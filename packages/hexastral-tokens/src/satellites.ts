@@ -86,15 +86,63 @@ export const numerologyPalette = {
   blueGhost: 'rgba(74,111,165,0.08)',
 } as const
 
-// ── Cycle (黄历) — 朱泥 terra (the almanac-paper palette) ───────────────────
+// ── Cycle (黄历) — 朱泥 terra (default) + 3 alt variants ────────────────────
+//
+// The default 朱泥 honors ADR-0010 §6. The alt variants exist because a single
+// red read as overwhelming to some users; each alt is a 黄历-coherent ink the
+// almanac tradition itself uses. The 黄历纸 surface tint (`paperGrain`) stays
+// terra-anchored regardless of variant — variant changes the highlights, not
+// the page feel.
 
-/** 朱泥 — terracotta clay red, evoking old 黄历 paper. Per ADR-0010 §6. */
+/** 朱泥 — terracotta clay red, the default 黄历 accent. */
 export const cyclePalette = {
   terra: '#A8492E',
   terraBright: '#C25E3E',
   terraMute: 'rgba(168,73,46,0.45)',
   terraGhost: 'rgba(168,73,46,0.08)',
-  paperGrain: 'rgba(168,73,46,0.05)', // 黄历纸 ambient surface tint
+  paperGrain: 'rgba(168,73,46,0.05)', // brand-anchored 黄历纸 ambient tint
+} as const
+
+/**
+ * Cycle accent variants — semantic 黄历 inks. Values picked at mid-luminance
+ * so they read on both cream (light) and warm-black (dark) without per-mode
+ * pivot. All share the same `accentGhost` alpha pattern as `cyclePalette`.
+ */
+export type CycleAccentVariant = 'terra' | 'ink' | 'azurite' | 'gold'
+
+export const cycleAccentVariants: Record<
+  CycleAccentVariant,
+  { accent: string; accentBright: string; accentMute: string; accentGhost: string }
+> = {
+  // 朱泥 (default)
+  terra: {
+    accent: cyclePalette.terra,
+    accentBright: cyclePalette.terraBright,
+    accentMute: cyclePalette.terraMute,
+    accentGhost: cyclePalette.terraGhost,
+  },
+  // 苍墨 — warm dark-gray, the body ink of an almanac
+  ink: {
+    accent: '#4D4540',
+    accentBright: '#6B5F55',
+    accentMute: 'rgba(77,69,64,0.45)',
+    accentGhost: 'rgba(77,69,64,0.08)',
+  },
+  // 靛青 — textile indigo (intentionally aligned with the 水元素 hue so
+  // 干支水日 + brand accent feel of one cloth when this variant is picked)
+  azurite: {
+    accent: '#3F6B86',
+    accentBright: '#5A8AAA',
+    accentMute: 'rgba(63,107,134,0.45)',
+    accentGhost: 'rgba(63,107,134,0.08)',
+  },
+  // 赭金 — antique brass-gold (distinct from coincast amber)
+  gold: {
+    accent: '#9B7A2F',
+    accentBright: '#B8954A',
+    accentMute: 'rgba(155,122,47,0.45)',
+    accentGhost: 'rgba(155,122,47,0.08)',
+  },
 } as const
 
 // ── Satellite tokens factory ───────────────────────────────────────────────
@@ -126,7 +174,13 @@ export interface SatelliteAccent {
   surfaceTint?: string
 }
 
-export function getSatelliteAccent(key: SatelliteKey): SatelliteAccent {
+/**
+ * @param accentVariant Optional variant id. Cycle accepts the
+ *   `CycleAccentVariant` ids ('terra' | 'ink' | 'azurite' | 'gold'); other
+ *   satellites currently ignore it. Unknown variants fall back to the
+ *   satellite's default accent.
+ */
+export function getSatelliteAccent(key: SatelliteKey, accentVariant?: string): SatelliteAccent {
   switch (key) {
     case 'compass':
       return {
@@ -165,14 +219,20 @@ export function getSatelliteAccent(key: SatelliteKey): SatelliteAccent {
         accentMute: numerologyPalette.violetMute,
         accentGhost: numerologyPalette.violetGhost,
       }
-    case 'cycle':
+    case 'cycle': {
+      const v =
+        accentVariant && accentVariant in cycleAccentVariants
+          ? cycleAccentVariants[accentVariant as CycleAccentVariant]
+          : cycleAccentVariants.terra
       return {
-        accent: cyclePalette.terra,
-        accentBright: cyclePalette.terraBright,
-        accentMute: cyclePalette.terraMute,
-        accentGhost: cyclePalette.terraGhost,
+        accent: v.accent,
+        accentBright: v.accentBright,
+        accentMute: v.accentMute,
+        accentGhost: v.accentGhost,
+        // paperGrain stays brand-anchored — variant changes highlights, not page feel
         surfaceTint: cyclePalette.paperGrain,
       }
+    }
   }
 }
 
@@ -182,9 +242,10 @@ export function getSatelliteAccent(key: SatelliteKey): SatelliteAccent {
  */
 export function satelliteTokens(
   key: SatelliteKey,
-  baseTokens: ModeTokens
+  baseTokens: ModeTokens,
+  accentVariant?: string
 ): ModeTokens & { accentBright: string; accentGhost: string; surfaceTint?: string } {
-  const a = getSatelliteAccent(key)
+  const a = getSatelliteAccent(key, accentVariant)
   return {
     ...baseTokens,
     accent: a.accent,

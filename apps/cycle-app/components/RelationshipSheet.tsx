@@ -6,11 +6,14 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
-import { Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+import { type CycleBirthInfo, getCycleBirthInfo } from '@/lib/birth'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import type { CyclePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
+import { openYuanCompose } from '@/lib/yuan-handoff'
 
 const TITLE: Record<Locale, string> = {
   'zh-Hans': '与 TA 的关系',
@@ -59,6 +62,24 @@ export function RelationshipSheet({
   const { t, locale } = useStrings()
   const rel = selfDate && person ? relationship(selfDate, person.solarDate) : null
 
+  // Load the full self birth info for the Yuán hand-off URL — selfDate alone
+  // isn't enough; Yuán's draft accepts time/gender/city too. Only loads when
+  // the sheet is opened to keep the unmount path cheap.
+  const [self, setSelf] = useState<CycleBirthInfo | null>(null)
+  useEffect(() => {
+    if (!visible) return
+    getCycleBirthInfo()
+      .then((info) => setSelf(info ?? null))
+      .catch(() => {})
+  }, [visible])
+
+  const personIsLunar = person?.calendar === 'lunar'
+  const canOpenYuan = !!person && !personIsLunar
+  const openYuan = () => {
+    if (!person || personIsLunar) return
+    void openYuanCompose({ person, self })
+  }
+
   return (
     <SatelliteBottomSheet visible={visible} onClose={onClose} title={TITLE[locale]}>
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'center' }}>
@@ -83,6 +104,42 @@ export function RelationshipSheet({
             <Text style={{ color: colors.text, fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
               {VERDICT_LINE[rel.verdict][locale]}
             </Text>
+            {/* Yuán hand-off — the 生肖 verdict is the cycle-side preview; the
+                full 八字/紫微 合盘 lives in Yuán. Falls through to App Store
+                if Yuán isn't installed. */}
+            {canOpenYuan ? (
+              <Pressable
+                onPress={openYuan}
+                accessibilityRole='button'
+                accessibilityLabel={t.yuanComposeCta}
+                style={({ pressed }) => ({
+                  alignSelf: 'stretch',
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  borderWidth: 0.5,
+                  borderColor: colors.accent,
+                  backgroundColor: colors.accentGhost,
+                  alignItems: 'center',
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                  {t.yuanComposeCta}
+                </Text>
+              </Pressable>
+            ) : personIsLunar ? (
+              <Text
+                style={{
+                  color: colors.dim,
+                  fontSize: 12,
+                  lineHeight: 18,
+                  textAlign: 'center',
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                {t.yuanComposeLunarNote}
+              </Text>
+            ) : null}
           </>
         ) : (
           <Text style={{ color: colors.secondary, fontSize: 14 }}>{t.people.needBirthBody}</Text>

@@ -6,6 +6,7 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
+import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { type CycleDayPayload, fetchCycleDay } from '@/lib/api'
@@ -37,6 +38,10 @@ function Label({ children }: { children: string }) {
 
 export function WatchSettings() {
   const { colors, spacing } = useTheme()
+  // Watch/widget previews mirror native render contracts: 对你而言 is Pro-only.
+  // Free users see the same face/widget without the personalization line.
+  const entitlements = useEntitlements()
+  const isPro = hasEntitlement(entitlements, 'cycle_pro')
   const [payload, setPayload] = useState<CycleDayPayload | null>(null)
   const [template, setTemplate] = useState<WatchTemplate>(DEFAULT_TEMPLATE)
   const [skinId, setSkinId] = useState<MoonSkinId>(DEFAULT_MOON_SKIN_ID)
@@ -92,7 +97,7 @@ export function WatchSettings() {
               moonSkinId={skinId}
               date={payload.date}
               day={payload.day}
-              personalization={payload.personalization}
+              personalization={isPro ? payload.personalization : null}
             />
           </View>
           <View style={{ gap: 4, alignItems: 'center' }}>
@@ -110,7 +115,7 @@ export function WatchSettings() {
                 moonSkinId={skinId}
                 date={payload.date}
                 day={payload.day}
-                personalization={payload.personalization}
+                personalization={isPro ? payload.personalization : null}
               />
             </View>
             <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>桌面小组件</Text>

@@ -236,6 +236,11 @@ export interface Strings {
     homeEntry: string
   }
   watchWidgets: string
+  themeAccent: string
+  /** CTA below the 生肖 reading that opens Yuán for full 合盘. */
+  yuanComposeCta: string
+  /** Shown when the contact's birthday is 农历 — Yuán only accepts solar. */
+  yuanComposeLunarNote: string
 }
 
 const zhHans: Strings = {
@@ -420,6 +425,9 @@ const zhHans: Strings = {
     homeEntry: '记录生日',
   },
   watchWidgets: '表盘与桌面组件',
+  themeAccent: '主题色',
+  yuanComposeCta: '在 Yuán 看完整合盘 →',
+  yuanComposeLunarNote: 'Yuán 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
 }
 
 const zhHant: Strings = {
@@ -578,6 +586,9 @@ const zhHant: Strings = {
     homeEntry: '記錄生日',
   },
   watchWidgets: '錶盤與桌面元件',
+  themeAccent: '主題色',
+  yuanComposeCta: '在 Yuán 看完整合盤 →',
+  yuanComposeLunarNote: 'Yuán 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
 }
 
 const ja: Strings = {
@@ -749,6 +760,9 @@ const ja: Strings = {
     homeEntry: '記念日を追加',
   },
   watchWidgets: '文字盤とウィジェット',
+  themeAccent: 'テーマカラー',
+  yuanComposeCta: 'Yuán で本格相性鑑定 →',
+  yuanComposeLunarNote: 'Yuán は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
 }
 
 const en: Strings = {
@@ -933,6 +947,10 @@ const en: Strings = {
     homeEntry: 'Add birthday',
   },
   watchWidgets: 'Watch & Widgets',
+  themeAccent: 'Accent color',
+  yuanComposeCta: 'Open full reading in Yuán →',
+  yuanComposeLunarNote:
+    'Yuán supports solar birthdays only. Edit this person to a solar date and try again.',
 }
 
 const TABLE: Record<Locale, Strings> = { 'zh-Hans': zhHans, 'zh-Hant': zhHant, ja, en }

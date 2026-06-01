@@ -523,7 +523,7 @@ bondRoutes.post('/invite', async (c) => {
   try {
     await mailerClient.post(c.env.SVC_MAILER, '/send', {
       to: input.targetEmail.toLowerCase(),
-      subject: `${inviterName} wants to discover your cosmic connection · HexAstral`,
+      subject: buildInvitationSubject({ inviterName, locale: user.locale ?? 'zh' }),
       html,
       ...(user.email ? { replyTo: user.email } : {}),
     })
@@ -2151,6 +2151,141 @@ async function sendBondAcceptedEmails(
   await Promise.all(tasks)
 }
 
+/**
+ * Operator identity for the email footer — required by:
+ *   - US CAN-SPAM Act §5(a)(5): commercial sender's valid physical postal address
+ *   - JP 特定電子メール法 §4: 送信者氏名・住所・受信拒否通知方法
+ *   - SG Spam Control Act §11: sender identification
+ *   - MY PDPA: data user identification
+ *
+ * TODO(legal): replace POSTAL with the registered UseOne Tech LLC address before
+ * public launch. Tracked in docs/local-manual-checklist.md.
+ */
+const OPERATOR = {
+  brand: 'HexAstral',
+  legal: 'UseOne Tech LLC',
+  postal: '30 N Gould St, Ste R, Sheridan, WY 82801, USA',
+  privacyUrl: 'https://hexastral.com/privacy',
+} as const
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+type InviteLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
+
+function normalizeInviteLocale(locale: string): InviteLocale {
+  if (locale === 'zh' || locale === 'zh-Hans' || locale.startsWith('zh-CN')) return 'zh'
+  if (locale === 'zh-Hant' || locale.startsWith('zh-TW') || locale.startsWith('zh-HK')) return 'zh-Hant'
+  if (locale === 'ja' || locale.startsWith('ja-')) return 'ja'
+  return 'en'
+}
+
+interface InviteCopy {
+  preheader: string
+  heading: (name: string) => string
+  relationshipLabel: string
+  bodyIntro: string
+  bodyPrivacy: string
+  cta: string
+  expiryNote: string
+  disclosureWhy: (name: string) => string
+  disclosureOptOut: string
+  disclosureNoMailingList: string
+  operatorLine: string
+}
+
+const INVITE_COPY: Record<InviteLocale, InviteCopy> = {
+  en: {
+    preheader: 'You have been invited to confirm participation in a private birth-chart compatibility reading.',
+    heading: (n) => `${n} has invited you to confirm your birth details for a compatibility reading.`,
+    relationshipLabel: 'Indicated relationship',
+    bodyIntro:
+      'If you choose to participate, you will enter your own birth details. Your data is used only to compute the reading; the inviter never sees your exact birth information.',
+    bodyPrivacy:
+      'Only the reading result is shared. You may decline by ignoring this email; the invitation expires automatically.',
+    cta: 'Open invitation',
+    expiryNote: 'This invitation expires in 7 days.',
+    disclosureWhy: (n) =>
+      `You received this one-time message because ${n} entered your email address while creating a connection request on HexAstral.`,
+    disclosureOptOut:
+      'No further messages will be sent. To have your email deleted immediately, do not respond — the invitation and your email are removed at expiry. For privacy questions, contact privacy@hexastral.com.',
+    disclosureNoMailingList: 'Your email is not added to any mailing list.',
+    operatorLine: '',
+  },
+  zh: {
+    preheader: '你被邀请确认是否参与一次私人星盘合盘解读。',
+    heading: (n) => `${n} 邀请你确认生辰信息以完成合盘解读`,
+    relationshipLabel: '关系标签',
+    bodyIntro:
+      '如果你选择参与，由你本人填写自己的生辰信息；邀请人不会看到你的具体生辰，仅会看到合盘结果。',
+    bodyPrivacy: '若不愿参与，可直接忽略本邮件，邀请将自动过期并删除。',
+    cta: '查看邀请',
+    expiryNote: '本邀请将在 7 天后过期。',
+    disclosureWhy: (n) => `你收到这封一次性邮件，是因为 ${n} 在 HexAstral 上填入了你的邮箱以发起合盘邀请。`,
+    disclosureOptOut:
+      '本邮件不会有任何后续。如希望立即删除你的邮箱记录，无需回复——邀请过期后邮箱将自动清除。隐私问题请联系 privacy@hexastral.com。',
+    disclosureNoMailingList: '你的邮箱不会被加入任何邮件列表。',
+    operatorLine: '',
+  },
+  'zh-Hant': {
+    preheader: '您被邀請確認是否參與一次私人星盤合盤解讀。',
+    heading: (n) => `${n} 邀請您確認生辰資料以完成合盤解讀`,
+    relationshipLabel: '關係標籤',
+    bodyIntro:
+      '若您選擇參與，由您本人填寫自己的生辰資料；邀請人不會看到您的具體生辰，僅會看到合盤結果。',
+    bodyPrivacy: '若不願參與，可直接忽略本郵件，邀請將自動過期並刪除。',
+    cta: '查看邀請',
+    expiryNote: '本邀請將於 7 天後過期。',
+    disclosureWhy: (n) => `您收到這封一次性郵件，是因為 ${n} 在 HexAstral 上填入了您的電子郵件以發起合盤邀請。`,
+    disclosureOptOut:
+      '本郵件不會有任何後續。若希望立即刪除您的電郵記錄，無需回覆——邀請過期後電郵將自動清除。隱私相關問題請聯絡 privacy@hexastral.com。',
+    disclosureNoMailingList: '您的電郵不會被加入任何郵件列表。',
+    operatorLine: '',
+  },
+  ja: {
+    preheader: '相性鑑定への参加確認のご案内です（一回限りの送信）。',
+    heading: (n) => `${n} 様より、相性鑑定のご招待が届いています`,
+    relationshipLabel: '関係性ラベル',
+    bodyIntro:
+      'ご参加いただける場合は、ご自身の生年月日等の情報をご入力いただきます。招待者にはお客様の生年月日情報そのものは共有されず、鑑定結果のみが表示されます。',
+    bodyPrivacy: 'ご参加されない場合は、本メールをそのまま無視していただいて構いません。招待は自動的に期限切れとなり、削除されます。',
+    cta: '招待を確認する',
+    expiryNote: '本招待は 7 日後に失効します。',
+    disclosureWhy: (n) => `本メールは、${n} 様が HexAstral にてお客様のメールアドレスを入力されたため、一回限り送信されています。`,
+    disclosureOptOut:
+      '今後追加でメールが送信されることはありません。受信を希望されない場合、ご返信は不要です——招待の失効と同時にメールアドレスは自動的に削除されます。受信拒否・個人情報に関するお問い合わせは privacy@hexastral.com までご連絡ください。',
+    disclosureNoMailingList: 'お客様のメールアドレスがメーリングリストに追加されることはありません。',
+    operatorLine: '送信者：',
+  },
+}
+
+/**
+ * Locale-aware subject for the bond invitation email.
+ *
+ * - English subjects are prefixed with `<ADV>` to satisfy Singapore Spam Control
+ *   Act §11(2) — we don't know the recipient's country reliably, but the
+ *   English market is the most likely SG destination, so we tag all English
+ *   subjects defensively. Other locales (zh/zh-Hant/ja) skip the tag.
+ * - Tone is strictly transactional: no "discover your cosmic connection"-style
+ *   marketing language. JP 特定電子メール法 transactional-exemption hinges on
+ *   the message being a direct response to recipient-triggered context (here,
+ *   the inviter entering the email).
+ */
+function buildInvitationSubject(opts: { inviterName: string; locale: string }): string {
+  const loc = normalizeInviteLocale(opts.locale)
+  const name = opts.inviterName
+  if (loc === 'zh') return `${name} 邀请你确认合盘信息 · HexAstral`
+  if (loc === 'zh-Hant') return `${name} 邀請您確認合盤資料 · HexAstral`
+  if (loc === 'ja') return `${name} 様より相性鑑定のご招待 · HexAstral`
+  return `<ADV> ${name} has invited you to a birth-chart compatibility reading · HexAstral`
+}
+
 function buildInvitationEmailHtml(opts: {
   inviterName: string
   relationshipLabel: string
@@ -2158,36 +2293,49 @@ function buildInvitationEmailHtml(opts: {
   resonateUrl: string
   locale: string
 }): string {
-  const { inviterName, relationshipLabel, message, resonateUrl } = opts
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+  const loc = normalizeInviteLocale(opts.locale)
+  const c = INVITE_COPY[loc]
+  const name = escapeHtml(opts.inviterName)
+  const rel = escapeHtml(opts.relationshipLabel)
+  const url = escapeHtml(opts.resonateUrl)
+  const msg = opts.message ? escapeHtml(opts.message) : null
+  const headingHtml = escapeHtml(c.heading(opts.inviterName)).replace(name, `<strong>${name}</strong>`)
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${OPERATOR.brand}</title></head>
 <body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;font-size:1px;line-height:1px;mso-hide:all;">${escapeHtml(c.preheader)}</span>
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 20px;">
     <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e4e4e7;">
-      <tr><td style="padding:40px 32px;text-align:center;">
-        <p style="margin:0 0 8px;font-size:11px;color:#71717a;letter-spacing:4px;text-transform:uppercase;">HEXASTRAL</p>
-        <h1 style="margin:0 0 24px;font-size:22px;font-weight:300;color:#09090b;letter-spacing:1px;line-height:1.4;">
-          ${inviterName} wants to discover<br>your cosmic connection
+      <tr><td style="padding:40px 32px;text-align:left;">
+        <p style="margin:0 0 8px;font-size:11px;color:#71717a;letter-spacing:4px;text-transform:uppercase;">${OPERATOR.brand}</p>
+        <h1 style="margin:0 0 20px;font-size:18px;font-weight:400;color:#09090b;line-height:1.5;">
+          ${headingHtml}
         </h1>
-        <p style="margin:0 0 12px;font-size:13px;color:#71717a;line-height:1.6;">
-          Relationship: <strong style="color:#09090b;">${relationshipLabel}</strong>
+        <p style="margin:0 0 12px;font-size:13px;color:#52525b;line-height:1.6;">
+          ${escapeHtml(c.relationshipLabel)}: <strong style="color:#09090b;">${rel}</strong>
         </p>
-        ${message ? `<p style="margin:0 0 24px;font-size:13px;color:#52525b;line-height:1.6;font-style:italic;">"${message}"</p>` : ''}
-        <p style="margin:0 0 28px;font-size:13px;color:#71717a;line-height:1.6;">
-          Enter your birth details to reveal the resonance between your star charts.<br>
-          Your exact birth data will remain private — only the reading result will be shared.
+        ${msg ? `<p style="margin:0 0 20px;padding:12px 14px;background:#fafafa;border-left:2px solid #e4e4e7;font-size:13px;color:#52525b;line-height:1.6;">${msg}</p>` : ''}
+        <p style="margin:0 0 16px;font-size:13px;color:#52525b;line-height:1.6;">
+          ${escapeHtml(c.bodyIntro)}
         </p>
-        <a href="${resonateUrl}" style="display:inline-block;padding:14px 40px;background:#09090b;color:#fafafa;font-size:13px;font-weight:500;letter-spacing:2px;text-decoration:none;text-transform:uppercase;">
-          Respond to Resonance →
+        <p style="margin:0 0 24px;font-size:13px;color:#52525b;line-height:1.6;">
+          ${escapeHtml(c.bodyPrivacy)}
+        </p>
+        <a href="${url}" style="display:inline-block;padding:12px 28px;background:#09090b;color:#fafafa;font-size:13px;font-weight:500;letter-spacing:1px;text-decoration:none;">
+          ${escapeHtml(c.cta)}
         </a>
         <p style="margin:24px 0 0;font-size:11px;color:#a1a1aa;line-height:1.6;">
-          As a responder, you'll receive a free compatibility summary.<br>
-          This invitation expires in 7 days.
+          ${escapeHtml(c.expiryNote)}
         </p>
-        <p style="margin:16px 0 0;border-top:1px solid #f4f4f5;padding-top:16px;font-size:10px;color:#a1a1aa;line-height:1.6;">
-          You received this one-time invitation because ${inviterName} entered your email to connect on HexAstral.
-          Your email is used only to deliver this invitation — it is not added to any mailing list, and no
-          further emails are sent unless you respond. No action is needed to decline; the invitation expires on its own.
-        </p>
+        <div style="margin:24px 0 0;border-top:1px solid #f4f4f5;padding-top:16px;font-size:10px;color:#a1a1aa;line-height:1.7;">
+          <p style="margin:0 0 6px;">${escapeHtml(c.disclosureWhy(opts.inviterName))}</p>
+          <p style="margin:0 0 6px;">${escapeHtml(c.disclosureOptOut)}</p>
+          <p style="margin:0 0 6px;">${escapeHtml(c.disclosureNoMailingList)}</p>
+          <p style="margin:8px 0 0;">
+            ${escapeHtml(c.operatorLine)}${OPERATOR.brand} · ${OPERATOR.legal}<br>
+            ${OPERATOR.postal}<br>
+            <a href="${OPERATOR.privacyUrl}" style="color:#a1a1aa;">${OPERATOR.privacyUrl}</a>
+          </p>
+        </div>
       </td></tr>
     </table>
   </td></tr></table>

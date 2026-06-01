@@ -19,6 +19,7 @@ import { Platform } from 'react-native'
 import { fetchCycleDay } from './api'
 import { getStrings, type Locale } from './i18n'
 import type { CyclePerson, PersonCalendar } from './people'
+import { getCycleProActive } from './pro'
 import { localizeYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'cycle.push.enabled'
@@ -114,12 +115,18 @@ async function cancelDaily(): Promise<void> {
   } catch {}
 }
 
-/** Build the notification body from a day payload (deterministic — no LLM). */
+/**
+ * Build the notification body from a day payload (deterministic — no LLM).
+ * `isPro` gates the 对你而言 verdict line: free users get the generic 宜忌 /
+ * 干支 / 节气 body that's pure math from the day itself, never the
+ * birth-info-derived personalization that's part of cycle_pro.
+ */
 function dailyContent(
   locale: Locale,
   t: ReturnType<typeof getStrings>,
   dateStr: string,
-  payload: Awaited<ReturnType<typeof fetchCycleDay>>
+  payload: Awaited<ReturnType<typeof fetchCycleDay>>,
+  isPro: boolean
 ): { title: string; body: string } {
   const d = payload.day
   // Localize the 宜忌 verbs (were leaking raw CJK under en/ja) + locale separators.
@@ -129,7 +136,7 @@ function dailyContent(
   const yi = d.goodFor.slice(0, 2).map(loc).join(sep) || '—'
   const ji = d.avoid.slice(0, 2).map(loc).join(sep) || '—'
   let body = `${t.suitable} ${yi} · ${t.avoid} ${ji}`
-  if (payload.personalization) {
+  if (isPro && payload.personalization) {
     body += ` · ${t.personal.forYou}${colon}${t.personal.fit[payload.personalization.fit]}`
   }
   // Fold the 节气 into the body when this very day is a 节气 (covers C.5.3 lightly).
@@ -142,6 +149,9 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   await cancelDaily()
   const t = getStrings(opts.locale)
   const now = Date.now()
+  // Read entitlement once per reschedule pass. SDK-unconfigured paths (Expo
+  // Go, missing key) safely return false → free-tier body.
+  const isPro = await getCycleProActive()
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightAm(i)
@@ -150,7 +160,13 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
 
     let content: { title: string; body: string } = { title: t.appName, body: t.today }
     try {
-      content = dailyContent(opts.locale, t, dateStr, await fetchCycleDay(dateStr, opts.birthDate))
+      content = dailyContent(
+        opts.locale,
+        t,
+        dateStr,
+        await fetchCycleDay(dateStr, opts.birthDate),
+        isPro
+      )
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
     }

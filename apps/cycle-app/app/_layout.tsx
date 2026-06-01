@@ -13,11 +13,18 @@ import { CoreUIProvider } from '@zhop/core-ui'
 import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-runtime'
 import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import {
+  AccentProvider,
+  type CycleAccentVariant,
+  DEFAULT_ACCENT_VARIANT,
+  getAccentVariant,
+  setAccentVariant,
+} from '@/lib/accent'
 import { getCycleBirthDate } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
@@ -44,13 +51,29 @@ export default function RootLayout() {
   // Cycle defaults light — 黄历 reads best on warm paper; honor explicit dark mode.
   const mode: 'light' | 'dark' = scheme === 'dark' ? 'dark' : 'light'
 
+  // Lift the accent variant here so the picker (downstream in /display) can
+  // mutate it via context and the CoreUIProvider re-renders with the new
+  // accent immediately — no app restart.
+  const [variant, setVariantState] = useState<CycleAccentVariant>(DEFAULT_ACCENT_VARIANT)
+  useEffect(() => {
+    getAccentVariant()
+      .then(setVariantState)
+      .catch(() => {})
+  }, [])
+  const setVariant = useCallback((v: CycleAccentVariant) => {
+    setVariantState(v)
+    void setAccentVariant(v)
+  }, [])
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <CoreUIProvider brand='cycle' mode={mode}>
-          <LocaleProvider>
-            <RootLayoutInner />
-          </LocaleProvider>
+        <CoreUIProvider brand='cycle' mode={mode} accentVariant={variant}>
+          <AccentProvider value={{ variant, setVariant }}>
+            <LocaleProvider>
+              <RootLayoutInner />
+            </LocaleProvider>
+          </AccentProvider>
         </CoreUIProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

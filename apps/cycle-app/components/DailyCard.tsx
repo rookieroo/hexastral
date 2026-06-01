@@ -23,6 +23,7 @@ import type { CycleDay, CyclePersonalization, PersonalFit } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
 import { localizeYijiVerb } from '@/lib/yiji-vocab'
 import { StaticMoon } from './StaticMoon'
@@ -84,17 +85,20 @@ const BRANCH_TO_ANIMAL: Record<string, string> = {
   亥: '猪',
 }
 
+// Canonical 五行 palette lives in shichen-content.ts (ELEMENT_COLORS) — same
+// values feed the 时辰 wheel, glossary grid, calendar dots, and timeline rows.
+// 天干 → 五行 → color so 干支日 ink matches everywhere.
 const STEM_ELEMENT_COLOR: Record<string, string> = {
-  甲: '#5B8C5A',
-  乙: '#5B8C5A',
-  丙: '#C25450',
-  丁: '#C25450',
-  戊: '#A0845C',
-  己: '#A0845C',
-  庚: '#C4A882',
-  辛: '#C4A882',
-  壬: '#4A6FA5',
-  癸: '#4A6FA5',
+  甲: ELEMENT_COLORS['木'],
+  乙: ELEMENT_COLORS['木'],
+  丙: ELEMENT_COLORS['火'],
+  丁: ELEMENT_COLORS['火'],
+  戊: ELEMENT_COLORS['土'],
+  己: ELEMENT_COLORS['土'],
+  庚: ELEMENT_COLORS['金'],
+  辛: ELEMENT_COLORS['金'],
+  壬: ELEMENT_COLORS['水'],
+  癸: ELEMENT_COLORS['水'],
 }
 
 /** 天干 → 五行 (English), for the en 干支纪年 ("Fire Horse"). */
@@ -598,19 +602,19 @@ function RevealSlot({
   )
 }
 
-// ── full — home 黄历 hero (watch-face look: dark, 月相-led, no border/dots) ────
+// ── full — home 黄历 hero (月相-led, 干支 in 五行 ink; respects light/dark) ──────
 
 function FullTier({ model }: { model: DailyCardModel }) {
   const { colors } = useTheme()
   const { t, locale } = useStrings()
   const lunar = model.lunarMonthDay || model.lunarLabel
-  // Watch-face aesthetic on the home: dark canvas, 月相 leads, 干支 in its 五行
-  // 意象 colour. No accent frame, no 吉凶 score dots (review + psych risk).
+  // No accent frame, no 吉凶 score dots (review + psych risk). Card surface
+  // follows the system theme — paper in light, near-black in dark.
   return (
     <View
       style={{
         borderRadius: 18,
-        backgroundColor: '#0E0D0C',
+        backgroundColor: colors.card,
         paddingHorizontal: 20,
         paddingVertical: 18,
         gap: 14,
@@ -626,7 +630,7 @@ function FullTier({ model }: { model: DailyCardModel }) {
         }}
       >
         <Text
-          style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, letterSpacing: 1, flexShrink: 1 }}
+          style={{ color: colors.secondary, fontSize: 13, letterSpacing: 1, flexShrink: 1 }}
           numberOfLines={1}
         >
           {formatWatchDate(model.date, locale)}
@@ -641,14 +645,14 @@ function FullTier({ model }: { model: DailyCardModel }) {
               paddingVertical: 4,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: model.benming ? colors.accent : 'rgba(255,255,255,0.18)',
-              backgroundColor: model.benming ? 'rgba(168,73,46,0.18)' : 'transparent',
+              borderColor: model.benming ? colors.accent : colors.separator,
+              backgroundColor: model.benming ? colors.accentGhost : 'transparent',
             }}
             accessibilityLabel={model.benming ? `${model.yearChip} · ${t.benming}` : model.yearChip}
           >
             <Text
               style={{
-                color: model.benming ? colors.accent : 'rgba(255,255,255,0.8)',
+                color: model.benming ? colors.accent : colors.text,
                 fontSize: 12,
                 letterSpacing: 1,
                 fontWeight: model.benming ? '600' : '500',
@@ -681,19 +685,19 @@ function FullTier({ model }: { model: DailyCardModel }) {
           {model.ganZhi}
         </Text>
         <View style={{ flex: 1 }} />
-        <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, textAlign: 'right' }}>
+        <Text style={{ color: colors.secondary, fontSize: 14, textAlign: 'right' }}>
           {model.officerLabel}
         </Text>
       </View>
 
       {/* 农历 · 节气 · 二十八宿 */}
-      <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 19 }}>
+      <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
         {lunar ? (
           <Text
             style={
               model.lunarStrong
                 ? { color: colors.accent, fontWeight: '600' }
-                : { color: 'rgba(255,255,255,0.45)' }
+                : { color: colors.dim }
             }
           >
             {lunar}
@@ -709,11 +713,18 @@ function FullTier({ model }: { model: DailyCardModel }) {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
           accessibilityLabel={`${t.personalClashLabel} · ${model.clashAnimal}`}
         >
-          <Text style={{ color: '#E0796B', fontSize: 12, fontWeight: '600', letterSpacing: 1 }}>
+          <Text
+            style={{
+              color: ELEMENT_COLORS['火'],
+              fontSize: 12,
+              fontWeight: '600',
+              letterSpacing: 1,
+            }}
+          >
             {t.personalClashLabel}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>·</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>{model.clashAnimal}</Text>
+          <Text style={{ color: colors.dim, fontSize: 12 }}>·</Text>
+          <Text style={{ color: colors.secondary, fontSize: 12 }}>{model.clashAnimal}</Text>
         </View>
       ) : null}
     </View>

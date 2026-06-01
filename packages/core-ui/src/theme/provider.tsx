@@ -102,11 +102,20 @@ const ThemeContext = createContext<CoreUITheme | null>(null)
 export interface CoreUIProviderProps {
   brand: CoreUIBrand
   mode: CoreUIMode
+  /**
+   * Optional per-brand accent variant id. Currently honored by `cycle`
+   * (`'terra' | 'ink' | 'azurite' | 'gold'`); other brands ignore it. Unknown
+   * variants fall back to the brand's default accent.
+   */
+  accentVariant?: string
   children: ReactNode
 }
 
-export function CoreUIProvider({ brand, mode, children }: CoreUIProviderProps) {
-  const theme = useMemo<CoreUITheme>(() => buildTheme(brand, mode), [brand, mode])
+export function CoreUIProvider({ brand, mode, accentVariant, children }: CoreUIProviderProps) {
+  const theme = useMemo<CoreUITheme>(
+    () => buildTheme(brand, mode, accentVariant),
+    [brand, mode, accentVariant]
+  )
 
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>
 }
@@ -121,7 +130,7 @@ export function useTheme(): CoreUITheme {
 
 // ── Build ──────────────────────────────────────────────────────────────────
 
-function buildTheme(brand: CoreUIBrand, mode: CoreUIMode): CoreUITheme {
+function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string): CoreUITheme {
   const isDark = mode === 'dark'
   const baseTokens: ModeTokens = isDark ? darkTokens : lightTokens
   const highlights = getHighlightColors(isDark)
@@ -137,8 +146,8 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode): CoreUITheme {
     accent = FLAGSHIP_ACCENTS[brand][mode]
     accentBright = accent
   } else {
-    // Satellite — use satellite accent factory.
-    const sat = getSatelliteAccent(brand)
+    // Satellite — use satellite accent factory (variant is satellite-specific).
+    const sat = getSatelliteAccent(brand, accentVariant)
     accent = sat.accent
     accentBright = sat.accentBright
     accentGhost = sat.accentGhost

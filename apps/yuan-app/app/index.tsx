@@ -1,11 +1,12 @@
 /**
  * Yuán entry — decides where the user lands on app open.
  *
- * - First-ever launch (no onboarding completed) → /(onboarding)/welcome
- * - Returning user with at least one bond → /(bonds)
- * - Returning user, no bonds yet, but onboarding done → /(bonds) (empty state)
+ * - First-ever launch, intro not seen → /(onboarding)/intro (then welcome)
+ * - Onboarding not yet done but intro seen → /(onboarding)/welcome
+ * - Returning user with onboarding done → /(bonds) (with or without bonds)
  *
- * Decision is cheap (single AsyncStorage read); no spinner shown for ≥1 frame.
+ * Intro is single-shot: we set `INTRO_SEEN_KEY` up-front so a force-quit
+ * mid-animation doesn't replay it.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -16,18 +17,32 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 
 const ONBOARDING_DONE_KEY = 'yuan_onboarding_complete_v1'
+const INTRO_SEEN_KEY = 'yuan_intro_seen_v1'
+
+type EntryStatus = 'loading' | 'intro' | 'welcome' | 'returning'
 
 export default function EntryScreen() {
-  const [status, setStatus] = useState<'loading' | 'first' | 'returning'>('loading')
+  const [status, setStatus] = useState<EntryStatus>('loading')
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const done = await AsyncStorage.getItem(ONBOARDING_DONE_KEY)
-        if (!cancelled) setStatus(done ? 'returning' : 'first')
+        const [done, intro] = await Promise.all([
+          AsyncStorage.getItem(ONBOARDING_DONE_KEY),
+          AsyncStorage.getItem(INTRO_SEEN_KEY),
+        ])
+        if (cancelled) return
+        if (done) {
+          setStatus('returning')
+        } else if (!intro) {
+          await AsyncStorage.setItem(INTRO_SEEN_KEY, '1')
+          if (!cancelled) setStatus('intro')
+        } else {
+          setStatus('welcome')
+        }
       } catch {
-        if (!cancelled) setStatus('first')
+        if (!cancelled) setStatus('welcome')
       }
     })()
     return () => {
@@ -49,7 +64,8 @@ export default function EntryScreen() {
       </View>
     )
   }
-  if (status === 'first') return <Redirect href='/(onboarding)/welcome' />
+  if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
+  if (status === 'welcome') return <Redirect href='/(onboarding)/welcome' />
   return <Redirect href='/(bonds)' />
 }
 

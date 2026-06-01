@@ -35,6 +35,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { YuanClientGate } from '@/lib/client'
+import { captureCompose } from '@/lib/composeLink'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
@@ -80,9 +81,17 @@ export default function RootLayout() {
   const locale = useMemo(() => resolveLocale(), [])
 
   useEffect(() => {
-    void Linking.getInitialURL().then((url) => captureOnboardAttribution(url))
+    // Two URL listeners — they're orthogonal: onboard captures `?from=` for
+    // funnel attribution, compose pre-fills the onboarding draft from a
+    // sibling app's hand-off (cycle → yuán today; see apps/cycle-app/lib/
+    // yuan-handoff.ts for the contract).
+    void Linking.getInitialURL().then((url) => {
+      captureOnboardAttribution(url)
+      captureCompose(url)
+    })
     const sub = Linking.addEventListener('url', ({ url }) => {
       void captureOnboardAttribution(url)
+      captureCompose(url)
     })
     return () => sub.remove()
   }, [])
