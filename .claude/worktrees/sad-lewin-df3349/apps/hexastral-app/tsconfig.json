@@ -1,0 +1,23 @@
+{
+  "extends": "@zhop/typescript-config/base.json",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["@cloudflare/workers-types/2023-07-01"],
+    "paths": {
+      "@/*": ["./*"],
+      "react-native": ["./node_modules/react-native"],
+      "react-native/*": ["./node_modules/react-native/*"],
+      "@rn-primitives/*": ["./node_modules/@rn-primitives/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

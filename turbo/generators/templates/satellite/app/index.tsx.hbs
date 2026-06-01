@@ -1,0 +1,60 @@
+/**
+ * {{name}} — home screen scaffold.
+ * Replace this with the product's primary surface.
+ */
+
+import * as Haptics from 'expo-haptics'
+import { useRouter } from 'expo-router'
+import { Pressable, SafeAreaView, Text, View } from 'react-native'
+import { useI18n } from '@/lib/i18n'
+import { useAppTheme } from '@/lib/theme'
+
+export default function HomeScreen() {
+  const router = useRouter()
+  const { t } = useI18n()
+  const { colors } = useAppTheme()
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: 36,
+            fontWeight: '500',
+            letterSpacing: 1.4,
+            textAlign: 'center',
+          }}
+        >
+          {t('homeTitle')}
+        </Text>
+        <View style={{ height: 16 }} />
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: 14,
+            textAlign: 'center',
+            lineHeight: 22,
+          }}
+        >
+          {t('homeTagline')}
+        </Text>
+      </View>
+
+      <View style={{ paddingHorizontal: 24, paddingBottom: 32, gap: 12 }}>
+        <Pressable
+          accessibilityRole='button'
+          onPress={() => {
+            Haptics.selectionAsync()
+            router.push('/settings')
+          }}
+          style={{ paddingVertical: 12, alignItems: 'center' }}
+        >
+          <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1.2 }}>
+            {t('homeSettingsCta')}
+          </Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  )
+}

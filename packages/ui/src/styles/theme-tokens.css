@@ -1,0 +1,158 @@
+/**
+ * Theme Design Tokens
+ *
+ * 这些类提取了各主题的通用特征，供多个原子组件复用
+ * 避免在每个组件的 CVA 里重复写相同的 Tailwind 类
+ */
+
+/* ========== Athletic Theme Tokens ========== */
+.theme-athletic-border {
+  @apply border-2 border-primary;
+}
+
+.theme-athletic-shadow {
+  @apply shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)];
+}
+
+.theme-athletic-font {
+  @apply font-black uppercase tracking-tight;
+}
+
+.theme-athletic-interactive {
+  @apply hover:scale-105 active:scale-95 transition-transform;
+  @apply hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none;
+}
+
+/* ========== Minimal Theme Tokens ========== */
+.theme-minimal-border {
+  @apply border-b border-primary/50;
+}
+
+.theme-minimal-font {
+  @apply font-light tracking-wide;
+}
+
+.theme-minimal-interactive {
+  @apply hover:border-primary transition-colors;
+}
+
+/* ========== Tech Theme Tokens ========== */
+.theme-tech-border {
+  @apply border border-primary/30 rounded-none;
+}
+
+.theme-tech-font {
+  @apply font-mono font-bold uppercase tracking-wider;
+}
+
+.theme-tech-interactive {
+  @apply hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(var(--primary),0.3)] backdrop-blur-sm transition-all;
+}
+
+/* ========== Fashion Theme Tokens ========== */
+.theme-fashion-border {
+  @apply border border-primary/20 rounded-full;
+}
+
+.theme-fashion-font {
+  @apply font-serif italic tracking-widest;
+}
+
+.theme-fashion-interactive {
+  @apply hover:border-primary hover:bg-primary/5 transition-colors;
+}
+
+/* ========== Natural Theme Tokens ========== */
+.theme-natural-border {
+  @apply border-none rounded-lg;
+}
+
+.theme-natural-font {
+  @apply font-sans tracking-tight;
+}
+
+.theme-natural-background {
+  @apply bg-primary/10;
+}
+
+.theme-natural-interactive {
+  @apply hover:bg-primary/20 transition-colors;
+}
+
+/* ========== Luxury Theme Tokens ========== */
+.theme-luxury-border {
+  @apply border border-foreground/80 rounded-none;
+}
+
+.theme-luxury-font {
+  @apply font-serif tracking-[0.2em] uppercase;
+}
+
+.theme-luxury-interactive {
+  @apply hover:bg-foreground hover:text-background transition-all duration-500;
+}
+
+/* ========== Bold Theme Tokens ========== */
+.theme-bold-border {
+  @apply border-2 border-foreground rounded-none;
+}
+
+.theme-bold-font {
+  @apply font-black uppercase;
+}
+
+.theme-bold-shadow {
+  @apply shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+}
+
+.theme-bold-interactive {
+  @apply hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+  @apply active:shadow-none active:translate-x-1 active:translate-y-1 transition-all;
+}
+
+/* ========== Platform-specific Tokens ========== */
+
+/* Amazon */
+.theme-amazon-colors {
+  @apply bg-[#FFD814] text-black hover:bg-[#F7CA00];
+}
+
+.theme-amazon-border {
+  @apply border border-[#FCD200] rounded-md;
+}
+
+/* TikTok */
+.theme-tiktok-colors {
+  @apply bg-[#FE2C55] text-white hover:bg-[#E6284D];
+}
+
+.theme-tiktok-shape {
+  @apply rounded-[4px] border-none;
+}
+
+/* Walmart */
+.theme-walmart-colors {
+  @apply bg-[#0071DC] text-white hover:bg-[#005FB8];
+}
+
+.theme-walmart-shape {
+  @apply rounded-full px-6;
+}
+
+/* Etsy */
+.theme-etsy-colors {
+  @apply bg-[#222222] text-white hover:bg-[#000000];
+}
+
+.theme-etsy-shape {
+  @apply rounded-full px-6 border-none;
+}
+
+/* Temu */
+.theme-temu-colors {
+  @apply bg-[#FB7701] text-white hover:bg-[#E06A01];
+}
+
+.theme-temu-shape {
+  @apply rounded-full border-none;
+}

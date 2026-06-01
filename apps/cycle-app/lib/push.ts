@@ -1,0 +1,340 @@
+/**
+ * Cycle daily push (C.5) — 100% deterministic, NO LLM.
+ *
+ * Cycle is Tier-3 anonymous, so we use **local scheduled notifications** (no push
+ * token, no server cron, no account): the app fetches the server-computed
+ * deterministic almanac (`/api/cycle/day`, incl. the 对你而言 overlay when a birth
+ * date is set) and schedules a rolling window of 8am local notifications. They are
+ * rescheduled on each app open so content stays fresh. (A future REMOTE push via
+ * svc-notify + Expo tokens is the scale option — not needed for v1.)
+ *
+ * expo-notifications API mirrors `apps/hexastral-app/lib/ux/pushNotifications.ts`
+ * (version ~0.32.16).
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { lunarToSolar } from '@zhop/astro-core'
+import * as Notifications from 'expo-notifications'
+import { Platform } from 'react-native'
+import { fetchCycleDay } from './api'
+import { getStrings, type Locale } from './i18n'
+import type { CyclePerson, PersonCalendar } from './people'
+import { localizeYijiVerb } from './yiji-vocab'
+
+const ENABLED_KEY = 'cycle.push.enabled'
+/** Stable per-date identifier prefix — makes scheduling idempotent (no dupes). */
+const DAILY_ID_PREFIX = 'cycle-daily-'
+const PUSH_HOUR = 8
+const WINDOW_DAYS = 5
+
+/** Retro-check copy ({event} = the localized event label). */
+const RETRO_TEXT: Record<Locale, string> = {
+  'zh-Hans': '上次为「{event}」选的吉日，结果如何？点开记一笔。',
+  'zh-Hant': '上次為「{event}」選的吉日，結果如何？點開記一筆。',
+  ja: '先日選んだ「{event}」の吉日、いかがでしたか？',
+  en: 'How did your {event} go? Tap to log it.',
+}
+
+interface PushOpts {
+  locale: Locale
+  birthDate?: string
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+/** Local calendar date (device tz) for `d`. */
+function localYmd(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** Local 8am `daysAhead` days from now. */
+function eightAm(daysAhead: number): Date {
+  const d = new Date()
+  d.setDate(d.getDate() + daysAhead)
+  d.setHours(PUSH_HOUR, 0, 0, 0)
+  return d
+}
+
+// ── permission + enable flag ──────────────────────────────────────────────────
+
+export async function requestPushPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false
+  const existing = await Notifications.getPermissionsAsync()
+  if (existing.status === 'granted') return true
+  const req = await Notifications.requestPermissionsAsync({
+    ios: { allowAlert: true, allowBadge: true, allowSound: true },
+  })
+  return req.status === 'granted'
+}
+
+export async function isPushEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(ENABLED_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+async function setEnabledFlag(on: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ENABLED_KEY, on ? '1' : '0')
+  } catch {}
+}
+
+/** Foreground display behavior — call once at root. */
+export function configureNotifications(): void {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  })
+}
+
+// ── daily 8am rolling window ────────────────────────────────────────────────────
+
+/**
+ * Cancel every scheduled cycle-daily notification — found by identifier prefix,
+ * NOT a stored ID list (which raced rapid locale switches and left stale /
+ * duplicate notifications). Robust to any prior state.
+ */
+async function cancelDaily(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(DAILY_ID_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+/** Build the notification body from a day payload (deterministic — no LLM). */
+function dailyContent(
+  locale: Locale,
+  t: ReturnType<typeof getStrings>,
+  dateStr: string,
+  payload: Awaited<ReturnType<typeof fetchCycleDay>>
+): { title: string; body: string } {
+  const d = payload.day
+  // Localize the 宜忌 verbs (were leaking raw CJK under en/ja) + locale separators.
+  const sep = locale === 'en' ? ', ' : '、'
+  const colon = locale === 'en' ? ': ' : '：'
+  const loc = (v: string) => localizeYijiVerb(v, locale)
+  const yi = d.goodFor.slice(0, 2).map(loc).join(sep) || '—'
+  const ji = d.avoid.slice(0, 2).map(loc).join(sep) || '—'
+  let body = `${t.suitable} ${yi} · ${t.avoid} ${ji}`
+  if (payload.personalization) {
+    body += ` · ${t.personal.forYou}${colon}${t.personal.fit[payload.personalization.fit]}`
+  }
+  // Fold the 节气 into the body when this very day is a 节气 (covers C.5.3 lightly).
+  if (d.solarTerm.prev.date === dateStr) body += ` · ${d.solarTerm.prev.name}`
+  return { title: `${dateStr} · ${d.ganZhi}日`, body }
+}
+
+/** (Re)schedule the rolling daily window with fresh deterministic content. */
+export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
+  await cancelDaily()
+  const t = getStrings(opts.locale)
+  const now = Date.now()
+
+  for (let i = 0; i < WINDOW_DAYS; i++) {
+    const when = eightAm(i)
+    if (when.getTime() <= now) continue // skip past 8am (e.g. today, opened after 8)
+    const dateStr = localYmd(when)
+
+    let content: { title: string; body: string } = { title: t.appName, body: t.today }
+    try {
+      content = dailyContent(opts.locale, t, dateStr, await fetchCycleDay(dateStr, opts.birthDate))
+    } catch {
+      // keep the generic fallback — a push that opens the app is still useful
+    }
+
+    try {
+      // Stable per-date identifier → idempotent: rescheduling (e.g. on a locale
+      // switch) REPLACES the day's notification instead of stacking a duplicate.
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${DAILY_ID_PREFIX}${dateStr}`,
+        content: { ...content, data: { day: dateStr } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+      })
+    } catch {}
+  }
+}
+
+export async function enableDailyPush(opts: PushOpts): Promise<boolean> {
+  if (!(await requestPushPermission())) return false
+  await setEnabledFlag(true)
+  await scheduleDailyAlmanac(opts)
+  return true
+}
+
+export async function disableDailyPush(): Promise<void> {
+  await setEnabledFlag(false)
+  await cancelDaily()
+}
+
+/** Re-sync the rolling window on app open (no-op unless enabled). */
+export async function refreshDailyPush(opts: PushOpts): Promise<void> {
+  if (await isPushEnabled()) await scheduleDailyAlmanac(opts)
+}
+
+/**
+ * Subscribe to notification taps. The handler receives the notification's `day`
+ * (YYYY-MM-DD) so the caller can deep-link Today to that date. Returns an
+ * unsubscribe fn; also fires for the launch notification (cold start).
+ */
+export function addCycleNotificationTapListener(onOpen: (day: string | null) => void): () => void {
+  const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const day = response.notification.request.content.data?.day
+    onOpen(typeof day === 'string' ? day : null)
+  })
+  return () => sub.remove()
+}
+
+// ── retro-check (C.5.2) ─────────────────────────────────────────────────────────
+
+/** Schedule a single nudge 7 days after a picked 择日 date. */
+export async function scheduleRetroCheck(opts: {
+  date: string
+  eventLabel: string
+  locale: Locale
+}): Promise<void> {
+  if (!(await requestPushPermission())) return
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(opts.date)
+  if (!m) return
+  const when = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), PUSH_HOUR, 0, 0, 0)
+  when.setDate(when.getDate() + 7)
+  if (when.getTime() <= Date.now()) return
+
+  const body = RETRO_TEXT[opts.locale].replace('{event}', opts.eventLabel)
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: { title: getStrings(opts.locale).appName, body },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    })
+  } catch {}
+}
+
+// ── 亲友 birthday reminders ──────────────────────────────────────────────────
+
+const BDAY_ID_PREFIX = 'cycle-bday-'
+
+const BDAY_TEXT: Record<Locale, { soon: string; tomorrow: string; day: string }> = {
+  'zh-Hans': {
+    soon: '还有 {n} 天是「{name}」的生日',
+    tomorrow: '明天是「{name}」的生日',
+    day: '今天是「{name}」的生日，记得送上祝福',
+  },
+  'zh-Hant': {
+    soon: '還有 {n} 天是「{name}」的生日',
+    tomorrow: '明天是「{name}」的生日',
+    day: '今天是「{name}」的生日，記得送上祝福',
+  },
+  ja: {
+    soon: '「{name}」さんの誕生日まであと {n} 日',
+    tomorrow: '明日は「{name}」さんの誕生日',
+    day: '今日は「{name}」さんの誕生日です',
+  },
+  en: {
+    soon: "{name}'s birthday is in {n} days",
+    tomorrow: "Tomorrow is {name}'s birthday",
+    day: "Today is {name}'s birthday",
+  },
+}
+
+/**
+ * Next 8am occurrence of a birthday. Solar → recurs on the same Gregorian MM-DD.
+ * 农历 → convert this/next 农历 year's (month, day) to Gregorian via astro-core
+ * and pick the first future one (leap-month birthdays fall back to the regular
+ * month; astro-core's range is 1900-2100).
+ */
+function nextBirthdayFor(p: { solarDate: string; calendar?: PersonCalendar }): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.solarDate)
+  if (!m) return null
+  const now = new Date()
+  const mo = Number(m[2])
+  const dd = Number(m[3])
+
+  if (p.calendar === 'lunar') {
+    for (const y of [now.getFullYear(), now.getFullYear() + 1]) {
+      try {
+        const s = lunarToSolar(y, mo, dd, false)
+        const d = new Date(s.getFullYear(), s.getMonth(), s.getDate(), PUSH_HOUR, 0, 0, 0)
+        if (d.getTime() > now.getTime()) return d
+      } catch {}
+    }
+    return null
+  }
+
+  let d = new Date(now.getFullYear(), mo - 1, dd, PUSH_HOUR, 0, 0, 0)
+  if (d.getTime() <= now.getTime())
+    d = new Date(now.getFullYear() + 1, mo - 1, dd, PUSH_HOUR, 0, 0, 0)
+  return d
+}
+
+async function cancelBirthdays(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(BDAY_ID_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+/**
+ * (Re)schedule each 亲友 birthday's reminders. Per person: an advance reminder
+ * `advanceDays` before (default 1 → "tomorrow"; >1 → "in N days"; 0 → none) plus
+ * a day-of reminder (unless `remindOnDay === false`). 农历 birthdays convert via
+ * astro-core. Stable per-person ids → idempotent. Only schedules when permission
+ * is already granted (call on app open freely; the 亲友 screen prompts on add).
+ */
+export async function scheduleBirthdayReminders(
+  people: ReadonlyArray<CyclePerson>,
+  locale: Locale
+): Promise<void> {
+  await cancelBirthdays()
+  const perm = await Notifications.getPermissionsAsync().catch(() => null)
+  if (!perm || perm.status !== 'granted') return
+
+  const t = BDAY_TEXT[locale]
+  const title = getStrings(locale).appName
+  const now = Date.now()
+  const DAY_MS = 24 * 60 * 60 * 1000
+
+  for (const p of people) {
+    const dayOf = nextBirthdayFor(p)
+    if (!dayOf) continue
+    const advanceDays = p.advanceDays ?? 1
+
+    if (advanceDays > 0) {
+      const advance = new Date(dayOf.getTime() - advanceDays * DAY_MS)
+      if (advance.getTime() > now) {
+        const body =
+          advanceDays === 1
+            ? t.tomorrow.replace('{name}', p.name)
+            : t.soon.replace('{n}', String(advanceDays)).replace('{name}', p.name)
+        await Notifications.scheduleNotificationAsync({
+          identifier: `${BDAY_ID_PREFIX}${p.id}-prev`,
+          content: { title, body },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: advance },
+        }).catch(() => {})
+      }
+    }
+
+    if (p.remindOnDay !== false && dayOf.getTime() > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${BDAY_ID_PREFIX}${p.id}-day`,
+        content: { title, body: t.day.replace('{name}', p.name) },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dayOf },
+      }).catch(() => {})
+    }
+  }
+}

@@ -1,0 +1,92 @@
+// Sprint 5 template — to be customized per app.
+// {{widgetName}} placeholder is replaced by the plugin at prebuild time.
+
+import WidgetKit
+import SwiftUI
+
+struct HexastralProvider: TimelineProvider {
+    typealias Entry = HexastralEntry
+
+    func placeholder(in context: Context) -> HexastralEntry {
+        HexastralEntry(date: Date(), payload: HexastralPayload.placeholder())
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (HexastralEntry) -> Void) {
+        let payload = HexastralPayload.readFromAppGroup() ?? HexastralPayload.placeholder()
+        completion(HexastralEntry(date: Date(), payload: payload))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<HexastralEntry>) -> Void) {
+        let payload = HexastralPayload.readFromAppGroup() ?? HexastralPayload.placeholder()
+        let now = Date()
+
+        // Generate timeline entries: 1 per 4-hour interval over next 24 hours
+        var entries: [HexastralEntry] = []
+        for hourOffset in stride(from: 0, to: 24, by: 4) {
+            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: now) ?? now
+            entries.append(HexastralEntry(date: entryDate, payload: payload))
+        }
+
+        // Refresh after the last entry's display window expires
+        let timeline = Timeline(entries: entries, policy: .atEnd)
+        completion(timeline)
+    }
+}
+
+struct HexastralEntry: TimelineEntry {
+    let date: Date
+    let payload: HexastralPayload
+}
+
+struct HexastralPayload: Codable {
+    let updatedAt: String
+    let appSlug: String
+    let locale: String
+    let data: [String: AnyCodable]
+    let freshUntil: String?
+
+    static func readFromAppGroup() -> HexastralPayload? {
+        // App Group identifier injected by the Expo config plugin at prebuild.
+        let groupId = "{{appGroupId}}"
+        guard let defaults = UserDefaults(suiteName: groupId) else { return nil }
+        guard let raw = defaults.string(forKey: "hexastral_widget_payload_v1") else { return nil }
+        guard let data = raw.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(HexastralPayload.self, from: data)
+    }
+
+    static func placeholder() -> HexastralPayload {
+        HexastralPayload(
+            updatedAt: ISO8601DateFormatter().string(from: Date()),
+            appSlug: "{{appSlug}}",
+            locale: "en",
+            data: [:],
+            freshUntil: nil
+        )
+    }
+}
+
+/// AnyCodable wrapper to handle the dynamic `data` field.
+struct AnyCodable: Codable {
+    let value: Any
+    init(_ value: Any) { self.value = value }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let v = try? container.decode(Bool.self) { value = v; return }
+        if let v = try? container.decode(Int.self) { value = v; return }
+        if let v = try? container.decode(Double.self) { value = v; return }
+        if let v = try? container.decode(String.self) { value = v; return }
+        if let v = try? container.decode([AnyCodable].self) { value = v.map(\.value); return }
+        if let v = try? container.decode([String: AnyCodable].self) { value = v.mapValues(\.value); return }
+        value = NSNull()
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch value {
+        case let v as Bool: try container.encode(v)
+        case let v as Int: try container.encode(v)
+        case let v as Double: try container.encode(v)
+        case let v as String: try container.encode(v)
+        default: try container.encodeNil()
+        }
+    }
+}

@@ -1,0 +1,50 @@
+{
+  "_comment": "MingPan (BaZi · Four Pillars satellite) — App Store Connect ASO metadata. Tier-3 funnel, no IAP (invite-unlock + Ecosystem upsell to cycle/yuan). Anti-spam compliant per docs/anti-spam-positioning.md: zero direct trigger words in title/subtitle/keywords/promotionalText/description. Single mentions of 占星/horoscope ONLY in explicit-differentiation contexts in description body (mid-text, not lead). Constraints: subtitle ≤30c, keywords ≤100c comma-separated (NO spaces after commas), promotionalText ≤170c, description ≤4000c. CJK chars count as 1.",
+  "bundleId": "com.hexastral.fate",
+  "appName": "MingPan",
+  "primaryCategory": "EDUCATION",
+  "secondaryCategory": "LIFESTYLE",
+  "contentRating": "12+",
+  "_categoryRationale": "EDUCATION primary (matches 'BaZi calculator + AI personality framework' positioning, distances from saturated Lifestyle/Entertainment horoscope cluster). LIFESTYLE secondary for App Store discovery breadth.",
+  "_doNotUse": [
+    "astrology", "horoscope", "zodiac", "fortune", "fortune-telling", "palm reading",
+    "divination", "destiny", "lucky", "prophecy", "psychic", "spiritual reading",
+    "mystical", "cosmic energy", "occult", "supernatural",
+    "占星", "算命", "运势", "吉凶", "神秘", "玄学", "灵性", "宿命", "卜卦", "占卜",
+    "占星術", "占い", "運勢", "運命", "神秘的", "霊的", "開運", "スピリチュアル", "オカルト"
+  ],
+  "locales": {
+    "en-US": {
+      "subtitle": "BaZi · Four Pillars · AI",
+      "keywords": "bazi,four pillars,ming li,chinese,classical,personality,AI,self reflection,cosmology,study,heritage,learn",
+      "promotionalText": "Generate your BaZi (Four Pillars) chart. Explore personality through 1500 years of classical Chinese cosmology with AI-augmented self-reflection.",
+      "description": "MingPan is a BaZi (八字 / Four Pillars) calculator and learning tool rooted in classical Chinese cosmology and modern AI.\n\nWHAT IT IS\n\n• A BaZi chart generator. Enter your birth date and time; receive your 年柱 / 月柱 / 日柱 / 时柱 with their Heavenly Stems (天干) and Earthly Branches (地支).\n• A personality framework. Like MBTI or Enneagram for the Chinese cultural context: your Day Master (日主) describes your core temperament; your Five Elements (五行) balance describes your tendencies.\n• An AI learning companion. Chat with an AI grounded in classical 命理 scholarship to learn what your chart's elements mean and how they interact.\n\nWHAT YOU GET\n\n• Four-Pillar chart from solar or lunar input\n• Structured personality profile based on Day Master and Five Elements\n• Favorable vs. unfavorable element analysis\n• AI chat: ask about your chart, get classical context\n• Four languages: English, 日本語, 简体中文, 繁體中文\n• Save and revisit your chart anytime\n• Optional public chart profile at hexastral.com/u/[username]\n\nEDUCATIONAL CONTEXT\n\nBaZi (八字, \"Eight Characters\") is a cosmological framework developed over the Song through Ming dynasties (10th-17th c. CE). It uses the Heavenly Stems (天干) and Earthly Branches (地支) — the same calendar-counting system as the Chinese lunar calendar — to construct a four-pillar chart for any moment in time. Each pillar encodes one of the Five Elements (五行: Wood, Fire, Earth, Metal, Water) which interact through classical generation and control cycles.\n\nThe framework has been studied by scholars in China, Japan, Korea, and Taiwan for over a thousand years. Classical reference texts include 《三命通会》 (Wan Yuwu, Ming dynasty), 《滴天髓》 (Liu Bowen, late Yuan / early Ming), and 《子平真诠》 (Shen Xiao Zhan, Qing dynasty).\n\nPRIVACY\n\nYour birth information stays on your device by default. We never sell or share personal data. Optional public profile is opt-in and OFF by default.\n\nABOUT\n\nMingPan is published by UseONE, LLC. Privacy: hexastral.com/privacy. Terms: hexastral.com/terms."
+    },
+    "zh-Hans": {
+      "subtitle": "八字四柱 · AI 性格框架",
+      "keywords": "八字,四柱,命理,中华命学,性格分析,日主,五行,天干地支,经典,学习,自我反思,AI",
+      "promotionalText": "BaZi 八字命盘生成器，结合 AI 性格分析。基于 1500 年中华命理学术传统的工具型学习应用。非西方占星，非命运预测。",
+      "description": "MingPan 是一款基于古典中华宇宙观与现代 AI 的 BaZi（八字 / 四柱）命盘生成与学习工具。\n\n它是什么\n\n• 八字命盘生成器：输入生辰，获得完整的年柱 / 月柱 / 日柱 / 时柱，含天干地支\n• 性格分析框架：类似 MBTI / Enneagram 在中华文化语境中的对应。你的日主描述核心气质，五行平衡描述行为倾向\n• AI 学习伙伴：与基于古典命理学术的 AI 对话，学习命盘元素的含义与互动逻辑\n\n你能用它做什么\n\n• 阳历 / 阴历 / 真太阳时输入，生成四柱命盘\n• 基于日主与五行的结构化性格档案\n• 喜用神与忌神的五行元素分析\n• AI 对话：询问关于你命盘的问题，获取古典学术语境\n• 四种语言：中文（简繁）/ 日本語 / English\n• 命盘本地存储，随时查阅\n• 可选公开命盘页：hexastral.com/u/[username]\n\n教育背景\n\nBaZi（八字 / 四柱）是宋至明代（10-17 世纪）发展的中华宇宙观学术框架。它使用天干地支系统（与农历计日同一套）构造任意时刻的四柱命盘。每柱编码五行（木火土金水）之一，五行通过古典生克制化循环互动。\n\n中华、日韩、台港的学者研究此框架逾千年。古典参考典籍包括《三命通会》（万育吾，明）、《滴天髓》（刘伯温，元末明初）、《子平真诠》（沈孝瞻，清）。\n\n本应用非西方占星类型，非命运预测，非每日运势推送，而是一款命理学术研究的辅助工具。\n\n隐私\n\n生辰信息默认仅存于本设备。我们绝不出售或分享个人数据。公开命盘页为可选功能，默认关闭。\n\n关于\n\nMingPan 由 UseONE, LLC 出版。隐私政策：hexastral.com/privacy。使用条款：hexastral.com/terms。"
+    },
+    "zh-Hant": {
+      "subtitle": "八字四柱 · AI 性格框架",
+      "keywords": "八字,四柱,命理,中華命學,性格分析,日主,五行,天干地支,經典,學習,自我反思,AI",
+      "promotionalText": "BaZi 八字命盤生成器，結合 AI 性格分析。基於 1500 年中華命理學術傳統的工具型學習應用。非西方占星，非命運預測。",
+      "description": "MingPan 是一款基於古典中華宇宙觀與現代 AI 的 BaZi（八字 / 四柱）命盤生成與學習工具。\n\n它是什麼\n\n• 八字命盤生成器：輸入生辰，獲得完整的年柱 / 月柱 / 日柱 / 時柱，含天干地支\n• 性格分析框架：類似 MBTI / Enneagram 在中華文化語境中的對應。你的日主描述核心氣質，五行平衡描述行為傾向\n• AI 學習夥伴：與基於古典命理學術的 AI 對話，學習命盤元素的含義與互動邏輯\n\n你能用它做什麼\n\n• 陽曆 / 陰曆 / 真太陽時輸入，生成四柱命盤\n• 基於日主與五行的結構化性格檔案\n• 喜用神與忌神的五行元素分析\n• AI 對話：詢問關於你命盤的問題，獲取古典學術語境\n• 四種語言：中文（簡繁）/ 日本語 / English\n• 命盤本地存儲，隨時查閱\n• 可選公開命盤頁：hexastral.com/u/[username]\n\n教育背景\n\nBaZi（八字 / 四柱）是宋至明代（10-17 世紀）發展的中華宇宙觀學術框架。它使用天干地支系統（與農曆計日同一套）構造任意時刻的四柱命盤。每柱編碼五行（木火土金水）之一，五行通過古典生剋制化循環互動。\n\n中華、日韓、台港的學者研究此框架逾千年。古典參考典籍包括《三命通會》（萬育吾，明）、《滴天髓》（劉伯溫，元末明初）、《子平真詮》（沈孝瞻，清）。\n\n本應用非西方占星類型，非命運預測，非每日運勢推送，而是一款命理學術研究的輔助工具。\n\n隱私\n\n生辰資訊預設僅存於本設備。我們絕不出售或分享個人資料。公開命盤頁為可選功能，預設關閉。\n\n關於\n\nMingPan 由 UseONE, LLC 出版。隱私政策：hexastral.com/privacy。使用條款：hexastral.com/terms。"
+    },
+    "ja": {
+      "subtitle": "BaZi 四柱推命 · AI 性格分析",
+      "keywords": "BaZi,四柱推命,命理,中華命学,性格分析,日主,五行,天干地支,学習,古典,自己分析,AI",
+      "promotionalText": "BaZi 四柱の命盤を生成し、AI による性格分析を提供。1500 年の中華命理学術伝統に基づく学習ツール。西洋占星術ではありません。",
+      "description": "MingPan は、古典中華宇宙観と現代 AI を組み合わせた BaZi（八字 / 四柱）命盤生成・学習ツールです。\n\nこれは何か\n\n• BaZi 命盤ジェネレーター：生年月日と時刻を入力すると、年柱 / 月柱 / 日柱 / 時柱（天干・地支）が得られます\n• 性格分析フレームワーク：中華文化圏における MBTI / エニアグラム相当のフレーム。日主はあなたの基本的な気質を、五行のバランスは行動傾向を表します\n• AI 学習コンパニオン：古典命理学術に基づいた AI と対話し、あなたの命盤要素の意味と相互作用を学べます\n\n機能\n\n• 太陽暦 / 太陰暦 / 真太陽時から四柱命盤を生成\n• 日主と五行に基づく構造化された性格プロファイル\n• 喜用神と忌神の五行解析\n• AI チャット：あなたの命盤について質問し、古典的な学術文脈を得る\n• 4 言語：日本語 / 中国語（簡繁）/ English\n• 命盤をローカル保存し、いつでも参照\n• 任意の公開命盤ページ：hexastral.com/u/[username]\n\n学術的背景\n\nBaZi（八字 / 四柱）は宋から明にかけて（10-17 世紀）発展した中華宇宙観の学術フレームワークです。天干地支のシステム（旧暦の日付計算と同一）を用いて任意時点の四柱命盤を構築します。各柱は五行（木火土金水）のいずれかを符号化し、五行は古典的な相生・相剋の循環で相互作用します。\n\nこの枠組みは中華・日本・韓国・台湾の学者によって千年以上研究されてきました。古典参考文献として『三命通会』（万育吾、明代）、『滴天髓』（劉伯温、元末明初）、『子平真詮』（沈孝瞻、清代）などがあります。\n\n本アプリは西洋占星術ではなく、運命予測でもなく、毎日の運勢配信でもありません。命理学術研究のための学習ツールです。\n\nプライバシー\n\n生年月日情報はデフォルトで本端末内のみに保存されます。個人データの販売・共有は一切ありません。公開命盤ページはオプトインで、デフォルトはオフです。\n\nアプリ情報\n\nMingPan は UseONE, LLC が発行しています。プライバシーポリシー：hexastral.com/privacy。利用規約：hexastral.com/terms。"
+    }
+  },
+  "_charCounts": {
+    "_note": "Manual verification per locale. CJK chars count as 1 per Apple. Subtitle ≤30, keywords ≤100, promotionalText ≤170, description ≤4000.",
+    "en-US": { "subtitle": 24, "keywords": 100, "promotionalText": 148, "description": "~1850" },
+    "zh-Hans": { "subtitle": 14, "keywords": 47, "promotionalText": 60, "description": "~830" },
+    "zh-Hant": { "subtitle": 14, "keywords": 47, "promotionalText": 60, "description": "~830" },
+    "ja": { "subtitle": 18, "keywords": 60, "promotionalText": 65, "description": "~880" }
+  },
+  "_screenshotDirection": "See docs/screenshot-direction.md. NO mystical imagery, NO moons/stars/zodiac wheels. LEAD with: BaZi chart with labeled 干支 columns, Five Elements bar chart, AI chat conversation showing classical context, calendar view with structured日柱 grid. Visual register: 'educational tool' / 'study app' / 'modern AI utility'."
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@zhop/portfolio-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared portfolio API client for satellite and flagship apps",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@zhop/satellite-runtime": "workspace:*",
+    "react": "^19.2.3"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.81.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@zhop/typescript-config": "workspace:*",
+    "react-native": "0.81.5",
+    "typescript": "^5.9.3"
+  }
+}

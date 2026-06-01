@@ -1,0 +1,105 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`signature() snapshots a 丙火极强 sun-king across all 9 locales 1`] = `
+[
+  {
+    "display": "compact",
+    "locale": "zh",
+    "primary": "炎炎烈日",
+    "secondary": "帝座",
+    "tokens": [
+      "炎炎烈日",
+      "帝座",
+      "杀刃",
+    ],
+  },
+  {
+    "display": "compact",
+    "locale": "zh-Hant",
+    "primary": "炎炎烈日",
+    "secondary": "帝座",
+    "tokens": [
+      "炎炎烈日",
+      "帝座",
+      "殺刃",
+    ],
+  },
+  {
+    "display": "stacked",
+    "locale": "en",
+    "primary": "Scorching Sun",
+    "secondary": "Empire Star",
+    "tokens": [
+      "Scorching Sun",
+      "Empire Star",
+      "Sword",
+    ],
+  },
+  {
+    "display": "compact",
+    "locale": "ja",
+    "primary": "炎陽",
+    "secondary": "帝座",
+    "tokens": [
+      "炎陽",
+      "帝座",
+      "刃",
+    ],
+  },
+  {
+    "display": "compact",
+    "locale": "ko",
+    "primary": "작렬하는 태양",
+    "secondary": "제왕",
+    "tokens": [
+      "작렬하는 태양",
+      "제왕",
+      "칼날",
+    ],
+  },
+  {
+    "display": "stacked",
+    "locale": "de",
+    "primary": "Brennende Sonne",
+    "secondary": "Kaiserstern",
+    "tokens": [
+      "Brennende Sonne",
+      "Kaiserstern",
+      "Schwert",
+    ],
+  },
+  {
+    "display": "stacked",
+    "locale": "es",
+    "primary": "Sol Abrasador",
+    "secondary": "Estrella Imperial",
+    "tokens": [
+      "Sol Abrasador",
+      "Estrella Imperial",
+      "Espada",
+    ],
+  },
+  {
+    "display": "stacked",
+    "locale": "vi",
+    "primary": "Nắng Gắt",
+    "secondary": "Đế Tinh",
+    "tokens": [
+      "Nắng Gắt",
+      "Đế Tinh",
+      "Đao Kiếm",
+    ],
+  },
+  {
+    "display": "stacked",
+    "locale": "th",
+    "primary": "แสงแดดแผดเผา",
+    "secondary": "ดาวจักรพรรดิ",
+    "tokens": [
+      "แสงแดดแผดเผา",
+      "ดาวจักรพรรดิ",
+      "ดาบ",
+    ],
+  },
+]
+`;

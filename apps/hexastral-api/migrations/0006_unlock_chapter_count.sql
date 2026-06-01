@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `unlocked_chapter_count` integer DEFAULT 2 NOT NULL;

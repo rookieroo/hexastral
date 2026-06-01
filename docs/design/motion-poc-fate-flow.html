@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · fate-app 全场景动画流程 POC</title>
+<style>
+  :root{
+    --void:#0C0B0A; --bone:#E9E2D2; --paper:#EAE3D2; --paper-2:#E2DAC6;
+    --cinnabar:#9B2226; --bronze:#C2A878; --dim:#8A8170; --faint:#5A5446;
+    --line:rgba(233,226,210,.1); --line-2:rgba(233,226,210,.2);
+    --serif:"Hoefler Text","Baskerville","Songti SC",Georgia,serif;
+    --seal:"Songti SC","STSong",serif; --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070605;color:var(--bone);font-family:var(--serif);padding:44px 32px 80px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto}
+  .lock{color:var(--bronze);font-family:var(--sans);font-size:11px;letter-spacing:5px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-weight:400;font-size:25px;letter-spacing:1px;margin:0 0 6px}
+  .lede{color:var(--dim);font-family:var(--sans);font-size:12.5px;max-width:830px;line-height:1.9;margin:0 0 8px}
+  .lede b{color:var(--bone)}
+  .row{display:flex;gap:46px;flex-wrap:wrap;align-items:flex-start;margin-top:28px}
+
+  .phone{position:relative;width:320px;height:680px;border-radius:36px;overflow:hidden;flex:none;
+    background:#0C0B0A;border:1px solid var(--line);box-shadow:0 30px 72px rgba(0,0,0,.66)}
+  .layer{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .55s ease}
+  .layer.show{opacity:1;pointer-events:auto}
+
+  /* 进场 splash */
+  #splash{background:radial-gradient(120% 80% at 50% 30%, #F1EAD9, var(--paper) 62%, #E0D7C2);display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #splash .slogo{width:150px;height:150px}
+  #splash .wm{font-family:var(--serif);font-size:20px;letter-spacing:6px;color:#2a241a;margin-top:24px}
+  #splash .wm .cn{font-family:var(--seal);color:var(--cinnabar);margin-left:6px}
+  #splash .wms{font-family:var(--sans);font-size:9px;letter-spacing:5px;color:#9b8c66;margin-top:7px;text-transform:uppercase}
+  .phone.p-splash #splash{animation:ignite calc(1700ms*var(--s)) ease-out}
+  @keyframes ignite{0%{transform:scale(1.04);opacity:0}14%{opacity:1}100%{transform:scale(1);opacity:1}}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px}
+  .nav .ico{width:20px;height:20px;color:var(--bone);opacity:.8}
+  .nav .bd{display:flex;align-items:center;gap:8px}
+  .nav .bd .mm{width:22px;height:22px}
+  .nav .bd .nm{font-family:var(--sans);font-size:12px;letter-spacing:2px}.nav .bd .nm .cn{font-family:var(--seal);color:var(--bronze);margin-left:4px}
+
+  /* home (dark) */
+  #home{background:radial-gradient(130% 80% at 50% 0%,#1b1610,#0C0B0A 72%)}
+  #home .hero{text-align:center;padding:26px 22px 0}
+  #home .hk{font-family:var(--sans);font-size:10px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase}
+  #home .bigmoon{width:154px;height:154px;margin:20px auto 10px}
+  #home .sig{font-family:var(--serif);font-size:23px;letter-spacing:2px;color:var(--bone)}
+  #home .sigs{font-family:var(--sans);font-size:10.5px;letter-spacing:2px;color:var(--faint);margin-top:6px}
+  #home .pills{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  #home .pill{font-family:var(--sans);font-size:10.5px;padding:5px 11px;border-radius:16px;border:1px solid var(--line-2);color:var(--dim)}
+  #home .cta{position:absolute;left:24px;right:24px;bottom:40px;height:48px;border-radius:13px;background:var(--cinnabar);color:#f4ecdc;font-family:var(--sans);font-size:13px;letter-spacing:3px;display:flex;align-items:center;justify-content:center;transition:filter .25s}
+  #home .cta .d{width:6px;height:6px;border-radius:50%;background:#f4ecdc;margin-right:10px;opacity:.85}
+  .phone.p-home #home .hero>*{animation:rise calc(620ms*var(--s)) ease-out backwards}
+  .phone.p-home #home .hero>*:nth-child(2){animation-delay:calc(90ms*var(--s))}
+  .phone.p-home #home .hero>*:nth-child(3){animation-delay:calc(180ms*var(--s))}
+  .phone.p-home #home .hero>*:nth-child(4){animation-delay:calc(260ms*var(--s))}
+  .phone.p-home #home .hero>*:nth-child(5){animation-delay:calc(340ms*var(--s))}
+  /* Hero 大月是 magic-move 的共享元素,不参与上浮(否则落位后会再"闪"一次) */
+  .phone.p-home #home .bigmoon{animation:none}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* loading(主·推演中) — 真实月相:暗面 = Logo 暗月(同 v15 渐变 + 墨边),
+     终止线按真实月相椭圆「连续」推移(新月→盈→满→亏→新月);新月态 = App 图标本身 */
+  #loading{background:radial-gradient(130% 80% at 50% 36%,#17120c,#0C0B0A 74%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+  /* 无外圈:月悬夜空,不描边;仅极淡月晕(非border) */
+  .mphwrap{position:relative;width:150px;height:150px;border-radius:50%;box-shadow:0 0 44px 6px rgba(232,224,205,.04)}
+  .mph{display:block;width:100%;height:100%}
+  .mphgrain{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:overlay;opacity:.28;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='130' height='130'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='130' height='130' filter='url(%23g)'/></svg>");background-size:130px 130px}
+  /* 不闪烁:轮播"正在做的事"短语,淡入淡出 */
+  .ldt{font-family:var(--sans);font-size:11px;letter-spacing:2.5px;color:var(--bronze);min-height:15px;opacity:1;transition:opacity .42s ease}
+
+  /* 短等待(换页/小请求) — 同一月相语言的小尺寸,覆在当前屏上 */
+  #miniload{display:flex;align-items:center;justify-content:center;background:rgba(10,9,8,.5)}
+  .miniwrap{display:flex;flex-direction:column;align-items:center;gap:13px}
+  .miniwrap .ldt2{font-family:var(--sans);font-size:10px;letter-spacing:6px;color:var(--bronze);text-transform:uppercase;opacity:.85}
+  .mphwrap.sm{width:64px;height:64px;box-shadow:0 0 22px 3px rgba(232,224,205,.05)}
+
+  /* report (宣纸 PAPER) — 命书:命盘(不变) + 大运 timeline(在变) + 现运 */
+  #report{background:radial-gradient(120% 85% at 50% 0%, #F1EAD9, var(--paper) 56%, var(--paper-2));color:#41382a;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  #report::-webkit-scrollbar{width:0}
+  #report .rnav{display:flex;align-items:center;justify-content:space-between;padding:17px 22px 0}
+  #report .rnav .ico{width:18px;height:18px;color:#6b5f48}
+  #report .rnav .t{font-family:var(--serif);font-size:14px;letter-spacing:3px;color:#2a241a}
+  #report .rnav .t .cn{font-family:var(--seal);color:#9b7d3e}
+  #report .rsect{padding:9px 24px 10px;border-top:1px solid rgba(120,110,86,.16)}
+  #report .rsect.first{border-top:0;padding-top:7px}
+  #report .rlabel{font-family:var(--sans);font-size:9.5px;letter-spacing:3px;color:#9b7d3e;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  #report .rlabel .cn{font-family:var(--seal);color:#8a8170;letter-spacing:2px;font-size:11px}
+  #report .rsub{font-family:var(--sans);font-size:10px;letter-spacing:.4px;color:#8a8170;margin-top:4px}
+  #report .chartwrap{text-align:center;padding:3px 0 0}
+  #report .now{font-family:var(--serif);font-size:18px;margin-top:8px;color:#2a241a}
+  #report .now .cn{font-family:var(--seal);color:#8a5a20;font-size:13px;margin-left:8px}
+  #report .gloss{font-family:var(--sans);font-size:11.5px;line-height:1.66;color:#4a4030;margin-top:7px}
+  #report .gloss .em{color:#8a5a20}
+  #report .pills{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  #report .pill{font-family:var(--sans);font-size:10px;padding:4px 9px;border-radius:16px;border:1px solid rgba(120,110,86,.32);color:#6b5f48}
+  #report .pill.up{color:#5f7a52;border-color:rgba(95,122,82,.45)}
+  #report .pill.dn{color:#9B2226;border-color:rgba(155,34,38,.4)}
+  /* 五行旺衰:墨条 + count-up */
+  #report .rwuxing{margin-top:9px;display:flex;flex-direction:column;gap:7px}
+  #report .wx{display:flex;align-items:center;gap:9px}
+  #report .wx .ch{font-family:var(--seal);font-size:13px;color:#4a4030;width:14px;text-align:center}
+  #report .wx .en{font-family:var(--sans);font-size:8.5px;letter-spacing:1px;color:#8a8170;width:34px;text-transform:uppercase}
+  #report .wx .track{flex:1;height:6px;border-radius:3px;background:rgba(120,110,86,.16);overflow:hidden;position:relative}
+  #report .wx .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:3px;background:linear-gradient(90deg,#5a5142,#2f2a20)}
+  #report .wx.max .fill{background:linear-gradient(90deg,#a18654,#7e6534)}
+  #report .wx.yong .fill{background:linear-gradient(90deg,#b06a4e,#9B2226)}
+  #report .wx .num{font-family:var(--sans);font-size:10.5px;color:#6b5f48;width:26px;text-align:right;font-variant-numeric:tabular-nums}
+  #report .wx.max .num{color:#8A7544}
+  #report .wx.yong .num{color:#9B2226;font-weight:600}
+  #report .wx .tag{font-family:var(--sans);font-size:8.5px;letter-spacing:1.5px;color:transparent;width:30px;text-align:right;text-transform:uppercase}
+  #report .wx.max .tag{color:#8A7544}
+  #report .wx.yong .tag{color:#9B2226;font-weight:600}
+  /* 报告内容默认满状态:墨晕转场已承担"形成"叙事,不再叠掏空再填的二次绘制 */
+  /* 命书可竖向滚动:底部纸色渐隐,内容滚到行动条之上不突兀 */
+  #report .rfade{position:absolute;left:0;right:0;bottom:0;height:80px;background:linear-gradient(transparent,var(--paper-2) 70%);pointer-events:none}
+  /* 落款印 — 小如真迹钤印,盖在宣纸命书右下留白 */
+  .luokuan{position:absolute;right:24px;bottom:99px;width:50px;height:50px}
+  .yinji{position:absolute;inset:0;opacity:0}
+  .yinji img{width:100%;height:100%;object-fit:contain;display:block}
+  .luokuan .bleed{position:absolute;inset:-26%;border-radius:24%;opacity:0;background:radial-gradient(circle,rgba(155,34,38,.5),rgba(155,34,38,.1) 52%,transparent 72%)}
+  .luokuan .shadow{position:absolute;left:50%;bottom:40%;width:58px;height:13px;margin-left:-29px;border-radius:50%;opacity:0;background:radial-gradient(closest-side,rgba(40,30,18,.4),transparent)}
+  /* 石章落点：水平按"印身"重心(非图框中心)对齐印记;基线落在印记底,盖压时石身全覆印面 */
+  .chop{position:absolute;left:calc(50% + 6px);bottom:1px;height:132px;transform-origin:50% 100%;opacity:0;transform:translateX(-50%);pointer-events:none}
+  .chop img{height:100%;width:auto;display:block;mix-blend-mode:multiply}
+  .phone.stamping .chop{animation:chopDrop calc(1200ms*var(--s)) cubic-bezier(.3,.7,.25,1) forwards}
+  .phone.stamping .luokuan .shadow{animation:shadow calc(1200ms*var(--s)) ease-out forwards}
+  .phone.stamping .yinji.live{animation:reveal calc(1200ms*var(--s)) ease-out forwards}
+  .phone.stamping .luokuan .bleed{animation:bleed calc(1200ms*var(--s)) ease-out forwards}
+  .phone.stamped .yinji.live{opacity:1}
+  @keyframes chopDrop{0%{opacity:0;transform:translateX(-50%) translateY(-300px)}28%{opacity:1}40%{transform:translateX(-50%) translateY(0)}47%{transform:translateX(-50%) translateY(4px) scale(.992)}54%{transform:translateX(-50%) translateY(0)}64%{opacity:1;transform:translateX(-50%) translateY(0)}92%{opacity:1;transform:translateX(-50%) translateY(-148px)}100%{opacity:0;transform:translateX(-50%) translateY(-310px)}}
+  @keyframes reveal{0%,56%{opacity:0;transform:scale(.95)}66%{opacity:1;transform:scale(1.04)}78%{transform:scale(.99)}100%{opacity:1;transform:scale(1)}}
+  @keyframes bleed{0%,56%{opacity:0;transform:scale(.4)}66%{opacity:.5;transform:scale(1.06)}100%{opacity:0;transform:scale(1.5)}}
+  @keyframes shadow{0%{opacity:0;transform:scale(1.6)}40%{opacity:.5;transform:scale(1)}48%{opacity:.55;transform:scale(.94)}66%{opacity:.1;transform:scale(1.5)}100%{opacity:0}}
+  .actions{position:absolute;left:22px;right:22px;bottom:34px;display:flex;gap:12px}
+  .act{flex:1;height:46px;border-radius:12px;font-family:var(--sans);font-size:13px;letter-spacing:3px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .act.yes{background:var(--cinnabar);color:#f4ecdc} .act.no{background:transparent;border:1px solid rgba(120,110,86,.4);color:#6b5f48}
+  .phone.acted .actions{opacity:.4;pointer-events:none;transition:opacity .4s}
+
+  /* 墨晕转场：report(纸) 经有机 mask 在 dark home 上揭示 → 纸现 = 高对比可见 */
+  .phone.wiping #report{-webkit-mask:url(#revealMask);mask:url(#revealMask)}
+  .phone.wiping .rmc{animation:rmgrow calc(2400ms*var(--s)) cubic-bezier(.3,.45,.2,1) forwards}
+  @keyframes rmgrow{from{r:0}to{r:820}}
+
+  .cap{font-family:var(--sans);color:var(--faint);font-size:11px;letter-spacing:1px;text-align:center;margin-top:12px}.cap b{color:var(--bronze)}
+  .panel{font-family:var(--sans);min-width:300px;flex:1}
+  .phase{font-family:var(--sans);font-size:11px;letter-spacing:3px;color:var(--bronze);text-transform:uppercase;margin-bottom:14px}.phase b{color:var(--bone)}
+  .ctrls{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+  .btn{font-family:var(--sans);font-size:12px;letter-spacing:1px;color:var(--bone);background:#17150f;border:1px solid rgba(194,168,120,.4);border-radius:8px;padding:8px 13px;cursor:pointer}
+  .btn:hover{border-color:var(--bronze)} .btn.primary{background:var(--cinnabar);border-color:var(--cinnabar);color:#f4ecdc} .btn.on{background:var(--bronze);color:#1a1206;border-color:var(--bronze)}
+  .sl{font-family:var(--sans);font-size:11px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin:26px 0 12px}
+  .note{color:var(--dim);font-family:var(--sans);font-size:12px;border-left:2px solid var(--bronze);padding-left:14px;line-height:2;max-width:520px}
+  .note b{color:var(--bronze)} .note code{color:var(--bone);background:#17150f;padding:1px 5px;border-radius:4px;font-size:11px}
+  .note + .note{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="lock">● fate-app · Full Motion Flow</p>
+  <h1>fate-app 全场景动画流程 POC</h1>
+  <p class="lede"><b>进场</b>(纸图标→夜app) → <b>loading</b>(月相循环·固定日在右) → <b>墨晕转场</b>(纸命书在夜屏上化开,高对比) → <b>用户盖印</b>(读完落 <b>信</b>/<b>疑</b>,水墨石章 lilong 落下)。首页月=V15 水墨月(同图标);命书=宣纸;真印 信(甲骨)/疑(小篆)。</p>
+
+  <div class="row">
+    <div>
+      <div class="phone" id="phone" style="--s:1">
+        <div class="layer" id="splash">
+          <div class="slogo" id="splashLogo"></div>
+          <div class="wm">HEXASTRAL<span class="cn">命</span></div>
+          <div class="wms">Lifelong Birth Chart</div>
+        </div>
+
+        <div class="layer" id="home">
+          <div class="nav" style="justify-content:flex-end">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-label="share"><circle cx="6.5" cy="12" r="2.4"/><circle cx="17.5" cy="6" r="2.4"/><circle cx="17.5" cy="18" r="2.4"/><path d="M8.8 10.9 L15.2 7.1 M8.8 13.1 L15.2 16.9"/></svg>
+          </div>
+          <div class="hero">
+            <div class="hk" data-zh="今日 · 庚子" data-en="Today · Gēng-zǐ">今日 · 庚子</div>
+            <div class="bigmoon" id="homeMoon"></div>
+            <div class="sig" data-zh="宜 静思 · 忌 远行" data-en="Favor stillness · Avoid travel">宜 静思 · 忌 远行</div>
+            <div class="sigs" data-zh="今日命签" data-en="Daily Fate Signal">今日命签</div>
+            <div class="pills"><span class="pill" data-zh="木旺" data-en="Wood ↑">木旺</span><span class="pill" data-zh="水相" data-en="Water →">水相</span><span class="pill" data-zh="火休" data-en="Fire ↓">火休</span></div>
+          </div>
+          <div class="cta" id="cta" data-zh='<span class="d"></span>展开命书' data-en='<span class="d"></span>Open the Reading'><span class="d"></span>展开命书</div>
+        </div>
+
+        <div class="layer" id="loading">
+          <div class="mphwrap">
+            <svg class="mph" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="40" fill="url(#mphFace)"/>
+              <circle id="mphShadow" cx="47" cy="50" r="48" fill="url(#v15Shadow)" filter="url(#inkTerm)" clip-path="url(#mphClip)"/>
+            </svg>
+            <div class="mphgrain"></div>
+          </div>
+          <div class="ldt" id="loadPhrase">校真太阳时</div>
+        </div>
+
+        <!-- 命书 · 宣纸 -->
+        <div class="layer" id="report">
+          <div class="rnav"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 4.5 L8 12 L15 19.5"/></svg>
+            <div class="t" data-zh='命书 <span class="cn">· 现运</span>' data-en='Reading <span class="cn">· This Phase</span>'>命书 <span class="cn">· 现运</span></div><span style="width:19px"></span>
+          </div>
+          <!-- 命盘 · 不变(地形) -->
+          <div class="rsect first">
+            <div class="rlabel" data-zh='本命盘 <span class="cn">命 · 不变</span>' data-en='Your Chart <span class="cn">命 · Fixed</span>'>本命盘 <span class="cn">命 · 不变</span></div>
+            <div class="rsub" data-zh="八字 · 四柱 · 丙午年 · 子时" data-en="BaZi · Four Pillars · 1990 丙午 · Zi hr">八字 · 四柱 · 丙午年 · 子时</div>
+            <div class="chartwrap"><svg id="rchart" width="206" height="110" viewBox="0 0 206 110"></svg></div>
+          </div>
+          <!-- 五行旺衰 -->
+          <div class="rsect">
+            <div class="rlabel" data-zh='五行旺衰 <span class="cn">日主木 · 宜补金</span>' data-en='Five Elements <span class="cn">Wood DM · Need Metal</span>'>五行旺衰 <span class="cn">日主木 · 宜补金</span></div>
+            <div class="rwuxing" id="rwuxing"></div>
+          </div>
+          <!-- 大运 timeline · 在变(天气) -->
+          <div class="rsect">
+            <div class="rlabel" data-zh='大运 <span class="cn">运 · 在变</span>' data-en='The Timeline <span class="cn">运 · Moving</span>'>大运 <span class="cn">运 · 在变</span></div>
+            <svg id="rtimeline" width="272" height="90" viewBox="0 0 272 90" style="display:block;margin:7px auto 0"></svg>
+          </div>
+          <!-- 现运 · 此章 -->
+          <div class="rsect">
+            <div class="rlabel" data-zh='现运 <span class="cn">此章</span>' data-en='This Phase <span class="cn">现运</span>'>现运 <span class="cn">此章</span></div>
+            <div class="now" data-zh='火土得令 · 承位<span class="cn">戊午大运</span>' data-en='Fire crowns the throne<span class="cn">戊午</span>'>火土得令 · 承位<span class="cn">戊午大运</span></div>
+            <div class="gloss" data-zh='立身之运（32–41）：声望渐起，可执牛耳。地形虽定，<span class="em">此运宜进取、不宜守成</span>，唯须防躁。' data-en='A <span class="em">decade of standing</span> (32–41): reputation rises, leadership opens. The terrain can&#39;t change — but this is the season to <span class="em">act, not wait</span>. Guard against over-reach.'>立身之运（32–41）：声望渐起，可执牛耳。地形虽定，<span class="em">此运宜进取、不宜守成</span>，唯须防躁。</div>
+            <div class="pills"><span class="pill up" data-zh="进取" data-en="Step forward">进取</span><span class="pill up" data-zh="显达" data-en="Be seen">显达</span><span class="pill dn" data-zh="躁进" data-en="Over-reach">躁进</span></div>
+          </div>
+          <div style="height:128px" aria-hidden="true"></div>
+          <div class="rfade"></div>
+          <div class="luokuan">
+            <div class="bleed"></div><div class="shadow"></div>
+            <div class="yinji" id="yinji"></div>
+            <div class="chop" id="chop"><img src="raw/proc/lilong_crop.png" alt="石章"></div>
+          </div>
+          <div class="actions" id="actions">
+            <div class="act yes" id="actYes" data-zh="已阅 · 信" data-en="Accept · 信">已阅 · 信</div>
+            <div class="act no" id="actNo" data-zh="存疑 · 疑" data-en="Doubt · 疑">存疑 · 疑</div>
+          </div>
+        </div>
+
+        <!-- 短等待覆层(同一月相·小尺寸) — 覆在当前屏上,非独占层 -->
+        <div class="layer" id="miniload">
+          <div class="miniwrap">
+            <div class="mphwrap sm">
+              <svg class="mph" viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r="40" fill="url(#mphFace)"/>
+                <circle id="mphShadowMini" cx="47" cy="50" r="48" fill="url(#v15Shadow)" filter="url(#inkTerm)" clip-path="url(#mphClip)"/>
+              </svg>
+              <div class="mphgrain"></div>
+            </div>
+          </div>
+        </div>
+
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+          <defs>
+            <!-- 墨晕转场:仿 loading 暗面 — 渐隐渐变(浓→淡 层次) + 双频位移(大墨舌 + 飞溅粒子) → 揭示锋是分层粒子墨晕,非硬边 -->
+            <radialGradient id="wipeGrad"><stop offset="0%" stop-color="#fff"/><stop offset="58%" stop-color="#fff"/><stop offset="79%" stop-color="#fff" stop-opacity="0.94"/><stop offset="91%" stop-color="#fff" stop-opacity="0.5"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+            <filter id="iwedge" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="lo"/>
+              <feDisplacementMap in="SourceGraphic" in2="lo" scale="32" result="d1"/>
+              <feTurbulence type="fractalNoise" baseFrequency="0.18 0.26" numOctaves="2" seed="3" result="hi"/>
+              <feDisplacementMap in="d1" in2="hi" scale="9"/>
+            </filter>
+            <mask id="revealMask" maskUnits="userSpaceOnUse" x="0" y="0" width="320" height="680">
+              <rect x="0" y="0" width="320" height="680" fill="black"/>
+              <circle class="rmc" cx="160" cy="606" r="0" fill="url(#wipeGrad)" filter="url(#iwedge)"/>
+            </mask>
+          </defs>
+        </svg>
+      </div>
+      <div class="cap" id="cap"><b>—</b></div>
+    </div>
+
+    <div class="panel">
+      <div class="phase" id="phaseLabel">PHASE · <b>—</b></div>
+      <div class="ctrls">
+        <button class="btn primary" id="all">▶ 完整流程</button>
+        <button class="btn on" id="slow">慢放 0.3×</button>
+        <button class="btn" id="lang">中文 ▸ EN</button>
+      </div>
+      <div class="ctrls" style="margin-top:4px">
+        <button class="btn" data-go="splash">进场</button>
+        <button class="btn" data-go="loading">推演·月相</button>
+        <button class="btn" data-go="mini">短等待·小月相</button>
+        <button class="btn" data-go="wipe">墨晕转场</button>
+        <button class="btn" data-go="report">命书(待盖)</button>
+      </div>
+      <div class="sl">改动</div>
+      <div class="note">
+        ① 首页月 = <b>V15 水墨月</b>(同 App 图标)。② loading = <b>真实月相</b>:暗面就是<b>图标的暗月</b>(同 v15 渐变 + 墨边),终止线按真实月相<b>椭圆连续推移</b>(新月→盈→满→亏→新月);<b>新月态 = App 图标本身</b>。短等待 = 同一月相的小尺寸覆层。八个 app 复用这一套月相语言。③ 命书 = <b>宣纸</b>:本命盘 + 大运 timeline + 现运,经墨晕在夜屏上化开(高对比)。④ 落款 = 你的真迹 <b>信</b>(甲骨)/<b>疑</b>(小篆),小钤印;石章 = 水墨 <b>lilong</b>。
+      </div>
+      <div class="note"><b>用户盖印</b>：读完命书点「已阅·信」(认可)或「存疑」→ 石章落下 → 显印。转场≠盖印相邻。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function v15moon(px){return `<svg viewBox="0 0 100 100" width="${px}" height="${px}"><circle cx="50" cy="50" r="44" fill="url(#v15G)" filter="url(#inkM)"/></svg>`;}
+function paperMoon(){return `<svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="background:#EAE3D2"><rect width="100" height="100" fill="#EAE3D2"/><circle cx="50" cy="50" r="34" fill="url(#v15paper)" filter="url(#inkM)"/></svg>`;}
+
+document.body.insertAdjacentHTML('beforeend',`<svg width="0" height="0" style="position:absolute"><defs>
+  <radialGradient id="v15G" cx="64%" cy="70%" r="62%"><stop offset="0%" stop-color="#3a3a40"/><stop offset="42%" stop-color="#222227"/><stop offset="78%" stop-color="#15151a"/><stop offset="100%" stop-color="#e7e0d0"/></radialGradient>
+  <radialGradient id="v15paper" cx="64%" cy="70%" r="62%"><stop offset="0%" stop-color="#3a3a40"/><stop offset="42%" stop-color="#222227"/><stop offset="78%" stop-color="#15151a"/><stop offset="100%" stop-color="#e7e0d0"/></radialGradient>
+  <filter id="inkM" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.5"/></filter>
+  <filter id="inkMLoad" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.5"/></filter>
+  <!-- loading 阴影圆盘:整体位移,中心全暗→外缘溶解为粒子(渐变+filter 随盘移动) -->
+  <radialGradient id="v15Shadow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#0e0d0c"/><stop offset="50%" stop-color="#131218"/><stop offset="78%" stop-color="#1a1922"/><stop offset="94%" stop-color="#1a1922" stop-opacity="0.4"/><stop offset="100%" stop-color="#1a1922" stop-opacity="0"/></radialGradient>
+  <!-- loading 月相:受光面(月表·被暗面腐蚀后露出的亮底) -->
+  <radialGradient id="mphFace" cx="36%" cy="30%" r="68%"><stop offset="0%" stop-color="#e7e0d0"/><stop offset="55%" stop-color="#d4cbb4"/><stop offset="100%" stop-color="#b5ac96"/></radialGradient>
+  <!-- 终止线墨侵:三频 displacement 链 — 大墨舌→纤维丝→细粒子飞溅 -->
+  <filter id="inkTerm" x="-30%" y="-30%" width="160%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05 0.08" numOctaves="3" seed="7" result="lo"/>
+    <feDisplacementMap in="SourceGraphic" in2="lo" scale="10" result="d"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.35 0.5" numOctaves="3" seed="3" result="hi"/>
+    <feDisplacementMap in="d" in2="hi" scale="5" result="d2"/>
+    <feTurbulence type="fractalNoise" baseFrequency="1.2 1.4" numOctaves="1" seed="11" result="uf"/>
+    <feDisplacementMap in="d2" in2="uf" scale="3"/>
+  </filter>
+  <clipPath id="mphClip"><circle cx="50" cy="50" r="40"/></clipPath>
+</defs></svg>`);
+document.getElementById('splashLogo').innerHTML = v15moon(150);  // 进场 Logo = 月(同 Hero、同图标),不套白底卡片
+document.getElementById('homeMoon').innerHTML = v15moon(154);
+
+// ===== 命书图表:命盘 + 五行 + 大运 —— 可"绘制"(描线/朱砂点批/墨条填充/count-up) =====
+const PINK='#6b5f48', PBRZ='#9b7d3e', PCIN='#9B2226', PPAPER='#EAE3D2';
+const rcs=document.getElementById('rchart'), rts=document.getElementById('rtimeline');
+const RCX=103, RCY=54, RR=46;
+function buildChart(){
+  let g='';
+  g+=`<circle class="rdraw" id="rcRingO" cx="${RCX}" cy="${RCY}" r="${RR}" pathLength="1" fill="none" stroke="${PINK}" stroke-opacity=".4" stroke-width="1"/>`;
+  g+=`<circle class="rdraw" id="rcRingI" cx="${RCX}" cy="${RCY}" r="${(RR*0.62).toFixed(1)}" pathLength="1" fill="none" stroke="${PINK}" stroke-opacity=".2" stroke-width="1"/>`;
+  for(let i=0;i<12;i++){const a=i*30*Math.PI/180;const x1=RCX+RR*0.86*Math.sin(a),y1=RCY-RR*0.86*Math.cos(a),x2=RCX+RR*Math.sin(a),y2=RCY-RR*Math.cos(a);
+    g+=`<line class="rcSpoke" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${PINK}" stroke-opacity=".3" stroke-width="1"/>`;}
+  const pts=[[20,.9],[80,.5],[150,.8],[214,.46],[290,.72],[338,.56]].map(([d,r])=>{const a=d*Math.PI/180;return [RCX+RR*r*Math.sin(a), RCY-RR*r*Math.cos(a)];});
+  g+=`<path id="rcConstel" d="M${pts.map(p=>p.map(n=>n.toFixed(1)).join(' ')).join(' L ')}" fill="none" stroke="${PBRZ}" stroke-opacity=".6" stroke-width="1"/>`;
+  pts.forEach((p,i)=>{const big=i===2; g+=`<circle class="rcStar" data-i="${i}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${big?2.6:1.7}" fill="${big?PCIN:PBRZ}"/>`;});
+  g+=`<circle id="rcMingDisc" cx="${RCX}" cy="${RCY}" r="11" fill="${PPAPER}"/>`;
+  g+=`<text id="rcMing" x="${RCX}" y="${RCY+1}" fill="${PCIN}" font-size="16" font-family="'Songti SC',serif" text-anchor="middle" dominant-baseline="middle">命</text>`;
+  rcs.innerHTML=g;
+}
+const RWX=[{ch:'木',en:'Wood',v:32,max:true},{ch:'火',en:'Fire',v:22},{ch:'土',en:'Earth',v:24},{ch:'金',en:'Metal',v:14,yong:true},{ch:'水',en:'Water',v:8}];
+function buildWuxing(){ document.getElementById('rwuxing').innerHTML = RWX.map(w=>{const c=w.yong?'yong':(w.max?'max':'');const t=w.yong?'宜补':(w.max?'最旺':'');return `<div class="wx ${c}"><span class="ch">${w.ch}</span><span class="en">${w.en}</span><span class="track"><span class="fill" style="width:${w.v}%"></span></span><span class="num">${w.v}</span><span class="tag">${t}</span></div>`;}).join(''); }
+function buildTimeline(){
+  const nodes=[{gz:'庚申',a:'2'},{gz:'辛酉',a:'12'},{gz:'壬戌',a:'22'},{gz:'戊午',a:'32',now:true},{gz:'丁巳',a:'42'},{gz:'丙辰',a:'52'},{gz:'乙卯',a:'62'}];
+  const x0=18,x1=254,y=46,n=nodes.length;
+  let g=`<line id="rtBase" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${PINK}" stroke-opacity=".3" stroke-width="1"/>`;
+  nodes.forEach((nd,i)=>{
+    const x=x0+(x1-x0)*i/(n-1), past=i<3, now=nd.now; const col= now?PBRZ:(past?'rgba(107,95,72,.72)':'rgba(107,95,72,.4)');
+    if(now) g+=`<circle class="rtNowRing" cx="${x.toFixed(1)}" cy="${y}" r="10" fill="rgba(155,34,38,.08)" stroke="${PCIN}" stroke-opacity=".45"/>`;
+    g+=`<circle class="rtNode" data-i="${i}" cx="${x.toFixed(1)}" cy="${y}" r="${now?4.4:2.7}" fill="${now?PCIN:PPAPER}" stroke="${now?PCIN:col}" stroke-width="1.5"/>`;
+    g+=`<text class="rtTxt" x="${x.toFixed(1)}" y="${y-14}" fill="${col}" font-size="9" font-family="'Songti SC',serif" text-anchor="middle">${nd.gz}</text>`;
+    g+=`<text class="rtTxt" x="${x.toFixed(1)}" y="${y+19}" fill="${col}" font-size="8" font-family="'Helvetica Neue',sans-serif" text-anchor="middle">${nd.a}</text>`;
+    if(now) g+=`<text class="rtNow" x="${x.toFixed(1)}" y="${y+33}" fill="${PCIN}" font-size="7.5" font-family="'Helvetica Neue',sans-serif" font-weight="700" letter-spacing="2" text-anchor="middle">NOW</text>`;
+  });
+  rts.innerHTML=g;
+}
+buildChart(); buildWuxing(); buildTimeline();
+
+// 绘制助手(WAAPI,随 scale 同步慢放)
+let drawTimers=[];
+function dClr(){ drawTimers.forEach(clearTimeout); drawTimers=[]; }
+function dAt(ms,fn){ drawTimers.push(setTimeout(fn, ms*scale)); }
+function _draw(el,dur){ if(!el)return; el.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:dur*scale,easing:'cubic-bezier(.45,0,.2,1)',fill:'forwards'}); }
+function _pop(el,dur){ if(!el)return; el.style.opacity='1'; el.animate([{transform:'scale(0)'},{transform:'scale(1.3)',offset:.65},{transform:'scale(1)'}],{duration:dur*scale,easing:'cubic-bezier(.3,1.4,.4,1)',fill:'forwards'}); }
+function _ink(el,dur){ if(!el)return; el.style.opacity='1'; el.animate([{opacity:0,transform:'scale(.8)'},{opacity:1,transform:'scale(1)'}],{duration:dur*scale,easing:'ease-out',fill:'forwards'}); }
+function _fade(el,dur){ if(!el)return; el.style.opacity='1'; el.animate([{opacity:0},{opacity:1}],{duration:dur*scale,easing:'ease-out',fill:'forwards'}); }
+function _fill(fillEl,numEl,to,dur){ if(!fillEl)return; fillEl.animate([{width:'0%'},{width:to+'%'}],{duration:dur*scale,easing:'cubic-bezier(.35,0,.2,1)',fill:'forwards'}); const t0=performance.now(),D=dur*scale; (function step(now){const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3); if(numEl)numEl.textContent=Math.round(to*e); if(k<1)requestAnimationFrame(step);})(performance.now()); }
+function resetReportDraw(){
+  dClr();
+  rcs.querySelectorAll('.rdraw').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.strokeDashoffset=1;});
+  rcs.querySelectorAll('.rcSpoke,.rcStar').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.opacity='0';e.style.transform='';});
+  ['rcMingDisc','rcMing'].forEach(id=>{const e=document.getElementById(id);if(e){e.getAnimations().forEach(a=>a.cancel());e.style.opacity='0';}});
+  document.querySelectorAll('#rwuxing .fill').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.width='0%';});
+  document.querySelectorAll('#rwuxing .num').forEach(e=>e.textContent='0');
+  rts.querySelectorAll('.rdraw').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.strokeDashoffset=1;});
+  rts.querySelectorAll('.rtNode,.rtTxt,.rtNow,.rtNowRing').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.opacity='0';e.style.transform='';});
+  document.querySelectorAll('#report .now,#report .gloss,#report .pills').forEach(e=>{e.getAnimations().forEach(a=>a.cancel());e.style.opacity='0';});
+}
+function drawReport(){
+  resetReportDraw();
+  document.getElementById('report').scrollTop=0;   // 从顶开始绘(命盘在视野内)
+  _draw(document.getElementById('rcRingO'),700);
+  dAt(160,()=>_draw(document.getElementById('rcRingI'),600));
+  rcs.querySelectorAll('.rcSpoke').forEach((sp,i)=>dAt(240+i*24,()=>_fade(sp,220)));
+  dAt(560,()=>_draw(document.getElementById('rcConstel'),700));
+  rcs.querySelectorAll('.rcStar').forEach((st,i)=>dAt(820+i*120,()=>_pop(st,340)));
+  dAt(980,()=>{_ink(document.getElementById('rcMingDisc'),400);_ink(document.getElementById('rcMing'),460);});
+  document.querySelectorAll('#rwuxing .wx').forEach((wx,i)=>{const f=wx.querySelector('.fill'),nu=wx.querySelector('.num');dAt(1680+i*110,()=>_fill(f,nu,+f.dataset.v,820));});
+  dAt(2620,()=>_draw(document.getElementById('rtBase'),620));
+  rts.querySelectorAll('.rtNode').forEach((nd,i)=>dAt(2840+i*100,()=>_pop(nd,300)));
+  rts.querySelectorAll('.rtTxt').forEach((t,i)=>dAt(2840+Math.floor(i/2)*100,()=>_fade(t,280)));
+  dAt(3280,()=>{const r=rts.querySelector('.rtNowRing');if(r){r.style.opacity='1';r.animate([{transform:'scale(.4)',opacity:0},{transform:'scale(1.2)',opacity:.9,offset:.6},{transform:'scale(1)',opacity:1}],{duration:600*scale,easing:'cubic-bezier(.3,1.2,.4,1)',fill:'forwards'});}_fade(rts.querySelector('.rtNow'),340);});
+  dAt(3520,()=>_fade(document.querySelector('#report .now'),420));
+  dAt(3700,()=>_fade(document.querySelector('#report .gloss'),420));
+  dAt(3860,()=>_fade(document.querySelector('#report .pills'),420));
+}
+
+// ===== loading 月相:阴影圆盘整体位移 — 模拟真实月相 =====
+// phase 0→0.5: 盈(阴影向左退,右侧先亮); 0.5→1: 亏(阴影从右侧进,左侧最后亮)
+// phase=0.5 时阴影已完全离开月面,从左侧"跳"到右侧(视觉不可见)
+let moonPhase=0;
+// SWEEP=180:阴影盘只"恰好"扫离月面,满月一闪而过 → 几乎无"全白"空档;速度略提
+const MOON_SPEED=0.0027, SWEEP=180;
+function setDiscCx(ids, cx){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.setAttribute('cx', cx); }); }
+function phaseToCx(p){ return p<0.5 ? 50 - SWEEP*p : 50 + SWEEP*(1-p); }
+setDiscCx(['mphShadow','mphShadowMini'], phaseToCx(0));
+function moonTick(){
+  moonPhase += MOON_SPEED / Math.max(scale,1);
+  if(moonPhase >= 1) moonPhase -= 1;
+  const cx = phaseToCx(moonPhase);
+  if(document.getElementById('loading').classList.contains('show')) setDiscCx(['mphShadow'], cx);
+  if(document.getElementById('miniload').classList.contains('show')) setDiscCx(['mphShadowMini'], cx);
+  requestAnimationFrame(moonTick);
+}
+requestAnimationFrame(moonTick);
+
+// loading 文案:轮播"正在做的事"(校时/对天干/对地支/算五行...),淡入淡出、非闪烁 → 透明、可信、有进度
+const LOAD_STEPS={
+  zh:['校准真太阳时','起四柱','对齐天干','对齐地支','称五行旺衰','排布大运','勘合现运'],
+  en:['Calibrating solar time','Casting Four Pillars','Aligning Heavenly Stems','Aligning Earthly Branches','Weighing Five Elements','Arranging Luck Pillars','Matching this phase']
+};
+let loadStep=0, loadTimer=null;
+function loadPhraseTick(){ const el=document.getElementById('loadPhrase'); if(!el) return; const arr=LOAD_STEPS[typeof lang!=='undefined'?lang:'zh']||LOAD_STEPS.zh; el.style.opacity='0'; setTimeout(()=>{ el.textContent=arr[loadStep%arr.length]; el.style.opacity='1'; loadStep++; }, 380); }
+function startLoadPhrases(){ stopLoadPhrases(); const el=document.getElementById('loadPhrase'); const arr=LOAD_STEPS[typeof lang!=='undefined'?lang:'zh']||LOAD_STEPS.zh; if(el){ el.textContent=arr[0]; el.style.opacity='1'; } loadStep=1; loadTimer=setInterval(loadPhraseTick, 1600); }
+function stopLoadPhrases(){ if(loadTimer){ clearInterval(loadTimer); loadTimer=null; } }
+
+const phone=document.getElementById('phone');
+const layers=['splash','home','loading','report'];
+let scale=3.3, timers=[];
+function clr(){ timers.forEach(clearTimeout); timers=[]; }
+function setScale(){ phone.style.setProperty('--s',scale); }
+// 墨蚀(主 loading) 与 吞噬(短等待) 皆 CSS/SMIL 驱动,无需 JS 帧循环
+function show(id){ layers.forEach(l=>document.getElementById(l).classList.toggle('show', l===id)); }
+function setPhase(name){ phone.classList.remove('p-splash','p-home','p-loading','p-report'); if(['splash','home','loading','report'].includes(name))phone.classList.add('p-'+name); setScale(); document.getElementById('phaseLabel').innerHTML='PHASE · <b>'+name+'</b>'; document.getElementById('cap').innerHTML='<b>'+({splash:'进场 · Logo→Hero 神奇移动',home:'首屏 · 今日签',loading:'推演中 · 真实月相 + 步骤文案',wipe:'墨晕转场 · 纸现(慢)',report:'命书 · 待盖印',stamp:'盖印'}[name]||'—')+'</b>'; if(name==='loading') startLoadPhrases(); else stopLoadPhrases(); }
+const T=ms=>ms*scale;
+function resetStamp(){ phone.classList.remove('stamping','stamped','acted'); const y=document.getElementById('yinji'); y.className='yinji'; y.innerHTML=''; }
+
+function goSplash(){ clr(); phone.classList.remove('stamping','stamped','acted','wiping'); resetStamp(); setPhase('splash'); show('splash'); }
+function goHome(){ clr(); phone.classList.remove('wiping'); resetStamp(); setPhase('home'); show('home'); }
+// 进场→首屏:神奇动画移动(FLIP) — 进场 Logo(月)飞到 Hero 大月位(同一颗月,只是位/底变)
+function splashToHome(){
+  clr(); phone.classList.remove('wiping','stamping','stamped','acted'); resetStamp();
+  const src=document.getElementById('splashLogo'), dst=document.getElementById('homeMoon'), pr=phone.getBoundingClientRect();
+  if(!src||!dst){ goHome(); return; }
+  const a=src.getBoundingClientRect(), b=dst.getBoundingClientRect();
+  const fly=document.createElement('div');
+  fly.innerHTML=v15moon(Math.round(a.width));
+  fly.style.cssText=`position:absolute;left:${(a.left-pr.left).toFixed(1)}px;top:${(a.top-pr.top).toFixed(1)}px;width:${a.width.toFixed(1)}px;height:${a.height.toFixed(1)}px;transform-origin:top left;z-index:60;pointer-events:none`;
+  phone.appendChild(fly); src.style.visibility='hidden';
+  setPhase('home'); show('home');
+  dst.style.opacity='0';   // Hero 月先隐(共享元素,由 fly 顶替;CSS 已禁其上浮,无需动 animation)
+  const dx=(b.left-pr.left)-(a.left-pr.left), dy=(b.top-pr.top)-(a.top-pr.top), s=b.width/a.width;
+  const dur=Math.max(500, Math.min(580*scale, 1000));   // 快而稳;慢放也封顶,不拖成"爬到终点"
+  fly.animate([{transform:'translate(0px,0px) scale(1)'},{transform:`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${s.toFixed(4)})`}],{duration:dur,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+  // 干净交接:到点瞬露真月(与 fly 末态完全一致),次帧撤 fly → 无淡出重叠抖动
+  timers.push(setTimeout(()=>{ dst.style.opacity='1'; }, dur-16));
+  timers.push(setTimeout(()=>{ fly.remove(); src.style.visibility=''; dst.style.opacity=''; }, dur+40));
+}
+function goLoading(){ clr(); phone.classList.remove('wiping'); resetStamp(); setPhase('loading'); show('loading'); }
+function goReport(){ clr(); phone.classList.remove('wiping'); resetStamp(); setPhase('report'); show('report'); document.getElementById('report').scrollTop=0; }
+// 短等待覆层(吞噬):覆在当前屏上,~1.7s 后退场。换页/小请求用
+function showMini(){ const base=[...document.querySelectorAll('.layer.show')].some(l=>l.id!=='miniload'); if(!base) goReport(); const m=document.getElementById('miniload'); m.classList.add('show'); timers.push(setTimeout(()=>m.classList.remove('show'), T(1700))); }
+function goWipe(){ clr(); resetStamp();
+  if(!document.getElementById('home').classList.contains('show')&&!document.getElementById('loading').classList.contains('show'))show('home');
+  setPhase('wipe');
+  document.getElementById('report').scrollTop=0;       // 从顶揭开
+  document.getElementById('report').classList.add('show');
+  phone.classList.remove('wiping'); void phone.offsetWidth; phone.classList.add('wiping');
+  timers.push(setTimeout(()=>{ phone.classList.remove('wiping'); setPhase('report'); show('report'); }, T(2500)));
+}
+const SEAL={yes:'raw/seals/xin.png', no:'raw/seals/yi.png'};
+function userStamp(kind){
+  if(phone.classList.contains('acted')) return;
+  const y=document.getElementById('yinji'); y.className='yinji live'; y.innerHTML=`<img src="${SEAL[kind]}" alt="">`;
+  phone.classList.add('acted');
+  phone.classList.remove('stamping'); void phone.offsetWidth; phone.classList.add('stamping');
+  try{navigator.vibrate&&navigator.vibrate(kind==='no'?[16,40,16]:26)}catch(e){}
+  timers.push(setTimeout(()=>{ phone.classList.add('stamped'); phone.classList.remove('stamping'); }, T(1240)));
+}
+document.getElementById('actYes').onclick=()=>userStamp('yes');
+document.getElementById('actNo').onclick=()=>userStamp('no');
+document.getElementById('cta').onclick=()=>{ clr(); goLoading(); timers.push(setTimeout(goWipe, T(1500))); };  // 点 CTA 手动推进
+
+function playAll(){
+  clr(); goSplash();
+  timers.push(setTimeout(splashToHome, T(1900)));
+  timers.push(setTimeout(()=>{ document.getElementById('cta').style.filter='brightness(1.25)'; }, T(3100)));
+  timers.push(setTimeout(()=>{ document.getElementById('cta').style.filter=''; goLoading(); }, T(3350)));
+  timers.push(setTimeout(goWipe, T(5000)));   // → 命书(待盖)，停在此等用户点「已阅·信」/「存疑」
+  timers.push(setTimeout(()=>{ const y=document.getElementById('actYes'); y.style.transition='filter .5s'; y.style.filter='brightness(1.25)'; setTimeout(()=>y.style.filter='',700*scale); }, T(8300)));
+}
+document.getElementById('all').onclick=playAll;
+document.getElementById('slow').onclick=function(){ scale=scale===1?3.3:1; this.classList.toggle('on',scale!==1); this.textContent=scale===1?'慢放 0.3×':'恢复 1×'; setScale(); };
+// 中/EN 切换：印面 信/疑/命 保持中文(品牌印记)，其余 UI 文案翻译
+let lang='zh';
+function applyLang(){ document.querySelectorAll('[data-zh]').forEach(el=>{ el.innerHTML=(lang==='en'?el.dataset.en:el.dataset.zh); }); document.documentElement.lang=lang; document.getElementById('lang').textContent=(lang==='zh'?'中文 ▸ EN':'EN ▸ 中文'); }
+document.getElementById('lang').onclick=()=>{ lang=(lang==='zh'?'en':'zh'); applyLang(); };
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ const g=b.dataset.go; if(g==='splash'){goSplash();timers.push(setTimeout(splashToHome,T(1900)));} else if(g==='loading')goLoading(); else if(g==='mini')showMini(); else if(g==='wipe')goWipe(); else if(g==='report')goReport(); });
+
+setScale(); playAll();
+</script>
+</body>
+</html>

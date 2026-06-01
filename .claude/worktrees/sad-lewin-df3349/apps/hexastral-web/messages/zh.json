@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "title": "HexAstral — 星辰知道你是谁",
+    "description": "结合命格四柱与 AI 深度解读，60 秒揭开你的命运格局。"
+  },
+  "nav": {
+    "tools": "免费工具",
+    "freeReading": "免费测算",
+    "download": "下载 App"
+  },
+  "landing": {
+    "heroBadge": "命格 · 星宫命理 · AI 解读",
+    "heroLine1": "星辰知道",
+    "heroLine2": "你是谁",
+    "heroSub": "结合命格四柱，AI 深度解读\n60 秒揭开你的命运格局",
+    "heroCTA": "免费测算起盘 →",
+    "heroNote": "无需注册 · 60 秒出盘 · 首次赠 3 枚香火",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "命理四维，AI 全息解读",
+    "features": [
+      {
+        "title": "命格 · 四柱排盘",
+        "desc": "精准排盘天干地支四柱八字。推演先天的五行能量、核心日主格局及八卦卦象（易经）。",
+        "tag": "Natal Chart Reading"
+      },
+      {
+        "title": "星宫 · 命宫全图",
+        "desc": "结合紫微斗数解析命盘十二宫，洞察事业、财富与姻缘的主运势。",
+        "tag": "Zi Wei Dou Shu Chart"
+      },
+      {
+        "title": "大运神煞 · 时间轴",
+        "desc": "十年大运格 × 神煞落盘，精确定位人生各阶段的机遇与风险。",
+        "tag": "Da Yun Timeline & Shen Sha"
+      },
+      {
+        "title": "合盘 · 配对指数",
+        "desc": "双人命盘深度合参，量化配对分数，揭示关系中的吸引与摩擦之源。",
+        "tag": "Compatibility Pairing Score"
+      }
+    ],
+    "convTitle": "你来这里，是为了——",
+    "convBody": "了解自己？看透一段关系？还是寻找人生某个阶段为什么那么难？\n无论哪种，星盘都有答案。",
+    "convCTA": "开始我的测算",
+    "testimonialsSectionLabel": "用户说",
+    "testimonials": [
+      {
+        "text": "那句“你骨子里是匹野马，但现实把你圈养”，我看完当场哭出来了。",
+        "name": "陈 ××",
+        "tag": "深圳 · 设计师"
+      },
+      {
+        "text": "合婚报告让我第一次从五行角度理解了我们为什么总在同一件事上吵架。",
+        "name": "林 ××",
+        "tag": "上海 · 产品经理"
+      },
+      {
+        "text": "大运时间轴让我明白为什么 2024 年突然那么难——原来换大运了。",
+        "name": "Kevin W.",
+        "tag": "Toronto · Engineer"
+      }
+    ],
+    "ctaHeadline": "免费获取你的命盘",
+    "ctaSub": "下载 HexAstral，首次完成排盘赠送 3 枚香火，解锁 AI 深度解读",
+    "footerPrivacy": "隐私政策",
+    "footerTerms": "用户协议",
+    "footerStart": "开始测算"
+  },
+  "onboarding": {
+    "motivationPrompt": "你来这里，是为了——",
+    "motivationTitle1": "选择你的",
+    "motivationTitle2": "测算模式",
+    "modePersonalTitle": "了解我自己",
+    "modePersonalDesc": "探索个人性格、命运格局与人生大运",
+    "modePairingTitle": "了解我们的关系",
+    "modePairingDesc": "伴侣 / 恋人配对 — 合盘深度分析",
+    "modePairingBadge": "最受欢迎 ★",
+    "noSignupNote": "无需注册 · 数据仅用于计算 · 完全免费",
+    "selfStep1Label": "第一步 — 你的信息",
+    "selfBirthLabel": "你的出生信息",
+    "selfStep1Title": "你出生的那一刻",
+    "selfStep1Accent": "星辰是如何排列的？",
+    "partnerStep2Label": "第二步 — Ta 的信息",
+    "partnerStep2Title": "让星辰告诉你们",
+    "partnerStep2Accent": "彼此是什么关系",
+    "submitPersonal": "开始排盘",
+    "submitNext": "下一步 →",
+    "submitPairing": "查看配对结果",
+    "back": "← 返回",
+    "restart": "← 重新开始",
+    "errorRetry": "计算失败，请稍后重试",
+    "selfDefault": "你",
+    "partnerDefault": "Ta",
+    "personalChartLabel": "{name}的命盘",
+    "dayMasterLabel": "日主",
+    "starsSpeakPrefix": "✦ 星辰对{name}说",
+    "fullReadingLabel": "完整 AI 命理解读",
+    "personalPaywallUnlock": "🔒 下载解锁完整解读",
+    "personalCTAHeadline": "{name}的完整命盘已就绪",
+    "personalCTASub": "下载 HexAstral，获取 AI 深度解读 · 大运时间轴 · 神煞落盘",
+    "pairingScoreUnit": "{a} × {b}　配对指数",
+    "pairingInsightsTitle": "星盘洞察",
+    "pairingFullReportLabel": "深度合参报告",
+    "pairingPaywallUnlock": "🔒 下载解锁完整合参报告",
+    "pairingCTAHeadline": "解锁完整合婚报告",
+    "pairingCTASub": "下载 HexAstral，获取 AI 深度合参 · 关系摩擦点解析 · 最佳相处模式",
+    "partnerLabel": "{selfName} 的另一半",
+    "bNameQuestion": "星辰开口之前，我需要知道你的名字。你叫什么？",
+    "bNamePlaceholder": "你的名字",
+    "bDateQuestion": "{name}，你是什么时候降临这个世界的？命盘始于那一刻。",
+    "bTimeQuestion": "你知道出生的大致时辰吗？时柱是命运之柱，越精确越好。",
+    "bGenderQuestion": "在阴阳的语言里——你更接近哪股能量？",
+    "bGenderMale": "阳 ☰",
+    "bGenderFemale": "阴 ☷",
+    "bCityQuestion": "你在哪座城市出生？出生地将你的命盘锚定于大地。",
+    "bCityPlaceholder": "出生城市",
+    "bContinue": "继续",
+    "bRevealChart": "揭示我的命盘"
+  },
+  "loading": {
+    "messages": [
+      "正在锚定出生时空坐标...",
+      "解析年柱干支能量矩阵...",
+      "校准土星逆行轨迹偏差...",
+      "扫描月支藏干五行结构...",
+      "计算日主强弱平衡指数...",
+      "感知第四宫的命运共振...",
+      "检测水属性能量波动...",
+      "正在感知第七宫的能量...",
+      "融合星宫星系坐标数据...",
+      "大运时间轴校准完成...",
+      "神煞落盘，命理结构成形...",
+      "你的星盘即将显现..."
+    ]
+  },
+  "form": {
+    "nameLabel": "姓名（可选）",
+    "namePlaceholder": "随便填，只是方便区分",
+    "cityLabel": "出生城市 *",
+    "cityPlaceholder": "下一个城市，如 北京·上海·广州",
+    "solarTimeNote": "将根据城市经度自动修正真太阳时",
+    "dateLabel": "公历生日",
+    "hourLabel": "出生时辰",
+    "unknownHour": "不知道出生时辰",
+    "genderMale": "☰ 男命",
+    "genderFemale": "☷ 女命",
+    "shichen": [
+      "早子时　23:00–01:00",
+      "丑时　　01:00–03:00",
+      "寅时　　03:00–05:00",
+      "卯时　　05:00–07:00",
+      "辰时　　07:00–09:00",
+      "巳时　　09:00–11:00",
+      "午时　　11:00–13:00",
+      "未时　　13:00–15:00",
+      "申时　　15:00–17:00",
+      "酉时　　17:00–19:00",
+      "戌时　　19:00–21:00",
+      "亥时　　21:00–23:00",
+      "晚子时　23:00–01:00"
+    ],
+    "dateLabelLunar": "农历生日",
+    "checkLunar": "农历",
+    "checkTrueSolar": "真太阳时"
+  },
+  "pair": {
+    "inviteText": "邀你查看你们的星盘缘分",
+    "scoreLabel": "合盘指数",
+    "dayMasterOfLabel": "{name} 日主",
+    "unlockFull": "下载解锁完整报告",
+    "orWeb": "或在浏览器直接测算",
+    "expiredTitle": "链接已失效",
+    "expiredDesc": "此分享链接已过期或无效，请让对方重新生成"
+  },
+  "resonate": {
+    "defaultTitle": "你收到了邀请",
+    "inviteTitle": "邀请你进行合盘测算",
+    "subtitle": "命理共振",
+    "description": "通过东方玄学智慧，探索你们的命理契合度。",
+    "inviteFrom": "邀请来自",
+    "expires": "过期时间",
+    "openInApp": "在 HexAstral 中打开",
+    "downloadApp": "免费下载 HexAstral",
+    "curiosityTitle": "你们的命缘正在召唤",
+    "curiosityUnlockCTA": "下载 HexAstral·探索完整命缘解读",
+    "dimLongTerm": "长远潜力",
+    "dimAttraction": "磁性吸引",
+    "dimCommunication": "沟通流动",
+    "dimEmotional": "情感共鸣",
+    "expired": "此邀请已过期，请让对方重新发送。",
+    "notFound": "邀请不存在或已失效。"
+  },
+  "common": {
+    "download": "免费下载 HexAstral",
+    "downloadButton": "App Store 免费下载",
+    "downloadNote": "免费开始 · 无需注册 · 首次赠送 3 枚香火",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "你被邀请了 · HexAstral",
+    "meta_description": "你的朋友邀你一起探索命盘，通过邀请链接下载，首次额外赠送香火",
+    "headline": "星辰为你留了\n一席之地",
+    "subline": "你的朋友邀你一起探索命盘。通过邀请链接下载 HexAstral，即可解锁专属福利。",
+    "ref_label": "邀请码",
+    "benefit_1": "首次完成排盘额外赠送香火，解锁 AI 深度解读",
+    "benefit_2": "无需注册，60 秒完成命格起盘",
+    "benefit_3": "命格 · 星宫命理 · 合盘配对全模块开放",
+    "cta": "免费下载，领取邀请奖励",
+    "note": "仅限通过邀请链接首次下载的新用户"
+  },
+  "Metadata": {
+    "title": "HexAstral — 星辰知道你是谁",
+    "description": "结合四柱八字（天干地支）、紫微斗数分析、先天八卦与 AI 深度解读，60 秒揭开你的命运格局。"
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral解读"
+  },
+  "growth": {
+    "navHome": "首页",
+    "navTools": "免费工具",
+    "navBlog": "博客",
+    "navMethodology": "方法论",
+    "disclaimer": "仅供文化探索与自省参考，不能替代专业、医疗或法律意见。",
+    "toolsIndexTitle": "免费工具",
+    "toolsIndexSubtitle": "快速排盘与资料查阅。完整 AI 解读请在 iOS App 内进行。",
+    "blogTitle": "博客",
+    "blogSubtitle": "用可读的方式介绍东方玄学，并标明典籍与传统名称。",
+    "readArticle": "阅读全文",
+    "backToTools": "全部工具",
+    "backToBlog": "全部文章",
+    "openAppStore": "前往 App Store 下载"
+  }
+}

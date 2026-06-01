@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · 中文名 + 2字篆印 候选</title>
+<style>
+  :root{
+    --void:#0C0B0A; --paper:#EAE3D2; --bone:#E9E2D2; --stone:#16140F;
+    --cinnabar:#9B2226; --bronze:#C2A878; --dim:#8A8170; --faint:#5A5446; --line:rgba(233,226,210,.1);
+    --serif:"Hoefler Text","Baskerville","Songti SC",Georgia,serif;
+    --seal:"Songti SC","STSong",serif; --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070605;color:var(--bone);font-family:var(--serif);padding:46px 32px 100px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  .lock{color:var(--bronze);font-family:var(--sans);font-size:11px;letter-spacing:5px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-weight:400;font-size:25px;letter-spacing:1px;margin:0 0 6px}
+  .lede{color:var(--dim);font-family:var(--sans);font-size:12.5px;max-width:800px;line-height:1.9;margin:0 0 8px}
+  .lede b{color:var(--bone)}
+  .sl{font-family:var(--sans);font-size:11px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin:44px 0 20px;display:flex;align-items:center;gap:14px}
+  .sl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(194,168,120,.4),transparent)}
+
+  .cands{display:flex;gap:20px;flex-wrap:wrap}
+  .cand{width:200px;background:linear-gradient(165deg,#15120c,#0e0c08);border:1px solid var(--line);border-radius:14px;padding:20px 18px;text-align:center}
+  .cand.rec{border-color:rgba(194,168,120,.55);box-shadow:0 0 0 1px rgba(194,168,120,.2)}
+  .cand .seal{width:96px;height:96px;margin:0 auto;background:var(--paper);border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .cand .py{font-family:var(--sans);color:var(--bronze);font-size:12px;letter-spacing:2px;margin-top:14px}
+  .cand .en{font-family:var(--serif);font-size:15px;margin-top:2px}
+  .cand .fit{font-family:var(--sans);color:var(--dim);font-size:11px;line-height:1.7;margin-top:9px}
+  .cand .tag{font-family:var(--sans);font-size:9px;letter-spacing:2px;color:var(--bronze);text-transform:uppercase;margin-top:8px}
+  .cand.bad{opacity:.5}
+  .cand.bad .tag{color:#b06}
+
+  .lockup{display:flex;gap:40px;flex-wrap:wrap;align-items:center;background:linear-gradient(165deg,#15120c,#0e0c08);border:1px solid var(--line);border-radius:16px;padding:34px 36px}
+  .lockup .mark{width:84px;height:84px;flex:none}
+  .lockup .wm{font-size:30px;letter-spacing:8px}
+  .lockup .wm small{display:block;font-family:var(--seal);font-size:15px;letter-spacing:8px;color:var(--bronze);margin-top:8px;padding-left:4px}
+  .lockup .vt{align-self:stretch;width:1px;background:var(--line)}
+  .lockup .desc{font-family:var(--sans);color:var(--dim);font-size:12px;line-height:1.9;max-width:300px}
+  .lockup .desc b{color:var(--bronze)}
+
+  .note{margin-top:38px;color:var(--dim);font-family:var(--sans);font-size:12px;border-left:2px solid var(--bronze);padding-left:14px;line-height:2;max-width:840px}
+  .note b{color:var(--bronze)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="lock">● Chinese Name + 2-char Seal</p>
+  <h1>中文名 + 2 字篆印</h1>
+  <p class="lede">英文名做印太挤——换 <b>2 字中文名</b>,方寸刚好。下方印为 <b>Songti 占位</b>(看名 + 布局),定名后描真篆刻。<b>观象</b>为我的推荐。</p>
+
+  <svg width="0" height="0" style="position:absolute"><defs>
+    <filter id="carve" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.36" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.2"/></filter>
+  </defs></svg>
+
+  <div class="sl">① 候选 · 2 字篆印（朱文）</div>
+  <div class="cands" id="cands"></div>
+
+  <div class="sl">② 双语锁版（以「观象」为例）</div>
+  <div class="lockup">
+    <span class="mark" id="lkSeal"></span>
+    <div>
+      <div class="wm">HEXASTRAL<small>观 象</small></div>
+    </div>
+    <div class="vt"></div>
+    <div class="desc">对外 <b>HexAstral</b>(英文好记、上架);灵魂 <b>观象</b>(中文印,盖报告/分享/推送)。两张脸,一个被记住、一个被信服。</div>
+  </div>
+
+  <div class="note">
+    <b>为什么 2 字中文印 &gt; 英文九宫:</b>方寸里两字,疏密天成、像真印;英文九字塞进去永远挤。<b>观象</b>里的「象」正是命相卜的共同字(卦象·星象·天象·面相),「观」是那安静的动作——一名统全矩阵。
+    <br>定名后:我交刻字师/或描真篆,出 朱文+白文 两版,作内容钤印(非图标)。要不要顺带也想个英文 tagline?如 "Read the signs."
+  </div>
+</div>
+
+<script>
+const CINNABAR='#9B2226', PAPER='#EAE3D2', SEALF="'Songti SC','STSong',serif";
+// 2-char 朱文 seal (chars side by side), Songti placeholder
+function nameSeal(a,b,px,mode){
+  mode=mode||'zw';
+  const fg = mode==='bw'?PAPER:CINNABAR;
+  const chars=`<text x="30" y="52" fill="${fg}" font-size="40" font-family="${SEALF}" font-weight="700" text-anchor="middle" dominant-baseline="middle">${a}</text>
+               <text x="70" y="52" fill="${fg}" font-size="40" font-family="${SEALF}" font-weight="700" text-anchor="middle" dominant-baseline="middle">${b}</text>`;
+  if(mode==='bw') return `<svg viewBox="0 0 100 100" width="${px}" height="${px}"><rect x="7" y="7" width="86" height="86" rx="7" fill="${CINNABAR}" filter="url(#carve)"/>${chars}</svg>`;
+  return `<svg viewBox="0 0 100 100" width="${px}" height="${px}"><rect x="8" y="8" width="84" height="84" rx="6" fill="none" stroke="${CINNABAR}" stroke-width="3" filter="url(#carve)"/>${chars}</svg>`;
+}
+const CANDS=[
+  {a:'观',b:'象',py:'GUĀN XIÀNG',en:'Read the Signs',fit:'观天象·卦象·面相之"象";一名概括命相卜全矩阵。',rec:true},
+  {a:'星',b:'枢',py:'XĪNG SHŪ',en:'Star Pivot',fit:'北斗天枢/紫微——命运所绕的定星;最贴 Astral。'},
+  {a:'乾',b:'象',py:'QIÁN XIÀNG',en:"Heaven's Signs",fit:'乾=天、又是头卦;咬住 Hex(卦)+ 天象。'},
+  {a:'玄',b:'象',py:'XUÁN XIÀNG',en:'Mystic Signs',fit:'玄+象,够玄学;"玄"略累,作备选。'},
+  {a:'天',b:'机',py:'TIĀN JĪ',en:"Heaven's Secret",fit:'好听但算命 app 烂大街,不建议。',bad:true},
+];
+document.getElementById('cands').innerHTML = CANDS.map(c=>`
+  <div class="cand ${c.rec?'rec':''} ${c.bad?'bad':''}">
+    <div class="seal">${nameSeal(c.a,c.b,86,'zw')}</div>
+    <div class="py">${c.py}</div><div class="en">${c.en}</div>
+    <div class="fit">${c.fit}</div>
+    <div class="tag">${c.rec?'★ 推荐':c.bad?'× 慎用':'候选'}</div>
+  </div>`).join('');
+document.getElementById('lkSeal').innerHTML = nameSeal('观','象',1000,'bw').replace('width="1000" height="1000"','width="100%" height="100%"');
+</script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+{
+  "_comment": "JA messages · anti-spam compliant per docs/anti-spam-positioning.md. ZERO trigger words (占い / 占星術 / 運命 / 運勢 / 神秘的 / 霊的 / 開運 / オカルト / スピリチュアル / 星々はあなたを知っている / 運命の羅針盤). Lead vocabulary: BaZi, 四柱推命, 命盤, 紫微斗数, 十二宮, 大運, 中華命学, 古典中華宇宙観, AI 性格分析. NOTE: 四柱推命 is the standard Japanese academic term — keep. 縁 keep where it represents yuan-app brand concept; replace 'fate-bond' uses with 命盤/結び.",
+  "meta": {
+    "title": "HexAstral — BaZi · ZiWei · AI",
+    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。1500年の中華命学伝統に基づく学習ツール。"
+  },
+  "nav": {
+    "tools": "無料ツール",
+    "freeReading": "無料鑑定",
+    "download": "アプリを入手"
+  },
+  "landing": {
+    "heroBadge": "BaZi · ZiWei · AI",
+    "heroLine1": "あなたの命盤、",
+    "heroLine2": "古典的に読み解く",
+    "heroSub": "60秒で四柱推命の命盤を生成\n1500年の中華命学伝統に基づく AI 性格分析",
+    "heroCTA": "無料で鑑定を始める →",
+    "heroNote": "会員登録不要 · 60秒で鑑定 · 初回 3 回 AI 対話付き",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "命盤を読む四つのレンズ",
+    "features": [
+      {
+        "title": "四柱推命 · 命式鑑定",
+        "desc": "年月日時の四柱を精密に算出。日主の五行強弱・十神配置・調候用神を解析します。",
+        "tag": "四柱推命"
+      },
+      {
+        "title": "紫微 · 十二宮",
+        "desc": "紫微斗数で 12 宮位を解析。大限・流年と、主星・補星の二重解読を提供します。",
+        "tag": "紫微斗数命盤"
+      },
+      {
+        "title": "大運 · タイムライン",
+        "desc": "10年大運 × 神煞落盤で、人生の各ステージの機会と制約を正確に把握。",
+        "tag": "大運タイムライン"
+      },
+      {
+        "title": "合盤 · 相性指数",
+        "desc": "二人の命式を深く合参。相性スコアを数値化し、引き合いと摩擦の根源を明かします。",
+        "tag": "合盤配對"
+      }
+    ],
+    "convTitle": "あなたがここに来た理由——",
+    "convBody": "自分自身を知りたいから？ある関係をもっとよく理解したいから？人生で特別に辛かった時期を理解したいから？\nどんな理由でも、あなたの命盤には読み解ける構造があります。",
+    "convCTA": "鑑定を始める",
+    "testimonialsSectionLabel": "ユーザーの声",
+    "testimonials": [
+      {
+        "text": "「あなたは本質的には野生の馬だけど、現実があなたを囲いの中に閉じ込めている」という一節を読んで、思わず泣いてしまいました。",
+        "name": "C.W.",
+        "tag": "深圳 · デザイナー"
+      },
+      {
+        "text": "相性レポートのおかげで、なぜ私たちがいつも同じことで言い合いになるのか、五行の観点から初めて理解できました。",
+        "name": "L.H.",
+        "tag": "上海 · プロダクトマネージャー"
+      },
+      {
+        "text": "大運タイムラインを見て、なぜ 2024 年がこんなに辛かったのかがやっとわかりました。大運が切り替わっていたんです。",
+        "name": "Kevin W.",
+        "tag": "Toronto · エンジニア"
+      }
+    ],
+    "ctaHeadline": "無料で命式を取得する",
+    "ctaSub": "HexAstral をダウンロード — AI 深層解読・大運タイムライン・神煞分析を最初の鑑定から解放",
+    "footerPrivacy": "プライバシーポリシー",
+    "footerTerms": "利用規約",
+    "footerStart": "鑑定を始める"
+  },
+  "onboarding": {
+    "motivationPrompt": "あなたがここに来た理由——",
+    "motivationTitle1": "鑑定モードを",
+    "motivationTitle2": "選んでください",
+    "modePersonalTitle": "自分自身を知りたい",
+    "modePersonalDesc": "四柱推命フレームで性格・命盤構造・人生の大運を探求する",
+    "modePairingTitle": "二人の関係を調べたい",
+    "modePairingDesc": "恋人・パートナーとの四柱合参で、五行レベルの相性を深く解析",
+    "modePairingBadge": "人気 No.1 ★",
+    "noSignupNote": "会員登録不要 · 計算のみに使用 · 完全無料",
+    "selfStep1Label": "ステップ 1 — あなたの情報",
+    "selfBirthLabel": "あなたの生年月日時",
+    "selfStep1Title": "あなたが生まれた瞬間、",
+    "selfStep1Accent": "命盤の配置はどうなっていましたか？",
+    "partnerStep2Label": "ステップ 2 — 相手の情報",
+    "partnerStep2Title": "二つの命盤を比較し、",
+    "partnerStep2Accent": "二人の関係構造を読む",
+    "submitPersonal": "鑑定を開始する",
+    "submitNext": "次へ →",
+    "submitPairing": "相性を見る",
+    "back": "← 戻る",
+    "restart": "← 最初からやり直す",
+    "errorRetry": "計算に失敗しました。もう一度お試しください",
+    "selfDefault": "あなた",
+    "partnerDefault": "相手",
+    "personalChartLabel": "{name}の命式",
+    "dayMasterLabel": "日主",
+    "starsSpeakPrefix": "✦ {name} への洞察",
+    "fullReadingLabel": "完全 AI 鑑定レポート",
+    "personalPaywallUnlock": "🔒 ダウンロードして全文を解放",
+    "personalCTAHeadline": "{name}の完全命式が完成しました",
+    "personalCTASub": "HexAstral をダウンロード — AI 深層解読 · 大運タイムライン · 神煞落盤",
+    "pairingScoreUnit": "{a} × {b}　相性指数",
+    "pairingInsightsTitle": "命盤インサイト",
+    "pairingFullReportLabel": "詳細合参レポート",
+    "pairingPaywallUnlock": "🔒 ダウンロードして完全レポートを解放",
+    "pairingCTAHeadline": "完全合参レポートを解放する",
+    "pairingCTASub": "HexAstral をダウンロード — AI 深層合参 · 摩擦ポイント分析 · 最適な関係モード",
+    "partnerLabel": "{selfName}のパートナー",
+    "bNameQuestion": "鑑定を始める前に、お名前を教えてください。",
+    "bNamePlaceholder": "あなたの名前",
+    "bDateQuestion": "{name}さん、いつ生まれましたか？命盤はその瞬間から始まります。",
+    "bTimeQuestion": "生まれた時刻はわかりますか？時柱が正確だと命盤の精度が上がります。",
+    "bGenderQuestion": "陰陽の言葉で——どちらのエネルギーに近いですか？",
+    "bGenderMale": "陽 ☰",
+    "bGenderFemale": "陰 ☷",
+    "bCityQuestion": "どの都市で生まれましたか？出生地によりローカルな真太陽時で命盤を整えます。",
+    "bCityPlaceholder": "出生都市",
+    "bContinue": "続ける",
+    "bRevealChart": "命盤を表示する"
+  },
+  "loading": {
+    "_comment": "Procedural-tone loading messages. Original '土星逆行軌道を校正中' was Western astrology (Saturn retrograde — wrong tradition!) — removed. '命運共鳴' and 'エネルギー波動' read mystical; replaced with computational language.",
+    "messages": [
+      "誕生の時空座標を特定中...",
+      "年柱の干支構造を解析中...",
+      "節気の境界を校正中...",
+      "月支の蔵干五行構造をスキャン中...",
+      "日主の強弱バランスを計算中...",
+      "第四宮の座標を特定中...",
+      "五行の相互作用パターンを計算中...",
+      "第七宮を特定中...",
+      "十二宮の座標データを統合中...",
+      "大運タイムラインの校正完了...",
+      "神煞落盤、命盤構造が形成されました...",
+      "あなたの命盤が間もなく表示されます..."
+    ]
+  },
+  "form": {
+    "nameLabel": "お名前（任意）",
+    "namePlaceholder": "区別のためだけ、何でも OK",
+    "cityLabel": "出生地 *",
+    "cityPlaceholder": "例：東京·大阪·京都·ニューヨーク",
+    "solarTimeNote": "出生地の経度に基づき真太陽時を自動補正",
+    "dateLabel": "生年月日（西暦）",
+    "hourLabel": "生まれた時間帯",
+    "unknownHour": "出生時刻は不明",
+    "genderMale": "☰ 男性",
+    "genderFemale": "☷ 女性",
+    "shichen": [
+      "子の刻（前）23:00–01:00",
+      "丑の刻　　  01:00–03:00",
+      "寅の刻　　  03:00–05:00",
+      "卯の刻　　  05:00–07:00",
+      "辰の刻　　  07:00–09:00",
+      "巳の刻　　  09:00–11:00",
+      "午の刻　　  11:00–13:00",
+      "未の刻　　  13:00–15:00",
+      "申の刻　　  15:00–17:00",
+      "酉の刻　　  17:00–19:00",
+      "戌の刻　　  19:00–21:00",
+      "亥の刻　　  21:00–23:00",
+      "子の刻（後）23:00–01:00"
+    ],
+    "dateLabelLunar": "生年月日（旧暦）",
+    "checkLunar": "旧暦",
+    "checkTrueSolar": "真太陽時"
+  },
+  "pair": {
+    "inviteText": "があなたとの命盤を比較するよう招待しています",
+    "scoreLabel": "相性指数",
+    "dayMasterOfLabel": "{name}の日主",
+    "unlockFull": "ダウンロードして完全レポートを解放",
+    "orWeb": "またはブラウザで直接鑑定する",
+    "expiredTitle": "リンクが無効です",
+    "expiredDesc": "この共有リンクは期限切れか無効です。相手に新しいリンクを生成してもらってください。"
+  },
+  "resonate": {
+    "defaultTitle": "招待が届きました",
+    "inviteTitle": "が相性鑑定に招待しています",
+    "subtitle": "命盤の相性",
+    "description": "古典中華の五行フレームで二つの BaZi 命盤を比較します。",
+    "inviteFrom": "招待者",
+    "expires": "有効期限",
+    "openInApp": "HexAstral で開く",
+    "downloadApp": "HexAstral を無料ダウンロード",
+    "curiosityTitle": "あなたたちの相性レポート",
+    "curiosityUnlockCTA": "HexAstral をダウンロードして全相性レポートを解放",
+    "dimLongTerm": "長期的可能性",
+    "dimAttraction": "磁力的引力",
+    "dimCommunication": "コミュニケーション",
+    "dimEmotional": "感情的共鳴",
+    "expired": "この招待は期限切れです。送信者に新しい招待を依頼してください。",
+    "notFound": "招待が見つからないか無効です。"
+  },
+  "common": {
+    "download": "HexAstral を無料でダウンロード",
+    "downloadButton": "App Store で無料ダウンロード",
+    "downloadNote": "無料で始めよう · 会員登録不要 · 初回 3 回 AI 対話付き",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "招待が届いています · HexAstral",
+    "meta_description": "友達からの招待で HexAstral を始めましょう。招待リンクからダウンロードで特別リワードをゲット。",
+    "headline": "友達があなたの席を\n用意しました",
+    "subline": "友達から招待が届いています。招待リンクから HexAstral をダウンロードすると、特別なリワードが解除されます。",
+    "ref_label": "招待コード",
+    "benefit_1": "初回鑑定完了で AI 対話の追加回数を獲得 — 深層鑑定を解放",
+    "benefit_2": "会員登録不要 · 60秒で命式完成",
+    "benefit_3": "四柱推命 · 紫微 · 合盤配對 — 全機能開放",
+    "cta": "無料ダウンロードして招待特典を受け取る",
+    "note": "招待リンクから初めてダウンロードする新規ユーザーのみ対象"
+  },
+  "Metadata": {
+    "title": "HexAstral — BaZi & 紫微命盤鑑定",
+    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。1500年の中華命学伝統に基づく学習ツール。"
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral 鑑定",
+    "joinedSince": "{year}年から HexAstral を利用中",
+    "readingsCount": "鑑定 {n} 回",
+    "baziHeading": "八字 · 四柱",
+    "pillarYear": "年",
+    "pillarMonth": "月",
+    "pillarDay": "日",
+    "pillarHour": "時",
+    "ctaHeadline": "あなたの BaZi 命盤を読む",
+    "ctaSub": "AI 搭載の 四柱推命 · 紫微斗数 — iOS で無料",
+    "ctaButton": "App Store からダウンロード",
+    "viewFullChart": "命盤の詳細を見る（四柱 + 十二宮）"
+  },
+  "growth": {
+    "navHome": "ホーム",
+    "navTools": "無料ツール",
+    "navBlog": "ブログ",
+    "navMethodology": "方法論",
+    "disclaimer": "文化的な探求と内省のための参考であり、専門家・医療・法律の助言に代わるものではありません。",
+    "toolsIndexTitle": "無料ツール",
+    "toolsIndexSubtitle": "簡易計算と参照。本格的な AI 解読は iOS アプリで。",
+    "blogTitle": "ブログ",
+    "blogSubtitle": "中華命学をわかりやすく。原語（拼音・漢字）も併記します。",
+    "readArticle": "記事を読む",
+    "backToTools": "ツール一覧",
+    "backToBlog": "記事一覧",
+    "openAppStore": "App Store で入手"
+  }
+}

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金石玄学 · 图标系统 v5 · 上架版（无框 B / 满铺底色 + 朱砂房号）</title>
+<style>
+  :root{
+    --void:#0B0B0C; --paper:#F5F0E8; --paperWarm:#EDE6D8;
+    --cinnabar:#9B2226; --gold:#C4A882; --zinc:#71717A;
+    --ink:#1a1610; --inkGlyph:#E6DCC6; --paperBg:#ECE4D4; --paperGlyph:#2a1b0f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#16140f; color:var(--paperWarm);
+    font-family:"PingFang SC","Hiragino Sans GB","Songti SC",-apple-system,serif;
+    padding:40px 28px 90px; line-height:1.6;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:24px;font-weight:600;letter-spacing:2px;margin:0 0 6px}
+  .sub{color:var(--zinc);font-size:13px;margin:0 0 4px}
+  .note{color:var(--zinc);font-size:12px;max-width:900px;border-left:2px solid var(--cinnabar);padding-left:12px;margin:14px 0 8px;line-height:1.9}
+  .note b{color:var(--gold)} .note i{color:var(--paperWarm);font-style:normal}
+
+  .sec{margin-top:38px}
+  .sec h2{font-size:13px;letter-spacing:5px;color:var(--gold);font-weight:500;margin:0 0 4px}
+  .sec .h-s{color:var(--zinc);font-size:12px;margin:0 0 20px}
+
+  .grid{display:flex;gap:34px;flex-wrap:wrap}
+  .pcol .ph{font-size:11px;letter-spacing:3px;color:var(--gold);opacity:.85;margin:0 0 12px;text-align:center}
+  .icons{display:flex;gap:16px;flex-wrap:wrap}
+  .item{width:120px;text-align:center}
+  .app{width:106px;height:106px;display:block;margin:0 auto;border-radius:24px;box-shadow:0 3px 12px rgba(0,0,0,.4)}
+  .cap{font-size:10px;letter-spacing:1px;margin-top:9px;color:var(--paperWarm);opacity:.72}
+  .cap b{display:block;color:var(--gold);letter-spacing:2px;opacity:1;margin-bottom:1px;font-size:11px}
+
+  .alt .app{width:78px;height:78px;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .alt .item{width:92px}
+  .alt .cap b{font-size:10px}
+
+  .sizes{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+  .szcol{text-align:center}
+  .szrow{display:flex;gap:14px;align-items:center;justify-content:center;min-height:112px}
+  .szcap{font-size:10px;color:var(--zinc);margin-top:10px;letter-spacing:1px;line-height:1.5}
+  .szcap b{display:block;color:var(--gold);opacity:1;margin-bottom:1px}
+
+  .foot{margin-top:40px;color:var(--zinc);font-size:12px;border-left:2px solid var(--gold);padding-left:12px;line-height:1.9;max-width:900px}
+  .foot b{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>金石玄学 · 图标系统 v5 · 上架版</h1>
+  <p class="sub">Shipping form — 无框版 B：满铺底色 + 焦墨/阴白字 + 朱砂房号（命/相/卜）</p>
+  <p class="note">
+    按定稿决定落地：<i>①</i> 弃边缘<b>印框</b>（会被系统圆角/自适应形状裁切），印框留作 in-app / 营销母题（见 v4）；
+    <i>②</i> 全套<b>统一底色</b>，各 App 品牌色不进图标本体（保家族一致）；
+    <i>③</i> Cycle = <b>圭表</b>（测正午日影长定节气），洛书 = <b>梅花点阵</b>（小尺寸可读）；
+    <i>④</i> <b>墨地</b>为主版，<b>纸地</b>备选。字形沿用 v4（命/夢 仍为手摹近似，生产前由设计师精修）。
+  </p>
+
+  <!-- shared defs: 治印蚀刻 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <filter id="erode" x="-25%" y="-25%" width="150%" height="150%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
+  <div class="sec">
+    <h2>墨地 · 上架主版</h2>
+    <div class="h-s">深石底 + 阴白字 + 朱砂房号 —— "金石印·阴文"气质</div>
+    <div class="grid" id="setInk"></div>
+  </div>
+
+  <div class="sec alt">
+    <h2>纸地 · 备选</h2>
+    <div class="h-s">宣纸底 + 焦墨字 + 朱砂房号 —— "钤印于纸"气质（同一套字形）</div>
+    <div class="grid" id="setPaper"></div>
+  </div>
+
+  <div class="sec">
+    <h2>小尺寸校验</h2>
+    <div class="h-s">取最繁的 命 / 圭表 / 夢 / 洛书，验到通知图标尺寸是否还认得出</div>
+    <div class="sizes" id="sizes"></div>
+  </div>
+
+  <div class="foot">
+    <b>导出目标</b>：iOS 1024×1024（无透明、无自带圆角，系统自动套切）；Android 自适应图标 108dp 画布 / 中心 72dp 安全区（朱印已内缩避开圆角裁切）。
+    <br><b>待精修</b>：命 / 夢 交设计师或篆刻师对字源（小學堂 / 漢典）精修到书家级矢量后替换。
+  </div>
+</div>
+
+<script>
+const CINNABAR = '#9B2226', PAPER = '#F5F0E8';
+const sealFont = "'Songti SC','STSong','SimSun',serif";
+
+const ICONS = [
+  { app:'fate-app',        cap:'命 · 八字紫微',   palace:'命', glyph:'ming'     },
+  { app:'yuan-app',        cap:'緣 · 姻缘合婚',   palace:'命', glyph:'hongxian' },
+  { app:'cycle-app',       cap:'圭表 · 黄历',     palace:'命', glyph:'guibiao'  },
+  { app:'face-oracle-app', cap:'面 · 面相',       palace:'相', glyph:'mian'     },
+  { app:'feng-app',        cap:'罗盘 · 风水堪舆', palace:'相', glyph:'luopan'   },
+  { app:'coin-cast-app',   cap:'爻 · 六爻铜钱',   palace:'卜', glyph:'yao'      },
+  { app:'dream-oracle-app',cap:'夢 · 解梦',       palace:'卜', glyph:'meng'     },
+  { app:'numerology-app',  cap:'洛书 · 梅花数',   palace:'卜', glyph:'luoshu'   },
+];
+const PALACES = [
+  { key:'命', sub:'推命' }, { key:'相', sub:'相形' }, { key:'卜', sub:'占卜' },
+];
+
+// ===== 字形（沿用 v4 定稿，verbatim）=====
+function yao(){ // 爻 — 甲骨, 强非对称
+  return `<g stroke="currentColor" stroke-linecap="round" fill="none" filter="url(#erode)">
+    <line x1="27" y1="19" x2="63" y2="44" stroke-width="7.2"/>
+    <line x1="68" y1="23" x2="32" y2="49" stroke-width="6.3"/>
+    <line x1="37" y1="51" x2="70" y2="74" stroke-width="6.8"/>
+    <line x1="65" y1="55" x2="30" y2="81" stroke-width="7.4"/>
+  </g>`;
+}
+function mian(){ // 面 — 甲骨: 眼形外廓 + 圆目 + 大瞳
+  return `<g filter="url(#erode)">
+    <path d="M52,14 Q74,26 69,50 Q70,75 47,86 Q27,73 31,49 Q29,25 52,14 Z"
+          fill="none" stroke="currentColor" stroke-width="4.4"/>
+    <path d="M37,49 Q50,40 64,49 Q50,59 37,49 Z" fill="none" stroke="currentColor" stroke-width="2.8"/>
+    <circle cx="50.5" cy="49" r="4.2" fill="currentColor"/>
+  </g>`;
+}
+function ming(){ // 命 — 小篆: 亼 + 口 + 卩
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20,42 L50,13 L80,42" stroke-width="3.4"/>
+    <path d="M33,36 L67,36" stroke-width="2.6"/>
+    <path d="M33,48 L48,48 L48,67 L33,67 Z" stroke-width="2.6"/>
+    <path d="M55,42 Q60,37 64,42" stroke-width="2.6"/>
+    <path d="M58,42 L58,65 Q58,81 74,81" stroke-width="3.2"/>
+  </g>`;
+}
+function meng(){ // 夢 — 甲骨: 爿(床) + 大眼之人
+  return `<g filter="url(#erode)">
+    <g stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M33,18 L33,83" stroke-width="2.8"/>
+      <path d="M20,27 L33,27 M20,27 L20,34" stroke-width="2.4"/>
+      <path d="M20,74 L33,74" stroke-width="2.4"/>
+      <path d="M49,31 Q58,25 67,31" stroke-width="2.4"/>
+      <ellipse cx="58" cy="41" rx="9.5" ry="6" stroke-width="2.5"/>
+      <path d="M58,47 Q61,63 56,75 Q54,83 63,84" stroke-width="2.8"/>
+    </g>
+    <circle cx="58" cy="41" r="2.7" fill="currentColor"/>
+  </g>`;
+}
+function hongxian(){ // 緣 — 双线缠绕成结
+  return `<g stroke="currentColor" fill="none" stroke-width="3.2" stroke-linecap="round" filter="url(#erode)">
+    <path d="M39,20 C52,27 52,36 50,42 C48,48 36,52 38,60 C40,68 50,72 58,81"/>
+    <path d="M61,20 C48,27 48,36 50,42 C52,48 64,52 62,60 C60,68 50,72 42,81"/>
+    <path d="M45,45 Q50,40 55,45 Q50,51 45,45 Z" stroke-width="2"/>
+    <g stroke-width="2">
+      <path d="M58,81 l4,5 M58,81 l-2,6"/>
+      <path d="M42,81 l-4,5 M42,81 l2,6"/>
+    </g>
+  </g>`;
+}
+function guibiao(){ // 圭表 — 日 + 表(立杆) + 圭(量尺) + 影
+  let rays='';
+  for(let i=0;i<8;i++){
+    const a=i*45*Math.PI/180;
+    rays+=`<line x1="${(26+5*Math.cos(a)).toFixed(1)}" y1="${(23+5*Math.sin(a)).toFixed(1)}" x2="${(26+8*Math.cos(a)).toFixed(1)}" y2="${(23+8*Math.sin(a)).toFixed(1)}" stroke-width="1.3"/>`;
+  }
+  let scale='';
+  for(let i=0;i<5;i++){ const x=48+i*8; scale+=`<line x1="${x}" y1="72" x2="${x}" y2="76" stroke-width="1.3"/>`; }
+  return `<g filter="url(#erode)">
+    <g stroke="currentColor" fill="none" stroke-linecap="round">
+      <circle cx="26" cy="23" r="3.4" stroke-width="1.7"/>${rays}
+    </g>
+    <line x1="40" y1="29" x2="63" y2="72" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/>
+    <g stroke="currentColor" fill="none" stroke-linecap="round">
+      <line x1="33" y1="72" x2="84" y2="72" stroke-width="2"/>
+      ${scale}
+      <line x1="40" y1="72" x2="40" y2="28" stroke-width="3.2"/>
+    </g>
+    <line x1="40" y1="72" x2="63" y2="72" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <line x1="63" y1="72" x2="63" y2="66" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </g>`;
+}
+function luopan(){ // 罗盘 — 满圈 + 24山 + 居中指针
+  let t='';
+  for(let i=0;i<24;i++){
+    const a=i*15*Math.PI/180, major=(i%6===0), r1=major?22:26, r2=31;
+    const x1=(50+r1*Math.sin(a)).toFixed(1), y1=(50-r1*Math.cos(a)).toFixed(1);
+    const x2=(50+r2*Math.sin(a)).toFixed(1), y2=(50-r2*Math.cos(a)).toFixed(1);
+    t+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.4:1.2}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="50" cy="50" r="32" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="20" stroke-width="1.4" opacity="0.6"/>
+    <g>${t}</g>
+    <g transform="rotate(-22 50 50)">
+      <path d="M50,33 L54.5,50 L50,67 L45.5,50 Z" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="50" r="2.6" fill="currentColor" stroke="none"/>
+    </g>
+  </g>`;
+}
+function luoshu(){ // 洛书 — 五居中梅花
+  const C=50, d=15;
+  const lines=`<line x1="${C}" y1="${C-d}" x2="${C}" y2="${C+d}" stroke="currentColor" stroke-width="2.2"/>`+
+              `<line x1="${C-d}" y1="${C}" x2="${C+d}" y2="${C}" stroke="currentColor" stroke-width="2.2"/>`;
+  const arms=[[C,C-d],[C+d,C],[C,C+d],[C-d,C]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4.3" fill="none" stroke="currentColor" stroke-width="2.4"/>`).join('');
+  const center=`<circle cx="${C}" cy="${C}" r="5.6" fill="currentColor" stroke="none"/>`;
+  return `<g filter="url(#erode)">${lines}${arms}${center}</g>`;
+}
+const DRAW = { yao, mian, ming, meng, hongxian, guibiao, luopan, luoshu };
+function glyphSVG(ic){ return DRAW[ic.glyph](); }
+
+// ===== 上架图标：无框 B（满铺底色 + 字 + 朱砂房号）=====
+function appIcon(ic, ground, style){
+  const g = ground==='paper'
+    ? { bg:'var(--paperBg)', ink:'var(--paperGlyph)' }
+    : { bg:'var(--ink)',     ink:'var(--inkGlyph)' };
+  return `<svg class="app" viewBox="0 0 100 100"${style?` style="${style}"`:''}>
+    <rect x="0" y="0" width="100" height="100" rx="22" fill="${g.bg}"/>
+    <g style="color:${g.ink}">${glyphSVG(ic)}</g>
+    <g transform="translate(70,70)">
+      <rect x="0" y="0" width="16" height="16" rx="2.4" fill="${CINNABAR}" filter="url(#erode)"/>
+      <text x="8" y="8.8" fill="${PAPER}" font-size="10.5" font-family="${sealFont}" font-weight="700"
+            text-anchor="middle" dominant-baseline="middle">${ic.palace}</text>
+    </g>
+  </svg>`;
+}
+
+function renderSet(id, ground){
+  document.getElementById(id).innerHTML = PALACES.map(p=>`
+    <div class="pcol">
+      <div class="ph">${p.key}宫 · ${p.sub}</div>
+      <div class="icons">${ICONS.filter(i=>i.palace===p.key).map(ic=>{
+        const [a,b]=ic.cap.split(' · ');
+        return `<div class="item">${appIcon(ic,ground)}<div class="cap"><b>${a}</b>${b||''}</div></div>`;
+      }).join('')}</div>
+    </div>`).join('');
+}
+
+function renderSizes(){
+  const picks = ICONS.filter(i=>['ming','guibiao','meng','luoshu'].includes(i.glyph));
+  const sizes = [
+    {px:104,l:'1024',s:'App Store'},
+    {px:60, l:'120', s:'主屏'},
+    {px:40, l:'80',  s:'Spotlight'},
+    {px:27, l:'54',  s:'通知'},
+  ];
+  document.getElementById('sizes').innerHTML = sizes.map(z=>`
+    <div class="szcol">
+      <div class="szrow">${picks.map(ic=>appIcon(ic,'ink',`width:${z.px}px;height:${z.px}px;border-radius:${(z.px*0.22).toFixed(0)}px;box-shadow:0 1px 6px rgba(0,0,0,.4)`)).join('')}</div>
+      <div class="szcap"><b>${z.l}px</b>${z.s}</div>
+    </div>`).join('');
+}
+
+renderSet('setInk','ink'); renderSet('setPaper','paper'); renderSizes();
+</script>
+</body>
+</html>

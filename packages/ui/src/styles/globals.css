@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@import "./deployment-tokens.css";
+@import "./utils.css";
+@import "./theme.css";
+@import "./variables.css";
+@import "./quota.css";
+@import "tw-animate-css";
+@plugin "tailwind-scrollbar";
+@source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  body.resizing-panels {
+    @apply select-none;
+  }
+  body.resizing-panels * {
+    @apply cursor-col-resize;
+  }
+
+  /* IDE Layout Styles */
+  .ide-browser-panel {
+    padding-left: var(--ide-panel-padding-xs);
+    padding-top: var(--ide-panel-padding-xs);
+    padding-bottom: var(--ide-panel-padding-xs);
+    padding-right: 0;
+  }
+
+  .ide-main-panel {
+    border-radius: var(--ide-panel-border-radius);
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .ide-code-explorer {
+    border-radius: var(--ide-panel-border-radius);
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  /* Responsive IDE panel padding */
+  @media (min-width: 640px) {
+    .ide-browser-panel {
+      padding-left: var(--ide-panel-padding-sm);
+      padding-top: var(--ide-panel-padding-sm);
+      padding-bottom: var(--ide-panel-padding-sm);
+    }
+
+    .ide-main-panel {
+      border-radius: var(--ide-panel-border-radius-lg);
+      box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    .ide-code-explorer {
+      border-radius: var(--ide-panel-border-radius-lg);
+      box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .ide-browser-panel {
+      padding-left: var(--ide-panel-padding-lg);
+      padding-top: var(--ide-panel-padding-lg);
+      padding-bottom: var(--ide-panel-padding-lg);
+    }
+  }
+
+  /* Chat Panel Styles */
+  .ide-chat-main-area {
+    padding: var(--ide-chat-padding-y) var(--ide-chat-padding-x);
+  }
+
+  .ide-chat-input-container {
+    margin-top: auto;
+    padding: 0 var(--ide-chat-padding-x) var(--ide-chat-padding-y);
+  }
+
+  /* Responsive chat panel padding */
+  @media (min-width: 640px) {
+    .ide-chat-main-area {
+      padding: calc(var(--ide-chat-padding-y) * 1.25) calc(var(--ide-chat-padding-x) * 1.5);
+    }
+
+    .ide-chat-input-container {
+      padding: 0 calc(var(--ide-chat-padding-x) * 1.5) var(--ide-chat-padding-y);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .ide-chat-main-area {
+      padding: calc(var(--ide-chat-padding-y) * 1.5) calc(var(--ide-chat-padding-x) * 2);
+    }
+
+    .ide-chat-input-container {
+      padding: 0 calc(var(--ide-chat-padding-x) * 2) var(--ide-chat-padding-y);
+    }
+  }
+}

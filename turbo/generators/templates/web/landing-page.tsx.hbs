@@ -1,0 +1,38 @@
+/**
+ * /[locale]/{{slug}} — {{name}} satellite landing.
+ */
+
+import type { Metadata } from 'next'
+import { SatelliteLanding } from '../_satellite/SatelliteLanding'
+
+interface Props { params: Promise<{ locale: string }> }
+
+const COPY: Record<string, { title: string; subtitle: string; body: string; tryCta: string; appCta: string }> = {
+  en: {
+    title: '{{name}}',
+    subtitle: 'Your subtitle goes here.',
+    body: 'Replace this body copy with the {{name}} pitch — what it is, who it is for, why it is different.',
+    tryCta: 'Try {{name}}',
+    appCta: 'Get {{name}} on iOS',
+  },
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
+  const c = COPY[locale] ?? COPY.en
+  return { title: `${c.title} · HexAstral`, description: c.subtitle }
+}
+
+export default async function {{slugPascal}}LandingPage({ params }: Props) {
+  const { locale } = await params
+  const copy = COPY[locale] ?? COPY.en
+  return (
+    <SatelliteLanding
+      locale={locale}
+      tryHref='/{{slug}}/try'
+      glyph='{{glyph}}'
+      glyphColor='#18181B'
+      copy={copy}
+    />
+  )
+}

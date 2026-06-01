@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@zhop/ui/components",
+    "utils": "@zhop/ui/lib/utils",
+    "hooks": "@zhop/ui/hooks",
+    "lib": "@zhop/ui/lib",
+    "ui": "@zhop/ui/components"
+  },
+  "iconZhopry": "lucide"
+}

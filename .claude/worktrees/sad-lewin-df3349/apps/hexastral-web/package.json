@@ -1,0 +1,42 @@
+{
+  "name": "@zhop/hexastral-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbo -p 3001",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --keep-vars",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.2",
+    "@opennextjs/cloudflare": "^1.8.5",
+    "@zhop/astro-core": "workspace:*",
+    "@zhop/astro-i18n": "workspace:*",
+    "@zhop/ddl-client": "workspace:*",
+    "@zhop/hexastral-client": "workspace:*",
+    "@zhop/hexastral-tokens": "workspace:*",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.486.0",
+    "next": "^15.5.9",
+    "next-intl": "^4.8.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250525.0",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@zhop/typescript-config": "workspace:*",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.90.0"
+  }
+}

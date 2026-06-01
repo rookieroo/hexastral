@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svc-signal",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // ── Cron ────────────────────────────────────────────────────────────
+  // 00:00 UTC daily — well before svc-notify hourly cron starts dispatching
+  // pushes at 08:00 in any timezone, so the daily_almanac row is guaranteed
+  // present when the push consumer reads it.
+  "triggers": {
+    "crons": ["0 0 * * *"]
+  },
+
+  // ── Service Bindings ────────────────────────────────────────────────
+  // SVC_API: hexastral-api — exposes /api/internal/almanac/{eligible-users,upsert}
+  // SVC_ADMIN_NOTIFY: ops alerting on partial-coverage cron failures
+  "services": [
+    { "binding": "SVC_API", "service": "hexastral-api" },
+    { "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }
+  ],
+
+  // ── Tail consumer ───────────────────────────────────────────────────
+  "tail_consumers": [{ "service": "svc-tail" }]
+
+  // ── Secrets (set via wrangler secret put / sync-secrets.js) ─────────
+  // INTERNAL_KEY : shared secret for svc-signal → hexastral-api internal endpoints
+}

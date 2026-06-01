@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · 国风插画 (Guofeng Illustration) · v9 · 母题系统 + 出图规格</title>
+<style>
+  :root{
+    --bg:#0f1118; --tile:#161a24; --tile2:#1b2030;
+    --moon:#ECE7DA; --gold:#C8A86A; --cinnabar:#9B2226;
+    --dai:#3C4A60; --qing:#5F8A82; --ink:#11131b;
+    --dim:#8b8f9a; --faint:#565a66;
+    --serif:"Songti SC","Noto Serif SC",serif;
+    --sans:-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0a0b10;color:var(--moon);font-family:var(--sans);padding:48px 30px 110px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1140px;margin:0 auto}
+  .kicker{color:var(--gold);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-family:var(--serif);font-weight:300;font-size:30px;letter-spacing:4px;margin:0 0 8px}
+  .lede{color:var(--dim);font-size:13px;max-width:800px;line-height:1.95;margin:0 0 4px}
+  .lede b{color:var(--moon);font-weight:500} .lede i{color:var(--gold);font-style:normal}
+
+  .sec{margin-top:58px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;margin:0 0 6px}
+  .sec-h .n{font-family:var(--serif);font-weight:300;color:var(--faint);font-size:15px}
+  .sec-h h2{font-size:13px;letter-spacing:5px;font-weight:500;margin:0}
+  .sec-s{color:var(--dim);font-size:12px;margin:0 0 26px;max-width:780px;line-height:1.85}
+  .sec-s b{color:var(--gold)}
+
+  .fam{display:flex;gap:18px;flex-wrap:wrap}
+  .ic{width:140px;text-align:center}
+  .ic .frame{width:120px;height:120px;margin:0 auto;border-radius:26px;overflow:hidden;
+    background:linear-gradient(165deg,var(--tile2),var(--tile));box-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.04)}
+  .ic .frame svg{display:block;width:100%;height:100%}
+  .ic .t{font-family:var(--serif);font-weight:300;font-size:15px;letter-spacing:1px;margin-top:13px}
+  .ic .s{color:var(--dim);font-size:11px;margin-top:2px}
+  .ic .s b{color:var(--gold);font-weight:400}
+
+  .sizes{display:flex;gap:13px;flex-wrap:wrap;align-items:center;margin-top:2px}
+  .szcap{color:var(--dim);font-size:11px;margin-top:12px;letter-spacing:1px}.szcap b{color:var(--gold)}
+
+  .spec{background:var(--tile);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:22px 24px;max-width:900px}
+  .spec h4{color:var(--gold);font-size:11px;letter-spacing:3px;margin:18px 0 10px}.spec h4:first-child{margin-top:0}
+  .spec ul{margin:0;padding-left:18px;color:var(--dim);font-size:12.5px;line-height:1.95}.spec ul b{color:var(--moon)}
+  .prompt{background:#0c0e13;border-left:3px solid var(--gold);border-radius:6px;padding:9px 12px;margin:8px 0 0;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#cdc8ba}
+  .prompt b{color:var(--gold);display:block;font-size:10px;margin-bottom:3px;font-family:inherit}
+
+  .foot{margin-top:54px;color:var(--dim);font-size:12px;border-left:2px solid var(--gold);padding-left:14px;line-height:2;max-width:880px}
+  .foot b{color:var(--gold)} .foot i{color:var(--moon);font-style:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Guofeng Illustration · 国风插画 · 矢量内核</p>
+  <h1>国风插画 · 母题系统</h1>
+  <p class="lede">
+    写实天体=品类烂大街、不可独占,跳过。转<b>国风插画</b>(《阴阳师》《原神》一脉:玄学题材 + 国风,既神秘高级又最被 CN 年轻人吃,且可独占)。
+    核心不是画风,是<b>把"月亮"换成抄不走的文化母题</b>。<i>下方为矢量扁平稿——定方向用;精细二次元/painterly 成稿走第②的插画师 / AI 规格。</i>
+  </p>
+
+  <div class="sec">
+    <div class="sec-h"><span class="n">01</span><h2>母题八象 · 矢量国风</h2></div>
+    <div class="sec-s">每个 App 一个有文化负载的母题,克制配色(月白 / 金 / 朱砂 / 黛 / 青)落在深夜地子上。</div>
+    <div class="fam" id="fam"></div>
+    <div style="margin-top:30px">
+      <div class="szcap" style="margin:0 0 12px"><b>48px 小尺寸校验</b> · 主屏量级</div>
+      <div class="sizes" id="sizes"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="n">02</span><h2>出图规格 · 精细成稿（插画师 / AI）</h2></div>
+    <div class="sec-s">矢量稿是<b>内核与构图依据</b>;真正的国风二次元/工笔 painterly 由此升级。</div>
+    <div class="spec">
+      <h4>插画 BRIEF</h4>
+      <ul>
+        <li><b>风格锚点</b>:国风二次元 / 新中式工笔(参考《阴阳师》《原神》立绘的<b>线 + 渲染 + 描金</b>,但更克制、更"器物/天象"少"人设")。</li>
+        <li><b>母题(锁定,别换成 generic 月亮)</b>:八字=北斗紫微 · 姻缘=双鱼同心 · 黄历=日月祥云 · 面相=侧颜观相 · 风水=青绿山水 · 六爻=太极八卦 · 解梦=庄周梦蝶 · 梅花数=梅枝。</li>
+        <li><b>色</b>:深夜地子 + 月白 / 描金 / 朱砂点睛 / 黛青;每图主色≤3,全套统一地子保家族。</li>
+        <li><b>构图</b>:主体居中安全区、留白足、可缩放到 16px 仍认得出轮廓;交付 1024 + 矢量描边。</li>
+      </ul>
+      <h4>AI 提示词（Firefly 商用最稳 · MJ 风格最浓 · SD/Flux 可控）</h4>
+      <div class="prompt"><b>解梦 · 庄周梦蝶</b>elegant Chinese gongbi illustration, a single luminous butterfly before a crescent moon, ink-line + soft gold rendering, deep indigo night, vermillion accent, minimal, centered, ample negative space, no text --ar 1:1 --style 国风</div>
+      <div class="prompt"><b>风水 · 青绿山水</b>Chinese qinglv (blue-green) landscape, layered misty mountains + water + a pale moon, gold outline, deep night palette, gongbi, minimal icon composition</div>
+      <div class="prompt"><b>六爻 · 太极</b>a taiji yin-yang emblem in ink-and-gold, subtle eight-trigram ring, deep indigo, premium, flat-meets-painterly, centered</div>
+      <h4>合成进图标</h4>
+      <div class="prompt" style="border-left-color:var(--dim)">拿到 PNG → clip 进圆角方版(rx 22)；统一在右下留朱砂钤印；导出 iOS 1024 / Android 自适应 108dp（中心 72dp 安全区）。</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>为什么这条比写实强:</b>① <i>可独占</i>——庄周梦蝶/北斗/太极/青绿山水是你的母题,别人抄不走;写实月亮谁都能用。② <i>有文化魂</i>——把 V5 古字想表达的东方性,用"画"承载,门槛却低得多。③ <i>市场验证</i>——阴阳师/原神证明国风二次元能高级能赚钱。
+    <br><b>诚实:</b>上面是矢量扁平,墨味/描金/工笔质感要插画师或 AI(规格已备)。先用 ② 出 1–2 张精稿(解梦蝶 + 太极)验气质,成立再出全套。
+    <br><b>完整堆叠:</b>国风插画=主图标 + 英雄/营销;V7 细线=内页功能图标;V5 古字=字标/印记。
+  </div>
+</div>
+
+<script>
+const M='#ECE7DA', G='#C8A86A', C='#9B2226', DAI='#3C4A60', QING='#5F8A82', INK='#11131b';
+
+// ---- 国风矢量母题 (viewBox 100) ----
+function fate(){ // 北斗紫微
+  const stars=[[28,40],[30,56],[45,60],[44,44],[57,40],[69,35],[80,40]]; // dipper-ish
+  let lines=`<polyline points="28,40 30,56 45,60 44,44 28,40" fill="none" stroke="${M}" stroke-width="1" opacity=".45"/>`+
+            `<polyline points="44,44 57,40 69,35 80,40" fill="none" stroke="${M}" stroke-width="1" opacity=".45"/>`;
+  let dots=stars.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.3" fill="${M}"/>`).join('');
+  return lines+dots+`<circle cx="62" cy="66" r="4.4" fill="${G}"/><circle cx="62" cy="66" r="8" fill="none" stroke="${G}" stroke-width="1" opacity=".4"/>`;
+}
+function yuan(){ // 双鱼同心
+  return `<g fill="none" stroke-width="3" stroke-linecap="round">
+    <circle cx="40" cy="50" r="16" stroke="${M}"/>
+    <circle cx="60" cy="50" r="16" stroke="${M}"/>
+  </g><circle cx="50" cy="50" r="4" fill="${C}"/>
+  <path d="M50,50 q-3,8 -8,11 M50,50 q3,8 8,11" stroke="${C}" stroke-width="1.6" fill="none" opacity=".8"/>`;
+}
+function cycle(){ // 日月祥云
+  return `<circle cx="40" cy="36" r="12" fill="${G}"/>
+  <path d="M68,28 a13,13 0 1 0 0,26 a10,10 0 1 1 0,-26 Z" fill="${M}"/>
+  <path d="M22,64 q5,-7 12,-3 q3,-8 11,-4 q6,-6 13,-1 q7,-3 12,3 q5,5 -2,9 q-30,3 -56,0 q-5,-2 -3,-4 Z" fill="${DAI}"/>
+  <path d="M24,64 q26,3 52,0" stroke="${M}" stroke-width="1" fill="none" opacity=".4"/>`;
+}
+function face(){ // 侧颜观相
+  return `<path d="M44,20 Q32,22 31,38 Q31,47 36,51 Q33,53 37,56 L34,60 Q35,66 30,69
+    Q39,76 50,74 Q44,68 47,60 Q52,57 49,52 Q56,46 52,36 Q52,24 44,20 Z"
+    fill="${M}"/>
+  <circle cx="62" cy="34" r="3" fill="${G}"/>
+  <circle cx="71" cy="46" r="1.6" fill="${M}" opacity=".7"/>`;
+}
+function feng(){ // 青绿山水
+  return `<circle cx="68" cy="32" r="8" fill="${G}" opacity=".9"/>
+  <path d="M14,66 L34,40 L50,66 Z" fill="${QING}"/>
+  <path d="M40,66 L60,46 L84,66 Z" fill="${DAI}"/>
+  <path d="M14,70 Q30,65 44,70 Q58,75 72,70 Q80,67 86,70" stroke="${M}" stroke-width="1.4" fill="none" opacity=".55"/>
+  <path d="M16,77 Q32,72 46,77 Q60,82 74,77" stroke="${M}" stroke-width="1.2" fill="none" opacity=".4"/>`;
+}
+function coin(){ // 太极
+  return `<circle cx="50" cy="50" r="30" fill="${M}"/>
+  <path d="M50,20 a15,15 0 0,1 0,30 a15,15 0 0,0 0,30 a30,30 0 0,1 0,-60 Z" fill="${INK}"/>
+  <circle cx="50" cy="35" r="5" fill="${M}"/>
+  <circle cx="50" cy="65" r="5" fill="${INK}"/>
+  <circle cx="50" cy="50" r="30" fill="none" stroke="${G}" stroke-width="1.4" opacity=".6"/>`;
+}
+function dream(){ // 庄周梦蝶
+  return `<path d="M62,30 a13,13 0 1 0 0,26 a10,10 0 0 1 0,-26 Z" fill="${G}" opacity=".85"/>
+  <g fill="${M}">
+    <path d="M50,50 C40,32 22,30 22,42 C22,52 38,52 50,50 Z"/>
+    <path d="M50,50 C40,68 24,72 26,60 C28,52 40,52 50,50 Z"/>
+    <path d="M50,50 C60,33 76,32 75,43 C74,52 60,52 50,50 Z"/>
+    <path d="M50,50 C60,67 74,70 73,60 C72,53 60,52 50,50 Z"/>
+  </g>
+  <path d="M50,46 L50,58" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+  <path d="M50,46 q-3,-5 -6,-6 M50,46 q3,-5 6,-6" stroke="${M}" stroke-width="1.2" fill="none"/>
+  <circle cx="50" cy="50" r="2" fill="${C}"/>`;
+}
+function plum(){ // 梅枝
+  let blooms='';
+  [[40,38],[58,30],[64,52]].forEach(([cx,cy])=>{
+    let p=''; for(let i=0;i<5;i++){const a=(-90+i*72)*Math.PI/180; p+=`<circle cx="${(cx+6*Math.cos(a)).toFixed(1)}" cy="${(cy+6*Math.sin(a)).toFixed(1)}" r="4" fill="${M}"/>`;}
+    blooms+=p+`<circle cx="${cx}" cy="${cy}" r="2.4" fill="${C}"/>`;
+  });
+  return `<path d="M24,74 Q40,60 46,40 M46,40 Q54,30 60,30 M46,40 Q58,48 66,52" stroke="${DAI}" stroke-width="2.6" fill="none" stroke-linecap="round"/>${blooms}`;
+}
+
+const DRAW={fate,yuan,cycle,face,feng,coin,dream,plum};
+function icon(fn){ return `<svg viewBox="0 0 100 100">${DRAW[fn]()}</svg>`; }
+
+const ICONS=[
+  {fn:'fate', t:'八字紫微', s:'北斗 · 紫微'},
+  {fn:'yuan', t:'姻缘合婚', s:'双环 · 同心'},
+  {fn:'cycle',t:'黄历',     s:'日月 · 祥云'},
+  {fn:'face', t:'面相',     s:'侧颜 · 观相'},
+  {fn:'feng', t:'风水堪舆', s:'青绿 · 山水'},
+  {fn:'coin', t:'六爻',     s:'太极 · 八卦'},
+  {fn:'dream',t:'解梦',     s:'庄周 · 梦蝶'},
+  {fn:'plum', t:'梅花数',   s:'梅枝'},
+];
+document.getElementById('fam').innerHTML = ICONS.map(ic=>`
+  <div class="ic"><div class="frame">${icon(ic.fn)}</div>
+  <div class="t">${ic.t}</div><div class="s">${ic.s}</div></div>`).join('');
+document.getElementById('sizes').innerHTML = ICONS.map(ic=>`
+  <div style="width:48px;height:48px;border-radius:11px;overflow:hidden;background:linear-gradient(165deg,var(--tile2),var(--tile));box-shadow:0 1px 5px rgba(0,0,0,.4)">${icon(ic.fn)}</div>`).join('');
+</script>
+</body>
+</html>

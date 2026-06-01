@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · Matrix Icons · v13</title>
+<style>
+  :root{
+    --paper:#F2EBDC;
+    --paper-deep:#E4D7BF;
+    --fiber:rgba(42,31,19,.055);
+    --ink:#221C14;
+    --ink-soft:#5D5243;
+    --ink-faint:#8D826F;
+    --line:rgba(34,28,20,.16);
+    --seal:#8B2D24;
+    --shadow:0 18px 42px rgba(42,31,19,.13);
+    --serif:"Songti SC","STSong","Hoefler Text","Baskerville",serif;
+    --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:var(--sans);
+    background:
+      radial-gradient(900px 560px at 8% -6%,rgba(139,45,36,.08),transparent 62%),
+      radial-gradient(720px 520px at 100% 12%,rgba(34,28,20,.08),transparent 60%),
+      linear-gradient(180deg,var(--paper),#EDE4D1 55%,#E6DBC5);
+    -webkit-font-smoothing:antialiased;
+  }
+  body:before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.78;
+    background:
+      linear-gradient(90deg,transparent 0 31px,var(--fiber) 32px,transparent 33px 65px),
+      linear-gradient(0deg,transparent 0 27px,rgba(255,255,255,.16) 28px,transparent 29px 59px);
+    mix-blend-mode:multiply;
+  }
+  .wrap{max-width:1260px;margin:0 auto;padding:54px 38px 104px;position:relative}
+  .kicker{margin:0 0 12px;color:var(--seal);font-size:11px;font-weight:800;letter-spacing:4px;text-transform:uppercase}
+  h1{margin:0;font-family:var(--serif);font-size:40px;font-weight:500;letter-spacing:1px}
+  h1 span{color:var(--seal);font-weight:700}
+  .lede{max-width:920px;margin:13px 0 0;color:var(--ink-soft);font-size:13px;line-height:1.95}
+  .lede b{color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{border:1px solid var(--line);border-radius:999px;background:rgba(255,252,244,.38);color:var(--ink-soft);font-size:10px;font-weight:800;letter-spacing:2px;padding:7px 11px}
+  .section{margin-top:48px}
+  .sectionHead{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-bottom:16px}
+  h2{margin:0;color:var(--ink);font-size:12px;letter-spacing:4px;text-transform:uppercase}
+  .section p{margin:6px 0 0;max-width:850px;color:var(--ink-soft);font-size:12px;line-height:1.8}
+  .mark{color:var(--seal);font-size:11px;font-weight:800;letter-spacing:1.7px;white-space:nowrap}
+  .grid{display:grid;gap:14px}
+  .coreGrid{grid-template-columns:repeat(8,minmax(0,1fr))}
+  .termGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .toolGrid{grid-template-columns:repeat(10,minmax(0,1fr))}
+  .matrixGrid{grid-template-columns:repeat(8,minmax(0,1fr))}
+  .registerGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .stateGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+
+  /* ── App Store logo (sphere) ── */
+  .logoSection{
+    margin-top:36px;
+    padding:30px;
+    border-radius:18px;
+    background:linear-gradient(180deg,rgba(34,28,20,.05),rgba(34,28,20,.02));
+    border:1px solid var(--line);
+  }
+  .logoGrid{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:22px;
+  }
+  .logoCard{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    padding:16px;
+    border-radius:14px;
+    background:rgba(255,252,244,.42);
+    border:1px solid var(--line);
+    position:relative;
+  }
+  .logoCard .tierTag{
+    position:absolute;
+    top:10px;
+    right:10px;
+    font-size:8.5px;
+    font-weight:900;
+    letter-spacing:1.4px;
+    padding:3px 7px;
+    border-radius:6px;
+  }
+  .tier-flag .tierTag{background:var(--seal);color:#fff}
+  .tier-asp .tierTag{background:var(--ink);color:var(--paper)}
+  .tier-funnel .tierTag{background:rgba(34,28,20,.10);color:var(--ink-soft)}
+  .sphere{
+    width:120px;
+    height:120px;
+    border-radius:28px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+    overflow:hidden;
+    background:#000;
+  }
+  .logoLabel{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink);text-align:center;margin-top:4px}
+  .logoSub{font-size:10.5px;color:var(--ink-faint);text-align:center;letter-spacing:.6px;line-height:1.45}
+  .logoParams{font-size:9.5px;color:var(--ink-faint);text-align:center;font-family:ui-monospace,Menlo,monospace;line-height:1.5;opacity:.75}
+
+  /* ── card / glyph (unchanged from v12) ── */
+  .card{
+    position:relative;overflow:hidden;min-height:166px;
+    border:1px solid var(--line);border-radius:12px;
+    background:
+      radial-gradient(140px 90px at 25% 0%,rgba(255,255,255,.58),transparent 64%),
+      linear-gradient(180deg,rgba(255,252,244,.76),rgba(232,220,197,.62));
+    box-shadow:var(--shadow);padding:15px 12px 13px;
+  }
+  .card:after{content:"";position:absolute;inset:9px;border:1px solid rgba(34,28,20,.055);border-radius:9px;pointer-events:none}
+  .sealPlate{
+    width:82px;height:82px;margin:2px auto 13px;
+    display:grid;place-items:center;border-radius:18px;
+    background:
+      radial-gradient(70px 52px at 32% 24%,rgba(34,28,20,.10),transparent 62%),
+      rgba(255,252,244,.28);
+    box-shadow:inset 0 0 0 1px rgba(34,28,20,.10),inset 0 -18px 24px rgba(34,28,20,.04);
+  }
+  .glyph{width:60px;height:60px;color:var(--ink)}
+  .glyph .stroke{fill:none;stroke:currentColor;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round;filter:url(#inkRough)}
+  .glyph .thin{stroke-width:3.1}
+  .glyph .bold{stroke-width:5.2}
+  .glyph .fill{fill:currentColor;stroke:none;filter:url(#inkBleed)}
+  /* Light register: no filter, no displacement, thinner stroke */
+  .glyph.light .stroke{stroke-width:3.4;filter:none}
+  .glyph.light .thin{stroke-width:2.4}
+  .glyph.light .bold{stroke-width:4.2}
+  .glyph.light .fill{filter:none}
+  /* State variants */
+  .glyph.disabled{opacity:.32}
+  .glyph.disabled .stroke{stroke:var(--ink-faint)}
+  .glyph.active .activeDot{fill:var(--seal);filter:none}
+  .selected .sealPlate{box-shadow:inset 0 0 0 2px var(--seal),inset 0 -18px 24px rgba(34,28,20,.04)}
+
+  .title{text-align:center;color:var(--ink);font-family:var(--serif);font-size:14px;font-weight:700;letter-spacing:1px}
+  .desc{margin-top:5px;color:var(--ink-faint);font-size:10.5px;line-height:1.5;text-align:center}
+  .term{min-height:136px;display:grid;grid-template-columns:50px 1fr;gap:13px;padding:15px}
+  .term .sealPlate{width:46px;height:46px;margin:0;border-radius:12px}
+  .term .glyph{width:36px;height:36px}
+  .term .glyph .stroke{stroke-width:4.4}
+  .term .title,.term .desc{text-align:left}
+  .rank{margin-bottom:4px;color:var(--seal);font-size:9px;font-weight:900;letter-spacing:1.7px}
+  .small{min-height:104px;text-align:center;padding:14px 8px 11px}
+  .small .sealPlate{width:44px;height:44px;margin:0 auto 7px;border-radius:12px}
+  .small .glyph{width:34px;height:34px}
+  .small .title{font-family:var(--sans);font-size:12px;letter-spacing:.4px}
+  .small .desc{font-size:10px}
+
+  /* Two-register comparison */
+  .regPair{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:14px;border-radius:12px;background:rgba(255,252,244,.42);border:1px solid var(--line)}
+  .regColumn{text-align:center}
+  .regColumn .lbl{font-size:9.5px;color:var(--seal);font-weight:800;letter-spacing:1.5px;margin-bottom:4px}
+
+  /* State demo */
+  .stateRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:14px;border-radius:12px;background:rgba(255,252,244,.42);border:1px solid var(--line)}
+  .stateCol{text-align:center}
+  .stateCol .lbl{font-size:9.5px;color:var(--ink-soft);font-weight:700;letter-spacing:1px;margin-bottom:4px}
+
+  .textRule{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,252,244,.42);padding:14px 16px;color:var(--ink-soft);font-size:12px;line-height:1.8}
+  .textRule b{color:var(--ink)}
+  .engCard{border:1px solid var(--line);border-radius:12px;background:rgba(255,252,244,.42);padding:14px 16px;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+  .engCard b{color:var(--ink);font-size:12.5px}
+  .engCard code{font-family:ui-monospace,Menlo,monospace;background:rgba(34,28,20,.08);padding:1px 5px;border-radius:4px;font-size:11px;color:var(--ink)}
+  .engGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+
+  .rules{display:grid;gap:12px;margin-top:14px}
+  .rule{border:1px solid var(--line);border-radius:12px;background:rgba(255,252,244,.45);padding:15px 16px;color:var(--ink-soft);font-size:12px;line-height:1.8}
+  .rule b{display:block;color:var(--ink);font-size:13px;margin-bottom:4px}
+
+  @media(max-width:1120px){
+    .coreGrid,.matrixGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .termGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .toolGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .logoGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .registerGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stateGrid{grid-template-columns:1fr 1fr}
+    .engGrid{grid-template-columns:1fr}
+  }
+  @media(max-width:760px){
+    .wrap{padding:34px 20px 80px}
+    h1{font-size:31px}
+    .sectionHead{display:block}
+    .mark{display:block;margin-top:8px;white-space:normal}
+    .coreGrid,.matrixGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .termGrid{grid-template-columns:1fr}
+    .toolGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .logoGrid{grid-template-columns:1fr}
+    .registerGrid{grid-template-columns:1fr}
+    .stateGrid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<!-- Shared filters: defined ONCE globally, referenced by all glyphs.
+     Filter id collision is not an issue here because we want all glyphs
+     to share the same rough/bleed look. Per-sphere gradients DO get
+     unique IDs (see sphere generator below) — that's the actual collision
+     pitfall this matrix exposes. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="inkRough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="13" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.75" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="inkBleed" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation=".18"/>
+    </filter>
+  </defs>
+</svg>
+
+<main class="wrap">
+  <p class="kicker">matrix system · ink + sphere · v13</p>
+  <h1>HexAstral 矩阵图标系统 · <span>v13</span></h1>
+  <p class="lede">
+    在 v12 墨骨印的基础上回应工程化与矩阵一致性问题：
+    <b>(1) 顶部新增 8 个 App Store logo 的月相变体矩阵</b>（cycle 为锚点，参数化派生）；
+    <b>(2) Filter bake 策略 + ID hash 防碰撞</b>；
+    <b>(3) 双册 register（重墨/轻墨）按 app 层级切换</b>；
+    <b>(4) 状态变体 default/active/disabled/selected</b>；
+    <b>(5) 时间维度图标语义去歧义</b>；
+    <b>(6) Matrix 段补齐到真实 8 个 app</b>。
+  </p>
+  <div class="chips">
+    <span class="chip">SPHERE MATRIX</span>
+    <span class="chip">BAKED FILTER</span>
+    <span class="chip">HASHED IDS</span>
+    <span class="chip">DUAL REGISTER</span>
+    <span class="chip">STATE VARIANTS</span>
+    <span class="chip">8 APPS</span>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       Section 0: App Store logo · sphere matrix
+       cycle = anchor (current icon.png), other 7 = parametric variants
+       only 4 levers used: 高光位置 / 范围 / 色号 / 强度
+       ───────────────────────────────────────────────────────────── -->
+  <section class="logoSection">
+    <div class="sectionHead">
+      <div>
+        <h2>App Store Logo · 月相矩阵</h2>
+        <p>
+          以 cycle-app 现有 icon 为锚点（残月相位），其余 7 个 App 通过 <b>4 个杠杆</b>（高光中心 cx/cy、高光半径 r、高光色号、强度 peak）派生。
+          不加任何文字图案、不动球体几何、不改背景色。SVG 参数化重构，质感比原 PNG 降一档，但全矢量、可程序化生成、可批量出 1024 / 512 / 60 各尺寸。
+        </p>
+      </div>
+      <span class="mark">8 variants · 4 levers only</span>
+    </div>
+    <div class="logoGrid" id="logoGrid"></div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       Section: Engineering decisions
+       ───────────────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Engineering · 工程化决策</h2>
+        <p>v12 的飞白质感很好但有 3 个生产风险：filter 性能、ID 碰撞、小尺寸降级。逐条交付方案。</p>
+      </div>
+      <span class="mark">production-ready</span>
+    </div>
+    <div class="engGrid">
+      <div class="engCard">
+        <b>Filter Bake · 离线烘焙</b>
+        <p style="margin:6px 0 0">
+          运行时 <code>feTurbulence + feDisplacementMap</code> 在单页 50 + 图标同框时 Safari 帧率掉到 30 以下，RN 上更慢。
+          方案：<code>tooling/icon-bake/bake.ts</code> 用 paper.js 把 displacement 形变烘焙进静态 path，运行时零 filter 调用。
+          页面顶部 <code>inkRough</code> filter 仍保留作为编辑期预览，正式构建时由 bake 步骤替换。
+        </p>
+      </div>
+      <div class="engCard">
+        <b>ID Hash · 防碰撞</b>
+        <p style="margin:6px 0 0">
+          v12 的 <code>id="inkRough"</code> 全局共享（所有 glyph 用同一份 filter，OK）。
+          但 sphere 变体需要 <b>每个实例的 gradient 参数不同</b>，如果都叫 <code>id="hi"</code>，浏览器只渲染第一个。
+          下方 sphere 生成器用自增 counter 给每个实例生成 <code>id="h{n}"</code>。RN/SVGR 出包时用 nanoid。
+        </p>
+      </div>
+      <div class="engCard">
+        <b>Dual Register · 双册切换</b>
+        <p style="margin:6px 0 0">
+          <b>重墨</b>（cycle/yuan/feng/face-oracle/fate/numerology）保留飞白 + 朱砂；
+          <b>轻墨</b>（coin-cast/dream-oracle）去 displacement、stroke 细一档、保留 inkBleed。
+          CSS class 切换：<code>.glyph.light .stroke{filter:none;stroke-width:3.4}</code>。下方有对照示例。
+        </p>
+      </div>
+      <div class="engCard">
+        <b>State Variants · 状态</b>
+        <p style="margin:6px 0 0">
+          每个核心图标 4 态：<b>default / active</b>（朱砂点）<b> / disabled</b>（stroke 改 ink-faint + opacity .32）<b> / selected</b>（容器内描 2px 朱砂边）。
+          不用透明度兜底，靠语义差异。下方有对照示例。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       Section: Core (with improved time dimension distinction)
+       dayun + 10y ticks, liunian + 12 branches dots, liumonth + moon arc
+       ───────────────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Core Surface · 主功能（8）</h2>
+        <p>大运 / 流年 / 流月 / 五行四个抽象时间维度各加一个微差异化标识，避免无标签时无法区分。</p>
+      </div>
+      <span class="mark">8 primary glyphs</span>
+    </div>
+    <div class="grid coreGrid" id="core"></div>
+  </section>
+
+  <!-- BaZi -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>BaZi Glyphs · 八字图标（10）</h2>
+        <p>柱、上干、下支、日主、藏干、用忌、冲合。结构语言保持 v12。</p>
+      </div>
+      <span class="mark">pillar language</span>
+    </div>
+    <div class="grid termGrid" id="bazi"></div>
+  </section>
+
+  <!-- Ziwei -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Ziwei Glyphs · 紫微图标（8）</h2>
+        <p>宫格容器 + 星曜落点 + 四化亮度。保持 v12。</p>
+      </div>
+      <span class="mark">palace language</span>
+    </div>
+    <div class="grid termGrid" id="ziwei"></div>
+  </section>
+
+  <!-- Utility -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Utility · 流程操作（14）</h2>
+        <p>同一支笔，更安静。保持 v12。</p>
+      </div>
+      <span class="mark">same brush, quieter</span>
+    </div>
+    <div class="grid toolGrid" id="utility"></div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       Matrix · UPDATED to 8 real apps (cycle/yuan/feng/face/fate/num/coin/dream)
+       Removed v12's plum/almanac/luopan (not standalone apps, they're features)
+       ───────────────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Matrix · 8 个 App 内引用图标</h2>
+        <p>App 内互相引用时用这套（不是 App Store logo）。已替换 v12 里的 plum / almanac / luopan（这三个是 fate 内的功能而非独立 app）为真实矩阵：cycle、numerology、coin-cast。</p>
+      </div>
+      <span class="mark">8 apps · in-app reference</span>
+    </div>
+    <div class="grid matrixGrid" id="matrix"></div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       Two-register comparison
+       ───────────────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>双册 Register 对照 · 重墨 / 轻墨</h2>
+        <p>同一图标在两册下的差异。重墨用于命理形而上学类（cycle/yuan/feng/face-oracle/fate/numerology），轻墨用于趣味类（coin-cast/dream-oracle）。</p>
+      </div>
+      <span class="mark">heavy vs light</span>
+    </div>
+    <div class="grid registerGrid" id="registerDemo"></div>
+  </section>
+
+  <!-- State variants -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>状态变体 · default / active / disabled / selected</h2>
+        <p>核心图标的 4 个状态，工程实现时不要只用透明度兜底。</p>
+      </div>
+      <span class="mark">4 states</span>
+    </div>
+    <div class="grid stateGrid" id="stateDemo"></div>
+  </section>
+
+  <div class="textRule">
+    <b>文字仍承载术语本体：</b>
+    甲乙丙丁、子丑寅卯、星名、宫名、纳音、格局名不做伪图标；图标只辅助结构、关系、状态和动作。
+    <b style="display:block;margin-top:8px">App Store logo 的月相系统是独立子系统：</b>
+    不在 in-app glyph 中复用 sphere 图形，避免视觉语言混乱。Sphere 只用于 App icon / launch screen / 启动 splash。
+  </div>
+
+  <!-- Design rules -->
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>设计原则</h2>
+        <p>v13 在 v12 4 条原则上追加 4 条工程 + 矩阵原则。</p>
+      </div>
+      <span class="mark">12 principles</span>
+    </div>
+    <div class="rules">
+      <div class="rule"><b>风格原则（v12）</b>整套图标只允许一种主墨色；质感来自纸、墨边、留白和笔触。</div>
+      <div class="rule"><b>造型原则（v12）</b>八字从「柱」出发，紫微从「宫格」出发，时间从「轨道/节点」出发。</div>
+      <div class="rule"><b>细节原则（v12）</b>只保留能帮助识别的细节。墨迹毛边是材质，不承担语义。</div>
+      <div class="rule"><b>落地建议（v12）</b>P0 优先：命盘、八字、紫微、五行、四柱、日主、命宫、主星、大运。</div>
+      <div class="rule"><b>性能原则（v13）</b>所有 turbulence/displacement 上线前必须 bake 成静态 path。运行时 SVG filter 调用必须 = 0。</div>
+      <div class="rule"><b>命名原则（v13）</b>所有 SVG def id 用 nanoid，禁用语义命名（如 <code>id="hi"</code>），避免组件复用碰撞。</div>
+      <div class="rule"><b>层级原则（v13）</b>App Store logo（sphere）和 in-app glyph（ink stroke）是两个独立子系统，禁止互相复用形状。</div>
+      <div class="rule"><b>矩阵原则（v13）</b>8 个 sphere 变体只动 4 个杠杆，不加文字/silhouette/外框。轻则保持家族识别，重则破坏品牌一致。</div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────
+   Sphere generator · master + 7 parametric variants
+   4 levers only: hi-center (cx, cy), hi-radius, hi-color, hi-peak
+   ─────────────────────────────────────────────────────────────────── */
+let __sphereId=0;
+function sphere(p){
+  const id=`s${++__sphereId}`;
+  return `
+    <svg viewBox="0 0 100 100" class="sphere" aria-hidden="true">
+      <defs>
+        <radialGradient id="b${id}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${p.baseHue}"/>
+          <stop offset="98%" stop-color="#000"/>
+        </radialGradient>
+        <radialGradient id="h${id}" cx="${p.hiX}%" cy="${p.hiY}%" r="${p.hiR}%" fx="${p.hiX}%" fy="${p.hiY}%">
+          <stop offset="0%" stop-color="${p.hiColor}" stop-opacity="${p.hiPeak}"/>
+          <stop offset="45%" stop-color="${p.hiColor}" stop-opacity="${(p.hiPeak*0.35).toFixed(2)}"/>
+          <stop offset="100%" stop-color="${p.hiColor}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="100" height="100" fill="#000"/>
+      <circle cx="50" cy="50" r="50" fill="url(#b${id})"/>
+      <circle cx="50" cy="50" r="50" fill="url(#h${id})" style="mix-blend-mode:screen"/>
+    </svg>
+  `;
+}
+
+function logoCard(app){
+  return `
+    <div class="logoCard tier-${app.tier}">
+      <span class="tierTag">${app.tierLabel}</span>
+      ${sphere(app.params)}
+      <div class="logoLabel">${app.label}</div>
+      <div class="logoSub">${app.phase}</div>
+      <div class="logoParams">cx ${app.params.hiX} · cy ${app.params.hiY} · r ${app.params.hiR}<br>${app.params.hiColor} · peak ${app.params.hiPeak}</div>
+    </div>
+  `;
+}
+
+const APPS=[
+  // ── Anchor (current icon.png, near-new / waning crescent diagonal)
+  { label:'cycle', phase:'残月 · 锚点（current icon.png）', tier:'flag', tierLabel:'旗舰订阅',
+    params:{ baseHue:'#0F0F0F', hiX:75, hiY:60, hiR:48, hiColor:'#E6E6E6', hiPeak:0.95 } },
+
+  // ── Flagship subscription
+  { label:'yuan', phase:'朦弦月 · 横向暖银（缘起对望）', tier:'flag', tierLabel:'旗舰订阅',
+    params:{ baseHue:'#0F0F0F', hiX:70, hiY:50, hiR:55, hiColor:'#F2EBDC', hiPeak:0.85 } },
+
+  // ── High ASP (high-priced one-shot)
+  { label:'feng', phase:'上弦月 · 垂直锐切（精准）', tier:'asp', tierLabel:'高客单',
+    params:{ baseHue:'#0F0F0F', hiX:65, hiY:50, hiR:38, hiColor:'#EEF1F4', hiPeak:0.98 } },
+  { label:'face-oracle', phase:'亏凸 · 强侧光（面相读光影）', tier:'asp', tierLabel:'高客单',
+    params:{ baseHue:'#0F0F0F', hiX:85, hiY:50, hiR:36, hiColor:'#DDDDDD', hiPeak:0.92 } },
+
+  // ── Funnel
+  { label:'fate', phase:'新月 · 细窄起源（八字 = 命的原点）', tier:'funnel', tierLabel:'漏斗',
+    params:{ baseHue:'#0F0F0F', hiX:78, hiY:75, hiR:26, hiColor:'#C8B89A', hiPeak:0.72 } },
+  { label:'numerology', phase:'暗上弦 · 紧致单点（数 = 单点精度）', tier:'funnel', tierLabel:'漏斗',
+    params:{ baseHue:'#0F0F0F', hiX:50, hiY:60, hiR:22, hiColor:'#D8D8D8', hiPeak:0.86 } },
+  { label:'coin-cast', phase:'峨眉月 · 轻盈起卦', tier:'funnel', tierLabel:'漏斗',
+    params:{ baseHue:'#0F0F0F', hiX:28, hiY:35, hiR:46, hiColor:'#DDE5EA', hiPeak:0.78 } },
+  { label:'dream-oracle', phase:'满月散光 · 梦的弥散', tier:'funnel', tierLabel:'漏斗',
+    params:{ baseHue:'#0A0A0E', hiX:50, hiY:50, hiR:72, hiColor:'#E8DDDD', hiPeak:0.65 } },
+];
+
+document.getElementById('logoGrid').innerHTML=APPS.map(logoCard).join('');
+
+/* ───────────────────────────────────────────────────────────────────
+   Ink glyph icons · inherited from v12 with improvements
+   ─────────────────────────────────────────────────────────────────── */
+const ICONS={
+  /* Core 8 — time dimensions get extra distinguishing marks */
+  chart:`<path class="stroke" d="M32 10c12 0 22 10 22 22S44 54 32 54 10 44 10 32 20 10 32 10Z"/><path class="stroke thin" d="M32 16v8M32 40v8M16 32h8M40 32h8"/><circle class="fill activeDot" cx="32" cy="32" r="4.2"/><path class="stroke thin" d="M20 20l5 5M44 20l-5 5M44 44l-5-5M20 44l5-5"/>`,
+  bazi:`<path class="stroke bold" d="M17 12v40M27 12v40M37 12v40M47 12v40"/><path class="stroke thin" d="M14 22h36M14 42h36"/><circle class="fill activeDot" cx="37" cy="32" r="4.4"/>`,
+  ziwei:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><path class="fill activeDot" d="M32 20l3.1 7.6 8.1.6-6.2 5.2 1.9 7.8-6.9-4.4-6.9 4.4 1.9-7.8-6.2-5.2 8.1-.6Z"/>`,
+  scroll:`<path class="stroke" d="M20 11h23c4 0 7 3 7 7v28c0 4-3 7-7 7H20c-4 0-7-3-7-7V18c0-4 3-7 7-7Z"/><path class="stroke thin" d="M23 23h18M23 32h18M23 41h12"/><path class="stroke thin" d="M17 12c5 8 5 32 0 40"/>`,
+  /* 五行 — 5 nodes on pentagon (already distinct in v12) */
+  wuxing:`<path class="stroke" d="M32 10l20 14.5-7.6 23.5H19.6L12 24.5Z"/><circle class="fill activeDot" cx="32" cy="10" r="3.4"/><circle class="fill" cx="52" cy="24.5" r="3.4"/><circle class="fill" cx="44.4" cy="48" r="3.4"/><circle class="fill" cx="19.6" cy="48" r="3.4"/><circle class="fill" cx="12" cy="24.5" r="3.4"/>`,
+  /* 大运 — 10-year ticks on baseline (NEW vs v12) */
+  dayun:`<path class="stroke bold" d="M10 36h44"/><path class="stroke" d="M46 28l8 8-8 8"/><path class="stroke thin" d="M14 30v12M22 30v12M30 30v12M38 30v12"/><circle class="fill activeDot" cx="30" cy="36" r="4.5"/>`,
+  /* 流年 — 12 micro dots around ring (NEW vs v12) */
+  liunian:`<circle class="stroke" cx="32" cy="32" r="22"/><circle class="fill" cx="32" cy="10" r="1.6"/><circle class="fill" cx="43" cy="13" r="1.6"/><circle class="fill" cx="51" cy="21" r="1.6"/><circle class="fill" cx="54" cy="32" r="1.6"/><circle class="fill" cx="51" cy="43" r="1.6"/><circle class="fill" cx="43" cy="51" r="1.6"/><circle class="fill" cx="32" cy="54" r="1.6"/><circle class="fill" cx="21" cy="51" r="1.6"/><circle class="fill" cx="13" cy="43" r="1.6"/><circle class="fill" cx="10" cy="32" r="1.6"/><circle class="fill" cx="13" cy="21" r="1.6"/><circle class="fill" cx="21" cy="13" r="1.6"/><circle class="fill activeDot" cx="44" cy="20" r="4.5"/>`,
+  /* 流月 — moon arc + phase notch (NEW vs v12, clearer) */
+  liumonth:`<path class="stroke" d="M43 10a22 22 0 1 0 0 44c-9-4.5-14-12.2-14-22s5-17.5 14-22Z"/><path class="stroke thin" d="M29 22a14 14 0 0 1 0 20"/><circle class="fill activeDot" cx="38" cy="32" r="3"/>`,
+
+  /* BaZi — kept from v12 */
+  pillar:`<path class="stroke bold" d="M16 12v40M27 12v40M38 12v40M49 12v40"/><path class="stroke thin" d="M13 22h39M13 42h39"/>`,
+  stem:`<path class="stroke bold" d="M32 11v42"/><path class="stroke" d="M20 17h24M23 32h18M20 47h24"/><path class="stroke thin" d="M24 11c6 4 10 4 16 0"/>`,
+  branch:`<path class="stroke" d="M16 24h32M32 24v28"/><path class="stroke bold" d="M22 52c4-8 7-11 10-11s6 3 10 11"/><path class="stroke thin" d="M24 16c5-4 11-4 16 0"/>`,
+  daymaster:`<path class="stroke bold" d="M16 12v40M27 12v40M38 12v40M49 12v40"/><circle class="fill" cx="38" cy="32" r="7"/><path class="stroke thin" d="M13 42h39"/>`,
+  shishen:`<circle class="fill" cx="32" cy="32" r="5"/><path class="stroke" d="M32 10v11M32 43v11M10 32h11M43 32h11M16 16l8 8M48 48l-8-8M48 16l-8 8M16 48l8-8"/>`,
+  hidden:`<path class="stroke" d="M18 18h28M32 18v30"/><path class="stroke bold" d="M22 48c4-7 7-10 10-10s6 3 10 10"/><circle class="fill" cx="32" cy="41" r="4"/>`,
+  useful:`<path class="stroke" d="M32 11l18 13-7 21H21l-7-21Z"/><path class="stroke bold" d="M23 32l6 6 13-16"/>`,
+  avoid:`<path class="stroke" d="M32 11l18 13-7 21H21l-7-21Z"/><path class="stroke bold" d="M24 24l16 16M40 24L24 40"/>`,
+  combine:`<path class="stroke" d="M25 39a10 10 0 0 1 0-14l5-5a10 10 0 0 1 14 14l-3 3"/><path class="stroke" d="M39 25a10 10 0 0 1 0 14l-5 5a10 10 0 0 1-14-14l3-3"/>`,
+  clash:`<path class="stroke bold" d="M16 18l30 30M46 18L16 48"/><path class="stroke" d="M42 14h8v8M22 50h-8v-8"/>`,
+
+  /* Ziwei — kept from v12 */
+  palace:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/>`,
+  minggong:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><circle class="fill" cx="32" cy="32" r="6"/>`,
+  shengong:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><path class="stroke bold" d="M32 24v16M24 32h16"/>`,
+  majorstar:`<rect class="stroke thin" x="15" y="15" width="34" height="34" rx="4"/><path class="stroke" d="M32 17l3.8 9.4 10.1.8-7.7 6.4 2.4 9.8-8.6-5.5-8.6 5.5 2.4-9.8-7.7-6.4 10.1-.8Z"/>`,
+  minorstar:`<rect class="stroke thin" x="15" y="15" width="34" height="34" rx="4"/><circle class="fill" cx="25" cy="26" r="3.2"/><circle class="fill" cx="39" cy="36" r="2.5"/><path class="stroke thin" d="M25 26l14 10"/>`,
+  sihua:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="8"/><path class="stroke" d="M23 25h18M23 39h18M26 22v20M38 22v20"/>`,
+  brightness:`<path class="stroke" d="M14 50h36"/><path class="stroke bold" d="M19 42v8M29 34v16M39 25v25M49 14v36"/><circle class="fill" cx="49" cy="14" r="3.5"/>`,
+  empty:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38M24 32h16"/>`,
+
+  /* Utility — kept from v12 */
+  date:`<rect class="stroke" x="15" y="16" width="34" height="34" rx="6"/><path class="stroke thin" d="M15 26h34M24 10v10M40 10v10M24 35h5M35 35h5M24 43h12"/>`,
+  time:`<circle class="stroke" cx="32" cy="32" r="20"/><path class="stroke" d="M32 20v13l9 5"/>`,
+  place:`<path class="stroke" d="M32 56S17 40 17 27a15 15 0 0 1 30 0c0 13-15 29-15 29Z"/><circle class="fill" cx="32" cy="27" r="5"/>`,
+  solar:`<circle class="stroke" cx="32" cy="18" r="7"/><path class="stroke thin" d="M32 5v5M32 26v7M19 18h-5M50 18h-5M22 8l4 4M42 12l4-4M16 52h32M25 33l7 19 7-19"/>`,
+  expand:`<rect class="stroke" x="20" y="10" width="24" height="44" rx="5"/><path class="stroke" d="M32 20v24M24 36l8 8 8-8"/>`,
+  share:`<circle class="stroke" cx="18" cy="32" r="6"/><circle class="stroke" cx="46" cy="18" r="6"/><circle class="stroke" cx="46" cy="46" r="6"/><path class="stroke" d="M23.5 29.2l17-8.4M23.5 34.8l17 8.4"/>`,
+  edit:`<path class="stroke" d="M44 12l8 8-28 30-11 3 3-11Z"/><path class="stroke thin" d="M39 17l8 8"/>`,
+  sync:`<path class="stroke" d="M48 25a18 18 0 0 0-29-9"/><path class="stroke" d="M48 13v12H36"/><path class="stroke" d="M16 39a18 18 0 0 0 29 9"/><path class="stroke" d="M16 51V39h12"/>`,
+  public:`<path class="stroke" d="M8 32s9-15 24-15 24 15 24 15-9 15-24 15S8 32 8 32Z"/><circle class="fill" cx="32" cy="32" r="7"/>`,
+  back:`<path class="stroke" d="M34 16L18 32l16 16"/><path class="stroke" d="M18 32h30"/>`,
+  profile:`<circle class="stroke" cx="32" cy="21" r="9"/><path class="stroke" d="M15 54c3-12 10-18 17-18s14 6 17 18"/>`,
+  history:`<path class="stroke" d="M21 21v-9H12"/><path class="stroke" d="M20 14a22 22 0 1 1-6 24"/><path class="stroke" d="M32 22v12l9 5"/>`,
+  search:`<circle class="stroke" cx="28" cy="28" r="15"/><path class="stroke" d="M40 40l12 12"/>`,
+  unlock:`<path class="stroke" d="M22 28v-8a10 10 0 0 1 19-4"/><rect class="stroke" x="18" y="28" width="30" height="24" rx="6"/><path class="stroke" d="M33 38v6"/>`,
+
+  /* Matrix · 8 real apps (replaces v12's plum/almanac/luopan with cycle/numerology/coin-cast) */
+  cycle:`<circle class="stroke" cx="32" cy="32" r="22"/><path class="stroke" d="M32 10a22 22 0 0 1 0 44"/><circle class="fill activeDot" cx="32" cy="32" r="2.8"/>`,
+  yuan:`<circle class="stroke" cx="25" cy="32" r="11"/><circle class="stroke" cx="39" cy="32" r="11"/><path class="stroke thin" d="M16 44c10 8 22 8 32 0"/>`,
+  feng:`<path class="stroke" d="M10 34c9-12 19-18 32-18 8 0 13 5 13 11 0 10-10 14-21 10"/><path class="stroke thin" d="M12 48c13 6 28 5 40-3"/>`,
+  face:`<path class="stroke" d="M32 9c12 0 20 10 20 23s-8 23-20 23-20-10-20-23S20 9 32 9Z"/><path class="stroke thin" d="M22 30c4-3 7-3 10 0M34 30c4-3 7-3 10 0M24 42c5 4 11 4 16 0"/>`,
+  fateApp:`<path class="stroke bold" d="M17 12v40M27 12v40M37 12v40M47 12v40"/><circle class="fill activeDot" cx="37" cy="32" r="5"/>`,
+  numerology:`<path class="stroke" d="M22 14h12v18l-10 18h-4"/><path class="stroke" d="M44 14v36"/><circle class="fill activeDot" cx="44" cy="14" r="3"/>`,
+  coincast:`<circle class="stroke" cx="32" cy="32" r="14"/><circle class="stroke thin" cx="32" cy="32" r="22"/><path class="stroke thin" d="M28 28h8M28 32h8M28 36h8"/>`,
+  dream:`<path class="stroke" d="M12 43c0-6 4-10 10-10 2-8 8-13 17-13 8 0 15 6 15 14 0 9-7 15-16 15H20c-5 0-8-2-8-6Z"/><path class="stroke thin" d="M40 11c-5 2-8 6-8 11 3-1.2 6-1.6 9-1.2"/>`,
+};
+
+function svg(key,extra=''){
+  return `<svg class="glyph ${extra}" viewBox="0 0 64 64" aria-hidden="true">${ICONS[key]}</svg>`;
+}
+function card([key,title,desc,rank], mode='core'){
+  const rankHtml=mode==='term'?`<div class="rank">${rank}</div>`:'';
+  return `<div class="card ${mode==='term'?'term':''} ${mode==='small'?'small':''}">
+    <div class="sealPlate">${svg(key)}</div>
+    <div>${rankHtml}<div class="title">${title}</div><div class="desc">${desc}</div></div>
+  </div>`;
+}
+
+const core=[
+  ['chart','命盘','中心、方位、全局定位'],
+  ['bazi','八字','四柱排布，日主高亮'],
+  ['ziwei','紫微','宫格之中，星曜落位'],
+  ['scroll','命书','结构化解读章节'],
+  ['wuxing','五行','五点循环，五星节点'],
+  ['dayun','大运','10 年刻度 + 当前节点'],
+  ['liunian','流年','12 地支微点 + 当前落点'],
+  ['liumonth','流月','月相切面 + 当前月'],
+];
+document.getElementById('core').innerHTML=core.map((x)=>card(x)).join('');
+
+const bazi=[
+  ['pillar','四柱','年、月、日、时四个结构位','P0 STRUCTURE'],
+  ['stem','天干','柱的上层，表示显性气','P0 STRUCTURE'],
+  ['branch','地支','柱的下层，表示根与时间支点','P0 STRUCTURE'],
+  ['daymaster','日主','八字里的"我"，高亮日柱','P0 FOCUS'],
+  ['shishen','十神 / 五类关系','围绕日主的关系模型','P1 RELATION'],
+  ['hidden','藏干','支中有藏，用内点表达','P1 DETAIL'],
+  ['useful','用神','取用、支持、可借力的状态','P1 STATE'],
+  ['avoid','忌神','失衡、过载、需节制的状态','P1 STATE'],
+  ['combine','合 / 会','靠近、联结、成局的关系线','P1 RELATION'],
+  ['clash','冲 / 刑 / 害','对冲、破裂、摩擦的关系线','P1 RELATION'],
+];
+document.getElementById('bazi').innerHTML=bazi.map((x)=>card(x,'term')).join('');
+
+const ziwei=[
+  ['palace','十二宫','紫微 Chart 的容器结构','P0 STRUCTURE'],
+  ['minggong','命宫','主定位，适合高亮中心宫','P0 FOCUS'],
+  ['shengong','身宫','身体与实践落点，轻标记','P1 FOCUS'],
+  ['majorstar','主星','Chart 扫读只需知道主星','P0 STAR'],
+  ['minorstar','辅星','辅助信息，视觉权重较低','P1 STAR'],
+  ['sihua','四化','禄权科忌应用同一 badge','P1 BADGE'],
+  ['brightness','庙旺平陷','星曜亮度是状态刻度','P2 STATE'],
+  ['empty','空宫','无主星时的占位结构','P2 STATE'],
+];
+document.getElementById('ziwei').innerHTML=ziwei.map((x)=>card(x,'term')).join('');
+
+const utility=[
+  ['date','日期','出生日期'],['time','时辰','出生时段'],['place','地点','出生地'],['solar','真太阳时','校正时间'],
+  ['expand','展开','打开命书'],['share','分享','传播结果'],['edit','编辑','修改资料'],['sync','同步','同步命盘'],
+  ['public','公开','主页可见'],['back','返回','回到上一层'],['profile','档案','Me / profile'],['history','历史','历史命书'],
+  ['search','搜索','查找'],['unlock','解锁','解锁章节'],
+];
+document.getElementById('utility').innerHTML=utility.map((x)=>card(x,'small')).join('');
+
+/* Matrix · 8 real apps */
+const matrix=[
+  ['cycle','cycle','周期 · 旗舰订阅'],
+  ['yuan','yuan','缘合 · 旗舰订阅'],
+  ['feng','feng','风水 · 高客单'],
+  ['face','face-oracle','面相 · 高客单'],
+  ['fateApp','fate','八字 · 漏斗'],
+  ['numerology','numerology','数秘 · 漏斗'],
+  ['coincast','coin-cast','钱卦 · 漏斗'],
+  ['dream','dream-oracle','梦境 · 漏斗'],
+];
+document.getElementById('matrix').innerHTML=matrix.map((x)=>card(x,'small')).join('');
+
+/* Two-register comparison */
+const regPairs=['chart','bazi','ziwei','dayun'];
+document.getElementById('registerDemo').innerHTML=regPairs.map(k=>`
+  <div class="regPair">
+    <div class="regColumn">
+      <div class="lbl">HEAVY 重墨</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k)}</div>
+    </div>
+    <div class="regColumn">
+      <div class="lbl">LIGHT 轻墨</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k,'light')}</div>
+    </div>
+  </div>
+`).join('');
+
+/* State demo */
+const stateKeys=['chart','ziwei','dayun'];
+document.getElementById('stateDemo').innerHTML=stateKeys.map(k=>`
+  <div class="stateRow" style="grid-column:span 1">
+    <div class="stateCol">
+      <div class="lbl">DEFAULT</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k)}</div>
+    </div>
+    <div class="stateCol">
+      <div class="lbl">ACTIVE</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k,'active')}</div>
+    </div>
+    <div class="stateCol">
+      <div class="lbl">DISABLED</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k,'disabled')}</div>
+    </div>
+    <div class="stateCol selected">
+      <div class="lbl">SELECTED</div>
+      <div class="sealPlate" style="margin:0 auto">${svg(k)}</div>
+    </div>
+  </div>
+`).join('') + `
+  <div class="engCard" style="grid-column:1/-1">
+    <b>State 实现说明</b>
+    <p style="margin:6px 0 0">
+      <code>active</code>: <code>.activeDot</code> 子元素填充 <code>--seal</code>，其他元素保持 <code>--ink</code>。
+      <code>disabled</code>: <code>.glyph</code> 加 <code>.disabled</code> class，stroke 改 <code>--ink-faint</code> + opacity .32。
+      <code>selected</code>: 外层 <code>.sealPlate</code> 容器加 <code>.selected</code> class，添加 2px <code>--seal</code> inset border。
+      RN 端用 <code>react-native-svg</code> 同款，state 通过 prop 传入。
+    </p>
+  </div>
+`;
+</script>
+</body>
+</html>

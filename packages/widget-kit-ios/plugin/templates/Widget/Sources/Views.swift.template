@@ -1,0 +1,99 @@
+// Sprint 5 template — 3 widget families (Small, Medium, Lock-Screen).
+// Customized per app (cycle/feng/yuan) at integration time. MingPan has no widget.
+
+import WidgetKit
+import SwiftUI
+
+/// Small widget — 158x158pt (compact).
+struct SmallWidgetView: View {
+    let entry: HexastralEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(entry.payload.data["ganZhi"]?.value as? String ?? "—")
+                .font(.title2)
+                .fontWeight(.medium)
+            Text(entry.payload.data["lunarDate"]?.value as? String ?? "")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            HStack {
+                Text("→")
+                    .font(.caption2)
+                Text(entry.payload.data["nextSolarTermName"]?.value as? String ?? "")
+                    .font(.caption2)
+                if let days = entry.payload.data["nextSolarTermDays"]?.value as? Int {
+                    Text("\(days)d")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .padding(12)
+    }
+}
+
+/// Medium widget — 338x158pt (horizontal).
+struct MediumWidgetView: View {
+    let entry: HexastralEntry
+
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.payload.data["ganZhi"]?.value as? String ?? "—")
+                    .font(.title)
+                    .fontWeight(.medium)
+                Text(entry.payload.data["lunarDate"]?.value as? String ?? "")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Label {
+                    Text(entry.payload.data["nextSolarTermName"]?.value as? String ?? "")
+                        .font(.caption)
+                } icon: {
+                    Image(systemName: "sun.max")
+                        .font(.caption)
+                }
+                if let yi = entry.payload.data["todayYi"]?.value as? String {
+                    Label {
+                        Text(yi)
+                            .font(.caption)
+                            .lineLimit(2)
+                    } icon: {
+                        Image(systemName: "checkmark.seal")
+                            .font(.caption)
+                    }
+                }
+            }
+        }
+        .padding(16)
+    }
+}
+
+/// Lock-Screen rectangular widget — 160x76pt (very compact).
+struct LockScreenWidgetView: View {
+    let entry: HexastralEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(entry.payload.data["ganZhi"]?.value as? String ?? "—")
+                    .font(.headline)
+                Spacer()
+                if let label = entry.payload.data["nextFamilyEventLabel"]?.value as? String,
+                   let days = entry.payload.data["nextFamilyEventDays"]?.value as? Int {
+                    Text("\(label) \(days)d")
+                        .font(.caption2)
+                }
+            }
+            Text(entry.payload.data["lunarDate"]?.value as? String ?? "")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(6)
+    }
+}

@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "title": "HexAstral — 별들은 당신을 알고 있어요",
+    "description": "사주팔자와 자미두수를 AI로 심층 해석. 60초 안에 당신의 운명 설계도를 만나보세요."
+  },
+  "nav": {
+    "freeReading": "무료 사주",
+    "download": "앱 다운로드"
+  },
+  "landing": {
+    "heroBadge": "사주팔자 · 자미두수 · AI 감정",
+    "heroLine1": "별들은",
+    "heroLine2": "당신을 알고 있어요",
+    "heroSub": "동양의 지혜와 AI가 만나다\n60초 안에 나의 운명을 알아보세요",
+    "heroCTA": "무료 사주 보기 →",
+    "heroNote": "회원가입 불필요 · 60초 완성 · 첫 이용 코인 3개 증정",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "사주명리의 네 가지 차원",
+    "features": [
+      {
+        "title": "사주팔자 · 명식 분석",
+        "desc": "연월일시 사주를 정밀하게 산출. 일주 오행 강약, 십신 관계, 조후용신을 해석합니다.",
+        "tag": "Destiny Reading"
+      },
+      {
+        "title": "자미두수 · 명반 전도",
+        "desc": "12궁위를 하나하나 해석. 대한·유년의 정밀한 운세와 주성·보성의 이중 해석.",
+        "tag": "Star Palace Chart"
+      },
+      {
+        "title": "대운 · 신살 타임라인",
+        "desc": "10년 대운 × 신살 배치로 인생 각 단계의 기회와 위험을 정확하게 파악.",
+        "tag": "Fate Cycle Timeline"
+      },
+      {
+        "title": "사주 궁합 · 배합 지수",
+        "desc": "두 명의 사주를 심층 합참. 배합 점수를 수치화하고 끌림과 마찰의 근원을 밝힙니다.",
+        "tag": "Compatibility Score"
+      }
+    ],
+    "convTitle": "여기 오신 이유는——",
+    "convBody": "자신을 이해하기 위해서인가요? 어떤 관계를 좀 더 명확하게 보고 싶어서인가요? 유독 힘들었던 인생의 한 챕터를 이해하고 싶어서인가요?\n어떤 이유든, 별들에게는 답이 있습니다.",
+    "convCTA": "내 사주 보기",
+    "testimonialsSectionLabel": "사용자 후기",
+    "testimonials": [
+      {
+        "text": "\"당신은 본질적으로 야생마이지만, 현실이 당신을 울타리 안에 가두고 있다\"는 문장을 읽고 그 자리에서 울어버렸어요.",
+        "name": "C.W.",
+        "tag": "선전 · 디자이너"
+      },
+      {
+        "text": "궁합 리포트 덕분에 우리가 왜 항상 같은 문제로 싸우는지 오행의 관점에서 처음으로 이해했어요.",
+        "name": "L.H.",
+        "tag": "상하이 · 프로덕트 매니저"
+      },
+      {
+        "text": "대운 타임라인을 보고 나서야 2024년이 왜 그렇게 힘들었는지 이해했어요. 대운이 바뀐 해였더라고요.",
+        "name": "Kevin W.",
+        "tag": "토론토 · 엔지니어"
+      }
+    ],
+    "ctaHeadline": "무료로 나의 사주 받기",
+    "ctaSub": "HexAstral 다운로드 — AI 심층 해석 · 대운 타임라인 · 신살 분석을 첫 사주부터 해방",
+    "footerPrivacy": "개인정보 처리방침",
+    "footerTerms": "이용약관",
+    "footerStart": "사주 보기"
+  },
+  "onboarding": {
+    "motivationPrompt": "여기 오신 이유는——",
+    "motivationTitle1": "감정 모드를",
+    "motivationTitle2": "선택하세요",
+    "modePersonalTitle": "나를 알고 싶어요",
+    "modePersonalDesc": "성격, 운명, 대운을 심층 탐구합니다",
+    "modePairingTitle": "우리의 인연 보기",
+    "modePairingDesc": "연인·파트너와의 사주 궁합 심층 분석",
+    "modePairingBadge": "가장 인기 있는 ★",
+    "noSignupNote": "회원가입 불필요 · 계산에만 사용 · 완전 무료",
+    "selfStep1Label": "1단계 — 내 정보",
+    "selfBirthLabel": "나의 생년월일시",
+    "selfStep1Title": "내가 태어난 그 순간,",
+    "selfStep1Accent": "별들은 어떻게 배열되어 있었을까요?",
+    "partnerStep2Label": "2단계 — 상대방 정보",
+    "partnerStep2Title": "별들이 두 사람의",
+    "partnerStep2Accent": "인연을 알려드릴게요",
+    "submitPersonal": "사주 시작하기",
+    "submitNext": "다음 →",
+    "submitPairing": "궁합 결과 보기",
+    "back": "← 돌아가기",
+    "restart": "← 처음부터",
+    "errorRetry": "계산에 실패했습니다. 잠시 후 다시 시도해 주세요",
+    "selfDefault": "나",
+    "partnerDefault": "상대방",
+    "personalChartLabel": "{name}의 사주",
+    "dayMasterLabel": "일주",
+    "starsSpeakPrefix": "✦ 별들이 {name}에게 말하는 것",
+    "fullReadingLabel": "완전 AI 감정 리포트",
+    "personalPaywallUnlock": "🔒 다운로드해서 전체 해석 해방",
+    "personalCTAHeadline": "{name}의 완전한 사주가 완성됐어요",
+    "personalCTASub": "HexAstral 다운로드 — AI 심층 해석 · 대운 타임라인 · 신살 배치",
+    "pairingScoreUnit": "{a} × {b}   궁합 지수",
+    "pairingInsightsTitle": "성반 인사이트",
+    "pairingFullReportLabel": "심층 궁합 리포트",
+    "pairingPaywallUnlock": "🔒 다운로드해서 완전한 궁합 리포트 해방",
+    "pairingCTAHeadline": "완전한 궁합 리포트 해방하기",
+    "pairingCTASub": "HexAstral 다운로드 — AI 심층 합참 · 마찰 포인트 분석 · 최적 관계 모드",
+    "partnerLabel": "{selfName}의 파트너",
+    "bNameQuestion": "별이 말하기 전에, 이름을 알려주세요.",
+    "bNamePlaceholder": "이름",
+    "bDateQuestion": "{name}님, 언제 태어나셨나요? 명반은 그 순간부터 시작됩니다.",
+    "bTimeQuestion": "태어난 시간을 아시나요? 시주는 운명의 기둥입니다.",
+    "bGenderQuestion": "음양의 언어로 — 어떤 에너지에 가까우신가요?",
+    "bGenderMale": "양 ☰",
+    "bGenderFemale": "음 ☷",
+    "bCityQuestion": "어디서 태어나셨나요? 출생지가 명반을 대지에 고정합니다.",
+    "bCityPlaceholder": "출생 도시",
+    "bContinue": "계속",
+    "bRevealChart": "명반 공개"
+  },
+  "loading": {
+    "messages": [
+      "탄생 시공간 좌표를 고정하는 중...",
+      "연주 간지 에너지 매트릭스 분석 중...",
+      "천체 정렬 교정 중...",
+      "월지 장간 오행 구조 스캔 중...",
+      "일주 강약 균형 계산 중...",
+      "4궁의 명운 공명 감지 중...",
+      "수(水) 속성 에너지 파동 감지 중...",
+      "7궁 에너지 흐름 감지 중...",
+      "자미두수 좌표 데이터 통합 중...",
+      "대운 타임라인 교정 완료...",
+      "신살 배치, 명리 구조 형성 중...",
+      "당신의 성반이 곧 나타납니다..."
+    ]
+  },
+  "form": {
+    "nameLabel": "이름 (선택사항)",
+    "namePlaceholder": "구별하기 위해서만, 뭐든 괜찮아요",
+    "cityLabel": "출생지 *",
+    "cityPlaceholder": "예: 서울·부산·도쿄·뉴욕",
+    "solarTimeNote": "도시 경도 기준 진태양시 자동 보정",
+    "dateLabel": "생년월일 (양력)",
+    "hourLabel": "태어난 시간대",
+    "unknownHour": "출생 시각을 모름",
+    "genderMale": "☰ 남자",
+    "genderFemale": "☷ 여자",
+    "shichen": [
+      "자시(전)  23:00–01:00",
+      "축시　    01:00–03:00",
+      "인시　    03:00–05:00",
+      "묘시　    05:00–07:00",
+      "진시　    07:00–09:00",
+      "사시　    09:00–11:00",
+      "오시　    11:00–13:00",
+      "미시　    13:00–15:00",
+      "신시　    15:00–17:00",
+      "유시　    17:00–19:00",
+      "술시　    19:00–21:00",
+      "해시　    21:00–23:00",
+      "자시(후)  23:00–01:00"
+    ],
+    "dateLabelLunar": "생년월일 (음력)",
+    "checkLunar": "음력",
+    "checkTrueSolar": "진태양시"
+  },
+  "pair": {
+    "inviteText": "님이 두 사람의 성반 인연을 함께 확인해보자고 초대했어요",
+    "scoreLabel": "궁합 지수",
+    "dayMasterOfLabel": "{name}의 일주",
+    "unlockFull": "다운로드해서 완전한 리포트 해방",
+    "orWeb": "또는 브라우저에서 바로 사주 보기",
+    "expiredTitle": "링크가 만료됐어요",
+    "expiredDesc": "이 공유 링크는 만료되었거나 유효하지 않습니다. 상대방에게 새로운 링크를 만들어 달라고 해주세요."
+  },
+  "resonate": {
+    "defaultTitle": "초대를 받았습니다",
+    "inviteTitle": "님이 궁합 감정에 초대했습니다",
+    "subtitle": "운명의 공명",
+    "description": "동양 현학의 지혜로 두 사람의 궁합을 탐구합니다.",
+    "inviteFrom": "초대 담당자",
+    "expires": "만료일",
+    "openInApp": "HexAstral에서 열기",
+    "downloadApp": "HexAstral 무료 다운로드",
+    "curiosityTitle": "당신들의 운명적 인연이 기다립니다",
+    "curiosityUnlockCTA": "HexAstral을 다운로드하여 전체 궁합 해석 잠금 해제",
+    "dimLongTerm": "장기 가능성",
+    "dimAttraction": "자기적 끌림",
+    "dimCommunication": "소통 흐름",
+    "dimEmotional": "감정적 공명",
+    "expired": "이 초대는 만료되었습니다. 보낸 사람에게 새 초대를 요청하세요.",
+    "notFound": "초대를 찾을 수 없거나 더 이상 유효하지 않습니다."
+  },
+  "common": {
+    "download": "HexAstral 무료 다운로드",
+    "downloadButton": "App Store에서 무료 다운로드",
+    "downloadNote": "무료 시작 · 회원가입 불필요 · 첫 이용 코인 3개 증정",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "진구의 초대를 받았어요 · HexAstral",
+    "meta_description": "친구가 HexAstral에 초대했어요. 초대 링크로 다운로드하면 특별 리워드를 얻을 수 있어요.",
+    "headline": "별자리가 당신을\n기다리고 있어요",
+    "subline": "친구에게 초대를 받았어요. 초대 링크로 HexAstral을 다운로드하면 특별 혼동 혁택을 드릴게요.",
+    "ref_label": "초대 코드",
+    "benefit_1": "첫 사주 산운 완료 시 바다스 코인 증정 — AI 심층 해석 잠금 해제",
+    "benefit_2": "회원가입 불필요 · 60초 안에 사주 완성",
+    "benefit_3": "사주팛자 · 자미두수 · 궁합 배지 전체 오픈",
+    "cta": "무료 다운로드 후 초대 혼택 받기",
+    "note": "초대 링크를 통해 첫 번째로 다운로드하는 신규 사용자에게만 해당함"
+  },
+  "Metadata": {
+    "title": "HexAstral — 운명의 청사진",
+    "description": "동양의 지혜와 AI의 만남."
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral 해석"
+  }
+}

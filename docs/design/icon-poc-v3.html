@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金石玄学 · 图标系统 v3 · 日冕 / 红线 / 甲骨梦 / 拓片质感天花板 + Firefly 合成</title>
+<style>
+  :root{
+    --void:#0B0B0C; --stone:#141416;
+    --paper:#F5F0E8; --paperWarm:#EDE6D8; --paperAged:#DDD5C4;
+    --inkBrown:#3C2415; --rubbingWhite:#E8DFCE;
+    --cinnabar:#9B2226; --gold:#C4A882; --zinc500:#71717A;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#16140f; color:var(--paperWarm);
+    font-family:"PingFang SC","Hiragino Sans GB","Songti SC",-apple-system,serif;
+    padding:40px 28px 90px; line-height:1.6;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:24px;font-weight:600;letter-spacing:2px;margin:0 0 6px}
+  .sub{color:var(--zinc500);font-size:13px;margin:0 0 4px}
+  .rules{color:var(--gold);font-size:13px;letter-spacing:1px;margin:14px 0 4px}
+  .note{color:var(--zinc500);font-size:12px;max-width:860px;border-left:2px solid var(--cinnabar);padding-left:12px;margin:16px 0 10px}
+  .note b{color:var(--gold)}
+  .v3{color:var(--zinc500);font-size:12px;max-width:860px;border-left:2px solid var(--gold);padding-left:12px;margin:10px 0 6px;line-height:1.85}
+  .v3 b{color:var(--gold)} .v3 i{color:var(--paperWarm);font-style:normal}
+
+  /* ---- taxonomy strip: 命相卜三宫 + 山留白 ---- */
+  .taxo{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 30px}
+  .gong{flex:1 1 200px;border:1px solid #2a2620;border-radius:10px;padding:12px 14px;background:#1b1812}
+  .gong.shan{background:#141109;border-style:dashed;opacity:.7}
+  .gong .g-h{font-size:15px;letter-spacing:3px;color:var(--gold);margin-bottom:3px}
+  .gong .g-s{font-size:11px;color:var(--zinc500);margin-bottom:8px;letter-spacing:1px}
+  .gong .g-i{font-size:12px;color:var(--paperWarm);line-height:1.9}
+  .gong .g-i i{color:var(--zinc500);font-style:normal}
+
+  .panels{display:flex;flex-direction:column;gap:22px}
+  .card{border-radius:14px;padding:24px 22px 28px;position:relative;overflow:hidden}
+  .card.rice{background:var(--paper);color:var(--inkBrown)}
+  .card.rub{background:var(--void);color:var(--rubbingWhite)}
+  .card h2{font-size:13px;letter-spacing:6px;text-transform:uppercase;font-weight:500;margin:0 0 20px;opacity:.7}
+
+  .palaces{display:flex;gap:14px;flex-wrap:wrap}
+  .pgroup{flex:1 1 auto;border-radius:10px;padding:6px 4px 4px}
+  .card.rice .pgroup{border:1px dashed rgba(60,36,21,.22)}
+  .card.rub .pgroup{border:1px dashed rgba(232,223,206,.16)}
+  .pgroup.shan{flex:0 0 132px;opacity:.55}
+  .phead{font-size:11px;letter-spacing:3px;text-align:center;margin:4px 0 8px;opacity:.6}
+  .ptiles{display:flex;flex-wrap:wrap;gap:6px 2px;justify-content:center}
+
+  .tile{width:114px;text-align:center}
+  .ico{width:96px;height:96px;display:block;margin:0 auto}
+  .cap{font-size:10px;letter-spacing:2px;margin-top:5px;opacity:.6}
+
+  .grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply}
+  .card.rub .grain{mix-blend-mode:screen;opacity:.5}
+
+  /* ---- Cycle 对比: 节气轮 vs 日冕 ---- */
+  .cyc{margin:26px 0 0;background:#1b1812;border:1px solid #2a2620;border-radius:12px;padding:18px 18px 20px}
+  .cyc h3{font-size:12px;letter-spacing:4px;color:var(--gold);margin:0 0 14px;font-weight:500}
+  .cyccmp{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .cyccell{text-align:center;color:var(--paperWarm)}
+  .cyccell .ico{width:104px;height:104px}
+  .cyccell .cc{font-size:10px;letter-spacing:2px;margin-top:6px;opacity:.6}
+  .cyccell .cc b{display:block;color:var(--gold);letter-spacing:3px;opacity:1;margin-bottom:2px}
+  .cyccell.old{opacity:.5}
+  .cycarrow{color:var(--zinc500);font-size:22px;align-self:center}
+  .cycnote{color:var(--zinc500);font-size:12px;max-width:480px;line-height:1.8}
+  .cycnote b{color:var(--gold)}
+
+  /* ---- 拓片质感研究 ---- */
+  .study{margin-top:30px;background:var(--void);border-radius:14px;padding:24px 22px 26px;position:relative;overflow:hidden}
+  .study h2{font-size:13px;letter-spacing:6px;text-transform:uppercase;font-weight:500;margin:0 0 6px;color:var(--rubbingWhite);opacity:.75}
+  .study .s-note{color:var(--zinc500);font-size:12px;max-width:820px;margin:0 0 18px;border-left:2px solid var(--cinnabar);padding-left:12px}
+  .study .s-note b{color:var(--gold)}
+  .srow{display:flex;gap:16px;flex-wrap:wrap;color:var(--rubbingWhite)}
+  .scard{width:140px;text-align:center}
+  .scard .sico{width:122px;height:122px;display:block;margin:0 auto;border-radius:8px}
+  .scard .slot{width:122px;height:122px;margin:0 auto;border:1.5px dashed #4a443a;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;color:var(--zinc500);font-size:11px;line-height:1.5;padding:10px}
+  .scard .scap{font-size:10px;letter-spacing:1px;margin-top:8px;opacity:.6}
+  .scard .scap b{display:block;color:var(--gold);letter-spacing:2px;opacity:1;margin-bottom:2px}
+
+  /* ---- Firefly / 合成 ---- */
+  .fire{margin-top:30px;background:var(--void);border-radius:14px;padding:24px 22px 26px;color:var(--rubbingWhite)}
+  .fire h2{font-size:13px;letter-spacing:6px;text-transform:uppercase;font-weight:500;margin:0 0 6px;opacity:.75}
+  .fire .f-note{color:var(--zinc500);font-size:12px;max-width:820px;margin:0 0 18px;border-left:2px solid var(--cinnabar);padding-left:12px;line-height:1.8}
+  .fire .f-note b{color:var(--gold)}
+  .firegrid{display:flex;gap:22px;flex-wrap:wrap}
+  .firecol{flex:1 1 330px;min-width:290px}
+  .firecol h4{font-size:11px;letter-spacing:3px;color:var(--gold);margin:0 0 10px}
+  pre.code{background:#111014;border:1px solid #2a2620;border-radius:8px;padding:12px 14px;overflow:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#cfc7b6;white-space:pre;margin:0}
+  .prompt{background:#15130d;border:1px solid #2a2620;border-left:3px solid var(--gold);border-radius:6px;
+    padding:9px 12px;margin:0 0 10px;font-size:11.5px;line-height:1.65;color:#cdc4b1;font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  .prompt b{color:var(--gold);display:block;letter-spacing:1px;margin-bottom:4px;font-size:10px;font-family:inherit}
+  .firedemo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-top:4px}
+  .firedemo .scard{width:118px}
+  .firedemo .sico{width:104px;height:104px}
+  .srclist{color:var(--zinc500);font-size:11.5px;line-height:1.95;margin:6px 0 0;padding-left:2px}
+  .srclist b{color:var(--paperWarm);font-weight:500}
+  .srclist .tag{color:var(--gold)}
+
+  /* ---- legend ---- */
+  .legend{margin-top:34px;color:var(--zinc500);font-size:12px}
+  .legend .lh{color:var(--gold);letter-spacing:3px;margin-bottom:10px}
+  .lgrid{display:flex;gap:10px 18px;flex-wrap:wrap}
+  .lrow{display:flex;align-items:center;gap:8px;flex:0 0 240px}
+  .chip{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(255,255,255,.15)}
+  .lrow b{color:var(--paperWarm);font-weight:500}
+  .lrow i{font-style:normal;color:var(--zinc500)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>金石玄学 · 图标系统 v3</h1>
+  <p class="sub">字象合一优先 · 命相卜三宫 + 山留白 · 印框 + 治印 + 锁定色（焦墨/朱砂）+ 房号</p>
+  <p class="rules">铁律 — 重量&gt;装饰 · 蚀刻&gt;光洁 · 不齐&gt;对称 · 写意&gt;写实</p>
+  <p class="v3">
+    <b>v3 改动</b>（对照 v2）：
+    <i>① Cycle</i> 节气轮 → <b>日冕</b>（日字+放射光丝+二分二至，拆掉与罗盘的撞脸，见下方对比）。
+    <i>② 緣</i> 系统字 → <b>红线</b>设计象形（双糸缠绕同心结；形声字无象形根，用文化象形更准，currentColor 守家族锁定色）。
+    <i>③ 夢</i> 系统字 → <b>甲骨象形</b>（突出眉目 + 爿床，"睡中所见"）。
+    <i>④ 命</i> 系统字 → <b>小篆近似</b>（亼+口+卩；<b>标注「待核」</b>—凭结构摹，未对权威字源，生产前须以小學堂/漢典校字）。
+    <i>⑤</i> 拓片质感推到程序化天花板（青铜锈/枯墨/碑面）；<i>⑥</i> 新增 Firefly/SD 提示词 + 外部位图合成进印框的代码与活例。
+  </p>
+  <p class="note">
+    <b>字象合一</b>：能让字本身成画的，用古字 —— 爻、面、夢（甲骨）<b>纯矢量字即画</b>；命用小篆近似（待核）。
+    无象形根的（緣 形声字）用<b>设计象形</b>（红线）；其余设计象形 —— 洛书、罗盘、日冕。
+    全套用同一<b>印框 + 治印蚀刻 + 焦墨/阴白锁定色 + 朱砂房号（命/相/卜）</b>统一；各 App 品牌色仅作 legend 色签，不进图标本体。
+  </p>
+
+  <!-- ===== taxonomy ===== -->
+  <div class="taxo" id="taxo"></div>
+
+  <!-- ============ shared defs ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="erode" x="-25%" y="-25%" width="150%" height="150%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="11" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="1.9" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="erodeFrame" x="-25%" y="-25%" width="150%" height="150%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.38" numOctaves="3" seed="4" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0"/>
+      </filter>
+
+      <!-- 拓片质感: low-freq warp + high-freq speckle knockout -->
+      <filter id="rub" x="-35%" y="-35%" width="170%" height="170%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035 0.05" numOctaves="3" seed="9" result="big"/>
+        <feDisplacementMap in="SourceGraphic" in2="big" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="warp"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="2" seed="3" result="sp"/>
+        <feColorMatrix in="sp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.7 1.12" result="mask"/>
+        <feComposite in="warp" in2="mask" operator="in"/>
+      </filter>
+
+      <!-- 青铜锈: warp + 绿锈斑块只贴在字形上 -->
+      <filter id="patina" x="-40%" y="-40%" width="180%" height="180%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.03 0.045" numOctaves="3" seed="9" result="big"/>
+        <feDisplacementMap in="SourceGraphic" in2="big" scale="4" xChannelSelector="R" yChannelSelector="G" result="warp"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.07 0.09" numOctaves="3" seed="5" result="p"/>
+        <feColorMatrix in="p" type="matrix"
+          values="0 0 0 0 0.10
+                  0 0 0 0 0.55
+                  0 0 0 0 0.46
+                  0 0 0 1.7 -0.55" result="green"/>
+        <feComposite in="green" in2="warp" operator="in" result="patch"/>
+        <feMerge><feMergeNode in="warp"/><feMergeNode in="patch"/></feMerge>
+      </filter>
+
+      <!-- 枯墨: 比 #rub 更狠的干笔剥蚀 -->
+      <filter id="drymo" x="-35%" y="-35%" width="170%" height="170%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.03" numOctaves="2" seed="2" result="w"/>
+        <feDisplacementMap in="SourceGraphic" in2="w" scale="3.4" xChannelSelector="R" yChannelSelector="G" result="warp"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.85 0.7" numOctaves="3" seed="6" result="sp"/>
+        <feColorMatrix in="sp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.3" result="mask"/>
+        <feComposite in="warp" in2="mask" operator="in"/>
+      </filter>
+
+      <!-- 碑面: 程序化石面底纹 (填进 rect, 或作 mask 填充源) -->
+      <filter id="ground" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="5" seed="3" result="n"/>
+        <feColorMatrix in="n" type="matrix"
+          values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 0.06" result="a"/>
+        <feFlood flood-color="#7a6f5e" result="c"/>
+        <feComposite in="c" in2="a" operator="in"/>
+      </filter>
+
+      <symbol id="frame" viewBox="0 0 100 100">
+        <path d="M8,4 L93,3 Q97,3 97,7 L98,92 Q98,97 94,97 L7,98 Q3,98 3,94 L4,8 Q4,4 8,4 Z"
+              fill="none" stroke="currentColor" stroke-width="2.4" filter="url(#erodeFrame)"/>
+        <path d="M14,11 L87,10 Q89,10 89,12 L90,88 Q90,90 88,90 L13,91 Q11,91 11,89 L10,13 Q10,11 14,11 Z"
+              fill="none" stroke="currentColor" stroke-width="1" opacity="0.45" filter="url(#erodeFrame)"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="panels">
+    <div class="card rice" id="rice">
+      <h2>宣纸 · 焦墨</h2>
+      <div class="palaces" data-palaces></div>
+      <svg class="grain"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.06"/></svg>
+    </div>
+
+    <div class="card rub" id="rub-panel">
+      <h2>碑拓 · 阴文</h2>
+      <div class="palaces" data-palaces></div>
+      <svg class="grain"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.10"/></svg>
+    </div>
+  </div>
+
+  <!-- ===== Cycle 对比 ===== -->
+  <div class="cyc">
+    <h3>CYCLE · 节气轮 → 日冕</h3>
+    <div class="cyccmp" id="cyccmp"></div>
+  </div>
+
+  <!-- ===== 拓片质感研究 ===== -->
+  <div class="study">
+    <h2>拓片质感研究 · 程序化天花板</h2>
+    <p class="s-note">
+      纯几何 → 基础蚀刻(#erode) → 重蚀拓痕(#rub) → <b>青铜锈(#patina)</b> → <b>枯墨(#drymo)</b> → <b>碑面拓底(#ground)</b> → 真位图合成位。
+      前六格<b>全程序化、矢量、授权干净、可缩放</b>，是我能全包的上限；最后一格"真刀痕/真铜锈/真枯墨"需外部位图（见下方 Firefly 区）。
+    </p>
+    <div class="srow" id="study"></div>
+  </div>
+
+  <!-- ===== Firefly / 外部位图合成 ===== -->
+  <div class="fire">
+    <h2>Firefly / SD · 外部位图 → 合成进印框</h2>
+    <p class="f-note">
+      我<b>不能在此生成位图</b>，也不替你嵌未核实授权的图。真实路径有二：你用 Firefly/SD <b>生成</b>（我给提示词），或从 <b>CC0 机构</b>取（认准具名机构）。
+      拿到 PNG 后，用下面的 <b>mask 合成法</b>把它"灌"进字形 —— 字成为透出纹理的窗口，与同一印框统一。右侧活例已用程序化石面演示该管线，把 <code>rect</code> 换成你的 <code>image</code> 即可。
+      <b>建议</b>：图标本体走程序化（16px 下真拓片只会糊成脏点）；真位图留给英雄图/营销页/启动图。
+    </p>
+    <div class="firegrid">
+      <div class="firecol">
+        <h4>① 生成提示词（英文出图更稳）</h4>
+        <div class="prompt"><b>青铜器拓片 / bronze rubbing</b>ink rubbing (taku) of an ancient Chinese bronze inscription, black ink on warm rice paper, worn eroded edges, subtle paper grain, flat scan, no perspective, monochrome, high contrast --no color, gloss, modern, shadow</div>
+        <div class="prompt"><b>碑拓阴文 / stele rubbing</b>weathered stone stele rubbing, white characters on black ground (yin-wen), cracked pitted stone, 3000-year patina, archaeological, hi-res flat scan, grayscale --no perspective, gloss</div>
+        <div class="prompt"><b>青铜锈面 / verdigris</b>close-up ancient bronze surface, green verdigris patina, malachite + azurite oxidation, pitted metal, museum artifact, soft diffuse light, seamless top-down PBR texture</div>
+        <div class="srclist">
+          <span class="tag">渠道（认准具名机构 / CC0，别信路边 public domain）</span><br>
+          · <b>Adobe Firefly</b> — 商用最安全（授权训练 + 赔付保障）<br>
+          · <b>SD / Flux</b>（ComfyUI 本地）— 自由度最高<br>
+          · <b>The Met Open Access</b>（CC0，有中国青铜器/拓片）· <b>Smithsonian Open Access</b>（CC0）<br>
+          · <b>台北故宫 Open Data</b> · <b>Wikimedia Commons</b>（逐图看授权）<br>
+          · 纯材质 CC0：<b>Poly Haven</b> · <b>ambientCG</b>（纸/石/铜）<br>
+          · 篆形字源摹本：<b>小學堂</b>（中研院）· <b>漢典 zdic.net</b> · <b>说文 ctext.org</b>
+        </div>
+      </div>
+      <div class="firecol">
+        <h4>② 合成代码（字形作 mask 灌纹理）</h4>
+<pre class="code">&lt;svg viewBox="0 0 100 100"&gt;
+  &lt;defs&gt;
+    &lt;mask id="glyph"&gt;        &lt;!-- 白=保留 --&gt;
+      &lt;g style="color:#fff"&gt;
+        { 你的字形 path / charGlyph }
+      &lt;/g&gt;
+    &lt;/mask&gt;
+  &lt;/defs&gt;
+
+  &lt;use href="#frame"/&gt;
+
+  &lt;!-- 换成你的 Firefly/SD 位图 --&gt;
+  &lt;image href="rubbing.png"
+         width="100" height="100"
+         preserveAspectRatio="xMidYMid slice"
+         mask="url(#glyph)"/&gt;
+&lt;/svg&gt;</pre>
+        <h4 style="margin-top:16px">③ 活例（程序化石面占位，证明管线）</h4>
+        <div class="firedemo" id="firedemo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== legend ===== -->
+  <div class="legend">
+    <div class="lh">图标 · 应用 · 宫 · 各 App 品牌色（仅在 App 内用，不进图标）</div>
+    <div class="lgrid" id="legend"></div>
+  </div>
+</div>
+
+<script>
+const CINNABAR = '#9B2226', PAPER = '#F5F0E8';
+const sealFont = "'Songti SC','STSong','SimSun',serif";
+
+// ---- product taxonomy ----
+const ICONS = [
+  { app:'fate-app',        cap:'命 · 八字紫微',   palace:'命', accent:'#C4A882', kind:'draw', glyph:'ming',     tag:'小篆 · 近似待核' },
+  { app:'yuan-app',        cap:'緣 · 姻缘合婚',   palace:'命', accent:'#9B2226', kind:'draw', glyph:'hongxian', tag:'设计象形 · 红线' },
+  { app:'cycle-app',       cap:'日冕 · 黄历',     palace:'命', accent:'#A8492E', kind:'draw', glyph:'corona',   tag:'设计象形 · 日冕' },
+  { app:'face-oracle-app', cap:'面 · 面相',       palace:'相', accent:'#3F7B5C', kind:'draw', glyph:'mian',     tag:'金文 · 字即画' },
+  { app:'feng-app',        cap:'罗盘 · 风水堪舆', palace:'相', accent:'#B08D5B', kind:'draw', glyph:'luopan',   tag:'设计象形' },
+  { app:'coin-cast-app',   cap:'爻 · 六爻铜钱',   palace:'卜', accent:'#B8741F', kind:'draw', glyph:'yao',      tag:'字即画' },
+  { app:'dream-oracle-app',cap:'夢 · 解梦',       palace:'卜', accent:'#3C3E76', kind:'draw', glyph:'meng',     tag:'甲骨 · 象形' },
+  { app:'numerology-app',  cap:'洛书 · 梅花数',   palace:'卜', accent:'#5B3F8A', kind:'draw', glyph:'luoshu',   tag:'设计象形' },
+];
+const PALACES = [
+  { key:'命', sub:'推命 · 生辰定数', apps:'fate 八字紫微 · yuan 合婚 · cycle 黄历' },
+  { key:'相', sub:'相形 · 观象辨势', apps:'face 面相 · feng 风水堪舆' },
+  { key:'卜', sub:'占卜 · 起卦问机', apps:'coin 六爻 · dream 解梦 · numerology 梅花' },
+];
+
+// ---- drawn pictographs (currentColor adapts to substrate ink) ----
+function yao(){ // 爻 — two stacked 乂, carved
+  return `<g stroke="currentColor" stroke-width="6.5" stroke-linecap="round" fill="none" filter="url(#erode)">
+    <line x1="34" y1="27" x2="66" y2="49"/><line x1="66" y1="27" x2="34" y2="49"/>
+    <line x1="34" y1="53" x2="66" y2="75"/><line x1="66" y1="53" x2="34" y2="75"/>
+  </g>`;
+}
+function mian(){ // 面 — 金文: face contour enclosing one 目
+  return `<g filter="url(#erode)">
+    <path d="M31,23 Q50,17 69,23 Q75,42 71,65 Q64,83 50,85 Q36,83 29,65 Q25,42 31,23 Z"
+          fill="none" stroke="currentColor" stroke-width="4.2"/>
+    <path d="M37,45 Q50,38 63,45 Q50,52 37,45 Z" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="50" cy="45.5" r="3.1" fill="currentColor"/>
+  </g>`;
+}
+function corona(){ // 日冕 — 日字(disc+bar) + 不齐放射光丝 + 二分二至长芒
+  const cx=50, cy=50, rIn=16;
+  const lens=[31,25,28,24,32,26,29,23,31,25,27,24,32,26,28,25]; // 不齐>对称
+  let w='';
+  const n=lens.length;
+  for(let i=0;i<n;i++){
+    const a=(i/n)*2*Math.PI - Math.PI/2;
+    const x1=(cx+rIn*Math.cos(a)).toFixed(1), y1=(cy+rIn*Math.sin(a)).toFixed(1);
+    const r2=lens[i];
+    const x2=(cx+r2*Math.cos(a)).toFixed(1), y2=(cy+r2*Math.sin(a)).toFixed(1);
+    const major=(i%4===0); // 春分/夏至/秋分/冬至
+    w+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.9:1.5}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="${cx}" cy="${cy}" r="${rIn}" stroke-width="2.6"/>
+    <line x1="${cx-10}" y1="${cy}" x2="${cx+10}" y2="${cy}" stroke-width="2.2"/>
+    <g stroke-linecap="round">${w}</g>
+  </g>`;
+}
+function hongxian(){ // 緣 — 设计象形: 双线缠绕(两次交叉成结, 似月老红线); 区别于爻的硬交叉. currentColor 守家族锁定色, 红由 accent/房号承载
+  return `<g stroke="currentColor" fill="none" stroke-width="3.2" stroke-linecap="round" filter="url(#erode)">
+    <path d="M39,20 C52,27 52,36 50,42 C48,48 36,52 38,60 C40,68 50,72 58,81"/>
+    <path d="M61,20 C48,27 48,36 50,42 C52,48 64,52 62,60 C60,68 50,72 42,81"/>
+    <path d="M45,45 Q50,40 55,45 Q50,51 45,45 Z" stroke-width="2"/>
+    <g stroke-width="2">
+      <path d="M58,81 l4,5 M58,81 l-2,6"/>
+      <path d="M42,81 l-4,5 M42,81 l2,6"/>
+    </g>
+  </g>`;
+}
+function meng(){ // 夢 — 甲骨象形: 突出眉目(睡中所见) + 卧身 + 爿床
+  return `<g filter="url(#erode)">
+    <g stroke="currentColor" fill="none" stroke-linecap="round">
+      <path d="M30,33 Q42,24 55,32" stroke-width="2.8"/>
+      <path d="M31,43 Q42,36 53,43 Q42,50 31,43 Z" stroke-width="2.4"/>
+      <path d="M28,66 Q42,61 60,65" stroke-width="3.2"/>
+      <path d="M70,30 L70,80 M76,32 L76,78" stroke-width="2.4"/>
+      <path d="M64,42 L70,42 M64,64 L70,64" stroke-width="1.8"/>
+    </g>
+    <circle cx="42" cy="43" r="2.8" fill="currentColor"/>
+  </g>`;
+}
+function ming(){ // 命 — 小篆结构近似 (亼 roof + 口 + 卩). 待真篆字源核对.
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28,31 Q50,18 72,31" stroke-width="3.4"/>
+    <path d="M40,30 L60,30" stroke-width="2.4"/>
+    <path d="M31,44 L45,44 L45,59 L31,59 Z" stroke-width="2.6"/>
+    <path d="M58,40 L58,73" stroke-width="3"/>
+    <path d="M58,41 Q67,45 64,55 Q62,65 53,67" stroke-width="3"/>
+  </g>`;
+}
+function luopan(){ // 罗盘 — concentric rings + 24山 ticks + pointer
+  let t='';
+  for(let i=0;i<24;i++){
+    const a=i*15*Math.PI/180, major=(i%6===0), r1=major?22:26, r2=31;
+    const x1=(50+r1*Math.sin(a)).toFixed(1), y1=(50-r1*Math.cos(a)).toFixed(1);
+    const x2=(50+r2*Math.sin(a)).toFixed(1), y2=(50-r2*Math.cos(a)).toFixed(1);
+    t+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.4:1.2}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="50" cy="50" r="32" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="20" stroke-width="1.4" opacity="0.6"/>
+    <g>${t}</g>
+    <g transform="rotate(-22 50 50)">
+      <path d="M50,33 L54.5,50 L50,67 L45.5,50 Z" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="50" r="2.6" fill="currentColor" stroke="none"/>
+    </g>
+  </g>`;
+}
+function jieqi(){ // 节气轮 (v2 旧版, 仅留作对比) — 24 spokes + 日 center
+  let s='';
+  for(let i=0;i<24;i++){
+    const a=i*15*Math.PI/180, major=(i%6===0), r1=major?13:20, r2=30;
+    const x1=(50+r1*Math.sin(a)).toFixed(1), y1=(50-r1*Math.cos(a)).toFixed(1);
+    const x2=(50+r2*Math.sin(a)).toFixed(1), y2=(50-r2*Math.cos(a)).toFixed(1);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.6:1.2}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="50" cy="50" r="31" stroke-width="2.4"/>
+    <g>${s}</g>
+    <circle cx="50" cy="50" r="9" fill="currentColor" stroke="none"/>
+  </g>`;
+}
+function luoshu(){ // 洛书 — 九宫格 + 中五点 + 四正点
+  let g=`<rect x="28" y="28" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    <line x1="42.7" y1="28" x2="42.7" y2="72" stroke-width="1.3"/>
+    <line x1="57.3" y1="28" x2="57.3" y2="72" stroke-width="1.3"/>
+    <line x1="28" y1="42.7" x2="72" y2="42.7" stroke-width="1.3"/>
+    <line x1="28" y1="57.3" x2="72" y2="57.3" stroke-width="1.3"/>`;
+  const d=4.2;
+  g+=`<g fill="currentColor" stroke="none">
+    <circle cx="50" cy="50" r="1.8"/>
+    <circle cx="${50-d}" cy="${50-d}" r="1.8"/><circle cx="${50+d}" cy="${50-d}" r="1.8"/>
+    <circle cx="${50-d}" cy="${50+d}" r="1.8"/><circle cx="${50+d}" cy="${50+d}" r="1.8"/>
+    <circle cx="50" cy="35.3" r="1.7"/><circle cx="50" cy="64.7" r="1.7"/>
+    <circle cx="35.3" cy="50" r="1.7"/><circle cx="64.7" cy="50" r="1.7"/>
+  </g>`;
+  return `<g stroke="currentColor" filter="url(#erode)">${g}</g>`;
+}
+const DRAW = { yao, mian, corona, hongxian, meng, ming, luopan, jieqi, luoshu };
+
+function charGlyph(ch){
+  return `<text x="50" y="54" text-anchor="middle" dominant-baseline="middle"
+    font-family="${sealFont}" font-size="54" font-weight="700"
+    fill="currentColor" filter="url(#erode)">${ch}</text>`;
+}
+function glyphSVG(ic){ return ic.kind==='char' ? charGlyph(ic.glyph) : DRAW[ic.glyph](); }
+
+// parameterized 面 for the texture study (filter + color overridable)
+function faceWith(filterId, color, sw){
+  const c = color || '#E8DFCE';
+  const f = filterId ? `filter="url(#${filterId})"` : '';
+  return `<g ${f} style="color:${c}">
+    <path d="M31,23 Q50,17 69,23 Q75,42 71,65 Q64,83 50,85 Q36,83 29,65 Q25,42 31,23 Z"
+          fill="none" stroke="currentColor" stroke-width="${sw||4.4}"/>
+    <path d="M37,45 Q50,38 63,45 Q50,52 37,45 Z" fill="none" stroke="currentColor" stroke-width="2.7"/>
+    <circle cx="50" cy="45.5" r="3.1" fill="currentColor"/>
+  </g>`;
+}
+
+function cornerSeal(p){ // 房号: cinnabar palace stamp
+  return `<g transform="translate(74,74)">
+    <rect x="0" y="0" width="17" height="17" rx="2.5" fill="${CINNABAR}" filter="url(#erode)"/>
+    <text x="8.5" y="9.4" fill="${PAPER}" font-size="11" font-family="${sealFont}" font-weight="700"
+          text-anchor="middle" dominant-baseline="middle">${p}</text>
+  </g>`;
+}
+
+function tile(ic){
+  return `<div class="tile">
+    <svg class="ico" viewBox="0 0 100 100">
+      <use href="#frame"/>
+      ${glyphSVG(ic)}
+      ${cornerSeal(ic.palace)}
+    </svg>
+    <div class="cap">${ic.cap}</div>
+  </div>`;
+}
+function shanTile(){
+  return `<div class="tile">
+    <svg class="ico" viewBox="0 0 100 100">
+      <use href="#frame"/>
+      <text x="50" y="54" text-anchor="middle" dominant-baseline="middle"
+        font-family="${sealFont}" font-size="46" font-weight="600"
+        fill="currentColor" opacity="0.16" filter="url(#erode)">山</text>
+    </svg>
+    <div class="cap">未启 · 预留</div>
+  </div>`;
+}
+
+function renderPanels(){
+  const html = PALACES.map(p=>{
+    const tiles = ICONS.filter(i=>i.palace===p.key).map(tile).join('');
+    return `<div class="pgroup">
+      <div class="phead">${p.key}宫 · ${p.sub.split(' · ')[0]}</div>
+      <div class="ptiles">${tiles}</div>
+    </div>`;
+  }).join('') + `<div class="pgroup shan">
+      <div class="phead">山 · 留白</div>
+      <div class="ptiles">${shanTile()}</div>
+    </div>`;
+  document.querySelectorAll('[data-palaces]').forEach(el=> el.innerHTML = html);
+}
+
+function renderTaxo(){
+  const cells = PALACES.map(p=>`<div class="gong">
+    <div class="g-h">${p.key}宫</div>
+    <div class="g-s">${p.sub}</div>
+    <div class="g-i">${p.apps.split(' · ').map(a=>`<i>·</i> ${a}`).join('<br>')}</div>
+  </div>`).join('') + `<div class="gong shan">
+    <div class="g-h">山</div>
+    <div class="g-s">留白 · 自修养性</div>
+    <div class="g-i"><i>·</i> 暂无产品<br><i>·</i> 预留第四宫</div>
+  </div>`;
+  document.getElementById('taxo').innerHTML = cells;
+}
+
+function renderCycleCompare(){
+  const cell = (fn, tag, sub, cls) => `<div class="cyccell ${cls||''}">
+    <svg class="ico" viewBox="0 0 100 100" style="color:var(--rubbingWhite)">
+      <use href="#frame"/>${fn}${cornerSeal('命')}
+    </svg>
+    <div class="cc"><b>${tag}</b>${sub}</div>
+  </div>`;
+  document.getElementById('cyccmp').innerHTML =
+    cell(jieqi(), 'v2 节气轮', '24 辐射刻度', 'old') +
+    `<div class="cycarrow">→</div>` +
+    cell(corona(), 'v3 日冕', '日 + 光丝 + 二分二至') +
+    `<div class="cycnote">
+      旧 <b>节气轮</b> 与 <b>罗盘(feng)</b> 都是"圆 + 24 辐射刻度"，同套图标里撞脸。
+      <b>日冕</b>拆掉碰撞：节气本源自太阳在黄道上的位置，太阳系图标比轮子更贴"黄历"本义；日冕又自带天象玄学感（呼应 Astral）。
+      保留 <b>日</b>字(字即画) + 二分二至长芒(节气信息)，避免糊成"天气 app"。
+    </div>`;
+}
+
+function renderStudy(){
+  const flat   = faceWith('',       '#E8DFCE', 4.2);
+  const erode  = faceWith('erode',  '#E8DFCE');
+  const rub    = faceWith('rub',    '#E8DFCE', 4.6);
+  const patina = faceWith('patina', '#8a7a52', 4.6);
+  const drymo  = faceWith('drymo',  '#E8DFCE', 4.8);
+
+  // 碑面拓底: 焦墨字 刻在 程序化石板 上
+  const ground = `<rect x="2" y="2" width="96" height="96" rx="8" filter="url(#ground)" opacity="0.9"/>
+    ${faceWith('rub', '#1c1810', 4.6)}`;
+
+  const cards = [
+    { cap:'纯几何',     sub:'无质感基线',        svg:flat },
+    { cap:'基础蚀刻',   sub:'#erode（系统当前）', svg:erode },
+    { cap:'重蚀拓痕',   sub:'#rub 程序化',        svg:rub },
+    { cap:'青铜锈',     sub:'#patina 程序化',     svg:patina },
+    { cap:'枯墨',       sub:'#drymo 程序化',      svg:drymo },
+    { cap:'碑面拓底',   sub:'#ground 石板+焦墨',  svg:ground },
+  ];
+  const cardHtml = cards.map(c=>`<div class="scard">
+    <svg class="sico" viewBox="0 0 100 100" style="color:#E8DFCE"><use href="#frame"/>${c.svg}${cornerSeal('相')}</svg>
+    <div class="scap"><b>${c.cap}</b>${c.sub}</div>
+  </div>`).join('');
+  const slot = `<div class="scard">
+    <div class="slot">真刀痕 / 真铜锈<br>/ 真枯墨<br><span style="color:#9B2226">合成位（外部位图）</span></div>
+    <div class="scap"><b>真位图</b>需 Firefly / CC0 素材</div>
+  </div>`;
+  document.getElementById('study').innerHTML = cardHtml + slot;
+}
+
+function renderFireDemo(){
+  // mask 合成法活例: 字形作 mask, 用程序化石面(#ground)当"位图"占位灌进去
+  const maskFace = `<mask id="mFace"><g style="color:#fff">${faceWith('rub','#fff',5)}</g></mask>`;
+  const maskMing = `<mask id="mMing"><g style="color:#fff">${ming().replace(/currentColor/g,'#fff')}</g></mask>`;
+  const demo = (defs, maskId, cap, sub) => `<div class="scard">
+    <svg class="sico" viewBox="0 0 100 100" style="color:#E8DFCE">
+      <defs>${defs}</defs>
+      <use href="#frame"/>
+      <rect x="0" y="0" width="100" height="100" filter="url(#ground)" mask="url(#${maskId})"/>
+      ${cornerSeal('相')}
+    </svg>
+    <div class="scap"><b>${cap}</b>${sub}</div>
+  </div>`;
+  document.getElementById('firedemo').innerHTML =
+    demo(maskFace, 'mFace', '面 · 灌石面', 'rect→你的 image') +
+    demo(maskMing, 'mMing', '命 · 灌石面', 'rect→你的 image');
+}
+
+function renderLegend(){
+  document.getElementById('legend').innerHTML = ICONS.map(ic=>`
+    <div class="lrow">
+      <span class="chip" style="background:${ic.accent}"></span>
+      <span><b>${ic.cap}</b> &nbsp;<i>${ic.palace}宫 · ${ic.app} · ${ic.tag}</i></span>
+    </div>`).join('');
+}
+
+renderTaxo(); renderPanels(); renderCycleCompare(); renderStudy(); renderFireDemo(); renderLegend();
+</script>
+</body>
+</html>

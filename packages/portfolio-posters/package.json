@@ -1,0 +1,29 @@
+{
+  "name": "@zhop/portfolio-posters",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Share poster layouts for portfolio satellite apps (not full screens)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@zhop/hexastral-tokens": "workspace:*",
+    "@zhop/satellite-ui": "workspace:*",
+    "react": "^19.2.3",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-view-shot": "^4.0.3"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.81.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

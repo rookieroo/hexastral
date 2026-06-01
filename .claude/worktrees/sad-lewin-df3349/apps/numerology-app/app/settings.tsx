@@ -1,0 +1,55 @@
+/**
+ * Settings — placeholder. v1.0 has only a language label and an "About" link.
+ * Memory toggle / Apple Sign In land in v1.1 once the satellite has signal.
+ */
+
+import { ScrollView, Text, View } from 'react-native'
+import { useI18n } from '@/lib/i18n'
+import { useAppTheme } from '@/lib/theme'
+
+export default function SettingsScreen() {
+  const { t, locale } = useI18n()
+  const { colors } = useAppTheme()
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{ padding: 24 }}
+    >
+      <Text
+        style={{
+          color: colors.text,
+          fontSize: 20,
+          fontWeight: '500',
+          letterSpacing: 0.4,
+        }}
+      >
+        {t('settingsTitle')}
+      </Text>
+
+      <View style={{ height: 24 }} />
+
+      <View
+        style={{
+          paddingVertical: 16,
+          borderBottomWidth: 0.5,
+          borderBottomColor: colors.separator,
+        }}
+      >
+        <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 1.6 }}>
+          {t('settingsLanguage')}
+        </Text>
+        <Text style={{ color: colors.text, fontSize: 16, marginTop: 4 }}>{locale.toUpperCase()}</Text>
+      </View>
+
+      <View style={{ paddingVertical: 16 }}>
+        <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 1.6 }}>
+          {t('settingsAbout')}
+        </Text>
+        <Text style={{ color: colors.text, fontSize: 13, marginTop: 4 }}>
+          Numerology · v0.1.0 · HexAstral
+        </Text>
+      </View>
+    </ScrollView>
+  )
+}

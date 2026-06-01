@@ -1,0 +1,246 @@
+{
+  "_comment": "ZH-Hans messages · anti-spam compliant per docs/anti-spam-positioning.md. Mirrors en.json structure. ZERO trigger words (占星 / 命运 / 运势 / 玄学 / 算命 / 星辰知道 / 星宫命理 / 命运格局) outside explicit-negation context. Lead vocabulary: 八字, 四柱, 命盘, 紫微斗数, 十二宫, 大运, 中华命学, 古典中华宇宙观, AI 性格框架, 命格 (作为学术术语 OK).",
+  "meta": {
+    "title": "HexAstral — BaZi · ZiWei · AI",
+    "description": "60 秒生成你的八字四柱与紫微斗数命盘，配 AI 性格分析。基于古典中华宇宙观与现代 AI 的工具型学习应用。"
+  },
+  "nav": {
+    "tools": "免费工具",
+    "freeReading": "免费测算",
+    "download": "下载 App"
+  },
+  "landing": {
+    "heroBadge": "八字 · 紫微 · AI",
+    "heroLine1": "你的命盘，",
+    "heroLine2": "古典学解",
+    "heroSub": "60 秒生成你的八字命盘\n以 1500 年中华命学传统为根基的 AI 性格分析",
+    "heroCTA": "免费测算起盘 →",
+    "heroNote": "无需注册 · 60 秒出盘 · 首次赠 3 次 AI 对话",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "命盘四维，AI 全息解读",
+    "features": [
+      {
+        "title": "八字 · 四柱排盘",
+        "desc": "精准排盘天干地支四柱八字。推演先天的五行能量、日主格局及八卦卦象（易经）。",
+        "tag": "八字命盘"
+      },
+      {
+        "title": "紫微 · 十二宫",
+        "desc": "结合紫微斗数解析命盘十二宫，洞察事业、财富与人际等领域的格局。",
+        "tag": "紫微斗数命盘"
+      },
+      {
+        "title": "大运 · 时间轴",
+        "desc": "十年大运格 × 神煞落盘，精确定位人生各阶段的机遇与制约。",
+        "tag": "大运时间轴"
+      },
+      {
+        "title": "合盘 · 配对指数",
+        "desc": "双人命盘深度合参，量化配对分数，揭示关系中的吸引与摩擦之源。",
+        "tag": "合盘配对"
+      }
+    ],
+    "convTitle": "你来这里，是为了——",
+    "convBody": "了解自己？看透一段关系？还是寻找人生某个阶段为什么那么难？\n无论哪种，你的命盘都有结构可读。",
+    "convCTA": "开始我的测算",
+    "testimonialsSectionLabel": "用户说",
+    "testimonials": [
+      {
+        "text": "那句\"你骨子里是匹野马，但现实把你圈养\"，我看完当场哭出来了。",
+        "name": "陈 ××",
+        "tag": "深圳 · 设计师"
+      },
+      {
+        "text": "合婚报告让我第一次从五行角度理解了我们为什么总在同一件事上吵架。",
+        "name": "林 ××",
+        "tag": "上海 · 产品经理"
+      },
+      {
+        "text": "大运时间轴让我明白为什么 2024 年突然那么难——原来换大运了。",
+        "name": "Kevin W.",
+        "tag": "Toronto · Engineer"
+      }
+    ],
+    "ctaHeadline": "免费获取你的命盘",
+    "ctaSub": "下载 HexAstral，首次完成排盘赠送 3 次 AI 对话，解锁深度解读",
+    "footerPrivacy": "隐私政策",
+    "footerTerms": "用户协议",
+    "footerStart": "开始测算"
+  },
+  "onboarding": {
+    "motivationPrompt": "你来这里，是为了——",
+    "motivationTitle1": "选择你的",
+    "motivationTitle2": "测算模式",
+    "modePersonalTitle": "了解我自己",
+    "modePersonalDesc": "通过八字框架探索个人性格、命盘结构与人生大运",
+    "modePairingTitle": "了解我们的关系",
+    "modePairingDesc": "伴侣 / 恋人配对 — 五行深度合参",
+    "modePairingBadge": "最受欢迎 ★",
+    "noSignupNote": "无需注册 · 数据仅用于计算 · 完全免费",
+    "selfStep1Label": "第一步 — 你的信息",
+    "selfBirthLabel": "你的出生信息",
+    "selfStep1Title": "你出生的那一刻，",
+    "selfStep1Accent": "你的命盘配置是怎样的？",
+    "partnerStep2Label": "第二步 — Ta 的信息",
+    "partnerStep2Title": "比较两张命盘",
+    "partnerStep2Accent": "看你们之间的关系结构",
+    "submitPersonal": "开始排盘",
+    "submitNext": "下一步 →",
+    "submitPairing": "查看配对结果",
+    "back": "← 返回",
+    "restart": "← 重新开始",
+    "errorRetry": "计算失败，请稍后重试",
+    "selfDefault": "你",
+    "partnerDefault": "Ta",
+    "personalChartLabel": "{name}的命盘",
+    "dayMasterLabel": "日主",
+    "starsSpeakPrefix": "✦ 对{name}的洞察",
+    "fullReadingLabel": "完整 AI 解读",
+    "personalPaywallUnlock": "🔒 下载解锁完整解读",
+    "personalCTAHeadline": "{name}的完整命盘已就绪",
+    "personalCTASub": "下载 HexAstral，获取 AI 深度解读 · 大运时间轴 · 神煞落盘",
+    "pairingScoreUnit": "{a} × {b}　配对指数",
+    "pairingInsightsTitle": "命盘洞察",
+    "pairingFullReportLabel": "深度合参报告",
+    "pairingPaywallUnlock": "🔒 下载解锁完整合参报告",
+    "pairingCTAHeadline": "解锁完整合参报告",
+    "pairingCTASub": "下载 HexAstral，获取 AI 深度合参 · 关系摩擦点解析 · 最佳相处模式",
+    "partnerLabel": "{selfName} 的另一半",
+    "bNameQuestion": "排盘之前，我需要知道你的名字。你叫什么？",
+    "bNamePlaceholder": "你的名字",
+    "bDateQuestion": "{name}，你是什么时候出生的？命盘始于那一刻。",
+    "bTimeQuestion": "你知道出生的大致时辰吗？时柱越精确，命盘越精确。",
+    "bGenderQuestion": "在阴阳的语言里——你更接近哪股能量？",
+    "bGenderMale": "阳 ☰",
+    "bGenderFemale": "阴 ☷",
+    "bCityQuestion": "你在哪座城市出生？出生地将你的命盘锚定于本地真太阳时。",
+    "bCityPlaceholder": "出生城市",
+    "bContinue": "继续",
+    "bRevealChart": "显示我的命盘"
+  },
+  "loading": {
+    "_comment": "Procedural-tone loading messages. Original 'Saturn retrograde calibration' was Western astrology (wrong tradition!) — removed. All steps reframed as deterministic computation.",
+    "messages": [
+      "正在锚定出生时空坐标...",
+      "解析年柱干支结构...",
+      "校准节气边界...",
+      "扫描月支藏干五行结构...",
+      "计算日主强弱平衡...",
+      "锚定第四宫坐标...",
+      "计算五行互动模式...",
+      "锚定第七宫...",
+      "融合十二宫坐标数据...",
+      "大运时间轴校准完成...",
+      "神煞落盘，命盘结构成形...",
+      "你的命盘即将显现..."
+    ]
+  },
+  "form": {
+    "nameLabel": "姓名（可选）",
+    "namePlaceholder": "随便填，只是方便区分",
+    "cityLabel": "出生城市 *",
+    "cityPlaceholder": "出生地城市，如 北京·上海·广州",
+    "solarTimeNote": "将根据城市经度自动修正真太阳时",
+    "dateLabel": "公历生日",
+    "hourLabel": "出生时辰",
+    "unknownHour": "不知道出生时辰",
+    "genderMale": "☰ 男命",
+    "genderFemale": "☷ 女命",
+    "shichen": [
+      "早子时　23:00–01:00",
+      "丑时　　01:00–03:00",
+      "寅时　　03:00–05:00",
+      "卯时　　05:00–07:00",
+      "辰时　　07:00–09:00",
+      "巳时　　09:00–11:00",
+      "午时　　11:00–13:00",
+      "未时　　13:00–15:00",
+      "申时　　15:00–17:00",
+      "酉时　　17:00–19:00",
+      "戌时　　19:00–21:00",
+      "亥时　　21:00–23:00",
+      "晚子时　23:00–01:00"
+    ],
+    "dateLabelLunar": "农历生日",
+    "checkLunar": "农历",
+    "checkTrueSolar": "真太阳时"
+  },
+  "pair": {
+    "inviteText": "邀你比较你们的命盘",
+    "scoreLabel": "合盘指数",
+    "dayMasterOfLabel": "{name} 日主",
+    "unlockFull": "下载解锁完整报告",
+    "orWeb": "或在浏览器直接测算",
+    "expiredTitle": "链接已失效",
+    "expiredDesc": "此分享链接已过期或无效，请让对方重新生成"
+  },
+  "resonate": {
+    "defaultTitle": "你收到了邀请",
+    "inviteTitle": "邀请你进行合盘测算",
+    "subtitle": "命盘配对",
+    "description": "通过古典中华五行框架，比较两张八字命盘的契合度。",
+    "inviteFrom": "邀请来自",
+    "expires": "过期时间",
+    "openInApp": "在 HexAstral 中打开",
+    "downloadApp": "免费下载 HexAstral",
+    "curiosityTitle": "你们的配对解读",
+    "curiosityUnlockCTA": "下载 HexAstral 解锁完整配对解读",
+    "dimLongTerm": "长远潜力",
+    "dimAttraction": "磁性吸引",
+    "dimCommunication": "沟通流动",
+    "dimEmotional": "情感共鸣",
+    "expired": "此邀请已过期，请让对方重新发送。",
+    "notFound": "邀请不存在或已失效。"
+  },
+  "common": {
+    "download": "免费下载 HexAstral",
+    "downloadButton": "App Store 免费下载",
+    "downloadNote": "免费开始 · 无需注册 · 首次赠送 3 次 AI 对话",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "你被邀请了 · HexAstral",
+    "meta_description": "你的朋友邀你一起探索八字命盘，通过邀请链接下载，首次额外赠送 AI 对话",
+    "headline": "你的朋友\n为你留了一席之地",
+    "subline": "你的朋友邀你一起探索八字命盘。通过邀请链接下载 HexAstral，即可解锁专属福利。",
+    "ref_label": "邀请码",
+    "benefit_1": "首次完成排盘额外赠送 AI 对话次数，解锁深度解读",
+    "benefit_2": "无需注册，60 秒完成命盘起盘",
+    "benefit_3": "八字 · 紫微 · 合盘配对全模块开放",
+    "cta": "免费下载，领取邀请奖励",
+    "note": "仅限通过邀请链接首次下载的新用户"
+  },
+  "Metadata": {
+    "title": "HexAstral — 八字 & 紫微命盘解读",
+    "description": "60 秒生成你的八字四柱（天干地支）、紫微斗数与八卦命盘，配 AI 性格分析。基于古典中华宇宙观与现代 AI 的工具型学习应用。"
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral 解读",
+    "joinedSince": "自 {year} 年加入 HexAstral",
+    "readingsCount": "{n} 次解读",
+    "baziHeading": "八字 · 四柱",
+    "pillarYear": "年",
+    "pillarMonth": "月",
+    "pillarDay": "日",
+    "pillarHour": "时",
+    "ctaHeadline": "探索你的八字命盘",
+    "ctaSub": "AI 加持的八字与紫微命盘 — iOS 免费体验",
+    "ctaButton": "前往 App Store 下载",
+    "viewFullChart": "查看完整命盘（四柱 + 十二宫）"
+  },
+  "growth": {
+    "navHome": "首页",
+    "navTools": "免费工具",
+    "navBlog": "博客",
+    "navMethodology": "方法论",
+    "disclaimer": "仅供文化探索与自省参考，不能替代专业、医疗或法律意见。",
+    "toolsIndexTitle": "免费工具",
+    "toolsIndexSubtitle": "快速排盘与资料查阅。完整 AI 解读请在 iOS App 内进行。",
+    "blogTitle": "博客",
+    "blogSubtitle": "用可读的方式介绍中华命学，并标明典籍与传统名称。",
+    "readArticle": "阅读全文",
+    "backToTools": "全部工具",
+    "backToBlog": "全部文章",
+    "openAppStore": "前往 App Store 下载"
+  }
+}

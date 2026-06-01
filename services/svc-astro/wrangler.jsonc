@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svc-astro",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+
+  // ⚠️ 重要: 不设置 routes 和 workers_dev
+  // 此 Worker 仅通过 hexastral-api 的 Service Binding 内部访问
+
+  // Secrets (通过 wrangler secret put 注入，不进代码仓库):
+  //   GEMINI_API_KEY     — Google Gemini Vision API Key (面相/手相专属 VLM，仅看图→文字)
+  //
+  // 设置命令:
+  //   wrangler secret put GEMINI_API_KEY   --env production
+
+  // Workers AI — 统一文本/对话路由 (@zhop/ai-vision/router):
+  //   flagship: Kimi K2.6 → Qwen3-30B → GLM-4.7-Flash   (readings/reports/Pro chat)
+  //   standard: Qwen3-30B → GLM-4.7-Flash                (explain/signal/Free chat)
+  "ai": { "binding": "AI" },
+
+  // Service Bindings
+  "services": [{ "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }],
+
+  // Tail Worker -- centralized log aggregation
+  "tail_consumers": [{ "service": "svc-tail" }],
+
+  // Rate Limiting — defense-in-depth (service binding only)
+  "unsafe": {
+    "bindings": [
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMITER",
+        "namespace_id": "1",
+        "simple": {
+          "limit": 30,
+          "period": 60
+        }
+      }
+    ]
+  }
+}

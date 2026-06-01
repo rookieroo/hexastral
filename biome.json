@@ -1,0 +1,191 @@
+{
+  "$schema": "https://biomejs.dev/schemas/^2.2.2/schema.json",
+  "root": true,
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "files": {
+    "ignoreUnknown": true,
+    "maxSize": 5242880,
+    "includes": [
+      "**",
+      "!**/.wrangler",
+      "!**/workbox*.js",
+      "!**/sw*.js",
+      "!**/service-worker.js",
+      "!**/fallback*.js",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/ios",
+      "!**/.git",
+      "!**/.vscode",
+      "!**/.android",
+      "!**/.DS_Store",
+      "!**/Thumbs.db",
+      "!**/.next",
+      "!**/.open-next",
+      "!**/useCanvasCursor.ts",
+      "!**/privacy",
+      "!**/.cache",
+      "!**/.expo",
+      "!**/tsbuildinfo.json",
+      "!idea",
+      "!cloudflare-env.d.ts",
+      "!**/paraglide",
+      "!**/public",
+      "!**/next-env.d.ts",
+      "!**/expo-env.d.ts",
+      "!**/payload-types.ts",
+      "!**/app/(payload)",
+      "!**/public/inspect.js",
+      "!**/public/inspect.src.js",
+      "!**/worker-configuration.d.ts",
+      "!apps/hexastral-web/app/editor/editor.css"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useTemplate": "warn",
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
+      },
+      "suspicious": {
+        "noEmptyInterface": "off",
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "off"
+      },
+      "performance": {
+        "noDynamicNamespaceImportAccess": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 100,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "includes": [
+      "**",
+      "!**/node_modules/**/*",
+      "!**/*.config.*",
+      "!**/*.json",
+      "!**/.turbo"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
+      "trailingCommas": "es5",
+      "semicolons": "asNeeded"
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/hexastral-app/**",
+        "apps/yuan-app/**",
+        "apps/coin-cast-app/**",
+        "apps/dream-oracle-app/**",
+        "apps/face-oracle-app/**",
+        "apps/numerology-app/**",
+        "services/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/hexastral-app/global.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/hexastral-web/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useKeyWithClickEvents": "warn",
+            "useValidAnchor": "error",
+            "noStaticElementInteractions": "off",
+            "noLabelWithoutControl": "warn",
+            "useButtonType": "warn",
+            "useFocusableInteractive": "warn",
+            "useSemanticElements": "warn",
+            "useAriaPropsForRole": "warn",
+            "useAriaPropsSupportedByRole": "warn"
+          },
+          "performance": {
+            "noImgElement": "warn"
+          },
+          "style": {
+            "noNonNullAssertion": "warn"
+          },
+          "complexity": {
+            "useIndexOf": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/ui/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useButtonType": "warn",
+            "useFocusableInteractive": "warn",
+            "useSemanticElements": "warn",
+            "useAriaPropsForRole": "warn",
+            "useAriaPropsSupportedByRole": "warn"
+          },
+          "performance": {
+            "noImgElement": "warn"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ]
+}

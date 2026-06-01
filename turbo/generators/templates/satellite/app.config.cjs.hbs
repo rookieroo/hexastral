@@ -1,0 +1,8 @@
+/**
+ * Expo reads `app.config.*` before Metro so `EXPO_PUBLIC_*` can be injected from env files.
+ */
+const { registerExpoEnv } = require('@zhop/expo-env-loader')
+
+registerExpoEnv(__dirname)
+
+module.exports = require('./app.json').expo

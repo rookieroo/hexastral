@@ -1,0 +1,153 @@
+/**
+ * English dictionary.
+ *
+ * Translation philosophy:
+ *   - Pinyin first for stems/branches/stars (preserves traditional reference)
+ *   - Plain-English meaning second (in parentheses) only when shown standalone
+ *   - For shorthand UI (cards, badges) use Pinyin only — full meaning is in detail copy
+ */
+import type { Dictionary } from '../types'
+
+export const en: Dictionary = {
+  stem: {
+    甲: 'Jia', 乙: 'Yi', 丙: 'Bing', 丁: 'Ding', 戊: 'Wu',
+    己: 'Ji', 庚: 'Geng', 辛: 'Xin', 壬: 'Ren', 癸: 'Gui',
+  },
+  branch: {
+    子: 'Zi', 丑: 'Chou', 寅: 'Yin', 卯: 'Mao', 辰: 'Chen', 巳: 'Si',
+    午: 'Wu', 未: 'Wei', 申: 'Shen', 酉: 'You', 戌: 'Xu', 亥: 'Hai',
+  },
+  element: {
+    木: 'Wood', 火: 'Fire', 土: 'Earth', 金: 'Metal', 水: 'Water',
+  },
+  yinyang: { 阳: 'Yang', 阴: 'Yin' },
+  shishen: {
+    比肩: 'Companion', 劫财: 'Rival',
+    食神: 'Eating God', 伤官: 'Hurting Officer',
+    偏财: 'Indirect Wealth', 正财: 'Direct Wealth',
+    七杀: 'Seven Killings', 正官: 'Direct Officer',
+    偏印: 'Indirect Resource', 正印: 'Direct Resource',
+  },
+  shishenCategory: {
+    比劫: 'Peer Group',
+    食伤: 'Output Group',
+    财星: 'Wealth Stars',
+    官杀: 'Officer Stars',
+    印绶: 'Resource Stars',
+  },
+  geju: {
+    正官格: 'Direct Officer Pattern',
+    七杀格: 'Seven Killings Pattern',
+    正财格: 'Direct Wealth Pattern',
+    偏财格: 'Indirect Wealth Pattern',
+    正印格: 'Direct Resource Pattern',
+    偏印格: 'Indirect Resource Pattern',
+    伤官格: 'Hurting Officer Pattern',
+    食神格: 'Eating God Pattern',
+    从财格: 'Following Wealth Pattern',
+    从杀格: 'Following Killings Pattern',
+    从儿格: 'Following Output Pattern',
+    从势格: 'Following Trend Pattern',
+    曲直格: 'Wood Dominance Pattern',
+    炎上格: 'Fire Dominance Pattern',
+    稼穑格: 'Earth Dominance Pattern',
+    从革格: 'Metal Dominance Pattern',
+    润下格: 'Water Dominance Pattern',
+    建禄格: 'Established Prosperity Pattern',
+    月刃格: 'Monthly Blade Pattern',
+    普通格: 'Common Pattern',
+  },
+  gejuQuality: { 上: 'High', 中: 'Mid', 下: 'Low' },
+  dayMasterStrength: {
+    极强: 'Very Strong',
+    偏强: 'Strong',
+    中和: 'Balanced',
+    偏弱: 'Weak',
+    极弱: 'Very Weak',
+  },
+  shensha: {
+    天乙贵人: 'Heavenly Nobleman',
+    文昌贵人: 'Literary Nobleman',
+    桃花: 'Peach Blossom',
+    驿马: 'Travel Horse',
+    华盖: 'Flower Canopy',
+    将星: 'General Star',
+    劫煞: 'Robbery Sha',
+    亡神: 'Lost Spirit',
+  },
+  shenshaPolarity: {
+    吉: 'Auspicious',
+    凶: 'Inauspicious',
+    中: 'Neutral',
+  },
+  palace: {
+    命宫: 'Self', 兄弟: 'Siblings', 夫妻: 'Spouse', 子女: 'Children',
+    财帛: 'Wealth', 疾厄: 'Health', 迁移: 'Travel', 交友: 'Friends',
+    官禄: 'Career', 田宅: 'Property', 福德: 'Fortune', 父母: 'Parents',
+  },
+  mutagen: {
+    禄: 'Lu (Wealth)',
+    权: 'Quan (Power)',
+    科: 'Ke (Fame)',
+    忌: 'Ji (Restraint)',
+  },
+  brightness: {
+    庙: 'Temple',
+    旺: 'Prosperous',
+    得: 'Gained',
+    利: 'Beneficial',
+    平: 'Plain',
+    不: 'Weakened',
+    陷: 'Trapped',
+  },
+  shichen: {
+    子时: 'Zi Hour',
+    丑时: 'Chou Hour',
+    寅时: 'Yin Hour',
+    卯时: 'Mao Hour',
+    辰时: 'Chen Hour',
+    巳时: 'Si Hour',
+    午时: 'Wu Hour',
+    未时: 'Wei Hour',
+    申时: 'Shen Hour',
+    酉时: 'You Hour',
+    戌时: 'Xu Hour',
+    亥时: 'Hai Hour',
+  },
+  shichenAnimal: {
+    鼠: 'Rat', 牛: 'Ox', 虎: 'Tiger', 兔: 'Rabbit',
+    龙: 'Dragon', 蛇: 'Snake', 马: 'Horse', 羊: 'Goat',
+    猴: 'Monkey', 鸡: 'Rooster', 狗: 'Dog', 猪: 'Pig',
+  },
+  ziweiMajor: {
+    紫微: 'Zi Wei (Emperor)',
+    天机: 'Tian Ji (Strategist)',
+    太阳: 'Tai Yang (Sun)',
+    武曲: 'Wu Qu (Warrior)',
+    天同: 'Tian Tong (Companion)',
+    廉贞: 'Lian Zhen (Integrity)',
+    天府: 'Tian Fu (Treasury)',
+    太阴: 'Tai Yin (Moon)',
+    贪狼: 'Tan Lang (Desire)',
+    巨门: 'Ju Men (Great Gate)',
+    天相: 'Tian Xiang (Minister)',
+    天梁: 'Tian Liang (Beam)',
+    七杀: 'Qi Sha (Seven Killings)',
+    破军: 'Po Jun (Vanguard)',
+  },
+  ziweiAux: {
+    文昌: 'Wen Chang (Literary Star)',
+    文曲: 'Wen Qu (Literary Curve)',
+    左辅: 'Zuo Fu (Left Assistant)',
+    右弼: 'You Bi (Right Assistant)',
+    天魁: 'Tian Kui (Heavenly Champion)',
+    天钺: 'Tian Yue (Heavenly Axe)',
+  },
+  fiveElementsClass: {
+    水二局: 'Water Class II',
+    木三局: 'Wood Class III',
+    金四局: 'Metal Class IV',
+    土五局: 'Earth Class V',
+    火六局: 'Fire Class VI',
+  },
+}

@@ -1,0 +1,246 @@
+{
+  "_comment": "EN messages · anti-spam compliant per docs/anti-spam-positioning.md. Mirror this to zh/tw/ja with same key set. ZERO trigger words (astrology / horoscope / zodiac / fortune / destiny / cosmic blueprint / star palace / mystical / divination / fate) outside of explicit-negation context. Lead vocabulary: BaZi, Four Pillars, ZiWei, Twelve Palaces, decade cycle, classical Chinese cosmology, AI personality framework, educational, chart, configuration.",
+  "meta": {
+    "title": "HexAstral — BaZi · ZiWei · AI",
+    "description": "Generate your BaZi (Four Pillars) and ZiWei chart with AI-augmented personality insights in 60 seconds. Grounded in classical Chinese cosmology. Educational, not predictive."
+  },
+  "nav": {
+    "tools": "Tools",
+    "freeReading": "Free Reading",
+    "download": "Download App"
+  },
+  "landing": {
+    "heroBadge": "BaZi · ZiWei · AI",
+    "heroLine1": "Your Chart,",
+    "heroLine2": "Classically Read",
+    "heroSub": "Generate your BaZi chart in 60 seconds. AI-augmented insights grounded in 1500 years of classical Chinese cosmology.",
+    "heroCTA": "Start Free Reading →",
+    "heroNote": "No signup · 60-second chart · 3 chat credits on first reading",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "Four Lenses on Your Chart",
+    "features": [
+      {
+        "title": "BaZi (Four Pillars)",
+        "desc": "Precision charting of your Four Pillars (八字). Decode your Day Master, Heavenly Stems and Earthly Branches (天干地支), and the I Ching (八卦) hexagram tied to your moment of birth.",
+        "tag": "Pillar Reading"
+      },
+      {
+        "title": "ZiWei (Twelve Palaces)",
+        "desc": "All 12 palaces decoded through ZiWei Dou Shu (紫微斗数). Decade cycles and annual element flows mapped against classical configurations.",
+        "tag": "Palace Chart"
+      },
+      {
+        "title": "Decade Cycles & Configurations",
+        "desc": "10-year decade cycle mapped against classical configurations — surfaces the opportunities and constraints at each life stage.",
+        "tag": "Decade Timeline"
+      },
+      {
+        "title": "Element Compatibility",
+        "desc": "Dual chart synthesis through the Five Elements (五行) framework — surfaces connection, attraction, and sources of friction between two people.",
+        "tag": "Compatibility Score"
+      }
+    ],
+    "convTitle": "Why Are You Here?",
+    "convBody": "To understand yourself? To see a relationship more clearly? To make sense of a chapter in your life that was unusually hard?\nWhatever it is, your chart has structure worth reading.",
+    "convCTA": "Start My Reading",
+    "testimonialsSectionLabel": "What Users Say",
+    "testimonials": [
+      {
+        "text": "\"You're a wild horse at heart, but reality has kept you in a stable\" — I cried reading that.",
+        "name": "C.W.",
+        "tag": "Shenzhen · Designer"
+      },
+      {
+        "text": "The compatibility report helped me finally understand, through the Five Elements lens, why we always fight over the exact same thing.",
+        "name": "L.H.",
+        "tag": "Shanghai · Product Manager"
+      },
+      {
+        "text": "The decade cycle timeline made everything click — I finally understood why 2024 was so brutal. I'd just entered a new cycle.",
+        "name": "Kevin W.",
+        "tag": "Toronto · Software Engineer"
+      }
+    ],
+    "ctaHeadline": "Get Your Free Chart",
+    "ctaSub": "Download HexAstral — unlock AI deep reading, decade cycle timelines & configuration analysis on your first chart",
+    "footerPrivacy": "Privacy Policy",
+    "footerTerms": "Terms of Service",
+    "footerStart": "Start Reading"
+  },
+  "onboarding": {
+    "motivationPrompt": "Why are you here?",
+    "motivationTitle1": "Choose Your",
+    "motivationTitle2": "Reading Mode",
+    "modePersonalTitle": "Know Myself",
+    "modePersonalDesc": "Explore your personality, chart structure & life decade cycles through the BaZi framework",
+    "modePairingTitle": "Know Our Connection",
+    "modePairingDesc": "Partner / lover compatibility — deep Five Elements analysis",
+    "modePairingBadge": "Most Popular ★",
+    "noSignupNote": "No signup · Data used only for calculation · Completely free",
+    "selfStep1Label": "Step 1 — Your Info",
+    "selfBirthLabel": "Your Birth Details",
+    "selfStep1Title": "At the moment you were born,",
+    "selfStep1Accent": "what was your chart configuration?",
+    "partnerStep2Label": "Step 2 — Their Info",
+    "partnerStep2Title": "Compare two charts to see",
+    "partnerStep2Accent": "the nature of your connection",
+    "submitPersonal": "Get My Chart",
+    "submitNext": "Next →",
+    "submitPairing": "See Compatibility",
+    "back": "← Back",
+    "restart": "← Start Over",
+    "errorRetry": "Calculation failed, please try again",
+    "selfDefault": "You",
+    "partnerDefault": "Them",
+    "personalChartLabel": "{name}'s Chart",
+    "dayMasterLabel": "Day Master",
+    "starsSpeakPrefix": "✦ Insights for {name}",
+    "fullReadingLabel": "Full AI Reading",
+    "personalPaywallUnlock": "🔒 Download to Unlock Full Reading",
+    "personalCTAHeadline": "{name}'s complete chart is ready",
+    "personalCTASub": "Download HexAstral — AI deep reading · Decade cycle timeline · Configuration analysis",
+    "pairingScoreUnit": "{a} × {b}   Compatibility",
+    "pairingInsightsTitle": "Chart Insights",
+    "pairingFullReportLabel": "Deep Compatibility Report",
+    "pairingPaywallUnlock": "🔒 Download to Unlock Full Report",
+    "pairingCTAHeadline": "Unlock the Full Compatibility Report",
+    "pairingCTASub": "Download HexAstral — AI deep analysis · Friction point breakdown · Best compatibility modes",
+    "partnerLabel": "{selfName}'s partner",
+    "bNameQuestion": "To start, what should I call you? Your chart begins with your name.",
+    "bNamePlaceholder": "Your name",
+    "bDateQuestion": "When were you born, {name}? Your BaZi chart begins with that moment.",
+    "bTimeQuestion": "Do you know the approximate hour of your birth? This refines your Hour Pillar.",
+    "bGenderQuestion": "In the language of Yin and Yang — which energy resonates with you?",
+    "bGenderMale": "Yang ☰",
+    "bGenderFemale": "Yin ☷",
+    "bCityQuestion": "Where were you born? Your birthplace anchors your chart to local solar time.",
+    "bCityPlaceholder": "Birth city",
+    "bContinue": "Continue",
+    "bRevealChart": "Reveal My Chart"
+  },
+  "loading": {
+    "_comment": "Procedural-tone loading messages. NO 'celestial alignments', 'vibrations', 'cosmic energy patterns' — those read as mystical. All replaced with computation-language.",
+    "messages": [
+      "Anchoring your birth coordinates...",
+      "Decoding the Year Pillar matrix...",
+      "Computing solar terms boundary...",
+      "Scanning Earth Branch hidden stems...",
+      "Calculating Five Elements balance...",
+      "Indexing your 4th Palace...",
+      "Computing element interaction patterns...",
+      "Reading your 7th Palace...",
+      "Integrating Twelve Palaces configuration...",
+      "Decade cycle calibration complete...",
+      "Configurations mapped...",
+      "Your chart is about to be revealed..."
+    ]
+  },
+  "form": {
+    "nameLabel": "Name (optional)",
+    "namePlaceholder": "Anything works, just to tell you apart",
+    "cityLabel": "Birth City *",
+    "cityPlaceholder": "e.g. New York · London · Beijing",
+    "solarTimeNote": "True Solar Time auto-corrected by city longitude",
+    "dateLabel": "Birth Date (Gregorian)",
+    "hourLabel": "Birth Hour",
+    "unknownHour": "I don't know my birth hour",
+    "genderMale": "☰ Male",
+    "genderFemale": "☷ Female",
+    "shichen": [
+      "Rat (early)  23:00–01:00",
+      "Ox           01:00–03:00",
+      "Tiger        03:00–05:00",
+      "Rabbit       05:00–07:00",
+      "Dragon       07:00–09:00",
+      "Snake        09:00–11:00",
+      "Horse        11:00–13:00",
+      "Goat         13:00–15:00",
+      "Monkey       15:00–17:00",
+      "Rooster      17:00–19:00",
+      "Dog          19:00–21:00",
+      "Pig          21:00–23:00",
+      "Rat (late)   23:00–01:00"
+    ],
+    "dateLabelLunar": "Birth Date (Chinese Lunar)",
+    "checkLunar": "Chinese Lunar",
+    "checkTrueSolar": "True Solar Time"
+  },
+  "pair": {
+    "inviteText": "invites you to compare your charts",
+    "scoreLabel": "Compatibility Score",
+    "dayMasterOfLabel": "{name}'s Day Master",
+    "unlockFull": "Download to Unlock Full Report",
+    "orWeb": "Or take the reading in your browser",
+    "expiredTitle": "Link Expired",
+    "expiredDesc": "This share link has expired or is no longer valid. Ask your partner to generate a new one."
+  },
+  "resonate": {
+    "defaultTitle": "You're Invited",
+    "inviteTitle": "invites you to a compatibility reading",
+    "subtitle": "Chart Compatibility",
+    "description": "Compare two BaZi charts through the classical Five Elements framework.",
+    "inviteFrom": "Invitation From",
+    "expires": "Expires",
+    "openInApp": "Open in HexAstral",
+    "downloadApp": "Download HexAstral Free",
+    "curiosityTitle": "Your Compatibility Reading",
+    "curiosityUnlockCTA": "Download HexAstral to Unlock Your Full Reading",
+    "dimLongTerm": "Long-term Potential",
+    "dimAttraction": "Magnetic Attraction",
+    "dimCommunication": "Communication Flow",
+    "dimEmotional": "Emotional Resonance",
+    "expired": "This invitation has expired. Ask the sender to create a new one.",
+    "notFound": "Invitation not found or no longer valid."
+  },
+  "common": {
+    "download": "Download HexAstral Free",
+    "downloadButton": "Download Free on App Store",
+    "downloadNote": "Free to start · No signup required · 3 chat credits on first reading",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "You've Been Invited · HexAstral",
+    "meta_description": "Your friend invited you to explore your BaZi chart. Download via their link and unlock exclusive rewards.",
+    "headline": "Your Friend\nSaved You a Seat",
+    "subline": "Your friend invited you to explore your BaZi chart. Download HexAstral via their invite link to unlock exclusive rewards.",
+    "ref_label": "Invite Code",
+    "benefit_1": "Bonus chat credits on your first chart — unlock AI deep readings",
+    "benefit_2": "No signup required · Full chart in 60 seconds",
+    "benefit_3": "BaZi · ZiWei · Compatibility — all modules unlocked",
+    "cta": "Download Free & Claim Invite Reward",
+    "note": "Offer applies to new users downloading via an invite link only"
+  },
+  "Metadata": {
+    "title": "HexAstral — BaZi & ZiWei Chart Reading",
+    "description": "Generate your BaZi (Four Pillars) and ZiWei chart with AI-augmented personality insights, grounded in classical Chinese cosmology. Educational, not predictive."
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral reading",
+    "joinedSince": "On HexAstral since {year}",
+    "readingsCount": "{n} readings",
+    "baziHeading": "Ba Zi · Four pillars",
+    "pillarYear": "Year",
+    "pillarMonth": "Month",
+    "pillarDay": "Day",
+    "pillarHour": "Hour",
+    "ctaHeadline": "Explore your BaZi chart",
+    "ctaSub": "AI-augmented BaZi & ZiWei chart — free on iOS",
+    "ctaButton": "Download on the App Store",
+    "viewFullChart": "View full chart (pillars + palaces)"
+  },
+  "growth": {
+    "navHome": "Home",
+    "navTools": "Tools",
+    "navBlog": "Blog",
+    "navMethodology": "Methodology",
+    "disclaimer": "For cultural exploration and reflection only. Not a substitute for professional, medical, or legal advice.",
+    "toolsIndexTitle": "Free tools",
+    "toolsIndexSubtitle": "Quick calculators and reference. Full AI readings are in our iOS apps.",
+    "blogTitle": "Blog",
+    "blogSubtitle": "Chinese cosmology in plain language — with named source terms.",
+    "readArticle": "Read article",
+    "backToTools": "All tools",
+    "backToBlog": "All posts",
+    "openAppStore": "Download on the App Store"
+  }
+}

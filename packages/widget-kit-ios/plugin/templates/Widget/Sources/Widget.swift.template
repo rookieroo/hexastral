@@ -1,0 +1,53 @@
+// Sprint 5 template — Widget configuration entry point.
+// Customized per app at integration time.
+
+import WidgetKit
+import SwiftUI
+
+@main
+struct HexastralWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        HexastralWidgetSmall()
+        HexastralWidgetMedium()
+        HexastralWidgetLockScreen()
+    }
+}
+
+struct HexastralWidgetSmall: Widget {
+    let kind: String = "{{appSlug}}_widget_small"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: HexastralProvider()) { entry in
+            SmallWidgetView(entry: entry)
+        }
+        .configurationDisplayName("{{appDisplayName}} · Today")
+        .description("Today's 干支 and next 节气 countdown.")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+struct HexastralWidgetMedium: Widget {
+    let kind: String = "{{appSlug}}_widget_medium"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: HexastralProvider()) { entry in
+            MediumWidgetView(entry: entry)
+        }
+        .configurationDisplayName("{{appDisplayName}} · Today + Yi")
+        .description("Today's 干支, lunar date, and favorable activity.")
+        .supportedFamilies([.systemMedium])
+    }
+}
+
+struct HexastralWidgetLockScreen: Widget {
+    let kind: String = "{{appSlug}}_widget_lock"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: HexastralProvider()) { entry in
+            LockScreenWidgetView(entry: entry)
+        }
+        .configurationDisplayName("{{appDisplayName}} · Lock")
+        .description("Today's 干支 + next family event.")
+        .supportedFamilies([.accessoryRectangular])
+    }
+}

@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · Fate Icons · 墨骨印 v14</title>
+<style>
+  :root{
+    --paper:#F2EBDC;
+    --paper-deep:#E4D7BF;
+    --fiber:rgba(42,31,19,.055);
+    --ink:#221C14;
+    --ink-soft:#5D5243;
+    --ink-faint:#8D826F;
+    --line:rgba(34,28,20,.16);
+    --seal:#8B2D24;
+    --shadow:0 18px 42px rgba(42,31,19,.13);
+    --serif:"Songti SC","STSong","Hoefler Text","Baskerville",serif;
+    --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:var(--sans);
+    background:
+      radial-gradient(900px 560px at 8% -6%,rgba(139,45,36,.08),transparent 62%),
+      radial-gradient(720px 520px at 100% 12%,rgba(34,28,20,.08),transparent 60%),
+      linear-gradient(180deg,var(--paper),#EDE4D1 55%,#E6DBC5);
+    -webkit-font-smoothing:antialiased;
+  }
+  body:before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.78;
+    background:
+      linear-gradient(90deg,transparent 0 31px,var(--fiber) 32px,transparent 33px 65px),
+      linear-gradient(0deg,transparent 0 27px,rgba(255,255,255,.16) 28px,transparent 29px 59px);
+    mix-blend-mode:multiply;
+  }
+  .wrap{max-width:1260px;margin:0 auto;padding:54px 38px 104px;position:relative}
+  .kicker{
+    margin:0 0 12px;
+    color:var(--seal);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:4px;
+    text-transform:uppercase;
+  }
+  h1{
+    margin:0;
+    font-family:var(--serif);
+    font-size:40px;
+    font-weight:500;
+    letter-spacing:1px;
+  }
+  h1 span{color:var(--seal);font-weight:700}
+  .lede{
+    max-width:920px;
+    margin:13px 0 0;
+    color:var(--ink-soft);
+    font-size:13px;
+    line-height:1.95;
+  }
+  .lede b{color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:rgba(255,252,244,.38);
+    color:var(--ink-soft);
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:2px;
+    padding:7px 11px;
+  }
+  .section{margin-top:48px}
+  .sectionHead{
+    display:flex;
+    align-items:end;
+    justify-content:space-between;
+    gap:22px;
+    margin-bottom:16px;
+  }
+  h2{
+    margin:0;
+    color:var(--ink);
+    font-size:12px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+  }
+  .section p{
+    margin:6px 0 0;
+    max-width:850px;
+    color:var(--ink-soft);
+    font-size:12px;
+    line-height:1.8;
+  }
+  .mark{
+    color:var(--seal);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:1.7px;
+    white-space:nowrap;
+  }
+  .grid{display:grid;gap:14px}
+  .coreGrid{grid-template-columns:repeat(8,minmax(0,1fr))}
+  .termGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .toolGrid{grid-template-columns:repeat(10,minmax(0,1fr))}
+  .card{
+    position:relative;
+    overflow:hidden;
+    min-height:166px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:
+      radial-gradient(140px 90px at 25% 0%,rgba(255,255,255,.58),transparent 64%),
+      linear-gradient(180deg,rgba(255,252,244,.76),rgba(232,220,197,.62));
+    box-shadow:var(--shadow);
+    padding:15px 12px 13px;
+  }
+  .card:after{
+    content:"";
+    position:absolute;
+    inset:9px;
+    border:1px solid rgba(34,28,20,.055);
+    border-radius:9px;
+    pointer-events:none;
+  }
+  .sealPlate{
+    width:82px;
+    height:82px;
+    margin:2px auto 13px;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    background:
+      radial-gradient(70px 52px at 32% 24%,rgba(34,28,20,.10),transparent 62%),
+      rgba(255,252,244,.28);
+    box-shadow:
+      inset 0 0 0 1px rgba(34,28,20,.10),
+      inset 0 -18px 24px rgba(34,28,20,.04);
+  }
+  .glyph{width:60px;height:60px;color:var(--ink)}
+  .glyph .stroke{
+    fill:none;
+    stroke:currentColor;
+    stroke-width:4.2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    filter:url(#inkRough);
+  }
+  .glyph .thin{stroke-width:3.1}
+  .glyph .bold{stroke-width:5.2}
+  .glyph .fill{fill:currentColor;stroke:none;filter:url(#inkBleed)}
+  .title{
+    text-align:center;
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:1px;
+  }
+  .desc{
+    margin-top:5px;
+    color:var(--ink-faint);
+    font-size:10.5px;
+    line-height:1.5;
+    text-align:center;
+  }
+  .term{
+    min-height:136px;
+    display:grid;
+    grid-template-columns:50px 1fr;
+    gap:13px;
+    padding:15px;
+  }
+  .term .sealPlate{
+    width:46px;
+    height:46px;
+    margin:0;
+    border-radius:12px;
+  }
+  .term .glyph{width:36px;height:36px}
+  .term .glyph .stroke{stroke-width:4.4}
+  .term .title,.term .desc{text-align:left}
+  .rank{
+    margin-bottom:4px;
+    color:var(--seal);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:1.7px;
+  }
+  .small{
+    min-height:104px;
+    text-align:center;
+    padding:14px 8px 11px;
+  }
+  .small .sealPlate{
+    width:44px;
+    height:44px;
+    margin:0 auto 7px;
+    border-radius:12px;
+  }
+  .small .glyph{width:34px;height:34px}
+  .small .title{
+    font-family:var(--sans);
+    font-size:12px;
+    letter-spacing:.4px;
+  }
+  .small .desc{font-size:10px}
+  .textRule{
+    margin-top:14px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(255,252,244,.42);
+    padding:14px 16px;
+    color:var(--ink-soft);
+    font-size:12px;
+    line-height:1.8;
+  }
+  .textRule b{color:var(--ink)}
+  .preview{
+    margin-top:54px;
+    display:grid;
+    grid-template-columns:350px minmax(360px,1fr);
+    gap:34px;
+    align-items:start;
+  }
+  .phone{
+    width:350px;
+    height:700px;
+    border:1px solid var(--line);
+    border-radius:34px;
+    background:
+      radial-gradient(200px 180px at 50% 24%,rgba(34,28,20,.08),transparent 72%),
+      linear-gradient(180deg,#F8F3E8,#EADFC9);
+    box-shadow:0 30px 76px rgba(42,31,19,.18);
+    padding:26px 22px;
+    display:flex;
+    flex-direction:column;
+  }
+  .phoneTop{
+    margin-top:24px;
+    color:var(--seal);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:4px;
+    text-align:center;
+  }
+  .phoneGlyph{
+    width:176px;
+    height:176px;
+    margin:28px auto 18px;
+    display:grid;
+    place-items:center;
+    border-radius:32px;
+    background:rgba(255,252,244,.35);
+    box-shadow:inset 0 0 0 1px rgba(34,28,20,.10);
+  }
+  .phoneGlyph .glyph{width:142px;height:142px}
+  .phoneGlyph .glyph .stroke{stroke-width:3.7}
+  .phoneTitle{
+    font-family:var(--serif);
+    font-size:28px;
+    text-align:center;
+    color:var(--ink);
+    letter-spacing:1px;
+  }
+  .phoneMeta{
+    margin-top:9px;
+    color:var(--ink-soft);
+    font-size:11px;
+    line-height:1.8;
+    letter-spacing:1.4px;
+    text-align:center;
+  }
+  .badges{display:flex;justify-content:center;gap:8px;margin-top:18px}
+  .badge{
+    border:1px solid rgba(34,28,20,.18);
+    border-radius:999px;
+    background:rgba(255,252,244,.45);
+    color:var(--ink);
+    font-size:11px;
+    font-weight:800;
+    padding:6px 10px;
+  }
+  .spacer{flex:1}
+  .cta{
+    height:52px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:var(--ink);
+    color:var(--paper);
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:1px;
+  }
+  .cta .glyph{width:22px;height:22px;color:var(--paper)}
+  .cta .glyph .stroke{stroke-width:5}
+  .rules{display:grid;gap:12px}
+  .rule{
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(255,252,244,.45);
+    padding:15px 16px;
+    color:var(--ink-soft);
+    font-size:12px;
+    line-height:1.8;
+  }
+  .rule b{display:block;color:var(--ink);font-size:13px;margin-bottom:4px}
+  @media(max-width:1120px){
+    .coreGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .termGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .toolGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  }
+  @media(max-width:760px){
+    .wrap{padding:34px 20px 80px}
+    h1{font-size:31px}
+    .sectionHead{display:block}
+    .mark{display:block;margin-top:8px;white-space:normal}
+    .coreGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .termGrid{grid-template-columns:1fr}
+    .toolGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .preview{grid-template-columns:1fr}
+    .phone{width:100%;max-width:350px}
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="inkRough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="13" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.75" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="inkBleed" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation=".18"/>
+    </filter>
+  </defs>
+</svg>
+
+<main class="wrap">
+  <p class="kicker">single ink · hand drawn seal · v14</p>
+  <h1>Fate 图标系统 · <span>墨骨印</span></h1>
+  <p class="lede">
+    重新选择风格：<b>单墨色、水墨手绘、篆刻容器、统一线宽和收笔</b>。不再用五颜六色区分业务层级；
+    八字仍然是柱、干支、日主、关系，紫微仍然是宫、星、四化、亮度，但所有图标都像出自同一支笔。
+  </p>
+  <div class="chips">
+    <span class="chip">ONE INK</span>
+    <span class="chip">BRUSH EDGE</span>
+    <span class="chip">SEAL PLATE</span>
+    <span class="chip">CHART SEMANTICS</span>
+  </div>
+
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Core Surface · Fate 主功能</h2>
+        <p>主图标保留业务骨架，但全部统一成墨印笔触：八字偏竖、紫微偏宫格、时间偏轨道。</p>
+      </div>
+      <span class="mark">8 primary glyphs</span>
+    </div>
+    <div class="grid coreGrid" id="core"></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>BaZi Glyphs · 八字图标</h2>
+        <p>八字图标不画“神秘”，只画读盘结构：柱、上干、下支、日主、藏干、用忌、冲合。</p>
+      </div>
+      <span class="mark">pillar language</span>
+    </div>
+    <div class="grid termGrid" id="bazi"></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Ziwei Glyphs · 紫微图标</h2>
+        <p>紫微图标统一成“宫格里的星”：宫格是容器，星曜是落点，四化和亮度是状态。</p>
+      </div>
+      <span class="mark">palace language</span>
+    </div>
+    <div class="grid termGrid" id="ziwei"></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Utility · 流程操作</h2>
+        <p>操作图标也走同一支笔，但不强行命理化；它们只负责让流程清楚。</p>
+      </div>
+      <span class="mark">same brush, quieter</span>
+    </div>
+    <div class="grid toolGrid" id="utility"></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHead">
+      <div>
+        <h2>Matrix Reserve · 产品矩阵</h2>
+        <p>跨 App 图标保留单墨色与印章容器，避免在 Fate 里变成彩色品牌墙。</p>
+      </div>
+      <span class="mark">monochrome reserve</span>
+    </div>
+    <div class="grid toolGrid" id="matrix"></div>
+  </section>
+
+  <div class="textRule">
+    <b>文字继续承载术语本体：</b>
+    甲乙丙丁、子丑寅卯、星名、宫名、纳音、格局名不做伪图标；图标只辅助结构、关系、状态和动作。
+  </div>
+
+  <section class="preview">
+    <div class="phone">
+      <div class="phoneTop">乙巳大运 · 24-33</div>
+      <div class="phoneGlyph" id="phoneGlyph"></div>
+      <div class="phoneTitle">辛金日主</div>
+      <div class="phoneMeta">财格 · 喜金水 · 命宫紫微天相</div>
+      <div class="badges"><span class="badge">四柱</span><span class="badge">五行</span><span class="badge">命宫</span></div>
+      <div class="spacer"></div>
+      <div class="cta" id="cta"></div>
+    </div>
+    <div class="rules">
+      <div class="rule"><b>风格原则</b>整套图标只允许一种主墨色；质感来自纸、墨边、留白和笔触，而不是颜色变化。</div>
+      <div class="rule"><b>造型原则</b>八字所有图标从“柱”出发，紫微所有图标从“宫格”出发，时间图标从“轨道/节点”出发。</div>
+      <div class="rule"><b>细节原则</b>只保留能帮助识别的细节。墨迹毛边是材质，不承担语义；语义仍由主形完成。</div>
+      <div class="rule"><b>落地建议</b>如果进 RN，可先做 P0：命盘、八字、紫微、五行、四柱、日主、命宫、主星、大运。</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const ICONS={
+  chart:`<path class="stroke" d="M32 10c12 0 22 10 22 22S44 54 32 54 10 44 10 32 20 10 32 10Z"/><path class="stroke thin" d="M32 16v8M32 40v8M16 32h8M40 32h8"/><circle class="fill" cx="32" cy="32" r="4.2"/><path class="stroke thin" d="M20 20l5 5M44 20l-5 5M44 44l-5-5M20 44l5-5"/>`,
+  bazi:`<path class="stroke bold" d="M17 12v40M27 12v40M37 12v40M47 12v40"/><path class="stroke thin" d="M14 22h36M14 42h36"/><circle class="fill" cx="37" cy="32" r="4.4"/>`,
+  ziwei:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><path class="fill" d="M32 20l3.1 7.6 8.1.6-6.2 5.2 1.9 7.8-6.9-4.4-6.9 4.4 1.9-7.8-6.2-5.2 8.1-.6Z"/>`,
+  scroll:`<path class="stroke" d="M20 11h23c4 0 7 3 7 7v28c0 4-3 7-7 7H20c-4 0-7-3-7-7V18c0-4 3-7 7-7Z"/><path class="stroke thin" d="M23 23h18M23 32h18M23 41h12"/><path class="stroke thin" d="M17 12c5 8 5 32 0 40"/>`,
+  wuxing:`<path class="stroke" d="M32 10l20 14.5-7.6 23.5H19.6L12 24.5Z"/><circle class="fill" cx="32" cy="10" r="3.4"/><circle class="fill" cx="52" cy="24.5" r="3.4"/><circle class="fill" cx="44.4" cy="48" r="3.4"/><circle class="fill" cx="19.6" cy="48" r="3.4"/><circle class="fill" cx="12" cy="24.5" r="3.4"/>`,
+  dayun:`<path class="stroke bold" d="M10 36h44"/><path class="stroke" d="M46 28l8 8-8 8"/><path class="stroke thin" d="M18 25v22M28 28v16M38 28v16"/><circle class="fill" cx="36" cy="36" r="4.5"/>`,
+  liunian:`<circle class="stroke" cx="32" cy="32" r="22"/><path class="stroke thin" d="M32 12v8M32 44v8M12 32h8M44 32h8"/><circle class="fill" cx="44" cy="20" r="5"/><path class="stroke thin" d="M32 32l12-12"/>`,
+  liumonth:`<path class="stroke" d="M43 10a22 22 0 1 0 0 44c-9-4.5-14-12.2-14-22s5-17.5 14-22Z"/><path class="stroke thin" d="M17 48c7 3.4 18 3.4 25 0"/>`,
+
+  pillar:`<path class="stroke bold" d="M16 12v40M27 12v40M38 12v40M49 12v40"/><path class="stroke thin" d="M13 22h39M13 42h39"/>`,
+  stem:`<path class="stroke bold" d="M32 11v42"/><path class="stroke" d="M20 17h24M23 32h18M20 47h24"/><path class="stroke thin" d="M24 11c6 4 10 4 16 0"/>`,
+  branch:`<path class="stroke" d="M16 24h32M32 24v28"/><path class="stroke bold" d="M22 52c4-8 7-11 10-11s6 3 10 11"/><path class="stroke thin" d="M24 16c5-4 11-4 16 0"/>`,
+  daymaster:`<path class="stroke bold" d="M16 12v40M27 12v40M38 12v40M49 12v40"/><circle class="fill" cx="38" cy="32" r="7"/><path class="stroke thin" d="M13 42h39"/>`,
+  shishen:`<circle class="fill" cx="32" cy="32" r="5"/><path class="stroke" d="M32 10v11M32 43v11M10 32h11M43 32h11M16 16l8 8M48 48l-8-8M48 16l-8 8M16 48l8-8"/>`,
+  hidden:`<path class="stroke" d="M18 18h28M32 18v30"/><path class="stroke bold" d="M22 48c4-7 7-10 10-10s6 3 10 10"/><circle class="fill" cx="32" cy="41" r="4"/>`,
+  useful:`<path class="stroke" d="M32 11l18 13-7 21H21l-7-21Z"/><path class="stroke bold" d="M23 32l6 6 13-16"/>`,
+  avoid:`<path class="stroke" d="M32 11l18 13-7 21H21l-7-21Z"/><path class="stroke bold" d="M24 24l16 16M40 24L24 40"/>`,
+  combine:`<path class="stroke" d="M25 39a10 10 0 0 1 0-14l5-5a10 10 0 0 1 14 14l-3 3"/><path class="stroke" d="M39 25a10 10 0 0 1 0 14l-5 5a10 10 0 0 1-14-14l3-3"/>`,
+  clash:`<path class="stroke bold" d="M16 18l30 30M46 18L16 48"/><path class="stroke" d="M42 14h8v8M22 50h-8v-8"/>`,
+
+  palace:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/>`,
+  minggong:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><circle class="fill" cx="32" cy="32" r="6"/>`,
+  shengong:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38"/><path class="stroke bold" d="M32 24v16M24 32h16"/>`,
+  majorstar:`<rect class="stroke thin" x="15" y="15" width="34" height="34" rx="4"/><path class="stroke" d="M32 17l3.8 9.4 10.1.8-7.7 6.4 2.4 9.8-8.6-5.5-8.6 5.5 2.4-9.8-7.7-6.4 10.1-.8Z"/>`,
+  minorstar:`<rect class="stroke thin" x="15" y="15" width="34" height="34" rx="4"/><circle class="fill" cx="25" cy="26" r="3.2"/><circle class="fill" cx="39" cy="36" r="2.5"/><path class="stroke thin" d="M25 26l14 10"/>`,
+  sihua:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="8"/><path class="stroke" d="M23 25h18M23 39h18M26 22v20M38 22v20"/>`,
+  brightness:`<path class="stroke" d="M14 50h36"/><path class="stroke bold" d="M19 42v8M29 34v16M39 25v25M49 14v36"/><circle class="fill" cx="49" cy="14" r="3.5"/>`,
+  empty:`<rect class="stroke" x="13" y="13" width="38" height="38" rx="4"/><path class="stroke thin" d="M25.7 13v38M38.3 13v38M13 25.7h38M13 38.3h38M24 32h16"/>`,
+
+  date:`<rect class="stroke" x="15" y="16" width="34" height="34" rx="6"/><path class="stroke thin" d="M15 26h34M24 10v10M40 10v10M24 35h5M35 35h5M24 43h12"/>`,
+  time:`<circle class="stroke" cx="32" cy="32" r="20"/><path class="stroke" d="M32 20v13l9 5"/>`,
+  place:`<path class="stroke" d="M32 56S17 40 17 27a15 15 0 0 1 30 0c0 13-15 29-15 29Z"/><circle class="fill" cx="32" cy="27" r="5"/>`,
+  solar:`<circle class="stroke" cx="32" cy="18" r="7"/><path class="stroke thin" d="M32 5v5M32 26v7M19 18h-5M50 18h-5M22 8l4 4M42 12l4-4M16 52h32M25 33l7 19 7-19"/>`,
+  expand:`<rect class="stroke" x="20" y="10" width="24" height="44" rx="5"/><path class="stroke" d="M32 20v24M24 36l8 8 8-8"/>`,
+  share:`<circle class="stroke" cx="18" cy="32" r="6"/><circle class="stroke" cx="46" cy="18" r="6"/><circle class="stroke" cx="46" cy="46" r="6"/><path class="stroke" d="M23.5 29.2l17-8.4M23.5 34.8l17 8.4"/>`,
+  edit:`<path class="stroke" d="M44 12l8 8-28 30-11 3 3-11Z"/><path class="stroke thin" d="M39 17l8 8"/>`,
+  sync:`<path class="stroke" d="M48 25a18 18 0 0 0-29-9"/><path class="stroke" d="M48 13v12H36"/><path class="stroke" d="M16 39a18 18 0 0 0 29 9"/><path class="stroke" d="M16 51V39h12"/>`,
+  public:`<path class="stroke" d="M8 32s9-15 24-15 24 15 24 15-9 15-24 15S8 32 8 32Z"/><circle class="fill" cx="32" cy="32" r="7"/>`,
+  back:`<path class="stroke" d="M34 16L18 32l16 16"/><path class="stroke" d="M18 32h30"/>`,
+  profile:`<circle class="stroke" cx="32" cy="21" r="9"/><path class="stroke" d="M15 54c3-12 10-18 17-18s14 6 17 18"/>`,
+  history:`<path class="stroke" d="M21 21v-9H12"/><path class="stroke" d="M20 14a22 22 0 1 1-6 24"/><path class="stroke" d="M32 22v12l9 5"/>`,
+  search:`<circle class="stroke" cx="28" cy="28" r="15"/><path class="stroke" d="M40 40l12 12"/>`,
+  unlock:`<path class="stroke" d="M22 28v-8a10 10 0 0 1 19-4"/><rect class="stroke" x="18" y="28" width="30" height="24" rx="6"/><path class="stroke" d="M33 38v6"/>`,
+
+  yuan:`<circle class="stroke" cx="25" cy="32" r="11"/><circle class="stroke" cx="39" cy="32" r="11"/><path class="stroke thin" d="M16 44c10 8 22 8 32 0"/>`,
+  feng:`<path class="stroke" d="M10 34c9-12 19-18 32-18 8 0 13 5 13 11 0 10-10 14-21 10"/><path class="stroke thin" d="M12 48c13 6 28 5 40-3"/>`,
+  face:`<path class="stroke" d="M32 9c12 0 20 10 20 23s-8 23-20 23-20-10-20-23S20 9 32 9Z"/><path class="stroke thin" d="M22 30c4-3 7-3 10 0M34 30c4-3 7-3 10 0M24 42c5 4 11 4 16 0"/>`,
+  hex:`<path class="stroke bold" d="M14 16h36M14 32h14M36 32h14M14 48h36"/>`,
+  dream:`<path class="stroke" d="M12 43c0-6 4-10 10-10 2-8 8-13 17-13 8 0 15 6 15 14 0 9-7 15-16 15H20c-5 0-8-2-8-6Z"/><path class="stroke thin" d="M40 11c-5 2-8 6-8 11 3-1.2 6-1.6 9-1.2"/>`,
+  plum:`<path class="stroke" d="M14 52c12-16 25-27 40-37"/><path class="stroke" d="M21 18l6-5 6 5-2.2 7.2h-7.6Z"/><circle class="fill" cx="43" cy="22" r="3"/>`,
+  almanac:`<rect class="stroke" x="15" y="16" width="34" height="34" rx="6"/><path class="stroke thin" d="M15 26h34M24 10v10M40 10v10"/><circle class="fill" cx="40" cy="39" r="5"/>`,
+  luopan:`<circle class="stroke" cx="32" cy="32" r="24"/><circle class="stroke thin" cx="32" cy="32" r="11"/><path class="stroke thin" d="M32 8v7M32 49v7M8 32h7M49 32h7"/><path class="fill" d="M32 17l5 15-5 15-5-15Z"/>`,
+};
+
+function svg(key){
+  return `<svg class="glyph" viewBox="0 0 64 64" aria-hidden="true">${ICONS[key]}</svg>`;
+}
+function card([key,title,desc,rank], mode='core'){
+  const rankHtml=mode==='term'?`<div class="rank">${rank}</div>`:'';
+  return `<div class="card ${mode==='term'?'term':''} ${mode==='small'?'small':''}">
+    <div class="sealPlate">${svg(key)}</div>
+    <div>${rankHtml}<div class="title">${title}</div><div class="desc">${desc}</div></div>
+  </div>`;
+}
+
+const core=[
+  ['chart','命盘','中心、方位、全局定位'],
+  ['bazi','八字','四柱排布，日主高亮'],
+  ['ziwei','紫微','宫格之中，星曜落位'],
+  ['scroll','命书','结构化解读章节'],
+  ['wuxing','五行','五点循环，不替代文字'],
+  ['dayun','大运','十年段落与当前节点'],
+  ['liunian','流年','年度落点在轨道上'],
+  ['liumonth','流月','月相切面与短周期'],
+];
+document.getElementById('core').innerHTML=core.map((x)=>card(x)).join('');
+
+const bazi=[
+  ['pillar','四柱','年、月、日、时四个结构位','P0 STRUCTURE'],
+  ['stem','天干','柱的上层，表示显性气','P0 STRUCTURE'],
+  ['branch','地支','柱的下层，表示根与时间支点','P0 STRUCTURE'],
+  ['daymaster','日主','八字里的“我”，高亮日柱即可','P0 FOCUS'],
+  ['shishen','十神 / 五类关系','围绕日主的关系模型','P1 RELATION'],
+  ['hidden','藏干','支中有藏，用内点表达','P1 DETAIL'],
+  ['useful','用神','取用、支持、可借力的状态','P1 STATE'],
+  ['avoid','忌神','失衡、过载、需节制的状态','P1 STATE'],
+  ['combine','合 / 会','靠近、联结、成局的关系线','P1 RELATION'],
+  ['clash','冲 / 刑 / 害','对冲、破裂、摩擦的关系线','P1 RELATION'],
+];
+document.getElementById('bazi').innerHTML=bazi.map((x)=>card(x,'term')).join('');
+
+const ziwei=[
+  ['palace','十二宫','紫微 Chart 的容器结构','P0 STRUCTURE'],
+  ['minggong','命宫','主定位，适合高亮中心宫','P0 FOCUS'],
+  ['shengong','身宫','身体与实践落点，轻标记即可','P1 FOCUS'],
+  ['majorstar','主星','Chart 扫读只需知道主星在此','P0 STAR'],
+  ['minorstar','辅星','辅助信息，视觉权重低于主星','P1 STAR'],
+  ['sihua','四化','禄权科忌应用同一 badge 容器','P1 BADGE'],
+  ['brightness','庙旺平陷','星曜亮度是状态刻度','P2 STATE'],
+  ['empty','空宫','无主星时的占位结构','P2 STATE'],
+];
+document.getElementById('ziwei').innerHTML=ziwei.map((x)=>card(x,'term')).join('');
+
+const utility=[
+  ['date','日期','出生日期'],['time','时辰','出生时段'],['place','地点','出生地'],['solar','真太阳时','校正时间'],
+  ['expand','展开','打开命书'],['share','分享','传播结果'],['edit','编辑','修改资料'],['sync','同步','同步命盘'],
+  ['public','公开','主页可见'],['back','返回','回到上一层'],['profile','档案','Me / profile'],['history','历史','历史命书'],
+  ['search','搜索','查找'],['unlock','解锁','解锁章节'],
+];
+document.getElementById('utility').innerHTML=utility.map((x)=>card(x,'small')).join('');
+
+const matrix=[
+  ['yuan','缘','关系合盘'],['feng','风','居所气流'],['face','面','面相识别'],['hex','卦','六爻卦线'],
+  ['dream','梦','梦境云团'],['plum','梅花','梅花易数'],['almanac','黄历','日历宜忌'],['luopan','罗盘','方位测量'],
+];
+document.getElementById('matrix').innerHTML=matrix.map((x)=>card(x,'small')).join('');
+
+document.getElementById('phoneGlyph').innerHTML=svg('ziwei');
+document.getElementById('cta').innerHTML=`${svg('scroll')}<span>展开命书</span>`;
+</script>
+</body>
+</html>

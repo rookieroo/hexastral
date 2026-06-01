@@ -1,0 +1,30 @@
+{
+  "name": "@zhop/svc-astro",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types",
+    "secrets:sync": "bun ../../scripts/sync-secrets.js --app=svc-astro --env=production",
+    "secrets:sync:dry": "bun ../../scripts/sync-secrets.js --app=svc-astro --env=production --dry-run",
+    "eval:personas": "bun run scripts/eval-personas.ts",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@zhop/ai-vision": "workspace:*",
+    "@zhop/astro-core": "workspace:*",
+    "hono": "^4.12.8",
+    "iztro": "2.5.7",
+    "openai": "^6.27.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250924.0",
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.90.0"
+  }
+}

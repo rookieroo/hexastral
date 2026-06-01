@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hexastral-svc-geocode",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "vars": {
+    // Nominatim contact email (required by Nominatim usage policy)
+    "NOMINATIM_EMAIL": "props@hexastral.com"
+  },
+
+  // KV namespace for caching Nominatim results (24h TTL)
+  "kv_namespaces": [
+    {
+      "binding": "GEOCODE_CACHE",
+      "id": "7f12dd43c57e4ddfb12defab4574c74d",
+      "preview_id": "1ccf23b7217e47c3a46bf94b2851ad6e"
+    }
+  ],
+
+  // Routes — exposed via hexastral API gateway or Service Binding
+  // [
+  //   { "pattern": "api.hexastral.com/geocode/*", "zone_name": "hexastral.com" }
+  // ]
+
+  // Tail worker
+  "tail_consumers": [{ "service": "svc-tail" }]
+}

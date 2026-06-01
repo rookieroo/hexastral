@@ -1,0 +1,246 @@
+{
+  "_comment": "ZH-Hant messages · anti-spam compliant per docs/anti-spam-positioning.md. Traditional-char mirror of zh.json. ZERO trigger words (占星 / 命運 / 運勢 / 玄學 / 算命 / 星辰知道 / 星宮命理 / 命運格局).",
+  "meta": {
+    "title": "HexAstral — BaZi · ZiWei · AI",
+    "description": "60 秒生成你的八字四柱與紫微斗數命盤，配 AI 性格分析。基於古典中華宇宙觀與現代 AI 的工具型學習應用。"
+  },
+  "nav": {
+    "tools": "免費工具",
+    "freeReading": "免費測算",
+    "download": "下載 App"
+  },
+  "landing": {
+    "heroBadge": "八字 · 紫微 · AI",
+    "heroLine1": "你的命盤，",
+    "heroLine2": "古典學解",
+    "heroSub": "60 秒生成你的八字命盤\n以 1500 年中華命學傳統為根基的 AI 性格分析",
+    "heroCTA": "免費測算起盤 →",
+    "heroNote": "無需註冊 · 60 秒出盤 · 首次贈 3 次 AI 對話",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "命盤四維，AI 全息解讀",
+    "features": [
+      {
+        "title": "八字 · 四柱排盤",
+        "desc": "精準排盤天干地支四柱八字。推演先天的五行能量、日主格局及八卦卦象（易經）。",
+        "tag": "八字命盤"
+      },
+      {
+        "title": "紫微 · 十二宮",
+        "desc": "結合紫微斗數解析命盤十二宮，洞察事業、財富與人際等領域的格局。",
+        "tag": "紫微斗數命盤"
+      },
+      {
+        "title": "大運 · 時間軸",
+        "desc": "十年大運格 × 神煞落盤，精確定位人生各階段的機遇與制約。",
+        "tag": "大運時間軸"
+      },
+      {
+        "title": "合盤 · 配對指數",
+        "desc": "雙人命盤深度合參，量化配對分數，揭示關係中的吸引與摩擦之源。",
+        "tag": "合盤配對"
+      }
+    ],
+    "convTitle": "你來這裡，是為了——",
+    "convBody": "了解自己？看透一段關係？還是尋找人生某個階段為什麼那麼難？\n無論哪種，你的命盤都有結構可讀。",
+    "convCTA": "開始我的測算",
+    "testimonialsSectionLabel": "用戶說",
+    "testimonials": [
+      {
+        "text": "那句「你骨子裡是匹野馬，但現實把你圈養」，我看完當場哭出來了。",
+        "name": "陳 ××",
+        "tag": "深圳 · 設計師"
+      },
+      {
+        "text": "合婚報告讓我第一次從五行角度理解了我們為什麼總在同一件事上吵架。",
+        "name": "林 ××",
+        "tag": "上海 · 產品經理"
+      },
+      {
+        "text": "大運時間軸讓我明白為什麼 2024 年突然那麼難——原來換大運了。",
+        "name": "Kevin W.",
+        "tag": "Toronto · Engineer"
+      }
+    ],
+    "ctaHeadline": "免費獲取你的命盤",
+    "ctaSub": "下載 HexAstral，首次完成排盤贈送 3 次 AI 對話，解鎖深度解讀",
+    "footerPrivacy": "隱私政策",
+    "footerTerms": "用戶協議",
+    "footerStart": "開始測算"
+  },
+  "onboarding": {
+    "motivationPrompt": "你來這裡，是為了——",
+    "motivationTitle1": "選擇你的",
+    "motivationTitle2": "測算模式",
+    "modePersonalTitle": "了解我自己",
+    "modePersonalDesc": "透過八字框架探索個人性格、命盤結構與人生大運",
+    "modePairingTitle": "了解我們的關係",
+    "modePairingDesc": "伴侶 / 戀人配對 — 五行深度合參",
+    "modePairingBadge": "最受歡迎 ★",
+    "noSignupNote": "無需註冊 · 資料僅用於計算 · 完全免費",
+    "selfStep1Label": "第一步 — 你的資訊",
+    "selfBirthLabel": "你的出生資訊",
+    "selfStep1Title": "你出生的那一刻，",
+    "selfStep1Accent": "你的命盤配置是怎樣的？",
+    "partnerStep2Label": "第二步 — Ta 的資訊",
+    "partnerStep2Title": "比較兩張命盤",
+    "partnerStep2Accent": "看你們之間的關係結構",
+    "submitPersonal": "開始排盤",
+    "submitNext": "下一步 →",
+    "submitPairing": "查看配對結果",
+    "back": "← 返回",
+    "restart": "← 重新開始",
+    "errorRetry": "計算失敗，請稍後重試",
+    "selfDefault": "你",
+    "partnerDefault": "Ta",
+    "personalChartLabel": "{name}的命盤",
+    "dayMasterLabel": "日主",
+    "starsSpeakPrefix": "✦ 對{name}的洞察",
+    "fullReadingLabel": "完整 AI 解讀",
+    "personalPaywallUnlock": "🔒 下載解鎖完整解讀",
+    "personalCTAHeadline": "{name}的完整命盤已就緒",
+    "personalCTASub": "下載 HexAstral，獲取 AI 深度解讀 · 大運時間軸 · 神煞落盤",
+    "pairingScoreUnit": "{a} × {b}　配對指數",
+    "pairingInsightsTitle": "命盤洞察",
+    "pairingFullReportLabel": "深度合參報告",
+    "pairingPaywallUnlock": "🔒 下載解鎖完整合參報告",
+    "pairingCTAHeadline": "解鎖完整合參報告",
+    "pairingCTASub": "下載 HexAstral，獲取 AI 深度合參 · 關係摩擦點解析 · 最佳相處模式",
+    "partnerLabel": "{selfName} 的另一半",
+    "bNameQuestion": "排盤之前，我需要知道你的名字。你叫什麼？",
+    "bNamePlaceholder": "你的名字",
+    "bDateQuestion": "{name}，你是什麼時候出生的？命盤始於那一刻。",
+    "bTimeQuestion": "你知道出生的大致時辰嗎？時柱越精確，命盤越精確。",
+    "bGenderQuestion": "在陰陽的語言裡——你更接近哪股能量？",
+    "bGenderMale": "陽 ☰",
+    "bGenderFemale": "陰 ☷",
+    "bCityQuestion": "你在哪座城市出生？出生地將你的命盤錨定於本地真太陽時。",
+    "bCityPlaceholder": "出生城市",
+    "bContinue": "繼續",
+    "bRevealChart": "顯示我的命盤"
+  },
+  "loading": {
+    "_comment": "Procedural-tone loading messages. Original 'Saturn retrograde calibration' was Western astrology (wrong tradition!) — removed. All steps reframed as deterministic computation.",
+    "messages": [
+      "正在錨定出生時空座標...",
+      "解析年柱干支結構...",
+      "校準節氣邊界...",
+      "掃描月支藏干五行結構...",
+      "計算日主強弱平衡...",
+      "錨定第四宮座標...",
+      "計算五行互動模式...",
+      "錨定第七宮...",
+      "融合十二宮座標資料...",
+      "大運時間軸校準完成...",
+      "神煞落盤，命盤結構成形...",
+      "你的命盤即將顯現..."
+    ]
+  },
+  "form": {
+    "nameLabel": "姓名（可選）",
+    "namePlaceholder": "隨便填，只是方便區分",
+    "cityLabel": "出生城市 *",
+    "cityPlaceholder": "如 台北·香港·北京·紐約",
+    "solarTimeNote": "將根據城市經度自動修正真太陽時",
+    "dateLabel": "公曆生日",
+    "hourLabel": "出生時辰",
+    "unknownHour": "不知道出生時辰",
+    "genderMale": "☰ 男命",
+    "genderFemale": "☷ 女命",
+    "shichen": [
+      "早子時　23:00–01:00",
+      "丑時　　01:00–03:00",
+      "寅時　　03:00–05:00",
+      "卯時　　05:00–07:00",
+      "辰時　　07:00–09:00",
+      "巳時　　09:00–11:00",
+      "午時　　11:00–13:00",
+      "未時　　13:00–15:00",
+      "申時　　15:00–17:00",
+      "酉時　　17:00–19:00",
+      "戌時　　19:00–21:00",
+      "亥時　　21:00–23:00",
+      "晚子時　23:00–01:00"
+    ],
+    "dateLabelLunar": "農曆生日",
+    "checkLunar": "農曆",
+    "checkTrueSolar": "真太陽時"
+  },
+  "pair": {
+    "inviteText": "邀你比較你們的命盤",
+    "scoreLabel": "合盤指數",
+    "dayMasterOfLabel": "{name} 日主",
+    "unlockFull": "下載解鎖完整報告",
+    "orWeb": "或在瀏覽器直接測算",
+    "expiredTitle": "連結已失效",
+    "expiredDesc": "此分享連結已過期或無效，請讓對方重新生成"
+  },
+  "resonate": {
+    "defaultTitle": "你收到了邀請",
+    "inviteTitle": "邀請你進行合盤測算",
+    "subtitle": "命盤配對",
+    "description": "透過古典中華五行框架，比較兩張八字命盤的契合度。",
+    "inviteFrom": "邀請來自",
+    "expires": "過期時間",
+    "openInApp": "在 HexAstral 中打開",
+    "downloadApp": "免費下載 HexAstral",
+    "curiosityTitle": "你們的配對解讀",
+    "curiosityUnlockCTA": "下載 HexAstral 解鎖完整配對解讀",
+    "dimLongTerm": "長遠潛力",
+    "dimAttraction": "磁性吸引",
+    "dimCommunication": "溝通流動",
+    "dimEmotional": "情感共鳴",
+    "expired": "此邀請已過期，請讓對方重新發送。",
+    "notFound": "邀請不存在或已失效。"
+  },
+  "common": {
+    "download": "免費下載 HexAstral",
+    "downloadButton": "App Store 免費下載",
+    "downloadNote": "免費開始 · 無需註冊 · 首次贈送 3 次 AI 對話",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "你收到邀請了 · HexAstral",
+    "meta_description": "你的朋友邀你一起探索八字命盤，透過邀請連結下載，首次額外贈送 AI 對話",
+    "headline": "你的朋友\n為你留了一席之地",
+    "subline": "你的朋友邀你一起探索八字命盤。透過邀請連結下載 HexAstral，即可解鎖專屬福利。",
+    "ref_label": "邀請碼",
+    "benefit_1": "首次完成排盤額外贈送 AI 對話次數，解鎖深度解讀",
+    "benefit_2": "無需註冊，60 秒完成命盤起盤",
+    "benefit_3": "八字 · 紫微 · 合盤配對全模組開放",
+    "cta": "免費下載，領取邀請獎勵",
+    "note": "僅限透過邀請連結首次下載的新用戶"
+  },
+  "Metadata": {
+    "title": "HexAstral — 八字 & 紫微命盤解讀",
+    "description": "60 秒生成你的八字四柱（天干地支）、紫微斗數與八卦命盤，配 AI 性格分析。基於古典中華宇宙觀與現代 AI 的工具型學習應用。"
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral 解讀",
+    "joinedSince": "自 {year} 年加入 HexAstral",
+    "readingsCount": "{n} 次解讀",
+    "baziHeading": "八字 · 四柱",
+    "pillarYear": "年",
+    "pillarMonth": "月",
+    "pillarDay": "日",
+    "pillarHour": "時",
+    "ctaHeadline": "探索你的八字命盤",
+    "ctaSub": "AI 加持的八字與紫微命盤 — iOS 免費體驗",
+    "ctaButton": "前往 App Store 下載",
+    "viewFullChart": "查看完整命盤（四柱 + 十二宮）"
+  },
+  "growth": {
+    "navHome": "首頁",
+    "navTools": "免費工具",
+    "navBlog": "部落格",
+    "navMethodology": "方法論",
+    "disclaimer": "僅供文化探索與自省參考，不能取代專業、醫療或法律意見。",
+    "toolsIndexTitle": "免費工具",
+    "toolsIndexSubtitle": "快速排盤與資料查閱。完整 AI 解讀請在 iOS App 內進行。",
+    "blogTitle": "部落格",
+    "blogSubtitle": "以可讀方式介紹中華命學，並標明典籍與傳統名稱。",
+    "readArticle": "閱讀全文",
+    "backToTools": "全部工具",
+    "backToBlog": "全部文章",
+    "openAppStore": "前往 App Store 下載"
+  }
+}

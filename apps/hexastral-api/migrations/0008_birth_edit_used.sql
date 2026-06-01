@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `birth_edit_used` integer DEFAULT false NOT NULL;

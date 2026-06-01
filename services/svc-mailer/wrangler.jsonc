@@ -1,0 +1,22 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hexastral-svc-mailer",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // No public routes – accessed only via Service Binding from hexastral-api
+  // Caller adds: { "binding": "SVC_MAILER", "service": "hexastral-svc-mailer" }
+
+  "vars": {
+    "AWS_REGION": "us-east-1",
+    "AWS_SES_FROM": "noreply@hexastral.com"
+  },
+
+  // Secrets (via `wrangler secret put`):
+  //   AWS_ACCESS_KEY_ID      - IAM用户，只需 ses:SendEmail 权限
+  //   AWS_SECRET_ACCESS_KEY  - IAM密钥
+
+  // Tail worker
+  "tail_consumers": [{ "service": "svc-tail" }]
+}

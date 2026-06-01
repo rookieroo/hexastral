@@ -1,0 +1,82 @@
+/**
+ * Fēng app theme — Phase F back-compat shim.
+ *
+ * Phase E shipped a local FENG_PALETTE + useFengTheme. Phase F moves the
+ * source of truth into `@zhop/core-ui` (brand="feng"). This file now:
+ *
+ *   1. Re-exports FENG_PALETTE for raw color access (BootSplash, BaguaCompassOverlay arrows).
+ *   2. Re-exports `spacing` constants for back-compat (apps still use spacing.lg etc.).
+ *   3. Provides `useFengTheme()` as a thin adapter over `useTheme()` from core-ui,
+ *      so existing screens that destructure `{ colors }` keep working unmodified.
+ *
+ * New code should import directly from `@zhop/core-ui`:
+ *
+ *   import { useTheme } from '@zhop/core-ui'
+ *   const { colors, spacing, getElevation } = useTheme()
+ *
+ * Once all Fēng screens migrate, this file can be deleted.
+ */
+
+import { useTheme } from '@zhop/core-ui'
+
+// Raw palette — needed for BootSplash (pre-provider) and for SVG components
+// (BaguaCompassOverlay arrow colors) where the brand colors are visualization
+// semantics, not theme chrome.
+export const FENG_PALETTE = {
+  inkTeal: '#0F1E26',
+  inkTealMid: '#2E4756',
+  copperGold: '#B08D5B',
+  copperGoldMute: '#7A6240',
+  cinnabar: '#9B2226',
+  rice: '#F5EFE3',
+  riceWarm: '#EAE3D0',
+  riceMute: '#A89F8E',
+  black: '#020608',
+} as const
+
+export interface FengColors {
+  bg: string
+  surface: string
+  surfaceMute: string
+  text: string
+  textMute: string
+  accent: string
+  accentMute: string
+  border: string
+  warning: string
+  success: string
+  /** Visualization-specific: face-direction arrow on satellite overlays. */
+  arrowFace: string
+  /** Visualization-specific: sit-direction arrow on satellite overlays. */
+  arrowSit: string
+}
+
+/**
+ * @deprecated New code should call `useTheme()` from `@zhop/core-ui` directly.
+ *             This shim maps the core-ui theme onto the legacy FengColors shape
+ *             so existing screens keep working during the Phase F migration.
+ */
+export function useFengTheme(): { isDark: boolean; colors: FengColors } {
+  const theme = useTheme()
+  const c = theme.colors
+  return {
+    isDark: theme.isDark,
+    colors: {
+      bg: c.bg,
+      surface: c.card,
+      surfaceMute: c.cardElevated,
+      text: c.text,
+      textMute: c.secondary,
+      accent: c.accent,
+      accentMute: c.accentGhost,
+      border: c.separator,
+      warning: c.warning,
+      success: c.success,
+      // Visualization-specific arrow colors stay brand-fixed regardless of mode.
+      arrowFace: FENG_PALETTE.copperGold,
+      arrowSit: FENG_PALETTE.cinnabar,
+    },
+  }
+}
+
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const

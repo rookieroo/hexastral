@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · 章目录封印面 + 启封解锁 POC（Free→Full）</title>
+<style>
+  :root{
+    --void:#0C0B0A; --paper:#EAE3D2; --paper-2:#E2DAC6; --bone:#E9E2D2;
+    --ink:#3a3328; --ink-2:#6b5f48; --bronze:#9b7d3e; --cinnabar:#9B2226; --dim:#8A8170; --faint:#5A5446;
+    --serif:"Hoefler Text","Baskerville","Songti SC",Georgia,serif;
+    --seal:"Songti SC","STSong",serif; --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070605;color:var(--bone);font-family:var(--serif);padding:44px 32px 80px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto}
+  .lock{color:var(--bronze);font-family:var(--sans);font-size:11px;letter-spacing:5px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-weight:400;font-size:25px;letter-spacing:1px;margin:0 0 6px}
+  .lede{color:var(--dim);font-family:var(--sans);font-size:12.5px;max-width:820px;line-height:1.9;margin:0 0 8px}
+  .lede b{color:var(--bone)}
+  .row{display:flex;gap:46px;flex-wrap:wrap;align-items:flex-start;margin-top:26px}
+  .ctrls{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 0}
+  .btn{font-family:var(--sans);font-size:12px;letter-spacing:1px;color:var(--bone);background:#17150f;border:1px solid rgba(194,168,120,.4);border-radius:8px;padding:8px 13px;cursor:pointer}
+  .btn:hover{border-color:var(--bronze)} .btn.on{background:var(--bronze);color:#1a1206;border-color:var(--bronze)}
+
+  /* 命书纸面 */
+  .phone{width:340px;border-radius:26px;overflow:hidden;flex:none;color:var(--ink);position:relative;
+    background:radial-gradient(120% 70% at 50% 0%, #F1EAD9, var(--paper) 52%, var(--paper-2));
+    box-shadow:0 26px 64px rgba(0,0,0,.5)}
+  .hd{padding:20px 24px 6px;display:flex;align-items:baseline;justify-content:space-between}
+  .hd .t{font-family:var(--serif);font-size:15px;letter-spacing:3px;color:#2a241a}
+  .hd .t .cn{font-family:var(--seal);color:var(--bronze);font-size:12px;margin-left:4px}
+  .hd .pg{font-family:var(--sans);font-size:9.5px;letter-spacing:2px;color:var(--dim)}
+  .ming{padding:2px 24px 12px;font-family:var(--sans);font-size:11px;line-height:1.7;color:var(--ink-2)}
+  .ming b{color:var(--cinnabar);font-family:var(--seal)}
+
+  /* 章行 */
+  .chap{display:flex;align-items:flex-start;gap:12px;padding:13px 24px;border-top:1px solid rgba(120,110,86,.16);position:relative}
+  .chap .no{font-family:var(--seal);font-size:11px;color:var(--bronze);width:16px;flex:none;padding-top:2px}
+  .chap .bd{flex:1;min-width:0}
+  .chap .ti{font-family:var(--serif);font-size:14px;color:#2a241a;letter-spacing:1px}
+  .chap .ti .en{font-family:var(--sans);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-left:7px}
+  .chap .hook{font-family:var(--sans);font-size:11px;line-height:1.55;color:var(--ink-2);margin-top:4px}
+  .chap .more{font-family:var(--sans);font-size:11px;line-height:1.55;color:var(--ink-2);margin-top:3px;opacity:0;max-height:0;overflow:hidden}
+  .chap .go{font-family:var(--sans);font-size:16px;color:var(--bronze);flex:none;align-self:center;opacity:.7}
+
+  /* 封印区 */
+  .sealzone{position:relative}
+  .locked{filter:blur(5px);opacity:.42;transition:filter .1s,opacity .1s;pointer-events:none}
+  /* 墨幕:盖住锁定章,顶缘墨晕 */
+  .veil{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg, rgba(24,20,15,0) 0%, rgba(26,22,16,.74) 16%, rgba(20,17,12,.86) 46%, rgba(18,15,11,.9) 100%);
+    filter:url(#veilEdge)}
+  /* 封缄卡:朱印 + 文案 + CTA,居中浮在墨幕上 */
+  .sealcard{position:absolute;left:0;right:0;top:38%;display:flex;flex-direction:column;align-items:center;gap:13px;z-index:3}
+  /* 蜡封:两半合一(中缝隐),启封时左右半分别外旋下落,蜡溅+蜡晕 */
+  .wax{position:relative;width:66px;height:66px;cursor:pointer}
+  .wax .half{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 36% 30%, #c84a3e 0%, #8e2520 36%, #5a1310 78%, #3a0a08 100%);
+    box-shadow:0 8px 18px rgba(74,15,15,.55), inset 0 -3px 6px rgba(0,0,0,.5), inset 0 3px 5px rgba(255,200,180,.22);
+    filter:url(#waxEdge);
+    display:flex;align-items:center;justify-content:center;
+    transform-origin:center;will-change:transform}
+  .wax .left{clip-path:polygon(0 0, 51% 0, 51% 100%, 0 100%)}
+  .wax .right{clip-path:polygon(49% 0, 100% 0, 100% 100%, 49% 100%)}
+  .wax .mark{font-family:var(--seal);font-size:34px;color:#3a0a08;font-weight:700;line-height:1;text-shadow:0 -1px 0 rgba(0,0,0,.45),0 1px 0 rgba(255,200,180,.22);pointer-events:none}
+  .wax .bleed{position:absolute;inset:-42%;border-radius:50%;opacity:0;background:radial-gradient(circle,rgba(110,28,28,.65),rgba(110,28,28,.15) 50%,transparent 72%);pointer-events:none}
+  .wax .splatter{position:absolute;border-radius:50%;background:#5a1310;opacity:0;pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .wax .sp1{width:5px;height:5px;top:6%;left:-12%}
+  .wax .sp2{width:4px;height:4px;bottom:6%;right:-10%}
+  .wax .sp3{width:5px;height:5px;top:62%;left:-16%}
+  .sealtxt{font-family:var(--sans);font-size:11px;letter-spacing:2px;color:#d8cfbb;text-align:center}
+  .sealtxt b{color:#f0e7d4}
+  .cta{font-family:var(--sans);font-size:12.5px;letter-spacing:3px;color:#f4ecdc;background:var(--cinnabar);border:none;border-radius:12px;padding:11px 22px;cursor:pointer;box-shadow:0 8px 22px rgba(155,34,38,.35)}
+  .cta .d{display:inline-block;width:6px;height:6px;border-radius:50%;background:#f4ecdc;margin-right:9px;opacity:.85;vertical-align:middle}
+
+  /* 解封后 */
+  .opened .veil{opacity:0}
+  .opened .locked{filter:blur(0);opacity:1;pointer-events:auto}
+  .opened .sealcard{opacity:0;pointer-events:none}
+  .opened .chap.lk .more{opacity:1;max-height:40px}
+
+  .panel{font-family:var(--sans);min-width:280px;flex:1}
+  .sl{font-family:var(--sans);font-size:11px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin:0 0 12px}
+  .note{color:var(--dim);font-family:var(--sans);font-size:12px;border-left:2px solid var(--bronze);padding-left:14px;line-height:2;max-width:560px}
+  .note b{color:var(--bronze)} .note code{color:var(--bone);background:#17150f;padding:1px 5px;border-radius:4px;font-size:11px}
+  .note+.note{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="lock">● 命书 · Chapters · Free→Full</p>
+  <h1>章目录封印面 + 启封解锁 POC</h1>
+  <p class="lede">命书目录即 <b>Free/Full 的封印面</b>：前几章开放(标题+钩子+入口),其余压在<b>墨幕</b>下、盖一枚<b>朱印「封」</b>+ 钩子可见但模糊——"看得见有这么多、读不到"。点「启封」→ <b>朱印破 → 墨幕化开(粒子) → 各章去模糊洇现 + 续出下一句</b>。= 变现时刻,扣"解封"母题。</p>
+
+  <div class="ctrls">
+    <button class="btn" id="reseal">▷ 重新封缄(重播)</button>
+  </div>
+
+  <div class="row">
+    <div class="phone" id="phone">
+      <div class="hd"><div class="t">命书 <span class="cn">· 目录</span></div><div class="pg">FREE · 2 / 8 章</div></div>
+      <div class="ming">日主 <b>木</b> · 身强 ｜ 紫微 <b>天府</b> 坐命 —— 外柔内刚,谋定而后动。</div>
+
+      <!-- Free 开放章 -->
+      <div class="chap">
+        <div class="no">壹</div>
+        <div class="bd"><div class="ti">现运 · 此章<span class="en">This Phase</span></div><div class="hook">火土得令,立身之运(32–41):声望渐起,宜进取、不宜守成。</div></div>
+        <div class="go">›</div>
+      </div>
+      <div class="chap">
+        <div class="no">贰</div>
+        <div class="bd"><div class="ti">性情 · 命格<span class="en">Nature</span></div><div class="hook">比印相生,主见强而能纳谏;成于专,败于躁。</div></div>
+        <div class="go">›</div>
+      </div>
+
+      <!-- 封印区:锁定章 + 墨幕 + 封缄卡 -->
+      <div class="sealzone" id="sealzone">
+        <div class="locked" id="locked">
+          <div class="chap lk"><div class="no">叁</div><div class="bd"><div class="ti">事业 · 官禄<span class="en">Career</span></div><div class="hook">官禄宫见七杀化权,宜掌实权、忌虚名;三十后</div><div class="more">一运转旺,可独当一面,然须防刚而招怨。</div></div><div class="go">›</div></div>
+          <div class="chap lk"><div class="no">肆</div><div class="bd"><div class="ti">财帛 · 进取<span class="en">Wealth</span></div><div class="hook">财星藏库,偏财有气而正财平;得之以谋,</div><div class="more">不宜赌性;四十一后财库渐开,置产为吉。</div></div><div class="go">›</div></div>
+          <div class="chap lk"><div class="no">伍</div><div class="bd"><div class="ti">姻缘 · 夫妻<span class="en">Marriage</span></div><div class="hook">夫妻宫坐太阴,情深而迟;早婚多波,</div><div class="more">晚成则安;配火土相生之人,白首可期。</div></div><div class="go">›</div></div>
+          <div class="chap lk"><div class="no">陆</div><div class="bd"><div class="ti">健康 · 疾厄<span class="en">Health</span></div><div class="hook">木旺火相,肝胆心火偏亢;宜疏不宜补,</div><div class="more">忌熬夜与急怒,水为调候,近水则安。</div></div><div class="go">›</div></div>
+          <div class="chap lk"><div class="no">柒</div><div class="bd"><div class="ti">大运 · 逐运<span class="en">Luck Pillars</span></div><div class="hook">戊午、丁巳两运火土接力,二十年显达;</div><div class="more">丙辰一转,宜守成交棒,慎极而骄。</div></div><div class="go">›</div></div>
+          <div class="chap lk"><div class="no">捌</div><div class="bd"><div class="ti">紫微 · 十二宫<span class="en">12 Palaces</span></div><div class="hook">命迁双美,出外逢贵;田宅渐丰,</div><div class="more">福德见禄,中晚年安乐有余荫。</div></div><div class="go">›</div></div>
+        </div>
+        <div class="veil" id="veil"></div>
+        <div class="sealcard" id="sealcard">
+          <div class="wax" id="wax">
+            <span class="bleed"></span>
+            <span class="splatter sp1"></span>
+            <span class="splatter sp2"></span>
+            <span class="splatter sp3"></span>
+            <span class="half left"><span class="mark">命</span></span>
+            <span class="half right"><span class="mark">命</span></span>
+          </div>
+          <div class="sealtxt">余下 <b>6 章</b> · 封</div>
+          <button class="cta" id="cta"><span class="d"></span>启封 · Full</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="sl">启封次第</div>
+      <div class="note">
+        ① 点「启封」→ 触觉 + <b>朱印「封」破</b>:印身一顿放大、中缝裂开、<b>朱砂晕</b>爆开、印淡去。<br>
+        ② <b>墨幕化开</b>:暗幕透明 + 顶缘墨晕(粒子)上飘退去(复用墨晕语言)。<br>
+        ③ <b>各锁定章去模糊</b>逐条洇现,并<b>续出下一句</b>(钩子→完整)——让人感到"内容更多了"。<br>
+        末态 = 全本目录(8/8),可逐章进 L2 详页。
+      </div>
+      <div class="sl" style="margin-top:22px">为什么这样</div>
+      <div class="note">封印面 = <b>看得见标题/钩子、读不到正文</b> → 比"灰一片"更勾人、也更诚实。解锁动效**就是付费母题**(解封)。真机:RN reanimated + Skia(墨幕粒子),计费在"启封"前置。</div>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="veilEdge" x="-20%" y="-30%" width="140%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.04" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="14"/>
+  </filter>
+  <!-- 蜡边轻位移:让蜡饼边缘不规则,像真实凝固的蜡 -->
+  <filter id="waxEdge" x="-15%" y="-15%" width="130%" height="130%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.18 0.22" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/>
+  </filter>
+</defs></svg>
+
+<script>
+const phone=document.getElementById('phone'), sealzone=document.getElementById('sealzone');
+const veil=document.getElementById('veil'), sealcard=document.getElementById('sealcard'), wax=document.getElementById('wax');
+let timers=[];
+function clr(){ timers.forEach(clearTimeout); timers=[]; }
+function at(ms,fn){ timers.push(setTimeout(fn,ms)); }
+
+function unseal(){
+  if(phone.classList.contains('opened')) return;
+  clr();
+  try{navigator.vibrate&&navigator.vibrate([14,30,22])}catch(e){}
+  const wL=wax.querySelector('.left'), wR=wax.querySelector('.right'), bleed=wax.querySelector('.bleed'), sps=wax.querySelectorAll('.splatter');
+  // ① 蜡封一震(impact)
+  [wL,wR].forEach(h=>h.animate([{transform:'scale(1)'},{transform:'scale(1.08)',offset:.45},{transform:'scale(1)'}],{duration:240,easing:'cubic-bezier(.3,1.2,.5,1)',fill:'forwards'}));
+  // ② 中缝裂、两半外旋下落 + 蜡晕 + 蜡溅
+  at(220,()=>{
+    wL.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:'translate(-10px,9px) rotate(-14deg)',opacity:0}],{duration:580,easing:'cubic-bezier(.4,.1,.3,1)',fill:'forwards'});
+    wR.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:'translate(10px,9px) rotate(14deg)',opacity:0}],{duration:580,easing:'cubic-bezier(.4,.1,.3,1)',fill:'forwards'});
+    bleed.animate([{opacity:0,transform:'scale(.4)'},{opacity:.85,transform:'scale(1.15)',offset:.45},{opacity:0,transform:'scale(1.9)'}],{duration:760,easing:'ease-out',fill:'forwards'});
+    const dirs=[[-22,-12],[24,16],[-28,8]];
+    sps.forEach((sp,i)=>sp.animate([{opacity:0,transform:'translate(0,0) scale(.5)'},{opacity:.85,offset:.3},{opacity:0,transform:`translate(${dirs[i][0]}px,${dirs[i][1]}px) scale(1.3)`}],{duration:700,easing:'ease-out',fill:'forwards'}));
+  });
+  at(360,()=>{ const t=sealcard.querySelector('.sealtxt'), c=document.getElementById('cta'); [t,c].forEach(e=>e.animate([{opacity:1},{opacity:0,transform:'translateY(6px)'}],{duration:360,fill:'forwards'})); });
+  // ③ 墨幕化开
+  at(460,()=>veil.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-26px)'}],{duration:820,easing:'cubic-bezier(.3,.5,.2,1)',fill:'forwards'}));
+  // ④ 锁定章去模糊 + 续句
+  at(580,()=>{ phone.classList.add('opened'); document.querySelector('.hd .pg').textContent='FULL · 8 / 8 章'; });
+  document.querySelectorAll('#locked .chap').forEach((c,i)=>{
+    at(640+i*110,()=>{ c.animate([{filter:'blur(5px)',opacity:.42,transform:'translateY(6px)'},{filter:'blur(0px)',opacity:1,transform:'translateY(0)'}],{duration:560,easing:'ease-out',fill:'forwards'});
+      const m=c.querySelector('.more'); if(m) m.animate([{opacity:0},{opacity:1}],{duration:520,delay:160,easing:'ease-out',fill:'forwards'}); });
+  });
+}
+function reseal(){
+  clr(); phone.classList.remove('opened');
+  document.querySelector('.hd .pg').textContent='FREE · 2 / 8 章';
+  const wL=wax.querySelector('.left'), wR=wax.querySelector('.right'), bleed=wax.querySelector('.bleed'), sps=wax.querySelectorAll('.splatter');
+  [wL,wR,bleed,veil,sealcard.querySelector('.sealtxt'),document.getElementById('cta'),...sps].forEach(e=>{e.getAnimations().forEach(a=>a.cancel());});
+  [wL,wR].forEach(e=>{e.style.transform='';e.style.opacity='';});
+  bleed.style.opacity='0';bleed.style.transform='';
+  sps.forEach(e=>{e.style.opacity='0';e.style.transform='';});
+  veil.style.opacity='';veil.style.transform='';
+  sealcard.querySelector('.sealtxt').style.opacity='';document.getElementById('cta').style.opacity='';document.getElementById('cta').style.transform='';
+  document.querySelectorAll('#locked .chap').forEach(c=>{c.getAnimations().forEach(a=>a.cancel());c.style.filter='';c.style.opacity='';c.style.transform='';const m=c.querySelector('.more');if(m){m.getAnimations().forEach(a=>a.cancel());m.style.opacity='';}});
+}
+document.getElementById('cta').onclick=unseal;
+wax.onclick=unseal;
+document.getElementById('reseal').onclick=reseal;
+</script>
+</body>
+</html>

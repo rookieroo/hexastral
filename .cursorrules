@@ -1,0 +1,163 @@
+# HexAstral Monorepo Standard Operating Procedures
+
+## 1. MANDATORY ARCHITECTURE RULES
+- **Package Manager**: Always use `bun`. Never `npm/pnpm`.
+- **Environment**: Cloudflare Workers (Hono) for API, Expo 54 for iOS, Next.js 15 for Web.
+- **Rules Overrides**: Sub-folder `.cursorrules` (e.g., `apps/hexastral-app/`, `services/`) override these.
+
+---
+
+## 2. CODE GENERATION STANDARDS
+
+### Imports
+- `import { z } from 'zod/v4'` ONLY (not `'zod'`)
+- Use `import type` for type-only imports
+- Cloudflare API: Use `lib/service-clients.ts`, never raw `c.env.SVC_*.fetch()`
+
+### Safety
+- No `any` type → use `unknown` + type guards
+- No `as Type` assertions → use Zod or type guards
+- No empty `catch {}` → must log or handle
+- Use `// @ts-expect-error [reason]` with explanation if necessary
+
+### Style & UI
+- **Hardcoded colors**: Forbidden. Use `ios.*` palette from `useTheme()`
+- **Icons**: Monochrome Lucide only. No decorative icons "for interest".
+  - **Exception**: Semantic controls (e.g. segment toggles, list/calendar mode switches, empty states) may use monochrome Lucide for affordance — not for ornament.
+- **Cards**: Flat design (`borderWidth: 0.5, borderRadius: 0, borderColor: colors.border`). NO rainbow/colorful borders
+- **Database columns**: snake_case
+- **Environment vars**: UPPER_SNAKE_CASE
+- **File naming**: 
+  - Components: PascalCase
+  - Routes/utilities: camelCase or kebab-case
+  - API files: kebab-case
+
+---
+
+## 3. MONOREPO SPECIFIC
+
+### Shared Packages
+Before modifying `@zhop/*` packages, verify impact on all consumers:
+- `astro-core` → used by: hexastral-api, hexastral-app, svc-astro
+- `hexastral-tokens` → used by: hexastral-app, hexastral-web, packages/ui
+- `hexastral-client` → used by: hexastral-app, hexastral-web
+
+Run `bun typecheck` after changes.
+
+### Database
+- **Single source of truth**: `apps/hexastral-api/src/db/schema.ts`
+- Always run `bun db:generate` after schema changes
+- Verify migration SQL before deploying
+- Apply to production with: `bun db:migrate:prod`
+
+### i18n
+- New UI text requires keys in ALL 9 locale files
+- Files: `locales/{zh, zh-Hant, en, ko, ja, de, es, vi, th}.ts`
+- Use `useI18n()` hook (iOS) or `next-intl` (Web)
+- Never hardcode UI text in components
+
+---
+
+## 4. CLOUDFLARE, WRANGLER & AGENT CLI
+
+### Wrangler (monorepo baseline)
+- All Worker `package.json` files pin **`wrangler` `^4.90.0`**; run **`bun install`** at the repo root after bumps.
+- **Do not rely on global `wrangler` on PATH** (often outdated, missing `ai-search`, wrong schema). Use **`bunx wrangler`** from the **directory that owns that `package.json`** (e.g. `cd apps/hexastral-api && bunx wrangler …`), or **`bun run <script>`** when defined.
+
+### Prefer `bun run` over ad-hoc flags
+- **hexastral-api**: `bun dev`, `bun deploy`, `bun db:generate|migrate|migrate:prod`, `bun run ai-search:info`, `bun cf-typegen` — see `apps/hexastral-api/package.json`.
+- **services/\***: `bun dev`, `bun deploy` inside each `services/<name>/`.
+- After **`wrangler.jsonc` binding changes** in any Worker: same directory, run **`bunx wrangler types`** (or that package’s `cf-typegen`) so `CloudflareBindings` stays accurate.
+
+### AI Search (`hexastral-api`)
+- `ai_search` entries use **`instance_name`**, equal to the instance API JSON field **`id`** (not `instance_id` in wrangler config).
+
+### Agents (Cursor)
+- For routine CLI (typecheck, `bunx wrangler ai-search get …`, `wrangler types`, local `bun dev`), **run commands in the workspace** instead of asking the user to copy-paste. Reserve explicit human approval for **production deploys**, **remote D1 migrations**, and **secret** changes when the user has not requested them.
+
+### Quick ops (examples — always `bunx` from the owning package dir)
+
+| Task | Command |
+|------|---------|
+| **API local dev** | `cd apps/hexastral-api && bun dev` (3010) |
+| **CF sanity** | `bash scripts/debug-cloudflare.sh` |
+| **Refresh Worker types** | `cd apps/hexastral-api && bunx wrangler types` |
+
+D1/KV/tail/deploy subcommands and flags: use **Wrangler skill** or MCP **cloudflare-docs** (see `.cursor/mcp.json`). If Cursor shows **JSON syntax error: Unexpected end of JSON input** for `cloudflare-docs`, your **user** MCP JSON is empty or truncated — open **Settings → MCP → Open JSON**, delete the broken `cloudflare-docs` block or paste a complete object, save, restart Cursor; alternatively install the official integration with **`/add-plugin cloudflare`**. Avoid duplicating long CLI tables in rules.
+
+### Common Patterns
+
+```typescript
+// ✅ Context variables (injected by middleware)
+const userId = c.get('userId')      // string | null
+const db = c.get('db')              // DrizzleD1Database
+const requestId = c.get('requestId') // string (nanoid)
+
+// ✅ Rate limiting
+const { success } = await c.env.RATE_LIMITER.limit({ key: userId })
+if (!success) throw new HTTPException(429, { message: 'Rate limited' })
+
+// ✅ KV operations
+await c.env.GUARD_KV.put('key', JSON.stringify(data), { expirationTtl: 86400 })
+const cached = await c.env.GUARD_KV.get('key')
+
+// ✅ Atomic DB operations
+await db.batch([
+  db.update(users).set({ credits: sql`credits - ${cost}` }).where(eq(users.id, userId)),
+  db.insert(readings).values({ id: nanoid(), user_id: userId, ... })
+])
+
+// ❌ Never use empty catch
+try { await operation() } catch { }  // FORBIDDEN
+
+// ✅ Always log or handle
+try { await operation() } catch (err) {
+  logger.error('Failed', { error: err })
+  throw new HTTPException(500, { message: 'Internal error' })
+}
+```
+
+### Environment Variables
+- Store secrets: `cd apps/hexastral-api && bunx wrangler secret put NAME` (or the Worker that owns the secret)
+- Store config: `wrangler.jsonc` `vars` section
+- Sync: `bun scripts/sync-secrets.js --app=hexastral-api --env=production`
+
+---
+
+## 5. EXECUTION COMMANDS
+
+| Tool | Command | Purpose |
+|------|---------|---------|
+| **iOS** | `npx expo install <pkg>` | Native module install (NOT `bun add`) |
+| **iOS** | `bunx expo start` | Metro bundler start |
+| **iOS** | `bunx expo run:ios` | Local simulator build |
+| **iOS** | `eas build --profile production --platform ios` | Cloud build for App Store |
+| **API** | `bun dev` | Wrangler dev (3010) |
+| **API** | `bun deploy` | Deploy to Cloudflare |
+| **QA** | `bun typecheck` | TS strict check all workspaces |
+| **QA** | `bun format:fix && bun lint:fix` | Format + lint fix all |
+| **QA** | `maestro test .maestro/flows/` | E2E tests before refactors |
+
+---
+
+## 6. DEPLOYMENT POLICY
+
+- **Do not** auto-deploy **production** on every change across `hexastral-api`, `hexastral-web`, and all `services/*` workers — risk of partial rollout, bad migrations, and noisy churn.
+- **Preferred**: CI runs `bun typecheck` / lint on PRs; merge to `main` feeds **staging or preview** only; production deploys use **path-filtered** jobs (e.g. Turborepo `--filter`), **manual approval** or **tagged releases**, and **explicit** D1 migrations (`bun db:migrate:prod`).
+
+---
+
+## 7. RULES HIERARCHY
+
+When in doubt, follow this priority:
+1. **Sub-folder `.cursorrules`** (e.g., `apps/hexastral-app/.cursorrules`)
+2. **This global `.cursorrules`**
+3. **ARCHITECTURE_SUMMARY.md** (architectural decisions)
+4. **Codebase patterns** (existing code style)
+
+For detailed guidance:
+- **iOS development**: See `apps/hexastral-app/.cursorrules`
+- **Backend development**: See `apps/hexastral-api/.cursorrules`
+- **Microservices**: See `services/.cursorrules`
+- **Project structure**: See `ARCHITECTURE_SUMMARY.md`
+- **Implementation help**: See `IMPLEMENTATION_GUIDE.md`

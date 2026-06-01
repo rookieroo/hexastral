@@ -1,0 +1,28 @@
+{
+  "name": "@zhop/hexastral-icons",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Custom SVG icon library for HexAstral — tab icons, metaphysics domain glyphs, and UI actions. Designed for React Native (react-native-svg).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tabs": "./src/tabs.tsx",
+    "./domain": "./src/domain.tsx",
+    "./action": "./src/action.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-native": ">=0.81.0",
+    "react-native-svg": ">=15.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@zhop/typescript-config": "workspace:*",
+    "react-native-svg": "15.12.1",
+    "typescript": "^5.9.3"
+  }
+}

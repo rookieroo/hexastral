@@ -1,0 +1,85 @@
+{
+  "name": "@zhop/astro-core",
+  "version": "0.1.0",
+  "description": "Deterministic East-Asian metaphysics compute layer (干支/八字/格局/十神/纳音/神煞/节气/时辰/黄历/合婚). Shared by svc-astro and client apps (fate-app).",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./ganzhi": {
+      "types": "./src/ganzhi.ts",
+      "default": "./src/ganzhi.ts"
+    },
+    "./jieqi": {
+      "types": "./src/jieqi.ts",
+      "default": "./src/jieqi.ts"
+    },
+    "./lunar": {
+      "types": "./src/lunar.ts",
+      "default": "./src/lunar.ts"
+    },
+    "./solar-time": {
+      "types": "./src/solar-time.ts",
+      "default": "./src/solar-time.ts"
+    },
+    "./shichen": {
+      "types": "./src/shichen.ts",
+      "default": "./src/shichen.ts"
+    },
+    "./constants": {
+      "types": "./src/constants.ts",
+      "default": "./src/constants.ts"
+    },
+    "./tiaohou": {
+      "types": "./src/tiaohou.ts",
+      "default": "./src/tiaohou.ts"
+    },
+    "./combinations": {
+      "types": "./src/combinations.ts",
+      "default": "./src/combinations.ts"
+    },
+    "./geo-time": {
+      "types": "./src/geo-time/index.ts",
+      "default": "./src/geo-time/index.ts"
+    },
+    "./hehun": {
+      "types": "./src/hehun.ts",
+      "default": "./src/hehun.ts"
+    },
+    "./dayun": {
+      "types": "./src/dayun.ts",
+      "default": "./src/dayun.ts"
+    },
+    "./shensha": {
+      "types": "./src/shensha.ts",
+      "default": "./src/shensha.ts"
+    },
+    "./shishen": {
+      "types": "./src/shishen.ts",
+      "default": "./src/shishen.ts"
+    },
+    "./synastry": {
+      "types": "./src/synastry.ts",
+      "default": "./src/synastry.ts"
+    },
+    "./almanac": {
+      "types": "./src/almanac.ts",
+      "default": "./src/almanac.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "devDependencies": {
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

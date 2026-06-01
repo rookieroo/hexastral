@@ -1,0 +1,115 @@
+import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-runtime'
+import { Stack } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { Platform, StyleSheet } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { useAppTheme } from '@/lib/theme'
+
+function SatelliteGrowthMount() {
+  usePortfolioSatelliteBootstrap({
+    storagePrefix: PORTFOLIO_STORAGE_PREFIX,
+    targetApp: PORTFOLIO_TARGET_APP,
+  })
+  usePurchases()
+  return null
+}
+
+export default function RootLayout() {
+  const { colors, isDark } = useAppTheme()
+
+  return (
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <SatelliteGrowthMount />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            headerStyle: { backgroundColor: colors.bg },
+            headerTintColor: colors.text,
+            headerTitleStyle: { fontWeight: '500' },
+            contentStyle: { flex: 1, backgroundColor: colors.bg },
+          }}
+        >
+          <Stack.Screen
+            name='cast'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.42, 0.72], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='detail'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.55, 0.92], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='history'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.5, 0.9], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='paywall'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.38, 0.72], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='result'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.45, 0.85], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='settings'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.32, 0.52], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+          <Stack.Screen
+            name='before-cast'
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              ...(Platform.OS === 'ios'
+                ? { sheetAllowedDetents: [0.42, 0.78], sheetInitialDetentIndex: 0 }
+                : {}),
+            }}
+          />
+        </Stack>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  )
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+})

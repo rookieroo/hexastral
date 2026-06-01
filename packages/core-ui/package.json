@@ -1,0 +1,47 @@
+{
+  "name": "@zhop/core-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared React Native UI primitives for HexAstral apps. Consumes @zhop/hexastral-tokens (palette + motion + elevation + satellite accents) and exposes Button / Card / Input / EmptyState / LoadingState / ErrorState / PageTransition / Pill / Divider / Text. Every Phase F app consumes this — no parallel theme files allowed.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components": "./src/components/index.ts",
+    "./theme": "./src/theme/index.ts",
+    "./motion": "./src/motion/index.ts",
+    "./hooks": "./src/hooks/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@zhop/astro-core": "workspace:*",
+    "@zhop/hexastral-tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "@react-native-community/datetimepicker": ">=8.4.0",
+    "@shopify/react-native-skia": ">=2.0.0",
+    "expo-haptics": "~15.0.8",
+    "expo-image-picker": ">=17.0.0",
+    "lucide-react-native": ">=0.400.0",
+    "react": "^19.2.3",
+    "react-native": ">=0.81.0",
+    "react-native-reanimated": ">=4.0.0",
+    "react-native-svg": ">=15.0.0"
+  },
+  "devDependencies": {
+    "@shopify/react-native-skia": "2.2.12",
+    "@types/react": "^19.1.10",
+    "@zhop/typescript-config": "workspace:*",
+    "expo-haptics": "~15.0.8",
+    "expo-image-picker": "~17.0.8",
+    "lucide-react-native": "^1.14.0",
+    "react": "^19.2.3",
+    "react-native": "0.81.5",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-svg": "15.12.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,51 @@
+/**
+ * /[locale]/{{slug}}/try — free in-browser {{name}} demo (scaffold).
+ *
+ * Server component that owns SEO + locale-aware copy and delegates the
+ * interactive form to the client island. Wire this to the appropriate
+ * `/api/...` endpoint once the product surface is defined.
+ */
+
+import type { Metadata } from 'next'
+import { {{slugPascal}}TryClient } from './client'
+
+interface Props { params: Promise<{ locale: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
+  const titles: Record<string, string> = {
+    en: 'Try {{name}} · HexAstral',
+  }
+  return { title: titles[locale] ?? titles.en }
+}
+
+const COPY: Record<
+  string,
+  {
+    title: string
+    fieldLabel: string
+    placeholder: string
+    submit: string
+    busy: string
+    err: string
+    appCta: string
+  }
+> = {
+  en: {
+    title: 'Try {{name}}',
+    fieldLabel: 'Your input',
+    placeholder: 'Replace with the right placeholder',
+    submit: 'Reveal',
+    busy: 'Working…',
+    err: 'Something went wrong. Please try again.',
+    appCta: 'Continue in {{name}} on iOS',
+  },
+}
+
+export default async function {{slugPascal}}TryPage({ params }: Props) {
+  const { locale } = await params
+  const copy = COPY[locale] ?? COPY.en
+  return <{{slugPascal}}TryClient copy={copy} locale={locale} />
+}
+
+export type {{slugPascal}}TryCopy = (typeof COPY)['en']

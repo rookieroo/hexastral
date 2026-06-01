@@ -1,0 +1,10 @@
+{
+  "extends": "@zhop/typescript-config/base.json",
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types/2023-07-01"]
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,383 @@
+# HexAstral Microservices (services/*) Development Rules
+
+**Loaded automatically when working under `services/`. Overrides root rules.**
+
+---
+
+## 1. Quick Facts
+
+| Dimension | Value |
+|-----------|-------|
+| **Framework** | Hono 4.9+ |
+| **Runtime** | Cloudflare Workers |
+| **Access** | Service bindings only (internal) — no public routes |
+| **Auth** | None (internal calls) |
+| **Deploy** | wrangler deploy |
+| **Local Port** | 3100+ (per service) |
+
+---
+
+## 2. Forbidden Patterns ❌
+
+| Forbidden | Why | Alternative |
+|-----------|-----|-------------|
+| Direct external calls | No auth | Via hexastral-api service bindings only |
+| Empty `catch {}` | Swallows errors | `logger.error(...)` + rethrow |
+| `any` or `as Type` | Type loss | Zod parse or type guards |
+| Long-running tasks (>30s) | Workers timeout | Use Workflows (core-workflow) |
+| Store sensitive info | KV has no encryption | Workers AI, Vectorize, or external key management |
+
+---
+
+## 3. Service Overview
+
+| Service | Port | Purpose | Endpoints |
+|---------|------|---------|-----------|
+| `svc-astro` | 3101 | Ba Zi / Zi Wei / Yi Jing computation | `/compute-*` |
+| `svc-geocode` | 3103 | City / timezone lookup | `/geocode` |
+| `svc-mailer` | 3104 | Transactional email (AWS SES) | `/send` |
+| `svc-notify` | 3105 | Push notifications (Expo/FCM) | `/send`, `/send-fortune` |
+| `svc-fortune` | 3106 | Daily fortune generation | `/generate`, queue handlers |
+| `svc-admin-notify` | 3109 | Admin alerts (Telegram) | `/notify` |
+| `svc-tail` | 3110 | Tail log aggregation | `/tail` |
+| `svc-signal` | 3111 | Internal signal relay to API | `/signals/*` |
+
+---
+
+## 4. Route Design
+
+### Entry Pattern
+
+```typescript
+import { Hono } from 'hono'
+import { z } from 'zod/v4'
+import { zValidator } from '@hono/zod-validator'
+
+const app = new Hono()
+
+// ✅ Simple POST endpoint
+app.post('/compute-hehun', 
+  zValidator('json', hehunSchema),
+  async (c) => {
+    const { person1, person2 } = c.req.valid('json')
+    const result = computeHehun(person1, person2)
+    return c.json(result)
+  }
+)
+
+// ✅ Streaming response (large data)
+app.get('/stream/:id', async (c) => {
+  const { id } = c.req.param()
+  return c.streamText(async (stream) => {
+    for (const chunk of chunks) {
+      await stream.write(chunk)
+    }
+  })
+})
+
+// ❌ Public route (no security)
+// app.get('/public/endpoint')
+```
+
+### Input Validation
+
+```typescript
+const computeSchema = z.object({
+  year: z.number().min(1900),
+  month: z.number().min(1).max(12),
+  hour: z.number().min(0).max(23),
+})
+
+app.post('/compute',
+  zValidator('json', computeSchema),
+  async (c) => {
+    const data = c.req.valid('json')  // ✅ validated
+    // handle...
+  }
+)
+```
+
+---
+
+## 5. Service Implementations
+
+### svc-astro (Ba Zi computation)
+
+```typescript
+import { buildFourPillars, getHehunScore } from '@zhop/astro-core/ganzhi'
+
+app.post('/compute-hehun',
+  zValidator('json', hehunSchema),
+  async (c) => {
+    const { person1, person2 } = c.req.valid('json')
+    
+    try {
+      const score = getHehunScore(person1, person2)
+      return c.json({ score, interpretation: 'Compatible' })
+    } catch (err) {
+      logger.error('Hehun computation failed', { error: err })
+      return c.json({ error: 'Computation failed' }, 500)
+    }
+  }
+)
+```
+
+### svc-signal (Internal Signal Relay)
+
+```typescript
+import { createLogger } from '@zhop/logger'
+
+const logger = createLogger('svc-signal')
+
+app.post('/signals/heartbeat',
+  zValidator('json', heartbeatSchema),
+  async (c) => {
+    const payload = c.req.valid('json')
+    const response = await c.env.SVC_API.fetch('http://internal/signals/heartbeat', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-key': c.env.INTERNAL_KEY,
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new HTTPException(response.status, { message: 'Upstream failed' })
+    logger.info('Forwarded heartbeat signal')
+    return c.json({ ok: true })
+  }
+)
+```
+
+### svc-mailer (Transactional Email via AWS SES)
+
+```typescript
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
+
+app.post('/send',
+  zValidator('json', mailSchema),
+  async (c) => {
+    const { to, subject, html } = c.req.valid('json')
+    
+    const ses = new SESv2Client({
+      region: c.env.AWS_REGION,
+      credentials: {
+        accessKeyId: c.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: c.env.AWS_SECRET_ACCESS_KEY,
+      },
+    })
+    const result = await ses.send(
+      new SendEmailCommand({
+        FromEmailAddress: c.env.AWS_SES_FROM,
+        Destination: { ToAddresses: [to] },
+        Content: {
+          Simple: {
+            Subject: { Data: subject },
+            Body: { Html: { Data: html } },
+          },
+        },
+      }),
+    )
+    
+    return c.json({ messageId: result.MessageId })
+  }
+)
+```
+
+### svc-notify (FCM Push)
+
+```typescript
+import { initializeApp, cert } from 'firebase-admin/app'
+import { getMessaging } from 'firebase-admin/messaging'
+
+const app = new Hono()
+
+app.post('/send-multicast',
+  zValidator('json', notifySchema),
+  async (c) => {
+    const { tokens, title, body } = c.req.valid('json')
+    
+    const messaging = getMessaging()
+    const response = await messaging.sendMulticast({
+      tokens,
+      notification: { title, body },
+      data: { type: 'reading_update' },
+    })
+    
+    return c.json({
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    })
+  }
+)
+```
+
+### svc-admin-notify (Telegram Alerts)
+
+```typescript
+import { createLogger } from '@zhop/logger'
+
+const logger = createLogger('svc-admin-notify')
+
+app.post('/notify',
+  zValidator('json', notifySchema),
+  async (c) => {
+    const { text } = c.req.valid('json')
+    const url = `https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/sendMessage`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: c.env.TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: 'HTML',
+      }),
+    })
+    if (!response.ok) {
+      logger.error('Failed to deliver Telegram alert', { status: response.status })
+      throw new HTTPException(500, { message: 'Notification failed' })
+    }
+    return c.json({ ok: true })
+  }
+)
+```
+
+---
+
+## 6. Error Handling
+
+```typescript
+import { HTTPException } from 'hono/http-exception'
+
+// ✅ Structured errors
+app.post('/endpoint', async (c) => {
+  try {
+    const result = await expensiveOperation()
+    return c.json(result)
+  } catch (err) {
+    logger.error('Operation failed', {
+      error: err instanceof Error ? err.message : String(err),
+      service: 'svc-astro',
+    })
+    
+    // Return 500 — let hexastral-api's service-clients handle it
+    throw new HTTPException(500, {
+      message: 'Service error'
+    })
+  }
+})
+
+// ✅ Global error handler
+app.onError((err, c) => {
+  if (err instanceof HTTPException) return err.getResponse()
+  
+  logger.error('Unhandled error', { error: err })
+  return c.json({ error: 'Internal error' }, 500)
+})
+```
+
+---
+
+## 7. Logging & Tracing
+
+```typescript
+import { createLogger } from '@zhop/logger'
+
+const logger = createLogger('svc-astro')
+
+// ✅ Structured logging
+logger.info('Hehun computed', {
+  person1Id: 'user123',
+  person2Id: 'user456',
+  score: 78,
+  duration: 125,  // ms
+})
+
+// ❌ Don't
+console.log('Score:', score)
+```
+
+---
+
+## 8. Performance
+
+### Caching Strategy
+
+```typescript
+// ✅ KV cache (memory-first)
+const cached = await c.env.KV_NAMESPACE.get(`hehun:${key}`)
+if (cached) return c.json(JSON.parse(cached))
+
+const result = computeHehun(person1, person2)
+await c.env.KV_NAMESPACE.put(
+  `hehun:${key}`,
+  JSON.stringify(result),
+  { expirationTtl: 7 * 24 * 3600 }  // 7 days
+)
+```
+
+### Streaming (large responses)
+
+```typescript
+// ✅ Stream to avoid memory overflow
+app.get('/export/:id', async (c) => {
+  return c.streamText(async (stream) => {
+    for await (const chunk of largeDataGenerator()) {
+      await stream.write(chunk)
+    }
+  })
+})
+```
+
+---
+
+## 9. Wrangler & scripts (services/*)
+
+- **`wrangler` `^4.90.0`** per service `package.json`; repo root **`bun install`** after bumps.
+- Run **`bunx wrangler …` from `services/<name>/`** (never assume global `wrangler` matches).
+- **Prefer** `bun dev`, `bun deploy` from each service directory; multi-service deploy from root scripts if defined.
+- **After** `wrangler.jsonc` binding changes: `bunx wrangler types` in that service when applicable.
+- Logs / deployments: `bunx wrangler tail <worker-name>`, `bunx wrangler deployments list <worker-name>` — exact worker name from that service’s `wrangler.jsonc` `name` field.
+- Full CLI reference: **Wrangler skill** / **cloudflare-docs** MCP.
+
+---
+
+## 10. wrangler.jsonc Config
+
+```jsonc
+{
+  "name": "svc-astro",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-12-16",
+  "env": {
+    "production": {
+      "routes": [
+        {
+          "pattern": "svc-astro.hexastral.workers.dev/*",
+          "zone_name": "hexastral.workers.dev"
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+## 11. Deploy Checklist
+
+- [ ] `bun typecheck` passes
+- [ ] Local test passes (`bun dev`)
+- [ ] No `console.log` / `// @ts-ignore`
+- [ ] Error handling complete (no empty catch)
+- [ ] All key operations are logged
+- [ ] Environment variables set (`bunx wrangler secret put …` from that service directory)
+
+---
+
+## 12. Reference
+
+- **Core lib**: `@zhop/astro-core` (Ba Zi / Zi Wei computation)
+- **Logger**: `@zhop/logger`
+- **Hono docs**: https://hono.dev
+- **Workers AI**: https://developers.cloudflare.com/workers-ai
+- **Vectorize**: https://developers.cloudflare.com/vectorize

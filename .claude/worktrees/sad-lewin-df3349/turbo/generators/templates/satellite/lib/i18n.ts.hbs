@@ -1,0 +1,72 @@
+/**
+ * {{name}} i18n. Single-language English at v0.1; add zh / ja later by
+ * appending entries to TABLES with the same keys.
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getLocales } from 'expo-localization'
+import { useEffect, useState } from 'react'
+
+const LOCALE_STORAGE_KEY = '{{slugCamel}}_locale'
+
+const EN = {
+  homeTitle: '{{name}}',
+  homeTagline: 'Your tagline goes here.',
+  homeSettingsCta: 'Settings',
+  settingsTitle: 'Settings',
+  settingsLanguage: 'Language',
+  settingsAbout: 'About',
+} as const
+
+type Strings = typeof EN
+type Key = keyof Strings
+
+const TABLES: Record<string, Strings> = { en: EN }
+
+let currentLocale: 'en' = 'en'
+const listeners = new Set<(loc: 'en') => void>()
+
+function detectLocale(): 'en' {
+  try {
+    const first = getLocales()[0]
+    void first
+    return 'en'
+  } catch {
+    return 'en'
+  }
+}
+
+export function useI18n() {
+  const [locale, setLocale] = useState<'en'>(currentLocale)
+
+  useEffect(() => {
+    AsyncStorage.getItem(LOCALE_STORAGE_KEY)
+      .then((stored) => {
+        if (stored && stored in TABLES) {
+          currentLocale = stored as 'en'
+          setLocale(stored as 'en')
+        } else {
+          currentLocale = detectLocale()
+          setLocale(currentLocale)
+        }
+      })
+      .catch(() => {})
+    listeners.add(setLocale)
+    return () => {
+      listeners.delete(setLocale)
+    }
+  }, [])
+
+  const t = (key: Key, params?: Record<string, string | number>): string => {
+    const table = TABLES[locale] ?? TABLES.en
+    let str = (table?.[key] ?? EN[key] ?? key) as string
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        str = str.replaceAll(`{${k}}`, String(v))
+      }
+    }
+    return str
+  }
+
+  return { t, locale }
+}

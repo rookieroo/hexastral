@@ -1,0 +1,51 @@
+{
+  "name": "@zhop/hexastral-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/index.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "wrangler dev --port 3010",
+    "deploy": "bun with-env wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test 'src/**/*.test.ts'",
+    "secrets:sync": "bun ../../scripts/sync-secrets.js --app=hexastral-api --env=production",
+    "secrets:sync:dry": "bun ../../scripts/sync-secrets.js --app=hexastral-api --env=production --dry-run",
+    "with-env": "dotenv -e .env --",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply hexastral-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply hexastral-db --remote",
+    "ai-search:create": "wrangler ai-search create hexastral-portfolio-memory",
+    "ai-search:info": "wrangler ai-search get portfolio_memory_ai_search --json",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.7.6",
+    "@zhop/astro-core": "workspace:*",
+    "@zhop/growth-funnel": "workspace:*",
+    "drizzle-orm": "^0.44.5",
+    "hono": "^4.9.8",
+    "jose": "^6.2.3",
+    "nanoid": "^5.1.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250924.0",
+    "@zhop/typescript-config": "workspace:*",
+    "dotenv": "^17.2.2",
+    "dotenv-cli": "^10.0.0",
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.90.0"
+  }
+}

@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Ink Brutalism — Zinc palette mapped to shadcn/rn-reusables CSS variable naming.
+ * Used by NativeWind-powered components in @zhop/ui-native.
+ * lib/theme.ts (useTheme hook) remains the source of truth for domain components.
+ *
+ * Pattern follows react-native-reusables showcase: CSS vars must be inside
+ * @layer base so NativeWind processes them at the correct cascade priority.
+ * Dark mode selector is .dark:root (not standalone .dark).
+ */
+@layer base {
+  :root {
+    --background: 0 0% 98%; /* Zinc-50  #FAFAFA */
+    --foreground: 240 5.2% 10%; /* Zinc-900 #18181B */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 240 5.2% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5.2% 10%;
+    --primary: 240 5.2% 10%; /* Zinc-900 #18181B — ink black */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%; /* Zinc-100 #F4F4F5 */
+    --secondary-foreground: 240 5.2% 10%;
+    --muted: 240 5% 96%; /* Zinc-100 */
+    --muted-foreground: 240 4% 46%; /* Zinc-500 #71717A */
+    --accent: 24 46% 16%; /* Ink Brown #3C2415 */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 83%; /* Zinc-300 #D4D4D8 */
+    --input: 240 5% 90%; /* Zinc-200 #E4E4E7 */
+    --ring: 240 5.2% 10%;
+    --radius: 0rem; /* Ink Brutalism — square edges */
+  }
+
+  .dark:root {
+    --background: 240 10% 4%; /* Zinc-950 #09090B */
+    --foreground: 0 0% 98%; /* Zinc-50  #FAFAFA */
+    --card: 240 5.2% 10%; /* Zinc-900 #18181B */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5.2% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%; /* Zinc-50  #FAFAFA — ink white */
+    --primary-foreground: 240 5.2% 10%;
+    --secondary: 240 3.7% 16%; /* Zinc-800 #27272A */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 16%; /* Zinc-800 */
+    --muted-foreground: 240 5% 65%; /* Zinc-400 #A1A1AA */
+    --accent: 33 36% 64%; /* Ink Gold  #C4A882 */
+    --accent-foreground: 240 10% 4%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5% 26%; /* Zinc-700 #3F3F46 */
+    --input: 240 5% 26%;
+    --ring: 0 0% 98%;
+    --radius: 0rem;
+  }
+}

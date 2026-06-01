@@ -1,0 +1,159 @@
+# HexAstral Monorepo
+
+> **Maintainer**: HexAstral Engineering
+> **Stack**: Cloudflare Workers + Expo 54 + Next.js 15 + Bun + Turborepo
+
+HexAstral is an AI-powered East Asian metaphysics product suite built on Cloudflare + Expo.
+
+## Product Philosophy
+
+1. Transparent interpretation over black-box fortune telling.
+2. One user identity and one data model across all reading types.
+3. Service-oriented backend with strict boundaries and observable operations.
+
+## Brand Matrix
+
+See [docs/decisions/0002-brand-matrix.md](docs/decisions/0002-brand-matrix.md).
+
+```
+HexAstral (master / LLC publisher)
+├── Flagships — single CJK glyph + Latin transliteration
+│   ├── HexAstral        — 命緣卦道 four-tab life navigator
+│   ├── Yuán  / 緣       — relationship & compatibility (in development)
+│   └── Fēng  / 風       — feng-shui (Q3+, deferred)
+└── Satellites — independent Western names, shared backend
+    ├── Coin Cast        — I-Ching coin divination
+    ├── Face Oracle      — face reading
+    └── Dream Oracle     — dream interpretation
+```
+
+## Repository Structure
+
+```text
+apps/
+  hexastral-api/        Cloudflare Worker API gateway (Hono + D1)
+  hexastral-app/        Expo iOS flagship (命緣卦道)
+  hexastral-web/        Next.js on Cloudflare — unified web surface
+  useone-tech/          Next.js on Cloudflare — LLC corporate site (privacy/terms)
+  coin-cast-app/        Satellite — I-Ching divination
+  dream-oracle-app/     Satellite — dream interpretation
+  face-oracle-app/      Satellite — face reading
+services/
+  svc-astro/            Core metaphysics compute + AI interpretation
+  svc-signal/           Daily almanac cron worker (00:00 UTC)
+  svc-notify/           Push notification delivery (hourly cron + queue consumer)
+  svc-geocode/          City / timezone geocoding (Nominatim cache)
+  svc-mailer/           Transactional email (AWS SES)
+  svc-admin-notify/     Admin alert sink (Telegram)
+  svc-tail/             Centralized log aggregation (tail consumer for all workers)
+packages/
+  hexastral-tokens/     Design tokens (palette + typography + motion)
+  hexastral-client/     Hono RPC client (typed from hexastral-api)
+  astro-core/           Pure TypeScript metaphysics engine
+  astro-i18n/           Multilingual labelization
+  ddl-client/           Deferred deep link + fingerprint
+  growth-funnel/        Attribution event schema
+  email/                React Email templates + SES/Resend
+  logger/               Workers JSON logger
+  scenario-bazi/        Four-pillars UI primitives (hexastral-app)
+  scenario-bonds/       Compatibility radar chart (legacy, replaced by scenario-yuan)
+  scenario-ziwei/       Zi Wei chart UI (hexastral-app)
+  scenario-dream/       Dream input UI (shared by hexastral-app + dream-oracle-app)
+  scenario-palmface/    Face/palm capture (shared by hexastral-app + face-oracle-app)
+  portfolio-client/     Satellite app API client (shared by 3 satellites)
+  portfolio-posters/    Share poster templates
+  satellite-ui/         Feature shell for satellite apps
+  satellite-runtime/    Satellite bootstrap (DDL ingest, attribution, Apple linking)
+  expo-env-loader/      Expo .env bootstrap
+  ui/                   Web UI components (web only)
+  ui-native/            React Native primitives wrapper
+tooling/
+  typescript-config/    Shared tsconfig presets
+docs/
+  decisions/            Architecture Decision Records
+```
+
+## Dependency Graph (Service Bindings)
+
+```text
+hexastral-app, coin-cast-app, dream-oracle-app, face-oracle-app
+  → https://api.hexastral.com (hexastral-api)
+
+hexastral-web → https://api.hexastral.com (hexastral-api)
+
+hexastral-api
+  → svc-astro (chart compute, AI interpretation)
+  → svc-geocode (city lookup)
+  → svc-notify (push delivery)
+  → svc-mailer (transactional email)
+  → svc-admin-notify (alerts)
+
+svc-signal     → hexastral-api (SVC_API) → svc-admin-notify
+svc-notify     → hexastral-api (SVC_API) → svc-admin-notify
+svc-astro      → svc-admin-notify
+svc-tail       ← (tail consumer for all workers)
+```
+
+The DAG is acyclic. All D1 writes go through `hexastral-api`. Internal services
+never bind D1 directly.
+
+## Request and Data Flow
+
+1. iOS / web signs request and calls `hexastral-api`.
+2. API authenticates (HMAC for mobile, Turnstile for web) and applies quota.
+3. API calls internal service via Service Binding for compute or side-effects.
+4. Services persist and cache data via SVC_API back into D1/KV/R2.
+5. Async jobs (almanac / push) run via Queue + Cron.
+
+## Engineering Standards
+
+1. TypeScript strict mode, no `any`.
+2. Hono + `HTTPException` for API errors.
+3. API route handlers must use injected `db` from middleware.
+4. Service-to-service calls use service bindings (no public endpoints).
+5. iOS network fetching uses React Query hooks.
+6. All shared design tokens come from `@zhop/hexastral-tokens`.
+
+## Quick Start
+
+```bash
+bun install
+bun dev
+```
+
+Common commands:
+
+```bash
+bun typecheck                # all workspaces
+bun lint                     # all workspaces (biome)
+bun format:fix               # biome auto-format
+bun test                     # all workspaces with tests (astro-core, svc-fortune)
+bun check-deps               # version consistency across workspaces
+```
+
+## Deployment
+
+CI runs validation only (typecheck / lint / test / check-deps on every PR). All
+production deploys happen **locally** via wrangler / EAS — see [deploy.md](deploy.md).
+
+```bash
+# API (with DB migration)
+cd apps/hexastral-api && bun deploy
+
+# Each service
+cd services/svc-astro && bun deploy
+
+# Web
+cd apps/hexastral-web && bun deploy
+
+# Mobile (cloud build via EAS)
+cd apps/hexastral-app && eas build --profile production --platform ios
+```
+
+## Documentation Index
+
+- [docs/decisions/0001-yuan-naming.md](docs/decisions/0001-yuan-naming.md) — Yuán (緣) product naming
+- [docs/decisions/0002-brand-matrix.md](docs/decisions/0002-brand-matrix.md) — Brand architecture
+- [deploy.md](deploy.md) — Local deploy runbook
+- [apps/hexastral-api/README.md](apps/hexastral-api/README.md) — API deployment
+- [apps/hexastral-app/README.md](apps/hexastral-app/README.md) — iOS app

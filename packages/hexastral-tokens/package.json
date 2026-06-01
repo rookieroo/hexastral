@@ -1,0 +1,82 @@
+{
+  "name": "@zhop/hexastral-tokens",
+  "version": "0.1.0",
+  "description": "Pure-TS HexAstral design tokens — palette (light/dark ModeTokens), motion, elevation, gradients, per-satellite accents. Consumed by core-ui + web.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./lunar": {
+      "types": "./src/lunar.ts",
+      "default": "./src/lunar.ts"
+    },
+    "./palette": {
+      "types": "./src/palette.ts",
+      "default": "./src/palette.ts"
+    },
+    "./gradients": {
+      "types": "./src/gradients.ts",
+      "default": "./src/gradients.ts"
+    },
+    "./paths": {
+      "types": "./src/paths.ts",
+      "default": "./src/paths.ts"
+    },
+    "./reports": {
+      "types": "./src/reports.ts",
+      "default": "./src/reports.ts"
+    },
+    "./social": {
+      "types": "./src/social.ts",
+      "default": "./src/social.ts"
+    },
+    "./constants/time": {
+      "types": "./src/constants/time.ts",
+      "default": "./src/constants/time.ts"
+    },
+    "./constants/ziwei": {
+      "types": "./src/constants/ziwei.ts",
+      "default": "./src/constants/ziwei.ts"
+    },
+    "./constants/fortune": {
+      "types": "./src/constants/fortune.ts",
+      "default": "./src/constants/fortune.ts"
+    },
+    "./constants/hexagram": {
+      "types": "./src/constants/hexagram.ts",
+      "default": "./src/constants/hexagram.ts"
+    },
+    "./yuan": {
+      "types": "./src/yuan.ts",
+      "default": "./src/yuan.ts"
+    },
+    "./motion": {
+      "types": "./src/motion.ts",
+      "default": "./src/motion.ts"
+    },
+    "./moon": {
+      "types": "./src/moon.ts",
+      "default": "./src/moon.ts"
+    },
+    "./elevation": {
+      "types": "./src/elevation.ts",
+      "default": "./src/elevation.ts"
+    },
+    "./satellites": {
+      "types": "./src/satellites.ts",
+      "default": "./src/satellites.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "devDependencies": {
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

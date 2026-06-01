@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "title": "HexAstral — The Stars Know Who You Are",
+    "description": "Ancient Eastern wisdom meets AI — discover your cosmic blueprint in 60 seconds. Destiny Chart & Star Palace readings."
+  },
+  "nav": {
+    "tools": "Tools",
+    "freeReading": "Free Reading",
+    "download": "Download App"
+  },
+  "landing": {
+    "heroBadge": "Destiny · Stars · AI Reading",
+    "heroLine1": "The Stars Know",
+    "heroLine2": "Who You Are",
+    "heroSub": "Ancient Eastern wisdom meets AI — discover your destiny in 60 seconds",
+    "heroCTA": "Start Free Reading →",
+    "heroNote": "No signup · 60-second chart · 3 coins on first reading",
+    "featuresSectionLabel": "Core Features",
+    "featuresSectionTitle": "Four Dimensions of Cosmic Insight",
+    "features": [
+      {
+        "title": "Destiny Chart",
+        "desc": "Precision charting of your Four Pillars of Destiny (Ba Zi). Decode your Core Element, Tiangan Dizhi (Heavenly Stems and Earthly Branches), and the I Ching (Ba Gua) hexagram.",
+        "tag": "Destiny Reading"
+      },
+      {
+        "title": "Star Palace Reading",
+        "desc": "All 12 star palaces decoded using Zi Wei Dou Shu. Major fate cycles and annual flows mapped with precision.",
+        "tag": "Star Palace Chart"
+      },
+      {
+        "title": "Fate Cycles & Celestial Formations",
+        "desc": "10-year fate cycle mapped against celestial formations — pinpoint the opportunities and risks at each life stage.",
+        "tag": "Fate Cycle Timeline"
+      },
+      {
+        "title": "Elemental Compatibility",
+        "desc": "Dual chart synthesis quantifies connection, attraction, and sources of friction between two people.",
+        "tag": "Compatibility Score"
+      }
+    ],
+    "convTitle": "Why Are You Here?",
+    "convBody": "To understand yourself? To see a relationship more clearly? To make sense of a chapter in your life that was unusually hard?\nWhatever it is, the stars have answers.",
+    "convCTA": "Start My Reading",
+    "testimonialsSectionLabel": "What Users Say",
+    "testimonials": [
+      {
+        "text": "\"You're a wild horse at heart, but reality has kept you in a stable\" — I cried reading that.",
+        "name": "C.W.",
+        "tag": "Shenzhen · Designer"
+      },
+      {
+        "text": "The compatibility report helped me finally understand, through the Five Elements lens, why we always fight over the exact same thing.",
+        "name": "L.H.",
+        "tag": "Shanghai · Product Manager"
+      },
+      {
+        "text": "The fate cycle timeline made everything click — I finally understood why 2024 was so brutal. I'd just entered a new cycle.",
+        "name": "Kevin W.",
+        "tag": "Toronto · Software Engineer"
+      }
+    ],
+    "ctaHeadline": "Get Your Free Chart",
+    "ctaSub": "Download HexAstral — unlock AI deep reading, fate cycle timelines & celestial formation analysis on your first chart",
+    "footerPrivacy": "Privacy Policy",
+    "footerTerms": "Terms of Service",
+    "footerStart": "Start Reading"
+  },
+  "onboarding": {
+    "motivationPrompt": "Why are you here?",
+    "motivationTitle1": "Choose Your",
+    "motivationTitle2": "Reading Mode",
+    "modePersonalTitle": "Know Myself",
+    "modePersonalDesc": "Explore your personality, destiny blueprint & life fate cycles",
+    "modePairingTitle": "Know Our Connection",
+    "modePairingDesc": "Partner / lover compatibility — deep elemental analysis",
+    "modePairingBadge": "Most Popular ★",
+    "noSignupNote": "No signup · Data used only for calculation · Completely free",
+    "selfStep1Label": "Step 1 — Your Info",
+    "selfBirthLabel": "Your Birth Details",
+    "selfStep1Title": "At the moment you were born,",
+    "selfStep1Accent": "how were the stars aligned?",
+    "partnerStep2Label": "Step 2 — Their Info",
+    "partnerStep2Title": "Let the stars reveal",
+    "partnerStep2Accent": "the nature of your connection",
+    "submitPersonal": "Get My Chart",
+    "submitNext": "Next →",
+    "submitPairing": "See Compatibility",
+    "back": "← Back",
+    "restart": "← Start Over",
+    "errorRetry": "Calculation failed, please try again",
+    "selfDefault": "You",
+    "partnerDefault": "Them",
+    "personalChartLabel": "{name}'s Chart",
+    "dayMasterLabel": "Core Element",
+    "starsSpeakPrefix": "✦ The stars speak to {name}",
+    "fullReadingLabel": "Full AI Reading",
+    "personalPaywallUnlock": "🔒 Download to Unlock Full Reading",
+    "personalCTAHeadline": "{name}'s complete chart is ready",
+    "personalCTASub": "Download HexAstral — AI deep reading · Fate cycle timeline · Celestial formation analysis",
+    "pairingScoreUnit": "{a} × {b}   Compatibility",
+    "pairingInsightsTitle": "Chart Insights",
+    "pairingFullReportLabel": "Deep Compatibility Report",
+    "pairingPaywallUnlock": "🔒 Download to Unlock Full Report",
+    "pairingCTAHeadline": "Unlock the Full Compatibility Report",
+    "pairingCTASub": "Download HexAstral — AI deep analysis · Friction point breakdown · Best compatibility modes",
+    "partnerLabel": "{selfName}'s partner",
+    "bNameQuestion": "Before the stars can speak, I'll need your name. What shall I call you?",
+    "bNamePlaceholder": "Your name",
+    "bDateQuestion": "When were you born, {name}? The celestial chart begins with the moment you arrived.",
+    "bTimeQuestion": "Do you know the approximate hour of your birth? This refines your Hour Pillar — the pillar of destiny.",
+    "bGenderQuestion": "In the language of Yin and Yang — which energy resonates with you?",
+    "bGenderMale": "Yang ☰",
+    "bGenderFemale": "Yin ☷",
+    "bCityQuestion": "Where did you first draw breath? Your birthplace anchors your chart to the earth.",
+    "bCityPlaceholder": "Birth city",
+    "bContinue": "Continue",
+    "bRevealChart": "Reveal My Chart"
+  },
+  "loading": {
+    "messages": [
+      "Anchoring your birth coordinates...",
+      "Decoding the Year Pillar matrix...",
+      "Calibrating celestial alignments...",
+      "Scanning Earth Branch hidden stems...",
+      "Calculating Core Element balance...",
+      "Sensing the resonance of your 4th Palace...",
+      "Detecting elemental energy patterns...",
+      "Reading your 7th Palace vibrations...",
+      "Integrating Star Palace configurations...",
+      "Fate cycle calibration complete...",
+      "Celestial formations mapped...",
+      "Your chart is about to be revealed..."
+    ]
+  },
+  "form": {
+    "nameLabel": "Name (optional)",
+    "namePlaceholder": "Anything works, just to tell you apart",
+    "cityLabel": "Birth City *",
+    "cityPlaceholder": "e.g. New York · London · Beijing",
+    "solarTimeNote": "True Solar Time auto-corrected by city longitude",
+    "dateLabel": "Birth Date (Gregorian)",
+    "hourLabel": "Birth Hour",
+    "unknownHour": "I don't know my birth hour",
+    "genderMale": "☰ Male",
+    "genderFemale": "☷ Female",
+    "shichen": [
+      "Rat (early)  23:00–01:00",
+      "Ox           01:00–03:00",
+      "Tiger        03:00–05:00",
+      "Rabbit       05:00–07:00",
+      "Dragon       07:00–09:00",
+      "Snake        09:00–11:00",
+      "Horse        11:00–13:00",
+      "Goat         13:00–15:00",
+      "Monkey       15:00–17:00",
+      "Rooster      17:00–19:00",
+      "Dog          19:00–21:00",
+      "Pig          21:00–23:00",
+      "Rat (late)   23:00–01:00"
+    ],
+    "dateLabelLunar": "Birth Date (Chinese Lunar)",
+    "checkLunar": "Chinese Lunar",
+    "checkTrueSolar": "True Solar Time"
+  },
+  "pair": {
+    "inviteText": "invites you to see your cosmic connection",
+    "scoreLabel": "Compatibility Score",
+    "dayMasterOfLabel": "{name}'s Core Element",
+    "unlockFull": "Download to Unlock Full Report",
+    "orWeb": "Or take the reading in your browser",
+    "expiredTitle": "Link Expired",
+    "expiredDesc": "This share link has expired or is no longer valid. Ask your partner to generate a new one."
+  },
+  "resonate": {
+    "defaultTitle": "You're Invited",
+    "inviteTitle": "invites you to a compatibility reading",
+    "subtitle": "Cosmic Compatibility",
+    "description": "Discover your compatibility through the wisdom of Eastern metaphysics.",
+    "inviteFrom": "Invitation From",
+    "expires": "Expires",
+    "openInApp": "Open in HexAstral",
+    "downloadApp": "Download HexAstral Free",
+    "curiosityTitle": "Your Cosmic Bond Awaits",
+    "curiosityUnlockCTA": "Download HexAstral to Unlock Your Full Bond Reading",
+    "dimLongTerm": "Long-term Potential",
+    "dimAttraction": "Magnetic Attraction",
+    "dimCommunication": "Communication Flow",
+    "dimEmotional": "Emotional Resonance",
+    "expired": "This invitation has expired. Ask the sender to create a new one.",
+    "notFound": "Invitation not found or no longer valid."
+  },
+  "common": {
+    "download": "Download HexAstral Free",
+    "downloadButton": "Download Free on App Store",
+    "downloadNote": "Free to start · No signup required · 3 coins on first reading",
+    "appStoreAlt": "Download on the App Store"
+  },
+  "invite": {
+    "meta_title": "You've Been Invited · HexAstral",
+    "meta_description": "Your friend invited you to discover your birth chart. Download via their link and unlock exclusive rewards.",
+    "headline": "The Stars Have\nSaved You a Seat",
+    "subline": "Your friend invited you to explore your cosmic blueprint. Download HexAstral via their invite link to unlock exclusive rewards.",
+    "ref_label": "Invite Code",
+    "benefit_1": "Bonus coins on your first chart — unlock AI deep readings",
+    "benefit_2": "No signup required · Full chart in 60 seconds",
+    "benefit_3": "Destiny · Stars · Compatibility — all modules unlocked",
+    "cta": "Download Free & Claim Invite Reward",
+    "note": "Offer applies to new users downloading via an invite link only"
+  },
+  "Metadata": {
+    "title": "HexAstral — Cosmic Blueprint & Destiny Reading",
+    "description": "Ancient Eastern wisdom meets modern AI. Discover your destiny with Ba Zi (Four Pillars), Zi Wei Dou Shu (Star Palace), I Ching, and Ba Gua."
+  },
+  "publicProfile": {
+    "plainIntroHeading": "HexAstral reading"
+  },
+  "growth": {
+    "navHome": "Home",
+    "navTools": "Tools",
+    "navBlog": "Blog",
+    "navMethodology": "Methodology",
+    "disclaimer": "For cultural exploration and reflection only. Not a substitute for professional, medical, or legal advice.",
+    "toolsIndexTitle": "Free tools",
+    "toolsIndexSubtitle": "Quick calculators and reference. Full AI readings are in our iOS apps.",
+    "blogTitle": "Blog",
+    "blogSubtitle": "Eastern metaphysics in plain language — with named source terms.",
+    "readArticle": "Read article",
+    "backToTools": "All tools",
+    "backToBlog": "All posts",
+    "openAppStore": "Download on the App Store"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hexastral-svc-feng",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "limits": {
+    "cpu_ms": 300000
+  },
+  // Workers AI — Stage-3 text synthesis runs on the shared CF router
+  // (@zhop/ai-vision/router, Kimi/Qwen3/GLM). Same LLM base as the rest of the matrix.
+  "ai": { "binding": "AI" },
+  // Public env vars (non-secret). MAPBOX_TOKEN is a secret — set via:
+  //   wrangler secret put MAPBOX_TOKEN
+  // Gemini key is `GEMINI_API_KEY` — VLM (Stage-1 vision) ONLY; text synthesis is on Workers AI.
+  "vars": {
+    "ENV": "production",
+    // Default tile style; can be overridden per request.
+    "MAPBOX_STATIC_STYLE": "mapbox/satellite-v9"
+  },
+  // R2 buckets — cache raw and annotated map images.
+  //
+  // Create with:
+  //   wrangler r2 bucket create feng-maps
+  //   wrangler r2 bucket create feng-annotated
+  // and paste preview names if developing against staging.
+  "r2_buckets": [
+    {
+      "binding": "MAPS_CACHE",
+      "bucket_name": "feng-maps"
+    },
+    {
+      "binding": "ANNOTATED_CACHE",
+      "bucket_name": "feng-annotated"
+    }
+  ],
+  // Tail worker for logs (matches the rest of the services).
+  "tail_consumers": [
+    {
+      "service": "svc-tail"
+    }
+  ]
+}

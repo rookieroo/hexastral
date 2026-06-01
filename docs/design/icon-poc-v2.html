@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金石玄学 · 图标系统 v2 · 字象合一 / 命相卜三宫</title>
+<style>
+  :root{
+    --void:#0B0B0C; --stone:#141416;
+    --paper:#F5F0E8; --paperWarm:#EDE6D8; --paperAged:#DDD5C4;
+    --inkBrown:#3C2415; --rubbingWhite:#E8DFCE;
+    --cinnabar:#9B2226; --gold:#C4A882; --zinc500:#71717A;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#16140f; color:var(--paperWarm);
+    font-family:"PingFang SC","Hiragino Sans GB","Songti SC",-apple-system,serif;
+    padding:40px 28px 90px; line-height:1.6;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:24px;font-weight:600;letter-spacing:2px;margin:0 0 6px}
+  .sub{color:var(--zinc500);font-size:13px;margin:0 0 4px}
+  .rules{color:var(--gold);font-size:13px;letter-spacing:1px;margin:14px 0 4px}
+  .note{color:var(--zinc500);font-size:12px;max-width:860px;border-left:2px solid var(--cinnabar);padding-left:12px;margin:16px 0 10px}
+  .note b{color:var(--gold)}
+
+  /* ---- taxonomy strip: 命相卜三宫 + 山留白 ---- */
+  .taxo{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 30px}
+  .gong{flex:1 1 200px;border:1px solid #2a2620;border-radius:10px;padding:12px 14px;background:#1b1812}
+  .gong.shan{background:#141109;border-style:dashed;opacity:.7}
+  .gong .g-h{font-size:15px;letter-spacing:3px;color:var(--gold);margin-bottom:3px}
+  .gong .g-s{font-size:11px;color:var(--zinc500);margin-bottom:8px;letter-spacing:1px}
+  .gong .g-i{font-size:12px;color:var(--paperWarm);line-height:1.9}
+  .gong .g-i i{color:var(--zinc500);font-style:normal}
+
+  .panels{display:flex;flex-direction:column;gap:22px}
+  .card{border-radius:14px;padding:24px 22px 28px;position:relative;overflow:hidden}
+  .card.rice{background:var(--paper);color:var(--inkBrown)}
+  .card.rub{background:var(--void);color:var(--rubbingWhite)}
+  .card h2{font-size:13px;letter-spacing:6px;text-transform:uppercase;font-weight:500;margin:0 0 20px;opacity:.7}
+
+  .palaces{display:flex;gap:14px;flex-wrap:wrap}
+  .pgroup{flex:1 1 auto;border-radius:10px;padding:6px 4px 4px}
+  .card.rice .pgroup{border:1px dashed rgba(60,36,21,.22)}
+  .card.rub .pgroup{border:1px dashed rgba(232,223,206,.16)}
+  .pgroup.shan{flex:0 0 132px;opacity:.55}
+  .phead{font-size:11px;letter-spacing:3px;text-align:center;margin:4px 0 8px;opacity:.6}
+  .ptiles{display:flex;flex-wrap:wrap;gap:6px 2px;justify-content:center}
+
+  .tile{width:114px;text-align:center}
+  .ico{width:96px;height:96px;display:block;margin:0 auto}
+  .cap{font-size:10px;letter-spacing:2px;margin-top:5px;opacity:.6}
+
+  .grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply}
+  .card.rub .grain{mix-blend-mode:screen;opacity:.5}
+
+  /* ---- 面 拓片质感研究 ---- */
+  .study{margin-top:30px;background:var(--void);border-radius:14px;padding:24px 22px 26px;position:relative;overflow:hidden}
+  .study h2{font-size:13px;letter-spacing:6px;text-transform:uppercase;font-weight:500;margin:0 0 6px;color:var(--rubbingWhite);opacity:.75}
+  .study .s-note{color:var(--zinc500);font-size:12px;max-width:780px;margin:0 0 18px;border-left:2px solid var(--cinnabar);padding-left:12px}
+  .study .s-note b{color:var(--gold)}
+  .srow{display:flex;gap:18px;flex-wrap:wrap;color:var(--rubbingWhite)}
+  .scard{width:150px;text-align:center}
+  .scard .sico{width:130px;height:130px;display:block;margin:0 auto;border-radius:8px}
+  .scard .slot{width:130px;height:130px;margin:0 auto;border:1.5px dashed #4a443a;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;color:var(--zinc500);font-size:11px;line-height:1.5;padding:10px}
+  .scard .scap{font-size:10px;letter-spacing:1px;margin-top:8px;opacity:.6}
+  .scard .scap b{display:block;color:var(--gold);letter-spacing:2px;opacity:1;margin-bottom:2px}
+
+  /* ---- legend ---- */
+  .legend{margin-top:34px;color:var(--zinc500);font-size:12px}
+  .legend .lh{color:var(--gold);letter-spacing:3px;margin-bottom:10px}
+  .lgrid{display:flex;gap:10px 18px;flex-wrap:wrap}
+  .lrow{display:flex;align-items:center;gap:8px;flex:0 0 240px}
+  .chip{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(255,255,255,.15)}
+  .lrow b{color:var(--paperWarm);font-weight:500}
+  .lrow i{font-style:normal;color:var(--zinc500)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>金石玄学 · 图标系统 v2</h1>
+  <p class="sub">字象合一优先 · 命相卜三宫 + 山留白 · 印框 + 治印 + 锁定色（焦墨/朱砂）+ 房号 · 真实 SEAL_FRAME_PATH 与 token 色值</p>
+  <p class="rules">铁律 — 重量&gt;装饰 · 蚀刻&gt;光洁 · 不齐&gt;对称 · 写意&gt;写实</p>
+  <p class="note">
+    <b>字象合一</b>：能让字本身成画的，用古字 —— 爻（两乂相交）、面（金文目在框内）用<b>纯矢量字即画</b>；
+    命、夢 暂用<b>系统字占位</b>（生产换真篆/金文矢量或手刻）。无好象形字的，用<b>设计象形</b> —— 洛书（九宫）、罗盘、节气轮。
+    全套用同一<b>印框 + 治印蚀刻 + 焦墨/阴白锁定色 + 朱砂房号（命/相/卜）</b>统一；各 App 品牌色仅作 legend 色签，不进图标本体（保家族一致）。
+    面的<b>拓片质感</b>见下方研究区：纯代码到 feTurbulence 的天花板，真做旧需外部位图（diffusion / 公有领域拓片）。
+  </p>
+
+  <!-- ===== taxonomy: 命相卜三宫 + 山留白 ===== -->
+  <div class="taxo" id="taxo"></div>
+
+  <!-- ============ shared defs: filters + seal frame symbol ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="erode" x="-25%" y="-25%" width="150%" height="150%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="11" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="1.9" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="erodeFrame" x="-25%" y="-25%" width="150%" height="150%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.38" numOctaves="3" seed="4" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0"/>
+      </filter>
+
+      <!-- 拓片质感: low-freq warp (uneven stone) + high-freq speckle knockout (ink that didn't take) -->
+      <filter id="rub" x="-35%" y="-35%" width="170%" height="170%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035 0.05" numOctaves="3" seed="9" result="big"/>
+        <feDisplacementMap in="SourceGraphic" in2="big" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="warp"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="2" seed="3" result="sp"/>
+        <feColorMatrix in="sp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.7 1.12" result="mask"/>
+        <feComposite in="warp" in2="mask" operator="in"/>
+      </filter>
+
+      <symbol id="frame" viewBox="0 0 100 100">
+        <path d="M8,4 L93,3 Q97,3 97,7 L98,92 Q98,97 94,97 L7,98 Q3,98 3,94 L4,8 Q4,4 8,4 Z"
+              fill="none" stroke="currentColor" stroke-width="2.4" filter="url(#erodeFrame)"/>
+        <path d="M14,11 L87,10 Q89,10 89,12 L90,88 Q90,90 88,90 L13,91 Q11,91 11,89 L10,13 Q10,11 14,11 Z"
+              fill="none" stroke="currentColor" stroke-width="1" opacity="0.45" filter="url(#erodeFrame)"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="panels">
+    <div class="card rice" id="rice">
+      <h2>宣纸 · 焦墨</h2>
+      <div class="palaces" data-palaces></div>
+      <svg class="grain"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.06"/></svg>
+    </div>
+
+    <div class="card rub" id="rub-panel">
+      <h2>碑拓 · 阴文</h2>
+      <div class="palaces" data-palaces></div>
+      <svg class="grain"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.10"/></svg>
+    </div>
+  </div>
+
+  <!-- ===== 面 拓片质感研究 ===== -->
+  <div class="study">
+    <h2>面 · 拓片质感研究</h2>
+    <p class="s-note">
+      左→右：纯几何（无质感）→ 基础蚀刻（#erode）→ 重蚀拓痕（#rub：低频起伏 + 高频剥蚀）→ <b>真拓片合成位</b>。
+      最后一格是<b>外部位图槽</b>：diffusion 做旧或公有领域碑拓扫描，以 mask 合成进同一印框。
+      我能<b>全包前三格的几何与程序化质感</b>；第四格的"刀痕/青铜锈/枯墨"需要位图素材 —— 我无法在此生成 diffusion，也不应贸然嵌入未核实授权的"公有领域"图。先看程序化够不够。
+    </p>
+    <div class="srow" id="study"></div>
+  </div>
+
+  <!-- ===== legend ===== -->
+  <div class="legend">
+    <div class="lh">图标 · 应用 · 宫 · 各 App 品牌色（仅在 App 内用，不进图标）</div>
+    <div class="lgrid" id="legend"></div>
+  </div>
+</div>
+
+<script>
+const CINNABAR = '#9B2226', PAPER = '#F5F0E8';
+const sealFont = "'Songti SC','STSong','SimSun',serif";
+
+// ---- product taxonomy (reconstructed from prior session + ROADMAP product identities) ----
+const ICONS = [
+  { app:'fate-app',        cap:'命 · 八字紫微',   palace:'命', accent:'#C4A882', kind:'char', glyph:'命',     tag:'篆/金文占位' },
+  { app:'yuan-app',        cap:'緣 · 姻缘合婚',   palace:'命', accent:'#9B2226', kind:'char', glyph:'緣',     tag:'篆/金文占位' },
+  { app:'cycle-app',       cap:'节气轮 · 黄历',   palace:'命', accent:'#A8492E', kind:'draw', glyph:'jieqi',  tag:'设计象形' },
+  { app:'face-oracle-app', cap:'面 · 面相',       palace:'相', accent:'#3F7B5C', kind:'draw', glyph:'mian',   tag:'金文 · 字即画' },
+  { app:'feng-app',        cap:'罗盘 · 风水堪舆', palace:'相', accent:'#B08D5B', kind:'draw', glyph:'luopan', tag:'设计象形' },
+  { app:'coin-cast-app',   cap:'爻 · 六爻铜钱',   palace:'卜', accent:'#B8741F', kind:'draw', glyph:'yao',    tag:'字即画' },
+  { app:'dream-oracle-app',cap:'夢 · 解梦',       palace:'卜', accent:'#3C3E76', kind:'char', glyph:'夢',     tag:'篆/金文占位' },
+  { app:'numerology-app',  cap:'洛书 · 梅花数',   palace:'卜', accent:'#5B3F8A', kind:'draw', glyph:'luoshu', tag:'设计象形' },
+];
+const PALACES = [
+  { key:'命', sub:'推命 · 生辰定数', apps:'fate 八字紫微 · yuan 合婚 · cycle 黄历' },
+  { key:'相', sub:'相形 · 观象辨势', apps:'face 面相 · feng 风水堪舆' },
+  { key:'卜', sub:'占卜 · 起卦问机', apps:'coin 六爻 · dream 解梦 · numerology 梅花' },
+];
+
+// ---- drawn pictographs (currentColor adapts to substrate ink) ----
+function ring(fn){ return `<g stroke="currentColor" fill="none" filter="url(#erode)">${fn}</g>`; }
+
+function yao(){ // 爻 — two stacked 乂, carved
+  return `<g stroke="currentColor" stroke-width="6.5" stroke-linecap="round" fill="none" filter="url(#erode)">
+    <line x1="34" y1="27" x2="66" y2="49"/><line x1="66" y1="27" x2="34" y2="49"/>
+    <line x1="34" y1="53" x2="66" y2="75"/><line x1="66" y1="53" x2="34" y2="75"/>
+  </g>`;
+}
+function mian(){ // 面 — 金文: face contour enclosing one 目
+  return `<g filter="url(#erode)">
+    <path d="M31,23 Q50,17 69,23 Q75,42 71,65 Q64,83 50,85 Q36,83 29,65 Q25,42 31,23 Z"
+          fill="none" stroke="currentColor" stroke-width="4.2"/>
+    <path d="M37,45 Q50,38 63,45 Q50,52 37,45 Z" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="50" cy="45.5" r="3.1" fill="currentColor"/>
+  </g>`;
+}
+function luopan(){ // 罗盘 — concentric rings + 24山 ticks + pointer
+  let t='';
+  for(let i=0;i<24;i++){
+    const a=i*15*Math.PI/180, major=(i%6===0), r1=major?22:26, r2=31;
+    const x1=(50+r1*Math.sin(a)).toFixed(1), y1=(50-r1*Math.cos(a)).toFixed(1);
+    const x2=(50+r2*Math.sin(a)).toFixed(1), y2=(50-r2*Math.cos(a)).toFixed(1);
+    t+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.4:1.2}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="50" cy="50" r="32" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="20" stroke-width="1.4" opacity="0.6"/>
+    <g>${t}</g>
+    <g transform="rotate(-22 50 50)">
+      <path d="M50,33 L54.5,50 L50,67 L45.5,50 Z" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="50" r="2.6" fill="currentColor" stroke="none"/>
+    </g>
+  </g>`;
+}
+function jieqi(){ // 节气轮 — 24 spokes (4 cardinals long) + 日 center
+  let s='';
+  for(let i=0;i<24;i++){
+    const a=i*15*Math.PI/180, major=(i%6===0), r1=major?13:20, r2=30;
+    const x1=(50+r1*Math.sin(a)).toFixed(1), y1=(50-r1*Math.cos(a)).toFixed(1);
+    const x2=(50+r2*Math.sin(a)).toFixed(1), y2=(50-r2*Math.cos(a)).toFixed(1);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${major?2.6:1.2}"/>`;
+  }
+  return `<g stroke="currentColor" fill="none" filter="url(#erode)">
+    <circle cx="50" cy="50" r="31" stroke-width="2.4"/>
+    <g>${s}</g>
+    <circle cx="50" cy="50" r="9" fill="currentColor" stroke="none"/>
+  </g>`;
+}
+function luoshu(){ // 洛书 — 九宫格 + 中五点 + 四正点
+  let g=`<rect x="28" y="28" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    <line x1="42.7" y1="28" x2="42.7" y2="72" stroke-width="1.3"/>
+    <line x1="57.3" y1="28" x2="57.3" y2="72" stroke-width="1.3"/>
+    <line x1="28" y1="42.7" x2="72" y2="42.7" stroke-width="1.3"/>
+    <line x1="28" y1="57.3" x2="72" y2="57.3" stroke-width="1.3"/>`;
+  const d=4.2;
+  g+=`<g fill="currentColor" stroke="none">
+    <circle cx="50" cy="50" r="1.8"/>
+    <circle cx="${50-d}" cy="${50-d}" r="1.8"/><circle cx="${50+d}" cy="${50-d}" r="1.8"/>
+    <circle cx="${50-d}" cy="${50+d}" r="1.8"/><circle cx="${50+d}" cy="${50+d}" r="1.8"/>
+    <circle cx="50" cy="35.3" r="1.7"/><circle cx="50" cy="64.7" r="1.7"/>
+    <circle cx="35.3" cy="50" r="1.7"/><circle cx="64.7" cy="50" r="1.7"/>
+  </g>`;
+  return `<g stroke="currentColor" filter="url(#erode)">${g}</g>`;
+}
+const DRAW = { yao, mian, luopan, jieqi, luoshu };
+
+function charGlyph(ch){
+  return `<text x="50" y="54" text-anchor="middle" dominant-baseline="middle"
+    font-family="${sealFont}" font-size="54" font-weight="700"
+    fill="currentColor" filter="url(#erode)">${ch}</text>`;
+}
+function glyphSVG(ic){ return ic.kind==='char' ? charGlyph(ic.glyph) : DRAW[ic.glyph](); }
+
+function cornerSeal(p){ // 房号: cinnabar palace stamp
+  return `<g transform="translate(74,74)">
+    <rect x="0" y="0" width="17" height="17" rx="2.5" fill="${CINNABAR}" filter="url(#erode)"/>
+    <text x="8.5" y="9.4" fill="${PAPER}" font-size="11" font-family="${sealFont}" font-weight="700"
+          text-anchor="middle" dominant-baseline="middle">${p}</text>
+  </g>`;
+}
+
+function tile(ic){
+  return `<div class="tile">
+    <svg class="ico" viewBox="0 0 100 100">
+      <use href="#frame"/>
+      ${glyphSVG(ic)}
+      ${cornerSeal(ic.palace)}
+    </svg>
+    <div class="cap">${ic.cap}</div>
+  </div>`;
+}
+function shanTile(){
+  return `<div class="tile">
+    <svg class="ico" viewBox="0 0 100 100">
+      <use href="#frame"/>
+      <text x="50" y="54" text-anchor="middle" dominant-baseline="middle"
+        font-family="${sealFont}" font-size="46" font-weight="600"
+        fill="currentColor" opacity="0.16" filter="url(#erode)">山</text>
+    </svg>
+    <div class="cap">未启 · 预留</div>
+  </div>`;
+}
+
+function renderPanels(){
+  const html = PALACES.map(p=>{
+    const tiles = ICONS.filter(i=>i.palace===p.key).map(tile).join('');
+    return `<div class="pgroup">
+      <div class="phead">${p.key}宫 · ${p.sub.split(' · ')[0]}</div>
+      <div class="ptiles">${tiles}</div>
+    </div>`;
+  }).join('') + `<div class="pgroup shan">
+      <div class="phead">山 · 留白</div>
+      <div class="ptiles">${shanTile()}</div>
+    </div>`;
+  document.querySelectorAll('[data-palaces]').forEach(el=> el.innerHTML = html);
+}
+
+function renderTaxo(){
+  const cells = PALACES.map(p=>`<div class="gong">
+    <div class="g-h">${p.key}宫</div>
+    <div class="g-s">${p.sub}</div>
+    <div class="g-i">${p.apps.split(' · ').map(a=>`<i>·</i> ${a}`).join('<br>')}</div>
+  </div>`).join('') + `<div class="gong shan">
+    <div class="g-h">山</div>
+    <div class="g-s">留白 · 自修养性</div>
+    <div class="g-i"><i>·</i> 暂无产品<br><i>·</i> 预留第四宫</div>
+  </div>`;
+  document.getElementById('taxo').innerHTML = cells;
+}
+
+function renderStudy(){
+  const face = mian();
+  const faceRub = `<g filter="url(#rub)">
+    <path d="M31,23 Q50,17 69,23 Q75,42 71,65 Q64,83 50,85 Q36,83 29,65 Q25,42 31,23 Z"
+          fill="none" stroke="#E8DFCE" stroke-width="4.6"/>
+    <path d="M37,45 Q50,38 63,45 Q50,52 37,45 Z" fill="none" stroke="#E8DFCE" stroke-width="2.8"/>
+    <circle cx="50" cy="45.5" r="3.2" fill="#E8DFCE"/>
+  </g>`;
+  const flat = `<g>
+    <path d="M31,23 Q50,17 69,23 Q75,42 71,65 Q64,83 50,85 Q36,83 29,65 Q25,42 31,23 Z"
+          fill="none" stroke="#E8DFCE" stroke-width="4.2"/>
+    <path d="M37,45 Q50,38 63,45 Q50,52 37,45 Z" fill="none" stroke="#E8DFCE" stroke-width="2.6"/>
+    <circle cx="50" cy="45.5" r="3.1" fill="#E8DFCE"/>
+  </g>`;
+  const cards = [
+    { cap:'纯几何', sub:'无质感基线', svg:flat },
+    { cap:'基础蚀刻', sub:'#erode（系统当前）', svg:`<g style="color:#E8DFCE">${face}</g>` },
+    { cap:'重蚀拓痕', sub:'#rub 程序化', svg:faceRub },
+  ];
+  const cardHtml = cards.map(c=>`<div class="scard">
+    <svg class="sico" viewBox="0 0 100 100" style="color:#E8DFCE"><use href="#frame"/>${c.svg}${cornerSeal('相')}</svg>
+    <div class="scap"><b>${c.cap}</b>${c.sub}</div>
+  </div>`).join('');
+  const slot = `<div class="scard">
+    <div class="slot">diffusion 做旧<br>/ 公有领域拓片<br><span style="color:#9B2226">合成位（外部位图）</span></div>
+    <div class="scap"><b>真拓片</b>需人工 / 外部素材</div>
+  </div>`;
+  document.getElementById('study').innerHTML = cardHtml + slot;
+}
+
+function renderLegend(){
+  document.getElementById('legend').innerHTML = ICONS.map(ic=>`
+    <div class="lrow">
+      <span class="chip" style="background:${ic.accent}"></span>
+      <span><b>${ic.cap}</b> &nbsp;<i>${ic.palace}宫 · ${ic.app} · ${ic.tag}</i></span>
+    </div>`).join('');
+}
+
+renderTaxo(); renderPanels(); renderStudy(); renderLegend();
+</script>
+</body>
+</html>

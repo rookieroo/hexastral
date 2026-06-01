@@ -1,0 +1,22 @@
+{
+  "extends": "@zhop/typescript-config/base.json",
+  "compilerOptions": {
+    "strict": true,
+    "types": [
+      "@cloudflare/workers-types/2023-07-01"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

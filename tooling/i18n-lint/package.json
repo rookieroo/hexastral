@@ -1,0 +1,12 @@
+{
+  "name": "@zhop/i18n-lint",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "i18n-lint": "./check.ts"
+  },
+  "scripts": {
+    "check": "bun check.ts"
+  }
+}

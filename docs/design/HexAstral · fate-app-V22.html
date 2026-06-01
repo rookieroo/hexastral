@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!-- saved from url=(0087)file:///Users/chris/Desktop/code/web/hexastral/docs/design/icon-poc-v22-fate-night.html -->
+<html lang="zh"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · fate-app 夜月图标（受光月牙 + 命印）</title>
+<style>
+  :root{
+    --void:#0C0B0A; --night:#070605; --paper:#E8E0CE; --bone:#E9E2D2; --stone:#16140F;
+    --cinnabar:#9B2226; --bronze:#C2A878; --dim:#8A8170; --faint:#5A5446; --line:rgba(233,226,210,.12);
+    --serif:"Hoefler Text","Baskerville","Songti SC",Georgia,serif;
+    --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0a0908;color:var(--bone);font-family:var(--serif);padding:46px 32px 110px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  .lock{color:var(--bronze);font-family:var(--sans);font-size:11px;letter-spacing:5px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-weight:400;font-size:26px;letter-spacing:1px;margin:0 0 6px}
+  .lede{color:var(--dim);font-family:var(--sans);font-size:12.5px;max-width:820px;line-height:1.9;margin:0 0 8px}
+  .lede b{color:var(--bone)}
+  .sl{font-family:var(--sans);font-size:11px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin:48px 0 20px;display:flex;align-items:center;gap:14px}
+  .sl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(194,168,120,.4),transparent)}
+
+  /* ---- generic icon frame ---- */
+  .frame{position:relative;overflow:hidden;background:var(--night);border:1px solid rgba(233,226,210,.1);box-shadow:0 8px 26px rgba(0,0,0,.55)}
+  .frame .moon{position:absolute;inset:0}
+  .frame .seal-ov{position:absolute}
+
+  /* ---- hero compare: 带印 vs 无印 ---- */
+  .hero{display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start}
+  .hcol{text-align:center}
+  .hcol .frame{width:236px;height:236px;border-radius:23%;box-shadow:0 22px 60px rgba(0,0,0,.65),inset 0 0 0 1px rgba(233,226,210,.04)}
+  .hcol .cap{font-family:var(--sans);color:var(--dim);font-size:12px;margin-top:14px;letter-spacing:.5px}
+  .hcol .cap b{color:var(--bronze)}
+
+  /* ---- small-size legibility strip ---- */
+  .sizes{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap;margin-top:20px}
+  .sz{text-align:center}
+  .sz .frame{border-radius:23%}
+  .sz .t{font-family:var(--sans);color:var(--faint);font-size:10px;margin-top:7px;letter-spacing:1px}
+  .sz.s120 .frame{width:120px;height:120px}
+  .sz.s80 .frame{width:80px;height:80px}
+  .sz.s60 .frame{width:60px;height:60px}
+  .sz.s40 .frame{width:40px;height:40px}
+
+  /* ---- mask previews ---- */
+  .safe{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .tile{text-align:center}
+  .tile .frame{width:150px;height:150px}
+  .tile .cap{font-family:var(--sans);color:var(--dim);font-size:11px;margin-top:9px;letter-spacing:.5px}
+  .tile .cap b{color:var(--bronze)}
+  .ios .frame{border-radius:23%}
+  .a-circle .frame{border-radius:50%}
+  .a-squircle .frame{border-radius:42%}
+  .a-round .frame{border-radius:26%}
+  .guide .frame{border-radius:23%;outline:1px solid rgba(233,226,210,.15)}
+  .guide .frame .zone{position:absolute;inset:17%;border:1.5px dashed rgba(194,168,120,.7);border-radius:50%;pointer-events:none}
+
+  /* ---- 命相卜 seal swap ---- */
+  .seals{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .seals .tile .frame{border-radius:23%}
+  .paperchip{display:flex;gap:18px;flex-wrap:wrap;align-items:center;background:var(--paper);border-radius:8px;padding:16px 20px;margin-top:10px}
+  .paperchip .one{text-align:center}
+  .paperchip .one .t{font-family:var(--sans);color:#7a6f57;font-size:10px;margin-top:6px;letter-spacing:2px}
+
+  .note{margin-top:34px;color:var(--dim);font-family:var(--sans);font-size:12px;border-left:2px solid var(--bronze);padding-left:14px;line-height:2;max-width:860px}
+  .note b{color:var(--bronze)} .note code{color:var(--bone);background:#16140f;padding:1px 5px;border-radius:4px;font-size:11px}
+  .note + .note{margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="lock">● fate-app · Night Moon + 命 Seal</p>
+  <h1>fate-app 夜月图标 · 受光月牙 + 命印</h1>
+  <p class="lede">由 v15 演进:<b>①</b> 底改纯夜色(near-black),去掉月球外圈描边;<b>②</b> 保留径向渐变,把受光面压到右下缘——暗球大部分融进夜空,只留一道<b>月牙受光</b>(正好是 fate-app 品牌母题"暗球受光");<b>③</b> 印章字由「玄」换成 <b>命</b>(fate-app 对应命相卜之「命」)。下面把<b>带印 / 无印</b>两版并排,并给出 120 → 40px 的缩放条,判断小尺寸下印是否还成立。水墨球与命印均为<b>矢量占位</b>,终稿换 AI 图 / 篆刻稿即可。</p>
+
+  <svg width="0" height="0" style="position:absolute"><defs>
+    <filter id="ink" x="-30%" y="-30%" width="160%" height="160%"><feturbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="4" result="n"></feturbulence><fedisplacementmap in="SourceGraphic" in2="n" scale="1.1"></fedisplacementmap></filter>
+    <filter id="rough" x="-25%" y="-25%" width="150%" height="150%"><feturbulence type="fractalNoise" baseFrequency="0.55" numOctaves="1" seed="3" result="n"></feturbulence><fedisplacementmap in="SourceGraphic" in2="n" scale="1.8"></fedisplacementmap></filter>
+    <radialgradient id="nightField" cx="50%" cy="40%" r="78%">
+      <stop offset="0%" stop-color="#0D0F16"></stop><stop offset="62%" stop-color="#080A0F"></stop><stop offset="100%" stop-color="#05060A"></stop>
+    </radialgradient>
+    <radialgradient id="moonLit" cx="62%" cy="62%" r="64%">
+      <stop offset="0%" stop-color="#F8F2E4"></stop>
+      <stop offset="50%" stop-color="#E9E1CF"></stop>
+      <stop offset="100%" stop-color="#A8A18F"></stop>
+    </radialgradient>
+    <radialgradient id="moonShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06080E"></stop>
+      <stop offset="80%" stop-color="#06080E"></stop>
+      <stop offset="93%" stop-color="#070810" stop-opacity="0.55"></stop>
+      <stop offset="100%" stop-color="#070810" stop-opacity="0"></stop>
+    </radialgradient>
+  </defs></svg>
+
+  <div class="sl">① 带印 vs 无印（同一夜月底，236px）</div>
+  <div class="hero">
+    <div class="hcol"><div class="frame" id="heroSeal"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><g filter="url(#rough)"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></g></svg></div></div><div class="cap"><b>带印</b> · 命印落左下安全区</div></div>
+    <div class="hcol"><div class="frame" id="heroClean"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg></div><div class="cap"><b>无印</b> · 纯水墨母题(现有 ADR 方向)</div></div>
+  </div>
+
+  <div class="sl">② 小尺寸可读性（带印 → 缩到桌面 / 角标尺寸）</div>
+  <div class="sizes" id="sizesSeal"><div class="sz s120"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="t">120px</div></div><div class="sz s80"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="t">80px</div></div><div class="sz s60"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="t">60px</div></div><div class="sz s40"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="t">40px</div></div></div>
+  <div class="sizes" id="sizesClean" style="margin-top:10px"><div class="sz s120"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg></div><div class="t">120px</div></div><div class="sz s80"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg></div><div class="t">80px</div></div><div class="sz s60"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg></div><div class="t">60px</div></div><div class="sz s40"><div class="frame"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle>
+  </svg></div><div class="t">40px</div></div></div>
+
+  <div class="sl">③ 各遮罩预览（带印）</div>
+  <div class="safe">
+    <div class="tile guide"><div class="frame" id="mg"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div><div class="zone"></div></div><div class="cap"><b>安全区</b> 主体压进中心圈</div></div>
+    <div class="tile ios"><div class="frame" id="m1"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="cap"><b>iOS</b> 圆角</div></div>
+    <div class="tile a-circle"><div class="frame" id="m2"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="cap"><b>Android</b> 圆形</div></div>
+    <div class="tile a-squircle"><div class="frame" id="m3"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="cap"><b>Android</b> squircle</div></div>
+    <div class="tile a-round"><div class="frame" id="m4"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg></div></div><div class="cap"><b>Android</b> 圆角方</div></div>
+  </div>
+
+  <div class="sl">④ 命 · 相 · 卜 三印替换（白文朱印 · 矢量占位）</div>
+  <div class="seals">
+    <div class="tile ios"><div class="frame" id="sMing"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><g filter="url(#rough)"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></g></svg></div></div><div class="cap"><b>命</b> fate / numerology / cycle</div></div>
+    <div class="tile ios"><div class="frame" id="sXiang"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><g filter="url(#rough)"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31,17 L31,83"></path>
+    <path d="M18,35 L44,35"></path>
+    <path d="M31,52 L19,71"></path>
+    <path d="M31,52 L43,71"></path>
+    <rect x="55" y="22" width="24" height="58" rx="2"></rect>
+    <path d="M55,41 L79,41"></path>
+    <path d="M55,60 L79,60"></path>
+  </g></g></svg></div></div><div class="cap"><b>相</b> face / feng / yuan</div></div>
+    <div class="tile ios"><div class="frame" id="sBu"><svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"></rect>
+    <g filter="url(#ink)"><circle cx="50" cy="50" r="37" fill="url(#moonLit)"></circle><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"></circle></g>
+  </svg><div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%"><svg viewBox="0 0 100 100" width="100%" height="100%"><g filter="url(#rough)"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45,16 L45,86"></path>
+    <path d="M45,47 Q56,42 66,33"></path>
+  </g></g></svg></div></div><div class="cap"><b>卜</b> coin-cast / dream</div></div>
+  </div>
+  <div class="paperchip" id="chip"><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="8.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg><div class="t">命</div></div><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31,17 L31,83"></path>
+    <path d="M18,35 L44,35"></path>
+    <path d="M31,52 L19,71"></path>
+    <path d="M31,52 L43,71"></path>
+    <rect x="55" y="22" width="24" height="58" rx="2"></rect>
+    <path d="M55,41 L79,41"></path>
+    <path d="M55,60 L79,60"></path>
+  </g></svg><div class="t">相</div></div><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="6" y="6" width="88" height="88" rx="9" fill="#9B2226"></rect><g fill="none" stroke="#E8E0CE" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45,16 L45,86"></path>
+    <path d="M45,47 Q56,42 66,33"></path>
+  </g></svg><div class="t">卜</div></div><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="8" y="8" width="84" height="84" rx="7" fill="none" stroke="#9B2226" stroke-width="3.4"></rect><g fill="none" stroke="#9B2226" stroke-width="7.6000000000000005" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"></path>
+    <path d="M26,41 L23,46 M74,41 L77,46"></path>
+    <path d="M50,41 L50,49"></path>
+    <path d="M34,51 Q50,54 60,50"></path>
+    <path d="M39,51 Q33,48 35,43"></path>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"></path>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"></path>
+    <path d="M58,53 C62,63 59,72 51,76"></path>
+  </g></svg><div class="t">命 朱文</div></div><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="8" y="8" width="84" height="84" rx="7" fill="none" stroke="#9B2226" stroke-width="3.4"></rect><g fill="none" stroke="#9B2226" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31,17 L31,83"></path>
+    <path d="M18,35 L44,35"></path>
+    <path d="M31,52 L19,71"></path>
+    <path d="M31,52 L43,71"></path>
+    <rect x="55" y="22" width="24" height="58" rx="2"></rect>
+    <path d="M55,41 L79,41"></path>
+    <path d="M55,60 L79,60"></path>
+  </g></svg><div class="t">相 朱文</div></div><div class="one"><svg viewBox="0 0 100 100" width="76" height="76"><rect x="8" y="8" width="84" height="84" rx="7" fill="none" stroke="#9B2226" stroke-width="3.4"></rect><g fill="none" stroke="#9B2226" stroke-width="8.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45,16 L45,86"></path>
+    <path d="M45,47 Q56,42 66,33"></path>
+  </g></svg><div class="t">卜 朱文</div></div></div>
+
+  <div class="note">
+    <b>诚实说·篆体:</b>「命」是有机字,手描 SVG 已到极限(见 v18/v20),这里三印是<b>结构占位</b>,不是真<b>中山篆 / 鸟虫篆</b>。要那个味,走 AI 出图(提示词见 <code>ai-image-prompts.md §5</code>)或交篆刻师,再把朱印 PNG 垫进安全区即可——本页结构原样复用。
+  </div>
+  <div class="note">
+    <b>怎么换真图:</b>把水墨球 / 朱印存进 <code>docs/design/raw/</code>,告诉我路径,我按本模板批量输出 iOS 1024 + Android 自适应 + 各遮罩,并对齐色调。<b>注意:</b>夜底要"近黑不死黑"(<code>#070605</code> 带极淡靛蓝抬光),保住夜空层次;月牙是唯一亮区,别让它在黑壁纸上消失。
+  </div>
+</div>
+
+<script>
+const CINNABAR='#9B2226', PAPER='#E8E0CE';
+
+/* ---------- 篆形矢量（结构占位） ---------- */
+// 命 — 先秦金文形 (亼实三角 + 左口环 + 右卩钩 + 中腿)，复用 v20
+function gMing(color, sw){
+  return `<g fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50,14 L26,41 L74,41 Z"/>
+    <path d="M26,41 L23,46 M74,41 L77,46"/>
+    <path d="M50,41 L50,49"/>
+    <path d="M34,51 Q50,54 60,50"/>
+    <path d="M39,51 Q33,48 35,43"/>
+    <path d="M60,50 Q73,49 73,42 Q73,37 67,41"/>
+    <path d="M43,55 C34,57 33,68 42,70 C51,71 50,59 43,57 Z"/>
+    <path d="M58,53 C62,63 59,72 51,76"/>
+  </g>`;
+}
+// 相 — 木(左) + 目(右)
+function gXiang(color, sw){
+  return `<g fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31,17 L31,83"/>
+    <path d="M18,35 L44,35"/>
+    <path d="M31,52 L19,71"/>
+    <path d="M31,52 L43,71"/>
+    <rect x="55" y="22" width="24" height="58" rx="2"/>
+    <path d="M55,41 L79,41"/>
+    <path d="M55,60 L79,60"/>
+  </g>`;
+}
+// 卜 — 竖 + 右上短枝（甲骨/篆形）
+function gBu(color, sw){
+  return `<g fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45,16 L45,86"/>
+    <path d="M45,47 Q56,42 66,33"/>
+  </g>`;
+}
+const GLYPH = { ming:{fn:gMing,sw:8.4}, xiang:{fn:gXiang,sw:6.6}, bu:{fn:gBu,sw:9.5} };
+
+// 白文(朱底白字) / 朱文(朱字白底)。tex=刻痕位移(贵)，仅大图开。
+function seal(name, mode, px, tex){
+  const g = GLYPH[name];
+  let inner;
+  if(mode==='bw') inner = `<rect x="6" y="6" width="88" height="88" rx="9" fill="${CINNABAR}"/>${g.fn(PAPER, g.sw)}`;
+  else            inner = `<rect x="8" y="8" width="84" height="84" rx="7" fill="none" stroke="${CINNABAR}" stroke-width="3.4"/>${g.fn(CINNABAR, g.sw-0.8)}`;
+  if(tex) inner = `<g filter="url(#rough)">${inner}</g>`;
+  return `<svg viewBox="0 0 100 100" width="${px}" height="${px}">${inner}</svg>`;
+}
+
+/* ---------- 夜月母题 ---------- */
+function nightMoon(tex){
+  // 受光满月盘 + 偏移夜盘(软 alpha 端线) → 右下月牙
+  const body = `<circle cx="50" cy="50" r="37" fill="url(#moonLit)"/><circle cx="46" cy="46" r="40" fill="url(#moonShadow)"/>`;
+  return `<svg class="moon" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="url(#nightField)"/>
+    ${tex?`<g filter="url(#ink)">${body}</g>`:body}
+  </svg>`;
+}
+// 命印叠加 div（满铺 100% 缩放）
+function sealOverlay(tex){ const s = seal('ming','bw',1000,tex).replace('width="1000" height="1000"','width="100%" height="100%"'); return `<div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%">${s}</div>`; }
+
+/* ---------- 渲染 ---------- */
+// hero（全刻痕纹理）
+document.getElementById('heroSeal').innerHTML  = nightMoon(true) + sealOverlay(true);
+document.getElementById('heroClean').innerHTML = nightMoon(true);
+
+// 小尺寸条（小图纹理不可见，关掉省渲染）
+function sizeStrip(withSeal){
+  return [120,80,60,40].map(s=>`<div class="sz s${s}"><div class="frame">${nightMoon(false)}${withSeal?sealOverlay(false):''}</div><div class="t">${s}px</div></div>`).join('');
+}
+document.getElementById('sizesSeal').innerHTML  = sizeStrip(true);
+document.getElementById('sizesClean').innerHTML = sizeStrip(false);
+
+// 遮罩预览（月球带纹理，叠加印很小关纹理）
+['mg','m1','m2','m3','m4'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.insertAdjacentHTML('afterbegin', nightMoon(true) + sealOverlay(false));
+});
+
+// 命相卜 三印（盖在夜月底，showcase 开纹理）
+function sealedTile(name){
+  const ov = seal(name,'bw',1000,true).replace('width="1000" height="1000"','width="100%" height="100%"');
+  return nightMoon(true) + `<div class="seal-ov" style="left:12%;bottom:12%;width:20%;height:20%">${ov}</div>`;
+}
+document.getElementById('sMing').innerHTML  = sealedTile('ming');
+document.getElementById('sXiang').innerHTML = sealedTile('xiang');
+document.getElementById('sBu').innerHTML    = sealedTile('bu');
+
+// 朱印纸面对照（看印本身，参考图关纹理）
+document.getElementById('chip').innerHTML =
+  ['ming','xiang','bu'].map((n,i)=>`<div class="one">${seal(n,'bw',76,false)}<div class="t">${['命','相','卜'][i]}</div></div>`).join('')
+  + ['ming','xiang','bu'].map((n,i)=>`<div class="one">${seal(n,'zw',76,false)}<div class="t">${['命','相','卜'][i]} 朱文</div></div>`).join('');
+</script>
+
+
+</body></html>

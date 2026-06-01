@@ -1,0 +1,29 @@
+{
+  "name": "@zhop/ai-vision",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared AI infra for the HexAstral matrix: Gemini Vision client (image -> text, VLM only) + a unified Cloudflare Workers AI text/chat router (Kimi/Qwen3/GLM) + R2 cache + Zod-retry envelope. Consumed by svc-feng (feng-shui) and svc-astro (physiognomy + all readings/chat). Single Gemini secret (VLM only), single text-routing policy, single retry + cache pattern.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./gemini": "./src/gemini.ts",
+    "./router": "./src/router.ts",
+    "./cache": "./src/cache.ts",
+    "./retry": "./src/retry.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@google/genai": "^1.44.0",
+    "@zhop/logger": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250924.0",
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

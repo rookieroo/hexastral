@@ -1,0 +1,40 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hexastral-web",
+  "account_id": "e4f7d0771f5e2430f42c5842f7d260c1",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "preview_urls": true,
+  "minify": true,
+  "keep_vars": true,
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "ada443775299408a8e0e9642f87b8ede"
+    }
+  ],
+  // Custom domain: hexastral.com
+  // "routes": [{ "pattern": "hexastral.com", "custom_domain": true }],
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://hexastral.com",
+    "NEXT_PUBLIC_API_URL": "https://api.hexastral.com",
+    "NEXT_PUBLIC_APP_STORE_URL": "https://apps.apple.com/app/hexastral/id0000000000",
+    // Cloudflare Turnstile — public site key for rendering the widget in web forms
+    // Get from: Cloudflare Dashboard → Turnstile → your site → Site Key (safe to expose)
+    "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAACzwgZxj-UShx-9l"
+  }
+
+  // Secrets (via wrangler secret put / sync-secrets.js):
+  // None — Turnstile verification is delegated to hexastral-api (which holds TURNSTILE_SECRET)
+}

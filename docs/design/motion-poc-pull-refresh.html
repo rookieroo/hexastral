@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexAstral · 下拉刷新(墨珠聚→月相→墨晕显新签) POC</title>
+<style>
+  :root{
+    --void:#0C0B0A; --bone:#E9E2D2; --paper:#EAE3D2; --paper-2:#E2DAC6;
+    --cinnabar:#9B2226; --bronze:#C2A878; --dim:#8A8170; --faint:#5A5446;
+    --line:rgba(233,226,210,.1); --line-2:rgba(233,226,210,.2);
+    --serif:"Hoefler Text","Baskerville","Songti SC",Georgia,serif;
+    --seal:"Songti SC","STSong",serif; --sans:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070605;color:var(--bone);font-family:var(--serif);padding:46px 32px 90px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto}
+  .lock{color:var(--bronze);font-family:var(--sans);font-size:11px;letter-spacing:5px;text-transform:uppercase;margin:0 0 14px}
+  h1{font-weight:400;font-size:25px;letter-spacing:1px;margin:0 0 6px}
+  .lede{color:var(--dim);font-family:var(--sans);font-size:12.5px;max-width:820px;line-height:1.9;margin:0 0 8px}
+  .lede b{color:var(--bone)}
+  .row{display:flex;gap:46px;flex-wrap:wrap;align-items:flex-start;margin-top:26px}
+  .ctrls{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 0}
+  .btn{font-family:var(--sans);font-size:12px;letter-spacing:1px;color:var(--bone);background:#17150f;border:1px solid rgba(194,168,120,.4);border-radius:8px;padding:8px 13px;cursor:pointer}
+  .btn:hover{border-color:var(--bronze)} .btn.primary{background:var(--cinnabar);border-color:var(--cinnabar);color:#f4ecdc} .btn.on{background:var(--bronze);color:#1a1206;border-color:var(--bronze)}
+
+  /* 手机面 */
+  .phone{width:320px;height:580px;border-radius:34px;overflow:hidden;flex:none;position:relative;
+    background:radial-gradient(130% 80% at 50% 0%, #1b1610, #0C0B0A 72%);
+    border:1px solid var(--line);box-shadow:0 28px 64px rgba(0,0,0,.62)}
+  .nav{display:flex;align-items:center;justify-content:flex-end;padding:18px 20px 6px}
+  .nav svg{width:20px;height:20px;color:var(--bone);opacity:.8}
+  /* 内容区(scrollable 模拟) */
+  .scroll{position:absolute;left:0;right:0;top:46px;bottom:0;overflow:hidden}
+  .pullzone{height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:none}
+  .phone.pull .pullzone{height:84px;transition:height 480ms cubic-bezier(.3,.7,.25,1)}
+  .pulldot{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#efe9da 0%,#cfc8b6 60%,#9c947f 100%);
+    box-shadow:0 0 14px 2px rgba(232,224,205,.18);transform:scale(0);opacity:0;transition:none}
+  .phone.pull .pulldot{transform:scale(1);opacity:1;transition:transform 420ms cubic-bezier(.3,.7,.25,1) 60ms,opacity 280ms ease 60ms}
+
+  /* 释放→变成 mini 月相,扫一圈 */
+  .phone.spinning .pullzone{height:88px}
+  .phone.spinning .pulldot{width:42px;height:42px;background:radial-gradient(56% 54% at 42% 38%,#d4cdba,#b8b19f 46%,#918b78);transition:width 320ms ease,height 320ms ease,background 280ms ease}
+  .mphshade{position:absolute;width:42px;height:42px;border-radius:50%;left:0;top:0;background:radial-gradient(circle at 50% 50%, #0c0905 50%, rgba(12,9,5,.6) 78%, rgba(12,9,5,0) 96%);
+    transform:translateX(-110%);opacity:0}
+  .phone.spinning .mphshade{opacity:1;animation:phsweep 1500ms cubic-bezier(.4,0,.6,1) forwards}
+  @keyframes phsweep{0%{transform:translateX(-110%)}50%{transform:translateX(110%)}51%{transform:translateX(110%)}100%{transform:translateX(-110%)}}
+
+  /* 内容卡:今日签 */
+  .card{margin:8px 22px 0;padding:18px 18px 22px;border-radius:18px;
+    background:linear-gradient(180deg, rgba(28,24,18,.55), rgba(20,18,14,.7));
+    border:1px solid var(--line);position:relative;overflow:hidden}
+  .card .hk{font-family:var(--sans);font-size:10px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin-bottom:14px}
+  .card .sig{font-family:var(--serif);font-size:21px;letter-spacing:2px;color:var(--bone)}
+  .card .gloss{font-family:var(--sans);font-size:12px;color:var(--dim);margin-top:10px;line-height:1.7}
+  /* 内容切换:小墨晕 mask 揭新签 */
+  .signalwrap{position:relative}
+  .signalwrap .layer{transition:opacity .42s ease}
+  .signalwrap .next{position:absolute;inset:0;opacity:0;-webkit-mask:url(#bloomMask);mask:url(#bloomMask)}
+  .phone.refreshed .signalwrap .now{opacity:0}
+  .phone.refreshed .signalwrap .next{opacity:1}
+  .phone.refreshed .bm{animation:bmgrow 760ms cubic-bezier(.3,.45,.2,1) forwards}
+  @keyframes bmgrow{from{r:0}to{r:520}}
+
+  .panel{font-family:var(--sans);min-width:280px;flex:1}
+  .sl{font-family:var(--sans);font-size:11px;letter-spacing:4px;color:var(--bronze);text-transform:uppercase;margin:0 0 12px}
+  .note{color:var(--dim);font-family:var(--sans);font-size:12px;border-left:2px solid var(--bronze);padding-left:14px;line-height:2;max-width:520px}
+  .note b{color:var(--bronze)} .note code{color:var(--bone);background:#17150f;padding:1px 5px;border-radius:4px;font-size:11px}
+  .note+.note{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="lock">● 下拉刷新 · Pull → 墨珠 → 月相 → 墨晕新签</p>
+  <h1>下拉刷新(墨珠聚 → 月相重推 → 墨晕显新签) POC</h1>
+  <p class="lede">日用每日刷新,语言一致:<b>下拉</b> → <b>墨珠</b>从顶聚现(渐放大、下落); <b>释放</b> → 珠化为<b>mini 月相</b>,扫一圈推演; <b>完成</b> → 新签透过<b>小墨晕</b>显出。复用既有 loader + 墨晕语言,不新造方言。</p>
+
+  <div class="ctrls">
+    <button class="btn primary" id="run">▷ 模拟下拉刷新</button>
+  </div>
+
+  <div class="row">
+    <div class="phone" id="phone">
+      <div class="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-label="share"><circle cx="6.5" cy="12" r="2.4"/><circle cx="17.5" cy="6" r="2.4"/><circle cx="17.5" cy="18" r="2.4"/><path d="M8.8 10.9 L15.2 7.1 M8.8 13.1 L15.2 16.9"/></svg>
+      </div>
+      <div class="scroll">
+        <div class="pullzone">
+          <div style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center">
+            <div class="pulldot"></div>
+            <div class="mphshade"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="hk" id="hk">今日 · 庚子</div>
+          <div class="signalwrap">
+            <div class="layer now">
+              <div class="sig">宜 静思 · 忌 远行</div>
+              <div class="gloss">水旺木相,内省为吉。</div>
+            </div>
+            <div class="layer next" id="next">
+              <div class="sig">宜 进取 · 忌 拖延</div>
+              <div class="gloss">火土得令,谋而有应。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="sl">刷新次第</div>
+      <div class="note">
+        ① <b>下拉</b>(模拟): pullzone 撑开 84px,**墨珠**(径向骨色 + 暖光晕) scale 0→1 + 出现。<br>
+        ② <b>释放</b>(spinning): 珠扩为 42px mini 月,**阴影盘**扫一圈(复用 fate-flow loader 几何,SWEEP 简化)。<br>
+        ③ <b>完成</b>(refreshed): 旧签淡出 + <b>小墨晕 mask</b>从中心化开新签(复用墨晕转场 mini 版)。
+      </div>
+      <div class="sl" style="margin-top:22px">移植</div>
+      <div class="note">真机:`<code>ScrollView refreshControl</code>` 的 onPull/onRelease 钩到这套 sequence。墨晕用 Skia mask + noise 或预烘焙;月相用同 `<code>core-ui/motion/MoonPhaseLoader</code>` mini 实例。</div>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="bedge" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency="0.018 0.025" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="22"/></filter>
+  <mask id="bloomMask" maskUnits="userSpaceOnUse" x="0" y="0" width="320" height="200">
+    <rect x="0" y="0" width="320" height="200" fill="black"/>
+    <circle class="bm" cx="160" cy="90" r="0" fill="#fff" filter="url(#bedge)"/>
+  </mask>
+</defs></svg>
+
+<script>
+const phone=document.getElementById('phone');
+let timers=[];
+function clr(){ timers.forEach(clearTimeout); timers=[]; }
+function reset(){ phone.classList.remove('pull','spinning','refreshed'); document.getElementById('hk').textContent='今日 · 庚子'; }
+function run(){
+  clr(); reset();
+  // ① 下拉
+  timers.push(setTimeout(()=>phone.classList.add('pull'), 60));
+  // ② 释放 → 月相一圈(~1500ms)
+  timers.push(setTimeout(()=>{ phone.classList.add('spinning'); try{navigator.vibrate&&navigator.vibrate(14)}catch(e){} }, 760));
+  // ③ 完成 → 墨晕显新签 + 改 hk
+  timers.push(setTimeout(()=>{
+    phone.classList.add('refreshed');
+    document.getElementById('hk').textContent='今日 · 辛丑';
+  }, 760+1500));
+  // ④ 收起 pull(回到正常态),保留 refreshed 新签
+  timers.push(setTimeout(()=>{ phone.classList.remove('pull','spinning'); }, 760+1500+900));
+}
+document.getElementById('run').onclick=run;
+</script>
+</body>
+</html>

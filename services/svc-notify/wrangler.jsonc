@@ -1,0 +1,55 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svc-notify",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // No public routes - Service Binding only
+  // Workers calling this service add:
+  // { "binding": "SVC_NOTIFY", "service": "svc-notify" }
+
+  // Cron trigger: hourly — svc-notify determines which timezones are at 8am local
+  // Weekly cron (Sunday 03:00 UTC) — purges push tokens inactive > 90 days
+  "triggers": {
+    "crons": ["0 * * * *", "0 3 * * *"]
+  },
+
+  // Service bindings
+  "services": [
+    { "binding": "SVC_API", "service": "hexastral-api" },
+    { "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }
+  ],
+
+  // Tail worker — forwards exceptions + non-OK outcomes to svc-tail
+  "tail_consumers": [{ "service": "svc-tail" }],
+
+  // Queue: daily-fortune — cron enqueues, consumer sends Expo pushes
+  "queues": {
+    "producers": [{ "binding": "DAILY_FORTUNE_QUEUE", "queue": "daily-fortune" }],
+    "consumers": [
+      {
+        "queue": "daily-fortune",
+        "max_batch_size": 100,
+        "max_batch_timeout": 10,
+        "max_retries": 3,
+        "dead_letter_queue": "daily-fortune-dlq"
+      }
+    ]
+  },
+
+  // KV namespaces
+  "kv_namespaces": [
+    {
+      // Expo push token registry (userId → PushTokenRecord)
+      "binding": "EXPO_PUSH_TOKENS",
+      "id": "c34974277a9a4cc4be7d26142d101eaf",
+      "preview_id": "b7b0b2008a5042ac88430c80ecb71613"
+    }
+    // FORTUNE_CACHE removed 2026-04-30 — daily push body now reads daily_almanac
+    // via SVC_API binding (/api/internal/almanac/today). D1 is the source of truth.
+  ]
+
+  // Secrets (set via wrangler secret put / sync-secrets.js):
+  // - INTERNAL_KEY  shared secret with hexastral-api (openssl rand -hex 32)
+}

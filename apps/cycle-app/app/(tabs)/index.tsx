@@ -1,0 +1,343 @@
+/**
+ * Home — Calendar + embedded day detail (Sprint 3 chunk 7 IA pivot).
+ *
+ * Per user feedback 2026-06-02: Calendar is the dominant element on cycle's
+ * home. Tap any day in the strip to switch the 黄历 detail below; selection
+ * defaults to today. There's no longer a separate `/day/[date]` route — that
+ * shape duplicated content; deep-link callers (e.g. /event picks) navigate
+ * back to home with `?day=YYYY-MM-DD` as a query param.
+ *
+ * The top-right ⋯ button is gone — swipe-left + the bottom hint is the only
+ * way to Me. Screen readers reach Me via the accessibilityLabel'd
+ * `BackArrowIcon` in the bottom hint's Animated.View, which now sets
+ * `pointerEvents='box-none'` so the inner Pressable catches taps.
+ */
+
+import { Button, useTheme } from '@zhop/core-ui'
+import { BackArrowIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { SWIPE_TO_ME } from '@zhop/satellite-ui'
+import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { Cake, CalendarCheck } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { CalendarStrip } from '@/components/CalendarStrip'
+import { CultureSnippetCard } from '@/components/CultureSnippetCard'
+import { CultureTopicsGrid } from '@/components/culture/CultureTopicsGrid'
+import { DayView } from '@/components/DayView'
+import { DualTzBanner } from '@/components/DualTzBanner'
+import { LiuyearBanner } from '@/components/LiuyearBanner'
+import { type CycleDayPayload, fetchCycleDay } from '@/lib/api'
+import { getCycleBirthDate } from '@/lib/birth'
+import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
+import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
+import { useStrings } from '@/lib/i18n-context'
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+function pad(n: number) {
+  return String(n).padStart(2, '0')
+}
+function todayIsoString(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export default function HomeScreen() {
+  const { colors, spacing } = useTheme()
+  const { t, locale } = useStrings()
+  const router = useRouter()
+  const params = useLocalSearchParams<{ day?: string }>()
+
+  const todayIso = useMemo(() => todayIsoString(), [])
+  const initialDay = useMemo(() => {
+    const candidate = Array.isArray(params.day) ? params.day[0] : params.day
+    return typeof candidate === 'string' && DATE_RE.test(candidate) ? candidate : todayIso
+  }, [params.day, todayIso])
+
+  const [selectedDay, setSelectedDay] = useState(initialDay)
+
+  // Re-sync when /event (or any other route) deep-links into home with a
+  // new ?day param — `useLocalSearchParams` returns the live value.
+  useEffect(() => {
+    const candidate = Array.isArray(params.day) ? params.day[0] : params.day
+    if (typeof candidate === 'string' && DATE_RE.test(candidate)) {
+      setSelectedDay(candidate)
+    }
+  }, [params.day])
+
+  /* ── Day detail fetch — refires whenever selectedDay changes ── */
+  const [dayData, setDayData] = useState<CycleDayPayload | null>(null)
+  const [dayLoading, setDayLoading] = useState(true)
+  const [dayError, setDayError] = useState<string | null>(null)
+  const loadDay = useCallback(() => {
+    setDayLoading(true)
+    setDayError(null)
+    getCycleBirthDate()
+      .then((birthDate) => fetchCycleDay(selectedDay, birthDate))
+      .then((d) => setDayData(d))
+      .catch((e: unknown) => setDayError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setDayLoading(false))
+  }, [selectedDay])
+  // Refetch on focus AND on selectedDay change. Focus covers the
+  // edit-birth-in-Me → return-to-home flow so the personalization overlay
+  // updates without the user pulling-to-refresh.
+  useFocusEffect(
+    useCallback(() => {
+      loadDay()
+    }, [loadDay])
+  )
+
+  /* ── left-swipe → Me (ADR-0018 shared contract) ── */
+  const goToMe = useCallback(() => router.push('/me'), [router])
+  const { activeOffsetX, failOffsetY, commitDx, maxDy, hintDelayMs } = SWIPE_TO_ME
+  const swipeToMe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX(activeOffsetX)
+        .failOffsetY(failOffsetY)
+        .onEnd((e) => {
+          if (e.translationX < commitDx && Math.abs(e.translationY) < maxDy) runOnJS(goToMe)()
+        }),
+    [goToMe, activeOffsetX, failOffsetY, commitDx, maxDy]
+  )
+
+  /* ── bottom swipe-discoverability hint ── */
+  const hintFade = useSharedValue(0)
+  const hintSlide = useSharedValue(0)
+  useEffect(() => {
+    const HINT_EASE = Easing.bezier(0.4, 0, 0.2, 1)
+    const id = setTimeout(() => {
+      hintFade.value = withTiming(0.55, { duration: 700, easing: HINT_EASE })
+      // Looping beckon — a clear left-nudge so the swipe affordance reads.
+      hintSlide.value = withRepeat(withTiming(-13, { duration: 820, easing: HINT_EASE }), -1, true)
+    }, hintDelayMs)
+    return () => clearTimeout(id)
+  }, [hintFade, hintSlide, hintDelayMs])
+  const hintFadeStyle = useAnimatedStyle(() => ({ opacity: hintFade.value }))
+  const hintArrowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: hintSlide.value }],
+  }))
+
+  return (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <GestureDetector gesture={swipeToMe}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{
+              paddingBottom: spacing['3xl'] + 48, // leave room for bottom swipe hint
+              gap: spacing.lg,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <DualTzBanner />
+
+            {/* Life-Timeline banner (Sprint 4.5 / ADR-0020) — self-gates on
+                birth+gender (renders null otherwise); taps push to /timeline. */}
+            <LiuyearBanner />
+
+            <CalendarStrip selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+
+            {/* Day detail — refreshes on selection change. Festival /
+                solar-term chip uses the selected day's payload (not literal
+                "today"), which is intentional: when a user taps Feb 17,
+                the chip shows "春节" even if today isn't 春节. */}
+            <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
+              {dayLoading && !dayData ? (
+                <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
+                  <ActivityIndicator color={colors.accent} />
+                </View>
+              ) : dayError ? (
+                <View style={{ gap: spacing.md, paddingVertical: spacing.xl }}>
+                  <Text style={{ color: colors.secondary }}>
+                    {t.loadFailed}: {dayError}
+                  </Text>
+                  <Button variant='secondary' onPress={loadDay}>
+                    {t.retry}
+                  </Button>
+                </View>
+              ) : dayData ? (
+                <>
+                  {(() => {
+                    const cultureId = resolveCultureTargetId(dayData.day)
+                    const apiLabel =
+                      dayData.day.festivalToday?.name ?? dayData.day.solarTermToday?.name
+                    if (!cultureId || !apiLabel) return null
+                    const chipLabel = dayData.day.festivalToday
+                      ? localizeCultureEntry(cultureId, locale, apiLabel)
+                      : localizeSolarTermName(apiLabel, locale)
+                    return (
+                      <CultureAccentChip
+                        label={chipLabel}
+                        onPress={() => router.push(`/festival/${cultureId}` as Href)}
+                        colors={colors}
+                        spacing={spacing}
+                      />
+                    )
+                  })()}
+
+                  <DayView payload={dayData} today={selectedDay === todayIso} />
+
+                  {/* Actions — 择日 + 记录亲友生日 (carries the selected month-day, no year). */}
+                  <View
+                    style={{
+                      borderRadius: 14,
+                      backgroundColor: colors.card,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <NavRow
+                      icon={CalendarCheck}
+                      label={t.eventSearch}
+                      onPress={() => router.push('/event')}
+                      colors={colors}
+                      spacing={spacing}
+                      divider
+                    />
+                    <NavRow
+                      icon={Cake}
+                      label={t.people.homeEntry}
+                      onPress={() => router.push(`/people?md=${selectedDay.slice(5)}` as Href)}
+                      colors={colors}
+                      spacing={spacing}
+                    />
+                  </View>
+
+                  {/* 今日文化 — directly above the (collapsed) 文化导览. */}
+                  {(() => {
+                    const onCultureDay = resolveCultureTargetId(dayData.day) !== null
+                    const snippet = cultureSnippetForHome(dayData.day, locale)
+                    if (!snippet) return null
+                    const upcomingTagline = onCultureDay
+                      ? undefined
+                      : t.cultureUpcomingTerm.replace('{name}', snippet.title)
+                    return (
+                      <CultureSnippetCard snippet={snippet} upcomingTagline={upcomingTagline} />
+                    )
+                  })()}
+
+                  <CultureTopicsGrid />
+                </>
+              ) : null}
+            </View>
+          </ScrollView>
+
+          {/* Bottom swipe-hint — primary visual affordance for swipe-to-Me. */}
+          <Animated.View
+            pointerEvents='none'
+            style={[
+              {
+                position: 'absolute',
+                bottom: spacing.xl,
+                left: 0,
+                right: 0,
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 6,
+              },
+              hintFadeStyle,
+            ]}
+          >
+            <Animated.View style={hintArrowStyle}>
+              <BackArrowIcon size={13} color={colors.dim} />
+            </Animated.View>
+            <Text
+              style={{
+                color: colors.dim,
+                fontSize: 10.5,
+                letterSpacing: 3,
+                textTransform: 'uppercase',
+              }}
+            >
+              {t.swipeMeHint}
+            </Text>
+          </Animated.View>
+        </View>
+      </GestureDetector>
+    </SafeAreaView>
+  )
+}
+
+interface NavRowProps {
+  icon: React.ComponentType<{ size: number; color: string }>
+  label: string
+  onPress: () => void
+  colors: { text: string; accent: string; dim: string; separator: string }
+  spacing: { md: number; lg: number }
+  divider?: boolean
+}
+
+interface CultureAccentChipProps {
+  label: string
+  onPress: () => void
+  colors: { accent: string; accentGhost: string }
+  spacing: { md: number }
+}
+
+function CultureAccentChip({ label, onPress, colors, spacing }: CultureAccentChipProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole='button'
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 8,
+        borderRadius: 14,
+        borderWidth: 0.5,
+        borderColor: colors.accent,
+        backgroundColor: colors.accentGhost,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: colors.accent,
+          fontSize: 13,
+          fontWeight: '600',
+          letterSpacing: 1,
+        }}
+      >
+        {label}
+      </Text>
+      <ChevronRightIcon size={14} color={colors.accent} strokeWidth={1.6} />
+    </Pressable>
+  )
+}
+
+function NavRow({ icon: Icon, label, onPress, colors, spacing, divider }: NavRowProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        borderBottomWidth: divider ? 0.5 : 0,
+        borderBottomColor: colors.separator,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Icon size={18} color={colors.accent} />
+      <Text style={{ flex: 1, color: colors.text, fontSize: 15 }}>{label}</Text>
+      <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+    </Pressable>
+  )
+}

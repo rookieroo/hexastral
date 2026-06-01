@@ -1,0 +1,351 @@
+# HexAstral API (hexastral-api) Development Rules
+
+**Loaded automatically when working under `apps/hexastral-api/`. Overrides root rules.**
+
+---
+
+## 1. Quick Facts
+
+| Dimension | Value |
+|-----------|-------|
+| **Framework** | Hono 4.9+ |
+| **Runtime** | Cloudflare Workers |
+| **Database** | D1 (SQLite) + Drizzle ORM |
+| **Validation** | Zod v4 + @hono/zod-validator |
+| **Auth** | HMAC (iOS) or Turnstile (Web) |
+| **Deploy** | wrangler deploy |
+| **Local Port** | 3010 |
+
+---
+
+## 2. Forbidden Patterns ❌
+
+| Forbidden | Why | Alternative |
+|-----------|-----|-------------|
+| Direct `c.env.SVC_*` calls | No timeout, inconsistent error handling | `lib/service-clients.ts` |
+| Mixed auth middleware | Security hole | Route: HMAC XOR Turnstile only |
+| Empty `catch {}` | Swallows errors | `logger.error(...)` or rethrow |
+| Direct DB field assign | Race conditions | `db.batch([...])` atomic ops |
+| N+1 queries | Poor performance | Relational `with: { ... }` |
+| Vague error responses | Hard to debug | `HTTPException(status, { message })` |
+| `any` or `as Type` | Type loss | Zod parse or type guards |
+
+---
+
+## 3. Project Structure
+
+```
+src/
+├── index.ts              # Entry + onError
+├── types.ts              # Global types
+├── infra-types.ts        # Cloudflare bindings
+├── db/schema.ts          # Drizzle tables (single source of truth)
+├── middleware/
+│   ├── hmac-verify.ts    # iOS auth
+│   ├── turnstile-verify.ts # Web auth
+│   ├── db-middleware.ts   # DB injection
+│   └── logging.ts        # Request logging
+├── lib/
+│   ├── service-clients.ts # Microservice calls
+│   └── validators.ts     # Shared Zod schemas
+├── routes/               # Route handlers
+└── services/             # Business logic
+```
+
+---
+
+## 4. Context Variables (Auto-Injected)
+
+```typescript
+c.get('requestId')   // string (nanoid) — full traceability
+c.get('userId')      // string | null
+c.get('db')          // DrizzleD1Database — pre-initialized
+```
+
+---
+
+## 5. Database (D1 + Drizzle)
+
+### Schema
+
+```typescript
+import { sqliteTable, text, integer, index, relations } from 'drizzle-orm/sqlite-core'
+
+export const users = sqliteTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').unique(),
+    is_premium: integer('is_premium', { mode: 'boolean' }).default(false),
+    created_at: text('created_at').default('CURRENT_TIMESTAMP'),
+  },
+  (table) => [
+    index('idx_users_email').on(table.email),
+    index('idx_users_premium').on(table.is_premium),
+  ]
+)
+
+export const usersRelations = relations(users, ({ many }) => ({
+  readings: many(readings),
+}))
+```
+
+### Migration Workflow
+
+```bash
+# After editing schema.ts
+bun db:generate        # Generate migration SQL
+bun db:migrate         # Test locally
+# Review migrations/*.sql
+bun db:migrate:prod    # Deploy to production
+```
+
+### Query Patterns
+
+```typescript
+import { eq, sql } from 'drizzle-orm'
+
+// ✅ Relational query
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+  with: { readings: { limit: 10 } }
+})
+
+// ✅ Raw SQL (complex queries)
+const result = await db.execute(
+  sql`SELECT * FROM readings WHERE user_id = ${userId} LIMIT 10`
+)
+
+// ✅ Atomic credit update
+await db.batch([
+  db.update(users).set({ credits: sql`credits - ${cost}` }).where(eq(users.id, userId)),
+  db.insert(readings).values({ id: nanoid(), user_id: userId, ... })
+])
+
+// ❌ N+1
+const user = await db.query.users.findFirst(...)
+const readings = await db.query.readings.findMany(...)  // separate queries
+```
+
+---
+
+## 6. Routes & Validation
+
+### Route Structure
+
+```typescript
+import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod/v4'
+
+const app = new Hono()
+
+// ✅ iOS endpoint
+app.post('/bazi/compute', hmacVerify, 
+  zValidator('json', computeSchema),
+  async (c) => {
+    const userId = c.get('userId')
+    const { year, month, day, hour, city } = c.req.valid('json')
+    // handle...
+  }
+)
+
+// ✅ Web endpoint
+app.post('/share/send', turnstileVerify,
+  zValidator('json', shareSchema),
+  async (c) => {
+    // handle...
+  }
+)
+
+// ❌ Mixed auth
+app.post('/bad', hmacVerify, turnstileVerify, (c) => { })
+```
+
+### Zod Validation
+
+```typescript
+const computeSchema = z.object({
+  year: z.number().min(1900).max(2100),
+  month: z.number().min(1).max(12),
+  day: z.number().min(1).max(31),
+  hour: z.number().min(0).max(23),
+  city: z.string().min(1),
+})
+
+app.post('/compute',
+  zValidator('json', computeSchema),
+  async (c) => {
+    // ✅ Data validated & parsed
+    const data = c.req.valid('json')
+  }
+)
+```
+
+---
+
+## 7. Error Handling
+
+```typescript
+import { HTTPException } from 'hono/http-exception'
+
+// ✅ Structured errors
+if (!user) throw new HTTPException(404, { message: 'User not found' })
+if (!hasAccess) throw new HTTPException(403, { message: 'Forbidden' })
+if (tooManyRequests) throw new HTTPException(429, { message: 'Rate limited' })
+
+// ✅ Global handler
+app.onError((err, c) => {
+  if (err instanceof HTTPException) return err.getResponse()
+  
+  logger.error('Unhandled error', {
+    requestId: c.get('requestId'),
+    error: err instanceof Error ? err.message : String(err),
+  })
+  
+  return c.json({ error: 'Internal server error' }, 500)
+})
+
+// ❌ Silent catch
+try { await operation() } catch { }
+
+// ✅ Explicit handling
+try { await operation() } catch (err) {
+  logger.error('Operation failed', { error: err })
+  throw new HTTPException(500, { message: 'Failed' })
+}
+```
+
+---
+
+## 8. Microservice Integration
+
+### Unified Client Layer
+
+```typescript
+// lib/service-clients.ts — single source of truth
+async function callService<T>(
+  binding: any,
+  path: string,
+  init?: RequestInit
+): Promise<T> {
+  const abortSignal = AbortSignal.timeout(10000)  // 10s timeout
+  
+  try {
+    const res = await binding.fetch(
+      new Request(`http://internal${path}`, { ...init, signal: abortSignal })
+    )
+    
+    if (!res.ok) throw new ServiceError(`Error: ${res.status}`, res.status)
+    return await res.json()
+  } catch (err) {
+    throw new ServiceError(String(err), 500)
+  }
+}
+
+// ✅ In route handler
+const result = await astroClient.computeHehun(c.env.SVC_ASTRO, payload)
+
+// ❌ Don't do this (no timeout, no error handling)
+const res = await c.env.SVC_ASTRO.fetch(new Request(...))
+```
+
+---
+
+## 9. Rate Limiting & Cache
+
+### Rate Limiting
+
+```typescript
+// Configured in wrangler.jsonc
+// "RATE_LIMITER": { "limit": 60, "period": 60 }
+// "CHART_RATE_LIMITER": { "limit": 5, "period": 60 }
+
+app.post('/bazi/compute', hmacVerify, async (c) => {
+  const userId = c.get('userId')
+  
+  const { success } = await c.env.CHART_RATE_LIMITER.limit({ key: userId })
+  if (!success) throw new HTTPException(429, { message: 'Too many requests' })
+  
+  // handle...
+})
+```
+
+### KV Cache
+
+```typescript
+// GUARD_KV (24h): divination dedup + rate limit
+// DDL_KV (30min): deep link sessions
+// FORTUNE_CACHE (7d): fortune results
+
+const cached = await c.env.FORTUNE_CACHE.get(`fortune:${userId}:${date}`)
+if (cached) return c.json(JSON.parse(cached))
+
+const result = await generateFortune(userId)
+await c.env.FORTUNE_CACHE.put(
+  `fortune:${userId}:${date}`,
+  JSON.stringify(result),
+  { expirationTtl: 7 * 24 * 3600 }
+)
+```
+
+---
+
+## 10. Logging & Tracing
+
+```typescript
+import { createLogger } from '@zhop/logger'
+
+const logger = createLogger('hexastral-api')
+
+// ✅ Structured logging
+logger.error('Chart computation failed', {
+  requestId: c.get('requestId'),
+  userId: c.get('userId'),
+  chartType: 'bazi',
+  error: err instanceof Error ? err.message : String(err),
+})
+
+// ❌ Don't
+console.log('Error:', err)  // loses structured context
+```
+
+---
+
+## 11. Wrangler & scripts (hexastral-api)
+
+- **Always** `bunx wrangler …` from **`apps/hexastral-api`** (this package’s devDependency). Do not assume global `wrangler` has `ai-search` or current config schema.
+- **Prefer** `package.json` scripts: `bun dev`, `bun deploy`, `bun db:generate`, `bun db:migrate`, `bun db:migrate:prod`, `bun run ai-search:info`, `bun cf-typegen`.
+- **After** `wrangler.jsonc` edits: `bunx wrangler types` (or `bun cf-typegen`).
+- **AI Search binding**: `ai_search[].instance_name` === API instance **`id`**.
+- D1/KV/tail/deployments flags: use **Wrangler skill** / **cloudflare-docs** MCP — do not duplicate long command lists here.
+
+---
+
+## 12. Deploy Checklist
+
+- [ ] `bun typecheck` passes
+- [ ] `bun db:generate` run (if schema changed)
+- [ ] Local test passes (`bun dev`)
+- [ ] Migration SQL reviewed (`cat migrations/...`)
+- [ ] Secrets set (`bunx wrangler secret put …` as needed)
+- [ ] No `console.log` / `// @ts-ignore`
+- [ ] All routes have auth middleware
+- [ ] Error handling complete (no empty catch)
+
+```bash
+bun deploy
+# Optional: bunx wrangler deployments list hexastral-api
+# Optional: bunx wrangler rollback hexastral-api
+```
+
+---
+
+## 13. Reference
+
+- `db/schema.ts` — table definitions
+- `lib/service-clients.ts` — microservice calls
+- `middleware/` — auth, DB, logging
+- `routes/` — route handlers
+- `wrangler.jsonc` — resource config
+

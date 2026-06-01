@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "design-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4599", "--directory", "docs/design"],
+      "port": 4599
+    },
+    {
+      "name": "hexastral-web",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/hexastral-web", "dev"],
+      "port": 3001
+    }
+  ]
+}

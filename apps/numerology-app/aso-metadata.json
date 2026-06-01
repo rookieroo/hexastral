@@ -1,0 +1,34 @@
+{
+  "_comment": "Numerology (satellite) — App Store Connect ASO metadata. Phase K pivot: engine is 梅花易数 (Shao Yong plum-blossom number divination), positioned for Western users as 'Eastern numerology' to capture the 'numerology' loanword search volume while staying brand-coherent with classical Chinese metaphysics. subtitle ≤30 chars, keywords ≤100 chars (comma-separated, no spaces after commas).",
+  "bundleId": "com.hexastral.numerology",
+  "appName": "Numerology",
+  "primaryCategory": "LIFESTYLE",
+  "secondaryCategory": "REFERENCE",
+  "contentRating": "4+",
+  "locales": {
+    "en-US": {
+      "subtitle": "Plum-Blossom · Eastern Divination",
+      "keywords": "numerology,plum blossom,i ching,divination,oracle,hexagram,fortune,chinese astrology,number reading,eastern",
+      "promotionalText": "Ask a question, cast a hexagram in one tap. The thousand-year-old Chinese plum-blossom oracle, demystified.",
+      "description": "Numerology, but Chinese — the plum-blossom (梅花易数) divination system created by Shao Yong (1011 – 1077). Different from Western numerology: you don't look up your life-path number, you cast a hexagram tied to this exact moment + a question.\n\nHow it works:\n1. Hold a question in mind\n2. Optionally write down a number that came to you (or just let the moment speak)\n3. Tap Cast — the system rolls a hexagram from the precise time of your tap and your number\n4. Read the upper and lower trigrams, the changing line, the five-phase relation between subject (体) and object (用), and the nuclear hexagram (互卦) that reveals the hidden tendency\n\nWhy Eastern numerology is different:\n• Pythagorean / Western numerology uses your name + birthday and looks up static numbers\n• Plum-blossom is time-sensitive — the same question cast an hour later gives a different reading\n• Subject vs object analysis tells you whether the matter feeds you, weighs on you, or is balanced\n\nFeatures:\n• Free unlimited casts — no paywall on the core reading\n• Save your casts (Sign in with Apple)\n• Cross-reference with your full natal chart in HexAstral (companion app)\n• Privacy-first — no tracking, no ads"
+    },
+    "zh-Hans": {
+      "subtitle": "梅花易数 · 一念一卦",
+      "keywords": "梅花易数,周易,起卦,占卜,六爻,卜卦,数术,邵雍,体用,先天数",
+      "promotionalText": "心中一念，掌心一卦——邵雍《梅花易数》千年起卦术，一键完成。",
+      "description": "梅花易数 — 北宋邵雍（1011-1077）所创的先天数法起卦术。\n\n与西方 Numerology 不同：不是用姓名生日查表，而是以「当下时刻 + 心中之数」起卦，每一卦只对应这一刻、这一问。\n\n使用方式：\n1. 心中默念你的问题\n2. 记下第一个浮现的数字（也可留空——纯以时间起卦）\n3. 一键起卦 — 系统取当下年月日时与你的数字，按邵雍先天八卦数演算\n4. 读上下卦、动爻位置、体卦/用卦五行生克、互卦隐藏走势\n\n核心特点：\n• 时间敏感 — 同一问题隔小时起卦结果不同\n• 体用判定 — 直接判断「用生体（吉）」「体克用（顺）」「比和（平）」「体生用（耗）」「用克体（凶）」\n• 互卦展示 — 揭示事物深层走势，非表象\n\n功能：\n• 永久免费起卦，核心功能无 paywall\n• 苹果登录后跨设备保存历史\n• 与 HexAstral 个人命理 app 互通——卦象可结合本命八字深度解读\n• 隐私优先，零广告零追踪"
+    },
+    "zh-Hant": {
+      "subtitle": "梅花易數 · 一念一卦",
+      "keywords": "梅花易數,周易,起卦,占卜,六爻,卜卦,數術,邵雍,體用,先天數",
+      "promotionalText": "心中一念，掌心一卦——邵雍《梅花易數》千年起卦術，一鍵完成。",
+      "description": "梅花易數 — 北宋邵雍（1011-1077）所創的先天數法起卦術。\n\n與西方 Numerology 不同：不是用姓名生日查表，而是以「當下時刻 + 心中之數」起卦，每一卦只對應這一刻、這一問。\n\n使用方式：\n1. 心中默念你的問題\n2. 記下第一個浮現的數字（也可留空——純以時間起卦）\n3. 一鍵起卦 — 系統取當下年月日時與你的數字，按邵雍先天八卦數演算\n4. 讀上下卦、動爻位置、體卦/用卦五行生剋、互卦隱藏走勢\n\n核心特點：\n• 時間敏感 — 同一問題隔小時起卦結果不同\n• 體用判定 — 直接判斷「用生體（吉）」「體剋用（順）」「比和（平）」「體生用（耗）」「用剋體（凶）」\n• 互卦展示 — 揭示事物深層走勢，非表象\n\n功能：\n• 永久免費起卦，核心功能無 paywall\n• 蘋果登入後跨裝置保存歷史\n• 與 HexAstral 個人命理 app 互通——卦象可結合本命八字深度解讀\n• 隱私優先，零廣告零追蹤"
+    },
+    "ja": {
+      "subtitle": "梅花易数 · 一念一卦",
+      "keywords": "梅花易数,易経,占い,卜卦,先天数,邵雍,体用,五行,Numerology,東洋数術",
+      "promotionalText": "心に問いを抱き、手のひらで一卦を立てる——邵雍の梅花易数、千年の数術が一タップで。",
+      "description": "梅花易数（ばいかえきすう）— 北宋・邵雍（1011-1077）が創始した先天数法による立卦術。\n\n西洋 Numerology との違い：氏名や生年月日から数字を引くのではなく、「今この瞬間 + 心に浮かんだ数」から卦を立てます。同じ問いも、時刻が変われば卦が変わります。\n\n使い方：\n1. 問いを心に抱く\n2. 最初に浮かんだ数字を記入（空欄なら時刻のみで立卦）\n3. ワンタップで立卦 — 現在の年月日時とあなたの数を、邵雍の先天八卦数に従って計算\n4. 上下の卦・動爻・体卦/用卦の五行生剋・互卦（隠れた傾向）を読み解く\n\n特徴：\n• 時間感応性 — 同じ問いでも一時間後には異なる卦\n• 体用判定 — 「用生体（吉）」「体剋用（順）」「比和（平）」「体生用（耗）」「用剋体（凶）」を即判定\n• 互卦表示 — 事の深層の流れを示します\n\n機能：\n• 永久無料で立卦、コア機能に paywall なし\n• Apple サインインで履歴をデバイス間同期\n• HexAstral 命理アプリと連携 — 本命四柱と組み合わせた深い解読が可能\n• プライバシー優先、広告なし、トラッキングなし"
+    }
+  }
+}

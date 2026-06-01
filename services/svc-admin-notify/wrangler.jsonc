@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svc-admin-notify",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true
+
+  // Internal service — no public routes
+  // Called via Service Binding from hexastral-api, svc-fortune, svc-notify, etc.
+  //
+  // Callers add:
+  //   { "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }
+  //
+  // Then call:
+  //   await env.SVC_ADMIN_NOTIFY.fetch(new Request('http://internal/alert', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ title: '...', message: '...', level: 'error', context: {} }),
+  //   }))
+
+  // Secrets (set via wrangler secret put / sync-secrets.js):
+  // - TELEGRAM_BOT_TOKEN  create bot via @BotFather on Telegram
+  // - TELEGRAM_CHAT_ID    admin chat or group ID (@userinfobot to find it)
+}

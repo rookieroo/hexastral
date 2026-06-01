@@ -1,0 +1,58 @@
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "REPLACE_WITH_REVENUECAT_IOS_KEY",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_KEY"
+      }
+    },
+    "development-device": {
+      "extends": "development",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_ENV": "preview",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "REPLACE_WITH_REVENUECAT_IOS_KEY",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_KEY"
+      }
+    },
+    "production": {
+      "ios": {
+        "autoIncrement": true
+      },
+      "android": {
+        "autoIncrement": true,
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_ENV": "production"
+      }
+    }
+  }
+}
