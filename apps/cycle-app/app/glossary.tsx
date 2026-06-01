@@ -1,20 +1,23 @@
 /**
- * /glossary — the 文化 hub. Single-screen toggle list (2026-06 redesign): each
- * big category is an accordion; expanding shows its content inline, so the IA is
- * hub → content (no separate category page, no list→list). 节气/节日 expand to a
- * flat tappable list → /festival/[id] intro; 时辰/干支/八字 render their reference
- * visual inline; 紫微 shows intro + Wikipedia. Each section opens with a localized
- * cultural-background blurb + Wikipedia link. 100% free (ADR-0020).
+ * /glossary — the 文化 hub. Single-screen toggle list: each big category is an
+ * accordion; expanding shows its content inline. IA is hub → content with no
+ * separate detail page (per 2026-06 feedback the /festival/[id] drill-in felt
+ * too deep when browsing the lists). 节气/节日 expand to a list where each
+ * entry shows its own date + 1-2 sentence summary + Wikipedia link inline.
+ * 时辰/干支/八字 render their reference visual inline; 紫微 shows intro + Wiki.
+ * Each section opens with a localized cultural-background blurb + Wikipedia
+ * link. 100% free (ADR-0020).
  */
 
 import { useTheme } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
-import { type Href, useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { CultureIntroBlock } from '@/components/culture/CultureIntroBlock'
+import { CultureWikiLink } from '@/components/culture/CultureWikiLink'
 import { BaziPillars } from '@/components/glossary/BaziPillars'
 import { GanzhiGrid } from '@/components/glossary/GanzhiGrid'
 import { ShichenWheel } from '@/components/glossary/ShichenWheel'
@@ -23,7 +26,9 @@ import { type CycleYearOverviewPayload, fetchCycleYearOverview } from '@/lib/api
 import {
   CULTURE_CATEGORIES,
   type CultureCategoryKey,
+  cultureSummary,
   getCultureCategory,
+  getCultureEntryWikipediaUrl,
   isCultureCategoryKey,
   localizeFestival,
   localizeSolarTermName,
@@ -65,7 +70,6 @@ function fmtMonthDay(iso: string): string {
 export default function GlossaryScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
-  const router = useRouter()
   const params = useLocalSearchParams<{ open?: string }>()
   const [open, setOpen] = useState<CultureCategoryKey | null>(() => parseGlossaryOpen(params.open))
 
@@ -146,7 +150,6 @@ export default function GlossaryScreen() {
                       spacing={spacing}
                       t={t}
                       locale={locale}
-                      onOpen={(id) => router.push(`/festival/${id}` as Href)}
                     />
                   </View>
                 ) : null}
@@ -169,7 +172,6 @@ function CategoryBody({
   spacing,
   t,
   locale,
-  onOpen,
 }: {
   cat: CultureCategoryKey
   overview: CycleYearOverviewPayload | null
@@ -180,7 +182,6 @@ function CategoryBody({
   spacing: ThemeSpacing
   t: Strings
   locale: Locale
-  onOpen: (id: string) => void
 }) {
   if (cat === 'shichen') return <ShichenWheel />
   if (cat === 'ganzhi') return <GanzhiGrid />
@@ -206,15 +207,16 @@ function CategoryBody({
 
   if (cat === 'festivals') {
     return (
-      <View>
+      <View style={{ gap: spacing.md }}>
         {overview.festivals.map((f) => (
-          <ListRow
+          <EntryCard
             key={f.id}
+            entryId={f.id}
             label={localizeFestival(f.id, locale, f.name)}
             sub={f.solarDate}
-            onPress={() => onOpen(f.id)}
             colors={colors}
             spacing={spacing}
+            locale={locale}
           />
         ))}
       </View>
@@ -223,18 +225,18 @@ function CategoryBody({
 
   const terms = [...overview.solarTerms].sort((a, b) => a.date.localeCompare(b.date))
   return (
-    <View>
+    <View style={{ gap: spacing.md }}>
       {terms.map((term) => {
         const target = solarTermTargetId(term.name)
         return (
-          <ListRow
+          <EntryCard
             key={term.index}
+            entryId={target}
             label={localizeSolarTermName(term.name, locale)}
             sub={fmtMonthDay(term.date)}
-            onPress={() => target && onOpen(target)}
-            disabled={!target}
             colors={colors}
             spacing={spacing}
+            locale={locale}
           />
         )
       })}
@@ -242,37 +244,52 @@ function CategoryBody({
   )
 }
 
-function ListRow({
+/**
+ * Flat inline entry card — no drill-in. Shows name + date + the 1-2 sentence
+ * CULTURE_SUMMARIES blurb + a Wikipedia link. Replaces the prior ListRow that
+ * pushed /festival/[id] (per 2026-06 feedback: the 3rd-level page felt too
+ * deep for browsing the 8 festivals or 24 solar terms).
+ */
+function EntryCard({
+  entryId,
   label,
   sub,
-  onPress,
-  disabled,
   colors,
   spacing,
+  locale,
 }: {
+  entryId: string | null
   label: string
   sub: string
-  onPress: () => void
-  disabled?: boolean
   colors: ThemeColors
   spacing: ThemeSpacing
+  locale: Locale
 }) {
+  const summary = entryId ? cultureSummary(entryId, locale) : null
+  const wikiUrl = entryId ? getCultureEntryWikipediaUrl(entryId, locale) : null
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole='button'
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    <View
+      style={{
         paddingVertical: spacing.sm,
-        opacity: pressed ? 0.6 : 1,
-      })}
+        borderTopWidth: 0.5,
+        borderTopColor: colors.separator,
+        gap: 4,
+      }}
     >
-      <Text style={{ color: colors.text, fontSize: 15 }}>{label}</Text>
-      <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
-    </Pressable>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
+      </View>
+      {summary ? (
+        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{summary}</Text>
+      ) : null}
+      {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
+    </View>
   )
 }

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yuán · 进场动画预览 v2（水墨深空版）</title>
+<style>
+  :root {
+    /* Dark theme — paper figures on a deep void, in keeping with the
+       rubbing.void family in packages/hexastral-tokens/src/palette.ts. */
+    --void:       #07080A;
+    --void-soft:  #0F1014;
+    --paper:      #E8E0CE;
+    --paper-dim:  rgba(232, 224, 206, 0.55);
+    --paper-faint:rgba(232, 224, 206, 0.18);
+    --cinnabar:   #9B2226;
+    --halo:       rgba(232, 224, 206, 0.10);
+
+    --sans: -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #04050a;
+    color: var(--paper);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stage {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .phone {
+    position: relative;
+    width: min(390px, 100vw);
+    height: min(844px, 100vh);
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 30%, var(--void-soft) 0%, var(--void) 65%, #04050a 100%);
+    border: 1px solid rgba(232, 224, 206, 0.08);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+    border-radius: 32px;
+  }
+  @media (max-width: 420px), (max-height: 880px) {
+    .phone { border-radius: 0; border: none; box-shadow: none; }
+  }
+  .scene {
+    position: absolute; inset: 0;
+    display: block;
+  }
+  /* Speech motif — a thin paper-colored arc that fades up from each speaker.
+     Avoids the regular-dot-row that looked mechanical. */
+  .speech {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 320ms ease-out;
+  }
+  .speech.on { opacity: 1; }
+
+  .hint {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 56px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--paper-dim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 700ms ease-out;
+    text-transform: lowercase;
+  }
+  .hint.on { opacity: 0.65; }
+  .hint.cta { letter-spacing: 7px; color: var(--paper); font-size: 12px; }
+
+  /* Reviewer controls — sit outside the phone. */
+  .controls {
+    position: fixed;
+    top: 16px; right: 16px;
+    display: flex; gap: 8px;
+    z-index: 10;
+  }
+  .btn {
+    background: var(--paper);
+    color: var(--void);
+    border: none;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--paper-dim);
+    border: 1px solid rgba(232, 224, 206, 0.25);
+  }
+  .btn.ghost.active {
+    background: var(--paper);
+    color: var(--void);
+  }
+  .btn:active { transform: translateY(1px); }
+  .locale-picker { display: flex; gap: 4px; }
+
+  .timeline-note {
+    position: fixed;
+    bottom: 12px;
+    left: 16px; right: 16px;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(232, 224, 206, 0.35);
+    letter-spacing: 3px;
+    pointer-events: none;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="locale-picker" id="localePicker">
+    <button class="btn ghost" data-locale="zh">中</button>
+    <button class="btn ghost" data-locale="zh-Hant">繁</button>
+    <button class="btn ghost" data-locale="en">EN</button>
+    <button class="btn ghost" data-locale="ja">日</button>
+  </div>
+  <button class="btn" id="replayBtn">↻ REPLAY</button>
+</div>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <svg class="scene" id="scene" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+      <!-- Star field -->
+      <g id="stars"></g>
+
+      <!-- Planet arc — two stacked paths for an ink-bleed brush effect:
+           a wide low-opacity halo behind the thin opaque ink line. -->
+      <path id="arcHalo" fill="none" stroke="var(--halo)" stroke-width="9" stroke-linecap="round"
+            d="M -40 720 Q 195 580 430 720"
+            style="stroke-dasharray: 1500; stroke-dashoffset: 1500;"/>
+      <path id="arcPath" fill="none" stroke="var(--paper)" stroke-width="2.2" stroke-linecap="round"
+            d="M -40 720 Q 195 580 430 720"
+            style="stroke-dasharray: 1500; stroke-dashoffset: 1500;"/>
+
+      <!-- Speech arc — short brush curve floating off each speaker's head. -->
+      <g id="speechF1" class="speech" pointer-events="none"></g>
+      <g id="speechF2" class="speech" pointer-events="none"></g>
+
+      <!-- Characters drawn into the SVG directly so they share the same
+           stacking + filter context as the arc + stars. Each character is
+           a <g> whose transform + child geometry is re-set every frame. -->
+      <g id="f1"></g>
+      <g id="f2"></g>
+      <g id="f3"></g>
+      <g id="f4"></g>
+    </svg>
+
+    <div class="hint" id="hintSkip">tap to skip</div>
+    <div class="hint cta" id="hintCta">tap to begin</div>
+  </div>
+</div>
+
+<div class="timeline-note">
+  Act I 抵达 · II 擦肩 · III 拥抱离别 · IV 留下来一起看星空
+</div>
+
+<script>
+(() => {
+  // ── i18n ───────────────────────────────────────────────────────────────
+  const COPY = {
+    en:        { tap: 'tap to skip',        continue: 'tap to begin' },
+    zh:        { tap: '轻触跳过',          continue: '轻触开始' },
+    'zh-Hant': { tap: '輕觸跳過',          continue: '輕觸開始' },
+    ja:        { tap: 'タップでスキップ', continue: 'タップで始める' },
+  };
+
+  // ── Stage geometry ─────────────────────────────────────────────────────
+  const W = 390, H = 844;
+  // Arc Q(-40 720, 195 580, 430 720) peaks at y=650.
+  const GROUND_Y = 650;
+  const CENTER = W / 2;
+
+  // Slot positions along the arc (x). y is computed from the curve so feet
+  // always rest on the ink line. We solve y for a given x by inverting the
+  // quadratic Bezier (t from x, then y(t)).
+  // Bezier: B(t) = (1-t)^2 * P0 + 2t(1-t) * P1 + t^2 * P2
+  // x(t) = (1-t)^2*(-40) + 2t(1-t)*195 + t^2*430
+  //      = -40 + 430t - 40t^2  (expanded)
+  // → 40t^2 - 430t + (x + 40) = 0  → t = (430 - sqrt(430^2 - 160(x+40))) / 80
+  function yOnArc(x) {
+    const a = 40, b = -430, c = x + 40;
+    const disc = b*b - 4*a*c;
+    if (disc < 0) return GROUND_Y;
+    const t = (-b - Math.sqrt(disc)) / (2*a);
+    const y = (1-t)*(1-t)*720 + 2*t*(1-t)*580 + t*t*720;
+    return y;
+  }
+
+  // ── Timeline (ms) ──────────────────────────────────────────────────────
+  // Beats are end-aligned: t_end of each phase is what we drive to.
+  const T = {
+    bgFade:     0,
+    arcDraw:    300,    // → 1300 (arc draws over 1000ms)
+    starsIn:    1000,   // → 1800
+    hintSkip:   1200,
+
+    // Act I — figure 1 arrives, looks around (alone)
+    f1WalkInStart:  1800,
+    f1WalkInEnd:    4200,   // 2.4s walk-in (slow, deliberate)
+    f1LookL:        4700,
+    f1LookR:        5400,
+    f1LookCenter:   6100,
+
+    // Act II — f2 arrives, they talk closer, then f2 leaves
+    f2WalkInStart:  6500,
+    f2WalkInEnd:    8500,
+    talkA:          9000,   // f1 speaks
+    talkB:         10200,   // f2 responds
+    talkC:         11400,   // f1 again
+    f2WalkOutStart:12400,
+    f2WalkOutEnd:  14600,
+    // f1 watches f2 leave (head turn)
+    f1WatchEnd:    15200,
+
+    // Act III — f3 arrives, embrace, leaves
+    f3WalkInStart: 15600,
+    f3WalkInEnd:   17600,
+    hug1Start:     17800,
+    hug1Hold:      18400,   // hold for 1.2s
+    hug1End:       19600,
+    f3WalkOutStart:19900,
+    f3WalkOutEnd:  22000,
+
+    // Act IV — f4 arrives, hug, both sit (staggered)
+    f4WalkInStart: 22400,
+    f4WalkInEnd:   24400,
+    hug2Start:     24600,
+    hug2Hold:      25400,
+    hug2End:       26400,
+    f4SitDown:     27000,
+    f1WatchF4Sit:  27600,
+    f1SitDown:     28400,
+    leanBack:      29400,
+    starsBright:   30000,
+    ctaIn:         31000,
+
+    end:           32000,
+  };
+
+  // ── Easing ─────────────────────────────────────────────────────────────
+  const ease = {
+    inOut: (t) => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2,
+    out:   (t) => 1 - Math.pow(1 - t, 3),
+    in:    (t) => t * t * t,
+    linear:(t) => t,
+  };
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp01 = (t) => Math.max(0, Math.min(1, t));
+
+  // Linear interpolate within a window [t0, t1], clamped and eased.
+  function tween(now, t0, t1, easeFn = ease.inOut) {
+    if (now <= t0) return 0;
+    if (now >= t1) return 1;
+    return easeFn((now - t0) / (t1 - t0));
+  }
+
+  // Returns a value that ramps 0→1 across [t0, t1], stays 1 across [t1, t2],
+  // ramps 1→0 across [t2, t3]. Useful for "appears between t0 and t3".
+  function envelope(now, t0, t1, t2, t3) {
+    if (now < t0 || now > t3) return 0;
+    if (now < t1) return ease.out((now - t0) / (t1 - t0));
+    if (now < t2) return 1;
+    return 1 - ease.in((now - t2) / (t3 - t2));
+  }
+
+  // ── Character renderer ─────────────────────────────────────────────────
+  // A character's visible state at any moment is a bag of joint params.
+  // We render two stacked stroked paths per limb (halo + ink) so the
+  // motion reads as a wet brush stroke rather than a CAD wireframe.
+
+  const HALO_W = 6;
+  const INK_W = 2.4;
+  const HEAD_R = 5.5;
+
+  // Default skeleton — coordinates in figure-local space where (0,0) is the
+  // feet midpoint. We render this group then translate to world (x, GROUND_Y).
+  // The figure faces +x by default (faceDir = 1); flip via scale(-1, 1).
+  function skeletonGeometry(state) {
+    const {
+      pose = 'stand',
+      walkPhase = 0,        // radians, for walk cycle
+      bodyTilt = 0,         // radians, lean forward(+) / back(-)
+      headTilt = 0,         // radians, head pitch up(-) / down(+)
+      headTurn = 0,         // -1 left, 0 forward, +1 right
+      armReach = 0,         // 0 = arms hanging, 1 = arms fully out forward (hug)
+      // Speech & gesture
+      armGestureL = 0,      // 0..1 raise left arm
+      armGestureR = 0,
+    } = state;
+
+    // Body anchor — feet at (0, 0), hip at (0, -22), shoulder at (0, -38), head at (0, -52)
+    // For sit pose, body is shorter and tilted back.
+    const isSit = pose === 'sit';
+
+    const hipY = isSit ? -10 : -22;
+    const shoulderY = isSit ? -26 : -38;
+    const headY = isSit ? -38 + Math.sin(headTilt) * 2 : -52;
+    const bodyLeanX = Math.sin(bodyTilt) * 4;
+    const headX = bodyLeanX + Math.sin(bodyTilt) * 2 + headTurn * 1.6;
+
+    // Walk cycle: legs alternate, body bobs slightly
+    const stepAmp = pose === 'walk' ? 7 : 0;
+    const bob = pose === 'walk' ? Math.abs(Math.sin(walkPhase * 0.5)) * -1.2 : 0;
+    const lLegAngle = pose === 'walk' ? Math.sin(walkPhase) * 0.35 : (isSit ? 0.9 : -0.12);
+    const rLegAngle = pose === 'walk' ? -Math.sin(walkPhase) * 0.35 : (isSit ? 0.9 : 0.12);
+
+    // Arms
+    let lArmAng, rArmAng, lElbow, rElbow;
+    if (armReach > 0) {
+      // Hug — arms reach forward (+x).
+      lArmAng = lerp(0.35, 1.4, armReach);
+      rArmAng = lerp(-0.35, -1.4, armReach);
+      lElbow = lerp(0, 14, armReach);
+      rElbow = lerp(0, 14, armReach);
+    } else if (pose === 'walk') {
+      lArmAng = -Math.sin(walkPhase) * 0.22;
+      rArmAng = Math.sin(walkPhase) * 0.22;
+      lElbow = 0;
+      rElbow = 0;
+    } else if (pose === 'sit') {
+      // Hands rest on knees
+      lArmAng = 0.9;
+      rArmAng = -0.9;
+      lElbow = 6;
+      rElbow = 6;
+    } else {
+      // Standing
+      lArmAng = -0.18;
+      rArmAng = 0.18;
+      lElbow = 0;
+      rElbow = 0;
+      if (armGestureL > 0) {
+        lArmAng = lerp(-0.18, -1.0, armGestureL);
+      }
+      if (armGestureR > 0) {
+        rArmAng = lerp(0.18, 1.0, armGestureR);
+      }
+    }
+
+    // Helper to compute end-of-line from start + angle + length
+    const angleEnd = (sx, sy, ang, len) => ({
+      x: sx + Math.sin(ang) * len,
+      y: sy + Math.cos(ang) * -len, // negative because y grows down in SVG
+    });
+
+    // Limb geometry
+    const torso = { x1: bodyLeanX, y1: shoulderY + bob, x2: bodyLeanX, y2: hipY + bob };
+
+    const lShoulder = { x: bodyLeanX - 1, y: shoulderY + 2 + bob };
+    const rShoulder = { x: bodyLeanX + 1, y: shoulderY + 2 + bob };
+
+    // Arms with optional elbow
+    const lArmEnd = angleEnd(lShoulder.x, lShoulder.y, Math.PI + lArmAng, 16);
+    const rArmEnd = angleEnd(rShoulder.x, rShoulder.y, Math.PI + rArmAng, 16);
+
+    const lHip = { x: bodyLeanX - 1, y: hipY + bob };
+    const rHip = { x: bodyLeanX + 1, y: hipY + bob };
+
+    // For sit, legs bend at knee
+    let lLegEnd, rLegEnd, lKnee, rKnee;
+    if (isSit) {
+      // Sitting on the ground: thighs forward horizontally (knees same height
+      // as hips, projected forward), shins drop straight down so feet rest
+      // exactly on the ground (y=0). The two legs splay a little so the
+      // silhouette reads as "seated cross-ish-legged" rather than rigid.
+      lKnee   = { x: lHip.x + 7, y: lHip.y + 0.5 };
+      rKnee   = { x: rHip.x + 9, y: rHip.y + 0.5 };
+      lLegEnd = { x: lKnee.x - 2, y: 0 };
+      rLegEnd = { x: rKnee.x + 1, y: 0 };
+    } else {
+      lKnee = null; rKnee = null;
+      lLegEnd = angleEnd(lHip.x, lHip.y, Math.PI + lLegAngle, 22);
+      rLegEnd = angleEnd(rHip.x, rHip.y, Math.PI + rLegAngle, 22);
+      // Step amplitude for walk
+      if (pose === 'walk') {
+        lLegEnd.x += stepAmp * Math.sin(walkPhase) * 0.4;
+        rLegEnd.x -= stepAmp * Math.sin(walkPhase) * 0.4;
+      }
+    }
+
+    return {
+      head: { cx: headX, cy: headY, r: HEAD_R },
+      torso,
+      lArm: [lShoulder, lArmEnd],
+      rArm: [rShoulder, rArmEnd],
+      lLeg: lKnee ? [lHip, lKnee, lLegEnd] : [lHip, lLegEnd],
+      rLeg: rKnee ? [rHip, rKnee, rLegEnd] : [rHip, rLegEnd],
+    };
+  }
+
+  function renderCharacter(gid, worldX, opacity, state) {
+    const geom = skeletonGeometry(state);
+    const faceDir = state.faceDir ?? 1;
+    const flip = faceDir === -1 ? -1 : 1;
+
+    // Build path strings
+    const limbs = [
+      ['torso', `M ${geom.torso.x1} ${geom.torso.y1} L ${geom.torso.x2} ${geom.torso.y2}`],
+      ['lArm', geom.lArm.length === 2
+        ? `M ${geom.lArm[0].x} ${geom.lArm[0].y} L ${geom.lArm[1].x} ${geom.lArm[1].y}`
+        : `M ${geom.lArm[0].x} ${geom.lArm[0].y} L ${geom.lArm[1].x} ${geom.lArm[1].y}`],
+      ['rArm', `M ${geom.rArm[0].x} ${geom.rArm[0].y} L ${geom.rArm[1].x} ${geom.rArm[1].y}`],
+      ['lLeg', geom.lLeg.length === 3
+        ? `M ${geom.lLeg[0].x} ${geom.lLeg[0].y} L ${geom.lLeg[1].x} ${geom.lLeg[1].y} L ${geom.lLeg[2].x} ${geom.lLeg[2].y}`
+        : `M ${geom.lLeg[0].x} ${geom.lLeg[0].y} L ${geom.lLeg[1].x} ${geom.lLeg[1].y}`],
+      ['rLeg', geom.rLeg.length === 3
+        ? `M ${geom.rLeg[0].x} ${geom.rLeg[0].y} L ${geom.rLeg[1].x} ${geom.rLeg[1].y} L ${geom.rLeg[2].x} ${geom.rLeg[2].y}`
+        : `M ${geom.rLeg[0].x} ${geom.rLeg[0].y} L ${geom.rLeg[1].x} ${geom.rLeg[1].y}`],
+    ];
+
+    // Two passes — wide halo + thin ink — gives a wet-ink bleed.
+    let inner = '';
+    for (const [, d] of limbs) {
+      inner += `<path d="${d}" fill="none" stroke="var(--halo)" stroke-width="${HALO_W}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    for (const [, d] of limbs) {
+      inner += `<path d="${d}" fill="none" stroke="var(--paper)" stroke-width="${INK_W}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    // Head — halo + filled core, with a tiny soft offset for organic edge
+    inner += `<circle cx="${geom.head.cx}" cy="${geom.head.cy}" r="${HEAD_R + 1.5}" fill="var(--halo)"/>`;
+    inner += `<circle cx="${geom.head.cx}" cy="${geom.head.cy}" r="${HEAD_R}" fill="var(--paper)"/>`;
+
+    const g = document.getElementById(gid);
+    g.setAttribute('transform', `translate(${worldX} ${GROUND_Y}) scale(${flip} 1)`);
+    g.setAttribute('opacity', opacity.toFixed(3));
+    g.innerHTML = inner;
+  }
+
+  // ── Speech motif ───────────────────────────────────────────────────────
+  // Two short arcs rising from above the speaker's head. Asymmetric — only
+  // the speaker shows it, the listener stays quiet (intent is legible).
+  function renderSpeech(gid, worldX, opacity) {
+    const g = document.getElementById(gid);
+    g.setAttribute('opacity', opacity.toFixed(3));
+    if (opacity < 0.02) {
+      g.innerHTML = '';
+      return;
+    }
+    // Three short arcs stacked above worldX, GROUND_Y - 60
+    const baseY = GROUND_Y - 64;
+    const arcs = `
+      <path d="M ${worldX - 4} ${baseY} Q ${worldX} ${baseY - 4} ${worldX + 4} ${baseY}"
+            fill="none" stroke="var(--paper)" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M ${worldX - 6} ${baseY - 7} Q ${worldX} ${baseY - 12} ${worldX + 6} ${baseY - 7}"
+            fill="none" stroke="var(--paper-dim)" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M ${worldX - 3} ${baseY - 14} Q ${worldX} ${baseY - 17} ${worldX + 3} ${baseY - 14}"
+            fill="none" stroke="var(--paper-faint)" stroke-width="1.2" stroke-linecap="round"/>
+    `;
+    g.innerHTML = arcs;
+  }
+
+  // ── Star field ─────────────────────────────────────────────────────────
+  const STAR_SEEDS = [
+    [0.08, 0.10, 1.0, 0.0], [0.18, 0.05, 0.7, 0.3], [0.27, 0.20, 0.9, 0.6],
+    [0.36, 0.08, 0.8, 0.9], [0.44, 0.16, 1.2, 0.2], [0.52, 0.04, 0.6, 0.5],
+    [0.61, 0.13, 0.9, 0.8], [0.69, 0.23, 0.8, 0.1], [0.78, 0.07, 1.1, 0.4],
+    [0.86, 0.17, 0.85, 0.7], [0.93, 0.10, 0.7, 0.0], [0.14, 0.28, 0.8, 0.55],
+    [0.32, 0.32, 0.95, 0.15], [0.58, 0.30, 0.7, 0.85], [0.75, 0.34, 0.9, 0.45],
+    [0.22, 0.42, 0.7, 0.25], [0.66, 0.45, 0.8, 0.65],
+  ];
+
+  function mountStars() {
+    const g = document.getElementById('stars');
+    g.innerHTML = STAR_SEEDS.map(([fx, fy, r, ph], i) => {
+      const cx = (fx * W).toFixed(1);
+      const cy = (fy * H).toFixed(1);
+      return `<g id="star${i}" opacity="0">
+        <circle cx="${cx}" cy="${cy}" r="${(r * 1.8).toFixed(2)}" fill="var(--halo)"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--paper)"/>
+      </g>`;
+    }).join('');
+  }
+
+  // ── Animation driver ───────────────────────────────────────────────────
+  // setInterval at ~30 fps (33 ms). We tried rAF first but headless preview
+  // environments often suspend it; setInterval ticks reliably. Real devices
+  // get ~60 fps from this in practice because the browser conflates
+  // interval ticks with the next paint.
+  let startTime = null;
+  let intervalHandle = null;
+  let skipped = false;
+
+  function tick() {
+    if (startTime === null) startTime = performance.now();
+    const t = performance.now() - startTime;
+    drawScene(t);
+    if (t >= T.end || skipped) {
+      clearInterval(intervalHandle);
+      intervalHandle = null;
+      drawScene(T.end);
+    }
+  }
+
+  function play() {
+    if (intervalHandle) clearInterval(intervalHandle);
+    startTime = null;
+    skipped = false;
+    intervalHandle = setInterval(tick, 33);
+    tick(); // immediate first frame
+  }
+
+  function skipToEnd() {
+    skipped = true;
+    if (intervalHandle) clearInterval(intervalHandle);
+    intervalHandle = null;
+    drawScene(T.end);
+  }
+
+  // ── Per-frame scene description ────────────────────────────────────────
+  function drawScene(t) {
+    // Arc draw
+    const arcK = tween(t, T.arcDraw, T.arcDraw + 1000, ease.out);
+    const dashoff = 1500 * (1 - arcK);
+    document.getElementById('arcHalo').style.strokeDashoffset = dashoff.toFixed(1);
+    document.getElementById('arcPath').style.strokeDashoffset = dashoff.toFixed(1);
+
+    // Stars in
+    const starsBase = tween(t, T.starsIn, T.starsIn + 1500, ease.out);
+    // Per-star phase twinkle
+    STAR_SEEDS.forEach(([, , , ph], i) => {
+      const el = document.getElementById(`star${i}`);
+      if (!el) return;
+      const fade = starsBase;
+      // Each star pulses a tiny amount; the bright moment near the end lifts all
+      const twink = 0.7 + 0.3 * Math.sin((t * 0.001 + ph * 3));
+      const bright = tween(t, T.starsBright, T.starsBright + 1500);
+      const finalOp = fade * (0.45 + bright * 0.5) * twink;
+      el.setAttribute('opacity', clamp01(finalOp).toFixed(3));
+    });
+
+    // Hints
+    const skipOp = tween(t, T.hintSkip, T.hintSkip + 700) * (1 - tween(t, T.ctaIn - 400, T.ctaIn));
+    const ctaOp  = tween(t, T.ctaIn, T.ctaIn + 800);
+    setHint('hintSkip', skipOp, 'on');
+    setHint('hintCta', ctaOp, 'on');
+
+    // ── Characters ──
+    drawF1(t);
+    drawF2(t);
+    drawF3(t);
+    drawF4(t);
+
+    // ── Speech ──
+    drawSpeech(t);
+  }
+
+  function setHint(id, op, cls) {
+    const el = document.getElementById(id);
+    const isOn = op > 0.05;
+    if (el.classList.contains(cls) !== isOn) {
+      el.classList.toggle(cls, isOn);
+    }
+  }
+
+  // ── Slot positions (along the arc) ─────────────────────────────────────
+  // Conversation: 32 px apart — close enough to read as one quiet exchange
+  // (not crowd, not strangers).
+  const SLOT_F1 = CENTER - 16;
+  const SLOT_F2 = CENTER + 16;
+  const SLOT_HUG = CENTER - 6;       // f3 ends up slightly to the right of f1
+  const SLOT_F4_HUG = CENTER - 6;    // f4 arrives from the left
+  // For the final scene: F1 stays at SLOT_F1, F4 sits at SLOT_F1 + 24 — far
+  // enough that the two silhouettes don't smear into one blob.
+  const SLOT_F4_SIT = SLOT_F1 + 26;
+  const OFF_LEFT  = -60;
+  const OFF_RIGHT = W + 60;
+
+  // ── Character timelines ────────────────────────────────────────────────
+  function drawF1(t) {
+    // F1's life: walks in from left, looks around, talks with F2,
+    // hugs F3 briefly, hugs F4, finally sits next to F4 looking up.
+
+    // Walk-in
+    const wIn = tween(t, T.f1WalkInStart, T.f1WalkInEnd, ease.out);
+    const opIn = tween(t, T.f1WalkInStart, T.f1WalkInStart + 400);
+    let x = lerp(OFF_LEFT, SLOT_F1, wIn);
+    let opacity = opIn;
+
+    // Determine pose
+    let pose = 'walk';
+    let walkPhase = (t / 200) % (Math.PI * 2);
+    let headTurn = 0;
+    let armGestureL = 0, armGestureR = 0;
+    let armReach = 0;
+    let bodyTilt = 0;
+
+    if (t >= T.f1WalkInEnd) {
+      pose = 'stand';
+      x = SLOT_F1;
+    }
+
+    // Look-around (after walk-in)
+    if (t >= T.f1WalkInEnd && t < T.f2WalkInStart) {
+      const lookT = (t - T.f1WalkInEnd) / (T.f2WalkInStart - T.f1WalkInEnd);
+      // 3-beat look: center → left → right → center
+      if (lookT < 0.25) headTurn = lerp(0, -1, lookT / 0.25);
+      else if (lookT < 0.5) headTurn = lerp(-1, 1, (lookT - 0.25) / 0.25);
+      else if (lookT < 0.75) headTurn = lerp(1, 0, (lookT - 0.5) / 0.25);
+      else headTurn = 0;
+    }
+
+    // Watch F2 arrive — turn head right
+    if (t >= T.f2WalkInStart && t < T.f2WalkInEnd) {
+      headTurn = tween(t, T.f2WalkInStart, T.f2WalkInStart + 800) * 0.7;
+    }
+
+    // Talk — three exchanges, alternate gestures
+    if (t >= T.f2WalkInEnd && t < T.f2WalkOutStart) {
+      pose = 'stand';
+      headTurn = 0.6; // facing F2
+      // F1 speaks at A and C
+      if (t >= T.talkA && t < T.talkA + 800) {
+        armGestureR = tween(t, T.talkA, T.talkA + 200) * (1 - tween(t, T.talkA + 600, T.talkA + 800));
+      }
+      if (t >= T.talkC && t < T.talkC + 800) {
+        armGestureR = tween(t, T.talkC, T.talkC + 200) * (1 - tween(t, T.talkC + 600, T.talkC + 800));
+      }
+      // Subtle listener nod at B
+      if (t >= T.talkB && t < T.talkB + 1000) {
+        bodyTilt = Math.sin((t - T.talkB) / 1000 * Math.PI * 2) * 0.04;
+      }
+    }
+
+    // F2 walks away — F1 watches them leave (head turn fades to center)
+    if (t >= T.f2WalkOutStart && t < T.f1WatchEnd) {
+      headTurn = 0.6 * (1 - tween(t, T.f2WalkOutStart + 600, T.f1WatchEnd));
+      pose = 'stand';
+    }
+
+    // F3 arrives & hugs
+    if (t >= T.f3WalkInStart && t < T.f3WalkInEnd) {
+      // F1 looks toward incoming F3 (from right)
+      headTurn = 0.5 * tween(t, T.f3WalkInStart, T.f3WalkInStart + 600);
+      pose = 'stand';
+    }
+    if (t >= T.hug1Start && t < T.hug1End) {
+      pose = 'stand';
+      armReach = envelope(t, T.hug1Start, T.hug1Hold - 200, T.hug1Hold + 400, T.hug1End);
+      headTurn = 0.3 * (1 - envelope(t, T.hug1Hold - 200, T.hug1Hold, T.hug1Hold + 400, T.hug1Hold + 600));
+    }
+    if (t >= T.f3WalkOutStart && t < T.f4WalkInStart) {
+      // F1 alone again, slight head turn watching f3 leave
+      headTurn = 0.4 * (1 - tween(t, T.f3WalkOutStart + 600, T.f4WalkInStart));
+      pose = 'stand';
+    }
+
+    // F4 arrives — F1 looks left
+    if (t >= T.f4WalkInStart && t < T.f4WalkInEnd) {
+      headTurn = -0.5 * tween(t, T.f4WalkInStart, T.f4WalkInStart + 600);
+      pose = 'stand';
+    }
+    if (t >= T.hug2Start && t < T.hug2End) {
+      pose = 'stand';
+      armReach = envelope(t, T.hug2Start, T.hug2Hold - 200, T.hug2Hold + 400, T.hug2End);
+      headTurn = -0.3 * (1 - envelope(t, T.hug2Hold - 200, T.hug2Hold, T.hug2Hold + 400, T.hug2Hold + 600));
+    }
+
+    // F1 watches F4 sit, then sits
+    if (t >= T.hug2End && t < T.f1SitDown) {
+      headTurn = lerp(0, 0.35, tween(t, T.hug2End, T.f1WatchF4Sit, ease.out));
+      pose = 'stand';
+    }
+    if (t >= T.f1SitDown) {
+      const sitT = tween(t, T.f1SitDown, T.f1SitDown + 700, ease.out);
+      // smooth transition into sit by interpolating pose:
+      // we hold sit pose with arms relaxing.
+      pose = 'sit';
+      headTurn = lerp(0.35, 0, sitT);
+    }
+
+    // Lean back & look up
+    if (t >= T.leanBack) {
+      const k = tween(t, T.leanBack, T.leanBack + 800, ease.out);
+      bodyTilt = -k * 0.18;
+      // head tilts up via headTilt
+    }
+
+    renderCharacter('f1', x, opacity, {
+      pose, walkPhase, headTurn, armGestureL, armGestureR, armReach, bodyTilt,
+      faceDir: 1,
+    });
+  }
+
+  function drawF2(t) {
+    // F2 arrives from right, talks with F1, walks back out to right.
+    if (t < T.f2WalkInStart || t > T.f2WalkOutEnd + 400) {
+      // Off-stage
+      renderCharacter('f2', OFF_RIGHT, 0, { pose: 'stand', faceDir: -1 });
+      return;
+    }
+
+    let x, pose, walkPhase = (t / 200) % (Math.PI * 2);
+    let opacity = 1;
+    let headTurn = 0, armGestureR = 0, armGestureL = 0, bodyTilt = 0;
+
+    if (t < T.f2WalkInEnd) {
+      const k = tween(t, T.f2WalkInStart, T.f2WalkInEnd, ease.out);
+      x = lerp(OFF_RIGHT, SLOT_F2, k);
+      opacity = tween(t, T.f2WalkInStart, T.f2WalkInStart + 400);
+      pose = 'walk';
+    } else if (t < T.f2WalkOutStart) {
+      x = SLOT_F2;
+      pose = 'stand';
+      headTurn = -0.6;  // facing F1 (left, since F2 is right of F1 and facing left)
+      // F2 speaks at B
+      if (t >= T.talkB && t < T.talkB + 800) {
+        armGestureR = tween(t, T.talkB, T.talkB + 200) * (1 - tween(t, T.talkB + 600, T.talkB + 800));
+      }
+      // F2 listens at A and C (subtle nod)
+      if (t >= T.talkA && t < T.talkA + 1000) {
+        bodyTilt = Math.sin((t - T.talkA) / 1000 * Math.PI * 2) * 0.04;
+      }
+      if (t >= T.talkC && t < T.talkC + 1000) {
+        bodyTilt = Math.sin((t - T.talkC) / 1000 * Math.PI * 2) * 0.04;
+      }
+    } else {
+      // Walk out — continue past off-right; opacity fades after walking starts
+      const k = tween(t, T.f2WalkOutStart, T.f2WalkOutEnd, ease.in);
+      x = lerp(SLOT_F2, OFF_RIGHT + 80, k);
+      // Fade out across the last 800ms of the walk
+      opacity = 1 - tween(t, T.f2WalkOutEnd - 800, T.f2WalkOutEnd + 200);
+      pose = 'walk';
+    }
+
+    renderCharacter('f2', x, clamp01(opacity), {
+      pose, walkPhase, headTurn, armGestureR, armGestureL, bodyTilt,
+      faceDir: pose === 'walk' && t >= T.f2WalkOutStart ? 1 : -1,
+    });
+  }
+
+  function drawF3(t) {
+    if (t < T.f3WalkInStart || t > T.f3WalkOutEnd + 400) {
+      renderCharacter('f3', OFF_RIGHT, 0, { pose: 'stand', faceDir: -1 });
+      return;
+    }
+
+    let x, pose, walkPhase = (t / 200) % (Math.PI * 2);
+    let opacity = 1;
+    let headTurn = 0;
+    let armReach = 0;
+
+    if (t < T.f3WalkInEnd) {
+      const k = tween(t, T.f3WalkInStart, T.f3WalkInEnd, ease.out);
+      x = lerp(OFF_RIGHT, SLOT_HUG + 14, k);
+      opacity = tween(t, T.f3WalkInStart, T.f3WalkInStart + 400);
+      pose = 'walk';
+    } else if (t < T.f3WalkOutStart) {
+      // Hug sequence
+      const stepK = tween(t, T.f3WalkInEnd, T.hug1Start, ease.inOut);
+      x = lerp(SLOT_HUG + 14, SLOT_HUG, stepK);
+      pose = 'stand';
+      headTurn = -0.4;
+      armReach = envelope(t, T.hug1Start, T.hug1Hold - 200, T.hug1Hold + 400, T.hug1End);
+    } else {
+      // Walk out to the right
+      const k = tween(t, T.f3WalkOutStart, T.f3WalkOutEnd, ease.in);
+      x = lerp(SLOT_HUG, OFF_RIGHT + 80, k);
+      opacity = 1 - tween(t, T.f3WalkOutEnd - 800, T.f3WalkOutEnd + 200);
+      pose = 'walk';
+    }
+
+    renderCharacter('f3', x, clamp01(opacity), {
+      pose, walkPhase, headTurn, armReach,
+      faceDir: t < T.f3WalkOutStart ? -1 : 1,
+    });
+  }
+
+  function drawF4(t) {
+    if (t < T.f4WalkInStart) {
+      renderCharacter('f4', OFF_LEFT, 0, { pose: 'stand', faceDir: 1 });
+      return;
+    }
+
+    let x, pose, walkPhase = (t / 200) % (Math.PI * 2);
+    let opacity = 1;
+    let headTurn = 0;
+    let armReach = 0;
+    let bodyTilt = 0;
+
+    if (t < T.f4WalkInEnd) {
+      const k = tween(t, T.f4WalkInStart, T.f4WalkInEnd, ease.out);
+      x = lerp(OFF_LEFT, SLOT_F4_HUG - 14, k);
+      opacity = tween(t, T.f4WalkInStart, T.f4WalkInStart + 400);
+      pose = 'walk';
+    } else if (t < T.hug2End) {
+      const stepK = tween(t, T.f4WalkInEnd, T.hug2Start, ease.inOut);
+      x = lerp(SLOT_F4_HUG - 14, SLOT_F4_HUG, stepK);
+      pose = 'stand';
+      headTurn = 0.4;
+      armReach = envelope(t, T.hug2Start, T.hug2Hold - 200, T.hug2Hold + 400, T.hug2End);
+    } else if (t < T.f4SitDown) {
+      // Brief separation step
+      const k = tween(t, T.hug2End, T.f4SitDown, ease.out);
+      x = lerp(SLOT_F4_HUG, SLOT_F4_SIT, k);
+      pose = 'stand';
+    } else {
+      // Sit down
+      x = SLOT_F4_SIT;
+      pose = 'sit';
+    }
+
+    // Lean back like F1
+    if (t >= T.leanBack) {
+      const k = tween(t, T.leanBack, T.leanBack + 800, ease.out);
+      bodyTilt = -k * 0.18;
+    }
+
+    renderCharacter('f4', x, clamp01(opacity), {
+      pose, walkPhase, headTurn, armReach, bodyTilt,
+      faceDir: 1,
+    });
+  }
+
+  function drawSpeech(t) {
+    // F1 speaks at A and C; F2 speaks at B. Show the arc above the speaker.
+    const f1Speak = Math.max(
+      envelope(t, T.talkA - 100, T.talkA + 200, T.talkA + 600, T.talkA + 900),
+      envelope(t, T.talkC - 100, T.talkC + 200, T.talkC + 600, T.talkC + 900),
+    );
+    const f2Speak = envelope(t, T.talkB - 100, T.talkB + 200, T.talkB + 600, T.talkB + 900);
+    renderSpeech('speechF1', SLOT_F1, f1Speak);
+    renderSpeech('speechF2', SLOT_F2, f2Speak);
+  }
+
+  // ── Locale ─────────────────────────────────────────────────────────────
+  function setLocale(loc) {
+    const c = COPY[loc] || COPY.en;
+    document.getElementById('hintSkip').textContent = c.tap;
+    document.getElementById('hintCta').textContent = c.continue;
+    document.documentElement.lang = loc;
+    document.querySelectorAll('#localePicker .btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.locale === loc);
+    });
+    localStorage.setItem('yuan_intro_locale_v2', loc);
+  }
+
+  // ── Wire up ────────────────────────────────────────────────────────────
+  document.getElementById('replayBtn').addEventListener('click', play);
+  document.getElementById('phone').addEventListener('click', (e) => {
+    if (e.target.closest('.controls')) return;
+    skipToEnd();
+  });
+  document.getElementById('localePicker').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-locale]');
+    if (!t) return;
+    setLocale(t.dataset.locale);
+  });
+
+  // Boot
+  mountStars();
+  setLocale(localStorage.getItem('yuan_intro_locale_v2') || 'zh');
+  play();
+})();
+</script>
+</body>
+</html>

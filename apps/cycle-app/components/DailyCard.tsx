@@ -500,14 +500,16 @@ function AncientFace({ model, moonSkinId, phaseOverride }: FaceProps) {
     <Pressable
       onPress={toggle}
       accessibilityRole='button'
+      // No inner border — the parent watch-preview wrapper clips with a
+      // ~42pt borderRadius + overflow:hidden, so a rectangular inner border
+      // gets sliced into 4 disconnected edge segments. The dark canvas +
+      // copper text alone carry the 古风 aesthetic.
       style={{
         flex: 1,
         backgroundColor: '#0A0908',
         paddingHorizontal: 16,
         paddingVertical: 14,
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(196,168,130,0.28)',
       }}
     >
       {/* 節氣 + 月相 */}

@@ -26,8 +26,8 @@ import {
   lunarToSolar,
   type PersonalAlmanacSubject,
   personalAlmanacOverlay,
-  solarToLunar,
   STEM_WUXING,
+  solarToLunar,
 } from '@zhop/astro-core'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -215,7 +215,11 @@ const HOLIDAYS_JA: ReadonlyArray<Holiday> = [
   { id: 'yama', name: '山の日', rule: { kind: 'gregorian-fixed', month: 8, day: 11 } },
   { id: 'keirou', name: '敬老の日', rule: { kind: 'nth-weekday', month: 9, n: 3, weekday: 1 } },
   { id: 'shuubun', name: '秋分の日', rule: { kind: 'solar-term', termName: '秋分' } },
-  { id: 'sports', name: 'スポーツの日', rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 } },
+  {
+    id: 'sports',
+    name: 'スポーツの日',
+    rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 },
+  },
   { id: 'bunka', name: '文化の日', rule: { kind: 'gregorian-fixed', month: 11, day: 3 } },
   { id: 'kinrou', name: '勤労感謝の日', rule: { kind: 'gregorian-fixed', month: 11, day: 23 } },
 ]
@@ -223,14 +227,30 @@ const HOLIDAYS_JA: ReadonlyArray<Holiday> = [
 const HOLIDAYS_EN: ReadonlyArray<Holiday> = [
   { id: 'newyear', name: "New Year's Day", rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
   { id: 'mlk', name: 'MLK Day', rule: { kind: 'nth-weekday', month: 1, n: 3, weekday: 1 } },
-  { id: 'presidents', name: "Presidents' Day", rule: { kind: 'nth-weekday', month: 2, n: 3, weekday: 1 } },
+  {
+    id: 'presidents',
+    name: "Presidents' Day",
+    rule: { kind: 'nth-weekday', month: 2, n: 3, weekday: 1 },
+  },
   { id: 'memorial', name: 'Memorial Day', rule: { kind: 'last-weekday', month: 5, weekday: 1 } },
   { id: 'juneteenth', name: 'Juneteenth', rule: { kind: 'gregorian-fixed', month: 6, day: 19 } },
-  { id: 'independence', name: 'Independence Day', rule: { kind: 'gregorian-fixed', month: 7, day: 4 } },
+  {
+    id: 'independence',
+    name: 'Independence Day',
+    rule: { kind: 'gregorian-fixed', month: 7, day: 4 },
+  },
   { id: 'labor', name: 'Labor Day', rule: { kind: 'nth-weekday', month: 9, n: 1, weekday: 1 } },
-  { id: 'columbus', name: 'Columbus Day', rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 } },
+  {
+    id: 'columbus',
+    name: 'Columbus Day',
+    rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 },
+  },
   { id: 'veterans', name: 'Veterans Day', rule: { kind: 'gregorian-fixed', month: 11, day: 11 } },
-  { id: 'thanksgiving', name: 'Thanksgiving', rule: { kind: 'nth-weekday', month: 11, n: 4, weekday: 4 } },
+  {
+    id: 'thanksgiving',
+    name: 'Thanksgiving',
+    rule: { kind: 'nth-weekday', month: 11, n: 4, weekday: 4 },
+  },
   { id: 'christmas', name: 'Christmas', rule: { kind: 'gregorian-fixed', month: 12, day: 25 } },
 ]
 
@@ -448,6 +468,121 @@ cycleRoutes.get('/day', (c) => {
     personalization,
     explanation: null,
   })
+})
+
+// ── GET /calendar.ics — Apple Calendar / iCal subscription feed ────────────
+// Returns ±30 days of 干支 + 节气 + 宜忌 as RFC 5545 all-day VEVENTs so users
+// can subscribe in the system Calendar app via webcal:// and see the almanac
+// inline on their phone/Mac/iPad without opening cycle. v1 is anonymous and
+// generic (no 对你而言) — matches the free-tier push contract. Personalized
+// per-user feeds are a follow-up (require per-user opaque tokens + Pro gate).
+//
+// Edge-cached for an hour. Apple Calendar polls subscribed feeds on its own
+// cadence (typically every 5min–24h depending on user settings), so a 60min
+// cache is enough to absorb thundering-herd subscriptions without staleness
+// showing up to the user.
+
+/** Window size around "today" (UTC anchor). 61 days = past month + next month. */
+const ICS_WINDOW_DAYS = 30
+
+/** Escape ICS TEXT field per RFC 5545 §3.3.11. */
+function icsEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
+}
+
+/** Fold long lines per RFC 5545 §3.1 — keep clients like Outlook happy. */
+function foldIcsLine(line: string): string {
+  if (line.length <= 75) return line
+  const out: string[] = []
+  let i = 0
+  while (i < line.length) {
+    const take = i === 0 ? 75 : 74 // continuation lines lead with a space (-1 budget)
+    out.push((i === 0 ? '' : ' ') + line.slice(i, i + take))
+    i += take
+  }
+  return out.join('\r\n')
+}
+
+/** YYYYMMDD for DTSTART;VALUE=DATE. */
+function ymdCompact(ymd: Ymd): string {
+  return `${ymd.year}${String(ymd.month).padStart(2, '0')}${String(ymd.day).padStart(2, '0')}`
+}
+
+/** UTC YYYYMMDDTHHMMSSZ for DTSTAMP. */
+function utcStamp(d: Date): string {
+  return (
+    `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}` +
+    `${String(d.getUTCDate()).padStart(2, '0')}T` +
+    `${String(d.getUTCHours()).padStart(2, '0')}` +
+    `${String(d.getUTCMinutes()).padStart(2, '0')}` +
+    `${String(d.getUTCSeconds()).padStart(2, '0')}Z`
+  )
+}
+
+function ymdAdd(ymd: Ymd, days: number): Ymd {
+  const d = ymdToDate(ymd)
+  d.setUTCDate(d.getUTCDate() + days)
+  return dateToYmd(d)
+}
+
+cycleRoutes.get('/calendar.ics', (c) => {
+  const today = dateToYmd(new Date())
+  const stamp = utcStamp(new Date())
+
+  const events: string[] = []
+  for (let offset = -ICS_WINDOW_DAYS; offset <= ICS_WINDOW_DAYS; offset++) {
+    const ymd = ymdAdd(today, offset)
+    const { day } = buildDay(ymd)
+    const dt = ymdCompact(ymd)
+    const dtEnd = ymdCompact(ymdAdd(ymd, 1))
+
+    const yi = day.goodFor.slice(0, 4).join('、') || '—'
+    const ji = day.avoid.slice(0, 4).join('、') || '—'
+    const summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}`
+    const descParts = [
+      `干支日：${day.ganZhi}（${day.element}）`,
+      `日辰：${day.dayOfficer}日`,
+      day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
+      day.festivalToday ? `节日：${day.festivalToday.name}` : null,
+      `宜：${day.goodFor.join('、') || '—'}`,
+      `忌：${day.avoid.join('、') || '—'}`,
+      `冲：${day.clash.clashAnimal}`,
+    ].filter(Boolean) as string[]
+    const description = descParts.join('\\n')
+
+    events.push(
+      [
+        'BEGIN:VEVENT',
+        foldIcsLine(`UID:cycle-${dt}@hexastral.com`),
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${dt}`,
+        `DTEND;VALUE=DATE:${dtEnd}`,
+        foldIcsLine(`SUMMARY:${icsEscape(summary)}`),
+        foldIcsLine(`DESCRIPTION:${icsEscape(description)}`),
+        'TRANSP:TRANSPARENT',
+        'END:VEVENT',
+      ].join('\r\n')
+    )
+  }
+
+  const body = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//HexAstral//Cycle Almanac v1//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Cycle 黄历',
+    'X-WR-TIMEZONE:Asia/Shanghai',
+    'X-PUBLISHED-TTL:PT1H',
+    ...events,
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  c.header('Content-Type', 'text/calendar; charset=utf-8')
+  c.header('Cache-Control', 'public, max-age=3600')
+  c.header('Content-Disposition', 'inline; filename="cycle-almanac.ics"')
+  return c.body(body)
 })
 
 // ── GET /month?year=&month= — batched month grid (Sprint 2 deliverable #2) ──

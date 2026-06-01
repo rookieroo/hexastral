@@ -30,7 +30,7 @@ export function CyclePaywallSheet({ visible, onClose }: { visible: boolean; onCl
   const { t } = useStrings()
 
   return (
-    <SatelliteBottomSheet visible={visible} onClose={onClose} title={t.proTitle} animated={false}>
+    <SatelliteBottomSheet visible={visible} onClose={onClose} title={t.proTitle}>
       <View style={{ padding: spacing.xl, gap: spacing.lg }}>
         <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
           {t.proSubtitle}

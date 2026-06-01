@@ -12,8 +12,8 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
 import {
   analyses,
-  bondInviteCredits,
   bondInvitations,
+  bondInviteCredits,
   chapterUnlockInvitations,
   contactHashes,
   conversationMessages,
@@ -45,15 +45,15 @@ import {
   users,
 } from '../db/schema'
 import type { AppDb, AppEnv, CloudflareBindings } from '../infra-types'
+import { userHasCapability } from '../lib/access/entitlement-access'
 import { requireUserId } from '../lib/auth'
 import {
   BIOMETRIC_CONSENT_VERSION,
   recordBiometricConsent,
   revokeBiometricConsent,
 } from '../lib/biometric-consent'
-import { userHasCapability } from '../lib/access/entitlement-access'
 import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quota'
-import { claimChapterUnlocksForEmail } from '../lib/chapter-access'
+import { CHAPTER_UNLOCK_DEFAULT, claimChapterUnlocksForEmail } from '../lib/chapter-access'
 import { buildChartSkeleton, rebuildUserCharts } from '../lib/chart-skeleton'
 import {
   ensureStellarChartForPublicProfile,
@@ -251,6 +251,7 @@ export const userRoutes = new Hono<AppEnv>()
       appleUserId: input.appleUserId ?? null,
       googleUserId: input.googleUserId ?? null,
       deviceSecret,
+      unlockedChapterCount: CHAPTER_UNLOCK_DEFAULT,
     })
 
     // No welcome coins — new users get one free base chart reading (handled by feature flag)
@@ -939,17 +940,19 @@ export const userRoutes = new Hono<AppEnv>()
     //     unnecessary because Drizzle FK has cascade, but we declare it).
     await db.batch([
       // Invitation / bond layer (fk references)
-      db.delete(chapterUnlockInvitations).where(
-        or(
-          eq(chapterUnlockInvitations.inviterUserId, userId),
-          eq(chapterUnlockInvitations.redeemedByUserId, userId)
-        )
-      ),
+      db
+        .delete(chapterUnlockInvitations)
+        .where(
+          or(
+            eq(chapterUnlockInvitations.inviterUserId, userId),
+            eq(chapterUnlockInvitations.redeemedByUserId, userId)
+          )
+        ),
       db.delete(bondInvitations).where(eq(bondInvitations.inviterUserId, userId)),
       db.delete(bondInviteCredits).where(eq(bondInviteCredits.userId, userId)),
-      db.delete(readingGifts).where(
-        or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId))
-      ),
+      db
+        .delete(readingGifts)
+        .where(or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId))),
       // Sharing / reports layer
       db.delete(sharedReports).where(eq(sharedReports.userId, userId)),
       db.delete(reportChapters).where(eq(reportChapters.userId, userId)),
@@ -1089,9 +1092,7 @@ export const userRoutes = new Hono<AppEnv>()
       db
         .select()
         .from(readingGifts)
-        .where(
-          or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId))
-        )
+        .where(or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId)))
         .all(),
       db.select().from(sharedReports).where(eq(sharedReports.userId, userId)).all(),
       db.select().from(lifeEvents).where(eq(lifeEvents.userId, userId)).all(),

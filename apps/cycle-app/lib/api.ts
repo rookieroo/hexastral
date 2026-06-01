@@ -7,7 +7,7 @@
  * Response envelope is the Phase-F shape `{ ok, data }`; we unwrap `data`.
  */
 
-import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
+import { resolvePortfolioApiUrl, signedApiFetch } from '@zhop/satellite-runtime'
 
 // ── Domain types (mirror the C.1 route output) ────────────────────────────
 
@@ -432,19 +432,35 @@ export interface TimelinePayload {
 }
 
 /**
- * Fetch the user's life-timeline payload. The route is HMAC-signed in the
- * eventual production path; for now we go through the same anonymous
- * `postJson` helper as cycle/explain — this matches how the timeline route
- * is currently mounted (anonymous + sub-router) and lets the cache work
- * without requiring sign-in. When DDL is wired in, swap to a signed client.
+ * Fetch the user's life-timeline payload. The server route
+ * (`/api/cycle/timeline`, mounted in hexastral-api/src/index.ts:358) is gated
+ * by `hmacVerify`, so we sign through `signedFetch` instead of the anonymous
+ * `postJson`. signedFetch reads the userId + deviceSecret provisioned by
+ * `usePortfolioSatelliteBootstrap` at root layout and attaches
+ * `Authorization: Bearer <userId>` + the x-signature / x-timestamp /
+ * x-body-hash / x-client-platform headers the middleware expects.
+ *
+ * Returns null path → surfaced as an error to the caller. Common causes:
+ *   - signedFetch returns null when bootstrap hasn't finished provisioning
+ *     userId/deviceSecret yet (rare; bootstrap fires at app start)
+ *   - 4xx response when prod doesn't have the timeline route mounted yet
+ *     (deploy hexastral-api to fix — see deploy.md)
  */
-export function fetchTimeline(args: {
+export async function fetchTimeline(args: {
   birthDate: string
   birthHour: number
   gender: 'M' | 'F'
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 }): Promise<TimelinePayload> {
-  return postJson<TimelinePayload>('/api/cycle/timeline', args)
+  const res = await signedApiFetch({ method: 'POST', path: '/api/cycle/timeline', body: args })
+  if (!res) {
+    throw new Error('timeline request could not be signed (bootstrap pending)')
+  }
+  const body = (await res.json().catch(() => null)) as Envelope<TimelinePayload> | null
+  if (!res.ok || !body || body.ok !== true || body.data === undefined) {
+    throw new Error(body?.error?.message ?? `timeline request failed (${res.status})`)
+  }
+  return body.data
 }
 
 /** The Pro/lazy LLM 深度解读 (C.4). `source` tells the UI if it degraded to template. */

@@ -31,6 +31,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   Animated,
   Dimensions,
+  Easing,
   Modal,
   PanResponder,
   Platform,
@@ -79,12 +80,16 @@ export function SatelliteBottomSheet({
     if (visible) {
       translateY.setValue(SCREEN_HEIGHT)
       fade.setValue(0)
+      // Smooth ease-out slide — symmetric with close. Earlier revisions used
+      // a critically-damped spring (damping=22, stiffness=280) but small users
+      // perceived the deceleration as bounce; per 2026-06 feedback the open
+      // animation is a plain timing curve (matches iOS sheet feel).
       Animated.parallel([
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
-          damping: 22,
-          stiffness: 280,
         }),
         Animated.timing(fade, {
           toValue: 1,
@@ -120,11 +125,13 @@ export function SatelliteBottomSheet({
           if (g.dy > 100 || g.vy > 0.5) {
             onClose()
           } else {
-            Animated.spring(translateY, {
+            // Snap-back from a partial drag — matches the open curve (smooth
+            // ease, no spring overshoot).
+            Animated.timing(translateY, {
               toValue: 0,
+              duration: 200,
+              easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
-              damping: 22,
-              stiffness: 280,
             }).start()
           }
         },

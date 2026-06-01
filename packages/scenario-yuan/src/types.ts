@@ -166,11 +166,29 @@ export interface InvitationInfo {
 }
 
 export interface ResonanceInviteInput {
-  targetEmail: string
+  /**
+   * Optional. Only set when delivery mode is `'server'` (legacy path).
+   * For `'user'` (default), the email is private to A's device and is
+   * never sent to the server.
+   */
+  targetEmail?: string
   targetName: string
   relationshipLabel: string
   /** Optional opening note from A */
   message?: string
+  /**
+   * `'user'` (default): A's device opens the system mail composer with the
+   * server-provided subject + body. Privacy-by-design — no PII for B
+   * stored server-side.
+   * `'server'`: legacy SES path. Required for the rare case A's device
+   * has no mail composer; client must also supply `targetEmail`.
+   */
+  deliveryMode?: 'user' | 'server'
+}
+
+export interface ResonanceInviteMailto {
+  subject: string
+  body: string
 }
 
 export interface ResonanceInviteResult {
@@ -178,6 +196,10 @@ export interface ResonanceInviteResult {
   invitationId: string
   status: 'pending_invite'
   token: string
+  resonateUrl: string
+  deliveryMode: 'user' | 'server'
+  /** Locale-aware mailto template — client composes the email on A's device. */
+  mailto: ResonanceInviteMailto
 }
 
 export interface RespondInput {

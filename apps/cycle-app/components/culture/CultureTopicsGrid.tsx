@@ -1,82 +1,50 @@
 /**
- * Home 文化导览 — the six concepts (节日 / 节气 / 时辰 / 干支 / 八字 / 紫微). Collapsed by
- * default (2026-06 feedback); expanding reveals each concept's summary inline
- * (no deeper in-app page) with a direct Wikipedia link for more.
+ * Home 文化导览 — a single drill-in row that opens /glossary (the culture hub).
+ *
+ * Earlier revisions surfaced the 6 categories directly on home, but per
+ * 2026-06 feedback that made the drill-in feel redundant (same list on both
+ * screens). Now home shows ONE entry; glossary owns the 6-category list and
+ * each category's 二级分类 (festivals list, solar terms list, ShichenWheel,
+ * GanzhiGrid, BaziPillars, ZiweiIntro).
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
-import { useState } from 'react'
+import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 
-import { CultureWikiLink } from '@/components/culture/CultureWikiLink'
-import { CULTURE_CATEGORIES, type CultureCategoryKey, getWikipediaUrl } from '@/lib/culture'
 import { useStrings } from '@/lib/i18n-context'
-
-function categoryLabel(key: CultureCategoryKey, t: ReturnType<typeof useStrings>['t']): string {
-  switch (key) {
-    case 'festivals':
-      return t.festivalsSection
-    case 'jieqi':
-      return t.solarTermsSection
-    case 'shichen':
-      return t.glossaryShichen
-    case 'ganzhi':
-      return t.glossaryGanzhi
-    case 'sizhu':
-      return t.glossarySizhu
-    case 'ziwei':
-      return t.glossaryZiwei
-  }
-}
 
 export function CultureTopicsGrid() {
   const { colors, spacing } = useTheme()
-  const { t, locale } = useStrings()
-  const [open, setOpen] = useState(false)
+  const { t } = useStrings()
+  const router = useRouter()
 
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={{ borderRadius: 12, backgroundColor: colors.card, overflow: 'hidden' }}>
       <Pressable
-        onPress={() => setOpen((v) => !v)}
+        onPress={() => router.push('/glossary')}
         accessibilityRole='button'
         accessibilityLabel={t.cultureTopicsTitle}
-        hitSlop={8}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        style={({ pressed }) => ({
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          opacity: pressed ? 0.6 : 1,
+        })}
       >
-        <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>
-          {t.cultureTopicsTitle}
-        </Text>
-        {open ? (
-          <ChevronDownIcon size={18} color={colors.secondary} />
-        ) : (
-          <ChevronRightIcon size={18} color={colors.secondary} />
-        )}
-      </Pressable>
-
-      {open ? (
-        <View style={{ borderRadius: 12, backgroundColor: colors.card, overflow: 'hidden' }}>
-          {CULTURE_CATEGORIES.map((cat, i) => (
-            <View
-              key={cat.key}
-              style={{
-                borderTopWidth: i === 0 ? 0 : 0.5,
-                borderTopColor: colors.separator,
-                padding: spacing.lg,
-                gap: 6,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
-                {categoryLabel(cat.key, t)}
-              </Text>
-              <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
-                {cat.intro[locale]}
-              </Text>
-              <CultureWikiLink url={getWikipediaUrl(locale, cat.wikipediaTitle[locale])} />
-            </View>
-          ))}
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+            {t.cultureTopicsTitle}
+          </Text>
+          <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 17 }}>
+            {t.cultureHubBlurb}
+          </Text>
         </View>
-      ) : null}
+        <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+      </Pressable>
     </View>
   )
 }

@@ -100,6 +100,8 @@ export interface Strings {
   cultureUpcomingTerm: string
   /** Home section label above the six-topic culture grid. */
   cultureTopicsTitle: string
+  /** Hint subtitle beneath the home culture drill-in — enumerates the 6 hub categories. */
+  cultureHubBlurb: string
   /** Link label opening Wikipedia in the browser. */
   cultureWikipediaCta: string
   /** Ziwei section — interactive chart not shipped yet. */
@@ -241,6 +243,12 @@ export interface Strings {
   yuanComposeCta: string
   /** Shown when the contact's birthday is 农历 — Yuán only accepts solar. */
   yuanComposeLunarNote: string
+  /** Section label above the Apple Calendar subscribe row. */
+  appleCalendarSection: string
+  /** Row label that opens the system Calendar subscribe sheet. */
+  appleCalendarSubscribeRow: string
+  /** Hint subtitle beneath the subscribe row. */
+  appleCalendarSubscribeHint: string
 }
 
 const zhHans: Strings = {
@@ -300,6 +308,7 @@ const zhHans: Strings = {
   cultureReadMore: '阅读全文',
   cultureUpcomingTerm: '即将到来 · {name}',
   cultureTopicsTitle: '文化百科',
+  cultureHubBlurb: '节日 · 节气 · 时辰 · 干支 · 八字 · 紫微',
   cultureWikipediaCta: '在维基百科了解更多',
   ziweiChartComingSoon: '星盘排盘功能即将上线',
   seasonSpring: '春',
@@ -428,6 +437,10 @@ const zhHans: Strings = {
   themeAccent: '主题色',
   yuanComposeCta: '在 Yuán 看完整合盘 →',
   yuanComposeLunarNote: 'Yuán 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
+  appleCalendarSection: '系统日历',
+  appleCalendarSubscribeRow: '在 Apple 日历订阅黄历',
+  appleCalendarSubscribeHint:
+    '把每日干支、节气、宜忌同步到 iPhone / Mac 日历，不用打开 App 也能看见。',
 }
 
 const zhHant: Strings = {
@@ -475,6 +488,7 @@ const zhHant: Strings = {
   cultureReadMore: '閱讀全文',
   cultureUpcomingTerm: '即將到來 · {name}',
   cultureTopicsTitle: '文化百科',
+  cultureHubBlurb: '節日 · 節氣 · 時辰 · 干支 · 八字 · 紫微',
   cultureWikipediaCta: '在維基百科了解更多',
   ziweiChartComingSoon: '星盤排盤功能即將上線',
   seasonSpring: '春',
@@ -589,6 +603,10 @@ const zhHant: Strings = {
   themeAccent: '主題色',
   yuanComposeCta: '在 Yuán 看完整合盤 →',
   yuanComposeLunarNote: 'Yuán 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
+  appleCalendarSection: '系統日曆',
+  appleCalendarSubscribeRow: '在 Apple 日曆訂閱黃曆',
+  appleCalendarSubscribeHint:
+    '把每日干支、節氣、宜忌同步到 iPhone / Mac 日曆，不用打開 App 也能看見。',
 }
 
 const ja: Strings = {
@@ -648,6 +666,7 @@ const ja: Strings = {
   cultureReadMore: '全文を読む',
   cultureUpcomingTerm: 'まもなく · {name}',
   cultureTopicsTitle: '文化百科',
+  cultureHubBlurb: '節日 · 二十四節気 · 十二時辰 · 干支 · 八字 · 紫微',
   cultureWikipediaCta: 'ウィキペディアで詳しく',
   ziweiChartComingSoon: '星盤チャートは近日公開',
   seasonSpring: '春',
@@ -763,6 +782,10 @@ const ja: Strings = {
   themeAccent: 'テーマカラー',
   yuanComposeCta: 'Yuán で本格相性鑑定 →',
   yuanComposeLunarNote: 'Yuán は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
+  appleCalendarSection: 'システムカレンダー',
+  appleCalendarSubscribeRow: 'Apple カレンダーに暦を購読',
+  appleCalendarSubscribeHint:
+    '毎日の干支・節気・宜忌を iPhone / Mac のカレンダーへ同期。アプリを開かなくても確認できます。',
 }
 
 const en: Strings = {
@@ -822,6 +845,7 @@ const en: Strings = {
   cultureReadMore: 'Read more',
   cultureUpcomingTerm: 'Up next · {name}',
   cultureTopicsTitle: 'Culture guide',
+  cultureHubBlurb: 'Festivals · solar terms · 12 hours · ganzhi · bazi · ziwei',
   cultureWikipediaCta: 'Learn more on Wikipedia',
   ziweiChartComingSoon: 'Interactive chart coming soon',
   seasonSpring: 'Spring',
@@ -951,6 +975,10 @@ const en: Strings = {
   yuanComposeCta: 'Open full reading in Yuán →',
   yuanComposeLunarNote:
     'Yuán supports solar birthdays only. Edit this person to a solar date and try again.',
+  appleCalendarSection: 'System calendar',
+  appleCalendarSubscribeRow: 'Subscribe in Apple Calendar',
+  appleCalendarSubscribeHint:
+    'Sync daily 干支, solar terms, and yi/ji to your iPhone / Mac Calendar so you see them without opening the app.',
 }
 
 const TABLE: Record<Locale, Strings> = { 'zh-Hans': zhHans, 'zh-Hant': zhHant, ja, en }

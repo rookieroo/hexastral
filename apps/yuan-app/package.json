@@ -7,6 +7,7 @@
     "dev": "node_modules/.bin/expo start --dev-client",
     "dev:go": "node_modules/.bin/expo start",
     "ios": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo run:ios",
+    "ios:device": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo run:ios --device",
     "android": "node_modules/.bin/expo run:android",
     "prebuild": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo prebuild",
     "typecheck": "tsc --noEmit",

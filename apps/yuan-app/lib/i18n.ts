@@ -58,13 +58,14 @@ export const translations: Translations = {
 
     'mode.title': 'Now for them',
     'mode.invite': 'Invite them to fill in their own',
-    'mode.inviteHint': "We'll email them — they take it from there",
+    'mode.inviteHint': 'Your mail app drafts the note — you send it, they take the thread',
     'mode.fill': 'Or I will fill it in →',
 
     'invite.title': 'Their email',
     'invite.subtitle': 'And what are you to each other?',
-    'invite.hint': "I'll send a note. They'll continue the thread.",
-    'invite.send': 'Send invitation →',
+    'invite.hint':
+      'Your mail app opens with a draft — send it and they take the thread from there.',
+    'invite.send': 'Open in Mail →',
 
     'fill.title': 'Tell me about them',
     'fill.name': 'Name',
@@ -204,13 +205,13 @@ export const translations: Translations = {
 
     'mode.title': '现在轮到 ta',
     'mode.invite': '邀请 ta 自己填',
-    'mode.inviteHint': '我会发邮件让 ta 接力',
+    'mode.inviteHint': '我会写好邀请，由你的邮箱发出，ta 接力',
     'mode.fill': '或者我代填  →',
 
     'invite.title': 'ta 的邮箱',
     'invite.subtitle': '你们是什么关系？',
-    'invite.hint': '我会发一封信，让 ta 接力填',
-    'invite.send': '发送邀请  →',
+    'invite.hint': '你的邮箱会打开一封写好的邀请，由你发出，ta 接力填生辰',
+    'invite.send': '用我的邮箱发出  →',
 
     'fill.title': '告诉我关于 ta',
     'fill.name': '姓名',
@@ -349,13 +350,13 @@ export const translations: Translations = {
 
     'mode.title': '現在輪到 ta',
     'mode.invite': '邀請 ta 自己填',
-    'mode.inviteHint': '我會發郵件讓 ta 接力',
+    'mode.inviteHint': '我會寫好邀請，由你的郵箱寄出，ta 接力',
     'mode.fill': '或者我代填  →',
 
     'invite.title': 'ta 的信箱',
     'invite.subtitle': '你們是什麼關係？',
-    'invite.hint': '我會發一封信，讓 ta 接力填',
-    'invite.send': '送出邀請  →',
+    'invite.hint': '你的郵箱會打開一封寫好的邀請，由你發出，ta 接力填生辰',
+    'invite.send': '用我的郵箱寄出  →',
 
     'fill.title': '告訴我關於 ta',
     'fill.name': '姓名',
@@ -494,13 +495,13 @@ export const translations: Translations = {
 
     'mode.title': '次は相手の番',
     'mode.invite': '相手に自分で記入してもらう',
-    'mode.inviteHint': 'メールでお誘いします',
+    'mode.inviteHint': 'メールアプリで下書きが開きます。あなたから送信',
     'mode.fill': '私が代わりに入力  →',
 
     'invite.title': '相手のメール',
     'invite.subtitle': '二人はどんな関係？',
-    'invite.hint': 'メールを送って続きをお任せします',
-    'invite.send': '招待を送る  →',
+    'invite.hint': 'メールアプリで下書きが開きます。送信したらあとは相手のターン',
+    'invite.send': 'メールアプリで開く  →',
 
     'fill.title': '相手について教えて',
     'fill.name': '名前',
@@ -552,7 +553,8 @@ export const translations: Translations = {
     'invite.accept.open': '縁レポートを開く  →',
     'invite.accept.later': '後で',
     'invite.accept.consent.lead': '',
-    'invite.accept.consent.trail': 'さんと出生情報を共有し、相性鑑定のために使用することに同意します。',
+    'invite.accept.consent.trail':
+      'さんと出生情報を共有し、相性鑑定のために使用することに同意します。',
     'invite.accept.consent.privacyPolicy': 'プライバシーポリシー',
     'invite.accept.relationship.other': '縁の相手',
 
@@ -562,8 +564,7 @@ export const translations: Translations = {
     'settings.email.notLinked': 'メール未登録',
     'settings.email.link': 'メールを登録',
     'settings.email.change': 'メールを変更',
-    'settings.email.hint':
-      '任意 — 相手からの返信や、新しい端末での縁の復元に役立ちます。',
+    'settings.email.hint': '任意 — 相手からの返信や、新しい端末での縁の復元に役立ちます。',
     'settings.email.title': 'メールを確認',
     'settings.email.subtitle': '6桁の確認コードをお送りします。',
     'settings.email.placeholder': 'you@example.com',

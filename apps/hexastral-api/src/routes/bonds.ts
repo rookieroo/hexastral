@@ -36,12 +36,13 @@ import {
   birthToInput,
   buildEgoTimeline,
   type PairReadingBirth,
-  resolveResonanceCounterpart,
   type ResolvedBond,
+  resolveResonanceCounterpart,
 } from '../lib/bonds-timeline'
+import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { logEvent } from '../lib/event-log'
-import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { sendPushEvent } from '../lib/push'
+import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
 import { solarDateSchema } from '../lib/validation'
 import { getBondInviteCreditStatus } from '../services/quota'
@@ -98,10 +99,29 @@ const soloCreateSchema = z.object({
 })
 
 const resonanceInviteSchema = z.object({
-  targetEmail: z.string().email().max(254),
+  /**
+   * Optional. Only used server-side when `deliveryMode === 'server'`
+   * (legacy path); for `deliveryMode === 'user'` the email is composed
+   * entirely on A's device via mailto and never reaches the server.
+   * Stored as empty string in the user-initiated path so the database
+   * column (non-null) remains valid while holding no PII for B.
+   */
+  targetEmail: z.string().email().max(254).optional(),
   targetName: z.string().min(1).max(50),
   relationshipLabel: z.string().min(1).max(30),
   message: z.string().max(500).optional(),
+  /**
+   * `'user'` (default): the server never sends an email. A's device opens
+   *   the system mail composer (mailto:) with a server-provided locale-aware
+   *   subject + body containing the invitation link. Eliminates the
+   *   cross-jurisdiction commercial-email exposure (JP 特定電子メール法,
+   *   SG Spam Control Act, MY PDPA, US CAN-SPAM) because the message
+   *   originates from A's personal mailbox.
+   * `'server'` (legacy): existing flow — the server sends a hardened
+   *   transactional invite via SES. Retained for clients without mailto
+   *   support; subject is `<ADV>`-prefixed for English to satisfy SG SCA.
+   */
+  deliveryMode: z.enum(['server', 'user']).default('user').optional(),
 })
 
 const respondSchema = z.object({
@@ -453,30 +473,42 @@ bondRoutes.post('/invite', async (c) => {
     )
   }
 
-  // Cannot invite yourself (only when inviter email is known)
-  if (user.email && input.targetEmail.toLowerCase() === user.email.toLowerCase()) {
+  const deliveryMode = input.deliveryMode ?? 'user'
+  // In user-initiated mode, deliberately discard any targetEmail the client
+  // may have supplied — B's email must never reach our database. The mailto
+  // recipient is set on A's device using A's locally-held input.
+  const normalizedEmail =
+    deliveryMode === 'server' ? input.targetEmail?.trim().toLowerCase() : undefined
+
+  // Self-invite check — only meaningful when the inviter declared a target
+  // email (server delivery). User mode has no email to compare against.
+  if (normalizedEmail && user.email && normalizedEmail === user.email.toLowerCase()) {
     return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Cannot invite yourself')
   }
 
-  // Check no pending invitation to same email
-  const existing = await db
-    .select({ id: bondInvitations.id })
-    .from(bondInvitations)
-    .where(
-      and(
-        eq(bondInvitations.inviterUserId, userId),
-        eq(bondInvitations.targetEmail, input.targetEmail.toLowerCase()),
-        eq(bondInvitations.status, 'pending')
+  // Dedup by (inviter, targetEmail) — only when we actually hold the email.
+  // For user-initiated invites without a stored email, A can issue multiple
+  // pending invitations; cleanup happens on accept/decline/expiry.
+  if (normalizedEmail) {
+    const existing = await db
+      .select({ id: bondInvitations.id })
+      .from(bondInvitations)
+      .where(
+        and(
+          eq(bondInvitations.inviterUserId, userId),
+          eq(bondInvitations.targetEmail, normalizedEmail),
+          eq(bondInvitations.status, 'pending')
+        )
       )
-    )
-    .get()
-  if (existing) {
-    return jsonErr(
-      c,
-      409,
-      ApiErrorCode.conflict,
-      'Pending invitation already exists for this email'
-    )
+      .get()
+    if (existing) {
+      return jsonErr(
+        c,
+        409,
+        ApiErrorCode.conflict,
+        'Pending invitation already exists for this email'
+      )
+    }
   }
 
   // Create bond + invitation
@@ -500,7 +532,11 @@ bondRoutes.post('/invite', async (c) => {
       id: invitationId,
       bondId,
       inviterUserId: userId,
-      targetEmail: input.targetEmail.toLowerCase(),
+      // Empty-string sentinel for user-initiated invites — keeps the existing
+      // NOT NULL constraint valid without storing PII for B. The /respond
+      // handler treats `''` as "no email-match check required" and falls back
+      // to token-only matching.
+      targetEmail: normalizedEmail ?? '',
       token,
       status: 'pending',
       message: input.message ?? null,
@@ -508,27 +544,40 @@ bondRoutes.post('/invite', async (c) => {
     }),
   ])
 
-  // Send invitation email via SVC_MAILER
   const inviterName = user.name ?? 'Someone'
   const resonateUrl = `https://hexastral.com/resonate/${token}`
+  const locale = user.locale ?? 'zh'
 
-  const html = buildInvitationEmailHtml({
-    inviterName,
-    relationshipLabel: input.relationshipLabel,
-    message: input.message,
-    resonateUrl,
-    locale: user.locale ?? 'zh',
-  })
-
-  try {
-    await mailerClient.post(c.env.SVC_MAILER, '/send', {
-      to: input.targetEmail.toLowerCase(),
-      subject: buildInvitationSubject({ inviterName, locale: user.locale ?? 'zh' }),
-      html,
-      ...(user.email ? { replyTo: user.email } : {}),
+  if (deliveryMode === 'server') {
+    // Legacy / fallback path — server sends the hardened transactional invite.
+    // Only reached when the client explicitly opts in (older builds without
+    // mailto support); new clients default to `user` mode where this branch
+    // is skipped entirely and no email leaves our infrastructure.
+    if (!normalizedEmail) {
+      return jsonErr(
+        c,
+        400,
+        ApiErrorCode.missing_required,
+        'targetEmail required for server delivery mode'
+      )
+    }
+    const html = buildInvitationEmailHtml({
+      inviterName,
+      relationshipLabel: input.relationshipLabel,
+      message: input.message,
+      resonateUrl,
+      locale,
     })
-  } catch {
-    return jsonErr(c, 502, ApiErrorCode.upstream_unavailable, 'Failed to send invitation email')
+    try {
+      await mailerClient.post(c.env.SVC_MAILER, '/send', {
+        to: normalizedEmail,
+        subject: buildInvitationSubject({ inviterName, locale }),
+        html,
+        ...(user.email ? { replyTo: user.email } : {}),
+      })
+    } catch {
+      return jsonErr(c, 502, ApiErrorCode.upstream_unavailable, 'Failed to send invitation email')
+    }
   }
 
   c.executionCtx.waitUntil(
@@ -536,12 +585,34 @@ bondRoutes.post('/invite', async (c) => {
       bondId,
       invitationId,
       mode: 'resonance',
+      deliveryMode,
       label: input.relationshipLabel,
-      targetEmail: input.targetEmail.toLowerCase(),
+      ...(normalizedEmail && deliveryMode === 'server' ? { targetEmail: normalizedEmail } : {}),
     })
   )
 
-  return jsonOk(c, { bondId, invitationId, status: 'pending_invite', token }, 201)
+  return jsonOk(
+    c,
+    {
+      bondId,
+      invitationId,
+      status: 'pending_invite',
+      token,
+      resonateUrl,
+      deliveryMode,
+      // mailto template — A's device composes the actual email. Always
+      // returned so the client has a graceful fallback even when it opted
+      // into server delivery.
+      mailto: buildInvitationMailto({
+        inviterName,
+        relationshipLabel: input.relationshipLabel,
+        message: input.message,
+        resonateUrl,
+        locale,
+      }),
+    },
+    201
+  )
 })
 
 // ── GET /invite/:token/info — Public: invitation details ────
@@ -755,21 +826,30 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   if (!responder) {
     return jsonErr(c, 404, ApiErrorCode.not_found, 'User not found')
   }
-  if (!responder.email) {
-    return jsonErr(
-      c,
-      400,
-      ApiErrorCode.missing_required,
-      'Link your email in Settings before responding'
-    )
-  }
-  if (responder.email.toLowerCase() !== invitation.targetEmail.toLowerCase()) {
-    return jsonErr(
-      c,
-      403,
-      ApiErrorCode.forbidden,
-      'Invitation email mismatch. Please sign in with the invited email.'
-    )
+  // Email-match check only runs when A's invite stored a target email
+  // (legacy `deliveryMode: 'server'` path). In the user-initiated mailto
+  // path, `invitation.targetEmail` is an empty string by design — A's
+  // device sent the link directly, so the token in the URL is the
+  // sufficient authorization. We still require the responder to have an
+  // account; we just don't pin them to a specific bound email.
+  const storedTargetEmail = invitation.targetEmail?.trim().toLowerCase() ?? ''
+  if (storedTargetEmail) {
+    if (!responder.email) {
+      return jsonErr(
+        c,
+        400,
+        ApiErrorCode.missing_required,
+        'Link your email in Settings before responding'
+      )
+    }
+    if (responder.email.toLowerCase() !== storedTargetEmail) {
+      return jsonErr(
+        c,
+        403,
+        ApiErrorCode.forbidden,
+        'Invitation email mismatch. Please sign in with the invited email.'
+      )
+    }
   }
 
   // ── Decline ──
@@ -978,7 +1058,11 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
 
   const mirrorBondId = crypto.randomUUID()
 
-  // Update invitation + A's bond (A always has full access)
+  // Update invitation + A's bond (A always has full access). Also flip A's
+  // unlockedChapterCount to the full cap — B showed up and accepted the
+  // bond, which is the product trigger for "your partner is here, unlock
+  // the whole reading" (see lib/chapter-access.ts). MAX-clamp guards
+  // against a future Pro tier pushing the count above CAP.
   await db.batch([
     db
       .update(bondInvitations)
@@ -995,6 +1079,13 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(userBonds.id, invitation.bondId)),
+    db
+      .update(users)
+      .set({
+        unlockedChapterCount: sql`MAX(${users.unlockedChapterCount}, ${CHAPTER_UNLOCK_CAP})`,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, invitation.inviterUserId)),
   ])
 
   await db.insert(userBonds).values({
@@ -1045,7 +1136,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
       sendBondAcceptedEmails(c.env, {
         inviterEmail: inviter.email ?? null,
         inviterName: inviter.name ?? null,
-        responderEmail: responder.email,
+        responderEmail: responder.email ?? null,
         responderName: responder.name ?? null,
         relationshipLabel: bond?.relationshipLabel ?? '',
       }),
@@ -2121,7 +2212,7 @@ async function sendBondAcceptedEmails(
   input: {
     inviterEmail: string | null
     inviterName: string | null
-    responderEmail: string
+    responderEmail: string | null
     responderName: string | null
     relationshipLabel: string
   }
@@ -2140,13 +2231,15 @@ async function sendBondAcceptedEmails(
     )
   }
 
-  tasks.push(
-    mailerClient.post(env.SVC_MAILER, '/send', {
-      to: input.responderEmail,
-      subject: 'Resonance connected successfully',
-      html: `<p>You are now connected with ${inviterDisplay} in Resonance.</p><p>Relationship: ${input.relationshipLabel}</p><p>Your compatibility reading is ready in HexAstral.</p>`,
-    })
-  )
+  if (input.responderEmail) {
+    tasks.push(
+      mailerClient.post(env.SVC_MAILER, '/send', {
+        to: input.responderEmail,
+        subject: 'Resonance connected successfully',
+        html: `<p>You are now connected with ${inviterDisplay} in Resonance.</p><p>Relationship: ${input.relationshipLabel}</p><p>Your compatibility reading is ready in HexAstral.</p>`,
+      })
+    )
+  }
 
   await Promise.all(tasks)
 }
@@ -2181,7 +2274,8 @@ type InviteLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
 function normalizeInviteLocale(locale: string): InviteLocale {
   if (locale === 'zh' || locale === 'zh-Hans' || locale.startsWith('zh-CN')) return 'zh'
-  if (locale === 'zh-Hant' || locale.startsWith('zh-TW') || locale.startsWith('zh-HK')) return 'zh-Hant'
+  if (locale === 'zh-Hant' || locale.startsWith('zh-TW') || locale.startsWith('zh-HK'))
+    return 'zh-Hant'
   if (locale === 'ja' || locale.startsWith('ja-')) return 'ja'
   return 'en'
 }
@@ -2202,8 +2296,10 @@ interface InviteCopy {
 
 const INVITE_COPY: Record<InviteLocale, InviteCopy> = {
   en: {
-    preheader: 'You have been invited to confirm participation in a private birth-chart compatibility reading.',
-    heading: (n) => `${n} has invited you to confirm your birth details for a compatibility reading.`,
+    preheader:
+      'You have been invited to confirm participation in a private birth-chart compatibility reading.',
+    heading: (n) =>
+      `${n} has invited you to confirm your birth details for a compatibility reading.`,
     relationshipLabel: 'Indicated relationship',
     bodyIntro:
       'If you choose to participate, you will enter your own birth details. Your data is used only to compute the reading; the inviter never sees your exact birth information.',
@@ -2227,7 +2323,8 @@ const INVITE_COPY: Record<InviteLocale, InviteCopy> = {
     bodyPrivacy: '若不愿参与，可直接忽略本邮件，邀请将自动过期并删除。',
     cta: '查看邀请',
     expiryNote: '本邀请将在 7 天后过期。',
-    disclosureWhy: (n) => `你收到这封一次性邮件，是因为 ${n} 在 HexAstral 上填入了你的邮箱以发起合盘邀请。`,
+    disclosureWhy: (n) =>
+      `你收到这封一次性邮件，是因为 ${n} 在 HexAstral 上填入了你的邮箱以发起合盘邀请。`,
     disclosureOptOut:
       '本邮件不会有任何后续。如希望立即删除你的邮箱记录，无需回复——邀请过期后邮箱将自动清除。隐私问题请联系 privacy@hexastral.com。',
     disclosureNoMailingList: '你的邮箱不会被加入任何邮件列表。',
@@ -2242,7 +2339,8 @@ const INVITE_COPY: Record<InviteLocale, InviteCopy> = {
     bodyPrivacy: '若不願參與，可直接忽略本郵件，邀請將自動過期並刪除。',
     cta: '查看邀請',
     expiryNote: '本邀請將於 7 天後過期。',
-    disclosureWhy: (n) => `您收到這封一次性郵件，是因為 ${n} 在 HexAstral 上填入了您的電子郵件以發起合盤邀請。`,
+    disclosureWhy: (n) =>
+      `您收到這封一次性郵件，是因為 ${n} 在 HexAstral 上填入了您的電子郵件以發起合盤邀請。`,
     disclosureOptOut:
       '本郵件不會有任何後續。若希望立即刪除您的電郵記錄，無需回覆——邀請過期後電郵將自動清除。隱私相關問題請聯絡 privacy@hexastral.com。',
     disclosureNoMailingList: '您的電郵不會被加入任何郵件列表。',
@@ -2254,13 +2352,16 @@ const INVITE_COPY: Record<InviteLocale, InviteCopy> = {
     relationshipLabel: '関係性ラベル',
     bodyIntro:
       'ご参加いただける場合は、ご自身の生年月日等の情報をご入力いただきます。招待者にはお客様の生年月日情報そのものは共有されず、鑑定結果のみが表示されます。',
-    bodyPrivacy: 'ご参加されない場合は、本メールをそのまま無視していただいて構いません。招待は自動的に期限切れとなり、削除されます。',
+    bodyPrivacy:
+      'ご参加されない場合は、本メールをそのまま無視していただいて構いません。招待は自動的に期限切れとなり、削除されます。',
     cta: '招待を確認する',
     expiryNote: '本招待は 7 日後に失効します。',
-    disclosureWhy: (n) => `本メールは、${n} 様が HexAstral にてお客様のメールアドレスを入力されたため、一回限り送信されています。`,
+    disclosureWhy: (n) =>
+      `本メールは、${n} 様が HexAstral にてお客様のメールアドレスを入力されたため、一回限り送信されています。`,
     disclosureOptOut:
       '今後追加でメールが送信されることはありません。受信を希望されない場合、ご返信は不要です——招待の失効と同時にメールアドレスは自動的に削除されます。受信拒否・個人情報に関するお問い合わせは privacy@hexastral.com までご連絡ください。',
-    disclosureNoMailingList: 'お客様のメールアドレスがメーリングリストに追加されることはありません。',
+    disclosureNoMailingList:
+      'お客様のメールアドレスがメーリングリストに追加されることはありません。',
     operatorLine: '送信者：',
   },
 }
@@ -2286,6 +2387,77 @@ function buildInvitationSubject(opts: { inviterName: string; locale: string }): 
   return `<ADV> ${name} has invited you to a birth-chart compatibility reading · HexAstral`
 }
 
+interface MailtoTemplate {
+  subject: string
+  body: string
+}
+
+/**
+ * Build the locale-aware mailto subject + body that A's device will hand to
+ * the system mail composer. Critically: no `<ADV>` prefix here — the message
+ * originates from A's personal mailbox, not from our service, so it is a
+ * private one-to-one communication exempt from commercial-email regulation
+ * across US/SG/MY/JP. The body is friendly first-person; A can edit it.
+ */
+function buildInvitationMailto(opts: {
+  inviterName: string
+  relationshipLabel: string
+  message?: string | null
+  resonateUrl: string
+  locale: string
+}): MailtoTemplate {
+  const loc = normalizeInviteLocale(opts.locale)
+  const { inviterName, relationshipLabel, message, resonateUrl } = opts
+
+  if (loc === 'zh') {
+    const messageLine = message ? `\n\n${message}\n` : ''
+    return {
+      subject: `来自 ${inviterName} 的合盘邀请`,
+      body:
+        `嗨，${messageLine}\n\n` +
+        `我在用 HexAstral 看星盘合盘，把你当作我的「${relationshipLabel}」加进去了，想邀请你一起。\n\n` +
+        `点这个链接确认你的生辰信息：${resonateUrl}\n\n` +
+        '链接 7 天有效。你填的生辰我看不到，只能看到合盘的结果。\n\n' +
+        `— ${inviterName}`,
+    }
+  }
+  if (loc === 'zh-Hant') {
+    const messageLine = message ? `\n\n${message}\n` : ''
+    return {
+      subject: `來自 ${inviterName} 的合盤邀請`,
+      body:
+        `嗨，${messageLine}\n\n` +
+        `我在用 HexAstral 看星盤合盤，把你當作我的「${relationshipLabel}」加進去了，想邀請你一起。\n\n` +
+        `點這個連結確認你的生辰資料：${resonateUrl}\n\n` +
+        '連結 7 天內有效。你填的生辰我看不到，只能看到合盤結果。\n\n' +
+        `— ${inviterName}`,
+    }
+  }
+  if (loc === 'ja') {
+    const messageLine = message ? `\n\n${message}\n` : ''
+    return {
+      subject: `${inviterName} さんから相性鑑定のご招待`,
+      body:
+        `こんにちは。${messageLine}\n\n` +
+        `HexAstral という相性鑑定アプリで、あなたを「${relationshipLabel}」として登録しました。よかったら一緒に見てみませんか？\n\n` +
+        `こちらのリンクから生年月日等のご入力をお願いします：${resonateUrl}\n\n` +
+        'リンクは 7 日間有効です。入力された情報は私には見えず、鑑定結果のみが共有されます。\n\n' +
+        `— ${inviterName}`,
+    }
+  }
+  // en + fallback
+  const messageLine = message ? `\n\n${message}\n` : ''
+  return {
+    subject: `${inviterName} invited you to a compatibility reading`,
+    body:
+      `Hey,${messageLine}\n\n` +
+      `I'm using an app called HexAstral to look at birth-chart compatibility, and I added you as my "${relationshipLabel}". Curious to see what comes up?\n\n` +
+      `Use this link to confirm your birth details: ${resonateUrl}\n\n` +
+      `The link expires in 7 days. I won't see your exact birth info — only the reading result.\n\n` +
+      `— ${inviterName}`,
+  }
+}
+
 function buildInvitationEmailHtml(opts: {
   inviterName: string
   relationshipLabel: string
@@ -2299,7 +2471,10 @@ function buildInvitationEmailHtml(opts: {
   const rel = escapeHtml(opts.relationshipLabel)
   const url = escapeHtml(opts.resonateUrl)
   const msg = opts.message ? escapeHtml(opts.message) : null
-  const headingHtml = escapeHtml(c.heading(opts.inviterName)).replace(name, `<strong>${name}</strong>`)
+  const headingHtml = escapeHtml(c.heading(opts.inviterName)).replace(
+    name,
+    `<strong>${name}</strong>`
+  )
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${OPERATOR.brand}</title></head>
 <body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;font-size:1px;line-height:1px;mso-hide:all;">${escapeHtml(c.preheader)}</span>

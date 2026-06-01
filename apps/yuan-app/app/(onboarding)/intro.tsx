@@ -16,10 +16,11 @@ import { zinc } from '@zhop/hexastral-tokens'
 import { yuanType } from '@zhop/hexastral-tokens/yuan'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useWindowDimensions, Pressable, Text, View, StyleSheet } from 'react-native'
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import Animated, {
-  Easing,
   cancelAnimation,
+  Easing,
+  type SharedValue,
   useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
@@ -34,11 +35,20 @@ import { resolveLocale } from '@/lib/i18n'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
-const INTRO_COPY: Record<string, { tap: string; continue: string }> = {
+type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
+
+const INTRO_COPY: Record<CopyLocale, { tap: string; continue: string }> = {
   en: { tap: 'tap to skip', continue: 'tap to begin' },
   zh: { tap: '轻触跳过', continue: '轻触开始' },
   'zh-Hant': { tap: '輕觸跳過', continue: '輕觸開始' },
   ja: { tap: 'タップでスキップ', continue: 'タップで始める' },
+}
+
+function pickIntroCopy(locale: string): { tap: string; continue: string } {
+  if (locale === 'en' || locale === 'zh' || locale === 'zh-Hant' || locale === 'ja') {
+    return INTRO_COPY[locale]
+  }
+  return INTRO_COPY.en
 }
 
 /* ── Timeline (ms) ──────────────────────────────────────────────────────── */
@@ -103,7 +113,15 @@ function StickFigure({ pose, size = 64, facing = 'R' }: StickFigureProps) {
       {/* Head */}
       <Circle cx={20 + headDx} cy={headCy} r={5.5} fill={headFill} />
       {/* Body */}
-      <Line x1={20} y1={neckY} x2={20} y2={hipY} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
+      <Line
+        x1={20}
+        y1={neckY}
+        x2={20}
+        y2={hipY}
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeLinecap='round'
+      />
       {/* Arms */}
       {armOut ? (
         <>
@@ -152,15 +170,63 @@ function StickFigure({ pose, size = 64, facing = 'R' }: StickFigureProps) {
       {pose === 'sit' ? (
         <>
           {/* Folded: thigh out, shin down */}
-          <Line x1={20} y1={hipY} x2={20 + armDir * 10} y2={hipY + 2} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
-          <Line x1={20 + armDir * 10} y1={hipY + 2} x2={20 + armDir * 14} y2={hipY + 14} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
-          <Line x1={20} y1={hipY} x2={20 + armDir * 4} y2={hipY + 4} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
-          <Line x1={20 + armDir * 4} y1={hipY + 4} x2={20 + armDir * 8} y2={hipY + 16} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
+          <Line
+            x1={20}
+            y1={hipY}
+            x2={20 + armDir * 10}
+            y2={hipY + 2}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
+          <Line
+            x1={20 + armDir * 10}
+            y1={hipY + 2}
+            x2={20 + armDir * 14}
+            y2={hipY + 14}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
+          <Line
+            x1={20}
+            y1={hipY}
+            x2={20 + armDir * 4}
+            y2={hipY + 4}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
+          <Line
+            x1={20 + armDir * 4}
+            y1={hipY + 4}
+            x2={20 + armDir * 8}
+            y2={hipY + 16}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
         </>
       ) : (
         <>
-          <Line x1={20} y1={hipY} x2={20 - legSpread} y2={76} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
-          <Line x1={20} y1={hipY} x2={20 + legSpread} y2={76} stroke={stroke} strokeWidth={sw} strokeLinecap='round' />
+          <Line
+            x1={20}
+            y1={hipY}
+            x2={20 - legSpread}
+            y2={76}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
+          <Line
+            x1={20}
+            y1={hipY}
+            x2={20 + legSpread}
+            y2={76}
+            stroke={stroke}
+            strokeWidth={sw}
+            strokeLinecap='round'
+          />
         </>
       )}
     </Svg>
@@ -234,10 +300,18 @@ interface Star {
   phase: number
 }
 
-function StarField({ width, height, brightSv }: { width: number; height: number; brightSv: Animated.SharedValue<number> }) {
+function StarField({
+  width,
+  height,
+  brightSv,
+}: {
+  width: number
+  height: number
+  brightSv: SharedValue<number>
+}) {
   const stars = useMemo<Star[]>(() => {
     // Deterministic positions — no Math.random per project conventions.
-    const seeds = [
+    const seeds: Array<[number, number, number, number]> = [
       [0.08, 0.12, 1.2, 0.0],
       [0.18, 0.06, 0.8, 0.3],
       [0.27, 0.22, 1.0, 0.6],
@@ -249,7 +323,7 @@ function StarField({ width, height, brightSv }: { width: number; height: number;
       [0.78, 0.08, 1.3, 0.4],
       [0.86, 0.19, 1.0, 0.7],
       [0.93, 0.11, 0.8, 0.0],
-      [0.14, 0.30, 0.9, 0.55],
+      [0.14, 0.3, 0.9, 0.55],
       [0.32, 0.34, 1.1, 0.15],
       [0.58, 0.32, 0.8, 0.85],
       [0.75, 0.36, 1.0, 0.45],
@@ -271,7 +345,7 @@ function StarField({ width, height, brightSv }: { width: number; height: number;
   )
 }
 
-function StarDot({ star, brightSv }: { star: Star; brightSv: Animated.SharedValue<number> }) {
+function StarDot({ star, brightSv }: { star: Star; brightSv: SharedValue<number> }) {
   // Each star has a per-star phase offset so they twinkle out of sync.
   const twinkle = useSharedValue(0)
   useEffect(() => {
@@ -294,7 +368,13 @@ function StarDot({ star, brightSv }: { star: Star; brightSv: Animated.SharedValu
   }))
 
   return (
-    <AnimatedCircle cx={star.x} cy={star.y} r={star.r} fill={zinc[700]} animatedProps={animatedProps} />
+    <AnimatedCircle
+      cx={star.x}
+      cy={star.y}
+      r={star.r}
+      fill={zinc[700]}
+      animatedProps={animatedProps}
+    />
   )
 }
 
@@ -304,7 +384,7 @@ export default function IntroScreen() {
   const router = useRouter()
   const reduced = useReducedMotion()
   const locale = useMemo(() => resolveLocale(), [])
-  const copy = INTRO_COPY[locale] ?? INTRO_COPY.en
+  const copy = useMemo(() => pickIntroCopy(locale), [locale])
   const { width, height } = useWindowDimensions()
   const groundY = height * 0.62
   const center = width / 2

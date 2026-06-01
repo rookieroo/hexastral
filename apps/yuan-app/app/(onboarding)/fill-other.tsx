@@ -61,7 +61,7 @@ export default function FillOtherScreen() {
       : null
   )
   const [relType, setRelType] = useState<RelationshipType | null>(
-    (draft.relationshipLabel as RelationshipType) || null
+    (draft.relationshipLabel as RelationshipType) || 'romantic'
   )
 
   const cityName = pickedCity?.name.trim() ?? ''

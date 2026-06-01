@@ -1,9 +1,17 @@
 /**
- * Onboarding · Screen 7a — Invite by email
+ * Onboarding · Screen 7a — Invite by email (user-initiated)
  *
- * Email + relationship chip selector + optional message → POST /api/bonds/invite
- * via scenario-yuan's useBondInvitation().create(). On success, mark
- * onboarding complete and route to /(bonds) which shows the waiting state.
+ * A enters B's email + relationship label → POST /api/bonds/invite creates
+ * the bond + token server-side WITHOUT touching B's email. The server
+ * returns a locale-aware mailto subject/body; this screen hands those to
+ * the system mail composer via expo-linking. A's own mailbox sends the
+ * actual message, sidestepping cross-jurisdiction commercial-email
+ * regulation (JP 特定電子メール法, SG Spam Control Act, MY PDPA, US
+ * CAN-SPAM) since the message originates as a private one-to-one email.
+ *
+ * On mail-composer-unavailable (rare — typically dev simulators), we copy
+ * the resonate URL to the clipboard and route to bonds with an explanatory
+ * banner; bonds then offers a Share Sheet fallback.
  */
 
 import { yuanLight, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
@@ -12,9 +20,10 @@ import {
   RelationshipTypeSelector,
   useBondInvitation,
 } from '@zhop/scenario-yuan'
+import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Pressable, Share, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { resolveLocale, t } from '@/lib/i18n'
@@ -40,7 +49,7 @@ export default function InviteEmailScreen() {
   const draft = useDraft()
   const { create } = useBondInvitation()
   const [email, setEmail] = useState<string>(draft.otherEmail)
-  const [relType, setRelType] = useState<RelationshipType | null>(null)
+  const [relType, setRelType] = useState<RelationshipType | null>('romantic')
   const [message, setMessage] = useState<string>('')
   const [sending, setSending] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,13 +66,34 @@ export default function InviteEmailScreen() {
         RELATIONSHIP_LABEL_BY_TYPE[relType].en ??
         'Other'
       const targetName = email.split('@')[0] ?? ''
-      await create({
-        targetEmail: email.trim(),
+      const recipient = email.trim()
+      // deliveryMode defaults to 'user' server-side — targetEmail is
+      // intentionally omitted so the server never receives B's address.
+      const result = await create({
         targetName,
         relationshipLabel: label,
         message: message.trim() || undefined,
       })
-      updateDraft({ otherEmail: email.trim(), relationshipLabel: label, message })
+
+      // Compose the system mailto URL using server-provided locale-aware
+      // copy. URL-encode subject + body so newlines / Unicode survive the
+      // round-trip to the OS handler.
+      const subject = encodeURIComponent(result.mailto.subject)
+      const body = encodeURIComponent(result.mailto.body)
+      const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${subject}&body=${body}`
+
+      const canOpenMail = await Linking.canOpenURL(mailtoUrl).catch(() => false)
+      if (canOpenMail) {
+        await Linking.openURL(mailtoUrl)
+      } else {
+        // Fallback: hand the bond URL to the system share sheet so A can
+        // send it through any channel (Messages, WhatsApp, AirDrop, etc).
+        // The bond is already pending server-side; the link is the only
+        // thing B needs.
+        await Share.share({ message: result.mailto.body }).catch(() => undefined)
+      }
+
+      updateDraft({ otherEmail: recipient, relationshipLabel: label, message })
       await markOnboardingComplete()
       await clearDraft()
       router.replace('/(bonds)')

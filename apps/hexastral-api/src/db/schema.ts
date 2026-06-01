@@ -170,11 +170,13 @@ export const users = sqliteTable(
      * 命书章节解锁额度 — first N chapters in `CHAPTER_UNLOCK_ORDER`
      * (see lib/chapter-access.ts) are available to this user.
      *
-     * Free user starts at 2 (ch1 + ch4). Each successful invite-redeem
-     * (target binds email) increments by 1, capped at the total chapter
-     * count. Pro/IAP path (post-launch) flips this to max immediately.
+     * Free user starts at 3 (ch1 + ch4 + ch3 in unlock order). The first
+     * invite-redeem (target binds email) flips this to the full chapter
+     * count — the partner showed up, unlock the whole reading. Pro/IAP path
+     * also flips to max. New rows should pass `CHAPTER_UNLOCK_DEFAULT`
+     * explicitly so behavior is independent of the column-level default.
      */
-    unlockedChapterCount: integer('unlocked_chapter_count').default(2).notNull(),
+    unlockedChapterCount: integer('unlocked_chapter_count').default(3).notNull(),
 
     /**
      * Free users get one lifetime birth-info correction. After that, the edit

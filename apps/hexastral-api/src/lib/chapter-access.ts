@@ -2,11 +2,16 @@
  * Chapter unlock policy — single source of truth for "which chapter is the
  * N-th to unlock" and "is THIS chapter currently readable by THIS user".
  *
- * The free-reading flow gives every user the first 2 chapters by default
- * (see `users.unlockedChapterCount` default in schema). Each successful
- * invite-redeem (target binds email) increments the count by 1. Cap is the
- * total length of the ordered list — invites stop being useful once the user
- * holds every chapter.
+ * The free-reading flow gives every user the first 3 chapters by default
+ * (see `users.unlockedChapterCount` default in schema; new rows must pass
+ * `CHAPTER_UNLOCK_DEFAULT` explicitly to be robust against schema drift).
+ *
+ * Unlocking the rest:
+ *   - Pro/IAP entitlement → flips count to `CHAPTER_UNLOCK_CAP` immediately.
+ *   - Invite redemption → ANY pending invite of A redeemed by B (B binds the
+ *     invited email) flips A's count to `CHAPTER_UNLOCK_CAP`. We do not
+ *     +1 per redeem — the product premise is "your partner downloaded too",
+ *     and one such partner is enough to validate the bond.
  *
  * `ch2_dimensions_dynamic` is intentionally NOT in the unlock list. It is the
  * time-bound Pro variant of `ch2_dimensions_static` and is gated by a future
@@ -38,7 +43,7 @@ export const CHAPTER_UNLOCK_ORDER: ReadonlyArray<ChapterSlug> = [
 export const CHAPTER_UNLOCK_CAP = CHAPTER_UNLOCK_ORDER.length
 
 /** Default `users.unlockedChapterCount` for a brand-new account. */
-export const CHAPTER_UNLOCK_DEFAULT = 2
+export const CHAPTER_UNLOCK_DEFAULT = 3
 
 /**
  * True if `slug` is readable by a user holding `unlockedCount` chapters.
@@ -62,11 +67,15 @@ export function chapterUnlockPosition(slug: string): number | null {
 /**
  * Called from `POST /api/user/:userId/email/confirm` right after `users.email`
  * is written. Scans pending `chapter_unlock_invitations` whose `target_email`
- * matches the freshly bound email and credits each inviter one chapter unlock
- * (clamped to `CHAPTER_UNLOCK_CAP`).
+ * matches the freshly bound email and flips each inviter's
+ * `unlockedChapterCount` to `CHAPTER_UNLOCK_CAP` — the partner showed up,
+ * unlock the whole reading.
+ *
+ * We use `MAX(count, CAP)` rather than blind set in case Pro/IAP has already
+ * pushed the count above the unlock-mechanic ceiling for a future variant.
  *
  * Returns the number of invites redeemed so the email-confirm response can
- * surface a "你解锁了 N 章给朋友" toast back to B.
+ * surface a "你解锁了 N 个朋友的合盘" toast back to B.
  */
 export async function claimChapterUnlocksForEmail(
   db: AppDb,
@@ -77,7 +86,10 @@ export async function claimChapterUnlocksForEmail(
   if (!email) return 0
 
   const pending = await db
-    .select({ id: chapterUnlockInvitations.id, inviterUserId: chapterUnlockInvitations.inviterUserId })
+    .select({
+      id: chapterUnlockInvitations.id,
+      inviterUserId: chapterUnlockInvitations.inviterUserId,
+    })
     .from(chapterUnlockInvitations)
     .where(
       and(
@@ -91,8 +103,7 @@ export async function claimChapterUnlocksForEmail(
 
   const now = new Date().toISOString()
   // Each invite is independent (different inviters possible); fan out in
-  // parallel. Increment is `min(count + 1, CAP)` via SQL so concurrent
-  // redemptions on the same inviter still respect the cap.
+  // parallel. Each redemption flips the inviter to the full unlock count.
   await Promise.all(
     pending.map((row) =>
       Promise.all([
@@ -107,7 +118,7 @@ export async function claimChapterUnlocksForEmail(
         db
           .update(users)
           .set({
-            unlockedChapterCount: sql`MIN(${users.unlockedChapterCount} + 1, ${CHAPTER_UNLOCK_CAP})`,
+            unlockedChapterCount: sql`MAX(${users.unlockedChapterCount}, ${CHAPTER_UNLOCK_CAP})`,
             updatedAt: now,
           })
           .where(eq(users.id, row.inviterUserId)),

@@ -14,6 +14,7 @@ import { z } from 'zod/v4'
 
 import { users } from '../db/schema'
 import type { CloudflareBindings, ContextVariables } from '../infra-types'
+import { CHAPTER_UNLOCK_DEFAULT } from '../lib/chapter-access'
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
 const jwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'))
@@ -59,80 +60,82 @@ function audienceForTarget(targetApp: string): string {
 export const portfolioAuthRoutes = new Hono<{
   Bindings: CloudflareBindings
   Variables: ContextVariables
-}>().post('/apple', async (c) => {
-  let body: unknown
-  try {
-    body = await c.req.json()
-  } catch {
-    throw new HTTPException(422, { message: 'Expected JSON body' })
-  }
+}>()
+  .post('/apple', async (c) => {
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      throw new HTTPException(422, { message: 'Expected JSON body' })
+    }
 
-  const parsed = portfolioAuthBodySchema.safeParse(body)
-  if (!parsed.success) {
-    throw new HTTPException(422, { message: 'Invalid payload' })
-  }
+    const parsed = portfolioAuthBodySchema.safeParse(body)
+    if (!parsed.success) {
+      throw new HTTPException(422, { message: 'Invalid payload' })
+    }
 
-  const { identityToken, target_app } = parsed.data
-  const audience = audienceForTarget(target_app)
+    const { identityToken, target_app } = parsed.data
+    const audience = audienceForTarget(target_app)
 
-  let sub: string
-  // Apple ships the `email` claim ONLY on first authorization — subsequent
-  // re-auths drop it. Capture it from the verified JWT (more trustworthy than
-  // a client-supplied field) on the first auth and persist; never overwrite
-  // an existing email.
-  let emailFromToken: string | null = null
-  try {
-    const { payload } = await jwtVerify(identityToken, jwks, {
-      issuer: APPLE_ISSUER,
-      audience,
+    let sub: string
+    // Apple ships the `email` claim ONLY on first authorization — subsequent
+    // re-auths drop it. Capture it from the verified JWT (more trustworthy than
+    // a client-supplied field) on the first auth and persist; never overwrite
+    // an existing email.
+    let emailFromToken: string | null = null
+    try {
+      const { payload } = await jwtVerify(identityToken, jwks, {
+        issuer: APPLE_ISSUER,
+        audience,
+      })
+      if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+        throw new HTTPException(401, { message: 'Invalid Apple token' })
+      }
+      sub = payload.sub
+      if (typeof payload.email === 'string' && payload.email.includes('@')) {
+        emailFromToken = payload.email.trim().toLowerCase()
+      }
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      console.warn('[portfolio-auth/apple] jwtVerify failed', err)
+      throw new HTTPException(401, { message: 'Apple identity token invalid' })
+    }
+
+    const db = c.get('db')
+
+    const existing = await db.select().from(users).where(eq(users.appleUserId, sub)).get()
+
+    if (existing) {
+      const patch: { deviceSecret?: string; email?: string; updatedAt: string } = {
+        updatedAt: new Date().toISOString(),
+      }
+      if (!existing.deviceSecret) patch.deviceSecret = crypto.randomUUID()
+      // Backfill email when Apple ships it AND we don't already have one — covers
+      // the (rare) case where a user revoked + re-authorized to surface a new
+      // email, and the more common case of an account created before the email
+      // capture fix was deployed.
+      if (!existing.email && emailFromToken) patch.email = emailFromToken
+      if (patch.deviceSecret !== undefined || patch.email !== undefined) {
+        await db.update(users).set(patch).where(eq(users.id, existing.id))
+      }
+      return c.json({
+        userId: existing.id,
+        deviceSecret: patch.deviceSecret ?? (existing.deviceSecret as string),
+      })
+    }
+
+    const id = nanoid()
+    const deviceSecret = crypto.randomUUID()
+    await db.insert(users).values({
+      id,
+      appleUserId: sub,
+      deviceSecret,
+      unlockedChapterCount: CHAPTER_UNLOCK_DEFAULT,
+      ...(emailFromToken ? { email: emailFromToken } : {}),
     })
-    if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
-      throw new HTTPException(401, { message: 'Invalid Apple token' })
-    }
-    sub = payload.sub
-    if (typeof payload.email === 'string' && payload.email.includes('@')) {
-      emailFromToken = payload.email.trim().toLowerCase()
-    }
-  } catch (err) {
-    if (err instanceof HTTPException) throw err
-    console.warn('[portfolio-auth/apple] jwtVerify failed', err)
-    throw new HTTPException(401, { message: 'Apple identity token invalid' })
-  }
 
-  const db = c.get('db')
-
-  const existing = await db.select().from(users).where(eq(users.appleUserId, sub)).get()
-
-  if (existing) {
-    const patch: { deviceSecret?: string; email?: string; updatedAt: string } = {
-      updatedAt: new Date().toISOString(),
-    }
-    if (!existing.deviceSecret) patch.deviceSecret = crypto.randomUUID()
-    // Backfill email when Apple ships it AND we don't already have one — covers
-    // the (rare) case where a user revoked + re-authorized to surface a new
-    // email, and the more common case of an account created before the email
-    // capture fix was deployed.
-    if (!existing.email && emailFromToken) patch.email = emailFromToken
-    if (patch.deviceSecret !== undefined || patch.email !== undefined) {
-      await db.update(users).set(patch).where(eq(users.id, existing.id))
-    }
-    return c.json({
-      userId: existing.id,
-      deviceSecret: patch.deviceSecret ?? (existing.deviceSecret as string),
-    })
-  }
-
-  const id = nanoid()
-  const deviceSecret = crypto.randomUUID()
-  await db.insert(users).values({
-    id,
-    appleUserId: sub,
-    deviceSecret,
-    ...(emailFromToken ? { email: emailFromToken } : {}),
+    return c.json({ userId: id, deviceSecret }, 201)
   })
-
-  return c.json({ userId: id, deviceSecret }, 201)
-})
   .post('/google', async (c) => {
     let body: unknown
     try {
@@ -192,6 +195,7 @@ export const portfolioAuthRoutes = new Hono<{
       id,
       googleUserId: sub,
       deviceSecret,
+      unlockedChapterCount: CHAPTER_UNLOCK_DEFAULT,
     })
 
     return c.json({ userId: id, deviceSecret }, 201)

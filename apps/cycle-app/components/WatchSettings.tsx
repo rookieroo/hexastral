@@ -195,7 +195,13 @@ export function WatchSettings() {
                   backgroundColor: '#000',
                 }}
               >
-                <StaticMoon phase={0.3} size={34} skinId={opt.id} />
+                {/* Skia's native Canvas swallows touches, so the parent
+                    Pressable never sees taps on the moon itself — only on
+                    the text label. pointerEvents='none' on this wrapper
+                    lets taps pass through to the Pressable. */}
+                <View pointerEvents='none'>
+                  <StaticMoon phase={0.3} size={34} skinId={opt.id} />
+                </View>
                 <Text style={{ color: sel ? colors.accent : colors.dim, fontSize: 11 }}>
                   {opt.name}
                 </Text>

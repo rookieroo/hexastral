@@ -28,6 +28,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Linking, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { AccentPicker } from '@/components/AccentPicker'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import {
   type CycleBirthInfo,
@@ -35,6 +36,7 @@ import {
   isValidBirthDate,
   setCycleBirthInfo,
 } from '@/lib/birth'
+import { openCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import type { Locale } from '@/lib/i18n'
@@ -380,6 +382,15 @@ export default function MeScreen() {
           </View>
         ) : null}
 
+        {/* ── 主题色 — global accent variant (朱泥 default + 3 alts). Lives here
+            because watch face + widget have their own brand-anchored palettes
+            and don't honor the app accent — the picker would be misleading on
+            the /display screen. ── */}
+        <View>
+          <SectionLabel>{t.themeAccent}</SectionLabel>
+          <AccentPicker />
+        </View>
+
         {/* ── 亲友生日 + 表盘与桌面组件 drill-ins ── */}
         <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
           <Pressable
@@ -457,6 +468,38 @@ export default function MeScreen() {
               trackColor={{ true: colors.accent }}
             />
           </View>
+        </View>
+
+        {/* ── Apple Calendar subscribe — opens webcal:// in system Calendar ── */}
+        <View>
+          <SectionLabel>{t.appleCalendarSection}</SectionLabel>
+          <Pressable
+            onPress={() => {
+              void openCalendarSubscribe()
+            }}
+            accessibilityRole='button'
+            accessibilityLabel={t.appleCalendarSubscribeRow}
+            style={({ pressed }) => ({
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 15 }}>
+                {t.appleCalendarSubscribeRow}
+              </Text>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                {t.appleCalendarSubscribeHint}
+              </Text>
+            </View>
+            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+          </Pressable>
         </View>
 
         {/* ── Discover (collapsed) ── */}
