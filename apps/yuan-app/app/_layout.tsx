@@ -4,7 +4,7 @@
  * Tree:
  *   GestureHandlerRootView
  *     SafeAreaProvider
- *       CoreUIProvider (brand='yuan', mode='light') — Phase F design system anchor
+ *       CoreUIProvider (brand='yuan', mode='dark') — dark-only (ADR-0018 ink aesthetic)
  *         AuthProvider (provisions userId + deviceSecret)
  *           YuanClientGate (wires <YuanClientProvider> once userId is ready)
  *             IapInitializer  (one-shot RevenueCat configure + login)
@@ -24,7 +24,7 @@
  */
 
 import { CoreUIProvider } from '@zhop/core-ui'
-import { ink, ricePaper } from '@zhop/hexastral-tokens'
+import { yuanDark } from '@zhop/hexastral-tokens/yuan'
 import { YuanSeal } from '@zhop/scenario-yuan'
 import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
@@ -45,7 +45,7 @@ function BootSplash() {
     <View
       style={{
         flex: 1,
-        backgroundColor: ricePaper.ivory,
+        backgroundColor: yuanDark.bg,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 24,
@@ -53,7 +53,7 @@ function BootSplash() {
     >
       <YuanSeal mode='breathing' size={96} />
       <Text
-        style={{ fontSize: 13, letterSpacing: 4, color: ink.brown, textTransform: 'uppercase' }}
+        style={{ fontSize: 13, letterSpacing: 4, color: yuanDark.textSecondary, textTransform: 'uppercase' }}
       >
         Yuán
       </Text>
@@ -99,15 +99,15 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style='auto' />
-        <CoreUIProvider brand='yuan' mode='light'>
+        <StatusBar style='light' />
+        <CoreUIProvider brand='yuan' mode='dark'>
           <AuthProvider locale={locale}>
             <YuanClientGate fallback={<BootSplash />}>
               <IapInitializer />
               <Stack
                 screenOptions={{
                   headerShown: false,
-                  contentStyle: { backgroundColor: ricePaper.ivory },
+                  contentStyle: { backgroundColor: yuanDark.bg },
                   animation: 'slide_from_right',
                 }}
               >
