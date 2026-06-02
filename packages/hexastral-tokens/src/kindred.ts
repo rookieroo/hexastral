@@ -17,7 +17,8 @@
 
 import { cinnabar, ink, ricePaper, rubbing, zinc } from './palette'
 
-// ── Semantic theme — light mode (default for Kindred) ──────────────────────────
+// ── Semantic theme — light mode (web teaser surface ONLY; the app is dark-only
+//    per ADR-0021 §5 and never reads these tokens) ───────────────────────────────
 
 export const kindredLight = {
   // Surfaces
@@ -49,7 +50,7 @@ export const kindredLight = {
   borderStrong: 'rgba(60,36,21,0.25)',
 } as const
 
-// ── Dark mode (system override only, optional) ──────────────────────────────
+// ── Dark mode (the app's only mode — ADR-0021 §5) ───────────────────────────
 
 export const kindredDark = {
   bg: rubbing.void,

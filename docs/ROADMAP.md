@@ -11,7 +11,7 @@ This doc replaces the prior multi-phase plan. ADRs in `decisions/` are the histo
 | App | Role | Status (early June) |
 |---|---|---|
 | **Auspice** (`apps/auspice-app`, bundle `com.hexastral.cycle`) | Daily 黄历 utility · login-at-subscribe Pro · 对你而言 personal calendar · gateway to Bonds | Core complete; needs rename surfaced, secrets deployed, ASO + screenshots, on-device smoke |
-| **Kindred** (`apps/kindred-app`) | Bonds graph + 合婚 / 关系 reading · receives Auspice's 亲友 carry-over via `/api/bonds/solo` | Backend bonds API live; receive path verified; needs onboarding polish + screenshots |
+| **Kindred** (`apps/kindred-app`) | Solo 八字紫微 reading first, then Bonds / 合盘 Threads · receives Auspice's 亲友 carry-over via `/api/bonds/solo` | Backend bonds API live; receive path verified; **pivoting to solo-first on the ming-pan frame per [ADR-0021](decisions/0021-kindred-v2-solo-first-mingpan-frame.md)** (phases K1–K4); intro animation precision landed |
 
 **Out of scope for June** (post-V1 wave per ADR-0019): Feng, Fate, MingPan, V1.5 face/coin/dream apps.
 

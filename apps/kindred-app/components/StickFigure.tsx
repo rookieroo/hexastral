@@ -8,19 +8,33 @@
  * the pooled ink where a brush presses down.
  *
  * Poses are discrete (`stand`/`walk`/`lookL`/`lookR`/`talk`/`hug`/`sit`). For
- * `walk`, an optional `phase` (0..1, driven by `useWalkPhase`) swings the legs
- * and arms and lifts the forward foot — a continuous gait. Everything else is
- * static geometry. `sit` is now cross-legged (盘腿), not feet-on-a-ledge.
+ * `walk`, an optional `phase` (0..1, driven by `useGroundedGait`) swings the
+ * legs and arms and lifts the forward foot — a continuous gait tied to the
+ * distance actually travelled, so feet plant instead of sliding. Everything
+ * else is static geometry. `sit` is cross-legged (盘腿), not feet-on-a-ledge.
  *
  * Coordinates live in a 40-wide, 80-tall box centered at x=20; feet at y≈76.
  * Default stroke is light (the app is dark-only); callers tint via `stroke`.
  */
 
 import { ricePaper } from '@zhop/hexastral-tokens'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import {
+  type DerivedValue,
+  runOnJS,
+  type SharedValue,
+  useAnimatedReaction,
+  useDerivedValue,
+} from 'react-native-reanimated'
 import { Circle, Ellipse, Path, Svg } from 'react-native-svg'
 
 export type Pose = 'stand' | 'walk' | 'lookL' | 'lookR' | 'talk' | 'hug' | 'sit'
+
+/** Default rendered figure size (box width in px; the box is size × size*2). */
+export const FIGURE_SIZE = 64
+
+/** Feet baseline measured from the top of the rendered figure box (y≈76 of the 80-unit viewBox). */
+export const FEET_Y = (76 / 80) * FIGURE_SIZE * 2
 
 export interface StickFigureProps {
   pose: Pose
@@ -28,7 +42,7 @@ export interface StickFigureProps {
   facing?: 'L' | 'R'
   /** Stroke + fill colour. Defaults to ivory (dark-mode). Tab bar passes gold/muted. */
   stroke?: string
-  /** Gait phase 0..1 — only used by the `walk` pose (see useWalkPhase). */
+  /** Gait phase 0..1 — only used by the `walk` pose (see useGroundedGait). */
   phase?: number
 }
 
@@ -173,36 +187,38 @@ export function StickFigure({
 }
 
 /**
- * useWalkPhase — drives a 0..1 gait phase via requestAnimationFrame while
- * `active`, else parks at 0. Kept on the JS thread deliberately: the figure's
- * limb geometry is recomputed from `phase` each frame (cheap for one small
- * SVG), while spatial movement (translateX/Y, bob) stays on reanimated in the
- * caller. Returns 0 when inactive so the figure renders a clean `stand`.
+ * useGroundedGait — distance-driven gait phase.
+ *
+ * Converts a figure's horizontal shared-value position into a 0..1 gait
+ * phase: one full cycle per `stridePx` of travel. Because the phase is a
+ * function of distance (not time), the legs are kinematically tied to the
+ * ground — when the figure decelerates the stride slows with it, and when it
+ * stops the feet stop. No foot-sliding.
+ *
+ * Returns the phase twice:
+ *   - `phase` (React state) — drives the JS-thread SVG limb geometry
+ *   - `phaseSv` (derived value) — for UI-thread effects (body bob) in the
+ *     caller's animated styles
+ *
+ * The JS-thread state only updates while the figure is actually moving
+ * (reactions fire on value change), so idle figures cost nothing.
  */
-export function useWalkPhase(active: boolean, periodMs = 560): number {
+export function useGroundedGait(
+  xSv: SharedValue<number>,
+  stridePx = FIGURE_SIZE
+): { phase: number; phaseSv: DerivedValue<number> } {
   const [phase, setPhase] = useState(0)
-  const startRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    if (!active) {
-      startRef.current = null
-      setPhase(0)
-      return
-    }
-    let raf = 0
-    let mounted = true
-    const loop = (t: number) => {
-      if (!mounted) return
-      if (startRef.current === null) startRef.current = t
-      setPhase(((t - startRef.current) % periodMs) / periodMs)
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => {
-      mounted = false
-      if (raf) cancelAnimationFrame(raf)
-    }
-  }, [active, periodMs])
+  const phaseSv = useDerivedValue(() => {
+    // Proper positive modulo — x can be negative (figures start off-screen left).
+    const m = ((xSv.value % stridePx) + stridePx) % stridePx
+    return m / stridePx
+  })
 
-  return phase
+  useAnimatedReaction(
+    () => phaseSv.value,
+    (p) => runOnJS(setPhase)(p)
+  )
+
+  return { phase, phaseSv }
 }
