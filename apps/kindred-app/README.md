@@ -26,9 +26,12 @@ apps/kindred-app/
 │   └── accept/[token].tsx       DDL-claimed entry for B-users (modal)
 ├── components/
 │   ├── StickFigure.tsx          shared mascot (intro + pair-input tab icons)
+│   ├── IntroScene.tsx           intro scenery: sky / ground / galaxy / glow / dust
+│   │                                + drop-in slot for AI backdrop plates
 │   ├── PairTabBar.tsx           animated you/TA tab bar + connecting thread
 │   ├── PersonFields.tsx         compact birth-info field stack (both tabs)
 │   └── EmailVerifyModal.tsx     email verification bottom sheet
+├── assets/intro/                AI scene-plate slot + generation prompt guide
 ├── lib/
 │   ├── config.ts                Env vars (apiUrl, env, RevenueCat keys)
 │   ├── hmac.ts                  v2 HMAC-SHA256 request signing

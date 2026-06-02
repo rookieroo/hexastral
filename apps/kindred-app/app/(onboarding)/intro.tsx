@@ -13,6 +13,10 @@
  * hug → sit) are React-state transitions at scripted beats. The single f1↔f2
  * exchange is shaped as three envelopes — F1 greets (short), F2 explains
  * (long), F1 says goodbye (short) — to imply content, not just rhythm.
+ *
+ * Scenery (sky / ground / galaxy / glow / dust) lives in
+ * components/IntroScene.tsx — including the slot for AI-generated backdrop
+ * plates (see assets/intro/README.md).
  */
 
 import { V15Moon } from '@zhop/core-ui/motion'
@@ -22,23 +26,17 @@ import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import Animated, {
-  cancelAnimation,
   Easing,
-  type SharedValue,
-  useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withDelay,
-  withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, { Circle, Path } from 'react-native-svg'
+import { FigureGlow, IntroStage, WalkDust } from '@/components/IntroScene'
 import { type Pose, StickFigure, useWalkPhase } from '@/components/StickFigure'
 import { resolveLocale } from '@/lib/i18n'
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
@@ -58,8 +56,6 @@ function pickIntroCopy(locale: string): { tap: string; continue: string } {
 
 /* ── Palette (dark ground, ivory ink) ───────────────────────────────────── */
 const BG = rubbing.void
-const ARC = zinc[600]
-const STAR = zinc[400]
 const DOT = zinc[300]
 const HINT_EARLY = zinc[500]
 const HINT_LATE = zinc[300]
@@ -159,87 +155,6 @@ function SpeechDots({
   )
 }
 
-/* ── Star field ─────────────────────────────────────────────────────────── */
-
-interface Star {
-  x: number
-  y: number
-  r: number
-  phase: number
-}
-
-function StarField({
-  width,
-  height,
-  brightSv,
-}: {
-  width: number
-  height: number
-  brightSv: SharedValue<number>
-}) {
-  const stars = useMemo<Star[]>(() => {
-    // Deterministic positions — no Math.random per project conventions.
-    const seeds: Array<[number, number, number, number]> = [
-      [0.08, 0.12, 1.2, 0.0],
-      [0.18, 0.06, 0.8, 0.3],
-      [0.27, 0.22, 1.0, 0.6],
-      [0.36, 0.09, 0.9, 0.9],
-      [0.44, 0.18, 1.4, 0.2],
-      [0.52, 0.04, 0.7, 0.5],
-      [0.61, 0.15, 1.1, 0.8],
-      [0.69, 0.25, 0.9, 0.1],
-      [0.78, 0.08, 1.3, 0.4],
-      [0.86, 0.19, 1.0, 0.7],
-      [0.93, 0.11, 0.8, 0.0],
-      [0.14, 0.3, 0.9, 0.55],
-      [0.32, 0.34, 1.1, 0.15],
-      [0.58, 0.32, 0.8, 0.85],
-      [0.75, 0.36, 1.0, 0.45],
-    ]
-    return seeds.map(([fx, fy, r, phase]) => ({
-      x: fx * width,
-      y: fy * height,
-      r,
-      phase,
-    }))
-  }, [width, height])
-
-  return (
-    <Svg style={StyleSheet.absoluteFillObject} pointerEvents='none'>
-      {stars.map((s, i) => (
-        <StarDot key={i} star={s} brightSv={brightSv} />
-      ))}
-    </Svg>
-  )
-}
-
-function StarDot({ star, brightSv }: { star: Star; brightSv: SharedValue<number> }) {
-  // Each star has a per-star phase offset so they twinkle out of sync.
-  const twinkle = useSharedValue(0)
-  useEffect(() => {
-    twinkle.value = withDelay(
-      star.phase * 1000,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
-          withTiming(0.3, { duration: 1400, easing: Easing.inOut(Easing.quad) })
-        ),
-        -1,
-        true
-      )
-    )
-    return () => cancelAnimation(twinkle)
-  }, [])
-
-  const animatedProps = useAnimatedProps(() => ({
-    opacity: 0.15 + twinkle.value * 0.35 + brightSv.value * 0.45,
-  }))
-
-  return (
-    <AnimatedCircle cx={star.x} cy={star.y} r={star.r} fill={STAR} animatedProps={animatedProps} />
-  )
-}
-
 /* ── Main intro screen ──────────────────────────────────────────────────── */
 
 export default function IntroScreen() {
@@ -274,6 +189,9 @@ export default function IntroScreen() {
   const ctaOp = useSharedValue(reduced ? 1 : 0)
   const skipOp = useSharedValue(0)
   const starsBright = useSharedValue(0)
+  // Halo behind an embracing / sitting pair — follows the pair between slots.
+  const glowX = useSharedValue(slot1 - 12)
+  const glowOp = useSharedValue(0)
 
   /* Pose state — discrete transitions at scripted beats */
   const [f1Pose, setF1Pose] = useState<Pose>('walk')
@@ -282,6 +200,10 @@ export default function IntroScreen() {
   const [f4Pose, setF4Pose] = useState<Pose>('walk')
   const [talkSide, setTalkSide] = useState<TalkSide>(null)
   const [done, setDone] = useState<boolean>(reduced)
+  // Movement direction per figure (for the dust trail) — f2/f3 enter moving
+  // left, then leave moving right; f1/f4 only ever move right.
+  const [f2Heading, setF2Heading] = useState<'L' | 'R'>('L')
+  const [f3Heading, setF3Heading] = useState<'L' | 'R'>('L')
 
   // Continuous gait phase — runs only while some figure is walking.
   const anyWalking =
@@ -334,7 +256,10 @@ export default function IntroScreen() {
     at(T.talkB, () => setTalkSide('R')) // F2 explains — long
     at(T.talkC, () => setTalkSide('L')) // F1 goodbye — short
     at(T.talkEnd, () => setTalkSide(null))
-    at(T.f2WalkOut, () => setF2Pose('walk'))
+    at(T.f2WalkOut, () => {
+      setF2Pose('walk')
+      setF2Heading('R')
+    })
     f2X.value = withDelay(
       T.f2WalkOut,
       withTiming(offRight, { duration: 1700, easing: Easing.in(Easing.cubic) })
@@ -352,10 +277,16 @@ export default function IntroScreen() {
     at(T.hug1Start, () => {
       setF3Pose('hug')
       setF1Pose('hug')
+      // Halo swells around the embrace...
+      glowX.value = slot1 + 20
+      glowOp.value = withTiming(0.85, { duration: 700, easing: Easing.out(Easing.quad) })
     })
     at(T.hug1End, () => {
       setF3Pose('walk')
+      setF3Heading('R')
       setF1Pose('stand')
+      // ...and dies down when this one, too, walks away.
+      glowOp.value = withTiming(0, { duration: 900 })
     })
     f3X.value = withDelay(
       T.f3WalkOut,
@@ -373,10 +304,15 @@ export default function IntroScreen() {
     at(T.hug2Start, () => {
       setF4Pose('hug')
       setF1Pose('hug')
+      // The halo returns over the pair that stays...
+      glowX.value = slot1 - 12
+      glowOp.value = withTiming(0.85, { duration: 700, easing: Easing.out(Easing.quad) })
     })
     at(T.sitDown, () => {
       setF4Pose('sit')
       setF1Pose('sit')
+      // ...and settles into a softer, steady warmth as they sit.
+      glowOp.value = withTiming(0.5, { duration: 1200 })
     })
     starsBright.value = withDelay(T.starsBright, withTiming(1, { duration: 1500 }))
 
@@ -396,9 +332,6 @@ export default function IntroScreen() {
   }
 
   /* Animated styles */
-  const arcStyle = useAnimatedProps(() => ({
-    strokeDashoffset: arcDraw.value * 2000,
-  }))
   const f1Style = useAnimatedStyle(() => ({
     opacity: f1Op.value,
     transform: [{ translateX: f1X.value - 32 }],
@@ -418,48 +351,33 @@ export default function IntroScreen() {
   const ctaStyle = useAnimatedStyle(() => ({ opacity: ctaOp.value }))
   const skipStyle = useAnimatedStyle(() => ({ opacity: skipOp.value }))
 
-  /* Planet arc path — gentle hill at bottom of screen */
-  const arcD = useMemo(() => {
-    const y0 = height * 0.85
-    const yMid = height * 0.65
-    return `M -40 ${y0} Q ${center} ${yMid - 30} ${width + 40} ${y0}`
-  }, [width, height, center])
-
   // Figure container — absolutely positioned; we set top to groundY - figureHeight
   const figTop = groundY - 96 // 64*1.5 figure box height (size=64 -> 128 svg height-ish)
 
-  const AnimatedPath = useMemo(() => Animated.createAnimatedComponent(Path), [])
-
   return (
     <Pressable style={{ flex: 1, backgroundColor: BG }} onPress={done ? handleAdvance : undefined}>
-      {/* Stars layer */}
-      <StarField width={width} height={height} brightSv={starsBright} />
+      {/* Scenery — stars + galaxy + planet ground (or AI backdrop plates) */}
+      <IntroStage width={width} height={height} drawSv={arcDraw} brightSv={starsBright} />
 
-      {/* Planet arc */}
-      <Svg style={StyleSheet.absoluteFillObject} pointerEvents='none'>
-        <AnimatedPath
-          d={arcD}
-          stroke={ARC}
-          strokeWidth={2.2}
-          fill='none'
-          strokeLinecap='round'
-          strokeDasharray='2000'
-          animatedProps={arcStyle}
-        />
-      </Svg>
+      {/* Halo behind embracing / sitting pairs (under the figures) */}
+      <FigureGlow xSv={glowX} opacitySv={glowOp} top={figTop - 10} size={150} />
 
       {/* Figures */}
       <Animated.View style={[styles.figure, { top: figTop }, f1Style]}>
         <StickFigure pose={f1Pose} facing={f1Pose === 'lookL' ? 'L' : 'R'} phase={walkPhase} />
+        <WalkDust active={f1Pose === 'walk'} heading='R' />
       </Animated.View>
       <Animated.View style={[styles.figure, { top: figTop }, f2Style]}>
         <StickFigure pose={f2Pose} facing='L' phase={walkPhase} />
+        <WalkDust active={f2Pose === 'walk'} heading={f2Heading} />
       </Animated.View>
       <Animated.View style={[styles.figure, { top: figTop }, f3Style]}>
         <StickFigure pose={f3Pose} facing='L' phase={walkPhase} />
+        <WalkDust active={f3Pose === 'walk'} heading={f3Heading} />
       </Animated.View>
       <Animated.View style={[styles.figure, { top: figTop }, f4Style]}>
         <StickFigure pose={f4Pose} facing='R' phase={walkPhase} />
+        <WalkDust active={f4Pose === 'walk'} heading='R' />
       </Animated.View>
 
       {/* Speech dots overlay during the exchange (one side at a time) */}
