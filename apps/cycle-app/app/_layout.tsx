@@ -32,8 +32,10 @@ import { getPeople } from '@/lib/people'
 import {
   addCycleNotificationTapListener,
   configureNotifications,
+  purgeStaleNotificationsOnce,
   refreshDailyPush,
   scheduleBirthdayReminders,
+  scheduleHolidayHeadsUp,
 } from '@/lib/push'
 import { useAppTheme } from '@/lib/theme'
 
@@ -89,12 +91,16 @@ function RootLayoutInner() {
   // (keeps the rolling 8am notifications' content fresh; no-op unless push is enabled).
   useEffect(() => {
     configureNotifications()
-    getCycleBirthDate()
-      .then((birthDate) => refreshDailyPush({ locale, birthDate }))
-      .catch(() => {})
-    getPeople()
-      .then((people) => scheduleBirthdayReminders(people, locale))
-      .catch(() => {})
+    // One-time purge of stale notifications (old id schemes → duplicate spam),
+    // THEN rebuild a clean set: the daily window + 亲友 birthdays.
+    void (async () => {
+      await purgeStaleNotificationsOnce()
+      const birthDate = (await getCycleBirthDate().catch(() => undefined)) ?? undefined
+      await refreshDailyPush({ locale, birthDate })
+      const people = await getPeople().catch(() => [])
+      await scheduleBirthdayReminders(people, locale)
+      await scheduleHolidayHeadsUp(locale)
+    })()
   }, [locale])
 
   // Notification tap → deep-link Today to the notification's date.

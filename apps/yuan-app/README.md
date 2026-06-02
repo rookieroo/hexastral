@@ -14,22 +14,21 @@ apps/yuan-app/
 ├── app/
 │   ├── _layout.tsx              GestureHandler + Auth + YuanClientGate
 │   ├── index.tsx                Route decision (first launch vs returning)
-│   ├── (onboarding)/            8-screen form-as-conversation flow
-│   │   ├── welcome.tsx          1 · 緣 cinnabar seal, breathing
-│   │   ├── name.tsx             2 · A's name
-│   │   ├── birth-date.tsx       3 · A's birth date (inline picker)
-│   │   ├── birth-time.tsx       4 · A's birth time (with "I don't know" skip)
-│   │   ├── birth-place.tsx      5 · A's birth city
-│   │   ├── mode.tsx             6 · Invite vs fill-in
-│   │   ├── invite-email.tsx     7a · Email + relationship + send
-│   │   ├── fill-other.tsx       7b · A enters B's birth (solo mode)
-│   │   └── reveal.tsx           8 · RevealMoment ceremony
+│   ├── (onboarding)/            intro → dual-tab pair input → reveal
+│   │   ├── intro.tsx            0 · stick-figure parable (first launch only)
+│   │   ├── pair-input.tsx       1 · dual-tab 合盘 form — you / TA tabs (icons are
+│   │   │                            the stick figures; thread animates on switch).
+│   │   │                            TA path: know (fill) | invite (mailto) | skip
+│   │   └── reveal.tsx           2 · RevealMoment ceremony (solo create)
 │   ├── (bonds)/                 Main app after onboarding
 │   │   ├── index.tsx            Bond list (or waiting state)
 │   │   └── [id].tsx             Bond detail (ChapterPager or summary)
 │   └── accept/[token].tsx       DDL-claimed entry for B-users (modal)
 ├── components/
-│   └── ProgressIndicator.tsx    6-segment onboarding progress bar
+│   ├── StickFigure.tsx          shared mascot (intro + pair-input tab icons)
+│   ├── PairTabBar.tsx           animated you/TA tab bar + connecting thread
+│   ├── PersonFields.tsx         compact birth-info field stack (both tabs)
+│   └── EmailVerifyModal.tsx     email verification bottom sheet
 ├── lib/
 │   ├── config.ts                Env vars (apiUrl, env, RevenueCat keys)
 │   ├── hmac.ts                  v2 HMAC-SHA256 request signing
@@ -101,11 +100,11 @@ This app does NOT depend on:
 
 Phase B v0:
 - ✅ Project scaffold + 4-locale i18n
-- ✅ 8-screen onboarding (form-as-conversation pattern)
+- ✅ Dual-tab pair-input onboarding (stick-figure tabs · you / TA · know | invite | skip)
 - ✅ Bond list with waiting state
 - ✅ Bond detail with ChapterPager + fallback summary
 - ✅ DDL accept modal for B-users
-- ⏳ Solo mode (fill-other) — UI ready, awaiting `useSoloBond` hook in scenario-yuan
+- ✅ Solo "fill TA" path → reveal (`useSoloBond`) + mailto invite path (`useBondInvitation`)
 - ⏳ Sharing (ShareableChapterCard → view-shot → expo-sharing) — wired stub
 - ⏳ RevenueCat paywall — placeholder env vars
 - ⏳ Apple Sign In — `usesAppleSignIn: true` declared, integration TBD

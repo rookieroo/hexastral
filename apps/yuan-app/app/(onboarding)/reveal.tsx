@@ -130,7 +130,7 @@ export default function RevealScreen() {
           <Pressable onPress={() => void runCreate()} hitSlop={12}>
             <Text style={yuanPresets.ctaText}>{t(locale, 'reveal.retry')}</Text>
           </Pressable>
-          <Pressable onPress={() => router.replace('/(onboarding)/fill-other')} hitSlop={12}>
+          <Pressable onPress={() => router.replace('/(onboarding)/pair-input')} hitSlop={12}>
             <Text
               style={[
                 yuanType.caption,

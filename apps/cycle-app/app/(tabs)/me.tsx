@@ -23,12 +23,14 @@ import {
   useTheme,
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Linking, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
+import { CyclePaywallSheet } from '@/components/CyclePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import {
   type CycleBirthInfo,
@@ -36,12 +38,19 @@ import {
   isValidBirthDate,
   setCycleBirthInfo,
 } from '@/lib/birth'
-import { openCalendarSubscribe } from '@/lib/calendar-feed'
+import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { disableDailyPush, enableDailyPush, isPushEnabled } from '@/lib/push'
+import {
+  disableDailyPush,
+  disableHolidayHeadsUp,
+  enableDailyPush,
+  enableHolidayHeadsUp,
+  isHolidayHeadsUpEnabled,
+  isPushEnabled,
+} from '@/lib/push'
 
 const LOCALES: { key: Locale; label: string }[] = [
   { key: 'zh-Hans', label: '简体中文' },
@@ -82,6 +91,9 @@ export default function MeScreen() {
   // matches the ming-pan 生态 pattern (ADR-0018: no ad slots on funnel surfaces).
   const [ecoOpen, setEcoOpen] = useState(false)
   const [pushOn, setPushOn] = useState(false)
+  const [calPaywallOpen, setCalPaywallOpen] = useState(false)
+  const entitlements = useEntitlements()
+  const isPro = hasEntitlement(entitlements, 'cycle_pro')
 
   // ── Birth info form state ───────────────────────────────────────────────
   const [birth, setBirth] = useState<CycleBirthInfo>({ solarDate: '', timeIndex: null })
@@ -144,6 +156,22 @@ export default function MeScreen() {
   useEffect(() => {
     isPushEnabled()
       .then(setPushOn)
+      .catch(() => {})
+  }, [])
+
+  // 节假日 / 调休 heads-up toggle (opt-in; same enable/disable shape as daily push).
+  const [holidayOn, setHolidayOn] = useState(false)
+  const toggleHoliday = async (next: boolean) => {
+    if (next) {
+      setHolidayOn(await enableHolidayHeadsUp(locale))
+    } else {
+      await disableHolidayHeadsUp()
+      setHolidayOn(false)
+    }
+  }
+  useEffect(() => {
+    isHolidayHeadsUpEnabled()
+      .then(setHolidayOn)
       .catch(() => {})
   }, [])
 
@@ -470,6 +498,35 @@ export default function MeScreen() {
           </View>
         </View>
 
+        {/* ── 节假日 / 调休 heads-up (CN) ── */}
+        <View>
+          <SectionLabel>{t.holidayHeadsUp}</SectionLabel>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>{t.holidayHeadsUp}</Text>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                {t.holidayHeadsUpHint}
+              </Text>
+            </View>
+            <Switch
+              value={holidayOn}
+              onValueChange={toggleHoliday}
+              trackColor={{ true: colors.accent }}
+            />
+          </View>
+        </View>
+
         {/* ── Apple Calendar subscribe — opens webcal:// in system Calendar ── */}
         <View>
           <SectionLabel>{t.appleCalendarSection}</SectionLabel>
@@ -500,7 +557,49 @@ export default function MeScreen() {
             </View>
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
+          {/* Pro 对你而言 calendar — per-day verdict synced to the system Calendar. */}
+          <Pressable
+            onPress={() => {
+              if (!isPro) {
+                setCalPaywallOpen(true)
+                return
+              }
+              if (!birthValid) {
+                setEditingBirth(true)
+                return
+              }
+              void openPersonalCalendarSubscribe(birth.solarDate)
+            }}
+            accessibilityRole='button'
+            accessibilityLabel={t.personalCalendarRow}
+            style={({ pressed }) => ({
+              marginTop: spacing.md,
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: colors.text, fontSize: 15 }}>{t.personalCalendarRow}</Text>
+                {!isPro ? (
+                  <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
+                ) : null}
+              </View>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                {t.personalCalendarHint}
+              </Text>
+            </View>
+            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+          </Pressable>
         </View>
+
+        <CyclePaywallSheet visible={calPaywallOpen} onClose={() => setCalPaywallOpen(false)} />
 
         {/* ── Discover (collapsed) ── */}
         <View>

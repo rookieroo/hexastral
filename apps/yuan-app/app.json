@@ -60,7 +60,8 @@
         ],
         "NSPrivacyCollectedDataTypes": [],
         "NSPrivacyTracking": false
-      }
+      },
+      "appleTeamId": "L9Z47DW56X"
     },
     "android": {
       "package": "com.hexastral.yuan",

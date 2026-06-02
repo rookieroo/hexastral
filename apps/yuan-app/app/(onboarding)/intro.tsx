@@ -30,7 +30,8 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, { Circle, G, Line, Path } from 'react-native-svg'
+import Svg, { Circle, Path } from 'react-native-svg'
+import { type Pose, StickFigure } from '@/components/StickFigure'
 import { resolveLocale } from '@/lib/i18n'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
@@ -73,164 +74,6 @@ const T = {
   sitDown: 19200,
   starsBright: 20500,
   ctaIn: 21500,
-}
-
-/* ── Stick-figure component ─────────────────────────────────────────────── */
-
-type Pose = 'stand' | 'walk' | 'lookL' | 'lookR' | 'talk' | 'hug' | 'sit'
-
-interface StickFigureProps {
-  pose: Pose
-  size?: number
-  facing?: 'L' | 'R'
-}
-
-function StickFigure({ pose, size = 64, facing = 'R' }: StickFigureProps) {
-  // All coordinates in a 40-wide, 80-tall box, centered horizontally at x=20.
-  // Feet rest at y=80.
-  const stroke = zinc[800]
-  const sw = 2.2
-  const headFill = zinc[800]
-
-  // Head offset for look poses (subtle horizontal shift)
-  const headDx = pose === 'lookL' ? -1.5 : pose === 'lookR' ? 1.5 : 0
-
-  // Leg geometry — folded for sit, splayed slightly for walk
-  const legSpread = pose === 'walk' ? 7 : pose === 'sit' ? 10 : 5
-
-  // Arm geometry — out for hug, hanging otherwise
-  const armOut = pose === 'hug'
-  // For hug, arms reach toward the partner (facing direction)
-  const armDir = facing === 'R' ? 1 : -1
-
-  // Body verticals
-  const headCy = pose === 'sit' ? 30 : 18
-  const neckY = pose === 'sit' ? 38 : 26
-  const hipY = pose === 'sit' ? 58 : 56
-
-  return (
-    <Svg width={size} height={size * 2} viewBox='0 0 40 80'>
-      {/* Head */}
-      <Circle cx={20 + headDx} cy={headCy} r={5.5} fill={headFill} />
-      {/* Body */}
-      <Line
-        x1={20}
-        y1={neckY}
-        x2={20}
-        y2={hipY}
-        stroke={stroke}
-        strokeWidth={sw}
-        strokeLinecap='round'
-      />
-      {/* Arms */}
-      {armOut ? (
-        <>
-          <Line
-            x1={20}
-            y1={neckY + 6}
-            x2={20 + armDir * 12}
-            y2={neckY + 2}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20}
-            y1={neckY + 6}
-            x2={20 + armDir * 12}
-            y2={neckY + 10}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-        </>
-      ) : (
-        <>
-          <Line
-            x1={20}
-            y1={neckY + 4}
-            x2={pose === 'walk' ? 14 : 13}
-            y2={hipY - 4}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20}
-            y1={neckY + 4}
-            x2={pose === 'walk' ? 26 : 27}
-            y2={hipY - 4}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-        </>
-      )}
-      {/* Legs */}
-      {pose === 'sit' ? (
-        <>
-          {/* Folded: thigh out, shin down */}
-          <Line
-            x1={20}
-            y1={hipY}
-            x2={20 + armDir * 10}
-            y2={hipY + 2}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20 + armDir * 10}
-            y1={hipY + 2}
-            x2={20 + armDir * 14}
-            y2={hipY + 14}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20}
-            y1={hipY}
-            x2={20 + armDir * 4}
-            y2={hipY + 4}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20 + armDir * 4}
-            y1={hipY + 4}
-            x2={20 + armDir * 8}
-            y2={hipY + 16}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-        </>
-      ) : (
-        <>
-          <Line
-            x1={20}
-            y1={hipY}
-            x2={20 - legSpread}
-            y2={76}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-          <Line
-            x1={20}
-            y1={hipY}
-            x2={20 + legSpread}
-            y2={76}
-            stroke={stroke}
-            strokeWidth={sw}
-            strokeLinecap='round'
-          />
-        </>
-      )}
-    </Svg>
-  )
 }
 
 /* ── Speech dots component ──────────────────────────────────────────────── */
@@ -393,7 +236,6 @@ export default function IntroScreen() {
   const offLeft = -120
   const offRight = width + 120
   const slot1 = center - 36 // primary stays here through whole sequence
-  const slot2L = center - 80 // talking partner to the left
   const slot2R = center + 80
   // For hug, partner overlaps slot1
   const slotHug = slot1 + 40
@@ -521,7 +363,7 @@ export default function IntroScreen() {
   }, [reduced])
 
   const handleAdvance = () => {
-    router.replace('/(onboarding)/welcome')
+    router.replace({ pathname: '/(onboarding)/pair-input', params: { intro: '1' } })
   }
 
   /* Animated styles */

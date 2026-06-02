@@ -75,7 +75,7 @@ export default function BondListScreen() {
   }
 
   // Pending invite as primary state (most common right after onboarding A→invite)
-  if (firstPending && firstPending.invitation) {
+  if (firstPending?.invitation) {
     return (
       <WaitingForOther
         state='pending'
@@ -106,7 +106,7 @@ export default function BondListScreen() {
             illustration={<YuanSeal mode='static' size={96} />}
             title={t(locale, 'bondList.empty.title')}
             customAction={
-              <Pressable onPress={() => router.push('/(onboarding)/welcome')} hitSlop={12}>
+              <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={12}>
                 <Text style={yuanPresets.ctaText}>{t(locale, 'bondList.empty.cta')}</Text>
               </Pressable>
             }
@@ -140,7 +140,7 @@ export default function BondListScreen() {
               <Pressable onPress={() => router.push('/(settings)')} hitSlop={8}>
                 <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>···</Text>
               </Pressable>
-              <Pressable onPress={() => router.push('/(onboarding)/welcome')} hitSlop={8}>
+              <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={8}>
                 <Text style={[yuanType.caption, { color: yuanLight.accent }]}>+</Text>
               </Pressable>
             </View>

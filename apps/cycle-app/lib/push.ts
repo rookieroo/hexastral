@@ -17,12 +17,15 @@ import { lunarToSolar } from '@zhop/astro-core'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { fetchCycleDay } from './api'
+import { upcomingHolidayHeadsUps } from './cn-holidays'
 import { getStrings, type Locale } from './i18n'
 import type { CyclePerson, PersonCalendar } from './people'
 import { getCycleProActive } from './pro'
 import { localizeYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'cycle.push.enabled'
+/** One-time purge flag — clears notifications scheduled by older id schemes. */
+const PURGE_FLAG = 'cycle.push.purgedV2'
 /** Stable per-date identifier prefix — makes scheduling idempotent (no dupes). */
 const DAILY_ID_PREFIX = 'cycle-daily-'
 const PUSH_HOUR = 8
@@ -201,6 +204,23 @@ export async function refreshDailyPush(opts: PushOpts): Promise<void> {
 }
 
 /**
+ * One-time cleanup — call ONCE at app open, before any (re)scheduling. Older
+ * builds scheduled the daily window under different identifier schemes that the
+ * prefix-based `cancelDaily` can't match, so they piled up and fired as duplicate
+ * / mixed-locale notifications (2026-06 report). This clears the entire local
+ * queue (pending + already-delivered) once; the stable-id scheduling that runs
+ * right after keeps things idempotent from here on.
+ */
+export async function purgeStaleNotificationsOnce(): Promise<void> {
+  try {
+    if ((await AsyncStorage.getItem(PURGE_FLAG)) === '1') return
+    await Notifications.cancelAllScheduledNotificationsAsync()
+    await Notifications.dismissAllNotificationsAsync().catch(() => {})
+    await AsyncStorage.setItem(PURGE_FLAG, '1')
+  } catch {}
+}
+
+/**
  * Subscribe to notification taps. The handler receives the notification's `day`
  * (YYYY-MM-DD) so the caller can deep-link Today to that date. Returns an
  * unsubscribe fn; also fires for the launch notification (cold start).
@@ -353,4 +373,110 @@ export async function scheduleBirthdayReminders(
       }).catch(() => {})
     }
   }
+}
+
+// ── 节假日 / 调休 heads-up (CN) ──────────────────────────────────────────────────
+
+const HOLIDAY_ID_PREFIX = 'cycle-holiday-'
+const HOLIDAY_ENABLED_KEY = 'cycle.holiday.enabled'
+/** Heads-up fires at 20:00 the evening BEFORE the holiday start / 调休 workday. */
+const HOLIDAY_EVE_HOUR = 20
+const HOLIDAY_WINDOW_DAYS = 100
+
+const HOLIDAY_TEXT: Record<Locale, { holiday: string; workday: string }> = {
+  'zh-Hans': {
+    holiday: '明天起{name}放假（至 {end}），记得关掉工作日闹钟。',
+    workday: '明天调休上班，别忘了设好闹钟。',
+  },
+  'zh-Hant': {
+    holiday: '明天起{name}放假（至 {end}），記得關掉工作日鬧鐘。',
+    workday: '明天調休上班，別忘了設好鬧鐘。',
+  },
+  ja: {
+    holiday: '明日から{name}が休み（{end}まで）。平日のアラームを忘れずにオフに。',
+    workday: '明日は振替出勤日。アラームの設定をお忘れなく。',
+  },
+  en: {
+    holiday: '{name} holiday starts tomorrow (through {end}) — turn off your weekday alarm.',
+    workday: 'Tomorrow is a makeup workday — remember to set your alarm.',
+  },
+}
+
+function holidayEndLabel(iso: string, locale: Locale): string {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return iso
+  const mo = Number(m[1])
+  const dd = Number(m[2])
+  return locale === 'en' ? `${mo}/${dd}` : `${mo}月${dd}日`
+}
+
+async function cancelHoliday(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(HOLIDAY_ID_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+export async function isHolidayHeadsUpEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(HOLIDAY_ENABLED_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * (Re)schedule the rolling window of 节假日/调休 heads-ups — evening-before, stable
+ * per-date ids (idempotent). No-op unless the user enabled it AND permission is
+ * granted, so it's safe to call on every app open.
+ */
+export async function scheduleHolidayHeadsUp(locale: Locale): Promise<void> {
+  await cancelHoliday()
+  if (!(await isHolidayHeadsUpEnabled())) return
+  const perm = await Notifications.getPermissionsAsync().catch(() => null)
+  if (!perm || perm.status !== 'granted') return
+
+  const t = HOLIDAY_TEXT[locale]
+  const title = getStrings(locale).appName
+  const now = Date.now()
+
+  for (const ev of upcomingHolidayHeadsUps(localYmd(new Date()), HOLIDAY_WINDOW_DAYS)) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ev.date)
+    if (!m) continue
+    const eve = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), HOLIDAY_EVE_HOUR, 0, 0, 0)
+    eve.setDate(eve.getDate() - 1) // the evening BEFORE
+    if (eve.getTime() <= now) continue
+
+    const body =
+      ev.kind === 'holiday'
+        ? t.holiday
+            .replace('{name}', ev.name)
+            .replace('{end}', holidayEndLabel(ev.endDate ?? ev.date, locale))
+        : t.workday
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${HOLIDAY_ID_PREFIX}${ev.date}`,
+      content: { title, body },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: eve },
+    }).catch(() => {})
+  }
+}
+
+export async function enableHolidayHeadsUp(locale: Locale): Promise<boolean> {
+  if (!(await requestPushPermission())) return false
+  try {
+    await AsyncStorage.setItem(HOLIDAY_ENABLED_KEY, '1')
+  } catch {}
+  await scheduleHolidayHeadsUp(locale)
+  return true
+}
+
+export async function disableHolidayHeadsUp(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(HOLIDAY_ENABLED_KEY, '0')
+  } catch {}
+  await cancelHoliday()
 }

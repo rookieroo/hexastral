@@ -11,6 +11,7 @@
 
 import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 import { Linking } from 'react-native'
+import Purchases from 'react-native-purchases'
 
 const FEED_PATH = '/api/cycle/calendar.ics'
 
@@ -39,6 +40,31 @@ export async function openCalendarSubscribe(): Promise<boolean> {
   const url = getCalendarSubscribeUrl()
   try {
     await Linking.openURL(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const SIGN_PATH = '/api/cycle/calendar/sign'
+
+/**
+ * Pro 对你而言 feed. Asks the server to mint a signed webcal URL — the server
+ * verifies cycle_pro via RevenueCat (using the RC app-user-id) before issuing an
+ * HMAC-signed, opaque token URL — then opens the system Calendar subscribe. The
+ * caller also gates on Pro + birth set for snappy UX; the server is the real gate.
+ */
+export async function openPersonalCalendarSubscribe(birthDate: string): Promise<boolean> {
+  try {
+    const appUserId = await Purchases.getAppUserID()
+    const signUrl = `${resolvePortfolioApiUrl()}${SIGN_PATH}?birthDate=${encodeURIComponent(
+      birthDate
+    )}&u=${encodeURIComponent(appUserId)}`
+    const res = await fetch(signUrl, { headers: { accept: 'application/json' } })
+    if (!res.ok) return false
+    const data = (await res.json()) as { url?: string }
+    if (!data.url) return false
+    await Linking.openURL(data.url)
     return true
   } catch {
     return false

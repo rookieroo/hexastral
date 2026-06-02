@@ -42,6 +42,7 @@ import { getCycleBirthDate } from '@/lib/birth'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
+import { syncTodayWidget } from '@/lib/widget-bridge'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -97,6 +98,12 @@ export default function HomeScreen() {
       loadDay()
     }, [loadDay])
   )
+
+  // Mirror the loaded day into the App Group for the native widget (no-op until
+  // the WidgetKit target + native module are linked — see lib/widget-bridge.ts).
+  useEffect(() => {
+    if (dayData) void syncTodayWidget(dayData.date, dayData.day, dayData.personalization, t, locale)
+  }, [dayData, t, locale])
 
   /* ── left-swipe → Me (ADR-0018 shared contract) ── */
   const goToMe = useCallback(() => router.push('/me'), [router])

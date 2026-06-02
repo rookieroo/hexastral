@@ -43,6 +43,9 @@ export interface Strings {
   settings: string
   language: string
   dailyPush: string
+  /** 节假日 / 调休 heads-up toggle label + hint. */
+  holidayHeadsUp: string
+  holidayHeadsUpHint: string
   privacy: string
   terms: string
   // navigation / discovery
@@ -249,10 +252,13 @@ export interface Strings {
   appleCalendarSubscribeRow: string
   /** Hint subtitle beneath the subscribe row. */
   appleCalendarSubscribeHint: string
+  /** Pro 对你而言 calendar subscribe row + hint. */
+  personalCalendarRow: string
+  personalCalendarHint: string
 }
 
 const zhHans: Strings = {
-  appName: 'Cycle 黄历',
+  appName: 'Auspice 黄历',
   todayTab: '今',
   monthTab: '月',
   festivalsTab: '节',
@@ -280,6 +286,8 @@ const zhHans: Strings = {
   settings: '设置',
   language: '语言',
   dailyPush: '每日提醒',
+  holidayHeadsUp: '节假日提醒',
+  holidayHeadsUpHint: '法定节假日 / 调休前一晚提醒你，别记错闹钟（中国大陆）。',
   privacy: '隐私政策',
   terms: '使用条款',
   openMonth: '月历',
@@ -438,6 +446,8 @@ const zhHans: Strings = {
   yuanComposeCta: '在 Yuán 看完整合盘 →',
   yuanComposeLunarNote: 'Yuán 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
   appleCalendarSection: '系统日历',
+  personalCalendarRow: '对你而言 · 专属日历',
+  personalCalendarHint: '把每天的吉 / 平 / 凶同步到系统日历（Pro）',
   appleCalendarSubscribeRow: '在 Apple 日历订阅黄历',
   appleCalendarSubscribeHint:
     '把每日干支、节气、宜忌同步到 iPhone / Mac 日历，不用打开 App 也能看见。',
@@ -445,7 +455,7 @@ const zhHans: Strings = {
 
 const zhHant: Strings = {
   ...zhHans,
-  appName: 'Cycle 黃曆',
+  appName: 'Auspice 黃曆',
   festivalsTab: '節',
   dutyMansion: '值日星宿',
   dayOfficerLabel: '值神',
@@ -460,6 +470,8 @@ const zhHant: Strings = {
   settings: '設定',
   language: '語言',
   dailyPush: '每日提醒',
+  holidayHeadsUp: '節假日提醒',
+  holidayHeadsUpHint: '法定節假日 / 調休前一晚提醒你，別記錯鬧鐘（中國大陸）。',
   privacy: '隱私政策',
   terms: '使用條款',
   openMonth: '月曆',
@@ -604,13 +616,15 @@ const zhHant: Strings = {
   yuanComposeCta: '在 Yuán 看完整合盤 →',
   yuanComposeLunarNote: 'Yuán 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
   appleCalendarSection: '系統日曆',
+  personalCalendarRow: '對你而言 · 專屬日曆',
+  personalCalendarHint: '把每天的吉 / 平 / 凶同步到系統日曆（Pro）',
   appleCalendarSubscribeRow: '在 Apple 日曆訂閱黃曆',
   appleCalendarSubscribeHint:
     '把每日干支、節氣、宜忌同步到 iPhone / Mac 日曆，不用打開 App 也能看見。',
 }
 
 const ja: Strings = {
-  appName: 'Cycle 暦',
+  appName: 'Auspice 暦',
   todayTab: '今日',
   monthTab: '月',
   festivalsTab: '節句',
@@ -638,6 +652,8 @@ const ja: Strings = {
   settings: '設定',
   language: '言語',
   dailyPush: '毎日の通知',
+  holidayHeadsUp: '祝日リマインド',
+  holidayHeadsUpHint: '法定祝日 / 振替出勤の前夜に通知（中国本土）。',
   privacy: 'プライバシー',
   terms: '利用規約',
   openMonth: 'カレンダー',
@@ -783,13 +799,15 @@ const ja: Strings = {
   yuanComposeCta: 'Yuán で本格相性鑑定 →',
   yuanComposeLunarNote: 'Yuán は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
   appleCalendarSection: 'システムカレンダー',
+  personalCalendarRow: 'あなたへ · 専用カレンダー',
+  personalCalendarHint: '毎日の吉凶をシステムカレンダーに同期（Pro）',
   appleCalendarSubscribeRow: 'Apple カレンダーに暦を購読',
   appleCalendarSubscribeHint:
     '毎日の干支・節気・宜忌を iPhone / Mac のカレンダーへ同期。アプリを開かなくても確認できます。',
 }
 
 const en: Strings = {
-  appName: 'Cycle Almanac',
+  appName: 'Auspice',
   todayTab: 'Today',
   monthTab: 'Month',
   festivalsTab: 'Festivals',
@@ -817,6 +835,8 @@ const en: Strings = {
   settings: 'Settings',
   language: 'Language',
   dailyPush: 'Daily reminder',
+  holidayHeadsUp: 'Holiday heads-up',
+  holidayHeadsUpHint: 'Night-before alert for public holidays / makeup workdays (mainland China).',
   privacy: 'Privacy',
   terms: 'Terms',
   openMonth: 'Calendar',
@@ -976,6 +996,8 @@ const en: Strings = {
   yuanComposeLunarNote:
     'Yuán supports solar birthdays only. Edit this person to a solar date and try again.',
   appleCalendarSection: 'System calendar',
+  personalCalendarRow: 'For-you calendar',
+  personalCalendarHint: 'Sync your daily verdict to the system Calendar (Pro)',
   appleCalendarSubscribeRow: 'Subscribe in Apple Calendar',
   appleCalendarSubscribeHint:
     'Sync daily 干支, solar terms, and yi/ji to your iPhone / Mac Calendar so you see them without opening the app.',

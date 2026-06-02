@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Cycle",
+    "name": "Auspice",
     "slug": "cycle",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -19,6 +19,9 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.hexastral.cycle"]
       },
       "associatedDomains": [
         "applinks:hexastral.com",

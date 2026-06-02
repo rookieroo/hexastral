@@ -35,6 +35,7 @@ import { z } from 'zod/v4'
 import type { AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
+import { parseRcActiveEntitlements } from '../services/revenuecat'
 import {
   evaluateLlmGuard,
   type LlmGuardConfig,
@@ -482,8 +483,14 @@ cycleRoutes.get('/day', (c) => {
 // cache is enough to absorb thundering-herd subscriptions without staleness
 // showing up to the user.
 
-/** Window size around "today" (UTC anchor). 61 days = past month + next month. */
-const ICS_WINDOW_DAYS = 30
+/**
+ * Rolling window around "today" (UTC anchor): 2 weeks back + ~1 year forward.
+ * 黄历 days are deterministic and the feed is edge-cached, so Apple Calendar's
+ * own polling keeps a subscribed feed fresh with NO cron — each poll recomputes
+ * the current window, sliding it forward a day at a time.
+ */
+const ICS_PAST_DAYS = 14
+const ICS_FUTURE_DAYS = 365
 
 /** Escape ICS TEXT field per RFC 5545 §3.3.11. */
 function icsEscape(s: string): string {
@@ -525,20 +532,28 @@ function ymdAdd(ymd: Ymd, days: number): Ymd {
   return dateToYmd(d)
 }
 
-cycleRoutes.get('/calendar.ics', (c) => {
+/** 对你而言 verdict → short label for the calendar feed. */
+const FIT_LABEL: Record<string, string> = { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' }
+
+/**
+ * Render a full VCALENDAR body for the rolling window. When `subject` is set,
+ * each day also carries the deterministic 对你而言 verdict (the Pro feed).
+ */
+function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: string): string {
   const today = dateToYmd(new Date())
   const stamp = utcStamp(new Date())
 
   const events: string[] = []
-  for (let offset = -ICS_WINDOW_DAYS; offset <= ICS_WINDOW_DAYS; offset++) {
+  for (let offset = -ICS_PAST_DAYS; offset <= ICS_FUTURE_DAYS; offset++) {
     const ymd = ymdAdd(today, offset)
-    const { day } = buildDay(ymd)
+    const { day, personalization } = buildDay(ymd, subject)
     const dt = ymdCompact(ymd)
     const dtEnd = ymdCompact(ymdAdd(ymd, 1))
 
     const yi = day.goodFor.slice(0, 4).join('、') || '—'
     const ji = day.avoid.slice(0, 4).join('、') || '—'
-    const summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}`
+    const forYou = personalization ? (FIT_LABEL[personalization.fit] ?? personalization.fit) : null
+    const summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}${forYou ? ` · 你${forYou}` : ''}`
     const descParts = [
       `干支日：${day.ganZhi}（${day.element}）`,
       `日辰：${day.dayOfficer}日`,
@@ -547,13 +562,14 @@ cycleRoutes.get('/calendar.ics', (c) => {
       `宜：${day.goodFor.join('、') || '—'}`,
       `忌：${day.avoid.join('、') || '—'}`,
       `冲：${day.clash.clashAnimal}`,
+      forYou ? `对你而言：${forYou}` : null,
     ].filter(Boolean) as string[]
     const description = descParts.join('\\n')
 
     events.push(
       [
         'BEGIN:VEVENT',
-        foldIcsLine(`UID:cycle-${dt}@hexastral.com`),
+        foldIcsLine(`UID:cycle-${subject ? 'p-' : ''}${dt}@hexastral.com`),
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${dt}`,
         `DTEND;VALUE=DATE:${dtEnd}`,
@@ -565,24 +581,135 @@ cycleRoutes.get('/calendar.ics', (c) => {
     )
   }
 
-  const body = [
+  return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//HexAstral//Cycle Almanac v1//EN',
+    'PRODID:-//HexAstral//Auspice Almanac v1//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Cycle 黄历',
+    foldIcsLine(`X-WR-CALNAME:${calName}`),
     'X-WR-TIMEZONE:Asia/Shanghai',
     'X-PUBLISHED-TTL:PT1H',
     ...events,
     'END:VCALENDAR',
     '',
   ].join('\r\n')
+}
 
+cycleRoutes.get('/calendar.ics', (c) => {
   c.header('Content-Type', 'text/calendar; charset=utf-8')
   c.header('Cache-Control', 'public, max-age=3600')
-  c.header('Content-Disposition', 'inline; filename="cycle-almanac.ics"')
-  return c.body(body)
+  c.header('Content-Disposition', 'inline; filename="auspice-almanac.ics"')
+  return c.body(renderAlmanacIcs(undefined, 'Auspice 黄历'))
+})
+
+// ── Pro 对你而言 calendar feed — signed token + server-side Pro check ─────────
+// Flow: the app calls GET /calendar/sign with its RC app-user-id; the server
+// verifies cycle_pro via RevenueCat, then returns a webcal URL carrying an
+// HMAC-signed token of the birthDate. Apple Calendar fetches /calendar/p/:token,
+// which verifies the signature and renders the personalized feed. The token is
+// opaque (hides the birthDate) and tamper-proof (only server-issued URLs work).
+
+type CalendarEnv = { CYCLE_CALENDAR_SECRET?: string; REVENUECAT_API_KEY?: string }
+
+function bytesToB64url(bytes: Uint8Array): string {
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+function strToB64url(s: string): string {
+  return bytesToB64url(new TextEncoder().encode(s))
+}
+function b64urlToStr(s: string): string {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'))
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new TextDecoder().decode(bytes)
+}
+async function hmacB64url(secret: string, data: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data))
+  return bytesToB64url(new Uint8Array(sig))
+}
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+async function makeCalendarToken(secret: string, birthDate: string): Promise<string> {
+  return `${strToB64url(birthDate)}.${await hmacB64url(secret, birthDate)}`
+}
+async function verifyCalendarToken(secret: string, token: string): Promise<string | null> {
+  const dot = token.lastIndexOf('.')
+  if (dot <= 0) return null
+  let birthDate: string
+  try {
+    birthDate = b64urlToStr(token.slice(0, dot))
+  } catch {
+    return null
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null
+  const expected = await hmacB64url(secret, birthDate)
+  return timingSafeEqual(token.slice(dot + 1), expected) ? birthDate : null
+}
+
+/** Live RevenueCat check — is cycle_pro (or universe_pro) active for this RC id? */
+async function isCycleProViaRc(apiKey: string, appUserId: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    )
+    if (!res.ok) return false
+    const active = parseRcActiveEntitlements(await res.json(), new Date().toISOString())
+    return active.some((e) => e.key === 'cycle_pro' || e.key === 'universe_pro')
+  } catch {
+    return false
+  }
+}
+
+// Mint a signed personal-feed URL. Server verifies Pro via RevenueCat when
+// REVENUECAT_API_KEY is configured (fail-closed in prod; fail-open in dev with
+// no key so local builds work). `u` = the RC app-user-id from the client.
+cycleRoutes.get('/calendar/sign', async (c) => {
+  const env = c.env as unknown as CalendarEnv
+  const birthDate = c.req.query('birthDate')
+  if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return c.json({ error: 'birthDate=YYYY-MM-DD required' }, 400)
+  }
+  if (!env.CYCLE_CALENDAR_SECRET) {
+    return c.json({ error: 'calendar signing not configured' }, 503)
+  }
+  if (env.REVENUECAT_API_KEY) {
+    const appUserId = c.req.query('u')
+    if (!appUserId || !(await isCycleProViaRc(env.REVENUECAT_API_KEY, appUserId))) {
+      return c.json({ error: 'pro required' }, 403)
+    }
+  }
+  const token = await makeCalendarToken(env.CYCLE_CALENDAR_SECRET, birthDate)
+  const host = new URL(c.req.url).host
+  return c.json({ url: `webcal://${host}/api/cycle/calendar/p/${token}.ics` })
+})
+
+// Apple Calendar fetches this. Verify the signed token → render the 对你而言 feed.
+cycleRoutes.get('/calendar/p/:token', async (c) => {
+  const env = c.env as unknown as CalendarEnv
+  if (!env.CYCLE_CALENDAR_SECRET) return c.text('not configured', 503)
+  const raw = c.req.param('token')
+  const token = raw.endsWith('.ics') ? raw.slice(0, -4) : raw
+  const birthDate = await verifyCalendarToken(env.CYCLE_CALENDAR_SECRET, token)
+  if (!birthDate) return c.text('invalid or expired link', 403)
+  c.header('Content-Type', 'text/calendar; charset=utf-8')
+  c.header('Cache-Control', 'private, max-age=3600')
+  c.header('Content-Disposition', 'inline; filename="auspice-foryou.ics"')
+  return c.body(renderAlmanacIcs(subjectFromBirthDate(birthDate), 'Auspice · 对你而言'))
 })
 
 // ── GET /month?year=&month= — batched month grid (Sprint 2 deliverable #2) ──

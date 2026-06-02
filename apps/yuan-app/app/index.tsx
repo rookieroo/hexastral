@@ -1,8 +1,8 @@
 /**
  * Yuán entry — decides where the user lands on app open.
  *
- * - First-ever launch, intro not seen → /(onboarding)/intro (then welcome)
- * - Onboarding not yet done but intro seen → /(onboarding)/welcome
+ * - First-ever launch, intro not seen → /(onboarding)/intro (then pair-input)
+ * - Onboarding not yet done but intro seen → /(onboarding)/pair-input
  * - Returning user with onboarding done → /(bonds) (with or without bonds)
  *
  * Intro is single-shot: we set `INTRO_SEEN_KEY` up-front so a force-quit
@@ -65,7 +65,7 @@ export default function EntryScreen() {
     )
   }
   if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
-  if (status === 'welcome') return <Redirect href='/(onboarding)/welcome' />
+  if (status === 'welcome') return <Redirect href='/(onboarding)/pair-input' />
   return <Redirect href='/(bonds)' />
 }
 
