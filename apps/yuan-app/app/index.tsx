@@ -1,17 +1,20 @@
 /**
  * Yuán entry — decides where the user lands on app open.
  *
- * - First-ever launch, intro not seen → /(onboarding)/intro (then pair-input)
- * - Onboarding not yet done but intro seen → /(onboarding)/pair-input
- * - Returning user with onboarding done → /(bonds) (with or without bonds)
+ * - First-ever launch, intro not seen → /(onboarding)/intro (stick-figure
+ *   parable, once) → self birth wizard → mode picker
+ * - Onboarding not yet done but intro seen → /(onboarding)/self
+ * - Returning user with onboarding done → /(bonds) (HomeSplash moon flourish)
  *
  * Intro is single-shot: we set `INTRO_SEEN_KEY` up-front so a force-quit
- * mid-animation doesn't replay it.
+ * mid-animation doesn't replay it. Use `resetOnboarding()` (DEV, in Settings)
+ * to replay from scratch.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ricePaper } from '@zhop/hexastral-tokens'
-import { YuanSeal } from '@zhop/scenario-yuan'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
+import { yuanDark } from '@zhop/hexastral-tokens/yuan'
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -55,20 +58,25 @@ export default function EntryScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: ricePaper.ivory,
+          backgroundColor: yuanDark.bg,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <YuanSeal mode='breathing' size={72} />
+        <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
       </View>
     )
   }
   if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
-  if (status === 'welcome') return <Redirect href='/(onboarding)/pair-input' />
+  if (status === 'welcome') return <Redirect href='/(onboarding)/self' />
   return <Redirect href='/(bonds)' />
 }
 
 export async function markOnboardingComplete(): Promise<void> {
   await AsyncStorage.setItem(ONBOARDING_DONE_KEY, '1')
+}
+
+/** DEV-only: wipe first-launch flags so the intro + onboarding replay. */
+export async function resetOnboarding(): Promise<void> {
+  await AsyncStorage.multiRemove([ONBOARDING_DONE_KEY, INTRO_SEEN_KEY])
 }

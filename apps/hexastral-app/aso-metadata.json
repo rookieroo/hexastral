@@ -1,0 +1,58 @@
+{
+  "_comment": "HexAstral — App Store Connect ASO metadata. subtitle ≤30 chars, keywords ≤100 chars (comma-separated, no spaces after commas). Update all locales before submitting a new version.",
+  "bundleId": "com.hexastral.fate",
+  "appName": "HexAstral",
+  "primaryCategory": "LIFESTYLE",
+  "secondaryCategory": "UTILITIES",
+  "contentRating": "4+",
+  "locales": {
+    "en-US": {
+      "subtitle": "I Ching · Natal · Stellar",
+      "keywords": "i ching,four pillars,bazi,zi wei,horoscope,oracle,destiny,fortune,divination,compatibility",
+      "promotionalText": "Discover your destiny through the ancient wisdom of East Asian metaphysics.",
+      "description": "HexAstral brings together three traditions of East Asian metaphysics — I Ching (六爻), Natal Chart (命格), and Stellar Chart (星宫) — powered by AI interpretation.\n\nCore features:\n• Natal four-pillar chart with 10-year luck cycle analysis\n• Stellar palace chart and 12-palace readings\n• I Ching hexagram divination (Liu Yao & Mei Hua)\n• Compatibility reading (合婚) for couples\n• AI face reading (相学)\n• AI-narrated insights in 9 languages\n• Daily fortune almanac (日历)\n\nTransparent methodology: every reading shows the raw chart data alongside the AI interpretation so you can verify the reasoning yourself.\n\nPrivacy-first: birth data is encrypted in transit and never sold or shared."
+    },
+    "zh-Hans": {
+      "subtitle": "星宫·命格·六爻·合婚",
+      "keywords": "紫微斗数,八字,六爻,合婚,大运,流年,神煞,命理,算命,相学",
+      "promotionalText": "用AI解读东方命理智慧，透明可验证。",
+      "description": "HexAstral 融合星宫命理、命格四柱、六爻占卜三大东方命理体系，结合 AI 深度解读。\n\n核心功能：\n• 命格四柱命盘 + 十年大运分析\n• 星宫本命盘 + 十二宫详解\n• 六爻 & 梅花易数占卜\n• 合婚配对评分与解析\n• AI 面相解读\n• AI 口播解读，支持9种语言\n• 每日运势与黄历\n\n透明算法：每份报告同时展示原始排盘数据与 AI 解读，推理过程一目了然。\n\n隐私优先：生辰信息全程加密传输，绝不出售或共享。"
+    },
+    "zh-Hant": {
+      "subtitle": "星宮·命格·六爻·合婚",
+      "keywords": "紫微斗數,八字,六爻,合婚,大運,流年,神煞,命理,算命,相學",
+      "promotionalText": "以AI解讀東方命理智慧，透明可驗證。",
+      "description": "HexAstral 融合星宮命理、命格四柱、六爻占卜三大東方命理體系，結合 AI 深度解讀。\n\n核心功能：\n• 命格四柱命盤 + 十年大運分析\n• 星宮本命盤 + 十二宮詳解\n• 六爻 & 梅花易數占卜\n• 合婚配對評分與解析\n• AI 面相解讀\n• AI 口播解讀，支援9種語言\n• 每日運勢與黃曆\n\n透明算法：每份報告同時展示原始排盤數據與 AI 解讀，推理過程一目了然。\n\n隱私優先：生辰資訊全程加密傳輸，絕不出售或共享。"
+    },
+    "ja": {
+      "subtitle": "命格·星宮·易経·合婚",
+      "keywords": "四柱推命,紫微斗数,易経,相性,運勢,占い,命理,大運,縁起,人相",
+      "promotionalText": "東洋の命理学をAIで解読。透明性のある鑑定。",
+      "description": "HexAstralは、命格（四柱推命）・星宮命理・易経（六爻）の東洋三大命理体系をAI解釈とともに提供します。\n\n主な機能：\n• 命格四柱 + 10年大運分析\n• 星宮 本命盤・十二宮解説\n• 六爻・梅花易数占い\n• 相性鑑定（合婚）\n• AI人相占い\n• AI音声解説（9言語対応）\n• 毎日の運勢・万年暦\n\n透明性：すべての鑑定でAI解释根拠を原盤データとともに確認できます。\n\nプライバシー優先：生年月日情報は暗号化通信。販売・共有は一切しません。"
+    },
+    "ko": {
+      "subtitle": "명격·성궁·역경·궁합",
+      "keywords": "사주팔자,자미두수,역경,궁합,대운,운세,명리,점성,운명,관상",
+      "promotionalText": "AI로 풀어내는 동양 명리학, 투명하게 검증 가능.",
+      "description": "HexAstral은 명격(八字), 성궁명리(紫微斗數), 육효(六爻) 3대 동양 명리 체계를 AI 해석과 함께 제공합니다.\n\n주요 기능:\n• 명격 사주 + 10년 대운 분석\n• 성궁 본명반 + 12궁 해설\n• 육효 & 매화역수 점궘\n• 궁합 (합혼) 점수 및 해석\n• AI 관상 분석\n• AI 음성 해설(9개 언어 지원)\n• 매일 운세 & 만세력\n\n투명한 알고리즘: 모든 리딩에서 원본 차트 데이터와 AI 해석을 함께 확인할 수 있습니다.\n\n개인정보 보호 우선: 생년월일 정보는 암호화 전송, 절대 판매·공유하지 않습니다."
+    },
+    "vi": {
+      "subtitle": "Tứ Trụ·Tử Vi·Kinh Dịch·Hợp Hôn",
+      "keywords": "tu tru,tu vi,kinh dich,hop hon,dai van,van menh,xem boi,menh ly,ngay tot,tuong hoc",
+      "promotionalText": "Khám phá vận mệnh qua 4 hệ thống mệnh lý phương Đông, giải mã bởi AI.",
+      "description": "HexAstral kết hợp Natal Chart (Tứ Trụ), Stellar Chart (Tử Vi) và Lục Hào (Kinh Dịch) — ba hệ thống mệnh lý phương Đông — với giải mã AI chuyên sâu.\n\nTính năng chính:\n• Lá số Natal + phân tích Đại Vận 10 năm\n• Lá số Stellar + giải thích 12 cung\n• Bói Lục Hào & Mai Hoa Dịch Số\n• Xem hợp hôn (tương hợp đôi lứa)\n• AI xem tướng\n• Giải thích bằng giọng AI (9 ngôn ngữ)\n• Vận mệnh hàng ngày & lịch vạn niên\n\nMinh bạch: mỗi bài đọc hiển thị dữ liệu biểu đồ thô cùng với giải thích AI.\n\nBảo mật: dữ liệu ngày sinh mã hóa toàn trình, không bán hoặc chia sẻ."
+    },
+    "th": {
+      "subtitle": "Natal·Stellar·เสี่ยงเซียม·ดูคู่",
+      "keywords": "ดวงจีน,โหราศาสตร์,เซียมซี,ชะตา,ดวงชะตา,ราศี,ทำนาย,โชคชะตา,ดูเนื้อคู่,โหงวเฮ้ง",
+      "promotionalText": "ค้นพบชะตาชีวิตผ่านโหราศาสตร์จีน 4 ศาสตร์ ด้วย AI",
+      "description": "HexAstral รวบรวม 3 ศาสตร์โหราศาสตร์จีน ได้แก่ Natal Chart (八字), Stellar Chart (紫微斗數) และลิ่วเหยา (六爻) — พร้อมการวิเคราะห์โดย AI\n\nฟีเจอร์หลัก:\n• ดวง Natal + วิเคราะห์ดาวนำ 10 ปี\n• ดวง Stellar + อธิบาย 12 วัง\n• ทำนายลิ่วเหยา & เหมยฮวาอี้\n• ดูความเข้ากันของคู่รัก\n• AI โหงวเฮ้ง\n• เสียง AI อธิบาย (9 ภาษา)\n• ดวงรายวัน & ปฏิทินจีน\n\nโปร่งใส: ทุกผลดวงแสดงข้อมูลดิบและคำอธิบาย AI ให้ตรวจสอบได้\n\nความเป็นส่วนตัว: ข้อมูลวันเกิดเข้ารหัสตลอด ไม่ขายหรือเปิดเผย"
+    },
+    "id": {
+      "subtitle": "Natal·Stellar·I Ching·Jodoh",
+      "keywords": "bazi,zi wei,i ching,ramalan,nasib,horoskop,jodoh,keberuntungan,shio,fisiognomi",
+      "promotionalText": "Jelajahi takdir lewat 4 sistem astrologi Tiongkok, diinterpretasi AI.",
+      "description": "HexAstral menggabungkan tiga sistem metafisika Asia Timur — Natal Chart (八字), Stellar Chart (紫微斗數), dan Liu Yao (六爻) — dengan interpretasi AI mendalam.\n\nFitur utama:\n• Grafik Natal + analisis siklus keberuntungan 10 tahun\n• Kartu Stellar + penjelasan 12 istana\n• Ramalan Liu Yao & Mei Hua Yi\n• Pembacaan kecocokan pasangan (合婚)\n• AI pembacaan wajah\n• Penjelasan suara AI (9 bahasa)\n• Ramalan harian & kalender Tionghoa\n\nTransparan: setiap pembacaan menampilkan data grafik mentah bersama interpretasi AI.\n\nPrivasi utama: data tanggal lahir dienkripsi, tidak dijual atau dibagikan."
+    }
+  }
+}

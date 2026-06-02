@@ -1,0 +1,98 @@
+{
+  "expo": {
+    "name": "Auspice",
+    "slug": "auspice",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "auspice",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09090B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hexastral.auspice",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.hexastral.auspice"
+        ]
+      },
+      "associatedDomains": [
+        "applinks:hexastral.com",
+        "applinks:www.hexastral.com"
+      ],
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategorySystemBootTime",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "35F9.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "E174.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "C617.1"
+            ]
+          }
+        ],
+        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyTracking": false
+      }
+    },
+    "android": {
+      "package": "com.hexastral.auspice",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#09090B"
+      }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "REVENUECAT_IOS_API_KEY": "REPLACE_WITH_REVENUECAT_IOS_API_KEY",
+      "REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_API_KEY",
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "useone-tech",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-notifications",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosClientId": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m",
+          "androidClientId": "443209724807-nt26socuql9j5jmsrd1ve9h8ap7i3ubp.apps.googleusercontent.com"
+        }
+      ]
+    ]
+  }
+}

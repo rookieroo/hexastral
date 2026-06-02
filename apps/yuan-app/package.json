@@ -17,10 +17,13 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.5",
+    "@react-native-masked-view/masked-view": "0.3.2",
+    "@shopify/react-native-skia": "2.2.12",
     "@zhop/core-ui": "workspace:*",
     "@zhop/ddl-client": "workspace:*",
     "@zhop/hexastral-client": "workspace:*",
     "@zhop/hexastral-tokens": "workspace:*",
+    "@zhop/satellite-ui": "workspace:*",
     "@zhop/scenario-yuan": "workspace:*",
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.33",

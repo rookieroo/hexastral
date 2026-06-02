@@ -9,7 +9,7 @@
  *           YuanClientGate (wires <YuanClientProvider> once userId is ready)
  *             IapInitializer  (one-shot RevenueCat configure + login)
  *             expo-router <Stack>
- *               (onboarding)/*  — first-launch 8-screen flow
+ *               (onboarding)/*  — intro → self → mode → [other-meta+birth | invite] → reveal
  *               (bonds)/*       — main app (bond list + detail)
  *               (settings)/*    — Apple Sign In + sign out
  *               (commerce)/*    — paywall modal
@@ -24,8 +24,9 @@
  */
 
 import { CoreUIProvider } from '@zhop/core-ui'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { yuanDark } from '@zhop/hexastral-tokens/yuan'
-import { YuanSeal } from '@zhop/scenario-yuan'
 import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -51,9 +52,14 @@ function BootSplash() {
         gap: 24,
       }}
     >
-      <YuanSeal mode='breathing' size={96} />
+      <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
       <Text
-        style={{ fontSize: 13, letterSpacing: 4, color: yuanDark.textSecondary, textTransform: 'uppercase' }}
+        style={{
+          fontSize: 13,
+          letterSpacing: 4,
+          color: yuanDark.textSecondary,
+          textTransform: 'uppercase',
+        }}
       >
         Yuán
       </Text>

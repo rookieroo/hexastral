@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>CFBundleAllowMixedLocalizations</key>
+    <true/>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>HexAstral</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>hexastral</string>
+          <string>com.hexastral</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.66780034156-gjh4nrjuh622pbjfcvt107guocrn0qul</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+hexastral</string>
+        </array>
+      </dict>
+    </array>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+      <key>NSAllowsArbitraryLoads</key>
+      <false/>
+      <key>NSAllowsLocalNetworking</key>
+      <true/>
+    </dict>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>HexAstral can add auspicious dates and personal almanac events to your calendar.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>HexAstral can add auspicious dates and personal almanac events to your calendar.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>HexAstral uses the camera to capture face or hand photos for physiognomy readings.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>HexAstral accesses your contacts to find friends who are already on HexAstral and to invite others.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>HexAstral uses Face ID to protect your personal readings and health data.</string>
+    <key>NSHealthShareUsageDescription</key>
+    <string>HexAstral reads your health data — such as sleep, heart rate, and activity — to enrich your metaphysical readings with real physiological context.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>HexAstral may write reading milestones and mindfulness session records to your Health app.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>HexAstral's compass uses your location to correct magnetic declination for accurate feng shui directions.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>HexAstral uses the microphone for voice-activated readings and Siri shortcuts.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>HexAstral uses motion sensors to detect how you shake your phone to generate authentic hexagram readings.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>HexAstral saves your reading cards and charts to your photo library for easy sharing.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>HexAstral saves your reading cards and charts to your photo library for easy sharing.</string>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>HexAstral needs access to reminders to help you track important practices.</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>HexAstral needs access to reminders to help you track important practices.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>HexAstral uses speech recognition to let you ask questions and request readings by voice.</string>
+    <key>NSUserActivityTypes</key>
+    <array>
+      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+    </array>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>HexAstral uses anonymous analytics to improve your reading experience and app quality.</string>
+    <key>RCTNewArchEnabled</key>
+    <true/>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>fetch</string>
+      <string>remote-notification</string>
+    </array>
+    <key>UILaunchStoryboardName</key>
+    <string>SplashScreen</string>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+      <string>arm64</string>
+    </array>
+    <key>UIRequiresFullScreen</key>
+    <false/>
+    <key>UIStatusBarStyle</key>
+    <string>UIStatusBarStyleDefault</string>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+      <string>UIInterfaceOrientationPortrait</string>
+      <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+      <string>UIInterfaceOrientationPortrait</string>
+      <string>UIInterfaceOrientationPortraitUpsideDown</string>
+      <string>UIInterfaceOrientationLandscapeLeft</string>
+      <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIUserInterfaceStyle</key>
+    <string>Automatic</string>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+  </dict>
+</plist>

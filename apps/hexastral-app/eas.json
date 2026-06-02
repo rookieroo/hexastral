@@ -1,0 +1,78 @@
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "0a4af280-d37c-4f8c-8dfa-3a3ceb6ef3c4",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "443209724807-nt26socuql9j5jmsrd1ve9h8ap7i3ubp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "test_RbVidJpEkAdpCjYRzjqCyEDAYDx",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_RbVidJpEkAdpCjYRzjqCyEDAYDx",
+        "EXPO_PUBLIC_ENV": "development"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "0a4af280-d37c-4f8c-8dfa-3a3ceb6ef3c4",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "443209724807-nt26socuql9j5jmsrd1ve9h8ap7i3ubp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "test_RbVidJpEkAdpCjYRzjqCyEDAYDx",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_RbVidJpEkAdpCjYRzjqCyEDAYDx",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a2eeb5cea98aa6dd94b9255bde081951@o4511156674953216.ingest.us.sentry.io/4511156679671808",
+        "EXPO_PUBLIC_ENV": "preview",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    },
+    "production": {
+      "ios": {
+        "autoIncrement": true
+      },
+      "android": {
+        "autoIncrement": true,
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "0a4af280-d37c-4f8c-8dfa-3a3ceb6ef3c4",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "443209724807-nt26socuql9j5jmsrd1ve9h8ap7i3ubp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_RlvRyEKWPqhtOZKmCponixllMxp",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_RbVidJpEkAdpCjYRzjqCyEDAYDx",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a2eeb5cea98aa6dd94b9255bde081951@o4511156674953216.ingest.us.sentry.io/4511156679671808",
+        "EXPO_PUBLIC_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "chrisding03@gmail.com",
+        "ascAppId": "REPLACE_WITH_ASC_APP_ID",
+        "appleTeamId": "L9Z47DW56X",
+        "sku": "com.hexastral.fate"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./secrets/google-play-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
+}

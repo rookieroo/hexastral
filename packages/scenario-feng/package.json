@@ -20,7 +20,7 @@
     "@zhop/hexastral-tokens": "workspace:*"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-query": "^5.100.14",
     "expo-haptics": "~15.0.8",
     "expo-linear-gradient": ">=15.0.0",
     "react": "^19.2.3",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250924.0",
-    "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-query": "^5.100.14",
     "@types/react": "^19.1.10",
     "@zhop/typescript-config": "workspace:*",
     "expo-haptics": "~15.0.8",

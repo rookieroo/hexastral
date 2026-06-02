@@ -1,7 +1,7 @@
 /**
  * StickFigure — the Yuán mascot, drawn as ink brush strokes.
  *
- * Shared by the onboarding intro and the pair-input tab bar. Each limb is a
+ * Used by the onboarding intro animation. Each limb is a
  * filled, tapered `<Path>` (a `brushStroke` lozenge — thin at the ends, a
  * slight belly in the middle) rather than a uniform SVG stroke, so it reads
  * as a real ink stroke with 笔锋. Small "nib" dots at the heavy joints fake
@@ -36,7 +36,14 @@ export interface StickFigureProps {
  * Filled tapered brush stroke between two points. Width goes w1 → (belly) → w2.
  * Returns an SVG path `d`. Pure math — safe to call every render.
  */
-function brushStroke(x1: number, y1: number, x2: number, y2: number, w1: number, w2: number): string {
+function brushStroke(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  w1: number,
+  w2: number
+): string {
   const dx = x2 - x1
   const dy = y2 - y1
   const len = Math.hypot(dx, dy) || 1
@@ -135,7 +142,13 @@ function buildStrokes(pose: Pose, facing: 'L' | 'R', phase: number): Stroke[] {
   return out
 }
 
-export function StickFigure({ pose, size = 64, facing = 'R', stroke = ricePaper.ivory, phase = 0 }: StickFigureProps) {
+export function StickFigure({
+  pose,
+  size = 64,
+  facing = 'R',
+  stroke = ricePaper.ivory,
+  phase = 0,
+}: StickFigureProps) {
   const headDx = pose === 'lookL' ? -1.5 : pose === 'lookR' ? 1.5 : 0
   const headCy = pose === 'sit' ? 30 : 18
   // Slightly squashed, off-round head — less "regular".
@@ -151,7 +164,9 @@ export function StickFigure({ pose, size = 64, facing = 'R', stroke = ricePaper.
         <Path key={i} d={s.d} fill={stroke} />
       ))}
       {strokes.map((s, i) =>
-        s.nib ? <Circle key={`n${i}`} cx={s.nib[0]} cy={s.nib[1]} r={s.nib[2]} fill={stroke} /> : null
+        s.nib ? (
+          <Circle key={`n${i}`} cx={s.nib[0]} cy={s.nib[1]} r={s.nib[2]} fill={stroke} />
+        ) : null
       )}
     </Svg>
   )
@@ -179,7 +194,7 @@ export function useWalkPhase(active: boolean, periodMs = 560): number {
     const loop = (t: number) => {
       if (!mounted) return
       if (startRef.current === null) startRef.current = t
-      setPhase((((t - startRef.current) % periodMs) / periodMs))
+      setPhase(((t - startRef.current) % periodMs) / periodMs)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)

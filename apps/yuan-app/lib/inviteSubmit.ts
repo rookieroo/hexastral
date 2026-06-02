@@ -1,9 +1,9 @@
 /**
- * Invite-submit helpers — shared by the pair-input "invite TA" path.
+ * Invite-submit helpers — shared by the onboarding /invite screen.
  *
- * Extracted from the former invite-email.tsx screen so the dual-tab
- * pair-input can reuse the exact mailto delivery + relationship-label
- * mapping. The server creates the bond + token WITHOUT B's email
+ * Extracted from the former invite-email screen so the onboarding /invite
+ * route reuses the exact mailto delivery + relationship-label mapping.
+ * The server creates the bond + token WITHOUT B's email
  * (deliveryMode 'user'); A's own mail app sends the message, sidestepping
  * cross-jurisdiction commercial-email regulation.
  */

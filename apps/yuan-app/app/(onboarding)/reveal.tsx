@@ -23,6 +23,7 @@ import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { resolveLocale, t } from '@/lib/i18n'
 import { clearDraft, useDraft } from '@/lib/onboardingDraft'
+import { suppressNextSplash } from '@/lib/splash-control'
 import { markOnboardingComplete } from '../index'
 
 const NOON_SHICHEN: TimeIndex = 6
@@ -100,6 +101,7 @@ export default function RevealScreen() {
     if (status !== 'ready') return
     await markOnboardingComplete()
     await clearDraft()
+    suppressNextSplash()
     if (bondId) {
       router.replace({ pathname: '/(bonds)/[id]', params: { id: bondId } })
     } else {
@@ -130,7 +132,7 @@ export default function RevealScreen() {
           <Pressable onPress={() => void runCreate()} hitSlop={12}>
             <Text style={yuanPresets.ctaText}>{t(locale, 'reveal.retry')}</Text>
           </Pressable>
-          <Pressable onPress={() => router.replace('/(onboarding)/pair-input')} hitSlop={12}>
+          <Pressable onPress={() => router.replace('/(onboarding)/self')} hitSlop={12}>
             <Text
               style={[
                 yuanType.caption,

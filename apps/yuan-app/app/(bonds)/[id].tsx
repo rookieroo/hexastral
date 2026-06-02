@@ -19,6 +19,8 @@
  */
 
 import { ErrorState, useHaptic } from '@zhop/core-ui'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { yuanDark, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import {
   ChapterPager,
@@ -26,15 +28,15 @@ import {
   ShareableChapterCard,
   useShareBond,
   useSynastryReport,
-  YuanSeal,
 } from '@zhop/scenario-yuan'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
+import { ReportReveal } from '@/components/ReportReveal'
 import { useI18n } from '@/lib/i18n'
 
 export default function BondDetailScreen() {
@@ -111,7 +113,7 @@ export default function BondDetailScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={yuanDark.accent} />
+          <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
         </View>
       </SafeAreaView>
     )
@@ -123,7 +125,7 @@ export default function BondDetailScreen() {
         <View
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: yuanSpacing.lg }}
         >
-          <YuanSeal mode='breathing' size={96} />
+          <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
           <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>合盘中…</Text>
         </View>
       </SafeAreaView>
@@ -166,124 +168,128 @@ export default function BondDetailScreen() {
   // Chapter-based report (v2): horizontal pager
   if (chapters && chapters.length > 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
-        <View
-          style={{
-            paddingHorizontal: yuanSpacing.screenH,
-            paddingVertical: yuanSpacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
-          </Pressable>
-          <Text
-            style={[
-              yuanType.caption,
-              { color: yuanDark.textSecondary, marginLeft: yuanSpacing.md },
-            ]}
-          >
-            {detail.targetName} · {detail.relationshipLabel}
-          </Text>
-          <View style={{ flex: 1 }} />
-          {openChat ? (
-            <Pressable onPress={openChat} hitSlop={8}>
-              <Text style={yuanPresets.ctaText}>{t('chat.cta')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-        <ChapterPager
-          report={{
-            id: detail.id,
-            bondId: detail.id,
-            generatedAt: detail.createdAt,
-            chapters,
-            headline: detail.archetypeTagline ?? '',
-          }}
-          currentIndex={chapterIndex}
-          onIndexChange={setChapterIndex}
-          onShareChapter={(idx) => void handleShareChapter(idx)}
-        />
-
-        {/* Off-screen capture target — positioned far outside viewport but mounted. */}
-        {shareTarget ? (
+      <ReportReveal>
+        <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
           <View
-            ref={captureRefView}
-            collapsable={false}
-            style={{ position: 'absolute', top: -20000, left: 0 }}
+            style={{
+              paddingHorizontal: yuanSpacing.screenH,
+              paddingVertical: yuanSpacing.md,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
           >
-            <ShareableChapterCard
-              chapter={chapters[shareTarget.index] ?? chapters[0]!}
-              selfName={selfName ?? '你'}
-              otherName={otherName}
-              width={1080}
-              height={1920}
-              brandUrl={shareTarget.brandUrl}
-            />
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
+            </Pressable>
+            <Text
+              style={[
+                yuanType.caption,
+                { color: yuanDark.textSecondary, marginLeft: yuanSpacing.md },
+              ]}
+            >
+              {detail.targetName} · {detail.relationshipLabel}
+            </Text>
+            <View style={{ flex: 1 }} />
+            {openChat ? (
+              <Pressable onPress={openChat} hitSlop={8}>
+                <Text style={yuanPresets.ctaText}>{t('chat.cta')}</Text>
+              </Pressable>
+            ) : null}
           </View>
-        ) : null}
-      </SafeAreaView>
+          <ChapterPager
+            report={{
+              id: detail.id,
+              bondId: detail.id,
+              generatedAt: detail.createdAt,
+              chapters,
+              headline: detail.archetypeTagline ?? '',
+            }}
+            currentIndex={chapterIndex}
+            onIndexChange={setChapterIndex}
+            onShareChapter={(idx) => void handleShareChapter(idx)}
+          />
+
+          {/* Off-screen capture target — positioned far outside viewport but mounted. */}
+          {shareTarget ? (
+            <View
+              ref={captureRefView}
+              collapsable={false}
+              style={{ position: 'absolute', top: -20000, left: 0 }}
+            >
+              <ShareableChapterCard
+                chapter={chapters[shareTarget.index] ?? chapters[0]!}
+                selfName={selfName ?? '你'}
+                otherName={otherName}
+                width={1080}
+                height={1920}
+                brandUrl={shareTarget.brandUrl}
+              />
+            </View>
+          ) : null}
+        </SafeAreaView>
+      </ReportReveal>
     )
   }
 
   // V1 fallback — single-page summary
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: yuanSpacing.screenH,
-          paddingTop: yuanSpacing.lg,
-          paddingBottom: yuanSpacing.xxl,
-        }}
-      >
-        <Pressable onPress={() => router.back()} hitSlop={12} style={{ alignSelf: 'flex-start' }}>
-          <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
-        </Pressable>
-
-        <View style={{ alignItems: 'center', marginTop: yuanSpacing.lg, gap: yuanSpacing.sm }}>
-          <Text style={[yuanType.seal, { color: yuanDark.textMuted }]}>
-            {detail.relationshipLabel}
-          </Text>
-          <Text style={[yuanType.title, { color: yuanDark.text }]}>{detail.targetName}</Text>
-        </View>
-
-        {detail.score != null && (
-          <View style={{ alignItems: 'center', marginTop: yuanSpacing.xl }}>
-            <CompatibilityScore score={detail.score} label={detail.grade ?? undefined} />
-          </View>
-        )}
-
-        {detail.archetypeName && (
-          <View style={{ marginTop: yuanSpacing.xl, gap: yuanSpacing.sm }}>
-            <Text style={[yuanType.caption, { color: yuanDark.accent, letterSpacing: 4 }]}>
-              {detail.archetypeCategory?.toUpperCase()}
-            </Text>
-            <Text style={[yuanType.heading, { color: yuanDark.text }]}>
-              {detail.archetypeName}
-            </Text>
-            {detail.archetypeTagline && (
-              <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>
-                {detail.archetypeTagline}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {detail.interpretation?.overview && (
-          <View style={{ marginTop: yuanSpacing.xl }}>
-            <Text style={[yuanType.body, { color: yuanDark.text }]}>
-              {detail.interpretation.overview}
-            </Text>
-          </View>
-        )}
-
-        {openChat ? (
-          <Pressable onPress={openChat} style={{ marginTop: yuanSpacing.xl }} hitSlop={8}>
-            <Text style={yuanPresets.ctaText}>{t('chat.cta')}</Text>
+    <ReportReveal>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: yuanSpacing.screenH,
+            paddingTop: yuanSpacing.lg,
+            paddingBottom: yuanSpacing.xxl,
+          }}
+        >
+          <Pressable onPress={() => router.back()} hitSlop={12} style={{ alignSelf: 'flex-start' }}>
+            <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
           </Pressable>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+
+          <View style={{ alignItems: 'center', marginTop: yuanSpacing.lg, gap: yuanSpacing.sm }}>
+            <Text style={[yuanType.seal, { color: yuanDark.textMuted }]}>
+              {detail.relationshipLabel}
+            </Text>
+            <Text style={[yuanType.title, { color: yuanDark.text }]}>{detail.targetName}</Text>
+          </View>
+
+          {detail.score != null && (
+            <View style={{ alignItems: 'center', marginTop: yuanSpacing.xl }}>
+              <CompatibilityScore score={detail.score} label={detail.grade ?? undefined} />
+            </View>
+          )}
+
+          {detail.archetypeName && (
+            <View style={{ marginTop: yuanSpacing.xl, gap: yuanSpacing.sm }}>
+              <Text style={[yuanType.caption, { color: yuanDark.accent, letterSpacing: 4 }]}>
+                {detail.archetypeCategory?.toUpperCase()}
+              </Text>
+              <Text style={[yuanType.heading, { color: yuanDark.text }]}>
+                {detail.archetypeName}
+              </Text>
+              {detail.archetypeTagline && (
+                <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>
+                  {detail.archetypeTagline}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {detail.interpretation?.overview && (
+            <View style={{ marginTop: yuanSpacing.xl }}>
+              <Text style={[yuanType.body, { color: yuanDark.text }]}>
+                {detail.interpretation.overview}
+              </Text>
+            </View>
+          )}
+
+          {openChat ? (
+            <Pressable onPress={openChat} style={{ marginTop: yuanSpacing.xl }} hitSlop={8}>
+              <Text style={yuanPresets.ctaText}>{t('chat.cta')}</Text>
+            </Pressable>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    </ReportReveal>
   )
 }

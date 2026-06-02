@@ -13,6 +13,8 @@ import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
+import { clearDraft } from '@/lib/onboardingDraft'
+import { resetOnboarding } from '../index'
 
 type Status = 'idle' | 'pending' | 'linked' | 'recovered' | 'already_linked' | 'error'
 
@@ -142,7 +144,11 @@ export default function SettingsScreen() {
         <Card
           variant='outlined'
           padding='lg'
-          style={{ backgroundColor: yuanDark.card, gap: yuanSpacing.sm, marginBottom: yuanSpacing.lg }}
+          style={{
+            backgroundColor: yuanDark.card,
+            gap: yuanSpacing.sm,
+            marginBottom: yuanSpacing.lg,
+          }}
         >
           {userEmail ? (
             <Text style={[yuanType.body, { color: yuanDark.text }]}>{maskEmail(userEmail)}</Text>
@@ -264,6 +270,25 @@ export default function SettingsScreen() {
         >
           {t(locale, 'settings.signOut.hint')}
         </Text>
+
+        {__DEV__ ? (
+          <Pressable
+            onPress={async () => {
+              await resetOnboarding()
+              await clearDraft()
+              router.replace('/')
+            }}
+            hitSlop={12}
+            style={{ alignSelf: 'center', marginTop: yuanSpacing.lg }}
+          >
+            <Text
+              style={[yuanType.caption, { color: yuanDark.seal, textDecorationLine: 'underline' }]}
+            >
+              DEV · replay intro + reset onboarding
+            </Text>
+          </Pressable>
+        ) : null}
+
         <View style={{ height: yuanSpacing.xl }} />
       </View>
 

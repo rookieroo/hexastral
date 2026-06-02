@@ -1,4 +1,4 @@
-import { ricePaper } from '@zhop/hexastral-tokens'
+import { yuanDark } from '@zhop/hexastral-tokens/yuan'
 import { Stack } from 'expo-router'
 
 export default function OnboardingLayout() {
@@ -6,14 +6,15 @@ export default function OnboardingLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: ricePaper.ivory },
+        contentStyle: { backgroundColor: yuanDark.bg },
         animation: 'slide_from_right',
         gestureEnabled: true,
       }}
     >
-      {/* pair-input owns its own entrance (figure settle), so suppress the
-          horizontal slide and the edge-swipe back to the (deleted) welcome. */}
-      <Stack.Screen name='pair-input' options={{ animation: 'fade', gestureEnabled: false }} />
+      {/* Intro is a one-shot cinematic — suppress edge-swipe back to nothing. */}
+      <Stack.Screen name='intro' options={{ gestureEnabled: false }} />
+      {/* Reveal masks API latency with its own ceremony — no edge-swipe back. */}
+      <Stack.Screen name='reveal' options={{ gestureEnabled: false }} />
     </Stack>
   )
 }
