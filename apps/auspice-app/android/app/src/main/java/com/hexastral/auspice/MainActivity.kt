@@ -1,4 +1,4 @@
-package com.hexastral.cycle
+package com.hexastral.auspice
 
 import android.os.Build
 import android.os.Bundle

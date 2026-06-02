@@ -26,6 +26,8 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="cycle"/>
         <data android:scheme="exp+cycle"/>
+        <data android:scheme="auspice"/>
+        <data android:scheme="exp+auspice"/>
       </intent-filter>
     </activity>
   </application>

@@ -29,8 +29,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>cycle</string>
-          <string>com.hexastral.cycle</string>
+          <string>auspice</string>
+          <string>com.hexastral.auspice</string>
         </array>
       </dict>
       <dict>
@@ -42,7 +42,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+cycle</string>
+          <string>exp+auspice</string>
         </array>
       </dict>
     </array>
