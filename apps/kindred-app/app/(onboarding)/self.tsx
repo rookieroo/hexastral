@@ -8,8 +8,13 @@
  *
  * Binds directly to the onboarding draft (self* fields) — every step
  * commits via onChange so a backgrounded app preserves progress. The form
- * navigates internally between steps; we only handle the terminal submit
- * (→ mode picker).
+ * navigates internally between steps; we only handle the terminal submit.
+ *
+ * Submit forks on onboarding state (ADR-0021 solo-first):
+ *  - First run → persist self birth, complete onboarding, land on /(reading)
+ *    (the solo 八字紫微 report — no partner required)
+ *  - Re-entered later (Threads "+" / edit birth) → persist + on to the mode
+ *    picker, the partner flow unchanged
  *
  * V15Moon is rendered as the form's crown so the brand anchor is visible
  * throughout the wizard (matches the home header + HomeSplash logo).
@@ -30,6 +35,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { resolveLocale } from '@/lib/i18n'
 import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
+import { saveSelfBirth } from '@/lib/selfBirth'
+import { suppressNextSplash } from '@/lib/splash-control'
+import { isOnboardingComplete, markOnboardingComplete } from '../index'
 
 function localeToLang(loc: string): string {
   if (loc === 'en') return 'en-US'
@@ -76,6 +84,29 @@ export default function SelfBirthScreen() {
     searchCityApi(query, lang, 7)
 
   const handleSubmit = async () => {
+    // Persist self birth — the solo reading computes from this for the life
+    // of the install (the onboarding draft gets cleared, this doesn't).
+    if (draft.selfSolarDate && draft.selfGender) {
+      await saveSelfBirth({
+        solarDate: draft.selfSolarDate,
+        timeIndex: draft.selfTimeIndex,
+        gender: draft.selfGender,
+        city: draft.selfBirthCity || undefined,
+        lat: draft.selfBirthLat ?? undefined,
+        lng: draft.selfBirthLng ?? undefined,
+        timezone: draft.selfBirthTimezone ?? undefined,
+      })
+    }
+
+    // First run: solo-first (ADR-0021) — straight to the reading, no partner gate.
+    if (!(await isOnboardingComplete())) {
+      await markOnboardingComplete()
+      suppressNextSplash()
+      router.replace('/(reading)')
+      return
+    }
+
+    // Re-entered from Threads "+" — continue to the partner flow.
     router.push('/(onboarding)/mode')
   }
 

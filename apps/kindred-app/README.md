@@ -28,10 +28,24 @@ apps/kindred-app/
 │   ├── StickFigure.tsx          shared mascot (intro + pair-input tab icons)
 │   ├── IntroScene.tsx           intro scenery: sky / ground / galaxy / glow / dust
 │   │                                + drop-in slot for AI backdrop plates
+│   ├── reading/                 solo 八字紫微 report UI (ported from ming-pan, ADR-0021 K1)
+│   │   ├── ReadingOverlay.tsx   ink-bloom open/close shell
+│   │   ├── ReadingReport.tsx    chapter list + detail (RevenueCat-gated locked chapters)
+│   │   ├── ChartAppendix.tsx    八字 chart at-a-glance
+│   │   ├── ZiweiChartView.tsx   紫微 12-palace native chart
+│   │   └── reading-i18n.ts      reading strings + data-atom labels (4 locales)
 │   ├── PairTabBar.tsx           animated you/TA tab bar + connecting thread
 │   ├── PersonFields.tsx         compact birth-info field stack (both tabs)
 │   └── EmailVerifyModal.tsx     email verification bottom sheet
+├── lib/solo/                    solo reading compute + cache (ported from ming-pan)
+│   ├── natal.ts                 八字 four-pillar compute (@zhop/astro-core)
+│   ├── ziwei.ts                 紫微 compute (iztro, lazy)
+│   ├── reading.ts               五行 counts · 大运 chain · day-master relations
+│   └── reading-cache.ts         POST /api/natal + GET /api/report/chapter/* (HMAC v2)
+├── lib/selfBirth.ts             persistent self birth info (seed for the solo reading)
+├── app/(reading)/               HOME: solo reading (ADR-0021 solo-first)
 ├── assets/intro/                AI scene-plate slot + generation prompt guide
+├── assets/imagery/              Q版 mascot + chapter 实物意象 prompt guide
 ├── lib/
 │   ├── config.ts                Env vars (apiUrl, env, RevenueCat keys)
 │   ├── hmac.ts                  v2 HMAC-SHA256 request signing

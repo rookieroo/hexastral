@@ -2,9 +2,10 @@
  * Kindred entry — decides where the user lands on app open.
  *
  * - First-ever launch, intro not seen → /(onboarding)/intro (stick-figure
- *   parable, once) → self birth wizard → mode picker
+ *   parable, once) → self birth wizard → solo reading (ADR-0021 solo-first)
  * - Onboarding not yet done but intro seen → /(onboarding)/self
- * - Returning user with onboarding done → /(bonds) (HomeSplash moon flourish)
+ * - Returning user with onboarding done → /(reading) — the solo reading IS
+ *   the home; Threads (bonds) hang off it
  *
  * Intro is single-shot: we set `INTRO_SEEN_KEY` up-front so a force-quit
  * mid-animation doesn't replay it. Use `resetOnboarding()` (DEV, in Settings)
@@ -69,11 +70,16 @@ export default function EntryScreen() {
   }
   if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
   if (status === 'welcome') return <Redirect href='/(onboarding)/self' />
-  return <Redirect href='/(bonds)' />
+  return <Redirect href='/(reading)' />
 }
 
 export async function markOnboardingComplete(): Promise<void> {
   await AsyncStorage.setItem(ONBOARDING_DONE_KEY, '1')
+}
+
+/** Whether first-run onboarding has finished (self.tsx forks its submit on this). */
+export async function isOnboardingComplete(): Promise<boolean> {
+  return (await AsyncStorage.getItem(ONBOARDING_DONE_KEY)) != null
 }
 
 /** DEV-only: wipe first-launch flags so the intro + onboarding replay. */

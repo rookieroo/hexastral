@@ -9,8 +9,9 @@
  *           KindredClientGate (wires <KindredClientProvider> once userId is ready)
  *             IapInitializer  (one-shot RevenueCat configure + login)
  *             expo-router <Stack>
- *               (onboarding)/*  — intro → self → mode → [other-meta+birth | invite] → reveal
- *               (bonds)/*       — main app (bond list + detail)
+ *               (onboarding)/*  — intro → self → [first run: solo reading] or mode → partner flow
+ *               (reading)/*     — HOME: solo 八字紫微 report (ADR-0021 K1)
+ *               (bonds)/*       — Threads: bond list + detail
  *               (settings)/*    — Apple Sign In + sign out
  *               (commerce)/*    — paywall modal
  *               accept/[token]  — deep-link claim (B-user from email)
@@ -119,6 +120,7 @@ export default function RootLayout() {
               >
                 <Stack.Screen name='index' />
                 <Stack.Screen name='(onboarding)' />
+                <Stack.Screen name='(reading)' />
                 <Stack.Screen name='(bonds)' />
                 <Stack.Screen name='(settings)' />
                 <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />

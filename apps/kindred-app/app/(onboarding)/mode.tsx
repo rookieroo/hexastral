@@ -51,12 +51,12 @@ export default function ModeScreen() {
       router.push('/(onboarding)/invite')
       return
     }
-    // skip → bonds (self-only for now)
+    // skip → solo reading home (ADR-0021: A's own report needs no partner)
     updateDraft({ otherMode: null })
     await markOnboardingComplete()
     await clearDraft()
     suppressNextSplash()
-    router.replace('/(bonds)')
+    router.replace('/(reading)')
   }
 
   const ctaKey: TranslationKey = intent === 'skip' ? 'pair.cta.start' : 'common.next'
