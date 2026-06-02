@@ -3,7 +3,7 @@
  */
 
 import { Card } from '@zhop/core-ui'
-import { yuanLight, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
       <View
         style={{
           flex: 1,
@@ -123,9 +123,9 @@ export default function SettingsScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
           <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text style={[yuanType.heading, { color: yuanLight.textMuted }]}>←</Text>
+            <Text style={[yuanType.heading, { color: yuanDark.textMuted }]}>←</Text>
           </Pressable>
-          <Text style={[yuanType.seal, { color: yuanLight.textMuted }]}>
+          <Text style={[yuanType.seal, { color: yuanDark.textMuted }]}>
             {t(locale, 'settings.title')}
           </Text>
           <View style={{ width: 24 }} />
@@ -134,7 +134,7 @@ export default function SettingsScreen() {
         <View style={{ height: yuanSpacing.xl }} />
 
         <Text
-          style={[yuanType.seal, { color: yuanLight.textSecondary, marginBottom: yuanSpacing.md }]}
+          style={[yuanType.seal, { color: yuanDark.textSecondary, marginBottom: yuanSpacing.md }]}
         >
           {t(locale, 'settings.email.section')}
         </Text>
@@ -142,27 +142,27 @@ export default function SettingsScreen() {
         <Card
           variant='outlined'
           padding='lg'
-          style={{ backgroundColor: yuanLight.card, gap: yuanSpacing.sm, marginBottom: yuanSpacing.lg }}
+          style={{ backgroundColor: yuanDark.card, gap: yuanSpacing.sm, marginBottom: yuanSpacing.lg }}
         >
           {userEmail ? (
-            <Text style={[yuanType.body, { color: yuanLight.text }]}>{maskEmail(userEmail)}</Text>
+            <Text style={[yuanType.body, { color: yuanDark.text }]}>{maskEmail(userEmail)}</Text>
           ) : (
-            <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.textMuted }]}>
               {t(locale, 'settings.email.notLinked')}
             </Text>
           )}
           <Pressable onPress={() => setEmailModalOpen(true)} hitSlop={8}>
-            <Text style={[yuanType.caption, { color: yuanLight.accent }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.accent }]}>
               {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
             </Text>
           </Pressable>
-          <Text style={[yuanType.caption, { color: yuanLight.textMuted, lineHeight: 18 }]}>
+          <Text style={[yuanType.caption, { color: yuanDark.textMuted, lineHeight: 18 }]}>
             {t(locale, 'settings.email.hint')}
           </Text>
         </Card>
 
         <Text
-          style={[yuanType.seal, { color: yuanLight.textSecondary, marginBottom: yuanSpacing.md }]}
+          style={[yuanType.seal, { color: yuanDark.textSecondary, marginBottom: yuanSpacing.md }]}
         >
           {t(locale, 'settings.account')}
         </Text>
@@ -170,7 +170,7 @@ export default function SettingsScreen() {
         <Card
           variant='outlined'
           padding='lg'
-          style={{ backgroundColor: yuanLight.card, gap: yuanSpacing.md }}
+          style={{ backgroundColor: yuanDark.card, gap: yuanSpacing.md }}
         >
           {appleAvailable ? (
             <View style={{ gap: yuanSpacing.sm }}>
@@ -181,35 +181,35 @@ export default function SettingsScreen() {
                 style={{ width: '100%', height: 48 }}
                 onPress={handleApple}
               />
-              <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>
+              <Text style={[yuanType.caption, { color: yuanDark.textMuted }]}>
                 {t(locale, 'settings.signInWithApple.hint')}
               </Text>
             </View>
           ) : (
-            <Text style={[yuanType.body, { color: yuanLight.textMuted }]}>
+            <Text style={[yuanType.body, { color: yuanDark.textMuted }]}>
               {t(locale, 'settings.signInWithApple')} — iOS only
             </Text>
           )}
 
           {status === 'linked' || status === 'already_linked' ? (
-            <Text style={[yuanType.caption, { color: yuanLight.accent }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.accent }]}>
               ✓ {t(locale, 'settings.linked')}
             </Text>
           ) : null}
           {status === 'recovered' ? (
-            <Text style={[yuanType.caption, { color: yuanLight.accent }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.accent }]}>
               ✓ {t(locale, 'settings.recovered')}
             </Text>
           ) : null}
           {status === 'error' && errorMsg ? (
-            <Text style={[yuanType.caption, { color: yuanLight.seal }]}>{errorMsg}</Text>
+            <Text style={[yuanType.caption, { color: yuanDark.seal }]}>{errorMsg}</Text>
           ) : null}
         </Card>
 
         <View style={{ height: yuanSpacing.lg }} />
 
         <Text
-          style={[yuanType.seal, { color: yuanLight.textSecondary, marginBottom: yuanSpacing.md }]}
+          style={[yuanType.seal, { color: yuanDark.textSecondary, marginBottom: yuanSpacing.md }]}
         >
           {t(locale, 'settings.privacy.section')}
         </Text>
@@ -217,7 +217,7 @@ export default function SettingsScreen() {
         <Card
           variant='outlined'
           padding='lg'
-          style={{ backgroundColor: yuanLight.card, gap: yuanSpacing.sm }}
+          style={{ backgroundColor: yuanDark.card, gap: yuanSpacing.sm }}
         >
           <View
             style={{
@@ -227,7 +227,7 @@ export default function SettingsScreen() {
               gap: yuanSpacing.md,
             }}
           >
-            <Text style={[yuanType.body, { color: yuanLight.text, flex: 1 }]}>
+            <Text style={[yuanType.body, { color: yuanDark.text, flex: 1 }]}>
               {t(locale, 'settings.crossAppMemory.label')}
             </Text>
             <Switch
@@ -236,7 +236,7 @@ export default function SettingsScreen() {
               disabled={crossAppBusy || !userId}
             />
           </View>
-          <Text style={[yuanType.caption, { color: yuanLight.textMuted, lineHeight: 18 }]}>
+          <Text style={[yuanType.caption, { color: yuanDark.textMuted, lineHeight: 18 }]}>
             {t(locale, 'settings.crossAppMemory.hint')}
           </Text>
         </Card>
@@ -248,7 +248,7 @@ export default function SettingsScreen() {
             style={[
               yuanType.caption,
               {
-                color: yuanLight.textMuted,
+                color: yuanDark.textMuted,
                 textDecorationLine: 'underline',
               },
             ]}
@@ -259,7 +259,7 @@ export default function SettingsScreen() {
         <Text
           style={[
             yuanType.caption,
-            { color: yuanLight.textMuted, textAlign: 'center', marginTop: yuanSpacing.xs },
+            { color: yuanDark.textMuted, textAlign: 'center', marginTop: yuanSpacing.xs },
           ]}
         >
           {t(locale, 'settings.signOut.hint')}

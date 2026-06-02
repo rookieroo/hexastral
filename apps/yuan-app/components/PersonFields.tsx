@@ -16,7 +16,7 @@ import {
   type ShichenIndex,
   ShichenPicker,
 } from '@zhop/core-ui'
-import { yuanLight, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-yuan'
 import * as Haptics from 'expo-haptics'
 import { useCallback, useMemo } from 'react'
@@ -186,7 +186,7 @@ export function PersonFields({ person, locale, showRelationship = false }: Perso
           value={shichen}
           onChange={(idx) => apply({ time: idx })}
           onSelect={() => Haptics.selectionAsync()}
-          accentColor={yuanLight.accent}
+          accentColor={yuanDark.accent}
         />
         <Pressable
           onPress={() => {
@@ -199,7 +199,7 @@ export function PersonFields({ person, locale, showRelationship = false }: Perso
           <Text
             style={[
               yuanType.caption,
-              { color: yuanLight.textMuted, textDecorationLine: 'underline' },
+              { color: yuanDark.textMuted, textDecorationLine: 'underline' },
             ]}
           >
             {t(locale, 'fill.timeUnknown')}
@@ -222,7 +222,7 @@ export function PersonFields({ person, locale, showRelationship = false }: Perso
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text style={[yuanType.seal, { color: yuanLight.textSecondary, marginBottom: yuanSpacing.sm }]}>
+    <Text style={[yuanType.seal, { color: yuanDark.textSecondary, marginBottom: yuanSpacing.sm }]}>
       {children}
     </Text>
   )
@@ -248,14 +248,14 @@ function UnderlineInput({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={yuanLight.textMuted}
+      placeholderTextColor={yuanDark.textMuted}
       keyboardType={keyboardType}
       maxLength={maxLength}
       style={{
         fontSize: yuanType.body.fontSize,
-        color: yuanLight.text,
+        color: yuanDark.text,
         borderBottomWidth: 0.5,
-        borderBottomColor: yuanLight.border,
+        borderBottomColor: yuanDark.border,
         paddingVertical: yuanSpacing.sm,
       }}
     />
@@ -278,11 +278,11 @@ function GenderChip({ label, selected, onPress }: GenderChipProps) {
         paddingHorizontal: yuanSpacing.lg,
         borderRadius: 999,
         borderWidth: 0.5,
-        borderColor: selected ? yuanLight.accent : yuanLight.border,
-        backgroundColor: selected ? `${yuanLight.accent}14` : 'transparent',
+        borderColor: selected ? yuanDark.accent : yuanDark.border,
+        backgroundColor: selected ? `${yuanDark.accent}14` : 'transparent',
       }}
     >
-      <Text style={[yuanType.body, { color: selected ? yuanLight.accent : yuanLight.text }]}>
+      <Text style={[yuanType.body, { color: selected ? yuanDark.accent : yuanDark.text }]}>
         {label}
       </Text>
     </Pressable>

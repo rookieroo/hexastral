@@ -9,7 +9,7 @@
  */
 
 import { ReadingChatScreen, type ReadingChatStrings } from '@zhop/core-ui'
-import { yuanLight, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanType } from '@zhop/hexastral-tokens/yuan'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
 import { useMemo } from 'react'
@@ -41,7 +41,7 @@ export default function BondChatScreen() {
   )
 
   if (!userId || !id) {
-    return <View style={{ flex: 1, backgroundColor: yuanLight.bg }} />
+    return <View style={{ flex: 1, backgroundColor: yuanDark.bg }} />
   }
 
   const header = (
@@ -55,13 +55,13 @@ export default function BondChatScreen() {
         gap: 8,
         borderBottomWidth: 0.5,
         borderBottomColor: '#00000014',
-        backgroundColor: yuanLight.bg,
+        backgroundColor: yuanDark.bg,
       }}
     >
       <Pressable onPress={() => router.back()} hitSlop={12}>
-        <ChevronLeft color={yuanLight.text} size={24} strokeWidth={1.2} />
+        <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
       </Pressable>
-      <Text style={[yuanType.heading, { color: yuanLight.text, fontSize: 17 }]} numberOfLines={1}>
+      <Text style={[yuanType.heading, { color: yuanDark.text, fontSize: 17 }]} numberOfLines={1}>
         {title || copy.title}
       </Text>
     </View>

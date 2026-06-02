@@ -14,7 +14,7 @@
 
 import { ink } from '@zhop/hexastral-tokens'
 import { duration, spring } from '@zhop/hexastral-tokens/motion'
-import { yuanLight, yuanMotion, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanMotion, yuanType } from '@zhop/hexastral-tokens/yuan'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -169,13 +169,13 @@ export function PairTabBar({
             pose={pose}
             facing='R'
             size={FIG}
-            stroke={active === 'self' ? ink.gold : yuanLight.textMuted}
+            stroke={active === 'self' ? ink.gold : yuanDark.textMuted}
           />
         </Animated.View>
         <Text
           style={[
             yuanType.caption,
-            { color: active === 'self' ? yuanLight.accent : yuanLight.textMuted, marginTop: 4 },
+            { color: active === 'self' ? yuanDark.accent : yuanDark.textMuted, marginTop: 4 },
           ]}
         >
           {selfLabel}
@@ -195,13 +195,13 @@ export function PairTabBar({
             pose={pose}
             facing='L'
             size={FIG}
-            stroke={active === 'other' ? ink.gold : yuanLight.textMuted}
+            stroke={active === 'other' ? ink.gold : yuanDark.textMuted}
           />
         </Animated.View>
         <Text
           style={[
             yuanType.caption,
-            { color: active === 'other' ? yuanLight.accent : yuanLight.textMuted, marginTop: 4 },
+            { color: active === 'other' ? yuanDark.accent : yuanDark.textMuted, marginTop: 4 },
           ]}
         >
           {otherLabel}

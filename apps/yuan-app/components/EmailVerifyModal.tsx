@@ -3,7 +3,7 @@
  * POST /api/user/:userId/email/request + /email/confirm (HMAC).
  */
 
-import { yuanLight, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import { useState } from 'react'
 import {
   ActivityIndicator,
@@ -129,7 +129,7 @@ export function EmailVerifyModal({
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: yuanLight.card,
+            backgroundColor: yuanDark.card,
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
             paddingBottom: 40,
@@ -137,18 +137,18 @@ export function EmailVerifyModal({
         >
           <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
             <View
-              style={{ width: 36, height: 4, backgroundColor: yuanLight.border }}
+              style={{ width: 36, height: 4, backgroundColor: yuanDark.border }}
             />
           </View>
 
           <View style={{ paddingHorizontal: yuanSpacing.screenH, paddingTop: 12 }}>
-            <Text style={[yuanType.heading, { color: yuanLight.text, marginBottom: 4 }]}>
+            <Text style={[yuanType.heading, { color: yuanDark.text, marginBottom: 4 }]}>
               {t(locale, 'settings.email.title')}
             </Text>
 
             {step === 'email' ? (
               <>
-                <Text style={[yuanType.caption, { color: yuanLight.textSecondary, marginTop: 8 }]}>
+                <Text style={[yuanType.caption, { color: yuanDark.textSecondary, marginTop: 8 }]}>
                   {t(locale, 'settings.email.subtitle')}
                 </Text>
                 <TextInput
@@ -158,22 +158,22 @@ export function EmailVerifyModal({
                     setError(null)
                   }}
                   placeholder={t(locale, 'settings.email.placeholder')}
-                  placeholderTextColor={yuanLight.textMuted}
+                  placeholderTextColor={yuanDark.textMuted}
                   keyboardType='email-address'
                   autoCapitalize='none'
                   autoCorrect={false}
                   autoFocus
                   style={{
                     borderWidth: 0.5,
-                    borderColor: error ? yuanLight.seal : yuanLight.border,
+                    borderColor: error ? yuanDark.seal : yuanDark.border,
                     padding: 14,
                     fontSize: 16,
-                    color: yuanLight.text,
+                    color: yuanDark.text,
                     marginTop: yuanSpacing.lg,
                   }}
                 />
                 {error ? (
-                  <Text style={[yuanType.caption, { color: yuanLight.seal, marginTop: 6 }]}>
+                  <Text style={[yuanType.caption, { color: yuanDark.seal, marginTop: 6 }]}>
                     {error}
                   </Text>
                 ) : null}
@@ -183,15 +183,15 @@ export function EmailVerifyModal({
                   style={{
                     marginTop: yuanSpacing.lg,
                     paddingVertical: 14,
-                    backgroundColor: yuanLight.accent,
+                    backgroundColor: yuanDark.accent,
                     alignItems: 'center',
                     opacity: loading ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
-                    <ActivityIndicator color={yuanLight.bg} />
+                    <ActivityIndicator color={yuanDark.bg} />
                   ) : (
-                    <Text style={[yuanType.body, { color: yuanLight.bg, fontWeight: '600' }]}>
+                    <Text style={[yuanType.body, { color: yuanDark.bg, fontWeight: '600' }]}>
                       {t(locale, 'settings.email.sendCode')}
                     </Text>
                   )}
@@ -199,7 +199,7 @@ export function EmailVerifyModal({
               </>
             ) : (
               <>
-                <Text style={[yuanType.caption, { color: yuanLight.textSecondary, marginTop: 8 }]}>
+                <Text style={[yuanType.caption, { color: yuanDark.textSecondary, marginTop: 8 }]}>
                   {t(locale, 'settings.email.codeSent')} {email}
                 </Text>
                 <TextInput
@@ -209,23 +209,23 @@ export function EmailVerifyModal({
                     setError(null)
                   }}
                   placeholder='000000'
-                  placeholderTextColor={yuanLight.textMuted}
+                  placeholderTextColor={yuanDark.textMuted}
                   keyboardType='number-pad'
                   maxLength={6}
                   autoFocus
                   style={{
                     borderWidth: 0.5,
-                    borderColor: error ? yuanLight.seal : yuanLight.border,
+                    borderColor: error ? yuanDark.seal : yuanDark.border,
                     padding: 14,
                     fontSize: 28,
-                    color: yuanLight.text,
+                    color: yuanDark.text,
                     marginTop: yuanSpacing.lg,
                     letterSpacing: 8,
                     textAlign: 'center',
                   }}
                 />
                 {error ? (
-                  <Text style={[yuanType.caption, { color: yuanLight.seal, marginTop: 6 }]}>
+                  <Text style={[yuanType.caption, { color: yuanDark.seal, marginTop: 6 }]}>
                     {error}
                   </Text>
                 ) : null}
@@ -235,15 +235,15 @@ export function EmailVerifyModal({
                   style={{
                     marginTop: yuanSpacing.lg,
                     paddingVertical: 14,
-                    backgroundColor: yuanLight.accent,
+                    backgroundColor: yuanDark.accent,
                     alignItems: 'center',
                     opacity: loading || code.length !== 6 ? 0.5 : 1,
                   }}
                 >
                   {loading ? (
-                    <ActivityIndicator color={yuanLight.bg} />
+                    <ActivityIndicator color={yuanDark.bg} />
                   ) : (
-                    <Text style={[yuanType.body, { color: yuanLight.bg, fontWeight: '600' }]}>
+                    <Text style={[yuanType.body, { color: yuanDark.bg, fontWeight: '600' }]}>
                       {t(locale, 'settings.email.verify')}
                     </Text>
                   )}
@@ -256,7 +256,7 @@ export function EmailVerifyModal({
                   }}
                   style={{ marginTop: yuanSpacing.md, alignItems: 'center', padding: 8 }}
                 >
-                  <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>
+                  <Text style={[yuanType.caption, { color: yuanDark.textMuted }]}>
                     {t(locale, 'settings.email.changeEmail')}
                   </Text>
                 </Pressable>

@@ -14,7 +14,7 @@
  */
 
 import { PaywallView } from '@zhop/core-ui'
-import { yuanLight } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark } from '@zhop/hexastral-tokens/yuan'
 import { YuanSeal } from '@zhop/scenario-yuan'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -40,13 +40,13 @@ export default function PaywallScreen() {
 
   const palette = useMemo(
     () => ({
-      background: yuanLight.bg,
-      text: yuanLight.text,
-      textSecondary: yuanLight.textSecondary,
-      textMuted: yuanLight.textMuted,
-      border: yuanLight.border,
-      card: yuanLight.card,
-      accent: yuanLight.accent,
+      background: yuanDark.bg,
+      text: yuanDark.text,
+      textSecondary: yuanDark.textSecondary,
+      textMuted: yuanDark.textMuted,
+      border: yuanDark.border,
+      card: yuanDark.card,
+      accent: yuanDark.accent,
     }),
     []
   )
@@ -75,7 +75,7 @@ export default function PaywallScreen() {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
       <PaywallView
         reason={reason}
         productIds={YUAN_PRODUCT_IDS}

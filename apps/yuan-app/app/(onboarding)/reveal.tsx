@@ -15,7 +15,7 @@
  * + routes home.
  */
 
-import { yuanLight, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import { RevealMoment, type TimeIndex, useSoloBond } from '@zhop/scenario-yuan'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -109,7 +109,7 @@ export default function RevealScreen() {
 
   if (status === 'error') {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View
           style={{
             flex: 1,
@@ -119,11 +119,11 @@ export default function RevealScreen() {
             gap: yuanSpacing.lg,
           }}
         >
-          <Text style={[yuanType.title, { color: yuanLight.text, textAlign: 'center' }]}>
+          <Text style={[yuanType.title, { color: yuanDark.text, textAlign: 'center' }]}>
             {t(locale, 'reveal.error')}
           </Text>
           {errorMsg ? (
-            <Text style={[yuanType.caption, { color: yuanLight.textMuted, textAlign: 'center' }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.textMuted, textAlign: 'center' }]}>
               {errorMsg}
             </Text>
           ) : null}
@@ -134,7 +134,7 @@ export default function RevealScreen() {
             <Text
               style={[
                 yuanType.caption,
-                { color: yuanLight.textMuted, textDecorationLine: 'underline' },
+                { color: yuanDark.textMuted, textDecorationLine: 'underline' },
               ]}
             >
               {t(locale, 'reveal.back')}

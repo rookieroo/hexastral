@@ -19,7 +19,7 @@
  * reveal, move to (tabs)/) is deferred — see the sprint plan Part 2.
  */
 
-import { yuanLight, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import {
   type RelationshipType,
   RelationshipTypeSelector,
@@ -181,7 +181,7 @@ export default function PairInputScreen() {
           }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -191,13 +191,13 @@ export default function PairInputScreen() {
         >
           {/* Header — the folded welcome couplet */}
           <View style={{ alignItems: 'center', marginBottom: yuanSpacing.md }}>
-            <Text style={[yuanType.heading, { color: yuanLight.text, textAlign: 'center' }]}>
+            <Text style={[yuanType.heading, { color: yuanDark.text, textAlign: 'center' }]}>
               {t(locale, 'welcome.line1')}
             </Text>
             <Text
               style={[
                 yuanType.body,
-                { color: yuanLight.textSecondary, textAlign: 'center', marginTop: 2 },
+                { color: yuanDark.textSecondary, textAlign: 'center', marginTop: 2 },
               ]}
             >
               {t(locale, 'welcome.line2')}
@@ -228,7 +228,7 @@ export default function PairInputScreen() {
                   <Text
                     style={[
                       yuanType.title,
-                      { color: yuanLight.text, marginBottom: yuanSpacing.lg },
+                      { color: yuanDark.text, marginBottom: yuanSpacing.lg },
                     ]}
                   >
                     {t(locale, 'pair.self.title')}
@@ -240,7 +240,7 @@ export default function PairInputScreen() {
                   <Text
                     style={[
                       yuanType.title,
-                      { color: yuanLight.text, marginBottom: yuanSpacing.lg },
+                      { color: yuanDark.text, marginBottom: yuanSpacing.lg },
                     ]}
                   >
                     {t(locale, 'pair.other.title')}
@@ -274,30 +274,30 @@ export default function PairInputScreen() {
                         autoComplete='email'
                         keyboardType='email-address'
                         placeholder='email@example.com'
-                        placeholderTextColor={yuanLight.textMuted}
+                        placeholderTextColor={yuanDark.textMuted}
                         style={{
                           fontSize: yuanType.heading.fontSize,
-                          color: yuanLight.text,
+                          color: yuanDark.text,
                           borderBottomWidth: 0.5,
-                          borderBottomColor: yuanLight.border,
+                          borderBottomColor: yuanDark.border,
                           paddingVertical: yuanSpacing.md,
                         }}
                       />
                       <View style={{ height: yuanSpacing.lg }} />
-                      <Text style={[yuanType.caption, { color: yuanLight.textSecondary }]}>
+                      <Text style={[yuanType.caption, { color: yuanDark.textSecondary }]}>
                         {t(locale, 'invite.subtitle')}
                       </Text>
                       <View style={{ height: yuanSpacing.sm }} />
                       <RelationshipTypeSelector value={inviteRelType} onChange={setInviteRelType} />
                       <View style={{ height: yuanSpacing.lg }} />
-                      <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>
+                      <Text style={[yuanType.caption, { color: yuanDark.textMuted }]}>
                         {t(locale, 'invite.hint')}
                       </Text>
                     </View>
                   )}
 
                   {intent === 'skip' && (
-                    <Text style={[yuanType.body, { color: yuanLight.textSecondary }]}>
+                    <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>
                       {t(locale, 'waiting.hint')}
                     </Text>
                   )}
@@ -309,7 +309,7 @@ export default function PairInputScreen() {
           {/* CTA */}
           {error && (
             <Text
-              style={[yuanType.caption, { color: yuanLight.seal, marginBottom: yuanSpacing.sm }]}
+              style={[yuanType.caption, { color: yuanDark.seal, marginBottom: yuanSpacing.sm }]}
             >
               {error}
             </Text>
@@ -321,7 +321,7 @@ export default function PairInputScreen() {
             style={{ alignSelf: 'flex-end', opacity: cta.enabled ? 1 : 0.3 }}
           >
             {sending ? (
-              <ActivityIndicator color={yuanLight.accent} />
+              <ActivityIndicator color={yuanDark.accent} />
             ) : (
               <Text style={yuanPresets.ctaText}>{t(locale, cta.label)}</Text>
             )}
@@ -353,8 +353,8 @@ function IntentRow({ label, selected, onPress }: IntentRowProps) {
         paddingVertical: yuanSpacing.md,
         paddingHorizontal: yuanSpacing.md,
         borderWidth: 0.5,
-        borderColor: selected ? yuanLight.accent : yuanLight.border,
-        backgroundColor: selected ? `${yuanLight.accent}10` : 'transparent',
+        borderColor: selected ? yuanDark.accent : yuanDark.border,
+        backgroundColor: selected ? `${yuanDark.accent}10` : 'transparent',
       }}
     >
       <View
@@ -363,7 +363,7 @@ function IntentRow({ label, selected, onPress }: IntentRowProps) {
           height: 16,
           borderRadius: 999,
           borderWidth: 1.5,
-          borderColor: selected ? yuanLight.accent : yuanLight.borderStrong,
+          borderColor: selected ? yuanDark.accent : yuanDark.borderStrong,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -374,12 +374,12 @@ function IntentRow({ label, selected, onPress }: IntentRowProps) {
               width: 8,
               height: 8,
               borderRadius: 999,
-              backgroundColor: yuanLight.accent,
+              backgroundColor: yuanDark.accent,
             }}
           />
         )}
       </View>
-      <Text style={[yuanType.body, { color: selected ? yuanLight.text : yuanLight.textSecondary }]}>
+      <Text style={[yuanType.body, { color: selected ? yuanDark.text : yuanDark.textSecondary }]}>
         {label}
       </Text>
     </Pressable>

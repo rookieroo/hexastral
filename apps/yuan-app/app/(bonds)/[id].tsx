@@ -19,7 +19,7 @@
  */
 
 import { ErrorState, useHaptic } from '@zhop/core-ui'
-import { yuanLight, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import {
   ChapterPager,
   CompatibilityScore,
@@ -109,9 +109,9 @@ export default function BondDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={yuanLight.accent} />
+          <ActivityIndicator color={yuanDark.accent} />
         </View>
       </SafeAreaView>
     )
@@ -119,12 +119,12 @@ export default function BondDetailScreen() {
 
   if (isGenerating) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: yuanSpacing.lg }}
         >
           <YuanSeal mode='breathing' size={96} />
-          <Text style={[yuanType.body, { color: yuanLight.textSecondary }]}>合盘中…</Text>
+          <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>合盘中…</Text>
         </View>
       </SafeAreaView>
     )
@@ -132,7 +132,7 @@ export default function BondDetailScreen() {
 
   if (error || !detail) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <ErrorState
           variant='fullscreen'
           title={error?.message ?? 'Bond not found'}
@@ -166,7 +166,7 @@ export default function BondDetailScreen() {
   // Chapter-based report (v2): horizontal pager
   if (chapters && chapters.length > 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View
           style={{
             paddingHorizontal: yuanSpacing.screenH,
@@ -176,12 +176,12 @@ export default function BondDetailScreen() {
           }}
         >
           <Pressable onPress={() => router.back()} hitSlop={12}>
-            <ChevronLeft color={yuanLight.text} size={24} strokeWidth={1.2} />
+            <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
           </Pressable>
           <Text
             style={[
               yuanType.caption,
-              { color: yuanLight.textSecondary, marginLeft: yuanSpacing.md },
+              { color: yuanDark.textSecondary, marginLeft: yuanSpacing.md },
             ]}
           >
             {detail.targetName} · {detail.relationshipLabel}
@@ -229,7 +229,7 @@ export default function BondDetailScreen() {
 
   // V1 fallback — single-page summary
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: yuanSpacing.screenH,
@@ -238,14 +238,14 @@ export default function BondDetailScreen() {
         }}
       >
         <Pressable onPress={() => router.back()} hitSlop={12} style={{ alignSelf: 'flex-start' }}>
-          <ChevronLeft color={yuanLight.text} size={24} strokeWidth={1.2} />
+          <ChevronLeft color={yuanDark.text} size={24} strokeWidth={1.2} />
         </Pressable>
 
         <View style={{ alignItems: 'center', marginTop: yuanSpacing.lg, gap: yuanSpacing.sm }}>
-          <Text style={[yuanType.seal, { color: yuanLight.textMuted }]}>
+          <Text style={[yuanType.seal, { color: yuanDark.textMuted }]}>
             {detail.relationshipLabel}
           </Text>
-          <Text style={[yuanType.title, { color: yuanLight.text }]}>{detail.targetName}</Text>
+          <Text style={[yuanType.title, { color: yuanDark.text }]}>{detail.targetName}</Text>
         </View>
 
         {detail.score != null && (
@@ -256,14 +256,14 @@ export default function BondDetailScreen() {
 
         {detail.archetypeName && (
           <View style={{ marginTop: yuanSpacing.xl, gap: yuanSpacing.sm }}>
-            <Text style={[yuanType.caption, { color: yuanLight.accent, letterSpacing: 4 }]}>
+            <Text style={[yuanType.caption, { color: yuanDark.accent, letterSpacing: 4 }]}>
               {detail.archetypeCategory?.toUpperCase()}
             </Text>
-            <Text style={[yuanType.heading, { color: yuanLight.text }]}>
+            <Text style={[yuanType.heading, { color: yuanDark.text }]}>
               {detail.archetypeName}
             </Text>
             {detail.archetypeTagline && (
-              <Text style={[yuanType.body, { color: yuanLight.textSecondary }]}>
+              <Text style={[yuanType.body, { color: yuanDark.textSecondary }]}>
                 {detail.archetypeTagline}
               </Text>
             )}
@@ -272,7 +272,7 @@ export default function BondDetailScreen() {
 
         {detail.interpretation?.overview && (
           <View style={{ marginTop: yuanSpacing.xl }}>
-            <Text style={[yuanType.body, { color: yuanLight.text }]}>
+            <Text style={[yuanType.body, { color: yuanDark.text }]}>
               {detail.interpretation.overview}
             </Text>
           </View>

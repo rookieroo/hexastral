@@ -13,7 +13,7 @@
  */
 
 import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
-import { yuanLight, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanPresets, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import { type BondData, useBondList, WaitingForOther, YuanSeal } from '@zhop/scenario-yuan'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef } from 'react'
@@ -48,7 +48,7 @@ export default function BondListScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <YuanSeal mode='breathing' size={72} />
         </View>
@@ -58,7 +58,7 @@ export default function BondListScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <ErrorState
           variant='fullscreen'
           illustration={<YuanSeal mode='static' size={72} />}
@@ -100,7 +100,7 @@ export default function BondListScreen() {
   // sits cleanly inside the EmptyState block, not as a separate footer.
   if (activeBonds.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
             illustration={<YuanSeal mode='static' size={96} />}
@@ -118,7 +118,7 @@ export default function BondListScreen() {
 
   // Normal list
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
       <FlatList
         contentContainerStyle={{
           paddingHorizontal: yuanSpacing.screenH,
@@ -135,13 +135,13 @@ export default function BondListScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={[yuanType.seal, { color: yuanLight.textMuted }]}>緣</Text>
+            <Text style={[yuanType.seal, { color: yuanDark.textMuted }]}>緣</Text>
             <View style={{ flexDirection: 'row', gap: yuanSpacing.lg, alignItems: 'center' }}>
               <Pressable onPress={() => router.push('/(settings)')} hitSlop={8}>
-                <Text style={[yuanType.caption, { color: yuanLight.textMuted }]}>···</Text>
+                <Text style={[yuanType.caption, { color: yuanDark.textMuted }]}>···</Text>
               </Pressable>
               <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={8}>
-                <Text style={[yuanType.caption, { color: yuanLight.accent }]}>+</Text>
+                <Text style={[yuanType.caption, { color: yuanDark.accent }]}>+</Text>
               </Pressable>
             </View>
           </View>
@@ -168,9 +168,9 @@ export default function BondListScreen() {
 function BondListItem({ bond, onPress }: { bond: BondData; onPress: () => void }) {
   return (
     <Pressable onPress={onPress}>
-      <Card variant='outlined' padding='lg' style={{ backgroundColor: yuanLight.card, gap: 6 }}>
-        <Text style={[yuanType.heading, { color: yuanLight.text }]}>{bond.targetName}</Text>
-        <Text style={[yuanType.caption, { color: yuanLight.textSecondary }]}>
+      <Card variant='outlined' padding='lg' style={{ backgroundColor: yuanDark.card, gap: 6 }}>
+        <Text style={[yuanType.heading, { color: yuanDark.text }]}>{bond.targetName}</Text>
+        <Text style={[yuanType.caption, { color: yuanDark.textSecondary }]}>
           {bond.relationshipLabel}
         </Text>
         {bond.score != null && (
@@ -183,13 +183,13 @@ function BondListItem({ bond, onPress }: { bond: BondData; onPress: () => void }
             }}
           >
             <Text
-              style={{ fontSize: 36, fontWeight: '300', color: yuanLight.text, letterSpacing: -1 }}
+              style={{ fontSize: 36, fontWeight: '300', color: yuanDark.text, letterSpacing: -1 }}
             >
               {bond.score}
             </Text>
             {bond.archetypeTagline && (
               <Text
-                style={[yuanType.caption, { color: yuanLight.textMuted, flex: 1 }]}
+                style={[yuanType.caption, { color: yuanDark.textMuted, flex: 1 }]}
                 numberOfLines={1}
               >
                 {bond.archetypeTagline}

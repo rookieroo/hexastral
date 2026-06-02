@@ -14,7 +14,7 @@
  * list; the bond is still accessible from there.
  */
 
-import { yuanLight, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
+import { yuanDark, yuanSpacing, yuanType } from '@zhop/hexastral-tokens/yuan'
 import {
   InviteAcceptSheet,
   type RelationshipType,
@@ -73,7 +73,7 @@ export default function AcceptTokenScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <YuanSeal mode='breathing' size={72} />
         </View>
@@ -83,7 +83,7 @@ export default function AcceptTokenScreen() {
 
   if (error || !invitation) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: yuanLight.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: yuanDark.bg }}>
         <View
           style={{
             flex: 1,
@@ -92,7 +92,7 @@ export default function AcceptTokenScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={[yuanType.body, { color: yuanLight.seal, textAlign: 'center' }]}>
+          <Text style={[yuanType.body, { color: yuanDark.seal, textAlign: 'center' }]}>
             {error?.message ?? 'Invitation not found'}
           </Text>
         </View>
@@ -132,9 +132,9 @@ export default function AcceptTokenScreen() {
       <View style={{ flex: 1 }} onTouchEnd={() => router.back()} />
       {accepting ? (
         <View
-          style={{ padding: yuanSpacing.xxl, alignItems: 'center', backgroundColor: yuanLight.bg }}
+          style={{ padding: yuanSpacing.xxl, alignItems: 'center', backgroundColor: yuanDark.bg }}
         >
-          <ActivityIndicator color={yuanLight.accent} />
+          <ActivityIndicator color={yuanDark.accent} />
         </View>
       ) : (
         <InviteAcceptSheet
@@ -168,25 +168,25 @@ export default function AcceptTokenScreen() {
                   height: 18,
                   borderRadius: 3,
                   borderWidth: 1.5,
-                  borderColor: consentGiven ? yuanLight.accent : yuanLight.borderStrong,
-                  backgroundColor: consentGiven ? yuanLight.accent : 'transparent',
+                  borderColor: consentGiven ? yuanDark.accent : yuanDark.borderStrong,
+                  backgroundColor: consentGiven ? yuanDark.accent : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginTop: 2,
                 }}
               >
                 {consentGiven && (
-                  <Text style={{ color: yuanLight.bg, fontSize: 12, fontWeight: '700' }}>
+                  <Text style={{ color: yuanDark.bg, fontSize: 12, fontWeight: '700' }}>
                     {'✓'}
                   </Text>
                 )}
               </View>
-              <Text style={[yuanType.caption, { color: yuanLight.textSecondary, flex: 1 }]}>
+              <Text style={[yuanType.caption, { color: yuanDark.textSecondary, flex: 1 }]}>
                 {t('invite.accept.consent.lead')}
                 {invitation.inviterName}
                 {t('invite.accept.consent.trail')}
                 <Text
-                  style={{ color: yuanLight.accent, textDecorationLine: 'underline' }}
+                  style={{ color: yuanDark.accent, textDecorationLine: 'underline' }}
                   onPress={() => Linking.openURL(privacyUrl)}
                 >
                   {t('invite.accept.consent.privacyPolicy')}
@@ -201,10 +201,10 @@ export default function AcceptTokenScreen() {
           style={[
             yuanType.caption,
             {
-              color: yuanLight.seal,
+              color: yuanDark.seal,
               padding: yuanSpacing.md,
               textAlign: 'center',
-              backgroundColor: yuanLight.bg,
+              backgroundColor: yuanDark.bg,
             },
           ]}
         >
