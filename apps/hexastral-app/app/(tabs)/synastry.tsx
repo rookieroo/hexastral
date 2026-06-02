@@ -2,7 +2,7 @@
  * Bonds / Synastry tab — auto-redirects to the Bond Create flow.
  *
  * The legacy single-person Fate composer was removed in the deep refactor.
- * The "缘" tab now serves as a quick entrypoint to /(bonds)/bond-create so
+ * The "Kindred" tab now serves as a quick entrypoint to /(bonds)/bond-create so
  * users coming from the tab bar reach the live bond flow immediately.
  */
 

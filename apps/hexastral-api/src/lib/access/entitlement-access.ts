@@ -1,7 +1,7 @@
 /**
  * Async entitlement-access helpers — the DB-backed bridge between the pure capability
  * resolver (`capabilities.ts`) and route gates. Uses PER-CAPABILITY entitlement checks so a
- * `fate_pro` subscriber unlocks the 命 surface but NOT 緣's pair, etc. (ADR-0013).
+ * `fate_pro` subscriber unlocks the 命 surface but NOT Kindred's pair, etc. (ADR-0013).
  *
  * `capabilities.ts` stays pure (no DB) for unit-testing; this is the thin async layer.
  */

@@ -15,13 +15,13 @@ export { purchaseRoutes } from './purchase'
 
 // Stellar routes
 
+// Auspice — 黄历 satellite engine (deterministic: 干支 + 建除 + 二十八宿 + 宜忌 + 日冲煞)
+export { auspiceRoutes } from './auspice'
 // Bonds / Contacts
 export { bondRoutes } from './bonds'
 export { contactRoutes } from './contacts'
-// Cycle — 黄历 satellite engine (deterministic: 干支 + 建除 + 二十八宿 + 宜忌 + 日冲煞)
-export { cycleRoutes } from './cycle'
-// Cycle Pro — Life Timeline (大运 + 流年 + 流月) — deterministic, HMAC-signed, D1-cached
-export { cycleTimelineRoutes } from './cycle-timeline'
+// Auspice Pro — Life Timeline (大运 + 流年 + 流月) — deterministic, HMAC-signed, D1-cached
+export { auspiceTimelineRoutes } from './cycle-timeline'
 export { ddlRoutes } from './ddl'
 export { discoveryRoutes } from './discovery'
 export { flagsRoutes } from './flags'
@@ -50,7 +50,7 @@ export { portfolioRoutes } from './portfolio'
 export { portfolioAuthRoutes } from './portfolio-auth'
 // Quota — Pro 月度配额
 export { quotaRoutes } from './quota'
-// Timeline — fate/Yuán 命运时间轴节点 deep reading (astro-core engine + K.4-guarded explain)
+// Timeline — fate/Kindred 命运时间轴节点 deep reading (astro-core engine + K.4-guarded explain)
 export { relationshipTimelineRoutes } from './relationship-timeline'
 // Versioned report (6-chapter, append-only, lazy regen on context_hash mismatch)
 export { reportChapterRoutes, reportManifestRoutes } from './report'

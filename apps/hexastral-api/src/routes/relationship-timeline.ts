@@ -1,5 +1,5 @@
 /**
- * POST /api/relationship-timeline/explain — Yuán 关系时间轴节点深度解读 (B-yuan.3).
+ * POST /api/relationship-timeline/explain — Kindred 关系时间轴节点深度解读 (B-yuan.3).
  *
  * Same shape as /api/timeline/explain (fate), but the node is recomputed from BOTH
  * charts via `@zhop/astro-core` `getRelationshipTimelineNodes` (B-yuan.1). The explain

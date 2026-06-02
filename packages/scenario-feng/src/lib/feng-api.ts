@@ -2,8 +2,8 @@
  * Hand-written RPC façade for `/api/feng/*`.
  *
  * Background: Hono's `hc<AppType>()` stops inferring deep route trees once
- * the app grows past a certain size — Yuán hit this last phase and shipped
- * `yuan-bonds-api.ts` for the same reason. We do the same here for Fēng.
+ * the app grows past a certain size — Kindred hit this last phase and shipped
+ * `kindred-bonds-api.ts` for the same reason. We do the same here for Fēng.
  *
  * The factory takes a HexastralClient and returns a typed surface that hides
  * the `.api.feng.sites` chain so consumers don't fight the inference depth

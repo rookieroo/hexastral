@@ -1,9 +1,9 @@
 /**
- * Cycle daily push (C.5) — 100% deterministic, NO LLM.
+ * Auspice daily push (C.5) — 100% deterministic, NO LLM.
  *
- * Cycle is Tier-3 anonymous, so we use **local scheduled notifications** (no push
+ * Auspice is Tier-3 anonymous, so we use **local scheduled notifications** (no push
  * token, no server cron, no account): the app fetches the server-computed
- * deterministic almanac (`/api/cycle/day`, incl. the 对你而言 overlay when a birth
+ * deterministic almanac (`/api/auspice/day`, incl. the 对你而言 overlay when a birth
  * date is set) and schedules a rolling window of 8am local notifications. They are
  * rescheduled on each app open so content stays fresh. (A future REMOTE push via
  * svc-notify + Expo tokens is the scale option — not needed for v1.)
@@ -16,16 +16,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { lunarToSolar } from '@zhop/astro-core'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import { fetchCycleDay } from './api'
+import { fetchAuspiceDay } from './api'
 import { upcomingHolidayHeadsUps } from './cn-holidays'
 import { getStrings, type Locale } from './i18n'
-import type { CyclePerson, PersonCalendar } from './people'
-import { getCycleProActive } from './pro'
+import type { AuspicePerson, PersonCalendar } from './people'
+import { getAuspiceProActive } from './pro'
 import { localizeYijiVerb } from './yiji-vocab'
 
-const ENABLED_KEY = 'cycle.push.enabled'
+const ENABLED_KEY = 'auspice.push.enabled'
 /** One-time purge flag — clears notifications scheduled by older id schemes. */
-const PURGE_FLAG = 'cycle.push.purgedV2'
+const PURGE_FLAG = 'auspice.push.purgedV2'
 /** Stable per-date identifier prefix — makes scheduling idempotent (no dupes). */
 const DAILY_ID_PREFIX = 'cycle-daily-'
 const PUSH_HOUR = 8
@@ -122,13 +122,13 @@ async function cancelDaily(): Promise<void> {
  * Build the notification body from a day payload (deterministic — no LLM).
  * `isPro` gates the 对你而言 verdict line: free users get the generic 宜忌 /
  * 干支 / 节气 body that's pure math from the day itself, never the
- * birth-info-derived personalization that's part of cycle_pro.
+ * birth-info-derived personalization that's part of auspice_pro.
  */
 function dailyContent(
   locale: Locale,
   t: ReturnType<typeof getStrings>,
   dateStr: string,
-  payload: Awaited<ReturnType<typeof fetchCycleDay>>,
+  payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
   isPro: boolean
 ): { title: string; body: string } {
   const d = payload.day
@@ -154,7 +154,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   const now = Date.now()
   // Read entitlement once per reschedule pass. SDK-unconfigured paths (Expo
   // Go, missing key) safely return false → free-tier body.
-  const isPro = await getCycleProActive()
+  const isPro = await getAuspiceProActive()
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightAm(i)
@@ -167,7 +167,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
         opts.locale,
         t,
         dateStr,
-        await fetchCycleDay(dateStr, opts.birthDate),
+        await fetchAuspiceDay(dateStr, opts.birthDate),
         isPro
       )
     } catch {
@@ -225,7 +225,9 @@ export async function purgeStaleNotificationsOnce(): Promise<void> {
  * (YYYY-MM-DD) so the caller can deep-link Today to that date. Returns an
  * unsubscribe fn; also fires for the launch notification (cold start).
  */
-export function addCycleNotificationTapListener(onOpen: (day: string | null) => void): () => void {
+export function addAuspiceNotificationTapListener(
+  onOpen: (day: string | null) => void
+): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const day = response.notification.request.content.data?.day
     onOpen(typeof day === 'string' ? day : null)
@@ -333,7 +335,7 @@ async function cancelBirthdays(): Promise<void> {
  * is already granted (call on app open freely; the 亲友 screen prompts on add).
  */
 export async function scheduleBirthdayReminders(
-  people: ReadonlyArray<CyclePerson>,
+  people: ReadonlyArray<AuspicePerson>,
   locale: Locale
 ): Promise<void> {
   await cancelBirthdays()
@@ -378,7 +380,7 @@ export async function scheduleBirthdayReminders(
 // ── 节假日 / 调休 heads-up (CN) ──────────────────────────────────────────────────
 
 const HOLIDAY_ID_PREFIX = 'cycle-holiday-'
-const HOLIDAY_ENABLED_KEY = 'cycle.holiday.enabled'
+const HOLIDAY_ENABLED_KEY = 'auspice.holiday.enabled'
 /** Heads-up fires at 20:00 the evening BEFORE the holiday start / 调休 workday. */
 const HOLIDAY_EVE_HOUR = 20
 const HOLIDAY_WINDOW_DAYS = 100

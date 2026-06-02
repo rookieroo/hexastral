@@ -16,8 +16,8 @@ Adopt a three-tier brand architecture:
 ```
 HexAstral (master / LLC publisher)
 ├── Flagships — single CJK glyph + Latin transliteration
-│   ├── HexAstral        — 命緣卦道 four-tab life navigator (current)
-│   ├── Yuán  / 緣       — relationship & compatibility
+│   ├── HexAstral        — 命Kindred卦道 four-tab life navigator (current)
+│   ├── Kindred  / Kindred       — relationship & compatibility
 │   └── Fēng  / 風       — feng-shui (Q3+, deferred)
 └── Satellites — independent Western names, shared backend
     ├── Coin Cast        — I-Ching coin divination
@@ -29,7 +29,7 @@ HexAstral (master / LLC publisher)
 
 | Tier | Pattern | Example |
 |------|---------|---------|
-| Flagship | Single CJK glyph + Latin transliteration | `Yuán / 緣` |
+| Flagship | Single CJK glyph + Latin transliteration | `Kindred / Kindred` |
 | Satellite | English category noun, evocative not literal | `Coin Cast` |
 | Master | "HexAstral" — appears only as App Store **Seller** name and in optional flagship subtitle (e.g., "by HexAstral") | — |
 
@@ -43,7 +43,7 @@ All apps in all tiers consume `@zhop/hexastral-tokens`:
   CJK glyph used as hero mark
 
 What differs between products: **proportions and usage rules**, not tokens.
-Yuán uses ricePaper heavier and cinnabar at emotional peaks; HexAstral uses
+Kindred uses ricePaper heavier and cinnabar at emotional peaks; HexAstral uses
 rubbing heavier and cinnabar minimally; satellites pick a single accent slice of
 the palette.
 
@@ -51,11 +51,11 @@ the palette.
 
 | Asset | Pattern | Example |
 |-------|---------|---------|
-| Bundle id | `com.hexastral.<slug>` | `com.hexastral.yuan` |
-| App workspace | `apps/<slug>-app/` | `apps/yuan-app/` |
-| Shared logic package | `packages/scenario-<slug>/` | `packages/scenario-yuan/` |
+| Bundle id | `com.hexastral.<slug>` | `com.hexastral.kindred` |
+| App workspace | `apps/<slug>-app/` | `apps/kindred-app/` |
+| Shared logic package | `packages/scenario-<slug>/` | `packages/scenario-kindred/` |
 | Domain | `<slug>.hexastral.com` or sub-path on `hexastral.com` | `hexastral.com/yuan` |
-| RevenueCat | `hexastral_<slug>_*` SKU prefix | `hexastral_yuan_pro_monthly` |
+| RevenueCat | `hexastral_<slug>_*` SKU prefix | `hexastral_kindred_pro_monthly` |
 
 ### App Store seller field
 
@@ -80,5 +80,5 @@ Negative:
 
 ## References
 
-- ADR-0001: Yuán naming
+- ADR-0001: Kindred naming
 - `packages/hexastral-tokens/src/palette.ts`

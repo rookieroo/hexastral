@@ -8,7 +8,7 @@
 import { useTheme } from '@zhop/core-ui'
 import { Stack } from 'expo-router'
 
-export default function CycleHomeStackLayout() {
+export default function AuspiceHomeStackLayout() {
   const { colors } = useTheme()
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>

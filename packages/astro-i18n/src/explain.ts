@@ -15,8 +15,8 @@ import { explanationsEn } from './explanations/en'
 import { explanationsJa } from './explanations/ja'
 import { explanationsZh } from './explanations/zh'
 import { explanationsZhHant } from './explanations/zh-Hant'
-import type { ExplanationDict } from './types-explanations'
 import type { Locale, TokenCategory } from './types'
+import type { ExplanationDict } from './types-explanations'
 
 const dictionaries: Partial<Record<Locale, ExplanationDict>> = {
   zh: explanationsZh,
@@ -25,11 +25,7 @@ const dictionaries: Partial<Record<Locale, ExplanationDict>> = {
   ja: explanationsJa,
 }
 
-export function explainTerm(
-  category: TokenCategory,
-  token: string,
-  locale: Locale
-): string | null {
+export function explainTerm(category: TokenCategory, token: string, locale: Locale): string | null {
   const localized = dictionaries[locale]?.[category]?.[token]
   if (localized) return localized
 

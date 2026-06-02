@@ -23,7 +23,7 @@ export interface ErrorStateProps {
   onSecondary?: () => void
   /**
    * Custom action slot — fully replaces the built-in Button(s) when provided.
-   * Use for brand-specific CTA patterns (e.g. Yuán's gold-underline text link).
+   * Use for brand-specific CTA patterns (e.g. Kindred's gold-underline text link).
    */
   customAction?: ReactNode
   style?: StyleProp<ViewStyle>

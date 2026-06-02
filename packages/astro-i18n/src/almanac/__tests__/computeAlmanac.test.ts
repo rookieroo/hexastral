@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeAlmanac } from '../computeAlmanac'
 import type { Locale } from '../../types'
+import { computeAlmanac } from '../computeAlmanac'
 
 const baseUser = {
   userId: 'user-test-001',
@@ -27,11 +27,7 @@ describe('computeAlmanac()', () => {
     expect(a.energyLevel).toBe(b.energyLevel)
     expect(a.luckyDirection).toBe(b.luckyDirection)
     // But the template strings differ across many users (sanity — at least 1 differs).
-    expect([a.headline, a.todayLens, a.watchFor]).not.toEqual([
-      b.headline,
-      b.todayLens,
-      b.watchFor,
-    ])
+    expect([a.headline, a.todayLens, a.watchFor]).not.toEqual([b.headline, b.todayLens, b.watchFor])
   })
 
   it('renders for all 9 locales', () => {

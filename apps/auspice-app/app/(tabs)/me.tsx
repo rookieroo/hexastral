@@ -30,13 +30,13 @@ import { Linking, Pressable, ScrollView, Switch, Text, TextInput, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
-import { CyclePaywallSheet } from '@/components/CyclePaywallSheet'
+import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import {
-  type CycleBirthInfo,
-  getCycleBirthInfo,
+  type AuspiceBirthInfo,
+  getAuspiceBirthInfo,
   isValidBirthDate,
-  setCycleBirthInfo,
+  setAuspiceBirthInfo,
 } from '@/lib/birth'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
@@ -93,10 +93,10 @@ export default function MeScreen() {
   const [pushOn, setPushOn] = useState(false)
   const [calPaywallOpen, setCalPaywallOpen] = useState(false)
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   // ── Birth info form state ───────────────────────────────────────────────
-  const [birth, setBirth] = useState<CycleBirthInfo>({ solarDate: '', timeIndex: null })
+  const [birth, setBirth] = useState<AuspiceBirthInfo>({ solarDate: '', timeIndex: null })
   const [birthSaved, setBirthSaved] = useState(false)
   // Once a birth is on record, the form collapses to a one-line summary; tapping
   // it re-expands for edits. First-time users (no record yet) see the full form.
@@ -117,7 +117,7 @@ export default function MeScreen() {
   }, [birth, t])
 
   useEffect(() => {
-    getCycleBirthInfo()
+    getAuspiceBirthInfo()
       .then((info) => {
         if (info) {
           setBirth(info)
@@ -129,7 +129,7 @@ export default function MeScreen() {
 
   const saveBirth = () => {
     if (!birthValid) return
-    void setCycleBirthInfo(birth).then(() => {
+    void setAuspiceBirthInfo(birth).then(() => {
       setBirthSaved(true)
       setHasSavedBirth(true)
       // Collapse back to the summary row once saved; tap it to edit again.
@@ -599,7 +599,7 @@ export default function MeScreen() {
           </Pressable>
         </View>
 
-        <CyclePaywallSheet visible={calPaywallOpen} onClose={() => setCalPaywallOpen(false)} />
+        <AuspicePaywallSheet visible={calPaywallOpen} onClose={() => setCalPaywallOpen(false)} />
 
         {/* ── Discover (collapsed) ── */}
         <View>

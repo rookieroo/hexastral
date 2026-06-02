@@ -13,7 +13,7 @@
 import type { PortfolioTarget } from './types'
 
 export type QuestionType = 'relationship' | 'home_office' | 'career_wealth' | 'self_daily'
-export type FlagshipKey = 'yuan' | 'feng' | 'cycle' | 'hexastral'
+export type FlagshipKey = 'kindred' | 'feng' | 'auspice' | 'hexastral'
 
 export const QUESTION_TYPES: readonly QuestionType[] = [
   'relationship',
@@ -23,16 +23,16 @@ export const QUESTION_TYPES: readonly QuestionType[] = [
 ] as const
 
 const QUESTION_TO_FLAGSHIP: Record<QuestionType, FlagshipKey> = {
-  relationship: 'yuan',
+  relationship: 'kindred',
   home_office: 'feng',
   career_wealth: 'hexastral',
-  self_daily: 'cycle',
+  self_daily: 'auspice',
 }
 
 const TARGET_DEFAULT_FLAGSHIP: Record<PortfolioTarget, FlagshipKey> = {
   faceoracle: 'hexastral',
   starpalace: 'hexastral',
-  soulmatch: 'yuan',
+  soulmatch: 'kindred',
   fengshui: 'feng',
   dreamoracle: 'hexastral',
   eightpillars: 'hexastral',

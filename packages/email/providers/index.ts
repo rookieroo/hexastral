@@ -1,10 +1,10 @@
 /**
  * Unified Email Provider Interface
- * 
+ *
  * Supports:
  * - Resend (recommended, built on AWS SES)
  * - AWS SES Direct (via HTTP API)
- * 
+ *
  * Usage:
  * ```ts
  * const emailProvider = createEmailProvider(env)
@@ -16,8 +16,8 @@
  * ```
  */
 
-import { Resend, type CreateEmailOptions } from 'resend'
-import { AWSSESClient, createSESClient } from './aws-ses'
+import { type CreateEmailOptions, Resend } from 'resend'
+import { type AWSSESClient, createSESClient } from './aws-ses'
 
 export interface EmailMessage {
   to: string | string[]
@@ -141,10 +141,10 @@ export function createEmailProvider(env: EmailProviderConfig): EmailProvider {
 
 // Re-export
 export { AWSSESClient, createSESClient } from './aws-ses'
-export { EmailBlacklistService, createSESWebhookHandler } from './blacklist'
 export type {
   BlacklistEntry,
-  SNSNotification,
   SESBounceNotification,
   SESComplaintNotification,
+  SNSNotification,
 } from './blacklist'
+export { createSESWebhookHandler, EmailBlacklistService } from './blacklist'

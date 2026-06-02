@@ -19,7 +19,7 @@
     "@zhop/ddl-client": "workspace:*",
     "@zhop/hexastral-client": "workspace:*",
     "@zhop/hexastral-tokens": "workspace:*",
-    "@zhop/scenario-yuan": "workspace:*",
+    "@zhop/scenario-kindred": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "next": "^16.1.6",

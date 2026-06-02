@@ -206,7 +206,7 @@ export const users = sqliteTable(
  * truth for subscription access (ADR-0013).
  *
  * RC webhook writes here; `GET /api/users/me/entitlements` reads. Entitlement
- * keys are defined in src/config/products.ts: yuan_pro | cycle_pro | fate_pro |
+ * keys are defined in src/config/products.ts: kindred_pro | auspice_pro | fate_pro |
  * universe_pro.
  */
 export const userEntitlements = sqliteTable(
@@ -887,7 +887,7 @@ export const dailySignals = sqliteTable(
   ]
 )
 
-// ==================== 关系图谱（缘·Bonds） ====================
+// ==================== 关系图谱（Kindred·Bonds） ====================
 
 /**
  * 用户关系绑定 — 双模式: Solo (默念) + Resonance (共振)
@@ -1743,7 +1743,7 @@ export const fengReports = sqliteTable(
     /** Gregorian 流年 — 用来过滤"今年/明年"切换 */
     fengYear: integer('feng_year').notNull(),
     /** 当前玄空元运 1-9 */
-    currentYuan: integer('current_yuan').notNull(),
+    currentYuan: integer('current_kindred').notNull(),
 
     /** Stage 1 输出 — ShaObservationSet JSON */
     visionJson: text('vision_json').notNull(),
@@ -1840,12 +1840,12 @@ export const fengJobsRelations = relations(fengJobs, ({ one }) => ({
   report: one(fengReports, { fields: [fengJobs.reportId], references: [fengReports.id] }),
 }))
 
-// ==================== Cycle · Life Timeline cache (Sprint 4 — ADR-0020) ====================
+// ==================== Auspice · Life Timeline cache (Sprint 4 — ADR-0020) ====================
 //
-// Memoizes the deterministic `POST /api/cycle/timeline` payload (大运 + 流年 + 流月) keyed
+// Memoizes the deterministic `POST /api/auspice/timeline` payload (大运 + 流年 + 流月) keyed
 // on the sha256 of `(birthDate, birthHour, gender, locale, TIMELINE_CACHE_VERSION)`.
 // The route is anonymous-by-design (no userId column) — birth lives on-device for
-// Cycle; the cache key fully describes the input domain.
+// Auspice; the cache key fully describes the input domain.
 //
 // Bumping `TIMELINE_CACHE_VERSION` invalidates ALL existing rows on the next read
 // (the hash changes, the lookup misses, the recompute path runs + overwrites by

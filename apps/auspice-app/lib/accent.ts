@@ -1,5 +1,5 @@
 /**
- * Cycle accent variant — user-pickable brand-color flavor. Default 朱泥
+ * Auspice accent variant — user-pickable brand-color flavor. Default 朱泥
  * (terra) honors ADR-0010 §6; users who find the red overwhelming can pick
  * 苍墨 / 靛青 / 赭金. The variant is persisted in AsyncStorage and lifted
  * into the root provider so a switch re-themes the whole app instantly.
@@ -9,26 +9,31 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { CycleAccentVariant } from '@zhop/hexastral-tokens/satellites'
+import type { AuspiceAccentVariant } from '@zhop/hexastral-tokens/satellites'
 import { createContext, useContext } from 'react'
 import type { Locale } from './i18n'
 
-export type { CycleAccentVariant }
+export type { AuspiceAccentVariant }
 
-const STORAGE_KEY = 'cycle.accent.variant'
-export const DEFAULT_ACCENT_VARIANT: CycleAccentVariant = 'terra'
+const STORAGE_KEY = 'auspice.accent.variant'
+export const DEFAULT_ACCENT_VARIANT: AuspiceAccentVariant = 'terra'
 
-const VALID_VARIANTS: ReadonlySet<CycleAccentVariant> = new Set(['terra', 'ink', 'azurite', 'gold'])
+const VALID_VARIANTS: ReadonlySet<AuspiceAccentVariant> = new Set([
+  'terra',
+  'ink',
+  'azurite',
+  'gold',
+])
 
-export async function getAccentVariant(): Promise<CycleAccentVariant> {
+export async function getAccentVariant(): Promise<AuspiceAccentVariant> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY)
-    if (raw && VALID_VARIANTS.has(raw as CycleAccentVariant)) return raw as CycleAccentVariant
+    if (raw && VALID_VARIANTS.has(raw as AuspiceAccentVariant)) return raw as AuspiceAccentVariant
   } catch {}
   return DEFAULT_ACCENT_VARIANT
 }
 
-export async function setAccentVariant(v: CycleAccentVariant): Promise<void> {
+export async function setAccentVariant(v: AuspiceAccentVariant): Promise<void> {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, v)
   } catch {}
@@ -41,7 +46,7 @@ export async function setAccentVariant(v: CycleAccentVariant): Promise<void> {
  */
 export const ACCENT_VARIANT_LABELS: Record<
   Locale,
-  Record<CycleAccentVariant, { name: string; hint: string }>
+  Record<AuspiceAccentVariant, { name: string; hint: string }>
 > = {
   'zh-Hans': {
     terra: { name: '朱泥', hint: '黄历默认' },
@@ -72,8 +77,8 @@ export const ACCENT_VARIANT_LABELS: Record<
 // ── Context for the picker to mutate the lifted variant state ─────────────
 
 interface AccentContextValue {
-  variant: CycleAccentVariant
-  setVariant: (v: CycleAccentVariant) => void
+  variant: AuspiceAccentVariant
+  setVariant: (v: AuspiceAccentVariant) => void
 }
 
 const AccentContext = createContext<AccentContextValue | null>(null)

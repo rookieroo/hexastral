@@ -1,7 +1,7 @@
 /**
  * /[locale]/numerology — Numerology product landing page (Phase D.3).
  *
- * Mirrors the Yuán landing pattern (`apps/hexastral-web/app/[locale]/yuan/page.tsx`)
+ * Mirrors the Kindred landing pattern (`apps/hexastral-web/app/[locale]/yuan/page.tsx`)
  * with three goals:
  *   1. Explain what Numerology is in ≤ 1 scroll
  *   2. CTA "Calculate your numbers" → /[locale]/numerology/calculate (free demo)

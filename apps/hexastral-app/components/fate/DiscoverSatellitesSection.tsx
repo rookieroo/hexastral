@@ -44,9 +44,9 @@ interface SatelliteEntry {
 
 const ENTRIES: ReadonlyArray<SatelliteEntry> = [
   {
-    key: 'yuan',
-    titleKey: 'discover_yuan_title',
-    subtitleKey: 'discover_yuan_subtitle',
+    key: 'kindred',
+    titleKey: 'discover_kindred_title',
+    subtitleKey: 'discover_kindred_subtitle',
     icon: Sparkles,
   },
   {

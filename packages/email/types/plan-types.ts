@@ -5,12 +5,12 @@ export const PLAN_TYPES = {
   FREE: 'zhop free',
   PRO: 'zhop pro',
   MAX: 'zhop max',
-} as const;
+} as const
 
 /**
  * Plan type union type
  */
-export type PlanType = typeof PLAN_TYPES[keyof typeof PLAN_TYPES];
+export type PlanType = (typeof PLAN_TYPES)[keyof typeof PLAN_TYPES]
 
 /**
  * Plan benefits interface for email templates
@@ -19,22 +19,22 @@ export interface PlanBenefits {
   /**
    * List of features for the plan
    */
-  features: string[];
-  
+  features: string[]
+
   /**
    * Marketing description for the plan
    */
-  description: string;
-  
+  description: string
+
   /**
    * Call to action text
    */
-  ctaText: string;
-  
+  ctaText: string
+
   /**
    * Welcome message
    */
-  welcomeMessage: string;
+  welcomeMessage: string
 }
 
 /**
@@ -44,8 +44,8 @@ export interface PlanConfig {
   /**
    * Plan benefits
    */
-  benefits: PlanBenefits;
-  
+  benefits: PlanBenefits
+
   /**
    * Plan price information
    */
@@ -53,19 +53,19 @@ export interface PlanConfig {
     /**
      * Monthly price
      */
-    monthly: number;
-    
+    monthly: number
+
     /**
      * Yearly price
      */
-    yearly: number;
-    
+    yearly: number
+
     /**
      * Currency
      */
-    currency: string;
-  };
-  
+    currency: string
+  }
+
   /**
    * Plan limits
    */
@@ -73,21 +73,21 @@ export interface PlanConfig {
     /**
      * Number of projects
      */
-    projects: number;
-    
+    projects: number
+
     /**
      * Number of AI messages
      */
-    aiMessages: number;
-    
+    aiMessages: number
+
     /**
      * Number of team seats
      */
-    seats: number;
-  };
+    seats: number
+  }
 }
 
 /**
  * Plan configuration map
  */
-export type PlanConfigMap = Record<PlanType, PlanConfig>;
+export type PlanConfigMap = Record<PlanType, PlanConfig>

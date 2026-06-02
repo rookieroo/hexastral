@@ -12,7 +12,7 @@
 import { Hono } from 'hono'
 import type { CloudflareBindings, ContextVariables } from '../infra-types'
 
-type FlagshipTarget = 'yuan' | 'feng'
+type FlagshipTarget = 'kindred' | 'feng'
 interface Recommendation {
   target: FlagshipTarget
   weight: number
@@ -20,33 +20,33 @@ interface Recommendation {
 
 const CONFIG_VERSION = 'v1'
 const BOTH: Recommendation[] = [
-  { target: 'yuan', weight: 0.6 },
+  { target: 'kindred', weight: 0.6 },
   { target: 'feng', weight: 0.6 },
 ]
 
 /** source → intent → recommendations. `*` is the intent wildcard fallback. */
 const DEFAULTS: Record<string, Record<string, Recommendation[]>> = {
   fate: {
-    relationship: [{ target: 'yuan', weight: 1 }],
-    career_wealth: [{ target: 'yuan', weight: 1 }],
+    relationship: [{ target: 'kindred', weight: 1 }],
+    career_wealth: [{ target: 'kindred', weight: 1 }],
     home_office: [{ target: 'feng', weight: 1 }],
     self_daily: [],
     '*': BOTH,
   },
   numerology: {
-    relationship: [{ target: 'yuan', weight: 1 }],
+    relationship: [{ target: 'kindred', weight: 1 }],
     home_office: [{ target: 'feng', weight: 1 }],
     '*': BOTH,
   },
   coincast: {
     '*': [
-      { target: 'yuan', weight: 0.5 },
+      { target: 'kindred', weight: 0.5 },
       { target: 'feng', weight: 0.5 },
     ],
   },
   dreamoracle: {
-    relationship: [{ target: 'yuan', weight: 1 }],
-    '*': [{ target: 'yuan', weight: 0.7 }],
+    relationship: [{ target: 'kindred', weight: 1 }],
+    '*': [{ target: 'kindred', weight: 0.7 }],
   },
   faceoracle: { '*': BOTH },
   cycle: { '*': BOTH },

@@ -22,7 +22,7 @@ const TYPE_META: Record<
   yiching: { en: 'I Ching Hexagram', zh: '易经卦学', icon: '兑', color: '#C4A862' },
   fate: { en: 'Full Chart Report', zh: '综合命书', icon: '命', color: '#7b5ea7' },
   physiognomy: { en: 'Face Reading', zh: '面相解读', icon: '相', color: '#A0845C' },
-  hehun: { en: 'Compatibility', zh: '合婚', icon: '缘', color: '#C4A882' },
+  hehun: { en: 'Compatibility', zh: '合婚', icon: 'Kindred', color: '#C4A882' },
 }
 
 function extractSnippet(contentJson: string): string {

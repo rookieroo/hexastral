@@ -22,7 +22,7 @@ import { BaziPillars } from '@/components/glossary/BaziPillars'
 import { GanzhiGrid } from '@/components/glossary/GanzhiGrid'
 import { ShichenWheel } from '@/components/glossary/ShichenWheel'
 import { ZiweiIntro } from '@/components/glossary/ZiweiIntro'
-import { type CycleYearOverviewPayload, fetchCycleYearOverview } from '@/lib/api'
+import { type AuspiceYearOverviewPayload, fetchAuspiceYearOverview } from '@/lib/api'
 import {
   CULTURE_CATEGORIES,
   type CultureCategoryKey,
@@ -78,13 +78,13 @@ export default function GlossaryScreen() {
     if (next) setOpen(next)
   }, [params.open])
 
-  const [overview, setOverview] = useState<CycleYearOverviewPayload | null>(null)
+  const [overview, setOverview] = useState<AuspiceYearOverviewPayload | null>(null)
   const [ovLoading, setOvLoading] = useState(false)
   const [ovError, setOvError] = useState(false)
   const loadOverview = useCallback(() => {
     setOvLoading(true)
     setOvError(false)
-    fetchCycleYearOverview(new Date().getFullYear())
+    fetchAuspiceYearOverview(new Date().getFullYear())
       .then(setOverview)
       .catch(() => setOvError(true))
       .finally(() => setOvLoading(false))
@@ -174,7 +174,7 @@ function CategoryBody({
   locale,
 }: {
   cat: CultureCategoryKey
-  overview: CycleYearOverviewPayload | null
+  overview: AuspiceYearOverviewPayload | null
   loading: boolean
   error: boolean
   onRetry: () => void

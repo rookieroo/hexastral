@@ -1,21 +1,18 @@
-import { Section } from '@react-email/components';
-import type * as React from 'react';
+import { Section } from '@react-email/components'
+import type * as React from 'react'
 
 export interface ContentSectionProps {
   /** Section content */
-  children: React.ReactNode;
+  children: React.ReactNode
   /** Optional additional CSS classes */
-  className?: string;
+  className?: string
 }
 
 /**
  * Content section for email templates with consistent styling
  * Uses inline styles for better email client compatibility
  */
-export const ContentSection: React.FC<ContentSectionProps> = ({
-  children,
-  className = '',
-}) => {
+export const ContentSection: React.FC<ContentSectionProps> = ({ children, className = '' }) => {
   return (
     <Section
       className={className}
@@ -25,5 +22,5 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
     >
       {children}
     </Section>
-  );
-};
+  )
+}

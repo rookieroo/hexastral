@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { fetchTimeline, type TimelinePayload } from '@/lib/api'
-import { getCycleBirthInfo } from '@/lib/birth'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 
 /** Convert a stored shichen-index (0-11) into a representative wall-clock hour. */
@@ -37,7 +37,7 @@ export function LiuyearBanner() {
 
   useEffect(() => {
     let cancelled = false
-    getCycleBirthInfo()
+    getAuspiceBirthInfo()
       .then((info) => {
         if (!info?.gender) return
         const birthHour = shichenToHour(info.timeIndex)

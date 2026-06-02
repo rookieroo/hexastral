@@ -17,16 +17,16 @@ import type { SatelliteQuestionTypePickerLabels } from './SatelliteQuestionTypeP
 
 const FLAGSHIP_SCHEME: Record<FlagshipKey, string> = {
   hexastral: 'hexastral',
-  yuan: 'yuan',
+  kindred: 'kindred',
   feng: 'feng',
-  cycle: 'cycle',
+  auspice: 'auspice',
 }
 
 const FLAGSHIP_APP_STORE_ID: Record<FlagshipKey, string> = {
   hexastral: 'id0000000001',
-  yuan: 'id0000000002',
+  kindred: 'id0000000002',
   feng: 'id0000000003',
-  cycle: 'id0000000004',
+  auspice: 'id0000000004',
 }
 
 export interface BuildFlagshipDeepLinkArgs {
@@ -80,12 +80,12 @@ const FLAGSHIP_LABELS_EN: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: 'Open in HexAstral',
     installedBody: 'Pick up your full chart and daily signals where you left off.',
   },
-  yuan: {
-    kicker: 'CONTINUE IN YUÁN',
+  kindred: {
+    kicker: 'CONTINUE IN KINDRED',
     title: 'Read your relationship in depth',
-    body: 'Bring a partner. Yuán compares two charts and writes a synastry chapter you can share.',
-    cta: 'Install Yuán',
-    installedCta: 'Open in Yuán',
+    body: 'Bring a partner. Kindred compares two charts and writes a synastry chapter you can share.',
+    cta: 'Install Kindred',
+    installedCta: 'Open in Kindred',
     installedBody: 'Add a partner and weave this thread into a full synastry chapter.',
   },
   feng: {
@@ -96,12 +96,12 @@ const FLAGSHIP_LABELS_EN: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: 'Open in Fēng',
     installedBody: 'Anchor this bearing to a Fēng site reading.',
   },
-  cycle: {
-    kicker: 'CONTINUE IN CYCLE',
+  auspice: {
+    kicker: 'CONTINUE IN AUSPICE',
     title: 'Plan your days with your chart',
-    body: "Cycle maps today's almanac to your chart, so you can see which days favor action, rest, or delay.",
-    cta: 'Install Cycle',
-    installedCta: 'Open in Cycle',
+    body: "Auspice maps today's almanac to your chart, so you can see which days favor action, rest, or delay.",
+    cta: 'Install Auspice',
+    installedCta: 'Open in Auspice',
     installedBody: 'Pick up your personalized day planning where you left off.',
   },
 }
@@ -115,12 +115,12 @@ const FLAGSHIP_LABELS_ZH: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: '在 HexAstral 中打开',
     installedBody: '接着看完整命盘与每日运势。',
   },
-  yuan: {
-    kicker: '继续使用 YUÁN',
+  kindred: {
+    kicker: '继续使用 KINDRED',
     title: '深入解读你的这段关系',
-    body: '加入伴侣信息，Yuán 比对双方命盘并生成可分享的合婚章节。',
-    cta: '安装 Yuán',
-    installedCta: '在 Yuán 中打开',
+    body: '加入伴侣信息，Kindred 比对双方命盘并生成可分享的合婚章节。',
+    cta: '安装 Kindred',
+    installedCta: '在 Kindred 中打开',
     installedBody: '加入伴侣信息，让这条丝线织成完整的合婚章节。',
   },
   feng: {
@@ -131,12 +131,12 @@ const FLAGSHIP_LABELS_ZH: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: '在 Fēng 中打开',
     installedBody: '把这个方位带入 Fēng 的现场解读。',
   },
-  cycle: {
-    kicker: '继续使用 CYCLE',
+  auspice: {
+    kicker: '继续使用 AUSPICE',
     title: '用你的命盘规划每一天',
-    body: 'Cycle 将每日黄历对应到你的命盘，让你看清哪些日子宜行动、宜休整、宜等待。',
-    cta: '安装 Cycle',
-    installedCta: '在 Cycle 中打开',
+    body: 'Auspice 将每日黄历对应到你的命盘，让你看清哪些日子宜行动、宜休整、宜等待。',
+    cta: '安装 Auspice',
+    installedCta: '在 Auspice 中打开',
     installedBody: '接着看为你定制的每日择日。',
   },
 }
@@ -150,12 +150,12 @@ const FLAGSHIP_LABELS_ZH_HANT: Record<FlagshipKey, SatelliteFlagshipUpsellLabels
     installedCta: '在 HexAstral 中打開',
     installedBody: '接著看完整命盤與每日運勢。',
   },
-  yuan: {
-    kicker: '繼續使用 YUÁN',
+  kindred: {
+    kicker: '繼續使用 KINDRED',
     title: '深入解讀你的這段關係',
-    body: '加入伴侶資訊，Yuán 比對雙方命盤並生成可分享的合婚章節。',
-    cta: '安裝 Yuán',
-    installedCta: '在 Yuán 中打開',
+    body: '加入伴侶資訊，Kindred 比對雙方命盤並生成可分享的合婚章節。',
+    cta: '安裝 Kindred',
+    installedCta: '在 Kindred 中打開',
     installedBody: '加入伴侶資訊，讓這條絲線織成完整的合婚章節。',
   },
   feng: {
@@ -166,12 +166,12 @@ const FLAGSHIP_LABELS_ZH_HANT: Record<FlagshipKey, SatelliteFlagshipUpsellLabels
     installedCta: '在 Fēng 中打開',
     installedBody: '把這個方位帶入 Fēng 的現場解讀。',
   },
-  cycle: {
-    kicker: '繼續使用 CYCLE',
+  auspice: {
+    kicker: '繼續使用 AUSPICE',
     title: '用你的命盤規劃每一天',
-    body: 'Cycle 將每日黃曆對應到你的命盤，讓你看清哪些日子宜行動、宜休整、宜等待。',
-    cta: '安裝 Cycle',
-    installedCta: '在 Cycle 中打開',
+    body: 'Auspice 將每日黃曆對應到你的命盤，讓你看清哪些日子宜行動、宜休整、宜等待。',
+    cta: '安裝 Auspice',
+    installedCta: '在 Auspice 中打開',
     installedBody: '接著看為你定制的每日擇日。',
   },
 }
@@ -185,12 +185,12 @@ const FLAGSHIP_LABELS_JA: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: 'HexAstral で開く',
     installedBody: '完全な命盤と日々の運気を、続きから。',
   },
-  yuan: {
-    kicker: 'YUÁN で続ける',
+  kindred: {
+    kicker: 'KINDRED で続ける',
     title: '関係をより深く読む',
-    body: 'パートナーの情報を加えて、Yuán が二人の命盤を比較し、共有できる相性章を生成。',
-    cta: 'Yuán をインストール',
-    installedCta: 'Yuán で開く',
+    body: 'パートナーの情報を加えて、Kindred が二人の命盤を比較し、共有できる相性章を生成。',
+    cta: 'Kindred をインストール',
+    installedCta: 'Kindred で開く',
     installedBody: 'パートナーの情報を加えて、完全な相性章へ。',
   },
   feng: {
@@ -201,12 +201,12 @@ const FLAGSHIP_LABELS_JA: Record<FlagshipKey, SatelliteFlagshipUpsellLabels> = {
     installedCta: 'Fēng で開く',
     installedBody: 'この方位を Fēng の現地鑑定に取り込む。',
   },
-  cycle: {
-    kicker: 'CYCLE で続ける',
+  auspice: {
+    kicker: 'AUSPICE で続ける',
     title: '命盤で毎日を計画する',
-    body: 'Cycle は今日の暦をあなたの命盤に重ね、行動・休息・見送りに向く日を可視化します。',
-    cta: 'Cycle をインストール',
-    installedCta: 'Cycle で開く',
+    body: 'Auspice は今日の暦をあなたの命盤に重ね、行動・休息・見送りに向く日を可視化します。',
+    cta: 'Auspice をインストール',
+    installedCta: 'Auspice で開く',
     installedBody: 'あなた専用の日取り計画を続きから。',
   },
 }

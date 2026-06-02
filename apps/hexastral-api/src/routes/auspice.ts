@@ -1,0 +1,1227 @@
+/**
+ * GET /api/auspice/* — Auspice (黄历) satellite engine. 100% deterministic, no LLM.
+ *
+ * Thin wrapper over `@zhop/astro-core` `calculateDailyAlmanac` (干支 + 建除十二神 +
+ * 二十八宿 + 建除宜忌 + 日冲煞) plus 节气 context and the 12 时辰. All compute lives in
+ * the package (ADR-0008); this route only parses the request and shapes the response.
+ *
+ * Anonymous (no HMAC), IP rate-limited (see mount in index.ts). Personalization
+ * ("对你而言", C.3) is a **deterministic** overlay: pass `birthDate` and the server derives
+ * the 日主 + 生肖 and fills `personalization` via astro-core `personalAlmanacOverlay` (no LLM,
+ * no userId lookup — anonymous-safe). The Pro AI explanation (`/cycle/explain`, C.4,
+ * K.4-guarded) attaches later; `explanation` stays a null placeholder.
+ */
+
+import {
+  allShiChen,
+  calculateDailyAlmanac,
+  type DailyAlmanac,
+  getFourPillars,
+  getJieQiInstant,
+  getNearestJieQiForGregorianDate,
+  getYearJieQi,
+  HEAVENLY_STEMS,
+  type HeavenlyStem,
+  hourGanZhi,
+  lunarToSolar,
+  type PersonalAlmanacSubject,
+  personalAlmanacOverlay,
+  STEM_WUXING,
+  solarToLunar,
+} from '@zhop/astro-core'
+import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import { z } from 'zod/v4'
+import type { AppEnv } from '../infra-types'
+import { jsonOk } from '../lib/api-response'
+import { astroClient } from '../lib/service-clients'
+import { parseRcActiveEntitlements } from '../services/revenuecat'
+import {
+  evaluateLlmGuard,
+  type LlmGuardConfig,
+  recordLlmGuardGrant,
+  resolveLlmGuardSubject,
+} from '../services/shared/llm-guard'
+
+export const auspiceRoutes = new Hono<AppEnv>()
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+/** Reverse-择日 event windows can't be unbounded — a Worker must not loop forever. */
+const MAX_SEARCH_SPAN_DAYS = 92
+
+interface Ymd {
+  year: number
+  month: number
+  day: number
+}
+
+function parseYmd(s: string): Ymd {
+  if (!DATE_RE.test(s)) throw new HTTPException(400, { message: 'date must be YYYY-MM-DD' })
+  const [year, month, day] = s.split('-').map((n) => Number.parseInt(n, 10)) as [
+    number,
+    number,
+    number,
+  ]
+  // Reject impossible calendar dates (e.g. 2026-02-31) via a UTC round-trip.
+  const probe = new Date(Date.UTC(year, month - 1, day))
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    throw new HTTPException(400, { message: `invalid date: ${s}` })
+  }
+  return { year, month, day }
+}
+
+function ymdToDate(ymd: Ymd): Date {
+  return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day))
+}
+
+function fmtUtc(d: Date): string {
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${m}-${day}`
+}
+
+function dateToYmd(d: Date): Ymd {
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}
+
+/**
+ * Derive the personal subject from a birth date (anonymous-safe; no stored lookup).
+ * 日主 = birth day-stem; 生肖 = birth year-branch (for the personal 六冲). 用神/忌神 need a
+ * full 八字 analysis, so they stay undefined at the route level (v1) — the deterministic
+ * overlay falls back to the raw 日主 五行 relation.
+ */
+function subjectFromBirthDate(birthDate: string): PersonalAlmanacSubject {
+  const b = parseYmd(birthDate)
+  const pillars = getFourPillars({ ...b, hour: 0 })
+  return { dayMasterStem: pillars.day.stem, birthBranch: pillars.year.branch }
+}
+
+/**
+ * 12 地支 → 生肖. Used for the year-pillar `yearGanZhi.animal` field on the
+ * day payload (Sprint 2 Tier-1 audit #5 + #10). Lookup-by-branch (not by Gregorian
+ * year) so it respects the 立春 boundary the year pillar already encodes.
+ */
+const BRANCH_ANIMALS = [
+  '鼠',
+  '牛',
+  '虎',
+  '兔',
+  '龙',
+  '蛇',
+  '马',
+  '羊',
+  '猴',
+  '鸡',
+  '狗',
+  '猪',
+] as const
+const BRANCH_ORDER = '子丑寅卯辰巳午未申酉戌亥'
+function branchToAnimal(branch: string): string {
+  const i = BRANCH_ORDER.indexOf(branch)
+  return i >= 0 && i < BRANCH_ANIMALS.length ? BRANCH_ANIMALS[i]! : ''
+}
+
+/**
+ * The 8 major Chinese festivals in `docs/sprints/cycle-sprint-plan.md` Sprint
+ * 3 §1. Six are anchored to fixed 农历 dates (春节 / 元宵 / 端午 / 七夕 /
+ * 中秋 / 重阳); two are anchored to specific 节气 instants (清明 / 冬至).
+ *
+ * Hoisted above `buildDay` so the per-day endpoint can ALSO answer "is today
+ * a festival?" — used by the Sprint 3 chunk 3 Today highlight chip. The
+ * `/year-overview` route reuses the same tables for its list rendering.
+ */
+const FESTIVALS_LUNAR: ReadonlyArray<{
+  id: string
+  name: string
+  lunarMonth: number
+  lunarDay: number
+  lunarLabel: string
+}> = [
+  { id: 'chunjie', name: '春节', lunarMonth: 1, lunarDay: 1, lunarLabel: '正月初一' },
+  { id: 'yuanxiao', name: '元宵', lunarMonth: 1, lunarDay: 15, lunarLabel: '正月十五' },
+  { id: 'duanwu', name: '端午', lunarMonth: 5, lunarDay: 5, lunarLabel: '五月初五' },
+  { id: 'qixi', name: '七夕', lunarMonth: 7, lunarDay: 7, lunarLabel: '七月初七' },
+  { id: 'zhongqiu', name: '中秋', lunarMonth: 8, lunarDay: 15, lunarLabel: '八月十五' },
+  { id: 'chongyang', name: '重阳', lunarMonth: 9, lunarDay: 9, lunarLabel: '九月初九' },
+]
+
+const FESTIVALS_SOLAR_TERM: ReadonlyArray<{ id: string; name: string; termName: string }> = [
+  { id: 'qingming', name: '清明', termName: '清明' },
+  { id: 'dongzhi', name: '冬至', termName: '冬至' },
+]
+
+// ── Locale-scoped public holidays for the Month grid (Sprint 3 chunk 4) ──
+//
+// Resolved per-cell on /month requests using the user's locale. Five rule kinds
+// cover the cases that matter: fixed gregorian dates (元旦, July 4th), fixed
+// 农历 dates (春节, 中秋), 节气 anchors (春分の日, 清明), nth-weekday-of-month
+// (Memorial Day, 海の日), and last-weekday-of-month (Memorial Day variant).
+// Floating-rule helpers are tiny pure functions further down.
+//
+// Coverage notes:
+//   - zh-Hans / zh-Hant share the mainland-CN public-holiday list; HK / TW
+//     specifics (e.g. 雙十 10/10) are a v1 simplification. The user's setting
+//     in Me overrides if they need a different region.
+//   - ja covers the 14 国民の祝日 in the 1948 法律 + the modern 山の日 /
+//     スポーツの日. Names match the official Cabinet Office spelling.
+//   - en defaults to US federal holidays. UK / AU / CA variants TBD.
+type HolidayRule =
+  | { kind: 'gregorian-fixed'; month: number; day: number }
+  | { kind: 'lunar-fixed'; lunarMonth: number; lunarDay: number }
+  | { kind: 'solar-term'; termName: string }
+  | { kind: 'nth-weekday'; month: number; n: number; weekday: number /* 0=Sun..6=Sat */ }
+  | { kind: 'last-weekday'; month: number; weekday: number }
+
+interface Holiday {
+  id: string
+  name: string
+  rule: HolidayRule
+}
+
+const HOLIDAYS_ZH_HANS: ReadonlyArray<Holiday> = [
+  { id: 'yuandan', name: '元旦', rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
+  { id: 'chunjie', name: '春节', rule: { kind: 'lunar-fixed', lunarMonth: 1, lunarDay: 1 } },
+  { id: 'qingming', name: '清明', rule: { kind: 'solar-term', termName: '清明' } },
+  { id: 'laodong', name: '劳动节', rule: { kind: 'gregorian-fixed', month: 5, day: 1 } },
+  { id: 'duanwu', name: '端午', rule: { kind: 'lunar-fixed', lunarMonth: 5, lunarDay: 5 } },
+  { id: 'zhongqiu', name: '中秋', rule: { kind: 'lunar-fixed', lunarMonth: 8, lunarDay: 15 } },
+  { id: 'guoqing', name: '国庆', rule: { kind: 'gregorian-fixed', month: 10, day: 1 } },
+]
+
+const HOLIDAYS_ZH_HANT: ReadonlyArray<Holiday> = [
+  { id: 'yuandan', name: '元旦', rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
+  { id: 'chunjie', name: '春節', rule: { kind: 'lunar-fixed', lunarMonth: 1, lunarDay: 1 } },
+  { id: 'qingming', name: '清明', rule: { kind: 'solar-term', termName: '清明' } },
+  { id: 'laodong', name: '勞動節', rule: { kind: 'gregorian-fixed', month: 5, day: 1 } },
+  { id: 'duanwu', name: '端午', rule: { kind: 'lunar-fixed', lunarMonth: 5, lunarDay: 5 } },
+  { id: 'zhongqiu', name: '中秋', rule: { kind: 'lunar-fixed', lunarMonth: 8, lunarDay: 15 } },
+  { id: 'guoqing', name: '國慶', rule: { kind: 'gregorian-fixed', month: 10, day: 1 } },
+]
+
+const HOLIDAYS_JA: ReadonlyArray<Holiday> = [
+  { id: 'ganjitsu', name: '元日', rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
+  { id: 'seijin', name: '成人の日', rule: { kind: 'nth-weekday', month: 1, n: 2, weekday: 1 } },
+  { id: 'kenkoku', name: '建国記念の日', rule: { kind: 'gregorian-fixed', month: 2, day: 11 } },
+  { id: 'tennou', name: '天皇誕生日', rule: { kind: 'gregorian-fixed', month: 2, day: 23 } },
+  { id: 'shunbun', name: '春分の日', rule: { kind: 'solar-term', termName: '春分' } },
+  { id: 'shouwa', name: '昭和の日', rule: { kind: 'gregorian-fixed', month: 4, day: 29 } },
+  { id: 'kenpou', name: '憲法記念日', rule: { kind: 'gregorian-fixed', month: 5, day: 3 } },
+  { id: 'midori', name: 'みどりの日', rule: { kind: 'gregorian-fixed', month: 5, day: 4 } },
+  { id: 'kodomo', name: 'こどもの日', rule: { kind: 'gregorian-fixed', month: 5, day: 5 } },
+  { id: 'umi', name: '海の日', rule: { kind: 'nth-weekday', month: 7, n: 3, weekday: 1 } },
+  { id: 'yama', name: '山の日', rule: { kind: 'gregorian-fixed', month: 8, day: 11 } },
+  { id: 'keirou', name: '敬老の日', rule: { kind: 'nth-weekday', month: 9, n: 3, weekday: 1 } },
+  { id: 'shuubun', name: '秋分の日', rule: { kind: 'solar-term', termName: '秋分' } },
+  {
+    id: 'sports',
+    name: 'スポーツの日',
+    rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 },
+  },
+  { id: 'bunka', name: '文化の日', rule: { kind: 'gregorian-fixed', month: 11, day: 3 } },
+  { id: 'kinrou', name: '勤労感謝の日', rule: { kind: 'gregorian-fixed', month: 11, day: 23 } },
+]
+
+const HOLIDAYS_EN: ReadonlyArray<Holiday> = [
+  { id: 'newyear', name: "New Year's Day", rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
+  { id: 'mlk', name: 'MLK Day', rule: { kind: 'nth-weekday', month: 1, n: 3, weekday: 1 } },
+  {
+    id: 'presidents',
+    name: "Presidents' Day",
+    rule: { kind: 'nth-weekday', month: 2, n: 3, weekday: 1 },
+  },
+  { id: 'memorial', name: 'Memorial Day', rule: { kind: 'last-weekday', month: 5, weekday: 1 } },
+  { id: 'juneteenth', name: 'Juneteenth', rule: { kind: 'gregorian-fixed', month: 6, day: 19 } },
+  {
+    id: 'independence',
+    name: 'Independence Day',
+    rule: { kind: 'gregorian-fixed', month: 7, day: 4 },
+  },
+  { id: 'labor', name: 'Labor Day', rule: { kind: 'nth-weekday', month: 9, n: 1, weekday: 1 } },
+  {
+    id: 'columbus',
+    name: 'Columbus Day',
+    rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 },
+  },
+  { id: 'veterans', name: 'Veterans Day', rule: { kind: 'gregorian-fixed', month: 11, day: 11 } },
+  {
+    id: 'thanksgiving',
+    name: 'Thanksgiving',
+    rule: { kind: 'nth-weekday', month: 11, n: 4, weekday: 4 },
+  },
+  { id: 'christmas', name: 'Christmas', rule: { kind: 'gregorian-fixed', month: 12, day: 25 } },
+]
+
+type SupportedHolidayLocale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
+const LOCALE_HOLIDAYS: Record<SupportedHolidayLocale, ReadonlyArray<Holiday>> = {
+  'zh-Hans': HOLIDAYS_ZH_HANS,
+  'zh-Hant': HOLIDAYS_ZH_HANT,
+  ja: HOLIDAYS_JA,
+  en: HOLIDAYS_EN,
+}
+
+function nthWeekdayOfMonth(year: number, month: number, n: number, weekday: number): number {
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay()
+  const offset = (weekday - firstWeekday + 7) % 7
+  return 1 + offset + (n - 1) * 7
+}
+
+function lastWeekdayOfMonth(year: number, month: number, weekday: number): number {
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const lastWeekday = new Date(Date.UTC(year, month - 1, lastDay)).getUTCDay()
+  const offset = (lastWeekday - weekday + 7) % 7
+  return lastDay - offset
+}
+
+/**
+ * Resolve a holiday rule to a (year, month, day) that the user's calendar
+ * cell can match against. Returns null if the rule doesn't land in the
+ * requested gregorian month (e.g. 春节 in Jan/Feb spans gregorian months;
+ * the caller iterates per-day so this just needs to answer "what day"). The
+ * year passed is the gregorian year being rendered.
+ */
+function resolveHolidayDayInMonth(
+  rule: HolidayRule,
+  year: number,
+  month: number,
+  yearJieQi: ReturnType<typeof getYearJieQi>
+): number | null {
+  switch (rule.kind) {
+    case 'gregorian-fixed':
+      return rule.month === month ? rule.day : null
+    case 'lunar-fixed': {
+      try {
+        const d = lunarToSolar(year, rule.lunarMonth, rule.lunarDay, false)
+        return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month ? d.getUTCDate() : null
+      } catch {
+        return null
+      }
+    }
+    case 'solar-term': {
+      const entry = yearJieQi.find((e) => e.jieqi.name === rule.termName)
+      return entry && entry.month === month ? entry.day : null
+    }
+    case 'nth-weekday':
+      return rule.month === month ? nthWeekdayOfMonth(year, month, rule.n, rule.weekday) : null
+    case 'last-weekday':
+      return rule.month === month ? lastWeekdayOfMonth(year, month, rule.weekday) : null
+  }
+}
+
+/** Almanac facts + 节气 context + 12 时辰 (+ optional deterministic 对你而言 overlay). */
+function buildDay(ymd: Ymd, subject?: PersonalAlmanacSubject) {
+  const almanac: DailyAlmanac = calculateDailyAlmanac(ymd)
+  const term = getNearestJieQiForGregorianDate(ymd.year, ymd.month, ymd.day)
+  // Year pillar (立春-aware) — drives `yearGanZhi` for the hero card 生肖年 chip
+  // and the `benming` flag in personalization.
+  const yearPillar = getFourPillars({ ...ymd, hour: 0 }).year
+  // 农历 + 年内 24 节气 — reused below for the lunarDate field, the festival
+  // matchers (Sprint 3 chunk 3), and the solarTermToday flag.
+  const lunar = solarToLunar(ymd.year, ymd.month, ymd.day)
+  const yearJieQi = getYearJieQi(ymd.year)
+  // Day stem drives the 五鼠遁 hour pillars; read it off the computed 干支.
+  const dayStemIdx = HEAVENLY_STEMS.indexOf(almanac.todayGanZhi[0] as HeavenlyStem)
+  const hours = allShiChen().map((sc) => ({
+    name: sc.name,
+    branch: sc.branch,
+    startHour: sc.startHour,
+    endHour: sc.endHour,
+    ganZhi: hourGanZhi(dayStemIdx, sc.startHour).label,
+  }))
+
+  // Sprint 3 chunk 3 — "today is X" matchers.
+  //   - festivalToday: non-null when today's 农历 date hits one of the 6 lunar
+  //     festivals OR today's gregorian date hits 清明 / 冬至. Drives the
+  //     accent chip + tap-through to `/festival/[id]` on Today.
+  //   - solarTermToday: non-null when today is the gregorian day a 节气 falls
+  //     on (UTC+8). Display-only chip when there's no festival match for the
+  //     same day (because then the chip already shows the festival name).
+  let festivalToday: { id: string; name: string } | null = null
+  if (!lunar.isLeap) {
+    const match = FESTIVALS_LUNAR.find(
+      (f) => f.lunarMonth === lunar.month && f.lunarDay === lunar.day
+    )
+    if (match) festivalToday = { id: match.id, name: match.name }
+  }
+  if (!festivalToday) {
+    const solarTermFestival = FESTIVALS_SOLAR_TERM.find((f) => {
+      const entry = yearJieQi.find((e) => e.jieqi.name === f.termName)
+      return entry && entry.month === ymd.month && entry.day === ymd.day
+    })
+    if (solarTermFestival) {
+      festivalToday = { id: solarTermFestival.id, name: solarTermFestival.name }
+    }
+  }
+  const todayTerm = yearJieQi.find((e) => e.month === ymd.month && e.day === ymd.day)
+  const solarTermToday = todayTerm ? { name: todayTerm.jieqi.name } : null
+
+  // Boundary remap (SPAM-19): astro-core uses `lucky` / `zodiac` internally
+  // (classical 黄历 terms), but the public response keys are renamed to
+  // `auspicious` / `clashAnimal` / `auspiciousColor` / `auspiciousDirection`
+  // to keep App Store reviewer-visible network payloads free of vocabulary
+  // that triggers Guideline 4.3(b). Internal compute and DB columns are
+  // unchanged.
+  const day = {
+    ganZhi: almanac.todayGanZhi,
+    element: almanac.todayElement,
+    dayOfficer: almanac.dayOfficer,
+    mansion: {
+      name: almanac.mansion.name,
+      luminary: almanac.mansion.luminary,
+      animal: almanac.mansion.animal,
+      quadrant: almanac.mansion.quadrant,
+      auspicious: almanac.mansion.lucky,
+      index: almanac.mansion.index,
+    },
+    goodFor: almanac.goodFor,
+    avoid: almanac.avoid,
+    clash: {
+      branch: almanac.clash.branch,
+      clashAnimal: almanac.clash.zodiac,
+    },
+    evilDirection: almanac.evilDirection,
+    dayGod: almanac.dayGod,
+    pengZu: almanac.pengZu,
+    auspiciousColor: almanac.luckyColor,
+    auspiciousDirection: almanac.luckyDirection,
+    dos: almanac.dos,
+    donts: almanac.donts,
+    overallRating: almanac.overallRating,
+    // Year pillar (立春-aware) — Tier-1 audit #5 (生肖年 chip on hero) + the
+    // 本命年 check downstream. `animal` resolved off the branch index so it
+    // tracks the pillar's actual year (not the Gregorian-year approximation).
+    yearGanZhi: {
+      stem: yearPillar.stem,
+      branch: yearPillar.branch,
+      animal: branchToAnimal(yearPillar.branch),
+    },
+    // 农历 — Tier-1 audit #8 (农历初一/十五 highlight + 闰月 indicator) + the
+    // future month-grid build-out. `monthName` already prefixes "闰" when
+    // the month is a leap month (no separate isLeapName flag needed). The
+    // `isFirst` / `isFifteenth` flags are convenience booleans the client uses
+    // to switch the 农历 text colour to accent on glance-significant days.
+    lunarDate: {
+      year: lunar.year,
+      month: lunar.month,
+      day: lunar.day,
+      isLeap: lunar.isLeap,
+      monthName: lunar.monthName,
+      dayName: lunar.dayName,
+      isFirst: lunar.day === 1,
+      isFifteenth: lunar.day === 15,
+    },
+    // Sprint 3 chunk 3 — Today highlight (tap-through to `/festival/[id]`).
+    festivalToday,
+    solarTermToday,
+    solarTerm: {
+      // `instant` is the second-level UTC ISO timestamp (C.1.8 VSOP87) — the
+      // client renders it in local time. `date` stays the YYYY-MM-DD UTC
+      // calendar day for back-compat.
+      prev: {
+        name: term.prev.name,
+        date: fmtUtc(term.prev.date),
+        instant: term.prev.date.toISOString(),
+      },
+      next: {
+        name: term.next.name,
+        date: fmtUtc(term.next.date),
+        instant: term.next.date.toISOString(),
+      },
+    },
+    hours,
+  }
+
+  // `day` stays the shared base (no per-八字 variation); the per-user verdict lives here.
+  // `benming` (本命年) — Tier-1 audit #10: true when the user's birth-year
+  // branch equals the current year-pillar branch (e.g. 属马 user in 丙午年).
+  const personalization = subject
+    ? {
+        dayMaster: subject.dayMasterStem,
+        benming: subject.birthBranch === yearPillar.branch,
+        ...personalAlmanacOverlay(subject, {
+          dayElement: almanac.todayElement,
+          dayBranch: almanac.dayBranch,
+        }),
+      }
+    : null
+
+  return { day, personalization }
+}
+
+// ── GET /day?date=YYYY-MM-DD&birthDate=YYYY-MM-DD ─────────────
+// `birthDate` (optional) drives the deterministic "对你而言" overlay. No userId / HMAC —
+// the endpoint is anonymous; the client passes its locally-held birth date.
+
+auspiceRoutes.get('/day', (c) => {
+  const dateParam = c.req.query('date')
+  const ymd = dateParam ? parseYmd(dateParam) : dateToYmd(new Date())
+  const birthDate = c.req.query('birthDate')
+  const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
+
+  const { day, personalization } = buildDay(ymd, subject)
+
+  return jsonOk(c, {
+    date: fmtUtc(ymdToDate(ymd)),
+    day,
+    personalization,
+    explanation: null,
+  })
+})
+
+// ── GET /calendar.ics — Apple Calendar / iCal subscription feed ────────────
+// Returns ±30 days of 干支 + 节气 + 宜忌 as RFC 5545 all-day VEVENTs so users
+// can subscribe in the system Calendar app via webcal:// and see the almanac
+// inline on their phone/Mac/iPad without opening cycle. v1 is anonymous and
+// generic (no 对你而言) — matches the free-tier push contract. Personalized
+// per-user feeds are a follow-up (require per-user opaque tokens + Pro gate).
+//
+// Edge-cached for an hour. Apple Calendar polls subscribed feeds on its own
+// cadence (typically every 5min–24h depending on user settings), so a 60min
+// cache is enough to absorb thundering-herd subscriptions without staleness
+// showing up to the user.
+
+/**
+ * Rolling window around "today" (UTC anchor): 2 weeks back + ~1 year forward.
+ * 黄历 days are deterministic and the feed is edge-cached, so Apple Calendar's
+ * own polling keeps a subscribed feed fresh with NO cron — each poll recomputes
+ * the current window, sliding it forward a day at a time.
+ */
+const ICS_PAST_DAYS = 14
+const ICS_FUTURE_DAYS = 365
+
+/** Escape ICS TEXT field per RFC 5545 §3.3.11. */
+function icsEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
+}
+
+/** Fold long lines per RFC 5545 §3.1 — keep clients like Outlook happy. */
+function foldIcsLine(line: string): string {
+  if (line.length <= 75) return line
+  const out: string[] = []
+  let i = 0
+  while (i < line.length) {
+    const take = i === 0 ? 75 : 74 // continuation lines lead with a space (-1 budget)
+    out.push((i === 0 ? '' : ' ') + line.slice(i, i + take))
+    i += take
+  }
+  return out.join('\r\n')
+}
+
+/** YYYYMMDD for DTSTART;VALUE=DATE. */
+function ymdCompact(ymd: Ymd): string {
+  return `${ymd.year}${String(ymd.month).padStart(2, '0')}${String(ymd.day).padStart(2, '0')}`
+}
+
+/** UTC YYYYMMDDTHHMMSSZ for DTSTAMP. */
+function utcStamp(d: Date): string {
+  return (
+    `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}` +
+    `${String(d.getUTCDate()).padStart(2, '0')}T` +
+    `${String(d.getUTCHours()).padStart(2, '0')}` +
+    `${String(d.getUTCMinutes()).padStart(2, '0')}` +
+    `${String(d.getUTCSeconds()).padStart(2, '0')}Z`
+  )
+}
+
+function ymdAdd(ymd: Ymd, days: number): Ymd {
+  const d = ymdToDate(ymd)
+  d.setUTCDate(d.getUTCDate() + days)
+  return dateToYmd(d)
+}
+
+/** 对你而言 verdict → short label for the calendar feed. */
+const FIT_LABEL: Record<string, string> = { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' }
+
+/**
+ * Render a full VCALENDAR body for the rolling window. When `subject` is set,
+ * each day also carries the deterministic 对你而言 verdict (the Pro feed).
+ */
+function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: string): string {
+  const today = dateToYmd(new Date())
+  const stamp = utcStamp(new Date())
+
+  const events: string[] = []
+  for (let offset = -ICS_PAST_DAYS; offset <= ICS_FUTURE_DAYS; offset++) {
+    const ymd = ymdAdd(today, offset)
+    const { day, personalization } = buildDay(ymd, subject)
+    const dt = ymdCompact(ymd)
+    const dtEnd = ymdCompact(ymdAdd(ymd, 1))
+
+    const yi = day.goodFor.slice(0, 4).join('、') || '—'
+    const ji = day.avoid.slice(0, 4).join('、') || '—'
+    const forYou = personalization ? (FIT_LABEL[personalization.fit] ?? personalization.fit) : null
+    const summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}${forYou ? ` · 你${forYou}` : ''}`
+    const descParts = [
+      `干支日：${day.ganZhi}（${day.element}）`,
+      `日辰：${day.dayOfficer}日`,
+      day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
+      day.festivalToday ? `节日：${day.festivalToday.name}` : null,
+      `宜：${day.goodFor.join('、') || '—'}`,
+      `忌：${day.avoid.join('、') || '—'}`,
+      `冲：${day.clash.clashAnimal}`,
+      forYou ? `对你而言：${forYou}` : null,
+    ].filter(Boolean) as string[]
+    const description = descParts.join('\\n')
+
+    events.push(
+      [
+        'BEGIN:VEVENT',
+        foldIcsLine(`UID:cycle-${subject ? 'p-' : ''}${dt}@hexastral.com`),
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${dt}`,
+        `DTEND;VALUE=DATE:${dtEnd}`,
+        foldIcsLine(`SUMMARY:${icsEscape(summary)}`),
+        foldIcsLine(`DESCRIPTION:${icsEscape(description)}`),
+        'TRANSP:TRANSPARENT',
+        'END:VEVENT',
+      ].join('\r\n')
+    )
+  }
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//HexAstral//Auspice Almanac v1//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    foldIcsLine(`X-WR-CALNAME:${calName}`),
+    'X-WR-TIMEZONE:Asia/Shanghai',
+    'X-PUBLISHED-TTL:PT1H',
+    ...events,
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+}
+
+auspiceRoutes.get('/calendar.ics', (c) => {
+  c.header('Content-Type', 'text/calendar; charset=utf-8')
+  c.header('Cache-Control', 'public, max-age=3600')
+  c.header('Content-Disposition', 'inline; filename="auspice-almanac.ics"')
+  return c.body(renderAlmanacIcs(undefined, 'Auspice 黄历'))
+})
+
+// ── Pro 对你而言 calendar feed — signed token + server-side Pro check ─────────
+// Flow: the app calls GET /calendar/sign with its RC app-user-id; the server
+// verifies auspice_pro via RevenueCat, then returns a webcal URL carrying an
+// HMAC-signed token of the birthDate. Apple Calendar fetches /calendar/p/:token,
+// which verifies the signature and renders the personalized feed. The token is
+// opaque (hides the birthDate) and tamper-proof (only server-issued URLs work).
+
+type CalendarEnv = { CYCLE_CALENDAR_SECRET?: string; REVENUECAT_API_KEY?: string }
+
+function bytesToB64url(bytes: Uint8Array): string {
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+function strToB64url(s: string): string {
+  return bytesToB64url(new TextEncoder().encode(s))
+}
+function b64urlToStr(s: string): string {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'))
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new TextDecoder().decode(bytes)
+}
+async function hmacB64url(secret: string, data: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data))
+  return bytesToB64url(new Uint8Array(sig))
+}
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+async function makeCalendarToken(secret: string, birthDate: string): Promise<string> {
+  return `${strToB64url(birthDate)}.${await hmacB64url(secret, birthDate)}`
+}
+async function verifyCalendarToken(secret: string, token: string): Promise<string | null> {
+  const dot = token.lastIndexOf('.')
+  if (dot <= 0) return null
+  let birthDate: string
+  try {
+    birthDate = b64urlToStr(token.slice(0, dot))
+  } catch {
+    return null
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null
+  const expected = await hmacB64url(secret, birthDate)
+  return timingSafeEqual(token.slice(dot + 1), expected) ? birthDate : null
+}
+
+/** Live RevenueCat check — is auspice_pro (or universe_pro) active for this RC id? */
+async function isAuspiceProViaRc(apiKey: string, appUserId: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    )
+    if (!res.ok) return false
+    const active = parseRcActiveEntitlements(await res.json(), new Date().toISOString())
+    return active.some((e) => e.key === 'auspice_pro' || e.key === 'universe_pro')
+  } catch {
+    return false
+  }
+}
+
+// Mint a signed personal-feed URL. Server verifies Pro via RevenueCat when
+// REVENUECAT_API_KEY is configured (fail-closed in prod; fail-open in dev with
+// no key so local builds work). `u` = the RC app-user-id from the client.
+auspiceRoutes.get('/calendar/sign', async (c) => {
+  const env = c.env as unknown as CalendarEnv
+  const birthDate = c.req.query('birthDate')
+  if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return c.json({ error: 'birthDate=YYYY-MM-DD required' }, 400)
+  }
+  if (!env.CYCLE_CALENDAR_SECRET) {
+    return c.json({ error: 'calendar signing not configured' }, 503)
+  }
+  if (env.REVENUECAT_API_KEY) {
+    const appUserId = c.req.query('u')
+    if (!appUserId || !(await isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId))) {
+      return c.json({ error: 'pro required' }, 403)
+    }
+  }
+  const token = await makeCalendarToken(env.CYCLE_CALENDAR_SECRET, birthDate)
+  const host = new URL(c.req.url).host
+  return c.json({ url: `webcal://${host}/api/auspice/calendar/p/${token}.ics` })
+})
+
+// Apple Calendar fetches this. Verify the signed token → render the 对你而言 feed.
+auspiceRoutes.get('/calendar/p/:token', async (c) => {
+  const env = c.env as unknown as CalendarEnv
+  if (!env.CYCLE_CALENDAR_SECRET) return c.text('not configured', 503)
+  const raw = c.req.param('token')
+  const token = raw.endsWith('.ics') ? raw.slice(0, -4) : raw
+  const birthDate = await verifyCalendarToken(env.CYCLE_CALENDAR_SECRET, token)
+  if (!birthDate) return c.text('invalid or expired link', 403)
+  c.header('Content-Type', 'text/calendar; charset=utf-8')
+  c.header('Cache-Control', 'private, max-age=3600')
+  c.header('Content-Disposition', 'inline; filename="auspice-foryou.ics"')
+  return c.body(renderAlmanacIcs(subjectFromBirthDate(birthDate), 'Auspice · 对你而言'))
+})
+
+// ── GET /month?year=&month= — batched month grid (Sprint 2 deliverable #2) ──
+// Returns one row per day in the requested gregorian month with the data the
+// Month grid cell renders: 农历 day name + 初一/十五 flags + 节气 mark + heat-
+// map rating. One request replaces the 30 single-day fetches that would
+// otherwise hammer this anonymous endpoint when a user scrubs months.
+
+const MIN_YEAR = 1900
+const MAX_YEAR = 2100
+
+const SUPPORTED_HOLIDAY_LOCALES = ['zh-Hans', 'zh-Hant', 'ja', 'en'] as const
+
+const monthQuerySchema = z.object({
+  year: z.coerce.number().int().min(MIN_YEAR).max(MAX_YEAR),
+  month: z.coerce.number().int().min(1).max(12),
+  /** User's display locale — drives the per-cell `publicHoliday` lookup. */
+  locale: z.enum(SUPPORTED_HOLIDAY_LOCALES).default('zh-Hans'),
+})
+
+/**
+ * Per-day shape for the month grid. The cell renders gregorian day number
+ * (`day`) prominently; `lunarDayName` is the small CJK label underneath;
+ * `solarTermName` is non-null only on the exact gregorian day a 节气 falls on
+ * (in 北京时间, UTC+8) — driving the small mark on those cells.
+ *
+ * `publicHoliday` (Sprint 3 chunk 4) is the localized holiday name when the
+ * day matches a public holiday in the user's locale. The client renders this
+ * with higher priority than `solarTermName` since the holiday usually carries
+ * the more user-actionable signal.
+ */
+function buildMonth(year: number, month: number, locale: SupportedHolidayLocale) {
+  // Reject impossible months (e.g. month=13). zod already enforces the range
+  // but the calendar bounds happen via Date.UTC roll-over check.
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+
+  // Pre-compute the year's 节气 list once, filter to this month — converts the
+  // 24 yearly terms into an O(1) lookup the per-day loop hits.
+  const yearJieQi = getYearJieQi(year)
+  const monthJieQiMap = new Map<number, string>()
+  for (const entry of yearJieQi) {
+    if (entry.month === month) monthJieQiMap.set(entry.day, entry.jieqi.name)
+  }
+
+  // Pre-resolve the locale's holidays to a day → name lookup. Resolved once
+  // per request, not once per cell.
+  const monthHolidays = new Map<number, string>()
+  for (const h of LOCALE_HOLIDAYS[locale]) {
+    const day = resolveHolidayDayInMonth(h.rule, year, month, yearJieQi)
+    if (day !== null && day >= 1 && day <= daysInMonth) {
+      monthHolidays.set(day, h.name)
+    }
+  }
+
+  // Lunar month header — pick a representative day inside the month. Day 15
+  // is reliably inside any gregorian month and usually lands inside the same
+  // lunar month, so its `monthName` (with "闰" prefix when applicable) is the
+  // header label the Month grid shows above the day cells.
+  const headerLunar = solarToLunar(year, month, Math.min(15, daysInMonth))
+  const lunarMonthHeader = `${headerLunar.year}年 ${headerLunar.monthName}`
+
+  const days = []
+  for (let d = 1; d <= daysInMonth; d++) {
+    const almanac = calculateDailyAlmanac({ year, month, day: d })
+    const lunar = solarToLunar(year, month, d)
+    days.push({
+      day: d,
+      date: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      lunarDay: lunar.day,
+      lunarDayName: lunar.dayName,
+      isLunarFirst: lunar.day === 1,
+      isLunarFifteenth: lunar.day === 15,
+      isLeapMonth: lunar.isLeap,
+      solarTermName: monthJieQiMap.get(d) ?? null,
+      publicHoliday: monthHolidays.get(d) ?? null,
+      overallRating: almanac.overallRating,
+      // 流日 (Sprint 4.5 follow-up) — the day's 五行 element for the calendar
+      // cell's element-color dot. Same value as the day route's `day.element`.
+      dayElement: almanac.todayElement,
+    })
+  }
+
+  return { year, month, locale, lunarMonthHeader, days }
+}
+
+auspiceRoutes.get('/month', (c) => {
+  const parsed = monthQuerySchema.safeParse({
+    year: c.req.query('year'),
+    month: c.req.query('month'),
+    locale: c.req.query('locale'),
+  })
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: 'invalid year/month/locale' })
+  }
+  return jsonOk(c, buildMonth(parsed.data.year, parsed.data.month, parsed.data.locale))
+})
+
+// ── GET /year-overview?year= — Sprint 3 节庆 page (24 节气 + 8 festivals) ──
+//
+// One request feeds the `/festivals` drill-in's two list sections — avoids the
+// 32 round-trips it would take to assemble client-side. Both timelines are
+// deterministic from astro-core (no LLM, no auth), so the response caches
+// well at edge for an entire year.
+
+const yearQuerySchema = z.object({
+  year: z.coerce.number().int().min(MIN_YEAR).max(MAX_YEAR),
+})
+
+// FESTIVALS_LUNAR + FESTIVALS_SOLAR_TERM are declared above buildDay so the
+// per-day endpoint can answer "is today a festival?"; reused here.
+
+function buildYearOverview(year: number) {
+  const yearJieQi = getYearJieQi(year)
+  const solarTerms = yearJieQi.map((entry, index) => {
+    const instant = getJieQiInstant(year, index)
+    return {
+      index,
+      name: entry.jieqi.name,
+      date: `${year}-${String(entry.month).padStart(2, '0')}-${String(entry.day).padStart(2, '0')}`,
+      instant: instant ? instant.toISOString() : null,
+    }
+  })
+
+  const festivals: Array<{
+    id: string
+    name: string
+    kind: 'lunar' | 'solar-term'
+    solarDate: string
+    lunarLabel: string | null
+  }> = []
+
+  for (const f of FESTIVALS_LUNAR) {
+    try {
+      const solarDate = lunarToSolar(year, f.lunarMonth, f.lunarDay, false)
+      const m = String(solarDate.getUTCMonth() + 1).padStart(2, '0')
+      const d = String(solarDate.getUTCDate()).padStart(2, '0')
+      festivals.push({
+        id: f.id,
+        name: f.name,
+        kind: 'lunar',
+        solarDate: `${solarDate.getUTCFullYear()}-${m}-${d}`,
+        lunarLabel: f.lunarLabel,
+      })
+    } catch {
+      // Out-of-range year — silently skip. astro-core lunar tables cover 1900-2100.
+    }
+  }
+
+  for (const f of FESTIVALS_SOLAR_TERM) {
+    const term = yearJieQi.find((e) => e.jieqi.name === f.termName)
+    if (!term) continue
+    festivals.push({
+      id: f.id,
+      name: f.name,
+      kind: 'solar-term',
+      solarDate: `${year}-${String(term.month).padStart(2, '0')}-${String(term.day).padStart(2, '0')}`,
+      lunarLabel: null,
+    })
+  }
+
+  festivals.sort((a, b) => a.solarDate.localeCompare(b.solarDate))
+
+  return { year, solarTerms, festivals }
+}
+
+auspiceRoutes.get('/year-overview', (c) => {
+  const parsed = yearQuerySchema.safeParse({ year: c.req.query('year') })
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: 'invalid year' })
+  }
+  return jsonOk(c, buildYearOverview(parsed.data.year))
+})
+
+// ── GET /search?event=&from=&to= — reverse 择日 ───────────────
+
+const EVENTS = [
+  'wedding',
+  'business',
+  'signing',
+  'move',
+  'move-in',
+  'travel',
+  'burial',
+  'groundbreaking',
+  'medical',
+  'study',
+] as const
+type AuspiceEvent = (typeof EVENTS)[number]
+
+/** event → 黄历 宜忌 verbs that decide its fitness, matched against goodFor / avoid. */
+const EVENT_VERBS: Record<AuspiceEvent, readonly string[]> = {
+  wedding: ['嫁娶'],
+  business: ['开市', '交易', '纳财'],
+  signing: ['立券', '交易'],
+  move: ['移徙'],
+  'move-in': ['入宅', '移徙'],
+  travel: ['出行'],
+  burial: ['安葬'],
+  groundbreaking: ['动土', '破土'],
+  medical: ['求医', '疗病'],
+  study: ['入学'],
+}
+
+const searchQuerySchema = z.object({
+  event: z.enum(EVENTS),
+  from: z.string().regex(DATE_RE, 'from must be YYYY-MM-DD'),
+  to: z.string().regex(DATE_RE, 'to must be YYYY-MM-DD'),
+})
+
+const specializedQuerySchema = z.object({
+  from: z.string().regex(DATE_RE, 'from must be YYYY-MM-DD'),
+  to: z.string().regex(DATE_RE, 'to must be YYYY-MM-DD'),
+})
+
+/**
+ * Sprint 2 deliverable #3 — activity-tuned officer boosts for the four
+ * specialized 择日 routes. Each event biases scoring toward 建除十二神
+ * that classical 黄历 traditions consider auspicious for that activity,
+ * and away from ones traditionally avoided. Officer signal is the most
+ * reliable per-day boost the existing astro-core surface provides;
+ * richer 神煞 (天德 / 月德 / 红沙 / 月厌 / 受死 / 往亡 etc.) needs
+ * additional astro-core primitives and is left as follow-up work.
+ */
+interface EventBoosts {
+  goodOfficers: ReadonlySet<DayOfficer>
+  badOfficers: ReadonlySet<DayOfficer>
+}
+type DayOfficer = DailyAlmanac['dayOfficer']
+
+const EVENT_BOOSTS: Partial<Record<AuspiceEvent, EventBoosts>> = {
+  // 嫁娶 — 成日宜婚, 定日宜定盟, 破日大忌.
+  wedding: {
+    goodOfficers: new Set<DayOfficer>(['成', '定']),
+    badOfficers: new Set<DayOfficer>(['破']),
+  },
+  // 入宅 — 定/开/建 安宅, 破/危 宜避.
+  'move-in': {
+    goodOfficers: new Set<DayOfficer>(['定', '开', '建']),
+    badOfficers: new Set<DayOfficer>(['破', '危']),
+  },
+  // 开市 — 开/收 财利, 闭日 财绝.
+  business: {
+    goodOfficers: new Set<DayOfficer>(['开', '收']),
+    badOfficers: new Set<DayOfficer>(['闭']),
+  },
+  // 出行 — 除/开 易行, 破/危/闭 阻塞.
+  travel: {
+    goodOfficers: new Set<DayOfficer>(['除', '开']),
+    badOfficers: new Set<DayOfficer>(['破', '危', '闭']),
+  },
+}
+
+function scoreDay(almanac: DailyAlmanac, verbs: readonly string[], boosts?: EventBoosts) {
+  const matchedGood = verbs.filter((v) => almanac.goodFor.includes(v))
+  const matchedBad = verbs.filter((v) => almanac.avoid.includes(v))
+  let score = 0.5
+  if (matchedGood.length > 0) score += 0.35
+  if (matchedBad.length > 0) score -= 0.4
+  score += almanac.mansion.lucky ? 0.1 : -0.05
+  // gentle nudge from the 五行 day rating (1..5 → -0.05..+0.05)
+  score += (almanac.overallRating - 3) * 0.025
+  // Sprint 2 deliverable #3 — activity-tuned officer boost (only applied
+  // on the 4 specialized routes; the generic `/search` passes no boosts).
+  let officerBoost = 0
+  if (boosts?.goodOfficers.has(almanac.dayOfficer)) officerBoost = 0.08
+  else if (boosts?.badOfficers.has(almanac.dayOfficer)) officerBoost = -0.08
+  score += officerBoost
+  return {
+    score: Math.max(0, Math.min(1, score)),
+    matchedGood,
+    matchedBad,
+    officerBoost,
+  }
+}
+
+function reasoning(
+  almanac: DailyAlmanac,
+  matchedGood: string[],
+  matchedBad: string[],
+  officerBoost?: number
+): string {
+  const parts = [`${almanac.todayGanZhi}日`, `${almanac.dayOfficer}日`, `${almanac.mansion.name}宿`]
+  if (matchedGood.length > 0) parts.push(`宜${matchedGood.join('、')}`)
+  if (matchedBad.length > 0) parts.push(`忌${matchedBad.join('、')}`)
+  // Specialized-route activity-tuned reasoning (Sprint 2 #3).
+  if (officerBoost !== undefined && officerBoost > 0) parts.push(`${almanac.dayOfficer}日相宜`)
+  else if (officerBoost !== undefined && officerBoost < 0) parts.push(`${almanac.dayOfficer}日相避`)
+  return parts.join(' · ')
+}
+
+/** Shared ranking pipeline for both /search (generic) and the 4 specialized routes. */
+function runSearch(event: AuspiceEvent, fromStr: string, toStr: string, specialized: boolean) {
+  const fromDate = ymdToDate(parseYmd(fromStr))
+  const toDate = ymdToDate(parseYmd(toStr))
+  if (toDate.getTime() < fromDate.getTime()) {
+    throw new HTTPException(400, { message: 'to must be on or after from' })
+  }
+  const spanDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1
+  if (spanDays > MAX_SEARCH_SPAN_DAYS) {
+    throw new HTTPException(400, { message: `range too large (max ${MAX_SEARCH_SPAN_DAYS} days)` })
+  }
+
+  const verbs = EVENT_VERBS[event]
+  const boosts = specialized ? EVENT_BOOSTS[event] : undefined
+  const scored: Array<{
+    date: string
+    score: number
+    recommended: boolean
+    reasoning: string
+    day: {
+      ganZhi: string
+      dayOfficer: DayOfficer
+      mansion: string
+      goodFor: string[]
+      avoid: string[]
+    }
+  }> = []
+
+  const cursor = new Date(fromDate)
+  for (let i = 0; i < spanDays; i++) {
+    const almanac = calculateDailyAlmanac(dateToYmd(cursor))
+    const { score, matchedGood, matchedBad, officerBoost } = scoreDay(almanac, verbs, boosts)
+    scored.push({
+      date: fmtUtc(cursor),
+      score: Math.round(score * 100) / 100,
+      recommended: score >= 0.6,
+      reasoning: reasoning(
+        almanac,
+        matchedGood,
+        matchedBad,
+        specialized ? officerBoost : undefined
+      ),
+      day: {
+        ganZhi: almanac.todayGanZhi,
+        dayOfficer: almanac.dayOfficer,
+        mansion: almanac.mansion.name,
+        goodFor: almanac.goodFor,
+        avoid: almanac.avoid,
+      },
+    })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  // Rank by score desc; tie-break earliest date so picks are stable.
+  scored.sort((a, b) => b.score - a.score || a.date.localeCompare(b.date))
+
+  return {
+    event,
+    range: { from: fromStr, to: toStr },
+    top: scored.slice(0, 3),
+  }
+}
+
+auspiceRoutes.get('/search', (c) => {
+  const parsed = searchQuerySchema.parse({
+    event: c.req.query('event'),
+    from: c.req.query('from'),
+    to: c.req.query('to'),
+  })
+  return jsonOk(c, runSearch(parsed.event, parsed.from, parsed.to, /* specialized */ false))
+})
+
+// ── Specialized 择日 routes (Sprint 2 deliverable #3) ─────────────
+// Thin wrappers over runSearch that pre-set the event + opt into
+// activity-tuned officer boosts. Separate URLs so:
+//   1. the client can cache per activity,
+//   2. UI screens get a clean per-activity entry point with their own copy,
+//   3. the response carries activity-tuned reasoning ("成日相宜" etc.).
+
+auspiceRoutes.get('/wedding', (c) => {
+  const parsed = specializedQuerySchema.parse({
+    from: c.req.query('from'),
+    to: c.req.query('to'),
+  })
+  return jsonOk(c, runSearch('wedding', parsed.from, parsed.to, /* specialized */ true))
+})
+
+auspiceRoutes.get('/move-in', (c) => {
+  const parsed = specializedQuerySchema.parse({
+    from: c.req.query('from'),
+    to: c.req.query('to'),
+  })
+  return jsonOk(c, runSearch('move-in', parsed.from, parsed.to, /* specialized */ true))
+})
+
+auspiceRoutes.get('/business', (c) => {
+  const parsed = specializedQuerySchema.parse({
+    from: c.req.query('from'),
+    to: c.req.query('to'),
+  })
+  return jsonOk(c, runSearch('business', parsed.from, parsed.to, /* specialized */ true))
+})
+
+auspiceRoutes.get('/travel', (c) => {
+  const parsed = specializedQuerySchema.parse({
+    from: c.req.query('from'),
+    to: c.req.query('to'),
+  })
+  return jsonOk(c, runSearch('travel', parsed.from, parsed.to, /* specialized */ true))
+})
+
+// ── POST /explain — 深度解读 (C.4): the ONLY LLM in Auspice ─────
+//
+// Pro/lazy: invoked on app-open + field-tap, NEVER pre-generated, NEVER in the push.
+// Cost-guarded by the shared K.4 guard (free taste → degrade to a deterministic
+// template; v1 never hard-blocks). 24h cached in GUARD_KV. Subject: deviceId > ipHash
+// (the endpoint is anonymous — no trusted userId).
+
+const CYCLE_GUARD_CONFIG = {
+  app: 'cycle',
+  dailyLimitAnon: 1,
+  dailyLimitSigned: 3,
+  lifetimePeakPass: 1,
+  globalDailyBudget: 5000,
+  noRollover: true,
+  noPeriodicRefill: true,
+} as const satisfies LlmGuardConfig
+
+const explainSchema = z.object({
+  date: z.string().regex(DATE_RE, 'date must be YYYY-MM-DD'),
+  field: z.string().min(1).max(40),
+  /** 日主 天干 (optional) — adds the 对你而言 angle + buckets the cache. */
+  dayMaster: z.string().max(2).optional(),
+  locale: z.string().max(16).default('en'),
+  /** Anonymous install id (optional) — preferred quota subject over ipHash. */
+  deviceId: z.string().max(128).optional(),
+})
+
+/** Tiny non-crypto hash so raw IPs never land in KV keys. */
+function hashIp(ip: string): string {
+  let h = 2_166_136_261
+  for (let i = 0; i < ip.length; i++) {
+    h ^= ip.charCodeAt(i)
+    h = Math.imul(h, 16_777_619)
+  }
+  return (h >>> 0).toString(36)
+}
+
+/** Deterministic fallback when the LLM is exhausted/unavailable — never blank. */
+function templateExplanation(almanac: DailyAlmanac, field: string): string {
+  const base = `${field}：${almanac.todayGanZhi}日 · ${almanac.dayOfficer}日 · ${almanac.mansion.name}宿。`
+  return almanac.elementRelation ? `${base}（对你而言：日主${almanac.elementRelation}）` : base
+}
+
+auspiceRoutes.post('/explain', async (c) => {
+  const body = explainSchema.parse(await c.req.json().catch(() => ({})))
+  const ymd = parseYmd(body.date)
+  const dayMaster = body.dayMaster as HeavenlyStem | undefined
+
+  // Recompute the day (personalized when 日主 known) — facts for the prompt + template.
+  const almanac = calculateDailyAlmanac(ymd, dayMaster)
+  const bucket = dayMaster ? STEM_WUXING[dayMaster] : 'none'
+  const cacheKey = `auspice:explain:${body.date}:${body.field}:${body.locale}:${bucket}`
+
+  // 1. Cache hit — no guard spend.
+  const cached = await c.env.GUARD_KV.get(cacheKey)
+  if (cached) {
+    return jsonOk(c, { explanation: cached, source: 'cache', upsell: false })
+  }
+
+  // 2. Guard decision (subject: deviceId > ipHash).
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const subject = resolveLlmGuardSubject({ deviceId: body.deviceId, ipHash: hashIp(ip) })
+  const template = () =>
+    jsonOk(c, {
+      explanation: templateExplanation(almanac, body.field),
+      source: 'template',
+      upsell: false,
+    })
+  if (!subject) return template()
+
+  const guard = await evaluateLlmGuard(c.env, { subject, config: CYCLE_GUARD_CONFIG })
+  for (const ev of guard.events) console.info('[cycle.explain.guard]', JSON.stringify(ev))
+
+  if (guard.decision === 'allow_llm') {
+    try {
+      const resp = await astroClient.post<{ explanation: string }>(
+        c.env.SVC_ASTRO,
+        '/cycle/explain',
+        {
+          date: body.date,
+          field: body.field,
+          ganZhi: almanac.todayGanZhi,
+          dayOfficer: almanac.dayOfficer,
+          mansion: almanac.mansion.name,
+          dayMaster,
+          relation: almanac.elementRelation,
+          locale: body.locale,
+          isPro: guard.tier === 'deep',
+        }
+      )
+      const explanation = (resp.explanation ?? '').trim()
+      if (explanation) {
+        await c.env.GUARD_KV.put(cacheKey, explanation, { expirationTtl: 86_400 })
+        await recordLlmGuardGrant(c.env, {
+          subject,
+          config: CYCLE_GUARD_CONFIG,
+          consumesPeakPass: guard.consumesPeakPass,
+        })
+        return jsonOk(c, { explanation, source: 'llm', tier: guard.tier, upsell: false })
+      }
+    } catch (err) {
+      console.error('[auspice.explain] svc-astro failed', err)
+    }
+    return template() // svc-astro failed/empty — degrade, no grant recorded
+  }
+
+  // 3. allow_cached (global budget) / allow_template (subject exhausted) — cache already
+  //    missed, so serve the deterministic template + surface the upsell.
+  return jsonOk(c, {
+    explanation: templateExplanation(almanac, body.field),
+    source: 'template',
+    upsell: guard.upsellAfterExhaust,
+  })
+})

@@ -1,15 +1,15 @@
-# ADR-0020: Cycle Life Timeline + Educational Glossary
+# ADR-0020: Auspice Life Timeline + Educational Glossary
 
 - **Status**: Accepted
 - **Date**: 2026-06-02
-- **Modifies**: ADR-0010 (Cycle satellite) — repositions cycle from "daily 黄历 utility" to "personalized 中国命理 life-timeline tool with educational glossary surface"
+- **Modifies**: ADR-0010 (Auspice satellite) — repositions cycle from "daily 黄历 utility" to "personalized 中国命理 life-timeline tool with educational glossary surface"
 - **Related**: ADR-0015 (Product Doctrine v2), ADR-0018 (Design Language), ADR-0019 (V1 wave narrowing)
 
 ## Context
 
-Cycle through Sprint 1-3 was built as a daily 黄历 utility (today's pillar / 宜忌 / 12 时辰 / 节气). Sprint 3 expanded the surface to include the calendar, festivals/节气 detail pages, and per-locale public holidays. Recent user feedback (2026-06-02) re-frames the product more ambitiously:
+Auspice through Sprint 1-3 was built as a daily 黄历 utility (today's pillar / 宜忌 / 12 时辰 / 节气). Sprint 3 expanded the surface to include the calendar, festivals/节气 detail pages, and per-locale public holidays. Recent user feedback (2026-06-02) re-frames the product more ambitiously:
 
-> 我希望Cycle能肩负起人生timeline的功能，根据用户输入的Birth info生成八字盘和紫薇盘，然后两个盘合参调用一次LLM就能得到人生的timeline，体现在Calendar中，这是会员级别的功能，同时还有流年大运，流月，流日。这些加起来就是个性化黄历，基于中国命理学说的个性化黄历。我理解只有拿到Birth info，LLM 人生timeline才能给出For you 【Favorable】
+> 我希望Auspice能肩负起人生timeline的功能，根据用户输入的Birth info生成八字盘和紫薇盘，然后两个盘合参调用一次LLM就能得到人生的timeline，体现在Calendar中，这是会员级别的功能，同时还有流年大运，流月，流日。这些加起来就是个性化黄历，基于中国命理学说的个性化黄历。我理解只有拿到Birth info，LLM 人生timeline才能给出For you 【Favorable】
 
 And:
 
@@ -23,9 +23,9 @@ The new positioning has two layers:
 
 ## Decision
 
-### Cycle V2 doctrine — two layers, one product
+### Auspice V2 doctrine — two layers, one product
 
-**Pro layer (personalized life timeline)**: gated by `cycle_pro` entitlement and **requires** birth info.
+**Pro layer (personalized life timeline)**: gated by `auspice_pro` entitlement and **requires** birth info.
 
 | Surface | Free | Pro |
 |---|---|---|
@@ -52,7 +52,7 @@ The first two festivals + 立春 are already authored under `lib/festival-conten
 **Server**:
 
 ```
-/api/cycle/timeline  POST
+/api/auspice/timeline  POST
   body: { birthInfo: { solarDate, timeIndex, gender, longitude?, latitude? } }
   auth: HMAC + userId required (Pro entitlement enforced)
   flow:
@@ -64,12 +64,12 @@ The first two festivals + 立春 are already authored under `lib/festival-conten
     6. Return TimelinePayload { decades, years, monthly, daily-overlay-rules }
   cache: timeline_cache table — fingerprint → payload. Lifelong cache; birth never changes.
 
-/api/cycle/day  GET   (existing)
+/api/auspice/day  GET   (existing)
   EXTEND: when caller is Pro + signed-in, attach today's slice of the timeline
   (流年 verdict + 大运 phase) to the response so Today/day-detail can render
   "For you · Favorable" without a separate fetch.
 
-/api/cycle/glossary/[topic]  GET   (new, free, anonymous)
+/api/auspice/glossary/[topic]  GET   (new, free, anonymous)
   Returns per-section authored content (or 'coming soon' placeholder).
   Same cached delivery as /festival content (KV or D1).
 ```
@@ -120,7 +120,7 @@ Per user observation: the green "Favorable" badge on Today's For-you card today 
 
 The doctrine: **For-you is never a guess, never a horoscope** — it's either deterministic (free tier) or deterministic-plus-explained-by-LLM (Pro). The compute substrate is classical 中国命理 throughout.
 
-### Pro feature checklist (gated by `cycle_pro` entitlement + birth info present)
+### Pro feature checklist (gated by `auspice_pro` entitlement + birth info present)
 
 - Full 宜忌 (vs Free top-3 — already implemented via `YiJiBlock` limit prop)
 - 对你而言 personalization (currently free; should gate per ADR-0015)
@@ -150,7 +150,7 @@ This ADR injects new work between Sprint 3 (mostly done) and Sprint 4 (was "fami
 |---|---|---|
 | Sprint 3 (W1.3) | 节庆 + 节气 content | + `/glossary` scaffold (this turn); 节气/festival/glossary content authoring is the ongoing track |
 | Sprint 3.5 (NEW) | — | **Honest For-you**: gate the For-you card on birth info + Pro; deterministic compute already exists. Quick win. |
-| Sprint 4 (W1.4) | family events + push scheduler | **Life timeline backend**: 八字 + 紫微 compute, LLM integration, `timeline_cache` D1 table, `/api/cycle/timeline` endpoint |
+| Sprint 4 (W1.4) | family events + push scheduler | **Life timeline backend**: 八字 + 紫微 compute, LLM integration, `timeline_cache` D1 table, `/api/auspice/timeline` endpoint |
 | Sprint 4.5 (NEW) | — | `/timeline` Pro screen + 流日 dots + 大运/流年 banner on Calendar |
 | Sprint 5 (W1.5) | widgets + watch + ASO + TestFlight | unchanged — but widgets get a Pro "Today's 流日 verdict" variant |
 | Sprint 6 (W1.6) | (was end) | family events + push scheduler (shifted from Sprint 4) |
@@ -161,7 +161,7 @@ cycle now needs **2 more sprints** to ship (Sprint 4 + 4.5) before W1.5 widget w
 
 The educational glossary is the **anchor**, not a side feature. Reviewer notes (per `docs/reviewer-notes-templates.md`) get rewritten to lead with:
 
-> Cycle is an educational tool for Chinese cosmology and the traditional 黄历 calendar.
+> Auspice is an educational tool for Chinese cosmology and the traditional 黄历 calendar.
 > - 二十四节气, 十二时辰, 中国传统节日: solar / lunar calendar entries with explanatory content from classical sources
 > - 天干地支, 四柱八字, 紫微星盘: glossary of 中国命理学 concepts grounded in Song-dynasty 子平 / 紫微 traditions
 > - Personalized layer (Pro, opt-in): given user-provided birth date, the app computes a structured 八字 chart and presents the deterministic 五行 relationships against the daily 干支. The AI-narrated layer cites the classical interaction tables it relies on — it is *not* astrological prediction in the Western sense.
@@ -186,7 +186,7 @@ Same MBTI / Big-Five analogy as ADR-0017. The glossary section list is the proof
 
 ## Cross-references
 
-- ADR-0010 — Cycle satellite (this supersedes the "daily-utility-only" framing)
+- ADR-0010 — Auspice satellite (this supersedes the "daily-utility-only" framing)
 - ADR-0015 — Product Doctrine v2 (utility-anchored doctrine; this ADR adds the personalization + education layers)
 - ADR-0018 — Design Language (glossary's "innovative UI" must follow the no-tab + minimalism rules)
 - ADR-0019 — V1 wave narrowing (cycle still ships first; this ADR's Sprint 4/4.5 work happens within V1)

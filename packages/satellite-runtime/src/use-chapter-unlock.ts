@@ -113,9 +113,7 @@ export async function fetchReportManifest(): Promise<ReportManifest | null> {
 }
 
 /** A's own pending chapter-unlock invites (for "waiting for X@..." UI). */
-export async function fetchPendingChapterUnlockInvites(): Promise<
-  PendingChapterUnlockInvite[]
-> {
+export async function fetchPendingChapterUnlockInvites(): Promise<PendingChapterUnlockInvite[]> {
   const res = await signedFetch('GET', '/api/portfolio/invite-chapter-unlock/pending')
   if (!res?.ok) return []
   try {
@@ -134,10 +132,9 @@ export async function fetchPendingChapterUnlockInvites(): Promise<
 export async function inviteChapterUnlock(input: {
   targetEmail: string
   message?: string
-}):
-  Promise<
-    { ok: true; data: InviteChapterUnlockSent } | { ok: false; error: InviteChapterUnlockError }
-  > {
+}): Promise<
+  { ok: true; data: InviteChapterUnlockSent } | { ok: false; error: InviteChapterUnlockError }
+> {
   const res = await signedFetch('POST', '/api/portfolio/invite-chapter-unlock', input)
   if (!res) return { ok: false, error: 'unauthed' }
   if (res.ok) {

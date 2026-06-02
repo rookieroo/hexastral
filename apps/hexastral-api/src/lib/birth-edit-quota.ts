@@ -37,8 +37,7 @@ export function classifyBirthEdit(
   prior: BirthEditPriorState,
   next: BirthEditInput
 ): BirthEditDisposition {
-  const hadPrior =
-    !!prior.birthSolarDate && prior.birthTimeIndex != null && !!prior.birthGender
+  const hadPrior = !!prior.birthSolarDate && prior.birthTimeIndex != null && !!prior.birthGender
   if (!hadPrior) return 'first_add'
   const isChange =
     prior.birthSolarDate !== next.birthSolarDate ||

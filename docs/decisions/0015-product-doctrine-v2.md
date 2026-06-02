@@ -43,7 +43,7 @@ cosmology as texture (not substance).**
 |---|---|---|---|---|---|
 | **cycle** | `com.hexastral.cycle` | 万年历 + 24 节气 + 8 节日 + 农历家庭事件 | 黄历宜忌 + 28 宿 + 12 神 + 对你而言 | Subscription flagship | Free / $4.99 mo / $39.99 yr |
 | **feng** | `com.hexastral.feng` | 多空间维护 + 24 节气提醒 + 月度飞星 | 罗盘 + Ba Gua + 五行 + 古典 site theory | Subscription + single-purchase | Free / $7.99 mo + $9.99 single audit |
-| **yuan v2** | `com.hexastral.yuan` | 每日双盘洞察 + 流月 + 多对配对 + 周年追踪 | 八字合盘 + 合冲刑害 + 五行 fit + 古典 pair patterns | Subscription + viral acquisition | Free / $4.99 mo / $39.99 yr |
+| **yuan v2** | `com.hexastral.kindred` | 每日双盘洞察 + 流月 + 多对配对 + 周年追踪 | 八字合盘 + 合冲刑害 + 五行 fit + 古典 pair patterns | Subscription + viral acquisition | Free / $4.99 mo / $39.99 yr |
 | **MingPan** | `com.hexastral.fate` (display: MingPan) | (none — pure tool) | 八字盘 + 紫微盘生成 + 古典 reference | One-time IAP | $4.99 lifetime |
 
 ### Daily-utility lock-in mechanisms (mandatory per app, except MingPan)
@@ -65,7 +65,7 @@ cosmology as texture (not substance).**
 
 Universe bundle math: cycle ($4.99) + feng ($7.99) + yuan ($4.99) + MingPan ($4.99 amortized) = $22.96 + ≈ Universe $9.99 (57% off).
 
-### Yuan v2 specific decisions (reverses yuan v1 deprecation in v2 of this ADR)
+### Kindred v2 specific decisions (reverses yuan v1 deprecation in v2 of this ADR)
 
 Original yuan v1 was a one-shot couples-chart with single $9.99 IAP. v2 reframes:
 
@@ -218,7 +218,7 @@ estimated.
 | W3 yuan rejected for compatibility-as-horoscope read | 15-20% | Strict screenshot + ASO discipline; cite Co-Star/Pattern precedent in reviewer notes |
 | W4 MingPan rejected as 4.3(a) "minimum functionality" | 15% | Bundle with classical 命理 wiki + chart export — pivot from "calculator" to "educational reference" if needed |
 | 12-week timeline blows out | 30% | Sprint plan with weekly checkpoints (per app sprint docs); parallel work for cycle + feng once shared infra lands |
-| Cycle 家庭多账户 feature flops | 20% | Iterate per-cycle metric; if dead by V1.5, simplify Pro tier |
+| Auspice 家庭多账户 feature flops | 20% | Iterate per-cycle metric; if dead by V1.5, simplify Pro tier |
 
 ### Implementation paths
 

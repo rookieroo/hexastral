@@ -255,7 +255,7 @@ const ZH: Record<keyof typeof EN, string> = {
   alertQuotaUpgrade: '查看方案',
   waYingTitle: '外应 · 本卦不作数',
   waYingMessage:
-    '有铜钱立于桌缘、难以定阴阳。按传统六爻，整卦作废（含已摇出的爻），请静心后从第一爻重新摇齐六爻。此象多示所问悬而未决、变数未落，不必强判吉凶。',
+    '有铜钱立于桌Kindred、难以定阴阳。按传统六爻，整卦作废（含已摇出的爻），请静心后从第一爻重新摇齐六爻。此象多示所问悬而未决、变数未落，不必强判吉凶。',
   waYingAck: '知道了',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
@@ -380,7 +380,7 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   alertQuotaUpgrade: '查看方案',
   waYingTitle: '外應 · 本卦不作數',
   waYingMessage:
-    '有銅錢立於桌緣、難以定陰陽。依傳統六爻，整卦作廢（含已搖出之爻），請靜心後從第一爻重新搖齊六爻。此象多示所問懸而未決、變數未落，不必強判吉凶。',
+    '有銅錢立於桌Kindred、難以定陰陽。依傳統六爻，整卦作廢（含已搖出之爻），請靜心後從第一爻重新搖齊六爻。此象多示所問懸而未決、變數未落，不必強判吉凶。',
   waYingAck: '知道了',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:

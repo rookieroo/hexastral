@@ -51,7 +51,7 @@ export const webhookRoutes = new Hono<AppEnv>()
 const CONSUMABLE_EVENTS = new Set(['INITIAL_PURCHASE', 'NON_RENEWING_PURCHASE'])
 // RevenueCat emits INITIAL_PURCHASE for the FIRST subscription purchase (there is no
 // 'INITIAL_SUBSCRIPTION' event); RENEWAL on each renewal; PRODUCT_CHANGE on an in-group
-// crossgrade (e.g. cycle_pro → universe_pro) which must grant the new product's bundle;
+// crossgrade (e.g. auspice_pro → universe_pro) which must grant the new product's bundle;
 // UNCANCELLATION when a user un-cancels before expiry. The product kind (subscription vs
 // consumable) disambiguates INITIAL_PURCHASE between this set and CONSUMABLE_EVENTS.
 const SUBSCRIPTION_ACTIVATE_EVENTS = new Set([

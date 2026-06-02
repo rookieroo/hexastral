@@ -12,7 +12,7 @@ export const PRIVACY_URL = 'https://www.hexastral.com/privacy/cycle'
 export const TERMS_URL = 'https://www.hexastral.com/terms'
 
 /**
- * Flagship funnel deep links (ADR-0010 §4): wedding date-picking → Yuán;
+ * Flagship funnel deep links (ADR-0010 §4): wedding date-picking → Kindred;
  * office-opening / move-in → Fēng. App Store fallbacks for unverified installs.
  */
 export const FLAGSHIP_LINKS = {

@@ -37,12 +37,7 @@ export function labelize(
 ): string {
   if (!key) return ''
   const target = DICTS[locale] ?? en
-  return (
-    target[category]?.[key] ??
-    en[category]?.[key] ??
-    zh[category]?.[key] ??
-    key
-  )
+  return target[category]?.[key] ?? en[category]?.[key] ?? zh[category]?.[key] ?? key
 }
 
 /**

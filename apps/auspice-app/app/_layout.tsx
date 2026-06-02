@@ -1,5 +1,5 @@
 /**
- * Cycle root layout — Tier-3 satellite shape (ADR-0010).
+ * Auspice root layout — Tier-3 satellite shape (ADR-0010).
  *
  *   GestureHandlerRootView
  *     SafeAreaProvider
@@ -20,17 +20,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import {
   AccentProvider,
-  type CycleAccentVariant,
+  type AuspiceAccentVariant,
   DEFAULT_ACCENT_VARIANT,
   getAccentVariant,
   setAccentVariant,
 } from '@/lib/accent'
-import { getCycleBirthDate } from '@/lib/birth'
+import { getAuspiceBirthDate } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
 import { getPeople } from '@/lib/people'
 import {
-  addCycleNotificationTapListener,
+  addAuspiceNotificationTapListener,
   configureNotifications,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
@@ -50,19 +50,19 @@ function SatelliteGrowthMount() {
 
 export default function RootLayout() {
   const scheme = useColorScheme()
-  // Cycle defaults light — 黄历 reads best on warm paper; honor explicit dark mode.
+  // Auspice defaults light — 黄历 reads best on warm paper; honor explicit dark mode.
   const mode: 'light' | 'dark' = scheme === 'dark' ? 'dark' : 'light'
 
   // Lift the accent variant here so the picker (downstream in /display) can
   // mutate it via context and the CoreUIProvider re-renders with the new
   // accent immediately — no app restart.
-  const [variant, setVariantState] = useState<CycleAccentVariant>(DEFAULT_ACCENT_VARIANT)
+  const [variant, setVariantState] = useState<AuspiceAccentVariant>(DEFAULT_ACCENT_VARIANT)
   useEffect(() => {
     getAccentVariant()
       .then(setVariantState)
       .catch(() => {})
   }, [])
-  const setVariant = useCallback((v: CycleAccentVariant) => {
+  const setVariant = useCallback((v: AuspiceAccentVariant) => {
     setVariantState(v)
     void setAccentVariant(v)
   }, [])
@@ -95,7 +95,7 @@ function RootLayoutInner() {
     // THEN rebuild a clean set: the daily window + 亲友 birthdays.
     void (async () => {
       await purgeStaleNotificationsOnce()
-      const birthDate = (await getCycleBirthDate().catch(() => undefined)) ?? undefined
+      const birthDate = (await getAuspiceBirthDate().catch(() => undefined)) ?? undefined
       await refreshDailyPush({ locale, birthDate })
       const people = await getPeople().catch(() => [])
       await scheduleBirthdayReminders(people, locale)
@@ -105,7 +105,7 @@ function RootLayoutInner() {
 
   // Notification tap → deep-link Today to the notification's date.
   useEffect(() => {
-    return addCycleNotificationTapListener((day) => {
+    return addAuspiceNotificationTapListener((day) => {
       if (day) router.push({ pathname: '/', params: { day } })
       else router.push('/')
     })

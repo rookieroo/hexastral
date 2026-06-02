@@ -19,11 +19,11 @@
 
 | Term | Where it lives | What it is |
 |---|---|---|
-| **Entitlement** | RevenueCat | A capability flag, e.g. `yuan_pro`. Apps check `entitlements.active[key]`. |
-| **Product / SKU** | App Store Connect + Google Play | A purchasable thing, e.g. `yuan_pro_monthly`. |
+| **Entitlement** | RevenueCat | A capability flag, e.g. `kindred_pro`. Apps check `entitlements.active[key]`. |
+| **Product / SKU** | App Store Connect + Google Play | A purchasable thing, e.g. `kindred_pro_monthly`. |
 | **Offering / Package** | RevenueCat | A bundle of products presented to the user (Monthly + Annual). |
 
-One product can grant multiple entitlements (e.g., `universe_pro_*` grants `yuan_pro` + `feng_pro` + `hexastral_pro` + `universe_pro`).
+One product can grant multiple entitlements (e.g., `universe_pro_*` grants `kindred_pro` + `feng_pro` + `hexastral_pro` + `universe_pro`).
 
 ---
 
@@ -31,7 +31,7 @@ One product can grant multiple entitlements (e.g., `universe_pro_*` grants `yuan
 
 | Key | Unlocks |
 |---|---|
-| `yuan_pro` | Yuán flagship Pro features (deep synastry, BaZi pair LLM, annual forecast) |
+| `kindred_pro` | Kindred flagship Pro features (deep synastry, BaZi pair LLM, annual forecast) |
 | `feng_pro` | Fēng flagship Pro features (multi-photo synthesis, auspicious-date LLM, advanced compass overlays) |
 | `hexastral_pro` | HexAstral flagship Pro (90-day Daily Signal history, deep ZiWei/BaZi, chat credits multiplier) |
 | `universe_pro` | Implies all three flagships' Pro + every satellite's Pro tier |
@@ -44,13 +44,13 @@ Naming convention: lowercase, snake_case, suffix `_pro`. Don't rename — these 
 
 | Product ID | Plan | Grants |
 |---|---|---|
-| `yuan_pro_monthly` | Monthly | `yuan_pro` |
-| `yuan_pro_annual` | Annual | `yuan_pro` |
+| `kindred_pro_monthly` | Monthly | `kindred_pro` |
+| `kindred_pro_annual` | Annual | `kindred_pro` |
 | `feng_pro_monthly` | Monthly | `feng_pro` |
 | `feng_pro_annual` | Annual | `feng_pro` |
 | `hexastral_pro_monthly` | Monthly | `hexastral_pro` |
 | `hexastral_pro_annual` | Annual | `hexastral_pro` |
-| `universe_pro_monthly` | Monthly | `yuan_pro` + `feng_pro` + `hexastral_pro` + `universe_pro` |
+| `universe_pro_monthly` | Monthly | `kindred_pro` + `feng_pro` + `hexastral_pro` + `universe_pro` |
 | `universe_pro_annual` | Annual | (same) |
 
 Legacy CoinCast products (`coincast_pro_monthly` / `_annual`) and consumables (`hexastral_chat_5`, `hexastral_divination_3`, `coincast_cast_pack_10`, single-reading SKUs) remain unchanged — they were already in production-ready state.
@@ -59,7 +59,7 @@ Pricing suggestion (sandbox first; revise after market test):
 
 | Plan | Monthly | Annual |
 |---|---:|---:|
-| `yuan_pro` | $9.99 | $79.99 |
+| `kindred_pro` | $9.99 | $79.99 |
 | `feng_pro` | $12.99 | $99.99 |
 | `hexastral_pro` | $7.99 | $59.99 |
 | `universe_pro` | $19.99 | $149.99 |
@@ -79,13 +79,13 @@ For each of the 8 products:
    - All 8 products go in this group so users can upgrade/downgrade between them with prorated billing.
 
 2. **Add Subscription**
-   - **Reference Name**: same as Product ID (e.g. `yuan_pro_monthly`).
+   - **Reference Name**: same as Product ID (e.g. `kindred_pro_monthly`).
    - **Product ID**: the exact ID from §2 (App Store will scope it under your bundle ID).
    - **Subscription Duration**: 1 Month or 1 Year.
    - **Subscription Pricing**: enter monthly or annual price. Apple will auto-generate territory pricing — review for tier consistency.
 
 3. **Localizations** (minimum: en, zh-Hans, zh-Hant, ja, ko)
-   - **Display Name**: e.g. "Yuán Pro Monthly"
+   - **Display Name**: e.g. "Kindred Pro Monthly"
    - **Description**: 1-2 sentences explaining what the user gets.
 
 4. **App Store Promotion**
@@ -109,11 +109,11 @@ Repeat for Google Play Console under **Monetize → Products → Subscriptions**
 
 ### 4.1 Create the 4 entitlements
 
-For each of `yuan_pro`, `feng_pro`, `hexastral_pro`, `universe_pro`:
+For each of `kindred_pro`, `feng_pro`, `hexastral_pro`, `universe_pro`:
 
 1. Click **+ New entitlement**.
 2. **Identifier**: lowercase entitlement key from §1 (no spaces, exact match).
-3. **Display name**: human-readable, e.g. "Yuán Pro".
+3. **Display name**: human-readable, e.g. "Kindred Pro".
 4. Save.
 
 ### 4.2 Register the 8 products
@@ -134,7 +134,7 @@ For each product ID from §2:
 
 | Entitlement | Attached products |
 |---|---|
-| `yuan_pro` | `yuan_pro_monthly`, `yuan_pro_annual`, `universe_pro_monthly`, `universe_pro_annual` |
+| `kindred_pro` | `kindred_pro_monthly`, `kindred_pro_annual`, `universe_pro_monthly`, `universe_pro_annual` |
 | `feng_pro` | `feng_pro_monthly`, `feng_pro_annual`, `universe_pro_monthly`, `universe_pro_annual` |
 | `hexastral_pro` | `hexastral_pro_monthly`, `hexastral_pro_annual`, `universe_pro_monthly`, `universe_pro_annual` |
 | `universe_pro` | `universe_pro_monthly`, `universe_pro_annual` |
@@ -147,7 +147,7 @@ Universe Pro intentionally attaches to all three vertical entitlements so client
 
 Create 4 offerings, one per flagship-family CTA surface:
 
-- `yuan_default` — packages: `monthly` (= `yuan_pro_monthly`), `annual` (= `yuan_pro_annual`)
+- `yuan_default` — packages: `monthly` (= `kindred_pro_monthly`), `annual` (= `kindred_pro_annual`)
 - `feng_default` — packages: `feng_pro_monthly`, `feng_pro_annual`
 - `hexastral_default` — packages: `hexastral_pro_monthly`, `hexastral_pro_annual`
 - `universe_default` — packages: `universe_pro_monthly`, `universe_pro_annual`
@@ -194,11 +194,11 @@ For local dev, put placeholder `test_xxx` keys in `.env`. The hook detects `REPL
 
 1. Create a sandbox tester in App Store Connect → **Users and Access → Sandbox Testers**.
 2. Sign out of the App Store on the device → install the dev build → sign in with the sandbox tester on the **first paywall prompt** (not in Settings).
-3. Purchase `yuan_pro_monthly` → verify:
-   - RevenueCat dashboard → **Customers** shows the user with active `yuan_pro` entitlement.
-   - `POST /webhooks/revenuecat` returns `200` with `action: 'subscription_activated'` and `entitlements: ['yuan_pro']`.
-   - D1: `SELECT * FROM user_entitlements WHERE user_id = '<rcAppUserId>' AND entitlement_key = 'yuan_pro'` returns one row with `expires_at` populated.
-   - App: re-launch → `useEntitlements().yuan_pro.active === true`.
+3. Purchase `kindred_pro_monthly` → verify:
+   - RevenueCat dashboard → **Customers** shows the user with active `kindred_pro` entitlement.
+   - `POST /webhooks/revenuecat` returns `200` with `action: 'subscription_activated'` and `entitlements: ['kindred_pro']`.
+   - D1: `SELECT * FROM user_entitlements WHERE user_id = '<rcAppUserId>' AND entitlement_key = 'kindred_pro'` returns one row with `expires_at` populated.
+   - App: re-launch → `useEntitlements().kindred_pro.active === true`.
 4. Purchase `universe_pro_annual` → verify all 4 entitlements appear in D1.
 5. Cancel from device Settings → verify `subscription_cancelled` webhook action and `expires_at` unchanged (access continues until period end).
 6. Wait for sandbox expiry (5 min for monthly, ~1 hour for annual) → verify `subscription_expired` and `expires_at` updated to `now()`.

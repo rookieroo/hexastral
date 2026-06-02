@@ -14,10 +14,22 @@
  *   import { labelizeMany } from '@zhop/astro-i18n'
  *   labelizeMany('element', ['木', '火'], 'en') // → ['Wood', 'Fire']
  */
-export { getLocalizedDictionary, labelize, labelizeMany } from './labelize'
-export { explainTerm } from './explain'
+
+export type {
+  AlmanacResult,
+  Branch,
+  ComputeAlmanacInput,
+  DayContext,
+  Direction,
+  EnergyLevel,
+  Relation,
+  UserStaticTraits,
+  WuXing,
+} from './almanac/computeAlmanac'
+export { computeAlmanac } from './almanac/computeAlmanac'
 export type { ExplanationDict } from './explain'
-export type { Dictionary, Locale, TokenCategory } from './types'
+export { explainTerm } from './explain'
+export { getLocalizedDictionary, labelize, labelizeMany } from './labelize'
 export { signature } from './signature'
 export type {
   DayMasterStrength,
@@ -28,15 +40,4 @@ export type {
   TenGod,
   ZiweiMainStar,
 } from './signature-types'
-export { computeAlmanac } from './almanac/computeAlmanac'
-export type {
-  AlmanacResult,
-  ComputeAlmanacInput,
-  DayContext,
-  Direction,
-  EnergyLevel,
-  Relation,
-  UserStaticTraits,
-  WuXing,
-  Branch,
-} from './almanac/computeAlmanac'
+export type { Dictionary, Locale, TokenCategory } from './types'

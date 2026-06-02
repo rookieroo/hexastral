@@ -11,8 +11,8 @@
 
 import {
   type BondInput,
-  composeBondsTimeline,
   type ComposeBondsTimelineOptions,
+  composeBondsTimeline,
   type DateTimeInput,
   type RelationshipPerson,
 } from '@zhop/astro-core'

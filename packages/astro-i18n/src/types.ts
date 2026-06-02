@@ -11,16 +11,7 @@
  *   - svc-astro Worker prompt construction
  */
 
-export type Locale =
-  | 'zh'
-  | 'zh-Hant'
-  | 'en'
-  | 'ja'
-  | 'ko'
-  | 'de'
-  | 'es'
-  | 'vi'
-  | 'th'
+export type Locale = 'zh' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'de' | 'es' | 'vi' | 'th'
 
 export type TokenCategory =
   | 'stem' // 10 天干

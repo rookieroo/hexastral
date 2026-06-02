@@ -400,7 +400,7 @@ export function formatDaYunForPrompt(result: DaYunResult, currentYear: number): 
 // Life Timeline API (ADR-0020)
 // ========================================
 //
-// Slimmer surface tailored to `POST /api/cycle/timeline` (the Pro Life-
+// Slimmer surface tailored to `POST /api/auspice/timeline` (the Pro Life-
 // Timeline endpoint) and the cycle-app consumer. Wraps the rich
 // `calculateDaYun` / `getLiuNianRange` helpers above with a stable
 // `PillarUnit { stem, branch, element }` shape so the route layer can
@@ -580,7 +580,9 @@ export function computeLiunian(
   windowYears = 5
 ): LiunianRow[] {
   if (!Number.isInteger(windowYears) || windowYears < 0) {
-    throw new Error(`computeLiunian: windowYears must be a non-negative integer (got ${windowYears})`)
+    throw new Error(
+      `computeLiunian: windowYears must be a non-negative integer (got ${windowYears})`
+    )
   }
   const rows = getLiuNianRange(birthYear, centerYear - windowYears, centerYear + windowYears)
   return rows.map((r) => ({

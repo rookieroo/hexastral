@@ -110,7 +110,7 @@ export default async function Image({
           marginBottom: '20px',
         }}
       >
-        缘
+        Kindred
       </div>
 
       {/* "invites you" label */}

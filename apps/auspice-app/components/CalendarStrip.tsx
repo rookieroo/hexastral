@@ -1,7 +1,7 @@
 /**
  * CalendarStrip — horizontal-paging month grid for the cycle home screen.
  *
- * Cycle's home is "Calendar + day detail" (per user feedback 2026-06-02):
+ * Auspice's home is "Calendar + day detail" (per user feedback 2026-06-02):
  * the calendar dominates the top portion; tap any cell to switch the
  * embedded day detail below. `selectedDay` is owned by the parent so the
  * day-detail re-fetches alongside selection.
@@ -31,7 +31,7 @@ import {
   View,
 } from 'react-native'
 
-import { type CycleMonthDay, type CycleMonthPayload, fetchCycleMonth } from '@/lib/api'
+import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
@@ -91,7 +91,7 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
   const listRef = useRef<FlatList<MonthRef>>(null)
 
   // Session-scope cache so paging back to a month is instant.
-  const cacheRef = useRef<Map<string, CycleMonthPayload>>(new Map())
+  const cacheRef = useRef<Map<string, AuspiceMonthPayload>>(new Map())
 
   // Per-month lunar header lifted up so the fixed top row can display it.
   const [lunarHeaders, setLunarHeaders] = useState<Record<string, string>>({})
@@ -248,7 +248,7 @@ interface MonthCellProps {
   locale: Locale
   todayKey: string
   selectedDay: string
-  cache: Map<string, CycleMonthPayload>
+  cache: Map<string, AuspiceMonthPayload>
   onCellHeader: (key: string, header: string) => void
   onPressDay: (dateIso: string) => void
   width: number
@@ -268,7 +268,7 @@ function MonthCell({
   const { colors, spacing } = useTheme()
   const cacheKey = `${year}-${month}-${locale}`
 
-  const [data, setData] = useState<CycleMonthPayload | null>(() => cache.get(cacheKey) ?? null)
+  const [data, setData] = useState<AuspiceMonthPayload | null>(() => cache.get(cacheKey) ?? null)
   const [loading, setLoading] = useState<boolean>(() => !cache.has(cacheKey))
 
   useEffect(() => {
@@ -279,7 +279,7 @@ function MonthCell({
     }
     let cancelled = false
     setLoading(true)
-    fetchCycleMonth(year, month, locale)
+    fetchAuspiceMonth(year, month, locale)
       .then((payload) => {
         cache.set(cacheKey, payload)
         if (cancelled) return
@@ -298,7 +298,7 @@ function MonthCell({
   const firstWeekday = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
 
-  const cells: Array<{ day: number; data: CycleMonthDay | null } | null> = [
+  const cells: Array<{ day: number; data: AuspiceMonthDay | null } | null> = [
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => ({
       day: i + 1,
@@ -369,7 +369,7 @@ function DayCell({
   colors,
 }: {
   dayNum: number
-  data: CycleMonthDay | null
+  data: AuspiceMonthDay | null
   isToday: boolean
   isSelected: boolean
   colors: DayCellColors

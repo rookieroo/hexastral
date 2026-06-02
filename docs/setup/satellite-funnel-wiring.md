@@ -12,7 +12,7 @@
 1. **Question-type picker** on the result page (or capture, your call) — 4
    choices: `relationship` / `home_office` / `career_wealth` / `self_daily`.
 2. **Flagship upsell card** below — a 3-line CTA pointing at the right
-   flagship (Yuán / Fēng / HexAstral) based on user's answer (or the
+   flagship (Kindred / Fēng / HexAstral) based on user's answer (or the
    satellite's default if they skip).
 
 Both components live in `@zhop/satellite-ui`. The routing function lives in
@@ -49,7 +49,7 @@ Deep-link schemes (from each flagship's `app.json`):
 | Flagship | Scheme |
 |---|---|
 | HexAstral | `hexastral://onboard?from=<slug>&signal=<question>&ddl=<token>` |
-| Yuán | `yuan://onboard?...` |
+| Kindred | `yuan://onboard?...` |
 | Fēng | `feng://onboard?...` |
 
 The `from=<slug>` query param is read by the flagship's
@@ -155,7 +155,7 @@ via `getFlagshipAttribution()`.
 Wired in:
 - [`apps/hexastral-app/app/_layout.tsx`](../../apps/hexastral-app/app/_layout.tsx)
   (extends existing DDL handler with `captureOnboardAttribution`)
-- [`apps/yuan-app/app/_layout.tsx`](../../apps/yuan-app/app/_layout.tsx)
+- [`apps/kindred-app/app/_layout.tsx`](../../apps/kindred-app/app/_layout.tsx)
 - [`apps/feng-app/app/_layout.tsx`](../../apps/feng-app/app/_layout.tsx)
 
 If you need to read it from an onboarding screen:

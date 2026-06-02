@@ -66,7 +66,7 @@ export const pairRoutes = new Hono<AppEnv>()
       throw new HTTPException(404, { message: 'User not found' })
     }
 
-    const isPro = await userHasCapability(db, input.userId, 'yuan')
+    const isPro = await userHasCapability(db, input.userId, 'kindred')
 
     // Fetch current user's physiognomy features (if available) to cross-reference with pair reading
     let physiognomyFeaturesJsonA: string | null = null

@@ -1,6 +1,6 @@
 /**
- * Cycle (黄历) API client — calls the anonymous, deterministic endpoints
- * `GET /api/cycle/day` and `GET /api/cycle/search` (C.1, hexastral-api). These
+ * Auspice (黄历) API client — calls the anonymous, deterministic endpoints
+ * `GET /api/auspice/day` and `GET /api/auspice/search` (C.1, hexastral-api). These
  * are plain public endpoints (no HMAC/DDL), so we fetch directly off the base
  * URL rather than going through the portfolio `runAuto` pipeline.
  *
@@ -45,7 +45,7 @@ export interface DayClash {
   clashAnimal: string
 }
 
-export interface CycleHour {
+export interface AuspiceHour {
   name: string
   branch: string
   startHour: number
@@ -83,7 +83,7 @@ export interface LunarDateInfo {
   isFifteenth: boolean
 }
 
-export interface CycleDay {
+export interface AuspiceDay {
   ganZhi: string
   element: string
   dayOfficer: DayOfficer
@@ -115,7 +115,7 @@ export interface CycleDay {
     prev: { name: string; date: string; instant: string }
     next: { name: string; date: string; instant: string }
   }
-  hours: CycleHour[]
+  hours: AuspiceHour[]
 }
 
 export type PersonalFit = '吉' | '平' | '凶'
@@ -131,7 +131,7 @@ export type PersonalReasonCode =
   | 'personal_clash'
 
 /** Deterministic "对你而言" overlay (C.3) — present only when birthDate was supplied. */
-export interface CyclePersonalization {
+export interface AuspicePersonalization {
   dayMaster: string
   dayMasterElement: string
   relation: string
@@ -144,11 +144,11 @@ export interface CyclePersonalization {
   benming: boolean
 }
 
-export interface CycleDayPayload {
+export interface AuspiceDayPayload {
   date: string
-  day: CycleDay
+  day: AuspiceDay
   /** C.3 deterministic overlay — non-null when `birthDate` was passed to the endpoint. */
-  personalization: CyclePersonalization | null
+  personalization: AuspicePersonalization | null
   /** Filled by C.4 (Pro AI explanation) once requested. */
   explanation: null
 }
@@ -156,7 +156,7 @@ export interface CycleDayPayload {
 // ── 节庆 year overview (Sprint 3 chunk 1) ─────────────────────────────────
 
 /** One entry in the 24 节气 timeline returned by `/year-overview`. */
-export interface CycleSolarTermEntry {
+export interface AuspiceSolarTermEntry {
   /** 0..23 — 立春 is 0, 大寒 is 23. Stable across years. */
   index: number
   /** Localized term name in CJK, e.g. "立春". */
@@ -168,7 +168,7 @@ export interface CycleSolarTermEntry {
 }
 
 /** One of the 8 major Chinese festivals returned by `/year-overview`. */
-export interface CycleFestival {
+export interface AuspiceFestival {
   /** Stable id; route into the future `/festival/[id]` detail page. */
   id: string
   /** Display name in CJK, e.g. "春节". */
@@ -185,22 +185,22 @@ export interface CycleFestival {
 }
 
 /** Batch response for the `/festivals` drill-in's two list sections. */
-export interface CycleYearOverviewPayload {
+export interface AuspiceYearOverviewPayload {
   year: number
   /** 24 entries, ordered by `index` (= calendar order). */
-  solarTerms: CycleSolarTermEntry[]
+  solarTerms: AuspiceSolarTermEntry[]
   /** 8 festivals, sorted by `solarDate` (calendar order). */
-  festivals: CycleFestival[]
+  festivals: AuspiceFestival[]
 }
 
-export function fetchCycleYearOverview(year: number): Promise<CycleYearOverviewPayload> {
-  return getJson<CycleYearOverviewPayload>(`/api/cycle/year-overview?year=${year}`)
+export function fetchAuspiceYearOverview(year: number): Promise<AuspiceYearOverviewPayload> {
+  return getJson<AuspiceYearOverviewPayload>(`/api/auspice/year-overview?year=${year}`)
 }
 
 // ── Month grid (Sprint 2 deliverable #2) ───────────────────────────────────
 
 /** One day's cell data on the month grid. */
-export interface CycleMonthDay {
+export interface AuspiceMonthDay {
   /** Gregorian day-of-month (1..31). */
   day: number
   /** ISO YYYY-MM-DD for the day. Drives the drill-in `/day/[date]` route. */
@@ -225,15 +225,15 @@ export interface CycleMonthDay {
   dayElement: '木' | '火' | '土' | '金' | '水'
 }
 
-/** Batch response from `/api/cycle/month?year=&month=&locale=`. */
-export interface CycleMonthPayload {
+/** Batch response from `/api/auspice/month?year=&month=&locale=`. */
+export interface AuspiceMonthPayload {
   year: number
   month: number
   /** The locale the server used to resolve `publicHoliday` strings. */
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
   /** "{lunarYear}年 {monthName}", already prefixed with "闰" when applicable. */
   lunarMonthHeader: string
-  days: CycleMonthDay[]
+  days: AuspiceMonthDay[]
 }
 
 /** Reverse-择日 event taxonomy — must match the route's `EVENTS` enum. */
@@ -249,9 +249,9 @@ export const CYCLE_EVENTS = [
   'medical',
   'study',
 ] as const
-export type CycleEvent = (typeof CYCLE_EVENTS)[number]
+export type AuspiceEvent = (typeof CYCLE_EVENTS)[number]
 
-export interface CycleSearchResult {
+export interface AuspiceSearchResult {
   date: string
   score: number
   recommended: boolean
@@ -265,10 +265,10 @@ export interface CycleSearchResult {
   }
 }
 
-export interface CycleSearchPayload {
-  event: CycleEvent
+export interface AuspiceSearchPayload {
+  event: AuspiceEvent
   range: { from: string; to: string }
-  top: CycleSearchResult[]
+  top: AuspiceSearchResult[]
 }
 
 // ── Fetch helpers ──────────────────────────────────────────────────────────
@@ -308,38 +308,40 @@ async function postJson<T>(path: string, payload: unknown): Promise<T> {
  * Pass `birthDate` (the user's locally-stored birth date) to get the deterministic
  * "对你而言" overlay — it never leaves the device except as this one query param.
  */
-export function fetchCycleDay(date?: string, birthDate?: string): Promise<CycleDayPayload> {
+export function fetchAuspiceDay(date?: string, birthDate?: string): Promise<AuspiceDayPayload> {
   const params = new URLSearchParams()
   if (date) params.set('date', date)
   if (birthDate) params.set('birthDate', birthDate)
   const q = params.toString()
-  return getJson<CycleDayPayload>(`/api/cycle/day${q ? `?${q}` : ''}`)
+  return getJson<AuspiceDayPayload>(`/api/auspice/day${q ? `?${q}` : ''}`)
 }
 
 /**
  * Batched month grid — 30/31 days of per-cell data in one request. Replaces
- * the wasteful per-cell `fetchCycleDay` round-trips the Sprint 1 grid would
- * have done. Backed by `GET /api/cycle/month?year=&month=&locale=`. The
+ * the wasteful per-cell `fetchAuspiceDay` round-trips the Sprint 1 grid would
+ * have done. Backed by `GET /api/auspice/month?year=&month=&locale=`. The
  * locale drives the per-cell `publicHoliday` lookup (CN / JP / US holiday
  * tables) — pass the user's display locale.
  */
-export function fetchCycleMonth(
+export function fetchAuspiceMonth(
   year: number,
   month: number,
   locale?: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
-): Promise<CycleMonthPayload> {
+): Promise<AuspiceMonthPayload> {
   const localeParam = locale ? `&locale=${encodeURIComponent(locale)}` : ''
-  return getJson<CycleMonthPayload>(`/api/cycle/month?year=${year}&month=${month}${localeParam}`)
+  return getJson<AuspiceMonthPayload>(
+    `/api/auspice/month?year=${year}&month=${month}${localeParam}`
+  )
 }
 
 /** Reverse 择日: top-3 ranked days for an event within `[from, to]` (≤ 92 days). */
-export function searchCycleDays(
-  event: CycleEvent,
+export function searchAuspiceDays(
+  event: AuspiceEvent,
   from: string,
   to: string
-): Promise<CycleSearchPayload> {
+): Promise<AuspiceSearchPayload> {
   const q = `?event=${event}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-  return getJson<CycleSearchPayload>(`/api/cycle/search${q}`)
+  return getJson<AuspiceSearchPayload>(`/api/auspice/search${q}`)
 }
 
 /**
@@ -354,18 +356,18 @@ export type SpecializedCycleEvent = 'wedding' | 'move-in' | 'business' | 'travel
  * officer boosts and emits activity-tuned reasoning. One thin function per
  * route so call sites stay clean.
  */
-export function fetchCycleSpecialized(
+export function fetchAuspiceSpecialized(
   event: SpecializedCycleEvent,
   from: string,
   to: string
-): Promise<CycleSearchPayload> {
+): Promise<AuspiceSearchPayload> {
   const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-  return getJson<CycleSearchPayload>(`/api/cycle/${event}${q}`)
+  return getJson<AuspiceSearchPayload>(`/api/auspice/${event}${q}`)
 }
 
 // ── Life Timeline (Sprint 4 — ADR-0020) ────────────────────────────────────
 //
-// Pro-layer payload from `POST /api/cycle/timeline`. Pure-deterministic
+// Pro-layer payload from `POST /api/auspice/timeline`. Pure-deterministic
 // computation against the user's 八字 (Four Pillars) — 大运 (10-year cycles),
 // 流年 (yearly), 流月 (monthly). LLM narration is deferred (Sprint 4 v2).
 // Cached server-side for 30 days; client just re-fetches on focus.
@@ -433,7 +435,7 @@ export interface TimelinePayload {
 
 /**
  * Fetch the user's life-timeline payload. The server route
- * (`/api/cycle/timeline`, mounted in hexastral-api/src/index.ts:358) is gated
+ * (`/api/auspice/timeline`, mounted in hexastral-api/src/index.ts:358) is gated
  * by `hmacVerify`, so we sign through `signedFetch` instead of the anonymous
  * `postJson`. signedFetch reads the userId + deviceSecret provisioned by
  * `usePortfolioSatelliteBootstrap` at root layout and attaches
@@ -452,7 +454,7 @@ export async function fetchTimeline(args: {
   gender: 'M' | 'F'
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 }): Promise<TimelinePayload> {
-  const res = await signedApiFetch({ method: 'POST', path: '/api/cycle/timeline', body: args })
+  const res = await signedApiFetch({ method: 'POST', path: '/api/auspice/timeline', body: args })
   if (!res) {
     throw new Error('timeline request could not be signed (bootstrap pending)')
   }
@@ -464,7 +466,7 @@ export async function fetchTimeline(args: {
 }
 
 /** The Pro/lazy LLM 深度解读 (C.4). `source` tells the UI if it degraded to template. */
-export interface CycleExplainResult {
+export interface AuspiceExplainResult {
   explanation: string
   source: 'llm' | 'cache' | 'template'
   tier?: 'default' | 'deep'
@@ -476,11 +478,11 @@ export interface CycleExplainResult {
  * (lazy, never pre-fetched). `dayMaster` (from the day's `personalization`) adds
  * the 对你而言 angle and improves the server cache hit rate.
  */
-export function fetchCycleExplain(params: {
+export function fetchAuspiceExplain(params: {
   date: string
   field: string
   dayMaster?: string
   locale: string
-}): Promise<CycleExplainResult> {
-  return postJson<CycleExplainResult>('/api/cycle/explain', params)
+}): Promise<AuspiceExplainResult> {
+  return postJson<AuspiceExplainResult>('/api/auspice/explain', params)
 }

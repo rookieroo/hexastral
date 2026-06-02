@@ -1,38 +1,45 @@
-import { Link, Section, Text } from '@react-email/components';
-import type * as React from 'react';
+import { Link, Section, Text } from '@react-email/components'
+import type * as React from 'react'
 
 export interface EmailFooterProps {
   /** Optional extra content to add to the footer */
-  extraContent?: React.ReactNode;
+  extraContent?: React.ReactNode
 }
 
 /**
  * Consistent footer component for all email templates
  */
 export const EmailFooter: React.FC<EmailFooterProps> = ({ extraContent }) => {
-  const currentYear = new Date().getFullYear();
-  
+  const currentYear = new Date().getFullYear()
+
   return (
-    <Section className="bg-muted p-5 text-center border-t border-border rounded-b-lg">
-      {extraContent && (
-        <div className="mb-4">{extraContent}</div>
-      )}
-      <Text className="m-0 text-muted-foreground text-sm mb-2">
+    <Section className='bg-muted p-5 text-center border-t border-border rounded-b-lg'>
+      {extraContent && <div className='mb-4'>{extraContent}</div>}
+      <Text className='m-0 text-muted-foreground text-sm mb-2'>
         © {currentYear} Zhop. All rights reserved.
       </Text>
-      <Text className="m-0 text-muted-foreground text-sm">
-        <Link href="https://zhop.app/privacy" className="text-brand no-underline mx-2 hover:underline">
+      <Text className='m-0 text-muted-foreground text-sm'>
+        <Link
+          href='https://zhop.app/privacy'
+          className='text-brand no-underline mx-2 hover:underline'
+        >
           Privacy Policy
         </Link>
         |
-        <Link href="https://zhop.app/terms" className="text-brand no-underline mx-2 hover:underline">
+        <Link
+          href='https://zhop.app/terms'
+          className='text-brand no-underline mx-2 hover:underline'
+        >
           Terms of Service
         </Link>
         |
-        <Link href="mailto:contact@zhop.app" className="text-brand no-underline mx-2 hover:underline">
+        <Link
+          href='mailto:contact@zhop.app'
+          className='text-brand no-underline mx-2 hover:underline'
+        >
           Contact Us
         </Link>
       </Text>
     </Section>
-  );
-}; 
+  )
+}

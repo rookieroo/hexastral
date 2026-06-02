@@ -8,19 +8,10 @@
  */
 
 import { signatureDictionaries } from './dict/signature'
-import type {
-  SignatureDictionary,
-  SignatureInput,
-  SignatureOutput,
-} from './signature-types'
+import type { SignatureDictionary, SignatureInput, SignatureOutput } from './signature-types'
 import type { Locale } from './types'
 
-const COMPACT_LOCALES: ReadonlySet<Locale> = new Set<Locale>([
-  'zh',
-  'zh-Hant',
-  'ja',
-  'ko',
-])
+const COMPACT_LOCALES: ReadonlySet<Locale> = new Set<Locale>(['zh', 'zh-Hant', 'ja', 'ko'])
 
 function pickPrimary(dict: SignatureDictionary, input: SignatureInput): string {
   const { dayMasterStem, dayMasterStrength } = input

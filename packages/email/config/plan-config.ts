@@ -1,4 +1,4 @@
-import { PLAN_TYPES, type PlanConfigMap } from '../types/plan-types';
+import { PLAN_TYPES, type PlanConfigMap } from '../types/plan-types'
 
 /**
  * Plan configuration for email templates
@@ -12,24 +12,26 @@ export const PLAN_EMAIL_CONFIG: PlanConfigMap = {
         '10 AI messages per month',
         'Core features access',
         'Community support',
-        'Self-hosting capabilities'
+        'Self-hosting capabilities',
       ],
-      description: 'Perfect for everyone starting out on a website for their big idea. Get started with essential features to bring your vision to life.',
+      description:
+        'Perfect for everyone starting out on a website for their big idea. Get started with essential features to bring your vision to life.',
       ctaText: 'Start Building Your Project',
-      welcomeMessage: 'Welcome to Zhop! You\'re all set to start building amazing projects with our AI-powered platform. Your free plan gives you everything you need to get started.'
+      welcomeMessage:
+        "Welcome to Zhop! You're all set to start building amazing projects with our AI-powered platform. Your free plan gives you everything you need to get started.",
     },
     pricing: {
       monthly: 0,
       yearly: 0,
-      currency: 'USD'
+      currency: 'USD',
     },
     limits: {
       projects: 1,
       aiMessages: 10,
-      seats: 1
-    }
+      seats: 1,
+    },
   },
-  
+
   [PLAN_TYPES.PRO]: {
     benefits: {
       features: [
@@ -39,24 +41,26 @@ export const PLAN_EMAIL_CONFIG: PlanConfigMap = {
         'Remove the Zhop badge',
         'Custom domains',
         'Website hosting included',
-        'Email support'
+        'Email support',
       ],
-      description: 'Perfect for small teams and growing businesses. Scale your development with advanced features and professional support.',
+      description:
+        'Perfect for small teams and growing businesses. Scale your development with advanced features and professional support.',
       ctaText: 'Explore Pro Features',
-      welcomeMessage: 'Welcome to Zhop Pro! You now have access to powerful features designed for professional development and team collaboration.'
+      welcomeMessage:
+        'Welcome to Zhop Pro! You now have access to powerful features designed for professional development and team collaboration.',
     },
     pricing: {
       monthly: 20,
       yearly: 240,
-      currency: 'USD'
+      currency: 'USD',
     },
     limits: {
       projects: 3,
       aiMessages: 100,
-      seats: 5
-    }
+      seats: 5,
+    },
   },
-  
+
   [PLAN_TYPES.MAX]: {
     benefits: {
       features: [
@@ -66,21 +70,23 @@ export const PLAN_EMAIL_CONFIG: PlanConfigMap = {
         'Early access to features',
         'More projects and AI messages',
         'Community forum support',
-        'Priority customer support'
+        'Priority customer support',
       ],
-      description: 'For larger teams with advanced needs. Get maximum power and priority support for your most ambitious projects.',
+      description:
+        'For larger teams with advanced needs. Get maximum power and priority support for your most ambitious projects.',
       ctaText: 'Unlock Maximum Potential',
-      welcomeMessage: 'Welcome to Zhop Max! You\'re now part of our premium tier with access to the most advanced features and priority support.'
+      welcomeMessage:
+        "Welcome to Zhop Max! You're now part of our premium tier with access to the most advanced features and priority support.",
     },
     pricing: {
       monthly: 40,
       yearly: 480,
-      currency: 'USD'
+      currency: 'USD',
     },
     limits: {
       projects: 6,
       aiMessages: 250,
-      seats: 20
-    }
-  }
-};
+      seats: 20,
+    },
+  },
+}

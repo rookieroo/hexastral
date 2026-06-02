@@ -46,5 +46,5 @@ network hop. The Compass satellite needs this offline for its core feature.
 - `@zhop/hexastral-client` — typed RPC client
 - `@zhop/hexastral-tokens` — palette / typography (墨青 #2E4756 + 铜金 #B08D5B
   proposed for Fēng; see plan §1)
-- `@zhop/scenario-yuan` — sibling flagship package, share the same
+- `@zhop/scenario-kindred` — sibling flagship package, share the same
   ChapterPager design

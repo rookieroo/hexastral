@@ -13,7 +13,7 @@
  *     <App />
  *   </FengClientProvider>
  *
- * Mirrors YuanClientProvider — each app constructs its own client because
+ * Mirrors KindredClientProvider — each app constructs its own client because
  * authentication varies (HMAC on mobile, bearer/Turnstile on web).
  */
 

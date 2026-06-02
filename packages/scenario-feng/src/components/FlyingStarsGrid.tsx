@@ -95,12 +95,7 @@ function PalaceCell({
   // by the *facing* star (主宰 palace fortune in 玄空).
   const quality: StarQuality = palace === '中' ? '退气' : classifyStar(data.facing, yuanYun)
   return (
-    <View
-      style={[
-        styles.cell,
-        { borderColor, backgroundColor: QUALITY_TINT[quality] },
-      ]}
-    >
+    <View style={[styles.cell, { borderColor, backgroundColor: QUALITY_TINT[quality] }]}>
       <View style={styles.cellHeader}>
         <Text style={[styles.palaceLabel, { color: labelColor }]}>{palace}</Text>
         <Text style={[styles.qualityChip, { color: labelColor }]}>{QUALITY_LABEL[quality]}</Text>

@@ -56,7 +56,7 @@ export interface ShichenPickerProps {
   style?: StyleProp<ViewStyle>
   /**
    * Override the accent color used for the selected cell background + label.
-   * Defaults to the active theme's accent (which on Yuán reads as cinnabar,
+   * Defaults to the active theme's accent (which on Kindred reads as cinnabar,
    * on hexastral-app reads as iOS text color, etc.).
    */
   accentColor?: string

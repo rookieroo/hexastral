@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-import type { CycleDay, CyclePersonalization, PersonalFit } from '@/lib/api'
+import type { AuspiceDay, AuspicePersonalization, PersonalFit } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -199,7 +199,7 @@ function fitColorOnDark(fit: PersonalFit | null): string {
   return fit === '吉' ? '#34C759' : fit === '凶' ? '#FF453A' : 'rgba(255,255,255,0.75)'
 }
 
-function resolveClashAnimal(clash: CycleDay['clash']): string {
+function resolveClashAnimal(clash: AuspiceDay['clash']): string {
   if (clash.clashAnimal) return clash.clashAnimal
   const legacy = (clash as unknown as { zodiac?: string }).zodiac
   if (legacy) return legacy
@@ -208,8 +208,8 @@ function resolveClashAnimal(clash: CycleDay['clash']): string {
 
 export function buildDailyCardModel(
   date: string,
-  day: CycleDay,
-  personalization: CyclePersonalization | null | undefined,
+  day: AuspiceDay,
+  personalization: AuspicePersonalization | null | undefined,
   t: Strings,
   locale: Locale
 ): DailyCardModel {
@@ -266,8 +266,8 @@ export function DailyCard({
   phaseOverride,
 }: {
   date: string
-  day: CycleDay
-  personalization?: CyclePersonalization | null
+  day: AuspiceDay
+  personalization?: AuspicePersonalization | null
   tier?: DailyCardTier
   moonSkinId?: MoonSkinId
   /** Watch face template (compact tier). `almanac` / `ancient` are the Pro faces. */

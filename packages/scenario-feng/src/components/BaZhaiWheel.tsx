@@ -154,7 +154,13 @@ export const BaZhaiWheel = memo(function BaZhaiWheel({
       {/* 坐山 / 大门 markers — hairline arc on the outer edge */}
       {sitPalace ? (
         <Path
-          d={wedgePath(cx, cy, rOuter + 1, PALACE_CENTER_DEG[sitPalace] - 22.5, PALACE_CENTER_DEG[sitPalace] + 22.5)}
+          d={wedgePath(
+            cx,
+            cy,
+            rOuter + 1,
+            PALACE_CENTER_DEG[sitPalace] - 22.5,
+            PALACE_CENTER_DEG[sitPalace] + 22.5
+          )}
           fill='none'
           stroke='#9B2226'
           strokeWidth={1.5}
@@ -163,7 +169,13 @@ export const BaZhaiWheel = memo(function BaZhaiWheel({
       ) : null}
       {doorPalace ? (
         <Path
-          d={wedgePath(cx, cy, rOuter + 1, PALACE_CENTER_DEG[doorPalace] - 22.5, PALACE_CENTER_DEG[doorPalace] + 22.5)}
+          d={wedgePath(
+            cx,
+            cy,
+            rOuter + 1,
+            PALACE_CENTER_DEG[doorPalace] - 22.5,
+            PALACE_CENTER_DEG[doorPalace] + 22.5
+          )}
           fill='none'
           stroke='#3A86FF'
           strokeWidth={1.5}
@@ -172,7 +184,14 @@ export const BaZhaiWheel = memo(function BaZhaiWheel({
       ) : null}
 
       {/* Center disc with 命卦 glyph + group label */}
-      <Circle cx={cx} cy={cy} r={rCenter} fill={LUCKY_FILL} stroke={LUCKY_COLOR} strokeWidth={0.5} />
+      <Circle
+        cx={cx}
+        cy={cy}
+        r={rCenter}
+        fill={LUCKY_FILL}
+        stroke={LUCKY_COLOR}
+        strokeWidth={0.5}
+      />
       <SvgText
         x={cx}
         y={cy - 2}

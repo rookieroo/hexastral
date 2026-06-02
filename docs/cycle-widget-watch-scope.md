@@ -6,7 +6,7 @@ and a watch face/complication.
 
 ## What exists today (the easy 30%)
 
-All in `apps/cycle-app` (RN), reusable as the **visual + data spec**:
+All in `apps/auspice-app` (RN), reusable as the **visual + data spec**:
 
 - `components/DailyCard.tsx` — 4 watch-face templates (modern / lunar / almanac /
   ancient) from one `buildDailyCardModel(date, day, …)`.
@@ -27,7 +27,7 @@ The native widget/watch need each day's 黄历 (干支 / 宜忌 / 节气 / 月�
 Two options:
 
 1. **App Group shared container (recommended for v1).** The RN app already fetches
-   `/api/cycle/day`; on refresh it writes the next N days (e.g. 7–30) of
+   `/api/auspice/day`; on refresh it writes the next N days (e.g. 7–30) of
    `DailyCardModel`-shaped JSON into an App Group (`group.com.hexastral.cycle`)
    `UserDefaults`/file. The widget/watch read that container — **no Swift port of
    the engine, no network in the extension.** WidgetKit `TimelineProvider`
@@ -69,7 +69,7 @@ Two options:
 
 ## IAP / Pro gating
 - Free faces: `modern` / `lunar`. Pro faces: `almanac` / `ancient` + the **对你而言**
-  line on any face. The extension reads the `cycle_pro` entitlement from the shared
+  line on any face. The extension reads the `auspice_pro` entitlement from the shared
   App Group (the RN app writes it on entitlement change) and downgrades to a free
   face if not Pro. This makes the widget/watch a **visible Pro upsell** on the home
   screen.

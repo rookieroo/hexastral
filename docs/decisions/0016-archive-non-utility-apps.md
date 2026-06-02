@@ -102,16 +102,16 @@ After V1 trigger criteria met:
 
 Total V1.5 wave: ~8-12 weeks of dev work (with 2 apps parallel where possible).
 
-### Yuan v1 deprecation (RETAINED, not revised)
+### Kindred v1 deprecation (RETAINED, not revised)
 
 yuan v1 product shape (single-shot couples-chart, $9.99 IAP) is **deprecated** in
 favor of yuan v2 (subscription + daily-utility + viral, per ADR-0015). This was
 correct in the original ADR-0016 and is retained.
 
-**Bundle**: `com.hexastral.yuan` REMAINS ACTIVE — yuan v2 ships under same
+**Bundle**: `com.hexastral.kindred` REMAINS ACTIVE — yuan v2 ships under same
 bundle.
 
-**Code retention**: `apps/yuan-app/` stays in active workspace. `packages/scenario-yuan/`
+**Code retention**: `apps/kindred-app/` stays in active workspace. `packages/scenario-kindred/`
 engine stays (used by yuan v2). Existing UI scaffold is partial-reusable; yuan
 v2 sprint plan (see `docs/sprints/feng-yuan-mingpan-sprint-plan.md`) details
 the redesign work.
@@ -122,7 +122,7 @@ the redesign work.
 
 Old Universe bundle (per ADR-0012, superseded):
 ```
-HexAstral Universe Pro: Yuán + Fate + Cycle Pro + Coin-Cast/Face/Dream/Numerology allowances
+HexAstral Universe Pro: Kindred + Fate + Auspice Pro + Coin-Cast/Face/Dream/Numerology allowances
 ```
 
 New Universe bundle (per ADR-0015 + this ADR revision):

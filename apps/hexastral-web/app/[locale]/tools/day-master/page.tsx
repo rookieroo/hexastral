@@ -29,7 +29,7 @@ export default function DayMasterToolPage() {
       </h1>
       <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.65 }}>
         The <strong>Day Master</strong> is the Heavenly Stem sitting on your day pillar (
-        <em> Ri Yuan / 日元 </em>). It anchors Element psychology in Ba Zi — like a sun sign
+        <em> Ri Kindred / 日元 </em>). It anchors Element psychology in Ba Zi — like a sun sign
         backbone, tuned for Five Elements rather than planets.
       </p>
       <DayMasterCalculator />

@@ -1,7 +1,7 @@
 /**
- * @zhop/astro-core — 本我中心的多关系时间轴 (Bonds Timeline, Yuán BT.1)
+ * @zhop/astro-core — 本我中心的多关系时间轴 (Bonds Timeline, Kindred BT.1)
  *
- * 把本我(ego)与**全部** bonds 的关系节点叠在同一条时间轴上。这是 Yuán 的订阅护城河
+ * 把本我(ego)与**全部** bonds 的关系节点叠在同一条时间轴上。这是 Kindred 的订阅护城河
  * (ADR-0014): 一条「本我日历」，主动提前推送跨全部关系的显著节点。
  *
  * 架构 (ADR-0014):
@@ -265,7 +265,8 @@ function buildNotifications(
   candidates.sort((a, b) => {
     const sr = sigRank(a.node.significance) - sigRank(b.node.significance)
     if (sr !== 0) return sr
-    if (a.node.bonds.length !== b.node.bonds.length) return b.node.bonds.length - a.node.bonds.length
+    if (a.node.bonds.length !== b.node.bonds.length)
+      return b.node.bonds.length - a.node.bonds.length
     if (a.fireMs !== b.fireMs) return a.fireMs - b.fireMs
     return a.leadDays - b.leadDays
   })

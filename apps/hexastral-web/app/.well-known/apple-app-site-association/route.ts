@@ -31,9 +31,9 @@ export function GET(): NextResponse {
             '/*/lp/horoscope/*',
           ],
         },
-        // Yuán — synastry / bonds
+        // Kindred — synastry / bonds
         {
-          appID: `${TEAM_ID}.com.hexastral.yuan`,
+          appID: `${TEAM_ID}.com.hexastral.kindred`,
           paths: [
             '/lp/yuan/*',
             '/*/lp/yuan/*',

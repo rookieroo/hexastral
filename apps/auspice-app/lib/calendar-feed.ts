@@ -3,7 +3,7 @@
  * via webcal:// so the OS handles the "subscribe" flow without us building
  * a subscription manager.
  *
- * The feed at `/api/cycle/calendar.ics` is anonymous + generic for v1
+ * The feed at `/api/auspice/calendar.ics` is anonymous + generic for v1
  * (no 对你而言, matches the free-tier push contract). Per-user opaque tokens
  * + Pro paywall integration are a follow-up — when ready, swap this URL
  * shape to include `?token=<opaque>`.
@@ -13,7 +13,7 @@ import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 import { Linking } from 'react-native'
 import Purchases from 'react-native-purchases'
 
-const FEED_PATH = '/api/cycle/calendar.ics'
+const FEED_PATH = '/api/auspice/calendar.ics'
 
 /** Plain HTTPS URL — for showing the user or copying to clipboard. */
 export function getCalendarFeedUrl(): string {
@@ -46,11 +46,11 @@ export async function openCalendarSubscribe(): Promise<boolean> {
   }
 }
 
-const SIGN_PATH = '/api/cycle/calendar/sign'
+const SIGN_PATH = '/api/auspice/calendar/sign'
 
 /**
  * Pro 对你而言 feed. Asks the server to mint a signed webcal URL — the server
- * verifies cycle_pro via RevenueCat (using the RC app-user-id) before issuing an
+ * verifies auspice_pro via RevenueCat (using the RC app-user-id) before issuing an
  * HMAC-signed, opaque token URL — then opens the system Calendar subscribe. The
  * caller also gates on Pro + birth set for snappy UX; the server is the real gate.
  */

@@ -9,25 +9,25 @@ Per-app specifics: see `auspice-launch.md` and `yuan-launch.md`.
 ## Pre-submission
 
 ### Developer portal (Apple)
-- [ ] App ID for each bundle id (`com.hexastral.cycle`, `com.hexastral.yuan`)
+- [ ] App ID for each bundle id (`com.hexastral.cycle`, `com.hexastral.kindred`)
 - [ ] Enable capabilities per app:
   - Auspice: **Sign in with Apple**, **App Groups** (`group.com.hexastral.cycle` — needed even though widget ships post-June, since the entitlement is already in the binary)
-  - Yuán: **Sign in with Apple**
+  - Kindred: **Sign in with Apple**
 - [ ] Provisioning profiles regenerated after capability changes
 
 ### App Store Connect
 - [ ] App record created per bundle id, primary category set:
   - Auspice → Reference
-  - Yuán → Lifestyle
+  - Kindred → Lifestyle
 - [ ] Pricing: free with IAP (subscriptions)
 - [ ] Subscription products:
-  - `cycle_pro_monthly`, `cycle_pro_annual` (Auspice)
-  - Yuán's product IDs per `apps/yuan-app/lib/iap.ts`
+  - `auspice_pro_monthly`, `auspice_pro_annual` (Auspice)
+  - Kindred's product IDs per `apps/kindred-app/lib/iap.ts`
 - [ ] Localizations: zh-Hans, zh-Hant, ja, en — name + subtitle + keywords + description + promotional text
 
 ### RevenueCat
 - [ ] Products imported from App Store Connect for both apps
-- [ ] Entitlements: `cycle_pro` (Auspice), Yuán's entitlement, `universe_pro` (cross-app override) — see `setup/revenuecat-entitlements.md`
+- [ ] Entitlements: `auspice_pro` (Auspice), Kindred's entitlement, `universe_pro` (cross-app override) — see `setup/revenuecat-entitlements.md`
 - [ ] Webhook → `/api/webhook/revenuecat` confirmed firing
 - [ ] Secret REST API key set as `REVENUECAT_API_KEY` on the Worker
 
@@ -35,7 +35,7 @@ Per-app specifics: see `auspice-launch.md` and `yuan-launch.md`.
 Both apps file the same privacy posture:
 - **Collected on sign-in only**: Apple email or Google email (purpose: account / customer support / restore)
 - **Collected on purchase**: Purchases (RC manages, linked to the userId)
-- **User content** (typed): birth info, 亲友 birthdays (stored locally + relayed to portfolio bonds on Yuán transfer)
+- **User content** (typed): birth info, 亲友 birthdays (stored locally + relayed to portfolio bonds on Kindred transfer)
 - **Tracking**: none
 - [ ] Privacy URL live + linked in app + App Store Connect
 - [ ] Privacy nutrition labels filled per above
@@ -55,7 +55,7 @@ Per app, 4 locales × 5–6 screens. Sample shot list:
 4. PersonalCard (对你而言) — the Pro hook
 5. 节假日提醒 + 表盘 settings — the CN differentiation
 
-**Yuán (Lifestyle):**
+**Kindred (Lifestyle):**
 1. Bonds home (the "your people" map)
 2. Pair reading hero (合婚)
 3. Bonds timeline (the IP)
@@ -79,7 +79,7 @@ Auspice (黄历):
 - Sign-in only at the subscribe step (not gating the daily content).
 - 节假日 reminders use the State Council's published 2026 holiday schedule.
 
-Yuán (緣):
+Kindred (Kindred):
 - Relationship analysis using 八字 (Bazi) — entertainment / cultural reference.
 - Sign-in required to record bonds (each is stored under the user's identity).
 - No matchmaking / dating features.
@@ -91,14 +91,14 @@ Yuán (緣):
 
 Per ADR-0019: ship the lowest-risk first to build publisher credibility.
 1. **Auspice** — Reference category, deterministic utility, plenty of approved precedents (黄历 / LunaCal / Almanac+).
-2. **Yuán** — Lifestyle, references 八字; safer once Auspice has shipped under the same publisher.
+2. **Kindred** — Lifestyle, references 八字; safer once Auspice has shipped under the same publisher.
 
-Submit Auspice → wait for approval → submit Yuán the same day Auspice approves. Don't pile two new apps into review at once from a fresh-ish publisher.
+Submit Auspice → wait for approval → submit Kindred the same day Auspice approves. Don't pile two new apps into review at once from a fresh-ish publisher.
 
 ---
 
 ## Post-submission
 
 - [ ] Auspice review: clear in 24–48h if metadata is clean. Common reject: deceptive name (Auspice is clear), undisclosed IAP, missing privacy URL.
-- [ ] Yuán review: as above; the only Yuán-specific risk is review reading the 八字 reading as "fortune telling" — captions and description should frame as **cultural reference / personality lens**, not predictions.
+- [ ] Kindred review: as above; the only Kindred-specific risk is review reading the 八字 reading as "fortune telling" — captions and description should frame as **cultural reference / personality lens**, not predictions.
 - [ ] After approval: monitor RC for first conversion, monitor Sentry for crashes, monitor Worker logs for `/calendar/sign` 403s (sign-in flow regressions).

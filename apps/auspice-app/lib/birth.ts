@@ -4,18 +4,18 @@
  *
  * Two storage shapes coexist:
  *   - `cycle.birthDate` — just the YYYY-MM-DD string. Original v1 schema;
- *     kept for back-compat with the /api/cycle/day query param.
+ *     kept for back-compat with the /api/auspice/day query param.
  *   - `cycle.birthInfo` — richer object {solarDate, timeIndex, gender, city}.
  *     Added 2026-06 as the user-facing form expanded beyond just-the-date.
  *
- * Both are read/written together so legacy callers (`getCycleBirthDate`) keep
- * working while new callers (`getCycleBirthInfo`) get the full shape.
+ * Both are read/written together so legacy callers (`getAuspiceBirthDate`) keep
+ * working while new callers (`getAuspiceBirthInfo`) get the full shape.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const KEY_DATE = 'cycle.birthDate'
-const KEY_INFO = 'cycle.birthInfo'
+const KEY_DATE = 'auspice.birthDate'
+const KEY_INFO = 'auspice.birthInfo'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export function isValidBirthDate(v: string): boolean {
@@ -25,7 +25,7 @@ export function isValidBirthDate(v: string): boolean {
 /** ShichenIndex (0-11) or `null` for unknown. Mirrors core-ui's ShichenPicker encoding. */
 export type ShichenIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11
 
-export interface CycleBirthInfo {
+export interface AuspiceBirthInfo {
   /** ISO YYYY-MM-DD (solar / gregorian). Always present when info is saved. */
   solarDate: string
   /** 0-11 shichen index, `null` when user picked "unknown". */
@@ -42,13 +42,13 @@ export interface CycleBirthInfo {
   timezone?: string | null
 }
 
-interface CycleBirthInfoStored extends CycleBirthInfo {
+interface AuspiceBirthInfoStored extends AuspiceBirthInfo {
   v: 1
 }
 
-// ── Date-only API (legacy, used by /api/cycle/day query param) ──────────────
+// ── Date-only API (legacy, used by /api/auspice/day query param) ──────────────
 
-export async function getCycleBirthDate(): Promise<string | undefined> {
+export async function getAuspiceBirthDate(): Promise<string | undefined> {
   try {
     const v = await AsyncStorage.getItem(KEY_DATE)
     return v && DATE_RE.test(v) ? v : undefined
@@ -57,14 +57,14 @@ export async function getCycleBirthDate(): Promise<string | undefined> {
   }
 }
 
-export async function setCycleBirthDate(date: string): Promise<void> {
+export async function setAuspiceBirthDate(date: string): Promise<void> {
   if (!DATE_RE.test(date)) return
   try {
     await AsyncStorage.setItem(KEY_DATE, date)
   } catch {}
 }
 
-export async function clearCycleBirthDate(): Promise<void> {
+export async function clearAuspiceBirthDate(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([KEY_DATE, KEY_INFO])
   } catch {}
@@ -72,15 +72,15 @@ export async function clearCycleBirthDate(): Promise<void> {
 
 // ── Rich birth-info API (single-page form in Me) ────────────────────────────
 
-export async function getCycleBirthInfo(): Promise<CycleBirthInfo | null> {
+export async function getAuspiceBirthInfo(): Promise<AuspiceBirthInfo | null> {
   try {
     const raw = await AsyncStorage.getItem(KEY_INFO)
     if (!raw) {
       // Back-fill from legacy date-only storage.
-      const date = await getCycleBirthDate()
+      const date = await getAuspiceBirthDate()
       return date ? { solarDate: date, timeIndex: null } : null
     }
-    const parsed = JSON.parse(raw) as CycleBirthInfoStored
+    const parsed = JSON.parse(raw) as AuspiceBirthInfoStored
     if (!parsed || typeof parsed.solarDate !== 'string' || !DATE_RE.test(parsed.solarDate)) {
       return null
     }
@@ -102,9 +102,9 @@ export async function getCycleBirthInfo(): Promise<CycleBirthInfo | null> {
   }
 }
 
-export async function setCycleBirthInfo(info: CycleBirthInfo): Promise<void> {
+export async function setAuspiceBirthInfo(info: AuspiceBirthInfo): Promise<void> {
   if (!DATE_RE.test(info.solarDate)) return
-  const payload: CycleBirthInfoStored = { v: 1, ...info }
+  const payload: AuspiceBirthInfoStored = { v: 1, ...info }
   try {
     await AsyncStorage.multiSet([
       [KEY_INFO, JSON.stringify(payload)],

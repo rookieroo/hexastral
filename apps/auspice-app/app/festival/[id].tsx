@@ -18,7 +18,11 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { CultureWikiLink } from '@/components/culture/CultureWikiLink'
-import { type CycleFestival, type CycleSolarTermEntry, fetchCycleYearOverview } from '@/lib/api'
+import {
+  type AuspiceFestival,
+  type AuspiceSolarTermEntry,
+  fetchAuspiceYearOverview,
+} from '@/lib/api'
 import {
   getCultureEntryWikipediaUrl,
   localizeCultureEntry,
@@ -49,8 +53,8 @@ export default function FestivalDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
-  const [festival, setFestival] = useState<CycleFestival | null>(null)
-  const [solarTerm, setSolarTerm] = useState<CycleSolarTermEntry | null>(null)
+  const [festival, setFestival] = useState<AuspiceFestival | null>(null)
+  const [solarTerm, setSolarTerm] = useState<AuspiceSolarTermEntry | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Decode the id. `jieqi-{pinyin}` ids route to one of the 24 节气;
@@ -67,7 +71,7 @@ export default function FestivalDetailScreen() {
   // cheap and avoids passing complex objects via router params.
   useEffect(() => {
     setLoading(true)
-    fetchCycleYearOverview(new Date().getFullYear())
+    fetchAuspiceYearOverview(new Date().getFullYear())
       .then((overview) => {
         const festivalMatch = id ? overview.festivals.find((f) => f.id === id) : null
         const termMatch = jieqiName ? overview.solarTerms.find((s) => s.name === jieqiName) : null

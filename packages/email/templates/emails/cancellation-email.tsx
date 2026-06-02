@@ -1,16 +1,6 @@
-import {
-  Heading,
-  Text,
-  Section,
-  Link,
-} from '@react-email/components';
-import type * as React from 'react';
-import { 
-  Button, 
-  ContentSection, 
-  EmailContainer, 
-  InfoBox 
-} from '../../components';
+import { Heading, Link, Section, Text } from '@react-email/components'
+import type * as React from 'react'
+import { Button, ContentSection, EmailContainer, InfoBox } from '../../components'
 
 /**
  * Email sent when a user cancels their subscription
@@ -18,12 +8,12 @@ import {
 export const CancellationEmailTemplate: React.FC = () => {
   return (
     <EmailContainer
-      title="Zhop Subscription Cancelled"
-      previewText="Your Zhop subscription has been cancelled"
+      title='Zhop Subscription Cancelled'
+      previewText='Your Zhop subscription has been cancelled'
     >
       <ContentSection>
         <Heading
-          as="h2"
+          as='h2'
           style={{
             margin: '0 0 16px 0',
             fontSize: '24px',
@@ -43,11 +33,12 @@ export const CancellationEmailTemplate: React.FC = () => {
             lineHeight: '1.6',
           }}
         >
-          We're sorry to see you go. Your Zhop subscription has been cancelled and will no longer renew automatically.
+          We're sorry to see you go. Your Zhop subscription has been cancelled and will no longer
+          renew automatically.
         </Text>
 
         {/* Cancellation Details */}
-        <InfoBox title="What Happens Next" variant="info">
+        <InfoBox title='What Happens Next' variant='info'>
           <Text
             style={{
               margin: '0 0 8px 0',
@@ -56,7 +47,8 @@ export const CancellationEmailTemplate: React.FC = () => {
               lineHeight: '1.6',
             }}
           >
-            Your premium features will remain available until the end of the current billing cycle. After that, your account will automatically switch to the limited free plan.
+            Your premium features will remain available until the end of the current billing cycle.
+            After that, your account will automatically switch to the limited free plan.
           </Text>
           <Text
             style={{
@@ -79,15 +71,13 @@ export const CancellationEmailTemplate: React.FC = () => {
             lineHeight: '1.6',
           }}
         >
-          We'd like to understand your experience with Zhop and how we can improve our service. If you have a moment, please let us know why you decided to cancel.
+          We'd like to understand your experience with Zhop and how we can improve our service. If
+          you have a moment, please let us know why you decided to cancel.
         </Text>
 
         {/* Call to Action Button */}
         <Section style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <Button
-            href="#"
-            variant="primary"
-          >
+          <Button href='#' variant='primary'>
             Share Your Feedback
           </Button>
         </Section>
@@ -101,20 +91,21 @@ export const CancellationEmailTemplate: React.FC = () => {
             lineHeight: '1.6',
           }}
         >
-          Changed your mind? {" "}
+          Changed your mind?{' '}
           <Link
-            href="https://zhop.app/#price"
+            href='https://zhop.app/#price'
             style={{
               color: '#e9680c', // Your brand color
               textDecoration: 'none',
             }}
           >
             Reactivate your subscription at any time
-          </Link>.
+          </Link>
+          .
         </Text>
       </ContentSection>
     </EmailContainer>
-  );
-};
+  )
+}
 
-export default CancellationEmailTemplate; 
+export default CancellationEmailTemplate

@@ -22,14 +22,14 @@
 >
 > Note the renumber: face-oracle and the other satellites were "Tier 1 portfolio
 > satellites" under the old axis; under ADR-0009 face-oracle is **Tier 2** and the rest
-> are **Tier 3**. Yuán + Fēng sat *above* the satellite tiers before; they are now Tier 1.
+> are **Tier 3**. Kindred + Fēng sat *above* the satellite tiers before; they are now Tier 1.
 >
 > **The old capability checklists below still apply as the build contract for Tier-3
 > funnel satellites — minus paywall / RC product IDs** (Tier-3 has no IAP, exactly as the
 > old "Tier 3 free utility" forbade). A Tier-3 funnel satellite still needs anonymous
 > bootstrap, onboarding, history, portfolio writes + memory document, locked brand palette,
 > ASO term, and a `SatelliteFlagshipUpsellCard`; it does **not** define RC products.
-> `fate-app` is the new reference; Cycle (ADR-0010) follows the same shape.
+> `fate-app` is the new reference; Auspice (ADR-0010) follows the same shape.
 
 ## Context
 

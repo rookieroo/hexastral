@@ -67,7 +67,7 @@ In your app's `app.json`:
       [
         "@zhop/widget-kit-ios/plugin",
         {
-          "widgetName": "CycleWidget",
+          "widgetName": "AuspiceWidget",
           "appSlug": "cycle",
           "appGroupId": "group.com.hexastral.shared.cycle",
           "watchComplication": true
@@ -85,13 +85,13 @@ Then `expo prebuild --clean` to generate the Xcode targets.
 In your top-level component (e.g. cycle's Today tab):
 
 ```tsx
-import { useWidgetSync, type CycleWidgetData } from '@zhop/widget-kit-ios'
+import { useWidgetSync, type AuspiceWidgetData } from '@zhop/widget-kit-ios'
 
 function TodayTab() {
   const { ganZhi, lunarDate, nextSolarTerm } = useCycleData()
   const { upcomingFamilyEvent } = useFamilyEvents()
 
-  const widgetData: CycleWidgetData = {
+  const widgetData: AuspiceWidgetData = {
     ganZhi,
     lunarDate,
     nextSolarTermName: nextSolarTerm.name,
@@ -131,9 +131,9 @@ interface WidgetSyncPayload<TData> {
 ```
 
 Per-app data shapes are exported from `./types`:
-- `CycleWidgetData` — 干支, 农历, 节气, 家庭事件
+- `AuspiceWidgetData` — 干支, 农历, 节气, 家庭事件
 - `FengWidgetData` — 流月飞星, 房间提示, 节气维护
-- `YuanWidgetData` — 双盘 fit, 1-line, 周年倒计时
+- `KindredWidgetData` — 双盘 fit, 1-line, 周年倒计时
 
 ## Apple Watch complication (Sprint 5)
 
@@ -153,7 +153,7 @@ renders a modular small complication.
 
 - **Sprint 1 (current)**: TS types, RN hook with AsyncStorage fallback, plugin shell, Swift templates
 - **Sprint 5 (cycle ship)**: native bridge module, Xcode mutation in plugin, Swift compile, on-device testing
-- **Feng + Yuan adoption (W2 + W3)**: drop-in usage of useWidgetSync with FengWidgetData / YuanWidgetData
+- **Feng + Kindred adoption (W2 + W3)**: drop-in usage of useWidgetSync with FengWidgetData / KindredWidgetData
 - **V1.5 expansion**: Coincast adds hexagram widget, FaceRead adds face-stats widget, DreamRead adds dream-pattern widget
 
 ## References

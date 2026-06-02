@@ -611,8 +611,8 @@ export const ja: Record<TranslationKeys, string> = {
   tab_you: '我',
   // ── Phase J · J.3.4 Discovery cards ──
   discover_section_label: 'その他のアプリ',
-  discover_yuan_title: 'あなたと相手の縁を読む',
-  discover_yuan_subtitle: 'Yuán · 二人の命盤の相性鑑定',
+  discover_kindred_title: 'あなたと相手の縁を読む',
+  discover_kindred_subtitle: 'Kindred · 二人の命盤の相性鑑定',
   discover_faceoracle_title: '人相 · 手相 AI 鑑定',
   discover_faceoracle_subtitle: 'FaceOracle · 一枚の写真で構造化解析',
   discover_feng_title: '住まいの風水を読む',

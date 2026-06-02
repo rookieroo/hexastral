@@ -156,7 +156,7 @@ export async function getPrimaryReadingText(
       return row.chapters
     }
     case 'cycle': {
-      // Cycle "readings" aren't persisted — the readingId IS the date (YYYY-MM-DD),
+      // Auspice "readings" aren't persisted — the readingId IS the date (YYYY-MM-DD),
       // so recompute the day's 黄历 deterministically to seed the chat. Public almanac
       // data, so no per-user ownership check (unlike the cases above).
       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(readingId)

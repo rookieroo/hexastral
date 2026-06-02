@@ -3,8 +3,8 @@
  *
  * Routing is server-driven via the K.2 discovery endpoint (`source='fate'`), with
  * offline `routeQuestionToFlagship` as the loading/failure fallback:
- * relationship/career → Yuán, home_office → Fēng, self_daily → no upsell
- * (fate IS the 命/self app), unpicked → Yuán.
+ * relationship/career → Kindred, home_office → Fēng, self_daily → no upsell
+ * (fate IS the 命/self app), unpicked → Kindred.
  */
 
 import {
@@ -38,7 +38,7 @@ export function FlagshipUpsell() {
     | undefined
 
   const suggested = routeQuestionToFlagship(questionType)
-  // Never upsell to the retired self app ('hexastral'); unpicked defaults to Yuán
+  // Never upsell to the retired self app ('hexastral'); unpicked defaults to Kindred
   // so the funnel always shows. self/daily now routes to Cycle (daily flagship).
   const offline: FlagshipKey | null =
     suggested && suggested !== 'hexastral' ? suggested : 'yuan'

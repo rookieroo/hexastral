@@ -1,10 +1,10 @@
 /**
- * Login-at-subscribe identity. Cycle is anonymous-first (ADR-0010 Tier 3) — the
+ * Login-at-subscribe identity. Auspice is anonymous-first (ADR-0010 Tier 3) — the
  * FREE 黄历 needs no account — but the SUBSCRIBE step requires sign-in so the
  * subscription becomes a portable, cross-app identity:
  *   - it restores on every device (not tied to one install / Apple ID anon RC id),
  *   - universe_pro continuity across the suite, and
- *   - frictionless Bonds carry-over when the user later converts to Yuan (緣).
+ *   - frictionless Bonds carry-over when the user later converts to Kindred (Kindred).
  *
  * Apple Sign In → POST /portfolio/auth/apple (creates/loads the unified user +
  * deviceSecret, persisted by satellite-runtime) → alias RevenueCat to that userId
@@ -20,7 +20,7 @@ import {
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
-import { transferCyclePeopleToBonds } from './bonds-transfer'
+import { transferAuspicePeopleToBonds } from './bonds-transfer'
 import { PORTFOLIO_TARGET_APP } from './growth-config'
 import { getPeople } from './people'
 
@@ -127,14 +127,14 @@ export async function signInWithGoogle(): Promise<string | null> {
 
 /**
  * The PAYOFF of sign-in — push every eligible 亲友 (lib/people.ts) into the
- * portfolio Bonds graph so Yuan picks them up with zero friction. Runs after
+ * portfolio Bonds graph so Kindred picks them up with zero friction. Runs after
  * each successful sign-in; idempotent, failures retried on the next call.
  */
 async function transferBondsInBackground(): Promise<void> {
   try {
     const people = await getPeople()
     if (people.length === 0) return
-    await transferCyclePeopleToBonds(people, 'zh-CN')
+    await transferAuspicePeopleToBonds(people, 'zh-CN')
   } catch {}
 }
 

@@ -18,7 +18,7 @@ re-deriving their own.
 The user mandate, verbatim:
 
 > 再继续之前，首先说明一个背景：之前一直专注于fate-app的开发是因为想拿它作为
-> 应用风格和公用模块的基础，现在Cycle 也需要使用fate-app 摸索固定好的风格 UI
+> 应用风格和公用模块的基础，现在Auspice 也需要使用fate-app 摸索固定好的风格 UI
 > 模块，包括不限于各种动画效果，转场设计，Me的设计，去底部导航栏等设计，这都是
 > 可以沿用，一以贯之的设计风格，也是这个玄学矩阵的调性，我希望 所有的应用保持
 > 其内核不变的同时也统一应用的风格，减少元素堆叠，突破固定底部导航栏的范式，
@@ -290,8 +290,8 @@ navigation, home, or Me:
 - The reference implementation: `apps/ming-pan-app/app/(tabs)/index.tsx`,
   `apps/ming-pan-app/app/(tabs)/me.tsx`, `apps/ming-pan-app/app/(tabs)/_layout.tsx`.
 - The shared swipe contract: `packages/satellite-ui/src/swipe-nav.ts`.
-- Cycle's adoption (the second consumer, validating the abstraction):
-  `apps/cycle-app/app/(tabs)/_layout.tsx`, `…/(tabs)/index.tsx`,
+- Auspice's adoption (the second consumer, validating the abstraction):
+  `apps/auspice-app/app/(tabs)/_layout.tsx`, `…/(tabs)/index.tsx`,
   `…/(tabs)/me.tsx`, `…/(tabs)/month.tsx`.
 - ADR-0015 Product Doctrine v2 — the "utility-anchored + classical-cosmology"
   product brief this design language operationalises.

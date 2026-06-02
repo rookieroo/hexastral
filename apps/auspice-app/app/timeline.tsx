@@ -24,7 +24,7 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { CyclePaywallSheet } from '@/components/CyclePaywallSheet'
+import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import {
   type DayunRow,
   fetchTimeline,
@@ -32,7 +32,7 @@ import {
   type LiuyueRow,
   type TimelinePayload,
 } from '@/lib/api'
-import { getCycleBirthInfo } from '@/lib/birth'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
@@ -54,14 +54,14 @@ export default function TimelineScreen() {
   const { t, locale } = useStrings()
   const router = useRouter()
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
 
   const load = useCallback(() => {
     setState({ kind: 'loading' })
-    getCycleBirthInfo()
+    getAuspiceBirthInfo()
       .then((info) => {
         if (!info?.gender) {
           setState({ kind: 'no-birth' })
@@ -127,7 +127,7 @@ export default function TimelineScreen() {
           />
         )}
       </ScrollView>
-      <CyclePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+      <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </SafeAreaView>
   )
 }

@@ -8,7 +8,7 @@
  * Keyed by the same route id the home/glossary resolve to:
  *   - 24 节气 → `jieqi-{pinyin}` (清明 / 冬至 also have festival-flavoured
  *     entries under `qingming` / `dongzhi`, used when reached as a festival).
- *   - 8 festivals → their `CycleFestival.id`.
+ *   - 8 festivals → their `AuspiceFestival.id`.
  */
 
 import type { Locale } from '../i18n'
@@ -184,7 +184,7 @@ export const CULTURE_SUMMARIES: Record<string, LocalizedText> = {
     'zh-Hans': '五月初五，赛龙舟、吃粽子、挂艾草，纪念屈原并驱邪避疫。',
     'zh-Hant': '五月初五，賽龍舟、吃粽子、掛艾草，紀念屈原並驅邪避疫。',
     ja: '旧暦五月五日。竜舟競漕や粽（ちまき）で屈原を偲び、邪気を払う。',
-    en: 'The 5th of the 5th lunar month — dragon-boat races and rice dumplings honor Qu Yuan and ward off ill.',
+    en: 'The 5th of the 5th lunar month — dragon-boat races and rice dumplings honor Qu Kindred and ward off ill.',
   },
   qixi: {
     'zh-Hans': '七月初七，源于牛郎织女的传说，是中国传统的「情人节」，又称乞巧节。',

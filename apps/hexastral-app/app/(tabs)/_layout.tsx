@@ -2,7 +2,7 @@
  * Hexastral 3-Tab Layout — Personal Fate flagship per ADR-0007 / Phase J · J.3.3
  * 命 Fate | 书 Report | 我 You
  *
- * Bonds (缘) lives in the Yuán companion now; tap a DiscoveryCard on the Fate
+ * Bonds (Kindred) lives in the Kindred companion now; tap a DiscoveryCard on the Fate
  * home to deep-link. Oracle (卦/void) is folded into the Fate home as a card
  * strip or surfaced via DiscoveryCard to coin-cast / numerology.
  *

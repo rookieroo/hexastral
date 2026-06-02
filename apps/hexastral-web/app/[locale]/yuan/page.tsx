@@ -1,13 +1,13 @@
 /**
- * /[locale]/yuan — Yuán (緣) product landing page.
+ * /[locale]/yuan — Kindred (Kindred) product landing page.
  *
  * Three goals:
- *   1. Communicate what Yuán is in ≤ 1 scroll (relationship analysis, not solo)
+ *   1. Communicate what Kindred is in ≤ 1 scroll (relationship analysis, not solo)
  *   2. CTA "start a connection" → /[locale]/yuan/start (web flow) OR App Store
  *   3. SEO: capture "synastry", "couples chart", "BaZi compatibility", "Chinese cosmology"
  *
- * Visual: rice-paper light background, cinnabar 緣 hero glyph, ink-gold accents.
- * Mirrors the mobile Yuán aesthetic so the brand feels continuous across web ↔ app.
+ * Visual: rice-paper light background, cinnabar Kindred hero glyph, ink-gold accents.
+ * Mirrors the mobile Kindred aesthetic so the brand feels continuous across web ↔ app.
  *
  * Replaces (with 301 redirects from):
  *   - /[locale]/resonate/[token]  → /[locale]/yuan/invite/[token]
@@ -19,16 +19,16 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
-interface YuanLandingPageProps {
+interface KindredLandingPageProps {
   params: Promise<{ locale: string }>
 }
 
-export async function generateMetadata({ params }: YuanLandingPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: KindredLandingPageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Yuán: BaZi Couples Chart',
-    zh: '緣 · 八字合盤',
-    tw: '緣 · 八字合盤',
+    en: 'Kindred: BaZi Couples Chart',
+    zh: 'Kindred · 八字合盤',
+    tw: 'Kindred · 八字合盤',
     ja: '縁・四柱推命の相性',
   }
   const title = titles[locale] ?? titles.en
@@ -49,12 +49,12 @@ export async function generateMetadata({ params }: YuanLandingPageProps): Promis
   }
 }
 
-export default async function YuanLandingPage({ params }: YuanLandingPageProps) {
+export default async function KindredLandingPage({ params }: KindredLandingPageProps) {
   const { locale } = await params
   // Soft-fallback if `yuan` namespace isn't yet in messages — render plain copy.
   let t: ((k: string) => string) | null = null
   try {
-    t = await getTranslations({ locale, namespace: 'yuan' })
+    t = await getTranslations({ locale, namespace: 'kindred' })
   } catch {
     t = null
   }
@@ -102,7 +102,7 @@ export default async function YuanLandingPage({ params }: YuanLandingPageProps) 
               lineHeight: 1,
             }}
           >
-            緣
+            Kindred
           </span>
         </div>
 
@@ -130,7 +130,7 @@ export default async function YuanLandingPage({ params }: YuanLandingPageProps) 
           {get('hero_subtitle', '有看不见的丝线')}
         </p>
 
-        {/* Body — what Yuán is */}
+        {/* Body — what Kindred is */}
         <p
           style={{
             fontSize: 16,
@@ -143,7 +143,7 @@ export default async function YuanLandingPage({ params }: YuanLandingPageProps) 
         >
           {get(
             'body',
-            'Yuán 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以一探究竟。基于八字与紫微的合盘传统，结合 AI 解读，揭示你们之间真实的共鸣与张力。'
+            'Kindred 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以一探究竟。基于八字与紫微的合盘传统，结合 AI 解读，揭示你们之间真实的共鸣与张力。'
           )}
         </p>
 
@@ -162,7 +162,7 @@ export default async function YuanLandingPage({ params }: YuanLandingPageProps) 
               textDecoration: 'none',
             }}
           >
-            {get('cta_start', '开始一段缘')}
+            {get('cta_start', '开始一段Kindred')}
           </Link>
           <a
             href='https://apps.apple.com/app/yuan/id000000000'
@@ -174,7 +174,7 @@ export default async function YuanLandingPage({ params }: YuanLandingPageProps) 
               fontWeight: 500,
             }}
           >
-            {get('cta_app', 'Get Yuán on iOS')}
+            {get('cta_app', 'Get Kindred on iOS')}
           </a>
         </div>
 

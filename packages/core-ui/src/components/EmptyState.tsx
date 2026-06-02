@@ -2,7 +2,7 @@
  * EmptyState — replaces the bare "no data" Views found across apps.
  *
  * Apps pass:
- *   - `illustration` — an SVG (brand-specific glyph like 緣 / 風 / etc.)
+ *   - `illustration` — an SVG (brand-specific glyph like Kindred / 風 / etc.)
  *   - `title` — short headline
  *   - `subtitle` — one-line explanation
  *   - optional CTA via `actionLabel` + `onAction`
@@ -28,8 +28,8 @@ export interface EmptyStateProps {
   onAction?: () => void
   /**
    * Custom action slot — fully replaces the built-in Button rendering when
-   * provided. Use this for brand-specific CTAs (e.g. Yuán's gold-underline
-   * text link via yuanPresets.ctaText) that should not be a boxed button.
+   * provided. Use this for brand-specific CTAs (e.g. Kindred's gold-underline
+   * text link via kindredPresets.ctaText) that should not be a boxed button.
    */
   customAction?: ReactNode
   style?: StyleProp<ViewStyle>

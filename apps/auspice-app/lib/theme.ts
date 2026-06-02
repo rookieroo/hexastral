@@ -1,5 +1,5 @@
 /**
- * Cycle theme — back-compat shim over `@zhop/core-ui` (brand="cycle" — 朱泥 terra
+ * Auspice theme — back-compat shim over `@zhop/core-ui` (brand="cycle" — 朱泥 terra
  * per ADR-0010 §6). New code should call `useTheme()` from `@zhop/core-ui` directly;
  * this preserves the `{ isDark, colors: ModeTokens }` shape for legacy call sites.
  */

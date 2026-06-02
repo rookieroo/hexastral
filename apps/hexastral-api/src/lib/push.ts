@@ -15,8 +15,8 @@ import { notifyClient } from './service-clients'
 
 const PUSH_STRINGS: Record<string, Record<string, string>> = {
   bond_matched_title: {
-    zh: '缘分已至',
-    'zh-Hant': '緣分已至',
+    zh: 'Kindred分已至',
+    'zh-Hant': 'Kindred分已至',
     en: 'Your contact joined!',
     ja: 'ご縁がつながりました',
     ko: '인연이 이어졌습니다',
@@ -40,8 +40,8 @@ const PUSH_STRINGS: Record<string, Record<string, string>> = {
   // ── Bond lifecycle events ────────────────────────────────────────────────
 
   bond_accepted_title: {
-    zh: '缘分已共振',
-    'zh-Hant': '緣分已共振',
+    zh: 'Kindred分已共振',
+    'zh-Hant': 'Kindred分已共振',
     en: 'Connection accepted!',
     ja: '縁が確立されました',
     ko: '인연이 연결되었습니다',
@@ -51,8 +51,8 @@ const PUSH_STRINGS: Record<string, Record<string, string>> = {
     th: 'การเชื่อมต่อได้รับการยอมรับแล้ว!',
   },
   bond_accepted_body: {
-    zh: '你的合盘解读已就绪，开启应用查看福报缘分。',
-    'zh-Hant': '你的合盤解讀已就緒，開啟應用查看福報緣分。',
+    zh: '你的合盘解读已就绪，开启应用查看福报Kindred分。',
+    'zh-Hant': '你的合盤解讀已就緒，開啟應用查看福報Kindred分。',
     en: 'Your compatibility reading is ready. Open HexAstral to see the full analysis.',
     ja: '合盤解読が完成しました。アプリを開いてご確認ください。',
     ko: '궁합 해석이 준비되었습니다. 앱을 열어 확인하세요.',

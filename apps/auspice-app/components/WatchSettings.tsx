@@ -9,8 +9,8 @@ import { useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { type CycleDayPayload, fetchCycleDay } from '@/lib/api'
-import { getCycleBirthDate } from '@/lib/birth'
+import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
+import { getAuspiceBirthDate } from '@/lib/birth'
 import {
   DEFAULT_MOON_SKIN_ID,
   DEFAULT_TEMPLATE,
@@ -41,16 +41,16 @@ export function WatchSettings() {
   // Watch/widget previews mirror native render contracts: 对你而言 is Pro-only.
   // Free users see the same face/widget without the personalization line.
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
-  const [payload, setPayload] = useState<CycleDayPayload | null>(null)
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
+  const [payload, setPayload] = useState<AuspiceDayPayload | null>(null)
   const [template, setTemplate] = useState<WatchTemplate>(DEFAULT_TEMPLATE)
   const [skinId, setSkinId] = useState<MoonSkinId>(DEFAULT_MOON_SKIN_ID)
 
   useEffect(() => {
     const d = new Date()
     const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-    getCycleBirthDate()
-      .then((b) => fetchCycleDay(iso, b))
+    getAuspiceBirthDate()
+      .then((b) => fetchAuspiceDay(iso, b))
       .then(setPayload)
       .catch(() => {})
     getWatchTemplate()

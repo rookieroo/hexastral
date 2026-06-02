@@ -139,7 +139,9 @@ export function useFlag<T>(key: string, defaultValue: T): T {
     // Re-fetch on app foreground if cache is stale.
     const appStateSub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return
-      const age = memoryCache ? Date.now() - new Date(memoryCache.fetchedAt).getTime() : Infinity
+      const age = memoryCache
+        ? Date.now() - new Date(memoryCache.fetchedAt).getTime()
+        : Number.POSITIVE_INFINITY
       if (age > STALE_AFTER_MS) void fetchFlags().catch(() => {})
     })
 

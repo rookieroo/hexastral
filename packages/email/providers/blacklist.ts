@@ -140,10 +140,7 @@ export class EmailBlacklistService {
    */
   async removeFromBlacklist(email: string): Promise<void> {
     const normalizedEmail = email.toLowerCase().trim()
-    await this.db
-      .prepare('DELETE FROM email_blacklist WHERE email = ?')
-      .bind(normalizedEmail)
-      .run()
+    await this.db.prepare('DELETE FROM email_blacklist WHERE email = ?').bind(normalizedEmail).run()
   }
 
   /**
@@ -221,10 +218,7 @@ export class EmailBlacklistService {
   /**
    * Process a bounce notification
    */
-  private async processBounce(
-    bounce: SESBounceNotification,
-    messageId: string
-  ): Promise<void> {
+  private async processBounce(bounce: SESBounceNotification, messageId: string): Promise<void> {
     // Only blacklist permanent bounces (hard bounces)
     // Transient bounces (soft bounces) may succeed on retry
     if (bounce.bounce.bounceType !== 'Permanent') {
@@ -302,10 +296,12 @@ export class EmailBlacklistService {
  * app.post('/webhooks/ses', createSESWebhookHandler((c) => c.env.DB))
  * ```
  */
-export function createSESWebhookHandler(
-  getDb: (c: { env: { DB: D1Database } }) => D1Database
-) {
-  return async (c: { env: { DB: D1Database }; req: { json: () => Promise<SNSNotification> }; json: (data: unknown, status?: number) => Response }) => {
+export function createSESWebhookHandler(getDb: (c: { env: { DB: D1Database } }) => D1Database) {
+  return async (c: {
+    env: { DB: D1Database }
+    req: { json: () => Promise<SNSNotification> }
+    json: (data: unknown, status?: number) => Response
+  }) => {
     try {
       const notification = await c.req.json()
       const blacklistService = new EmailBlacklistService(getDb(c))

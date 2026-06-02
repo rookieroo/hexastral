@@ -155,14 +155,17 @@ async function getExpoToken(projectId?: string): Promise<string | null> {
  * upserts on token PK. Stores a local flag so subsequent calls short-circuit
  * (we don't need to register on every app open).
  */
-export async function registerPushTokenWithServer(input: RegisterTokenInput = {}): Promise<boolean> {
+export async function registerPushTokenWithServer(
+  input: RegisterTokenInput = {}
+): Promise<boolean> {
   const token = await getExpoToken(input.projectId)
   if (!token) return false
 
   const platform: 'ios' | 'android' =
     input.platform ?? (Platform.OS === 'android' ? 'android' : 'ios')
   const timezoneId =
-    input.timezoneId ?? (() => {
+    input.timezoneId ??
+    (() => {
       try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone
       } catch {

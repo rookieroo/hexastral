@@ -2,7 +2,7 @@
  * POST /api/onboarding/apple-link — link an Apple ID to the current anonymous user.
  *
  * HMAC-protected (the caller already has a userId + deviceSecret from
- * POST /api/user). Used by Yuán, Fēng, and other flagships that ship with
+ * POST /api/user). Used by Kindred, Fēng, and other flagships that ship with
  * anonymous-first onboarding and offer Apple Sign In as a recovery affordance.
  *
  * Three outcomes:
@@ -32,7 +32,7 @@ const jwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'))
 
 const VALID_AUDIENCES = new Set<string>([
   'com.hexastral.fate',
-  'com.hexastral.yuan',
+  'com.hexastral.kindred',
   'com.hexastral.feng',
 ])
 

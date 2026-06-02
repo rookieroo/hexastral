@@ -37,8 +37,8 @@ import { CultureTopicsGrid } from '@/components/culture/CultureTopicsGrid'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
 import { LiuyearBanner } from '@/components/LiuyearBanner'
-import { type CycleDayPayload, fetchCycleDay } from '@/lib/api'
-import { getCycleBirthDate } from '@/lib/birth'
+import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
+import { getAuspiceBirthDate } from '@/lib/birth'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
@@ -78,14 +78,14 @@ export default function HomeScreen() {
   }, [params.day])
 
   /* ── Day detail fetch — refires whenever selectedDay changes ── */
-  const [dayData, setDayData] = useState<CycleDayPayload | null>(null)
+  const [dayData, setDayData] = useState<AuspiceDayPayload | null>(null)
   const [dayLoading, setDayLoading] = useState(true)
   const [dayError, setDayError] = useState<string | null>(null)
   const loadDay = useCallback(() => {
     setDayLoading(true)
     setDayError(null)
-    getCycleBirthDate()
-      .then((birthDate) => fetchCycleDay(selectedDay, birthDate))
+    getAuspiceBirthDate()
+      .then((birthDate) => fetchAuspiceDay(selectedDay, birthDate))
       .then((d) => setDayData(d))
       .catch((e: unknown) => setDayError(e instanceof Error ? e.message : String(e)))
       .finally(() => setDayLoading(false))

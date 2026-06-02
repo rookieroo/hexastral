@@ -13,13 +13,13 @@ import { useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { CyclePaywallSheet } from '@/components/CyclePaywallSheet'
+import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
-import { getCycleBirthInfo } from '@/lib/birth'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import {
+  type AuspicePerson,
   addPerson,
-  type CyclePerson,
   getPeople,
   type PersonCalendar,
   type PersonGender,
@@ -44,9 +44,9 @@ export default function PeopleScreen() {
   const { t, locale } = useStrings()
   const params = useLocalSearchParams<{ md?: string }>()
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
-  const [people, setPeople] = useState<CyclePerson[]>([])
+  const [people, setPeople] = useState<AuspicePerson[]>([])
   const [selfDate, setSelfDate] = useState<string | null>(null)
 
   // ── add form ──
@@ -62,13 +62,13 @@ export default function PeopleScreen() {
   const [remindOnDay, setRemindOnDay] = useState(true)
 
   const [paywallOpen, setPaywallOpen] = useState(false)
-  const [relPerson, setRelPerson] = useState<CyclePerson | null>(null)
+  const [relPerson, setRelPerson] = useState<AuspicePerson | null>(null)
 
   useEffect(() => {
     getPeople()
       .then(setPeople)
       .catch(() => {})
-    getCycleBirthInfo()
+    getAuspiceBirthInfo()
       .then((info) => setSelfDate(info?.solarDate ?? null))
       .catch(() => {})
   }, [])
@@ -107,7 +107,7 @@ export default function PeopleScreen() {
     void scheduleBirthdayReminders(next, locale)
   }
 
-  const openRelation = (p: CyclePerson) => {
+  const openRelation = (p: AuspicePerson) => {
     if (!selfDate) {
       Alert.alert(t.people.needBirth, t.people.needBirthBody)
       return
@@ -129,7 +129,7 @@ export default function PeopleScreen() {
   } as const
   const microLabel = { color: colors.dim, fontSize: 11, letterSpacing: 2 } as const
 
-  function personLine(p: CyclePerson): string {
+  function personLine(p: AuspicePerson): string {
     const shown = p.solarDate.startsWith('0000-') ? p.solarDate.slice(5) : p.solarDate
     const parts = [`${p.calendar === 'lunar' ? `${t.people.lunar} ` : ''}${shown}`]
     const animal = animalOf(p.solarDate)
@@ -357,7 +357,7 @@ export default function PeopleScreen() {
         )}
       </ScrollView>
 
-      <CyclePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+      <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
       <RelationshipSheet
         visible={!!relPerson && !paywallOpen && isPro}
         onClose={() => setRelPerson(null)}

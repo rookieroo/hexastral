@@ -12,7 +12,7 @@
 export interface WidgetSyncPayload<TData = Record<string, unknown>> {
   /** ISO timestamp when this payload was written (RN side). */
   updatedAt: string
-  /** App slug (e.g. 'cycle', 'feng', 'yuan', 'mingpan'). Identifies which widget reads this. */
+  /** App slug (e.g. 'cycle', 'feng', 'kindred', 'mingpan'). Identifies which widget reads this. */
   appSlug: AppSlug
   /** Locale of the strings inside `data` (4 supported). */
   locale: WidgetLocale
@@ -44,12 +44,12 @@ export const WIDGET_PAYLOAD_KEY = 'hexastral_widget_payload_v1'
 
 // ── Per-app data shapes (extend as widgets ship) ─────────────────────────
 
-/** Cycle widget data (Sprint 5 spec).
+/** Auspice widget data (Sprint 5 spec).
  *  Small: ganZhi, lunarDate, nextSolarTermDays, nextSolarTermName
  *  Medium: + todayYi (top 1), moonPhaseEmoji (Pro)
  *  Lock-Screen: + nextFamilyEventLabel, nextFamilyEventDays
  */
-export interface CycleWidgetData {
+export interface AuspiceWidgetData {
   ganZhi: string
   lunarDate: string
   nextSolarTermName: string
@@ -74,12 +74,12 @@ export interface FengWidgetData {
   nextJieqiDays: number
 }
 
-/** Yuan widget data (Sprint Y.4 spec).
+/** Kindred widget data (Sprint Y.4 spec).
  *  Small: todayPairFit, dailyInsightOneLine
  *  Medium: + nextAnniversaryCountdown
  *  Lock-Screen: + relationshipTrendArrow
  */
-export interface YuanWidgetData {
+export interface KindredWidgetData {
   todayPairFitStars: number
   dailyInsightOneLine: string
   nextAnniversaryDays?: number

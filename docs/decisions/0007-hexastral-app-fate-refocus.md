@@ -11,8 +11,8 @@
 > **omnibus shape itself** (命 / 星 / 六爻 / 合婚 / 面相 / 黄历 in one app) contradicts the
 > satellite-funnel matrix and cannibalizes its own satellites. Resolution: **retire**
 > hexastral-app rather than refocus it; a clean Tier-3 `fate-app` (八字 + 紫微) replaces only
-> its natal surface, and the other surfaces go to their owning apps (合婚→Yuán, 六爻→Coin
-> Cast, 面相→Face Oracle, 黄历→Cycle).
+> its natal surface, and the other surfaces go to their owning apps (合婚→Kindred, 六爻→Coin
+> Cast, 面相→Face Oracle, 黄历→Auspice).
 >
 > **What stays valid as history**: the §1/§2 *ownership* reasoning — that each scenario
 > has exactly one owning app and that functional duplication triggers iOS §4.3 — is the
@@ -106,7 +106,7 @@ phase-j-plan.md §1.
 
 Each satellite-bound feature in hexastral-app's Fate home is replaced
 with a "discovery card" that:
-- Renders a one-line teaser ("看你和 TA 的缘 →")
+- Renders a one-line teaser ("看你和 TA 的Kindred →")
 - On tap: tries the satellite's universal link via `Linking.openURL`
 - On install miss: falls back to App Store with a `via=hexastral` query
   param so we can attribute funnel conversions
@@ -122,7 +122,7 @@ Each app's marketing title + subtitle commits to one thing:
 | App | Title | Subtitle / pitch |
 |---|---|---|
 | hexastral-app | HexAstral | 你的命盘 · 大运 · 日签 — Lifelong birth chart |
-| yuan-app | 缘 Yuán | 双人合盘 · Synastry & relationship reading |
+| yuan-app | Kindred Kindred | 双人合盘 · Synastry & relationship reading |
 | face-oracle-app | Face Oracle | 面相手相 AI 解读 |
 | dream-oracle-app | Dream Oracle | 周公解梦 · Dream interpretation |
 | coin-cast-app | Coin Cast | 六爻占卜 · I-Ching divination (coins + shake) |
@@ -138,7 +138,7 @@ answer is:
 > Each app serves a single, distinct scenario in East-Asian metaphysics.
 > They share infrastructure (auth, payment, content) but the primary
 > user task is different in each: lifelong chart (HexAstral), couple
-> compatibility (Yuán), face reading (Face Oracle), dream interpretation
+> compatibility (Kindred), face reading (Face Oracle), dream interpretation
 > (Dream Oracle), I-Ching (Coin Cast), numerology (Numerology),
 > feng-shui (Fēng), compass utility (Compass).
 

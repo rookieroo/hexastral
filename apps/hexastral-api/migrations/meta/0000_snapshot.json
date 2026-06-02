@@ -1713,8 +1713,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "current_yuan": {
-          "name": "current_yuan",
+        "current_kindred": {
+          "name": "current_kindred",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

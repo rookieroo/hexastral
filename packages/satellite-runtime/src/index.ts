@@ -2,7 +2,11 @@ export { resolvePortfolioApiUrl } from './api-url'
 export type { PortfolioAppleAuthSurface } from './auth-apple'
 export { emitPortfolioAppleLinkedGrowth, exchangeAppleCredentialForPortfolio } from './auth-apple'
 export type { PortfolioGoogleAuthSurface } from './auth-google'
-export { emitPortfolioGoogleLinkedGrowth, exchangeGoogleCredentialForPortfolio } from './auth-google'
+export {
+  emitPortfolioGoogleLinkedGrowth,
+  exchangeGoogleCredentialForPortfolio,
+} from './auth-google'
+export { captureCrashError, initCrashReporting, setCrashUserContext } from './crash'
 export type { CaptureCrossAppAttributionInput } from './cross-app-attribution'
 export {
   captureCrossAppAttribution,
@@ -26,6 +30,8 @@ export {
   hasEntitlement,
   useEntitlements,
 } from './entitlements/use-entitlements'
+export { ErrorBoundary } from './error-boundary'
+export { emitFirstReadingCompletedOnce, emitFirstReadingStartedOnce } from './first-reading-emit'
 export { ingestGrowthEvent } from './growth-ingest'
 export type { SignatureHeaders, SignRequestParams } from './hmac'
 export {
@@ -59,21 +65,6 @@ export {
   updatePortfolioProfile,
 } from './profile'
 export {
-  clearPortfolioUserId,
-  getPortfolioUserId,
-  invalidatePortfolioSession,
-  repairPortfolioCredentialMismatch,
-  setPortfolioUserId,
-} from './session'
-export type { DiscoveryRecommendation } from './use-discovery'
-export { emitCrossAppDiscoveryTap, useDiscoveryRecommendations } from './use-discovery'
-export { captureCrashError, initCrashReporting, setCrashUserContext } from './crash'
-export { ErrorBoundary } from './error-boundary'
-export { emitFirstReadingCompletedOnce, emitFirstReadingStartedOnce } from './first-reading-emit'
-export { signedFetch as signedApiFetch } from './signed-fetch'
-export type { StreakState } from './streak'
-export { getStreakState, recordTodayOpen } from './streak'
-export {
   configurePushHandler,
   getPushPermissionStatus,
   registerPushTokenWithServer,
@@ -82,24 +73,19 @@ export {
   usePushPrime,
   useTokenPermissionReconcile,
 } from './push'
+export {
+  clearPortfolioUserId,
+  getPortfolioUserId,
+  invalidatePortfolioSession,
+  repairPortfolioCredentialMismatch,
+  setPortfolioUserId,
+} from './session'
+export { signedFetch as signedApiFetch } from './signed-fetch'
+export type { StreakState } from './streak'
+export { getStreakState, recordTodayOpen } from './streak'
 export type { HexastralLink } from './universal-links'
 export { parseHexastralLink, useUniversalLinks } from './universal-links'
-export { refreshFlags, useFlag } from './use-flag'
-export { getCurrentNetInfo, useNetInfo } from './use-net-info'
-export type { PortfolioBirthInfo } from './use-portfolio-birth-info'
-export {
-  getPortfolioBirthInfo,
-  saveAndCacheBirthInfo,
-  usePortfolioBirthInfo,
-} from './use-portfolio-birth-info'
-export type { UsePortfolioSatelliteBootstrapArgs } from './use-portfolio-bootstrap'
-export { usePortfolioSatelliteBootstrap } from './use-portfolio-bootstrap'
-export { usePurchases } from './use-purchases'
-export type { UserPreferencesUpdate } from './use-user-preferences'
-export { saveUserPreferences } from './use-user-preferences'
 export { deletePortfolioAccount } from './use-account-delete'
-export type { EmailConfirmResult } from './use-email-bind'
-export { confirmEmailOtp, requestEmailOtp, unbindUserEmail } from './use-email-bind'
 export type {
   ChapterManifestEntry,
   ChapterSlug,
@@ -113,3 +99,20 @@ export {
   fetchReportManifest,
   inviteChapterUnlock,
 } from './use-chapter-unlock'
+export type { DiscoveryRecommendation } from './use-discovery'
+export { emitCrossAppDiscoveryTap, useDiscoveryRecommendations } from './use-discovery'
+export type { EmailConfirmResult } from './use-email-bind'
+export { confirmEmailOtp, requestEmailOtp, unbindUserEmail } from './use-email-bind'
+export { refreshFlags, useFlag } from './use-flag'
+export { getCurrentNetInfo, useNetInfo } from './use-net-info'
+export type { PortfolioBirthInfo } from './use-portfolio-birth-info'
+export {
+  getPortfolioBirthInfo,
+  saveAndCacheBirthInfo,
+  usePortfolioBirthInfo,
+} from './use-portfolio-birth-info'
+export type { UsePortfolioSatelliteBootstrapArgs } from './use-portfolio-bootstrap'
+export { usePortfolioSatelliteBootstrap } from './use-portfolio-bootstrap'
+export { usePurchases } from './use-purchases'
+export type { UserPreferencesUpdate } from './use-user-preferences'
+export { saveUserPreferences } from './use-user-preferences'

@@ -15,10 +15,10 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import type { CycleDayPayload } from '@/lib/api'
+import type { AuspiceDayPayload } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import { useStrings } from '@/lib/i18n-context'
-import { CyclePaywallSheet } from './CyclePaywallSheet'
+import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { DailyCard } from './DailyCard'
 import { ExplainSheet } from './ExplainSheet'
 import { HourScrubber } from './HourScrubber'
@@ -42,18 +42,24 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-export function DayView({ payload, today = false }: { payload: CycleDayPayload; today?: boolean }) {
+export function DayView({
+  payload,
+  today = false,
+}: {
+  payload: AuspiceDayPayload
+  today?: boolean
+}) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
   const { date, day } = payload
   const [explainField, setExplainField] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
-  // Pro gating (Sprint 2 chunk 8). `universe_pro` mirrors into `cycle_pro`
+  // Pro gating (Sprint 2 chunk 8). `universe_pro` mirrors into `auspice_pro`
   // server-side per ADR-0015 §"Universe Bundle", and `useEntitlements` mirrors
-  // that locally too, so checking `cycle_pro` alone covers both purchase paths.
+  // that locally too, so checking `auspice_pro` alone covers both purchase paths.
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   return (
     <View style={{ gap: spacing.xl }}>
@@ -137,7 +143,7 @@ export function DayView({ payload, today = false }: { payload: CycleDayPayload; 
         dayMaster={payload.personalization?.dayMaster}
         onClose={() => setExplainField(null)}
       />
-      <CyclePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+      <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </View>
   )
 }

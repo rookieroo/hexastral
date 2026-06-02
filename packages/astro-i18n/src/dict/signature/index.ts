@@ -2,8 +2,8 @@
  * Signature dictionaries — barrel export keyed by Locale.
  */
 
-import type { Locale } from '../../types'
 import type { SignatureDictionary } from '../../signature-types'
+import type { Locale } from '../../types'
 import { de } from './de'
 import { en } from './en'
 import { es } from './es'

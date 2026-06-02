@@ -17,7 +17,7 @@ import { useState } from 'react'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
 
-export interface YuanInviteClientProps {
+export interface KindredInviteClientProps {
   token: string
   locale: string
   inviterName: string
@@ -50,14 +50,14 @@ function localTimeToTimeIndex(hhmm: string): number {
   return Math.floor((h + 1) / 2)
 }
 
-export function YuanInviteClient({
+export function KindredInviteClient({
   token,
   locale,
   inviterName,
   relationshipLabel,
   targetName,
   note,
-}: YuanInviteClientProps) {
+}: KindredInviteClientProps) {
   const router = useRouter()
   const [stage, setStage] = useState<'gate' | 'form' | 'sending'>('gate')
   const [error, setError] = useState<string | null>(null)
@@ -134,7 +134,7 @@ export function YuanInviteClient({
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>緣</span>
+          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>Kindred</span>
         </div>
 
         {/* Inviter intro */}
@@ -172,7 +172,7 @@ export function YuanInviteClient({
           }}
         >
           {isZh
-            ? `${inviterName} 邀你共看一份 ${relationshipLabel} 的缘报告`
+            ? `${inviterName} 邀你共看一份 ${relationshipLabel} 的Kindred报告`
             : `${inviterName} wants to read your ${relationshipLabel} resonance`}
         </p>
 

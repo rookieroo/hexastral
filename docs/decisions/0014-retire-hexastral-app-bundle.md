@@ -7,7 +7,7 @@
 
 ## Context
 
-The `hexastral-app` (working name 命緣卦道) was scoped in early planning as an all-in-one storefront combining 8 metaphysics business lines (BaZi, Zi Wei, Feng Shui, face/palm, I-Ching, dream interpretation, numerology, lunar calendar).
+The `hexastral-app` (working name 命Kindred卦道) was scoped in early planning as an all-in-one storefront combining 8 metaphysics business lines (BaZi, Zi Wei, Feng Shui, face/palm, I-Ching, dream interpretation, numerology, lunar calendar).
 
 The app was submitted to App Store Connect under bundle ID `com.hexastral.hexastral` and was **rejected under Guideline 4.3(b) Design — Spam** in the "saturated astrology / horoscope / palm reading / fortune telling / zodiac" category. The rejection language explicitly cited the saturated-category problem and recommended:
 
@@ -44,7 +44,7 @@ The all-in-one storefront concept inherently combines all of the explicitly-cite
 - Marketing collateral that referenced "Download HexAstral" must redirect to either (a) a specific satellite app or (b) hexastral.com PWA.
 
 ### Neutral
-- The `EntitlementKey` `universe_pro` continues to make sense as a bundle subscription (grants cycle_pro + yuan_pro + fate_pro across 3 satellite apps). The "universe" is the *bundle of entitlements*, not a single app.
+- The `EntitlementKey` `universe_pro` continues to make sense as a bundle subscription (grants auspice_pro + kindred_pro + fate_pro across 3 satellite apps). The "universe" is the *bundle of entitlements*, not a single app.
 
 ## Operational steps required
 

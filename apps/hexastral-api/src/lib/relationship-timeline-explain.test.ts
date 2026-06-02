@@ -12,8 +12,14 @@ import { calculateDaYun } from '@zhop/astro-core/dayun'
 import type { CloudflareBindings } from '../infra-types'
 import { explainRelationshipTimelineNode } from './relationship-timeline-explain'
 
-const self: RelationshipPerson = { input: { year: 1990, month: 3, day: 15, hour: 13 }, gender: '男' }
-const partner: RelationshipPerson = { input: { year: 1992, month: 7, day: 20, hour: 9 }, gender: '女' }
+const self: RelationshipPerson = {
+  input: { year: 1990, month: 3, day: 15, hour: 13 },
+  gender: '男',
+}
+const partner: RelationshipPerson = {
+  input: { year: 1992, month: 7, day: 20, hour: 9 },
+  gender: '女',
+}
 
 /** 假 env: GUARD_KV 恒 miss, 无需 svc-astro (subject=null 路径不触达)。 */
 const fakeEnv = {

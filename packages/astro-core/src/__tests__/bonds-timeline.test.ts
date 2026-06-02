@@ -14,8 +14,8 @@
 import { describe, expect, test } from 'bun:test'
 import { type BondInput, composeBondsTimeline } from '../bonds-timeline'
 import { calculateDaYun } from '../dayun'
-import { getRelationshipTimelineNodes, type RelationshipPerson } from '../relationship-timeline'
 import type { RelNodeSignificance } from '../relationship-timeline'
+import { getRelationshipTimelineNodes, type RelationshipPerson } from '../relationship-timeline'
 
 const DAY = 86_400_000
 const ego: RelationshipPerson = { input: { year: 1990, month: 3, day: 15, hour: 14 }, gender: '男' }
@@ -212,7 +212,8 @@ describe('notifications — 推送限额', () => {
       minGapDays: 1,
     })
     const egoNotifs = notifications.filter(
-      (n) => n.node.kind === '大运' && n.node.daYunOf === 'A' && n.node.year === futureStep.startYear
+      (n) =>
+        n.node.kind === '大运' && n.node.daYunOf === 'A' && n.node.year === futureStep.startYear
     )
     expect(egoNotifs.map((n) => n.leadLabel).sort()).toEqual(['一个月', '半年'])
   })

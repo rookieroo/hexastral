@@ -1,5 +1,5 @@
 /**
- * @zhop/astro-core — 关系命运时间轴 (Relationship Timeline, Yuán B-yuan.1)
+ * @zhop/astro-core — 关系命运时间轴 (Relationship Timeline, Kindred B-yuan.1)
  *
  * fate 的 `timeline.ts` 是单人(命主)的;这是**双人(关系)**版:
  *   - 逐年流年对 **双方日主** 的十神 + 流年支与 **双方日支** 的 冲(六冲)/合(六合)

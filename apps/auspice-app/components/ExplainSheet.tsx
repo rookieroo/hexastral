@@ -1,6 +1,6 @@
 /**
  * 深度解读 bottom sheet (C.4) — the Pro/lazy LLM surface. Opens only when the user
- * taps a 宜忌 field (never pre-fetched), calls `POST /api/cycle/explain`, and shows
+ * taps a 宜忌 field (never pre-fetched), calls `POST /api/auspice/explain`, and shows
  * the reading + a Share action. `source==='template'` means the K.4 guard degraded
  * (free taste used up) — `upsell` then nudges to Pro. Chat ("continue asking") is
  * server-ready (`'cycle'` reading type) and lands with the in-app chat screen.
@@ -14,7 +14,7 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, Share, Text, View } from 'react-native'
-import { type CycleExplainResult, fetchCycleExplain } from '@/lib/api'
+import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 
@@ -74,14 +74,14 @@ export function ExplainSheet({
   const L = LABELS[locale]
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const [result, setResult] = useState<CycleExplainResult | null>(null)
+  const [result, setResult] = useState<AuspiceExplainResult | null>(null)
 
   useEffect(() => {
     if (!field) return
     setLoading(true)
     setError(false)
     setResult(null)
-    fetchCycleExplain({ date, field, dayMaster, locale })
+    fetchAuspiceExplain({ date, field, dayMaster, locale })
       .then((r) => setResult(r))
       .catch(() => setError(true))
       .finally(() => setLoading(false))

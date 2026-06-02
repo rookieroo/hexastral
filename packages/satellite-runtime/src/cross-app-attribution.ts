@@ -12,8 +12,8 @@
  * intentionally separate from this attribution capture.
  */
 
-import type { AppInstallAttributedEvent } from '@zhop/growth-funnel'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import type { AppInstallAttributedEvent } from '@zhop/growth-funnel'
 import * as Linking from 'expo-linking'
 
 import { ingestGrowthEvent } from './growth-ingest'

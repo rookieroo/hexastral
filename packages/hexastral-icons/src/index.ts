@@ -15,39 +15,6 @@
  *   import { ShareIcon, BrushEditIcon } from '@zhop/hexastral-icons/action'
  */
 
-export type { IconComponent, IconProps } from './types'
-
-// Tab bar icons
-export {
-  AlmanacIcon,
-  BaziIcon,
-  BondIcon,
-  DreamIcon,
-  DwellingIcon,
-  FaceIcon,
-  HexagramIcon,
-  LuopanIcon,
-  MonthViewIcon,
-  NumerologyIcon,
-  ProfileIcon,
-  ReadingsIcon,
-  ZiweiIcon,
-} from './tabs'
-
-// Domain icons
-export {
-  DaYunIcon,
-  LiuNianIcon,
-  SealStampIcon,
-  TrigramIcon,
-  WuxingEarthIcon,
-  WuxingFireIcon,
-  WuxingMetalIcon,
-  WuxingWaterIcon,
-  WuxingWoodIcon,
-  YinYangIcon,
-} from './domain'
-
 // Action icons
 export {
   BackArrowIcon,
@@ -64,3 +31,33 @@ export {
   SettingsIcon,
   ShareIcon,
 } from './action'
+// Domain icons
+export {
+  DaYunIcon,
+  LiuNianIcon,
+  SealStampIcon,
+  TrigramIcon,
+  WuxingEarthIcon,
+  WuxingFireIcon,
+  WuxingMetalIcon,
+  WuxingWaterIcon,
+  WuxingWoodIcon,
+  YinYangIcon,
+} from './domain'
+// Tab bar icons
+export {
+  AlmanacIcon,
+  BaziIcon,
+  BondIcon,
+  DreamIcon,
+  DwellingIcon,
+  FaceIcon,
+  HexagramIcon,
+  LuopanIcon,
+  MonthViewIcon,
+  NumerologyIcon,
+  ProfileIcon,
+  ReadingsIcon,
+  ZiweiIcon,
+} from './tabs'
+export type { IconComponent, IconProps } from './types'

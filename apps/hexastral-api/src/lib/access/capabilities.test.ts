@@ -15,7 +15,7 @@ describe('resolveCapability', () => {
     expect(resolveCapability('natal')).toBe('fate')
     expect(resolveCapability('stellar')).toBe('fate')
     expect(resolveCapability('report')).toBe('fate')
-    expect(resolveCapability('pair')).toBe('yuan')
+    expect(resolveCapability('pair')).toBe('kindred')
     expect(resolveCapability('cycle')).toBe('cycle')
     expect(resolveCapability('feng')).toBe('feng')
     expect(resolveCapability('physiognomy')).toBe('face')
@@ -25,14 +25,14 @@ describe('resolveCapability', () => {
   it('lets a known X-Target-App override the reading-type heuristic', () => {
     // A 'natal' reading opened inside the cycle app is gated as cycle.
     expect(resolveCapability('natal', 'cycle')).toBe('cycle')
-    expect(resolveCapability('natal', 'yuan')).toBe('yuan')
+    expect(resolveCapability('natal', 'kindred')).toBe('kindred')
     expect(resolveCapability('physiognomy', 'faceoracle')).toBe('face')
     expect(resolveCapability('yiching', 'dreamoracle')).toBe('dream')
     expect(resolveCapability('natal', 'numerology')).toBe('numerology')
   })
 
   it('falls back to the reading type for an unknown/legacy targetApp', () => {
-    expect(resolveCapability('pair', 'hexastral')).toBe('yuan')
+    expect(resolveCapability('pair', 'hexastral')).toBe('kindred')
     expect(resolveCapability('natal', null)).toBe('fate')
     expect(resolveCapability('cycle', undefined)).toBe('cycle')
   })
@@ -42,7 +42,7 @@ describe('hasCapability', () => {
   it('universe_pro unlocks every capability', () => {
     const all: Capability[] = [
       'fate',
-      'yuan',
+      'kindred',
       'cycle',
       'feng',
       'face',
@@ -55,15 +55,15 @@ describe('hasCapability', () => {
 
   it('a flagship entitlement unlocks only its own app', () => {
     expect(hasCapability(ents('fate_pro'), 'fate')).toBe(true)
-    expect(hasCapability(ents('fate_pro'), 'yuan')).toBe(false)
-    expect(hasCapability(ents('yuan_pro'), 'yuan')).toBe(true)
-    expect(hasCapability(ents('cycle_pro'), 'cycle')).toBe(true)
-    expect(hasCapability(ents('cycle_pro'), 'fate')).toBe(false)
+    expect(hasCapability(ents('fate_pro'), 'kindred')).toBe(false)
+    expect(hasCapability(ents('kindred_pro'), 'kindred')).toBe(true)
+    expect(hasCapability(ents('auspice_pro'), 'cycle')).toBe(true)
+    expect(hasCapability(ents('auspice_pro'), 'fate')).toBe(false)
   })
 
   it('episodic apps are never unlocked by a subscription entitlement (credit-gated)', () => {
     // No per-app sub grants feng/face/coincast/dream/numerology — only universe_pro does.
-    expect(hasCapability(ents('fate_pro', 'yuan_pro', 'cycle_pro'), 'feng')).toBe(false)
+    expect(hasCapability(ents('fate_pro', 'kindred_pro', 'auspice_pro'), 'feng')).toBe(false)
     expect(hasCapability(ents('fate_pro'), 'face')).toBe(false)
     expect(hasCapability([], 'coincast')).toBe(false)
   })
@@ -81,14 +81,14 @@ describe('resolveChatTier', () => {
     expect(resolveChatTier({ entitlements: ents('fate_pro'), readingType: 'natal' }).tier).toBe(
       'pro'
     )
-    // fate_pro does NOT unlock a 緣 (pair) chat → free taste.
+    // fate_pro does NOT unlock a Kindred (pair) chat → free taste.
     expect(resolveChatTier({ entitlements: ents('fate_pro'), readingType: 'pair' }).tier).toBe(
       'free'
     )
-    expect(resolveChatTier({ entitlements: ents('yuan_pro'), readingType: 'pair' }).tier).toBe(
+    expect(resolveChatTier({ entitlements: ents('kindred_pro'), readingType: 'pair' }).tier).toBe(
       'pro'
     )
-    expect(resolveChatTier({ entitlements: ents('cycle_pro'), readingType: 'cycle' }).tier).toBe(
+    expect(resolveChatTier({ entitlements: ents('auspice_pro'), readingType: 'cycle' }).tier).toBe(
       'pro'
     )
   })

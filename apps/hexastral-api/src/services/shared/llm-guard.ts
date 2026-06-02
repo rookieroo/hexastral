@@ -1,7 +1,7 @@
 /**
  * Shared LLM cost/quality guard — "Conservative Mode v1" (Phase K · K.4).
  *
- * A platform capability consumed by every low-cost LLM surface (Cycle's
+ * A platform capability consumed by every low-cost LLM surface (Auspice's
  * `/cycle/explain`, future fate-app AI 命盘解读, etc.) so cost policy is defined
  * ONCE here, never forked app-by-app. Sibling to `divination-guard.ts`: that one
  * gates *content* (abuse / dedup); this one gates *cost* (rate / budget / tier).

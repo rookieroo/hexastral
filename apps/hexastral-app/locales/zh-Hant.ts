@@ -63,8 +63,8 @@ export const zhHant: Record<TranslationKeys, string> = {
   history_delete_oracle: '將從命冊中移除該筆占卜紀錄，且無法復原。',
   history_delete_daily: '將從命冊中移除該筆每日運勢紀錄，且無法復原。',
   history_delete_pair:
-    '將從命冊中移除該筆合盤紀錄。若已與「緣分」中的 Cosmic Bond 關聯，請先刪除對應 Bond。',
-  history_delete_pair_conflict: '該合盤仍關聯 Cosmic Bond。請先在「緣」分頁刪除對應 Bond 後再試。',
+    '將從命冊中移除該筆合盤紀錄。若已與「Kindred分」中的 Cosmic Bond 關聯，請先刪除對應 Bond。',
+  history_delete_pair_conflict: '該合盤仍關聯 Cosmic Bond。請先在「Kindred」分頁刪除對應 Bond 後再試。',
   history_divination: '占卜',
   history_reading: '排盤',
   history_analysis: '分析',
@@ -78,7 +78,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   history_view_calendar: '日曆',
   history_calendar_select_day: '點選日曆中有標記的日期查看紀錄',
   history_fate_sub_daily: '每日運勢',
-  history_fate_sub_readings: '緣分解讀',
+  history_fate_sub_readings: 'Kindred分解讀',
   history_kind_daily: '每日',
   history_kind_book: '命書',
   history_kind_pair: '合盤',
@@ -92,7 +92,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   history_personal_fate_chapters: '{count} 章',
   pair_section_overview: '總覽',
   pair_section_day_master: '日主互動',
-  pair_section_year_branch: '年支緣分',
+  pair_section_year_branch: '年支Kindred分',
   pair_section_month_branch: '月支生活',
   pair_section_day_branch: '日支親密',
   pair_section_highlights: '亮點',
@@ -466,12 +466,12 @@ export const zhHant: Record<TranslationKeys, string> = {
 命盤須知
 • 時辰是命盤的核心數據，實在記不清可前後兩辰各查一次對比
 • 合盤需雙方提供準確數據，數據不全會影響解讀精度
-• 合盤結論展示緣分傾向，而非固定命運；雙方努力可逆轉或強化格局
+• 合盤結論展示Kindred分傾向，而非固定命運；雙方努力可逆轉或強化格局
 • 農曆輸入時，若不確定是否閏月，建議查閱家譜或改用陽曆
 
 合盤通識
 • 高分代表相合，低分代表摩擦點——兩者均可化解，無絕對好壞
-• 緣分非恆量：雙方大運流年的交匯會持續動態調整命盤互動
+• Kindred分非恆量：雙方大運流年的交匯會持續動態調整命盤互動
 • 一次合盤是當下快照，建議隨生命階段變化定期復盤
 • 不以命格評判對方——命盤是理解工具，而非評判標籤
 
@@ -597,7 +597,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   ob_notify_skip: '暫不開啟',
   ob_notify_daily_title: '今日運勢速覽',
   ob_notify_daily_body: '順勢而為，相信你已擬好的方案。',
-  ob_notify_friend_body: 'Aurora Chen 將你加為因緣聯繫人。',
+  ob_notify_friend_body: 'Aurora Chen 將你加為因Kindred聯繫人。',
   ob_notify_now: '剛剛',
   ob_notify_yesterday: '昨天',
   ob_today_label: '今日',
@@ -652,8 +652,8 @@ export const zhHant: Record<TranslationKeys, string> = {
   tab_you: '我',
   // ── Phase J · J.3.4 Discovery cards ──
   discover_section_label: '其他應用',
-  discover_yuan_title: '看你和 TA 的緣',
-  discover_yuan_subtitle: 'Yuán · 雙盤合婚 · 緣分箋',
+  discover_kindred_title: '看你和 TA 的Kindred',
+  discover_kindred_subtitle: 'Kindred · 雙盤合婚 · Kindred分箋',
   discover_faceoracle_title: '面相 · 手相 AI 解讀',
   discover_faceoracle_subtitle: 'FaceOracle · 一張照片 · 結構化解讀',
   discover_feng_title: '看你居所的風水',
@@ -695,12 +695,12 @@ export const zhHant: Record<TranslationKeys, string> = {
   explore_dream_result_heading: '解讀',
   explore_dream_result_empty: '未返回解讀正文。',
 
-  // Bonds — 緣分關係
+  // Bonds — Kindred分關係
   bond_dim_long_term: '長期',
   bond_dim_attraction: '吸引',
   bond_dim_communication: '溝通',
   bond_dim_emotional: '情感',
-  bonds_invite_msg: '解碼我們的宇宙緣分——下載 HexAstral 查看我們的星盤契合度！',
+  bonds_invite_msg: '解碼我們的宇宙Kindred分——下載 HexAstral 查看我們的星盤契合度！',
   // Legacy friends keys
 
   // Void
@@ -1087,10 +1087,10 @@ export const zhHant: Record<TranslationKeys, string> = {
   detail_natal_title: '命格詳情',
 
   // ── Synastry push ──
-  synastry_push_resonance_title: '今日緣分感應強烈 ✨',
+  synastry_push_resonance_title: '今日Kindred分感應強烈 ✨',
   synastry_push_resonance_body: '你們的命格今日高度共振，適合深度交流與心靈連結。',
   synastry_push_tension_title: '今日因果課題顯現',
-  synastry_push_tension_body: '今日流日與緣分產生張力，是彼此成長的契機——保持傾聽與耐心。',
+  synastry_push_tension_body: '今日流日與Kindred分產生張力，是彼此成長的契機——保持傾聽與耐心。',
   tab_me: '我',
 
   // ── Almanac (日曆通書) ──
@@ -1279,9 +1279,9 @@ export const zhHant: Record<TranslationKeys, string> = {
 
   // ── 紫微宮位描述 ──────────────────────────────────────────
   stellar_palace_ming_desc: '統攝先天個性、人生走向與整體命格',
-  stellar_palace_xiongdi_desc: '反映兄弟姊妹緣分及同輩人際關係',
-  stellar_palace_fuqi_desc: '揭示感情緣分、婚姻模式與伴侶特質',
-  stellar_palace_zinv_desc: '關聯子嗣緣分、創造力與晚年助力',
+  stellar_palace_xiongdi_desc: '反映兄弟姊妹Kindred分及同輩人際關係',
+  stellar_palace_fuqi_desc: '揭示感情Kindred分、婚姻模式與伴侶特質',
+  stellar_palace_zinv_desc: '關聯子嗣Kindred分、創造力與晚年助力',
   stellar_palace_caibo_desc: '代表財富結構、進財方式與理財格局',
   stellar_palace_jie_desc: '顯示身體健康狀態與應對壓力的方式',
   stellar_palace_qianyi_desc: '代表外出運勢、遷居機遇與對外交往',
@@ -1289,7 +1289,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   stellar_palace_guanlu_desc: '顯示事業發展潛力、工作成就與社會地位',
   stellar_palace_tianzhai_desc: '關聯家庭環境、不動產積累與安全感',
   stellar_palace_fude_desc: '象徵精神世界、享樂態度與深層內心欲望',
-  stellar_palace_fumu_desc: '反映與父母、師長及上級的緣分與互動',
+  stellar_palace_fumu_desc: '反映與父母、師長及上級的Kindred分與互動',
   reading_lang_mismatch: '此解讀以 {lang} 生成',
   reading_lang_regenerate: '以目前語言重新生成',
 
@@ -1359,7 +1359,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   quick_ask_caption: '向 HexAstral 提問',
   quick_cast_hexagram: '卦',
   quick_cast_caption: '起卦問事',
-  quick_bond: '緣',
+  quick_bond: 'Kindred',
   quick_bond_caption: '連接他人',
   seven_day_trail_label: '七日軌跡',
   seven_day_trail_empty: '這七天還未留下記錄，明日起漸漸亮起',
@@ -1387,7 +1387,7 @@ export const zhHant: Record<TranslationKeys, string> = {
   quick_status_pro_chat: '追問池 {remaining}/{limit}',
   quick_status_pro_pair: '合盤 {remaining}/{limit}',
   welcome_primer_title: '命運首頁',
-  welcome_primer_subtitle: '先從問、卦、緣開始，逐步建立你的每日節奏。',
+  welcome_primer_subtitle: '先從問、卦、Kindred開始，逐步建立你的每日節奏。',
   report_toc_title: '命書目錄',
   report_chapter_versions: '版本',
   report_ch1_title: '命格',

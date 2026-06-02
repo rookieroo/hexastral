@@ -27,7 +27,7 @@ import { freshEventEnvelope } from './new-event-envelope'
 type ReadingKind = string
 
 interface FirstReadingEmitInput {
-  /** App namespace ('fate', 'cycle', 'yuan', 'feng', etc.) */
+  /** App namespace ('fate', 'cycle', 'kindred', 'feng', etc.) */
   app: string
   /** Reading-domain key (e.g. 'natal', 'compatibility', 'almanac_today') */
   readingKind: ReadingKind

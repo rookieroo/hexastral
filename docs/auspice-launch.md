@@ -12,9 +12,9 @@ Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = th
 - Home: dark watch-face hero · CalendarStrip (i18n weekdays, no CJK in en) · 今日文化 + collapsible 文化导览 · 择日 + 记录亲友生日 actions
 - For-you (`PersonalCard`): free verdict + summary, Pro = per-reason explanation
 - Calendar feed: free `/calendar.ics` (13-month rolling) · Pro `/calendar/personal.ics` (signed token + server RC check)
-- 亲友 (`/people`): name + birthday (solar/lunar) + 时辰 + gender + advance-days · year optional · transfers to Yuán Bonds on sign-in
+- 亲友 (`/people`): name + birthday (solar/lunar) + 时辰 + gender + advance-days · year optional · transfers to Kindred Bonds on sign-in
 - Settings (`/me`): birth (collapses on save) · daily push · 节假日 heads-up (CN 调休 2026) · 表盘 (`/display`, dark-only) · 外地时区 (`/remote-tz`) · Apple Calendar subscribe (free + Pro rows) · sign-in is at the paywall
-- Sign-in: Apple primary on iOS + Google secondary (cross-platform); RC alias; on success → `transferCyclePeopleToBonds`
+- Sign-in: Apple primary on iOS + Google secondary (cross-platform); RC alias; on success → `transferAuspicePeopleToBonds`
 - Notifications: stable per-date IDs, one-time purge of stale ID-scheme cruft, 节假日/调休 heads-up
 
 **Native scaffolded but not shipping in June:**
@@ -30,7 +30,7 @@ Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = th
 - [ ] `wrangler secret put CYCLE_CALENDAR_SECRET` (generate: `openssl rand -hex 32`)
 - [ ] Confirm `REVENUECAT_API_KEY` set on the Worker (RC dashboard → API Keys → secret REST key)
 - [ ] `cd apps/hexastral-api && bun deploy` — picks up the wider `.ics` window + the signed-token + sign route
-- [ ] RC dashboard: `cycle_pro_monthly` + `cycle_pro_annual` products live; entitlement `cycle_pro` mapped
+- [ ] RC dashboard: `auspice_pro_monthly` + `auspice_pro_annual` products live; entitlement `auspice_pro` mapped
 
 ### App Store Connect
 - [ ] Create the Auspice App Store Connect record (display name: **Auspice**, subtitle: 黄历 / Chinese Almanac, category: Reference)

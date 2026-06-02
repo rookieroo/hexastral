@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react'
 import { Text, View } from 'react-native'
-import type { CycleDay, CyclePersonalization } from '@/lib/api'
+import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
 import type { MoonSkinId } from '@/lib/widget-config'
 import { buildDailyCardModel, type DailyCardModel, formatWatchDate, topVerbs } from './DailyCard'
@@ -37,8 +37,8 @@ export function WidgetCard({
   moonSkinId,
 }: {
   date: string
-  day: CycleDay
-  personalization?: CyclePersonalization | null
+  day: AuspiceDay
+  personalization?: AuspicePersonalization | null
   size: WidgetSize
   moonSkinId?: MoonSkinId
 }) {

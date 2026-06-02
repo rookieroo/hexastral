@@ -13,10 +13,7 @@
 import type { GrowthEventSource, GrowthFunnelEvent } from './funnel-event'
 
 /** The subset of fields a caller actually needs to specify. */
-export type FunnelEmitInput = Pick<
-  GrowthFunnelEvent,
-  'event_name' | 'payload'
-> &
+export type FunnelEmitInput = Pick<GrowthFunnelEvent, 'event_name' | 'payload'> &
   Partial<Pick<GrowthFunnelEvent, 'surface' | 'utm' | 'ddl_token' | 'target_app'>>
 
 export interface FunnelEmitterOptions {

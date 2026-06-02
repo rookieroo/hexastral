@@ -2,7 +2,7 @@
  * Local (anonymous) birth-info draft for portfolio satellites — stored per app
  * via AsyncStorage. Anonymous Tier-3 users keep birth inputs locally; once they
  * sign in, sync up with `saveAndCacheBirthInfo` (see use-portfolio-birth-info).
- * Shared so fate-app, Cycle, and any future natal-driven satellite agree on shape + key.
+ * Shared so fate-app, Auspice, and any future natal-driven satellite agree on shape + key.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'

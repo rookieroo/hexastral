@@ -1,5 +1,5 @@
-import { PLAN_EMAIL_CONFIG } from '../config/plan-config';
-import { PLAN_TYPES, type PlanType, type PlanConfig } from '../types/plan-types';
+import { PLAN_EMAIL_CONFIG } from '../config/plan-config'
+import { PLAN_TYPES, type PlanConfig, type PlanType } from '../types/plan-types'
 
 /**
  * Normalize plan name to match our plan types
@@ -7,22 +7,22 @@ import { PLAN_TYPES, type PlanType, type PlanConfig } from '../types/plan-types'
  * @returns Normalized plan type
  */
 export function normalizePlanName(planName: string): PlanType {
-  const normalizedName = planName.toLowerCase().trim();
-  
+  const normalizedName = planName.toLowerCase().trim()
+
   if (normalizedName.includes('free')) {
-    return PLAN_TYPES.FREE;
+    return PLAN_TYPES.FREE
   }
-  
+
   if (normalizedName.includes('pro')) {
-    return PLAN_TYPES.PRO;
+    return PLAN_TYPES.PRO
   }
-  
+
   if (normalizedName.includes('max')) {
-    return PLAN_TYPES.MAX;
+    return PLAN_TYPES.MAX
   }
-  
+
   // Default to free plan if no match found
-  return PLAN_TYPES.FREE;
+  return PLAN_TYPES.FREE
 }
 
 /**
@@ -31,8 +31,8 @@ export function normalizePlanName(planName: string): PlanType {
  * @returns Plan configuration object
  */
 export function getPlanConfig(planName: string): PlanConfig {
-  const normalizedPlan = normalizePlanName(planName);
-  return PLAN_EMAIL_CONFIG[normalizedPlan];
+  const normalizedPlan = normalizePlanName(planName)
+  return PLAN_EMAIL_CONFIG[normalizedPlan]
 }
 
 /**
@@ -41,8 +41,8 @@ export function getPlanConfig(planName: string): PlanConfig {
  * @returns Plan benefits object
  */
 export function getPlanBenefits(planName: string) {
-  const config = getPlanConfig(planName);
-  return config.benefits;
+  const config = getPlanConfig(planName)
+  return config.benefits
 }
 
 /**
@@ -51,8 +51,8 @@ export function getPlanBenefits(planName: string) {
  * @returns Plan pricing object
  */
 export function getPlanPricing(planName: string) {
-  const config = getPlanConfig(planName);
-  return config.pricing;
+  const config = getPlanConfig(planName)
+  return config.pricing
 }
 
 /**
@@ -61,8 +61,8 @@ export function getPlanPricing(planName: string) {
  * @returns Plan limits object
  */
 export function getPlanLimits(planName: string) {
-  const config = getPlanConfig(planName);
-  return config.limits;
+  const config = getPlanConfig(planName)
+  return config.limits
 }
 
 /**
@@ -71,8 +71,8 @@ export function getPlanLimits(planName: string) {
  * @returns True if plan is free
  */
 export function isFreePlan(planName: string): boolean {
-  const normalizedPlan = normalizePlanName(planName);
-  return normalizedPlan === PLAN_TYPES.FREE;
+  const normalizedPlan = normalizePlanName(planName)
+  return normalizedPlan === PLAN_TYPES.FREE
 }
 
 /**
@@ -81,8 +81,8 @@ export function isFreePlan(planName: string): boolean {
  * @returns True if plan is pro
  */
 export function isProPlan(planName: string): boolean {
-  const normalizedPlan = normalizePlanName(planName);
-  return normalizedPlan === PLAN_TYPES.PRO;
+  const normalizedPlan = normalizePlanName(planName)
+  return normalizedPlan === PLAN_TYPES.PRO
 }
 
 /**
@@ -91,6 +91,6 @@ export function isProPlan(planName: string): boolean {
  * @returns True if plan is max
  */
 export function isMaxPlan(planName: string): boolean {
-  const normalizedPlan = normalizePlanName(planName);
-  return normalizedPlan === PLAN_TYPES.MAX;
+  const normalizedPlan = normalizePlanName(planName)
+  return normalizedPlan === PLAN_TYPES.MAX
 }

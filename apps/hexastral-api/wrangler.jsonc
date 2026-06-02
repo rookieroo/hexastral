@@ -1,173 +1,169 @@
 {
-	"$schema": "../../node_modules/wrangler/config-schema.json",
-	"name": "hexastral-api",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-09-03",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	"minify": true,
-	"placement": {
-		"mode": "smart"
-	},
-	"observability": {
-		"enabled": true
-	},
-	// Fēng analyze pipeline (maps → vision → synthesis) can exceed 30s; use a queue
-	// consumer instead of waitUntil. Create once: bunx wrangler queues create feng-analyze
-	"limits": {
-		"cpu_ms": 300000
-	},
-	"queues": {
-		"producers": [
-			{
-				"binding": "FENG_ANALYZE_QUEUE",
-				"queue": "feng-analyze"
-			}
-		],
-		"consumers": [
-			{
-				"queue": "feng-analyze",
-				"max_batch_size": 1,
-				"max_retries": 2
-			}
-		]
-	},
-	// Cron — 每日 04:00 UTC: 事件归档 + 邀请过期退币
-	"triggers": {
-		"crons": [
-			"0 4 * * *"
-		]
-	},
-	// D1 Database — 统一用户数据 + 所有术数记录
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "hexastral-db",
-			"database_id": "cad1ad88-5854-4a88-aa19-bc79e84f4c49"
-		}
-	],
-	// KV — 占卜禁忌守卫 (精确去重 + 语义去重 + 日限)
-	//     + DDL session store (Deferred Deep Link, 30min TTL)
-	"kv_namespaces": [
-		{
-			"binding": "GUARD_KV",
-			"id": "2d7689c0d930413390e4d20235f959a0"
-		},
-		{
-			"binding": "DDL_KV",
-			"id": "f46f02e4b6374cbcbee8f3faa8d7d365"
-		}
-	],
-	// Rate Limiting — 防刷保护
-	"unsafe": {
-		"bindings": [
-			{
-				"type": "ratelimit",
-				"name": "RATE_LIMITER",
-				"namespace_id": "1",
-				"simple": {
-					"limit": 60,
-					"period": 60
-				}
-			},
-			{
-				"type": "ratelimit",
-				"name": "CHART_RATE_LIMITER",
-				"namespace_id": "2",
-				"simple": {
-					"limit": 5,
-					"period": 60
-				}
-			}
-		]
-	},
-	// Workers AI — divination-guard 语义去重 (embeddings)
-	"ai": {
-		"binding": "AI"
-	},
-	// Service Bindings — 内部 Worker 调用 (无公网暴露)
-	"services": [
-		{
-			"binding": "SVC_GEOCODE",
-			"service": "hexastral-svc-geocode"
-		},
-		{
-			"binding": "SVC_NOTIFY",
-			"service": "svc-notify"
-		},
-		{
-			"binding": "SVC_ASTRO",
-			"service": "svc-astro"
-		},
-		{
-			"binding": "SVC_MAILER",
-			"service": "hexastral-svc-mailer"
-		},
-		{
-			"binding": "SVC_ADMIN_NOTIFY",
-			"service": "svc-admin-notify"
-		},
-		{
-			"binding": "SVC_FENG",
-			"service": "hexastral-svc-feng"
-		}
-	],
-	// Custom domain
-	"routes": [
-		{
-			"pattern": "api.hexastral.com",
-			"custom_domain": true
-		}
-	],
-	// Analytics Engine — growth funnel events (append-only; SQL API in dashboard)
-	"analytics_engine_datasets": [
-		{
-			"binding": "GROWTH_FUNNEL_ANALYTICS",
-			"dataset": "growth_funnel_events"
-		}
-	],
-	// R2 — 用户媒体与分析归档
-	"r2_buckets": [
-		{
-			"binding": "ANALYTICS_BUCKET",
-			"bucket_name": "hexastral-analytics"
-		},
-		{
-			// 用户持久化媒体（头像、手相照片、风水平面图等）
-			"binding": "MEDIA_BUCKET",
-			"bucket_name": "hexastral-media"
-		}
-	],
-	// Portfolio memory (Cloudflare AI Search) — open beta.
-	// CLI: requires Wrangler >= ~4.79 (`wrangler ai-search`). If `wrangler ai-search` is "unknown", you are on a global/old binary — use from this app dir:
-	//   cd apps/hexastral-api && bunx wrangler ai-search get <instance_name> --json
-	// or: bun run ai-search:info   (see package.json; adjust instance name to match your AI Search instance).
-	// OAuth scopes: ai-search:write + ai-search:run.
-	// If `bun run ai-search:create` fails with code 10000 / "missing ... ai-search:*", your token predates those scopes:
-	//   wrangler logout && wrangler login
-	// Wrangler binding uses `instance_name` (same string as AI Search API JSON field `id`), e.g.:
-	//   cd apps/hexastral-api && bunx wrangler ai-search get portfolio_memory_ai_search --json | head
-	// Prefer an instance WITHOUT an R2/web crawler source if you only upload reading snippets via Workers `items.upload`
-	// (binding R2 to e.g. hexastral-media would index that whole bucket — usually wrong for this feature).
-	// `instance_name` must match your AI Search instance (API `id`: portfolio_memory_ai_search).
-	"ai_search": [
-		{
-			"binding": "PORTFOLIO_MEMORY_AI_SEARCH",
-			"instance_name": "portfolio_memory_ai_search"
-		}
-	],
-	// 环境变量
-	"vars": {
-		"ENVIRONMENT": "production",
-		"TURNSTILE_SITE_KEY": "0x4AAAAAACzwgZxj-UShx-9l",
-		// KV 缓存版本 — 编辑 D1 命格预设文案后递增此值（v1→v2）使旧缓存立即失效
-		"ARCHETYPE_CACHE_VERSION": "v1"
-	},
-	// Tail Worker — centralized log aggregation
-	"tail_consumers": [
-		{
-			"service": "svc-tail"
-		}
-	]
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hexastral-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+  "placement": {
+    "mode": "smart"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Fēng analyze pipeline (maps → vision → synthesis) can exceed 30s; use a queue
+  // consumer instead of waitUntil. Create once: bunx wrangler queues create feng-analyze
+  "limits": {
+    "cpu_ms": 300000
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "FENG_ANALYZE_QUEUE",
+        "queue": "feng-analyze"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "feng-analyze",
+        "max_batch_size": 1,
+        "max_retries": 2
+      }
+    ]
+  },
+  // Cron — 每日 04:00 UTC: 事件归档 + 邀请过期退币
+  "triggers": {
+    "crons": ["0 4 * * *"]
+  },
+  // D1 Database — 统一用户数据 + 所有术数记录
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hexastral-db",
+      "database_id": "cad1ad88-5854-4a88-aa19-bc79e84f4c49"
+    }
+  ],
+  // KV — 占卜禁忌守卫 (精确去重 + 语义去重 + 日限)
+  //     + DDL session store (Deferred Deep Link, 30min TTL)
+  "kv_namespaces": [
+    {
+      "binding": "GUARD_KV",
+      "id": "2d7689c0d930413390e4d20235f959a0"
+    },
+    {
+      "binding": "DDL_KV",
+      "id": "f46f02e4b6374cbcbee8f3faa8d7d365"
+    }
+  ],
+  // Rate Limiting — 防刷保护
+  "unsafe": {
+    "bindings": [
+      {
+        "type": "ratelimit",
+        "name": "RATE_LIMITER",
+        "namespace_id": "1",
+        "simple": {
+          "limit": 60,
+          "period": 60
+        }
+      },
+      {
+        "type": "ratelimit",
+        "name": "CHART_RATE_LIMITER",
+        "namespace_id": "2",
+        "simple": {
+          "limit": 5,
+          "period": 60
+        }
+      }
+    ]
+  },
+  // Workers AI — divination-guard 语义去重 (embeddings)
+  "ai": {
+    "binding": "AI"
+  },
+  // Service Bindings — 内部 Worker 调用 (无公网暴露)
+  "services": [
+    {
+      "binding": "SVC_GEOCODE",
+      "service": "hexastral-svc-geocode"
+    },
+    {
+      "binding": "SVC_NOTIFY",
+      "service": "svc-notify"
+    },
+    {
+      "binding": "SVC_ASTRO",
+      "service": "svc-astro"
+    },
+    {
+      "binding": "SVC_MAILER",
+      "service": "hexastral-svc-mailer"
+    },
+    {
+      "binding": "SVC_ADMIN_NOTIFY",
+      "service": "svc-admin-notify"
+    },
+    {
+      "binding": "SVC_FENG",
+      "service": "hexastral-svc-feng"
+    }
+  ],
+  // Custom domain
+  "routes": [
+    {
+      "pattern": "api.hexastral.com",
+      "custom_domain": true
+    }
+  ],
+  // Analytics Engine — growth funnel events (append-only; SQL API in dashboard)
+  "analytics_engine_datasets": [
+    {
+      "binding": "GROWTH_FUNNEL_ANALYTICS",
+      "dataset": "growth_funnel_events"
+    }
+  ],
+  // R2 — 用户媒体与分析归档
+  "r2_buckets": [
+    {
+      "binding": "ANALYTICS_BUCKET",
+      "bucket_name": "hexastral-analytics"
+    },
+    {
+      // 用户持久化媒体（头像、手相照片、风水平面图等）
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "hexastral-media"
+    }
+  ],
+  // Portfolio memory (Cloudflare AI Search) — open beta.
+  // CLI: requires Wrangler >= ~4.79 (`wrangler ai-search`). If `wrangler ai-search` is "unknown", you are on a global/old binary — use from this app dir:
+  //   cd apps/hexastral-api && bunx wrangler ai-search get <instance_name> --json
+  // or: bun run ai-search:info   (see package.json; adjust instance name to match your AI Search instance).
+  // OAuth scopes: ai-search:write + ai-search:run.
+  // If `bun run ai-search:create` fails with code 10000 / "missing ... ai-search:*", your token predates those scopes:
+  //   wrangler logout && wrangler login
+  // Wrangler binding uses `instance_name` (same string as AI Search API JSON field `id`), e.g.:
+  //   cd apps/hexastral-api && bunx wrangler ai-search get portfolio_memory_ai_search --json | head
+  // Prefer an instance WITHOUT an R2/web crawler source if you only upload reading snippets via Workers `items.upload`
+  // (binding R2 to e.g. hexastral-media would index that whole bucket — usually wrong for this feature).
+  // `instance_name` must match your AI Search instance (API `id`: portfolio_memory_ai_search).
+  "ai_search": [
+    {
+      "binding": "PORTFOLIO_MEMORY_AI_SEARCH",
+      "instance_name": "portfolio_memory_ai_search"
+    }
+  ],
+  // 环境变量
+  "vars": {
+    "ENVIRONMENT": "production",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAACzwgZxj-UShx-9l",
+    // KV 缓存版本 — 编辑 D1 命格预设文案后递增此值（v1→v2）使旧缓存立即失效
+    "ARCHETYPE_CACHE_VERSION": "v1"
+  },
+  // Tail Worker — centralized log aggregation
+  "tail_consumers": [
+    {
+      "service": "svc-tail"
+    }
+  ]
 }

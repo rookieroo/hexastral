@@ -7,14 +7,14 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const KEY = 'cycle.people'
+const KEY = 'auspice.people'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export type PersonGender = '男' | '女'
 /** Whether `solarDate` is a Gregorian (solar) date or a 农历 year-month-day. */
 export type PersonCalendar = 'solar' | 'lunar'
 
-export interface CyclePerson {
+export interface AuspicePerson {
   id: string
   name: string
   /** YYYY-MM-DD. Gregorian when `calendar==='solar'`, else interpreted as 农历. */
@@ -33,7 +33,7 @@ export interface CyclePerson {
   remindOnDay?: boolean
 }
 
-function isPerson(v: unknown): v is CyclePerson {
+function isPerson(v: unknown): v is AuspicePerson {
   if (typeof v !== 'object' || v === null) return false
   const p = v as Record<string, unknown>
   return (
@@ -44,7 +44,7 @@ function isPerson(v: unknown): v is CyclePerson {
   )
 }
 
-export async function getPeople(): Promise<CyclePerson[]> {
+export async function getPeople(): Promise<AuspicePerson[]> {
   try {
     const raw = await AsyncStorage.getItem(KEY)
     const arr = raw ? JSON.parse(raw) : []
@@ -54,7 +54,7 @@ export async function getPeople(): Promise<CyclePerson[]> {
   }
 }
 
-async function savePeople(people: CyclePerson[]): Promise<void> {
+async function savePeople(people: AuspicePerson[]): Promise<void> {
   try {
     await AsyncStorage.setItem(KEY, JSON.stringify(people))
   } catch {}
@@ -75,12 +75,12 @@ export interface AddPersonInput {
   remindOnDay?: boolean
 }
 
-export async function addPerson(input: AddPersonInput): Promise<CyclePerson[]> {
+export async function addPerson(input: AddPersonInput): Promise<AuspicePerson[]> {
   if (!DATE_RE.test(input.solarDate)) return getPeople()
   const people = await getPeople()
   // App-runtime id (not a workflow script — Date.now/random are fine here).
   const id = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
-  const next: CyclePerson[] = [
+  const next: AuspicePerson[] = [
     ...people,
     {
       id,
@@ -98,7 +98,7 @@ export async function addPerson(input: AddPersonInput): Promise<CyclePerson[]> {
   return next
 }
 
-export async function removePerson(id: string): Promise<CyclePerson[]> {
+export async function removePerson(id: string): Promise<AuspicePerson[]> {
   const people = (await getPeople()).filter((p) => p.id !== id)
   await savePeople(people)
   return people

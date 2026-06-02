@@ -35,71 +35,66 @@ function toBase64(bytes: ArrayBuffer): string {
   return btoa(result)
 }
 
-export const fengReportRoutes = new Hono<AppEnv>().get(
-  '/:reportId/maps/:tile',
-  async (c) => {
-    const userId = requireUserId(c)
-    const reportId = c.req.param('reportId')
-    const tileParam = c.req.param('tile')
+export const fengReportRoutes = new Hono<AppEnv>().get('/:reportId/maps/:tile', async (c) => {
+  const userId = requireUserId(c)
+  const reportId = c.req.param('reportId')
+  const tileParam = c.req.param('tile')
 
-    const parsedTile = tileSchema.safeParse(tileParam)
-    if (!parsedTile.success) {
-      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'tile must be close|mid|wide')
-    }
-    const tile = parsedTile.data
-    const db = c.get('db')
-
-    const row = await db
-      .select({
-        id: fengReports.id,
-        userId: fengReports.userId,
-        annotatedMapKeys: fengReports.annotatedMapKeys,
-      })
-      .from(fengReports)
-      .where(and(eq(fengReports.id, reportId), eq(fengReports.userId, userId)))
-      .get()
-
-    if (!row) {
-      return jsonErr(c, 404, ApiErrorCode.not_found, 'report not found')
-    }
-    if (!row.annotatedMapKeys) {
-      return jsonErr(
-        c,
-        404,
-        ApiErrorCode.not_found,
-        'this report has no annotated map (legacy or partial run)'
-      )
-    }
-
-    let keys: Partial<Record<'close' | 'mid' | 'wide', string>>
-    try {
-      keys = JSON.parse(row.annotatedMapKeys) as Partial<
-        Record<'close' | 'mid' | 'wide', string>
-      >
-    } catch {
-      return jsonErr(c, 500, ApiErrorCode.internal_error, 'annotated_map_keys not parseable')
-    }
-    const key = keys[tile]
-    if (!key) {
-      return jsonErr(
-        c,
-        404,
-        ApiErrorCode.not_found,
-        `tile ${tile} not rendered for this report (prefetch may have skipped this scale)`
-      )
-    }
-
-    const res = await c.env.SVC_FENG.fetch(
-      new Request(`https://svc-feng.internal/maps/image/annotated/${encodeURIComponent(key)}`)
-    )
-    if (!res.ok) {
-      return jsonErr(c, 502, ApiErrorCode.internal_error, `svc-feng image fetch ${res.status}`)
-    }
-    const bytes = await res.arrayBuffer()
-    return jsonOk(c, {
-      tile,
-      base64: toBase64(bytes),
-      contentType: res.headers.get('content-type') ?? 'image/png',
-    })
+  const parsedTile = tileSchema.safeParse(tileParam)
+  if (!parsedTile.success) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'tile must be close|mid|wide')
   }
-)
+  const tile = parsedTile.data
+  const db = c.get('db')
+
+  const row = await db
+    .select({
+      id: fengReports.id,
+      userId: fengReports.userId,
+      annotatedMapKeys: fengReports.annotatedMapKeys,
+    })
+    .from(fengReports)
+    .where(and(eq(fengReports.id, reportId), eq(fengReports.userId, userId)))
+    .get()
+
+  if (!row) {
+    return jsonErr(c, 404, ApiErrorCode.not_found, 'report not found')
+  }
+  if (!row.annotatedMapKeys) {
+    return jsonErr(
+      c,
+      404,
+      ApiErrorCode.not_found,
+      'this report has no annotated map (legacy or partial run)'
+    )
+  }
+
+  let keys: Partial<Record<'close' | 'mid' | 'wide', string>>
+  try {
+    keys = JSON.parse(row.annotatedMapKeys) as Partial<Record<'close' | 'mid' | 'wide', string>>
+  } catch {
+    return jsonErr(c, 500, ApiErrorCode.internal_error, 'annotated_map_keys not parseable')
+  }
+  const key = keys[tile]
+  if (!key) {
+    return jsonErr(
+      c,
+      404,
+      ApiErrorCode.not_found,
+      `tile ${tile} not rendered for this report (prefetch may have skipped this scale)`
+    )
+  }
+
+  const res = await c.env.SVC_FENG.fetch(
+    new Request(`https://svc-feng.internal/maps/image/annotated/${encodeURIComponent(key)}`)
+  )
+  if (!res.ok) {
+    return jsonErr(c, 502, ApiErrorCode.internal_error, `svc-feng image fetch ${res.status}`)
+  }
+  const bytes = await res.arrayBuffer()
+  return jsonOk(c, {
+    tile,
+    base64: toBase64(bytes),
+    contentType: res.headers.get('content-type') ?? 'image/png',
+  })
+})

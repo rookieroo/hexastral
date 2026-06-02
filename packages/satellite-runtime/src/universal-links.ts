@@ -25,8 +25,8 @@
  * app's navigation layer.
  */
 
-import { useEffect } from 'react'
 import * as Linking from 'expo-linking'
+import { useEffect } from 'react'
 
 /** Discriminated union of recognized hexastral.com link kinds. */
 export type HexastralLink =

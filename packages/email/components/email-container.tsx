@@ -29,11 +29,7 @@ export interface EmailContainerProps {
  * Base container for all email templates
  * Provides consistent styling, responsive layout, and includes header/footer
  */
-export const EmailContainer: React.FC<EmailContainerProps> = ({
-  title,
-  previewText,
-  children,
-}) => {
+export const EmailContainer: React.FC<EmailContainerProps> = ({ title, previewText, children }) => {
   return (
     <Tailwind
       config={{
@@ -75,7 +71,10 @@ export const EmailContainer: React.FC<EmailContainerProps> = ({
         </Head>
         <Preview>{previewText}</Preview>
         <Body className='m-0 p-0 font-sans bg-gray-50 text-foreground'>
-          <Container className='max-w-2xl mx-auto bg-white my-8 border border-gray-200' style={{ borderRadius: '10px' }}>
+          <Container
+            className='max-w-2xl mx-auto bg-white my-8 border border-gray-200'
+            style={{ borderRadius: '10px' }}
+          >
             <EmailHeader />
             {children}
             <EmailFooter />

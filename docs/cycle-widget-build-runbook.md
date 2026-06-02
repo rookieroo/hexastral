@@ -16,7 +16,7 @@ dev machine; CI does not build native.**
 
 1. **Install the native deps** (don't pin versions here — let bun resolve):
    ```bash
-   cd apps/cycle-app
+   cd apps/auspice-app
    bun add @bacons/apple-targets react-native-shared-group-preferences
    ```
    - `@bacons/apple-targets` — config plugin that adds the Widget Extension target.
@@ -60,7 +60,7 @@ dev machine; CI does not build native.**
 ## Follow-ups (per docs/cycle-widget-watch-scope.md)
 - Write an **N-day window** (batch fetch), not just today, so the WidgetKit timeline
   spans several days between app opens.
-- Mirror the **cycle_pro entitlement** into the App Group so the widget can show the
+- Mirror the **auspice_pro entitlement** into the App Group so the widget can show the
   Pro 对你而言 line / Pro faces and downgrade gracefully for free users.
 - **watchOS complications** — a second `@bacons/apple-targets` target reading the
   same App Group.

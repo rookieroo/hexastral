@@ -31,6 +31,6 @@ export {
   useFengClient,
 } from './context'
 export * from './hooks'
+export { normalizeFengDeg, nudgeFengDeg, pointToFengDeg } from './lib/facing-deg'
 export type { CreateSiteInput, LogBearingInput, PatchSiteInput } from './lib/feng-api'
-export { nudgeFengDeg, normalizeFengDeg, pointToFengDeg } from './lib/facing-deg'
 export * from './types'

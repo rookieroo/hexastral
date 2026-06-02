@@ -26,7 +26,7 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 import { fetchTimeline, type PillarUnit, type TimelinePayload } from '@/lib/api'
-import { getCycleBirthInfo } from '@/lib/birth'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { TWELVE_BRANCHES, type Wuxing } from '@/lib/ganzhi-content'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
@@ -58,7 +58,7 @@ export function BaziPillars() {
 
   const load = useCallback(() => {
     setState({ kind: 'loading' })
-    getCycleBirthInfo()
+    getAuspiceBirthInfo()
       .then((info) => {
         if (!info?.gender) {
           setState({ kind: 'no-birth' })

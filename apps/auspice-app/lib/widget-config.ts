@@ -22,7 +22,7 @@ export const MOON_SKIN_OPTIONS: ReadonlyArray<{ id: MoonSkinId; name: string }> 
 ]
 
 const VALID = new Set<string>(MOON_SKIN_OPTIONS.map((o) => o.id))
-const KEY = 'cycle.widget.moonSkin'
+const KEY = 'auspice.widget.moonSkin'
 
 export async function getMoonSkin(): Promise<MoonSkinId> {
   try {
@@ -54,7 +54,7 @@ export const TEMPLATE_OPTIONS: ReadonlyArray<{ id: WatchTemplate; label: string;
 ]
 
 const VALID_TEMPLATES = new Set<string>(TEMPLATE_OPTIONS.map((o) => o.id))
-const TEMPLATE_KEY = 'cycle.widget.template'
+const TEMPLATE_KEY = 'auspice.widget.template'
 
 export async function getWatchTemplate(): Promise<WatchTemplate> {
   try {

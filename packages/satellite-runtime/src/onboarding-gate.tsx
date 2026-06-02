@@ -31,8 +31,8 @@
  * `router.replace('/index')`) to re-check.
  */
 
-import { Redirect } from 'expo-router'
 import type { Href } from 'expo-router'
+import { Redirect } from 'expo-router'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -60,7 +60,7 @@ export function useOnboardingState({
 }: UseOnboardingStateOptions): OnboardingState {
   const [state, setState] = useState<OnboardingState>(
     // `none` and `optional` don't gate, so skip the async check entirely.
-    kind === 'none' || kind === 'optional' ? 'satisfied' : 'loading',
+    kind === 'none' || kind === 'optional' ? 'satisfied' : 'loading'
   )
 
   useEffect(() => {
@@ -109,11 +109,7 @@ export function OnboardingEntryGate({
   const state = useOnboardingState({ storagePrefix, kind })
 
   if (state === 'loading') {
-    return (
-      loadingFallback ?? (
-        <View style={{ flex: 1, backgroundColor: '#0C0B0A' }} />
-      )
-    )
+    return loadingFallback ?? <View style={{ flex: 1, backgroundColor: '#0C0B0A' }} />
   }
   if (state === 'needs-onboarding') return <Redirect href={onboardingHref} />
   return <Redirect href={homeHref} />

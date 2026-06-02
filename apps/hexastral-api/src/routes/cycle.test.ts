@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { cycleRoutes } from './cycle'
+import { auspiceRoutes } from './cycle'
 
 // The handlers only read query params + @zhop/astro-core (no db / env / rate-limit),
 // so the sub-app can be exercised directly via .request() without bindings.
 
-describe('GET /api/cycle/day', () => {
+describe('GET /api/auspice/day', () => {
   test('returns a full deterministic AlmanacDay envelope', async () => {
-    const res = await cycleRoutes.request('/day?date=2026-06-12')
+    const res = await auspiceRoutes.request('/day?date=2026-06-12')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
@@ -54,19 +54,19 @@ describe('GET /api/cycle/day', () => {
   })
 
   test('defaults to today (UTC) when no date is given', async () => {
-    const res = await cycleRoutes.request('/day')
+    const res = await auspiceRoutes.request('/day')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.data.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
   test('rejects an impossible calendar date', async () => {
-    const res = await cycleRoutes.request('/day?date=2026-02-31')
+    const res = await auspiceRoutes.request('/day?date=2026-02-31')
     expect(res.status).toBe(400)
   })
 
   test('fills a deterministic personalization block when birthDate is given', async () => {
-    const res = await cycleRoutes.request('/day?date=2026-06-12&birthDate=1990-08-15')
+    const res = await auspiceRoutes.request('/day?date=2026-06-12&birthDate=1990-08-15')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.data.personalization).not.toBeNull()
@@ -82,9 +82,9 @@ describe('GET /api/cycle/day', () => {
   })
 })
 
-describe('GET /api/cycle/month', () => {
+describe('GET /api/auspice/month', () => {
   test('returns a batch month payload with per-day 农历 + 节气 marks + rating', async () => {
-    const res = await cycleRoutes.request('/month?year=2026&month=6')
+    const res = await auspiceRoutes.request('/month?year=2026&month=6')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
@@ -115,18 +115,22 @@ describe('GET /api/cycle/month', () => {
   })
 
   test('rejects out-of-range year / month', async () => {
-    const r1 = await cycleRoutes.request('/month?year=1899&month=6')
+    const r1 = await auspiceRoutes.request('/month?year=1899&month=6')
     expect(r1.status).toBe(400)
-    const r2 = await cycleRoutes.request('/month?year=2026&month=13')
+    const r2 = await auspiceRoutes.request('/month?year=2026&month=13')
     expect(r2.status).toBe(400)
   })
 
   test('zh-Hans public holidays: 春节 on Feb 17, 国庆 on Oct 1', async () => {
-    const feb = await (await cycleRoutes.request('/month?year=2026&month=2&locale=zh-Hans')).json()
+    const feb = await (
+      await auspiceRoutes.request('/month?year=2026&month=2&locale=zh-Hans')
+    ).json()
     expect(feb.data.locale).toBe('zh-Hans')
     const chunjie = feb.data.days.find((d: { day: number }) => d.day === 17)
     expect(chunjie.publicHoliday).toBe('春节')
-    const oct = await (await cycleRoutes.request('/month?year=2026&month=10&locale=zh-Hans')).json()
+    const oct = await (
+      await auspiceRoutes.request('/month?year=2026&month=10&locale=zh-Hans')
+    ).json()
     const guoqing = oct.data.days.find((d: { day: number }) => d.day === 1)
     expect(guoqing.publicHoliday).toBe('国庆')
     // Random non-holiday day stays null.
@@ -135,13 +139,13 @@ describe('GET /api/cycle/month', () => {
   })
 
   test('ja public holidays: 建国記念の日 Feb 11, 春分の日 (solar-term)', async () => {
-    const feb = await (await cycleRoutes.request('/month?year=2026&month=2&locale=ja')).json()
+    const feb = await (await auspiceRoutes.request('/month?year=2026&month=2&locale=ja')).json()
     expect(feb.data.locale).toBe('ja')
     const kenkoku = feb.data.days.find((d: { day: number }) => d.day === 11)
     expect(kenkoku.publicHoliday).toBe('建国記念の日')
     // 春分の日 falls on the gregorian day of 春分 — verify there's exactly
     // one day in March that has the holiday + matches 春分 solar term.
-    const mar = await (await cycleRoutes.request('/month?year=2026&month=3&locale=ja')).json()
+    const mar = await (await auspiceRoutes.request('/month?year=2026&month=3&locale=ja')).json()
     const shunbun = mar.data.days.find(
       (d: { publicHoliday: string | null }) => d.publicHoliday === '春分の日'
     )
@@ -150,11 +154,11 @@ describe('GET /api/cycle/month', () => {
   })
 
   test('en public holidays: Independence Day Jul 4, Thanksgiving 4th Thursday Nov', async () => {
-    const jul = await (await cycleRoutes.request('/month?year=2026&month=7&locale=en')).json()
+    const jul = await (await auspiceRoutes.request('/month?year=2026&month=7&locale=en')).json()
     const ind = jul.data.days.find((d: { day: number }) => d.day === 4)
     expect(ind.publicHoliday).toBe('Independence Day')
     // Thanksgiving 2026 is the 4th Thursday of November = Nov 26.
-    const nov = await (await cycleRoutes.request('/month?year=2026&month=11&locale=en')).json()
+    const nov = await (await auspiceRoutes.request('/month?year=2026&month=11&locale=en')).json()
     const thx = nov.data.days.find(
       (d: { publicHoliday: string | null }) => d.publicHoliday === 'Thanksgiving'
     )
@@ -162,15 +166,15 @@ describe('GET /api/cycle/month', () => {
   })
 
   test('defaults to zh-Hans when no locale is provided', async () => {
-    const res = await (await cycleRoutes.request('/month?year=2026&month=10')).json()
+    const res = await (await auspiceRoutes.request('/month?year=2026&month=10')).json()
     expect(res.data.locale).toBe('zh-Hans')
     expect(res.data.days.find((d: { day: number }) => d.day === 1).publicHoliday).toBe('国庆')
   })
 })
 
-describe('GET /api/cycle/search', () => {
+describe('GET /api/auspice/search', () => {
   test('returns up to 3 days ranked by fitness, with reasoning', async () => {
-    const res = await cycleRoutes.request('/search?event=wedding&from=2026-06-01&to=2026-06-30')
+    const res = await auspiceRoutes.request('/search?event=wedding&from=2026-06-01&to=2026-06-30')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
@@ -190,7 +194,7 @@ describe('GET /api/cycle/search', () => {
   })
 
   test('rejects an unbounded range', async () => {
-    const res = await cycleRoutes.request('/search?event=travel&from=2026-01-01&to=2026-12-31')
+    const res = await auspiceRoutes.request('/search?event=travel&from=2026-01-01&to=2026-12-31')
     expect(res.status).toBe(400)
   })
 })
@@ -200,9 +204,9 @@ describe('GET /api/cycle/search', () => {
 // nudge the score toward 建除十二神 classically auspicious for the activity.
 // Sprint 3 chunk 1 — /festivals page batch endpoint. One request feeds both
 // the 24 节气 timeline and the 8-festival list.
-describe('GET /api/cycle/year-overview', () => {
+describe('GET /api/auspice/year-overview', () => {
   test('returns 24 solar terms + 8 festivals for a valid year', async () => {
-    const res = await cycleRoutes.request('/year-overview?year=2026')
+    const res = await auspiceRoutes.request('/year-overview?year=2026')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
@@ -244,14 +248,14 @@ describe('GET /api/cycle/year-overview', () => {
   })
 
   test('rejects out-of-range year', async () => {
-    const r1 = await cycleRoutes.request('/year-overview?year=1899')
+    const r1 = await auspiceRoutes.request('/year-overview?year=1899')
     expect(r1.status).toBe(400)
-    const r2 = await cycleRoutes.request('/year-overview?year=2101')
+    const r2 = await auspiceRoutes.request('/year-overview?year=2101')
     expect(r2.status).toBe(400)
   })
 })
 
-describe('GET /api/cycle/{wedding,move-in,business,travel}', () => {
+describe('GET /api/auspice/{wedding,move-in,business,travel}', () => {
   const cases: Array<{
     path: string
     event: string
@@ -265,7 +269,7 @@ describe('GET /api/cycle/{wedding,move-in,business,travel}', () => {
 
   for (const tc of cases) {
     test(`${tc.path} returns ranked dates with the right event tag`, async () => {
-      const res = await cycleRoutes.request(`${tc.path}?from=2026-06-01&to=2026-06-30`)
+      const res = await auspiceRoutes.request(`${tc.path}?from=2026-06-01&to=2026-06-30`)
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body.ok).toBe(true)
@@ -283,18 +287,16 @@ describe('GET /api/cycle/{wedding,move-in,business,travel}', () => {
     // The specialized route emits activity-tuned reasoning when its top pick
     // hits a `成` or `定` officer; the generic route doesn't. At least one of
     // the top-3 picks from /wedding in a 30-day window will exercise this.
-    const r1 = await cycleRoutes.request('/wedding?from=2026-06-01&to=2026-06-30')
+    const r1 = await auspiceRoutes.request('/wedding?from=2026-06-01&to=2026-06-30')
     const b1 = await r1.json()
     const reasonings: string[] = b1.data.top.map((t: { reasoning: string }) => t.reasoning)
     // At least one of the specialized reasonings carries the officer-tuned tag.
-    const hasTunedTag = reasonings.some(
-      (r: string) => r.includes('相宜') || r.includes('相避')
-    )
+    const hasTunedTag = reasonings.some((r: string) => r.includes('相宜') || r.includes('相避'))
     expect(hasTunedTag).toBe(true)
   })
 
   test('rejects out-of-range span on specialized routes', async () => {
-    const res = await cycleRoutes.request('/travel?from=2026-01-01&to=2026-12-31')
+    const res = await auspiceRoutes.request('/travel?from=2026-01-01&to=2026-12-31')
     expect(res.status).toBe(400)
   })
 })

@@ -13,7 +13,7 @@
  *     [
  *       "@zhop/widget-kit-ios/plugin",
  *       {
- *         "widgetName": "CycleWidget",
+ *         "widgetName": "AuspiceWidget",
  *         "appSlug": "cycle",
  *         "appGroupId": "group.com.hexastral.shared.cycle",
  *         "watchComplication": true
@@ -35,7 +35,7 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
 export interface WidgetKitIosPluginProps {
-  /** PascalCase widget extension name. E.g. "CycleWidget". */
+  /** PascalCase widget extension name. E.g. "AuspiceWidget". */
   widgetName: string
   /** App slug — must match the `AppSlug` type. */
   appSlug: 'cycle' | 'feng' | 'yuan' | 'mingpan'
@@ -47,9 +47,7 @@ export interface WidgetKitIosPluginProps {
 
 const withWidgetExtension: ConfigPlugin<WidgetKitIosPluginProps> = (config, props) => {
   if (!props.widgetName || !props.appSlug || !props.appGroupId) {
-    throw new Error(
-      '[widget-kit-ios] All three of widgetName, appSlug, appGroupId are required'
-    )
+    throw new Error('[widget-kit-ios] All three of widgetName, appSlug, appGroupId are required')
   }
 
   // Sprint 1: scaffold only — validate props, no Xcode mutation yet.

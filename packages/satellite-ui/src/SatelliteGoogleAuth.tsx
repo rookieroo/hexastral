@@ -68,7 +68,9 @@ export function SatelliteGoogleAuth(props: SatelliteGoogleAuthProps): ReactEleme
     let cancelled = false
     ;(async () => {
       try {
-        const mod = (await import('@react-native-google-signin/google-signin')) as unknown as GoogleSigninModule
+        const mod = (await import(
+          '@react-native-google-signin/google-signin'
+        )) as unknown as GoogleSigninModule
         if (cancelled) return
         mod.GoogleSignin.configure({
           iosClientId: props.iosClientId,

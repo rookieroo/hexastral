@@ -114,8 +114,9 @@ export async function callGeminiVisionStructured<T>(
     { model, imageCount: opts.images.length, structured: true },
     async () => {
       const ai = new GoogleGenAI({ apiKey })
-      const parts: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> =
-        [{ text: opts.userPrompt }]
+      const parts: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> = [
+        { text: opts.userPrompt },
+      ]
       for (const img of opts.images) {
         parts.push({ inlineData: { data: img.base64, mimeType: img.mimeType ?? 'image/png' } })
       }

@@ -122,7 +122,7 @@ export const REPORT_CONFIGS: Record<ReportType, ReportVisualConfig> = {
     },
     accentColor: ink.gold,
     iconHint: 'users',
-    sealText: '缘',
+    sealText: 'Kindred',
   },
   'chart-card': {
     gradient: chartCardGradient,

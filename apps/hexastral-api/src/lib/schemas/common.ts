@@ -43,7 +43,7 @@ export const localeSchema = z.enum([
 ])
 export type Locale = z.infer<typeof localeSchema>
 
-/** Subset of locales currently supported by Fēng / Yuán / HexAstral V1. */
+/** Subset of locales currently supported by Fēng / Kindred / HexAstral V1. */
 export const v1LocaleSchema = z.enum(['en', 'zh', 'zh-Hant', 'ja'])
 export type V1Locale = z.infer<typeof v1LocaleSchema>
 

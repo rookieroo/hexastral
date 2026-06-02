@@ -1,5 +1,5 @@
 /**
- * Tests for POST /api/cycle/timeline (Sprint 4 — ADR-0020 Life Timeline backend).
+ * Tests for POST /api/auspice/timeline (Sprint 4 — ADR-0020 Life Timeline backend).
  *
  * Mirrors the cycle.test.ts harness pattern — drives the sub-router via
  * `.request()` directly. HMAC v2 verification is wired at the index.ts level
@@ -11,7 +11,7 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
 import type { AppEnv } from '../infra-types'
-import { buildTimelinePayload, cycleTimelineRoutes } from './cycle-timeline'
+import { auspiceTimelineRoutes, buildTimelinePayload } from './cycle-timeline'
 
 /**
  * Build a fresh Hono app that wraps the sub-router with an in-memory `db`
@@ -87,7 +87,7 @@ function makeHarness() {
     c.set('db', fakeDb as any)
     await next()
   })
-  app.route('/', cycleTimelineRoutes)
+  app.route('/', auspiceTimelineRoutes)
 
   return { app, store }
 }
@@ -107,7 +107,7 @@ async function postTimeline(app: Hono<AppEnv>, body: object) {
   })
 }
 
-describe('POST /api/cycle/timeline', () => {
+describe('POST /api/auspice/timeline', () => {
   test('returns 8 大运 steps + schemaVersion 1', async () => {
     const { app } = makeHarness()
     const res = await postTimeline(app, BODY)

@@ -189,5 +189,5 @@ the build log for `Uploading source maps` lines.
 - [ ] Wire `setCrashUserContext(userId)` post-sign-in (existing hook
       in `usePortfolioSatelliteBootstrap` is the natural spot)
 - [ ] Add `initCrashReporting({ app: 'cycle' })` to cycle-app _layout.tsx
-- [ ] Add `initCrashReporting({ app: 'yuan' })` to yuan-app _layout.tsx
+- [ ] Add `initCrashReporting({ app: 'kindred' })` to yuan-app _layout.tsx
 - [ ] Add `initCrashReporting({ app: 'feng' })` to feng-app _layout.tsx

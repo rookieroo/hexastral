@@ -23,7 +23,6 @@ import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quo
 import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { rebuildUserCharts } from '../lib/chart-skeleton'
 import { castMeihua } from '../lib/meihua'
-import { mailerClient } from '../lib/service-clients'
 import {
   buildCoincastMemoryDocument,
   buildDreamMemoryDocument,
@@ -40,6 +39,7 @@ import {
   buildSoulMatchPrompt,
   buildStarPalacePrompt,
 } from '../lib/prompts'
+import { mailerClient } from '../lib/service-clients'
 import {
   type CreditSource,
   consumeCredit,
@@ -73,12 +73,12 @@ const linkedBodySchema = z.object({
   questionType: questionTypeSchema.optional(),
 })
 
-type FlagshipKey = 'yuan' | 'feng' | 'hexastral'
+type FlagshipKey = 'kindred' | 'feng' | 'hexastral'
 type QuestionType = z.infer<typeof questionTypeSchema>
 type PortfolioTargetKey = z.infer<typeof portfolioTargetSchema>
 
 const QUESTION_TO_FLAGSHIP: Record<QuestionType, FlagshipKey> = {
-  relationship: 'yuan',
+  relationship: 'kindred',
   home_office: 'feng',
   career_wealth: 'hexastral',
   self_daily: 'hexastral',
@@ -87,7 +87,7 @@ const QUESTION_TO_FLAGSHIP: Record<QuestionType, FlagshipKey> = {
 const TARGET_DEFAULT_FLAGSHIP: Record<PortfolioTargetKey, FlagshipKey> = {
   faceoracle: 'hexastral',
   starpalace: 'hexastral',
-  soulmatch: 'yuan',
+  soulmatch: 'kindred',
   fengshui: 'feng',
   dreamoracle: 'hexastral',
   eightpillars: 'hexastral',

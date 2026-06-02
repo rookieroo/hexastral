@@ -628,8 +628,8 @@ export const de: Record<TranslationKeys, string> = {
   tab_you: 'Du',
   // ── Phase J · J.3.4 Discovery cards (EN fallback) ──
   discover_section_label: 'DISCOVER',
-  discover_yuan_title: 'Read your bond with someone',
-  discover_yuan_subtitle: 'Yuán · synastry compatibility readings',
+  discover_kindred_title: 'Read your bond with someone',
+  discover_kindred_subtitle: 'Kindred · synastry compatibility readings',
   discover_faceoracle_title: 'Face & palm AI reading',
   discover_faceoracle_subtitle: 'FaceOracle · one photo, structured insight',
   discover_feng_title: "Read your home's feng-shui",

@@ -1,5 +1,5 @@
 /**
- * /api/bonds — 关系图谱 CRUD (缘·Bonds)
+ * /api/bonds — 关系图谱 CRUD (Kindred·Bonds)
  *
  * 双模式: Solo (默念) + Resonance (共振)
  *
@@ -187,8 +187,8 @@ type BondLimitResult =
     }
 
 const YUAN_PRO_PRODUCT_IDS = {
-  monthly: 'hexastral_yuan_pro_monthly',
-  annual: 'hexastral_yuan_pro_annual',
+  monthly: 'hexastral_kindred_pro_monthly',
+  annual: 'hexastral_kindred_pro_annual',
 } as const
 
 /** Check bond limit for free users — returns instead of throws so route can emit envelope. */
@@ -198,7 +198,7 @@ async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResul
     return { allowed: false, reason: 'user_not_found', message: 'User not found' }
   }
 
-  const isPro = await userHasCapability(db, userId, 'yuan')
+  const isPro = await userHasCapability(db, userId, 'kindred')
   if (isPro) return { allowed: true }
 
   const [countRow] = await db
@@ -210,7 +210,7 @@ async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResul
     return {
       allowed: false,
       reason: 'paywall_required',
-      message: `Free users are limited to ${FREE_BOND_LIMIT} bonds. Upgrade to Yuán Pro for unlimited.`,
+      message: `Free users are limited to ${FREE_BOND_LIMIT} bonds. Upgrade to Kindred Pro for unlimited.`,
       limit: FREE_BOND_LIMIT,
       iapProductIds: YUAN_PRO_PRODUCT_IDS,
     }
@@ -291,7 +291,7 @@ bondRoutes.post('/solo', async (c) => {
   }
 
   // Call SVC_ASTRO hehun/compute
-  const isPro = await userHasCapability(db, user.id, 'yuan')
+  const isPro = await userHasCapability(db, user.id, 'kindred')
 
   // Map iOS preset label → relationshipCategory enum; freetext → customRelationshipLabel
   const PRESET_CATEGORIES = new Set([
@@ -897,7 +897,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     })
   }
 
-  const isPro = await userHasCapability(db, inviter.id, 'yuan')
+  const isPro = await userHasCapability(db, inviter.id, 'kindred')
 
   // Resonance bonds are free for both parties — use standard AI tier (not Pro HIGH thinking)
   // isPro only controls AI quality tier, not access gating
@@ -1269,7 +1269,7 @@ bondRoutes.get('/', async (c) => {
   }
 
   // Check subscription for Pro-only features (todaySynastry)
-  const isPro = await userHasCapability(db, userId, 'yuan')
+  const isPro = await userHasCapability(db, userId, 'kindred')
 
   // Compute today's day pillar once for synastry
   const now = new Date()
@@ -1324,7 +1324,7 @@ bondRoutes.get('/', async (c) => {
 // 无 KV 缓存 → 永不陈旧。plan §2.2 明示「缓存非必需」, 且 §7 把「失效点漏一处则轴不更新」
 // 列为风险 —— 重算即读消除该风险类。若日后 compute 成本显现再加 per-user KV 缓存 + 失效。
 //
-// 闸 (BT.6, plan §5-Q3 已定): yuan_pro/universe_pro = 前瞻全轴(+15y) + 主动推送;
+// 闸 (BT.6, plan §5-Q3 已定): kindred_pro/universe_pro = 前瞻全轴(+15y) + 主动推送;
 // 免费 = 当前年 + **全部** bond (免费上限 3 个 resonance, 已够慷慨; 奖励裂变 —— 拉来 3 段
 // 关系的用户能看到全部 3 段的本年节点), 无推送。前瞻全轴与推送是护城河, Pro only。
 //
@@ -1360,7 +1360,7 @@ bondRoutes.get('/timeline', async (c) => {
     gender: ego.birthGender as '男' | '女',
   }
 
-  const isPro = await userHasCapability(db, userId, 'yuan')
+  const isPro = await userHasCapability(db, userId, 'kindred')
 
   // active bonds — 最早创建在前, 让免费层「第 1 个 bond」稳定。
   const rows = await db
@@ -1436,7 +1436,7 @@ bondRoutes.get('/timeline', async (c) => {
   return jsonOk(c, {
     ...timeline,
     pro: isPro,
-    ...(isPro ? {} : { upsell: { capability: 'yuan', iapProductIds: YUAN_PRO_PRODUCT_IDS } }),
+    ...(isPro ? {} : { upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS } }),
   })
 })
 
@@ -1542,7 +1542,7 @@ bondRoutes.post('/timeline/explain', async (c) => {
 
 // Semantic key mapping matches calculateHeHun dimension order:
 //  dimensions[0] 日主五行 (40%) → long_term
-//  dimensions[1] 年支缘分 (20%) → attraction
+//  dimensions[1] 年支Kindred分 (20%) → attraction
 //  dimensions[2] 月支生活 (20%) → communication
 //  dimensions[3] 日支亲密 (20%) → emotional
 const DIMENSION_SEMANTIC_KEYS = ['long_term', 'attraction', 'communication', 'emotional'] as const
@@ -1707,7 +1707,7 @@ bondRoutes.get('/:id/synastry', async (c) => {
   if (!user) {
     return jsonErr(c, 404, ApiErrorCode.not_found, 'User not found')
   }
-  const isPro = await userHasCapability(db, userId, 'yuan')
+  const isPro = await userHasCapability(db, userId, 'kindred')
   if (!isPro) {
     return jsonErr(
       c,
@@ -2008,7 +2008,7 @@ bondRoutes.post('/:id/share', async (c) => {
   }
 
   const shareId = generateShareId()
-  const titleHint = `${reading.personAName ?? ''} · 缘 · ${reading.personBName ?? bond.targetName}`
+  const titleHint = `${reading.personAName ?? ''} · Kindred · ${reading.personBName ?? bond.targetName}`
 
   await db.insert(sharedReports).values({
     id: shareId,

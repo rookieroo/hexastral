@@ -1,5 +1,5 @@
 /**
- * Cycle i18n — 4 locales out of the gate (ADR-0010 §3): zh-Hans / zh-Hant / ja / en.
+ * Auspice i18n — 4 locales out of the gate (ADR-0010 §3): zh-Hans / zh-Hant / ja / en.
  *
  * Scope note (v1): UI chrome + event taxonomy + 建除 glosses are fully translated.
  * The 黄历 domain vocabulary returned by the API (宿名 / 宜忌 verbs) renders as the
@@ -8,7 +8,7 @@
  */
 
 import { getLocales } from 'expo-localization'
-import type { CycleEvent, DayOfficer, PersonalFit, PersonalReasonCode } from './api'
+import type { AuspiceEvent, DayOfficer, PersonalFit, PersonalReasonCode } from './api'
 
 export type Locale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 
@@ -208,7 +208,7 @@ export interface Strings {
   birthCityPlaceholder: string
   birthSave: string
   birthSaved: string
-  events: Record<CycleEvent, string>
+  events: Record<AuspiceEvent, string>
   officers: Record<DayOfficer, string>
   personal: {
     forYou: string
@@ -247,10 +247,10 @@ export interface Strings {
   }
   watchWidgets: string
   themeAccent: string
-  /** CTA below the 生肖 reading that opens Yuán for full 合盘. */
-  yuanComposeCta: string
-  /** Shown when the contact's birthday is 农历 — Yuán only accepts solar. */
-  yuanComposeLunarNote: string
+  /** CTA below the 生肖 reading that opens Kindred for full 合盘. */
+  kindredComposeCta: string
+  /** Shown when the contact's birthday is 农历 — Kindred only accepts solar. */
+  kindredComposeLunarNote: string
   /** Section label above the Apple Calendar subscribe row. */
   appleCalendarSection: string
   /** Row label that opens the system Calendar subscribe sheet. */
@@ -302,13 +302,13 @@ const zhHans: Strings = {
   lunarLabel: '农历',
   personalClashLabel: '今日冲你',
   unlockMore: '解锁更多',
-  proTitle: 'Cycle Pro',
+  proTitle: 'Auspice Pro',
   proSubtitle: '对你而言逐条解读 · 大运流年 · 4 项专项择日 (嫁娶/入宅/开市/出行)',
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
   proRestore: '恢复购买',
   signInToSubscribe: '订阅前请先登录',
-  signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「缘」等其他应用时延续。',
+  signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Kindred」等其他应用时延续。',
   signInWithGoogle: '使用 Google 登录',
   signInError: '登录失败，请重试。',
   specializedActive: '专项择日 已启用',
@@ -452,8 +452,8 @@ const zhHans: Strings = {
   },
   watchWidgets: '表盘与桌面组件',
   themeAccent: '主题色',
-  yuanComposeCta: '在 Yuán 看完整合盘 →',
-  yuanComposeLunarNote: 'Yuán 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
+  kindredComposeCta: '在 Kindred 看完整合盘 →',
+  kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
   appleCalendarSection: '系统日历',
   personalCalendarRow: '对你而言 · 专属日历',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系统日历（Pro）',
@@ -490,13 +490,13 @@ const zhHant: Strings = {
   lunarLabel: '農曆',
   personalClashLabel: '今日沖你',
   unlockMore: '解鎖更多',
-  proTitle: 'Cycle Pro',
+  proTitle: 'Auspice Pro',
   proSubtitle: '對你而言逐條解讀 · 大運流年 · 4 項專項擇日 (嫁娶/入宅/開市/出行)',
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
   proRestore: '恢復購買',
   signInToSubscribe: '訂閱前請先登入',
-  signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「緣」等其他應用時延續。',
+  signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Kindred」等其他應用時延續。',
   signInWithGoogle: '使用 Google 登入',
   signInError: '登入失敗，請重試。',
   specializedActive: '專項擇日 已啟用',
@@ -626,8 +626,8 @@ const zhHant: Strings = {
   },
   watchWidgets: '錶盤與桌面元件',
   themeAccent: '主題色',
-  yuanComposeCta: '在 Yuán 看完整合盤 →',
-  yuanComposeLunarNote: 'Yuán 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
+  kindredComposeCta: '在 Kindred 看完整合盤 →',
+  kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
   appleCalendarSection: '系統日曆',
   personalCalendarRow: '對你而言 · 專屬日曆',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系統日曆（Pro）',
@@ -676,7 +676,7 @@ const ja: Strings = {
   lunarLabel: '旧暦',
   personalClashLabel: '本日と冲',
   unlockMore: 'もっと見る',
-  proTitle: 'Cycle Pro',
+  proTitle: 'Auspice Pro',
   proSubtitle: 'あなたへの個別解説 · 大運・流年 · 4 種の専門日選び',
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
@@ -814,8 +814,8 @@ const ja: Strings = {
   },
   watchWidgets: '文字盤とウィジェット',
   themeAccent: 'テーマカラー',
-  yuanComposeCta: 'Yuán で本格相性鑑定 →',
-  yuanComposeLunarNote: 'Yuán は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
+  kindredComposeCta: 'Kindred で本格相性鑑定 →',
+  kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
   appleCalendarSection: 'システムカレンダー',
   personalCalendarRow: 'あなたへ · 専用カレンダー',
   personalCalendarHint: '毎日の吉凶をシステムカレンダーに同期（Pro）',
@@ -864,14 +864,14 @@ const en: Strings = {
   lunarLabel: 'Lunar',
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
-  proTitle: 'Cycle Pro',
+  proTitle: 'Auspice Pro',
   proSubtitle: 'Per-reason For-you reading · Life timeline · 4 specialized date pickers',
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
   proRestore: 'Restore purchase',
   signInToSubscribe: 'Sign in to subscribe',
   signInBenefit:
-    'Signing in lets your subscription restore on every device and carry into other apps like Yuan.',
+    'Signing in lets your subscription restore on every device and carry into other apps like Kindred.',
   signInWithGoogle: 'Sign in with Google',
   signInError: 'Sign-in failed. Please try again.',
   specializedActive: 'Specialized scoring on',
@@ -921,7 +921,7 @@ const en: Strings = {
   timelineBannerHint: 'Decade · Year',
   ganzhiStemsTitle: 'Ten Stems',
   ganzhiBranchesTitle: 'Twelve Branches',
-  ganzhiSixtyTitle: 'Sixty Cycle',
+  ganzhiSixtyTitle: 'Sixty Auspice',
   ganzhiYearLabel: 'Nearest year',
   ganzhiComboIndex: '{index} / 60',
   baziPillarYear: 'Year',
@@ -1015,9 +1015,9 @@ const en: Strings = {
   },
   watchWidgets: 'Watch & Widgets',
   themeAccent: 'Accent color',
-  yuanComposeCta: 'Open full reading in Yuán →',
-  yuanComposeLunarNote:
-    'Yuán supports solar birthdays only. Edit this person to a solar date and try again.',
+  kindredComposeCta: 'Open full reading in Kindred →',
+  kindredComposeLunarNote:
+    'Kindred supports solar birthdays only. Edit this person to a solar date and try again.',
   appleCalendarSection: 'System calendar',
   personalCalendarRow: 'For-you calendar',
   personalCalendarHint: 'Sync your daily verdict to the system Calendar (Pro)',

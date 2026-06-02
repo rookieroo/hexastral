@@ -28,8 +28,8 @@
 
 import { resolvePortfolioApiUrl } from './api-url'
 import { signRequest } from './hmac'
-import { getCurrentNetInfo } from './use-net-info'
 import { getPortfolioUserId } from './session'
+import { getCurrentNetInfo } from './use-net-info'
 
 interface SignedFetchOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'

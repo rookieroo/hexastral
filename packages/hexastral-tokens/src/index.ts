@@ -15,7 +15,7 @@
  *   @zhop/hexastral-tokens/moon       — moon-phase loader skins + geometry
  *   @zhop/hexastral-tokens/elevation  — surface layering shadows
  *   @zhop/hexastral-tokens/satellites — per-satellite brand palettes
- *   @zhop/hexastral-tokens/yuan       — Yuán flagship overrides
+ *   @zhop/hexastral-tokens/kindred       — Kindred flagship overrides
  */
 
 export * from './elevation'

@@ -5,7 +5,7 @@ Replaces the retired omnibus `hexastral-app`'s natal surface. **No auth, no IAP.
 
 - Positioning + KPIs (acquisition / birth-chart capture / funnel — **not** DAU) and the full
   build/drop plan: [docs/phase-k-plan.md](../../docs/phase-k-plan.md) §0.1.1 + K.1.
-- Funnels to Yuán / Fēng via the dynamic discovery endpoint (K.2, `source='fate'`).
+- Funnels to Kindred / Fēng via the dynamic discovery endpoint (K.2, `source='fate'`).
 - The 命理 line's daily-active lives in **Cycle** (黄历 + 对你而言), fed by the chart this app
   captures into portfolio memory — not here.
 

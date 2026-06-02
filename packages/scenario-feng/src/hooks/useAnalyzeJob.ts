@@ -96,39 +96,42 @@ export function useAnalyzeJob(siteId: string | null | undefined): UseAnalyzeJobR
     [client, onError]
   )
 
-  const start = useCallback(async (siteIdOverride?: string) => {
-    const targetSiteId = siteIdOverride ?? siteId
-    if (!targetSiteId) return
-    cancelledRef.current = false
-    clearTimer()
-    setError(null)
-    setJob(null)
-    setIsRunning(true)
-    startedAtRef.current = Date.now()
-    try {
-      const enq = await unwrap<AnalyzeEnqueueResponse>(
-        await fengSites(client)[':id'].analyze.$post({ param: { id: targetSiteId } })
-      )
-      // Seed the snapshot so the UI shows "stage: maps, progress: 0" immediately.
-      setJob({
-        id: enq.jobId,
-        siteId: enq.siteId,
-        stage: 'maps',
-        progress: 0,
-        reportId: null,
-        errorMessage: null,
-        startedAt: new Date().toISOString(),
-        finishedAt: null,
-        report: null,
-      })
-      void poll(enq.jobId)
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err))
-      setError(e)
-      setIsRunning(false)
-      onError?.(e)
-    }
-  }, [client, onError, poll, siteId, clearTimer])
+  const start = useCallback(
+    async (siteIdOverride?: string) => {
+      const targetSiteId = siteIdOverride ?? siteId
+      if (!targetSiteId) return
+      cancelledRef.current = false
+      clearTimer()
+      setError(null)
+      setJob(null)
+      setIsRunning(true)
+      startedAtRef.current = Date.now()
+      try {
+        const enq = await unwrap<AnalyzeEnqueueResponse>(
+          await fengSites(client)[':id'].analyze.$post({ param: { id: targetSiteId } })
+        )
+        // Seed the snapshot so the UI shows "stage: maps, progress: 0" immediately.
+        setJob({
+          id: enq.jobId,
+          siteId: enq.siteId,
+          stage: 'maps',
+          progress: 0,
+          reportId: null,
+          errorMessage: null,
+          startedAt: new Date().toISOString(),
+          finishedAt: null,
+          report: null,
+        })
+        void poll(enq.jobId)
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error(String(err))
+        setError(e)
+        setIsRunning(false)
+        onError?.(e)
+      }
+    },
+    [client, onError, poll, siteId, clearTimer]
+  )
 
   const cancel = useCallback(() => {
     cancelledRef.current = true

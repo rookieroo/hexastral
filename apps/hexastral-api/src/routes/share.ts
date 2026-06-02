@@ -3,7 +3,7 @@
  *
  * POST   /api/share           — 创建分享快照，返回分享 URL
  * GET    /api/share/:shareId  — 查询分享内容（供 hexastral-web 渲染，公开无鉴权）
- * GET    /api/share/yuan/:shareId — Yuán-specific single-chapter share view (公开)
+ * GET    /api/share/yuan/:shareId — Kindred-specific single-chapter share view (公开)
  * DELETE /api/share/:shareId  — 撤销分享（设 expiresAt 为过去时间）
  *
  * 注意：分享的是 AI 文字报告（命理/占卜/风水），不是结构化命盘数据。
@@ -125,7 +125,7 @@ export const shareRoutes = new Hono<AppEnv>()
     return jsonOk(c, share)
   })
   /**
-   * GET /api/share/yuan/:shareId — Yuán-specific single-chapter share view.
+   * GET /api/share/yuan/:shareId — Kindred-specific single-chapter share view.
    *
    * Renders the chapter as expected by [apps/hexastral-web/app/[locale]/yuan/report/[shareId]/page.tsx].
    * Public — no auth. The shareId is a normal `sharedReports.id` but the
@@ -148,7 +148,7 @@ export const shareRoutes = new Hono<AppEnv>()
       return jsonErr(c, 404, ApiErrorCode.not_found, 'Share not found')
     }
     if (share.reportType !== 'pair') {
-      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Not a Yuán share')
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Not a Kindred share')
     }
     if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
       return jsonErr(c, 410, ApiErrorCode.gone, 'This share link has expired')

@@ -1,20 +1,17 @@
-import { Section, Text } from '@react-email/components';
-import * as React from 'react';
+import { Section, Text } from '@react-email/components'
+import type * as React from 'react'
 
 export interface OtpCodeProps {
   /** The OTP code to display */
-  code: string;
+  code: string
   /** Optional additional CSS classes */
-  className?: string;
+  className?: string
 }
 
 /**
  * Component for displaying OTP codes in emails with consistent styling
  */
-export const OtpCode: React.FC<OtpCodeProps> = ({
-  code,
-  className = '',
-}) => {
+export const OtpCode: React.FC<OtpCodeProps> = ({ code, className = '' }) => {
   return (
     <Section
       className={className}
@@ -40,5 +37,5 @@ export const OtpCode: React.FC<OtpCodeProps> = ({
         {code}
       </Text>
     </Section>
-  );
-};
+  )
+}

@@ -8,8 +8,8 @@
 import { useTheme } from '@zhop/core-ui'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { type CycleDayPayload, fetchCycleDay } from '@/lib/api'
-import { getCycleBirthDate } from '@/lib/birth'
+import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
+import { getAuspiceBirthDate } from '@/lib/birth'
 import {
   DEFAULT_MOON_SKIN_ID,
   getMoonSkin,
@@ -27,7 +27,7 @@ function pad(n: number) {
 }
 
 /** A rich 黄历 day for testing the Pro faces / scenarios offline. 农历十五 → 满月; fit 吉. */
-const MOCK_PAYLOAD: CycleDayPayload = {
+const MOCK_PAYLOAD: AuspiceDayPayload = {
   date: '2026-08-12',
   day: {
     ganZhi: '丙午',
@@ -131,7 +131,7 @@ function WatchFrame({
 
 export function DevWidgetPreview() {
   const { colors, spacing } = useTheme()
-  const [real, setReal] = useState<CycleDayPayload | null>(null)
+  const [real, setReal] = useState<AuspiceDayPayload | null>(null)
   const [skinId, setSkinId] = useState<MoonSkinId>(DEFAULT_MOON_SKIN_ID)
   const [mockOn, setMockOn] = useState(false)
   const [phase, setPhase] = useState<number | undefined>(undefined)
@@ -140,8 +140,8 @@ export function DevWidgetPreview() {
   useEffect(() => {
     const d = new Date()
     const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-    getCycleBirthDate()
-      .then((birthDate) => fetchCycleDay(iso, birthDate))
+    getAuspiceBirthDate()
+      .then((birthDate) => fetchAuspiceDay(iso, birthDate))
       .then(setReal)
       .catch(() => {})
     getMoonSkin()

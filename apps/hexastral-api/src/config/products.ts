@@ -5,13 +5,13 @@
  * RevenueCat dashboard per docs/setup/revenuecat-entitlements.md §7.
  */
 
-export type EntitlementKey = 'yuan_pro' | 'cycle_pro' | 'fate_pro' | 'universe_pro'
+export type EntitlementKey = 'kindred_pro' | 'auspice_pro' | 'fate_pro' | 'universe_pro'
 // NOTE: fate is a funnel app — no standalone fate_pro subscription. The
 // `fate_pro` entitlement is universe_pro-only (Universe-Pro users get the Pro
 // experience inside fate, e.g. all chapters unlocked + daily LLM insights).
 // NOTE: feng/face are per-use only (ADR-0013 §2 / plan §8) — no standalone sub
 // entitlement. Unlimited chat/readings on those come via universe_pro.
-export type FlagshipKey = 'yuan' | 'feng' | 'hexastral'
+export type FlagshipKey = 'kindred' | 'feng' | 'hexastral'
 export type SubscriptionPlan = 'monthly' | 'annual'
 
 export type ProductKind = 'subscription' | 'consumable' | 'single_purchase'
@@ -54,8 +54,8 @@ export interface SinglePurchaseProduct {
 export type ProductSpec = SubscriptionProduct | ConsumableProduct | SinglePurchaseProduct
 
 export const ALL_ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
-  'yuan_pro',
-  'cycle_pro',
+  'kindred_pro',
+  'auspice_pro',
   'fate_pro',
   'universe_pro',
 ] as const
@@ -63,16 +63,16 @@ export const ALL_ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
 export const PRODUCTS: readonly ProductSpec[] = [
   // ── Flagship subscriptions ─────────────────────────────────────────────
   {
-    productId: 'yuan_pro_monthly',
+    productId: 'kindred_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: ['yuan_pro'],
+    grantsEntitlements: ['kindred_pro'],
   },
   {
-    productId: 'yuan_pro_annual',
+    productId: 'kindred_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: ['yuan_pro'],
+    grantsEntitlements: ['kindred_pro'],
   },
   // ── Recurring-satellite subscriptions (revised tier hierarchy) ─────────
   // Subscription flagships: cycle (daily 黄历) + yuan (compatibility).
@@ -80,29 +80,29 @@ export const PRODUCTS: readonly ProductSpec[] = [
   // funnel tier — its monetization is invite-unlock + Ecosystem upsell to
   // cycle/yuan. No standalone fate_pro subscription product.
   {
-    productId: 'cycle_pro_monthly',
+    productId: 'auspice_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: ['cycle_pro'],
+    grantsEntitlements: ['auspice_pro'],
   },
   {
-    productId: 'cycle_pro_annual',
+    productId: 'auspice_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: ['cycle_pro'],
+    grantsEntitlements: ['auspice_pro'],
   },
 
   {
     productId: 'universe_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: ['yuan_pro', 'cycle_pro', 'fate_pro', 'universe_pro'],
+    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro'],
   },
   {
     productId: 'universe_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: ['yuan_pro', 'cycle_pro', 'fate_pro', 'universe_pro'],
+    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro'],
   },
 
   // ── Legacy satellite subscription (CoinCast Pro — funnels to HexAstral) ─

@@ -49,9 +49,9 @@
       "types": "./src/constants/hexagram.ts",
       "default": "./src/constants/hexagram.ts"
     },
-    "./yuan": {
-      "types": "./src/yuan.ts",
-      "default": "./src/yuan.ts"
+    "./kindred": {
+      "types": "./src/kindred.ts",
+      "default": "./src/kindred.ts"
     },
     "./motion": {
       "types": "./src/motion.ts",

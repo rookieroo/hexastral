@@ -8,7 +8,7 @@
 import { useTheme } from '@zhop/core-ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
-import type { CycleHour } from '@/lib/api'
+import type { AuspiceHour } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
 import { localizeShichen } from '@/lib/shichen-vocab'
 
@@ -23,7 +23,7 @@ export function HourScrubber({
   hours,
   activeBranch,
 }: {
-  hours: CycleHour[]
+  hours: AuspiceHour[]
   activeBranch?: string
 }) {
   const { colors, spacing } = useTheme()

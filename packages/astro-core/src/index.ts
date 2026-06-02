@@ -43,6 +43,15 @@ export {
   TWENTY_EIGHT_MANSIONS,
   twentyEightMansions,
 } from './almanac'
+// 本我中心多关系时间轴 (Bonds Timeline — Kindred BT.1, ADR-0014)
+export type {
+  BondInput,
+  ComposeBondsTimelineOptions,
+  MergedBondRef,
+  MergedNode,
+  MergedNotification,
+} from './bonds-timeline'
+export { composeBondsTimeline } from './bonds-timeline'
 // 合化冲 (BaZi)
 export type {
   BranchClash,
@@ -274,16 +283,7 @@ export {
   lunarToSolar,
   solarToLunar,
 } from './lunar'
-// 本我中心多关系时间轴 (Bonds Timeline — Yuán BT.1, ADR-0014)
-export type {
-  BondInput,
-  ComposeBondsTimelineOptions,
-  MergedBondRef,
-  MergedNode,
-  MergedNotification,
-} from './bonds-timeline'
-export { composeBondsTimeline } from './bonds-timeline'
-// 关系命运时间轴 (Relationship Timeline — Yuán B-yuan.1)
+// 关系命运时间轴 (Relationship Timeline — Kindred B-yuan.1)
 export type {
   RelationshipPerson,
   RelationshipTimelineNode,

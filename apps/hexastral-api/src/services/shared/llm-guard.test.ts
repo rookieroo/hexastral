@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { computeLlmGuardDecision, type LlmGuardConfig, resolveLlmGuardSubject } from './llm-guard'
 
-// Mirrors the config the Cycle plan supplies for /cycle/explain.
+// Mirrors the config the Auspice plan supplies for /cycle/explain.
 const config: LlmGuardConfig = {
   app: 'cycle',
   dailyLimitAnon: 1,

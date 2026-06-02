@@ -15,7 +15,7 @@ import type { Locale } from '../i18n'
 import type { LocalizedText } from './types'
 import { getWikipediaUrl } from './wikipedia'
 
-/** Eight major festivals (`CycleFestival.id`). */
+/** Eight major festivals (`AuspiceFestival.id`). */
 const FESTIVAL_WIKI: Record<string, LocalizedText> = {
   chunjie: {
     'zh-Hans': '春节',

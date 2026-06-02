@@ -14,7 +14,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const STORAGE_KEY = 'cycle.remoteTz'
+const STORAGE_KEY = 'auspice.remoteTz'
 
 export interface RemoteTz {
   /** Signed hours east of UTC. e.g. +8 for Beijing, -5 for NYC EST, -7 for LA PDT. */

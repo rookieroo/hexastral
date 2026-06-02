@@ -112,7 +112,7 @@
     {
       "includes": [
         "apps/hexastral-app/**",
-        "apps/yuan-app/**",
+        "apps/kindred-app/**",
         "apps/coin-cast-app/**",
         "apps/dream-oracle-app/**",
         "apps/face-oracle-app/**",

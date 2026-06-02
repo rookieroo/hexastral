@@ -9,14 +9,14 @@
 
 ## Context
 
-ADR-0012 settled instrument-by-engagement (3 subscription flagships **fate / Yuán / Cycle** + episodic consumables for Fēng/Face/Coin/Dream/Numerology + a `universe_pro` bundle + chat as the tiered hook). The *implementation* still runs **two disconnected entitlement models**:
+ADR-0012 settled instrument-by-engagement (3 subscription flagships **fate / Kindred / Auspice** + episodic consumables for Fēng/Face/Coin/Dream/Numerology + a `universe_pro` bundle + chat as the tiered hook). The *implementation* still runs **two disconnected entitlement models**:
 
 - **Legacy global Pro** — `users.subscription_status` → `isProUser()` drives **all** gating (chat, `checkReadingAccess`, quota). It is set **only** for `hexastral_pro` (the retired omnibus).
-- **New per-flagship** — `user_entitlements` (`fate_pro`/`yuan_pro`/`cycle_pro`/…) written by the RevenueCat webhook, but read by almost nothing (only `universe_pro` → chat tier).
+- **New per-flagship** — `user_entitlements` (`fate_pro`/`kindred_pro`/`auspice_pro`/…) written by the RevenueCat webhook, but read by almost nothing (only `universe_pro` → chat tier).
 
-**Result (the headline bug):** a `fate_pro` / `yuan_pro` / `cycle_pro` subscriber has `subscription_status='free'` → `isProUser=false` → **blocked from chat (402 at `routes/chat.ts`) and from quota-gated readings**. The new subscriptions are sold but unlock nothing server-side.
+**Result (the headline bug):** a `fate_pro` / `kindred_pro` / `auspice_pro` subscriber has `subscription_status='free'` → `isProUser=false` → **blocked from chat (402 at `routes/chat.ts`) and from quota-gated readings**. The new subscriptions are sold but unlock nothing server-side.
 
-Supporting problems: credits are scattered per-type columns (`chat_credits_remaining`, `divination_credits_remaining`, `coincast_credits_remaining`); verification is webhook-only (no reconciliation, non-atomic `consume`); the client reads entitlements from the RC SDK only (5 keys, missing `cycle_pro`/`fate_pro`) and ignores the existing `GET /api/users/me/entitlements`; and the yuan-app product IDs (`hexastral_yuan_pro_monthly`) diverge from the server catalog (`yuan_pro_monthly`).
+Supporting problems: credits are scattered per-type columns (`chat_credits_remaining`, `divination_credits_remaining`, `coincast_credits_remaining`); verification is webhook-only (no reconciliation, non-atomic `consume`); the client reads entitlements from the RC SDK only (5 keys, missing `auspice_pro`/`fate_pro`) and ignores the existing `GET /api/users/me/entitlements`; and the yuan-app product IDs (`hexastral_kindred_pro_monthly`) diverge from the server catalog (`kindred_pro_monthly`).
 
 ## Decision
 
@@ -29,8 +29,8 @@ All gating goes through one resolver keyed on the active entitlement set — nev
 | Capability (app) | Granted by | Instrument |
 |---|---|---|
 | fate (命) | `fate_pro` ∪ `universe_pro` | subscription |
-| yuan (緣) | `yuan_pro` ∪ `universe_pro` | subscription |
-| cycle (黄历) | `cycle_pro` ∪ `universe_pro` | subscription |
+| yuan (Kindred) | `kindred_pro` ∪ `universe_pro` | subscription |
+| cycle (黄历) | `auspice_pro` ∪ `universe_pro` | subscription |
 | feng (风水) | one-shot purchase ∪ universe allowance | episodic |
 | face (面相) | consumable credit ∪ universe allowance | episodic |
 | coincast / dream / numerology | pack credit ∪ universe allowance | episodic |
@@ -47,7 +47,7 @@ Replace the per-type columns with a `user_credits(user_id, credit_type, balance,
 (a) Client adopts `GET /me/entitlements` as canonical. (b) Add a RevenueCat REST reconciliation fallback (on app launch / scheduled sweep) so a missed webhook self-heals — today drift is unrecoverable (the backend is purely webhook-push). (c) Make `POST /purchase/consume` atomic (single conditional UPDATE) to close the read-then-write double-spend race. (d) Keep the solid bits: webhook Bearer-secret (constant-time) + `rc_event_id` UNIQUE + KV idempotency.
 
 ### 6. Product-ID naming convention
-Subs `<flagship>_pro_{monthly,annual}` (e.g. `yuan_pro_monthly`); episodic `<app>_<kind>` (`feng_site`, `faceoracle_reading`, `coincast_cast_pack_10`). `products.ts` is the single catalog; client `growth-config` **imports** IDs, never redefines them. Reconcile the yuan-app divergence before the manual ASC/RC product setup.
+Subs `<flagship>_pro_{monthly,annual}` (e.g. `kindred_pro_monthly`); episodic `<app>_<kind>` (`feng_site`, `faceoracle_reading`, `coincast_cast_pack_10`). `products.ts` is the single catalog; client `growth-config` **imports** IDs, never redefines them. Reconcile the yuan-app divergence before the manual ASC/RC product setup.
 
 ### 7. Phased migration (dependency-true; P1–P3 server-verifiable)
 - **P1** (this change): capability resolver + rewire **chat** off `isProUser` → entitlements, with the **free-taste** tier. Fixes the headline "subscribers blocked" bug. Pure + unit-tested.

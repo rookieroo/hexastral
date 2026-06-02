@@ -38,9 +38,7 @@ export function emitGrowthEventServer(
     return
   }
 
-  const payloadBlob = JSON.stringify(
-    'payload' in event ? event.payload : {}
-  )
+  const payloadBlob = JSON.stringify('payload' in event ? event.payload : {})
   const payloadTruncated =
     payloadBlob.length > MAX_PAYLOAD_BLOB_BYTES
       ? payloadBlob.slice(0, MAX_PAYLOAD_BLOB_BYTES)

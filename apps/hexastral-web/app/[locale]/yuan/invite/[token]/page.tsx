@@ -18,7 +18,7 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { YuanInviteClient } from './client'
+import { KindredInviteClient } from './client'
 
 interface PageProps {
   params: Promise<{ locale: string; token: string }>
@@ -55,12 +55,12 @@ async function resolveInvitation(token: string): Promise<InvitationContext | nul
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { token, locale } = await params
   const ctx = await resolveInvitation(token)
-  if (!ctx) return { title: 'Yuán' }
+  if (!ctx) return { title: 'Kindred' }
 
   const titles: Record<string, (name: string) => string> & { en: (name: string) => string } = {
-    en: (n) => `${n} invited you · Yuán`,
-    zh: (n) => `${n} 邀你看看 · 緣`,
-    tw: (n) => `${n} 邀你看看 · 緣`,
+    en: (n) => `${n} invited you · Kindred`,
+    zh: (n) => `${n} 邀你看看 · Kindred`,
+    tw: (n) => `${n} 邀你看看 · Kindred`,
     ja: (n) => `${n} さんからの招待 · 縁`,
   }
   const titleFn = titles[locale] ?? titles.en
@@ -86,13 +86,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function YuanInvitePage({ params }: PageProps) {
+export default async function KindredInvitePage({ params }: PageProps) {
   const { token, locale } = await params
   const ctx = await resolveInvitation(token)
   if (!ctx) notFound()
 
   return (
-    <YuanInviteClient
+    <KindredInviteClient
       token={token}
       locale={locale}
       inviterName={ctx.inviterName}

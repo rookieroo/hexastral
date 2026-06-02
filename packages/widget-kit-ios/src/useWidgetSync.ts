@@ -16,10 +16,10 @@ import { Platform } from 'react-native'
 
 import {
   type AppSlug,
+  appGroupForSlug,
+  WIDGET_PAYLOAD_KEY,
   type WidgetLocale,
   type WidgetSyncPayload,
-  WIDGET_PAYLOAD_KEY,
-  appGroupForSlug,
 } from './types'
 
 type AsyncStorageLike = {
@@ -68,9 +68,9 @@ function loadAppGroupBridge(): {
     if (!req) return null
     // The native module name. Will exist after Sprint 1 prebuild generates the
     // WidgetExtension target + App Group bridge.
-    const mod = req('react-native-app-group-bridge') as
-      | { writeToAppGroup: (group: string, key: string, value: string) => Promise<void> }
-      | null
+    const mod = req('react-native-app-group-bridge') as {
+      writeToAppGroup: (group: string, key: string, value: string) => Promise<void>
+    } | null
     return mod ?? null
   } catch {
     return null

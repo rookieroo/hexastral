@@ -36,9 +36,9 @@ describe('parseRcActiveEntitlements', () => {
     const json = {
       subscriber: {
         entitlements: {
-          cycle_pro: {
+          auspice_pro: {
             expires_date: '2026-01-01T00:00:00Z',
-            product_identifier: 'cycle_pro_monthly',
+            product_identifier: 'auspice_pro_monthly',
           },
           bogus_pro: { expires_date: '2099-01-01T00:00:00Z', product_identifier: 'x' },
         },
@@ -80,14 +80,14 @@ describe('diffEntitlements', () => {
 
   it('re-grants when the expiry differs (missed renewal) but not when identical', () => {
     const renewed = diffEntitlements({
-      rcActive: [mkRc('cycle_pro', '2026-08-01T00:00:00Z')],
-      ours: [mkOurs('cycle_pro', '2026-07-01T00:00:00Z')],
+      rcActive: [mkRc('auspice_pro', '2026-08-01T00:00:00Z')],
+      ours: [mkOurs('auspice_pro', '2026-07-01T00:00:00Z')],
     })
-    expect(renewed.toGrant.map((g) => g.key)).toEqual(['cycle_pro'])
+    expect(renewed.toGrant.map((g) => g.key)).toEqual(['auspice_pro'])
 
     const same = diffEntitlements({
-      rcActive: [mkRc('cycle_pro', '2026-07-01T00:00:00Z')],
-      ours: [mkOurs('cycle_pro', '2026-07-01T00:00:00Z')],
+      rcActive: [mkRc('auspice_pro', '2026-07-01T00:00:00Z')],
+      ours: [mkOurs('auspice_pro', '2026-07-01T00:00:00Z')],
     })
     expect(same.toGrant).toEqual([])
     expect(same.toExpire).toEqual([])
@@ -96,9 +96,9 @@ describe('diffEntitlements', () => {
   it('expires a locally-active entitlement RC no longer reports (missed cancellation)', () => {
     const { toGrant, toExpire } = diffEntitlements({
       rcActive: [],
-      ours: [mkOurs('yuan_pro', '2026-09-01T00:00:00Z')],
+      ours: [mkOurs('kindred_pro', '2026-09-01T00:00:00Z')],
     })
     expect(toGrant).toEqual([])
-    expect(toExpire).toEqual(['yuan_pro'])
+    expect(toExpire).toEqual(['kindred_pro'])
   })
 })

@@ -170,7 +170,7 @@ shared landing-copy refresh task.
 
 **Negative**:
 
-- The matrix-narrative "命緣卦道" four-pillar story is temporarily
+- The matrix-narrative "命Kindred卦道" four-pillar story is temporarily
   shelved. Press / ASO can't lean on "matrix of metaphysics apps" yet;
   must lead with each app's utility individually.
 - MingPan is the most premium-feeling app and its absence at launch

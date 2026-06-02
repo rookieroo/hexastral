@@ -164,25 +164,21 @@ function readDsnFromEnv(): string | undefined {
 
 function readRelease(): string | undefined {
   // ExpoConfig: version (semver) + ios.buildNumber / android.versionCode
-  const expoConfig = Constants.expoConfig as
-    | {
-        version?: string
-        ios?: { buildNumber?: string }
-        android?: { versionCode?: number }
-      }
-    | null
+  const expoConfig = Constants.expoConfig as {
+    version?: string
+    ios?: { buildNumber?: string }
+    android?: { versionCode?: number }
+  } | null
   const version = expoConfig?.version
   if (!version) return undefined
   return `app@${version}`
 }
 
 function readDistribution(): string | undefined {
-  const expoConfig = Constants.expoConfig as
-    | {
-        ios?: { buildNumber?: string }
-        android?: { versionCode?: number }
-      }
-    | null
+  const expoConfig = Constants.expoConfig as {
+    ios?: { buildNumber?: string }
+    android?: { versionCode?: number }
+  } | null
   return expoConfig?.ios?.buildNumber ?? expoConfig?.android?.versionCode?.toString() ?? undefined
 }
 

@@ -1,24 +1,20 @@
-import { Heading, Section, Text } from '@react-email/components';
-import type * as React from 'react';
+import { Heading, Section, Text } from '@react-email/components'
+import type * as React from 'react'
 
 export interface InfoBoxProps {
   /** Box title */
-  title?: string;
+  title?: string
   /** Box content */
-  children: React.ReactNode;
+  children: React.ReactNode
   /** Box type/style variant */
-  variant?: 'info' | 'success' | 'warning' | 'error';
+  variant?: 'info' | 'success' | 'warning' | 'error'
 }
 
 /**
  * Information box component for highlighting important information in emails
  * Uses inline styles for maximum email client compatibility
  */
-export const InfoBox: React.FC<InfoBoxProps> = ({
-  title,
-  children,
-  variant = 'info',
-}) => {
+export const InfoBox: React.FC<InfoBoxProps> = ({ title, children, variant = 'info' }) => {
   // Define variant styles with RGB colors and inline styles
   const variantStyles = {
     info: {
@@ -41,9 +37,9 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
       borderLeft: '4px solid #ef4444', // Red-500
       color: '#1f2937', // Gray-800
     },
-  };
+  }
 
-  const styles = variantStyles[variant];
+  const styles = variantStyles[variant]
 
   return (
     <Section
@@ -56,7 +52,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
     >
       {title && (
         <Heading
-          as="h3"
+          as='h3'
           style={{
             margin: '0 0 8px 0',
             fontSize: '16px',
@@ -83,5 +79,5 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
         children
       )}
     </Section>
-  );
-};
+  )
+}

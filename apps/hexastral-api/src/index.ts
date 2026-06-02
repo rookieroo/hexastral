@@ -25,14 +25,13 @@ import { createHmacVerifyMiddleware } from './middleware/hmac-verify'
 import { createIdempotencyMiddleware } from './middleware/idempotency'
 import { createTurnstileMiddleware } from './middleware/turnstile'
 import {
+  auspiceRoutes,
+  auspiceTimelineRoutes,
   bondRoutes,
   chatRoutes,
   contactRoutes,
-  cycleRoutes,
-  cycleTimelineRoutes,
   ddlRoutes,
   discoveryRoutes,
-  flagsRoutes,
   divinationRoutes,
   faceFeaturesRoutes,
   fengDeclinationRoutes,
@@ -40,6 +39,7 @@ import {
   fengMapRoutes,
   fengReportRoutes,
   fengSiteRoutes,
+  flagsRoutes,
   geocodeRoutes,
   growthFunnelEventRoutes,
   healthRoutes,
@@ -341,10 +341,10 @@ app.route('/api/discovery/recommendations', discoveryRoutes)
 // for an App Store build. Ops flip via `wrangler kv:key put`.
 app.route('/api/flags', flagsRoutes)
 
-// Cycle — anonymous 黄历 engine (deterministic GET /day,/search + the Pro/lazy LLM
+// Auspice — anonymous 黄历 engine (deterministic GET /day,/search + the Pro/lazy LLM
 // POST /explain which is K.4-guarded internally). No HMAC, no IAP — Tier 3. IP rate-limited
 // on GET + POST (the explain endpoint's per-subject/budget guard is the deeper cost control).
-app.use('/api/cycle/*', async (c, next) => {
+app.use('/api/auspice/*', async (c, next) => {
   if (c.req.method !== 'GET' && c.req.method !== 'POST') return next()
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const { success } = await c.env.RATE_LIMITER.limit({ key: `cycle:${ip}` })
@@ -352,16 +352,16 @@ app.use('/api/cycle/*', async (c, next) => {
   await next()
 })
 
-// Cycle · Life Timeline (Sprint 4, ADR-0020) — HMAC-signed; deterministic 大运/流年/流月
-// payload, D1-cached for 30 days. Mounted BEFORE the anonymous /api/cycle base route
+// Auspice · Life Timeline (Sprint 4, ADR-0020) — HMAC-signed; deterministic 大运/流年/流月
+// payload, D1-cached for 30 days. Mounted BEFORE the anonymous /api/auspice base route
 // so the longer prefix wins and HMAC verification runs before the handler.
-app.use('/api/cycle/timeline', hmacVerify)
-app.use('/api/cycle/timeline/*', hmacVerify)
-app.route('/api/cycle/timeline', cycleTimelineRoutes)
+app.use('/api/auspice/timeline', hmacVerify)
+app.use('/api/auspice/timeline/*', hmacVerify)
+app.route('/api/auspice/timeline', auspiceTimelineRoutes)
 
-app.route('/api/cycle', cycleRoutes)
+app.route('/api/auspice', auspiceRoutes)
 
-// fate/Yuán 命运时间轴节点深度解读 (B-fate.3). Anonymous-capable; the POST /explain
+// fate/Kindred 命运时间轴节点深度解读 (B-fate.3). Anonymous-capable; the POST /explain
 // is K.4-guarded internally (per-subject + global budget). IP rate-limited as defense-in-depth.
 app.use('/api/timeline/*', async (c, next) => {
   if (c.req.method !== 'POST') return next()
@@ -372,7 +372,7 @@ app.use('/api/timeline/*', async (c, next) => {
 })
 app.route('/api/timeline', timelineRoutes)
 
-// Yuán 关系命运时间轴节点深度解读 (B-yuan.3). Recomputes the node from BOTH charts;
+// Kindred 关系命运时间轴节点深度解读 (B-yuan.3). Recomputes the node from BOTH charts;
 // K.4-guarded internally + IP rate-limited (defense-in-depth).
 app.use('/api/relationship-timeline/*', async (c, next) => {
   if (c.req.method !== 'POST') return next()

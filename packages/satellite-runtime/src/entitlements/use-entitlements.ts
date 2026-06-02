@@ -15,7 +15,7 @@ import Purchases, { type CustomerInfo } from 'react-native-purchases'
 // Mirrors the server catalog (apps/hexastral-api/src/config/products.ts). feng/face are
 // per-use only (no standalone sub — plan §8); the verticals are fate/yuan/cycle, all
 // also granted by the universe_pro bundle.
-export type EntitlementKey = 'yuan_pro' | 'cycle_pro' | 'fate_pro' | 'universe_pro'
+export type EntitlementKey = 'kindred_pro' | 'auspice_pro' | 'fate_pro' | 'universe_pro'
 
 export interface EntitlementSnapshot {
   active: boolean
@@ -32,15 +32,15 @@ const INITIAL_SNAPSHOT: EntitlementSnapshot = {
 }
 
 const ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
-  'yuan_pro',
-  'cycle_pro',
+  'kindred_pro',
+  'auspice_pro',
   'fate_pro',
   'universe_pro',
 ] as const
 
 const INITIAL_STATE: EntitlementsState = {
-  yuan_pro: INITIAL_SNAPSHOT,
-  cycle_pro: INITIAL_SNAPSHOT,
+  kindred_pro: INITIAL_SNAPSHOT,
+  auspice_pro: INITIAL_SNAPSHOT,
   fate_pro: INITIAL_SNAPSHOT,
   universe_pro: INITIAL_SNAPSHOT,
 }
@@ -62,7 +62,7 @@ function snapshotFromCustomerInfo(info: CustomerInfo): EntitlementsState {
   // server-side (see docs/setup/revenuecat-entitlements.md §4.3), but mirror
   // that locally so a future RC config slip doesn't gate vertical features.
   if (next.universe_pro.active) {
-    for (const key of ['yuan_pro', 'cycle_pro', 'fate_pro'] as const) {
+    for (const key of ['kindred_pro', 'auspice_pro', 'fate_pro'] as const) {
       if (!next[key].active) {
         next[key] = {
           active: true,

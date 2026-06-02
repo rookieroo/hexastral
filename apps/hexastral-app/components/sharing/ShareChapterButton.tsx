@@ -3,7 +3,7 @@
  *
  * Wraps `shareReportAsLink` with a small spec'd UI:
  *   - Hairline-bordered pill with localized "Share this chapter" label
- *   - Cinnabar/gold accent that recalls the Yuán share pattern but auto-themes
+ *   - Cinnabar/gold accent that recalls the Kindred share pattern but auto-themes
  *     for hexastral-app's IosPalette
  *   - Single-tap → server snapshot via `/api/share` → native share sheet with a
  *     URL pointing at hexastral-web's `/report/[shareId]/page.tsx` (OG-ready)
@@ -48,7 +48,7 @@ export function ShareChapterButton({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  // Cinnabar accent in light mode, ink-gold in dark — same accent the Yuán
+  // Cinnabar accent in light mode, ink-gold in dark — same accent the Kindred
   // share card uses, so users perceive a consistent share action across apps.
   const cinnabar = isDark ? '#C4A882' : '#9B2226'
 

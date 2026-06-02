@@ -1,15 +1,15 @@
-import { Link } from '@react-email/components';
-import type * as React from 'react';
+import { Link } from '@react-email/components'
+import type * as React from 'react'
 
 export interface ButtonProps {
   /** URL the button links to */
-  href: string;
+  href: string
   /** Button text */
-  children: React.ReactNode;
+  children: React.ReactNode
   /** CSS class variants */
-  variant?: 'primary' | 'secondary' | 'outline' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'outline' | 'destructive'
   /** Optional additional CSS classes */
-  className?: string;
+  className?: string
 }
 
 /**
@@ -44,12 +44,12 @@ export const Button: React.FC<ButtonProps> = ({
       color: '#ffffff',
       borderColor: '#ef4444',
     },
-  };
+  }
 
-  const styles = variantStyles[variant];
+  const styles = variantStyles[variant]
 
   return (
-    <table cellPadding="0" cellSpacing="0" role="presentation" style={{ margin: '0 auto' }}>
+    <table cellPadding='0' cellSpacing='0' role='presentation' style={{ margin: '0 auto' }}>
       <tr>
         <td
           style={{
@@ -77,5 +77,5 @@ export const Button: React.FC<ButtonProps> = ({
         </td>
       </tr>
     </table>
-  );
-};
+  )
+}

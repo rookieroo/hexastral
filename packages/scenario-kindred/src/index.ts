@@ -1,0 +1,32 @@
+/**
+ * @zhop/scenario-kindred
+ *
+ * Shared logic for the Kindred (Kindred) synastry product. Consumed by:
+ *   - apps/hexastral-app (bonds tab) — migration planned, see README
+ *   - apps/kindred-app (planned, standalone Expo build)
+ *
+ * Setup (in app root):
+ *
+ *   import { createHexastralClient } from '@zhop/hexastral-client'
+ *   import { KindredClientProvider } from '@zhop/scenario-kindred'
+ *
+ *   const client = createHexastralClient(API_URL, { signRequest })
+ *
+ *   <KindredClientProvider client={client}>
+ *     <App />
+ *   </KindredClientProvider>
+ *
+ * Then any descendant component can call hooks:
+ *
+ *   const { invitation, respond } = useBondInvitation(token)
+ *   const { bonds } = useBondList()
+ *   const { detail, chapters } = useSynastryReport(bondId)
+ *
+ * See docs/decisions/0001-yuan-naming.md for product context.
+ */
+
+export * from './components'
+export type { KindredClientConfig, KindredClientProviderProps } from './context'
+export { KindredClientProvider, useKindredClient } from './context'
+export * from './hooks'
+export * from './types'

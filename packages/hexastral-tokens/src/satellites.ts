@@ -86,7 +86,7 @@ export const numerologyPalette = {
   blueGhost: 'rgba(74,111,165,0.08)',
 } as const
 
-// ── Cycle (黄历) — 朱泥 terra (default) + 3 alt variants ────────────────────
+// ── Auspice (黄历) — 朱泥 terra (default) + 3 alt variants ────────────────────
 //
 // The default 朱泥 honors ADR-0010 §6. The alt variants exist because a single
 // red read as overwhelming to some users; each alt is a 黄历-coherent ink the
@@ -95,7 +95,7 @@ export const numerologyPalette = {
 // the page feel.
 
 /** 朱泥 — terracotta clay red, the default 黄历 accent. */
-export const cyclePalette = {
+export const auspicePalette = {
   terra: '#A8492E',
   terraBright: '#C25E3E',
   terraMute: 'rgba(168,73,46,0.45)',
@@ -104,22 +104,22 @@ export const cyclePalette = {
 } as const
 
 /**
- * Cycle accent variants — semantic 黄历 inks. Values picked at mid-luminance
+ * Auspice accent variants — semantic 黄历 inks. Values picked at mid-luminance
  * so they read on both cream (light) and warm-black (dark) without per-mode
- * pivot. All share the same `accentGhost` alpha pattern as `cyclePalette`.
+ * pivot. All share the same `accentGhost` alpha pattern as `auspicePalette`.
  */
-export type CycleAccentVariant = 'terra' | 'ink' | 'azurite' | 'gold'
+export type AuspiceAccentVariant = 'terra' | 'ink' | 'azurite' | 'gold'
 
-export const cycleAccentVariants: Record<
-  CycleAccentVariant,
+export const auspiceAccentVariants: Record<
+  AuspiceAccentVariant,
   { accent: string; accentBright: string; accentMute: string; accentGhost: string }
 > = {
   // 朱泥 (default)
   terra: {
-    accent: cyclePalette.terra,
-    accentBright: cyclePalette.terraBright,
-    accentMute: cyclePalette.terraMute,
-    accentGhost: cyclePalette.terraGhost,
+    accent: auspicePalette.terra,
+    accentBright: auspicePalette.terraBright,
+    accentMute: auspicePalette.terraMute,
+    accentGhost: auspicePalette.terraGhost,
   },
   // 苍墨 — warm dark-gray, the body ink of an almanac
   ink: {
@@ -175,8 +175,8 @@ export interface SatelliteAccent {
 }
 
 /**
- * @param accentVariant Optional variant id. Cycle accepts the
- *   `CycleAccentVariant` ids ('terra' | 'ink' | 'azurite' | 'gold'); other
+ * @param accentVariant Optional variant id. Auspice accepts the
+ *   `AuspiceAccentVariant` ids ('terra' | 'ink' | 'azurite' | 'gold'); other
  *   satellites currently ignore it. Unknown variants fall back to the
  *   satellite's default accent.
  */
@@ -221,16 +221,16 @@ export function getSatelliteAccent(key: SatelliteKey, accentVariant?: string): S
       }
     case 'cycle': {
       const v =
-        accentVariant && accentVariant in cycleAccentVariants
-          ? cycleAccentVariants[accentVariant as CycleAccentVariant]
-          : cycleAccentVariants.terra
+        accentVariant && accentVariant in auspiceAccentVariants
+          ? auspiceAccentVariants[accentVariant as AuspiceAccentVariant]
+          : auspiceAccentVariants.terra
       return {
         accent: v.accent,
         accentBright: v.accentBright,
         accentMute: v.accentMute,
         accentGhost: v.accentGhost,
         // paperGrain stays brand-anchored — variant changes highlights, not page feel
-        surfaceTint: cyclePalette.paperGrain,
+        surfaceTint: auspicePalette.paperGrain,
       }
     }
   }

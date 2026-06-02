@@ -1,5 +1,5 @@
 /**
- * Entry — Cycle is anonymous-first (ADR-0010 Tier 3): no sign-in gate, no
+ * Entry — Auspice is anonymous-first (ADR-0010 Tier 3): no sign-in gate, no
  * onboarding wall. Boot straight into Today.
  */
 

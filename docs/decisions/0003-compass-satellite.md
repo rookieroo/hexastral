@@ -8,7 +8,7 @@
 
 > **REVERSAL (2026-05-20)**: The standalone Compass app is killed. Reason: red-ocean
 > compass market + Tier-3 utility with weak conversion to Fēng + user education cost
-> too high vs Cycle (黄历 satellite) which serves daily-utility need more directly.
+> too high vs Auspice (黄历 satellite) which serves daily-utility need more directly.
 > The in-app compass tab inside feng-app survives as a pure magnetic compass utility
 > (no separate app, no IAP, no /api/compass route).
 >
@@ -74,7 +74,7 @@ Per ADR-0002 satellite naming rules:
 
 This is the **first satellite to ship with a CJK alias.** The justification:
 Compass is the only satellite whose Chinese-market analog (羅盤 / 罗盘) is a
-single-glyph cultural object on par with 緣 / 風, and the in-app tab inside Fēng
+single-glyph cultural object on par with Kindred / 風, and the in-app tab inside Fēng
 is labeled 羅 for consistency. Treating Compass with a CJK alias does not
 break ADR-0002 because the App Store name and identity remain Western —
 the CJK glyph is a marketing accent, not the primary identifier.

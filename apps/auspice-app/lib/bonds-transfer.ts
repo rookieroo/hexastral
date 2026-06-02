@@ -1,23 +1,23 @@
 /**
- * Cycle 亲友 → Yuan Bonds — frictionless carry-over after sign-in.
+ * Auspice 亲友 → Kindred Bonds — frictionless carry-over after sign-in.
  *
  * The payoff of the login-at-subscribe identity: once the user has a portfolio
  * userId + deviceSecret, every 亲友 they recorded (lib/people.ts) can be POSTed
- * to `/api/bonds/solo` to seed the Yuan (緣) graph WITHOUT re-entering names /
- * birthdays / 时辰 / gender. The first time the user opens Yuan, the bonds are
+ * to `/api/bonds/solo` to seed the Kindred (Kindred) graph WITHOUT re-entering names /
+ * birthdays / 时辰 / gender. The first time the user opens Kindred, the bonds are
  * already there.
  *
- * Idempotent — a `cycle.bonds.transferred` set tracks `CyclePerson.id`s that
+ * Idempotent — a `cycle.bonds.transferred` set tracks `AuspicePerson.id`s that
  * have already been pushed, so re-running this is safe (e.g. on each app open).
- * Skips people missing the data Yuan's `personBirthSchema` requires (time index
+ * Skips people missing the data Kindred's `personBirthSchema` requires (time index
  * + gender). The user can edit them in /people and the next sweep picks them up.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { signedApiFetch } from '@zhop/satellite-runtime'
-import type { CyclePerson } from './people'
+import type { AuspicePerson } from './people'
 
-const TRANSFERRED_KEY = 'cycle.bonds.transferred'
+const TRANSFERRED_KEY = 'auspice.bonds.transferred'
 
 async function getTransferred(): Promise<Set<string>> {
   try {
@@ -35,17 +35,17 @@ async function setTransferred(ids: Set<string>): Promise<void> {
   } catch {}
 }
 
-/** True if the person has enough data for Yuan's `personBirthSchema`. */
-function isYuanReady(p: CyclePerson): boolean {
-  // Year-unknown 亲友 carry a 0000 sentinel — skip; Yuan needs a real year.
+/** True if the person has enough data for Kindred's `personBirthSchema`. */
+function isYuanReady(p: AuspicePerson): boolean {
+  // Year-unknown 亲友 carry a 0000 sentinel — skip; Kindred needs a real year.
   if (p.solarDate.startsWith('0000-')) return false
   if (p.timeIndex == null) return false
   if (p.gender !== '男' && p.gender !== '女') return false
   return true
 }
 
-/** Map a CyclePerson to the `POST /api/bonds/solo` payload. */
-function toSoloPayload(p: CyclePerson, language: string): unknown {
+/** Map a AuspicePerson to the `POST /api/bonds/solo` payload. */
+function toSoloPayload(p: AuspicePerson, language: string): unknown {
   return {
     targetName: p.name,
     relationshipLabel: p.relation?.trim() || '亲友',
@@ -75,8 +75,8 @@ export interface TransferResult {
  * caller hasn't yet signed in (signedApiFetch returns 401 without a session).
  * Safe to call repeatedly; on partial failure the next call retries the failed.
  */
-export async function transferCyclePeopleToBonds(
-  people: ReadonlyArray<CyclePerson>,
+export async function transferAuspicePeopleToBonds(
+  people: ReadonlyArray<AuspicePerson>,
   language: string
 ): Promise<TransferResult> {
   const transferred = await getTransferred()

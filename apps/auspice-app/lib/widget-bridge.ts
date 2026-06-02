@@ -11,7 +11,7 @@
 
 import { NativeModules, Platform } from 'react-native'
 import { buildDailyCardModel, topVerbs } from '@/components/DailyCard'
-import type { CycleDay, CyclePersonalization } from '@/lib/api'
+import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 const APP_GROUP = 'group.com.hexastral.cycle'
@@ -47,8 +47,8 @@ export async function writeWidgetDays(days: WidgetDay[]): Promise<void> {
 /** Build today's WidgetDay from a day payload and sync it. Call after each fetch. */
 export async function syncTodayWidget(
   date: string,
-  day: CycleDay,
-  personalization: CyclePersonalization | null | undefined,
+  day: AuspiceDay,
+  personalization: AuspicePersonalization | null | undefined,
   t: Parameters<typeof buildDailyCardModel>[3],
   locale: Locale
 ): Promise<void> {

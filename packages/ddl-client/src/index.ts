@@ -23,25 +23,23 @@
  *   if (session?.meta.payload?.mode === 'pairing') { ... }
  */
 
-// Types
-export type {
-  BrowserFingerprint,
-  DDLSession,
-  DDLSessionMeta,
-  DDLCreateResponse,
-  DDLResolveResponse,
-  DDLMatchFingerprint,
-  DDLMatchResponse,
-} from './types'
+// API client
+export { createDDLSession, matchDDLSession, resolveDDLSession } from './client'
 
 // Fingerprint
 export { collectFingerprint, fingerprintId } from './fingerprint'
-
-// API client
-export { createDDLSession, resolveDDLSession, matchDDLSession } from './client'
-
-// Redirect helpers
-export { redirectToAppStore, getCachedDDLToken, clearCachedDDLToken } from './redirect'
-
 // Growth / attribution (browser)
 export { mergeUtmForDdl, readPersistedGrowthUtm } from './growth-utm'
+
+// Redirect helpers
+export { clearCachedDDLToken, getCachedDDLToken, redirectToAppStore } from './redirect'
+// Types
+export type {
+  BrowserFingerprint,
+  DDLCreateResponse,
+  DDLMatchFingerprint,
+  DDLMatchResponse,
+  DDLResolveResponse,
+  DDLSession,
+  DDLSessionMeta,
+} from './types'

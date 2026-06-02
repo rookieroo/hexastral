@@ -2,16 +2,16 @@
  * Reverse 择日 — pick an event, get the top-3 ranked days in the next 30 days
  * with reasoning. Two scoring modes:
  *
- *   - Generic (`GET /api/cycle/search`) — verb-match against the day's 宜/忌
+ *   - Generic (`GET /api/auspice/search`) — verb-match against the day's 宜/忌
  *     plus 28-mansion + 五行 nudge. Free for all 10 events.
- *   - Specialized (`GET /api/cycle/{wedding,move-in,business,travel}`,
+ *   - Specialized (`GET /api/auspice/{wedding,move-in,business,travel}`,
  *     Sprint 2 chunk 7) — Pro only; adds 建除十二神 officer boosts and tags
  *     reasoning with "相宜 / 相避" suffixes.
  *
  * When the user picks one of the 4 specialized events, the screen calls
- * `fetchCycleSpecialized` if they're Pro and falls back to generic + a
+ * `fetchAuspiceSpecialized` if they're Pro and falls back to generic + a
  * paywall hint otherwise. Intent routes the cross-app funnel: wedding →
- * Yuán; everything else → Fēng. Cross-promo is allowed here per ADR-0019
+ * Kindred; everything else → Fēng. Cross-promo is allowed here per ADR-0019
  * peer-promote (the user has stated an intent; this is contextual, not a
  * home-screen ad slot).
  */
@@ -23,15 +23,15 @@ import { useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { CyclePaywallSheet } from '@/components/CyclePaywallSheet'
+import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import {
+  type AuspiceEvent,
+  type AuspiceSearchPayload,
   CYCLE_EVENTS,
-  type CycleEvent,
-  type CycleSearchPayload,
-  fetchCycleSpecialized,
+  fetchAuspiceSpecialized,
   type SpecializedCycleEvent,
-  searchCycleDays,
+  searchAuspiceDays,
 } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
 import { scheduleRetroCheck } from '@/lib/push'
@@ -43,13 +43,13 @@ function fmt(d: Date) {
 }
 
 /** Events the 4 specialized Pro routes handle. Must mirror server (Sprint 2 #7). */
-const SPECIALIZED_EVENT_SET: ReadonlySet<CycleEvent> = new Set<CycleEvent>([
+const SPECIALIZED_EVENT_SET: ReadonlySet<AuspiceEvent> = new Set<AuspiceEvent>([
   'wedding',
   'move-in',
   'business',
   'travel',
 ])
-function isSpecialized(e: CycleEvent): e is SpecializedCycleEvent {
+function isSpecialized(e: AuspiceEvent): e is SpecializedCycleEvent {
   return SPECIALIZED_EVENT_SET.has(e)
 }
 
@@ -58,16 +58,16 @@ export default function EventScreen() {
   const { t, locale } = useStrings()
   const router = useRouter()
 
-  const [event, setEvent] = useState<CycleEvent>('wedding')
+  const [event, setEvent] = useState<AuspiceEvent>('wedding')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<CycleSearchPayload | null>(null)
+  const [result, setResult] = useState<AuspiceSearchPayload | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
 
-  // Pro split — `cycle_pro` covers `universe_pro` purchases via the local
+  // Pro split — `auspice_pro` covers `universe_pro` purchases via the local
   // mirror in `snapshotFromCustomerInfo`, so this single check covers both.
   const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'cycle_pro')
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const specialized = isSpecialized(event)
   const useSpecializedScoring = specialized && isPro
 
@@ -82,8 +82,8 @@ export default function EventScreen() {
     const fromIso = fmt(today)
     const toIso = fmt(to)
     const promise = useSpecializedScoring
-      ? fetchCycleSpecialized(event as SpecializedCycleEvent, fromIso, toIso)
-      : searchCycleDays(event, fromIso, toIso)
+      ? fetchAuspiceSpecialized(event as SpecializedCycleEvent, fromIso, toIso)
+      : searchAuspiceDays(event, fromIso, toIso)
     promise
       .then((r) => setResult(r))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
@@ -239,7 +239,7 @@ export default function EventScreen() {
           </View>
         ) : null}
       </ScrollView>
-      <CyclePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+      <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </SafeAreaView>
   )
 }

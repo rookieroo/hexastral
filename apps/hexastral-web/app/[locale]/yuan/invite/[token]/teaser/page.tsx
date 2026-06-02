@@ -9,7 +9,7 @@
  *   - "Your charts are aligned." (validation: they finished the form)
  *   - 3 quotable lines pulled from the report (first 3 chapter golden lines)
  *   - "The full story is in the app." (anticipation)
- *   - "Get Yuán on iOS" → DDL handoff to App Store (token claimed on install)
+ *   - "Get Kindred on iOS" → DDL handoff to App Store (token claimed on install)
  */
 
 import type { Metadata } from 'next'
@@ -46,15 +46,15 @@ async function fetchTeaser(token: string): Promise<TeaserData | null> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Your resonance · Yuán',
-    zh: '你们的共鸣 · 緣',
-    tw: '你們的共鳴 · 緣',
+    en: 'Your resonance · Kindred',
+    zh: '你们的共鸣 · Kindred',
+    tw: '你們的共鳴 · Kindred',
     ja: '二人の共鳴 · 縁',
   }
   return { title: titles[locale] ?? titles.en }
 }
 
-export default async function YuanInviteTeaserPage({ params }: PageProps) {
+export default async function KindredInviteTeaserPage({ params }: PageProps) {
   const { token, locale } = await params
   const data = await fetchTeaser(token)
   if (!data) notFound()
@@ -87,7 +87,7 @@ export default async function YuanInviteTeaserPage({ params }: PageProps) {
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>緣</span>
+          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>Kindred</span>
         </div>
 
         {/* Names + tag */}
@@ -101,7 +101,7 @@ export default async function YuanInviteTeaserPage({ params }: PageProps) {
             marginBottom: 12,
           }}
         >
-          {isZh ? '你们的缘' : 'your resonance'}
+          {isZh ? '你们的Kindred' : 'your resonance'}
         </p>
         <h1
           style={{
@@ -173,7 +173,7 @@ export default async function YuanInviteTeaserPage({ params }: PageProps) {
             textDecoration: 'none',
           }}
         >
-          {isZh ? '在 iOS 上获取 Yuán →' : 'Get Yuán on iOS →'}
+          {isZh ? '在 iOS 上获取 Kindred →' : 'Get Kindred on iOS →'}
         </a>
 
         <p

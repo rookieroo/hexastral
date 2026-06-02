@@ -1,5 +1,5 @@
 /**
- * POST /api/cycle/timeline — Cycle's "Life Timeline" Pro payload (Sprint 4 backend).
+ * POST /api/auspice/timeline — Auspice's "Life Timeline" Pro payload (Sprint 4 backend).
  *
  * Deterministic by design (ADR-0020):
  *   大运 (10-year cycles) · 流年 (yearly ±5) · 流月 (this year's 12 lunar months) — ALL
@@ -15,9 +15,9 @@
  *
  * Anonymous identity (HMAC v2): the route requires the standard mobile signing
  * envelope but does NOT derive birth from `userId` — the body carries the birth
- * fields, so the same handler answers both Cycle (where birth is locally held on
+ * fields, so the same handler answers both Auspice (where birth is locally held on
  * device) and a future Fate-flagship caller. The wiring in `index.ts` adds the
- * `hmacVerify` middleware on `/api/cycle/timeline` only (rest of `/api/cycle/*`
+ * `hmacVerify` middleware on `/api/auspice/timeline` only (rest of `/api/auspice/*`
  * stays anonymous, IP rate-limited).
  *
  * Compute path (cache miss):
@@ -28,7 +28,7 @@
  *      year-stem + lunar-month-branch table that astro-core already exposes).
  *
  * The shape is the `TimelinePayload` interface the cycle-app's timeline tab consumes;
- * keep this in lock-step with `apps/cycle-app/lib/api.ts` `TimelinePayload` (Agent D).
+ * keep this in lock-step with `apps/auspice-app/lib/api.ts` `TimelinePayload` (Agent D).
  */
 
 import {
@@ -52,7 +52,7 @@ import { lifeTimelineCache, TIMELINE_CACHE_VERSION } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
 
-export const cycleTimelineRoutes = new Hono<AppEnv>()
+export const auspiceTimelineRoutes = new Hono<AppEnv>()
 
 // ── Public shape ────────────────────────────────────────────────
 // Single source of truth for both the route response and the Drizzle cache JSON
@@ -239,7 +239,9 @@ async function readCached(db: AppDb, contextKey: string, nowIso: string): Promis
   const row = await db
     .select({ contentJson: lifeTimelineCache.contentJson })
     .from(lifeTimelineCache)
-    .where(and(eq(lifeTimelineCache.contextKey, contextKey), gt(lifeTimelineCache.expiresAt, nowIso)))
+    .where(
+      and(eq(lifeTimelineCache.contextKey, contextKey), gt(lifeTimelineCache.expiresAt, nowIso))
+    )
     .limit(1)
     .get()
   return row?.contentJson ?? null
@@ -271,7 +273,7 @@ async function writeCached(
 
 // ── Route ───────────────────────────────────────────────────────
 
-cycleTimelineRoutes.post('/', async (c) => {
+auspiceTimelineRoutes.post('/', async (c) => {
   const parsed = requestSchema.safeParse(await c.req.json().catch(() => ({})))
   if (!parsed.success) {
     throw new HTTPException(400, { message: 'invalid timeline request body' })
@@ -302,7 +304,7 @@ cycleTimelineRoutes.post('/', async (c) => {
     try {
       await writeCached(db, contextKey, contentJson, now)
     } catch (err) {
-      console.warn('[cycle.timeline] cache write failed', err)
+      console.warn('[auspice.timeline] cache write failed', err)
     }
   }
   return jsonOk(c, payload)
@@ -313,6 +315,6 @@ cycleTimelineRoutes.post('/', async (c) => {
 export { computeContextKey }
 
 // Reject anything other than POST on the sub-path with a clean 405.
-cycleTimelineRoutes.all('/', (c) => {
+auspiceTimelineRoutes.all('/', (c) => {
   throw new HTTPException(405, { message: 'method not allowed' })
 })

@@ -16,8 +16,8 @@ import type { ChatTier, ReadingType } from '../reading-context-builder'
 
 export type Capability =
   | 'fate'
-  | 'yuan'
-  | 'cycle'
+  | 'kindred'
+  | 'auspice'
   | 'feng'
   | 'face'
   | 'coincast'
@@ -31,8 +31,8 @@ export type Capability =
  */
 const SUBSCRIPTION_ENTITLEMENT: Partial<Record<Capability, EntitlementKey>> = {
   fate: 'fate_pro',
-  yuan: 'yuan_pro',
-  cycle: 'cycle_pro',
+  kindred: 'kindred_pro',
+  auspice: 'auspice_pro',
 }
 
 /**
@@ -47,8 +47,8 @@ const CAPABILITY_UPSELL: Record<Capability, string> = {
   // SatelliteFlagshipUpsellCard separately routes free fate users to cycle/yuan
   // App Store pages; this is the in-context paywall product id.
   fate: 'universe_pro_monthly',
-  yuan: 'yuan_pro_monthly',
-  cycle: 'cycle_pro_monthly',
+  kindred: 'kindred_pro_monthly',
+  auspice: 'auspice_pro_monthly',
   feng: 'hexastral_feng_single',
   face: 'faceoracle_reading',
   coincast: 'coincast_cast_pack_10',
@@ -59,16 +59,16 @@ const CAPABILITY_UPSELL: Record<Capability, string> = {
 /**
  * Resolve which app/capability a chat or reading belongs to. The X-Target-App
  * header wins when it names a known app; otherwise the reading type decides
- * (natal/stellar/report = the 命 fate surface, pair = 緣, yiching = 六爻, …).
+ * (natal/stellar/report = the 命 fate surface, pair = Kindred, yiching = 六爻, …).
  */
 export function resolveCapability(readingType: ReadingType, targetApp?: string | null): Capability {
   switch (targetApp) {
-    case 'yuan':
-      return 'yuan'
+    case 'kindred':
+      return 'kindred'
     case 'feng':
       return 'feng'
-    case 'cycle':
-      return 'cycle'
+    case 'auspice':
+      return 'auspice'
     case 'fate':
       return 'fate'
     case 'faceoracle':
@@ -82,11 +82,11 @@ export function resolveCapability(readingType: ReadingType, targetApp?: string |
   }
   switch (readingType) {
     case 'pair':
-      return 'yuan'
+      return 'kindred'
     case 'feng':
       return 'feng'
     case 'cycle':
-      return 'cycle'
+      return 'auspice'
     case 'physiognomy':
       return 'face'
     case 'yiching':

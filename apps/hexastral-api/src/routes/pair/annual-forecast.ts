@@ -73,7 +73,7 @@ pairAnnualForecastRoutes.post('/:id/annual-forecast', async (c) => {
   const user = await db.select().from(users).where(deq(users.id, userId)).get()
   if (!user) throw new HTTPException(404, { message: 'User not found' })
 
-  const isPro = await userHasCapability(db, userId, 'yuan')
+  const isPro = await userHasCapability(db, userId, 'kindred')
 
   if (!isPro) throw new HTTPException(403, { message: 'pro_required' })
 

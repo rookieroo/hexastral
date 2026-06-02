@@ -9,7 +9,7 @@
  *
  * v0: minimalist page that explains the flow + points to the iOS app. The
  * full "fill A's own birth info on web then invite B" UX comes in Phase B
- * once Yuán-app is live and the web → app handoff is wired.
+ * once Kindred-app is live and the web → app handoff is wired.
  */
 
 import type { Metadata } from 'next'
@@ -22,15 +22,15 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Start a connection · Yuán',
-    zh: '开始一段缘 · 緣',
-    tw: '開始一段緣 · 緣',
+    en: 'Start a connection · Kindred',
+    zh: '开始一段Kindred · Kindred',
+    tw: '開始一段Kindred · Kindred',
     ja: '縁を結ぶ · 縁',
   }
   return { title: titles[locale] ?? titles.en }
 }
 
-export default async function YuanStartPage({ params }: PageProps) {
+export default async function KindredStartPage({ params }: PageProps) {
   const { locale } = await params
   const isZh = locale === 'zh' || locale === 'tw'
 
@@ -59,7 +59,7 @@ export default async function YuanStartPage({ params }: PageProps) {
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882' }}>緣</span>
+          <span style={{ fontSize: 48, color: '#C4A882' }}>Kindred</span>
         </div>
 
         <h1
@@ -100,7 +100,7 @@ export default async function YuanStartPage({ params }: PageProps) {
             marginBottom: 32,
           }}
         >
-          {isZh ? '获取 Yuán →' : 'Get Yuán →'}
+          {isZh ? '获取 Kindred →' : 'Get Kindred →'}
         </a>
 
         <div>
@@ -115,7 +115,7 @@ export default async function YuanStartPage({ params }: PageProps) {
               textDecoration: 'none',
             }}
           >
-            {isZh ? '← 返回 Yuán' : '← Back to Yuán'}
+            {isZh ? '← 返回 Kindred' : '← Back to Kindred'}
           </Link>
         </div>
       </div>

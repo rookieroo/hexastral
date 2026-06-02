@@ -2,10 +2,10 @@
 
 - Status: Accepted
 - Date: 2026-05-22
-- Builds on: [ADR-0012](0012-matrix-freemium-monetization.md) (Yuán = subscription flagship, value = Timeline + tiered chat), [ADR-0013](0013-iap-system-architecture.md) (capability resolver / entitlement gate), `packages/astro-core/src/relationship-timeline.ts` (the pairwise engine this composes), `apps/hexastral-api/src/db/schema.ts` (`userBonds`, `pairReadings`)
+- Builds on: [ADR-0012](0012-matrix-freemium-monetization.md) (Kindred = subscription flagship, value = Timeline + tiered chat), [ADR-0013](0013-iap-system-architecture.md) (capability resolver / entitlement gate), `packages/astro-core/src/relationship-timeline.ts` (the pairwise engine this composes), `apps/hexastral-api/src/db/schema.ts` (`userBonds`, `pairReadings`)
 - Companion: [bonds-timeline-plan.md](../bonds-timeline-plan.md) (BT.0–BT.6 build roadmap)
 
-> ADR-0012 decided Yuán's subscription value is the **Timeline** (proactive prediction) plus tiered chat (passive retrieval). This ADR decides the *architecture* of the ego-centric multi-bond timeline — one time axis weaving 本我 × all bonds — that is Yuán's subscription moat.
+> ADR-0012 decided Kindred's subscription value is the **Timeline** (proactive prediction) plus tiered chat (passive retrieval). This ADR decides the *architecture* of the ego-centric multi-bond timeline — one time axis weaving 本我 × all bonds — that is Kindred's subscription moat.
 
 ## Context
 
@@ -35,7 +35,7 @@ Why: [schema.ts](../../apps/hexastral-api/src/db/schema.ts) is explicit that B's
 
 The server returns a *future push schedule*; the client schedules a rolling window with `expo-notifications` and re-schedules on app open.
 
-Why: this mirrors the cycle-app pattern ([cycle-app/lib/push.ts](../../apps/cycle-app/lib/push.ts), `scheduleDailyAlmanac` / `refreshDailyPush`). No push tokens, no server cron, no per-device delivery infrastructure. The per-user global push cap (so N bonds don't each fire independently) is computed server-side in the merge; the client just lays the resulting schedule onto its local notification queue.
+Why: this mirrors the cycle-app pattern ([cycle-app/lib/push.ts](../../apps/auspice-app/lib/push.ts), `scheduleDailyAlmanac` / `refreshDailyPush`). No push tokens, no server cron, no per-device delivery infrastructure. The per-user global push cap (so N bonds don't each fire independently) is computed server-side in the merge; the client just lays the resulting schedule onto its local notification queue.
 
 ## Consequences
 
@@ -54,4 +54,4 @@ Why: this mirrors the cycle-app pattern ([cycle-app/lib/push.ts](../../apps/cycl
 
 ## References
 - [ADR-0012](0012-matrix-freemium-monetization.md) (model: Timeline §2 vs chat §3) · [ADR-0013](0013-iap-system-architecture.md) (capability gate) · [bonds-timeline-plan.md](../bonds-timeline-plan.md) (BT roadmap)
-- `packages/astro-core/src/relationship-timeline.ts` (pairwise engine) · `apps/hexastral-api/src/db/schema.ts` (`userBonds` / `pairReadings`) · `apps/cycle-app/lib/push.ts` (local push pattern) · `apps/hexastral-api/src/lib/access/capabilities.ts` (yuan gate)
+- `packages/astro-core/src/relationship-timeline.ts` (pairwise engine) · `apps/hexastral-api/src/db/schema.ts` (`userBonds` / `pairReadings`) · `apps/auspice-app/lib/push.ts` (local push pattern) · `apps/hexastral-api/src/lib/access/capabilities.ts` (yuan gate)

@@ -110,7 +110,7 @@ interface BirthInfoFormProps {
   accent: string
 
   /** Optional decorative element rendered above the welcome step title.
-   *  yuan passes <YuanSeal mode='breathing' size={120} />, feng could pass
+   *  yuan passes <KindredSeal mode='breathing' size={120} />, feng could pass
    *  a compass glyph, etc. Skip if you don't want a crown. */
   crown?: ReactNode
 
@@ -267,7 +267,7 @@ After `<BirthInfoForm>` lands in core-ui:
       Result: ~600 LOC deleted from hexastral-app.
 - [ ] **yuan-app** `(onboarding)/birth-date.tsx`, `birth-time.tsx`,
       `birth-place.tsx`, `name.tsx` (the self flow) — replace with
-      `<BirthInfoForm accent={yuanLight.accent} crown={<YuanSeal/>}/>`.
+      `<BirthInfoForm accent={kindredLight.accent} crown={<KindredSeal/>}/>`.
       The name + mode steps stay yuan-specific (they're outside birth-info).
       Result: ~400 LOC deleted from yuan-app.
 - [ ] **yuan-app** `fill-other.tsx` — keep the dense single-screen layout
@@ -335,7 +335,7 @@ Action for J.1.1:
 Rendered above the welcome / first step's title. Pass any ReactNode.
 
 Recommended per app:
-- **yuan-app**: `<YuanSeal mode='breathing' size={120} />`
+- **yuan-app**: `<KindredSeal mode='breathing' size={120} />`
 - **hexastral-app**: nothing (mono aesthetic) OR a tiny 八字盘 svg glyph
 - **feng-app**: 罗盘 ring icon (24山 glyph) if adopted later
 - **numerology-app**: a number-glyph if adopted later

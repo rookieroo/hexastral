@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
 import { getStrings, type Locale, resolveLocale, type Strings } from './i18n'
 
-const STORAGE_KEY = 'cycle.locale'
+const STORAGE_KEY = 'auspice.locale'
 
 interface LocaleCtx {
   locale: Locale

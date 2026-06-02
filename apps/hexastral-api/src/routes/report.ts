@@ -28,11 +28,7 @@ import { reportChapters, users } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { userHasCapability } from '../lib/access/entitlement-access'
 import { requireUserId } from '../lib/auth'
-import {
-  CHAPTER_UNLOCK_CAP,
-  chapterUnlockPosition,
-  isChapterUnlocked,
-} from '../lib/chapter-access'
+import { CHAPTER_UNLOCK_CAP, chapterUnlockPosition, isChapterUnlocked } from '../lib/chapter-access'
 import {
   CHAPTER_SLUGS,
   type ChapterSlug,

@@ -5,16 +5,17 @@
  * Rendering is done via @react-email/components render() and sent
  * through the svc-mailer Service Binding.
  */
-import React from 'react'
+
 import { render } from '@react-email/components'
+import React from 'react'
 import type { EmailServiceClient } from '../service-client'
 import {
-  WelcomeEmailTemplate,
   CancellationEmailTemplate,
+  ContactTemplate,
+  EmailVerificationTemplate,
   OrganizationInvitationTemplate,
   SignInTemplate,
-  EmailVerificationTemplate,
-  ContactTemplate,
+  WelcomeEmailTemplate,
 } from '../templates'
 
 /**
@@ -23,12 +24,10 @@ import {
 export async function sendWelcomeEmail(
   mailer: EmailServiceClient,
   userEmail: string,
-  planName: string,
+  planName: string
 ) {
   try {
-    const html = await render(
-      React.createElement(WelcomeEmailTemplate, { planName }),
-    )
+    const html = await render(React.createElement(WelcomeEmailTemplate, { planName }))
     await mailer.send({
       to: userEmail,
       subject: `Welcome to the Zhop ${planName} Plan`,
@@ -43,14 +42,9 @@ export async function sendWelcomeEmail(
 /**
  * Send a cancellation email to a specific email address.
  */
-export async function sendCancellationEmail(
-  mailer: EmailServiceClient,
-  userEmail: string,
-) {
+export async function sendCancellationEmail(mailer: EmailServiceClient, userEmail: string) {
   try {
-    const html = await render(
-      React.createElement(CancellationEmailTemplate, {}),
-    )
+    const html = await render(React.createElement(CancellationEmailTemplate, {}))
     await mailer.send({
       to: userEmail,
       subject: 'Zhop Subscription Cancelled',
@@ -73,7 +67,7 @@ export async function sendOrganizationInvitation(
     invitedByEmail: string
     teamName: string
     inviteLink: string
-  },
+  }
 ) {
   const { email, invitedByUsername, invitedByEmail, teamName, inviteLink } = options
   try {
@@ -83,7 +77,7 @@ export async function sendOrganizationInvitation(
         invitedByEmail,
         teamName,
         inviteLink,
-      }),
+      })
     )
     await mailer.send({
       to: email,
@@ -99,15 +93,9 @@ export async function sendOrganizationInvitation(
 /**
  * Send a sign-in verification email with OTP code.
  */
-export async function sendSignInEmail(
-  mailer: EmailServiceClient,
-  userEmail: string,
-  otp: string,
-) {
+export async function sendSignInEmail(mailer: EmailServiceClient, userEmail: string, otp: string) {
   try {
-    const html = await render(
-      React.createElement(SignInTemplate, { otp }),
-    )
+    const html = await render(React.createElement(SignInTemplate, { otp }))
     await mailer.send({
       to: userEmail,
       subject: 'Zhop - Sign-in Verification Code',
@@ -125,12 +113,10 @@ export async function sendSignInEmail(
 export async function sendEmailVerification(
   mailer: EmailServiceClient,
   userEmail: string,
-  otp: string,
+  otp: string
 ) {
   try {
-    const html = await render(
-      React.createElement(EmailVerificationTemplate, { otp }),
-    )
+    const html = await render(React.createElement(EmailVerificationTemplate, { otp }))
     await mailer.send({
       to: userEmail,
       subject: 'Zhop - Email Verification Code',
@@ -152,13 +138,11 @@ export async function sendContactFormNotification(
     email: string
     message: string
     recipientEmail: string
-  },
+  }
 ) {
   const { name, email, message, recipientEmail } = options
   try {
-    const html = await render(
-      React.createElement(ContactTemplate, { name, email, message }),
-    )
+    const html = await render(React.createElement(ContactTemplate, { name, email, message }))
     await mailer.send({
       to: recipientEmail,
       subject: 'Zhop Contact Form Submission',

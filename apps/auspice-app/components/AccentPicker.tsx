@@ -9,12 +9,12 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { cycleAccentVariants } from '@zhop/hexastral-tokens/satellites'
+import { auspiceAccentVariants } from '@zhop/hexastral-tokens/satellites'
 import { Pressable, Text, View } from 'react-native'
-import { ACCENT_VARIANT_LABELS, type CycleAccentVariant, useAccentVariant } from '@/lib/accent'
+import { ACCENT_VARIANT_LABELS, type AuspiceAccentVariant, useAccentVariant } from '@/lib/accent'
 import { useStrings } from '@/lib/i18n-context'
 
-const ORDER: readonly CycleAccentVariant[] = ['terra', 'ink', 'azurite', 'gold']
+const ORDER: readonly AuspiceAccentVariant[] = ['terra', 'ink', 'azurite', 'gold']
 
 export function AccentPicker() {
   const { colors, spacing } = useTheme()
@@ -26,7 +26,7 @@ export function AccentPicker() {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
       {ORDER.map((v) => {
         const sel = v === variant
-        const swatch = cycleAccentVariants[v].accent
+        const swatch = auspiceAccentVariants[v].accent
         return (
           <Pressable
             key={v}

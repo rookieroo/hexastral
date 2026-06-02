@@ -5,7 +5,7 @@
  * the app via the cinnabar share button, a `sharedReports` row is created in
  * D1 with a short shareId. The shared URL renders ONE chapter's golden line +
  * body (not the whole report) — viewers see enough to be curious, then a CTA
- * to download Yuán to read the full thing.
+ * to download Kindred to read the full thing.
  *
  * Backend endpoint: GET /api/share/yuan/:shareId
  * Returns: { chapter, selfName, otherName, expiresAt }
@@ -15,7 +15,7 @@
  * ShareableChapterCard layout the mobile share button produces.
  */
 
-import type { SynastryChapter } from '@zhop/scenario-yuan/types'
+import type { SynastryChapter } from '@zhop/scenario-kindred/types'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -85,29 +85,29 @@ const CHAPTER_TITLES_BY_LOCALE: Record<string, ChapterTitleRow> & { en: ChapterT
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { shareId, locale } = await params
   const data = await fetchShared(shareId)
-  if (!data) return { title: 'Yuán' }
+  if (!data) return { title: 'Kindred' }
 
   const titleMap = CHAPTER_TITLES_BY_LOCALE[locale] ?? CHAPTER_TITLES_BY_LOCALE.en
   const chapterTitle = titleMap[data.chapter.kind]
 
   return {
-    title: `${chapterTitle} · ${data.selfName} & ${data.otherName} · Yuán`,
+    title: `${chapterTitle} · ${data.selfName} & ${data.otherName} · Kindred`,
     description: data.chapter.goldenLine,
     openGraph: {
       title: `${chapterTitle} · ${data.selfName} & ${data.otherName}`,
       description: data.chapter.goldenLine,
-      siteName: 'Yuán by HexAstral',
+      siteName: 'Kindred by HexAstral',
       images: [{ url: `${API_URL}/api/share/yuan/${shareId}/og.png`, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${chapterTitle} · Yuán`,
+      title: `${chapterTitle} · Kindred`,
       description: data.chapter.goldenLine,
     },
   }
 }
 
-export default async function YuanReportSharePage({ params }: PageProps) {
+export default async function KindredReportSharePage({ params }: PageProps) {
   const { shareId, locale } = await params
   const data = await fetchShared(shareId)
   if (!data) notFound()
@@ -143,7 +143,7 @@ export default async function YuanReportSharePage({ params }: PageProps) {
               justifyContent: 'center',
             }}
           >
-            <span style={{ fontSize: 40, color: '#C4A882' }}>緣</span>
+            <span style={{ fontSize: 40, color: '#C4A882' }}>Kindred</span>
           </div>
           <p
             style={{
@@ -205,7 +205,7 @@ export default async function YuanReportSharePage({ params }: PageProps) {
             }}
           >
             {isZh
-              ? '你也想看看自己和某个人的缘？'
+              ? '你也想看看自己和某个人的Kindred？'
               : 'Curious about your own resonance with someone?'}
           </p>
           <a
@@ -221,7 +221,7 @@ export default async function YuanReportSharePage({ params }: PageProps) {
               textDecoration: 'none',
             }}
           >
-            {isZh ? '在 iOS 上获取 Yuán →' : 'Get Yuán on iOS →'}
+            {isZh ? '在 iOS 上获取 Kindred →' : 'Get Kindred on iOS →'}
           </a>
         </div>
       </div>

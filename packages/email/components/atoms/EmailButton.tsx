@@ -139,12 +139,7 @@ export function EmailButton(props: EmailButtonProps) {
  *
  * @internal - Do not use directly, use EmailButton instead
  */
-function EmailButtonNative({
-  href,
-  children,
-  variant = 'primary',
-  size = 'md',
-}: EmailButtonProps) {
+function EmailButtonNative({ href, children, variant = 'primary', size = 'md' }: EmailButtonProps) {
   const variantStyle = variantStyles[variant]
   const sizeStyle = sizeStyles[size]
 
@@ -202,18 +197,17 @@ function EmailButtonTable({
   return (
     <table
       width={fullWidth ? '100%' : undefined}
-      cellPadding="0"
-      cellSpacing="0"
-      role="presentation"
+      cellPadding='0'
+      cellSpacing='0'
+      role='presentation'
       style={{
-        margin:
-          align === 'center' ? '0 auto' : align === 'right' ? '0 0 0 auto' : '0',
+        margin: align === 'center' ? '0 auto' : align === 'right' ? '0 0 0 auto' : '0',
       }}
     >
       <tbody>
         <tr>
           <td
-            align="center"
+            align='center'
             style={{
               backgroundColor: variantStyle.bg,
               borderRadius: '6px',

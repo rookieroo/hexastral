@@ -28,7 +28,7 @@ export interface ReportGradient {
 // ── Report gradients ─────────────────────────────────────────────────────────
 
 /**
- * 大运报告 — 10-Year Cycle (The Macro Shift)
+ * 大运报告 — 10-Year Auspice (The Macro Shift)
  * Imagery: concentric tree rings / layered stele inscriptions.
  * Deep void base with faint warm undertone at the edges.
  */

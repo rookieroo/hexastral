@@ -1,5 +1,5 @@
 /**
- * Flagship funnel card (ADR-0010 §4) — intent-routed: wedding → Yuán; office /
+ * Flagship funnel card (ADR-0010 §4) — intent-routed: wedding → Kindred; office /
  * move-in / groundbreaking → Fēng. Deep-links into the flagship with an App Store
  * fallback for unverified installs.
  *
@@ -25,19 +25,23 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
   yuan: {
     'zh-Hans': {
       title: '为这桩喜事合个八字？',
-      body: 'Yuán 缘 · 双人合婚与关系分析',
-      cta: '打开 Yuán',
+      body: 'Kindred Kindred · 双人合婚与关系分析',
+      cta: '打开 Kindred',
     },
     'zh-Hant': {
       title: '為這樁喜事合個八字？',
-      body: 'Yuán 緣 · 雙人合婚與關係分析',
-      cta: '開啟 Yuán',
+      body: 'Kindred Kindred · 雙人合婚與關係分析',
+      cta: '開啟 Kindred',
     },
-    ja: { title: 'この慶事、相性も占う？', body: 'Yuán 縁 · 相性と関係の鑑定', cta: 'Yuán を開く' },
+    ja: {
+      title: 'この慶事、相性も占う？',
+      body: 'Kindred 縁 · 相性と関係の鑑定',
+      cta: 'Kindred を開く',
+    },
     en: {
       title: 'Pair two charts for the big day?',
-      body: 'Yuán · compatibility & relationships',
-      cta: 'Open Yuán',
+      body: 'Kindred · compatibility & relationships',
+      cta: 'Open Kindred',
     },
   },
   feng: {

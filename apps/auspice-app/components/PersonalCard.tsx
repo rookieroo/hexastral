@@ -12,7 +12,7 @@
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { Pressable, Text, View } from 'react-native'
-import type { CyclePersonalization } from '@/lib/api'
+import type { AuspicePersonalization } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
 
 export function PersonalCard({
@@ -20,7 +20,7 @@ export function PersonalCard({
   locked = false,
   onUnlock,
 }: {
-  data: CyclePersonalization
+  data: AuspicePersonalization
   /** Free tier: show the verdict + one-line read, gate the per-reason detail. */
   locked?: boolean
   onUnlock?: () => void

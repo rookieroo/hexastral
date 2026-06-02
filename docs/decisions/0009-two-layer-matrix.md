@@ -16,16 +16,16 @@
 
 [ADR-0007](0007-hexastral-app-fate-refocus.md) repositioned hexastral-app as the
 "Personal Fate (个人命理) flagship." The Phase K matrix audit found a deeper problem
-than "hexastral.fate is a weak flagship": hexastral-app is an **omnibus** "命緣卦道"
+than "hexastral.fate is a weak flagship": hexastral-app is an **omnibus** "命Kindred卦道"
 app whose ASO + tabs sell 命 / 星 / 六爻 / 合婚 / 面相 / 黄历 all at once — overlapping
 **four** matrix members simultaneously:
 
 | hexastral-app surface | Already owned by |
 |---|---|
-| 合婚 / synastry | Yuán |
+| 合婚 / synastry | Kindred |
 | 六爻 / yiching | Coin Cast |
 | 面相 | Face Oracle |
-| 黄历 (planned) | Cycle |
+| 黄历 (planned) | Auspice |
 
 Several of those surfaces are already rotting — the personalized almanac
 (`apps/hexastral-app/app/(explore)/almanac.tsx`) is **disabled dead code** since
@@ -47,19 +47,19 @@ top-of-funnel** (satellite). FaceOracle is the one exception that is neither.
 ```
 HexAstral (master / LLC publisher)
 ├── Flagships (Tier 1 — IAP-producing, Pro chat)
-│   ├── Yuán / 緣  — relationship & compatibility
+│   ├── Kindred / Kindred  — relationship & compatibility
 │   └── Fēng / 風  — feng-shui
 ├── Tier 2 (high-cost, auth + IAP — neither flagship nor free)
 │   └── Face Oracle (面相) — VLM inference cost; trial-or-paid (see K.3)
-└── Tier 3 (anonymous ASO funnels → upsell to Yuán/Fēng; no IAP)
+└── Tier 3 (anonymous ASO funnels → upsell to Kindred/Fēng; no IAP)
     ├── fate-app (命 — 八字 + 紫微; replaces retired hexastral-app)
     ├── Coin Cast (六爻)
     ├── Dream Oracle
     ├── Numerology (梅花)
-    └── Cycle (黄历 — planned, see ADR-0010)
+    └── Auspice (黄历 — planned, see ADR-0010)
 ```
 
-- **Only two flagships.** Yuán + Fēng are the sole IAP-producing products and the
+- **Only two flagships.** Kindred + Fēng are the sole IAP-producing products and the
   only homes for Pro chat. (Chat moves to them in K.5; it leaves with hexastral-app.)
 - **FaceOracle is Tier 2.** It can't be free-anonymous (VLM inference cost) but isn't
   a flagship either — it gets auth + a limited paid model. Billing shape decided in K.3.
@@ -75,20 +75,20 @@ surface. The rest already have homes:
 | Retired surface | Goes to |
 |---|---|
 | 八字 + 紫微 natal/stellar | **fate-app** (new) |
-| 合婚 / synastry | Yuán |
+| 合婚 / synastry | Kindred |
 | 六爻 / 梅花 | Coin Cast / Numerology |
 | 面相 | Face Oracle |
-| 黄历 (dead code) | Cycle |
-| Pro chat | Yuán + Fēng (K.5) |
+| 黄历 (dead code) | Auspice |
+| Pro chat | Kindred + Fēng (K.5) |
 
 Execution is **fate-app-first**: build fate-app (K.1), then delete hexastral-app once
-fate-app + Cycle cover its surfaces (Wave 4). Narrowing hexastral in place is rejected —
+fate-app + Auspice cover its surfaces (Wave 4). Narrowing hexastral in place is rejected —
 it just yields fate-app with legacy baggage. See [phase-k-plan.md §0.1.1](../phase-k-plan.md).
 
 ### 3. All funnel satellites end on a server-driven flagship upsell
 
 A Tier-3 satellite has **outbound** `SatelliteFlagshipUpsellCard` (`@zhop/satellite-ui`)
-pointing at the actual flagships (Yuán + Fēng) — **not** a hub-style central rail
+pointing at the actual flagships (Kindred + Fēng) — **not** a hub-style central rail
 (hexastral-app's `DiscoverSatellitesSection` was flagship/hub behavior, wrong for a funnel).
 
 The cross-app routing is **server-side configurable** (Cloudflare KV), not hardcoded per
@@ -99,16 +99,16 @@ app, so business can re-target funnels without shipping new builds. See K.2:
 
 fate-app is a **pure funnel + the matrix's birth-chart capture / identity anchor**.
 八字/紫微 is one-time深度 consumption — do **not** chase DAU on fate-app. The 命理 line's
-daily-active is served by **Cycle** (黄历 + 对你而言), which reads the chart fate-app captured:
+daily-active is served by **Auspice** (黄历 + 对你而言), which reads the chart fate-app captured:
 
 ```
-fate-app (capture 命盘) → portfolio memory → Cycle (daily 对你而言) + Yuán (合婚) + Fēng (命卦)
+fate-app (capture 命盘) → portfolio memory → Auspice (daily 对你而言) + Kindred (合婚) + Fēng (命卦)
 ```
 
-fate-app KPIs = ASO installs · birth-info capture rate · funnel CTR to Yuán/Fēng ·
+fate-app KPIs = ASO installs · birth-info capture rate · funnel CTR to Kindred/Fēng ·
 downstream personalization seed count — **not** D7/D30. Re-engagement, if any, is
 low-frequency milestone push only (大运/流年 transitions), never daily 运势 (that re-creates
-the Cycle overlap this restructure removes).
+the Auspice overlap this restructure removes).
 
 ### 5. LLM cost/quality is a shared platform capability
 
@@ -135,7 +135,7 @@ stays non-LLM; the guard applies only to the explanation/chat layer.
   the natal surface. Mitigated: **pre-PMF, zero real users** (CLAUDE.md), so feature loss
   has no user cost; every surface has a home elsewhere.
 - fate-app has no daily-active loop — **by design** (it's a capture/funnel anchor). 命理
-  daily-active lives in Cycle, fed by fate's captured chart.
+  daily-active lives in Auspice, fed by fate's captured chart.
 - Tier numbering is redefined relative to ADR-0006 (capability-axis → monetization-axis);
   this ADR's amendment to 0006 documents the remap so the two don't read as contradictory.
 
@@ -146,7 +146,7 @@ legacy baggage (old subscription/quota/chat code, omnibus AASA, mixed ASO histor
 benefit over a clean build.
 
 **B. In-place demotion of hexastral-app to a Tier-3 funnel.** Rejected — highest-churn,
-lowest-value: rewires every tab, paywall, and discovery surface of a 命緣卦道 app that we
+lowest-value: rewires every tab, paywall, and discovery surface of a 命Kindred卦道 app that we
 then keep maintaining. (This was the original phase-k §2 draft, now replaced by K.1.)
 
 **C. Keep hexastral-app as the flagship per ADR-0007.** Rejected — the audit shows the
@@ -155,7 +155,7 @@ omnibus shape cannibalizes its own satellites; no amount of polish fixes the sha
 ## References
 
 - [phase-k-plan.md](../phase-k-plan.md) — full execution plan (K.0–K.5)
-- [cycle-satellite-plan.md](../cycle-satellite-plan.md) — Cycle (黄历) satellite, ADR-0010
+- [cycle-satellite-plan.md](../cycle-satellite-plan.md) — Auspice (黄历) satellite, ADR-0010
 - [ADR-0004](0004-satellite-funnel-pattern.md) — funnel pattern (amended by this ADR §1)
 - [ADR-0006](0006-satellite-tiers.md) — satellite tiers (amended by this ADR)
 - [ADR-0007](0007-hexastral-app-fate-refocus.md) — reverted by this ADR

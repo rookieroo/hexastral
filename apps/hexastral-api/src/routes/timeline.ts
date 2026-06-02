@@ -1,7 +1,7 @@
 /**
- * POST /api/timeline/explain — fate/Yuán 命运时间轴节点深度解读 (B-fate.3).
+ * POST /api/timeline/explain — fate/Kindred 命运时间轴节点深度解读 (B-fate.3).
  *
- * Mirrors `/api/cycle/explain` (C.4): the deterministic timeline node + its one-line
+ * Mirrors `/api/auspice/explain` (C.4): the deterministic timeline node + its one-line
  * `summary` are computed in `@zhop/astro-core` (`timeline.ts`, B-fate.1); this is the
  * ONLY LLM layer, cost-guarded by the shared K.4 guard and 24h-cached in GUARD_KV.
  *
@@ -10,7 +10,7 @@
  * deterministic `node.summary` (never blank); subject priority userId > deviceId > ipHash.
  * The full timeline view + node summaries stay free + client-side; THIS endpoint is the
  * Pro AI elaboration (per ADR-0012). Pro gating (entitlement → higher limit / deep tier)
- * layers on later via the `userId` subject; structure here is identical to Cycle.
+ * layers on later via the `userId` subject; structure here is identical to Auspice.
  */
 
 import { getTimelineNodes } from '@zhop/astro-core'

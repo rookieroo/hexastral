@@ -3,7 +3,7 @@
  * content in `festival-content.ts` and produces a short excerpt for the card.
  */
 
-import type { CycleDay } from './api'
+import type { AuspiceDay } from './api'
 import { cultureSummary, localizeCultureEntry, localizeSolarTermName } from './culture'
 import { getFestivalContent, previewBody, solarTermTargetId } from './festival-content'
 import type { Locale } from './i18n'
@@ -22,7 +22,7 @@ export interface CultureSnippet {
 }
 
 /** Route id for `/festival/[id]` when the selected day is a festival or 节气 day. */
-export function resolveCultureTargetId(day: CycleDay): string | null {
+export function resolveCultureTargetId(day: AuspiceDay): string | null {
   if (day.festivalToday) return day.festivalToday.id
   if (day.solarTermToday) return solarTermTargetId(day.solarTermToday.name)
   return null
@@ -50,7 +50,7 @@ export function buildCultureSnippet(
 }
 
 /** Non-null when the selected day is a festival or solar-term day. */
-export function cultureSnippetForDay(day: CycleDay, locale: Locale): CultureSnippet | null {
+export function cultureSnippetForDay(day: AuspiceDay, locale: Locale): CultureSnippet | null {
   const targetId = resolveCultureTargetId(day)
   if (!targetId) return null
   const apiName = day.festivalToday?.name ?? day.solarTermToday?.name ?? ''
@@ -62,7 +62,7 @@ export function cultureSnippetForDay(day: CycleDay, locale: Locale): CultureSnip
 
 /** Preview for the upcoming 节气 when today is not a term/festival day. */
 export function cultureSnippetForUpcomingTerm(
-  day: CycleDay,
+  day: AuspiceDay,
   locale: Locale
 ): CultureSnippet | null {
   const nextName = day.solarTerm.next.name
@@ -72,6 +72,6 @@ export function cultureSnippetForUpcomingTerm(
 }
 
 /** Festival/节气 day first; otherwise the next solar term in the window. */
-export function cultureSnippetForHome(day: CycleDay, locale: Locale): CultureSnippet | null {
+export function cultureSnippetForHome(day: AuspiceDay, locale: Locale): CultureSnippet | null {
   return cultureSnippetForDay(day, locale) ?? cultureSnippetForUpcomingTerm(day, locale)
 }
