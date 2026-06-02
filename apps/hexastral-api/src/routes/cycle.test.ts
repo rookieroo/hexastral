@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { auspiceRoutes } from './cycle'
+import { auspiceRoutes } from './auspice'
 
 // The handlers only read query params + @zhop/astro-core (no db / env / rate-limit),
 // so the sub-app can be exercised directly via .request() without bindings.
@@ -153,16 +153,25 @@ describe('GET /api/auspice/month', () => {
     expect(shunbun.solarTermName).toBe('春分')
   })
 
-  test('en public holidays: Independence Day Jul 4, Thanksgiving 4th Thursday Nov', async () => {
+  test('en public holidays: Chinese festivals in English (no US holidays)', async () => {
+    // EN locale mirrors the 8 cultural festivals — NOT US federal holidays.
+    // 端午 (Dragon Boat Festival) 2026 lands on the gregorian Jun 19.
+    const jun = await (await auspiceRoutes.request('/month?year=2026&month=6&locale=en')).json()
+    const duanwu = jun.data.days.find(
+      (d: { publicHoliday: string | null }) => d.publicHoliday === 'Dragon Boat Festival'
+    )
+    expect(duanwu).toBeDefined()
+    expect(duanwu.day).toBe(19)
+    // US holidays must NOT leak into the EN calendar — Juneteenth (also Jun 19)
+    // and Independence Day (Jul 4) were the worst offenders pre-cleanup.
     const jul = await (await auspiceRoutes.request('/month?year=2026&month=7&locale=en')).json()
-    const ind = jul.data.days.find((d: { day: number }) => d.day === 4)
-    expect(ind.publicHoliday).toBe('Independence Day')
-    // Thanksgiving 2026 is the 4th Thursday of November = Nov 26.
+    const jul4 = jul.data.days.find((d: { day: number }) => d.day === 4)
+    expect(jul4.publicHoliday).toBeNull()
     const nov = await (await auspiceRoutes.request('/month?year=2026&month=11&locale=en')).json()
     const thx = nov.data.days.find(
       (d: { publicHoliday: string | null }) => d.publicHoliday === 'Thanksgiving'
     )
-    expect(thx.day).toBe(26)
+    expect(thx).toBeUndefined()
   })
 
   test('defaults to zh-Hans when no locale is provided', async () => {

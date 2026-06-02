@@ -154,32 +154,22 @@ export default function FestivalDetailScreen() {
           ) : null}
         </View>
 
-        {/* Sections — authored content if available, "coming soon" placeholder
-            otherwise. Free preview = first PREVIEW_LENGTH characters of body
-            with a paywall pill; Pro shows the full body. */}
-        {sections && sections.length > 0 ? (
-          sections.map((section, i) => (
-            <SectionCard
-              key={`${id}-${i}`}
-              title={section.title}
-              body={section.body}
-              colors={colors}
-              spacing={spacing}
-            />
-          ))
-        ) : (
-          <View
-            style={{
-              borderRadius: 14,
-              borderWidth: 0.5,
-              borderColor: colors.separator,
-              backgroundColor: colors.card,
-              padding: spacing.lg,
-            }}
-          >
-            <Text style={{ color: colors.dim, fontSize: 14 }}>{t.contentComingSoon}</Text>
-          </View>
-        )}
+        {/* Sections — authored content when available. When the entry has no
+            in-app body yet (the common case while content fills out), the hero
+            above already carries name + date + Wikipedia link, so we render
+            nothing here rather than a "coming soon" placeholder that adds
+            visual weight without information. */}
+        {sections && sections.length > 0
+          ? sections.map((section, i) => (
+              <SectionCard
+                key={`${id}-${i}`}
+                title={section.title}
+                body={section.body}
+                colors={colors}
+                spacing={spacing}
+              />
+            ))
+          : null}
       </ScrollView>
     </SafeAreaView>
   )

@@ -7,6 +7,7 @@
  */
 
 import { type ShichenIndex, ShichenPicker, useTheme } from '@zhop/core-ui'
+import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -60,6 +61,9 @@ export default function PeopleScreen() {
   const [gender, setGender] = useState<PersonGender | undefined>(undefined)
   const [advanceDays, setAdvanceDays] = useState(1)
   const [remindOnDay, setRemindOnDay] = useState(true)
+  // 时辰 + gender are 八字-合盘-only — collapsed by default so the everyday
+  // "remind me about Mom's birthday" path stays a 3-field flow.
+  const [compatExpanded, setCompatExpanded] = useState(false)
 
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [relPerson, setRelPerson] = useState<AuspicePerson | null>(null)
@@ -98,6 +102,7 @@ export default function PeopleScreen() {
     setGender(undefined)
     setAdvanceDays(1)
     setRemindOnDay(true)
+    setCompatExpanded(false)
     void scheduleBirthdayReminders(next, locale)
   }
 
@@ -166,11 +171,13 @@ export default function PeopleScreen() {
             style={fieldStyle}
           />
 
-          {/* Calendar toggle */}
+          {/* Calendar toggle — uses the unified birthCalendar* strings (shared
+              with the /me birth-info form) so EN reads "Chinese (lunar)"
+              consistently, not the ambiguous bare "Lunar". */}
           <Segmented
             options={[
-              { key: 'solar', label: t.people.solar },
-              { key: 'lunar', label: t.people.lunar },
+              { key: 'solar', label: t.birthCalendarSolar },
+              { key: 'lunar', label: t.birthCalendarLunar },
             ]}
             value={calendar}
             onChange={(k) => setCalendar(k as PersonCalendar)}
@@ -205,43 +212,91 @@ export default function PeopleScreen() {
             </View>
           </View>
 
-          {/* 时辰 (for 八字 / 合盘) */}
-          <View style={{ gap: spacing.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={microLabel}>{t.birthShichenLabel}</Text>
-              <Pressable
-                onPress={() => setTimeIndex(null)}
-                hitSlop={6}
-                accessibilityRole='button'
-                accessibilityLabel={t.birthShichenUnknown}
-              >
-                <Text
-                  style={{
-                    color: timeIndex === null ? colors.accent : colors.dim,
-                    fontSize: 12,
-                    fontWeight: timeIndex === null ? '600' : '400',
-                  }}
-                >
-                  {t.birthShichenUnknown}
-                </Text>
-              </Pressable>
-            </View>
-            <ShichenPicker value={timeIndex} onChange={(idx: ShichenIndex) => setTimeIndex(idx)} />
-          </View>
+          {/* Lunar-mode hint — only rendered when the user picked 农历, so the
+              date input visibly signals which calendar it's interpreting
+              (the MM-DD format doesn't change between solar / lunar, so
+              without this the toggle reads as a no-op). */}
+          {calendar === 'lunar' ? (
+            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18, marginTop: -4 }}>
+              {t.birthCalendarLunarHint}
+            </Text>
+          ) : null}
 
-          {/* Gender */}
+          {/* Compatibility (合盘) fields — collapsed by default. 时辰 + gender
+              are needed for 八字 合盘 but redundant for plain birthday reminders,
+              so they sit behind a disclosure to keep the everyday path clean. */}
           <View style={{ gap: spacing.sm }}>
-            <Text style={microLabel}>{t.birthGenderLabel}</Text>
-            <Segmented
-              options={[
-                { key: '男', label: t.birthGenderMale },
-                { key: '女', label: t.birthGenderFemale },
-              ]}
-              value={gender ?? ''}
-              onChange={(k) => setGender(k as PersonGender)}
-              colors={colors}
-              spacing={spacing}
-            />
+            <Pressable
+              onPress={() => setCompatExpanded((v) => !v)}
+              accessibilityRole='button'
+              accessibilityState={{ expanded: compatExpanded }}
+              accessibilityLabel={t.people.compatibilityToggle}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>
+                {t.people.compatibilityToggle}
+              </Text>
+              {compatExpanded ? (
+                <ChevronDownIcon size={14} color={colors.dim} strokeWidth={1.4} />
+              ) : (
+                <ChevronRightIcon size={14} color={colors.dim} strokeWidth={1.4} />
+              )}
+            </Pressable>
+
+            {compatExpanded ? (
+              <View style={{ gap: spacing.lg, marginTop: spacing.xs }}>
+                <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                  {t.people.compatibilityHint}
+                </Text>
+
+                {/* 时辰 (for 八字 / 合盘) */}
+                <View style={{ gap: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={microLabel}>{t.birthShichenLabel}</Text>
+                    <Pressable
+                      onPress={() => setTimeIndex(null)}
+                      hitSlop={6}
+                      accessibilityRole='button'
+                      accessibilityLabel={t.birthShichenUnknown}
+                    >
+                      <Text
+                        style={{
+                          color: timeIndex === null ? colors.accent : colors.dim,
+                          fontSize: 12,
+                          fontWeight: timeIndex === null ? '600' : '400',
+                        }}
+                      >
+                        {t.birthShichenUnknown}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <ShichenPicker
+                    value={timeIndex}
+                    onChange={(idx: ShichenIndex) => setTimeIndex(idx)}
+                  />
+                </View>
+
+                {/* Gender */}
+                <View style={{ gap: spacing.sm }}>
+                  <Text style={microLabel}>{t.birthGenderLabel}</Text>
+                  <Segmented
+                    options={[
+                      { key: '男', label: t.birthGenderMale },
+                      { key: '女', label: t.birthGenderFemale },
+                    ]}
+                    value={gender ?? ''}
+                    onChange={(k) => setGender(k as PersonGender)}
+                    colors={colors}
+                    spacing={spacing}
+                  />
+                </View>
+              </View>
+            ) : null}
           </View>
 
           {/* Advance reminder + day-of */}

@@ -13,12 +13,13 @@
  *   Bump `TIMELINE_CACHE_VERSION` in `db/schema.ts` to invalidate all cached payloads
  *   at once (e.g. shape change, astro-core algorithm fix).
  *
- * Anonymous identity (HMAC v2): the route requires the standard mobile signing
- * envelope but does NOT derive birth from `userId` — the body carries the birth
- * fields, so the same handler answers both Auspice (where birth is locally held on
- * device) and a future Fate-flagship caller. The wiring in `index.ts` adds the
- * `hmacVerify` middleware on `/api/auspice/timeline` only (rest of `/api/auspice/*`
- * stays anonymous, IP rate-limited).
+ * Anonymous-capable: the handler NEVER reads `userId` — the request body fully
+ * determines both the cache key (`computeContextKey`) and the deterministic payload,
+ * so the same handler answers Auspice (anonymous, birth held on-device) and a future
+ * signed Fate-flagship caller alike. Originally HMAC-gated, dropped 2026-06 because
+ * Auspice is a Tier-3 satellite with no sign-in path — anonymous users couldn't reach
+ * the 四柱八字 glossary section at all. Protected by the same cycle:IP rate-limiter
+ * the rest of `/api/auspice/*` uses (index.ts).
  *
  * Compute path (cache miss):
  *   1. `getFourPillars` for the 4 pillars (year/month/day/hour — hour=null when birthHour=-1).

@@ -7,7 +7,7 @@
  * Response envelope is the Phase-F shape `{ ok, data }`; we unwrap `data`.
  */
 
-import { resolvePortfolioApiUrl, signedApiFetch } from '@zhop/satellite-runtime'
+import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 
 // ── Domain types (mirror the C.1 route output) ────────────────────────────
 
@@ -434,35 +434,21 @@ export interface TimelinePayload {
 }
 
 /**
- * Fetch the user's life-timeline payload. The server route
- * (`/api/auspice/timeline`, mounted in hexastral-api/src/index.ts:358) is gated
- * by `hmacVerify`, so we sign through `signedFetch` instead of the anonymous
- * `postJson`. signedFetch reads the userId + deviceSecret provisioned by
- * `usePortfolioSatelliteBootstrap` at root layout and attaches
- * `Authorization: Bearer <userId>` + the x-signature / x-timestamp /
- * x-body-hash / x-client-platform headers the middleware expects.
+ * Fetch the user's life-timeline payload from `POST /api/auspice/timeline`.
  *
- * Returns null path → surfaced as an error to the caller. Common causes:
- *   - signedFetch returns null when bootstrap hasn't finished provisioning
- *     userId/deviceSecret yet (rare; bootstrap fires at app start)
- *   - 4xx response when prod doesn't have the timeline route mounted yet
- *     (deploy hexastral-api to fix — see deploy.md)
+ * Anonymous-capable as of 2026-06 (server-side HMAC gate dropped): the route is
+ * purely deterministic — same body → same payload — and Auspice has no sign-in
+ * flow, so gating it with HMAC made the 四柱八字 glossary section unreachable
+ * for every user. The same cycle:IP rate-limiter that covers the rest of
+ * `/api/auspice/*` still applies as defense-in-depth.
  */
-export async function fetchTimeline(args: {
+export function fetchTimeline(args: {
   birthDate: string
   birthHour: number
   gender: 'M' | 'F'
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 }): Promise<TimelinePayload> {
-  const res = await signedApiFetch({ method: 'POST', path: '/api/auspice/timeline', body: args })
-  if (!res) {
-    throw new Error('timeline request could not be signed (bootstrap pending)')
-  }
-  const body = (await res.json().catch(() => null)) as Envelope<TimelinePayload> | null
-  if (!res.ok || !body || body.ok !== true || body.data === undefined) {
-    throw new Error(body?.error?.message ?? `timeline request failed (${res.status})`)
-  }
-  return body.data
+  return postJson<TimelinePayload>('/api/auspice/timeline', args)
 }
 
 /** The Pro/lazy LLM 深度解读 (C.4). `source` tells the UI if it degraded to template. */

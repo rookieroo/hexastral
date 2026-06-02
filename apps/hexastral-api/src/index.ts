@@ -352,11 +352,12 @@ app.use('/api/auspice/*', async (c, next) => {
   await next()
 })
 
-// Auspice · Life Timeline (Sprint 4, ADR-0020) — HMAC-signed; deterministic 大运/流年/流月
-// payload, D1-cached for 30 days. Mounted BEFORE the anonymous /api/auspice base route
-// so the longer prefix wins and HMAC verification runs before the handler.
-app.use('/api/auspice/timeline', hmacVerify)
-app.use('/api/auspice/timeline/*', hmacVerify)
+// Auspice · Life Timeline (Sprint 4, ADR-0020) — deterministic 大运/流年/流月 payload,
+// D1-cached for 30 days. ANONYMOUS-CAPABLE (2026-06): the handler never reads userId
+// (the request body fully determines the cache key + output), and Auspice is a Tier-3
+// satellite with no sign-in flow — gating this with HMAC made the 四柱八字 glossary
+// section unreachable for every anonymous user. Falls under the umbrella
+// `/api/auspice/*` cycle:IP rate-limiter mounted above as defense-in-depth.
 app.route('/api/auspice/timeline', auspiceTimelineRoutes)
 
 app.route('/api/auspice', auspiceRoutes)

@@ -199,6 +199,14 @@ export interface Strings {
   glossaryZiwei: string
   // Birth-info form (single-page, in Me — Sprint 3 chunk 8)
   birthDateLabel: string
+  /** Solar / Lunar toggle on the Birth-info form. Stored as solar; lunar is
+   *  converted via @zhop/astro-core lunarToSolar before save. */
+  birthCalendarSolar: string
+  birthCalendarLunar: string
+  /** Shown beneath the date input when the user has Lunar selected, so the
+   *  visual context for "what calendar am I typing in" doesn't depend on the
+   *  segmented toggle alone. Used by both /me birth-info and /people. */
+  birthCalendarLunarHint: string
   birthShichenLabel: string
   birthShichenUnknown: string
   birthGenderLabel: string
@@ -206,6 +214,9 @@ export interface Strings {
   birthGenderFemale: string
   birthCityLabel: string
   birthCityPlaceholder: string
+  /** Why the city field matters — true-solar-time correction for 时柱/日柱
+   *  accuracy. Shown beneath the city picker. */
+  birthCityHint: string
   birthSave: string
   birthSaved: string
   events: Record<AuspiceEvent, string>
@@ -244,6 +255,10 @@ export interface Strings {
     needBirth: string
     needBirthBody: string
     homeEntry: string
+    /** Disclosure header above the optional 时辰 / gender fields — collapsed by default. */
+    compatibilityToggle: string
+    /** Hint line under the disclosure header explaining what the fields are for. */
+    compatibilityHint: string
   }
   watchWidgets: string
   themeAccent: string
@@ -369,6 +384,9 @@ const zhHans: Strings = {
   baziElementBalance: '五行分布',
   baziHourUnknown: '时辰未填',
   birthDateLabel: '出生日期',
+  birthCalendarSolar: '阳历',
+  birthCalendarLunar: '农历',
+  birthCalendarLunarHint: '输入农历月日（闰月不区分）',
   birthShichenLabel: '出生时辰',
   birthShichenUnknown: '未知',
   birthGenderLabel: '性别',
@@ -376,6 +394,8 @@ const zhHans: Strings = {
   birthGenderFemale: '女',
   birthCityLabel: '出生地（可选）',
   birthCityPlaceholder: '城市',
+  birthCityHint:
+    '用于真太阳时校准 — 让时柱、日柱更准。远离标准经度的出生地（美洲、欧洲、中国西部）影响最高可达 2 小时；东部中国通常 ≤15 分钟。',
   birthSave: '保存',
   birthSaved: '已保存',
   events: {
@@ -449,6 +469,8 @@ const zhHans: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '请先在设置里填写你的生辰，才能查看与 TA 的关系。',
     homeEntry: '记录生日',
+    compatibilityToggle: '添加合盘信息（选填）',
+    compatibilityHint: '时辰、性别仅用于八字合盘；普通生日提醒不需要填',
   },
   watchWidgets: '表盘与桌面组件',
   themeAccent: '主题色',
@@ -557,6 +579,9 @@ const zhHant: Strings = {
   baziElementBalance: '五行分佈',
   baziHourUnknown: '時辰未填',
   birthDateLabel: '出生日期',
+  birthCalendarSolar: '陽曆',
+  birthCalendarLunar: '農曆',
+  birthCalendarLunarHint: '輸入農曆月日（閏月不區分）',
   birthShichenLabel: '出生時辰',
   birthShichenUnknown: '未知',
   birthGenderLabel: '性別',
@@ -564,6 +589,8 @@ const zhHant: Strings = {
   birthGenderFemale: '女',
   birthCityLabel: '出生地（可選）',
   birthCityPlaceholder: '城市',
+  birthCityHint:
+    '用於真太陽時校準 — 讓時柱、日柱更準。遠離標準經度的出生地（美洲、歐洲、中國西部）影響最高可達 2 小時；東部中國通常 ≤15 分鐘。',
   birthSave: '保存',
   birthSaved: '已保存',
   events: {
@@ -623,6 +650,8 @@ const zhHant: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '請先在設定裡填寫你的生辰，才能查看與 TA 的關係。',
     homeEntry: '記錄生日',
+    compatibilityToggle: '新增合盤資訊（選填）',
+    compatibilityHint: '時辰、性別僅用於八字合盤；普通生日提醒不需要填',
   },
   watchWidgets: '錶盤與桌面元件',
   themeAccent: '主題色',
@@ -744,6 +773,9 @@ const ja: Strings = {
   baziElementBalance: '五行バランス',
   baziHourUnknown: '時辰未入力',
   birthDateLabel: '生年月日',
+  birthCalendarSolar: '新暦',
+  birthCalendarLunar: '旧暦',
+  birthCalendarLunarHint: '旧暦の月日を入力（閏月は区別なし）',
   birthShichenLabel: '生まれた時辰',
   birthShichenUnknown: '不明',
   birthGenderLabel: '性別',
@@ -751,6 +783,8 @@ const ja: Strings = {
   birthGenderFemale: '女性',
   birthCityLabel: '出生地（任意）',
   birthCityPlaceholder: '都市名',
+  birthCityHint:
+    '真太陽時補正に使用 — 時柱・日柱の精度を上げます。標準経度から離れた出生地（米国・欧州・中国西部）では最大 2 時間ずれることがあります。日本国内は通常 30 分以内。',
   birthSave: '保存',
   birthSaved: '保存しました',
   events: {
@@ -811,6 +845,8 @@ const ja: Strings = {
     needBirth: '生年月日が必要',
     needBirthBody: '相性を見るには、設定であなたの生年月日を入力してください。',
     homeEntry: '記念日を追加',
+    compatibilityToggle: '相性鑑定の情報（任意）',
+    compatibilityHint: '時辰と性別は相性鑑定のみで使用。通知だけなら不要です',
   },
   watchWidgets: '文字盤とウィジェット',
   themeAccent: 'テーマカラー',
@@ -932,6 +968,9 @@ const en: Strings = {
   baziElementBalance: 'Element balance',
   baziHourUnknown: 'Hour not set',
   birthDateLabel: 'Birth date',
+  birthCalendarSolar: 'Solar',
+  birthCalendarLunar: 'Chinese (lunar)',
+  birthCalendarLunarHint: 'Enter the lunar month and day (leap months not distinguished).',
   birthShichenLabel: 'Birth hour',
   birthShichenUnknown: 'Unknown',
   birthGenderLabel: 'Gender',
@@ -939,6 +978,8 @@ const en: Strings = {
   birthGenderFemale: 'Female',
   birthCityLabel: 'Birth city (optional)',
   birthCityPlaceholder: 'City',
+  birthCityHint:
+    'Used for true-solar-time correction — sharpens the hour and day pillars. Births far from the standard meridian (US, Europe, Western China) can shift by up to 2 hours; Eastern China is usually ≤15 minutes.',
   birthSave: 'Save',
   birthSaved: 'Saved',
   events: {
@@ -1012,6 +1053,9 @@ const en: Strings = {
     needBirth: 'Your birth needed',
     needBirthBody: 'Set your own birth in Settings to see your bond with them.',
     homeEntry: 'Add birthday',
+    compatibilityToggle: 'Compatibility info (optional)',
+    compatibilityHint:
+      'Hour and gender are only used for the compatibility reading — skip for a reminder-only entry.',
   },
   watchWidgets: 'Watch & Widgets',
   themeAccent: 'Accent color',

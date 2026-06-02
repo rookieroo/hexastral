@@ -26,8 +26,20 @@ export function isValidBirthDate(v: string): boolean {
 export type ShichenIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11
 
 export interface AuspiceBirthInfo {
-  /** ISO YYYY-MM-DD (solar / gregorian). Always present when info is saved. */
+  /** ISO YYYY-MM-DD (solar / gregorian). Always present when info is saved —
+   *  this is the canonical form for 八字 calculations. When the user enters
+   *  their birthday as 农历, the form converts via `lunarToSolar` before
+   *  saving and stashes the original lunar string in `lunarInput`. */
   solarDate: string
+  /** Which calendar the user entered the date in. Drives the edit-form
+   *  pre-fill — default 'solar' for back-compat (legacy records that
+   *  predate the toggle). */
+  calendar?: 'solar' | 'lunar'
+  /** Original lunar input as YYYY-MM-DD (year + 农历 month + day). Present
+   *  ONLY when calendar === 'lunar'; lets the edit form show the user's
+   *  original 农历 input instead of re-deriving it (which could differ on
+   *  leap-month edge cases). */
+  lunarInput?: string
   /** 0-11 shichen index, `null` when user picked "unknown". */
   timeIndex: ShichenIndex | null
   /** 男 / 女 — required for full 八字 analysis (大运 direction). */
@@ -87,6 +99,13 @@ export async function getAuspiceBirthInfo(): Promise<AuspiceBirthInfo | null> {
     const timeIndex = parsed.timeIndex
     return {
       solarDate: parsed.solarDate,
+      calendar: parsed.calendar === 'lunar' ? 'lunar' : 'solar',
+      lunarInput:
+        parsed.calendar === 'lunar' &&
+        typeof parsed.lunarInput === 'string' &&
+        DATE_RE.test(parsed.lunarInput)
+          ? parsed.lunarInput
+          : undefined,
       timeIndex:
         typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
           ? (timeIndex as ShichenIndex)

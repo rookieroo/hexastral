@@ -34,7 +34,6 @@ import {
 import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
 /** Half-window of months loaded around the anchor. 4-year browsable window. */
 const WINDOW = 24
@@ -393,11 +392,10 @@ function DayCell({
   const numColor = isSelected ? '#fff' : isToday ? colors.accent : colors.text
   const lowerColor = isSelected ? '#fff' : strong ? colors.accent : colors.dim
 
-  // 流日 dot (Sprint 4.5 follow-up): tiny element-colored ring sitting between
-  // the day number and the lower label, hinting at the 干支 5-color rhythm.
-  // White inside the selected (filled-accent) cell so it stays readable.
-  const elementDotColor = data?.dayElement ? ELEMENT_COLORS[data.dayElement] : null
-  const dotColor = elementDotColor ? (isSelected ? '#fff' : elementDotColor) : null
+  // The 流日 五行 element is intentionally NOT shown as a per-cell dot here.
+  // 30 days × 5 colors made the month read as visual noise; the day's 干支 +
+  // color now lives only on the selected-day detail card below, where it
+  // carries information instead of competing with it. (2026-06 home audit.)
 
   return (
     <View
@@ -415,17 +413,6 @@ function DayCell({
       <Text style={{ color: numColor, fontSize: 14, fontWeight: isSelected ? '700' : '400' }}>
         {dayNum}
       </Text>
-      {dotColor ? (
-        <View
-          style={{
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: dotColor,
-            opacity: isSelected ? 0.9 : 0.7,
-          }}
-        />
-      ) : null}
       {lowerText ? (
         <Text
           style={{ color: lowerColor, fontSize: 9, fontWeight: strong ? '600' : '400' }}

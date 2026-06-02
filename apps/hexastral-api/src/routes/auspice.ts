@@ -168,7 +168,10 @@ const FESTIVALS_SOLAR_TERM: ReadonlyArray<{ id: string; name: string; termName: 
 //     in Me overrides if they need a different region.
 //   - ja covers the 14 国民の祝日 in the 1948 法律 + the modern 山の日 /
 //     スポーツの日. Names match the official Cabinet Office spelling.
-//   - en defaults to US federal holidays. UK / AU / CA variants TBD.
+//   - en is the 8 Chinese cultural festivals translated. The app's identity is
+//     a Chinese calendar utility — US federal holidays were a UX leak (e.g.
+//     Juneteenth shadowing 端午 on June 19); the diaspora has the system
+//     calendar for those.
 type HolidayRule =
   | { kind: 'gregorian-fixed'; month: number; day: number }
   | { kind: 'lunar-fixed'; lunarMonth: number; lunarDay: number }
@@ -225,34 +228,44 @@ const HOLIDAYS_JA: ReadonlyArray<Holiday> = [
   { id: 'kinrou', name: '勤労感謝の日', rule: { kind: 'gregorian-fixed', month: 11, day: 23 } },
 ]
 
+// EN locale serves the overseas-Chinese diaspora + non-CJK learners of the
+// Chinese calendar. US federal holidays are noise here — the user already has
+// the system calendar for those, and showing Juneteenth on the same day as
+// 端午 (Dragon Boat Festival) created a "which is it?" confusion that broke the
+// app's identity as a Chinese calendar utility. So EN mirrors the 8 cultural
+// festivals from `festivals[]`, localized — making the month grid coherent
+// with the festival list below it. (2026-06 follow-up to the home-screen
+// audit.) JA keeps its national holidays because most JP days off derive from
+// or align with Chinese festivals / 节气 (春分の日 / 秋分の日 / こどもの日).
 const HOLIDAYS_EN: ReadonlyArray<Holiday> = [
-  { id: 'newyear', name: "New Year's Day", rule: { kind: 'gregorian-fixed', month: 1, day: 1 } },
-  { id: 'mlk', name: 'MLK Day', rule: { kind: 'nth-weekday', month: 1, n: 3, weekday: 1 } },
   {
-    id: 'presidents',
-    name: "Presidents' Day",
-    rule: { kind: 'nth-weekday', month: 2, n: 3, weekday: 1 },
+    id: 'chunjie',
+    name: 'Spring Festival',
+    rule: { kind: 'lunar-fixed', lunarMonth: 1, lunarDay: 1 },
   },
-  { id: 'memorial', name: 'Memorial Day', rule: { kind: 'last-weekday', month: 5, weekday: 1 } },
-  { id: 'juneteenth', name: 'Juneteenth', rule: { kind: 'gregorian-fixed', month: 6, day: 19 } },
   {
-    id: 'independence',
-    name: 'Independence Day',
-    rule: { kind: 'gregorian-fixed', month: 7, day: 4 },
+    id: 'yuanxiao',
+    name: 'Lantern Festival',
+    rule: { kind: 'lunar-fixed', lunarMonth: 1, lunarDay: 15 },
   },
-  { id: 'labor', name: 'Labor Day', rule: { kind: 'nth-weekday', month: 9, n: 1, weekday: 1 } },
+  { id: 'qingming', name: 'Qingming Festival', rule: { kind: 'solar-term', termName: '清明' } },
   {
-    id: 'columbus',
-    name: 'Columbus Day',
-    rule: { kind: 'nth-weekday', month: 10, n: 2, weekday: 1 },
+    id: 'duanwu',
+    name: 'Dragon Boat Festival',
+    rule: { kind: 'lunar-fixed', lunarMonth: 5, lunarDay: 5 },
   },
-  { id: 'veterans', name: 'Veterans Day', rule: { kind: 'gregorian-fixed', month: 11, day: 11 } },
+  { id: 'qixi', name: 'Qixi Festival', rule: { kind: 'lunar-fixed', lunarMonth: 7, lunarDay: 7 } },
   {
-    id: 'thanksgiving',
-    name: 'Thanksgiving',
-    rule: { kind: 'nth-weekday', month: 11, n: 4, weekday: 4 },
+    id: 'zhongqiu',
+    name: 'Mid-Autumn Festival',
+    rule: { kind: 'lunar-fixed', lunarMonth: 8, lunarDay: 15 },
   },
-  { id: 'christmas', name: 'Christmas', rule: { kind: 'gregorian-fixed', month: 12, day: 25 } },
+  {
+    id: 'chongyang',
+    name: 'Double Ninth Festival',
+    rule: { kind: 'lunar-fixed', lunarMonth: 9, lunarDay: 9 },
+  },
+  { id: 'dongzhi', name: 'Winter Solstice', rule: { kind: 'solar-term', termName: '冬至' } },
 ]
 
 type SupportedHolidayLocale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'

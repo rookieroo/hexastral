@@ -15,6 +15,7 @@
  * `@zhop/core-ui` for apps that need the deeper flow.
  */
 
+import { lunarToSolar } from '@zhop/astro-core'
 import {
   CityPicker,
   DEFAULT_TOP_CITIES,
@@ -96,16 +97,52 @@ export default function MeScreen() {
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   // ── Birth info form state ───────────────────────────────────────────────
+  // `birth` is the canonical saved object (solarDate is always the gregorian
+  // form, even when the user originally entered 农历). `dateInput` + `calendar`
+  // are the editor-mode state: what the user is typing right now and which
+  // calendar they're typing it in. On save we run `lunarToSolar` and persist
+  // both the canonical solarDate and the original lunarInput so re-editing
+  // shows the user's original 农历 entry instead of a possibly-leap-month-
+  // ambiguous reverse conversion.
   const [birth, setBirth] = useState<AuspiceBirthInfo>({ solarDate: '', timeIndex: null })
+  const [dateInput, setDateInput] = useState('')
+  const [calendar, setCalendar] = useState<'solar' | 'lunar'>('solar')
   const [birthSaved, setBirthSaved] = useState(false)
   // Once a birth is on record, the form collapses to a one-line summary; tapping
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
-  const birthValid = isValidBirthDate(birth.solarDate)
+
+  /** The canonical solar YYYY-MM-DD derived from `dateInput` + `calendar`.
+   *  Null when the input is incomplete or an invalid lunar date (e.g. 农历
+   *  2月30 in a 短月 year). Drives the Save button's enabled state. */
+  const computedSolarDate = useMemo<string | null>(() => {
+    if (!isValidBirthDate(dateInput)) return null
+    if (calendar === 'solar') return dateInput
+    const [y, m, d] = dateInput.split('-').map(Number)
+    if (!y || !m || !d || y < 1900 || y > 2100) return null
+    if (m < 1 || m > 12 || d < 1 || d > 30) return null
+    try {
+      const sd = lunarToSolar(y, m, d, false)
+      const yy = sd.getFullYear()
+      const mm = String(sd.getMonth() + 1).padStart(2, '0')
+      const dd = String(sd.getDate()).padStart(2, '0')
+      return `${yy}-${mm}-${dd}`
+    } catch {
+      return null
+    }
+  }, [dateInput, calendar])
+  const birthValid = computedSolarDate !== null
 
   const birthSummary = useMemo(() => {
-    const parts: string[] = [birth.solarDate]
+    // When the user entered their birthday as 农历, show that form in the
+    // summary so what they see matches what they typed — the solar conversion
+    // is an internal detail. The 时辰 / gender / city pieces are unchanged.
+    const dateLabel =
+      birth.calendar === 'lunar' && birth.lunarInput
+        ? `${birth.lunarInput} (${t.birthCalendarLunar})`
+        : birth.solarDate
+    const parts: string[] = [dateLabel]
     parts.push(
       birth.timeIndex === null ? t.birthShichenUnknown : `${SHICHEN_BRANCHES[birth.timeIndex]}时`
     )
@@ -122,14 +159,24 @@ export default function MeScreen() {
         if (info) {
           setBirth(info)
           setHasSavedBirth(true)
+          const isLunar = info.calendar === 'lunar' && !!info.lunarInput
+          setCalendar(isLunar ? 'lunar' : 'solar')
+          setDateInput(isLunar ? (info.lunarInput ?? '') : info.solarDate)
         }
       })
       .catch(() => {})
   }, [])
 
   const saveBirth = () => {
-    if (!birthValid) return
-    void setAuspiceBirthInfo(birth).then(() => {
+    if (!birthValid || !computedSolarDate) return
+    const updated: AuspiceBirthInfo = {
+      ...birth,
+      solarDate: computedSolarDate,
+      calendar,
+      lunarInput: calendar === 'lunar' ? dateInput : undefined,
+    }
+    void setAuspiceBirthInfo(updated).then(() => {
+      setBirth(updated)
       setBirthSaved(true)
       setHasSavedBirth(true)
       // Collapse back to the summary row once saved; tap it to edit again.
@@ -214,16 +261,55 @@ export default function MeScreen() {
                 gap: spacing.lg,
               }}
             >
-              {/* Date — smart auto-format input. */}
+              {/* Calendar toggle — Solar / Lunar (农历). Storage stays solar;
+                  农历 inputs convert via @zhop/astro-core `lunarToSolar` on
+                  save. Many Chinese users (esp. older generations + diaspora)
+                  know their birthday only as a 农历 date — making them
+                  pre-convert is friction. Years 1900-2100 supported. */}
               <View style={{ gap: spacing.sm }}>
                 <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
                   {t.birthDateLabel}
                 </Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {(
+                    [
+                      ['solar', t.birthCalendarSolar],
+                      ['lunar', t.birthCalendarLunar],
+                    ] as const
+                  ).map(([key, label]) => {
+                    const selected = calendar === key
+                    return (
+                      <Pressable
+                        key={key}
+                        onPress={() => setCalendar(key)}
+                        accessibilityRole='button'
+                        accessibilityState={{ selected }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: spacing.sm,
+                          borderRadius: 10,
+                          borderWidth: 0.5,
+                          borderColor: selected ? colors.accent : colors.separator,
+                          backgroundColor: selected ? colors.accent : 'transparent',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: selected ? '#fff' : colors.text,
+                            fontSize: 14,
+                            fontWeight: selected ? '600' : '400',
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
                 <TextInput
-                  value={birth.solarDate}
-                  onChangeText={(raw) =>
-                    setBirth((prev) => ({ ...prev, solarDate: formatDateInput(raw) }))
-                  }
+                  value={dateInput}
+                  onChangeText={(raw) => setDateInput(formatDateInput(raw))}
                   placeholder={t.personal.birthDatePlaceholder}
                   placeholderTextColor={colors.dim}
                   autoCapitalize='none'
@@ -237,6 +323,11 @@ export default function MeScreen() {
                     paddingVertical: spacing.sm,
                   }}
                 />
+                {calendar === 'lunar' ? (
+                  <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                    {t.birthCalendarLunarHint}
+                  </Text>
+                ) : null}
               </View>
 
               {/* Shichen — 12-cell grid + "unknown" Pressable. */}
@@ -318,7 +409,14 @@ export default function MeScreen() {
                 </View>
               </View>
 
-              {/* City — geocode-backed picker (resolves coords + IANA timezone). */}
+              {/* City — geocode-backed picker (resolves coords + IANA timezone).
+                  Kept OPTIONAL deliberately: forcing a city would block users
+                  who don't know their birth city (adopted, refugee, casual).
+                  But the why-it-matters hint underneath surfaces the accuracy
+                  cost so users can make an informed choice — 真太阳时 (TST)
+                  correction is where city earns its keep, and that mostly
+                  matters for 时柱 / 日柱-near-23:00 cases far from the standard
+                  meridian. (2026-06 follow-up after For-you accuracy audit.) */}
               <View style={{ gap: spacing.sm }}>
                 <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
                   {t.birthCityLabel}
@@ -348,6 +446,16 @@ export default function MeScreen() {
                   topCities={DEFAULT_TOP_CITIES}
                   placeholder={t.birthCityPlaceholder}
                 />
+                <Text
+                  style={{
+                    color: colors.dim,
+                    fontSize: 12,
+                    lineHeight: 18,
+                    marginTop: 2,
+                  }}
+                >
+                  {t.birthCityHint}
+                </Text>
               </View>
 
               {/* Save — disabled until date is valid. "Saved" feedback briefly. */}

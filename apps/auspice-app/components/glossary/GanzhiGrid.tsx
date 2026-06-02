@@ -72,7 +72,16 @@ export function GanzhiGrid() {
                 <Text style={{ color: stemColor, fontSize: 18, fontWeight: '500' }}>
                   {stem.char}
                 </Text>
-                <Text style={{ color: colors.dim, fontSize: 8, letterSpacing: 0.5 }}>
+                {/* numberOfLines=1 + adjustsFontSizeToFit guards against the
+                    EN-locale `Wood·Yang` / `Earth·Yang` wrapping in the narrow
+                    cell — RN auto-shrinks down to the minimum scale instead
+                    of breaking onto a second line that overflows the box. */}
+                <Text
+                  style={{ color: colors.dim, fontSize: 8, letterSpacing: 0.5 }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
                   {localizeWuxing(stem.element, locale)}·{localizePolarity(stem.polarity, locale)}
                 </Text>
               </View>
@@ -104,7 +113,12 @@ export function GanzhiGrid() {
                   <Text style={{ color: branchColor, fontSize: 18, fontWeight: '500' }}>
                     {branch.char}
                   </Text>
-                  <Text style={{ color: colors.secondary, fontSize: 10 }} numberOfLines={1}>
+                  <Text
+                    style={{ color: colors.secondary, fontSize: 10 }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
                     {branch.animal[locale]}
                   </Text>
                 </View>
