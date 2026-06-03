@@ -74,24 +74,39 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
       }}
     >
       <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
-        {/* Seal — uses the 緣 seal glyph (same as native KindredSeal). The
-            literal "Kindred" word overflowed the disc; one CJK glyph reads
-            as a stamp at any size and matches the in-app brand mark. */}
-        <div
-          style={{
-            width: 96,
-            height: 96,
-            borderRadius: '50%',
-            backgroundColor: '#9B2226',
-            margin: '0 auto 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontSize: 50, lineHeight: 1, color: '#C4A882', fontWeight: 400 }}>
-            緣
-          </span>
+        {/* Brand mark — inline cinnabar phase-moon (SKIN_CINNABAR_INK at
+            phase 0.25, same as the in-app KindredMoon). The earlier 緣
+            glyph read as outdated branding; the moon is the brand. */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <svg width='96' height='96' viewBox='0 0 100 100' aria-hidden role='img'>
+            <defs>
+              <radialGradient id='teaser-face' cx='36%' cy='30%' r='68%'>
+                <stop offset='0%' stopColor='#f3d8c0' />
+                <stop offset='55%' stopColor='#c87454' />
+                <stop offset='100%' stopColor='#7a2418' />
+              </radialGradient>
+              <radialGradient id='teaser-shadow' cx='50%' cy='50%' r='60%'>
+                <stop offset='0%' stopColor='#0e0d0c' />
+                <stop offset='78%' stopColor='#1a1922' stopOpacity='0.94' />
+                <stop offset='100%' stopColor='#1a1922' stopOpacity='0' />
+              </radialGradient>
+              <clipPath id='teaser-disk'>
+                <circle cx='50' cy='50' r='44' />
+              </clipPath>
+            </defs>
+            <g clipPath='url(#teaser-disk)'>
+              <circle cx='50' cy='50' r='44' fill='url(#teaser-face)' />
+              <circle cx='27' cy='50' r='44' fill='url(#teaser-shadow)' />
+            </g>
+            <circle
+              cx='50'
+              cy='50'
+              r='44'
+              fill='none'
+              stroke='rgba(122,36,24,0.18)'
+              strokeWidth='0.75'
+            />
+          </svg>
         </div>
         <p
           style={{

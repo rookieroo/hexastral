@@ -1,18 +1,22 @@
 /**
- * Settings — email binding, Apple Sign In (recovery), sign out, plus the
- * legal links (privacy / terms) the App Store requires and a daily-reading
+ * Settings — email binding, account sign-in (Apple/Google sheet), sign out,
+ * legal links (privacy / terms) the App Store requires, and a daily-reading
  * push toggle.
+ *
+ * Sign-in moved out of an inline Apple-only card into the shared
+ * `<SignInSheet>` (Apple + Google, bottom-drawer) — matches the ming-pan
+ * pattern the user asked for.
  */
 
 import { Card } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import * as AppleAuthentication from 'expo-apple-authentication'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native'
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
+import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
@@ -44,10 +48,9 @@ function maskEmail(email: string): string {
 export default function SettingsScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { userId, userEmail, linkApple, signOut, refreshProfile, setUserEmail } = useAuth()
-  const [appleAvailable, setAppleAvailable] = useState(false)
+  const { userId, userEmail, signOut, refreshProfile, setUserEmail } = useAuth()
+  const [signInOpen, setSignInOpen] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [crossAppMemory, setCrossAppMemoryState] = useState(false)
   const [crossAppBusy, setCrossAppBusy] = useState(false)

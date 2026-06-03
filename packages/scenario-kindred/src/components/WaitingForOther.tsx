@@ -31,16 +31,7 @@ import {
   kindredType,
 } from '@zhop/hexastral-tokens/kindred'
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated'
 import { KindredSeal } from './KindredSeal'
 
 export interface WaitingForOtherProps {
@@ -80,23 +71,17 @@ export function WaitingForOther({
 }: WaitingForOtherProps) {
   const merged = { ...DEFAULT_COPY, ...(copy ?? {}) }
 
-  // Pending state: subtle pulse on a "tether" between the logo and the invitee.
-  const tetherOpacity = useSharedValue(0.4)
-
-  useEffect(() => {
-    if (state === 'pending') {
-      tetherOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.9, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0.4, { duration: 1500, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        true
-      )
-    }
-  }, [state])
-
-  const tetherStyle = useAnimatedStyle(() => ({ opacity: tetherOpacity.value }))
+  // 2026-06: trimmed from a 3-zone layout (logo + title-stack + animated
+  // tether + bordered partner card + hint + 2 buttons) to a single focal
+  // beat: brand mark, one status line that says who+when in plain language,
+  // primary action + small cancel link. The tether animation + the hint
+  // were redundant — the user already knows what "Invitation sent" means.
+  const subtitle =
+    state === 'pending'
+      ? otherName && sentAtLabel
+        ? `${otherName} · ${sentAtLabel}`
+        : (otherName ?? sentAtLabel ?? merged.pendingSubtitle)
+      : `${otherName ?? ''} · ${merged.acceptedSubtitle}`
 
   return (
     <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -108,79 +93,30 @@ export function WaitingForOther({
           justifyContent: 'space-between',
         }}
       >
-        {/* Top: brand mark + status */}
+        {/* Top: brand mark + one focal status line. */}
         <View
-          style={{ alignItems: 'center', gap: kindredSpacing.xl, marginTop: kindredSpacing.xxl }}
+          style={{ alignItems: 'center', gap: kindredSpacing.lg, marginTop: kindredSpacing.xxl }}
         >
           {logo ?? <KindredSeal mode={state === 'pending' ? 'breathing' : 'stamp'} size={96} />}
-
-          <View style={{ alignItems: 'center', gap: kindredSpacing.sm }}>
-            <Text style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}>
-              {state === 'pending' ? merged.pendingTitle : merged.acceptedTitle}
-            </Text>
-            <Text
-              style={[kindredType.body, { color: kindredDark.textSecondary, textAlign: 'center' }]}
-            >
-              {state === 'pending'
-                ? merged.pendingSubtitle
-                : `${otherName ?? ''} · ${merged.acceptedSubtitle}`}
-            </Text>
-          </View>
+          <Text
+            style={[
+              kindredType.title,
+              { color: kindredDark.text, textAlign: 'center' },
+            ]}
+          >
+            {state === 'pending' ? merged.pendingTitle : merged.acceptedTitle}
+          </Text>
+          <Text
+            style={[
+              kindredType.caption,
+              { color: kindredDark.textMuted, textAlign: 'center' },
+            ]}
+          >
+            {subtitle}
+          </Text>
         </View>
 
-        {/* Middle: tether + who was invited / when (channel-neutral — no contact info) */}
-        {state === 'pending' && (
-          <View style={{ alignItems: 'center', gap: kindredSpacing.lg }}>
-            <Animated.View
-              style={[
-                {
-                  width: 1,
-                  height: 60,
-                  backgroundColor: kindredDark.accent,
-                  opacity: 0.6,
-                },
-                tetherStyle,
-              ]}
-            />
-            {otherName || sentAtLabel ? (
-              <View
-                style={{
-                  paddingHorizontal: kindredSpacing.lg,
-                  paddingVertical: kindredSpacing.md,
-                  borderWidth: 0.5,
-                  borderColor: kindredDark.border,
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                {otherName ? (
-                  <Text style={[kindredType.heading, { color: kindredDark.text }]}>
-                    {otherName}
-                  </Text>
-                ) : null}
-                {sentAtLabel ? (
-                  <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                    {sentAtLabel}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-            <Text
-              style={[
-                kindredType.body,
-                {
-                  color: kindredDark.textSecondary,
-                  textAlign: 'center',
-                  paddingHorizontal: kindredSpacing.lg,
-                },
-              ]}
-            >
-              {merged.pendingHint}
-            </Text>
-          </View>
-        )}
-
-        {/* Bottom: actions */}
+        {/* Bottom: primary action + small cancel link (only on pending). */}
         <View style={{ alignItems: 'center', gap: kindredSpacing.md }}>
           {state === 'pending' ? (
             <>

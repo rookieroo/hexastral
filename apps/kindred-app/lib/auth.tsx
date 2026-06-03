@@ -102,6 +102,16 @@ export interface AppleLinkResult {
   userId: string
 }
 
+export interface GoogleLinkInput {
+  identityToken: string
+}
+
+export interface GoogleLinkResult {
+  outcome: AppleLinkOutcome
+  /** The userId in effect after the call — may differ from before on `recovered`. */
+  userId: string
+}
+
 interface ApiSuccess<T> {
   ok: true
   data: T
@@ -124,6 +134,8 @@ export interface AuthState {
   setUserEmail: (email: string) => void
   /** Link the current user to an Apple ID, or recover an existing one. */
   linkApple: (input: AppleLinkInput) => Promise<AppleLinkResult>
+  /** Link the current user to a Google account, or recover an existing one. */
+  linkGoogle: (input: GoogleLinkInput) => Promise<GoogleLinkResult>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -181,12 +193,20 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
     }
   }, [locale])
 
-  const linkApple = useCallback(
-    async (input: AppleLinkInput): Promise<AppleLinkResult> => {
-      if (!userId) throw new Error('Cannot link Apple ID before user is provisioned')
+  /**
+   * Shared link logic for both providers — they POST identical-shape bodies
+   * and the server returns the same 3 outcomes. Only the path + the input
+   * payload differ, so we keep one function and split the public API into
+   * `linkApple` + `linkGoogle` thin wrappers for clarity at the call site.
+   */
+  const linkProvider = useCallback(
+    async (
+      path: string,
+      payload: Record<string, unknown>
+    ): Promise<{ outcome: AppleLinkOutcome; userId: string }> => {
+      if (!userId) throw new Error('Cannot link a provider before user is provisioned')
 
-      const path = '/api/onboarding/apple-link'
-      const body = JSON.stringify(input)
+      const body = JSON.stringify(payload)
       const sig = await signRequest({ method: 'POST', path, body, userId })
       if (!sig) throw new Error('Missing device secret')
 
@@ -223,6 +243,18 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
     [userId, refreshProfile]
   )
 
+  const linkApple = useCallback(
+    (input: AppleLinkInput): Promise<AppleLinkResult> =>
+      linkProvider('/api/onboarding/apple-link', input),
+    [linkProvider]
+  )
+
+  const linkGoogle = useCallback(
+    (input: GoogleLinkInput): Promise<GoogleLinkResult> =>
+      linkProvider('/api/onboarding/google-link', input),
+    [linkProvider]
+  )
+
   const value = useMemo<AuthState>(
     () => ({
       userId,
@@ -250,8 +282,9 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
       refreshProfile,
       setUserEmail,
       linkApple,
+      linkGoogle,
     }),
-    [userId, userEmail, isLoading, resyncCredentials, refreshProfile, linkApple]
+    [userId, userEmail, isLoading, resyncCredentials, refreshProfile, linkApple, linkGoogle]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

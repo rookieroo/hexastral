@@ -4,6 +4,7 @@ import { onboardingAppleLinkRoutes } from './apple-link'
 import { onboardingBootstrapRoutes } from './bootstrap'
 import { onboardingChartRoutes } from './chart'
 import { onboardingConvertRoutes } from './convert'
+import { onboardingGoogleLinkRoutes } from './google-link'
 import { onboardingRevealRoutes } from './reveal'
 import { onboardingStaticTraitsRoutes } from './static-traits'
 
@@ -17,3 +18,4 @@ export const onboardingRoutes = new Hono<AppEnv>()
   .route('/reveal', onboardingRevealRoutes)
   .route('/bootstrap', onboardingBootstrapRoutes)
   .route('/apple-link', onboardingAppleLinkRoutes)
+  .route('/google-link', onboardingGoogleLinkRoutes)

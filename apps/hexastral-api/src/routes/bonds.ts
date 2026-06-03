@@ -682,6 +682,11 @@ bondRoutes.get('/invite/:token/info', async (c) => {
   return jsonOk(c, {
     invitationId: invitation.id,
     inviterName: inviter?.name ?? 'Someone',
+    // True when the inviter actually has a stored name (Apple sign-in /
+    // explicit profile name). Lets the recipient surface know whether
+    // "Invitation from {name}" is honest or just a fallback — when false,
+    // the web page should use a name-less phrasing instead of "From Someone".
+    inviterHasName: !!inviter?.name,
     inviterAvatarUrl: inviter?.avatarKey
       ? `${new URL(c.req.url).origin}/api/media/public/${inviter.avatarKey}`
       : null,

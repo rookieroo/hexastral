@@ -152,6 +152,9 @@ export const translations: Translations = {
     'bondList.empty.title': 'No threads yet',
     'bondList.empty.cta': 'Begin →',
     'bondList.error.title': 'Could not load threads',
+    'bondList.pendingSection': 'Waiting for them',
+    'bondList.pendingTag': 'Invitation sent',
+    'bondList.noActiveYet': 'No woven threads yet — once they accept, they show up here.',
     'bond.matching': 'Aligning your charts…',
 
     'invite.accept.prefix': 'is ',
@@ -199,7 +202,14 @@ export const translations: Translations = {
     'settings.legal.privacy': 'Privacy policy',
     'settings.legal.terms': 'Terms of service',
     'settings.error.conflict': 'This Apple ID is already linked to another account',
-    'settings.error.generic': "Couldn't link your Apple ID",
+    'settings.error.generic': "Couldn't link your account",
+    'signIn.title': 'Sign in',
+    'signIn.hint':
+      'Tie this device to an account so your threads survive a wipe. Apple sends us a stable id; Google adds an email.',
+    'signIn.appleCta': 'Continue with Apple',
+    'signIn.googleCta': 'Continue with Google',
+    'signIn.appleUnavailable': 'Apple sign-in needs a release build',
+    'signIn.cancel': 'Not now',
 
     'paywall.signInTitle': 'Sign in to continue',
     'paywall.signInHint':
@@ -348,6 +358,9 @@ export const translations: Translations = {
     'bondList.empty.title': '还没有牵绊',
     'bondList.empty.cta': '开始一段  →',
     'bondList.error.title': '无法加载牵绊列表',
+    'bondList.pendingSection': '等 ta 接力',
+    'bondList.pendingTag': '邀请已发出',
+    'bondList.noActiveYet': '还没有已合的牵绊——对方接受后会出现在这里。',
     'bond.matching': '合盘中…',
 
     'invite.accept.prefix': '是 ',
@@ -394,7 +407,13 @@ export const translations: Translations = {
     'settings.legal.privacy': '隐私政策',
     'settings.legal.terms': '服务条款',
     'settings.error.conflict': '此 Apple ID 已绑定到另一账户',
-    'settings.error.generic': '绑定 Apple ID 失败',
+    'settings.error.generic': '账户绑定失败',
+    'signIn.title': '登录',
+    'signIn.hint': '绑定一个账户，换设备也不会丢牵绊。Apple 提供稳定 ID；Google 同时给我们邮箱。',
+    'signIn.appleCta': '使用 Apple 继续',
+    'signIn.googleCta': '使用 Google 继续',
+    'signIn.appleUnavailable': 'Apple 登录需要正式版构建',
+    'signIn.cancel': '稍后',
 
     'paywall.signInTitle': '登录后再购买',
     'paywall.signInHint': '订阅会绑定到账户上，换设备不会丢失。Apple 只给我们一个稳定的 ID 和（可选的）邮箱。',
@@ -542,6 +561,9 @@ export const translations: Translations = {
     'bondList.empty.title': '還沒有牽絆',
     'bondList.empty.cta': '開始一段  →',
     'bondList.error.title': '無法載入牽絆列表',
+    'bondList.pendingSection': '等 ta 接力',
+    'bondList.pendingTag': '邀請已發出',
+    'bondList.noActiveYet': '還沒有已合的牽絆——對方接受後會出現在這裡。',
     'bond.matching': '合盤中…',
 
     'invite.accept.prefix': '是 ',
@@ -588,7 +610,13 @@ export const translations: Translations = {
     'settings.legal.privacy': '隱私政策',
     'settings.legal.terms': '服務條款',
     'settings.error.conflict': '此 Apple ID 已綁定其他帳號',
-    'settings.error.generic': '綁定 Apple ID 失敗',
+    'settings.error.generic': '帳號綁定失敗',
+    'signIn.title': '登入',
+    'signIn.hint': '綁定一個帳號，換裝置也不會遺失牽絆。Apple 提供穩定 ID；Google 同時給我們信箱。',
+    'signIn.appleCta': '使用 Apple 繼續',
+    'signIn.googleCta': '使用 Google 繼續',
+    'signIn.appleUnavailable': 'Apple 登入需要正式版建置',
+    'signIn.cancel': '稍後',
 
     'paywall.signInTitle': '登入後再購買',
     'paywall.signInHint': '訂閱會綁定到帳號上，換裝置不會遺失。Apple 只給我們穩定 ID 和（可選的）信箱。',
@@ -736,6 +764,9 @@ export const translations: Translations = {
     'bondList.empty.title': 'まだ縁はありません',
     'bondList.empty.cta': '始める  →',
     'bondList.error.title': '縁を読み込めませんでした',
+    'bondList.pendingSection': '返事待ち',
+    'bondList.pendingTag': '招待送信済み',
+    'bondList.noActiveYet': 'まだ結ばれた縁はありません — 相手が承諾するとここに表示されます。',
     'bond.matching': '相性を計算中…',
 
     'invite.accept.prefix': 'さんが',
@@ -783,7 +814,14 @@ export const translations: Translations = {
     'settings.legal.privacy': 'プライバシーポリシー',
     'settings.legal.terms': '利用規約',
     'settings.error.conflict': 'このApple IDは別のアカウントにリンク済みです',
-    'settings.error.generic': 'Apple IDのリンクに失敗しました',
+    'settings.error.generic': 'アカウントのリンクに失敗しました',
+    'signIn.title': 'サインイン',
+    'signIn.hint':
+      'この端末をアカウントに紐づけて、端末を変えても縁が残るようにします。Appleは安定したIDを、Googleはメールも提供します。',
+    'signIn.appleCta': 'Appleで続行',
+    'signIn.googleCta': 'Googleで続行',
+    'signIn.appleUnavailable': 'AppleサインインはRelease/Devビルドが必要です',
+    'signIn.cancel': '後で',
 
     'paywall.signInTitle': 'サインインして続行',
     'paywall.signInHint':

@@ -4,20 +4,24 @@ import { getTranslations } from 'next-intl/server'
 /**
  * Kindred invite landing — what B sees when they tap A's share-sheet link.
  *
- * Design (2026-06 simplification, per device feedback):
- *   - Kindred branding throughout (not "HexAstral"). The share link is a
- *     Kindred-app artefact; the recipient sees Kindred's seal + palette.
- *   - TWO CTAs: deep-link (open the app if installed) + App Store fallback.
- *     The earlier layout stacked four (open / download / unlock / footer DDL);
- *     the curiosity-gap blur was misleading because B has not yet shared
- *     birth info, so no reading actually exists.
- *   - Web stays form-LESS by design — the birth form (8 fields incl. lunar
- *     toggle, city picker, gender) belongs inside the native app, not in a
- *     one-shot landing page. The deep-link carries the token, so the app
- *     resumes the invite the moment B opens it and the form runs there.
- *   - Warm paper palette (#F5F0E8 ground / #9B2226 seal / #C4A882 gold)
- *     matches /yuan/invite/[token]/teaser so the two halves of the flow
- *     feel like one Kindred surface.
+ * Iteration notes (2026-06):
+ *   - Logo is now an inline cinnabar phase-moon SVG (an approximation of the
+ *     in-app KindredMoon / SKIN_CINNABAR_INK at phase 0.25), not the 緣 glyph.
+ *     User feedback: 緣 read as "outdated" branding; the moon is the brand.
+ *   - All copy goes through next-intl messages so the page actually localises
+ *     by route (previously had inline isZh checks for headlines while other
+ *     strings came from getTranslations — inconsistent).
+ *   - "Invitation from Someone" copy is gated on `inviterHasName` from the
+ *     server: when the inviter is anonymous (no Apple link, no profile name)
+ *     we drop the "From {someone}" line — B reached this page through a link
+ *     A explicitly shared, so identifying the sender by name only matters
+ *     when there IS a real name.
+ *   - Deep link is `kindred:///accept/{token}` (no triple-slash variant
+ *     needed; expo-router resolves the path segment to /accept/[token]).
+ *
+ * Web stays form-LESS by design — the birth form belongs inside the native
+ * app, not in a one-shot landing page. The deep-link carries the token, so
+ * the app resumes the invite the moment B opens it and the form runs there.
  */
 
 interface PageProps {
@@ -53,6 +57,64 @@ function localizeRelationship(rawLabel: string, locale: string): string {
   return rawLabel
 }
 
+/**
+ * Inline cinnabar phase-moon — a still SVG approximation of the in-app
+ * KindredMoon (SKIN_CINNABAR_INK at phase 0.25, right-lit crescent).
+ *
+ * The native moon is rendered with Skia + shaders (rich noise + paper grain);
+ * on the web we approximate with:
+ *   - a base disk filled with a radial gradient (cinnabar lit face)
+ *   - a darker disk offset to the LEFT to mask the shadow side
+ *   - both inside a circular clip path so the crescent reads cleanly
+ *
+ * Same color stops as SKIN_CINNABAR_INK (packages/hexastral-tokens/src/moon.ts:
+ * faceStops #f3d8c0 / #c87454 / #7a2418, shadow #0e0d0c).
+ */
+function CinnabarMoon({ size = 88 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox='0 0 100 100'
+      aria-hidden
+      role='img'
+      style={{ display: 'block' }}
+    >
+      <defs>
+        <radialGradient id='kindred-face' cx='36%' cy='30%' r='68%'>
+          <stop offset='0%' stopColor='#f3d8c0' />
+          <stop offset='55%' stopColor='#c87454' />
+          <stop offset='100%' stopColor='#7a2418' />
+        </radialGradient>
+        <radialGradient id='kindred-shadow' cx='50%' cy='50%' r='60%'>
+          <stop offset='0%' stopColor='#0e0d0c' />
+          <stop offset='78%' stopColor='#1a1922' stopOpacity='0.94' />
+          <stop offset='100%' stopColor='#1a1922' stopOpacity='0' />
+        </radialGradient>
+        <clipPath id='kindred-disk'>
+          <circle cx='50' cy='50' r='44' />
+        </clipPath>
+      </defs>
+      {/* Lit face — cinnabar */}
+      <g clipPath='url(#kindred-disk)'>
+        <circle cx='50' cy='50' r='44' fill='url(#kindred-face)' />
+        {/* Shadow side — a darker disk shifted LEFT so the crescent sits on
+            the right (phase 0.25). cx shifted by ~30% of the radius. */}
+        <circle cx='27' cy='50' r='44' fill='url(#kindred-shadow)' />
+      </g>
+      {/* Rim — a thin warm outline so the moon doesn't melt into the paper. */}
+      <circle
+        cx='50'
+        cy='50'
+        r='44'
+        fill='none'
+        stroke='rgba(122,36,24,0.18)'
+        strokeWidth='0.75'
+      />
+    </svg>
+  )
+}
+
 async function fetchInviteData(token: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
   try {
@@ -64,6 +126,7 @@ async function fetchInviteData(token: string) {
       data: {
         invitationId: string
         inviterName: string
+        inviterHasName?: boolean
         inviterAvatarUrl: string | null
         relationshipLabel: string
         targetName: string
@@ -82,13 +145,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const t = await getTranslations({ locale, namespace: 'resonate' })
   const invite = await fetchInviteData(token)
 
-  const title = invite ? `${invite.inviterName} ${t('inviteTitle')}` : t('defaultTitle')
+  const hasName = invite?.inviterHasName ?? false
+  const baseTitle =
+    invite && hasName ? `${invite.inviterName} ${t('inviteTitle')}` : t('defaultTitle')
+  // `title.absolute` bypasses the root layout's "%s · HexAstral" template so
+  // the Kindred invite landing doesn't render as "... · Kindred · HexAstral".
+  // This is a Kindred-branded surface; HexAstral is the umbrella, not the page.
+  const fullTitle = `${baseTitle} · Kindred`
 
   return {
-    title: `${title} · Kindred`,
+    title: { absolute: fullTitle },
     description: t('description'),
     openGraph: {
-      title: `${title} · Kindred`,
+      title: fullTitle,
       description: t('description'),
     },
   }
@@ -100,11 +169,20 @@ export default async function ResonatePage({ params }: PageProps) {
   const invite = await fetchInviteData(token)
 
   const expired = invite ? new Date(invite.expiresAt) < new Date() : false
-  // Kindred-specific deep link — the app's URL scheme catches this and resumes
-  // the invite flow with the token so B lands on the in-app birth form.
-  const deepLink = `kindred://bond-accept?token=${token}`
+  // expo-router resolves this path segment to /accept/[token] inside the app
+  // (apps/kindred-app/app/accept/[token].tsx). The earlier `kindred://bond-accept?token=`
+  // didn't match any route and silently failed to open the app.
+  const deepLink = `kindred:///accept/${token}`
   const appStoreUrl = 'https://apps.apple.com/app/kindred/id6745054798'
-  const isZh = locale === 'zh' || locale === 'tw' || locale === 'zh-Hant'
+
+  // Locale fallback for tw-locale dates (Hant uses zh-TW formatting).
+  const dateLocale = locale === 'tw' ? 'zh-TW' : locale === 'zh' ? 'zh-CN' : locale
+  const expiresLabel = invite
+    ? new Date(invite.expiresAt).toLocaleDateString(dateLocale)
+    : ''
+
+  const inviterHasName = invite?.inviterHasName ?? false
+  const showRelationshipPrefix = inviterHasName && !!invite?.relationshipLabel
 
   return (
     <main
@@ -119,33 +197,9 @@ export default async function ResonatePage({ params }: PageProps) {
       }}
     >
       <div style={{ width: '100%', maxWidth: 420, textAlign: 'center' }}>
-        {/* Cinnabar seal — the Kindred mark.
-            Uses the 緣 seal glyph (same as native KindredSeal in
-            packages/scenario-kindred). The literal word "Kindred" didn't fit
-            inside the disc and clipped to "Kind"; one CJK glyph reads as a
-            seal/stamp at any size and stays brand-consistent. */}
-        <div
-          style={{
-            width: 88,
-            height: 88,
-            borderRadius: '50%',
-            backgroundColor: '#9B2226',
-            margin: '0 auto 2.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 46,
-              lineHeight: 1,
-              color: '#C4A882',
-              fontWeight: 400,
-            }}
-          >
-            緣
-          </span>
+        {/* Brand mark — same cinnabar phase-moon as the in-app KindredMoon. */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <CinnabarMoon size={88} />
         </div>
         <p
           style={{
@@ -154,7 +208,6 @@ export default async function ResonatePage({ params }: PageProps) {
             letterSpacing: 4,
             textTransform: 'uppercase',
             color: 'rgba(60,36,21,0.55)',
-            marginTop: -16,
             marginBottom: 36,
           }}
         >
@@ -163,39 +216,76 @@ export default async function ResonatePage({ params }: PageProps) {
 
         {invite && !expired ? (
           <>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 4,
-                textTransform: 'uppercase',
-                color: 'rgba(60,36,21,0.55)',
-                marginBottom: 14,
-              }}
-            >
-              {t('inviteFrom')}
-            </p>
-            <h1
-              style={{
-                fontSize: 30,
-                fontWeight: 400,
-                color: '#3C2415',
-                letterSpacing: -0.4,
-                marginBottom: 10,
-              }}
-            >
-              {invite.inviterName}
-            </h1>
-            <p
-              style={{
-                fontSize: 13,
-                letterSpacing: 2,
-                color: '#9B2226',
-                marginBottom: invite.message ? 24 : 36,
-              }}
-            >
-              {localizeRelationship(invite.relationshipLabel, locale)}
-            </p>
+            {inviterHasName ? (
+              <>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: 4,
+                    textTransform: 'uppercase',
+                    color: 'rgba(60,36,21,0.55)',
+                    marginBottom: 14,
+                  }}
+                >
+                  {t('inviteFrom')}
+                </p>
+                <h1
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 400,
+                    color: '#3C2415',
+                    letterSpacing: -0.4,
+                    marginBottom: showRelationshipPrefix ? 10 : 36,
+                  }}
+                >
+                  {invite.inviterName}
+                </h1>
+                {showRelationshipPrefix ? (
+                  <p
+                    style={{
+                      fontSize: 13,
+                      letterSpacing: 2,
+                      color: '#9B2226',
+                      marginBottom: invite.message ? 24 : 36,
+                    }}
+                  >
+                    {t('relationshipPrefix')}{' '}
+                    {localizeRelationship(invite.relationshipLabel, locale)}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              // Anonymous inviter — no Apple link, no profile name. The "From
+              // Someone" line would lie about identity; surface a generic lead
+              // instead. The relationship label still appears (it's real data
+              // A picked) so B knows what the bond is.
+              <>
+                <h1
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 400,
+                    color: '#3C2415',
+                    letterSpacing: -0.4,
+                    marginBottom: invite.relationshipLabel ? 10 : 36,
+                  }}
+                >
+                  {t('anonymousLead')}
+                </h1>
+                {invite.relationshipLabel ? (
+                  <p
+                    style={{
+                      fontSize: 13,
+                      letterSpacing: 2,
+                      color: '#9B2226',
+                      marginBottom: invite.message ? 24 : 36,
+                    }}
+                  >
+                    {localizeRelationship(invite.relationshipLabel, locale)}
+                  </p>
+                ) : null}
+              </>
+            )}
 
             {invite.message ? (
               <p
@@ -215,9 +305,11 @@ export default async function ResonatePage({ params }: PageProps) {
               </p>
             ) : null}
 
-            {/* Primary CTA — open in app (deep link). On a fresh iOS install
-                the scheme fails silently, so the App Store fallback below
-                still works. */}
+            {/* Primary CTA — open in the app via the kindred:// scheme. The
+                deep link routes to /accept/[token] (see
+                apps/kindred-app/app/accept/[token].tsx). When the app isn't
+                installed the scheme fails silently and the App Store fallback
+                below picks it up. */}
             <a
               href={deepLink}
               style={{
@@ -233,11 +325,10 @@ export default async function ResonatePage({ params }: PageProps) {
                 marginBottom: 24,
               }}
             >
-              {isZh ? '在 Kindred 中打开 →' : 'Open in Kindred →'}
+              {t('openInApp')} →
             </a>
 
-            {/* Secondary — App Store. Reads as a footer link, not a button,
-                so it doesn't compete with the primary deep-link. */}
+            {/* Secondary — App Store. Reads as a footer link, not a button. */}
             <a
               href={appStoreUrl}
               style={{
@@ -250,11 +341,11 @@ export default async function ResonatePage({ params }: PageProps) {
                 marginBottom: 28,
               }}
             >
-              {isZh ? '在 iOS 上获取 Kindred' : 'Get Kindred on iOS'}
+              {t('downloadApp')}
             </a>
 
             <p style={{ fontSize: 11, color: 'rgba(60,36,21,0.35)', letterSpacing: 0.8 }}>
-              {t('expires')}: {new Date(invite.expiresAt).toLocaleDateString()}
+              {t('expires')}: {expiresLabel}
             </p>
           </>
         ) : (

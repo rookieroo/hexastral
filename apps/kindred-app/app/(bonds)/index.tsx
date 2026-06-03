@@ -1,24 +1,39 @@
 /**
  * Threads (合盘) — secondary screen reached from the solo home.
  *
- * Three sub-modes: WaitingForOther (pending invite), empty-state, or the bond
- * list. This is a secondary screen, so it does NOT carry the home's floating
- * ··· settings shortcut or the swipe-left-to-Settings gesture — Settings is
- * only reachable from the home (per the user's 二级页面 rule).
+ * Shows ALL pending invitations + active bonds in one scrollable surface:
+ *
+ *   - Pending invites at the top, rendered as a horizontal pager (one card
+ *     per page, snap to width). The user can swipe between them — earlier
+ *     this screen blocked the whole list with a single full-page
+ *     WaitingForOther for the first pending only, so a user with 3 invites
+ *     could only see 1.
+ *   - Active bonds below, in a vertical list.
  *
  * Phase F migration: bond cards use <Card>; empty/error states use
  * <EmptyState> / <ErrorState>. Editorial typography (kindredType) and
  * gold-underline CTAs (kindredPresets.ctaText) remain Kindred-specific.
+ * This is a secondary screen, so it does NOT carry the home's floating
+ * ··· settings shortcut or the swipe-left-to-Settings gesture.
  */
 
 import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { type BondData, useBondList, WaitingForOther } from '@zhop/scenario-kindred'
+import { type BondData, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, Text, View } from 'react-native'
+import {
+  FlatList,
+  Pressable,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
 import { KindredMoon } from '@/components/KindredMoon'
@@ -35,11 +50,6 @@ export default function BondListScreen() {
   const authRetryDone = useRef(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
-  // Threads is a secondary screen — Settings is reached via the home's
-  // floating ··· (and the swipe-left gesture, which only originates from home).
-  // No floating ··· here; secondary pages should not stack their own settings
-  // entry-point on top of the stack-back affordance.
-
   useEffect(() => {
     if (!error?.message.includes('Authentication failed') || authRetryDone.current) return
     authRetryDone.current = true
@@ -50,81 +60,45 @@ export default function BondListScreen() {
       })
   }, [error, resyncCredentials, refetch])
 
-  // First pending invitation (if any) → show waiting state above the list
-  const firstPending = useMemo(
-    () => bonds.find((b) => b.status === 'pending_invite' && b.invitation),
+  const pendingBonds = useMemo(
+    () => bonds.filter((b) => b.status === 'pending_invite' && b.invitation),
     [bonds]
   )
   const activeBonds = useMemo(() => bonds.filter((b) => b.status === 'active'), [bonds])
 
-  // Localized copy for the pending-invite waiting screen. The component itself is
-  // shared + presentational (scenario-kindred); the app owns i18n + the relative
-  // "sent N ago" label, so nothing in it is hardcoded to one language.
-  const waitingCopy = useMemo(
-    () => ({
-      pendingTitle: t(locale, 'waiting.title'),
-      pendingSubtitle: t(locale, 'waiting.subtitle'),
-      pendingHint: t(locale, 'waiting.hint'),
-      resend: t(locale, 'waiting.resend'),
-      cancel: t(locale, 'waiting.cancel'),
-      acceptedTitle: t(locale, 'waiting.acceptedTitle'),
-      acceptedSubtitle: t(locale, 'waiting.acceptedSubtitle'),
-      viewReport: t(locale, 'waiting.viewReport'),
-    }),
-    [locale]
-  )
+  // ── Render branches ───────────────────────────────────────────────────────
 
-  const content = (() => {
-    if (isLoading) {
-      return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
-          </View>
-        </SafeAreaView>
-      )
-    }
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
+        </View>
+      </SafeAreaView>
+    )
+  }
 
-    if (error) {
-      return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-          <ErrorState
-            variant='fullscreen'
-            illustration={<KindredMoon size={72} />}
-            title={t(locale, 'bondList.error.title')}
-            message={error.message}
-            customAction={
-              <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
-            }
-          />
-        </SafeAreaView>
-      )
-    }
-
-    // Pending invite as primary state (most common right after onboarding A→invite)
-    if (firstPending?.invitation) {
-      return (
-        <WaitingForOther
-          state='pending'
-          otherName={firstPending.targetName}
-          sentAtLabel={relativeSentLabel(locale, firstPending.createdAt)}
-          // Brand mark = the same cinnabar moon as home / intro (not the seal).
-          logo={<KindredMoon size={96} />}
-          copy={waitingCopy}
-          onResend={() => {
-            /* TODO: resend RPC */
-          }}
-          onCancel={() => {
-            /* TODO: cancel RPC */
-          }}
-          onViewReport={() => router.push(`/(bonds)/${firstPending.id}`)}
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        <ErrorState
+          variant='fullscreen'
+          illustration={<KindredMoon size={72} />}
+          title={t(locale, 'bondList.error.title')}
+          message={error.message}
+          customAction={
+            <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
+          }
         />
-      )
-    }
+      </SafeAreaView>
+    )
+  }
 
-    // No bonds at all — EmptyState with the seal as illustration.
-    if (activeBonds.length === 0) {
-      return (
+  const hasAnything = pendingBonds.length > 0 || activeBonds.length > 0
+
+  if (!hasAnything) {
+    return (
+      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
           <View style={{ flex: 1, justifyContent: 'center' }}>
             <EmptyState
@@ -140,15 +114,16 @@ export default function BondListScreen() {
             />
           </View>
         </SafeAreaView>
-      )
-    }
+        {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
+      </View>
+    )
+  }
 
-    // Normal list
-    return (
+  return (
+    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <FlatList
           contentContainerStyle={{
-            paddingHorizontal: kindredSpacing.screenH,
             paddingTop: kindredSpacing.lg,
             paddingBottom: kindredSpacing.xxl,
             gap: kindredSpacing.md,
@@ -163,6 +138,7 @@ export default function BondListScreen() {
                   justifyContent: 'flex-end',
                   alignItems: 'center',
                   marginBottom: kindredSpacing.md,
+                  paddingHorizontal: kindredSpacing.screenH,
                 }}
               >
                 <Pressable onPress={() => router.push('/(onboarding)/self')} hitSlop={8}>
@@ -173,25 +149,179 @@ export default function BondListScreen() {
               <View style={{ alignItems: 'center' }}>
                 <KindredMoon size={56} />
               </View>
+
+              {/* Pending pager — full-width snap pages so the user can swipe
+                  through every outstanding invite. Lives ABOVE the active
+                  list because pending threads need attention (resend/cancel)
+                  while actives are just navigation destinations. */}
+              {pendingBonds.length > 0 ? (
+                <PendingPager
+                  bonds={pendingBonds}
+                  locale={locale}
+                  onOpen={(id) => router.push(`/(bonds)/${id}`)}
+                />
+              ) : null}
             </View>
           }
+          // Active bonds get the existing card row.
           data={activeBonds}
           keyExtractor={(b) => b.id}
           renderItem={({ item }) => (
-            <BondListItem bond={item} onPress={() => router.push(`/(bonds)/${item.id}`)} />
+            <View style={{ paddingHorizontal: kindredSpacing.screenH }}>
+              <BondListItem bond={item} onPress={() => router.push(`/(bonds)/${item.id}`)} />
+            </View>
           )}
+          ListEmptyComponent={
+            // The pager covers all pendings; if there are no actives we just
+            // show a quiet hint so the screen isn't visually empty below.
+            pendingBonds.length > 0 ? (
+              <Text
+                style={[
+                  kindredType.caption,
+                  {
+                    color: kindredDark.textMuted,
+                    textAlign: 'center',
+                    paddingHorizontal: kindredSpacing.screenH,
+                    paddingTop: kindredSpacing.lg,
+                  },
+                ]}
+              >
+                {t(locale, 'bondList.noActiveYet')}
+              </Text>
+            ) : null
+          }
           onRefresh={() => void refetch()}
           refreshing={false}
         />
       </SafeAreaView>
-    )
-  })()
-
-  return (
-    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      {content}
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
+  )
+}
+
+/**
+ * PendingPager — horizontal snap-scroll pager, one card per page. Each card
+ * carries the partner name + relationship + a "waiting since" line + a quiet
+ * "tap to manage" affordance. The pager dot row underneath tells the user
+ * there are more pages without needing arrows.
+ */
+function PendingPager({
+  bonds,
+  locale,
+  onOpen,
+}: {
+  bonds: BondData[]
+  locale: ReturnType<typeof resolveLocale>
+  onOpen: (id: string) => void
+}) {
+  const { width } = useWindowDimensions()
+  // Cards are slightly inset from screen edges so the next page peeks at the
+  // edge — discoverability without an explicit indicator.
+  const PAGE = width
+  const CARD_INSET = kindredSpacing.screenH
+  const [page, setPage] = useState(0)
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = Math.round(e.nativeEvent.contentOffset.x / PAGE)
+    if (next !== page) setPage(next)
+  }
+
+  return (
+    <View style={{ marginTop: kindredSpacing.lg }}>
+      <Text
+        style={[
+          kindredType.seal,
+          {
+            color: kindredDark.textSecondary,
+            paddingHorizontal: kindredSpacing.screenH,
+            marginBottom: kindredSpacing.md,
+          },
+        ]}
+      >
+        {t(locale, 'bondList.pendingSection')}
+      </Text>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={PAGE}
+        decelerationRate='fast'
+        onMomentumScrollEnd={onScrollEnd}
+      >
+        {bonds.map((bond) => (
+          <View key={bond.id} style={{ width: PAGE, paddingHorizontal: CARD_INSET }}>
+            <PendingBondCard
+              bond={bond}
+              locale={locale}
+              onPress={() => onOpen(bond.id)}
+            />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Page dots — only when there's more than one page. */}
+      {bonds.length > 1 ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 6,
+            marginTop: kindredSpacing.md,
+          }}
+        >
+          {bonds.map((b, i) => (
+            <View
+              key={b.id}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: i === page ? kindredDark.accent : kindredDark.border,
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function PendingBondCard({
+  bond,
+  locale,
+  onPress,
+}: {
+  bond: BondData
+  locale: ReturnType<typeof resolveLocale>
+  onPress: () => void
+}) {
+  return (
+    <Pressable onPress={onPress}>
+      <Card
+        variant='outlined'
+        padding='lg'
+        style={{
+          backgroundColor: kindredDark.card,
+          gap: kindredSpacing.xs,
+        }}
+      >
+        <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
+          {t(locale, 'bondList.pendingTag')}
+        </Text>
+        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{bond.targetName}</Text>
+        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
+          {bond.relationshipLabel}
+        </Text>
+        <Text
+          style={[
+            kindredType.caption,
+            { color: kindredDark.textMuted, marginTop: kindredSpacing.sm },
+          ]}
+        >
+          {relativeSentLabel(locale, bond.createdAt)}
+        </Text>
+      </Card>
+    </Pressable>
   )
 }
 
