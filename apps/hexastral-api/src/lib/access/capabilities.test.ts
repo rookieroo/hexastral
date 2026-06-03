@@ -16,15 +16,15 @@ describe('resolveCapability', () => {
     expect(resolveCapability('stellar')).toBe('fate')
     expect(resolveCapability('report')).toBe('fate')
     expect(resolveCapability('pair')).toBe('kindred')
-    expect(resolveCapability('cycle')).toBe('cycle')
+    expect(resolveCapability('cycle')).toBe('auspice')
     expect(resolveCapability('feng')).toBe('feng')
     expect(resolveCapability('physiognomy')).toBe('face')
     expect(resolveCapability('yiching')).toBe('coincast')
   })
 
   it('lets a known X-Target-App override the reading-type heuristic', () => {
-    // A 'natal' reading opened inside the cycle app is gated as cycle.
-    expect(resolveCapability('natal', 'cycle')).toBe('cycle')
+    // A 'natal' reading opened inside the auspice app is gated as auspice.
+    expect(resolveCapability('natal', 'auspice')).toBe('auspice')
     expect(resolveCapability('natal', 'kindred')).toBe('kindred')
     expect(resolveCapability('physiognomy', 'faceoracle')).toBe('face')
     expect(resolveCapability('yiching', 'dreamoracle')).toBe('dream')
@@ -33,8 +33,10 @@ describe('resolveCapability', () => {
 
   it('falls back to the reading type for an unknown/legacy targetApp', () => {
     expect(resolveCapability('pair', 'hexastral')).toBe('kindred')
+    // 'cycle' is the pre-rename app key (now 'auspice') — treated as legacy/unknown.
+    expect(resolveCapability('natal', 'cycle')).toBe('fate')
     expect(resolveCapability('natal', null)).toBe('fate')
-    expect(resolveCapability('cycle', undefined)).toBe('cycle')
+    expect(resolveCapability('cycle', undefined)).toBe('auspice')
   })
 })
 
@@ -43,7 +45,7 @@ describe('hasCapability', () => {
     const all: Capability[] = [
       'fate',
       'kindred',
-      'cycle',
+      'auspice',
       'feng',
       'face',
       'coincast',
@@ -57,7 +59,7 @@ describe('hasCapability', () => {
     expect(hasCapability(ents('fate_pro'), 'fate')).toBe(true)
     expect(hasCapability(ents('fate_pro'), 'kindred')).toBe(false)
     expect(hasCapability(ents('kindred_pro'), 'kindred')).toBe(true)
-    expect(hasCapability(ents('auspice_pro'), 'cycle')).toBe(true)
+    expect(hasCapability(ents('auspice_pro'), 'auspice')).toBe(true)
     expect(hasCapability(ents('auspice_pro'), 'fate')).toBe(false)
   })
 

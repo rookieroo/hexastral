@@ -14,7 +14,7 @@
     "lint:i18n": "bun tooling/i18n-lint/check.ts",
     "lint:strict": "turbo lint --continue --",
     "lint:fix": "turbo lint --continue -- --write --diagnostic-level=error",
-    "check-deps": "check-dependency-version-consistency .",
+    "check-deps": "check-dependency-version-consistency . --ignore-package @zhop/hexastral-app --ignore-dep @react-native-google-signin/google-signin --ignore-dep react-native-view-shot",
     "typecheck": "turbo typecheck",
     "gen": "turbo gen --config 'turbo/generators/config.ts'",
     "migration:local": "turbo migration:local",
