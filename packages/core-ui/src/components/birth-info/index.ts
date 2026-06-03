@@ -29,6 +29,12 @@ export { BirthReviewStep } from './BirthReviewStep'
 export { BirthTimeStep } from './BirthTimeStep'
 export { birthInfoCopyForLocale } from './defaultCopy'
 export { type LunarDateValue, LunarDateWheels } from './LunarDateWheels'
+export {
+  ShichenField,
+  type ShichenFieldLabels,
+  type ShichenFieldProps,
+  shichenFieldLabelsForLocale,
+} from './ShichenField'
 export type {
   BirthInfoCopy,
   BirthInfoFormProps,

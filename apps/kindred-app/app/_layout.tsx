@@ -27,14 +27,12 @@ import '@/lib/ensure-intl'
  */
 
 import { CoreUIProvider } from '@zhop/core-ui'
-import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
-import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/lib/auth'
@@ -44,30 +42,17 @@ import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
 
+/**
+ * Boot cover — the client gate paints the kindred bg ONLY while session
+ * provisioning resolves (a frame or two of automatic network setup, not a
+ * user-initiated action). A moon-phase spinner here read as a redundant
+ * "Loading" screen in front of the brand's own entrance flourish (intro moon
+ * for first launch, HomeSplash for returning users); a loader belongs only
+ * where the user took an explicit action and the API genuinely needs time.
+ * The native splash already covers the cold-launch flash before this mounts.
+ */
 function BootSplash() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: kindredDark.bg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 24,
-      }}
-    >
-      <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
-      <Text
-        style={{
-          fontSize: 13,
-          letterSpacing: 4,
-          color: kindredDark.textSecondary,
-          textTransform: 'uppercase',
-        }}
-      >
-        Kindred
-      </Text>
-    </View>
-  )
+  return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
 }
 
 /**

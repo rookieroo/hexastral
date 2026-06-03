@@ -27,8 +27,9 @@ import {
   type CityRecord,
   CityPicker,
   DEFAULT_TOP_CITIES,
+  ShichenField,
   type ShichenIndex,
-  ShichenPicker,
+  shichenFieldLabelsForLocale,
 } from '@zhop/core-ui'
 import {
   kindredDark,
@@ -122,6 +123,8 @@ export function BirthForm({
     )
   }
 
+  const shichenLabels = shichenFieldLabelsForLocale(lang)
+
   return (
     <View style={{ gap: kindredSpacing.lg }}>
       <Field label={t(locale, 'date.title')}>
@@ -131,6 +134,7 @@ export function BirthForm({
           accent={kindredDark.accent}
           labels={dateLabels}
           locale={lang}
+          prominent
         />
       </Field>
 
@@ -152,10 +156,11 @@ export function BirthForm({
         <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
           {t(locale, 'pairInput.timeHint')}
         </Text>
-        <ShichenPicker
+        <ShichenField
           value={shichen}
           onChange={(idx) => onTime(idx)}
-          accentColor={kindredDark.accent}
+          accent={kindredDark.accent}
+          labels={shichenLabels}
         />
       </View>
 

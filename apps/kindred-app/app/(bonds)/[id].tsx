@@ -206,6 +206,17 @@ export default function BondDetailScreen() {
                 <Text style={kindredPresets.ctaText}>{t('chat.cta')}</Text>
               </Pressable>
             ) : null}
+            {/* New thread — opens the single-page add-partner flow, not the
+                old self birth wizard. */}
+            <Pressable
+              onPress={() => router.push('/(onboarding)/mode')}
+              hitSlop={8}
+              accessibilityRole='button'
+              accessibilityLabel={t('bondList.add')}
+              style={{ marginLeft: kindredSpacing.md }}
+            >
+              <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
+            </Pressable>
           </View>
           <ChapterPager
             report={{
@@ -253,9 +264,21 @@ export default function BondDetailScreen() {
             paddingBottom: kindredSpacing.xxl,
           }}
         >
-          <Pressable onPress={() => router.back()} hitSlop={12} style={{ alignSelf: 'flex-start' }}>
-            <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
-          </Pressable>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/(onboarding)/mode')}
+              hitSlop={8}
+              accessibilityRole='button'
+              accessibilityLabel={t('bondList.add')}
+            >
+              <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
+            </Pressable>
+          </View>
 
           <View
             style={{ alignItems: 'center', marginTop: kindredSpacing.lg, gap: kindredSpacing.sm }}

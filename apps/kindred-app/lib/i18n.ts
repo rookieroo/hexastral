@@ -155,6 +155,9 @@ export const translations: Translations = {
     'bondList.pendingSection': 'Waiting for them',
     'bondList.pendingTag': 'Invitation sent',
     'bondList.noActiveYet': 'No woven threads yet — once they accept, they show up here.',
+    'bondList.title': 'Threads',
+    'bondList.subtitle': 'The people woven into your chart',
+    'bondList.add': 'New thread',
     'bond.matching': 'Aligning your charts…',
 
     'invite.accept.prefix': 'is ',
@@ -361,6 +364,9 @@ export const translations: Translations = {
     'bondList.pendingSection': '等 ta 接力',
     'bondList.pendingTag': '邀请已发出',
     'bondList.noActiveYet': '还没有已合的牵绊——对方接受后会出现在这里。',
+    'bondList.title': '牵绊',
+    'bondList.subtitle': '那些与你命盘交织的人',
+    'bondList.add': '新缘',
     'bond.matching': '合盘中…',
 
     'invite.accept.prefix': '是 ',
@@ -564,6 +570,9 @@ export const translations: Translations = {
     'bondList.pendingSection': '等 ta 接力',
     'bondList.pendingTag': '邀請已發出',
     'bondList.noActiveYet': '還沒有已合的牽絆——對方接受後會出現在這裡。',
+    'bondList.title': '牽絆',
+    'bondList.subtitle': '那些與你命盤交織的人',
+    'bondList.add': '新緣',
     'bond.matching': '合盤中…',
 
     'invite.accept.prefix': '是 ',
@@ -767,6 +776,9 @@ export const translations: Translations = {
     'bondList.pendingSection': '返事待ち',
     'bondList.pendingTag': '招待送信済み',
     'bondList.noActiveYet': 'まだ結ばれた縁はありません — 相手が承諾するとここに表示されます。',
+    'bondList.title': '縁',
+    'bondList.subtitle': 'あなたの命盤に織り込まれた人々',
+    'bondList.add': '新しい縁',
     'bond.matching': '相性を計算中…',
 
     'invite.accept.prefix': 'さんが',

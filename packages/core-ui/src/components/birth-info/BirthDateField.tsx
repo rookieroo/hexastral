@@ -66,6 +66,14 @@ export interface BirthDateFieldProps {
   labels: BirthDateFieldLabels
   /** Forwarded to the native DateTimePicker (e.g. 'zh-CN'). */
   locale?: string
+  /**
+   * Boxed, larger input instead of the thin underline. The underline variant
+   * read as plain text on the kindred form ("不容易找到输入位置"); `prominent`
+   * gives the entry an obvious bordered field + bigger type so it's clearly the
+   * place to type. Defaults to false (the underline) for hosts that want the
+   * quieter inline look.
+   */
+  prominent?: boolean
 }
 
 /** Auto-insert dashes → YYYY-MM-DD; strips non-digits, caps at 8 digits. */
@@ -149,7 +157,14 @@ function lunarSeedFrom(input: string, calendar: BirthCalendar, isLeap: boolean):
   return defaultLunarSeed()
 }
 
-export function BirthDateField({ value, onChange, accent, labels, locale }: BirthDateFieldProps) {
+export function BirthDateField({
+  value,
+  onChange,
+  accent,
+  labels,
+  locale,
+  prominent = false,
+}: BirthDateFieldProps) {
   const { colors, spacing, isDark } = useTheme()
   // Pin the native iOS DateTimePicker to the CoreUI theme — otherwise the
   // spinner follows the device system theme and renders light even when the
@@ -252,14 +267,26 @@ export function BirthDateField({ value, onChange, accent, labels, locale }: Birt
         })}
       </View>
 
-      {/* The input row — compact text entry + wheel affordance */}
+      {/* The input row — compact text entry + wheel affordance. `prominent`
+          boxes it (border + larger type) so it's unmistakably an input. */}
       <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          borderBottomWidth: 0.5,
-          borderBottomColor: colors.separator,
-        }}
+        style={
+          prominent
+            ? {
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 0.5,
+                borderColor: colors.separator,
+                borderRadius: 10,
+                paddingHorizontal: spacing.md,
+              }
+            : {
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
+              }
+        }
       >
         <TextInput
           value={input}
@@ -270,10 +297,13 @@ export function BirthDateField({ value, onChange, accent, labels, locale }: Birt
           maxLength={10}
           style={{
             flex: 1,
-            fontSize: 16,
+            fontSize: prominent ? 19 : 16,
+            letterSpacing: prominent ? 1 : 0,
             color: colors.text,
-            paddingVertical: spacing.sm,
+            // `padding: 0` first kills Android's default TextInput inset; the
+            // explicit paddingVertical then sets the row height.
             padding: 0,
+            paddingVertical: prominent ? spacing.md : spacing.sm,
           }}
         />
         {calendar === 'lunar' && isLeap && labels.leapLabel ? (
