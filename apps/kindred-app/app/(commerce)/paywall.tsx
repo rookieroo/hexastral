@@ -5,15 +5,15 @@
  * `hexastral_kindred_pro` RevenueCat entitlement.
  *
  * Auth gate (2026-06): if the user has no recovery method attached (no
- * Apple-link, no email), we render an inline sign-in step BEFORE the price
- * picker. A subscription tied to an anonymous device-id evaporates on phone
- * loss / reinstall — surfacing the auth step here keeps people from buying
- * into a wallet they can't restore.
+ * Apple-link, no Google-link, no email), we render an inline sign-in step
+ * BEFORE the price picker. A subscription tied to an anonymous device-id
+ * evaporates on phone loss / reinstall — surfacing the auth step here keeps
+ * people from buying into a wallet they can't restore. The sign-in itself
+ * lifts the multi-provider `<SignInSheet>` (Apple + Google), same drawer
+ * the user sees in Settings.
  *
- * Hero now uses the cinnabar phase-moon (KindredMoon) instead of the
- * KindredSeal disc, which carried the 緣 glyph — the user said the seal
- * shouldn't show up inside the paywall ("仍然是 缘 字logo"), and the moon
- * matches the rest of the brand surface in the app.
+ * Hero uses the cinnabar phase-moon (KindredMoon) — not the KindredSeal,
+ * which carried the 緣 glyph the user asked us to drop from the paywall.
  *
  * Reached via:
  *   router.push({ pathname: '/(commerce)/paywall', params: { reason } })
@@ -22,12 +22,12 @@
 
 import { PaywallView } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import * as AppleAuthentication from 'expo-apple-authentication'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
+import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import {
   getYuanOfferings,
@@ -43,19 +43,11 @@ export default function PaywallScreen() {
   const locale = useMemo(() => resolveLocale(), [])
   const { reason } = useLocalSearchParams<{ reason?: string }>()
   const [offerings, setOfferings] = useState<KindredOfferings | null>(null)
-  const { userEmail, linkApple, refreshProfile } = useAuth()
-  const [signingIn, setSigningIn] = useState(false)
-  const [signInError, setSignInError] = useState<string | null>(null)
-  const [appleAvailable, setAppleAvailable] = useState(false)
+  const { userEmail } = useAuth()
+  const [signInOpen, setSignInOpen] = useState(false)
 
   useEffect(() => {
     void getYuanOfferings().then(setOfferings)
-  }, [])
-
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable)
-    }
   }, [])
 
   const palette = useMemo(
@@ -95,52 +87,14 @@ export default function PaywallScreen() {
   )
 
   // userEmail is the simplest "do they have a recovery handle?" signal. It's
-  // set after an OTP email bind OR after an Apple sign-in (with EMAIL scope,
-  // which we now request — see (settings)/index.tsx handleApple). If null,
-  // the user is anonymous device-id only and would lose any purchase on
-  // device-loss; we route through sign-in first.
+  // set after an OTP email bind OR after Apple/Google sign-in with the email
+  // scope (Apple via FULL_NAME+EMAIL, Google always sends email). If null
+  // the user is anonymous device-id only; we route through SignInSheet first.
   const needsAuth = userEmail === null
-
-  const handleApple = async () => {
-    if (signingIn) return
-    setSigningIn(true)
-    setSignInError(null)
-    try {
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      })
-      if (!credential.identityToken) throw new Error('Apple returned no identity token')
-      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
-        .filter(Boolean)
-        .join(' ')
-        .trim()
-      await linkApple({
-        identityToken: credential.identityToken,
-        fullName: fullName || undefined,
-      })
-      await refreshProfile()
-    } catch (err) {
-      const code = (err as { code?: string }).code
-      if (code === 'ERR_REQUEST_CANCELED') {
-        setSigningIn(false)
-        return
-      }
-      setSignInError(err instanceof Error ? err.message : t(locale, 'settings.error.generic'))
-    } finally {
-      setSigningIn(false)
-    }
-  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       {needsAuth ? (
-        // Inline auth gate — sits in front of the paywall until the user has
-        // a recovery handle. Same KindredMoon hero so the surface still feels
-        // like the paywall; pressing Apple lifts the gate and the paywall
-        // re-renders without a route change.
         <View
           style={{
             flex: 1,
@@ -153,69 +107,35 @@ export default function PaywallScreen() {
             <KindredMoon size={96} />
           </View>
           <Text
-            style={[
-              kindredType.title,
-              { color: kindredDark.text, textAlign: 'center' },
-            ]}
+            style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}
           >
             {t(locale, 'paywall.signInTitle')}
           </Text>
           <Text
             style={[
               kindredType.body,
-              {
-                color: kindredDark.textSecondary,
-                textAlign: 'center',
-                lineHeight: 22,
-              },
+              { color: kindredDark.textSecondary, textAlign: 'center', lineHeight: 22 },
             ]}
           >
             {t(locale, 'paywall.signInHint')}
           </Text>
-          {appleAvailable && Platform.OS === 'ios' ? (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={8}
-              style={{ width: '100%', height: 48, marginTop: kindredSpacing.md }}
-              onPress={handleApple}
-            />
-          ) : (
-            <Pressable
-              onPress={handleApple}
-              disabled={signingIn}
-              style={{
-                marginTop: kindredSpacing.md,
-                paddingVertical: kindredSpacing.md,
-                borderWidth: 0.5,
-                borderColor: kindredDark.border,
-                alignItems: 'center',
-                opacity: signingIn ? 0.6 : 1,
-              }}
-            >
-              {signingIn ? (
-                <ActivityIndicator color={kindredDark.text} />
-              ) : (
-                <Text style={[kindredType.body, { color: kindredDark.text }]}>
-                  {t(locale, 'paywall.signInCta')}
-                </Text>
-              )}
-            </Pressable>
-          )}
-          {signInError ? (
-            <Text
-              style={[
-                kindredType.caption,
-                {
-                  color: kindredDark.seal,
-                  textAlign: 'center',
-                  marginTop: kindredSpacing.sm,
-                },
-              ]}
-            >
-              {signInError}
+
+          <Pressable
+            onPress={() => setSignInOpen(true)}
+            style={({ pressed }) => ({
+              marginTop: kindredSpacing.md,
+              paddingVertical: kindredSpacing.md,
+              backgroundColor: kindredDark.text,
+              borderRadius: 8,
+              alignItems: 'center',
+              opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.bg, fontWeight: '500' }]}>
+              {t(locale, 'signIn.title')}
             </Text>
-          ) : null}
+          </Pressable>
+
           <Pressable
             onPress={() => router.back()}
             hitSlop={12}
@@ -256,6 +176,8 @@ export default function PaywallScreen() {
           onRestore={restoreKindredPurchases}
         />
       )}
+
+      <SignInSheet visible={signInOpen} onClose={() => setSignInOpen(false)} />
     </SafeAreaView>
   )
 }

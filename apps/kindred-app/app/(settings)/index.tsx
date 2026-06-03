@@ -195,29 +195,36 @@ export default function SettingsScreen() {
           {t(locale, 'settings.account')}
         </Text>
 
+        {/* Account — single Sign-in CTA that lifts the multi-provider drawer
+            (Apple + Google). Replaces the Apple-only inline button so the
+            UI matches ming-pan's sheet pattern the user asked for. The "✓
+            linked / recovered" status text fades back in once SignInSheet's
+            onAuthed callback fires and the profile email is refetched. */}
         <Card
           variant='outlined'
           padding='lg'
-          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.md }}
+          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.sm }}
         >
-          {appleAvailable ? (
-            <View style={{ gap: kindredSpacing.sm }}>
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={8}
-                style={{ width: '100%', height: 48 }}
-                onPress={handleApple}
-              />
-              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                {t(locale, 'settings.signInWithApple.hint')}
-              </Text>
-            </View>
-          ) : (
-            <Text style={[kindredType.body, { color: kindredDark.textMuted }]}>
-              {t(locale, 'settings.signInWithApple')} — iOS only
+          <Pressable
+            onPress={() => setSignInOpen(true)}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {t(locale, 'signIn.title')}
             </Text>
-          )}
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {t(locale, 'settings.signInWithApple.hint')}
+            </Text>
+          </Pressable>
 
           {status === 'linked' || status === 'already_linked' ? (
             <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
@@ -228,9 +235,6 @@ export default function SettingsScreen() {
             <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
               ✓ {t(locale, 'settings.recovered')}
             </Text>
-          ) : null}
-          {status === 'error' && errorMsg ? (
-            <Text style={[kindredType.caption, { color: kindredDark.seal }]}>{errorMsg}</Text>
           ) : null}
         </Card>
 
@@ -415,6 +419,12 @@ export default function SettingsScreen() {
           onClose={() => setEmailModalOpen(false)}
         />
       ) : null}
+
+      <SignInSheet
+        visible={signInOpen}
+        onClose={() => setSignInOpen(false)}
+        onAuthed={() => setStatus('linked')}
+      />
     </SafeAreaView>
   )
 }

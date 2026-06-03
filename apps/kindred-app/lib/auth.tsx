@@ -202,7 +202,7 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
   const linkProvider = useCallback(
     async (
       path: string,
-      payload: Record<string, unknown>
+      payload: AppleLinkInput | GoogleLinkInput
     ): Promise<{ outcome: AppleLinkOutcome; userId: string }> => {
       if (!userId) throw new Error('Cannot link a provider before user is provisioned')
 

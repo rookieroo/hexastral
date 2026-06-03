@@ -134,9 +134,13 @@ export function SignInSheet({ visible, onClose, onAuthed }: SignInSheetProps) {
     let cancelled = false
     ;(async () => {
       try {
-        const mod = (await import(
-          '@react-native-google-signin/google-signin'
-        )) as unknown as GoogleSigninModule
+        // Dynamic specifier so TypeScript doesn't require the package to be
+        // installed at this workspace's resolution — same pattern satellite-ui
+        // uses for SatelliteGoogleAuth. The lib is a peer dep of satellite-ui;
+        // when the user runs `bun install` after declaring it directly in
+        // kindred-app, this import resolves and the button enables.
+        const specifier = '@react-native-google-signin/google-signin'
+        const mod = (await import(specifier)) as unknown as GoogleSigninModule
         if (cancelled) return
         mod.GoogleSignin.configure({
           iosClientId: iosClientId || undefined,
