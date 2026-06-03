@@ -275,7 +275,7 @@ export const HEXAGRAM_DETAILS: HexagramData[] = [
     judgment: '同人于野，亨。利涉大川，利君子贞。',
     image: '天与火，同人。君子以类族辨物。',
     judgmentExplain:
-      '同人卦天火相合，代表志同道合之人聚在一起。开阔胸襟、广结善Kindred则亨通。宜合作共事、团队协作。走出小圈子，以公心待人方得大成。',
+      '同人卦天火相合，代表志同道合之人聚在一起。开阔胸襟、广结善缘则亨通。宜合作共事、团队协作。走出小圈子，以公心待人方得大成。',
     keywords: ['同心', '合作', '开放', '公心'],
     fortune: 'fortune',
     lines: [

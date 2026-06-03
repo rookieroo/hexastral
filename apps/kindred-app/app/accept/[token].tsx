@@ -1,11 +1,16 @@
 /**
- * /accept/[token] — B-user entry from email deep link / DDL claim.
+ * /accept/[token] — B-user entry from the shared invite link / DDL claim.
+ *
+ * The invite is channel-agnostic (ADR-0021 §3): A shares a web URL through any
+ * app (Messages / WhatsApp / WeChat / Mail / AirDrop), so nothing here assumes
+ * email or SMS.
  *
  * Flow:
- *   1. B clicked the link in the invitation email → web /yuan/invite/[token]
+ *   1. B opened the shared invite link → web /resonate/[token]
  *      → B filled birth info → web tagged DDL token → App Store
  *   2. After install, the app's DDL handshake (via @zhop/ddl-client) resolves
- *      the pending claim and navigates here.
+ *      the pending claim and navigates here. If the app was already installed,
+ *      the link's token comes straight through the URL (no DDL needed).
  *   3. We load /api/bonds/invite/:token/info → render <InviteAcceptSheet>.
  *   4. On "Open" → POST /respond (if not yet done by web) → navigate to
  *      /(bonds)/[bondId] which plays RevealMoment + report.
@@ -17,7 +22,6 @@
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import {
   InviteAcceptSheet,
-  KindredSeal,
   type RelationshipType,
   useBondInvitation,
 } from '@zhop/scenario-kindred'
@@ -25,6 +29,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KindredMoon } from '@/components/KindredMoon'
 import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
 
 const RELATIONSHIP_I18N: Record<RelationshipType, TranslationKey> = {
@@ -75,7 +80,7 @@ export default function AcceptTokenScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <KindredSeal mode='breathing' size={72} />
+          <KindredMoon size={72} />
         </View>
       </SafeAreaView>
     )

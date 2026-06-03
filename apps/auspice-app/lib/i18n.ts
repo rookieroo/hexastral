@@ -267,9 +267,10 @@ export interface Strings {
     needBirth: string
     needBirthBody: string
     homeEntry: string
-    /** Disclosure header above the optional 时辰 / gender fields — collapsed by default. */
+    /** Disclosure header above the optional 时辰 / gender / birthplace fields — collapsed by default. */
     compatibilityToggle: string
-    /** Hint line under the disclosure header explaining what the fields are for. */
+    /** Hint under the disclosure header: filling these unlocks the two-person
+     *  relationship report, viewable in the Kindred app. */
     compatibilityHint: string
   }
   watchWidgets: string
@@ -498,7 +499,8 @@ const zhHans: Strings = {
     needBirthBody: '请先在设置里填写你的生辰，才能查看与 TA 的关系。',
     homeEntry: '记录生日',
     compatibilityToggle: '添加合盘信息（选填）',
-    compatibilityHint: '时辰、性别仅用于八字合盘；普通生日提醒不需要填',
+    compatibilityHint:
+      '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
   },
   watchWidgets: '表盘与桌面组件',
   themeAccent: '主题色',
@@ -695,7 +697,8 @@ const zhHant: Strings = {
     needBirthBody: '請先在設定裡填寫你的生辰，才能查看與 TA 的關係。',
     homeEntry: '記錄生日',
     compatibilityToggle: '新增合盤資訊（選填）',
-    compatibilityHint: '時辰、性別僅用於八字合盤；普通生日提醒不需要填',
+    compatibilityHint:
+      '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
   },
   watchWidgets: '錶盤與桌面元件',
   themeAccent: '主題色',
@@ -906,7 +909,8 @@ const ja: Strings = {
     needBirthBody: '相性を見るには、設定であなたの生年月日を入力してください。',
     homeEntry: '記念日を追加',
     compatibilityToggle: '相性鑑定の情報（任意）',
-    compatibilityHint: '時辰と性別は相性鑑定のみで使用。通知だけなら不要です',
+    compatibilityHint:
+      '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。通知だけなら入力不要です。',
   },
   watchWidgets: '文字盤とウィジェット',
   themeAccent: 'テーマカラー',
@@ -1131,7 +1135,7 @@ const en: Strings = {
     homeEntry: 'Add birthday',
     compatibilityToggle: 'Compatibility info (optional)',
     compatibilityHint:
-      'Hour and gender are only used for the compatibility reading — skip for a reminder-only entry.',
+      'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app. Skip for a reminder-only entry.',
   },
   watchWidgets: 'Watch & Widgets',
   themeAccent: 'Accent color',

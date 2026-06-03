@@ -137,7 +137,9 @@ export default function BondDetailScreen() {
           }}
         >
           <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
-          <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>合盘中…</Text>
+          <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
+            {t('bond.matching')}
+          </Text>
         </View>
       </SafeAreaView>
     )

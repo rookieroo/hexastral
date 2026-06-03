@@ -1542,7 +1542,7 @@ bondRoutes.post('/timeline/explain', async (c) => {
 
 // Semantic key mapping matches calculateHeHun dimension order:
 //  dimensions[0] 日主五行 (40%) → long_term
-//  dimensions[1] 年支Kindred分 (20%) → attraction
+//  dimensions[1] 年支缘分 (20%) → attraction
 //  dimensions[2] 月支生活 (20%) → communication
 //  dimensions[3] 日支亲密 (20%) → emotional
 const DIMENSION_SEMANTIC_KEYS = ['long_term', 'attraction', 'communication', 'emotional'] as const

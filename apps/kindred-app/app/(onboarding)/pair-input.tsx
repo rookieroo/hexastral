@@ -29,8 +29,15 @@
  * PrimaryButton (usePressScale + haptics).
  */
 
-import { lunarToSolar } from '@zhop/astro-core'
-import { CityPicker, DEFAULT_TOP_CITIES, ShichenPicker } from '@zhop/core-ui'
+import {
+  BirthDateField,
+  type BirthDateFieldValue,
+  birthDateFieldLabelsForLocale,
+  birthInputToSolar,
+  CityPicker,
+  DEFAULT_TOP_CITIES,
+  ShichenPicker,
+} from '@zhop/core-ui'
 import { MoonPhaseLoader, SKIN_CINNABAR_INK, usePressScale } from '@zhop/core-ui/motion'
 import {
   kindredDark,
@@ -41,7 +48,7 @@ import {
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
@@ -62,8 +69,6 @@ import { isOnboardingComplete, markOnboardingComplete } from '../index'
 
 type Step = 'self' | 'choose' | 'other'
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-
 function localeToLang(loc: string): string {
   if (loc === 'en') return 'en-US'
   if (loc === 'ja') return 'ja-JP'
@@ -71,30 +76,13 @@ function localeToLang(loc: string): string {
   return 'zh-CN'
 }
 
-/** Auto-insert dashes → YYYY-MM-DD; strips non-digits, caps at 8 digits. */
-function formatDateInput(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 4) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`
-  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
-}
-
-/** Convert a typed date (in the chosen calendar) to a canonical solar string,
- *  or null when incomplete / an impossible 农历 date. */
-function toSolar(dateInput: string, calendar: 'solar' | 'lunar'): string | null {
-  if (!DATE_RE.test(dateInput)) return null
-  if (calendar === 'solar') return dateInput
-  const [y, m, d] = dateInput.split('-').map(Number)
-  if (!y || !m || !d || y < 1900 || y > 2100) return null
-  if (m < 1 || m > 12 || d < 1 || d > 30) return null
-  try {
-    const sd = lunarToSolar(y, m, d, false)
-    const yy = sd.getFullYear()
-    const mm = String(sd.getMonth() + 1).padStart(2, '0')
-    const dd = String(sd.getDate()).padStart(2, '0')
-    return `${yy}-${mm}-${dd}`
-  } catch {
-    return null
+/** Seed a BirthDateFieldValue from a draft's (solar) date string. */
+function dateValueFromDraft(solar: string): BirthDateFieldValue {
+  return {
+    input: solar,
+    calendar: 'solar',
+    isLeap: false,
+    solarDate: birthInputToSolar(solar, 'solar'),
   }
 }
 
@@ -130,22 +118,33 @@ export default function PairInputScreen() {
     transform: [{ translateY: moonTy.value }, { scale: moonScale.value }],
   }))
 
-  // The date inputs hold what the user is typing (which may be a 农历 string);
-  // the canonical solar form is computed on the fly + committed to the draft.
-  const [selfDateInput, setSelfDateInput] = useState(draft.selfSolarDate)
-  const [selfCalendar, setSelfCalendar] = useState<'solar' | 'lunar'>('solar')
-  const [otherDateInput, setOtherDateInput] = useState(draft.otherSolarDate)
-  const [otherCalendar, setOtherCalendar] = useState<'solar' | 'lunar'>('solar')
+  // The date fields hold what the user is typing/picking (which may be a 农历
+  // date); the shared BirthDateField derives the canonical solar form on every
+  // change and we commit that to the draft.
+  const [selfDate, setSelfDate] = useState<BirthDateFieldValue>(() =>
+    dateValueFromDraft(draft.selfSolarDate)
+  )
+  const [otherDate, setOtherDate] = useState<BirthDateFieldValue>(() =>
+    dateValueFromDraft(draft.otherSolarDate)
+  )
   const [submitting, setSubmitting] = useState(false)
 
-  const selfSolar = useMemo(
-    () => toSolar(selfDateInput, selfCalendar),
-    [selfDateInput, selfCalendar]
+  // Shared field labels — core-ui defaults, with the app's own calendar copy.
+  const dateLabels = useMemo(
+    () => ({
+      ...birthDateFieldLabelsForLocale(lang),
+      solar: t(locale, 'pairInput.calendar.solar'),
+      lunar: t(locale, 'pairInput.calendar.lunar'),
+      lunarHint: t(locale, 'pairInput.calendar.lunarHint'),
+    }),
+    [lang, locale]
   )
-  const otherSolar = useMemo(
-    () => toSolar(otherDateInput, otherCalendar),
-    [otherDateInput, otherCalendar]
-  )
+
+  const selfSolar = selfDate.solarDate
+  const otherSolar = otherDate.solarDate
+
+  // ScrollView ref — the city picker scrolls itself above the keyboard on focus.
+  const scrollRef = useRef<ScrollView>(null)
 
   // "Filled" = enough for the downstream flow. Self needs date + gender; the
   // partner additionally needs a name + relationship (the reveal create reads
@@ -161,24 +160,14 @@ export default function PairInputScreen() {
   const searchCity = (query: string) => searchCityApi(query, lang, 7)
 
   // Commit the resolved solar date for a side into the draft (keeps the draft
-  // canonical even when the user typed a 农历 date).
-  const commitSelfDate = (raw: string) => {
-    const next = formatDateInput(raw)
-    setSelfDateInput(next)
-    updateDraft({ selfSolarDate: toSolar(next, selfCalendar) ?? '' })
+  // canonical even when the user typed/picked a 农历 date).
+  const commitSelfDate = (next: BirthDateFieldValue) => {
+    setSelfDate(next)
+    updateDraft({ selfSolarDate: next.solarDate ?? '' })
   }
-  const commitSelfCalendar = (cal: 'solar' | 'lunar') => {
-    setSelfCalendar(cal)
-    updateDraft({ selfSolarDate: toSolar(selfDateInput, cal) ?? '' })
-  }
-  const commitOtherDate = (raw: string) => {
-    const next = formatDateInput(raw)
-    setOtherDateInput(next)
-    updateDraft({ otherSolarDate: toSolar(next, otherCalendar) ?? '' })
-  }
-  const commitOtherCalendar = (cal: 'solar' | 'lunar') => {
-    setOtherCalendar(cal)
-    updateDraft({ otherSolarDate: toSolar(otherDateInput, cal) ?? '' })
+  const commitOtherDate = (next: BirthDateFieldValue) => {
+    setOtherDate(next)
+    updateDraft({ otherSolarDate: next.solarDate ?? '' })
   }
 
   // ── Persist + step transitions ────────────────────────────────────────────
@@ -240,6 +229,7 @@ export default function PairInputScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }} edges={['top']}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{
           paddingHorizontal: kindredSpacing.screenH,
           paddingTop: kindredSpacing.lg,
@@ -247,6 +237,7 @@ export default function PairInputScreen() {
           gap: kindredSpacing.lg,
         }}
         keyboardShouldPersistTaps='handled'
+        automaticallyAdjustKeyboardInsets
       >
         {/* Brand moon — shared with the intro outro (route = fade) for continuity;
             morphs to the opposite phase once your own side is done. */}
@@ -267,10 +258,10 @@ export default function PairInputScreen() {
             </Field>
             <BirthForm
               locale={locale}
-              calendar={selfCalendar}
-              onCalendar={commitSelfCalendar}
-              dateInput={selfDateInput}
+              lang={lang}
+              date={selfDate}
               onDate={commitSelfDate}
+              dateLabels={dateLabels}
               timeIndex={draft.selfTimeIndex}
               onTime={(idx) => updateDraft({ selfTimeIndex: idx })}
               gender={draft.selfGender}
@@ -282,6 +273,7 @@ export default function PairInputScreen() {
               onCity={(patch) => updateDraft(patch)}
               searchCity={searchCity}
               fieldPrefix='self'
+              scrollRef={scrollRef}
             />
             <View style={{ marginTop: kindredSpacing.sm }}>
               <PrimaryButton
@@ -360,10 +352,10 @@ export default function PairInputScreen() {
             </Field>
             <BirthForm
               locale={locale}
-              calendar={otherCalendar}
-              onCalendar={commitOtherCalendar}
-              dateInput={otherDateInput}
+              lang={lang}
+              date={otherDate}
               onDate={commitOtherDate}
+              dateLabels={dateLabels}
               timeIndex={draft.otherTimeIndex}
               onTime={(idx) => updateDraft({ otherTimeIndex: idx })}
               gender={draft.otherGender}
@@ -375,6 +367,7 @@ export default function PairInputScreen() {
               onCity={(patch) => updateDraft(patch)}
               searchCity={searchCity}
               fieldPrefix='other'
+              scrollRef={scrollRef}
             />
             <View style={{ marginTop: kindredSpacing.sm }}>
               <PrimaryButton
@@ -547,10 +540,11 @@ function NameInput({
 
 interface BirthFormProps {
   locale: Locale
-  calendar: 'solar' | 'lunar'
-  onCalendar: (cal: 'solar' | 'lunar') => void
-  dateInput: string
-  onDate: (raw: string) => void
+  /** BCP-47 tag (e.g. 'zh-CN') for the native date picker. */
+  lang: string
+  date: BirthDateFieldValue
+  onDate: (next: BirthDateFieldValue) => void
+  dateLabels: import('@zhop/core-ui').BirthDateFieldLabels
   timeIndex: number | null
   onTime: (idx: number | null) => void
   gender: '男' | '女' | null
@@ -563,14 +557,16 @@ interface BirthFormProps {
   searchCity: (query: string) => Promise<import('@zhop/core-ui').CityRecord[]>
   /** 'self' / 'other' — picks which draft fields the city write targets. */
   fieldPrefix: 'self' | 'other'
+  /** Host ScrollView — the city field scrolls itself above the keyboard on focus. */
+  scrollRef: RefObject<ScrollView | null>
 }
 
 function BirthForm({
   locale,
-  calendar,
-  onCalendar,
-  dateInput,
+  lang,
+  date,
   onDate,
+  dateLabels,
   timeIndex,
   onTime,
   gender,
@@ -582,6 +578,7 @@ function BirthForm({
   onCity,
   searchCity,
   fieldPrefix,
+  scrollRef,
 }: BirthFormProps) {
   // 时辰 + city are the "soft" fields (often unknown). Collapse them behind a
   // toggle so the form reads as 2 required fields, not a wall. Default open if
@@ -612,36 +609,17 @@ function BirthForm({
 
   return (
     <View style={{ gap: kindredSpacing.lg }}>
-      {/* Birth date — calendar toggle (solar / 农历) + auto-formatted input. */}
+      {/* Birth date — the shared HexAstral standard: compact auto-formatted
+          input (same habit for solar / 农历) + a wheel affordance that summons
+          the system cascading picker (solar) / lunar wheels (农历). */}
       <Field label={t(locale, 'date.title')}>
-        <Segmented
-          options={[
-            { key: 'solar', label: t(locale, 'pairInput.calendar.solar') },
-            { key: 'lunar', label: t(locale, 'pairInput.calendar.lunar') },
-          ]}
-          value={calendar}
-          onChange={(k) => onCalendar(k as 'solar' | 'lunar')}
+        <BirthDateField
+          value={date}
+          onChange={onDate}
+          accent={kindredDark.accent}
+          labels={dateLabels}
+          locale={lang}
         />
-        <TextInput
-          value={dateInput}
-          onChangeText={onDate}
-          placeholder='1995-08-12'
-          placeholderTextColor={kindredDark.textMuted}
-          keyboardType='numeric'
-          maxLength={10}
-          style={{
-            fontSize: kindredType.body.fontSize,
-            color: kindredDark.text,
-            borderBottomWidth: 0.5,
-            borderBottomColor: kindredDark.border,
-            paddingVertical: kindredSpacing.sm,
-          }}
-        />
-        {calendar === 'lunar' ? (
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-            {t(locale, 'pairInput.calendar.lunarHint')}
-          </Text>
-        ) : null}
       </Field>
 
       {/* Gender — required for 八字 大运 direction. */}
@@ -716,7 +694,8 @@ function BirthForm({
             />
           </View>
 
-          {/* City — optional; geocode-backed (coords + IANA tz for 真太阳时). */}
+          {/* City — optional; geocode-backed (coords + IANA tz for 真太阳时).
+              `scrollRef` lets the picker pin itself above the keyboard on focus. */}
           <Field label={t(locale, 'place.title')}>
             <CityPicker
               value={cityValue}
@@ -740,6 +719,7 @@ function BirthForm({
               search={searchCity}
               topCities={DEFAULT_TOP_CITIES}
               placeholder={t(locale, 'pairInput.cityPlaceholder')}
+              scrollRef={scrollRef}
             />
           </Field>
         </Animated.View>

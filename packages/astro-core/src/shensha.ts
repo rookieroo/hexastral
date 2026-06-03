@@ -7,7 +7,7 @@
  * P2 核心神煞:
  * 1. 天乙贵人 — 逢贵人相助，遇难呈祥
  * 2. 文昌贵人 — 利学业、考试、文艺
- * 3. 桃花（咸池）— 异性Kindred、人Kindred
+ * 3. 桃花（咸池）— 异性缘、人缘
  * 4. 驿马 — 迁动、出行、变化
  *
  * 辅助神煞:
@@ -330,9 +330,9 @@ export function getWangShen(branch: EarthlyBranch): EarthlyBranch {
 
 /** 神煞描述映射 */
 const SHENSHA_DESCRIPTIONS: Record<ShenShaType, { polarity: ShenShaPolarity; desc: string }> = {
-  天乙贵人: { polarity: '吉', desc: '逢凶化吉，遇难呈祥。贵人相助，人Kindred极佳。' },
+  天乙贵人: { polarity: '吉', desc: '逢凶化吉，遇难呈祥。贵人相助，人缘极佳。' },
   文昌贵人: { polarity: '吉', desc: '聪慧好学，利考试、文艺、学术。' },
-  桃花: { polarity: '中', desc: '异性Kindred旺，人Kindred佳。正桃花利感情，偏桃花主风流。' },
+  桃花: { polarity: '中', desc: '异性缘旺，人缘佳。正桃花利感情，偏桃花主风流。' },
   驿马: { polarity: '中', desc: '主迁动、出行、变化。利外出发展，不宜守旧。' },
   华盖: { polarity: '中', desc: '聪颖孤高，利宗教、哲学、艺术。命带华盖多孤独。' },
   将星: { polarity: '吉', desc: '有领导才能，权威显赫，适合掌权任事。' },

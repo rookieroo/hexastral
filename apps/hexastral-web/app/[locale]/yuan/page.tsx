@@ -162,7 +162,7 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
               textDecoration: 'none',
             }}
           >
-            {get('cta_start', '开始一段Kindred')}
+            {get('cta_start', '开始一段缘')}
           </Link>
           <a
             href='https://apps.apple.com/app/yuan/id000000000'

@@ -234,7 +234,7 @@ describe('calculateHeHun — 完整计算', () => {
     const result = calculateHeHun(pA, pB)
     const names = result.dimensions.map((d) => d.name)
     expect(names).toContain('日主五行互补')
-    expect(names).toContain('年支Kindred分')
+    expect(names).toContain('年支缘分')
     expect(names).toContain('月支生活')
     expect(names).toContain('日支亲密')
   })

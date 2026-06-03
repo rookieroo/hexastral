@@ -10,10 +10,11 @@
  * own API (typically `/api/geocode/search` via hexastral-client).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
+  type ScrollView,
   type StyleProp,
   Text,
   TextInput,
@@ -58,6 +59,16 @@ export interface CityPickerProps {
   debounceMs?: number
   /** Optional style override for the outer container. */
   style?: StyleProp<ViewStyle>
+  /**
+   * Host ScrollView ref. When provided, focusing the search input scrolls the
+   * picker to the top of the visible area so the input + the results list sit
+   * ABOVE the keyboard (2026-06 form-standards feedback: "City 录入自动调整
+   * 位置到输入法上方"). Pair with `automaticallyAdjustKeyboardInsets` on the
+   * host ScrollView.
+   */
+  scrollRef?: RefObject<ScrollView | null>
+  /** Fired when the search input gains focus (runs alongside scrollRef handling). */
+  onInputFocus?: () => void
 }
 
 export function CityPicker({
@@ -71,6 +82,8 @@ export function CityPicker({
   limit = 7,
   debounceMs = 400,
   style,
+  scrollRef,
+  onInputFocus,
 }: CityPickerProps) {
   const { colors, spacing } = useTheme()
   const [query, setQuery] = useState<string>(value?.name ?? '')
@@ -78,6 +91,21 @@ export function CityPicker({
   const [isSearching, setIsSearching] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastApiQueryRef = useRef('')
+  const rootRef = useRef<View>(null)
+
+  // Keyboard positioning — when the input focuses, pin the picker to the top
+  // of the host scroll view so the input + result rows stay above the keyboard.
+  const handleInputFocus = useCallback(() => {
+    onInputFocus?.()
+    const scrollNode = scrollRef?.current
+    const rootNode = rootRef.current
+    if (!scrollNode || !rootNode) return
+    rootNode.measureLayout(
+      scrollNode.getInnerViewNode(),
+      (_x: number, y: number) => scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true }),
+      () => undefined
+    )
+  }, [onInputFocus, scrollRef])
 
   // Keep input in sync if `value` changes externally (e.g. draft hydration).
   // Listing `query` here would loop on every keystroke.
@@ -154,7 +182,7 @@ export function CityPicker({
   const showEmpty = query.trim().length > 1 && results.length === 0 && !isSearching
 
   return (
-    <View style={style}>
+    <View ref={rootRef} collapsable={false} style={style}>
       <View
         style={{
           flexDirection: 'row',
@@ -180,6 +208,7 @@ export function CityPicker({
           autoCorrect={false}
           autoCapitalize='words'
           returnKeyType='search'
+          onFocus={handleInputFocus}
         />
         {isSearching ? (
           <ActivityIndicator size='small' color={colors.secondary} style={{ marginLeft: 8 }} />

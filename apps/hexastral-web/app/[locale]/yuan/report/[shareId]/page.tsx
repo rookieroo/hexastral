@@ -205,7 +205,7 @@ export default async function KindredReportSharePage({ params }: PageProps) {
             }}
           >
             {isZh
-              ? '你也想看看自己和某个人的Kindred？'
+              ? '你也想看看自己和某个人的缘？'
               : 'Curious about your own resonance with someone?'}
           </p>
           <a

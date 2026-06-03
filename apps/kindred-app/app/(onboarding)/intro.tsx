@@ -3,7 +3,7 @@
  *
  * A stick-figure parable, played scene-by-scene at a deliberate pace (~14s):
  * lone arrival → fleeting talk → fleeting hug → the one that stays. Sets the
- * emotional thesis (Kindred分 — connection worth keeping) before any form
+ * emotional thesis (缘分 — connection worth keeping) before any form
  * input. The whole thing is tempo-controlled by one `SPEED` knob (see Timeline).
  * The final beat: the pair sits with their BACKS to the viewer, gazing up at a
  * moon that swells large — which then shrinks + moves into the form's logo.
@@ -58,7 +58,6 @@ import { resolveLocale } from '@/lib/i18n'
 type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
 interface IntroCopy {
-  tap: string
   continue: string
   /** One caption per act — arrival, passing, brief warmth, the one who stays. */
   acts: [string, string, string, string]
@@ -69,7 +68,6 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
   // most connections are fleeting → even warm ones can end → but one stays,
   // and that one is who this app is about (the CTA picks it up from there).
   en: {
-    tap: 'tap to skip',
     continue: 'tap to begin',
     acts: [
       'you arrive in this world alone',
@@ -79,7 +77,6 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
     ],
   },
   zh: {
-    tap: '轻触跳过',
     continue: '轻触开始',
     acts: [
       '人来到世上，是一个人',
@@ -89,7 +86,6 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
     ],
   },
   'zh-Hant': {
-    tap: '輕觸跳過',
     continue: '輕觸開始',
     acts: [
       '人來到世上，是一個人',
@@ -99,7 +95,6 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
     ],
   },
   ja: {
-    tap: 'タップでスキップ',
     continue: 'タップで始める',
     acts: [
       '人はひとりで生まれてくる',
@@ -120,7 +115,6 @@ function pickIntroCopy(locale: string): IntroCopy {
 /* ── Palette (dark ground, ivory ink) ───────────────────────────────────── */
 const BG = rubbing.void
 const DOT = zinc[300]
-const HINT_EARLY = zinc[500]
 const HINT_LATE = zinc[300]
 /** Caption colour steps up one notch per act — the parable's hierarchy, in light. */
 const ACT_COLORS = [zinc[500], zinc[400], zinc[300], ricePaper.ivory] as const
@@ -129,10 +123,12 @@ const ACT_COLORS = [zinc[500], zinc[400], zinc[300], ricePaper.ivory] as const
  * One tempo knob for the whole parable. `at()` scales every scheduled trigger
  * by SPEED and `d()` scales every inline animation duration by the same factor,
  * so the sequence keeps its choreography (no new overlaps) at any tempo. The T
- * entries below are the ORIGINAL ms; SPEED 0.6 plays them ~1.7× faster (~14s) —
- * slow enough that each scene lands one at a time, but not the original 23s
- * drag. Lower SPEED = snappier, higher = more deliberate. */
-const SPEED = 0.6
+ * entries below are the ORIGINAL ms; SPEED 0.8 plays them ~1.25× faster (~18s).
+ * 2026-06 device feedback: 0.6 (~14s) still rushed each scene — the pacing can
+ * afford to breathe because the persistent "tap to begin" hint below means
+ * nobody is ever forced to wait it out. Lower SPEED = snappier, higher = more
+ * deliberate. */
+const SPEED = 0.8
 /** Scale an animation duration/delay by SPEED (rounded). Triggers go through at(). */
 const d = (ms: number): number => Math.round(ms * SPEED)
 
@@ -294,8 +290,10 @@ export default function IntroScreen() {
   const f3Op = useSharedValue(0)
   const f4X = useSharedValue(offLeft)
   const f4Op = useSharedValue(0)
+  // One persistent bottom hint — "tap to begin" — visible (dimmed) from the
+  // first beat so the user always knows they can leave, brightening to full
+  // once the parable lands (2026-06 feedback: 底部应该一直显示 tap to begin).
   const ctaOp = useSharedValue(reduced ? 1 : 0)
-  const skipOp = useSharedValue(0)
   const starsBright = useSharedValue(reduced ? 1 : 0)
   // Halo behind an embracing / sitting pair — follows the pair between slots.
   const glowX = useSharedValue(slot1 - 12)
@@ -349,7 +347,8 @@ export default function IntroScreen() {
 
     // Background + planet arc drawing in
     arcDraw.value = withTiming(0, { duration: d(900), easing: Easing.out(Easing.quad) })
-    skipOp.value = withDelay(d(800), withTiming(0.45, { duration: d(600) }))
+    // The hint shows early (dimmed) and stays for the whole parable.
+    ctaOp.value = withDelay(d(800), withTiming(0.45, { duration: d(600) }))
 
     // Ambient light steps up one notch per act (full bloom at the very end) —
     // the four scenes' hierarchy, expressed in light. Driven via at() so later
@@ -430,13 +429,15 @@ export default function IntroScreen() {
       f3Op.value = withTiming(1, { duration: d(300) })
       f3X.value = withTiming(slotHug, { duration: d(1500), easing: Easing.out(Easing.cubic) })
     })
+    // The newcomer reaches out first; F1 answers a beat later — an embrace is a
+    // response, not a mirror (no two figures ever move on the same frame).
     at(T.hug1Start, () => {
       setF3Pose('hug')
-      setF1Pose('hug')
       // Halo swells around the embrace...
       glowX.value = slot1 + 20
       glowOp.value = withTiming(0.85, { duration: d(700), easing: Easing.out(Easing.quad) })
     })
+    at(T.hug1Start + 300, () => setF1Pose('hug'))
     at(T.hug1End, () => {
       setF3Pose('walk')
       setF3Heading('R')
@@ -458,19 +459,23 @@ export default function IntroScreen() {
       d(T.f4WalkIn),
       withTiming(slotSit, { duration: d(1500), easing: Easing.out(Easing.cubic) })
     )
+    // The final pair never moves in lockstep (2026-06 feedback: simultaneous
+    // pose changes read as mechanical). F4 initiates the hug, F1 answers ~a
+    // breath later; F1 settles down first, F4 lingers in the embrace and then
+    // sits beside — same beats, offset timing.
     at(T.hug2Start, () => {
       setF4Pose('hug')
-      setF1Pose('hug')
       // The halo returns over the pair that stays...
       glowX.value = slot1 - 12
       glowOp.value = withTiming(0.85, { duration: d(700), easing: Easing.out(Easing.quad) })
     })
+    at(T.hug2Start + 400, () => setF1Pose('hug'))
     at(T.sitDown, () => {
       // Backs to the viewer, gazing up at the moon; legs hidden in front.
-      setF4Pose('sitBack')
       setF1Pose('sitBack')
       glowOp.value = withTiming(0.5, { duration: d(1200) })
     })
+    at(T.sitDown + 650, () => setF4Pose('sitBack'))
     // Big camera push on the pair + the focal moon swells in above them — the
     // "拉近镜头放大人和月亮" final tableau that hands off to the form.
     at(T.hug2Start, () => {
@@ -485,9 +490,10 @@ export default function IntroScreen() {
       starsBright.value = withTiming(1, { duration: d(1500) })
     })
 
-    // === Outro: CTA fades in ===
-    ctaOp.value = withDelay(d(T.ctaIn), withTiming(1, { duration: d(800) }))
-    skipOp.value = withDelay(d(T.ctaIn), withTiming(0, { duration: d(400) }))
+    // === Outro: the persistent hint brightens to full ===
+    at(T.ctaIn, () => {
+      ctaOp.value = withTiming(1, { duration: d(800) })
+    })
     at(T.ctaIn + 200, () => setDone(true))
 
     return () => {
@@ -506,7 +512,6 @@ export default function IntroScreen() {
   const f3Style = useFigureStyle(f3X, f3Op, gait3.phaseSv, f3Pose, width, height)
   const f4Style = useFigureStyle(f4X, f4Op, gait4.phaseSv, f4Pose, width, height)
   const ctaStyle = useAnimatedStyle(() => ({ opacity: ctaOp.value }))
-  const skipStyle = useAnimatedStyle(() => ({ opacity: skipOp.value }))
   const actStyle = useAnimatedStyle(() => ({ opacity: actOp.value }))
   const stageStyle = useAnimatedStyle(() => ({ transform: [{ scale: stageScale.value }] }))
   const focalMoonStyle = useAnimatedStyle(() => ({
@@ -606,24 +611,20 @@ export default function IntroScreen() {
         <MoonPhaseLoader size={FOCAL_MOON_SIZE} phase={introMoonPhase} skin={SKIN_CINNABAR_INK} />
       </Animated.View>
 
-      {/* Skip hint (early) */}
-      <Animated.View style={[styles.hint, skipStyle]} pointerEvents='none'>
-        <Text style={[kindredType.caption, { color: HINT_EARLY }]}>{copy.tap}</Text>
-      </Animated.View>
-
-      {/* Continue CTA (after sequence) */}
+      {/* Persistent bottom hint — always "tap to begin", dimmed during the
+          parable, full brightness once it lands. Tapping works the whole time. */}
       <Animated.View style={[styles.hint, ctaStyle]} pointerEvents='none'>
         <Text style={[kindredType.caption, { color: HINT_LATE, letterSpacing: 3 }]}>
           {copy.continue}
         </Text>
       </Animated.View>
 
-      {/* Always-on tap-to-skip layer when not done */}
+      {/* Always-on tap-to-begin layer while the parable plays */}
       {!done && (
         <Pressable
           style={StyleSheet.absoluteFillObject}
           onPress={handleAdvance}
-          accessibilityLabel={copy.tap}
+          accessibilityLabel={copy.continue}
         />
       )}
     </Pressable>
