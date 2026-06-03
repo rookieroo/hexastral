@@ -74,7 +74,7 @@ export const translations: Translations = {
 
     'mode.subtitle': 'Synastry takes two — choose how to bring them in.',
     'mode.know.hint': "You'll fill their birth info in the next steps.",
-    'mode.invite.hint': 'We open Mail with a ready note; they take it from there.',
+    'mode.invite.hint': 'We write the note — share it however you like, and they take the thread from there.',
     'mode.skip.hint': 'See your own reading now. Add them anytime later.',
 
     'name.title': 'First,',
@@ -96,14 +96,12 @@ export const translations: Translations = {
     'mode.inviteHint': 'Your mail app drafts the note — you send it, they take the thread',
     'mode.fill': 'Or I will fill it in →',
 
-    'invite.title': 'Their email',
     'invite.subtitle': 'And what are you to each other?',
     'invite.hint':
-      'The invite is sent by you, from your own Messages or Mail — we never touch their contact info.',
-    'invite.send': 'Open in Mail →',
+      'You send the invite yourself, through any app you like — we never touch their contact info.',
     'invite.heading': 'Invite them',
     'invite.name.placeholder': 'What you call them (optional)',
-    'invite.channel.sms': 'Open in Messages →',
+    'invite.share': 'Share invite →',
 
     'fill.title': 'Tell me about them',
     'fill.name': 'Name',
@@ -129,6 +127,11 @@ export const translations: Translations = {
     'waiting.title': 'Invitation sent',
     'waiting.subtitle': 'waiting for them',
     'waiting.hint': "Once they fill in their birth, we'll align your charts.",
+    'waiting.sentAtPrefix': 'Sent · ',
+    'waiting.justNow': 'just now',
+    'waiting.minutesAgo': 'min ago',
+    'waiting.hoursAgo': 'hr ago',
+    'waiting.daysAgo': 'days ago',
     'waiting.resend': 'Resend invitation',
     'waiting.cancel': 'Cancel invitation',
     'waiting.acceptedTitle': 'Your thread is woven',
@@ -177,7 +180,6 @@ export const translations: Translations = {
     'settings.email.invalid': 'Enter a valid email address',
     'settings.email.requestError': 'Could not send code — try again',
     'settings.email.codeError': 'Invalid or expired code',
-    'waiting.linkEmail': 'Add your email in Settings so they can reach you →',
     'settings.signInWithApple': 'Sign in with Apple',
     'settings.signInWithApple.hint': 'Recover your threads on a new device',
     'settings.linked': 'Linked',
@@ -259,7 +261,7 @@ export const translations: Translations = {
 
     'mode.subtitle': '合盘需要两个人 — 选择 TA 的加入方式。',
     'mode.know.hint': '下一步录入 TA 的生辰资料。',
-    'mode.invite.hint': '我们写好邀请、由你的邮箱发出，TA 接力。',
+    'mode.invite.hint': '我们写好邀请，你用任意方式发给 TA，TA 接力。',
     'mode.skip.hint': '先看你自己的解读，之后随时可以加 TA。',
 
     'name.title': '先告诉我',
@@ -281,13 +283,11 @@ export const translations: Translations = {
     'mode.inviteHint': '我会写好邀请，由你的邮箱发出，ta 接力',
     'mode.fill': '或者我代填  →',
 
-    'invite.title': 'ta 的邮箱',
     'invite.subtitle': '你们是什么关系？',
-    'invite.hint': '邀请由你亲自发出（信息或邮件），我们不会接触 ta 的联系方式',
-    'invite.send': '用我的邮箱发出  →',
+    'invite.hint': '邀请由你亲自发出，用任意 app 发给 ta 都行，我们不会接触 ta 的联系方式',
     'invite.heading': '邀请 ta',
     'invite.name.placeholder': 'ta 的称呼（可选）',
-    'invite.channel.sms': '用信息发出  →',
+    'invite.share': '分享邀请  →',
 
     'fill.title': '告诉我关于 ta',
     'fill.name': '姓名',
@@ -312,7 +312,12 @@ export const translations: Translations = {
 
     'waiting.title': '邀请已发出',
     'waiting.subtitle': '等 ta 接力',
-    'waiting.hint': 'ta 收到邮件后填一份生辰，我们就会合上你们的星盘',
+    'waiting.hint': 'ta 填一份生辰，我们就会合上你们的星盘',
+    'waiting.sentAtPrefix': '已发送 · ',
+    'waiting.justNow': '刚刚',
+    'waiting.minutesAgo': '分钟前',
+    'waiting.hoursAgo': '小时前',
+    'waiting.daysAgo': '天前',
     'waiting.resend': '重发邀请',
     'waiting.cancel': '取消邀请',
     'waiting.acceptedTitle': '你们的Kindred已系',
@@ -360,7 +365,6 @@ export const translations: Translations = {
     'settings.email.invalid': '请输入有效邮箱',
     'settings.email.requestError': '发送失败，请重试',
     'settings.email.codeError': '验证码无效或已过期',
-    'waiting.linkEmail': '在设置中补充你的邮箱，方便对方联系你 →',
     'settings.signInWithApple': '用 Apple 登录',
     'settings.signInWithApple.hint': '在新设备上恢复你的Kindred',
     'settings.linked': '已绑定',
@@ -442,7 +446,7 @@ export const translations: Translations = {
 
     'mode.subtitle': '合盤需要兩個人 — 選擇 TA 的加入方式。',
     'mode.know.hint': '下一步錄入 TA 的生辰資料。',
-    'mode.invite.hint': '我們寫好邀請、由你的郵箱發出，TA 接力。',
+    'mode.invite.hint': '我們寫好邀請，你用任意方式發給 TA，TA 接力。',
     'mode.skip.hint': '先看你自己的解讀，之後隨時可以加 TA。',
 
     'name.title': '先告訴我',
@@ -464,13 +468,11 @@ export const translations: Translations = {
     'mode.inviteHint': '我會寫好邀請，由你的郵箱寄出，ta 接力',
     'mode.fill': '或者我代填  →',
 
-    'invite.title': 'ta 的信箱',
     'invite.subtitle': '你們是什麼關係？',
-    'invite.hint': '邀請由你親自發出（訊息或郵件），我們不會接觸 ta 的聯絡方式',
-    'invite.send': '用我的郵箱寄出  →',
+    'invite.hint': '邀請由你親自發出，用任意 app 發給 ta 都行，我們不會接觸 ta 的聯絡方式',
     'invite.heading': '邀請 ta',
     'invite.name.placeholder': 'ta 的稱呼（可選）',
-    'invite.channel.sms': '用訊息發出  →',
+    'invite.share': '分享邀請  →',
 
     'fill.title': '告訴我關於 ta',
     'fill.name': '姓名',
@@ -495,7 +497,12 @@ export const translations: Translations = {
 
     'waiting.title': '邀請已發出',
     'waiting.subtitle': '等 ta 接力',
-    'waiting.hint': 'ta 收到信件後填一份生辰，我們就會合上你們的星盤',
+    'waiting.hint': 'ta 填一份生辰，我們就會合上你們的星盤',
+    'waiting.sentAtPrefix': '已發送 · ',
+    'waiting.justNow': '剛剛',
+    'waiting.minutesAgo': '分鐘前',
+    'waiting.hoursAgo': '小時前',
+    'waiting.daysAgo': '天前',
     'waiting.resend': '重新發送邀請',
     'waiting.cancel': '取消邀請',
     'waiting.acceptedTitle': '你們的Kindred已繫',
@@ -543,7 +550,6 @@ export const translations: Translations = {
     'settings.email.invalid': '請輸入有效郵箱',
     'settings.email.requestError': '發送失敗，請重試',
     'settings.email.codeError': '驗證碼無效或已過期',
-    'waiting.linkEmail': '在設定中補充你的郵箱，方便對方聯繫你 →',
     'settings.signInWithApple': '使用 Apple 登入',
     'settings.signInWithApple.hint': '在新裝置上恢復你的Kindred',
     'settings.linked': '已綁定',
@@ -625,7 +631,7 @@ export const translations: Translations = {
 
     'mode.subtitle': '相性鑑定はふたり必要 — 相手をどう招くか選択。',
     'mode.know.hint': '次のステップで相手の生年月日を入力します。',
-    'mode.invite.hint': 'メールアプリで下書きが開きます。送信したらバトンタッチ。',
+    'mode.invite.hint': '招待文を用意します。好きな方法で送れば、あとは相手にバトンタッチ。',
     'mode.skip.hint': 'まずあなたの結果を表示。お相手は後でも追加可能。',
 
     'name.title': 'まず',
@@ -647,13 +653,11 @@ export const translations: Translations = {
     'mode.inviteHint': 'メールアプリで下書きが開きます。あなたから送信',
     'mode.fill': '私が代わりに入力  →',
 
-    'invite.title': '相手のメール',
     'invite.subtitle': '二人はどんな関係？',
-    'invite.hint': '招待はあなた自身がメッセージかメールで送ります。相手の連絡先には触れません',
-    'invite.send': 'メールアプリで開く  →',
+    'invite.hint': '招待はあなた自身が好きなアプリで送ります。相手の連絡先には触れません',
     'invite.heading': '相手を招待',
     'invite.name.placeholder': '相手の呼び名（任意）',
-    'invite.channel.sms': 'メッセージで送る  →',
+    'invite.share': '招待を共有  →',
 
     'fill.title': '相手について教えて',
     'fill.name': '名前',
@@ -679,6 +683,11 @@ export const translations: Translations = {
     'waiting.title': '招待を送信しました',
     'waiting.subtitle': '相手の返信を待っています',
     'waiting.hint': '相手が生まれた情報を入力すると、二人の星盤を合わせます',
+    'waiting.sentAtPrefix': '送信済み · ',
+    'waiting.justNow': 'たった今',
+    'waiting.minutesAgo': '分前',
+    'waiting.hoursAgo': '時間前',
+    'waiting.daysAgo': '日前',
     'waiting.resend': '招待を再送',
     'waiting.cancel': '招待を取り消す',
     'waiting.acceptedTitle': '縁が結ばれました',
@@ -727,7 +736,6 @@ export const translations: Translations = {
     'settings.email.invalid': '有効なメールアドレスを入力してください',
     'settings.email.requestError': '送信に失敗しました。もう一度お試しください',
     'settings.email.codeError': 'コードが無効、または期限切れです',
-    'waiting.linkEmail': '設定でメールを追加すると、相手から連絡を受け取れます →',
     'settings.signInWithApple': 'Appleでサインイン',
     'settings.signInWithApple.hint': '新しいデバイスで縁を復元',
     'settings.linked': 'リンク済み',
@@ -777,6 +785,27 @@ export type TranslationKey = keyof typeof translations.en
 
 export function t(locale: Locale, key: TranslationKey): string {
   return translations[locale][key] ?? translations.en[key] ?? key
+}
+
+/**
+ * Localized "Sent · N ago" label for the invite waiting screen. Channel-neutral
+ * (no email/phone) — just how long ago the invite link went out.
+ */
+export function relativeSentLabel(locale: Locale, iso: string): string {
+  let rel: string
+  try {
+    const minutes = Math.floor((Date.now() - Date.parse(iso)) / 60_000)
+    if (minutes < 1) rel = t(locale, 'waiting.justNow')
+    else if (minutes < 60) rel = `${minutes} ${t(locale, 'waiting.minutesAgo')}`
+    else {
+      const hours = Math.floor(minutes / 60)
+      if (hours < 24) rel = `${hours} ${t(locale, 'waiting.hoursAgo')}`
+      else rel = `${Math.floor(hours / 24)} ${t(locale, 'waiting.daysAgo')}`
+    }
+  } catch {
+    rel = t(locale, 'waiting.justNow')
+  }
+  return `${t(locale, 'waiting.sentAtPrefix')}${rel}`
 }
 
 /** HexAstral web privacy page path segment for each Kindred locale */

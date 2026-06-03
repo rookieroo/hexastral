@@ -4,7 +4,7 @@
  * Reached from the (reading) home "+" — the user already has their own solo
  * reading (ADR-0021 solo-first); this picks how to bring the other person in:
  *   - know   → /(onboarding)/other-meta  (name + relationship, then their birth)
- *   - invite → /(onboarding)/invite      (user-sent SMS / email invite)
+ *   - invite → /(onboarding)/invite      (channel-agnostic share invite)
  *
  * The pre-K2 "skip" option is gone: there is nothing to skip to — the solo
  * reading already exists without a partner.
@@ -13,12 +13,12 @@
  * by the time the partner flow finishes (bond creation requires it).
  */
 
-import { V15Moon } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
@@ -64,7 +64,7 @@ export default function ModeScreen() {
         }}
       >
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <V15Moon size={56} />
+          <KindredMoon size={56} />
         </View>
         <Text style={[kindredType.title, { color: kindredDark.text }]}>
           {t(locale, 'pair.other.title')}

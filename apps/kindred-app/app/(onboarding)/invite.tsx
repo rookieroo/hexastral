@@ -1,19 +1,18 @@
 /**
- * Threads · Invite them — SMS (primary) or email (ADR-0021 §3).
+ * Threads · Invite them — one channel-agnostic share (ADR-0021 §3).
  *
  * POST /api/bonds/invite creates the bond + token server-side WITHOUT touching
- * B's contact info (deliveryMode 'user'); the returned message body is handed
- * to A's own Messages or Mail composer:
- *   - SMS:   recipient-less `sms:` draft — A picks the recipient. No input needed.
- *   - Email: A enters the address locally (never sent to the server) → mailto.
+ * B's contact info (deliveryMode 'user'); the returned message body (with the
+ * invite link) is handed to the system share sheet, so A can send it through
+ * ANY app — Messages, WhatsApp, WeChat, Mail, AirDrop. No channel is special,
+ * so there is no email/phone field and no per-channel copy to get wrong.
  *
  * The bond lands as pending; the (reading) home Threads section and
  * (bonds)/index.tsx then show the waiting state.
  *
- * See lib/inviteSubmit.ts for delivery + paywall + relationship-label helpers.
+ * See lib/inviteSubmit.ts for share + paywall + relationship-label helpers.
  */
 
-import { V15Moon } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import {
   type RelationshipType,
@@ -24,59 +23,36 @@ import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
-import {
-  deliverInviteMailto,
-  deliverInviteSms,
-  isPaywall,
-  isValidEmail,
-  relationshipLabel,
-} from '@/lib/inviteSubmit'
+import { isPaywall, relationshipLabel, shareInvite } from '@/lib/inviteSubmit'
 import { clearDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
 import { suppressNextSplash } from '@/lib/splash-control'
 import { markOnboardingComplete } from '../index'
-
-type Channel = 'sms' | 'email'
 
 export default function InviteScreen() {
   const router = useRouter()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const draft = useDraft()
   const { create } = useBondInvitation()
-  const [name, setName] = useState<string>('')
-  const [email, setEmail] = useState<string>(draft.otherEmail)
+  const [name, setName] = useState<string>(draft.otherName)
   const [relType, setRelType] = useState<RelationshipType>('romantic')
-  const [sending, setSending] = useState<Channel | null>(null)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const canSendSms = sending === null
-  const canSendEmail = isValidEmail(email) && sending === null
-
-  const handleSend = async (channel: Channel) => {
-    if (channel === 'email' && !canSendEmail) return
-    if (channel === 'sms' && !canSendSms) return
-    setSending(channel)
+  const handleShare = async () => {
+    if (sending) return
+    setSending(true)
     setError(null)
     try {
       const label = relationshipLabel(relType, locale)
-      const recipient = email.trim()
-      // targetName: what A calls B. Falls back to the email prefix (email
-      // channel) or the relationship label (SMS channel, where there is no
-      // other identifier to derive a name from).
-      const targetName =
-        name.trim() || (channel === 'email' ? (recipient.split('@')[0] ?? label) : label)
+      // targetName: what A calls B. Falls back to the relationship label when no
+      // name is given — the channel is anonymous, so there's no other identifier.
+      const targetName = name.trim() || label
       const result = await create({ targetName, relationshipLabel: label })
-      if (channel === 'sms') {
-        await deliverInviteSms(result.mailto)
-      } else {
-        await deliverInviteMailto(recipient, result.mailto)
-      }
-      updateDraft({
-        otherMode: 'invite',
-        otherEmail: channel === 'email' ? recipient : '',
-        relationshipLabel: label,
-      })
+      await shareInvite(result.mailto)
+      updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
       await markOnboardingComplete()
       await clearDraft()
       suppressNextSplash()
@@ -84,7 +60,7 @@ export default function InviteScreen() {
       router.replace('/(reading)')
     } catch (err) {
       if (isPaywall(err)) {
-        setSending(null)
+        setSending(false)
         router.push({
           pathname: '/(commerce)/paywall',
           params: { reason: err instanceof Error ? err.message : '' },
@@ -92,7 +68,7 @@ export default function InviteScreen() {
         return
       }
       setError(err instanceof Error ? err.message : 'Failed')
-      setSending(null)
+      setSending(false)
     }
   }
 
@@ -106,7 +82,7 @@ export default function InviteScreen() {
         }}
       >
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <V15Moon size={56} />
+          <KindredMoon size={56} />
         </View>
         <Text style={[kindredType.title, { color: kindredDark.text }]}>
           {t(locale, 'invite.heading')}
@@ -140,54 +116,13 @@ export default function InviteScreen() {
           {t(locale, 'invite.hint')}
         </Text>
 
-        {/* Channel 1 — Messages (primary; no recipient input needed) */}
+        {/* One channel-agnostic share — the system share sheet picks the app. */}
         <View style={{ height: kindredSpacing.xl }} />
         <PrimaryButton
-          label={t(locale, 'invite.channel.sms')}
-          onPress={() => void handleSend('sms')}
-          disabled={!canSendSms}
-          loading={sending === 'sms'}
+          label={t(locale, 'invite.share')}
+          onPress={() => void handleShare()}
+          loading={sending}
         />
-
-        {/* Channel 2 — Mail (requires their address, kept on-device) */}
-        <View style={{ height: kindredSpacing.xl }} />
-        <View
-          style={{
-            borderTopWidth: 0.5,
-            borderTopColor: kindredDark.separator,
-            paddingTop: kindredSpacing.lg,
-          }}
-        >
-          <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-            {t(locale, 'invite.title')}
-          </Text>
-          <TextInput
-            value={email}
-            onChangeText={(v) => {
-              setEmail(v)
-              updateDraft({ otherEmail: v })
-            }}
-            autoCapitalize='none'
-            autoComplete='email'
-            keyboardType='email-address'
-            placeholder='email@example.com'
-            placeholderTextColor={kindredDark.textMuted}
-            style={{
-              fontSize: kindredType.body.fontSize,
-              color: kindredDark.text,
-              borderBottomWidth: 0.5,
-              borderBottomColor: kindredDark.border,
-              paddingVertical: kindredSpacing.md,
-            }}
-          />
-          <View style={{ height: kindredSpacing.md }} />
-          <PrimaryButton
-            label={t(locale, 'invite.send')}
-            onPress={() => void handleSend('email')}
-            disabled={!canSendEmail}
-            loading={sending === 'email'}
-          />
-        </View>
 
         <View style={{ flex: 1 }} />
         {error && (

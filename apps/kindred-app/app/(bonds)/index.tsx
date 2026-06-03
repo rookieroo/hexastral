@@ -11,7 +11,7 @@
  */
 
 import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
-import { AutoMoonPhaseLoader, V15Moon } from '@zhop/core-ui/motion'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
@@ -21,22 +21,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
-import { resolveLocale, t } from '@/lib/i18n'
+import { relativeSentLabel, resolveLocale, t } from '@/lib/i18n'
 import { consumeSplashDecision } from '@/lib/splash-control'
 
 export default function BondListScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { resyncCredentials, userEmail } = useAuth()
+  const { resyncCredentials } = useAuth()
   const { bonds, isLoading, error, refetch } = useBondList()
   const authRetryDone = useRef(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
+  const insets = useSafeAreaInsets()
 
-  // Swipe-left → Settings (ADR-0018 rule 2). The ··· header is the a11y fallback.
+  // Swipe-left → Settings (ADR-0018 rule 2). The floating ··· is the a11y fallback.
   const goToSettings = useCallback(() => router.push('/(settings)'), [router])
   const { activeOffsetX, failOffsetY, commitDx, maxDy } = SWIPE_TO_ME
   const swipeToMe = useMemo(
@@ -69,6 +71,23 @@ export default function BondListScreen() {
   )
   const activeBonds = useMemo(() => bonds.filter((b) => b.status === 'active'), [bonds])
 
+  // Localized copy for the pending-invite waiting screen. The component itself is
+  // shared + presentational (scenario-kindred); the app owns i18n + the relative
+  // "sent N ago" label, so nothing in it is hardcoded to one language.
+  const waitingCopy = useMemo(
+    () => ({
+      pendingTitle: t(locale, 'waiting.title'),
+      pendingSubtitle: t(locale, 'waiting.subtitle'),
+      pendingHint: t(locale, 'waiting.hint'),
+      resend: t(locale, 'waiting.resend'),
+      cancel: t(locale, 'waiting.cancel'),
+      acceptedTitle: t(locale, 'waiting.acceptedTitle'),
+      acceptedSubtitle: t(locale, 'waiting.acceptedSubtitle'),
+      viewReport: t(locale, 'waiting.viewReport'),
+    }),
+    [locale]
+  )
+
   const content = (() => {
     if (isLoading) {
       return (
@@ -85,7 +104,7 @@ export default function BondListScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
           <ErrorState
             variant='fullscreen'
-            illustration={<V15Moon size={72} />}
+            illustration={<KindredMoon size={72} />}
             title={t(locale, 'bondList.error.title')}
             message={error.message}
             customAction={
@@ -101,11 +120,9 @@ export default function BondListScreen() {
       return (
         <WaitingForOther
           state='pending'
-          invitedEmail={firstPending.invitation.targetEmail}
-          sentAt={firstPending.createdAt}
           otherName={firstPending.targetName}
-          linkEmailHint={!userEmail ? t(locale, 'waiting.linkEmail') : undefined}
-          onLinkEmail={!userEmail ? () => router.push('/(settings)') : undefined}
+          sentAtLabel={relativeSentLabel(locale, firstPending.createdAt)}
+          copy={waitingCopy}
           onResend={() => {
             /* TODO: resend RPC */
           }}
@@ -123,7 +140,7 @@ export default function BondListScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
           <View style={{ flex: 1, justifyContent: 'center' }}>
             <EmptyState
-              illustration={<V15Moon size={96} />}
+              illustration={<KindredMoon size={96} />}
               title={t(locale, 'bondList.empty.title')}
               customAction={
                 <PrimaryButton
@@ -150,30 +167,23 @@ export default function BondListScreen() {
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
-              {/* Header chrome — Settings (left) + Add (right), tucked into the corners */}
+              {/* Header chrome — just the new-thread "+". Settings moved to the
+                  bottom-floating ··· + the swipe-left gesture (ADR-0018). */}
               <View
                 style={{
                   flexDirection: 'row',
-                  justifyContent: 'space-between',
+                  justifyContent: 'flex-end',
                   alignItems: 'center',
                   marginBottom: kindredSpacing.md,
                 }}
               >
-                <Pressable
-                  onPress={() => router.push('/(settings)')}
-                  hitSlop={8}
-                  accessibilityRole='button'
-                  accessibilityLabel={t(locale, 'settings.title')}
-                >
-                  <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>···</Text>
-                </Pressable>
                 <Pressable onPress={() => router.push('/(onboarding)/self')} hitSlop={8}>
                   <Text style={[kindredType.caption, { color: kindredDark.accent }]}>+</Text>
                 </Pressable>
               </View>
-              {/* Brand anchor — same V15Moon that HomeSplash flies into */}
+              {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
               <View style={{ alignItems: 'center' }}>
-                <V15Moon size={56} />
+                <KindredMoon size={56} />
               </View>
             </View>
           }
@@ -193,6 +203,38 @@ export default function BondListScreen() {
     <GestureDetector gesture={swipeToMe}>
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         {content}
+        {/* Floating "more" — relocated from the top-left. The discoverable a11y
+            fallback for the swipe-left → Settings gesture (ADR-0018). */}
+        <View
+          pointerEvents='box-none'
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: insets.bottom + 16,
+            alignItems: 'center',
+          }}
+        >
+          <Pressable
+            onPress={goToSettings}
+            hitSlop={12}
+            accessibilityRole='button'
+            accessibilityLabel={t(locale, 'settings.title')}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: kindredDark.card,
+              borderWidth: 0.5,
+              borderColor: kindredDark.border,
+              opacity: 0.85,
+            }}
+          >
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>···</Text>
+          </Pressable>
+        </View>
         {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
       </View>
     </GestureDetector>

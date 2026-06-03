@@ -2,14 +2,15 @@
  * Invite-submit helpers — shared by the Threads /invite screen.
  *
  * The server creates the bond + token WITHOUT B's contact info
- * (deliveryMode 'user'); A's own Messages or Mail app sends the invitation,
- * sidestepping cross-jurisdiction commercial-messaging regulation entirely
- * (ADR-0021 §3: user-sends-only, no SMS provider, no email on file).
+ * (deliveryMode 'user'); A hands the invitation to the system share sheet and
+ * sends it through whatever channel they like — Messages, WhatsApp, WeChat,
+ * Mail, AirDrop — sidestepping cross-jurisdiction commercial-messaging
+ * regulation entirely (ADR-0021 §3: user-sends-only, no provider, no contact
+ * info on file). The invite link lives in the shared message body.
  */
 
 import type { RelationshipType, ResonanceInviteMailto } from '@zhop/scenario-kindred'
-import * as Linking from 'expo-linking'
-import { Platform, Share } from 'react-native'
+import { Share } from 'react-native'
 import type { Locale } from './i18n'
 
 /** Localized relationship label sent to the server as `relationshipLabel`. */
@@ -26,10 +27,6 @@ export function relationshipLabel(type: RelationshipType, locale: Locale): strin
   return RELATIONSHIP_LABEL_BY_TYPE[type][locale] ?? RELATIONSHIP_LABEL_BY_TYPE[type].en ?? 'Other'
 }
 
-export function isValidEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
-}
-
 /**
  * Backend paywall sentinels surfaced by useSoloBond / useBondInvitation when
  * the free bond limit is reached. Both invite + solo create paths use these.
@@ -40,42 +37,10 @@ export function isPaywall(err: unknown): boolean {
 }
 
 /**
- * Hand the server-composed invitation to A's own mail composer. If no mail
- * app is available (typically dev simulators) fall back to the system share
- * sheet so A can send the bond link through any channel. The bond is already
- * pending server-side; the link is all B needs.
+ * Hand the server-composed invitation to the system share sheet so A can send
+ * the bond link through any channel (Messages, WhatsApp, WeChat, Mail, AirDrop…).
+ * The bond is already pending server-side; the link in the body is all B needs.
  */
-export async function deliverInviteMailto(
-  recipient: string,
-  mailto: ResonanceInviteMailto
-): Promise<void> {
-  const subject = encodeURIComponent(mailto.subject)
-  const body = encodeURIComponent(mailto.body)
-  const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${subject}&body=${body}`
-  const canOpenMail = await Linking.canOpenURL(mailtoUrl).catch(() => false)
-  if (canOpenMail) {
-    await Linking.openURL(mailtoUrl)
-  } else {
-    await Share.share({ message: mailto.body }).catch(() => undefined)
-  }
-}
-
-/**
- * Hand the invitation to A's own Messages composer (recipient-less `sms:`
- * draft — A picks who it goes to). Same compliance posture as mailto: the
- * message leaves from A's own number, we never see B's contact info
- * (ADR-0021 §3 — this is why there is no SMS-provider integration).
- * Falls back to the system share sheet when SMS isn't available (iPad / dev
- * simulator).
- */
-export async function deliverInviteSms(mailto: ResonanceInviteMailto): Promise<void> {
-  const body = encodeURIComponent(mailto.body)
-  // Recipient-less compose: iOS expects `sms:&body=`, Android `sms:?body=`.
-  const smsUrl = Platform.OS === 'android' ? `sms:?body=${body}` : `sms:&body=${body}`
-  const canOpenSms = await Linking.canOpenURL(smsUrl).catch(() => false)
-  if (canOpenSms) {
-    await Linking.openURL(smsUrl)
-  } else {
-    await Share.share({ message: mailto.body }).catch(() => undefined)
-  }
+export async function shareInvite(mailto: ResonanceInviteMailto): Promise<void> {
+  await Share.share({ message: mailto.body }).catch(() => undefined)
 }

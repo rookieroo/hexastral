@@ -2,12 +2,18 @@
  * WaitingForOther — A user's screen after sending an invitation, before B accepts.
  *
  * Shown when:
- *   - A completed Screen 7a (email invite) and the invitation is `pending`
+ *   - A sent a channel-agnostic invite link and the invitation is `pending`
  *   - User opens the app and there's at least one pending invitation
  *
  * Two states:
- *   `pending`  : "still waiting" with the invited email, send-time, resend CTA
- *   `accepted` : "ta joined!" with celebratory subtle animation, "see report" CTA
+ *   `pending`  : "still waiting" — who was invited + when, resend (re-share) CTA
+ *   `accepted` : "ta joined!" with a celebratory subtle animation, "see report" CTA
+ *
+ * Channel-neutral by design (ADR-0021 §3, user-sends-only): the invite goes out
+ * through the system share sheet, so there is no email / phone on file to show —
+ * the middle shows who A invited and how long ago. Fully copy-driven: the host
+ * app passes localized `copy` + a preformatted `sentAtLabel`, so nothing here is
+ * hardcoded to one language.
  *
  * The transition from pending → accepted is handled by the parent (via polling or
  * push notification refetch); this component is purely presentational.
@@ -33,26 +39,20 @@ import { KindredSeal } from './KindredSeal'
 
 export interface WaitingForOtherProps {
   state: 'pending' | 'accepted'
-  /** Email B was invited at (rendered with privacy masking) */
-  invitedEmail: string
-  /** ISO timestamp of invitation send */
-  sentAt: string
-  /** Optional B's name once accepted */
+  /** Who A invited — a name, or the relationship label for channel-less invites. */
   otherName?: string
+  /** Preformatted, localized "Sent · N ago" label (the host app owns formatting). */
+  sentAtLabel?: string
   onResend: () => void
   onCancel: () => void
   onViewReport: () => void
-  /** Soft nudge: add inviter email in Settings (optional, non-blocking) */
-  linkEmailHint?: string
-  onLinkEmail?: () => void
   copy?: Partial<typeof DEFAULT_COPY>
 }
 
 const DEFAULT_COPY = {
   pendingTitle: '邀请已发出',
   pendingSubtitle: '等 ta 接力',
-  pendingHint: 'ta 收到邮件后填一份生辰，我们就会合上你们的星盘',
-  sentAtPrefix: '已发送 · ',
+  pendingHint: 'ta 填一份生辰，我们就会合上你们的星盘',
   resend: '重发邀请',
   cancel: '取消邀请',
   acceptedTitle: '你们的Kindred已系',
@@ -60,43 +60,18 @@ const DEFAULT_COPY = {
   viewReport: '阅读你们的故事  →',
 } as const
 
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@')
-  if (!local || !domain) return email
-  if (local.length <= 2) return `${local[0]}***@${domain}`
-  return `${local.slice(0, 2)}${'•'.repeat(local.length - 2)}@${domain}`
-}
-
-function formatRelative(iso: string): string {
-  try {
-    const ms = Date.now() - Date.parse(iso)
-    const minutes = Math.floor(ms / 60_000)
-    if (minutes < 1) return '刚刚'
-    if (minutes < 60) return `${minutes} 分钟前`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours} 小时前`
-    const days = Math.floor(hours / 24)
-    return `${days} 天前`
-  } catch {
-    return ''
-  }
-}
-
 export function WaitingForOther({
   state,
-  invitedEmail,
-  sentAt,
   otherName,
+  sentAtLabel,
   onResend,
   onCancel,
   onViewReport,
-  linkEmailHint,
-  onLinkEmail,
   copy,
 }: WaitingForOtherProps) {
   const merged = { ...DEFAULT_COPY, ...(copy ?? {}) }
 
-  // Pending state: subtle pulse on a dotted-line "tether" between seal and email
+  // Pending state: subtle pulse on a "tether" between the seal and the invitee.
   const tetherOpacity = useSharedValue(0.4)
 
   useEffect(() => {
@@ -144,7 +119,7 @@ export function WaitingForOther({
           </View>
         </View>
 
-        {/* Middle: invited email + tether */}
+        {/* Middle: tether + who was invited / when (channel-neutral — no contact info) */}
         {state === 'pending' && (
           <View style={{ alignItems: 'center', gap: kindredSpacing.lg }}>
             <Animated.View
@@ -158,25 +133,29 @@ export function WaitingForOther({
                 tetherStyle,
               ]}
             />
-            <View
-              style={{
-                paddingHorizontal: kindredSpacing.lg,
-                paddingVertical: kindredSpacing.md,
-                borderWidth: 0.5,
-                borderColor: kindredLight.border,
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              <Text style={[kindredType.caption, { color: kindredLight.textMuted }]}>邀请到</Text>
-              <Text style={[kindredType.heading, { color: kindredLight.text }]}>
-                {maskEmail(invitedEmail)}
-              </Text>
-              <Text style={[kindredType.caption, { color: kindredLight.textMuted }]}>
-                {merged.sentAtPrefix}
-                {formatRelative(sentAt)}
-              </Text>
-            </View>
+            {otherName || sentAtLabel ? (
+              <View
+                style={{
+                  paddingHorizontal: kindredSpacing.lg,
+                  paddingVertical: kindredSpacing.md,
+                  borderWidth: 0.5,
+                  borderColor: kindredLight.border,
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                {otherName ? (
+                  <Text style={[kindredType.heading, { color: kindredLight.text }]}>
+                    {otherName}
+                  </Text>
+                ) : null}
+                {sentAtLabel ? (
+                  <Text style={[kindredType.caption, { color: kindredLight.textMuted }]}>
+                    {sentAtLabel}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
             <Text
               style={[
                 kindredType.body,
@@ -189,19 +168,6 @@ export function WaitingForOther({
             >
               {merged.pendingHint}
             </Text>
-            {linkEmailHint && onLinkEmail ? (
-              <Pressable
-                onPress={onLinkEmail}
-                hitSlop={12}
-                style={{ marginTop: kindredSpacing.sm }}
-              >
-                <Text
-                  style={[kindredType.caption, { color: kindredLight.accent, textAlign: 'center' }]}
-                >
-                  {linkEmailHint}
-                </Text>
-              </Pressable>
-            ) : null}
           </View>
         )}
 

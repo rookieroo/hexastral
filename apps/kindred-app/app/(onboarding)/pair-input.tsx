@@ -31,7 +31,7 @@
 
 import { lunarToSolar } from '@zhop/astro-core'
 import { CityPicker, DEFAULT_TOP_CITIES, ShichenPicker } from '@zhop/core-ui'
-import { MoonPhaseLoader, SKIN_CINNABAR, usePressScale } from '@zhop/core-ui/motion'
+import { MoonPhaseLoader, SKIN_CINNABAR_INK, usePressScale } from '@zhop/core-ui/motion'
 import {
   kindredDark,
   kindredRadius,
@@ -212,7 +212,7 @@ export default function PairInputScreen() {
   /** "I know their details" → partner form. */
   const goFillOther = () => setStep('other')
 
-  /** "Invite them to fill it in" → invite flow (SMS/email). */
+  /** "Invite them to fill it in" → invite flow (channel-agnostic share). */
   const goInvite = () => {
     updateDraft({ otherMode: 'invite' })
     router.push('/(onboarding)/invite')
@@ -253,7 +253,7 @@ export default function PairInputScreen() {
         <Animated.View
           style={[{ alignItems: 'center', marginBottom: kindredSpacing.sm }, moonStyle]}
         >
-          <MoonPhaseLoader size={64} phase={moonPhase} skin={SKIN_CINNABAR} clean />
+          <MoonPhaseLoader size={64} phase={moonPhase} skin={SKIN_CINNABAR_INK} />
         </Animated.View>
 
         {step === 'self' && (

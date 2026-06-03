@@ -12,7 +12,7 @@ import WidgetKit
 
 // MARK: - Shared data (matches the JSON written by lib/widget-bridge.ts)
 
-private let APP_GROUP = "group.com.hexastral.cycle"
+private let APP_GROUP = "group.com.hexastral.auspice"
 private let DAYS_KEY = "almanac_days"
 
 struct SharedDay: Decodable {

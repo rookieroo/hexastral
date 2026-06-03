@@ -77,7 +77,10 @@ export function KindredSeal({ size = 96, mode = 'static', stampDelayMs = 0 }: Ki
     opacity: opacity.value,
   }))
 
-  const glyphSize = Math.floor(size * 0.5)
+  // A single seal glyph — 緣, the fate-bond this app is built on — sized to sit
+  // inside the disc with margin. (Was the literal word "Kindred" at 0.5·size,
+  // which overflowed the circle and clipped to "Kind".)
+  const glyphSize = Math.round(size * 0.52)
 
   return (
     <Animated.View
@@ -94,14 +97,17 @@ export function KindredSeal({ size = 96, mode = 'static', stampDelayMs = 0 }: Ki
       ]}
     >
       <Text
+        numberOfLines={1}
         style={{
           fontSize: glyphSize,
-          lineHeight: glyphSize * 1.15,
+          lineHeight: glyphSize * 1.1,
           color: ink.gold,
           fontWeight: '400',
+          textAlign: 'center',
+          includeFontPadding: false,
         }}
       >
-        Kindred
+        緣
       </Text>
     </Animated.View>
   )

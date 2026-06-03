@@ -6,13 +6,13 @@
  * label) and the relationship type. CTA → /(onboarding)/other-birth.
  */
 
-import { V15Moon } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { resolveLocale, t } from '@/lib/i18n'
 import { updateDraft, useDraft } from '@/lib/onboardingDraft'
@@ -35,7 +35,7 @@ export default function OtherMetaScreen() {
         }}
       >
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <V15Moon size={56} />
+          <KindredMoon size={56} />
         </View>
         <Text style={[kindredType.title, { color: kindredDark.text }]}>
           {t(locale, 'pair.other.about')}

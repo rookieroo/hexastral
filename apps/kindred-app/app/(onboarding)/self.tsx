@@ -26,12 +26,12 @@ import {
   birthInfoCopyForLocale,
   type CityRecord,
 } from '@zhop/core-ui'
-import { V15Moon } from '@zhop/core-ui/motion'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KindredMoon } from '@/components/KindredMoon'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { resolveLocale } from '@/lib/i18n'
@@ -124,7 +124,7 @@ export default function SelfBirthScreen() {
           onChange={handleChange}
           onSubmit={handleSubmit}
           accent={kindredDark.accent}
-          crown={<V15Moon size={64} />}
+          crown={<KindredMoon size={64} />}
           copy={copy}
           searchCity={handleSearchCity}
           locale={locale}

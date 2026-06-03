@@ -21,7 +21,7 @@
  */
 
 import { EmptyState } from '@zhop/core-ui'
-import { AutoMoonPhaseLoader, V15Moon } from '@zhop/core-ui/motion'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
@@ -31,8 +31,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
@@ -94,6 +95,7 @@ export default function ReadingHomeScreen() {
   const birth = useSelfBirth()
   const [readingOpen, setReadingOpen] = useState(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
+  const insets = useSafeAreaInsets()
 
   // Threads (K2) — bond list summary for the second section of the home.
   // Refetched on focus so a bond created/accepted elsewhere shows up on return.
@@ -175,7 +177,7 @@ export default function ReadingHomeScreen() {
           }}
         >
           <EmptyState
-            illustration={<V15Moon size={96} />}
+            illustration={<KindredMoon size={96} />}
             title={copy.noBirthTitle}
             customAction={
               <PrimaryButton
@@ -221,31 +223,25 @@ export default function ReadingHomeScreen() {
           </View>
         )}
 
-        {/* Header chrome — Settings (left) + new thread (right), tucked into the corners */}
+        {/* Header chrome — just the new-thread "+". Settings moved to the
+            bottom-floating ··· (relocated from the top-left) + the swipe-left
+            gesture (ADR-0018). */}
         <View
           style={{
             flexDirection: 'row',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             marginBottom: kindredSpacing.md,
           }}
         >
-          <Pressable
-            onPress={goToSettings}
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t(locale, 'settings.title')}
-          >
-            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>···</Text>
-          </Pressable>
           <Pressable onPress={() => router.push('/(onboarding)/mode')} hitSlop={8}>
             <Text style={[kindredType.caption, { color: kindredDark.accent }]}>+</Text>
           </Pressable>
         </View>
 
-        {/* Brand anchor — same V15Moon that HomeSplash flies into */}
+        {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <V15Moon size={56} />
+          <KindredMoon size={56} />
         </View>
 
         {/* Identity — single day-master glyph, the ADR-0018 "one CJK glyph" hero */}
@@ -311,6 +307,38 @@ export default function ReadingHomeScreen() {
     <GestureDetector gesture={swipeToMe}>
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>{content}</SafeAreaView>
+        {/* Floating "more" — relocated from the top-left. The discoverable a11y
+            fallback for the swipe-left → Settings gesture (ADR-0018). */}
+        <View
+          pointerEvents='box-none'
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: insets.bottom + 16,
+            alignItems: 'center',
+          }}
+        >
+          <Pressable
+            onPress={goToSettings}
+            hitSlop={12}
+            accessibilityRole='button'
+            accessibilityLabel={t(locale, 'settings.title')}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: kindredDark.card,
+              borderWidth: 0.5,
+              borderColor: kindredDark.border,
+              opacity: 0.85,
+            }}
+          >
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>···</Text>
+          </Pressable>
+        </View>
         {/* Full reading — ink-bloom overlay (kept mounted for open/close animation) */}
         <ReadingOverlay
           visible={readingOpen}

@@ -170,6 +170,26 @@ export const SKIN_CINNABAR: MoonFaceSkin = {
   surface: { kind: 'none' },
 }
 
+/**
+ * Cinnabar with a matte paper grain — Kindred's brand phase-moon. Same face as
+ * SKIN_CINNABAR but with the water-ink paper surface (instead of the glossy
+ * `clean`/none look), so the swelling focal moon reads as the same matte ink
+ * material as the V15 logo moon's `inkM` edge rather than smooth plastic.
+ * NOT in ALL_MOON_SKINS — it's an app-brand variant, not a user-picker option.
+ */
+export const SKIN_CINNABAR_INK: MoonFaceSkin = {
+  id: 'cinnabar-ink',
+  name: '朱砂·墨',
+  faceCenter: { cx: 0.36, cy: 0.3 },
+  faceRadius: 0.68,
+  faceStops: [
+    { offset: 0, color: '#f3d8c0' },
+    { offset: 0.55, color: '#c87454' },
+    { offset: 1, color: '#7a2418' },
+  ],
+  surface: { kind: 'paper', opacity: 0.18 },
+}
+
 /** All built-in skins in display order (for pickers). */
 export const ALL_MOON_SKINS: MoonFaceSkin[] = [
   SKIN_RICE_PAPER,
@@ -254,6 +274,29 @@ export const LOGO_NIGHT_V15: LogoMoonSkin = {
       { offset: 0, color: '#1A1A1F' },
       { offset: 0.42, color: '#121214' },
       { offset: 0.78, color: '#0B0B0C' },
+      { offset: 1, color: '#e7e0d0' },
+    ],
+  },
+}
+
+/**
+ * Cinnabar logo moon — Kindred's brand mark. Same rim-lit v15G shape, but the
+ * sphere body is warm 朱砂 (tied to the seal's #9b2226) deepening to burgundy,
+ * with the cream rim-light intact. Reads as a red moon on void-black, so the
+ * static brand anchor (home / splash / empty) matches the cinnabar phase-moon
+ * of the intro + loaders instead of floating as a grey 水墨月 disc.
+ */
+export const LOGO_CINNABAR_V15: LogoMoonSkin = {
+  id: 'cinnabar',
+  name: '朱砂月',
+  gradient: {
+    cx: 0.64,
+    cy: 0.7,
+    r: 0.62,
+    stops: [
+      { offset: 0, color: '#c8543a' },
+      { offset: 0.42, color: '#9b2226' },
+      { offset: 0.78, color: '#5a1810' },
       { offset: 1, color: '#e7e0d0' },
     ],
   },

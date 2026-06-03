@@ -12,7 +12,6 @@
  * right after onboarding (the exits call `suppressNextSplash()`).
  */
 
-import { V15Moon } from '@zhop/core-ui/motion'
 import { ricePaper } from '@zhop/hexastral-tokens'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useEffect } from 'react'
@@ -26,6 +25,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated'
+import { KindredMoon } from '@/components/KindredMoon'
 
 const SPLASH_MOON = 132
 const HOME_MOON = 56
@@ -89,7 +89,7 @@ export function HomeSplash({ onDone }: { onDone: () => void }) {
     <>
       <Animated.View style={[StyleSheet.absoluteFill, styles.bg, bgStyle]} pointerEvents='none' />
       <Animated.View style={[styles.center, moonStyle]} pointerEvents='none'>
-        <V15Moon size={SPLASH_MOON} />
+        <KindredMoon size={SPLASH_MOON} />
         <Text style={styles.word}>Kindred</Text>
       </Animated.View>
     </>

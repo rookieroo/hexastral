@@ -5,7 +5,7 @@ The RN-side scaffold is in the repo and tsc-green / non-breaking:
 - `targets/widget/expo-target.config.js` — target config for `@bacons/apple-targets`.
 - `lib/widget-bridge.ts` — writes the day into the App Group (no-ops until linked).
 - `app/(tabs)/index.tsx` — calls `syncTodayWidget(...)` whenever the day loads.
-- `app.json` → `ios.entitlements` declares the `group.com.hexastral.cycle` App Group.
+- `app.json` → `ios.entitlements` declares the `group.com.hexastral.auspice` App Group.
 
 Until the steps below run, `lib/widget-bridge.ts` is a no-op (it talks to
 `NativeModules.RNSharedGroupPreferences`, which is absent). The app builds + runs
@@ -31,9 +31,12 @@ dev machine; CI does not build native.**
    since the plugin module isn't resolvable yet.)
 
 3. **Apple Developer portal** — enable the **App Groups** capability and create
-   `group.com.hexastral.cycle` for BOTH bundle ids:
-   - `com.hexastral.cycle` (main app)
-   - `com.hexastral.cycle.AuspiceWidget` (the widget — created by the plugin)
+   `group.com.hexastral.auspice` for BOTH bundle ids. The portal App Group id must
+   match the entitlements EXACTLY (app.json `ios.entitlements` +
+   `targets/widget/expo-target.config.js` both declare `group.com.hexastral.auspice`)
+   — a mismatch makes the shared container inaccessible and breaks code signing:
+   - `com.hexastral.auspice` (main app)
+   - `com.hexastral.auspice.AuspiceWidget` (the widget — created by the plugin)
 
 4. **Prebuild** (regenerates `ios/` with the widget target + entitlements):
    ```bash

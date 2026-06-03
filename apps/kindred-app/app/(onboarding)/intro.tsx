@@ -28,7 +28,7 @@
  * plates (see assets/intro/README.md).
  */
 
-import { MoonPhaseLoader, SKIN_CINNABAR } from '@zhop/core-ui/motion'
+import { MoonPhaseLoader, SKIN_CINNABAR_INK } from '@zhop/core-ui/motion'
 import { ricePaper, rubbing, zinc } from '@zhop/hexastral-tokens'
 import { kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
@@ -603,7 +603,7 @@ export default function IntroScreen() {
         ]}
         pointerEvents='none'
       >
-        <MoonPhaseLoader size={FOCAL_MOON_SIZE} phase={introMoonPhase} skin={SKIN_CINNABAR} clean />
+        <MoonPhaseLoader size={FOCAL_MOON_SIZE} phase={introMoonPhase} skin={SKIN_CINNABAR_INK} />
       </Animated.View>
 
       {/* Skip hint (early) */}
