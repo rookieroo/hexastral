@@ -182,15 +182,22 @@ describe('buildTimelinePayload', () => {
     expect(payload.currentLiunianIndex).toBe(5) // middle of an 11-row window
   })
 
-  test('thisYearLiuyue has 12 entries (one per lunar month)', async () => {
+  test('liuyue is a rolling 12-month window starting at the current month, with fit', async () => {
     const now = new Date('2026-05-31T00:00:00Z')
     const payload = buildTimelinePayload(BODY, now)
-    expect(payload.thisYearLiuyue).toHaveLength(12)
-    // Each entry carries a stem+branch+element triple.
-    for (const row of payload.thisYearLiuyue) {
+    expect(payload.liuyue).toHaveLength(12)
+    // First entry is the current month; the window rolls forward (across the year).
+    expect(payload.liuyue[0]!.isCurrent).toBe(true)
+    expect(payload.liuyue[0]!.month).toBe(5)
+    expect(payload.liuyue[0]!.year).toBe(2026)
+    // Rolls past December → next year (May 2026 + 8 = Jan 2027).
+    expect(payload.liuyue[8]!.month).toBe(1)
+    expect(payload.liuyue[8]!.year).toBe(2027)
+    for (const row of payload.liuyue) {
       expect(row.pillar.stem).toBeDefined()
       expect(row.pillar.branch).toBeDefined()
       expect(row.pillar.element).toBeDefined()
+      expect(['吉', '平', '凶']).toContain(row.fit)
     }
   })
 })

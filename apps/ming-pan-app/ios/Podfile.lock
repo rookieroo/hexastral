@@ -2399,7 +2399,7 @@ PODS:
 DEPENDENCIES:
   - "EXApplication (from `../../../node_modules/.bun/expo-application@7.0.8+da394b4df4511c20/node_modules/expo-application/ios`)"
   - "EXConstants (from `../../../node_modules/.bun/expo-constants@18.0.13+da394b4df4511c20/node_modules/expo-constants/ios`)"
-  - "EXImageLoader (from `../../../node_modules/.bun/expo-image-loader@6.0.0+72b870f0954e9cef/node_modules/expo-image-loader/ios`)"
+  - "EXImageLoader (from `../../../node_modules/.bun/expo-image-loader@6.0.0+da394b4df4511c20/node_modules/expo-image-loader/ios`)"
   - "EXJSONUtils (from `../../../node_modules/.bun/expo-json-utils@0.15.0/node_modules/expo-json-utils/ios`)"
   - "EXManifests (from `../../../node_modules/.bun/expo-manifests@1.0.10+da394b4df4511c20/node_modules/expo-manifests/ios`)"
   - "EXNotifications (from `../../../node_modules/.bun/expo-notifications@0.32.16+da394b4df4511c20/node_modules/expo-notifications/ios`)"
@@ -2416,7 +2416,7 @@ DEPENDENCIES:
   - "ExpoFont (from `../../../node_modules/.bun/expo-font@14.0.11+e4fd16ac8ffee978/node_modules/expo-font/ios`)"
   - "ExpoHaptics (from `../../../node_modules/.bun/expo-haptics@15.0.8+da394b4df4511c20/node_modules/expo-haptics/ios`)"
   - "ExpoHead (from `../../../node_modules/.bun/expo-router@6.0.23+e1553b39c881b8c4/node_modules/expo-router/ios`)"
-  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@17.0.10+72b870f0954e9cef/node_modules/expo-image-picker/ios`)"
+  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@17.0.10+da394b4df4511c20/node_modules/expo-image-picker/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.bun/expo-keep-awake@15.0.8+1b9f08083c0c1237/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinking (from `../../../node_modules/.bun/expo-linking@8.0.12+da394b4df4511c20/node_modules/expo-linking/ios`)"
   - "ExpoLocalization (from `../../../node_modules/.bun/expo-localization@17.0.8+da394b4df4511c20/node_modules/expo-localization/ios`)"
@@ -2524,7 +2524,7 @@ EXTERNAL SOURCES:
   EXConstants:
     :path: "../../../node_modules/.bun/expo-constants@18.0.13+da394b4df4511c20/node_modules/expo-constants/ios"
   EXImageLoader:
-    :path: "../../../node_modules/.bun/expo-image-loader@6.0.0+72b870f0954e9cef/node_modules/expo-image-loader/ios"
+    :path: "../../../node_modules/.bun/expo-image-loader@6.0.0+da394b4df4511c20/node_modules/expo-image-loader/ios"
   EXJSONUtils:
     :path: "../../../node_modules/.bun/expo-json-utils@0.15.0/node_modules/expo-json-utils/ios"
   EXManifests:
@@ -2558,7 +2558,7 @@ EXTERNAL SOURCES:
   ExpoHead:
     :path: "../../../node_modules/.bun/expo-router@6.0.23+e1553b39c881b8c4/node_modules/expo-router/ios"
   ExpoImagePicker:
-    :path: "../../../node_modules/.bun/expo-image-picker@17.0.10+72b870f0954e9cef/node_modules/expo-image-picker/ios"
+    :path: "../../../node_modules/.bun/expo-image-picker@17.0.10+da394b4df4511c20/node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.bun/expo-keep-awake@15.0.8+1b9f08083c0c1237/node_modules/expo-keep-awake/ios"
   ExpoLinking:

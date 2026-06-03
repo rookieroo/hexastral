@@ -1,19 +1,26 @@
 /**
  * StickFigure — the Kindred mascot, drawn as ink brush strokes.
  *
- * Used by the onboarding intro animation. Each limb is a
- * filled, tapered `<Path>` (a `brushStroke` lozenge — thin at the ends, a
- * slight belly in the middle) rather than a uniform SVG stroke, so it reads
- * as a real ink stroke with 笔锋. Small "nib" dots at the heavy joints fake
- * the pooled ink where a brush presses down.
+ * Used by the onboarding intro animation. Each limb is a filled, tapered
+ * `<Path>` (a `brushStroke` lozenge — thin at the ends, a slight belly in the
+ * middle) rather than a uniform SVG stroke, so it reads as a real ink stroke
+ * with 笔锋. Small "nib" dots at the heavy joints fake the pooled ink where a
+ * brush presses down.
  *
- * Poses are discrete (`stand`/`walk`/`lookL`/`lookR`/`talk`/`hug`/`sit`). For
- * `walk`, an optional `phase` (0..1, driven by `useGroundedGait`) swings the
- * legs and arms and lifts the forward foot — a continuous gait tied to the
- * distance actually travelled, so feet plant instead of sliding. Everything
- * else is static geometry. `sit` hugs the knees (抱膝), side view.
+ * Proportions are deliberately chibi / Q — a big round head on a short, chunky
+ * body — so the figures read as cute rather than clinical.
  *
- * Coordinates live in a 40-wide, 80-tall box centered at x=20; feet at y≈76.
+ * Poses are discrete (`stand`/`walk`/`lookL`/`lookR`/`talk`/`hug`/`sit`/
+ * `sitBack`). For `walk`, an optional `phase` (0..1, driven by `useGroundedGait`)
+ * swings the legs and arms and lifts the forward foot. `sit` hugs the knees
+ * (抱膝, side view); `sitBack` is the back view — facing away (toward the moon),
+ * a rounded seated back with the legs hidden in front.
+ *
+ * `seed` applies a small deterministic per-figure jitter (head tilt, arm reach,
+ * leg stance) so two figures sharing a pose never look identical or perfectly
+ * mirrored — pairs get a touch of individual difference.
+ *
+ * Coordinates live in a 40-wide, 80-tall box centered at x=20; feet at y≈70.
  * Default stroke is light (the app is dark-only); callers tint via `stroke`.
  */
 
@@ -28,13 +35,16 @@ import {
 } from 'react-native-reanimated'
 import { Circle, Ellipse, Path, Svg } from 'react-native-svg'
 
-export type Pose = 'stand' | 'walk' | 'lookL' | 'lookR' | 'talk' | 'hug' | 'sit'
+export type Pose = 'stand' | 'walk' | 'lookL' | 'lookR' | 'talk' | 'hug' | 'sit' | 'sitBack'
 
 /** Default rendered figure size (box width in px; the box is size × size*2). */
 export const FIGURE_SIZE = 64
 
-/** Feet baseline measured from the top of the rendered figure box (y≈76 of the 80-unit viewBox). */
-export const FEET_Y = (76 / 80) * FIGURE_SIZE * 2
+/** Feet baseline measured from the top of the rendered figure box (y≈70 of the 80-unit viewBox). */
+export const FEET_Y = (70 / 80) * FIGURE_SIZE * 2
+
+/** Seated-base baseline for `sitBack` (the rounded base rests at y≈67, above the standing feet). */
+export const SIT_BACK_Y = (67 / 80) * FIGURE_SIZE * 2
 
 export interface StickFigureProps {
   pose: Pose
@@ -44,6 +54,8 @@ export interface StickFigureProps {
   stroke?: string
   /** Gait phase 0..1 — only used by the `walk` pose (see useGroundedGait). */
   phase?: number
+  /** Per-figure variation seed — perturbs angles/reach so a pair isn't identical/mirrored. */
+  seed?: number
 }
 
 /**
@@ -90,71 +102,99 @@ function r(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+/** Deterministic per-figure jitter in [-0.5, 0.5], stable for a (seed, n) pair. */
+function jig(seed: number, n: number): number {
+  const x = Math.sin(seed * 49.17 + n * 12.9898) * 43758.5453
+  return x - Math.floor(x) - 0.5
+}
+
 interface Stroke {
   d: string
   /** Nib dot at the heavy end, if any: [x, y, radius]. */
   nib?: [number, number, number]
 }
 
-function buildStrokes(pose: Pose, facing: 'L' | 'R', phase: number): Stroke[] {
+function buildStrokes(pose: Pose, facing: 'L' | 'R', phase: number, seed: number): Stroke[] {
   const dir = facing === 'R' ? 1 : -1
   const out: Stroke[] = []
 
-  if (pose === 'sit') {
-    // Knees-hugged sit (抱膝), side view facing `dir` — two people doing this
-    // shoulder-to-shoulder reads as "sitting together watching the sky", not
-    // meditation (the old cross-legged pose + a glow read as 打坐 + 佛光).
-    const hipY = 60
-    const neckY = 40
-    const kneeX = 20 + dir * 8
-    const kneeY = 54
-    const footX = 20 + dir * 10
-    const footY = 74
-    // Torso leans back a touch (head behind the hips).
-    out.push({ d: brushStroke(20 - dir * 2, neckY, 20, hipY, 3.2, 3.6), nib: [20, hipY, 1.7] })
-    // Thigh up to the raised knee, shin down to the planted foot.
-    out.push({ d: brushStroke(20, hipY, kneeX, kneeY, 2.8, 2.0) })
-    out.push({ d: brushStroke(kneeX, kneeY, footX, footY, 2.0, 1.4) })
-    // Arms wrap forward around the knee.
-    out.push({ d: brushStroke(20 - dir * 1, neckY + 6, kneeX + dir * 1, kneeY + 2, 2.2, 1.3) })
+  if (pose === 'sitBack') {
+    // Back view, seated, facing away (up toward the moon). A rounded seated
+    // mass — narrow at the shoulders, wide at the base — with the legs hidden
+    // in front. `seed` skews the base + a faint arm so a pair differs.
+    const shoulderY = 40
+    const baseY = 66
+    const bw = 9 + jig(seed, 1) * 1.4 // shoulder width
+    const baseW = 14 + jig(seed, 2) * 2 // seated base width
+    out.push({ d: brushStroke(20, shoulderY, 20, baseY, bw, baseW), nib: [20, baseY, baseW / 2] })
+    // A faint arm resting at one side (side varies with seed) — breaks symmetry.
+    const armDir = jig(seed, 3) > 0 ? 1 : -1
+    out.push({
+      d: brushStroke(20 + armDir * 3, shoulderY + 3, 20 + armDir * 7, baseY - 6, 2.4, 1.6),
+    })
     return out
   }
 
-  const neckY = 26
-  const hipY = 56
-  // Torso.
-  out.push({ d: brushStroke(20, neckY, 20, hipY, 3.4, 3.0), nib: [20, hipY, 1.8] })
-
-  // Arms.
-  if (pose === 'hug') {
-    out.push({ d: brushStroke(20, neckY + 6, 20 + dir * 12, neckY + 2, 2.4, 1.3) })
-    out.push({ d: brushStroke(20, neckY + 6, 20 + dir * 12, neckY + 10, 2.4, 1.3) })
-  } else if (pose === 'walk') {
-    const sw = Math.sin(phase * Math.PI * 2)
-    // Arms counter-swing the legs.
-    out.push({ d: brushStroke(20, neckY + 4, 14 - sw * 5, hipY - 4, 2.3, 1.2) })
-    out.push({ d: brushStroke(20, neckY + 4, 26 + sw * 5, hipY - 4, 2.3, 1.2) })
-  } else {
-    out.push({ d: brushStroke(20, neckY + 4, 13, hipY - 4, 2.3, 1.2) })
-    out.push({ d: brushStroke(20, neckY + 4, 27, hipY - 4, 2.3, 1.2) })
+  if (pose === 'sit') {
+    // Knees-hugged sit (抱膝), side view facing `dir`.
+    const hipY = 58
+    const neckY = 40
+    const kneeX = 20 + dir * 8
+    const kneeY = 52
+    const footX = 20 + dir * 10
+    const footY = 68
+    out.push({ d: brushStroke(20 - dir * 2, neckY, 20, hipY, 3.6, 4.0), nib: [20, hipY, 2.0] })
+    out.push({ d: brushStroke(20, hipY, kneeX, kneeY, 3.2, 2.2) })
+    out.push({ d: brushStroke(kneeX, kneeY, footX, footY, 2.2, 1.6) })
+    out.push({ d: brushStroke(20 - dir * 1, neckY + 6, kneeX + dir * 1, kneeY + 2, 2.4, 1.4) })
+    return out
   }
 
-  // Legs.
+  // ── Standing family (stand / walk / look* / talk / hug) — chibi proportions ──
+  const neckY = 25
+  const hipY = 48
+  const feetY = 70
+  const armY = neckY + 4
+  // Torso — short + chunky.
+  out.push({ d: brushStroke(20, neckY, 20, hipY, 4.6, 4.0), nib: [20, hipY, 2.2] })
+
+  // Arms — stubby, with a little seeded asymmetry so a pair differs.
+  const aJL = jig(seed, 4) * 2
+  const aJR = jig(seed, 5) * 2
+  if (pose === 'hug') {
+    out.push({ d: brushStroke(20, armY + 2, 20 + dir * 12, neckY + 1 + aJL, 3.0, 1.6) })
+    out.push({ d: brushStroke(20, armY + 2, 20 + dir * 12, neckY + 9 + aJR, 3.0, 1.6) })
+  } else if (pose === 'walk') {
+    const sw = Math.sin(phase * Math.PI * 2)
+    out.push({ d: brushStroke(20, armY, 13 - sw * 5, hipY - 3, 2.9, 1.5) })
+    out.push({ d: brushStroke(20, armY, 27 + sw * 5, hipY - 3, 2.9, 1.5) })
+  } else if (pose === 'talk') {
+    // One arm gestures up (the seeded side) — livelier than two symmetric arms.
+    const up = jig(seed, 6) > 0 ? 1 : -1
+    out.push({ d: brushStroke(20, armY, 20 + up * 11, neckY - 1 + aJL, 2.9, 1.5) })
+    out.push({ d: brushStroke(20, armY, 20 - up * 9, hipY - 4 + aJR, 2.9, 1.5) })
+  } else {
+    out.push({ d: brushStroke(20, armY, 12 + aJL, hipY - 3, 2.9, 1.5) })
+    out.push({ d: brushStroke(20, armY, 28 + aJR, hipY - 3, 2.9, 1.5) })
+  }
+
+  // Legs — short + chunky.
   if (pose === 'walk') {
     const sw = Math.sin(phase * Math.PI * 2)
-    const stride = 7
+    const stride = 6.5
     const lift = 4
-    // Leg A leads with +sw, leg B with -sw; the forward-swinging foot lifts.
     const ax = 20 + sw * stride
-    const ay = 76 - Math.max(0, sw) * lift
+    const ay = feetY - Math.max(0, sw) * lift
     const bx = 20 - sw * stride
-    const by = 76 - Math.max(0, -sw) * lift
-    out.push({ d: brushStroke(20, hipY, ax, ay, 2.7, 1.4) })
-    out.push({ d: brushStroke(20, hipY, bx, by, 2.7, 1.4) })
+    const by = feetY - Math.max(0, -sw) * lift
+    out.push({ d: brushStroke(20, hipY, ax, ay, 3.4, 1.8) })
+    out.push({ d: brushStroke(20, hipY, bx, by, 3.4, 1.8) })
   } else {
-    const spread = 5
-    out.push({ d: brushStroke(20, hipY, 20 - spread, 76, 2.7, 1.4) })
-    out.push({ d: brushStroke(20, hipY, 20 + spread, 76, 2.7, 1.4) })
+    const spread = 4.5
+    const lJ = jig(seed, 7) * 1.6
+    const rJ = jig(seed, 8) * 1.6
+    out.push({ d: brushStroke(20, hipY, 20 - spread + lJ, feetY, 3.4, 1.8) })
+    out.push({ d: brushStroke(20, hipY, 20 + spread + rJ, feetY, 3.4, 1.8) })
   }
 
   return out
@@ -166,18 +206,22 @@ export function StickFigure({
   facing = 'R',
   stroke = ricePaper.ivory,
   phase = 0,
+  seed = 0,
 }: StickFigureProps) {
   const sitLean = pose === 'sit' ? (facing === 'R' ? -2 : 2) : 0
-  const headDx = pose === 'lookL' ? -1.5 : pose === 'lookR' ? 1.5 : sitLean
-  const headCy = pose === 'sit' ? 33 : 18
-  // Slightly squashed, off-round head — less "regular".
-  const headRx = 5.6
-  const headRy = 5.1
-  const strokes = buildStrokes(pose, facing, phase)
+  // Head tilt: explicit for look poses, a seated lean for sit, plus a touch of
+  // seeded tilt everywhere so a pair never holds its head identically.
+  const baseDx = pose === 'lookL' ? -2 : pose === 'lookR' ? 2 : sitLean
+  const headDx = baseDx + jig(seed, 9) * 1.6
+  const headCy = (pose === 'sit' ? 32 : pose === 'sitBack' ? 30 : 15) + jig(seed, 10) * 1
+  // Big, nearly-round chibi head.
+  const headRx = 9.5
+  const headRy = 9.0
+  const strokes = buildStrokes(pose, facing, phase, seed)
 
   return (
     <Svg width={size} height={size * 2} viewBox='0 0 40 80'>
-      {/* Head — filled, faintly oval (less "regular" than a perfect circle). */}
+      {/* Head — big + round (chibi). */}
       <Ellipse cx={20 + headDx} cy={headCy} rx={headRx} ry={headRy} fill={stroke} />
       {strokes.map((s, i) => (
         <Path key={i} d={s.d} fill={stroke} />

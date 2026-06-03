@@ -28,19 +28,27 @@ export function StaticMoon({
   useEffect(() => {
     p.value = withTiming(phase, { duration: 1200, easing: Easing.out(Easing.cubic) })
   }, [phase, p])
-  const skin = (skinId && MOON_SKINS_BY_ID[skinId]) || SKIN_SILVER
-  // Keep the water-ink shadow (the differentiator) but scale its displacement down
-  // with size so it stays a fine texture, not big tongues; drop the grain speckle
-  // (`clean`) and the halo for a crisp small moon.
-  const inkStrength = Math.min(1, size / 120)
+  const skinBase = (skinId && MOON_SKINS_BY_ID[skinId]) || SKIN_SILVER
+  const sizeK = Math.min(1, size / 120)
+  // Keep the water-ink shadow (the brand differentiator) but scale its edge
+  // displacement down with size so it stays a fine texture, not big tongues.
+  const inkStrength = sizeK
+  // Unify the two faces. Previously `clean` stripped the surface grain entirely,
+  // leaving a glossy radial-gradient lit face that clashed with the water-ink
+  // shadow edge (光滑 vs 水墨). Instead keep a faint, size-scaled grain across the
+  // WHOLE disc so the lit face shares the shadow's material — floored at 0.4 so
+  // even small moons read as textured (not plastic), never above the skin default.
+  const skin =
+    skinBase.surface.kind === 'none'
+      ? skinBase
+      : {
+          ...skinBase,
+          surface: {
+            ...skinBase.surface,
+            opacity: (skinBase.surface.opacity ?? 0.18) * (0.4 + 0.6 * sizeK),
+          },
+        }
   return (
-    <MoonPhaseLoader
-      size={size}
-      phase={p}
-      skin={skin}
-      clean
-      inkStrength={inkStrength}
-      halo={false}
-    />
+    <MoonPhaseLoader size={size} phase={p} skin={skin} inkStrength={inkStrength} halo={false} />
   )
 }

@@ -40,6 +40,10 @@ export interface AuspiceBirthInfo {
    *  original 农历 input instead of re-deriving it (which could differ on
    *  leap-month edge cases). */
   lunarInput?: string
+  /** Whether the lunar month the user picked was a leap month (闰月). Only
+   *  meaningful when calendar === 'lunar'; needed for an accurate
+   *  `lunarToSolar` round-trip (the wheel picker can select 闰X months). */
+  lunarIsLeap?: boolean
   /** 0-11 shichen index, `null` when user picked "unknown". */
   timeIndex: ShichenIndex | null
   /** 男 / 女 — required for full 八字 analysis (大运 direction). */
@@ -106,6 +110,7 @@ export async function getAuspiceBirthInfo(): Promise<AuspiceBirthInfo | null> {
         DATE_RE.test(parsed.lunarInput)
           ? parsed.lunarInput
           : undefined,
+      lunarIsLeap: parsed.calendar === 'lunar' && parsed.lunarIsLeap === true ? true : undefined,
       timeIndex:
         typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
           ? (timeIndex as ShichenIndex)

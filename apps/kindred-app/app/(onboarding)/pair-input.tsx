@@ -1,53 +1,57 @@
 /**
- * Onboarding · Pair input — the single dual-tab birth-info screen.
+ * Onboarding · Pair input — a 3-step, low-friction birth-info flow.
  *
- * Replaces the old multi-screen wizard (self → mode → other-meta → other-birth)
- * with one screen carrying two tabs: "You / 你" on the left and the partner
- * ("TA" / "Them" / "相手") on the right (PairTabBar). Both tabs show the same
- * birth-info form, styled after Auspice's For-you / 亲友 single-page form
- * (apps/auspice-app/app/(tabs)/me.tsx + people.tsx) rather than core-ui's
- * 5-step BirthInfoForm wizard: a calendar toggle (solar / 农历, 农历 converts via
- * astro-core lunarToSolar on commit), an auto-formatted YYYY-MM-DD TextInput,
- * the 12-cell ShichenPicker, a 2-button gender segmented control, and an
- * optional geocode-backed CityPicker.
+ * Replaces the old dual-tab screen that showed TWO full birth forms at once
+ * (a ~10-field wall — "看着就不想填") plus buried escape hatches. The new shape
+ * is a linear step machine so the user only ever sees ONE person's form, and
+ * the "how do we add TA?" choice comes UP FRONT (before any partner form),
+ * with the zero-friction invite as the default:
  *
- * State binds to the shared onboarding draft (lib/onboardingDraft — the self-
- * and other- prefixed fields) so a backgrounded app keeps progress; the draft
- * store is unchanged.
+ *   self   — your own birth info. Progressive: name + date + gender are the
+ *            visible core; 时辰 + city collapse behind a "more precise" toggle,
+ *            so the screen reads short and fillable.
+ *   choose — payoff ("your chart is ready") → three paths for TA:
+ *              1. Invite TA to fill it in themselves  (recommended, default)
+ *              2. I know TA's birth details           → partner form
+ *              3. Skip — see mine first               → solo reading
+ *   other  — TA's name + relationship + the same progressive birth form.
  *
- * The partner tab additionally collects the relationship type and, below the
- * form, surfaces three alternatives for users who can't / won't fill the
- * partner's details:
- *   - "Don't know their birth details" → /(onboarding)/invite
- *   - "Invite them to fill it in"       → /(onboarding)/invite
- *   - "Skip — later"                    → solo-first completion → /(reading)
+ * Completion forks (unchanged from before):
+ *   - You valid + partner valid → otherMode 'fill' → /(onboarding)/reveal
+ *   - You valid + invite        → otherMode 'invite' → /(onboarding)/invite
+ *   - You valid + skip          → solo-first (ADR-0021) → /(reading)
  *
- * Completion forks:
- *   - You valid + partner valid → set otherMode 'fill' → /(onboarding)/reveal
- *     (the reveal screen runs useSoloBond create → bond detail)
- *   - You valid + skip          → solo-first (ADR-0021): saveSelfBirth +
- *     syncSelfBirthToServer + markOnboardingComplete + suppressNextSplash +
- *     router.replace('/(reading)') — same as the old self.tsx first-run branch.
+ * Self birth is persisted once, when advancing self → choose (persistSelf), so
+ * every downstream terminal action can assume it is saved + syncing.
  *
- * Dark-only (kindredDark); the PairTabBar thread animation is reanimated v4;
- * tab + commit taps use expo-haptics.
+ * State binds to the shared onboarding draft (lib/onboardingDraft). Dark-only
+ * (kindredDark). Tab/commit taps use expo-haptics; CTAs are the tactile
+ * PrimaryButton (usePressScale + haptics).
  */
 
 import { lunarToSolar } from '@zhop/astro-core'
 import { CityPicker, DEFAULT_TOP_CITIES, ShichenPicker } from '@zhop/core-ui'
-import { V15Moon } from '@zhop/core-ui/motion'
+import { MoonPhaseLoader, SKIN_CINNABAR, usePressScale } from '@zhop/core-ui/motion'
 import {
   kindredDark,
-  kindredPresets,
+  kindredRadius,
   kindredSpacing,
   kindredType,
 } from '@zhop/hexastral-tokens/kindred'
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-kindred'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native'
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { type PairTab, PairTabBar } from '@/components/PairTabBar'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
@@ -55,6 +59,8 @@ import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDra
 import { saveSelfBirth, syncSelfBirthToServer } from '@/lib/selfBirth'
 import { suppressNextSplash } from '@/lib/splash-control'
 import { isOnboardingComplete, markOnboardingComplete } from '../index'
+
+type Step = 'self' | 'choose' | 'other'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -94,12 +100,36 @@ function toSolar(dateInput: string, calendar: 'solar' | 'lunar'): string | null 
 
 export default function PairInputScreen() {
   const router = useRouter()
+  const { height } = useWindowDimensions()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const { userId } = useAuth()
   const draft = useDraft()
   const lang = useMemo(() => localeToLang(locale), [locale])
 
-  const [tab, setTab] = useState<PairTab>('self')
+  const [step, setStep] = useState<Step>('self')
+  // Brand moon — a controlled MoonPhaseLoader that morphs to the OPPOSITE phase
+  // once you finish your own side (step leaves 'self') and back again on return.
+  // phase 0.25 = right-lit; 0.75 = its mirror (left-lit). It shares look + size
+  // with the intro's outro moon (pair-input route = fade) for a magic-move feel.
+  const moonPhase = useSharedValue(0.25)
+  // Magic-move entrance: the moon arrives BIG + low (matching the intro's swollen
+  // focal moon) and shrinks + rises into its resting spot — "从大到小并且有位移",
+  // not a fade. Tune the START values on device to seat against the intro hand-off.
+  const moonScale = useSharedValue(2.6)
+  // Start ~0.32h below the resting spot so it sits roughly where the intro's
+  // focal moon ended (~0.45h), then rises into place — that's the displacement.
+  const moonTy = useSharedValue(height * 0.32)
+  useEffect(() => {
+    moonPhase.value = withTiming(step === 'self' ? 0.25 : 0.75, { duration: 720 })
+  }, [step, moonPhase])
+  useEffect(() => {
+    moonScale.value = withTiming(1, { duration: 820, easing: Easing.out(Easing.cubic) })
+    moonTy.value = withTiming(0, { duration: 820, easing: Easing.out(Easing.cubic) })
+  }, [moonScale, moonTy])
+  const moonStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: moonTy.value }, { scale: moonScale.value }],
+  }))
+
   // The date inputs hold what the user is typing (which may be a 农历 string);
   // the canonical solar form is computed on the fly + committed to the draft.
   const [selfDateInput, setSelfDateInput] = useState(draft.selfSolarDate)
@@ -135,8 +165,7 @@ export default function PairInputScreen() {
   const commitSelfDate = (raw: string) => {
     const next = formatDateInput(raw)
     setSelfDateInput(next)
-    const solar = toSolar(next, selfCalendar)
-    updateDraft({ selfSolarDate: solar ?? '' })
+    updateDraft({ selfSolarDate: toSolar(next, selfCalendar) ?? '' })
   }
   const commitSelfCalendar = (cal: 'solar' | 'lunar') => {
     setSelfCalendar(cal)
@@ -152,10 +181,10 @@ export default function PairInputScreen() {
     updateDraft({ otherSolarDate: toSolar(otherDateInput, cal) ?? '' })
   }
 
-  // ── Completion paths ──────────────────────────────────────────────────────
+  // ── Persist + step transitions ────────────────────────────────────────────
 
-  /** Persist self birth (solo reading seed) + sync to server. Shared by both
-   *  the pair path and the skip path. */
+  /** Persist self birth (solo reading seed) + sync to server. Runs once on
+   *  self → choose, so terminal actions can assume self is saved. */
   const persistSelf = async () => {
     if (!selfSolar || draft.selfGender === null) return
     const birth = {
@@ -171,39 +200,41 @@ export default function PairInputScreen() {
     if (userId) void syncSelfBirthToServer(userId, birth)
   }
 
-  /** Both sides ready → reveal flow (solo bond create lives in reveal.tsx). */
-  const handlePairUp = async () => {
-    if (!selfFilled || !otherFilled || submitting) return
-    setSubmitting(true)
+  /** self → choose. Persists self up-front, then surfaces the TA paths. */
+  const goChoose = async () => {
+    if (!selfFilled || submitting) return
     await persistSelf()
-    updateDraft({ otherMode: 'fill' })
-    router.push('/(onboarding)/reveal')
+    setStep('choose')
   }
 
-  /** Skip the partner → solo-first completion (mirrors old self.tsx first run). */
-  const handleSkip = async () => {
-    if (!selfFilled || submitting) return
+  // ── Terminal forks (self already persisted in goChoose) ─────────────────────
+
+  /** "I know their details" → partner form. */
+  const goFillOther = () => setStep('other')
+
+  /** "Invite them to fill it in" → invite flow (SMS/email). */
+  const goInvite = () => {
+    updateDraft({ otherMode: 'invite' })
+    router.push('/(onboarding)/invite')
+  }
+
+  /** "Skip — see mine first" → solo-first completion (ADR-0021). */
+  const goSkip = async () => {
+    if (submitting) return
     setSubmitting(true)
-    await persistSelf()
     if (!(await isOnboardingComplete())) {
       await markOnboardingComplete()
-      suppressNextSplash()
-      router.replace('/(reading)')
-      return
     }
-    // Re-entered later with onboarding already done → just land home.
     suppressNextSplash()
     router.replace('/(reading)')
   }
 
-  /** Either invite alternative → persist self first, then the invite flow. */
-  const handleInvite = async () => {
-    if (!selfFilled || submitting) return
+  /** Both sides ready → reveal flow (solo bond create lives in reveal.tsx). */
+  const handlePairUp = async () => {
+    if (!otherFilled || submitting) return
     setSubmitting(true)
-    await persistSelf()
-    updateDraft({ otherMode: 'invite' })
-    router.push('/(onboarding)/invite')
-    setSubmitting(false)
+    updateDraft({ otherMode: 'fill' })
+    router.push('/(onboarding)/reveal')
   }
 
   return (
@@ -217,24 +248,16 @@ export default function PairInputScreen() {
         }}
         keyboardShouldPersistTaps='handled'
       >
-        <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xs }}>
-          <V15Moon size={56} />
-        </View>
+        {/* Brand moon — shared with the intro outro (route = fade) for continuity;
+            morphs to the opposite phase once your own side is done. */}
+        <Animated.View
+          style={[{ alignItems: 'center', marginBottom: kindredSpacing.sm }, moonStyle]}
+        >
+          <MoonPhaseLoader size={64} phase={moonPhase} skin={SKIN_CINNABAR} clean />
+        </Animated.View>
 
-        <PairTabBar
-          active={tab}
-          onChange={setTab}
-          selfLabel={t(locale, 'pair.tab.self')}
-          otherLabel={t(locale, 'pair.tab.other')}
-          selfFilled={selfFilled}
-          otherFilled={otherFilled}
-        />
-
-        {tab === 'self' ? (
-          <View style={{ gap: kindredSpacing.lg }}>
-            <Text style={[kindredType.heading, { color: kindredDark.text }]}>
-              {t(locale, 'pair.self.title')}
-            </Text>
+        {step === 'self' && (
+          <Animated.View entering={FadeInDown.duration(260)} style={{ gap: kindredSpacing.lg }}>
             <Field label={t(locale, 'pairInput.name.self')}>
               <NameInput
                 value={draft.selfName}
@@ -260,9 +283,65 @@ export default function PairInputScreen() {
               searchCity={searchCity}
               fieldPrefix='self'
             />
-          </View>
-        ) : (
-          <View style={{ gap: kindredSpacing.lg }}>
+            <View style={{ marginTop: kindredSpacing.sm }}>
+              <PrimaryButton
+                label={t(locale, 'common.next')}
+                onPress={() => void goChoose()}
+                disabled={!selfFilled}
+              />
+            </View>
+          </Animated.View>
+        )}
+
+        {step === 'choose' && (
+          <Animated.View entering={FadeInDown.duration(260)} style={{ gap: kindredSpacing.lg }}>
+            <BackLink label={t(locale, 'pairInput.back')} onPress={() => setStep('self')} />
+            {/* Payoff — the user has invested in their own chart; reward it
+                before asking for the harder thing (TA's details). */}
+            <View style={{ alignItems: 'center', gap: kindredSpacing.xs }}>
+              <Text style={[kindredType.seal, { color: kindredDark.accent }]}>
+                {`${t(locale, 'pairInput.selfReady')}  ✓`}
+              </Text>
+              <Text style={[kindredType.title, { color: kindredDark.text }]}>
+                {t(locale, 'mode.title')}
+              </Text>
+              <Text
+                style={[
+                  kindredType.body,
+                  { color: kindredDark.textSecondary, textAlign: 'center' },
+                ]}
+              >
+                {t(locale, 'mode.subtitle')}
+              </Text>
+            </View>
+
+            <View style={{ gap: kindredSpacing.md }}>
+              {/* Default happy path — TA fills their own on their own device, so
+                  the user never has to know TA's birth time. Zero friction. */}
+              <ChoiceCard
+                title={t(locale, 'pair.other.intent.invite')}
+                hint={t(locale, 'mode.invite.hint')}
+                badge={t(locale, 'pairInput.recommended')}
+                onPress={goInvite}
+              />
+              <ChoiceCard
+                title={t(locale, 'pair.other.intent.know')}
+                hint={t(locale, 'mode.know.hint')}
+                onPress={goFillOther}
+              />
+              <SkipRow
+                label={t(locale, 'pair.other.intent.skip')}
+                hint={t(locale, 'mode.skip.hint')}
+                disabled={submitting}
+                onPress={() => void goSkip()}
+              />
+            </View>
+          </Animated.View>
+        )}
+
+        {step === 'other' && (
+          <Animated.View entering={FadeInDown.duration(260)} style={{ gap: kindredSpacing.lg }}>
+            <BackLink label={t(locale, 'pairInput.back')} onPress={() => setStep('choose')} />
             <Text style={[kindredType.heading, { color: kindredDark.text }]}>
               {t(locale, 'pair.other.about')}
             </Text>
@@ -297,67 +376,133 @@ export default function PairInputScreen() {
               searchCity={searchCity}
               fieldPrefix='other'
             />
-
-            {/* Alternatives for when the partner's birth can't be filled now.
-                All three require the user's own info first (selfFilled). */}
-            <View
-              style={{
-                marginTop: kindredSpacing.sm,
-                paddingTop: kindredSpacing.lg,
-                borderTopWidth: 0.5,
-                borderTopColor: kindredDark.separator,
-                gap: kindredSpacing.md,
-              }}
-            >
-              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                {t(locale, 'pairInput.alt.heading')}
-              </Text>
-              <AltLink
-                label={t(locale, 'pairInput.alt.unknown')}
-                enabled={selfFilled && !submitting}
-                onPress={handleInvite}
-              />
-              <AltLink
-                label={t(locale, 'pairInput.alt.invite')}
-                enabled={selfFilled && !submitting}
-                onPress={handleInvite}
-              />
-              <AltLink
-                label={t(locale, 'pairInput.alt.skip')}
-                enabled={selfFilled && !submitting}
-                onPress={handleSkip}
+            <View style={{ marginTop: kindredSpacing.sm }}>
+              <PrimaryButton
+                label={t(locale, 'pair.cta.read')}
+                onPress={() => void handlePairUp()}
+                disabled={!otherFilled}
+                loading={submitting}
+                tone='seal'
               />
             </View>
-          </View>
+          </Animated.View>
         )}
-
-        {/* Primary CTA — context-sensitive. On the You tab it advances to the
-            partner tab once self is filled; on the partner tab it pairs up. */}
-        <View style={{ marginTop: kindredSpacing.md, alignItems: 'flex-end' }}>
-          {tab === 'self' ? (
-            <Pressable
-              onPress={() => setTab('other')}
-              disabled={!selfFilled}
-              hitSlop={12}
-              accessibilityRole='button'
-              style={{ opacity: selfFilled ? 1 : 0.3 }}
-            >
-              <Text style={kindredPresets.ctaText}>{t(locale, 'pairInput.cta.next')}</Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={handlePairUp}
-              disabled={!otherFilled || submitting}
-              hitSlop={12}
-              accessibilityRole='button'
-              style={{ opacity: otherFilled && !submitting ? 1 : 0.3 }}
-            >
-              <Text style={kindredPresets.ctaText}>{t(locale, 'pair.cta.read')}</Text>
-            </Pressable>
-          )}
-        </View>
       </ScrollView>
     </SafeAreaView>
+  )
+}
+
+/* ── Choose-step pieces ──────────────────────────────────────────────────── */
+
+/** A tappable path card (invite / know). Tactile via usePressScale + haptics. */
+function ChoiceCard({
+  title,
+  hint,
+  badge,
+  onPress,
+}: {
+  title: string
+  hint: string
+  badge?: string
+  onPress: () => void
+}) {
+  const { animatedStyle, onPressIn, onPressOut } = usePressScale()
+  const handle = () => {
+    void Haptics.selectionAsync().catch(() => undefined)
+    onPress()
+  }
+  // The recommended card carries the gold accent border; others read calmer.
+  const accented = badge != null
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={handle}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        accessibilityRole='button'
+        accessibilityLabel={title}
+        style={{
+          borderWidth: accented ? 1 : 0.5,
+          borderColor: accented ? kindredDark.accent : kindredDark.border,
+          backgroundColor: accented ? `${kindredDark.accent}12` : 'transparent',
+          borderRadius: kindredRadius.md,
+          paddingVertical: kindredSpacing.md,
+          paddingHorizontal: kindredSpacing.md,
+          gap: kindredSpacing.xs,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
+          <Text style={[kindredType.body, { color: kindredDark.text, fontWeight: '600', flex: 1 }]}>
+            {title}
+          </Text>
+          {badge != null && (
+            <Text
+              style={[
+                kindredType.seal,
+                {
+                  color: kindredDark.bg,
+                  backgroundColor: kindredDark.accent,
+                  paddingHorizontal: kindredSpacing.sm,
+                  paddingVertical: 2,
+                  borderRadius: kindredRadius.sm,
+                  overflow: 'hidden',
+                },
+              ]}
+            >
+              {badge}
+            </Text>
+          )}
+          <Text style={{ color: kindredDark.textMuted, fontSize: 18 }}>→</Text>
+        </View>
+        <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>{hint}</Text>
+      </Pressable>
+    </Animated.View>
+  )
+}
+
+/** The de-emphasised "skip / see mine first" path. */
+function SkipRow({
+  label,
+  hint,
+  disabled,
+  onPress,
+}: {
+  label: string
+  hint: string
+  disabled: boolean
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole='button'
+      style={{
+        opacity: disabled ? 0.4 : 1,
+        paddingVertical: kindredSpacing.sm,
+        alignItems: 'center',
+        gap: 2,
+      }}
+    >
+      <Text
+        style={[
+          kindredType.body,
+          { color: kindredDark.textSecondary, textDecorationLine: 'underline' },
+        ]}
+      >
+        {label}
+      </Text>
+      <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>{hint}</Text>
+    </Pressable>
+  )
+}
+
+function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole='button'>
+      <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>{`←  ${label}`}</Text>
+    </Pressable>
   )
 }
 
@@ -398,36 +543,7 @@ function NameInput({
   )
 }
 
-function AltLink({
-  label,
-  enabled,
-  onPress,
-}: {
-  label: string
-  enabled: boolean
-  onPress: () => void
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={!enabled}
-      hitSlop={8}
-      accessibilityRole='button'
-      style={{ opacity: enabled ? 1 : 0.35 }}
-    >
-      <Text
-        style={[
-          kindredType.body,
-          { color: kindredDark.textSecondary, textDecorationLine: 'underline' },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  )
-}
-
-/* ── Birth form (Auspice For-you layout, kindred tokens) ─────────────────── */
+/* ── Birth form (progressive: required core + collapsible "more precise") ──── */
 
 interface BirthFormProps {
   locale: Locale
@@ -467,6 +583,12 @@ function BirthForm({
   searchCity,
   fieldPrefix,
 }: BirthFormProps) {
+  // 时辰 + city are the "soft" fields (often unknown). Collapse them behind a
+  // toggle so the form reads as 2 required fields, not a wall. Default open if
+  // the draft already carries either (returning users keep their data visible).
+  const hasRefinement = (typeof timeIndex === 'number' && timeIndex >= 0) || city.length > 0
+  const [refineOpen, setRefineOpen] = useState(hasRefinement)
+
   const shichen =
     typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
       ? (timeIndex as import('@zhop/core-ui').ShichenIndex)
@@ -482,6 +604,11 @@ function BirthForm({
           timezone: timezone ?? null,
         }
       : null
+
+  const toggleRefine = () => {
+    void Haptics.selectionAsync().catch(() => undefined)
+    setRefineOpen((v) => !v)
+  }
 
   return (
     <View style={{ gap: kindredSpacing.lg }}>
@@ -517,37 +644,6 @@ function BirthForm({
         ) : null}
       </Field>
 
-      {/* 时辰 — 12-cell grid + "unknown" reset. */}
-      <View style={{ gap: kindredSpacing.sm }}>
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
-            {t(locale, 'time.title')}
-          </Text>
-          <Pressable
-            onPress={() => onTime(null)}
-            hitSlop={6}
-            accessibilityRole='button'
-            accessibilityLabel={t(locale, 'fill.timeUnknown')}
-          >
-            <Text
-              style={[
-                kindredType.caption,
-                { color: shichen === null ? kindredDark.accent : kindredDark.textMuted },
-              ]}
-            >
-              {t(locale, 'fill.timeUnknown')}
-            </Text>
-          </Pressable>
-        </View>
-        <ShichenPicker
-          value={shichen}
-          onChange={(idx) => onTime(idx)}
-          accentColor={kindredDark.accent}
-        />
-      </View>
-
       {/* Gender — required for 八字 大运 direction. */}
       <Field label={t(locale, 'fill.gender')}>
         <Segmented
@@ -560,32 +656,94 @@ function BirthForm({
         />
       </Field>
 
-      {/* City — optional; geocode-backed (coords + IANA tz for 真太阳时). */}
-      <Field label={t(locale, 'place.title')}>
-        <CityPicker
-          value={cityValue}
-          onSelect={(c) =>
-            onCity(
-              fieldPrefix === 'self'
-                ? {
-                    selfBirthCity: c.name,
-                    selfBirthLat: c.lat,
-                    selfBirthLng: c.lng,
-                    selfBirthTimezone: c.timezone ?? null,
-                  }
-                : {
-                    otherBirthCity: c.name,
-                    otherBirthLat: c.lat,
-                    otherBirthLng: c.lng,
-                    otherBirthTimezone: c.timezone ?? null,
-                  }
-            )
-          }
-          search={searchCity}
-          topCities={DEFAULT_TOP_CITIES}
-          placeholder={t(locale, 'pairInput.cityPlaceholder')}
-        />
-      </Field>
+      {/* Collapsible refinement — 时辰 + city. Optional; sharpens the chart. */}
+      <Pressable
+        onPress={toggleRefine}
+        accessibilityRole='button'
+        accessibilityState={{ expanded: refineOpen }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: kindredSpacing.sm,
+        }}
+      >
+        <View style={{ gap: 2 }}>
+          <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
+            {t(locale, 'pairInput.refine')}
+          </Text>
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+            {t(locale, 'pairInput.refine.hint')}
+          </Text>
+        </View>
+        <Text style={{ color: kindredDark.textMuted, fontSize: 16 }}>{refineOpen ? '−' : '+'}</Text>
+      </Pressable>
+
+      {refineOpen && (
+        <Animated.View entering={FadeInDown.duration(220)} style={{ gap: kindredSpacing.lg }}>
+          {/* 时辰 — 12-cell grid + "unknown" reset. */}
+          <View style={{ gap: kindredSpacing.sm }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
+                {t(locale, 'time.title')}
+              </Text>
+              <Pressable
+                onPress={() => onTime(null)}
+                hitSlop={6}
+                accessibilityRole='button'
+                accessibilityLabel={t(locale, 'fill.timeUnknown')}
+              >
+                <Text
+                  style={[
+                    kindredType.caption,
+                    { color: shichen === null ? kindredDark.accent : kindredDark.textMuted },
+                  ]}
+                >
+                  {t(locale, 'fill.timeUnknown')}
+                </Text>
+              </Pressable>
+            </View>
+            <ShichenPicker
+              value={shichen}
+              onChange={(idx) => onTime(idx)}
+              accentColor={kindredDark.accent}
+            />
+          </View>
+
+          {/* City — optional; geocode-backed (coords + IANA tz for 真太阳时). */}
+          <Field label={t(locale, 'place.title')}>
+            <CityPicker
+              value={cityValue}
+              onSelect={(c) =>
+                onCity(
+                  fieldPrefix === 'self'
+                    ? {
+                        selfBirthCity: c.name,
+                        selfBirthLat: c.lat,
+                        selfBirthLng: c.lng,
+                        selfBirthTimezone: c.timezone ?? null,
+                      }
+                    : {
+                        otherBirthCity: c.name,
+                        otherBirthLat: c.lat,
+                        otherBirthLng: c.lng,
+                        otherBirthTimezone: c.timezone ?? null,
+                      }
+                )
+              }
+              search={searchCity}
+              topCities={DEFAULT_TOP_CITIES}
+              placeholder={t(locale, 'pairInput.cityPlaceholder')}
+            />
+          </Field>
+        </Animated.View>
+      )}
     </View>
   )
 }

@@ -1,9 +1,13 @@
 /**
  * Onboarding · Screen 0 — Comic-style intro animation.
  *
- * A ~23-second stick-figure parable: lone arrival → fleeting talk → fleeting
- * hug → the one that stays. Sets the emotional thesis (Kindred分 — connection
- * worth keeping) before any form input. Plays only on first launch
+ * A stick-figure parable, played scene-by-scene at a deliberate pace (~14s):
+ * lone arrival → fleeting talk → fleeting hug → the one that stays. Sets the
+ * emotional thesis (Kindred分 — connection worth keeping) before any form
+ * input. The whole thing is tempo-controlled by one `SPEED` knob (see Timeline).
+ * The final beat: the pair sits with their BACKS to the viewer, gazing up at a
+ * moon that swells large — which then shrinks + moves into the form's logo.
+ * Plays only on first launch
  * (gated by AsyncStorage key `yuan_intro_seen_v1` in app/index.tsx);
  * tap anywhere to skip.
  *
@@ -24,10 +28,9 @@
  * plates (see assets/intro/README.md).
  */
 
-import { V15Moon } from '@zhop/core-ui/motion'
+import { MoonPhaseLoader, SKIN_CINNABAR } from '@zhop/core-ui/motion'
 import { ricePaper, rubbing, zinc } from '@zhop/hexastral-tokens'
 import { kindredType } from '@zhop/hexastral-tokens/kindred'
-import { LOGO_NIGHT_V15 } from '@zhop/hexastral-tokens/moon'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
@@ -43,7 +46,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { FigureGlow, groundYAt, IntroStage, WalkDust } from '@/components/IntroScene'
-import { FEET_Y, type Pose, StickFigure, useGroundedGait } from '@/components/StickFigure'
+import {
+  FEET_Y,
+  type Pose,
+  SIT_BACK_Y,
+  StickFigure,
+  useGroundedGait,
+} from '@/components/StickFigure'
 import { resolveLocale } from '@/lib/i18n'
 
 type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
@@ -116,7 +125,22 @@ const HINT_LATE = zinc[300]
 /** Caption colour steps up one notch per act — the parable's hierarchy, in light. */
 const ACT_COLORS = [zinc[500], zinc[400], zinc[300], ricePaper.ivory] as const
 
-/* ── Timeline (ms) ──────────────────────────────────────────────────────── */
+/* ── Timeline (ms) ────────────────────────────────────────────────────────
+ * One tempo knob for the whole parable. `at()` scales every scheduled trigger
+ * by SPEED and `d()` scales every inline animation duration by the same factor,
+ * so the sequence keeps its choreography (no new overlaps) at any tempo. The T
+ * entries below are the ORIGINAL ms; SPEED 0.6 plays them ~1.7× faster (~14s) —
+ * slow enough that each scene lands one at a time, but not the original 23s
+ * drag. Lower SPEED = snappier, higher = more deliberate. */
+const SPEED = 0.6
+/** Scale an animation duration/delay by SPEED (rounded). Triggers go through at(). */
+const d = (ms: number): number => Math.round(ms * SPEED)
+
+/* Final-scene focal moon — the pair gazes up at it; it swells, then pair-input
+ * shrinks + moves it into place (the magic move). Tune freely on device. */
+const FOCAL_MOON_SIZE = 100
+const FOCAL_MOON_MAX_SCALE = 1.7
+
 const T = {
   starsIn: 800,
   f1WalkIn: 1500,
@@ -227,8 +251,9 @@ function useFigureStyle(
   height: number
 ) {
   const walking = pose === 'walk'
-  // `sit` (抱膝) plants the foot at y≈74 of 80 rather than the standing y≈76.
-  const baseline = pose === 'sit' ? FEET_Y - 3.2 : FEET_Y
+  // Seated poses rest higher than standing feet: `sit` (抱膝) just above the
+  // feet line, `sitBack` on its rounded base.
+  const baseline = pose === 'sit' ? FEET_Y - 3.2 : pose === 'sitBack' ? SIT_BACK_Y : FEET_Y
   return useAnimatedStyle(() => {
     const gy = groundYAt(xSv.value, width, height)
     const bob = walking ? (1 - Math.abs(Math.sin(phaseSv.value * Math.PI * 2))) * 2 : 0
@@ -278,6 +303,12 @@ export default function IntroScreen() {
   // Act caption opacity + gentle camera push-in on the final act.
   const actOp = useSharedValue(reduced ? 1 : 0)
   const stageScale = useSharedValue(1)
+  // Focal moon — static phase 0.25 (right-lit), the SAME phase/skin pair-input
+  // opens on. Fades in + swells over the final scene; ends big + centered so
+  // pair-input can shrink + move it into place (the magic move).
+  const introMoonPhase = useSharedValue(0.25)
+  const moonOp = useSharedValue(reduced ? 1 : 0)
+  const moonScale = useSharedValue(reduced ? FOCAL_MOON_MAX_SCALE : 0.9)
 
   /* Pose state — discrete transitions at scripted beats */
   const [f1Pose, setF1Pose] = useState<Pose>('walk')
@@ -310,28 +341,30 @@ export default function IntroScreen() {
       return
     }
 
+    // at() scales every scheduled trigger by SPEED (see Timeline note), so the
+    // whole parable runs ~2.8× faster without re-choreographing.
     const at = (ms: number, fn: () => void) => {
-      timersRef.current.push(setTimeout(fn, ms))
+      timersRef.current.push(setTimeout(fn, d(ms)))
     }
 
     // Background + planet arc drawing in
-    arcDraw.value = withTiming(0, { duration: 900, easing: Easing.out(Easing.quad) })
-    skipOp.value = withDelay(800, withTiming(0.45, { duration: 600 }))
+    arcDraw.value = withTiming(0, { duration: d(900), easing: Easing.out(Easing.quad) })
+    skipOp.value = withDelay(d(800), withTiming(0.45, { duration: d(600) }))
 
     // Ambient light steps up one notch per act (full bloom at the very end) —
     // the four scenes' hierarchy, expressed in light. Driven via at() so later
     // steps don't cancel earlier pending ones.
     at(T.starsIn, () => {
-      starsBright.value = withTiming(0.2, { duration: 1200 })
+      starsBright.value = withTiming(0.2, { duration: d(1200) })
     })
     at(T.f2WalkIn, () => {
-      starsBright.value = withTiming(0.35, { duration: 800 })
+      starsBright.value = withTiming(0.35, { duration: d(800) })
     })
     at(T.f3WalkIn, () => {
-      starsBright.value = withTiming(0.5, { duration: 800 })
+      starsBright.value = withTiming(0.5, { duration: d(800) })
     })
     at(T.f4WalkIn, () => {
-      starsBright.value = withTiming(0.65, { duration: 800 })
+      starsBright.value = withTiming(0.65, { duration: d(800) })
     })
 
     // Act captions — silent-film intertitles, in at each act's beat, out
@@ -339,11 +372,11 @@ export default function IntroScreen() {
     const caption = (idx: number, inMs: number, outMs?: number) => {
       at(inMs, () => {
         setAct(idx)
-        actOp.value = withTiming(1, { duration: 600 })
+        actOp.value = withTiming(1, { duration: d(600) })
       })
       if (outMs !== undefined) {
         at(outMs, () => {
-          actOp.value = withTiming(0, { duration: 400 })
+          actOp.value = withTiming(0, { duration: d(400) })
         })
       }
     }
@@ -353,10 +386,10 @@ export default function IntroScreen() {
     caption(3, T.hug2Start)
 
     // === Act 1: figure 1 arrives, looks around ===
-    f1Op.value = withDelay(T.f1WalkIn, withTiming(1, { duration: 300 }))
+    f1Op.value = withDelay(d(T.f1WalkIn), withTiming(1, { duration: d(300) }))
     f1X.value = withDelay(
-      T.f1WalkIn,
-      withTiming(slot1, { duration: 1500, easing: Easing.out(Easing.cubic) })
+      d(T.f1WalkIn),
+      withTiming(slot1, { duration: d(1500), easing: Easing.out(Easing.cubic) })
     )
     at(T.f1WalkIn + 1500, () => setF1Pose('stand'))
     at(T.f1LookLeft, () => setF1Pose('lookL'))
@@ -370,8 +403,8 @@ export default function IntroScreen() {
     // left f2/f3 invisible at their off-screen start position.
     at(T.f2WalkIn, () => {
       setF2Pose('walk')
-      f2Op.value = withTiming(1, { duration: 300 })
-      f2X.value = withTiming(slot2R, { duration: 1300, easing: Easing.out(Easing.cubic) })
+      f2Op.value = withTiming(1, { duration: d(300) })
+      f2X.value = withTiming(slot2R, { duration: d(1300), easing: Easing.out(Easing.cubic) })
     })
     at(T.f2WalkIn + 1300, () => {
       setF2Pose('talk')
@@ -384,72 +417,77 @@ export default function IntroScreen() {
     at(T.f2WalkOut, () => {
       setF2Pose('walk')
       setF2Heading('R')
-      f2X.value = withTiming(offRight, { duration: 1700, easing: Easing.in(Easing.cubic) })
+      f2X.value = withTiming(offRight, { duration: d(1700), easing: Easing.in(Easing.cubic) })
     })
     at(T.f2WalkOut + 1500, () => {
-      f2Op.value = withTiming(0, { duration: 300 })
+      f2Op.value = withTiming(0, { duration: d(300) })
     })
     at(T.f2WalkOut + 200, () => setF1Pose('stand'))
 
     // === Act 3: figure 3 walks in, hugs, leaves ===
     at(T.f3WalkIn, () => {
       setF3Pose('walk')
-      f3Op.value = withTiming(1, { duration: 300 })
-      f3X.value = withTiming(slotHug, { duration: 1500, easing: Easing.out(Easing.cubic) })
+      f3Op.value = withTiming(1, { duration: d(300) })
+      f3X.value = withTiming(slotHug, { duration: d(1500), easing: Easing.out(Easing.cubic) })
     })
     at(T.hug1Start, () => {
       setF3Pose('hug')
       setF1Pose('hug')
       // Halo swells around the embrace...
       glowX.value = slot1 + 20
-      glowOp.value = withTiming(0.85, { duration: 700, easing: Easing.out(Easing.quad) })
+      glowOp.value = withTiming(0.85, { duration: d(700), easing: Easing.out(Easing.quad) })
     })
     at(T.hug1End, () => {
       setF3Pose('walk')
       setF3Heading('R')
       setF1Pose('stand')
       // ...and dies down when this one, too, walks away.
-      glowOp.value = withTiming(0, { duration: 900 })
+      glowOp.value = withTiming(0, { duration: d(900) })
     })
     at(T.f3WalkOut, () => {
-      f3X.value = withTiming(offRight, { duration: 1800, easing: Easing.in(Easing.cubic) })
+      f3X.value = withTiming(offRight, { duration: d(1800), easing: Easing.in(Easing.cubic) })
     })
     at(T.f3WalkOut + 1500, () => {
-      f3Op.value = withTiming(0, { duration: 300 })
+      f3Op.value = withTiming(0, { duration: d(300) })
     })
 
     // === Act 4: figure 4 walks in, hugs, both sit shoulder-to-shoulder ===
     at(T.f4WalkIn, () => setF4Pose('walk'))
-    f4Op.value = withDelay(T.f4WalkIn, withTiming(1, { duration: 300 }))
+    f4Op.value = withDelay(d(T.f4WalkIn), withTiming(1, { duration: d(300) }))
     f4X.value = withDelay(
-      T.f4WalkIn,
-      withTiming(slotSit, { duration: 1500, easing: Easing.out(Easing.cubic) })
+      d(T.f4WalkIn),
+      withTiming(slotSit, { duration: d(1500), easing: Easing.out(Easing.cubic) })
     )
     at(T.hug2Start, () => {
       setF4Pose('hug')
       setF1Pose('hug')
       // The halo returns over the pair that stays...
       glowX.value = slot1 - 12
-      glowOp.value = withTiming(0.85, { duration: 700, easing: Easing.out(Easing.quad) })
+      glowOp.value = withTiming(0.85, { duration: d(700), easing: Easing.out(Easing.quad) })
     })
     at(T.sitDown, () => {
-      setF4Pose('sit')
-      setF1Pose('sit')
-      // ...and settles into a softer, steady warmth as they sit.
-      glowOp.value = withTiming(0.5, { duration: 1200 })
+      // Backs to the viewer, gazing up at the moon; legs hidden in front.
+      setF4Pose('sitBack')
+      setF1Pose('sitBack')
+      glowOp.value = withTiming(0.5, { duration: d(1200) })
     })
-    // Camera pushes in on the pair that stays; the sky fully blooms. 1.12 is
-    // deliberately a real push (1.04 read as nothing on device).
+    // Big camera push on the pair + the focal moon swells in above them — the
+    // "拉近镜头放大人和月亮" final tableau that hands off to the form.
     at(T.hug2Start, () => {
-      stageScale.value = withTiming(1.12, { duration: 4500, easing: Easing.out(Easing.quad) })
+      stageScale.value = withTiming(1.45, { duration: d(4500), easing: Easing.out(Easing.quad) })
+      moonOp.value = withTiming(1, { duration: d(1600) })
+      moonScale.value = withTiming(FOCAL_MOON_MAX_SCALE, {
+        duration: d(4200),
+        easing: Easing.out(Easing.quad),
+      })
     })
     at(T.starsBright, () => {
-      starsBright.value = withTiming(1, { duration: 1500 })
+      starsBright.value = withTiming(1, { duration: d(1500) })
     })
 
     // === Outro: CTA fades in ===
-    ctaOp.value = withDelay(T.ctaIn, withTiming(1, { duration: 800 }))
-    skipOp.value = withDelay(T.ctaIn, withTiming(0, { duration: 400 }))
+    ctaOp.value = withDelay(d(T.ctaIn), withTiming(1, { duration: d(800) }))
+    skipOp.value = withDelay(d(T.ctaIn), withTiming(0, { duration: d(400) }))
     at(T.ctaIn + 200, () => setDone(true))
 
     return () => {
@@ -471,6 +509,10 @@ export default function IntroScreen() {
   const skipStyle = useAnimatedStyle(() => ({ opacity: skipOp.value }))
   const actStyle = useAnimatedStyle(() => ({ opacity: actOp.value }))
   const stageStyle = useAnimatedStyle(() => ({ transform: [{ scale: stageScale.value }] }))
+  const focalMoonStyle = useAnimatedStyle(() => ({
+    opacity: moonOp.value,
+    transform: [{ scale: moonScale.value }],
+  }))
 
   // Anchor for overlays (glow, speech dots): figure-box top when standing at slot1.
   const centerFigTop = groundYAt(slot1, width, height) - FEET_Y
@@ -485,21 +527,27 @@ export default function IntroScreen() {
         {/* Halo behind embracing / sitting pairs (under the figures) */}
         <FigureGlow xSv={glowX} opacitySv={glowOp} top={centerFigTop - 10} size={150} />
 
-        {/* Figures */}
+        {/* Figures — each carries a distinct `seed` so a pair never holds the
+            same pose identically or as a pure mirror (talk / hug / sit differ). */}
         <Animated.View style={[styles.figure, f1Style]}>
-          <StickFigure pose={f1Pose} facing={f1Pose === 'lookL' ? 'L' : 'R'} phase={gait1.phase} />
+          <StickFigure
+            pose={f1Pose}
+            facing={f1Pose === 'lookL' ? 'L' : 'R'}
+            phase={gait1.phase}
+            seed={1}
+          />
           <WalkDust active={f1Pose === 'walk'} heading='R' />
         </Animated.View>
         <Animated.View style={[styles.figure, f2Style]}>
-          <StickFigure pose={f2Pose} facing='L' phase={gait2.phase} />
+          <StickFigure pose={f2Pose} facing='L' phase={gait2.phase} seed={2} />
           <WalkDust active={f2Pose === 'walk'} heading={f2Heading} />
         </Animated.View>
         <Animated.View style={[styles.figure, f3Style]}>
-          <StickFigure pose={f3Pose} facing='L' phase={gait3.phase} />
+          <StickFigure pose={f3Pose} facing='L' phase={gait3.phase} seed={3} />
           <WalkDust active={f3Pose === 'walk'} heading={f3Heading} />
         </Animated.View>
         <Animated.View style={[styles.figure, f4Style]}>
-          <StickFigure pose={f4Pose} facing='R' phase={gait4.phase} />
+          <StickFigure pose={f4Pose} facing='R' phase={gait4.phase} seed={4} />
           <WalkDust active={f4Pose === 'walk'} heading='R' />
         </Animated.View>
 
@@ -537,13 +585,25 @@ export default function IntroScreen() {
         </Text>
       </Animated.View>
 
-      {/* Brand anchor — V15Moon fades in alongside the CTA at the same vertical
-          position the home header uses, so onboarding ends on the same logo
-          home starts on. */}
-      <Animated.View style={[styles.brand, ctaStyle]} pointerEvents='none'>
-        {/* Night-blended skin: the moon's shadow side melts into the void sky
-            instead of floating as a grey disc. */}
-        <V15Moon size={64} skin={LOGO_NIGHT_V15} />
+      {/* Focal moon — the pair gazes up at it. Fades in + swells over the final
+          scene and ends big + centered so pair-input can shrink + move it into
+          place (the magic move). Same cinnabar phase-0.25 moon. */}
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            // Mid-lower: below the caption (~0.3h), above the seated pair, so the
+            // form moon can travel a real distance UP into its resting spot.
+            top: height * 0.45 - FOCAL_MOON_SIZE / 2,
+            left: 0,
+            right: 0,
+            alignItems: 'center',
+          },
+          focalMoonStyle,
+        ]}
+        pointerEvents='none'
+      >
+        <MoonPhaseLoader size={FOCAL_MOON_SIZE} phase={introMoonPhase} skin={SKIN_CINNABAR} clean />
       </Animated.View>
 
       {/* Skip hint (early) */}
@@ -592,13 +652,6 @@ const styles = StyleSheet.create({
   hint: {
     position: 'absolute',
     bottom: 64,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  brand: {
-    position: 'absolute',
-    top: 96,
     left: 0,
     right: 0,
     alignItems: 'center',

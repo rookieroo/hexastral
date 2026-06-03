@@ -15,17 +15,13 @@
  * + routes home.
  */
 
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { RevealMoment, type TimeIndex, useSoloBond } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { resolveLocale, t } from '@/lib/i18n'
 import { clearDraft, useDraft } from '@/lib/onboardingDraft'
 import { suppressNextSplash } from '@/lib/splash-control'
@@ -137,9 +133,7 @@ export default function RevealScreen() {
               {errorMsg}
             </Text>
           ) : null}
-          <Pressable onPress={() => void runCreate()} hitSlop={12}>
-            <Text style={kindredPresets.ctaText}>{t(locale, 'reveal.retry')}</Text>
-          </Pressable>
+          <PrimaryButton label={t(locale, 'reveal.retry')} onPress={() => void runCreate()} />
           <Pressable onPress={() => router.replace('/(onboarding)/self')} hitSlop={12}>
             <Text
               style={[

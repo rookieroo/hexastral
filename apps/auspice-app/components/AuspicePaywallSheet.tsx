@@ -63,6 +63,18 @@ export function AuspicePaywallSheet({
           {t.proSubtitle}
         </Text>
 
+        {/* What Pro unlocks — explicit, localized benefit list. */}
+        <View style={{ gap: spacing.sm }}>
+          {t.proBenefits.map((benefit) => (
+            <View key={benefit} style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Text style={{ color: colors.accent, fontSize: 13, lineHeight: 20 }}>✓</Text>
+              <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20, flex: 1 }}>
+                {benefit}
+              </Text>
+            </View>
+          ))}
+        </View>
+
         {signedIn === null ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
             <ActivityIndicator color={colors.accent} />

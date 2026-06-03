@@ -8,23 +8,56 @@
  * pager, so a swipe-to-close overlay would fight those. Mirrors the ink
  * vocabulary of apps/ming-pan-app's ReadingOverlay (ADR-0018 rule 3/6).
  *
- * Requires @shopify/react-native-skia + @react-native-masked-view/masked-view
- * (added to yuan-app deps; needs a native rebuild).
+ * DARK-MODE FIX: the bloom alone is invisible on dark — the revealed report is
+ * dark and the not-yet-revealed area is dark, so the organic ink edge has no
+ * contrast ("完全看不出来"). We ride a LUMINOUS ivory ink-front on the bloom
+ * boundary: a soft glowing ring at the same radius/timing as the mask, which
+ * makes the 墨晕 read as ink lit from within as it spreads, then fades to
+ * nothing as the bloom fills the screen. (Light mode never needed it; the
+ * paper-bright report gave its own contrast.)
+ *
+ * Requires @shopify/react-native-skia + @react-native-masked-view/masked-view.
  */
 
 import MaskedView from '@react-native-masked-view/masked-view'
+import { Canvas, Circle, RadialGradient, vec } from '@shopify/react-native-skia'
 import { InkBloomMask } from '@zhop/core-ui/motion'
+import { ricePaper } from '@zhop/hexastral-tokens'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
-import { useReducedMotion } from 'react-native-reanimated'
+import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useDerivedValue,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 type Phase = 'cover' | 'wipe' | 'done'
+
+const BLOOM_MS = 1600
+// Match InkBloomMask's internal easing so the glow front stays on the ink edge.
+const BLOOM_EASING = Easing.bezier(0.3, 0.45, 0.2, 1)
 
 export function ReportReveal({ children }: { children: ReactNode }) {
   const { width, height } = useWindowDimensions()
   const reduced = useReducedMotion()
   const [phase, setPhase] = useState<Phase>(reduced ? 'done' : 'cover')
+
+  const origin = { x: width / 2, y: height * 0.86 }
+  const maxRadius = Math.hypot(width, height) * 1.1
+
+  // Luminous ink-front — a ring driven on the SAME radius + timing as the mask,
+  // so it glows along the spreading ink edge (the part that's invisible in dark).
+  const edgeR = useSharedValue(0)
+  const edgeRadius = useDerivedValue(() => Math.max(1, edgeR.value))
+  const edgeGlowStyle = useAnimatedStyle(() => ({
+    // Bright while sweeping, gone by the time it fills the screen (no pop on done).
+    opacity: interpolate(edgeR.value / maxRadius, [0, 0.7, 1], [0.85, 0.7, 0]),
+  }))
 
   // Short cover hold lets MaskedView + the Skia canvas paint their first frame.
   useEffect(() => {
@@ -33,27 +66,54 @@ export function ReportReveal({ children }: { children: ReactNode }) {
     return () => clearTimeout(id)
   }, [reduced, phase])
 
+  // Start the glow front the moment the bloom starts (same params as the mask).
+  useEffect(() => {
+    if (phase !== 'wipe') return
+    edgeR.value = withTiming(maxRadius, { duration: BLOOM_MS, easing: BLOOM_EASING })
+  }, [phase, maxRadius, edgeR])
+
   // Once fully bloomed (or under reduced motion) render the report with NO mask
   // so paging / scroll gestures are pristine.
   if (phase === 'done') return <>{children}</>
 
   return (
-    <MaskedView
-      style={{ flex: 1 }}
-      maskElement={
-        <InkBloomMask
-          active={phase === 'wipe'}
-          origin={{ x: width / 2, y: height * 0.86 }}
-          maxRadius={Math.hypot(width, height) * 1.1}
-          width={width}
-          height={height}
-          duration={1600}
-          onOpened={() => setPhase('done')}
-          onCollapsed={() => {}}
-        />
-      }
-    >
-      <View style={[{ flex: 1 }, phase === 'cover' && { opacity: 0 }]}>{children}</View>
-    </MaskedView>
+    <View style={{ flex: 1 }}>
+      <MaskedView
+        style={{ flex: 1 }}
+        maskElement={
+          <InkBloomMask
+            active={phase === 'wipe'}
+            origin={origin}
+            maxRadius={maxRadius}
+            width={width}
+            height={height}
+            duration={BLOOM_MS}
+            onOpened={() => setPhase('done')}
+            onCollapsed={() => {}}
+          />
+        }
+      >
+        <View style={[{ flex: 1 }, phase === 'cover' && { opacity: 0 }]}>{children}</View>
+      </MaskedView>
+
+      {/* Luminous ivory ink-front, on top, riding the bloom edge (dark-mode legibility). */}
+      <Animated.View style={[StyleSheet.absoluteFill, edgeGlowStyle]} pointerEvents='none'>
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Circle cx={origin.x} cy={origin.y} r={edgeRadius}>
+            <RadialGradient
+              c={vec(origin.x, origin.y)}
+              r={edgeRadius}
+              colors={[
+                'rgba(245,240,232,0)',
+                'rgba(245,240,232,0)',
+                ricePaper.ivory,
+                'rgba(245,240,232,0)',
+              ]}
+              positions={[0, 0.78, 0.93, 1]}
+            />
+          </Circle>
+        </Canvas>
+      </Animated.View>
+    </View>
   )
 }

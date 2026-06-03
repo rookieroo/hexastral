@@ -47,6 +47,7 @@ const TARGET_TO_BUNDLE_ID: Record<string, string> = {
   eightpillars: 'com.hexastral.eightpillars',
   coincast: 'com.hexastral.coincast',
   fate: 'com.hexastral.fate',
+  auspice: 'com.hexastral.auspice',
 }
 
 function audienceForTarget(targetApp: string): string {

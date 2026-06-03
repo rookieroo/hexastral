@@ -381,7 +381,14 @@ export interface PillarUnit {
   element: '木' | '火' | '土' | '金' | '水'
 }
 
-export interface DayunRow {
+/** Personal 对你而言 verdict for a period — the SAME `personalAlmanacOverlay` engine
+ *  as the daily 黄历, applied to the period pillar (流月/流年/大运), not the day. */
+export interface PeriodFit {
+  fit: PersonalFit
+  reasons: PersonalReasonCode[]
+}
+
+export interface DayunRow extends PeriodFit {
   /** 1..8. */
   index: number
   pillar: PillarUnit
@@ -397,15 +404,17 @@ export interface DayunRow {
   isCurrent: boolean
 }
 
-export interface LiunianRow {
+export interface LiunianRow extends PeriodFit {
   year: number
   pillar: PillarUnit
   age: number
   isCurrent: boolean
 }
 
-export interface LiuyueRow {
-  /** 1..12 — currently mapped to calendar month (节气 boundaries TODO). */
+export interface LiuyueRow extends PeriodFit {
+  /** Gregorian year (the window rolls across the year boundary). */
+  year: number
+  /** 1..12 Gregorian month (≈ lunar month; 节气 boundaries TODO). */
   month: number
   pillar: PillarUnit
   isCurrent: boolean
@@ -429,8 +438,8 @@ export interface TimelinePayload {
   /** ±5 years around today (typically 11 entries). */
   liunian: LiunianRow[]
   currentLiunianIndex: number
-  /** 12 rows for the current year. */
-  thisYearLiuyue: LiuyueRow[]
+  /** Rolling 12-month 流月 window from the current Gregorian month (spans the year). */
+  liuyue: LiuyueRow[]
 }
 
 /**

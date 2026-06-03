@@ -18,6 +18,7 @@ export {
 export { BirthReviewStep } from './BirthReviewStep'
 export { BirthTimeStep } from './BirthTimeStep'
 export { birthInfoCopyForLocale } from './defaultCopy'
+export { type LunarDateValue, LunarDateWheels } from './LunarDateWheels'
 export type {
   BirthInfoCopy,
   BirthInfoFormProps,

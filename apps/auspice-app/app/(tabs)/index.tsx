@@ -18,7 +18,7 @@ import { BackArrowIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Cake, CalendarCheck } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -106,7 +106,19 @@ export default function HomeScreen() {
   }, [dayData, t, locale])
 
   /* ── left-swipe → Me (ADR-0018 shared contract) ── */
-  const goToMe = useCallback(() => router.push('/me'), [router])
+  // Re-entrancy latch: the Pan gesture can deliver `onEnd` more than once on a
+  // bouncy release (a second micro-pan still satisfies the commit threshold),
+  // and `router.push` does not dedupe — without this guard a single swipe could
+  // stack two `me` screens. Clear after the slide transition settles.
+  const navLockRef = useRef(false)
+  const goToMe = useCallback(() => {
+    if (navLockRef.current) return
+    navLockRef.current = true
+    router.push('/me')
+    setTimeout(() => {
+      navLockRef.current = false
+    }, 600)
+  }, [router])
   const { activeOffsetX, failOffsetY, commitDx, maxDy, hintDelayMs } = SWIPE_TO_ME
   const swipeToMe = useMemo(
     () =>

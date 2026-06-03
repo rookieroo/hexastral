@@ -30,13 +30,18 @@ import {
   fetchTimeline,
   type LiunianRow,
   type LiuyueRow,
+  type PersonalFit,
   type TimelinePayload,
 } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
-const FREE_DAYUN_LIMIT = 3
+/** Free preview = current position + the next N 流月; Pro unlocks the full life. */
+const FREE_LIUYUE_MONTHS = 6
+
+/** 对你而言 verdict → dot color (吉 green / 平 grey / 凶 red). */
+const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
@@ -160,6 +165,10 @@ interface BodyStrings {
   timelineCurrentBadge: string
   timelineAgeFrom: string
   timelineProLocked: string
+  timelineFreePreviewNote: string
+  timelineAdvice: Record<PersonalFit, string>
+  timelineClashNote: string
+  personal: { fit: Record<PersonalFit, string> }
 }
 
 function TimelineBody({
@@ -177,10 +186,59 @@ function TimelineBody({
   spacing: BodySpacing
   t: BodyStrings
 }) {
-  const visibleDayun = isPro ? payload.dayun : payload.dayun.slice(0, FREE_DAYUN_LIMIT)
+  // Free = a near-term snapshot (current 大运 + current 流年 + next 6 流月);
+  // Pro = the full lifetime ladder. Each Free-gated section gets a LockedRow.
+  const dayunCurrent =
+    payload.currentDayunIndex >= 0 ? payload.dayun[payload.currentDayunIndex] : payload.dayun[0]
+  const visibleDayun = isPro ? payload.dayun : dayunCurrent ? [dayunCurrent] : []
+  const visibleLiunian = isPro ? payload.liunian : payload.liunian.filter((r) => r.isCurrent)
+  // 流月 is a rolling window from the current month (server Phase 2), so the free
+  // preview is just the first N — no calendar-month filtering needed.
+  const visibleLiuyue = isPro ? payload.liuyue : payload.liuyue.slice(0, FREE_LIUYUE_MONTHS)
+  const dayunLocked = !isPro && visibleDayun.length < payload.dayun.length
+  const liunianLocked = !isPro && visibleLiunian.length < payload.liunian.length
+  const liuyueLocked = !isPro && visibleLiuyue.length < payload.liuyue.length
+
+  // 本月「对你而言」— the current 流月's deterministic verdict + advice (the SAME
+  // engine as the daily 黄历, one tier up). This is the in-app "近期" guidance; the
+  // node reminders surface the same thing on month boundaries.
+  const thisMonth = payload.liuyue[0]
+  const monthAdvice = thisMonth
+    ? `${t.timelineAdvice[thisMonth.fit]}${
+        thisMonth.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+      }`
+    : null
 
   return (
     <View style={{ gap: spacing.xl }}>
+      {!isPro ? (
+        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+          {t.timelineFreePreviewNote}
+        </Text>
+      ) : null}
+
+      {/* 本月 对你而言 — current 流月 verdict + advice (the "近期" guidance). */}
+      {thisMonth && monthAdvice ? (
+        <View
+          style={{
+            borderRadius: 14,
+            backgroundColor: colors.card,
+            borderLeftWidth: 3,
+            borderLeftColor: FIT_COLOR[thisMonth.fit],
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            gap: 4,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+            {`${thisMonth.month}月 · ${thisMonth.pillar.stem}${thisMonth.pillar.branch} · ${t.personal.fit[thisMonth.fit]}`}
+          </Text>
+          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
+            {monthAdvice}
+          </Text>
+        </View>
+      ) : null}
+
       {/* 大运 horizontal ladder */}
       <Section title={t.timelineDayun} colors={colors} spacing={spacing}>
         <ScrollView
@@ -199,7 +257,7 @@ function TimelineBody({
             />
           ))}
         </ScrollView>
-        {!isPro && payload.dayun.length > FREE_DAYUN_LIMIT ? (
+        {dayunLocked ? (
           <LockedRow
             label={t.timelineProLocked}
             colors={colors}
@@ -218,26 +276,47 @@ function TimelineBody({
             overflow: 'hidden',
           }}
         >
-          {payload.liunian.map((row, i) => (
+          {visibleLiunian.map((row, i) => (
             <LiunianRowView
               key={row.year}
               row={row}
               colors={colors}
               spacing={spacing}
               currentLabel={t.timelineCurrentBadge}
-              divider={i < payload.liunian.length - 1}
+              divider={i < visibleLiunian.length - 1}
             />
           ))}
         </View>
+        {liunianLocked ? (
+          <LockedRow
+            label={t.timelineProLocked}
+            colors={colors}
+            spacing={spacing}
+            onPress={onLockedTap}
+          />
+        ) : null}
       </Section>
 
       {/* 流月 grid (4 cols × 3 rows fits 12 cleanly) */}
       <Section title={t.timelineLiuyue} colors={colors} spacing={spacing}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {payload.thisYearLiuyue.map((row) => (
-            <LiuyueCell key={row.month} row={row} colors={colors} spacing={spacing} />
+          {visibleLiuyue.map((row) => (
+            <LiuyueCell
+              key={`${row.year}-${row.month}`}
+              row={row}
+              colors={colors}
+              spacing={spacing}
+            />
           ))}
         </View>
+        {liuyueLocked ? (
+          <LockedRow
+            label={t.timelineProLocked}
+            colors={colors}
+            spacing={spacing}
+            onPress={onLockedTap}
+          />
+        ) : null}
       </Section>
     </View>
   )
@@ -259,6 +338,16 @@ function Section({
       <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{title}</Text>
       {children}
     </View>
+  )
+}
+
+/** Tiny 对你而言 verdict dot (吉/平/凶) shown on each period row. */
+function FitDot({ fit }: { fit: PersonalFit }) {
+  return (
+    <View
+      accessibilityLabel={fit}
+      style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: FIT_COLOR[fit] }}
+    />
   )
 }
 
@@ -290,7 +379,10 @@ function DayunChip({
         alignItems: 'flex-start',
       }}
     >
-      <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 2 }}>#{row.index}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 2 }}>#{row.index}</Text>
+        <FitDot fit={row.fit} />
+      </View>
       <Text style={{ color: elementColor, fontSize: 22, fontWeight: '500' }}>
         {row.pillar.stem}
         {row.pillar.branch}
@@ -365,6 +457,7 @@ function LiunianRowView({
         {row.pillar.stem}
         {row.pillar.branch}
       </Text>
+      <FitDot fit={row.fit} />
       <Text style={{ color: colors.dim, fontSize: 12 }}>{row.age}</Text>
       {row.isCurrent ? (
         <View
@@ -417,6 +510,7 @@ function LiuyueCell({
           {row.pillar.stem}
           {row.pillar.branch}
         </Text>
+        <FitDot fit={row.fit} />
       </View>
     </View>
   )

@@ -1851,7 +1851,9 @@ export const fengJobsRelations = relations(fengJobs, ({ one }) => ({
 // (the hash changes, the lookup misses, the recompute path runs + overwrites by
 // `contextKey`). Use that escape hatch when astro-core changes 大运 boundaries or
 // when the payload shape (`schemaVersion`) bumps.
-export const TIMELINE_CACHE_VERSION = 'v1'
+// v2 (Phase 2): rolling 12-month 流月 (was current-calendar-year) + per-row personal
+// 对你而言 fit/reasons on 大运/流年/流月; `thisYearLiuyue` renamed `liuyue`.
+export const TIMELINE_CACHE_VERSION = 'v2'
 
 export const lifeTimelineCache = sqliteTable(
   'life_timeline_cache',

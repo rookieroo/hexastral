@@ -14,16 +14,12 @@
  */
 
 import { V15Moon } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 import { updateDraft } from '@/lib/onboardingDraft'
@@ -94,9 +90,7 @@ export default function ModeScreen() {
           ))}
         </View>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={handleNext} hitSlop={12} style={{ alignSelf: 'flex-end' }}>
-          <Text style={kindredPresets.ctaText}>{t(locale, 'common.next')}</Text>
-        </Pressable>
+        <PrimaryButton label={t(locale, 'common.next')} onPress={handleNext} />
         <View style={{ height: kindredSpacing.xl }} />
       </View>
     </SafeAreaView>

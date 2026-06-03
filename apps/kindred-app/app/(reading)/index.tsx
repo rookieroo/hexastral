@@ -22,12 +22,7 @@
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader, V15Moon } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type BondData, useBondList } from '@zhop/scenario-kindred'
@@ -38,6 +33,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -182,9 +178,11 @@ export default function ReadingHomeScreen() {
             illustration={<V15Moon size={96} />}
             title={copy.noBirthTitle}
             customAction={
-              <Pressable onPress={() => router.push('/(onboarding)/self')} hitSlop={12}>
-                <Text style={kindredPresets.ctaText}>{copy.noBirthCta}</Text>
-              </Pressable>
+              <PrimaryButton
+                label={copy.noBirthCta}
+                onPress={() => router.push('/(onboarding)/self')}
+                block={false}
+              />
             }
           />
         </View>
@@ -256,14 +254,9 @@ export default function ReadingHomeScreen() {
           <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
             {birth.solarDate} · {natal.dayMasterWuXing}
           </Text>
-          <Pressable
-            onPress={() => setReadingOpen(true)}
-            hitSlop={12}
-            accessibilityRole='button'
-            style={{ marginTop: kindredSpacing.lg }}
-          >
-            <Text style={kindredPresets.ctaText}>{copy.open}</Text>
-          </Pressable>
+          <View style={{ marginTop: kindredSpacing.lg }}>
+            <PrimaryButton label={copy.open} onPress={() => setReadingOpen(true)} block={false} />
+          </View>
         </View>
 
         {/* Threads — the second layer (合盘), real bond data inline (K2) */}

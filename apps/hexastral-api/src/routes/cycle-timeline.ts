@@ -41,6 +41,10 @@ import {
   HEAVENLY_STEMS,
   type HeavenlyStem,
   monthGanZhi,
+  type PersonalAlmanacSubject,
+  type PersonalFit,
+  type PersonalReasonCode,
+  personalAlmanacOverlay,
   STEM_WUXING,
   type WuXing,
   yearGanZhi,
@@ -67,7 +71,15 @@ interface PillarUnit {
   element: WuXing
 }
 
-interface DayunRow {
+/** Personal verdict for a period, from `personalAlmanacOverlay` — the SAME engine
+ *  that powers the daily 黄历 「对你而言」, applied to the period pillar (流月/流年/大运)
+ *  instead of the day pillar. Subject = 日主 + 本命支 (matches the daily overlay). */
+interface PeriodFit {
+  fit: PersonalFit
+  reasons: PersonalReasonCode[]
+}
+
+interface DayunRow extends PeriodFit {
   index: number
   pillar: PillarUnit
   startYear: number
@@ -77,14 +89,17 @@ interface DayunRow {
   isCurrent: boolean
 }
 
-interface LiunianRow {
+interface LiunianRow extends PeriodFit {
   year: number
   pillar: PillarUnit
   age: number
   isCurrent: boolean
 }
 
-interface LiuyueRow {
+interface LiuyueRow extends PeriodFit {
+  /** Gregorian year of this 流月 (the window rolls across the year boundary). */
+  year: number
+  /** Gregorian month 1..12 (≈ lunar month; 节气-accurate boundaries are a TODO). */
   month: number
   pillar: PillarUnit
   isCurrent: boolean
@@ -104,7 +119,9 @@ export interface TimelinePayload {
   currentDayunIndex: number
   liunian: LiunianRow[]
   currentLiunianIndex: number
-  thisYearLiuyue: LiuyueRow[]
+  /** Rolling 12-month 流月 window from the current Gregorian month (spans the year
+   *  boundary). Renamed from `thisYearLiuyue` when it became rolling (Phase 2). */
+  liuyue: LiuyueRow[]
 }
 
 // ── Request validation ──────────────────────────────────────────
@@ -163,6 +180,19 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
   const dayP = pillarFrom(pillars.day.stem, pillars.day.branch)
   const hourP = hasHour ? pillarFrom(pillars.hour.stem, pillars.hour.branch) : null
 
+  // Personal overlay — the SAME engine as the daily 黄历 「对你而言」, applied to each
+  // period pillar. Subject = 日主 + 本命支 (no 用神, matching the daily auspice overlay)
+  // so the timeline verdict and the daily verdict are computed identically — the
+  // timeline just answers 流月/流年/大运 instead of 流日.
+  const subject: PersonalAlmanacSubject = {
+    dayMasterStem: pillars.day.stem,
+    birthBranch: pillars.year.branch,
+  }
+  const periodFit = (stem: HeavenlyStem, branch: EarthlyBranch): PeriodFit => {
+    const o = personalAlmanacOverlay(subject, { dayElement: STEM_WUXING[stem], dayBranch: branch })
+    return { fit: o.fit, reasons: o.reasons }
+  }
+
   // 2) 大运 — 8 steps (covers ~80 years; covers a normal lifespan with margin).
   const daYun = calculateDaYun({ year, month, day, hour: hourForPillars }, astroGender, 8)
   // Current year drives the "where am I" indices. Use Gregorian year (not 立春-aware) — the
@@ -177,6 +207,7 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
     startAge: s.startAge,
     endAge: s.endAge,
     isCurrent: todayYear >= s.startYear && todayYear <= s.endYear,
+    ...periodFit(s.ganZhi.stem, s.ganZhi.branch),
   }))
   const currentDayunIndex = dayunRows.findIndex((r) => r.isCurrent)
 
@@ -191,32 +222,31 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
     pillar: pillarFrom(ln.ganZhi.stem, ln.ganZhi.branch),
     age: ln.age,
     isCurrent: ln.year === todayYear,
+    ...periodFit(ln.ganZhi.stem, ln.ganZhi.branch),
   }))
   const currentLiunianIndex = liunianRows.findIndex((r) => r.isCurrent)
 
-  // 4) 流月 — 12 lunar months of the CURRENT Gregorian year. 月支 enumerates from 寅 (= lunar 正月)
-  //    so branchIdx = (lunarMonth + 1) mod 12 in astro-core's 0-based branch order
-  //    (子=0..亥=11 → 寅=2). 月干 derives from 年干 via the 五虎遁 table that
-  //    `monthGanZhi(yearStemIdx, monthBranchIdx)` already encodes.
-  const thisYearGZ = yearGanZhi(todayYear)
-  const yearStemIdx = HEAVENLY_STEMS.indexOf(thisYearGZ.stem)
-  const todayMonth = now.getUTCMonth() + 1 // 1..12 — Gregorian; close-enough proxy for "current 流月".
+  // 4) 流月 — a ROLLING 12-month window from the current Gregorian month (spans the
+  //    year boundary so the cycle-app's "next N months" preview + the node reminders
+  //    don't truncate in December). Each month uses its OWN Gregorian year's 年干 for
+  //    the 五虎遁 月干 derivation. 月支 enumerates from 寅 (正月) → branchIdx (m+1) mod 12.
+  //    Gregorian month ≈ lunar month (节气-accurate boundaries remain a TODO, as before).
   const liuyueRows: LiuyueRow[] = []
-  for (let lunarMonth = 1; lunarMonth <= 12; lunarMonth++) {
-    // 正月 → 寅 (branchIdx 2), 二月 → 卯 (3), …, 腊月 → 丑 (1).
-    const branchIdx = (lunarMonth + 1) % 12
-    const gz = monthGanZhi(yearStemIdx, branchIdx)
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(Date.UTC(todayYear, now.getUTCMonth() + i, 1))
+    const gYear = d.getUTCFullYear()
+    const gMonth = d.getUTCMonth() + 1
+    const yearStemIdx = HEAVENLY_STEMS.indexOf(yearGanZhi(gYear).stem)
+    const gz = monthGanZhi(yearStemIdx, (gMonth + 1) % 12)
     liuyueRows.push({
-      month: lunarMonth,
+      year: gYear,
+      month: gMonth,
       pillar: pillarFrom(gz.stem, gz.branch),
-      // Heuristic — Gregorian month ≈ lunar month for the "isCurrent" badge.
-      // The cycle-app already shows the lunar/solar gap in copy, so an exact
-      // 节气-aware switch isn't required for the visual indicator here.
-      isCurrent: lunarMonth === todayMonth,
+      isCurrent: i === 0,
+      ...periodFit(gz.stem, gz.branch),
     })
   }
   // EARTHLY_BRANCHES is imported only for type-checking the branch domain — no runtime use.
-  // (Bundler tree-shakes it; keeping the import documents the canonical ordering.)
   void EARTHLY_BRANCHES
 
   return {
@@ -228,7 +258,7 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
     currentDayunIndex,
     liunian: liunianRows,
     currentLiunianIndex,
-    thisYearLiuyue: liuyueRows,
+    liuyue: liuyueRows,
   }
 }
 

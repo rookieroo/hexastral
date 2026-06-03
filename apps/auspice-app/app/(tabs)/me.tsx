@@ -15,10 +15,13 @@
  * `@zhop/core-ui` for apps that need the deeper flow.
  */
 
-import { lunarToSolar } from '@zhop/astro-core'
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
+import { lunarToSolar, solarToLunar } from '@zhop/astro-core'
 import {
   CityPicker,
   DEFAULT_TOP_CITIES,
+  type LunarDateValue,
+  LunarDateWheels,
   type ShichenIndex,
   ShichenPicker,
   useTheme,
@@ -27,18 +30,13 @@ import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Linking, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { Linking, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
-import {
-  type AuspiceBirthInfo,
-  getAuspiceBirthInfo,
-  isValidBirthDate,
-  setAuspiceBirthInfo,
-} from '@/lib/birth'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
@@ -47,10 +45,13 @@ import { useStrings } from '@/lib/i18n-context'
 import {
   disableDailyPush,
   disableHolidayHeadsUp,
+  disableTimelineReminders,
   enableDailyPush,
   enableHolidayHeadsUp,
+  enableTimelineReminders,
   isHolidayHeadsUpEnabled,
   isPushEnabled,
+  isTimelineRemindersEnabled,
 } from '@/lib/push'
 
 const LOCALES: { key: Locale; label: string }[] = [
@@ -72,16 +73,33 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-/**
- * Format a raw input string as YYYY-MM-DD by auto-inserting dashes. Strips
- * everything that isn't a digit and caps at 8 digits — predictable behavior
- * regardless of which keyboard the user is on (numeric, alphanumeric, IME).
- */
-function formatDateInput(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 4) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`
-  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
+const MIN_DATE = new Date(1900, 0, 1)
+const MAX_DATE = new Date()
+
+/** Parse `YYYY-MM-DD` into a local-time Date. Returns null on bad input. */
+function parseSolarDate(iso: string | undefined): Date | null {
+  if (!iso || iso.length !== 10) return null
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d)
+}
+
+/** Format a Date as solar `YYYY-MM-DD`. */
+function formatSolarDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+/** Parse the stored `lunarInput` (`YYYY-MM-DD`, 农历) into y/m/d. */
+function parseLunarInput(
+  s: string | undefined
+): { year: number; month: number; day: number } | null {
+  if (!s) return null
+  const [year, month, day] = s.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return { year, month, day }
 }
 
 export default function MeScreen() {
@@ -98,40 +116,51 @@ export default function MeScreen() {
 
   // ── Birth info form state ───────────────────────────────────────────────
   // `birth` is the canonical saved object (solarDate is always the gregorian
-  // form, even when the user originally entered 农历). `dateInput` + `calendar`
-  // are the editor-mode state: what the user is typing right now and which
-  // calendar they're typing it in. On save we run `lunarToSolar` and persist
-  // both the canonical solarDate and the original lunarInput so re-editing
-  // shows the user's original 农历 entry instead of a possibly-leap-month-
-  // ambiguous reverse conversion.
+  // form, even when the user originally entered 农历). `solarPicked` / `lunarYmd`
+  // + `calendar` are the editor-mode state: the date the user is picking and
+  // which calendar they're picking it in. On save we run `lunarToSolar` and
+  // persist both the canonical solarDate and the original lunar selection
+  // (lunarInput + lunarIsLeap) so re-editing restores the user's 农历 choice
+  // exactly instead of a possibly-leap-month-ambiguous reverse conversion.
   const [birth, setBirth] = useState<AuspiceBirthInfo>({ solarDate: '', timeIndex: null })
-  const [dateInput, setDateInput] = useState('')
   const [calendar, setCalendar] = useState<'solar' | 'lunar'>('solar')
+  // Solar mode: a real Date driving the native picker. Lunar mode: y/m/d/leap
+  // driving the shared scroll-wheels. Defaults — solar: ~25y ago; lunar: today's
+  // 农历 equivalent — get overwritten by any saved record in the effect below.
+  const [solarPicked, setSolarPicked] = useState<Date>(
+    () => new Date(new Date().getFullYear() - 25, 5, 15)
+  )
+  const [lunarYmd, setLunarYmd] = useState<LunarDateValue>(() => {
+    const now = new Date()
+    try {
+      const l = solarToLunar(now.getFullYear(), now.getMonth() + 1, now.getDate())
+      return { year: l.year, month: l.month, day: l.day, isLeap: l.isLeap }
+    } catch {
+      return { year: 1990, month: 1, day: 1, isLeap: false }
+    }
+  })
+  // Android shows the date picker as a one-shot dialog; iOS uses the inline
+  // compact pill, so this stays false there.
+  const [showAndroidPicker, setShowAndroidPicker] = useState(false)
   const [birthSaved, setBirthSaved] = useState(false)
   // Once a birth is on record, the form collapses to a one-line summary; tapping
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
 
-  /** The canonical solar YYYY-MM-DD derived from `dateInput` + `calendar`.
-   *  Null when the input is incomplete or an invalid lunar date (e.g. 农历
-   *  2月30 in a 短月 year). Drives the Save button's enabled state. */
+  /** The canonical solar YYYY-MM-DD derived from the active picker. Null only
+   *  when a lunar selection fails to convert (defensive — the wheels constrain
+   *  to valid 农历 dates). Drives the Save button's enabled state. */
   const computedSolarDate = useMemo<string | null>(() => {
-    if (!isValidBirthDate(dateInput)) return null
-    if (calendar === 'solar') return dateInput
-    const [y, m, d] = dateInput.split('-').map(Number)
-    if (!y || !m || !d || y < 1900 || y > 2100) return null
-    if (m < 1 || m > 12 || d < 1 || d > 30) return null
+    if (calendar === 'solar') return formatSolarDate(solarPicked)
     try {
-      const sd = lunarToSolar(y, m, d, false)
-      const yy = sd.getFullYear()
-      const mm = String(sd.getMonth() + 1).padStart(2, '0')
-      const dd = String(sd.getDate()).padStart(2, '0')
-      return `${yy}-${mm}-${dd}`
+      return formatSolarDate(
+        lunarToSolar(lunarYmd.year, lunarYmd.month, lunarYmd.day, lunarYmd.isLeap)
+      )
     } catch {
       return null
     }
-  }, [dateInput, calendar])
+  }, [calendar, solarPicked, lunarYmd])
   const birthValid = computedSolarDate !== null
 
   const birthSummary = useMemo(() => {
@@ -156,24 +185,39 @@ export default function MeScreen() {
   useEffect(() => {
     getAuspiceBirthInfo()
       .then((info) => {
-        if (info) {
-          setBirth(info)
-          setHasSavedBirth(true)
-          const isLunar = info.calendar === 'lunar' && !!info.lunarInput
-          setCalendar(isLunar ? 'lunar' : 'solar')
-          setDateInput(isLunar ? (info.lunarInput ?? '') : info.solarDate)
+        if (!info) return
+        setBirth(info)
+        setHasSavedBirth(true)
+        const isLunar = info.calendar === 'lunar' && !!info.lunarInput
+        setCalendar(isLunar ? 'lunar' : 'solar')
+        if (isLunar) {
+          const parsed = parseLunarInput(info.lunarInput)
+          if (parsed) setLunarYmd({ ...parsed, isLeap: info.lunarIsLeap === true })
+        } else {
+          const d = parseSolarDate(info.solarDate)
+          if (d) setSolarPicked(d)
         }
       })
       .catch(() => {})
   }, [])
 
+  const handleSolarChange = (_: DateTimePickerEvent, picked?: Date) => {
+    if (Platform.OS === 'android') setShowAndroidPicker(false)
+    if (picked) setSolarPicked(picked)
+  }
+
   const saveBirth = () => {
     if (!birthValid || !computedSolarDate) return
+    const lunarInput =
+      calendar === 'lunar'
+        ? `${lunarYmd.year}-${String(lunarYmd.month).padStart(2, '0')}-${String(lunarYmd.day).padStart(2, '0')}`
+        : undefined
     const updated: AuspiceBirthInfo = {
       ...birth,
       solarDate: computedSolarDate,
       calendar,
-      lunarInput: calendar === 'lunar' ? dateInput : undefined,
+      lunarInput,
+      lunarIsLeap: calendar === 'lunar' ? lunarYmd.isLeap : undefined,
     }
     void setAuspiceBirthInfo(updated).then(() => {
       setBirth(updated)
@@ -222,9 +266,44 @@ export default function MeScreen() {
       .catch(() => {})
   }, [])
 
+  // 人生节点提醒 (Pro) — month-start / 大运 transition nudges to /timeline. Needs a
+  // saved birth (gender + date) to compute the timeline; gates on Pro first.
+  const [timelineRemindOn, setTimelineRemindOn] = useState(false)
+  const toggleTimelineRemind = async (next: boolean) => {
+    if (!next) {
+      await disableTimelineReminders()
+      setTimelineRemindOn(false)
+      return
+    }
+    if (!isPro) {
+      setCalPaywallOpen(true)
+      return
+    }
+    if (!birth.gender || !birth.solarDate) {
+      setEditingBirth(true)
+      return
+    }
+    const ok = await enableTimelineReminders({
+      locale,
+      birthDate: birth.solarDate,
+      birthHour: birth.timeIndex === null ? -1 : birth.timeIndex * 2,
+      gender: birth.gender === '男' ? 'M' : 'F',
+    })
+    setTimelineRemindOn(ok)
+  }
+  useEffect(() => {
+    isTimelineRemindersEnabled()
+      .then(setTimelineRemindOn)
+      .catch(() => {})
+  }, [])
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
+        keyboardShouldPersistTaps='handled'
+        automaticallyAdjustKeyboardInsets
+      >
         {/* No back button + no h1 title — minimalist drill-in. iOS edge-swipe-
             back + Android system-back handle nav. */}
 
@@ -307,22 +386,56 @@ export default function MeScreen() {
                     )
                   })}
                 </View>
-                <TextInput
-                  value={dateInput}
-                  onChangeText={(raw) => setDateInput(formatDateInput(raw))}
-                  placeholder={t.personal.birthDatePlaceholder}
-                  placeholderTextColor={colors.dim}
-                  autoCapitalize='none'
-                  keyboardType='numeric'
-                  maxLength={10}
-                  style={{
-                    color: colors.text,
-                    fontSize: 16,
-                    borderBottomWidth: 0.5,
-                    borderBottomColor: colors.separator,
-                    paddingVertical: spacing.sm,
-                  }}
-                />
+                {calendar === 'solar' ? (
+                  <View>
+                    {Platform.OS === 'ios' ? (
+                      <DateTimePicker
+                        value={solarPicked}
+                        mode='date'
+                        display='compact'
+                        minimumDate={MIN_DATE}
+                        maximumDate={MAX_DATE}
+                        onChange={handleSolarChange}
+                        accentColor={colors.accent}
+                        locale={locale}
+                        style={{ alignSelf: 'flex-start' }}
+                      />
+                    ) : (
+                      <Pressable
+                        onPress={() => setShowAndroidPicker(true)}
+                        accessibilityRole='button'
+                        style={{
+                          borderBottomWidth: 0.5,
+                          borderBottomColor: colors.separator,
+                          paddingVertical: spacing.sm,
+                        }}
+                      >
+                        <Text style={{ color: colors.text, fontSize: 16 }}>
+                          {formatSolarDate(solarPicked)}
+                        </Text>
+                      </Pressable>
+                    )}
+                    {Platform.OS === 'android' && showAndroidPicker ? (
+                      <DateTimePicker
+                        value={solarPicked}
+                        mode='date'
+                        display='default'
+                        minimumDate={MIN_DATE}
+                        maximumDate={MAX_DATE}
+                        onChange={handleSolarChange}
+                      />
+                    ) : null}
+                  </View>
+                ) : (
+                  <LunarDateWheels
+                    year={lunarYmd.year}
+                    month={lunarYmd.month}
+                    day={lunarYmd.day}
+                    isLeap={lunarYmd.isLeap}
+                    accent={colors.accent}
+                    onChange={setLunarYmd}
+                  />
+                )}
                 {calendar === 'lunar' ? (
                   <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
                     {t.birthCalendarLunarHint}
@@ -489,35 +602,6 @@ export default function MeScreen() {
           )}
         </View>
 
-        {/* ── Language (DEV-only) ── */}
-        {__DEV__ ? (
-          <View>
-            <SectionLabel>{`${t.language} · DEV`}</SectionLabel>
-            <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-              {LOCALES.map((l, i) => (
-                <Pressable
-                  key={l.key}
-                  onPress={() => setLocale(l.key)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingVertical: spacing.md,
-                    paddingHorizontal: spacing.lg,
-                    borderTopWidth: i === 0 ? 0 : 0.5,
-                    borderTopColor: colors.separator,
-                  }}
-                >
-                  <Text style={{ color: colors.text, fontSize: 16 }}>{l.label}</Text>
-                  {locale === l.key ? (
-                    <Text style={{ color: colors.accent, fontSize: 16 }}>✓</Text>
-                  ) : null}
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
         {/* ── 主题色 — global accent variant (朱泥 default + 3 alts). Lives here
             because watch face + widget have their own brand-anchored palettes
             and don't honor the app accent — the picker would be misleading on
@@ -601,6 +685,40 @@ export default function MeScreen() {
             <Switch
               value={pushOn}
               onValueChange={togglePush}
+              trackColor={{ true: colors.accent }}
+            />
+          </View>
+        </View>
+
+        {/* ── 人生节点提醒 (Pro) ── */}
+        <View>
+          <SectionLabel>{t.timelineRemindToggle}</SectionLabel>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: colors.text, fontSize: 16 }}>{t.timelineRemindToggle}</Text>
+                {!isPro ? (
+                  <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
+                ) : null}
+              </View>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                {t.timelineRemindHint}
+              </Text>
+            </View>
+            <Switch
+              value={timelineRemindOn}
+              onValueChange={toggleTimelineRemind}
               trackColor={{ true: colors.accent }}
             />
           </View>
@@ -772,6 +890,36 @@ export default function MeScreen() {
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
         </View>
+
+        {/* ── Language (DEV-only) — kept at the very bottom so it never crowds
+            the real settings above it. ── */}
+        {__DEV__ ? (
+          <View>
+            <SectionLabel>{`${t.language} · DEV`}</SectionLabel>
+            <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
+              {LOCALES.map((l, i) => (
+                <Pressable
+                  key={l.key}
+                  onPress={() => setLocale(l.key)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: spacing.md,
+                    paddingHorizontal: spacing.lg,
+                    borderTopWidth: i === 0 ? 0 : 0.5,
+                    borderTopColor: colors.separator,
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontSize: 16 }}>{l.label}</Text>
+                  {locale === l.key ? (
+                    <Text style={{ color: colors.accent, fontSize: 16 }}>✓</Text>
+                  ) : null}
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   )

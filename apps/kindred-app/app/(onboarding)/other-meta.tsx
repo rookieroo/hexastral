@@ -7,17 +7,13 @@
  */
 
 import { V15Moon } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { resolveLocale, t } from '@/lib/i18n'
 import { updateDraft, useDraft } from '@/lib/onboardingDraft'
 
@@ -83,14 +79,11 @@ export default function OtherMetaScreen() {
         />
 
         <View style={{ flex: 1 }} />
-        <Pressable
+        <PrimaryButton
+          label={t(locale, 'common.next')}
           onPress={() => router.push('/(onboarding)/other-birth')}
           disabled={!canContinue}
-          hitSlop={12}
-          style={{ alignSelf: 'flex-end', opacity: canContinue ? 1 : 0.3 }}
-        >
-          <Text style={kindredPresets.ctaText}>{t(locale, 'common.next')}</Text>
-        </Pressable>
+        />
         <View style={{ height: kindredSpacing.xl }} />
       </View>
     </SafeAreaView>

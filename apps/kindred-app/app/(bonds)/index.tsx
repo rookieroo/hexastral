@@ -12,12 +12,7 @@
 
 import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader, V15Moon } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type BondData, useBondList, WaitingForOther } from '@zhop/scenario-kindred'
@@ -28,6 +23,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
 import { consumeSplashDecision } from '@/lib/splash-control'
@@ -93,9 +89,7 @@ export default function BondListScreen() {
             title={t(locale, 'bondList.error.title')}
             message={error.message}
             customAction={
-              <Pressable onPress={() => void refetch()} hitSlop={12}>
-                <Text style={kindredPresets.ctaText}>Retry →</Text>
-              </Pressable>
+              <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
             }
           />
         </SafeAreaView>
@@ -132,9 +126,11 @@ export default function BondListScreen() {
               illustration={<V15Moon size={96} />}
               title={t(locale, 'bondList.empty.title')}
               customAction={
-                <Pressable onPress={() => router.push('/(onboarding)/self')} hitSlop={12}>
-                  <Text style={kindredPresets.ctaText}>{t(locale, 'bondList.empty.cta')}</Text>
-                </Pressable>
+                <PrimaryButton
+                  label={t(locale, 'bondList.empty.cta')}
+                  onPress={() => router.push('/(onboarding)/self')}
+                  block={false}
+                />
               }
             />
           </View>

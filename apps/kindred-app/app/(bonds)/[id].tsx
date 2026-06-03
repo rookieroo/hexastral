@@ -41,6 +41,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReportReveal } from '@/components/ReportReveal'
 import { useI18n } from '@/lib/i18n'
 
@@ -149,9 +150,7 @@ export default function BondDetailScreen() {
           variant='fullscreen'
           title={error?.message ?? 'Bond not found'}
           customAction={
-            <Pressable onPress={() => void refetch()} hitSlop={12}>
-              <Text style={kindredPresets.ctaText}>Retry →</Text>
-            </Pressable>
+            <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
           }
         />
       </SafeAreaView>
@@ -298,9 +297,9 @@ export default function BondDetailScreen() {
           )}
 
           {openChat ? (
-            <Pressable onPress={openChat} style={{ marginTop: kindredSpacing.xl }} hitSlop={8}>
-              <Text style={kindredPresets.ctaText}>{t('chat.cta')}</Text>
-            </Pressable>
+            <View style={{ marginTop: kindredSpacing.xl }}>
+              <PrimaryButton label={t('chat.cta')} onPress={openChat} />
+            </View>
           ) : null}
         </ScrollView>
       </SafeAreaView>

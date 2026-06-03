@@ -11,7 +11,7 @@
 
 import { CoreUIProvider } from '@zhop/core-ui'
 import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-runtime'
-import { Stack, useRouter } from 'expo-router'
+import { type Href, Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, useColorScheme } from 'react-native'
@@ -25,7 +25,7 @@ import {
   getAccentVariant,
   setAccentVariant,
 } from '@/lib/accent'
-import { getAuspiceBirthDate } from '@/lib/birth'
+import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
 import { getPeople } from '@/lib/people'
@@ -34,6 +34,7 @@ import {
   configureNotifications,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
+  refreshTimelineReminders,
   scheduleBirthdayReminders,
   scheduleHolidayHeadsUp,
 } from '@/lib/push'
@@ -100,13 +101,24 @@ function RootLayoutInner() {
       const people = await getPeople().catch(() => [])
       await scheduleBirthdayReminders(people, locale)
       await scheduleHolidayHeadsUp(locale)
+      // 人生节点提醒 (Pro) — self-clears if disabled / not Pro / no birth gender.
+      const info = await getAuspiceBirthInfo().catch(() => null)
+      if (info?.gender) {
+        await refreshTimelineReminders({
+          locale,
+          birthDate: info.solarDate,
+          birthHour: info.timeIndex === null ? -1 : info.timeIndex * 2,
+          gender: info.gender === '男' ? 'M' : 'F',
+        })
+      }
     })()
   }, [locale])
 
   // Notification tap → deep-link Today to the notification's date.
   useEffect(() => {
-    return addAuspiceNotificationTapListener((day) => {
-      if (day) router.push({ pathname: '/', params: { day } })
+    return addAuspiceNotificationTapListener(({ day, route }) => {
+      if (route) router.push(route as Href)
+      else if (day) router.push({ pathname: '/', params: { day } })
       else router.push('/')
     })
   }, [router])

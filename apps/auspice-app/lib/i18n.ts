@@ -67,6 +67,8 @@ export interface Strings {
   proTitle: string
   /** Paywall sheet subtitle / what Pro unlocks. */
   proSubtitle: string
+  /** Bulleted list of what Auspice Pro unlocks, shown in the paywall sheet. */
+  proBenefits: string[]
   /** Plan label for the monthly subscription. */
   proMonthly: string
   /** Plan label for the annual subscription. */
@@ -159,8 +161,18 @@ export interface Strings {
   timelineCurrentBadge: string
   /** Age-range label fragment — pass {age} as a template token. */
   timelineAgeFrom: string
-  /** Paywall CTA shown beneath the first-3 大运 teaser for Free users. */
+  /** Paywall CTA shown beneath the gated sections for Free users. */
   timelineProLocked: string
+  /** Caption telling Free users they see the current position + next 6 months. */
+  timelineFreePreviewNote: string
+  /** Settings toggle label for the Pro 人生节点提醒 (month-start / 大运 push). */
+  timelineRemindToggle: string
+  /** Hint under the 人生节点提醒 toggle. */
+  timelineRemindHint: string
+  /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
+  timelineAdvice: Record<PersonalFit, string>
+  /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
+  timelineClashNote: string
   /** Compact label for the LiuyearBanner on Today (above the hero). */
   timelineBannerHint: string
   // ── 干支 grid (Glossary chunk 2 / ADR-0020) ─────────────────────────────
@@ -319,6 +331,12 @@ const zhHans: Strings = {
   unlockMore: '解锁更多',
   proTitle: 'Auspice Pro',
   proSubtitle: '对你而言逐条解读 · 大运流年 · 4 项专项择日 (嫁娶/入宅/开市/出行)',
+  proBenefits: [
+    '对你而言 · 每条宜忌的逐条解读',
+    '完整人生时间线 · 大运 / 流年 / 全年流月',
+    '4 项专项择日 · 嫁娶 / 入宅 / 开市 / 出行',
+    '个人黄历日历 · 一键订阅到系统日历',
+  ],
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
   proRestore: '恢复购买',
@@ -370,6 +388,16 @@ const zhHans: Strings = {
   timelineCurrentBadge: '当前',
   timelineAgeFrom: '{age} 岁起',
   timelineProLocked: '解锁完整人生时间线',
+  timelineFreePreviewNote:
+    '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
+  timelineRemindToggle: '人生节点提醒',
+  timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
+  timelineAdvice: {
+    吉: '气运相生，宜主动进取、顺势把握时机。',
+    平: '运势平稳，按部就班、稳中求进即可。',
+    凶: '气运受克，宜守不宜攻；注意休息、少熬夜，别硬撑。',
+  },
+  timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
   timelineBannerHint: '大运 · 流年',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
@@ -514,6 +542,12 @@ const zhHant: Strings = {
   unlockMore: '解鎖更多',
   proTitle: 'Auspice Pro',
   proSubtitle: '對你而言逐條解讀 · 大運流年 · 4 項專項擇日 (嫁娶/入宅/開市/出行)',
+  proBenefits: [
+    '對你而言 · 每條宜忌的逐條解讀',
+    '完整人生時間線 · 大運 / 流年 / 全年流月',
+    '4 項專項擇日 · 嫁娶 / 入宅 / 開市 / 出行',
+    '個人黃曆日曆 · 一鍵訂閱到系統日曆',
+  ],
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
   proRestore: '恢復購買',
@@ -565,6 +599,16 @@ const zhHant: Strings = {
   timelineCurrentBadge: '當前',
   timelineAgeFrom: '{age} 歲起',
   timelineProLocked: '解鎖完整人生時間線',
+  timelineFreePreviewNote:
+    '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
+  timelineRemindToggle: '人生節點提醒',
+  timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
+  timelineAdvice: {
+    吉: '氣運相生，宜主動進取、順勢把握時機。',
+    平: '運勢平穩，按部就班、穩中求進即可。',
+    凶: '氣運受剋，宜守不宜攻；注意休息、少熬夜，別硬撐。',
+  },
+  timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
   timelineBannerHint: '大運 · 流年',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
@@ -707,6 +751,12 @@ const ja: Strings = {
   unlockMore: 'もっと見る',
   proTitle: 'Auspice Pro',
   proSubtitle: 'あなたへの個別解説 · 大運・流年 · 4 種の専門日選び',
+  proBenefits: [
+    'あなたへの個別解説 · 宜忌を一項目ずつ',
+    '人生タイムライン全期間 · 大運 / 流年 / 通年の流月',
+    '4 種の専門日選び · 婚礼 / 入居 / 開業 / 旅行',
+    '個人の暦カレンダー · システムカレンダーに購読',
+  ],
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
   proRestore: '購入を復元',
@@ -759,6 +809,16 @@ const ja: Strings = {
   timelineCurrentBadge: '現在',
   timelineAgeFrom: '{age} 歳から',
   timelineProLocked: '人生タイムラインを全期間解錠',
+  timelineFreePreviewNote:
+    '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
+  timelineRemindToggle: '人生の節目リマインド',
+  timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
+  timelineAdvice: {
+    吉: '運気が味方します。積極的に動き、好機を掴みましょう。',
+    平: '運気は穏やか。着実に、無理なく進めましょう。',
+    凶: '運気は抑えぎみ。守りを固め、休息を大切に、無理は禁物。',
+  },
+  timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
   timelineBannerHint: '大運 · 流年',
   ganzhiStemsTitle: '十干',
   ganzhiBranchesTitle: '十二支',
@@ -902,6 +962,12 @@ const en: Strings = {
   unlockMore: 'Unlock more',
   proTitle: 'Auspice Pro',
   proSubtitle: 'Per-reason For-you reading · Life timeline · 4 specialized date pickers',
+  proBenefits: [
+    'For-you reading — every Suitable / Avoid explained, reason by reason',
+    'Full life timeline — decade cycles, yearly, and all 12 months',
+    '4 specialized date pickers — wedding / move-in / opening / travel',
+    'Personal almanac calendar — subscribe to your system Calendar',
+  ],
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
   proRestore: 'Restore purchase',
@@ -954,6 +1020,16 @@ const en: Strings = {
   timelineCurrentBadge: 'Now',
   timelineAgeFrom: 'From age {age}',
   timelineProLocked: 'Unlock the full life timeline',
+  timelineFreePreviewNote:
+    'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
+  timelineRemindToggle: 'Timeline reminders',
+  timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
+  timelineAdvice: {
+    吉: 'The energy supports you — take initiative and seize the moment.',
+    平: 'Steady energy — keep a measured pace and build gradually.',
+    凶: 'The energy runs counter — hold steady, rest well, and avoid overexerting.',
+  },
+  timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
   timelineBannerHint: 'Decade · Year',
   ganzhiStemsTitle: 'Ten Stems',
   ganzhiBranchesTitle: 'Twelve Branches',

@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { lunarToSolar } from '@zhop/astro-core'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import { fetchAuspiceDay } from './api'
+import { fetchAuspiceDay, fetchTimeline, type PersonalFit, type PersonalReasonCode } from './api'
 import { upcomingHolidayHeadsUps } from './cn-holidays'
 import { getStrings, type Locale } from './i18n'
 import type { AuspicePerson, PersonCalendar } from './people'
@@ -221,16 +221,19 @@ export async function purgeStaleNotificationsOnce(): Promise<void> {
 }
 
 /**
- * Subscribe to notification taps. The handler receives the notification's `day`
- * (YYYY-MM-DD) so the caller can deep-link Today to that date. Returns an
- * unsubscribe fn; also fires for the launch notification (cold start).
+ * Subscribe to notification taps. The handler receives the notification's
+ * deep-link target: `day` (YYYY-MM-DD → Today) and/or `route` (e.g. `/timeline`).
+ * Returns an unsubscribe fn; also fires for the launch notification (cold start).
  */
 export function addAuspiceNotificationTapListener(
-  onOpen: (day: string | null) => void
+  onOpen: (target: { day: string | null; route: string | null }) => void
 ): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const day = response.notification.request.content.data?.day
-    onOpen(typeof day === 'string' ? day : null)
+    const data = response.notification.request.content.data ?? {}
+    onOpen({
+      day: typeof data.day === 'string' ? data.day : null,
+      route: typeof data.route === 'string' ? data.route : null,
+    })
   })
   return () => sub.remove()
 }
@@ -481,4 +484,171 @@ export async function disableHolidayHeadsUp(): Promise<void> {
     await AsyncStorage.setItem(HOLIDAY_ENABLED_KEY, '0')
   } catch {}
   await cancelHoliday()
+}
+
+// ── 人生节点提醒 (Life-timeline node reminders — Pro, ADR-0020 Phase 1) ──────────
+//
+// Opt-in, Pro-gated LOCAL notifications at 八字 timeline boundaries: the 1st of
+// each upcoming month (流月) and the year a new 大运 begins. Deterministic — the
+// body just states the period's 干支 and points at /timeline. NO 命理 advice
+// text yet; the "宜进取 / 宜静养" guidance needs the server-side 对你而言
+// interpretation extended to 流月/流年 (Phase 2). Same local-notification
+// pattern as the daily / holiday windows: cancel-by-prefix + reschedule on open.
+
+const TIMELINE_ID_PREFIX = 'cycle-timeline-'
+const TIMELINE_ENABLED_KEY = 'auspice.timeline.enabled'
+/** Rolling count of month-start nudges to schedule (refreshed on each app open). */
+const TIMELINE_MONTH_HORIZON = 6
+/** Only heads-up a 大运 transition if its first year is within this many months. */
+const TIMELINE_DAYUN_HORIZON_MONTHS = 18
+
+// `{advice}` is filled from the SAME `timelineAdvice` copy the in-app timeline uses
+// (keyed by the server's deterministic fit), so the notification and the screen say
+// the same thing. `{fit}` is the 吉/平/凶 label.
+const TIMELINE_TEXT: Record<Locale, { month: string; dayun: string }> = {
+  'zh-Hans': {
+    month: '{month}月 · 流月{ganzhi}（{fit}）{advice}',
+    dayun: '{year}年起进入新的大运{ganzhi}（{fit}）{advice}',
+  },
+  'zh-Hant': {
+    month: '{month}月 · 流月{ganzhi}（{fit}）{advice}',
+    dayun: '{year}年起進入新的大運{ganzhi}（{fit}）{advice}',
+  },
+  ja: {
+    month: '{month}月 · 流月{ganzhi}（{fit}）{advice}',
+    dayun: '{year}年から新しい大運{ganzhi}（{fit}）{advice}',
+  },
+  en: {
+    month: 'Month {month} · 流月 {ganzhi} ({fit}). {advice}',
+    dayun: 'A new 大运 {ganzhi} begins in {year} ({fit}). {advice}',
+  },
+}
+
+/** Birth inputs needed to fetch the deterministic timeline (mirrors fetchTimeline). */
+export interface TimelineReminderOpts {
+  locale: Locale
+  birthDate: string
+  /** 0-23, or -1 when 时辰 unknown (shichen index × 2). */
+  birthHour: number
+  gender: 'M' | 'F'
+}
+
+async function cancelTimeline(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(TIMELINE_ID_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+export async function isTimelineRemindersEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(TIMELINE_ENABLED_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * (Re)schedule the life-timeline node reminders. No-op unless enabled AND
+ * permission granted AND auspice_pro active (the full timeline + its reminders
+ * are Pro) — so it self-clears if Pro lapses. Safe to call on every app open.
+ */
+export async function scheduleTimelineReminders(opts: TimelineReminderOpts): Promise<void> {
+  await cancelTimeline()
+  if (!(await isTimelineRemindersEnabled())) return
+  const perm = await Notifications.getPermissionsAsync().catch(() => null)
+  if (!perm || perm.status !== 'granted') return
+  if (!(await getAuspiceProActive())) return
+
+  let payload: Awaited<ReturnType<typeof fetchTimeline>>
+  try {
+    payload = await fetchTimeline({
+      birthDate: opts.birthDate,
+      birthHour: opts.birthHour,
+      gender: opts.gender,
+      locale: opts.locale,
+    })
+  } catch {
+    return // deterministic fetch failed (offline / transient) — try again next open
+  }
+
+  const text = TIMELINE_TEXT[opts.locale]
+  const strings = getStrings(opts.locale)
+  const title = strings.timelineTitle
+  const now = new Date()
+  const nowMs = now.getTime()
+  const adviceFor = (fit: PersonalFit, reasons: PersonalReasonCode[]): string =>
+    `${strings.timelineAdvice[fit]}${
+      reasons.includes('personal_clash') ? ` ${strings.timelineClashNote}` : ''
+    }`
+
+  // Month-start nudges — 1st of each upcoming month at 8am, body = that month's 流月
+  // verdict + advice. 流月 is now a rolling window (Phase 2), so it spans the year end.
+  const liuyueByKey = new Map(payload.liuyue.map((r) => [`${r.year}-${r.month}`, r]))
+  for (let i = 0; i < TIMELINE_MONTH_HORIZON; i++) {
+    const when = new Date(now.getFullYear(), now.getMonth() + i, 1, PUSH_HOUR, 0, 0, 0)
+    if (when.getTime() <= nowMs) continue
+    const row = liuyueByKey.get(`${when.getFullYear()}-${when.getMonth() + 1}`)
+    if (!row) continue
+    const body = text.month
+      .replace('{month}', String(when.getMonth() + 1))
+      .replace('{ganzhi}', `${row.pillar.stem}${row.pillar.branch}`)
+      .replace('{fit}', strings.personal.fit[row.fit])
+      .replace('{advice}', adviceFor(row.fit, row.reasons))
+    try {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${TIMELINE_ID_PREFIX}month-${when.getFullYear()}-${pad(when.getMonth() + 1)}`,
+        content: { title, body, data: { route: '/timeline' } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+      })
+    } catch {}
+  }
+
+  // 大运 transition — heads-up on Jan 1 of the year a new cycle begins, if near.
+  const horizonMs = new Date(
+    now.getFullYear(),
+    now.getMonth() + TIMELINE_DAYUN_HORIZON_MONTHS,
+    1
+  ).getTime()
+  for (const dy of payload.dayun) {
+    const when = new Date(dy.startYear, 0, 1, PUSH_HOUR, 0, 0, 0)
+    if (when.getTime() <= nowMs || when.getTime() > horizonMs) continue
+    const body = text.dayun
+      .replace('{year}', String(dy.startYear))
+      .replace('{ganzhi}', `${dy.pillar.stem}${dy.pillar.branch}`)
+      .replace('{fit}', strings.personal.fit[dy.fit])
+      .replace('{advice}', adviceFor(dy.fit, dy.reasons))
+    try {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${TIMELINE_ID_PREFIX}dayun-${dy.startYear}`,
+        content: { title, body, data: { route: '/timeline' } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+      })
+    } catch {}
+  }
+}
+
+export async function enableTimelineReminders(opts: TimelineReminderOpts): Promise<boolean> {
+  if (!(await requestPushPermission())) return false
+  try {
+    await AsyncStorage.setItem(TIMELINE_ENABLED_KEY, '1')
+  } catch {}
+  await scheduleTimelineReminders(opts)
+  return true
+}
+
+export async function disableTimelineReminders(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TIMELINE_ENABLED_KEY, '0')
+  } catch {}
+  await cancelTimeline()
+}
+
+/** Re-sync on app open (no-op unless enabled + permitted + Pro). */
+export async function refreshTimelineReminders(opts: TimelineReminderOpts): Promise<void> {
+  if (await isTimelineRemindersEnabled()) await scheduleTimelineReminders(opts)
 }

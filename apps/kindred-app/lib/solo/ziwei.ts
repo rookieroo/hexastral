@@ -1,3 +1,5 @@
+import '@/lib/ensure-intl'
+
 /**
  * Client-side 紫微斗数 命盘 compute — anonymous, offline, via the `iztro` lib
  * (the same engine svc-astro uses; see services/svc-astro/src/services/stellar/stellar.ts).

@@ -1,3 +1,5 @@
+import '@/lib/ensure-intl'
+
 /**
  * Kindred root layout.
  *

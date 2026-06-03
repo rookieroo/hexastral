@@ -14,12 +14,7 @@
  */
 
 import { V15Moon } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPresets,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import {
   type RelationshipType,
   RelationshipTypeSelector,
@@ -27,8 +22,9 @@ import {
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { PrimaryButton } from '@/components/PrimaryButton'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import {
   deliverInviteMailto,
@@ -146,19 +142,12 @@ export default function InviteScreen() {
 
         {/* Channel 1 — Messages (primary; no recipient input needed) */}
         <View style={{ height: kindredSpacing.xl }} />
-        <Pressable
+        <PrimaryButton
+          label={t(locale, 'invite.channel.sms')}
           onPress={() => void handleSend('sms')}
           disabled={!canSendSms}
-          hitSlop={12}
-          accessibilityRole='button'
-          style={{ alignSelf: 'flex-start', opacity: canSendSms ? 1 : 0.3 }}
-        >
-          {sending === 'sms' ? (
-            <ActivityIndicator color={kindredDark.accent} />
-          ) : (
-            <Text style={kindredPresets.ctaText}>{t(locale, 'invite.channel.sms')}</Text>
-          )}
-        </Pressable>
+          loading={sending === 'sms'}
+        />
 
         {/* Channel 2 — Mail (requires their address, kept on-device) */}
         <View style={{ height: kindredSpacing.xl }} />
@@ -192,19 +181,12 @@ export default function InviteScreen() {
             }}
           />
           <View style={{ height: kindredSpacing.md }} />
-          <Pressable
+          <PrimaryButton
+            label={t(locale, 'invite.send')}
             onPress={() => void handleSend('email')}
             disabled={!canSendEmail}
-            hitSlop={12}
-            accessibilityRole='button'
-            style={{ alignSelf: 'flex-start', opacity: canSendEmail ? 1 : 0.3 }}
-          >
-            {sending === 'email' ? (
-              <ActivityIndicator color={kindredDark.accent} />
-            ) : (
-              <Text style={kindredPresets.ctaText}>{t(locale, 'invite.send')}</Text>
-            )}
-          </Pressable>
+            loading={sending === 'email'}
+          />
         </View>
 
         <View style={{ flex: 1 }} />
