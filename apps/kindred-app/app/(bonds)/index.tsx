@@ -122,6 +122,8 @@ export default function BondListScreen() {
           state='pending'
           otherName={firstPending.targetName}
           sentAtLabel={relativeSentLabel(locale, firstPending.createdAt)}
+          // Brand mark = the same cinnabar moon as home / intro (not the seal).
+          logo={<KindredMoon size={96} />}
           copy={waitingCopy}
           onResend={() => {
             /* TODO: resend RPC */

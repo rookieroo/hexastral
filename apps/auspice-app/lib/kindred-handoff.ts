@@ -13,6 +13,7 @@
  *     &self_city=<url-encoded>&self_lat=<f>&self_lng=<f>&self_tz=<IANA>
  *     &other_name=<url-encoded>&other_date=YYYY-MM-DD
  *     &other_time=N&other_gender=男|女
+ *     &other_city=<url-encoded>&other_lat=<f>&other_lng=<f>&other_tz=<IANA>
  *     &rel=<url-encoded>
  *
  *   - `mode=pair` ships both blocks; `mode=fill` ships only `other_*` (self
@@ -75,6 +76,10 @@ export function buildKindredComposeUrl({ person, self, relationshipLabel }: Buil
       append(p, 'other_time', person.timeIndex)
     }
     append(p, 'other_gender', person.gender)
+    append(p, 'other_city', person.city)
+    append(p, 'other_lat', person.lat)
+    append(p, 'other_lng', person.lng)
+    append(p, 'other_tz', person.timezone)
   }
   append(p, 'rel', relationshipLabel)
 

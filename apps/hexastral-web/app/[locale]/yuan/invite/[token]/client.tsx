@@ -172,7 +172,7 @@ export function KindredInviteClient({
           }}
         >
           {isZh
-            ? `${inviterName} 邀你共看一份 ${relationshipLabel} 的Kindred报告`
+            ? `${inviterName} 邀你共看一份 ${relationshipLabel} 的缘报告`
             : `${inviterName} wants to read your ${relationshipLabel} resonance`}
         </p>
 

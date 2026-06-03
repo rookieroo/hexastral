@@ -8,6 +8,7 @@
  *     &self_date=...&self_time=...&self_gender=...&self_city=...
  *     &self_lat=...&self_lng=...&self_tz=...
  *     &other_name=...&other_date=...&other_time=...&other_gender=...
+ *     &other_city=...&other_lat=...&other_lng=...&other_tz=...
  *     &rel=...
  *
  * Unknown query params are ignored (forward-compat). Missing fields fall
@@ -94,6 +95,14 @@ export function parseComposeUrl(url: string): Partial<OnboardingDraft> | null {
     if (t !== null) patch.otherTimeIndex = t
     const g = parseGender(q.other_gender)
     if (g) patch.otherGender = g
+    const city = parseStr(q.other_city)
+    if (city) patch.otherBirthCity = city
+    const lat = parseFloatLike(q.other_lat)
+    if (lat !== null) patch.otherBirthLat = lat
+    const lng = parseFloatLike(q.other_lng)
+    if (lng !== null) patch.otherBirthLng = lng
+    const tz = parseStr(q.other_tz)
+    if (tz) patch.otherBirthTimezone = tz
   }
 
   const rel = parseStr(q.rel)

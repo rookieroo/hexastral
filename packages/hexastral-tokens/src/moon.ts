@@ -187,7 +187,10 @@ export const SKIN_CINNABAR_INK: MoonFaceSkin = {
     { offset: 0.55, color: '#c87454' },
     { offset: 1, color: '#7a2418' },
   ],
-  surface: { kind: 'paper', opacity: 0.18 },
+  // 0.28 (the rice-paper default) rather than a faint 0.18 — the lit face must
+  // read as matte ink-on-paper, not a smooth plastic sphere, so its material
+  // matches the water-ink shadow side (2026-06 feedback: 表面光滑 vs 水墨阴影不搭).
+  surface: { kind: 'paper', opacity: 0.28 },
 }
 
 /** All built-in skins in display order (for pickers). */
@@ -282,9 +285,14 @@ export const LOGO_NIGHT_V15: LogoMoonSkin = {
 /**
  * Cinnabar logo moon — Kindred's brand mark. Same rim-lit v15G shape, but the
  * sphere body is warm 朱砂 (tied to the seal's #9b2226) deepening to burgundy,
- * with the cream rim-light intact. Reads as a red moon on void-black, so the
- * static brand anchor (home / splash / empty) matches the cinnabar phase-moon
- * of the intro + loaders instead of floating as a grey 水墨月 disc.
+ * with a cinnabar-warmed ivory rim-light. Reads as a red moon on void-black, so
+ * the static brand anchor (home / splash / empty) matches the cinnabar
+ * phase-moon of the intro + loaders instead of floating as a grey 水墨月 disc.
+ *
+ * 2026-06 tune: at small render sizes (56px home anchor) the old cream rim
+ * (#e7e0d0) dominated and the moon read as 月白, breaking continuity with the
+ * intro's cinnabar phase-moon. The body stops are brighter and the rim is
+ * tinted toward cinnabar so the anchor stays unmistakably 朱砂 at any size.
  */
 export const LOGO_CINNABAR_V15: LogoMoonSkin = {
   id: 'cinnabar',
@@ -294,10 +302,10 @@ export const LOGO_CINNABAR_V15: LogoMoonSkin = {
     cy: 0.7,
     r: 0.62,
     stops: [
-      { offset: 0, color: '#c8543a' },
-      { offset: 0.42, color: '#9b2226' },
-      { offset: 0.78, color: '#5a1810' },
-      { offset: 1, color: '#e7e0d0' },
+      { offset: 0, color: '#d4664a' },
+      { offset: 0.42, color: '#a82e28' },
+      { offset: 0.78, color: '#641c12' },
+      { offset: 1, color: '#eccdb0' },
     ],
   },
 }

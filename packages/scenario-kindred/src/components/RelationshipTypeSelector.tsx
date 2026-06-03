@@ -2,12 +2,16 @@
  * RelationshipTypeSelector — chip group for picking a RelationshipType.
  *
  * Visual: row of small pill chips with subtle border. Selected chip uses
- * `accent` (ink.gold) background; others are transparent with ink.brown border.
+ * `accent` (ink.gold) background; others are transparent with a hairline border.
  * No animation — instant snap on tap.
+ *
+ * Dark-only (kindredDark): every consumer (pair-input / invite / other-meta)
+ * is a kindred-app dark screen per ADR-0021. The previous kindredLight tokens
+ * rendered near-invisible brown-on-black text.
  */
 
 import {
-  kindredLight,
+  kindredDark,
   kindredRadius,
   kindredSpacing,
   kindredType,
@@ -55,15 +59,15 @@ export function RelationshipTypeSelector({
               paddingHorizontal: kindredSpacing.md,
               paddingVertical: kindredSpacing.sm,
               borderRadius: kindredRadius.sm,
-              backgroundColor: isSelected ? kindredLight.accent : 'transparent',
+              backgroundColor: isSelected ? kindredDark.accent : 'transparent',
               borderWidth: 0.5,
-              borderColor: isSelected ? kindredLight.accent : kindredLight.border,
+              borderColor: isSelected ? kindredDark.accent : kindredDark.border,
             }}
           >
             <Text
               style={{
                 ...kindredType.caption,
-                color: isSelected ? kindredLight.bg : kindredLight.text,
+                color: isSelected ? kindredDark.bg : kindredDark.text,
               }}
             >
               {merged[rt]}

@@ -7,6 +7,16 @@
  * in core-ui instead of a per-scenario package.
  */
 
+export {
+  type BirthCalendar,
+  BirthDateField,
+  type BirthDateFieldLabels,
+  type BirthDateFieldProps,
+  type BirthDateFieldValue,
+  birthDateFieldLabelsForLocale,
+  birthInputToSolar,
+  formatBirthDateInput,
+} from './BirthDateField'
 export { BirthDateStep } from './BirthDateStep'
 export { BirthGenderStep } from './BirthGenderStep'
 export { BirthInfoForm } from './BirthInfoForm'

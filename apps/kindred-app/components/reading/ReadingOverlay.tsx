@@ -80,7 +80,9 @@ function OverlayInner({
   const edgeR = useSharedValue(0)
   const edgeRadius = useDerivedValue(() => Math.max(1, edgeR.value))
   const edgeGlowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(edgeR.value / maxRadius, [0, 0.7, 1], [0.85, 0.7, 0]),
+    // Full brightness while sweeping — on the void-black report bg this ring IS
+    // the visible 墨晕; anything dimmer disappears (2026-06 device feedback).
+    opacity: interpolate(edgeR.value / maxRadius, [0, 0.75, 1], [1, 0.85, 0]),
   }))
 
   // Short cover hold lets MaskedView + the Skia canvas mount and paint their
@@ -169,11 +171,13 @@ function OverlayInner({
                 r={edgeRadius}
                 colors={[
                   'rgba(245,240,232,0)',
-                  'rgba(245,240,232,0)',
+                  'rgba(245,240,232,0.12)',
                   ricePaper.ivory,
                   'rgba(245,240,232,0)',
                 ]}
-                positions={[0, 0.78, 0.93, 1]}
+                // Wider luminous band (0.7→1 of the radius) so the spreading
+                // ink edge reads on black, with a faint inner wash behind it.
+                positions={[0, 0.7, 0.9, 1]}
               />
             </Circle>
           </Canvas>

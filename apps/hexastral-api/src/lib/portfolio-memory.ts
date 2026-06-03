@@ -3,7 +3,7 @@
  * Bind `PORTFOLIO_MEMORY_AI_SEARCH` (ai_search instance) in wrangler when an instance exists; otherwise all calls no-op.
  *
  * Targets:
- *   - 'hexastral' — flagship 命Kindred卦道 readings (natal / stellar / yiching / pair / physiognomy / report)
+ *   - 'hexastral' — flagship 命缘卦道 readings (natal / stellar / yiching / pair / physiognomy / report)
  *   - 'coincast'  — CoinCast satellite (yi-ching style daily question)
  *   - 'dreamoracle' — DreamOracle satellite (dream interpretation)
  */

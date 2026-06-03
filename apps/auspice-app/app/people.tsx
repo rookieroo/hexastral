@@ -1,22 +1,30 @@
 /**
- * /people — 亲友生日. Capture name + birthday (solar OR 农历) + 时辰 + gender so the
- * reminders fire correctly AND the Pro 合盘 (八字 / 紫微) reading has what it needs
- * later. Reminders: advance (default 1 day, configurable) + day-of (toggle).
- * Tap 关系 for the 生肖 bond — Pro (free users hit the paywall). The user's OWN
- * birth lives in Settings (lib/birth.ts).
+ * /people — 亲友生日. Capture name + birthday (solar OR 农历) + 时辰 + gender +
+ * birthplace so the reminders fire correctly AND the Pro 合盘 (八字 / 紫微) reading
+ * has what it needs later. Reminders: advance (default 1 day, configurable) +
+ * day-of (toggle). Tap 关系 for the 生肖 bond — Pro (free users hit the paywall).
+ * The user's OWN birth lives in Settings (lib/birth.ts).
  */
 
-import { type ShichenIndex, ShichenPicker, useTheme } from '@zhop/core-ui'
+import {
+  CityPicker,
+  type CityRecord,
+  DEFAULT_TOP_CITIES,
+  type ShichenIndex,
+  ShichenPicker,
+  useTheme,
+} from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
 import {
   type AuspicePerson,
@@ -59,11 +67,16 @@ export default function PeopleScreen() {
   const [calendar, setCalendar] = useState<PersonCalendar>('solar')
   const [timeIndex, setTimeIndex] = useState<ShichenIndex | null>(null)
   const [gender, setGender] = useState<PersonGender | undefined>(undefined)
+  const [birthCity, setBirthCity] = useState<CityRecord | null>(null)
   const [advanceDays, setAdvanceDays] = useState(1)
   const [remindOnDay, setRemindOnDay] = useState(true)
-  // 时辰 + gender are 八字-合盘-only — collapsed by default so the everyday
-  // "remind me about Mom's birthday" path stays a 3-field flow.
+  // 时辰 + gender + birthplace are 八字-合盘-only — collapsed by default so the
+  // everyday "remind me about Mom's birthday" path stays a 3-field flow.
   const [compatExpanded, setCompatExpanded] = useState(false)
+
+  // City keyboard positioning — the CityPicker pins itself above the keyboard
+  // on focus when given the host ScrollView ref.
+  const scrollRef = useRef<ScrollView>(null)
 
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [relPerson, setRelPerson] = useState<AuspicePerson | null>(null)
@@ -90,6 +103,10 @@ export default function PeopleScreen() {
       calendar,
       timeIndex,
       gender,
+      city: birthCity?.name,
+      lat: birthCity?.lat,
+      lng: birthCity?.lng,
+      timezone: birthCity?.timezone ?? null,
       advanceDays,
       remindOnDay,
     })
@@ -100,6 +117,7 @@ export default function PeopleScreen() {
     setCalendar('solar')
     setTimeIndex(null)
     setGender(undefined)
+    setBirthCity(null)
     setAdvanceDays(1)
     setRemindOnDay(true)
     setCompatExpanded(false)
@@ -140,6 +158,7 @@ export default function PeopleScreen() {
     const animal = animalOf(p.solarDate)
     if (animal) parts.push(`属${animal}`)
     if (p.timeIndex != null) parts.push(`${SHICHEN_BRANCHES[p.timeIndex]}时`)
+    if (p.city) parts.push(p.city)
     return parts.join(' · ')
   }
 
@@ -147,8 +166,10 @@ export default function PeopleScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Headerless drill-in (ADR-0018) — iOS edge-swipe-back handles nav. */}
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps='handled'
+        automaticallyAdjustKeyboardInsets
       >
         {/* Add form */}
         <View
@@ -293,6 +314,21 @@ export default function PeopleScreen() {
                     onChange={(k) => setGender(k as PersonGender)}
                     colors={colors}
                     spacing={spacing}
+                  />
+                </View>
+
+                {/* Birthplace — optional; geocode-backed (coords + IANA tz for
+                    真太阳时 correction in the Kindred 合盘). `scrollRef` lets
+                    the picker pin itself above the keyboard on focus. */}
+                <View style={{ gap: spacing.sm }}>
+                  <Text style={microLabel}>{t.birthCityLabel}</Text>
+                  <CityPicker
+                    value={birthCity}
+                    onSelect={setBirthCity}
+                    search={searchCity}
+                    topCities={DEFAULT_TOP_CITIES}
+                    placeholder={t.birthCityPlaceholder}
+                    scrollRef={scrollRef}
                   />
                 </View>
               </View>

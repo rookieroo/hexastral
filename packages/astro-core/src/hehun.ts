@@ -288,8 +288,8 @@ function scoreBranchRelation(
 function getGrade(score: number): { grade: HeHunResult['grade']; label: string } {
   if (score >= 90) return { grade: 'S', label: '天作之合' }
   if (score >= 75) return { grade: 'A', label: '非常般配' }
-  if (score >= 60) return { grade: 'B', label: '良Kindred佳配' }
-  if (score >= 45) return { grade: 'C', label: '有Kindred需修' }
+  if (score >= 60) return { grade: 'B', label: '良缘佳配' }
+  if (score >= 45) return { grade: 'C', label: '有缘需修' }
   return { grade: 'D', label: '磨合考验' }
 }
 
@@ -346,7 +346,7 @@ export function calculateHeHun(pillarsA: FourPillars, pillarsB: FourPillars): He
   const yearScore = scoreBranchRelation(
     pillarsA.year.branch,
     pillarsB.year.branch,
-    '年支Kindred分',
+    '年支缘分',
     20
   )
   dimensions.push(yearScore)
@@ -390,7 +390,7 @@ function generateSummary(
   const base = `配对指数 ${score}/100（${grade}级）。`
 
   if (highlights.length > 0 && warnings.length === 0) {
-    return `${base}多维度高度契合，是令人羡慕的好Kindred分。`
+    return `${base}多维度高度契合，是令人羡慕的好缘分。`
   }
   if (highlights.length > 0 && warnings.length > 0) {
     return `${base}整体相合，但有${warnings.length}个领域需要双方共同经营。`

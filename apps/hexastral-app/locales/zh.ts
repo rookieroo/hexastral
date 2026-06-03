@@ -61,7 +61,7 @@ export const zh = {
   history_delete_oracle: '将从命册中移除该条占卜记录，且无法恢复。',
   history_delete_daily: '将从命册中移除该条每日运势记录，且无法恢复。',
   history_delete_pair:
-    '将从命册中移除该条合盘记录。若已与「Kindred分」中的 Cosmic Bond 关联，请先删除对应 Bond。',
+    '将从命册中移除该条合盘记录。若已与「缘分」中的 Cosmic Bond 关联，请先删除对应 Bond。',
   history_delete_pair_conflict:
     '该合盘仍关联 Cosmic Bond。请先在「Kindred」标签删除对应 Bond 后再试。',
   history_divination: '占卜',
@@ -77,7 +77,7 @@ export const zh = {
   history_view_calendar: '日历',
   history_calendar_select_day: '点选日历中有标记的日期查看记录',
   history_fate_sub_daily: '每日运势',
-  history_fate_sub_readings: 'Kindred分解读',
+  history_fate_sub_readings: '缘分解读',
   history_kind_daily: '每日',
   history_kind_book: '命书',
   history_kind_pair: '合盘',
@@ -91,7 +91,7 @@ export const zh = {
   history_personal_fate_chapters: '{count} 章',
   pair_section_overview: '总览',
   pair_section_day_master: '日主互动',
-  pair_section_year_branch: '年支Kindred分',
+  pair_section_year_branch: '年支缘分',
   pair_section_month_branch: '月支生活',
   pair_section_day_branch: '日支亲密',
   pair_section_highlights: '亮点',
@@ -477,12 +477,12 @@ export const zh = {
 命盘须知
 • 时辰是命盘的核心数据，实在记不清可前后两辰各查一次对比
 • 合盘需双方提供准确数据，数据不全会影响解读精度
-• 合盘结论展示Kindred分倒向，而非固定命运；双方尽力可逆转或强化格局
+• 合盘结论展示缘分倒向，而非固定命运；双方尽力可逆转或强化格局
 • 农历输入时，若不确定是否闰月，建议查阅家谱或改用阳历
 
 合盘通识（传统命理规则）
 • 高分代表相合，低分代表摩擦点——两者均可化解，无绝对好坏
-• Kindred分非恒量：双方大运流年的交汇会持续动态调整命盘互动
+• 缘分非恒量：双方大运流年的交汇会持续动态调整命盘互动
 • 一次合盘是当下快照，建议随生命阶段变化定期复盘
 • 不以命格评判对方——命盘是理解工具，而非评判标签
 
@@ -614,7 +614,7 @@ export const zh = {
   ob_notify_skip: '暂不开启',
   ob_notify_daily_title: '今日运势速览',
   ob_notify_daily_body: '顺势而为，相信你已拟好的方案。',
-  ob_notify_friend_body: 'Aurora Chen 将你加为因Kindred联系人。',
+  ob_notify_friend_body: 'Aurora Chen 将你加为因缘联系人。',
   ob_notify_now: '刚刚',
   ob_notify_yesterday: '昨天',
   ob_today_label: '今日',
@@ -668,8 +668,8 @@ export const zh = {
   tab_you: '我',
   // ── Phase J · J.3.4 Discovery cards ──
   discover_section_label: '其他应用',
-  discover_kindred_title: '看你和 TA 的Kindred',
-  discover_kindred_subtitle: 'Kindred · 双盘合婚 · Kindred分笺',
+  discover_kindred_title: '看你和 TA 的缘',
+  discover_kindred_subtitle: 'Kindred · 双盘合婚 · 缘分笺',
   discover_faceoracle_title: '面相 · 手相 AI 解读',
   discover_faceoracle_subtitle: 'FaceOracle · 一张照片 · 结构化解读',
   discover_feng_title: '看你居所的风水',
@@ -711,12 +711,12 @@ export const zh = {
   explore_dream_result_heading: '解读',
   explore_dream_result_empty: '未返回解读正文。',
 
-  // Bonds — Kindred分关系
+  // Bonds — 缘分关系
   bond_dim_long_term: '长期',
   bond_dim_attraction: '吸引',
   bond_dim_communication: '沟通',
   bond_dim_emotional: '情感',
-  bonds_invite_msg: '探索我们之间的星象Kindred分 — 下载HexAstral，录入你的生辰：',
+  bonds_invite_msg: '探索我们之间的星象缘分 — 下载HexAstral，录入你的生辰：',
   // Legacy friends keys
 
   // Void
@@ -1101,10 +1101,10 @@ export const zh = {
   fate_tab_upgrade_hint: '升级解锁全部洞见',
 
   // ── Synastry push ──
-  synastry_push_resonance_title: '今日Kindred分感应强烈 ✨',
+  synastry_push_resonance_title: '今日缘分感应强烈 ✨',
   synastry_push_resonance_body: '你们的命格今日高度共振，适合深度交流与心灵连结。',
   synastry_push_tension_title: '今日因果课题显现',
-  synastry_push_tension_body: '今日流日与Kindred分产生张力，是彼此成长的契机——保持倾听与耐心。',
+  synastry_push_tension_body: '今日流日与缘分产生张力，是彼此成长的契机——保持倾听与耐心。',
   tab_me: '我',
 
   // ── Almanac (日历通书) ──
@@ -1293,9 +1293,9 @@ export const zh = {
 
   // ── 紫微宫位描述 ──────────────────────────────────────────
   stellar_palace_ming_desc: '统摄先天个性、人生走向与整体命格',
-  stellar_palace_xiongdi_desc: '反映兄弟姐妹Kindred分及同辈人际关系',
-  stellar_palace_fuqi_desc: '揭示感情Kindred分、婚姻模式与伴侣特质',
-  stellar_palace_zinv_desc: '关联子嗣Kindred分、创造力与晚年助力',
+  stellar_palace_xiongdi_desc: '反映兄弟姐妹缘分及同辈人际关系',
+  stellar_palace_fuqi_desc: '揭示感情缘分、婚姻模式与伴侣特质',
+  stellar_palace_zinv_desc: '关联子嗣缘分、创造力与晚年助力',
   stellar_palace_caibo_desc: '代表财富结构、进财方式与理财格局',
   stellar_palace_jie_desc: '显示身体健康状态与应对压力的方式',
   stellar_palace_qianyi_desc: '代表外出运势、迁居机遇与对外交往',
@@ -1303,7 +1303,7 @@ export const zh = {
   stellar_palace_guanlu_desc: '显示事业发展潜力、工作成就与社会地位',
   stellar_palace_tianzhai_desc: '关联家庭环境、不动产积累与安全感',
   stellar_palace_fude_desc: '象征精神世界、享乐态度与深层内心欲望',
-  stellar_palace_fumu_desc: '反映与父母、师长及上级的Kindred分与互动',
+  stellar_palace_fumu_desc: '反映与父母、师长及上级的缘分与互动',
   reading_lang_mismatch: '此解读以 {lang} 生成',
   reading_lang_regenerate: '以当前语言重新生成',
 
@@ -1388,7 +1388,7 @@ export const zh = {
   quick_status_pro_chat: '追问池 {remaining}/{limit}',
   quick_status_pro_pair: '合盘 {remaining}/{limit}',
   welcome_primer_title: '命运主页',
-  welcome_primer_subtitle: '先从问、卦、Kindred开始，逐步建立你的每日节奏。',
+  welcome_primer_subtitle: '先从问、卦、缘开始，逐步建立你的每日节奏。',
   seven_day_trail_label: '七日轨迹',
   seven_day_trail_empty: '这七天还未留下记录，明日起渐渐亮起',
   seven_day_trail_pro_locked: '升级 Pro 查看完整历史',

@@ -27,6 +27,11 @@ export interface AuspicePerson {
   timeIndex?: number | null
   /** For 合盘 / 八字. */
   gender?: PersonGender
+  /** Birthplace (optional) — for 真太阳时 correction in the Kindred 合盘 reading. */
+  city?: string
+  lat?: number
+  lng?: number
+  timezone?: string | null
   /** Days before the birthday to remind (default 1; 0 = no advance reminder). */
   advanceDays?: number
   /** Also remind on the day itself (default true). */
@@ -71,6 +76,10 @@ export interface AddPersonInput {
   calendar?: PersonCalendar
   timeIndex?: number | null
   gender?: PersonGender
+  city?: string
+  lat?: number
+  lng?: number
+  timezone?: string | null
   advanceDays?: number
   remindOnDay?: boolean
 }
@@ -90,6 +99,10 @@ export async function addPerson(input: AddPersonInput): Promise<AuspicePerson[]>
       calendar: input.calendar ?? 'solar',
       timeIndex: input.timeIndex ?? null,
       gender: input.gender,
+      city: input.city,
+      lat: input.lat,
+      lng: input.lng,
+      timezone: input.timezone,
       advanceDays: input.advanceDays ?? 1,
       remindOnDay: input.remindOnDay ?? true,
     },

@@ -15,13 +15,12 @@
  * `@zhop/core-ui` for apps that need the deeper flow.
  */
 
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
-import { lunarToSolar, solarToLunar } from '@zhop/astro-core'
 import {
+  BirthDateField,
+  type BirthDateFieldValue,
+  birthDateFieldLabelsForLocale,
   CityPicker,
   DEFAULT_TOP_CITIES,
-  type LunarDateValue,
-  LunarDateWheels,
   type ShichenIndex,
   ShichenPicker,
   useTheme,
@@ -29,8 +28,8 @@ import {
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
-import { Linking, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
@@ -73,35 +72,6 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-const MIN_DATE = new Date(1900, 0, 1)
-const MAX_DATE = new Date()
-
-/** Parse `YYYY-MM-DD` into a local-time Date. Returns null on bad input. */
-function parseSolarDate(iso: string | undefined): Date | null {
-  if (!iso || iso.length !== 10) return null
-  const [y, m, d] = iso.split('-').map(Number)
-  if (!y || !m || !d) return null
-  return new Date(y, m - 1, d)
-}
-
-/** Format a Date as solar `YYYY-MM-DD`. */
-function formatSolarDate(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-/** Parse the stored `lunarInput` (`YYYY-MM-DD`, 农历) into y/m/d. */
-function parseLunarInput(
-  s: string | undefined
-): { year: number; month: number; day: number } | null {
-  if (!s) return null
-  const [year, month, day] = s.split('-').map(Number)
-  if (!year || !month || !day) return null
-  return { year, month, day }
-}
-
 export default function MeScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale, setLocale } = useStrings()
@@ -116,52 +86,44 @@ export default function MeScreen() {
 
   // ── Birth info form state ───────────────────────────────────────────────
   // `birth` is the canonical saved object (solarDate is always the gregorian
-  // form, even when the user originally entered 农历). `solarPicked` / `lunarYmd`
-  // + `calendar` are the editor-mode state: the date the user is picking and
-  // which calendar they're picking it in. On save we run `lunarToSolar` and
-  // persist both the canonical solarDate and the original lunar selection
+  // form, even when the user originally entered 农历). `dateField` is the
+  // editor-mode state: the shared BirthDateField value (compact input +
+  // summonable picker — the same standard as kindred's pair-input form). On
+  // save we persist both the canonical solarDate and the original lunar input
   // (lunarInput + lunarIsLeap) so re-editing restores the user's 农历 choice
   // exactly instead of a possibly-leap-month-ambiguous reverse conversion.
   const [birth, setBirth] = useState<AuspiceBirthInfo>({ solarDate: '', timeIndex: null })
-  const [calendar, setCalendar] = useState<'solar' | 'lunar'>('solar')
-  // Solar mode: a real Date driving the native picker. Lunar mode: y/m/d/leap
-  // driving the shared scroll-wheels. Defaults — solar: ~25y ago; lunar: today's
-  // 农历 equivalent — get overwritten by any saved record in the effect below.
-  const [solarPicked, setSolarPicked] = useState<Date>(
-    () => new Date(new Date().getFullYear() - 25, 5, 15)
-  )
-  const [lunarYmd, setLunarYmd] = useState<LunarDateValue>(() => {
-    const now = new Date()
-    try {
-      const l = solarToLunar(now.getFullYear(), now.getMonth() + 1, now.getDate())
-      return { year: l.year, month: l.month, day: l.day, isLeap: l.isLeap }
-    } catch {
-      return { year: 1990, month: 1, day: 1, isLeap: false }
-    }
+  const [dateField, setDateField] = useState<BirthDateFieldValue>({
+    input: '',
+    calendar: 'solar',
+    isLeap: false,
+    solarDate: null,
   })
-  // Android shows the date picker as a one-shot dialog; iOS uses the inline
-  // compact pill, so this stays false there.
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false)
   const [birthSaved, setBirthSaved] = useState(false)
   // Once a birth is on record, the form collapses to a one-line summary; tapping
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
 
-  /** The canonical solar YYYY-MM-DD derived from the active picker. Null only
-   *  when a lunar selection fails to convert (defensive — the wheels constrain
-   *  to valid 农历 dates). Drives the Save button's enabled state. */
-  const computedSolarDate = useMemo<string | null>(() => {
-    if (calendar === 'solar') return formatSolarDate(solarPicked)
-    try {
-      return formatSolarDate(
-        lunarToSolar(lunarYmd.year, lunarYmd.month, lunarYmd.day, lunarYmd.isLeap)
-      )
-    } catch {
-      return null
-    }
-  }, [calendar, solarPicked, lunarYmd])
+  // Shared field labels — core-ui defaults, with the app's own calendar copy.
+  const dateLabels = useMemo(
+    () => ({
+      ...birthDateFieldLabelsForLocale(locale),
+      solar: t.birthCalendarSolar,
+      lunar: t.birthCalendarLunar,
+      lunarHint: t.birthCalendarLunarHint,
+    }),
+    [locale, t]
+  )
+
+  /** The canonical solar YYYY-MM-DD derived from the date field. Null while
+   *  incomplete / invalid. Drives the Save button's enabled state. */
+  const computedSolarDate = dateField.solarDate
   const birthValid = computedSolarDate !== null
+
+  // City keyboard positioning — the CityPicker pins itself above the keyboard
+  // on focus when given the host ScrollView ref.
+  const scrollRef = useRef<ScrollView>(null)
 
   const birthSummary = useMemo(() => {
     // When the user entered their birthday as 农历, show that form in the
@@ -188,36 +150,27 @@ export default function MeScreen() {
         if (!info) return
         setBirth(info)
         setHasSavedBirth(true)
+        // Seed the editor with what the user originally entered (农历 stays 农历).
         const isLunar = info.calendar === 'lunar' && !!info.lunarInput
-        setCalendar(isLunar ? 'lunar' : 'solar')
-        if (isLunar) {
-          const parsed = parseLunarInput(info.lunarInput)
-          if (parsed) setLunarYmd({ ...parsed, isLeap: info.lunarIsLeap === true })
-        } else {
-          const d = parseSolarDate(info.solarDate)
-          if (d) setSolarPicked(d)
-        }
+        setDateField({
+          input: isLunar && info.lunarInput ? info.lunarInput : info.solarDate,
+          calendar: isLunar ? 'lunar' : 'solar',
+          isLeap: isLunar && info.lunarIsLeap === true,
+          solarDate: info.solarDate || null,
+        })
       })
       .catch(() => {})
   }, [])
 
-  const handleSolarChange = (_: DateTimePickerEvent, picked?: Date) => {
-    if (Platform.OS === 'android') setShowAndroidPicker(false)
-    if (picked) setSolarPicked(picked)
-  }
-
   const saveBirth = () => {
     if (!birthValid || !computedSolarDate) return
-    const lunarInput =
-      calendar === 'lunar'
-        ? `${lunarYmd.year}-${String(lunarYmd.month).padStart(2, '0')}-${String(lunarYmd.day).padStart(2, '0')}`
-        : undefined
+    const isLunar = dateField.calendar === 'lunar'
     const updated: AuspiceBirthInfo = {
       ...birth,
       solarDate: computedSolarDate,
-      calendar,
-      lunarInput,
-      lunarIsLeap: calendar === 'lunar' ? lunarYmd.isLeap : undefined,
+      calendar: dateField.calendar,
+      lunarInput: isLunar ? dateField.input : undefined,
+      lunarIsLeap: isLunar ? dateField.isLeap : undefined,
     }
     void setAuspiceBirthInfo(updated).then(() => {
       setBirth(updated)
@@ -300,6 +253,7 @@ export default function MeScreen() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps='handled'
         automaticallyAdjustKeyboardInsets
@@ -340,107 +294,24 @@ export default function MeScreen() {
                 gap: spacing.lg,
               }}
             >
-              {/* Calendar toggle — Solar / Lunar (农历). Storage stays solar;
-                  农历 inputs convert via @zhop/astro-core `lunarToSolar` on
-                  save. Many Chinese users (esp. older generations + diaspora)
-                  know their birthday only as a 农历 date — making them
-                  pre-convert is friction. Years 1900-2100 supported. */}
+              {/* Birth date — the shared HexAstral standard (BirthDateField):
+                  compact auto-formatted input that works identically for 公历
+                  and 农历, plus a wheel affordance that summons the system
+                  cascading picker (solar) / lunar wheels (农历). Storage stays
+                  solar; 农历 inputs convert on the fly. Many Chinese users
+                  (esp. older generations + diaspora) know their birthday only
+                  as a 农历 date — making them pre-convert is friction. */}
               <View style={{ gap: spacing.sm }}>
                 <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
                   {t.birthDateLabel}
                 </Text>
-                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  {(
-                    [
-                      ['solar', t.birthCalendarSolar],
-                      ['lunar', t.birthCalendarLunar],
-                    ] as const
-                  ).map(([key, label]) => {
-                    const selected = calendar === key
-                    return (
-                      <Pressable
-                        key={key}
-                        onPress={() => setCalendar(key)}
-                        accessibilityRole='button'
-                        accessibilityState={{ selected }}
-                        style={{
-                          flex: 1,
-                          paddingVertical: spacing.sm,
-                          borderRadius: 10,
-                          borderWidth: 0.5,
-                          borderColor: selected ? colors.accent : colors.separator,
-                          backgroundColor: selected ? colors.accent : 'transparent',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: selected ? '#fff' : colors.text,
-                            fontSize: 14,
-                            fontWeight: selected ? '600' : '400',
-                          }}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
-                </View>
-                {calendar === 'solar' ? (
-                  <View>
-                    {Platform.OS === 'ios' ? (
-                      <DateTimePicker
-                        value={solarPicked}
-                        mode='date'
-                        display='compact'
-                        minimumDate={MIN_DATE}
-                        maximumDate={MAX_DATE}
-                        onChange={handleSolarChange}
-                        accentColor={colors.accent}
-                        locale={locale}
-                        style={{ alignSelf: 'flex-start' }}
-                      />
-                    ) : (
-                      <Pressable
-                        onPress={() => setShowAndroidPicker(true)}
-                        accessibilityRole='button'
-                        style={{
-                          borderBottomWidth: 0.5,
-                          borderBottomColor: colors.separator,
-                          paddingVertical: spacing.sm,
-                        }}
-                      >
-                        <Text style={{ color: colors.text, fontSize: 16 }}>
-                          {formatSolarDate(solarPicked)}
-                        </Text>
-                      </Pressable>
-                    )}
-                    {Platform.OS === 'android' && showAndroidPicker ? (
-                      <DateTimePicker
-                        value={solarPicked}
-                        mode='date'
-                        display='default'
-                        minimumDate={MIN_DATE}
-                        maximumDate={MAX_DATE}
-                        onChange={handleSolarChange}
-                      />
-                    ) : null}
-                  </View>
-                ) : (
-                  <LunarDateWheels
-                    year={lunarYmd.year}
-                    month={lunarYmd.month}
-                    day={lunarYmd.day}
-                    isLeap={lunarYmd.isLeap}
-                    accent={colors.accent}
-                    onChange={setLunarYmd}
-                  />
-                )}
-                {calendar === 'lunar' ? (
-                  <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                    {t.birthCalendarLunarHint}
-                  </Text>
-                ) : null}
+                <BirthDateField
+                  value={dateField}
+                  onChange={setDateField}
+                  accent={colors.accent}
+                  labels={dateLabels}
+                  locale={locale}
+                />
               </View>
 
               {/* Shichen — 12-cell grid + "unknown" Pressable. */}
@@ -558,6 +429,7 @@ export default function MeScreen() {
                   search={searchCity}
                   topCities={DEFAULT_TOP_CITIES}
                   placeholder={t.birthCityPlaceholder}
+                  scrollRef={scrollRef}
                 />
                 <Text
                   style={{

@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
     en: 'Start a connection · Kindred',
-    zh: '开始一段Kindred · Kindred',
-    tw: '開始一段Kindred · Kindred',
+    zh: '开始一段缘 · Kindred',
+    tw: '開始一段緣 · Kindred',
     ja: '縁を結ぶ · 縁',
   }
   return { title: titles[locale] ?? titles.en }

@@ -101,7 +101,7 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
             marginBottom: 12,
           }}
         >
-          {isZh ? '你们的Kindred' : 'your resonance'}
+          {isZh ? '你们的缘' : 'your resonance'}
         </p>
         <h1
           style={{

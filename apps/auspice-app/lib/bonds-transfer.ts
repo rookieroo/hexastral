@@ -54,6 +54,11 @@ function toSoloPayload(p: AuspicePerson, language: string): unknown {
       timeIndex: p.timeIndex,
       gender: p.gender,
       calendarType: p.calendar ?? 'solar',
+      // Birthplace (optional) — lets the 合盘 apply 真太阳时 correction.
+      ...(p.city ? { city: p.city } : {}),
+      ...(typeof p.lat === 'number' ? { latitude: p.lat } : {}),
+      ...(typeof p.lng === 'number' ? { longitude: p.lng } : {}),
+      ...(p.timezone ? { timezoneId: p.timezone } : {}),
     },
     language,
   }

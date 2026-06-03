@@ -55,8 +55,9 @@ export function ReportReveal({ children }: { children: ReactNode }) {
   const edgeR = useSharedValue(0)
   const edgeRadius = useDerivedValue(() => Math.max(1, edgeR.value))
   const edgeGlowStyle = useAnimatedStyle(() => ({
-    // Bright while sweeping, gone by the time it fills the screen (no pop on done).
-    opacity: interpolate(edgeR.value / maxRadius, [0, 0.7, 1], [0.85, 0.7, 0]),
+    // Full brightness while sweeping, gone by the time it fills the screen (no
+    // pop on done) — on the dark report bg this ring IS the visible 墨晕.
+    opacity: interpolate(edgeR.value / maxRadius, [0, 0.75, 1], [1, 0.85, 0]),
   }))
 
   // Short cover hold lets MaskedView + the Skia canvas paint their first frame.
@@ -105,11 +106,13 @@ export function ReportReveal({ children }: { children: ReactNode }) {
               r={edgeRadius}
               colors={[
                 'rgba(245,240,232,0)',
-                'rgba(245,240,232,0)',
+                'rgba(245,240,232,0.12)',
                 ricePaper.ivory,
                 'rgba(245,240,232,0)',
               ]}
-              positions={[0, 0.78, 0.93, 1]}
+              // Wider luminous band (0.7→1 of the radius) so the spreading ink
+              // edge reads on black, with a faint inner wash behind it.
+              positions={[0, 0.7, 0.9, 1]}
             />
           </Circle>
         </Canvas>
