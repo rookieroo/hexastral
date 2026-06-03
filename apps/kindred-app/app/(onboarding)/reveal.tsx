@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { cacheBondBirth } from '@/lib/bondBirthCache'
 import { resolveLocale, t } from '@/lib/i18n'
 import { clearDraft, useDraft } from '@/lib/onboardingDraft'
 import { suppressNextSplash } from '@/lib/splash-control'
@@ -80,6 +81,17 @@ export default function RevealScreen() {
         language: localeToBackendLang(locale),
       })
       setBondId(result.bondId)
+      // This device entered TA's birth (fill mode) — keep a local copy so the
+      // bond detail can offer the "send to Auspice" port (server never returns
+      // it; see lib/bondBirthCache).
+      void cacheBondBirth(result.bondId, {
+        name: draft.otherName,
+        relationshipLabel: draft.relationshipLabel || 'other',
+        solarDate: draft.otherSolarDate,
+        timeIndex: draft.otherTimeIndex,
+        gender,
+        city: draft.otherBirthCity || null,
+      })
       setStatus('ready')
     } catch (err) {
       const code = (err as Error & { code?: string }).code

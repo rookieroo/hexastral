@@ -43,6 +43,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReportReveal } from '@/components/ReportReveal'
+import { openAuspiceCompose } from '@/lib/auspice-handoff'
+import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
 import { useI18n } from '@/lib/i18n'
 
 export default function BondDetailScreen() {
@@ -54,6 +56,33 @@ export default function BondDetailScreen() {
   const [chapterIndex, setChapterIndex] = useState<number>(0)
   const { createShareUrl } = useShareBond()
   const { t } = useI18n()
+
+  // Auspice port — only when THIS device entered TA's birth (fill bond). The
+  // server never returns a partner's raw birth (privacy D2), so we read the
+  // local cache written at creation time.
+  const [auspiceBirth, setAuspiceBirth] = useState<CachedBondBirth | null>(null)
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    void getBondBirth(id).then((b) => {
+      if (!cancelled) setAuspiceBirth(b)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  const sendToAuspice = () => {
+    if (!auspiceBirth) return
+    void openAuspiceCompose({
+      name: auspiceBirth.name,
+      solarDate: auspiceBirth.solarDate,
+      timeIndex: auspiceBirth.timeIndex,
+      gender: auspiceBirth.gender,
+      city: auspiceBirth.city ?? null,
+      relationshipLabel: auspiceBirth.relationshipLabel,
+    })
+  }
 
   // Off-screen render target for ShareableChapterCard.
   // When shareTarget is set, the hidden View renders the card for that chapter
@@ -218,6 +247,19 @@ export default function BondDetailScreen() {
               <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
             </Pressable>
           </View>
+          {auspiceBirth ? (
+            <Pressable
+              onPress={sendToAuspice}
+              hitSlop={6}
+              accessibilityRole='button'
+              style={{
+                paddingHorizontal: kindredSpacing.screenH,
+                paddingBottom: kindredSpacing.sm,
+              }}
+            >
+              <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
+            </Pressable>
+          ) : null}
           <ChapterPager
             report={{
               id: detail.id,
@@ -325,6 +367,17 @@ export default function BondDetailScreen() {
             <View style={{ marginTop: kindredSpacing.xl }}>
               <PrimaryButton label={t('chat.cta')} onPress={openChat} />
             </View>
+          ) : null}
+
+          {auspiceBirth ? (
+            <Pressable
+              onPress={sendToAuspice}
+              hitSlop={6}
+              accessibilityRole='button'
+              style={{ marginTop: kindredSpacing.lg, alignSelf: 'flex-start' }}
+            >
+              <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
+            </Pressable>
           ) : null}
         </ScrollView>
       </SafeAreaView>

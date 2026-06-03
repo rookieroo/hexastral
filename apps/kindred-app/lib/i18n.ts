@@ -159,6 +159,7 @@ export const translations: Translations = {
     'bondList.subtitle': 'The people woven into your chart',
     'bondList.add': 'New thread',
     'bond.matching': 'Aligning your charts…',
+    'bond.toAuspice': 'Add to Auspice almanac  →',
 
     'invite.accept.prefix': 'is ',
     'invite.accept.suffix': ' inviting you in',
@@ -368,6 +369,7 @@ export const translations: Translations = {
     'bondList.subtitle': '那些与你命盘交织的人',
     'bondList.add': '新缘',
     'bond.matching': '合盘中…',
+    'bond.toAuspice': '加入 Auspice 黄历提醒  →',
 
     'invite.accept.prefix': '是 ',
     'invite.accept.suffix': ' 邀请你进入',
@@ -574,6 +576,7 @@ export const translations: Translations = {
     'bondList.subtitle': '那些與你命盤交織的人',
     'bondList.add': '新緣',
     'bond.matching': '合盤中…',
+    'bond.toAuspice': '加入 Auspice 黃曆提醒  →',
 
     'invite.accept.prefix': '是 ',
     'invite.accept.suffix': ' 邀請你進入',
@@ -780,6 +783,7 @@ export const translations: Translations = {
     'bondList.subtitle': 'あなたの命盤に織り込まれた人々',
     'bondList.add': '新しい縁',
     'bond.matching': '相性を計算中…',
+    'bond.toAuspice': 'Auspice の暦に追加  →',
 
     'invite.accept.prefix': 'さんが',
     'invite.accept.suffix': 'あなたを誘っています',
