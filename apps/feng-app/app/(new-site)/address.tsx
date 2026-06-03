@@ -110,7 +110,9 @@ export default function AddressScreen() {
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {strings.new_site_address_title}
       </Text>
-      <Text style={{ fontSize: 15, color: colors.textMute }}>{strings.new_site_address_subtitle}</Text>
+      <Text style={{ fontSize: 15, color: colors.textMute }}>
+        {strings.new_site_address_subtitle}
+      </Text>
 
       <View style={{ gap: spacing.sm }}>
         <Text

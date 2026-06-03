@@ -68,12 +68,7 @@ export function GET(): NextResponse {
         // Numerology + plum-blossom
         {
           appID: `${TEAM_ID}.com.hexastral.numerology`,
-          paths: [
-            '/lp/numerology/*',
-            '/*/lp/numerology/*',
-            '/lp/meihua/*',
-            '/*/lp/meihua/*',
-          ],
+          paths: ['/lp/numerology/*', '/*/lp/numerology/*', '/lp/meihua/*', '/*/lp/meihua/*'],
         },
         // Feng-shui report
         {

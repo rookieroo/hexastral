@@ -38,10 +38,7 @@ export async function getCachedChapter(
 
 export async function setCachedChapter(chapter: CachedChapter): Promise<void> {
   try {
-    await AsyncStorage.setItem(
-      cacheKey(chapter.slug, chapter.chartHash),
-      JSON.stringify(chapter)
-    )
+    await AsyncStorage.setItem(cacheKey(chapter.slug, chapter.chartHash), JSON.stringify(chapter))
   } catch {
     // Non-critical — next open will re-fetch
   }

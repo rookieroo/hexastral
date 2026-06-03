@@ -1,6 +1,6 @@
 import { config } from './config'
-import { getStoredFengUserId } from './user-session'
 import { signRequest } from './hmac'
+import { getStoredFengUserId } from './user-session'
 
 export interface FengBirthInfo {
   birthSolarDate: string
@@ -24,10 +24,7 @@ interface BirthInfoResponse {
   } | null
 }
 
-async function signedBirthRequest(
-  method: 'GET' | 'PUT',
-  body?: FengBirthInfo
-): Promise<Response> {
+async function signedBirthRequest(method: 'GET' | 'PUT', body?: FengBirthInfo): Promise<Response> {
   const userId = await getStoredFengUserId()
   if (!userId) throw new Error('birth_info_requires_auth')
 

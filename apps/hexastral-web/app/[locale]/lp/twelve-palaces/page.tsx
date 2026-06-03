@@ -28,9 +28,8 @@ export default async function LpTwelvePalacesPage() {
       </p>
       <h1 style={{ fontWeight: 400 }}>Daily palace insights, anchored in classical ZiWei.</h1>
       <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.7 }}>
-        Notifications cite Zi Wei Dou Shu ({' '}
-        <span lang='zh-Hans'>紫微斗数</span>
-        ) — twelve palaces, decade cycles, source terms preserved.
+        Notifications cite Zi Wei Dou Shu ( <span lang='zh-Hans'>紫微斗数</span>) — twelve palaces,
+        decade cycles, source terms preserved.
       </p>
       <Link
         href='/tools/palace-chart'

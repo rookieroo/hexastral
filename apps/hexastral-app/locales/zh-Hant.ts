@@ -64,7 +64,8 @@ export const zhHant: Record<TranslationKeys, string> = {
   history_delete_daily: '將從命冊中移除該筆每日運勢紀錄，且無法復原。',
   history_delete_pair:
     '將從命冊中移除該筆合盤紀錄。若已與「Kindred分」中的 Cosmic Bond 關聯，請先刪除對應 Bond。',
-  history_delete_pair_conflict: '該合盤仍關聯 Cosmic Bond。請先在「Kindred」分頁刪除對應 Bond 後再試。',
+  history_delete_pair_conflict:
+    '該合盤仍關聯 Cosmic Bond。請先在「Kindred」分頁刪除對應 Bond 後再試。',
   history_divination: '占卜',
   history_reading: '排盤',
   history_analysis: '分析',

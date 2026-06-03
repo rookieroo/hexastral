@@ -73,7 +73,12 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
   ja: {
     tap: 'タップでスキップ',
     continue: 'タップで始める',
-    acts: ['ひとりで生まれてくる', 'すれ違う人もいる', 'しばらく寄り添う人も', 'となりに残る人がいる'],
+    acts: [
+      'ひとりで生まれてくる',
+      'すれ違う人もいる',
+      'しばらく寄り添う人も',
+      'となりに残る人がいる',
+    ],
   },
 }
 
@@ -499,10 +504,7 @@ export default function IntroScreen() {
       </Animated.View>
 
       {/* Act caption — names the current act, one notch brighter each time */}
-      <Animated.View
-        style={[styles.caption, { top: height * 0.3 }, actStyle]}
-        pointerEvents='none'
-      >
+      <Animated.View style={[styles.caption, { top: height * 0.3 }, actStyle]} pointerEvents='none'>
         <Text
           style={[
             kindredType.caption,

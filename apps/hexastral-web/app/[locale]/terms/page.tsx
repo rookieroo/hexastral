@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Link } from '@/i18n/navigation'
 import { type Locale, routing } from '@/i18n/routing'
 import { getLegalUiStrings } from '@/lib/legal/legal-ui-strings'
-import { TERMS_LAST_UPDATED, getTermsSections } from '@/lib/legal/terms-sections'
+import { getTermsSections, TERMS_LAST_UPDATED } from '@/lib/legal/terms-sections'
 
 interface TermsPageProps {
   params: Promise<{ locale: string }>

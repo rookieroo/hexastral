@@ -62,7 +62,8 @@ export const zh = {
   history_delete_daily: '将从命册中移除该条每日运势记录，且无法恢复。',
   history_delete_pair:
     '将从命册中移除该条合盘记录。若已与「Kindred分」中的 Cosmic Bond 关联，请先删除对应 Bond。',
-  history_delete_pair_conflict: '该合盘仍关联 Cosmic Bond。请先在「Kindred」标签删除对应 Bond 后再试。',
+  history_delete_pair_conflict:
+    '该合盘仍关联 Cosmic Bond。请先在「Kindred」标签删除对应 Bond 后再试。',
   history_divination: '占卜',
   history_reading: '排盘',
   history_analysis: '分析',

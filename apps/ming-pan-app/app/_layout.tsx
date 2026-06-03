@@ -32,8 +32,8 @@ import {
   useTokenPermissionReconcile,
   useUniversalLinks,
 } from '@zhop/satellite-runtime'
-import { Stack } from 'expo-router'
 import * as Linking from 'expo-linking'
+import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback } from 'react'
 import { StyleSheet } from 'react-native'

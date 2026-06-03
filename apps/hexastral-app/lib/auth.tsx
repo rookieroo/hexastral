@@ -13,10 +13,10 @@ import * as SecureStore from 'expo-secure-store'
 import type { ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
-import { clearAppSessionCaches } from './session-reset'
 import { apiClient } from './api'
 import { loginRevenueCat, logoutRevenueCat } from './domain/subscription'
 import { getDeviceSecret, storeDeviceSecret } from './hmac'
+import { clearAppSessionCaches } from './session-reset'
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
 

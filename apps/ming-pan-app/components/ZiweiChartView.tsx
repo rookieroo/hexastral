@@ -46,7 +46,10 @@ export function ZiweiChartView({ chart, colors }: Props) {
               key={p.index}
               style={[
                 styles.row,
-                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator },
+                i > 0 && {
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: colors.separator,
+                },
               ]}
             >
               <View style={[styles.label, archetype && styles.labelEn]}>

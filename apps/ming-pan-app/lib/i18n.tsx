@@ -24,7 +24,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { GeJuAnalysis, HeavenlyStem, WuXing } from '@zhop/astro-core'
 import { saveUserPreferences } from '@zhop/satellite-runtime'
 import { getLocales } from 'expo-localization'
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 export type AppLocale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 
@@ -41,7 +49,8 @@ const LOCALE_KEY = 'fate.locale'
 
 export function resolveSystemLocale(): AppLocale {
   const tag = getLocales()[0]?.languageTag ?? 'en'
-  if (tag.startsWith('zh-Hant') || tag.startsWith('zh-TW') || tag.startsWith('zh-HK')) return 'zh-Hant'
+  if (tag.startsWith('zh-Hant') || tag.startsWith('zh-TW') || tag.startsWith('zh-HK'))
+    return 'zh-Hant'
   if (tag.startsWith('zh')) return 'zh-Hans'
   if (tag.startsWith('ja')) return 'ja'
   return 'en'
@@ -78,7 +87,13 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
  * Data-atom maps — the BaZi/Ziwei values we DO localise.
  * ────────────────────────────────────────────────────────────────────────── */
 
-const ELEMENT_EN: Record<WuXing, string> = { 木: 'Wood', 火: 'Fire', 土: 'Earth', 金: 'Metal', 水: 'Water' }
+const ELEMENT_EN: Record<WuXing, string> = {
+  木: 'Wood',
+  火: 'Fire',
+  土: 'Earth',
+  金: 'Metal',
+  水: 'Water',
+}
 
 const STRENGTH: Record<GeJuAnalysis['dayMasterStrength'], Record<AppLocale, string>> = {
   极强: { 'zh-Hans': '极强', 'zh-Hant': '極強', ja: '極強', en: 'Very Strong' },

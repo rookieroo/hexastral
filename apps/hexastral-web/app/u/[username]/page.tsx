@@ -128,9 +128,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
         ? derivedSig.signature.trim()
         : null
   const baseDesc = `View ${displayName}'s BaZi (Four Pillars) chart on HexAstral — AI-augmented chart insights.`
-  const ogDesc = sig
-    ? `${displayName} · ${sig}`
-    : `${displayName}'s BaZi chart, AI-augmented.`
+  const ogDesc = sig ? `${displayName} · ${sig}` : `${displayName}'s BaZi chart, AI-augmented.`
   return {
     title: `${displayName} · HexAstral`,
     description: sig ? ogDesc : baseDesc,
@@ -180,8 +178,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   )
   const natalPillars = chart?.natal ? parsePublicNatalPillars(chart.natal) : null
   const fingerprint = chart?.natal ? parsePublicNatalFingerprint(chart.natal) : null
-  const mingPalaceStars =
-    extractMingPalaceStars(chart?.stellar) || (user.ziweiMingPalaceStar ?? '')
+  const mingPalaceStars = extractMingPalaceStars(chart?.stellar) || (user.ziweiMingPalaceStar ?? '')
   const fingerprintLine =
     showSignature && fingerprint
       ? formatFingerprintLine(fingerprint, mingPalaceStars, user.locale)

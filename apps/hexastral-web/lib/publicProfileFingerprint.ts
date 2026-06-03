@@ -26,8 +26,11 @@ export function parsePublicNatalFingerprint(natal: unknown): NatalFingerprint | 
   // fallback in case future payloads include it.
   const pillars = n.pillars as Record<string, unknown> | undefined
   const day = pillars?.day as Record<string, unknown> | undefined
-  const stem =
-    isString(n.dayMaster) ? n.dayMaster : isString(day?.stem) ? (day.stem as string) : null
+  const stem = isString(n.dayMaster)
+    ? n.dayMaster
+    : isString(day?.stem)
+      ? (day.stem as string)
+      : null
   if (!stem || !isString(n.dayMasterWuXing)) return null
   if (!geju || !isString(geju.primary)) return null
   return {

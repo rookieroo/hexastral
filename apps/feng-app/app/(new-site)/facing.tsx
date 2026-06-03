@@ -253,7 +253,14 @@ export default function FacingScreen() {
           )}
         </View>
         {hasSatellite ? (
-          <Text style={{ marginTop: spacing.sm, fontSize: 13, color: colors.textMute, textAlign: 'center' }}>
+          <Text
+            style={{
+              marginTop: spacing.sm,
+              fontSize: 13,
+              color: colors.textMute,
+              textAlign: 'center',
+            }}
+          >
             {strings.new_site_facing_map_legend}
           </Text>
         ) : null}
@@ -306,7 +313,9 @@ export default function FacingScreen() {
         </Pressable>
       </View>
 
-      <Text style={{ fontSize: 13, color: colors.textMute }}>{strings.new_site_facing_capture_hint}</Text>
+      <Text style={{ fontSize: 13, color: colors.textMute }}>
+        {strings.new_site_facing_capture_hint}
+      </Text>
 
       <Pressable
         onPress={() => captureHeading(editTarget === 'door' ? 'door' : 'face')}

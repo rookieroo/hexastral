@@ -88,7 +88,7 @@ async function fetchFlags(): Promise<CachedSnapshot> {
       memoryCache = snapshot
       // Persist + notify in parallel — don't make subscribers wait on disk.
       void persistToStorage(snapshot)
-      subscribers.forEach((cb) => cb())
+      for (const cb of subscribers) cb()
       return snapshot
     } finally {
       inflight = null

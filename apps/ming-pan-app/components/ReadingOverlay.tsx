@@ -102,10 +102,7 @@ function OverlayInner({ onClose }: { onClose: () => void }) {
               flash before the Skia mask establishes — once the mask is painting,
               the paper bloom inside the ink shape takes over. */}
           <View style={[S.content, revealPhase === 'cover' && S.coverHidden]}>
-            <ReadingReport
-              activeChapter={activeChapter}
-              setActiveChapter={setActiveChapter}
-            />
+            <ReadingReport activeChapter={activeChapter} setActiveChapter={setActiveChapter} />
           </View>
         </MaskedView>
       </View>

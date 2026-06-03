@@ -8,10 +8,7 @@
  * email — the parent decides when to dismiss.
  */
 
-import {
-  type InviteChapterUnlockError,
-  inviteChapterUnlock,
-} from '@zhop/satellite-runtime'
+import { type InviteChapterUnlockError, inviteChapterUnlock } from '@zhop/satellite-runtime'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -144,60 +141,60 @@ export function InviteUnlockSheet({ visible, onClose, onSent }: InviteUnlockShee
               <View style={S.sheet}>
                 <View style={S.handle} />
                 {phase === 'compose' ? (
-            <>
-              <Text style={S.title}>{t('invite.title')}</Text>
-              <Text style={S.hint}>{t('invite.hint')}</Text>
-              <TextInput
-                style={S.input}
-                value={targetEmail}
-                onChangeText={setTargetEmail}
-                placeholder={t('invite.targetEmailPlaceholder')}
-                placeholderTextColor={P.dim}
-                keyboardType='email-address'
-                autoCapitalize='none'
-                autoCorrect={false}
-                autoComplete='email'
-                editable={!busy}
-              />
-              <TextInput
-                style={[S.input, S.message]}
-                value={message}
-                onChangeText={setMessage}
-                placeholder={t('invite.messagePlaceholder')}
-                placeholderTextColor={P.dim}
-                multiline
-                maxLength={280}
-                editable={!busy}
-              />
-              {error ? <Text style={S.error}>{error}</Text> : null}
-              <Pressable
-                onPress={send}
-                disabled={busy || targetEmail.length === 0}
-                style={({ pressed }) => [
-                  S.cta,
-                  (busy || targetEmail.length === 0) && S.ctaDisabled,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                {busy ? (
-                  <ActivityIndicator color={P.ctaText} />
+                  <>
+                    <Text style={S.title}>{t('invite.title')}</Text>
+                    <Text style={S.hint}>{t('invite.hint')}</Text>
+                    <TextInput
+                      style={S.input}
+                      value={targetEmail}
+                      onChangeText={setTargetEmail}
+                      placeholder={t('invite.targetEmailPlaceholder')}
+                      placeholderTextColor={P.dim}
+                      keyboardType='email-address'
+                      autoCapitalize='none'
+                      autoCorrect={false}
+                      autoComplete='email'
+                      editable={!busy}
+                    />
+                    <TextInput
+                      style={[S.input, S.message]}
+                      value={message}
+                      onChangeText={setMessage}
+                      placeholder={t('invite.messagePlaceholder')}
+                      placeholderTextColor={P.dim}
+                      multiline
+                      maxLength={280}
+                      editable={!busy}
+                    />
+                    {error ? <Text style={S.error}>{error}</Text> : null}
+                    <Pressable
+                      onPress={send}
+                      disabled={busy || targetEmail.length === 0}
+                      style={({ pressed }) => [
+                        S.cta,
+                        (busy || targetEmail.length === 0) && S.ctaDisabled,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      {busy ? (
+                        <ActivityIndicator color={P.ctaText} />
+                      ) : (
+                        <Text style={S.ctaText}>{t('invite.send')}</Text>
+                      )}
+                    </Pressable>
+                  </>
                 ) : (
-                  <Text style={S.ctaText}>{t('invite.send')}</Text>
+                  <>
+                    <Text style={S.title}>{t('invite.sentTitle')}</Text>
+                    <Text style={S.hint}>{t('invite.sentBody', { email: targetEmail })}</Text>
+                    <Pressable
+                      onPress={onClose}
+                      style={({ pressed }) => [S.cta, pressed && { opacity: 0.85 }]}
+                    >
+                      <Text style={S.ctaText}>{t('common.cancel')}</Text>
+                    </Pressable>
+                  </>
                 )}
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={S.title}>{t('invite.sentTitle')}</Text>
-              <Text style={S.hint}>{t('invite.sentBody', { email: targetEmail })}</Text>
-              <Pressable
-                onPress={onClose}
-                style={({ pressed }) => [S.cta, pressed && { opacity: 0.85 }]}
-              >
-                <Text style={S.ctaText}>{t('common.cancel')}</Text>
-              </Pressable>
-            </>
-          )}
               </View>
             </Animated.View>
           </KeyboardAvoidingView>

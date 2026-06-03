@@ -156,9 +156,7 @@ export default function ChatScreen() {
         readingType={readingType}
         readingId={id}
         fetchHistory={() => fetchChatHistory(userId, readingType, id)}
-        sendMessage={(msg, requestId) =>
-          sendChatMessage(userId, readingType, id, msg, requestId)
-        }
+        sendMessage={(msg, requestId) => sendChatMessage(userId, readingType, id, msg, requestId)}
         onPaywallRequest={showPaywallModal}
         onError={(err) => handleApiError(err)}
         copy={copy}

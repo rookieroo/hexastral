@@ -292,7 +292,8 @@ const ZH_HANS: Strings = {
   new_site_address_geocode_error: '无法解析该地址的坐标，请使用「当前定位」或修改地址。',
   new_site_address_geocoding: '正在查询位置…',
   new_site_facing_title: '确认朝向',
-  new_site_facing_subtitle: '地图真北朝上（环上 N）。拖动当前选中的箭头，或在户外对准后点「记录」。',
+  new_site_facing_subtitle:
+    '地图真北朝上（环上 N）。拖动当前选中的箭头，或在户外对准后点「记录」。',
   new_site_facing_map_legend:
     '金 = 楼门 · 蓝 = 户门 · 白 = 手机朝向（户外较准，室内会偏）· 环上 N = 真北',
   new_site_facing_edit_building: '调楼门',
@@ -401,9 +402,9 @@ const ZH_HANT: Strings = {
   new_site_address_geocode_error: '無法解析此地址的座標，請使用「目前位置」或修改地址。',
   new_site_address_geocoding: '正在查詢位置…',
   new_site_facing_title: '確認朝向',
-  new_site_facing_subtitle: '地圖真北朝上（環上 N）。拖曳目前選中的箭頭，或在戶外對準後點「記錄」。',
-  new_site_facing_map_legend:
-    '金 = 樓門 · 藍 = 戶門 · 白 = 手機朝向（戶外較準）· 環上 N = 真北',
+  new_site_facing_subtitle:
+    '地圖真北朝上（環上 N）。拖曳目前選中的箭頭，或在戶外對準後點「記錄」。',
+  new_site_facing_map_legend: '金 = 樓門 · 藍 = 戶門 · 白 = 手機朝向（戶外較準）· 環上 N = 真北',
   new_site_facing_edit_building: '調樓門',
   new_site_facing_edit_unit_door: '調戶門',
   new_site_facing_capture_hint: '戶外平舉手機對準門後點：',
@@ -578,8 +579,7 @@ const JA: Strings = {
     'サインイン画面に戻ります。サイトとレポートはこのアカウントに残ります。',
   cancel: 'キャンセル',
   birth_info_title: '生年月日',
-  birth_info_subtitle:
-    '風水レポートの八字・命卦章に使用します。アカウントに安全に保存されます。',
+  birth_info_subtitle: '風水レポートの八字・命卦章に使用します。アカウントに安全に保存されます。',
   birth_date_label: '西暦の生年月日',
   birth_time_label: '出生時刻（十二支）',
   birth_time_unknown: '時刻不明',

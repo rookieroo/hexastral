@@ -33,7 +33,9 @@ export default function ChartScreen() {
         timeIndex: state.draft.timeIndex ?? 0,
         gender: state.draft.gender,
       })
-    } catch { return null }
+    } catch {
+      return null
+    }
   }, [state])
 
   if (state.status === 'loading') {
@@ -64,7 +66,9 @@ export default function ChartScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <ZiweiChartView chart={chart} colors={colors} />
           {state.draft.timeIndex == null ? (
-            <Text style={[styles.caveat, { color: colors.dim }]}>{t('chart.timeUnknownCaveat')}</Text>
+            <Text style={[styles.caveat, { color: colors.dim }]}>
+              {t('chart.timeUnknownCaveat')}
+            </Text>
           ) : null}
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -78,8 +82,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   headerTitle: { fontSize: 11, letterSpacing: 4, fontWeight: '300' },
   spacer: { width: 20 },

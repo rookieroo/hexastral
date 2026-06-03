@@ -49,8 +49,7 @@ const STRINGS: Record<Locale, LegalUiStrings> = {
     privacyPageTitle: '隐私政策',
     termsPageTitle: '使用条款',
     lastUpdatedLabel: '最近更新',
-    privacySubheading:
-      '适用于 UseONE, LLC 出品的 HexAstral、Kindred、Fēng、Cycle 以及所有卫星应用',
+    privacySubheading: '适用于 UseONE, LLC 出品的 HexAstral、Kindred、Fēng、Cycle 以及所有卫星应用',
     backToHome: '← 返回首页',
     privacyLinkLabel: '隐私政策 →',
     termsLinkLabel: '使用条款 →',
@@ -60,8 +59,7 @@ const STRINGS: Record<Locale, LegalUiStrings> = {
     privacyPageTitle: '隱私政策',
     termsPageTitle: '使用條款',
     lastUpdatedLabel: '最近更新',
-    privacySubheading:
-      '適用於 UseONE, LLC 出品的 HexAstral、Kindred、Fēng、Cycle 以及所有衛星應用',
+    privacySubheading: '適用於 UseONE, LLC 出品的 HexAstral、Kindred、Fēng、Cycle 以及所有衛星應用',
     backToHome: '← 返回首頁',
     privacyLinkLabel: '隱私政策 →',
     termsLinkLabel: '使用條款 →',

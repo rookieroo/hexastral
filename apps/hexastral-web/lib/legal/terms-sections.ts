@@ -12,11 +12,10 @@
  */
 
 import type { Locale } from '@/i18n/routing'
-import type { LegalSection } from './privacy-sections'
-
 import termsEnRaw from './data/terms.en.json'
 import termsJaRaw from './data/terms.ja.json'
 import termsTwRaw from './data/terms.tw.json'
+import type { LegalSection } from './privacy-sections'
 
 interface LegalDoc {
   lastUpdated: string

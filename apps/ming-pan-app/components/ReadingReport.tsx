@@ -30,25 +30,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
-import { EmailBindSheet } from './EmailBindSheet'
-import { InviteUnlockSheet } from './InviteUnlockSheet'
-import { SignInPromptSheet } from './SignInPromptSheet'
 import { setEntitlement, useEntitlement } from '@/lib/entitlement'
 import {
   dayMasterLabel,
   elementLabel,
-  shichenLabel,
   type StringKey,
+  shichenLabel,
   strengthLabel,
   useI18n,
 } from '@/lib/i18n'
 import { computeFateNatalChart } from '@/lib/natal'
 import { analyzeDayunRelation, computeDayunChain, parseBirthInput } from '@/lib/reading'
-import { type CachedChapter, computeChartHash, fetchChapter, getCachedChapter } from '@/lib/reading-cache'
+import {
+  type CachedChapter,
+  computeChartHash,
+  fetchChapter,
+  getCachedChapter,
+} from '@/lib/reading-cache'
 import { markReadingViewed } from '@/lib/reading-mark'
 import { useBirthDraft } from '@/lib/use-birth-draft'
 import { computeZiweiChart } from '@/lib/ziwei'
+import { EmailBindSheet } from './EmailBindSheet'
+import { InviteUnlockSheet } from './InviteUnlockSheet'
+import { SignInPromptSheet } from './SignInPromptSheet'
 
 /* ── palette ── */
 const P = {
@@ -354,7 +358,9 @@ export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReport
   const ziweiMing = ziwei?.palaces.find((p) => p.name === '命宫')
   const ziweiLabel = ziweiMing?.majorStars.map((s) => s.name).join(' ') ?? ''
   const birthBadge = `${state.draft.solarDate} · ${
-    state.draft.timeIndex != null ? shichenLabel(state.draft.timeIndex, locale) : t('birth.timeUnknown')
+    state.draft.timeIndex != null
+      ? shichenLabel(state.draft.timeIndex, locale)
+      : t('birth.timeUnknown')
   }`
 
   const identityLine =
@@ -525,10 +531,7 @@ export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReport
             const isAccessible =
               entitlement === 'paid' || (manifest?.unlockedChapterCount ?? 0) >= requiredCount
             return isAccessible ? (
-              <Pressable
-                key={ch.sub}
-                onPress={() => setActiveChapter({ kind: 'locked', idx })}
-              >
+              <Pressable key={ch.sub} onPress={() => setActiveChapter({ kind: 'locked', idx })}>
                 {({ pressed }) => (
                   <View style={pressed ? S.chapterPressed : undefined}>
                     <Chapter
@@ -758,10 +761,7 @@ function ChapterDetail({
           <Text style={S.detailHeaderSub}>{sub}</Text>
           <View style={S.backBtn} />
         </View>
-        <ScrollView
-          contentContainerStyle={S.detailScroll}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={S.detailScroll} showsVerticalScrollIndicator={false}>
           {identityLine ? (
             <View style={S.detailIdentity}>
               <Text style={S.detailIdentityLine}>{identityLine}</Text>

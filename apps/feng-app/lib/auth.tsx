@@ -95,7 +95,9 @@ async function registerUser(
   })
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
-    throw new Error(`user_registration_failed:${res.status}${detail ? `:${detail.slice(0, 200)}` : ''}`)
+    throw new Error(
+      `user_registration_failed:${res.status}${detail ? `:${detail.slice(0, 200)}` : ''}`
+    )
   }
   const json = (await res.json()) as { data: Record<string, unknown> }
   const apiUser = json.data
@@ -106,14 +108,10 @@ async function registerUser(
     id: userId,
     email: typeof apiUser.email === 'string' ? apiUser.email : null,
     name: typeof apiUser.name === 'string' ? apiUser.name : null,
-    birthSolarDate:
-      typeof apiUser.birthSolarDate === 'string' ? apiUser.birthSolarDate : null,
-    birthTimeIndex:
-      typeof apiUser.birthTimeIndex === 'number' ? apiUser.birthTimeIndex : null,
+    birthSolarDate: typeof apiUser.birthSolarDate === 'string' ? apiUser.birthSolarDate : null,
+    birthTimeIndex: typeof apiUser.birthTimeIndex === 'number' ? apiUser.birthTimeIndex : null,
     birthGender:
-      apiUser.birthGender === '男' || apiUser.birthGender === '女'
-        ? apiUser.birthGender
-        : null,
+      apiUser.birthGender === '男' || apiUser.birthGender === '女' ? apiUser.birthGender : null,
     birthCity: typeof apiUser.birthCity === 'string' ? apiUser.birthCity : null,
   }
 }

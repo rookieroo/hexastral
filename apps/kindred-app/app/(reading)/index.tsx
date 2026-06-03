@@ -39,8 +39,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
-import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import { useSelfBirth } from '@/lib/selfBirth'
+import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import { consumeSplashDecision } from '@/lib/splash-control'
 
 /* ── Home copy (4 locales, local — keeps lib/i18n.ts untouched) ─────────── */

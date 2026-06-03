@@ -289,7 +289,11 @@ export default function BirthInfoScreen() {
               setCityQuery(c.displayName || c.name)
               setCityResults([])
             }}
-            style={{ paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
+            style={{
+              paddingVertical: 10,
+              borderBottomWidth: 0.5,
+              borderBottomColor: colors.separator,
+            }}
           >
             <Text style={{ color: colors.text }}>{c.displayName || c.name}</Text>
           </Pressable>

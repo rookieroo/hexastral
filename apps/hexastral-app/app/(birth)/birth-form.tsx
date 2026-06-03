@@ -15,23 +15,13 @@
  *   - draft clear + route to home.
  */
 
-import {
-  BirthInfoForm,
-  type BirthInfoValue,
-  type CityRecord,
-  useTheme,
-} from '@zhop/core-ui'
+import { BirthInfoForm, type BirthInfoValue, type CityRecord, useTheme } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { useEffect } from 'react'
 import { Alert } from 'react-native'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import {
-  clearBirthDraft,
-  type BirthDraft,
-  updateBirthDraft,
-  useBirthDraft,
-} from '@/lib/birthDraft'
+import { type BirthDraft, clearBirthDraft, updateBirthDraft, useBirthDraft } from '@/lib/birthDraft'
 import { saveBirthInfo } from '@/lib/domain/birthInfo'
 import { checkSubscriptionStatus } from '@/lib/domain/subscription'
 import { useI18n } from '@/lib/i18n'

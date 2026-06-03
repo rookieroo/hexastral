@@ -160,71 +160,71 @@ export function EmailBindSheet({ visible, onClose, onSuccess }: EmailBindSheetPr
                 <Text style={S.title}>{t('email.bindTitle')}</Text>
                 <Text style={S.hint}>{t('email.bindHint')}</Text>
 
-          {step === 'email' ? (
-            <>
-              <TextInput
-                style={S.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t('email.placeholder')}
-                placeholderTextColor={P.dim}
-                keyboardType='email-address'
-                autoCapitalize='none'
-                autoCorrect={false}
-                autoComplete='email'
-                editable={!busy}
-              />
-              {error ? <Text style={S.error}>{error}</Text> : null}
-              <Pressable
-                onPress={sendCode}
-                disabled={busy || email.length === 0}
-                style={({ pressed }) => [
-                  S.cta,
-                  (busy || email.length === 0) && S.ctaDisabled,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                {busy ? (
-                  <ActivityIndicator color={P.ctaText} />
+                {step === 'email' ? (
+                  <>
+                    <TextInput
+                      style={S.input}
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder={t('email.placeholder')}
+                      placeholderTextColor={P.dim}
+                      keyboardType='email-address'
+                      autoCapitalize='none'
+                      autoCorrect={false}
+                      autoComplete='email'
+                      editable={!busy}
+                    />
+                    {error ? <Text style={S.error}>{error}</Text> : null}
+                    <Pressable
+                      onPress={sendCode}
+                      disabled={busy || email.length === 0}
+                      style={({ pressed }) => [
+                        S.cta,
+                        (busy || email.length === 0) && S.ctaDisabled,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      {busy ? (
+                        <ActivityIndicator color={P.ctaText} />
+                      ) : (
+                        <Text style={S.ctaText}>{t('email.sendCode')}</Text>
+                      )}
+                    </Pressable>
+                  </>
                 ) : (
-                  <Text style={S.ctaText}>{t('email.sendCode')}</Text>
+                  <>
+                    <Text style={S.codeSent}>{t('email.codeSentTo', { email })}</Text>
+                    <TextInput
+                      style={S.input}
+                      value={code}
+                      onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
+                      placeholder={t('email.codePlaceholder')}
+                      placeholderTextColor={P.dim}
+                      keyboardType='number-pad'
+                      maxLength={6}
+                      editable={!busy}
+                    />
+                    {error ? <Text style={S.error}>{error}</Text> : null}
+                    <Pressable
+                      onPress={verifyCode}
+                      disabled={busy || code.length !== 6}
+                      style={({ pressed }) => [
+                        S.cta,
+                        (busy || code.length !== 6) && S.ctaDisabled,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      {busy ? (
+                        <ActivityIndicator color={P.ctaText} />
+                      ) : (
+                        <Text style={S.ctaText}>{t('email.verify')}</Text>
+                      )}
+                    </Pressable>
+                    <Pressable onPress={goBackToEmail} hitSlop={8} style={S.resendBtn}>
+                      <Text style={S.resend}>{t('email.resend')}</Text>
+                    </Pressable>
+                  </>
                 )}
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={S.codeSent}>{t('email.codeSentTo', { email })}</Text>
-              <TextInput
-                style={S.input}
-                value={code}
-                onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-                placeholder={t('email.codePlaceholder')}
-                placeholderTextColor={P.dim}
-                keyboardType='number-pad'
-                maxLength={6}
-                editable={!busy}
-              />
-              {error ? <Text style={S.error}>{error}</Text> : null}
-              <Pressable
-                onPress={verifyCode}
-                disabled={busy || code.length !== 6}
-                style={({ pressed }) => [
-                  S.cta,
-                  (busy || code.length !== 6) && S.ctaDisabled,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                {busy ? (
-                  <ActivityIndicator color={P.ctaText} />
-                ) : (
-                  <Text style={S.ctaText}>{t('email.verify')}</Text>
-                )}
-              </Pressable>
-              <Pressable onPress={goBackToEmail} hitSlop={8} style={S.resendBtn}>
-                <Text style={S.resend}>{t('email.resend')}</Text>
-              </Pressable>
-            </>
-          )}
               </View>
             </Animated.View>
           </KeyboardAvoidingView>

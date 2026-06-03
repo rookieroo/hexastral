@@ -1,4 +1,8 @@
-# hexastral-app
+# hexastral-app — RETIRED (ADR-0014b)
+
+Retired omnibus app, superseded by the standalone satellites (kindred-app et al).
+**Excluded from monorepo typecheck** (no `typecheck` script): its API bindings have
+drifted and are not maintained. Lint still runs. Archive per ADR-0016 when convenient.
 
 Expo iOS app for HexAstral.
 

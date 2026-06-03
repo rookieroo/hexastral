@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/lib/auth'
-import { fetchBirthInfo, type FengBirthInfo } from '@/lib/birth-info'
+import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 
@@ -119,11 +119,7 @@ export default function ProfileTab() {
           </Text>
         )}
         <View style={{ alignSelf: 'flex-start' }}>
-          <Button
-            variant='secondary'
-            size='md'
-            onPress={() => router.push('/(birth-info)')}
-          >
+          <Button variant='secondary' size='md' onPress={() => router.push('/(birth-info)')}>
             {birthInfo ? t.profile_birth_edit_cta : t.profile_birth_required_cta}
           </Button>
         </View>

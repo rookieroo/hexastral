@@ -7,6 +7,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { BackArrowIcon, ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { BaseSharePoster } from '@zhop/portfolio-posters'
 import {
   checkPortfolioUsernameAvailable,
   clearLocalBirthDraft,
@@ -23,7 +24,6 @@ import {
   unbindUserEmail,
   updatePortfolioProfile,
 } from '@zhop/satellite-runtime'
-import { BaseSharePoster } from '@zhop/portfolio-posters'
 import { captureAndSharePoster } from '@zhop/satellite-ui'
 import { SatelliteAppleAuth } from '@zhop/satellite-ui/SatelliteAppleAuth'
 import { SatelliteGoogleAuth } from '@zhop/satellite-ui/SatelliteGoogleAuth'
@@ -413,7 +413,6 @@ export default function FateMeScreen() {
     }
   }, [draft])
 
-
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
     else router.replace('/(tabs)')
@@ -475,9 +474,7 @@ export default function FateMeScreen() {
           }
           subtitle={t('me.chartCard')}
           shareUrl={
-            profile?.username
-              ? `${HEXASTRAL_PROFILE_URL}/u/${profile.username}`
-              : HEXASTRAL_WEB_URL
+            profile?.username ? `${HEXASTRAL_PROFILE_URL}/u/${profile.username}` : HEXASTRAL_WEB_URL
           }
         />
       </View>
@@ -581,9 +578,7 @@ export default function FateMeScreen() {
               {profile?.email ? (
                 <>
                   <View style={[S.actionRow, { borderBottomColor: colors.separator }]}>
-                    <Text style={[S.actionLabel, { color: colors.text }]}>
-                      {t('me.bindEmail')}
-                    </Text>
+                    <Text style={[S.actionLabel, { color: colors.text }]}>{t('me.bindEmail')}</Text>
                     <Text style={[S.actionValue, { color: colors.dim }]} numberOfLines={1}>
                       {profile.email}
                     </Text>
@@ -611,9 +606,7 @@ export default function FateMeScreen() {
                     pressed && S.actionRowPressed,
                   ]}
                 >
-                  <Text style={[S.actionLabel, { color: colors.text }]}>
-                    {t('me.bindEmail')}
-                  </Text>
+                  <Text style={[S.actionLabel, { color: colors.text }]}>{t('me.bindEmail')}</Text>
                   <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
                 </Pressable>
               )}
@@ -627,9 +620,7 @@ export default function FateMeScreen() {
                     pressed && !syncing && !synced && S.actionRowPressed,
                   ]}
                 >
-                  <Text style={[S.actionLabel, { color: colors.text }]}>
-                    {t('me.syncChart')}
-                  </Text>
+                  <Text style={[S.actionLabel, { color: colors.text }]}>{t('me.syncChart')}</Text>
                   {syncing ? (
                     <ActivityIndicator color={colors.secondary} size='small' />
                   ) : synced ? (
@@ -643,14 +634,9 @@ export default function FateMeScreen() {
               ) : null}
               <Pressable
                 onPress={signOut}
-                style={({ pressed }) => [
-                  S.actionRowLast,
-                  pressed && S.actionRowPressed,
-                ]}
+                style={({ pressed }) => [S.actionRowLast, pressed && S.actionRowPressed]}
               >
-                <Text style={[S.actionLabel, { color: colors.secondary }]}>
-                  {t('me.signOut')}
-                </Text>
+                <Text style={[S.actionLabel, { color: colors.secondary }]}>{t('me.signOut')}</Text>
                 <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
               </Pressable>
             </View>
@@ -728,10 +714,7 @@ export default function FateMeScreen() {
                 <Text style={[S.kvKey, { color: colors.dim }]}>{t('me.usernameLabel')}</Text>
                 <Pressable onPress={startEditUsername} hitSlop={6}>
                   <Text
-                    style={[
-                      S.kvVal,
-                      { color: profile.username ? colors.text : colors.accent },
-                    ]}
+                    style={[S.kvVal, { color: profile.username ? colors.text : colors.accent }]}
                   >
                     {profile.username ? `@${profile.username}` : t('me.usernameNotSet')}
                     {'  '}
@@ -769,9 +752,7 @@ export default function FateMeScreen() {
                   {HEXASTRAL_PROFILE_URL.replace(/^https?:\/\//, '')}/u/{profile.username}
                 </Text>
                 <Pressable onPress={shareProfile} hitSlop={8}>
-                  <Text style={[S.link, { color: colors.accent }]}>
-                    {t('me.sharePublicPage')}
-                  </Text>
+                  <Text style={[S.link, { color: colors.accent }]}>{t('me.sharePublicPage')}</Text>
                 </Pressable>
               </>
             ) : null}
@@ -802,9 +783,7 @@ export default function FateMeScreen() {
             Renders for everyone, signed-in or not, so a user can audit
             our data practices before tying their account to an email. */}
         <View style={[S.card, card]}>
-          <Text style={[S.cardTitle, { color: colors.secondary }]}>
-            {t('me.legalSection')}
-          </Text>
+          <Text style={[S.cardTitle, { color: colors.secondary }]}>{t('me.legalSection')}</Text>
           <View style={S.accountRows}>
             <Pressable
               onPress={openPrivacy}
@@ -831,17 +810,13 @@ export default function FateMeScreen() {
             signed in (anonymous users have nothing server-side to delete). */}
         {session === 'in' ? (
           <View style={[S.card, card]}>
-            <Text style={[S.cardTitle, { color: colors.secondary }]}>
-              {t('me.dangerSection')}
-            </Text>
+            <Text style={[S.cardTitle, { color: colors.secondary }]}>{t('me.dangerSection')}</Text>
             <View style={S.accountRows}>
               <Pressable
                 onPress={deleteAccount}
                 style={({ pressed }) => [S.actionRowLast, pressed && S.actionRowPressed]}
               >
-                <Text style={[S.actionLabel, { color: '#C25450' }]}>
-                  {t('me.deleteAccount')}
-                </Text>
+                <Text style={[S.actionLabel, { color: '#C25450' }]}>{t('me.deleteAccount')}</Text>
                 <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
               </Pressable>
             </View>

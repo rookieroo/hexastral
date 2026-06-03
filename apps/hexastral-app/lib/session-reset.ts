@@ -1,6 +1,6 @@
-import { queryClient } from './query-client'
 import { clearCache } from './cache'
 import { clearStoredProfile } from './domain/profile'
+import { queryClient } from './query-client'
 import { mmkvStorage } from './storage'
 
 /** Wipe local caches after sign-out so readings/history do not leak across accounts. */

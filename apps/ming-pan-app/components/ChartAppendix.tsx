@@ -12,20 +12,16 @@ import { ChevronDownIcon } from '@zhop/hexastral-icons/action'
 import { DaYunIcon } from '@zhop/hexastral-icons/domain'
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 import {
   dayMasterLabel,
   elementLabel,
   fiveElementsClassLabel,
   palaceLabel,
+  type StringKey,
   starArchetypeLabel,
   strengthLabel,
-  type StringKey,
   useI18n,
   usesStarArchetype,
 } from '@/lib/i18n'
@@ -110,7 +106,8 @@ export function ChartAppendix({
                   <Text style={S.pillarLabel}>{label}</Text>
                   <Text style={S.pillarGod}>{god}</Text>
                   <Text style={[S.pillarGz, key === 'day' && S.pillarGzDay]}>
-                    {gz.stem}{gz.branch}
+                    {gz.stem}
+                    {gz.branch}
                   </Text>
                 </View>
               )
@@ -170,12 +167,11 @@ export function ChartAppendix({
             {dayunSteps.map((n) => (
               <View key={`${n.index}`} style={S.dayunNode}>
                 <Text style={[S.dayunGz, n.isCurrent && S.dayunGzNow]}>
-                  {n.ganZhi.stem}{n.ganZhi.branch}
+                  {n.ganZhi.stem}
+                  {n.ganZhi.branch}
                 </Text>
                 <View style={[S.dayunDot, n.isCurrent && S.dayunDotNow]} />
-                <Text style={[S.dayunAge, n.isCurrent && S.dayunAgeNow]}>
-                  {n.startAge}
-                </Text>
+                <Text style={[S.dayunAge, n.isCurrent && S.dayunAgeNow]}>{n.startAge}</Text>
               </View>
             ))}
           </View>
@@ -187,7 +183,9 @@ export function ChartAppendix({
               <Text style={S.sectionTitle}>{t('appendix.ziwei')}</Text>
               <Text style={S.sectionSub}>ZIWEI</Text>
 
-              <Text style={S.metaSub}>{fiveElementsClassLabel(ziwei.fiveElementsClass, locale)}</Text>
+              <Text style={S.metaSub}>
+                {fiveElementsClassLabel(ziwei.fiveElementsClass, locale)}
+              </Text>
 
               <View style={S.palaceList}>
                 {KEY_PALACES.map((name) => {
@@ -197,14 +195,18 @@ export function ChartAppendix({
                     .map((s) =>
                       archetype
                         ? starArchetypeLabel(s.name, locale)
-                        : `${s.name}${s.brightness ? `(${s.brightness})` : ''}`,
+                        : `${s.name}${s.brightness ? `(${s.brightness})` : ''}`
                     )
                     .join(archetype ? ' · ' : ' ')
                   const isSoul = name === '命宫'
                   return (
                     <View key={name} style={S.palaceRow}>
                       <Text
-                        style={[S.palaceName, isSoul && S.palaceNameSoul, archetype && S.palaceNameEn]}
+                        style={[
+                          S.palaceName,
+                          isSoul && S.palaceNameSoul,
+                          archetype && S.palaceNameEn,
+                        ]}
                       >
                         {palaceLabel(name, locale)}
                       </Text>
@@ -239,7 +241,9 @@ const C = {
 const S = StyleSheet.create({
   root: { borderTopWidth: 0.5, borderTopColor: C.hairline, paddingTop: 14 },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 4,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -250,14 +254,24 @@ const S = StyleSheet.create({
   // section headers
   sectionTitle: { color: C.cream, fontFamily: 'Songti SC', fontSize: 16, letterSpacing: 2 },
   sectionSub: {
-    color: C.gold, fontSize: 9, letterSpacing: 3, fontWeight: '600',
-    marginBottom: 12, marginTop: 2,
+    color: C.gold,
+    fontSize: 9,
+    letterSpacing: 3,
+    fontWeight: '600',
+    marginBottom: 12,
+    marginTop: 2,
   },
   sectionDivider: {
-    height: 0.5, backgroundColor: C.hairline, marginVertical: 20,
+    height: 0.5,
+    backgroundColor: C.hairline,
+    marginVertical: 20,
   },
   fieldLabel: {
-    color: C.gold, fontSize: 10, letterSpacing: 3, fontWeight: '600', marginBottom: 10,
+    color: C.gold,
+    fontSize: 10,
+    letterSpacing: 3,
+    fontWeight: '600',
+    marginBottom: 10,
   },
   fieldRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   fieldLabelInRow: { marginBottom: 0 },
@@ -276,7 +290,13 @@ const S = StyleSheet.create({
   wuxingCol: { gap: 6 },
   wxRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   wxLabel: { width: 44, fontSize: 11, letterSpacing: 0.3 },
-  wxTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: 'rgba(233,226,210,0.08)', overflow: 'hidden' },
+  wxTrack: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(233,226,210,0.08)',
+    overflow: 'hidden',
+  },
   wxFill: { height: 5, borderRadius: 3, backgroundColor: C.dim },
   wxFillMax: { backgroundColor: C.gold },
   wxFillYong: { backgroundColor: '#b06a4e' },
@@ -289,12 +309,19 @@ const S = StyleSheet.create({
   dayunGz: { color: C.dim, fontFamily: 'Songti SC', fontSize: 10 },
   dayunGzNow: { color: C.gold, fontWeight: '600' },
   dayunDot: {
-    width: 6, height: 6, borderRadius: 3,
-    borderWidth: 1.5, borderColor: C.dim, backgroundColor: 'transparent',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    borderColor: C.dim,
+    backgroundColor: 'transparent',
   },
   dayunDotNow: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: C.cinnabar, borderColor: C.cinnabar,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.cinnabar,
+    borderColor: C.cinnabar,
   },
   dayunAge: { color: C.dim, fontSize: 8 },
   dayunAgeNow: { color: C.cinnabar, fontWeight: '600' },

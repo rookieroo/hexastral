@@ -40,8 +40,7 @@ export function FlagshipUpsell() {
   const suggested = routeQuestionToFlagship(questionType)
   // Never upsell to the retired self app ('hexastral'); unpicked defaults to Kindred
   // so the funnel always shows. self/daily now routes to Auspice (daily flagship).
-  const offline: FlagshipKey | null =
-    suggested && suggested !== 'hexastral' ? suggested : 'kindred'
+  const offline: FlagshipKey | null = suggested && suggested !== 'hexastral' ? suggested : 'kindred'
 
   const target: FlagshipKey | null = dynamic ?? offline
 

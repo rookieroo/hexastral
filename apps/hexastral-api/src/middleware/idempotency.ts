@@ -102,7 +102,9 @@ export function createIdempotencyMiddleware(): MiddlewareHandler<AppEnv> {
     const cloned = res.clone()
     const body = await cloned.text()
     const headers: [string, string][] = []
-    cloned.headers.forEach((v, k) => headers.push([k, v]))
+    cloned.headers.forEach((v, k) => {
+      headers.push([k, v])
+    })
 
     const payload: CachedResponse = {
       status: res.status,

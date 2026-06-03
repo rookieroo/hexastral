@@ -20,8 +20,7 @@
     "submit:all": "eas submit --platform all",
     "gen-assets": "python3 scripts/gen-assets.py",
     "lint": "biome check .",
-    "format": "biome format . --write",
-    "typecheck": "tsc --noEmit"
+    "format": "biome format . --write"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.9",
