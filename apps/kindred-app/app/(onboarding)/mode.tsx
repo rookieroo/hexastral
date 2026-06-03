@@ -1,14 +1,16 @@
 /**
- * Onboarding · Now for them (intent picker).
+ * Threads · New thread (intent picker).
  *
- * Reached after self birth-info is complete. Three paths:
+ * Reached from the (reading) home "+" — the user already has their own solo
+ * reading (ADR-0021 solo-first); this picks how to bring the other person in:
  *   - know   → /(onboarding)/other-meta  (name + relationship, then their birth)
- *   - invite → /(onboarding)/invite      (mailto invite)
- *   - skip   → /(bonds)                  (finish self-only; can add TA later)
+ *   - invite → /(onboarding)/invite      (user-sent SMS / email invite)
  *
- * Skip is the "relax the begin gate" affordance — once self is filled the
- * user can proceed without TA's data. V15Moon at the top keeps the brand
- * anchor consistent with self / home.
+ * The pre-K2 "skip" option is gone: there is nothing to skip to — the solo
+ * reading already exists without a partner.
+ *
+ * On mount, fire ensureSelfBirthSynced() so the server has person A's birth
+ * by the time the partner flow finishes (bond creation requires it).
  */
 
 import { V15Moon } from '@zhop/core-ui/motion'
@@ -19,47 +21,42 @@ import {
   kindredType,
 } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
-import { clearDraft, updateDraft } from '@/lib/onboardingDraft'
-import { suppressNextSplash } from '@/lib/splash-control'
-import { markOnboardingComplete } from '../index'
+import { updateDraft } from '@/lib/onboardingDraft'
+import { ensureSelfBirthSynced } from '@/lib/selfBirth'
 
-type Intent = 'know' | 'invite' | 'skip'
+type Intent = 'know' | 'invite'
 
 const OPTS: { key: Intent; label: TranslationKey; subtitle: TranslationKey }[] = [
   { key: 'know', label: 'pair.other.intent.know', subtitle: 'mode.know.hint' },
   { key: 'invite', label: 'pair.other.intent.invite', subtitle: 'mode.invite.hint' },
-  { key: 'skip', label: 'pair.other.intent.skip', subtitle: 'mode.skip.hint' },
 ]
 
 export default function ModeScreen() {
   const router = useRouter()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
+  const { userId } = useAuth()
   const [intent, setIntent] = useState<Intent>('know')
 
-  const handleNext = async () => {
+  // Pre-sync person A's birth to the server (no-op when already synced) so
+  // the bond-creation calls at the end of either path never 400.
+  useEffect(() => {
+    if (userId) void ensureSelfBirthSynced(userId)
+  }, [userId])
+
+  const handleNext = () => {
     if (intent === 'know') {
       updateDraft({ otherMode: 'fill' })
       router.push('/(onboarding)/other-meta')
       return
     }
-    if (intent === 'invite') {
-      updateDraft({ otherMode: 'invite' })
-      router.push('/(onboarding)/invite')
-      return
-    }
-    // skip → solo reading home (ADR-0021: A's own report needs no partner)
-    updateDraft({ otherMode: null })
-    await markOnboardingComplete()
-    await clearDraft()
-    suppressNextSplash()
-    router.replace('/(reading)')
+    updateDraft({ otherMode: 'invite' })
+    router.push('/(onboarding)/invite')
   }
-
-  const ctaKey: TranslationKey = intent === 'skip' ? 'pair.cta.start' : 'common.next'
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -97,8 +94,8 @@ export default function ModeScreen() {
           ))}
         </View>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={() => void handleNext()} hitSlop={12} style={{ alignSelf: 'flex-end' }}>
-          <Text style={kindredPresets.ctaText}>{t(locale, ctaKey)}</Text>
+        <Pressable onPress={handleNext} hitSlop={12} style={{ alignSelf: 'flex-end' }}>
+          <Text style={kindredPresets.ctaText}>{t(locale, 'common.next')}</Text>
         </Pressable>
         <View style={{ height: kindredSpacing.xl }} />
       </View>

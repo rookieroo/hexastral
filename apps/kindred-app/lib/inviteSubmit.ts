@@ -1,16 +1,15 @@
 /**
- * Invite-submit helpers — shared by the onboarding /invite screen.
+ * Invite-submit helpers — shared by the Threads /invite screen.
  *
- * Extracted from the former invite-email screen so the onboarding /invite
- * route reuses the exact mailto delivery + relationship-label mapping.
- * The server creates the bond + token WITHOUT B's email
- * (deliveryMode 'user'); A's own mail app sends the message, sidestepping
- * cross-jurisdiction commercial-email regulation.
+ * The server creates the bond + token WITHOUT B's contact info
+ * (deliveryMode 'user'); A's own Messages or Mail app sends the invitation,
+ * sidestepping cross-jurisdiction commercial-messaging regulation entirely
+ * (ADR-0021 §3: user-sends-only, no SMS provider, no email on file).
  */
 
 import type { RelationshipType, ResonanceInviteMailto } from '@zhop/scenario-kindred'
 import * as Linking from 'expo-linking'
-import { Share } from 'react-native'
+import { Platform, Share } from 'react-native'
 import type { Locale } from './i18n'
 
 /** Localized relationship label sent to the server as `relationshipLabel`. */
@@ -56,6 +55,26 @@ export async function deliverInviteMailto(
   const canOpenMail = await Linking.canOpenURL(mailtoUrl).catch(() => false)
   if (canOpenMail) {
     await Linking.openURL(mailtoUrl)
+  } else {
+    await Share.share({ message: mailto.body }).catch(() => undefined)
+  }
+}
+
+/**
+ * Hand the invitation to A's own Messages composer (recipient-less `sms:`
+ * draft — A picks who it goes to). Same compliance posture as mailto: the
+ * message leaves from A's own number, we never see B's contact info
+ * (ADR-0021 §3 — this is why there is no SMS-provider integration).
+ * Falls back to the system share sheet when SMS isn't available (iPad / dev
+ * simulator).
+ */
+export async function deliverInviteSms(mailto: ResonanceInviteMailto): Promise<void> {
+  const body = encodeURIComponent(mailto.body)
+  // Recipient-less compose: iOS expects `sms:&body=`, Android `sms:?body=`.
+  const smsUrl = Platform.OS === 'android' ? `sms:?body=${body}` : `sms:&body=${body}`
+  const canOpenSms = await Linking.canOpenURL(smsUrl).catch(() => false)
+  if (canOpenSms) {
+    await Linking.openURL(smsUrl)
   } else {
     await Share.share({ message: mailto.body }).catch(() => undefined)
   }

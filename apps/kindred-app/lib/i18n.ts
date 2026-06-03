@@ -82,8 +82,11 @@ export const translations: Translations = {
     'invite.title': 'Their email',
     'invite.subtitle': 'And what are you to each other?',
     'invite.hint':
-      'Your mail app opens with a draft — send it and they take the thread from there.',
+      'The invite is sent by you, from your own Messages or Mail — we never touch their contact info.',
     'invite.send': 'Open in Mail →',
+    'invite.heading': 'Invite them',
+    'invite.name.placeholder': 'What you call them (optional)',
+    'invite.channel.sms': 'Open in Messages →',
 
     'fill.title': 'Tell me about them',
     'fill.name': 'Name',
@@ -246,8 +249,11 @@ export const translations: Translations = {
 
     'invite.title': 'ta 的邮箱',
     'invite.subtitle': '你们是什么关系？',
-    'invite.hint': '你的邮箱会打开一封写好的邀请，由你发出，ta 接力填生辰',
+    'invite.hint': '邀请由你亲自发出（信息或邮件），我们不会接触 ta 的联系方式',
     'invite.send': '用我的邮箱发出  →',
+    'invite.heading': '邀请 ta',
+    'invite.name.placeholder': 'ta 的称呼（可选）',
+    'invite.channel.sms': '用信息发出  →',
 
     'fill.title': '告诉我关于 ta',
     'fill.name': '姓名',
@@ -409,8 +415,11 @@ export const translations: Translations = {
 
     'invite.title': 'ta 的信箱',
     'invite.subtitle': '你們是什麼關係？',
-    'invite.hint': '你的郵箱會打開一封寫好的邀請，由你發出，ta 接力填生辰',
+    'invite.hint': '邀請由你親自發出（訊息或郵件），我們不會接觸 ta 的聯絡方式',
     'invite.send': '用我的郵箱寄出  →',
+    'invite.heading': '邀請 ta',
+    'invite.name.placeholder': 'ta 的稱呼（可選）',
+    'invite.channel.sms': '用訊息發出  →',
 
     'fill.title': '告訴我關於 ta',
     'fill.name': '姓名',
@@ -572,8 +581,11 @@ export const translations: Translations = {
 
     'invite.title': '相手のメール',
     'invite.subtitle': '二人はどんな関係？',
-    'invite.hint': 'メールアプリで下書きが開きます。送信したらあとは相手のターン',
+    'invite.hint': '招待はあなた自身がメッセージかメールで送ります。相手の連絡先には触れません',
     'invite.send': 'メールアプリで開く  →',
+    'invite.heading': '相手を招待',
+    'invite.name.placeholder': '相手の呼び名（任意）',
+    'invite.channel.sms': 'メッセージで送る  →',
 
     'fill.title': '相手について教えて',
     'fill.name': '名前',

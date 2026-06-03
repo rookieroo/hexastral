@@ -30,7 +30,8 @@ import {
 } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
-import { useRouter } from 'expo-router'
+import { type BondData, useBondList } from '@zhop/scenario-kindred'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -49,6 +50,8 @@ interface HomeCopy {
   open: string
   threads: string
   threadsHint: string
+  /** Suffix after the pending-invite count, e.g. "2 waiting for reply". */
+  threadsPending: string
   noBirthTitle: string
   noBirthCta: string
 }
@@ -58,6 +61,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: 'Open your reading →',
     threads: 'Threads',
     threadsHint: 'Readings for two — invite or add someone',
+    threadsPending: 'waiting for reply',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },
@@ -65,6 +69,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '打开命书 →',
     threads: '牵绊',
     threadsHint: '两个人的合盘 — 邀请或录入对方',
+    threadsPending: '段等待回应',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
   },
@@ -72,6 +77,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '打開命書 →',
     threads: '牽絆',
     threadsHint: '兩個人的合盤 — 邀請或錄入對方',
+    threadsPending: '段等待回應',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
   },
@@ -79,6 +85,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '命書を開く →',
     threads: '絆',
     threadsHint: 'ふたりの相性 — 招待または入力',
+    threadsPending: '件 返事待ち',
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
@@ -91,6 +98,22 @@ export default function ReadingHomeScreen() {
   const birth = useSelfBirth()
   const [readingOpen, setReadingOpen] = useState(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
+
+  // Threads (K2) — bond list summary for the second section of the home.
+  // Refetched on focus so a bond created/accepted elsewhere shows up on return.
+  const { bonds, refetch } = useBondList()
+  useFocusEffect(
+    useCallback(() => {
+      void refetch()
+    }, [refetch])
+  )
+  const activeBonds = useMemo(() => bonds.filter((b) => b.status === 'active'), [bonds])
+  const pendingCount = useMemo(
+    () => bonds.filter((b) => b.status === 'pending_invite').length,
+    [bonds]
+  )
+  // The two most recent threads, shown inline on the home.
+  const recentBonds = useMemo(() => activeBonds.slice(0, 2), [activeBonds])
 
   // Swipe-left → Settings (ADR-0018 rule 2). The ··· header is the a11y fallback.
   const goToSettings = useCallback(() => router.push('/(settings)'), [router])
@@ -206,7 +229,7 @@ export default function ReadingHomeScreen() {
           </Pressable>
         </View>
 
-        {/* Threads — the second layer (合盘) */}
+        {/* Threads — the second layer (合盘), real bond data inline (K2) */}
         <View
           style={{
             marginTop: kindredSpacing.xxl,
@@ -228,11 +251,26 @@ export default function ReadingHomeScreen() {
               }}
             >
               <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
-              <Text style={[kindredType.caption, { color: kindredDark.accent }]}>→</Text>
+              <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
+                {bonds.length > 0 ? `${bonds.length} ` : ''}→
+              </Text>
             </View>
-            <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-              {copy.threadsHint}
-            </Text>
+            {bonds.length === 0 ? (
+              <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
+                {copy.threadsHint}
+              </Text>
+            ) : (
+              <View style={{ gap: kindredSpacing.sm, marginTop: kindredSpacing.xs }}>
+                {recentBonds.map((b) => (
+                  <ThreadRow key={b.id} bond={b} />
+                ))}
+                {pendingCount > 0 && (
+                  <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+                    {pendingCount} {copy.threadsPending}
+                  </Text>
+                )}
+              </View>
+            )}
           </Pressable>
         </View>
       </ScrollView>
@@ -248,5 +286,26 @@ export default function ReadingHomeScreen() {
         {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
       </View>
     </GestureDetector>
+  )
+}
+
+/** One inline thread on the home — name · relationship, score on the right. */
+function ThreadRow({ bond }: { bond: BondData }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+      }}
+    >
+      <Text style={[kindredType.body, { color: kindredDark.text }]} numberOfLines={1}>
+        {bond.targetName}
+        <Text style={{ color: kindredDark.textMuted }}> · {bond.relationshipLabel}</Text>
+      </Text>
+      {bond.score != null && (
+        <Text style={[kindredType.caption, { color: kindredDark.accent }]}>{bond.score}</Text>
+      )}
+    </View>
   )
 }

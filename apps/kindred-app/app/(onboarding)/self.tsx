@@ -32,10 +32,11 @@ import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { resolveLocale } from '@/lib/i18n'
 import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
-import { saveSelfBirth } from '@/lib/selfBirth'
+import { saveSelfBirth, syncSelfBirthToServer } from '@/lib/selfBirth'
 import { suppressNextSplash } from '@/lib/splash-control'
 import { isOnboardingComplete, markOnboardingComplete } from '../index'
 
@@ -49,6 +50,7 @@ function localeToLang(loc: string): string {
 export default function SelfBirthScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
+  const { userId } = useAuth()
   const draft = useDraft()
   const lang = useMemo(() => localeToLang(locale), [locale])
   const copy = useMemo(() => birthInfoCopyForLocale(locale), [locale])
@@ -87,7 +89,7 @@ export default function SelfBirthScreen() {
     // Persist self birth — the solo reading computes from this for the life
     // of the install (the onboarding draft gets cleared, this doesn't).
     if (draft.selfSolarDate && draft.selfGender) {
-      await saveSelfBirth({
+      const birth = {
         solarDate: draft.selfSolarDate,
         timeIndex: draft.selfTimeIndex,
         gender: draft.selfGender,
@@ -95,7 +97,11 @@ export default function SelfBirthScreen() {
         lat: draft.selfBirthLat ?? undefined,
         lng: draft.selfBirthLng ?? undefined,
         timezone: draft.selfBirthTimezone ?? undefined,
-      })
+      }
+      await saveSelfBirth(birth)
+      // Server sync (K2) — the bonds API reads person A's birth from the users
+      // table; fire-and-forget here, Threads re-attempts before bond creation.
+      if (userId) void syncSelfBirthToServer(userId, birth)
     }
 
     // First run: solo-first (ADR-0021) — straight to the reading, no partner gate.

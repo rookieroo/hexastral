@@ -110,7 +110,8 @@ export default function RevealScreen() {
     if (bondId) {
       router.replace({ pathname: '/(bonds)/[id]', params: { id: bondId } })
     } else {
-      router.replace('/(bonds)')
+      // No bond detail to land on → home (its Threads section shows the state).
+      router.replace('/(reading)')
     }
   }, [status, bondId, router])
 
