@@ -30,6 +30,7 @@
 
 import type { WuXing } from '@zhop/astro-core'
 import { cinnabar, ink, ricePaper, rubbing } from '@zhop/hexastral-tokens'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, ChevronRight } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -111,9 +112,22 @@ export interface ReadingReportProps {
   /** Lifted to ReadingOverlay so swipe-back can pop detail before closing. */
   activeChapter: ChapterRef | null
   setActiveChapter: (next: ChapterRef | null) => void
+  /**
+   * 划词 AI chat (ADR-0021 K3) — called when the user long-presses a paragraph
+   * (quote = that paragraph) or taps the chapter-level ask CTA (quote = null).
+   * `slug` is the server chapter slug ('ch1_personality' / 'ch4_timeline').
+   * Omit to hide the ask affordances entirely.
+   */
+  onAskAI?: (args: { slug: string; quote: string | null }) => void
 }
 
-export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReportProps) {
+/** ChapterRef.key → server report-chapter slug (reading-cache / chat readingId). */
+const CHAPTER_SLUG: Record<'ch1' | 'ch4', string> = {
+  ch1: 'ch1_personality',
+  ch4: 'ch4_timeline',
+}
+
+export function ReadingReport({ activeChapter, setActiveChapter, onAskAI }: ReadingReportProps) {
   const birth = useSelfBirth()
   const router = useRouter()
   const { t, locale } = useReadingI18n()
@@ -289,7 +303,8 @@ export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReport
   if (detailChapter) {
     const back = () => setActiveChapter(null)
     if (detailChapter.kind === 'free') {
-      const m = detailChapter.key === 'ch1' ? ch1Meta : ch4Meta
+      const key = detailChapter.key
+      const m = key === 'ch1' ? ch1Meta : ch4Meta
       detailProps = {
         label: m.label,
         sub: m.sub,
@@ -306,6 +321,12 @@ export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReport
         // a preview, not a personalised reading.
         identityLine,
         birthBadge,
+        // 划词 AI chat (K3) — long-press a paragraph or tap the chapter CTA.
+        onAsk: onAskAI
+          ? (quote: string | null) => onAskAI({ slug: CHAPTER_SLUG[key], quote })
+          : undefined,
+        askChapterLabel: t('reading.askChapter'),
+        askHint: t('reading.askParagraphHint'),
       }
     } else {
       const lc = LOCKED_CHAPTERS[detailChapter.idx]
@@ -513,6 +534,9 @@ function ChapterDetail({
   onUnlock,
   identityLine,
   birthBadge,
+  onAsk,
+  askChapterLabel,
+  askHint,
 }: {
   label: string
   sub: string
@@ -527,7 +551,19 @@ function ChapterDetail({
   /** Optional chart fingerprint shown above the chapter title (free only). */
   identityLine?: string
   birthBadge?: string
+  /** 划词 chat (K3): quote = long-pressed paragraph, null = whole chapter. */
+  onAsk?: (quote: string | null) => void
+  askChapterLabel?: string
+  askHint?: string
 }) {
+  // Paragraph-level ask: split the prose into its '\n\n' blocks (the shape
+  // flattenChapterContent produces) so each one can be long-pressed.
+  const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
+  const askParagraph = (para: string) => {
+    if (!onAsk) return
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
+    onAsk(para)
+  }
   return (
     <View style={S.paper}>
       <SafeAreaView style={S.safe} edges={['top']}>
@@ -552,7 +588,34 @@ function ChapterDetail({
           ) : null}
           <Text style={S.detailLabel}>{label}</Text>
           {content ? (
-            <Text style={S.detailBody}>{content}</Text>
+            onAsk ? (
+              // 划词 mode: each paragraph is long-pressable → ask AI about it.
+              <View>
+                {askHint ? <Text style={S.askHint}>{askHint}</Text> : null}
+                {paragraphs.map((para, i) => (
+                  <Pressable
+                    key={i}
+                    onLongPress={() => askParagraph(para)}
+                    delayLongPress={350}
+                    style={({ pressed }) => [pressed && S.paraPressed]}
+                  >
+                    <Text style={[S.detailBody, S.paraBlock]}>{para}</Text>
+                  </Pressable>
+                ))}
+                {askChapterLabel ? (
+                  <Pressable
+                    onPress={() => onAsk(null)}
+                    hitSlop={12}
+                    accessibilityRole='button'
+                    style={({ pressed }) => [S.askChapterBtn, pressed && { opacity: 0.7 }]}
+                  >
+                    <Text style={S.askChapterText}>{askChapterLabel}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={S.detailBody}>{content}</Text>
+            )
           ) : loading ? (
             <View style={S.skeleton}>
               <View style={S.skelLine} />
@@ -685,4 +748,17 @@ const S = StyleSheet.create({
   detailBody: { color: P.ink, fontSize: 17, lineHeight: 32, letterSpacing: 0.3 },
   detailPlaceholder: { color: P.inkSoft, fontSize: 16, lineHeight: 28, fontStyle: 'italic' },
   detailUnlock: { marginTop: 40 },
+
+  // 划词 AI chat (K3)
+  askHint: { color: P.muted, fontSize: 12, letterSpacing: 0.5, marginBottom: 16 },
+  paraBlock: { marginBottom: 20 },
+  paraPressed: { backgroundColor: P.hairSoft, marginHorizontal: -8, paddingHorizontal: 8 },
+  askChapterBtn: { marginTop: 24, alignSelf: 'flex-start' },
+  askChapterText: {
+    color: P.bronze,
+    fontSize: 14,
+    letterSpacing: 1,
+    textDecorationLine: 'underline',
+    textDecorationColor: P.bronze,
+  },
 })

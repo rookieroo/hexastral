@@ -5,14 +5,18 @@
  * server-side (402 `pro_required`); errors are surfaced by re-throwing the
  * envelope's `error.message` so the screen can route to the paywall.
  *
- * Conversations are scoped server-side by `X-Target-App: yuan`.
+ * Conversations are scoped server-side by `X-Target-App: kindred`.
  */
 
 import type { ReadingChatHistory, ReadingChatSendResult } from '@zhop/core-ui'
 import { config } from './config'
 import { signRequest } from './hmac'
 
-const TARGET_APP = 'yuan'
+// The app key the capability resolver recognises (capabilities.ts). The
+// pre-rename 'yuan' is treated as unknown/legacy there, which would mis-gate
+// solo-reading chat ('natal'/'report' types) under fate_pro instead of
+// kindred_pro — so this MUST be the post-rename key.
+const TARGET_APP = 'kindred'
 
 async function authedHeaders(
   userId: string,

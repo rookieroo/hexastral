@@ -117,6 +117,12 @@ export interface ReadingChatScreenProps {
   disableBillingUI?: boolean
   /** Provide a fresh request id per send (defaults to crypto.randomUUID). */
   newRequestId?: () => string
+  /**
+   * Pre-fill the input on first mount — e.g. a quoted passage the user
+   * selected in a reading ("ask about this paragraph"). The user can edit or
+   * clear it before sending; it is never auto-sent.
+   */
+  initialDraft?: string
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -162,6 +168,7 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     header,
     disableBillingUI = false,
     newRequestId = defaultRequestId,
+    initialDraft,
   } = props
 
   const { colors, isDark } = useTheme()
@@ -171,7 +178,7 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     messages: [],
   })
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialDraft ?? '')
   const [isSending, setIsSending] = useState(false)
   const [billingMode, setBillingMode] = useState<ReadingChatBillingMode | null>(null)
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null)

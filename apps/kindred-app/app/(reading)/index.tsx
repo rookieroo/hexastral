@@ -131,6 +131,19 @@ export default function ReadingHomeScreen() {
     [goToSettings, activeOffsetX, failOffsetY, commitDx, maxDy]
   )
 
+  // 划词 AI chat (K3): close the overlay, then push the chat seeded with the
+  // chapter slug + (optionally) the long-pressed paragraph as a quoted draft.
+  const handleAskAI = useCallback(
+    ({ slug, quote }: { slug: string; quote: string | null }) => {
+      setReadingOpen(false)
+      router.push({
+        pathname: '/(reading)/chat',
+        params: { slug, ...(quote ? { quote } : {}) },
+      })
+    },
+    [router]
+  )
+
   // Identity block — chart computes client-side from the persisted birth.
   const natal = useMemo<FateNatalChart | null>(() => {
     if (!birth) return null
@@ -282,7 +295,11 @@ export default function ReadingHomeScreen() {
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>{content}</SafeAreaView>
         {/* Full reading — ink-bloom overlay (kept mounted for open/close animation) */}
-        <ReadingOverlay visible={readingOpen} onClose={() => setReadingOpen(false)} />
+        <ReadingOverlay
+          visible={readingOpen}
+          onClose={() => setReadingOpen(false)}
+          onAskAI={handleAskAI}
+        />
         {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
       </View>
     </GestureDetector>

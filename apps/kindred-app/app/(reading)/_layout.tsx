@@ -11,6 +11,7 @@ export default function ReadingLayout() {
       }}
     >
       <Stack.Screen name='index' />
+      <Stack.Screen name='chat' />
     </Stack>
   )
 }

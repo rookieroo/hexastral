@@ -29,13 +29,15 @@ import { type ChapterRef, ReadingReport } from './ReadingReport'
 export interface ReadingOverlayProps {
   visible: boolean
   onClose: () => void
+  /** 划词 AI chat (K3) — forwarded to ReadingReport's ask affordances. */
+  onAskAI?: (args: { slug: string; quote: string | null }) => void
 }
 
-export function ReadingOverlay({ visible, onClose }: ReadingOverlayProps) {
+export function ReadingOverlay({ visible, onClose, onAskAI }: ReadingOverlayProps) {
   // Hooks-free outer wrapper: gate render so the inner re-mounts on each open
   // (fresh reveal phase, fresh mask + Skia canvas).
   if (!visible) return null
-  return <OverlayInner onClose={onClose} />
+  return <OverlayInner onClose={onClose} onAskAI={onAskAI} />
 }
 
 type Phase = 'cover' | 'wipe' | 'done' | 'closing'
@@ -43,7 +45,13 @@ type Phase = 'cover' | 'wipe' | 'done' | 'closing'
 const OPEN_DURATION = 1600
 const CLOSE_DURATION = 700
 
-function OverlayInner({ onClose }: { onClose: () => void }) {
+function OverlayInner({
+  onClose,
+  onAskAI,
+}: {
+  onClose: () => void
+  onAskAI?: (args: { slug: string; quote: string | null }) => void
+}) {
   const { width, height } = useWindowDimensions()
   const [revealPhase, setRevealPhase] = useState<Phase>('cover')
   // Chapter detail navigation lives here (not in ReadingReport) so the overlay's
@@ -109,7 +117,11 @@ function OverlayInner({ onClose }: { onClose: () => void }) {
               flash before the Skia mask establishes — once the mask is painting,
               the report bloom inside the ink shape takes over. */}
           <View style={[S.content, revealPhase === 'cover' && S.coverHidden]}>
-            <ReadingReport activeChapter={activeChapter} setActiveChapter={setActiveChapter} />
+            <ReadingReport
+              activeChapter={activeChapter}
+              setActiveChapter={setActiveChapter}
+              onAskAI={onAskAI}
+            />
           </View>
         </MaskedView>
       </View>
