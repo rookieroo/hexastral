@@ -412,6 +412,14 @@ app.route('/api/ddl', ddlRoutes)
 app.use('/api/onboarding/reveal*', hmacVerify)
 app.use('/api/onboarding/static-traits*', hmacVerify)
 app.use('/api/onboarding/bootstrap*', hmacVerify)
+// Provider-link endpoints attach an Apple/Google identity to the current
+// (anonymous) user, so they MUST run hmacVerify to put userId in scope —
+// each handler calls requireUserId(c). Without this the signed request is
+// ignored, userId is undefined, and the route 401s right after the Apple
+// sheet returns ("能弹出Apple框但之后报错"). The turnstile mounted above on
+// /api/onboarding/* is a no-op for iOS (x-client-platform check).
+app.use('/api/onboarding/apple-link*', hmacVerify)
+app.use('/api/onboarding/google-link*', hmacVerify)
 app.route('/api/onboarding', onboardingRoutes)
 
 // Daily Signal — iOS only, HMAC required
