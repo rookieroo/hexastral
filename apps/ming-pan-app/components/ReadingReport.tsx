@@ -588,14 +588,14 @@ export function ReadingReport({ activeChapter, setActiveChapter }: ReadingReport
               measurable end-to-end via the events from P0-8. */}
           <View style={S.upsellSlot}>
             <SatelliteFlagshipUpsellCard
-              suggestedFlagship='cycle'
+              suggestedFlagship='auspice'
               labelsByFlagship={defaultFlagshipUpsellLabels(locale)}
               deepLink={buildFlagshipDeepLink({
-                flagship: 'cycle',
+                flagship: 'auspice',
                 fromSlug: 'fate',
                 signal: null,
               })}
-              appStoreUrl={flagshipAppStoreUrl('cycle')}
+              appStoreUrl={flagshipAppStoreUrl('auspice')}
               onUpgrade={(flagship) => {
                 void emitCrossAppDiscoveryTap({
                   storagePrefix: 'pf_fate',
