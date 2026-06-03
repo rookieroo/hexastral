@@ -58,12 +58,6 @@ export default function SettingsScreen() {
   const [dailyPushBusy, setDailyPushBusy] = useState(false)
 
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable)
-    }
-  }, [])
-
-  useEffect(() => {
     void getDailyPushEnabled().then(setDailyPushState)
   }, [])
 
@@ -108,50 +102,6 @@ export default function SettingsScreen() {
       setCrossAppMemoryState(!value)
     } finally {
       setCrossAppBusy(false)
-    }
-  }
-
-  const handleApple = async () => {
-    setStatus('pending')
-    setErrorMsg(null)
-    try {
-      // Request EMAIL alongside FULL_NAME — Apple sends the email on the
-      // FIRST authorization per device (and on every authorization for
-      // non-relay addresses). The hexastral-api apple-link endpoint already
-      // persists it when present
-      // (apps/hexastral-api/src/routes/onboarding/apple-link.ts:156); without
-      // this scope we were silently dropping the email even for users who
-      // signed in. With it the bound email survives a device wipe and the
-      // user gets a real recovery handle.
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      })
-      if (!credential.identityToken) throw new Error('Apple returned no identity token')
-      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
-        .filter(Boolean)
-        .join(' ')
-        .trim()
-      const result = await linkApple({
-        identityToken: credential.identityToken,
-        fullName: fullName || undefined,
-      })
-      setStatus(result.outcome)
-    } catch (err) {
-      const code = (err as { code?: string }).code
-      if (code === 'ERR_REQUEST_CANCELED') {
-        setStatus('idle')
-        return
-      }
-      if (code === 'conflict') {
-        setStatus('error')
-        setErrorMsg(t(locale, 'settings.error.conflict'))
-        return
-      }
-      setStatus('error')
-      setErrorMsg(err instanceof Error ? err.message : t(locale, 'settings.error.generic'))
     }
   }
 
