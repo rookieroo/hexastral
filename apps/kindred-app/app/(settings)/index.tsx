@@ -269,6 +269,8 @@ export default function SettingsScreen() {
               value={crossAppMemory}
               onValueChange={handleCrossAppToggle}
               disabled={crossAppBusy || !userId}
+              trackColor={{ false: kindredDark.border, true: kindredDark.seal }}
+              ios_backgroundColor={kindredDark.border}
             />
           </View>
           <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
@@ -311,6 +313,8 @@ export default function SettingsScreen() {
               value={dailyPush}
               onValueChange={handleDailyPushToggle}
               disabled={dailyPushBusy}
+              trackColor={{ false: kindredDark.border, true: kindredDark.seal }}
+              ios_backgroundColor={kindredDark.border}
             />
           </View>
           <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>

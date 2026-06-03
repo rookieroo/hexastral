@@ -1,9 +1,10 @@
 /**
  * Onboarding · Screen 8 — Reveal moment
  *
- * Plays the 2.7s RevealMoment animation while POST /api/bonds/solo runs in
- * background. The animation masks API latency; when both complete, the user
- * taps "Read your story →" and lands on /(bonds)/[id].
+ * Plays the moon-phase RevealMoment ceremony while POST /api/bonds/solo runs in
+ * background. The cycling cinnabar moon doubles as the "aligning" loader and
+ * masks API latency; when both complete, the user taps "Read your story →" and
+ * lands on /(bonds)/[id].
  *
  * Three terminal states:
  *  - ready    → CTA navigates to the new bond detail
@@ -15,7 +16,9 @@
  * + routes home.
  */
 
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { RevealMoment, type TimeIndex, useSoloBond } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -151,8 +154,7 @@ export default function RevealScreen() {
 
   return (
     <RevealMoment
-      selfGlyph='甲'
-      otherGlyph='乙'
+      moon={<AutoMoonPhaseLoader size={120} skin={SKIN_CINNABAR} />}
       playAnimation
       copy={{
         line1: t(locale, 'reveal.line1'),
