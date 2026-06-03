@@ -11,7 +11,7 @@
  * from HexAstral chat.
  */
 
-import { runAuto } from '@zhop/portfolio-client'
+import { type FlagshipKey, runAuto } from '@zhop/portfolio-client'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 
 export interface MeihuaNuclearHexagram {
@@ -50,9 +50,8 @@ export interface MeihuaComputeResult {
   mode: 'preview' | 'linked'
   readingId: string
   reading: MeihuaReading
-  /** Server-suggested flagship to upsell — typically `'yuan'`, `'feng'`, or `'cycle'`.
-   *  Type kept in sync with `FlagshipKey` from `@zhop/portfolio-client/routing`. */
-  suggestedFlagship: 'yuan' | 'feng' | 'cycle' | 'hexastral' | null
+  /** Server-suggested flagship to upsell — typically `'kindred'`, `'feng'`, or `'auspice'`. */
+  suggestedFlagship: FlagshipKey | null
 }
 
 function isReading(v: unknown): v is MeihuaReading {

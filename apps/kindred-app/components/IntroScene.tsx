@@ -285,10 +285,29 @@ export function GalaxyBand({
 /* ── Planet ground ──────────────────────────────────────────────────────── */
 
 /**
+ * Ground rim Y at screen-space x — the same quadratic the Ground component
+ * draws (keep the two in sync). Exported as a worklet so figure styles in
+ * intro.tsx can plant feet on the rim while walking up the hill; also
+ * callable from plain JS (overlay anchoring).
+ *
+ * The rim is a symmetric quadratic (endpoints level at y0, peak at center),
+ * so x(t) is linear and t solves directly from x.
+ */
+export function groundYAt(x: number, width: number, height: number): number {
+  'worklet'
+  const y0 = height * 0.85
+  const yPeak = height * 0.65 - 30
+  const t = (x + 40) / (width + 80)
+  return y0 - 2 * (y0 - yPeak) * (t - t * t)
+}
+
+/**
  * Ground — the planet surface: a filled hill below the rim arc (vertical
  * gradient, weathered → void) with deterministic grain specks for rocky
  * texture, plus the rim line itself which draws in via `drawSv`
  * (1 = hidden, 0 = drawn — same contract as the old inline arc).
+ *
+ * Geometry constants (y0 / yPeak / ±40 overhang) must match groundYAt above.
  */
 export function Ground({
   width,
