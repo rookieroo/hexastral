@@ -2,8 +2,8 @@
  * Kindred entry — decides where the user lands on app open.
  *
  * - First-ever launch, intro not seen → /(onboarding)/intro (stick-figure
- *   parable, once) → self birth wizard → solo reading (ADR-0021 solo-first)
- * - Onboarding not yet done but intro seen → /(onboarding)/self
+ *   parable, once) → pair-input dual-tab form → solo reading (ADR-0021 solo-first)
+ * - Onboarding not yet done but intro seen → /(onboarding)/pair-input
  * - Returning user with onboarding done → /(reading) — the solo reading IS
  *   the home; Threads (bonds) hang off it
  *
@@ -69,7 +69,7 @@ export default function EntryScreen() {
     )
   }
   if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
-  if (status === 'welcome') return <Redirect href='/(onboarding)/self' />
+  if (status === 'welcome') return <Redirect href='/(onboarding)/pair-input' />
   return <Redirect href='/(reading)' />
 }
 

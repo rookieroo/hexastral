@@ -11,7 +11,7 @@
  * `walk`, an optional `phase` (0..1, driven by `useGroundedGait`) swings the
  * legs and arms and lifts the forward foot — a continuous gait tied to the
  * distance actually travelled, so feet plant instead of sliding. Everything
- * else is static geometry. `sit` is cross-legged (盘腿), not feet-on-a-ledge.
+ * else is static geometry. `sit` hugs the knees (抱膝), side view.
  *
  * Coordinates live in a 40-wide, 80-tall box centered at x=20; feet at y≈76.
  * Default stroke is light (the app is dark-only); callers tint via `stroke`.
@@ -101,18 +101,22 @@ function buildStrokes(pose: Pose, facing: 'L' | 'R', phase: number): Stroke[] {
   const out: Stroke[] = []
 
   if (pose === 'sit') {
-    const hipY = 58
-    const neckY = 38
-    // Torso.
-    out.push({ d: brushStroke(20, neckY, 20, hipY, 3.2, 3.6), nib: [20, neckY, 1.7] })
-    // Cross-legged (盘腿): two thighs out to the knees, two shins crossing in front.
-    out.push({ d: brushStroke(20, hipY, 20 - 9, 67, 2.8, 1.8) })
-    out.push({ d: brushStroke(20, hipY, 20 + 9, 67, 2.8, 1.8) })
-    out.push({ d: brushStroke(20 - 9, 67, 20 + 7, 72, 1.9, 1.3) })
-    out.push({ d: brushStroke(20 + 9, 67, 20 - 7, 72, 1.9, 1.3) })
-    // Arms rest on knees.
-    out.push({ d: brushStroke(20, neckY + 5, 20 - 9, 66, 2.2, 1.3) })
-    out.push({ d: brushStroke(20, neckY + 5, 20 + 9, 66, 2.2, 1.3) })
+    // Knees-hugged sit (抱膝), side view facing `dir` — two people doing this
+    // shoulder-to-shoulder reads as "sitting together watching the sky", not
+    // meditation (the old cross-legged pose + a glow read as 打坐 + 佛光).
+    const hipY = 60
+    const neckY = 40
+    const kneeX = 20 + dir * 8
+    const kneeY = 54
+    const footX = 20 + dir * 10
+    const footY = 74
+    // Torso leans back a touch (head behind the hips).
+    out.push({ d: brushStroke(20 - dir * 2, neckY, 20, hipY, 3.2, 3.6), nib: [20, hipY, 1.7] })
+    // Thigh up to the raised knee, shin down to the planted foot.
+    out.push({ d: brushStroke(20, hipY, kneeX, kneeY, 2.8, 2.0) })
+    out.push({ d: brushStroke(kneeX, kneeY, footX, footY, 2.0, 1.4) })
+    // Arms wrap forward around the knee.
+    out.push({ d: brushStroke(20 - dir * 1, neckY + 6, kneeX + dir * 1, kneeY + 2, 2.2, 1.3) })
     return out
   }
 
@@ -163,8 +167,9 @@ export function StickFigure({
   stroke = ricePaper.ivory,
   phase = 0,
 }: StickFigureProps) {
-  const headDx = pose === 'lookL' ? -1.5 : pose === 'lookR' ? 1.5 : 0
-  const headCy = pose === 'sit' ? 30 : 18
+  const sitLean = pose === 'sit' ? (facing === 'R' ? -2 : 2) : 0
+  const headDx = pose === 'lookL' ? -1.5 : pose === 'lookR' ? 1.5 : sitLean
+  const headCy = pose === 'sit' ? 33 : 18
   // Slightly squashed, off-round head — less "regular".
   const headRx = 5.6
   const headRy = 5.1

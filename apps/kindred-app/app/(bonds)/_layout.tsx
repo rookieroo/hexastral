@@ -1,4 +1,4 @@
-import { ricePaper } from '@zhop/hexastral-tokens'
+import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { Stack } from 'expo-router'
 
 export default function BondsLayout() {
@@ -6,7 +6,7 @@ export default function BondsLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: ricePaper.ivory },
+        contentStyle: { backgroundColor: kindredDark.bg },
         animation: 'slide_from_right',
       }}
     >

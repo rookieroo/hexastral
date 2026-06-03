@@ -237,5 +237,27 @@ export const LOGO_DEFAULT_V15: LogoMoonSkin = {
   },
 }
 
+/**
+ * Night-sky variant — same rim-lit shape, but the dark sphere fades into
+ * rubbing.void (#0B0B0C) so the moon's shadow side melts into a void-black
+ * night scene instead of floating as a grey disc (kindred intro, ADR-0018
+ * dark-only surfaces).
+ */
+export const LOGO_NIGHT_V15: LogoMoonSkin = {
+  id: 'night',
+  name: '夜空月',
+  gradient: {
+    cx: 0.64,
+    cy: 0.7,
+    r: 0.62,
+    stops: [
+      { offset: 0, color: '#1A1A1F' },
+      { offset: 0.42, color: '#121214' },
+      { offset: 0.78, color: '#0B0B0C' },
+      { offset: 1, color: '#e7e0d0' },
+    ],
+  },
+}
+
 /** Logo moon constants (HTML v15moon: circle cx=50, cy=50, r=44 in viewBox 100). */
 export const LOGO_MOON_R = 44

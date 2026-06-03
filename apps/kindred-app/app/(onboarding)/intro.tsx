@@ -27,6 +27,7 @@
 import { V15Moon } from '@zhop/core-ui/motion'
 import { ricePaper, rubbing, zinc } from '@zhop/hexastral-tokens'
 import { kindredType } from '@zhop/hexastral-tokens/kindred'
+import { LOGO_NIGHT_V15 } from '@zhop/hexastral-tokens/moon'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
@@ -55,29 +56,47 @@ interface IntroCopy {
 }
 
 const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
+  // The parable's thesis builds across the four captions: life starts alone →
+  // most connections are fleeting → even warm ones can end → but one stays,
+  // and that one is who this app is about (the CTA picks it up from there).
   en: {
     tap: 'tap to skip',
     continue: 'tap to begin',
-    acts: ['you arrive alone', 'some pass by', 'some stay a while', 'one stays'],
+    acts: [
+      'you arrive in this world alone',
+      'most people pass right by',
+      'some hold you, then let go',
+      'but one of them will stay',
+    ],
   },
   zh: {
     tap: '轻触跳过',
     continue: '轻触开始',
-    acts: ['一个人来到世上', '有人擦肩而过', '有人短暂停留', '有人留了下来'],
+    acts: [
+      '人来到世上，是一个人',
+      '有的人擦肩而过',
+      '有的人拥抱过你，又离开',
+      '而总有一个人，会留下来',
+    ],
   },
   'zh-Hant': {
     tap: '輕觸跳過',
     continue: '輕觸開始',
-    acts: ['一個人來到世上', '有人擦肩而過', '有人短暫停留', '有人留了下來'],
+    acts: [
+      '人來到世上，是一個人',
+      '有的人擦肩而過',
+      '有的人擁抱過你，又離開',
+      '而總有一個人，會留下來',
+    ],
   },
   ja: {
     tap: 'タップでスキップ',
     continue: 'タップで始める',
     acts: [
-      'ひとりで生まれてくる',
-      'すれ違う人もいる',
-      'しばらく寄り添う人も',
-      'となりに残る人がいる',
+      '人はひとりで生まれてくる',
+      'すれ違うだけの人もいる',
+      '抱きしめて、離れていく人もいる',
+      'それでも、そばに残る人がいる',
     ],
   },
 }
@@ -208,8 +227,8 @@ function useFigureStyle(
   height: number
 ) {
   const walking = pose === 'walk'
-  // `sit` rests on the crossed shins (y≈72 of 80) rather than the feet (y≈76).
-  const baseline = pose === 'sit' ? FEET_Y - 6.4 : FEET_Y
+  // `sit` (抱膝) plants the foot at y≈74 of 80 rather than the standing y≈76.
+  const baseline = pose === 'sit' ? FEET_Y - 3.2 : FEET_Y
   return useAnimatedStyle(() => {
     const gy = groundYAt(xSv.value, width, height)
     const bob = walking ? (1 - Math.abs(Math.sin(phaseSv.value * Math.PI * 2))) * 2 : 0
@@ -345,12 +364,15 @@ export default function IntroScreen() {
     at(T.f1LookCenter, () => setF1Pose('stand'))
 
     // === Act 2: figure 2 walks in; A/B/C exchange; figure 2 leaves ===
-    at(T.f2WalkIn, () => setF2Pose('walk'))
-    f2Op.value = withDelay(T.f2WalkIn, withTiming(1, { duration: 300 }))
-    f2X.value = withDelay(
-      T.f2WalkIn,
-      withTiming(slot2R, { duration: 1300, easing: Easing.out(Easing.cubic) })
-    )
+    // NOTE: the walk-OUT animations are scheduled inside at() callbacks. A second
+    // pending `withDelay` assigned to the same shared value would CANCEL the
+    // walk-in one (reanimated replaces pending animations on assignment), which
+    // left f2/f3 invisible at their off-screen start position.
+    at(T.f2WalkIn, () => {
+      setF2Pose('walk')
+      f2Op.value = withTiming(1, { duration: 300 })
+      f2X.value = withTiming(slot2R, { duration: 1300, easing: Easing.out(Easing.cubic) })
+    })
     at(T.f2WalkIn + 1300, () => {
       setF2Pose('talk')
       setF1Pose('talk')
@@ -362,21 +384,19 @@ export default function IntroScreen() {
     at(T.f2WalkOut, () => {
       setF2Pose('walk')
       setF2Heading('R')
+      f2X.value = withTiming(offRight, { duration: 1700, easing: Easing.in(Easing.cubic) })
     })
-    f2X.value = withDelay(
-      T.f2WalkOut,
-      withTiming(offRight, { duration: 1700, easing: Easing.in(Easing.cubic) })
-    )
-    f2Op.value = withDelay(T.f2WalkOut + 1500, withTiming(0, { duration: 300 }))
+    at(T.f2WalkOut + 1500, () => {
+      f2Op.value = withTiming(0, { duration: 300 })
+    })
     at(T.f2WalkOut + 200, () => setF1Pose('stand'))
 
     // === Act 3: figure 3 walks in, hugs, leaves ===
-    at(T.f3WalkIn, () => setF3Pose('walk'))
-    f3Op.value = withDelay(T.f3WalkIn, withTiming(1, { duration: 300 }))
-    f3X.value = withDelay(
-      T.f3WalkIn,
-      withTiming(slotHug, { duration: 1500, easing: Easing.out(Easing.cubic) })
-    )
+    at(T.f3WalkIn, () => {
+      setF3Pose('walk')
+      f3Op.value = withTiming(1, { duration: 300 })
+      f3X.value = withTiming(slotHug, { duration: 1500, easing: Easing.out(Easing.cubic) })
+    })
     at(T.hug1Start, () => {
       setF3Pose('hug')
       setF1Pose('hug')
@@ -391,11 +411,12 @@ export default function IntroScreen() {
       // ...and dies down when this one, too, walks away.
       glowOp.value = withTiming(0, { duration: 900 })
     })
-    f3X.value = withDelay(
-      T.f3WalkOut,
-      withTiming(offRight, { duration: 1800, easing: Easing.in(Easing.cubic) })
-    )
-    f3Op.value = withDelay(T.f3WalkOut + 1500, withTiming(0, { duration: 300 }))
+    at(T.f3WalkOut, () => {
+      f3X.value = withTiming(offRight, { duration: 1800, easing: Easing.in(Easing.cubic) })
+    })
+    at(T.f3WalkOut + 1500, () => {
+      f3Op.value = withTiming(0, { duration: 300 })
+    })
 
     // === Act 4: figure 4 walks in, hugs, both sit shoulder-to-shoulder ===
     at(T.f4WalkIn, () => setF4Pose('walk'))
@@ -417,9 +438,10 @@ export default function IntroScreen() {
       // ...and settles into a softer, steady warmth as they sit.
       glowOp.value = withTiming(0.5, { duration: 1200 })
     })
-    // Camera pushes in slightly on the pair that stays; the sky fully blooms.
+    // Camera pushes in on the pair that stays; the sky fully blooms. 1.12 is
+    // deliberately a real push (1.04 read as nothing on device).
     at(T.hug2Start, () => {
-      stageScale.value = withTiming(1.04, { duration: 3500, easing: Easing.out(Easing.quad) })
+      stageScale.value = withTiming(1.12, { duration: 4500, easing: Easing.out(Easing.quad) })
     })
     at(T.starsBright, () => {
       starsBright.value = withTiming(1, { duration: 1500 })
@@ -437,7 +459,7 @@ export default function IntroScreen() {
   }, [reduced])
 
   const handleAdvance = () => {
-    router.replace('/(onboarding)/self')
+    router.replace('/(onboarding)/pair-input')
   }
 
   /* Animated styles — figures follow the ground arc and bob with their stride */
@@ -519,7 +541,9 @@ export default function IntroScreen() {
           position the home header uses, so onboarding ends on the same logo
           home starts on. */}
       <Animated.View style={[styles.brand, ctaStyle]} pointerEvents='none'>
-        <V15Moon size={64} />
+        {/* Night-blended skin: the moon's shadow side melts into the void sky
+            instead of floating as a grey disc. */}
+        <V15Moon size={64} skin={LOGO_NIGHT_V15} />
       </Animated.View>
 
       {/* Skip hint (early) */}

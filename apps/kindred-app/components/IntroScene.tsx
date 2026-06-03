@@ -33,15 +33,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, {
-  Circle,
-  Defs,
-  Line,
-  LinearGradient,
-  Path,
-  RadialGradient,
-  Stop,
-} from 'react-native-svg'
+import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 const AnimatedPath = Animated.createAnimatedComponent(Path)
@@ -411,14 +403,14 @@ export function IntroStage({
 
 /* ── Figure glow ────────────────────────────────────────────────────────── */
 
-/** Ray angles (degrees, 0 = up) for the radiating lines around an embrace. */
-const RAY_ANGLES = [-110, -75, -40, -10, 10, 40, 75, 110]
-
 /**
- * FigureGlow — a warm halo with short radiating rays, placed behind an
- * embracing / sitting pair. Position (center x) and opacity are both driven
- * by the caller's shared values so the glow can follow the pair between the
- * hug slot and the sit slot.
+ * FigureGlow — a faint warmth behind an embracing / sitting pair. Position
+ * (center x) and opacity are both driven by the caller's shared values so the
+ * glow can follow the pair between the hug slot and the sit slot.
+ *
+ * Deliberately just a soft gradient — earlier versions added radiating rays,
+ * which (combined with the old cross-legged sit pose) read as a meditating
+ * figure with a Buddhist halo. Warmth, not enlightenment.
  */
 export function FigureGlow({
   xSv,
@@ -438,9 +430,6 @@ export function FigureGlow({
   }))
 
   const c = size / 2
-  // Rays sit just outside the bright core.
-  const rayInner = size * 0.3
-  const rayOuter = size * 0.38
 
   return (
     <Animated.View
@@ -450,30 +439,12 @@ export function FigureGlow({
       <Svg width={size} height={size}>
         <Defs>
           <RadialGradient id='figureGlow' cx='50%' cy='50%' r='50%'>
-            <Stop offset='0' stopColor={GLOW} stopOpacity='0.3' />
-            <Stop offset='0.55' stopColor={GLOW} stopOpacity='0.1' />
+            <Stop offset='0' stopColor={GLOW} stopOpacity='0.18' />
+            <Stop offset='0.6' stopColor={GLOW} stopOpacity='0.06' />
             <Stop offset='1' stopColor={GLOW} stopOpacity='0' />
           </RadialGradient>
         </Defs>
         <Circle cx={c} cy={c} r={c} fill='url(#figureGlow)' />
-        {RAY_ANGLES.map((deg) => {
-          const rad = ((deg - 90) * Math.PI) / 180
-          const cos = Math.cos(rad)
-          const sin = Math.sin(rad)
-          return (
-            <Line
-              key={deg}
-              x1={c + cos * rayInner}
-              y1={c + sin * rayInner}
-              x2={c + cos * rayOuter}
-              y2={c + sin * rayOuter}
-              stroke={GLOW}
-              strokeWidth={1.2}
-              strokeLinecap='round'
-              opacity={0.35}
-            />
-          )
-        })}
       </Svg>
     </Animated.View>
   )

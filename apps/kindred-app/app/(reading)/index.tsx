@@ -199,6 +199,30 @@ export default function ReadingHomeScreen() {
           paddingBottom: kindredSpacing.xxl,
         }}
       >
+        {/* DEV-only shortcuts — relaunch the intro animation / onboarding form
+            directly, no manual reset + shake-menu dance required. */}
+        {__DEV__ && (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: kindredSpacing.lg,
+              marginBottom: kindredSpacing.md,
+            }}
+          >
+            <Pressable onPress={() => router.push('/(onboarding)/intro')} hitSlop={8}>
+              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+                DEV intro →
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={8}>
+              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+                DEV form →
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Header chrome — Settings (left) + new thread (right), tucked into the corners */}
         <View
           style={{
