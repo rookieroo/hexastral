@@ -283,16 +283,15 @@ export const LOGO_NIGHT_V15: LogoMoonSkin = {
 }
 
 /**
- * Cinnabar logo moon — Kindred's brand mark. Same rim-lit v15G shape, but the
- * sphere body is warm 朱砂 (tied to the seal's #9b2226) deepening to burgundy,
- * with a cinnabar-warmed ivory rim-light. Reads as a red moon on void-black, so
- * the static brand anchor (home / splash / empty) matches the cinnabar
- * phase-moon of the intro + loaders instead of floating as a grey 水墨月 disc.
+ * Cinnabar logo moon — Kindred's brand mark. A "朱砂色月亮" — vermillion lights
+ * the lit crescent (the rim, where the sun is striking the moon) while the
+ * shadowed body deepens to burgundy / void. The radial gradient is centred
+ * off-axis (cx 0.64, cy 0.7) so the dark body sits opposite the lit side and
+ * the rim-light reads as a true crescent rather than a halo.
  *
- * 2026-06 tune: at small render sizes (56px home anchor) the old cream rim
- * (#e7e0d0) dominated and the moon read as 月白, breaking continuity with the
- * intro's cinnabar phase-moon. The body stops are brighter and the rim is
- * tinted toward cinnabar so the anchor stays unmistakably 朱砂 at any size.
+ * 2026-06: a prior tune put cinnabar on the BODY and ivory on the rim, which
+ * read as a red sphere with a halo (the lit face was cream, not red). The lit
+ * side should be the cinnabar; the body should be the shadow. Swapped to fix.
  */
 export const LOGO_CINNABAR_V15: LogoMoonSkin = {
   id: 'cinnabar',
@@ -302,10 +301,10 @@ export const LOGO_CINNABAR_V15: LogoMoonSkin = {
     cy: 0.7,
     r: 0.62,
     stops: [
-      { offset: 0, color: '#d4664a' },
-      { offset: 0.42, color: '#a82e28' },
-      { offset: 0.78, color: '#641c12' },
-      { offset: 1, color: '#eccdb0' },
+      { offset: 0, color: '#3a0a08' },
+      { offset: 0.42, color: '#641c12' },
+      { offset: 0.78, color: '#a82e28' },
+      { offset: 1, color: '#e85a3d' },
     ],
   },
 }

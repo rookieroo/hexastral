@@ -56,8 +56,9 @@ export interface ShichenPickerProps {
   style?: StyleProp<ViewStyle>
   /**
    * Override the accent color used for the selected cell background + label.
-   * Defaults to the active theme's accent (which on Kindred reads as cinnabar,
-   * on hexastral-app reads as iOS text color, etc.).
+   * Defaults to the active theme's brand accent so the selected chip carries
+   * the satellite's identity (Auspice terracotta, Kindred gold, etc.) rather
+   * than a brand-neutral near-black.
    */
   accentColor?: string
 }
@@ -70,7 +71,7 @@ export function ShichenPicker({
   accentColor,
 }: ShichenPickerProps) {
   const { colors } = useTheme()
-  const activeBg = accentColor ?? colors.text
+  const activeBg = accentColor ?? colors.accent
   const activeFg = colors.bg
   const inactiveBorder = colors.separator
   const inactiveLabel = colors.text

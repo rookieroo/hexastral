@@ -205,7 +205,7 @@ export default function HomeScreen() {
                     )
                   })()}
 
-                  <DayView payload={dayData} today={selectedDay === todayIso} />
+                  <DayView payload={dayData} />
 
                   {/* Actions — 择日 + 记录亲友生日 (carries the selected month-day, no year). */}
                   <View

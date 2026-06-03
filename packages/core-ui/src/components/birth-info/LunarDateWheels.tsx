@@ -165,7 +165,11 @@ function Wheel<T>({
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-      {/* Center selection band — 3 rows above the centred slot in a 7-row wheel */}
+      {/* Center selection band — 3 rows above the centred slot in a 7-row wheel.
+          The band is the wheel's primary affordance, so it needs to read clearly
+          on EITHER mode: the border is rendered at full accent opacity (was
+          `${accent}66` ≈ 40%, which dissolved into light surfaces), and the
+          inner wash is ~13% accent — visible on both ink-dark and rice-paper. */}
       <View
         pointerEvents='none'
         style={{
@@ -174,10 +178,10 @@ function Wheel<T>({
           left: 0,
           right: 0,
           height: WHEEL_ITEM_HEIGHT,
-          borderTopWidth: 0.5,
-          borderBottomWidth: 0.5,
-          borderColor: `${accent}66`,
-          backgroundColor: `${accent}0A`,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: accent,
+          backgroundColor: `${accent}22`,
         }}
       />
       <ScrollView
@@ -200,26 +204,38 @@ function Wheel<T>({
           }
         }}
       >
-        {items.map((it, i) => (
-          <View
-            key={it.key}
-            style={{
-              height: WHEEL_ITEM_HEIGHT,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
+        {items.map((it, i) => {
+          // Soften items that are not the selection AND not the immediate
+          // neighbours, so the wheel still reads as a centred slot rather than
+          // a flat list. Neighbours stay near full text colour so the next
+          // value is always legible — the prior 65%-opacity secondary token
+          // was too faint on light surfaces ("看不清" in light mode).
+          const distance = Math.abs(i - selectedIdx)
+          const colorForRow =
+            distance === 0 ? colors.text : distance <= 1 ? colors.text : colors.secondary
+          const opacity = distance === 0 ? 1 : distance === 1 ? 0.7 : 0.45
+          return (
+            <View
+              key={it.key}
               style={{
-                fontSize: 16,
-                color: i === selectedIdx ? colors.text : colors.secondary,
-                fontWeight: i === selectedIdx ? '600' : '400',
+                height: WHEEL_ITEM_HEIGHT,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {it.label}
-            </Text>
-          </View>
-        ))}
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: colorForRow,
+                  fontWeight: distance === 0 ? '600' : '400',
+                  opacity,
+                }}
+              >
+                {it.label}
+              </Text>
+            </View>
+          )
+        })}
       </ScrollView>
     </View>
   )

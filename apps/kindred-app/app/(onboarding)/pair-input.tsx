@@ -146,14 +146,17 @@ export default function PairInputScreen() {
   // ScrollView ref — the city picker scrolls itself above the keyboard on focus.
   const scrollRef = useRef<ScrollView>(null)
 
-  // "Filled" = enough for the downstream flow. Self needs date + gender; the
-  // partner additionally needs a name + relationship (the reveal create reads
-  // targetName + relationshipLabel).
+  // "Filled" = enough for the downstream flow. Self / partner each need date
+  // + gender + 时辰 (the hour pillar — without it the chart engine has to
+  // guess); the partner additionally needs a name + relationship type (the
+  // reveal create reads targetName + relationshipLabel). City stays optional.
   const relType: RelationshipType | null = (draft.relationshipLabel as RelationshipType) || null
-  const selfFilled = selfSolar !== null && draft.selfGender !== null
+  const selfFilled =
+    selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
   const otherFilled =
     otherSolar !== null &&
     draft.otherGender !== null &&
+    typeof draft.otherTimeIndex === 'number' &&
     draft.otherName.trim().length > 0 &&
     relType !== null
 
@@ -580,12 +583,11 @@ function BirthForm({
   fieldPrefix,
   scrollRef,
 }: BirthFormProps) {
-  // 时辰 + city are the "soft" fields (often unknown). Collapse them behind a
-  // toggle so the form reads as 2 required fields, not a wall. Default open if
-  // the draft already carries either (returning users keep their data visible).
-  const hasRefinement = (typeof timeIndex === 'number' && timeIndex >= 0) || city.length > 0
-  const [refineOpen, setRefineOpen] = useState(hasRefinement)
-
+  // 时辰 is REQUIRED — it drives the hour pillar of the 八字 (without it the
+  // chart engine has to guess, silently producing a wrong chapter). It was
+  // previously hidden behind a "more precise" toggle alongside city; that
+  // made it look optional and most users skipped it. The toggle is gone and
+  // the picker is always visible; city stays inline with an "optional" hint.
   const shichen =
     typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
       ? (timeIndex as import('@zhop/core-ui').ShichenIndex)
@@ -602,9 +604,23 @@ function BirthForm({
         }
       : null
 
-  const toggleRefine = () => {
+  const clearCity = () => {
     void Haptics.selectionAsync().catch(() => undefined)
-    setRefineOpen((v) => !v)
+    onCity(
+      fieldPrefix === 'self'
+        ? {
+            selfBirthCity: '',
+            selfBirthLat: null,
+            selfBirthLng: null,
+            selfBirthTimezone: null,
+          }
+        : {
+            otherBirthCity: '',
+            otherBirthLat: null,
+            otherBirthLng: null,
+            otherBirthTimezone: null,
+          }
+    )
   }
 
   return (
@@ -634,96 +650,78 @@ function BirthForm({
         />
       </Field>
 
-      {/* Collapsible refinement — 时辰 + city. Optional; sharpens the chart. */}
-      <Pressable
-        onPress={toggleRefine}
-        accessibilityRole='button'
-        accessibilityState={{ expanded: refineOpen }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingVertical: kindredSpacing.sm,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
-            {t(locale, 'pairInput.refine')}
-          </Text>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-            {t(locale, 'pairInput.refine.hint')}
-          </Text>
-        </View>
-        <Text style={{ color: kindredDark.textMuted, fontSize: 16 }}>{refineOpen ? '−' : '+'}</Text>
-      </Pressable>
+      {/* 时辰 — required field, always visible. The 12-cell grid takes ~3
+          rows so the form stays scannable. Hint explains WHY it matters so
+          a user who doesn't know their birth time understands the cost. */}
+      <View style={{ gap: kindredSpacing.sm }}>
+        <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
+          {t(locale, 'time.title')}
+        </Text>
+        <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+          {t(locale, 'pairInput.timeHint')}
+        </Text>
+        <ShichenPicker
+          value={shichen}
+          onChange={(idx) => onTime(idx)}
+          accentColor={kindredDark.accent}
+        />
+      </View>
 
-      {refineOpen && (
-        <Animated.View entering={FadeInDown.duration(220)} style={{ gap: kindredSpacing.lg }}>
-          {/* 时辰 — 12-cell grid + "unknown" reset. */}
-          <View style={{ gap: kindredSpacing.sm }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
-                {t(locale, 'time.title')}
+      {/* City — optional; sharpens the hour pillar via 真太阳时 correction.
+          Inline header carries an "optional" tag + a clear shortcut so the
+          user can wipe a previous pick. `scrollRef` lets the picker pin
+          itself above the keyboard on focus. */}
+      <View style={{ gap: kindredSpacing.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
+            {t(locale, 'place.title')}
+          </Text>
+          {city.length > 0 ? (
+            <Pressable onPress={clearCity} hitSlop={6} accessibilityRole='button'>
+              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+                {t(locale, 'pairInput.cityClear')}
               </Text>
-              <Pressable
-                onPress={() => onTime(null)}
-                hitSlop={6}
-                accessibilityRole='button'
-                accessibilityLabel={t(locale, 'fill.timeUnknown')}
-              >
-                <Text
-                  style={[
-                    kindredType.caption,
-                    { color: shichen === null ? kindredDark.accent : kindredDark.textMuted },
-                  ]}
-                >
-                  {t(locale, 'fill.timeUnknown')}
-                </Text>
-              </Pressable>
-            </View>
-            <ShichenPicker
-              value={shichen}
-              onChange={(idx) => onTime(idx)}
-              accentColor={kindredDark.accent}
-            />
-          </View>
-
-          {/* City — optional; geocode-backed (coords + IANA tz for 真太阳时).
-              `scrollRef` lets the picker pin itself above the keyboard on focus. */}
-          <Field label={t(locale, 'place.title')}>
-            <CityPicker
-              value={cityValue}
-              onSelect={(c) =>
-                onCity(
-                  fieldPrefix === 'self'
-                    ? {
-                        selfBirthCity: c.name,
-                        selfBirthLat: c.lat,
-                        selfBirthLng: c.lng,
-                        selfBirthTimezone: c.timezone ?? null,
-                      }
-                    : {
-                        otherBirthCity: c.name,
-                        otherBirthLat: c.lat,
-                        otherBirthLng: c.lng,
-                        otherBirthTimezone: c.timezone ?? null,
-                      }
-                )
-              }
-              search={searchCity}
-              topCities={DEFAULT_TOP_CITIES}
-              placeholder={t(locale, 'pairInput.cityPlaceholder')}
-              scrollRef={scrollRef}
-            />
-          </Field>
-        </Animated.View>
-      )}
+            </Pressable>
+          ) : (
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+              {t(locale, 'pairInput.cityOptional')}
+            </Text>
+          )}
+        </View>
+        <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+          {t(locale, 'pairInput.cityHint')}
+        </Text>
+        <CityPicker
+          value={cityValue}
+          onSelect={(c) =>
+            onCity(
+              fieldPrefix === 'self'
+                ? {
+                    selfBirthCity: c.name,
+                    selfBirthLat: c.lat,
+                    selfBirthLng: c.lng,
+                    selfBirthTimezone: c.timezone ?? null,
+                  }
+                : {
+                    otherBirthCity: c.name,
+                    otherBirthLat: c.lat,
+                    otherBirthLng: c.lng,
+                    otherBirthTimezone: c.timezone ?? null,
+                  }
+            )
+          }
+          search={searchCity}
+          topCities={DEFAULT_TOP_CITIES}
+          placeholder={t(locale, 'pairInput.cityPlaceholder')}
+          scrollRef={scrollRef}
+        />
+      </View>
     </View>
   )
 }

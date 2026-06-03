@@ -89,6 +89,10 @@ export default function BirthFormScreen() {
       return
     }
 
+    // BirthInfoValue's place fields became optional (kindred's onboarding can
+    // skip city) — hexastral-app does not pass `placeOptional`, so the review
+    // step still gates submit on city/lat/lng/timezone being present. These
+    // fallbacks exist only to satisfy TypeScript, never to ship empty geo data.
     await saveBirthInfo({
       solarDate: final.solarDate,
       birthYear: final.solarDate.split('-')[0],
@@ -108,10 +112,10 @@ export default function BirthFormScreen() {
           birthSolarDate: final.solarDate,
           birthTimeIndex: final.timeIndex ?? 6,
           birthGender: final.gender,
-          birthCity: final.city,
-          birthLongitude: String(final.lng),
-          birthLatitude: String(final.lat),
-          birthTimezoneId: final.timezone,
+          birthCity: final.city ?? '',
+          birthLongitude: final.lng != null ? String(final.lng) : '',
+          birthLatitude: final.lat != null ? String(final.lat) : '',
+          birthTimezoneId: final.timezone ?? '',
         },
       })
       if (!put.ok && __DEV__) {

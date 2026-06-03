@@ -5,7 +5,16 @@
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useState } from 'react'
-import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from 'react-native'
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { config } from '@/lib/config'
 import { signRequest } from '@/lib/hmac'
 import { resolveLocale, t } from '@/lib/i18n'
@@ -114,20 +123,28 @@ export function EmailVerifyModal({
   }
 
   return (
+    // KeyboardAvoidingView lifts the bottom-anchored sheet above the on-screen
+    // keyboard. Without it the autoFocus'd TextInput summons the keyboard before
+    // the sheet finishes its slide-in, and the sheet ends up hidden underneath
+    // — what the user reported as "只弹出了输入法" (only the keyboard shows).
     <Modal visible={visible} transparent animationType='slide' statusBarTranslucent>
-      <Pressable
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
-        onPress={resetAndClose}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <Pressable
-          onPress={() => {}}
-          style={{
-            backgroundColor: kindredDark.card,
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0,
-            paddingBottom: 40,
-          }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
+          onPress={resetAndClose}
         >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: kindredDark.card,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingBottom: 40,
+            }}
+          >
           <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
             <View style={{ width: 36, height: 4, backgroundColor: kindredDark.border }} />
           </View>
@@ -260,6 +277,7 @@ export function EmailVerifyModal({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

@@ -28,14 +28,20 @@ interface Props extends BirthStepProps {
 
 function isComplete(
   v: Partial<BirthInfoValue>,
-  skipSteps?: ReadonlyArray<BirthInfoStep>
+  skipSteps?: ReadonlyArray<BirthInfoStep>,
+  requireTime?: boolean,
+  placeOptional?: boolean
 ): v is BirthInfoValue {
-  const placeSkipped = skipSteps?.includes('place') ?? false
+  const placeSkipped = (skipSteps?.includes('place') ?? false) || (placeOptional ?? false)
   const baseOk =
     typeof v.solarDate === 'string' &&
     v.solarDate.length === 10 &&
     (v.gender === '男' || v.gender === '女')
   if (!baseOk) return false
+  // Hour pillar matters for apps that read it; without timeIndex the chart
+  // engine has to guess (typically defaults to 子时 / 6), which silently
+  // produces a wrong reading. Hosts opt into strict via `requireTime`.
+  if (requireTime && typeof v.timeIndex !== 'number') return false
   if (placeSkipped) return true
   return (
     typeof v.city === 'string' &&
@@ -75,10 +81,12 @@ export function BirthReviewStep({
   onEdit,
   onSubmit,
   skipSteps,
+  requireTime,
+  placeOptional,
 }: Props) {
   const { colors, spacing } = useTheme()
   const [submitting, setSubmitting] = useState(false)
-  const complete = isComplete(value, skipSteps)
+  const complete = isComplete(value, skipSteps, requireTime, placeOptional)
 
   const handleSubmit = async () => {
     if (!complete || submitting) return

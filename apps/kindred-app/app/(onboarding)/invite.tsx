@@ -1,11 +1,17 @@
 /**
  * Threads · Invite them — one channel-agnostic share (ADR-0021 §3).
  *
- * POST /api/bonds/invite creates the bond + token server-side WITHOUT touching
- * B's contact info (deliveryMode 'user'); the returned message body (with the
- * invite link) is handed to the system share sheet, so A can send it through
- * ANY app — Messages, WhatsApp, WeChat, Mail, AirDrop. No channel is special,
- * so there is no email/phone field and no per-channel copy to get wrong.
+ * Simplified layout (2026-06): the earlier page had ~6 stacked elements
+ * (moon, title, subtitle, picker, name input, hint, button, error) at equal
+ * weight and read as "scattered with no focus". The single decision here is
+ * "what relation are you?" — the relationship picker is now the focal block;
+ * name is a quiet optional below it; the hint folds into one short caption.
+ *
+ * POST /api/bonds/invite creates the bond + token server-side WITHOUT
+ * touching B's contact info (deliveryMode 'user'); the returned message body
+ * (with the invite link) is handed to the system share sheet, so A can send
+ * it through ANY app — Messages, WhatsApp, WeChat, Mail, AirDrop. No channel
+ * is special, so there is no email/phone field and no per-channel copy.
  *
  * The bond lands as pending; the (reading) home Threads section and
  * (bonds)/index.tsx then show the waiting state.
@@ -21,7 +27,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Text, TextInput, View } from 'react-native'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -40,6 +46,7 @@ export default function InviteScreen() {
   const [relType, setRelType] = useState<RelationshipType>('romantic')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showNameField, setShowNameField] = useState(name.trim().length > 0)
 
   const handleShare = async () => {
     if (sending) return
@@ -47,8 +54,8 @@ export default function InviteScreen() {
     setError(null)
     try {
       const label = relationshipLabel(relType, locale)
-      // targetName: what A calls B. Falls back to the relationship label when no
-      // name is given — the channel is anonymous, so there's no other identifier.
+      // targetName: what A calls B. Falls back to the relationship label when
+      // no name is given — the channel is anonymous, so there's no other id.
       const targetName = name.trim() || label
       const result = await create({ targetName, relationshipLabel: label })
       await shareInvite(result.mailto)
@@ -81,61 +88,90 @@ export default function InviteScreen() {
           paddingTop: kindredSpacing.xl,
         }}
       >
+        {/* Brand mark + one prompt — no separate title + subtitle stack. */}
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
           <KindredMoon size={56} />
         </View>
-        <Text style={[kindredType.title, { color: kindredDark.text }]}>
+        <Text
+          style={[
+            kindredType.title,
+            { color: kindredDark.text, textAlign: 'center', marginBottom: kindredSpacing.xs },
+          ]}
+        >
           {t(locale, 'invite.heading')}
         </Text>
-
-        {/* Relationship + optional name */}
-        <View style={{ height: kindredSpacing.lg }} />
-        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
+        <Text
+          style={[
+            kindredType.caption,
+            {
+              color: kindredDark.textSecondary,
+              textAlign: 'center',
+              marginBottom: kindredSpacing.xxl,
+            },
+          ]}
+        >
           {t(locale, 'invite.subtitle')}
         </Text>
-        <View style={{ height: kindredSpacing.md }} />
+
+        {/* Focal block — the one decision the user is here to make. */}
         <RelationshipTypeSelector value={relType} onChange={setRelType} />
 
-        <View style={{ height: kindredSpacing.lg }} />
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder={t(locale, 'invite.name.placeholder')}
-          placeholderTextColor={kindredDark.textMuted}
-          style={{
-            fontSize: kindredType.body.fontSize,
-            color: kindredDark.text,
-            borderBottomWidth: 0.5,
-            borderBottomColor: kindredDark.border,
-            paddingVertical: kindredSpacing.md,
-          }}
-        />
+        {/* Optional name — collapsed by default to keep this page about the
+            relationship choice. Tap to expand if the user wants a personal
+            label; otherwise the relationship name itself becomes targetName. */}
+        <View style={{ marginTop: kindredSpacing.lg }}>
+          {showNameField ? (
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t(locale, 'invite.name.placeholder')}
+              placeholderTextColor={kindredDark.textMuted}
+              autoFocus
+              style={{
+                fontSize: kindredType.body.fontSize,
+                color: kindredDark.text,
+                borderBottomWidth: 0.5,
+                borderBottomColor: kindredDark.border,
+                paddingVertical: kindredSpacing.sm,
+              }}
+            />
+          ) : (
+            <Pressable onPress={() => setShowNameField(true)} hitSlop={6}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textMuted, textAlign: 'center' },
+                ]}
+              >
+                + {t(locale, 'invite.name.placeholder')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
 
-        <View style={{ height: kindredSpacing.lg }} />
-        <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-          {t(locale, 'invite.hint')}
-        </Text>
+        <View style={{ flex: 1 }} />
 
-        {/* One channel-agnostic share — the system share sheet picks the app. */}
-        <View style={{ height: kindredSpacing.xl }} />
+        {error ? (
+          <Text
+            style={[
+              kindredType.caption,
+              {
+                color: kindredDark.seal,
+                marginBottom: kindredSpacing.md,
+                textAlign: 'center',
+              },
+            ]}
+          >
+            {error}
+          </Text>
+        ) : null}
+
         <PrimaryButton
           label={t(locale, 'invite.share')}
           onPress={() => void handleShare()}
           loading={sending}
         />
-
-        <View style={{ flex: 1 }} />
-        {error && (
-          <Text
-            style={[
-              kindredType.caption,
-              { color: kindredDark.seal, marginBottom: kindredSpacing.md },
-            ]}
-          >
-            {error}
-          </Text>
-        )}
-        <View style={{ height: kindredSpacing.xl }} />
+        <View style={{ height: kindredSpacing.lg }} />
       </View>
     </SafeAreaView>
   )

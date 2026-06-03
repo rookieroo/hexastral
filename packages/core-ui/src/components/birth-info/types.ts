@@ -17,16 +17,21 @@ export interface BirthInfoValue {
   /** Lunar date if the user entered lunar; echo-back for the review screen.
    *  Uses the existing `LunarDate` from `@zhop/astro-core`. */
   lunarDate?: LunarDate
-  /** 0–11 shichen index, or null if user skipped. */
+  /** 0–11 shichen index, or null if the form did not require it (legacy
+   *  skip path). When the host passes `requireTime`, this is never null. */
   timeIndex: ShichenIndex | null
   /** 男 / 女 — 八字 mandates one. */
   gender: '男' | '女'
-  /** Localized city name for review display. */
-  city: string
-  /** Decimal lat / lng + IANA timezone — required for 真太阳时 correction. */
-  lat: number
-  lng: number
-  timezone: string
+  /** Localized city name for review display. Optional — when the host passes
+   *  `placeOptional`, the user may skip and leave place fields undefined.
+   *  The chart engine then falls back to the device timezone (less precise
+   *  hour pillar, which is why the place step explains the tradeoff). */
+  city?: string
+  /** Decimal lat / lng + IANA timezone — used for 真太阳时 correction when
+   *  present; absent when the user skipped the place step. */
+  lat?: number
+  lng?: number
+  timezone?: string
 }
 
 export interface BirthInfoCopy {
@@ -37,6 +42,8 @@ export interface BirthInfoCopy {
 
   timeTitle: string
   timeSubtitle?: string
+  /** Label for the "I don't know" affordance. Only rendered when the host
+   *  does NOT pass `requireTime` — otherwise the time step is mandatory. */
   timeSkipLabel: string
 
   genderTitle: string
@@ -47,6 +54,10 @@ export interface BirthInfoCopy {
   placeTitle: string
   placeSubtitle?: string
   placeSearchPlaceholder: string
+  /** When the host passes `placeOptional`, this label is rendered as a skip
+   *  affordance inside the place step so the user can advance without
+   *  picking a city. Falls back to `timeSkipLabel` if unset. */
+  placeSkipLabel?: string
 
   reviewTitle: string
   reviewSubtitle?: string
@@ -88,6 +99,16 @@ export interface BirthInfoFormProps {
   locale?: string
   /** Skip specific steps. E.g. yuan fill-other passes ['review']. */
   skipSteps?: BirthInfoStep[]
+  /** When true, birth time is mandatory: the time step hides its Skip
+   *  affordance and the review step blocks Submit until a 时辰 is picked.
+   *  Use this for apps that read the hour pillar (kindred, yuan, numerology,
+   *  cycle) — without it the chart hour stem/branch is wrong. */
+  requireTime?: boolean
+  /** When true, city / lat / lng / timezone are NOT required to submit. The
+   *  place step renders a Skip affordance (using `copy.placeSkipLabel`) and
+   *  the review screen accepts a missing city. The chart engine then falls
+   *  back to the device timezone instead of 真太阳时 correction. */
+  placeOptional?: boolean
 }
 
 /** Props shared by every step component. */
@@ -101,4 +122,8 @@ export interface BirthStepProps {
   totalSteps: number
   crown?: ReactNode
   locale?: string
+  /** Forwarded from BirthInfoFormProps.requireTime — read by BirthTimeStep. */
+  requireTime?: boolean
+  /** Forwarded from BirthInfoFormProps.placeOptional — read by BirthPlaceStep. */
+  placeOptional?: boolean
 }

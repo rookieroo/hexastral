@@ -74,21 +74,37 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
       }}
     >
       <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
-        {/* Seal */}
+        {/* Seal — uses the 緣 seal glyph (same as native KindredSeal). The
+            literal "Kindred" word overflowed the disc; one CJK glyph reads
+            as a stamp at any size and matches the in-app brand mark. */}
         <div
           style={{
             width: 96,
             height: 96,
             borderRadius: '50%',
             backgroundColor: '#9B2226',
-            margin: '0 auto 32px',
+            margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>Kindred</span>
+          <span style={{ fontSize: 50, lineHeight: 1, color: '#C4A882', fontWeight: 400 }}>
+            緣
+          </span>
         </div>
+        <p
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 4,
+            textTransform: 'uppercase',
+            color: 'rgba(60,36,21,0.55)',
+            marginBottom: 32,
+          }}
+        >
+          Kindred
+        </p>
 
         {/* Names + tag */}
         <p

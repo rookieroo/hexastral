@@ -1,9 +1,10 @@
 /**
- * Main bond list — the home screen after onboarding.
+ * Threads (合盘) — secondary screen reached from the solo home.
  *
  * Three sub-modes: WaitingForOther (pending invite), empty-state, or the bond
- * list. Swipe left → Settings (ADR-0018 SWIPE_TO_ME; ··· header is the a11y
- * fallback). On cold launch a V15Moon HomeSplash flourishes once.
+ * list. This is a secondary screen, so it does NOT carry the home's floating
+ * ··· settings shortcut or the swipe-left-to-Settings gesture — Settings is
+ * only reachable from the home (per the user's 二级页面 rule).
  *
  * Phase F migration: bond cards use <Card>; empty/error states use
  * <EmptyState> / <ErrorState>. Editorial typography (kindredType) and
@@ -14,14 +15,11 @@ import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type BondData, useBondList, WaitingForOther } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { runOnJS } from 'react-native-reanimated'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -36,23 +34,11 @@ export default function BondListScreen() {
   const { bonds, isLoading, error, refetch } = useBondList()
   const authRetryDone = useRef(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
-  const insets = useSafeAreaInsets()
 
-  // Swipe-left → Settings (ADR-0018 rule 2). The floating ··· is the a11y fallback.
-  const goToSettings = useCallback(() => router.push('/(settings)'), [router])
-  const { activeOffsetX, failOffsetY, commitDx, maxDy } = SWIPE_TO_ME
-  const swipeToMe = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX(activeOffsetX)
-        .failOffsetY(failOffsetY)
-        .onEnd((e) => {
-          if (e.translationX < commitDx && Math.abs(e.translationY) < maxDy) {
-            runOnJS(goToSettings)()
-          }
-        }),
-    [goToSettings, activeOffsetX, failOffsetY, commitDx, maxDy]
-  )
+  // Threads is a secondary screen — Settings is reached via the home's
+  // floating ··· (and the swipe-left gesture, which only originates from home).
+  // No floating ··· here; secondary pages should not stack their own settings
+  // entry-point on top of the stack-back affordance.
 
   useEffect(() => {
     if (!error?.message.includes('Authentication failed') || authRetryDone.current) return
@@ -169,8 +155,8 @@ export default function BondListScreen() {
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
-              {/* Header chrome — just the new-thread "+". Settings moved to the
-                  bottom-floating ··· + the swipe-left gesture (ADR-0018). */}
+              {/* Header chrome — just the new-thread "+". This is a secondary
+                  screen; settings entry lives on the home, not here. */}
               <View
                 style={{
                   flexDirection: 'row',
@@ -202,44 +188,10 @@ export default function BondListScreen() {
   })()
 
   return (
-    <GestureDetector gesture={swipeToMe}>
-      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        {content}
-        {/* Floating "more" — relocated from the top-left. The discoverable a11y
-            fallback for the swipe-left → Settings gesture (ADR-0018). */}
-        <View
-          pointerEvents='box-none'
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: insets.bottom + 16,
-            alignItems: 'center',
-          }}
-        >
-          <Pressable
-            onPress={goToSettings}
-            hitSlop={12}
-            accessibilityRole='button'
-            accessibilityLabel={t(locale, 'settings.title')}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: kindredDark.card,
-              borderWidth: 0.5,
-              borderColor: kindredDark.border,
-              opacity: 0.85,
-            }}
-          >
-            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>···</Text>
-          </Pressable>
-        </View>
-        {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
-      </View>
-    </GestureDetector>
+    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      {content}
+      {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
+    </View>
   )
 }
 

@@ -38,6 +38,8 @@ export function BirthInfoForm({
   topCities,
   locale,
   skipSteps,
+  requireTime,
+  placeOptional,
 }: BirthInfoFormProps) {
   const order = DEFAULT_ORDER.filter((s) => !skipSteps?.includes(s))
   const [current, setCurrent] = useState<BirthInfoStep>(order[0] ?? 'date')
@@ -82,6 +84,8 @@ export function BirthInfoForm({
     step: stepNum,
     totalSteps,
     locale,
+    requireTime,
+    placeOptional,
   }
 
   switch (current) {

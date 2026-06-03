@@ -150,7 +150,12 @@ function lunarSeedFrom(input: string, calendar: BirthCalendar, isLeap: boolean):
 }
 
 export function BirthDateField({ value, onChange, accent, labels, locale }: BirthDateFieldProps) {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, isDark } = useTheme()
+  // Pin the native iOS DateTimePicker to the CoreUI theme — otherwise the
+  // spinner follows the device system theme and renders light even when the
+  // host app (kindred) forces dark, so the wheel text is washed out against
+  // the kindred dark sheet ("滚轮选择器在 light 模式下看不清").
+  const pickerTheme: 'dark' | 'light' = isDark ? 'dark' : 'light'
   const { input, calendar } = value
   const isLeap = value.isLeap ?? false
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -300,6 +305,7 @@ export function BirthDateField({ value, onChange, accent, labels, locale }: Birt
           display='spinner'
           minimumDate={MIN_DATE}
           maximumDate={MAX_DATE}
+          themeVariant={pickerTheme}
           onChange={(event, picked) => {
             setPickerOpen(false)
             if (event.type === 'set' && picked) emit(formatSolar(picked), 'solar', false)
@@ -351,6 +357,7 @@ export function BirthDateField({ value, onChange, accent, labels, locale }: Birt
               display='spinner'
               minimumDate={MIN_DATE}
               maximumDate={MAX_DATE}
+              themeVariant={pickerTheme}
               onChange={(_, picked) => {
                 if (picked) setPickSolar(picked)
               }}

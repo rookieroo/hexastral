@@ -56,7 +56,7 @@ export function BirthDateStep({
   crown,
   locale,
 }: BirthStepProps) {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, isDark } = useTheme()
   const [mode, setMode] = useState<Mode>(value.lunarDate ? 'lunar' : 'solar')
 
   // ── Solar mode state ──────────────────────────────────────────────────
@@ -170,6 +170,9 @@ export function BirthDateStep({
 
         <View style={{ marginTop: spacing.lg }}>
           {mode === 'solar' ? (
+            // themeVariant pins the iOS picker to the CoreUI theme — otherwise
+            // it follows the device system theme and renders in light even
+            // when the app forces dark (kindred), making text invisible.
             <DateTimePicker
               value={solar}
               mode='date'
@@ -178,6 +181,7 @@ export function BirthDateStep({
               maximumDate={MAX_DATE}
               onChange={handleSolarChange}
               accentColor={accent}
+              themeVariant={isDark ? 'dark' : 'light'}
               locale={locale}
             />
           ) : (

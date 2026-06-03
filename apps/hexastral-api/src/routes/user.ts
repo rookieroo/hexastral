@@ -564,6 +564,19 @@ export const userRoutes = new Hono<AppEnv>()
   </table>
 </body></html>`
 
+    // Defensive: in some deploys SVC_MAILER may be undefined even though the
+    // wrangler.jsonc binding is declared (e.g. local `wrangler dev` without the
+    // svc-mailer worker running, or a build where the bind was skipped). Surface
+    // that as a 502 with a precise reason instead of throwing TypeError from
+    // mailerClient.post — that was the dead-silent "send failure" users hit.
+    if (!c.env.SVC_MAILER) {
+      c.executionCtx.waitUntil(c.env.GUARD_KV.delete(otpKey))
+      console.error('[email/request] SVC_MAILER binding missing — is svc-mailer deployed?')
+      throw new HTTPException(502, {
+        message: 'Email service is not configured on the server',
+      })
+    }
+
     try {
       await mailerClient.post(c.env.SVC_MAILER, '/send', {
         to: email,
@@ -574,8 +587,11 @@ export const userRoutes = new Hono<AppEnv>()
       // Clean up KV on send failure so user can retry immediately
       c.executionCtx.waitUntil(c.env.GUARD_KV.delete(otpKey))
       const reason = err instanceof Error ? err.message : 'mailer unavailable'
-      console.error('[email/request] mailer failed:', reason)
-      throw new HTTPException(502, { message: 'Failed to send verification email' })
+      console.error('[email/request] mailer failed:', reason, {
+        userId,
+        emailDomain: email.split('@')[1],
+      })
+      throw new HTTPException(502, { message: `Failed to send verification email: ${reason}` })
     }
 
     return c.json({ ok: true })

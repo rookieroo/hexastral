@@ -19,17 +19,20 @@
  *   - Removed ming-pan-only growth surfaces: SatelliteFlagshipUpsellCard,
  *     satellite-runtime analytics emits, usePushPrime, markReadingViewed,
  *     portfolio public-profile links, cross-app discovery taps.
- *   - Theme: dark-only ink (ADR-0021 §5) from `@zhop/hexastral-tokens`
- *     (rubbing / ricePaper / ink / cinnabar). ming-pan rendered on a light
- *     paper surface; here the surface is the void-black report ground.
+ *   - Theme: rice-paper ground (2026-06 device feedback — "水墨晕开的动画
+ *     还是看不清"). The ink-bloom reveal works because the bloomed mask
+ *     uncovers a warm cream surface against the dark home behind, so the
+ *     organic ink edge has real contrast. Body type is dark ink on paper;
+ *     bronze stays as the section accent and cinnabar still anchors the seal.
+ *     The earlier dark-ink palette stayed faithful to ADR-0021 §5 but lost
+ *     the wash animation; the 报告页 now reads as 宣纸 like ming-pan-app.
  *   - Icons: lucide-react-native (ArrowLeft / ChevronRight) — kindred's icon
  *     set — replacing `@zhop/hexastral-icons` (not a kindred dep).
  *   - i18n: reading-i18n.ts (this folder).
- *   - Status bar stays dark (kindred is dark-only); no light/dark toggle.
  */
 
 import type { WuXing } from '@zhop/astro-core'
-import { cinnabar, ink, ricePaper, rubbing } from '@zhop/hexastral-tokens'
+import { cinnabar, ink, ricePaper } from '@zhop/hexastral-tokens'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, ChevronRight } from 'lucide-react-native'
@@ -58,16 +61,18 @@ import {
   useReadingI18n,
 } from './reading-i18n'
 
-/* ── palette — dark ink (ADR-0021 §5) ── */
+/* ── palette — 宣纸 paper ground; dark ink type, bronze accent, cinnabar CTA.
+   Mirrors ming-pan-app/components/ReadingReport.tsx (#EAE3D2 paper, #3C2415
+   ink), tuned to kindred's existing token names. */
 const P = {
-  bg: rubbing.void,
-  ink: ricePaper.ivory,
-  inkSoft: 'rgba(245,240,232,0.72)',
+  bg: ricePaper.ivory,
+  ink: ink.brown,
+  inkSoft: 'rgba(60,36,21,0.72)',
   bronze: ink.gold,
-  muted: 'rgba(245,240,232,0.45)',
+  muted: 'rgba(60,36,21,0.45)',
   cinnabar: cinnabar.seal,
-  hair: 'rgba(245,240,232,0.14)',
-  hairSoft: 'rgba(245,240,232,0.07)',
+  hair: 'rgba(60,36,21,0.14)',
+  hairSoft: 'rgba(60,36,21,0.07)',
   ctaText: ricePaper.ivory,
 } as const
 

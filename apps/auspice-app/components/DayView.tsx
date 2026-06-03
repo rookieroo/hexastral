@@ -20,17 +20,8 @@ import { localizeSolarTermName } from '@/lib/culture'
 import { useStrings } from '@/lib/i18n-context'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
-import { HourScrubber } from './HourScrubber'
 import { PersonalCard } from './PersonalCard'
 import { YiJiBlock } from './YiJiBlock'
-
-const BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
-
-/** The 地支 of the 时辰 covering the current wall-clock hour (子时 spans 23:00). */
-function currentBranch(): string {
-  const h = new Date().getHours()
-  return BRANCHES[h === 23 ? 0 : Math.floor((h + 1) / 2)] ?? '子'
-}
 
 function SectionLabel({ children }: { children: string }) {
   const { colors } = useTheme()
@@ -41,13 +32,7 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-export function DayView({
-  payload,
-  today = false,
-}: {
-  payload: AuspiceDayPayload
-  today?: boolean
-}) {
+export function DayView({ payload }: { payload: AuspiceDayPayload }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
@@ -146,11 +131,6 @@ export function DayView({
           </Text>
         </Pressable>
       )}
-
-      <View>
-        <SectionLabel>{t.auspiciousHours}</SectionLabel>
-        <HourScrubber hours={day.hours} activeBranch={today ? currentBranch() : undefined} />
-      </View>
 
       <View>
         <SectionLabel>{t.solarTerm}</SectionLabel>

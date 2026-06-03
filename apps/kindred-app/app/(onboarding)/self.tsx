@@ -20,12 +20,7 @@
  * throughout the wizard (matches the home header + HomeSplash logo).
  */
 
-import {
-  BirthInfoForm,
-  type BirthInfoValue,
-  birthInfoCopyForLocale,
-  type CityRecord,
-} from '@zhop/core-ui'
+import { BirthInfoForm, type BirthInfoValue, type CityRecord } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
@@ -33,6 +28,7 @@ import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { useAuth } from '@/lib/auth'
+import { kindredBirthCopy } from '@/lib/birthInfoCopy'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { resolveLocale } from '@/lib/i18n'
 import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
@@ -53,7 +49,10 @@ export default function SelfBirthScreen() {
   const { userId } = useAuth()
   const draft = useDraft()
   const lang = useMemo(() => localeToLang(locale), [locale])
-  const copy = useMemo(() => birthInfoCopyForLocale(locale), [locale])
+  // Kindred reads the hour pillar, so timeIndex is mandatory; the city is
+  // optional but improves 真太阳时 accuracy of the hour stem/branch. Override
+  // the shared copy's hint lines so the user knows which fields matter.
+  const copy = useMemo(() => kindredBirthCopy(locale), [locale])
 
   const value: Partial<BirthInfoValue> = {
     solarDate: draft.selfSolarDate || undefined,
@@ -128,6 +127,8 @@ export default function SelfBirthScreen() {
           copy={copy}
           searchCity={handleSearchCity}
           locale={locale}
+          requireTime
+          placeOptional
         />
       </View>
     </SafeAreaView>

@@ -18,21 +18,11 @@
  */
 
 import MaskedView from '@react-native-masked-view/masked-view'
-import { Canvas, Circle, RadialGradient, vec } from '@shopify/react-native-skia'
 import { InkBloomMask } from '@zhop/core-ui/motion'
-import { ricePaper } from '@zhop/hexastral-tokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  Easing,
-  interpolate,
-  runOnJS,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { runOnJS } from 'react-native-reanimated'
 
 import { type ChapterRef, ReadingReport } from './ReadingReport'
 
@@ -54,8 +44,6 @@ type Phase = 'cover' | 'wipe' | 'done' | 'closing'
 
 const OPEN_DURATION = 1600
 const CLOSE_DURATION = 700
-// Match InkBloomMask's internal easing so the glow front stays on the ink edge.
-const BLOOM_EASING = Easing.bezier(0.3, 0.45, 0.2, 1)
 
 function OverlayInner({
   onClose,
@@ -73,17 +61,10 @@ function OverlayInner({
   const origin = useMemo(() => ({ x: width / 2, y: height * 0.86 }), [width, height])
   const maxRadius = useMemo(() => Math.hypot(width, height) * 1.1, [width, height])
 
-  // Luminous ivory ink-front — a ring on the SAME radius + timing as the mask, so
-  // the 墨晕 reads as ink lit from within as it spreads. The white bloom mask is
-  // invisible on the dark report bg, so without this the reveal has no visible
-  // ink edge. Mirrors ReportReveal's dark-mode fix.
-  const edgeR = useSharedValue(0)
-  const edgeRadius = useDerivedValue(() => Math.max(1, edgeR.value))
-  const edgeGlowStyle = useAnimatedStyle(() => ({
-    // Full brightness while sweeping — on the void-black report bg this ring IS
-    // the visible 墨晕; anything dimmer disappears (2026-06 device feedback).
-    opacity: interpolate(edgeR.value / maxRadius, [0, 0.75, 1], [1, 0.85, 0]),
-  }))
+  // Report now sits on a 宣纸 (rice-paper) ground, so the bloom uncovers cream
+  // paper against the dark home — the organic mask edge IS the visible 墨晕.
+  // The earlier luminous-ivory ring workaround (added when the report itself
+  // was dark) is removed; with paper, ink and contrast happen naturally.
 
   // Short cover hold lets MaskedView + the Skia canvas mount and paint their
   // first (empty) frame before the bloom kicks in.
@@ -91,16 +72,6 @@ function OverlayInner({
     const id = setTimeout(() => setRevealPhase('wipe'), 90)
     return () => clearTimeout(id)
   }, [])
-
-  // Glow front rides the bloom edge: out to maxRadius on open, back to the
-  // origin on close (the ink collapses to where it started).
-  useEffect(() => {
-    if (revealPhase === 'wipe') {
-      edgeR.value = withTiming(maxRadius, { duration: OPEN_DURATION, easing: BLOOM_EASING })
-    } else if (revealPhase === 'closing') {
-      edgeR.value = withTiming(0, { duration: CLOSE_DURATION, easing: BLOOM_EASING })
-    }
-  }, [revealPhase, maxRadius, edgeR])
 
   const handleOpened = useCallback(() => setRevealPhase('done'), [])
   const handleCollapsed = useCallback(() => onClose(), [onClose])
@@ -152,7 +123,7 @@ function OverlayInner({
         >
           {/* Opacity gate during 'cover' guards against the first-frame MaskedView
               flash before the Skia mask establishes — once the mask is painting,
-              the report bloom inside the ink shape takes over. */}
+              the paper bloom inside the ink shape takes over. */}
           <View style={[S.content, revealPhase === 'cover' && S.coverHidden]}>
             <ReadingReport
               activeChapter={activeChapter}
@@ -161,27 +132,6 @@ function OverlayInner({
             />
           </View>
         </MaskedView>
-
-        {/* Luminous ivory ink-front, on top, riding the bloom edge (dark-mode legibility). */}
-        <Animated.View style={[StyleSheet.absoluteFill, edgeGlowStyle]} pointerEvents='none'>
-          <Canvas style={StyleSheet.absoluteFill}>
-            <Circle cx={origin.x} cy={origin.y} r={edgeRadius}>
-              <RadialGradient
-                c={vec(origin.x, origin.y)}
-                r={edgeRadius}
-                colors={[
-                  'rgba(245,240,232,0)',
-                  'rgba(245,240,232,0.12)',
-                  ricePaper.ivory,
-                  'rgba(245,240,232,0)',
-                ]}
-                // Wider luminous band (0.7→1 of the radius) so the spreading
-                // ink edge reads on black, with a faint inner wash behind it.
-                positions={[0, 0.7, 0.9, 1]}
-              />
-            </Circle>
-          </Canvas>
-        </Animated.View>
       </View>
     </GestureDetector>
   )

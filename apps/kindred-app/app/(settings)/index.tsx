@@ -1,20 +1,36 @@
 /**
- * Settings — email binding, Apple Sign In (recovery), sign out.
+ * Settings — email binding, Apple Sign In (recovery), sign out, plus the
+ * legal links (privacy / terms) the App Store requires and a daily-reading
+ * push toggle.
  */
 
 import { Card } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as AppleAuthentication from 'expo-apple-authentication'
+import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, Pressable, Switch, Text, View } from 'react-native'
+import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
+import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
 import { resetOnboarding } from '../index'
+
+// Privacy + Terms URLs — Apple App Store requires both to be reachable from
+// inside a signed-in surface. Hosted on the LLC corp site so the legal
+// document lives under our company entity, independent of the app brand.
+const LEGAL_BASE = 'https://hexastral.com'
+function legalUrl(path: '/privacy' | '/terms', locale: string): string {
+  // Locale prefix matches hexastral-web's [locale] segment. Default falls
+  // through to the English version when the user's locale isn't published.
+  const known = ['en', 'zh', 'tw', 'ja']
+  const seg = known.includes(locale) ? locale : 'en'
+  return `${LEGAL_BASE}/${seg}${path}`
+}
 
 type Status = 'idle' | 'pending' | 'linked' | 'recovered' | 'already_linked' | 'error'
 
@@ -35,12 +51,38 @@ export default function SettingsScreen() {
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [crossAppMemory, setCrossAppMemoryState] = useState(false)
   const [crossAppBusy, setCrossAppBusy] = useState(false)
+  const [dailyPush, setDailyPushState] = useState(false)
+  const [dailyPushBusy, setDailyPushBusy] = useState(false)
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
       AppleAuthentication.isAvailableAsync().then(setAppleAvailable)
     }
   }, [])
+
+  useEffect(() => {
+    void getDailyPushEnabled().then(setDailyPushState)
+  }, [])
+
+  const handleDailyPushToggle = async (value: boolean) => {
+    if (dailyPushBusy) return
+    setDailyPushBusy(true)
+    setDailyPushState(value)
+    try {
+      await setDailyPushEnabled(value)
+    } catch {
+      setDailyPushState(!value)
+    } finally {
+      setDailyPushBusy(false)
+    }
+  }
+
+  const openLegal = useCallback(
+    (path: '/privacy' | '/terms') => {
+      void Linking.openURL(legalUrl(path, locale))
+    },
+    [locale]
+  )
 
   useEffect(() => {
     void refreshProfile()
@@ -70,8 +112,19 @@ export default function SettingsScreen() {
     setStatus('pending')
     setErrorMsg(null)
     try {
+      // Request EMAIL alongside FULL_NAME — Apple sends the email on the
+      // FIRST authorization per device (and on every authorization for
+      // non-relay addresses). The hexastral-api apple-link endpoint already
+      // persists it when present
+      // (apps/hexastral-api/src/routes/onboarding/apple-link.ts:156); without
+      // this scope we were silently dropping the email even for users who
+      // signed in. With it the bound email survives a device wipe and the
+      // user gets a real recovery handle.
       const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME],
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
       })
       if (!credential.identityToken) throw new Error('Apple returned no identity token')
       const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
@@ -116,24 +169,32 @@ export default function SettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       <View
         style={{
-          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           paddingHorizontal: kindredSpacing.screenH,
           paddingTop: kindredSpacing.xl,
         }}
       >
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text style={[kindredType.heading, { color: kindredDark.textMuted }]}>←</Text>
-          </Pressable>
-          <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
-            {t(locale, 'settings.title')}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Text style={[kindredType.heading, { color: kindredDark.textMuted }]}>←</Text>
+        </Pressable>
+        <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
+          {t(locale, 'settings.title')}
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-        <View style={{ height: kindredSpacing.xl }} />
+      <ScrollView
+        // Settings is now long enough (email + account + notifications + privacy +
+        // legal + sign-out + DEV tools) that it needs to scroll on smaller phones.
+        contentContainerStyle={{
+          paddingHorizontal: kindredSpacing.screenH,
+          paddingTop: kindredSpacing.xl,
+          paddingBottom: kindredSpacing.xxl,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
 
         <Text
           style={[
@@ -258,7 +319,95 @@ export default function SettingsScreen() {
           </Text>
         </Card>
 
-        <View style={{ flex: 1 }} />
+        <View style={{ height: kindredSpacing.lg }} />
+
+        {/* Notifications — daily reading nudge. Delivery is server-driven
+            (svc-notify cron), so the toggle persists the user's preference
+            and the API reads it on profile sync. Off by default to avoid
+            unsolicited push (App Store guideline). */}
+        <Text
+          style={[
+            kindredType.seal,
+            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
+          ]}
+        >
+          {t(locale, 'settings.notifications.section')}
+        </Text>
+
+        <Card
+          variant='outlined'
+          padding='lg'
+          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.sm }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: kindredSpacing.md,
+            }}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text, flex: 1 }]}>
+              {t(locale, 'settings.dailyPush.label')}
+            </Text>
+            <Switch
+              value={dailyPush}
+              onValueChange={handleDailyPushToggle}
+              disabled={dailyPushBusy}
+            />
+          </View>
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+            {t(locale, 'settings.dailyPush.hint')}
+          </Text>
+        </Card>
+
+        <View style={{ height: kindredSpacing.lg }} />
+
+        {/* Legal — App Store requires Privacy + Terms to be reachable from
+            the signed-in surface. We open the hosted versions on hexastral.com
+            so the documents stay versioned in one place. */}
+        <Text
+          style={[
+            kindredType.seal,
+            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
+          ]}
+        >
+          {t(locale, 'settings.legal.section')}
+        </Text>
+
+        <Card
+          variant='outlined'
+          padding='lg'
+          style={{ backgroundColor: kindredDark.card, gap: 0 }}
+        >
+          <Pressable
+            onPress={() => openLegal('/privacy')}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {t(locale, 'settings.legal.privacy')}
+            </Text>
+          </Pressable>
+          <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
+          <Pressable
+            onPress={() => openLegal('/terms')}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {t(locale, 'settings.legal.terms')}
+            </Text>
+          </Pressable>
+        </Card>
+
+        <View style={{ height: kindredSpacing.xxl }} />
 
         <Pressable onPress={handleSignOut} hitSlop={12} style={{ alignSelf: 'center' }}>
           <Text
@@ -302,9 +451,7 @@ export default function SettingsScreen() {
             </Text>
           </Pressable>
         ) : null}
-
-        <View style={{ height: kindredSpacing.xl }} />
-      </View>
+      </ScrollView>
 
       {userId ? (
         <EmailVerifyModal

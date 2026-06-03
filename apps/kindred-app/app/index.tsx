@@ -13,9 +13,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
-import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -23,10 +21,10 @@ import { View } from 'react-native'
 const ONBOARDING_DONE_KEY = 'yuan_onboarding_complete_v1'
 const INTRO_SEEN_KEY = 'yuan_intro_seen_v1'
 
-type EntryStatus = 'loading' | 'intro' | 'welcome' | 'returning'
+type EntryStatus = 'pending' | 'intro' | 'welcome' | 'returning'
 
 export default function EntryScreen() {
-  const [status, setStatus] = useState<EntryStatus>('loading')
+  const [status, setStatus] = useState<EntryStatus>('pending')
 
   useEffect(() => {
     let cancelled = false
@@ -54,19 +52,13 @@ export default function EntryScreen() {
     }
   }, [])
 
-  if (status === 'loading') {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: kindredDark.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
-      </View>
-    )
+  // While the AsyncStorage probes resolve, paint the kindred bg only —
+  // no loader spinner. The check completes in a frame or two; a moon-phase
+  // loader before the intro would compete with the intro's own moon
+  // animation and break the first-launch beat (intro → onboarding → home).
+  // Returning users land on the splash inside (reading) instead.
+  if (status === 'pending') {
+    return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
   }
   if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
   if (status === 'welcome') return <Redirect href='/(onboarding)/pair-input' />

@@ -22,6 +22,7 @@ export function BirthTimeStep({
   copy,
   step,
   totalSteps,
+  requireTime,
 }: BirthStepProps) {
   const { colors, spacing } = useTheme()
   const initial = value.timeIndex ?? null
@@ -34,11 +35,16 @@ export function BirthTimeStep({
     onNext()
   }
 
-  const handleSkip = () => {
-    Haptics.selectionAsync()
-    onChange({ timeIndex: null })
-    onNext()
-  }
+  // Skip is only available when the host hasn't marked time as required.
+  // For apps that read the hour pillar (kindred / yuan / numerology / cycle),
+  // a null timeIndex breaks the chart; they pass `requireTime` to lock this.
+  const handleSkip = requireTime
+    ? null
+    : () => {
+        Haptics.selectionAsync()
+        onChange({ timeIndex: null })
+        onNext()
+      }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -70,10 +76,19 @@ export function BirthTimeStep({
 
         <View style={{ flex: 1, minHeight: spacing.lg }} />
 
-        <View style={[styles.footer, { marginTop: spacing.xl }]}>
-          <Pressable onPress={handleSkip} hitSlop={12}>
-            <Text style={[styles.skip, { color: colors.secondary }]}>{copy.timeSkipLabel}</Text>
-          </Pressable>
+        <View
+          style={[
+            styles.footer,
+            // Without a skip affordance the CTA aligns right (no left sibling
+            // to balance against), which matches every other required step.
+            { marginTop: spacing.xl, justifyContent: handleSkip ? 'space-between' : 'flex-end' },
+          ]}
+        >
+          {handleSkip ? (
+            <Pressable onPress={handleSkip} hitSlop={12}>
+              <Text style={[styles.skip, { color: colors.secondary }]}>{copy.timeSkipLabel}</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={handleNext}
             hitSlop={12}

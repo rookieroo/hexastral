@@ -29,6 +29,7 @@ export function BirthPlaceStep({
   totalSteps,
   searchCity,
   topCities,
+  placeOptional,
 }: Props) {
   const { colors, spacing } = useTheme()
 
@@ -64,6 +65,18 @@ export function BirthPlaceStep({
     onNext()
   }
 
+  // Skip surfaces only when the host marks place as optional. Clearing the
+  // place fields lets the chart engine fall back to the device timezone;
+  // the subtitle is where we tell the user that 真太阳时 correction is lost.
+  const handleSkip = placeOptional
+    ? () => {
+        Haptics.selectionAsync()
+        onChange({ city: undefined, lat: undefined, lng: undefined, timezone: undefined })
+        onNext()
+      }
+    : null
+  const skipLabel = copy.placeSkipLabel ?? copy.timeSkipLabel
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView
@@ -96,7 +109,17 @@ export function BirthPlaceStep({
 
         <View style={{ flex: 1, minHeight: spacing.lg }} />
 
-        <View style={[styles.footer, { marginTop: spacing.xl }]}>
+        <View
+          style={[
+            styles.footer,
+            { marginTop: spacing.xl, justifyContent: handleSkip ? 'space-between' : 'flex-end' },
+          ]}
+        >
+          {handleSkip ? (
+            <Pressable onPress={handleSkip} hitSlop={12}>
+              <Text style={[styles.skip, { color: colors.secondary }]}>{skipLabel}</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={handleNext}
             hitSlop={12}
@@ -127,7 +150,12 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  skip: {
+    fontSize: 13,
+    fontWeight: '300',
+    textDecorationLine: 'underline',
   },
   cta: {
     fontSize: 14,

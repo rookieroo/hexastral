@@ -6,17 +6,13 @@
  * /reveal — no double-review. Reveal then runs the solo create + ceremony.
  */
 
-import {
-  BirthInfoForm,
-  type BirthInfoValue,
-  birthInfoCopyForLocale,
-  type CityRecord,
-} from '@zhop/core-ui'
+import { BirthInfoForm, type BirthInfoValue, type CityRecord } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { kindredBirthCopy } from '@/lib/birthInfoCopy'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { resolveLocale } from '@/lib/i18n'
 import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
@@ -33,7 +29,7 @@ export default function OtherBirthScreen() {
   const locale = useMemo(() => resolveLocale(), [])
   const draft = useDraft()
   const lang = useMemo(() => localeToLang(locale), [locale])
-  const copy = useMemo(() => birthInfoCopyForLocale(locale), [locale])
+  const copy = useMemo(() => kindredBirthCopy(locale), [locale])
 
   const value: Partial<BirthInfoValue> = {
     solarDate: draft.otherSolarDate || undefined,
@@ -82,6 +78,8 @@ export default function OtherBirthScreen() {
           searchCity={handleSearchCity}
           locale={locale}
           skipSteps={['review']}
+          requireTime
+          placeOptional
         />
       </View>
     </SafeAreaView>
