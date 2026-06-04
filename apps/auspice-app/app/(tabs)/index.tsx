@@ -37,7 +37,12 @@ import { CultureTopicsGrid } from '@/components/culture/CultureTopicsGrid'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
 import { LiuyearBanner } from '@/components/LiuyearBanner'
-import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
+import {
+  type AuspiceDayPayload,
+  fetchAuspiceBootstrap,
+  fetchAuspiceDay,
+  primeFromBootstrap,
+} from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
@@ -81,15 +86,29 @@ export default function HomeScreen() {
   const [dayData, setDayData] = useState<AuspiceDayPayload | null>(null)
   const [dayLoading, setDayLoading] = useState(true)
   const [dayError, setDayError] = useState<string | null>(null)
+  // First load of the session uses /bootstrap (focused day + its month in ONE
+  // request) and seeds the month into the GET cache, so the CalendarStrip's own
+  // month fetch hits cache instead of a second round-trip. Later day-navigations
+  // use the plain day read (the month is already cached).
+  const primedRef = useRef(false)
   const loadDay = useCallback(() => {
     setDayLoading(true)
     setDayError(null)
     getAuspiceBirthDate()
-      .then((birthDate) => fetchAuspiceDay(selectedDay, birthDate))
+      .then((birthDate) => {
+        if (!primedRef.current) {
+          primedRef.current = true
+          return fetchAuspiceBootstrap(selectedDay, locale, birthDate).then((b) => {
+            primeFromBootstrap(b, selectedDay, locale, birthDate)
+            return b as AuspiceDayPayload
+          })
+        }
+        return fetchAuspiceDay(selectedDay, birthDate)
+      })
       .then((d) => setDayData(d))
       .catch((e: unknown) => setDayError(e instanceof Error ? e.message : String(e)))
       .finally(() => setDayLoading(false))
-  }, [selectedDay])
+  }, [selectedDay, locale])
   // Refetch on focus AND on selectedDay change. Focus covers the
   // edit-birth-in-Me → return-to-home flow so the personalization overlay
   // updates without the user pulling-to-refresh.

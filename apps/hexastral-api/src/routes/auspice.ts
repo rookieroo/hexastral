@@ -30,11 +30,11 @@ import {
   STEM_WUXING,
   solarToLunar,
 } from '@zhop/astro-core'
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
 import type { AppEnv } from '../infra-types'
-import { jsonOk } from '../lib/api-response'
+import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
 import { parseRcActiveEntitlements } from '../services/revenuecat'
 import {
@@ -475,20 +475,52 @@ function buildDay(ymd: Ymd, subject?: PersonalAlmanacSubject) {
 // `birthDate` (optional) drives the deterministic "对你而言" overlay. No userId / HMAC —
 // the endpoint is anonymous; the client passes its locally-held birth date.
 
+// ── Edge cache (Cloudflare Cache API) ──────────────────────────────────────
+// The almanac GET reads (/day · /month · /year-overview · /bootstrap) are pure,
+// deterministic functions of their query params (date · birthDate · year · month
+// · locale), so the request URL is a complete cache key. We cache the rendered
+// JSON at the CF colo to skip recompute on repeat/burst requests (a launch
+// fan-out, or many devices opening the same locale's month).
+//
+// TTL is deliberately SHORT: the data is immutable per-key, but a code deploy
+// that changes almanac logic must not be masked by a long edge TTL — 10 min lets
+// a fix propagate fast (this is exactly the prod-staleness footgun we hit during
+// this build). Dev builds send `Cache-Control: no-cache` and bypass the cache
+// entirely, so on-device testing always exercises fresh worker code.
+const ALMANAC_EDGE_TTL = 600
+
+async function edgeCachedJson(c: Context<AppEnv>, build: () => unknown): Promise<Response> {
+  const wantsFresh = (c.req.header('cache-control') ?? '').includes('no-cache')
+  const cache = caches.default
+  const cacheKey = new Request(new URL(c.req.url).toString(), { method: 'GET' })
+  if (!wantsFresh) {
+    const hit = await cache.match(cacheKey)
+    if (hit) return hit
+  }
+  const res = new Response(JSON.stringify(ok(build())), {
+    status: 200,
+    headers: {
+      'content-type': 'application/json; charset=UTF-8',
+      'cache-control': `public, max-age=${ALMANAC_EDGE_TTL}`,
+    },
+  })
+  if (!wantsFresh) c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()))
+  return res
+}
+
 auspiceRoutes.get('/day', (c) => {
   const dateParam = c.req.query('date')
   const ymd = dateParam ? parseYmd(dateParam) : dateToYmd(new Date())
   const birthDate = c.req.query('birthDate')
   const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
 
-  const { day, personalization } = buildDay(ymd, subject)
-
-  return jsonOk(c, {
-    date: fmtUtc(ymdToDate(ymd)),
-    day,
-    personalization,
-    explanation: null,
-  })
+  const build = () => {
+    const { day, personalization } = buildDay(ymd, subject)
+    return { date: fmtUtc(ymdToDate(ymd)), day, personalization, explanation: null }
+  }
+  // Only edge-cache an explicit `date` — the no-date "today" shares a key across
+  // the midnight boundary and would go stale, so it always computes fresh.
+  return dateParam ? edgeCachedJson(c, build) : jsonOk(c, build())
 })
 
 // ── GET /calendar.ics — Apple Calendar / iCal subscription feed ────────────
@@ -824,7 +856,47 @@ auspiceRoutes.get('/month', (c) => {
   if (!parsed.success) {
     throw new HTTPException(400, { message: 'invalid year/month/locale' })
   }
-  return jsonOk(c, buildMonth(parsed.data.year, parsed.data.month, parsed.data.locale))
+  const { year, month, locale } = parsed.data
+  return edgeCachedJson(c, () => buildMonth(year, month, locale))
+})
+
+// ── GET /bootstrap — one-shot launch payload (focused day + its month) ──────
+//
+// Collapses the today-tab cold start — which otherwise fires a separate /day and
+// /month (plus the client's per-strip-day fan-out) — into ONE request. Same
+// deterministic-edge-cache as the others. `date` is REQUIRED so the cache key is
+// unambiguous + stable across midnight; `locale` drives the month grid's holiday
+// overlay; `birthDate` (optional) adds the 对你而言 overlay to the focused day.
+// The month grid already carries per-cell data, so the CalendarStrip can source
+// its cells from `month` instead of N× /day.
+const bootstrapQuerySchema = z.object({
+  date: z.string().regex(DATE_RE, 'date must be YYYY-MM-DD'),
+  birthDate: z.string().regex(DATE_RE).optional(),
+  locale: z.enum(['zh-Hans', 'zh-Hant', 'ja', 'en']).default('en'),
+})
+
+auspiceRoutes.get('/bootstrap', (c) => {
+  const parsed = bootstrapQuerySchema.safeParse({
+    date: c.req.query('date'),
+    birthDate: c.req.query('birthDate'),
+    locale: c.req.query('locale'),
+  })
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: 'invalid date/birthDate/locale' })
+  }
+  const { date, birthDate, locale } = parsed.data
+  const ymd = parseYmd(date)
+  const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
+  return edgeCachedJson(c, () => {
+    const { day, personalization } = buildDay(ymd, subject)
+    return {
+      date: fmtUtc(ymdToDate(ymd)),
+      day,
+      personalization,
+      explanation: null,
+      month: buildMonth(ymd.year, ymd.month, locale),
+    }
+  })
 })
 
 // ── GET /year-overview?year= — Sprint 3 节庆 page (24 节气 + 8 festivals) ──
@@ -900,7 +972,8 @@ auspiceRoutes.get('/year-overview', (c) => {
   if (!parsed.success) {
     throw new HTTPException(400, { message: 'invalid year' })
   }
-  return jsonOk(c, buildYearOverview(parsed.data.year))
+  const { year } = parsed.data
+  return edgeCachedJson(c, () => buildYearOverview(year))
 })
 
 // ── GET /search?event=&from=&to= — reverse 择日 ───────────────

@@ -297,7 +297,11 @@ interface Envelope<T> {
 
 async function getJsonRaw<T>(path: string): Promise<T> {
   const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
-    headers: { accept: 'application/json' },
+    // __DEV__ bypasses the server edge cache so on-device testing always hits
+    // fresh worker code (prod builds let the colo cache deterministic reads).
+    headers: __DEV__
+      ? { accept: 'application/json', 'cache-control': 'no-cache' }
+      : { accept: 'application/json' },
   })
   const body = (await res.json().catch(() => null)) as Envelope<T> | null
   if (!res.ok || !body || body.ok !== true || body.data === undefined) {
@@ -386,6 +390,52 @@ export function fetchAuspiceMonth(
   const localeParam = locale ? `&locale=${encodeURIComponent(locale)}` : ''
   return getJson<AuspiceMonthPayload>(
     `/api/auspice/month?year=${year}&month=${month}${localeParam}`
+  )
+}
+
+/** Combined launch payload: the focused day detail + its month grid in one read. */
+export interface AuspiceBootstrapPayload extends AuspiceDayPayload {
+  month: AuspiceMonthPayload
+}
+
+/**
+ * One-shot cold-start read — the focused day + its month grid in a SINGLE request,
+ * replacing the separate fetchAuspiceDay + fetchAuspiceMonth round-trips on launch.
+ * Edge-cached server-side; the client cache + in-flight dedup still layer on top.
+ * The CalendarStrip can source its cells from `month` instead of N× per-day fetches.
+ */
+export function fetchAuspiceBootstrap(
+  date: string,
+  locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en',
+  birthDate?: string
+): Promise<AuspiceBootstrapPayload> {
+  const params = new URLSearchParams({ date, locale })
+  if (birthDate) params.set('birthDate', birthDate)
+  return getJson<AuspiceBootstrapPayload>(`/api/auspice/bootstrap?${params.toString()}`)
+}
+
+/**
+ * Seed the per-endpoint GET caches from a bootstrap payload so the today screen's
+ * own `fetchAuspiceDay(date, birthDate)` and the CalendarStrip's
+ * `fetchAuspiceMonth(year, month, locale)` resolve from cache with NO extra
+ * network. Keys are reconstructed in the SAME format those fetchers produce
+ * (kept here, beside them, so they can't drift); a mismatch degrades to a normal
+ * fetch, never an error.
+ */
+export function primeFromBootstrap(
+  b: AuspiceBootstrapPayload,
+  date: string,
+  locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en',
+  birthDate?: string
+): void {
+  const { month, ...day } = b
+  const dayParams = new URLSearchParams()
+  dayParams.set('date', date)
+  if (birthDate) dayParams.set('birthDate', birthDate)
+  getCache.set(`/api/auspice/day?${dayParams.toString()}`, { at: Date.now(), data: day })
+  getCache.set(
+    `/api/auspice/month?year=${month.year}&month=${month.month}&locale=${encodeURIComponent(locale)}`,
+    { at: Date.now(), data: month }
   )
 }
 
