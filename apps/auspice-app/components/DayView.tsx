@@ -37,17 +37,9 @@ export function DayView({ payload }: { payload: AuspiceDayPayload }) {
   const { t, locale } = useStrings()
   const router = useRouter()
   const { date, day } = payload
-  // Slim 黄历 header bits — replaces the removed DailyCard hero on home (that
-  // card is really a widget/watch preview, not home content). 干支日 · 农历 · 年.
-  const ld = day.lunarDate
-  const yg = day.yearGanZhi
-  const dayGanzhiLabel = `${day.ganZhi}${locale.startsWith('zh') ? '日' : ''}`
-  const dayHeaderSub = [
-    ld ? (locale === 'en' ? `Lunar ${ld.month}/${ld.day}` : `${ld.monthName}${ld.dayName}`) : '',
-    yg && locale !== 'en' ? `${yg.stem}${yg.branch}年` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // 干支日 · 农历 · 年干支 now lives ABOVE the calendar (see app/(tabs)/index.tsx,
+  // DayIdentityHeader) per 2026-06 layout feedback — the calendar's bottom half
+  // leads with 宜忌, the 重点 of a 黄历. DayView itself starts at 宜忌.
   const [explainField, setExplainField] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
   // Pro gating (Sprint 2 chunk 8). `universe_pro` mirrors into `auspice_pro`
@@ -58,21 +50,9 @@ export function DayView({ payload }: { payload: AuspiceDayPayload }) {
 
   return (
     <View style={{ gap: spacing.xl }}>
-      {/* Slim 黄历 identity — 干支日 · 农历 · 年干支. The bulky hero card moved out
-          (it reads as a widget/watch preview, not home content; 2026-06 IA feedback). */}
-      <View
-        style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: spacing.sm }}
-      >
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}>
-          {dayGanzhiLabel}
-        </Text>
-        {dayHeaderSub ? (
-          <Text style={{ color: colors.dim, fontSize: 13 }}>{dayHeaderSub}</Text>
-        ) : null}
-      </View>
-
       {/* 宜忌 — table-stakes for a 黄历, so it leads the day detail right under the
-          calendar (the 重点), above 对你而言. (2026-06 IA feedback.) */}
+          calendar (the 重点), above 对你而言. The day identity (干支日 · 农历 · 年)
+          moved above the calendar. (2026-06 IA feedback.) */}
       <View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
       </View>

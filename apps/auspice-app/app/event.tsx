@@ -1,26 +1,23 @@
 /**
- * Reverse 择日 — pick an event, get the top-3 ranked days in the next 30 days
- * with reasoning. Two scoring modes:
+ * Reverse 择日 — pick an event, get the top-3 ranked days with reasoning.
  *
- *   - Generic (`GET /api/auspice/search`) — verb-match against the day's 宜/忌
- *     plus 28-mansion + 五行 nudge. Free for all 10 events.
- *   - Specialized (`GET /api/auspice/{wedding,move-in,business,travel}`,
- *     Sprint 2 chunk 7) — Pro only; adds 建除十二神 officer boosts and tags
- *     reasoning with "相宜 / 相避" suffixes.
+ * Scoring (2026-06 flip): the 4 "specialized" events (嫁娶 / 入宅 / 开市 / 出行)
+ * apply 建除十二神 officer boosts. That activity-tuned scoring is now FREE for
+ * everyone — the server routes are anonymous + deterministic, so there's no
+ * reason to wall the better answer. What Pro buys is REACH: Free always searches
+ * the next 30 days (top 3); Pro picks any window up to ~3 months. That's the one
+ * wall on this screen, and the paywall says exactly that.
  *
- * When the user picks one of the 4 specialized events, the screen calls
- * `fetchAuspiceSpecialized` if they're Pro and falls back to generic + a
- * paywall hint otherwise. Intent routes the cross-app funnel: wedding →
- * Kindred; everything else → Fēng. Cross-promo is allowed here per ADR-0019
- * peer-promote (the user has stated an intent; this is contextual, not a
- * home-screen ad slot).
+ * Intent routes the cross-app funnel: wedding → Kindred; everything else → Fēng
+ * (ADR-0019 peer-promote — the user stated an intent; this is contextual).
  */
 
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
@@ -36,13 +33,22 @@ import {
 import { useStrings } from '@/lib/i18n-context'
 import { scheduleRetroCheck } from '@/lib/push'
 
+/** Free window + server cap (mirror auspice.ts MAX_SEARCH_SPAN_DAYS). */
+const FREE_WINDOW_DAYS = 30
+const MAX_SPAN_DAYS = 92
+
 function fmt(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${day}`
 }
+function addDays(d: Date, n: number): Date {
+  const next = new Date(d)
+  next.setDate(next.getDate() + n)
+  return next
+}
 
-/** Events the 4 specialized Pro routes handle. Must mirror server (Sprint 2 #7). */
+/** Events the 4 specialized routes handle. Must mirror server (Sprint 2 #7). */
 const SPECIALIZED_EVENT_SET: ReadonlySet<AuspiceEvent> = new Set<AuspiceEvent>([
   'wedding',
   'move-in',
@@ -64,24 +70,34 @@ export default function EventScreen() {
   const [result, setResult] = useState<AuspiceSearchPayload | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
 
-  // Pro split — `auspice_pro` covers `universe_pro` purchases via the local
-  // mirror in `snapshotFromCustomerInfo`, so this single check covers both.
+  // Pro date-range (Pro-only). Free is pinned to the next 30 days.
+  const [fromDate, setFromDate] = useState(() => new Date())
+  const [toDate, setToDate] = useState(() => addDays(new Date(), FREE_WINDOW_DAYS))
+
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const specialized = isSpecialized(event)
-  const useSpecializedScoring = specialized && isPro
 
   const run = () => {
-    const today = new Date()
-    const to = new Date(today)
-    to.setDate(to.getDate() + 30)
+    // Free → fixed next-30-days; Pro → the chosen window, clamped to the server cap.
+    let from: Date
+    let to: Date
+    if (isPro) {
+      from = fromDate
+      to = toDate < from ? new Date(from) : toDate
+      const max = addDays(from, MAX_SPAN_DAYS - 1)
+      if (to > max) to = max
+    } else {
+      from = new Date()
+      to = addDays(from, FREE_WINDOW_DAYS)
+    }
     setLoading(true)
     setError(null)
     setResult(null)
-    // Pro + a specialized event → activity-tuned scoring; otherwise generic.
-    const fromIso = fmt(today)
+    const fromIso = fmt(from)
     const toIso = fmt(to)
-    const promise = useSpecializedScoring
+    // Specialized scoring is free now — only the window is gated.
+    const promise = specialized
       ? fetchAuspiceSpecialized(event as SpecializedCycleEvent, fromIso, toIso)
       : searchAuspiceDays(event, fromIso, toIso)
     promise
@@ -94,9 +110,7 @@ export default function EventScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* No back button + no h1 title — minimalist drill-in (2026-06 chrome
-          cleanup). iOS edge-swipe-back + Android system-back handle nav.
-          The event-picker chips below ARE the page identity. */}
+      {/* Headerless drill-in (ADR-0018). The event-picker chips are the page identity. */}
       <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}>
         <View>
           <Text
@@ -129,52 +143,78 @@ export default function EventScreen() {
           </View>
         </View>
 
-        {/* Specialized-scoring indicator (Pro) or Pro upsell pill (Free) —
-            only rendered for the 4 specialized events. Stays out of the way
-            when the user picks a generic event like 签约/动土/出葬. */}
+        {/* Specialized-scoring indicator — shown for the 4 specialized events.
+            It's on for everyone now (free included), so no Pro wall lives here. */}
         {specialized ? (
-          isPro ? (
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                paddingHorizontal: spacing.md,
-                paddingVertical: 6,
-                borderRadius: 14,
-                borderWidth: 0.5,
-                borderColor: colors.accent,
-                backgroundColor: colors.accentGhost,
-              }}
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              paddingHorizontal: spacing.md,
+              paddingVertical: 6,
+              borderRadius: 14,
+              borderWidth: 0.5,
+              borderColor: colors.accent,
+              backgroundColor: colors.accentGhost,
+            }}
+          >
+            <Text
+              style={{ color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
             >
-              <Text
-                style={{ color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
-              >
-                {t.specializedActive}
-              </Text>
+              {t.specializedActive}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Date range — the one Pro wall on this screen. */}
+        <View style={{ gap: spacing.sm }}>
+          <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>
+            {t.eventRangeSection}
+          </Text>
+          {isPro ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <DateTimePicker
+                value={fromDate}
+                mode='date'
+                display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                accentColor={colors.accent}
+                onChange={(_e, d) => {
+                  if (d) setFromDate(d)
+                }}
+              />
+              <Text style={{ color: colors.dim, fontSize: 16 }}>→</Text>
+              <DateTimePicker
+                value={toDate}
+                mode='date'
+                display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                accentColor={colors.accent}
+                minimumDate={fromDate}
+                maximumDate={addDays(fromDate, MAX_SPAN_DAYS - 1)}
+                onChange={(_e, d) => {
+                  if (d) setToDate(d)
+                }}
+              />
             </View>
           ) : (
             <Pressable
               onPress={() => setPaywallOpen(true)}
-              hitSlop={6}
               accessibilityRole='button'
-              accessibilityLabel={t.specializedUpsell}
+              accessibilityLabel={t.eventRangeUpsell}
               style={{
-                alignSelf: 'flex-start',
-                paddingHorizontal: spacing.md,
-                paddingVertical: 6,
-                borderRadius: 14,
-                borderWidth: 0.5,
-                borderColor: colors.accent,
-                backgroundColor: colors.accentGhost,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
               }}
             >
+              <Text style={{ color: colors.text, fontSize: 14 }}>{t.eventRangeFreeNote}</Text>
               <Text
                 style={{ color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
               >
-                {t.specializedUpsell}
+                {t.eventRangeUpsell}
               </Text>
             </Pressable>
-          )
-        ) : null}
+          )}
+        </View>
 
         <Button variant='primary' fullWidth onPress={run}>
           {t.search}
@@ -198,14 +238,9 @@ export default function EventScreen() {
                 <Pressable
                   key={r.date}
                   onPress={() => {
-                    // Picked a 择日 day → nudge 7 days later to ask how it went (C.5.2).
                     scheduleRetroCheck({ date: r.date, eventLabel: t.events[event], locale }).catch(
                       () => {}
                     )
-                    // /day/[date] route was consolidated into home (Sprint 3
-                    // chunk 7 IA pivot). Deep-link to home with ?day param;
-                    // home reads it via useLocalSearchParams and selects the
-                    // day in the calendar grid below the strip.
                     router.push({ pathname: '/', params: { day: r.date } })
                   }}
                   style={{
