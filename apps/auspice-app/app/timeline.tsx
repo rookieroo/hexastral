@@ -104,7 +104,12 @@ export default function TimelineScreen() {
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
-  const { shotRef, capturing, share: shareImage } = useImageShare()
+  // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
+  // baking it ahead of the tap makes Share feel instant.
+  const { shotRef, capturing, share: shareImage } = useImageShare({
+    prewarm: state.kind === 'data',
+    warmKey: state.kind === 'data' ? 'ready' : 'pending',
+  })
 
   const load = useCallback(() => {
     setState({ kind: 'loading' })

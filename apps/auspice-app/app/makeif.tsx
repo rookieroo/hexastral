@@ -283,7 +283,12 @@ function Sandbox({
   const [acked, setAcked] = useState(false)
   const [customEvent, setCustomEvent] = useState('')
   // Image share: capture the whole 假如 graph (mainline + branches) to a PNG.
-  const { shotRef, capturing, share: shareImage } = useImageShare()
+  // Pre-warm once there's a fork to share, re-capturing as forks are added, so the
+  // Share tap hands off an already-rendered PNG instead of waiting on Skia.
+  const { shotRef, capturing, share: shareImage } = useImageShare({
+    prewarm: branches.length > 0,
+    warmKey: branches.length,
+  })
 
   useEffect(() => {
     AsyncStorage.getItem(ACK_KEY)
