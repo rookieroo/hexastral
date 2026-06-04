@@ -17,7 +17,7 @@ import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { RotateCw, X } from 'lucide-react-native'
+import { RotateCw, Share2, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -32,8 +32,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { MakeIfGraph } from '@/components/MakeIfGraph'
-import { fetchMakeIfNarratives, fetchTimeline, type TimelinePayload } from '@/lib/api'
+import {
+  deleteMakeifFork,
+  fetchMakeIfNarratives,
+  fetchTimeline,
+  listMakeifForks,
+  saveMakeifFork,
+  type TimelinePayload,
+} from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceDeviceId } from '@/lib/device'
 import { useStrings } from '@/lib/i18n-context'
 import {
   buildInteractiveModel,
@@ -43,6 +51,7 @@ import {
   makeIfInteractiveCopyForLocale,
   makeIfTeaser,
 } from '@/lib/makeIfBranches'
+import { shareReading } from '@/lib/share'
 
 const ACK_KEY = 'auspice.makeif.disclaimer.v1'
 const MAX_FORKS = 4
@@ -275,6 +284,49 @@ function Sandbox({
       .catch(() => {})
   }, [])
 
+  // Stable anonymous device id — scopes the user's persisted forks.
+  const [deviceId, setDeviceId] = useState<string | null>(null)
+  useEffect(() => {
+    getAuspiceDeviceId()
+      .then(setDeviceId)
+      .catch(() => {})
+  }, [])
+
+  // Hydrate saved forks (D1) once the device id is ready, so a returning user
+  // sees their branches + narratives instead of an empty sandbox. Runs once per
+  // (device · profile) — deps are primitives so a new `birth` ref won't re-load
+  // and clobber forks created this session.
+  useEffect(() => {
+    if (!deviceId) return
+    let cancelled = false
+    listMakeifForks({
+      deviceId,
+      birthDate: birth.birthDate,
+      birthHour: birth.birthHour,
+      gender: birth.gender,
+    })
+      .then((r) => {
+        if (cancelled || r.forks.length === 0) return
+        const loaded = r.forks.map((f) => ({
+          ...buildUserBranch({
+            id: f.id,
+            event: f.event,
+            divergeAtAge: f.divergeAtAge,
+            mergeAtAge: f.mergeAtAge,
+            endAge: model.endAge,
+            isPast: f.isPast,
+          }),
+          outcome: f.narrative,
+        }))
+        setBranches(loaded.slice(-MAX_FORKS))
+        setStatus(Object.fromEntries(loaded.map((b) => [b.id, 'done' as const])))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [deviceId, birth.birthDate, birth.birthHour, birth.gender, model.endAge])
+
   const combined = useMemo(() => ({ ...model, branches }), [model, branches])
 
   // Fetch (or re-fetch) a fork's narrative, tracking per-fork status so the user
@@ -312,6 +364,24 @@ function Sandbox({
               prev.map((b) => (b.id === fork.id ? { ...b, outcome: narrative } : b))
             )
             setStatus((s) => ({ ...s, [fork.id]: 'done' }))
+            // Persist so the fork survives an app restart (D1, device-scoped).
+            if (deviceId) {
+              saveMakeifFork({
+                deviceId,
+                birthDate: birth.birthDate,
+                birthHour: birth.birthHour,
+                gender: birth.gender,
+                id: fork.id,
+                label: fork.label,
+                event: fork.label,
+                divergeAtAge: fork.divergeAtAge,
+                mergeAtAge: fork.mergeAtAge,
+                isPast: fork.isPast ?? false,
+                realPillar,
+                narrative,
+                locale,
+              }).catch(() => {})
+            }
           } else {
             // No prose: 'template' = the daily LLM allowance is used up; else a
             // generation/parse failure.
@@ -323,7 +393,7 @@ function Sandbox({
         })
         .catch(() => setStatus((s) => ({ ...s, [fork.id]: 'error' })))
     },
-    [birth, locale, payload]
+    [birth, locale, payload, deviceId]
   )
 
   const onNodeTap = (age: number) => {
@@ -372,6 +442,7 @@ function Sandbox({
       delete next[id]
       return next
     })
+    if (deviceId) deleteMakeifFork(id, deviceId).catch(() => {})
   }
 
   const forkIsPast = forkAge != null && currentAge != null && forkAge < currentAge
@@ -423,6 +494,20 @@ function Sandbox({
                   <Pressable onPress={() => runFork(b)} hitSlop={8} accessibilityRole='button'>
                     <RotateCw size={15} color={colors.dim} strokeWidth={1.6} />
                   </Pressable>
+                  {b.outcome ? (
+                    <Pressable
+                      onPress={() =>
+                        shareReading(
+                          `${ic.forkTitle(b.divergeAtAge, !!b.isPast)} · ${b.label}\n${b.outcome}`,
+                          locale
+                        )
+                      }
+                      hitSlop={8}
+                      accessibilityRole='button'
+                    >
+                      <Share2 size={15} color={colors.dim} strokeWidth={1.6} />
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     onPress={() => deleteFork(b.id)}
                     hitSlop={8}

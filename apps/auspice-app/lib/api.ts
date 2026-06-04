@@ -562,7 +562,26 @@ export function fetchTimeline(args: {
   gender: 'M' | 'F'
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 }): Promise<TimelinePayload> {
-  return postJson<TimelinePayload>('/api/auspice/timeline', args)
+  // The timeline is read-only + deterministic from the birth profile, yet it's a
+  // POST (carries the profile in the body) so it skips the GET cache. LiuyearBanner
+  // re-fetches on every home focus — ~7 calls in one session in practice — so dedup
+  // + cache it by args here (reusing the GET cache store). A changed birthDate/
+  // locale re-keys; clearAuspiceGetCache() drops it on birth edit.
+  const key = `timeline:${args.birthDate}:${args.birthHour}:${args.gender}:${args.locale}`
+  const hit = getCache.get(key)
+  if (hit && Date.now() - hit.at < GET_TTL_MS) return Promise.resolve(hit.data as TimelinePayload)
+  const existing = getInflight.get(key)
+  if (existing) return existing as Promise<TimelinePayload>
+  const p = postJson<TimelinePayload>('/api/auspice/timeline', args)
+    .then((data) => {
+      getCache.set(key, { at: Date.now(), data })
+      return data
+    })
+    .finally(() => {
+      getInflight.delete(key)
+    })
+  getInflight.set(key, p)
+  return p
 }
 
 /** The Pro/lazy LLM 深度解读 (C.4). `source` tells the UI if it degraded to template. */
@@ -621,4 +640,62 @@ export function fetchMakeIfNarratives(params: {
 }): Promise<AuspiceMakeIfResult> {
   // DEV builds bypass the server's per-subject daily rate limit (prod sends false).
   return postJson<AuspiceMakeIfResult>('/api/auspice/makeif', { ...params, dev: __DEV__ })
+}
+
+// ── make-if forks persistence (D1, device-scoped) ──────────────────────────
+
+/** A persisted make-if fork as returned by the list endpoint. */
+export interface MakeifForkRow {
+  id: string
+  label: string
+  event: string
+  divergeAtAge: number
+  mergeAtAge: number | null
+  isPast: boolean
+  realPillar: string | null
+  narrative: string
+  locale: string
+}
+
+export function saveMakeifFork(params: {
+  deviceId: string
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+  id: string
+  label: string
+  event: string
+  divergeAtAge: number
+  mergeAtAge: number | null
+  isPast: boolean
+  realPillar?: string
+  narrative: string
+  locale: string
+}): Promise<{ saved: boolean }> {
+  return postJson('/api/auspice/makeif/forks', params)
+}
+
+/** List the device's saved forks for a birth profile. Uncached (forks mutate). */
+export function listMakeifForks(params: {
+  deviceId: string
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+}): Promise<{ forks: MakeifForkRow[] }> {
+  const q = new URLSearchParams({
+    deviceId: params.deviceId,
+    birthDate: params.birthDate,
+    birthHour: String(params.birthHour),
+    gender: params.gender,
+  })
+  return getJsonRaw<{ forks: MakeifForkRow[] }>(`/api/auspice/makeif/forks?${q.toString()}`)
+}
+
+export async function deleteMakeifFork(id: string, deviceId: string): Promise<void> {
+  const path = `/api/auspice/makeif/forks/${encodeURIComponent(id)}?deviceId=${encodeURIComponent(deviceId)}`
+  const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
+    method: 'DELETE',
+    headers: { accept: 'application/json' },
+  })
+  if (!res.ok) throw new Error(`delete fork failed (${res.status})`)
 }

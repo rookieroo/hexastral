@@ -14,10 +14,11 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, Share, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { shareReading } from '@/lib/share'
 
 interface SheetLabels {
   title: string
@@ -132,9 +133,7 @@ export function ExplainSheet({
         {result && isPro ? (
           <Button
             variant='secondary'
-            onPress={() => {
-              Share.share({ message: `${field} · ${result.explanation}` }).catch(() => {})
-            }}
+            onPress={() => shareReading(`${field} · ${result.explanation}`, locale)}
           >
             {L.share}
           </Button>

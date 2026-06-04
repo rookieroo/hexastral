@@ -1185,6 +1185,44 @@ export const notificationAttributions = sqliteTable(
   (t) => [index('na_user_idx').on(t.userId), index('na_notification_idx').on(t.notificationId)]
 )
 
+// ==================== make-if 人生分支 (Auspice — user-created forks) ====================
+
+/**
+ * make-if forks — the user's interactive "假如人生" branches (Auspice Pro). Each
+ * row is a 大运 node the user tapped + an event they chose; the LLM narrative is
+ * stored so the sandbox survives an app restart (it was in-memory only). Scoped by
+ * `owner` = userId when signed in, else `device:<deviceId>` (Pro users sign in at
+ * the paywall; dev/anon falls back to device). Profile columns let the list filter
+ * to the current birth profile. PK (owner, id) → re-saving the same fork upserts.
+ */
+export const makeifForks = sqliteTable(
+  'makeif_forks',
+  {
+    owner: text('owner').notNull(),
+    /** Client branch id — deterministic from event + age. */
+    id: text('id').notNull(),
+    birthDate: text('birth_date').notNull(),
+    birthHour: integer('birth_hour').notNull(),
+    gender: text('gender').notNull(),
+    event: text('event').notNull(),
+    label: text('label').notNull(),
+    divergeAtAge: integer('diverge_at_age').notNull(),
+    /** null = the branch runs to the end (no rejoin). */
+    mergeAtAge: integer('merge_at_age'),
+    isPast: integer('is_past', { mode: 'boolean' }).notNull().default(false),
+    realPillar: text('real_pillar'),
+    narrative: text('narrative').notNull(),
+    locale: text('locale').notNull().default('en'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    primaryKey({ columns: [t.owner, t.id] }),
+    index('makeif_forks_owner_profile_idx').on(t.owner, t.birthDate, t.birthHour, t.gender),
+  ]
+)
+
 // ==================== Relations ====================
 
 export const usersRelations = relations(users, ({ many }) => ({

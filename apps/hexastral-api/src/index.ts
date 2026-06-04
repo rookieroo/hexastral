@@ -198,9 +198,15 @@ app.use('/api/onboarding/*', turnstile)
 //     be exempt because deviceSecret is returned BY it; it cannot be used
 //     to sign the request that creates it in the first place.
 //     Solution: /api/user/* applies HMAC except for POST /api/user[/].
-for (const path of ['/api/notify', '/api/contacts']) {
-  app.use(`${path}/*`, hmacVerify)
-}
+app.use('/api/contacts/*', hmacVerify)
+// /api/notify/* is HMAC — EXCEPT /push-targets, which is a service-to-service read
+// (the svc-notify daily cron) authenticated by X-Internal-Key in the route handler.
+// The cron carries no user HMAC signature, so without this exemption it 403'd every
+// night before its own X-Internal-Key check could run.
+app.use('/api/notify/*', async (c, next) => {
+  if (c.req.path === '/api/notify/push-targets') return next()
+  return hmacVerify(c, next)
+})
 
 app.use('/api/bonds/*', async (c, next) => {
   const isPublicInviteInfo =

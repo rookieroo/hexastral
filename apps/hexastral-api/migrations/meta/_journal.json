@@ -71,6 +71,13 @@
       "when": 1780239075445,
       "tag": "0009_lush_groot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1780570112411,
+      "tag": "0010_overconfident_harpoon",
+      "breakpoints": true
     }
   ]
 }

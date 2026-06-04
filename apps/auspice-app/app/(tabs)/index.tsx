@@ -180,12 +180,9 @@ export default function HomeScreen() {
           >
             <DualTzBanner />
 
-            {/* Life-Timeline banner (Sprint 4.5 / ADR-0020) — self-gates on
-                birth+gender (renders null otherwise); taps push to /timeline. */}
-            <LiuyearBanner />
-
-            {/* 干支日 · 农历 · 年干支 — lifted ABOVE the calendar so the bottom half
-                leads cleanly with 宜忌 (2026-06 layout feedback). */}
+            {/* 干支日 · 农历 · 年干支 — the single date row above the calendar (the
+                大运·流年 + timeline/make-if entries moved BELOW the calendar, into
+                the most-tappable zone just above 宜忌, per layout feedback). */}
             {dayData ? (
               <DayIdentityHeader
                 payload={dayData}
@@ -196,6 +193,11 @@ export default function HomeScreen() {
             ) : null}
 
             <CalendarStrip selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+
+            {/* Life-Timeline + make-if entries (大运·流年 context + the two pills),
+                moved here: directly below the calendar and above 宜忌 is the most-
+                tappable zone. Self-gates on birth+gender (renders null otherwise). */}
+            <LiuyearBanner />
 
             {/* Day detail — refreshes on selection change. Festival /
                 solar-term chip uses the selected day's payload (not literal

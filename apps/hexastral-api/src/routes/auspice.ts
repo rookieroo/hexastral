@@ -30,9 +30,11 @@ import {
   STEM_WUXING,
   solarToLunar,
 } from '@zhop/astro-core'
+import { and, eq } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
+import { makeifForks } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
@@ -1276,6 +1278,60 @@ function templateExplanation(almanac: DailyAlmanac, field: string): string {
   return almanac.elementRelation ? `${base}（对你而言：日主${almanac.elementRelation}）` : base
 }
 
+/**
+ * Background-warm the REST of a day's 宜忌 fields after the tapped one was served,
+ * so later taps that day are KV hits (no second LLM wait). Runs under `waitUntil`
+ * — never blocks the response, never throws into the request. Skips already-cached
+ * fields so it doesn't re-bill the LLM budget.
+ */
+async function warmExplainRest(
+  c: Context<AppEnv>,
+  args: {
+    date: string
+    fields: string[]
+    ganZhi: string
+    dayOfficer: string
+    mansion: string
+    dayMaster?: string
+    relation?: string
+    locale: string
+    cacheKeyOf: (field: string) => string
+  }
+): Promise<void> {
+  const todo: string[] = []
+  for (const f of args.fields) {
+    if (!(await c.env.GUARD_KV.get(args.cacheKeyOf(f)))) todo.push(f)
+  }
+  if (todo.length === 0) return
+  try {
+    const resp = await astroClient.post<{ explanations: Record<string, string> }>(
+      c.env.SVC_ASTRO,
+      '/cycle/explain-batch',
+      {
+        date: args.date,
+        fields: todo,
+        ganZhi: args.ganZhi,
+        dayOfficer: args.dayOfficer,
+        mansion: args.mansion,
+        dayMaster: args.dayMaster,
+        relation: args.relation,
+        locale: args.locale,
+        isPro: true,
+      }
+    )
+    const map = resp.explanations ?? {}
+    await Promise.all(
+      Object.entries(map)
+        .filter(([, v]) => v?.trim())
+        .map(([f, v]) =>
+          c.env.GUARD_KV.put(args.cacheKeyOf(f), v.trim(), { expirationTtl: 86_400 })
+        )
+    )
+  } catch (err) {
+    console.error('[auspice.explain] background warm failed', err)
+  }
+}
+
 auspiceRoutes.post('/explain', async (c) => {
   const body = explainSchema.parse(await c.req.json().catch(() => ({})))
   const ymd = parseYmd(body.date)
@@ -1324,21 +1380,22 @@ auspiceRoutes.post('/explain', async (c) => {
     if (guard.decision !== 'allow_llm') return template(guard.upsellAfterExhaust)
   }
 
-  // Every tappable field of the day — one LLM call covers them all.
-  const fields = [
+  // FAST PATH: generate ONLY the tapped field (single call, ~2-3s) and return it,
+  // then warm the REST of the day's fields in the background so later taps are KV
+  // hits. (Previously one ~12s batch up front — far too slow for a single tap.)
+  const restFields = [
     ...almanac.goodFor.map((v) => `宜 ${v}`),
     ...almanac.avoid.map((v) => `忌 ${v}`),
     `冲${almanac.clash.zodiac}`,
-  ]
-  if (!fields.includes(body.field)) fields.push(body.field)
+  ].filter((f) => f !== body.field)
 
   try {
-    const resp = await astroClient.post<{ explanations: Record<string, string> }>(
+    const single = await astroClient.post<{ explanation: string }>(
       c.env.SVC_ASTRO,
-      '/cycle/explain-batch',
+      '/cycle/explain',
       {
         date: body.date,
-        fields,
+        field: body.field,
         ganZhi: almanac.todayGanZhi,
         dayOfficer: almanac.dayOfficer,
         mansion: almanac.mansion.name,
@@ -1348,14 +1405,9 @@ auspiceRoutes.post('/explain', async (c) => {
         isPro: true,
       }
     )
-    const map = resp.explanations ?? {}
-    const entries = Object.entries(map).filter(([, v]) => v?.trim())
-    if (entries.length > 0) {
-      await Promise.all(
-        entries.map(([f, v]) =>
-          c.env.GUARD_KV.put(cacheKeyOf(f), v.trim(), { expirationTtl: 86_400 })
-        )
-      )
+    const explanation = (single.explanation ?? '').trim()
+    if (explanation) {
+      await c.env.GUARD_KV.put(cacheKeyOf(body.field), explanation, { expirationTtl: 86_400 })
       if (!body.dev && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
@@ -1363,12 +1415,23 @@ auspiceRoutes.post('/explain', async (c) => {
           consumesPeakPass: guard.consumesPeakPass,
         })
       }
-      const explanation = (map[body.field] ?? '').trim()
-      if (explanation)
-        return jsonOk(c, { explanation, source: 'llm', tier: guard?.tier ?? 'dev', upsell: false })
+      c.executionCtx.waitUntil(
+        warmExplainRest(c, {
+          date: body.date,
+          fields: restFields,
+          ganZhi: almanac.todayGanZhi,
+          dayOfficer: almanac.dayOfficer,
+          mansion: almanac.mansion.name,
+          dayMaster,
+          relation: almanac.elementRelation,
+          locale: body.locale,
+          cacheKeyOf,
+        })
+      )
+      return jsonOk(c, { explanation, source: 'llm', tier: guard?.tier ?? 'dev', upsell: false })
     }
   } catch (err) {
-    console.error('[auspice.explain] batch failed', err)
+    console.error('[auspice.explain] single failed', err)
   }
   return template(false) // svc-astro failed/empty — degrade, no grant recorded
 })
@@ -1480,4 +1543,98 @@ auspiceRoutes.post('/makeif', async (c) => {
     console.error('[auspice.makeif] narrate failed', err)
   }
   return jsonOk(c, { narratives: {}, source: 'template' })
+})
+
+// ── make-if forks persistence (D1) ─────────────────────────────────────────
+//
+// The interactive sandbox was in-memory only — forks vanished on exit. These
+// persist them so a returning user sees their "假如人生" branches + narratives.
+// Scoped by device (`owner = device:<deviceId>`), matching Auspice's anonymous
+// model; account-level cross-device sync can migrate device→userId on sign-in
+// later (same pattern as transferAuspicePeopleToBonds). PK (owner,id) → re-save
+// upserts the latest narrative.
+
+const forkSchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  birthDate: z.string().regex(DATE_RE),
+  birthHour: z.number().int().min(-1).max(23),
+  gender: z.enum(['M', 'F']),
+  id: z.string().min(1).max(64),
+  label: z.string().max(40),
+  event: z.string().max(200),
+  divergeAtAge: z.number().int().min(0).max(120),
+  mergeAtAge: z.number().int().min(0).max(120).nullable(),
+  isPast: z.boolean().default(false),
+  realPillar: z.string().max(8).optional(),
+  narrative: z.string().max(2000),
+  locale: z.string().max(16).default('en'),
+})
+
+auspiceRoutes.post('/makeif/forks', async (c) => {
+  const body = forkSchema.parse(await c.req.json())
+  const owner = `device:${body.deviceId}`
+  await c
+    .get('db')
+    .insert(makeifForks)
+    .values({
+      owner,
+      id: body.id,
+      birthDate: body.birthDate,
+      birthHour: body.birthHour,
+      gender: body.gender,
+      event: body.event,
+      label: body.label,
+      divergeAtAge: body.divergeAtAge,
+      mergeAtAge: body.mergeAtAge,
+      isPast: body.isPast,
+      realPillar: body.realPillar,
+      narrative: body.narrative,
+      locale: body.locale,
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [makeifForks.owner, makeifForks.id],
+      set: {
+        narrative: body.narrative,
+        label: body.label,
+        event: body.event,
+        locale: body.locale,
+      },
+    })
+  return jsonOk(c, { saved: true })
+})
+
+auspiceRoutes.get('/makeif/forks', async (c) => {
+  const deviceId = c.req.query('deviceId')
+  const birthDate = c.req.query('birthDate')
+  const birthHour = Number.parseInt(c.req.query('birthHour') ?? '', 10)
+  const gender = c.req.query('gender')
+  if (!deviceId || !birthDate || Number.isNaN(birthHour) || (gender !== 'M' && gender !== 'F')) {
+    throw new HTTPException(400, { message: 'deviceId/birthDate/birthHour/gender required' })
+  }
+  const rows = await c
+    .get('db')
+    .select()
+    .from(makeifForks)
+    .where(
+      and(
+        eq(makeifForks.owner, `device:${deviceId}`),
+        eq(makeifForks.birthDate, birthDate),
+        eq(makeifForks.birthHour, birthHour),
+        eq(makeifForks.gender, gender)
+      )
+    )
+    .orderBy(makeifForks.createdAt)
+  return jsonOk(c, { forks: rows })
+})
+
+auspiceRoutes.delete('/makeif/forks/:id', async (c) => {
+  const id = c.req.param('id')
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  await c
+    .get('db')
+    .delete(makeifForks)
+    .where(and(eq(makeifForks.owner, `device:${deviceId}`), eq(makeifForks.id, id)))
+  return jsonOk(c, { deleted: true })
 })
