@@ -1,9 +1,10 @@
 /**
  * Onboarding · Screen 8 — Reveal moment
  *
- * Plays the 2.7s RevealMoment animation while POST /api/bonds/solo runs in
- * background. The animation masks API latency; when both complete, the user
- * taps "Read your story →" and lands on /(bonds)/[id].
+ * Plays the moon-phase RevealMoment ceremony while POST /api/bonds/solo runs in
+ * background. The cycling cinnabar moon doubles as the "aligning" loader and
+ * masks API latency; when both complete, the user taps "Read your story →" and
+ * lands on /(bonds)/[id].
  *
  * Three terminal states:
  *  - ready    → CTA navigates to the new bond detail
@@ -15,13 +16,16 @@
  * + routes home.
  */
 
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { RevealMoment, type TimeIndex, useSoloBond } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { cacheBondBirth } from '@/lib/bondBirthCache'
 import { resolveLocale, t } from '@/lib/i18n'
 import { clearDraft, useDraft } from '@/lib/onboardingDraft'
 import { suppressNextSplash } from '@/lib/splash-control'
@@ -77,6 +81,17 @@ export default function RevealScreen() {
         language: localeToBackendLang(locale),
       })
       setBondId(result.bondId)
+      // This device entered TA's birth (fill mode) — keep a local copy so the
+      // bond detail can offer the "send to Auspice" port (server never returns
+      // it; see lib/bondBirthCache).
+      void cacheBondBirth(result.bondId, {
+        name: draft.otherName,
+        relationshipLabel: draft.relationshipLabel || 'other',
+        solarDate: draft.otherSolarDate,
+        timeIndex: draft.otherTimeIndex,
+        gender,
+        city: draft.otherBirthCity || null,
+      })
       setStatus('ready')
     } catch (err) {
       const code = (err as Error & { code?: string }).code
@@ -151,8 +166,7 @@ export default function RevealScreen() {
 
   return (
     <RevealMoment
-      selfGlyph='甲'
-      otherGlyph='乙'
+      moon={<AutoMoonPhaseLoader size={120} skin={SKIN_CINNABAR} />}
       playAnimation
       copy={{
         line1: t(locale, 'reveal.line1'),

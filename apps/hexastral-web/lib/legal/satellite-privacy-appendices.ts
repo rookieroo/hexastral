@@ -1,15 +1,18 @@
-export const SATELLITE_PRIVACY_KEYS = [
-  'faceoracle',
-  'starpalace',
-  'soulmatch',
-  'fengshui',
-  'dreamoracle',
-  'eightpillars',
-  'coincast',
-  'numerology',
-  'compass',
-  'cycle',
-] as const
+/**
+ * Per-app privacy appendices under the UseONE, LLC umbrella policy.
+ *
+ * Scope (2026-06): only the apps we actively ship are disclosed here — Kindred
+ * and Auspice. The HexAstral universe is a connected matrix of apps that share
+ * ONE sign-in identity, and these appendices describe the data flows that carry
+ * across that shared account. Apps still in development are intentionally NOT
+ * listed: we don't pre-announce unreleased surfaces, and an appendix only goes
+ * live when its app does.
+ *
+ * Each appendix is a thin, app-specific supplement; the umbrella policy
+ * (privacy.{locale}.json) governs everything common.
+ */
+
+export const SATELLITE_PRIVACY_KEYS = ['kindred', 'auspice'] as const
 
 export type SatellitePrivacyKey = (typeof SATELLITE_PRIVACY_KEYS)[number]
 
@@ -21,102 +24,28 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
   SatellitePrivacyKey,
   { displayName: string; summary: string; bullets: readonly string[] }
 > = {
-  faceoracle: {
-    displayName: 'Face Oracle',
+  kindred: {
+    displayName: 'Kindred',
     summary:
-      'Satellite app focused on face and palm readings. Photo capture uses device hardware; uploads follow the shared HexAstral media retention rules.',
+      'Relationship synastry (合盘) in the HexAstral universe. Your own birth data drives a solo reading; adding another person creates a "bond" whose compatibility report combines both charts. One shared sign-in carries your bonds across the universe and survives a reinstall.',
     bullets: [
-      'Camera and photo library access only when you start a capture flow.',
-      'Images may be processed by authorized AI vision systems under DPAs; ephemeral handling matches the flagship Face/Palm notice.',
-      'Growth funnel telemetry may include anonymous install ID and campaign metadata tied to this app key.',
+      'Your birth date, 时辰 (hour-pillar index), gender, and optional birthplace power the solo and pair (合盘) charts.',
+      "A partner's birth details are stored only when you enter them yourself or they accept an invite and enter their own — both subjects' data backs the bond.",
+      'Apple / Google sign-in attaches a recoverable identity (a stable id, and an email when provided) so your bonds restore on a new device; required before any purchase so a subscription is never stranded on a lost device.',
+      'People you recorded in Auspice (亲友) can be imported into Kindred as bonds, and a Kindred bond can be sent back to Auspice — the same shared account moves the data; nothing crosses apps until you trigger the carry-over.',
+      'Subscription identifiers are processed via RevenueCat. Anonymous funnel telemetry may record steps under target_app=kindred. No ads.',
     ],
   },
-  starpalace: {
-    displayName: 'Star Palace',
+  auspice: {
+    displayName: 'Auspice',
     summary:
-      'Zi Wei Dou Shu–oriented experiences; birth datetimes drive palace calculations shared with the flagship chart engine.',
+      'Daily Chinese almanac (黄历) in the HexAstral universe. Anonymous and account-free by default — the base almanac is deterministic. Signing in is optional and only needed to subscribe or to carry data to other universe apps such as Kindred.',
     bullets: [
-      'Birth date, time window, gender, and location equivalents used for chart computation.',
-      'Subscription or SKU identifiers processed via RevenueCat policies.',
-      'Anonymous usage telemetry may record funnel steps under target_app=starpalace.',
-    ],
-  },
-  soulmatch: {
-    displayName: 'Soul Match',
-    summary:
-      'Compatibility-oriented flows may combine two profiles; both subjects must consent before persistence.',
-    bullets: [
-      'Partner inputs are stored only when explicitly submitted inside the compatibility workflow.',
-      'Pair-reading identifiers reference existing HexAstral bond/read models when synced.',
-      'Marketing attribution reuses the shared DDL session store with TTL.',
-    ],
-  },
-  fengshui: {
-    displayName: 'Feng Shui AI',
-    summary:
-      'Environmental layouts or bearing measurements may be captured as structured metadata plus optional imagery.',
-    bullets: [
-      'Floor-plan uploads follow R2 object prefixes scoped by target_app=fengshui.',
-      'Derived analyses stored with analyses.target_app for quota reporting.',
-      'No automated resale of location snapshots—deleted according to media retention policies.',
-    ],
-  },
-  dreamoracle: {
-    displayName: 'Dream Oracle',
-    summary:
-      'Dream journaling features collect voluntary narrative text for interpretation pipelines.',
-    bullets: [
-      'Free-text dreams may be logged with timestamps for revisitation.',
-      'LLM inference flows inherit flagship AI provider safeguards.',
-      'You may delete historical entries via standard account deletion channels.',
-    ],
-  },
-  eightpillars: {
-    displayName: 'Eight Pillars',
-    summary: 'BaZi-heavy onboarding emphasizes day-master storytelling with TikTok-style funnels.',
-    bullets: [
-      'Birth information aligns with flagship BaZi calculations.',
-      'Waitlist or viral referrals store minimal identity markers until signup completes.',
-      'Anonymous funnel analytics differentiate eightpillars vs flagship shells.',
-    ],
-  },
-  coincast: {
-    displayName: 'Coin Cast',
-    summary: 'I Ching coin/divination flows reuse yijing endpoints with portfolio quotas.',
-    bullets: [
-      'Questions and entropy choices logged under divinations.target_app=coincast.',
-      'Purchases or credits follow RevenueCat entitlements.',
-      'Telemetry captures ritual UX interactions without recording biometric data.',
-    ],
-  },
-  numerology: {
-    displayName: 'Numerology',
-    summary:
-      'Life-path and numerology calculations based on birth date; no additional personal data beyond standard birth information.',
-    bullets: [
-      'Birth date used for life-path number, expression number, and related calculations.',
-      'Subscription entitlements managed via RevenueCat.',
-      'Reading results stored in portfolio with target_app=numerology for cross-app recall when opted in.',
-    ],
-  },
-  compass: {
-    displayName: 'Compass',
-    summary: 'Free utility providing a traditional Luopan compass overlay. No account required.',
-    bullets: [
-      'Magnetometer and device orientation sensor data processed locally; not transmitted to servers.',
-      'No birth information or personal data collected.',
-      'Optional deep-link to Feng app includes only bearing angle metadata, no location data.',
-    ],
-  },
-  cycle: {
-    displayName: 'Cycle',
-    summary:
-      'Daily Chinese almanac (黄历). Anonymous and account-free; the base almanac is deterministic. An optional birth date stays on your device.',
-    bullets: [
-      'An optional birth date is stored locally on your device and sent only as a request parameter (never an account) to compute the personalized “对你而言” overlay.',
+      'An optional birth date is stored locally on your device and sent only as a request parameter (never as an account) to compute the personalized "对你而言" overlay.',
+      '亲友 (friends & family) you add stay on your device; you may export an eligible 亲友 to Kindred as a bond, and import a Kindred bond back into Auspice — only when you choose to, over your one shared sign-in.',
       'Daily reminders are scheduled as local notifications on the device — no push token is registered and no server-side schedule is stored.',
-      'The optional AI “deep reading” sends only the date, the selected 宜/忌 field, and your day-master stem (not your full birth date) to authorized LLM providers under DPAs; cost-guarded, no biometric data.',
-      'Anonymous funnel telemetry may record steps under target_app=cycle. No ads, no tracking.',
+      'The optional AI "deep reading" sends only the date, the selected 宜/忌 field, and your day-master stem (not your full birth date) to authorized LLM providers under DPAs; cost-guarded, no biometric data.',
+      'Anonymous funnel telemetry may record steps under target_app=auspice. No ads, no tracking.',
     ],
   },
 }

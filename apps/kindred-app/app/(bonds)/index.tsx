@@ -19,7 +19,12 @@
 
 import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import {
+  kindredDark,
+  kindredRadius,
+  kindredSpacing,
+  kindredType,
+} from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { type BondData, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
@@ -104,10 +109,11 @@ export default function BondListScreen() {
             <EmptyState
               illustration={<KindredMoon size={96} />}
               title={t(locale, 'bondList.empty.title')}
+              subtitle={t(locale, 'bondList.subtitle')}
               customAction={
                 <PrimaryButton
                   label={t(locale, 'bondList.empty.cta')}
-                  onPress={() => router.push('/(onboarding)/self')}
+                  onPress={() => router.push('/(onboarding)/mode')}
                   block={false}
                 />
               }
@@ -130,8 +136,10 @@ export default function BondListScreen() {
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
-              {/* Header chrome — just the new-thread "+". This is a secondary
-                  screen; settings entry lives on the home, not here. */}
+              {/* Header chrome — the add-thread button. This is a secondary
+                  screen; settings entry lives on the home, not here. The "+"
+                  now opens the new single-page add-partner flow (mode → the
+                  one-page BirthForm), not the old self birth wizard. */}
               <View
                 style={{
                   flexDirection: 'row',
@@ -141,13 +149,25 @@ export default function BondListScreen() {
                   paddingHorizontal: kindredSpacing.screenH,
                 }}
               >
-                <Pressable onPress={() => router.push('/(onboarding)/self')} hitSlop={8}>
-                  <Text style={[kindredType.caption, { color: kindredDark.accent }]}>+</Text>
-                </Pressable>
+                <AddThreadButton
+                  label={t(locale, 'bondList.add')}
+                  onPress={() => router.push('/(onboarding)/mode')}
+                />
               </View>
               {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
-              <View style={{ alignItems: 'center' }}>
+              <View style={{ alignItems: 'center', gap: kindredSpacing.sm }}>
                 <KindredMoon size={56} />
+                <Text style={[kindredType.title, { color: kindredDark.text }]}>
+                  {t(locale, 'bondList.title')}
+                </Text>
+                <Text
+                  style={[
+                    kindredType.caption,
+                    { color: kindredDark.textMuted, textAlign: 'center' },
+                  ]}
+                >
+                  {t(locale, 'bondList.subtitle')}
+                </Text>
               </View>
 
               {/* Pending pager — full-width snap pages so the user can swipe
@@ -196,6 +216,32 @@ export default function BondListScreen() {
       </SafeAreaView>
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
+  )
+}
+
+/** A small bordered pill — the new-thread CTA in the list header. */
+function AddThreadButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole='button'
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: kindredSpacing.md,
+        paddingVertical: kindredSpacing.sm,
+        borderRadius: kindredRadius.sm,
+        borderWidth: 0.5,
+        borderColor: kindredDark.accent,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Text style={{ color: kindredDark.accent, fontSize: 16, lineHeight: 16 }}>+</Text>
+      <Text style={[kindredType.caption, { color: kindredDark.accent }]}>{label}</Text>
+    </Pressable>
   )
 }
 

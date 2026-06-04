@@ -11,9 +11,10 @@
 
 import { CoreUIProvider } from '@zhop/core-ui'
 import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-runtime'
+import * as Linking from 'expo-linking'
 import { type Href, Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -28,7 +29,8 @@ import {
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
-import { getPeople } from '@/lib/people'
+import { parseKindredComposeUrl } from '@/lib/kindred-import'
+import { addPerson, getPeople } from '@/lib/people'
 import {
   addAuspiceNotificationTapListener,
   configureNotifications,
@@ -113,6 +115,24 @@ function RootLayoutInner() {
       }
     })()
   }, [locale])
+
+  // Kindred → Auspice import: a `auspice://compose?...` hand-off adds the
+  // person to 亲友 and lands on the list. Deduped by URL so the initial-URL +
+  // event-listener pair don't double-add the same link.
+  const lastComposeRef = useRef<string | null>(null)
+  useEffect(() => {
+    const handle = async (url: string | null) => {
+      if (!url || url === lastComposeRef.current) return
+      const input = parseKindredComposeUrl(url)
+      if (!input) return
+      lastComposeRef.current = url
+      await addPerson(input)
+      router.push('/people')
+    }
+    void Linking.getInitialURL().then(handle)
+    const sub = Linking.addEventListener('url', ({ url }) => void handle(url))
+    return () => sub.remove()
+  }, [router])
 
   // Notification tap → deep-link Today to the notification's date.
   useEffect(() => {

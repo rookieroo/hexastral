@@ -10,9 +10,9 @@
  * used moments earlier for themselves.
  *
  * Layout (top → bottom):
- *   - Date (BirthDateField — compact + sheet picker, solar/lunar toggle)
+ *   - Date (BirthDateField — prominent boxed input + sheet picker, solar/lunar)
  *   - Gender (Segmented — 男/女)
- *   - 时辰 (ShichenPicker grid, ALWAYS visible, required)
+ *   - 时辰 (ShichenField — one-line summary + almanac wheel sheet, required)
  *   - City (CityPicker, optional, with clear shortcut)
  *
  * Field, NameInput exports are utility pieces consumers wrap around the
@@ -27,8 +27,9 @@ import {
   type CityRecord,
   CityPicker,
   DEFAULT_TOP_CITIES,
+  ShichenField,
   type ShichenIndex,
-  ShichenPicker,
+  shichenFieldLabelsForLocale,
 } from '@zhop/core-ui'
 import {
   kindredDark,
@@ -85,8 +86,9 @@ export function BirthForm({
   scrollRef,
 }: BirthFormProps) {
   // 时辰 is REQUIRED — it drives the hour pillar of the 八字 (without it the
-  // chart engine has to guess, silently producing a wrong chapter). The
-  // picker is always visible; city stays inline with an "optional" hint.
+  // chart engine has to guess, silently producing a wrong chapter). It's a
+  // collapsed ShichenField (one-line summary + almanac wheel sheet); city
+  // stays inline with an "optional" hint.
   const shichen =
     typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
       ? (timeIndex as ShichenIndex)
@@ -122,6 +124,8 @@ export function BirthForm({
     )
   }
 
+  const shichenLabels = shichenFieldLabelsForLocale(lang)
+
   return (
     <View style={{ gap: kindredSpacing.lg }}>
       <Field label={t(locale, 'date.title')}>
@@ -131,6 +135,7 @@ export function BirthForm({
           accent={kindredDark.accent}
           labels={dateLabels}
           locale={lang}
+          prominent
         />
       </Field>
 
@@ -152,10 +157,11 @@ export function BirthForm({
         <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
           {t(locale, 'pairInput.timeHint')}
         </Text>
-        <ShichenPicker
+        <ShichenField
           value={shichen}
           onChange={(idx) => onTime(idx)}
-          accentColor={kindredDark.accent}
+          accent={kindredDark.accent}
+          labels={shichenLabels}
         />
       </View>
 
