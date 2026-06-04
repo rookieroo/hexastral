@@ -31,3 +31,20 @@ export async function shareReading(body: string, locale = 'en'): Promise<void> {
     // user cancelled or share unavailable — no-op
   }
 }
+
+const WEB_BASE = 'https://hexastral.com'
+
+/**
+ * Share a day's 宜忌 as a link to its SERVER-RENDERED share page
+ * (hexastral.com/s/day/<date>). The page's OG image is a branded 宜忌 card, so the
+ * iMessage/social link preview shows that card (the hook) + the page has an install
+ * CTA. `date` = YYYY-MM-DD. (Direct PNG-file share is a follow-up.)
+ */
+export async function shareDayCard(date: string, locale = 'en'): Promise<void> {
+  const tag = TAGLINE[locale] ?? TAGLINE.en
+  try {
+    await Share.share({ message: `${tag}\n${WEB_BASE}/s/day/${date}` })
+  } catch {
+    // cancelled — no-op
+  }
+}

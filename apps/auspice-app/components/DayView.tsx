@@ -13,12 +13,14 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
+import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import type { RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { shareDayCard } from '@/lib/share'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
 import { PersonalCard } from './PersonalCard'
@@ -110,6 +112,19 @@ export function DayView({
           calendar (the 重点), above 对你而言. The day identity (干支日 · 农历 · 年)
           moved above the calendar. (2026-06 IA feedback.) */}
       <View>
+        {/* Share the day's 宜忌 → a server-rendered card page (link preview = the
+            card, the page has an install CTA). */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <Pressable
+            onPress={() => shareDayCard(date, locale)}
+            hitSlop={12}
+            accessibilityRole='button'
+            accessibilityLabel='Share'
+            style={{ padding: 4 }}
+          >
+            <Share2 size={16} color={colors.dim} strokeWidth={1.6} />
+          </Pressable>
+        </View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
       </View>
 
