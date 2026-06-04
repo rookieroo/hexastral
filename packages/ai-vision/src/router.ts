@@ -83,6 +83,15 @@ export interface FallbackCallOptions {
   temperature?: number
   /** When true, instruct the model to emit ONLY a JSON object (extracted post-hoc). */
   jsonMode?: boolean
+  /**
+   * Append the `/no_think` soft switch to the user turn. Qwen-template models
+   * (our Qwen3 Tier-1) skip the chain-of-thought, which is the right default for
+   * SHORT structured tasks (explain / makeif-narrate): reasoning there only burns
+   * the token budget and — at low `maxTokens` — can starve the answer to empty.
+   * Harmless to models that don't recognize it (GLM ignores it; give those token
+   * headroom instead).
+   */
+  noThink?: boolean
   /** Forces structured JSON output via a schema instruction injected into the system prompt. */
   responseSchema?: Record<string, unknown>
   /** Optional metric tag — grouped in the [llm-router.metric] log line. */
@@ -167,6 +176,28 @@ export function stripThinking(text: string): string {
 
 // ==================== CF Workers AI calls (OpenAI messages format) ====================
 
+/**
+ * Extract the assistant text from a Workers AI `ai.run` result, tolerant of BOTH
+ * response shapes the catalog now mixes:
+ *   - NEW OpenAI chat-completion shape (Kimi / Qwen3 / GLM and the 2025+ models):
+ *       `result.choices[0].message.content`. Reasoning models keep their chain in a
+ *       SEPARATE `message.reasoning_content` / `message.reasoning` field, so
+ *       `.content` is already free of <think> blocks.
+ *   - LEGACY Workers AI text shape: top-level `result.response`.
+ * Returns '' when neither yields a non-empty string (caller treats '' as a failure
+ * and falls through to the next model). This is the fix for the 2025-Q2 catalog
+ * migration that silently broke every `.response`-only reader.
+ */
+function extractAiText(result: unknown): string {
+  const r = result as {
+    choices?: Array<{ message?: { content?: unknown } }>
+    response?: unknown
+  } | null
+  const fromChoices = r?.choices?.[0]?.message?.content
+  if (typeof fromChoices === 'string' && fromChoices) return fromChoices
+  return typeof r?.response === 'string' ? r.response : ''
+}
+
 async function callCfAi(
   ai: WorkersAiBinding,
   model: string,
@@ -180,21 +211,22 @@ async function callCfAi(
   } else if (options?.jsonMode) {
     finalSystem += '\n\nYou must output ONLY valid JSON.'
   }
+  const finalUser = options?.noThink ? `${userPrompt}\n\n/no_think` : userPrompt
 
-  const result = (await ai.run(model, {
+  const result = await ai.run(model, {
     messages: [
       { role: 'system', content: finalSystem },
-      { role: 'user', content: userPrompt },
+      { role: 'user', content: finalUser },
     ],
     max_tokens: options?.maxTokens ?? 4096,
     temperature: options?.temperature ?? 0.7,
-  })) as { response?: string }
+  })
 
-  if (!result.response) {
+  let text = extractAiText(result)
+  if (!text) {
     throw new Error(`Empty response from ${model}`)
   }
 
-  let text = result.response
   if (options?.responseSchema || options?.jsonMode) {
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) text = jsonMatch[0]
@@ -214,19 +246,20 @@ async function callCfAiChat(
   messages: readonly ChatMessage[],
   options?: ChatCallOptions
 ): Promise<string> {
-  const result = (await ai.run(model, {
+  const result = await ai.run(model, {
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages.map((m) => ({ role: toCfRole(m.role), content: m.content })),
     ],
     max_tokens: options?.maxTokens ?? 2048,
     temperature: options?.temperature ?? 0.7,
-  })) as { response?: string }
+  })
 
-  if (!result.response) {
+  const text = extractAiText(result)
+  if (!text) {
     throw new Error(`Empty response from ${model}`)
   }
-  return result.response
+  return text
 }
 
 // ==================== Public API ====================

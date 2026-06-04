@@ -65,9 +65,9 @@ cycleRoutes.post('/explain', async (c) => {
 
   const explanation = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
-    maxTokens: 320,
+    maxTokens: 512,
     temperature: 0.7,
-    thinkingLevel: 'MINIMAL',
+    noThink: true,
     tier: 'standard',
     metricLabel: 'cycle-explain',
     locale: input.locale,
@@ -145,12 +145,12 @@ cycleRoutes.post('/explain-batch', async (c) => {
     .map((f) => `- ${f}`)
     .join('\n')}\n\n请为每个字段各写一段，按 JSON 返回：{"字段原文": "解释", ...}`
 
-  const maxTokens = Math.min(2048, input.fields.length * 180 + 256)
+  const maxTokens = Math.min(3072, input.fields.length * 200 + 768)
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
     maxTokens,
     temperature: 0.6,
-    thinkingLevel: 'MINIMAL',
+    noThink: true,
     tier: 'standard',
     metricLabel: 'cycle-explain-batch',
     locale: input.locale,
@@ -227,12 +227,12 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
   const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段，按 JSON 返回：{"分支id": "叙事", ...}`
 
   const ids = input.branches.map((b) => b.id)
-  const maxTokens = Math.min(2048, ids.length * 260 + 256)
+  const maxTokens = Math.min(3072, ids.length * 300 + 768)
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
     maxTokens,
     temperature: 0.8,
-    thinkingLevel: 'MINIMAL',
+    noThink: true,
     tier: 'standard',
     metricLabel: 'cycle-makeif-narrate',
     locale: input.locale,

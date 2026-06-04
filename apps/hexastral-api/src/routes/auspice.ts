@@ -1138,10 +1138,16 @@ auspiceRoutes.get('/travel', (c) => {
 // template; v1 never hard-blocks). 24h cached in GUARD_KV. Subject: deviceId > ipHash
 // (the endpoint is anonymous — no trusted userId).
 
+// 宜忌 深读 backstop. NOTE: ONLY the Pro path reaches this guard — free callers get
+// the deterministic template earlier (no LLM, no guard). The deep reading is also
+// per-day cached (one batch call covers a whole day's fields), so a legit Pro user
+// triggers ≤1 LLM call per distinct day opened. The guard's sole job is to cap a
+// client that spoofs `isPro` across many novel dates — hence Pro-generous, not the
+// old 1/day free-taste number that was silently throttling real subscribers.
 const CYCLE_GUARD_CONFIG = {
   app: 'cycle',
-  dailyLimitAnon: 1,
-  dailyLimitSigned: 3,
+  dailyLimitAnon: 15,
+  dailyLimitSigned: 30,
   lifetimePeakPass: 1,
   globalDailyBudget: 5000,
   noRollover: true,
@@ -1175,6 +1181,10 @@ const explainSchema = z.object({
    *  endpoint is anonymous so this is trusted-but-cheap: cost stays bounded by
    *  the per-day KV cache regardless. */
   isPro: z.boolean().default(false),
+  /** __DEV__ test builds — skip the guard so the full Pro reading is always
+   *  exercised on a test device (mirrors /makeif's `dev`). Trusted-but-cheap:
+   *  cost still bounded by the per-day KV cache. */
+  dev: z.boolean().default(false),
 })
 
 /** Tiny non-crypto hash so raw IPs never land in KV keys. */
@@ -1232,9 +1242,14 @@ auspiceRoutes.post('/explain', async (c) => {
     })
   if (!subject) return template(false)
 
-  const guard = await evaluateLlmGuard(c.env, { subject, config: CYCLE_GUARD_CONFIG })
-  for (const ev of guard.events) console.info('[cycle.explain.guard]', JSON.stringify(ev))
-  if (guard.decision !== 'allow_llm') return template(guard.upsellAfterExhaust)
+  // __DEV__ test devices bypass the guard entirely (mirrors /makeif) so the full
+  // Pro reading is always exercised; prod still caps spoofed-isPro abuse.
+  let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
+  if (!body.dev) {
+    guard = await evaluateLlmGuard(c.env, { subject, config: CYCLE_GUARD_CONFIG })
+    for (const ev of guard.events) console.info('[cycle.explain.guard]', JSON.stringify(ev))
+    if (guard.decision !== 'allow_llm') return template(guard.upsellAfterExhaust)
+  }
 
   // Every tappable field of the day — one LLM call covers them all.
   const fields = [
@@ -1268,14 +1283,16 @@ auspiceRoutes.post('/explain', async (c) => {
           c.env.GUARD_KV.put(cacheKeyOf(f), v.trim(), { expirationTtl: 86_400 })
         )
       )
-      await recordLlmGuardGrant(c.env, {
-        subject,
-        config: CYCLE_GUARD_CONFIG,
-        consumesPeakPass: guard.consumesPeakPass,
-      })
+      if (!body.dev && guard) {
+        await recordLlmGuardGrant(c.env, {
+          subject,
+          config: CYCLE_GUARD_CONFIG,
+          consumesPeakPass: guard.consumesPeakPass,
+        })
+      }
       const explanation = (map[body.field] ?? '').trim()
       if (explanation)
-        return jsonOk(c, { explanation, source: 'llm', tier: guard.tier, upsell: false })
+        return jsonOk(c, { explanation, source: 'llm', tier: guard?.tier ?? 'dev', upsell: false })
     }
   } catch (err) {
     console.error('[auspice.explain] batch failed', err)

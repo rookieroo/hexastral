@@ -295,7 +295,7 @@ interface Envelope<T> {
   error?: { code: string; message: string }
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJsonRaw<T>(path: string): Promise<T> {
   const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
     headers: { accept: 'application/json' },
   })
@@ -304,6 +304,45 @@ async function getJson<T>(path: string): Promise<T> {
     throw new Error(body?.error?.message ?? `cycle request failed (${res.status})`)
   }
   return body.data
+}
+
+// ── GET cache + in-flight dedup ────────────────────────────────────────────
+// Auspice's GET reads (day / month / search) are deterministic per-URL: the
+// almanac is pure calendar math and the 对你而言 overlay is a pure function of the
+// `birthDate` query param, so the full path IS a complete cache key. Without this
+// the app fired DUPLICATE /day + /month calls on a single launch and re-fetched on
+// every back-navigation. The in-flight map collapses concurrent identical requests
+// into one network call; the short TTL serves repeat navigations from memory. A
+// changed birthDate/locale re-keys naturally (different URL → fresh fetch).
+const GET_TTL_MS = 5 * 60_000
+const getCache = new Map<string, { at: number; data: unknown }>()
+const getInflight = new Map<string, Promise<unknown>>()
+
+async function getJson<T>(path: string): Promise<T> {
+  const hit = getCache.get(path)
+  if (hit && Date.now() - hit.at < GET_TTL_MS) return hit.data as T
+  const existing = getInflight.get(path)
+  if (existing) return existing as Promise<T>
+  const p = getJsonRaw<T>(path)
+    .then((data) => {
+      getCache.set(path, { at: Date.now(), data })
+      return data
+    })
+    .finally(() => {
+      getInflight.delete(path)
+    })
+  getInflight.set(path, p)
+  return p as Promise<T>
+}
+
+/**
+ * Drop all cached GET reads. Call after the user edits birth info (so the 对你而言
+ * overlay refreshes immediately rather than after the TTL). Correctness doesn't
+ * depend on it — a changed birthDate already re-keys — but it avoids a stale glance.
+ */
+export function clearAuspiceGetCache(): void {
+  getCache.clear()
+  getInflight.clear()
 }
 
 async function postJson<T>(path: string, payload: unknown): Promise<T> {
@@ -497,7 +536,7 @@ export function fetchAuspiceExplain(params: {
   /** Pro unlocks the LLM deep reading; free gets the deterministic template. */
   isPro?: boolean
 }): Promise<AuspiceExplainResult> {
-  return postJson<AuspiceExplainResult>('/api/auspice/explain', params)
+  return postJson<AuspiceExplainResult>('/api/auspice/explain', { ...params, dev: __DEV__ })
 }
 
 /** make-if 分支叙事 (Phase 3) — Pro-only "假如你..." stories, cached server-side. */
