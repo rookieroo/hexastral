@@ -20,6 +20,7 @@ import {
   darkTokens,
   getHighlightColors,
   getScrimColors,
+  getStatusColors,
   lightTokens,
   type ModeTokens,
   SPACING,
@@ -135,6 +136,7 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
   const baseTokens: ModeTokens = isDark ? darkTokens : lightTokens
   const highlights = getHighlightColors(isDark)
   const scrims = getScrimColors(isDark)
+  const status = getStatusColors(isDark)
 
   // Resolve brand accent.
   let accent = baseTokens.accent
@@ -165,8 +167,8 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
       accentGhost,
       surfaceTint,
       warning: highlights.warnBar,
-      success: '#22C55E',
-      danger: '#EF4444',
+      success: status.success,
+      danger: status.danger,
       scrim: scrims.scrim,
       scrimHeavy: scrims.scrimHeavy,
     },
