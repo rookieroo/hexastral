@@ -1473,7 +1473,7 @@ auspiceRoutes.post('/makeif', async (c) => {
   const body = makeifSchema.parse(await c.req.json().catch(() => ({})))
 
   // Pro-only — Free sees the deterministic structure + the explainer, no narrative.
-  if (!body.isPro) return jsonOk(c, { narratives: {}, source: 'locked' })
+  if (!body.isPro) return jsonOk(c, { narratives: {}, summaries: {}, source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
   const hour = body.birthHour < 0 ? 12 : body.birthHour
@@ -1485,14 +1485,19 @@ auspiceRoutes.post('/makeif', async (c) => {
   const shapeSig = body.branches
     .map((b) => `${b.id}:${b.label}:${b.divergeAtAge}:${b.mergeAtAge}:${b.isPast}:${b.realPillar}`)
     .join(',')
-  // `v2` busts the 30-day cache after the locale-directive fix — pre-fix entries
-  // cached Chinese narratives under en/ja keys; bumping the prefix drops them.
-  const cacheKey = `auspice:makeif:v2:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
+  // `v3` busts the 30-day cache after the 概要 (summary) addition — pre-v3 entries
+  // cached only `{id: narrative}`; v3 caches `{narratives, summaries}` together.
+  const cacheKey = `auspice:makeif:v3:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
   const cached = await c.env.GUARD_KV.get(cacheKey)
   if (cached) {
     try {
+      const parsed = JSON.parse(cached) as {
+        narratives: Record<string, string>
+        summaries?: Record<string, string>
+      }
       return jsonOk(c, {
-        narratives: JSON.parse(cached) as Record<string, string>,
+        narratives: parsed.narratives ?? {},
+        summaries: parsed.summaries ?? {},
         source: 'cache',
       })
     } catch {
@@ -1507,34 +1512,41 @@ auspiceRoutes.post('/makeif', async (c) => {
   // still hit MAKEIF_GUARD_CONFIG.
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
   if (!body.dev) {
-    if (!subject) return jsonOk(c, { narratives: {}, source: 'template' })
+    if (!subject) return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
     guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[auspice.makeif.guard]', JSON.stringify(ev))
     if (guard.decision !== 'allow_llm') {
-      return jsonOk(c, { narratives: {}, source: 'template', upsell: guard.upsellAfterExhaust })
+      return jsonOk(c, {
+        narratives: {},
+        summaries: {},
+        source: 'template',
+        upsell: guard.upsellAfterExhaust,
+      })
     }
   }
 
   const currentAge = new Date().getUTCFullYear() - ymd.year
 
   try {
-    const resp = await astroClient.post<{ narratives: Record<string, string> }>(
-      c.env.SVC_ASTRO,
-      '/cycle/makeif-narrate',
-      {
-        dayMaster: pillars.day.stem,
-        dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
-        yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
-        gender: body.gender,
-        currentAge,
-        locale: body.locale,
-        isPro: true,
-        branches: body.branches,
-      }
-    )
+    const resp = await astroClient.post<{
+      narratives: Record<string, string>
+      summaries?: Record<string, string>
+    }>(c.env.SVC_ASTRO, '/cycle/makeif-narrate', {
+      dayMaster: pillars.day.stem,
+      dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
+      yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
+      gender: body.gender,
+      currentAge,
+      locale: body.locale,
+      isPro: true,
+      branches: body.branches,
+    })
     const narratives = resp.narratives ?? {}
+    const summaries = resp.summaries ?? {}
     if (Object.keys(narratives).length > 0) {
-      await c.env.GUARD_KV.put(cacheKey, JSON.stringify(narratives), { expirationTtl: 2_592_000 })
+      await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narratives, summaries }), {
+        expirationTtl: 2_592_000,
+      })
       if (!body.dev && subject && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
@@ -1542,12 +1554,12 @@ auspiceRoutes.post('/makeif', async (c) => {
           consumesPeakPass: guard.consumesPeakPass,
         })
       }
-      return jsonOk(c, { narratives, source: 'llm' })
+      return jsonOk(c, { narratives, summaries, source: 'llm' })
     }
   } catch (err) {
     console.error('[auspice.makeif] narrate failed', err)
   }
-  return jsonOk(c, { narratives: {}, source: 'template' })
+  return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
 })
 
 // ── make-if forks persistence (D1) ─────────────────────────────────────────

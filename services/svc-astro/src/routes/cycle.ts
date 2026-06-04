@@ -116,6 +116,45 @@ function parseBatchJson(raw: string, fields: string[]): Record<string, string> {
   return out
 }
 
+/**
+ * Like `parseBatchJson` but for a nested `{ id: { o: body, s: summary } }` shape
+ * — used by make-if, which returns BOTH the full "假如你…" narrative (`o`) and a
+ * one-line 概要 (`s`) per branch so a forwarded share is legible at a glance.
+ * Tolerates a flat `{ id: "body" }` row (summary then empty) so a model that
+ * ignores the nesting still yields usable narratives.
+ */
+function parseNestedBatchJson(
+  raw: string,
+  ids: string[]
+): { bodies: Record<string, string>; summaries: Record<string, string> } {
+  const bodies: Record<string, string> = {}
+  const summaries: Record<string, string> = {}
+  try {
+    let s = raw.trim()
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    if (fence?.[1]) s = fence[1].trim()
+    const start = s.indexOf('{')
+    const end = s.lastIndexOf('}')
+    if (start >= 0 && end > start) s = s.slice(start, end + 1)
+    const obj = JSON.parse(s) as Record<string, unknown>
+    for (const id of ids) {
+      const v = obj[id]
+      if (typeof v === 'string' && v.trim()) {
+        bodies[id] = v.trim()
+      } else if (v && typeof v === 'object') {
+        const row = v as Record<string, unknown>
+        const body = row.o ?? row.body ?? row.narrative
+        const sum = row.s ?? row.summary
+        if (typeof body === 'string' && body.trim()) bodies[id] = body.trim()
+        if (typeof sum === 'string' && sum.trim()) summaries[id] = sum.trim()
+      }
+    }
+  } catch {
+    // partial/empty — the API caller templates the misses, never blank.
+  }
+  return { bodies, summaries }
+}
+
 cycleRoutes.post('/explain-batch', async (c) => {
   const input = batchSchema.parse(await c.req.json())
   const langLabel = getLangLabel(input.locale)
@@ -220,21 +259,24 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
     })
     .join('\n')
 
-  const systemPrompt = `你是一位通晓八字的命理叙事师。为用户的每一条「假如」人生分支写 70–140 字${langLabel}第二人称叙事（以「假如你…」开头），并锚定在该节点真实的大运能量上。
+  const systemPrompt = `你是一位通晓八字的命理叙事师。为用户的每一条「假如」人生分支，输出两部分${langLabel}内容：
+  1. o（正文）：70–140 字第二人称叙事（以「假如你…」开头），锚定该节点真实的大运能量。
+  2. s（概要）：一句 ≤ 18 字的提炼，让人一眼读懂这条分支的走向（用作分享卡片上的标签，不要以「假如你」开头）。
 规则：
 - 每条分支会标注它发生在「已过去」还是「现在/未来」，以及当时真实的大运干支：
   · 已过去：先用一句点出这条「假如」与你真实人生的差异，再写它可能的走向。
   · 现在/未来：写这条选择可能带来的人生走向，并务必各给一句「做这个决定要注意的事项」与「潜在风险」。
 - 依据该大运的五行/十神能量来写，讲成「趋势·参考」，不是命运定论，也不是对未来的断言或保证。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
-- 严格只输出一个 JSON 对象：键为分支 id、值为该分支叙事正文。不要标题、不要 Markdown、不要代码块。
-- 注意：JSON 的「键」保持分支 id 原样不变，仅「值」（叙事正文）使用下述语言。
+- 严格只输出一个 JSON 对象：键为分支 id，值为 {"o": 正文, "s": 概要}。不要标题、不要 Markdown、不要代码块。
+- 注意：JSON 的「键」保持分支 id 原样不变，仅 o / s 的文字使用下述语言。
 ${langDirective(input.locale)}`
 
-  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段，按 JSON 返回：{"分支id": "叙事", ...}\n\n${langDirective(input.locale)}`
+  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段正文与一句概要，按 JSON 返回：{"分支id": {"o": "叙事", "s": "概要"}, ...}\n\n${langDirective(input.locale)}`
 
   const ids = input.branches.map((b) => b.id)
-  const maxTokens = Math.min(3072, ids.length * 300 + 768)
+  // +120 headroom per branch for the extra 概要 line on top of the narrative.
+  const maxTokens = Math.min(3072, ids.length * 420 + 768)
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
     maxTokens,
@@ -245,7 +287,8 @@ ${langDirective(input.locale)}`
     locale: input.locale,
   })
 
-  return c.json({ narratives: parseBatchJson(raw, ids) })
+  const { bodies, summaries } = parseNestedBatchJson(raw, ids)
+  return c.json({ narratives: bodies, summaries })
 })
 
 function getLangLabel(lang: string): string {
