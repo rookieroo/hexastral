@@ -198,6 +198,7 @@ export function DayView({
       <ExplainSheet
         date={date}
         field={explainField}
+        ganZhi={day.ganZhi}
         dayMaster={payload.personalization?.dayMaster}
         onClose={() => setExplainField(null)}
         onUpgrade={() => {

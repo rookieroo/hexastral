@@ -17,7 +17,7 @@ import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share2, X } from 'lucide-react-native'
+import { Share2, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -28,6 +28,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
@@ -51,7 +52,7 @@ import {
   makeIfInteractiveCopyForLocale,
   makeIfTeaser,
 } from '@/lib/makeIfBranches'
-import { shareReading } from '@/lib/share'
+import { shareMakeifFork } from '@/lib/share'
 
 const ACK_KEY = 'auspice.makeif.disclaimer.v1'
 const MAX_FORKS = 4
@@ -486,76 +487,26 @@ function Sandbox({
         nowLabel={makeIfCopyForLocale(locale).nowLabel}
       />
 
-      {/* Fork list — title + regenerate/delete actions + status or narrative. */}
+      {/* Fork list — actions live behind a left-swipe (kindred Threads pattern)
+          so the row is free for the narrative. The old cramped icon row had
+          18px hit targets that the user struggled to land on. */}
+      {branches.length > 0 ? (
+        <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>{ic.swipeHint}</Text>
+      ) : null}
       <View style={{ gap: spacing.md }}>
-        {branches.map((b) => {
-          const st = status[b.id]
-          return (
-            <View key={b.id} style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: b.color,
-                  marginTop: 5,
-                  opacity: b.isPast ? 0.5 : 1,
-                }}
-              />
-              <View style={{ flex: 1, gap: 3 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <Text
-                    style={{ flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' }}
-                    numberOfLines={1}
-                  >
-                    {ic.forkTitle(b.divergeAtAge, !!b.isPast)} · {b.label}
-                  </Text>
-                  {/* Reload dropped — with the locale-keyed cache a re-run just
-                      re-serves the same narrative (retry lives in the error state). */}
-                  {b.outcome ? (
-                    <Pressable
-                      onPress={() =>
-                        shareReading(
-                          `${ic.forkTitle(b.divergeAtAge, !!b.isPast)} · ${b.label}\n${b.outcome}`,
-                          locale
-                        )
-                      }
-                      hitSlop={12}
-                      accessibilityRole='button'
-                      style={{ padding: 4 }}
-                    >
-                      <Share2 size={18} color={colors.dim} strokeWidth={1.6} />
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    onPress={() => deleteFork(b.id)}
-                    hitSlop={12}
-                    accessibilityRole='button'
-                    style={{ padding: 4 }}
-                  >
-                    <X size={18} color={colors.dim} strokeWidth={1.6} />
-                  </Pressable>
-                </View>
-                {st === 'loading' ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <ActivityIndicator size='small' color={colors.accent} />
-                    <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.generating}</Text>
-                  </View>
-                ) : st === 'error' ? (
-                  <Pressable onPress={() => runFork(b)} accessibilityRole='button'>
-                    <Text style={{ color: colors.accent, fontSize: 13 }}>{ic.failedRetry}</Text>
-                  </Pressable>
-                ) : st === 'limited' ? (
-                  <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.limited}</Text>
-                ) : b.outcome ? (
-                  <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
-                    {b.outcome}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          )
-        })}
+        {branches.map((b) => (
+          <ForkRow
+            key={b.id}
+            branch={b}
+            status={status[b.id]}
+            ic={ic}
+            colors={colors}
+            spacing={spacing}
+            locale={locale}
+            onDelete={() => deleteFork(b.id)}
+            onRetry={() => runFork(b)}
+          />
+        ))}
       </View>
 
       <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>{ic.footer}</Text>
@@ -625,5 +576,140 @@ function Sandbox({
         </View>
       </SatelliteBottomSheet>
     </View>
+  )
+}
+
+// ── ForkRow (swipe-to-reveal Share + Delete) ──────────────────────────────────
+
+type RowStatus = 'loading' | 'done' | 'error' | 'limited' | undefined
+
+/**
+ * One fork in the sandbox list. Wraps the row in a ReanimatedSwipeable; the
+ * row body stays clean (just dot + title + status/narrative), and Share +
+ * Delete live behind a left-swipe — same gesture pattern Kindred Threads use
+ * for delete. Replaces the previous 18px inline icon row, which the user
+ * struggled to land on.
+ *
+ * a11y caveat: VoiceOver users can't trigger the swipe actions directly;
+ * the retry-on-error inline link still works. A future pass should add
+ * `accessibilityActions` on the row so VO has a discoverable path.
+ */
+function ForkRow({
+  branch: b,
+  status: st,
+  ic,
+  colors,
+  spacing,
+  locale,
+  onDelete,
+  onRetry,
+}: {
+  branch: MakeIfBranch
+  status: RowStatus
+  ic: ReturnType<typeof makeIfInteractiveCopyForLocale>
+  colors: C
+  spacing: S
+  locale: string
+  onDelete: () => void
+  onRetry: () => void
+}) {
+  const forkTitle = ic.forkTitle(b.divergeAtAge, !!b.isPast)
+
+  const renderRightActions = (
+    _progress: unknown,
+    _translation: unknown,
+    methods: { close: () => void }
+  ) => (
+    <View style={{ flexDirection: 'row' }}>
+      {b.outcome ? (
+        <Pressable
+          onPress={() => {
+            methods.close()
+            shareMakeifFork({ forkTitle, label: b.label, outcome: b.outcome ?? '' }, locale)
+          }}
+          accessibilityRole='button'
+          accessibilityLabel={ic.share}
+          style={{
+            width: 80,
+            backgroundColor: colors.accent,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+          }}
+        >
+          <Share2 size={20} color='#fff' strokeWidth={1.6} />
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{ic.share}</Text>
+        </Pressable>
+      ) : null}
+      <Pressable
+        onPress={() => {
+          methods.close()
+          onDelete()
+        }}
+        accessibilityRole='button'
+        accessibilityLabel={ic.delete}
+        style={{
+          width: 80,
+          backgroundColor: '#9B2226',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+        }}
+      >
+        <Trash2 size={20} color='#fff' strokeWidth={1.6} />
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{ic.delete}</Text>
+      </Pressable>
+    </View>
+  )
+
+  return (
+    <ReanimatedSwipeable
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      renderRightActions={renderRightActions}
+    >
+      {/* Opaque bg keeps the red Delete action hidden until swiped. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: spacing.sm,
+          paddingVertical: spacing.sm,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: b.color,
+            marginTop: 5,
+            opacity: b.isPast ? 0.5 : 1,
+          }}
+        />
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+            {forkTitle} · {b.label}
+          </Text>
+          {st === 'loading' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <ActivityIndicator size='small' color={colors.accent} />
+              <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.generating}</Text>
+            </View>
+          ) : st === 'error' ? (
+            <Pressable onPress={onRetry} accessibilityRole='button'>
+              <Text style={{ color: colors.accent, fontSize: 13 }}>{ic.failedRetry}</Text>
+            </Pressable>
+          ) : st === 'limited' ? (
+            <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.limited}</Text>
+          ) : b.outcome ? (
+            <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
+              {b.outcome}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    </ReanimatedSwipeable>
   )
 }

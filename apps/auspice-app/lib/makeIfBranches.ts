@@ -347,6 +347,10 @@ export interface MakeIfInteractiveCopy {
   unlockTitle: string
   unlockBody: string
   unlockCta: string
+  /** Swipe-to-reveal row actions (replaces the cramped inline icon row). */
+  swipeHint: string
+  share: string
+  delete: string
 }
 
 export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiveCopy {
@@ -369,6 +373,9 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       unlockTitle: 'make-if · 假如人生',
       unlockBody: '解鎖後，可在你真實人生線的任一節點假設一個選擇，由你的八字推演出另一種人生。',
       unlockCta: '解鎖假如人生',
+      swipeHint: '向左滑動分支以分享或刪除',
+      share: '分享',
+      delete: '刪除',
     }
   }
   if (locale.startsWith('zh')) {
@@ -390,6 +397,9 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       unlockTitle: 'make-if · 假如人生',
       unlockBody: '解锁后，可在你真实人生线的任一节点假设一个选择，由你的八字推演出另一种人生。',
       unlockCta: '解锁假如人生',
+      swipeHint: '向左滑动分支以分享或删除',
+      share: '分享',
+      delete: '删除',
     }
   }
   if (locale.startsWith('ja')) {
@@ -413,6 +423,9 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       unlockBody:
         '解錠すると、あなたの本当の人生線の任意の節点で選択を仮定し、八字からもう一つの人生を描けます。',
       unlockCta: 'もしもの人生を解錠',
+      swipeHint: '分岐を左にスワイプして共有または削除',
+      share: '共有',
+      delete: '削除',
     }
   }
   return {
@@ -441,5 +454,8 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
     unlockBody:
       'Unlock to assume a choice at any node of your real life line and let your 八字 explore another life.',
     unlockCta: 'Unlock make-if',
+    swipeHint: 'Swipe a branch left to share or delete',
+    share: 'Share',
+    delete: 'Delete',
   }
 }

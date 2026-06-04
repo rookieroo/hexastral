@@ -18,6 +18,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Share2 } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -34,6 +35,7 @@ import { LiuyueStrip, ReadingBubble, TimelineGraph } from '@/components/Timeline
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
+import { shareTimeline } from '@/lib/share'
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
@@ -49,6 +51,31 @@ function defaultSelection(payload: TimelinePayload): string {
     if (d) return `dayun-${d.index}`
   }
   return 'source'
+}
+
+/**
+ * Build the share snapshot — scoped to the CURRENT 大运 + this year's 流年 (we
+ * share "by 大运 unit", not the whole 80-year line). Returns null when there's no
+ * current 大运 in coverage, so the caller can hide the Share entry.
+ */
+function buildTimelineSnapshot(
+  payload: TimelinePayload,
+  t: ReturnType<typeof useStrings>['t']
+): Parameters<typeof shareTimeline>[0] | null {
+  const dayun =
+    payload.currentDayunIndex >= 0 ? payload.dayun[payload.currentDayunIndex] : undefined
+  if (!dayun) return null
+  const liunian = payload.liunian.find((r) => r.isCurrent)
+  const source = payload.pillars.day
+  return {
+    source: `${source.stem}${source.branch}`,
+    dayun: `${dayun.pillar.stem}${dayun.pillar.branch}`,
+    dayunAges: `${dayun.startAge}–${dayun.endAge}`,
+    year: liunian?.year ?? new Date().getFullYear(),
+    yearPillar: liunian ? `${liunian.pillar.stem}${liunian.pillar.branch}` : '—',
+    fit: dayun.fit,
+    advice: t.timelineAdvice[dayun.fit],
+  }
 }
 
 interface BirthCtx {
@@ -121,9 +148,38 @@ export default function TimelineScreen() {
           gap: spacing.xl,
         }}
       >
-        <Text style={{ color: colors.text, fontSize: 28, fontWeight: '300' }}>
-          {t.timelineTitle}
-        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: spacing.md,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 28, fontWeight: '300' }}>
+            {t.timelineTitle}
+          </Text>
+          {/* Share the current-大运 snapshot → server-rendered card. Available to
+              all tiers: the snapshot is the current cycle Free users already see,
+              so it leaks no Pro content and widens the sharer pool. */}
+          {state.kind === 'data'
+            ? (() => {
+                const snap = buildTimelineSnapshot(state.payload, t)
+                if (!snap) return null
+                return (
+                  <Pressable
+                    onPress={() => shareTimeline(snap, locale)}
+                    hitSlop={12}
+                    accessibilityRole='button'
+                    accessibilityLabel='Share'
+                    style={{ padding: 4 }}
+                  >
+                    <Share2 size={20} color={colors.dim} strokeWidth={1.6} />
+                  </Pressable>
+                )
+              })()
+            : null}
+        </View>
 
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>

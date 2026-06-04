@@ -18,7 +18,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { shareReading } from '@/lib/share'
+import { shareExplain } from '@/lib/share'
 
 interface SheetLabels {
   title: string
@@ -67,6 +67,7 @@ const LABELS: Record<Locale, SheetLabels> = {
 export function ExplainSheet({
   date,
   field,
+  ganZhi,
   dayMaster,
   onClose,
   onUpgrade,
@@ -74,13 +75,15 @@ export function ExplainSheet({
   date: string
   /** The tapped field, e.g. "宜 动土"; `null` keeps the sheet closed. */
   field: string | null
+  /** The day's 干支, e.g. "己酉" — shown on the share card. */
+  ganZhi?: string
   dayMaster?: string
   onClose: () => void
   /** Opens the paywall — shown to free users instead of the deep reading. */
   onUpgrade?: () => void
 }) {
   const { colors, spacing } = useTheme()
-  const { locale } = useStrings()
+  const { t, locale } = useStrings()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
   const L = LABELS[locale]
   const [loading, setLoading] = useState(false)
@@ -130,10 +133,23 @@ export function ExplainSheet({
             {L.unlock}
           </Button>
         ) : null}
-        {result && isPro ? (
+        {result && isPro && field ? (
           <Button
             variant='secondary'
-            onPress={() => shareReading(`${field} · ${result.explanation}`, locale)}
+            onPress={() =>
+              shareExplain(
+                {
+                  date,
+                  ganZhi: ganZhi ?? '',
+                  field,
+                  // Field is "{宜|忌 label} {verb}" (YiJiBlock) — 宜 when it leads
+                  // with the localized 宜 header, else 忌.
+                  isYi: field.startsWith(t.suitable),
+                  explanation: result.explanation,
+                },
+                locale
+              )
+            }
           >
             {L.share}
           </Button>
