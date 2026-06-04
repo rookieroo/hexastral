@@ -30,6 +30,15 @@ function shichenToHour(timeIndex: number | null): number {
   return timeIndex * 2
 }
 
+/** Short localized hook that introduces make-if under its CTA — the 干支 that used
+ *  to sit on its own said nothing to users; this teases what the feature does. */
+const MAKEIF_TAGLINE: Record<string, string> = {
+  'zh-Hans': '推演另一种人生',
+  'zh-Hant': '推演另一種人生',
+  ja: 'もしもの人生を試す',
+  en: 'explore a what-if life',
+}
+
 export function LiuyearBanner() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
@@ -54,64 +63,35 @@ export function LiuyearBanner() {
     }
   }, [locale])
 
-  // Two clearly-tappable entry buttons (icon + label) — small icons were hard to
-  // hit. The current 大运·流年 shows above once birth is set.
   const dayun = data?.dayun[data.currentDayunIndex]
   const liunian = data?.liunian[data.currentLiunianIndex]
   const makeifLabel = makeIfInteractiveCopyForLocale(locale).screenTitle
+  // The 大运·流年 干支 (jargon on its own) now rides as the timeline CTA's subtitle —
+  // a meaningful home; make-if gets a one-line hook that actually introduces it.
+  const periodSub =
+    dayun && liunian
+      ? `${dayun.pillar.stem}${dayun.pillar.branch} · ${liunian.pillar.stem}${liunian.pillar.branch}`
+      : t.timelineBannerHint
 
   return (
-    <View style={{ marginHorizontal: spacing.xl, gap: spacing.sm }}>
-      {dayun && liunian ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            paddingHorizontal: spacing.xs,
-          }}
-        >
-          <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
-            {t.timelineBannerHint}
-          </Text>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              gap: spacing.sm,
-            }}
-          >
-            <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
-              {dayun.pillar.stem}
-              {dayun.pillar.branch}
-            </Text>
-            <Text style={{ color: colors.dim, fontSize: 13 }}>·</Text>
-            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
-              {liunian.pillar.stem}
-              {liunian.pillar.branch}
-            </Text>
-          </View>
-        </View>
-      ) : null}
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <EntryPill
-          icon={<GitCommitVertical size={18} color={colors.text} strokeWidth={1.6} />}
-          label={t.timelineTitle}
-          onPress={() => router.push('/timeline')}
-          colors={colors}
-          spacing={spacing}
-        />
-        <EntryPill
-          icon={<GitFork size={18} color={colors.accent} strokeWidth={1.6} />}
-          label={makeifLabel}
-          onPress={() => router.push('/makeif')}
-          colors={colors}
-          spacing={spacing}
-          accent
-        />
-      </View>
+    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+      <EntryPill
+        icon={<GitCommitVertical size={18} color={colors.text} strokeWidth={1.6} />}
+        label={t.timelineTitle}
+        sub={periodSub}
+        onPress={() => router.push('/timeline')}
+        colors={colors}
+        spacing={spacing}
+      />
+      <EntryPill
+        icon={<GitFork size={18} color={colors.accent} strokeWidth={1.6} />}
+        label={makeifLabel}
+        sub={MAKEIF_TAGLINE[locale] ?? MAKEIF_TAGLINE.en}
+        onPress={() => router.push('/makeif')}
+        colors={colors}
+        spacing={spacing}
+        accent
+      />
     </View>
   )
 }
@@ -119,6 +99,7 @@ export function LiuyearBanner() {
 function EntryPill({
   icon,
   label,
+  sub,
   onPress,
   colors,
   spacing,
@@ -126,6 +107,7 @@ function EntryPill({
 }: {
   icon: ReactNode
   label: string
+  sub?: string
   onPress: () => void
   colors: ReturnType<typeof useTheme>['colors']
   spacing: ReturnType<typeof useTheme>['spacing']
@@ -152,12 +134,19 @@ function EntryPill({
       })}
     >
       {icon}
-      <Text
-        style={{ color: accent ? colors.accent : colors.text, fontSize: 14, fontWeight: '600' }}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
+      <View style={{ flexShrink: 1 }}>
+        <Text
+          style={{ color: accent ? colors.accent : colors.text, fontSize: 14, fontWeight: '600' }}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+        {sub ? (
+          <Text style={{ color: colors.dim, fontSize: 11, marginTop: 1 }} numberOfLines={1}>
+            {sub}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   )
 }

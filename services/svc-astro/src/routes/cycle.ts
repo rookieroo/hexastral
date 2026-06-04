@@ -59,9 +59,10 @@ cycleRoutes.post('/explain', async (c) => {
 - 语气务实，讲成「趋势 / 宜忌参考」，不是命运定论。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
 - 不要罗列术语表，像对朋友解释。${personalClause}
-- 只输出解释正文，不要标题、不要 JSON。`
+- 只输出解释正文，不要标题、不要 JSON。
+${langDirective(input.locale)}`
 
-  const userPrompt = `【今日黄历事实】\n${facts}\n\n请解释「${input.field}」。`
+  const userPrompt = `【今日黄历事实】\n${facts}\n\n请解释「${input.field}」。\n\n${langDirective(input.locale)}`
 
   const explanation = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
@@ -139,11 +140,15 @@ cycleRoutes.post('/explain-batch', async (c) => {
 - 依据建除十二神 / 二十八宿 / 节气 / 五行 说明，并给出一句可操作的建议。
 - 语气务实，讲成「趋势 / 宜忌参考」，不是命运定论。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。${personalClause}
-- 严格只输出一个 JSON 对象：键为给定字段「原文」，值为该字段的解释正文。不要标题、不要 Markdown、不要代码块、不要任何多余文字。`
+- 严格只输出一个 JSON 对象：键为给定字段「原文」，值为该字段的解释正文。不要标题、不要 Markdown、不要代码块、不要任何多余文字。
+- 注意：JSON 的「键」保持给定字段原文不变，仅「值」（解释正文）使用下述语言。
+${langDirective(input.locale)}`
 
   const userPrompt = `【今日黄历事实】\n${facts}\n\n字段列表（共 ${input.fields.length} 个）：\n${input.fields
     .map((f) => `- ${f}`)
-    .join('\n')}\n\n请为每个字段各写一段，按 JSON 返回：{"字段原文": "解释", ...}`
+    .join(
+      '\n'
+    )}\n\n请为每个字段各写一段，按 JSON 返回：{"字段原文": "解释", ...}\n\n${langDirective(input.locale)}`
 
   const maxTokens = Math.min(3072, input.fields.length * 200 + 768)
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
@@ -177,7 +182,7 @@ const narrateSchema = z.object({
   branches: z
     .array(
       z.object({
-        id: z.string().max(16),
+        id: z.string().max(64),
         label: z.string().max(40),
         divergeAtAge: z.number().int().min(0).max(120),
         mergeAtAge: z.number().int().min(0).max(120).nullable(),
@@ -222,9 +227,11 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
   · 现在/未来：写这条选择可能带来的人生走向，并务必各给一句「做这个决定要注意的事项」与「潜在风险」。
 - 依据该大运的五行/十神能量来写，讲成「趋势·参考」，不是命运定论，也不是对未来的断言或保证。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
-- 严格只输出一个 JSON 对象：键为分支 id、值为该分支叙事正文。不要标题、不要 Markdown、不要代码块。`
+- 严格只输出一个 JSON 对象：键为分支 id、值为该分支叙事正文。不要标题、不要 Markdown、不要代码块。
+- 注意：JSON 的「键」保持分支 id 原样不变，仅「值」（叙事正文）使用下述语言。
+${langDirective(input.locale)}`
 
-  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段，按 JSON 返回：{"分支id": "叙事", ...}`
+  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段，按 JSON 返回：{"分支id": "叙事", ...}\n\n${langDirective(input.locale)}`
 
   const ids = input.branches.map((b) => b.id)
   const maxTokens = Math.min(3072, ids.length * 300 + 768)
@@ -247,4 +254,19 @@ function getLangLabel(lang: string): string {
   if (lang === 'ja') return '日本語'
   if (lang === 'ko') return '한국어'
   return 'English'
+}
+
+/**
+ * Forceful output-language directive, written IN the target language. Merely
+ * embedding `${langLabel}` mid-Chinese-prompt made the model default to Chinese
+ * for en/ja/ko; this emphatic last line (in the target tongue) makes it comply —
+ * 八字 干支 terms (丁丑 / 大运 …) may stay in Han characters regardless.
+ */
+function langDirective(lang: string): string {
+  if (lang.startsWith('zh-Hant') || lang === 'zh-TW') return '【输出语言】正文必须用繁體中文。'
+  if (lang.startsWith('zh')) return '【输出语言】正文必须用简体中文。'
+  if (lang === 'ja')
+    return '【出力言語】必ず自然な日本語（ひらがな・カタカナを含む和文）で書くこと。中国語（简体/繁体）は禁止。文体例「もし…していたら…」。干支（丁丑・大運 等）のみ漢字可。'
+  if (lang === 'ko') return '【출력 언어】본문은 반드시 한국어로 작성하세요.'
+  return 'OUTPUT LANGUAGE: write the prose in English only — do NOT write in Chinese (keep Ba Zi terms like 丁丑 / 大运 as-is).'
 }

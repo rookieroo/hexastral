@@ -493,7 +493,10 @@ const ALMANAC_EDGE_TTL = 600
 
 async function edgeCachedJson(c: Context<AppEnv>, build: () => unknown): Promise<Response> {
   const wantsFresh = (c.req.header('cache-control') ?? '').includes('no-cache')
-  const cache = caches.default
+  // `caches.default` is a Workers-only extension (not in the standard CacheStorage
+  // lib) — cast so this file also typechecks when pulled into a non-Workers tsconfig
+  // (hexastral-web imports an API type, dragging this module into its type graph).
+  const cache = (caches as unknown as { default: Cache }).default
   const cacheKey = new Request(new URL(c.req.url).toString(), { method: 'GET' })
   if (!wantsFresh) {
     const hit = await cache.match(cacheKey)
@@ -1454,7 +1457,7 @@ const makeifSchema = z.object({
   branches: z
     .array(
       z.object({
-        id: z.string().max(16),
+        id: z.string().max(64),
         label: z.string().max(40),
         divergeAtAge: z.number().int().min(0).max(120),
         mergeAtAge: z.number().int().min(0).max(120).nullable(),
@@ -1482,7 +1485,9 @@ auspiceRoutes.post('/makeif', async (c) => {
   const shapeSig = body.branches
     .map((b) => `${b.id}:${b.label}:${b.divergeAtAge}:${b.mergeAtAge}:${b.isPast}:${b.realPillar}`)
     .join(',')
-  const cacheKey = `auspice:makeif:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
+  // `v2` busts the 30-day cache after the locale-directive fix — pre-fix entries
+  // cached Chinese narratives under en/ja keys; bumping the prefix drops them.
+  const cacheKey = `auspice:makeif:v2:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
   const cached = await c.env.GUARD_KV.get(cacheKey)
   if (cached) {
     try {

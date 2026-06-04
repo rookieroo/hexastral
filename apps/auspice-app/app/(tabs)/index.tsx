@@ -194,11 +194,6 @@ export default function HomeScreen() {
 
             <CalendarStrip selectedDay={selectedDay} onSelectDay={setSelectedDay} />
 
-            {/* Life-Timeline + make-if entries (大运·流年 context + the two pills),
-                moved here: directly below the calendar and above 宜忌 is the most-
-                tappable zone. Self-gates on birth+gender (renders null otherwise). */}
-            <LiuyearBanner />
-
             {/* Day detail — refreshes on selection change. Festival /
                 solar-term chip uses the selected day's payload (not literal
                 "today"), which is intentional: when a user taps Feb 17,
@@ -237,7 +232,7 @@ export default function HomeScreen() {
                     )
                   })()}
 
-                  <DayView payload={dayData} />
+                  <DayView payload={dayData} afterYiji={<LiuyearBanner />} />
 
                   {/* Actions — 择日 + 记录亲友生日 (carries the selected month-day, no year). */}
                   <View
@@ -386,10 +381,14 @@ function DayIdentityHeader({
   const { day } = payload
   const ld = day.lunarDate
   const yg = day.yearGanZhi
+  const gYear = payload.date.slice(0, 4)
   const dayGanzhiLabel = `${day.ganZhi}${locale.startsWith('zh') ? '日' : ''}`
+  // One identity row carrying BOTH year reckonings — 干支纪年 (丙午年) + 阳历纪年
+  // (2026) — so the calendar header below stays the single month-nav line.
   const sub = [
     ld ? (locale === 'en' ? `Lunar ${ld.month}/${ld.day}` : `${ld.monthName}${ld.dayName}`) : '',
     yg && locale !== 'en' ? `${yg.stem}${yg.branch}年` : '',
+    locale === 'en' ? gYear : `${gYear}年`,
   ]
     .filter(Boolean)
     .join(' · ')

@@ -17,7 +17,7 @@ import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { RotateCw, Share2, X } from 'lucide-react-native'
+import { Share2, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -292,10 +292,13 @@ function Sandbox({
       .catch(() => {})
   }, [])
 
-  // Hydrate saved forks (D1) once the device id is ready, so a returning user
-  // sees their branches + narratives instead of an empty sandbox. Runs once per
-  // (device · profile) — deps are primitives so a new `birth` ref won't re-load
-  // and clobber forks created this session.
+  // Hydrate saved forks (D1) once the device id is ready, so a returning user sees
+  // their branches + narratives instead of an empty sandbox. A fork whose stored
+  // locale ≠ the current locale is queued for re-generation — a Pro user who switches
+  // language gets their readings re-narrated in the new language (lazy: only on a
+  // mismatch). `locale` is a dep so a switch re-loads + re-narrates; the other deps
+  // are primitives so a new `birth` ref won't clobber forks created this session.
+  const [pendingRegen, setPendingRegen] = useState<MakeIfBranch[]>([])
   useEffect(() => {
     if (!deviceId) return
     let cancelled = false
@@ -307,25 +310,33 @@ function Sandbox({
     })
       .then((r) => {
         if (cancelled || r.forks.length === 0) return
-        const loaded = r.forks.map((f) => ({
-          ...buildUserBranch({
-            id: f.id,
-            event: f.event,
-            divergeAtAge: f.divergeAtAge,
-            mergeAtAge: f.mergeAtAge,
-            endAge: model.endAge,
-            isPast: f.isPast,
-          }),
-          outcome: f.narrative,
+        const loaded = r.forks.slice(-MAX_FORKS).map((f) => ({
+          branch: {
+            ...buildUserBranch({
+              id: f.id,
+              event: f.event,
+              divergeAtAge: f.divergeAtAge,
+              mergeAtAge: f.mergeAtAge,
+              endAge: model.endAge,
+              isPast: f.isPast,
+            }),
+            outcome: f.narrative,
+          },
+          stale: f.locale !== locale,
         }))
-        setBranches(loaded.slice(-MAX_FORKS))
-        setStatus(Object.fromEntries(loaded.map((b) => [b.id, 'done' as const])))
+        setBranches(loaded.map((x) => x.branch))
+        setStatus(
+          Object.fromEntries(
+            loaded.map((x) => [x.branch.id, x.stale ? 'loading' : 'done'] as const)
+          )
+        )
+        setPendingRegen(loaded.filter((x) => x.stale).map((x) => x.branch))
       })
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [deviceId, birth.birthDate, birth.birthHour, birth.gender, model.endAge])
+  }, [deviceId, birth.birthDate, birth.birthHour, birth.gender, model.endAge, locale])
 
   const combined = useMemo(() => ({ ...model, branches }), [model, branches])
 
@@ -395,6 +406,14 @@ function Sandbox({
     },
     [birth, locale, payload, deviceId]
   )
+
+  // Re-narrate forks whose stored language ≠ the current locale (queued by the
+  // hydrate effect). Deferred to here so `runFork` is in scope; clears after firing.
+  useEffect(() => {
+    if (pendingRegen.length === 0) return
+    for (const f of pendingRegen) runFork(f)
+    setPendingRegen([])
+  }, [pendingRegen, runFork])
 
   const onNodeTap = (age: number) => {
     if (!acked) {
@@ -491,9 +510,8 @@ function Sandbox({
                   >
                     {ic.forkTitle(b.divergeAtAge, !!b.isPast)} · {b.label}
                   </Text>
-                  <Pressable onPress={() => runFork(b)} hitSlop={8} accessibilityRole='button'>
-                    <RotateCw size={15} color={colors.dim} strokeWidth={1.6} />
-                  </Pressable>
+                  {/* Reload dropped — with the locale-keyed cache a re-run just
+                      re-serves the same narrative (retry lives in the error state). */}
                   {b.outcome ? (
                     <Pressable
                       onPress={() =>
@@ -502,18 +520,20 @@ function Sandbox({
                           locale
                         )
                       }
-                      hitSlop={8}
+                      hitSlop={12}
                       accessibilityRole='button'
+                      style={{ padding: 4 }}
                     >
-                      <Share2 size={15} color={colors.dim} strokeWidth={1.6} />
+                      <Share2 size={18} color={colors.dim} strokeWidth={1.6} />
                     </Pressable>
                   ) : null}
                   <Pressable
                     onPress={() => deleteFork(b.id)}
-                    hitSlop={8}
+                    hitSlop={12}
                     accessibilityRole='button'
+                    style={{ padding: 4 }}
                   >
-                    <X size={16} color={colors.dim} strokeWidth={1.6} />
+                    <X size={18} color={colors.dim} strokeWidth={1.6} />
                   </Pressable>
                 </View>
                 {st === 'loading' ? (
@@ -568,6 +588,9 @@ function Sandbox({
           <TextInput
             value={customEvent}
             onChangeText={setCustomEvent}
+            // Bound the event → bound the fork id (id = `user-${age}-${event}`),
+            // which is the D1 PK + narrate-schema key.
+            maxLength={24}
             placeholder={ic.eventPlaceholder}
             placeholderTextColor={colors.dim}
             style={{

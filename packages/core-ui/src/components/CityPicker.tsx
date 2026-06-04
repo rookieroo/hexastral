@@ -97,14 +97,53 @@ export function CityPicker({
   // of the host scroll view so the input + result rows stay above the keyboard.
   const handleInputFocus = useCallback(() => {
     onInputFocus?.()
-    const scrollNode = scrollRef?.current
+    // getInnerViewRef() + measureInWindow() exist on the native ScrollView handle
+    // (RN 0.81 / Fabric) but aren't in RN's ScrollView type — cast to the minimal
+    // native shape this routine actually calls.
+    const scrollNode = scrollRef?.current as
+      | {
+          getInnerViewRef?: () => number
+          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void
+          scrollTo: (opts: { y?: number; animated?: boolean }) => void
+        }
+      | null
+      | undefined
     const rootNode = rootRef.current
     if (!scrollNode || !rootNode) return
-    rootNode.measureLayout(
-      scrollNode.getInnerViewNode(),
-      (_x: number, y: number) => scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true }),
-      () => undefined
-    )
+
+    // RN 0.81 / Fabric: getInnerViewNode() returns a legacy handle and triggers
+    // "measureLayout must be called with a ref to a native component". Prefer
+    // getInnerViewRef() (native content container); fall back to window coords.
+    const scrollContent =
+      typeof scrollNode.getInnerViewRef === 'function' ? scrollNode.getInnerViewRef() : null
+
+    const scrollToPicker = (y: number) => {
+      scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true })
+    }
+
+    if (scrollContent) {
+      rootNode.measureLayout(
+        scrollContent,
+        (_x: number, y: number) => scrollToPicker(y),
+        () => {
+          rootNode.measureInWindow((_rx: number, rootY: number) => {
+            scrollNode.measureInWindow((_sx: number, scrollY: number) => {
+              scrollNode.scrollTo({
+                y: Math.max(0, rootY - scrollY - 12),
+                animated: true,
+              })
+            })
+          })
+        }
+      )
+      return
+    }
+
+    rootNode.measureInWindow((_rx: number, rootY: number) => {
+      scrollNode.measureInWindow((_sx: number, scrollY: number) => {
+        scrollNode.scrollTo({ y: Math.max(0, rootY - scrollY - 12), animated: true })
+      })
+    })
   }, [onInputFocus, scrollRef])
 
   // Keep input in sync if `value` changes externally (e.g. draft hydration).

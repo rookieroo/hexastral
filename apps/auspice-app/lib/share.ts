@@ -4,12 +4,12 @@ import { Share } from 'react-native'
  * Share an LLM-generated reading as text + an install CTA — the goal is organic
  * acquisition: a friend reads the narrative and taps through to download.
  *
- * TODO(launch): Auspice isn't published yet, so `INSTALL_URL` points at the
- * marketing site. Swap to the real `https://apps.apple.com/app/id…` (and the
- * Android Play URL) the moment the listing is live — this is the only place to
- * change. The App Store also rewrites this to a smart App Banner on iOS.
+ * TODO(launch): Auspice isn't published yet, and there's no /auspice page on the
+ * marketing site (it 404'd), so this points at the working root for now. The real
+ * fix is a per-reading SHARE PAGE (hexastral-web) with a server-rendered OG image
+ * + "Get the app" CTA — swap this to that URL (then the App Store link at launch).
  */
-const INSTALL_URL = 'https://hexastral.com/auspice'
+const INSTALL_URL = 'https://hexastral.com'
 
 /** Localized "shared from" + soft CTA. Body already carries the localized reading. */
 const TAGLINE: Record<string, string> = {

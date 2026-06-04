@@ -13,7 +13,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
@@ -75,7 +75,14 @@ function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoS
   )
 }
 
-export function DayView({ payload }: { payload: AuspiceDayPayload }) {
+export function DayView({
+  payload,
+  afterYiji,
+}: {
+  payload: AuspiceDayPayload
+  /** Slot rendered directly under 宜忌 (the 重点) — the timeline + make-if CTAs. */
+  afterYiji?: ReactNode
+}) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
@@ -105,6 +112,10 @@ export function DayView({ payload }: { payload: AuspiceDayPayload }) {
       <View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
       </View>
+
+      {/* Timeline + make-if CTAs — directly below 宜忌 (the most-tapped zone) per
+          layout feedback, above 对你而言. */}
+      {afterYiji}
 
       {/* Honest For-you (Sprint 3.5 / ADR-0020), now the primary Pro wall:
             - birth set → PersonalCard: 吉/凶/平 verdict free, per-reason locked

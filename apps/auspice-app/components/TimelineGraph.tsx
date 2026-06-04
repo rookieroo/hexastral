@@ -244,23 +244,52 @@ export function TimelineGraph({
     <View style={{ width, height: graph.height }}>
       <Canvas style={{ position: 'absolute', left: 0, top: 0, width, height: graph.height }}>
         {/* Trunk — the continuous through-line of self. */}
-        <Path path={graph.trunkPath} style='stroke' strokeWidth={1.5} color={colors.separator} />
+        <Path
+          path={graph.trunkPath}
+          style='stroke'
+          strokeWidth={1.8}
+          strokeCap='round'
+          color={colors.separator}
+        />
         {/* Ghost edges (locked / future, Free tier). */}
         <Group opacity={0.35}>
-          <Path path={graph.ghostEdges} style='stroke' strokeWidth={1.3} color={colors.dim} />
+          <Path
+            path={graph.ghostEdges}
+            style='stroke'
+            strokeWidth={1.4}
+            strokeCap='round'
+            strokeJoin='round'
+            color={colors.dim}
+          />
         </Group>
         {/* Solid branch + commit edges. */}
-        <Path path={graph.solidEdges} style='stroke' strokeWidth={1.6} color={colors.separator} />
+        <Path
+          path={graph.solidEdges}
+          style='stroke'
+          strokeWidth={1.8}
+          strokeCap='round'
+          strokeJoin='round'
+          color={colors.separator}
+        />
 
         {/* Nodes. */}
         {graph.nodes.map((n) => {
           const elementColor = ELEMENT_COLORS[n.element]
           if (n.locked) {
-            return <Circle key={n.id} cx={n.x} cy={n.y} r={n.r} color={colors.dim} opacity={0.3} />
+            return (
+              <Group key={n.id}>
+                {/* bg halo punches the line → the node sits on it with a clean gap */}
+                <Circle cx={n.x} cy={n.y} r={n.r + 3} color={colors.bg} />
+                <Circle cx={n.x} cy={n.y} r={n.r} color={colors.dim} opacity={0.3} />
+              </Group>
+            )
           }
           const selected = selectedId === n.id
           return (
             <Group key={n.id}>
+              {/* bg halo punches the line → the node sits on it with a clean gap
+                  (the GitLens/Sourcetree look). */}
+              <Circle cx={n.x} cy={n.y} r={n.r + 3} color={colors.bg} />
               {n.isHead ? (
                 <Circle cx={n.x} cy={n.y} r={n.r + 7} color={colors.accent} opacity={0.12} />
               ) : null}

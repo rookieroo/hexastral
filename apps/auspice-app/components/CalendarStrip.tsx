@@ -155,13 +155,17 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
           paddingTop: spacing.sm,
         }}
       >
-        <View style={{ gap: 2, flexShrink: 1 }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1 }}
+        >
           <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
             {visibleMonth.year} · {pad(visibleMonth.month)}
           </Text>
           {visibleLunarHeader && locale !== 'en' ? (
-            <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
-              {visibleLunarHeader}
+            // Drop the redundant leading "{lunarYear}年 " (the 阳历 year already shows
+            // above) — one row, just the 农历 month, e.g. "五月".
+            <Text style={{ color: colors.secondary, fontSize: 13 }}>
+              {visibleLunarHeader.replace(/^\d+年\s*/, '')}
             </Text>
           ) : null}
         </View>
