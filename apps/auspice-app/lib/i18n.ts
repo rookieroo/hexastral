@@ -84,6 +84,12 @@ export interface Strings {
   specializedActive: string
   /** Upsell pill on /event when user picks a specialized event but isn't Pro yet. */
   specializedUpsell: string
+  /** Section label above the 择日 date-range control. */
+  eventRangeSection: string
+  /** Free-tier note: the search is pinned to the next 30 days, top 3. */
+  eventRangeFreeNote: string
+  /** Pro upsell on the date-range row — unlock a custom window. */
+  eventRangeUpsell: string
   // Sprint 2 dual-timezone (chunk 6, Tier-1 #9)
   /** Me section title for the dual-timezone setting. */
   remoteTzSection: string
@@ -97,6 +103,8 @@ export interface Strings {
   remoteTzClear: string
   /** Inline "is now" word for the Today banner ({label} {remoteTzNow} {date}). */
   remoteTzNow: string
+  /** Instruction under the globe picker — drag to spin, tap to choose a point. */
+  remoteTzGlobeHint: string
   // Sprint 3 chunk 1 — /festivals foundation
   /** Compact label for the 节庆 row on Today's drill-in nav + as the /festivals page title. */
   openFestivals: string
@@ -331,11 +339,11 @@ const zhHans: Strings = {
   personalClashLabel: '今日冲你',
   unlockMore: '解锁更多',
   proTitle: 'Auspice Pro',
-  proSubtitle: '对你而言逐条解读 · 大运流年 · 4 项专项择日 (嫁娶/入宅/开市/出行)',
+  proSubtitle: '对你而言逐条解读 · 完整人生时间线 · 择日自定义日期范围',
   proBenefits: [
     '对你而言 · 每条宜忌的逐条解读',
     '完整人生时间线 · 大运 / 流年 / 全年流月',
-    '4 项专项择日 · 嫁娶 / 入宅 / 开市 / 出行',
+    '择日自定义日期范围 · 最长约 3 个月（免费版仅未来 30 天，专项择日免费）',
     '个人黄历日历 · 一键订阅到系统日历',
   ],
   proMonthly: '月度订阅',
@@ -347,12 +355,16 @@ const zhHans: Strings = {
   signInError: '登录失败，请重试。',
   specializedActive: '专项择日 已启用',
   specializedUpsell: 'Pro · 解锁专项择日',
+  eventRangeSection: '时间范围',
+  eventRangeFreeNote: '未来 30 天 · 取最佳 3 天',
+  eventRangeUpsell: 'Pro · 自定义日期范围',
   remoteTzSection: '外地时区',
   remoteTzOffsetHint: '时差 (例 +8 / -5)',
   remoteTzCityHint: '城市 (可选)',
   remoteTzSave: '保存',
   remoteTzClear: '清除',
   remoteTzNow: '已是',
+  remoteTzGlobeHint: '拖动旋转，点选地点设定时区',
   openFestivals: '节庆',
   cultureHub: '文化',
   cultureSnippetTitle: '今日文化',
@@ -543,11 +555,11 @@ const zhHant: Strings = {
   personalClashLabel: '今日沖你',
   unlockMore: '解鎖更多',
   proTitle: 'Auspice Pro',
-  proSubtitle: '對你而言逐條解讀 · 大運流年 · 4 項專項擇日 (嫁娶/入宅/開市/出行)',
+  proSubtitle: '對你而言逐條解讀 · 完整人生時間線 · 擇日自訂日期範圍',
   proBenefits: [
     '對你而言 · 每條宜忌的逐條解讀',
     '完整人生時間線 · 大運 / 流年 / 全年流月',
-    '4 項專項擇日 · 嫁娶 / 入宅 / 開市 / 出行',
+    '擇日自訂日期範圍 · 最長約 3 個月（免費版僅未來 30 天，專項擇日免費）',
     '個人黃曆日曆 · 一鍵訂閱到系統日曆',
   ],
   proMonthly: '月度訂閱',
@@ -559,12 +571,16 @@ const zhHant: Strings = {
   signInError: '登入失敗，請重試。',
   specializedActive: '專項擇日 已啟用',
   specializedUpsell: 'Pro · 解鎖專項擇日',
+  eventRangeSection: '時間範圍',
+  eventRangeFreeNote: '未來 30 天 · 取最佳 3 天',
+  eventRangeUpsell: 'Pro · 自訂日期範圍',
   remoteTzSection: '外地時區',
   remoteTzOffsetHint: '時差 (例 +8 / -5)',
   remoteTzCityHint: '城市 (可選)',
   remoteTzSave: '保存',
   remoteTzClear: '清除',
   remoteTzNow: '已是',
+  remoteTzGlobeHint: '拖曳旋轉，點選地點設定時區',
   openFestivals: '節慶',
   cultureHub: '文化',
   cultureSnippetTitle: '今日文化',
@@ -753,11 +769,11 @@ const ja: Strings = {
   personalClashLabel: '本日と冲',
   unlockMore: 'もっと見る',
   proTitle: 'Auspice Pro',
-  proSubtitle: 'あなたへの個別解説 · 大運・流年 · 4 種の専門日選び',
+  proSubtitle: 'あなたへの個別解説 · 人生タイムライン全期間 · 日選びの期間指定',
   proBenefits: [
     'あなたへの個別解説 · 宜忌を一項目ずつ',
     '人生タイムライン全期間 · 大運 / 流年 / 通年の流月',
-    '4 種の専門日選び · 婚礼 / 入居 / 開業 / 旅行',
+    '日選びの期間を自由に指定 · 最長約 3 か月（無料は今後 30 日、専門日選びは無料）',
     '個人の暦カレンダー · システムカレンダーに購読',
   ],
   proMonthly: '月額プラン',
@@ -770,12 +786,16 @@ const ja: Strings = {
   signInError: 'サインインに失敗しました。もう一度お試しください。',
   specializedActive: '専門日選び 適用中',
   specializedUpsell: 'Pro · 専門日選びを解錠',
+  eventRangeSection: '期間',
+  eventRangeFreeNote: '今後 30 日 · ベスト 3 日',
+  eventRangeUpsell: 'Pro · 期間を自由に指定',
   remoteTzSection: '現地時間',
   remoteTzOffsetHint: '時差 (例 +8 / -5)',
   remoteTzCityHint: '都市名（任意）',
   remoteTzSave: '保存',
   remoteTzClear: 'クリア',
   remoteTzNow: 'は',
+  remoteTzGlobeHint: 'ドラッグで回転、地点をタップして時差を設定',
   openFestivals: '節句',
   cultureHub: '文化',
   cultureSnippetTitle: '今日の文化',
@@ -965,11 +985,11 @@ const en: Strings = {
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
   proTitle: 'Auspice Pro',
-  proSubtitle: 'Per-reason For-you reading · Life timeline · 4 specialized date pickers',
+  proSubtitle: 'Per-reason For-you reading · Full life timeline · Custom date-picker range',
   proBenefits: [
     'For-you reading — every Suitable / Avoid explained, reason by reason',
     'Full life timeline — decade cycles, yearly, and all 12 months',
-    '4 specialized date pickers — wedding / move-in / opening / travel',
+    'Custom date-picker range — up to ~3 months (Free is the next 30 days; specialized scoring is free)',
     'Personal almanac calendar — subscribe to your system Calendar',
   ],
   proMonthly: 'Monthly',
@@ -982,12 +1002,16 @@ const en: Strings = {
   signInError: 'Sign-in failed. Please try again.',
   specializedActive: 'Specialized scoring on',
   specializedUpsell: 'Pro · unlock specialized scoring',
+  eventRangeSection: 'Date range',
+  eventRangeFreeNote: 'Next 30 days · top 3',
+  eventRangeUpsell: 'Pro · custom date range',
   remoteTzSection: 'Remote timezone',
   remoteTzOffsetHint: 'Hours offset (e.g. +8 / -5)',
   remoteTzCityHint: 'City (optional)',
   remoteTzSave: 'Save',
   remoteTzClear: 'Clear',
   remoteTzNow: 'is now',
+  remoteTzGlobeHint: 'Drag to spin, tap a spot to set the timezone',
   openFestivals: 'Festivals',
   cultureHub: 'Culture',
   cultureSnippetTitle: "Today's culture",

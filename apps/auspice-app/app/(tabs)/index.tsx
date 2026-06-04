@@ -165,6 +165,17 @@ export default function HomeScreen() {
                 birth+gender (renders null otherwise); taps push to /timeline. */}
             <LiuyearBanner />
 
+            {/* 干支日 · 农历 · 年干支 — lifted ABOVE the calendar so the bottom half
+                leads cleanly with 宜忌 (2026-06 layout feedback). */}
+            {dayData ? (
+              <DayIdentityHeader
+                payload={dayData}
+                colors={colors}
+                spacing={spacing}
+                locale={locale}
+              />
+            ) : null}
+
             <CalendarStrip selectedDay={selectedDay} onSelectDay={setSelectedDay} />
 
             {/* Day detail — refreshes on selection change. Festival /
@@ -336,6 +347,46 @@ function CultureAccentChip({ label, onPress, colors, spacing }: CultureAccentChi
       </Text>
       <ChevronRightIcon size={14} color={colors.accent} strokeWidth={1.6} />
     </Pressable>
+  )
+}
+
+/** 干支日 · 农历 · 年干支 — the selected day's identity, shown above the calendar. */
+function DayIdentityHeader({
+  payload,
+  colors,
+  spacing,
+  locale,
+}: {
+  payload: AuspiceDayPayload
+  colors: { text: string; dim: string }
+  spacing: { xl: number; sm: number }
+  locale: string
+}) {
+  const { day } = payload
+  const ld = day.lunarDate
+  const yg = day.yearGanZhi
+  const dayGanzhiLabel = `${day.ganZhi}${locale.startsWith('zh') ? '日' : ''}`
+  const sub = [
+    ld ? (locale === 'en' ? `Lunar ${ld.month}/${ld.day}` : `${ld.monthName}${ld.dayName}`) : '',
+    yg && locale !== 'en' ? `${yg.stem}${yg.branch}年` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <View
+      style={{
+        paddingHorizontal: spacing.xl,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+      }}
+    >
+      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}>
+        {dayGanzhiLabel}
+      </Text>
+      {sub ? <Text style={{ color: colors.dim, fontSize: 13 }}>{sub}</Text> : null}
+    </View>
   )
 }
 

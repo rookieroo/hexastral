@@ -23,9 +23,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
-import { getAuspiceBirthInfo } from '@/lib/birth'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
+import { openKindredCompose } from '@/lib/kindred-handoff'
 import {
   type AuspicePerson,
   addPerson,
@@ -57,6 +58,8 @@ export default function PeopleScreen() {
 
   const [people, setPeople] = useState<AuspicePerson[]>([])
   const [selfDate, setSelfDate] = useState<string | null>(null)
+  // Full self birth info — needed (beyond selfDate) to seed the Kindred 合盘 hand-off.
+  const [selfInfo, setSelfInfo] = useState<AuspiceBirthInfo | null>(null)
 
   // ── add form ──
   const [name, setName] = useState('')
@@ -86,11 +89,35 @@ export default function PeopleScreen() {
       .then(setPeople)
       .catch(() => {})
     getAuspiceBirthInfo()
-      .then((info) => setSelfDate(info?.solarDate ?? null))
+      .then((info) => {
+        setSelfDate(info?.solarDate ?? null)
+        setSelfInfo(info ?? null)
+      })
       .catch(() => {})
   }, [])
 
   const canAdd = MD_RE.test(monthDay) && name.trim().length > 0
+  // Kindred 合盘 needs a real, solar full date (year + month-day). The 时辰 /
+  // gender / birthplace just sharpen it. We only surface the hand-off when those
+  // are satisfied so the jump never lands on an empty Kindred draft.
+  const kindredReady = canAdd && /^\d{4}$/.test(birthYear) && calendar === 'solar'
+  const openKindred = () => {
+    void openKindredCompose({
+      person: {
+        id: 'draft',
+        name: name.trim(),
+        solarDate: `${birthYear}-${monthDay}`,
+        calendar: 'solar',
+        timeIndex,
+        gender,
+        city: birthCity?.name,
+        lat: birthCity?.lat,
+        lng: birthCity?.lng,
+        timezone: birthCity?.timezone ?? null,
+      },
+      self: selfInfo,
+    })
+  }
 
   const add = async () => {
     if (!canAdd) return
@@ -331,6 +358,35 @@ export default function PeopleScreen() {
                     scrollRef={scrollRef}
                   />
                 </View>
+
+                {/* Kindred hand-off — the actual 八字 / 紫微 合盘 lives in Kindred.
+                    Surfaced once a full solar date is on the form so the jump lands
+                    on a pre-filled draft, not an empty one. Lunar dates can't cross
+                    over (Kindred's draft is solar-only). */}
+                {calendar === 'lunar' ? (
+                  <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                    {t.kindredComposeLunarNote}
+                  </Text>
+                ) : kindredReady ? (
+                  <Pressable
+                    onPress={openKindred}
+                    accessibilityRole='button'
+                    accessibilityLabel={t.kindredComposeCta}
+                    style={({ pressed }) => ({
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      borderWidth: 0.5,
+                      borderColor: colors.accent,
+                      backgroundColor: colors.accentGhost,
+                      alignItems: 'center',
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                      {t.kindredComposeCta}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
           </View>

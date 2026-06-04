@@ -107,28 +107,103 @@ export interface RemoteTzCityPreset {
    *  here (Sprint 3 simplification); users in DST regions can pick a near
    *  preset or accept the ±1h drift twice a year. */
   offsetHours: number
+  /** Geographic coordinates — drive the globe picker's dots + tap-snapping. */
+  lat: number
+  lng: number
 }
 
 /**
- * Curated cities the user can pick as their "remote" reference TZ — covers
- * the overseas-Chinese diaspora's most common family-back-home cases plus
- * the major Asian + western timezones. The free-text TextInput fallback
- * still exists for less common locations.
+ * Quick-pick cities. Intentionally NOT sorted CJK-first (2026-06 feedback) —
+ * the ordering interleaves regions so it reads as a world list, not a
+ * China-then-rest list. The globe picker is the primary affordance; these are
+ * the fast path for the common diaspora cases.
  */
 export const REMOTE_TZ_CITY_PRESETS: ReadonlyArray<RemoteTzCityPreset> = [
-  { id: 'beijing', label: '北京', offsetHours: 8 },
-  { id: 'shanghai', label: '上海', offsetHours: 8 },
-  { id: 'hongkong', label: '香港', offsetHours: 8 },
-  { id: 'taipei', label: '台北', offsetHours: 8 },
-  { id: 'singapore', label: '新加坡', offsetHours: 8 },
-  { id: 'tokyo', label: '東京', offsetHours: 9 },
-  { id: 'seoul', label: '首爾', offsetHours: 9 },
-  { id: 'sydney', label: 'Sydney', offsetHours: 10 },
-  { id: 'dubai', label: 'Dubai', offsetHours: 4 },
-  { id: 'london', label: 'London', offsetHours: 0 },
-  { id: 'paris', label: 'Paris', offsetHours: 1 },
-  { id: 'berlin', label: 'Berlin', offsetHours: 1 },
-  { id: 'nyc', label: 'New York', offsetHours: -5 },
-  { id: 'la', label: 'Los Angeles', offsetHours: -8 },
-  { id: 'sf', label: 'San Francisco', offsetHours: -8 },
+  { id: 'la', label: 'Los Angeles', offsetHours: -8, lat: 34.05, lng: -118.24 },
+  { id: 'beijing', label: '北京', offsetHours: 8, lat: 39.9, lng: 116.41 },
+  { id: 'london', label: 'London', offsetHours: 0, lat: 51.51, lng: -0.13 },
+  { id: 'tokyo', label: '東京', offsetHours: 9, lat: 35.68, lng: 139.69 },
+  { id: 'nyc', label: 'New York', offsetHours: -5, lat: 40.71, lng: -74.01 },
+  { id: 'singapore', label: '新加坡', offsetHours: 8, lat: 1.35, lng: 103.82 },
+  { id: 'paris', label: 'Paris', offsetHours: 1, lat: 48.86, lng: 2.35 },
+  { id: 'hongkong', label: '香港', offsetHours: 8, lat: 22.32, lng: 114.17 },
+  { id: 'sydney', label: 'Sydney', offsetHours: 10, lat: -33.87, lng: 151.21 },
+  { id: 'shanghai', label: '上海', offsetHours: 8, lat: 31.23, lng: 121.47 },
+  { id: 'sf', label: 'San Francisco', offsetHours: -8, lat: 37.77, lng: -122.42 },
+  { id: 'taipei', label: '台北', offsetHours: 8, lat: 25.03, lng: 121.57 },
+  { id: 'dubai', label: 'Dubai', offsetHours: 4, lat: 25.2, lng: 55.27 },
+  { id: 'seoul', label: '首爾', offsetHours: 9, lat: 37.57, lng: 126.98 },
+  { id: 'berlin', label: 'Berlin', offsetHours: 1, lat: 52.52, lng: 13.4 },
 ]
+
+/** A city dot on the globe picker. */
+export interface GlobeCity {
+  label: string
+  lat: number
+  lng: number
+  offsetHours: number
+}
+
+/**
+ * Dots scattered on the globe — the quick-pick cities plus enough extra anchors
+ * for every continent to read as populated (GitHub-globe style). Also the
+ * snap targets when the user taps near a city.
+ */
+export const GLOBE_CITIES: ReadonlyArray<GlobeCity> = [
+  ...REMOTE_TZ_CITY_PRESETS.map((c) => ({
+    label: c.label,
+    lat: c.lat,
+    lng: c.lng,
+    offsetHours: c.offsetHours,
+  })),
+  { label: 'Vancouver', lat: 49.28, lng: -123.12, offsetHours: -8 },
+  { label: 'Chicago', lat: 41.88, lng: -87.63, offsetHours: -6 },
+  { label: 'Mexico City', lat: 19.43, lng: -99.13, offsetHours: -6 },
+  { label: 'Bogotá', lat: 4.71, lng: -74.07, offsetHours: -5 },
+  { label: 'São Paulo', lat: -23.55, lng: -46.63, offsetHours: -3 },
+  { label: 'Buenos Aires', lat: -34.6, lng: -58.38, offsetHours: -3 },
+  { label: 'Honolulu', lat: 21.31, lng: -157.86, offsetHours: -10 },
+  { label: 'Anchorage', lat: 61.22, lng: -149.9, offsetHours: -9 },
+  { label: 'Reykjavík', lat: 64.15, lng: -21.94, offsetHours: 0 },
+  { label: 'Lagos', lat: 6.52, lng: 3.38, offsetHours: 1 },
+  { label: 'Cairo', lat: 30.04, lng: 31.24, offsetHours: 2 },
+  { label: 'Johannesburg', lat: -26.2, lng: 28.05, offsetHours: 2 },
+  { label: 'Nairobi', lat: -1.29, lng: 36.82, offsetHours: 3 },
+  { label: 'Moscow', lat: 55.76, lng: 37.62, offsetHours: 3 },
+  { label: 'Istanbul', lat: 41.01, lng: 28.98, offsetHours: 3 },
+  { label: 'Mumbai', lat: 19.08, lng: 72.88, offsetHours: 5.5 },
+  { label: 'Delhi', lat: 28.61, lng: 77.21, offsetHours: 5.5 },
+  { label: 'Bangkok', lat: 13.76, lng: 100.5, offsetHours: 7 },
+  { label: 'Jakarta', lat: -6.21, lng: 106.85, offsetHours: 7 },
+  { label: 'Perth', lat: -31.95, lng: 115.86, offsetHours: 8 },
+  { label: 'Auckland', lat: -36.85, lng: 174.76, offsetHours: 12 },
+]
+
+/** Earth-rotation timezone estimate from a longitude (no political TZ borders /
+ *  DST — consistent with this module's offset-only model). */
+export function offsetFromLongitude(lng: number): number {
+  return Math.max(-12, Math.min(14, Math.round(lng / 15)))
+}
+
+/**
+ * Nearest globe city to a tapped lat/lng, within ~7° (equirectangular approx,
+ * longitude weighted by latitude). Lets a tap "snap" to a named city + its real
+ * offset (which may be a half-hour zone) instead of a bare UTC±N.
+ */
+export function nearestGlobeCity(lat: number, lng: number): GlobeCity | null {
+  let best: GlobeCity | null = null
+  let bestD = Number.POSITIVE_INFINITY
+  const cosLat = Math.cos((lat * Math.PI) / 180)
+  for (const c of GLOBE_CITIES) {
+    const dLat = c.lat - lat
+    let dLng = c.lng - lng
+    if (dLng > 180) dLng -= 360
+    if (dLng < -180) dLng += 360
+    const d = Math.hypot(dLat, dLng * cosLat)
+    if (d < bestD) {
+      bestD = d
+      best = c
+    }
+  }
+  return bestD <= 7 ? best : null
+}

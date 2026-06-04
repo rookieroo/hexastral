@@ -1,51 +1,54 @@
 /**
- * /timeline — Pro Life-Timeline page (Sprint 4.5 / ADR-0020).
+ * /timeline — 人生时间线 (ADR-0020, 2026-06 git-graph redesign).
  *
- * Renders the user's deterministic 八字-derived timeline:
- *   - 大运 horizontal scroll (8 chips, 10-year cycles)
- *   - 流年 vertical list (±5 years from current)
- *   - 流月 grid (12 months for the current year)
+ * The life is drawn as a git graph (see components/TimelineGraph): the natal
+ * 命局 is the SOURCE, each 大运 is a 10-year branch off the through-line of self,
+ * the 大运 you're living is the checked-out HEAD branch carrying the 流年 as
+ * commits, and 流月 are the finest commits of the current year.
  *
- * Gating:
- *   - No birth info → "Set birth info" placeholder pointing to /me
- *   - Free + birth set → first 3 大运 + paywall overlay
- *   - Pro + birth set → full timeline
+ * Gating is ONE wall, ONE CTA (2026-06 feedback — the old page showed three
+ * "unlock" rows). Free sees the SOURCE + the current branch + this year; Pro
+ * lights up the whole life. The single unlock CTA sits at the very bottom.
  *
- * ADR-0018 minimalism: no back button, no h1 chrome; the content
- * sections ARE the page identity. Element colors come from the same
- * 五行 palette used by the 12 时辰 wheel (ELEMENT_COLORS).
+ * ADR-0018 minimalism: no chrome, no bordered "cards". The graph and the app's
+ * own type ARE the page. Element colors come from the shared 五行 palette.
  */
 
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
-import {
-  type DayunRow,
-  fetchTimeline,
-  type LiunianRow,
-  type LiuyueRow,
-  type PersonalFit,
-  type TimelinePayload,
-} from '@/lib/api'
+import { LiuyueStrip, TimelineGraph } from '@/components/TimelineGraph'
+import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
-import { ELEMENT_COLORS } from '@/lib/shichen-content'
-
-/** Free preview = current position + the next N 流月; Pro unlocks the full life. */
-const FREE_LIUYUE_MONTHS = 6
-
-/** 对你而言 verdict → dot color (吉 green / 平 grey / 凶 red). */
-const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
   return timeIndex * 2
+}
+
+/** Default the detail panel to "now": the current 流年, else current 大运, else SOURCE. */
+function defaultSelection(payload: TimelinePayload): string {
+  const cur = payload.liunian.find((r) => r.isCurrent)
+  if (cur) return `liunian-${cur.year}`
+  if (payload.currentDayunIndex >= 0) {
+    const d = payload.dayun[payload.currentDayunIndex]
+    if (d) return `dayun-${d.index}`
+  }
+  return 'source'
 }
 
 type ScreenState =
@@ -58,11 +61,13 @@ export default function TimelineScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
+  const { width: screenWidth } = useWindowDimensions()
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setState({ kind: 'loading' })
@@ -79,7 +84,10 @@ export default function TimelineScreen() {
           birthHour,
           gender,
           locale,
-        }).then((payload) => setState({ kind: 'data', payload }))
+        }).then((payload) => {
+          setSelectedId(defaultSelection(payload))
+          setState({ kind: 'data', payload })
+        })
       })
       .catch((e: unknown) => {
         setState({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
@@ -91,6 +99,8 @@ export default function TimelineScreen() {
       load()
     }, [load])
   )
+
+  const canvasWidth = screenWidth - spacing.xl * 2
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -122,12 +132,15 @@ export default function TimelineScreen() {
             {t.loadFailed}: {state.message}
           </Text>
         ) : (
-          <TimelineBody
+          <Body
             payload={state.payload}
             isPro={isPro}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
             onLockedTap={() => setPaywallOpen(true)}
             colors={colors}
             spacing={spacing}
+            canvasWidth={canvasWidth}
             t={t}
           />
         )}
@@ -137,7 +150,7 @@ export default function TimelineScreen() {
   )
 }
 
-// ── Body composition ──────────────────────────────────────────────────────
+// ── Body ──────────────────────────────────────────────────────────────────
 
 interface BodyColors {
   text: string
@@ -146,10 +159,8 @@ interface BodyColors {
   accent: string
   accentGhost: string
   separator: string
-  card: string
   bg: string
 }
-
 interface BodySpacing {
   sm: number
   md: number
@@ -158,56 +169,60 @@ interface BodySpacing {
   '3xl': number
 }
 
-interface BodyStrings {
-  timelineDayun: string
-  timelineLiunian: string
-  timelineLiuyue: string
-  timelineCurrentBadge: string
-  timelineAgeFrom: string
-  timelineProLocked: string
-  timelineFreePreviewNote: string
-  timelineAdvice: Record<PersonalFit, string>
-  timelineClashNote: string
-  personal: { fit: Record<PersonalFit, string> }
-}
+const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
-function TimelineBody({
+function Body({
   payload,
   isPro,
+  selectedId,
+  onSelect,
   onLockedTap,
   colors,
   spacing,
+  canvasWidth,
   t,
 }: {
   payload: TimelinePayload
   isPro: boolean
+  selectedId: string | null
+  onSelect: (id: string) => void
   onLockedTap: () => void
   colors: BodyColors
   spacing: BodySpacing
-  t: BodyStrings
+  canvasWidth: number
+  t: ReturnType<typeof useStrings>['t']
 }) {
-  // Free = a near-term snapshot (current 大运 + current 流年 + next 6 流月);
-  // Pro = the full lifetime ladder. Each Free-gated section gets a LockedRow.
-  const dayunCurrent =
-    payload.currentDayunIndex >= 0 ? payload.dayun[payload.currentDayunIndex] : payload.dayun[0]
-  const visibleDayun = isPro ? payload.dayun : dayunCurrent ? [dayunCurrent] : []
-  const visibleLiunian = isPro ? payload.liunian : payload.liunian.filter((r) => r.isCurrent)
-  // 流月 is a rolling window from the current month (server Phase 2), so the free
-  // preview is just the first N — no calendar-month filtering needed.
-  const visibleLiuyue = isPro ? payload.liuyue : payload.liuyue.slice(0, FREE_LIUYUE_MONTHS)
-  const dayunLocked = !isPro && visibleDayun.length < payload.dayun.length
-  const liunianLocked = !isPro && visibleLiunian.length < payload.liunian.length
-  const liuyueLocked = !isPro && visibleLiuyue.length < payload.liuyue.length
-
-  // 本月「对你而言」— the current 流月's deterministic verdict + advice (the SAME
-  // engine as the daily 黄历, one tier up). This is the in-app "近期" guidance; the
-  // node reminders surface the same thing on month boundaries.
-  const thisMonth = payload.liuyue[0]
-  const monthAdvice = thisMonth
-    ? `${t.timelineAdvice[thisMonth.fit]}${
-        thisMonth.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
-      }`
-    : null
+  // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
+  const detail = useMemo(() => {
+    if (!selectedId) return null
+    if (selectedId === 'source') {
+      return {
+        heading: `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`,
+        fit: null as PersonalFit | null,
+        body: t.personal.birthHint,
+      }
+    }
+    if (selectedId.startsWith('dayun-')) {
+      const idx = Number(selectedId.slice('dayun-'.length))
+      const row = payload.dayun.find((d) => d.index === idx)
+      if (!row) return null
+      const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+      return {
+        heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
+        fit: row.fit,
+        body: `${t.timelineAdvice[row.fit]}${clash}`,
+      }
+    }
+    const year = Number(selectedId.slice('liunian-'.length))
+    const row = payload.liunian.find((r) => r.year === year)
+    if (!row) return null
+    const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+    return {
+      heading: `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+      fit: row.fit,
+      body: `${t.timelineAdvice[row.fit]}${clash}`,
+    }
+  }, [selectedId, payload, t])
 
   return (
     <View style={{ gap: spacing.xl }}>
@@ -217,340 +232,69 @@ function TimelineBody({
         </Text>
       ) : null}
 
-      {/* 本月 对你而言 — current 流月 verdict + advice (the "近期" guidance). */}
-      {thisMonth && monthAdvice ? (
+      {/* Selected-node reading — the "近期" guidance. A single fit-colored rule,
+          no background card (2026-06 design feedback). */}
+      {detail ? (
         <View
           style={{
-            borderRadius: 14,
-            backgroundColor: colors.card,
-            borderLeftWidth: 3,
-            borderLeftColor: FIT_COLOR[thisMonth.fit],
+            borderLeftWidth: 2.5,
+            borderLeftColor: detail.fit ? FIT_COLOR[detail.fit] : colors.separator,
+            paddingLeft: spacing.lg,
+            gap: 5,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+            {detail.heading}
+          </Text>
+          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
+            {detail.body}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* The life as a git graph. */}
+      <TimelineGraph
+        payload={payload}
+        isPro={isPro}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        onLockedTap={onLockedTap}
+        colors={colors}
+        width={canvasWidth}
+      />
+
+      {/* 流月 — the finest commits of the current year. */}
+      {payload.liuyue.length > 0 ? (
+        <LiuyueStrip
+          liuyue={payload.liuyue}
+          isPro={isPro}
+          colors={colors}
+          label={t.timelineLiuyue}
+        />
+      ) : null}
+
+      {/* ONE unlock — the only paywall on the page. */}
+      {!isPro ? (
+        <Pressable
+          onPress={onLockedTap}
+          accessibilityRole='button'
+          accessibilityLabel={t.timelineProLocked}
+          style={({ pressed }) => ({
+            marginTop: spacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             paddingVertical: spacing.md,
-            paddingHorizontal: spacing.lg,
-            gap: 4,
-          }}
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
-          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-            {`${thisMonth.month}月 · ${thisMonth.pillar.stem}${thisMonth.pillar.branch} · ${t.personal.fit[thisMonth.fit]}`}
+          <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600', letterSpacing: 1 }}>
+            {t.timelineProLocked}
           </Text>
-          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
-            {monthAdvice}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* 大运 horizontal ladder */}
-      <Section title={t.timelineDayun} colors={colors} spacing={spacing}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.md, paddingRight: spacing.lg }}
-        >
-          {visibleDayun.map((row) => (
-            <DayunChip
-              key={row.index}
-              row={row}
-              colors={colors}
-              spacing={spacing}
-              currentLabel={t.timelineCurrentBadge}
-              ageLabel={t.timelineAgeFrom}
-            />
-          ))}
-        </ScrollView>
-        {dayunLocked ? (
-          <LockedRow
-            label={t.timelineProLocked}
-            colors={colors}
-            spacing={spacing}
-            onPress={onLockedTap}
-          />
-        ) : null}
-      </Section>
-
-      {/* 流年 vertical list */}
-      <Section title={t.timelineLiunian} colors={colors} spacing={spacing}>
-        <View
-          style={{
-            borderRadius: 14,
-            backgroundColor: colors.card,
-            overflow: 'hidden',
-          }}
-        >
-          {visibleLiunian.map((row, i) => (
-            <LiunianRowView
-              key={row.year}
-              row={row}
-              colors={colors}
-              spacing={spacing}
-              currentLabel={t.timelineCurrentBadge}
-              divider={i < visibleLiunian.length - 1}
-            />
-          ))}
-        </View>
-        {liunianLocked ? (
-          <LockedRow
-            label={t.timelineProLocked}
-            colors={colors}
-            spacing={spacing}
-            onPress={onLockedTap}
-          />
-        ) : null}
-      </Section>
-
-      {/* 流月 grid (4 cols × 3 rows fits 12 cleanly) */}
-      <Section title={t.timelineLiuyue} colors={colors} spacing={spacing}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {visibleLiuyue.map((row) => (
-            <LiuyueCell
-              key={`${row.year}-${row.month}`}
-              row={row}
-              colors={colors}
-              spacing={spacing}
-            />
-          ))}
-        </View>
-        {liuyueLocked ? (
-          <LockedRow
-            label={t.timelineProLocked}
-            colors={colors}
-            spacing={spacing}
-            onPress={onLockedTap}
-          />
-        ) : null}
-      </Section>
-    </View>
-  )
-}
-
-function Section({
-  title,
-  colors,
-  spacing,
-  children,
-}: {
-  title: string
-  colors: BodyColors
-  spacing: BodySpacing
-  children: React.ReactNode
-}) {
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{title}</Text>
-      {children}
-    </View>
-  )
-}
-
-/** Tiny 对你而言 verdict dot (吉/平/凶) shown on each period row. */
-function FitDot({ fit }: { fit: PersonalFit }) {
-  return (
-    <View
-      accessibilityLabel={fit}
-      style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: FIT_COLOR[fit] }}
-    />
-  )
-}
-
-function DayunChip({
-  row,
-  colors,
-  spacing,
-  currentLabel,
-  ageLabel,
-}: {
-  row: DayunRow
-  colors: BodyColors
-  spacing: BodySpacing
-  currentLabel: string
-  ageLabel: string
-}) {
-  const elementColor = ELEMENT_COLORS[row.pillar.element]
-  return (
-    <View
-      style={{
-        minWidth: 96,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-        borderRadius: 12,
-        borderWidth: row.isCurrent ? 1.5 : 0.5,
-        borderColor: row.isCurrent ? colors.accent : colors.separator,
-        backgroundColor: colors.card,
-        gap: 4,
-        alignItems: 'flex-start',
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-        <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 2 }}>#{row.index}</Text>
-        <FitDot fit={row.fit} />
-      </View>
-      <Text style={{ color: elementColor, fontSize: 22, fontWeight: '500' }}>
-        {row.pillar.stem}
-        {row.pillar.branch}
-      </Text>
-      <Text style={{ color: colors.secondary, fontSize: 11 }}>
-        {ageLabel.replace('{age}', String(row.startAge))}
-      </Text>
-      {row.isCurrent ? (
-        <View
-          style={{
-            marginTop: 2,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 999,
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 9, letterSpacing: 1, fontWeight: '600' }}>
-            {currentLabel}
-          </Text>
-        </View>
+          <ChevronRightIcon size={16} color={colors.accent} strokeWidth={1.4} />
+        </Pressable>
       ) : null}
     </View>
-  )
-}
-
-function LiunianRowView({
-  row,
-  colors,
-  spacing,
-  currentLabel,
-  divider,
-}: {
-  row: LiunianRow
-  colors: BodyColors
-  spacing: BodySpacing
-  currentLabel: string
-  divider: boolean
-}) {
-  const elementColor = ELEMENT_COLORS[row.pillar.element]
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderBottomWidth: divider ? 0.5 : 0,
-        borderBottomColor: colors.separator,
-        backgroundColor: row.isCurrent ? colors.accentGhost : 'transparent',
-        gap: spacing.md,
-      }}
-    >
-      <Text
-        style={{
-          width: 56,
-          color: colors.text,
-          fontSize: 14,
-          fontWeight: row.isCurrent ? '600' : '400',
-        }}
-      >
-        {row.year}
-      </Text>
-      <Text
-        style={{
-          flex: 1,
-          color: elementColor,
-          fontSize: 16,
-          fontWeight: '500',
-        }}
-      >
-        {row.pillar.stem}
-        {row.pillar.branch}
-      </Text>
-      <FitDot fit={row.fit} />
-      <Text style={{ color: colors.dim, fontSize: 12 }}>{row.age}</Text>
-      {row.isCurrent ? (
-        <View
-          style={{
-            paddingHorizontal: 8,
-            paddingVertical: 2,
-            borderRadius: 999,
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 10, letterSpacing: 1, fontWeight: '600' }}>
-            {currentLabel}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-  )
-}
-
-function LiuyueCell({
-  row,
-  colors,
-  spacing,
-}: {
-  row: LiuyueRow
-  colors: BodyColors
-  spacing: BodySpacing
-}) {
-  const elementColor = ELEMENT_COLORS[row.pillar.element]
-  return (
-    <View
-      style={{
-        width: '25%',
-        padding: 4,
-      }}
-    >
-      <View
-        style={{
-          alignItems: 'center',
-          paddingVertical: spacing.md,
-          borderRadius: 10,
-          borderWidth: row.isCurrent ? 1.5 : 0.5,
-          borderColor: row.isCurrent ? colors.accent : colors.separator,
-          backgroundColor: colors.card,
-          gap: 2,
-        }}
-      >
-        <Text style={{ color: colors.dim, fontSize: 10 }}>{row.month}</Text>
-        <Text style={{ color: elementColor, fontSize: 14, fontWeight: '500' }}>
-          {row.pillar.stem}
-          {row.pillar.branch}
-        </Text>
-        <FitDot fit={row.fit} />
-      </View>
-    </View>
-  )
-}
-
-function LockedRow({
-  label,
-  colors,
-  spacing,
-  onPress,
-}: {
-  label: string
-  colors: BodyColors
-  spacing: BodySpacing
-  onPress: () => void
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole='button'
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
-        marginTop: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: 12,
-        borderWidth: 0.5,
-        borderColor: colors.accent,
-        backgroundColor: colors.accentGhost,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}>
-        {label}
-      </Text>
-      <ChevronRightIcon size={16} color={colors.accent} strokeWidth={1.4} />
-    </Pressable>
   )
 }
 
@@ -573,24 +317,15 @@ function NoBirthCard({
       accessibilityRole='button'
       accessibilityLabel={cta}
       style={({ pressed }) => ({
-        borderRadius: 16,
-        borderWidth: 0.5,
-        borderColor: colors.separator,
-        backgroundColor: colors.card,
-        padding: spacing.lg,
+        borderLeftWidth: 2.5,
+        borderLeftColor: colors.accent,
+        paddingLeft: spacing.lg,
         gap: spacing.sm,
         opacity: pressed ? 0.7 : 1,
       })}
     >
       <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>{body}</Text>
-      <Text
-        style={{
-          color: colors.accent,
-          fontSize: 13,
-          fontWeight: '600',
-          letterSpacing: 1,
-        }}
-      >
+      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}>
         {cta}
       </Text>
     </Pressable>
