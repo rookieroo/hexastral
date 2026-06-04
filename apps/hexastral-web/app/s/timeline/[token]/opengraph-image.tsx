@@ -6,6 +6,7 @@
  */
 
 import { ImageResponse } from 'next/og'
+import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
 export const alt = 'Auspice — Life Timeline'
@@ -74,6 +75,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   const { token } = await params
   const payload = decodeToken(token)
   const tag = TAGLINE[payload?.lc ?? 'en'] ?? EN_TAGLINE
+  const copy = pickCopy('timeline', payload?.lc)
 
   /** A node in the mini-graph: a haloed dot + its label. */
   const Node = ({
@@ -150,7 +152,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
             marginBottom: 18,
           }}
         >
-          人生时间线
+          {copy.eyebrow.replace('AUSPICE · ', '').replace('AUSPICE ', '')}
         </span>
         {payload ? (
           <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -188,7 +190,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 30, letterSpacing: 8, color: '#9A6A3A', display: 'flex' }}>
-            AUSPICE 黄历
+            {copy.eyebrow}
           </span>
           <span style={{ fontSize: 34, color: '#3A2E22', lineHeight: 1.4, display: 'flex' }}>
             {tag}
@@ -220,7 +222,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           </div>
         ) : null}
         <span style={{ fontSize: 23, color: '#A8906F', letterSpacing: 2, display: 'flex' }}>
-          hexastral.com · 每日干支 · 农历 · 宜忌
+          {AUSPICE_FOOTER_LINK} · {copy.footer}
         </span>
       </div>
     </div>,

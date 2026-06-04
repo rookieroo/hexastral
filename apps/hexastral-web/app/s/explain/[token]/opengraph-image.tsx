@@ -5,6 +5,7 @@
  */
 
 import { ImageResponse } from 'next/og'
+import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
 export const alt = 'Auspice — Deep Reading'
@@ -58,6 +59,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   const { token } = await params
   const payload = decodeToken(token)
   const tag = TAGLINE[payload?.lc ?? 'en'] ?? EN_TAGLINE
+  const copy = pickCopy('explain', payload?.lc)
   const accent = payload?.yi === false ? '#C0452E' : '#2E9E5B'
   const accentBg = payload?.yi === false ? 'rgba(192,69,46,0.12)' : 'rgba(46,158,91,0.12)'
 
@@ -76,7 +78,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 30, letterSpacing: 8, color: '#9A6A3A', display: 'flex' }}>
-          AUSPICE 黄历
+          {copy.eyebrow}
         </span>
         <span style={{ fontSize: 26, color: '#B08D6A', display: 'flex' }}>
           {payload ? `${payload.gz}日 · ${payload.dt}` : tag}
@@ -121,8 +123,8 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           letterSpacing: 2,
         }}
       >
-        <span style={{ display: 'flex' }}>{tag}</span>
-        <span style={{ display: 'flex' }}>hexastral.com</span>
+        <span style={{ display: 'flex' }}>{copy.footer}</span>
+        <span style={{ display: 'flex' }}>{AUSPICE_FOOTER_LINK}</span>
       </div>
     </div>,
     { ...size }

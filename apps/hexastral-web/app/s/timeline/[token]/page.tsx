@@ -12,6 +12,7 @@
 
 import type { Metadata } from 'next'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 interface TimelinePayload {
   /** Source 命局 — natal day pillar, e.g. "乙卯". */
@@ -79,7 +80,7 @@ const EN_COPY: ShareCopy = {
   hero: 'AUSPICE · LIFE TIMELINE',
   tagline: 'See your real timeline branch by branch',
   cta: 'See your own',
-  footer: 'The Chinese calendar — daily 干支 · 农历 · 宜忌',
+  footer: 'Auspice — your life as a branching timeline · 大运 · 流年 · 流月',
   source: 'Source 命',
   dayun: 'Current cycle',
   liunian: 'This year',
@@ -92,7 +93,7 @@ const COPY: Record<string, ShareCopy> = {
     hero: 'AUSPICE · 人生时间线',
     tagline: '把你的命局看清——按大运一段一段看',
     cta: '看看你自己的',
-    footer: '每日干支 · 农历 · 节气 · 宜忌',
+    footer: 'Auspice · 大运 · 流年 · 流月 —— 把一生看成一条分叉的时间线',
     source: '命 · 日主',
     dayun: '当前大运',
     liunian: '当年流年',
@@ -103,7 +104,7 @@ const COPY: Record<string, ShareCopy> = {
     hero: 'AUSPICE · 人生時間線',
     tagline: '把你的命局看清 —— 按大運一段一段看',
     cta: '看看你自己的',
-    footer: '每日干支 · 農曆 · 節氣 · 宜忌',
+    footer: 'Auspice · 大運 · 流年 · 流月 —— 把一生看成一條分叉的時間線',
     source: '命 · 日主',
     dayun: '當前大運',
     liunian: '當年流年',
@@ -114,7 +115,7 @@ const COPY: Record<string, ShareCopy> = {
     hero: 'AUSPICE · 人生タイムライン',
     tagline: 'あなたの命局を、大運ごとに見つめる',
     cta: 'あなたのも見てみる',
-    footer: '干支 · 旧暦 · 二十四節気 · 宜忌',
+    footer: 'Auspice · 大運 · 流年 · 流月 —— 人生を枝分かれする時間軸として',
     source: '命 · 日主',
     dayun: '今の大運',
     liunian: 'この一年',
@@ -291,9 +292,13 @@ export default async function TimelineSharePage({
               lineHeight: 1.6,
             }}
           >
-            Auspice — {copy.footer}
+            {copy.footer}
           </p>
-          <DDLRedirectButton payload={{ source: 'auspice_timeline_share' }}>
+          <DDLRedirectButton
+            payload={{ source: 'auspice_timeline_share' }}
+            targetApp='auspice'
+            appStoreUrl={resolveAppStoreUrl('auspice')}
+          >
             <span
               style={{
                 display: 'inline-block',

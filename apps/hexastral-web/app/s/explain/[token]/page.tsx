@@ -12,6 +12,7 @@
 
 import type { Metadata } from 'next'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 interface ExplainPayload {
   /** ISO date the reading is for, e.g. "2026-06-04". */
@@ -65,7 +66,7 @@ const EN_COPY: ShareCopy = {
   hero: 'AUSPICE · DEEP READING',
   tagline: 'Why today favors what it favors',
   cta: 'See your own',
-  footer: 'The Chinese calendar — daily 干支 · 农历 · 宜忌',
+  footer: 'Auspice — the Chinese calendar · daily 干支 · 农历 · 宜忌',
 }
 
 const COPY: Record<string, ShareCopy> = {
@@ -73,19 +74,19 @@ const COPY: Record<string, ShareCopy> = {
     hero: 'AUSPICE · 深度解读',
     tagline: '今天为什么宜这个、忌那个',
     cta: '看看你自己的',
-    footer: '每日干支 · 农历 · 节气 · 宜忌',
+    footer: 'Auspice · 每日干支 · 农历 · 节气 · 宜忌',
   },
   'zh-Hant': {
     hero: 'AUSPICE · 深度解讀',
     tagline: '今天為什麼宜這個、忌那個',
     cta: '看看你自己的',
-    footer: '每日干支 · 農曆 · 節氣 · 宜忌',
+    footer: 'Auspice · 每日干支 · 農曆 · 節氣 · 宜忌',
   },
   ja: {
     hero: 'AUSPICE · 詳しい解説',
     tagline: '今日、なぜそれが吉でそれが凶なのか',
     cta: 'あなたのも見てみる',
-    footer: '干支 · 旧暦 · 二十四節気 · 宜忌',
+    footer: 'Auspice · 干支 · 旧暦 · 二十四節気 · 宜忌',
   },
   en: EN_COPY,
 }
@@ -235,9 +236,13 @@ export default async function ExplainSharePage({ params }: { params: Promise<{ t
               lineHeight: 1.6,
             }}
           >
-            Auspice — {copy.footer}
+            {copy.footer}
           </p>
-          <DDLRedirectButton payload={{ source: 'auspice_explain_share', date: payload?.dt }}>
+          <DDLRedirectButton
+            payload={{ source: 'auspice_explain_share', date: payload?.dt }}
+            targetApp='auspice'
+            appStoreUrl={resolveAppStoreUrl('auspice')}
+          >
             <span
               style={{
                 display: 'inline-block',
