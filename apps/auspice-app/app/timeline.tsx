@@ -18,7 +18,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share2 } from 'lucide-react-native'
+import { Share } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -37,7 +37,7 @@ import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
-import { shareTaglineFor, timelineShareUrl } from '@/lib/share'
+import { shareTaglineFor, timelineShareChrome, timelineShareUrl } from '@/lib/share'
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
@@ -181,7 +181,7 @@ export default function TimelineScreen() {
                     accessibilityLabel='Share'
                     style={{ padding: 4 }}
                   >
-                    <Share2 size={20} color={colors.dim} strokeWidth={1.6} />
+                    <Share size={20} color={colors.secondary} strokeWidth={1.6} />
                   </Pressable>
                 )
               })()
@@ -226,12 +226,16 @@ export default function TimelineScreen() {
       {capturing && state.kind === 'data'
         ? (() => {
             const snap = buildTimelineSnapshot(state.payload, t)
+            const chrome = timelineShareChrome(locale)
             return (
               <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
                 <ShareableCard
                   ref={shotRef}
                   width={screenWidth}
                   locale={locale}
+                  eyebrow={chrome.eyebrow}
+                  footer={chrome.footer}
+                  footerUrl={chrome.url}
                   title={t.timelineTitle}
                   subtitle={
                     snap
@@ -249,6 +253,17 @@ export default function TimelineScreen() {
                     width={screenWidth - 48}
                     detail={null}
                   />
+                  {/* The live graph pops a reading bubble on tap; the capture has no
+                      selection, so bake the CURRENT 大运 reading in directly — a
+                      forwarded image is otherwise just dots with no takeaway. */}
+                  {snap ? (
+                    <ReadingBubble
+                      heading={`${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`}
+                      body={snap.advice}
+                      fit={snap.fit}
+                      colors={SHARE_PALETTE}
+                    />
+                  ) : null}
                 </ShareableCard>
               </View>
             )

@@ -612,6 +612,9 @@ export function fetchAuspiceExplain(params: {
 export interface AuspiceMakeIfResult {
   /** branch id → narrative. Empty when not Pro (`source: 'locked'`). */
   narratives: Record<string, string>
+  /** branch id → one-line 概要 (the at-a-glance takeaway shown next to the branch
+   *  and baked into the share image). May be absent for older cached entries. */
+  summaries?: Record<string, string>
   source: 'llm' | 'cache' | 'template' | 'locked'
   upsell?: boolean
 }

@@ -31,6 +31,9 @@ export interface MakeIfBranch {
   label: string
   /** Terminal flavor — one line; the LLM narrative replaces it when present. */
   outcome: string
+  /** One-line 概要 of the outcome — the at-a-glance takeaway shown next to the
+   *  branch and baked into the share image (so a forwarded share is legible). */
+  summary?: string
   divergeAtAge: number
   /** Age it merges back to the mainline, or null = runs to the end. */
   mergeAtAge: number | null
@@ -351,6 +354,53 @@ export interface MakeIfInteractiveCopy {
   swipeHint: string
   share: string
   delete: string
+  /** Tap-to-expand the 概要 into the full narrative bubble, and back. */
+  expand: string
+  collapse: string
+}
+
+/**
+ * The preset event chips, positionally aligned across locales (index 0 = 创业 /
+ * Build a business, 1 = 结婚 / Marry, …). Used to re-localize a saved fork's label:
+ * a fork's label is frozen in its CREATION language, so a Pro user who switches
+ * app language would otherwise see e.g. a Chinese "今" graph with an English
+ * "Marry" branch (the 中英文混用 the user flagged). We can only re-map the PRESET
+ * chips this way — a free-typed custom event stays as written.
+ */
+const PRESET_EVENT_CHIPS: Record<string, readonly string[]> = {
+  'zh-Hans': ['创业', '结婚', '移居海外', '转行', '读研深造', '辞职远行'],
+  'zh-Hant': ['創業', '結婚', '移居海外', '轉行', '讀研深造', '辭職遠行'],
+  ja: ['起業', '結婚', '海外移住', '転職', '大学院進学', '退職して旅へ'],
+  en: ['Start a business', 'Marry', 'Move abroad', 'Switch careers', 'Grad school', 'Quit & travel'],
+}
+
+function presetChipsForLocale(locale: string): readonly string[] {
+  if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK')
+    return PRESET_EVENT_CHIPS['zh-Hant']
+  if (locale.startsWith('zh')) return PRESET_EVENT_CHIPS['zh-Hans']
+  if (locale.startsWith('ja')) return PRESET_EVENT_CHIPS.ja
+  return PRESET_EVENT_CHIPS.en
+}
+
+/** Re-map a saved fork label to the active locale if it matches a preset chip in
+ *  any language; otherwise (a custom event) return it unchanged. */
+export function relocalizeEventLabel(label: string, locale: string): string {
+  for (const set of Object.values(PRESET_EVENT_CHIPS)) {
+    const idx = set.indexOf(label)
+    if (idx >= 0) return presetChipsForLocale(locale)[idx] ?? label
+  }
+  return label
+}
+
+/** Fallback 概要 from a full narrative — the first clause, trimmed — used for forks
+ *  hydrated from storage (whose summary isn't persisted) so they still show a
+ *  takeaway line without a re-narrate round-trip. */
+export function deriveMakeIfSummary(narrative: string): string {
+  if (!narrative) return ''
+  const cleaned = narrative.replace(/^假如你[，,]?\s*/, '').trim()
+  const cut = cleaned.split(/[。！？.!?\n]/)[0]?.trim() ?? cleaned
+  const max = 24
+  return cut.length > max ? `${cut.slice(0, max)}…` : cut
 }
 
 export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiveCopy {
@@ -376,6 +426,8 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       swipeHint: '向左滑動分支以分享或刪除',
       share: '分享',
       delete: '刪除',
+      expand: '展開',
+      collapse: '收起',
     }
   }
   if (locale.startsWith('zh')) {
@@ -400,6 +452,8 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       swipeHint: '向左滑动分支以分享或删除',
       share: '分享',
       delete: '删除',
+      expand: '展开',
+      collapse: '收起',
     }
   }
   if (locale.startsWith('ja')) {
@@ -426,6 +480,8 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       swipeHint: '分岐を左にスワイプして共有または削除',
       share: '共有',
       delete: '削除',
+      expand: '詳しく',
+      collapse: '閉じる',
     }
   }
   return {
@@ -457,5 +513,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
     swipeHint: 'Swipe a branch left to share or delete',
     share: 'Share',
     delete: 'Delete',
+    expand: 'More',
+    collapse: 'Less',
   }
 }
