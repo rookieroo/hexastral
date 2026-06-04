@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 
-export const runtime = 'nodejs'
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 
 interface DayData {
