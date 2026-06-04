@@ -861,6 +861,8 @@ export const es: Record<TranslationKeys, string> = {
   toggle_off: 'OFF',
   notif_daily_fortune: 'Fortuna diaria',
   notif_daily_fortune_desc: 'Una lectura personalizada cada mañana',
+  notif_daily_fortune_evening: 'Resumen nocturno',
+  notif_daily_fortune_evening_desc: 'Un resumen nocturno y un adelanto de mañana',
   notif_lucky_window: 'Período auspicioso se acerca',
   notif_lucky_window_desc: 'Recíbe una notificación cuando tu carta señale un período favorable',
   notif_chart_transit: 'Actualización de tránsito anual',

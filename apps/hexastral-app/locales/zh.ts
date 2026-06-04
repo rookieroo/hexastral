@@ -903,6 +903,8 @@ export const zh = {
   toggle_off: '关闭',
   notif_daily_fortune: '每日运势',
   notif_daily_fortune_desc: '每天一条个性化日运推送',
+  notif_daily_fortune_evening: '晚间运势',
+  notif_daily_fortune_evening_desc: '傍晚一条今日复盘与明日提示',
   notif_lucky_window: '吉期将至',
   notif_lucky_window_desc: '当流年大运出现利好之窗，第一时间通知你',
   notif_chart_transit: '流年大运切换',

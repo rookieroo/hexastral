@@ -2,8 +2,9 @@
  * Notification preferences — hydrate from GET /api/user/:id (notif_prefs_json),
  * local edits while on screen, single PATCH on unmount when dirty.
  *
- * 注意：这些布尔值目前主要持久化用户意图；svc-notify / svc-fortune 的多数推送路径
- * 尚未在发送前读取 `notif_prefs_json` 做过滤（退订逻辑待接线）。
+ * 退订接线：每日运势（dailyFortune / dailyFortuneEvening）的发送路径已在
+ * `push-targets` 用 json_extract 按槽位过滤——关闭开关即不再入队。其余推送
+ * （luckyWindow / chartTransit / fateReportReady）的退订过滤待接线。
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -15,6 +16,11 @@ type NK = keyof NotifPrefs
 
 export const NOTIF_ROW_KEYS: Array<{ key: NK; labelKey: string; descKey: string }> = [
   { key: 'dailyFortune', labelKey: 'notif_daily_fortune', descKey: 'notif_daily_fortune_desc' },
+  {
+    key: 'dailyFortuneEvening',
+    labelKey: 'notif_daily_fortune_evening',
+    descKey: 'notif_daily_fortune_evening_desc',
+  },
   { key: 'luckyWindow', labelKey: 'notif_lucky_window', descKey: 'notif_lucky_window_desc' },
   { key: 'chartTransit', labelKey: 'notif_chart_transit', descKey: 'notif_chart_transit_desc' },
   {

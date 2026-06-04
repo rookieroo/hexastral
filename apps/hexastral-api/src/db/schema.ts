@@ -144,7 +144,9 @@ export const users = sqliteTable(
     locale: text('locale').default('zh'),
     /** AI 解读音调偏好 — gentle(温和) | straight(直白) | poetic(诗意) */
     tonePreference: text('tone_preference').default('gentle'),
-    /** 推送通知偏好 JSON: { dailyFortune, luckyWindow, chartTransit, fateReportReady }（旧版 contactJoined 忽略） */
+    /** 推送通知偏好 JSON: { dailyFortune, dailyFortuneEvening, luckyWindow, chartTransit,
+     *  fateReportReady }（旧版 contactJoined 忽略）。dailyFortune* 两个槽位在
+     *  push-targets 用 json_extract 过滤；缺省视为开启（退订而非订阅）。 */
     notifPrefsJson: text('notif_prefs_json'),
 
     // ── 命理静态特征（onboarding 一次性计算，永不变） ──

@@ -865,6 +865,8 @@ export const en: Record<TranslationKeys, string> = {
   toggle_off: 'OFF',
   notif_daily_fortune: 'Daily fortune',
   notif_daily_fortune_desc: 'A personalized daily reading each morning',
+  notif_daily_fortune_evening: 'Evening recap',
+  notif_daily_fortune_evening_desc: 'An evening recap and a nudge for tomorrow',
   notif_lucky_window: 'Lucky window approaching',
   notif_lucky_window_desc: 'Get notified when a favorable period aligns with your chart',
   notif_chart_transit: 'Annual transit update',

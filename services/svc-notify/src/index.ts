@@ -76,6 +76,8 @@ interface DailyFortuneMessage {
   token: string
   locale: string
   timezone?: string
+  /** Which daily slot this push is for — morning reading vs evening recap. */
+  slot?: 'morning' | 'evening'
 }
 
 // ============ App ============
@@ -346,11 +348,34 @@ function getDailyFallbackText(locale: string): { title: string; body: string } {
   )
 }
 
+/**
+ * Evening-slot fallback copy — a lighter end-of-day recap / tomorrow nudge, so the
+ * evening push reads differently from the morning reading. Used when daily_almanac
+ * has no entry to recap. Lookup: exact locale → language prefix → 'en'.
+ */
+function getEveningFallbackText(locale: string): { title: string; body: string } {
+  const pool: Record<string, { title: string; body: string }[]> = {
+    zh: [{ title: '今日收个尾', body: '回看今天的宜忌，也为明天理一理。开启应用查看。' }],
+    'zh-Hant': [{ title: '今日收個尾', body: '回看今天的宜忌，也為明天理一理。開啟應用查看。' }],
+    en: [{ title: 'Wind down', body: "Look back on today and get a read on tomorrow in HexAstral." }],
+    ko: [{ title: '하루 마무리', body: '오늘을 돌아보고 내일을 준비해 보세요. 앱에서 확인하세요.' }],
+    ja: [{ title: '一日の締めくくり', body: '今日を振り返り、明日に備えましょう。アプリでご確認ください。' }],
+    de: [{ title: 'Tagesausklang', body: 'Blicken Sie auf heute zurück und auf morgen voraus in HexAstral.' }],
+    es: [{ title: 'Cierra el día', body: 'Repasa hoy y anticipa mañana en HexAstral.' }],
+    vi: [{ title: 'Khép lại ngày', body: 'Nhìn lại hôm nay và chuẩn bị cho ngày mai trong HexAstral.' }],
+    th: [{ title: 'สรุปท้ายวัน', body: 'ทบทวนวันนี้และเตรียมพร้อมพรุ่งนี้ใน HexAstral' }],
+  }
+  const lang = locale.split('-')[0] ?? locale
+  const candidates = pool[locale] ?? pool[lang] ?? pool['en'] ?? []
+  return candidates[0] ?? { title: 'Wind down', body: 'Look back on today in HexAstral.' }
+}
+
 // ============ Scheduled Handler (Cron) ============
 
 /**
- * Hourly cron: determines which IANA timezones are currently at 08:00 local,
- * fetches push targets from D1 via SVC_API, and enqueues fortune pushes.
+ * Hourly cron: determines which IANA timezones are at a dispatch hour right now
+ * (08:00 local = morning reading, 20:00 local = evening recap), fetches the
+ * opted-in push targets from D1 via SVC_API, and enqueues fortune pushes.
  */
 async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
   // Weekly cron (Sunday 03:00 UTC) — purge stale push tokens
@@ -359,8 +384,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     return
   }
 
-  // Hourly cron — daily fortune push dispatch
-  await runHourlyFortunePush(env)
+  // Hourly cron — daily fortune push dispatch (morning + evening slots)
+  await runHourlyFortunePush(env, 'morning', 8)
+  await runHourlyFortunePush(env, 'evening', 20)
 }
 
 /**
@@ -426,13 +452,17 @@ async function purgeStaleTokens(env: Env): Promise<void> {
 }
 
 /**
- * Hourly cron dispatch: find timezones at 8am, enqueue fortune pushes.
+ * Hourly cron dispatch: find timezones at `targetHour` local, enqueue the
+ * given slot's fortune pushes for users opted in to that slot.
  */
-async function runHourlyFortunePush(env: Env): Promise<void> {
-  logger.info('hourly fortune push check started')
+async function runHourlyFortunePush(
+  env: Env,
+  slot: 'morning' | 'evening',
+  targetHour: number
+): Promise<void> {
+  logger.info('hourly fortune push check started', { slot, targetHour })
 
   const now = new Date()
-  const targetHour = 8
 
   // Find all IANA timezones where local hour == targetHour right now
   const matchingZones = TIMEZONE_POOL.filter((tz) => {
@@ -450,11 +480,11 @@ async function runHourlyFortunePush(env: Env): Promise<void> {
   })
 
   if (matchingZones.length === 0) {
-    logger.info('No timezones at target hour', { targetHour })
+    logger.info('No timezones at target hour', { slot, targetHour })
     return
   }
 
-  logger.info('Timezones at 8am', { zones: matchingZones.join(', ') })
+  logger.info('Timezones at target hour', { slot, targetHour, zones: matchingZones.join(', ') })
 
   let totalEnqueued = 0
   let totalPages = 0
@@ -465,6 +495,7 @@ async function runHourlyFortunePush(env: Env): Promise<void> {
     while (cursor !== null) {
       const url = new URL('https://internal/api/notify/push-targets')
       url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('slot', slot)
       url.searchParams.set('limit', '200')
       url.searchParams.set('cursor', cursor)
 
@@ -493,6 +524,7 @@ async function runHourlyFortunePush(env: Env): Promise<void> {
         token: row.token,
         locale: row.locale ?? 'en',
         timezone: row.timezoneId,
+        slot,
       }))
 
       // Enqueue in chunks of 100
@@ -508,6 +540,7 @@ async function runHourlyFortunePush(env: Env): Promise<void> {
   }
 
   logger.info('Hourly fortune push complete', {
+    slot,
     timezonesMatched: matchingZones.length,
     totalEnqueued,
     totalPages,
@@ -595,7 +628,9 @@ async function purgeInvalidTokensFromD1(env: Env, tokens: string[]): Promise<voi
  * Queue consumer for "daily-fortune" queue.
  * Receives batches of DailyFortuneMessage and sends Expo push notifications.
  *
- * Note: `users.notif_prefs_json` (e.g. dailyFortune) is not read here yet — toggles are stored from the app but not enforced on this path.
+ * Opt-out enforcement happens UPSTREAM: push-targets only returns users who have
+ * the slot's toggle enabled in users.notif_prefs_json (dailyFortune /
+ * dailyFortuneEvening), so anything reaching this queue is already opted in.
  */
 async function queue(batch: MessageBatch<DailyFortuneMessage>, env: Env): Promise<void> {
   const today = new Date().toISOString().slice(0, 10)
@@ -608,6 +643,7 @@ async function queue(batch: MessageBatch<DailyFortuneMessage>, env: Env): Promis
 
   const pushTasks = batch.messages.map(async (msg) => {
     const { userId, token, locale } = msg.body
+    const slot = msg.body.slot ?? 'morning'
     if (!/^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/.test(token)) {
       msg.ack()
       return
@@ -632,15 +668,18 @@ async function queue(batch: MessageBatch<DailyFortuneMessage>, env: Env): Promis
       almanac = body?.data ?? null
     }
 
+    const pushType = slot === 'evening' ? 'daily_signal_evening' : 'daily_signal'
     let pushBody: string
-    let data: Record<string, string> = { type: 'daily_signal' }
+    let data: Record<string, string> = { type: pushType }
     let usedFallback = false
 
     if (almanac) {
-      // Personalized push — deterministic Almanac headline (matches in-app card).
-      pushBody = almanac.headline
+      // Personalized push — deterministic Almanac content (matches the in-app card).
+      // Morning leads with the headline (the day's read); evening leads with the
+      // "watch for" line (an end-of-day nudge) so the two slots read differently.
+      pushBody = slot === 'evening' ? almanac.watchFor || almanac.headline : almanac.headline
       data = {
-        type: 'daily_signal',
+        type: pushType,
         date: today,
         energyLevel: almanac.energyLevel,
         relation: almanac.relation,
@@ -648,8 +687,8 @@ async function queue(batch: MessageBatch<DailyFortuneMessage>, env: Env): Promis
       }
     } else {
       // Fallback: svc-signal cron has not written for this user yet (brand-new account,
-      // missing static traits, or cron lag). Use locale-aware default copy.
-      const fb = getDailyFallbackText(locale)
+      // missing static traits, or cron lag). Use locale-aware default copy per slot.
+      const fb = slot === 'evening' ? getEveningFallbackText(locale) : getDailyFallbackText(locale)
       pushBody = fb.body
       usedFallback = true
     }

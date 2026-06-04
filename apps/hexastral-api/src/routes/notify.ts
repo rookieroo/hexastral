@@ -6,7 +6,7 @@
  * ALL  /*                 — 其余请求透传到 svc-notify
  */
 
-import { and, eq, inArray, lt } from 'drizzle-orm'
+import { and, eq, inArray, lt, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
@@ -70,10 +70,21 @@ notifyRoutes.get('/push-targets', async (c) => {
   const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
   const cursor = c.req.query('cursor') ?? '0'
   const offset = Number.parseInt(cursor, 10)
+  // Daily fortune fires twice: morning (8am local) and evening (8pm local). Each
+  // slot has its own opt-out toggle in users.notif_prefs_json — until now those
+  // toggles were STORED but never enforced on the send path (settings were
+  // decorative). Filter here so an opted-out user is never enqueued.
+  const slot = c.req.query('slot') === 'evening' ? 'evening' : 'morning'
+  const prefKey = slot === 'evening' ? 'dailyFortuneEvening' : 'dailyFortune'
 
   const db = c.get('db')
 
-  const condition = timezoneId ? eq(pushTokens.timezoneId, timezoneId) : undefined
+  // A missing column / missing key defaults to ENABLED (1) — opt-out, not opt-in —
+  // so existing users keep getting the morning push, and only an explicit `false`
+  // suppresses it. json_extract returns NULL when the key/blob is absent.
+  const prefEnabled = sql`COALESCE(json_extract(${users.notifPrefsJson}, ${`$.${prefKey}`}), 1) <> 0`
+  const tzCondition = timezoneId ? eq(pushTokens.timezoneId, timezoneId) : undefined
+  const condition = tzCondition ? and(tzCondition, prefEnabled) : prefEnabled
 
   const rows = await db
     .select({

@@ -2,6 +2,7 @@ import type { NotifPrefs } from '@/lib/hooks/useUpdatePreferences'
 
 export const DEFAULT_NOTIF_PREFS: NotifPrefs = {
   dailyFortune: true,
+  dailyFortuneEvening: true,
   luckyWindow: true,
   chartTransit: true,
   fateReportReady: true,
@@ -9,6 +10,7 @@ export const DEFAULT_NOTIF_PREFS: NotifPrefs = {
 
 const KEYS: (keyof NotifPrefs)[] = [
   'dailyFortune',
+  'dailyFortuneEvening',
   'luckyWindow',
   'chartTransit',
   'fateReportReady',
