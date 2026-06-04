@@ -12,6 +12,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useTheme } from '../../theme'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
 import { BirthProgressIndicator } from './BirthProgressIndicator'
+import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
 
 export function BirthTimeStep({
@@ -23,10 +24,15 @@ export function BirthTimeStep({
   step,
   totalSteps,
   requireTime,
+  timeInputStyle = 'grid',
 }: BirthStepProps) {
   const { colors, spacing } = useTheme()
+  const isWheel = timeInputStyle === 'wheel'
   const initial = value.timeIndex ?? null
-  const [picked, setPicked] = useState<ShichenIndex | null>(initial)
+  // The wheel always has a centred value, so it starts on the saved 时辰 (or 子)
+  // rather than null — otherwise Next would read as disabled under a clearly
+  // selected row. The grid keeps null so the user must tap to choose.
+  const [picked, setPicked] = useState<ShichenIndex | null>(isWheel ? (initial ?? 0) : initial)
 
   const handleNext = () => {
     if (picked === null) return
@@ -66,12 +72,16 @@ export function BirthTimeStep({
         </View>
 
         <View style={{ marginTop: spacing.xl }}>
-          <ShichenPicker
-            value={picked}
-            onChange={setPicked}
-            onSelect={() => Haptics.selectionAsync()}
-            accentColor={accent}
-          />
+          {isWheel ? (
+            <ShichenWheel value={picked ?? 0} onChange={setPicked} accent={accent} />
+          ) : (
+            <ShichenPicker
+              value={picked}
+              onChange={setPicked}
+              onSelect={() => Haptics.selectionAsync()}
+              accentColor={accent}
+            />
+          )}
         </View>
 
         <View style={{ flex: 1, minHeight: spacing.lg }} />

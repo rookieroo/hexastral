@@ -12,6 +12,20 @@ import type { AuspiceEvent, DayOfficer, PersonalFit, PersonalReasonCode } from '
 
 export type Locale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 
+/**
+ * 六曜 (Rokuyo) strings — JP-only. Surfaced solely in the ja DayView, so this
+ * block is optional on `Strings` and lives only on the `ja` table; other locales
+ * leave it undefined and never render the section.
+ */
+export interface RokuyoStrings {
+  /** Section label, "六曜". */
+  label: string
+  /** One-line framing as a calendar annotation (not a personal fortune). */
+  caption: string
+  /** Per-day meanings indexed by Rokuyo.index (0=大安 … 5=仏滅, (month+day)%6 order). */
+  items: readonly [string, string, string, string, string, string]
+}
+
 export interface Strings {
   appName: string
   todayTab: string
@@ -26,6 +40,8 @@ export interface Strings {
   dutyMansion: string
   dayOfficerLabel: string
   solarTerm: string
+  /** 六曜 — JP-only; undefined on non-ja locales (the section never renders). */
+  rokuyo?: RokuyoStrings
   auspiciousHours: string
   ratingLabel: string
   // event search
@@ -165,6 +181,8 @@ export interface Strings {
   timelineLiunian: string
   /** Label for 流月 (monthly) section. */
   timelineLiuyue: string
+  /** Note under 流月: only this year is shown; key-moment reminders live in Settings. */
+  timelineLiuyueNote: string
   /** Badge text on the currently-active row in any timeline section. */
   timelineCurrentBadge: string
   /** Age-range label fragment — pass {age} as a template token. */
@@ -398,6 +416,7 @@ const zhHans: Strings = {
   timelineDayun: '大运',
   timelineLiunian: '流年',
   timelineLiuyue: '流月',
+  timelineLiuyueNote: '只显示今年流月。重要时点的提醒可在「设置」开启推送。',
   timelineCurrentBadge: '当前',
   timelineAgeFrom: '{age} 岁起',
   timelineProLocked: '解锁完整人生时间线',
@@ -614,6 +633,7 @@ const zhHant: Strings = {
   timelineDayun: '大運',
   timelineLiunian: '流年',
   timelineLiuyue: '流月',
+  timelineLiuyueNote: '只顯示今年流月。重要時點的提醒可在「設定」開啟推播。',
   timelineCurrentBadge: '當前',
   timelineAgeFrom: '{age} 歲起',
   timelineProLocked: '解鎖完整人生時間線',
@@ -742,6 +762,18 @@ const ja: Strings = {
   dutyMansion: '二十八宿',
   dayOfficerLabel: '十二直',
   solarTerm: '節気',
+  rokuyo: {
+    label: '六曜',
+    caption: '旧暦から導く日本の暦注。日の吉凶の目安として親しまれています。',
+    items: [
+      '大安 — 万事に吉。婚礼・開店・旅行など、何事を始めるにも良い日。',
+      '赤口 — 正午前後のみ吉、ほかは凶。祝い事は控えめに。',
+      '先勝 — 午前は吉、午後は凶。急ぐ用事は早めに済ませると良い。',
+      '友引 — 朝夕は吉、正午は凶。祝い事に良いが葬儀は避ける習わし。',
+      '先負 — 午前は凶、午後は吉。急がず、平静に過ごすと良い。',
+      '仏滅 — 万事に凶とされる日。祝い事は避けるのが無難。',
+    ],
+  },
   auspiciousHours: '時辰',
   ratingLabel: '評価',
   eventSearch: '日選び',
@@ -829,6 +861,7 @@ const ja: Strings = {
   timelineDayun: '大運',
   timelineLiunian: '流年',
   timelineLiuyue: '流月',
+  timelineLiuyueNote: '表示は今年の流月のみ。重要な時点の通知は「設定」で有効化できます。',
   timelineCurrentBadge: '現在',
   timelineAgeFrom: '{age} 歳から',
   timelineProLocked: '人生タイムラインを全期間解錠',
@@ -1045,6 +1078,8 @@ const en: Strings = {
   timelineDayun: 'Decade',
   timelineLiunian: 'Year',
   timelineLiuyue: 'Month',
+  timelineLiuyueNote:
+    "Only this year's months are shown. Enable reminders for key moments in Settings.",
   timelineCurrentBadge: 'Now',
   timelineAgeFrom: 'From age {age}',
   timelineProLocked: 'Unlock the full life timeline',

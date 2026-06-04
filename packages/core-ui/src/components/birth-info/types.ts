@@ -109,6 +109,11 @@ export interface BirthInfoFormProps {
    *  the review screen accepts a missing city. The chart engine then falls
    *  back to the device timezone instead of 真太阳时 correction. */
   placeOptional?: boolean
+  /** How the time step captures the 时辰. `'grid'` (default) is the 12-cell
+   *  ShichenPicker; `'wheel'` is the looping native-style ShichenWheel. Apps
+   *  that want their birth-time input to match a native picker (kindred) opt
+   *  into `'wheel'`; everyone else keeps the grid. */
+  timeInputStyle?: 'grid' | 'wheel'
 }
 
 /** Props shared by every step component. */
@@ -126,4 +131,6 @@ export interface BirthStepProps {
   requireTime?: boolean
   /** Forwarded from BirthInfoFormProps.placeOptional — read by BirthPlaceStep. */
   placeOptional?: boolean
+  /** Forwarded from BirthInfoFormProps.timeInputStyle — read by BirthTimeStep. */
+  timeInputStyle?: 'grid' | 'wheel'
 }

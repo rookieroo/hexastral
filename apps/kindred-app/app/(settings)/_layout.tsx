@@ -1,4 +1,4 @@
-import { ricePaper } from '@zhop/hexastral-tokens'
+import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { Stack } from 'expo-router'
 
 export default function SettingsLayout() {
@@ -6,7 +6,8 @@ export default function SettingsLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: ricePaper.ivory },
+        // Shared 宣纸 document layer — same surface as the reading + paywall.
+        contentStyle: { backgroundColor: kindredPaper.bg },
         animation: 'slide_from_right',
       }}
     />

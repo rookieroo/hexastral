@@ -12,14 +12,15 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { GitCommitVertical, GitFork } from 'lucide-react-native'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { fetchTimeline, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
+import { makeIfInteractiveCopyForLocale } from '@/lib/makeIfBranches'
 
 /** Convert a stored shichen-index (0-11) into a representative wall-clock hour. */
 function shichenToHour(timeIndex: number | null): number {
@@ -53,45 +54,110 @@ export function LiuyearBanner() {
     }
   }, [locale])
 
-  if (!data) return null
-  const dayun = data.dayun[data.currentDayunIndex]
-  const liunian = data.liunian[data.currentLiunianIndex]
-  if (!dayun || !liunian) return null
+  // Two clearly-tappable entry buttons (icon + label) — small icons were hard to
+  // hit. The current 大运·流年 shows above once birth is set.
+  const dayun = data?.dayun[data.currentDayunIndex]
+  const liunian = data?.liunian[data.currentLiunianIndex]
+  const makeifLabel = makeIfInteractiveCopyForLocale(locale).screenTitle
 
   return (
+    <View style={{ marginHorizontal: spacing.xl, gap: spacing.sm }}>
+      {dayun && liunian ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            paddingHorizontal: spacing.xs,
+          }}
+        >
+          <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
+            {t.timelineBannerHint}
+          </Text>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: spacing.sm,
+            }}
+          >
+            <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
+              {dayun.pillar.stem}
+              {dayun.pillar.branch}
+            </Text>
+            <Text style={{ color: colors.dim, fontSize: 13 }}>·</Text>
+            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+              {liunian.pillar.stem}
+              {liunian.pillar.branch}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <EntryPill
+          icon={<GitCommitVertical size={18} color={colors.text} strokeWidth={1.6} />}
+          label={t.timelineTitle}
+          onPress={() => router.push('/timeline')}
+          colors={colors}
+          spacing={spacing}
+        />
+        <EntryPill
+          icon={<GitFork size={18} color={colors.accent} strokeWidth={1.6} />}
+          label={makeifLabel}
+          onPress={() => router.push('/makeif')}
+          colors={colors}
+          spacing={spacing}
+          accent
+        />
+      </View>
+    </View>
+  )
+}
+
+function EntryPill({
+  icon,
+  label,
+  onPress,
+  colors,
+  spacing,
+  accent,
+}: {
+  icon: ReactNode
+  label: string
+  onPress: () => void
+  colors: ReturnType<typeof useTheme>['colors']
+  spacing: ReturnType<typeof useTheme>['spacing']
+  accent?: boolean
+}) {
+  return (
     <Pressable
-      onPress={() => router.push('/timeline')}
+      onPress={onPress}
       accessibilityRole='button'
-      accessibilityLabel={t.timelineTitle}
+      accessibilityLabel={label}
       style={({ pressed }) => ({
-        marginHorizontal: spacing.xl,
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: spacing.sm,
-        paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
         borderRadius: 12,
         borderWidth: 0.5,
-        borderColor: colors.separator,
-        backgroundColor: colors.card,
+        borderColor: accent ? colors.accent : colors.separator,
+        backgroundColor: accent ? colors.accentGhost : colors.card,
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
-        {t.timelineBannerHint}
+      {icon}
+      <Text
+        style={{ color: accent ? colors.accent : colors.text, fontSize: 14, fontWeight: '600' }}
+        numberOfLines={1}
+      >
+        {label}
       </Text>
-      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md }}>
-        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-          {dayun.pillar.stem}
-          {dayun.pillar.branch}
-        </Text>
-        <Text style={{ color: colors.dim, fontSize: 14 }}>·</Text>
-        <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
-          {liunian.pillar.stem}
-          {liunian.pillar.branch}
-        </Text>
-      </View>
-      <ChevronRightIcon size={14} color={colors.dim} strokeWidth={1.4} />
     </Pressable>
   )
 }

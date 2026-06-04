@@ -118,10 +118,32 @@ export function useEntitlements(): EntitlementsState {
   return state
 }
 
+// ── DEV-only Pro override ────────────────────────────────────────────────────
+//
+// A debug toggle can force the running app into Pro or Free without a real
+// RevenueCat purchase. In-memory only (resets on reload) so this package needs
+// no storage dep. Gating happens at the call site — apps only ever call
+// `setDevEntitlementOverride` from `__DEV__` blocks, so in production the
+// override stays null and `hasEntitlement` behaves exactly as before.
+
+export type DevEntitlementOverride = 'pro' | 'free' | null
+
+let devEntitlementOverride: DevEntitlementOverride = null
+
+export function getDevEntitlementOverride(): DevEntitlementOverride {
+  return devEntitlementOverride
+}
+
+export function setDevEntitlementOverride(next: DevEntitlementOverride): void {
+  devEntitlementOverride = next
+}
+
 export function hasAnyProEntitlement(state: EntitlementsState): boolean {
+  if (devEntitlementOverride) return devEntitlementOverride === 'pro'
   return ENTITLEMENT_KEYS.some((k) => state[k].active)
 }
 
 export function hasEntitlement(state: EntitlementsState, key: EntitlementKey): boolean {
+  if (devEntitlementOverride) return devEntitlementOverride === 'pro'
   return state[key].active
 }

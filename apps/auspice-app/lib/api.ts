@@ -83,6 +83,20 @@ export interface LunarDateInfo {
   isFifteenth: boolean
 }
 
+/**
+ * 六曜 (Rokuyo) — the Japanese six-day calendar annotation derived from the 旧暦
+ * month + day. Surfaced only in the ja DayView (a standard カレンダー element); the
+ * meaning text + tone live in app i18n keyed by `index`.
+ */
+export interface RokuyoInfo {
+  /** 0-5 = 大安 / 赤口 / 先勝 / 友引 / 先負 / 仏滅 (in (month+day)%6 order). */
+  index: number
+  /** 漢字表記, e.g. "大安". */
+  name: string
+  /** ふりがな, e.g. "たいあん". */
+  reading: string
+}
+
 export interface AuspiceDay {
   ganZhi: string
   element: string
@@ -103,6 +117,8 @@ export interface AuspiceDay {
   yearGanZhi: YearGanZhi
   /** 农历. Sprint 2 Tier-1 audit #8: drives 农历 inline label + 初一/十五 emphasis on the hero. */
   lunarDate: LunarDateInfo
+  /** 六曜. JP-only calendar annotation (旧暦-derived); the ja DayView renders a badge. Optional for back-compat with cached payloads. */
+  rokuyo?: RokuyoInfo
   /** Sprint 3 chunk 3 — set when today's date matches one of the 8 festivals. Drives the accent chip + tap to /festival/[id] on Today. */
   festivalToday: { id: string; name: string } | null
   /** Sprint 3 chunk 3 — set when today IS the gregorian day a 节气 falls on. Display-only when also a festival day (the festival chip already names it). */
@@ -478,6 +494,42 @@ export function fetchAuspiceExplain(params: {
   field: string
   dayMaster?: string
   locale: string
+  /** Pro unlocks the LLM deep reading; free gets the deterministic template. */
+  isPro?: boolean
 }): Promise<AuspiceExplainResult> {
   return postJson<AuspiceExplainResult>('/api/auspice/explain', params)
+}
+
+/** make-if 分支叙事 (Phase 3) — Pro-only "假如你..." stories, cached server-side. */
+export interface AuspiceMakeIfResult {
+  /** branch id → narrative. Empty when not Pro (`source: 'locked'`). */
+  narratives: Record<string, string>
+  source: 'llm' | 'cache' | 'template' | 'locked'
+  upsell?: boolean
+}
+
+/**
+ * Fetch the per-branch narrative for the make-if life branches. The branch
+ * SHAPE (id/label/diverge/merge) is computed client-side and sent so the story
+ * matches the drawn graph; only Pro callers get prose (else `narratives: {}`).
+ */
+export function fetchMakeIfNarratives(params: {
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+  locale: string
+  isPro: boolean
+  branches: {
+    id: string
+    label: string
+    divergeAtAge: number
+    mergeAtAge: number | null
+    /** Past fork = a reflection contrasted with real life; future = a projection. */
+    isPast?: boolean
+    /** Real 大运 干支 at the fork age — anchors the reading. */
+    realPillar?: string
+  }[]
+}): Promise<AuspiceMakeIfResult> {
+  // DEV builds bypass the server's per-subject daily rate limit (prod sends false).
+  return postJson<AuspiceMakeIfResult>('/api/auspice/makeif', { ...params, dev: __DEV__ })
 }

@@ -78,7 +78,8 @@ export const translations: Translations = {
 
     'mode.subtitle': 'Synastry takes two — choose how to bring them in.',
     'mode.know.hint': "You'll fill their birth info in the next steps.",
-    'mode.invite.hint': 'We write the note — share it however you like, and they take the thread from there.',
+    'mode.invite.hint':
+      'We write the note — share it however you like, and they take the thread from there.',
     'mode.skip.hint': 'See your own reading now. Add them anytime later.',
 
     'name.title': 'First,',
@@ -158,6 +159,14 @@ export const translations: Translations = {
     'bondList.title': 'Threads',
     'bondList.subtitle': 'The people woven into your chart',
     'bondList.add': 'New thread',
+    'bondList.delete': 'Delete',
+    'bondList.deleteTitle': 'Delete this thread?',
+    'bondList.deleteBody': "This removes your synastry with them. It can't be undone.",
+    'bondList.cancel': 'Cancel',
+    'bond.statusActive': 'Info complete',
+    'bond.statusPending': 'Awaiting them',
+    'bond.statusDeclined': 'Declined',
+    'bond.statusExpired': 'Expired',
     'bond.matching': 'Aligning your charts…',
     'bond.toAuspice': 'Add to Auspice almanac  →',
 
@@ -368,6 +377,14 @@ export const translations: Translations = {
     'bondList.title': '牵绊',
     'bondList.subtitle': '那些与你命盘交织的人',
     'bondList.add': '新缘',
+    'bondList.delete': '删除',
+    'bondList.deleteTitle': '删除这条牵绊？',
+    'bondList.deleteBody': '会移除你与 ta 的合盘记录，且无法恢复。',
+    'bondList.cancel': '取消',
+    'bond.statusActive': '资料完整',
+    'bond.statusPending': '待对方填写',
+    'bond.statusDeclined': '已婉拒',
+    'bond.statusExpired': '已过期',
     'bond.matching': '合盘中…',
     'bond.toAuspice': '加入 Auspice 黄历提醒  →',
 
@@ -424,7 +441,8 @@ export const translations: Translations = {
     'signIn.cancel': '稍后',
 
     'paywall.signInTitle': '登录后再购买',
-    'paywall.signInHint': '订阅会绑定到账户上，换设备不会丢失。Apple 只给我们一个稳定的 ID 和（可选的）邮箱。',
+    'paywall.signInHint':
+      '订阅会绑定到账户上，换设备不会丢失。Apple 只给我们一个稳定的 ID 和（可选的）邮箱。',
     'paywall.signInCta': '使用 Apple 继续',
     'paywall.title': '解锁 Kindred Pro',
     'paywall.subtitle': '你已达到免费 3 段缘分的上限',
@@ -575,6 +593,14 @@ export const translations: Translations = {
     'bondList.title': '牽絆',
     'bondList.subtitle': '那些與你命盤交織的人',
     'bondList.add': '新緣',
+    'bondList.delete': '刪除',
+    'bondList.deleteTitle': '刪除這條牽絆？',
+    'bondList.deleteBody': '會移除你與 ta 的合盤記錄，且無法復原。',
+    'bondList.cancel': '取消',
+    'bond.statusActive': '資料完整',
+    'bond.statusPending': '待對方填寫',
+    'bond.statusDeclined': '已婉拒',
+    'bond.statusExpired': '已過期',
     'bond.matching': '合盤中…',
     'bond.toAuspice': '加入 Auspice 黃曆提醒  →',
 
@@ -631,7 +657,8 @@ export const translations: Translations = {
     'signIn.cancel': '稍後',
 
     'paywall.signInTitle': '登入後再購買',
-    'paywall.signInHint': '訂閱會綁定到帳號上，換裝置不會遺失。Apple 只給我們穩定 ID 和（可選的）信箱。',
+    'paywall.signInHint':
+      '訂閱會綁定到帳號上，換裝置不會遺失。Apple 只給我們穩定 ID 和（可選的）信箱。',
     'paywall.signInCta': '使用 Apple 繼續',
     'paywall.title': '解鎖 Kindred Pro',
     'paywall.subtitle': '你已達到免費 3 段緣分的上限',
@@ -782,6 +809,14 @@ export const translations: Translations = {
     'bondList.title': '縁',
     'bondList.subtitle': 'あなたの命盤に織り込まれた人々',
     'bondList.add': '新しい縁',
+    'bondList.delete': '削除',
+    'bondList.deleteTitle': 'この縁を削除しますか？',
+    'bondList.deleteBody': '相手との相性記録が削除されます。元に戻せません。',
+    'bondList.cancel': 'キャンセル',
+    'bond.statusActive': '入力済み',
+    'bond.statusPending': '相手の入力待ち',
+    'bond.statusDeclined': '辞退されました',
+    'bond.statusExpired': '期限切れ',
     'bond.matching': '相性を計算中…',
     'bond.toAuspice': 'Auspice の暦に追加  →',
 

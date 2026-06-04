@@ -79,7 +79,23 @@ export interface KindredProStatus {
   expiresAt: string | null
 }
 
+// ── DEV-only Pro override ─────────────────────────────────────────────────────
+// In-memory toggle (Settings · DEV) to force Pro/Free without a real purchase.
+// Resets on reload; gated on __DEV__ so production never overrides.
+export type KindredDevPro = 'pro' | 'free' | null
+let devProOverride: KindredDevPro = null
+
+export function getKindredDevPro(): KindredDevPro {
+  return __DEV__ ? devProOverride : null
+}
+
+export function setKindredDevPro(next: KindredDevPro): void {
+  if (__DEV__) devProOverride = next
+}
+
 export async function getYuanProStatus(): Promise<KindredProStatus> {
+  const dev = getKindredDevPro()
+  if (dev) return { isPro: dev === 'pro', expiresAt: null }
   const p = loadPurchases()
   if (!p || !initialized) return { isPro: false, expiresAt: null }
   try {

@@ -9,9 +9,14 @@
  * is the safe behavior.
  */
 
+import { getDevEntitlementOverride } from '@zhop/satellite-runtime'
 import Purchases from 'react-native-purchases'
 
 export async function getAuspiceProActive(): Promise<boolean> {
+  // DEV override (set from the Me-tab debug toggle) wins so push/headless paths
+  // match the in-app gating. No-op in production (override stays null).
+  const override = getDevEntitlementOverride()
+  if (override) return override === 'pro'
   try {
     const info = await Purchases.getCustomerInfo()
     const active = info.entitlements.active

@@ -225,6 +225,7 @@ export function TimelineGraph({
   onLockedTap,
   colors,
   width,
+  detail,
 }: {
   payload: TimelinePayload
   isPro: boolean
@@ -233,8 +234,11 @@ export function TimelineGraph({
   onLockedTap: () => void
   colors: GColors
   width: number
+  /** The selected node's reading — popped up anchored to that node. */
+  detail?: { heading: string; body: string; fit: PersonalFit | null } | null
 }) {
   const graph = useMemo(() => buildGraph(payload, isPro, width), [payload, isPro, width])
+  const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
   return (
     <View style={{ width, height: graph.height }}>
@@ -357,6 +361,95 @@ export function TimelineGraph({
           </Pressable>
         )
       })}
+
+      {/* Selected-node reading — a speech-bubble popover whose caret points up at
+          the tapped node, so it stays in view on a long graph (pointer-through). */}
+      {detail && selectedNode ? (
+        <View
+          pointerEvents='none'
+          style={{
+            position: 'absolute',
+            top: selectedNode.y + selectedNode.r + 10,
+            left: 8,
+            right: 8,
+          }}
+        >
+          <ReadingBubble
+            heading={detail.heading}
+            body={detail.body}
+            fit={detail.fit}
+            colors={colors}
+            caretLeft={Math.max(2, selectedNode.x - 14)}
+          />
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+/** Speech-bubble reading popover with an optional up-caret (graph nodes + 流月). */
+export function ReadingBubble({
+  heading,
+  body,
+  fit,
+  colors,
+  caretLeft,
+}: {
+  heading: string
+  body: string
+  fit: PersonalFit | null
+  colors: GColors
+  /** x of the up-caret (omit to hide it). */
+  caretLeft?: number
+}) {
+  return (
+    <View>
+      {caretLeft != null ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: -6,
+            left: caretLeft,
+            width: 0,
+            height: 0,
+            borderLeftWidth: 6,
+            borderRightWidth: 6,
+            borderBottomWidth: 6,
+            borderLeftColor: 'transparent',
+            borderRightColor: 'transparent',
+            borderBottomColor: colors.bg,
+            zIndex: 1,
+          }}
+        />
+      ) : null}
+      <View
+        style={{
+          backgroundColor: colors.bg,
+          borderRadius: 12,
+          borderWidth: 0.5,
+          borderColor: colors.separator,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          gap: 4,
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 8,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+          {fit ? (
+            <View
+              style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: FIT_COLOR[fit] }}
+            />
+          ) : null}
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 }}>
+            {heading}
+          </Text>
+        </View>
+        <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>{body}</Text>
+      </View>
     </View>
   )
 }
@@ -368,11 +461,15 @@ export function LiuyueStrip({
   isPro,
   colors,
   label,
+  selectedId,
+  onSelect,
 }: {
   liuyue: LiuyueRow[]
   isPro: boolean
   colors: GColors
   label: string
+  selectedId?: string | null
+  onSelect?: (id: string) => void
 }) {
   const visible = isPro ? liuyue : liuyue.slice(0, FREE_LIUYUE_MONTHS)
   return (
@@ -381,10 +478,22 @@ export function LiuyueStrip({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
         {visible.map((m) => {
           const elementColor = ELEMENT_COLORS[m.pillar.element]
+          const id = `liuyue-${m.year}-${m.month}`
+          const selected = selectedId === id
+          const highlight = m.isCurrent || selected
           return (
-            <View key={`${m.year}-${m.month}`} style={{ alignItems: 'center', gap: 5, width: 52 }}>
+            <Pressable
+              key={`${m.year}-${m.month}`}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {})
+                onSelect?.(id)
+              }}
+              accessibilityRole='button'
+              accessibilityLabel={`${m.month} ${m.pillar.stem}${m.pillar.branch}`}
+              style={{ alignItems: 'center', gap: 5, width: 52 }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {m.isCurrent ? (
+                {highlight ? (
                   <View
                     style={{
                       position: 'absolute',
@@ -392,7 +501,7 @@ export function LiuyueStrip({
                       height: 22,
                       borderRadius: 11,
                       backgroundColor: colors.accent,
-                      opacity: 0.12,
+                      opacity: m.isCurrent ? 0.12 : 0.2,
                       left: -3,
                       top: -3,
                     }}
@@ -403,24 +512,24 @@ export function LiuyueStrip({
                     width: 14,
                     height: 14,
                     borderRadius: 7,
-                    borderWidth: m.isCurrent ? 2 : 1.2,
-                    borderColor: elementColor,
+                    borderWidth: highlight ? 2 : 1.2,
+                    borderColor: selected ? colors.accent : elementColor,
                     backgroundColor: m.isCurrent ? elementColor : 'transparent',
                   }}
                 />
               </View>
               <Text
                 style={{
-                  color: m.isCurrent ? colors.text : colors.dim,
+                  color: highlight ? colors.text : colors.dim,
                   fontSize: 13,
-                  fontWeight: m.isCurrent ? '600' : '400',
+                  fontWeight: highlight ? '600' : '400',
                 }}
               >
                 {m.pillar.stem}
                 {m.pillar.branch}
               </Text>
               <Text style={{ color: colors.dim, fontSize: 10 }}>{m.month}</Text>
-            </View>
+            </Pressable>
           )
         })}
       </View>

@@ -21,13 +21,16 @@ export { persistPendingDdlToken, resolvePendingPortfolioDdl } from './ddl-resolu
 export { readLastResolvedDdlMeta, storeLastResolvedDdlSession } from './ddl-session-cache'
 export { extractDdlTokenFromUrl } from './ddl-token'
 export type {
+  DevEntitlementOverride,
   EntitlementKey,
   EntitlementSnapshot,
   EntitlementsState,
 } from './entitlements/use-entitlements'
 export {
+  getDevEntitlementOverride,
   hasAnyProEntitlement,
   hasEntitlement,
+  setDevEntitlementOverride,
   useEntitlements,
 } from './entitlements/use-entitlements'
 export { ErrorBoundary } from './error-boundary'

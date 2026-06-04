@@ -15,8 +15,9 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import type { AuspiceDayPayload } from '@/lib/api'
+import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
+import type { RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
@@ -29,6 +30,48 @@ function SectionLabel({ children }: { children: string }) {
     <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
       {children}
     </Text>
+  )
+}
+
+// 六曜 tone by Rokuyo.index (0=大安 … 5=仏滅). Restrained 3-tier coloring — 大安 /
+// 友引 lean auspicious (accent), 仏滅 / 赤口 muted (dim), the split days neutral.
+// A standard カレンダー convention, kept subtle so it reads as annotation, not a
+// personal fortune claim.
+const ROKUYO_TONE = ['good', 'bad', 'mixed', 'good', 'mixed', 'bad'] as const
+
+/** 六曜 strip — JP-only day annotation; rendered above 宜忌 in the ja DayView. */
+function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoStrings }) {
+  const { colors, spacing } = useTheme()
+  const tone = ROKUYO_TONE[rokuyo.index] ?? 'mixed'
+  const accent = tone === 'good' ? colors.accent : tone === 'bad' ? colors.dim : colors.secondary
+  const meaning = strings.items[rokuyo.index] ?? ''
+  return (
+    <View>
+      <SectionLabel>{strings.label}</SectionLabel>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View
+          style={{
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: accent,
+            backgroundColor: colors.card,
+            alignItems: 'center',
+            minWidth: 64,
+          }}
+        >
+          <Text style={{ color: accent, fontSize: 20, fontWeight: '600', letterSpacing: 1 }}>
+            {rokuyo.name}
+          </Text>
+          <Text style={{ color: colors.dim, fontSize: 10, marginTop: 2 }}>{rokuyo.reading}</Text>
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>{meaning}</Text>
+          <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>{strings.caption}</Text>
+        </View>
+      </View>
+    </View>
   )
 }
 
@@ -50,6 +93,12 @@ export function DayView({ payload }: { payload: AuspiceDayPayload }) {
 
   return (
     <View style={{ gap: spacing.xl }}>
+      {/* 六曜 (JP only) —旧暦-derived calendar annotation Japanese users expect on
+          any カレンダー. Sits above 宜忌 to group the day-quality read together. */}
+      {locale === 'ja' && day.rokuyo && t.rokuyo ? (
+        <RokuyoStrip rokuyo={day.rokuyo} strings={t.rokuyo} />
+      ) : null}
+
       {/* 宜忌 — table-stakes for a 黄历, so it leads the day detail right under the
           calendar (the 重点), above 对你而言. The day identity (干支日 · 农历 · 年)
           moved above the calendar. (2026-06 IA feedback.) */}
@@ -125,6 +174,10 @@ export function DayView({ payload }: { payload: AuspiceDayPayload }) {
         field={explainField}
         dayMaster={payload.personalization?.dayMaster}
         onClose={() => setExplainField(null)}
+        onUpgrade={() => {
+          setExplainField(null)
+          setPaywallOpen(true)
+        }}
       />
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </View>

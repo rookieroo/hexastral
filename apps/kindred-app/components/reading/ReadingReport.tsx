@@ -32,10 +32,10 @@
  */
 
 import type { WuXing } from '@zhop/astro-core'
-import { cinnabar, ink, ricePaper } from '@zhop/hexastral-tokens'
+import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, ChevronRight } from 'lucide-react-native'
+import { ArrowLeft, ChevronRight, X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
@@ -61,20 +61,12 @@ import {
   useReadingI18n,
 } from './reading-i18n'
 
-/* ── palette — 宣纸 paper ground; dark ink type, bronze accent, cinnabar CTA.
-   Mirrors ming-pan-app/components/ReadingReport.tsx (#EAE3D2 paper, #3C2415
-   ink), tuned to kindred's existing token names. */
-const P = {
-  bg: ricePaper.ivory,
-  ink: ink.brown,
-  inkSoft: 'rgba(60,36,21,0.72)',
-  bronze: ink.gold,
-  muted: 'rgba(60,36,21,0.45)',
-  cinnabar: cinnabar.seal,
-  hair: 'rgba(60,36,21,0.14)',
-  hairSoft: 'rgba(60,36,21,0.07)',
-  ctaText: ricePaper.ivory,
-} as const
+/* ── palette — the shared 宣纸 document layer (kindredPaper): paper ground, dark
+   ink body, bronze section accent, cinnabar seal. Promoted out of this file to
+   @zhop/hexastral-tokens so the paywall + settings cream surfaces present on the
+   exact same surface — one "document" the dark shell unrolls, not three creams
+   that drift (2026-06: "宣纸=文档层，统一 cream 表面"). */
+const P = kindredPaper
 
 const LOCKED_CHAPTERS = [
   {
@@ -124,6 +116,9 @@ export interface ReadingReportProps {
    * Omit to hide the ask affordances entirely.
    */
   onAskAI?: (args: { slug: string; quote: string | null }) => void
+  /** Top-right close (X). Runs the overlay's reverse-bloom collapse, NOT an
+   *  abrupt unmount. Omit to hide the affordance. */
+  onRequestClose?: () => void
 }
 
 /** ChapterRef.key → server report-chapter slug (reading-cache / chat readingId). */
@@ -132,10 +127,28 @@ const CHAPTER_SLUG: Record<'ch1' | 'ch4', string> = {
   ch4: 'ch4_timeline',
 }
 
-export function ReadingReport({ activeChapter, setActiveChapter, onAskAI }: ReadingReportProps) {
+export function ReadingReport({
+  activeChapter,
+  setActiveChapter,
+  onAskAI,
+  onRequestClose,
+}: ReadingReportProps) {
   const birth = useSelfBirth()
   const router = useRouter()
   const { t, locale } = useReadingI18n()
+
+  // Top-right close — same node in both the empty-guard and the full report.
+  const closeBtn = onRequestClose ? (
+    <Pressable
+      onPress={onRequestClose}
+      hitSlop={12}
+      accessibilityRole='button'
+      accessibilityLabel={t('common.close')}
+      style={S.headerClose}
+    >
+      <X color={P.muted} size={20} strokeWidth={1.5} />
+    </Pressable>
+  ) : null
 
   const ready = birth != null
   const timeIndex = birth?.timeIndex ?? null
@@ -252,6 +265,7 @@ export function ReadingReport({ activeChapter, setActiveChapter, onAskAI }: Read
         <SafeAreaView edges={['top']}>
           <View style={S.header}>
             <Text style={S.headerTitle}>{t('reading.title')}</Text>
+            {closeBtn}
           </View>
         </SafeAreaView>
       </View>
@@ -359,6 +373,7 @@ export function ReadingReport({ activeChapter, setActiveChapter, onAskAI }: Read
       <SafeAreaView style={S.safe} edges={['top']}>
         <View style={S.header}>
           <Text style={S.headerTitle}>{t('reading.title')}</Text>
+          {closeBtn}
         </View>
 
         <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
@@ -671,6 +686,15 @@ const S = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: { color: P.bronze, fontSize: 11, letterSpacing: 4, fontWeight: '300' },
+  // Absolute so the title stays optically centered; sits at the top-right.
+  headerClose: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
 
   scroll: { paddingHorizontal: 24, paddingTop: 12 },
 

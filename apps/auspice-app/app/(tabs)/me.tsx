@@ -21,12 +21,19 @@ import {
   birthDateFieldLabelsForLocale,
   CityPicker,
   DEFAULT_TOP_CITIES,
+  ShichenField,
   type ShichenIndex,
-  ShichenPicker,
+  shichenFieldLabelsForLocale,
   useTheme,
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
-import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
+import {
+  type DevEntitlementOverride,
+  getDevEntitlementOverride,
+  hasEntitlement,
+  setDevEntitlementOverride,
+  useEntitlements,
+} from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
@@ -83,6 +90,14 @@ export default function MeScreen() {
   const [calPaywallOpen, setCalPaywallOpen] = useState(false)
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
+  // DEV-only Pro override — cycled from the debug block at the bottom. Re-renders
+  // this screen so all `hasEntitlement`-gated UI flips live.
+  const [devPro, setDevPro] = useState<DevEntitlementOverride>(getDevEntitlementOverride())
+  const cycleDevPro = () => {
+    const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
+    setDevEntitlementOverride(next)
+    setDevPro(next)
+  }
 
   // ── Birth info form state ───────────────────────────────────────────────
   // `birth` is the canonical saved object (solarDate is always the gregorian
@@ -314,7 +329,8 @@ export default function MeScreen() {
                 />
               </View>
 
-              {/* Shichen — 12-cell grid + "unknown" Pressable. */}
+              {/* Shichen — one-line wheel field (matches kindred + the date field
+                  above; collapses the old 12-cell grid) + "unknown" Pressable. */}
               <View style={{ gap: spacing.sm }}>
                 <View
                   style={{
@@ -343,11 +359,13 @@ export default function MeScreen() {
                     </Text>
                   </Pressable>
                 </View>
-                <ShichenPicker
+                <ShichenField
                   value={birth.timeIndex}
                   onChange={(idx: ShichenIndex) =>
                     setBirth((prev) => ({ ...prev, timeIndex: idx }))
                   }
+                  accent={colors.accent}
+                  labels={shichenFieldLabelsForLocale(locale)}
                 />
               </View>
 
@@ -767,6 +785,32 @@ export default function MeScreen() {
             the real settings above it. ── */}
         {__DEV__ ? (
           <View>
+            {/* Force Pro/Free locally — cycles Off (real RC) → PRO → FREE. */}
+            <SectionLabel>PRO · DEV</SectionLabel>
+            <View
+              style={{
+                borderRadius: 14,
+                backgroundColor: colors.card,
+                overflow: 'hidden',
+                marginBottom: spacing.lg,
+              }}
+            >
+              <Pressable
+                onPress={cycleDevPro}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 16 }}>Force entitlement</Text>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
+                  {devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}
+                </Text>
+              </Pressable>
+            </View>
             <SectionLabel>{`${t.language} · DEV`}</SectionLabel>
             <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
               {LOCALES.map((l, i) => (

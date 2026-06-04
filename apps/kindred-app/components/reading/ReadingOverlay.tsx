@@ -129,6 +129,7 @@ function OverlayInner({
               activeChapter={activeChapter}
               setActiveChapter={setActiveChapter}
               onAskAI={onAskAI}
+              onRequestClose={startClose}
             />
           </View>
         </MaskedView>

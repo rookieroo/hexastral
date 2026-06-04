@@ -274,12 +274,14 @@ export {
   yaoToYinYang,
 } from './liuyao'
 // 农历
+export type { Rokuyo, RokuyoName } from './lunar'
 export {
   getLeapMonth,
   getLeapMonthDays,
   getLunarMonthDays,
   getLunarNewYear,
   getLunarYearDays,
+  getRokuyo,
   lunarToSolar,
   solarToLunar,
 } from './lunar'

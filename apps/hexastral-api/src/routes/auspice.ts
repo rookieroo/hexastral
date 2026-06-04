@@ -19,6 +19,7 @@ import {
   getFourPillars,
   getJieQiInstant,
   getNearestJieQiForGregorianDate,
+  getRokuyo,
   getYearJieQi,
   HEAVENLY_STEMS,
   type HeavenlyStem,
@@ -426,6 +427,12 @@ function buildDay(ymd: Ymd, subject?: PersonalAlmanacSubject) {
       isFirst: lunar.day === 1,
       isFifteenth: lunar.day === 15,
     },
+    // 六曜 (Rokuyo) — the Japanese six-day calendar annotation derived purely
+    // from the 旧暦 month + day. Shipped on every locale (it is locale-agnostic
+    // lunar data, tiny); only the ja DayView surfaces the badge. Like 六曜 on any
+    // Japanese カレンダー this is a calendar annotation, not a fortune claim — the
+    // name kanji (大安/仏滅 …) are the cycle's own labels and stay as-is.
+    rokuyo: getRokuyo(lunar.month, lunar.day),
     // Sprint 3 chunk 3 — Today highlight (tap-through to `/festival/[id]`).
     festivalToday,
     solarTermToday,
@@ -1141,6 +1148,20 @@ const CYCLE_GUARD_CONFIG = {
   noPeriodicRefill: true,
 } as const satisfies LlmGuardConfig
 
+// make-if is Pro-gated + cached, so the interactive sandbox needs a far higher
+// per-day budget than the daily 黄历 explain (which used 1/day for free taste).
+// This is the "Pro rate-limit" — generous but bounded so a runaway can't drain
+// the LLM budget.
+const MAKEIF_GUARD_CONFIG = {
+  app: 'cycle',
+  dailyLimitAnon: 10,
+  dailyLimitSigned: 20,
+  lifetimePeakPass: 1,
+  globalDailyBudget: 5000,
+  noRollover: true,
+  noPeriodicRefill: true,
+} as const satisfies LlmGuardConfig
+
 const explainSchema = z.object({
   date: z.string().regex(DATE_RE, 'date must be YYYY-MM-DD'),
   field: z.string().min(1).max(40),
@@ -1149,6 +1170,11 @@ const explainSchema = z.object({
   locale: z.string().max(16).default('en'),
   /** Anonymous install id (optional) — preferred quota subject over ipHash. */
   deviceId: z.string().max(128).optional(),
+  /** Client-reported Pro entitlement. The deep LLM reading is Pro-only
+   *  (订阅解锁); free callers get the deterministic template + an upsell. The
+   *  endpoint is anonymous so this is trusted-but-cheap: cost stays bounded by
+   *  the per-day KV cache regardless. */
+  isPro: z.boolean().default(false),
 })
 
 /** Tiny non-crypto hash so raw IPs never land in KV keys. */
@@ -1175,66 +1201,193 @@ auspiceRoutes.post('/explain', async (c) => {
   // Recompute the day (personalized when 日主 known) — facts for the prompt + template.
   const almanac = calculateDailyAlmanac(ymd, dayMaster)
   const bucket = dayMaster ? STEM_WUXING[dayMaster] : 'none'
-  const cacheKey = `auspice:explain:${body.date}:${body.field}:${body.locale}:${bucket}`
+  const cacheKeyOf = (field: string) =>
+    `auspice:explain:${body.date}:${field}:${body.locale}:${bucket}`
 
-  // 1. Cache hit — no guard spend.
-  const cached = await c.env.GUARD_KV.get(cacheKey)
+  // Pro-gate (订阅解锁): the deep LLM reading is Pro-only. Free callers always get
+  // the deterministic template + an upsell — they never trigger an LLM call.
+  if (!body.isPro) {
+    return jsonOk(c, {
+      explanation: templateExplanation(almanac, body.field),
+      source: 'template',
+      upsell: true,
+    })
+  }
+
+  // Pro: cache-first. Any field of a day a Pro user already opened is a hit.
+  const cached = await c.env.GUARD_KV.get(cacheKeyOf(body.field))
   if (cached) {
     return jsonOk(c, { explanation: cached, source: 'cache', upsell: false })
   }
 
-  // 2. Guard decision (subject: deviceId > ipHash).
+  // Miss → guard backstop (caps abuse via novel dates), then BATCH the whole day
+  // in ONE call and cache EVERY field, so later taps that day are KV hits.
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const subject = resolveLlmGuardSubject({ deviceId: body.deviceId, ipHash: hashIp(ip) })
-  const template = () =>
+  const template = (upsell: boolean) =>
     jsonOk(c, {
       explanation: templateExplanation(almanac, body.field),
       source: 'template',
-      upsell: false,
+      upsell,
     })
-  if (!subject) return template()
+  if (!subject) return template(false)
 
   const guard = await evaluateLlmGuard(c.env, { subject, config: CYCLE_GUARD_CONFIG })
   for (const ev of guard.events) console.info('[cycle.explain.guard]', JSON.stringify(ev))
+  if (guard.decision !== 'allow_llm') return template(guard.upsellAfterExhaust)
 
-  if (guard.decision === 'allow_llm') {
-    try {
-      const resp = await astroClient.post<{ explanation: string }>(
-        c.env.SVC_ASTRO,
-        '/cycle/explain',
-        {
-          date: body.date,
-          field: body.field,
-          ganZhi: almanac.todayGanZhi,
-          dayOfficer: almanac.dayOfficer,
-          mansion: almanac.mansion.name,
-          dayMaster,
-          relation: almanac.elementRelation,
-          locale: body.locale,
-          isPro: guard.tier === 'deep',
-        }
-      )
-      const explanation = (resp.explanation ?? '').trim()
-      if (explanation) {
-        await c.env.GUARD_KV.put(cacheKey, explanation, { expirationTtl: 86_400 })
-        await recordLlmGuardGrant(c.env, {
-          subject,
-          config: CYCLE_GUARD_CONFIG,
-          consumesPeakPass: guard.consumesPeakPass,
-        })
-        return jsonOk(c, { explanation, source: 'llm', tier: guard.tier, upsell: false })
+  // Every tappable field of the day — one LLM call covers them all.
+  const fields = [
+    ...almanac.goodFor.map((v) => `宜 ${v}`),
+    ...almanac.avoid.map((v) => `忌 ${v}`),
+    `冲${almanac.clash.zodiac}`,
+  ]
+  if (!fields.includes(body.field)) fields.push(body.field)
+
+  try {
+    const resp = await astroClient.post<{ explanations: Record<string, string> }>(
+      c.env.SVC_ASTRO,
+      '/cycle/explain-batch',
+      {
+        date: body.date,
+        fields,
+        ganZhi: almanac.todayGanZhi,
+        dayOfficer: almanac.dayOfficer,
+        mansion: almanac.mansion.name,
+        dayMaster,
+        relation: almanac.elementRelation,
+        locale: body.locale,
+        isPro: true,
       }
-    } catch (err) {
-      console.error('[auspice.explain] svc-astro failed', err)
+    )
+    const map = resp.explanations ?? {}
+    const entries = Object.entries(map).filter(([, v]) => v?.trim())
+    if (entries.length > 0) {
+      await Promise.all(
+        entries.map(([f, v]) =>
+          c.env.GUARD_KV.put(cacheKeyOf(f), v.trim(), { expirationTtl: 86_400 })
+        )
+      )
+      await recordLlmGuardGrant(c.env, {
+        subject,
+        config: CYCLE_GUARD_CONFIG,
+        consumesPeakPass: guard.consumesPeakPass,
+      })
+      const explanation = (map[body.field] ?? '').trim()
+      if (explanation)
+        return jsonOk(c, { explanation, source: 'llm', tier: guard.tier, upsell: false })
     }
-    return template() // svc-astro failed/empty — degrade, no grant recorded
+  } catch (err) {
+    console.error('[auspice.explain] batch failed', err)
+  }
+  return template(false) // svc-astro failed/empty — degrade, no grant recorded
+})
+
+// ── POST /makeif — Pro "假如你..." narratives for the make-if life branches ────
+//
+// make-if Phase 3. The branch STRUCTURE is deterministic + client-side; this
+// adds the per-branch narrative (one LLM call, same batch+cache+Pro-gate pattern
+// as /explain). Pro-only; cached 30d per (birth profile · locale · branch shape).
+
+const makeifSchema = z.object({
+  birthDate: z.string().regex(DATE_RE, 'birthDate must be YYYY-MM-DD'),
+  birthHour: z.number().int().min(-1).max(23).default(-1),
+  gender: z.enum(['M', 'F']),
+  locale: z.string().max(16).default('en'),
+  isPro: z.boolean().default(false),
+  /** DEV builds (__DEV__) set this to bypass the per-subject daily limit while
+   *  testing. Production app builds always send false. */
+  dev: z.boolean().default(false),
+  branches: z
+    .array(
+      z.object({
+        id: z.string().max(16),
+        label: z.string().max(40),
+        divergeAtAge: z.number().int().min(0).max(120),
+        mergeAtAge: z.number().int().min(0).max(120).nullable(),
+        isPast: z.boolean().optional(),
+        realPillar: z.string().max(8).optional(),
+      })
+    )
+    .min(1)
+    .max(5),
+})
+
+auspiceRoutes.post('/makeif', async (c) => {
+  const body = makeifSchema.parse(await c.req.json().catch(() => ({})))
+
+  // Pro-only — Free sees the deterministic structure + the explainer, no narrative.
+  if (!body.isPro) return jsonOk(c, { narratives: {}, source: 'locked' })
+
+  const ymd = parseYmd(body.birthDate)
+  const hour = body.birthHour < 0 ? 12 : body.birthHour
+  const pillars = getFourPillars({ year: ymd.year, month: ymd.month, day: ymd.day, hour })
+
+  // Cache key buckets by birth profile + branch shape, so a given person always
+  // reads the same stories and re-asks are free. Branch shape folded in via the
+  // tiny non-crypto hash so a structure change busts the cache.
+  const shapeSig = body.branches
+    .map((b) => `${b.id}:${b.label}:${b.divergeAtAge}:${b.mergeAtAge}:${b.isPast}:${b.realPillar}`)
+    .join(',')
+  const cacheKey = `auspice:makeif:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
+  const cached = await c.env.GUARD_KV.get(cacheKey)
+  if (cached) {
+    try {
+      return jsonOk(c, {
+        narratives: JSON.parse(cached) as Record<string, string>,
+        source: 'cache',
+      })
+    } catch {
+      // fall through to regenerate on a corrupt cache row
+    }
   }
 
-  // 3. allow_cached (global budget) / allow_template (subject exhausted) — cache already
-  //    missed, so serve the deterministic template + surface the upsell.
-  return jsonOk(c, {
-    explanation: templateExplanation(almanac, body.field),
-    source: 'template',
-    upsell: guard.upsellAfterExhaust,
-  })
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
+  // DEV builds bypass the per-subject daily limit so testing isn't capped after
+  // a handful of forks. Production app builds send dev=false, so real users
+  // still hit MAKEIF_GUARD_CONFIG.
+  let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
+  if (!body.dev) {
+    if (!subject) return jsonOk(c, { narratives: {}, source: 'template' })
+    guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
+    for (const ev of guard.events) console.info('[auspice.makeif.guard]', JSON.stringify(ev))
+    if (guard.decision !== 'allow_llm') {
+      return jsonOk(c, { narratives: {}, source: 'template', upsell: guard.upsellAfterExhaust })
+    }
+  }
+
+  const currentAge = new Date().getUTCFullYear() - ymd.year
+
+  try {
+    const resp = await astroClient.post<{ narratives: Record<string, string> }>(
+      c.env.SVC_ASTRO,
+      '/cycle/makeif-narrate',
+      {
+        dayMaster: pillars.day.stem,
+        dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
+        yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
+        gender: body.gender,
+        currentAge,
+        locale: body.locale,
+        isPro: true,
+        branches: body.branches,
+      }
+    )
+    const narratives = resp.narratives ?? {}
+    if (Object.keys(narratives).length > 0) {
+      await c.env.GUARD_KV.put(cacheKey, JSON.stringify(narratives), { expirationTtl: 2_592_000 })
+      if (!body.dev && subject && guard) {
+        await recordLlmGuardGrant(c.env, {
+          subject,
+          config: MAKEIF_GUARD_CONFIG,
+          consumesPeakPass: guard.consumesPeakPass,
+        })
+      }
+      return jsonOk(c, { narratives, source: 'llm' })
+    }
+  } catch (err) {
+    console.error('[auspice.makeif] narrate failed', err)
+  }
+  return jsonOk(c, { narratives: {}, source: 'template' })
 })

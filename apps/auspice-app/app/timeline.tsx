@@ -30,7 +30,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
-import { LiuyueStrip, TimelineGraph } from '@/components/TimelineGraph'
+import { LiuyueStrip, ReadingBubble, TimelineGraph } from '@/components/TimelineGraph'
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
@@ -51,11 +51,17 @@ function defaultSelection(payload: TimelinePayload): string {
   return 'source'
 }
 
+interface BirthCtx {
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+}
+
 type ScreenState =
   | { kind: 'loading' }
   | { kind: 'no-birth' }
   | { kind: 'error'; message: string }
-  | { kind: 'data'; payload: TimelinePayload }
+  | { kind: 'data'; payload: TimelinePayload; birth: BirthCtx }
 
 export default function TimelineScreen() {
   const { colors, spacing } = useTheme()
@@ -86,7 +92,11 @@ export default function TimelineScreen() {
           locale,
         }).then((payload) => {
           setSelectedId(defaultSelection(payload))
-          setState({ kind: 'data', payload })
+          setState({
+            kind: 'data',
+            payload,
+            birth: { birthDate: info.solarDate, birthHour, gender },
+          })
         })
       })
       .catch((e: unknown) => {
@@ -121,11 +131,11 @@ export default function TimelineScreen() {
           </View>
         ) : state.kind === 'no-birth' ? (
           <NoBirthCard
-            onPress={() => router.push('/me')}
             colors={colors}
             spacing={spacing}
-            cta={t.personalEmptyCta}
             body={t.personalEmptyBody}
+            cta={t.personalEmptyCta}
+            onPress={() => router.push('/me')}
           />
         ) : state.kind === 'error' ? (
           <Text style={{ color: colors.secondary }}>
@@ -169,8 +179,6 @@ interface BodySpacing {
   '3xl': number
 }
 
-const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
-
 function Body({
   payload,
   isPro,
@@ -213,6 +221,17 @@ function Body({
         body: `${t.timelineAdvice[row.fit]}${clash}`,
       }
     }
+    if (selectedId.startsWith('liuyue-')) {
+      const [, y, m] = selectedId.split('-')
+      const row = payload.liuyue.find((r) => r.year === Number(y) && r.month === Number(m))
+      if (!row) return null
+      const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+      return {
+        heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+        fit: row.fit,
+        body: `${t.timelineAdvice[row.fit]}${clash}`,
+      }
+    }
     const year = Number(selectedId.slice('liunian-'.length))
     const row = payload.liunian.find((r) => r.year === year)
     if (!row) return null
@@ -232,27 +251,8 @@ function Body({
         </Text>
       ) : null}
 
-      {/* Selected-node reading — the "近期" guidance. A single fit-colored rule,
-          no background card (2026-06 design feedback). */}
-      {detail ? (
-        <View
-          style={{
-            borderLeftWidth: 2.5,
-            borderLeftColor: detail.fit ? FIT_COLOR[detail.fit] : colors.separator,
-            paddingLeft: spacing.lg,
-            gap: 5,
-          }}
-        >
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
-            {detail.heading}
-          </Text>
-          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
-            {detail.body}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* The life as a git graph. */}
+      {/* The life as a git graph — the selected-node reading now pops up anchored
+          TO the tapped node (long graphs scrolled the old top panel out of view). */}
       <TimelineGraph
         payload={payload}
         isPro={isPro}
@@ -261,17 +261,38 @@ function Body({
         onLockedTap={onLockedTap}
         colors={colors}
         width={canvasWidth}
+        detail={selectedId?.startsWith('liuyue-') ? null : detail}
       />
 
-      {/* 流月 — the finest commits of the current year. */}
+      {/* 流月 — the finest commits; each is tappable for its own reading. */}
       {payload.liuyue.length > 0 ? (
-        <LiuyueStrip
-          liuyue={payload.liuyue}
-          isPro={isPro}
-          colors={colors}
-          label={t.timelineLiuyue}
-        />
+        <View style={{ gap: spacing.md }}>
+          <LiuyueStrip
+            liuyue={payload.liuyue}
+            isPro={isPro}
+            colors={colors}
+            label={t.timelineLiuyue}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+          {selectedId?.startsWith('liuyue-') && detail ? (
+            <ReadingBubble
+              heading={detail.heading}
+              body={detail.body}
+              fit={detail.fit}
+              colors={colors}
+            />
+          ) : null}
+          {/* Only this year's 流月 is shown by design — full data isn't dumped;
+              key-moment reminders are opt-in push (DAU lever). */}
+          <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
+            {t.timelineLiuyueNote}
+          </Text>
+        </View>
       ) : null}
+
+      {/* make-if 假如 now lives on its own /makeif screen (entered from the Today
+          banner) — keeps this page short. */}
 
       {/* ONE unlock — the only paywall on the page. */}
       {!isPro ? (
@@ -298,18 +319,19 @@ function Body({
   )
 }
 
+/** No-birth prompt — a single fit-colored rule that routes to the birth form. */
 function NoBirthCard({
-  onPress,
   colors,
   spacing,
-  cta,
   body,
+  cta,
+  onPress,
 }: {
-  onPress: () => void
   colors: BodyColors
   spacing: BodySpacing
-  cta: string
   body: string
+  cta: string
+  onPress: () => void
 }) {
   return (
     <Pressable

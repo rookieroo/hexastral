@@ -28,6 +28,7 @@ import {
 } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import {
+  type BondStatus,
   ChapterPager,
   CompatibilityScore,
   ShareableChapterCard,
@@ -42,10 +43,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import { PrimaryButton } from '@/components/PrimaryButton'
-import { ReportReveal } from '@/components/ReportReveal'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
-import { useI18n } from '@/lib/i18n'
+import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 
 export default function BondDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -205,182 +205,227 @@ export default function BondDetailScreen() {
           })
       : null
 
-  // Chapter-based report (v2): horizontal pager
+  // Basic-info line under the header — when the thread was started + whether
+  // their info is in (2026-06: "进去之后展示这个 Thread 的基本信息"). resolveLocale()
+  // is a plain call (not a hook) so it's safe below the loading/error returns.
+  const locale = resolveLocale()
+  const startedLabel = relativeSentLabel(locale, detail.createdAt)
+  const status = detailStatus(detail.status, t)
+  const metaRow = (justify: 'flex-start' | 'center') => (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: justify,
+        flexWrap: 'wrap',
+        gap: 8,
+        paddingHorizontal: kindredSpacing.screenH,
+        marginBottom: kindredSpacing.sm,
+      }}
+    >
+      <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>{startedLabel}</Text>
+      {status.label ? (
+        <>
+          <Text style={{ color: kindredDark.textMuted, fontSize: 12 }}>·</Text>
+          <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
+        </>
+      ) : null}
+    </View>
+  )
+
+  // Chapter-based report (v2): horizontal pager. No entry animation — straight
+  // to the report under a basic-info header (2026-06: "点进去不用做动画").
   if (chapters && chapters.length > 0) {
     return (
-      <ReportReveal>
-        <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-          <View
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        <View
+          style={{
+            paddingHorizontal: kindredSpacing.screenH,
+            paddingVertical: kindredSpacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
+          </Pressable>
+          <Text
+            style={[
+              kindredType.caption,
+              { color: kindredDark.textSecondary, marginLeft: kindredSpacing.md },
+            ]}
+          >
+            {detail.targetName} · {detail.relationshipLabel}
+          </Text>
+          <View style={{ flex: 1 }} />
+          {openChat ? (
+            <Pressable onPress={openChat} hitSlop={8}>
+              <Text style={kindredPresets.ctaText}>{t('chat.cta')}</Text>
+            </Pressable>
+          ) : null}
+          {/* New thread — opens the single-page add-partner flow, not the
+              old self birth wizard. */}
+          <Pressable
+            onPress={() => router.push('/(onboarding)/mode')}
+            hitSlop={8}
+            accessibilityRole='button'
+            accessibilityLabel={t('bondList.add')}
+            style={{ marginLeft: kindredSpacing.md }}
+          >
+            <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
+          </Pressable>
+        </View>
+        {metaRow('flex-start')}
+        {auspiceBirth ? (
+          <Pressable
+            onPress={sendToAuspice}
+            hitSlop={6}
+            accessibilityRole='button'
             style={{
               paddingHorizontal: kindredSpacing.screenH,
-              paddingVertical: kindredSpacing.md,
-              flexDirection: 'row',
-              alignItems: 'center',
+              paddingBottom: kindredSpacing.sm,
             }}
           >
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
-            </Pressable>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textSecondary, marginLeft: kindredSpacing.md },
-              ]}
-            >
-              {detail.targetName} · {detail.relationshipLabel}
-            </Text>
-            <View style={{ flex: 1 }} />
-            {openChat ? (
-              <Pressable onPress={openChat} hitSlop={8}>
-                <Text style={kindredPresets.ctaText}>{t('chat.cta')}</Text>
-              </Pressable>
-            ) : null}
-            {/* New thread — opens the single-page add-partner flow, not the
-                old self birth wizard. */}
-            <Pressable
-              onPress={() => router.push('/(onboarding)/mode')}
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('bondList.add')}
-              style={{ marginLeft: kindredSpacing.md }}
-            >
-              <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
-            </Pressable>
-          </View>
-          {auspiceBirth ? (
-            <Pressable
-              onPress={sendToAuspice}
-              hitSlop={6}
-              accessibilityRole='button'
-              style={{
-                paddingHorizontal: kindredSpacing.screenH,
-                paddingBottom: kindredSpacing.sm,
-              }}
-            >
-              <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
-            </Pressable>
-          ) : null}
-          <ChapterPager
-            report={{
-              id: detail.id,
-              bondId: detail.id,
-              generatedAt: detail.createdAt,
-              chapters,
-              headline: detail.archetypeTagline ?? '',
-            }}
-            currentIndex={chapterIndex}
-            onIndexChange={setChapterIndex}
-            onShareChapter={(idx) => void handleShareChapter(idx)}
-          />
+            <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
+          </Pressable>
+        ) : null}
+        <ChapterPager
+          report={{
+            id: detail.id,
+            bondId: detail.id,
+            generatedAt: detail.createdAt,
+            chapters,
+            headline: detail.archetypeTagline ?? '',
+          }}
+          currentIndex={chapterIndex}
+          onIndexChange={setChapterIndex}
+          onShareChapter={(idx) => void handleShareChapter(idx)}
+        />
 
-          {/* Off-screen capture target — positioned far outside viewport but mounted. */}
-          {shareTarget ? (
-            <View
-              ref={captureRefView}
-              collapsable={false}
-              style={{ position: 'absolute', top: -20000, left: 0 }}
-            >
-              <ShareableChapterCard
-                chapter={chapters[shareTarget.index] ?? chapters[0]!}
-                selfName={selfName ?? '你'}
-                otherName={otherName}
-                width={1080}
-                height={1920}
-                brandUrl={shareTarget.brandUrl}
-              />
-            </View>
-          ) : null}
-        </SafeAreaView>
-      </ReportReveal>
+        {/* Off-screen capture target — positioned far outside viewport but mounted. */}
+        {shareTarget ? (
+          <View
+            ref={captureRefView}
+            collapsable={false}
+            style={{ position: 'absolute', top: -20000, left: 0 }}
+          >
+            <ShareableChapterCard
+              chapter={chapters[shareTarget.index] ?? chapters[0]!}
+              selfName={selfName ?? '你'}
+              otherName={otherName}
+              width={1080}
+              height={1920}
+              brandUrl={shareTarget.brandUrl}
+            />
+          </View>
+        ) : null}
+      </SafeAreaView>
     )
   }
 
-  // V1 fallback — single-page summary
+  // V1 fallback — single-page summary. No entry animation; basic info up top.
   return (
-    <ReportReveal>
-      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: kindredSpacing.screenH,
-            paddingTop: kindredSpacing.lg,
-            paddingBottom: kindredSpacing.xxl,
-          }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: kindredSpacing.screenH,
+          paddingTop: kindredSpacing.lg,
+          paddingBottom: kindredSpacing.xxl,
+        }}
+      >
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(onboarding)/mode')}
+            hitSlop={8}
+            accessibilityRole='button'
+            accessibilityLabel={t('bondList.add')}
           >
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(onboarding)/mode')}
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('bondList.add')}
-            >
-              <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
-            </Pressable>
-          </View>
+            <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
+          </Pressable>
+        </View>
 
-          <View
-            style={{ alignItems: 'center', marginTop: kindredSpacing.lg, gap: kindredSpacing.sm }}
+        <View
+          style={{ alignItems: 'center', marginTop: kindredSpacing.lg, gap: kindredSpacing.sm }}
+        >
+          <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
+            {detail.relationshipLabel}
+          </Text>
+          <Text style={[kindredType.title, { color: kindredDark.text }]}>{detail.targetName}</Text>
+        </View>
+
+        <View style={{ marginTop: kindredSpacing.md }}>{metaRow('center')}</View>
+
+        {detail.score != null && (
+          <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl }}>
+            <CompatibilityScore score={detail.score} label={detail.grade ?? undefined} />
+          </View>
+        )}
+
+        {detail.archetypeName && (
+          <View style={{ marginTop: kindredSpacing.xl, gap: kindredSpacing.sm }}>
+            <Text style={[kindredType.caption, { color: kindredDark.accent, letterSpacing: 4 }]}>
+              {detail.archetypeCategory?.toUpperCase()}
+            </Text>
+            <Text style={[kindredType.heading, { color: kindredDark.text }]}>
+              {detail.archetypeName}
+            </Text>
+            {detail.archetypeTagline && (
+              <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
+                {detail.archetypeTagline}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {detail.interpretation?.overview && (
+          <View style={{ marginTop: kindredSpacing.xl }}>
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {detail.interpretation.overview}
+            </Text>
+          </View>
+        )}
+
+        {openChat ? (
+          <View style={{ marginTop: kindredSpacing.xl }}>
+            <PrimaryButton label={t('chat.cta')} onPress={openChat} />
+          </View>
+        ) : null}
+
+        {auspiceBirth ? (
+          <Pressable
+            onPress={sendToAuspice}
+            hitSlop={6}
+            accessibilityRole='button'
+            style={{ marginTop: kindredSpacing.lg, alignSelf: 'flex-start' }}
           >
-            <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
-              {detail.relationshipLabel}
-            </Text>
-            <Text style={[kindredType.title, { color: kindredDark.text }]}>
-              {detail.targetName}
-            </Text>
-          </View>
-
-          {detail.score != null && (
-            <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl }}>
-              <CompatibilityScore score={detail.score} label={detail.grade ?? undefined} />
-            </View>
-          )}
-
-          {detail.archetypeName && (
-            <View style={{ marginTop: kindredSpacing.xl, gap: kindredSpacing.sm }}>
-              <Text style={[kindredType.caption, { color: kindredDark.accent, letterSpacing: 4 }]}>
-                {detail.archetypeCategory?.toUpperCase()}
-              </Text>
-              <Text style={[kindredType.heading, { color: kindredDark.text }]}>
-                {detail.archetypeName}
-              </Text>
-              {detail.archetypeTagline && (
-                <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
-                  {detail.archetypeTagline}
-                </Text>
-              )}
-            </View>
-          )}
-
-          {detail.interpretation?.overview && (
-            <View style={{ marginTop: kindredSpacing.xl }}>
-              <Text style={[kindredType.body, { color: kindredDark.text }]}>
-                {detail.interpretation.overview}
-              </Text>
-            </View>
-          )}
-
-          {openChat ? (
-            <View style={{ marginTop: kindredSpacing.xl }}>
-              <PrimaryButton label={t('chat.cta')} onPress={openChat} />
-            </View>
-          ) : null}
-
-          {auspiceBirth ? (
-            <Pressable
-              onPress={sendToAuspice}
-              hitSlop={6}
-              accessibilityRole='button'
-              style={{ marginTop: kindredSpacing.lg, alignSelf: 'flex-start' }}
-            >
-              <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
-            </Pressable>
-          ) : null}
-        </ScrollView>
-      </SafeAreaView>
-    </ReportReveal>
+            <Text style={kindredPresets.ctaText}>{t('bond.toAuspice')}</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   )
+}
+
+/** Status → "is their info in?" label + tint for the detail's basic-info line. */
+function detailStatus(
+  status: BondStatus,
+  t: (key: string) => string
+): { label: string; color: string } {
+  switch (status) {
+    case 'active':
+      return { label: t('bond.statusActive'), color: kindredDark.accent }
+    case 'pending_invite':
+      return { label: t('bond.statusPending'), color: kindredDark.textSecondary }
+    case 'declined':
+      return { label: t('bond.statusDeclined'), color: kindredDark.textMuted }
+    case 'expired':
+      return { label: t('bond.statusExpired'), color: kindredDark.textMuted }
+    default:
+      return { label: '', color: kindredDark.textMuted }
+  }
 }

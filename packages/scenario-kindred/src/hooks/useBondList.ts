@@ -26,6 +26,9 @@ export interface UseBondListResult {
   isLoading: boolean
   error: Error | null
   refetch: () => Promise<void>
+  /** Soft-delete a bond. Removes it from the list optimistically and rolls
+   *  back (re-inserting it) if the server call fails. */
+  deleteBond: (id: string) => Promise<void>
 }
 
 const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, ReadonlyArray<string>> = {
@@ -69,6 +72,26 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
     void refetch()
   }, [refetch])
 
+  const deleteBond = useCallback(
+    async (id: string) => {
+      // Optimistic — drop it now; the server soft-deletes (status 'removed')
+      // and the next fetch already filters it. Roll back on failure.
+      const snapshot = allBonds
+      setAllBonds((prev) => prev.filter((b) => b.id !== id))
+      try {
+        await unwrap<{ id: string; status: string }>(
+          await kindredBonds(client)[':id'].$delete({ param: { id } })
+        )
+      } catch (err) {
+        setAllBonds(snapshot)
+        const e = err instanceof Error ? err : new Error(String(err))
+        onError?.(e)
+        throw e
+      }
+    },
+    [client, onError, allBonds]
+  )
+
   const filtered = allBonds.filter((b) => {
     if (options.withReadingOnly && !b.hehunReadingId) return false
     if (
@@ -80,5 +103,5 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
     return true
   })
 
-  return { bonds: filtered, isLoading, error, refetch }
+  return { bonds: filtered, isLoading, error, refetch, deleteBond }
 }

@@ -15,37 +15,10 @@
 
 import * as Haptics from 'expo-haptics'
 import { useState } from 'react'
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Modal, Pressable, Text, View } from 'react-native'
 import { useTheme } from '../../theme'
 import type { ShichenIndex } from '../ShichenPicker'
-
-interface Shichen {
-  readonly index: ShichenIndex
-  readonly branch: string
-  readonly range: string
-}
-
-const SHICHEN: ReadonlyArray<Shichen> = [
-  { index: 0, branch: '子', range: '23:00 – 01:00' },
-  { index: 1, branch: '丑', range: '01:00 – 03:00' },
-  { index: 2, branch: '寅', range: '03:00 – 05:00' },
-  { index: 3, branch: '卯', range: '05:00 – 07:00' },
-  { index: 4, branch: '辰', range: '07:00 – 09:00' },
-  { index: 5, branch: '巳', range: '09:00 – 11:00' },
-  { index: 6, branch: '午', range: '11:00 – 13:00' },
-  { index: 7, branch: '未', range: '13:00 – 15:00' },
-  { index: 8, branch: '申', range: '15:00 – 17:00' },
-  { index: 9, branch: '酉', range: '17:00 – 19:00' },
-  { index: 10, branch: '戌', range: '19:00 – 21:00' },
-  { index: 11, branch: '亥', range: '21:00 – 23:00' },
-]
-
-const ITEM_H = 56
-// 5 visible rows — the centred slot plus two neighbours each side. Larger rows
-// (vs the 36px date wheels) so the branch glyph reads big and the almanac feel
-// lands.
-const VISIBLE = 5
-const WHEEL_H = ITEM_H * VISIBLE
+import { SHICHEN, ShichenWheel } from './ShichenWheel'
 
 export interface ShichenFieldLabels {
   /** Summary placeholder when nothing is picked (e.g. '选择时辰'). */
@@ -117,21 +90,40 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
       </Pressable>
 
       <Modal visible={open} transparent animationType='slide' onRequestClose={() => setOpen(false)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: colors.scrim }}
-          onPress={() => setOpen(false)}
-          accessibilityRole='button'
-        />
+        {/* Backdrop is transparent — the half-screen above the sheet stays fully
+            visible (no grey scrim in either light or dark, 2026-06 feedback). It
+            still catches taps to dismiss; the sheet separates by its own shadow +
+            grab handle instead of a dimming overlay. */}
+        <Pressable style={{ flex: 1 }} onPress={() => setOpen(false)} accessibilityRole='button' />
         <View
           style={{
             backgroundColor: colors.card,
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
+            borderTopWidth: 0.5,
+            borderColor: colors.separator,
             paddingHorizontal: 20,
-            paddingTop: 12,
+            paddingTop: 8,
             paddingBottom: 28,
+            shadowColor: '#000',
+            shadowOpacity: 0.22,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: -6 },
+            elevation: 24,
           }}
         >
+          {/* Grab handle — native-sheet affordance + visual separation from the
+              undimmed content behind. */}
+          <View
+            style={{
+              alignSelf: 'center',
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: colors.separator,
+              marginBottom: 8,
+            }}
+          />
           {/* Sheet header — almanac title left, confirm right. */}
           <View
             style={{
@@ -151,90 +143,11 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
             </Pressable>
           </View>
 
-          <ShichenWheel value={draft} onChange={setDraft} accent={accent} />
+          {/* Mount the wheel only while open so it always re-seeds at the current
+              draft (a re-opened sheet starts parked on the saved 时辰). */}
+          {open ? <ShichenWheel value={draft} onChange={setDraft} accent={accent} /> : null}
         </View>
       </Modal>
-    </View>
-  )
-}
-
-/** Single-column 时辰 scroll-wheel — branch glyph (big) + clock range. */
-function ShichenWheel({
-  value,
-  onChange,
-  accent,
-}: {
-  value: ShichenIndex
-  onChange: (idx: ShichenIndex) => void
-  accent: string
-}) {
-  const { colors } = useTheme()
-  const pad = ITEM_H * Math.floor(VISIBLE / 2)
-
-  return (
-    <View style={{ height: WHEEL_H, position: 'relative' }}>
-      {/* Centre selection band. */}
-      <View
-        pointerEvents='none'
-        style={{
-          position: 'absolute',
-          top: pad,
-          left: 0,
-          right: 0,
-          height: ITEM_H,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: accent,
-          backgroundColor: `${accent}1A`,
-        }}
-      />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_H}
-        decelerationRate='fast'
-        contentOffset={{ x: 0, y: value * ITEM_H }}
-        contentContainerStyle={{ paddingVertical: pad }}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_H)
-          const clamped = Math.max(0, Math.min(SHICHEN.length - 1, idx)) as ShichenIndex
-          if (clamped !== value) {
-            void Haptics.selectionAsync().catch(() => undefined)
-            onChange(clamped)
-          }
-        }}
-      >
-        {SHICHEN.map((s, i) => {
-          const distance = Math.abs(i - value)
-          const center = distance === 0
-          const opacity = center ? 1 : distance === 1 ? 0.55 : 0.28
-          return (
-            <View
-              key={s.index}
-              style={{
-                height: ITEM_H,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 14,
-                opacity,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: center ? 30 : 26,
-                  color: center ? colors.text : colors.secondary,
-                  fontWeight: '400',
-                }}
-              >
-                {`${s.branch}时`}
-              </Text>
-              <Text style={{ fontSize: 13, color: colors.secondary, fontWeight: '300' }}>
-                {s.range}
-              </Text>
-            </View>
-          )
-        })}
-      </ScrollView>
     </View>
   )
 }
@@ -260,7 +173,12 @@ export function shichenFieldLabelsForLocale(locale: string): ShichenFieldLabels 
     return { placeholder: '选择时辰', title: '十二时辰', done: '完成', openPicker: '打开选择器' }
   }
   if (locale.startsWith('ja')) {
-    return { placeholder: '時辰を選ぶ', title: '十二時辰', done: '完了', openPicker: 'ピッカーを開く' }
+    return {
+      placeholder: '時辰を選ぶ',
+      title: '十二時辰',
+      done: '完了',
+      openPicker: 'ピッカーを開く',
+    }
   }
   return {
     placeholder: 'Pick a 时辰',

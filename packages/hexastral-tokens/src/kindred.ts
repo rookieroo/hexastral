@@ -72,6 +72,35 @@ export const kindredDark = {
   borderStrong: 'rgba(245,240,232,0.25)',
 } as const
 
+// ── 宣纸 document layer ──────────────────────────────────────────────────────
+//
+// The warm "paper" surface the long-form reading / paywall / settings present
+// on. The app shell is dark (ADR-0021 §5); these screens are the DELIBERATE
+// exception — a 文档层 (document layer) the ink-bloom uncovers, so the cream sits
+// against the dark home like an unrolled scroll, not a second app. Promoted to
+// one named surface (was a private palette inside ReadingReport + scattered
+// `ricePaper.ivory` literals) so every cream screen reads as the SAME document
+// and can't drift (2026-06: "宣纸=文档层，统一 cream 表面"). Dark-on-cream by
+// design — these tokens deliberately invert kindredDark.
+
+export const kindredPaper = {
+  /** Rice-paper ground. */
+  bg: ricePaper.ivory,
+  /** Dark-brown body ink. */
+  ink: ink.brown,
+  inkSoft: 'rgba(60,36,21,0.72)',
+  /** Section accent (bronze). */
+  bronze: ink.gold,
+  muted: 'rgba(60,36,21,0.45)',
+  /** Seal red — the one warm CTA anchor on paper. */
+  cinnabar: cinnabar.seal,
+  /** Hairline rules on paper. */
+  hair: 'rgba(60,36,21,0.14)',
+  hairSoft: 'rgba(60,36,21,0.07)',
+  /** Light text/glyph sitting on a cinnabar or ink fill. */
+  ctaText: ricePaper.ivory,
+} as const
+
 export type KindredTheme = typeof kindredLight
 
 // ── Typography ──────────────────────────────────────────────────────────────

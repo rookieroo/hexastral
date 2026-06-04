@@ -129,6 +129,7 @@ export default function SelfBirthScreen() {
           locale={locale}
           requireTime
           placeOptional
+          timeInputStyle='wheel'
         />
       </View>
     </SafeAreaView>

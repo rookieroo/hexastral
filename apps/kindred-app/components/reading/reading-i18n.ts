@@ -82,6 +82,7 @@ export const readingTranslations: ReadingTranslations = {
     'home.favorAvoid': 'Favorable {fav} · Avoid {unfav}',
     'birth.timeUnknown': 'Time unknown',
     'common.back': 'Back',
+    'common.close': 'Close',
   },
 
   zh: {
@@ -133,6 +134,7 @@ export const readingTranslations: ReadingTranslations = {
     'home.favorAvoid': '喜{fav} · 忌{unfav}',
     'birth.timeUnknown': '时辰未知',
     'common.back': '返回',
+    'common.close': '关闭',
   },
 
   'zh-Hant': {
@@ -184,6 +186,7 @@ export const readingTranslations: ReadingTranslations = {
     'home.favorAvoid': '喜{fav} · 忌{unfav}',
     'birth.timeUnknown': '時辰未知',
     'common.back': '返回',
+    'common.close': '關閉',
   },
 
   ja: {
@@ -235,6 +238,7 @@ export const readingTranslations: ReadingTranslations = {
     'home.favorAvoid': '喜{fav} · 忌{unfav}',
     'birth.timeUnknown': '時刻不明',
     'common.back': '戻る',
+    'common.close': '閉じる',
   },
 }
 

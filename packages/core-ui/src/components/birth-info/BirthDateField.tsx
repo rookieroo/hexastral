@@ -350,8 +350,11 @@ export function BirthDateField({
         animationType='slide'
         onRequestClose={() => setPickerOpen(false)}
       >
+        {/* Transparent backdrop — the half-screen above the sheet stays visible
+            (no grey scrim, light or dark, 2026-06 feedback); still tap-to-dismiss.
+            The sheet separates via its own shadow + grab handle. */}
         <Pressable
-          style={{ flex: 1, backgroundColor: colors.scrim }}
+          style={{ flex: 1 }}
           onPress={() => setPickerOpen(false)}
           accessibilityRole='button'
         />
@@ -360,11 +363,29 @@ export function BirthDateField({
             backgroundColor: colors.card,
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
+            borderTopWidth: 0.5,
+            borderColor: colors.separator,
             paddingHorizontal: spacing.lg,
             paddingTop: spacing.sm,
             paddingBottom: spacing.xl,
+            shadowColor: '#000',
+            shadowOpacity: 0.22,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: -6 },
+            elevation: 24,
           }}
         >
+          {/* Grab handle — native-sheet affordance + separation without dimming. */}
+          <View
+            style={{
+              alignSelf: 'center',
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: colors.separator,
+              marginBottom: spacing.xs,
+            }}
+          />
           {/* Sheet header — confirm on the right */}
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
             <Pressable onPress={confirmPicker} hitSlop={12} accessibilityRole='button'>

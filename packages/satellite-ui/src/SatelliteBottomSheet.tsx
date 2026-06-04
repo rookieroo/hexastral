@@ -27,11 +27,12 @@
  */
 import { useTheme } from '@zhop/core-ui'
 import type { ReactNode } from 'react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
   Easing,
+  Keyboard,
   Modal,
   PanResponder,
   Platform,
@@ -69,6 +70,18 @@ export function SatelliteBottomSheet({
   const { colors } = useTheme()
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current
   const fade = useRef(new Animated.Value(0)).current
+  // Lift the sheet above the keyboard so a TextInput inside it stays visible.
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const show = Keyboard.addListener(showEvt, (e) => setKeyboardHeight(e.endCoordinates.height))
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
 
   useEffect(() => {
     if (!animated) {
@@ -162,6 +175,7 @@ export function SatelliteBottomSheet({
             {
               backgroundColor: colors.bg,
               maxHeight: MAX_SHEET_HEIGHT,
+              bottom: keyboardHeight,
               transform: [{ translateY }],
             },
           ]}

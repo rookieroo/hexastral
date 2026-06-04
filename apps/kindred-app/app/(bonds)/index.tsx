@@ -1,23 +1,21 @@
 /**
  * Threads (合盘) — secondary screen reached from the solo home.
  *
- * Shows ALL pending invitations + active bonds in one scrollable surface:
+ * A single vertical list of every thread (pending invites + active bonds +
+ * declined/expired), newest-attention first. Each row is a lean list item — not
+ * a card — showing the basic info a user manages by: who they are, the
+ * relationship, when the thread was started, and whether their info is in yet.
+ * Swiping a row left reveals a Delete action (soft-delete via the bonds API).
  *
- *   - Pending invites at the top, rendered as a horizontal pager (one card
- *     per page, snap to width). The user can swipe between them — earlier
- *     this screen blocked the whole list with a single full-page
- *     WaitingForOther for the first pending only, so a user with 3 invites
- *     could only see 1.
- *   - Active bonds below, in a vertical list.
+ * Replaces the earlier card-slider (a horizontal pager for pending invites over
+ * a card list) per 2026-06 feedback — "threads card slider 不如直接做成 list".
  *
- * Phase F migration: bond cards use <Card>; empty/error states use
- * <EmptyState> / <ErrorState>. Editorial typography (kindredType) and
- * gold-underline CTAs (kindredPresets.ctaText) remain Kindred-specific.
- * This is a secondary screen, so it does NOT carry the home's floating
- * ··· settings shortcut or the swipe-left-to-Settings gesture.
+ * Phase F migration: empty/error states use <EmptyState> / <ErrorState>.
+ * Editorial typography (kindredType) stays Kindred-specific. This is a secondary
+ * screen, so it does NOT carry the home's floating ··· settings shortcut.
  */
 
-import { Card, EmptyState, ErrorState } from '@zhop/core-ui'
+import { EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import {
   kindredDark,
@@ -26,19 +24,12 @@ import {
   kindredType,
 } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { type BondData, useBondList } from '@zhop/scenario-kindred'
+import { type BondData, type BondStatus, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
+import { ChevronRight } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FlatList,
-  Pressable,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
 import { KindredMoon } from '@/components/KindredMoon'
@@ -47,11 +38,21 @@ import { useAuth } from '@/lib/auth'
 import { relativeSentLabel, resolveLocale, t } from '@/lib/i18n'
 import { consumeSplashDecision } from '@/lib/splash-control'
 
+// Pending threads need attention (resend/cancel); actives are destinations;
+// declined/expired are tail noise the user may want to clear. Sort accordingly.
+const STATUS_ORDER: Record<BondStatus, number> = {
+  pending_invite: 0,
+  active: 1,
+  declined: 2,
+  expired: 3,
+  removed: 4,
+}
+
 export default function BondListScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
   const { resyncCredentials } = useAuth()
-  const { bonds, isLoading, error, refetch } = useBondList()
+  const { bonds, isLoading, error, refetch, deleteBond } = useBondList()
   const authRetryDone = useRef(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
@@ -65,11 +66,31 @@ export default function BondListScreen() {
       })
   }, [error, resyncCredentials, refetch])
 
-  const pendingBonds = useMemo(
-    () => bonds.filter((b) => b.status === 'pending_invite' && b.invitation),
+  const threads = useMemo(
+    () =>
+      [...bonds].sort((a, b) => {
+        const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+        if (byStatus !== 0) return byStatus
+        // Newest first within a status group.
+        return b.createdAt.localeCompare(a.createdAt)
+      }),
     [bonds]
   )
-  const activeBonds = useMemo(() => bonds.filter((b) => b.status === 'active'), [bonds])
+
+  const confirmDelete = (bond: BondData) => {
+    Alert.alert(t(locale, 'bondList.deleteTitle'), t(locale, 'bondList.deleteBody'), [
+      { text: t(locale, 'bondList.cancel'), style: 'cancel' },
+      {
+        text: t(locale, 'bondList.delete'),
+        style: 'destructive',
+        onPress: () => {
+          void deleteBond(bond.id).catch((err) => {
+            if (__DEV__) console.warn('[Kindred bonds] delete failed', err)
+          })
+        },
+      },
+    ])
+  }
 
   // ── Render branches ───────────────────────────────────────────────────────
 
@@ -99,9 +120,7 @@ export default function BondListScreen() {
     )
   }
 
-  const hasAnything = pendingBonds.length > 0 || activeBonds.length > 0
-
-  if (!hasAnything) {
+  if (threads.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -132,14 +151,11 @@ export default function BondListScreen() {
           contentContainerStyle={{
             paddingTop: kindredSpacing.lg,
             paddingBottom: kindredSpacing.xxl,
-            gap: kindredSpacing.md,
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
               {/* Header chrome — the add-thread button. This is a secondary
-                  screen; settings entry lives on the home, not here. The "+"
-                  now opens the new single-page add-partner flow (mode → the
-                  one-page BirthForm), not the old self birth wizard. */}
+                  screen; settings entry lives on the home, not here. */}
               <View
                 style={{
                   flexDirection: 'row',
@@ -155,7 +171,13 @@ export default function BondListScreen() {
                 />
               </View>
               {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
-              <View style={{ alignItems: 'center', gap: kindredSpacing.sm }}>
+              <View
+                style={{
+                  alignItems: 'center',
+                  gap: kindredSpacing.sm,
+                  marginBottom: kindredSpacing.md,
+                }}
+              >
                 <KindredMoon size={56} />
                 <Text style={[kindredType.title, { color: kindredDark.text }]}>
                   {t(locale, 'bondList.title')}
@@ -169,47 +191,27 @@ export default function BondListScreen() {
                   {t(locale, 'bondList.subtitle')}
                 </Text>
               </View>
-
-              {/* Pending pager — full-width snap pages so the user can swipe
-                  through every outstanding invite. Lives ABOVE the active
-                  list because pending threads need attention (resend/cancel)
-                  while actives are just navigation destinations. */}
-              {pendingBonds.length > 0 ? (
-                <PendingPager
-                  bonds={pendingBonds}
-                  locale={locale}
-                  onOpen={(id) => router.push(`/(bonds)/${id}`)}
-                />
-              ) : null}
             </View>
           }
-          // Active bonds get the existing card row.
-          data={activeBonds}
+          data={threads}
           keyExtractor={(b) => b.id}
           renderItem={({ item }) => (
-            <View style={{ paddingHorizontal: kindredSpacing.screenH }}>
-              <BondListItem bond={item} onPress={() => router.push(`/(bonds)/${item.id}`)} />
-            </View>
+            <ThreadRow
+              bond={item}
+              locale={locale}
+              onPress={() => router.push(`/(bonds)/${item.id}`)}
+              onDelete={() => confirmDelete(item)}
+            />
           )}
-          ListEmptyComponent={
-            // The pager covers all pendings; if there are no actives we just
-            // show a quiet hint so the screen isn't visually empty below.
-            pendingBonds.length > 0 ? (
-              <Text
-                style={[
-                  kindredType.caption,
-                  {
-                    color: kindredDark.textMuted,
-                    textAlign: 'center',
-                    paddingHorizontal: kindredSpacing.screenH,
-                    paddingTop: kindredSpacing.lg,
-                  },
-                ]}
-              >
-                {t(locale, 'bondList.noActiveYet')}
-              </Text>
-            ) : null
-          }
+          ItemSeparatorComponent={() => (
+            <View
+              style={{
+                height: StyleSheet.hairlineWidth,
+                backgroundColor: kindredDark.border,
+                marginLeft: kindredSpacing.screenH,
+              }}
+            />
+          )}
           onRefresh={() => void refetch()}
           refreshing={false}
         />
@@ -245,175 +247,111 @@ function AddThreadButton({ label, onPress }: { label: string; onPress: () => voi
   )
 }
 
-/**
- * PendingPager — horizontal snap-scroll pager, one card per page. Each card
- * carries the partner name + relationship + a "waiting since" line + a quiet
- * "tap to manage" affordance. The pager dot row underneath tells the user
- * there are more pages without needing arrows.
- */
-function PendingPager({
-  bonds,
-  locale,
-  onOpen,
-}: {
-  bonds: BondData[]
-  locale: ReturnType<typeof resolveLocale>
-  onOpen: (id: string) => void
-}) {
-  const { width } = useWindowDimensions()
-  // Cards are slightly inset from screen edges so the next page peeks at the
-  // edge — discoverability without an explicit indicator.
-  const PAGE = width
-  const CARD_INSET = kindredSpacing.screenH
-  const [page, setPage] = useState(0)
-
-  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const next = Math.round(e.nativeEvent.contentOffset.x / PAGE)
-    if (next !== page) setPage(next)
+/** Per-status label + tint for the row's "info filled?" line. */
+function statusMeta(status: BondStatus, locale: ReturnType<typeof resolveLocale>) {
+  switch (status) {
+    case 'active':
+      return { label: t(locale, 'bond.statusActive'), color: kindredDark.accent }
+    case 'pending_invite':
+      return { label: t(locale, 'bond.statusPending'), color: kindredDark.textSecondary }
+    case 'declined':
+      return { label: t(locale, 'bond.statusDeclined'), color: kindredDark.textMuted }
+    case 'expired':
+      return { label: t(locale, 'bond.statusExpired'), color: kindredDark.textMuted }
+    default:
+      return { label: '', color: kindredDark.textMuted }
   }
-
-  return (
-    <View style={{ marginTop: kindredSpacing.lg }}>
-      <Text
-        style={[
-          kindredType.seal,
-          {
-            color: kindredDark.textSecondary,
-            paddingHorizontal: kindredSpacing.screenH,
-            marginBottom: kindredSpacing.md,
-          },
-        ]}
-      >
-        {t(locale, 'bondList.pendingSection')}
-      </Text>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={PAGE}
-        decelerationRate='fast'
-        onMomentumScrollEnd={onScrollEnd}
-      >
-        {bonds.map((bond) => (
-          <View key={bond.id} style={{ width: PAGE, paddingHorizontal: CARD_INSET }}>
-            <PendingBondCard
-              bond={bond}
-              locale={locale}
-              onPress={() => onOpen(bond.id)}
-            />
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Page dots — only when there's more than one page. */}
-      {bonds.length > 1 ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: 6,
-            marginTop: kindredSpacing.md,
-          }}
-        >
-          {bonds.map((b, i) => (
-            <View
-              key={b.id}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: i === page ? kindredDark.accent : kindredDark.border,
-              }}
-            />
-          ))}
-        </View>
-      ) : null}
-    </View>
-  )
 }
 
-function PendingBondCard({
+/**
+ * ThreadRow — one lean, swipe-to-delete list item. Shows name, relationship,
+ * when it was started, and a status line (whether their info is in). Tapping
+ * opens the thread; swiping left reveals Delete.
+ */
+function ThreadRow({
   bond,
   locale,
   onPress,
+  onDelete,
 }: {
   bond: BondData
   locale: ReturnType<typeof resolveLocale>
   onPress: () => void
+  onDelete: () => void
 }) {
+  const status = statusMeta(bond.status, locale)
+  const name = bond.targetName || bond.targetUser?.name || ''
+
   return (
-    <Pressable onPress={onPress}>
-      <Card
-        variant='outlined'
-        padding='lg'
+    <ReanimatedSwipeable
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      // The action is delivered the swipeable's own methods, so the row can
+      // animate closed before the confirm dialog pops (no ref plumbing).
+      renderRightActions={(_progress, _translation, methods) => (
+        <Pressable
+          onPress={() => {
+            methods.close()
+            onDelete()
+          }}
+          accessibilityRole='button'
+          accessibilityLabel={t(locale, 'bondList.delete')}
+          style={{
+            width: 92,
+            backgroundColor: kindredDark.seal,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: kindredDark.text, fontSize: 15, fontWeight: '600' }}>
+            {t(locale, 'bondList.delete')}
+          </Text>
+        </Pressable>
+      )}
+    >
+      <Pressable
+        onPress={onPress}
         style={{
-          backgroundColor: kindredDark.card,
-          gap: kindredSpacing.xs,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: kindredSpacing.md,
+          paddingHorizontal: kindredSpacing.screenH,
+          paddingVertical: kindredSpacing.lg,
+          // Opaque so the red Delete action stays hidden until swiped.
+          backgroundColor: kindredDark.bg,
         }}
       >
-        <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
-          {t(locale, 'bondList.pendingTag')}
-        </Text>
-        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{bond.targetName}</Text>
-        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-          {bond.relationshipLabel}
-        </Text>
-        <Text
-          style={[
-            kindredType.caption,
-            { color: kindredDark.textMuted, marginTop: kindredSpacing.sm },
-          ]}
-        >
-          {relativeSentLabel(locale, bond.createdAt)}
-        </Text>
-      </Card>
-    </Pressable>
-  )
-}
-
-/**
- * BondListItem — uses core-ui <Card> for elevation + consistent padding.
- * kindredType (16/28 body, 22/32 heading) is preserved over core-ui Text variants
- * because Kindred's editorial line-heights are part of the brand.
- */
-function BondListItem({ bond, onPress }: { bond: BondData; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress}>
-      <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 6 }}>
-        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{bond.targetName}</Text>
-        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-          {bond.relationshipLabel}
-        </Text>
-        {bond.score != null && (
-          <View
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text
+            style={[kindredType.caption, { color: kindredDark.textSecondary }]}
+            numberOfLines={1}
+          >
+            {bond.relationshipLabel}
+            {` · ${relativeSentLabel(locale, bond.createdAt)}`}
+          </Text>
+          {status.label ? (
+            <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
+          ) : null}
+        </View>
+        {bond.score != null ? (
+          <Text
             style={{
-              flexDirection: 'row',
-              alignItems: 'baseline',
-              gap: kindredSpacing.sm,
-              marginTop: kindredSpacing.sm,
+              fontSize: 32,
+              fontWeight: '300',
+              color: kindredDark.text,
+              letterSpacing: -1,
             }}
           >
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                color: kindredDark.text,
-                letterSpacing: -1,
-              }}
-            >
-              {bond.score}
-            </Text>
-            {bond.archetypeTagline && (
-              <Text
-                style={[kindredType.caption, { color: kindredDark.textMuted, flex: 1 }]}
-                numberOfLines={1}
-              >
-                {bond.archetypeTagline}
-              </Text>
-            )}
-          </View>
+            {bond.score}
+          </Text>
+        ) : (
+          <ChevronRight color={kindredDark.textMuted} size={20} strokeWidth={1.2} />
         )}
-      </Card>
-    </Pressable>
+      </Pressable>
+    </ReanimatedSwipeable>
   )
 }

@@ -10,8 +10,9 @@ import {
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
+  ShichenField,
   type ShichenIndex,
-  ShichenPicker,
+  shichenFieldLabelsForLocale,
   useTheme,
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
@@ -323,9 +324,11 @@ export default function PeopleScreen() {
                       </Text>
                     </Pressable>
                   </View>
-                  <ShichenPicker
+                  <ShichenField
                     value={timeIndex}
                     onChange={(idx: ShichenIndex) => setTimeIndex(idx)}
+                    accent={colors.accent}
+                    labels={shichenFieldLabelsForLocale(locale)}
                   />
                 </View>
 

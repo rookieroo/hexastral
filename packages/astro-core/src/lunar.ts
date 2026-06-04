@@ -466,3 +466,49 @@ export function getLunarNewYear(year: number): Date {
   if (!entry) throw new RangeError(`No data for year ${year}`)
   return new Date(year, entry[0] - 1, entry[1])
 }
+
+// ========================================
+// 六曜 (Rokuyo — Japanese six-day cycle)
+// ========================================
+
+/** 六曜の名称（旧暦由来の暦注） */
+export type RokuyoName = '先勝' | '友引' | '先負' | '仏滅' | '大安' | '赤口'
+
+export interface Rokuyo {
+  /** 0-5, computed as (lunarMonth + lunarDay) % 6 */
+  index: number
+  /** 漢字表記 */
+  name: RokuyoName
+  /** ふりがな */
+  reading: string
+}
+
+const ROKUYO_TABLE: ReadonlyArray<{ name: RokuyoName; reading: string }> = [
+  { name: '大安', reading: 'たいあん' },
+  { name: '赤口', reading: 'しゃっこう' },
+  { name: '先勝', reading: 'せんしょう' },
+  { name: '友引', reading: 'ともびき' },
+  { name: '先負', reading: 'せんぶ' },
+  { name: '仏滅', reading: 'ぶつめつ' },
+]
+
+/**
+ * 六曜（ろくよう）— the Japanese six-day calendar cycle traditionally printed on
+ * 日めくり / カレンダー to annotate each day. Determined purely from the
+ * lunisolar (旧暦) month + day:
+ *
+ *   index = (lunarMonth + lunarDay) mod 6
+ *
+ * with 0=大安, 1=赤口, 2=先勝, 3=友引, 4=先負, 5=仏滅. Each 旧暦 month resets the
+ * cycle (旧暦1月1日 is fixed at 先勝 → (1 + 1) mod 6 = 2), so leap months reuse
+ * the same ordinal as their base month. This is a deterministic calendar
+ * annotation — no astronomy beyond the 旧暦 conversion itself.
+ *
+ * @param lunarMonth 旧暦の月 (1-12; leap months use the same ordinal)
+ * @param lunarDay   旧暦の日 (1-30)
+ */
+export function getRokuyo(lunarMonth: number, lunarDay: number): Rokuyo {
+  const index = (((lunarMonth + lunarDay) % 6) + 6) % 6
+  const entry = ROKUYO_TABLE[index] ?? { name: '大安' as const, reading: 'たいあん' }
+  return { index, name: entry.name, reading: entry.reading }
+}

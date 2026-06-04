@@ -19,6 +19,7 @@ import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
+import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
@@ -56,6 +57,14 @@ export default function SettingsScreen() {
   const [crossAppBusy, setCrossAppBusy] = useState(false)
   const [dailyPush, setDailyPushState] = useState(false)
   const [dailyPushBusy, setDailyPushBusy] = useState(false)
+  // DEV-only Pro override — cycles Off (real RC) → PRO → FREE. The reading reads
+  // it on open, so flip then re-open the report to see locked chapters change.
+  const [devPro, setDevPro] = useState<KindredDevPro>(getKindredDevPro())
+  const cycleDevPro = () => {
+    const next: KindredDevPro = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
+    setKindredDevPro(next)
+    setDevPro(next)
+  }
 
   useEffect(() => {
     void getDailyPushEnabled().then(setDailyPushState)
@@ -148,7 +157,6 @@ export default function SettingsScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-
         <Text
           style={[
             kindredType.seal,
@@ -336,11 +344,7 @@ export default function SettingsScreen() {
           {t(locale, 'settings.legal.section')}
         </Text>
 
-        <Card
-          variant='outlined'
-          padding='lg'
-          style={{ backgroundColor: kindredDark.card, gap: 0 }}
-        >
+        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
           <Pressable
             onPress={() => openLegal('/privacy')}
             hitSlop={4}
@@ -393,24 +397,37 @@ export default function SettingsScreen() {
         </Text>
 
         {__DEV__ ? (
-          <Pressable
-            onPress={async () => {
-              await resetOnboarding()
-              await clearDraft()
-              router.replace('/')
-            }}
-            hitSlop={12}
-            style={{ alignSelf: 'center', marginTop: kindredSpacing.lg }}
+          <View
+            style={{ alignItems: 'center', marginTop: kindredSpacing.lg, gap: kindredSpacing.md }}
           >
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.seal, textDecorationLine: 'underline' },
-              ]}
+            <Pressable onPress={cycleDevPro} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                {`DEV · Pro: ${devPro === null ? 'off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}`}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                await resetOnboarding()
+                await clearDraft()
+                router.replace('/')
+              }}
+              hitSlop={12}
             >
-              DEV · replay intro + reset onboarding
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.seal, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · replay intro + reset onboarding
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
       </ScrollView>
 
