@@ -82,7 +82,8 @@ export default function middleware(request: NextRequest) {
     pathname.startsWith('/u/') ||
     pathname.startsWith('/hehun/') ||
     pathname.startsWith('/invite/') ||
-    pathname.startsWith('/report/')
+    pathname.startsWith('/report/') ||
+    pathname.startsWith('/s/')
   ) {
     const res = NextResponse.next()
     // `/u/*` — App Router pages use `dynamic = 'force-dynamic'` + `fetch(..., no-store)`;
