@@ -33,6 +33,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { MakeIfGraph } from '@/components/MakeIfGraph'
+import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
   fetchMakeIfNarratives,
@@ -44,6 +45,7 @@ import {
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { useStrings } from '@/lib/i18n-context'
+import { useImageShare } from '@/lib/imageShare'
 import {
   buildInteractiveModel,
   buildUserBranch,
@@ -52,7 +54,7 @@ import {
   makeIfInteractiveCopyForLocale,
   makeIfTeaser,
 } from '@/lib/makeIfBranches'
-import { shareMakeifFork } from '@/lib/share'
+import { makeifShareUrl, shareMakeifFork, shareTaglineFor } from '@/lib/share'
 
 const ACK_KEY = 'auspice.makeif.disclaimer.v1'
 const MAX_FORKS = 4
@@ -278,6 +280,8 @@ function Sandbox({
   const [pendingAge, setPendingAge] = useState<number | null>(null)
   const [acked, setAcked] = useState(false)
   const [customEvent, setCustomEvent] = useState('')
+  // Image share: capture the whole 假如 graph (mainline + branches) to a PNG.
+  const { shotRef, capturing, share: shareImage } = useImageShare()
 
   useEffect(() => {
     AsyncStorage.getItem(ACK_KEY)
@@ -467,9 +471,43 @@ function Sandbox({
 
   const forkIsPast = forkAge != null && currentAge != null && forkAge < currentAge
 
+  // Caption for the graph image = tagline + the most-recent fork's /s/makeif
+  // landing (real content + DDL→App Store CTA). The image itself shows the whole
+  // graph; the tap-through lands on one fork's reading.
+  const lastFork = branches[branches.length - 1]
+  const onShareGraph = () => {
+    const url = lastFork?.outcome
+      ? makeifShareUrl(
+          {
+            forkTitle: ic.forkTitle(lastFork.divergeAtAge, !!lastFork.isPast),
+            label: lastFork.label,
+            outcome: lastFork.outcome,
+          },
+          locale
+        )
+      : 'https://hexastral.com/s/timeline' // graph-only fallback (no narrated fork yet)
+    shareImage(`${shareTaglineFor(locale)}\n${url}`)
+  }
+
   return (
     <View style={{ gap: spacing.lg }}>
-      <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>{ic.tapHint}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Text style={{ flex: 1, color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
+          {ic.tapHint}
+        </Text>
+        {/* Share the whole 假如 graph as an image (on-device capture → instant). */}
+        {branches.length > 0 ? (
+          <Pressable
+            onPress={onShareGraph}
+            hitSlop={12}
+            accessibilityRole='button'
+            accessibilityLabel={ic.share}
+            style={{ padding: 4 }}
+          >
+            <Share2 size={20} color={colors.dim} strokeWidth={1.6} />
+          </Pressable>
+        ) : null}
+      </View>
 
       <MakeIfGraph
         // Re-mount on each added fork so the new branch animates in.
@@ -486,6 +524,32 @@ function Sandbox({
         onMainNodeTap={onNodeTap}
         nowLabel={makeIfCopyForLocale(locale).nowLabel}
       />
+
+      {/* Off-screen capture target — the real graph on a fixed ivory palette. */}
+      {capturing ? (
+        <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
+          <ShareableCard
+            ref={shotRef}
+            width={width}
+            locale={locale}
+            title={ic.screenTitle}
+            subtitle={`${payload.pillars.day.stem}${payload.pillars.day.branch}${locale.startsWith('zh') ? '日' : ''}`}
+          >
+            <MakeIfGraph
+              model={combined}
+              colors={SHARE_PALETTE}
+              width={width - 48}
+              locked={false}
+              dashed={false}
+              animateIn={false}
+              selectedBranchId={null}
+              onSelectBranch={() => {}}
+              onLockedTap={() => {}}
+              nowLabel={makeIfCopyForLocale(locale).nowLabel}
+            />
+          </ShareableCard>
+        </View>
+      ) : null}
 
       {/* Fork list — actions live behind a left-swipe (kindred Threads pattern)
           so the row is free for the narrative. The old cramped icon row had

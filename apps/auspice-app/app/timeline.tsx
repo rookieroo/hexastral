@@ -31,11 +31,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
+import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { LiuyueStrip, ReadingBubble, TimelineGraph } from '@/components/TimelineGraph'
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
-import { shareTimeline } from '@/lib/share'
+import { useImageShare } from '@/lib/imageShare'
+import { shareTaglineFor, timelineShareUrl } from '@/lib/share'
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
@@ -61,7 +63,7 @@ function defaultSelection(payload: TimelinePayload): string {
 function buildTimelineSnapshot(
   payload: TimelinePayload,
   t: ReturnType<typeof useStrings>['t']
-): Parameters<typeof shareTimeline>[0] | null {
+): Parameters<typeof timelineShareUrl>[0] | null {
   const dayun =
     payload.currentDayunIndex >= 0 ? payload.dayun[payload.currentDayunIndex] : undefined
   if (!dayun) return null
@@ -101,6 +103,8 @@ export default function TimelineScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Image share: capture the real graph (not a server reconstruction) to a PNG.
+  const { shotRef, capturing, share: shareImage } = useImageShare()
 
   const load = useCallback(() => {
     setState({ kind: 'loading' })
@@ -159,16 +163,19 @@ export default function TimelineScreen() {
           <Text style={{ color: colors.text, fontSize: 28, fontWeight: '300' }}>
             {t.timelineTitle}
           </Text>
-          {/* Share the current-大运 snapshot → server-rendered card. Available to
-              all tiers: the snapshot is the current cycle Free users already see,
-              so it leaks no Pro content and widens the sharer pool. */}
+          {/* Share the REAL graph as an image (captured on-device → instant, no
+              Worker round-trip). Available to all tiers — the captured graph is
+              what the user already sees, so it leaks no Pro content. The /s/
+              landing URL rides along as the caption (funnel + SEO). */}
           {state.kind === 'data'
             ? (() => {
                 const snap = buildTimelineSnapshot(state.payload, t)
                 if (!snap) return null
                 return (
                   <Pressable
-                    onPress={() => shareTimeline(snap, locale)}
+                    onPress={() =>
+                      shareImage(`${shareTaglineFor(locale)}\n${timelineShareUrl(snap, locale)}`)
+                    }
                     hitSlop={12}
                     accessibilityRole='button'
                     accessibilityLabel='Share'
@@ -212,6 +219,41 @@ export default function TimelineScreen() {
         )}
       </ScrollView>
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+
+      {/* Off-screen capture target — mounted only while capturing, then unmounted.
+          Renders the real TimelineGraph on a fixed ivory palette so the PNG is
+          brand-consistent regardless of the user's theme. */}
+      {capturing && state.kind === 'data'
+        ? (() => {
+            const snap = buildTimelineSnapshot(state.payload, t)
+            return (
+              <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
+                <ShareableCard
+                  ref={shotRef}
+                  width={screenWidth}
+                  locale={locale}
+                  title={t.timelineTitle}
+                  subtitle={
+                    snap
+                      ? `${snap.source}${locale.startsWith('zh') ? '日' : ''} · ${snap.dayun} ${snap.dayunAges}`
+                      : undefined
+                  }
+                >
+                  <TimelineGraph
+                    payload={state.payload}
+                    isPro={isPro}
+                    selectedId={null}
+                    onSelect={() => {}}
+                    onLockedTap={() => {}}
+                    colors={SHARE_PALETTE}
+                    width={screenWidth - 48}
+                    detail={null}
+                  />
+                </ShareableCard>
+              </View>
+            )
+          })()
+        : null}
     </SafeAreaView>
   )
 }

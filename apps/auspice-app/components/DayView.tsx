@@ -15,15 +15,18 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import type { RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { shareDayCard } from '@/lib/share'
+import { useImageShare } from '@/lib/imageShare'
+import { dayShareUrl, shareTaglineFor } from '@/lib/share'
+import { localizeYijiVerb } from '@/lib/yiji-vocab'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
 import { PersonalCard } from './PersonalCard'
+import { SHARE_PALETTE, ShareableCard } from './ShareableCard'
 import { YiJiBlock } from './YiJiBlock'
 
 function SectionLabel({ children }: { children: string }) {
@@ -88,12 +91,22 @@ export function DayView({
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
+  const { width: screenWidth } = useWindowDimensions()
   const { date, day } = payload
   // 干支日 · 农历 · 年干支 now lives ABOVE the calendar (see app/(tabs)/index.tsx,
   // DayIdentityHeader) per 2026-06 layout feedback — the calendar's bottom half
   // leads with 宜忌, the 重点 of a 黄历. DayView itself starts at 宜忌.
   const [explainField, setExplainField] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
+  // Image share: capture a 宜忌 card to a PNG on-device (instant — the old URL
+  // share made iOS block on a cold-Worker OG fetch). The /s/day URL rides along
+  // as the caption for the install funnel.
+  const { shotRef, capturing, share: shareImage } = useImageShare()
+  const lunar = day.lunarDate
+    ? locale === 'en'
+      ? `Lunar ${day.lunarDate.month}/${day.lunarDate.day}`
+      : `${day.lunarDate.monthName}${day.lunarDate.dayName}`
+    : undefined
   // Pro gating (Sprint 2 chunk 8). `universe_pro` mirrors into `auspice_pro`
   // server-side per ADR-0015 §"Universe Bundle", and `useEntitlements` mirrors
   // that locally too, so checking `auspice_pro` alone covers both purchase paths.
@@ -112,11 +125,11 @@ export function DayView({
           calendar (the 重点), above 对你而言. The day identity (干支日 · 农历 · 年)
           moved above the calendar. (2026-06 IA feedback.) */}
       <View>
-        {/* Share the day's 宜忌 → a server-rendered card page (link preview = the
-            card, the page has an install CTA). */}
+        {/* Share the day's 宜忌 as an IMAGE (captured on-device → instant; the
+            old URL share made iOS wait on a cold-Worker OG fetch). */}
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
           <Pressable
-            onPress={() => shareDayCard(date, locale)}
+            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date)}`)}
             hitSlop={12}
             accessibilityRole='button'
             accessibilityLabel='Share'
@@ -127,6 +140,21 @@ export function DayView({
         </View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
       </View>
+
+      {/* Off-screen capture target for the 宜忌 image share (Skia-free). */}
+      {capturing ? (
+        <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
+          <ShareableCard
+            ref={shotRef}
+            width={screenWidth}
+            locale={locale}
+            title={`${day.ganZhi}${locale.startsWith('zh') || locale === 'ja' ? '日' : ''}`}
+            subtitle={[date, lunar].filter(Boolean).join(' · ')}
+          >
+            <ShareYiJi goodFor={day.goodFor} avoid={day.avoid} locale={locale} t={t} />
+          </ShareableCard>
+        </View>
+      ) : null}
 
       {/* Timeline + make-if CTAs — directly below 宜忌 (the most-tapped zone) per
           layout feedback, above 对你而言. */}
@@ -207,6 +235,53 @@ export function DayView({
         }}
       />
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
+    </View>
+  )
+}
+
+/** 宜 / 忌 chip rows for the shareable image card — fixed ivory palette, verbs
+ *  localized. Mirrors the web `/s/day` OG card. */
+function ShareYiJi({
+  goodFor,
+  avoid,
+  locale,
+  t,
+}: {
+  goodFor: string[]
+  avoid: string[]
+  locale: Parameters<typeof localizeYijiVerb>[1]
+  t: ReturnType<typeof useStrings>['t']
+}) {
+  const Row = ({ label, items, color }: { label: string; items: string[]; color: string }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+      <Text style={{ color, fontSize: 17, fontWeight: '700', minWidth: 24 }}>{label}</Text>
+      <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {items.length === 0 ? (
+          <Text style={{ color: SHARE_PALETTE.dim, fontSize: 15 }}>—</Text>
+        ) : (
+          items.slice(0, 6).map((v) => (
+            <View
+              key={v}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 9,
+                backgroundColor: `${color}14`,
+                borderWidth: 1,
+                borderColor: `${color}33`,
+              }}
+            >
+              <Text style={{ color, fontSize: 15 }}>{localizeYijiVerb(v, locale)}</Text>
+            </View>
+          ))
+        )}
+      </View>
+    </View>
+  )
+  return (
+    <View style={{ gap: 14 }}>
+      <Row label={t.suitable} items={goodFor} color='#2E9E5B' />
+      <Row label={t.avoid} items={avoid} color='#C0452E' />
     </View>
   )
 }
