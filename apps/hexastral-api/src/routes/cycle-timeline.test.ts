@@ -108,18 +108,38 @@ async function postTimeline(app: Hono<AppEnv>, body: object) {
 }
 
 describe('POST /api/auspice/timeline', () => {
-  test('returns 8 大运 steps + schemaVersion 1', async () => {
+  test('returns 8 大运 steps + schemaVersion 2', async () => {
     const { app } = makeHarness()
     const res = await postTimeline(app, BODY)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
-    expect(body.data.schemaVersion).toBe(1)
+    expect(body.data.schemaVersion).toBe(2)
     expect(body.data.dayun).toHaveLength(8)
     // Pillars are present (year/month/day) and `hour` is non-null because
     // birthHour=14 is a known time.
     expect(body.data.pillars.year.element).toBeDefined()
     expect(body.data.pillars.hour).not.toBeNull()
+  })
+
+  test('each 大运 carries its own 流年 commits spanning the decade', async () => {
+    const { app } = makeHarness()
+    const res = await postTimeline(app, BODY)
+    const body = await res.json()
+    for (const dy of body.data.dayun) {
+      // A 大运 spans startYear..endYear inclusive — its 流年 cover exactly that span.
+      expect(dy.liunian.length).toBe(dy.endYear - dy.startYear + 1)
+      expect(dy.liunian[0].year).toBe(dy.startYear)
+      expect(dy.liunian.at(-1).year).toBe(dy.endYear)
+      // Every 流年 row carries a personal 对你而言 verdict + reasons.
+      for (const ln of dy.liunian) {
+        expect(['吉', '平', '凶']).toContain(ln.fit)
+        expect(Array.isArray(ln.reasons)).toBe(true)
+      }
+    }
+    // The current 大运 contains exactly one 流年 flagged isCurrent (this year).
+    const cur = body.data.dayun[body.data.currentDayunIndex]
+    expect(cur.liunian.filter((l: { isCurrent: boolean }) => l.isCurrent)).toHaveLength(1)
   })
 
   test('currentDayunIndex falls inside [0, 7] when the user is alive today', async () => {

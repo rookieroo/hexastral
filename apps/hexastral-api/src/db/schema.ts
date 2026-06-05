@@ -1994,7 +1994,9 @@ export const fengJobsRelations = relations(fengJobs, ({ one }) => ({
 // when the payload shape (`schemaVersion`) bumps.
 // v2 (Phase 2): rolling 12-month 流月 (was current-calendar-year) + per-row personal
 // 对你而言 fit/reasons on 大运/流年/流月; `thisYearLiuyue` renamed `liuyue`.
-export const TIMELINE_CACHE_VERSION = 'v2'
+// v3 (git-graph): each 大运 carries its own 流年 commits (DayunRow.liunian) so the
+// client can render every 大运 as a real branch that merges back.
+export const TIMELINE_CACHE_VERSION = 'v3'
 
 export const lifeTimelineCache = sqliteTable(
   'life_timeline_cache',
