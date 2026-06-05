@@ -29,6 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
+import { resolveLocale, t } from '@/lib/i18n'
 import {
   getYuanOfferings,
   type KindredOfferings,
@@ -36,7 +37,6 @@ import {
   restoreKindredPurchases,
   YUAN_PRODUCT_IDS,
 } from '@/lib/iap'
-import { resolveLocale, t } from '@/lib/i18n'
 
 export default function PaywallScreen() {
   const router = useRouter()
@@ -106,9 +106,7 @@ export default function PaywallScreen() {
           <View style={{ alignItems: 'center', marginBottom: kindredSpacing.md }}>
             <KindredMoon size={96} />
           </View>
-          <Text
-            style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}
-          >
+          <Text style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}>
             {t(locale, 'paywall.signInTitle')}
           </Text>
           <Text

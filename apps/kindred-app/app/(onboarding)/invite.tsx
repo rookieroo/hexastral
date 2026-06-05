@@ -138,10 +138,7 @@ export default function InviteScreen() {
           ) : (
             <Pressable onPress={() => setShowNameField(true)} hitSlop={6}>
               <Text
-                style={[
-                  kindredType.caption,
-                  { color: kindredDark.textMuted, textAlign: 'center' },
-                ]}
+                style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
               >
                 + {t(locale, 'invite.name.placeholder')}
               </Text>

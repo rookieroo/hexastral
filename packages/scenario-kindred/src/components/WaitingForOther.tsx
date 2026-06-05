@@ -98,19 +98,11 @@ export function WaitingForOther({
           style={{ alignItems: 'center', gap: kindredSpacing.lg, marginTop: kindredSpacing.xxl }}
         >
           {logo ?? <KindredSeal mode={state === 'pending' ? 'breathing' : 'stamp'} size={96} />}
-          <Text
-            style={[
-              kindredType.title,
-              { color: kindredDark.text, textAlign: 'center' },
-            ]}
-          >
+          <Text style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}>
             {state === 'pending' ? merged.pendingTitle : merged.acceptedTitle}
           </Text>
           <Text
-            style={[
-              kindredType.caption,
-              { color: kindredDark.textMuted, textAlign: 'center' },
-            ]}
+            style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
           >
             {subtitle}
           </Text>

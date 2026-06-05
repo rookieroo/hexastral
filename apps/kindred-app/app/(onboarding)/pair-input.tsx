@@ -506,4 +506,3 @@ function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
 /* ── BirthForm + Field + NameInput moved to components/BirthForm.tsx so
      other-meta.tsx can mount the same single-page form for the post-onboarding
      "I know their details" flow (was a multi-step BirthInfoForm wizard). ── */
-

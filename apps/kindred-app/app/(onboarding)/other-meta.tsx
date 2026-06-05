@@ -110,7 +110,7 @@ export default function OtherMetaScreen() {
       >
         <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole='button'>
           <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-            ←  {t(locale, 'pairInput.back')}
+            ← {t(locale, 'pairInput.back')}
           </Text>
         </Pressable>
 
