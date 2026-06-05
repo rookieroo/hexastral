@@ -15,7 +15,9 @@
 import {
   allShiChen,
   calculateDailyAlmanac,
+  calculateDailySynastry,
   type DailyAlmanac,
+  dayGanZhi,
   getFourPillars,
   getJieQiInstant,
   getNearestJieQiForGregorianDate,
@@ -29,6 +31,7 @@ import {
   personalAlmanacOverlay,
   STEM_WUXING,
   solarToLunar,
+  type SynastryResult,
 } from '@zhop/astro-core'
 import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
@@ -532,6 +535,109 @@ auspiceRoutes.get('/day', (c) => {
   // Only edge-cache an explicit `date` — the no-date "today" shares a key across
   // the midnight boundary and would go stale, so it always computes fresh.
   return dateParam ? edgeCachedJson(c, build) : jsonOk(c, build())
+})
+
+// ── POST /pair — relationship-aware 择日 + 今日你和TA (Auspice×Kindred bridge) ──
+//
+// The "act on a date, together" verb (ADR doctrine: Auspice owns calendar-shaped
+// actionability; the deep 合盘 report + bonds-timeline stay in Kindred). Walks a
+// date window: per-day pair synastry (calculateDailySynastry over both charts) +
+// the day's 宜忌, and returns today's pair pulse plus the best upcoming 吉日 for an
+// optional activity. Stateless + deterministic (no LLM); both charts come from the
+// request — it's the user's OWN 亲友 data, so there's no counterpart-privacy gate
+// (unlike Kindred resonance bonds). 宜忌 is overlaid only on the synastry shortlist
+// to bound buildDay cost.
+
+const pairBirth = z.object({
+  date: z.string().regex(DATE_RE),
+  /** 0-23, -1 = 时辰 unknown (noon assumed for the day pillar). */
+  hour: z.number().int().min(-1).max(23).default(-1),
+})
+
+const pairSchema = z.object({
+  self: pairBirth,
+  other: pairBirth,
+  /** Window start (default today). */
+  fromDate: z.string().regex(DATE_RE).optional(),
+  days: z.number().int().min(1).max(90).default(45),
+  /** Optional 宜忌 verb to 择日 for (e.g. 嫁娶); when set, picks must be 宜 it. */
+  activity: z.string().max(24).optional(),
+  locale: z.string().max(16).default('en'),
+})
+
+interface PairDay {
+  date: string
+  ganZhi: string
+  status: SynastryResult['status']
+  synergy: number
+  friction: number
+  ymd: Ymd
+}
+
+auspiceRoutes.post('/pair', async (c) => {
+  const b = pairSchema.parse(await c.req.json())
+  const sy = parseYmd(b.self.date)
+  const oy = parseYmd(b.other.date)
+  const selfPillars = getFourPillars({
+    year: sy.year,
+    month: sy.month,
+    day: sy.day,
+    hour: b.self.hour < 0 ? 12 : b.self.hour,
+  })
+  const otherPillars = getFourPillars({
+    year: oy.year,
+    month: oy.month,
+    day: oy.day,
+    hour: b.other.hour < 0 ? 12 : b.other.hour,
+  })
+
+  const start = b.fromDate ? ymdToDate(parseYmd(b.fromDate)) : ymdToDate(dateToYmd(new Date()))
+
+  // 1) Per-day pair synastry across the window (cheap — no almanac build).
+  const all: PairDay[] = []
+  for (let i = 0; i < b.days; i++) {
+    const d = new Date(start.getTime() + i * 86_400_000)
+    const ymd = dateToYmd(d)
+    const dateStr = fmtUtc(d)
+    const gz = dayGanZhi(ymd.year, ymd.month, ymd.day)
+    const syn = calculateDailySynastry(selfPillars, otherPillars, gz, dateStr)
+    all.push({ date: dateStr, ganZhi: gz.label, status: syn.status, synergy: syn.synergy, friction: syn.friction, ymd })
+  }
+
+  // 2) Today's pulse + its 宜忌 (one almanac build).
+  const head = all[0]
+  const todayBuild = head ? buildDay(head.ymd) : null
+  const today = head
+    ? {
+        date: head.date,
+        ganZhi: head.ganZhi,
+        status: head.status,
+        synergy: head.synergy,
+        friction: head.friction,
+        yi: todayBuild ? todayBuild.day.goodFor.slice(0, 4) : [],
+        ji: todayBuild ? todayBuild.day.avoid.slice(0, 4) : [],
+      }
+    : null
+
+  // 3) 择日 — overlay 宜忌 only on the synastry shortlist (bounds buildDay calls).
+  const shortlist = all
+    .filter((d) => d.status === 'resonance' || d.synergy >= 70)
+    .sort((x, y) => y.synergy - x.synergy)
+  const picks: Array<{
+    date: string
+    ganZhi: string
+    status: SynastryResult['status']
+    synergy: number
+    yi: string[]
+  }> = []
+  for (const d of shortlist) {
+    const { day } = buildDay(d.ymd)
+    if (b.activity && (!day.goodFor.includes(b.activity) || day.avoid.includes(b.activity))) continue
+    picks.push({ date: d.date, ganZhi: d.ganZhi, status: d.status, synergy: d.synergy, yi: day.goodFor.slice(0, 4) })
+    if (picks.length >= 8) break
+  }
+
+  return jsonOk(c, { today, picks })
 })
 
 // ── GET /calendar.ics — Apple Calendar / iCal subscription feed ────────────
