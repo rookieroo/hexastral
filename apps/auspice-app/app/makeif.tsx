@@ -595,7 +595,10 @@ function Sandbox({
         locked={false}
         dashed={false}
         animateIn={branches.length > 0}
-        selectedBranchId={sel}
+        // Always keep ONE branch in focus (the latest fork until the user taps
+        // another) so the graph reads as "this 假如, highlighted" — never a flat
+        // legend of equally-weighted dashes.
+        selectedBranchId={sel ?? featured?.id ?? null}
         onSelectBranch={(id) => setSel((cur) => (cur === id ? null : id))}
         onLockedTap={() => {}}
         onMainNodeTap={onNodeTap}
@@ -629,28 +632,44 @@ function Sandbox({
               onLockedTap={() => {}}
               nowLabel={makeIfCopyForLocale(locale).nowLabel}
             />
-            {/* Bake the featured branch's full 概要 under the graph — one clear
-                takeaway, not three truncated lines. */}
+            {/* Bake the featured branch as a TITLED explanation under the graph —
+                a coloured label header + its full 概要, so the highlighted 假如 is
+                unmistakable and reads as one clear takeaway (not a thin caption). */}
             {featured && (featured.summary || featured.outcome) ? (
-              <View
-                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 4 }}
-              >
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: featured.color,
-                    marginTop: 5,
-                  }}
-                />
-                <Text style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 14, lineHeight: 21 }}>
-                  <Text style={{ fontWeight: '600' }}>{featured.label}</Text>
-                  {'  '}
-                  <Text style={{ color: SHARE_PALETTE.secondary }}>
-                    {featured.summary || deriveMakeIfSummary(featured.outcome)}
+              <View style={{ marginTop: 6, gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: 4.5,
+                      backgroundColor: featured.color,
+                    }}
+                  />
+                  <Text style={{ color: SHARE_PALETTE.text, fontSize: 15, fontWeight: '700' }}>
+                    {featured.label}
                   </Text>
+                </View>
+                {/* 影响 — what this 假如 changes. */}
+                <Text style={{ color: SHARE_PALETTE.secondary, fontSize: 13.5, lineHeight: 21 }}>
+                  {featured.summary || deriveMakeIfSummary(featured.outcome)}
                 </Text>
+                {/* 注意/时机 — only for a present/future 假如 (an actionable decision):
+                    what the user's CURRENT 命局 window favors. Past "假如当年" is a
+                    reflection, not a choice, so it carries no timing call. */}
+                {!featured.isPast && timing ? (
+                  <Text
+                    style={{
+                      color: SHARE_PALETTE.dim,
+                      fontSize: 12,
+                      lineHeight: 18,
+                      marginTop: 2,
+                    }}
+                  >
+                    {`${t.makeifTiming.frame} · ${timing.label}`}
+                    {timing.reasons ? ` — ${timing.reasons}` : ''}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
           </ShareableCard>
