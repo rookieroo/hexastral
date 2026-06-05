@@ -855,6 +855,8 @@ export const vi: Record<TranslationKeys, string> = {
   toggle_off: 'TẮT',
   notif_daily_fortune: 'Vận hàng ngày',
   notif_daily_fortune_desc: 'Một bài đọc cá nhân hóa mỗi sáng',
+  notif_daily_fortune_evening: 'Tổng kết buổi tối',
+  notif_daily_fortune_evening_desc: 'Bản tổng kết buổi tối và gợi ý cho ngày mai',
   notif_lucky_window: 'Cửa sổ may mắn đang đến',
   notif_lucky_window_desc: 'Nhận thông báo khi lá số của bạn báo hiệu giai đoạn thuận lợi',
   notif_chart_transit: 'Cập nhật vận hạn năm',

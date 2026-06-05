@@ -30,6 +30,70 @@ export function shareTaglineFor(locale = 'en'): string {
   return TAGLINE[locale] ?? EN_TAGLINE
 }
 
+// ── Per-variant share chrome (页眉 + 页脚) ─────────────────────────────────────
+//
+// The day (宜忌) card keeps its 黄历 footer (the default baked into ShareableCard).
+// Timeline + make-if are important marketing entry points, so each gets its OWN
+// eyebrow + footer line that sells THAT feature, not the generic 黄历 tagline.
+// The landing label funnels to the app-specific page rather than the site root.
+
+/** App-specific landing the share image funnels to (shown bottom-right). */
+export const SHARE_LANDING = 'hexastral.com/auspice'
+
+export interface ShareChrome {
+  eyebrow: string
+  footer: string
+  url: string
+}
+
+const TIMELINE_FOOTER: Record<string, string> = {
+  'zh-Hans': '大运 · 流年 · 流月 · 一生流年图',
+  'zh-Hant': '大運 · 流年 · 流月 · 一生流年圖',
+  ja: '大運 · 流年 · 一生の流れ',
+  en: 'Your life as a branching 大运 timeline',
+}
+
+const TIMELINE_EYEBROW: Record<string, string> = {
+  'zh-Hans': 'AUSPICE · 人生时间线',
+  'zh-Hant': 'AUSPICE · 人生時間線',
+  ja: 'AUSPICE · 人生タイムライン',
+  en: 'AUSPICE · LIFE TIMELINE',
+}
+
+const MAKEIF_FOOTER: Record<string, string> = {
+  'zh-Hans': '八字推演 · 看见另一种人生',
+  'zh-Hant': '八字推演 · 看見另一種人生',
+  ja: '四柱推命 · もうひとつの人生',
+  en: 'Bazi what-if · see a parallel life',
+}
+
+const MAKEIF_EYEBROW: Record<string, string> = {
+  'zh-Hans': 'AUSPICE · 假如人生',
+  'zh-Hant': 'AUSPICE · 假如人生',
+  ja: 'AUSPICE · もしもの人生',
+  en: 'AUSPICE · MAKE-IF',
+}
+
+function pick(map: Record<string, string>, locale: string): string {
+  return map[locale] ?? map.en ?? ''
+}
+
+export function timelineShareChrome(locale = 'en'): ShareChrome {
+  return {
+    eyebrow: pick(TIMELINE_EYEBROW, locale),
+    footer: pick(TIMELINE_FOOTER, locale),
+    url: SHARE_LANDING,
+  }
+}
+
+export function makeifShareChrome(locale = 'en'): ShareChrome {
+  return {
+    eyebrow: pick(MAKEIF_EYEBROW, locale),
+    footer: pick(MAKEIF_FOOTER, locale),
+    url: SHARE_LANDING,
+  }
+}
+
 /**
  * UTF-8 safe base64url encoder (matches the `/s/<kind>/[token]` decoders).
  *
@@ -50,9 +114,11 @@ export function dayShareUrl(date: string): string {
   return `${WEB_BASE}/s/day/${date}`
 }
 
-/** `/s/makeif/<token>` — a make-if (假如) fork. */
+/** `/s/makeif/<token>` — a make-if (假如) fork. `summary` (概要) is the at-a-glance
+ *  takeaway shown next to the branch; it rides in the token (`sm`) so a forwarded
+ *  share is legible without opening the app (the web OG renders it prominently). */
 export function makeifShareUrl(
-  fork: { forkTitle: string; label: string; outcome: string },
+  fork: { forkTitle: string; label: string; outcome: string; summary?: string },
   locale = 'en'
 ): string {
   const token = toBase64Url(
@@ -60,6 +126,7 @@ export function makeifShareUrl(
       t: fork.forkTitle.slice(0, 80),
       l: fork.label.slice(0, 80),
       o: fork.outcome.slice(0, 900),
+      ...(fork.summary ? { sm: fork.summary.slice(0, 160) } : {}),
       lc: locale,
     })
   )
@@ -125,7 +192,7 @@ async function shareUrl(url: string, locale: string): Promise<void> {
 export const shareDayCard = (date: string, locale = 'en') => shareUrl(dayShareUrl(date), locale)
 
 export const shareMakeifFork = (
-  fork: { forkTitle: string; label: string; outcome: string },
+  fork: { forkTitle: string; label: string; outcome: string; summary?: string },
   locale = 'en'
 ) => shareUrl(makeifShareUrl(fork, locale), locale)
 

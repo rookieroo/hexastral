@@ -6,6 +6,7 @@
  */
 
 import { ImageResponse } from 'next/og'
+import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
 export const alt = 'Auspice — 假如 (Make If)'
@@ -16,6 +17,8 @@ interface MakeifPayload {
   t: string
   l: string
   o: string
+  /** Optional 1-line 概要 / at-a-glance summary — render prominently when present. */
+  sm?: string
   lc?: string
 }
 
@@ -35,6 +38,7 @@ function decodeToken(token: string): MakeifPayload | null {
       t: parsed.t.slice(0, 80),
       l: parsed.l.slice(0, 80),
       o: parsed.o.slice(0, 280),
+      sm: typeof parsed.sm === 'string' ? parsed.sm.slice(0, 160) : undefined,
       lc: typeof parsed.lc === 'string' ? parsed.lc : 'en',
     }
   } catch {
@@ -51,10 +55,20 @@ const TAGLINE: Record<string, string> = {
   en: EN_TAGLINE,
 }
 
+/** Localized fallback shown when the token is malformed (no English leak in zh/ja). */
+const MALFORMED: Record<string, string> = {
+  'zh-Hans': 'Auspice「假如」的命运分支 —— 链接无效。',
+  'zh-Hant': 'Auspice「假如」的命運分支 —— 連結無效。',
+  ja: 'Auspice「假如」のもう一つの人生 —— リンクが無効です。',
+  en: 'A "what if" branch from Auspice — link malformed.',
+}
+
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const payload = decodeToken(token)
-  const tag = TAGLINE[payload?.lc ?? 'en'] ?? EN_TAGLINE
+  const lc = payload?.lc ?? 'en'
+  const tag = TAGLINE[lc] ?? EN_TAGLINE
+  const copy = pickCopy('makeif', payload?.lc)
 
   return new ImageResponse(
     <div
@@ -71,7 +85,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 30, letterSpacing: 8, color: '#9A6A3A', display: 'flex' }}>
-          AUSPICE 假如
+          {copy.eyebrow}
         </span>
         <span style={{ fontSize: 26, color: '#B08D6A', display: 'flex' }}>{tag}</span>
       </div>
@@ -84,6 +98,22 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           <span style={{ fontSize: 32, color: '#9A6A3A', letterSpacing: 2, display: 'flex' }}>
             {payload.l}
           </span>
+          {payload.sm ? (
+            <span
+              style={{
+                fontSize: 36,
+                fontWeight: 500,
+                color: '#2B2118',
+                lineHeight: 1.4,
+                display: 'flex',
+                borderLeft: '4px solid #C99A5B',
+                paddingLeft: 22,
+                marginTop: 8,
+              }}
+            >
+              {payload.sm}
+            </span>
+          ) : null}
           <span
             style={{
               fontSize: 26,
@@ -98,7 +128,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
         </div>
       ) : (
         <span style={{ fontSize: 36, color: '#8A7866', display: 'flex' }}>
-          A "what if" branch from Auspice — link malformed.
+          {MALFORMED[lc] ?? MALFORMED.en}
         </span>
       )}
 
@@ -112,8 +142,8 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           letterSpacing: 2,
         }}
       >
-        <span style={{ display: 'flex' }}>每日干支 · 农历 · 节气 · 宜忌</span>
-        <span style={{ display: 'flex' }}>hexastral.com</span>
+        <span style={{ display: 'flex' }}>{copy.footer}</span>
+        <span style={{ display: 'flex' }}>{AUSPICE_FOOTER_LINK}</span>
       </div>
     </div>,
     { ...size }

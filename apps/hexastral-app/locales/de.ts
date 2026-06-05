@@ -863,6 +863,8 @@ export const de: Record<TranslationKeys, string> = {
   toggle_off: 'AUS',
   notif_daily_fortune: 'Tageshoroskop',
   notif_daily_fortune_desc: 'Personalisierte Tageslesung jeden Morgen',
+  notif_daily_fortune_evening: 'Abendlicher Rückblick',
+  notif_daily_fortune_evening_desc: 'Ein abendlicher Rückblick und ein Ausblick auf morgen',
   notif_lucky_window: 'Glücksfenster naht',
   notif_lucky_window_desc:
     'Benachrichtigung, wenn dein Horoskop eine günstige Periode signalisiert',

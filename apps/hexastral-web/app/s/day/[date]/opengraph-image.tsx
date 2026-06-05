@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { AUSPICE_FOOTER_LINK } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
 export const alt = 'Auspice — Chinese Calendar'
@@ -116,7 +117,7 @@ export default async function Image({ params }: { params: Promise<{ date: string
         }}
       >
         <span style={{ display: 'flex' }}>每日干支 · 农历 · 节气 · 宜忌</span>
-        <span style={{ display: 'flex' }}>hexastral.com</span>
+        <span style={{ display: 'flex' }}>{AUSPICE_FOOTER_LINK}</span>
       </div>
     </div>,
     { ...size }

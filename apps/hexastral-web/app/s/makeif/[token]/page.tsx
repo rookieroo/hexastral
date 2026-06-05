@@ -17,6 +17,7 @@
 
 import type { Metadata } from 'next'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 interface MakeifPayload {
   /** Fork title, e.g. "假如当年 · 25 岁". Server already localized in the app. */
@@ -25,6 +26,8 @@ interface MakeifPayload {
   l: string
   /** Narrative outcome paragraph (LLM-generated). */
   o: string
+  /** Optional 1-line 概要 / at-a-glance summary — the takeaway, rendered above `o`. */
+  sm?: string
   /** Locale (zh-Hans | zh-Hant | ja | en) the narrative is written in. */
   lc?: string
 }
@@ -45,6 +48,7 @@ function decodeToken(token: string): MakeifPayload | null {
       t: parsed.t.slice(0, 80),
       l: parsed.l.slice(0, 80),
       o: parsed.o.slice(0, 1200),
+      sm: typeof parsed.sm === 'string' ? parsed.sm.slice(0, 160) : undefined,
       lc: typeof parsed.lc === 'string' ? parsed.lc : 'en',
     }
   } catch {
@@ -56,14 +60,18 @@ interface ShareCopy {
   tagline: string
   cta: string
   hero: string
+  /** Footer pitch — fully localized (no Latin lead-in to avoid CN/EN mixing). */
   footer: string
+  /** Shown when the token is malformed (localized — no English leak in zh/ja). */
+  malformed: string
 }
 
 const EN_COPY: ShareCopy = {
   tagline: 'A "what if" branch from a bāzì life',
   cta: 'See your own',
   hero: 'AUSPICE · MAKE IF',
-  footer: 'The Chinese calendar — daily 干支 · 农历 · 宜忌',
+  footer: 'Auspice — explore a parallel life, drawn from your bāzì',
+  malformed: 'This 假如 link is malformed or has been truncated. Open Auspice to make a new one.',
 }
 
 const COPY: Record<string, ShareCopy> = {
@@ -71,19 +79,22 @@ const COPY: Record<string, ShareCopy> = {
     tagline: '一个「假如」的命运分支',
     cta: '看看你自己的',
     hero: 'AUSPICE 假如',
-    footer: '每日干支 · 农历 · 节气 · 宜忌',
+    footer: 'Auspice · 八字推演 —— 探一条平行的人生',
+    malformed: '这个「假如」链接已失效或被截断。打开 Auspice 重新生成一个。',
   },
   'zh-Hant': {
     tagline: '一個「假如」的命運分支',
     cta: '看看你自己的',
     hero: 'AUSPICE 假如',
-    footer: '每日干支 · 農曆 · 節氣 · 宜忌',
+    footer: 'Auspice · 八字推演 —— 探一條平行的人生',
+    malformed: '這個「假如」連結已失效或被截斷。打開 Auspice 重新生成一個。',
   },
   ja: {
     tagline: '「もしも」のもう一つの人生',
     cta: 'あなたのも見てみる',
     hero: 'AUSPICE 假如',
-    footer: '干支 · 旧暦 · 二十四節気 · 宜忌',
+    footer: 'Auspice · 八字から導く、もう一つの人生',
+    malformed: 'この「假如」リンクは無効か、切り詰められています。Auspice で作り直してください。',
   },
   en: EN_COPY,
 }
@@ -176,6 +187,21 @@ export default async function MakeifSharePage({ params }: { params: Promise<{ to
               </div>
             </div>
 
+            {payload.sm ? (
+              <div
+                style={{
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  lineHeight: 1.5,
+                  color: '#2B2118',
+                  borderLeft: '3px solid #C99A5B',
+                  paddingLeft: '0.85rem',
+                }}
+              >
+                {payload.sm}
+              </div>
+            ) : null}
+
             <div
               style={{
                 fontSize: '0.97rem',
@@ -199,7 +225,7 @@ export default async function MakeifSharePage({ params }: { params: Promise<{ to
               fontSize: '0.95rem',
             }}
           >
-            This 假如 link is malformed or has been truncated. Open Auspice to make a new one.
+            {copy.malformed}
           </div>
         )}
 
@@ -226,9 +252,13 @@ export default async function MakeifSharePage({ params }: { params: Promise<{ to
               lineHeight: 1.6,
             }}
           >
-            Auspice — {copy.footer}
+            {copy.footer}
           </p>
-          <DDLRedirectButton payload={{ source: 'auspice_makeif_share' }}>
+          <DDLRedirectButton
+            payload={{ source: 'auspice_makeif_share' }}
+            targetApp='auspice'
+            appStoreUrl={resolveAppStoreUrl('auspice')}
+          >
             <span
               style={{
                 display: 'inline-block',

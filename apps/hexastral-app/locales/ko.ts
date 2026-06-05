@@ -843,6 +843,8 @@ export const ko: Record<TranslationKeys, string> = {
   toggle_off: 'OFF',
   notif_daily_fortune: '오늘의 운세',
   notif_daily_fortune_desc: '매일 아침 맞춤 운세 알림',
+  notif_daily_fortune_evening: '저녁 운세',
+  notif_daily_fortune_evening_desc: '저녁에 오늘 정리와 내일 힌트 알림',
   notif_lucky_window: '길운의 시기가 다가옵니다',
   notif_lucky_window_desc: '당신의 명반에 좋은 기운의 창이 열릴 때 알려드립니다',
   notif_chart_transit: '유년 대운 변경',

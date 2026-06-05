@@ -847,6 +847,8 @@ export const th: Record<TranslationKeys, string> = {
   toggle_off: 'OFF',
   notif_daily_fortune: 'ดวงประจำวัน',
   notif_daily_fortune_desc: 'การอ่านดวงส่วนตัวทุกเช้า',
+  notif_daily_fortune_evening: 'สรุปยามเย็น',
+  notif_daily_fortune_evening_desc: 'สรุปประจำวันยามเย็นและคำแนะนำสำหรับพรุ่งนี้',
   notif_lucky_window: 'ช่วงโชคดีใกล้เข้ามาแล้ว',
   notif_lucky_window_desc: 'รับการแจ้งเตือนเมื่อดวงชะตาของคุณแสดงสัญญาณช่วงเวลาที่ดี',
   notif_chart_transit: 'อัปเดตผ่านฟ้าประจำปี',

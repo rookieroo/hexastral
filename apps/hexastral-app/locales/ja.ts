@@ -843,6 +843,8 @@ export const ja: Record<TranslationKeys, string> = {
   toggle_off: 'OFF',
   notif_daily_fortune: '毎日の運勢',
   notif_daily_fortune_desc: '毎朝パーソナライズされた運勢をお届け',
+  notif_daily_fortune_evening: '夜の運勢',
+  notif_daily_fortune_evening_desc: '夕方に今日の振り返りと明日のヒントを通知',
   notif_lucky_window: '吉運が近づいています',
   notif_lucky_window_desc: 'あなたの命盤に良縁の窓が開くとき通知します',
   notif_chart_transit: '流年の切り替わり',

@@ -5,7 +5,10 @@ import { signRequest } from '@/lib/hmac'
 type TonePreference = 'gentle' | 'straight' | 'poetic'
 
 export interface NotifPrefs {
+  /** Morning (8am local) daily reading push. */
   dailyFortune: boolean
+  /** Evening (8pm local) recap / tomorrow nudge — the second daily slot. */
+  dailyFortuneEvening: boolean
   luckyWindow: boolean
   chartTransit: boolean
   fateReportReady: boolean

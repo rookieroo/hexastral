@@ -24,7 +24,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
+import { deleteBirthdayReminder, saveBirthdayReminder } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
 import { openKindredCompose } from '@/lib/kindred-handoff'
@@ -36,7 +38,7 @@ import {
   type PersonGender,
   removePerson,
 } from '@/lib/people'
-import { requestPushPermission, scheduleBirthdayReminders } from '@/lib/push'
+import { FREE_BIRTHDAY_LIMIT, requestPushPermission, scheduleBirthdayReminders } from '@/lib/push'
 import { animalOf } from '@/lib/relationship'
 
 const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
@@ -150,12 +152,39 @@ export default function PeopleScreen() {
     setRemindOnDay(true)
     setCompatExpanded(false)
     void scheduleBirthdayReminders(next, locale)
+    // The 4th+ birthday REMINDER is a Pro perk — local scheduling already caps to
+    // FREE_BIRTHDAY_LIMIT, so nudge the paywall when a free user crosses it (the
+    // extra 亲友 is still saved for 合盘 etc., it just won't fire reminders).
+    if (!isPro && next.length > FREE_BIRTHDAY_LIMIT) setPaywallOpen(true)
+    // Persist the birthday server-side (authoritative cap + a future remote
+    // birthday push); best-effort, non-blocking.
+    const added = next[next.length - 1]
+    if (added) {
+      void getAuspiceDeviceId()
+        .then((deviceId) =>
+          saveBirthdayReminder({
+            deviceId,
+            id: added.id,
+            name: added.name,
+            solarDate: added.solarDate,
+            calendar: added.calendar ?? 'solar',
+            relation: added.relation,
+            advanceDays: added.advanceDays,
+            remindOnDay: added.remindOnDay,
+            isPro,
+          })
+        )
+        .catch(() => {})
+    }
   }
 
   const remove = async (id: string) => {
     const next = await removePerson(id)
     setPeople(next)
     void scheduleBirthdayReminders(next, locale)
+    void getAuspiceDeviceId()
+      .then((deviceId) => deleteBirthdayReminder(id, deviceId))
+      .catch(() => {})
   }
 
   const openRelation = (p: AuspicePerson) => {

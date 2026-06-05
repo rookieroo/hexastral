@@ -885,6 +885,8 @@ export const zhHant: Record<TranslationKeys, string> = {
   toggle_off: '關閉',
   notif_daily_fortune: '每日運勢',
   notif_daily_fortune_desc: '每天早晨一條個性化日運推送',
+  notif_daily_fortune_evening: '晚間運勢',
+  notif_daily_fortune_evening_desc: '傍晚一條今日復盤與明日提示',
   notif_lucky_window: '吉期將至',
   notif_lucky_window_desc: '當流年大運呈現利好之窗，第一時間通知你',
   notif_chart_transit: '流年大運切換',

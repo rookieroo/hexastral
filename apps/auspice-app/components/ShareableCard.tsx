@@ -27,8 +27,10 @@ export const SHARE_PALETTE = {
   bg: '#FBF7F0',
 } as const
 
-/** Localized "made with Auspice" footer line (left side; hexastral.com sits right). */
-const FOOTER: Record<string, string> = {
+/** Default footer line for the DAY (宜忌) card — left side; the landing URL sits
+ *  right. Timeline / make-if pass their OWN `footer` so each share carries chrome
+ *  that markets THAT feature instead of the generic 黄历 line. */
+const DAY_FOOTER: Record<string, string> = {
   'zh-Hans': '每日干支 · 农历 · 节气 · 宜忌',
   'zh-Hant': '每日干支 · 農曆 · 節氣 · 宜忌',
   ja: '干支 · 旧暦 · 二十四節気 · 宜忌',
@@ -43,14 +45,24 @@ export interface ShareableCardProps {
   /** Optional dim subtitle, e.g. the date or 命局. */
   subtitle?: string
   locale?: string
+  /** Small spaced brand eyebrow. Defaults to the 黄历 mark; timeline / make-if
+   *  override it so each share has its own 页眉. */
+  eyebrow?: string
+  /** Footer left line. Defaults to the 宜忌 day-card line; pass a feature-specific
+   *  tagline for timeline / make-if (the 页脚 doubles as a marketing hook). */
+  footer?: string
+  /** Footer right label — the app-specific landing the share funnels to. */
+  footerUrl?: string
   children: ReactNode
 }
 
 export const ShareableCard = forwardRef<View, ShareableCardProps>(function ShareableCard(
-  { width, title, subtitle, locale = 'en', children },
+  { width, title, subtitle, locale = 'en', eyebrow, footer, footerUrl, children },
   ref
 ) {
-  const footer = FOOTER[locale] ?? FOOTER.en
+  const footerLine = footer ?? DAY_FOOTER[locale] ?? DAY_FOOTER.en
+  const eyebrowLine = eyebrow ?? 'AUSPICE 黄历'
+  const landing = footerUrl ?? 'hexastral.com/auspice'
   return (
     <View
       ref={ref}
@@ -65,7 +77,7 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
     >
       <View style={{ gap: 6 }}>
         <Text style={{ color: SHARE_PALETTE.accent, fontSize: 12, letterSpacing: 4 }}>
-          AUSPICE 黄历
+          {eyebrowLine}
         </Text>
         <Text style={{ color: SHARE_PALETTE.text, fontSize: 24, fontWeight: '600' }}>{title}</Text>
         {subtitle ? (
@@ -85,10 +97,10 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
           paddingTop: 14,
         }}
       >
-        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>{footer}</Text>
         <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>
-          hexastral.com
+          {footerLine}
         </Text>
+        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>{landing}</Text>
       </View>
     </View>
   )

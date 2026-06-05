@@ -144,7 +144,9 @@ export const users = sqliteTable(
     locale: text('locale').default('zh'),
     /** AI 解读音调偏好 — gentle(温和) | straight(直白) | poetic(诗意) */
     tonePreference: text('tone_preference').default('gentle'),
-    /** 推送通知偏好 JSON: { dailyFortune, luckyWindow, chartTransit, fateReportReady }（旧版 contactJoined 忽略） */
+    /** 推送通知偏好 JSON: { dailyFortune, dailyFortuneEvening, luckyWindow, chartTransit,
+     *  fateReportReady }（旧版 contactJoined 忽略）。dailyFortune* 两个槽位在
+     *  push-targets 用 json_extract 过滤；缺省视为开启（退订而非订阅）。 */
     notifPrefsJson: text('notif_prefs_json'),
 
     // ── 命理静态特征（onboarding 一次性计算，永不变） ──
@@ -1221,6 +1223,93 @@ export const makeifForks = sqliteTable(
     primaryKey({ columns: [t.owner, t.id] }),
     index('makeif_forks_owner_profile_idx').on(t.owner, t.birthDate, t.birthHour, t.gender),
   ]
+)
+
+/**
+ * 生日提醒 (birthday reminders) — server-backed store for the 亲友 birthdays that
+ * drive reminder notifications. Auspice schedules these LOCALLY today (lib/push.ts,
+ * from on-device AsyncStorage); this table is the authoritative store so the
+ * free-tier cap (`FREE_BIRTHDAY_LIMIT`) is enforced server-side (not just locally),
+ * birthdays survive a reinstall, and a future REMOTE birthday push has a data
+ * source. Scoped by `owner` = `device:<deviceId>` (anon) or `user:<userId>`,
+ * matching makeif_forks. `monthDay` (MM-DD, solar only) is denormalized so a
+ * future "whose birthday is today" cron can index it; lunar rows resolve their
+ * Gregorian date at query/schedule time (astro-core), so monthDay stays null.
+ *
+ * Cadence/source: one row per saved 亲友 — written on add/edit, read on schedule.
+ * No generation, no LLM, tiny + static per user; the cap keeps it bounded for free.
+ */
+export const birthdayReminders = sqliteTable(
+  'birthday_reminders',
+  {
+    owner: text('owner').notNull(),
+    /** Client-generated stable id (matches the local AuspicePerson id). */
+    id: text('id').notNull(),
+    name: text('name').notNull(),
+    /** YYYY-MM-DD — Gregorian when calendar='solar', else interpreted as 农历. */
+    solarDate: text('solar_date').notNull(),
+    /** 'solar' (default) | 'lunar'. */
+    calendar: text('calendar').notNull().default('solar'),
+    relation: text('relation'),
+    /** Days before the birthday to remind (0 = none). */
+    advanceDays: integer('advance_days').notNull().default(1),
+    /** Also remind on the day itself. */
+    remindOnDay: integer('remind_on_day', { mode: 'boolean' }).notNull().default(true),
+    /** MM-DD for solar birthdays (cron index); null for lunar (resolved at runtime). */
+    monthDay: text('month_day'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    primaryKey({ columns: [t.owner, t.id] }),
+    index('birthday_reminders_owner_idx').on(t.owner),
+    index('birthday_reminders_month_day_idx').on(t.monthDay),
+  ]
+)
+
+/**
+ * 真实服务端推送订阅 (Auspice remote-push subscribers).
+ *
+ * Auspice has been LOCAL-only (expo-notifications), which dries up if the app
+ * isn't opened within the rolling window — unreliable for a daily habit. This
+ * table registers a device for REAL server push: svc-notify's hourly cron finds
+ * subscribers whose local time is a dispatch hour and sends an Expo push. The
+ * body is computed server-side from `buildDay` (deterministic — 干支/宜忌 + the
+ * 吉平凶 verdict from the birth profile); the LLM 对你而言 reading stays app-only.
+ *
+ * Anonymous + device-scoped (Auspice has no account): `deviceId` is the identity.
+ * The birth profile is denormalized here so the cron can personalize without a
+ * round-trip. Slot prefs are opt-OUT (default on); they mirror the local toggles
+ * so a device runs EITHER server push (when registered) OR local — never both
+ * (the app defers local daily once a token is registered). Indexed by timezone
+ * for the cron's per-zone fan-out.
+ */
+export const auspicePushSubs = sqliteTable(
+  'auspice_push_subs',
+  {
+    deviceId: text('device_id').primaryKey(),
+    /** Expo push token (ExponentPushToken[...]). */
+    token: text('token').notNull(),
+    platform: text('platform').notNull().default('ios'),
+    timezoneId: text('timezone_id').notNull(),
+    locale: text('locale').notNull().default('zh'),
+    /** Birth profile for the deterministic 对你而言 verdict (optional). */
+    birthDate: text('birth_date'),
+    /** 0-23, -1 = 时辰 unknown, null = no birth set. */
+    birthHour: integer('birth_hour'),
+    gender: text('gender'),
+    /** Slot prefs — opt-out (true = enabled). */
+    dailyMorning: integer('daily_morning', { mode: 'boolean' }).notNull().default(true),
+    dailyEvening: integer('daily_evening', { mode: 'boolean' }).notNull().default(true),
+    /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
+    isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
+    lastActiveAt: text('last_active_at').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index('auspice_push_subs_tz_idx').on(t.timezoneId)]
 )
 
 // ==================== Relations ====================

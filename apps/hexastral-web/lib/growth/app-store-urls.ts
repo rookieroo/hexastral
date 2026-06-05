@@ -8,6 +8,7 @@ export type GrowthAppStoreTarget =
   | 'dreamoracle'
   | 'eightpillars'
   | 'coincast'
+  | 'auspice'
 
 const HEX =
   process.env.NEXT_PUBLIC_APP_STORE_URL ?? 'https://apps.apple.com/app/hexastral/id6739739495'
@@ -21,6 +22,7 @@ const byTarget: Record<GrowthAppStoreTarget, string | undefined> = {
   dreamoracle: process.env.NEXT_PUBLIC_APP_STORE_URL_DREAMORACLE,
   eightpillars: process.env.NEXT_PUBLIC_APP_STORE_URL_EIGHTPILLARS,
   coincast: process.env.NEXT_PUBLIC_APP_STORE_URL_COINCAST,
+  auspice: process.env.NEXT_PUBLIC_APP_STORE_URL_AUSPICE,
 }
 
 export function resolveAppStoreUrl(target: GrowthAppStoreTarget): string {

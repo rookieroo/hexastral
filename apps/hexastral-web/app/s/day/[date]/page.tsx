@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 
@@ -163,7 +164,11 @@ export default async function AuspiceDaySharePage({
           >
             Auspice — the Chinese calendar, for the world.
           </p>
-          <DDLRedirectButton payload={{ source: 'auspice_day_share', date }}>
+          <DDLRedirectButton
+            payload={{ source: 'auspice_day_share', date }}
+            targetApp='auspice'
+            appStoreUrl={resolveAppStoreUrl('auspice')}
+          >
             <span
               style={{
                 display: 'inline-block',

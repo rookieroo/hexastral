@@ -13,7 +13,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
-import { Share2 } from 'lucide-react-native'
+import { Share } from 'lucide-react-native'
 import { type ReactNode, useState } from 'react'
 import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
@@ -135,7 +135,9 @@ export function DayView({
             accessibilityLabel='Share'
             style={{ padding: 4 }}
           >
-            <Share2 size={16} color={colors.dim} strokeWidth={1.6} />
+            {/* `Share` (export glyph) not `Share2` (node graph) — the latter
+                read as a fork and collided with make-if's GitFork icon. */}
+            <Share size={18} color={colors.secondary} strokeWidth={1.6} />
           </Pressable>
         </View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
@@ -239,6 +241,10 @@ export function DayView({
   )
 }
 
+/** Chip height (paddingVertical 6·2 + ~15px line + border) — the 宜/忌 label box
+ *  matches it so the label centers on the first chip row. */
+const CHIP_HEIGHT = 32
+
 /** 宜 / 忌 chip rows for the shareable image card — fixed ivory palette, verbs
  *  localized. Mirrors the web `/s/day` OG card. */
 function ShareYiJi({
@@ -254,7 +260,11 @@ function ShareYiJi({
 }) {
   const Row = ({ label, items, color }: { label: string; items: string[]; color: string }) => (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-      <Text style={{ color, fontSize: 17, fontWeight: '700', minWidth: 24 }}>{label}</Text>
+      {/* Label box matches one chip's height + centers, so 宜/忌 sits on the
+          baseline of the first chip row instead of floating above it. */}
+      <View style={{ minWidth: 24, minHeight: CHIP_HEIGHT, justifyContent: 'center' }}>
+        <Text style={{ color, fontSize: 17, fontWeight: '700' }}>{label}</Text>
+      </View>
       <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {items.length === 0 ? (
           <Text style={{ color: SHARE_PALETTE.dim, fontSize: 15 }}>—</Text>

@@ -104,7 +104,10 @@ export const darkTokens: ModeTokens = {
   tint: zinc[50],
   tintFg: zinc[900],
   accent: ink.gold,
-  dim: zinc[600],
+  // zinc[600] (#52525B) on the near-black 水墨 dark bg read at ~1.3:1 — lunar
+  // subtext, the share icon, and CTA subtitles were effectively invisible.
+  // zinc[500] keeps the muted intent while clearing the legibility floor.
+  dim: zinc[500],
   inkWash: ink.goldGhost,
 }
 
@@ -220,6 +223,21 @@ export function getHighlightColors(isDark: boolean): HighlightColors {
   return isDark
     ? { brownBg: '#1A0A00', greenBg: '#052E16', warnBg: '#3F1A00', warnBar: '#C2410C' }
     : { brownBg: '#FFF7ED', greenBg: '#F0FDF4', warnBg: '#FFF7ED', warnBar: '#EA580C' }
+}
+
+/** Semantic 宜/吉 (success) and 忌/凶 (danger) text colors, mode-adapted.
+ *  The flat #22C55E / #EF4444 pair was tuned for light surfaces and washed out
+ *  on the 水墨 dark bg; dark mode uses the brighter -400 tints so 宜忌 headers
+ *  and verdict chips stay legible. */
+export interface StatusColors {
+  success: string
+  danger: string
+}
+
+export function getStatusColors(isDark: boolean): StatusColors {
+  return isDark
+    ? { success: '#4ADE80', danger: '#F87171' }
+    : { success: '#16A34A', danger: '#DC2626' }
 }
 
 /** Typography scale — Ink Brutalism type ramp. */

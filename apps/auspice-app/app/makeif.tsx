@@ -17,7 +17,7 @@ import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share2, Trash2 } from 'lucide-react-native'
+import { Share, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -49,12 +49,14 @@ import { useImageShare } from '@/lib/imageShare'
 import {
   buildInteractiveModel,
   buildUserBranch,
+  deriveMakeIfSummary,
   type MakeIfBranch,
   makeIfCopyForLocale,
   makeIfInteractiveCopyForLocale,
   makeIfTeaser,
+  relocalizeEventLabel,
 } from '@/lib/makeIfBranches'
-import { makeifShareUrl, shareMakeifFork, shareTaglineFor } from '@/lib/share'
+import { makeifShareChrome, makeifShareUrl, shareMakeifFork, shareTaglineFor } from '@/lib/share'
 
 const ACK_KEY = 'auspice.makeif.disclaimer.v1'
 const MAX_FORKS = 4
@@ -281,7 +283,16 @@ function Sandbox({
   const [acked, setAcked] = useState(false)
   const [customEvent, setCustomEvent] = useState('')
   // Image share: capture the whole 假如 graph (mainline + branches) to a PNG.
-  const { shotRef, capturing, share: shareImage } = useImageShare()
+  // Pre-warm once there's a fork to share, re-capturing as forks are added, so the
+  // Share tap hands off an already-rendered PNG instead of waiting on Skia.
+  const {
+    shotRef,
+    capturing,
+    share: shareImage,
+  } = useImageShare({
+    prewarm: branches.length > 0,
+    warmKey: branches.length,
+  })
 
   useEffect(() => {
     AsyncStorage.getItem(ACK_KEY)
@@ -319,13 +330,19 @@ function Sandbox({
           branch: {
             ...buildUserBranch({
               id: f.id,
-              event: f.event,
+              // Re-localize a preset event whose label is frozen in the language it
+              // was created in (a custom event stays as typed) — avoids a zh graph
+              // showing an English "Marry" branch after a language switch.
+              event: relocalizeEventLabel(f.event, locale),
               divergeAtAge: f.divergeAtAge,
               mergeAtAge: f.mergeAtAge,
               endAge: model.endAge,
               isPast: f.isPast,
             }),
             outcome: f.narrative,
+            // Summary isn't persisted; derive a takeaway from the stored narrative
+            // so hydrated forks still show a 概要 (a re-narrate will overwrite it).
+            summary: deriveMakeIfSummary(f.narrative),
           },
           stale: f.locale !== locale,
         }))
@@ -376,8 +393,9 @@ function Sandbox({
         .then((r) => {
           const narrative = r.narratives[fork.id]
           if (narrative) {
+            const summary = r.summaries?.[fork.id] || deriveMakeIfSummary(narrative)
             setBranches((prev) =>
-              prev.map((b) => (b.id === fork.id ? { ...b, outcome: narrative } : b))
+              prev.map((b) => (b.id === fork.id ? { ...b, outcome: narrative, summary } : b))
             )
             setStatus((s) => ({ ...s, [fork.id]: 'done' }))
             // Persist so the fork survives an app restart (D1, device-scoped).
@@ -482,6 +500,7 @@ function Sandbox({
             forkTitle: ic.forkTitle(lastFork.divergeAtAge, !!lastFork.isPast),
             label: lastFork.label,
             outcome: lastFork.outcome,
+            summary: lastFork.summary,
           },
           locale
         )
@@ -504,7 +523,7 @@ function Sandbox({
             accessibilityLabel={ic.share}
             style={{ padding: 4 }}
           >
-            <Share2 size={20} color={colors.dim} strokeWidth={1.6} />
+            <Share size={20} color={colors.secondary} strokeWidth={1.6} />
           </Pressable>
         ) : null}
       </View>
@@ -532,6 +551,9 @@ function Sandbox({
             ref={shotRef}
             width={width}
             locale={locale}
+            eyebrow={makeifShareChrome(locale).eyebrow}
+            footer={makeifShareChrome(locale).footer}
+            footerUrl={makeifShareChrome(locale).url}
             title={ic.screenTitle}
             subtitle={`${payload.pillars.day.stem}${payload.pillars.day.branch}${locale.startsWith('zh') ? '日' : ''}`}
           >
@@ -547,6 +569,39 @@ function Sandbox({
               onLockedTap={() => {}}
               nowLabel={makeIfCopyForLocale(locale).nowLabel}
             />
+            {/* Bake each branch's 概要 under the graph — a bare graph of dots was
+                illegible once forwarded; the summaries make the share readable. */}
+            {branches.some((b) => b.summary || b.outcome) ? (
+              <View style={{ gap: 8, marginTop: 4 }}>
+                {branches
+                  .filter((b) => b.summary || b.outcome)
+                  .map((b) => (
+                    <View
+                      key={b.id}
+                      style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}
+                    >
+                      <View
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: b.color,
+                          marginTop: 5,
+                        }}
+                      />
+                      <Text
+                        style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 13, lineHeight: 19 }}
+                      >
+                        <Text style={{ fontWeight: '600' }}>{b.label}</Text>
+                        {'  '}
+                        <Text style={{ color: SHARE_PALETTE.secondary }}>
+                          {b.summary || deriveMakeIfSummary(b.outcome)}
+                        </Text>
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+            ) : null}
           </ShareableCard>
         </View>
       ) : null}
@@ -678,6 +733,7 @@ function ForkRow({
   onRetry: () => void
 }) {
   const forkTitle = ic.forkTitle(b.divergeAtAge, !!b.isPast)
+  const [expanded, setExpanded] = useState(false)
 
   const renderRightActions = (
     _progress: unknown,
@@ -689,7 +745,10 @@ function ForkRow({
         <Pressable
           onPress={() => {
             methods.close()
-            shareMakeifFork({ forkTitle, label: b.label, outcome: b.outcome ?? '' }, locale)
+            shareMakeifFork(
+              { forkTitle, label: b.label, outcome: b.outcome ?? '', summary: b.summary },
+              locale
+            )
           }}
           accessibilityRole='button'
           accessibilityLabel={ic.share}
@@ -701,7 +760,7 @@ function ForkRow({
             gap: 4,
           }}
         >
-          <Share2 size={20} color='#fff' strokeWidth={1.6} />
+          <Share size={20} color='#fff' strokeWidth={1.6} />
           <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{ic.share}</Text>
         </Pressable>
       ) : null}
@@ -768,9 +827,43 @@ function ForkRow({
           ) : st === 'limited' ? (
             <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.limited}</Text>
           ) : b.outcome ? (
-            <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
-              {b.outcome}
-            </Text>
+            // The 概要 is the visible takeaway; tap pops the full "假如你…" narrative
+            // in a bubble (the row was a wall of prose that read poorly inline and
+            // was illegible once shared).
+            <Pressable
+              onPress={() => setExpanded((v) => !v)}
+              accessibilityRole='button'
+              accessibilityLabel={expanded ? ic.collapse : ic.expand}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text
+                  style={{ flex: 1, color: colors.secondary, fontSize: 13, lineHeight: 20 }}
+                  numberOfLines={expanded ? undefined : 2}
+                >
+                  {b.summary || deriveMakeIfSummary(b.outcome)}
+                </Text>
+                <Text style={{ color: colors.accent, fontSize: 11 }}>
+                  {expanded ? ic.collapse : ic.expand}
+                </Text>
+              </View>
+              {expanded ? (
+                <View
+                  style={{
+                    marginTop: spacing.sm,
+                    borderRadius: 12,
+                    borderWidth: 0.5,
+                    borderColor: colors.separator,
+                    backgroundColor: colors.accentGhost,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontSize: 13, lineHeight: 21 }}>
+                    {b.outcome}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
           ) : null}
         </View>
       </View>

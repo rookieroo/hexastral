@@ -30,11 +30,11 @@ import {
   STEM_WUXING,
   solarToLunar,
 } from '@zhop/astro-core'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { makeifForks } from '../db/schema'
+import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
@@ -595,6 +595,13 @@ const FIT_LABEL: Record<string, string> = { 吉: '宜把握', 平: '平稳', 凶
 /**
  * Render a full VCALENDAR body for the rolling window. When `subject` is set,
  * each day also carries the deterministic 对你而言 verdict (the Pro feed).
+ *
+ * INVARIANT — keep this feed 100% DETERMINISTIC (pure `buildDay` compute: 干支 /
+ * 宜忌 / 节气 / the 吉平凶 verdict). NEVER put LLM-generated personalized prose
+ * here: a calendar export spans a whole rolling window, which is far too much to
+ * generate, and the personalized "对你而言" reading is deliberately app-ONLY — it
+ * is the daily-push hook that drives DAU. The export is the deterministic almanac;
+ * the personalization lives in the app.
  */
 function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: string): string {
   const today = dateToYmd(new Date())
@@ -1473,7 +1480,7 @@ auspiceRoutes.post('/makeif', async (c) => {
   const body = makeifSchema.parse(await c.req.json().catch(() => ({})))
 
   // Pro-only — Free sees the deterministic structure + the explainer, no narrative.
-  if (!body.isPro) return jsonOk(c, { narratives: {}, source: 'locked' })
+  if (!body.isPro) return jsonOk(c, { narratives: {}, summaries: {}, source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
   const hour = body.birthHour < 0 ? 12 : body.birthHour
@@ -1485,14 +1492,19 @@ auspiceRoutes.post('/makeif', async (c) => {
   const shapeSig = body.branches
     .map((b) => `${b.id}:${b.label}:${b.divergeAtAge}:${b.mergeAtAge}:${b.isPast}:${b.realPillar}`)
     .join(',')
-  // `v2` busts the 30-day cache after the locale-directive fix — pre-fix entries
-  // cached Chinese narratives under en/ja keys; bumping the prefix drops them.
-  const cacheKey = `auspice:makeif:v2:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
+  // `v3` busts the 30-day cache after the 概要 (summary) addition — pre-v3 entries
+  // cached only `{id: narrative}`; v3 caches `{narratives, summaries}` together.
+  const cacheKey = `auspice:makeif:v3:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
   const cached = await c.env.GUARD_KV.get(cacheKey)
   if (cached) {
     try {
+      const parsed = JSON.parse(cached) as {
+        narratives: Record<string, string>
+        summaries?: Record<string, string>
+      }
       return jsonOk(c, {
-        narratives: JSON.parse(cached) as Record<string, string>,
+        narratives: parsed.narratives ?? {},
+        summaries: parsed.summaries ?? {},
         source: 'cache',
       })
     } catch {
@@ -1507,34 +1519,41 @@ auspiceRoutes.post('/makeif', async (c) => {
   // still hit MAKEIF_GUARD_CONFIG.
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
   if (!body.dev) {
-    if (!subject) return jsonOk(c, { narratives: {}, source: 'template' })
+    if (!subject) return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
     guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[auspice.makeif.guard]', JSON.stringify(ev))
     if (guard.decision !== 'allow_llm') {
-      return jsonOk(c, { narratives: {}, source: 'template', upsell: guard.upsellAfterExhaust })
+      return jsonOk(c, {
+        narratives: {},
+        summaries: {},
+        source: 'template',
+        upsell: guard.upsellAfterExhaust,
+      })
     }
   }
 
   const currentAge = new Date().getUTCFullYear() - ymd.year
 
   try {
-    const resp = await astroClient.post<{ narratives: Record<string, string> }>(
-      c.env.SVC_ASTRO,
-      '/cycle/makeif-narrate',
-      {
-        dayMaster: pillars.day.stem,
-        dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
-        yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
-        gender: body.gender,
-        currentAge,
-        locale: body.locale,
-        isPro: true,
-        branches: body.branches,
-      }
-    )
+    const resp = await astroClient.post<{
+      narratives: Record<string, string>
+      summaries?: Record<string, string>
+    }>(c.env.SVC_ASTRO, '/cycle/makeif-narrate', {
+      dayMaster: pillars.day.stem,
+      dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
+      yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
+      gender: body.gender,
+      currentAge,
+      locale: body.locale,
+      isPro: true,
+      branches: body.branches,
+    })
     const narratives = resp.narratives ?? {}
+    const summaries = resp.summaries ?? {}
     if (Object.keys(narratives).length > 0) {
-      await c.env.GUARD_KV.put(cacheKey, JSON.stringify(narratives), { expirationTtl: 2_592_000 })
+      await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narratives, summaries }), {
+        expirationTtl: 2_592_000,
+      })
       if (!body.dev && subject && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
@@ -1542,12 +1561,12 @@ auspiceRoutes.post('/makeif', async (c) => {
           consumesPeakPass: guard.consumesPeakPass,
         })
       }
-      return jsonOk(c, { narratives, source: 'llm' })
+      return jsonOk(c, { narratives, summaries, source: 'llm' })
     }
   } catch (err) {
     console.error('[auspice.makeif] narrate failed', err)
   }
-  return jsonOk(c, { narratives: {}, source: 'template' })
+  return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
 })
 
 // ── make-if forks persistence (D1) ─────────────────────────────────────────
@@ -1642,4 +1661,333 @@ auspiceRoutes.delete('/makeif/forks/:id', async (c) => {
     .delete(makeifForks)
     .where(and(eq(makeifForks.owner, `device:${deviceId}`), eq(makeifForks.id, id)))
   return jsonOk(c, { deleted: true })
+})
+
+// ── 生日提醒 (birthday reminders) persistence + free-tier cap ─────────────────
+//
+// Server-backed store for 亲友 birthdays (see schema.birthdayReminders). The free
+// tier gets reminders for the first BIRTHDAY_FREE_LIMIT 亲友; more need auspice_pro.
+// The cap is enforced HERE (authoritative) so it can't be bypassed by editing local
+// storage; the app also caps locally for snappy UX. Device-scoped like make-if.
+
+const BIRTHDAY_FREE_LIMIT = 3
+
+/** MM-DD for a solar birthday (cron index); null for 农历 (resolved at runtime). */
+function solarMonthDay(date: string, calendar: 'solar' | 'lunar'): string | null {
+  if (calendar !== 'solar') return null
+  const m = /^\d{4}-(\d{2}-\d{2})$/.exec(date)
+  return m ? (m[1] ?? null) : null
+}
+
+/** Live Pro gate for the cap: RevenueCat when configured + `u` present, else the
+ *  client flag (fail-open in dev with no RC key — matches /calendar/sign). */
+async function birthdayProOk(
+  env: CalendarEnv,
+  isProFlag: boolean,
+  appUserId?: string
+): Promise<boolean> {
+  if (env.REVENUECAT_API_KEY && appUserId)
+    return isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId)
+  return isProFlag
+}
+
+const birthdaySchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(80),
+  solarDate: z.string().regex(DATE_RE),
+  calendar: z.enum(['solar', 'lunar']).default('solar'),
+  relation: z.string().max(40).optional(),
+  advanceDays: z.number().int().min(0).max(60).default(1),
+  remindOnDay: z.boolean().default(true),
+  /** Pro signal — client flag, hardened by a live RC check when `u` is sent. */
+  isPro: z.boolean().default(false),
+  /** RevenueCat app-user-id, for the authoritative Pro check. */
+  u: z.string().max(128).optional(),
+})
+
+auspiceRoutes.post('/birthdays', async (c) => {
+  const body = birthdaySchema.parse(await c.req.json())
+  const owner = `device:${body.deviceId}`
+  const db = c.get('db')
+
+  const existing = await db
+    .select({ id: birthdayReminders.id })
+    .from(birthdayReminders)
+    .where(eq(birthdayReminders.owner, owner))
+  const isNew = !existing.some((r) => r.id === body.id)
+
+  // Only NEW birthdays beyond the free cap need Pro; editing an existing one is free.
+  if (isNew && existing.length >= BIRTHDAY_FREE_LIMIT) {
+    const pro = await birthdayProOk(c.env as unknown as CalendarEnv, body.isPro, body.u)
+    if (!pro) {
+      return jsonOk(c, { saved: false, limited: true, limit: BIRTHDAY_FREE_LIMIT })
+    }
+  }
+
+  await db
+    .insert(birthdayReminders)
+    .values({
+      owner,
+      id: body.id,
+      name: body.name,
+      solarDate: body.solarDate,
+      calendar: body.calendar,
+      relation: body.relation,
+      advanceDays: body.advanceDays,
+      remindOnDay: body.remindOnDay,
+      monthDay: solarMonthDay(body.solarDate, body.calendar),
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [birthdayReminders.owner, birthdayReminders.id],
+      set: {
+        name: body.name,
+        solarDate: body.solarDate,
+        calendar: body.calendar,
+        relation: body.relation,
+        advanceDays: body.advanceDays,
+        remindOnDay: body.remindOnDay,
+        monthDay: solarMonthDay(body.solarDate, body.calendar),
+      },
+    })
+  return jsonOk(c, { saved: true })
+})
+
+auspiceRoutes.get('/birthdays', async (c) => {
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  const rows = await c
+    .get('db')
+    .select()
+    .from(birthdayReminders)
+    .where(eq(birthdayReminders.owner, `device:${deviceId}`))
+    .orderBy(birthdayReminders.createdAt)
+  return jsonOk(c, { birthdays: rows, freeLimit: BIRTHDAY_FREE_LIMIT })
+})
+
+auspiceRoutes.delete('/birthdays/:id', async (c) => {
+  const id = c.req.param('id')
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  await c
+    .get('db')
+    .delete(birthdayReminders)
+    .where(and(eq(birthdayReminders.owner, `device:${deviceId}`), eq(birthdayReminders.id, id)))
+  return jsonOk(c, { deleted: true })
+})
+
+// ── 真实服务端推送 (Auspice remote push) — register + render + cron targets ─────
+//
+// Reliability fix: local notifications dry up if the app isn't opened within the
+// rolling window. A registered device gets REAL server push (svc-notify cron →
+// Expo). The body is rendered HERE from the deterministic `buildDay` (干支/宜忌 +
+// the 吉平凶 verdict from the birth profile); the LLM 对你而言 stays app-only. The
+// app registers on open with its birth profile + slot prefs, and DEFERS its local
+// daily once registered so a device runs server OR local, never both.
+
+/** Push body labels — small fixed set localized; 宜忌 verbs stay CJK in v1 (the
+ *  in-app local path localizes them; sharing the verb vocab server-side is a
+ *  follow-up). zh-first product, so this reads natively for the core audience. */
+interface PushLabelSet {
+  yi: string
+  ji: string
+  forYou: string
+  daySuffix: string
+  tomorrow: string
+  fit: Record<string, string>
+}
+
+const EN_PUSH_LABELS: PushLabelSet = {
+  yi: 'Good',
+  ji: 'Avoid',
+  forYou: 'You',
+  daySuffix: '',
+  tomorrow: 'Tomorrow',
+  fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
+}
+
+const PUSH_LABELS: Record<string, PushLabelSet> = {
+  'zh-Hans': {
+    yi: '宜',
+    ji: '忌',
+    forYou: '你',
+    daySuffix: '日',
+    tomorrow: '明日预告',
+    fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
+  },
+  'zh-Hant': {
+    yi: '宜',
+    ji: '忌',
+    forYou: '你',
+    daySuffix: '日',
+    tomorrow: '明日預告',
+    fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
+  },
+  ja: {
+    yi: '吉',
+    ji: '凶',
+    forYou: 'あなた',
+    daySuffix: '日',
+    tomorrow: '明日の予報',
+    fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
+  },
+  en: EN_PUSH_LABELS,
+}
+
+function pushLabels(locale: string): PushLabelSet {
+  if (locale.startsWith('zh-Hant')) return PUSH_LABELS['zh-Hant'] ?? EN_PUSH_LABELS
+  if (locale.startsWith('zh')) return PUSH_LABELS['zh-Hans'] ?? EN_PUSH_LABELS
+  if (locale.startsWith('ja')) return PUSH_LABELS.ja ?? EN_PUSH_LABELS
+  return EN_PUSH_LABELS
+}
+
+interface AuspicePushSubRow {
+  deviceId: string
+  token: string
+  locale: string
+  birthDate: string | null
+  isPro: boolean
+}
+
+/** Render a deterministic push for one subscriber + date (morning = that day,
+ *  evening = a preview of `dateYmd` which the cron already advanced to tomorrow). */
+function renderAuspicePush(
+  slot: 'morning' | 'evening',
+  dateYmd: Ymd,
+  sub: AuspicePushSubRow
+): { title: string; body: string; data: Record<string, string> } {
+  const L = pushLabels(sub.locale)
+  const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
+  const { day, personalization } = buildDay(dateYmd, subject)
+  const dateStr = fmtUtc(ymdToDate(dateYmd))
+  const yi = day.goodFor.slice(0, 3).join('、') || '—'
+  const ji = day.avoid.slice(0, 3).join('、') || '—'
+  let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
+  if (sub.isPro && personalization)
+    body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
+  const title =
+    slot === 'evening' ? `${L.tomorrow} · ${dateStr}` : `${dateStr} · ${day.ganZhi}${L.daySuffix}`
+  return {
+    title,
+    body,
+    data: { type: slot === 'evening' ? 'auspice_evening' : 'auspice_daily', day: dateStr },
+  }
+}
+
+const pushRegisterSchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  token: z.string().min(1).max(256),
+  platform: z.enum(['ios', 'android']).default('ios'),
+  timezoneId: z.string().min(1).max(64),
+  locale: z.string().max(16).default('zh'),
+  birthDate: z.string().regex(DATE_RE).optional(),
+  birthHour: z.number().int().min(-1).max(23).optional(),
+  gender: z.enum(['M', 'F']).optional(),
+  dailyMorning: z.boolean().default(true),
+  dailyEvening: z.boolean().default(true),
+  isPro: z.boolean().default(false),
+})
+
+auspiceRoutes.post('/push/register', async (c) => {
+  const b = pushRegisterSchema.parse(await c.req.json())
+  if (!/^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/.test(b.token)) {
+    throw new HTTPException(400, { message: 'invalid Expo push token' })
+  }
+  const now = new Date().toISOString()
+  await c
+    .get('db')
+    .insert(auspicePushSubs)
+    .values({
+      deviceId: b.deviceId,
+      token: b.token,
+      platform: b.platform,
+      timezoneId: b.timezoneId,
+      locale: b.locale,
+      birthDate: b.birthDate ?? null,
+      birthHour: b.birthHour ?? null,
+      gender: b.gender ?? null,
+      dailyMorning: b.dailyMorning,
+      dailyEvening: b.dailyEvening,
+      isPro: b.isPro,
+      lastActiveAt: now,
+      createdAt: now,
+    })
+    .onConflictDoUpdate({
+      target: auspicePushSubs.deviceId,
+      set: {
+        token: b.token,
+        platform: b.platform,
+        timezoneId: b.timezoneId,
+        locale: b.locale,
+        birthDate: b.birthDate ?? null,
+        birthHour: b.birthHour ?? null,
+        gender: b.gender ?? null,
+        dailyMorning: b.dailyMorning,
+        dailyEvening: b.dailyEvening,
+        isPro: b.isPro,
+        lastActiveAt: now,
+      },
+    })
+  return jsonOk(c, { registered: true })
+})
+
+auspiceRoutes.delete('/push/register', async (c) => {
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  await c.get('db').delete(auspicePushSubs).where(eq(auspicePushSubs.deviceId, deviceId))
+  return jsonOk(c, { unregistered: true })
+})
+
+// Internal: svc-notify cron pulls rendered messages per timezone + slot. The cron
+// passes the LOCAL date already (morning = today, evening = tomorrow-preview).
+auspiceRoutes.get('/push/targets', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const slot = c.req.query('slot') === 'evening' ? 'evening' : 'morning'
+  const timezoneId = c.req.query('timezoneId')
+  const date = c.req.query('date')
+  if (!timezoneId || !date || !DATE_RE.test(date)) {
+    throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
+  }
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
+  const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
+  const slotEnabled =
+    slot === 'evening' ? auspicePushSubs.dailyEvening : auspicePushSubs.dailyMorning
+
+  const rows = await c
+    .get('db')
+    .select({
+      deviceId: auspicePushSubs.deviceId,
+      token: auspicePushSubs.token,
+      locale: auspicePushSubs.locale,
+      birthDate: auspicePushSubs.birthDate,
+      isPro: auspicePushSubs.isPro,
+    })
+    .from(auspicePushSubs)
+    .where(and(eq(auspicePushSubs.timezoneId, timezoneId), eq(slotEnabled, true)))
+    .limit(limit + 1)
+    .offset(offset)
+
+  const hasMore = rows.length > limit
+  const page = hasMore ? rows.slice(0, limit) : rows
+  const ymd = parseYmd(date)
+  const messages = page.map((sub) => {
+    const { title, body, data } = renderAuspicePush(slot, ymd, sub)
+    return { deviceId: sub.deviceId, token: sub.token, title, body, data }
+  })
+  return jsonOk(c, { messages, nextCursor: hasMore ? String(offset + limit) : null })
+})
+
+// Internal: svc-notify reports Expo DeviceNotRegistered tokens → drop the subs.
+auspiceRoutes.post('/push/unregister-stale', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const body = await c.req.json<{ tokens?: unknown }>().catch(() => ({ tokens: [] }))
+  const tokens = (Array.isArray(body.tokens) ? body.tokens : [])
+    .filter((t): t is string => typeof t === 'string')
+    .slice(0, 100)
+  if (tokens.length === 0) return jsonOk(c, { deleted: 0 })
+  await c.get('db').delete(auspicePushSubs).where(inArray(auspicePushSubs.token, tokens))
+  return jsonOk(c, { deleted: tokens.length })
 })
