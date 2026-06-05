@@ -19,6 +19,7 @@
  */
 
 import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
+import { getShiShen, type HeavenlyStem, type ShiShenCategory } from '@zhop/astro-core'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -99,6 +100,8 @@ interface GNode {
   chip?: ChipKind
   /** The one forward-looking 爆点 node — enlarged + emphasized for the share. */
   isHero?: boolean
+  /** 十神 decade-theme — the life domain this 大运 activates (大运 nodes only). */
+  domain?: ShiShenCategory
   title: string
   sub: string
   /** Index back into the source rows for the detail panel. */
@@ -183,6 +186,11 @@ function buildGraph(
     const locked = !isPro && state !== 'current'
     const dayunY = y
     const dayunChip = chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch)
+    // 十神 decade-theme — which life domain this 大运 activates vs the 日主.
+    const dayunDomain = getShiShen(
+      dayMaster.stem as HeavenlyStem,
+      d.pillar.stem as HeavenlyStem
+    ).category
 
     if (locked) {
       // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
@@ -200,6 +208,7 @@ function buildGraph(
         element: d.pillar.element,
         fit: d.fit,
         chip: dayunChip,
+        domain: dayunDomain,
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -236,6 +245,7 @@ function buildGraph(
       element: d.pillar.element,
       fit: d.fit,
       chip: dayunChip,
+      domain: dayunDomain,
       title: `${d.pillar.stem}${d.pillar.branch}`,
       sub: `${d.startAge}`,
       ref: { kind: 'dayun', row: d },
@@ -326,6 +336,7 @@ export function TimelineGraph({
   reasonLabels,
   taohuaBranch,
   yimaBranch,
+  domainLabels,
   expandedDayunIndex,
 }: {
   payload: TimelinePayload
@@ -344,6 +355,8 @@ export function TimelineGraph({
   /** 本命 桃花/驿马 branches — a period landing on one earns that chip. */
   taohuaBranch?: string
   yimaBranch?: string
+  /** Localized 十神 → life-domain labels — the 大运 branch theme. */
+  domainLabels?: Record<ShiShenCategory, string>
   /** Checked-out 大运 (tap a 大运 to expand its full decade). Defaults to current. */
   expandedDayunIndex?: number
 }) {
@@ -479,6 +492,13 @@ export function TimelineGraph({
                 <Text style={{ color: colors.dim, fontSize: 12 }}>
                   {n.kind === 'source' ? n.sub : n.kind === 'dayun' ? `${n.sub}+` : n.sub}
                 </Text>
+                {/* 大运 branch theme — the 十神 life domain this decade activates
+                    (git: a branch has a name). 流年 commits stay verdict + chip. */}
+                {n.kind === 'dayun' && n.domain && domainLabels ? (
+                  <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '500' }}>
+                    {domainLabels[n.domain]}
+                  </Text>
+                ) : null}
                 {/* Verdict: the 吉/平/凶 word in its colour (denser than a bare dot,
                     color-blind safe). Falls back to a dot when no label map is passed. */}
                 {n.fit ? (

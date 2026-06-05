@@ -200,6 +200,10 @@ export interface Strings {
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
    *  the 用神/忌神 signal that the generic per-grade advice omits. */
   timelinePeriodElement: { favorable: string; unfavorable: string }
+  /** 十神 decade-theme — the life domain a 大运 activates (五类十神 → 领域). */
+  timelineDomain: { 比劫: string; 食伤: string; 财星: string; 官杀: string; 印绶: string }
+  /** 化解 ("支线解法") for a conflict / 忌神 node. {el} = the chart's 用神 五行. */
+  timelineHuajie: string
   /** Make-if decision timing — what KIND of move the current 命局 window favors. */
   makeifTiming: {
     frame: string
@@ -500,6 +504,14 @@ const zhHans: Strings = {
     unfavorable: '{el}行为你的忌神，此运宜稳健、多留意。',
   },
   timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
+  timelineDomain: {
+    比劫: '人际 · 竞合',
+    食伤: '表达 · 创作',
+    财星: '财富 · 务实',
+    官杀: '事业 · 责任',
+    印绶: '学养 · 贵人',
+  },
+  timelineHuajie: '化解：多借{el}行之力，宜静守、纳贵人。',
   makeifTiming: {
     frame: '当前命局时机',
     archetypes: {
@@ -780,6 +792,14 @@ const zhHant: Strings = {
     unfavorable: '{el}行為你的忌神，此運宜穩健、多留意。',
   },
   timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
+  timelineDomain: {
+    比劫: '人際 · 競合',
+    食伤: '表達 · 創作',
+    财星: '財富 · 務實',
+    官杀: '事業 · 責任',
+    印绶: '學養 · 貴人',
+  },
+  timelineHuajie: '化解：多借{el}行之力，宜靜守、納貴人。',
   makeifTiming: {
     frame: '當前命局時機',
     archetypes: {
@@ -1071,6 +1091,14 @@ const ja: Strings = {
     unfavorable: '{el}は忌神、この運は慎重に進めましょう。',
   },
   timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
+  timelineDomain: {
+    比劫: '人間関係 · 競合',
+    食伤: '表現 · 創作',
+    财星: '財運 · 実務',
+    官杀: '仕事 · 責任',
+    印绶: '学び · 貴人',
+  },
+  timelineHuajie: '化解：{el}の力を借り、静を守り貴人を頼みましょう。',
   makeifTiming: {
     frame: '今の命局のタイミング',
     archetypes: {
@@ -1353,6 +1381,14 @@ const en: Strings = {
     unfavorable: '{el} is your unfavorable element — stay steady and watchful.',
   },
   timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
+  timelineDomain: {
+    比劫: 'People · rivalry',
+    食伤: 'Expression · output',
+    财星: 'Wealth · the practical',
+    官杀: 'Career · duty',
+    印绶: 'Learning · mentors',
+  },
+  timelineHuajie: 'Remedy: lean on {el} — hold steady and seek allies.',
   makeifTiming: {
     frame: 'Your timing right now',
     archetypes: {

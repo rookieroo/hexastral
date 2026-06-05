@@ -103,26 +103,57 @@ If the git-graph geometry is off (curves, spacing, lane, merges), that's
 `buildGraph` in `TimelineGraph.tsx` — the Canvas just renders the nodes/edges it
 emits.
 
-## 4. Remaining tasks
+## 4. Remaining tasks (reprioritized 2026-06-05 — deterministic 命理 first)
 
-### Phase 4 — make-if branch-node LLM expansion  ⚠️ needs CF Workers AI to verify
-Tap a node ON a 假如 branch → generate "at this age in that life, you'd be…".
-- Extend the make-if narrative path to per-node (not just per-branch). The
-  per-branch generator exists: `apps/auspice-app/lib/makeIfBranches.ts` +
-  `fetchMakeIfNarratives` + svc-astro/hehun LLM. Add a per-node prompt + cache.
-- Buildable offline; generation only verifiable with Workers AI access.
+Decision: bring the deterministic 命理 capabilities in FIRST (high aha, no
+black-box, verifiable). The LLM branch expansion is now **secondary**.
 
-### Phase 5 — advanced git ops → business
-- **冲太岁 = conflict marker**: 冲 years already earn the `clash` chip; give them an
-  unmistakable "conflict" treatment (the year that fights your 本命).
-- **cherry-pick**: from a 假如 branch, lift one good outcome as a "carry into real
-  life" takeaway (a concrete, deterministic suggestion).
-- **diff**: a 假如 branch vs the real line side-by-side (the contrast is the insight).
-- Node popups on make-if branch nodes (pairs with Phase 4).
+### Phase 4 (NEW priority) — deterministic 命理 layer  ★ buildable + verifiable now
+The git-graph skeleton is a vessel; these fill it with real 命理 business. All
+backed by existing `astro-core` — no Workers AI.
+
+1. **十神 decade-theme** — each 大运 carries its 十神 category vs the 日主
+   (`getShiShen(dayMaster, periodStem).category` → 比劫/食伤/财星/官杀/印绶), mapped
+   to a life domain (人际/表达/财富/事业/学业). The branch gets a NAME (git: a
+   branch has a theme); 流年 keep verdict + chip. Make-if forks read as "this
+   choice activates your 财/官/印…".
+2. **化解 / 通关 ("支线解法")** — conflict nodes (冲太岁 `clash` / 忌神 `unfavorable`)
+   show their resolution: lean into the chart's 用神 element
+   (`getFourPillarsShiShen` → `analyzeGeJu` → `recommendFavorableElement`) + the
+   通关 五行 for a 克 relationship (`WUXING_GENERATE`). git merge-conflict →
+   resolution.
+3. **merge 命理 statement** — when a branch merges back to the trunk, say WHY:
+   the real 大运 at the merge age (its 十神 theme) reabsorbs the 假如 — the
+   命 vs 运 vs 选择 line ("even this choice gets pulled back toward your 官 decade").
+
+### Phase 5 — more deterministic ops (after Phase 4)
+- **神煞 event-flavor** on years (`getTianYiGuiRen` 贵人 / `getWenChangGuiRen` 文昌 /
+  `getJiangXing` 将星 / `getJieSha` 劫煞) — richer node chips.
+- **冲合刑害会** interaction precision (`analyzeBranchClashes` /
+  `analyzeBranchCombinations`) — better node reasons (流年 × 大运 × 本命).
+- **cherry-pick**: lift a 假如's good outcome as a "carry into real life" takeaway.
+- **diff**: a 假如 branch vs the real line side-by-side.
+- **择吉** on actionable future nodes (ties make-if 时机 to real date-picking).
+
+### Phase 6 (was Phase 4) — make-if branch-node LLM expansion  ⚠️ secondary; needs Workers AI to verify
+Tap a node on a 假如 branch → LLM "at this age in that life, you'd be…".
+Per-branch generator exists (`lib/makeIfBranches.ts` + `fetchMakeIfNarratives`);
+extend to per-node. Buildable offline; generation only verifiable with Workers AI.
+
+### Capability menu (the full 命理 → git/screen map, for reference)
+| 命理 ability | feature | astro-core | ready |
+|---|---|---|---|
+| 十神 | node life-domain / branch theme | `getShiShen` | ★★★ |
+| 化解/通关 | conflict resolution | `getWuXingRelation`/`recommendFavorableElement`/`WUXING_GENERATE` | ★★★ |
+| 神煞 | event-flavor chips | `analyzeShenSha`/`getTianYiGuiRen`/`getWenChangGuiRen`/`getJiangXing`/`getJieSha` | ★★★ |
+| 冲合刑害会 | precise node reasons | `analyzeBranchClashes`/`analyzeBranchCombinations` | ★★ |
+| 合婚 overlay | partner 大运/流年 on your axis | `calculateHeHun` | ★★ (= Kindred bonds-timeline) |
+| 择吉 | best window to act | Auspice 择日 | ★★ |
+| 紫微大限 | alt interpretation lens | iztro (deps) | ★ |
 
 ### Acceptance for the epic
-Every git operation visible in the graph maps to a real action, both screens read
-as the reference git graph, and share == on-screen state.
+Every git operation visible in the graph maps to a real 命理 action, both screens
+read as the reference git graph, and share == on-screen state.
 
 ## 5. Broader deferred backlog (infra-blocked, separate from this epic)
 - Kindred timeline **local push** wiring — needs `expo-notifications` (EAS/native;
