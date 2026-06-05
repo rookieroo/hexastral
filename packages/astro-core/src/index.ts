@@ -287,7 +287,10 @@ export {
 } from './lunar'
 // Period signals — per-period 命理 forces (用神/忌神/六冲/桃花) for timeline 印证 + make-if grounding
 export {
+  type FavoredMove,
+  favoredMove,
   type LifeEventCategory,
+  type MoveArchetype,
   type PeriodInput,
   type PeriodSignals,
   periodSignals,

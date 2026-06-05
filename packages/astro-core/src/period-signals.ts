@@ -133,3 +133,39 @@ export function retrodictionMatch(
   const matched = CATEGORY_SIGNALS[category].filter((k) => active[k])
   return { matched, hasMatch: matched.length > 0 }
 }
+
+// ── Favored move (Make-If decision timing) ───────────────────────────────────
+
+/**
+ * What KIND of move the current period's timing favors — the deterministic
+ * backbone of the make-if decision verdict. For a real decision "now", every
+ * option shares the same timing, so the chart can't rank options; it can say
+ * what the window favors, and the LLM maps the user's options onto that.
+ *
+ *   - hold    — 忌神当道 / 冲太岁: a defensive window; steady beats bold.
+ *   - move    — 驿马动: relocation / travel / changing environment.
+ *   - connect — 桃花: relationship / partnership moves.
+ *   - expand  — 用神当令 (and no defensive signal): proactive / outward moves.
+ */
+export type MoveArchetype = 'hold' | 'move' | 'connect' | 'expand'
+
+export interface FavoredMove {
+  primary: MoveArchetype
+  /** The signals driving the call (for localized phrasing). */
+  reasons: SignalKey[]
+}
+
+export function favoredMove(signals: RetrodictionSignals): FavoredMove {
+  // Defensive signals win: a clashing / 忌神 window says "hold" regardless of else.
+  if (signals.clashesBenming || signals.harmsElement === true) {
+    const reasons: SignalKey[] = []
+    if (signals.clashesBenming) reasons.push('clash')
+    if (signals.harmsElement === true) reasons.push('unfavorable')
+    return { primary: 'hold', reasons }
+  }
+  if (signals.yima) return { primary: 'move', reasons: ['yima'] }
+  if (signals.taohua) return { primary: 'connect', reasons: ['taohua'] }
+  if (signals.favorsElement === true) return { primary: 'expand', reasons: ['favorable'] }
+  // Neutral window — nothing pulling strongly; steady is the safe default.
+  return { primary: 'hold', reasons: [] }
+}

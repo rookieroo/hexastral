@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { PersonalAlmanacSubject } from '../almanac'
-import { periodSignals, retrodictionMatch } from '../period-signals'
+import {
+  favoredMove,
+  periodSignals,
+  type RetrodictionSignals,
+  retrodictionMatch,
+} from '../period-signals'
+
+const SIG = (over: Partial<RetrodictionSignals> = {}): RetrodictionSignals => ({
+  taohua: false,
+  yima: false,
+  favorsElement: false,
+  harmsElement: false,
+  clashesBenming: false,
+  ...over,
+})
 
 // 甲 day master; 用神 水, 忌神 金; 本命支 子 (桃花 → 酉, 六冲 → 午).
 const subject: PersonalAlmanacSubject = {
@@ -73,5 +87,33 @@ describe('retrodictionMatch', () => {
   it('returns no match when no relevant signal is active', () => {
     const s = periodSignals(subject, { element: '木', branch: '卯' }) // neutral, no 桃花/驿马/冲
     expect(retrodictionMatch('relationship', s).hasMatch).toBe(false)
+  })
+})
+
+describe('favoredMove', () => {
+  it('holds on a defensive window (忌神 / 冲), even if other signals are on', () => {
+    expect(favoredMove(SIG({ clashesBenming: true, favorsElement: true })).primary).toBe('hold')
+    expect(favoredMove(SIG({ harmsElement: true, yima: true })).primary).toBe('hold')
+    expect(favoredMove(SIG({ clashesBenming: true, harmsElement: true })).reasons).toEqual([
+      'clash',
+      'unfavorable',
+    ])
+  })
+
+  it('favors move on 驿马, connect on 桃花, expand on 用神 (no defensive signal)', () => {
+    expect(favoredMove(SIG({ yima: true })).primary).toBe('move')
+    expect(favoredMove(SIG({ taohua: true })).primary).toBe('connect')
+    expect(favoredMove(SIG({ favorsElement: true })).primary).toBe('expand')
+  })
+
+  it('ranks move over connect over expand when several are on', () => {
+    expect(favoredMove(SIG({ yima: true, taohua: true, favorsElement: true })).primary).toBe('move')
+    expect(favoredMove(SIG({ taohua: true, favorsElement: true })).primary).toBe('connect')
+  })
+
+  it('holds on a neutral window with no reasons', () => {
+    const r = favoredMove(SIG())
+    expect(r.primary).toBe('hold')
+    expect(r.reasons).toEqual([])
   })
 })
