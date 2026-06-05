@@ -6,6 +6,7 @@
  * The user's OWN birth lives in Settings (lib/birth.ts).
  */
 
+import { calculateHeHun, getFourPillars } from '@zhop/astro-core'
 import {
   CityPicker,
   type CityRecord,
@@ -18,7 +19,7 @@ import {
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -50,6 +51,14 @@ function formatMonthDay(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4)
   if (digits.length <= 2) return digits
   return `${digits.slice(0, 2)}-${digits.slice(2)}`
+}
+
+/** Four pillars from a solar YYYY-MM-DD + 时辰 index (noon when 时辰 unknown). */
+function pillarsFromSolar(solarDate: string, timeIndex: number | null) {
+  const [y, m, d] = solarDate.split('-').map(Number)
+  if (!y || !m || !d) return null
+  const hour = timeIndex != null && timeIndex >= 0 ? timeIndex * 2 : 12
+  return getFourPillars({ year: y, month: m, day: d, hour })
 }
 
 export default function PeopleScreen() {
@@ -104,6 +113,20 @@ export default function PeopleScreen() {
   // gender / birthplace just sharpen it. We only surface the hand-off when those
   // are satisfied so the jump never lands on an empty Kindred draft.
   const kindredReady = canAdd && /^\d{4}$/.test(birthYear) && calendar === 'solar'
+  // Deterministic 合盘 taste (astro-core, no LLM) — a real score + grade the user
+  // sees BEFORE the Kindred hand-off. The full LLM reading (chapters/ahaHook/chat)
+  // is Kindred's. Computed client-side from self + the freshly-entered 亲友 birth.
+  const synastryTaste = useMemo(() => {
+    if (!kindredReady || !selfInfo?.solarDate) return null
+    const selfP = pillarsFromSolar(selfInfo.solarDate, selfInfo.timeIndex ?? null)
+    const otherP = pillarsFromSolar(`${birthYear}-${monthDay}`, timeIndex)
+    if (!selfP || !otherP) return null
+    try {
+      return calculateHeHun(selfP, otherP)
+    } catch {
+      return null
+    }
+  }, [kindredReady, selfInfo, birthYear, monthDay, timeIndex])
   const openKindred = () => {
     confirmAndOpenKindred(
       {
@@ -410,24 +433,57 @@ export default function PeopleScreen() {
                     {t.kindredComposeLunarNote}
                   </Text>
                 ) : kindredReady ? (
-                  <Pressable
-                    onPress={openKindred}
-                    accessibilityRole='button'
-                    accessibilityLabel={t.kindredComposeCta}
-                    style={({ pressed }) => ({
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      borderWidth: 0.5,
-                      borderColor: colors.accent,
-                      backgroundColor: colors.accentGhost,
-                      alignItems: 'center',
-                      opacity: pressed ? 0.6 : 1,
-                    })}
-                  >
-                    <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
-                      {t.kindredComposeCta}
-                    </Text>
-                  </Pressable>
+                  <>
+                    {/* Partial 合盘 taste — a real deterministic score before the
+                        hand-off; the full reading is in Kindred. */}
+                    {synastryTaste ? (
+                      <View
+                        style={{
+                          borderRadius: 12,
+                          borderWidth: 0.5,
+                          borderColor: colors.separator,
+                          backgroundColor: colors.card,
+                          padding: spacing.md,
+                          gap: 4,
+                        }}
+                      >
+                        <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
+                          {t.people.synastryScore}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                          <Text style={{ color: colors.accent, fontSize: 28, fontWeight: '700' }}>
+                            {synastryTaste.score}
+                          </Text>
+                          <Text style={{ color: colors.text, fontSize: 14 }}>
+                            {synastryTaste.gradeLabel}
+                          </Text>
+                        </View>
+                        {synastryTaste.highlights[0] ? (
+                          <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                            {synastryTaste.highlights[0]}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                    <Pressable
+                      onPress={openKindred}
+                      accessibilityRole='button'
+                      accessibilityLabel={t.kindredComposeCta}
+                      style={({ pressed }) => ({
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        borderWidth: 0.5,
+                        borderColor: colors.accent,
+                        backgroundColor: colors.accentGhost,
+                        alignItems: 'center',
+                        opacity: pressed ? 0.6 : 1,
+                      })}
+                    >
+                      <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                        {t.kindredComposeCta}
+                      </Text>
+                    </Pressable>
+                  </>
                 ) : null}
               </View>
             ) : null}
