@@ -759,6 +759,7 @@ bondRoutes.get('/invite/:token/teaser', async (c) => {
             archetypeName: pairReadings.archetypeName,
             archetypeTagline: pairReadings.archetypeTagline,
             compatibilityData: pairReadings.compatibilityData,
+            interpretation: pairReadings.interpretation,
           })
           .from(pairReadings)
           .where(eq(pairReadings.id, bond.hehunReadingId))
@@ -792,9 +793,21 @@ bondRoutes.get('/invite/:token/teaser', async (c) => {
     goldenLines.push(reading.archetypeName)
   }
 
+  // The ahaHook is the single most striking line — lead the teaser with it.
+  let ahaHook: string | undefined
+  if (reading?.interpretation) {
+    try {
+      const parsed = JSON.parse(reading.interpretation) as { ahaHook?: unknown }
+      if (typeof parsed.ahaHook === 'string' && parsed.ahaHook) ahaHook = parsed.ahaHook
+    } catch {
+      // ignore — teaser still works without it
+    }
+  }
+
   return jsonOk(c, {
     selfName: inviter?.name ?? 'Someone',
     otherName: bond.targetName,
+    ahaHook,
     goldenLines: goldenLines.slice(0, 3),
     score: reading?.score ?? undefined,
   })
@@ -1682,6 +1695,7 @@ bondRoutes.get('/:id', async (c) => {
           .select({
             expiresAt: bondInvitations.expiresAt,
             targetEmail: bondInvitations.targetEmail,
+            token: bondInvitations.token,
           })
           .from(bondInvitations)
           .where(eq(bondInvitations.id, bond.invitationId))
@@ -1718,7 +1732,12 @@ bondRoutes.get('/:id', async (c) => {
     hookDimension: reading?.hookDimension ?? null,
     targetUser: targetUser ?? null,
     invitation: invitation
-      ? { expiresAt: invitation.expiresAt, targetEmail: invitation.targetEmail }
+      ? {
+          expiresAt: invitation.expiresAt,
+          targetEmail: invitation.targetEmail,
+          // Re-shareable invite link for the unlock wall's invite CTA (T2).
+          resonateUrl: `https://hexastral.com/resonate/${invitation.token}`,
+        }
       : null,
     dimensions: dimensionData,
     interpretation,

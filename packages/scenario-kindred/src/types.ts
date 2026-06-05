@@ -91,7 +91,7 @@ export interface BondData {
   unlockedDimensions: string | null
   sharedByOwner: boolean
   targetUser: { name: string | null; avatarKey: string | null } | null
-  invitation: { expiresAt: string; targetEmail: string } | null
+  invitation: { expiresAt: string; targetEmail: string; resonateUrl?: string } | null
   relationshipStage: RelationshipStage | null
   todaySynastry: DailySynastry | null
 }

@@ -427,7 +427,7 @@ function buildSynastryChaptersPrompt(result: HeHunFullResult, input: HeHunInput)
   const ym = `${now.getFullYear()}年${now.getMonth() + 1}月`
   const chapterList = SYNASTRY_CHAPTER_SPECS.map(
     (s, i) =>
-      `${i + 1}. kind="${s.kind}"（${s.label}）—— ${s.kind === 'monthly_outlook' ? `${s.focus}（当前为 ${ym}）` : s.focus}`
+      `${i + 1}. kind="${s.kind}"（${s.label}）—— ${s.kind === 'monthly_outlook' ? `${s.focus}（季节参考：${ym}；正文用"接下来这几周/这个月"等相对表述，不要写死具体公历年月——报告会被缓存，写死会随时间失效）` : s.focus}`
   ).join('\n')
 
   return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写一份「六章深度合盘」正文，并提炼一句最抓人的破冰断言。
@@ -495,6 +495,18 @@ export async function generateSynastryChapters(
     locale: language,
   })
 
+  return parseSynastryChaptersResponse(text)
+}
+
+/**
+ * Parse + validate the model's chapters JSON into a SynastryChaptersResult.
+ *
+ * Pure (no env / LLM) so it's unit-testable. Re-assembles chapters in canonical
+ * order, drops unknown kinds and body-less chapters, and throws on unrecoverable
+ * output (no JSON, or zero valid chapters) so the caller can fall back to a
+ * chapter-less report instead of surfacing garbage.
+ */
+export function parseSynastryChaptersResponse(text: string): SynastryChaptersResult {
   try {
     const jsonStr = extractJson(text)
     if (!jsonStr) throw new Error('No JSON found')

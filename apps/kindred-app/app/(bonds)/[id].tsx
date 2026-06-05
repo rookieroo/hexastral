@@ -40,10 +40,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { emitUnlockFunnel } from '@/lib/analytics'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
@@ -67,11 +68,20 @@ export default function BondDetailScreen() {
     })
   }, [])
 
+  // Funnel: the wall is shown when this bond still has locked chapters.
+  const lockedCount = detail?.interpretation?.lockedChapters?.length ?? 0
+  useEffect(() => {
+    if (id && lockedCount > 0) {
+      emitUnlockFunnel({ step: 'wall_view', bond_id: id, locked: lockedCount })
+    }
+  }, [id, lockedCount])
+
   // Buy → apply to this bond. RevenueCat records the purchase via webhook, so we
   // retry the server apply a few times to absorb webhook lag.
   const handlePurchaseUnlock = async () => {
     if (unlocking) return
     setUnlocking(true)
+    emitUnlockFunnel({ step: 'buy_tap', bond_id: id })
     try {
       const result = await purchaseKindredSingle('compatibility')
       if (result === 'cancelled') return
@@ -81,7 +91,10 @@ export default function BondDetailScreen() {
       }
       for (let attempt = 0; attempt < 3; attempt++) {
         const outcome = await unlockBond()
-        if (outcome === 'unlocked') return
+        if (outcome === 'unlocked') {
+          emitUnlockFunnel({ step: 'unlock_success', bond_id: id, via: 'single_purchase' })
+          return
+        }
         if (outcome === 'error') {
           Alert.alert(t('unlock.failed'))
           return
@@ -291,11 +304,30 @@ export default function BondDetailScreen() {
             ),
             subscribeCta: t('unlock.subscribe'),
           }}
-          onInvite={() => router.push('/(onboarding)/invite')}
+          onInvite={() => {
+            emitUnlockFunnel({ step: 'invite_tap', bond_id: detail.id })
+            // T2: share THIS bond's resonate link (partner name + ahaHook as the
+            // hook) when it exists; the partner joining flips the unlock. Fall
+            // back to the generic invite flow if there's no pending invitation.
+            const url = detail.invitation?.resonateUrl
+            if (url) {
+              const message = [
+                t('unlock.inviteShareLead').replace('{name}', detail.targetName),
+                detail.interpretation?.ahaHook ?? '',
+                url,
+              ]
+                .filter(Boolean)
+                .join('\n')
+              void Share.share({ message })
+            } else {
+              router.push('/(onboarding)/invite')
+            }
+          }}
           onPurchase={() => void handlePurchaseUnlock()}
-          onSubscribe={() =>
+          onSubscribe={() => {
+            emitUnlockFunnel({ step: 'subscribe_tap', bond_id: detail.id })
             router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
-          }
+          }}
         />
       ) : null
 
