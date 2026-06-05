@@ -44,6 +44,7 @@ import { logEvent } from '../lib/event-log'
 import { sendPushEvent } from '../lib/push'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
+import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
 import { solarDateSchema } from '../lib/validation'
 import { getBondInviteCreditStatus } from '../services/quota'
 import { resolveLlmGuardSubject } from '../services/shared/llm-guard'
@@ -1681,6 +1682,25 @@ bondRoutes.get('/:id', async (c) => {
           .where(eq(bondInvitations.id, bond.invitationId))
           .get()
       : null
+
+  // Gate the six synastry chapters before they leave the server: free viewers
+  // get the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest. Locked
+  // BODIES never ship. Subscribers / invite-or-purchase-unlocked users see all.
+  if (interpretation && Array.isArray(interpretation.chapters)) {
+    const [isSubscriber, viewer] = await Promise.all([
+      userHasCapability(db, userId, 'kindred'),
+      db
+        .select({ unlockedChapterCount: users.unlockedChapterCount })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get(),
+    ])
+    const unlockedCount = resolveUnlockedChapterCount({
+      isSubscriber,
+      unlockedChapterCount: viewer?.unlockedChapterCount ?? null,
+    })
+    interpretation = gateInterpretationChapters(interpretation, unlockedCount)
+  }
 
   return jsonOk(c, {
     ...bond,

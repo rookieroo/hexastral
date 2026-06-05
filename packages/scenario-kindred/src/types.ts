@@ -120,8 +120,14 @@ export interface PairInterpretation {
   branches?: string
   highlights?: string
   advice?: string
-  /** Optional per-chapter content for v2 reports */
+  /** Optional per-chapter content for v2 reports (unlocked chapters only). */
   chapters?: SynastryChapter[]
+  /** Locked chapters as teasers (no body) — present when not all are unlocked. */
+  lockedChapters?: LockedSynastryChapter[]
+  /** Total chapters in the full report, for "N / total" framing. */
+  totalChapters?: number
+  /** The aha-hook assertion — shown on the unlock wall to drive conversion + invite. */
+  ahaHook?: string
   [key: string]: unknown
 }
 
@@ -233,6 +239,15 @@ export interface SynastryChapter {
   body: string
   /** Optional visual data for the chapter (e.g., radar chart data) */
   visualData?: unknown
+}
+
+/** A locked chapter as sent to the client — teaser only, never a body. */
+export interface LockedSynastryChapter {
+  kind: ChapterKind
+  title: string
+  /** The screenshot-bait line, shown blurred/locked on the unlock wall. */
+  goldenLine: string
+  locked: true
 }
 
 /**
