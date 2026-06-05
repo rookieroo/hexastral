@@ -185,18 +185,9 @@ export function WatchSettings() {
                 <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
                   {tpl.label}
                 </Text>
-                {tpl.pro ? (
-                  <Text
-                    style={{
-                      color: colors.accent,
-                      fontSize: 9,
-                      fontWeight: '700',
-                      letterSpacing: 1,
-                    }}
-                  >
-                    PRO
-                  </Text>
-                ) : null}
+                {/* No per-template PRO badge: the whole section is 即将推出, so
+                    these aren't sellable yet. The TEMPLATE_OPTIONS.pro data stays
+                    for when the watch app ships and they become a paid tier. */}
               </Pressable>
             )
           })}
