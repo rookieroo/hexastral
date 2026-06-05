@@ -162,3 +162,43 @@ export async function restoreKindredPurchases(): Promise<boolean> {
     return false
   }
 }
+
+// ── Single purchases (non-subscription) ──────────────────────────────────────
+// One-time unlocks. The purchase is recorded server-side by the RevenueCat
+// webhook (single_purchases row); the caller then applies it to a bond via
+// POST /bonds/:id/unlock. We don't read entitlements here — success = the
+// store call resolved without throwing.
+
+export const KINDRED_SINGLE_PRODUCT_IDS = {
+  /** Full six-chapter synastry report for one bond ($6.99). */
+  compatibility: 'hexastral_compatibility',
+} as const
+
+export type KindredSingleSku = keyof typeof KINDRED_SINGLE_PRODUCT_IDS
+
+/** Localized store price for a single product, or null if unavailable (caller falls back). */
+export async function getKindredSinglePrice(sku: KindredSingleSku): Promise<string | null> {
+  const p = loadPurchases()
+  if (!p || !initialized) return null
+  try {
+    const products = await p.getProducts([KINDRED_SINGLE_PRODUCT_IDS[sku]])
+    return products[0]?.priceString ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function purchaseKindredSingle(sku: KindredSingleSku): Promise<KindredPurchaseResult> {
+  const p = loadPurchases()
+  if (!p || !initialized) return 'unavailable'
+  try {
+    await p.purchaseProduct(KINDRED_SINGLE_PRODUCT_IDS[sku])
+    return 'success'
+  } catch (err) {
+    const code = (err as { code?: string; userCancelled?: boolean }).code
+    if (code === 'PURCHASE_CANCELLED' || (err as { userCancelled?: boolean }).userCancelled) {
+      return 'cancelled'
+    }
+    return 'failed'
+  }
+}

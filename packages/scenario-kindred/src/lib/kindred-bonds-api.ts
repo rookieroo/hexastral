@@ -33,6 +33,10 @@ export type KindredBondsRpc = {
     share: {
       $post: (opts: { param: { id: string } }) => Promise<Response>
     }
+    /** Buy-to-unlock the full six-chapter report for this one bond. */
+    unlock: {
+      $post: (opts: { param: { id: string } }) => Promise<Response>
+    }
   }
   // Bonds timeline (BT.3/BT.4, ADR-0014). Registered before `/:id` server-side
   // so the static path wins; typed here for Kindred hooks.

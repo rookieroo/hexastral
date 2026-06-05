@@ -24,6 +24,13 @@ export interface UseSynastryReportResult {
   refetch: () => Promise<void>
   /** Convenience accessor: returns chapters if interpretation includes them */
   chapters: SynastryChapter[] | null
+  /**
+   * Apply a single purchase to unlock all chapters for this bond. Call AFTER the
+   * IAP completes. Returns `'unlocked'` (and refetches), `'needs_purchase'` when
+   * the server has no purchase to apply yet (webhook lag / not bought), or
+   * `'error'`.
+   */
+  unlockBond: () => Promise<'unlocked' | 'needs_purchase' | 'error'>
 }
 
 export function useSynastryReport(bondId: string | null): UseSynastryReportResult {
@@ -57,6 +64,20 @@ export function useSynastryReport(bondId: string | null): UseSynastryReportResul
     }
   }, [bondId, client, onError])
 
+  const unlockBond = useCallback(async (): Promise<'unlocked' | 'needs_purchase' | 'error'> => {
+    if (!bondId) return 'error'
+    try {
+      const res = await kindredBonds(client)[':id'].unlock.$post({ param: { id: bondId } })
+      if (res.status === 402) return 'needs_purchase'
+      if (!res.ok) return 'error'
+      await refetch()
+      return 'unlocked'
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error(String(err)))
+      return 'error'
+    }
+  }, [bondId, client, refetch, onError])
+
   useEffect(() => {
     if (!bondId) {
       setDetail(null)
@@ -73,6 +94,7 @@ export function useSynastryReport(bondId: string | null): UseSynastryReportResul
     error,
     refetch,
     chapters: extractChapters(detail?.interpretation),
+    unlockBond,
   }
 }
 

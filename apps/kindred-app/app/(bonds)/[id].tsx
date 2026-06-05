@@ -30,6 +30,7 @@ import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import {
   type BondStatus,
   ChapterPager,
+  ChapterUnlockWall,
   CompatibilityScore,
   ShareableChapterCard,
   useShareBond,
@@ -39,23 +40,60 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
+import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 
 export default function BondDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const { detail, isLoading, isGenerating, error, refetch, chapters } = useSynastryReport(
-    id ?? null
-  )
+  const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
+    useSynastryReport(id ?? null)
   const [chapterIndex, setChapterIndex] = useState<number>(0)
   const { createShareUrl } = useShareBond()
   const { t } = useI18n()
+
+  // One-time-unlock price (store-localized; falls back to the server's $6.99).
+  const [unlockPrice, setUnlockPrice] = useState<string>('$6.99')
+  const [unlocking, setUnlocking] = useState(false)
+  useEffect(() => {
+    void getKindredSinglePrice('compatibility').then((p) => {
+      if (p) setUnlockPrice(p)
+    })
+  }, [])
+
+  // Buy → apply to this bond. RevenueCat records the purchase via webhook, so we
+  // retry the server apply a few times to absorb webhook lag.
+  const handlePurchaseUnlock = async () => {
+    if (unlocking) return
+    setUnlocking(true)
+    try {
+      const result = await purchaseKindredSingle('compatibility')
+      if (result === 'cancelled') return
+      if (result !== 'success') {
+        Alert.alert(t('unlock.failed'))
+        return
+      }
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const outcome = await unlockBond()
+        if (outcome === 'unlocked') return
+        if (outcome === 'error') {
+          Alert.alert(t('unlock.failed'))
+          return
+        }
+        // needs_purchase → webhook not landed yet; wait and retry.
+        await new Promise((r) => setTimeout(r, 1500))
+      }
+      Alert.alert(t('unlock.pending'))
+    } finally {
+      setUnlocking(false)
+    }
+  }
 
   // Auspice port — only when THIS device entered TA's birth (fill bond). The
   // server never returns a partner's raw birth (privacy D2), so we read the
@@ -236,6 +274,31 @@ export default function BondDetailScreen() {
   // Chapter-based report (v2): horizontal pager. No entry animation — straight
   // to the report under a basic-info header (2026-06: "点进去不用做动画").
   if (chapters && chapters.length > 0) {
+    // Unlock wall — trailing pager page shown only when chapters remain locked.
+    const lockedChapters = detail.interpretation?.lockedChapters ?? []
+    const unlockWall =
+      lockedChapters.length > 0 ? (
+        <ChapterUnlockWall
+          ahaHook={detail.interpretation?.ahaHook}
+          lockedChapters={lockedChapters}
+          labels={{
+            heading: t('unlock.heading').replace('{n}', String(lockedChapters.length)),
+            inviteCta: t('unlock.invite'),
+            inviteHint: t('unlock.inviteHint'),
+            purchaseCta: (unlocking ? t('unlock.processing') : t('unlock.purchase')).replace(
+              '{price}',
+              unlockPrice
+            ),
+            subscribeCta: t('unlock.subscribe'),
+          }}
+          onInvite={() => router.push('/(onboarding)/invite')}
+          onPurchase={() => void handlePurchaseUnlock()}
+          onSubscribe={() =>
+            router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
+          }
+        />
+      ) : null
+
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <View
@@ -300,6 +363,7 @@ export default function BondDetailScreen() {
           currentIndex={chapterIndex}
           onIndexChange={setChapterIndex}
           onShareChapter={(idx) => void handleShareChapter(idx)}
+          trailing={unlockWall}
         />
 
         {/* Off-screen capture target — positioned far outside viewport but mounted. */}
