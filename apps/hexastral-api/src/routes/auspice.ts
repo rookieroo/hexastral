@@ -493,22 +493,28 @@ const ALMANAC_EDGE_TTL = 600
 
 async function edgeCachedJson(c: Context<AppEnv>, build: () => unknown): Promise<Response> {
   const wantsFresh = (c.req.header('cache-control') ?? '').includes('no-cache')
+  const jsonResponse = () =>
+    new Response(JSON.stringify(ok(build())), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json; charset=UTF-8',
+        'cache-control': `public, max-age=${ALMANAC_EDGE_TTL}`,
+      },
+    })
   // `caches.default` is a Workers-only extension (not in the standard CacheStorage
   // lib) — cast so this file also typechecks when pulled into a non-Workers tsconfig
   // (hexastral-web imports an API type, dragging this module into its type graph).
-  const cache = (caches as unknown as { default: Cache }).default
+  // It's also absent in unit tests / non-Workers runtimes; the cache is a perf
+  // optimization, not correctness, so skip it (and just compute) when unavailable.
+  const cache =
+    typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null
+  if (!cache) return jsonResponse()
   const cacheKey = new Request(new URL(c.req.url).toString(), { method: 'GET' })
   if (!wantsFresh) {
     const hit = await cache.match(cacheKey)
     if (hit) return hit
   }
-  const res = new Response(JSON.stringify(ok(build())), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json; charset=UTF-8',
-      'cache-control': `public, max-age=${ALMANAC_EDGE_TTL}`,
-    },
-  })
+  const res = jsonResponse()
   if (!wantsFresh) c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()))
   return res
 }
