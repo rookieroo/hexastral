@@ -29,4 +29,16 @@ export * from './components'
 export type { KindredClientConfig, KindredClientProviderProps } from './context'
 export { KindredClientProvider, useKindredClient } from './context'
 export * from './hooks'
+export {
+  formatLeadLabel,
+  formatNodeKind,
+  formatNodeSummary,
+  type KindredLocale,
+} from './lib/timeline-format'
+export {
+  type BuildTimelineNotificationPlanOptions,
+  buildTimelineNotificationPlan,
+  TIMELINE_NOTIFY_ID_PREFIX,
+  type TimelineNotificationPlanItem,
+} from './lib/timeline-notify'
 export * from './types'
