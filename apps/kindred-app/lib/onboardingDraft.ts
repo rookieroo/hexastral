@@ -43,6 +43,10 @@ export interface OnboardingDraft {
   // Both modes
   relationshipLabel: string
   message: string
+  /** True when this draft was seeded by a cross-app compose hand-off (e.g.
+   *  Auspice → Kindred). The solo-create call forwards it so the bond skips
+   *  the compatibility paywall and lands on the free-chapters + unlock wall. */
+  fromHandoff: boolean
 }
 
 const EMPTY: OnboardingDraft = {
@@ -66,6 +70,7 @@ const EMPTY: OnboardingDraft = {
   otherGender: null,
   relationshipLabel: '',
   message: '',
+  fromHandoff: false,
 }
 
 const subscribers = new Set<(d: OnboardingDraft) => void>()

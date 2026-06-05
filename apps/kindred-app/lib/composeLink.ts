@@ -108,6 +108,11 @@ export function parseComposeUrl(url: string): Partial<OnboardingDraft> | null {
   const rel = parseStr(q.rel)
   if (rel) patch.relationshipLabel = rel
 
+  // A compose link is always a cross-app hand-off — mark it so the eventual
+  // solo-create skips the compatibility paywall (full report still gated by
+  // the free-chapters unlock wall server-side).
+  if (Object.keys(patch).length) patch.fromHandoff = true
+
   return Object.keys(patch).length ? patch : null
 }
 

@@ -139,6 +139,9 @@ export interface SoloCreateInput {
   relationshipLabel: string
   targetBirth: PersonBirth
   language?: string
+  /** Cross-app hand-off from Auspice — skips the compatibility paywall; the bond
+   *  lands on the free 3 chapters + unlock wall (server gates the full report). */
+  fromHandoff?: boolean
 }
 
 /** Response from POST /api/bonds/solo. */

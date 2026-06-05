@@ -79,6 +79,7 @@ export default function RevealScreen() {
           city: draft.otherBirthCity || undefined,
         },
         language: localeToBackendLang(locale),
+        fromHandoff: draft.fromHandoff,
       })
       setBondId(result.bondId)
       // This device entered TA's birth (fill mode) — keep a local copy so the
