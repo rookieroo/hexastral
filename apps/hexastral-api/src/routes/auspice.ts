@@ -30,11 +30,11 @@ import {
   STEM_WUXING,
   solarToLunar,
 } from '@zhop/astro-core'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { birthdayReminders, makeifForks } from '../db/schema'
+import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
@@ -1775,4 +1775,181 @@ auspiceRoutes.delete('/birthdays/:id', async (c) => {
     .delete(birthdayReminders)
     .where(and(eq(birthdayReminders.owner, `device:${deviceId}`), eq(birthdayReminders.id, id)))
   return jsonOk(c, { deleted: true })
+})
+
+// ── 真实服务端推送 (Auspice remote push) — register + render + cron targets ─────
+//
+// Reliability fix: local notifications dry up if the app isn't opened within the
+// rolling window. A registered device gets REAL server push (svc-notify cron →
+// Expo). The body is rendered HERE from the deterministic `buildDay` (干支/宜忌 +
+// the 吉平凶 verdict from the birth profile); the LLM 对你而言 stays app-only. The
+// app registers on open with its birth profile + slot prefs, and DEFERS its local
+// daily once registered so a device runs server OR local, never both.
+
+/** Push body labels — small fixed set localized; 宜忌 verbs stay CJK in v1 (the
+ *  in-app local path localizes them; sharing the verb vocab server-side is a
+ *  follow-up). zh-first product, so this reads natively for the core audience. */
+const PUSH_LABELS: Record<
+  string,
+  { yi: string; ji: string; forYou: string; daySuffix: string; tomorrow: string; fit: Record<string, string> }
+> = {
+  'zh-Hans': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日预告', fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' } },
+  'zh-Hant': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日預告', fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' } },
+  ja: { yi: '吉', ji: '凶', forYou: 'あなた', daySuffix: '日', tomorrow: '明日の予報', fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' } },
+  en: { yi: 'Good', ji: 'Avoid', forYou: 'You', daySuffix: '', tomorrow: 'Tomorrow', fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' } },
+}
+
+function pushLabels(locale: string) {
+  if (locale.startsWith('zh-Hant')) return PUSH_LABELS['zh-Hant']
+  if (locale.startsWith('zh')) return PUSH_LABELS['zh-Hans']
+  if (locale.startsWith('ja')) return PUSH_LABELS.ja
+  return PUSH_LABELS.en
+}
+
+interface AuspicePushSubRow {
+  deviceId: string
+  token: string
+  locale: string
+  birthDate: string | null
+  isPro: boolean
+}
+
+/** Render a deterministic push for one subscriber + date (morning = that day,
+ *  evening = a preview of `dateYmd` which the cron already advanced to tomorrow). */
+function renderAuspicePush(
+  slot: 'morning' | 'evening',
+  dateYmd: Ymd,
+  sub: AuspicePushSubRow
+): { title: string; body: string; data: Record<string, string> } {
+  const L = pushLabels(sub.locale)
+  const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
+  const { day, personalization } = buildDay(dateYmd, subject)
+  const dateStr = fmtUtc(ymdToDate(dateYmd))
+  const yi = day.goodFor.slice(0, 3).join('、') || '—'
+  const ji = day.avoid.slice(0, 3).join('、') || '—'
+  let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
+  if (sub.isPro && personalization) body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
+  const title =
+    slot === 'evening' ? `${L.tomorrow} · ${dateStr}` : `${dateStr} · ${day.ganZhi}${L.daySuffix}`
+  return {
+    title,
+    body,
+    data: { type: slot === 'evening' ? 'auspice_evening' : 'auspice_daily', day: dateStr },
+  }
+}
+
+const pushRegisterSchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  token: z.string().min(1).max(256),
+  platform: z.enum(['ios', 'android']).default('ios'),
+  timezoneId: z.string().min(1).max(64),
+  locale: z.string().max(16).default('zh'),
+  birthDate: z.string().regex(DATE_RE).optional(),
+  birthHour: z.number().int().min(-1).max(23).optional(),
+  gender: z.enum(['M', 'F']).optional(),
+  dailyMorning: z.boolean().default(true),
+  dailyEvening: z.boolean().default(true),
+  isPro: z.boolean().default(false),
+})
+
+auspiceRoutes.post('/push/register', async (c) => {
+  const b = pushRegisterSchema.parse(await c.req.json())
+  if (!/^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/.test(b.token)) {
+    throw new HTTPException(400, { message: 'invalid Expo push token' })
+  }
+  const now = new Date().toISOString()
+  await c
+    .get('db')
+    .insert(auspicePushSubs)
+    .values({
+      deviceId: b.deviceId,
+      token: b.token,
+      platform: b.platform,
+      timezoneId: b.timezoneId,
+      locale: b.locale,
+      birthDate: b.birthDate ?? null,
+      birthHour: b.birthHour ?? null,
+      gender: b.gender ?? null,
+      dailyMorning: b.dailyMorning,
+      dailyEvening: b.dailyEvening,
+      isPro: b.isPro,
+      lastActiveAt: now,
+      createdAt: now,
+    })
+    .onConflictDoUpdate({
+      target: auspicePushSubs.deviceId,
+      set: {
+        token: b.token,
+        platform: b.platform,
+        timezoneId: b.timezoneId,
+        locale: b.locale,
+        birthDate: b.birthDate ?? null,
+        birthHour: b.birthHour ?? null,
+        gender: b.gender ?? null,
+        dailyMorning: b.dailyMorning,
+        dailyEvening: b.dailyEvening,
+        isPro: b.isPro,
+        lastActiveAt: now,
+      },
+    })
+  return jsonOk(c, { registered: true })
+})
+
+auspiceRoutes.delete('/push/register', async (c) => {
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  await c.get('db').delete(auspicePushSubs).where(eq(auspicePushSubs.deviceId, deviceId))
+  return jsonOk(c, { unregistered: true })
+})
+
+// Internal: svc-notify cron pulls rendered messages per timezone + slot. The cron
+// passes the LOCAL date already (morning = today, evening = tomorrow-preview).
+auspiceRoutes.get('/push/targets', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const slot = c.req.query('slot') === 'evening' ? 'evening' : 'morning'
+  const timezoneId = c.req.query('timezoneId')
+  const date = c.req.query('date')
+  if (!timezoneId || !date || !DATE_RE.test(date)) {
+    throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
+  }
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
+  const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
+  const slotEnabled = slot === 'evening' ? auspicePushSubs.dailyEvening : auspicePushSubs.dailyMorning
+
+  const rows = await c
+    .get('db')
+    .select({
+      deviceId: auspicePushSubs.deviceId,
+      token: auspicePushSubs.token,
+      locale: auspicePushSubs.locale,
+      birthDate: auspicePushSubs.birthDate,
+      isPro: auspicePushSubs.isPro,
+    })
+    .from(auspicePushSubs)
+    .where(and(eq(auspicePushSubs.timezoneId, timezoneId), eq(slotEnabled, true)))
+    .limit(limit + 1)
+    .offset(offset)
+
+  const hasMore = rows.length > limit
+  const page = hasMore ? rows.slice(0, limit) : rows
+  const ymd = parseYmd(date)
+  const messages = page.map((sub) => {
+    const { title, body, data } = renderAuspicePush(slot, ymd, sub)
+    return { deviceId: sub.deviceId, token: sub.token, title, body, data }
+  })
+  return jsonOk(c, { messages, nextCursor: hasMore ? String(offset + limit) : null })
+})
+
+// Internal: svc-notify reports Expo DeviceNotRegistered tokens → drop the subs.
+auspiceRoutes.post('/push/unregister-stale', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const body = await c.req.json<{ tokens?: unknown }>().catch(() => ({ tokens: [] }))
+  const tokens = (Array.isArray(body.tokens) ? body.tokens : [])
+    .filter((t): t is string => typeof t === 'string')
+    .slice(0, 100)
+  if (tokens.length === 0) return jsonOk(c, { deleted: 0 })
+  await c.get('db').delete(auspicePushSubs).where(inArray(auspicePushSubs.token, tokens))
+  return jsonOk(c, { deleted: tokens.length })
 })

@@ -310,6 +310,46 @@ async function sendExpoPush(tokens: string[], payload: ExpoPushPayload): Promise
   return { tickets, invalidTokens }
 }
 
+/** Like sendExpoPush but each message carries its OWN title/body/data (Auspice
+ *  pushes are personalized per device — same-payload batching doesn't fit). */
+interface ExpoMessage {
+  to: string
+  title?: string
+  body: string
+  data?: Record<string, string>
+}
+
+async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidTokens: string[] }> {
+  const invalidTokens: string[] = []
+  const chunkSize = 100
+  for (let i = 0; i < messages.length; i += chunkSize) {
+    const chunk = messages.slice(i, i + chunkSize)
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+      },
+      body: JSON.stringify(chunk.map((m) => ({ sound: 'default', ...m }))),
+    })
+    if (!res.ok) {
+      logger.error('Expo push API error (auspice)', { status: String(res.status) })
+      continue
+    }
+    const json = await res.json<{ data: ExpoTicket[] }>()
+    json.data.forEach((item, idx) => {
+      if (item.details?.error === 'DeviceNotRegistered') {
+        const t = chunk[idx]?.to
+        if (t) invalidTokens.push(t)
+      } else if (item.status !== 'ok') {
+        logger.warn('Expo push token issue (auspice)', { message: item.message })
+      }
+    })
+  }
+  return { invalidTokens }
+}
+
 // ============ Daily Fortune Fortune Text ============
 
 /**
@@ -385,8 +425,115 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
   }
 
   // Hourly cron — daily fortune push dispatch (morning + evening slots)
+  // Flagship hexastral-app (per-userId, daily_almanac via queue):
   await runHourlyFortunePush(env, 'morning', 8)
   await runHourlyFortunePush(env, 'evening', 20)
+  // Auspice (per-device, server-rendered almanac, direct send) — the REAL push
+  // that replaces local notifications' rolling-window unreliability:
+  await runAuspicePush(env, 'morning', 8)
+  await runAuspicePush(env, 'evening', 20)
+}
+
+/** Two-digit pad. */
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+/** Local clock hour (0-23) for `tz` at `now`. */
+function tzLocalHour(tz: string, now: Date): number {
+  try {
+    return Number.parseInt(
+      new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(now),
+      10
+    )
+  } catch {
+    return -1
+  }
+}
+
+/** Local calendar date (YYYY-MM-DD) for `tz` at `now`. */
+function tzLocalDate(tz: string, now: Date): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now) // en-CA → YYYY-MM-DD
+  } catch {
+    return now.toISOString().slice(0, 10)
+  }
+}
+
+/** `YYYY-MM-DD` + 1 day (UTC-anchored; date-only, so DST-safe). */
+function nextDateStr(s: string): string {
+  const [y, m, d] = s.split('-').map(Number)
+  const dt = new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1))
+  dt.setUTCDate(dt.getUTCDate() + 1)
+  return `${dt.getUTCFullYear()}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`
+}
+
+/**
+ * Auspice remote-push dispatch: find timezones at `targetHour` local, pull
+ * server-RENDERED messages (hexastral-api computes the deterministic almanac body
+ * per device), and send directly via Expo. Evening previews the NEXT day. Content
+ * is pre-rendered so there's no per-device almanac lookup here — svc-notify is a
+ * dumb sender. (At scale this can move behind a queue; pre-PMF a direct batched
+ * send is simpler and well within cron limits.)
+ */
+async function runAuspicePush(
+  env: Env,
+  slot: 'morning' | 'evening',
+  targetHour: number
+): Promise<void> {
+  const now = new Date()
+  const zones = TIMEZONE_POOL.filter((tz) => tzLocalHour(tz, now) === targetHour)
+  if (zones.length === 0) return
+  logger.info('auspice push check', { slot, targetHour, zones: zones.length })
+
+  const invalidTokens: string[] = []
+  let sent = 0
+
+  for (const tz of zones) {
+    const today = tzLocalDate(tz, now)
+    const date = slot === 'evening' ? nextDateStr(today) : today
+    let cursor: string | null = '0'
+    while (cursor !== null) {
+      const url = new URL('https://internal/api/auspice/push/targets')
+      url.searchParams.set('slot', slot)
+      url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('date', date)
+      url.searchParams.set('limit', '200')
+      url.searchParams.set('cursor', cursor)
+      const res = await env.SVC_API.fetch(url, { headers: { 'X-Internal-Key': env.INTERNAL_KEY } })
+      if (!res.ok) {
+        logger.error('auspice push-targets failed', { tz, status: String(res.status) })
+        break
+      }
+      const json = await res.json<{
+        data: {
+          messages: Array<{ deviceId: string; token: string; title: string; body: string; data: Record<string, string> }>
+          nextCursor: string | null
+        }
+      }>()
+      const msgs = json.data.messages
+      if (msgs.length > 0) {
+        const { invalidTokens: bad } = await sendExpoMessages(
+          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        )
+        invalidTokens.push(...bad)
+        sent += msgs.length - bad.length
+      }
+      cursor = json.data.nextCursor
+    }
+  }
+
+  // Drop DeviceNotRegistered subscribers so the registry stays clean.
+  if (invalidTokens.length > 0) {
+    await env.SVC_API.fetch('https://internal/api/auspice/push/unregister-stale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ tokens: invalidTokens.slice(0, 100) }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
+
+  logger.info('auspice push complete', { slot, sent, invalidTokens: invalidTokens.length })
 }
 
 /**

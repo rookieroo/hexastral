@@ -1268,6 +1268,50 @@ export const birthdayReminders = sqliteTable(
   ]
 )
 
+/**
+ * 真实服务端推送订阅 (Auspice remote-push subscribers).
+ *
+ * Auspice has been LOCAL-only (expo-notifications), which dries up if the app
+ * isn't opened within the rolling window — unreliable for a daily habit. This
+ * table registers a device for REAL server push: svc-notify's hourly cron finds
+ * subscribers whose local time is a dispatch hour and sends an Expo push. The
+ * body is computed server-side from `buildDay` (deterministic — 干支/宜忌 + the
+ * 吉平凶 verdict from the birth profile); the LLM 对你而言 reading stays app-only.
+ *
+ * Anonymous + device-scoped (Auspice has no account): `deviceId` is the identity.
+ * The birth profile is denormalized here so the cron can personalize without a
+ * round-trip. Slot prefs are opt-OUT (default on); they mirror the local toggles
+ * so a device runs EITHER server push (when registered) OR local — never both
+ * (the app defers local daily once a token is registered). Indexed by timezone
+ * for the cron's per-zone fan-out.
+ */
+export const auspicePushSubs = sqliteTable(
+  'auspice_push_subs',
+  {
+    deviceId: text('device_id').primaryKey(),
+    /** Expo push token (ExponentPushToken[...]). */
+    token: text('token').notNull(),
+    platform: text('platform').notNull().default('ios'),
+    timezoneId: text('timezone_id').notNull(),
+    locale: text('locale').notNull().default('zh'),
+    /** Birth profile for the deterministic 对你而言 verdict (optional). */
+    birthDate: text('birth_date'),
+    /** 0-23, -1 = 时辰 unknown, null = no birth set. */
+    birthHour: integer('birth_hour'),
+    gender: text('gender'),
+    /** Slot prefs — opt-out (true = enabled). */
+    dailyMorning: integer('daily_morning', { mode: 'boolean' }).notNull().default(true),
+    dailyEvening: integer('daily_evening', { mode: 'boolean' }).notNull().default(true),
+    /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
+    isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
+    lastActiveAt: text('last_active_at').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index('auspice_push_subs_tz_idx').on(t.timezoneId)]
+)
+
 // ==================== Relations ====================
 
 export const usersRelations = relations(users, ({ many }) => ({

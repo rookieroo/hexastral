@@ -21,6 +21,8 @@ import { upcomingHolidayHeadsUps } from './cn-holidays'
 import { getStrings, type Locale } from './i18n'
 import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
+import { syncAuspiceServerPush, unregisterAuspiceServerPush } from './serverPush'
+import { isServerPushActive } from './serverPushFlag'
 import { localizeYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'auspice.push.enabled'
@@ -172,6 +174,10 @@ function dailyContent(
 /** (Re)schedule the rolling daily window with fresh deterministic content. */
 export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   await cancelDaily()
+  // When the device is registered for SERVER push, the daily (morning + evening)
+  // is delivered remotely and reliably — don't also schedule it locally or the
+  // user gets two of each. Local stays the fallback for unregistered devices.
+  if (await isServerPushActive()) return
   const t = getStrings(opts.locale)
   const now = Date.now()
   // Read entitlement once per reschedule pass. SDK-unconfigured paths (Expo
@@ -242,12 +248,16 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
 export async function enableDailyPush(opts: PushOpts): Promise<boolean> {
   if (!(await requestPushPermission())) return false
   await setEnabledFlag(true)
+  // Prefer real server push (reliable even if the app isn't reopened); if it
+  // registers, scheduleDailyAlmanac no-ops the local window and the server owns it.
+  await syncAuspiceServerPush(opts.locale).catch(() => false)
   await scheduleDailyAlmanac(opts)
   return true
 }
 
 export async function disableDailyPush(): Promise<void> {
   await setEnabledFlag(false)
+  await unregisterAuspiceServerPush().catch(() => {})
   await cancelDaily()
 }
 

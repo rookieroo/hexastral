@@ -34,12 +34,14 @@ import { addPerson, getPeople } from '@/lib/people'
 import {
   addAuspiceNotificationTapListener,
   configureNotifications,
+  isPushEnabled,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
   refreshTimelineReminders,
   scheduleBirthdayReminders,
   scheduleHolidayHeadsUp,
 } from '@/lib/push'
+import { syncAuspiceServerPush } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
 
 function SatelliteGrowthMount() {
@@ -99,12 +101,19 @@ function RootLayoutInner() {
     void (async () => {
       await purgeStaleNotificationsOnce()
       const birthDate = (await getAuspiceBirthDate().catch(() => undefined)) ?? undefined
+      const info = await getAuspiceBirthInfo().catch(() => null)
+      // Real server push: when daily push is on, register this device so the cron
+      // delivers the daily reliably (local notifications dry up if the app isn't
+      // opened). On success `refreshDailyPush` becomes a no-op for the daily slot
+      // (it defers to the server); on failure the local rolling window still runs.
+      if (await isPushEnabled().catch(() => false)) {
+        await syncAuspiceServerPush(locale)
+      }
       await refreshDailyPush({ locale, birthDate })
       const people = await getPeople().catch(() => [])
       await scheduleBirthdayReminders(people, locale)
       await scheduleHolidayHeadsUp(locale)
       // 人生节点提醒 (Pro) — self-clears if disabled / not Pro / no birth gender.
-      const info = await getAuspiceBirthInfo().catch(() => null)
       if (info?.gender) {
         await refreshTimelineReminders({
           locale,

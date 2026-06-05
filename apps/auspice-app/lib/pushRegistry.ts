@@ -50,8 +50,13 @@ export const PUSH_TYPES: readonly PushTypeMeta[] = [
     id: 'daily',
     tier: 'free', // the 对你而言 overlay line is Pro-gated inside the body, not the push
     dataSource: 'daily-fetch',
-    cadence: 'Fetched per day from /api/auspice/day; rescheduled on every app open.',
-    storage: 'A rolling WINDOW_DAYS window of local notifications (morning + evening).',
+    cadence:
+      'SERVER push (svc-notify cron → Expo): the body is rendered server-side from ' +
+      'the deterministic almanac per device. Reliable even if the app stays closed. ' +
+      'Local rolling-window notifications are the FALLBACK when registration fails.',
+    storage:
+      'Server: auspice_push_subs (one row/device, refreshed on open). Local fallback: ' +
+      'a rolling WINDOW_DAYS window (morning + evening), deferred once server-registered.',
     slots: ['morning', 'evening'],
   },
   {
