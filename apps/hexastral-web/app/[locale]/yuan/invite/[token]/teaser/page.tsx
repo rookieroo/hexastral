@@ -24,6 +24,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 interface TeaserData {
   selfName: string
   otherName: string
+  /** The single most striking assertion about the pair — the lead hook. */
+  ahaHook?: string
   /** 3 lines max — pulled from first 3 chapters */
   goldenLines: string[]
   /** Compatibility score 0-100, optional */
@@ -145,6 +147,22 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
         >
           {data.selfName} · {data.otherName}
         </h1>
+
+        {/* Aha hook — the lead pull-quote, the line that makes you want to look. */}
+        {data.ahaHook ? (
+          <p
+            style={{
+              fontSize: 26,
+              lineHeight: 1.45,
+              fontWeight: 400,
+              color: '#7a2418',
+              letterSpacing: -0.4,
+              marginBottom: 48,
+            }}
+          >
+            {data.ahaHook}
+          </p>
+        ) : null}
 
         {/* Golden lines */}
         <div

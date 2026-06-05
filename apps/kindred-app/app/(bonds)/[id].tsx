@@ -40,7 +40,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -306,7 +306,22 @@ export default function BondDetailScreen() {
           }}
           onInvite={() => {
             emitUnlockFunnel({ step: 'invite_tap', bond_id: detail.id })
-            router.push('/(onboarding)/invite')
+            // T2: share THIS bond's resonate link (partner name + ahaHook as the
+            // hook) when it exists; the partner joining flips the unlock. Fall
+            // back to the generic invite flow if there's no pending invitation.
+            const url = detail.invitation?.resonateUrl
+            if (url) {
+              const message = [
+                t('unlock.inviteShareLead').replace('{name}', detail.targetName),
+                detail.interpretation?.ahaHook ?? '',
+                url,
+              ]
+                .filter(Boolean)
+                .join('\n')
+              void Share.share({ message })
+            } else {
+              router.push('/(onboarding)/invite')
+            }
           }}
           onPurchase={() => void handlePurchaseUnlock()}
           onSubscribe={() => {
