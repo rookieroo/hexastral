@@ -80,10 +80,23 @@ function SmallWidget({ model, moonSkinId }: SubProps) {
         </Text>
       </View>
       <View>
-        <Text style={{ color: CREAM, fontSize: 11 }} numberOfLines={1}>
+        {/* Shrink-to-fit rather than ellipsis-truncate — the English prefixes
+            ("Good for"/"Avoid") overflow the narrow small widget where the CJK
+            宜/忌 do not. */}
+        <Text
+          style={{ color: CREAM, fontSize: 11 }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 1)}`}
         </Text>
-        <Text style={{ color: DIM, fontSize: 11 }} numberOfLines={1}>
+        <Text
+          style={{ color: DIM, fontSize: 11 }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 1)}`}
         </Text>
       </View>
@@ -128,7 +141,7 @@ function MediumWidget({ model, moonSkinId }: SubProps) {
             style={{ color: fitColor(model.fit), fontSize: 12, fontWeight: '600' }}
             numberOfLines={1}
           >
-            {`${t.personal.forYou} ${model.fitLabel}`}
+            {`${t.personal.forYou} · ${model.fitLabel}`}
           </Text>
         ) : null}
       </View>
@@ -186,7 +199,7 @@ function LargeWidget({ model, moonSkinId }: SubProps) {
           style={{ color: fitColor(model.fit), fontSize: 13, fontWeight: '600' }}
           numberOfLines={1}
         >
-          {`${t.personal.forYou} ${model.fitLabel}`}
+          {`${t.personal.forYou} · ${model.fitLabel}`}
         </Text>
       ) : null}
     </View>
