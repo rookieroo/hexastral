@@ -200,11 +200,21 @@ export interface Strings {
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
    *  the 用神/忌神 signal that the generic per-grade advice omits. */
   timelinePeriodElement: { favorable: string; unfavorable: string }
+  /** 十神 decade-theme — the life domain a 大运 activates (五类十神 → 领域). */
+  timelineDomain: { 比劫: string; 食伤: string; 财星: string; 官杀: string; 印绶: string }
+  /** 化解 ("支线解法") for a conflict / 忌神 node. {el} = the chart's 用神 五行. */
+  timelineHuajie: string
   /** Make-if decision timing — what KIND of move the current 命局 window favors. */
   makeifTiming: {
     frame: string
     archetypes: { expand: string; hold: string; move: string; connect: string }
   }
+  /** Make-if 命主干 backdrop — the real 大运 十神 a 假如 plays out against ({domain}
+   *  = the 十神 life-domain word). The 命 vs 运 vs 选择 line. */
+  makeifBackdrop: string
+  /** Make-if cherry-pick — carry one good thing from an actionable 假如 into the
+   *  real line. {el} = 用神 五行; {year} = nearest favorable 流年. */
+  makeifCherrypick: string
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -225,6 +235,11 @@ export interface Strings {
       favorable: string
       unfavorable: string
       clash: string
+      /** 神煞 event-flavor chips (Phase 5). */
+      guiren: string
+      wenchang: string
+      jiangxing: string
+      jiesha: string
     }
   }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
@@ -500,6 +515,14 @@ const zhHans: Strings = {
     unfavorable: '{el}行为你的忌神，此运宜稳健、多留意。',
   },
   timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
+  timelineDomain: {
+    比劫: '人际 · 竞合',
+    食伤: '表达 · 创作',
+    财星: '财富 · 务实',
+    官杀: '事业 · 责任',
+    印绶: '学养 · 贵人',
+  },
+  timelineHuajie: '化解：多借{el}行之力，宜静守、纳贵人。',
   makeifTiming: {
     frame: '当前命局时机',
     archetypes: {
@@ -509,6 +532,8 @@ const zhHans: Strings = {
       connect: '利于结缘合作',
     },
   },
+  makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
+  makeifCherrypick: '带回现实 · 借{el}行之力,{year}年顺势而为。',
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -528,6 +553,10 @@ const zhHans: Strings = {
       favorable: '用神助力',
       unfavorable: '忌神当道',
       clash: '冲太岁',
+      guiren: '贵人扶持',
+      wenchang: '文昌利学',
+      jiangxing: '将星掌权',
+      jiesha: '劫煞破耗',
     },
   },
   timelineBannerHint: '大运 · 流年',
@@ -780,6 +809,14 @@ const zhHant: Strings = {
     unfavorable: '{el}行為你的忌神，此運宜穩健、多留意。',
   },
   timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
+  timelineDomain: {
+    比劫: '人際 · 競合',
+    食伤: '表達 · 創作',
+    财星: '財富 · 務實',
+    官杀: '事業 · 責任',
+    印绶: '學養 · 貴人',
+  },
+  timelineHuajie: '化解：多借{el}行之力，宜靜守、納貴人。',
   makeifTiming: {
     frame: '當前命局時機',
     archetypes: {
@@ -789,6 +826,8 @@ const zhHant: Strings = {
       connect: '利於結緣合作',
     },
   },
+  makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
+  makeifCherrypick: '帶回現實 · 借{el}行之力,{year}年順勢而為。',
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -808,6 +847,10 @@ const zhHant: Strings = {
       favorable: '用神助力',
       unfavorable: '忌神當道',
       clash: '沖太歲',
+      guiren: '貴人扶持',
+      wenchang: '文昌利學',
+      jiangxing: '將星掌權',
+      jiesha: '劫煞破耗',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -1071,6 +1114,14 @@ const ja: Strings = {
     unfavorable: '{el}は忌神、この運は慎重に進めましょう。',
   },
   timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
+  timelineDomain: {
+    比劫: '人間関係 · 競合',
+    食伤: '表現 · 創作',
+    财星: '財運 · 実務',
+    官杀: '仕事 · 責任',
+    印绶: '学び · 貴人',
+  },
+  timelineHuajie: '化解：{el}の力を借り、静を守り貴人を頼みましょう。',
   makeifTiming: {
     frame: '今の命局のタイミング',
     archetypes: {
@@ -1080,6 +1131,8 @@ const ja: Strings = {
       connect: 'ご縁・協働に向く',
     },
   },
+  makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
+  makeifCherrypick: '現実へ持ち帰る · {el}の力を借り、{year}年に動きましょう。',
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1099,6 +1152,10 @@ const ja: Strings = {
       favorable: '用神の後押し',
       unfavorable: '忌神が強い',
       clash: '冲太歳',
+      guiren: '貴人の助け',
+      wenchang: '文昌・学業',
+      jiangxing: '将星・統率',
+      jiesha: '劫煞・散財',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -1353,6 +1410,14 @@ const en: Strings = {
     unfavorable: '{el} is your unfavorable element — stay steady and watchful.',
   },
   timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
+  timelineDomain: {
+    比劫: 'People · rivalry',
+    食伤: 'Expression · output',
+    财星: 'Wealth · the practical',
+    官杀: 'Career · duty',
+    印绶: 'Learning · mentors',
+  },
+  timelineHuajie: 'Remedy: lean on {el} — hold steady and seek allies.',
   makeifTiming: {
     frame: 'Your timing right now',
     archetypes: {
@@ -1362,6 +1427,9 @@ const en: Strings = {
       connect: 'favors connection & partnership',
     },
   },
+  makeifBackdrop:
+    'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
+  makeifCherrypick: 'Carry it back · lean on {el}, act around {year}.',
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',
@@ -1381,6 +1449,10 @@ const en: Strings = {
       favorable: 'your favorable element',
       unfavorable: 'your unfavorable element',
       clash: 'a clash with your sign',
+      guiren: 'a benefactor year',
+      wenchang: 'a study window',
+      jiangxing: 'a leadership year',
+      jiesha: 'a year of loss',
     },
   },
   timelineBannerHint: 'Decade · Year',

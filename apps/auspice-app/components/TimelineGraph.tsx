@@ -19,6 +19,7 @@
  */
 
 import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
+import { getShiShen, type HeavenlyStem, type ShiShenCategory } from '@zhop/astro-core'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -30,33 +31,61 @@ import { ELEMENT_COLORS } from '@/lib/shichen-content'
 const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
 /** The single most salient "why" tag a period earns (priority-ranked, one per node). */
-type ChipKind = 'clash' | 'unfavorable' | 'favorable' | 'taohua' | 'yima'
+type ChipKind =
+  | 'clash'
+  | 'jiesha'
+  | 'unfavorable'
+  | 'guiren'
+  | 'favorable'
+  | 'wenchang'
+  | 'jiangxing'
+  | 'taohua'
+  | 'yima'
 
-/** Chip tint — caution (冲/忌) warm-red, 用神 gold, 桃花 rose, 驿马 teal. */
+/** Chip tint — caution warm-red, help gold/green, study blue, leadership purple. */
 const CHIP_COLOR: Record<ChipKind, string> = {
   clash: '#C2410C',
+  jiesha: '#B91C1C',
   unfavorable: '#C2410C',
+  guiren: '#15803D',
   favorable: '#B8860B',
+  wenchang: '#1D4ED8',
+  jiangxing: '#7C3AED',
   taohua: '#C45D8D',
   yima: '#2A8C7F',
 }
 
+/** The 本命-derived 神煞 branches a period can land on (the per-node "event flavor"). */
+export interface ShenShaBranches {
+  taohua?: string
+  yima?: string
+  /** 天乙贵人 — two branches. */
+  guiren?: readonly string[]
+  wenchang?: string
+  jiangxing?: string
+  jiesha?: string
+}
+
 /**
- * Pick the ONE most salient reason for a period — not a pile of tags. Priority:
- * 冲太岁 (a year to brace for) > 忌神 > 用神 > 桃花 > 驿马. 桃花/驿马 come from the
- * period branch vs the natal 本命支 (passed in); the rest from the server reasons.
+ * Pick the ONE most salient reason for a period — not a pile of tags. Priority
+ * (caution → strong help → flavor): 冲太岁 > 劫煞 > 忌神 > 天乙贵人 > 用神 > 文昌 >
+ * 将星 > 桃花 > 驿马. 神煞 come from the period branch vs the natal anchors; element
+ * clash/用神/忌神 from the server reasons.
  */
 function chipFor(
   reasons: readonly string[],
   branch: string,
-  taohuaBranch?: string,
-  yimaBranch?: string
+  ss?: ShenShaBranches
 ): ChipKind | undefined {
   if (reasons.includes('personal_clash')) return 'clash'
+  if (ss?.jiesha && branch === ss.jiesha) return 'jiesha'
   if (reasons.includes('unfavorable_element_present')) return 'unfavorable'
+  if (ss?.guiren?.includes(branch)) return 'guiren'
   if (reasons.includes('favorable_element_present')) return 'favorable'
-  if (taohuaBranch && branch === taohuaBranch) return 'taohua'
-  if (yimaBranch && branch === yimaBranch) return 'yima'
+  if (ss?.wenchang && branch === ss.wenchang) return 'wenchang'
+  if (ss?.jiangxing && branch === ss.jiangxing) return 'jiangxing'
+  if (ss?.taohua && branch === ss.taohua) return 'taohua'
+  if (ss?.yima && branch === ss.yima) return 'yima'
   return undefined
 }
 
@@ -99,6 +128,8 @@ interface GNode {
   chip?: ChipKind
   /** The one forward-looking 爆点 node — enlarged + emphasized for the share. */
   isHero?: boolean
+  /** 十神 decade-theme — the life domain this 大运 activates (大运 nodes only). */
+  domain?: ShiShenCategory
   title: string
   sub: string
   /** Index back into the source rows for the detail panel. */
@@ -132,8 +163,7 @@ function buildGraph(
   payload: TimelinePayload,
   isPro: boolean,
   width: number,
-  taohuaBranch?: string,
-  yimaBranch?: string,
+  shensha?: ShenShaBranches,
   /** The checked-out 大运 — expands to its full decade; others show notable years.
    *  Defaults to the current 大运. */
   expandedDayunIndex?: number
@@ -175,14 +205,19 @@ function buildGraph(
   //    every 大运 but the current one to a ghost bump. ──
   const expanded = expandedDayunIndex ?? cur
   const isNotable = (ln: LiunianRow): boolean =>
-    ln.fit !== '平' || chipFor(ln.reasons, ln.pillar.branch, taohuaBranch, yimaBranch) !== undefined
+    ln.fit !== '平' || chipFor(ln.reasons, ln.pillar.branch, shensha) !== undefined
   let trunkBottom = sourceY
 
   payload.dayun.forEach((d, i) => {
     const state: NodeState = i < cur ? 'past' : i === cur ? 'current' : 'future'
     const locked = !isPro && state !== 'current'
     const dayunY = y
-    const dayunChip = chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch)
+    const dayunChip = chipFor(d.reasons, d.pillar.branch, shensha)
+    // 十神 decade-theme — which life domain this 大运 activates vs the 日主.
+    const dayunDomain = getShiShen(
+      dayMaster.stem as HeavenlyStem,
+      d.pillar.stem as HeavenlyStem
+    ).category
 
     if (locked) {
       // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
@@ -200,6 +235,7 @@ function buildGraph(
         element: d.pillar.element,
         fit: d.fit,
         chip: dayunChip,
+        domain: dayunDomain,
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -236,6 +272,7 @@ function buildGraph(
       element: d.pillar.element,
       fit: d.fit,
       chip: dayunChip,
+      domain: dayunDomain,
       title: `${d.pillar.stem}${d.pillar.branch}`,
       sub: `${d.startAge}`,
       ref: { kind: 'dayun', row: d },
@@ -259,7 +296,7 @@ function buildGraph(
         isHead: ln.isCurrent,
         element: ln.pillar.element,
         fit: ln.fit,
-        chip: chipFor(ln.reasons, ln.pillar.branch, taohuaBranch, yimaBranch),
+        chip: chipFor(ln.reasons, ln.pillar.branch, shensha),
         title: `${ln.pillar.stem}${ln.pillar.branch}`,
         sub: `${ln.year}`,
         ref: { kind: 'liunian', row: ln },
@@ -324,8 +361,8 @@ export function TimelineGraph({
   detail,
   fitLabels,
   reasonLabels,
-  taohuaBranch,
-  yimaBranch,
+  shensha,
+  domainLabels,
   expandedDayunIndex,
 }: {
   payload: TimelinePayload
@@ -341,15 +378,16 @@ export function TimelineGraph({
   fitLabels?: Record<PersonalFit, string>
   /** Localized one-word reason labels for the per-node chip (one shown, priority-ranked). */
   reasonLabels?: Record<ChipKind, string>
-  /** 本命 桃花/驿马 branches — a period landing on one earns that chip. */
-  taohuaBranch?: string
-  yimaBranch?: string
+  /** 本命-derived 神煞 branches — a period landing on one earns that chip. */
+  shensha?: ShenShaBranches
+  /** Localized 十神 → life-domain labels — the 大运 branch theme. */
+  domainLabels?: Record<ShiShenCategory, string>
   /** Checked-out 大运 (tap a 大运 to expand its full decade). Defaults to current. */
   expandedDayunIndex?: number
 }) {
   const graph = useMemo(
-    () => buildGraph(payload, isPro, width, taohuaBranch, yimaBranch, expandedDayunIndex),
-    [payload, isPro, width, taohuaBranch, yimaBranch, expandedDayunIndex]
+    () => buildGraph(payload, isPro, width, shensha, expandedDayunIndex),
+    [payload, isPro, width, shensha, expandedDayunIndex]
   )
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
@@ -479,6 +517,13 @@ export function TimelineGraph({
                 <Text style={{ color: colors.dim, fontSize: 12 }}>
                   {n.kind === 'source' ? n.sub : n.kind === 'dayun' ? `${n.sub}+` : n.sub}
                 </Text>
+                {/* 大运 branch theme — the 十神 life domain this decade activates
+                    (git: a branch has a name). 流年 commits stay verdict + chip. */}
+                {n.kind === 'dayun' && n.domain && domainLabels ? (
+                  <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '500' }}>
+                    {domainLabels[n.domain]}
+                  </Text>
+                ) : null}
                 {/* Verdict: the 吉/平/凶 word in its colour (denser than a bare dot,
                     color-blind safe). Falls back to a dot when no label map is passed. */}
                 {n.fit ? (

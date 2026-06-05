@@ -15,11 +15,18 @@
  */
 
 import {
+  analyzeGeJu,
   type EarthlyBranch,
   getFourPillars,
+  getFourPillarsShiShen,
+  getJiangXing,
+  getJieSha,
   getTaoHua,
+  getTianYiGuiRen,
+  getWenChangGuiRen,
   getYiMa,
   retrodictionMatch,
+  type WuXing,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
@@ -39,7 +46,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
-import { LiuyueStrip, ReadingBubble, TimelineGraph } from '@/components/TimelineGraph'
+import {
+  LiuyueStrip,
+  ReadingBubble,
+  type ShenShaBranches,
+  TimelineGraph,
+} from '@/components/TimelineGraph'
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
@@ -107,7 +119,9 @@ interface NodeDetail {
 function resolveNodeDetail(
   payload: TimelinePayload,
   selectedId: string | null,
-  t: ReturnType<typeof useStrings>['t']
+  t: ReturnType<typeof useStrings>['t'],
+  /** Chart 用神 五行 — appended as a 化解 ("支线解法") on conflict / 忌神 nodes. */
+  favorableEl?: WuXing | null
 ): NodeDetail | null {
   // The 用神/忌神 element note — the per-node "why" the per-grade advice drops.
   const elementNote = (reasons: string[], element: string): string => {
@@ -115,6 +129,14 @@ function resolveNodeDetail(
       return ` ${t.timelinePeriodElement.favorable.replace('{el}', element)}`
     if (reasons.includes('unfavorable_element_present'))
       return ` ${t.timelinePeriodElement.unfavorable.replace('{el}', element)}`
+    return ''
+  }
+  // 化解 ("支线解法") — a 冲太岁 / 忌神 node is a "conflict"; resolve it by leaning
+  // into the chart's 用神. git merge-conflict → resolution.
+  const huajie = (reasons: string[]): string => {
+    if (!favorableEl) return ''
+    if (reasons.includes('personal_clash') || reasons.includes('unfavorable_element_present'))
+      return ` ${t.timelineHuajie.replace('{el}', favorableEl)}`
     return ''
   }
   if (!selectedId) return null
@@ -133,7 +155,7 @@ function resolveNodeDetail(
     return {
       heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
     }
   }
   if (selectedId.startsWith('liuyue-')) {
@@ -144,7 +166,7 @@ function resolveNodeDetail(
     return {
       heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
     }
   }
   const year = Number(selectedId.slice('liunian-'.length))
@@ -158,17 +180,36 @@ function resolveNodeDetail(
   return {
     heading: `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
     fit: row.fit,
-    body: `${t.timelineAdvice[row.fit]}${clash}`,
+    body: `${t.timelineAdvice[row.fit]}${clash}${huajie(row.reasons)}`,
   }
 }
 
-/** 本命 桃花/驿马 branches (from the birth-year branch) — drive the per-node chips. */
-function birthSignals(payload: TimelinePayload): { taohuaBranch?: string; yimaBranch?: string } {
+/** 本命-derived 神煞 branches (日干 → 贵人/文昌; 本命支 → 桃花/驿马/将星/劫煞) — the
+ *  per-node "event flavor" chips. */
+function birthShenSha(payload: TimelinePayload): ShenShaBranches {
   const [y, m, d] = payload.birth.date.split('-').map(Number)
   if (!y || !m || !d) return {}
   const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
-  const branch = getFourPillars({ year: y, month: m, day: d, hour }).year.branch
-  return { taohuaBranch: getTaoHua(branch), yimaBranch: getYiMa(branch) }
+  const pillars = getFourPillars({ year: y, month: m, day: d, hour })
+  const dayStem = pillars.day.stem
+  const branch = pillars.year.branch
+  return {
+    taohua: getTaoHua(branch),
+    yima: getYiMa(branch),
+    guiren: getTianYiGuiRen(dayStem),
+    wenchang: getWenChangGuiRen(dayStem),
+    jiangxing: getJiangXing(branch),
+    jiesha: getJieSha(branch),
+  }
+}
+
+/** The chart's 用神 五行 (格局 + 强弱 → 取用) — the anchor for a node's 化解. */
+function chartFavorableElement(payload: TimelinePayload): WuXing | null {
+  const [y, m, d] = payload.birth.date.split('-').map(Number)
+  if (!y || !m || !d) return null
+  const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
+  const pillars = getFourPillars({ year: y, month: m, day: d, hour })
+  return analyzeGeJu(pillars, getFourPillarsShiShen(pillars)).favorableElement
 }
 
 type ScreenState =
@@ -339,12 +380,13 @@ export default function TimelineScreen() {
         ? (() => {
             const snap = buildTimelineSnapshot(state.payload, t)
             const chrome = timelineShareChrome(locale)
-            const { taohuaBranch, yimaBranch } = birthSignals(state.payload)
+            const shensha = birthShenSha(state.payload)
+            const favEl = chartFavorableElement(state.payload)
             // WYSIWYG: bake the node the user actually has selected (its highlight +
             // reading), falling back to the current 大运 so a fresh share still has a
             // takeaway. What they see on screen = what they share.
             const shareDetail =
-              resolveNodeDetail(state.payload, selectedId, t) ??
+              resolveNodeDetail(state.payload, selectedId, t, favEl) ??
               (snap
                 ? {
                     heading: `${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`,
@@ -379,8 +421,8 @@ export default function TimelineScreen() {
                     detail={null}
                     fitLabels={t.personal.fit}
                     reasonLabels={t.yinzheng.signals}
-                    taohuaBranch={taohuaBranch}
-                    yimaBranch={yimaBranch}
+                    shensha={shensha}
+                    domainLabels={t.timelineDomain}
                     expandedDayunIndex={expandedDayun ?? undefined}
                   />
                   {/* Bake the SELECTED node's reading below the graph (no anchored
@@ -527,9 +569,13 @@ function Body({
   canvasWidth: number
   t: ReturnType<typeof useStrings>['t']
 }) {
+  const favEl = useMemo(() => chartFavorableElement(payload), [payload])
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
-  const detail = useMemo(() => resolveNodeDetail(payload, selectedId, t), [selectedId, payload, t])
-  const { taohuaBranch, yimaBranch } = useMemo(() => birthSignals(payload), [payload])
+  const detail = useMemo(
+    () => resolveNodeDetail(payload, selectedId, t, favEl),
+    [selectedId, payload, t, favEl]
+  )
+  const shensha = useMemo(() => birthShenSha(payload), [payload])
 
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
   const birthBranch = useMemo<EarthlyBranch | null>(() => {
@@ -568,8 +614,8 @@ function Body({
         detail={selectedId?.startsWith('liuyue-') ? null : detail}
         fitLabels={t.personal.fit}
         reasonLabels={t.yinzheng.signals}
-        taohuaBranch={taohuaBranch}
-        yimaBranch={yimaBranch}
+        shensha={shensha}
+        domainLabels={t.timelineDomain}
         expandedDayunIndex={expandedDayun ?? undefined}
       />
 
