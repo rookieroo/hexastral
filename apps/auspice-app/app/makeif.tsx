@@ -13,8 +13,10 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
+  analyzeGeJu,
   favoredMove,
   getFourPillars,
+  getFourPillarsShiShen,
   getShiShen,
   getTaoHua,
   getYiMa,
@@ -407,9 +409,10 @@ function Sandbox({
 
   // 命主干 backdrop — the real 大运's 十神 theme at the age this 假如 reconciles
   // (merge age, else fork age). The 命 vs 运 vs 选择 line: even an alt choice
-  // plays out against your actual chart's chapter.
+  // plays out against your actual chart's chapter. Shown for PAST "假如当年" forks
+  // (why they got reabsorbed).
   const featuredBackdrop = useMemo(() => {
-    if (!featured) return null
+    if (!featured?.isPast) return null
     const age = featured.mergeAtAge ?? featured.divergeAtAge
     const dy = payload.dayun.find((d) => age >= d.startAge && age <= d.endAge)
     if (!dy) return null
@@ -419,6 +422,24 @@ function Sandbox({
     ).category
     return t.makeifBackdrop.replace('{domain}', t.timelineDomain[cat])
   }, [featured, payload, t])
+
+  // cherry-pick ("带回现实") — for a PRESENT/FUTURE (actionable) 假如, the concrete
+  // carry-back: lean on the chart's 用神 + act around the nearest favorable 流年.
+  // git cherry-pick → lift one good thing from the alt branch into the real line.
+  const featuredCherrypick = useMemo(() => {
+    if (!featured || featured.isPast) return null
+    const [yy, mm, dd] = birth.birthDate.split('-').map(Number)
+    if (!yy || !mm || !dd) return null
+    const hour = birth.birthHour < 0 ? 12 : birth.birthHour
+    const pillars = getFourPillars({ year: yy, month: mm, day: dd, hour })
+    const favEl = analyzeGeJu(pillars, getFourPillarsShiShen(pillars)).favorableElement
+    const thisYear = new Date().getFullYear()
+    const favYear = payload.dayun
+      .flatMap((d) => d.liunian)
+      .filter((ln) => ln.year >= thisYear && ln.reasons.includes('favorable_element_present'))
+      .sort((a, b) => a.year - b.year)[0]?.year
+    return t.makeifCherrypick.replace('{el}', favEl).replace('{year}', String(favYear ?? thisYear))
+  }, [featured, birth, payload, t])
 
   // Fetch (or re-fetch) a fork's narrative, tracking per-fork status so the user
   // always gets feedback (loading / failed-retry / daily-limit), not silence.
@@ -605,10 +626,10 @@ function Sandbox({
           {timing.reasons ? (
             <Text style={{ color: colors.dim, fontSize: 12 }}>{timing.reasons}</Text>
           ) : null}
-          {/* 命主干 — the real 大运 chapter the highlighted 假如 plays out against. */}
-          {featuredBackdrop ? (
+          {/* 命主干 (past) / 带回现实 cherry-pick (actionable) for the highlighted 假如. */}
+          {featuredBackdrop || featuredCherrypick ? (
             <Text style={{ color: colors.dim, fontSize: 12, fontStyle: 'italic' }}>
-              {featuredBackdrop}
+              {featuredBackdrop ?? featuredCherrypick}
             </Text>
           ) : null}
         </View>
@@ -698,9 +719,9 @@ function Sandbox({
                     {timing.reasons ? ` — ${timing.reasons}` : ''}
                   </Text>
                 ) : null}
-                {/* 命主干 — the real 大运 chapter this 假如 reconciles against
-                    (命 vs 运 vs 选择). */}
-                {featuredBackdrop ? (
+                {/* 命主干 (past 假如) / 带回现实 (actionable 假如) — the 命 vs 运 vs
+                    选择 takeaway, or the cherry-pick into the real line. */}
+                {featuredBackdrop || featuredCherrypick ? (
                   <Text
                     style={{
                       color: SHARE_PALETTE.dim,
@@ -710,7 +731,7 @@ function Sandbox({
                       marginTop: 2,
                     }}
                   >
-                    {featuredBackdrop}
+                    {featuredBackdrop ?? featuredCherrypick}
                   </Text>
                 ) : null}
               </View>

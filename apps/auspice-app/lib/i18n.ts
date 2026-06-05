@@ -212,6 +212,9 @@ export interface Strings {
   /** Make-if 命主干 backdrop — the real 大运 十神 a 假如 plays out against ({domain}
    *  = the 十神 life-domain word). The 命 vs 运 vs 选择 line. */
   makeifBackdrop: string
+  /** Make-if cherry-pick — carry one good thing from an actionable 假如 into the
+   *  real line. {el} = 用神 五行; {year} = nearest favorable 流年. */
+  makeifCherrypick: string
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -530,6 +533,7 @@ const zhHans: Strings = {
     },
   },
   makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
+  makeifCherrypick: '带回现实 · 借{el}行之力,{year}年顺势而为。',
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -823,6 +827,7 @@ const zhHant: Strings = {
     },
   },
   makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
+  makeifCherrypick: '帶回現實 · 借{el}行之力,{year}年順勢而為。',
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -1127,6 +1132,7 @@ const ja: Strings = {
     },
   },
   makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
+  makeifCherrypick: '現実へ持ち帰る · {el}の力を借り、{year}年に動きましょう。',
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1423,6 +1429,7 @@ const en: Strings = {
   },
   makeifBackdrop:
     'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
+  makeifCherrypick: 'Carry it back · lean on {el}, act around {year}.',
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',
