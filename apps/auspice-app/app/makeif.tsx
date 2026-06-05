@@ -285,7 +285,11 @@ function Sandbox({
   // Image share: capture the whole 假如 graph (mainline + branches) to a PNG.
   // Pre-warm once there's a fork to share, re-capturing as forks are added, so the
   // Share tap hands off an already-rendered PNG instead of waiting on Skia.
-  const { shotRef, capturing, share: shareImage } = useImageShare({
+  const {
+    shotRef,
+    capturing,
+    share: shareImage,
+  } = useImageShare({
     prewarm: branches.length > 0,
     warmKey: branches.length,
   })
@@ -585,7 +589,9 @@ function Sandbox({
                           marginTop: 5,
                         }}
                       />
-                      <Text style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 13, lineHeight: 19 }}>
+                      <Text
+                        style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 13, lineHeight: 19 }}
+                      >
                         <Text style={{ fontWeight: '600' }}>{b.label}</Text>
                         {'  '}
                         <Text style={{ color: SHARE_PALETTE.secondary }}>

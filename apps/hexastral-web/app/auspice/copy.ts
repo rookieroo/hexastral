@@ -124,7 +124,8 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
       },
     ],
     cta: 'iOS で Auspice を入手',
-    ctaNote: '無料ではじめられます。暦はあなたのもの。個人向けの解説は、あなたの命盤で解放されます。',
+    ctaNote:
+      '無料ではじめられます。暦はあなたのもの。個人向けの解説は、あなたの命盤で解放されます。',
     footer: 'Auspice · 干支 · 旧暦 · 二十四節気 · 宜忌',
   },
 }

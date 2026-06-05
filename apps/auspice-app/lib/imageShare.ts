@@ -23,7 +23,11 @@ import { Platform, Share, type View } from 'react-native'
 import { captureRef } from 'react-native-view-shot'
 
 /** Hand an already-captured PNG file to the native share sheet. */
-async function shareCapturedUri(uri: string, caption?: string, dialogTitle?: string): Promise<void> {
+async function shareCapturedUri(
+  uri: string,
+  caption?: string,
+  dialogTitle?: string
+): Promise<void> {
   if (Platform.OS === 'ios') {
     // iOS carries the image + caption together to most targets (Messages,
     // WeChat, etc.) — image previews instantly, the URL chip resolves async

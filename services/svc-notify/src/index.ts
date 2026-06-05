@@ -397,12 +397,31 @@ function getEveningFallbackText(locale: string): { title: string; body: string }
   const pool: Record<string, { title: string; body: string }[]> = {
     zh: [{ title: '今日收个尾', body: '回看今天的宜忌，也为明天理一理。开启应用查看。' }],
     'zh-Hant': [{ title: '今日收個尾', body: '回看今天的宜忌，也為明天理一理。開啟應用查看。' }],
-    en: [{ title: 'Wind down', body: "Look back on today and get a read on tomorrow in HexAstral." }],
-    ko: [{ title: '하루 마무리', body: '오늘을 돌아보고 내일을 준비해 보세요. 앱에서 확인하세요.' }],
-    ja: [{ title: '一日の締めくくり', body: '今日を振り返り、明日に備えましょう。アプリでご確認ください。' }],
-    de: [{ title: 'Tagesausklang', body: 'Blicken Sie auf heute zurück und auf morgen voraus in HexAstral.' }],
+    en: [
+      { title: 'Wind down', body: 'Look back on today and get a read on tomorrow in HexAstral.' },
+    ],
+    ko: [
+      { title: '하루 마무리', body: '오늘을 돌아보고 내일을 준비해 보세요. 앱에서 확인하세요.' },
+    ],
+    ja: [
+      {
+        title: '一日の締めくくり',
+        body: '今日を振り返り、明日に備えましょう。アプリでご確認ください。',
+      },
+    ],
+    de: [
+      {
+        title: 'Tagesausklang',
+        body: 'Blicken Sie auf heute zurück und auf morgen voraus in HexAstral.',
+      },
+    ],
     es: [{ title: 'Cierra el día', body: 'Repasa hoy y anticipa mañana en HexAstral.' }],
-    vi: [{ title: 'Khép lại ngày', body: 'Nhìn lại hôm nay và chuẩn bị cho ngày mai trong HexAstral.' }],
+    vi: [
+      {
+        title: 'Khép lại ngày',
+        body: 'Nhìn lại hôm nay và chuẩn bị cho ngày mai trong HexAstral.',
+      },
+    ],
     th: [{ title: 'สรุปท้ายวัน', body: 'ทบทวนวันนี้และเตรียมพร้อมพรุ่งนี้ใน HexAstral' }],
   }
   const lang = locale.split('-')[0] ?? locale
@@ -443,7 +462,9 @@ function pad2(n: number): string {
 function tzLocalHour(tz: string, now: Date): number {
   try {
     return Number.parseInt(
-      new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(now),
+      new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(
+        now
+      ),
       10
     )
   } catch {
@@ -507,7 +528,13 @@ async function runAuspicePush(
       }
       const json = await res.json<{
         data: {
-          messages: Array<{ deviceId: string; token: string; title: string; body: string; data: Record<string, string> }>
+          messages: Array<{
+            deviceId: string
+            token: string
+            title: string
+            body: string
+            data: Record<string, string>
+          }>
           nextCursor: string | null
         }
       }>()

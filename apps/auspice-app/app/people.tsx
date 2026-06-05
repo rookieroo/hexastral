@@ -24,7 +24,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
+import { deleteBirthdayReminder, saveBirthdayReminder } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
 import { openKindredCompose } from '@/lib/kindred-handoff'
@@ -38,8 +40,6 @@ import {
 } from '@/lib/people'
 import { FREE_BIRTHDAY_LIMIT, requestPushPermission, scheduleBirthdayReminders } from '@/lib/push'
 import { animalOf } from '@/lib/relationship'
-import { deleteBirthdayReminder, saveBirthdayReminder } from '@/lib/api'
-import { getAuspiceDeviceId } from '@/lib/device'
 
 const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 const ADVANCE_OPTIONS = [0, 1, 3, 7] as const

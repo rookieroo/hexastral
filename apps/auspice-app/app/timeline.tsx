@@ -106,7 +106,11 @@ export default function TimelineScreen() {
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
   // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
   // baking it ahead of the tap makes Share feel instant.
-  const { shotRef, capturing, share: shareImage } = useImageShare({
+  const {
+    shotRef,
+    capturing,
+    share: shareImage,
+  } = useImageShare({
     prewarm: state.kind === 'data',
     warmKey: state.kind === 'data' ? 'ready' : 'pending',
   })

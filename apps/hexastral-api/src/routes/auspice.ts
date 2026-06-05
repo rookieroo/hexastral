@@ -1808,9 +1808,30 @@ const EN_PUSH_LABELS: PushLabelSet = {
 }
 
 const PUSH_LABELS: Record<string, PushLabelSet> = {
-  'zh-Hans': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日预告', fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' } },
-  'zh-Hant': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日預告', fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' } },
-  ja: { yi: '吉', ji: '凶', forYou: 'あなた', daySuffix: '日', tomorrow: '明日の予報', fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' } },
+  'zh-Hans': {
+    yi: '宜',
+    ji: '忌',
+    forYou: '你',
+    daySuffix: '日',
+    tomorrow: '明日预告',
+    fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
+  },
+  'zh-Hant': {
+    yi: '宜',
+    ji: '忌',
+    forYou: '你',
+    daySuffix: '日',
+    tomorrow: '明日預告',
+    fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
+  },
+  ja: {
+    yi: '吉',
+    ji: '凶',
+    forYou: 'あなた',
+    daySuffix: '日',
+    tomorrow: '明日の予報',
+    fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
+  },
   en: EN_PUSH_LABELS,
 }
 
@@ -1843,7 +1864,8 @@ function renderAuspicePush(
   const yi = day.goodFor.slice(0, 3).join('、') || '—'
   const ji = day.avoid.slice(0, 3).join('、') || '—'
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
-  if (sub.isPro && personalization) body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
+  if (sub.isPro && personalization)
+    body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
   const title =
     slot === 'evening' ? `${L.tomorrow} · ${dateStr}` : `${dateStr} · ${day.ganZhi}${L.daySuffix}`
   return {
@@ -1930,7 +1952,8 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }
   const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
   const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
-  const slotEnabled = slot === 'evening' ? auspicePushSubs.dailyEvening : auspicePushSubs.dailyMorning
+  const slotEnabled =
+    slot === 'evening' ? auspicePushSubs.dailyEvening : auspicePushSubs.dailyMorning
 
   const rows = await c
     .get('db')

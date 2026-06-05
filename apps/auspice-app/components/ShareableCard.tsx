@@ -97,7 +97,9 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
           paddingTop: 14,
         }}
       >
-        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>{footerLine}</Text>
+        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>
+          {footerLine}
+        </Text>
         <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>{landing}</Text>
       </View>
     </View>
