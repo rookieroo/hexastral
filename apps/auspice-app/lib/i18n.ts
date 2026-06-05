@@ -197,6 +197,9 @@ export interface Strings {
   timelineRemindHint: string
   /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
   timelineAdvice: Record<PersonalFit, string>
+  /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
+   *  the 用神/忌神 signal that the generic per-grade advice omits. */
+  timelinePeriodElement: { favorable: string; unfavorable: string }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
   timelineClashNote: string
   /** Compact label for the LiuyearBanner on Today (above the hero). */
@@ -456,6 +459,10 @@ const zhHans: Strings = {
     平: '运势平稳，按部就班、稳中求进即可。',
     凶: '气运受克，宜守不宜攻；注意休息、少熬夜，别硬撑。',
   },
+  timelinePeriodElement: {
+    favorable: '{el}行正是你的用神，此运整体有助力。',
+    unfavorable: '{el}行为你的忌神，此运宜稳健、多留意。',
+  },
   timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
   timelineBannerHint: '大运 · 流年',
   ganzhiStemsTitle: '十天干',
@@ -692,6 +699,10 @@ const zhHant: Strings = {
     吉: '氣運相生，宜主動進取、順勢把握時機。',
     平: '運勢平穩，按部就班、穩中求進即可。',
     凶: '氣運受剋，宜守不宜攻；注意休息、少熬夜，別硬撐。',
+  },
+  timelinePeriodElement: {
+    favorable: '{el}行正是你的用神，此運整體有助力。',
+    unfavorable: '{el}行為你的忌神，此運宜穩健、多留意。',
   },
   timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
   timelineBannerHint: '大運 · 流年',
@@ -941,6 +952,10 @@ const ja: Strings = {
     平: '運気は穏やか。着実に、無理なく進めましょう。',
     凶: '運気は抑えぎみ。守りを固め、休息を大切に、無理は禁物。',
   },
+  timelinePeriodElement: {
+    favorable: '{el}はあなたの用神、この運は全体に追い風。',
+    unfavorable: '{el}は忌神、この運は慎重に進めましょう。',
+  },
   timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
   timelineBannerHint: '大運 · 流年',
   ganzhiStemsTitle: '十干',
@@ -1178,6 +1193,10 @@ const en: Strings = {
     吉: 'The energy supports you — take initiative and seize the moment.',
     平: 'Steady energy — keep a measured pace and build gradually.',
     凶: 'The energy runs counter — hold steady, rest well, and avoid overexerting.',
+  },
+  timelinePeriodElement: {
+    favorable: '{el} is your favorable element — this period lends support.',
+    unfavorable: '{el} is your unfavorable element — stay steady and watchful.',
   },
   timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
   timelineBannerHint: 'Decade · Year',

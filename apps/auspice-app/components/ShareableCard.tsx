@@ -34,7 +34,16 @@ const DAY_FOOTER: Record<string, string> = {
   'zh-Hans': '每日干支 · 农历 · 节气 · 宜忌',
   'zh-Hant': '每日干支 · 農曆 · 節氣 · 宜忌',
   ja: '干支 · 旧暦 · 二十四節気 · 宜忌',
-  en: 'The Chinese calendar — 干支 · 农历 · 宜忌',
+  // en is pure English — no CJK — and short, so it never crowds the landing URL.
+  en: 'Chinese almanac · daily picks',
+}
+
+/** Locale-aware brand eyebrow default for the DAY card (en stays CJK-free). */
+const DAY_EYEBROW: Record<string, string> = {
+  'zh-Hans': 'AUSPICE 黄历',
+  'zh-Hant': 'AUSPICE 黃曆',
+  ja: 'AUSPICE 暦',
+  en: 'AUSPICE · ALMANAC',
 }
 
 export interface ShareableCardProps {
@@ -61,7 +70,7 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
   ref
 ) {
   const footerLine = footer ?? DAY_FOOTER[locale] ?? DAY_FOOTER.en
-  const eyebrowLine = eyebrow ?? 'AUSPICE 黄历'
+  const eyebrowLine = eyebrow ?? DAY_EYEBROW[locale] ?? DAY_EYEBROW.en
   const landing = footerUrl ?? 'hexastral.com/auspice'
   return (
     <View
@@ -97,10 +106,25 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
           paddingTop: 14,
         }}
       >
-        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>
+        {/* footerLine shrinks/ellipsizes; the landing URL never yields its width
+            so a long (e.g. translated) footer can't crowd or overlap the link. */}
+        <Text
+          style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1, flexShrink: 1 }}
+          numberOfLines={1}
+        >
           {footerLine}
         </Text>
-        <Text style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1 }}>{landing}</Text>
+        <Text
+          style={{
+            color: SHARE_PALETTE.dim,
+            fontSize: 11,
+            letterSpacing: 1,
+            flexShrink: 0,
+            marginLeft: 12,
+          }}
+        >
+          {landing}
+        </Text>
       </View>
     </View>
   )

@@ -237,10 +237,16 @@ export function MakeIfGraph({
             filled fork node, filled period dots, hollow ring on merge-back. */}
         {layout.branches.map((b) => {
           const selected = selectedBranchId === b.id
+          // When one branch is active, the others clearly recede so the highlight
+          // reads (a single "假如" in focus); with no selection all sit at 0.92.
+          const anySelected = selectedBranchId != null
           // Past "假如当年" branches read dimmer + dashed (已发生、不可改).
           const stroke = locked ? colors.dim : b.isPast ? colors.dim : b.color
           return (
-            <Group key={b.id} opacity={locked ? 0.28 : b.isPast ? 0.5 : selected ? 1 : 0.92}>
+            <Group
+              key={b.id}
+              opacity={locked ? 0.28 : selected ? 1 : anySelected ? 0.3 : b.isPast ? 0.5 : 0.92}
+            >
               <Path
                 path={b.path}
                 style='stroke'
@@ -371,6 +377,8 @@ export function MakeIfGraph({
               left: b.laneX + 8,
               top: b.forkY + layout.ageStep * 3 - 9,
               maxWidth: width - b.laneX - 12,
+              // Recede when another branch is the active one, matching the path dim.
+              opacity: selectedBranchId != null && selectedBranchId !== b.id ? 0.4 : 1,
             }}
           >
             <Text

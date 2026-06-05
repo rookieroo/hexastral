@@ -324,6 +324,15 @@ function Body({
 }) {
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
   const detail = useMemo(() => {
+    // The 用神/忌神 signal for a period, from its reasons — the per-node "why" the
+    // generic per-grade advice drops. Empty when the element is neutral.
+    const elementNote = (reasons: string[], element: string): string => {
+      if (reasons.includes('favorable_element_present'))
+        return ` ${t.timelinePeriodElement.favorable.replace('{el}', element)}`
+      if (reasons.includes('unfavorable_element_present'))
+        return ` ${t.timelinePeriodElement.unfavorable.replace('{el}', element)}`
+      return ''
+    }
     if (!selectedId) return null
     if (selectedId === 'source') {
       return {
@@ -340,7 +349,7 @@ function Body({
       return {
         heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
         fit: row.fit,
-        body: `${t.timelineAdvice[row.fit]}${clash}`,
+        body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
       }
     }
     if (selectedId.startsWith('liuyue-')) {
@@ -351,7 +360,7 @@ function Body({
       return {
         heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
         fit: row.fit,
-        body: `${t.timelineAdvice[row.fit]}${clash}`,
+        body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
       }
     }
     const year = Number(selectedId.slice('liunian-'.length))

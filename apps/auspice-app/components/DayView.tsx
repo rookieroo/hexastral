@@ -101,7 +101,10 @@ export function DayView({
   // Image share: capture a 宜忌 card to a PNG on-device (instant — the old URL
   // share made iOS block on a cold-Worker OG fetch). The /s/day URL rides along
   // as the caption for the install funnel.
-  const { shotRef, capturing, share: shareImage } = useImageShare()
+  // Pre-warm the capture so tapping share is instant (no 320ms paint+capture
+  // wait). Re-warms when the day changes. The 宜忌 card is light (no Skia), so
+  // keeping it mounted off-screen is cheap.
+  const { shotRef, capturing, share: shareImage } = useImageShare({ prewarm: true, warmKey: date })
   const lunar = day.lunarDate
     ? locale === 'en'
       ? `Lunar ${day.lunarDate.month}/${day.lunarDate.day}`

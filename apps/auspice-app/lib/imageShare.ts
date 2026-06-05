@@ -17,6 +17,7 @@
  * its caption still markets itself.
  */
 
+import * as Haptics from 'expo-haptics'
 import * as Sharing from 'expo-sharing'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Platform, Share, type View } from 'react-native'
@@ -120,6 +121,9 @@ export function useImageShare(
 
   const share = useCallback(
     async (cap: string) => {
+      // Immediate tactile ack so the tap feels registered even if a (non-warm)
+      // capture takes a beat — kills the "did it work?" perceived lag.
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
       // Warm copy ready → share instantly, no capture wait.
       if (prewarm && warmedUri.current) {
         try {
