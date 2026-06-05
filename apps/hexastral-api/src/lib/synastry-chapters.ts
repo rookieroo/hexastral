@@ -65,15 +65,19 @@ export function gateInterpretationChapters(
 }
 
 /**
- * How many synastry chapters this viewer may read in full.
- * Subscribers and fully-unlocked users get everything; everyone else gets the
- * free taste.
+ * How many synastry chapters this viewer may read in full. The full set is
+ * unlocked by ANY of:
+ *   - a subscription (kindred capability),
+ *   - this specific bond being unlocked (solo-created, or single-purchased),
+ *   - the global invite mechanic (users.unlockedChapterCount flipped to cap).
+ * Everyone else gets the free taste.
  */
 export function resolveUnlockedChapterCount(opts: {
   isSubscriber: boolean
+  bondUnlocked: boolean
   unlockedChapterCount: number | null
 }): number {
-  if (opts.isSubscriber) return SYNASTRY_TOTAL_CHAPTERS
+  if (opts.isSubscriber || opts.bondUnlocked) return SYNASTRY_TOTAL_CHAPTERS
   const stored = opts.unlockedChapterCount ?? SYNASTRY_FREE_CHAPTERS
   return Math.min(Math.max(stored, SYNASTRY_FREE_CHAPTERS), SYNASTRY_TOTAL_CHAPTERS)
 }

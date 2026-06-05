@@ -22,6 +22,7 @@ import {
   bondInviteCredits,
   pairReadings,
   sharedReports,
+  singlePurchases,
   userBonds,
   users,
 } from '../db/schema'
@@ -412,6 +413,9 @@ bondRoutes.post('/solo', async (c) => {
       targetBirthLunarDate: input.targetBirth.lunarDate ?? null,
       targetBirthIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
       unlockedDimensions: '4',
+      // A paid the compatibility fee to create this solo reading — the full
+      // six-chapter report is included, so no unlock wall for solo bonds.
+      chaptersUnlocked: true,
       status: 'active',
     }),
   ])
@@ -1570,6 +1574,7 @@ bondRoutes.get('/:id', async (c) => {
       mirrorBondId: userBonds.mirrorBondId,
       invitationId: userBonds.invitationId,
       unlockedDimensions: userBonds.unlockedDimensions,
+      chaptersUnlocked: userBonds.chaptersUnlocked,
       sharedByOwner: userBonds.sharedByOwner,
       status: userBonds.status,
       createdAt: userBonds.createdAt,
@@ -1697,6 +1702,7 @@ bondRoutes.get('/:id', async (c) => {
     ])
     const unlockedCount = resolveUnlockedChapterCount({
       isSubscriber,
+      bondUnlocked: bond.chaptersUnlocked,
       unlockedChapterCount: viewer?.unlockedChapterCount ?? null,
     })
     interpretation = gateInterpretationChapters(interpretation, unlockedCount)
@@ -1717,6 +1723,67 @@ bondRoutes.get('/:id', async (c) => {
     dimensions: dimensionData,
     interpretation,
   })
+})
+
+// ── POST /:id/unlock — buy-to-unlock the full six-chapter report for one bond ──
+// Free resonance bonds gate to SYNASTRY_FREE_CHAPTERS; this applies a single
+// purchase (hexastral_compatibility) to reveal all six for THIS bond. Solo bonds
+// are unlocked at creation and subscribers/invite-unlocked users never reach the
+// wall, so this is the resonance-bond buy path. Idempotent.
+bondRoutes.post('/:id/unlock', async (c) => {
+  const bondId = c.req.param('id')
+  const userId = requireUserId(c)
+  const db = c.get('db')
+
+  const bond = await db
+    .select({
+      id: userBonds.id,
+      hehunReadingId: userBonds.hehunReadingId,
+      chaptersUnlocked: userBonds.chaptersUnlocked,
+    })
+    .from(userBonds)
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+    .get()
+
+  if (!bond) return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
+  if (bond.chaptersUnlocked) return jsonOk(c, { unlocked: true, via: 'already' })
+
+  const access = await checkReadingAccess(db, userId, 'compatibility', {
+    readingId: bond.hehunReadingId ?? undefined,
+  })
+
+  if (!access.granted) {
+    // No subscription / credit / available purchase — client must buy first.
+    return jsonErr(c, 402, ApiErrorCode.paywall_required, 'Unlock requires purchase', {
+      iapProductId: access.iapProductId,
+      price: access.price,
+    })
+  }
+
+  // Spend the single purchase (subscribers / credits are granted without a row).
+  if (access.via === 'single_purchase') {
+    await db
+      .update(singlePurchases)
+      .set({
+        status: 'consumed',
+        readingId: bond.hehunReadingId ?? null,
+        consumedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(singlePurchases.id, access.purchaseId),
+          eq(singlePurchases.userId, userId),
+          eq(singlePurchases.status, 'purchased')
+        )
+      )
+  }
+
+  await db
+    .update(userBonds)
+    .set({ chaptersUnlocked: true, updatedAt: new Date().toISOString() })
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+
+  return jsonOk(c, { unlocked: true, via: access.via })
 })
 
 // ── GET /:id/synastry — 流日感应 (daily synastry for a bond) ──
