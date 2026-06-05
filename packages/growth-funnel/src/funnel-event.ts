@@ -113,6 +113,22 @@ export const SubscriptionStartedEvent = GrowthFunnelEventBase.extend({
   }),
 })
 
+/** Kindred synastry unlock-wall funnel — one event, `step` discriminator. */
+export type KindredUnlockFunnelEvent = z.infer<typeof KindredUnlockFunnelEvent>
+export const KindredUnlockFunnelEvent = GrowthFunnelEventBase.extend({
+  event_name: z.literal('kindred_unlock_funnel'),
+  payload: z.object({
+    /** Funnel step: wall shown → CTA tap → unlock resolved. */
+    step: z.enum(['wall_view', 'invite_tap', 'buy_tap', 'subscribe_tap', 'unlock_success']),
+    /** Bond the wall belongs to. */
+    bond_id: z.string().max(64).optional(),
+    /** How the unlock resolved (unlock_success): single_purchase | pro_quota | already. */
+    via: z.string().max(32).optional(),
+    /** Locked chapter count at wall view. */
+    locked: z.number().int().optional(),
+  }),
+})
+
 /** Native portfolio app claimed a DDL session after install (KV session read) */
 export type PortfolioDdlClaimedEvent = z.infer<typeof PortfolioDdlClaimedEvent>
 export const PortfolioDdlClaimedEvent = GrowthFunnelEventBase.extend({
@@ -179,6 +195,7 @@ export const GrowthFunnelEvent = z.discriminatedUnion('event_name', [
   FirstReadingCompletedEvent,
   PurchaseCompletedEvent,
   SubscriptionStartedEvent,
+  KindredUnlockFunnelEvent,
   PortfolioDdlClaimedEvent,
   PortfolioAppleLinkedEvent,
   PortfolioGoogleLinkedEvent,
