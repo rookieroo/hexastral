@@ -148,7 +148,11 @@ function resolveNodeDetail(
     }
   }
   const year = Number(selectedId.slice('liunian-'.length))
-  const row = payload.liunian.find((r) => r.year === year)
+  // 流年 now come from each 大运's own decade (git-graph) — search those first,
+  // falling back to the ±5y top-level set.
+  const row =
+    payload.dayun.flatMap((d) => d.liunian).find((r) => r.year === year) ??
+    payload.liunian.find((r) => r.year === year)
   if (!row) return null
   const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
   return {

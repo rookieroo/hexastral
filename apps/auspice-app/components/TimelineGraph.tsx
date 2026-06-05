@@ -133,7 +133,10 @@ function buildGraph(
   isPro: boolean,
   width: number,
   taohuaBranch?: string,
-  yimaBranch?: string
+  yimaBranch?: string,
+  /** The checked-out 大运 — expands to its full decade; others show notable years.
+   *  Defaults to the current 大运. */
+  expandedDayunIndex?: number
 ): BuiltGraph {
   const nodes: GNode[] = []
   const trunkPath = Skia.Path.Make()
@@ -164,83 +167,114 @@ function buildGraph(
   })
   y += STEP
 
-  // ── 大运 branches ──
-  const visibleLiunian = isPro ? payload.liunian : payload.liunian.filter((r) => r.isCurrent)
+  // ── 大运 branches — each a real git-graph branch: peel out of the trunk, run
+  //    its 流年 as commits down the lane, then merge back. The current 大运 is the
+  //    checked-out HEAD (open, "now" at the live year). Other unlocked 大运 show
+  //    only NOTABLE 流年 (a few commits — the "一串节点" look without dumping 80
+  //    years); the checked-out 大运 expands to its full decade. Free tier locks
+  //    every 大运 but the current one to a ghost bump. ──
+  const expanded = expandedDayunIndex ?? cur
+  const isNotable = (ln: LiunianRow): boolean =>
+    ln.fit !== '平' || chipFor(ln.reasons, ln.pillar.branch, taohuaBranch, yimaBranch) !== undefined
+  let trunkBottom = sourceY
 
   payload.dayun.forEach((d, i) => {
     const state: NodeState = i < cur ? 'past' : i === cur ? 'current' : 'future'
     const locked = !isPro && state !== 'current'
-    const nodeY = y
-    const edges = locked ? ghostEdges : solidEdges
+    const dayunY = y
+    const dayunChip = chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch)
 
-    if (state === 'current') {
-      // Open (checked-out) branch — diverge from the trunk just above, place the
-      // 大运 head, then run the 流年 down the branch lane. It does NOT merge: HEAD.
-      curve(edges, TRUNK_X, nodeY - STEP / 2, BRANCH_X, nodeY)
+    if (locked) {
+      // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
+      curve(ghostEdges, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
+      curve(ghostEdges, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
       nodes.push({
         id: `dayun-${d.index}`,
         x: BRANCH_X,
-        y: nodeY,
-        r: NODE_R + 1,
-        kind: 'dayun',
-        state,
-        locked: false,
-        isHead: false,
-        element: d.pillar.element,
-        fit: d.fit,
-        chip: chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch),
-        title: `${d.pillar.stem}${d.pillar.branch}`,
-        sub: `${d.startAge}`,
-        ref: { kind: 'dayun', row: d },
-      })
-      y += STEP
-
-      // 流年 commits along the branch lane.
-      let prevY = nodeY
-      visibleLiunian.forEach((r) => {
-        const ls: NodeState = r.isCurrent ? 'current' : r.year < thisYear ? 'past' : 'future'
-        solidEdges.moveTo(BRANCH_X, prevY)
-        solidEdges.lineTo(BRANCH_X, y)
-        nodes.push({
-          id: `liunian-${r.year}`,
-          x: BRANCH_X,
-          y,
-          r: r.isCurrent ? HEAD_R : NODE_R,
-          kind: 'liunian',
-          state: ls,
-          locked: false,
-          isHead: r.isCurrent,
-          element: r.pillar.element,
-          fit: r.fit,
-          chip: chipFor(r.reasons, r.pillar.branch, taohuaBranch, yimaBranch),
-          title: `${r.pillar.stem}${r.pillar.branch}`,
-          sub: `${r.year}`,
-          ref: { kind: 'liunian', row: r },
-        })
-        prevY = y
-        y += STEP
-      })
-    } else {
-      // Merged (past) or unlived (future) — a bump that peels out and rejoins.
-      curve(edges, TRUNK_X, nodeY - STEP / 2, BRANCH_X, nodeY)
-      curve(edges, BRANCH_X, nodeY, TRUNK_X, nodeY + STEP / 2)
-      nodes.push({
-        id: `dayun-${d.index}`,
-        x: BRANCH_X,
-        y: nodeY,
+        y: dayunY,
         r: NODE_R,
         kind: 'dayun',
         state,
-        locked,
+        locked: true,
         isHead: false,
         element: d.pillar.element,
         fit: d.fit,
-        chip: chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch),
+        chip: dayunChip,
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
       })
+      trunkBottom = Math.max(trunkBottom, dayunY + STEP / 2)
       y += STEP
+      return
+    }
+
+    // Free's current branch runs up to "now" only — forward-looking years stay the
+    // Pro moat. Pro: the current (or checked-out) 大运 shows its full decade; other
+    // 大运 show notable commits.
+    const years =
+      state === 'current'
+        ? isPro
+          ? d.liunian
+          : d.liunian.filter((ln) => ln.year <= thisYear)
+        : i === expanded
+          ? d.liunian
+          : d.liunian.filter(isNotable)
+
+    // Peel the branch out of the trunk and place the 大运 head.
+    curve(solidEdges, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
+    trunkBottom = Math.max(trunkBottom, dayunY)
+    nodes.push({
+      id: `dayun-${d.index}`,
+      x: BRANCH_X,
+      y: dayunY,
+      r: state === 'current' ? NODE_R + 1 : NODE_R,
+      kind: 'dayun',
+      state,
+      locked: false,
+      isHead: false,
+      element: d.pillar.element,
+      fit: d.fit,
+      chip: dayunChip,
+      title: `${d.pillar.stem}${d.pillar.branch}`,
+      sub: `${d.startAge}`,
+      ref: { kind: 'dayun', row: d },
+    })
+    y += STEP
+
+    // 流年 commits down the branch lane.
+    let prevY = dayunY
+    years.forEach((ln) => {
+      const ls: NodeState = ln.isCurrent ? 'current' : ln.year < thisYear ? 'past' : 'future'
+      solidEdges.moveTo(BRANCH_X, prevY)
+      solidEdges.lineTo(BRANCH_X, y)
+      nodes.push({
+        id: `liunian-${ln.year}`,
+        x: BRANCH_X,
+        y,
+        r: ln.isCurrent ? HEAD_R : NODE_R,
+        kind: 'liunian',
+        state: ls,
+        locked: false,
+        isHead: ln.isCurrent,
+        element: ln.pillar.element,
+        fit: ln.fit,
+        chip: chipFor(ln.reasons, ln.pillar.branch, taohuaBranch, yimaBranch),
+        title: `${ln.pillar.stem}${ln.pillar.branch}`,
+        sub: `${ln.year}`,
+        ref: { kind: 'liunian', row: ln },
+      })
+      prevY = y
+      y += STEP
+    })
+
+    // Merge back into the trunk — unless this is the open HEAD (current) branch.
+    if (state !== 'current') {
+      curve(solidEdges, BRANCH_X, prevY, TRUNK_X, y)
+      trunkBottom = Math.max(trunkBottom, y)
+      y += STEP / 2
+    } else {
+      trunkBottom = Math.max(trunkBottom, prevY)
     }
   })
 
@@ -260,14 +294,16 @@ function buildGraph(
     hero.r += 2
   }
 
-  // Trunk line: one continuous through-line of self from SOURCE to the last node.
-  const lastNodeY = y - STEP
+  // Trunk line: one continuous through-line of self from SOURCE down to the
+  // lowest point any branch touches it (last peel / last merge).
   trunkPath.moveTo(TRUNK_X, sourceY)
-  trunkPath.lineTo(TRUNK_X, Math.max(sourceY, lastNodeY))
+  trunkPath.lineTo(TRUNK_X, Math.max(sourceY, trunkBottom))
+
+  const maxNodeY = nodes.reduce((m, n) => Math.max(m, n.y), sourceY)
 
   return {
     width,
-    height: y - STEP + PAD_TOP + SOURCE_R,
+    height: Math.max(trunkBottom, maxNodeY) + STEP / 2 + SOURCE_R,
     nodes,
     trunkPath,
     solidEdges,
