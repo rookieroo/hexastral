@@ -507,6 +507,9 @@ export interface DayunRow extends PeriodFit {
   endAge: number
   /** Set by the route based on today's date. */
   isCurrent: boolean
+  /** This 大运's own 流年 commits (the full decade) — lets the client draw each
+   *  大运 as a real git-graph branch that runs its years and merges back. */
+  liunian: LiunianRow[]
 }
 
 export interface LiunianRow extends PeriodFit {
@@ -526,7 +529,7 @@ export interface LiuyueRow extends PeriodFit {
 }
 
 export interface TimelinePayload {
-  schemaVersion: 1
+  schemaVersion: 2
   computedAt: string
   birth: { date: string; hour: number; gender: 'M' | 'F' }
   pillars: {

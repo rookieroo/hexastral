@@ -87,6 +87,9 @@ interface DayunRow extends PeriodFit {
   startAge: number
   endAge: number
   isCurrent: boolean
+  /** The 大运's own 流年 commits (every year of the decade), so the client can
+   *  draw each 大运 as a real git-graph branch (BT git-graph redesign). */
+  liunian: LiunianRow[]
 }
 
 interface LiunianRow extends PeriodFit {
@@ -106,7 +109,7 @@ interface LiuyueRow extends PeriodFit {
 }
 
 export interface TimelinePayload {
-  schemaVersion: 1
+  schemaVersion: 2
   computedAt: string
   birth: { date: string; hour: number; gender: 'M' | 'F' }
   pillars: {
@@ -199,6 +202,16 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
   // timeline rows track Gregorian boundaries, so a January user landing pre-立春 still
   // sees their current row correctly bracketed.
   const todayYear = now.getUTCFullYear()
+  // Build each 大运's own 流年 commits (the full decade) so the client can draw
+  // every 大运 as a real branch with nodes that merge back — not a bare bump.
+  const liunianForDayun = (startYear: number, endYear: number): LiunianRow[] =>
+    getLiuNianRange(year, startYear, endYear).map((ln) => ({
+      year: ln.year,
+      pillar: pillarFrom(ln.ganZhi.stem, ln.ganZhi.branch),
+      age: ln.age,
+      isCurrent: ln.year === todayYear,
+      ...periodFit(ln.ganZhi.stem, ln.ganZhi.branch),
+    }))
   const dayunRows: DayunRow[] = daYun.steps.map((s) => ({
     index: s.index,
     pillar: pillarFrom(s.ganZhi.stem, s.ganZhi.branch),
@@ -207,6 +220,7 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
     startAge: s.startAge,
     endAge: s.endAge,
     isCurrent: todayYear >= s.startYear && todayYear <= s.endYear,
+    liunian: liunianForDayun(s.startYear, s.endYear),
     ...periodFit(s.ganZhi.stem, s.ganZhi.branch),
   }))
   const currentDayunIndex = dayunRows.findIndex((r) => r.isCurrent)
@@ -250,7 +264,7 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
   void EARTHLY_BRANCHES
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     computedAt: now.toISOString(),
     birth: { date: body.birthDate, hour: body.birthHour, gender: body.gender },
     pillars: { year: yearP, month: monthP, day: dayP, hour: hourP },

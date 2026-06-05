@@ -148,7 +148,11 @@ function resolveNodeDetail(
     }
   }
   const year = Number(selectedId.slice('liunian-'.length))
-  const row = payload.liunian.find((r) => r.year === year)
+  // 流年 now come from each 大运's own decade (git-graph) — search those first,
+  // falling back to the ±5y top-level set.
+  const row =
+    payload.dayun.flatMap((d) => d.liunian).find((r) => r.year === year) ??
+    payload.liunian.find((r) => r.year === year)
   if (!row) return null
   const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
   return {
@@ -184,6 +188,23 @@ export default function TimelineScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Checked-out 大运 (0-based) — tapping a 大运 expands its full decade (git "checkout"),
+  // tapping it again collapses back to the current 大运. Null = current.
+  const [expandedDayun, setExpandedDayun] = useState<number | null>(null)
+  const handleSelect = useCallback(
+    (id: string) => {
+      setSelectedId(id)
+      if (!id.startsWith('dayun-')) return
+      setExpandedDayun((prev) => {
+        if (state.kind !== 'data') return prev
+        const di = Number(id.slice('dayun-'.length))
+        const arrIdx = state.payload.dayun.findIndex((d) => d.index === di)
+        if (arrIdx < 0) return prev
+        return prev === arrIdx ? null : arrIdx
+      })
+    },
+    [state]
+  )
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
   // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
   // baking it ahead of the tap makes Share feel instant.
@@ -299,7 +320,8 @@ export default function TimelineScreen() {
             payload={state.payload}
             isPro={isPro}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={handleSelect}
+            expandedDayun={expandedDayun}
             onLockedTap={() => setPaywallOpen(true)}
             colors={colors}
             spacing={spacing}
@@ -359,6 +381,7 @@ export default function TimelineScreen() {
                     reasonLabels={t.yinzheng.signals}
                     taohuaBranch={taohuaBranch}
                     yimaBranch={yimaBranch}
+                    expandedDayunIndex={expandedDayun ?? undefined}
                   />
                   {/* Bake the SELECTED node's reading below the graph (no anchored
                       popover in a static card) — the share's takeaway tracks the
@@ -486,6 +509,7 @@ function Body({
   isPro,
   selectedId,
   onSelect,
+  expandedDayun,
   onLockedTap,
   colors,
   spacing,
@@ -496,6 +520,7 @@ function Body({
   isPro: boolean
   selectedId: string | null
   onSelect: (id: string) => void
+  expandedDayun: number | null
   onLockedTap: () => void
   colors: BodyColors
   spacing: BodySpacing
@@ -545,6 +570,7 @@ function Body({
         reasonLabels={t.yinzheng.signals}
         taohuaBranch={taohuaBranch}
         yimaBranch={yimaBranch}
+        expandedDayunIndex={expandedDayun ?? undefined}
       />
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
