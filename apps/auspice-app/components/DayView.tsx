@@ -175,6 +175,9 @@ export function DayView({
           data={payload.personalization}
           locked={!isPro}
           onUnlock={() => setPaywallOpen(true)}
+          // Pro: open the deep LLM reading of today's 对你而言 (ExplainSheet carries
+          // dayMaster, so it's personalized). The verdict is the explain subject.
+          onDeepRead={() => setExplainField(t.personal.fit[payload.personalization!.fit])}
         />
       ) : (
         <Pressable

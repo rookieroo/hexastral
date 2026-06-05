@@ -296,6 +296,8 @@ export interface Strings {
     summary: Record<PersonalFit, string>
     /** Quiet CTA that opens the Pro reading ("see why"). */
     why: string
+    /** Pro-tier CTA on 对你而言 → opens the LLM deep reading of the day. */
+    deepRead: string
     reason: Record<PersonalReasonCode, string>
     setBirth: string
     birthDatePlaceholder: string
@@ -584,6 +586,7 @@ const zhHans: Strings = {
       凶: '今天宜守不宜攻，低调收敛、避免冒进。',
     },
     why: '了解原因',
+    deepRead: '深入解读',
     reason: {
       day_generates_self: '今日五行生扶你，宜把握时机',
       day_controls_self: '今日五行克你，宜守不宜攻',
@@ -841,6 +844,7 @@ const zhHant: Strings = {
       凶: '今天宜守不宜攻，低調收斂、避免冒進。',
     },
     why: '了解原因',
+    deepRead: '深入解讀',
     reason: {
       day_generates_self: '今日五行生扶你，宜把握時機',
       day_controls_self: '今日五行剋你，宜守不宜攻',
@@ -1124,6 +1128,7 @@ const ja: Strings = {
       凶: '今日は攻めより守り。控えめに、無理は避けましょう。',
     },
     why: '理由を見る',
+    deepRead: '詳しく読む',
     reason: {
       day_generates_self: '本日の五行があなたを生じ、好機です',
       day_controls_self: '本日の五行があなたを剋す、守りを',
@@ -1409,6 +1414,7 @@ const en: Strings = {
       凶: 'A day to hold back — stay low-key and avoid pushing your luck.',
     },
     why: 'See why',
+    deepRead: 'Go deeper',
     reason: {
       day_generates_self: "Today's element nourishes you — seize the moment",
       day_controls_self: "Today's element restrains you — hold steady",

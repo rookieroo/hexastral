@@ -79,7 +79,11 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     const laneX = TRUNK_X + (i + 1) * laneW
     const path = Skia.Path.Make()
     const forkY = yForAge(br.divergeAtAge)
-    const drop = ageStep * 3
+    // Scale the vertical run with the horizontal travel so EVERY branch sweeps
+    // at the same gentle angle — a fixed drop made outer (far) lanes curve steep
+    // and cramped. The longer rail reads as a more graceful git-graph bezier.
+    const horiz = laneX - TRUNK_X
+    const drop = Math.max(ageStep * 2.5, horiz * 1.15)
     // diverge out of the trunk (smooth S-curve)
     path.moveTo(TRUNK_X, forkY)
     path.cubicTo(TRUNK_X, forkY + drop / 2, laneX, forkY + drop / 2, laneX, forkY + drop)

@@ -19,11 +19,15 @@ export function PersonalCard({
   data,
   locked = false,
   onUnlock,
+  onDeepRead,
 }: {
   data: AuspicePersonalization
   /** Free tier: show the verdict + one-line read, gate the per-reason detail. */
   locked?: boolean
   onUnlock?: () => void
+  /** Pro tier: open the LLM deep reading of the day's 对你而言 (the per-reason
+   *  text alone was a dead end — paid users had nowhere deeper to go). */
+  onDeepRead?: () => void
 }) {
   const { colors, spacing } = useTheme()
   const { t } = useStrings()
@@ -78,11 +82,34 @@ export function PersonalCard({
           </Pressable>
         ) : null
       ) : (
-        data.reasons.map((r) => (
-          <Text key={r} style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
-            · {t.personal.reason[r]}
-          </Text>
-        ))
+        <>
+          {data.reasons.map((r) => (
+            <Text key={r} style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
+              · {t.personal.reason[r]}
+            </Text>
+          ))}
+          {/* Pro deep-read entry — the per-reason lines alone dead-ended paid
+              users; this opens the LLM reading of today's 对你而言. */}
+          {onDeepRead ? (
+            <Pressable
+              onPress={onDeepRead}
+              accessibilityRole='button'
+              accessibilityLabel={t.personal.deepRead}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 2,
+                marginTop: spacing.xs,
+                opacity: pressed ? 0.55 : 1,
+              })}
+            >
+              <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+                {t.personal.deepRead}
+              </Text>
+              <ChevronRightIcon size={14} color={colors.accent} strokeWidth={1.6} />
+            </Pressable>
+          ) : null}
+        </>
       )}
     </View>
   )
