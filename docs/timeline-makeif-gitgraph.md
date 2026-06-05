@@ -112,6 +112,12 @@ black-box, verifiable). The LLM branch expansion is now **secondary**.
 The git-graph skeleton is a vessel; these fill it with real 命理 business. All
 backed by existing `astro-core` — no Workers AI.
 
+> **✅ SHIPPED** on `claude/timeline-shishen-huajie` (`bun test`/`typecheck`/`biome`
+> green; NOT yet visually verified or merged): all 3 below.
+> - 1 十神 decade-theme: `getShiShen(...).category` on 大运 nodes → `timelineDomain`
+> - 2 化解: `analyzeGeJu(...).favorableElement` → `timelineHuajie` on conflict nodes
+> - 3 命主干 backdrop (make-if): real 大运 十神 at merge/fork age → `makeifBackdrop`
+
 1. **十神 decade-theme** — each 大运 carries its 十神 category vs the 日主
    (`getShiShen(dayMaster, periodStem).category` → 比劫/食伤/财星/官杀/印绶), mapped
    to a life domain (人际/表达/财富/事业/学业). The branch gets a NAME (git: a
