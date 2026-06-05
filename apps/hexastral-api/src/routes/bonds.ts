@@ -98,6 +98,14 @@ const soloCreateSchema = z.object({
   relationshipLabel: z.string().min(1).max(30),
   targetBirth: personBirthSchema,
   language: z.string().optional().default('zh-CN'),
+  /**
+   * Cross-app hand-off from Auspice (the 亲友 → Kindred funnel). When set, the
+   * compatibility paywall is skipped so the imported bond lands on a real report
+   * — but only the free 3 chapters (chaptersUnlocked stays false; the rest unlock
+   * via the wall). Abuse is bounded by the free ≤3-bond limit checked above, so
+   * no extra cap is needed.
+   */
+  fromHandoff: z.boolean().optional().default(false),
 })
 
 const resonanceInviteSchema = z.object({
@@ -267,15 +275,20 @@ bondRoutes.post('/solo', async (c) => {
   const bondLimit = await checkBondLimit(db, userId)
   if (!bondLimit.allowed) return bondLimitError(c, bondLimit)
 
-  // Access check — Pro quota or single IAP required
-  const access = await checkReadingAccess(db, userId, 'compatibility', {
-    allowBondInviteCredit: false,
-  })
-  if (!access.granted) {
-    return jsonErr(c, 403, ApiErrorCode.paywall_required, access.reason ?? 'Paywall required', {
-      iapProductId: access.iapProductId,
-      price: access.price,
+  // Access check — Pro quota or single IAP required. The Auspice → Kindred
+  // hand-off skips it: the imported bond should land on a real report (free 3
+  // chapters), with the full report gated by the unlock wall instead of an
+  // up-front paywall. Bounded by the free ≤3-bond limit checked above.
+  if (!input.fromHandoff) {
+    const access = await checkReadingAccess(db, userId, 'compatibility', {
+      allowBondInviteCredit: false,
     })
+    if (!access.granted) {
+      return jsonErr(c, 403, ApiErrorCode.paywall_required, access.reason ?? 'Paywall required', {
+        iapProductId: access.iapProductId,
+        price: access.price,
+      })
+    }
   }
 
   // Get user birth data for person A
@@ -413,9 +426,9 @@ bondRoutes.post('/solo', async (c) => {
       targetBirthLunarDate: input.targetBirth.lunarDate ?? null,
       targetBirthIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
       unlockedDimensions: '4',
-      // A paid the compatibility fee to create this solo reading — the full
-      // six-chapter report is included, so no unlock wall for solo bonds.
-      chaptersUnlocked: true,
+      // Paid solo create includes the full six chapters; the free Auspice
+      // hand-off lands on the free 3 + unlock wall instead.
+      chaptersUnlocked: !input.fromHandoff,
       status: 'active',
     }),
   ])

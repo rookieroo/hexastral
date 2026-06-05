@@ -648,7 +648,7 @@ const zhHans: Strings = {
   kindredComposeCta: '在 Kindred 看完整合盘 →',
   kindredShareConsent: {
     title: '分享生辰给 Kindred?',
-    body: '将把你和 TA 的出生信息发送到 Kindred,用于生成完整关系合盘。仅在你同意后共享。',
+    body: '将把你和 TA 的出生信息发送到 Kindred,用于生成关系合盘。前几章免费阅读,完整报告在 Kindred 内解锁(下载并不会全部解锁)。仅在你同意后共享。',
     confirm: '同意并打开',
     cancel: '取消',
   },
@@ -914,7 +914,7 @@ const zhHant: Strings = {
   kindredComposeCta: '在 Kindred 看完整合盤 →',
   kindredShareConsent: {
     title: '分享生辰給 Kindred?',
-    body: '將把你和 TA 的出生資訊傳送到 Kindred,用於產生完整關係合盤。僅在你同意後共享。',
+    body: '將把你和 TA 的出生資訊傳送到 Kindred,用於產生關係合盤。前幾章免費閱讀,完整報告在 Kindred 內解鎖(下載並不會全部解鎖)。僅在你同意後共享。',
     confirm: '同意並開啟',
     cancel: '取消',
   },
@@ -1207,7 +1207,7 @@ const ja: Strings = {
   kindredComposeCta: 'Kindred で本格相性鑑定 →',
   kindredShareConsent: {
     title: 'Kindred に生年月日を共有しますか?',
-    body: 'あなたと相手の出生情報を Kindred に送り、完全な相性鑑定を作成します。同意した場合のみ共有します。',
+    body: 'あなたと相手の出生情報を Kindred に送り、相性鑑定を作成します。最初の数章は無料、完全版は Kindred 内でアンロックします(ダウンロードだけで全章解放ではありません)。同意した場合のみ共有します。',
     confirm: '同意して開く',
     cancel: 'キャンセル',
   },
@@ -1502,7 +1502,7 @@ const en: Strings = {
   kindredComposeCta: 'Open full reading in Kindred →',
   kindredShareConsent: {
     title: 'Share birth details with Kindred?',
-    body: 'We will send both birth details to Kindred to generate the full compatibility reading. Shared only with your consent.',
+    body: 'We will send both birth details to Kindred to generate your compatibility reading. The first chapters are free; the full report unlocks inside Kindred (downloading does not unlock everything). Shared only with your consent.',
     confirm: 'Agree & open',
     cancel: 'Cancel',
   },
