@@ -650,9 +650,26 @@ function Sandbox({
                     {featured.label}
                   </Text>
                 </View>
+                {/* 影响 — what this 假如 changes. */}
                 <Text style={{ color: SHARE_PALETTE.secondary, fontSize: 13.5, lineHeight: 21 }}>
                   {featured.summary || deriveMakeIfSummary(featured.outcome)}
                 </Text>
+                {/* 注意/时机 — only for a present/future 假如 (an actionable decision):
+                    what the user's CURRENT 命局 window favors. Past "假如当年" is a
+                    reflection, not a choice, so it carries no timing call. */}
+                {!featured.isPast && timing ? (
+                  <Text
+                    style={{
+                      color: SHARE_PALETTE.dim,
+                      fontSize: 12,
+                      lineHeight: 18,
+                      marginTop: 2,
+                    }}
+                  >
+                    {`${t.makeifTiming.frame} · ${timing.label}`}
+                    {timing.reasons ? ` — ${timing.reasons}` : ''}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
           </ShareableCard>

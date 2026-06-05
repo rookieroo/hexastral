@@ -93,6 +93,80 @@ interface BirthCtx {
   gender: 'M' | 'F'
 }
 
+interface NodeDetail {
+  heading: string
+  body: string
+  fit: PersonalFit | null
+}
+
+/**
+ * Resolve a selected node id → its 对你而言 verdict + advice. Pure + shared by the
+ * live Body and the share capture, so the PNG bakes exactly the node the user has
+ * selected (WYSIWYG) instead of a hardcoded "current 大运".
+ */
+function resolveNodeDetail(
+  payload: TimelinePayload,
+  selectedId: string | null,
+  t: ReturnType<typeof useStrings>['t']
+): NodeDetail | null {
+  // The 用神/忌神 element note — the per-node "why" the per-grade advice drops.
+  const elementNote = (reasons: string[], element: string): string => {
+    if (reasons.includes('favorable_element_present'))
+      return ` ${t.timelinePeriodElement.favorable.replace('{el}', element)}`
+    if (reasons.includes('unfavorable_element_present'))
+      return ` ${t.timelinePeriodElement.unfavorable.replace('{el}', element)}`
+    return ''
+  }
+  if (!selectedId) return null
+  if (selectedId === 'source') {
+    return {
+      heading: `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`,
+      fit: null,
+      body: t.personal.birthHint,
+    }
+  }
+  if (selectedId.startsWith('dayun-')) {
+    const idx = Number(selectedId.slice('dayun-'.length))
+    const row = payload.dayun.find((d) => d.index === idx)
+    if (!row) return null
+    const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+    return {
+      heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
+      fit: row.fit,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
+    }
+  }
+  if (selectedId.startsWith('liuyue-')) {
+    const [, y, m] = selectedId.split('-')
+    const row = payload.liuyue.find((r) => r.year === Number(y) && r.month === Number(m))
+    if (!row) return null
+    const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+    return {
+      heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+      fit: row.fit,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
+    }
+  }
+  const year = Number(selectedId.slice('liunian-'.length))
+  const row = payload.liunian.find((r) => r.year === year)
+  if (!row) return null
+  const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
+  return {
+    heading: `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+    fit: row.fit,
+    body: `${t.timelineAdvice[row.fit]}${clash}`,
+  }
+}
+
+/** 本命 桃花/驿马 branches (from the birth-year branch) — drive the per-node chips. */
+function birthSignals(payload: TimelinePayload): { taohuaBranch?: string; yimaBranch?: string } {
+  const [y, m, d] = payload.birth.date.split('-').map(Number)
+  if (!y || !m || !d) return {}
+  const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
+  const branch = getFourPillars({ year: y, month: m, day: d, hour }).year.branch
+  return { taohuaBranch: getTaoHua(branch), yimaBranch: getYiMa(branch) }
+}
+
 type ScreenState =
   | { kind: 'loading' }
   | { kind: 'no-birth' }
@@ -243,6 +317,19 @@ export default function TimelineScreen() {
         ? (() => {
             const snap = buildTimelineSnapshot(state.payload, t)
             const chrome = timelineShareChrome(locale)
+            const { taohuaBranch, yimaBranch } = birthSignals(state.payload)
+            // WYSIWYG: bake the node the user actually has selected (its highlight +
+            // reading), falling back to the current 大运 so a fresh share still has a
+            // takeaway. What they see on screen = what they share.
+            const shareDetail =
+              resolveNodeDetail(state.payload, selectedId, t) ??
+              (snap
+                ? {
+                    heading: `${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`,
+                    body: snap.advice,
+                    fit: snap.fit as PersonalFit | null,
+                  }
+                : null)
             return (
               <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
                 <ShareableCard
@@ -262,26 +349,25 @@ export default function TimelineScreen() {
                   <TimelineGraph
                     payload={state.payload}
                     isPro={isPro}
-                    selectedId={null}
+                    selectedId={selectedId}
                     onSelect={() => {}}
                     onLockedTap={() => {}}
                     colors={SHARE_PALETTE}
                     width={screenWidth - 48}
                     detail={null}
                     fitLabels={t.personal.fit}
-                    signalLabels={{
-                      favorable: t.yinzheng.signals.favorable,
-                      unfavorable: t.yinzheng.signals.unfavorable,
-                    }}
+                    reasonLabels={t.yinzheng.signals}
+                    taohuaBranch={taohuaBranch}
+                    yimaBranch={yimaBranch}
                   />
-                  {/* The live graph pops a reading bubble on tap; the capture has no
-                      selection, so bake the CURRENT 大运 reading in directly — a
-                      forwarded image is otherwise just dots with no takeaway. */}
-                  {snap ? (
+                  {/* Bake the SELECTED node's reading below the graph (no anchored
+                      popover in a static card) — the share's takeaway tracks the
+                      user's selection. */}
+                  {shareDetail ? (
                     <ReadingBubble
-                      heading={`${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`}
-                      body={snap.advice}
-                      fit={snap.fit}
+                      heading={shareDetail.heading}
+                      body={shareDetail.body}
+                      fit={shareDetail.fit}
                       colors={SHARE_PALETTE}
                     />
                   ) : null}
@@ -417,56 +503,8 @@ function Body({
   t: ReturnType<typeof useStrings>['t']
 }) {
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
-  const detail = useMemo(() => {
-    // The 用神/忌神 signal for a period, from its reasons — the per-node "why" the
-    // generic per-grade advice drops. Empty when the element is neutral.
-    const elementNote = (reasons: string[], element: string): string => {
-      if (reasons.includes('favorable_element_present'))
-        return ` ${t.timelinePeriodElement.favorable.replace('{el}', element)}`
-      if (reasons.includes('unfavorable_element_present'))
-        return ` ${t.timelinePeriodElement.unfavorable.replace('{el}', element)}`
-      return ''
-    }
-    if (!selectedId) return null
-    if (selectedId === 'source') {
-      return {
-        heading: `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`,
-        fit: null as PersonalFit | null,
-        body: t.personal.birthHint,
-      }
-    }
-    if (selectedId.startsWith('dayun-')) {
-      const idx = Number(selectedId.slice('dayun-'.length))
-      const row = payload.dayun.find((d) => d.index === idx)
-      if (!row) return null
-      const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
-      return {
-        heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
-        fit: row.fit,
-        body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
-      }
-    }
-    if (selectedId.startsWith('liuyue-')) {
-      const [, y, m] = selectedId.split('-')
-      const row = payload.liuyue.find((r) => r.year === Number(y) && r.month === Number(m))
-      if (!row) return null
-      const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
-      return {
-        heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
-        fit: row.fit,
-        body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}`,
-      }
-    }
-    const year = Number(selectedId.slice('liunian-'.length))
-    const row = payload.liunian.find((r) => r.year === year)
-    if (!row) return null
-    const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
-    return {
-      heading: `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
-      fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${clash}`,
-    }
-  }, [selectedId, payload, t])
+  const detail = useMemo(() => resolveNodeDetail(payload, selectedId, t), [selectedId, payload, t])
+  const { taohuaBranch, yimaBranch } = useMemo(() => birthSignals(payload), [payload])
 
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
   const birthBranch = useMemo<EarthlyBranch | null>(() => {
@@ -504,10 +542,9 @@ function Body({
         width={canvasWidth}
         detail={selectedId?.startsWith('liuyue-') ? null : detail}
         fitLabels={t.personal.fit}
-        signalLabels={{
-          favorable: t.yinzheng.signals.favorable,
-          unfavorable: t.yinzheng.signals.unfavorable,
-        }}
+        reasonLabels={t.yinzheng.signals}
+        taohuaBranch={taohuaBranch}
+        yimaBranch={yimaBranch}
       />
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}

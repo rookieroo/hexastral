@@ -29,13 +29,34 @@ import { ELEMENT_COLORS } from '@/lib/shichen-content'
 /** 对你而言 verdict → dot color (吉 green / 平 grey / 凶 red). Matches the daily 黄历. */
 const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
-/** 用神/忌神 marker tint — the period's element either helps (用神) or hinders (忌神). */
-const SIGNAL_COLOR = { favorable: '#B8860B', unfavorable: '#C2410C' } as const
+/** The single most salient "why" tag a period earns (priority-ranked, one per node). */
+type ChipKind = 'clash' | 'unfavorable' | 'favorable' | 'taohua' | 'yima'
 
-/** A period's element relationship to the day master, distilled from its reasons. */
-function signalFromReasons(reasons: readonly string[]): 'favorable' | 'unfavorable' | undefined {
-  if (reasons.includes('favorable_element_present')) return 'favorable'
+/** Chip tint — caution (冲/忌) warm-red, 用神 gold, 桃花 rose, 驿马 teal. */
+const CHIP_COLOR: Record<ChipKind, string> = {
+  clash: '#C2410C',
+  unfavorable: '#C2410C',
+  favorable: '#B8860B',
+  taohua: '#C45D8D',
+  yima: '#2A8C7F',
+}
+
+/**
+ * Pick the ONE most salient reason for a period — not a pile of tags. Priority:
+ * 冲太岁 (a year to brace for) > 忌神 > 用神 > 桃花 > 驿马. 桃花/驿马 come from the
+ * period branch vs the natal 本命支 (passed in); the rest from the server reasons.
+ */
+function chipFor(
+  reasons: readonly string[],
+  branch: string,
+  taohuaBranch?: string,
+  yimaBranch?: string
+): ChipKind | undefined {
+  if (reasons.includes('personal_clash')) return 'clash'
   if (reasons.includes('unfavorable_element_present')) return 'unfavorable'
+  if (reasons.includes('favorable_element_present')) return 'favorable'
+  if (taohuaBranch && branch === taohuaBranch) return 'taohua'
+  if (yimaBranch && branch === yimaBranch) return 'yima'
   return undefined
 }
 
@@ -74,8 +95,10 @@ interface GNode {
   isHead: boolean
   element: '木' | '火' | '土' | '金' | '水'
   fit?: PersonalFit
-  /** 用神/忌神 — the period's element helps or hinders (the per-node "why"). */
-  signal?: 'favorable' | 'unfavorable'
+  /** The single most salient "why" tag (the per-node reason; one only). */
+  chip?: ChipKind
+  /** The one forward-looking 爆点 node — enlarged + emphasized for the share. */
+  isHero?: boolean
   title: string
   sub: string
   /** Index back into the source rows for the detail panel. */
@@ -105,7 +128,13 @@ function curve(
   p.cubicTo(x1, midY, x2, midY, x2, y2)
 }
 
-function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): BuiltGraph {
+function buildGraph(
+  payload: TimelinePayload,
+  isPro: boolean,
+  width: number,
+  taohuaBranch?: string,
+  yimaBranch?: string
+): BuiltGraph {
   const nodes: GNode[] = []
   const trunkPath = Skia.Path.Make()
   const solidEdges = Skia.Path.Make()
@@ -159,7 +188,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
         isHead: false,
         element: d.pillar.element,
         fit: d.fit,
-        signal: signalFromReasons(d.reasons),
+        chip: chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch),
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -183,7 +212,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
           isHead: r.isCurrent,
           element: r.pillar.element,
           fit: r.fit,
-          signal: signalFromReasons(r.reasons),
+          chip: chipFor(r.reasons, r.pillar.branch, taohuaBranch, yimaBranch),
           title: `${r.pillar.stem}${r.pillar.branch}`,
           sub: `${r.year}`,
           ref: { kind: 'liunian', row: r },
@@ -206,7 +235,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
         isHead: false,
         element: d.pillar.element,
         fit: d.fit,
-        signal: signalFromReasons(d.reasons),
+        chip: chipFor(d.reasons, d.pillar.branch, taohuaBranch, yimaBranch),
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -214,6 +243,22 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
       y += STEP
     }
   })
+
+  // Hero (the share 爆点): the nearest UPCOMING node carrying a high-signal chip
+  // (a year to brace for / lean into), else fall back to "now". One only — a
+  // single focal point reads better than uniform density.
+  const hero =
+    nodes.find(
+      (n) =>
+        !n.locked &&
+        n.kind !== 'source' &&
+        n.state === 'future' &&
+        (n.chip === 'clash' || n.chip === 'unfavorable' || n.chip === 'favorable')
+    ) ?? nodes.find((n) => n.isHead)
+  if (hero) {
+    hero.isHero = true
+    hero.r += 2
+  }
 
   // Trunk line: one continuous through-line of self from SOURCE to the last node.
   const lastNodeY = y - STEP
@@ -242,7 +287,9 @@ export function TimelineGraph({
   width,
   detail,
   fitLabels,
-  signalLabels,
+  reasonLabels,
+  taohuaBranch,
+  yimaBranch,
 }: {
   payload: TimelinePayload
   isPro: boolean
@@ -255,10 +302,16 @@ export function TimelineGraph({
   detail?: { heading: string; body: string; fit: PersonalFit | null } | null
   /** Localized 吉/平/凶 verdict words — shown inline per node for at-a-glance density. */
   fitLabels?: Record<PersonalFit, string>
-  /** Localized 用神/忌神 short labels — the per-node "why" tag. */
-  signalLabels?: { favorable: string; unfavorable: string }
+  /** Localized one-word reason labels for the per-node chip (one shown, priority-ranked). */
+  reasonLabels?: Record<ChipKind, string>
+  /** 本命 桃花/驿马 branches — a period landing on one earns that chip. */
+  taohuaBranch?: string
+  yimaBranch?: string
 }) {
-  const graph = useMemo(() => buildGraph(payload, isPro, width), [payload, isPro, width])
+  const graph = useMemo(
+    () => buildGraph(payload, isPro, width, taohuaBranch, yimaBranch),
+    [payload, isPro, width, taohuaBranch, yimaBranch]
+  )
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
   return (
@@ -313,6 +366,9 @@ export function TimelineGraph({
               <Circle cx={n.x} cy={n.y} r={n.r + 3} color={colors.bg} />
               {n.isHead ? (
                 <Circle cx={n.x} cy={n.y} r={n.r + 7} color={colors.accent} opacity={0.12} />
+              ) : null}
+              {n.isHero && !n.isHead && n.chip ? (
+                <Circle cx={n.x} cy={n.y} r={n.r + 6} color={CHIP_COLOR[n.chip]} opacity={0.14} />
               ) : null}
               {/* Fill: current/source carry their element color; others read as hollow. */}
               <Circle
@@ -402,10 +458,22 @@ export function TimelineGraph({
                     />
                   )
                 ) : null}
-                {/* The per-node "why": whether this period's element is 用神/忌神. */}
-                {n.signal && signalLabels ? (
-                  <Text style={{ color: SIGNAL_COLOR[n.signal], fontSize: 10, fontWeight: '600' }}>
-                    {signalLabels[n.signal]}
+                {/* The per-node "why": ONE priority-ranked reason chip. The hero
+                    wears it as a filled pill (the share 爆点); others as plain text. */}
+                {n.chip && reasonLabels ? (
+                  <Text
+                    style={{
+                      color: n.isHero ? colors.bg : CHIP_COLOR[n.chip],
+                      backgroundColor: n.isHero ? CHIP_COLOR[n.chip] : 'transparent',
+                      fontSize: n.isHero ? 11 : 10,
+                      fontWeight: n.isHero ? '700' : '600',
+                      overflow: 'hidden',
+                      borderRadius: 4,
+                      paddingHorizontal: n.isHero ? 5 : 0,
+                      paddingVertical: n.isHero ? 1 : 0,
+                    }}
+                  >
+                    {reasonLabels[n.chip]}
                   </Text>
                 ) : null}
                 {n.isHead ? (
