@@ -14,6 +14,13 @@
  * own type ARE the page. Element colors come from the shared 五行 palette.
  */
 
+import {
+  type EarthlyBranch,
+  getFourPillars,
+  getTaoHua,
+  getYiMa,
+  retrodictionMatch,
+} from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
@@ -301,6 +308,88 @@ interface BodySpacing {
   '3xl': number
 }
 
+// 印证 — pinnable life-event categories (mirrors the API's EVENT_TYPES, minus 'other'
+// which has no chip). Module-level so the union types the panel's state precisely.
+const PIN_CATS = ['career', 'relationship', 'health', 'travel', 'education', 'family'] as const
+type PinCat = (typeof PIN_CATS)[number]
+
+/**
+ * 印证 panel — shown under a selected PAST 流年. The user pins what they lived that
+ * year; the chart corroborates it via `retrodictionMatch` over the period's signals
+ * (用神/忌神/冲 from the server-computed reasons + 桃花/驿马 from the 本命支). The
+ * "怎么这么准" moment, built entirely on already-trusted data + the astro-core keystone.
+ */
+function YinzhengPanel({
+  row,
+  birthBranch,
+  t,
+  colors,
+  spacing,
+}: {
+  row: { year: number; pillar: { branch: string }; reasons: readonly string[] }
+  birthBranch: EarthlyBranch
+  t: ReturnType<typeof useStrings>['t']
+  colors: BodyColors
+  spacing: BodySpacing
+}) {
+  const [cat, setCat] = useState<PinCat | null>(null)
+  const line = useMemo(() => {
+    if (!cat) return null
+    const m = retrodictionMatch(cat, {
+      favorsElement: row.reasons.includes('favorable_element_present'),
+      harmsElement: row.reasons.includes('unfavorable_element_present'),
+      clashesBenming: row.reasons.includes('personal_clash'),
+      taohua: row.pillar.branch === getTaoHua(birthBranch),
+      yima: row.pillar.branch === getYiMa(birthBranch),
+    })
+    if (!m.hasMatch) return t.yinzheng.noMatch
+    return `${t.yinzheng.lead}${m.matched.map((k) => t.yinzheng.signals[k]).join(' · ')} — ${t.yinzheng.matchFrame}`
+  }, [cat, row, birthBranch, t])
+
+  return (
+    <View
+      style={{
+        gap: spacing.sm,
+        borderTopWidth: 0.5,
+        borderTopColor: colors.separator,
+        paddingTop: spacing.md,
+      }}
+    >
+      <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
+        {t.yinzheng.prompt}
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {PIN_CATS.map((c) => {
+          const sel = c === cat
+          return (
+            <Pressable
+              key={c}
+              onPress={() => setCat(sel ? null : c)}
+              accessibilityRole='button'
+              accessibilityState={{ selected: sel }}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: 6,
+                borderRadius: 14,
+                borderWidth: sel ? 1 : 0.5,
+                borderColor: sel ? colors.accent : colors.separator,
+                backgroundColor: sel ? colors.accentGhost : 'transparent',
+              }}
+            >
+              <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
+                {t.yinzheng.cats[c]}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+      {line ? (
+        <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>{line}</Text>
+      ) : null}
+    </View>
+  )
+}
+
 function Body({
   payload,
   isPro,
@@ -374,6 +463,22 @@ function Body({
     }
   }, [selectedId, payload, t])
 
+  // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
+  const birthBranch = useMemo<EarthlyBranch | null>(() => {
+    const [y, m, d] = payload.birth.date.split('-').map(Number)
+    if (!y || !m || !d) return null
+    const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
+    return getFourPillars({ year: y, month: m, day: d, hour }).year.branch
+  }, [payload.birth])
+
+  // The selected node, when it's a PAST 流年 — the only place 印证 applies.
+  const pinnableRow = useMemo(() => {
+    if (!selectedId?.startsWith('liunian-')) return null
+    const year = Number(selectedId.slice('liunian-'.length))
+    const row = payload.liunian.find((r) => r.year === year)
+    return row && row.year < new Date().getFullYear() ? row : null
+  }, [selectedId, payload.liunian])
+
   return (
     <View style={{ gap: spacing.xl }}>
       {!isPro ? (
@@ -394,6 +499,18 @@ function Body({
         width={canvasWidth}
         detail={selectedId?.startsWith('liuyue-') ? null : detail}
       />
+
+      {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
+      {isPro && pinnableRow && birthBranch ? (
+        <YinzhengPanel
+          key={pinnableRow.year}
+          row={pinnableRow}
+          birthBranch={birthBranch}
+          t={t}
+          colors={colors}
+          spacing={spacing}
+        />
+      ) : null}
 
       {/* 流月 — the finest commits; each is tappable for its own reading. */}
       {payload.liuyue.length > 0 ? (

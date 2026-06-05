@@ -292,6 +292,7 @@ export {
   type PeriodSignals,
   periodSignals,
   type RetrodictionMatch,
+  type RetrodictionSignals,
   retrodictionMatch,
   type SignalKey,
 } from './period-signals'

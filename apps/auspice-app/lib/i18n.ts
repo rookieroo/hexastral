@@ -200,6 +200,28 @@ export interface Strings {
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
    *  the 用神/忌神 signal that the generic per-grade advice omits. */
   timelinePeriodElement: { favorable: string; unfavorable: string }
+  /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
+  yinzheng: {
+    prompt: string
+    lead: string
+    matchFrame: string
+    noMatch: string
+    cats: {
+      career: string
+      relationship: string
+      health: string
+      travel: string
+      education: string
+      family: string
+    }
+    signals: {
+      taohua: string
+      yima: string
+      favorable: string
+      unfavorable: string
+      clash: string
+    }
+  }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
   timelineClashNote: string
   /** Compact label for the LiuyearBanner on Today (above the hero). */
@@ -464,6 +486,27 @@ const zhHans: Strings = {
     unfavorable: '{el}行为你的忌神，此运宜稳健、多留意。',
   },
   timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
+  yinzheng: {
+    prompt: '这一年你经历了什么?',
+    lead: '那一年正逢',
+    matchFrame: '命盘印证了这一点。',
+    noMatch: '这一年命盘相对平静 —— 变化更多来自你自己。',
+    cats: {
+      career: '事业',
+      relationship: '感情',
+      health: '健康',
+      travel: '远行',
+      education: '学业',
+      family: '家庭',
+    },
+    signals: {
+      taohua: '桃花当令',
+      yima: '驿马动',
+      favorable: '用神助力',
+      unfavorable: '忌神当道',
+      clash: '冲太岁',
+    },
+  },
   timelineBannerHint: '大运 · 流年',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
@@ -705,6 +748,27 @@ const zhHant: Strings = {
     unfavorable: '{el}行為你的忌神，此運宜穩健、多留意。',
   },
   timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
+  yinzheng: {
+    prompt: '這一年你經歷了什麼?',
+    lead: '那一年正逢',
+    matchFrame: '命盤印證了這一點。',
+    noMatch: '這一年命盤相對平靜 —— 變化更多來自你自己。',
+    cats: {
+      career: '事業',
+      relationship: '感情',
+      health: '健康',
+      travel: '遠行',
+      education: '學業',
+      family: '家庭',
+    },
+    signals: {
+      taohua: '桃花當令',
+      yima: '驛馬動',
+      favorable: '用神助力',
+      unfavorable: '忌神當道',
+      clash: '沖太歲',
+    },
+  },
   timelineBannerHint: '大運 · 流年',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
@@ -957,6 +1021,27 @@ const ja: Strings = {
     unfavorable: '{el}は忌神、この運は慎重に進めましょう。',
   },
   timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
+  yinzheng: {
+    prompt: 'この年、何がありましたか?',
+    lead: 'その年はちょうど',
+    matchFrame: '命盤がそれを裏づけています。',
+    noMatch: 'この年の命盤は比較的穏やか —— 変化はあなた自身から。',
+    cats: {
+      career: '仕事',
+      relationship: '恋愛',
+      health: '健康',
+      travel: '遠出',
+      education: '学び',
+      family: '家族',
+    },
+    signals: {
+      taohua: '桃花が旺',
+      yima: '駅馬が動く',
+      favorable: '用神の後押し',
+      unfavorable: '忌神が強い',
+      clash: '冲太歳',
+    },
+  },
   timelineBannerHint: '大運 · 流年',
   ganzhiStemsTitle: '十干',
   ganzhiBranchesTitle: '十二支',
@@ -1199,6 +1284,27 @@ const en: Strings = {
     unfavorable: '{el} is your unfavorable element — stay steady and watchful.',
   },
   timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
+  yinzheng: {
+    prompt: 'What happened that year?',
+    lead: 'That year carried ',
+    matchFrame: 'your chart bears it out.',
+    noMatch: 'That year read quietly on the chart — the change came more from you.',
+    cats: {
+      career: 'Career',
+      relationship: 'Love',
+      health: 'Health',
+      travel: 'Travel',
+      education: 'Study',
+      family: 'Family',
+    },
+    signals: {
+      taohua: 'a romance window',
+      yima: 'a movement window',
+      favorable: 'your favorable element',
+      unfavorable: 'your unfavorable element',
+      clash: 'a clash with your sign',
+    },
+  },
   timelineBannerHint: 'Decade · Year',
   ganzhiStemsTitle: 'Ten Stems',
   ganzhiBranchesTitle: 'Twelve Branches',

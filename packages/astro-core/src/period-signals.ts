@@ -95,6 +95,13 @@ export interface RetrodictionMatch {
   hasMatch: boolean
 }
 
+/** The boolean signals retrodiction reads — a narrowed view of PeriodSignals so
+ *  callers can pass either a full PeriodSignals or a hand-built subset. */
+export type RetrodictionSignals = Pick<
+  PeriodSignals,
+  'taohua' | 'yima' | 'favorsElement' | 'harmsElement' | 'clashesBenming'
+>
+
 /** Which signals each category looks to for corroboration (ordered by salience). */
 const CATEGORY_SIGNALS: Record<LifeEventCategory, SignalKey[]> = {
   relationship: ['taohua', 'clash', 'favorable', 'unfavorable'],
@@ -114,7 +121,7 @@ const CATEGORY_SIGNALS: Record<LifeEventCategory, SignalKey[]> = {
  */
 export function retrodictionMatch(
   category: LifeEventCategory,
-  signals: PeriodSignals
+  signals: RetrodictionSignals
 ): RetrodictionMatch {
   const active: Record<SignalKey, boolean> = {
     taohua: signals.taohua,
