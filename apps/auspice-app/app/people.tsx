@@ -29,7 +29,7 @@ import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
-import { openKindredCompose } from '@/lib/kindred-handoff'
+import { confirmAndOpenKindred } from '@/lib/kindred-handoff'
 import {
   type AuspicePerson,
   addPerson,
@@ -105,21 +105,24 @@ export default function PeopleScreen() {
   // are satisfied so the jump never lands on an empty Kindred draft.
   const kindredReady = canAdd && /^\d{4}$/.test(birthYear) && calendar === 'solar'
   const openKindred = () => {
-    void openKindredCompose({
-      person: {
-        id: 'draft',
-        name: name.trim(),
-        solarDate: `${birthYear}-${monthDay}`,
-        calendar: 'solar',
-        timeIndex,
-        gender,
-        city: birthCity?.name,
-        lat: birthCity?.lat,
-        lng: birthCity?.lng,
-        timezone: birthCity?.timezone ?? null,
+    confirmAndOpenKindred(
+      {
+        person: {
+          id: 'draft',
+          name: name.trim(),
+          solarDate: `${birthYear}-${monthDay}`,
+          calendar: 'solar',
+          timeIndex,
+          gender,
+          city: birthCity?.name,
+          lat: birthCity?.lat,
+          lng: birthCity?.lng,
+          timezone: birthCity?.timezone ?? null,
+        },
+        self: selfInfo,
       },
-      self: selfInfo,
-    })
+      t.kindredShareConsent
+    )
   }
 
   const add = async () => {
@@ -331,6 +334,13 @@ export default function PeopleScreen() {
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
                   {t.people.compatibilityHint}
                 </Text>
+                {/* 合盘 silently needs a 4-digit solar year — surface it rather than
+                    let the user fill 时辰/性别 and get no report. */}
+                {!(/^\d{4}$/.test(birthYear) && calendar === 'solar') ? (
+                  <Text style={{ color: colors.accent, fontSize: 12, lineHeight: 18 }}>
+                    {t.people.compatYearRequired}
+                  </Text>
+                ) : null}
 
                 {/* 时辰 (for 八字 / 合盘) */}
                 <View style={{ gap: spacing.sm }}>

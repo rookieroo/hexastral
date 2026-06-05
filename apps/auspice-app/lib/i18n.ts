@@ -330,6 +330,9 @@ export interface Strings {
     /** Hint under the disclosure header: filling these unlocks the two-person
      *  relationship report, viewable in the Kindred app. */
     compatibilityHint: string
+    /** Shown inside the expanded 合盘 section when the solar birth year is missing —
+     *  合盘 silently can't compute without it, so make the requirement explicit. */
+    compatYearRequired: string
   }
   watchWidgets: string
   /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
@@ -347,6 +350,8 @@ export interface Strings {
   themeAccent: string
   /** CTA below the 生肖 reading that opens Kindred for full 合盘. */
   kindredComposeCta: string
+  /** Cross-app data-sharing consent shown before the Kindred 合盘 hand-off. */
+  kindredShareConsent: { title: string; body: string; confirm: string; cancel: string }
   /** Shown when the contact's birthday is 农历 — Kindred only accepts solar. */
   kindredComposeLunarNote: string
   /** 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 (the calendar-shaped
@@ -623,9 +628,10 @@ const zhHans: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '请先在设置里填写你的生辰，才能查看与 TA 的关系。',
     homeEntry: '记录生日',
-    compatibilityToggle: '添加合盘信息（选填）',
+    compatibilityToggle: '解锁你们的关系合盘（选填）',
     compatibilityHint:
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
+    compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
@@ -637,6 +643,12 @@ const zhHans: Strings = {
   comingSoon: '即将推出',
   themeAccent: '主题色',
   kindredComposeCta: '在 Kindred 看完整合盘 →',
+  kindredShareConsent: {
+    title: '分享生辰给 Kindred?',
+    body: '将把你和 TA 的出生信息发送到 Kindred,用于生成完整关系合盘。仅在你同意后共享。',
+    confirm: '同意并打开',
+    cancel: '取消',
+  },
   kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
   pair: {
     todayHeading: '今日 · 你和TA',
@@ -881,9 +893,10 @@ const zhHant: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '請先在設定裡填寫你的生辰，才能查看與 TA 的關係。',
     homeEntry: '記錄生日',
-    compatibilityToggle: '新增合盤資訊（選填）',
+    compatibilityToggle: '解鎖你們的關係合盤（選填）',
     compatibilityHint:
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
+    compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
@@ -895,6 +908,12 @@ const zhHant: Strings = {
   comingSoon: '即將推出',
   themeAccent: '主題色',
   kindredComposeCta: '在 Kindred 看完整合盤 →',
+  kindredShareConsent: {
+    title: '分享生辰給 Kindred?',
+    body: '將把你和 TA 的出生資訊傳送到 Kindred,用於產生完整關係合盤。僅在你同意後共享。',
+    confirm: '同意並開啟',
+    cancel: '取消',
+  },
   kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
   pair: {
     todayHeading: '今日 · 你和TA',
@@ -1165,9 +1184,11 @@ const ja: Strings = {
     needBirth: '生年月日が必要',
     needBirthBody: '相性を見るには、設定であなたの生年月日を入力してください。',
     homeEntry: '記念日を追加',
-    compatibilityToggle: '相性鑑定の情報（任意）',
+    compatibilityToggle: '二人の相性を解放（任意）',
     compatibilityHint:
       '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。通知だけなら入力不要です。',
+    compatYearRequired:
+      '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
@@ -1179,6 +1200,12 @@ const ja: Strings = {
   comingSoon: '近日公開',
   themeAccent: 'テーマカラー',
   kindredComposeCta: 'Kindred で本格相性鑑定 →',
+  kindredShareConsent: {
+    title: 'Kindred に生年月日を共有しますか?',
+    body: 'あなたと相手の出生情報を Kindred に送り、完全な相性鑑定を作成します。同意した場合のみ共有します。',
+    confirm: '同意して開く',
+    cancel: 'キャンセル',
+  },
   kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
   pair: {
     todayHeading: '今日 · あなたと相手',
@@ -1451,9 +1478,11 @@ const en: Strings = {
     needBirth: 'Your birth needed',
     needBirthBody: 'Set your own birth in Settings to see your bond with them.',
     homeEntry: 'Add birthday',
-    compatibilityToggle: 'Compatibility info (optional)',
+    compatibilityToggle: 'Unlock your compatibility (optional)',
     compatibilityHint:
       'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app. Skip for a reminder-only entry.',
+    compatYearRequired:
+      'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:
@@ -1465,6 +1494,12 @@ const en: Strings = {
   comingSoon: 'Soon',
   themeAccent: 'Accent color',
   kindredComposeCta: 'Open full reading in Kindred →',
+  kindredShareConsent: {
+    title: 'Share birth details with Kindred?',
+    body: 'We will send both birth details to Kindred to generate the full compatibility reading. Shared only with your consent.',
+    confirm: 'Agree & open',
+    cancel: 'Cancel',
+  },
   kindredComposeLunarNote:
     'Kindred supports solar birthdays only. Edit this person to a solar date and try again.',
   pair: {

@@ -25,7 +25,7 @@
  *     small UI affordance for that case in the caller).
  */
 
-import { Linking } from 'react-native'
+import { Alert, Linking } from 'react-native'
 import type { AuspiceBirthInfo } from './birth'
 import { FLAGSHIP_LINKS } from './config'
 import type { AuspicePerson } from './people'
@@ -104,4 +104,29 @@ export async function openKindredCompose(args: BuildArgs): Promise<boolean> {
       return false
     }
   }
+}
+
+export interface KindredShareConsent {
+  title: string
+  body: string
+  confirm: string
+  cancel: string
+}
+
+/**
+ * Gate the hand-off behind explicit cross-app data-sharing consent. The 亲友's
+ * (and the user's own) birth details ride in the deep-link URL the device opens —
+ * device-carried, never a silent server share — but it's still PII leaving for
+ * another app, so confirm first.
+ */
+export function confirmAndOpenKindred(args: BuildArgs, consent: KindredShareConsent): void {
+  Alert.alert(consent.title, consent.body, [
+    { text: consent.cancel, style: 'cancel' },
+    {
+      text: consent.confirm,
+      onPress: () => {
+        void openKindredCompose(args)
+      },
+    },
+  ])
 }
