@@ -488,9 +488,11 @@ export async function generateSynastryChapters(
   ].join('\n')
 
   const text = await callWithFallback(env, systemPrompt, prompt, {
-    isPro: true,
+    // Deep six-chapter report → flagship tier (Kimi K2.6 → Qwen3 30B → GLM-4.7-
+    // Flash, CF Workers AI). Depth is the tier now; isPro / thinkingLevel are
+    // deprecated no-ops on the CF router, and Gemini is vision-only (not here).
+    tier: 'flagship',
     maxTokens: 8192,
-    thinkingLevel: 'HIGH',
     metricLabel: 'hehun-chapters',
     locale: language,
   })

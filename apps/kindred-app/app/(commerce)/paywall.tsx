@@ -63,10 +63,19 @@ export default function PaywallScreen() {
     []
   )
 
+  // Reason-aware subtitle: chat gate / chapter unlock / bond quota each get apt
+  // copy instead of the bond-quota default.
+  const subtitleKey =
+    reason === 'chat'
+      ? 'paywall.subtitleChat'
+      : reason === 'chapters'
+        ? 'paywall.subtitleChapters'
+        : 'paywall.subtitle'
+
   const copy = useMemo(
     () => ({
       title: t(locale, 'paywall.title'),
-      subtitle: t(locale, 'paywall.subtitle'),
+      subtitle: t(locale, subtitleKey),
       planLabels: {
         monthly: t(locale, 'paywall.monthly'),
         annual: t(locale, 'paywall.annual'),
@@ -83,7 +92,7 @@ export default function PaywallScreen() {
       errorFailed: t(locale, 'paywall.failed'),
       errorUnavailable: t(locale, 'paywall.unavailable'),
     }),
-    [locale]
+    [locale, subtitleKey]
   )
 
   // userEmail is the simplest "do they have a recovery handle?" signal. It's
