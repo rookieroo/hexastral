@@ -132,14 +132,18 @@ backed by existing `astro-core` — no Workers AI.
    the real 大运 at the merge age (its 十神 theme) reabsorbs the 假如 — the
    命 vs 运 vs 选择 line ("even this choice gets pulled back toward your 官 decade").
 
-### Phase 5 — more deterministic ops (after Phase 4)
-- **神煞 event-flavor** on years (`getTianYiGuiRen` 贵人 / `getWenChangGuiRen` 文昌 /
-  `getJiangXing` 将星 / `getJieSha` 劫煞) — richer node chips.
-- **冲合刑害会** interaction precision (`analyzeBranchClashes` /
-  `analyzeBranchCombinations`) — better node reasons (流年 × 大运 × 本命).
-- **cherry-pick**: lift a 假如's good outcome as a "carry into real life" takeaway.
-- **diff**: a 假如 branch vs the real line side-by-side.
-- **择吉** on actionable future nodes (ties make-if 时机 to real date-picking).
+### Phase 5 — more deterministic ops
+- ✅ **神煞 event-flavor** SHIPPED (`b122604`): 天乙贵人/文昌/将星/劫煞 added to the
+  single-priority node chip (`chipFor` takes a `ShenShaBranches` bundle).
+- ✅ **cherry-pick** SHIPPED (`7d49880`): actionable 假如 → "带回现实" (用神 +
+  nearest favorable 流年); past 假如 keep the 命主干 backdrop (mutually exclusive).
+- ⬜ **冲合刑害会** interaction precision (`analyzeBranchClashes` /
+  `analyzeBranchCombinations`) — deeper node reasons (流年 × 大运 × 本命). Moderate
+  value (overlaps the existing chip); deferred.
+- ⬜ **diff**: a 假如 branch vs the real line side-by-side — a comparison VIEW
+  (new UI surface). Deferred — bigger UI, device-only to verify.
+- ⬜ **择吉** on actionable future nodes (ties make-if 时机 to real date-picking) —
+  needs the 择日 engine + a date surface. Deferred.
 
 ### Phase 6 (was Phase 4) — make-if branch-node LLM expansion  ⚠️ secondary; needs Workers AI to verify
 Tap a node on a 假如 branch → LLM "at this age in that life, you'd be…".
