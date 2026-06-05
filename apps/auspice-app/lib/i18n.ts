@@ -209,6 +209,9 @@ export interface Strings {
     frame: string
     archetypes: { expand: string; hold: string; move: string; connect: string }
   }
+  /** Make-if 命主干 backdrop — the real 大运 十神 a 假如 plays out against ({domain}
+   *  = the 十神 life-domain word). The 命 vs 运 vs 选择 line. */
+  makeifBackdrop: string
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -521,6 +524,7 @@ const zhHans: Strings = {
       connect: '利于结缘合作',
     },
   },
+  makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -809,6 +813,7 @@ const zhHant: Strings = {
       connect: '利於結緣合作',
     },
   },
+  makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -1108,6 +1113,7 @@ const ja: Strings = {
       connect: 'ご縁・協働に向く',
     },
   },
+  makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1398,6 +1404,8 @@ const en: Strings = {
       connect: 'favors connection & partnership',
     },
   },
+  makeifBackdrop:
+    'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',

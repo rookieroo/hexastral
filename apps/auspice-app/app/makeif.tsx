@@ -12,7 +12,14 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { favoredMove, getFourPillars, getTaoHua, getYiMa } from '@zhop/astro-core'
+import {
+  favoredMove,
+  getFourPillars,
+  getShiShen,
+  getTaoHua,
+  getYiMa,
+  type HeavenlyStem,
+} from '@zhop/astro-core'
 import { Button, useTheme } from '@zhop/core-ui'
 import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
@@ -398,6 +405,21 @@ function Sandbox({
     [branches, sel]
   )
 
+  // 命主干 backdrop — the real 大运's 十神 theme at the age this 假如 reconciles
+  // (merge age, else fork age). The 命 vs 运 vs 选择 line: even an alt choice
+  // plays out against your actual chart's chapter.
+  const featuredBackdrop = useMemo(() => {
+    if (!featured) return null
+    const age = featured.mergeAtAge ?? featured.divergeAtAge
+    const dy = payload.dayun.find((d) => age >= d.startAge && age <= d.endAge)
+    if (!dy) return null
+    const cat = getShiShen(
+      payload.pillars.day.stem as HeavenlyStem,
+      dy.pillar.stem as HeavenlyStem
+    ).category
+    return t.makeifBackdrop.replace('{domain}', t.timelineDomain[cat])
+  }, [featured, payload, t])
+
   // Fetch (or re-fetch) a fork's narrative, tracking per-fork status so the user
   // always gets feedback (loading / failed-retry / daily-limit), not silence.
   const runFork = useCallback(
@@ -583,6 +605,12 @@ function Sandbox({
           {timing.reasons ? (
             <Text style={{ color: colors.dim, fontSize: 12 }}>{timing.reasons}</Text>
           ) : null}
+          {/* 命主干 — the real 大运 chapter the highlighted 假如 plays out against. */}
+          {featuredBackdrop ? (
+            <Text style={{ color: colors.dim, fontSize: 12, fontStyle: 'italic' }}>
+              {featuredBackdrop}
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -668,6 +696,21 @@ function Sandbox({
                   >
                     {`${t.makeifTiming.frame} · ${timing.label}`}
                     {timing.reasons ? ` — ${timing.reasons}` : ''}
+                  </Text>
+                ) : null}
+                {/* 命主干 — the real 大运 chapter this 假如 reconciles against
+                    (命 vs 运 vs 选择). */}
+                {featuredBackdrop ? (
+                  <Text
+                    style={{
+                      color: SHARE_PALETTE.dim,
+                      fontSize: 12,
+                      lineHeight: 18,
+                      fontStyle: 'italic',
+                      marginTop: 2,
+                    }}
+                  >
+                    {featuredBackdrop}
                   </Text>
                 ) : null}
               </View>
