@@ -305,6 +305,20 @@ export interface Strings {
   kindredComposeCta: string
   /** Shown when the contact's birthday is 农历 — Kindred only accepts solar. */
   kindredComposeLunarNote: string
+  /** 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 (the calendar-shaped
+   *  relationship action; the deep 合盘 report stays in Kindred). */
+  pair: {
+    todayHeading: string
+    picksHeading: string
+    resonance: string
+    tension: string
+    neutral: string
+    resonanceLine: string
+    tensionLine: string
+    neutralLine: string
+    loading: string
+    picksEmpty: string
+  }
   /** Section label above the Apple Calendar subscribe row. */
   appleCalendarSection: string
   /** Row label that opens the system Calendar subscribe sheet. */
@@ -537,6 +551,18 @@ const zhHans: Strings = {
   themeAccent: '主题色',
   kindredComposeCta: '在 Kindred 看完整合盘 →',
   kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
+  pair: {
+    todayHeading: '今日 · 你和TA',
+    picksHeading: '为你俩择吉日',
+    resonance: '同气',
+    tension: '相激',
+    neutral: '平和',
+    resonanceLine: '今日两人气场相合，宜共事、相约、定大事。',
+    tensionLine: '今日两人气场相激，各退一步，宜缓不宜急。',
+    neutralLine: '今日两人气场平和，顺其自然即可。',
+    loading: '测算中…',
+    picksEmpty: '近期暂无格外契合的好日子，过段时间再看看。',
+  },
   appleCalendarSection: '系统日历',
   personalCalendarRow: '对你而言 · 专属日历',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系统日历（Pro）',
@@ -740,6 +766,18 @@ const zhHant: Strings = {
   themeAccent: '主題色',
   kindredComposeCta: '在 Kindred 看完整合盤 →',
   kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
+  pair: {
+    todayHeading: '今日 · 你和TA',
+    picksHeading: '為你倆擇吉日',
+    resonance: '同氣',
+    tension: '相激',
+    neutral: '平和',
+    resonanceLine: '今日兩人氣場相合，宜共事、相約、定大事。',
+    tensionLine: '今日兩人氣場相激，各退一步，宜緩不宜急。',
+    neutralLine: '今日兩人氣場平和，順其自然即可。',
+    loading: '測算中…',
+    picksEmpty: '近期暫無格外契合的好日子，過段時間再看看。',
+  },
   appleCalendarSection: '系統日曆',
   personalCalendarRow: '對你而言 · 專屬日曆',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系統日曆（Pro）',
@@ -969,6 +1007,18 @@ const ja: Strings = {
   themeAccent: 'テーマカラー',
   kindredComposeCta: 'Kindred で本格相性鑑定 →',
   kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
+  pair: {
+    todayHeading: '今日 · あなたと相手',
+    picksHeading: '二人の吉日を選ぶ',
+    resonance: '好相性',
+    tension: '要注意',
+    neutral: '平穏',
+    resonanceLine: '今日は二人の気が和合。共同作業や約束、大事の決断に好適。',
+    tensionLine: '今日は気がぶつかりやすい日。一歩譲り、急がず穏やかに。',
+    neutralLine: '今日は穏やかな相性。自然体で問題なし。',
+    loading: '計算中…',
+    picksEmpty: '近いうちに特に好相性の日は見当たりません。',
+  },
   appleCalendarSection: 'システムカレンダー',
   personalCalendarRow: 'あなたへ · 専用カレンダー',
   personalCalendarHint: '毎日の吉凶をシステムカレンダーに同期（Pro）',
@@ -1201,6 +1251,18 @@ const en: Strings = {
   kindredComposeCta: 'Open full reading in Kindred →',
   kindredComposeLunarNote:
     'Kindred supports solar birthdays only. Edit this person to a solar date and try again.',
+  pair: {
+    todayHeading: 'Today · You & them',
+    picksHeading: 'Good days for the two of you',
+    resonance: 'In sync',
+    tension: 'Friction',
+    neutral: 'Steady',
+    resonanceLine: 'Your energies align today — good for joint plans, meeting up, big decisions.',
+    tensionLine: 'Energies grate today — give a little, keep things low-key.',
+    neutralLine: 'A calm pairing today — go with the flow.',
+    loading: 'Calculating…',
+    picksEmpty: 'No standout days for the two of you right now — check back later.',
+  },
   appleCalendarSection: 'System calendar',
   personalCalendarRow: 'For-you calendar',
   personalCalendarHint: 'Sync your daily verdict to the system Calendar (Pro)',
