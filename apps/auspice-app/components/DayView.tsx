@@ -13,7 +13,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
-import { Share } from 'lucide-react-native'
+import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useState } from 'react'
 import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
@@ -135,9 +135,9 @@ export function DayView({
             accessibilityLabel='Share'
             style={{ padding: 4 }}
           >
-            {/* `Share` (export glyph) not `Share2` (node graph) — the latter
-                read as a fork and collided with make-if's GitFork icon. */}
-            <Share size={18} color={colors.secondary} strokeWidth={1.6} />
+            {/* `Share2` (share-network glyph); make-if uses `GitBranch`, so the
+                two no longer collide. */}
+            <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
           </Pressable>
         </View>
         <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />

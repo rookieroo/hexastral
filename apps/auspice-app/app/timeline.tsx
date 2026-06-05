@@ -18,7 +18,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share } from 'lucide-react-native'
+import { Share2 } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -190,7 +190,7 @@ export default function TimelineScreen() {
                     accessibilityLabel='Share'
                     style={{ padding: 4 }}
                   >
-                    <Share size={20} color={colors.secondary} strokeWidth={1.6} />
+                    <Share2 size={20} color={colors.secondary} strokeWidth={1.6} />
                   </Pressable>
                 )
               })()

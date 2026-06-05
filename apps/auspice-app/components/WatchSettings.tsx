@@ -1,8 +1,12 @@
 /**
- * WatchSettings — the user-facing 表盘 appearance config (template + 月相 skin)
- * with a live preview. Persisted via lib/widget-config; the native widget/watch
- * read the same choice once those targets ship. Until then this previews them.
- * Pro templates (黄历/古风) are marked but selectable here for preview.
+ * WatchSettings — appearance config for the home-screen widget (月相 skin) plus a
+ * preview of the watch-face styles.
+ *
+ * Honest framing (2026-06): only the home-screen WIDGET ships today (small +
+ * medium), and it varies by 月相 skin. The four "表盘样式" templates drive the
+ * watch-face PREVIEW only — there is no watchOS target yet — so they're labelled
+ * 即将推出 (coming soon) and not sold on the paywall. When the watch app lands,
+ * these templates become its faces with no migration. All copy is localized.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -11,6 +15,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
+import { useStrings } from '@/lib/i18n-context'
 import {
   DEFAULT_MOON_SKIN_ID,
   DEFAULT_TEMPLATE,
@@ -38,6 +43,7 @@ function Label({ children }: { children: string }) {
 
 export function WatchSettings() {
   const { colors, spacing } = useTheme()
+  const { t } = useStrings()
   // Watch/widget previews mirror native render contracts: 对你而言 is Pro-only.
   // Free users see the same face/widget without the personalization line.
   const entitlements = useEntitlements()
@@ -82,24 +88,7 @@ export function WatchSettings() {
             alignSelf: 'center',
           }}
         >
-          <View
-            style={{
-              width: 168,
-              height: 200,
-              borderRadius: 42,
-              overflow: 'hidden',
-              backgroundColor: '#000',
-            }}
-          >
-            <DailyCard
-              tier='compact'
-              template={template}
-              moonSkinId={skinId}
-              date={payload.date}
-              day={payload.day}
-              personalization={isPro ? payload.personalization : null}
-            />
-          </View>
+          {/* Widget preview FIRST — it's what actually ships today. */}
           <View style={{ gap: 4, alignItems: 'center' }}>
             <View
               style={{
@@ -118,18 +107,60 @@ export function WatchSettings() {
                 personalization={isPro ? payload.personalization : null}
               />
             </View>
-            <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>桌面小组件</Text>
+            <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>
+              {t.widgetPreviewCaption}
+            </Text>
+          </View>
+          {/* Watch preview — a look-ahead; no watchOS target ships yet. */}
+          <View style={{ gap: 4, alignItems: 'center' }}>
+            <View
+              style={{
+                width: 168,
+                height: 200,
+                borderRadius: 42,
+                overflow: 'hidden',
+                backgroundColor: '#000',
+                opacity: 0.85,
+              }}
+            >
+              <DailyCard
+                tier='compact'
+                template={template}
+                moonSkinId={skinId}
+                date={payload.date}
+                day={payload.day}
+                personalization={isPro ? payload.personalization : null}
+              />
+            </View>
+            <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>
+              {t.watchPreviewCaption}
+            </Text>
           </View>
         </View>
       ) : null}
 
-      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-        「表盘样式」用于手表表盘；「月相」同时作用于手表与桌面组件。桌面组件分小 / 中 / 大三种版式。
-      </Text>
+      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>{t.watchWidgetsNote}</Text>
 
-      {/* Template */}
+      {/* Watch-face styles — a preview only (no watchOS target yet), so the
+          section carries a 即将推出 badge and isn't sold on the paywall. */}
       <View style={{ gap: spacing.sm }}>
-        <Label>表盘样式</Label>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Label>{t.watchStyleLabel}</Label>
+          <View
+            style={{
+              paddingHorizontal: 6,
+              paddingVertical: 1,
+              borderRadius: 6,
+              backgroundColor: colors.separator,
+            }}
+          >
+            <Text
+              style={{ color: colors.secondary, fontSize: 9, letterSpacing: 1, fontWeight: '600' }}
+            >
+              {t.comingSoon}
+            </Text>
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {TEMPLATE_OPTIONS.map((tpl) => {
             const sel = tpl.id === template
@@ -172,9 +203,9 @@ export function WatchSettings() {
         </View>
       </View>
 
-      {/* Moon skin */}
+      {/* Moon skin — applies to the shipping home-screen widget. */}
       <View style={{ gap: spacing.sm }}>
-        <Label>月相</Label>
+        <Label>{t.moonSkinLabel}</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {MOON_SKIN_OPTIONS.map((opt) => {
             const sel = opt.id === skinId
