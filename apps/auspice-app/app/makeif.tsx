@@ -278,6 +278,9 @@ function Sandbox({
 
   const [branches, setBranches] = useState<MakeIfBranch[]>([])
   const [status, setStatus] = useState<Record<string, 'loading' | 'done' | 'error' | 'limited'>>({})
+  // The single highlighted/active branch. Tapping a branch (graph or fork row)
+  // selects it; the live graph dims the rest and the share features only it.
+  const [sel, setSel] = useState<string | null>(null)
   const [forkAge, setForkAge] = useState<number | null>(null)
   const [pendingAge, setPendingAge] = useState<number | null>(null)
   const [acked, setAcked] = useState(false)
@@ -291,7 +294,9 @@ function Sandbox({
     share: shareImage,
   } = useImageShare({
     prewarm: branches.length > 0,
-    warmKey: branches.length,
+    // Re-warm when a fork is added OR the featured/selected branch changes, so the
+    // share always reflects the branch currently highlighted.
+    warmKey: `${branches.length}:${sel ?? ''}`,
   })
 
   useEffect(() => {
@@ -361,6 +366,13 @@ function Sandbox({
   }, [deviceId, birth.birthDate, birth.birthHour, birth.gender, model.endAge, locale])
 
   const combined = useMemo(() => ({ ...model, branches }), [model, branches])
+
+  // The branch the share + selection feature: the explicitly selected one, else
+  // the most recent fork (what the user just created).
+  const featured = useMemo(
+    () => branches.find((b) => b.id === sel) ?? branches.at(-1) ?? null,
+    [branches, sel]
+  )
 
   // Fetch (or re-fetch) a fork's narrative, tracking per-fork status so the user
   // always gets feedback (loading / failed-retry / daily-limit), not silence.
@@ -537,8 +549,8 @@ function Sandbox({
         locked={false}
         dashed={false}
         animateIn={branches.length > 0}
-        selectedBranchId={null}
-        onSelectBranch={() => {}}
+        selectedBranchId={sel}
+        onSelectBranch={(id) => setSel((cur) => (cur === id ? null : id))}
         onLockedTap={() => {}}
         onMainNodeTap={onNodeTap}
         nowLabel={makeIfCopyForLocale(locale).nowLabel}
@@ -564,42 +576,35 @@ function Sandbox({
               locked={false}
               dashed={false}
               animateIn={false}
-              selectedBranchId={null}
+              // Feature ONE branch — the share is a single "假如" to show off, not
+              // a legend of three. The graph highlights it; the rest dim.
+              selectedBranchId={featured?.id ?? null}
               onSelectBranch={() => {}}
               onLockedTap={() => {}}
               nowLabel={makeIfCopyForLocale(locale).nowLabel}
             />
-            {/* Bake each branch's 概要 under the graph — a bare graph of dots was
-                illegible once forwarded; the summaries make the share readable. */}
-            {branches.some((b) => b.summary || b.outcome) ? (
-              <View style={{ gap: 8, marginTop: 4 }}>
-                {branches
-                  .filter((b) => b.summary || b.outcome)
-                  .map((b) => (
-                    <View
-                      key={b.id}
-                      style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}
-                    >
-                      <View
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: 4,
-                          backgroundColor: b.color,
-                          marginTop: 5,
-                        }}
-                      />
-                      <Text
-                        style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 13, lineHeight: 19 }}
-                      >
-                        <Text style={{ fontWeight: '600' }}>{b.label}</Text>
-                        {'  '}
-                        <Text style={{ color: SHARE_PALETTE.secondary }}>
-                          {b.summary || deriveMakeIfSummary(b.outcome)}
-                        </Text>
-                      </Text>
-                    </View>
-                  ))}
+            {/* Bake the featured branch's full 概要 under the graph — one clear
+                takeaway, not three truncated lines. */}
+            {featured && (featured.summary || featured.outcome) ? (
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 4 }}
+              >
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: featured.color,
+                    marginTop: 5,
+                  }}
+                />
+                <Text style={{ flex: 1, color: SHARE_PALETTE.text, fontSize: 14, lineHeight: 21 }}>
+                  <Text style={{ fontWeight: '600' }}>{featured.label}</Text>
+                  {'  '}
+                  <Text style={{ color: SHARE_PALETTE.secondary }}>
+                    {featured.summary || deriveMakeIfSummary(featured.outcome)}
+                  </Text>
+                </Text>
               </View>
             ) : null}
           </ShareableCard>
