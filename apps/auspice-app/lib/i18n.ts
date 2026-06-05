@@ -232,6 +232,11 @@ export interface Strings {
       favorable: string
       unfavorable: string
       clash: string
+      /** 神煞 event-flavor chips (Phase 5). */
+      guiren: string
+      wenchang: string
+      jiangxing: string
+      jiesha: string
     }
   }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
@@ -544,6 +549,10 @@ const zhHans: Strings = {
       favorable: '用神助力',
       unfavorable: '忌神当道',
       clash: '冲太岁',
+      guiren: '贵人扶持',
+      wenchang: '文昌利学',
+      jiangxing: '将星掌权',
+      jiesha: '劫煞破耗',
     },
   },
   timelineBannerHint: '大运 · 流年',
@@ -833,6 +842,10 @@ const zhHant: Strings = {
       favorable: '用神助力',
       unfavorable: '忌神當道',
       clash: '沖太歲',
+      guiren: '貴人扶持',
+      wenchang: '文昌利學',
+      jiangxing: '將星掌權',
+      jiesha: '劫煞破耗',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -1133,6 +1146,10 @@ const ja: Strings = {
       favorable: '用神の後押し',
       unfavorable: '忌神が強い',
       clash: '冲太歳',
+      guiren: '貴人の助け',
+      wenchang: '文昌・学業',
+      jiangxing: '将星・統率',
+      jiesha: '劫煞・散財',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -1425,6 +1442,10 @@ const en: Strings = {
       favorable: 'your favorable element',
       unfavorable: 'your unfavorable element',
       clash: 'a clash with your sign',
+      guiren: 'a benefactor year',
+      wenchang: 'a study window',
+      jiangxing: 'a leadership year',
+      jiesha: 'a year of loss',
     },
   },
   timelineBannerHint: 'Decade · Year',

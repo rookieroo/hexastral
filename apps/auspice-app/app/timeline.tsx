@@ -19,7 +19,11 @@ import {
   type EarthlyBranch,
   getFourPillars,
   getFourPillarsShiShen,
+  getJiangXing,
+  getJieSha,
   getTaoHua,
+  getTianYiGuiRen,
+  getWenChangGuiRen,
   getYiMa,
   retrodictionMatch,
   type WuXing,
@@ -42,7 +46,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
-import { LiuyueStrip, ReadingBubble, TimelineGraph } from '@/components/TimelineGraph'
+import {
+  LiuyueStrip,
+  ReadingBubble,
+  type ShenShaBranches,
+  TimelineGraph,
+} from '@/components/TimelineGraph'
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
@@ -175,13 +184,23 @@ function resolveNodeDetail(
   }
 }
 
-/** 本命 桃花/驿马 branches (from the birth-year branch) — drive the per-node chips. */
-function birthSignals(payload: TimelinePayload): { taohuaBranch?: string; yimaBranch?: string } {
+/** 本命-derived 神煞 branches (日干 → 贵人/文昌; 本命支 → 桃花/驿马/将星/劫煞) — the
+ *  per-node "event flavor" chips. */
+function birthShenSha(payload: TimelinePayload): ShenShaBranches {
   const [y, m, d] = payload.birth.date.split('-').map(Number)
   if (!y || !m || !d) return {}
   const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
-  const branch = getFourPillars({ year: y, month: m, day: d, hour }).year.branch
-  return { taohuaBranch: getTaoHua(branch), yimaBranch: getYiMa(branch) }
+  const pillars = getFourPillars({ year: y, month: m, day: d, hour })
+  const dayStem = pillars.day.stem
+  const branch = pillars.year.branch
+  return {
+    taohua: getTaoHua(branch),
+    yima: getYiMa(branch),
+    guiren: getTianYiGuiRen(dayStem),
+    wenchang: getWenChangGuiRen(dayStem),
+    jiangxing: getJiangXing(branch),
+    jiesha: getJieSha(branch),
+  }
 }
 
 /** The chart's 用神 五行 (格局 + 强弱 → 取用) — the anchor for a node's 化解. */
@@ -361,7 +380,7 @@ export default function TimelineScreen() {
         ? (() => {
             const snap = buildTimelineSnapshot(state.payload, t)
             const chrome = timelineShareChrome(locale)
-            const { taohuaBranch, yimaBranch } = birthSignals(state.payload)
+            const shensha = birthShenSha(state.payload)
             const favEl = chartFavorableElement(state.payload)
             // WYSIWYG: bake the node the user actually has selected (its highlight +
             // reading), falling back to the current 大运 so a fresh share still has a
@@ -402,8 +421,7 @@ export default function TimelineScreen() {
                     detail={null}
                     fitLabels={t.personal.fit}
                     reasonLabels={t.yinzheng.signals}
-                    taohuaBranch={taohuaBranch}
-                    yimaBranch={yimaBranch}
+                    shensha={shensha}
                     domainLabels={t.timelineDomain}
                     expandedDayunIndex={expandedDayun ?? undefined}
                   />
@@ -557,7 +575,7 @@ function Body({
     () => resolveNodeDetail(payload, selectedId, t, favEl),
     [selectedId, payload, t, favEl]
   )
-  const { taohuaBranch, yimaBranch } = useMemo(() => birthSignals(payload), [payload])
+  const shensha = useMemo(() => birthShenSha(payload), [payload])
 
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
   const birthBranch = useMemo<EarthlyBranch | null>(() => {
@@ -596,8 +614,7 @@ function Body({
         detail={selectedId?.startsWith('liuyue-') ? null : detail}
         fitLabels={t.personal.fit}
         reasonLabels={t.yinzheng.signals}
-        taohuaBranch={taohuaBranch}
-        yimaBranch={yimaBranch}
+        shensha={shensha}
         domainLabels={t.timelineDomain}
         expandedDayunIndex={expandedDayun ?? undefined}
       />
