@@ -75,7 +75,7 @@ const MAKEIF_EYEBROW: Record<string, string> = {
 }
 
 function pick(map: Record<string, string>, locale: string): string {
-  return map[locale] ?? map.en
+  return map[locale] ?? map.en ?? ''
 }
 
 export function timelineShareChrome(locale = 'en'): ShareChrome {

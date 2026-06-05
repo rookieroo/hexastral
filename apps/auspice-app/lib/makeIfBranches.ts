@@ -367,19 +367,28 @@ export interface MakeIfInteractiveCopy {
  * "Marry" branch (the 中英文混用 the user flagged). We can only re-map the PRESET
  * chips this way — a free-typed custom event stays as written.
  */
+const EN_PRESET_CHIPS: readonly string[] = [
+  'Start a business',
+  'Marry',
+  'Move abroad',
+  'Switch careers',
+  'Grad school',
+  'Quit & travel',
+]
+
 const PRESET_EVENT_CHIPS: Record<string, readonly string[]> = {
   'zh-Hans': ['创业', '结婚', '移居海外', '转行', '读研深造', '辞职远行'],
   'zh-Hant': ['創業', '結婚', '移居海外', '轉行', '讀研深造', '辭職遠行'],
   ja: ['起業', '結婚', '海外移住', '転職', '大学院進学', '退職して旅へ'],
-  en: ['Start a business', 'Marry', 'Move abroad', 'Switch careers', 'Grad school', 'Quit & travel'],
+  en: EN_PRESET_CHIPS,
 }
 
 function presetChipsForLocale(locale: string): readonly string[] {
   if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK')
-    return PRESET_EVENT_CHIPS['zh-Hant']
-  if (locale.startsWith('zh')) return PRESET_EVENT_CHIPS['zh-Hans']
-  if (locale.startsWith('ja')) return PRESET_EVENT_CHIPS.ja
-  return PRESET_EVENT_CHIPS.en
+    return PRESET_EVENT_CHIPS['zh-Hant'] ?? EN_PRESET_CHIPS
+  if (locale.startsWith('zh')) return PRESET_EVENT_CHIPS['zh-Hans'] ?? EN_PRESET_CHIPS
+  if (locale.startsWith('ja')) return PRESET_EVENT_CHIPS.ja ?? EN_PRESET_CHIPS
+  return EN_PRESET_CHIPS
 }
 
 /** Re-map a saved fork label to the active locale if it matches a preset chip in

@@ -1789,21 +1789,36 @@ auspiceRoutes.delete('/birthdays/:id', async (c) => {
 /** Push body labels — small fixed set localized; 宜忌 verbs stay CJK in v1 (the
  *  in-app local path localizes them; sharing the verb vocab server-side is a
  *  follow-up). zh-first product, so this reads natively for the core audience. */
-const PUSH_LABELS: Record<
-  string,
-  { yi: string; ji: string; forYou: string; daySuffix: string; tomorrow: string; fit: Record<string, string> }
-> = {
+interface PushLabelSet {
+  yi: string
+  ji: string
+  forYou: string
+  daySuffix: string
+  tomorrow: string
+  fit: Record<string, string>
+}
+
+const EN_PUSH_LABELS: PushLabelSet = {
+  yi: 'Good',
+  ji: 'Avoid',
+  forYou: 'You',
+  daySuffix: '',
+  tomorrow: 'Tomorrow',
+  fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
+}
+
+const PUSH_LABELS: Record<string, PushLabelSet> = {
   'zh-Hans': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日预告', fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' } },
   'zh-Hant': { yi: '宜', ji: '忌', forYou: '你', daySuffix: '日', tomorrow: '明日預告', fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' } },
   ja: { yi: '吉', ji: '凶', forYou: 'あなた', daySuffix: '日', tomorrow: '明日の予報', fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' } },
-  en: { yi: 'Good', ji: 'Avoid', forYou: 'You', daySuffix: '', tomorrow: 'Tomorrow', fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' } },
+  en: EN_PUSH_LABELS,
 }
 
-function pushLabels(locale: string) {
-  if (locale.startsWith('zh-Hant')) return PUSH_LABELS['zh-Hant']
-  if (locale.startsWith('zh')) return PUSH_LABELS['zh-Hans']
-  if (locale.startsWith('ja')) return PUSH_LABELS.ja
-  return PUSH_LABELS.en
+function pushLabels(locale: string): PushLabelSet {
+  if (locale.startsWith('zh-Hant')) return PUSH_LABELS['zh-Hant'] ?? EN_PUSH_LABELS
+  if (locale.startsWith('zh')) return PUSH_LABELS['zh-Hans'] ?? EN_PUSH_LABELS
+  if (locale.startsWith('ja')) return PUSH_LABELS.ja ?? EN_PUSH_LABELS
+  return EN_PUSH_LABELS
 }
 
 interface AuspicePushSubRow {
