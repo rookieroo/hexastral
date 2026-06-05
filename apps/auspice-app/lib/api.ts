@@ -608,6 +608,56 @@ export function fetchAuspiceExplain(params: {
   return postJson<AuspiceExplainResult>('/api/auspice/explain', { ...params, dev: __DEV__ })
 }
 
+// ── 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 ──────────────────────────
+//
+// Calendar-shaped relationship actionability (the deep 合盘 report stays in
+// Kindred). Stateless + deterministic; both charts are the user's OWN data.
+
+export type PairStatus = 'resonance' | 'tension' | 'neutral'
+
+export interface PairBirth {
+  date: string
+  /** 0-23, -1 = 时辰 unknown. */
+  hour: number
+}
+
+export interface PairTodayPulse {
+  date: string
+  ganZhi: string
+  status: PairStatus
+  synergy: number
+  friction: number
+  yi: string[]
+  ji: string[]
+}
+
+export interface PairPick {
+  date: string
+  ganZhi: string
+  status: PairStatus
+  synergy: number
+  yi: string[]
+}
+
+export interface AuspicePairResult {
+  today: PairTodayPulse | null
+  /** Upcoming 吉日 for the two of you (optionally filtered to an activity). */
+  picks: PairPick[]
+}
+
+/** Today's pair pulse + the next good days for the two of you. `activity` (a 宜忌
+ *  verb) restricts picks to days 宜 that activity. */
+export function fetchAuspicePair(params: {
+  self: PairBirth
+  other: PairBirth
+  fromDate?: string
+  days?: number
+  activity?: string
+  locale: string
+}): Promise<AuspicePairResult> {
+  return postJson<AuspicePairResult>('/api/auspice/pair', params)
+}
+
 /** make-if 分支叙事 (Phase 3) — Pro-only "假如你..." stories, cached server-side. */
 export interface AuspiceMakeIfResult {
   /** branch id → narrative. Empty when not Pro (`source: 'locked'`). */

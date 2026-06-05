@@ -15,7 +15,9 @@
 import {
   allShiChen,
   calculateDailyAlmanac,
+  calculateDailySynastry,
   type DailyAlmanac,
+  dayGanZhi,
   getFourPillars,
   getJieQiInstant,
   getNearestJieQiForGregorianDate,
@@ -28,6 +30,7 @@ import {
   type PersonalAlmanacSubject,
   personalAlmanacOverlay,
   STEM_WUXING,
+  type SynastryResult,
   solarToLunar,
 } from '@zhop/astro-core'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -532,6 +535,123 @@ auspiceRoutes.get('/day', (c) => {
   // Only edge-cache an explicit `date` — the no-date "today" shares a key across
   // the midnight boundary and would go stale, so it always computes fresh.
   return dateParam ? edgeCachedJson(c, build) : jsonOk(c, build())
+})
+
+// ── POST /pair — relationship-aware 择日 + 今日你和TA (Auspice×Kindred bridge) ──
+//
+// The "act on a date, together" verb (ADR doctrine: Auspice owns calendar-shaped
+// actionability; the deep 合盘 report + bonds-timeline stay in Kindred). Walks a
+// date window: per-day pair synastry (calculateDailySynastry over both charts) +
+// the day's 宜忌, and returns today's pair pulse plus the best upcoming 吉日 for an
+// optional activity. Stateless + deterministic (no LLM); both charts come from the
+// request — it's the user's OWN 亲友 data, so there's no counterpart-privacy gate
+// (unlike Kindred resonance bonds). 宜忌 is overlaid only on the synastry shortlist
+// to bound buildDay cost.
+
+const pairBirth = z.object({
+  date: z.string().regex(DATE_RE),
+  /** 0-23, -1 = 时辰 unknown (noon assumed for the day pillar). */
+  hour: z.number().int().min(-1).max(23).default(-1),
+})
+
+const pairSchema = z.object({
+  self: pairBirth,
+  other: pairBirth,
+  /** Window start (default today). */
+  fromDate: z.string().regex(DATE_RE).optional(),
+  days: z.number().int().min(1).max(90).default(45),
+  /** Optional 宜忌 verb to 择日 for (e.g. 嫁娶); when set, picks must be 宜 it. */
+  activity: z.string().max(24).optional(),
+  locale: z.string().max(16).default('en'),
+})
+
+interface PairDay {
+  date: string
+  ganZhi: string
+  status: SynastryResult['status']
+  synergy: number
+  friction: number
+  ymd: Ymd
+}
+
+auspiceRoutes.post('/pair', async (c) => {
+  const b = pairSchema.parse(await c.req.json())
+  const sy = parseYmd(b.self.date)
+  const oy = parseYmd(b.other.date)
+  const selfPillars = getFourPillars({
+    year: sy.year,
+    month: sy.month,
+    day: sy.day,
+    hour: b.self.hour < 0 ? 12 : b.self.hour,
+  })
+  const otherPillars = getFourPillars({
+    year: oy.year,
+    month: oy.month,
+    day: oy.day,
+    hour: b.other.hour < 0 ? 12 : b.other.hour,
+  })
+
+  const start = b.fromDate ? ymdToDate(parseYmd(b.fromDate)) : ymdToDate(dateToYmd(new Date()))
+
+  // 1) Per-day pair synastry across the window (cheap — no almanac build).
+  const all: PairDay[] = []
+  for (let i = 0; i < b.days; i++) {
+    const d = new Date(start.getTime() + i * 86_400_000)
+    const ymd = dateToYmd(d)
+    const dateStr = fmtUtc(d)
+    const gz = dayGanZhi(ymd.year, ymd.month, ymd.day)
+    const syn = calculateDailySynastry(selfPillars, otherPillars, gz, dateStr)
+    all.push({
+      date: dateStr,
+      ganZhi: gz.label,
+      status: syn.status,
+      synergy: syn.synergy,
+      friction: syn.friction,
+      ymd,
+    })
+  }
+
+  // 2) Today's pulse + its 宜忌 (one almanac build).
+  const head = all[0]
+  const todayBuild = head ? buildDay(head.ymd) : null
+  const today = head
+    ? {
+        date: head.date,
+        ganZhi: head.ganZhi,
+        status: head.status,
+        synergy: head.synergy,
+        friction: head.friction,
+        yi: todayBuild ? todayBuild.day.goodFor.slice(0, 4) : [],
+        ji: todayBuild ? todayBuild.day.avoid.slice(0, 4) : [],
+      }
+    : null
+
+  // 3) 择日 — overlay 宜忌 only on the synastry shortlist (bounds buildDay calls).
+  const shortlist = all
+    .filter((d) => d.status === 'resonance' || d.synergy >= 70)
+    .sort((x, y) => y.synergy - x.synergy)
+  const picks: Array<{
+    date: string
+    ganZhi: string
+    status: SynastryResult['status']
+    synergy: number
+    yi: string[]
+  }> = []
+  for (const d of shortlist) {
+    const { day } = buildDay(d.ymd)
+    if (b.activity && (!day.goodFor.includes(b.activity) || day.avoid.includes(b.activity)))
+      continue
+    picks.push({
+      date: d.date,
+      ganZhi: d.ganZhi,
+      status: d.status,
+      synergy: d.synergy,
+      yi: day.goodFor.slice(0, 4),
+    })
+    if (picks.length >= 8) break
+  }
+
+  return jsonOk(c, { today, picks })
 })
 
 // ── GET /calendar.ics — Apple Calendar / iCal subscription feed ────────────
@@ -1933,6 +2053,29 @@ function holidayText(locale: string): HolidayText {
   return EN_HOLIDAY_TEXT
 }
 
+// ── 关系桥 push copy ──────────────────────────────────────────────────────────
+interface RelationshipText {
+  title: string
+  /** `{name}` → the 亲友's name. */
+  body: string
+}
+const EN_RELATIONSHIP_TEXT: RelationshipText = {
+  title: 'In sync today',
+  body: 'You and {name} are in sync today — a good day to reach out or make plans.',
+}
+const RELATIONSHIP_TEXT: Record<string, RelationshipText> = {
+  'zh-Hans': { title: '今日同气', body: '今天你和{name}气场相合，宜相约、聚一聚。' },
+  'zh-Hant': { title: '今日同氣', body: '今天你和{name}氣場相合，宜相約、聚一聚。' },
+  ja: { title: '今日は好相性', body: '今日はあなたと{name}の相性が良い日。連絡や約束に好適。' },
+  en: EN_RELATIONSHIP_TEXT,
+}
+function relationshipPushText(locale: string): RelationshipText {
+  if (locale.startsWith('zh-Hant')) return RELATIONSHIP_TEXT['zh-Hant'] ?? EN_RELATIONSHIP_TEXT
+  if (locale.startsWith('zh')) return RELATIONSHIP_TEXT['zh-Hans'] ?? EN_RELATIONSHIP_TEXT
+  if (locale.startsWith('ja')) return RELATIONSHIP_TEXT.ja ?? EN_RELATIONSHIP_TEXT
+  return EN_RELATIONSHIP_TEXT
+}
+
 function holidayEndLabel(dateStr: string, locale: string): string {
   const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(dateStr)
   if (!m) return dateStr
@@ -2064,6 +2207,7 @@ const pushRegisterSchema = z.object({
   dailyEvening: z.boolean().default(true),
   birthdayOn: z.boolean().default(true),
   holidayOn: z.boolean().default(true),
+  relationshipOn: z.boolean().default(true),
   isPro: z.boolean().default(false),
 })
 
@@ -2089,6 +2233,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       dailyEvening: b.dailyEvening,
       birthdayOn: b.birthdayOn,
       holidayOn: b.holidayOn,
+      relationshipOn: b.relationshipOn,
       isPro: b.isPro,
       lastActiveAt: now,
       createdAt: now,
@@ -2107,6 +2252,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         dailyEvening: b.dailyEvening,
         birthdayOn: b.birthdayOn,
         holidayOn: b.holidayOn,
+        relationshipOn: b.relationshipOn,
         isPro: b.isPro,
         lastActiveAt: now,
       },
@@ -2150,6 +2296,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       dailyEvening: auspicePushSubs.dailyEvening,
       birthdayOn: auspicePushSubs.birthdayOn,
       holidayOn: auspicePushSubs.holidayOn,
+      relationshipOn: auspicePushSubs.relationshipOn,
     })
     .from(auspicePushSubs)
     .where(eq(auspicePushSubs.timezoneId, timezoneId))
@@ -2160,10 +2307,14 @@ auspiceRoutes.get('/push/targets', async (c) => {
   const page = hasMore ? page0.slice(0, limit) : page0
   const ymd = parseYmd(date)
 
-  // Morning: batch-load birthday reminders for the page's devices.
+  // Morning: batch-load 亲友 for the page's devices. Needed for both the birthday
+  // reminders AND the 关系桥 nudge (the latter only for devices with a birth on
+  // record — the pair synastry needs the owner's own chart).
   const bdaysByOwner = new Map<string, Array<typeof birthdayReminders.$inferSelect>>()
   if (slot === 'morning') {
-    const owners = page.filter((s) => s.birthdayOn).map((s) => `device:${s.deviceId}`)
+    const owners = page
+      .filter((s) => s.birthdayOn || (s.relationshipOn && s.birthDate))
+      .map((s) => `device:${s.deviceId}`)
     if (owners.length > 0) {
       const rows = await db
         .select()
@@ -2179,6 +2330,8 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }
   // Evening: the holiday heads-up is locale-keyed (not per-birth), so resolve once.
   const holiday = slot === 'evening' ? holidayHeadsUpFor(date) : null
+  // 关系桥 nudge needs today's day-pillar once (shared across all devices).
+  const dayGz = slot === 'morning' ? dayGanZhi(ymd.year, ymd.month, ymd.day) : null
 
   const messages: Array<{
     deviceId: string
@@ -2223,6 +2376,36 @@ auspiceRoutes.get('/push/targets', async (c) => {
           title: bt.title,
           body,
           data: { type: 'auspice_birthday' },
+        })
+      }
+    }
+    // 关系桥 nudge (morning) — "今日 你和 [亲友] 同气" when an 亲友's pair synastry
+    // with the owner reads `resonance` today. Resonance-gated (synergy > 85) so it
+    // fires rarely; at most one per device (the strongest match), and never for
+    // lunar-only 亲友 (the day-pillar synastry needs a solar date).
+    if (slot === 'morning' && sub.relationshipOn && sub.birthDate && dayGz) {
+      const friends = bdaysByOwner.get(`device:${sub.deviceId}`) ?? []
+      const ownerPillars = getFourPillars({
+        ...parseYmd(sub.birthDate),
+        hour: 12,
+      })
+      let best: { name: string; synergy: number } | null = null
+      for (const f of friends) {
+        if (f.calendar === 'lunar' || !DATE_RE.test(f.solarDate)) continue
+        const fp = getFourPillars({ ...parseYmd(f.solarDate), hour: 12 })
+        const syn = calculateDailySynastry(ownerPillars, fp, dayGz, date)
+        if (syn.status === 'resonance' && (!best || syn.synergy > best.synergy)) {
+          best = { name: f.name, synergy: syn.synergy }
+        }
+      }
+      if (best) {
+        const rt = relationshipPushText(sub.locale)
+        messages.push({
+          deviceId: sub.deviceId,
+          token: sub.token,
+          title: rt.title,
+          body: rt.body.replace('{name}', best.name),
+          data: { type: 'auspice_relationship', route: '/people' },
         })
       }
     }

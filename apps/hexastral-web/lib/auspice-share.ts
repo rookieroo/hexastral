@@ -17,8 +17,8 @@
 /** The destination label shown on the right side of every `/s/*` OG footer. */
 export const AUSPICE_FOOTER_LINK = 'hexastral.com/auspice'
 
-/** The four shareable Auspice surfaces. */
-export type AuspiceShareVariant = 'day' | 'explain' | 'timeline' | 'makeif'
+/** The shareable Auspice surfaces. */
+export type AuspiceShareVariant = 'day' | 'explain' | 'timeline' | 'makeif' | 'pair'
 
 export interface AuspiceVariantCopy {
   /** Spaced eyebrow / header line, e.g. "AUSPICE 黄历" or "AUSPICE · 人生时间线". */
@@ -82,6 +82,24 @@ const COPY: Record<AuspiceShareVariant, LocaleMap> = {
     ja: {
       eyebrow: 'AUSPICE 假如',
       footer: '八字から導く、もう一つの人生',
+    },
+  },
+  pair: {
+    en: {
+      eyebrow: 'AUSPICE · GOOD DAYS',
+      footer: 'The best days for the two of you, drawn from both charts',
+    },
+    'zh-Hans': {
+      eyebrow: 'AUSPICE 好日子',
+      footer: '两人合盘 —— 你和TA同气的好日子',
+    },
+    'zh-Hant': {
+      eyebrow: 'AUSPICE 好日子',
+      footer: '兩人合盤 —— 你和TA同氣的好日子',
+    },
+    ja: {
+      eyebrow: 'AUSPICE 吉日',
+      footer: '二人の命式から導く、相性の良い日',
     },
   },
 }
