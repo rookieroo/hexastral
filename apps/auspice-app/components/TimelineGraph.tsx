@@ -326,6 +326,7 @@ export function TimelineGraph({
   reasonLabels,
   taohuaBranch,
   yimaBranch,
+  expandedDayunIndex,
 }: {
   payload: TimelinePayload
   isPro: boolean
@@ -343,10 +344,12 @@ export function TimelineGraph({
   /** 本命 桃花/驿马 branches — a period landing on one earns that chip. */
   taohuaBranch?: string
   yimaBranch?: string
+  /** Checked-out 大运 (tap a 大运 to expand its full decade). Defaults to current. */
+  expandedDayunIndex?: number
 }) {
   const graph = useMemo(
-    () => buildGraph(payload, isPro, width, taohuaBranch, yimaBranch),
-    [payload, isPro, width, taohuaBranch, yimaBranch]
+    () => buildGraph(payload, isPro, width, taohuaBranch, yimaBranch, expandedDayunIndex),
+    [payload, isPro, width, taohuaBranch, yimaBranch, expandedDayunIndex]
   )
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
