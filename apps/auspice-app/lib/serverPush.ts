@@ -18,24 +18,33 @@
  * the caller keeps the local fallback.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
+import { saveBirthdayReminder } from './api'
 import { getAuspiceBirthInfo } from './birth'
 import { getAuspiceDeviceId } from './device'
+import type { AuspicePerson } from './people'
 import { getAuspiceProActive } from './pro'
 import { isServerPushActive, setServerPushActive } from './serverPushFlag'
 
-export interface ServerPushProfile {
+const BDAY_MIGRATED_KEY = 'auspice.bday.serverMigrated.v1'
+
+export interface ServerPushPrefs {
+  dailyMorning: boolean
+  dailyEvening: boolean
+  birthdayOn: boolean
+  holidayOn: boolean
+}
+
+export interface ServerPushProfile extends Partial<ServerPushPrefs> {
   locale: string
   birthDate?: string
   /** 0-23, -1 = 时辰 unknown. Omit when no birth set. */
   birthHour?: number
   gender?: 'M' | 'F'
   isPro: boolean
-  /** Slot opt-outs (default on). */
-  dailyMorning?: boolean
-  dailyEvening?: boolean
 }
 
 /**
@@ -75,6 +84,8 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
         gender: p.gender,
         dailyMorning: p.dailyMorning ?? true,
         dailyEvening: p.dailyEvening ?? true,
+        birthdayOn: p.birthdayOn ?? true,
+        holidayOn: p.holidayOn ?? true,
         isPro: p.isPro,
       }),
     })
@@ -87,12 +98,16 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
 }
 
 /**
- * Gather the current birth profile + Pro state and (re)register. The one call
- * both the app-open effect and the Settings enable-toggle use, so server push
- * always reflects the latest birth / Pro / locale without duplicating the
- * profile-gathering logic.
+ * Gather the current birth profile + Pro state and (re)register with the given
+ * slot prefs. The one call the app-open effect and Settings toggles use, so
+ * server push always reflects the latest birth / Pro / locale / prefs. Prefs are
+ * passed in (read from the local enable flags by the caller in lib/push) so this
+ * module doesn't import lib/push — keeps the dependency one-way.
  */
-export async function syncAuspiceServerPush(locale: string): Promise<boolean> {
+export async function syncAuspiceServerPush(
+  locale: string,
+  prefs: ServerPushPrefs
+): Promise<boolean> {
   const info = await getAuspiceBirthInfo().catch(() => null)
   const isPro = await getAuspiceProActive().catch(() => false)
   return registerAuspiceServerPush({
@@ -101,6 +116,7 @@ export async function syncAuspiceServerPush(locale: string): Promise<boolean> {
     birthHour: info ? (info.timeIndex === null ? -1 : info.timeIndex * 2) : undefined,
     gender: info?.gender ? (info.gender === '男' ? 'M' : 'F') : undefined,
     isPro,
+    ...prefs,
   })
 }
 
@@ -116,6 +132,43 @@ export async function unregisterAuspiceServerPush(): Promise<void> {
     // best-effort — the server drops stale tokens on DeviceNotRegistered anyway
   }
   await setServerPushActive(false)
+}
+
+/**
+ * One-time: push the device's existing 亲友 birthdays into the server table so
+ * server birthday push covers 亲友 saved BEFORE this feature shipped (without it,
+ * deferring local birthday would silently drop their reminders). people.tsx keeps
+ * the table current after. No-op unless server push is active + not yet migrated.
+ */
+export async function migrateBirthdaysToServerOnce(
+  people: ReadonlyArray<AuspicePerson>,
+  isPro: boolean
+): Promise<void> {
+  if (!(await isServerPushActive())) return
+  try {
+    if ((await AsyncStorage.getItem(BDAY_MIGRATED_KEY)) === '1') return
+  } catch {
+    return
+  }
+  try {
+    const deviceId = await getAuspiceDeviceId()
+    for (const p of people) {
+      await saveBirthdayReminder({
+        deviceId,
+        id: p.id,
+        name: p.name,
+        solarDate: p.solarDate,
+        calendar: p.calendar ?? 'solar',
+        relation: p.relation,
+        advanceDays: p.advanceDays,
+        remindOnDay: p.remindOnDay,
+        isPro,
+      }).catch(() => {})
+    }
+    await AsyncStorage.setItem(BDAY_MIGRATED_KEY, '1')
+  } catch {
+    // best-effort; people.tsx will sync each 亲友 on its next edit anyway
+  }
 }
 
 export { isServerPushActive }

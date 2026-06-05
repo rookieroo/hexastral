@@ -1302,6 +1302,10 @@ export const auspicePushSubs = sqliteTable(
     /** Slot prefs — opt-out (true = enabled). */
     dailyMorning: integer('daily_morning', { mode: 'boolean' }).notNull().default(true),
     dailyEvening: integer('daily_evening', { mode: 'boolean' }).notNull().default(true),
+    /** 生日提醒 (server-sent from birthday_reminders, morning slot). */
+    birthdayOn: integer('birthday_on', { mode: 'boolean' }).notNull().default(true),
+    /** 节假日/调休 heads-up (evening-before, CN schedule). */
+    holidayOn: integer('holiday_on', { mode: 'boolean' }).notNull().default(true),
     /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
     isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
     lastActiveAt: text('last_active_at').notNull(),

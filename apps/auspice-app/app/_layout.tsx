@@ -31,17 +31,18 @@ import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-con
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
 import { parseKindredComposeUrl } from '@/lib/kindred-import'
 import { addPerson, getPeople } from '@/lib/people'
+import { getAuspiceProActive } from '@/lib/pro'
 import {
   addAuspiceNotificationTapListener,
   configureNotifications,
-  isPushEnabled,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
   refreshTimelineReminders,
   scheduleBirthdayReminders,
   scheduleHolidayHeadsUp,
+  syncServerPush,
 } from '@/lib/push'
-import { syncAuspiceServerPush } from '@/lib/serverPush'
+import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
 
 function SatelliteGrowthMount() {
@@ -102,15 +103,15 @@ function RootLayoutInner() {
       await purgeStaleNotificationsOnce()
       const birthDate = (await getAuspiceBirthDate().catch(() => undefined)) ?? undefined
       const info = await getAuspiceBirthInfo().catch(() => null)
-      // Real server push: when daily push is on, register this device so the cron
-      // delivers the daily reliably (local notifications dry up if the app isn't
-      // opened). On success `refreshDailyPush` becomes a no-op for the daily slot
-      // (it defers to the server); on failure the local rolling window still runs.
-      if (await isPushEnabled().catch(() => false)) {
-        await syncAuspiceServerPush(locale)
-      }
-      await refreshDailyPush({ locale, birthDate })
       const people = await getPeople().catch(() => [])
+      // Real server push: register/unregister this device to match the local
+      // enable flags (daily + holiday; birthday rides along). The cron then
+      // delivers reliably even if the app isn't reopened. Once registered, the
+      // local daily/birthday/holiday schedulers below no-op (server owns them);
+      // on failure they run as the local fallback.
+      await syncServerPush(locale)
+      await migrateBirthdaysToServerOnce(people, await getAuspiceProActive().catch(() => false))
+      await refreshDailyPush({ locale, birthDate })
       await scheduleBirthdayReminders(people, locale)
       await scheduleHolidayHeadsUp(locale)
       // 人生节点提醒 (Pro) — self-clears if disabled / not Pro / no birth gender.
