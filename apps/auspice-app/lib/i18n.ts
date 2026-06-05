@@ -330,6 +330,9 @@ export interface Strings {
     /** Hint under the disclosure header: filling these unlocks the two-person
      *  relationship report, viewable in the Kindred app. */
     compatibilityHint: string
+    /** Shown inside the expanded 合盘 section when the solar birth year is missing —
+     *  合盘 silently can't compute without it, so make the requirement explicit. */
+    compatYearRequired: string
   }
   watchWidgets: string
   /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
@@ -623,9 +626,10 @@ const zhHans: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '请先在设置里填写你的生辰，才能查看与 TA 的关系。',
     homeEntry: '记录生日',
-    compatibilityToggle: '添加合盘信息（选填）',
+    compatibilityToggle: '解锁你们的关系合盘（选填）',
     compatibilityHint:
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
+    compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
@@ -881,9 +885,10 @@ const zhHant: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '請先在設定裡填寫你的生辰，才能查看與 TA 的關係。',
     homeEntry: '記錄生日',
-    compatibilityToggle: '新增合盤資訊（選填）',
+    compatibilityToggle: '解鎖你們的關係合盤（選填）',
     compatibilityHint:
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
+    compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
@@ -1165,9 +1170,11 @@ const ja: Strings = {
     needBirth: '生年月日が必要',
     needBirthBody: '相性を見るには、設定であなたの生年月日を入力してください。',
     homeEntry: '記念日を追加',
-    compatibilityToggle: '相性鑑定の情報（任意）',
+    compatibilityToggle: '二人の相性を解放（任意）',
     compatibilityHint:
       '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。通知だけなら入力不要です。',
+    compatYearRequired:
+      '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
@@ -1451,9 +1458,11 @@ const en: Strings = {
     needBirth: 'Your birth needed',
     needBirthBody: 'Set your own birth in Settings to see your bond with them.',
     homeEntry: 'Add birthday',
-    compatibilityToggle: 'Compatibility info (optional)',
+    compatibilityToggle: 'Unlock your compatibility (optional)',
     compatibilityHint:
       'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app. Skip for a reminder-only entry.',
+    compatYearRequired:
+      'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:

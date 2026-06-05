@@ -331,6 +331,13 @@ export default function PeopleScreen() {
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
                   {t.people.compatibilityHint}
                 </Text>
+                {/* 合盘 silently needs a 4-digit solar year — surface it rather than
+                    let the user fill 时辰/性别 and get no report. */}
+                {!(/^\d{4}$/.test(birthYear) && calendar === 'solar') ? (
+                  <Text style={{ color: colors.accent, fontSize: 12, lineHeight: 18 }}>
+                    {t.people.compatYearRequired}
+                  </Text>
+                ) : null}
 
                 {/* 时辰 (for 八字 / 合盘) */}
                 <View style={{ gap: spacing.sm }}>
