@@ -59,6 +59,7 @@ import {
   isPushEnabled,
   isTimelineRemindersEnabled,
 } from '@/lib/push'
+import { type PushTypeMeta, pushTypeById } from '@/lib/pushRegistry'
 
 const LOCALES: { key: Locale; label: string }[] = [
   { key: 'zh-Hans', label: '简体中文' },
@@ -76,6 +77,56 @@ function SectionLabel({ children }: { children: string }) {
     <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
       {children}
     </Text>
+  )
+}
+
+/** One push-notification toggle row — label (+ optional PRO badge / hint) + Switch.
+ *  Replaces three near-identical Switch blocks; driven by the `pushToggles` config
+ *  which takes its order + PRO flag from lib/pushRegistry (single source of truth). */
+function PushToggleRow({
+  label,
+  hint,
+  value,
+  onToggle,
+  showPro,
+}: {
+  label: string
+  hint?: string
+  value: boolean
+  onToggle: (next: boolean) => void | Promise<void>
+  /** Show the PRO badge — this push type is a Pro perk the user hasn't unlocked. */
+  showPro: boolean
+}) {
+  const { colors, spacing } = useTheme()
+  return (
+    <View>
+      <SectionLabel>{label}</SectionLabel>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.card,
+          borderRadius: 14,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          gap: spacing.md,
+        }}
+      >
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
+            {showPro ? (
+              <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
+            ) : null}
+          </View>
+          {hint ? (
+            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>{hint}</Text>
+          ) : null}
+        </View>
+        <Switch value={value} onValueChange={onToggle} trackColor={{ true: colors.accent }} />
+      </View>
+    </View>
   )
 }
 
@@ -208,7 +259,7 @@ export default function MeScreen() {
       })
       setPushOn(ok)
     } else {
-      await disableDailyPush()
+      await disableDailyPush(locale)
       setPushOn(false)
     }
   }
@@ -224,7 +275,7 @@ export default function MeScreen() {
     if (next) {
       setHolidayOn(await enableHolidayHeadsUp(locale))
     } else {
-      await disableHolidayHeadsUp()
+      await disableHolidayHeadsUp(locale)
       setHolidayOn(false)
     }
   }
@@ -264,6 +315,34 @@ export default function MeScreen() {
       .then(setTimelineRemindOn)
       .catch(() => {})
   }, [])
+
+  // Registry-driven push toggles — order + PRO flag from lib/pushRegistry (single
+  // source of truth), so the three rows render from one config + PushToggleRow
+  // instead of three near-identical Switch blocks (the settings tree had grown
+  // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
+  const pushToggles: Array<{
+    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'holiday'>
+    label: string
+    hint?: string
+    value: boolean
+    onToggle: (next: boolean) => void | Promise<void>
+  }> = [
+    { id: 'daily', label: t.dailyPush, value: pushOn, onToggle: togglePush },
+    {
+      id: 'timeline',
+      label: t.timelineRemindToggle,
+      hint: t.timelineRemindHint,
+      value: timelineRemindOn,
+      onToggle: toggleTimelineRemind,
+    },
+    {
+      id: 'holiday',
+      label: t.holidayHeadsUp,
+      hint: t.holidayHeadsUpHint,
+      value: holidayOn,
+      onToggle: toggleHoliday,
+    },
+  ]
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -557,91 +636,17 @@ export default function MeScreen() {
           </Pressable>
         </View>
 
-        {/* ── Daily push ── */}
-        <View>
-          <SectionLabel>{t.dailyPush}</SectionLabel>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-            }}
-          >
-            <Text style={{ color: colors.text, fontSize: 16 }}>{t.dailyPush}</Text>
-            <Switch
-              value={pushOn}
-              onValueChange={togglePush}
-              trackColor={{ true: colors.accent }}
-            />
-          </View>
-        </View>
-
-        {/* ── 人生节点提醒 (Pro) ── */}
-        <View>
-          <SectionLabel>{t.timelineRemindToggle}</SectionLabel>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              gap: spacing.md,
-            }}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: colors.text, fontSize: 16 }}>{t.timelineRemindToggle}</Text>
-                {!isPro ? (
-                  <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
-                ) : null}
-              </View>
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                {t.timelineRemindHint}
-              </Text>
-            </View>
-            <Switch
-              value={timelineRemindOn}
-              onValueChange={toggleTimelineRemind}
-              trackColor={{ true: colors.accent }}
-            />
-          </View>
-        </View>
-
-        {/* ── 节假日 / 调休 heads-up (CN) ── */}
-        <View>
-          <SectionLabel>{t.holidayHeadsUp}</SectionLabel>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              gap: spacing.md,
-            }}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ color: colors.text, fontSize: 16 }}>{t.holidayHeadsUp}</Text>
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                {t.holidayHeadsUpHint}
-              </Text>
-            </View>
-            <Switch
-              value={holidayOn}
-              onValueChange={toggleHoliday}
-              trackColor={{ true: colors.accent }}
-            />
-          </View>
-        </View>
+        {/* ── 推送提醒 — registry-driven (daily · 人生节点 Pro · 节假日) ── */}
+        {pushToggles.map((row) => (
+          <PushToggleRow
+            key={row.id}
+            label={row.label}
+            hint={row.hint}
+            value={row.value}
+            onToggle={row.onToggle}
+            showPro={pushTypeById(row.id)?.tier === 'pro' && !isPro}
+          />
+        ))}
 
         {/* ── Apple Calendar subscribe — opens webcal:// in system Calendar ── */}
         <View>

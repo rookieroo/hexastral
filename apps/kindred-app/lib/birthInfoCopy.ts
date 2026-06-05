@@ -15,7 +15,7 @@
  *     the subtitle.
  */
 
-import { birthInfoCopyForLocale, type BirthInfoCopy } from '@zhop/core-ui'
+import { type BirthInfoCopy, birthInfoCopyForLocale } from '@zhop/core-ui'
 
 interface KindredOverride {
   timeSubtitle: string
@@ -25,8 +25,7 @@ interface KindredOverride {
 
 const OVERRIDES: Record<string, KindredOverride> = {
   en: {
-    timeSubtitle:
-      'Twelve two-hour 时辰 windows. Required — your hour pillar depends on it.',
+    timeSubtitle: 'Twelve two-hour 时辰 windows. Required — your hour pillar depends on it.',
     placeSubtitle:
       'Optional. Your birth city sharpens the hour pillar via true-solar time; skip if unknown.',
     placeSkipLabel: 'Skip for now',
@@ -43,8 +42,7 @@ const OVERRIDES: Record<string, KindredOverride> = {
   },
   ja: {
     timeSubtitle: '12 の時辰（2 時間単位）。必須 — 時柱の決定に必要です。',
-    placeSubtitle:
-      '任意。出生地は真太陽時補正に使い、時柱の精度が上がります。不明なら省略可。',
+    placeSubtitle: '任意。出生地は真太陽時補正に使い、時柱の精度が上がります。不明なら省略可。',
     placeSkipLabel: '後で',
   },
 }

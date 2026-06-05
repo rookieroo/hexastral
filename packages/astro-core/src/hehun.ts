@@ -343,12 +343,7 @@ export function calculateHeHun(pillarsA: FourPillars, pillarsB: FourPillars): He
   dimensions.push(dayMasterScore)
 
   // 2. 年支关系 (20%)
-  const yearScore = scoreBranchRelation(
-    pillarsA.year.branch,
-    pillarsB.year.branch,
-    '年支缘分',
-    20
-  )
+  const yearScore = scoreBranchRelation(pillarsA.year.branch, pillarsB.year.branch, '年支缘分', 20)
   dimensions.push(yearScore)
 
   // 3. 月支关系 (20%)

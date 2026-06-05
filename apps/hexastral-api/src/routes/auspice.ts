@@ -493,22 +493,28 @@ const ALMANAC_EDGE_TTL = 600
 
 async function edgeCachedJson(c: Context<AppEnv>, build: () => unknown): Promise<Response> {
   const wantsFresh = (c.req.header('cache-control') ?? '').includes('no-cache')
+  const jsonResponse = () =>
+    new Response(JSON.stringify(ok(build())), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json; charset=UTF-8',
+        'cache-control': `public, max-age=${ALMANAC_EDGE_TTL}`,
+      },
+    })
   // `caches.default` is a Workers-only extension (not in the standard CacheStorage
   // lib) — cast so this file also typechecks when pulled into a non-Workers tsconfig
   // (hexastral-web imports an API type, dragging this module into its type graph).
-  const cache = (caches as unknown as { default: Cache }).default
+  // It's also absent in unit tests / non-Workers runtimes; the cache is a perf
+  // optimization, not correctness, so skip it (and just compute) when unavailable.
+  const cache =
+    typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null
+  if (!cache) return jsonResponse()
   const cacheKey = new Request(new URL(c.req.url).toString(), { method: 'GET' })
   if (!wantsFresh) {
     const hit = await cache.match(cacheKey)
     if (hit) return hit
   }
-  const res = new Response(JSON.stringify(ok(build())), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json; charset=UTF-8',
-      'cache-control': `public, max-age=${ALMANAC_EDGE_TTL}`,
-    },
-  })
+  const res = jsonResponse()
   if (!wantsFresh) c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()))
   return res
 }
@@ -1850,6 +1856,176 @@ interface AuspicePushSubRow {
   isPro: boolean
 }
 
+// ── 生日 / 节假日 server-side push text + matchers (remote push) ───────────────
+
+interface BdayText {
+  title: string
+  soon: string
+  tomorrow: string
+  day: string
+}
+const EN_BDAY_TEXT: BdayText = {
+  title: 'Birthday reminder',
+  soon: "{name}'s birthday is in {n} days",
+  tomorrow: "Tomorrow is {name}'s birthday",
+  day: "Today is {name}'s birthday",
+}
+const BIRTHDAY_TEXT: Record<string, BdayText> = {
+  'zh-Hans': {
+    title: '生日提醒',
+    soon: '还有 {n} 天是「{name}」的生日',
+    tomorrow: '明天是「{name}」的生日',
+    day: '今天是「{name}」的生日，记得送上祝福',
+  },
+  'zh-Hant': {
+    title: '生日提醒',
+    soon: '還有 {n} 天是「{name}」的生日',
+    tomorrow: '明天是「{name}」的生日',
+    day: '今天是「{name}」的生日，記得送上祝福',
+  },
+  ja: {
+    title: '誕生日リマインダー',
+    soon: '「{name}」さんの誕生日まであと {n} 日',
+    tomorrow: '明日は「{name}」さんの誕生日',
+    day: '今日は「{name}」さんの誕生日です',
+  },
+  en: EN_BDAY_TEXT,
+}
+function bdayText(locale: string): BdayText {
+  if (locale.startsWith('zh-Hant')) return BIRTHDAY_TEXT['zh-Hant'] ?? EN_BDAY_TEXT
+  if (locale.startsWith('zh')) return BIRTHDAY_TEXT['zh-Hans'] ?? EN_BDAY_TEXT
+  if (locale.startsWith('ja')) return BIRTHDAY_TEXT.ja ?? EN_BDAY_TEXT
+  return EN_BDAY_TEXT
+}
+
+interface HolidayText {
+  title: string
+  holiday: string
+  workday: string
+}
+const EN_HOLIDAY_TEXT: HolidayText = {
+  title: 'Holiday',
+  holiday: '{name} holiday starts tomorrow (through {end}) — turn off your weekday alarm.',
+  workday: 'Tomorrow is a makeup workday — remember to set your alarm.',
+}
+const HOLIDAY_TEXT: Record<string, HolidayText> = {
+  'zh-Hans': {
+    title: '节假日提醒',
+    holiday: '明天起{name}放假（至 {end}），记得关掉工作日闹钟。',
+    workday: '明天调休上班，别忘了设好闹钟。',
+  },
+  'zh-Hant': {
+    title: '節假日提醒',
+    holiday: '明天起{name}放假（至 {end}），記得關掉工作日鬧鐘。',
+    workday: '明天調休上班，別忘了設好鬧鐘。',
+  },
+  ja: {
+    title: '祝日リマインダー',
+    holiday: '明日から{name}が休み（{end}まで）。平日のアラームを忘れずにオフに。',
+    workday: '明日は振替出勤日。アラームの設定をお忘れなく。',
+  },
+  en: EN_HOLIDAY_TEXT,
+}
+function holidayText(locale: string): HolidayText {
+  if (locale.startsWith('zh-Hant')) return HOLIDAY_TEXT['zh-Hant'] ?? EN_HOLIDAY_TEXT
+  if (locale.startsWith('zh')) return HOLIDAY_TEXT['zh-Hans'] ?? EN_HOLIDAY_TEXT
+  if (locale.startsWith('ja')) return HOLIDAY_TEXT.ja ?? EN_HOLIDAY_TEXT
+  return EN_HOLIDAY_TEXT
+}
+
+function holidayEndLabel(dateStr: string, locale: string): string {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(dateStr)
+  if (!m) return dateStr
+  const mo = Number(m[1])
+  const dd = Number(m[2])
+  return locale.startsWith('en') ? `${mo}/${dd}` : `${mo}月${dd}日`
+}
+
+/**
+ * 中国大陆 法定节假日 + 调休 — MIRROR of apps/auspice-app/lib/cn-holidays.ts.
+ * Politically set (not algorithmic), so BOTH copies MUST be updated each year
+ * from the 国务院 announcement. Kept duplicated (13 dates) rather than extracted
+ * to a package to avoid cross-workspace churn; the app keeps its copy for the
+ * local-fallback path, the server uses this for remote push.
+ */
+const CN_HOLIDAYS: Record<
+  number,
+  {
+    holidays: ReadonlyArray<{ name: string; start: string; end: string }>
+    workdays: ReadonlyArray<string>
+  }
+> = {
+  2026: {
+    holidays: [
+      { name: '元旦', start: '2026-01-01', end: '2026-01-03' },
+      { name: '春节', start: '2026-02-15', end: '2026-02-23' },
+      { name: '清明节', start: '2026-04-04', end: '2026-04-06' },
+      { name: '劳动节', start: '2026-05-01', end: '2026-05-05' },
+      { name: '端午节', start: '2026-06-19', end: '2026-06-21' },
+      { name: '中秋节', start: '2026-09-25', end: '2026-09-27' },
+      { name: '国庆节', start: '2026-10-01', end: '2026-10-07' },
+    ],
+    workdays: ['2026-01-04', '2026-02-14', '2026-02-28', '2026-05-09', '2026-09-20', '2026-10-10'],
+  },
+}
+
+/** Heads-up that should fire the evening before `dateStr` (a holiday start or 调休). */
+function holidayHeadsUpFor(
+  dateStr: string
+): { kind: 'holiday' | 'workday'; name: string; end: string } | null {
+  const year = Number(dateStr.slice(0, 4))
+  const data = CN_HOLIDAYS[year]
+  if (!data) return null
+  for (const h of data.holidays)
+    if (h.start === dateStr) return { kind: 'holiday', name: h.name, end: h.end }
+  for (const w of data.workdays) if (w === dateStr) return { kind: 'workday', name: '', end: '' }
+  return null
+}
+
+interface BdayReminderRow {
+  name: string
+  solarDate: string
+  calendar: string
+  advanceDays: number
+  remindOnDay: boolean
+}
+
+/** Does this reminder fire on `todayStr` (the device's local date)? Mirrors the
+ *  app's nextBirthdayFor: next occurrence >= today; day-of (remindOnDay) or the
+ *  advance heads-up `advanceDays` before. 农历 resolved via astro-core. */
+function birthdayFiresOn(
+  r: BdayReminderRow,
+  todayStr: string
+): { kind: 'day' | 'tomorrow' | 'soon'; n: number } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.solarDate)
+  if (!m) return null
+  const mo = Number(m[2])
+  const dd = Number(m[3])
+  const today = new Date(`${todayStr}T00:00:00Z`)
+  const ty = today.getUTCFullYear()
+  const candidates: Date[] = []
+  if (r.calendar === 'lunar') {
+    for (const y of [ty, ty + 1]) {
+      try {
+        const s = lunarToSolar(y, mo, dd, false)
+        candidates.push(new Date(Date.UTC(s.getFullYear(), s.getMonth(), s.getDate())))
+      } catch {
+        // leap-month / out-of-range — skip
+      }
+    }
+  } else {
+    for (const y of [ty, ty + 1]) candidates.push(new Date(Date.UTC(y, mo - 1, dd)))
+  }
+  const occ = candidates
+    .filter((d) => d.getTime() >= today.getTime())
+    .sort((a, b) => a.getTime() - b.getTime())[0]
+  if (!occ) return null
+  const n = Math.round((occ.getTime() - today.getTime()) / 86_400_000)
+  if (n === 0 && r.remindOnDay) return { kind: 'day', n: 0 }
+  if (r.advanceDays > 0 && n === r.advanceDays) return { kind: n === 1 ? 'tomorrow' : 'soon', n }
+  return null
+}
+
 /** Render a deterministic push for one subscriber + date (morning = that day,
  *  evening = a preview of `dateYmd` which the cron already advanced to tomorrow). */
 function renderAuspicePush(
@@ -1886,6 +2062,8 @@ const pushRegisterSchema = z.object({
   gender: z.enum(['M', 'F']).optional(),
   dailyMorning: z.boolean().default(true),
   dailyEvening: z.boolean().default(true),
+  birthdayOn: z.boolean().default(true),
+  holidayOn: z.boolean().default(true),
   isPro: z.boolean().default(false),
 })
 
@@ -1909,6 +2087,8 @@ auspiceRoutes.post('/push/register', async (c) => {
       gender: b.gender ?? null,
       dailyMorning: b.dailyMorning,
       dailyEvening: b.dailyEvening,
+      birthdayOn: b.birthdayOn,
+      holidayOn: b.holidayOn,
       isPro: b.isPro,
       lastActiveAt: now,
       createdAt: now,
@@ -1925,6 +2105,8 @@ auspiceRoutes.post('/push/register', async (c) => {
         gender: b.gender ?? null,
         dailyMorning: b.dailyMorning,
         dailyEvening: b.dailyEvening,
+        birthdayOn: b.birthdayOn,
+        holidayOn: b.holidayOn,
         isPro: b.isPro,
         lastActiveAt: now,
       },
@@ -1952,30 +2134,116 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }
   const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
   const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
-  const slotEnabled =
-    slot === 'evening' ? auspicePushSubs.dailyEvening : auspicePushSubs.dailyMorning
+  const db = c.get('db')
 
-  const rows = await c
-    .get('db')
+  // All subs in the timezone; per-device prefs decide which messages to emit
+  // (a device can get several: daily + birthday in the morning, daily + holiday
+  // in the evening). Paginated by sub so a device's messages stay together.
+  const page0 = await db
     .select({
       deviceId: auspicePushSubs.deviceId,
       token: auspicePushSubs.token,
       locale: auspicePushSubs.locale,
       birthDate: auspicePushSubs.birthDate,
       isPro: auspicePushSubs.isPro,
+      dailyMorning: auspicePushSubs.dailyMorning,
+      dailyEvening: auspicePushSubs.dailyEvening,
+      birthdayOn: auspicePushSubs.birthdayOn,
+      holidayOn: auspicePushSubs.holidayOn,
     })
     .from(auspicePushSubs)
-    .where(and(eq(auspicePushSubs.timezoneId, timezoneId), eq(slotEnabled, true)))
+    .where(eq(auspicePushSubs.timezoneId, timezoneId))
     .limit(limit + 1)
     .offset(offset)
 
-  const hasMore = rows.length > limit
-  const page = hasMore ? rows.slice(0, limit) : rows
+  const hasMore = page0.length > limit
+  const page = hasMore ? page0.slice(0, limit) : page0
   const ymd = parseYmd(date)
-  const messages = page.map((sub) => {
-    const { title, body, data } = renderAuspicePush(slot, ymd, sub)
-    return { deviceId: sub.deviceId, token: sub.token, title, body, data }
-  })
+
+  // Morning: batch-load birthday reminders for the page's devices.
+  const bdaysByOwner = new Map<string, Array<typeof birthdayReminders.$inferSelect>>()
+  if (slot === 'morning') {
+    const owners = page.filter((s) => s.birthdayOn).map((s) => `device:${s.deviceId}`)
+    if (owners.length > 0) {
+      const rows = await db
+        .select()
+        .from(birthdayReminders)
+        .where(inArray(birthdayReminders.owner, owners))
+        .orderBy(birthdayReminders.createdAt)
+      for (const r of rows) {
+        const arr = bdaysByOwner.get(r.owner) ?? []
+        arr.push(r)
+        bdaysByOwner.set(r.owner, arr)
+      }
+    }
+  }
+  // Evening: the holiday heads-up is locale-keyed (not per-birth), so resolve once.
+  const holiday = slot === 'evening' ? holidayHeadsUpFor(date) : null
+
+  const messages: Array<{
+    deviceId: string
+    token: string
+    title: string
+    body: string
+    data: Record<string, string>
+  }> = []
+
+  for (const sub of page) {
+    // Daily reading / preview.
+    if (slot === 'evening' ? sub.dailyEvening : sub.dailyMorning) {
+      const m = renderAuspicePush(slot, ymd, sub)
+      messages.push({ deviceId: sub.deviceId, token: sub.token, ...m })
+    }
+    // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders.
+    if (slot === 'morning' && sub.birthdayOn) {
+      const all = bdaysByOwner.get(`device:${sub.deviceId}`) ?? []
+      const reminders = sub.isPro ? all : all.slice(0, BIRTHDAY_FREE_LIMIT)
+      const bt = bdayText(sub.locale)
+      for (const r of reminders) {
+        const fire = birthdayFiresOn(
+          {
+            name: r.name,
+            solarDate: r.solarDate,
+            calendar: r.calendar,
+            advanceDays: r.advanceDays,
+            remindOnDay: r.remindOnDay,
+          },
+          date
+        )
+        if (!fire) continue
+        const body =
+          fire.kind === 'day'
+            ? bt.day.replace('{name}', r.name)
+            : fire.kind === 'tomorrow'
+              ? bt.tomorrow.replace('{name}', r.name)
+              : bt.soon.replace('{n}', String(fire.n)).replace('{name}', r.name)
+        messages.push({
+          deviceId: sub.deviceId,
+          token: sub.token,
+          title: bt.title,
+          body,
+          data: { type: 'auspice_birthday' },
+        })
+      }
+    }
+    // Holiday / 调休 heads-up (evening before).
+    if (slot === 'evening' && sub.holidayOn && holiday) {
+      const ht = holidayText(sub.locale)
+      const body =
+        holiday.kind === 'holiday'
+          ? ht.holiday
+              .replace('{name}', holiday.name)
+              .replace('{end}', holidayEndLabel(holiday.end || date, sub.locale))
+          : ht.workday
+      messages.push({
+        deviceId: sub.deviceId,
+        token: sub.token,
+        title: ht.title,
+        body,
+        data: { type: 'auspice_holiday' },
+      })
+    }
+  }
   return jsonOk(c, { messages, nextCursor: hasMore ? String(offset + limit) : null })
 })
 

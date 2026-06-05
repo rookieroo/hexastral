@@ -145,138 +145,148 @@ export function EmailVerifyModal({
               paddingBottom: 40,
             }}
           >
-          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-            <View style={{ width: 36, height: 4, backgroundColor: kindredDark.border }} />
-          </View>
+            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, backgroundColor: kindredDark.border }} />
+            </View>
 
-          <View style={{ paddingHorizontal: kindredSpacing.screenH, paddingTop: 12 }}>
-            <Text style={[kindredType.heading, { color: kindredDark.text, marginBottom: 4 }]}>
-              {t(locale, 'settings.email.title')}
-            </Text>
+            <View style={{ paddingHorizontal: kindredSpacing.screenH, paddingTop: 12 }}>
+              <Text style={[kindredType.heading, { color: kindredDark.text, marginBottom: 4 }]}>
+                {t(locale, 'settings.email.title')}
+              </Text>
 
-            {step === 'email' ? (
-              <>
-                <Text
-                  style={[kindredType.caption, { color: kindredDark.textSecondary, marginTop: 8 }]}
-                >
-                  {t(locale, 'settings.email.subtitle')}
-                </Text>
-                <TextInput
-                  value={email}
-                  onChangeText={(v) => {
-                    setEmail(v)
-                    setError(null)
-                  }}
-                  placeholder={t(locale, 'settings.email.placeholder')}
-                  placeholderTextColor={kindredDark.textMuted}
-                  keyboardType='email-address'
-                  autoCapitalize='none'
-                  autoCorrect={false}
-                  autoFocus
-                  style={{
-                    borderWidth: 0.5,
-                    borderColor: error ? kindredDark.seal : kindredDark.border,
-                    padding: 14,
-                    fontSize: 16,
-                    color: kindredDark.text,
-                    marginTop: kindredSpacing.lg,
-                  }}
-                />
-                {error ? (
-                  <Text style={[kindredType.caption, { color: kindredDark.seal, marginTop: 6 }]}>
-                    {error}
+              {step === 'email' ? (
+                <>
+                  <Text
+                    style={[
+                      kindredType.caption,
+                      { color: kindredDark.textSecondary, marginTop: 8 },
+                    ]}
+                  >
+                    {t(locale, 'settings.email.subtitle')}
                   </Text>
-                ) : null}
-                <Pressable
-                  onPress={() => void requestCode()}
-                  disabled={loading}
-                  style={{
-                    marginTop: kindredSpacing.lg,
-                    paddingVertical: 14,
-                    backgroundColor: kindredDark.accent,
-                    alignItems: 'center',
-                    opacity: loading ? 0.6 : 1,
-                  }}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={kindredDark.bg} />
-                  ) : (
-                    <Text style={[kindredType.body, { color: kindredDark.bg, fontWeight: '600' }]}>
-                      {t(locale, 'settings.email.sendCode')}
+                  <TextInput
+                    value={email}
+                    onChangeText={(v) => {
+                      setEmail(v)
+                      setError(null)
+                    }}
+                    placeholder={t(locale, 'settings.email.placeholder')}
+                    placeholderTextColor={kindredDark.textMuted}
+                    keyboardType='email-address'
+                    autoCapitalize='none'
+                    autoCorrect={false}
+                    autoFocus
+                    style={{
+                      borderWidth: 0.5,
+                      borderColor: error ? kindredDark.seal : kindredDark.border,
+                      padding: 14,
+                      fontSize: 16,
+                      color: kindredDark.text,
+                      marginTop: kindredSpacing.lg,
+                    }}
+                  />
+                  {error ? (
+                    <Text style={[kindredType.caption, { color: kindredDark.seal, marginTop: 6 }]}>
+                      {error}
                     </Text>
-                  )}
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text
-                  style={[kindredType.caption, { color: kindredDark.textSecondary, marginTop: 8 }]}
-                >
-                  {t(locale, 'settings.email.codeSent')} {email}
-                </Text>
-                <TextInput
-                  value={code}
-                  onChangeText={(v) => {
-                    setCode(v.replace(/\D/g, ''))
-                    setError(null)
-                  }}
-                  placeholder='000000'
-                  placeholderTextColor={kindredDark.textMuted}
-                  keyboardType='number-pad'
-                  maxLength={6}
-                  autoFocus
-                  style={{
-                    borderWidth: 0.5,
-                    borderColor: error ? kindredDark.seal : kindredDark.border,
-                    padding: 14,
-                    fontSize: 28,
-                    color: kindredDark.text,
-                    marginTop: kindredSpacing.lg,
-                    letterSpacing: 8,
-                    textAlign: 'center',
-                  }}
-                />
-                {error ? (
-                  <Text style={[kindredType.caption, { color: kindredDark.seal, marginTop: 6 }]}>
-                    {error}
+                  ) : null}
+                  <Pressable
+                    onPress={() => void requestCode()}
+                    disabled={loading}
+                    style={{
+                      marginTop: kindredSpacing.lg,
+                      paddingVertical: 14,
+                      backgroundColor: kindredDark.accent,
+                      alignItems: 'center',
+                      opacity: loading ? 0.6 : 1,
+                    }}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={kindredDark.bg} />
+                    ) : (
+                      <Text
+                        style={[kindredType.body, { color: kindredDark.bg, fontWeight: '600' }]}
+                      >
+                        {t(locale, 'settings.email.sendCode')}
+                      </Text>
+                    )}
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      kindredType.caption,
+                      { color: kindredDark.textSecondary, marginTop: 8 },
+                    ]}
+                  >
+                    {t(locale, 'settings.email.codeSent')} {email}
                   </Text>
-                ) : null}
-                <Pressable
-                  onPress={() => void confirmCode()}
-                  disabled={loading || code.length !== 6}
-                  style={{
-                    marginTop: kindredSpacing.lg,
-                    paddingVertical: 14,
-                    backgroundColor: kindredDark.accent,
-                    alignItems: 'center',
-                    opacity: loading || code.length !== 6 ? 0.5 : 1,
-                  }}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={kindredDark.bg} />
-                  ) : (
-                    <Text style={[kindredType.body, { color: kindredDark.bg, fontWeight: '600' }]}>
-                      {t(locale, 'settings.email.verify')}
+                  <TextInput
+                    value={code}
+                    onChangeText={(v) => {
+                      setCode(v.replace(/\D/g, ''))
+                      setError(null)
+                    }}
+                    placeholder='000000'
+                    placeholderTextColor={kindredDark.textMuted}
+                    keyboardType='number-pad'
+                    maxLength={6}
+                    autoFocus
+                    style={{
+                      borderWidth: 0.5,
+                      borderColor: error ? kindredDark.seal : kindredDark.border,
+                      padding: 14,
+                      fontSize: 28,
+                      color: kindredDark.text,
+                      marginTop: kindredSpacing.lg,
+                      letterSpacing: 8,
+                      textAlign: 'center',
+                    }}
+                  />
+                  {error ? (
+                    <Text style={[kindredType.caption, { color: kindredDark.seal, marginTop: 6 }]}>
+                      {error}
                     </Text>
-                  )}
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setStep('email')
-                    setCode('')
-                    setError(null)
-                  }}
-                  style={{ marginTop: kindredSpacing.md, alignItems: 'center', padding: 8 }}
-                >
-                  <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                    {t(locale, 'settings.email.changeEmail')}
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </View>
+                  ) : null}
+                  <Pressable
+                    onPress={() => void confirmCode()}
+                    disabled={loading || code.length !== 6}
+                    style={{
+                      marginTop: kindredSpacing.lg,
+                      paddingVertical: 14,
+                      backgroundColor: kindredDark.accent,
+                      alignItems: 'center',
+                      opacity: loading || code.length !== 6 ? 0.5 : 1,
+                    }}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={kindredDark.bg} />
+                    ) : (
+                      <Text
+                        style={[kindredType.body, { color: kindredDark.bg, fontWeight: '600' }]}
+                      >
+                        {t(locale, 'settings.email.verify')}
+                      </Text>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setStep('email')
+                      setCode('')
+                      setError(null)
+                    }}
+                    style={{ marginTop: kindredSpacing.md, alignItems: 'center', padding: 8 }}
+                  >
+                    <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+                      {t(locale, 'settings.email.changeEmail')}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   )

@@ -103,14 +103,7 @@ function CinnabarMoon({ size = 88 }: { size?: number }) {
         <circle cx='27' cy='50' r='44' fill='url(#kindred-shadow)' />
       </g>
       {/* Rim — a thin warm outline so the moon doesn't melt into the paper. */}
-      <circle
-        cx='50'
-        cy='50'
-        r='44'
-        fill='none'
-        stroke='rgba(122,36,24,0.18)'
-        strokeWidth='0.75'
-      />
+      <circle cx='50' cy='50' r='44' fill='none' stroke='rgba(122,36,24,0.18)' strokeWidth='0.75' />
     </svg>
   )
 }
@@ -177,9 +170,7 @@ export default async function ResonatePage({ params }: PageProps) {
 
   // Locale fallback for tw-locale dates (Hant uses zh-TW formatting).
   const dateLocale = locale === 'tw' ? 'zh-TW' : locale === 'zh' ? 'zh-CN' : locale
-  const expiresLabel = invite
-    ? new Date(invite.expiresAt).toLocaleDateString(dateLocale)
-    : ''
+  const expiresLabel = invite ? new Date(invite.expiresAt).toLocaleDateString(dateLocale) : ''
 
   const inviterHasName = invite?.inviterHasName ?? false
   const showRelationshipPrefix = inviterHasName && !!invite?.relationshipLabel

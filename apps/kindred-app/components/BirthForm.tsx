@@ -24,18 +24,14 @@ import {
   BirthDateField,
   type BirthDateFieldLabels,
   type BirthDateFieldValue,
-  type CityRecord,
   CityPicker,
+  type CityRecord,
   DEFAULT_TOP_CITIES,
   ShichenField,
   type ShichenIndex,
   shichenFieldLabelsForLocale,
 } from '@zhop/core-ui'
-import {
-  kindredDark,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Haptics from 'expo-haptics'
 import type { ReactNode, RefObject } from 'react'
 import { Pressable, type ScrollView, Text, TextInput, View } from 'react-native'

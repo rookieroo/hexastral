@@ -33,18 +33,10 @@
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import Constants from 'expo-constants'
 import * as AppleAuthentication from 'expo-apple-authentication'
+import Constants from 'expo-constants'
 import { useEffect, useRef, useState } from 'react'
-import {
-  ActivityIndicator,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated'
 
 import { useAuth } from '@/lib/auth'
@@ -57,11 +49,7 @@ const EXIT_MS = 240
 // isn't installed; the runtime catch hides the button if so.
 interface GoogleSigninModule {
   GoogleSignin: {
-    configure(config: {
-      iosClientId?: string
-      webClientId?: string
-      offlineAccess?: boolean
-    }): void
+    configure(config: { iosClientId?: string; webClientId?: string; offlineAccess?: boolean }): void
     hasPlayServices(opts?: { showPlayServicesUpdateDialog?: boolean }): Promise<boolean>
     signIn(): Promise<{
       type?: string
@@ -254,12 +242,8 @@ export function SignInSheet({ visible, onClose, onAuthed }: SignInSheetProps) {
           >
             <View style={S.sheet}>
               <View style={S.handle} />
-              <Text style={[kindredType.title, S.title]}>
-                {t(locale, 'signIn.title')}
-              </Text>
-              <Text style={[kindredType.caption, S.hint]}>
-                {t(locale, 'signIn.hint')}
-              </Text>
+              <Text style={[kindredType.title, S.title]}>{t(locale, 'signIn.title')}</Text>
+              <Text style={[kindredType.caption, S.hint]}>{t(locale, 'signIn.hint')}</Text>
 
               {appleAvailable && Platform.OS === 'ios' ? (
                 <AppleAuthentication.AppleAuthenticationButton
@@ -307,9 +291,7 @@ export function SignInSheet({ visible, onClose, onAuthed }: SignInSheetProps) {
                 </View>
               ) : null}
 
-              {error ? (
-                <Text style={[kindredType.caption, S.error]}>{error}</Text>
-              ) : null}
+              {error ? <Text style={[kindredType.caption, S.error]}>{error}</Text> : null}
 
               <Pressable onPress={onClose} hitSlop={12} style={S.cancelBtn}>
                 <Text style={[kindredType.caption, S.cancelLabel]}>

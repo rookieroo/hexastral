@@ -20,11 +20,7 @@
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import {
-  InviteAcceptSheet,
-  type RelationshipType,
-  useBondInvitation,
-} from '@zhop/scenario-kindred'
+import { InviteAcceptSheet, type RelationshipType, useBondInvitation } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native'

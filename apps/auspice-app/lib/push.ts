@@ -245,19 +245,44 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   }
 }
 
+/**
+ * Read the local enable flags and (re)register OR unregister server push to match.
+ * Server-backed types: daily (early + late) and holiday; birthday rides along
+ * (always on, sent from the server birthday_reminders table). When BOTH daily and
+ * holiday are off, unregister — local scheduling then handles any birthdays.
+ * Prefs are read HERE (lib/push owns the flags) and passed to serverPush, so the
+ * dependency stays one-way (serverPush never imports push).
+ */
+export async function syncServerPush(locale: string): Promise<void> {
+  const daily = await isPushEnabled()
+  const holiday = await isHolidayHeadsUpEnabled()
+  if (!daily && !holiday) {
+    await unregisterAuspiceServerPush().catch(() => {})
+    return
+  }
+  await syncAuspiceServerPush(locale, {
+    dailyMorning: daily,
+    dailyEvening: daily,
+    birthdayOn: true,
+    holidayOn: holiday,
+  }).catch(() => {})
+}
+
 export async function enableDailyPush(opts: PushOpts): Promise<boolean> {
   if (!(await requestPushPermission())) return false
   await setEnabledFlag(true)
   // Prefer real server push (reliable even if the app isn't reopened); if it
   // registers, scheduleDailyAlmanac no-ops the local window and the server owns it.
-  await syncAuspiceServerPush(opts.locale).catch(() => false)
+  await syncServerPush(opts.locale)
   await scheduleDailyAlmanac(opts)
   return true
 }
 
-export async function disableDailyPush(): Promise<void> {
+export async function disableDailyPush(locale?: string): Promise<void> {
   await setEnabledFlag(false)
-  await unregisterAuspiceServerPush().catch(() => {})
+  // Re-sync (keeps server push alive if holiday is still on; else unregisters).
+  if (locale) await syncServerPush(locale)
+  else await unregisterAuspiceServerPush().catch(() => {})
   await cancelDaily()
 }
 
@@ -408,6 +433,10 @@ export async function scheduleBirthdayReminders(
   locale: Locale
 ): Promise<void> {
   await cancelBirthdays()
+  // Server push (when registered) sends birthdays from the server table — don't
+  // also schedule them locally or the user gets two. people.tsx keeps the server
+  // table in sync; local is the fallback for unregistered devices.
+  if (await isServerPushActive()) return
   const perm = await Notifications.getPermissionsAsync().catch(() => null)
   if (!perm || perm.status !== 'granted') return
 
@@ -514,6 +543,8 @@ export async function isHolidayHeadsUpEnabled(): Promise<boolean> {
  */
 export async function scheduleHolidayHeadsUp(locale: Locale): Promise<void> {
   await cancelHoliday()
+  // Server push (when registered) sends the holiday heads-up — don't double up.
+  if (await isServerPushActive()) return
   if (!(await isHolidayHeadsUpEnabled())) return
   const perm = await Notifications.getPermissionsAsync().catch(() => null)
   if (!perm || perm.status !== 'granted') return
@@ -548,14 +579,17 @@ export async function enableHolidayHeadsUp(locale: Locale): Promise<boolean> {
   try {
     await AsyncStorage.setItem(HOLIDAY_ENABLED_KEY, '1')
   } catch {}
-  await scheduleHolidayHeadsUp(locale)
+  await syncServerPush(locale) // register so the server sends the heads-up
+  await scheduleHolidayHeadsUp(locale) // no-ops if server active
   return true
 }
 
-export async function disableHolidayHeadsUp(): Promise<void> {
+export async function disableHolidayHeadsUp(locale?: Locale): Promise<void> {
   try {
     await AsyncStorage.setItem(HOLIDAY_ENABLED_KEY, '0')
   } catch {}
+  // Re-sync (keeps server push if daily is still on; else unregisters).
+  if (locale) await syncServerPush(locale)
   await cancelHoliday()
 }
 
