@@ -20,7 +20,7 @@ import {
   STEM_WUXING,
   type WuXing,
 } from '@zhop/astro-core'
-import { buildAgeLanguageBlock, calculateAge } from '../../lib/age'
+import { calculateAge } from '../../lib/age'
 import { type AiRouterEnv, callWithFallback } from '../../lib/ai-router'
 import { extractJson } from '../../lib/extract-json'
 import { buildLanguageBlock } from '../../lib/i18n-prompt'
@@ -159,7 +159,7 @@ export function computeHeHun(input: HeHunInput): HeHunFullResult {
 // AI Prompt
 // ========================================
 
-function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
+function buildPairFacts(result: HeHunFullResult, input: HeHunInput): string {
   const { compatibility, personA, personB } = result
   const nameA = input.personA.name ?? '甲方'
   const nameB = input.personB.name ?? '乙方'
@@ -227,9 +227,7 @@ function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
       ? `\n\n## 面相互补分析（后天修正）\n${physioSectionA}\n${physioSectionB}\n请分析双方面相特征的互补性和冲突点，作为关系和谐度的后天修正维度（如双方均无面相数据则略去此段）。`
       : ''
 
-  return `你是一位精通命盘配对的 AI 命理师。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。${relContext ? `\n\n${relContext}` : ''}
-
-## 甲方（${nameA}）
+  return `${relContext ? `${relContext}\n\n` : ''}## 甲方（${nameA}）
 - 四柱：${personA.pillarsLabel}
 - 日主：${personA.dayMaster}（${personA.dayMasterWuXing}），${personA.dayMasterStrength}
 - 格局：${personA.gejuPrimary}
@@ -248,7 +246,13 @@ ${physioSectionA}
 ${physioSectionB}
 ${physioCrossRef}
 
-${compatText}
+${compatText}`
+}
+
+function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
+  return `你是一位精通命盘配对的 AI 命理师。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。
+
+${buildPairFacts(result, input)}
 
 ## 输出要求（JSON 格式）
 {
@@ -343,6 +347,190 @@ export async function generateHeHunInterpretation(
   } catch (err) {
     throw new Error(
       `HeHun interpretation generation failed: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
+}
+
+// ========================================
+// 六章深度报告 + 破冰断言（aha hook）
+// ========================================
+
+/** One of the six synastry deep-report chapters. Mirrors scenario-kindred's
+ *  `SynastryChapter['kind']`; kept local so svc-astro stays frontend-free. */
+export type SynastryChapterKind =
+  | 'first_impression'
+  | 'communication'
+  | 'conflict'
+  | 'complement'
+  | 'monthly_outlook'
+  | 'long_term_advice'
+
+export interface SynastryChapterOutput {
+  kind: SynastryChapterKind
+  title: string
+  /** 1–3 sentence quotable 金句 — the screenshot/share bait. */
+  goldenLine: string
+  /** 150–250 word body, must cite concrete chart facts. */
+  body: string
+}
+
+export interface SynastryChaptersResult {
+  /** The single most striking, specific, true assertion about THIS pair —
+   *  shown on the report gate / invite CTA / paywall to drive unlock + invite. */
+  ahaHook: string
+  chapters: SynastryChapterOutput[]
+}
+
+/** Fixed chapter order + per-chapter focus. The first three are the free taste;
+ *  the rest unlock via invite / single-purchase / subscription (see ADR-0013). */
+const SYNASTRY_CHAPTER_SPECS: ReadonlyArray<{
+  kind: SynastryChapterKind
+  label: string
+  focus: string
+}> = [
+  {
+    kind: 'first_impression',
+    label: '第一印象',
+    focus: '两人初见的化学反应：日主与格局气场的第一观感，彼此最先被吸引或被触发的点',
+  },
+  {
+    kind: 'communication',
+    label: '沟通方式',
+    focus: '信息与情绪如何在两人间流动：表达节奏差异、最易被误解之处、最有效的沟通频道',
+  },
+  {
+    kind: 'conflict',
+    label: '冲突源头',
+    focus: '摩擦的真正根源（地支刑冲害/五行相克/格局张力），以及它通常如何被点燃',
+  },
+  {
+    kind: 'complement',
+    label: '互补之处',
+    focus: '彼此补足的能量：一方喜用恰是另一方所缺，长处如何对冲对方盲区',
+  },
+  {
+    kind: 'monthly_outlook',
+    label: '本月运势',
+    focus: '未来约30天两人相处的节奏：适合深聊/共同推进的窗口，与需要彼此留白的时段',
+  },
+  {
+    kind: 'long_term_advice',
+    label: '长期建议',
+    focus: '让这段关系走得久的核心功课：需要共同经营的，与各自需要软化的模式',
+  },
+]
+
+const VALID_CHAPTER_KINDS = new Set<string>(SYNASTRY_CHAPTER_SPECS.map((s) => s.kind))
+
+function buildSynastryChaptersPrompt(result: HeHunFullResult, input: HeHunInput): string {
+  const now = new Date()
+  const ym = `${now.getFullYear()}年${now.getMonth() + 1}月`
+  const chapterList = SYNASTRY_CHAPTER_SPECS.map(
+    (s, i) =>
+      `${i + 1}. kind="${s.kind}"（${s.label}）—— ${s.kind === 'monthly_outlook' ? `${s.focus}（当前为 ${ym}）` : s.focus}`
+  ).join('\n')
+
+  return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写一份「六章深度合盘」正文，并提炼一句最抓人的破冰断言。
+
+${buildPairFacts(result, input)}
+
+## 章节清单（必须严格按此顺序、此 kind 输出 6 章）
+${chapterList}
+
+## 写作要求
+- 每章 body 150–250 字，**必须直接引用上方命盘事实**（具体日主/格局/地支刑冲合/神煞/五行喜忌），禁止泛泛而谈、禁止占星化通用语。
+- 每章 goldenLine 为 1–3 句可截图分享的金句，精炼、有画面感、点中关系本质。
+- title ≤14 字，贴合该章 kind。
+- ahaHook 是整份报告的钩子：基于两人命盘的**真实互动**，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间；≤30 字，留有悬念引导用户解锁全文，**不含天命定论语气**。
+- 低分关系不说"不合适"，而说"需要更多理解与磨合"；高分关系也要提醒"好的关系仍需经营"。
+
+## 输出要求（严格 JSON）
+{
+  "ahaHook": "≤30字的破冰断言",
+  "chapters": [
+    { "kind": "first_impression", "title": "...", "goldenLine": "...", "body": "..." },
+    { "kind": "communication", "title": "...", "goldenLine": "...", "body": "..." },
+    { "kind": "conflict", "title": "...", "goldenLine": "...", "body": "..." },
+    { "kind": "complement", "title": "...", "goldenLine": "...", "body": "..." },
+    { "kind": "monthly_outlook", "title": "...", "goldenLine": "...", "body": "..." },
+    { "kind": "long_term_advice", "title": "...", "goldenLine": "...", "body": "..." }
+  ]
+}
+
+只输出纯 JSON，不要任何其他内容。`
+}
+
+/**
+ * AI 生成六章深度合盘 + 破冰断言。
+ *
+ * Generated once at bond creation, in parallel with the flat interpretation.
+ * Always full-quality (the chapters ARE the premium product); display gating
+ * by tier/unlock happens downstream. Throws on parse failure so the caller can
+ * fall back to a chapter-less report rather than 500.
+ */
+export async function generateSynastryChapters(
+  env: AiRouterEnv,
+  result: HeHunFullResult,
+  input: HeHunInput,
+  language: string
+): Promise<SynastryChaptersResult> {
+  const prompt = buildSynastryChaptersPrompt(result, input)
+
+  const systemPrompt = [
+    getSystemRole('hehun'),
+    '',
+    buildEnhancedGuardrails('相遇即是缘'),
+    '',
+    '## 合盘正文原则',
+    '- 每章必须落到双方命盘的具体特征上，给出可感、可执行的洞察',
+    '- 结尾正面、温暖，传递"相遇即是缘"的核心信念',
+    buildLanguageBlock(language, 'hehun'),
+  ].join('\n')
+
+  const text = await callWithFallback(env, systemPrompt, prompt, {
+    isPro: true,
+    maxTokens: 8192,
+    thinkingLevel: 'HIGH',
+    metricLabel: 'hehun-chapters',
+    locale: language,
+  })
+
+  try {
+    const jsonStr = extractJson(text)
+    if (!jsonStr) throw new Error('No JSON found')
+    const parsed = JSON.parse(jsonStr) as Partial<SynastryChaptersResult>
+
+    const rawChapters = Array.isArray(parsed.chapters) ? parsed.chapters : []
+    const byKind = new Map<string, Partial<SynastryChapterOutput>>()
+    for (const ch of rawChapters) {
+      if (ch && typeof ch.kind === 'string' && VALID_CHAPTER_KINDS.has(ch.kind)) {
+        byKind.set(ch.kind, ch)
+      }
+    }
+
+    // Re-assemble in the canonical order; drop chapters the model omitted.
+    const chapters: SynastryChapterOutput[] = SYNASTRY_CHAPTER_SPECS.flatMap((spec) => {
+      const ch = byKind.get(spec.kind)
+      if (!ch?.body) return []
+      return [
+        {
+          kind: spec.kind,
+          title: typeof ch.title === 'string' && ch.title ? ch.title : spec.label,
+          goldenLine: typeof ch.goldenLine === 'string' ? ch.goldenLine : '',
+          body: ch.body,
+        },
+      ]
+    })
+
+    if (chapters.length === 0) throw new Error('No valid chapters produced')
+
+    return {
+      ahaHook: typeof parsed.ahaHook === 'string' ? parsed.ahaHook : '',
+      chapters,
+    }
+  } catch (err) {
+    throw new Error(
+      `Synastry chapters generation failed: ${err instanceof Error ? err.message : String(err)}`
     )
   }
 }

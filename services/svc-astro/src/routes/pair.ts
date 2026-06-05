@@ -7,6 +7,7 @@ import {
   computeHeHun,
   generateAnnualForecast,
   generateHeHunInterpretation,
+  generateSynastryChapters,
 } from '../services/hehun/hehun'
 import type { Env } from '../types'
 
@@ -19,19 +20,30 @@ pairRoutes.post('/compute', async (c) => {
   const input = await c.req.json()
 
   const result = computeHeHun(input)
+  const language = input.language ?? 'zh-CN'
 
-  let interpretation = null
-  try {
-    interpretation = await generateHeHunInterpretation(
-      c.env,
-      result,
-      input,
-      input.isPro ?? false,
-      input.language ?? 'zh-CN'
-    )
-  } catch (err) {
-    console.error('[svc-astro/hehun] AI interpretation failed:', err)
+  // Flat interpretation (cards/teaser/share) and the six deep chapters + aha
+  // hook are independent LLM calls — run them in parallel so the deep report
+  // adds no extra latency. Either can fail independently without 500-ing.
+  const [interpResult, chaptersResult] = await Promise.allSettled([
+    generateHeHunInterpretation(c.env, result, input, input.isPro ?? false, language),
+    generateSynastryChapters(c.env, result, input, language),
+  ])
+
+  if (interpResult.status === 'rejected') {
+    console.error('[svc-astro/hehun] AI interpretation failed:', interpResult.reason)
   }
+  if (chaptersResult.status === 'rejected') {
+    console.error('[svc-astro/hehun] chapter generation failed:', chaptersResult.reason)
+  }
+
+  const interpretation =
+    interpResult.status === 'fulfilled'
+      ? {
+          ...interpResult.value,
+          ...(chaptersResult.status === 'fulfilled' ? chaptersResult.value : {}),
+        }
+      : null
 
   return c.json({ result, interpretation })
 })
