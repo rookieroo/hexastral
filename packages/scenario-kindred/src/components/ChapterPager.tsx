@@ -14,7 +14,7 @@
  * this component renders only the chapter cards themselves.
  */
 
-import { useCallback } from 'react'
+import { type ReactNode, useCallback } from 'react'
 import {
   Dimensions,
   type NativeScrollEvent,
@@ -30,6 +30,8 @@ export interface ChapterPagerProps {
   currentIndex: number
   onIndexChange: (index: number) => void
   onShareChapter: (chapterIndex: number) => void
+  /** Optional trailing page rendered after the last chapter (e.g. the unlock wall). */
+  trailing?: ReactNode
 }
 
 export function ChapterPager({
@@ -37,6 +39,7 @@ export function ChapterPager({
   currentIndex,
   onIndexChange,
   onShareChapter,
+  trailing,
 }: ChapterPagerProps) {
   const screenWidth = Dimensions.get('window').width
 
@@ -70,6 +73,7 @@ export function ChapterPager({
           />
         </View>
       ))}
+      {trailing ? <View style={{ width: screenWidth }}>{trailing}</View> : null}
     </ScrollView>
   )
 }

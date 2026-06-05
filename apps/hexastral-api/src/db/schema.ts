@@ -962,6 +962,14 @@ export const userBonds = sqliteTable(
 
     /** 已解锁的维度 JSON 数组 (e.g. ["soulmate_score","conflict_map"]) — Pro 功能 */
     unlockedDimensions: text('unlocked_dimensions'),
+    /**
+     * 是否已解锁全部六章深度合盘。solo 创建时 A 已付 compatibility，故置 true；
+     * 免费 resonance bond 默认 false，经单次购买 (POST /:id/unlock) 翻转。订阅 /
+     * 邀请解锁走全局信号 (capability / users.unlockedChapterCount)，不依赖此列。
+     */
+    chaptersUnlocked: integer('chapters_unlocked', { mode: 'boolean' })
+      .default(false)
+      .notNull(),
     /** 是否已分享给对方（用于 Resonance 模式社交裂变） */
     sharedByOwner: integer('shared_by_owner', { mode: 'boolean' }).default(false).notNull(),
 
