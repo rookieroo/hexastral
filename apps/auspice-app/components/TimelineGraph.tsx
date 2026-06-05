@@ -29,6 +29,16 @@ import { ELEMENT_COLORS } from '@/lib/shichen-content'
 /** 对你而言 verdict → dot color (吉 green / 平 grey / 凶 red). Matches the daily 黄历. */
 const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
 
+/** 用神/忌神 marker tint — the period's element either helps (用神) or hinders (忌神). */
+const SIGNAL_COLOR = { favorable: '#B8860B', unfavorable: '#C2410C' } as const
+
+/** A period's element relationship to the day master, distilled from its reasons. */
+function signalFromReasons(reasons: readonly string[]): 'favorable' | 'unfavorable' | undefined {
+  if (reasons.includes('favorable_element_present')) return 'favorable'
+  if (reasons.includes('unfavorable_element_present')) return 'unfavorable'
+  return undefined
+}
+
 /** Free preview = current position + the next N 流月; Pro unlocks the full life. */
 const FREE_LIUYUE_MONTHS = 6
 
@@ -64,6 +74,8 @@ interface GNode {
   isHead: boolean
   element: '木' | '火' | '土' | '金' | '水'
   fit?: PersonalFit
+  /** 用神/忌神 — the period's element helps or hinders (the per-node "why"). */
+  signal?: 'favorable' | 'unfavorable'
   title: string
   sub: string
   /** Index back into the source rows for the detail panel. */
@@ -147,6 +159,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
         isHead: false,
         element: d.pillar.element,
         fit: d.fit,
+        signal: signalFromReasons(d.reasons),
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -170,6 +183,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
           isHead: r.isCurrent,
           element: r.pillar.element,
           fit: r.fit,
+          signal: signalFromReasons(r.reasons),
           title: `${r.pillar.stem}${r.pillar.branch}`,
           sub: `${r.year}`,
           ref: { kind: 'liunian', row: r },
@@ -192,6 +206,7 @@ function buildGraph(payload: TimelinePayload, isPro: boolean, width: number): Bu
         isHead: false,
         element: d.pillar.element,
         fit: d.fit,
+        signal: signalFromReasons(d.reasons),
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -226,6 +241,8 @@ export function TimelineGraph({
   colors,
   width,
   detail,
+  fitLabels,
+  signalLabels,
 }: {
   payload: TimelinePayload
   isPro: boolean
@@ -236,6 +253,10 @@ export function TimelineGraph({
   width: number
   /** The selected node's reading — popped up anchored to that node. */
   detail?: { heading: string; body: string; fit: PersonalFit | null } | null
+  /** Localized 吉/平/凶 verdict words — shown inline per node for at-a-glance density. */
+  fitLabels?: Record<PersonalFit, string>
+  /** Localized 用神/忌神 short labels — the per-node "why" tag. */
+  signalLabels?: { favorable: string; unfavorable: string }
 }) {
   const graph = useMemo(() => buildGraph(payload, isPro, width), [payload, isPro, width])
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
@@ -363,15 +384,29 @@ export function TimelineGraph({
                 <Text style={{ color: colors.dim, fontSize: 12 }}>
                   {n.kind === 'source' ? n.sub : n.kind === 'dayun' ? `${n.sub}+` : n.sub}
                 </Text>
+                {/* Verdict: the 吉/平/凶 word in its colour (denser than a bare dot,
+                    color-blind safe). Falls back to a dot when no label map is passed. */}
                 {n.fit ? (
-                  <View
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: FIT_COLOR[n.fit],
-                    }}
-                  />
+                  fitLabels ? (
+                    <Text style={{ color: FIT_COLOR[n.fit], fontSize: 11, fontWeight: '500' }}>
+                      {fitLabels[n.fit]}
+                    </Text>
+                  ) : (
+                    <View
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: FIT_COLOR[n.fit],
+                      }}
+                    />
+                  )
+                ) : null}
+                {/* The per-node "why": whether this period's element is 用神/忌神. */}
+                {n.signal && signalLabels ? (
+                  <Text style={{ color: SIGNAL_COLOR[n.signal], fontSize: 10, fontWeight: '600' }}>
+                    {signalLabels[n.signal]}
+                  </Text>
                 ) : null}
                 {n.isHead ? (
                   <Text

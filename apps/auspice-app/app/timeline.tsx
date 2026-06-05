@@ -268,6 +268,11 @@ export default function TimelineScreen() {
                     colors={SHARE_PALETTE}
                     width={screenWidth - 48}
                     detail={null}
+                    fitLabels={t.personal.fit}
+                    signalLabels={{
+                      favorable: t.yinzheng.signals.favorable,
+                      unfavorable: t.yinzheng.signals.unfavorable,
+                    }}
                   />
                   {/* The live graph pops a reading bubble on tap; the capture has no
                       selection, so bake the CURRENT 大运 reading in directly — a
@@ -498,6 +503,11 @@ function Body({
         colors={colors}
         width={canvasWidth}
         detail={selectedId?.startsWith('liuyue-') ? null : detail}
+        fitLabels={t.personal.fit}
+        signalLabels={{
+          favorable: t.yinzheng.signals.favorable,
+          unfavorable: t.yinzheng.signals.unfavorable,
+        }}
       />
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
