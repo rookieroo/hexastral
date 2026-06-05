@@ -7,6 +7,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "types": "wrangler types",
     "secrets:sync": "bun ../../scripts/sync-secrets.js --app=svc-astro --env=production",
     "secrets:sync:dry": "bun ../../scripts/sync-secrets.js --app=svc-astro --env=production --dry-run",
