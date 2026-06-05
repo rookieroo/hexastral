@@ -24,6 +24,7 @@ import {
   fetchAuspiceYearOverview,
 } from '@/lib/api'
 import {
+  cultureSummary,
   getCultureEntryWikipediaUrl,
   localizeCultureEntry,
   localizeSolarTermName,
@@ -90,6 +91,9 @@ export default function FestivalDetailScreen() {
     id ??
     ''
   const tagline = content?.tagline?.[locale]
+  // The 1–2 sentence culture summary (same authored copy as the home 今日文化 card).
+  // Surfacing it here fixes detail pages that otherwise showed only a Wikipedia link.
+  const summary = useMemo(() => (id ? cultureSummary(id, locale) : null), [id, locale])
   const wikiUrl = useMemo(() => (id ? getCultureEntryWikipediaUrl(id, locale) : null), [id, locale])
 
   // Unified hero display: prefer festival's solar/lunar pair, else solar-term's
@@ -146,6 +150,14 @@ export default function FestivalDetailScreen() {
             </View>
           ) : loading ? (
             <ActivityIndicator color={colors.accent} />
+          ) : null}
+          {/* Real explanation up front — not just a bare Wikipedia link. */}
+          {summary ? (
+            <Text
+              style={{ color: colors.text, fontSize: 15, lineHeight: 24, marginTop: spacing.sm }}
+            >
+              {summary}
+            </Text>
           ) : null}
           {wikiUrl ? (
             <View style={{ marginTop: spacing.sm }}>
