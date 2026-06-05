@@ -21,7 +21,7 @@ import { type AuspicePairResult, fetchAuspicePair, type PairStatus } from '@/lib
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { openKindredCompose } from '@/lib/kindred-handoff'
+import { confirmAndOpenKindred } from '@/lib/kindred-handoff'
 import type { AuspicePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
 import { sharePairDays } from '@/lib/share'
@@ -147,7 +147,7 @@ export function RelationshipSheet({
 
   const openYuan = () => {
     if (!person || personIsLunar) return
-    void openKindredCompose({ person, self })
+    confirmAndOpenKindred({ person, self }, t.kindredShareConsent)
   }
 
   const statusLabel = (s: PairStatus): string =>

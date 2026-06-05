@@ -350,6 +350,8 @@ export interface Strings {
   themeAccent: string
   /** CTA below the 生肖 reading that opens Kindred for full 合盘. */
   kindredComposeCta: string
+  /** Cross-app data-sharing consent shown before the Kindred 合盘 hand-off. */
+  kindredShareConsent: { title: string; body: string; confirm: string; cancel: string }
   /** Shown when the contact's birthday is 农历 — Kindred only accepts solar. */
   kindredComposeLunarNote: string
   /** 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 (the calendar-shaped
@@ -641,6 +643,12 @@ const zhHans: Strings = {
   comingSoon: '即将推出',
   themeAccent: '主题色',
   kindredComposeCta: '在 Kindred 看完整合盘 →',
+  kindredShareConsent: {
+    title: '分享生辰给 Kindred?',
+    body: '将把你和 TA 的出生信息发送到 Kindred,用于生成完整关系合盘。仅在你同意后共享。',
+    confirm: '同意并打开',
+    cancel: '取消',
+  },
   kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
   pair: {
     todayHeading: '今日 · 你和TA',
@@ -900,6 +908,12 @@ const zhHant: Strings = {
   comingSoon: '即將推出',
   themeAccent: '主題色',
   kindredComposeCta: '在 Kindred 看完整合盤 →',
+  kindredShareConsent: {
+    title: '分享生辰給 Kindred?',
+    body: '將把你和 TA 的出生資訊傳送到 Kindred,用於產生完整關係合盤。僅在你同意後共享。',
+    confirm: '同意並開啟',
+    cancel: '取消',
+  },
   kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
   pair: {
     todayHeading: '今日 · 你和TA',
@@ -1186,6 +1200,12 @@ const ja: Strings = {
   comingSoon: '近日公開',
   themeAccent: 'テーマカラー',
   kindredComposeCta: 'Kindred で本格相性鑑定 →',
+  kindredShareConsent: {
+    title: 'Kindred に生年月日を共有しますか?',
+    body: 'あなたと相手の出生情報を Kindred に送り、完全な相性鑑定を作成します。同意した場合のみ共有します。',
+    confirm: '同意して開く',
+    cancel: 'キャンセル',
+  },
   kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
   pair: {
     todayHeading: '今日 · あなたと相手',
@@ -1474,6 +1494,12 @@ const en: Strings = {
   comingSoon: 'Soon',
   themeAccent: 'Accent color',
   kindredComposeCta: 'Open full reading in Kindred →',
+  kindredShareConsent: {
+    title: 'Share birth details with Kindred?',
+    body: 'We will send both birth details to Kindred to generate the full compatibility reading. Shared only with your consent.',
+    confirm: 'Agree & open',
+    cancel: 'Cancel',
+  },
   kindredComposeLunarNote:
     'Kindred supports solar birthdays only. Edit this person to a solar date and try again.',
   pair: {

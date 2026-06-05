@@ -29,7 +29,7 @@ import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
-import { openKindredCompose } from '@/lib/kindred-handoff'
+import { confirmAndOpenKindred } from '@/lib/kindred-handoff'
 import {
   type AuspicePerson,
   addPerson,
@@ -105,21 +105,24 @@ export default function PeopleScreen() {
   // are satisfied so the jump never lands on an empty Kindred draft.
   const kindredReady = canAdd && /^\d{4}$/.test(birthYear) && calendar === 'solar'
   const openKindred = () => {
-    void openKindredCompose({
-      person: {
-        id: 'draft',
-        name: name.trim(),
-        solarDate: `${birthYear}-${monthDay}`,
-        calendar: 'solar',
-        timeIndex,
-        gender,
-        city: birthCity?.name,
-        lat: birthCity?.lat,
-        lng: birthCity?.lng,
-        timezone: birthCity?.timezone ?? null,
+    confirmAndOpenKindred(
+      {
+        person: {
+          id: 'draft',
+          name: name.trim(),
+          solarDate: `${birthYear}-${monthDay}`,
+          calendar: 'solar',
+          timeIndex,
+          gender,
+          city: birthCity?.name,
+          lat: birthCity?.lat,
+          lng: birthCity?.lng,
+          timezone: birthCity?.timezone ?? null,
+        },
+        self: selfInfo,
       },
-      self: selfInfo,
-    })
+      t.kindredShareConsent
+    )
   }
 
   const add = async () => {
