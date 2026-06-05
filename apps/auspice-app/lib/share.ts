@@ -133,6 +133,23 @@ export function makeifShareUrl(
   return `${WEB_BASE}/s/makeif/${token}`
 }
 
+/** `/s/pair/<token>` — "你和 X 的好日子": the next good days for the two of you
+ *  (the Auspice×Kindred bridge's viral card). The days ride in the token so a
+ *  forwarded link previews AS the card without opening the app. */
+export function pairShareUrl(
+  pair: { name: string; days: Array<{ date: string; ganZhi: string }> },
+  locale = 'en'
+): string {
+  const token = toBase64Url(
+    JSON.stringify({
+      n: pair.name.slice(0, 40),
+      dl: pair.days.slice(0, 6).map((d) => ({ d: d.date.slice(0, 10), g: d.ganZhi.slice(0, 8) })),
+      lc: locale,
+    })
+  )
+  return `${WEB_BASE}/s/pair/${token}`
+}
+
 /** `/s/timeline/<token>` — a life-timeline snapshot scoped to the current 大运. */
 export function timelineShareUrl(
   snap: {
@@ -201,3 +218,6 @@ export const shareTimeline = (snap: Parameters<typeof timelineShareUrl>[0], loca
 
 export const shareExplain = (reading: Parameters<typeof explainShareUrl>[0], locale = 'en') =>
   shareUrl(explainShareUrl(reading, locale), locale)
+
+export const sharePairDays = (pair: Parameters<typeof pairShareUrl>[0], locale = 'en') =>
+  shareUrl(pairShareUrl(pair, locale), locale)

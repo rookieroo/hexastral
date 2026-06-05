@@ -24,6 +24,7 @@ import { useStrings } from '@/lib/i18n-context'
 import { openKindredCompose } from '@/lib/kindred-handoff'
 import type { AuspicePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
+import { sharePairDays } from '@/lib/share'
 
 const TITLE: Record<Locale, string> = {
   'zh-Hans': '与 TA 的关系',
@@ -250,6 +251,30 @@ export function RelationshipSheet({
                         {t.pair.picksEmpty}
                       </Text>
                     )}
+                    {picks.length > 0 && person ? (
+                      <Pressable
+                        onPress={() =>
+                          void sharePairDays(
+                            {
+                              name: person.name,
+                              days: picks.map((p) => ({ date: p.date, ganZhi: p.ganZhi })),
+                            },
+                            locale
+                          )
+                        }
+                        accessibilityRole='button'
+                        accessibilityLabel={t.pair.shareCta}
+                        style={({ pressed }) => ({
+                          alignSelf: 'flex-start',
+                          marginTop: 4,
+                          opacity: pressed ? 0.6 : 1,
+                        })}
+                      >
+                        <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+                          {t.pair.shareCta}
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 ) : null}
               </View>

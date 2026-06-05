@@ -318,6 +318,7 @@ export interface Strings {
     neutralLine: string
     loading: string
     picksEmpty: string
+    shareCta: string
   }
   /** Section label above the Apple Calendar subscribe row. */
   appleCalendarSection: string
@@ -562,6 +563,7 @@ const zhHans: Strings = {
     neutralLine: '今日两人气场平和，顺其自然即可。',
     loading: '测算中…',
     picksEmpty: '近期暂无格外契合的好日子，过段时间再看看。',
+    shareCta: '分享好日子',
   },
   appleCalendarSection: '系统日历',
   personalCalendarRow: '对你而言 · 专属日历',
@@ -777,6 +779,7 @@ const zhHant: Strings = {
     neutralLine: '今日兩人氣場平和，順其自然即可。',
     loading: '測算中…',
     picksEmpty: '近期暫無格外契合的好日子，過段時間再看看。',
+    shareCta: '分享好日子',
   },
   appleCalendarSection: '系統日曆',
   personalCalendarRow: '對你而言 · 專屬日曆',
@@ -1018,6 +1021,7 @@ const ja: Strings = {
     neutralLine: '今日は穏やかな相性。自然体で問題なし。',
     loading: '計算中…',
     picksEmpty: '近いうちに特に好相性の日は見当たりません。',
+    shareCta: '吉日をシェア',
   },
   appleCalendarSection: 'システムカレンダー',
   personalCalendarRow: 'あなたへ · 専用カレンダー',
@@ -1262,6 +1266,7 @@ const en: Strings = {
     neutralLine: 'A calm pairing today — go with the flow.',
     loading: 'Calculating…',
     picksEmpty: 'No standout days for the two of you right now — check back later.',
+    shareCta: 'Share these days',
   },
   appleCalendarSection: 'System calendar',
   personalCalendarRow: 'For-you calendar',
