@@ -30,8 +30,8 @@ import {
   type PersonalAlmanacSubject,
   personalAlmanacOverlay,
   STEM_WUXING,
-  solarToLunar,
   type SynastryResult,
+  solarToLunar,
 } from '@zhop/astro-core'
 import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
@@ -601,7 +601,14 @@ auspiceRoutes.post('/pair', async (c) => {
     const dateStr = fmtUtc(d)
     const gz = dayGanZhi(ymd.year, ymd.month, ymd.day)
     const syn = calculateDailySynastry(selfPillars, otherPillars, gz, dateStr)
-    all.push({ date: dateStr, ganZhi: gz.label, status: syn.status, synergy: syn.synergy, friction: syn.friction, ymd })
+    all.push({
+      date: dateStr,
+      ganZhi: gz.label,
+      status: syn.status,
+      synergy: syn.synergy,
+      friction: syn.friction,
+      ymd,
+    })
   }
 
   // 2) Today's pulse + its 宜忌 (one almanac build).
@@ -632,8 +639,15 @@ auspiceRoutes.post('/pair', async (c) => {
   }> = []
   for (const d of shortlist) {
     const { day } = buildDay(d.ymd)
-    if (b.activity && (!day.goodFor.includes(b.activity) || day.avoid.includes(b.activity))) continue
-    picks.push({ date: d.date, ganZhi: d.ganZhi, status: d.status, synergy: d.synergy, yi: day.goodFor.slice(0, 4) })
+    if (b.activity && (!day.goodFor.includes(b.activity) || day.avoid.includes(b.activity)))
+      continue
+    picks.push({
+      date: d.date,
+      ganZhi: d.ganZhi,
+      status: d.status,
+      synergy: d.synergy,
+      yi: day.goodFor.slice(0, 4),
+    })
     if (picks.length >= 8) break
   }
 
@@ -2039,6 +2053,29 @@ function holidayText(locale: string): HolidayText {
   return EN_HOLIDAY_TEXT
 }
 
+// ── 关系桥 push copy ──────────────────────────────────────────────────────────
+interface RelationshipText {
+  title: string
+  /** `{name}` → the 亲友's name. */
+  body: string
+}
+const EN_RELATIONSHIP_TEXT: RelationshipText = {
+  title: 'In sync today',
+  body: 'You and {name} are in sync today — a good day to reach out or make plans.',
+}
+const RELATIONSHIP_TEXT: Record<string, RelationshipText> = {
+  'zh-Hans': { title: '今日同气', body: '今天你和{name}气场相合，宜相约、聚一聚。' },
+  'zh-Hant': { title: '今日同氣', body: '今天你和{name}氣場相合，宜相約、聚一聚。' },
+  ja: { title: '今日は好相性', body: '今日はあなたと{name}の相性が良い日。連絡や約束に好適。' },
+  en: EN_RELATIONSHIP_TEXT,
+}
+function relationshipPushText(locale: string): RelationshipText {
+  if (locale.startsWith('zh-Hant')) return RELATIONSHIP_TEXT['zh-Hant'] ?? EN_RELATIONSHIP_TEXT
+  if (locale.startsWith('zh')) return RELATIONSHIP_TEXT['zh-Hans'] ?? EN_RELATIONSHIP_TEXT
+  if (locale.startsWith('ja')) return RELATIONSHIP_TEXT.ja ?? EN_RELATIONSHIP_TEXT
+  return EN_RELATIONSHIP_TEXT
+}
+
 function holidayEndLabel(dateStr: string, locale: string): string {
   const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(dateStr)
   if (!m) return dateStr
@@ -2170,6 +2207,7 @@ const pushRegisterSchema = z.object({
   dailyEvening: z.boolean().default(true),
   birthdayOn: z.boolean().default(true),
   holidayOn: z.boolean().default(true),
+  relationshipOn: z.boolean().default(true),
   isPro: z.boolean().default(false),
 })
 
@@ -2195,6 +2233,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       dailyEvening: b.dailyEvening,
       birthdayOn: b.birthdayOn,
       holidayOn: b.holidayOn,
+      relationshipOn: b.relationshipOn,
       isPro: b.isPro,
       lastActiveAt: now,
       createdAt: now,
@@ -2213,6 +2252,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         dailyEvening: b.dailyEvening,
         birthdayOn: b.birthdayOn,
         holidayOn: b.holidayOn,
+        relationshipOn: b.relationshipOn,
         isPro: b.isPro,
         lastActiveAt: now,
       },
@@ -2256,6 +2296,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       dailyEvening: auspicePushSubs.dailyEvening,
       birthdayOn: auspicePushSubs.birthdayOn,
       holidayOn: auspicePushSubs.holidayOn,
+      relationshipOn: auspicePushSubs.relationshipOn,
     })
     .from(auspicePushSubs)
     .where(eq(auspicePushSubs.timezoneId, timezoneId))
@@ -2266,10 +2307,14 @@ auspiceRoutes.get('/push/targets', async (c) => {
   const page = hasMore ? page0.slice(0, limit) : page0
   const ymd = parseYmd(date)
 
-  // Morning: batch-load birthday reminders for the page's devices.
+  // Morning: batch-load 亲友 for the page's devices. Needed for both the birthday
+  // reminders AND the 关系桥 nudge (the latter only for devices with a birth on
+  // record — the pair synastry needs the owner's own chart).
   const bdaysByOwner = new Map<string, Array<typeof birthdayReminders.$inferSelect>>()
   if (slot === 'morning') {
-    const owners = page.filter((s) => s.birthdayOn).map((s) => `device:${s.deviceId}`)
+    const owners = page
+      .filter((s) => s.birthdayOn || (s.relationshipOn && s.birthDate))
+      .map((s) => `device:${s.deviceId}`)
     if (owners.length > 0) {
       const rows = await db
         .select()
@@ -2285,6 +2330,8 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }
   // Evening: the holiday heads-up is locale-keyed (not per-birth), so resolve once.
   const holiday = slot === 'evening' ? holidayHeadsUpFor(date) : null
+  // 关系桥 nudge needs today's day-pillar once (shared across all devices).
+  const dayGz = slot === 'morning' ? dayGanZhi(ymd.year, ymd.month, ymd.day) : null
 
   const messages: Array<{
     deviceId: string
@@ -2329,6 +2376,36 @@ auspiceRoutes.get('/push/targets', async (c) => {
           title: bt.title,
           body,
           data: { type: 'auspice_birthday' },
+        })
+      }
+    }
+    // 关系桥 nudge (morning) — "今日 你和 [亲友] 同气" when an 亲友's pair synastry
+    // with the owner reads `resonance` today. Resonance-gated (synergy > 85) so it
+    // fires rarely; at most one per device (the strongest match), and never for
+    // lunar-only 亲友 (the day-pillar synastry needs a solar date).
+    if (slot === 'morning' && sub.relationshipOn && sub.birthDate && dayGz) {
+      const friends = bdaysByOwner.get(`device:${sub.deviceId}`) ?? []
+      const ownerPillars = getFourPillars({
+        ...parseYmd(sub.birthDate),
+        hour: 12,
+      })
+      let best: { name: string; synergy: number } | null = null
+      for (const f of friends) {
+        if (f.calendar === 'lunar' || !DATE_RE.test(f.solarDate)) continue
+        const fp = getFourPillars({ ...parseYmd(f.solarDate), hour: 12 })
+        const syn = calculateDailySynastry(ownerPillars, fp, dayGz, date)
+        if (syn.status === 'resonance' && (!best || syn.synergy > best.synergy)) {
+          best = { name: f.name, synergy: syn.synergy }
+        }
+      }
+      if (best) {
+        const rt = relationshipPushText(sub.locale)
+        messages.push({
+          deviceId: sub.deviceId,
+          token: sub.token,
+          title: rt.title,
+          body: rt.body.replace('{name}', best.name),
+          data: { type: 'auspice_relationship', route: '/people' },
         })
       }
     }

@@ -1306,6 +1306,8 @@ export const auspicePushSubs = sqliteTable(
     birthdayOn: integer('birthday_on', { mode: 'boolean' }).notNull().default(true),
     /** 节假日/调休 heads-up (evening-before, CN schedule). */
     holidayOn: integer('holiday_on', { mode: 'boolean' }).notNull().default(true),
+    /** 关系桥 nudge: "今日 你和 [亲友] 同气" on a resonance day (morning, rare). */
+    relationshipOn: integer('relationship_on', { mode: 'boolean' }).notNull().default(true),
     /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
     isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
     lastActiveAt: text('last_active_at').notNull(),
