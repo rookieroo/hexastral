@@ -109,6 +109,7 @@ export default function RootLayout() {
                 <Stack.Screen name='(onboarding)' />
                 <Stack.Screen name='(reading)' />
                 <Stack.Screen name='(bonds)' />
+                <Stack.Screen name='(timeline)' />
                 <Stack.Screen name='(settings)' />
                 <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
                 <Stack.Screen name='accept/[token]' options={{ presentation: 'modal' }} />

@@ -159,12 +159,16 @@ export default function BondListScreen() {
               <View
                 style={{
                   flexDirection: 'row',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   marginBottom: kindredSpacing.md,
                   paddingHorizontal: kindredSpacing.screenH,
                 }}
               >
+                <HeaderPill
+                  label={t(locale, 'timeline.title')}
+                  onPress={() => router.push('/(timeline)')}
+                />
                 <AddThreadButton
                   label={t(locale, 'bondList.add')}
                   onPress={() => router.push('/(onboarding)/mode')}
@@ -243,6 +247,28 @@ function AddThreadButton({ label, onPress }: { label: string; onPress: () => voi
     >
       <Text style={{ color: kindredDark.accent, fontSize: 16, lineHeight: 16 }}>+</Text>
       <Text style={[kindredType.caption, { color: kindredDark.accent }]}>{label}</Text>
+    </Pressable>
+  )
+}
+
+/** A plain outlined pill (no "+") — the Timeline entry in the list header. */
+function HeaderPill({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole='button'
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        paddingHorizontal: kindredSpacing.md,
+        paddingVertical: kindredSpacing.sm,
+        borderRadius: kindredRadius.sm,
+        borderWidth: 0.5,
+        borderColor: kindredDark.border,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>{label}</Text>
     </Pressable>
   )
 }
