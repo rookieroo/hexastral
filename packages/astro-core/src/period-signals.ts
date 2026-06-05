@@ -21,7 +21,7 @@ import {
   type PersonalReasonCode,
   personalAlmanacOverlay,
 } from './almanac'
-import { getTaoHua } from './shensha'
+import { getTaoHua, getYiMa } from './shensha'
 import type { EarthlyBranch, WuXing } from './types'
 
 /** A period's stem-element + branch — from a 流年/大运/流月 pillar. */
@@ -45,6 +45,8 @@ export interface PeriodSignals {
   clashesBenming: boolean
   /** Period 地支 is the subject's 桃花 — a relationship / romance window. */
   taohua: boolean
+  /** Period 地支 is the subject's 驿马 — a movement / travel / relocation window. */
+  yima: boolean
 }
 
 /**
@@ -59,6 +61,7 @@ export function periodSignals(subject: PersonalAlmanacSubject, period: PeriodInp
     dayBranch: period.branch,
   })
   const taohua = subject.birthBranch != null && period.branch === getTaoHua(subject.birthBranch)
+  const yima = subject.birthBranch != null && period.branch === getYiMa(subject.birthBranch)
   return {
     fit: overlay.fit,
     reasons: overlay.reasons,
@@ -66,5 +69,60 @@ export function periodSignals(subject: PersonalAlmanacSubject, period: PeriodInp
     harmsElement: overlay.harmsToday,
     clashesBenming: overlay.personalClash,
     taohua,
+    yima,
   }
+}
+
+// ── Retrodiction match (Timeline 印证) ────────────────────────────────────────
+
+/** Life-event category the user pins onto a past period (mirrors the API's
+ *  `EVENT_TYPES`). */
+export type LifeEventCategory =
+  | 'career'
+  | 'relationship'
+  | 'health'
+  | 'travel'
+  | 'education'
+  | 'family'
+  | 'other'
+
+/** A signal that can corroborate a pinned event — keys into localized phrasing. */
+export type SignalKey = 'taohua' | 'yima' | 'favorable' | 'unfavorable' | 'clash'
+
+export interface RetrodictionMatch {
+  /** The active signals that plausibly explain the event, strongest-first. */
+  matched: SignalKey[]
+  hasMatch: boolean
+}
+
+/** Which signals each category looks to for corroboration (ordered by salience). */
+const CATEGORY_SIGNALS: Record<LifeEventCategory, SignalKey[]> = {
+  relationship: ['taohua', 'clash', 'favorable', 'unfavorable'],
+  career: ['favorable', 'unfavorable', 'clash'],
+  health: ['unfavorable', 'clash'],
+  travel: ['yima', 'favorable'],
+  education: ['favorable', 'unfavorable'],
+  family: ['clash', 'favorable', 'unfavorable'],
+  other: ['favorable', 'unfavorable', 'clash', 'taohua', 'yima'],
+}
+
+/**
+ * The deterministic skeleton of Timeline「印证」: which of a period's active
+ * signals plausibly corroborate a pinned life-event category. Pure — the edge
+ * localizes the matched keys and (later) an LLM dresses a hit. Order preserves
+ * the category's salience ranking so the UI can lead with the strongest.
+ */
+export function retrodictionMatch(
+  category: LifeEventCategory,
+  signals: PeriodSignals
+): RetrodictionMatch {
+  const active: Record<SignalKey, boolean> = {
+    taohua: signals.taohua,
+    yima: signals.yima,
+    favorable: signals.favorsElement === true,
+    unfavorable: signals.harmsElement === true,
+    clash: signals.clashesBenming,
+  }
+  const matched = CATEGORY_SIGNALS[category].filter((k) => active[k])
+  return { matched, hasMatch: matched.length > 0 }
 }

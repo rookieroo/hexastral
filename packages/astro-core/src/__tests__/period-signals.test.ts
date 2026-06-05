@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PersonalAlmanacSubject } from '../almanac'
-import { periodSignals } from '../period-signals'
+import { periodSignals, retrodictionMatch } from '../period-signals'
 
 // 甲 day master; 用神 水, 忌神 金; 本命支 子 (桃花 → 酉, 六冲 → 午).
 const subject: PersonalAlmanacSubject = {
@@ -44,5 +44,34 @@ describe('periodSignals', () => {
     const s = periodSignals(subject, { element: '水', branch: '酉' })
     expect(s.fit).toBeTruthy()
     expect(Array.isArray(s.reasons)).toBe(true)
+  })
+
+  it('detects 驿马 when the period branch is the subject 驿马 (子 → 寅)', () => {
+    expect(periodSignals(subject, { element: '木', branch: '寅' }).yima).toBe(true)
+    expect(periodSignals(subject, { element: '木', branch: '卯' }).yima).toBe(false)
+  })
+})
+
+describe('retrodictionMatch', () => {
+  it('corroborates a relationship event with 桃花', () => {
+    const s = periodSignals(subject, { element: '土', branch: '酉' }) // 桃花
+    const m = retrodictionMatch('relationship', s)
+    expect(m.hasMatch).toBe(true)
+    expect(m.matched).toContain('taohua')
+  })
+
+  it('corroborates a travel event with 驿马 only (neutral element)', () => {
+    const s = periodSignals(subject, { element: '木', branch: '寅' })
+    expect(retrodictionMatch('travel', s).matched).toEqual(['yima'])
+  })
+
+  it('corroborates a career event with 用神 (favorable element)', () => {
+    const s = periodSignals(subject, { element: '水', branch: '卯' })
+    expect(retrodictionMatch('career', s).matched).toEqual(['favorable'])
+  })
+
+  it('returns no match when no relevant signal is active', () => {
+    const s = periodSignals(subject, { element: '木', branch: '卯' }) // neutral, no 桃花/驿马/冲
+    expect(retrodictionMatch('relationship', s).hasMatch).toBe(false)
   })
 })
