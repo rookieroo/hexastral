@@ -200,6 +200,11 @@ export interface Strings {
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
    *  the 用神/忌神 signal that the generic per-grade advice omits. */
   timelinePeriodElement: { favorable: string; unfavorable: string }
+  /** Make-if decision timing — what KIND of move the current 命局 window favors. */
+  makeifTiming: {
+    frame: string
+    archetypes: { expand: string; hold: string; move: string; connect: string }
+  }
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -486,6 +491,15 @@ const zhHans: Strings = {
     unfavorable: '{el}行为你的忌神，此运宜稳健、多留意。',
   },
   timelineClashNote: '与本命相冲，诸事多留意、勿冲动。',
+  makeifTiming: {
+    frame: '当前命局时机',
+    archetypes: {
+      expand: '利于主动进取',
+      hold: '宜守不宜攻',
+      move: '利于远行换境',
+      connect: '利于结缘合作',
+    },
+  },
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -748,6 +762,15 @@ const zhHant: Strings = {
     unfavorable: '{el}行為你的忌神，此運宜穩健、多留意。',
   },
   timelineClashNote: '與本命相沖，諸事多留意、勿衝動。',
+  makeifTiming: {
+    frame: '當前命局時機',
+    archetypes: {
+      expand: '利於主動進取',
+      hold: '宜守不宜攻',
+      move: '利於遠行換境',
+      connect: '利於結緣合作',
+    },
+  },
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -1021,6 +1044,15 @@ const ja: Strings = {
     unfavorable: '{el}は忌神、この運は慎重に進めましょう。',
   },
   timelineClashNote: '本命と相冲。慌てず慎重に進めましょう。',
+  makeifTiming: {
+    frame: '今の命局のタイミング',
+    archetypes: {
+      expand: '攻めが活きる',
+      hold: '守りが吉',
+      move: '移動・遠出に向く',
+      connect: 'ご縁・協働に向く',
+    },
+  },
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1284,6 +1316,15 @@ const en: Strings = {
     unfavorable: '{el} is your unfavorable element — stay steady and watchful.',
   },
   timelineClashNote: 'This period clashes with your birth sign — proceed with extra care.',
+  makeifTiming: {
+    frame: 'Your timing right now',
+    archetypes: {
+      expand: 'favors bold, outward moves',
+      hold: 'favors holding steady',
+      move: 'favors a change of place',
+      connect: 'favors connection & partnership',
+    },
+  },
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',

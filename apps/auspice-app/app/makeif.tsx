@@ -12,6 +12,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { favoredMove, getFourPillars, getTaoHua, getYiMa } from '@zhop/astro-core'
 import { Button, useTheme } from '@zhop/core-ui'
 import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
@@ -261,8 +262,31 @@ function Sandbox({
   payload: TimelinePayload
   birth: { birthDate: string; birthHour: number; gender: 'M' | 'F' }
 }) {
+  const { t } = useStrings()
   const ic = makeIfInteractiveCopyForLocale(locale)
   const currentAge = useMemo(() => payload.liunian.find((r) => r.isCurrent)?.age ?? null, [payload])
+
+  // Decision-timing verdict (B): what KIND of move the user's CURRENT 命局 window
+  // favors — the chart's read on a real decision they're weighing now. Built on
+  // the current 流年's signals (server reasons + 桃花/驿马 from 本命支) + favoredMove.
+  const timing = useMemo(() => {
+    const cur = payload.liunian.find((r) => r.isCurrent)
+    const [y, m, d] = birth.birthDate.split('-').map(Number)
+    if (!cur || !y || !m || !d) return null
+    const hour = birth.birthHour < 0 ? 12 : birth.birthHour
+    const bb = getFourPillars({ year: y, month: m, day: d, hour }).year.branch
+    const fm = favoredMove({
+      favorsElement: cur.reasons.includes('favorable_element_present'),
+      harmsElement: cur.reasons.includes('unfavorable_element_present'),
+      clashesBenming: cur.reasons.includes('personal_clash'),
+      taohua: cur.pillar.branch === getTaoHua(bb),
+      yima: cur.pillar.branch === getYiMa(bb),
+    })
+    return {
+      label: t.makeifTiming.archetypes[fm.primary],
+      reasons: fm.reasons.map((k) => t.yinzheng.signals[k]).join(' · '),
+    }
+  }, [payload.liunian, birth, t])
   const model = useMemo(
     () =>
       buildInteractiveModel(
@@ -539,6 +563,28 @@ function Sandbox({
           </Pressable>
         ) : null}
       </View>
+
+      {/* Decision-timing verdict — what the user's CURRENT 命局 window favors, the
+          chart's read on a real choice they're weighing now (B). */}
+      {timing ? (
+        <View
+          style={{
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+            borderRadius: 12,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            gap: 4,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+            {`${t.makeifTiming.frame} · ${timing.label}`}
+          </Text>
+          {timing.reasons ? (
+            <Text style={{ color: colors.dim, fontSize: 12 }}>{timing.reasons}</Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <MakeIfGraph
         // Re-mount on each added fork so the new branch animates in.
