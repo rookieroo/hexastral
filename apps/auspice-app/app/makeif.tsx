@@ -17,7 +17,7 @@ import { BackArrowIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share, Trash2 } from 'lucide-react-native'
+import { Share2, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -523,7 +523,7 @@ function Sandbox({
             accessibilityLabel={ic.share}
             style={{ padding: 4 }}
           >
-            <Share size={20} color={colors.secondary} strokeWidth={1.6} />
+            <Share2 size={20} color={colors.secondary} strokeWidth={1.6} />
           </Pressable>
         ) : null}
       </View>
@@ -760,7 +760,7 @@ function ForkRow({
             gap: 4,
           }}
         >
-          <Share size={20} color='#fff' strokeWidth={1.6} />
+          <Share2 size={20} color='#fff' strokeWidth={1.6} />
           <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{ic.share}</Text>
         </Pressable>
       ) : null}

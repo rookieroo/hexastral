@@ -13,7 +13,7 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
-import { GitCommitVertical, GitFork } from 'lucide-react-native'
+import { GitBranch, GitCommitVertical } from 'lucide-react-native'
 import { type ReactNode, useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
@@ -84,7 +84,7 @@ export function LiuyearBanner() {
         spacing={spacing}
       />
       <EntryPill
-        icon={<GitFork size={18} color={colors.accent} strokeWidth={1.6} />}
+        icon={<GitBranch size={18} color={colors.accent} strokeWidth={1.6} />}
         label={makeifLabel}
         sub={MAKEIF_TAGLINE[locale] ?? MAKEIF_TAGLINE.en}
         onPress={() => router.push('/makeif')}
