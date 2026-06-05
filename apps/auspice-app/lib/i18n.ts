@@ -300,6 +300,18 @@ export interface Strings {
     compatibilityHint: string
   }
   watchWidgets: string
+  /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
+  watchWidgetsNote: string
+  /** Caption under the home-widget preview mockup. */
+  widgetPreviewCaption: string
+  /** Caption under the watch-face preview mockup (carries the coming-soon note). */
+  watchPreviewCaption: string
+  /** Picker label for the watch-face styles (a preview; watch app not shipped). */
+  watchStyleLabel: string
+  /** Picker label for the 月相 palette (applies to the shipping widget). */
+  moonSkinLabel: string
+  /** Small "coming soon" badge. */
+  comingSoon: string
   themeAccent: string
   /** CTA below the 生肖 reading that opens Kindred for full 合盘. */
   kindredComposeCta: string
@@ -533,7 +545,14 @@ const zhHans: Strings = {
     compatibilityHint:
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
   },
-  watchWidgets: '表盘与桌面组件',
+  watchWidgets: '桌面组件与表盘',
+  watchWidgetsNote:
+    '桌面组件显示当日黄历，可选月相皮肤，分小 / 中两种版式。表盘样式为手表版预览 —— 手表 App 即将推出。',
+  widgetPreviewCaption: '桌面组件',
+  watchPreviewCaption: '表盘 · 即将推出',
+  watchStyleLabel: '表盘样式',
+  moonSkinLabel: '月相',
+  comingSoon: '即将推出',
   themeAccent: '主题色',
   kindredComposeCta: '在 Kindred 看完整合盘 →',
   kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
@@ -736,7 +755,14 @@ const zhHant: Strings = {
     compatibilityHint:
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
   },
-  watchWidgets: '錶盤與桌面元件',
+  watchWidgets: '桌面元件與錶盤',
+  watchWidgetsNote:
+    '桌面元件顯示當日黃曆，可選月相皮膚，分小 / 中兩種版式。錶盤樣式為手錶版預覽 —— 手錶 App 即將推出。',
+  widgetPreviewCaption: '桌面元件',
+  watchPreviewCaption: '錶盤 · 即將推出',
+  watchStyleLabel: '錶盤樣式',
+  moonSkinLabel: '月相',
+  comingSoon: '即將推出',
   themeAccent: '主題色',
   kindredComposeCta: '在 Kindred 看完整合盤 →',
   kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
@@ -965,7 +991,14 @@ const ja: Strings = {
     compatibilityHint:
       '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。通知だけなら入力不要です。',
   },
-  watchWidgets: '文字盤とウィジェット',
+  watchWidgets: 'ウィジェットと文字盤',
+  watchWidgetsNote:
+    'ウィジェットは今日の暦を表示し、月相スキンを選べます（小 / 中の2サイズ）。文字盤スタイルは Watch 版のプレビュー —— Watch アプリは近日公開。',
+  widgetPreviewCaption: 'ウィジェット',
+  watchPreviewCaption: '文字盤 · 近日公開',
+  watchStyleLabel: '文字盤スタイル',
+  moonSkinLabel: '月相',
+  comingSoon: '近日公開',
   themeAccent: 'テーマカラー',
   kindredComposeCta: 'Kindred で本格相性鑑定 →',
   kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
@@ -1196,7 +1229,14 @@ const en: Strings = {
     compatibilityHint:
       'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app. Skip for a reminder-only entry.',
   },
-  watchWidgets: 'Watch & Widgets',
+  watchWidgets: 'Widgets & Watch',
+  watchWidgetsNote:
+    "The widget shows today's almanac with your chosen moon skin, in small and medium sizes. The watch styles are a preview — the watch app is coming soon.",
+  widgetPreviewCaption: 'Widget',
+  watchPreviewCaption: 'Watch · soon',
+  watchStyleLabel: 'Watch styles',
+  moonSkinLabel: 'Moon skin',
+  comingSoon: 'Soon',
   themeAccent: 'Accent color',
   kindredComposeCta: 'Open full reading in Kindred →',
   kindredComposeLunarNote:
