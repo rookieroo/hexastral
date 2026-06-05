@@ -702,3 +702,66 @@ export async function deleteMakeifFork(id: string, deviceId: string): Promise<vo
   })
   if (!res.ok) throw new Error(`delete fork failed (${res.status})`)
 }
+
+// ── 生日提醒 (birthday reminders) — server-backed store + free-tier cap ─────────
+//
+// Auspice schedules reminders LOCALLY (lib/push.ts); this persists the 亲友
+// birthdays server-side so the cap is authoritative, they survive a reinstall, and
+// a future remote birthday push has a data source. `saved:false, limited:true` =
+// the free cap is hit and the user isn't Pro → show the paywall.
+
+export interface BirthdayReminderInput {
+  deviceId: string
+  id: string
+  name: string
+  solarDate: string
+  calendar?: 'solar' | 'lunar'
+  relation?: string
+  advanceDays?: number
+  remindOnDay?: boolean
+  isPro?: boolean
+  /** RevenueCat app-user-id, for the authoritative server Pro check. */
+  u?: string
+}
+
+export interface BirthdaySaveResult {
+  saved: boolean
+  /** True when the free cap was hit and the user isn't Pro. */
+  limited?: boolean
+  limit?: number
+}
+
+export function saveBirthdayReminder(input: BirthdayReminderInput): Promise<BirthdaySaveResult> {
+  return postJson<BirthdaySaveResult>('/api/auspice/birthdays', input)
+}
+
+export interface BirthdayReminderRow {
+  owner: string
+  id: string
+  name: string
+  solarDate: string
+  calendar: 'solar' | 'lunar'
+  relation: string | null
+  advanceDays: number
+  remindOnDay: boolean
+  monthDay: string | null
+  createdAt: string
+}
+
+export function listBirthdayReminders(
+  deviceId: string
+): Promise<{ birthdays: BirthdayReminderRow[]; freeLimit: number }> {
+  const q = new URLSearchParams({ deviceId })
+  return getJsonRaw<{ birthdays: BirthdayReminderRow[]; freeLimit: number }>(
+    `/api/auspice/birthdays?${q.toString()}`
+  )
+}
+
+export async function deleteBirthdayReminder(id: string, deviceId: string): Promise<void> {
+  const path = `/api/auspice/birthdays/${encodeURIComponent(id)}?deviceId=${encodeURIComponent(deviceId)}`
+  const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
+    method: 'DELETE',
+    headers: { accept: 'application/json' },
+  })
+  if (!res.ok) throw new Error(`delete birthday failed (${res.status})`)
+}

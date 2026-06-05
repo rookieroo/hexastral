@@ -28,8 +28,19 @@ const ENABLED_KEY = 'auspice.push.enabled'
 const PURGE_FLAG = 'auspice.push.purgedV2'
 /** Stable per-date identifier prefix — makes scheduling idempotent (no dupes). */
 const DAILY_ID_PREFIX = 'cycle-daily-'
+/** Evening (8pm) "tomorrow preview" notifications — the second of 早晚各一条. */
+const EVENING_ID_PREFIX = 'cycle-evening-'
 const PUSH_HOUR = 8
+const EVENING_HOUR = 20
 const WINDOW_DAYS = 5
+
+/** Evening-slot title — the 8pm push previews TOMORROW (forward-looking → next-day open). */
+const EVENING_TEXT: Record<Locale, { title: string }> = {
+  'zh-Hans': { title: '明日预告' },
+  'zh-Hant': { title: '明日預告' },
+  ja: { title: '明日の予報' },
+  en: { title: 'Tomorrow' },
+}
 
 /** Retro-check copy ({event} = the localized event label). */
 const RETRO_TEXT: Record<Locale, string> = {
@@ -58,6 +69,14 @@ function eightAm(daysAhead: number): Date {
   const d = new Date()
   d.setDate(d.getDate() + daysAhead)
   d.setHours(PUSH_HOUR, 0, 0, 0)
+  return d
+}
+
+/** Local 8pm `daysAhead` days from now (evening preview slot). */
+function eightPm(daysAhead: number): Date {
+  const d = new Date()
+  d.setDate(d.getDate() + daysAhead)
+  d.setHours(EVENING_HOUR, 0, 0, 0)
   return d
 }
 
@@ -112,7 +131,10 @@ async function cancelDaily(): Promise<void> {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync()
     await Promise.all(
       scheduled
-        .filter((n) => n.identifier.startsWith(DAILY_ID_PREFIX))
+        .filter(
+          (n) =>
+            n.identifier.startsWith(DAILY_ID_PREFIX) || n.identifier.startsWith(EVENING_ID_PREFIX)
+        )
         .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
     )
   } catch {}
@@ -180,6 +202,37 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
       await Notifications.scheduleNotificationAsync({
         identifier: `${DAILY_ID_PREFIX}${dateStr}`,
         content: { ...content, data: { day: dateStr } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+      })
+    } catch {}
+  }
+
+  // Evening (8pm) slot — the second of 早晚各一条. It previews TOMORROW's almanac
+  // (forward-looking → a next-day open hook), still 100% deterministic. Bundled
+  // under the SAME daily toggle so we don't add another Settings switch (the push
+  // system was already several layers deep).
+  const et = EVENING_TEXT[opts.locale]
+  for (let i = 0; i < WINDOW_DAYS; i++) {
+    const when = eightPm(i)
+    if (when.getTime() <= now) continue // skip past 8pm
+    const previewDate = localYmd(eightAm(i + 1)) // the morning AFTER this evening
+    let content: { title: string; body: string } = { title: et.title, body: t.today }
+    try {
+      const c = dailyContent(
+        opts.locale,
+        t,
+        previewDate,
+        await fetchAuspiceDay(previewDate, opts.birthDate),
+        isPro
+      )
+      content = { title: `${et.title} · ${previewDate}`, body: c.body }
+    } catch {
+      // keep the generic fallback — a push that opens the app is still useful
+    }
+    try {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${EVENING_ID_PREFIX}${previewDate}`,
+        content: { ...content, data: { day: previewDate } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -265,6 +318,9 @@ export async function scheduleRetroCheck(opts: {
 // ── 亲友 birthday reminders ──────────────────────────────────────────────────
 
 const BDAY_ID_PREFIX = 'cycle-bday-'
+/** Free tier gets birthday reminders for the first N 亲友; more need auspice_pro.
+ *  Mirrors the server cap in /api/auspice/birthdays so local + server agree. */
+export const FREE_BIRTHDAY_LIMIT = 3
 
 const BDAY_TEXT: Record<Locale, { soon: string; tomorrow: string; day: string }> = {
   'zh-Hans': {
@@ -350,7 +406,14 @@ export async function scheduleBirthdayReminders(
   const now = Date.now()
   const DAY_MS = 24 * 60 * 60 * 1000
 
-  for (const p of people) {
+  // Cap to FREE_BIRTHDAY_LIMIT reminders for free users; auspice_pro lifts it.
+  // The user can still SAVE any number of 亲友 (for 合盘 etc.) — only the birthday
+  // REMINDERS beyond the first few are a Pro perk. Stable order (creation) so the
+  // same 亲友 keep their reminders when others are added.
+  const isPro = await getAuspiceProActive()
+  const reminded = isPro ? people : people.slice(0, FREE_BIRTHDAY_LIMIT)
+
+  for (const p of reminded) {
     const dayOf = nextBirthdayFor(p)
     if (!dayOf) continue
     const advanceDays = p.advanceDays ?? 1

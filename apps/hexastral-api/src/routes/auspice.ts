@@ -34,7 +34,7 @@ import { and, eq } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { makeifForks } from '../db/schema'
+import { birthdayReminders, makeifForks } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
@@ -595,6 +595,13 @@ const FIT_LABEL: Record<string, string> = { 吉: '宜把握', 平: '平稳', 凶
 /**
  * Render a full VCALENDAR body for the rolling window. When `subject` is set,
  * each day also carries the deterministic 对你而言 verdict (the Pro feed).
+ *
+ * INVARIANT — keep this feed 100% DETERMINISTIC (pure `buildDay` compute: 干支 /
+ * 宜忌 / 节气 / the 吉平凶 verdict). NEVER put LLM-generated personalized prose
+ * here: a calendar export spans a whole rolling window, which is far too much to
+ * generate, and the personalized "对你而言" reading is deliberately app-ONLY — it
+ * is the daily-push hook that drives DAU. The export is the deterministic almanac;
+ * the personalization lives in the app.
  */
 function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: string): string {
   const today = dateToYmd(new Date())
@@ -1653,5 +1660,119 @@ auspiceRoutes.delete('/makeif/forks/:id', async (c) => {
     .get('db')
     .delete(makeifForks)
     .where(and(eq(makeifForks.owner, `device:${deviceId}`), eq(makeifForks.id, id)))
+  return jsonOk(c, { deleted: true })
+})
+
+// ── 生日提醒 (birthday reminders) persistence + free-tier cap ─────────────────
+//
+// Server-backed store for 亲友 birthdays (see schema.birthdayReminders). The free
+// tier gets reminders for the first BIRTHDAY_FREE_LIMIT 亲友; more need auspice_pro.
+// The cap is enforced HERE (authoritative) so it can't be bypassed by editing local
+// storage; the app also caps locally for snappy UX. Device-scoped like make-if.
+
+const BIRTHDAY_FREE_LIMIT = 3
+
+/** MM-DD for a solar birthday (cron index); null for 农历 (resolved at runtime). */
+function solarMonthDay(date: string, calendar: 'solar' | 'lunar'): string | null {
+  if (calendar !== 'solar') return null
+  const m = /^\d{4}-(\d{2}-\d{2})$/.exec(date)
+  return m ? (m[1] ?? null) : null
+}
+
+/** Live Pro gate for the cap: RevenueCat when configured + `u` present, else the
+ *  client flag (fail-open in dev with no RC key — matches /calendar/sign). */
+async function birthdayProOk(
+  env: CalendarEnv,
+  isProFlag: boolean,
+  appUserId?: string
+): Promise<boolean> {
+  if (env.REVENUECAT_API_KEY && appUserId)
+    return isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId)
+  return isProFlag
+}
+
+const birthdaySchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(80),
+  solarDate: z.string().regex(DATE_RE),
+  calendar: z.enum(['solar', 'lunar']).default('solar'),
+  relation: z.string().max(40).optional(),
+  advanceDays: z.number().int().min(0).max(60).default(1),
+  remindOnDay: z.boolean().default(true),
+  /** Pro signal — client flag, hardened by a live RC check when `u` is sent. */
+  isPro: z.boolean().default(false),
+  /** RevenueCat app-user-id, for the authoritative Pro check. */
+  u: z.string().max(128).optional(),
+})
+
+auspiceRoutes.post('/birthdays', async (c) => {
+  const body = birthdaySchema.parse(await c.req.json())
+  const owner = `device:${body.deviceId}`
+  const db = c.get('db')
+
+  const existing = await db
+    .select({ id: birthdayReminders.id })
+    .from(birthdayReminders)
+    .where(eq(birthdayReminders.owner, owner))
+  const isNew = !existing.some((r) => r.id === body.id)
+
+  // Only NEW birthdays beyond the free cap need Pro; editing an existing one is free.
+  if (isNew && existing.length >= BIRTHDAY_FREE_LIMIT) {
+    const pro = await birthdayProOk(c.env as unknown as CalendarEnv, body.isPro, body.u)
+    if (!pro) {
+      return jsonOk(c, { saved: false, limited: true, limit: BIRTHDAY_FREE_LIMIT })
+    }
+  }
+
+  await db
+    .insert(birthdayReminders)
+    .values({
+      owner,
+      id: body.id,
+      name: body.name,
+      solarDate: body.solarDate,
+      calendar: body.calendar,
+      relation: body.relation,
+      advanceDays: body.advanceDays,
+      remindOnDay: body.remindOnDay,
+      monthDay: solarMonthDay(body.solarDate, body.calendar),
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [birthdayReminders.owner, birthdayReminders.id],
+      set: {
+        name: body.name,
+        solarDate: body.solarDate,
+        calendar: body.calendar,
+        relation: body.relation,
+        advanceDays: body.advanceDays,
+        remindOnDay: body.remindOnDay,
+        monthDay: solarMonthDay(body.solarDate, body.calendar),
+      },
+    })
+  return jsonOk(c, { saved: true })
+})
+
+auspiceRoutes.get('/birthdays', async (c) => {
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  const rows = await c
+    .get('db')
+    .select()
+    .from(birthdayReminders)
+    .where(eq(birthdayReminders.owner, `device:${deviceId}`))
+    .orderBy(birthdayReminders.createdAt)
+  return jsonOk(c, { birthdays: rows, freeLimit: BIRTHDAY_FREE_LIMIT })
+})
+
+auspiceRoutes.delete('/birthdays/:id', async (c) => {
+  const id = c.req.param('id')
+  const deviceId = c.req.query('deviceId')
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  await c
+    .get('db')
+    .delete(birthdayReminders)
+    .where(and(eq(birthdayReminders.owner, `device:${deviceId}`), eq(birthdayReminders.id, id)))
   return jsonOk(c, { deleted: true })
 })

@@ -1225,6 +1225,49 @@ export const makeifForks = sqliteTable(
   ]
 )
 
+/**
+ * 生日提醒 (birthday reminders) — server-backed store for the 亲友 birthdays that
+ * drive reminder notifications. Auspice schedules these LOCALLY today (lib/push.ts,
+ * from on-device AsyncStorage); this table is the authoritative store so the
+ * free-tier cap (`FREE_BIRTHDAY_LIMIT`) is enforced server-side (not just locally),
+ * birthdays survive a reinstall, and a future REMOTE birthday push has a data
+ * source. Scoped by `owner` = `device:<deviceId>` (anon) or `user:<userId>`,
+ * matching makeif_forks. `monthDay` (MM-DD, solar only) is denormalized so a
+ * future "whose birthday is today" cron can index it; lunar rows resolve their
+ * Gregorian date at query/schedule time (astro-core), so monthDay stays null.
+ *
+ * Cadence/source: one row per saved 亲友 — written on add/edit, read on schedule.
+ * No generation, no LLM, tiny + static per user; the cap keeps it bounded for free.
+ */
+export const birthdayReminders = sqliteTable(
+  'birthday_reminders',
+  {
+    owner: text('owner').notNull(),
+    /** Client-generated stable id (matches the local AuspicePerson id). */
+    id: text('id').notNull(),
+    name: text('name').notNull(),
+    /** YYYY-MM-DD — Gregorian when calendar='solar', else interpreted as 农历. */
+    solarDate: text('solar_date').notNull(),
+    /** 'solar' (default) | 'lunar'. */
+    calendar: text('calendar').notNull().default('solar'),
+    relation: text('relation'),
+    /** Days before the birthday to remind (0 = none). */
+    advanceDays: integer('advance_days').notNull().default(1),
+    /** Also remind on the day itself. */
+    remindOnDay: integer('remind_on_day', { mode: 'boolean' }).notNull().default(true),
+    /** MM-DD for solar birthdays (cron index); null for lunar (resolved at runtime). */
+    monthDay: text('month_day'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    primaryKey({ columns: [t.owner, t.id] }),
+    index('birthday_reminders_owner_idx').on(t.owner),
+    index('birthday_reminders_month_day_idx').on(t.monthDay),
+  ]
+)
+
 // ==================== Relations ====================
 
 export const usersRelations = relations(users, ({ many }) => ({
