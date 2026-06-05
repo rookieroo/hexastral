@@ -32,6 +32,7 @@ import {
   type BondsTimelineSignificance,
   formatNodeKind,
   formatNodeSummary,
+  type UseBondsTimelineResult,
   useBondsTimeline,
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
@@ -72,7 +73,7 @@ function groupByYear(
 export default function TimelineScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { nodes, pro, isLoading, error, refetch } = useBondsTimeline()
+  const { nodes, pro, isLoading, error, refetch, explainNode } = useBondsTimeline()
 
   const grouped = useMemo(() => groupByYear(nodes), [nodes])
 
@@ -164,7 +165,7 @@ export default function TimelineScreen() {
             </Text>
             <View style={{ gap: kindredSpacing.sm }}>
               {yearNodes.map((node) => (
-                <NodeCard key={node.key} node={node} locale={locale} />
+                <NodeCard key={node.key} node={node} locale={locale} explainNode={explainNode} />
               ))}
             </View>
           </View>
@@ -237,8 +238,15 @@ function UpsellBanner({ locale, onPress }: { locale: Locale; onPress: () => void
  * One merged node card. Tapping "深入解读" lazily fetches the deep explanation
  * (bondId-keyed; first touched bond) and reveals it inline.
  */
-function NodeCard({ node, locale }: { node: BondsTimelineNode; locale: Locale }) {
-  const { explainNode } = useBondsTimeline()
+function NodeCard({
+  node,
+  locale,
+  explainNode,
+}: {
+  node: BondsTimelineNode
+  locale: Locale
+  explainNode: UseBondsTimelineResult['explainNode']
+}) {
   const [expanded, setExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [explanation, setExplanation] = useState<string | null>(null)
