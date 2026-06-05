@@ -27,7 +27,9 @@ export interface AuspiceVariantCopy {
   footer: string
 }
 
-type LocaleMap = Record<string, AuspiceVariantCopy>
+// `en` is required so `pickCopy`'s fallback is always a value (the repo runs
+// noUncheckedIndexedAccess, which makes a bare Record index possibly-undefined).
+type LocaleMap = Record<string, AuspiceVariantCopy> & { en: AuspiceVariantCopy }
 
 /**
  * Per-variant, per-locale eyebrow + footer. `en` is the guaranteed fallback for
