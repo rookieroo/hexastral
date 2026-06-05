@@ -599,6 +599,11 @@ export default function MeScreen() {
             <Text style={{ color: colors.text, fontSize: 15 }}>{t.people.title}</Text>
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
+          {/* Watch & Widgets entry — hidden until production quality is assured:
+              the native widget still renders the chosen 月相 as a flat circle
+              (Skia can't run in WidgetKit; needs pre-rendered skin×phase PNGs,
+              track B / ADR-0023) and no watchOS target ships yet. The /display
+              screen + WatchSettings are kept; restore this row when track B lands.
           <Pressable
             onPress={() => router.push('/display' as Href)}
             accessibilityRole='button'
@@ -614,6 +619,7 @@ export default function MeScreen() {
             <Text style={{ color: colors.text, fontSize: 15 }}>{t.watchWidgets}</Text>
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
+          */}
         </View>
 
         {/* ── 外地时区 (drill-in → /remote-tz) ── */}
