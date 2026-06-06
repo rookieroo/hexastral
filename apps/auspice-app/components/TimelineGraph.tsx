@@ -136,19 +136,17 @@ const NODE_R = 7
 const HEAD_R = 10
 const SOURCE_R = 9
 
-/** One distinct hue per 大运 — the Tower/Fork "git graph" identity. Cycles for >8
- *  branches (only 8 大运 ever, so no wrap in practice). Picked to read on light +
- *  dark themes and stay distinct from chip colours. */
-const BRANCH_PALETTE: readonly string[] = [
-  '#0EA5E9', // sky
-  '#A855F7', // purple
-  '#F97316', // orange
-  '#10B981', // emerald
-  '#EC4899', // pink
-  '#EAB308', // yellow
-  '#06B6D4', // cyan
-  '#F43F5E', // rose
-]
+/** 大运 lane colour BY 十神 domain — the branch hue carries MEANING (this is a 财
+ *  decade / a 官杀 decade …), not a positional rainbow. It lines up with the
+ *  domain label shown inline on the 大运. Picked to read on light + dark themes
+ *  and stay clear of the gold accent trunk + the chip colours. */
+const DOMAIN_COLORS: Record<ShiShenCategory, string> = {
+  比劫: '#0D9488', // teal — peers · competition · self-reliance
+  食伤: '#9333EA', // purple — output · expression · creativity
+  财星: '#EA580C', // orange — wealth · acquisition
+  官杀: '#DC2626', // red — authority · pressure · discipline
+  印绶: '#4F46E5', // indigo — support · study · protection
+}
 
 interface GColors {
   text: string
@@ -207,17 +205,29 @@ interface BuiltGraph {
   branches: GBranch[]
 }
 
-/** Smooth S-curve from a trunk point out to a branch node (or back). */
+/**
+ * A round git-graph elbow between a trunk point and a branch node. `leave`
+ * controls the tangent at the START: 'h' (peel — leave the trunk HORIZONTALLY,
+ * off the node's side, then arrive vertically in the lane) or 'v' (merge — leave
+ * the lane vertically, then arrive horizontally into the trunk). K pulls the
+ * controls for a full, round quarter-turn (the Tower / GitLens look) instead of
+ * the old lazy S that left straight downward.
+ */
 function curve(
   p: ReturnType<typeof Skia.Path.Make>,
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
+  leave: 'h' | 'v' = 'h'
 ) {
-  const midY = (y1 + y2) / 2
+  const K = 0.6
   p.moveTo(x1, y1)
-  p.cubicTo(x1, midY, x2, midY, x2, y2)
+  if (leave === 'h') {
+    p.cubicTo(x1 + (x2 - x1) * K, y1, x2, y2 - (y2 - y1) * K, x2, y2)
+  } else {
+    p.cubicTo(x1, y1 + (y2 - y1) * K, x2 + (x1 - x2) * K, y2, x2, y2)
+  }
 }
 
 function buildGraph(
@@ -294,15 +304,16 @@ function buildGraph(
       dayMaster.stem as HeavenlyStem,
       d.pillar.stem as HeavenlyStem
     ).category
-    // Each 大运 = a distinct git-graph branch with its own hue.
-    const branchColor = BRANCH_PALETTE[i % BRANCH_PALETTE.length] as string
+    // Each 大运's lane is coloured by its 十神 domain — the hue says what KIND of
+    // decade it is (财 / 官杀 / 印 …), matching the domain label shown inline.
+    const branchColor = DOMAIN_COLORS[dayunDomain]
     const branchPath = Skia.Path.Make()
 
     if (locked) {
       // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
       // Stays gray so the Pro contrast carries.
       curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
-      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
+      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2, 'v')
       branches.push({ color: branchColor, path: branchPath, ghost: true })
       nodes.push({
         id: `dayun-${d.index}`,
@@ -395,7 +406,7 @@ function buildGraph(
     // Merge back into the trunk — unless this is the open HEAD (current) branch.
     // The merge-back point on the trunk becomes a hollow ring (git "Merge X" node).
     if (state !== 'current') {
-      curve(branchPath, BRANCH_X, prevY, TRUNK_X, y)
+      curve(branchPath, BRANCH_X, prevY, TRUNK_X, y, 'v')
       nodes.push({
         id: `merge-${d.index}`,
         x: TRUNK_X,
@@ -516,10 +527,12 @@ export function TimelineGraph({
         <Path
           path={graph.trunkPath}
           style='stroke'
-          strokeWidth={2.2}
+          strokeWidth={2.4}
           strokeCap='round'
-          color={colors.text}
-          opacity={0.85}
+          // The 命 through-line follows the theme accent (a warm spine), not a
+          // near-black hairline — the 大运 lanes peel off it.
+          color={colors.accent}
+          opacity={0.6}
         />
         {/* Per-branch paths — ONE hue per 大运 end-to-end (peel + lane + merge),
             the Tower/Fork "git graph" identity. Ghost branches (Free, non-current)
@@ -552,9 +565,10 @@ export function TimelineGraph({
             )
           }
           const selected = selectedId === n.id
-          // 大运 head + merge-back = hollow ring (the git "branch tip" / "Merge X"
-          // commit), stroked in the branch's hue. Source + 流年 + locked stay solid.
-          const hollow = n.kind === 'dayun' || n.kind === 'mergeBack'
+          // Branch nodes (大运 head + 流年, out in the lane) render SOLID; only a
+          // trunk node that absorbs a branch (mergeBack) is a ring + centre dot.
+          // The user's "分支上的节点都是实心的 / 主干上有分支的节点是圆环+小圆点".
+          const hollow = n.kind === 'mergeBack'
           return (
             <Group key={n.id}>
               {/* bg halo punches the line → the node sits on it with a clean gap

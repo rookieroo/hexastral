@@ -132,7 +132,7 @@ export function DayView({
             old URL share made iOS wait on a cold-Worker OG fetch). */}
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
           <Pressable
-            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date)}`)}
+            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
             hitSlop={12}
             accessibilityRole='button'
             accessibilityLabel='Share'

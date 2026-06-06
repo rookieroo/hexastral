@@ -113,7 +113,7 @@ Scores describe **tendency**, not compatibility forever. People change; luck cyc
       'Your "sheng xiao year" follows the lunar new year boundary — not always January 1. Here is why that matters.',
     date: '2026-05-08',
     appCta: 'hexastral',
-    body: `The twelve animals (十二生肖 shēng xiào) rotate on a **lunar-year** boundary anchored at **Li Chun (立春)** or cultural Spring Festival conventions depending on practitioner school.
+    body: `The twelve animals (十二生肖 shēng xiào) rotate on a **lunar-year** boundary anchored at **Li Chun (立春)** or cultural Chinese New Year conventions depending on practitioner school.
 
 If you were born in January or early February, **double-check** the year animal before meme-sharing.
 

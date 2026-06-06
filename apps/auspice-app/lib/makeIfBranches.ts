@@ -60,15 +60,12 @@ export interface MakeIfModel {
 }
 
 /**
- * Preset-branch palette, aligned with the modern 五行 hues (see ELEMENT_COLORS):
- * - biz (下海经商) → 火 (cardinal red) — ambitious, active
- * - scholar (读书入仕) → 水 (deep blue) — refined, contemplative
- * - roam (远行闯荡) → 木 (emerald) — growth, movement
- *
- * Visually coherent with the timeline's element-coloured dots — make-if and
- * timeline share one design language now.
+ * Preset-branch palette — the git-graph "lane" hues (brown / indigo / purple),
+ * shared with the timeline's BRANCH_PALETTE so make-if and timeline read as the
+ * same git graph. A branch LANE carries identity (like a git GUI tints each
+ * branch), distinct from the element-coloured period DOTS which carry 五行.
  */
-const BRANCH_COLORS = ['#DC2626', '#2563EB', '#16A34A'] as const
+const BRANCH_COLORS = ['#B45309', '#4F46E5', '#9333EA'] as const
 
 // ── Deterministic helpers (no RNG — same seed → same path) ───────────────────
 
@@ -159,9 +156,9 @@ function branch(
 
 // ── Interactive sandbox (Phase 4) ─────────────────────────────────────────────
 
-/** User-fork palette — five distinct modern hues that round-trip with the 5
- *  ELEMENT_COLORS (火/水/木/土 + purple for "neither — creative"). */
-const USER_BRANCH_COLORS = ['#DC2626', '#2563EB', '#16A34A', '#D97706', '#A855F7'] as const
+/** User-fork palette — the git-graph lane hues: brown / indigo / purple first
+ *  (the named reference set), then teal + magenta for the 4th/5th forks. */
+const USER_BRANCH_COLORS = ['#B45309', '#4F46E5', '#9333EA', '#0F766E', '#BE185D'] as const
 
 function hashString(s: string): number {
   let h = 2_166_136_261
@@ -198,7 +195,12 @@ export function buildUserBranch(opts: {
   endAge: number
   isPast?: boolean
 }): MakeIfBranch {
-  const seed = hashString(opts.event) + opts.divergeAtAge
+  // Seed the structure (dots + verdicts) from the STABLE fork id, not the
+  // localized event label. The label re-localizes on a language switch (结婚 ↔
+  // Marry); seeding off it re-rolled every verdict, so the 现实 vs 假如 table
+  // silently changed when you flipped locales. The id is persisted + locale-
+  // invariant, so the diff stays put and only the prose re-narrates.
+  const seed = hashString(opts.id) + opts.divergeAtAge
   const color =
     USER_BRANCH_COLORS[hashString(opts.id) % USER_BRANCH_COLORS.length] ?? USER_BRANCH_COLORS[0]
   return {
@@ -412,15 +414,29 @@ export function relocalizeEventLabel(label: string, locale: string): string {
   return label
 }
 
-/** Fallback 概要 from a full narrative — the first clause, trimmed — used for forks
- *  hydrated from storage (whose summary isn't persisted) so they still show a
- *  takeaway line without a re-narrate round-trip. */
+/** Fallback 概要 from a full narrative — used for forks hydrated from storage
+ *  (whose summary isn't persisted) so they still show a takeaway without a
+ *  re-narrate round-trip. Takes the first sentence and, when that's short, the
+ *  next one too, so the collapsed branch reads as a real 概要 (the user flagged
+ *  it as too thin) — not a 24-char fragment. Caps to ~2 lines. Locale-safe (no
+ *  lookbehind — Hermes-friendly). */
 export function deriveMakeIfSummary(narrative: string): string {
   if (!narrative) return ''
-  const cleaned = narrative.replace(/^假如你[，,]?\s*/, '').trim()
-  const cut = cleaned.split(/[。！？.!?\n]/)[0]?.trim() ?? cleaned
-  const max = 24
-  return cut.length > max ? `${cut.slice(0, max)}…` : cut
+  const cleaned = narrative
+    .replace(/^假如你[，,]?\s*/, '')
+    .replace(/^if you[,，]?\s*/i, '')
+    .trim()
+  const first = cleaned.match(/^[^。！？.!?\n]*[。！？.!?]?/)?.[0]?.trim() ?? cleaned
+  let out = first
+  if (out.length < 30) {
+    const rest = cleaned
+      .slice(first.length)
+      .match(/^\s*[^。！？.!?\n]*[。！？.!?]?/)?.[0]
+      ?.trim()
+    if (rest) out = `${out}${out.endsWith('。') || /[.!?]$/.test(out) ? '' : '·'}${rest}`.trim()
+  }
+  const max = 64
+  return out.length > max ? `${out.slice(0, max).trim()}…` : out
 }
 
 export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiveCopy {

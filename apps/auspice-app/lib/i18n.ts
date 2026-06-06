@@ -234,6 +234,9 @@ export interface Strings {
     sameSuffix: string
     /** Suffix shown when the verdicts diverge — the "real diff" moments. */
     diffSuffix: string
+    /** Caption under the header: the rows are tappable + what the highlight /
+     *  last column means (users couldn't tell either). */
+    tapHint: string
   }
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
@@ -352,6 +355,7 @@ export interface Strings {
     namePlaceholder: string
     date: string
     yearOptional: string
+    yearRequired: string
     solar: string
     lunar: string
     advance: string
@@ -573,6 +577,7 @@ const zhHans: Strings = {
     mergeRow: '复归 · {age}岁',
     sameSuffix: '同向',
     diffSuffix: '相左',
+    tapHint: '点任一行展开那一年的解读 · 高亮行＝这个选择真正改变了运势',
   },
   yinzheng: {
     prompt: '这一年你经历了什么?',
@@ -690,6 +695,7 @@ const zhHans: Strings = {
     namePlaceholder: '妈妈 / 阿明',
     date: '生日',
     yearOptional: '出生年份（可选）',
+    yearRequired: '出生年份（必填）',
     solar: '阳历',
     lunar: '农历',
     advance: '提前提醒',
@@ -884,6 +890,7 @@ const zhHant: Strings = {
     mergeRow: '復歸 · {age}歲',
     sameSuffix: '同向',
     diffSuffix: '相左',
+    tapHint: '點任一行展開那一年的解讀 · 高亮行＝這個選擇真正改變了運勢',
   },
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
@@ -987,6 +994,7 @@ const zhHant: Strings = {
     namePlaceholder: '媽媽 / 阿明',
     date: '生日',
     yearOptional: '出生年份（可選）',
+    yearRequired: '出生年份（必填）',
     solar: '陽曆',
     lunar: '農曆',
     advance: '提前提醒',
@@ -1206,6 +1214,7 @@ const ja: Strings = {
     mergeRow: '合流 · {age}歳',
     sameSuffix: '同調',
     diffSuffix: '相違',
+    tapHint: '行をタップでその年の解説 · ハイライト＝選択が運勢を変えた節目',
   },
   yinzheng: {
     prompt: 'この年、何がありましたか?',
@@ -1310,6 +1319,7 @@ const ja: Strings = {
     namePlaceholder: '母 / たろう',
     date: '誕生日',
     yearOptional: '生年（任意）',
+    yearRequired: '生年（必須）',
     solar: '新暦',
     lunar: '旧暦',
     advance: '事前通知',
@@ -1378,7 +1388,7 @@ const en: Strings = {
   festivalsTab: 'Festivals',
   meTab: 'Me',
   today: 'Today',
-  suitable: 'Good for',
+  suitable: 'Good',
   avoid: 'Avoid',
   clash: 'Clash',
   evilDirection: 'Ill dir.',
@@ -1520,6 +1530,7 @@ const en: Strings = {
     mergeRow: 'Merge · age {age}',
     sameSuffix: 'aligned',
     diffSuffix: 'diverges',
+    tapHint: 'Tap a row to read that year · highlighted = where the choice changed your luck',
   },
   yinzheng: {
     prompt: 'What happened that year?',
@@ -1637,6 +1648,7 @@ const en: Strings = {
     namePlaceholder: 'Mom / Alex',
     date: 'Birthday',
     yearOptional: 'Birth year (optional)',
+    yearRequired: 'Birth year (required)',
     solar: 'Solar',
     lunar: 'Lunar',
     advance: 'Remind before',

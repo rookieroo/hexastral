@@ -246,7 +246,7 @@ const HOLIDAYS_JA: ReadonlyArray<Holiday> = [
 const HOLIDAYS_EN: ReadonlyArray<Holiday> = [
   {
     id: 'chunjie',
-    name: 'Spring Festival',
+    name: 'Chinese New Year',
     rule: { kind: 'lunar-fixed', lunarMonth: 1, lunarDay: 1 },
   },
   {

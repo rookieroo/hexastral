@@ -88,17 +88,24 @@ export function useImageShare(
     if (!prewarm) return
     warmedUri.current = null
     let cancelled = false
-    const id = setTimeout(async () => {
+    const capture = async () => {
       if (cancelled || !shotRef.current) return
       try {
         warmedUri.current = await captureRef(shotRef, { format: 'png', quality: 1 })
       } catch {
-        warmedUri.current = null
+        // Keep any earlier successful warm copy rather than nulling it.
       }
-    }, delayMs)
+    }
+    // Capture once for fast availability, then again a beat later: a heavy (Skia)
+    // card — the timeline / make-if graphs — may not have fully painted by the
+    // first tick, so the refresh replaces a half-rendered frame with a complete
+    // one. The light, Skia-free 宜忌 day card is ready on the first pass.
+    const id1 = setTimeout(capture, delayMs)
+    const id2 = setTimeout(capture, delayMs + 450)
     return () => {
       cancelled = true
-      clearTimeout(id)
+      clearTimeout(id1)
+      clearTimeout(id2)
     }
   }, [prewarm, warmKey, delayMs])
 

@@ -302,7 +302,12 @@ export default function PeopleScreen() {
               />
             </View>
             <View style={{ flex: 1, gap: spacing.sm }}>
-              <Text style={microLabel}>{t.people.yearOptional}</Text>
+              {/* 八字-合盘 needs a full solar year, so the field flips to required
+                  (accent label + accent underline) whenever the toggle below is
+                  ON — replaces the old separate nag paragraph. */}
+              <Text style={[microLabel, compatExpanded ? { color: colors.accent } : null]}>
+                {compatExpanded ? t.people.yearRequired : t.people.yearOptional}
+              </Text>
               <TextInput
                 value={birthYear}
                 onChangeText={(r) => setBirthYear(r.replace(/\D/g, '').slice(0, 4))}
@@ -310,7 +315,12 @@ export default function PeopleScreen() {
                 placeholderTextColor={colors.dim}
                 keyboardType='numeric'
                 maxLength={4}
-                style={fieldStyle}
+                style={[
+                  fieldStyle,
+                  compatExpanded && !/^\d{4}$/.test(birthYear)
+                    ? { borderBottomColor: colors.accent }
+                    : null,
+                ]}
               />
             </View>
           </View>
@@ -328,8 +338,8 @@ export default function PeopleScreen() {
           {/* Compatibility (合盘) — a PROMINENT toggle card (was a buried chevron
               disclosure; users couldn't find the unlock). When flipped on:
                 · the row tints with the accent + reveals the extra fields below,
-                · the year field above becomes effectively required (we surface a
-                  hint until it's filled), and
+                · the year field above flips to REQUIRED (accent label + accent
+                  underline) until a 4-digit solar year is filled, and
                 · 时辰 / gender / birthplace appear inline (not in a disclosure).
               Off → plain birthday reminder, no 八字 demanded. */}
           <Pressable
@@ -375,14 +385,6 @@ export default function PeopleScreen() {
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
                   {t.people.compatibilityHint}
                 </Text>
-                {/* 合盘 needs a 4-digit solar year — surface it as a required-hint
-                    once the toggle is ON, rather than letting the user fill the
-                    rest and quietly get no report. */}
-                {!(/^\d{4}$/.test(birthYear) && calendar === 'solar') ? (
-                  <Text style={{ color: colors.accent, fontSize: 12, lineHeight: 18 }}>
-                    {t.people.compatYearRequired}
-                  </Text>
-                ) : null}
 
                 {/* 时辰 (for 八字 / 合盘) */}
                 <View style={{ gap: spacing.sm }}>

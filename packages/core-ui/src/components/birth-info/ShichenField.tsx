@@ -1,13 +1,12 @@
 /**
  * ShichenField — collapsed 十二时辰 entry.
  *
- * The 12-cell grid (`ShichenPicker`) is correct but eats a lot of vertical
- * space on a birth form. This keeps the time field to ONE compact line — a
- * summary row with a wheel affordance, the exact same habit as
- * `BirthDateField` — and only on tap lifts a bottom-sheet scroll-wheel of the
- * twelve 时辰. The wheel leans old-almanac (古朴): a large ink branch glyph
- * with its clock range beneath, so picking a 时辰 feels ceremonial rather than
- * like ticking a grid cell.
+ * The inline 12-cell grid eats a lot of vertical space on a birth form, so this
+ * keeps the time field to ONE compact summary line (same habit as
+ * `BirthDateField`) and only on tap lifts a bottom-sheet `ShichenPicker` grid of
+ * the twelve 时辰. (It used a scroll-wheel here, but RN couldn't match a native
+ * UIPickerView — it dropped frames on-device — so the sheet shows the
+ * tap-to-pick grid instead: instant, no scroll jank.)
  *
  * 时辰 is a required field (it drives the 八字 hour pillar); the host decides
  * how to mark that. Encoding matches `ShichenPicker`: 0 = 子 … 11 = 亥.
@@ -17,8 +16,8 @@ import * as Haptics from 'expo-haptics'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { useTheme } from '../../theme'
-import type { ShichenIndex } from '../ShichenPicker'
-import { SHICHEN, ShichenWheel } from './ShichenWheel'
+import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
+import { SHICHEN } from './ShichenWheel'
 
 export interface ShichenFieldLabels {
   /** Summary placeholder when nothing is picked (e.g. '选择时辰'). */
@@ -143,9 +142,23 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
             </Pressable>
           </View>
 
-          {/* Mount the wheel only while open so it always re-seeds at the current
-              draft (a re-opened sheet starts parked on the saved 时辰). */}
-          {open ? <ShichenWheel value={draft} onChange={setDraft} accent={accent} /> : null}
+          {/* A 12-cell 时辰 grid — replaced the scroll-wheel, which dropped frames
+              on-device (RN can't match a native UIPickerView here). Tapping a cell
+              commits immediately + closes; no scroll, no jank. */}
+          {open ? (
+            <ShichenPicker
+              value={draft}
+              onChange={(idx) => {
+                setDraft(idx)
+                onChange(idx)
+                setOpen(false)
+              }}
+              onSelect={() => {
+                void Haptics.selectionAsync().catch(() => undefined)
+              }}
+              accentColor={accent}
+            />
+          ) : null}
         </View>
       </Modal>
     </View>

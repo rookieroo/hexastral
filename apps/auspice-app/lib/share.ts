@@ -109,9 +109,11 @@ function toBase64Url(input: string): string {
 
 // ── URL builders (shared by image captions + the text/URL fallback) ───────────
 
-/** `/s/day/<date>` — the day's 宜忌 card. `date` = YYYY-MM-DD. */
-export function dayShareUrl(date: string): string {
-  return `${WEB_BASE}/s/day/${date}`
+/** `/s/day/<date>` — the day's 宜忌 card. `date` = YYYY-MM-DD. `lc` lets the
+ *  server-rendered landing + OG localize 宜忌 (labels + verbs) instead of always
+ *  rendering Chinese (the EN-share-still-Chinese fix). */
+export function dayShareUrl(date: string, locale = 'en'): string {
+  return `${WEB_BASE}/s/day/${date}?lc=${encodeURIComponent(locale)}`
 }
 
 /** `/s/makeif/<token>` — a make-if (假如) fork. `summary` (概要) is the at-a-glance
@@ -206,7 +208,8 @@ async function shareUrl(url: string, locale: string): Promise<void> {
   }
 }
 
-export const shareDayCard = (date: string, locale = 'en') => shareUrl(dayShareUrl(date), locale)
+export const shareDayCard = (date: string, locale = 'en') =>
+  shareUrl(dayShareUrl(date, locale), locale)
 
 export const shareMakeifFork = (
   fork: { forkTitle: string; label: string; outcome: string; summary?: string },

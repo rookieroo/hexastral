@@ -54,7 +54,9 @@ import {
   type TimelinePayload,
 } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { localizeWuxing } from '@/lib/culture/terms'
 import { getAuspiceDeviceId } from '@/lib/device'
+import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import {
@@ -434,13 +436,17 @@ function Sandbox({
     const hour = birth.birthHour < 0 ? 12 : birth.birthHour
     const pillars = getFourPillars({ year: yy, month: mm, day: dd, hour })
     const favEl = analyzeGeJu(pillars, getFourPillarsShiShen(pillars)).favorableElement
+    if (!favEl) return null
     const thisYear = new Date().getFullYear()
     const favYear = payload.dayun
       .flatMap((d) => d.liunian)
       .filter((ln) => ln.year >= thisYear && ln.reasons.includes('favorable_element_present'))
       .sort((a, b) => a.year - b.year)[0]?.year
-    return t.makeifCherrypick.replace('{el}', favEl).replace('{year}', String(favYear ?? thisYear))
-  }, [featured, birth, payload, t])
+    // Localize the 五行 (木/火/…) — it was injected raw, so EN read "lean on 木".
+    return t.makeifCherrypick
+      .replace('{el}', localizeWuxing(favEl, locale as Locale))
+      .replace('{year}', String(favYear ?? thisYear))
+  }, [featured, birth, payload, t, locale])
 
   // Fetch (or re-fetch) a fork's narrative, tracking per-fork status so the user
   // always gets feedback (loading / failed-retry / daily-limit), not silence.
@@ -668,6 +674,7 @@ function Sandbox({
           birth={birth}
           locale={locale}
           t={t}
+          ic={ic}
           colors={colors}
           spacing={spacing}
         />
@@ -874,6 +881,7 @@ function MakeIfDiffPanel({
   birth,
   locale,
   t,
+  ic,
   colors,
   spacing,
 }: {
@@ -882,6 +890,7 @@ function MakeIfDiffPanel({
   birth: { birthDate: string; birthHour: number; gender: 'M' | 'F' }
   locale: string
   t: ReturnType<typeof useStrings>['t']
+  ic: ReturnType<typeof makeIfInteractiveCopyForLocale>
   colors: C
   spacing: S
 }) {
@@ -891,7 +900,9 @@ function MakeIfDiffPanel({
     凶: '#DC2626',
   }
   /** Per-row LLM expansion state. Key = `${branch.id}|${age}`. */
-  const [expanded, setExpanded] = useState<Record<string, 'loading' | 'done' | 'error'>>({})
+  const [expanded, setExpanded] = useState<
+    Record<string, 'loading' | 'done' | 'error' | 'collapsed'>
+  >({})
   const [narratives, setNarratives] = useState<Record<string, string>>({})
   // Reset row expansion when the featured branch changes — old narratives belong
   // to a different "假如". Forks are immutable per id so id is a safe identity.
@@ -993,9 +1004,10 @@ function MakeIfDiffPanel({
   const expandRow = (rowKey: string) => {
     if (expanded[rowKey] === 'loading') return
     if (narratives[rowKey]) {
-      // Toggle off if already shown; otherwise re-mark done.
+      // Toggle the cached narrative open/closed. 'collapsed' is distinct from
+      // 'error' so a re-collapsed row never reads as "failed".
       setExpanded((s) =>
-        s[rowKey] === 'done' ? { ...s, [rowKey]: 'error' } : { ...s, [rowKey]: 'done' }
+        s[rowKey] === 'done' ? { ...s, [rowKey]: 'collapsed' } : { ...s, [rowKey]: 'done' }
       )
       return
     }
@@ -1033,6 +1045,11 @@ function MakeIfDiffPanel({
 
   if (rows.length === 0) return null
 
+  // No 天干地支 in non-Chinese UIs (the user flagged 中英文混用): the raw 干支
+  // pillar shows only in zh; the verdict words localize everywhere via
+  // t.personal.fit so en/ja never leak 吉/平/凶 or 甲辰-style glyphs.
+  const showPillar = locale.startsWith('zh')
+
   const Pill = ({ fit }: { fit: '吉' | '平' | '凶' | null }) =>
     fit ? (
       <View
@@ -1043,7 +1060,9 @@ function MakeIfDiffPanel({
           backgroundColor: `${FIT_COLOR[fit]}22`,
         }}
       >
-        <Text style={{ color: FIT_COLOR[fit], fontSize: 11, fontWeight: '600' }}>{fit}</Text>
+        <Text style={{ color: FIT_COLOR[fit], fontSize: 11, fontWeight: '600' }}>
+          {t.personal.fit[fit]}
+        </Text>
       </View>
     ) : (
       <Text style={{ color: colors.dim, fontSize: 11 }}>—</Text>
@@ -1061,6 +1080,11 @@ function MakeIfDiffPanel({
       <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
         {t.makeifDiff.header}
       </Text>
+      {/* Explains the rows are tappable + what the highlight / last column mean —
+          the user couldn't tell what the last column was or that it did anything. */}
+      <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
+        {t.makeifDiff.tapHint}
+      </Text>
       {/* Column headers */}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Text style={{ flex: 1.1, color: colors.dim, fontSize: 11 }} numberOfLines={1}>
@@ -1068,7 +1092,7 @@ function MakeIfDiffPanel({
         </Text>
         <Text style={{ flex: 1.4, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.realCol}</Text>
         <Text style={{ flex: 1, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.altCol}</Text>
-        <View style={{ width: 56 }} />
+        <View style={{ width: 64 }} />
       </View>
       {rows.map((r) => {
         const diverges =
@@ -1099,32 +1123,46 @@ function MakeIfDiffPanel({
                 {r.label}
               </Text>
               <View style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: colors.text, fontSize: 12, letterSpacing: 1 }}>
-                  {r.realPillar}
-                </Text>
+                {showPillar ? (
+                  <Text style={{ color: colors.text, fontSize: 12, letterSpacing: 1 }}>
+                    {r.realPillar}
+                  </Text>
+                ) : null}
                 <Pill fit={r.realFit} />
               </View>
               <View style={{ flex: 1 }}>
                 <Pill fit={r.altFit} />
               </View>
-              <Text
+              {/* Comparison verdict + an expand chevron — the chevron makes the row
+                  read as tappable (it was a static word, so the user never tried
+                  it / saw "no reaction"). */}
+              <View
                 style={{
-                  width: 56,
-                  textAlign: 'right',
-                  color: diverges ? colors.accent : colors.dim,
-                  fontSize: 10,
-                  fontWeight: diverges ? '700' : '400',
+                  width: 64,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 4,
                 }}
-                numberOfLines={1}
               >
-                {state === 'loading'
-                  ? '…'
-                  : diverges
-                    ? t.makeifDiff.diffSuffix
-                    : r.sameRail
-                      ? t.makeifDiff.sameSuffix
-                      : ''}
-              </Text>
+                <Text
+                  style={{
+                    color: diverges ? colors.accent : colors.dim,
+                    fontSize: 10,
+                    fontWeight: diverges ? '700' : '400',
+                  }}
+                  numberOfLines={1}
+                >
+                  {state === 'loading'
+                    ? '…'
+                    : diverges
+                      ? t.makeifDiff.diffSuffix
+                      : r.sameRail
+                        ? t.makeifDiff.sameSuffix
+                        : ''}
+                </Text>
+                <Text style={{ color: colors.dim, fontSize: 9 }}>{isOpen ? '▾' : '▸'}</Text>
+              </View>
             </Pressable>
             {isOpen ? (
               <Text
@@ -1140,6 +1178,22 @@ function MakeIfDiffPanel({
               >
                 {narrative}
               </Text>
+            ) : state === 'error' ? (
+              // Previously SILENT on failure (the "tap does nothing" report) —
+              // surface the error + a retry tap target.
+              <Pressable onPress={() => expandRow(r.key)} accessibilityRole='button'>
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontSize: 12,
+                    paddingHorizontal: 6,
+                    paddingTop: 2,
+                    paddingBottom: 6,
+                  }}
+                >
+                  {ic.failedRetry}
+                </Text>
+              </Pressable>
             ) : null}
           </View>
         )

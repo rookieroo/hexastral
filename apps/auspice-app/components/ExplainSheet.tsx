@@ -14,11 +14,13 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { shareExplain } from '@/lib/share'
+import { useImageShare } from '@/lib/imageShare'
+import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 
 interface SheetLabels {
   title: string
@@ -83,12 +85,24 @@ export function ExplainSheet({
   onUpgrade?: () => void
 }) {
   const { colors, spacing } = useTheme()
-  const { t, locale } = useStrings()
+  const { locale } = useStrings()
+  const { width } = useWindowDimensions()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
   const L = LABELS[locale]
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [result, setResult] = useState<AuspiceExplainResult | null>(null)
+  // Image share (was a base64-token URL so long it dwarfed the reading). Pre-warm
+  // once the reading lands so the Share tap hands off a ready PNG; the caption is
+  // a SHORT /s/day link (install funnel), and the image itself carries the text.
+  const {
+    shotRef,
+    capturing,
+    share: shareImage,
+  } = useImageShare({
+    prewarm: isPro && !!result && field !== null,
+    warmKey: `${date}:${field ?? ''}`,
+  })
 
   useEffect(() => {
     if (!field) return
@@ -136,23 +150,35 @@ export function ExplainSheet({
         {result && isPro && field ? (
           <Button
             variant='secondary'
-            onPress={() =>
-              shareExplain(
-                {
-                  date,
-                  ganZhi: ganZhi ?? '',
-                  field,
-                  // Field is "{宜|忌 label} {verb}" (YiJiBlock) — 宜 when it leads
-                  // with the localized 宜 header, else 忌.
-                  isYi: field.startsWith(t.suitable),
-                  explanation: result.explanation,
-                },
-                locale
-              )
-            }
+            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
           >
             {L.share}
           </Button>
+        ) : null}
+
+        {/* Off-screen capture target — the reading baked onto the branded ivory
+            card, so the share IS the explanation (no giant token URL needed). */}
+        {capturing && result && field ? (
+          <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
+            <ShareableCard
+              ref={shotRef}
+              width={width}
+              locale={locale}
+              title={field}
+              subtitle={[
+                ganZhi
+                  ? `${ganZhi}${locale.startsWith('zh') || locale === 'ja' ? '日' : ''}`
+                  : null,
+                date,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            >
+              <Text style={{ color: SHARE_PALETTE.text, fontSize: 15, lineHeight: 25 }}>
+                {result.explanation}
+              </Text>
+            </ShareableCard>
+          </View>
         ) : null}
       </View>
     </SatelliteBottomSheet>

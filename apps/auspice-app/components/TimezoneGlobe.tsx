@@ -13,15 +13,48 @@
  * lib/dual-tz's deliberate simplification.
  */
 
-import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
+import { Canvas, Circle, Group, Path, RadialGradient, Skia, vec } from '@shopify/react-native-skia'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 
+import { CONTINENTS } from '@/lib/continents'
 import type { GlobeCity } from '@/lib/dual-tz'
 
 const DEG = Math.PI / 180
+
+/**
+ * Subdivide each coarse continent edge so the limb crossing is SMOOTH — the fill
+ * no longer pops a whole edge at a time as the globe turns; land slides past the
+ * horizon naturally. Run ONCE at module load (the outline data is static).
+ */
+function densify(
+  poly: ReadonlyArray<readonly [number, number]>,
+  step = 2.5
+): Array<[number, number]> {
+  const out: Array<[number, number]> = []
+  let prev: readonly [number, number] | null = null
+  for (const cur of poly) {
+    if (prev) {
+      const segs = Math.max(
+        1,
+        Math.ceil(Math.max(Math.abs(cur[0] - prev[0]), Math.abs(cur[1] - prev[1])) / step)
+      )
+      for (let k = 0; k < segs; k++) {
+        out.push([
+          prev[0] + ((cur[0] - prev[0]) * k) / segs,
+          prev[1] + ((cur[1] - prev[1]) * k) / segs,
+        ])
+      }
+    }
+    prev = cur
+  }
+  if (prev) out.push([prev[0], prev[1]])
+  return out
+}
+
+const DENSE_CONTINENTS = CONTINENTS.map((p) => densify(p))
 
 interface GlobeColors {
   bg: string
@@ -154,6 +187,59 @@ export function TimezoneGlobe({
     return path
   }, [lng0, lat0, R, cx, cy])
 
+  // Continent outlines (landmasses only, no national borders) — gives the
+  // otherwise-bare wireframe a recognizable Earth so the user can spot a region
+  // and tap near their city. Same front-facing clip as the graticule.
+  const land = useMemo(() => {
+    const path = Skia.Path.Make()
+    for (const poly of DENSE_CONTINENTS) {
+      let pen = false
+      for (const [lat, lng] of poly) {
+        const pr = project(lat, lng, lng0, lat0, R, cx, cy)
+        if (pr.visible) {
+          if (pen) path.lineTo(pr.sx, pr.sy)
+          else {
+            path.moveTo(pr.sx, pr.sy)
+            pen = true
+          }
+        } else {
+          pen = false
+        }
+      }
+    }
+    return path
+  }, [lng0, lat0, R, cx, cy])
+
+  // Filled landmasses (淡 fill) — so the globe reads like Earth, not just a
+  // wireframe. Only FRONT-FACING vertices are used; each run that exits the limb
+  // is closed with a chord, so back-of-sphere land never folds onto the front
+  // (the orthographic projector maps back points onto the same disk).
+  const landFill = useMemo(() => {
+    const path = Skia.Path.Make()
+    for (const poly of DENSE_CONTINENTS) {
+      const proj = poly.map(([lat, lng]) => project(lat, lng, lng0, lat0, R, cx, cy))
+      // Start at an invisible vertex so a visible run never wraps the array seam.
+      let start = proj.findIndex((p) => !p.visible)
+      if (start < 0) start = 0
+      const ordered = [...proj.slice(start), ...proj.slice(0, start)]
+      let pen = false
+      for (const pr of ordered) {
+        if (pr.visible) {
+          if (pen) path.lineTo(pr.sx, pr.sy)
+          else {
+            path.moveTo(pr.sx, pr.sy)
+            pen = true
+          }
+        } else if (pen) {
+          path.close()
+          pen = false
+        }
+      }
+      if (pen) path.close()
+    }
+    return path
+  }, [lng0, lat0, R, cx, cy])
+
   const dots = useMemo(
     () =>
       cities
@@ -205,16 +291,37 @@ export function TimezoneGlobe({
     <GestureDetector gesture={gesture}>
       <View style={{ width: size, height: size }}>
         <Canvas style={{ width: size, height: size }}>
-          {/* Sphere */}
+          {/* Sphere — flat base + a soft lit-ball gradient (highlight top-left,
+              shadow toward the lower-right limb) so it reads as a 3D globe, not a
+              flat disc. */}
           <Circle cx={cx} cy={cy} r={R} color={colors.card} />
+          <Circle cx={cx} cy={cy} r={R}>
+            <RadialGradient
+              c={vec(cx - R * 0.4, cy - R * 0.4)}
+              r={R * 1.6}
+              colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0.18)']}
+              positions={[0, 0.5, 1]}
+            />
+          </Circle>
           <Circle cx={cx} cy={cy} r={R} style='stroke' strokeWidth={1} color={colors.separator} />
+          {/* Continents — landmasses only, no national borders (orientation aid).
+              A 淡 fill reads like Earth; the stroke crisps the coastline. */}
+          <Path path={landFill} color={colors.text} opacity={0.12} />
+          <Path
+            path={land}
+            style='stroke'
+            strokeWidth={1.1}
+            strokeJoin='round'
+            color={colors.text}
+            opacity={0.42}
+          />
           {/* Graticule */}
           <Path
             path={graticule}
             style='stroke'
             strokeWidth={0.7}
             color={colors.dim}
-            opacity={0.4}
+            opacity={0.28}
           />
           {/* City dots — fade toward the limb. */}
           <Group>

@@ -62,7 +62,7 @@ interface Layout {
   mainTop: number
   mainBottom: number
   nowY: number | null
-  mainNodes: { age: number; label: string; isPast: boolean; y: number }[]
+  mainNodes: { age: number; label: string; isPast: boolean; y: number; isFork: boolean }[]
   branches: BranchLayout[]
 }
 
@@ -86,10 +86,15 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     // the screen, nothing like a git graph. Cap it tight: ~1.2 ageSteps minimum,
     // ~40px maximum, regardless of how far out the lane sits.
     const horiz = laneX - TRUNK_X
-    const drop = Math.min(40, Math.max(ageStep * 1.2, horiz * 0.35))
-    // diverge out of the trunk (smooth S-curve)
+    // A round git-graph "elbow": the branch leaves the trunk HORIZONTALLY (to the
+    // right, off the node's side — not straight down) and curves into its lane;
+    // drop ≈ the horizontal travel so the corner reads as a full quarter-turn,
+    // not a lazy diagonal. K pulls the control points for a fuller, rounder bend.
+    const drop = Math.min(52, Math.max(24, horiz))
+    const K = 0.6
+    // diverge: leave horizontal at the fork, arrive vertical down the lane
     path.moveTo(TRUNK_X, forkY)
-    path.cubicTo(TRUNK_X, forkY + drop / 2, laneX, forkY + drop / 2, laneX, forkY + drop)
+    path.cubicTo(TRUNK_X + horiz * K, forkY, laneX, forkY + drop * (1 - K), laneX, forkY + drop)
     let mergeY: number | null = null
     let endY: number
     if (br.mergeAtAge != null) {
@@ -97,8 +102,8 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
       endY = mergeY
       const mergeStart = mergeY - drop
       if (mergeStart > forkY + drop) path.lineTo(laneX, mergeStart)
-      // merge back into the trunk
-      path.cubicTo(laneX, mergeStart + drop / 2, TRUNK_X, mergeStart + drop / 2, TRUNK_X, mergeY)
+      // merge: leave vertical down the lane, arrive horizontal into the trunk
+      path.cubicTo(laneX, mergeStart + drop * K, TRUNK_X + horiz * K, mergeY, TRUNK_X, mergeY)
     } else {
       endY = yForAge(model.endAge)
       path.lineTo(laneX, endY)
@@ -122,7 +127,13 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     }
   })
 
-  const mainNodes = (model.mainNodes ?? []).map((n) => ({ ...n, y: yForAge(n.age) }))
+  // Mark which main-line nodes spawn a branch — those render as ring+dot; plain
+  // 大运 boundaries stay small solid dots.
+  const forkYs = new Set(branches.map((b) => Math.round(b.forkY)))
+  const mainNodes = (model.mainNodes ?? []).map((n) => {
+    const y = yForAge(n.age)
+    return { ...n, y, isFork: forkYs.has(Math.round(y)) }
+  })
 
   return {
     height,
@@ -139,8 +150,11 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
 
 /**
  * A graph node that reads as sitting ON a line with a clean gap: a bg-coloured
- * halo punches the line first, then the node (filled circle, or a hollow ring for
- * merges) draws on top.
+ * halo punches the line first, then the node draws on top. Two shapes:
+ *   - 'dot'  — a solid filled circle (a period along a branch lane).
+ *   - 'ring' — a hollow ring with a small centre dot (a trunk node that spawns
+ *              or absorbs a branch — the git "branch / merge" commit). This is
+ *              the user's "主干上有分支的节点是有小圆点的圆环".
  */
 function GNode({
   x,
@@ -148,24 +162,25 @@ function GNode({
   r,
   color,
   bg,
-  fill = true,
+  variant = 'dot',
 }: {
   x: number
   y: number
   r: number
   color: string
   bg: string
-  fill?: boolean
+  variant?: 'dot' | 'ring'
 }) {
   return (
     <Group>
       <Circle cx={x} cy={y} r={r + 2.5} color={bg} />
-      {fill ? (
+      {variant === 'dot' ? (
         <Circle cx={x} cy={y} r={r} color={color} />
       ) : (
         <Group>
           <Circle cx={x} cy={y} r={r} color={bg} />
           <Circle cx={x} cy={y} r={r} color={color} style='stroke' strokeWidth={2} />
+          <Circle cx={x} cy={y} r={Math.max(1.4, r - 3.4)} color={color} />
         </Group>
       )}
     </Group>
@@ -221,24 +236,31 @@ export function MakeIfGraph({
         <Path
           path={mainPath}
           style='stroke'
-          strokeWidth={1.8}
+          strokeWidth={2.4}
           strokeCap='round'
-          color={colors.separator}
+          // The real life-line follows the theme accent (not a grey hairline) — a
+          // warm spine the what-if lanes peel off of.
+          color={colors.accent}
+          opacity={0.55}
           end={progress}
         />
 
         {/* Mainline nodes — real 大运 boundaries (the spine), drawn UNDER the branch
             fork markers so a fork shows its branch colour. */}
-        {layout.mainNodes.map((n) => (
-          <GNode
-            key={`mn-${n.age}`}
-            x={TRUNK_X}
-            y={n.y}
-            r={3}
-            color={n.isPast ? colors.dim : colors.text}
-            bg={colors.bg}
-          />
-        ))}
+        {layout.mainNodes.map((n) =>
+          // Fork points are drawn by their branch (ring in the branch hue); a
+          // plain boundary is a small solid dot in the accent (theme) colour.
+          n.isFork ? null : (
+            <GNode
+              key={`mn-${n.age}`}
+              x={TRUNK_X}
+              y={n.y}
+              r={3}
+              color={n.isPast ? colors.dim : colors.accent}
+              bg={colors.bg}
+            />
+          )
+        )}
 
         {/* Branches — hypothetical "假如" lives. ONE colour per branch end-to-end;
             filled fork node, filled period dots, hollow ring on merge-back. */}
@@ -267,9 +289,16 @@ export function MakeIfGraph({
               </Path>
               {!locked ? (
                 <Group>
-                  {/* fork — where the branch leaves the trunk (filled) */}
-                  <GNode x={TRUNK_X} y={b.forkY} r={4.5} color={stroke} bg={colors.bg} />
-                  {/* period nodes along the lane (filled, branch colour) */}
+                  {/* fork — trunk node where the branch leaves: ring + centre dot */}
+                  <GNode
+                    x={TRUNK_X}
+                    y={b.forkY}
+                    r={5}
+                    color={stroke}
+                    bg={colors.bg}
+                    variant='ring'
+                  />
+                  {/* period nodes along the lane (solid, branch colour) */}
                   {b.dots.map((d, di) => (
                     <GNode
                       // Positional dots — index key is stable for this fixed list.
@@ -281,16 +310,15 @@ export function MakeIfGraph({
                       bg={colors.bg}
                     />
                   ))}
-                  {/* terminus — merge-back = hollow ring on the trunk; run-to-end =
-                      a filled cap in the lane. */}
+                  {/* terminus — merge-back = ring on the trunk; run-to-end = solid cap */}
                   {b.mergeY != null ? (
                     <GNode
                       x={TRUNK_X}
                       y={b.mergeY}
-                      r={4.5}
+                      r={5}
                       color={stroke}
                       bg={colors.bg}
-                      fill={false}
+                      variant='ring'
                     />
                   ) : (
                     <GNode x={b.laneX} y={b.endY} r={4} color={stroke} bg={colors.bg} />
@@ -304,8 +332,10 @@ export function MakeIfGraph({
         {/* "now" head on the mainline (onboarded) — drawn last so it sits on top. */}
         {layout.nowY != null ? (
           <Group>
-            <Circle cx={TRUNK_X} cy={layout.nowY} r={11} color={colors.accent} opacity={0.14} />
-            <GNode x={TRUNK_X} y={layout.nowY} r={5} color={colors.accent} bg={colors.bg} />
+            {/* "now" = the single brightest focal point: enlarged + a double glow. */}
+            <Circle cx={TRUNK_X} cy={layout.nowY} r={15} color={colors.accent} opacity={0.16} />
+            <Circle cx={TRUNK_X} cy={layout.nowY} r={10} color={colors.accent} opacity={0.12} />
+            <GNode x={TRUNK_X} y={layout.nowY} r={6.5} color={colors.accent} bg={colors.bg} />
           </Group>
         ) : null}
       </Canvas>

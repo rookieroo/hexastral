@@ -166,7 +166,7 @@ export const CULTURE_SUMMARIES: Record<string, LocalizedText> = {
     'zh-Hans': '农历正月初一，辞旧迎新、阖家团圆，是华人最重要的传统节日。',
     'zh-Hant': '農曆正月初一，辭舊迎新、闔家團圓，是華人最重要的傳統節日。',
     ja: '旧暦の元日。新年を迎え一家が団欒する、中華圏で最も重要な伝統行事。',
-    en: 'Lunar New Year’s Day — out with the old and in with the new, with family; the year’s biggest festival.',
+    en: 'Chinese New Year’s Day — out with the old and in with the new, with family; the year’s biggest festival.',
   },
   yuanxiao: {
     'zh-Hans': '正月十五，赏花灯、吃元宵、猜灯谜，为春节画上圆满句点。',
