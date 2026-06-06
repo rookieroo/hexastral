@@ -47,6 +47,7 @@ import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
   fetchMakeIfNarratives,
+  fetchMakeIfNodeNarrative,
   fetchTimeline,
   listMakeifForks,
   saveMakeifFork,
@@ -654,6 +655,24 @@ function Sandbox({
         nowLabel={makeIfCopyForLocale(locale).nowLabel}
       />
 
+      {/* Diff panel — the highlighted 假如 vs the real line, milestone-by-milestone.
+          Fork age + each dot's age + merge age each show the real 大运 + verdict
+          alongside the alt-life verdict; rows where the two diverge in fortune are
+          highlighted (the "real diff" moments). Tap a row → LLM zoom for that
+          specific age on this 假如 (Phase 6 per-node expansion). Sandbox is
+          Pro-only so isPro=true is implicit here. */}
+      {featured ? (
+        <MakeIfDiffPanel
+          branch={featured}
+          payload={payload}
+          birth={birth}
+          locale={locale}
+          t={t}
+          colors={colors}
+          spacing={spacing}
+        />
+      ) : null}
+
       {/* Off-screen capture target — the real graph on a fixed ivory palette. */}
       {capturing ? (
         <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
@@ -835,6 +854,299 @@ function Sandbox({
 // ── ForkRow (swipe-to-reveal Share + Delete) ──────────────────────────────────
 
 type RowStatus = 'loading' | 'done' | 'error' | 'limited' | undefined
+
+/**
+/**
+ * make-if 对照 — the featured 假如 branch vs the user's real life-line, row by row.
+ *
+ * Each row anchors on an age that exists on BOTH sides: the fork age, every
+ * branch-dot age, and the merge age (if the branch rejoins). Left column shows
+ * the real 大运's stem+branch at that age + the real verdict; right column shows
+ * the alt-life verdict. Rows where the two verdicts DIVERGE (e.g. real 凶 vs alt
+ * 吉) read as the "real diff" — moments where the choice actually mattered.
+ *
+ * Deterministic, no LLM — built from `payload.dayun` + the branch's `dots`. The
+ * narrative on the branch is a separate layer; this panel is the structural map.
+ */
+function MakeIfDiffPanel({
+  branch,
+  payload,
+  birth,
+  locale,
+  t,
+  colors,
+  spacing,
+}: {
+  branch: MakeIfBranch
+  payload: TimelinePayload
+  birth: { birthDate: string; birthHour: number; gender: 'M' | 'F' }
+  locale: string
+  t: ReturnType<typeof useStrings>['t']
+  colors: C
+  spacing: S
+}) {
+  const FIT_COLOR: Record<'吉' | '平' | '凶', string> = {
+    吉: '#16A34A',
+    平: '#71717A',
+    凶: '#DC2626',
+  }
+  /** Per-row LLM expansion state. Key = `${branch.id}|${age}`. */
+  const [expanded, setExpanded] = useState<Record<string, 'loading' | 'done' | 'error'>>({})
+  const [narratives, setNarratives] = useState<Record<string, string>>({})
+  // Reset row expansion when the featured branch changes — old narratives belong
+  // to a different "假如". Forks are immutable per id so id is a safe identity.
+  useEffect(() => {
+    setExpanded({})
+    setNarratives({})
+  }, [branch.id])
+
+  const rows = useMemo(() => {
+    const birthYear = Number(birth.birthDate.split('-')[0])
+    if (!Number.isFinite(birthYear)) return []
+    const allLn = payload.dayun.flatMap((d) => d.liunian)
+    const realFitAt = (age: number): '吉' | '平' | '凶' | null => {
+      const year = birthYear + age
+      const ln = allLn.find((r) => r.year === year)
+      if (ln) return ln.fit
+      const dy = payload.dayun.find((d) => age >= d.startAge && age <= d.endAge)
+      return dy?.fit ?? null
+    }
+    const realPillarAt = (age: number): string => {
+      const dy = payload.dayun.find((d) => age >= d.startAge && age <= d.endAge)
+      return dy ? `${dy.pillar.stem}${dy.pillar.branch}` : '—'
+    }
+    type Row = {
+      key: string
+      label: string
+      realPillar: string
+      realFit: '吉' | '平' | '凶' | null
+      altFit: '吉' | '平' | '凶' | null
+      sameRail: boolean
+    }
+    const out: Row[] = []
+    // Fork: branch starts here — compare the dot[0] verdict against real
+    out.push({
+      key: `fork-${branch.divergeAtAge}`,
+      label: t.makeifDiff.forkRow.replace('{age}', String(branch.divergeAtAge)),
+      realPillar: realPillarAt(branch.divergeAtAge),
+      realFit: realFitAt(branch.divergeAtAge),
+      altFit: branch.dots[0]?.fit ?? null,
+      sameRail: false,
+    })
+    // Strict-interior dots (avoid double-rendering the fork/merge boundary verdicts)
+    const lo = branch.divergeAtAge
+    const hi = branch.mergeAtAge ?? Number.POSITIVE_INFINITY
+    branch.dots
+      .filter((d) => d.age > lo && d.age < hi)
+      .forEach((d) => {
+        const rFit = realFitAt(d.age)
+        out.push({
+          key: `dot-${d.age}`,
+          label: `${d.age}`,
+          realPillar: realPillarAt(d.age),
+          realFit: rFit,
+          altFit: d.fit,
+          sameRail: rFit !== null && rFit === d.fit,
+        })
+      })
+    // Merge back (if any) — verdicts realign as the alt-life merges into fate.
+    if (branch.mergeAtAge != null) {
+      const rFit = realFitAt(branch.mergeAtAge)
+      out.push({
+        key: `merge-${branch.mergeAtAge}`,
+        label: t.makeifDiff.mergeRow.replace('{age}', String(branch.mergeAtAge)),
+        realPillar: realPillarAt(branch.mergeAtAge),
+        realFit: rFit,
+        // The branch reconciles to fate here — show the real verdict in both cols.
+        altFit: rFit,
+        sameRail: true,
+      })
+    }
+    return out
+  }, [branch, payload, birth, t])
+
+  // Resolve a row → the (focusAge, realPillar, realFit, altFit) the LLM needs.
+  const rowMeta = (
+    rowKey: string
+  ): {
+    focusAge: number
+    realPillar?: string
+    realFit?: '吉' | '平' | '凶'
+    altFit?: '吉' | '平' | '凶'
+  } | null => {
+    const r = rows.find((x) => x.key === rowKey)
+    if (!r) return null
+    // The label of dot rows is the bare age; fork/merge prefixed.
+    let age: number
+    if (rowKey.startsWith('fork-')) age = branch.divergeAtAge
+    else if (rowKey.startsWith('merge-')) age = branch.mergeAtAge ?? branch.divergeAtAge
+    else age = Number(rowKey.slice('dot-'.length))
+    if (!Number.isFinite(age)) return null
+    return {
+      focusAge: age,
+      realPillar: r.realPillar !== '—' ? r.realPillar : undefined,
+      realFit: r.realFit ?? undefined,
+      altFit: r.altFit ?? undefined,
+    }
+  }
+
+  const expandRow = (rowKey: string) => {
+    if (expanded[rowKey] === 'loading') return
+    if (narratives[rowKey]) {
+      // Toggle off if already shown; otherwise re-mark done.
+      setExpanded((s) =>
+        s[rowKey] === 'done' ? { ...s, [rowKey]: 'error' } : { ...s, [rowKey]: 'done' }
+      )
+      return
+    }
+    const meta = rowMeta(rowKey)
+    if (!meta) return
+    setExpanded((s) => ({ ...s, [rowKey]: 'loading' }))
+    fetchMakeIfNodeNarrative({
+      birthDate: birth.birthDate,
+      birthHour: birth.birthHour,
+      gender: birth.gender,
+      locale,
+      isPro: true,
+      branch: {
+        id: branch.id,
+        label: branch.label,
+        divergeAtAge: branch.divergeAtAge,
+        mergeAtAge: branch.mergeAtAge,
+        isPast: branch.isPast,
+      },
+      focusAge: meta.focusAge,
+      focusRealPillar: meta.realPillar,
+      focusRealFit: meta.realFit,
+      focusAltFit: meta.altFit,
+    })
+      .then((r) => {
+        if (r.narrative) {
+          setNarratives((m) => ({ ...m, [rowKey]: r.narrative }))
+          setExpanded((s) => ({ ...s, [rowKey]: 'done' }))
+        } else {
+          setExpanded((s) => ({ ...s, [rowKey]: 'error' }))
+        }
+      })
+      .catch(() => setExpanded((s) => ({ ...s, [rowKey]: 'error' })))
+  }
+
+  if (rows.length === 0) return null
+
+  const Pill = ({ fit }: { fit: '吉' | '平' | '凶' | null }) =>
+    fit ? (
+      <View
+        style={{
+          paddingHorizontal: 6,
+          paddingVertical: 1,
+          borderRadius: 4,
+          backgroundColor: `${FIT_COLOR[fit]}22`,
+        }}
+      >
+        <Text style={{ color: FIT_COLOR[fit], fontSize: 11, fontWeight: '600' }}>{fit}</Text>
+      </View>
+    ) : (
+      <Text style={{ color: colors.dim, fontSize: 11 }}>—</Text>
+    )
+
+  return (
+    <View
+      style={{
+        borderTopWidth: 0.5,
+        borderTopColor: colors.separator,
+        paddingTop: spacing.md,
+        gap: spacing.sm,
+      }}
+    >
+      <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+        {t.makeifDiff.header}
+      </Text>
+      {/* Column headers */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ flex: 1.1, color: colors.dim, fontSize: 11 }} numberOfLines={1}>
+          {' '}
+        </Text>
+        <Text style={{ flex: 1.4, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.realCol}</Text>
+        <Text style={{ flex: 1, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.altCol}</Text>
+        <View style={{ width: 56 }} />
+      </View>
+      {rows.map((r) => {
+        const diverges =
+          !r.sameRail && r.altFit != null && r.realFit != null && r.altFit !== r.realFit
+        const state = expanded[r.key]
+        const narrative = narratives[r.key]
+        const isOpen = state === 'done' && narrative
+        return (
+          <View key={r.key}>
+            <Pressable
+              onPress={() => expandRow(r.key)}
+              accessibilityRole='button'
+              accessibilityLabel={r.label}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 4,
+                paddingHorizontal: diverges ? 6 : 0,
+                borderRadius: 6,
+                backgroundColor: diverges
+                  ? `${colors.accent}10`
+                  : pressed
+                    ? `${colors.accent}06`
+                    : 'transparent',
+              })}
+            >
+              <Text style={{ flex: 1.1, color: colors.text, fontSize: 12 }} numberOfLines={1}>
+                {r.label}
+              </Text>
+              <View style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: colors.text, fontSize: 12, letterSpacing: 1 }}>
+                  {r.realPillar}
+                </Text>
+                <Pill fit={r.realFit} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Pill fit={r.altFit} />
+              </View>
+              <Text
+                style={{
+                  width: 56,
+                  textAlign: 'right',
+                  color: diverges ? colors.accent : colors.dim,
+                  fontSize: 10,
+                  fontWeight: diverges ? '700' : '400',
+                }}
+                numberOfLines={1}
+              >
+                {state === 'loading'
+                  ? '…'
+                  : diverges
+                    ? t.makeifDiff.diffSuffix
+                    : r.sameRail
+                      ? t.makeifDiff.sameSuffix
+                      : ''}
+              </Text>
+            </Pressable>
+            {isOpen ? (
+              <Text
+                style={{
+                  color: colors.secondary,
+                  fontSize: 12,
+                  lineHeight: 18,
+                  paddingHorizontal: 6,
+                  paddingTop: 2,
+                  paddingBottom: 6,
+                  fontStyle: 'italic',
+                }}
+              >
+                {narrative}
+              </Text>
+            ) : null}
+          </View>
+        )
+      })}
+    </View>
+  )
+}
 
 /**
  * One fork in the sandbox list. Wraps the row in a ReanimatedSwipeable; the

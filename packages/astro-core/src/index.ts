@@ -58,9 +58,12 @@ export type {
   BranchCombination,
   CombinationAnalysis,
   CombinationStatus,
+  IncomingBranchInteraction,
+  IncomingBranchInteractionKind,
   StemCombination,
 } from './combinations'
 export {
+  analyzeBranchAgainstNatal,
   analyzeBranchClashes,
   analyzeBranchCombinations,
   analyzeCombinations,

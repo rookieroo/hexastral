@@ -698,6 +698,44 @@ export function fetchMakeIfNarratives(params: {
   return postJson<AuspiceMakeIfResult>('/api/auspice/makeif', { ...params, dev: __DEV__ })
 }
 
+/** Phase-6 per-node response. `source: 'locked'` for non-Pro callers; `'template'`
+ *  when the guard denies or the LLM returns nothing usable. */
+export interface AuspiceMakeIfNodeResult {
+  narrative: string
+  source: 'llm' | 'cache' | 'template' | 'locked'
+  upsell?: boolean
+}
+
+/**
+ * Zoom into ONE specific age on a 假如 branch — the LLM writes a short
+ * "at this age in that life, you would be…" line for that single node. Pro
+ * gates the prose (Free gets `source: 'locked'`); cached 30d on the server.
+ */
+export function fetchMakeIfNodeNarrative(params: {
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+  locale: string
+  isPro: boolean
+  branch: {
+    id: string
+    label: string
+    divergeAtAge: number
+    mergeAtAge: number | null
+    isPast?: boolean
+    realPillar?: string
+  }
+  focusAge: number
+  focusRealPillar?: string
+  focusRealFit?: '吉' | '平' | '凶'
+  focusAltFit?: '吉' | '平' | '凶'
+}): Promise<AuspiceMakeIfNodeResult> {
+  return postJson<AuspiceMakeIfNodeResult>('/api/auspice/makeif/node', {
+    ...params,
+    dev: __DEV__,
+  })
+}
+
 // ── make-if forks persistence (D1, device-scoped) ──────────────────────────
 
 /** A persisted make-if fork as returned by the list endpoint. */

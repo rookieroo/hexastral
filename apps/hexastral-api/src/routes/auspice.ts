@@ -1695,6 +1695,119 @@ auspiceRoutes.post('/makeif', async (c) => {
   return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
 })
 
+// ── POST /makeif/node — per-NODE expansion within a 假如 branch (Phase 6) ─────
+//
+// Zooms a single age on a 假如 branch into "at this age in that life, you would
+// be…". Pro-only, cached 30d per (birth · branch shape · focus age · verdict
+// pair), same guard pattern as /makeif. Proxies to SVC_ASTRO.
+
+const makeifNodeSchema = z.object({
+  birthDate: z.string().regex(DATE_RE, 'birthDate must be YYYY-MM-DD'),
+  birthHour: z.number().int().min(-1).max(23).default(-1),
+  gender: z.enum(['M', 'F']),
+  locale: z.string().max(16).default('en'),
+  isPro: z.boolean().default(false),
+  dev: z.boolean().default(false),
+  branch: z.object({
+    id: z.string().max(64),
+    label: z.string().max(40),
+    divergeAtAge: z.number().int().min(0).max(120),
+    mergeAtAge: z.number().int().min(0).max(120).nullable(),
+    isPast: z.boolean().optional(),
+    realPillar: z.string().max(8).optional(),
+  }),
+  focusAge: z.number().int().min(0).max(120),
+  focusRealPillar: z.string().max(8).optional(),
+  focusRealFit: z.enum(['吉', '平', '凶']).optional(),
+  focusAltFit: z.enum(['吉', '平', '凶']).optional(),
+})
+
+auspiceRoutes.post('/makeif/node', async (c) => {
+  const body = makeifNodeSchema.parse(await c.req.json().catch(() => ({})))
+
+  if (!body.isPro) return jsonOk(c, { narrative: '', source: 'locked' })
+
+  const ymd = parseYmd(body.birthDate)
+  const hour = body.birthHour < 0 ? 12 : body.birthHour
+  const pillars = getFourPillars({ year: ymd.year, month: ymd.month, day: ymd.day, hour })
+
+  // Cache key buckets by (birth · branch shape · focus age · verdict pair). A
+  // re-tap on the same node is free.
+  const shapeSig = [
+    body.branch.id,
+    body.branch.label,
+    body.branch.divergeAtAge,
+    body.branch.mergeAtAge,
+    body.branch.isPast,
+    body.branch.realPillar,
+    body.focusAge,
+    body.focusRealPillar,
+    body.focusRealFit,
+    body.focusAltFit,
+  ].join('|')
+  const cacheKey = `auspice:makeif-node:v1:${body.birthDate}:${body.birthHour}:${body.gender}:${body.locale}:${hashIp(shapeSig)}`
+  const cached = await c.env.GUARD_KV.get(cacheKey)
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached) as { narrative: string }
+      if (parsed.narrative) return jsonOk(c, { narrative: parsed.narrative, source: 'cache' })
+    } catch {
+      // fall through to regenerate on a corrupt cache row
+    }
+  }
+
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
+  let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
+  if (!body.dev) {
+    if (!subject) return jsonOk(c, { narrative: '', source: 'template' })
+    guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
+    for (const ev of guard.events) console.info('[auspice.makeif-node.guard]', JSON.stringify(ev))
+    if (guard.decision !== 'allow_llm') {
+      return jsonOk(c, { narrative: '', source: 'template', upsell: guard.upsellAfterExhaust })
+    }
+  }
+
+  const currentAge = new Date().getUTCFullYear() - ymd.year
+  try {
+    const resp = await astroClient.post<{ narrative: string }>(
+      c.env.SVC_ASTRO,
+      '/cycle/makeif-node-narrate',
+      {
+        dayMaster: pillars.day.stem,
+        dayPillar: `${pillars.day.stem}${pillars.day.branch}`,
+        yearPillar: `${pillars.year.stem}${pillars.year.branch}`,
+        gender: body.gender,
+        currentAge,
+        locale: body.locale,
+        isPro: true,
+        branch: body.branch,
+        focusAge: body.focusAge,
+        focusRealPillar: body.focusRealPillar,
+        focusRealFit: body.focusRealFit,
+        focusAltFit: body.focusAltFit,
+      }
+    )
+    const narrative = (resp.narrative ?? '').trim()
+    if (narrative) {
+      await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narrative }), {
+        expirationTtl: 2_592_000,
+      })
+      if (!body.dev && subject && guard) {
+        await recordLlmGuardGrant(c.env, {
+          subject,
+          config: MAKEIF_GUARD_CONFIG,
+          consumesPeakPass: guard.consumesPeakPass,
+        })
+      }
+      return jsonOk(c, { narrative, source: 'llm' })
+    }
+  } catch (err) {
+    console.error('[auspice.makeif-node] narrate failed', err)
+  }
+  return jsonOk(c, { narrative: '', source: 'template' })
+})
+
 // ── make-if forks persistence (D1) ─────────────────────────────────────────
 //
 // The interactive sandbox was in-memory only — forks vanished on exit. These

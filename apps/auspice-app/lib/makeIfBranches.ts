@@ -59,7 +59,16 @@ export interface MakeIfModel {
   branches: MakeIfBranch[]
 }
 
-const BRANCH_COLORS = ['#C0452E', '#3F6B86', '#5B8A4E'] as const
+/**
+ * Preset-branch palette, aligned with the modern 五行 hues (see ELEMENT_COLORS):
+ * - biz (下海经商) → 火 (cardinal red) — ambitious, active
+ * - scholar (读书入仕) → 水 (deep blue) — refined, contemplative
+ * - roam (远行闯荡) → 木 (emerald) — growth, movement
+ *
+ * Visually coherent with the timeline's element-coloured dots — make-if and
+ * timeline share one design language now.
+ */
+const BRANCH_COLORS = ['#DC2626', '#2563EB', '#16A34A'] as const
 
 // ── Deterministic helpers (no RNG — same seed → same path) ───────────────────
 
@@ -150,7 +159,9 @@ function branch(
 
 // ── Interactive sandbox (Phase 4) ─────────────────────────────────────────────
 
-const USER_BRANCH_COLORS = ['#C0452E', '#3F6B86', '#5B8A4E', '#9B7A2F', '#7A5A9B'] as const
+/** User-fork palette — five distinct modern hues that round-trip with the 5
+ *  ELEMENT_COLORS (火/水/木/土 + purple for "neither — creative"). */
+const USER_BRANCH_COLORS = ['#DC2626', '#2563EB', '#16A34A', '#D97706', '#A855F7'] as const
 
 function hashString(s: string): number {
   let h = 2_166_136_261

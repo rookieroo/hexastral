@@ -296,8 +296,11 @@ function ShareYiJi({
   )
   return (
     <View style={{ gap: 14 }}>
-      <Row label={t.suitable} items={goodFor} color='#2E9E5B' />
-      <Row label={t.avoid} items={avoid} color='#C0452E' />
+      {/* 宜/忌 headings use the modern 五行 hues — emerald-600 (木, growth) for
+          GOOD FOR, red-600 (火, caution) for AVOID. Coherent with the rest of
+          the modernized palette. */}
+      <Row label={t.suitable} items={goodFor} color='#16A34A' />
+      <Row label={t.avoid} items={avoid} color='#DC2626' />
     </View>
   )
 }

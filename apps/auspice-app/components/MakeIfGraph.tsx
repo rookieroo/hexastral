@@ -79,11 +79,14 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     const laneX = TRUNK_X + (i + 1) * laneW
     const path = Skia.Path.Make()
     const forkY = yForAge(br.divergeAtAge)
-    // Scale the vertical run with the horizontal travel so EVERY branch sweeps
-    // at the same gentle angle — a fixed drop made outer (far) lanes curve steep
-    // and cramped. The longer rail reads as a more graceful git-graph bezier.
+    // Peel + merge are SHORT curves at the lane's top/bottom, like a real git GUI
+    // (Tower, GitLens, Fork): branches sit mostly STRAIGHT in their own lane and
+    // only kink near the fork/merge points. The previous formula scaled drop with
+    // horizontal travel — outer lanes turned into 200px swirls that arched across
+    // the screen, nothing like a git graph. Cap it tight: ~1.2 ageSteps minimum,
+    // ~40px maximum, regardless of how far out the lane sits.
     const horiz = laneX - TRUNK_X
-    const drop = Math.max(ageStep * 2.5, horiz * 1.15)
+    const drop = Math.min(40, Math.max(ageStep * 1.2, horiz * 0.35))
     // diverge out of the trunk (smooth S-curve)
     path.moveTo(TRUNK_X, forkY)
     path.cubicTo(TRUNK_X, forkY + drop / 2, laneX, forkY + drop / 2, laneX, forkY + drop)
@@ -249,7 +252,7 @@ export function MakeIfGraph({
           return (
             <Group
               key={b.id}
-              opacity={locked ? 0.28 : selected ? 1 : anySelected ? 0.3 : b.isPast ? 0.5 : 0.92}
+              opacity={locked ? 0.28 : selected ? 1 : anySelected ? 0.55 : b.isPast ? 0.5 : 0.92}
             >
               <Path
                 path={b.path}

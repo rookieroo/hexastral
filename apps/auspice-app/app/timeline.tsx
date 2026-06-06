@@ -229,23 +229,53 @@ export default function TimelineScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Checked-out 大运 (0-based) — tapping a 大运 expands its full decade (git "checkout"),
-  // tapping it again collapses back to the current 大运. Null = current.
-  const [expandedDayun, setExpandedDayun] = useState<number | null>(null)
+  // Per-大运 user toggles — a SET of array indices that XOR with the default-
+  // expanded set (current + next-10y). Default is empty: the user hasn't
+  // toggled anything, so the display follows the auto-rule. Tapping a 大运 head
+  // flips that decade's expansion state — both directions (collapse a default-
+  // open decade, expand a default-closed one).
+  const [userToggled, setUserToggled] = useState<ReadonlySet<number>>(() => new Set())
   const handleSelect = useCallback(
     (id: string) => {
       setSelectedId(id)
       if (!id.startsWith('dayun-')) return
-      setExpandedDayun((prev) => {
+      setUserToggled((prev) => {
         if (state.kind !== 'data') return prev
         const di = Number(id.slice('dayun-'.length))
         const arrIdx = state.payload.dayun.findIndex((d) => d.index === di)
         if (arrIdx < 0) return prev
-        return prev === arrIdx ? null : arrIdx
+        const next = new Set(prev)
+        if (next.has(arrIdx)) next.delete(arrIdx)
+        else next.add(arrIdx)
+        return next
       })
     },
     [state]
   )
+  // Default-expanded set — current 大运 + any future 大运 whose decade starts
+  // within ~10y. The user's `userToggled` XORs this for the final visible set.
+  const expandedDayun = useMemo<ReadonlySet<number>>(() => {
+    if (state.kind !== 'data') return new Set()
+    const cur = state.payload.currentDayunIndex
+    const thisYear = new Date().getFullYear()
+    const tenYearsOut = thisYear + 10
+    const defaultSet = new Set<number>()
+    if (cur >= 0) defaultSet.add(cur)
+    state.payload.dayun.forEach((d, i) => {
+      if (i === cur) return
+      // "Within 10 years" = the decade starts before now+10y AND ends after now,
+      // i.e. it overlaps the [now, now+10y] window the user can actually plan for.
+      if (d.startYear <= tenYearsOut && d.endYear >= thisYear) defaultSet.add(i)
+    })
+    // XOR userToggled with defaults — tapping a default-open decade collapses it,
+    // tapping a default-closed one expands it.
+    const final = new Set<number>(defaultSet)
+    userToggled.forEach((i) => {
+      if (final.has(i)) final.delete(i)
+      else final.add(i)
+    })
+    return final
+  }, [state, userToggled])
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
   // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
   // baking it ahead of the tap makes Share feel instant.
@@ -423,7 +453,7 @@ export default function TimelineScreen() {
                     reasonLabels={t.yinzheng.signals}
                     shensha={shensha}
                     domainLabels={t.timelineDomain}
-                    expandedDayunIndex={expandedDayun ?? undefined}
+                    expandedDayunIndices={expandedDayun}
                   />
                   {/* Bake the SELECTED node's reading below the graph (no anchored
                       popover in a static card) — the share's takeaway tracks the
@@ -546,6 +576,46 @@ function YinzhengPanel({
   )
 }
 
+/** 择吉 deep-link — opens /event with the selected future 流年's window prefilled.
+ *  Uses `business` as a sensible default (a Specialized free-tier event); the user
+ *  can switch event types once they land. */
+function ZejiLink({
+  year,
+  t,
+  colors,
+  spacing,
+}: {
+  year: number
+  t: ReturnType<typeof useStrings>['t']
+  colors: BodyColors
+  spacing: BodySpacing
+}) {
+  const router = useRouter()
+  const from = `${year}-02-01`
+  const to = `${year}-05-01`
+  return (
+    <Pressable
+      onPress={() =>
+        router.push(
+          `/event?event=business&from=${from}&to=${to}` as Parameters<typeof router.push>[0]
+        )
+      }
+      accessibilityRole='button'
+      accessibilityLabel={t.timelineZejiCta.replace('{year}', String(year))}
+      style={({ pressed }) => ({
+        borderTopWidth: 0.5,
+        borderTopColor: colors.separator,
+        paddingTop: spacing.md,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 }}>
+        {t.timelineZejiCta.replace('{year}', String(year))}
+      </Text>
+    </Pressable>
+  )
+}
+
 function Body({
   payload,
   isPro,
@@ -562,7 +632,7 @@ function Body({
   isPro: boolean
   selectedId: string | null
   onSelect: (id: string) => void
-  expandedDayun: number | null
+  expandedDayun: ReadonlySet<number>
   onLockedTap: () => void
   colors: BodyColors
   spacing: BodySpacing
@@ -593,6 +663,20 @@ function Body({
     return row && row.year < new Date().getFullYear() ? row : null
   }, [selectedId, payload.liunian])
 
+  // 择吉 link — the selected node is a FUTURE 流年, so we can offer a deep-link
+  // into /event with a 92-day window inside that year. Picking 立春-aligned
+  // Feb 1 → May 1 keeps it within the server's 92-day cap and lands inside the
+  // 流年's "current year" by 命理 reckoning. Pro can pick any sub-window.
+  const futureLiunianYear = useMemo<number | null>(() => {
+    if (!selectedId?.startsWith('liunian-')) return null
+    const year = Number(selectedId.slice('liunian-'.length))
+    if (!Number.isFinite(year) || year <= new Date().getFullYear()) return null
+    const inPayload =
+      payload.dayun.flatMap((d) => d.liunian).some((r) => r.year === year) ||
+      payload.liunian.some((r) => r.year === year)
+    return inPayload ? year : null
+  }, [selectedId, payload])
+
   return (
     <View style={{ gap: spacing.xl }}>
       {!isPro ? (
@@ -616,7 +700,7 @@ function Body({
         reasonLabels={t.yinzheng.signals}
         shensha={shensha}
         domainLabels={t.timelineDomain}
-        expandedDayunIndex={expandedDayun ?? undefined}
+        expandedDayunIndices={expandedDayun}
       />
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
@@ -629,6 +713,15 @@ function Body({
           colors={colors}
           spacing={spacing}
         />
+      ) : null}
+
+      {/* 择吉 deep-link — when a FUTURE 流年 is selected, jump into /event prefilled
+          with that year's window (Feb 1 → May 1, 立春-aligned, within the server's
+          92-day cap). Available to all tiers; the /event screen still gates the
+          window expansion for Free. The deterministic 命理 engine meets actionable
+          date-picking. */}
+      {futureLiunianYear ? (
+        <ZejiLink year={futureLiunianYear} t={t} colors={colors} spacing={spacing} />
       ) : null}
 
       {/* 流月 — the finest commits; each is tappable for its own reading. */}

@@ -189,6 +189,9 @@ export interface Strings {
   timelineAgeFrom: string
   /** Paywall CTA shown beneath the gated sections for Free users. */
   timelineProLocked: string
+  /** 择吉 deep-link shown when a future 流年 is selected — routes to /event with
+   *  prefilled year-window. `{year}` is the gregorian year. */
+  timelineZejiCta: string
   /** Caption telling Free users they see the current position + next 6 months. */
   timelineFreePreviewNote: string
   /** Settings toggle label for the Pro 人生节点提醒 (month-start / 大运 push). */
@@ -215,6 +218,23 @@ export interface Strings {
   /** Make-if cherry-pick — carry one good thing from an actionable 假如 into the
    *  real line. {el} = 用神 五行; {year} = nearest favorable 流年. */
   makeifCherrypick: string
+  /** Make-if diff panel — labels for the 现实 vs 假如 side-by-side comparison. */
+  makeifDiff: {
+    /** Panel header (eyebrow caption). */
+    header: string
+    /** Column header for the real life line. */
+    realCol: string
+    /** Column header for the alt-life branch. */
+    altCol: string
+    /** Fork-age row label, {age} = the age the branch diverged. */
+    forkRow: string
+    /** Merge-age row label, {age} = the age the branch rejoined the real line. */
+    mergeRow: string
+    /** Suffix shown on the diff row when both columns share the same verdict. */
+    sameSuffix: string
+    /** Suffix shown when the verdicts diverge — the "real diff" moments. */
+    diffSuffix: string
+  }
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -240,6 +260,13 @@ export interface Strings {
       wenchang: string
       jiangxing: string
       jiesha: string
+      /** 冲合刑害会 — period branch vs natal four pillars (Phase 5). */
+      sanhe: string
+      sanhui: string
+      liuhe: string
+      sanxing: string
+      liuhai: string
+      zixing: string
     }
   }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
@@ -340,10 +367,13 @@ export interface Strings {
     needBirth: string
     needBirthBody: string
     homeEntry: string
-    /** Disclosure header above the optional 时辰 / gender / birthplace fields — collapsed by default. */
+    /** Title on the prominent compatibility-mode card (sits above the row's Switch). */
     compatibilityToggle: string
-    /** Hint under the disclosure header: filling these unlocks the two-person
-     *  relationship report, viewable in the Kindred app. */
+    /** One-line hook shown next to the Switch — sells what flipping it ON unlocks
+     *  (合盘 / 八字 detail) in a single glance, without burying it in fine print. */
+    compatibilityHook: string
+    /** Long-form hint that appears only AFTER the Switch is on, before the extra
+     *  fields. Explains the two-person report + Kindred hand-off in detail. */
     compatibilityHint: string
     /** Shown inside the expanded 合盘 section when the solar birth year is missing —
      *  合盘 silently can't compute without it, so make the requirement explicit. */
@@ -501,6 +531,7 @@ const zhHans: Strings = {
   timelineCurrentBadge: '当前',
   timelineAgeFrom: '{age} 岁起',
   timelineProLocked: '解锁完整人生时间线',
+  timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
   timelineRemindToggle: '人生节点提醒',
@@ -534,6 +565,15 @@ const zhHans: Strings = {
   },
   makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
   makeifCherrypick: '带回现实 · 借{el}行之力,{year}年顺势而为。',
+  makeifDiff: {
+    header: '对照 · 现实 vs 假如',
+    realCol: '现实',
+    altCol: '假如',
+    forkRow: '分岔 · {age}岁',
+    mergeRow: '复归 · {age}岁',
+    sameSuffix: '同向',
+    diffSuffix: '相左',
+  },
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -557,6 +597,12 @@ const zhHans: Strings = {
       wenchang: '文昌利学',
       jiangxing: '将星掌权',
       jiesha: '劫煞破耗',
+      sanhe: '三合贵聚',
+      sanhui: '三会得令',
+      liuhe: '六合贴身',
+      sanxing: '三刑相磨',
+      liuhai: '六害暗耗',
+      zixing: '自刑自扰',
     },
   },
   timelineBannerHint: '大运 · 流年',
@@ -659,9 +705,10 @@ const zhHans: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '请先在设置里填写你的生辰，才能查看与 TA 的关系。',
     homeEntry: '记录生日',
-    compatibilityToggle: '解锁你们的关系合盘（选填）',
+    compatibilityToggle: '看你们怎么咬合',
+    compatibilityHook: '打开后录入八字，解锁你们的关系合盘',
     compatibilityHint:
-      '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
+      '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
     synastryScore: '你们的缘分指数',
   },
@@ -795,6 +842,7 @@ const zhHant: Strings = {
   timelineCurrentBadge: '當前',
   timelineAgeFrom: '{age} 歲起',
   timelineProLocked: '解鎖完整人生時間線',
+  timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
   timelineRemindToggle: '人生節點提醒',
@@ -828,6 +876,15 @@ const zhHant: Strings = {
   },
   makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
   makeifCherrypick: '帶回現實 · 借{el}行之力,{year}年順勢而為。',
+  makeifDiff: {
+    header: '對照 · 現實 vs 假如',
+    realCol: '現實',
+    altCol: '假如',
+    forkRow: '分岔 · {age}歲',
+    mergeRow: '復歸 · {age}歲',
+    sameSuffix: '同向',
+    diffSuffix: '相左',
+  },
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -851,6 +908,12 @@ const zhHant: Strings = {
       wenchang: '文昌利學',
       jiangxing: '將星掌權',
       jiesha: '劫煞破耗',
+      sanhe: '三合貴聚',
+      sanhui: '三會得令',
+      liuhe: '六合貼身',
+      sanxing: '三刑相磨',
+      liuhai: '六害暗耗',
+      zixing: '自刑自擾',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -939,9 +1002,10 @@ const zhHant: Strings = {
     needBirth: '需要你的生辰',
     needBirthBody: '請先在設定裡填寫你的生辰，才能查看與 TA 的關係。',
     homeEntry: '記錄生日',
-    compatibilityToggle: '解鎖你們的關係合盤（選填）',
+    compatibilityToggle: '看你們怎麼咬合',
+    compatibilityHook: '打開後錄入八字，解鎖你們的關係合盤',
     compatibilityHint:
-      '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
+      '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
     synastryScore: '你們的緣分指數',
   },
@@ -1100,6 +1164,7 @@ const ja: Strings = {
   timelineCurrentBadge: '現在',
   timelineAgeFrom: '{age} 歳から',
   timelineProLocked: '人生タイムラインを全期間解錠',
+  timelineZejiCta: '→ {year}年の吉日候補',
   timelineFreePreviewNote:
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
   timelineRemindToggle: '人生の節目リマインド',
@@ -1133,6 +1198,15 @@ const ja: Strings = {
   },
   makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
   makeifCherrypick: '現実へ持ち帰る · {el}の力を借り、{year}年に動きましょう。',
+  makeifDiff: {
+    header: '対比 · 現実 vs もしも',
+    realCol: '現実',
+    altCol: 'もしも',
+    forkRow: '分岐 · {age}歳',
+    mergeRow: '合流 · {age}歳',
+    sameSuffix: '同調',
+    diffSuffix: '相違',
+  },
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1156,6 +1230,12 @@ const ja: Strings = {
       wenchang: '文昌・学業',
       jiangxing: '将星・統率',
       jiesha: '劫煞・散財',
+      sanhe: '三合・貴の集い',
+      sanhui: '三会・方の旺',
+      liuhe: '六合・寄り添う',
+      sanxing: '三刑・摩擦',
+      liuhai: '六害・陰の消耗',
+      zixing: '自刑・自縛',
     },
   },
   timelineBannerHint: '大運 · 流年',
@@ -1245,9 +1325,10 @@ const ja: Strings = {
     needBirth: '生年月日が必要',
     needBirthBody: '相性を見るには、設定であなたの生年月日を入力してください。',
     homeEntry: '記念日を追加',
-    compatibilityToggle: '二人の相性を解放（任意）',
+    compatibilityToggle: '二人の噛み合い',
+    compatibilityHook: 'オンにして八字を入力すれば、二人の相性が見えます',
     compatibilityHint:
-      '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。通知だけなら入力不要です。',
+      '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。',
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
     synastryScore: '二人の相性スコア',
@@ -1396,6 +1477,7 @@ const en: Strings = {
   timelineCurrentBadge: 'Now',
   timelineAgeFrom: 'From age {age}',
   timelineProLocked: 'Unlock the full life timeline',
+  timelineZejiCta: '→ Best dates in {year}',
   timelineFreePreviewNote:
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
@@ -1430,6 +1512,15 @@ const en: Strings = {
   makeifBackdrop:
     'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
   makeifCherrypick: 'Carry it back · lean on {el}, act around {year}.',
+  makeifDiff: {
+    header: 'Side-by-side · Real vs What-if',
+    realCol: 'Real',
+    altCol: 'What-if',
+    forkRow: 'Fork · age {age}',
+    mergeRow: 'Merge · age {age}',
+    sameSuffix: 'aligned',
+    diffSuffix: 'diverges',
+  },
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',
@@ -1453,6 +1544,12 @@ const en: Strings = {
       wenchang: 'a study window',
       jiangxing: 'a leadership year',
       jiesha: 'a year of loss',
+      sanhe: 'a triple-harmony year',
+      sanhui: 'a directional gathering',
+      liuhe: 'a harmony pairing',
+      sanxing: 'a friction year',
+      liuhai: 'a quiet drain',
+      zixing: 'a self-friction year',
     },
   },
   timelineBannerHint: 'Decade · Year',
@@ -1555,9 +1652,10 @@ const en: Strings = {
     needBirth: 'Your birth needed',
     needBirthBody: 'Set your own birth in Settings to see your bond with them.',
     homeEntry: 'Add birthday',
-    compatibilityToggle: 'Unlock your compatibility (optional)',
+    compatibilityToggle: 'See how you two mesh',
+    compatibilityHook: 'Switch on + add their 八字 to unlock your compatibility report',
     compatibilityHint:
-      'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app. Skip for a reminder-only entry.',
+      'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app.',
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
     synastryScore: 'Your compatibility',
