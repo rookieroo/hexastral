@@ -636,7 +636,6 @@ function Body({
         <View style={{ gap: spacing.md }}>
           <LiuyueStrip
             liuyue={payload.liuyue}
-            isPro={isPro}
             colors={colors}
             label={t.timelineLiuyue}
             selectedId={selectedId}
