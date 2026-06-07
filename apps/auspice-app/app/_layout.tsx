@@ -173,6 +173,7 @@ function RootLayoutInner() {
         <Stack.Screen name='remote-tz' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='timeline' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='makeif' options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name='relationship/[id]' options={{ animation: 'slide_from_right' }} />
       </Stack>
     </>
   )

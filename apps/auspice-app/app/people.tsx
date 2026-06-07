@@ -18,7 +18,7 @@ import {
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -65,6 +65,7 @@ export default function PeopleScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const params = useLocalSearchParams<{ md?: string }>()
+  const router = useRouter()
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
@@ -561,10 +562,15 @@ export default function PeopleScreen() {
                   borderTopColor: colors.separator,
                 }}
               >
-                <View style={{ flex: 1 }}>
+                <Pressable
+                  onPress={() => router.push(`/relationship/${p.id}`)}
+                  accessibilityRole='button'
+                  accessibilityLabel={`${p.name} ${t.synastryTl.title}`}
+                  style={{ flex: 1 }}
+                >
                   <Text style={{ color: colors.text, fontSize: 16 }}>{p.name}</Text>
                   <Text style={{ color: colors.dim, fontSize: 12 }}>{personLine(p)}</Text>
-                </View>
+                </Pressable>
                 <Pressable
                   onPress={() => openRelation(p)}
                   accessibilityRole='button'

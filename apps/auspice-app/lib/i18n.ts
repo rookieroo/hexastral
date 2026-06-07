@@ -215,6 +215,20 @@ export interface Strings {
   /** Make-if cherry-pick — carry one good thing from an actionable 假如 into the
    *  real line. {el} = 用神 五行; {year} = nearest favorable 流年. */
   makeifCherrypick: string
+  /** 合盘 (synastry) relationship timeline screen. */
+  synastryTl: {
+    title: string
+    subtitle: string
+    score: string
+    yourDayun: string
+    theirDayun: string
+    clash: string
+    harmony: string
+    needBirth: string
+    empty: string
+    freeNote: string
+    back: string
+  }
   /** Timeline 印证 — pin a past life event; the chart corroborates it (retrodiction). */
   yinzheng: {
     prompt: string
@@ -534,6 +548,19 @@ const zhHans: Strings = {
   },
   makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
   makeifCherrypick: '带回现实 · 借{el}行之力,{year}年顺势而为。',
+  synastryTl: {
+    title: '关系时间轴',
+    subtitle: '你与TA命运交汇的显著节点',
+    score: '合缘',
+    yourDayun: '你换大运',
+    theirDayun: 'TA换大运',
+    clash: '相冲',
+    harmony: '相合',
+    needBirth: '需要双方完整生辰才能推演这段关系。',
+    empty: '这段关系暂无显著节点。',
+    freeNote: '免费仅显示今年；解锁可见未来全部节点并开启提醒。',
+    back: '返回',
+  },
   yinzheng: {
     prompt: '这一年你经历了什么?',
     lead: '那一年正逢',
@@ -828,6 +855,19 @@ const zhHant: Strings = {
   },
   makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
   makeifCherrypick: '帶回現實 · 借{el}行之力,{year}年順勢而為。',
+  synastryTl: {
+    title: '關係時間軸',
+    subtitle: '你與TA命運交匯的顯著節點',
+    score: '合緣',
+    yourDayun: '你換大運',
+    theirDayun: 'TA換大運',
+    clash: '相沖',
+    harmony: '相合',
+    needBirth: '需要雙方完整生辰才能推演這段關係。',
+    empty: '這段關係暫無顯著節點。',
+    freeNote: '免費僅顯示今年；解鎖可見未來全部節點並開啟提醒。',
+    back: '返回',
+  },
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
     lead: '那一年正逢',
@@ -1133,6 +1173,19 @@ const ja: Strings = {
   },
   makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
   makeifCherrypick: '現実へ持ち帰る · {el}の力を借り、{year}年に動きましょう。',
+  synastryTl: {
+    title: '関係タイムライン',
+    subtitle: '二人の運命が交わる節目',
+    score: '相性',
+    yourDayun: 'あなたの大運',
+    theirDayun: '相手の大運',
+    clash: '冲',
+    harmony: '合',
+    needBirth: '二人の完全な生年月日が必要です。',
+    empty: 'この関係に目立った節目はまだありません。',
+    freeNote: '無料は今年のみ。アンロックで未来の全節目と通知が見られます。',
+    back: '戻る',
+  },
   yinzheng: {
     prompt: 'この年、何がありましたか?',
     lead: 'その年はちょうど',
@@ -1430,6 +1483,19 @@ const en: Strings = {
   makeifBackdrop:
     'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
   makeifCherrypick: 'Carry it back · lean on {el}, act around {year}.',
+  synastryTl: {
+    title: 'Relationship timeline',
+    subtitle: 'Where your two paths cross',
+    score: 'Match',
+    yourDayun: 'Your luck cycle',
+    theirDayun: 'Their luck cycle',
+    clash: 'clash',
+    harmony: 'harmony',
+    needBirth: 'Both full birth charts are needed for this relationship.',
+    empty: 'No significant nodes for this relationship yet.',
+    freeNote: 'Free shows this year; unlock the full path ahead + reminders.',
+    back: 'Back',
+  },
   yinzheng: {
     prompt: 'What happened that year?',
     lead: 'That year carried ',

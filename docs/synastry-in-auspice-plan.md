@@ -146,10 +146,17 @@ complex one (the user flagged it) — design its event/choice recording model be
 building. S6 is a one-line funnel decision.
 
 ## 9. Open questions (decide before/within build)
-- **One-time consumable in Auspice**: add the RevenueCat consumable now, or gate
-  v1 on `auspice_pro` and add it later?
-- **合盘 make-if event model**: what does "record a relationship node event +
-  choice" capture, and how does it stay on the right side of the 真真假假 line?
-- **Kindred**: confirm Freeze (1) vs Keep-as-power-user (3).
-- **Deep reading delivery**: keep the LLM six-chapter (server) as the premium tier
-  inside Auspice, or is the deterministic timeline + 化解 enough for v1?
+- **One-time consumable in Auspice**: ✅ **ADD IT** — Auspice's first
+  non-subscription SKU.
+- **合盘 make-if event model**: ⏸ **DEFERRED (not urgent)** — design separately
+  before building S5.
+- **Kindred**: ✅ **FREEZE (option 1)** — stop the cross-app funnel; keep the code.
+- **Deep reading delivery**: ✅ **BOTH — no conflict.** Deterministic timeline +
+  化解 is the always-on base; the LLM six-chapter is the premium the one-time
+  purchase unlocks. They STACK (when/宜忌/化解 vs why/叙事), not either/or.
+
+## 10. Locked build order
+S1 合盘 timeline (on-device) → S2 node notifications + 偏好 → S3 one-time IAP +
+gate (free taste → full + 前瞻 + notifications + LLM deep reading) → S4 funnel bug
+fixes (lunar taste; decouple from frozen Kindred hand-off) → S6 stop Kindred
+funnel. S5 (合盘 make-if) DEFERRED.
