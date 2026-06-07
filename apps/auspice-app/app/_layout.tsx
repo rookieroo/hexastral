@@ -37,6 +37,7 @@ import {
   configureNotifications,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
+  refreshSynastryReminders,
   refreshTimelineReminders,
   scheduleBirthdayReminders,
   scheduleHolidayHeadsUp,
@@ -121,6 +122,12 @@ function RootLayoutInner() {
           birthDate: info.solarDate,
           birthHour: info.timeIndex === null ? -1 : info.timeIndex * 2,
           gender: info.gender === '男' ? 'M' : 'F',
+        })
+        // 合盘节点提醒 (Pro) — per-亲友 relationship nodes; self-clears if off / not Pro.
+        await refreshSynastryReminders({
+          locale,
+          self: { solarDate: info.solarDate, timeIndex: info.timeIndex, gender: info.gender },
+          people,
         })
       }
     })()

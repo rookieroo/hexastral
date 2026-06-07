@@ -195,6 +195,9 @@ export interface Strings {
   timelineRemindToggle: string
   /** Hint under the 人生节点提醒 toggle. */
   timelineRemindHint: string
+  /** 合盘节点提醒 toggle + hint (per-亲友 relationship-timeline reminders). */
+  synastryRemindToggle: string
+  synastryRemindHint: string
   /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
   timelineAdvice: Record<PersonalFit, string>
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
@@ -519,6 +522,8 @@ const zhHans: Strings = {
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
   timelineRemindToggle: '人生节点提醒',
   timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
+  synastryRemindToggle: '合盘节点提醒',
+  synastryRemindHint: '在亲友关系的显著节点临近时提醒你（双方大运换运、流年冲合）。',
   timelineAdvice: {
     吉: '气运相生，宜主动进取、顺势把握时机。',
     平: '运势平稳，按部就班、稳中求进即可。',
@@ -826,6 +831,8 @@ const zhHant: Strings = {
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
   timelineRemindToggle: '人生節點提醒',
   timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
+  synastryRemindToggle: '合盤節點提醒',
+  synastryRemindHint: '在親友關係的顯著節點臨近時提醒你（雙方大運換運、流年沖合）。',
   timelineAdvice: {
     吉: '氣運相生，宜主動進取、順勢把握時機。',
     平: '運勢平穩，按部就班、穩中求進即可。',
@@ -1144,6 +1151,8 @@ const ja: Strings = {
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
   timelineRemindToggle: '人生の節目リマインド',
   timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
+  synastryRemindToggle: '相性の節目リマインド',
+  synastryRemindHint: '相手との関係に節目が近づくとお知らせします（双方の大運・流年の冲合）。',
   timelineAdvice: {
     吉: '運気が味方します。積極的に動き、好機を掴みましょう。',
     平: '運気は穏やか。着実に、無理なく進めましょう。',
@@ -1453,6 +1462,9 @@ const en: Strings = {
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
+  synastryRemindToggle: 'Relationship reminders',
+  synastryRemindHint:
+    'A heads-up as a relationship reaches a significant node (either 大运 shift, 流年 冲/合).',
   timelineAdvice: {
     吉: 'The energy supports you — take initiative and seize the moment.',
     平: 'Steady energy — keep a measured pace and build gradually.',
