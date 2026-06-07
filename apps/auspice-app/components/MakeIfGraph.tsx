@@ -24,9 +24,10 @@ import { useSharedValue, withTiming } from 'react-native-reanimated'
 
 import type { MakeIfModel } from '@/lib/makeIfBranches'
 
-const TRUNK_X = 24
-const PAD = 18
-const TARGET_HEIGHT = 300
+const TRUNK_X = 34 // leaves room for an age tick on the LEFT of the trunk
+const PAD = 20
+const ROW = 28 // one age-row (row-based layout — no time-proportional clustering)
+const LANE = 22 // tight lane spacing — adjacent branches sit close, git-graph style
 
 interface MIColors {
   text: string
@@ -56,9 +57,6 @@ interface BranchLayout {
 
 interface Layout {
   height: number
-  ageStep: number
-  startAge: number
-  yForAge: (age: number) => number
   mainTop: number
   mainBottom: number
   nowY: number | null
@@ -66,52 +64,81 @@ interface Layout {
   branches: BranchLayout[]
 }
 
-function buildLayout(model: MakeIfModel, width: number): Layout {
-  const span = Math.max(1, model.endAge - model.startAge)
-  const ageStep = Math.max(3.6, Math.min(7, TARGET_HEIGHT / span))
-  const height = span * ageStep + PAD * 2
-  const yForAge = (age: number) => PAD + (age - model.startAge) * ageStep
-  // Lanes narrow as the user adds forks, so they stay on-screen.
-  const laneCount = Math.max(3, model.branches.length + 1)
-  const laneW = Math.max(34, Math.min(60, (width - TRUNK_X - 90) / laneCount))
+/** A tight git-graph S-elbow between two lanes: leave the start vertically and
+ *  arrive vertically, spanning the lane gap over ~`dy`. The short corner a real
+ *  git GUI draws (Tower / GitLens) — NOT a big sweeping arc. */
+function sElbow(
+  p: ReturnType<typeof Skia.Path.Make>,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  move: boolean
+) {
+  const dy = y2 - y1
+  if (move) p.moveTo(x1, y1)
+  p.cubicTo(x1, y1 + dy * 0.5, x2, y2 - dy * 0.5, x2, y2)
+}
+
+function buildLayout(model: MakeIfModel, _width: number): Layout {
+  // ROW-BASED: every distinct age (大运 boundaries + each branch's fork / merge /
+  // dots + the span ends) becomes an evenly-spaced row. Ages that bunch up in time
+  // no longer pile their fork/merge rings on top of each other near "now" — the
+  // git-graph "one commit per row" rhythm the old time-proportional layout lacked
+  // (the cluster the user flagged).
+  const ageSet = new Set<number>()
+  ageSet.add(model.startAge)
+  ageSet.add(model.endAge)
+  if (model.currentAge != null) ageSet.add(model.currentAge)
+  for (const n of model.mainNodes ?? []) ageSet.add(n.age)
+  for (const br of model.branches) {
+    ageSet.add(br.divergeAtAge)
+    if (br.mergeAtAge != null) ageSet.add(br.mergeAtAge)
+    for (const d of br.dots) ageSet.add(d.age)
+  }
+  const ages = [...ageSet].sort((a, b) => a - b)
+  const rowOf = new Map(ages.map((a, i) => [a, i] as const))
+  const lastRow = ages.length - 1
+  const first = ages[0] ?? model.startAge
+  const last = ages[lastRow] ?? model.endAge
+  const yForAge = (age: number): number => {
+    const exact = rowOf.get(age)
+    if (exact != null) return PAD + exact * ROW
+    if (age <= first) return PAD
+    if (age >= last) return PAD + lastRow * ROW
+    for (let i = 0; i < lastRow; i++) {
+      const a = ages[i]
+      const b = ages[i + 1]
+      if (a != null && b != null && age >= a && age <= b) {
+        return PAD + (i + (age - a) / (b - a)) * ROW
+      }
+    }
+    return PAD
+  }
 
   const branches: BranchLayout[] = model.branches.map((br, i) => {
-    const laneX = TRUNK_X + (i + 1) * laneW
-    const path = Skia.Path.Make()
+    const laneX = TRUNK_X + (i + 1) * LANE
     const forkY = yForAge(br.divergeAtAge)
-    // Peel + merge are SHORT curves at the lane's top/bottom, like a real git GUI
-    // (Tower, GitLens, Fork): branches sit mostly STRAIGHT in their own lane and
-    // only kink near the fork/merge points. The previous formula scaled drop with
-    // horizontal travel — outer lanes turned into 200px swirls that arched across
-    // the screen, nothing like a git graph. Cap it tight: ~1.2 ageSteps minimum,
-    // ~40px maximum, regardless of how far out the lane sits.
-    const horiz = laneX - TRUNK_X
-    // A round git-graph "elbow": the branch leaves the trunk HORIZONTALLY (to the
-    // right, off the node's side — not straight down) and curves into its lane;
-    // drop ≈ the horizontal travel so the corner reads as a full quarter-turn,
-    // not a lazy diagonal. K pulls the control points for a fuller, rounder bend.
-    const drop = Math.min(52, Math.max(24, horiz))
-    const K = 0.6
-    // diverge: leave horizontal at the fork, arrive vertical down the lane
-    path.moveTo(TRUNK_X, forkY)
-    path.cubicTo(TRUNK_X + horiz * K, forkY, laneX, forkY + drop * (1 - K), laneX, forkY + drop)
+    const path = Skia.Path.Make()
+    // peel: trunk → lane, a one-row S corner.
+    const laneTop = forkY + ROW
+    sElbow(path, TRUNK_X, forkY, laneX, laneTop, true)
     let mergeY: number | null = null
     let endY: number
     if (br.mergeAtAge != null) {
       mergeY = yForAge(br.mergeAtAge)
       endY = mergeY
-      const mergeStart = mergeY - drop
-      if (mergeStart > forkY + drop) path.lineTo(laneX, mergeStart)
-      // merge: leave vertical down the lane, arrive horizontal into the trunk
-      path.cubicTo(laneX, mergeStart + drop * K, TRUNK_X + horiz * K, mergeY, TRUNK_X, mergeY)
+      const mApproach = Math.max(laneTop, mergeY - ROW)
+      if (mApproach > laneTop) path.lineTo(laneX, mApproach)
+      // merge: lane → trunk, mirror S corner.
+      sElbow(path, laneX, mApproach, TRUNK_X, mergeY, false)
     } else {
       endY = yForAge(model.endAge)
       path.lineTo(laneX, endY)
     }
-    const lo = br.divergeAtAge
     const hi = br.mergeAtAge ?? model.endAge
     const dots = br.dots
-      .filter((d) => d.age > lo && d.age < hi)
+      .filter((d) => d.age > br.divergeAtAge && d.age < hi)
       .map((d) => ({ x: laneX, y: yForAge(d.age) }))
     return {
       id: br.id,
@@ -135,13 +162,11 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     return { ...n, y, isFork: forkYs.has(Math.round(y)) }
   })
 
+  const mainBottom = PAD + lastRow * ROW
   return {
-    height,
-    ageStep,
-    startAge: model.startAge,
-    yForAge,
-    mainTop: yForAge(model.startAge),
-    mainBottom: yForAge(model.endAge),
+    height: mainBottom + PAD,
+    mainTop: PAD,
+    mainBottom,
     nowY: model.currentAge != null ? yForAge(model.currentAge) : null,
     mainNodes,
     branches,
@@ -371,21 +396,27 @@ export function MakeIfGraph({
               style={{
                 position: 'absolute',
                 left: 0,
-                top: n.y - 13,
-                width: TRUNK_X + 64,
-                height: 26,
+                top: n.y - 14,
+                width: TRUNK_X + 26,
+                height: 28,
                 justifyContent: 'center',
               }}
             >
+              {/* Age tick on the LEFT of the trunk — branch labels live on the
+                  RIGHT, so the two never collide (the old graph stacked 干支·age
+                  labels on the right, on top of the branch labels). */}
               <Text
                 style={{
-                  marginLeft: TRUNK_X + 10,
+                  position: 'absolute',
+                  left: 0,
+                  width: TRUNK_X - 8,
+                  textAlign: 'right',
                   color: n.isPast ? colors.dim : colors.secondary,
                   fontSize: 11,
                 }}
                 numberOfLines={1}
               >
-                {n.label} · {n.age}
+                {n.age}
               </Text>
             </Pressable>
           ))
@@ -412,7 +443,7 @@ export function MakeIfGraph({
             style={{
               position: 'absolute',
               left: b.laneX + 8,
-              top: b.forkY + layout.ageStep * 3 - 9,
+              top: b.forkY + ROW - 9,
               maxWidth: width - b.laneX - 12,
               // Recede when another branch is the active one, matching the path dim.
               opacity: selectedBranchId != null && selectedBranchId !== b.id ? 0.4 : 1,

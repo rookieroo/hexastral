@@ -150,6 +150,74 @@ export const wuxingColors = {
 
 export type WuxingElement = keyof typeof wuxingColors
 
+// ── 五行 graph variant + 干支 mapping (timeline / make-if data-viz) ────────────
+//
+// DESIGN RULE — state via treatment, data via hue:
+//   · The brand **accent** (per-satellite; Auspice = 朱泥 terra) is RESERVED for
+//     "now / self / selected" and is only ever drawn as a TREATMENT (glow + ring).
+//   · DATA (干支/大运/流年/流月) is colored by its **五行 hue**, never the accent.
+// So the 五行 hues must stay OUT of the gold zone — otherwise `金` (which is gold
+// in `wuxingColors`) blurs into the gold accent-variant / dark-mode accent. This
+// graph variant fixes that: 金 → cool pewter, the rest tuned to read on paper.
+// Keep `wuxingColors` (金=gold) for 五行 chips / 科普; use `wuxingGraph` in graphs.
+
+/** 五行 node/line colors for graphs — 金 is pewter (not gold), to free the accent. */
+export const wuxingGraph: Record<WuxingElement, string> = {
+  wood: '#5B8C5A',
+  fire: '#C25450',
+  earth: '#A0845C',
+  metal: '#8E9AA1', // pewter — deliberately NOT gold, so the accent stays unique
+  water: '#4A6FA5',
+} as const
+
+/** 天干 → 五行. */
+export const STEM_ELEMENT: Record<string, WuxingElement> = {
+  甲: 'wood',
+  乙: 'wood',
+  丙: 'fire',
+  丁: 'fire',
+  戊: 'earth',
+  己: 'earth',
+  庚: 'metal',
+  辛: 'metal',
+  壬: 'water',
+  癸: 'water',
+}
+
+/** 地支 → 五行 (本气). */
+export const BRANCH_ELEMENT: Record<string, WuxingElement> = {
+  子: 'water',
+  丑: 'earth',
+  寅: 'wood',
+  卯: 'wood',
+  辰: 'earth',
+  巳: 'fire',
+  午: 'fire',
+  未: 'earth',
+  申: 'metal',
+  酉: 'metal',
+  戌: 'earth',
+  亥: 'water',
+}
+
+/** Graph color for a 干支 (or bare 天干) — by its 天干 五行; falls back to grey. */
+export function ganZhiGraphColor(ganZhi: string): string {
+  const el = STEM_ELEMENT[ganZhi[0] ?? '']
+  return el ? wuxingGraph[el] : zinc[500]
+}
+
+/**
+ * 吉 / 平 / 凶 verdict colors — brand-tuned 3-step. 平 is a neutral grey (NOT the
+ * old gold-brown taupe, which collided with the accent). Shared by the make-if
+ * 对照表, timeline fit dots, 宜忌 verdict chips, etc. — one source of truth.
+ */
+export const verdictColors = {
+  吉: '#4E8A6B',
+  平: '#8C8880',
+  凶: '#C0452E',
+} as const
+export type Verdict = keyof typeof verdictColors
+
 // ── Fortune ──────────────────────────────────────────────────────────────────
 
 export const fortuneColors = {

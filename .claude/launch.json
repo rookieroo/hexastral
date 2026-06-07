@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "graphlab",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4178", "--directory", "/tmp/graphlab"],
+      "port": 4178
+    },
+    {
       "name": "design-static",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4599", "--directory", "docs/design"],

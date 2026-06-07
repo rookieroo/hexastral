@@ -19,17 +19,16 @@ import {
   type EarthlyBranch,
   getFourPillars,
   getFourPillarsShiShen,
-  getJiangXing,
-  getJieSha,
+  getShiShen,
   getTaoHua,
-  getTianYiGuiRen,
-  getWenChangGuiRen,
   getYiMa,
+  type HeavenlyStem,
   retrodictionMatch,
   type WuXing,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
@@ -45,17 +44,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
+import type { DrilldownYear } from '@/components/DrilldownGraph'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
-import {
-  LiuyueStrip,
-  ReadingBubble,
-  type ShenShaBranches,
-  TimelineGraph,
-} from '@/components/TimelineGraph'
+import { DOMAIN_COLORS, ReadingBubble } from '@/components/TimelineGraph'
+import { TimelineYearGraph } from '@/components/TimelineYearGraph'
 import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
+import { computeLiuyue, type LiuyueCell } from '@/lib/liuyue'
 import { shareTaglineFor, timelineShareChrome, timelineShareUrl } from '@/lib/share'
 
 function shichenToHour(timeIndex: number | null): number {
@@ -184,24 +181,18 @@ function resolveNodeDetail(
   }
 }
 
-/** 本命-derived 神煞 branches (日干 → 贵人/文昌; 本命支 → 桃花/驿马/将星/劫煞) — the
- *  per-node "event flavor" chips. */
-function birthShenSha(payload: TimelinePayload): ShenShaBranches {
-  const [y, m, d] = payload.birth.date.split('-').map(Number)
-  if (!y || !m || !d) return {}
-  const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
-  const pillars = getFourPillars({ year: y, month: m, day: d, hour })
-  const dayStem = pillars.day.stem
-  const branch = pillars.year.branch
-  return {
-    taohua: getTaoHua(branch),
-    yima: getYiMa(branch),
-    guiren: getTianYiGuiRen(dayStem),
-    wenchang: getWenChangGuiRen(dayStem),
-    jiangxing: getJiangXing(branch),
-    jiesha: getJieSha(branch),
-  }
+/** 大运 lane hue by its 十神 domain vs the 日主 (matches the muted DOMAIN_COLORS). */
+function domainColorFor(payload: TimelinePayload, dayunStem: string): string {
+  const cat = getShiShen(
+    payload.pillars.day.stem as HeavenlyStem,
+    dayunStem as HeavenlyStem
+  ).category
+  return DOMAIN_COLORS[cat]
 }
+
+/** 吉/平/凶 dot colours — muted, on-theme (jade / slate-grey / terracotta). */
+// Fit colors from the token single-source (平 = neutral grey, brand-tuned).
+const FIT_COLOR = verdictColors
 
 /** The chart's 用神 五行 (格局 + 强弱 → 取用) — the anchor for a node's 化解. */
 function chartFavorableElement(payload: TimelinePayload): WuXing | null {
@@ -210,6 +201,17 @@ function chartFavorableElement(payload: TimelinePayload): WuXing | null {
   const hour = payload.birth.hour < 0 ? 12 : payload.birth.hour
   const pillars = getFourPillars({ year: y, month: m, day: d, hour })
   return analyzeGeJu(pillars, getFourPillarsShiShen(pillars)).favorableElement
+}
+
+interface Drill {
+  dayunLabel: string
+  domainColor: string
+  years: DrilldownYear[]
+  selectedYearIndex: number | null
+  selectedYear: number | null
+  liuyue: LiuyueCell[] | null
+  liuyueNowMonth: number | null
+  selectedMonth: number | null
 }
 
 type ScreenState =
@@ -229,53 +231,67 @@ export default function TimelineScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Per-大运 user toggles — a SET of array indices that XOR with the default-
-  // expanded set (current + next-10y). Default is empty: the user hasn't
-  // toggled anything, so the display follows the auto-rule. Tapping a 大运 head
-  // flips that decade's expansion state — both directions (collapse a default-
-  // open decade, expand a default-closed one).
-  const [userToggled, setUserToggled] = useState<ReadonlySet<number>>(() => new Set())
-  const handleSelect = useCallback(
-    (id: string) => {
-      setSelectedId(id)
-      if (!id.startsWith('dayun-')) return
-      setUserToggled((prev) => {
-        if (state.kind !== 'data') return prev
-        const di = Number(id.slice('dayun-'.length))
-        const arrIdx = state.payload.dayun.findIndex((d) => d.index === di)
-        if (arrIdx < 0) return prev
-        const next = new Set(prev)
-        if (next.has(arrIdx)) next.delete(arrIdx)
-        else next.add(arrIdx)
-        return next
-      })
+  // Which 大运 the drill-down shows (the selector picks it; default = the 大运
+  // you're living). Replaces the old expand/collapse-all model.
+  const [selectedDayunIndex, setSelectedDayunIndex] = useState(0)
+  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
+  const onSelectDayun = useCallback(
+    (i: number) => {
+      if (state.kind !== 'data') return
+      const dy = state.payload.dayun[i]
+      if (!dy) return
+      setSelectedDayunIndex(i)
+      setSelectedId(`dayun-${dy.index}`)
     },
     [state]
   )
-  // Default-expanded set — current 大运 + any future 大运 whose decade starts
-  // within ~10y. The user's `userToggled` XORs this for the final visible set.
-  const expandedDayun = useMemo<ReadonlySet<number>>(() => {
-    if (state.kind !== 'data') return new Set()
-    const cur = state.payload.currentDayunIndex
-    const thisYear = new Date().getFullYear()
-    const tenYearsOut = thisYear + 10
-    const defaultSet = new Set<number>()
-    if (cur >= 0) defaultSet.add(cur)
-    state.payload.dayun.forEach((d, i) => {
-      if (i === cur) return
-      // "Within 10 years" = the decade starts before now+10y AND ends after now,
-      // i.e. it overlaps the [now, now+10y] window the user can actually plan for.
-      if (d.startYear <= tenYearsOut && d.endYear >= thisYear) defaultSet.add(i)
-    })
-    // XOR userToggled with defaults — tapping a default-open decade collapses it,
-    // tapping a default-closed one expands it.
-    const final = new Set<number>(defaultSet)
-    userToggled.forEach((i) => {
-      if (final.has(i)) final.delete(i)
-      else final.add(i)
-    })
-    return final
-  }, [state, userToggled])
+  // Derive the drill props for the SELECTED 大运: its 流年 as a git spine + (when a
+  // 流年 is selected) that year's 流月 computed client-side. Lifted here so the live
+  // graph and the share capture render the same drilled state.
+  const drill = useMemo<Drill | null>(() => {
+    if (state.kind !== 'data') return null
+    const p = state.payload
+    const di = Math.min(Math.max(0, selectedDayunIndex), p.dayun.length - 1)
+    const dy = p.dayun[di]
+    if (!dy) return null
+    const favEl = chartFavorableElement(p)
+    const years: DrilldownYear[] = dy.liunian.map((r) => ({
+      gz: `${r.pillar.stem}${r.pillar.branch}`,
+      year: r.year,
+      fit: r.fit,
+      isCurrent: r.isCurrent,
+      age: r.age,
+      element: r.pillar.element,
+      shishen: getShiShen(p.pillars.day.stem as HeavenlyStem, r.pillar.stem as HeavenlyStem)
+        .category,
+    }))
+    const yearFromId = selectedId?.startsWith('liunian-')
+      ? Number(selectedId.slice('liunian-'.length))
+      : selectedId?.startsWith('liuyue-')
+        ? Number(selectedId.split('-')[1])
+        : null
+    let selectedYearIndex: number | null = null
+    let selectedYear: number | null = null
+    if (yearFromId != null) {
+      const idx = dy.liunian.findIndex((r) => r.year === yearFromId)
+      if (idx >= 0) {
+        selectedYearIndex = idx
+        selectedYear = yearFromId
+      }
+    }
+    const monthRaw = selectedId?.startsWith('liuyue-') ? Number(selectedId.split('-')[2]) : null
+    return {
+      dayunLabel: `${dy.pillar.stem}${dy.pillar.branch} 大运`,
+      domainColor: domainColorFor(p, dy.pillar.stem),
+      years,
+      selectedYearIndex,
+      selectedYear,
+      liuyue: selectedYear != null ? computeLiuyue(selectedYear, favEl) : null,
+      // Lunar≈Gregorian month for the now-highlight (节气 precision is a TODO).
+      liuyueNowMonth: selectedYear === new Date().getFullYear() ? new Date().getMonth() + 1 : null,
+      selectedMonth: monthRaw != null && Number.isFinite(monthRaw) ? monthRaw : null,
+    }
+  }, [state, selectedDayunIndex, selectedId])
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
   // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
   // baking it ahead of the tap makes Share feel instant.
@@ -305,6 +321,7 @@ export default function TimelineScreen() {
           locale,
         }).then((payload) => {
           setSelectedId(defaultSelection(payload))
+          setSelectedDayunIndex(payload.currentDayunIndex >= 0 ? payload.currentDayunIndex : 0)
           setState({
             kind: 'data',
             payload,
@@ -391,13 +408,16 @@ export default function TimelineScreen() {
             payload={state.payload}
             isPro={isPro}
             selectedId={selectedId}
+            selectedDayunIndex={selectedDayunIndex}
+            drill={drill}
             onSelect={handleSelect}
-            expandedDayun={expandedDayun}
+            onSelectDayun={onSelectDayun}
             onLockedTap={() => setPaywallOpen(true)}
             colors={colors}
             spacing={spacing}
             canvasWidth={canvasWidth}
             t={t}
+            lang={locale}
           />
         )}
       </ScrollView>
@@ -406,11 +426,10 @@ export default function TimelineScreen() {
       {/* Off-screen capture target — mounted only while capturing, then unmounted.
           Renders the real TimelineGraph on a fixed ivory palette so the PNG is
           brand-consistent regardless of the user's theme. */}
-      {capturing && state.kind === 'data'
+      {capturing && state.kind === 'data' && drill
         ? (() => {
             const snap = buildTimelineSnapshot(state.payload, t)
             const chrome = timelineShareChrome(locale)
-            const shensha = birthShenSha(state.payload)
             const favEl = chartFavorableElement(state.payload)
             // WYSIWYG: bake the node the user actually has selected (its highlight +
             // reading), falling back to the current 大运 so a fresh share still has a
@@ -440,20 +459,16 @@ export default function TimelineScreen() {
                       : undefined
                   }
                 >
-                  <TimelineGraph
-                    payload={state.payload}
-                    isPro={isPro}
-                    selectedId={selectedId}
-                    onSelect={() => {}}
-                    onLockedTap={() => {}}
-                    colors={SHARE_PALETTE}
+                  <TimelineYearGraph
                     width={screenWidth - 48}
-                    detail={null}
-                    fitLabels={t.personal.fit}
-                    reasonLabels={t.yinzheng.signals}
-                    shensha={shensha}
-                    domainLabels={t.timelineDomain}
-                    expandedDayunIndices={expandedDayun}
+                    colors={SHARE_PALETTE}
+                    dayunLabel={drill.dayunLabel}
+                    liunian={drill.years}
+                    selectedYearIndex={drill.selectedYearIndex}
+                    onSelectYear={() => {}}
+                    fitColor={FIT_COLOR}
+                    lang={locale}
+                    isPro={isPro}
                   />
                   {/* Bake the SELECTED node's reading below the graph (no anchored
                       popover in a static card) — the share's takeaway tracks the
@@ -620,32 +635,40 @@ function Body({
   payload,
   isPro,
   selectedId,
+  selectedDayunIndex,
+  drill,
   onSelect,
-  expandedDayun,
+  onSelectDayun,
   onLockedTap,
   colors,
   spacing,
   canvasWidth,
   t,
+  lang,
 }: {
   payload: TimelinePayload
   isPro: boolean
   selectedId: string | null
+  selectedDayunIndex: number
+  drill: Drill | null
   onSelect: (id: string) => void
-  expandedDayun: ReadonlySet<number>
+  onSelectDayun: (i: number) => void
   onLockedTap: () => void
   colors: BodyColors
   spacing: BodySpacing
   canvasWidth: number
   t: ReturnType<typeof useStrings>['t']
+  lang: string
 }) {
   const favEl = useMemo(() => chartFavorableElement(payload), [payload])
+  // Which year's 流月 sub-branch is woven open (Pro). Derived-open only when it
+  // equals the selected year, so selecting elsewhere collapses the weave.
+  const [liuyueOpenYear, setLiuyueOpenYear] = useState<number | null>(null)
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
   const detail = useMemo(
     () => resolveNodeDetail(payload, selectedId, t, favEl),
     [selectedId, payload, t, favEl]
   )
-  const shensha = useMemo(() => birthShenSha(payload), [payload])
 
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
   const birthBranch = useMemo<EarthlyBranch | null>(() => {
@@ -655,27 +678,24 @@ function Body({
     return getFourPillars({ year: y, month: m, day: d, hour }).year.branch
   }, [payload.birth])
 
-  // The selected node, when it's a PAST 流年 — the only place 印证 applies.
+  // The selected node, when it's a PAST 流年 — the only place 印证 applies. 流年 now
+  // come from each 大运's own decade, so search those.
   const pinnableRow = useMemo(() => {
     if (!selectedId?.startsWith('liunian-')) return null
     const year = Number(selectedId.slice('liunian-'.length))
-    const row = payload.liunian.find((r) => r.year === year)
+    const row = payload.dayun.flatMap((d) => d.liunian).find((r) => r.year === year)
     return row && row.year < new Date().getFullYear() ? row : null
-  }, [selectedId, payload.liunian])
+  }, [selectedId, payload.dayun])
 
-  // 择吉 link — the selected node is a FUTURE 流年, so we can offer a deep-link
-  // into /event with a 92-day window inside that year. Picking 立春-aligned
-  // Feb 1 → May 1 keeps it within the server's 92-day cap and lands inside the
-  // 流年's "current year" by 命理 reckoning. Pro can pick any sub-window.
+  // 择吉 link — the selected node is a FUTURE 流年 → deep-link into /event with that
+  // year's 立春-aligned window (Feb 1 → May 1, within the server's 92-day cap).
   const futureLiunianYear = useMemo<number | null>(() => {
     if (!selectedId?.startsWith('liunian-')) return null
     const year = Number(selectedId.slice('liunian-'.length))
     if (!Number.isFinite(year) || year <= new Date().getFullYear()) return null
-    const inPayload =
-      payload.dayun.flatMap((d) => d.liunian).some((r) => r.year === year) ||
-      payload.liunian.some((r) => r.year === year)
-    return inPayload ? year : null
+    return payload.dayun.flatMap((d) => d.liunian).some((r) => r.year === year) ? year : null
   }, [selectedId, payload])
+  const curIdx = payload.currentDayunIndex
 
   return (
     <View style={{ gap: spacing.xl }}>
@@ -685,23 +705,83 @@ function Body({
         </Text>
       ) : null}
 
-      {/* The life as a git graph — the selected-node reading now pops up anchored
-          TO the tapped node (long graphs scrolled the old top panel out of view). */}
-      <TimelineGraph
-        payload={payload}
-        isPro={isPro}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        onLockedTap={onLockedTap}
-        colors={colors}
-        width={canvasWidth}
-        detail={selectedId?.startsWith('liuyue-') ? null : detail}
-        fitLabels={t.personal.fit}
-        reasonLabels={t.yinzheng.signals}
-        shensha={shensha}
-        domainLabels={t.timelineDomain}
-        expandedDayunIndices={expandedDayun}
-      />
+      {/* 大运 selector — pick a decade to drill into (the whole-life view read long
+          + unfocused). Free unlocks only the 大运 you're living; others → paywall. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: spacing.sm, paddingVertical: 2 }}
+      >
+        {payload.dayun.map((d, i) => {
+          const sel = i === selectedDayunIndex
+          const locked = !isPro && i !== curIdx
+          return (
+            <Pressable
+              key={d.index}
+              onPress={() => (locked ? onLockedTap() : onSelectDayun(i))}
+              accessibilityRole='button'
+              accessibilityState={{ selected: sel }}
+              style={{
+                width: 50,
+                paddingVertical: spacing.sm,
+                borderRadius: 11,
+                borderWidth: 0.5,
+                borderColor: sel ? colors.accent : colors.separator,
+                backgroundColor: sel ? colors.accent : 'transparent',
+                alignItems: 'center',
+                opacity: locked ? 0.45 : 1,
+              }}
+            >
+              <Text style={{ color: sel ? '#fff' : colors.text, fontSize: 16, fontWeight: '500' }}>
+                {`${d.pillar.stem}${d.pillar.branch}`}
+              </Text>
+              <Text style={{ color: sel ? '#fff' : colors.dim, fontSize: 10, marginTop: 1 }}>
+                {`${d.startAge}+`}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+
+      {/* The selected 大运 → its 流年 git spine → tap a 流年 → its 流月 sub-lane
+          (月相-linked, drawn in). */}
+      {drill ? (
+        <TimelineYearGraph
+          width={canvasWidth}
+          colors={colors}
+          dayunLabel={drill.dayunLabel}
+          liunian={drill.years}
+          selectedYearIndex={drill.selectedYearIndex}
+          onSelectYear={(idx) => {
+            const r = drill.years[idx]
+            if (r) onSelect(`liunian-${r.year}`)
+          }}
+          fitColor={FIT_COLOR}
+          lang={lang}
+          isPro={isPro}
+          liuyue={drill.liuyue}
+          liuyueOpen={drill.selectedYear != null && liuyueOpenYear === drill.selectedYear}
+          selectedMonth={drill.selectedMonth}
+          onToggleLiuyue={() => {
+            const yr = drill.selectedYear
+            if (yr != null) setLiuyueOpenYear((c) => (c === yr ? null : yr))
+          }}
+          onSelectMonth={(mo) => {
+            if (drill.selectedYear != null) onSelect(`liuyue-${drill.selectedYear}-${mo}`)
+          }}
+          onLockedTap={onLockedTap}
+        />
+      ) : null}
+
+      {/* 对你而言 reading for the selected 大运 / 流年 / 流月. */}
+      {detail ? (
+        <ReadingBubble
+          heading={detail.heading}
+          body={detail.body}
+          fit={detail.fit}
+          colors={colors}
+        />
+      ) : null}
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
       {isPro && pinnableRow && birthBranch ? (
@@ -716,43 +796,10 @@ function Body({
       ) : null}
 
       {/* 择吉 deep-link — when a FUTURE 流年 is selected, jump into /event prefilled
-          with that year's window (Feb 1 → May 1, 立春-aligned, within the server's
-          92-day cap). Available to all tiers; the /event screen still gates the
-          window expansion for Free. The deterministic 命理 engine meets actionable
-          date-picking. */}
+          with that year's window (立春-aligned, within the server's 92-day cap). */}
       {futureLiunianYear ? (
         <ZejiLink year={futureLiunianYear} t={t} colors={colors} spacing={spacing} />
       ) : null}
-
-      {/* 流月 — the finest commits; each is tappable for its own reading. */}
-      {payload.liuyue.length > 0 ? (
-        <View style={{ gap: spacing.md }}>
-          <LiuyueStrip
-            liuyue={payload.liuyue}
-            isPro={isPro}
-            colors={colors}
-            label={t.timelineLiuyue}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-          {selectedId?.startsWith('liuyue-') && detail ? (
-            <ReadingBubble
-              heading={detail.heading}
-              body={detail.body}
-              fit={detail.fit}
-              colors={colors}
-            />
-          ) : null}
-          {/* Only this year's 流月 is shown by design — full data isn't dumped;
-              key-moment reminders are opt-in push (DAU lever). */}
-          <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
-            {t.timelineLiuyueNote}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* make-if 假如 now lives on its own /makeif screen (entered from the Today
-          banner) — keeps this page short. */}
 
       {/* ONE unlock — the only paywall on the page. */}
       {!isPro ? (

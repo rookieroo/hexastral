@@ -24,6 +24,7 @@ import {
 } from '@zhop/astro-core'
 import { Button, useTheme } from '@zhop/core-ui'
 import { BackArrowIcon } from '@zhop/hexastral-icons/action'
+import { ganZhiGraphColor, verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -43,6 +44,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { MakeIfGraph } from '@/components/MakeIfGraph'
+import { MakeIfYearGraph } from '@/components/MakeIfYearGraph'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
@@ -317,6 +319,9 @@ function Sandbox({
   // The single highlighted/active branch. Tapping a branch (graph or fork row)
   // selects it; the live graph dims the rest and the share features only it.
   const [sel, setSel] = useState<string | null>(null)
+  // Which 大运 the year-window centres on (null → now). The 大运 strip moves it so
+  // a far decade can be reached + forked. Tap the active one to reset to now.
+  const [focusAge, setFocusAge] = useState<number | null>(null)
   const [forkAge, setForkAge] = useState<number | null>(null)
   const [pendingAge, setPendingAge] = useState<number | null>(null)
   const [acked, setAcked] = useState(false)
@@ -400,8 +405,6 @@ function Sandbox({
       cancelled = true
     }
   }, [deviceId, birth.birthDate, birth.birthHour, birth.gender, model.endAge, locale])
-
-  const combined = useMemo(() => ({ ...model, branches }), [model, branches])
 
   // The branch the share + selection feature: the explicitly selected one, else
   // the most recent fork (what the user just created).
@@ -548,8 +551,13 @@ function Sandbox({
     const age = forkAge
     setForkAge(null)
     const isPast = currentAge != null && age < currentAge
-    // Past "假如当年" reflections rejoin the line; present/future forks run on.
-    const merge = isPast ? Math.min(model.endAge - 2, age + 14) : null
+    // 路不同仍是你 — every branch eventually rejoins your own rhythm (not a fixed
+    // "same fate": 命定其界、运在人为). A past "假如当年" reconverges after ~14y; a
+    // present/future choice runs longer (~20y). The rejoin marks identity
+    // continuity, NOT a guaranteed outcome — the row-level 得助/受克 carries the
+    // actual comparison, and 受克 spots offer a 解法. (Old code let future forks
+    // dangle to the end — the 转行 the user saw never merging.)
+    const merge = Math.min(model.endAge - 2, age + (isPast ? 14 : 20))
     const id = `user-${age}-${e}`
     const fork = buildUserBranch({
       id,
@@ -642,23 +650,108 @@ function Sandbox({
         </View>
       ) : null}
 
-      <MakeIfGraph
+      {/* 大运 strip — moves the year-window to a far decade so you can scroll the
+          whole life + fork there (the graph itself only shows one decade window). */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+        {payload.dayun.map((d) => {
+          const f = focusAge ?? currentAge ?? d.startAge
+          const active = f >= d.startAge && f <= d.endAge
+          return (
+            <Pressable
+              key={d.index}
+              onPress={() => setFocusAge((cur) => (active && cur != null ? null : d.startAge))}
+              accessibilityRole='button'
+              accessibilityLabel={`${d.pillar.stem}${d.pillar.branch}运`}
+              style={{ alignItems: 'center', gap: 3, flex: 1 }}
+            >
+              <View
+                style={{
+                  width: active ? 12 : 8,
+                  height: active ? 12 : 8,
+                  borderRadius: 6,
+                  backgroundColor: active
+                    ? colors.accent
+                    : ganZhiGraphColor(`${d.pillar.stem}${d.pillar.branch}`),
+                }}
+              />
+              <Text
+                style={{ fontSize: 9, color: active ? colors.text : colors.dim }}
+                numberOfLines={1}
+              >
+                {`${d.pillar.stem}${d.pillar.branch}`}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      {/* Branch chips — name each 假如 (lanes are colour-only on the graph) + a big
+          tap target to select it (the thin lane is hard to hit). */}
+      {branches.length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {branches.map((b) => {
+            const on = (sel ?? featured?.id) === b.id
+            return (
+              <Pressable
+                key={b.id}
+                onPress={() => setSel((cur) => (cur === b.id ? null : b.id))}
+                accessibilityRole='button'
+                accessibilityLabel={b.label}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
+                  borderRadius: 14,
+                  borderWidth: 0.5,
+                  borderColor: on ? b.color : colors.separator,
+                  backgroundColor: on ? `${b.color}1A` : 'transparent',
+                }}
+              >
+                <View
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 4,
+                    backgroundColor: b.color,
+                    opacity: b.isPast ? 0.6 : 1,
+                  }}
+                />
+                <Text
+                  style={{
+                    color: on ? colors.text : colors.secondary,
+                    fontSize: 12,
+                    fontWeight: on ? '700' : '500',
+                  }}
+                  numberOfLines={1}
+                >
+                  {b.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null}
+
+      <MakeIfYearGraph
         // Re-mount on each added fork so the new branch animates in.
         key={branches.length}
-        model={combined}
+        dayun={payload.dayun}
+        branches={branches}
         colors={colors}
         width={width}
-        locked={false}
         dashed={false}
         animateIn={branches.length > 0}
+        focusAge={focusAge}
         // Always keep ONE branch in focus (the latest fork until the user taps
         // another) so the graph reads as "this 假如, highlighted" — never a flat
         // legend of equally-weighted dashes.
         selectedBranchId={sel ?? featured?.id ?? null}
         onSelectBranch={(id) => setSel((cur) => (cur === id ? null : id))}
-        onLockedTap={() => {}}
         onMainNodeTap={onNodeTap}
         nowLabel={makeIfCopyForLocale(locale).nowLabel}
+        lang={locale}
       />
 
       {/* Diff panel — the highlighted 假如 vs the real line, milestone-by-milestone.
@@ -693,19 +786,19 @@ function Sandbox({
             title={ic.screenTitle}
             subtitle={`${payload.pillars.day.stem}${payload.pillars.day.branch}${locale.startsWith('zh') ? '日' : ''}`}
           >
-            <MakeIfGraph
-              model={combined}
+            <MakeIfYearGraph
+              dayun={payload.dayun}
+              branches={branches}
               colors={SHARE_PALETTE}
               width={width - 48}
-              locked={false}
               dashed={false}
               animateIn={false}
               // Feature ONE branch — the share is a single "假如" to show off, not
               // a legend of three. The graph highlights it; the rest dim.
               selectedBranchId={featured?.id ?? null}
               onSelectBranch={() => {}}
-              onLockedTap={() => {}}
               nowLabel={makeIfCopyForLocale(locale).nowLabel}
+              lang={locale}
             />
             {/* Bake the featured branch as a TITLED explanation under the graph —
                 a coloured label header + its full 概要, so the highlighted 假如 is
@@ -782,6 +875,8 @@ function Sandbox({
             colors={colors}
             spacing={spacing}
             locale={locale}
+            selected={(sel ?? featured?.id) === b.id}
+            onSelect={() => setSel((cur) => (cur === b.id ? null : b.id))}
             onDelete={() => deleteFork(b.id)}
             onRetry={() => runFork(b)}
           />
@@ -894,11 +989,8 @@ function MakeIfDiffPanel({
   colors: C
   spacing: S
 }) {
-  const FIT_COLOR: Record<'吉' | '平' | '凶', string> = {
-    吉: '#16A34A',
-    平: '#71717A',
-    凶: '#DC2626',
-  }
+  // Verdict colors come from the token single-source (平 = neutral grey, brand-tuned).
+  const FIT_COLOR = verdictColors
   /** Per-row LLM expansion state. Key = `${branch.id}|${age}`. */
   const [expanded, setExpanded] = useState<
     Record<string, 'loading' | 'done' | 'error' | 'collapsed'>
@@ -926,13 +1018,22 @@ function MakeIfDiffPanel({
       const dy = payload.dayun.find((d) => age >= d.startAge && age <= d.endAge)
       return dy ? `${dy.pillar.stem}${dy.pillar.branch}` : '—'
     }
+    type Cmp = 'help' | 'even' | 'harm' | null
+    const RANK = { 凶: 0, 平: 1, 吉: 2 } as const
+    // Direction of the what-if vs reality that year — does the alt path's verdict
+    // 生扶(help ↑) / 比和(even) / 克泄(harm ↓) the real-line verdict. harm → 解法.
+    const cmpOf = (real: '吉' | '平' | '凶' | null, alt: '吉' | '平' | '凶' | null): Cmp => {
+      if (real == null || alt == null) return null
+      if (alt === real) return 'even'
+      return RANK[alt] > RANK[real] ? 'help' : 'harm'
+    }
     type Row = {
       key: string
       label: string
       realPillar: string
       realFit: '吉' | '平' | '凶' | null
       altFit: '吉' | '平' | '凶' | null
-      sameRail: boolean
+      cmp: Cmp
     }
     const out: Row[] = []
     // Fork: branch starts here — compare the dot[0] verdict against real
@@ -942,7 +1043,7 @@ function MakeIfDiffPanel({
       realPillar: realPillarAt(branch.divergeAtAge),
       realFit: realFitAt(branch.divergeAtAge),
       altFit: branch.dots[0]?.fit ?? null,
-      sameRail: false,
+      cmp: cmpOf(realFitAt(branch.divergeAtAge), branch.dots[0]?.fit ?? null),
     })
     // Strict-interior dots (avoid double-rendering the fork/merge boundary verdicts)
     const lo = branch.divergeAtAge
@@ -957,7 +1058,7 @@ function MakeIfDiffPanel({
           realPillar: realPillarAt(d.age),
           realFit: rFit,
           altFit: d.fit,
-          sameRail: rFit !== null && rFit === d.fit,
+          cmp: cmpOf(rFit, d.fit),
         })
       })
     // Merge back (if any) — verdicts realign as the alt-life merges into fate.
@@ -968,9 +1069,9 @@ function MakeIfDiffPanel({
         label: t.makeifDiff.mergeRow.replace('{age}', String(branch.mergeAtAge)),
         realPillar: realPillarAt(branch.mergeAtAge),
         realFit: rFit,
-        // The branch reconciles to fate here — show the real verdict in both cols.
+        // The branch reconciles to its own rhythm here — verdicts realign.
         altFit: rFit,
-        sameRail: true,
+        cmp: 'even',
       })
     }
     return out
@@ -1085,18 +1186,12 @@ function MakeIfDiffPanel({
       <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
         {t.makeifDiff.tapHint}
       </Text>
-      {/* Column headers */}
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={{ flex: 1.1, color: colors.dim, fontSize: 11 }} numberOfLines={1}>
-          {' '}
-        </Text>
-        <Text style={{ flex: 1.4, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.realCol}</Text>
-        <Text style={{ flex: 1, color: colors.dim, fontSize: 11 }}>{t.makeifDiff.altCol}</Text>
-        <View style={{ width: 64 }} />
-      </View>
+      {/* Per-年 cards (mobile-friendlier than a 4-col table): 年 + 生克 verdict on
+          top, 现实 → 假如 verdict pair below; 受克 cards tint + open a 解法. */}
       {rows.map((r) => {
-        const diverges =
-          !r.sameRail && r.altFit != null && r.realFit != null && r.altFit !== r.realFit
+        const changed = r.cmp === 'help' || r.cmp === 'harm'
+        const cmpColor =
+          r.cmp === 'help' ? FIT_COLOR.吉 : r.cmp === 'harm' ? FIT_COLOR.凶 : colors.dim
         const state = expanded[r.key]
         const narrative = narratives[r.key]
         const isOpen = state === 'done' && narrative
@@ -1107,77 +1202,102 @@ function MakeIfDiffPanel({
               accessibilityRole='button'
               accessibilityLabel={r.label}
               style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: 4,
-                paddingHorizontal: diverges ? 6 : 0,
-                borderRadius: 6,
-                backgroundColor: diverges
-                  ? `${colors.accent}10`
+                borderWidth: 0.5,
+                borderColor: changed ? `${cmpColor}55` : colors.separator,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 9,
+                backgroundColor: changed
+                  ? `${cmpColor}10`
                   : pressed
                     ? `${colors.accent}06`
                     : 'transparent',
               })}
             >
-              <Text style={{ flex: 1.1, color: colors.text, fontSize: 12 }} numberOfLines={1}>
-                {r.label}
-              </Text>
-              <View style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {/* card header: 年 + 生克 verdict (+ chevron when it changed) */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text
+                  style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}
+                  numberOfLines={1}
+                >
+                  {r.label}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text
+                    style={{
+                      color: changed ? cmpColor : colors.dim,
+                      fontSize: 11,
+                      fontWeight: changed ? '700' : '400',
+                    }}
+                  >
+                    {state === 'loading'
+                      ? '…'
+                      : r.cmp === 'help'
+                        ? t.makeifDiff.help
+                        : r.cmp === 'harm'
+                          ? t.makeifDiff.harm
+                          : r.cmp === 'even'
+                            ? t.makeifDiff.even
+                            : ''}
+                  </Text>
+                  {changed ? (
+                    <Text style={{ color: colors.dim, fontSize: 9 }}>{isOpen ? '▾' : '▸'}</Text>
+                  ) : null}
+                </View>
+              </View>
+              {/* verdict pair: 现实 → 假如 */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 6,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text style={{ color: colors.dim, fontSize: 11 }}>{t.makeifDiff.realCol}</Text>
                 {showPillar ? (
                   <Text style={{ color: colors.text, fontSize: 12, letterSpacing: 1 }}>
                     {r.realPillar}
                   </Text>
                 ) : null}
                 <Pill fit={r.realFit} />
-              </View>
-              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.dim, fontSize: 12, marginHorizontal: 2 }}>→</Text>
+                <Text style={{ color: colors.dim, fontSize: 11 }}>{t.makeifDiff.altCol}</Text>
                 <Pill fit={r.altFit} />
-              </View>
-              {/* Comparison verdict + an expand chevron — the chevron makes the row
-                  read as tappable (it was a static word, so the user never tried
-                  it / saw "no reaction"). */}
-              <View
-                style={{
-                  width: 64,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: 4,
-                }}
-              >
-                <Text
-                  style={{
-                    color: diverges ? colors.accent : colors.dim,
-                    fontSize: 10,
-                    fontWeight: diverges ? '700' : '400',
-                  }}
-                  numberOfLines={1}
-                >
-                  {state === 'loading'
-                    ? '…'
-                    : diverges
-                      ? t.makeifDiff.diffSuffix
-                      : r.sameRail
-                        ? t.makeifDiff.sameSuffix
-                        : ''}
-                </Text>
-                <Text style={{ color: colors.dim, fontSize: 9 }}>{isOpen ? '▾' : '▸'}</Text>
               </View>
             </Pressable>
             {isOpen ? (
-              <Text
-                style={{
-                  color: colors.secondary,
-                  fontSize: 12,
-                  lineHeight: 18,
-                  paddingHorizontal: 6,
-                  paddingTop: 2,
-                  paddingBottom: 6,
-                  fontStyle: 'italic',
-                }}
-              >
-                {narrative}
-              </Text>
+              <View style={{ paddingHorizontal: 6, paddingTop: 2, paddingBottom: 6 }}>
+                {r.cmp === 'harm' ? (
+                  <Text
+                    style={{
+                      color: FIT_COLOR.凶,
+                      fontSize: 10,
+                      fontWeight: '700',
+                      marginBottom: 2,
+                    }}
+                  >
+                    {t.makeifDiff.remedy}
+                  </Text>
+                ) : null}
+                <Text
+                  style={{
+                    color: colors.secondary,
+                    fontSize: 12,
+                    lineHeight: 18,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {narrative}
+                </Text>
+              </View>
             ) : state === 'error' ? (
               // Previously SILENT on failure (the "tap does nothing" report) —
               // surface the error + a retry tap target.
@@ -1220,6 +1340,8 @@ function ForkRow({
   colors,
   spacing,
   locale,
+  selected,
+  onSelect,
   onDelete,
   onRetry,
 }: {
@@ -1229,6 +1351,10 @@ function ForkRow({
   colors: C
   spacing: S
   locale: string
+  /** This fork is the highlighted one on the graph. */
+  selected?: boolean
+  /** Tap the title to select this fork on the graph (a big, easy hit target). */
+  onSelect?: () => void
   onDelete: () => void
   onRetry: () => void
 }) {
@@ -1303,18 +1429,33 @@ function ForkRow({
       >
         <View
           style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: selected ? 11 : 8,
+            height: selected ? 11 : 8,
+            borderRadius: 6,
             backgroundColor: b.color,
-            marginTop: 5,
+            borderWidth: selected ? 1.5 : 0,
+            borderColor: colors.accent,
+            marginTop: selected ? 4 : 5,
             opacity: b.isPast ? 0.5 : 1,
           }}
         />
         <View style={{ flex: 1, gap: 3 }}>
-          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
-            {forkTitle} · {b.label}
-          </Text>
+          <Pressable
+            onPress={onSelect}
+            accessibilityRole='button'
+            accessibilityLabel={`${forkTitle} · ${b.label}`}
+          >
+            <Text
+              style={{
+                color: selected ? colors.accent : colors.text,
+                fontSize: 14,
+                fontWeight: selected ? '700' : '600',
+              }}
+              numberOfLines={1}
+            >
+              {forkTitle} · {b.label}
+            </Text>
+          </Pressable>
           {st === 'loading' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <ActivityIndicator size='small' color={colors.accent} />

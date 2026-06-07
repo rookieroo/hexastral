@@ -65,7 +65,9 @@ export interface MakeIfModel {
  * same git graph. A branch LANE carries identity (like a git GUI tints each
  * branch), distinct from the element-coloured period DOTS which carry 五行.
  */
-const BRANCH_COLORS = ['#B45309', '#4F46E5', '#9333EA'] as const
+// MUTED warm-toned lane hues (plum / slate / jade) — sit inside the ivory + gold
+// almanac palette; avoid amber so a branch never blends into the gold trunk.
+const BRANCH_COLORS = ['#7A5C86', '#4C5C7A', '#4E7C6F'] as const
 
 // ── Deterministic helpers (no RNG — same seed → same path) ───────────────────
 
@@ -158,7 +160,7 @@ function branch(
 
 /** User-fork palette — the git-graph lane hues: brown / indigo / purple first
  *  (the named reference set), then teal + magenta for the 4th/5th forks. */
-const USER_BRANCH_COLORS = ['#B45309', '#4F46E5', '#9333EA', '#0F766E', '#BE185D'] as const
+const USER_BRANCH_COLORS = ['#7A5C86', '#4C5C7A', '#4E7C6F', '#B5503A', '#A65A7E'] as const
 
 function hashString(s: string): number {
   let h = 2_166_136_261
@@ -251,14 +253,14 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       explainTitle: '關於 make-if · 假如',
       explainRules: [
         '虛線是「假如」的人生分支，實線是你真實的命盤主線。',
-        '每個重要抉擇都會讓人生分岔——有的中年回歸本命，有的一路到底；終點也許相同，路途截然不同。',
+        '每個重要抉擇都會讓人生分岔——有的中年回歸本命的節奏，有的一路向前；路不同，落點由你爭來。',
         '解鎖後，這幾條分支會由你的八字生成，成為只屬於你的「另外幾種人生」。',
       ],
       explainUnlock: '解鎖我的 make-if',
       branches: [
-        { label: '下海經商', outcome: '早年大富大貴，中年激進豪賭，早早回到命運終點。' },
-        { label: '讀書入仕', outcome: '讀書改命，矜矜業業，晚年壽終正寢。' },
-        { label: '遠行闖蕩', outcome: '遠走他鄉，幾度起落，中年歸來復歸本命。' },
+        { label: '創業經商', outcome: '起伏大、忌豪賭——穩住節奏，可成一番事業。' },
+        { label: '深造治學', outcome: '以學問立身，厚積薄發，貴人相助，大器晚成。' },
+        { label: '遠行移居', outcome: '遠走他鄉，幾度起落，見識大開，異鄉亦可立業。' },
       ],
     }
   }
@@ -273,14 +275,14 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       explainTitle: '关于 make-if · 假如',
       explainRules: [
         '虚线是「假如」的人生分支，实线是你真实的命盘主线。',
-        '每个重要抉择都会让人生分岔——有的中年回归本命，有的一路到底；终点也许相同，路途截然不同。',
+        '每个重要抉择都会让人生分岔——有的中年回归本命的节奏，有的一路向前；路不同，落点由你争来。',
         '解锁后，这几条分支会由你的八字生成，成为只属于你的「另外几种人生」。',
       ],
       explainUnlock: '解锁我的 make-if',
       branches: [
-        { label: '下海经商', outcome: '早年大富大贵，中年激进豪赌，早早回到命运终点。' },
-        { label: '读书入仕', outcome: '读书改命，矜矜业业，晚年寿终正寝。' },
-        { label: '远行闯荡', outcome: '远走他乡，几度起落，中年归来复归本命。' },
+        { label: '创业经商', outcome: '起伏大、忌豪赌——稳住节奏，可成一番事业。' },
+        { label: '深造治学', outcome: '以学问立身，厚积薄发，贵人相助，大器晚成。' },
+        { label: '远行移居', outcome: '远走他乡，几度起落，见识大开，异乡亦可立业。' },
       ],
     }
   }
@@ -296,17 +298,20 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       explainTitle: 'make-if とは · もしも',
       explainRules: [
         '点線は「もしも」の人生分岐、実線はあなたの本当の命盤の主線。',
-        'どの重要な選択も人生を分岐させる——中年で本命へ戻る道も、最後まで進む道もある。終点は同じでも、道はまるで違う。',
+        'どの重要な選択も人生を分岐させる——中年で本命の調子へ戻る道も、進み続ける道もある。道は違い、行き着く先は己しだい。',
         '解錠すると、これらの分岐があなたの八字から生成され、あなただけの「もう一つの人生」になる。',
       ],
       explainUnlock: '自分の make-if を解錠',
       branches: [
         {
-          label: '起業・商売',
-          outcome: '若くして巨万の富、中年で無謀な賭けに走り、早々に命運の果てへ。',
+          label: '起業・商い',
+          outcome: '浮き沈みは大きいが、無謀を避け堅実に歩めば事業を築ける。',
         },
-        { label: '学問・官途', outcome: '学びで運命を変え、堅実に勤め、晩年は天寿を全うする。' },
-        { label: '放浪・遠行', outcome: '遠く旅立ち、浮き沈みを経て、中年で帰郷し本命へ戻る。' },
+        { label: '進学・研究', outcome: '学問を礎に、晩成ながら着実。導く人にも恵まれる。' },
+        {
+          label: '海外へ',
+          outcome: '遠く旅立ち、浮き沈みを経て視野が開ける。異郷にも根を張れる。',
+        },
       ],
     }
   }
@@ -321,19 +326,23 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
     explainTitle: 'About make-if · what if',
     explainRules: [
       'Dashed lines are "what-if" forks; the solid line is your real chart.',
-      'Every major choice forks a life — some return to fate mid-life, some run to the end. Same destination, completely different road.',
+      'Every major choice forks a life — some rejoin your rhythm mid-life, some run on. Different roads, and where each lands is yours to earn.',
       'Unlock to grow these forks from your own 八字 — the other lives that could be yours.',
     ],
     explainUnlock: 'Unlock my make-if',
     branches: [
       {
-        label: 'Build a business',
-        outcome: 'Early fortune, then a reckless mid-life gamble that returns you to fate fast.',
+        label: 'Start a business',
+        outcome: 'Big swings — pace it, skip the gamble, and it can build into something.',
       },
-      { label: 'Study & serve', outcome: 'Study rewrites fate; steady work; a peaceful old age.' },
       {
-        label: 'Wander far',
-        outcome: 'Leave home, rise and fall, return mid-life and rejoin your true line.',
+        label: 'Further study',
+        outcome: 'Build on knowledge — slow to bloom but steady, with mentors along the way.',
+      },
+      {
+        label: 'Move abroad',
+        outcome:
+          'Leave home, ride the ups and downs, broaden your world — a life can root anywhere.',
       },
     ],
   }

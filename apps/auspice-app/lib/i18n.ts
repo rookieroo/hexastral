@@ -230,10 +230,14 @@ export interface Strings {
     forkRow: string
     /** Merge-age row label, {age} = the age the branch rejoined the real line. */
     mergeRow: string
-    /** Suffix shown on the diff row when both columns share the same verdict. */
-    sameSuffix: string
-    /** Suffix shown when the verdicts diverge — the "real diff" moments. */
-    diffSuffix: string
+    /** Last-col verdict compare (生克): alt 生扶 real (↑ favored). */
+    help: string
+    /** Last-col: alt 比和 real (no change). */
+    even: string
+    /** Last-col: alt 克泄 real (↓ strained) — these rows offer a 解法. */
+    harm: string
+    /** Label for the remedy a 受克(harm) row offers. */
+    remedy: string
     /** Caption under the header: the rows are tappable + what the highlight /
      *  last column means (users couldn't tell either). */
     tapHint: string
@@ -575,9 +579,11 @@ const zhHans: Strings = {
     altCol: '假如',
     forkRow: '分岔 · {age}岁',
     mergeRow: '复归 · {age}岁',
-    sameSuffix: '同向',
-    diffSuffix: '相左',
-    tapHint: '点任一行展开那一年的解读 · 高亮行＝这个选择真正改变了运势',
+    help: '得助 ↑',
+    even: '比和',
+    harm: '受克 ↓',
+    remedy: '解法',
+    tapHint: '点任一行展开那一年的解读 · 受克↓ 处可看「解法」',
   },
   yinzheng: {
     prompt: '这一年你经历了什么?',
@@ -888,9 +894,11 @@ const zhHant: Strings = {
     altCol: '假如',
     forkRow: '分岔 · {age}歲',
     mergeRow: '復歸 · {age}歲',
-    sameSuffix: '同向',
-    diffSuffix: '相左',
-    tapHint: '點任一行展開那一年的解讀 · 高亮行＝這個選擇真正改變了運勢',
+    help: '得助 ↑',
+    even: '比和',
+    harm: '受克 ↓',
+    remedy: '解法',
+    tapHint: '點任一行展開那一年的解讀 · 受克↓ 處可看「解法」',
   },
   yinzheng: {
     prompt: '這一年你經歷了什麼?',
@@ -1212,9 +1220,11 @@ const ja: Strings = {
     altCol: 'もしも',
     forkRow: '分岐 · {age}歳',
     mergeRow: '合流 · {age}歳',
-    sameSuffix: '同調',
-    diffSuffix: '相違',
-    tapHint: '行をタップでその年の解説 · ハイライト＝選択が運勢を変えた節目',
+    help: '追い風 ↑',
+    even: '拮抗',
+    harm: '重荷 ↓',
+    remedy: '対処法',
+    tapHint: '行をタップでその年の解説 · 重荷↓ には「対処法」',
   },
   yinzheng: {
     prompt: 'この年、何がありましたか?',
@@ -1528,9 +1538,11 @@ const en: Strings = {
     altCol: 'What-if',
     forkRow: 'Fork · age {age}',
     mergeRow: 'Merge · age {age}',
-    sameSuffix: 'aligned',
-    diffSuffix: 'diverges',
-    tapHint: 'Tap a row to read that year · highlighted = where the choice changed your luck',
+    help: 'favored ↑',
+    even: 'in balance',
+    harm: 'strained ↓',
+    remedy: 'remedy',
+    tapHint: 'Tap a row to read that year · tap a strained ↓ year for a remedy',
   },
   yinzheng: {
     prompt: 'What happened that year?',

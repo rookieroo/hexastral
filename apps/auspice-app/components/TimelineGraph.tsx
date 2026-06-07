@@ -27,6 +27,7 @@ import {
   type IncomingBranchInteractionKind,
   type ShiShenCategory,
 } from '@zhop/astro-core'
+import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -34,10 +35,9 @@ import { Pressable, Text, View } from 'react-native'
 import type { DayunRow, LiunianRow, LiuyueRow, PersonalFit, TimelinePayload } from '@/lib/api'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
-/** 对你而言 verdict → dot color, drawn from the modern 五行 palette: 吉 = 木
- *  emerald-600 (growth), 凶 = 火 red-600 (caution), 平 = zinc-500 (neutral).
- *  Matches the daily 黄历 + 干支 grids. */
-const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#16A34A', 平: '#71717A', 凶: '#DC2626' }
+/** 对你而言 verdict → dot color, from the token single-source (`verdictColors`):
+ *  吉 = jade, 平 = neutral grey, 凶 = alarm red. Shared across timeline / make-if. */
+const FIT_COLOR: Record<PersonalFit, string> = verdictColors
 
 /** The single most salient "why" tag a period earns (priority-ranked, one per node). */
 type ChipKind =
@@ -129,7 +129,7 @@ const FREE_LIUYUE_MONTHS = 6
 
 // ── Geometry ────────────────────────────────────────────────────────────────
 const TRUNK_X = 26 // through-line of self (命) lane
-const BRANCH_X = 70 // 大运 / 流年 branch lane
+const BRANCH_X = 52 // 大运 / 流年 branch lane (tight, git-graph spacing)
 const PAD_TOP = 18
 const STEP = 46 // vertical rhythm between stacked nodes
 const NODE_R = 7
@@ -140,12 +140,15 @@ const SOURCE_R = 9
  *  decade / a 官杀 decade …), not a positional rainbow. It lines up with the
  *  domain label shown inline on the 大运. Picked to read on light + dark themes
  *  and stay clear of the gold accent trunk + the chip colours. */
-const DOMAIN_COLORS: Record<ShiShenCategory, string> = {
-  比劫: '#0D9488', // teal — peers · competition · self-reliance
-  食伤: '#9333EA', // purple — output · expression · creativity
-  财星: '#EA580C', // orange — wealth · acquisition
-  官杀: '#DC2626', // red — authority · pressure · discipline
-  印绶: '#4F46E5', // indigo — support · study · protection
+// MUTED, warm-toned variants (not generic web green/blue/red) so the lanes sit
+// inside the ivory + gold almanac palette instead of fighting it. Each still maps
+// to its 十神 domain; tuned to read against the faint gold trunk + on dark theme.
+export const DOMAIN_COLORS: Record<ShiShenCategory, string> = {
+  比劫: '#4E7C6F', // muted jade — peers · competition · self-reliance
+  食伤: '#7A5C86', // muted plum — output · expression · creativity
+  财星: '#C0883E', // muted amber — wealth · acquisition
+  官杀: '#B5503A', // muted terracotta — authority · pressure · discipline
+  印绶: '#4C5C7A', // muted slate-indigo — support · study · protection
 }
 
 interface GColors {
@@ -206,28 +209,21 @@ interface BuiltGraph {
 }
 
 /**
- * A round git-graph elbow between a trunk point and a branch node. `leave`
- * controls the tangent at the START: 'h' (peel — leave the trunk HORIZONTALLY,
- * off the node's side, then arrive vertically in the lane) or 'v' (merge — leave
- * the lane vertically, then arrive horizontally into the trunk). K pulls the
- * controls for a full, round quarter-turn (the Tower / GitLens look) instead of
- * the old lazy S that left straight downward.
+ * A tight git-graph S-elbow between a trunk point and a branch node: leave the
+ * start vertically and arrive vertically — the short corner GitLens / Tower draw,
+ * matching the make-if graph + the screenshot-5 reference. Symmetric in x, so the
+ * same curve serves both the peel (trunk → lane) and the merge (lane → trunk).
  */
 function curve(
   p: ReturnType<typeof Skia.Path.Make>,
   x1: number,
   y1: number,
   x2: number,
-  y2: number,
-  leave: 'h' | 'v' = 'h'
+  y2: number
 ) {
-  const K = 0.6
+  const dy = y2 - y1
   p.moveTo(x1, y1)
-  if (leave === 'h') {
-    p.cubicTo(x1 + (x2 - x1) * K, y1, x2, y2 - (y2 - y1) * K, x2, y2)
-  } else {
-    p.cubicTo(x1, y1 + (y2 - y1) * K, x2 + (x1 - x2) * K, y2, x2, y2)
-  }
+  p.cubicTo(x1, y1 + dy * 0.5, x2, y2 - dy * 0.5, x2, y2)
 }
 
 function buildGraph(
@@ -313,7 +309,7 @@ function buildGraph(
       // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
       // Stays gray so the Pro contrast carries.
       curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
-      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2, 'v')
+      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
       branches.push({ color: branchColor, path: branchPath, ghost: true })
       nodes.push({
         id: `dayun-${d.index}`,
@@ -406,7 +402,7 @@ function buildGraph(
     // Merge back into the trunk — unless this is the open HEAD (current) branch.
     // The merge-back point on the trunk becomes a hollow ring (git "Merge X" node).
     if (state !== 'current') {
-      curve(branchPath, BRANCH_X, prevY, TRUNK_X, y, 'v')
+      curve(branchPath, BRANCH_X, prevY, TRUNK_X, y)
       nodes.push({
         id: `merge-${d.index}`,
         x: TRUNK_X,
