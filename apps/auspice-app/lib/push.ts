@@ -36,12 +36,13 @@ const PUSH_HOUR = 8
 const EVENING_HOUR = 20
 const WINDOW_DAYS = 5
 
-/** Evening-slot title — the 8pm push previews TOMORROW (forward-looking → next-day open). */
-const EVENING_TEXT: Record<Locale, { title: string }> = {
-  'zh-Hans': { title: '明日预告' },
-  'zh-Hant': { title: '明日預告' },
-  ja: { title: '明日の予報' },
-  en: { title: 'Tomorrow' },
+/** Evening-slot (8pm) labels — recap today + preview tomorrow, so it doesn't
+ *  duplicate tomorrow's 8am push. */
+const EVENING_TEXT: Record<Locale, { title: string; today: string; tomorrow: string }> = {
+  'zh-Hans': { title: '今日小结 · 明日预告', today: '今日', tomorrow: '明日' },
+  'zh-Hant': { title: '今日小結 · 明日預告', today: '今日', tomorrow: '明日' },
+  ja: { title: '今日のまとめ · 明日の予報', today: '今日', tomorrow: '明日' },
+  en: { title: "Today's recap · tomorrow", today: 'Today', tomorrow: 'Tomorrow' },
 }
 
 /** Retro-check copy ({event} = the localized event label). */
@@ -218,27 +219,35 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // under the SAME daily toggle so we don't add another Settings switch (the push
   // system was already several layers deep).
   const et = EVENING_TEXT[opts.locale]
+  const sep = opts.locale === 'en' ? ', ' : '、'
+  const loc = (v: string) => localizeYijiVerb(v, opts.locale)
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightPm(i)
     if (when.getTime() <= now) continue // skip past 8pm
-    const previewDate = localYmd(eightAm(i + 1)) // the morning AFTER this evening
+    const todayDate = localYmd(eightAm(i)) // the evening's OWN day (recap)
+    const tomorrowDate = localYmd(eightAm(i + 1)) // preview
     let content: { title: string; body: string } = { title: et.title, body: t.today }
     try {
-      const c = dailyContent(
-        opts.locale,
-        t,
-        previewDate,
-        await fetchAuspiceDay(previewDate, opts.birthDate),
-        isPro
-      )
-      content = { title: `${et.title} · ${previewDate}`, body: c.body }
+      // Recap today + preview tomorrow — so the 8pm push never duplicates
+      // tomorrow's 8am push (which carries tomorrow's 宜忌 alone).
+      const [tdP, tmP] = await Promise.all([
+        fetchAuspiceDay(todayDate, opts.birthDate),
+        fetchAuspiceDay(tomorrowDate, opts.birthDate),
+      ])
+      const tdYi = tdP.day.goodFor.slice(0, 2).map(loc).join(sep) || '—'
+      const tmYi = tmP.day.goodFor.slice(0, 2).map(loc).join(sep) || '—'
+      const tmJi = tmP.day.avoid.slice(0, 2).map(loc).join(sep) || '—'
+      content = {
+        title: et.title,
+        body: `${et.today}${t.suitable} ${tdYi} · ${et.tomorrow}${t.suitable} ${tmYi}·${t.avoid} ${tmJi}`,
+      }
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
     }
     try {
       await Notifications.scheduleNotificationAsync({
-        identifier: `${EVENING_ID_PREFIX}${previewDate}`,
-        content: { ...content, data: { day: previewDate } },
+        identifier: `${EVENING_ID_PREFIX}${tomorrowDate}`,
+        content: { ...content, data: { day: tomorrowDate } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}

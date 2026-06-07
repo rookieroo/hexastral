@@ -84,6 +84,12 @@ function ymdToDate(ymd: Ymd): Date {
   return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day))
 }
 
+function ymdShift(ymd: Ymd, days: number): Ymd {
+  const d = ymdToDate(ymd)
+  d.setUTCDate(d.getUTCDate() + days)
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}
+
 function fmtUtc(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')
   const day = String(d.getUTCDate()).padStart(2, '0')
@@ -1921,6 +1927,11 @@ interface PushLabelSet {
   forYou: string
   daySuffix: string
   tomorrow: string
+  /** Evening (20:00) title — a recap of today + a look ahead to tomorrow. */
+  eveningTitle: string
+  /** Short words for the evening body's two halves. */
+  today: string
+  tomorrowShort: string
   fit: Record<string, string>
 }
 
@@ -1930,6 +1941,9 @@ const EN_PUSH_LABELS: PushLabelSet = {
   forYou: 'You',
   daySuffix: '',
   tomorrow: 'Tomorrow',
+  eveningTitle: "Today's recap · tomorrow",
+  today: 'Today',
+  tomorrowShort: 'Tomorrow',
   fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
 }
 
@@ -1940,6 +1954,9 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: '你',
     daySuffix: '日',
     tomorrow: '明日预告',
+    eveningTitle: '今日小结 · 明日预告',
+    today: '今日',
+    tomorrowShort: '明日',
     fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
   },
   'zh-Hant': {
@@ -1948,6 +1965,9 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: '你',
     daySuffix: '日',
     tomorrow: '明日預告',
+    eveningTitle: '今日小結 · 明日預告',
+    today: '今日',
+    tomorrowShort: '明日',
     fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
   },
   ja: {
@@ -1956,6 +1976,9 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: 'あなた',
     daySuffix: '日',
     tomorrow: '明日の予報',
+    eveningTitle: '今日のまとめ · 明日の予報',
+    today: '今日',
+    tomorrowShort: '明日',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
   },
   en: EN_PUSH_LABELS,
@@ -2178,6 +2201,31 @@ function renderAuspicePush(
 ): { title: string; body: string; data: Record<string, string> } {
   const L = pushLabels(sub.locale)
   const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
+  const yiji = (ymd: Ymd, n: number) => {
+    const { day } = buildDay(ymd, subject)
+    return {
+      yi: day.goodFor.slice(0, n).join('、') || '—',
+      ji: day.avoid.slice(0, n).join('、') || '—',
+      ganZhi: day.ganZhi,
+    }
+  }
+
+  // Evening (20:00): the cron advanced dateYmd to tomorrow. RECAP today + PREVIEW
+  // tomorrow — so it never duplicates tomorrow's 08:00 push (which is tomorrow only).
+  if (slot === 'evening') {
+    const tmrYmd = dateYmd
+    const todayYmd = ymdShift(dateYmd, -1)
+    const td = yiji(todayYmd, 2)
+    const tm = yiji(tmrYmd, 2)
+    const body = `${L.today}${L.yi} ${td.yi} · ${L.tomorrowShort}${L.yi} ${tm.yi}·${L.ji} ${tm.ji}`
+    return {
+      title: L.eveningTitle,
+      body,
+      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(tmrYmd)) },
+    }
+  }
+
+  // Morning (08:00): today's almanac.
   const { day, personalization } = buildDay(dateYmd, subject)
   const dateStr = fmtUtc(ymdToDate(dateYmd))
   const yi = day.goodFor.slice(0, 3).join('、') || '—'
@@ -2185,12 +2233,10 @@ function renderAuspicePush(
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
   if (sub.isPro && personalization)
     body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
-  const title =
-    slot === 'evening' ? `${L.tomorrow} · ${dateStr}` : `${dateStr} · ${day.ganZhi}${L.daySuffix}`
   return {
-    title,
+    title: `${dateStr} · ${day.ganZhi}${L.daySuffix}`,
     body,
-    data: { type: slot === 'evening' ? 'auspice_evening' : 'auspice_daily', day: dateStr },
+    data: { type: 'auspice_daily', day: dateStr },
   }
 }
 
