@@ -1,0 +1,155 @@
+# Synastry in Auspice — folding 合盘 home, and the Kindred question
+
+> **Status**: PLAN (2026-06-05). No code yet — this is the "设计好方案" before build.
+> **Premise (founder)**: Kindred struggles for seed traffic; most of its value
+> Auspice can do (maybe better); **adding a birthday in Auspice is the natural
+> funnel**. So: bring 合盘 (synastry) fully into Auspice — a per-亲友 relationship
+> timeline + node notifications + a 合盘 make-if — and reconsider whether Kindred
+> needs to exist.
+> **Builds on**: [timeline-makeif-gitgraph.md](timeline-makeif-gitgraph.md) (the
+> git-graph + 命理 layer already shipped in Auspice) ·
+> [bonds-timeline-plan.md](bonds-timeline-plan.md) (the Kindred relationship-timeline
+> this generalizes).
+
+## 0. TL;DR
+
+A 亲友 in Auspice already carries a birth. Compute the **two-chart synastry
+timeline** client-side (both charts are the user's own device-local data — no
+cross-device privacy problem, unlike Kindred), render it as the **same git graph**
+we just built, attach **opt-in node notifications** (the proven `push.ts` pattern),
+and unlock the deep layer with the **one-time $6.99 合盘 purchase**. The recurring
+node reminders are what make a one-time purchase worth it ("this relationship,
+every turning point ahead, on your calendar"). A **合盘 make-if** lets the user
+record this relationship's what-ifs — but it NEVER drives notifications.
+
+## 1. Why this is strong (and why Kindred is in question)
+
+- **Funnel**: birthday entry is already in Auspice (`people.tsx`). Kindred needs a
+  separate install + seed traffic it can't get. Same value, no extra app to seed.
+- **Privacy is EASIER here**: Kindred's load-bearing constraint (D2) is "partner
+  B's birth must never reach A's device", forcing server-side merge + projection.
+  In Auspice the user enters the 亲友 birth themselves → both charts are local →
+  **synastry timeline computes on-device**, no server, no projection, no cron.
+- **Most value already exists** (see §2): the engines, the pair route, the
+  git-graph UI, the local-notification pattern, the $6.99 product.
+- **The one-time-purchase problem is solved**: a synastry report read once is
+  weak. A relationship *timeline with reminders* is recurring value → justifies a
+  one-time unlock and invites re-engagement.
+
+## 2. Reuse inventory (what already exists — this is mostly assembly)
+
+| Need | Already have | Where |
+|---|---|---|
+| Synastry score/grade/dims | `calculateHeHun` (deterministic) | astro-core |
+| **Relationship timeline engine** | `getRelationshipTimelineNodes` / `getRelationshipTimelineNotifications` | astro-core/relationship-timeline.ts |
+| 合盘 today + 择吉 | `/api/auspice/pair` | hexastral-api/routes/pair |
+| Deep six-chapter reading (LLM) | synastry chapters generator | svc-astro/hehun |
+| Git-graph UI | `TimelineGraph` (and `MakeIfGraph`) | apps/auspice-app/components |
+| Local node notifications | `scheduleTimelineReminders` pattern + prefs toggle | apps/auspice-app/lib/push.ts + (tabs)/me.tsx |
+| 亲友 entry + free taste | `people.tsx` (生肖 + score + 短语) | apps/auspice-app |
+| One-time product | `hexastral_compatibility` ($6.99 consumable) | currently Kindred RevenueCat; needs an Auspice-side product |
+| 命理 node layer | 十神 theme / 化解 / 神煞 chips / hero | shipped (timeline-makeif-gitgraph) |
+
+**Gap**: Auspice IAP today is subscription only (`auspice_pro` / `universe_pro`,
+`lib/pro.ts`). A one-time consumable purchase path must be added (or gate the
+synastry timeline behind `auspice_pro` for v1 and add the consumable later).
+
+## 3. Architecture (client-side synastry, on-device)
+
+```
+亲友 (people.tsx, device-local birth) + self birth
+        │  both charts on device — no server needed
+        ▼
+astro-core getRelationshipTimelineNodes(self, 亲友)   ← already exists
+        ▼
+RelationshipTimelineGraph (a TimelineGraph variant)   ← reuse the git graph
+        ├─ free taste: score + 生肖 + this year's node(s)
+        ├─ unlock ($6.99 one-time / auspice_pro): full 前瞻 + node detail
+        └─ opt-in notifications (push.ts pattern) → 偏好设置
+```
+
+- **No new server route required** for the timeline itself (compute-on-device).
+  The deep LLM six-chapter reading stays server-side (`/api/auspice/pair` or the
+  existing synastry chapters) and is the premium content.
+- **Node semantics** mirror the shipped personal timeline: 流年 where the two
+  charts interact (一方/双方 大运 换运, 流年 冲/合 between them), verdict + the
+  single priority chip, 化解 on conflict nodes, hero 爆点.
+
+## 4. The three features
+
+### 4.1 合盘 timeline (per 亲友)  ★ deterministic, on-device
+A relationship git graph: the trunk = the relationship through-line; nodes = the
+significant shared 流年/大运-transition moments (from `getRelationshipTimelineNodes`).
+Reuse `TimelineGraph` (or a thin `RelationshipTimelineGraph` wrapper). Entry: tap a
+亲友 → "关系时间轴".
+
+### 4.2 合盘 node notifications  ★ the recurring value
+Opt-in, in **偏好设置** (next to the existing 人生 timeline reminder toggle). Local
+notifications at the relationship's upcoming significant nodes
+(`getRelationshipTimelineNotifications`), Pro/one-time-purchase gated. This is the
+答案 to "why pay for a one-time 合盘": the reminders keep giving.
+
+### 4.3 合盘 make-if (synastry what-if)  ⚠ design-careful; NEVER notifies
+The user records THIS relationship's node events + choices ("假如那年我们一起创业",
+"假如当年没分开"). Reuse `MakeIfGraph`. The branch plays against the real
+relationship line (命主干 reabsorption, like the personal make-if).
+**Hard rule (founder)**: make-if is 真真假假 — over-interpreting or "intervening"
+backfires. So make-if is **explore-only; it is NOT a notification source**.
+Notifications come ONLY from the deterministic 人生/合盘 timeline nodes.
+
+## 5. Monetization
+
+- **Free**: synastry taste (score + 生肖 + one 短语), this year's relationship node.
+- **One-time $6.99 (`hexastral_compatibility`)**: full deep reading + the
+  relationship timeline 前瞻 + node notifications for THAT relationship. Recurring
+  reminders justify the price.
+- **`auspice_pro` / `universe_pro`**: all relationships' timelines + notifications
+  (the power-user bundle).
+- v1 may gate behind `auspice_pro` and add the per-relationship consumable next
+  (Auspice has no one-time purchase path yet — see §2 gap).
+
+## 6. The Kindred question — disposition options
+
+This plan makes Kindred's core (synastry) redundant in Auspice. Options:
+1. **Freeze** — keep the code + the standalone app, stop pushing the cross-app
+   funnel; revisit if Auspice synastry validates demand. (Lowest regret.)
+2. **Fold & deprecate** — migrate anything Auspice lacks (deep chat? multi-bond
+   compare?) then sunset the app. (Highest focus, irreversible-ish.)
+3. **Keep as power-user app** — Auspice = mass funnel + one-time synastry; Kindred =
+   deep multi-relationship + chat subscription for the few who want it.
+
+**Recommendation**: **(1) Freeze** now — build §4.1/§4.2 in Auspice, measure
+whether the birthday→synastry→one-time-purchase funnel converts. Don't sunset
+Kindred until Auspice synastry proves the demand Kindred couldn't seed. The
+earlier cross-app handoff work stays in the tree but we stop funneling to it.
+
+## 7. What's lost by not using Kindred (be honest)
+- Kindred's **invite/resonance flow** (partner B fills their own birth, PII never
+  on A's device). In Auspice the user types the 亲友 birth themselves — fine for
+  most cases, but no "send them a link to fill it in" social loop.
+- Kindred's **deep multi-relationship compare** + LLM **chat**. The chat moat is
+  real for power users; if it matters, keep option (3).
+
+## 8. Phased build
+
+| Phase | What | Verify |
+|---|---|---|
+| S1 | `RelationshipTimelineGraph` from `getRelationshipTimelineNodes` (reuse TimelineGraph); entry from 亲友 | typecheck; device |
+| S2 | 合盘 node notifications (push.ts pattern) + 偏好设置 toggle | typecheck; device |
+| S3 | Gate: free taste vs unlock (auspice_pro first; consumable next) | typecheck |
+| S4 | Fix the funnel bugs: lunar taste disappearing; decouple taste from the (now-removed) Kindred hand-off | device |
+| S5 | 合盘 make-if (reuse MakeIfGraph) — explore-only, no notifications | device |
+| S6 | Kindred: stop the cross-app funnel push (freeze) | review |
+
+S1–S3 + S4 are the core (deterministic, mostly on-device, high reuse). S5 is the
+complex one (the user flagged it) — design its event/choice recording model before
+building. S6 is a one-line funnel decision.
+
+## 9. Open questions (decide before/within build)
+- **One-time consumable in Auspice**: add the RevenueCat consumable now, or gate
+  v1 on `auspice_pro` and add it later?
+- **合盘 make-if event model**: what does "record a relationship node event +
+  choice" capture, and how does it stay on the right side of the 真真假假 line?
+- **Kindred**: confirm Freeze (1) vs Keep-as-power-user (3).
+- **Deep reading delivery**: keep the LLM six-chapter (server) as the premium tier
+  inside Auspice, or is the deterministic timeline + 化解 enough for v1?
