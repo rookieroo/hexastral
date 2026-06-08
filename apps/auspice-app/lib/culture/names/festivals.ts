@@ -10,7 +10,7 @@ export const FESTIVAL_NAMES: Record<string, LocalizedText> = {
     'zh-Hans': '春节',
     'zh-Hant': '春節',
     ja: '春節',
-    en: 'Spring Festival',
+    en: 'Chinese New Year',
   },
   yuanxiao: {
     'zh-Hans': '元宵节',

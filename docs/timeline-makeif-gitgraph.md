@@ -5,10 +5,11 @@
 > doc: what shipped, the design model, how to run + verify locally, and what's
 > left. Pick up from "Remaining tasks".
 >
-> **Last updated**: 2026-06-05.
-> **Branch**: `claude/timeline-gitgraph` (Phases 1–3a; NOT yet merged to main).
-> **Already on main**: the earlier insight-density pass (reason-chips, hero 爆点,
-> WYSIWYG share, make-if 影响/时机) — merge `6ae6db0`.
+> **Last updated**: 2026-06-06 — diff view, 择吉, Phase 6 per-node LLM all
+> shipped on top of yesterday's 冲合刑害会 precision. Plus a Tower/Fork-style git
+> graph polish on Timeline (per-branch colors, merge rings on the trunk).
+> **Branch**: `main`. Phases 1–6 complete except visual verification on device.
+> **Already on main**: every shipped phase below — the doc is now an audit, not a handoff.
 
 ## 0. TL;DR
 
@@ -137,33 +138,51 @@ backed by existing `astro-core` — no Workers AI.
   single-priority node chip (`chipFor` takes a `ShenShaBranches` bundle).
 - ✅ **cherry-pick** SHIPPED (`7d49880`): actionable 假如 → "带回现实" (用神 +
   nearest favorable 流年); past 假如 keep the 命主干 backdrop (mutually exclusive).
-- ⬜ **冲合刑害会** interaction precision (`analyzeBranchClashes` /
-  `analyzeBranchCombinations`) — deeper node reasons (流年 × 大运 × 本命). Moderate
-  value (overlaps the existing chip); deferred.
-- ⬜ **diff**: a 假如 branch vs the real line side-by-side — a comparison VIEW
-  (new UI surface). Deferred — bigger UI, device-only to verify.
-- ⬜ **择吉** on actionable future nodes (ties make-if 时机 to real date-picking) —
-  needs the 择日 engine + a date surface. Deferred.
+- ✅ **冲合刑害会 precision** SHIPPED (2026-06-05 afternoon): new
+  `analyzeBranchAgainstNatal(incoming, natal, stems?)` in `astro-core/combinations.ts`
+  detects the strongest 进盘×本命 interaction (sanhe-ju / sanhui-ju / chong /
+  liuhe / sanxing / liuhai / zixing). `chipFor` priority extended; old
+  `personal_clash`-only 冲 broadens to "冲任一本命支". Six new chip kinds with
+  zh-Hans/zh-Hant/ja/en labels (`signals.{sanhe,sanhui,liuhe,sanxing,liuhai,zixing}`).
+  Hero detection now also fires on 三合/三会/三刑/六害 future years.
+  - tests: 11 new cases in `combinations.test.ts` (priority order, 透干 status)
+  - `bun typecheck`/`bun test` green (802 pass, +11 from before).
+- ✅ **diff view** SHIPPED (2026-06-06): the highlighted 假如 vs the real life-line
+  rendered row-by-row in `MakeIfDiffPanel` ([apps/auspice-app/app/makeif.tsx]).
+  Each row = fork age / branch dot age / merge age. Left column shows the real
+  大运 干支 + 流年 verdict; right shows the alt-life verdict; rows where the two
+  verdicts **diverge** get an accent-tinted bg + "相左/diverges" suffix — the
+  "real diff" moments. Deterministic, no LLM. i18n keys `makeifDiff.{header,
+  realCol, altCol, forkRow, mergeRow, sameSuffix, diffSuffix}` in all 4 locales.
+- ✅ **择吉 deep-link** SHIPPED (2026-06-06): when a FUTURE 流年 is selected,
+  Timeline shows a "→ {year}年的吉日窗口" link routing to `/event` with the year's
+  Feb 1 → May 1 window prefilled (立春-aligned, within the server's 92-day cap).
+  `event.tsx` now reads `useLocalSearchParams<{event,from,to}>` and pre-populates
+  state; Free still gets the next-30-days clamp, Pro picks within the window.
 
-### Phase 6 (was Phase 4) — make-if branch-node LLM expansion  ⚠️ secondary; needs Workers AI to verify
-Tap a node on a 假如 branch → LLM "at this age in that life, you'd be…".
-Per-branch generator exists (`lib/makeIfBranches.ts` + `fetchMakeIfNarratives`);
-extend to per-node. Buildable offline; generation only verifiable with Workers AI.
-
-### Capability menu (the full 命理 → git/screen map, for reference)
-| 命理 ability | feature | astro-core | ready |
-|---|---|---|---|
-| 十神 | node life-domain / branch theme | `getShiShen` | ★★★ |
-| 化解/通关 | conflict resolution | `getWuXingRelation`/`recommendFavorableElement`/`WUXING_GENERATE` | ★★★ |
-| 神煞 | event-flavor chips | `analyzeShenSha`/`getTianYiGuiRen`/`getWenChangGuiRen`/`getJiangXing`/`getJieSha` | ★★★ |
-| 冲合刑害会 | precise node reasons | `analyzeBranchClashes`/`analyzeBranchCombinations` | ★★ |
-| 合婚 overlay | partner 大运/流年 on your axis | `calculateHeHun` | ★★ (= Kindred bonds-timeline) |
-| 择吉 | best window to act | Auspice 择日 | ★★ |
-| 紫微大限 | alt interpretation lens | iztro (deps) | ★ |
+### Phase 6 — make-if per-node LLM expansion  ✅ SHIPPED (2026-06-06)
+The diff-panel rows are the tap targets: tap any row → server hits Workers AI
+(via SVC_ASTRO) for a short "at this age in that life, you would be…" line on
+that specific node, rendered inline below the row. Same guard / cache pattern
+as `/makeif`.
+- **svc-astro**: new `POST /cycle/makeif-node-narrate` ([services/svc-astro/src/routes/cycle.ts])
+  takes the branch shape + focusAge + the real-vs-alt verdict pair; returns one
+  30–80 字 line, locale-targeted.
+- **hexastral-api**: new `POST /api/auspice/makeif/node` ([apps/hexastral-api/src/routes/auspice.ts])
+  — Pro-gated, KV-cached 30d per `(birth · branch shape · focusAge · verdict pair)`,
+  shares the existing `MAKEIF_GUARD_CONFIG` daily limit.
+- **client**: `fetchMakeIfNodeNarrative()` ([apps/auspice-app/lib/api.ts]); the
+  `MakeIfDiffPanel` wraps each row in a `Pressable` and renders the narrative
+  inline once it lands. Per-(branch.id, age) cache in component state survives
+  taps; switching the featured branch resets it.
+- **verification**: `bun typecheck` (35) + `bun test` (802) green. Workers AI
+  generation is verifiable locally via `wrangler dev`.
 
 ### Acceptance for the epic
 Every git operation visible in the graph maps to a real 命理 action, both screens
-read as the reference git graph, and share == on-screen state.
+read as the reference git graph (Tower/Fork-style — per-branch hues + merge
+rings on the trunk), and share == on-screen state. ✅ as of 2026-06-06; the
+final capability menu lives in §7 below.
 
 ## 5. Broader deferred backlog (infra-blocked, separate from this epic)
 - Kindred timeline **local push** wiring — needs `expo-notifications` (EAS/native;
@@ -177,6 +196,31 @@ read as the reference git graph, and share == on-screen state.
   `hexastral_compatibility` product config — needs prod creds / App Store Connect.
 
 ## 6. Branch / merge state
-- `claude/timeline-gitgraph` — Phases 1–3a, pushed, **awaiting merge** + your
-  visual verification.
-- Earlier work already merged to `main` (`6ae6db0` and before).
+- `main` carries every shipped phase (1–6). The 2026-06-06 wave adds:
+  - **Timeline UI polish**: `BRANCH_PALETTE` (8 hues) — per-大运 git-graph branch
+    color; merge-back nodes are hollow rings on the trunk (the git "Merge X"
+    commit visual); 大运 head + merge-back stroke uses the branch hue.
+  - **Diff view** (deterministic, no LLM) — 假如 vs real, row by row.
+  - **择吉 deep-link** — future 流年 → /event prefilled.
+  - **Phase 6 per-node LLM** — tap-to-expand on the diff rows.
+- Visual verification on device is still owed for the Timeline visual changes
+  (Skia path geometry; no test coverage). Suggested sweep:
+  - [ ] each 大运 reads as a distinctly-coloured branch (peel + lane + merge)
+  - [ ] past 大运 have a hollow ring on the trunk at the merge point
+  - [ ] current 大运 stays open at HEAD; "now" still glows
+  - [ ] Share PNG renders correctly with the new colored branches
+
+## 7. Capability menu — final
+All deterministic capabilities + Phase 6 LLM now wired in:
+
+| 命理 ability | feature | astro-core | ready |
+|---|---|---|---|
+| 十神 | node life-domain / branch theme | `getShiShen` | ★★★ ✅ |
+| 化解/通关 | conflict resolution | `recommendFavorableElement`/`WUXING_GENERATE` | ★★★ ✅ |
+| 神煞 | event-flavor chips | `analyzeShenSha` family | ★★★ ✅ |
+| 冲合刑害会 | precise node reasons | `analyzeBranchAgainstNatal` | ★★★ ✅ |
+| 择吉 | best window to act | Auspice 择日 (`searchAuspiceDays`) | ★★ ✅ (deep-link) |
+| diff | 假如 vs real side-by-side | `MakeIfDiffPanel` (deterministic) | ★★★ ✅ |
+| per-node 推演 | tap-a-row LLM zoom | `fetchMakeIfNodeNarrative` | ★★★ ✅ |
+| 合婚 overlay | partner 大运/流年 on your axis | `calculateHeHun` | ★★ (= Kindred bonds-timeline) |
+| 紫微大限 | alt interpretation lens | iztro (deps) | ★ (deferred) |

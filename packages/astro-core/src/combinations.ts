@@ -333,3 +333,200 @@ export function analyzeCombinations(
     branchClashes: analyzeBranchClashes(branches),
   }
 }
+
+// ========================================
+// 进盘交互（流年 / 大运 vs 本命四柱）
+// ========================================
+
+/** 地支三刑对 — 寅巳申、丑戌未、子卯 (任意两两相刑). */
+const BRANCH_PUNISHMENT_PAIRS: ReadonlyArray<readonly [EarthlyBranch, EarthlyBranch]> = [
+  ['寅', '巳'],
+  ['巳', '申'],
+  ['寅', '申'],
+  ['丑', '戌'],
+  ['戌', '未'],
+  ['丑', '未'],
+  ['子', '卯'],
+] as const
+
+/** 自刑地支 — 辰辰、午午、酉酉、亥亥. */
+const SELF_PUNISHMENT_BRANCHES: ReadonlySet<EarthlyBranch> = new Set(['辰', '午', '酉', '亥'])
+
+/** 地支六害 — 子未、丑午、寅巳、卯辰、申亥、酉戌. */
+const BRANCH_HARM_PAIRS: ReadonlyArray<readonly [EarthlyBranch, EarthlyBranch]> = [
+  ['子', '未'],
+  ['丑', '午'],
+  ['寅', '巳'],
+  ['卯', '辰'],
+  ['申', '亥'],
+  ['酉', '戌'],
+] as const
+
+/**
+ * 进盘地支 vs 本命四柱的交互类型。
+ *
+ * - 三合局 / 三会局 / 六合：正向；
+ * - 冲 / 三刑 / 六害 / 自刑：负向。
+ *
+ * 当进盘地支同时与本命构成多种关系时，只返回最显著的一项（详见 priority 顺序）。
+ */
+export type IncomingBranchInteractionKind =
+  | 'sanhe-ju'
+  | 'sanhui-ju'
+  | 'liuhe'
+  | 'chong'
+  | 'sanxing'
+  | 'liuhai'
+  | 'zixing'
+
+export interface IncomingBranchInteraction {
+  kind: IncomingBranchInteractionKind
+  /** 参与本次交互的地支（含进盘地支）。 */
+  branches: EarthlyBranch[]
+  /** 合化后的五行（仅 sanhe-ju / sanhui-ju / liuhe 有）。 */
+  resultWuxing?: WuXing
+  /** 合化状态（仅在传入 natalStems 时填充）。 */
+  status?: CombinationStatus
+  /** 简短描述，便于上层提取。 */
+  description: string
+}
+
+/**
+ * 分析「进盘地支」与本命四柱地支的最显著交互。
+ *
+ * 进盘地支 = 流年支 / 大运支 / 流月支 等任何外来支。本命四柱 = [年, 月, 日, 时]。
+ *
+ * 优先级（由强到弱）:
+ *   sanhe-ju → sanhui-ju → chong → liuhe → sanxing → liuhai → zixing → null
+ *
+ * 说明:
+ * - 三合局/三会局要求进盘支与本命中另外两支共同构成完整三支组合（半合不算）。
+ * - 六合返回与本命中任一支构成六合的情况；优先匹配日支（最贴身），其次月支。
+ * - 冲/三刑/六害检查进盘支与本命任一支的两两关系。
+ * - 自刑仅在进盘支落在 SELF_PUNISHMENT_BRANCHES 且本命存在同支时触发。
+ * - natalStems 可选，仅用于补全 `status`（合化 / 合而不化）。
+ *
+ * @param incoming   进盘地支
+ * @param natal      本命四柱地支 [年支, 月支, 日支, 时支]
+ * @param natalStems 本命四柱天干（可选，用于判断化神透干）
+ * @returns 最显著交互；若无任何匹配返回 null
+ */
+export function analyzeBranchAgainstNatal(
+  incoming: EarthlyBranch,
+  natal: readonly [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch],
+  natalStems?: readonly [HeavenlyStem, HeavenlyStem, HeavenlyStem, HeavenlyStem]
+): IncomingBranchInteraction | null {
+  const natalSet = new Set(natal)
+  const transparent = (wx: WuXing): CombinationStatus | undefined => {
+    if (!natalStems) return undefined
+    return natalStems.some((s) => STEM_WUXING[s] === wx) ? '合化' : '合而不化'
+  }
+
+  // 1. 三合局 — incoming 与本命中另两支构成完整三合
+  for (const [a, b, c, wx] of BRANCH_THREE_COMBINATION) {
+    const trio: EarthlyBranch[] = [a, b, c]
+    if (!trio.includes(incoming)) continue
+    const others = trio.filter((x) => x !== incoming)
+    if (others.every((x) => natalSet.has(x))) {
+      return {
+        kind: 'sanhe-ju',
+        branches: [incoming, ...others],
+        resultWuxing: wx,
+        status: transparent(wx),
+        description: `${a}${b}${c}三合${wx}局，流盘地支引动本命合局。`,
+      }
+    }
+  }
+
+  // 2. 三会局
+  for (const [a, b, c, wx] of BRANCH_THREE_GATHERING) {
+    const trio: EarthlyBranch[] = [a, b, c]
+    if (!trio.includes(incoming)) continue
+    const others = trio.filter((x) => x !== incoming)
+    if (others.every((x) => natalSet.has(x))) {
+      return {
+        kind: 'sanhui-ju',
+        branches: [incoming, ...others],
+        resultWuxing: wx,
+        status: transparent(wx),
+        description: `${a}${b}${c}三会${wx}局，方局当令。`,
+      }
+    }
+  }
+
+  // 3. 冲 — incoming 与本命任一支六冲（"冲太岁"类）
+  for (const n of natal) {
+    for (const [a, b] of BRANCH_CLASH_MAP) {
+      if ((incoming === a && n === b) || (incoming === b && n === a)) {
+        return {
+          kind: 'chong',
+          branches: [incoming, n],
+          description: `${incoming}${n}相冲，主变动。`,
+        }
+      }
+    }
+  }
+
+  // 4. 六合 — 优先匹配日支，其次月支、年支、时支
+  const sixHePartner = (b: EarthlyBranch): { partner: EarthlyBranch; wx: WuXing } | null => {
+    for (const [x, y, wx] of BRANCH_SIX_COMBINATION) {
+      if (b === x) return { partner: y, wx }
+      if (b === y) return { partner: x, wx }
+    }
+    return null
+  }
+  {
+    const liuhePartner = sixHePartner(incoming)
+    if (liuhePartner) {
+      const priority: ReadonlyArray<number> = [2, 1, 0, 3] // day, month, year, hour
+      for (const idx of priority) {
+        if (natal[idx] === liuhePartner.partner) {
+          return {
+            kind: 'liuhe',
+            branches: [incoming, liuhePartner.partner],
+            resultWuxing: liuhePartner.wx,
+            status: transparent(liuhePartner.wx),
+            description: `${incoming}${liuhePartner.partner}六合化${liuhePartner.wx}。`,
+          }
+        }
+      }
+    }
+  }
+
+  // 5. 三刑 — incoming 与本命任一支构成三刑对
+  for (const n of natal) {
+    for (const [a, b] of BRANCH_PUNISHMENT_PAIRS) {
+      if ((incoming === a && n === b) || (incoming === b && n === a)) {
+        return {
+          kind: 'sanxing',
+          branches: [incoming, n],
+          description: `${incoming}${n}相刑，主磨擦、官非、小破财。`,
+        }
+      }
+    }
+  }
+
+  // 6. 六害
+  for (const n of natal) {
+    for (const [a, b] of BRANCH_HARM_PAIRS) {
+      if ((incoming === a && n === b) || (incoming === b && n === a)) {
+        return {
+          kind: 'liuhai',
+          branches: [incoming, n],
+          description: `${incoming}${n}相害，暗中消耗，宜耐心。`,
+        }
+      }
+    }
+  }
+
+  // 7. 自刑 — incoming 是自刑地支且本命同支
+  if (SELF_PUNISHMENT_BRANCHES.has(incoming) && natalSet.has(incoming)) {
+    return {
+      kind: 'zixing',
+      branches: [incoming, incoming],
+      description: `${incoming}${incoming}自刑，自找烦扰，宜放下执念。`,
+    }
+  }
+
+  return null
+}

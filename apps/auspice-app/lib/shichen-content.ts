@@ -263,13 +263,26 @@ export const TWELVE_SHICHEN: ReadonlyArray<ShichenEntry> = [
   },
 ]
 
-/** Color hint for the 五行 ribbon shown in the wheel center. */
+/**
+ * 五行 palette — modern designer hues (Tailwind 600-level), keeping the
+ * traditional semantic mapping but trading the muted 中国画 originals for a
+ * vivid, distinguishable set that reads on both light + dark themes.
+ *
+ * - 木 (Wood)  emerald-600 — alive, growing
+ * - 火 (Fire)  red-600 — cardinal cinnabar
+ * - 土 (Earth) amber-600 — warm clay-gold
+ * - 金 (Metal) zinc-600 — modern gunmetal (distinguishable from 土's amber)
+ * - 水 (Water) blue-600 — deep ocean
+ *
+ * Used everywhere 五行 surfaces in UI: timeline + make-if dots, 干支 grids, 八字
+ * pillars, 时辰 wheel. Changing values here propagates by import (5 call sites).
+ */
 export const ELEMENT_COLORS: Record<ShichenEntry['element'], string> = {
-  木: '#5C8C5A', // green
-  火: '#C0584A', // cinnabar
-  土: '#B8896A', // earth-brown
-  金: '#A89B7F', // gold-grey
-  水: '#3F6B86', // deep blue
+  木: '#16A34A',
+  火: '#DC2626',
+  土: '#D97706',
+  金: '#52525B',
+  水: '#2563EB',
 }
 
 /** Compute the active 时辰 index from a wall-clock hour. 23:00 belongs to 子时 (next day). */

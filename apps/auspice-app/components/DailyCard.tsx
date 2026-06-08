@@ -196,7 +196,9 @@ function moonPhaseFromLunarDay(day: number | undefined): number {
 }
 
 function fitColorOnDark(fit: PersonalFit | null): string {
-  return fit === '吉' ? '#34C759' : fit === '凶' ? '#FF453A' : 'rgba(255,255,255,0.75)'
+  // Dark-bg context — use 400-level (lighter) green/red so they pop against
+  // black, matching the dark-mode 吉/凶 tokens in hexastral-tokens/palette.ts.
+  return fit === '吉' ? '#4ADE80' : fit === '凶' ? '#F87171' : 'rgba(255,255,255,0.75)'
 }
 
 function resolveClashAnimal(clash: AuspiceDay['clash']): string {

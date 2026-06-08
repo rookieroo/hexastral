@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
+import { pickCopy } from '@/lib/auspice-share'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { localizeYijiVerb, resolveShareLc, type ShareLc, yijiLabels } from '@/lib/yiji-i18n'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 
@@ -25,17 +28,35 @@ async function fetchDay(date: string): Promise<DayData | null> {
   }
 }
 
+/**
+ * Share locale = explicit `?lc=` (the app appends it) → Accept-Language → `en`.
+ * The page reads it so 宜忌 (labels + verbs) render in the viewer's language
+ * instead of always Chinese — the EN-share-still-Chinese fix.
+ */
+async function resolveLc(searchParams: Promise<{ lc?: string | string[] }>): Promise<ShareLc> {
+  const sp = await searchParams
+  const lc = Array.isArray(sp.lc) ? sp.lc[0] : sp.lc
+  const al = (await headers()).get('accept-language')
+  return resolveShareLc(lc, al)
+}
+
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ date: string }>
+  searchParams: Promise<{ lc?: string | string[] }>
 }): Promise<Metadata> {
   const { date } = await params
+  const lc = await resolveLc(searchParams)
   const day = await fetchDay(date)
-  const title = day ? `${date} ${day.ganZhi}日 · 宜忌 · Auspice` : `${date} · Auspice`
+  const L = yijiLabels(lc)
+  const loc = (v: string) => localizeYijiVerb(v, lc)
+  const cjk = lc !== 'en'
+  const title = day ? `${date} ${day.ganZhi}${cjk ? '日' : ''} · Auspice` : `${date} · Auspice`
   const description = day
-    ? `宜 ${day.goodFor.slice(0, 3).join(' ')} · 忌 ${day.avoid.slice(0, 3).join(' ')}`
-    : 'The Chinese calendar — 干支 · 农历 · 节气 · 宜忌.'
+    ? `${L.good} ${day.goodFor.slice(0, 3).map(loc).join(' ')} · ${L.avoid} ${day.avoid.slice(0, 3).map(loc).join(' ')}`
+    : 'Auspice — the Chinese calendar, for the world.'
   return { title, description, openGraph: { title, description, siteName: 'Auspice' } }
 }
 
@@ -57,12 +78,24 @@ const Chip = ({ label, color, bg }: { label: string; color: string; bg: string }
 
 export default async function AuspiceDaySharePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ date: string }>
+  searchParams: Promise<{ lc?: string | string[] }>
 }) {
   const { date } = await params
+  const lc = await resolveLc(searchParams)
   const day = await fetchDay(date)
-  const lunar = day?.lunarDate ? `${day.lunarDate.monthName}${day.lunarDate.dayName}` : ''
+  const L = yijiLabels(lc)
+  const loc = (v: string) => localizeYijiVerb(v, lc)
+  const copy = pickCopy('day', lc)
+  const cjk = lc !== 'en'
+  // The lunar date is Chinese month/day names (正月初一); show it only in CJK
+  // locales so the EN card stays English. The Gregorian date carries the identity.
+  const lunar = cjk && day?.lunarDate ? `${day.lunarDate.monthName}${day.lunarDate.dayName}` : ''
+  // Single-char 宜/忌 vs the wider Good/Avoid — give the label a min-width so both
+  // rows' chips start at the same x (the alignment the Chinese-only card avoided).
+  const labelWidth = lc === 'en' ? 58 : 28
 
   return (
     <main
@@ -93,7 +126,7 @@ export default async function AuspiceDaySharePage({
             fontSize: '0.8rem',
           }}
         >
-          AUSPICE 黄历
+          {copy.eyebrow}
         </div>
 
         {/* Day card */}
@@ -110,7 +143,10 @@ export default async function AuspiceDaySharePage({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '2.2rem', fontWeight: 600 }}>{day?.ganZhi ?? '—'}日</span>
+            <span style={{ fontSize: '2.2rem', fontWeight: 600 }}>
+              {day?.ganZhi ?? '—'}
+              {cjk ? '日' : ''}
+            </span>
             <span style={{ color: '#8A7866', fontSize: '0.95rem' }}>
               {date} {lunar}
             </span>
@@ -118,18 +154,36 @@ export default async function AuspiceDaySharePage({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span style={{ color: '#2E9E5B', fontWeight: 700, fontSize: '1.1rem' }}>宜</span>
+              <span
+                style={{
+                  color: '#2E9E5B',
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  minWidth: labelWidth,
+                }}
+              >
+                {L.good}
+              </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {(day?.goodFor ?? []).slice(0, 6).map((t) => (
-                  <Chip key={t} label={t} color='#2E9E5B' bg='rgba(46,158,91,0.08)' />
+                  <Chip key={t} label={loc(t)} color='#2E9E5B' bg='rgba(46,158,91,0.08)' />
                 ))}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span style={{ color: '#C0452E', fontWeight: 700, fontSize: '1.1rem' }}>忌</span>
+              <span
+                style={{
+                  color: '#C0452E',
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  minWidth: labelWidth,
+                }}
+              >
+                {L.avoid}
+              </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {(day?.avoid ?? []).slice(0, 6).map((t) => (
-                  <Chip key={t} label={t} color='#C0452E' bg='rgba(192,69,46,0.08)' />
+                  <Chip key={t} label={loc(t)} color='#C0452E' bg='rgba(192,69,46,0.08)' />
                 ))}
               </div>
             </div>
@@ -150,9 +204,7 @@ export default async function AuspiceDaySharePage({
             gap: '0.85rem',
           }}
         >
-          <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>
-            每天的干支 · 农历 · 节气 · 宜忌
-          </p>
+          <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>{copy.footer}</p>
           <p
             style={{
               margin: 0,

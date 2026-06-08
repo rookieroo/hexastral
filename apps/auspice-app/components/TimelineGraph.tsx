@@ -19,7 +19,15 @@
  */
 
 import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
-import { getShiShen, type HeavenlyStem, type ShiShenCategory } from '@zhop/astro-core'
+import {
+  analyzeBranchAgainstNatal,
+  type EarthlyBranch,
+  getShiShen,
+  type HeavenlyStem,
+  type IncomingBranchInteractionKind,
+  type ShiShenCategory,
+} from '@zhop/astro-core'
+import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -27,8 +35,9 @@ import { Pressable, Text, View } from 'react-native'
 import type { DayunRow, LiunianRow, LiuyueRow, PersonalFit, TimelinePayload } from '@/lib/api'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
-/** 对你而言 verdict → dot color (吉 green / 平 grey / 凶 red). Matches the daily 黄历. */
-const FIT_COLOR: Record<PersonalFit, string> = { 吉: '#34C759', 平: '#8E8E93', 凶: '#FF453A' }
+/** 对你而言 verdict → dot color, from the token single-source (`verdictColors`):
+ *  吉 = jade, 平 = neutral grey, 凶 = alarm red. Shared across timeline / make-if. */
+const FIT_COLOR: Record<PersonalFit, string> = verdictColors
 
 /** The single most salient "why" tag a period earns (priority-ranked, one per node). */
 type ChipKind =
@@ -41,8 +50,16 @@ type ChipKind =
   | 'jiangxing'
   | 'taohua'
   | 'yima'
+  | 'sanhe'
+  | 'sanhui'
+  | 'liuhe'
+  | 'sanxing'
+  | 'liuhai'
+  | 'zixing'
 
-/** Chip tint — caution warm-red, help gold/green, study blue, leadership purple. */
+/** Chip tint — caution warm-red, help gold/green, study blue, leadership purple,
+ *  合 (positive interaction) cool-emerald/teal/cyan, 刑害 (negative interaction)
+ *  deeper rust/amber than the plain 冲 to read as "more nuanced than 冲". */
 const CHIP_COLOR: Record<ChipKind, string> = {
   clash: '#C2410C',
   jiesha: '#B91C1C',
@@ -53,6 +70,12 @@ const CHIP_COLOR: Record<ChipKind, string> = {
   jiangxing: '#7C3AED',
   taohua: '#C45D8D',
   yima: '#2A8C7F',
+  sanhe: '#047857',
+  sanhui: '#0F766E',
+  liuhe: '#0E7490',
+  sanxing: '#92400E',
+  liuhai: '#7C2D12',
+  zixing: '#78350F',
 }
 
 /** The 本命-derived 神煞 branches a period can land on (the per-node "event flavor"). */
@@ -68,35 +91,62 @@ export interface ShenShaBranches {
 
 /**
  * Pick the ONE most salient reason for a period — not a pile of tags. Priority
- * (caution → strong help → flavor): 冲太岁 > 劫煞 > 忌神 > 天乙贵人 > 用神 > 文昌 >
- * 将星 > 桃花 > 驿马. 神煞 come from the period branch vs the natal anchors; element
- * clash/用神/忌神 from the server reasons.
+ * (rare strong-positive > caution > help > flavor):
+ *   三合局 > 三会局 > 冲太岁 > 劫煞 > 忌神 > 三刑 > 六害 > 天乙贵人 > 六合 > 用神 >
+ *   文昌 > 将星 > 桃花 > 驿马 > 自刑.
+ * 三合局/三会局/六合 (positive) + 三刑/六害/自刑 (nuanced negative) and 冲 come from
+ * `analyzeBranchAgainstNatal` — the period branch vs all 4 本命支 — so we now
+ * surface the full 冲合刑害会 layer, not just 冲年支 (the old `personal_clash`).
+ * 神煞 come from the period branch vs the natal anchors; 用神/忌神 from server.
  */
 function chipFor(
   reasons: readonly string[],
   branch: string,
-  ss?: ShenShaBranches
+  ss?: ShenShaBranches,
+  /** Precomputed period-branch ↔ natal interaction (合化冲刑害). */
+  interaction?: IncomingBranchInteractionKind | null
 ): ChipKind | undefined {
-  if (reasons.includes('personal_clash')) return 'clash'
+  if (interaction === 'sanhe-ju') return 'sanhe'
+  if (interaction === 'sanhui-ju') return 'sanhui'
+  if (interaction === 'chong' || reasons.includes('personal_clash')) return 'clash'
   if (ss?.jiesha && branch === ss.jiesha) return 'jiesha'
   if (reasons.includes('unfavorable_element_present')) return 'unfavorable'
+  if (interaction === 'sanxing') return 'sanxing'
+  if (interaction === 'liuhai') return 'liuhai'
   if (ss?.guiren?.includes(branch)) return 'guiren'
+  if (interaction === 'liuhe') return 'liuhe'
   if (reasons.includes('favorable_element_present')) return 'favorable'
   if (ss?.wenchang && branch === ss.wenchang) return 'wenchang'
   if (ss?.jiangxing && branch === ss.jiangxing) return 'jiangxing'
   if (ss?.taohua && branch === ss.taohua) return 'taohua'
   if (ss?.yima && branch === ss.yima) return 'yima'
+  if (interaction === 'zixing') return 'zixing'
   return undefined
 }
 
 // ── Geometry ────────────────────────────────────────────────────────────────
 const TRUNK_X = 26 // through-line of self (命) lane
-const BRANCH_X = 70 // 大运 / 流年 branch lane
+const BRANCH_X = 52 // 大运 / 流年 branch lane (tight, git-graph spacing)
 const PAD_TOP = 18
 const STEP = 46 // vertical rhythm between stacked nodes
 const NODE_R = 7
 const HEAD_R = 10
 const SOURCE_R = 9
+
+/** 大运 lane colour BY 十神 domain — the branch hue carries MEANING (this is a 财
+ *  decade / a 官杀 decade …), not a positional rainbow. It lines up with the
+ *  domain label shown inline on the 大运. Picked to read on light + dark themes
+ *  and stay clear of the gold accent trunk + the chip colours. */
+// MUTED, warm-toned variants (not generic web green/blue/red) so the lanes sit
+// inside the ivory + gold almanac palette instead of fighting it. Each still maps
+// to its 十神 domain; tuned to read against the faint gold trunk + on dark theme.
+export const DOMAIN_COLORS: Record<ShiShenCategory, string> = {
+  比劫: '#4E7C6F', // muted jade — peers · competition · self-reliance
+  食伤: '#7A5C86', // muted plum — output · expression · creativity
+  财星: '#C0883E', // muted amber — wealth · acquisition
+  官杀: '#B5503A', // muted terracotta — authority · pressure · discipline
+  印绶: '#4C5C7A', // muted slate-indigo — support · study · protection
+}
 
 interface GColors {
   text: string
@@ -114,7 +164,7 @@ interface GNode {
   x: number
   y: number
   r: number
-  kind: 'source' | 'dayun' | 'liunian'
+  kind: 'source' | 'dayun' | 'liunian' | 'mergeBack'
   state: NodeState
   /** Free users only see SOURCE + current 大运 branch + current 流年. */
   locked: boolean
@@ -127,23 +177,40 @@ interface GNode {
   isHero?: boolean
   /** 十神 decade-theme — the life domain this 大运 activates (大运 nodes only). */
   domain?: ShiShenCategory
+  /** Per-branch git tint — paints lane strokes + 大运 head / merge-back rings. */
+  branchColor?: string
   title: string
   sub: string
   /** Index back into the source rows for the detail panel. */
-  ref: { kind: 'source' } | { kind: 'dayun'; row: DayunRow } | { kind: 'liunian'; row: LiunianRow }
+  ref:
+    | { kind: 'source' }
+    | { kind: 'dayun'; row: DayunRow }
+    | { kind: 'liunian'; row: LiunianRow }
+    | { kind: 'mergeBack'; row: DayunRow }
+}
+
+/** One drawable branch — peel curve + lane line + merge curve, all in ONE hue. */
+interface GBranch {
+  color: string
+  path: ReturnType<typeof Skia.Path.Make>
+  /** Free + non-current = ghost bump (dashed gray). */
+  ghost: boolean
 }
 
 interface BuiltGraph {
   width: number
   height: number
   nodes: GNode[]
-  /** Pre-built Skia paths, split by visual weight so we can batch-render. */
   trunkPath: ReturnType<typeof Skia.Path.Make>
-  solidEdges: ReturnType<typeof Skia.Path.Make>
-  ghostEdges: ReturnType<typeof Skia.Path.Make>
+  branches: GBranch[]
 }
 
-/** Smooth S-curve from a trunk point out to a branch node (or back). */
+/**
+ * A tight git-graph S-elbow between a trunk point and a branch node: leave the
+ * start vertically and arrive vertically — the short corner GitLens / Tower draw,
+ * matching the make-if graph + the screenshot-5 reference. Symmetric in x, so the
+ * same curve serves both the peel (trunk → lane) and the merge (lane → trunk).
+ */
 function curve(
   p: ReturnType<typeof Skia.Path.Make>,
   x1: number,
@@ -151,9 +218,9 @@ function curve(
   x2: number,
   y2: number
 ) {
-  const midY = (y1 + y2) / 2
+  const dy = y2 - y1
   p.moveTo(x1, y1)
-  p.cubicTo(x1, midY, x2, midY, x2, y2)
+  p.cubicTo(x1, y1 + dy * 0.5, x2, y2 - dy * 0.5, x2, y2)
 }
 
 function buildGraph(
@@ -161,18 +228,30 @@ function buildGraph(
   isPro: boolean,
   width: number,
   shensha?: ShenShaBranches,
-  /** The checked-out 大运 — expands to its full decade; others show notable years.
-   *  Defaults to the current 大运. */
-  expandedDayunIndex?: number
+  /** Set of 大运 indices to render expanded (with all their 流年 commits). 大运
+   *  NOT in this set collapse to just their head + merge node — past + far-future
+   *  decades stay tidy by default; the user taps a head to expand. Empty/undefined
+   *  falls back to "current decade only". */
+  expandedDayunIndices?: ReadonlySet<number>
 ): BuiltGraph {
   const nodes: GNode[] = []
   const trunkPath = Skia.Path.Make()
-  const solidEdges = Skia.Path.Make()
-  const ghostEdges = Skia.Path.Make()
+  const branches: GBranch[] = []
 
   const cur = payload.currentDayunIndex
   const thisYear = new Date().getFullYear()
   const dayMaster = payload.pillars.day
+  // 本命四柱地支 — anchor for the per-node 冲合刑害会 analysis (hour pillar may be
+  // unknown; fall back to the day branch so we still have a 4-tuple). The cast is
+  // safe: the server already validated branches against the 地支 alphabet.
+  const natalBranches: readonly [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+    payload.pillars.year.branch as EarthlyBranch,
+    payload.pillars.month.branch as EarthlyBranch,
+    payload.pillars.day.branch as EarthlyBranch,
+    (payload.pillars.hour?.branch ?? payload.pillars.day.branch) as EarthlyBranch,
+  ]
+  const interactionFor = (branch: string): IncomingBranchInteractionKind | null =>
+    analyzeBranchAgainstNatal(branch as EarthlyBranch, natalBranches)?.kind ?? null
 
   let y = PAD_TOP
 
@@ -200,26 +279,35 @@ function buildGraph(
   //    only NOTABLE 流年 (a few commits — the "一串节点" look without dumping 80
   //    years); the checked-out 大运 expands to its full decade. Free tier locks
   //    every 大运 but the current one to a ghost bump. ──
-  const expanded = expandedDayunIndex ?? cur
-  const isNotable = (ln: LiunianRow): boolean =>
-    ln.fit !== '平' || chipFor(ln.reasons, ln.pillar.branch, shensha) !== undefined
+  // A 大运 is "expanded" when the user (or the default rule) wants its full
+  // decade of 流年 commits rendered. Anything not in this set collapses to just
+  // its head + merge ring — past/far-future stay tidy. Fall back to "current
+  // only" if the parent didn't pass a set (legacy callers, share capture).
+  const expandedSet: ReadonlySet<number> =
+    expandedDayunIndices && expandedDayunIndices.size > 0 ? expandedDayunIndices : new Set([cur])
   let trunkBottom = sourceY
 
   payload.dayun.forEach((d, i) => {
     const state: NodeState = i < cur ? 'past' : i === cur ? 'current' : 'future'
     const locked = !isPro && state !== 'current'
     const dayunY = y
-    const dayunChip = chipFor(d.reasons, d.pillar.branch, shensha)
+    const dayunChip = chipFor(d.reasons, d.pillar.branch, shensha, interactionFor(d.pillar.branch))
     // 十神 decade-theme — which life domain this 大运 activates vs the 日主.
     const dayunDomain = getShiShen(
       dayMaster.stem as HeavenlyStem,
       d.pillar.stem as HeavenlyStem
     ).category
+    // Each 大运's lane is coloured by its 十神 domain — the hue says what KIND of
+    // decade it is (财 / 官杀 / 印 …), matching the domain label shown inline.
+    const branchColor = DOMAIN_COLORS[dayunDomain]
+    const branchPath = Skia.Path.Make()
 
     if (locked) {
       // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
-      curve(ghostEdges, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
-      curve(ghostEdges, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
+      // Stays gray so the Pro contrast carries.
+      curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
+      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
+      branches.push({ color: branchColor, path: branchPath, ghost: true })
       nodes.push({
         id: `dayun-${d.index}`,
         x: BRANCH_X,
@@ -233,6 +321,7 @@ function buildGraph(
         fit: d.fit,
         chip: dayunChip,
         domain: dayunDomain,
+        branchColor,
         title: `${d.pillar.stem}${d.pillar.branch}`,
         sub: `${d.startAge}`,
         ref: { kind: 'dayun', row: d },
@@ -242,20 +331,23 @@ function buildGraph(
       return
     }
 
-    // Free's current branch runs up to "now" only — forward-looking years stay the
-    // Pro moat. Pro: the current (or checked-out) 大运 shows its full decade; other
-    // 大运 show notable commits.
+    // Free's current branch runs up to "now" only — forward-looking years stay
+    // the Pro moat. Beyond that: a 大运 in the expanded set renders its full
+    // decade; everything else collapses to ZERO 流年 commits (just the head + a
+    // merge ring), so past + far-future decades read as a tidy spine until the
+    // user taps to drill in.
+    const isExpanded = expandedSet.has(i)
     const years =
       state === 'current'
         ? isPro
           ? d.liunian
           : d.liunian.filter((ln) => ln.year <= thisYear)
-        : i === expanded
+        : isExpanded
           ? d.liunian
-          : d.liunian.filter(isNotable)
+          : []
 
     // Peel the branch out of the trunk and place the 大运 head.
-    curve(solidEdges, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
+    curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
     trunkBottom = Math.max(trunkBottom, dayunY)
     nodes.push({
       id: `dayun-${d.index}`,
@@ -270,6 +362,7 @@ function buildGraph(
       fit: d.fit,
       chip: dayunChip,
       domain: dayunDomain,
+      branchColor,
       title: `${d.pillar.stem}${d.pillar.branch}`,
       sub: `${d.startAge}`,
       ref: { kind: 'dayun', row: d },
@@ -280,8 +373,8 @@ function buildGraph(
     let prevY = dayunY
     years.forEach((ln) => {
       const ls: NodeState = ln.isCurrent ? 'current' : ln.year < thisYear ? 'past' : 'future'
-      solidEdges.moveTo(BRANCH_X, prevY)
-      solidEdges.lineTo(BRANCH_X, y)
+      branchPath.moveTo(BRANCH_X, prevY)
+      branchPath.lineTo(BRANCH_X, y)
       nodes.push({
         id: `liunian-${ln.year}`,
         x: BRANCH_X,
@@ -293,7 +386,8 @@ function buildGraph(
         isHead: ln.isCurrent,
         element: ln.pillar.element,
         fit: ln.fit,
-        chip: chipFor(ln.reasons, ln.pillar.branch, shensha),
+        chip: chipFor(ln.reasons, ln.pillar.branch, shensha, interactionFor(ln.pillar.branch)),
+        branchColor,
         title: `${ln.pillar.stem}${ln.pillar.branch}`,
         sub: `${ln.year}`,
         ref: { kind: 'liunian', row: ln },
@@ -303,25 +397,54 @@ function buildGraph(
     })
 
     // Merge back into the trunk — unless this is the open HEAD (current) branch.
+    // The merge-back point on the trunk becomes a hollow ring (git "Merge X" node).
     if (state !== 'current') {
-      curve(solidEdges, BRANCH_X, prevY, TRUNK_X, y)
+      curve(branchPath, BRANCH_X, prevY, TRUNK_X, y)
+      nodes.push({
+        id: `merge-${d.index}`,
+        x: TRUNK_X,
+        y,
+        r: NODE_R - 1,
+        kind: 'mergeBack',
+        state,
+        locked: false,
+        isHead: false,
+        element: d.pillar.element,
+        branchColor,
+        title: `${d.pillar.stem}${d.pillar.branch}`,
+        sub: `${d.endAge}`,
+        ref: { kind: 'mergeBack', row: d },
+      })
       trunkBottom = Math.max(trunkBottom, y)
       y += STEP / 2
     } else {
       trunkBottom = Math.max(trunkBottom, prevY)
     }
+
+    branches.push({ color: branchColor, path: branchPath, ghost: false })
   })
 
   // Hero (the share 爆点): the nearest UPCOMING node carrying a high-signal chip
   // (a year to brace for / lean into), else fall back to "now". One only — a
-  // single focal point reads better than uniform density.
+  // single focal point reads better than uniform density. 三合/三会 + 三刑/六害
+  // qualify alongside the original clash/不利/用神.
+  const HERO_CHIPS = new Set<ChipKind>([
+    'sanhe',
+    'sanhui',
+    'clash',
+    'unfavorable',
+    'favorable',
+    'sanxing',
+    'liuhai',
+  ])
   const hero =
     nodes.find(
       (n) =>
         !n.locked &&
         n.kind !== 'source' &&
         n.state === 'future' &&
-        (n.chip === 'clash' || n.chip === 'unfavorable' || n.chip === 'favorable')
+        n.chip !== undefined &&
+        HERO_CHIPS.has(n.chip)
     ) ?? nodes.find((n) => n.isHead)
   if (hero) {
     hero.isHero = true
@@ -340,8 +463,7 @@ function buildGraph(
     height: Math.max(trunkBottom, maxNodeY) + STEP / 2 + SOURCE_R,
     nodes,
     trunkPath,
-    solidEdges,
-    ghostEdges,
+    branches,
   }
 }
 
@@ -360,7 +482,7 @@ export function TimelineGraph({
   reasonLabels,
   shensha,
   domainLabels,
-  expandedDayunIndex,
+  expandedDayunIndices,
 }: {
   payload: TimelinePayload
   isPro: boolean
@@ -379,50 +501,53 @@ export function TimelineGraph({
   shensha?: ShenShaBranches
   /** Localized 十神 → life-domain labels — the 大运 branch theme. */
   domainLabels?: Record<ShiShenCategory, string>
-  /** Checked-out 大运 (tap a 大运 to expand its full decade). Defaults to current. */
-  expandedDayunIndex?: number
+  /** Indices of 大运 to render with all their 流年 (tap a head to toggle). */
+  expandedDayunIndices?: ReadonlySet<number>
 }) {
   const graph = useMemo(
-    () => buildGraph(payload, isPro, width, shensha, expandedDayunIndex),
-    [payload, isPro, width, shensha, expandedDayunIndex]
+    () => buildGraph(payload, isPro, width, shensha, expandedDayunIndices),
+    [payload, isPro, width, shensha, expandedDayunIndices]
   )
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
   return (
     <View style={{ width, height: graph.height }}>
       <Canvas style={{ position: 'absolute', left: 0, top: 0, width, height: graph.height }}>
-        {/* Trunk — the continuous through-line of self. */}
+        {/* Trunk — the continuous through-line of self (命). A real git GUI's
+            "main" line is a single bold colour, not a dim hairline: gives the
+            graph a spine to peel off of. Uses `colors.text` for weight + the
+            slightly thicker 2.2 stroke matches branch stroke without dominating. */}
         <Path
           path={graph.trunkPath}
           style='stroke'
-          strokeWidth={1.8}
+          strokeWidth={2.4}
           strokeCap='round'
-          color={colors.separator}
+          // The 命 through-line follows the theme accent (a warm spine), not a
+          // near-black hairline — the 大运 lanes peel off it.
+          color={colors.accent}
+          opacity={0.6}
         />
-        {/* Ghost edges (locked / future, Free tier). */}
-        <Group opacity={0.35}>
+        {/* Per-branch paths — ONE hue per 大运 end-to-end (peel + lane + merge),
+            the Tower/Fork "git graph" identity. Ghost branches (Free, non-current)
+            stay gray + dim. Stroke bumped to 2.2 for parity with the trunk. */}
+        {graph.branches.map((br, i) => (
           <Path
-            path={graph.ghostEdges}
+            // Index key OK — branches array is rebuilt each render, never reordered.
+            key={`br-${i}`}
+            path={br.path}
             style='stroke'
-            strokeWidth={1.4}
+            strokeWidth={2.2}
             strokeCap='round'
             strokeJoin='round'
-            color={colors.dim}
+            color={br.ghost ? colors.dim : br.color}
+            opacity={br.ghost ? 0.32 : 1}
           />
-        </Group>
-        {/* Solid branch + commit edges. */}
-        <Path
-          path={graph.solidEdges}
-          style='stroke'
-          strokeWidth={1.8}
-          strokeCap='round'
-          strokeJoin='round'
-          color={colors.separator}
-        />
+        ))}
 
         {/* Nodes. */}
         {graph.nodes.map((n) => {
           const elementColor = ELEMENT_COLORS[n.element]
+          const lane = n.branchColor ?? elementColor
           if (n.locked) {
             return (
               <Group key={n.id}>
@@ -433,6 +558,10 @@ export function TimelineGraph({
             )
           }
           const selected = selectedId === n.id
+          // Branch nodes (大运 head + 流年, out in the lane) render SOLID; only a
+          // trunk node that absorbs a branch (mergeBack) is a ring + centre dot.
+          // The user's "分支上的节点都是实心的 / 主干上有分支的节点是圆环+小圆点".
+          const hollow = n.kind === 'mergeBack'
           return (
             <Group key={n.id}>
               {/* bg halo punches the line → the node sits on it with a clean gap
@@ -444,31 +573,65 @@ export function TimelineGraph({
               {n.isHero && !n.isHead && n.chip ? (
                 <Circle cx={n.x} cy={n.y} r={n.r + 6} color={CHIP_COLOR[n.chip]} opacity={0.14} />
               ) : null}
-              {/* Fill: current/source carry their element color; others read as hollow. */}
-              <Circle
-                cx={n.x}
-                cy={n.y}
-                r={n.r}
-                color={n.state === 'future' ? colors.bg : elementColor}
-                opacity={n.state === 'future' ? 1 : n.state === 'past' ? 0.55 : 1}
-              />
-              <Circle
-                cx={n.x}
-                cy={n.y}
-                r={n.r}
-                style='stroke'
-                strokeWidth={selected ? 2 : 1.2}
-                color={selected ? colors.accent : elementColor}
-                opacity={n.state === 'past' ? 0.6 : 1}
-              />
+              {hollow ? (
+                <Group>
+                  {/* Hollow ring with an inner solid dot — the Tower/Fork "Merge X"
+                      commit look. The OUTER stroke is the branch's hue (says "this
+                      ring belongs to this branch"); the INNER dot is the trunk hue
+                      on mergeBack (the trunk absorbs the merge) and the branch hue
+                      on a dayun head (the branch's anchor commit). Gives the ring
+                      proper 质感 instead of a thin empty outline. */}
+                  <Circle cx={n.x} cy={n.y} r={n.r} color={colors.bg} />
+                  <Circle
+                    cx={n.x}
+                    cy={n.y}
+                    r={n.r}
+                    style='stroke'
+                    strokeWidth={selected ? 2.6 : 2.2}
+                    color={selected ? colors.accent : lane}
+                    opacity={n.state === 'past' ? 0.65 : 1}
+                  />
+                  <Circle
+                    cx={n.x}
+                    cy={n.y}
+                    r={Math.max(1.5, n.r - 4)}
+                    color={n.kind === 'mergeBack' ? colors.text : lane}
+                    opacity={n.state === 'past' ? 0.65 : 0.92}
+                  />
+                </Group>
+              ) : (
+                <Group>
+                  {/* Solid 流年 / source — element-coloured fill, branch-coloured
+                      outline ring (subtly carries the lane identity). */}
+                  <Circle
+                    cx={n.x}
+                    cy={n.y}
+                    r={n.r}
+                    color={n.state === 'future' ? colors.bg : elementColor}
+                    opacity={n.state === 'future' ? 1 : n.state === 'past' ? 0.55 : 1}
+                  />
+                  <Circle
+                    cx={n.x}
+                    cy={n.y}
+                    r={n.r}
+                    style='stroke'
+                    strokeWidth={selected ? 2 : 1.2}
+                    color={selected ? colors.accent : lane}
+                    opacity={n.state === 'past' ? 0.6 : 1}
+                  />
+                </Group>
+              )}
             </Group>
           )
         })}
       </Canvas>
 
-      {/* Label + tap overlay — shares the Canvas coordinate space. */}
+      {/* Label + tap overlay — shares the Canvas coordinate space. mergeBack rings
+          are structural-only (no verdict / chip — same info lives on the 大运 head)
+          so we skip a label for them but still allow a tap to focus the period. */}
       {graph.nodes.map((n) => {
         const labelLeft = n.x + n.r + 10
+        const structural = n.kind === 'mergeBack'
         return (
           <Pressable
             key={`hit-${n.id}`}
@@ -478,6 +641,12 @@ export function TimelineGraph({
                 return
               }
               Haptics.selectionAsync().catch(() => {})
+              // Merge-back rings route taps to their 大运 (same period, different
+              // git-graph anchor — the detail bubble lives on the 大运 head).
+              if (n.kind === 'mergeBack' && n.ref.kind === 'mergeBack') {
+                onSelect(`dayun-${n.ref.row.index}`)
+                return
+              }
               onSelect(n.id)
             }}
             accessibilityRole='button'
@@ -491,7 +660,7 @@ export function TimelineGraph({
               justifyContent: 'center',
             }}
           >
-            {n.locked ? null : (
+            {n.locked || structural ? null : (
               <View
                 style={{
                   position: 'absolute',

@@ -1,5 +1,7 @@
+import { headers } from 'next/headers'
 import { ImageResponse } from 'next/og'
-import { AUSPICE_FOOTER_LINK } from '@/lib/auspice-share'
+import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
+import { localizeYijiVerb, resolveShareLc, yijiLabels } from '@/lib/yiji-i18n'
 
 export const runtime = 'nodejs'
 export const alt = 'Auspice — Chinese Calendar'
@@ -30,10 +32,25 @@ async function fetchDay(date: string): Promise<DayData | null> {
 
 export default async function Image({ params }: { params: Promise<{ date: string }> }) {
   const { date } = await params
+  // OG image routes don't receive `?lc=` (Next only passes route params), so the
+  // locale comes from Accept-Language, defaulting to `en` (the global audience).
+  // The interactive landing page still honors the exact `?lc=` the app emits.
+  let acceptLanguage: string | null = null
+  try {
+    acceptLanguage = (await headers()).get('accept-language')
+  } catch {
+    acceptLanguage = null
+  }
+  const lc = resolveShareLc(undefined, acceptLanguage)
+  const cjk = lc !== 'en'
+  const L = yijiLabels(lc)
+  const copy = pickCopy('day', lc)
+  const loc = (v: string) => localizeYijiVerb(v, lc)
+
   const day = await fetchDay(date)
-  const good = (day?.goodFor ?? []).slice(0, 4)
-  const avoid = (day?.avoid ?? []).slice(0, 4)
-  const lunar = day?.lunarDate ? `${day.lunarDate.monthName}${day.lunarDate.dayName}` : ''
+  const good = (day?.goodFor ?? []).slice(0, 4).map(loc)
+  const avoid = (day?.avoid ?? []).slice(0, 4).map(loc)
+  const lunar = cjk && day?.lunarDate ? `${day.lunarDate.monthName}${day.lunarDate.dayName}` : ''
 
   const Pills = ({ items, color, bg }: { items: string[]; color: string; bg: string }) => (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -72,7 +89,7 @@ export default async function Image({ params }: { params: Promise<{ date: string
       {/* Brand */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 30, letterSpacing: 8, color: '#9A6A3A', display: 'flex' }}>
-          AUSPICE 黄历
+          {copy.eyebrow}
         </span>
         <span style={{ fontSize: 26, color: '#B08D6A', display: 'flex' }}>{date}</span>
       </div>
@@ -81,7 +98,8 @@ export default async function Image({ params }: { params: Promise<{ date: string
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 20 }}>
           <span style={{ fontSize: 92, fontWeight: 600, color: '#2B2118', display: 'flex' }}>
-            {day?.ganZhi ?? ''}日
+            {day?.ganZhi ?? ''}
+            {cjk ? '日' : ''}
           </span>
           {lunar ? (
             <span style={{ fontSize: 38, color: '#8A7866', display: 'flex' }}>{lunar}</span>
@@ -89,17 +107,33 @@ export default async function Image({ params }: { params: Promise<{ date: string
         </div>
       </div>
 
-      {/* 宜 / 忌 */}
+      {/* 宜 / 忌 (Good / Avoid) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, color: '#2E9E5B', display: 'flex' }}>
-            宜
+          <span
+            style={{
+              fontSize: 44,
+              fontWeight: 700,
+              color: '#2E9E5B',
+              display: 'flex',
+              width: cjk ? 60 : 150,
+            }}
+          >
+            {L.good}
           </span>
           <Pills items={good} color='#2E9E5B' bg='rgba(46,158,91,0.10)' />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, color: '#C0452E', display: 'flex' }}>
-            忌
+          <span
+            style={{
+              fontSize: 44,
+              fontWeight: 700,
+              color: '#C0452E',
+              display: 'flex',
+              width: cjk ? 60 : 150,
+            }}
+          >
+            {L.avoid}
           </span>
           <Pills items={avoid} color='#C0452E' bg='rgba(192,69,46,0.10)' />
         </div>
@@ -116,7 +150,7 @@ export default async function Image({ params }: { params: Promise<{ date: string
           letterSpacing: 2,
         }}
       >
-        <span style={{ display: 'flex' }}>每日干支 · 农历 · 节气 · 宜忌</span>
+        <span style={{ display: 'flex' }}>{copy.footer}</span>
         <span style={{ display: 'flex' }}>{AUSPICE_FOOTER_LINK}</span>
       </div>
     </div>,

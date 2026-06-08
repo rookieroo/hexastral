@@ -24,9 +24,10 @@ import { useSharedValue, withTiming } from 'react-native-reanimated'
 
 import type { MakeIfModel } from '@/lib/makeIfBranches'
 
-const TRUNK_X = 24
-const PAD = 18
-const TARGET_HEIGHT = 300
+const TRUNK_X = 34 // leaves room for an age tick on the LEFT of the trunk
+const PAD = 20
+const ROW = 28 // one age-row (row-based layout — no time-proportional clustering)
+const LANE = 22 // tight lane spacing — adjacent branches sit close, git-graph style
 
 interface MIColors {
   text: string
@@ -56,54 +57,88 @@ interface BranchLayout {
 
 interface Layout {
   height: number
-  ageStep: number
-  startAge: number
-  yForAge: (age: number) => number
   mainTop: number
   mainBottom: number
   nowY: number | null
-  mainNodes: { age: number; label: string; isPast: boolean; y: number }[]
+  mainNodes: { age: number; label: string; isPast: boolean; y: number; isFork: boolean }[]
   branches: BranchLayout[]
 }
 
-function buildLayout(model: MakeIfModel, width: number): Layout {
-  const span = Math.max(1, model.endAge - model.startAge)
-  const ageStep = Math.max(3.6, Math.min(7, TARGET_HEIGHT / span))
-  const height = span * ageStep + PAD * 2
-  const yForAge = (age: number) => PAD + (age - model.startAge) * ageStep
-  // Lanes narrow as the user adds forks, so they stay on-screen.
-  const laneCount = Math.max(3, model.branches.length + 1)
-  const laneW = Math.max(34, Math.min(60, (width - TRUNK_X - 90) / laneCount))
+/** A tight git-graph S-elbow between two lanes: leave the start vertically and
+ *  arrive vertically, spanning the lane gap over ~`dy`. The short corner a real
+ *  git GUI draws (Tower / GitLens) — NOT a big sweeping arc. */
+function sElbow(
+  p: ReturnType<typeof Skia.Path.Make>,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  move: boolean
+) {
+  const dy = y2 - y1
+  if (move) p.moveTo(x1, y1)
+  p.cubicTo(x1, y1 + dy * 0.5, x2, y2 - dy * 0.5, x2, y2)
+}
+
+function buildLayout(model: MakeIfModel, _width: number): Layout {
+  // ROW-BASED: every distinct age (大运 boundaries + each branch's fork / merge /
+  // dots + the span ends) becomes an evenly-spaced row. Ages that bunch up in time
+  // no longer pile their fork/merge rings on top of each other near "now" — the
+  // git-graph "one commit per row" rhythm the old time-proportional layout lacked
+  // (the cluster the user flagged).
+  const ageSet = new Set<number>()
+  ageSet.add(model.startAge)
+  ageSet.add(model.endAge)
+  if (model.currentAge != null) ageSet.add(model.currentAge)
+  for (const n of model.mainNodes ?? []) ageSet.add(n.age)
+  for (const br of model.branches) {
+    ageSet.add(br.divergeAtAge)
+    if (br.mergeAtAge != null) ageSet.add(br.mergeAtAge)
+    for (const d of br.dots) ageSet.add(d.age)
+  }
+  const ages = [...ageSet].sort((a, b) => a - b)
+  const rowOf = new Map(ages.map((a, i) => [a, i] as const))
+  const lastRow = ages.length - 1
+  const first = ages[0] ?? model.startAge
+  const last = ages[lastRow] ?? model.endAge
+  const yForAge = (age: number): number => {
+    const exact = rowOf.get(age)
+    if (exact != null) return PAD + exact * ROW
+    if (age <= first) return PAD
+    if (age >= last) return PAD + lastRow * ROW
+    for (let i = 0; i < lastRow; i++) {
+      const a = ages[i]
+      const b = ages[i + 1]
+      if (a != null && b != null && age >= a && age <= b) {
+        return PAD + (i + (age - a) / (b - a)) * ROW
+      }
+    }
+    return PAD
+  }
 
   const branches: BranchLayout[] = model.branches.map((br, i) => {
-    const laneX = TRUNK_X + (i + 1) * laneW
-    const path = Skia.Path.Make()
+    const laneX = TRUNK_X + (i + 1) * LANE
     const forkY = yForAge(br.divergeAtAge)
-    // Scale the vertical run with the horizontal travel so EVERY branch sweeps
-    // at the same gentle angle — a fixed drop made outer (far) lanes curve steep
-    // and cramped. The longer rail reads as a more graceful git-graph bezier.
-    const horiz = laneX - TRUNK_X
-    const drop = Math.max(ageStep * 2.5, horiz * 1.15)
-    // diverge out of the trunk (smooth S-curve)
-    path.moveTo(TRUNK_X, forkY)
-    path.cubicTo(TRUNK_X, forkY + drop / 2, laneX, forkY + drop / 2, laneX, forkY + drop)
+    const path = Skia.Path.Make()
+    // peel: trunk → lane, a one-row S corner.
+    const laneTop = forkY + ROW
+    sElbow(path, TRUNK_X, forkY, laneX, laneTop, true)
     let mergeY: number | null = null
     let endY: number
     if (br.mergeAtAge != null) {
       mergeY = yForAge(br.mergeAtAge)
       endY = mergeY
-      const mergeStart = mergeY - drop
-      if (mergeStart > forkY + drop) path.lineTo(laneX, mergeStart)
-      // merge back into the trunk
-      path.cubicTo(laneX, mergeStart + drop / 2, TRUNK_X, mergeStart + drop / 2, TRUNK_X, mergeY)
+      const mApproach = Math.max(laneTop, mergeY - ROW)
+      if (mApproach > laneTop) path.lineTo(laneX, mApproach)
+      // merge: lane → trunk, mirror S corner.
+      sElbow(path, laneX, mApproach, TRUNK_X, mergeY, false)
     } else {
       endY = yForAge(model.endAge)
       path.lineTo(laneX, endY)
     }
-    const lo = br.divergeAtAge
     const hi = br.mergeAtAge ?? model.endAge
     const dots = br.dots
-      .filter((d) => d.age > lo && d.age < hi)
+      .filter((d) => d.age > br.divergeAtAge && d.age < hi)
       .map((d) => ({ x: laneX, y: yForAge(d.age) }))
     return {
       id: br.id,
@@ -119,15 +154,19 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
     }
   })
 
-  const mainNodes = (model.mainNodes ?? []).map((n) => ({ ...n, y: yForAge(n.age) }))
+  // Mark which main-line nodes spawn a branch — those render as ring+dot; plain
+  // 大运 boundaries stay small solid dots.
+  const forkYs = new Set(branches.map((b) => Math.round(b.forkY)))
+  const mainNodes = (model.mainNodes ?? []).map((n) => {
+    const y = yForAge(n.age)
+    return { ...n, y, isFork: forkYs.has(Math.round(y)) }
+  })
 
+  const mainBottom = PAD + lastRow * ROW
   return {
-    height,
-    ageStep,
-    startAge: model.startAge,
-    yForAge,
-    mainTop: yForAge(model.startAge),
-    mainBottom: yForAge(model.endAge),
+    height: mainBottom + PAD,
+    mainTop: PAD,
+    mainBottom,
     nowY: model.currentAge != null ? yForAge(model.currentAge) : null,
     mainNodes,
     branches,
@@ -136,8 +175,11 @@ function buildLayout(model: MakeIfModel, width: number): Layout {
 
 /**
  * A graph node that reads as sitting ON a line with a clean gap: a bg-coloured
- * halo punches the line first, then the node (filled circle, or a hollow ring for
- * merges) draws on top.
+ * halo punches the line first, then the node draws on top. Two shapes:
+ *   - 'dot'  — a solid filled circle (a period along a branch lane).
+ *   - 'ring' — a hollow ring with a small centre dot (a trunk node that spawns
+ *              or absorbs a branch — the git "branch / merge" commit). This is
+ *              the user's "主干上有分支的节点是有小圆点的圆环".
  */
 function GNode({
   x,
@@ -145,24 +187,25 @@ function GNode({
   r,
   color,
   bg,
-  fill = true,
+  variant = 'dot',
 }: {
   x: number
   y: number
   r: number
   color: string
   bg: string
-  fill?: boolean
+  variant?: 'dot' | 'ring'
 }) {
   return (
     <Group>
       <Circle cx={x} cy={y} r={r + 2.5} color={bg} />
-      {fill ? (
+      {variant === 'dot' ? (
         <Circle cx={x} cy={y} r={r} color={color} />
       ) : (
         <Group>
           <Circle cx={x} cy={y} r={r} color={bg} />
           <Circle cx={x} cy={y} r={r} color={color} style='stroke' strokeWidth={2} />
+          <Circle cx={x} cy={y} r={Math.max(1.4, r - 3.4)} color={color} />
         </Group>
       )}
     </Group>
@@ -218,24 +261,31 @@ export function MakeIfGraph({
         <Path
           path={mainPath}
           style='stroke'
-          strokeWidth={1.8}
+          strokeWidth={2.4}
           strokeCap='round'
-          color={colors.separator}
+          // The real life-line follows the theme accent (not a grey hairline) — a
+          // warm spine the what-if lanes peel off of.
+          color={colors.accent}
+          opacity={0.55}
           end={progress}
         />
 
         {/* Mainline nodes — real 大运 boundaries (the spine), drawn UNDER the branch
             fork markers so a fork shows its branch colour. */}
-        {layout.mainNodes.map((n) => (
-          <GNode
-            key={`mn-${n.age}`}
-            x={TRUNK_X}
-            y={n.y}
-            r={3}
-            color={n.isPast ? colors.dim : colors.text}
-            bg={colors.bg}
-          />
-        ))}
+        {layout.mainNodes.map((n) =>
+          // Fork points are drawn by their branch (ring in the branch hue); a
+          // plain boundary is a small solid dot in the accent (theme) colour.
+          n.isFork ? null : (
+            <GNode
+              key={`mn-${n.age}`}
+              x={TRUNK_X}
+              y={n.y}
+              r={3}
+              color={n.isPast ? colors.dim : colors.accent}
+              bg={colors.bg}
+            />
+          )
+        )}
 
         {/* Branches — hypothetical "假如" lives. ONE colour per branch end-to-end;
             filled fork node, filled period dots, hollow ring on merge-back. */}
@@ -249,7 +299,7 @@ export function MakeIfGraph({
           return (
             <Group
               key={b.id}
-              opacity={locked ? 0.28 : selected ? 1 : anySelected ? 0.3 : b.isPast ? 0.5 : 0.92}
+              opacity={locked ? 0.28 : selected ? 1 : anySelected ? 0.55 : b.isPast ? 0.5 : 0.92}
             >
               <Path
                 path={b.path}
@@ -264,9 +314,16 @@ export function MakeIfGraph({
               </Path>
               {!locked ? (
                 <Group>
-                  {/* fork — where the branch leaves the trunk (filled) */}
-                  <GNode x={TRUNK_X} y={b.forkY} r={4.5} color={stroke} bg={colors.bg} />
-                  {/* period nodes along the lane (filled, branch colour) */}
+                  {/* fork — trunk node where the branch leaves: ring + centre dot */}
+                  <GNode
+                    x={TRUNK_X}
+                    y={b.forkY}
+                    r={5}
+                    color={stroke}
+                    bg={colors.bg}
+                    variant='ring'
+                  />
+                  {/* period nodes along the lane (solid, branch colour) */}
                   {b.dots.map((d, di) => (
                     <GNode
                       // Positional dots — index key is stable for this fixed list.
@@ -278,16 +335,15 @@ export function MakeIfGraph({
                       bg={colors.bg}
                     />
                   ))}
-                  {/* terminus — merge-back = hollow ring on the trunk; run-to-end =
-                      a filled cap in the lane. */}
+                  {/* terminus — merge-back = ring on the trunk; run-to-end = solid cap */}
                   {b.mergeY != null ? (
                     <GNode
                       x={TRUNK_X}
                       y={b.mergeY}
-                      r={4.5}
+                      r={5}
                       color={stroke}
                       bg={colors.bg}
-                      fill={false}
+                      variant='ring'
                     />
                   ) : (
                     <GNode x={b.laneX} y={b.endY} r={4} color={stroke} bg={colors.bg} />
@@ -301,8 +357,10 @@ export function MakeIfGraph({
         {/* "now" head on the mainline (onboarded) — drawn last so it sits on top. */}
         {layout.nowY != null ? (
           <Group>
-            <Circle cx={TRUNK_X} cy={layout.nowY} r={11} color={colors.accent} opacity={0.14} />
-            <GNode x={TRUNK_X} y={layout.nowY} r={5} color={colors.accent} bg={colors.bg} />
+            {/* "now" = the single brightest focal point: enlarged + a double glow. */}
+            <Circle cx={TRUNK_X} cy={layout.nowY} r={15} color={colors.accent} opacity={0.16} />
+            <Circle cx={TRUNK_X} cy={layout.nowY} r={10} color={colors.accent} opacity={0.12} />
+            <GNode x={TRUNK_X} y={layout.nowY} r={6.5} color={colors.accent} bg={colors.bg} />
           </Group>
         ) : null}
       </Canvas>
@@ -338,21 +396,27 @@ export function MakeIfGraph({
               style={{
                 position: 'absolute',
                 left: 0,
-                top: n.y - 13,
-                width: TRUNK_X + 64,
-                height: 26,
+                top: n.y - 14,
+                width: TRUNK_X + 26,
+                height: 28,
                 justifyContent: 'center',
               }}
             >
+              {/* Age tick on the LEFT of the trunk — branch labels live on the
+                  RIGHT, so the two never collide (the old graph stacked 干支·age
+                  labels on the right, on top of the branch labels). */}
               <Text
                 style={{
-                  marginLeft: TRUNK_X + 10,
+                  position: 'absolute',
+                  left: 0,
+                  width: TRUNK_X - 8,
+                  textAlign: 'right',
                   color: n.isPast ? colors.dim : colors.secondary,
                   fontSize: 11,
                 }}
                 numberOfLines={1}
               >
-                {n.label} · {n.age}
+                {n.age}
               </Text>
             </Pressable>
           ))
@@ -379,7 +443,7 @@ export function MakeIfGraph({
             style={{
               position: 'absolute',
               left: b.laneX + 8,
-              top: b.forkY + layout.ageStep * 3 - 9,
+              top: b.forkY + ROW - 9,
               maxWidth: width - b.laneX - 12,
               // Recede when another branch is the active one, matching the path dim.
               opacity: selectedBranchId != null && selectedBranchId !== b.id ? 0.4 : 1,

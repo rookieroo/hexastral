@@ -50,6 +50,10 @@ export function DualTzBanner() {
     <View
       style={{
         alignSelf: 'flex-start',
+        // Match the Today screen's content margin (spacing.xl) so the chip lines
+        // up with the day header / calendar / 宜忌 columns below it. Without this
+        // it sits flush to the screen edge and reads as broken alignment.
+        marginLeft: spacing.xl,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,

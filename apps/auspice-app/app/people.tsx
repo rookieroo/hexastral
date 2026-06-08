@@ -16,7 +16,6 @@ import {
   shichenFieldLabelsForLocale,
   useTheme,
 } from '@zhop/core-ui'
-import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -282,7 +281,12 @@ export default function PeopleScreen() {
               />
             </View>
             <View style={{ flex: 1, gap: spacing.sm }}>
-              <Text style={microLabel}>{t.people.yearOptional}</Text>
+              {/* 八字-合盘 needs a full solar year, so the field flips to required
+                  (accent label + accent underline) whenever the toggle below is
+                  ON — replaces the old separate nag paragraph. */}
+              <Text style={[microLabel, compatExpanded ? { color: colors.accent } : null]}>
+                {compatExpanded ? t.people.yearRequired : t.people.yearOptional}
+              </Text>
               <TextInput
                 value={birthYear}
                 onChangeText={(r) => setBirthYear(r.replace(/\D/g, '').slice(0, 4))}
@@ -290,7 +294,12 @@ export default function PeopleScreen() {
                 placeholderTextColor={colors.dim}
                 keyboardType='numeric'
                 maxLength={4}
-                style={fieldStyle}
+                style={[
+                  fieldStyle,
+                  compatExpanded && !/^\d{4}$/.test(birthYear)
+                    ? { borderBottomColor: colors.accent }
+                    : null,
+                ]}
               />
             </View>
           </View>
@@ -305,44 +314,56 @@ export default function PeopleScreen() {
             </Text>
           ) : null}
 
-          {/* Compatibility (合盘) fields — collapsed by default. 时辰 + gender
-              are needed for 八字 合盘 but redundant for plain birthday reminders,
-              so they sit behind a disclosure to keep the everyday path clean. */}
-          <View style={{ gap: spacing.sm }}>
-            <Pressable
-              onPress={() => setCompatExpanded((v) => !v)}
-              accessibilityRole='button'
-              accessibilityState={{ expanded: compatExpanded }}
-              accessibilityLabel={t.people.compatibilityToggle}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: 4,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>
-                {t.people.compatibilityToggle}
-              </Text>
-              {compatExpanded ? (
-                <ChevronDownIcon size={14} color={colors.dim} strokeWidth={1.4} />
-              ) : (
-                <ChevronRightIcon size={14} color={colors.dim} strokeWidth={1.4} />
-              )}
-            </Pressable>
+          {/* Compatibility (合盘) — a PROMINENT toggle card (was a buried chevron
+              disclosure; users couldn't find the unlock). When flipped on:
+                · the row tints with the accent + reveals the extra fields below,
+                · the year field above flips to REQUIRED (accent label + accent
+                  underline) until a 4-digit solar year is filled, and
+                · 时辰 / gender / birthplace appear inline (not in a disclosure).
+              Off → plain birthday reminder, no 八字 demanded. */}
+          <Pressable
+            onPress={() => setCompatExpanded((v) => !v)}
+            accessibilityRole='switch'
+            accessibilityState={{ checked: compatExpanded }}
+            accessibilityLabel={t.people.compatibilityToggle}
+            style={{
+              borderRadius: 12,
+              borderWidth: 0.5,
+              borderColor: compatExpanded ? colors.accent : colors.separator,
+              backgroundColor: compatExpanded ? colors.accentGhost : 'transparent',
+              padding: spacing.md,
+              gap: spacing.sm,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+                  {t.people.compatibilityToggle}
+                </Text>
+                <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                  {t.people.compatibilityHook}
+                </Text>
+              </View>
+              <Switch
+                value={compatExpanded}
+                onValueChange={setCompatExpanded}
+                trackColor={{ true: colors.accent }}
+              />
+            </View>
 
             {compatExpanded ? (
-              <View style={{ gap: spacing.lg, marginTop: spacing.xs }}>
+              <View
+                style={{
+                  gap: spacing.lg,
+                  marginTop: spacing.sm,
+                  paddingTop: spacing.sm,
+                  borderTopWidth: 0.5,
+                  borderTopColor: colors.separator,
+                }}
+              >
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
                   {t.people.compatibilityHint}
                 </Text>
-                {/* 合盘 silently needs a 4-digit solar year — surface it rather than
-                    let the user fill 时辰/性别 and get no report. */}
-                {!(/^\d{4}$/.test(birthYear) && calendar === 'solar') ? (
-                  <Text style={{ color: colors.accent, fontSize: 12, lineHeight: 18 }}>
-                    {t.people.compatYearRequired}
-                  </Text>
-                ) : null}
 
                 {/* 时辰 (for 八字 / 合盘) */}
                 <View style={{ gap: spacing.sm }}>
@@ -443,7 +464,7 @@ export default function PeopleScreen() {
                 ) : null}
               </View>
             ) : null}
-          </View>
+          </Pressable>
 
           {/* Advance reminder + day-of */}
           <View style={{ gap: spacing.sm }}>

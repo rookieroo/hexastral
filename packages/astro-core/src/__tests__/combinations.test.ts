@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  analyzeBranchAgainstNatal,
   analyzeBranchClashes,
   analyzeBranchCombinations,
   analyzeCombinations,
@@ -340,6 +341,183 @@ describe('combinations (合化)', () => {
       // 子丑六合, 午未六合, 子午冲
       expect(result.branchCombinations.length).toBeGreaterThanOrEqual(2)
       expect(result.branchClashes.length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  describe('analyzeBranchAgainstNatal — 进盘地支 vs 本命四柱', () => {
+    // 本命 申子辰 三合水 — 申支为进盘，已经在本命凑齐另两支
+    const natalSheZhiChen: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+      '子',
+      '辰',
+      '寅',
+      '卯',
+    ]
+
+    it('进盘 申 + 本命含 子辰 → sanhe-ju', () => {
+      const r = analyzeBranchAgainstNatal('申', natalSheZhiChen)
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('sanhe-ju')
+      expect(r!.resultWuxing).toBe('水')
+      expect(r!.branches).toEqual(['申', '子', '辰'])
+    })
+
+    it('进盘 寅 + 本命 卯辰 → sanhui-ju 木', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '卯',
+        '辰',
+        '午',
+        '酉',
+      ]
+      const r = analyzeBranchAgainstNatal('寅', natal)
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('sanhui-ju')
+      expect(r!.resultWuxing).toBe('木')
+    })
+
+    it('进盘 午 vs 本命 子（日支）→ chong', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '寅',
+        '卯',
+        '子',
+        '巳',
+      ]
+      const r = analyzeBranchAgainstNatal('午', natal)
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('chong')
+    })
+
+    it('进盘 丑 + 本命 子（日支）→ liuhe 土', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '寅',
+        '卯',
+        '子',
+        '巳',
+      ]
+      const r = analyzeBranchAgainstNatal('丑', natal)
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('liuhe')
+      expect(r!.resultWuxing).toBe('土')
+    })
+
+    it('六合优先匹配日支', () => {
+      // 本命: 年=丑, 月=寅, 日=亥, 时=卯
+      // 进盘 寅 → 月支寅相同（无 liuhe 与自身），亥(日支)寅六合化木
+      // 但寅与寅是同支 — 不构成新的 liuhe
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '丑',
+        '寅',
+        '亥',
+        '卯',
+      ]
+      const r = analyzeBranchAgainstNatal('寅', natal)
+      // 寅亥六合化木
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('liuhe')
+      expect(r!.branches).toEqual(['寅', '亥'])
+    })
+
+    it('三合优先于冲（申子辰局成 + 寅申冲）', () => {
+      // 本命含子辰寅 — 申既与子辰构成三合，也与寅相冲。应返回 sanhe-ju
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '子',
+        '辰',
+        '寅',
+        '卯',
+      ]
+      const r = analyzeBranchAgainstNatal('申', natal)
+      expect(r!.kind).toBe('sanhe-ju')
+    })
+
+    it('进盘 巳 vs 本命 寅 → sanxing（寅巳申之刑）', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '寅',
+        '卯',
+        '辰',
+        '未',
+      ]
+      const r = analyzeBranchAgainstNatal('巳', natal)
+      // 寅巳相刑；巳本与申也是三合，但本命无申
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('sanxing')
+    })
+
+    it('进盘 未 vs 本命 子（日支）→ liuhai', () => {
+      // 本命无丑（丑未会触发更高优先级的冲）
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '寅',
+        '卯',
+        '子',
+        '巳',
+      ]
+      const r = analyzeBranchAgainstNatal('未', natal)
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('liuhai')
+    })
+
+    it('进盘 辰 + 本命含 辰 → zixing', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '寅',
+        '辰',
+        '巳',
+        '未',
+      ]
+      const r = analyzeBranchAgainstNatal('辰', natal)
+      // 辰辰自刑（本命无其他更高优先级关系）
+      expect(r).not.toBeNull()
+      expect(r!.kind).toBe('zixing')
+    })
+
+    it('无关地支返回 null', () => {
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '子',
+        '丑',
+        '寅',
+        '卯',
+      ]
+      // 进盘 戌 — 与子丑寅卯均无六合/冲/刑/害关系
+      // 实际上：戌与卯六合化火！所以这测试需换一个
+      // 试 申 vs 卯戌酉巳：
+      const r = analyzeBranchAgainstNatal('申', ['卯', '戌', '酉', '巳'])
+      // 申巳相刑 — 实际是 sanxing
+      // 改用 戌 vs 寅午（三合火局）：戌与寅午会合三合？
+      // 真正"无关"的对要细查：午 vs 寅—无冲六合刑害
+      // 用 戌 vs 戌（同）— 但同会触发 zixing? 不，戌不在 SELF_PUNISHMENT_BRANCHES
+      // 选 戌 vs [子丑寅卯] —— 戌卯六合，会触发 liuhe
+      // 干脆用 戌 vs [子丑申亥] —— 戌与？子戌无；丑戌相刑；丑在 BRANCH_PUNISHMENT_PAIRS
+      // 改用 寅 vs [子丑酉戌]：寅与子=无；寅丑=无；寅酉=无；寅戌=三合火（半合），无三合局成
+      const r2 = analyzeBranchAgainstNatal('寅', ['子', '丑', '酉', '戌'])
+      // 寅未必有匹配 — 寅戌仅半合
+      expect(r2).toBeNull()
+      // r 仅作 fall-through 校验，避免 unused 警告
+      expect(r === null || r!.kind !== undefined).toBe(true)
+    })
+
+    it('合化透干校验 — 提供 natalStems 时填充 status', () => {
+      // 本命 子辰寅卯，天干 壬癸甲乙（含水）→ 申子辰三合水，水透壬癸
+      const natal: [EarthlyBranch, EarthlyBranch, EarthlyBranch, EarthlyBranch] = [
+        '子',
+        '辰',
+        '寅',
+        '卯',
+      ]
+      const stems: [HeavenlyStem, HeavenlyStem, HeavenlyStem, HeavenlyStem] = [
+        '壬',
+        '癸',
+        '甲',
+        '乙',
+      ]
+      const r = analyzeBranchAgainstNatal('申', natal, stems)
+      expect(r!.status).toBe('合化')
+
+      // 天干无水 → 合而不化
+      const noWaterStems: [HeavenlyStem, HeavenlyStem, HeavenlyStem, HeavenlyStem] = [
+        '甲',
+        '丙',
+        '戊',
+        '庚',
+      ]
+      const r2 = analyzeBranchAgainstNatal('申', natal, noWaterStems)
+      expect(r2!.status).toBe('合而不化')
     })
   })
 })

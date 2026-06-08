@@ -15,8 +15,8 @@
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -59,20 +59,49 @@ function isSpecialized(e: AuspiceEvent): e is SpecializedCycleEvent {
   return SPECIALIZED_EVENT_SET.has(e)
 }
 
+/** Optional deep-link params from /timeline ("查看吉日"). Pro-only fields, since
+ *  Free is pinned to the next-30-days window regardless. */
+const EVENT_SET = new Set<string>(CYCLE_EVENTS)
+function parseEvent(raw: string | string[] | undefined): AuspiceEvent | null {
+  const s = Array.isArray(raw) ? raw[0] : raw
+  return s && EVENT_SET.has(s) ? (s as AuspiceEvent) : null
+}
+function parseIsoDate(raw: string | string[] | undefined): Date | null {
+  const s = Array.isArray(raw) ? raw[0] : raw
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  const d = new Date(`${s}T00:00:00`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
 export default function EventScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
+  const params = useLocalSearchParams<{ event?: string; from?: string; to?: string }>()
 
-  const [event, setEvent] = useState<AuspiceEvent>('wedding')
+  const [event, setEvent] = useState<AuspiceEvent>(() => parseEvent(params.event) ?? 'wedding')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AuspiceSearchPayload | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
 
   // Pro date-range (Pro-only). Free is pinned to the next 30 days.
-  const [fromDate, setFromDate] = useState(() => new Date())
-  const [toDate, setToDate] = useState(() => addDays(new Date(), FREE_WINDOW_DAYS))
+  const [fromDate, setFromDate] = useState(() => parseIsoDate(params.from) ?? new Date())
+  const [toDate, setToDate] = useState(
+    () => parseIsoDate(params.to) ?? addDays(new Date(), FREE_WINDOW_DAYS)
+  )
+
+  // Late-arriving params (e.g., deep-link tap after the screen mounted) overwrite
+  // state once — without clobbering the user's subsequent manual edits.
+  useEffect(() => {
+    const e = parseEvent(params.event)
+    if (e) setEvent(e)
+    const f = parseIsoDate(params.from)
+    if (f) setFromDate(f)
+    const tDate = parseIsoDate(params.to)
+    if (tDate) setToDate(tDate)
+    // Intentionally run once on params — subsequent edits live in user state.
+  }, [params.event, params.from, params.to])
 
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')

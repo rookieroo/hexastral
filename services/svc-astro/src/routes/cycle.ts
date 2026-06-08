@@ -252,7 +252,7 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
   const branchLines = input.branches
     .map((b) => {
       const merge =
-        b.mergeAtAge != null ? `约 ${b.mergeAtAge} 岁回归本命主线` : '一路走到终点、不回归'
+        b.mergeAtAge != null ? `约 ${b.mergeAtAge} 岁与本命节奏重新交汇` : '一路走到底、不交汇'
       const when = b.isPast ? '已过去' : '现在/未来'
       const pillar = b.realPillar ? `真实大运 ${b.realPillar}` : ''
       return `- ${b.id}｜${b.label}｜约 ${b.divergeAtAge} 岁分岔（${when}·${pillar}），${merge}`
@@ -265,7 +265,7 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
 规则：
 - 每条分支会标注它发生在「已过去」还是「现在/未来」，以及当时真实的大运干支：
   · 已过去：先用一句点出这条「假如」与你真实人生的差异，再写它可能的走向。
-  · 现在/未来：写这条选择可能带来的人生走向，并务必各给一句「做这个决定要注意的事项」与「潜在风险」。
+  · 现在/未来：写这条选择可能带来的人生走向，各给一句「做这个决定要注意的事项」与「潜在风险」，并在结尾落到能动的一面——命定其界、运在人为：持续用功与对的抉择，能让你在尽力可及之境内把落点步步抬升（天行健，自强不息）；不要写成「终将回到既定命运／殊途同归」。
 - 依据该大运的五行/十神能量来写，讲成「趋势·参考」，不是命运定论，也不是对未来的断言或保证。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
 - 严格只输出一个 JSON 对象：键为分支 id，值为 {"o": 正文, "s": 概要}。不要标题、不要 Markdown、不要代码块。
@@ -289,6 +289,101 @@ ${langDirective(input.locale)}`
 
   const { bodies, summaries } = parseNestedBatchJson(raw, ids)
   return c.json({ narratives: bodies, summaries })
+})
+
+// ── POST /makeif-node-narrate — per-NODE expansion within a 假如 branch (Phase 6) ─
+//
+// One LLM call returns a short "at this age in that life, you would be…" line
+// for ONE specific point on a 假如 branch. The full branch narrative is the
+// arc; this is a zoom on a single node. Cached + Pro-gated upstream in the API.
+// Kept separate from the batch /makeif-narrate so a tap on a node is cheap.
+
+const nodeNarrateSchema = z.object({
+  dayMaster: z.string().max(2),
+  dayPillar: z.string().max(8).optional(),
+  yearPillar: z.string().max(8).optional(),
+  gender: z.enum(['M', 'F']).optional(),
+  currentAge: z.number().int().min(0).max(120).optional(),
+  locale: z.string().default('en'),
+  isPro: z.boolean().optional().default(false),
+  branch: z.object({
+    id: z.string().max(64),
+    label: z.string().max(40),
+    divergeAtAge: z.number().int().min(0).max(120),
+    mergeAtAge: z.number().int().min(0).max(120).nullable(),
+    isPast: z.boolean().optional(),
+    realPillar: z.string().max(8).optional(),
+  }),
+  /** The focus age on the branch (interior dot, fork, or merge). */
+  focusAge: z.number().int().min(0).max(120),
+  /** Real 大运 干支 at the focus age — anchors the zoom. */
+  focusRealPillar: z.string().max(8).optional(),
+  /** Real verdict at the focus age (吉/平/凶). */
+  focusRealFit: z.enum(['吉', '平', '凶']).optional(),
+  /** The branch's alt-life verdict at the focus age. */
+  focusAltFit: z.enum(['吉', '平', '凶']).optional(),
+})
+
+cycleRoutes.post('/makeif-node-narrate', async (c) => {
+  const input = nodeNarrateSchema.parse(await c.req.json())
+  const langLabel = getLangLabel(input.locale)
+  const ctx = [
+    `日主：${input.dayMaster}`,
+    input.dayPillar ? `日柱：${input.dayPillar}` : '',
+    input.yearPillar ? `年柱：${input.yearPillar}` : '',
+    input.gender ? `性别：${input.gender === 'M' ? '男' : '女'}` : '',
+    input.currentAge != null ? `当前年龄：约 ${input.currentAge} 岁` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const merge =
+    input.branch.mergeAtAge != null
+      ? `约 ${input.branch.mergeAtAge} 岁与本命节奏重新交汇`
+      : '一路走到底、不交汇'
+  const when = input.branch.isPast ? '已过去' : '现在/未来'
+  const branchPillar = input.branch.realPillar ? `分岔时真实大运 ${input.branch.realPillar}` : ''
+  const focusPillar = input.focusRealPillar ? `真实大运 ${input.focusRealPillar}` : ''
+  const realFit = input.focusRealFit ? `真实流年判断：${input.focusRealFit}` : ''
+  const altFit = input.focusAltFit ? `假如分支流年判断：${input.focusAltFit}` : ''
+  // 生克方向：假如 vs 真实，谁更顺。受克(更不顺) → 必须给「通关/化泄/扶抑」解法。
+  const RANK_FIT: Record<'吉' | '平' | '凶', number> = { 凶: 0, 平: 1, 吉: 2 }
+  const dir =
+    input.focusRealFit && input.focusAltFit && input.focusRealFit !== input.focusAltFit
+      ? RANK_FIT[input.focusAltFit] > RANK_FIT[input.focusRealFit]
+        ? 'help'
+        : 'harm'
+      : 'even'
+  const dirHint =
+    dir === 'harm'
+      ? input.branch.isPast
+        ? '【方向】受克·已过去：这一年若走此路会更吃力。它并未发生，给一句可记取的教训，化作往后的自强——不要写成「现在还能补救这一年」。'
+        : '【方向】受克：这一年「假如」比真实更吃力。结尾必须给一句具体「解法」——依八字「通关／化泄／扶抑」之理，点出可借的五行或行动，化作自强的着力点，不要只报忧。'
+      : dir === 'help'
+        ? '【方向】得助：这一年「假如」比真实更顺。写出顺在何处，但只作「趋势·参考」，不承诺结果。'
+        : '【方向】比和：与真实相当，平实描述即可。'
+
+  const systemPrompt = `你是一位通晓八字的命理叙事师。为「假如」分支中的某一年龄节点，输出一段简短的${langLabel}内容：
+- 30–80 字第二人称叙事（以「假如那一年你…」或「这一年你…」开头），聚焦于该节点真实大运的能量。
+- 不论分支整体如何，只描述这一年/这一段在那条「假如」人生里的状态：可能在做什么、面对什么、内心如何。
+- 引用真实大运干支与流年判断对比时，要克制：以「趋势·参考」收尾，不下断言。
+- 依【方向】调整收尾：受克→给「通关／化泄／扶抑」的具体解法，化作自强的着力点；得助→点出顺处但只作参考；比和→平实描述。能动在人——天行健，自强不息。
+- 禁止使用：命中注定、必然、一定、注定、宿命、殊途同归、must、definitely、certainly。
+- 只输出一行纯文本叙事，不要 JSON、标题、列表或代码块。
+${langDirective(input.locale)}`
+
+  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】${input.branch.label}（${when}），${branchPillar}，${merge}\n\n【聚焦节点】约 ${input.focusAge} 岁，${focusPillar}\n${realFit}\n${altFit}\n${dirHint}\n\n请以一段简短叙事描述「在这条假如分支中，${input.focusAge} 岁的你」的状态。\n${langDirective(input.locale)}`
+
+  const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
+    isPro: input.isPro,
+    maxTokens: 360,
+    temperature: 0.78,
+    noThink: true,
+    tier: 'standard',
+    metricLabel: 'cycle-makeif-node-narrate',
+    locale: input.locale,
+  })
+  return c.json({ narrative: raw.trim() })
 })
 
 function getLangLabel(lang: string): string {

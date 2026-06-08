@@ -24,7 +24,10 @@ const FAINT = 'rgba(231,224,208,0.35)'
 const COPPER = 'rgba(196,168,130,0.85)'
 
 function fitColor(fit: DailyCardModel['fit']): string {
-  return fit === '吉' ? '#34C759' : fit === '凶' ? '#FF453A' : DIM
+  // Dark-bg widget — use the lighter (400-level) variants of the modern 吉/凶
+  // palette so they read on a near-black background; the lighter ones mirror
+  // the dark-mode tokens in hexastral-tokens/palette.ts.
+  return fit === '吉' ? '#4ADE80' : fit === '凶' ? '#F87171' : DIM
 }
 
 type SubProps = { model: DailyCardModel; moonSkinId?: MoonSkinId }

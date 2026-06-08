@@ -7,13 +7,13 @@ export const CHUNJIE: FestivalContent = {
     'zh-Hans': '春节',
     'zh-Hant': '春節',
     ja: '春節',
-    en: 'Spring Festival',
+    en: 'Chinese New Year',
   },
   tagline: {
     'zh-Hans': '农历正月初一 · 万象更新',
     'zh-Hant': '農曆正月初一 · 萬象更新',
     ja: '農暦正月一日 · 新春到来',
-    en: 'Lunar New Year · the year reset',
+    en: 'Chinese New Year · the year reset',
   },
   sections: {
     'zh-Hans': [
@@ -101,7 +101,7 @@ export const CHUNJIE: FestivalContent = {
       },
       {
         title: 'Modern celebration',
-        body: "Spring Festival now anchors chunyun (春运), the largest annual human migration on Earth — billions of trips as families travel home. The CCTV Spring Festival Gala (春晚), broadcast since 1983, draws over a billion viewers in a single sitting. The 21st century has added WeChat red envelopes, short-video new-year greetings, livestream reunion dinners, and overseas-Chinese festival circuits in cities from San Francisco to Sydney — the tradition continually re-rooted in whatever the present moment's technology happens to be.",
+        body: "Chinese New Year now anchors chunyun (春运), the largest annual human migration on Earth — billions of trips as families travel home. The CCTV Spring Festival Gala (春晚), broadcast since 1983, draws over a billion viewers in a single sitting. The 21st century has added WeChat red envelopes, short-video new-year greetings, livestream reunion dinners, and overseas-Chinese festival circuits in cities from San Francisco to Sydney — the tradition continually re-rooted in whatever the present moment's technology happens to be.",
       },
     ],
   },

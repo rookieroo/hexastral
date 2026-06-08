@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: 'Sheng Xiao year lookup — free tool · HexAstral',
     description:
-      'Map a Gregorian year to the rotating sheng xiao (生肖) animal with caution near Lunar New Year. Deep charts need Ba Zi + Zi Wei in app.',
+      'Map a Gregorian year to the rotating sheng xiao (生肖) animal with caution near Chinese New Year. Deep charts need Ba Zi + Zi Wei in app.',
     alternates: {
       canonical:
         locale === 'en'
