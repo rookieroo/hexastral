@@ -58,14 +58,15 @@ from auspice's git-graph.
   IBM Plex Mono.
 - **DEV preview** `app/chapter-preview.tsx` (Metal×Fire sample) — renders the locked
   card + all 4 centerpiece states + the morph; reachable from home DEV row / `/_sitemap`.
+- **Centerpiece wired into the REAL report screen.** Server (`bonds.ts` GET /:id)
+  computes both day-master 五行 from the stored births (`getFourPillars` + `STEM_WUXING`,
+  coarse element only — Privacy D2) and attaches `personAElement` / `personBElement`
+  to the interpretation (`PairInterpretation` type updated). `app/(bonds)/[id].tsx`
+  reads them and feeds `ChapterPager` `aElement` / `bElement` / `locale` +
+  `renderCenterpiece` (mode via `deriveCenterpieceMode`, `active = idx === chapterIndex`).
+  The ink art now shows on real bonds, not just the DEV preview.
 
 ### ☐ Remaining
-
-- **Wire the centerpiece into the REAL report screen.** `app/(bonds)/[id].tsx`
-  renders `ChapterPager` but passes **no** `renderCenterpiece` / `aElement` /
-  `bElement` / `locale` — so the ink art shows only in the DEV preview. Pass them
-  from the real bond/report data (elements from the two charts; `active = idx ===
-  chapterIndex`; locale from `resolveLocale()`).
 - **Settings → Symbol Glossary screen.** Decodes seals / 五行 keys / 朱批 severity /
   ancient numerals — a map-legend page. Mock done: `~/Desktop/kindred-design-mock/
   glossary.png`. New route under `app/(settings)/`, reuse the glyph components on
@@ -127,7 +128,7 @@ Kindred's _relationship × time_ surface. **PLANNED — not built.** Detailed in
 | Card + pager | `packages/scenario-kindred/src/components/{ChapterCard,ChapterPager,ChapterMeta}.tsx` |
 | Glyphs | `packages/scenario-kindred/src/{glyphs.ts,kindredFonts.ts}` + `components/{AncientSeal,AncientNumeral,RiskMark}.tsx` |
 | Centerpiece | `apps/kindred-app/components/ink/InkCenterpiece.tsx` |
-| Real report | `apps/kindred-app/app/(bonds)/[id].tsx` ← centerpiece not yet wired |
+| Real report | `apps/kindred-app/app/(bonds)/[id].tsx` ← centerpiece wired |
 | DEV preview | `apps/kindred-app/app/chapter-preview.tsx` |
 | Share | `packages/scenario-kindred/src/components/ShareableChapterCard.tsx` (old design) |
 | Design mocks (scratch, NOT in repo) | `~/Desktop/kindred-design-mock/` — `chapter-en.png`, `glossary.png`, `static-states.png`, `morph-strip.png` |
