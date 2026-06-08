@@ -432,6 +432,10 @@ export default function BondDetailScreen() {
               otherName={otherName}
               width={1080}
               height={1920}
+              locale={locale}
+              aElement={aElement}
+              bElement={bElement}
+              chapterNumber={shareTarget.index + 1}
               brandUrl={shareTarget.brandUrl}
             />
           </View>
