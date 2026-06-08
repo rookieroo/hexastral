@@ -97,7 +97,21 @@ relationship line (命主干 reabsorption, like the personal make-if).
 backfires. So make-if is **explore-only; it is NOT a notification source**.
 Notifications come ONLY from the deterministic 人生/合盘 timeline nodes.
 
-## 5. Monetization
+## 5. Monetization — LOCKED model (founder, 2026-06-08)
+
+**Content vs delivery are decoupled** (the check before merge):
+- **One-time $6.99 (`hexastral_compatibility`)** = buy out ONE relationship's full
+  reading + 前瞻 timeline VIEW. You own the content. **Does NOT grant push.**
+  Non-subscribers can buy + view.
+- **Notifications (合盘节点提醒)** = **subscription ONLY** (`auspice_pro` /
+  `universe_pro`). Recurring delivery = recurring revenue; a one-time fee must
+  never buy perpetual push. (Already enforced: `scheduleSynastryReminders` gates
+  on `getAuspiceProActive`.)
+- So: **pay-once = content; subscribe = ongoing delivery across all relationships.**
+- Current branch is a safe subset (everything subscription-gated; one-time not
+  built yet). S3 adds ONLY the one-time VIEW unlock, leaving push subscription-only.
+
+### (original framing, superseded by the locked model above)
 
 - **Free**: synastry taste (score + 生肖 + one 短语), this year's relationship node.
 - **One-time $6.99 (`hexastral_compatibility`)**: full deep reading + the
