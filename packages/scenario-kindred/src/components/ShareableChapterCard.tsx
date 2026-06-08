@@ -30,6 +30,7 @@ import { isCjkLocale, kindredFonts } from '../kindredFonts'
 import type { SynastryChapter } from '../types'
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
+import { QrCode } from './QrCode'
 
 const CHAPTER_TITLES: Record<SynastryChapter['kind'], string> = {
   first_impression: '第一印象',
@@ -56,6 +57,12 @@ export interface ShareableChapterCardProps extends Omit<ViewProps, 'style'> {
   chapterNumber?: number
   /** Optional brand URL shown at footer (e.g., kindred.hexastral.com) */
   brandUrl?: string
+  /**
+   * Full install/share URL (with scheme) baked into a SCANNABLE QR — the
+   * mechanical path from a flat social image → App Store. When omitted, the
+   * card falls back to the text brandUrl only.
+   */
+  installUrl?: string
 }
 
 export function ShareableChapterCard({
@@ -69,6 +76,7 @@ export function ShareableChapterCard({
   bElement,
   chapterNumber = 1,
   brandUrl = 'kindred.hexastral.com',
+  installUrl,
   ...rest
 }: ShareableChapterCardProps) {
   // Aspect-ratio scaler — design is authored against 1080x1920.
@@ -197,6 +205,19 @@ export function ShareableChapterCard({
           inset={0.78}
           strokeWidth={9}
         />
+
+        {/* Scannable install QR — ink-on-paper so it blends into the card; the
+            quiet zone is the paper ground. This is the mechanical path from a
+            flat social image → App Store. Falls back to the text URL alone if
+            no installUrl (or if the URL exceeds the encoder's version range). */}
+        {installUrl ? (
+          <QrCode
+            value={installUrl}
+            size={s(190)}
+            color={kindredPaper.ink}
+            background={kindredPaper.bg}
+          />
+        ) : null}
 
         <Text
           style={{

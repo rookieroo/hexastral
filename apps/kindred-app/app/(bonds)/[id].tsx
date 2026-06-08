@@ -139,7 +139,11 @@ export default function BondDetailScreen() {
   // Off-screen render target for ShareableChapterCard.
   // When shareTarget is set, the hidden View renders the card for that chapter
   // and the effect below captures it via view-shot, then opens share sheet.
-  const [shareTarget, setShareTarget] = useState<{ index: number; brandUrl: string } | null>(null)
+  const [shareTarget, setShareTarget] = useState<{
+    index: number
+    brandUrl: string
+    installUrl?: string
+  } | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
   const captureRefView = useRef<View>(null)
   const haptic = useHaptic()
@@ -186,14 +190,17 @@ export default function BondDetailScreen() {
     if (!id || isCapturing) return
     setIsCapturing(true)
     let brandUrl = 'kindred.hexastral.com'
+    let installUrl: string | undefined
     try {
       const res = await createShareUrl(id)
+      // Full URL (with scheme) → scannable QR; stripped form → footer text.
+      installUrl = res.url
       brandUrl = res.url.replace(/^https?:\/\//, '')
     } catch (err) {
       if (__DEV__) console.warn('[Kindred share/url]', err)
       // Fall through with default brandUrl — still shareable as a generic card.
     }
-    setShareTarget({ index: idx, brandUrl })
+    setShareTarget({ index: idx, brandUrl, installUrl })
   }
 
   if (isLoading) {
@@ -452,6 +459,7 @@ export default function BondDetailScreen() {
               bElement={bElement}
               chapterNumber={shareTarget.index + 1}
               brandUrl={shareTarget.brandUrl}
+              installUrl={shareTarget.installUrl}
             />
           </View>
         ) : null}
