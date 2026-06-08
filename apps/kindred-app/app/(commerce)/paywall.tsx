@@ -101,6 +101,15 @@ export default function PaywallScreen() {
   // the user is anonymous device-id only; we route through SignInSheet first.
   const needsAuth = userEmail === null
 
+  // Pop the login sheet immediately for an anonymous user — login FIRST, then
+  // the paywall (was: paywall modal → tap → a second nested sign-in sheet). The
+  // inline view below stays as the backdrop / fallback if they dismiss it.
+  useEffect(() => {
+    if (needsAuth) setSignInOpen(true)
+    // Run once on mount; needsAuth flipping false after auth must NOT re-open it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       {needsAuth ? (

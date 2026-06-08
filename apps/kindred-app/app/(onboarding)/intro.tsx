@@ -270,8 +270,6 @@ export default function IntroScreen() {
   const offRight = width + 120
   const slot1 = center - 36 // primary stays here through whole sequence
   const slot2R = center + 80
-  // For hug, partner overlaps slot1
-  const slotHug = slot1 + 40
   // The one who stays sits shoulder-to-shoulder with f1.
   const slotSit = slot1 - 24
 
@@ -281,8 +279,6 @@ export default function IntroScreen() {
   const f1Op = useSharedValue(reduced ? 1 : 0)
   const f2X = useSharedValue(offRight)
   const f2Op = useSharedValue(0)
-  const f3X = useSharedValue(offRight)
-  const f3Op = useSharedValue(0)
   const f4X = useSharedValue(offLeft)
   const f4Op = useSharedValue(0)
   // Idle-breathing clock — one continuous 0..1 loop the figures sample (phase-
@@ -310,21 +306,18 @@ export default function IntroScreen() {
   /* Pose state — discrete transitions at scripted beats */
   const [f1Pose, setF1Pose] = useState<Pose>('walk')
   const [f2Pose, setF2Pose] = useState<Pose>('walk')
-  const [f3Pose, setF3Pose] = useState<Pose>('walk')
   const [f4Pose, setF4Pose] = useState<Pose>('walk')
   const [talkSide, setTalkSide] = useState<TalkSide>(null)
   const [done, setDone] = useState<boolean>(reduced)
   // Current act caption index (-1 = none yet).
-  const [act, setAct] = useState(reduced ? 3 : -1)
-  // Movement direction per figure (for the dust trail) — f2/f3 enter moving
-  // left, then leave moving right; f1/f4 only ever move right.
+  const [act, setAct] = useState(reduced ? 2 : -1)
+  // Movement direction per figure (for the dust trail) — f2 enters moving left,
+  // then leaves moving right; f1/f4 only ever move right.
   const [f2Heading, setF2Heading] = useState<'L' | 'R'>('L')
-  const [f3Heading, setF3Heading] = useState<'L' | 'R'>('L')
 
   // Distance-driven gait per figure — legs follow ground travel, no foot-slide.
   const gait1 = useGroundedGait(f1X)
   const gait2 = useGroundedGait(f2X)
-  const gait3 = useGroundedGait(f3X)
   const gait4 = useGroundedGait(f4X)
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -356,10 +349,7 @@ export default function IntroScreen() {
       starsBright.value = withTiming(0.2, { duration: d(1200) })
     })
     at(T.f2WalkIn, () => {
-      starsBright.value = withTiming(0.35, { duration: d(800) })
-    })
-    at(T.f3WalkIn, () => {
-      starsBright.value = withTiming(0.5, { duration: d(800) })
+      starsBright.value = withTiming(0.4, { duration: d(800) })
     })
     at(T.f4WalkIn, () => {
       starsBright.value = withTiming(0.65, { duration: d(800) })
@@ -380,8 +370,8 @@ export default function IntroScreen() {
     }
     caption(0, T.f1WalkIn + 700, T.f2WalkIn - 600)
     caption(1, T.talkA, T.f2WalkOut + 1200)
-    caption(2, T.hug1Start, T.f3WalkOut + 1400)
-    caption(3, T.hug2Start)
+    // The final thesis (act 2 = "the one who stays") holds through the CTA.
+    caption(2, T.hug2Start)
 
     // === Act 1: figure 1 arrives, looks around ===
     f1Op.value = withDelay(d(T.f1WalkIn), withTiming(1, { duration: d(300) }))
@@ -422,36 +412,10 @@ export default function IntroScreen() {
     })
     at(T.f2WalkOut + 200, () => setF1Pose('stand'))
 
-    // === Act 3: figure 3 walks in, hugs, leaves ===
-    at(T.f3WalkIn, () => {
-      setF3Pose('walk')
-      f3Op.value = withTiming(1, { duration: d(300) })
-      f3X.value = withTiming(slotHug, { duration: d(1500), easing: Easing.out(Easing.cubic) })
-    })
-    // The newcomer reaches out first; F1 answers a beat later — an embrace is a
-    // response, not a mirror (no two figures ever move on the same frame).
-    at(T.hug1Start, () => {
-      setF3Pose('hug')
-      // Halo swells around the embrace...
-      glowX.value = slot1 + 20
-      glowOp.value = withTiming(0.85, { duration: d(700), easing: Easing.out(Easing.quad) })
-    })
-    at(T.hug1Start + 300, () => setF1Pose('hug'))
-    at(T.hug1End, () => {
-      setF3Pose('walk')
-      setF3Heading('R')
-      setF1Pose('stand')
-      // ...and dies down when this one, too, walks away.
-      glowOp.value = withTiming(0, { duration: d(900) })
-    })
-    at(T.f3WalkOut, () => {
-      f3X.value = withTiming(offRight, { duration: d(1800), easing: Easing.in(Easing.cubic) })
-    })
-    at(T.f3WalkOut + 1500, () => {
-      f3Op.value = withTiming(0, { duration: d(300) })
-    })
+    // === A beat of solitude — f2 has gone; f1 stands alone for ~2s before the
+    // one who stays arrives (the f3 "throwaway hug" act was cut). ===
 
-    // === Act 4: figure 4 walks in, hugs, both sit shoulder-to-shoulder ===
+    // === Act 3: the one who stays walks in, hugs, both sit shoulder-to-shoulder ===
     at(T.f4WalkIn, () => setF4Pose('walk'))
     f4Op.value = withDelay(d(T.f4WalkIn), withTiming(1, { duration: d(300) }))
     f4X.value = withDelay(
@@ -508,7 +472,6 @@ export default function IntroScreen() {
   /* Animated styles — figures follow the ground arc and bob with their stride */
   const f1Style = useFigureStyle(f1X, f1Op, gait1.phaseSv, f1Pose, width, height, breath, 0)
   const f2Style = useFigureStyle(f2X, f2Op, gait2.phaseSv, f2Pose, width, height, breath, 0.37)
-  const f3Style = useFigureStyle(f3X, f3Op, gait3.phaseSv, f3Pose, width, height, breath, 0.62)
   const f4Style = useFigureStyle(f4X, f4Op, gait4.phaseSv, f4Pose, width, height, breath, 0.85)
 
   // Run the idle-breathing clock for the whole scene (continuous, linear — the
@@ -555,10 +518,6 @@ export default function IntroScreen() {
         <Animated.View style={[styles.figure, f2Style]}>
           <StickFigure pose={f2Pose} facing='L' phase={gait2.phase} seed={2} />
           <WalkDust active={f2Pose === 'walk'} heading={f2Heading} />
-        </Animated.View>
-        <Animated.View style={[styles.figure, f3Style]}>
-          <StickFigure pose={f3Pose} facing='L' phase={gait3.phase} seed={3} />
-          <WalkDust active={f3Pose === 'walk'} heading={f3Heading} />
         </Animated.View>
         <Animated.View style={[styles.figure, f4Style]}>
           <StickFigure pose={f4Pose} facing='R' phase={gait4.phase} seed={4} />

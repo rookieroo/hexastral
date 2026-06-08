@@ -17,16 +17,11 @@
 
 import { EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredRadius,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { type BondData, type BondStatus, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { ChevronRight } from 'lucide-react-native'
+import { CalendarClock, ChevronRight, Plus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -154,24 +149,31 @@ export default function BondListScreen() {
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
-              {/* Header chrome — the add-thread button. This is a secondary
-                  screen; settings entry lives on the home, not here. */}
+              {/* Header chrome — two lean icon buttons (timeline · add thread),
+                  right-aligned so they read as quiet actions, not a text bar.
+                  Settings entry lives on the home, not here. */}
               <View
                 style={{
                   flexDirection: 'row',
-                  justifyContent: 'space-between',
+                  justifyContent: 'flex-end',
                   alignItems: 'center',
+                  gap: kindredSpacing.sm,
                   marginBottom: kindredSpacing.md,
                   paddingHorizontal: kindredSpacing.screenH,
                 }}
               >
-                <HeaderPill
-                  label={t(locale, 'timeline.title')}
+                <IconButton
+                  accessibilityLabel={t(locale, 'timeline.title')}
                   onPress={() => router.push('/(timeline)')}
+                  icon={
+                    <CalendarClock color={kindredDark.textSecondary} size={18} strokeWidth={1.5} />
+                  }
                 />
-                <AddThreadButton
-                  label={t(locale, 'bondList.add')}
+                <IconButton
+                  accessibilityLabel={t(locale, 'bondList.add')}
                   onPress={() => router.push('/(onboarding)/mode')}
+                  icon={<Plus color={kindredDark.accent} size={20} strokeWidth={1.8} />}
+                  accent
                 />
               </View>
               {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
@@ -225,50 +227,36 @@ export default function BondListScreen() {
   )
 }
 
-/** A small bordered pill — the new-thread CTA in the list header. */
-function AddThreadButton({ label, onPress }: { label: string; onPress: () => void }) {
+/** A 36px icon button — the lean header actions (timeline · add thread). */
+function IconButton({
+  icon,
+  onPress,
+  accessibilityLabel,
+  accent,
+}: {
+  icon: React.ReactNode
+  onPress: () => void
+  accessibilityLabel: string
+  accent?: boolean
+}) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       accessibilityRole='button'
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => ({
-        flexDirection: 'row',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: kindredSpacing.md,
-        paddingVertical: kindredSpacing.sm,
-        borderRadius: kindredRadius.sm,
+        justifyContent: 'center',
         borderWidth: 0.5,
-        borderColor: kindredDark.accent,
+        borderColor: accent ? kindredDark.accent : kindredDark.border,
         opacity: pressed ? 0.6 : 1,
       })}
     >
-      <Text style={{ color: kindredDark.accent, fontSize: 16, lineHeight: 16 }}>+</Text>
-      <Text style={[kindredType.caption, { color: kindredDark.accent }]}>{label}</Text>
-    </Pressable>
-  )
-}
-
-/** A plain outlined pill (no "+") — the Timeline entry in the list header. */
-function HeaderPill({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      accessibilityRole='button'
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
-        paddingHorizontal: kindredSpacing.md,
-        paddingVertical: kindredSpacing.sm,
-        borderRadius: kindredRadius.sm,
-        borderWidth: 0.5,
-        borderColor: kindredDark.border,
-        opacity: pressed ? 0.6 : 1,
-      })}
-    >
-      <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>{label}</Text>
+      {icon}
     </Pressable>
   )
 }
