@@ -89,13 +89,11 @@ notifications at the relationship's upcoming significant nodes
 (`getRelationshipTimelineNotifications`), Pro/one-time-purchase gated. This is the
 答案 to "why pay for a one-time 合盘": the reminders keep giving.
 
-### 4.3 合盘 make-if (synastry what-if)  ⚠ design-careful; NEVER notifies
-The user records THIS relationship's node events + choices ("假如那年我们一起创业",
-"假如当年没分开"). Reuse `MakeIfGraph`. The branch plays against the real
-relationship line (命主干 reabsorption, like the personal make-if).
-**Hard rule (founder)**: make-if is 真真假假 — over-interpreting or "intervening"
-backfires. So make-if is **explore-only; it is NOT a notification source**.
-Notifications come ONLY from the deterministic 人生/合盘 timeline nodes.
+### 4.3 合盘 make-if (synastry what-if) — ❌ CUT (2026-06-08, see §11)
+Considered, then cut: its only healthy use (forward decision timing) is already
+covered by the 合盘 timeline + pair 择吉; its distinctive part (past counterfactual
+about a real person) is rumination-risk. Personal make-if stays; the relationship
+version does not. Notifications come ONLY from the deterministic 合盘 timeline nodes.
 
 ## 5. Monetization — LOCKED model (founder, 2026-06-08)
 
@@ -169,15 +167,37 @@ building. S6 is a one-line funnel decision.
   化解 is the always-on base; the LLM six-chapter is the premium the one-time
   purchase unlocks. They STACK (when/宜忌/化解 vs why/叙事), not either/or.
 
-## 10. Locked build order
-S1 合盘 timeline (on-device) → S2 node notifications + 偏好 → S3 one-time IAP +
-gate (free taste → full + 前瞻 + notifications + LLM deep reading) → S4 funnel bug
-fixes (lunar taste; decouple from frozen Kindred hand-off) → S6 stop Kindred
-funnel. S5 (合盘 make-if) DEFERRED.
+## 10. Build order — SHIPPED (S5 CUT)
+S1 合盘 timeline ✅ → S2 node notifications + 偏好 ✅ → S3 one-time IAP + gate ✅ →
+S4 funnel bug fixes ✅ → S6 stop Kindred funnel ✅. **S5 (合盘 make-if) CUT** —
+see §11. **The synastry-in-Auspice line is closed.**
 
 ---
 
-## 11. S5 — 合盘 make-if (relationship what-if) — DESIGN (2026-06-08)
+## 11. S5 — 合盘 make-if — ❌ CUT (founder decision, 2026-06-08)
+
+**Decision: do NOT build 合盘 make-if.** Reasoning from its real use cases:
+- **Forward relationship-decision timing** ("when is a good window for us to move
+  in / marry / …") is the only healthy, valuable scenario — and it's **already
+  covered** by the 合盘 timeline (favorable/strained windows ahead) + the existing
+  **pair 择吉** (`/api/auspice/pair` "为你俩择吉日"). make-if's branching adds ~0 here.
+- **Past counterfactual** ("假如我们当年没分手") is make-if's only *distinctive*
+  part, and it's the **risky** one: against a REAL named person (esp. an ex) it's
+  rumination — fuels regret or stamps fate on a breakup. High emotional/brand risk;
+  this is exactly the "过度解读/介入反而反感" the founder flagged.
+- **Current-couple novelty/share** is a narrow engagement hook (only works for a
+  positive current relationship), not enough to justify the surface.
+
+So the distinctive part is the harmful part, and the useful part is already built.
+The **关系决策择时** sliver was also NOT pursued (timeline + 择吉 already answer
+"when"). The personal make-if (single subject) stays — it's harmless parallel-life
+curiosity; the risk only appears when the "other life" is a specific real person.
+
+*(The detailed design below is kept as a record of what was considered and why it
+was cut — do not implement without revisiting this decision.)*
+
+### (archived design — NOT to be built)
+## 11(archived). 合盘 make-if (relationship what-if) — DESIGN (2026-06-08)
 
 > Status: **PLAN**. Build S5a (deterministic) when ready; S5b (LLM) needs CF
 > Workers AI. S1–S4/S6 shipped; this is the last piece.
