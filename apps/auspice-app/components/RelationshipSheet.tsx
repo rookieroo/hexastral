@@ -25,6 +25,7 @@ import { useStrings } from '@/lib/i18n-context'
 import type { AuspicePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
 import { sharePairDays } from '@/lib/share'
+import { RelationshipSeal } from './RelationshipSeal'
 
 const TITLE: Record<Locale, string> = {
   'zh-Hans': '与 TA 的关系',
@@ -214,15 +215,11 @@ export function RelationshipSheet({
                     justifyContent: 'center',
                   }}
                 >
-                  <Text
-                    style={{
-                      color: verdictColor(rel.verdict, colors),
-                      fontSize: 18,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {rel.verdict}
-                  </Text>
+                  <RelationshipSeal
+                    verdict={rel.verdict}
+                    size={32}
+                    color={verdictColor(rel.verdict, colors)}
+                  />
                 </View>
               </View>
               <Pole label={person?.name ?? 'TA'} animal={rel.otherAnimal} colors={colors} />

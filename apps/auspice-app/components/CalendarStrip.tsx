@@ -343,6 +343,7 @@ function MonthCell({
                 isToday={isToday}
                 isSelected={isSelected}
                 colors={colors}
+                locale={locale}
               />
             </Pressable>
           )
@@ -370,28 +371,42 @@ function DayCell({
   isToday,
   isSelected,
   colors,
+  locale,
 }: {
   dayNum: number
   data: AuspiceMonthDay | null
   isToday: boolean
   isSelected: boolean
   colors: DayCellColors
+  locale: Locale
 }) {
+  // Cell shading: en highlights ONLY public holidays (the 黄历 吉凶 rating is 命理
+  // a non-CJK audience can't read — same founder call as the sub-label). zh / tw /
+  // ja keep the 吉凶 shading.
   let bg = 'transparent'
   if (data) {
     if (data.publicHoliday) bg = colors.accentGhost
-    else if (data.overallRating >= 4) bg = colors.accentGhost
-    else if (data.overallRating <= 2) bg = 'rgba(155,34,38,0.06)'
+    else if (locale !== 'en' && data.overallRating >= 4) bg = colors.accentGhost
+    else if (locale !== 'en' && data.overallRating <= 2) bg = 'rgba(155,34,38,0.06)'
   }
   if (isSelected) bg = colors.accent
 
-  const lowerText = data?.publicHoliday ?? data?.solarTermName ?? data?.lunarDayName ?? ''
+  // The dim sub-label: en sees ONLY public holidays — 节气 / 农历 day names are
+  // 历法/命理 a non-CJK audience can't read (founder call: prefer holidays over
+  // terms users won't understand). zh / tw / ja keep the full almanac chain.
+  const hasHoliday = data?.publicHoliday !== null && data?.publicHoliday !== undefined
+  const lowerText =
+    locale === 'en'
+      ? (data?.publicHoliday ?? '')
+      : (data?.publicHoliday ?? data?.solarTermName ?? data?.lunarDayName ?? '')
   const strong =
-    data?.publicHoliday !== null && data?.publicHoliday !== undefined
-      ? true
-      : data?.solarTermName !== null && data?.solarTermName !== undefined
+    locale === 'en'
+      ? hasHoliday
+      : hasHoliday
         ? true
-        : data?.isLunarFirst === true || data?.isLunarFifteenth === true
+        : data?.solarTermName !== null && data?.solarTermName !== undefined
+          ? true
+          : data?.isLunarFirst === true || data?.isLunarFifteenth === true
 
   const numColor = isSelected ? '#fff' : isToday ? colors.accent : colors.text
   const lowerColor = isSelected ? '#fff' : strong ? colors.accent : colors.dim
