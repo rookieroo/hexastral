@@ -42,6 +42,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withDelay,
+  withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
@@ -244,7 +245,11 @@ function useFigureStyle(
   phaseSv: DerivedValue<number>,
   pose: Pose,
   width: number,
-  height: number
+  height: number,
+  /** Shared 0..1 looping clock for idle breathing (so held poses aren't frozen). */
+  breath: SharedValue<number>,
+  /** Per-figure phase offset (0..1) so figures don't breathe in unison. */
+  breathPhase: number
 ) {
   const walking = pose === 'walk'
   // Seated poses rest higher than standing feet: `sit` (抱膝) just above the
@@ -253,9 +258,12 @@ function useFigureStyle(
   return useAnimatedStyle(() => {
     const gy = groundYAt(xSv.value, width, height)
     const bob = walking ? (1 - Math.abs(Math.sin(phaseSv.value * Math.PI * 2))) * 2 : 0
+    // Idle breathing — a gentle chest rise/fall on every NON-walking pose, so a
+    // held figure reads as alive instead of frozen. Walking already bobs.
+    const breathing = walking ? 0 : Math.sin((breath.value + breathPhase) * Math.PI * 2) * 1
     return {
       opacity: opSv.value,
-      transform: [{ translateX: xSv.value - 32 }, { translateY: gy - baseline - bob }],
+      transform: [{ translateX: xSv.value - 32 }, { translateY: gy - baseline - bob - breathing }],
     }
   })
 }
@@ -290,6 +298,10 @@ export default function IntroScreen() {
   const f3Op = useSharedValue(0)
   const f4X = useSharedValue(offLeft)
   const f4Op = useSharedValue(0)
+  // Idle-breathing clock — one continuous 0..1 loop the figures sample (phase-
+  // offset) so held poses gently breathe instead of freezing. Off when the OS
+  // requests reduced motion.
+  const breath = useSharedValue(0)
   // One persistent bottom hint — "tap to begin" — visible (dimmed) from the
   // first beat so the user always knows they can leave, brightening to full
   // once the parable lands (2026-06 feedback: 底部应该一直显示 tap to begin).
@@ -507,10 +519,20 @@ export default function IntroScreen() {
   }
 
   /* Animated styles — figures follow the ground arc and bob with their stride */
-  const f1Style = useFigureStyle(f1X, f1Op, gait1.phaseSv, f1Pose, width, height)
-  const f2Style = useFigureStyle(f2X, f2Op, gait2.phaseSv, f2Pose, width, height)
-  const f3Style = useFigureStyle(f3X, f3Op, gait3.phaseSv, f3Pose, width, height)
-  const f4Style = useFigureStyle(f4X, f4Op, gait4.phaseSv, f4Pose, width, height)
+  const f1Style = useFigureStyle(f1X, f1Op, gait1.phaseSv, f1Pose, width, height, breath, 0)
+  const f2Style = useFigureStyle(f2X, f2Op, gait2.phaseSv, f2Pose, width, height, breath, 0.37)
+  const f3Style = useFigureStyle(f3X, f3Op, gait3.phaseSv, f3Pose, width, height, breath, 0.62)
+  const f4Style = useFigureStyle(f4X, f4Op, gait4.phaseSv, f4Pose, width, height, breath, 0.85)
+
+  // Run the idle-breathing clock for the whole scene (continuous, linear — the
+  // figures take a sine of it, so the breath itself eases). ~3.4s/cycle.
+  useEffect(() => {
+    if (reduced) return
+    breath.value = withRepeat(withTiming(1, { duration: 3400, easing: Easing.linear }), -1, false)
+    return () => {
+      breath.value = 0
+    }
+  }, [reduced, breath])
   const ctaStyle = useAnimatedStyle(() => ({ opacity: ctaOp.value }))
   const actStyle = useAnimatedStyle(() => ({ opacity: actOp.value }))
   const stageStyle = useAnimatedStyle(() => ({ transform: [{ scale: stageScale.value }] }))
