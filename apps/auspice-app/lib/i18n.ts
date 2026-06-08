@@ -234,6 +234,12 @@ export interface Strings {
     empty: string
     freeNote: string
     back: string
+    /** Unlock wall (S3): one-time view buyout ({price}) vs subscribe (adds reminders). */
+    unlockOneTime: string
+    unlockOneTimeNoPrice: string
+    unlockSubscribe: string
+    unlocking: string
+    purchaseFailed: string
   }
   /** Make-if diff panel — labels for the 现实 vs 假如 side-by-side comparison. */
   makeifDiff: {
@@ -604,8 +610,13 @@ const zhHans: Strings = {
     harmony: '相合',
     needBirth: '需要双方完整生辰才能推演这段关系。',
     empty: '这段关系暂无显著节点。',
-    freeNote: '免费仅显示今年；解锁可见未来全部节点并开启提醒。',
+    freeNote: '免费仅显示今年；完整前瞻可解锁。',
     back: '返回',
+    unlockOneTime: '解锁完整时间轴 · {price}(一次性)',
+    unlockOneTimeNoPrice: '解锁完整时间轴(一次性)',
+    unlockSubscribe: '或订阅 Pro · 含节点提醒',
+    unlocking: '解锁中…',
+    purchaseFailed: '购买未完成,请稍后再试。',
   },
   makeifDiff: {
     header: '对照 · 现实 vs 假如',
@@ -935,8 +946,13 @@ const zhHant: Strings = {
     harmony: '相合',
     needBirth: '需要雙方完整生辰才能推演這段關係。',
     empty: '這段關係暫無顯著節點。',
-    freeNote: '免費僅顯示今年；解鎖可見未來全部節點並開啟提醒。',
+    freeNote: '免費僅顯示今年；完整前瞻可解鎖。',
     back: '返回',
+    unlockOneTime: '解鎖完整時間軸 · {price}(一次性)',
+    unlockOneTimeNoPrice: '解鎖完整時間軸(一次性)',
+    unlockSubscribe: '或訂閱 Pro · 含節點提醒',
+    unlocking: '解鎖中…',
+    purchaseFailed: '購買未完成,請稍後再試。',
   },
   makeifDiff: {
     header: '對照 · 現實 vs 假如',
@@ -1277,8 +1293,13 @@ const ja: Strings = {
     harmony: '合',
     needBirth: '二人の完全な生年月日が必要です。',
     empty: 'この関係に目立った節目はまだありません。',
-    freeNote: '無料は今年のみ。アンロックで未来の全節目と通知が見られます。',
+    freeNote: '無料は今年のみ。先の予報はアンロックで。',
     back: '戻る',
+    unlockOneTime: '全タイムラインを解放 · {price}(買い切り)',
+    unlockOneTimeNoPrice: '全タイムラインを解放(買い切り)',
+    unlockSubscribe: 'または Pro 購読 · 通知つき',
+    unlocking: '処理中…',
+    purchaseFailed: '購入が完了しませんでした。',
   },
   makeifDiff: {
     header: '対比 · 現実 vs もしも',
@@ -1612,8 +1633,13 @@ const en: Strings = {
     harmony: 'harmony',
     needBirth: 'Both full birth charts are needed for this relationship.',
     empty: 'No significant nodes for this relationship yet.',
-    freeNote: 'Free shows this year; unlock the full path ahead + reminders.',
+    freeNote: 'Free shows this year; the full path ahead unlocks.',
     back: 'Back',
+    unlockOneTime: 'Unlock the full timeline · {price} (one-time)',
+    unlockOneTimeNoPrice: 'Unlock the full timeline (one-time)',
+    unlockSubscribe: 'Or subscribe to Pro · adds reminders',
+    unlocking: 'Unlocking…',
+    purchaseFailed: "Purchase didn't complete — please try again.",
   },
   makeifDiff: {
     header: 'Side-by-side · Real vs What-if',

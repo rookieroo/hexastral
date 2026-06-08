@@ -13,13 +13,16 @@ import { useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { type AuspicePerson, getPeople } from '@/lib/people'
+import { getSynastryUnlockPrice, purchaseSynastryUnlock } from '@/lib/synastry-iap'
 import { buildSynastryTimeline, resolveSolarInput } from '@/lib/synastry-timeline'
+import { isRelationshipUnlocked, markRelationshipUnlocked } from '@/lib/synastry-unlock'
 
 const SIG_COLOR = { major: '#9A6A3A', notable: '#B8860B', routine: '#8E8E93' } as const
 
@@ -44,6 +47,14 @@ export default function RelationshipTimelineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
   const [state, setState] = useState<State>({ kind: 'loading' })
+  // One-time buyout of THIS relationship's view (separate from the subscription).
+  const [unlocked, setUnlocked] = useState(false)
+  const [price, setPrice] = useState<string | null>(null)
+  const [purchasing, setPurchasing] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
+  // Full VIEW access = subscription OR this relationship bought. (Push stays
+  // subscription-only — never unlocked by the one-time buy.)
+  const fullAccess = isPro || unlocked
 
   useFocusEffect(
     useCallback(() => {
@@ -54,11 +65,33 @@ export default function RelationshipTimelineScreen() {
         if (!self?.gender || !person) setState({ kind: 'missing' })
         else setState({ kind: 'data', self, person })
       })
+      void isRelationshipUnlocked(id).then((u) => {
+        if (alive) setUnlocked(u)
+      })
+      void getSynastryUnlockPrice().then((p) => {
+        if (alive) setPrice(p)
+      })
       return () => {
         alive = false
       }
     }, [id])
   )
+
+  const buyUnlock = async () => {
+    if (purchasing) return
+    setPurchasing(true)
+    try {
+      const r = await purchaseSynastryUnlock()
+      if (r === 'success') {
+        await markRelationshipUnlocked(id)
+        setUnlocked(true)
+      } else if (r === 'failed' || r === 'unavailable') {
+        Alert.alert(t.synastryTl.purchaseFailed)
+      }
+    } finally {
+      setPurchasing(false)
+    }
+  }
 
   const model = useMemo(() => {
     if (state.kind !== 'data') return null
@@ -74,8 +107,8 @@ export default function RelationshipTimelineScreen() {
   const visibleNodes = useMemo(() => {
     if (!model) return []
     const sorted = [...model.nodes].sort((a, b) => a.year - b.year)
-    return isPro ? sorted : sorted.filter((n) => n.year === thisYear)
-  }, [model, isPro, thisYear])
+    return fullAccess ? sorted : sorted.filter((n) => n.year === thisYear)
+  }, [model, fullAccess, thisYear])
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -187,13 +220,56 @@ export default function RelationshipTimelineScreen() {
             </View>
           )}
 
-          {!isPro ? (
-            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-              {t.synastryTl.freeNote}
-            </Text>
+          {/* Unlock wall — view buyout (one-time) OR subscribe (adds reminders).
+              Hidden once the user has full view access. */}
+          {!fullAccess ? (
+            <View
+              style={{
+                gap: spacing.md,
+                borderTopWidth: 0.5,
+                borderTopColor: colors.separator,
+                paddingTop: spacing.lg,
+              }}
+            >
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                {t.synastryTl.freeNote}
+              </Text>
+              {/* One-time: buy out THIS relationship's full view (no reminders). */}
+              <Pressable
+                onPress={() => void buyUnlock()}
+                disabled={purchasing}
+                accessibilityRole='button'
+                style={({ pressed }) => ({
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  backgroundColor: colors.accent,
+                  alignItems: 'center',
+                  opacity: pressed || purchasing ? 0.6 : 1,
+                })}
+              >
+                <Text style={{ color: colors.bg, fontSize: 15, fontWeight: '700' }}>
+                  {purchasing
+                    ? t.synastryTl.unlocking
+                    : price
+                      ? t.synastryTl.unlockOneTime.replace('{price}', price)
+                      : t.synastryTl.unlockOneTimeNoPrice}
+                </Text>
+              </Pressable>
+              {/* Subscribe: full view across ALL relationships + node reminders. */}
+              <Pressable
+                onPress={() => setPaywallOpen(true)}
+                accessibilityRole='button'
+                style={({ pressed }) => ({ alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+                  {t.synastryTl.unlockSubscribe}
+                </Text>
+              </Pressable>
+            </View>
           ) : null}
         </ScrollView>
       )}
+      <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </SafeAreaView>
   )
 }
