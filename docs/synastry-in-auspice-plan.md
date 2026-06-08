@@ -174,3 +174,90 @@ S1 合盘 timeline (on-device) → S2 node notifications + 偏好 → S3 one-tim
 gate (free taste → full + 前瞻 + notifications + LLM deep reading) → S4 funnel bug
 fixes (lunar taste; decouple from frozen Kindred hand-off) → S6 stop Kindred
 funnel. S5 (合盘 make-if) DEFERRED.
+
+---
+
+## 11. S5 — 合盘 make-if (relationship what-if) — DESIGN (2026-06-08)
+
+> Status: **PLAN**. Build S5a (deterministic) when ready; S5b (LLM) needs CF
+> Workers AI. S1–S4/S6 shipped; this is the last piece.
+
+### 11.1 Concept
+The make-if treatment applied to a RELATIONSHIP. Trunk = the real relationship
+line (the two charts' synastry over time, from `buildSynastryTimeline`); a branch
+= a recorded relationship choice ("假如我们当年异地") forking at a chosen age,
+exploring the alternate trajectory and — for past forks — reconciling back to the
+real line (does the pair's 合缘 base pull it back? the 命/运/选择 line, but for two).
+
+### 11.2 Hard rules (founder, non-negotiable)
+- **NEVER a notification source.** Make-if is 真真假假; over-interpreting or
+  "intervening" backfires. Only the deterministic 合盘 timeline nodes (S2) notify.
+- **Explore-only, reflective framing.** Keep the personal make-if's "仅供反思,
+  非预测" disclaimer. No "你该离开TA"-style advice about a REAL person — this is
+  more sensitive than personal make-if; frame as 反思, never prescription.
+- **Gated** like the relationship view (one-time unlock OR subscription).
+
+### 11.3 Privacy
+Both charts are device-local (the user entered the 亲友). Deterministic parts run
+on-device. The LLM narrative sends both births to the server — acceptable in
+Auspice (both are the user's OWN data; no third-party-PII problem like Kindred's
+partner B).
+
+### 11.4 What the user records (the model flagged as complex)
+A relationship event + the age it (hypothetically) happened, kept tasteful via
+**presets** (free-text risks over-personal / invasive 真真假假):
+- Curated neutral set: 结识 / 在一起 / 异地 / 同居 / 结婚 / 分手 / 和好 / 共事 /
+  远行 / 生子 … (final list TBD).
+- User picks an event + an age. Past fork = reflection ("假如当年…"); present/future
+  = projection.
+- Stored per-relationship, device-local (mirror the personal make-if fork store).
+
+### 11.5 Deterministic core — S5a (buildable + verifiable now, NO Workers AI)
+- `buildSynastryTimeline` → the real relationship line + the period backdrop at the
+  fork (relationship-favorable vs strained, from the synastry node's 冲/合/十神).
+- `MakeIfModel` / `buildUserBranch` / `MakeIfGraph` → the branch git-graph (reuse).
+- A deterministic verdict: does the choice land in a relationship-favorable or
+  strained window (the 合盘 backdrop — analogous to the personal 命主干 line).
+- `makeifDiff` (already on main for personal) → extend to 现实关系线 vs 假如关系线.
+
+### 11.6 LLM layer — S5b (needs CF Workers AI; verification deferred)
+- A PAIR make-if narrative: "假如你们当年X,这段关系会…".
+- Extend `POST /api/auspice/makeif` (or a new `/api/auspice/pair-makeif`) to accept
+  BOTH births + the relationship event; reuse the hehun synastry prompt machinery
+  + the make-if narrative shape + the existing daily rate limit.
+- Gated (one-time/subscription).
+
+### 11.7 Where it lives
+Recommend: a **section on `/relationship/[id]`** (below the timeline), shown when
+the user has full access — keeps the whole relationship in one place. (Alt: a
+dedicated `/relationship/[id]/makeif`.)
+
+### 11.8 Reuse inventory
+| Need | Reuse |
+|---|---|
+| Branch git-graph | `components/MakeIfGraph` |
+| Branch model | `lib/makeIfBranches` (`buildUserBranch` / `buildInteractiveModel`) |
+| Real relationship line + backdrop | `lib/synastry-timeline` (S1) |
+| 现实 vs 假如 diff | `makeifDiff` (extend the personal one) |
+| LLM narrative | `lib/api fetchMakeIfNarratives` / `POST /api/auspice/makeif` (extend to pair) |
+| Per-fork device storage | mirror the personal make-if fork store |
+
+### 11.9 Phasing
+- **S5a (deterministic)**: relationship make-if graph (fork the relationship line
+  with a preset event) + deterministic backdrop verdict + diff vs the real line.
+  `bun typecheck` + test verifiable.
+- **S5b (LLM)**: pair make-if narrative per branch. Buildable offline; generation
+  verified only with Workers AI.
+
+### 11.10 Open questions (decide before building)
+- Preset event list — curate the neutral set; how much free-text (if any).
+- Screen placement: relationship section vs dedicated screen.
+- Pair LLM endpoint: extend `/makeif` vs a new `/pair-makeif`.
+- Past-fork "reconcile back": use the pair's 合缘 base as the pull?
+- Gating: same one-time/subscription as the view, or subscription-only (it's
+  generative)?
+
+### 11.11 Risks
+- 真真假假 sensitivity (about a REAL person) → presets + reflective framing + NO
+  notifications + disclaimer. Highest-care copy of anything in this plan.
+- LLM unverifiable in sandbox → S5b deferred behind Workers AI.
