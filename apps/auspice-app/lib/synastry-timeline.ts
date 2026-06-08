@@ -11,6 +11,7 @@
 
 import {
   type DateTimeInput,
+  getRelationshipLiuYueNodes,
   getRelationshipTimelineNodes,
   getRelationshipTimelineNotifications,
   lunarToSolar,
@@ -88,4 +89,26 @@ export function buildSynastryTimeline(
     fromDate: opts.now,
   })
   return { nodes, notifications }
+}
+
+/**
+ * Forward **monthly** relationship window (the displayed timeline). Auspice's
+ * synastry is the LIGHT funnel — it shows only the next few months (流月) so it
+ * stays a glance and does NOT overlap Kindred's lifetime axis (大运/流年, which is
+ * Kindred's moat). Forward-only (no past), on-device. Empty when either chart is
+ * incomplete. The lifetime `buildSynastryTimeline` above is kept only for the
+ * push-notification path (lib/push.ts).
+ */
+export function buildSynastryForwardMonths(
+  self: SynastryBirth | null | undefined,
+  person: SynastryBirth | null | undefined,
+  opts: { months?: number; now?: Date } = {}
+): RelationshipTimelineNode[] {
+  const a = toRelPerson(self)
+  const b = toRelPerson(person)
+  if (!a || !b) return []
+  return getRelationshipLiuYueNodes(a, b, {
+    fromDate: opts.now,
+    months: opts.months ?? 6,
+  }).nodes
 }

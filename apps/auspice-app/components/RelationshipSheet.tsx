@@ -17,7 +17,7 @@ import { useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { type AuspicePairResult, fetchAuspicePair, type PairStatus } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import type { Locale } from '@/lib/i18n'
@@ -171,19 +171,59 @@ export function RelationshipSheet({
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'center' }}>
         {rel ? (
           <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+            {/* Two people joined by a thread (Kindred's 缘 motif), the
+                relationship quality held at the centre — replaces the flat
+                colour badge. */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'stretch',
+                justifyContent: 'space-between',
+                paddingHorizontal: spacing.sm,
+              }}
+            >
               <Pole label={t.people.self} animal={rel.selfAnimal} colors={colors} />
               <View
                 style={{
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  backgroundColor: verdictColor(rel.verdict, colors),
+                  flex: 1,
+                  height: 52,
+                  marginHorizontal: spacing.xs,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
-                  {rel.verdict}
-                </Text>
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: colors.separator,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    borderWidth: 1,
+                    borderColor: verdictColor(rel.verdict, colors),
+                    backgroundColor: colors.bg,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: verdictColor(rel.verdict, colors),
+                      fontSize: 18,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {rel.verdict}
+                  </Text>
+                </View>
               </View>
               <Pole label={person?.name ?? 'TA'} animal={rel.otherAnimal} colors={colors} />
             </View>
@@ -336,8 +376,21 @@ function Pole({
   colors: ReturnType<typeof useTheme>['colors']
 }) {
   return (
-    <View style={{ alignItems: 'center', gap: 4, minWidth: 56 }}>
-      <Text style={{ color: colors.accent, fontSize: 30, fontWeight: '300' }}>{animal}</Text>
+    <View style={{ alignItems: 'center', gap: 6, width: 64 }}>
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.separator,
+          backgroundColor: colors.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: colors.accent, fontSize: 28, fontWeight: '300' }}>{animal}</Text>
+      </View>
       <Text style={{ color: colors.dim, fontSize: 12 }} numberOfLines={1}>
         {label}
       </Text>

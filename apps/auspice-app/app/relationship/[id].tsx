@@ -21,7 +21,7 @@ import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import { type AuspicePerson, getPeople } from '@/lib/people'
 import { getSynastryUnlockPrice, purchaseSynastryUnlock } from '@/lib/synastry-iap'
-import { buildSynastryTimeline, resolveSolarInput } from '@/lib/synastry-timeline'
+import { buildSynastryForwardMonths, resolveSolarInput } from '@/lib/synastry-timeline'
 import { isRelationshipUnlocked, markRelationshipUnlocked } from '@/lib/synastry-unlock'
 
 const SIG_COLOR = { major: '#9A6A3A', notable: '#B8860B', routine: '#8E8E93' } as const
@@ -99,16 +99,18 @@ export default function RelationshipTimelineScreen() {
     const selfP = pillarsOf(self)
     const otherP = pillarsOf(person)
     const score = selfP && otherP ? safeHeHun(selfP, otherP) : null
-    const { nodes } = buildSynastryTimeline(self, person)
+    // Light forward glance — next 6 months only (流月). The lifetime axis is
+    // Kindred's; Auspice keeps the synastry a taste so the two don't overlap.
+    const nodes = buildSynastryForwardMonths(self, person, { months: 6 })
     return { score, nodes }
   }, [state])
 
-  const thisYear = new Date().getFullYear()
+  // Engine returns the window already in chronological order, forward from now.
+  // Free sees just this month as a taste; full access sees all 6.
   const visibleNodes = useMemo(() => {
     if (!model) return []
-    const sorted = [...model.nodes].sort((a, b) => a.year - b.year)
-    return fullAccess ? sorted : sorted.filter((n) => n.year === thisYear)
-  }, [model, fullAccess, thisYear])
+    return fullAccess ? model.nodes : model.nodes.slice(0, 1)
+  }, [model, fullAccess])
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -180,7 +182,7 @@ export default function RelationshipTimelineScreen() {
                         : null
                 return (
                   <View
-                    key={`${n.type}-${n.year}-${n.daYunOf ?? ''}`}
+                    key={`${n.type}-${n.year}-${n.month ?? ''}-${n.daYunOf ?? ''}`}
                     style={{ flexDirection: 'row', gap: spacing.md }}
                   >
                     <View
@@ -197,7 +199,9 @@ export default function RelationshipTimelineScreen() {
                         <Text style={{ color: colors.text, fontSize: 16, letterSpacing: 1 }}>
                           {n.ganZhi.label}
                         </Text>
-                        <Text style={{ color: colors.dim, fontSize: 12 }}>{n.year}</Text>
+                        <Text style={{ color: colors.dim, fontSize: 12 }}>
+                          {n.month ? `${n.year}.${n.month}` : n.year}
+                        </Text>
                         {marker ? (
                           <Text
                             style={{

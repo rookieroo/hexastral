@@ -1,10 +1,14 @@
 /**
- * Opens the localized Wikipedia article in the system browser.
+ * Wikipedia deep link — a deliberately SUBTLE affordance.
+ *
+ * Was a full "Learn more on Wikipedia" CTA in accent colour, which made every
+ * culture card read like an external-link shell. Now it's a small muted "W"
+ * chip that trails the text — the source is still one tap away (and fully
+ * labelled for screen readers), but it no longer dominates the card.
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { ExternalLink } from 'lucide-react-native'
-import { Linking, Pressable, Text } from 'react-native'
+import { Linking, Pressable, StyleSheet, Text } from 'react-native'
 
 import { useStrings } from '@/lib/i18n-context'
 
@@ -23,19 +27,21 @@ export function CultureWikiLink({ url }: CultureWikiLinkProps) {
       }}
       accessibilityRole='link'
       accessibilityLabel={t.cultureWikipediaCta}
-      hitSlop={8}
+      hitSlop={10}
       style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
         alignSelf: 'flex-start',
-        gap: 6,
-        paddingVertical: 4,
-        opacity: pressed ? 0.65 : 1,
+        width: 20,
+        height: 20,
+        borderRadius: 5,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.separator,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pressed ? 0.5 : 0.9,
       })}
     >
-      <ExternalLink size={14} color={colors.accent} strokeWidth={1.6} />
-      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '500' }}>
-        {t.cultureWikipediaCta}
+      <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: '600', lineHeight: 14 }}>
+        W
       </Text>
     </Pressable>
   )
