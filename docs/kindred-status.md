@@ -127,6 +127,25 @@ Kindred's _relationship × time_ surface. Detailed in
 
 ## Workstream C — Supporting / product
 
+### Viral loop (病毒分裂) — audit 2026-06-08
+
+- ✅ **Cold-install handshake (DDL) wired** — was the fatal break: B tapping A's
+  `/resonate` link without the app installed lost the token on cold start and
+  dropped into generic onboarding (K-factor from new users ≈ 0). Now web
+  `/resonate` registers a DDL session (`DDLRedirectButton`, `payload:{kind:
+  'kindred-accept', token}`) before the App Store redirect, and the app recovers
+  it on first launch via `lib/ddl.ts` (`attemptKindredDdlRestore` → token resolve
+  then fingerprint `matchDDLSession`) → routes to `/accept/[token]`. Logic-verified
+  + unit-tested; **needs device QA to confirm the fingerprint match scan-rate**.
+- ☐ **Share-card scannable install path** — the 9:16 `ShareableChapterCard`
+  already carries the real per-share URL (`createShareUrl` → `res.url`, trackable
+  via `shareId`), but it is **text only** — a stranger on social can't tap/scan it.
+  Needs a QR baked into the image (`react-native-qrcode-svg`, already in the
+  lockfile via hexastral-app/portfolio-posters but not yet a `scenario-kindred`
+  dep → requires a networked `bun add`, blocked in the offline sandbox), OR a
+  vendored pure QR encoder rendered via the existing `react-native-svg`.
+- Soft throttle (by design): free users cap at 3 bonds (`FREE_BOND_LIMIT`).
+
 - ☐ **Pairing** — DDL / fingerprint / ref / mailto / contacts 合盘 backend already
   built; **email-first, contacts deferred** (see yuan-pairing notes). Front-end
   pair-input is a 3-step first-run flow (self → choose → other).
