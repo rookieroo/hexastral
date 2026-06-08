@@ -128,6 +128,9 @@ export interface PairInterpretation {
   totalChapters?: number
   /** The aha-hook assertion — shown on the unlock wall to drive conversion + invite. */
   ahaHook?: string
+  /** Both day-master 五行 (金木水火土) — drives the report ink centerpiece (生/克/比和). */
+  personAElement?: string
+  personBElement?: string
   [key: string]: unknown
 }
 

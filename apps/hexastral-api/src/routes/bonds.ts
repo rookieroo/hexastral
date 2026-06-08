@@ -10,6 +10,7 @@
  */
 
 import type { ExecutionContext } from '@cloudflare/workers-types/2023-07-01'
+import { STEM_WUXING } from '@zhop/astro-core'
 import { dayGanZhi, getFourPillars } from '@zhop/astro-core/ganzhi'
 import { calculateDailySynastry } from '@zhop/astro-core/synastry'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
@@ -69,6 +70,19 @@ function parseSolarParts(
   const day = Number.parseInt(parts[2]!, 10)
   if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return null
   return { year, month, day, hour: timeIndexToHour(timeIndex) }
+}
+
+/** Day-master 五行 (金木水火土) from a stored birth — drives the report's ink
+ *  centerpiece (生/克/比和). Privacy-safe: a coarse element, not the raw birth.
+ *  Returns null on unparseable input. */
+function dayMasterElement(solarDate: string, timeIndex: number): string | null {
+  const parts = parseSolarParts(solarDate, timeIndex)
+  if (!parts) return null
+  try {
+    return STEM_WUXING[getFourPillars(parts).day.stem]
+  } catch {
+    return null
+  }
 }
 
 export const bondRoutes = new Hono<AppEnv>()
@@ -1646,6 +1660,10 @@ bondRoutes.get('/:id', async (c) => {
         hookDimension: pairReadings.hookDimension,
         compatibilityData: pairReadings.compatibilityData,
         interpretation: pairReadings.interpretation,
+        personASolarDate: pairReadings.personASolarDate,
+        personATimeIndex: pairReadings.personATimeIndex,
+        personBSolarDate: pairReadings.personBSolarDate,
+        personBTimeIndex: pairReadings.personBTimeIndex,
       })
       .from(pairReadings)
       .where(eq(pairReadings.id, bond.hehunReadingId))
@@ -1666,6 +1684,14 @@ bondRoutes.get('/:id', async (c) => {
         if (parsed && typeof parsed === 'object') interpretation = parsed
       } catch {
         // Malformed interpretation JSON — leave as null so the client falls back gracefully.
+      }
+      // Surface both day-master 五行 so the report screen can render the ink
+      // centerpiece (生/克/比和). Coarse element only — D2-safe (not raw birth).
+      if (interpretation) {
+        const elA = dayMasterElement(rawReading.personASolarDate, rawReading.personATimeIndex)
+        const elB = dayMasterElement(rawReading.personBSolarDate, rawReading.personBTimeIndex)
+        if (elA) interpretation.personAElement = elA
+        if (elB) interpretation.personBElement = elB
       }
       // '4' or null (legacy) means full access; '1' means restricted to hookDimension only
       const canSeeAll = bond.unlockedDimensions === '4' || bond.unlockedDimensions === null

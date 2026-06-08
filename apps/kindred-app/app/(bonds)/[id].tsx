@@ -40,9 +40,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native'
+import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
+import { deriveCenterpieceMode, InkCenterpiece } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { emitUnlockFunnel } from '@/lib/analytics'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
@@ -260,6 +261,11 @@ export default function BondDetailScreen() {
   // their info is in (2026-06: "进去之后展示这个 Thread 的基本信息"). resolveLocale()
   // is a plain call (not a hook) so it's safe below the loading/error returns.
   const locale = resolveLocale()
+  // Day-master 五行 for both people — server computes these from the stored
+  // births (coarse element only, privacy-safe) and drops them on the
+  // interpretation. They drive the ink centerpiece's 生/克/比和 mode.
+  const aElement = detail.interpretation?.personAElement
+  const bElement = detail.interpretation?.personBElement
   const startedLabel = relativeSentLabel(locale, detail.createdAt)
   const status = detailStatus(detail.status, t)
   const metaRow = (justify: 'flex-start' | 'center') => (
@@ -396,6 +402,21 @@ export default function BondDetailScreen() {
           onIndexChange={setChapterIndex}
           onShareChapter={(idx) => void handleShareChapter(idx)}
           trailing={unlockWall}
+          aElement={aElement}
+          bElement={bElement}
+          locale={locale}
+          renderCenterpiece={
+            aElement && bElement
+              ? (ch, i) => (
+                  <InkCenterpiece
+                    kind={ch.kind}
+                    mode={deriveCenterpieceMode(ch.kind, aElement, bElement, ch.severity)}
+                    active={i === chapterIndex}
+                    width={Dimensions.get('window').width - 44}
+                  />
+                )
+              : undefined
+          }
         />
 
         {/* Off-screen capture target — positioned far outside viewport but mounted. */}
