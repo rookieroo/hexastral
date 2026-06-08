@@ -65,12 +65,16 @@ from auspice's git-graph.
   reads them and feeds `ChapterPager` `aElement` / `bElement` / `locale` +
   `renderCenterpiece` (mode via `deriveCenterpieceMode`, `active = idx === chapterIndex`).
   The ink art now shows on real bonds, not just the DEV preview.
+- **Settings → Symbol Glossary screen.** `app/(settings)/glossary.tsx` — a
+  map-legend that decodes the six chapter 碑拓 seals, the five 五行 用神 keys, the
+  three 暗礁 朱批 severities, the 1–6 积画 numerals and the 碑拓-vs-朱文 style
+  contrast, on `kindredPaper`. Reuses the exact card glyph primitives (now
+  exported from the `scenario-kindred` barrel: `AncientSeal` / `AncientNumeral` /
+  `RiskMark` / `YongshenKey` + `GLYPHS` / `CHAPTER_SEAL` / `WUXING_GLYPH` /
+  `NUMERALS` / `kindredFonts`). Linked from a new Reference section on the
+  settings index. Full i18n en / zh / zh-Hant / ja.
 
 ### ☐ Remaining
-- **Settings → Symbol Glossary screen.** Decodes seals / 五行 keys / 朱批 severity /
-  ancient numerals — a map-legend page. Mock done: `~/Desktop/kindred-design-mock/
-  glossary.png`. New route under `app/(settings)/`, reuse the glyph components on
-  `kindredPaper`, link from the settings index. NOT built.
 - **ShareableChapterCard redesign.** `packages/scenario-kindred` — still the OLD
   golden-line + cinnabar design; bring it onto the new 墨儀 system (seal + fonts +
   optional centerpiece still) for the 9:16 share artefact. Used by `[id].tsx`
