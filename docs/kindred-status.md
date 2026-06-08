@@ -137,13 +137,12 @@ Kindred's _relationship × time_ surface. Detailed in
   it on first launch via `lib/ddl.ts` (`attemptKindredDdlRestore` → token resolve
   then fingerprint `matchDDLSession`) → routes to `/accept/[token]`. Logic-verified
   + unit-tested; **needs device QA to confirm the fingerprint match scan-rate**.
-- ☐ **Share-card scannable install path** — the 9:16 `ShareableChapterCard`
-  already carries the real per-share URL (`createShareUrl` → `res.url`, trackable
-  via `shareId`), but it is **text only** — a stranger on social can't tap/scan it.
-  Needs a QR baked into the image (`react-native-qrcode-svg`, already in the
-  lockfile via hexastral-app/portfolio-posters but not yet a `scenario-kindred`
-  dep → requires a networked `bun add`, blocked in the offline sandbox), OR a
-  vendored pure QR encoder rendered via the existing `react-native-svg`.
+- ✅ **Share-card scannable install path** — the 9:16 `ShareableChapterCard` now
+  bakes a SCANNABLE QR of the real per-share install URL (`createShareUrl` →
+  `res.url`). Self-contained encoder `lib/qr.ts` (byte mode, ECC M, versions 1–6;
+  no native dep) rendered via the existing `react-native-svg` (`components/QrCode.tsx`).
+  GF(256)+Reed–Solomon core unit-tested against the published QR generator-poly
+  vectors — verifiable without a scanner; **final scan confirmation is device QA**.
 - Soft throttle (by design): free users cap at 3 bonds (`FREE_BOND_LIMIT`).
 
 - ☐ **Pairing** — DDL / fingerprint / ref / mailto / contacts 合盘 backend already
