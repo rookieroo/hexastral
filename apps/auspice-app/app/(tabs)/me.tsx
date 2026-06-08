@@ -48,15 +48,19 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { getPeople } from '@/lib/people'
 import {
   disableDailyPush,
   disableHolidayHeadsUp,
+  disableSynastryReminders,
   disableTimelineReminders,
   enableDailyPush,
   enableHolidayHeadsUp,
+  enableSynastryReminders,
   enableTimelineReminders,
   isHolidayHeadsUpEnabled,
   isPushEnabled,
+  isSynastryRemindersEnabled,
   isTimelineRemindersEnabled,
 } from '@/lib/push'
 import { type PushTypeMeta, pushTypeById } from '@/lib/pushRegistry'
@@ -316,12 +320,43 @@ export default function MeScreen() {
       .catch(() => {})
   }, [])
 
+  // 合盘节点提醒 (Pro) — per-亲友 relationship-timeline nodes (synastry-in-auspice S2).
+  // Needs the user's own birth + at least one 亲友; computed on-device.
+  const [synastryRemindOn, setSynastryRemindOn] = useState(false)
+  const toggleSynastryRemind = async (next: boolean) => {
+    if (!next) {
+      await disableSynastryReminders()
+      setSynastryRemindOn(false)
+      return
+    }
+    if (!isPro) {
+      setCalPaywallOpen(true)
+      return
+    }
+    if (!birth.gender || !birth.solarDate) {
+      setEditingBirth(true)
+      return
+    }
+    const people = await getPeople().catch(() => [])
+    const ok = await enableSynastryReminders({
+      locale,
+      self: { solarDate: birth.solarDate, timeIndex: birth.timeIndex, gender: birth.gender },
+      people,
+    })
+    setSynastryRemindOn(ok)
+  }
+  useEffect(() => {
+    isSynastryRemindersEnabled()
+      .then(setSynastryRemindOn)
+      .catch(() => {})
+  }, [])
+
   // Registry-driven push toggles — order + PRO flag from lib/pushRegistry (single
   // source of truth), so the three rows render from one config + PushToggleRow
   // instead of three near-identical Switch blocks (the settings tree had grown
   // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
   const pushToggles: Array<{
-    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'holiday'>
+    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'synastry' | 'holiday'>
     label: string
     hint?: string
     value: boolean
@@ -334,6 +369,13 @@ export default function MeScreen() {
       hint: t.timelineRemindHint,
       value: timelineRemindOn,
       onToggle: toggleTimelineRemind,
+    },
+    {
+      id: 'synastry',
+      label: t.synastryRemindToggle,
+      hint: t.synastryRemindHint,
+      value: synastryRemindOn,
+      onToggle: toggleSynastryRemind,
     },
     {
       id: 'holiday',

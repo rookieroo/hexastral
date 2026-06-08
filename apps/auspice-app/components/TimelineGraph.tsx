@@ -124,9 +124,6 @@ function chipFor(
   return undefined
 }
 
-/** Free preview = current position + the next N 流月; Pro unlocks the full life. */
-const FREE_LIUYUE_MONTHS = 6
-
 // ── Geometry ────────────────────────────────────────────────────────────────
 const TRUNK_X = 26 // through-line of self (命) lane
 const BRANCH_X = 52 // 大运 / 流年 branch lane (tight, git-graph spacing)
@@ -843,20 +840,21 @@ export function ReadingBubble({
 
 export function LiuyueStrip({
   liuyue,
-  isPro,
   colors,
   label,
   selectedId,
   onSelect,
 }: {
   liuyue: LiuyueRow[]
-  isPro: boolean
   colors: GColors
   label: string
   selectedId?: string | null
   onSelect?: (id: string) => void
 }) {
-  const visible = isPro ? liuyue : liuyue.slice(0, FREE_LIUYUE_MONTHS)
+  // 流月 are the current year's finest commits — show all 12 by default (the Pro
+  // moat is the 80-year 前瞻, not this year's months), so a thin 流年 view still
+  // has granularity to explore.
+  const visible = liuyue
   return (
     <View style={{ gap: 10 }}>
       <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{label}</Text>

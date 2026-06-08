@@ -23,6 +23,7 @@ import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
 import { syncAuspiceServerPush, unregisterAuspiceServerPush } from './serverPush'
 import { isServerPushActive } from './serverPushFlag'
+import { buildSynastryTimeline, type SynastryBirth } from './synastry-timeline'
 import { localizeYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'auspice.push.enabled'
@@ -36,12 +37,13 @@ const PUSH_HOUR = 8
 const EVENING_HOUR = 20
 const WINDOW_DAYS = 5
 
-/** Evening-slot title — the 8pm push previews TOMORROW (forward-looking → next-day open). */
-const EVENING_TEXT: Record<Locale, { title: string }> = {
-  'zh-Hans': { title: '明日预告' },
-  'zh-Hant': { title: '明日預告' },
-  ja: { title: '明日の予報' },
-  en: { title: 'Tomorrow' },
+/** Evening-slot (8pm) labels — recap today + preview tomorrow, so it doesn't
+ *  duplicate tomorrow's 8am push. */
+const EVENING_TEXT: Record<Locale, { title: string; today: string; tomorrow: string }> = {
+  'zh-Hans': { title: '今日小结 · 明日预告', today: '今日', tomorrow: '明日' },
+  'zh-Hant': { title: '今日小結 · 明日預告', today: '今日', tomorrow: '明日' },
+  ja: { title: '今日のまとめ · 明日の予報', today: '今日', tomorrow: '明日' },
+  en: { title: "Today's recap · tomorrow", today: 'Today', tomorrow: 'Tomorrow' },
 }
 
 /** Retro-check copy ({event} = the localized event label). */
@@ -218,27 +220,35 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // under the SAME daily toggle so we don't add another Settings switch (the push
   // system was already several layers deep).
   const et = EVENING_TEXT[opts.locale]
+  const sep = opts.locale === 'en' ? ', ' : '、'
+  const loc = (v: string) => localizeYijiVerb(v, opts.locale)
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightPm(i)
     if (when.getTime() <= now) continue // skip past 8pm
-    const previewDate = localYmd(eightAm(i + 1)) // the morning AFTER this evening
+    const todayDate = localYmd(eightAm(i)) // the evening's OWN day (recap)
+    const tomorrowDate = localYmd(eightAm(i + 1)) // preview
     let content: { title: string; body: string } = { title: et.title, body: t.today }
     try {
-      const c = dailyContent(
-        opts.locale,
-        t,
-        previewDate,
-        await fetchAuspiceDay(previewDate, opts.birthDate),
-        isPro
-      )
-      content = { title: `${et.title} · ${previewDate}`, body: c.body }
+      // Recap today + preview tomorrow — so the 8pm push never duplicates
+      // tomorrow's 8am push (which carries tomorrow's 宜忌 alone).
+      const [tdP, tmP] = await Promise.all([
+        fetchAuspiceDay(todayDate, opts.birthDate),
+        fetchAuspiceDay(tomorrowDate, opts.birthDate),
+      ])
+      const tdYi = tdP.day.goodFor.slice(0, 2).map(loc).join(sep) || '—'
+      const tmYi = tmP.day.goodFor.slice(0, 2).map(loc).join(sep) || '—'
+      const tmJi = tmP.day.avoid.slice(0, 2).map(loc).join(sep) || '—'
+      content = {
+        title: et.title,
+        body: `${et.today}${t.suitable} ${tdYi} · ${et.tomorrow}${t.suitable} ${tmYi}·${t.avoid} ${tmJi}`,
+      }
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
     }
     try {
       await Notifications.scheduleNotificationAsync({
-        identifier: `${EVENING_ID_PREFIX}${previewDate}`,
-        content: { ...content, data: { day: previewDate } },
+        identifier: `${EVENING_ID_PREFIX}${tomorrowDate}`,
+        content: { ...content, data: { day: tomorrowDate } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -758,4 +768,115 @@ export async function disableTimelineReminders(): Promise<void> {
 /** Re-sync on app open (no-op unless enabled + permitted + Pro). */
 export async function refreshTimelineReminders(opts: TimelineReminderOpts): Promise<void> {
   if (await isTimelineRemindersEnabled()) await scheduleTimelineReminders(opts)
+}
+
+// ── 合盘节点提醒 (synastry relationship-timeline reminders, synastry-in-auspice S2) ──
+//
+// Opt-in, Pro-gated LOCAL notifications at a 亲友 relationship's upcoming significant
+// nodes (一方/双方 大运 换运, 流年 冲/合) — the recurring value that makes the
+// relationship reading worth keeping. Computed ON-DEVICE (both charts are local) via
+// `buildSynastryTimeline`. Same cancel-by-prefix + reschedule-on-open pattern as the
+// daily / life-timeline windows. (S3 will let a one-time 合盘 purchase unlock this per
+// relationship; for now it rides `auspice_pro`.)
+
+const SYNASTRY_ID_PREFIX = 'auspice-synastry-'
+const SYNASTRY_ENABLED_KEY = 'auspice.synastry.enabled'
+/** Nearest N upcoming nodes per relationship, capped globally so many 亲友 don't flood. */
+const SYNASTRY_PER_PERSON = 1
+const SYNASTRY_GLOBAL_CAP = 6
+
+const SYNASTRY_TEXT: Record<Locale, { title: string; body: string }> = {
+  'zh-Hans': { title: '关系节点', body: '{name}：{year}年关系迎来显著节点,点开查看。' },
+  'zh-Hant': { title: '關係節點', body: '{name}：{year}年關係迎來顯著節點,點開查看。' },
+  ja: { title: '関係の節目', body: '{name}：{year}年、関係に節目が訪れます。' },
+  en: { title: 'Relationship node', body: '{name}: a turning point in {year}.' },
+}
+
+export interface SynastryReminderOpts {
+  locale: Locale
+  self: SynastryBirth
+  people: ReadonlyArray<AuspicePerson>
+}
+
+async function cancelSynastry(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(SYNASTRY_ID_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+export async function isSynastryRemindersEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(SYNASTRY_ENABLED_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * (Re)schedule relationship-node reminders across the user's 亲友. No-op unless
+ * enabled AND permission granted AND auspice_pro active (self-clears if Pro lapses).
+ * Safe to call on every app open.
+ */
+export async function scheduleSynastryReminders(opts: SynastryReminderOpts): Promise<void> {
+  await cancelSynastry()
+  if (!(await isSynastryRemindersEnabled())) return
+  const perm = await Notifications.getPermissionsAsync().catch(() => null)
+  if (!perm || perm.status !== 'granted') return
+  if (!(await getAuspiceProActive())) return
+  if (!opts.self.gender || !opts.self.solarDate) return
+
+  const text = SYNASTRY_TEXT[opts.locale]
+  const now = Date.now()
+
+  // Gather the nearest upcoming node(s) per relationship, then keep the global few
+  // soonest so a user with many 亲友 doesn't get flooded.
+  const candidates: Array<{ personId: string; name: string; year: number; fireMs: number }> = []
+  for (const p of opts.people) {
+    if (!p.gender || !p.solarDate) continue
+    const { notifications } = buildSynastryTimeline(opts.self, p, { now: new Date() })
+    notifications
+      .map((nf) => ({ nf, ms: new Date(nf.fireDate).getTime() }))
+      .filter((x) => Number.isFinite(x.ms) && x.ms > now)
+      .sort((a, b) => a.ms - b.ms)
+      .slice(0, SYNASTRY_PER_PERSON)
+      .forEach((x) =>
+        candidates.push({ personId: p.id, name: p.name, year: x.nf.node.year, fireMs: x.ms })
+      )
+  }
+  candidates.sort((a, b) => a.fireMs - b.fireMs)
+
+  for (const c of candidates.slice(0, SYNASTRY_GLOBAL_CAP)) {
+    const body = text.body.replace('{name}', c.name).replace('{year}', String(c.year))
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${SYNASTRY_ID_PREFIX}${c.personId}-${c.year}`,
+      content: { title: text.title, body, data: { route: `/relationship/${c.personId}` } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(c.fireMs) },
+    }).catch(() => {})
+  }
+}
+
+export async function enableSynastryReminders(opts: SynastryReminderOpts): Promise<boolean> {
+  if (!(await requestPushPermission())) return false
+  try {
+    await AsyncStorage.setItem(SYNASTRY_ENABLED_KEY, '1')
+  } catch {}
+  await scheduleSynastryReminders(opts)
+  return true
+}
+
+export async function disableSynastryReminders(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SYNASTRY_ENABLED_KEY, '0')
+  } catch {}
+  await cancelSynastry()
+}
+
+/** Re-sync on app open (no-op unless enabled + permitted + Pro). */
+export async function refreshSynastryReminders(opts: SynastryReminderOpts): Promise<void> {
+  if (await isSynastryRemindersEnabled()) await scheduleSynastryReminders(opts)
 }

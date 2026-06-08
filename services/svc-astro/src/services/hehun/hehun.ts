@@ -252,6 +252,9 @@ ${compatText}`
 function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
   return `你是一位精通命盘配对的 AI 命理师。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。
 
+## 语体要求（重要）
+用典雅、克制的命理书面语（"日主""相生相济""刑冲合会""刚柔相济"等）。**严禁现代口语与网络话术**（如"咬合""适配""CP""能量场""磁场""上头""相爱相杀"等）与商业/工程比喻。可有记忆点、可分享，但须根植命理意象；中文尤忌轻佻。
+
 ${buildPairFacts(result, input)}
 
 ## 输出要求（JSON 格式）
@@ -265,8 +268,8 @@ ${buildPairFacts(result, input)}
   "warnings": "注意事项（50字，需要经营的方面）",
   "advice": "开运建议（100字，具体化解和增进感情的方法）",
   "summary": "一句话总结（15字以内）",
-  "archetypeName": "Edgy viral relationship label in the user's language — e.g. '宿命捆绑', 'The Karmic Anchor', '相爱相杀', 'Mutual Destruction'. MUST be 2-8 words, punchy and shareable.",
-  "archetypeTagline": "Snarky one-liner about this pairing in the user's language — MUST be under 20 words, witty and emotionally resonant.",
+  "archetypeName": "A memorable, shareable relationship label in the user's language, rooted in 命理 imagery — e.g. '宿命之牵', 'The Karmic Anchor', '刚柔相济'. MUST be 2-8 words. For CJK use classical 命理 register, NOT internet slang.",
+  "archetypeTagline": "One resonant line about this pairing in the user's language — under 20 words. Insightful and warm, NOT snark; for CJK keep the 命理 书面语 register.",
   "archetypeCategory": "MUST be exactly one of: harmony | tension | growth | karmic | volatile — pick the most accurate description of the overall energy. Output English only.",
   "hookDimension": "MUST be exactly one of: long_term | communication | attraction | emotional — the dimension whose score deviates most from the other three (highest or lowest). Output English only.",
   "shareQuote": "社交分享金句（≤20字，朗朗上口，不含天命定论语气，适合截图分享）"
@@ -443,6 +446,7 @@ ${chapterList}
 - title ≤14 字，贴合该章 kind。
 - ahaHook 是整份报告的钩子：基于两人命盘的**真实互动**，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间；≤30 字，留有悬念引导用户解锁全文，**不含天命定论语气**。
 - 低分关系不说"不合适"，而说"需要更多理解与磨合"；高分关系也要提醒"好的关系仍需经营"。
+- **语体**：用典雅、克制的命理书面语（如"日主""刑冲合会""相生相济""刚柔相济"等）。**严禁现代口语与网络话术**（如"咬合""适配""CP感""能量场""磁场""上头"等），也不用商业/工程比喻。宁古雅，勿轻佻。
 
 ## 输出要求（严格 JSON）
 {
