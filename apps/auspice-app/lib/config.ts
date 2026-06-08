@@ -19,3 +19,15 @@ export const FLAGSHIP_LINKS = {
   yuan: { deepLink: 'yuan://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_YUAN' },
   feng: { deepLink: 'feng://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_FENG' },
 } as const
+
+/**
+ * Is a flagship LIVE (shipped on the store) and thus safe to funnel to? A funnel
+ * to an unshipped app lands on a placeholder App Store URL (404) — so we gate the
+ * cross-app upsell on this. Flip a flag to `true` the moment that app ships AND its
+ * `appStoreUrl` above is filled. Both off for now: Kindred is being repositioned
+ * (US), Fēng isn't ready.
+ */
+export const FLAGSHIP_LIVE: Record<keyof typeof FLAGSHIP_LINKS, boolean> = {
+  yuan: false,
+  feng: false,
+}

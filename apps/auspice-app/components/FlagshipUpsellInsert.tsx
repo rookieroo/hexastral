@@ -10,7 +10,7 @@
 
 import { Button, useTheme } from '@zhop/core-ui'
 import { Linking, Text, View } from 'react-native'
-import { FLAGSHIP_LINKS } from '@/lib/config'
+import { FLAGSHIP_LINKS, FLAGSHIP_LIVE } from '@/lib/config'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 
@@ -59,6 +59,9 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
 export function FlagshipUpsellInsert({ flagship }: { flagship: Flagship }) {
   const { colors, spacing } = useTheme()
   const { locale } = useStrings()
+  // Don't funnel to a flagship that isn't shipped yet (its appStoreUrl is a
+  // placeholder → 404). Flip FLAGSHIP_LIVE[flagship] when that app goes live.
+  if (!FLAGSHIP_LIVE[flagship]) return null
   const copy = COPY[flagship][locale]
   const link = FLAGSHIP_LINKS[flagship]
 
