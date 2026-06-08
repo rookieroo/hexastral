@@ -1,39 +1,117 @@
 /**
- * InkCenterpiece — the chapter centerpiece, react-native-skia, ANIMATED.
+ * InkCenterpiece — the chapter centerpiece, react-native-skia, STATIC.
  *
- * Element-agnostic by design: two particle masses (her = ink, his = pale) and
- * the STATE of their interaction IS the relationship — read at a glance:
- *   merge    生  — flow into each other, diffuse into one (drift together)
- *   oppose   克  — repel, crowd a tense seam, never cross (vibrate + sparks)
- *   resonate 比和 — distinct yet entwined, the 太極 swirl (slow rotation)
+ * Performance + feel come first. A per-particle animated sim ran hot and dropped
+ * frames on device (≈thousands of points re-simulated + re-allocated every frame
+ * on the UI thread), so this renders ONE settled particle field: generated once
+ * (deterministic), drawn as a few static `Points` clouds, then zero ongoing cost
+ * (no clock, no frame callback — Skia paints it once and leaves it).
  *
- * Particles are generated once (JS, deterministic) and drawn as Skia `Points`
- * (a few GPU draw calls) on a grey ground; a skia clock drives a per-state
- * transform so it breathes. Each chapter maps to the state matching its facet
- * of the bond's arc.
+ * Two masses (her = ink/dark, his = pale) on a grey ground; their arrangement
+ * alone is the relationship — no glyphs, no 干支/五行 text, no red:
+ *   merge      生    the two diffuse into one
+ *   oppose     克    two masses crowd a seam; neither crosses
+ *   resonate   比和  distinct yet entwined — the 太極 swirl
+ *   transition 克→生 the 解法 frozen at its turn: two energies fusing through a
+ *                    central 用神 bridge (distinct at the poles, one in the middle)
+ *
+ * Composition is ported from the approved 2D study (gen_states.py / states.png).
  */
 
-import { Canvas, Fill, Group, Points, type SkPoint, useClock } from '@shopify/react-native-skia'
-import { useMemo } from 'react'
-import { useDerivedValue } from 'react-native-reanimated'
+import { Canvas, Fill, Group, Points, type SkPoint } from '@shopify/react-native-skia'
+import { useEffect, useMemo } from 'react'
+import { Easing, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 
 const VW = 560
 const VH = 320
 const CX = 280
-const CY = 158
+const CY = 160
 
-type State = 'merge' | 'oppose' | 'resonate'
+export type Mode = 'merge' | 'oppose' | 'resonate' | 'transition'
 
-const CHAPTER_STATE: Record<string, State> = {
+// Fallback arc, used when no real relation is supplied (kind alone). Real data
+// should call `deriveCenterpieceMode` so the state reflects the actual couple.
+const CHAPTER_MODE: Record<string, Mode> = {
   first_impression: 'resonate',
   communication: 'merge',
   conflict: 'oppose',
-  complement: 'merge',
+  complement: 'transition',
   monthly_outlook: 'oppose',
-  long_term_advice: 'resonate',
+  long_term_advice: 'transition',
 }
 
-// ── deterministic rng + noise ────────────────────────────────────────────────
+// ── derive the state from the real 命理 relation ─────────────────────────────
+const ELEMENT_KEY: Record<string, string> = {
+  wood: 'wood',
+  木: 'wood',
+  fire: 'fire',
+  火: 'fire',
+  earth: 'earth',
+  土: 'earth',
+  metal: 'metal',
+  金: 'metal',
+  water: 'water',
+  水: 'water',
+}
+const GENERATE: Record<string, string> = {
+  wood: 'fire',
+  fire: 'earth',
+  earth: 'metal',
+  metal: 'water',
+  water: 'wood',
+}
+const OVERCOME: Record<string, string> = {
+  wood: 'earth',
+  earth: 'water',
+  water: 'fire',
+  fire: 'metal',
+  metal: 'wood',
+}
+
+type Relation = 'generate' | 'overcome' | 'peer'
+
+function elementRelation(aEl?: string, bEl?: string): Relation {
+  const a = aEl ? ELEMENT_KEY[aEl.trim().toLowerCase()] : undefined
+  const b = bEl ? ELEMENT_KEY[bEl.trim().toLowerCase()] : undefined
+  if (!a || !b) return 'overcome'
+  if (a === b) return 'peer'
+  if (GENERATE[a] === b || GENERATE[b] === a) return 'generate'
+  if (OVERCOME[a] === b || OVERCOME[b] === a) return 'overcome'
+  return 'peer'
+}
+
+function chapterIntent(kind: string): 'tension' | 'remedy' | 'union' {
+  if (kind === 'conflict' || kind === 'monthly_outlook') return 'tension'
+  if (kind === 'complement' || kind === 'long_term_advice') return 'remedy'
+  return 'union'
+}
+
+/** Map a chapter to a centerpiece state using the couple's real element relation. */
+export function deriveCenterpieceMode(
+  kind: string,
+  aEl?: string,
+  bEl?: string,
+  severity?: string
+): Mode {
+  if (kind === 'first_impression') return 'resonate'
+  const rel = elementRelation(aEl, bEl)
+  const intent = chapterIntent(kind)
+  const hot = severity === 'high'
+  if (intent === 'remedy') {
+    return rel === 'overcome' ? 'transition' : rel === 'generate' ? 'merge' : 'resonate'
+  }
+  if (intent === 'tension') {
+    if (rel === 'overcome') return 'oppose'
+    if (rel === 'generate') return hot ? 'oppose' : 'merge'
+    return hot ? 'oppose' : 'resonate'
+  }
+  // union
+  if (rel === 'generate') return 'merge'
+  if (rel === 'peer') return 'resonate'
+  return hot ? 'oppose' : 'merge'
+}
+
+// ── deterministic rng + value noise (stable, always-good layout) ─────────────
 function mulberry32(seed: number) {
   let a = seed >>> 0
   return () => {
@@ -45,10 +123,10 @@ function mulberry32(seed: number) {
   }
 }
 function gaussFrom(rnd: () => number) {
-  return (mu: number, sd: number) =>
-    mu + sd * Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd())
+  return (sd: number) =>
+    sd * Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd())
 }
-function makeNoise(seed: number, cells = 18) {
+function makeNoise(seed: number, cells = 16) {
   const r = mulberry32(seed)
   const g = Array.from({ length: cells + 1 }, () => Array.from({ length: cells + 1 }, () => r()))
   return (x: number, y: number) => {
@@ -71,65 +149,113 @@ function makeNoise(seed: number, cells = 18) {
   }
 }
 
-type Masses = { a: SkPoint[]; b: SkPoint[]; accent: SkPoint[] }
+// Two tonal tiers per mass give depth without per-particle draw cost.
+interface Clouds {
+  inkFaint: SkPoint[]
+  inkBold: SkPoint[]
+  paleFaint: SkPoint[]
+  paleBold: SkPoint[]
+}
 
-// ── three states (two masses; A = ink, B = pale; accent = cinnabar) ──────────
-function generate(state: State, s: number): Masses {
-  const a: SkPoint[] = []
-  const b: SkPoint[] = []
-  const accent: SkPoint[] = []
-  const push = (arr: SkPoint[], x: number, y: number) => arr.push({ x: x * s, y: y * s })
+const BASE_SEED: Record<Mode, number> = { resonate: 7, oppose: 19, merge: 3, transition: 23 }
 
-  if (state === 'merge') {
-    const rnd = mulberry32(3)
-    const nz = makeNoise(11)
-    const g = gaussFrom(rnd)
-    for (const [arr, cx, off] of [
-      [a, 210, 0],
-      [b, 350, 99],
+// Per-chapter salt so two chapters in the same state don't render an identical
+// field (e.g. both 'oppose' chapters) — same essence, different particular.
+function saltFromKind(kind: string): number {
+  let h = 0
+  for (let i = 0; i < kind.length; i++) h = (h * 31 + kind.charCodeAt(i)) | 0
+  return (h >>> 0) % 4099
+}
+
+function generate(mode: Mode, s: number, salt: number): Clouds {
+  const inkFaint: SkPoint[] = []
+  const inkBold: SkPoint[] = []
+  const paleFaint: SkPoint[] = []
+  const paleBold: SkPoint[] = []
+  const rnd = mulberry32(BASE_SEED[mode] + salt * 1009)
+  const gauss = gaussFrom(rnd)
+  const push = (ink: boolean, x: number, y: number) => {
+    const bold = rnd() < 0.36
+    const arr = ink ? (bold ? inkBold : inkFaint) : bold ? paleBold : paleFaint
+    arr.push({ x: x * s, y: y * s })
+  }
+
+  if (mode === 'merge') {
+    // 生 — two wide blobs that overlap into one; a dense fused core in the middle
+    const nz = makeNoise(11 + salt)
+    for (const [ink, cx, off] of [
+      [true, 210, 0],
+      [false, 350, 99],
     ] as const) {
-      for (let i = 0; i < 5200; i++) {
-        const x = cx + g(0, 118)
-        const y = CY + g(0, 84)
+      for (let i = 0; i < 3400; i++) {
+        const x = cx + gauss(118)
+        const y = CY + gauss(86)
         const f =
           Math.exp(-(((x - cx) / 130) ** 2) - ((y - CY) / 96) ** 2) * (0.5 + 0.7 * nz(x + off, y))
         if (rnd() > f) continue
-        push(arr, x, y)
+        push(ink, x, y)
       }
     }
-    for (let i = 0; i < 1500; i++) {
-      const x = CX + g(0, 52)
-      const y = CY + g(0, 40)
-      push(rnd() < 0.5 ? a : b, x, y)
+    for (let i = 0; i < 1050; i++) {
+      push(rnd() < 0.5, CX + gauss(52), CY + gauss(40))
     }
-  } else if (state === 'oppose') {
-    const rnd = mulberry32(19)
-    const nz = makeNoise(9)
-    const g = gaussFrom(rnd)
-    const seamX = CX
-    const gap = 22
-    for (const [arr, cx, sign] of [
-      [a, 150, 1],
-      [b, 410, -1],
+  } else if (mode === 'oppose') {
+    // 克 — two camps pressed CLOSE, divided by an irregular no-man's-land that is
+    // never crossed: each front is jagged (noise) and the gap between them varies
+    // along the seam — nearly touching in places, open in others. An irregular
+    // untouched middle, not a clean void.
+    const nz = makeNoise(9 + salt)
+    const nf = makeNoise(57 + salt)
+    const seamAt = (y: number) => CX + 26 * (nf(150, y * 2.3) - 0.5)
+    const halfGapAt = (y: number) => 5 + 16 * nf(610, y * 1.6)
+    for (const [ink, cx, sign] of [
+      [true, 205, 1],
+      [false, 355, -1],
     ] as const) {
-      for (let i = 0; i < 6000; i++) {
-        const x = cx + g(0, 70)
-        const y = CY + g(0, 100)
-        if (sign * (x - (seamX - sign * gap)) > 0) continue
-        const comp = Math.exp(-((Math.abs(x - (seamX - sign * gap)) / 40) ** 2))
+      for (let i = 0; i < 3600; i++) {
+        const x = cx + gauss(70)
+        const y = CY + gauss(100)
+        const front = seamAt(y) - sign * halfGapAt(y)
+        if (sign * (x - front) > 0) continue
+        const comp = Math.exp(-((Math.abs(x - front) / 36) ** 2))
         const f =
-          Math.exp(-(((x - cx) / 80) ** 2) - ((y - CY) / 108) ** 2) * (0.45 + 0.55 * nz(x, y)) +
-          0.5 * comp
+          Math.exp(-(((x - cx) / 80) ** 2) - ((y - CY) / 110) ** 2) * (0.45 + 0.55 * nz(x, y)) +
+          0.55 * comp
         if (rnd() > Math.min(0.95, f)) continue
-        push(arr, x, y)
+        push(ink, x, y)
       }
     }
-    for (let i = 0; i < 240; i++) push(accent, seamX + g(0, 4), CY + g(0, 96))
+  } else if (mode === 'transition') {
+    // 克→生 解法, frozen at the turn. Unlike oppose (a VOID at the seam), here the
+    // seam is a BRIDGE: two clearly polar masses (ink left, pale right) joined by a
+    // dense intermixed 用神 channel — the wall has become a gate.
+    const nz = makeNoise(15 + salt)
+    for (const [ink, cx, off] of [
+      [true, 178, 0],
+      [false, 382, 60],
+    ] as const) {
+      for (let i = 0; i < 3600; i++) {
+        const x = cx + gauss(62)
+        const y = CY + gauss(96)
+        const f =
+          Math.exp(-(((x - cx) / 74) ** 2) - ((y - CY) / 104) ** 2) * (0.5 + 0.55 * nz(x + off, y))
+        if (rnd() > f) continue
+        push(ink, x, y)
+      }
+    }
+    // the bridge — a dense intermixed column filling the seam (用神 channel)
+    for (let i = 0; i < 1700; i++) {
+      const x = CX + gauss(54)
+      const y = CY + gauss(82)
+      const f = Math.exp(-(((x - CX) / 64) ** 2))
+      if (rnd() > 0.4 + 0.6 * f) continue
+      push(rnd() < 0.5, x, y)
+    }
   } else {
-    // resonate — the 太極 swirl
-    const rnd = mulberry32(7)
-    const ns = makeNoise(33, 22)
-    const R = 132
+    // 比和 resonate — the 太極 swirl; tone owned by S-line membership
+    const ns = makeNoise(33 + salt, 22)
+    const R = 130
+    const cy = 158
     const isDark = (x: number, y: number) => {
       const dt = Math.hypot(x, y + R / 2)
       const db = Math.hypot(x, y - R / 2)
@@ -137,126 +263,167 @@ function generate(state: State, s: number): Masses {
       if (db <= R / 2) return true
       return x > 0
     }
-    for (let i = 0; i < 13000; i++) {
+    for (let i = 0; i < 8500; i++) {
       const ang = rnd() * 2 * Math.PI
       const rr = R * 1.16 * rnd() ** 0.62
       let x = rr * Math.cos(ang)
       let y = rr * Math.sin(ang)
-      const tw = (rr / R) * 9 * (ns(CX + x, CY + y) - 0.5)
+      const tw = (rr / R) * 9 * (ns(CX + x, cy + y) - 0.5)
       x += -Math.sin(ang) * tw
       y += Math.cos(ang) * tw
       const fade = rr < R * 0.82 ? 1 : Math.max(0, 1 - (rr - R * 0.82) / (R * 0.36))
       if (fade <= 0 || rr > R * 1.18) continue
       const d = isDark(x, y)
       if (rnd() > (d ? 0.72 : 0.62) * fade) continue
-      push(d ? a : b, CX + x, CY + y)
+      push(d, CX + x, cy + y)
     }
-    for (const [ex, ey, arr] of [
-      [CX, CY - R / 2, b],
-      [CX, CY + R / 2, a],
+    for (const [ex, ey, ink] of [
+      [CX, cy - R / 2, false],
+      [CX, cy + R / 2, true],
     ] as const) {
       for (let i = 0; i < 90; i++) {
         const ang = rnd() * 2 * Math.PI
-        const r = Math.abs(gaussFrom(rnd)(0, 6))
-        push(arr, ex + r * Math.cos(ang), ey + r * Math.sin(ang))
+        const r = Math.abs(gauss(6))
+        push(ink, ex + r * Math.cos(ang), ey + r * Math.sin(ang))
       }
     }
   }
-  return { a, b, accent }
+  return { inkFaint, inkBold, paleFaint, paleBold }
+}
+
+// ── render helpers ───────────────────────────────────────────────────────────
+const INK_FAINT = 'rgba(20,19,18,0.5)'
+const INK_BOLD = 'rgba(20,19,18,0.74)'
+const PALE_FAINT = 'rgba(244,243,239,0.5)'
+const PALE_BOLD = 'rgba(244,243,239,0.82)'
+
+function InkPoints({ faint, bold }: { faint: SkPoint[]; bold: SkPoint[] }) {
+  return (
+    <>
+      <Points
+        points={faint}
+        mode='points'
+        color={INK_FAINT}
+        style='stroke'
+        strokeWidth={2.1}
+        strokeCap='round'
+      />
+      <Points
+        points={bold}
+        mode='points'
+        color={INK_BOLD}
+        style='stroke'
+        strokeWidth={2.9}
+        strokeCap='round'
+      />
+    </>
+  )
+}
+function PalePoints({ faint, bold }: { faint: SkPoint[]; bold: SkPoint[] }) {
+  return (
+    <>
+      <Points
+        points={faint}
+        mode='points'
+        color={PALE_FAINT}
+        style='stroke'
+        strokeWidth={2.1}
+        strokeCap='round'
+      />
+      <Points
+        points={bold}
+        mode='points'
+        color={PALE_BOLD}
+        style='stroke'
+        strokeWidth={2.9}
+        strokeCap='round'
+      />
+    </>
+  )
+}
+
+function smoothstep(x: number) {
+  'worklet'
+  return x * x * (3 - 2 * x)
 }
 
 export interface InkCenterpieceProps {
-  /** Chapter kind → maps to a relationship state. */
+  /** Chapter kind → fallback relationship state when `mode` is omitted. */
   kind: string
   /** Rendered width; height follows the 560×320 aspect. */
   width: number
+  /** Explicit state, derived from real 命理 (via `deriveCenterpieceMode`). */
+  mode?: Mode
+  /**
+   * Whether this chapter is the one on screen. Only the `transition` state uses
+   * it: when it becomes active it plays the 克→生 morph ONCE (~3s) and rests on
+   * 生. Every other state is fully static and ignores this. Default true.
+   */
+  active?: boolean
 }
 
-export function InkCenterpiece({ kind, width }: InkCenterpieceProps) {
+export function InkCenterpiece({
+  kind,
+  width,
+  mode: modeProp,
+  active = true,
+}: InkCenterpieceProps) {
+  const mode = modeProp ?? CHAPTER_MODE[kind] ?? 'oppose'
   const height = (width * VH) / VW
   const s = width / VW
-  const state = CHAPTER_STATE[kind] ?? 'oppose'
-  const { a, b, accent } = useMemo(() => generate(state, s), [state, s])
+  const salt = useMemo(() => saltFromKind(kind), [kind])
+  const isTransition = mode === 'transition'
 
-  const clock = useClock()
-  const cx = CX * s
-  const cy = CY * s
-
-  // per-state animated transforms (all defined unconditionally; used per state)
-  const spin = useDerivedValue(() => [{ rotate: clock.value * 0.00012 }], [clock])
-  const pullA = useDerivedValue(
-    () => [{ translateX: Math.sin(clock.value * 0.0011) * 6 * s }],
-    [clock]
+  // Static geometry. Non-transition: one field. Transition: the 克 and 生 endpoints
+  // of the morph — both generated ONCE; only opacity + slide animate between them.
+  const single = useMemo(
+    () => (isTransition ? null : generate(mode, s, salt)),
+    [isTransition, mode, s, salt]
   )
-  const pullB = useDerivedValue(
-    () => [{ translateX: -Math.sin(clock.value * 0.0011) * 6 * s }],
-    [clock]
-  )
-  const jitA = useDerivedValue(
-    () => [{ translateX: Math.sin(clock.value * 0.006) * 2.4 * s }],
-    [clock]
-  )
-  const jitB = useDerivedValue(
-    () => [{ translateX: -Math.sin(clock.value * 0.006) * 2.4 * s }],
-    [clock]
-  )
-  const sparkOp = useDerivedValue(() => 0.55 + 0.35 * Math.sin(clock.value * 0.009), [clock])
-
-  const tA = state === 'merge' ? pullA : state === 'oppose' ? jitA : undefined
-  const tB = state === 'merge' ? pullB : state === 'oppose' ? jitB : undefined
-
-  const inkA = (
-    <Group transform={tA}>
-      <Points
-        points={a}
-        mode='points'
-        color='rgba(20,19,18,0.6)'
-        style='stroke'
-        strokeWidth={2.3 * s + 0.7}
-        strokeCap='round'
-      />
-    </Group>
-  )
-  const inkB = (
-    <Group transform={tB}>
-      <Points
-        points={b}
-        mode='points'
-        color='rgba(244,243,239,0.62)'
-        style='stroke'
-        strokeWidth={2.3 * s + 0.7}
-        strokeCap='round'
-      />
-    </Group>
+  const morph = useMemo(
+    () => (isTransition ? { o: generate('oppose', s, salt), m: generate('merge', s, salt) } : null),
+    [isTransition, s, salt]
   )
 
-  const body = (
-    <>
-      {inkA}
-      {inkB}
-      <Group opacity={state === 'oppose' ? sparkOp : undefined}>
-        <Points
-          points={accent}
-          mode='points'
-          color='rgba(168,48,26,0.7)'
-          style='stroke'
-          strokeWidth={2.6 * s + 0.7}
-          strokeCap='round'
-        />
-      </Group>
-    </>
-  )
+  // 克→生 progress (0 = 克, 1 = 生). Driven through opacity + transform only —
+  // GPU-side, no per-particle work, no per-frame allocation. Plays once when the
+  // chapter becomes active, then rests on 生 (animation stops → zero ongoing cost).
+  const t = useSharedValue(0)
+  useEffect(() => {
+    if (!isTransition || !active) return
+    t.value = 0
+    t.value = withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.cubic) })
+  }, [isTransition, active, t])
+
+  const fadeOut = useDerivedValue(() => 1 - t.value)
+  const fadeIn = useDerivedValue(() => t.value)
+  const slideInk = useDerivedValue(() => [{ translateX: 40 * s * smoothstep(t.value) }])
+  const slidePale = useDerivedValue(() => [{ translateX: -40 * s * smoothstep(t.value) }])
 
   return (
     <Canvas style={{ width, height }}>
       <Fill color='#bdbcb7' />
-      {state === 'resonate' ? (
-        <Group transform={spin} origin={{ x: cx, y: cy }}>
-          {body}
-        </Group>
-      ) : (
-        body
-      )}
+      {morph ? (
+        <>
+          {/* 克 endpoint — the two camps slide toward centre and fade out */}
+          <Group opacity={fadeOut} transform={slideInk}>
+            <InkPoints faint={morph.o.inkFaint} bold={morph.o.inkBold} />
+          </Group>
+          <Group opacity={fadeOut} transform={slidePale}>
+            <PalePoints faint={morph.o.paleFaint} bold={morph.o.paleBold} />
+          </Group>
+          {/* 生 endpoint — the merged whole fades in */}
+          <Group opacity={fadeIn}>
+            <PalePoints faint={morph.m.paleFaint} bold={morph.m.paleBold} />
+            <InkPoints faint={morph.m.inkFaint} bold={morph.m.inkBold} />
+          </Group>
+        </>
+      ) : single ? (
+        <>
+          <PalePoints faint={single.paleFaint} bold={single.paleBold} />
+          <InkPoints faint={single.inkFaint} bold={single.inkBold} />
+        </>
+      ) : null}
     </Canvas>
   )
 }

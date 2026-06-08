@@ -11,7 +11,10 @@ import { Stack } from 'expo-router'
 import { useState } from 'react'
 import { Dimensions, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { InkCenterpiece } from '@/components/ink/InkCenterpiece'
+import { deriveCenterpieceMode, InkCenterpiece } from '@/components/ink/InkCenterpiece'
+
+const A_ELEMENT = 'Metal'
+const B_ELEMENT = 'Fire'
 
 const CHAPTERS: SynastryChapter[] = [
   {
@@ -157,11 +160,16 @@ export default function ChapterPreview() {
         currentIndex={index}
         onIndexChange={setIndex}
         onShareChapter={() => {}}
-        aElement='Metal'
-        bElement='Fire'
+        aElement={A_ELEMENT}
+        bElement={B_ELEMENT}
         locale='en'
-        renderCenterpiece={(ch) => (
-          <InkCenterpiece kind={ch.kind} width={Dimensions.get('window').width - 44} />
+        renderCenterpiece={(ch, i) => (
+          <InkCenterpiece
+            kind={ch.kind}
+            mode={deriveCenterpieceMode(ch.kind, A_ELEMENT, B_ELEMENT, ch.severity)}
+            active={i === index}
+            width={Dimensions.get('window').width - 44}
+          />
         )}
       />
     </SafeAreaView>
