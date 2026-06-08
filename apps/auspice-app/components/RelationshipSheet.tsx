@@ -15,13 +15,13 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
+import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { type AuspicePairResult, fetchAuspicePair, type PairStatus } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
-import { confirmAndOpenKindred } from '@/lib/kindred-handoff'
 import type { AuspicePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
 import { sharePairDays } from '@/lib/share'
@@ -94,6 +94,7 @@ export function RelationshipSheet({
 }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
+  const router = useRouter()
   const rel = selfDate && person ? relationship(selfDate, person.solarDate) : null
 
   // Full self birth info — needed for the Kindred hand-off URL (time/gender/city)
@@ -107,7 +108,8 @@ export function RelationshipSheet({
   }, [visible])
 
   const personIsLunar = person?.calendar === 'lunar'
-  const canOpenYuan = !!person && !personIsLunar
+  // The in-Auspice relationship timeline handles 农历 too, so it's reachable for any 亲友.
+  const canOpenTimeline = !!person
 
   // ── 关系桥: 今日你和TA + 择吉日 (POST /api/auspice/pair) ──────────────────────
   // Eligible only once self birth is loaded and the 亲友 has a solar date — the
@@ -145,9 +147,11 @@ export function RelationshipSheet({
     }
   }, [visible, person, personIsLunar, self, locale])
 
-  const openYuan = () => {
-    if (!person || personIsLunar) return
-    confirmAndOpenKindred({ person, self }, t.kindredShareConsent)
+  // Open the full relationship timeline IN Auspice (the Kindred hand-off is frozen).
+  const openTimeline = () => {
+    if (!person) return
+    onClose()
+    router.push(`/relationship/${person.id}`)
   }
 
   const statusLabel = (s: PairStatus): string =>
@@ -280,14 +284,13 @@ export function RelationshipSheet({
               </View>
             ) : null}
 
-            {/* Kindred hand-off — the in-app pieces above are the cycle-side
-                preview; the full 八字/紫微 合盘 lives in Kindred. Falls through to
-                the App Store if Kindred isn't installed. */}
-            {canOpenYuan ? (
+            {/* The in-app pieces above are the 今日/择吉 preview; the full
+                relationship timeline (大运/流年 节点 + 化解) opens IN Auspice. */}
+            {canOpenTimeline ? (
               <Pressable
-                onPress={openYuan}
+                onPress={openTimeline}
                 accessibilityRole='button'
-                accessibilityLabel={t.kindredComposeCta}
+                accessibilityLabel={t.synastryTl.title}
                 style={({ pressed }) => ({
                   alignSelf: 'stretch',
                   paddingVertical: 14,
@@ -300,21 +303,9 @@ export function RelationshipSheet({
                 })}
               >
                 <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
-                  {t.kindredComposeCta}
+                  {t.synastryTl.title} →
                 </Text>
               </Pressable>
-            ) : personIsLunar ? (
-              <Text
-                style={{
-                  color: colors.dim,
-                  fontSize: 12,
-                  lineHeight: 18,
-                  textAlign: 'center',
-                  paddingHorizontal: spacing.lg,
-                }}
-              >
-                {t.kindredComposeLunarNote}
-              </Text>
             ) : null}
           </>
         ) : (

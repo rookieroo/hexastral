@@ -367,6 +367,8 @@ export interface Strings {
     compatYearRequired: string
     /** Label above the deterministic 合盘 score taste shown before the Kindred hand-off. */
     synastryScore: string
+    /** Hint under the live 合盘 taste — full relationship timeline opens after adding. */
+    synastryAddHint: string
   }
   watchWidgets: string
   /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
@@ -696,6 +698,7 @@ const zhHans: Strings = {
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。只需生日提醒的话不用填。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
     synastryScore: '你们的缘分指数',
+    synastryAddHint: '添加后,点亲友名字可查看你们的关系时间轴。',
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
@@ -991,6 +994,7 @@ const zhHant: Strings = {
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。只需生日提醒的話不用填。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
     synastryScore: '你們的緣分指數',
+    synastryAddHint: '添加後,點親友名字可查看你們的關係時間軸。',
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
@@ -1313,6 +1317,7 @@ const ja: Strings = {
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
     synastryScore: '二人の相性スコア',
+    synastryAddHint: '追加後、相手の名前をタップすると関係タイムラインを表示。',
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
@@ -1639,6 +1644,7 @@ const en: Strings = {
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
     synastryScore: 'Your compatibility',
+    synastryAddHint: 'After adding, tap their name to see your relationship timeline.',
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:
