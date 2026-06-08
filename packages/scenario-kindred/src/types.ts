@@ -233,13 +233,32 @@ export type ChapterKind =
   | 'monthly_outlook'
   | 'long_term_advice'
 
+/** Severity of a chapter's named risk (暗礁·风险). */
+export type ReefSeverity = 'low' | 'mid' | 'high'
+
 export interface SynastryChapter {
   kind: ChapterKind
   title: string
   /** 1–3 sentence "金句" lead — what users screenshot and share */
   goldenLine: string
-  /** Long-form interpretation, 150–250 words */
+  /** Assembled long-form body (the four layers joined) — what the current
+   *  text card renders. The redesigned card uses the structured fields below. */
   body: string
+  // ── Four-layer structure (populated by svc-astro) ──────────────────────────
+  /** 命盘依据 — concrete chart facts */
+  evidence?: string
+  /** 关系动态 — how the two actually interact on this dimension */
+  dynamic?: string
+  /** 暗礁·风险 — the one named risk/crisis to watch */
+  reef?: string
+  /** Severity of `reef` */
+  severity?: ReefSeverity
+  /** 解法 — concrete remedy anchored on 用神 */
+  remedy?: string
+  /** 用神 element the remedy is built on (金|木|水|火|土) */
+  yongshen?: string
+  /** Optional 注脚 — a hopeful counterpoint */
+  counterpoint?: string
   /** Optional visual data for the chapter (e.g., radar chart data) */
   visualData?: unknown
 }

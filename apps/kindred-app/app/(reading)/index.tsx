@@ -220,6 +220,9 @@ export default function ReadingHomeScreen() {
                 DEV form →
               </Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/chapter-preview')} hitSlop={8}>
+              <Text style={[kindredType.caption, { color: kindredDark.accent }]}>DEV 报告 →</Text>
+            </Pressable>
           </View>
         )}
 

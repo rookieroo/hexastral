@@ -28,6 +28,7 @@ import '@/lib/ensure-intl'
 
 import { CoreUIProvider } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
+import { useFonts } from 'expo-font'
 import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -73,6 +74,16 @@ function IapInitializer(): null {
 
 export default function RootLayout() {
   const locale = useMemo(() => resolveLocale(), [])
+
+  // Report fonts (free-commercial SIL OFL). Non-gating: they pop in when ready;
+  // the report uses them, falling back to system fonts for the first frames.
+  // CJK (Noto Serif CJK) is bundled separately once subsetted (full font ~25 MB).
+  useFonts({
+    LibreBaskerville: require('../assets/fonts/LibreBaskerville-Regular.ttf'),
+    CrimsonPro: require('../assets/fonts/CrimsonPro-Regular.ttf'),
+    'CrimsonPro-Italic': require('../assets/fonts/CrimsonPro-Italic.ttf'),
+    IBMPlexMono: require('../assets/fonts/IBMPlexMono-Regular.ttf'),
+  })
 
   useEffect(() => {
     // Two URL listeners — they're orthogonal: onboard captures `?from=` for

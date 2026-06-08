@@ -32,6 +32,13 @@ export interface ChapterPagerProps {
   onShareChapter: (chapterIndex: number) => void
   /** Optional trailing page rendered after the last chapter (e.g. the unlock wall). */
   trailing?: ReactNode
+  /** Day-master elements — shown in the chapter subtitle. */
+  aElement?: string
+  bElement?: string
+  /** Report locale — drives the card's fonts + static labels. */
+  locale?: string
+  /** Provides each chapter's centerpiece (水墨粒子 Skia ink) — supplied by the app. */
+  renderCenterpiece?: (chapter: SynastryReport['chapters'][number], index: number) => ReactNode
 }
 
 export function ChapterPager({
@@ -40,6 +47,10 @@ export function ChapterPager({
   onIndexChange,
   onShareChapter,
   trailing,
+  aElement,
+  bElement,
+  locale,
+  renderCenterpiece,
 }: ChapterPagerProps) {
   const screenWidth = Dimensions.get('window').width
 
@@ -70,6 +81,10 @@ export function ChapterPager({
             index={idx}
             total={report.chapters.length}
             onShare={() => onShareChapter(idx)}
+            aElement={aElement}
+            bElement={bElement}
+            locale={locale}
+            centerpiece={renderCenterpiece?.(chapter, idx)}
           />
         </View>
       ))}

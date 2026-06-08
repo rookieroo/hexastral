@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { parseSynastryChaptersResponse } from './hehun'
+import { computeRelationshipYongshen, parseSynastryChaptersResponse } from './hehun'
 
 const KINDS = [
   'first_impression',
@@ -90,5 +90,25 @@ describe('parseSynastryChaptersResponse', () => {
     expect(() =>
       parseSynastryChaptersResponse(JSON.stringify({ chapters: [chapter('nope')] }))
     ).toThrow()
+  })
+})
+
+describe('computeRelationshipYongshen', () => {
+  test('克 → bridging 通关 element, order-independent (火克金 → 土)', () => {
+    expect(computeRelationshipYongshen('火', '金').element).toBe('土')
+    expect(computeRelationshipYongshen('金', '火').element).toBe('土')
+  })
+
+  test('克 → bridge for other pairs (木克土 → 火, 水克火 → 木)', () => {
+    expect(computeRelationshipYongshen('木', '土').element).toBe('火')
+    expect(computeRelationshipYongshen('水', '火').element).toBe('木')
+  })
+
+  test('比和 → 泄秀 (火·火 → 土)', () => {
+    expect(computeRelationshipYongshen('火', '火').element).toBe('土')
+  })
+
+  test('相生 → flow outlet (木生火 → 土)', () => {
+    expect(computeRelationshipYongshen('木', '火').element).toBe('土')
   })
 })

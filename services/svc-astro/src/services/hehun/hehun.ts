@@ -18,6 +18,8 @@ import {
   type HeavenlyStem,
   type HeHunResult,
   STEM_WUXING,
+  WUXING_GENERATE,
+  WUXING_OVERCOME,
   type WuXing,
 } from '@zhop/astro-core'
 import { calculateAge } from '../../lib/age'
@@ -368,13 +370,32 @@ export type SynastryChapterKind =
   | 'monthly_outlook'
   | 'long_term_advice'
 
+/** Severity of a chapter's named risk (暗礁·风险). */
+export type ReefSeverity = 'low' | 'mid' | 'high'
+
 export interface SynastryChapterOutput {
   kind: SynastryChapterKind
   title: string
   /** 1–3 sentence quotable 金句 — the screenshot/share bait. */
   goldenLine: string
-  /** 150–250 word body, must cite concrete chart facts. */
+  /** Assembled long-form body (the four layers joined). Kept so the current
+   *  text-only ChapterCard renders the full depth without a redesign. */
   body: string
+  // ── Four-layer structure (the depth that justifies the price) ──────────────
+  /** 命盘依据 — cites concrete chart facts (日主/格局/刑冲合/神煞/五行喜忌). */
+  evidence?: string
+  /** 关系动态 — how the two actually interact on this dimension. */
+  dynamic?: string
+  /** 暗礁·风险 — the one named risk/crisis to watch on this dimension. */
+  reef?: string
+  /** Severity of `reef`. */
+  severity?: ReefSeverity
+  /** 解法 — concrete, actionable remedy anchored on 用神. */
+  remedy?: string
+  /** 用神 (favorable / 通关 element) the remedy is built on (金木水火土). */
+  yongshen?: WuXing
+  /** Optional 注脚 (e.g. 时柱相合 / 流月转气) — a hopeful counterpoint. */
+  counterpoint?: string
 }
 
 export interface SynastryChaptersResult {
@@ -382,6 +403,9 @@ export interface SynastryChaptersResult {
    *  shown on the report gate / invite CTA / paywall to drive unlock + invite. */
   ahaHook: string
   chapters: SynastryChapterOutput[]
+  /** The one 通关/喜用 element for the whole relationship — every chapter's
+   *  remedy is built on it (a single through-line, not six guesses). */
+  yongshen: WuXing
 }
 
 /** Fixed chapter order + per-chapter focus. The first three are the free taste;
@@ -424,42 +448,107 @@ const SYNASTRY_CHAPTER_SPECS: ReadonlyArray<{
 ]
 
 const VALID_CHAPTER_KINDS = new Set<string>(SYNASTRY_CHAPTER_SPECS.map((s) => s.kind))
+const VALID_SEVERITY = new Set<string>(['low', 'mid', 'high'])
 
-function buildSynastryChaptersPrompt(result: HeHunFullResult, input: HeHunInput): string {
-  const now = new Date()
-  const ym = `${now.getFullYear()}年${now.getMonth() + 1}月`
-  const chapterList = SYNASTRY_CHAPTER_SPECS.map(
-    (s, i) =>
-      `${i + 1}. kind="${s.kind}"（${s.label}）—— ${s.kind === 'monthly_outlook' ? `${s.focus}（季节参考：${ym}；正文用"接下来这几周/这个月"等相对表述，不要写死具体公历年月——报告会被缓存，写死会随时间失效）` : s.focus}`
-  ).join('\n')
+/**
+ * The relationship's single 通关/喜用 element, derived from the two day masters.
+ *   克 → the bridging element (controller 生 X, X 生 controlled): 火克金 → 土.
+ *   比和 → 泄秀 (channel the doubled element).
+ *   相生 → cultivate the flow's next outlet so the 生 cycle keeps moving.
+ * Deterministic, so all six chapters share ONE 用神 — a stronger through-line
+ * than letting each chapter guess its own.
+ */
+export function computeRelationshipYongshen(
+  a: WuXing,
+  b: WuXing
+): { element: WuXing; note: string } {
+  if (WUXING_OVERCOME[a] === b) {
+    const x = WUXING_GENERATE[a]
+    return { element: x, note: `${a}克${b}，以${x}通关（${a}生${x}、${x}生${b}），化相克为相生` }
+  }
+  if (WUXING_OVERCOME[b] === a) {
+    const x = WUXING_GENERATE[b]
+    return { element: x, note: `${b}克${a}，以${x}通关（${b}生${x}、${x}生${a}），化相克为相生` }
+  }
+  if (a === b) {
+    const x = WUXING_GENERATE[a]
+    return { element: x, note: `双方同为${a}，比和过旺，以${x}泄其秀、引气流通` }
+  }
+  // 相生 (a生b or b生a): no clash — cultivate the flow's next outlet.
+  const senior = WUXING_GENERATE[a] === b ? a : b
+  const x = WUXING_GENERATE[WUXING_GENERATE[senior]]
+  return { element: x, note: `${a}与${b}相生流通，以${x}续其生机、令气不滞` }
+}
 
-  return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写一份「六章深度合盘」正文，并提炼一句最抓人的破冰断言。
+/** Per-chapter prompt — asks for ONE chapter rendered as four labelled layers
+ *  (命盘依据 / 关系动态 / 暗礁·风险 + 严重度 / 解法 + 用神). Generating one chapter
+ *  per call lets each be deeper, cited, and independently retryable/cacheable. */
+function buildSynastryChapterPrompt(
+  spec: (typeof SYNASTRY_CHAPTER_SPECS)[number],
+  result: HeHunFullResult,
+  input: HeHunInput,
+  ym: string,
+  yongshen: WuXing,
+  yongshenNote: string
+): string {
+  const monthlyNote =
+    spec.kind === 'monthly_outlook'
+      ? `（季节参考：${ym}；正文用"接下来这几周/这个月"等相对表述，不要写死具体公历年月——报告会被缓存，写死会随时间失效）`
+      : ''
+
+  return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写「六章深度合盘」中的一章：**${spec.label}**。
 
 ${buildPairFacts(result, input)}
 
-## 章节清单（必须严格按此顺序、此 kind 输出 6 章）
-${chapterList}
+## 本章聚焦
+${spec.focus}${monthlyNote}
 
-## 写作要求
-- 每章 body 150–250 字，**必须直接引用上方命盘事实**（具体日主/格局/地支刑冲合/神煞/五行喜忌），禁止泛泛而谈、禁止占星化通用语。
-- 每章 goldenLine 为 1–3 句可截图分享的金句，精炼、有画面感、点中关系本质。
-- title ≤14 字，贴合该章 kind。
-- ahaHook 是整份报告的钩子：基于两人命盘的**真实互动**，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间；≤30 字，留有悬念引导用户解锁全文，**不含天命定论语气**。
+## 全报告通关用神（已据双方日主推定，六章共用，务必一致）
+本段关系的通关/喜用之神为【${yongshen}】：${yongshenNote}。
+本章的 remedy（解法）**必须围绕用神【${yongshen}】展开**，给出据此可执行的化解/增进之道，落到能动的一面。
+
+## 写作要求（这一章要"值钱"：详尽、精准、可执行）
+分四层撰写，每层都**必须直接引用上方命盘事实**（具体日主/格局/地支刑冲合/神煞/五行喜忌），禁止泛泛而谈、禁止占星化通用语：
+1. evidence（命盘依据，90–150字）：这一维度上双方命盘到底发生了什么——点名具体的干支/十神/刑冲合/神煞，把机理讲清楚。
+2. dynamic（关系动态，90–150字）：上述命理如何落到两人**真实相处**的样子，具体可感。
+3. reef（暗礁·风险，70–130字）：本章最该警惕的**一个**具体风险/危机——如何被触发、会演变成什么。点到痛处，但不下"天命定论"。
+4. remedy（解法，90–150字）：围绕**用神**给出具体、可执行的化解/增进之道，落到能动的一面（命定其界、运在人为）。
+
+另需：
+- severity：reef 的严重度，必须是 low | mid | high 之一（英文小写）。
+- goldenLine：1–3句可截图分享的金句，精炼、有画面感、点中本章本质。
+- title：≤14字，贴合本章。
+- counterpoint（可选，≤60字）：一句留有转机/希望的注脚（如时柱相合、流月转气），没有可省略或留空。
 - 低分关系不说"不合适"，而说"需要更多理解与磨合"；高分关系也要提醒"好的关系仍需经营"。
-- **语体**：用典雅、克制的命理书面语（如"日主""刑冲合会""相生相济""刚柔相济"等）。**严禁现代口语与网络话术**（如"咬合""适配""CP感""能量场""磁场""上头"等），也不用商业/工程比喻。宁古雅，勿轻佻。
+- **语体**：典雅克制的命理书面语（"日主""刑冲合会""相生相济""刚柔相济"等）。**严禁现代口语与网络话术**（"咬合""适配""CP感""能量场""磁场""上头"等）与商业/工程比喻。宁古雅，勿轻佻。
 
-## 输出要求（严格 JSON）
+## 输出要求（严格 JSON，仅此一章）
 {
-  "ahaHook": "≤30字的破冰断言",
-  "chapters": [
-    { "kind": "first_impression", "title": "...", "goldenLine": "...", "body": "..." },
-    { "kind": "communication", "title": "...", "goldenLine": "...", "body": "..." },
-    { "kind": "conflict", "title": "...", "goldenLine": "...", "body": "..." },
-    { "kind": "complement", "title": "...", "goldenLine": "...", "body": "..." },
-    { "kind": "monthly_outlook", "title": "...", "goldenLine": "...", "body": "..." },
-    { "kind": "long_term_advice", "title": "...", "goldenLine": "...", "body": "..." }
-  ]
+  "title": "...",
+  "goldenLine": "...",
+  "evidence": "...",
+  "dynamic": "...",
+  "reef": "...",
+  "severity": "low | mid | high",
+  "remedy": "...",
+  "counterpoint": "..."
 }
+
+只输出纯 JSON，不要任何其他内容。`
+}
+
+/** A tiny separate call for the whole-report 破冰断言 (aha hook). */
+function buildAhaHookPrompt(result: HeHunFullResult, input: HeHunInput): string {
+  return `你是一位精通命盘配对的 AI 命理师。基于以下两人命盘的**真实互动**，提炼一句最抓人的破冰断言。
+
+${buildPairFacts(result, input)}
+
+## 要求
+- 基于两人命盘的真实互动，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间。
+- ≤30字，留有悬念引导用户解锁全文，**不含天命定论语气**；典雅克制的命理书面语，严禁网络话术。
+
+## 输出（严格 JSON）
+{ "ahaHook": "≤30字的破冰断言" }
 
 只输出纯 JSON，不要任何其他内容。`
 }
@@ -478,7 +567,14 @@ export async function generateSynastryChapters(
   input: HeHunInput,
   language: string
 ): Promise<SynastryChaptersResult> {
-  const prompt = buildSynastryChaptersPrompt(result, input)
+  const now = new Date()
+  const ym = `${now.getFullYear()}年${now.getMonth() + 1}月`
+
+  // One 通关用神 for the whole report, derived from the two day masters.
+  const yong = computeRelationshipYongshen(
+    result.personA.dayMasterWuXing,
+    result.personB.dayMasterWuXing
+  )
 
   const systemPrompt = [
     getSystemRole('hehun'),
@@ -491,28 +587,113 @@ export async function generateSynastryChapters(
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
 
-  const text = await callWithFallback(env, systemPrompt, prompt, {
-    // Deep six-chapter report → flagship tier (Kimi K2.6 → Qwen3 30B → GLM-4.7-
-    // Flash, CF Workers AI). Depth is the tier now; isPro / thinkingLevel are
-    // deprecated no-ops on the CF router, and Gemini is vision-only (not here).
-    tier: 'flagship',
-    maxTokens: 8192,
-    metricLabel: 'hehun-chapters',
-    locale: language,
-  })
+  // One flagship call per chapter (+ a tiny aha-hook call), fired in parallel.
+  // Per-chapter generation lets each chapter be deeper and cited, and lets a
+  // single failed chapter drop out instead of nuking the whole report.
+  const chapterCall = (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number]) =>
+    callWithFallback(
+      env,
+      systemPrompt,
+      buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note),
+      {
+        tier: 'flagship',
+        maxTokens: 2200,
+        metricLabel: `hehun-chapter-${spec.kind}`,
+        locale: language,
+      }
+    ).then((text) => parseSynastryChapterResponse(text, spec, yong.element))
 
-  return parseSynastryChaptersResponse(text)
+  // Kick off the aha-hook call in parallel; it never rejects (defaults to '').
+  const ahaPromise: Promise<string> = callWithFallback(
+    env,
+    systemPrompt,
+    buildAhaHookPrompt(result, input),
+    { tier: 'flagship', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
+  )
+    .then(parseAhaHook)
+    .catch(() => '')
+
+  const settled = await Promise.allSettled(SYNASTRY_CHAPTER_SPECS.map(chapterCall))
+
+  const byKind = new Map<string, SynastryChapterOutput>()
+  for (const s of settled) {
+    if (s.status === 'fulfilled') byKind.set(s.value.kind, s.value)
+    else console.error('[svc-astro/hehun] chapter failed:', s.reason)
+  }
+  // Canonical order; drop any chapter whose call failed.
+  const chapters = SYNASTRY_CHAPTER_SPECS.flatMap((spec) => {
+    const ch = byKind.get(spec.kind)
+    return ch ? [ch] : []
+  })
+  if (chapters.length === 0) throw new Error('Synastry chapters: every chapter failed')
+
+  const ahaHook = await ahaPromise
+  return { ahaHook, chapters, yongshen: yong.element }
 }
 
 /**
- * Parse + validate the model's chapters JSON into a SynastryChaptersResult.
- *
- * Pure (no env / LLM) so it's unit-testable. Re-assembles chapters in canonical
- * order, drops unknown kinds and body-less chapters, and throws on unrecoverable
- * output (no JSON, or zero valid chapters) so the caller can fall back to a
- * chapter-less report instead of surfacing garbage.
+ * Parse one chapter's structured JSON into a SynastryChapterOutput. Assembles a
+ * rich `body` from the four layers so even the current text-only card shows the
+ * full depth. Throws if the chapter has no usable content (caller drops it).
  */
-export function parseSynastryChaptersResponse(text: string): SynastryChaptersResult {
+export function parseSynastryChapterResponse(
+  text: string,
+  spec: (typeof SYNASTRY_CHAPTER_SPECS)[number],
+  yongshen: WuXing
+): SynastryChapterOutput {
+  const jsonStr = extractJson(text)
+  if (!jsonStr) throw new Error(`Synastry chapter ${spec.kind}: no JSON`)
+  const p = JSON.parse(jsonStr) as Record<string, unknown>
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+
+  const evidence = str(p.evidence)
+  const dynamic = str(p.dynamic)
+  const reef = str(p.reef)
+  const remedy = str(p.remedy)
+  const counterpoint = str(p.counterpoint)
+  const severity = (VALID_SEVERITY.has(str(p.severity)) ? str(p.severity) : 'mid') as ReefSeverity
+
+  // Backward-compatible long-form body = the four layers, joined.
+  const body = [evidence, dynamic, reef, remedy, counterpoint].filter(Boolean).join('\n\n')
+  if (!body) throw new Error(`Synastry chapter ${spec.kind}: empty body`)
+
+  return {
+    kind: spec.kind,
+    title: str(p.title) || spec.label,
+    goldenLine: str(p.goldenLine),
+    body,
+    evidence: evidence || undefined,
+    dynamic: dynamic || undefined,
+    reef: reef || undefined,
+    severity,
+    remedy: remedy || undefined,
+    yongshen,
+    counterpoint: counterpoint || undefined,
+  }
+}
+
+/** Parse the tiny aha-hook JSON; returns '' on any failure (non-fatal). */
+export function parseAhaHook(text: string): string {
+  try {
+    const jsonStr = extractJson(text)
+    if (!jsonStr) return ''
+    const p = JSON.parse(jsonStr) as { ahaHook?: unknown }
+    return typeof p.ahaHook === 'string' ? p.ahaHook.trim() : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Legacy all-at-once parser (kept for the offline eval + as a fallback shape).
+ * Re-assembles chapters in canonical order, drops unknown/body-less chapters,
+ * and throws on unrecoverable output so the route can fall back gracefully.
+ * No `yongshen` — that's computed from chart facts in the live per-chapter flow,
+ * not recoverable from raw text alone.
+ */
+export function parseSynastryChaptersResponse(
+  text: string
+): Omit<SynastryChaptersResult, 'yongshen'> {
   try {
     const jsonStr = extractJson(text)
     if (!jsonStr) throw new Error('No JSON found')
