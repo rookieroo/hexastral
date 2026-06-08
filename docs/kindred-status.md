@@ -73,12 +73,16 @@ from auspice's git-graph.
   `RiskMark` / `YongshenKey` + `GLYPHS` / `CHAPTER_SEAL` / `WUXING_GLYPH` /
   `NUMERALS` / `kindredFonts`). Linked from a new Reference section on the
   settings index. Full i18n en / zh / zh-Hant / ja.
+- **ShareableChapterCard redesigned onto 墨儀.** `ShareableChapterCard.tsx` — the
+  9:16 capture artefact now matches the report: 碑拓 essence seal + display/CJK
+  title + ancient chapter numeral + 五行 subtitle on top; the goldenLine as the
+  hero (serif/italic, CJK-aware) with one cinnabar seal-dot; a cinnabar 朱文
+  Kindred seal (合) + brand at the foot (replaced the old rounded "logo bubble").
+  Locale-aware fonts via `isCjkLocale`. New optional props (`locale` / `aElement`
+  / `bElement` / `chapterNumber`) wired from real report data at the `[id].tsx`
+  capture site; body text still never included.
 
 ### ☐ Remaining
-- **ShareableChapterCard redesign.** `packages/scenario-kindred` — still the OLD
-  golden-line + cinnabar design; bring it onto the new 墨儀 system (seal + fonts +
-  optional centerpiece still) for the 9:16 share artefact. Used by `[id].tsx`
-  off-screen capture flow.
 - **Bundle CJK font.** `NotoSerifSC` (subsetted — full variable font ≈ 25 MB) for
   zh/ja; today CJK falls back to system. Latin set already bundled.
 - **碑拓 / ink textures.** `AncientSeal` renders clean solid forms; the stone-rubbing
