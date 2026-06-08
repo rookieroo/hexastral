@@ -1,12 +1,15 @@
 /**
  * Auspice daily push (C.5) — 100% deterministic, NO LLM.
  *
- * Auspice is Tier-3 anonymous, so we use **local scheduled notifications** (no push
- * token, no server cron, no account): the app fetches the server-computed
- * deterministic almanac (`/api/auspice/day`, incl. the 对你而言 overlay when a birth
- * date is set) and schedules a rolling window of 8am local notifications. They are
- * rescheduled on each app open so content stays fresh. (A future REMOTE push via
- * svc-notify + Expo tokens is the scale option — not needed for v1.)
+ * Two delivery paths, guarded against double-fire by `isServerPushActive()`:
+ *   - **Server push (primary):** svc-notify cron → `/api/auspice/push/targets`
+ *     renders per-device messages → Expo Push (registered via `serverPush.ts`).
+ *     See `pushRegistry.ts` for the server-primary / local-fallback contract.
+ *   - **Local scheduled notifications (fallback):** the app fetches the
+ *     server-computed deterministic almanac (`/api/auspice/day`, incl. the 对你而言
+ *     overlay when a birth date is set) and schedules a rolling window of 8am +
+ *     8pm local notifications, rescheduled on each app open so content stays
+ *     fresh. Used when the device has no push token / server push is inactive.
  *
  * expo-notifications API mirrors `apps/hexastral-app/lib/ux/pushNotifications.ts`
  * (version ~0.32.16).
