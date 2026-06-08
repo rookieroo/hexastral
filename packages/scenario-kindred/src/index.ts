@@ -38,6 +38,13 @@ export {
 export * from './hooks'
 export { isCjkLocale, kindredFonts } from './kindredFonts'
 export {
+  elementName,
+  formatLean,
+  formatVerdict,
+  formatWindowMonth,
+  formatWindowReasons,
+} from './lib/makeif-format'
+export {
   formatLeadLabel,
   formatNodeKind,
   formatNodeSummary,

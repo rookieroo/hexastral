@@ -303,6 +303,14 @@ export {
   retrodictionMatch,
   type SignalKey,
 } from './period-signals'
+// 关系决策推演 (Relationship Make-If — Kindred Workstream B)
+export type {
+  DecisionLean,
+  RelDecisionResult,
+  RelDecisionWindow,
+  RelMakeIfOptions,
+} from './relationship-makeif'
+export { planRelationshipDecision, relationshipYongshen } from './relationship-makeif'
 // 关系命运时间轴 (Relationship Timeline — Kindred B-yuan.1)
 export type {
   RelationshipPerson,

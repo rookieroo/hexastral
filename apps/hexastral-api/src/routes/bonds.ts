@@ -45,6 +45,7 @@ import {
 import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { logEvent } from '../lib/event-log'
 import { sendPushEvent } from '../lib/push'
+import { buildBondMakeIf } from '../lib/relationship-makeif'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
 import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
@@ -1594,6 +1595,103 @@ bondRoutes.post('/timeline/explain', async (c) => {
     subject,
   })
   return jsonOk(c, result)
+})
+
+// ── POST /:id/makeif — 关系决策推演 (Workstream B, ADR-0023 forward-decision frame) ──
+//
+// "假如我们在某个窗口推进这段关系，哪个时机最合？" Ranks the bond's forward 流月 windows
+// by 用神 alignment + 冲/合 and returns a deterministic verdict. Forward-only (never
+// past rumination — the risky use the Auspice S5 cut flagged). Pro/subscription gated
+// (living layer). Privacy D2: only derived facts (月柱/五行/冲合/评分), never raw birth.
+bondRoutes.post('/:id/makeif', async (c) => {
+  const bondId = c.req.param('id')
+  const userId = requireUserId(c)
+  const db = c.get('db')
+
+  const isPro = await userHasCapability(db, userId, 'kindred')
+  if (!isPro) {
+    return jsonOk(c, {
+      pro: false,
+      upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
+    })
+  }
+
+  // 本我盘 (D2: 仅 users 持全精度本我盘)
+  const ego = await db
+    .select({
+      birthSolarDate: users.birthSolarDate,
+      birthTimeIndex: users.birthTimeIndex,
+      birthGender: users.birthGender,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+  if (!ego?.birthSolarDate || ego.birthTimeIndex == null || !ego.birthGender) {
+    return jsonErr(
+      c,
+      400,
+      ApiErrorCode.missing_required,
+      'Complete your birth info to run a relationship make-if'
+    )
+  }
+  const egoBirth: BirthTriple = {
+    solarDate: ego.birthSolarDate,
+    timeIndex: ego.birthTimeIndex,
+    gender: ego.birthGender as '男' | '女',
+  }
+
+  const bond = await db
+    .select({
+      id: userBonds.id,
+      mode: userBonds.mode,
+      hehunReadingId: userBonds.hehunReadingId,
+      targetBirthSolarDate: userBonds.targetBirthSolarDate,
+      targetBirthTimeIndex: userBonds.targetBirthTimeIndex,
+      targetBirthGender: userBonds.targetBirthGender,
+    })
+    .from(userBonds)
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+    .get()
+  if (!bond) {
+    return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
+  }
+
+  // 对方盘: solo → userBonds.targetBirth*; resonance → pairReadings + 非对称解析 (D2 服务端持盘)
+  let counterpart: BirthTriple | null = null
+  if (bond.mode === 'solo') {
+    if (bond.targetBirthSolarDate && bond.targetBirthTimeIndex != null && bond.targetBirthGender) {
+      counterpart = {
+        solarDate: bond.targetBirthSolarDate,
+        timeIndex: bond.targetBirthTimeIndex,
+        gender: bond.targetBirthGender as '男' | '女',
+      }
+    }
+  } else if (bond.hehunReadingId) {
+    const reading = await db
+      .select({
+        personASolarDate: pairReadings.personASolarDate,
+        personATimeIndex: pairReadings.personATimeIndex,
+        personAGender: pairReadings.personAGender,
+        personBSolarDate: pairReadings.personBSolarDate,
+        personBTimeIndex: pairReadings.personBTimeIndex,
+        personBGender: pairReadings.personBGender,
+      })
+      .from(pairReadings)
+      .where(eq(pairReadings.id, bond.hehunReadingId))
+      .get()
+    if (reading) counterpart = resolveResonanceCounterpart(egoBirth, reading)
+  }
+  if (!counterpart) {
+    return jsonErr(
+      c,
+      400,
+      ApiErrorCode.missing_required,
+      'This bond has no birth info yet for a make-if'
+    )
+  }
+
+  const makeif = buildBondMakeIf(egoBirth, counterpart, { fromDate: new Date(), months: 12 })
+  return jsonOk(c, { ...makeif, pro: true })
 })
 
 // ── GET /:id — detail with filtered dimensions ────────────────

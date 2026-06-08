@@ -37,6 +37,10 @@ export type KindredBondsRpc = {
     unlock: {
       $post: (opts: { param: { id: string } }) => Promise<Response>
     }
+    /** 关系决策推演 (make-if): rank the bond's forward windows. Pro-gated. */
+    makeif: {
+      $post: (opts: { param: { id: string } }) => Promise<Response>
+    }
   }
   // Bonds timeline (BT.3/BT.4, ADR-0014). Registered before `/:id` server-side
   // so the static path wins; typed here for Kindred hooks.

@@ -390,6 +390,50 @@ export interface BondsTimelineExplainResult {
   upsell: boolean
 }
 
+// ── Relationship make-if (Workstream B — forward decision support) ───────────
+
+export type DecisionLean = 'favorable' | 'mixed' | 'caution'
+
+/** One scored candidate window from POST /api/bonds/:id/makeif. */
+export interface RelMakeIfWindow {
+  /** stable key `${year}-${month}` */
+  key: string
+  year: number
+  month: number
+  date: string
+  /** month pillar 干支 label */
+  ganZhi: string
+  /** month stem 五行 */
+  element: string
+  score: number
+  lean: DecisionLean
+  isYongshen: boolean
+  feedsYongshen: boolean
+  harmony: boolean
+  clash: boolean
+  /** deterministic zh reasons (client may localize from the structured flags) */
+  reasons: string[]
+}
+
+/** Response from POST /api/bonds/:id/makeif. */
+export interface RelMakeIfResponse {
+  /** True iff kindred_pro / universe_pro. */
+  pro: boolean
+  /** Present only for non-Pro — paywall hint (no windows computed). */
+  upsell?: {
+    capability: 'kindred'
+    iapProductIds: { monthly: string; annual: string }
+  }
+  /** The relationship's 通关用神 (one element). Empty when not Pro. */
+  yongshen?: string
+  yongshenNote?: string
+  windows?: RelMakeIfWindow[]
+  /** key of the recommended (highest-scoring) window. */
+  bestKey?: string
+  /** deterministic zh synthesis verdict. */
+  verdict?: string
+}
+
 // ── Credit / quota status ───────────────────────────────────────────────────
 
 export interface BondInviteCredits {

@@ -364,6 +364,21 @@ export default function BondDetailScreen() {
               <Text style={kindredPresets.ctaText}>{t('chat.cta')}</Text>
             </Pressable>
           ) : null}
+          {/* Make-if — forward decision support ("假如我们…"). Pro-gated on the
+              server; the screen surfaces the upsell when not subscribed. */}
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: '/(bonds)/makeif',
+                params: { id: detail.id, title: detail.targetName },
+              })
+            }
+            hitSlop={8}
+            accessibilityRole='button'
+            style={{ marginLeft: kindredSpacing.md }}
+          >
+            <Text style={kindredPresets.ctaText}>{t('makeif.cta')}</Text>
+          </Pressable>
           {/* New thread — opens the single-page add-partner flow, not the
               old self birth wizard. */}
           <Pressable
