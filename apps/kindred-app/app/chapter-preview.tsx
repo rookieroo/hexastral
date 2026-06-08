@@ -6,15 +6,22 @@
  */
 
 import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
-import { ChapterPager, type SynastryChapter, type SynastryReport } from '@zhop/scenario-kindred'
+import {
+  ChapterPager,
+  ShareableChapterCard,
+  type SynastryChapter,
+  type SynastryReport,
+} from '@zhop/scenario-kindred'
 import { Stack } from 'expo-router'
 import { useState } from 'react'
-import { Dimensions, Text, View } from 'react-native'
+import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { deriveCenterpieceMode, InkCenterpiece } from '@/components/ink/InkCenterpiece'
 
 const A_ELEMENT = 'Metal'
 const B_ELEMENT = 'Fire'
+// A real, scannable URL so device QA can verify the share-card QR end to end.
+const PREVIEW_INSTALL_URL = 'https://kindred.hexastral.com/r/dev-preview'
 
 const CHAPTERS: SynastryChapter[] = [
   {
@@ -135,6 +142,11 @@ const REPORT: SynastryReport = {
 
 export default function ChapterPreview() {
   const [index, setIndex] = useState(0)
+  const [mode, setMode] = useState<'card' | 'share'>('card')
+
+  // Share card is authored at 1080×1920; scale to fit the screen for preview.
+  const shareW = Math.min(Dimensions.get('window').width - 40, 380)
+  const shareH = (shareW * 1920) / 1080
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }} edges={['top']}>
@@ -148,30 +160,72 @@ export default function ChapterPreview() {
           paddingVertical: 10,
         }}
       >
-        <Text style={{ fontSize: 12, letterSpacing: 2, color: kindredPaper.muted }}>
-          DEV · SYNASTRY PREVIEW
-        </Text>
-        <Text style={{ fontSize: 12, letterSpacing: 1, color: kindredPaper.cinnabar }}>
-          {`${index + 1} / ${CHAPTERS.length} · swipe`}
+        <Pressable onPress={() => setMode((m) => (m === 'card' ? 'share' : 'card'))} hitSlop={8}>
+          <Text style={{ fontSize: 12, letterSpacing: 2, color: kindredPaper.cinnabar }}>
+            {mode === 'card' ? 'DEV · CARD → tap for SHARE' : 'DEV · SHARE → tap for CARD'}
+          </Text>
+        </Pressable>
+        <Text style={{ fontSize: 12, letterSpacing: 1, color: kindredPaper.muted }}>
+          {`${index + 1} / ${CHAPTERS.length}`}
         </Text>
       </View>
-      <ChapterPager
-        report={REPORT}
-        currentIndex={index}
-        onIndexChange={setIndex}
-        onShareChapter={() => {}}
-        aElement={A_ELEMENT}
-        bElement={B_ELEMENT}
-        locale='en'
-        renderCenterpiece={(ch, i) => (
-          <InkCenterpiece
-            kind={ch.kind}
-            mode={deriveCenterpieceMode(ch.kind, A_ELEMENT, B_ELEMENT, ch.severity)}
-            active={i === index}
-            width={Dimensions.get('window').width - 44}
+
+      {mode === 'card' ? (
+        <ChapterPager
+          report={REPORT}
+          currentIndex={index}
+          onIndexChange={setIndex}
+          onShareChapter={() => {}}
+          aElement={A_ELEMENT}
+          bElement={B_ELEMENT}
+          locale='en'
+          renderCenterpiece={(ch, i) => (
+            <InkCenterpiece
+              kind={ch.kind}
+              mode={deriveCenterpieceMode(ch.kind, A_ELEMENT, B_ELEMENT, ch.severity)}
+              active={i === index}
+              width={Dimensions.get('window').width - 44}
+            />
+          )}
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={{ alignItems: 'center', paddingVertical: 16, gap: 12 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* The 9:16 share artefact for the current chapter — scan the QR to
+              verify it resolves. Cycle chapters with the row below. */}
+          <ShareableChapterCard
+            chapter={CHAPTERS[index]!}
+            selfName='You'
+            otherName='Them'
+            width={shareW}
+            height={shareH}
+            locale='en'
+            aElement={A_ELEMENT}
+            bElement={B_ELEMENT}
+            chapterNumber={index + 1}
+            installUrl={PREVIEW_INSTALL_URL}
           />
-        )}
-      />
+          <View
+            style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}
+          >
+            {CHAPTERS.map((ch, i) => (
+              <Pressable key={ch.kind} onPress={() => setIndex(i)} hitSlop={6}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: 1,
+                    color: i === index ? kindredPaper.cinnabar : kindredPaper.muted,
+                  }}
+                >
+                  {i + 1}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   )
 }
