@@ -30,7 +30,7 @@ import { CoreUIProvider } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useFonts } from 'expo-font'
 import * as Linking from 'expo-linking'
-import { Stack } from 'expo-router'
+import { router, Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
 import { View } from 'react-native'
@@ -39,6 +39,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { KindredClientGate } from '@/lib/client'
 import { captureCompose } from '@/lib/composeLink'
+import { attemptKindredDdlRestore, setKindredDdlToken } from '@/lib/ddl'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
@@ -93,12 +94,24 @@ export default function RootLayout() {
     void Linking.getInitialURL().then((url) => {
       captureOnboardAttribution(url)
       captureCompose(url)
+      void setKindredDdlToken(url)
     })
     const sub = Linking.addEventListener('url', ({ url }) => {
       void captureOnboardAttribution(url)
       captureCompose(url)
+      void setKindredDdlToken(url)
     })
     return () => sub.remove()
+  }, [])
+
+  // Cold-install invite recovery (Deferred Deep Link). When B installed the app
+  // from A's /resonate link, no URL carries the token — recover it via the DDL
+  // fingerprint match and resume the invite at /accept/[token]. Runs once per
+  // install (claimed guard inside); a non-invited user costs one no-op match.
+  useEffect(() => {
+    void attemptKindredDdlRestore().then((claim) => {
+      if (claim) router.push({ pathname: '/accept/[token]', params: { token: claim.token } })
+    })
   }, [])
 
   return (

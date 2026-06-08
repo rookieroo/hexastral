@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 
 /**
  * Kindred invite landing — what B sees when they tap A's share-sheet link.
@@ -319,11 +320,18 @@ export default async function ResonatePage({ params }: PageProps) {
               {t('openInApp')} →
             </a>
 
-            {/* Secondary — App Store. Reads as a footer link, not a button. */}
-            <a
-              href={appStoreUrl}
+            {/* Secondary — App Store via a Deferred Deep Link. Registers a DDL
+                session keyed by this device's fingerprint carrying the invite
+                token, THEN redirects to the App Store. After B installs and
+                opens the app cold (no URL), the app recovers this token via the
+                DDL fingerprint match and resumes the invite at /accept/[token]
+                (apps/kindred-app/lib/ddl.ts). Without this, a cold install
+                loses the token and the viral loop breaks at the new-user step. */}
+            <DDLRedirectButton
+              payload={{ kind: 'kindred-accept', token }}
+              targetApp='kindred'
+              appStoreUrl={appStoreUrl}
               style={{
-                display: 'inline-block',
                 fontSize: 13,
                 letterSpacing: 2,
                 color: 'rgba(60,36,21,0.55)',
@@ -333,7 +341,7 @@ export default async function ResonatePage({ params }: PageProps) {
               }}
             >
               {t('downloadApp')}
-            </a>
+            </DDLRedirectButton>
 
             <p style={{ fontSize: 11, color: 'rgba(60,36,21,0.35)', letterSpacing: 0.8 }}>
               {t('expires')}: {expiresLabel}
