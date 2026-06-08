@@ -109,10 +109,14 @@ Kindred's _relationship × time_ surface. Detailed in
   + `composeBondsLiuYue` + `buildEgoLiuYue` → `liuyue` on the timeline response; a
   month strip with tap-to-read on the screen). Orthogonal to the lifetime axis,
   never pushed. Free = current month taste, Pro = 12-month window. Golden-tested.
-- ☐ **合盘 make-if** — "假如我们…" relationship hypotheticals (the synastry analogue
-  of auspice's make-if; insight-layer framing per ADR-0023, NOT git-graph for
-  kindred — keep the metaphors split). **Forward decision framing only** (no past
-  rumination about a real person — that's the risky use the Auspice S5 cut flagged).
+- ✅ **合盘 make-if (forward decision support)** — `planRelationshipDecision` +
+  `relationshipYongshen` (astro-core) rank the bond's forward 流月 windows by
+  用神 alignment + 流月 冲/合 → per-window lean/reasons + a deterministic verdict.
+  `POST /api/bonds/:id/makeif` (D2-safe, Pro-gated) → `useBondMakeIf` +
+  `app/(bonds)/makeif.tsx` (用神 + verdict + ranked month cards, best highlighted).
+  Verdict/reasons localized client-side (en/zh/zh-Hant/ja, no Chinese in the EN
+  surface). **Forward decision framing only** — no past rumination (the risky use
+  the Auspice S5 cut flagged). Insight-layer per ADR-0023, NOT git-graph.
 - ☐ **Relationship node notifications** — pure schedule builder (`buildTimelineNotificationPlan`)
   shipped + tested; on-device `expo-notifications` wiring deferred to the EAS/native
   batch (offline sandbox can't add the dep).
