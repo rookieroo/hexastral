@@ -19,6 +19,7 @@
 import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
 import { STEM_ELEMENT, wuxingGraph } from '@zhop/hexastral-tokens/palette'
 import * as Haptics from 'expo-haptics'
+import { Lock } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 
 import type { DrilldownYear } from '@/components/DrilldownGraph'
@@ -411,6 +412,7 @@ export function TimelineYearGraph({
             accessibilityRole='button'
             style={{ marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 }}
           >
+            {!isPro ? <Lock size={12} color={colors.accent} strokeWidth={2} /> : null}
             <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>
               {isPro
                 ? cjk
@@ -421,8 +423,8 @@ export function TimelineYearGraph({
                     ? 'Hide months'
                     : 'Show months'
                 : cjk
-                  ? '🔒 解锁流月'
-                  : '🔒 Unlock months'}
+                  ? '解锁流月'
+                  : 'Unlock months'}
             </Text>
             {isPro ? (
               <Text style={{ color: colors.dim, fontSize: 10 }}>{liuyueOpen ? '▾' : '▸'}</Text>

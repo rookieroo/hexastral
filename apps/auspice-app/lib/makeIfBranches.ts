@@ -258,9 +258,15 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       ],
       explainUnlock: '解鎖我的 make-if',
       branches: [
-        { label: '創業經商', outcome: '起伏大、忌豪賭——穩住節奏，可成一番事業。' },
-        { label: '深造治學', outcome: '以學問立身，厚積薄發，貴人相助，大器晚成。' },
-        { label: '遠行移居', outcome: '遠走他鄉，幾度起落，見識大開，異鄉亦可立業。' },
+        {
+          label: '用 AI 創業',
+          outcome: '趁 AI 浪潮早入局——前幾年起伏劇烈，穩住了能折回更強的你。',
+        },
+        {
+          label: '做自媒體',
+          outcome: 'All in 內容與表達——丙午火運利曝光，乘勢而上，能被這股大勢托得很遠。',
+        },
+        { label: '走穩妥的路', outcome: '一份安穩工作，平順許多，終會回到你本命的節奏。' },
       ],
     }
   }
@@ -280,9 +286,15 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       ],
       explainUnlock: '解锁我的 make-if',
       branches: [
-        { label: '创业经商', outcome: '起伏大、忌豪赌——稳住节奏，可成一番事业。' },
-        { label: '深造治学', outcome: '以学问立身，厚积薄发，贵人相助，大器晚成。' },
-        { label: '远行移居', outcome: '远走他乡，几度起落，见识大开，异乡亦可立业。' },
+        {
+          label: '用 AI 创业',
+          outcome: '趁 AI 浪潮早入局——前几年起伏剧烈，稳住了能折回更强的你。',
+        },
+        {
+          label: '做自媒体',
+          outcome: 'All in 内容与表达——丙午火运利曝光，乘势而上，能被这股大势托得很远。',
+        },
+        { label: '走稳妥的路', outcome: '一份安稳工作，平顺许多，终会回到你本命的节奏。' },
       ],
     }
   }
@@ -304,14 +316,15 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
       explainUnlock: '自分の make-if を解錠',
       branches: [
         {
-          label: '起業・商い',
-          outcome: '浮き沈みは大きいが、無謀を避け堅実に歩めば事業を築ける。',
+          label: 'AIで起業',
+          outcome: 'AIの波に早く乗る——最初の数年は激しいが、御せれば、より強い自分へ戻る。',
         },
-        { label: '進学・研究', outcome: '学問を礎に、晩成ながら着実。導く人にも恵まれる。' },
         {
-          label: '海外へ',
-          outcome: '遠く旅立ち、浮き沈みを経て視野が開ける。異郷にも根を張れる。',
+          label: '発信・コンテンツ',
+          outcome:
+            '内容と発信に全振り——この時代は「見られる」ことに味方し、波に乗れば遠くまで運ばれる。',
         },
+        { label: '堅実な道', outcome: '安定した仕事。穏やかで、やがて本命の調子へ戻る。' },
       ],
     }
   }
@@ -332,17 +345,18 @@ export function makeIfCopyForLocale(locale: string): MakeIfCopy {
     explainUnlock: 'Unlock my make-if',
     branches: [
       {
-        label: 'Start a business',
-        outcome: 'Big swings — pace it, skip the gamble, and it can build into something.',
-      },
-      {
-        label: 'Further study',
-        outcome: 'Build on knowledge — slow to bloom but steady, with mentors along the way.',
-      },
-      {
-        label: 'Move abroad',
+        label: 'Build with AI',
         outcome:
-          'Leave home, ride the ups and downs, broaden your world — a life can root anywhere.',
+          'Catch the AI wave early — wild years that, handled well, fold back into a stronger you.',
+      },
+      {
+        label: 'Build an audience',
+        outcome:
+          'Go all-in on content — these times reward being seen; ride the wave and it can carry you far.',
+      },
+      {
+        label: 'The steady path',
+        outcome: 'A safe, salaried route — calmer, and it rejoins your baseline rhythm.',
       },
     ],
   }
@@ -389,19 +403,21 @@ export interface MakeIfInteractiveCopy {
  * "Marry" branch (the 中英文混用 the user flagged). We can only re-map the PRESET
  * chips this way — a free-typed custom event stays as written.
  */
+// Era-relevant (丙午 2026 火运 = visibility/broadcast: AI + self-media) mixed with
+// universal life events. Positionally aligned across locales for re-localization.
 const EN_PRESET_CHIPS: readonly string[] = [
-  'Start a business',
+  'Build an audience',
+  'Build with AI',
+  'Switch careers',
   'Marry',
   'Move abroad',
-  'Switch careers',
-  'Grad school',
   'Quit & travel',
 ]
 
 const PRESET_EVENT_CHIPS: Record<string, readonly string[]> = {
-  'zh-Hans': ['创业', '结婚', '移居海外', '转行', '读研深造', '辞职远行'],
-  'zh-Hant': ['創業', '結婚', '移居海外', '轉行', '讀研深造', '辭職遠行'],
-  ja: ['起業', '結婚', '海外移住', '転職', '大学院進学', '退職して旅へ'],
+  'zh-Hans': ['做自媒体', '用AI创业', '转行', '结婚', '移居海外', '辞职远行'],
+  'zh-Hant': ['做自媒體', '用AI創業', '轉行', '結婚', '移居海外', '辭職遠行'],
+  ja: ['発信を始める', 'AIで起業', '転職', '結婚', '海外移住', '退職して旅へ'],
   en: EN_PRESET_CHIPS,
 }
 
@@ -454,7 +470,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       screenTitle: '假如人生',
       tapHint: '點主線上任一節點，假設一個選擇，推演另一種人生。',
       forkTitle: (age, isPast) => (isPast ? `假如當年 ${age} 歲…` : `假如在 ${age} 歲…`),
-      eventChips: ['創業', '結婚', '移居海外', '轉行', '讀研深造', '辭職遠行'],
+      eventChips: presetChipsForLocale('zh-Hant'),
       eventPlaceholder: '自訂一個事件…',
       submit: '推演',
       generating: '推演中…',
@@ -480,7 +496,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       screenTitle: '假如人生',
       tapHint: '点主线上任一节点，假设一个选择，推演另一种人生。',
       forkTitle: (age, isPast) => (isPast ? `假如当年 ${age} 岁…` : `假如在 ${age} 岁…`),
-      eventChips: ['创业', '结婚', '移居海外', '转行', '读研深造', '辞职远行'],
+      eventChips: presetChipsForLocale('zh-Hans'),
       eventPlaceholder: '自定义一个事件…',
       submit: '推演',
       generating: '推演中…',
@@ -506,7 +522,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       screenTitle: 'もしもの人生',
       tapHint: '本線の任意の節点をタップし、ある選択を仮定して別の人生を描いてみよう。',
       forkTitle: (age, isPast) => (isPast ? `もし ${age} 歳のあのとき…` : `もし ${age} 歳で…`),
-      eventChips: ['起業', '結婚', '海外移住', '転職', '大学院進学', '退職して旅へ'],
+      eventChips: presetChipsForLocale('ja'),
       eventPlaceholder: 'イベントを自由に入力…',
       submit: '推演する',
       generating: '推演中…',
@@ -533,14 +549,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
     screenTitle: 'make-if',
     tapHint: 'Tap any node on your line, assume a choice, and explore another life.',
     forkTitle: (age, isPast) => (isPast ? `If, back at ${age}…` : `If, at ${age}…`),
-    eventChips: [
-      'Start a business',
-      'Marry',
-      'Move abroad',
-      'Switch careers',
-      'Grad school',
-      'Quit & travel',
-    ],
+    eventChips: EN_PRESET_CHIPS,
     eventPlaceholder: 'Or type your own event…',
     submit: 'Explore',
     generating: 'Exploring…',

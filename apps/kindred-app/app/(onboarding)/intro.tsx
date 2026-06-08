@@ -1,9 +1,9 @@
 /**
  * Onboarding · Screen 0 — Comic-style intro animation.
  *
- * A stick-figure parable, played scene-by-scene at a deliberate pace (~14s):
- * lone arrival → fleeting talk → fleeting hug → the one that stays. Sets the
- * emotional thesis (缘分 — connection worth keeping) before any form
+ * A stick-figure parable, played scene-by-scene at a deliberate pace (~13s):
+ * lone arrival → someone who stays a while then goes → the one who stays. Sets
+ * the emotional thesis (缘分 — connection worth keeping) before any form
  * input. The whole thing is tempo-controlled by one `SPEED` knob (see Timeline).
  * The final beat: the pair sits with their BACKS to the viewer, gazing up at a
  * moon that swells large — which then shrinks + moves into the form's logo.
@@ -18,10 +18,10 @@
  * (groundYAt) so feet stay on the rim while walking up the hill. Pose changes
  * (walk → talk → hug → sit) are React-state transitions at scripted beats.
  *
- * The parable's four acts are layered: ambient light steps up one notch per
+ * The parable's three acts are layered: ambient light steps up one notch per
  * act, a caption (silent-film intertitle) names each act in an ever-brighter
- * tone, and the camera pushes in slightly on the final act — arrival, passing,
- * brief warmth, then the one who stays.
+ * tone, and the camera pushes in slightly on the final act — arrival, the one
+ * who stays a while then goes, then the one who stays for good.
  *
  * Scenery (sky / ground / galaxy / glow / dust) lives in
  * components/IntroScene.tsx — including the slot for AI-generated backdrop
@@ -60,48 +60,36 @@ type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
 interface IntroCopy {
   continue: string
-  /** One caption per act — arrival, passing, brief warmth, the one who stays. */
-  acts: [string, string, string, string]
+  /** One caption per act — arrival, the one who stays a while then goes, the one who stays. */
+  acts: [string, string, string]
 }
 
 const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
-  // The parable's thesis builds across the four captions: life starts alone →
-  // most connections are fleeting → even warm ones can end → but one stays,
-  // and that one is who this app is about (the CTA picks it up from there).
+  // The thesis builds across three captions, each more personal ("you") and
+  // warmer than the last: you start alone → people walk a stretch with you then
+  // go → but one is meant to stay by your side (the CTA picks it up from there).
   en: {
     continue: 'tap to begin',
     acts: [
-      'you arrive in this world alone',
-      'most people pass right by',
-      'some hold you, then let go',
-      'but one of them will stay',
+      'you come into the world alone',
+      'some people walk a while with you, then go',
+      'but one of them is meant to stay',
     ],
   },
   zh: {
     continue: '轻触开始',
-    acts: [
-      '人来到世上，是一个人',
-      '有的人擦肩而过',
-      '有的人拥抱过你，又离开',
-      '而总有一个人，会留下来',
-    ],
+    acts: ['你来到这世上，独自一人', '有些人陪你走一段，又走了', '但总有一个人，会留在你身边'],
   },
   'zh-Hant': {
     continue: '輕觸開始',
-    acts: [
-      '人來到世上，是一個人',
-      '有的人擦肩而過',
-      '有的人擁抱過你，又離開',
-      '而總有一個人，會留下來',
-    ],
+    acts: ['你來到這世上，獨自一人', '有些人陪你走一段，又走了', '但總有一個人，會留在你身邊'],
   },
   ja: {
     continue: 'タップで始める',
     acts: [
-      '人はひとりで生まれてくる',
-      'すれ違うだけの人もいる',
-      '抱きしめて、離れていく人もいる',
-      'それでも、そばに残る人がいる',
+      'あなたはひとりで、この世に来た',
+      'しばらく寄り添って、去っていく人もいる',
+      'それでも、あなたのそばに残る人がいる',
     ],
   },
 }
@@ -118,17 +106,17 @@ const BG = rubbing.void
 const DOT = zinc[300]
 const HINT_LATE = zinc[300]
 /** Caption colour steps up one notch per act — the parable's hierarchy, in light. */
-const ACT_COLORS = [zinc[500], zinc[400], zinc[300], ricePaper.ivory] as const
+const ACT_COLORS = [zinc[500], zinc[300], ricePaper.ivory] as const
 
 /* ── Timeline (ms) ────────────────────────────────────────────────────────
  * One tempo knob for the whole parable. `at()` scales every scheduled trigger
  * by SPEED and `d()` scales every inline animation duration by the same factor,
  * so the sequence keeps its choreography (no new overlaps) at any tempo. The T
- * entries below are the ORIGINAL ms; SPEED 0.8 plays them ~1.25× faster (~18s).
- * 2026-06 device feedback: 0.6 (~14s) still rushed each scene — the pacing can
- * afford to breathe because the persistent "tap to begin" hint below means
- * nobody is ever forced to wait it out. Lower SPEED = snappier, higher = more
- * deliberate. */
+ * entries below are the ORIGINAL ms; SPEED 0.8 plays them ~1.25× faster (~13s
+ * after the 3-act cut). 2026-06 device feedback: each scene needs room to land,
+ * so the captions hold longer now; the persistent "tap to begin" hint below
+ * means nobody is ever forced to wait it out. Lower SPEED = snappier, higher =
+ * more deliberate. */
 const SPEED = 0.8
 /** Scale an animation duration/delay by SPEED (rounded). Triggers go through at(). */
 const d = (ms: number): number => Math.round(ms * SPEED)
@@ -141,25 +129,24 @@ const FOCAL_MOON_MAX_SCALE = 1.7
 const T = {
   starsIn: 800,
   f1WalkIn: 1500,
-  f1LookLeft: 3000,
-  f1LookRight: 3700,
-  f1LookCenter: 4400,
-  f2WalkIn: 5000,
+  f1LookLeft: 3300,
+  f1LookRight: 4000,
+  f1LookCenter: 4700,
+  f2WalkIn: 5400,
   // f1↔f2 exchange shaped as three envelopes
-  talkA: 6500, // F1 greets (L, short)
-  talkB: 7400, // F2 explains (R, long)
-  talkC: 9200, // F1 goodbye (L, short)
-  talkEnd: 9900,
-  f2WalkOut: 10100,
-  f3WalkIn: 12300,
-  hug1Start: 13800,
-  hug1End: 15300,
-  f3WalkOut: 15500,
-  f4WalkIn: 17800,
-  hug2Start: 19300,
-  sitDown: 20500,
-  starsBright: 21800,
-  ctaIn: 22800,
+  talkA: 7000, // F1 greets (L, short)
+  talkB: 7900, // F2 explains (R, long)
+  talkC: 9600, // F1 goodbye (L, short)
+  talkEnd: 10200,
+  f2WalkOut: 10400,
+  // f3 (the throwaway-hug figure) was cut — the embrace now belongs only to the
+  // one who stays (f4), and a ~2s beat of solitude sits between f2 leaving and
+  // f4 arriving. f4 keeps its original var name though it is now the 3rd act.
+  f4WalkIn: 12400,
+  hug2Start: 13900,
+  sitDown: 15200,
+  starsBright: 16200,
+  ctaIn: 16800,
 }
 
 type TalkSide = 'L' | 'R' | null
