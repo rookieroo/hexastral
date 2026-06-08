@@ -332,6 +332,43 @@ export default function SettingsScreen() {
 
         <View style={{ height: kindredSpacing.lg }} />
 
+        {/* Reference — decodes the report's hand-built visual language (seals,
+            朱批 severity, 五行 用神 keys, ancient numerals). The report cards
+            label nothing inline, so this glossary is the one map-legend. */}
+        <Text
+          style={[
+            kindredType.seal,
+            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
+          ]}
+        >
+          {t(locale, 'settings.reference.section')}
+        </Text>
+
+        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
+          <Pressable
+            onPress={() => router.push('/(settings)/glossary')}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {t(locale, 'settings.glossary.row')}
+            </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {t(locale, 'settings.glossary.hint')}
+            </Text>
+          </Pressable>
+        </Card>
+
+        <View style={{ height: kindredSpacing.lg }} />
+
         {/* Legal — App Store requires Privacy + Terms to be reachable from
             the signed-in surface. We open the hosted versions on hexastral.com
             so the documents stay versioned in one place. */}

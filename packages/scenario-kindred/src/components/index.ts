@@ -16,8 +16,13 @@
  * (routing, paywall, RevenueCat) stay in each app.
  */
 
+export type { AncientNumeralProps } from './AncientNumeral'
+export { AncientNumeral } from './AncientNumeral'
+export type { AncientSealProps } from './AncientSeal'
+export { AncientSeal } from './AncientSeal'
 export type { ChapterCardProps } from './ChapterCard'
 export { ChapterCard } from './ChapterCard'
+export { YongshenKey } from './ChapterMeta'
 export type { ChapterPagerProps } from './ChapterPager'
 export { ChapterPager } from './ChapterPager'
 export type { ChapterUnlockWallLabels, ChapterUnlockWallProps } from './ChapterUnlockWall'
@@ -32,6 +37,7 @@ export type { RelationshipTypeSelectorProps } from './RelationshipTypeSelector'
 export { RelationshipTypeSelector } from './RelationshipTypeSelector'
 export type { RevealMomentProps } from './RevealMoment'
 export { RevealMoment } from './RevealMoment'
+export { RiskMark } from './RiskMark'
 export type { ShareableChapterCardProps } from './ShareableChapterCard'
 export { ShareableChapterCard } from './ShareableChapterCard'
 export type { WaitingForOtherProps } from './WaitingForOther'

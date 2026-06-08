@@ -28,7 +28,15 @@
 export * from './components'
 export type { KindredClientConfig, KindredClientProviderProps } from './context'
 export { KindredClientProvider, useKindredClient } from './context'
+export {
+  CHAPTER_SEAL,
+  GLYPHS,
+  type GlyphKey,
+  NUMERALS,
+  WUXING_GLYPH,
+} from './glyphs'
 export * from './hooks'
+export { isCjkLocale, kindredFonts } from './kindredFonts'
 export {
   formatLeadLabel,
   formatNodeKind,
