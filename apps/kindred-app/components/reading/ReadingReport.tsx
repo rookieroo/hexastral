@@ -32,10 +32,11 @@
  */
 
 import type { WuXing } from '@zhop/astro-core'
-import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
+import { AncientNumeral, isCjkLocale, kindredFonts } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, ChevronRight, X } from 'lucide-react-native'
+import { ArrowLeft, X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
@@ -67,6 +68,42 @@ import {
    exact same surface — one "document" the dark shell unrolls, not three creams
    that drift (2026-06: "宣纸=文档层，统一 cream 表面"). */
 const P = kindredPaper
+
+/* ── 墨儀 type system — the same bundled serifs the 合盘 report uses, so the solo
+   report reads as the same hand-set document (display/CJK title · old-style serif
+   body · mono labels). Latin for en, Noto serif for CJK. */
+interface Fonts {
+  title: string
+  body: string
+  label: string
+}
+function resolveFonts(locale: string): Fonts {
+  const cjk = isCjkLocale(locale)
+  return {
+    title: cjk ? kindredFonts.cjk : kindredFonts.display,
+    body: cjk ? kindredFonts.cjk : kindredFonts.serif,
+    label: cjk ? kindredFonts.cjk : kindredFonts.mono,
+  }
+}
+
+/** 碑拓 numeral seal — a dark stone-rubbing tile holding an ancient numeral; the
+ *  chapter marker that fills the 合盘 report's essence-seal slot. */
+function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size * 0.16,
+        backgroundColor: kindredDark.bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <AncientNumeral n={n} size={size * 0.5} color={kindredPaper.bg} strokeWidth={3} />
+    </View>
+  )
+}
 
 const LOCKED_CHAPTERS = [
   {
@@ -136,6 +173,7 @@ export function ReadingReport({
   const birth = useSelfBirth()
   const router = useRouter()
   const { t, locale } = useReadingI18n()
+  const fonts = useMemo(() => resolveFonts(locale), [locale])
 
   // Top-right close — same node in both the empty-guard and the full report.
   const closeBtn = onRequestClose ? (
@@ -318,7 +356,7 @@ export function ReadingReport({
      return tree, NOT an early return — the list stays mounted behind so the
      entering/exiting animations feel like a page push). */
   const detailChapter = activeChapter ?? lastActiveRef.current
-  let detailProps: React.ComponentProps<typeof ChapterDetail> | null = null
+  let detailProps: Omit<React.ComponentProps<typeof ChapterDetail>, 'fonts'> | null = null
   if (detailChapter) {
     const back = () => setActiveChapter(null)
     if (detailChapter.kind === 'free') {
@@ -372,26 +410,31 @@ export function ReadingReport({
     <View style={S.paper}>
       <SafeAreaView style={S.safe} edges={['top']}>
         <View style={S.header}>
-          <Text style={S.headerTitle}>{t('reading.title')}</Text>
+          <Text style={[S.headerTitle, { fontFamily: fonts.label }]}>{t('reading.title')}</Text>
           {closeBtn}
         </View>
 
         <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
           {/* identity header */}
-          <Text style={S.identity}>{identityLine}</Text>
-          <Text style={S.birth}>{birthBadge}</Text>
-          {timeIndex == null ? <Text style={S.caveat}>{t('reading.timeUnknownEst')}</Text> : null}
+          <Text style={[S.identity, { fontFamily: fonts.label }]}>{identityLine}</Text>
+          <Text style={[S.birth, { fontFamily: fonts.label }]}>{birthBadge}</Text>
+          {timeIndex == null ? (
+            <Text style={[S.caveat, { fontFamily: fonts.label }]}>
+              {t('reading.timeUnknownEst')}
+            </Text>
+          ) : null}
 
           {/* ch1: personality — summary only; tap drills into ChapterDetail */}
           <Pressable onPress={() => setActiveChapter({ kind: 'free', key: 'ch1' })}>
             {({ pressed }) => (
               <View style={pressed ? S.chapterPressed : undefined}>
                 <Chapter
+                  n={1}
                   label={ch1Meta.label}
                   sub={ch1Meta.sub}
                   summary={ch1Meta.content ?? ch1Meta.placeholder}
                   loading={ch1Meta.loading}
-                  showAffordance
+                  fonts={fonts}
                 />
               </View>
             )}
@@ -402,63 +445,47 @@ export function ReadingReport({
             {({ pressed }) => (
               <View style={pressed ? S.chapterPressed : undefined}>
                 <Chapter
+                  n={2}
                   label={ch4Meta.label}
                   sub={ch4Meta.sub}
                   summary={ch4Meta.content ?? ch4Meta.placeholder}
                   loading={ch4Meta.loading}
-                  showAffordance
+                  fonts={fonts}
                 />
               </View>
             )}
           </Pressable>
 
-          {/* ── premium chapters ── */}
-          <View style={S.lockedDivider}>
-            <View style={S.dividerLine} />
-            <Text style={S.dividerLabel}>{t('reading.moreChapters')}</Text>
-            <View style={S.dividerLine} />
-          </View>
+          {/* ── premium chapters — a quiet mono kicker, no rules (墨儀: whitespace,
+              not web dividers). */}
+          <Text style={[S.sectionKicker, { fontFamily: fonts.label }]}>
+            {t('reading.moreChapters')}
+          </Text>
 
           {/*
-           * Pro user (isPro) unlocks all locked chapters → they render as full
-           * Chapter cards (drill-in to the detail view). Otherwise the cards
-           * keep the dim teaser + chevron and tapping routes to the paywall.
+           * Pro user (isPro) → full Chapter rows (drill-in). Otherwise the same
+           * seal + title row, dimmed (a graded fade down the list), tapping
+           * routes to the paywall — no bordered "cards", no chevrons.
            */}
           {LOCKED_CHAPTERS.map((ch, i) => {
             const idx = i as 0 | 1 | 2 | 3
-            return isPro ? (
-              <Pressable key={ch.sub} onPress={() => setActiveChapter({ kind: 'locked', idx })}>
-                {({ pressed }) => (
-                  <View style={pressed ? S.chapterPressed : undefined}>
-                    <Chapter
-                      label={t(ch.labelKey)}
-                      sub={ch.sub}
-                      summary={t(ch.descKey)}
-                      loading={false}
-                      showAffordance
-                    />
-                  </View>
-                )}
-              </Pressable>
-            ) : (
+            return (
               <Pressable
                 key={ch.sub}
                 onPress={() => setActiveChapter({ kind: 'locked', idx })}
-                style={({ pressed }) => [
-                  S.lockedCard,
-                  { opacity: (0.5 - i * 0.06) * (pressed ? 0.7 : 1) },
-                ]}
+                style={({ pressed }) => ({
+                  opacity: isPro ? (pressed ? 0.7 : 1) : (0.62 - i * 0.07) * (pressed ? 0.7 : 1),
+                })}
               >
-                <View style={S.lockedHead}>
-                  <Text style={S.lockedLabel}>{t(ch.labelKey)}</Text>
-                  <Text style={S.lockedSub}>{ch.sub}</Text>
-                  <View style={S.lockedChevron}>
-                    <ChevronRight size={14} color={P.muted} strokeWidth={1.4} />
-                  </View>
-                </View>
-                <Text style={S.lockedDesc} numberOfLines={2}>
-                  {t(ch.descKey)}
-                </Text>
+                <Chapter
+                  n={i + 3}
+                  label={t(ch.labelKey)}
+                  sub={ch.sub}
+                  summary={t(ch.descKey)}
+                  loading={false}
+                  fonts={fonts}
+                  locked={!isPro}
+                />
               </Pressable>
             )
           })}
@@ -469,7 +496,7 @@ export function ReadingReport({
               style={({ pressed }) => [S.unlockBtn, pressed && { opacity: 0.85 }]}
               onPress={goToPaywall}
             >
-              <Text style={S.unlockText}>{t('reading.unlock')}</Text>
+              <Text style={[S.unlockText, { fontFamily: fonts.label }]}>{t('reading.unlock')}</Text>
             </Pressable>
           ) : null}
 
@@ -485,7 +512,7 @@ export function ReadingReport({
           exiting={SlideOutRight.duration(240)}
           style={S.detailOverlay}
         >
-          <ChapterDetail {...detailProps} />
+          <ChapterDetail {...detailProps} fonts={fonts} />
         </Animated.View>
       ) : null}
     </View>
@@ -500,30 +527,34 @@ export function ReadingReport({
  * so the user can browse the TOC without scrolling past long bodies.
  */
 function Chapter({
+  n,
   label,
   sub,
   summary,
   loading,
-  showAffordance,
+  fonts,
+  locked,
 }: {
+  /** 1-based chapter number → the 碑拓 numeral seal. */
+  n: number
   label: string
   sub: string
   /** One-paragraph preview; truncated to 2 lines via numberOfLines. */
   summary: string | null
   loading: boolean
-  /** When true, renders a chevron-right hinting the card opens a detail view. */
-  showAffordance?: boolean
+  fonts: Fonts
+  /** Locked chapters dim the seal a touch but keep the same structure. */
+  locked?: boolean
 }) {
   return (
     <View style={S.chapter}>
       <View style={S.chapterHead}>
-        <Text style={S.chapterLabel}>{label}</Text>
-        <Text style={S.chapterSub}>{sub}</Text>
-        {showAffordance ? (
-          <View style={S.chapterChevron}>
-            <ChevronRight size={14} color={P.muted} strokeWidth={1.4} />
-          </View>
-        ) : null}
+        <SealNumeral n={n} />
+        <View style={{ flex: 1, gap: 7 }}>
+          <Text style={[S.chapterLabel, { fontFamily: fonts.title }]}>{label}</Text>
+          <Text style={[S.chapterSub, { fontFamily: fonts.label }]}>{sub}</Text>
+        </View>
+        {locked ? <View style={S.lockDot} /> : null}
       </View>
       {loading && !summary ? (
         <View style={S.skeleton}>
@@ -531,7 +562,7 @@ function Chapter({
           <View style={[S.skelLine, { width: '70%' }]} />
         </View>
       ) : summary ? (
-        <Text style={S.chapterSummary} numberOfLines={2}>
+        <Text style={[S.chapterSummary, { fontFamily: fonts.body }]} numberOfLines={2}>
           {summary}
         </Text>
       ) : null}
@@ -557,6 +588,7 @@ function ChapterDetail({
   onAsk,
   askChapterLabel,
   askHint,
+  fonts,
 }: {
   label: string
   sub: string
@@ -575,6 +607,7 @@ function ChapterDetail({
   onAsk?: (quote: string | null) => void
   askChapterLabel?: string
   askHint?: string
+  fonts: Fonts
 }) {
   // Paragraph-level ask: split the prose into its '\n\n' blocks (the shape
   // flattenChapterContent produces) so each one can be long-pressed.
@@ -596,22 +629,28 @@ function ChapterDetail({
           >
             <ArrowLeft size={20} color={P.inkSoft} strokeWidth={1.5} />
           </Pressable>
-          <Text style={S.detailHeaderSub}>{sub}</Text>
+          <Text style={[S.detailHeaderSub, { fontFamily: fonts.label }]}>{sub}</Text>
           <View style={S.backBtn} />
         </View>
         <ScrollView contentContainerStyle={S.detailScroll} showsVerticalScrollIndicator={false}>
           {identityLine ? (
             <View style={S.detailIdentity}>
-              <Text style={S.detailIdentityLine}>{identityLine}</Text>
-              {birthBadge ? <Text style={S.detailBirth}>{birthBadge}</Text> : null}
+              <Text style={[S.detailIdentityLine, { fontFamily: fonts.label }]}>
+                {identityLine}
+              </Text>
+              {birthBadge ? (
+                <Text style={[S.detailBirth, { fontFamily: fonts.label }]}>{birthBadge}</Text>
+              ) : null}
             </View>
           ) : null}
-          <Text style={S.detailLabel}>{label}</Text>
+          <Text style={[S.detailLabel, { fontFamily: fonts.title }]}>{label}</Text>
           {content ? (
             onAsk ? (
               // 划词 mode: each paragraph is long-pressable → ask AI about it.
               <View>
-                {askHint ? <Text style={S.askHint}>{askHint}</Text> : null}
+                {askHint ? (
+                  <Text style={[S.askHint, { fontFamily: fonts.label }]}>{askHint}</Text>
+                ) : null}
                 {paragraphs.map((para, i) => (
                   <Pressable
                     key={i}
@@ -619,7 +658,9 @@ function ChapterDetail({
                     delayLongPress={350}
                     style={({ pressed }) => [pressed && S.paraPressed]}
                   >
-                    <Text style={[S.detailBody, S.paraBlock]}>{para}</Text>
+                    <Text style={[S.detailBody, S.paraBlock, { fontFamily: fonts.body }]}>
+                      {para}
+                    </Text>
                   </Pressable>
                 ))}
                 {askChapterLabel ? (
@@ -629,12 +670,14 @@ function ChapterDetail({
                     accessibilityRole='button'
                     style={({ pressed }) => [S.askChapterBtn, pressed && { opacity: 0.7 }]}
                   >
-                    <Text style={S.askChapterText}>{askChapterLabel}</Text>
+                    <Text style={[S.askChapterText, { fontFamily: fonts.label }]}>
+                      {askChapterLabel}
+                    </Text>
                   </Pressable>
                 ) : null}
               </View>
             ) : (
-              <Text style={S.detailBody}>{content}</Text>
+              <Text style={[S.detailBody, { fontFamily: fonts.body }]}>{content}</Text>
             )
           ) : loading ? (
             <View style={S.skeleton}>
@@ -645,7 +688,7 @@ function ChapterDetail({
               <View style={[S.skelLine, { width: '60%' }]} />
             </View>
           ) : placeholder ? (
-            <Text style={S.detailPlaceholder}>{placeholder}</Text>
+            <Text style={[S.detailPlaceholder, { fontFamily: fonts.body }]}>{placeholder}</Text>
           ) : null}
 
           {locked ? (
@@ -653,7 +696,7 @@ function ChapterDetail({
               style={({ pressed }) => [S.unlockBtn, S.detailUnlock, pressed && { opacity: 0.85 }]}
               onPress={onUnlock}
             >
-              <Text style={S.unlockText}>{unlockLabel}</Text>
+              <Text style={[S.unlockText, { fontFamily: fonts.label }]}>{unlockLabel}</Text>
             </Pressable>
           ) : null}
 
@@ -703,44 +746,33 @@ const S = StyleSheet.create({
   birth: { color: P.muted, fontSize: 11, letterSpacing: 1, marginBottom: 4 },
   caveat: { color: P.muted, fontSize: 10, marginBottom: 4 },
 
-  // chapter
-  chapter: { paddingVertical: 24, borderTopWidth: 0.5, borderTopColor: P.hair },
-  chapterHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  chapterLabel: { color: P.ink, fontSize: 22, letterSpacing: 1 },
-  chapterSub: { color: P.bronze, fontSize: 9, letterSpacing: 2.5, fontWeight: '600' },
-  chapterChevron: { marginLeft: 'auto', opacity: 0.55 },
+  // chapter — 碑拓 seal + title; structure by whitespace + a hairline, no widgets
+  chapter: {
+    paddingVertical: 26,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: P.hair,
+  },
+  chapterHead: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 16 },
+  chapterLabel: { color: P.ink, fontSize: 24, lineHeight: 30, letterSpacing: 0.5 },
+  chapterSub: { color: P.bronze, fontSize: 10, letterSpacing: 2.5 },
+  // 朱文 open ring — the quiet "locked" mark (replaces the lock/chevron widgets).
+  lockDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 1.2, borderColor: P.cinnabar },
   chapterPressed: { opacity: 0.7 },
   // List-view summary — short preview clamped to 2 lines. Body proper lives in
   // ChapterDetail (二级).
-  chapterSummary: { color: P.inkSoft, fontSize: 13, lineHeight: 20, letterSpacing: 0.2 },
+  chapterSummary: { color: P.inkSoft, fontSize: 15, lineHeight: 23 },
   skeleton: { gap: 12 },
   skelLine: { height: 10, borderRadius: 5, backgroundColor: P.hairSoft, width: '100%' },
 
-  // locked divider
-  lockedDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginTop: 32,
-    marginBottom: 20,
+  // premium section — a quiet mono kicker, no rules
+  sectionKicker: {
+    color: P.muted,
+    fontSize: 11,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginTop: 38,
+    marginBottom: 6,
   },
-  dividerLine: { flex: 1, height: 0.5, backgroundColor: P.hair },
-  dividerLabel: { color: P.muted, fontSize: 10, letterSpacing: 3, fontWeight: '500' },
-
-  // locked chapters
-  lockedCard: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    borderWidth: 0.5,
-    borderColor: P.hairSoft,
-    borderRadius: 10,
-  },
-  lockedHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  lockedLabel: { color: P.ink, fontSize: 16, letterSpacing: 1 },
-  lockedSub: { color: P.bronze, fontSize: 8, letterSpacing: 2, fontWeight: '600' },
-  lockedChevron: { marginLeft: 'auto', opacity: 0.55 },
-  lockedDesc: { color: P.muted, fontSize: 12, lineHeight: 18 },
 
   // unlock
   unlockBtn: {
