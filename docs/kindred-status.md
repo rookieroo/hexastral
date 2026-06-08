@@ -96,21 +96,28 @@ from auspice's git-graph.
 
 ## Workstream B — Living layer (合盘 timeline + make-if) · the subscription moat
 
-Kindred's _relationship × time_ surface. **PLANNED — not built.** Detailed in
+Kindred's _relationship × time_ surface. Detailed in
 [bonds-timeline-plan.md](bonds-timeline-plan.md) ·
 [timeline-makeif-gitgraph.md](timeline-makeif-gitgraph.md) ·
 [ADR-0014](decisions/0014-bonds-timeline-architecture.md) ·
 [ADR-0023](decisions/0023-timeline-makeif-insight-layer.md).
 
-- ☐ **合盘 timeline** — the relationship's 大运/流年/流月 over time for the PAIR
-  (合冲害刑/五行/用神 already computed in astro-core). Never a personal timeline.
+- ✅ **合盘 timeline (流年/大运)** — the ego-centric multi-bond axis (`composeBondsTimeline`
+  + `GET /api/bonds/timeline` + `app/(timeline)/index.tsx`), privacy-projected (D2),
+  gated (`userHasCapability ...'kindred'`). Always two people; never a personal timeline.
+- ✅ **合盘 timeline 流月 living layer** — the near-term monthly detail (`getRelationshipLiuYueNodes`
+  + `composeBondsLiuYue` + `buildEgoLiuYue` → `liuyue` on the timeline response; a
+  month strip with tap-to-read on the screen). Orthogonal to the lifetime axis,
+  never pushed. Free = current month taste, Pro = 12-month window. Golden-tested.
 - ☐ **合盘 make-if** — "假如我们…" relationship hypotheticals (the synastry analogue
   of auspice's make-if; insight-layer framing per ADR-0023, NOT git-graph for
-  kindred — keep the metaphors split).
-- ☐ **Relationship node notifications** — server-interpreted advice on relationship
-  nodes (2-phase, mirroring auspice's timeline reminders).
-- ☐ **Gating** — solo reading stays a static on-ramp; all _living_ features require a
-  bond + subscription.
+  kindred — keep the metaphors split). **Forward decision framing only** (no past
+  rumination about a real person — that's the risky use the Auspice S5 cut flagged).
+- ☐ **Relationship node notifications** — pure schedule builder (`buildTimelineNotificationPlan`)
+  shipped + tested; on-device `expo-notifications` wiring deferred to the EAS/native
+  batch (offline sandbox can't add the dep).
+- ✅ **Gating** — solo reading stays a static on-ramp; all _living_ features require a
+  bond + subscription (server-authoritative `pro`/`upsell`).
 
 ---
 
