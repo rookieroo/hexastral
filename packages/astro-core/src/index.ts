@@ -46,12 +46,13 @@ export {
 // 本我中心多关系时间轴 (Bonds Timeline — Kindred BT.1, ADR-0014)
 export type {
   BondInput,
+  ComposeBondsLiuYueOptions,
   ComposeBondsTimelineOptions,
   MergedBondRef,
   MergedNode,
   MergedNotification,
 } from './bonds-timeline'
-export { composeBondsTimeline } from './bonds-timeline'
+export { composeBondsLiuYue, composeBondsTimeline } from './bonds-timeline'
 // 合化冲 (BaZi)
 export type {
   BranchClash,
@@ -306,6 +307,7 @@ export {
 export type {
   RelationshipPerson,
   RelationshipTimelineNode,
+  RelLiuYueOptions,
   RelNodeSignificance,
   RelNotificationOptions,
   RelTimelineNodesOptions,
@@ -313,6 +315,7 @@ export type {
   RelTimelineNotification,
 } from './relationship-timeline'
 export {
+  getRelationshipLiuYueNodes,
   getRelationshipTimelineNodes,
   getRelationshipTimelineNotifications,
 } from './relationship-timeline'

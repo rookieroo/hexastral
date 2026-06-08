@@ -310,7 +310,7 @@ export interface SynastryReport {
 // Server returns ONLY derived nodes (privacy D2): no counterpart raw birth ever
 // crosses the wire. Mirrors apps/hexastral-api/src/lib/bonds-timeline.ts DTOs.
 
-export type BondsTimelineNodeKind = '大运' | '流年'
+export type BondsTimelineNodeKind = '大运' | '流年' | '流月'
 export type BondsTimelineSignificance = 'major' | 'notable' | 'routine'
 
 /** A bond touched by a merged node — id/name/label only, never birth. */
@@ -326,6 +326,8 @@ export interface BondsTimelineNode {
   /** effective date ISO YYYY-MM-DD */
   date: string
   year: number
+  /** 流月 nodes: calendar month 1–12 (undefined for 大运/流年). */
+  month?: number
   kind: BondsTimelineNodeKind
   /** 干支 label only (e.g. "甲子") */
   ganZhi: string
@@ -355,6 +357,11 @@ export interface BondsTimelineResponse {
   nodes: BondsTimelineNode[]
   /** Empty for non-Pro (proactive push is the Pro moat). */
   notifications: BondsTimelineNotification[]
+  /**
+   * 流月 living layer — near-term rolling months (orthogonal to the lifetime
+   * axis; never pushed). Free = current month only; Pro = 12-month window.
+   */
+  liuyue?: BondsTimelineNode[]
   /** True iff kindred_pro / universe_pro. Free = current year + all bonds, no push. */
   pro: boolean
   /** Present only for non-Pro — paywall hint. */

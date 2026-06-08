@@ -23,6 +23,8 @@ import type {
 
 export interface UseBondsTimelineResult {
   nodes: BondsTimelineNode[]
+  /** 流月 living layer — near-term months. Free = current month; Pro = 12. */
+  liuyue: BondsTimelineNode[]
   /** Pro-only local-push timetable; empty for free tier. */
   notifications: BondsTimelineNotification[]
   /** True iff kindred_pro / universe_pro (server-authoritative). */
@@ -38,6 +40,7 @@ export interface UseBondsTimelineResult {
 export function useBondsTimeline(): UseBondsTimelineResult {
   const { client, onError } = useKindredClient()
   const [nodes, setNodes] = useState<BondsTimelineNode[]>([])
+  const [liuyue, setLiuyue] = useState<BondsTimelineNode[]>([])
   const [notifications, setNotifications] = useState<BondsTimelineNotification[]>([])
   const [pro, setPro] = useState<boolean>(false)
   const [upsell, setUpsell] = useState<BondsTimelineResponse['upsell']>(undefined)
@@ -50,6 +53,7 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     try {
       const data = await unwrap<BondsTimelineResponse>(await kindredBonds(client).timeline.$get())
       setNodes(data.nodes)
+      setLiuyue(data.liuyue ?? [])
       setNotifications(data.notifications)
       setPro(data.pro)
       setUpsell(data.upsell)
@@ -80,5 +84,5 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     [client, onError]
   )
 
-  return { nodes, notifications, pro, upsell, isLoading, error, refetch, explainNode }
+  return { nodes, liuyue, notifications, pro, upsell, isLoading, error, refetch, explainNode }
 }

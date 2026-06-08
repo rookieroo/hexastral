@@ -11,9 +11,12 @@
 
 import {
   type BondInput,
+  type ComposeBondsLiuYueOptions,
   type ComposeBondsTimelineOptions,
+  composeBondsLiuYue,
   composeBondsTimeline,
   type DateTimeInput,
+  type MergedNode,
   type RelationshipPerson,
 } from '@zhop/astro-core'
 
@@ -48,7 +51,9 @@ export interface BondsTimelineNodeDTO {
   /** 生效日期 ISO `YYYY-MM-DD`. */
   date: string
   year: number
-  kind: '大运' | '流年'
+  /** 流月节点: 公历月 1–12 (大运/流年 undefined)。 */
+  month?: number
+  kind: '大运' | '流年' | '流月'
   /** 干支名 (e.g. "甲子"), 仅 label, 非原始盘。 */
   ganZhi: string
   daYunOf?: 'A' | 'B'
@@ -67,7 +72,8 @@ export interface BondsTimelineNotificationDTO {
   leadLabel: string
   date: string
   year: number
-  kind: '大运' | '流年'
+  // 实际只会是 大运/流年 (流月不推); 与节点 kind 同并集以省去窄化 cast。
+  kind: '大运' | '流年' | '流月'
   significance: 'major' | 'notable' | 'routine'
   summary: string
 }
@@ -75,6 +81,8 @@ export interface BondsTimelineNotificationDTO {
 export interface BondsTimelineDTO {
   nodes: BondsTimelineNodeDTO[]
   notifications: BondsTimelineNotificationDTO[]
+  /** 流月 living layer — 近期滚动窗口的月度明细 (可空; 大运/流年 轴之外的明细)。 */
+  liuyue?: BondsTimelineNodeDTO[]
 }
 
 /** shichen timeIndex (0-12) → 代表性 24h 小时 (与 routes/bonds.ts 同约定)。 */
@@ -123,15 +131,13 @@ export function resolveResonanceCounterpart(
       }
 }
 
-/** 把 astro-core 合并结果投影为隐私安全 DTO (剥离 per-bond 原始节点)。 */
-export function projectBondsTimeline(composed: {
-  nodes: ReturnType<typeof composeBondsTimeline>['nodes']
-  notifications: ReturnType<typeof composeBondsTimeline>['notifications']
-}): BondsTimelineDTO {
-  const nodes: BondsTimelineNodeDTO[] = composed.nodes.map((n) => ({
+/** 单个合并节点 → 隐私安全 DTO (剥离 per-bond 原始节点, 只留 id/名/标签)。 */
+function projectNode(n: MergedNode): BondsTimelineNodeDTO {
+  return {
     key: n.key,
     date: n.date,
     year: n.year,
+    month: n.month,
     kind: n.kind,
     ganZhi: n.ganZhi.label,
     daYunOf: n.daYunOf,
@@ -142,7 +148,15 @@ export function projectBondsTimeline(composed: {
       name: b.name,
       relationshipLabel: b.relationshipLabel,
     })),
-  }))
+  }
+}
+
+/** 把 astro-core 合并结果投影为隐私安全 DTO (剥离 per-bond 原始节点)。 */
+export function projectBondsTimeline(composed: {
+  nodes: ReturnType<typeof composeBondsTimeline>['nodes']
+  notifications: ReturnType<typeof composeBondsTimeline>['notifications']
+}): BondsTimelineDTO {
+  const nodes: BondsTimelineNodeDTO[] = composed.nodes.map(projectNode)
   const notifications: BondsTimelineNotificationDTO[] = composed.notifications.map((nf) => ({
     key: nf.node.key,
     fireDate: nf.fireDate,
@@ -157,19 +171,14 @@ export function projectBondsTimeline(composed: {
   return { nodes, notifications }
 }
 
-/**
- * 本我 + 已解析 bonds → 隐私安全时间轴 DTO。纯函数。
- * 生辰非法的 bond 自动跳过 (flatMap 滤除)。本我生辰非法 → 空轴 (路由应先校验)。
- */
-export function buildEgoTimeline(
+/** 本我盘 + 已解析 bonds → astro-core 入参 (滤掉生辰非法者); 本我非法 → null。 */
+function resolveEgoAndBonds(
   egoBirth: BirthTriple,
-  bonds: ResolvedBond[],
-  opts: ComposeBondsTimelineOptions = {}
-): BondsTimelineDTO {
+  bonds: ResolvedBond[]
+): { ego: RelationshipPerson; bondInputs: BondInput[] } | null {
   const egoInput = birthToInput(egoBirth)
-  if (!egoInput) return { nodes: [], notifications: [] }
+  if (!egoInput) return null
   const ego: RelationshipPerson = { input: egoInput, gender: egoBirth.gender }
-
   const bondInputs: BondInput[] = bonds.flatMap((b) => {
     const input = birthToInput(b.counterpart)
     if (!input) return []
@@ -183,6 +192,33 @@ export function buildEgoTimeline(
       },
     ]
   })
+  return { ego, bondInputs }
+}
 
-  return projectBondsTimeline(composeBondsTimeline(ego, bondInputs, opts))
+/**
+ * 本我 + 已解析 bonds → 隐私安全时间轴 DTO。纯函数。
+ * 生辰非法的 bond 自动跳过 (flatMap 滤除)。本我生辰非法 → 空轴 (路由应先校验)。
+ */
+export function buildEgoTimeline(
+  egoBirth: BirthTriple,
+  bonds: ResolvedBond[],
+  opts: ComposeBondsTimelineOptions = {}
+): BondsTimelineDTO {
+  const resolved = resolveEgoAndBonds(egoBirth, bonds)
+  if (!resolved) return { nodes: [], notifications: [] }
+  return projectBondsTimeline(composeBondsTimeline(resolved.ego, resolved.bondInputs, opts))
+}
+
+/**
+ * 本我 + 已解析 bonds → 隐私安全**流月** DTO 列表 (近期滚动窗口的月度明细)。纯函数。
+ * 与生命轴正交、无推送。本我生辰非法 → 空。
+ */
+export function buildEgoLiuYue(
+  egoBirth: BirthTriple,
+  bonds: ResolvedBond[],
+  opts: ComposeBondsLiuYueOptions = {}
+): BondsTimelineNodeDTO[] {
+  const resolved = resolveEgoAndBonds(egoBirth, bonds)
+  if (!resolved) return []
+  return composeBondsLiuYue(resolved.ego, resolved.bondInputs, opts).nodes.map(projectNode)
 }

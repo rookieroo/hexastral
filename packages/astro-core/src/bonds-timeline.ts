@@ -21,6 +21,7 @@
 
 import type { Gender } from './dayun'
 import {
+  getRelationshipLiuYueNodes,
   getRelationshipTimelineNodes,
   type RelationshipPerson,
   type RelationshipTimelineNode,
@@ -56,6 +57,8 @@ export interface MergedNode {
   /** 生效日期 ISO `YYYY-MM-DD` (共位节点共享)。 */
   date: string
   year: number
+  /** 流月节点: 公历月 1–12 (其余类型 undefined)。 */
+  month?: number
   kind: RelTimelineNodeType
   ganZhi: GanZhi
   /** 大运节点: 谁换运 (A=本我 / B=对方)。 */
@@ -280,4 +283,98 @@ function buildNotifications(
 
   accepted.sort((a, b) => a.fireMs - b.fireMs)
   return accepted.map(({ fireMs: _fireMs, ...rest }) => rest)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 流月 living layer — 本我 × 全部 bonds 的近期月度明细。
+//
+// 与上方生命轴正交: 这是滚动窗口的「本月各段关系如何」。同生命轴一样两两扇出 + 共位合并,
+// 但按 (年-月) 共位, 只标 notable/routine (无 major), 且**绝不推送** (流月不推, 同
+// relationship-timeline.ts 注)。月柱与人无关(仅取决于年/月), 故 ganZhi 跨 bond 相同,
+// 差异在每个 bond 的 冲/合/十神。视图全展示 12 个月, notable 月高亮受影响的关系。
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ComposeBondsLiuYueOptions {
+  /** 滚动窗口起点 (默认现在)。 */
+  fromDate?: Date
+  /** 窗口月数 (默认 12)。 */
+  months?: number
+}
+
+function mergedLiuYueSummary(
+  year: number,
+  month: number,
+  ganZhi: GanZhi,
+  notableBonds: MergedBondRef[]
+): string {
+  if (notableBonds.length === 0) {
+    return `${year}年${month}月 ${ganZhi.label}，各段关系大致平稳。`
+  }
+  return `${year}年${month}月 ${ganZhi.label}，与 ${joinNames(notableBonds)} 的关系本月流月互动显著。`
+}
+
+/**
+ * 合并本我 × 全部 bonds 的流月窗口。纯函数, 确定性。
+ *
+ * 全部月份都出现(默认 12 条), 每月 `bonds` = 该月对其构成 冲/合 的关系(可空);
+ * `significance` = 有受影响关系→notable, 否则 routine。不产生推送。
+ */
+export function composeBondsLiuYue(
+  ego: RelationshipPerson,
+  bonds: BondInput[],
+  opts: ComposeBondsLiuYueOptions = {}
+): { nodes: MergedNode[] } {
+  const order: string[] = []
+  const acc = new Map<
+    string,
+    { date: string; year: number; month: number; ganZhi: GanZhi; bonds: MergedBondRef[] }
+  >()
+
+  for (const bond of bonds) {
+    const bondPerson: RelationshipPerson = { input: bond.input, gender: bond.gender }
+    const { nodes } = getRelationshipLiuYueNodes(ego, bondPerson, {
+      fromDate: opts.fromDate,
+      months: opts.months,
+    })
+    for (const node of nodes) {
+      const key = `LY:${node.year}:${node.month}`
+      let bucket = acc.get(key)
+      if (!bucket) {
+        // 月柱与人无关 → 任一 bond 的 ganZhi 即该月月柱。
+        bucket = {
+          date: node.effectiveDate,
+          year: node.year,
+          month: node.month ?? 0,
+          ganZhi: node.ganZhi,
+          bonds: [],
+        }
+        acc.set(key, bucket)
+        order.push(key)
+      }
+      if (node.significance === 'notable') {
+        bucket.bonds.push({
+          bondId: bond.bondId,
+          name: bond.name,
+          relationshipLabel: bond.relationshipLabel,
+          node,
+        })
+      }
+    }
+  }
+
+  const nodes: MergedNode[] = order.map((key) => {
+    const m = acc.get(key)!
+    return {
+      key,
+      date: m.date,
+      year: m.year,
+      month: m.month,
+      kind: '流月',
+      ganZhi: m.ganZhi,
+      significance: m.bonds.length > 0 ? 'notable' : 'routine',
+      bonds: m.bonds,
+      summary: mergedLiuYueSummary(m.year, m.month, m.ganZhi, m.bonds),
+    }
+  })
+  return { nodes }
 }

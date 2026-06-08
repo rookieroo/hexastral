@@ -36,6 +36,7 @@ import { requireUserId } from '../lib/auth'
 import {
   type BirthTriple,
   birthToInput,
+  buildEgoLiuYue,
   buildEgoTimeline,
   type PairReadingBirth,
   type ResolvedBond,
@@ -1482,6 +1483,13 @@ bondRoutes.get('/timeline', async (c) => {
   })
   // 主动推送是护城河 → Pro only。免费层全展示当前年(全部 bond)钩子节点, 但不排程推送。
   if (!isPro) timeline.notifications = []
+
+  // 流月 living layer (近期月度明细) —— 订阅价值。免费层尝鲜本月一格, Pro 看满 12 个月,
+  // 与「免费=当前年 / Pro=前瞻」在月粒度上一致。无推送 (流月不推)。
+  timeline.liuyue = buildEgoLiuYue(egoBirth, resolved, {
+    fromDate: new Date(),
+    months: isPro ? 12 : 1,
+  })
 
   return jsonOk(c, {
     ...timeline,

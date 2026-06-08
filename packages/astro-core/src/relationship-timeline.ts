@@ -12,7 +12,9 @@
  * 日期全部 UTC,保证 golden 测试与时区无关。A = 用户,B = 对方。
  */
 
+import { HEAVENLY_STEMS } from './constants'
 import { calculateDaYun, type DaYunStep, type Gender, getLiuNian } from './dayun'
+import { monthGanZhi, yearGanZhi } from './ganzhi'
 import { getJieQiDay } from './jieqi'
 import { getShiShen, type ShiShenInfo } from './shishen'
 import type { DateTimeInput, EarthlyBranch, GanZhi, HeavenlyStem } from './types'
@@ -22,12 +24,14 @@ export interface RelationshipPerson {
   gender: Gender
 }
 
-export type RelTimelineNodeType = '大运' | '流年'
+export type RelTimelineNodeType = '大运' | '流年' | '流月'
 export type RelNodeSignificance = 'major' | 'notable' | 'routine'
 
 export interface RelationshipTimelineNode {
   type: RelTimelineNodeType
   year: number
+  /** 流月 节点: 公历月 1–12 (其余类型 undefined). */
+  month?: number
   effectiveDate: string
   ganZhi: GanZhi
   /** 大运 节点: 谁的大运换运 (A=用户 / B=对方). */
@@ -265,4 +269,104 @@ export function getRelationshipTimelineNotifications(
 
   out.sort((x, y) => (x.fireDate < y.fireDate ? -1 : x.fireDate > y.fireDate ? 1 : 0))
   return out
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 流月 (monthly) — the near-term *living* detail layer.
+//
+// 流年/大运 above are the lifetime axis (the 订阅 moat's long view). 流月 is the
+// rolling near-term window the relationship's day-to-day rhythm rides on — it is
+// NEVER part of the lifetime axis and is NEVER pushed (mirrors fate timeline.ts:7
+// + bonds-timeline-plan §7: 流月不推, avoids colliding with Auspice's daily nudge).
+// Calendar-month granularity, matching `computeLiuyue`'s v1 simplification (寅月 ≈
+// Jan/Feb boundary deferred to the 节气 follow-up).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 该公历月的 月柱干支 (五虎遁, 同 computeLiuyue 的 v1 历月映射). */
+function monthPillar(year: number, month: number): GanZhi {
+  const yearStemIdx = HEAVENLY_STEMS.indexOf(yearGanZhi(year).stem)
+  const monthBranchIdx = (month + 10) % 12 // 1月→丑(11), 2月→寅(0), …
+  return monthGanZhi(yearStemIdx, monthBranchIdx)
+}
+
+function annotateLiuYue(
+  year: number,
+  month: number,
+  a: ChartFacts,
+  b: ChartFacts
+): RelationshipTimelineNode {
+  const ganZhi = monthPillar(year, month)
+  const shiShenA = getShiShen(a.dayMaster, ganZhi.stem)
+  const shiShenB = getShiShen(b.dayMaster, ganZhi.stem)
+  const clashA = BRANCH_CLASH[ganZhi.branch] === a.dayBranch
+  const clashB = BRANCH_CLASH[ganZhi.branch] === b.dayBranch
+  const harmonyA = BRANCH_COMBINE[ganZhi.branch] === a.dayBranch
+  const harmonyB = BRANCH_COMBINE[ganZhi.branch] === b.dayBranch
+
+  const anyClash = clashA || clashB
+  const anyHarmony = harmonyA || harmonyB
+  const significance: RelNodeSignificance = anyClash || anyHarmony ? 'notable' : 'routine'
+
+  let summary: string
+  if (anyClash) {
+    const who = clashA && clashB ? '双方' : clashA ? '你' : '对方'
+    summary = `${year}年${month}月 ${ganZhi.label}，流月冲${who}日支，这个月易有摩擦，留心情绪。`
+  } else if (anyHarmony) {
+    const who = harmonyA && harmonyB ? '双方' : harmonyA ? '你' : '对方'
+    summary = `${year}年${month}月 ${ganZhi.label}，流月合${who}日支，这个月气氛和缓，适合靠近。`
+  } else {
+    summary = `${year}年${month}月 ${ganZhi.label}，本月关系平稳。`
+  }
+
+  return {
+    type: '流月',
+    year,
+    month,
+    effectiveDate: isoFromMs(Date.UTC(year, month - 1, 1)),
+    ganZhi,
+    shiShenA,
+    shiShenB,
+    clashA,
+    clashB,
+    harmonyA,
+    harmonyB,
+    significance,
+    summary,
+  }
+}
+
+export interface RelLiuYueOptions {
+  /** 窗口起点 (默认: 今天)。流月按其所在公历月起算。 */
+  fromDate?: Date
+  /** 滚动窗口月数 (默认 12)。 */
+  months?: number
+}
+
+/**
+ * 关系流月节点 —— 从 `fromDate` 所在月起的滚动 N 个月窗口, 已标注+评级, 升序。
+ * 纯近期明细 (不进生命轴、不推送)。A = 用户, B = 对方。
+ */
+export function getRelationshipLiuYueNodes(
+  personA: RelationshipPerson,
+  personB: RelationshipPerson,
+  opts: RelLiuYueOptions = {}
+): { nodes: RelationshipTimelineNode[] } {
+  const a = chartFacts(personA)
+  const b = chartFacts(personB)
+  const from = opts.fromDate ?? new Date()
+  const months = Math.max(1, opts.months ?? 12)
+
+  let year = from.getUTCFullYear()
+  let month = from.getUTCMonth() + 1 // 1–12
+
+  const nodes: RelationshipTimelineNode[] = []
+  for (let i = 0; i < months; i++) {
+    nodes.push(annotateLiuYue(year, month, a, b))
+    month += 1
+    if (month > 12) {
+      month = 1
+      year += 1
+    }
+  }
+  return { nodes }
 }

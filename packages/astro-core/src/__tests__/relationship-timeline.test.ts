@@ -10,8 +10,11 @@
  */
 
 import { describe, expect, test } from 'bun:test'
+import { HEAVENLY_STEMS } from '../constants'
 import { calculateDaYun, getLiuNian } from '../dayun'
+import { monthGanZhi, yearGanZhi } from '../ganzhi'
 import {
+  getRelationshipLiuYueNodes,
   getRelationshipTimelineNodes,
   getRelationshipTimelineNotifications,
   type RelationshipPerson,
@@ -130,6 +133,78 @@ describe('determinism', () => {
   test('同输入同输出', () => {
     expect(getRelationshipTimelineNodes(A, B).nodes).toEqual(
       getRelationshipTimelineNodes(A, B).nodes
+    )
+  })
+})
+
+describe('getRelationshipLiuYueNodes — 流月滚动窗口', () => {
+  const monthPillar = (year: number, month: number) => {
+    const yearStemIdx = HEAVENLY_STEMS.indexOf(yearGanZhi(year).stem)
+    return monthGanZhi(yearStemIdx, (month + 10) % 12)
+  }
+
+  test('默认 12 个月, 从 fromDate 所在月起, 连续递增并跨年', () => {
+    const { nodes } = getRelationshipLiuYueNodes(A, B, {
+      fromDate: new Date(Date.UTC(2024, 9, 15)), // 2024-10
+    })
+    expect(nodes).toHaveLength(12)
+    expect(nodes[0]!.year).toBe(2024)
+    expect(nodes[0]!.month).toBe(10)
+    // 连续: 2024-10 .. 2025-09
+    const seq = nodes.map((n) => `${n.year}-${n.month}`)
+    expect(seq).toEqual([
+      '2024-10',
+      '2024-11',
+      '2024-12',
+      '2025-1',
+      '2025-2',
+      '2025-3',
+      '2025-4',
+      '2025-5',
+      '2025-6',
+      '2025-7',
+      '2025-8',
+      '2025-9',
+    ])
+    // 全部 type=流月, effectiveDate = 该月 1 号 UTC
+    for (const n of nodes) {
+      expect(n.type).toBe('流月')
+      expect(n.effectiveDate).toBe(
+        new Date(Date.UTC(n.year, (n.month ?? 1) - 1, 1)).toISOString().slice(0, 10)
+      )
+    }
+  })
+
+  test('months 选项控制窗口长度 (≥1)', () => {
+    expect(getRelationshipLiuYueNodes(A, B, { months: 3 }).nodes).toHaveLength(3)
+    expect(getRelationshipLiuYueNodes(A, B, { months: 0 }).nodes).toHaveLength(1)
+  })
+
+  test('ganZhi / shiShen / 冲合 与原语交叉一致, 评级规则正确', () => {
+    const a = calculateDaYun(A.input, A.gender).pillars.day
+    const b = calculateDaYun(B.input, B.gender).pillars.day
+    const { nodes } = getRelationshipLiuYueNodes(A, B, {
+      fromDate: new Date(Date.UTC(2025, 0, 1)),
+      months: 12,
+    })
+    for (const n of nodes) {
+      const gz = monthPillar(n.year, n.month!)
+      expect(n.ganZhi.label).toBe(gz.label)
+      expect(n.shiShenA).toEqual(getShiShen(a.stem, gz.stem))
+      expect(n.shiShenB).toEqual(getShiShen(b.stem, gz.stem))
+      expect(n.clashA).toBe(CLASH[gz.branch] === a.branch)
+      expect(n.clashB).toBe(CLASH[gz.branch] === b.branch)
+      expect(n.harmonyA).toBe(COMBINE[gz.branch] === a.branch)
+      expect(n.harmonyB).toBe(COMBINE[gz.branch] === b.branch)
+      const anyRel = n.clashA || n.clashB || n.harmonyA || n.harmonyB
+      expect(n.significance).toBe(anyRel ? 'notable' : 'routine')
+    }
+  })
+
+  test('确定性', () => {
+    const o = { fromDate: new Date(Date.UTC(2025, 2, 1)), months: 6 }
+    expect(getRelationshipLiuYueNodes(A, B, o).nodes).toEqual(
+      getRelationshipLiuYueNodes(A, B, o).nodes
     )
   })
 })

@@ -16,6 +16,21 @@ import type { BondsTimelineNode, BondsTimelineNodeKind } from '../types'
 /** Kindred ships 4 locales (see apps/kindred-app/lib/i18n.ts). */
 export type KindredLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
+const EN_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
 /** Join bond display names with a locale-appropriate separator. */
 function joinNames(names: string[], locale: KindredLocale): string {
   const sep = locale === 'en' ? ', ' : '、'
@@ -57,6 +72,29 @@ export function formatNodeSummary(node: BondsTimelineNode, locale: KindredLocale
     }
   }
 
+  // 流月 — the near-term living layer. Calm months carry no bonds.
+  if (node.kind === '流月') {
+    const calm = node.bonds.length === 0
+    const m = node.month ?? 1
+    switch (locale) {
+      case 'zh':
+      case 'zh-Hant':
+        return calm
+          ? `${node.year}年${m}月 ${gz}，各段關係大致平穩。`
+          : `${node.year}年${m}月 ${gz}，與 ${names} 的關係本月流月互動顯著。`
+      case 'ja':
+        return calm
+          ? `${node.year}年${m}月 ${gz}、各関係はおおむね穏やかです。`
+          : `${node.year}年${m}月 ${gz}、${names} との関係に今月は動きが目立ちます。`
+      default: {
+        const mon = `${EN_MONTHS[m - 1] ?? `Month ${m}`} ${node.year}`
+        return calm
+          ? `${mon} (${gz}): a calm month across your bonds.`
+          : `${mon} (${gz}): a notable monthly turn with ${names}.`
+      }
+    }
+  }
+
   // 流年
   switch (locale) {
     case 'zh':
@@ -81,6 +119,16 @@ export function formatNodeKind(kind: BondsTimelineNodeKind, locale: KindredLocal
         return '大運'
       default:
         return 'Luck cycle'
+    }
+  }
+  if (kind === '流月') {
+    switch (locale) {
+      case 'zh':
+      case 'zh-Hant':
+      case 'ja':
+        return '流月'
+      default:
+        return 'Monthly'
     }
   }
   switch (locale) {

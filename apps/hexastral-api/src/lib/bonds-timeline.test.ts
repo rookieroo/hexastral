@@ -10,6 +10,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   type BirthTriple,
+  buildEgoLiuYue,
   buildEgoTimeline,
   type PairReadingBirth,
   type ResolvedBond,
@@ -135,5 +136,36 @@ describe('免费层钩子 (BT.6) — 当前年 + 全部 bond, 无推送', () => 
     for (const n of dto.nodes) for (const rb of n.bonds) seen.add(rb.bondId)
     expect(seen.size).toBeGreaterThan(1)
     expect(seen.has('b1')).toBe(true)
+  })
+})
+
+describe('buildEgoLiuYue — 流月 living layer', () => {
+  const FROM = new Date(Date.UTC(2026, 0, 1))
+
+  test('窗口月数受控, 全 kind=流月 + 带 month, 升序', () => {
+    const free = buildEgoLiuYue(egoBirth, bonds, { fromDate: FROM, months: 1 })
+    const pro = buildEgoLiuYue(egoBirth, bonds, { fromDate: FROM, months: 12 })
+    expect(free).toHaveLength(1)
+    expect(pro).toHaveLength(12)
+    for (const n of pro) {
+      expect(n.kind).toBe('流月')
+      expect(n.month).toBeGreaterThanOrEqual(1)
+      expect(n.month).toBeLessThanOrEqual(12)
+    }
+    const dates = pro.map((n) => n.date)
+    expect(dates).toEqual([...dates].sort())
+  })
+
+  test('隐私 (D2): 流月 DTO 绝不含对方原始 solarDate / timeIndex', () => {
+    const json = JSON.stringify(buildEgoLiuYue(egoBirth, bonds, { fromDate: FROM, months: 12 }))
+    expect(json).not.toContain('solarDate')
+    expect(json).not.toContain('timeIndex')
+    for (const b of bonds) expect(json).not.toContain(b.counterpart.solarDate)
+  })
+
+  test('本我生辰非法 → 空', () => {
+    expect(
+      buildEgoLiuYue({ solarDate: 'bad', timeIndex: 0, gender: '男' }, bonds, { months: 12 })
+    ).toEqual([])
   })
 })

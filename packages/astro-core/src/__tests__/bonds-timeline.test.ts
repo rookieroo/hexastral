@@ -12,10 +12,14 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { type BondInput, composeBondsTimeline } from '../bonds-timeline'
+import { type BondInput, composeBondsLiuYue, composeBondsTimeline } from '../bonds-timeline'
 import { calculateDaYun } from '../dayun'
 import type { RelNodeSignificance } from '../relationship-timeline'
-import { getRelationshipTimelineNodes, type RelationshipPerson } from '../relationship-timeline'
+import {
+  getRelationshipLiuYueNodes,
+  getRelationshipTimelineNodes,
+  type RelationshipPerson,
+} from '../relationship-timeline'
 
 const DAY = 86_400_000
 const ego: RelationshipPerson = { input: { year: 1990, month: 3, day: 15, hour: 14 }, gender: '男' }
@@ -256,5 +260,71 @@ describe('确定性', () => {
     const b = composeBondsTimeline(ego, bonds, opts)
     expect(a.nodes).toEqual(b.nodes)
     expect(a.notifications).toEqual(b.notifications)
+  })
+})
+
+describe('composeBondsLiuYue — 流月 living layer', () => {
+  const LY_OPTS = { fromDate: new Date(Date.UTC(2026, 0, 1)), months: 12 }
+
+  test('全部 12 个月都出现, 连续, kind=流月, 无推送概念', () => {
+    const { nodes } = composeBondsLiuYue(ego, bonds, LY_OPTS)
+    expect(nodes).toHaveLength(12)
+    for (const n of nodes) expect(n.kind).toBe('流月')
+    const seq = nodes.map((n) => `${n.year}-${n.month}`)
+    expect(seq).toEqual([
+      '2026-1',
+      '2026-2',
+      '2026-3',
+      '2026-4',
+      '2026-5',
+      '2026-6',
+      '2026-7',
+      '2026-8',
+      '2026-9',
+      '2026-10',
+      '2026-11',
+      '2026-12',
+    ])
+  })
+
+  test('月柱与人无关 → ganZhi ↔ 任一 bond 的 pairwise 流月', () => {
+    const { nodes } = composeBondsLiuYue(ego, bonds, LY_OPTS)
+    const ref = getRelationshipLiuYueNodes(
+      ego,
+      { input: bonds[0]!.input, gender: bonds[0]!.gender },
+      LY_OPTS
+    ).nodes
+    nodes.forEach((n, i) => {
+      expect(n.ganZhi.label).toBe(ref[i]!.ganZhi.label)
+    })
+  })
+
+  test('每月受影响关系 = 各 bond pairwise notable 的并集; significance 随之', () => {
+    const { nodes } = composeBondsLiuYue(ego, bonds, LY_OPTS)
+    // 每个 bond 的 (year-month → notable?) 表
+    const perBond = bonds.map((b) => ({
+      bondId: b.bondId,
+      notable: new Set(
+        getRelationshipLiuYueNodes(ego, { input: b.input, gender: b.gender }, LY_OPTS)
+          .nodes.filter((p) => p.significance === 'notable')
+          .map((p) => `${p.year}-${p.month}`)
+      ),
+    }))
+    for (const n of nodes) {
+      const ym = `${n.year}-${n.month}`
+      const expectedIds = perBond.filter((pb) => pb.notable.has(ym)).map((pb) => pb.bondId)
+      expect(new Set(n.bonds.map((b) => b.bondId))).toEqual(new Set(expectedIds))
+      expect(n.significance).toBe(expectedIds.length > 0 ? 'notable' : 'routine')
+    }
+  })
+
+  test('N=0: 无 bond → 空轴', () => {
+    expect(composeBondsLiuYue(ego, [], LY_OPTS).nodes).toEqual([])
+  })
+
+  test('确定性', () => {
+    expect(composeBondsLiuYue(ego, bonds, LY_OPTS).nodes).toEqual(
+      composeBondsLiuYue(ego, bonds, LY_OPTS).nodes
+    )
   })
 })

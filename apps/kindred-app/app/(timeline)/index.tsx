@@ -73,7 +73,7 @@ function groupByYear(
 export default function TimelineScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { nodes, pro, isLoading, error, refetch, explainNode } = useBondsTimeline()
+  const { nodes, liuyue, pro, isLoading, error, refetch, explainNode } = useBondsTimeline()
 
   const grouped = useMemo(() => groupByYear(nodes), [nodes])
 
@@ -153,6 +153,15 @@ export default function TimelineScreen() {
           <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
         ) : null}
 
+        {liuyue.length > 0 ? (
+          <LiuYueStrip
+            liuyue={liuyue}
+            pro={pro}
+            locale={locale}
+            onUpsell={() => router.push('/(commerce)/paywall')}
+          />
+        ) : null}
+
         {grouped.map(({ year, nodes: yearNodes }) => (
           <View key={year} style={{ marginBottom: kindredSpacing.lg }}>
             <Text
@@ -183,6 +192,185 @@ export default function TimelineScreen() {
         ) : null}
       </ScrollView>
     </SafeAreaView>
+  )
+}
+
+const EN_SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
+function monthLabel(node: BondsTimelineNode, locale: Locale): string {
+  const m = node.month ?? 1
+  return locale === 'en' ? (EN_SHORT_MONTHS[m - 1] ?? `M${m}`) : `${m}月`
+}
+
+/**
+ * 流月 living layer — the near-term rolling months across all bonds. A horizontal
+ * strip of month chips (significance dot + 干支); tapping one reveals its calm /
+ * notable read below. Free shows the current month + a locked rail prompting Pro
+ * for the full 12-month window (mirrors the year axis free/Pro split).
+ */
+function LiuYueStrip({
+  liuyue,
+  pro,
+  locale,
+  onUpsell,
+}: {
+  liuyue: BondsTimelineNode[]
+  pro: boolean
+  locale: Locale
+  onUpsell: () => void
+}) {
+  const [selectedKey, setSelectedKey] = useState<string>(liuyue[0]?.key ?? '')
+  const selected = liuyue.find((n) => n.key === selectedKey) ?? liuyue[0]
+  const names = selected?.bonds.map((b) => b.name).filter((n) => n.length > 0) ?? []
+
+  return (
+    <View style={{ marginBottom: kindredSpacing.lg }}>
+      <Text
+        style={[
+          kindredType.seal,
+          { color: kindredDark.textSecondary, marginBottom: kindredSpacing.xs },
+        ]}
+      >
+        {t(locale, 'timeline.liuyue.title')}
+      </Text>
+      <Text
+        style={[
+          kindredType.caption,
+          { color: kindredDark.textMuted, marginBottom: kindredSpacing.sm, lineHeight: 18 },
+        ]}
+      >
+        {t(locale, 'timeline.liuyue.subtitle')}
+      </Text>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: kindredSpacing.sm, paddingRight: kindredSpacing.sm }}
+      >
+        {liuyue.map((node) => (
+          <MonthChip
+            key={node.key}
+            node={node}
+            locale={locale}
+            selected={node.key === selectedKey}
+            onPress={() => setSelectedKey(node.key)}
+          />
+        ))}
+        {!pro ? (
+          <Pressable
+            onPress={onUpsell}
+            accessibilityRole='button'
+            style={({ pressed }) => ({
+              minWidth: 64,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: kindredSpacing.sm,
+              paddingHorizontal: kindredSpacing.md,
+              borderRadius: kindredRadius.sm,
+              borderWidth: 0.5,
+              borderColor: kindredDark.accent,
+              borderStyle: 'dashed',
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text style={[kindredType.caption, { color: kindredDark.accent }]}>+12</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+
+      {selected ? (
+        <View
+          style={{
+            marginTop: kindredSpacing.sm,
+            borderWidth: 0.5,
+            borderColor: kindredDark.border,
+            borderRadius: kindredRadius.md,
+            padding: kindredSpacing.lg,
+            backgroundColor: kindredDark.card,
+            gap: kindredSpacing.xs,
+          }}
+        >
+          <Text style={[kindredType.body, { color: kindredDark.text, lineHeight: 22 }]}>
+            {formatNodeSummary(selected, locale)}
+          </Text>
+          {names.length > 0 ? (
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+              {t(locale, 'timeline.affects')}: {names.join(locale === 'en' ? ', ' : '、')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {!pro ? (
+        <Text
+          style={[
+            kindredType.caption,
+            { color: kindredDark.textMuted, marginTop: kindredSpacing.xs },
+          ]}
+        >
+          {t(locale, 'timeline.liuyue.locked')}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+function MonthChip({
+  node,
+  locale,
+  selected,
+  onPress,
+}: {
+  node: BondsTimelineNode
+  locale: Locale
+  selected: boolean
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole='button'
+      style={({ pressed }) => ({
+        minWidth: 64,
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: kindredSpacing.sm,
+        paddingHorizontal: kindredSpacing.md,
+        borderRadius: kindredRadius.sm,
+        borderWidth: selected ? 1 : 0.5,
+        borderColor: selected ? kindredDark.accent : kindredDark.border,
+        backgroundColor: selected ? kindredDark.card : 'transparent',
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
+        {monthLabel(node, locale)}
+      </Text>
+      <Text style={[kindredType.caption, { color: kindredDark.text, fontSize: 13 }]}>
+        {node.ganZhi}
+      </Text>
+      <View
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: significanceColor(node.significance),
+        }}
+      />
+    </Pressable>
   )
 }
 
