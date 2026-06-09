@@ -1,38 +1,30 @@
 /**
- * Home — the solo 八字紫微 reading + the thread list, in one screen.
+ * Home — the solo 八字紫微 reading + the thread list, on one 宣纸 surface.
  *
- * 2026-06 device QA reshaped this (was: a centered moon+seal hero with a
- * "Threads →" link into a SEPARATE list screen, which read as too deep):
+ * 2026-06 device QA reshaped this twice:
+ *   - Threads flattened onto the home; tapping a row → its report directly.
+ *   - The whole home is now 宣纸 (rice paper), so home → report is one continuous
+ *     paper plane and the 水墨晕开 bloom reads as ink spreading on paper (point 1).
+ *   - timeline & make-if are per-合盘, so they moved OFF a global chip onto each
+ *     row's left-swipe (+ the report 划词 bar) (point 2).
  *
  *   ◐ Kindred                              ⚙   ← brand top-left · Settings top-right
  *   ┌─────────────────────────────────────┐
  *   │ 土   Earth · 1994-06-22              │   ← your own chart, one compact card
- *   │      Open your reading  →            │     (tap → solo ReadingOverlay)
+ *   │      Open your reading  →            │     (tap → solo ReadingOverlay bloom)
  *   └─────────────────────────────────────┘
- *   Threads                  ◷ Timeline   +
- *   ───────────────────────────────────────
- *   林朝英 · Partner                  生 ›    ← full list inline; tap a row → its
- *   王重阳 · Friend                   克 ›       report DIRECTLY (no middle screen)
- *
- * Timeline (the ego-centric multi-bond axis) is a header chip; make-if is
- * per-bond and lives inside each report. The old floating ··· + swipe-to-settings
- * are replaced by the visible top-right gear (clearer + no clash with row swipe).
+ *   Threads                              +
+ *   林朝英 · Partner                  生 ›    ← tap → report; swipe ← → Timeline /
+ *   王重阳 · Friend                   克 ›       Make-if / Delete
  */
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import {
-  AncientSeal,
-  type BondData,
-  type BondStatus,
-  kindredFonts,
-  useBondList,
-  WUXING_GLYPH,
-} from '@zhop/scenario-kindred'
+import { AncientSeal, type BondData, type BondStatus, kindredFonts, useBondList, WUXING_GLYPH } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { GitCommitVertical, Plus, Settings } from 'lucide-react-native'
+import { Plus, Settings } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -41,6 +33,7 @@ import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { resolveBondDisplayName } from '@/lib/bondName'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
@@ -97,7 +90,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
 }
 
 // Pending threads need attention; actives are destinations; declined/expired are
-// tail noise. Sort accordingly (matches the old Threads screen).
+// tail noise. Sort accordingly.
 const STATUS_ORDER: Record<BondStatus, number> = {
   pending_invite: 0,
   active: 1,
@@ -114,8 +107,8 @@ export default function ReadingHomeScreen() {
   const [readingOpen, setReadingOpen] = useState(false)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
-  // Threads — the bond list now lives inline on the home (2026-06: "Threads 列表
-  // 直接放首页"). Refetched on focus so a bond created/accepted elsewhere shows up.
+  // Threads — the bond list lives inline on the home. Refetched on focus so a
+  // bond created/accepted elsewhere shows up on return.
   const { bonds, refetch, deleteBond } = useBondList()
   useFocusEffect(
     useCallback(() => {
@@ -177,7 +170,7 @@ export default function ReadingHomeScreen() {
     }
   }, [birth])
 
-  // Fixed top bar — brand left, Settings right (replaces the floating ···).
+  // Fixed top bar — brand left, Settings right.
   const topBar = (
     <View
       style={{
@@ -197,7 +190,7 @@ export default function ReadingHomeScreen() {
             fontSize: 13,
             letterSpacing: 3,
             textTransform: 'uppercase',
-            color: kindredDark.text,
+            color: kindredPaper.ink,
           }}
         >
           Kindred
@@ -209,7 +202,7 @@ export default function ReadingHomeScreen() {
         accessibilityRole='button'
         accessibilityLabel={t(locale, 'settings.title')}
       >
-        <Settings color={kindredDark.textMuted} size={22} strokeWidth={1.5} />
+        <Settings color={kindredPaper.muted} size={22} strokeWidth={1.5} />
       </Pressable>
     </View>
   )
@@ -219,7 +212,7 @@ export default function ReadingHomeScreen() {
   // Loading the persisted birth.
   if (birth === undefined) {
     return (
-      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      <View style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
@@ -230,13 +223,12 @@ export default function ReadingHomeScreen() {
     )
   }
 
-  // Never onboarded with birth info (e.g. pre-K1 installs) → self form.
+  // Never onboarded with birth info (e.g. pre-K1 installs) → self form. Kept on
+  // the dark ground (a rare pre-onboarding edge; core-ui EmptyState is dark-themed).
   if (birth === null || natal === null) {
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        <SafeAreaView
-          style={{ flex: 1, justifyContent: 'center', paddingHorizontal: kindredSpacing.screenH }}
-        >
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', paddingHorizontal: kindredSpacing.screenH }}>
           <EmptyState
             illustration={<KindredMoon size={96} />}
             title={copy.noBirthTitle}
@@ -269,27 +261,26 @@ export default function ReadingHomeScreen() {
           padding: kindredSpacing.lg,
           borderRadius: 14,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: kindredDark.border,
-          backgroundColor: kindredDark.card,
-          opacity: pressed ? 0.85 : 1,
+          borderColor: kindredPaper.hair,
+          backgroundColor: kindredPaper.hairSoft,
+          opacity: pressed ? 0.7 : 1,
         })}
       >
         <AncientSeal
           glyph={WUXING_GLYPH[natal.dayMasterWuXing] ?? '木'}
           size={46}
-          tile={kindredDark.seal}
-          ink={kindredDark.text}
+          tile={kindredDark.bg}
+          ink={kindredPaper.bg}
         />
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
-            {birth.solarDate}
+          <Text style={[kindredType.caption, { color: kindredPaper.inkSoft }]}>
+            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} · {birth.solarDate}
           </Text>
-          <Text style={[kindredType.body, { color: kindredDark.accent }]}>{copy.open}</Text>
+          <Text style={[kindredType.body, { color: kindredPaper.cinnabar }]}>{copy.open}</Text>
         </View>
       </Pressable>
 
-      {/* Threads header — title + Timeline (multi-bond axis) + New chips. */}
+      {/* Threads header — title + New. (Timeline/make-if are per-bond → row swipe.) */}
       <View
         style={{
           flexDirection: 'row',
@@ -299,35 +290,39 @@ export default function ReadingHomeScreen() {
           marginBottom: kindredSpacing.sm,
         }}
       >
-        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
-          <Chip
-            icon={
-              <GitCommitVertical color={kindredDark.textSecondary} size={16} strokeWidth={1.7} />
-            }
-            label={t(locale, 'timeline.title')}
-            onPress={() => router.push('/(timeline)')}
-          />
-          <Chip
-            icon={<Plus color={kindredDark.accent} size={16} strokeWidth={1.9} />}
-            label={t(locale, 'bondList.add')}
-            onPress={() => router.push('/(onboarding)/mode')}
-            accent
-          />
-        </View>
+        <Text style={[kindredType.heading, { color: kindredPaper.ink }]}>{copy.threads}</Text>
+        <Pressable
+          onPress={() => router.push('/(onboarding)/mode')}
+          accessibilityRole='button'
+          accessibilityLabel={t(locale, 'bondList.add')}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: kindredPaper.cinnabar,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Plus color={kindredPaper.cinnabar} size={16} strokeWidth={1.9} />
+          <Text style={[kindredType.caption, { color: kindredPaper.cinnabar, fontWeight: '600' }]}>
+            {t(locale, 'bondList.add')}
+          </Text>
+        </Pressable>
       </View>
     </View>
   )
 
   return (
-    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+    <View style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <SafeAreaView style={{ flex: 1 }}>
         {topBar}
         <FlatList
-          contentContainerStyle={{
-            paddingTop: kindredSpacing.md,
-            paddingBottom: kindredSpacing.xxl,
-          }}
+          contentContainerStyle={{ paddingTop: kindredSpacing.md, paddingBottom: kindredSpacing.xxl }}
           ListHeaderComponent={listHeader}
           data={threads}
           keyExtractor={(b) => b.id}
@@ -337,13 +332,25 @@ export default function ReadingHomeScreen() {
               locale={locale}
               onPress={() => router.push(`/(bonds)/${item.id}`)}
               onDelete={() => confirmDelete(item)}
+              onTimeline={() =>
+                router.push({
+                  pathname: '/(timeline)',
+                  params: { bondId: item.id, bondName: resolveBondDisplayName(item).displayName },
+                })
+              }
+              onMakeif={() =>
+                router.push({
+                  pathname: '/(bonds)/makeif',
+                  params: { id: item.id, title: resolveBondDisplayName(item).displayName },
+                })
+              }
             />
           )}
           ItemSeparatorComponent={() => (
             <View
               style={{
                 height: StyleSheet.hairlineWidth,
-                backgroundColor: kindredDark.border,
+                backgroundColor: kindredPaper.hair,
                 marginLeft: kindredSpacing.screenH,
               }}
             />
@@ -352,7 +359,7 @@ export default function ReadingHomeScreen() {
             <Text
               style={[
                 kindredType.caption,
-                { color: kindredDark.textSecondary, paddingHorizontal: kindredSpacing.screenH },
+                { color: kindredPaper.inkSoft, paddingHorizontal: kindredSpacing.screenH },
               ]}
             >
               {copy.threadsHint}
@@ -374,7 +381,7 @@ export default function ReadingHomeScreen() {
                     fontFamily: kindredFonts.mono,
                     fontSize: 11,
                     letterSpacing: 1.5,
-                    color: kindredDark.textMuted,
+                    color: kindredPaper.muted,
                     textTransform: 'uppercase',
                   }}
                 >
@@ -389,56 +396,8 @@ export default function ReadingHomeScreen() {
       </SafeAreaView>
 
       {/* Full reading — ink-bloom overlay (kept mounted for open/close animation) */}
-      <ReadingOverlay
-        visible={readingOpen}
-        onClose={() => setReadingOpen(false)}
-        onAskAI={handleAskAI}
-      />
+      <ReadingOverlay visible={readingOpen} onClose={() => setReadingOpen(false)} onAskAI={handleAskAI} />
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
-  )
-}
-
-/** A compact header chip — icon + label rounded-rect. */
-function Chip({
-  icon,
-  label,
-  onPress,
-  accent,
-}: {
-  icon: React.ReactNode
-  label: string
-  onPress: () => void
-  accent?: boolean
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole='button'
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 999,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: accent ? kindredDark.accent : kindredDark.border,
-        backgroundColor: kindredDark.card,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      {icon}
-      <Text
-        style={[
-          kindredType.caption,
-          { color: accent ? kindredDark.accent : kindredDark.textSecondary, fontWeight: '600' },
-        ]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </Pressable>
   )
 }

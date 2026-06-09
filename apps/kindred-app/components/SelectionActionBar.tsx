@@ -15,22 +15,30 @@
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import { Copy, Highlighter, type LucideIcon, MessageCircle, Wand2 } from 'lucide-react-native'
+import {
+  Copy,
+  GitCommitVertical,
+  Highlighter,
+  type LucideIcon,
+  MessageCircle,
+  Wand2,
+} from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 export interface SelectionActionBarProps {
   /** The picked sentence; null hides the bar. */
   quote: string | null
-  labels: { copy: string; chat: string; highlight: string; makeif: string }
+  labels: { copy: string; chat: string; highlight: string; makeif: string; timeline: string }
   /** Whether the picked quote is already highlighted (toggles the icon tone). */
   highlighted?: boolean
   /** Each action renders only when its handler is provided (e.g. chat is omitted
-   *  until a pair reading exists). */
+   *  until a pair reading exists; timeline/make-if are the per-bond living layer). */
   onCopy?: () => void
   onChat?: () => void
   onHighlight?: () => void
   onMakeif?: () => void
+  onTimeline?: () => void
   onClose: () => void
 }
 
@@ -42,6 +50,7 @@ export function SelectionActionBar({
   onChat,
   onHighlight,
   onMakeif,
+  onTimeline,
   onClose,
 }: SelectionActionBarProps) {
   if (!quote) return null
@@ -57,6 +66,7 @@ export function SelectionActionBar({
       active: highlighted,
     },
     { key: 'makeif', label: labels.makeif, Icon: Wand2, onPress: onMakeif },
+    { key: 'timeline', label: labels.timeline, Icon: GitCommitVertical, onPress: onTimeline },
   ].filter(
     (
       a
