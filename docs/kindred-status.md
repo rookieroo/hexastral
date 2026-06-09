@@ -113,6 +113,58 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
 
 ---
 
+## Execution plan (sequenced 2026-06-09) — ordered to minimise rework
+
+Device screenshots (2026-06-09 18:15) confirmed: **Home⇄Threads merge (#1) is
+DONE**; the report page is clean ✅; two new bugs surfaced. Do these IN ORDER —
+each phase settles something the next phase depends on, so later work doesn't
+get re-done.
+
+**New bugs from the screenshots (root-caused):**
+- **B1 — the literal "Unknown".** `bonds.ts:1164` mirror-bond
+  `targetName: inviter.name ?? 'Unknown'` → when the inviter has no account
+  name, B sees "Unknown". Fix: fall back to the **relationship label** (never the
+  bare string). Client also treats a literal `'Unknown'` as empty (belt + braces).
+- **B2 — centerpiece 比和 on a 克 pair.** `InkCenterpiece.tsx:96` hardcodes
+  `first_impression → 'resonate'` (太極) regardless of the real 木克土. **Decision
+  needed:** keep the poetic "first meeting" 太極, OR reflect the real relation
+  (transition 克→生). Settle this BEFORE the score (#3) reuses the same 生克平.
+- **B3 (minor) — headline element mismatch.** goldenLine "木火相生" leads with the
+  用神 (火), not the actual pair 木×土 — reads as a mismatch against the 木克土 body.
+  Content/prompt tweak; low priority.
+
+**Phase 1 — correctness bugs (small, foundational; everything sits on these)**
+1. **B1 "Unknown"** — server fallback → relationship label; client guards. One
+   bug, visible on list + home + report + share.
+2. **B2 + settle 生克平 derivation** — decide the `first_impression` mode + confirm
+   `elementRelation`/`deriveCenterpieceMode` is the single source of truth for
+   生/克/平. Phase 2 reuses it, so fix it here or pay twice.
+
+**Phase 2 — derived display**
+3. **#3 Softer score** — replace the blunt 53 with 生/克/平 imagery on home+list,
+   reusing the (now-correct) Phase-1 derivation.
+
+**Phase 3 — understandability (after the visual vocabulary is FINAL)**
+4. **#4 Reading primer** — teaches 甲(邀请方)/乙(被邀请方), 五行, 生克, the 意象
+   (centerpiece) meanings, the 6 chapters, and the 划词 icon meanings; shown on
+   first report-entry + a persistent list entry. Extends `glossary.tsx`. Done
+   AFTER Phase 1–2 so it documents the final seals/centerpiece/score — no rework.
+
+**Phase 4 — theming + transition**
+5. **#5 Report = black bg, list/home = 宣纸** + the 水墨晕开 list→report transition
+   (`InkBloomMask`) + fix the weird black safe-area edges.
+
+**Phase 5 — backend (independent track, can run in parallel)**
+6. **#2 Per-recipient language** — generate A's report in A's locale + B's in B's
+   (B at accept-time, A lazily). No coupling to the UI phases.
+
+**Phase 6 — polish / deferred (needs a dep or device)**
+7. Real text-range 划词 selection (selectable-text dep decision) · highlight
+   persistence (AsyncStorage) · chat/make-if seed from `quote` · bundle
+   `NotoSerifSC` · centerpiece-morph Device QA.
+
+---
+
 ## Workstream A — Paid synastry report redesign (the $6.99 problem)
 
 The report was thin **by prompt**, not by schema. This workstream makes it worth
