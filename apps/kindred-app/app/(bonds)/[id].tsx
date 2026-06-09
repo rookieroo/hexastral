@@ -262,11 +262,11 @@ export default function BondDetailScreen() {
   }
 
   if (isLoading) {
-    // Plain dark hold — NO moon-phase loader here. Fetching an already-generated
+    // Plain 宣纸 hold — NO moon-phase loader here. Fetching an already-generated
     // report is brief, and the report's entrance IS the 水墨晕开 bloom (ReportBloom).
-    // A spinner before the bloom read as two competing animations (2026-06 device
-    // QA). The long LLM wait (202 → isGenerating) keeps its loader below.
-    return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+    // Paper (not dark) so it's continuous with the paper home + the bloom. The
+    // long LLM wait (202 → isGenerating) keeps its loader below.
+    return <View style={{ flex: 1, backgroundColor: kindredPaper.bg }} />
   }
 
   if (isGenerating) {
@@ -491,6 +491,7 @@ export default function BondDetailScreen() {
             chat: t('chat.cta'),
             highlight: t('reading.highlight'),
             makeif: t('makeif.cta'),
+            timeline: t('timeline.title'),
           }}
           onCopy={() => {
             if (pickedQuote) void Clipboard.setStringAsync(pickedQuote)
@@ -524,6 +525,13 @@ export default function BondDetailScreen() {
             router.push({
               pathname: '/(bonds)/makeif',
               params: { id: detail.id, title: detail.targetName, quote: q ?? '' },
+            })
+          }}
+          onTimeline={() => {
+            setPickedQuote(null)
+            router.push({
+              pathname: '/(timeline)',
+              params: { bondId: detail.id, bondName: displayName },
             })
           }}
           onClose={() => setPickedQuote(null)}
