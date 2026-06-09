@@ -159,14 +159,17 @@ get re-done.
   用神 (火), not the actual pair 木×土 — reads as a mismatch against the 木克土 body.
   Content/prompt tweak; low priority.
 
-**Phase 1 — correctness bugs (small, foundational; everything sits on these)**
-1. **B1 "Unknown"** — server fallback → relationship label; client guards. One
-   bug, visible on list + home + report + share.
-2. **B2 + settle the `(from → 解法 → to)` model** — ch1 = real static essence;
-   generalize the centerpiece `transition` to parameterized `(from, to)` + the 3
-   pairwise morphs; `elementRelation`/`deriveCenterpieceMode` + the 解法 direction
-   become the single source of truth. Phase 2 + ch6 + living layer all reuse it,
-   so settle it here or pay 3×.
+**Phase 1 — correctness bugs (small, foundational; everything sits on these)** — DONE (92a0200)
+1. **B1 "Unknown"** — DONE. `bonds.ts:1164` mirror-bond fallback now
+   `inviter.name ?? (bond?.relationshipLabel || '')` — never the literal
+   "Unknown"; client guards resolve the rest. Visible on list + home + report + share.
+2. **B2 + settle the `(from → 解法 → to)` model** — DONE. ch1 = real static essence
+   (`first_impression` → 生/克/比和, no more hardcoded swirl); centerpiece
+   `transition` is now parameterized `(from, to)` with `StaticMode` + the 3 pairwise
+   morphs; `deriveTransitionEndpoints(aEl,bEl)` is the single source of truth
+   (克→生 通关 / 比和→生 泄秀 / 生→生 续生). remedy chapters morph for 克 AND 比和;
+   生 rests on merge. Both call sites pass the derived endpoints. Phase 2 + ch6 +
+   living layer reuse this.
 
 **Phase 2 — derived display**
 3. **#3 Softer score** — replace the blunt 53 with the **静态 + 解法方向** (`克 → 生`),
