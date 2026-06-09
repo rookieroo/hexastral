@@ -171,6 +171,7 @@ function RootLayoutInner() {
         }}
       >
         <Stack.Screen name='index' />
+        <Stack.Screen name='welcome' options={{ animation: 'fade' }} />
         <Stack.Screen name='(tabs)' />
         <Stack.Screen name='display' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='event' options={{ animation: 'slide_from_right' }} />
