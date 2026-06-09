@@ -48,11 +48,33 @@ an App Store product first. **#9's fix is server-side — it requires a
 - ✅ **#7 Primer** — redesigned (icon + localized title/body per point; English
   drops 甲/乙 + 生/克/比和; CJK/JA keep their characters) + a "replay the quick
   intro" re-entry on the Symbol Glossary.
-- ☐ **#8 Solo report = one-time purchase.** Synastry's one-time $6.99 is already
-  correct (`ChapterUnlockWall`); the SOLO report wrongly gates behind subscription
-  (`ReadingReport.tsx:291`, `reason:'reading'`) and no $4.99 product exists in
-  `iap.ts`. Blocked on creating the `hexastral_personal` ($4.99) App Store product,
-  then wiring `purchaseKindredSingle('personal')` + a solo server apply path.
+- ☐ **#8 Solo report = one-time purchase.** BLOCKED (human App Store task) +
+  must ship as ONE coordinated pass — do NOT half-ship a buy button (a `personal`
+  purchase with no server grant = user pays, gets nothing). Full wiring spec
+  (mapped 2026-06-09):
+  1. **App Store Connect (HUMAN, the blocker):** create product `hexastral_personal`
+     ($4.99, non-consumable) + map it in RevenueCat.
+  2. **Server SKU** (`apps/hexastral-api/src/lib/access-check.ts`): add `'personal'`
+     to `SingleSkuId` + `SKU_IAP_META` (`{ productId: 'hexastral_personal', price:
+     '$4.99' }`). Mirrors the existing `compatibility`/`fate_reading` entries.
+  3. **Server grant path:** the solo personal reading's locked chapters are served
+     gated by the `kindred` capability today. Add a `personal` single-purchase
+     grant: a consume-on-apply endpoint (mirror `POST /bonds/:id/unlock`'s
+     `checkReadingAccess(... 'personal' ...)` → mark `singlePurchases` consumed)
+     and have the solo chapter-serve path honour an owned/consumed `personal`
+     purchase the same way a subscriber is honoured. UNIT-TESTABLE without the
+     store product (deterministic), so build + test this now even though the live
+     purchase is blocked.
+  4. **Client IAP** (`apps/kindred-app/lib/iap.ts`): add
+     `personal: 'hexastral_personal'` to `KINDRED_SINGLE_PRODUCT_IDS`.
+  5. **Client paywall:** for `reason:'reading'` (`ReadingReport.tsx:292` →
+     `(commerce)/paywall.tsx`) offer the one-time $4.99 row alongside the
+     subscription — but GUARD it: `getKindredSinglePrice('personal')` returns null
+     when the product isn't live, so hide the row until then (zero broken-button
+     risk). After purchase, call the new apply endpoint, then re-fetch.
+  - Until step 1 is done the live purchase can't be exercised; steps 2–3 (server +
+    tests) are safe to land first, 4–5 land with the product. Keep them together
+    so no pay-for-nothing window ever ships.
 
 ---
 
