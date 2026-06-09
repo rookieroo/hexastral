@@ -84,6 +84,12 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
 - ☐ **Highlight persistence** — session-local now; AsyncStorage-per-bond follow-up.
 - ☐ **chat / make-if consume the `quote` param** — it now flows to both routes;
   the screens should seed their context from it.
+- ☐ **Missing-name display (the "Unknown" the user saw).** Server already falls
+  back to 甲方/乙方 (`hehun.ts:166`); the client must match — any place a nameless
+  bond renders should show **甲 (inviter) / 乙 (you)** or the relationship, never
+  the bare "Unknown" / blank. List + detail headers already do name‖relationship
+  (2026-06-09); audit the report body + share card + identity line for stragglers.
+  Pairs with the primer (#4), which is what *teaches* 甲=邀请方 / 乙=被邀请方.
 
 ### ☐ New feedback queue (2026-06-09) — design-led, prioritized
 
