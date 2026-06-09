@@ -24,7 +24,7 @@ import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { reportChapters, users } from '../db/schema'
+import { reportChapters, userCharts, users } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { userHasCapability } from '../lib/access/entitlement-access'
 import { requireUserId } from '../lib/auth'
@@ -36,6 +36,7 @@ import {
   loadChartContext,
   STATIC_CHAPTERS,
 } from '../lib/chart-context'
+import { buildChartSkeleton } from '../lib/chart-skeleton'
 import { CHAPTER_MODEL_REGISTRY } from '../lib/model-registry'
 import { astroClient } from '../lib/service-clients'
 import { markCurrentAndInsert } from '../lib/versioned-store'
@@ -329,6 +330,47 @@ export const reportManifestRoutes = new Hono<AppEnv>().get('/', async (c) => {
 // Chapter (current + lazy regen)
 // ============================================================================
 
+/**
+ * Self-heal a missing natal chart before a report read.
+ *
+ * The report reads `user_charts`; if that row is missing — a failed onboarding
+ * bootstrap, or a destructive `rebuildUserCharts` that deleted then failed to
+ * re-insert — `loadChartContext` 404s and the client falls back to a placeholder
+ * forever (2026-06 device QA: the solo report "won't come out"). Rebuild the
+ * skeleton (idempotent, LLM-free, from the user's stored birth info) so the read
+ * proceeds. Mirrors the self-heal in GET /api/user/:id. No-op when a chart
+ * already exists or the user has no birth info on file.
+ */
+async function ensureUserChart(c: Context<AppEnv>, userId: string): Promise<void> {
+  const db = c.get('db')
+  const existing = await db
+    .select({ chartType: userCharts.chartType })
+    .from(userCharts)
+    .where(eq(userCharts.userId, userId))
+    .limit(1)
+  if (existing.length > 0) return
+
+  const user = await db.select().from(users).where(eq(users.id, userId)).get()
+  if (!user?.birthSolarDate || user.birthTimeIndex == null || !user.birthGender) return
+
+  try {
+    await buildChartSkeleton(db, c.env, {
+      userId,
+      birthSolarDate: user.birthSolarDate,
+      birthTimeIndex: user.birthTimeIndex,
+      birthGender: user.birthGender as '男' | '女',
+      birthCity: user.birthCity,
+      birthLongitude: user.birthLongitude,
+      birthLatitude: user.birthLatitude,
+      birthTimezoneId: user.birthTimezoneId,
+      hemisphereReversalEnabled: user.hemisphereReversalEnabled === true,
+      language: user.locale ?? 'zh-CN',
+    })
+  } catch (err) {
+    console.error('[report.chapter] chart-skeleton self-heal failed', userId, err)
+  }
+}
+
 export const reportChapterRoutes = new Hono<AppEnv>()
   .get('/:slug', async (c) => {
     const userId = requireUserId(c)
@@ -340,6 +382,10 @@ export const reportChapterRoutes = new Hono<AppEnv>()
     const isPro = await userHasCapability(db, userId, 'fate')
     const unlockedCount = await getUnlockedCount(db, userId)
     assertChapterAccess(slug, unlockedCount, isPro)
+
+    // Self-heal a missing natal chart so the read never dead-ends on a 404 →
+    // client placeholder (2026-06 device QA, solo report "won't come out").
+    await ensureUserChart(c, userId)
 
     const { chartHash, currentLiunian, currentDayun } = await loadChartContext(db, userId)
     const { model, promptVersion } = CHAPTER_MODEL_REGISTRY[slug]
