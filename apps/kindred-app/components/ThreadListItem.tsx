@@ -68,7 +68,9 @@ export function ThreadListItem({
           {isActive ? (
             <>
               <SwipeAction
-                icon={<GitCommitVertical color={kindredPaper.ctaText} size={18} strokeWidth={1.7} />}
+                icon={
+                  <GitCommitVertical color={kindredPaper.ctaText} size={18} strokeWidth={1.7} />
+                }
                 label={t(locale, 'timeline.title')}
                 bg={kindredPaper.ink}
                 onPress={() => {

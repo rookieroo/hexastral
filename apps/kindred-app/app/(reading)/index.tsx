@@ -20,9 +20,21 @@
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import { kindredDark, kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import {
+  kindredDark,
+  kindredPaper,
+  kindredSpacing,
+  kindredType,
+} from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { AncientSeal, type BondData, type BondStatus, kindredFonts, useBondList, WUXING_GLYPH } from '@zhop/scenario-kindred'
+import {
+  AncientSeal,
+  type BondData,
+  type BondStatus,
+  kindredFonts,
+  useBondList,
+  WUXING_GLYPH,
+} from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Plus, Settings } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
@@ -228,7 +240,9 @@ export default function ReadingHomeScreen() {
   if (birth === null || natal === null) {
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', paddingHorizontal: kindredSpacing.screenH }}>
+        <SafeAreaView
+          style={{ flex: 1, justifyContent: 'center', paddingHorizontal: kindredSpacing.screenH }}
+        >
           <EmptyState
             illustration={<KindredMoon size={96} />}
             title={copy.noBirthTitle}
@@ -274,7 +288,8 @@ export default function ReadingHomeScreen() {
         />
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={[kindredType.caption, { color: kindredPaper.inkSoft }]}>
-            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} · {birth.solarDate}
+            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
+            {birth.solarDate}
           </Text>
           <Text style={[kindredType.body, { color: kindredPaper.cinnabar }]}>{copy.open}</Text>
         </View>
@@ -322,7 +337,10 @@ export default function ReadingHomeScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         {topBar}
         <FlatList
-          contentContainerStyle={{ paddingTop: kindredSpacing.md, paddingBottom: kindredSpacing.xxl }}
+          contentContainerStyle={{
+            paddingTop: kindredSpacing.md,
+            paddingBottom: kindredSpacing.xxl,
+          }}
           ListHeaderComponent={listHeader}
           data={threads}
           keyExtractor={(b) => b.id}
@@ -396,7 +414,11 @@ export default function ReadingHomeScreen() {
       </SafeAreaView>
 
       {/* Full reading — ink-bloom overlay (kept mounted for open/close animation) */}
-      <ReadingOverlay visible={readingOpen} onClose={() => setReadingOpen(false)} onAskAI={handleAskAI} />
+      <ReadingOverlay
+        visible={readingOpen}
+        onClose={() => setReadingOpen(false)}
+        onAskAI={handleAskAI}
+      />
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
   )
