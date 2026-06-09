@@ -21,6 +21,41 @@ notifications / 划词 chat quota).
 
 ---
 
+## Session 2026-06-10 — device-QA rounds (home flatten + report fixes)
+
+Founder device QA on the live surfaces. 8 of 9 items shipped to `main`; #8 needs
+an App Store product first. **#9's fix is server-side — it requires a
+`cd apps/hexastral-api && bun deploy` to take effect.**
+
+- ✅ **#1/#4/#5 Home flattened.** The Threads list now lives on the home; tapping a
+  row opens its report directly (no middle screen). Brand top-left, Settings =
+  top-right gear (dropped the floating ··· + swipe-to-settings). Compact chart
+  card. Timeline = a home header chip; make-if stays per-report (划词). Shared
+  `components/ThreadListItem.tsx`; the old `(bonds)/index` is deduped + secondary.
+- ✅ **#2 "Unknown" = legacy data** (mirror bonds written before `bonds.ts:1183`).
+  `lib/bondName.ts resolveBondDisplayName()` strips the literal "Unknown" across
+  home/list/detail — fixes old rows, no migration.
+- ✅ **#3 Magic-move** flies the splash moon to the new top-left brand, inset-aware
+  (the old target ignored the safe-area inset → landed high). Device-tune if off.
+- ✅ **#6 Double animation** — dropped the moon loader before the 水墨晕开 bloom; the
+  bloom is the sole report entrance.
+- ☐→**deploy #9 Solo report placeholder.** Root cause: `loadChartContext`
+  (`chart-context.ts:96`) 404s when the `user_charts` natal row is missing
+  (failed bootstrap / destructive `rebuildUserCharts`) → the client falls back to
+  template text forever. `report.ts` now self-heals via `ensureUserChart()`
+  (rebuilds the LLM-free skeleton from stored birth info before the read).
+  **Code done + typechecks; takes effect only after the hexastral-api deploy.**
+- ✅ **#7 Primer** — redesigned (icon + localized title/body per point; English
+  drops 甲/乙 + 生/克/比和; CJK/JA keep their characters) + a "replay the quick
+  intro" re-entry on the Symbol Glossary.
+- ☐ **#8 Solo report = one-time purchase.** Synastry's one-time $6.99 is already
+  correct (`ChapterUnlockWall`); the SOLO report wrongly gates behind subscription
+  (`ReadingReport.tsx:291`, `reason:'reading'`) and no $4.99 product exists in
+  `iap.ts`. Blocked on creating the `hexastral_personal` ($4.99) App Store product,
+  then wiring `purchaseKindredSingle('personal')` + a solo server apply path.
+
+---
+
 ## Session 2026-06-09 — viral funnel repair + reading-experience overhaul
 
 The invite→accept→report loop was **completing for nobody**; the report's
