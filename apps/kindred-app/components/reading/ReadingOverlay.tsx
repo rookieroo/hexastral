@@ -19,6 +19,7 @@
 
 import MaskedView from '@react-native-masked-view/masked-view'
 import { InkBloomMask } from '@zhop/core-ui/motion'
+import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -61,10 +62,11 @@ function OverlayInner({
   const origin = useMemo(() => ({ x: width / 2, y: height * 0.86 }), [width, height])
   const maxRadius = useMemo(() => Math.hypot(width, height) * 1.1, [width, height])
 
-  // Report now sits on a 宣纸 (rice-paper) ground, so the bloom uncovers cream
-  // paper against the dark home — the organic mask edge IS the visible 墨晕.
-  // The earlier luminous-ivory ring workaround (added when the report itself
-  // was dark) is removed; with paper, ink and contrast happen naturally.
+  // Home + report are one continuous 宣纸 plane now (2026-06). The overlay root
+  // is paper, so the bloom reveals the report's INK (text / seals / centerpiece)
+  // spreading onto the paper as the organic mask grows — the same transition the
+  // 合盘 report uses (ReportBloom). The earlier paper-over-dark contrast is gone
+  // by design; the ink content appearing IS the 墨晕.
 
   // Short cover hold lets MaskedView + the Skia canvas mount and paint their
   // first (empty) frame before the bloom kicks in.
@@ -139,7 +141,9 @@ function OverlayInner({
 }
 
 const S = StyleSheet.create({
-  root: { zIndex: 100 },
+  // 宣纸 ground so the bloom reveals the report's ink over continuous paper (the
+  // home is paper too now). zIndex 100 keeps it above the home's brand mark.
+  root: { zIndex: 100, backgroundColor: kindredPaper.bg },
   content: { flex: 1 },
   coverHidden: { opacity: 0 },
 })

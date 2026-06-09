@@ -16,7 +16,7 @@
 
 import MaskedView from '@react-native-masked-view/masked-view'
 import { InkBloomMask } from '@zhop/core-ui/motion'
-import { kindredDark } from '@zhop/hexastral-tokens/kindred'
+import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
@@ -40,8 +40,11 @@ export function ReportBloom({ children }: { children: ReactNode }) {
   const open = phase === 'wipe' || phase === 'done'
 
   return (
-    // Dark surround the ink edge feathers into; the paper report blooms over it.
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredDark.bg }]}>
+    // 宣纸 surround — home + report are one continuous paper plane now (2026-06:
+    // "首页以宣纸为背景，水墨晕开展开报告"). The bloom reveals the report's INK
+    // (seals / centerpiece / text) spreading onto the paper; the organic mask
+    // edge IS the 墨晕. (Was a dark surround when the home was dark.)
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredPaper.bg }]}>
       <MaskedView
         style={StyleSheet.absoluteFill}
         maskElement={
