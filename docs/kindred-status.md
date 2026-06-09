@@ -126,9 +126,23 @@ get re-done.
   name, B sees "Unknown". Fix: fall back to the **relationship label** (never the
   bare string). Client also treats a literal `'Unknown'` as empty (belt + braces).
 - **B2 — centerpiece 比和 on a 克 pair.** `InkCenterpiece.tsx:96` hardcodes
-  `first_impression → 'resonate'` (太極) regardless of the real 木克土. **Decision
-  needed:** keep the poetic "first meeting" 太極, OR reflect the real relation
-  (transition 克→生). Settle this BEFORE the score (#3) reuses the same 生克平.
+  `first_impression → 'resonate'` (太極) regardless of the real 木克土.
+  **DECIDED (2026-06-09, founder framework check):** the 意象 encodes the
+  **static essence** of the day-master pair — fixed, three types (生→merge /
+  克→oppose / 比和→resonate). The *dynamic* (how that essence is 通关 vs 无解
+  across 大运/流年/流月) is **timeline + make-if's** job, NOT the report's. So:
+  - **ch1 = static essence** → derive the REAL relation (drop the resonate
+    hardcode; 生→merge, 克→oppose, 比和→resonate, faithfully).
+  - **ch6 = 解法/dynamic** → `transition` (克→生 via 用神) — already correct
+    (`long_term_advice` is `remedy` intent). 用神/解法 is needed for ALL three
+    types (`computeRelationshipYongshen` already returns one for 生/克/比和),
+    not just 克.
+  - Report = **static essence (ch1) + 解法 (ch6)**; the living dynamic is the
+    subscription layer. ch1/ch6 prompt copy should name this split + point the
+    reader to timeline/make-if for "when".
+  - Caveat: the 意象 is the day-master HEADLINE only (one static axis); full 合盘
+    (年支生肖 / 日支夫妻宫 / 用神互补 / 十神) lives in the chapter bodies. The 意象
+    is also symmetric — direction (谁克谁) stays in the body.
 - **B3 (minor) — headline element mismatch.** goldenLine "木火相生" leads with the
   用神 (火), not the actual pair 木×土 — reads as a mismatch against the 木克土 body.
   Content/prompt tweak; low priority.
