@@ -23,10 +23,11 @@ import {
   WUXING_GLYPH,
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { InkCenterpiece, type Mode } from '@/components/ink/InkCenterpiece'
+import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 
 // Chapter kinds in narrative order — same sequence the report pages through.
@@ -65,6 +66,7 @@ export default function GlossaryScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
   const tr = (key: TranslationKey) => t(locale, key)
+  const [showPrimer, setShowPrimer] = useState(false)
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
@@ -108,11 +110,32 @@ export default function GlossaryScreen() {
             fontSize: 16,
             lineHeight: 24,
             color: kindredPaper.inkSoft,
-            marginBottom: kindredSpacing.xl,
+            marginBottom: kindredSpacing.md,
           }}
         >
           {tr('glossary.intro')}
         </Text>
+
+        {/* Replay the one-time reading primer (the gentle intro overlay) — the
+            re-entry point a first-time reader otherwise loses (2026-06 device QA). */}
+        <Pressable
+          onPress={() => setShowPrimer(true)}
+          hitSlop={8}
+          accessibilityRole='button'
+          style={{ alignSelf: 'flex-start', marginBottom: kindredSpacing.xl }}
+        >
+          <Text
+            style={{
+              fontFamily: kindredFonts.mono,
+              fontSize: 11,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              color: kindredPaper.cinnabar,
+            }}
+          >
+            {tr('primer.replay')}
+          </Text>
+        </Pressable>
 
         {/* ── 甲 / 乙 roles ── */}
         <Section title={tr('glossary.roles.section')} caption={tr('glossary.roles.caption')}>
@@ -244,6 +267,15 @@ export default function GlossaryScreen() {
           ))}
         </Section>
       </ScrollView>
+
+      {/* Re-openable primer overlay (the "replay" entry above). */}
+      {showPrimer ? (
+        <ReadingPrimer
+          locale={locale}
+          onStart={() => setShowPrimer(false)}
+          onOpenGlossary={() => setShowPrimer(false)}
+        />
+      ) : null}
     </SafeAreaView>
   )
 }
