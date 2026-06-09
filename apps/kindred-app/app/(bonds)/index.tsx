@@ -19,7 +19,7 @@ import { EmptyState, ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { type BondData, type BondStatus, useBondList } from '@zhop/scenario-kindred'
+import { type BondData, type BondStatus, kindredFonts, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { ChevronRight, GitCommitVertical, Plus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -223,6 +223,31 @@ export default function BondListScreen() {
           )}
           onRefresh={() => void refetch()}
           refreshing={false}
+          ListFooterComponent={
+            threads.length > 0 ? (
+              <Pressable
+                onPress={() => router.push('/(settings)/glossary')}
+                hitSlop={8}
+                style={{
+                  alignSelf: 'center',
+                  marginTop: kindredSpacing.xl,
+                  paddingVertical: kindredSpacing.sm,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: kindredFonts.mono,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    color: kindredDark.textMuted,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t(locale, 'primer.more')}
+                </Text>
+              </Pressable>
+            ) : null
+          }
         />
       </SafeAreaView>
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}

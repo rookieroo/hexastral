@@ -26,6 +26,7 @@ import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { InkCenterpiece, type Mode } from '@/components/ink/InkCenterpiece'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 
 // Chapter kinds in narrative order — same sequence the report pages through.
@@ -48,6 +49,17 @@ const WUXING = [
 ] as const
 
 const SEVERITIES = ['low', 'mid', 'high'] as const
+
+// The four centerpiece states, paired with their i18n label key. Same sequence
+// a report walks: static essence first, the 解法 turn last.
+const ESSENCE_MODES: { mode: Mode; key: string }[] = [
+  { mode: 'merge', key: 'merge' },
+  { mode: 'oppose', key: 'oppose' },
+  { mode: 'resonate', key: 'resonate' },
+  { mode: 'transition', key: 'transition' },
+]
+
+const GESTURE_ACTIONS = ['copy', 'chat', 'highlight', 'makeif'] as const
 
 export default function GlossaryScreen() {
   const router = useRouter()
@@ -101,6 +113,23 @@ export default function GlossaryScreen() {
         >
           {tr('glossary.intro')}
         </Text>
+
+        {/* ── 甲 / 乙 roles ── */}
+        <Section title={tr('glossary.roles.section')} caption={tr('glossary.roles.caption')}>
+          <Row symbol={<RoleGlyph char='甲' />} label={tr('glossary.roles.jia')} />
+          <Row symbol={<RoleGlyph char='乙' />} label={tr('glossary.roles.yi')} />
+        </Section>
+
+        {/* ── The ink states (意象) — the actual centerpiece each chapter draws ── */}
+        <Section title={tr('glossary.essence.section')} caption={tr('glossary.essence.caption')}>
+          {ESSENCE_MODES.map(({ mode, key }) => (
+            <EssenceRow
+              key={mode}
+              mode={mode}
+              label={tr(`glossary.essence.${key}` as TranslationKey)}
+            />
+          ))}
+        </Section>
 
         {/* ── Chapter seals (碑拓) ── */}
         <Section title={tr('glossary.seals.section')} caption={tr('glossary.seals.caption')}>
@@ -203,6 +232,17 @@ export default function GlossaryScreen() {
             sub={tr('glossary.sealstyle.zhu.desc')}
           />
         </Section>
+
+        {/* ── 划词 long-press actions ── */}
+        <Section title={tr('glossary.gesture.section')} caption={tr('glossary.gesture.caption')}>
+          {GESTURE_ACTIONS.map((key) => (
+            <Row
+              key={key}
+              symbol={<GestureDot />}
+              label={tr(`glossary.gesture.${key}` as TranslationKey)}
+            />
+          ))}
+        </Section>
       </ScrollView>
     </SafeAreaView>
   )
@@ -295,5 +335,66 @@ function Row({ symbol, label, sub }: { symbol: React.ReactNode; label: string; s
         ) : null}
       </View>
     </View>
+  )
+}
+
+/** 甲 / 乙 in a stone-rubbing tile, matching the chapter-seal motif. */
+function RoleGlyph({ char }: { char: string }) {
+  return (
+    <View
+      style={{
+        width: 46,
+        height: 46,
+        borderRadius: 6,
+        backgroundColor: kindredDark.bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ fontFamily: kindredFonts.serif, fontSize: 24, color: kindredPaper.bg }}>
+        {char}
+      </Text>
+    </View>
+  )
+}
+
+/** A 意象 row — the real centerpiece thumbnail beside its meaning, so the legend
+ *  shows the exact ink the report draws (transition plays its 解法 morph once). */
+function EssenceRow({ mode, label }: { mode: Mode; label: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: kindredSpacing.md,
+        paddingVertical: kindredSpacing.md,
+        borderBottomWidth: 0.5,
+        borderBottomColor: kindredPaper.hair,
+      }}
+    >
+      <View style={{ borderRadius: 6, overflow: 'hidden' }}>
+        <InkCenterpiece kind={`glossary_${mode}`} mode={mode} width={92} />
+      </View>
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: kindredFonts.serif,
+          fontSize: 15,
+          lineHeight: 21,
+          color: kindredPaper.ink,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  )
+}
+
+/** A small cinnabar tick standing in for "an action in the slide-up bar". */
+function GestureDot() {
+  return (
+    <View
+      style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: kindredPaper.cinnabar }}
+    />
   )
 }

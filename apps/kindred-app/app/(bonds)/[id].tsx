@@ -50,6 +50,7 @@ import {
   InkCenterpiece,
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { SignInSheet } from '@/components/SignInSheet'
 import { emitUnlockFunnel } from '@/lib/analytics'
@@ -58,6 +59,7 @@ import { useAuth } from '@/lib/auth'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
+import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
 
 export default function BondDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -72,6 +74,26 @@ export default function BondDetailScreen() {
   const [highlights, setHighlights] = useState<string[]>([])
   const { createShareUrl } = useShareBond()
   const { t } = useI18n()
+
+  // First-report-entry primer (shown once; lib/primer-seen.ts gates it). Armed
+  // only once a chapter report actually exists — no point teaching the report
+  // over a loading/error/generating screen.
+  const hasChapters = !!chapters && chapters.length > 0
+  const [showPrimer, setShowPrimer] = useState(false)
+  useEffect(() => {
+    if (!hasChapters) return
+    let cancelled = false
+    void hasSeenReadingPrimer().then((seen) => {
+      if (!cancelled && !seen) setShowPrimer(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [hasChapters])
+  const dismissPrimer = () => {
+    setShowPrimer(false)
+    void markReadingPrimerSeen()
+  }
 
   // One-time-unlock price (store-localized; falls back to the server's $6.99).
   const [unlockPrice, setUnlockPrice] = useState<string>('$6.99')
@@ -485,6 +507,18 @@ export default function BondDetailScreen() {
           }}
           onClose={() => setPickedQuote(null)}
         />
+
+        {/* One-time "how to read this" overlay (甲/乙, the ink 意象, 划词). */}
+        {showPrimer ? (
+          <ReadingPrimer
+            locale={locale}
+            onStart={dismissPrimer}
+            onOpenGlossary={() => {
+              dismissPrimer()
+              router.push('/(settings)/glossary')
+            }}
+          />
+        ) : null}
       </SafeAreaView>
     )
   }

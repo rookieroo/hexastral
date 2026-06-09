@@ -181,11 +181,21 @@ get re-done.
    report centerpiece's job (Phase 1). The detail's chapterless-fallback
    `CompatibilityScore` ring is left as-is (rare path, ceremonial reading context).
 
-**Phase 3 — understandability (after the visual vocabulary is FINAL)**
-4. **#4 Reading primer** — teaches 甲(邀请方)/乙(被邀请方), 五行, 生克, the 意象
-   (centerpiece) meanings, the 6 chapters, and the 划词 icon meanings; shown on
-   first report-entry + a persistent list entry. Extends `glossary.tsx`. Done
-   AFTER Phase 1–2 so it documents the final seals/centerpiece/score — no rework.
+**Phase 3 — understandability (after the visual vocabulary is FINAL)** — DONE
+4. **#4 Reading primer** — DONE. Two surfaces:
+   - **First-report-entry overlay** (`ReadingPrimer`, gated once by
+     `lib/primer-seen.ts`): teaches 甲(邀请方)/乙(被邀请方), the ink 意象 (essence not
+     score), and the 划词 long-press, then a 「开始阅读」 CTA + a link into the full
+     glossary. Shown over the chapter report on first open only.
+   - **Extended glossary** (`(settings)/glossary.tsx`): added 3 sections — 甲/乙
+     roles, the four 意象 (real `InkCenterpiece` thumbnails: merge/oppose/resonate/
+     transition), and the 划词 long-press actions (copy/chat/highlight/make-if).
+     The existing seals/用神/severity/numerals/seal-styles sections stay.
+   - **Persistent entry**: a 宣纸-muted "Full symbol glossary" link in the threads
+     list footer (always reachable, not just via Settings).
+   - i18n: glossary.roles/essence/gesture.* + primer.* added across all 4 locales
+     (en/zh/zh-Hant/ja). Note: 划词 actions are text labels, not icons, so the
+     primer teaches the gesture + each action's meaning (not icon glyphs).
 
 **Phase 4 — theming + transition**
 5. **#5 Report = black bg, list/home = 宣纸** + the 水墨晕开 list→report transition
