@@ -218,9 +218,26 @@ get re-done.
      work inside MaskedView on device (the solo ScrollView pattern does); tune
      bloom origin/duration if the centre unfold feels off.
 
-**Phase 5 — backend (independent track, can run in parallel)**
-6. **#2 Per-recipient language** — generate A's report in A's locale + B's in B's
-   (B at accept-time, A lazily). No coupling to the UI phases.
+**Phase 5 — backend (independent track, can run in parallel)** — DONE
+6. **#2 Per-recipient language** — DONE (migration-free, exploits the existing
+   per-owner mirror rows).
+   - **Root cause**: at resonance accept the report was generated once in B's
+     `input.language` and written to BOTH mirror rows, so A read B's language. B's
+     side was already correct (the accept client sends B's locale). The gap was
+     A's side + an unreliable A-locale signal (the kindred client registers with
+     only `{ id }`, so `users.locale` stayed the 'zh' default).
+   - **A-locale signal**: the `/invite` handler now persists A's compose
+     `input.language` to `users.locale` (the client already sends it). No client
+     change, no migration.
+   - **Generation**: B's report stays synchronous in B's locale and seeds BOTH
+     rows; A's mirror row (`readingIdForInviter`) is regenerated in `inviter.locale`
+     in the background (`waitUntil`) — same deterministic synastry, A's prose. The
+     interpretation JSON is stamped with `language` (no schema column). Skipped
+     when A and B share a locale.
+   - **No GET/client change**: A's bond → A's row, B's mirror bond → B's row, so
+     each viewer already fetches their own-language interpretation. Brief window
+     after accept where A sees the B-language fallback until the bg regen lands
+     (acceptable — "A lazily"). Solo bonds are single-viewer, already A's locale.
 
 **Phase 6 — polish / deferred (needs a dep or device)**
 7. Real text-range 划词 selection (selectable-text dep decision) · highlight

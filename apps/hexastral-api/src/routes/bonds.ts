@@ -585,6 +585,15 @@ bondRoutes.post('/invite', async (c) => {
     }),
   ])
 
+  // Persist A's compose locale. The kindred client never syncs users.locale on
+  // registration (only `{ id }` is sent), so without this A's locale stays the
+  // 'zh' default and the accept handler can't regenerate A's mirror report in
+  // A's language (see /invite/:token/respond). This is also the daily-fortune
+  // language, so refreshing it on every invite keeps it current.
+  if (input.language) {
+    await db.update(users).set({ locale: input.language }).where(eq(users.id, userId))
+  }
+
   const inviterName = user.name ?? 'Someone'
   // Locale priority: request language (A's app locale) → stored user locale →
   // 'en'. Previously defaulted to 'zh', so any user without a stored locale got
@@ -1026,6 +1035,12 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     customRelationshipLabel: resonanceDerivedCustomLabel,
   })
 
+  // Stamp the language this prose was generated in. B (the responder) reads in
+  // their own locale (input.language); both mirror rows get this version now and
+  // A's is upgraded to A's locale in the background below. The stamp lets a
+  // future GET-time check tell which language a row holds.
+  interpretation.language = input.language
+
   // Save two mirrored reading rows so both A/B history libraries can resolve by ownerId.
   const readingIdForInviter = crypto.randomUUID()
   const readingIdForResponder = crypto.randomUUID()
@@ -1218,6 +1233,74 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
       }),
     ])
   )
+
+  // Per-recipient language: A (the inviter) should read the report in A's locale,
+  // not B's. The synastry compute is deterministic (same births → identical
+  // score/grade/dimensions), so only the AI prose differs — regenerate it in A's
+  // locale and update A's mirror row in place. Best-effort (waitUntil); on any
+  // failure A keeps the B-language version stored above. Skipped when A and B
+  // share a locale (the version we already stored is correct for both).
+  const inviterLang = inviter.locale ?? null
+  if (inviterLang && inviterLang !== input.language && input.birthData) {
+    const aBirth = input.birthData
+    c.executionCtx.waitUntil(
+      (async () => {
+        try {
+          const a = await callAstro<{
+            result: { compatibility: Record<string, unknown> }
+            interpretation: Record<string, string>
+          }>(c.env.SVC_ASTRO, '/pair/compute', {
+            personA: {
+              solarDate: inviter.birthSolarDate,
+              timeIndex: inviter.birthTimeIndex,
+              gender: inviter.birthGender,
+              name: inviter.name,
+            },
+            personB: {
+              solarDate: aBirth.solarDate,
+              timeIndex: aBirth.timeIndex,
+              gender: aBirth.gender,
+            },
+            userId: invitation.inviterUserId,
+            isPro,
+            language: inviterLang,
+            relationshipCategory: resonanceDerivedCategory,
+            customRelationshipLabel: resonanceDerivedCustomLabel,
+          })
+          const aInterp = a.interpretation
+          aInterp.language = inviterLang
+          await db
+            .update(pairReadings)
+            .set({
+              score: a.result.compatibility.score as number,
+              grade: a.result.compatibility.grade as string,
+              archetypeName: aInterp.archetypeName ?? null,
+              archetypeTagline: aInterp.archetypeTagline ?? null,
+              archetypeCategory:
+                (aInterp.archetypeCategory as
+                  | 'harmony'
+                  | 'tension'
+                  | 'growth'
+                  | 'karmic'
+                  | 'volatile'
+                  | undefined) ?? null,
+              hookDimension:
+                (aInterp.hookDimension as
+                  | 'long_term'
+                  | 'communication'
+                  | 'attraction'
+                  | 'emotional'
+                  | undefined) ?? null,
+              compatibilityData: JSON.stringify(a.result.compatibility),
+              interpretation: JSON.stringify(aInterp),
+            })
+            .where(eq(pairReadings.id, readingIdForInviter))
+        } catch {
+          // best-effort — A keeps the B-language fallback stored synchronously above
+        }
+      })()
+    )
+  }
 
   // Extract one exposed dimension for B's free briefing (性格契合度 personality)
   const compat = result.compatibility as Record<string, unknown>
