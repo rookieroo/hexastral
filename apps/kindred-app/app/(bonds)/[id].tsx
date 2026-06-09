@@ -22,6 +22,7 @@ import { ErrorState, useHaptic } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import {
   kindredDark,
+  kindredPaper,
   kindredPresets,
   kindredSpacing,
   kindredType,
@@ -51,6 +52,7 @@ import {
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
+import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { SignInSheet } from '@/components/SignInSheet'
 import { emitUnlockFunnel } from '@/lib/analytics'
@@ -398,43 +400,51 @@ export default function BondDetailScreen() {
       ) : null
 
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        {/* Clean report — NO top chrome at all (2026-06 feedback: "报告页应该
-            干干净净的显示报告即可，甚至不需要返回按钮，顶部的两个入口也去掉"). Exit
-            via the iOS edge-swipe-back gesture. Every action (copy / chat /
-            highlight / make-if) lives in the 划词 SelectionActionBar that slides
-            up when a paragraph is long-pressed (rendered below). */}
-        <ChapterPager
-          report={{
-            id: detail.id,
-            bondId: detail.id,
-            generatedAt: detail.createdAt,
-            chapters,
-            headline: detail.archetypeTagline ?? '',
-          }}
-          currentIndex={chapterIndex}
-          onIndexChange={setChapterIndex}
-          onShareChapter={(idx) => void handleShareChapter(idx)}
-          trailing={unlockWall}
-          aElement={aElement}
-          bElement={bElement}
-          locale={locale}
-          onPickQuote={setPickedQuote}
-          highlightedQuotes={highlights}
-          renderCenterpiece={
-            aElement && bElement
-              ? (ch, i) => (
-                  <InkCenterpiece
-                    kind={ch.kind}
-                    mode={deriveCenterpieceMode(ch.kind, aElement, bElement, ch.severity)}
-                    {...deriveTransitionEndpoints(aElement, bElement)}
-                    active={i === chapterIndex}
-                    width={Dimensions.get('window').width - 44}
-                  />
-                )
-              : undefined
-          }
-        />
+      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        {/* 水墨晕开 entrance — the paper report blooms in over the dark surround.
+            Wraps ONLY the pager; the off-screen capture target + chrome below
+            stay outside the mask. The inner SafeAreaView is paper (kindredPaper),
+            so the report reads edge-to-edge with no dark safe-area bands. */}
+        <ReportBloom>
+          <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+            {/* Clean report — NO top chrome at all (2026-06 feedback: "报告页应该
+                干干净净的显示报告即可，甚至不需要返回按钮，顶部的两个入口也去掉"). Exit
+                via the iOS edge-swipe-back gesture. Every action (copy / chat /
+                highlight / make-if) lives in the 划词 SelectionActionBar that slides
+                up when a paragraph is long-pressed (rendered below). */}
+            <ChapterPager
+              report={{
+                id: detail.id,
+                bondId: detail.id,
+                generatedAt: detail.createdAt,
+                chapters,
+                headline: detail.archetypeTagline ?? '',
+              }}
+              currentIndex={chapterIndex}
+              onIndexChange={setChapterIndex}
+              onShareChapter={(idx) => void handleShareChapter(idx)}
+              trailing={unlockWall}
+              aElement={aElement}
+              bElement={bElement}
+              locale={locale}
+              onPickQuote={setPickedQuote}
+              highlightedQuotes={highlights}
+              renderCenterpiece={
+                aElement && bElement
+                  ? (ch, i) => (
+                      <InkCenterpiece
+                        kind={ch.kind}
+                        mode={deriveCenterpieceMode(ch.kind, aElement, bElement, ch.severity)}
+                        {...deriveTransitionEndpoints(aElement, bElement)}
+                        active={i === chapterIndex}
+                        width={Dimensions.get('window').width - 44}
+                      />
+                    )
+                  : undefined
+              }
+            />
+          </SafeAreaView>
+        </ReportBloom>
 
         {/* Off-screen capture target — positioned far outside viewport but mounted. */}
         {shareTarget ? (
@@ -519,7 +529,7 @@ export default function BondDetailScreen() {
             }}
           />
         ) : null}
-      </SafeAreaView>
+      </View>
     )
   }
 

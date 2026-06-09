@@ -197,15 +197,26 @@ get re-done.
      (en/zh/zh-Hant/ja). Note: 划词 actions are text labels, not icons, so the
      primer teaches the gesture + each action's meaning (not icon glyphs).
 
-**Phase 4 — theming + transition**
-5. **#5 Report = black bg, list/home = 宣纸** + the 水墨晕开 list→report transition
-   (`InkBloomMask`) + fix the weird black safe-area edges.
-   - Founder confirmed (2026-06-09): the 合盘 report currently has NO 水墨晕开
-     entrance — opening a bond is a plain push. `InkBloomMask` ALREADY exists in
-     `@zhop/core-ui/motion` (InkWipeReveal.tsx) and ming-pan-app already wires it
-     ("blooms the paper report over the live home", apps/ming-pan-app/app/(tabs)/
-     index.tsx:365) — use that as the reference implementation. Kindred just needs
-     to adopt it on the list/home → `(bonds)/[id]` open.
+**Phase 4 — theming + transition** — DONE
+5. **#5 水墨晕开 report entrance + safe-area edges** — DONE.
+   - **ReportBloom** (`components/reading/ReportBloom.tsx`): wraps the 合盘 report's
+     ChapterPager in a MaskedView + `InkBloomMask` (the same ink vocabulary as the
+     solo ReadingOverlay). On mount the cream report blooms from centre over the
+     dark surround; the feathered edge IS the 墨晕. Rests open (mask stays full →
+     paging/long-press untouched); never collapses (leaving = route pop). Only the
+     pager is wrapped — the off-screen share-capture target, selection bar and
+     primer stay OUTSIDE the mask (a full mask would clip the off-screen capture).
+   - **No list→宣纸 inversion needed**: the report cards (`ChapterCard`) already
+     render on `kindredPaper.bg`, so the bloom reads paper-over-dark with the dark
+     surround coming from the route's dark root — the list stays dark (ADR-0018).
+   - **Black safe-area edges fixed**: the report's inner SafeAreaView is now
+     `kindredPaper.bg` (was `kindredDark.bg`), so the paper reads edge-to-edge with
+     no dark bands in the notch / home-indicator insets.
+   - **Route**: `(bonds)/[id]` animation set to `fade` so the ink bloom is the
+     transition, not a competing slide.
+   - Device-QA follow-ups: confirm the horizontal ChapterPager swipe + long-press
+     work inside MaskedView on device (the solo ScrollView pattern does); tune
+     bloom origin/duration if the centre unfold feels off.
 
 **Phase 5 — backend (independent track, can run in parallel)**
 6. **#2 Per-recipient language** — generate A's report in A's locale + B's in B's
