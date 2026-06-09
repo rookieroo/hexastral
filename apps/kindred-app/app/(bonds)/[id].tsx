@@ -251,6 +251,33 @@ export default function BondDetailScreen() {
   const selfName = detail.interpretation?.personAName as string | undefined
   const otherName = detail.targetName
 
+  // Title = a specific name; fall back to the relationship so it's never blank,
+  // and only tag the relationship when it isn't already the title (avoids
+  // "媳妇 · 媳妇"). Matches the threads list. (2026-06: "只显示关系很难分清".)
+  const rawName = (detail.targetName || detail.targetUser?.name || '').trim()
+  const displayName = rawName || detail.relationshipLabel
+  const relTag = rawName && detail.relationshipLabel !== rawName ? detail.relationshipLabel : null
+
+  // Re-send this bond's invite (share THIS bond's resonate link when it exists,
+  // else fall back to the generic invite flow). Surfaced both on the unlock wall
+  // and for pending/declined/expired threads (2026-06: "点进去应该给重新发起邀请的入口").
+  const reInvite = () => {
+    emitUnlockFunnel({ step: 'invite_tap', bond_id: detail.id })
+    const url = detail.invitation?.resonateUrl
+    if (url) {
+      const message = [
+        t('unlock.inviteShareLead').replace('{name}', displayName),
+        detail.interpretation?.ahaHook ?? '',
+        url,
+      ]
+        .filter(Boolean)
+        .join('\n')
+      void Share.share({ message })
+    } else {
+      router.push('/(onboarding)/invite')
+    }
+  }
+
   // Pro chat over this synastry. The server's 'pair' context query keys on the
   // pairReadings id (hehunReadingId), NOT the bond id — only offer chat once a
   // reading exists.
@@ -317,25 +344,7 @@ export default function BondDetailScreen() {
             ),
             subscribeCta: t('unlock.subscribe'),
           }}
-          onInvite={() => {
-            emitUnlockFunnel({ step: 'invite_tap', bond_id: detail.id })
-            // T2: share THIS bond's resonate link (partner name + ahaHook as the
-            // hook) when it exists; the partner joining flips the unlock. Fall
-            // back to the generic invite flow if there's no pending invitation.
-            const url = detail.invitation?.resonateUrl
-            if (url) {
-              const message = [
-                t('unlock.inviteShareLead').replace('{name}', detail.targetName),
-                detail.interpretation?.ahaHook ?? '',
-                url,
-              ]
-                .filter(Boolean)
-                .join('\n')
-              void Share.share({ message })
-            } else {
-              router.push('/(onboarding)/invite')
-            }
-          }}
+          onInvite={reInvite}
           onPurchase={() => void handlePurchaseUnlock()}
           onSubscribe={() => {
             emitUnlockFunnel({ step: 'subscribe_tap', bond_id: detail.id })
@@ -363,7 +372,8 @@ export default function BondDetailScreen() {
               { color: kindredDark.textSecondary, marginLeft: kindredSpacing.md },
             ]}
           >
-            {detail.targetName} · {detail.relationshipLabel}
+            {displayName}
+            {relTag ? ` · ${relTag}` : ''}
           </Text>
           <View style={{ flex: 1 }} />
           {openChat ? (
@@ -496,13 +506,30 @@ export default function BondDetailScreen() {
         <View
           style={{ alignItems: 'center', marginTop: kindredSpacing.lg, gap: kindredSpacing.sm }}
         >
-          <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
-            {detail.relationshipLabel}
-          </Text>
-          <Text style={[kindredType.title, { color: kindredDark.text }]}>{detail.targetName}</Text>
+          {relTag ? (
+            <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>{relTag}</Text>
+          ) : null}
+          <Text style={[kindredType.title, { color: kindredDark.text }]}>{displayName}</Text>
         </View>
 
         <View style={{ marginTop: kindredSpacing.md }}>{metaRow('center')}</View>
+
+        {/* Re-invite entry — a pending/declined/expired thread has no report yet;
+            give the user a clear way to (re)send the invitation right here. */}
+        {detail.status === 'pending_invite' ||
+        detail.status === 'declined' ||
+        detail.status === 'expired' ? (
+          <View
+            style={{ marginTop: kindredSpacing.xl, alignItems: 'center', gap: kindredSpacing.sm }}
+          >
+            <PrimaryButton label={t('waiting.resend')} onPress={reInvite} block={false} />
+            <Text
+              style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
+            >
+              {t('waiting.hint')}
+            </Text>
+          </View>
+        ) : null}
 
         {detail.score != null && (
           <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl }}>

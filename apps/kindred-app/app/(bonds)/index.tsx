@@ -294,7 +294,12 @@ function ThreadRow({
   onDelete: () => void
 }) {
   const status = statusMeta(bond.status, locale)
-  const name = bond.targetName || bond.targetUser?.name || ''
+  // A specific name is the title; fall back to the relationship so a row is
+  // never blank, and only show the relationship as a tag when it ISN'T already
+  // the title (avoids "媳妇 / 媳妇"). (2026-06: "只显示关系很难分清".)
+  const rawName = (bond.targetName || bond.targetUser?.name || '').trim()
+  const displayName = rawName || bond.relationshipLabel
+  const relTag = rawName && bond.relationshipLabel !== rawName ? bond.relationshipLabel : null
 
   return (
     <ReanimatedSwipeable
@@ -338,14 +343,14 @@ function ThreadRow({
       >
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
-            {name}
+            {displayName}
           </Text>
           <Text
             style={[kindredType.caption, { color: kindredDark.textSecondary }]}
             numberOfLines={1}
           >
-            {bond.relationshipLabel}
-            {` · ${relativeSentLabel(locale, bond.createdAt)}`}
+            {relTag ? `${relTag} · ` : ''}
+            {relativeSentLabel(locale, bond.createdAt)}
           </Text>
           {status.label ? (
             <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
