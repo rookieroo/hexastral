@@ -26,7 +26,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { EssenceTag } from '@/components/EssenceTag'
 import { HomeSplash } from '@/components/HomeSplash'
+import { hasValidElements } from '@/components/ink/InkCenterpiece'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
@@ -370,17 +372,8 @@ function ThreadRow({
             <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
           ) : null}
         </View>
-        {bond.score != null ? (
-          <Text
-            style={{
-              fontSize: 32,
-              fontWeight: '300',
-              color: kindredDark.text,
-              letterSpacing: -1,
-            }}
-          >
-            {bond.score}
-          </Text>
+        {hasValidElements(bond.aElement ?? undefined, bond.bElement ?? undefined) ? (
+          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
         ) : (
           <ChevronRight color={kindredDark.textMuted} size={20} strokeWidth={1.2} />
         )}

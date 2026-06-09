@@ -83,6 +83,10 @@ export interface BondData {
   createdAt: string
   score: number | null
   grade: string | null
+  /** Coarse day-master 五行 (金木水火土) for both parties — privacy-safe, drives
+   *  the list/home 意象 chip (生克平 essence). Null until a reading exists. */
+  aElement?: string | null
+  bElement?: string | null
   archetypeName: string | null
   archetypeTagline: string | null
   archetypeCategory: ArchetypeCategory | null

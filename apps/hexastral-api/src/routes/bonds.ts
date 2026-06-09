@@ -1379,10 +1379,22 @@ bondRoutes.get('/', async (c) => {
       }
     }
 
+    // Coarse day-master 五行 for both parties (privacy D2: element only, never
+    // raw birth). Drives the list/home 意象 chip — the 生克平 essence that
+    // replaces the blunt numeric score (see EssenceTag).
+    const aElement = reading
+      ? dayMasterElement(reading.personASolarDate, reading.personATimeIndex)
+      : null
+    const bElement = reading
+      ? dayMasterElement(reading.personBSolarDate, reading.personBTimeIndex)
+      : null
+
     return {
       ...b,
       score: reading?.score ?? null,
       grade: reading?.grade ?? null,
+      aElement,
+      bElement,
       archetypeName: reading?.archetypeName ?? null,
       archetypeTagline: reading?.archetypeTagline ?? null,
       archetypeCategory: reading?.archetypeCategory ?? null,

@@ -171,9 +171,15 @@ get re-done.
    生 rests on merge. Both call sites pass the derived endpoints. Phase 2 + ch6 +
    living layer reuse this.
 
-**Phase 2 — derived display**
-3. **#3 Softer score** — replace the blunt 53 with the **静态 + 解法方向** (`克 → 生`),
-   reusing the Phase-1 `(from,to)` model.
+**Phase 2 — derived display** — DONE
+3. **#3 Softer score** — DONE. The blunt 53 is gone from the threads list AND the
+   home rows; both now show the `EssenceTag` 意象 chip (相生 / 比和 / 相克, with 相克
+   softened by its 解法 名 通关). Server surfaces coarse `aElement`/`bElement` on the
+   list payload (privacy D2: element only); chip derives the essence via the same
+   `elementRelation` the centerpiece uses, so chip + ink never disagree. en locale
+   gets Generative / Resonant / Tempering. The finer from→to read stays the
+   report centerpiece's job (Phase 1). The detail's chapterless-fallback
+   `CompatibilityScore` ring is left as-is (rare path, ceremonial reading context).
 
 **Phase 3 — understandability (after the visual vocabulary is FINAL)**
 4. **#4 Reading primer** — teaches 甲(邀请方)/乙(被邀请方), 五行, 生克, the 意象
@@ -184,6 +190,12 @@ get re-done.
 **Phase 4 — theming + transition**
 5. **#5 Report = black bg, list/home = 宣纸** + the 水墨晕开 list→report transition
    (`InkBloomMask`) + fix the weird black safe-area edges.
+   - Founder confirmed (2026-06-09): the 合盘 report currently has NO 水墨晕开
+     entrance — opening a bond is a plain push. `InkBloomMask` ALREADY exists in
+     `@zhop/core-ui/motion` (InkWipeReveal.tsx) and ming-pan-app already wires it
+     ("blooms the paper report over the live home", apps/ming-pan-app/app/(tabs)/
+     index.tsx:365) — use that as the reference implementation. Kindred just needs
+     to adopt it on the list/home → `(bonds)/[id]` open.
 
 **Phase 5 — backend (independent track, can run in parallel)**
 6. **#2 Per-recipient language** — generate A's report in A's locale + B's in B's

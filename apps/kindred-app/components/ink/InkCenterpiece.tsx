@@ -77,9 +77,9 @@ const OVERCOME: Record<string, string> = {
   metal: 'wood',
 }
 
-type Relation = 'generate' | 'overcome' | 'peer'
+export type Relation = 'generate' | 'overcome' | 'peer'
 
-function elementRelation(aEl?: string, bEl?: string): Relation {
+export function elementRelation(aEl?: string, bEl?: string): Relation {
   const a = aEl ? ELEMENT_KEY[aEl.trim().toLowerCase()] : undefined
   const b = bEl ? ELEMENT_KEY[bEl.trim().toLowerCase()] : undefined
   if (!a || !b) return 'overcome'
@@ -87,6 +87,14 @@ function elementRelation(aEl?: string, bEl?: string): Relation {
   if (GENERATE[a] === b || GENERATE[b] === a) return 'generate'
   if (OVERCOME[a] === b || OVERCOME[b] === a) return 'overcome'
   return 'peer'
+}
+
+/** True only when BOTH elements map to a known 五行 — guards the essence chip
+ *  from rendering a default 'overcome' on missing/legacy data. */
+export function hasValidElements(aEl?: string, bEl?: string): boolean {
+  const a = aEl ? ELEMENT_KEY[aEl.trim().toLowerCase()] : undefined
+  const b = bEl ? ELEMENT_KEY[bEl.trim().toLowerCase()] : undefined
+  return !!a && !!b
 }
 
 function chapterIntent(kind: string): 'tension' | 'remedy' | 'union' {

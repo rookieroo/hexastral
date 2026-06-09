@@ -32,6 +32,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { EssenceTag } from '@/components/EssenceTag'
 import { HomeSplash } from '@/components/HomeSplash'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -349,23 +350,21 @@ export default function ReadingHomeScreen() {
   )
 }
 
-/** One inline thread on the home — name · relationship, score on the right. */
+/** One inline thread on the home — name · relationship, essence on the right. */
 function ThreadRow({ bond }: { bond: BondData }) {
   return (
     <View
       style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'baseline',
+        alignItems: 'center',
       }}
     >
       <Text style={[kindredType.body, { color: kindredDark.text }]} numberOfLines={1}>
         {bond.targetName}
         <Text style={{ color: kindredDark.textMuted }}> · {bond.relationshipLabel}</Text>
       </Text>
-      {bond.score != null && (
-        <Text style={[kindredType.caption, { color: kindredDark.accent }]}>{bond.score}</Text>
-      )}
+      <EssenceTag aElement={bond.aElement} bElement={bond.bElement} />
     </View>
   )
 }
