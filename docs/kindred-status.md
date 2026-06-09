@@ -102,7 +102,10 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
    locale) shared by both. Backend: generate B's at accept-time, A's lazily so
    accept doesn't pay 2× AI latency. (`bonds.ts` respond.)
 3. **Softer score (#3)** — replace the blunt number (e.g. 53) on the list with
-   the **生 / 克 / 平** imagery (already derived by `deriveCenterpieceMode`).
+   the **生 / 克 / 平** imagery (derived by `deriveCenterpieceMode`). **Finer than
+   the bare label:** show the **静态 + 解法方向** (`克 → 生`) — the same `(from,to)`
+   model as B2, so the list reads as a path (current + how the 用神 carries it),
+   not a verdict. One model, two consumers (意象 morph + list score).
 4. **Reading primer (#2)** — a "how to read this" guide: 甲/乙 (inviter/you),
    五行, 生克, what the 意象 (centerpiece) shows, what each of the 6 chapters
    covers, what to focus on, AND the 划词 icon meanings. Shown entering the
@@ -143,6 +146,15 @@ get re-done.
   - Caveat: the 意象 is the day-master HEADLINE only (one static axis); full 合盘
     (年支生肖 / 日支夫妻宫 / 用神互补 / 十神) lives in the chapter bodies. The 意象
     is also symmetric — direction (谁克谁) stays in the body.
+  - **Transitions (founder refinement 2026-06-09).** The relationship is a PATH
+    `from → 解法 → to`, not a static label. (a) Generalize `InkCenterpiece`'s
+    `transition` from the hardcoded oppose→merge to a parameterized `(from, to)`
+    morph (`{ from: generate(fromMode), to: generate(toMode) }` — reuses
+    `generate(mode)`). (b) Define the **3 pairwise morphs** (克↔生 / 平↔生 / 克↔平),
+    each bidirectional → all 6 directed transitions. (c) **ch6 解法 always points
+    to 生** (用神 = the flowing/generative ideal): 克→生 通关 / 平→生 泄秀引流 /
+    生→生 续生. (d) The **living layer** (timeline/make-if) may morph ANY direction
+    — a 大运 where 忌神/冲 dominates can degrade 生→克. Same `(from,to)` feeds both.
 - **B3 (minor) — headline element mismatch.** goldenLine "木火相生" leads with the
   用神 (火), not the actual pair 木×土 — reads as a mismatch against the 木克土 body.
   Content/prompt tweak; low priority.
@@ -150,13 +162,15 @@ get re-done.
 **Phase 1 — correctness bugs (small, foundational; everything sits on these)**
 1. **B1 "Unknown"** — server fallback → relationship label; client guards. One
    bug, visible on list + home + report + share.
-2. **B2 + settle 生克平 derivation** — decide the `first_impression` mode + confirm
-   `elementRelation`/`deriveCenterpieceMode` is the single source of truth for
-   生/克/平. Phase 2 reuses it, so fix it here or pay twice.
+2. **B2 + settle the `(from → 解法 → to)` model** — ch1 = real static essence;
+   generalize the centerpiece `transition` to parameterized `(from, to)` + the 3
+   pairwise morphs; `elementRelation`/`deriveCenterpieceMode` + the 解法 direction
+   become the single source of truth. Phase 2 + ch6 + living layer all reuse it,
+   so settle it here or pay 3×.
 
 **Phase 2 — derived display**
-3. **#3 Softer score** — replace the blunt 53 with 生/克/平 imagery on home+list,
-   reusing the (now-correct) Phase-1 derivation.
+3. **#3 Softer score** — replace the blunt 53 with the **静态 + 解法方向** (`克 → 生`),
+   reusing the Phase-1 `(from,to)` model.
 
 **Phase 3 — understandability (after the visual vocabulary is FINAL)**
 4. **#4 Reading primer** — teaches 甲(邀请方)/乙(被邀请方), 五行, 生克, the 意象
