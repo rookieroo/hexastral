@@ -21,10 +21,9 @@
  */
 
 import { PaywallView } from '@zhop/core-ui'
-import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { SignInSheet } from '@/components/SignInSheet'
@@ -95,103 +94,43 @@ export default function PaywallScreen() {
     [locale, subtitleKey]
   )
 
-  // userEmail is the simplest "do they have a recovery handle?" signal. It's
-  // set after an OTP email bind OR after Apple/Google sign-in with the email
-  // scope (Apple via FULL_NAME+EMAIL, Google always sends email). If null
-  // the user is anonymous device-id only; we route through SignInSheet first.
+  // userEmail = "do they already have a recovery handle?" (set after an email
+  // bind OR Apple/Google sign-in). Null → anonymous device-id only; we use this
+  // ONLY to decide whether to nudge sign-in AFTER a purchase — never to gate the
+  // purchase itself.
   const needsAuth = userEmail === null
-
-  // Pop the login sheet immediately for an anonymous user — login FIRST, then
-  // the paywall (was: paywall modal → tap → a second nested sign-in sheet). The
-  // inline view below stays as the backdrop / fallback if they dismiss it.
-  useEffect(() => {
-    if (needsAuth) setSignInOpen(true)
-    // Run once on mount; needsAuth flipping false after auth must NOT re-open it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      {needsAuth ? (
-        <View
-          style={{
-            flex: 1,
-            paddingHorizontal: kindredSpacing.screenH,
-            justifyContent: 'center',
-            gap: kindredSpacing.lg,
-          }}
-        >
-          <View style={{ alignItems: 'center', marginBottom: kindredSpacing.md }}>
-            <KindredMoon size={96} />
-          </View>
-          <Text style={[kindredType.title, { color: kindredDark.text, textAlign: 'center' }]}>
-            {t(locale, 'paywall.signInTitle')}
-          </Text>
-          <Text
-            style={[
-              kindredType.body,
-              { color: kindredDark.textSecondary, textAlign: 'center', lineHeight: 22 },
-            ]}
-          >
-            {t(locale, 'paywall.signInHint')}
-          </Text>
-
-          <Pressable
-            onPress={() => setSignInOpen(true)}
-            style={({ pressed }) => ({
-              marginTop: kindredSpacing.md,
-              paddingVertical: kindredSpacing.md,
-              backgroundColor: kindredDark.text,
-              borderRadius: 8,
-              alignItems: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.bg, fontWeight: '500' }]}>
-              {t(locale, 'signIn.title')}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            style={{ alignSelf: 'center', marginTop: kindredSpacing.lg }}
-          >
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, textDecorationLine: 'underline' },
-              ]}
-            >
-              {t(locale, 'paywall.close')}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <PaywallView
-          reason={reason}
-          productIds={YUAN_PRODUCT_IDS}
-          prices={{
-            monthly: offerings?.monthlyPriceString ?? null,
-            annual: offerings?.annualPriceString ?? null,
-          }}
-          bullets={[
-            t(locale, 'paywall.bullet.unlimited'),
-            t(locale, 'paywall.bullet.deep'),
-            t(locale, 'paywall.bullet.support'),
-          ]}
-          copy={copy}
-          brand={palette}
-          defaultPlan='annual'
-          hero={<KindredMoon size={96} />}
-          onClose={() => router.back()}
-          onPurchase={async (productId) => {
-            const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'
-            return purchaseKindredPro(plan)
-          }}
-          onRestore={restoreKindredPurchases}
-        />
-      )}
+      {/* Unlock does NOT gate on sign-in — anonymous users go straight to the
+          purchase options (直接拉起 IAP). RevenueCat is already logged in as the
+          anonymous userId (loginYuanIap at boot), so the buy attaches to it; we
+          nudge sign-in AFTER a successful purchase to make it Apple-recoverable. */}
+      <PaywallView
+        reason={reason}
+        productIds={YUAN_PRODUCT_IDS}
+        prices={{
+          monthly: offerings?.monthlyPriceString ?? null,
+          annual: offerings?.annualPriceString ?? null,
+        }}
+        bullets={[
+          t(locale, 'paywall.bullet.unlimited'),
+          t(locale, 'paywall.bullet.deep'),
+          t(locale, 'paywall.bullet.support'),
+        ]}
+        copy={copy}
+        brand={palette}
+        defaultPlan='annual'
+        hero={<KindredMoon size={96} />}
+        onClose={() => router.back()}
+        onPurchase={async (productId) => {
+          const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'
+          const result = await purchaseKindredPro(plan)
+          if (result === 'success' && needsAuth) setSignInOpen(true)
+          return result
+        }}
+        onRestore={restoreKindredPurchases}
+      />
 
       <SignInSheet visible={signInOpen} onClose={() => setSignInOpen(false)} />
     </SafeAreaView>

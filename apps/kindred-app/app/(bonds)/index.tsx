@@ -21,7 +21,7 @@ import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { type BondData, type BondStatus, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { CalendarClock, ChevronRight, Plus } from 'lucide-react-native'
+import { ChevronRight, GitCommitVertical, Plus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -149,39 +149,12 @@ export default function BondListScreen() {
           }}
           ListHeaderComponent={
             <View style={{ marginBottom: kindredSpacing.lg }}>
-              {/* Header chrome — two lean icon buttons (timeline · add thread),
-                  right-aligned so they read as quiet actions, not a text bar.
-                  Settings entry lives on the home, not here. */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: kindredSpacing.sm,
-                  marginBottom: kindredSpacing.md,
-                  paddingHorizontal: kindredSpacing.screenH,
-                }}
-              >
-                <IconButton
-                  accessibilityLabel={t(locale, 'timeline.title')}
-                  onPress={() => router.push('/(timeline)')}
-                  icon={
-                    <CalendarClock color={kindredDark.textSecondary} size={18} strokeWidth={1.5} />
-                  }
-                />
-                <IconButton
-                  accessibilityLabel={t(locale, 'bondList.add')}
-                  onPress={() => router.push('/(onboarding)/mode')}
-                  icon={<Plus color={kindredDark.accent} size={20} strokeWidth={1.8} />}
-                  accent
-                />
-              </View>
               {/* Brand anchor — same cinnabar moon that HomeSplash flies into */}
               <View
                 style={{
                   alignItems: 'center',
                   gap: kindredSpacing.sm,
-                  marginBottom: kindredSpacing.md,
+                  marginBottom: kindredSpacing.lg,
                 }}
               >
                 <KindredMoon size={56} />
@@ -196,6 +169,34 @@ export default function BondListScreen() {
                 >
                   {t(locale, 'bondList.subtitle')}
                 </Text>
+              </View>
+              {/* Two entry pills directly above the list — same shape as auspice's
+                  home EntryPills (icon + label rounded-rect), NOT floating circular
+                  icon buttons. Timeline (合盘 time axis) · New thread. */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: kindredSpacing.sm,
+                  paddingHorizontal: kindredSpacing.screenH,
+                }}
+              >
+                <HeaderPill
+                  icon={
+                    <GitCommitVertical
+                      color={kindredDark.textSecondary}
+                      size={18}
+                      strokeWidth={1.7}
+                    />
+                  }
+                  label={t(locale, 'timeline.title')}
+                  onPress={() => router.push('/(timeline)')}
+                />
+                <HeaderPill
+                  icon={<Plus color={kindredDark.accent} size={18} strokeWidth={1.9} />}
+                  label={t(locale, 'bondList.add')}
+                  onPress={() => router.push('/(onboarding)/mode')}
+                  accent
+                />
               </View>
             </View>
           }
@@ -227,36 +228,49 @@ export default function BondListScreen() {
   )
 }
 
-/** A 36px icon button — the lean header actions (timeline · add thread). */
-function IconButton({
+/** An entry pill — icon + label rounded-rect, mirroring auspice's home EntryPill
+ *  (no floating circular button). Two split the row (flex:1). */
+function HeaderPill({
   icon,
+  label,
   onPress,
-  accessibilityLabel,
   accent,
 }: {
   icon: React.ReactNode
+  label: string
   onPress: () => void
-  accessibilityLabel: string
   accent?: boolean
 }) {
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={8}
       accessibilityRole='button'
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={label}
       style={({ pressed }) => ({
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 0.5,
+        gap: kindredSpacing.sm,
+        paddingVertical: kindredSpacing.sm,
+        paddingHorizontal: kindredSpacing.md,
+        borderRadius: 12,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: accent ? kindredDark.accent : kindredDark.border,
-        opacity: pressed ? 0.6 : 1,
+        backgroundColor: kindredDark.card,
+        opacity: pressed ? 0.7 : 1,
       })}
     >
       {icon}
+      <Text
+        style={[
+          kindredType.caption,
+          { color: accent ? kindredDark.accent : kindredDark.textSecondary, fontWeight: '600' },
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
     </Pressable>
   )
 }

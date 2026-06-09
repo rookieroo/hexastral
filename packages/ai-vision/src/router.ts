@@ -198,6 +198,32 @@ function extractAiText(result: unknown): string {
   return typeof r?.response === 'string' ? r.response : ''
 }
 
+/**
+ * Per-model wall-clock budget. The router cascades on ERRORS, but `ai.run` has no
+ * timeout of its own — so a SLOW (non-erroring) model would block until the
+ * CALLER's outer timeout (svc-astro waits 55s) and the faster fallbacks
+ * (Qwen3/GLM) would never run → a 504. Capping each model and treating a timeout
+ * as a failure makes slowness cascade. Sized so two fallbacks still fit a ~55s
+ * caller budget (24 + 24 + flash leaves headroom).
+ */
+const PER_MODEL_TIMEOUT_MS = 24_000
+
+function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    work.then(
+      (v) => {
+        clearTimeout(timer)
+        resolve(v)
+      },
+      (e) => {
+        clearTimeout(timer)
+        reject(e)
+      }
+    )
+  })
+}
+
 async function callCfAi(
   ai: WorkersAiBinding,
   model: string,
@@ -213,14 +239,18 @@ async function callCfAi(
   }
   const finalUser = options?.noThink ? `${userPrompt}\n\n/no_think` : userPrompt
 
-  const result = await ai.run(model, {
-    messages: [
-      { role: 'system', content: finalSystem },
-      { role: 'user', content: finalUser },
-    ],
-    max_tokens: options?.maxTokens ?? 4096,
-    temperature: options?.temperature ?? 0.7,
-  })
+  const result = await withTimeout(
+    ai.run(model, {
+      messages: [
+        { role: 'system', content: finalSystem },
+        { role: 'user', content: finalUser },
+      ],
+      max_tokens: options?.maxTokens ?? 4096,
+      temperature: options?.temperature ?? 0.7,
+    }),
+    PER_MODEL_TIMEOUT_MS,
+    model
+  )
 
   let text = extractAiText(result)
   if (!text) {
@@ -246,14 +276,18 @@ async function callCfAiChat(
   messages: readonly ChatMessage[],
   options?: ChatCallOptions
 ): Promise<string> {
-  const result = await ai.run(model, {
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...messages.map((m) => ({ role: toCfRole(m.role), content: m.content })),
-    ],
-    max_tokens: options?.maxTokens ?? 2048,
-    temperature: options?.temperature ?? 0.7,
-  })
+  const result = await withTimeout(
+    ai.run(model, {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages.map((m) => ({ role: toCfRole(m.role), content: m.content })),
+      ],
+      max_tokens: options?.maxTokens ?? 2048,
+      temperature: options?.temperature ?? 0.7,
+    }),
+    PER_MODEL_TIMEOUT_MS,
+    model
+  )
 
   const text = extractAiText(result)
   if (!text) {

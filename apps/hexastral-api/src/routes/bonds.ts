@@ -148,6 +148,13 @@ const resonanceInviteSchema = z.object({
    *   support; subject is `<ADV>`-prefixed for English to satisfy SG SCA.
    */
   deliveryMode: z.enum(['server', 'user']).default('user').optional(),
+  /**
+   * Locale A is composing in (app `resolveLocale()` → 'en' | 'zh' | 'zh-Hant'
+   * | 'ja'). Used for the share message body + the resonate landing URL so the
+   * invite stays in A's language. Optional for older clients; falls back to the
+   * stored user locale, then 'en'.
+   */
+  language: z.string().max(16).optional(),
 })
 
 const respondSchema = z.object({
@@ -579,8 +586,11 @@ bondRoutes.post('/invite', async (c) => {
   ])
 
   const inviterName = user.name ?? 'Someone'
-  const resonateUrl = `https://hexastral.com/resonate/${token}`
-  const locale = user.locale ?? 'zh'
+  // Locale priority: request language (A's app locale) → stored user locale →
+  // 'en'. Previously defaulted to 'zh', so any user without a stored locale got
+  // a Chinese share message + landing even when composing in English.
+  const locale = input.language ?? user.locale ?? 'en'
+  const resonateUrl = `https://hexastral.com/${webLocalePrefix(locale)}resonate/${token}`
 
   if (deliveryMode === 'server') {
     // Legacy / fallback path — server sends the hardened transactional invite.
@@ -939,20 +949,23 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     return jsonErr(c, 500, ApiErrorCode.internal_error, 'Inviter birth data incomplete')
   }
 
-  const access = await checkReadingAccess(db, respondUserId, 'compatibility', {
-    allowBondInviteCredit: true,
-  })
-  if (!access.granted) {
-    return jsonErr(c, 403, ApiErrorCode.paywall_required, access.reason ?? 'Paywall required', {
-      iapProductId: access.iapProductId,
-      price: access.price,
-    })
-  }
-
+  // NO access gate here. Resonance (invite → accept) is FREE for BOTH parties by
+  // design — it's the viral loop, not a paid surface (the $6.99 wall lives on
+  // SOLO bonds where A enters someone's birth directly; see the create handler's
+  // checkReadingAccess). The invited party must always be able to complete the
+  // Thread they were invited to.
+  //
+  // BUG (fixed): this used to call checkReadingAccess(..., allowBondInviteCredit:
+  // true), which tries to CONSUME a bond-invite credit — but B's credit is only
+  // GRANTED ~200 lines below, AFTER the reading is computed. So B had no credit
+  // yet, fell through to "purchase_required", and 403'd before ever reaching the
+  // grant. Net effect: every invited user paywalled and the resonance flow never
+  // completed for anyone. Removing the gate matches the "free for both" intent
+  // documented immediately below.
   const isPro = await userHasCapability(db, inviter.id, 'kindred')
 
-  // Resonance bonds are free for both parties — use standard AI tier (not Pro HIGH thinking)
-  // isPro only controls AI quality tier, not access gating
+  // Resonance bonds use the standard AI tier (not Pro HIGH thinking); isPro only
+  // controls AI quality, not access gating.
 
   // Derive relationship category from bond's relationshipLabel
   const bondForLabel = await db
@@ -1128,6 +1141,10 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         targetUserId: respondUserId,
         mirrorBondId,
         unlockedDimensions: '4',
+        // Resonance = full report free for BOTH parties (product decision):
+        // unlock all 6 chapters on A's bond, not just the free 3. (A's
+        // user-level count is also bumped below; this makes it bond-explicit.)
+        chaptersUnlocked: true,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(userBonds.id, invitation.bondId)),
@@ -1150,6 +1167,9 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     hehunReadingId: readingIdForResponder,
     mirrorBondId: invitation.bondId,
     unlockedDimensions: '4',
+    // Full report free for the invited party too — resonance is free for both,
+    // so B's mirror bond opens all 6 chapters, same as A's.
+    chaptersUnlocked: true,
     status: 'active',
   })
   await db
@@ -1213,6 +1233,12 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // Return the free summary for B (limited — no full interpretation)
   return jsonOk(c, {
     status: 'accepted',
+    // The accept screen navigates to `result.bondId` (RespondResult contract) —
+    // B's OWN mirror bond. It was only returned as `mirrorBondId`, so
+    // result.bondId was undefined and "Open the thread" routed to
+    // /(bonds)/undefined: a dead screen that looked stuck/pending even though
+    // the accept fully succeeded server-side. Return it as `bondId` too.
+    bondId: mirrorBondId,
     readingId: readingIdForResponder,
     mirrorBondId,
     score: result.compatibility.score,
@@ -1847,6 +1873,18 @@ bondRoutes.get('/:id', async (c) => {
           .get()
       : null
 
+  // Re-share link should open the landing in the viewer's (A's) language, same
+  // as the create path. Only looked up when there's actually a pending invite.
+  let viewerLocale = 'en'
+  if (invitation) {
+    const v = await db
+      .select({ locale: users.locale })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get()
+    viewerLocale = v?.locale ?? 'en'
+  }
+
   // Gate the six synastry chapters before they leave the server: free viewers
   // get the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest. Locked
   // BODIES never ship. Subscribers / invite-or-purchase-unlocked users see all.
@@ -1880,8 +1918,9 @@ bondRoutes.get('/:id', async (c) => {
       ? {
           expiresAt: invitation.expiresAt,
           targetEmail: invitation.targetEmail,
-          // Re-shareable invite link for the unlock wall's invite CTA (T2).
-          resonateUrl: `https://hexastral.com/resonate/${invitation.token}`,
+          // Re-shareable invite link for the unlock wall's invite CTA (T2),
+          // locale-prefixed so the landing matches the viewer's language.
+          resonateUrl: `https://hexastral.com/${webLocalePrefix(viewerLocale)}resonate/${invitation.token}`,
         }
       : null,
     dimensions: dimensionData,
@@ -2528,6 +2567,22 @@ function escapeHtml(s: string): string {
 
 type InviteLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
+/**
+ * App/user locale → web resonate-landing route prefix.
+ *
+ * Web routing (hexastral-web/i18n/routing.ts): locales zh|tw|en|ja, default en,
+ * `as-needed` prefix → en has NO prefix, others use their short code. Keeps the
+ * landing page in the same language A composed the invite in. Returns a trailing
+ * slash so callers can interpolate `${prefix}resonate/...` directly.
+ */
+function webLocalePrefix(locale: string): string {
+  const l = locale.toLowerCase()
+  if (l === 'zh' || l === 'zh-hans' || l.startsWith('zh-cn')) return 'zh/'
+  if (l === 'zh-hant' || l === 'tw' || l.startsWith('zh-tw') || l.startsWith('zh-hk')) return 'tw/'
+  if (l === 'ja' || l.startsWith('ja')) return 'ja/'
+  return '' // en — default locale, no prefix
+}
+
 function normalizeInviteLocale(locale: string): InviteLocale {
   if (locale === 'zh' || locale === 'zh-Hans' || locale.startsWith('zh-CN')) return 'zh'
   if (locale === 'zh-Hant' || locale.startsWith('zh-TW') || locale.startsWith('zh-HK'))
@@ -2663,54 +2718,49 @@ function buildInvitationMailto(opts: {
   locale: string
 }): MailtoTemplate {
   const loc = normalizeInviteLocale(opts.locale)
-  const { inviterName, relationshipLabel, message, resonateUrl } = opts
+  const { message, resonateUrl } = opts
+  // A's optional personal note rides at the TOP. No auto-signature — over SMS /
+  // mail / WeChat / AirDrop the sender is already obvious, and "— Someone" reads
+  // badly when A has no name on file. Copy is minimalist + relation-NEUTRAL
+  // (asserting "I added you as my 恋人/partner" felt presumptuous + the label
+  // mapping is locale-fraught). `inviterName` / `relationshipLabel` intentionally
+  // unused in the body now.
+  const note = message ? `${message.trim()}\n\n` : ''
 
   if (loc === 'zh') {
-    const messageLine = message ? `\n\n${message}\n` : ''
     return {
-      subject: `来自 ${inviterName} 的合盘邀请`,
+      subject: '合盘邀请',
       body:
-        `嗨，${messageLine}\n\n` +
-        `我在用 HexAstral 看星盘合盘，把你当作我的「${relationshipLabel}」加进去了，想邀请你一起。\n\n` +
-        `点这个链接确认你的生辰信息：${resonateUrl}\n\n` +
-        '链接 7 天有效。你填的生辰我看不到，只能看到合盘的结果。\n\n' +
-        `— ${inviterName}`,
+        `${note}我在 HexAstral 上做了个生辰合盘，把你加上了，想看看两个人的盘合不合。\n\n` +
+        `填一下你的生辰就行（我只看得到结果，看不到你的信息）：\n${resonateUrl}\n\n` +
+        '链接 7 天有效。',
     }
   }
   if (loc === 'zh-Hant') {
-    const messageLine = message ? `\n\n${message}\n` : ''
     return {
-      subject: `來自 ${inviterName} 的合盤邀請`,
+      subject: '合盤邀請',
       body:
-        `嗨，${messageLine}\n\n` +
-        `我在用 HexAstral 看星盤合盤，把你當作我的「${relationshipLabel}」加進去了，想邀請你一起。\n\n` +
-        `點這個連結確認你的生辰資料：${resonateUrl}\n\n` +
-        '連結 7 天內有效。你填的生辰我看不到，只能看到合盤結果。\n\n' +
-        `— ${inviterName}`,
+        `${note}我在 HexAstral 上做了個生辰合盤，把你加上了，想看看兩個人的盤合不合。\n\n` +
+        `填一下你的生辰就行（我只看得到結果，看不到你的資料）：\n${resonateUrl}\n\n` +
+        '連結 7 天有效。',
     }
   }
   if (loc === 'ja') {
-    const messageLine = message ? `\n\n${message}\n` : ''
     return {
-      subject: `${inviterName} さんから相性鑑定のご招待`,
+      subject: '相性、見てみませんか？',
       body:
-        `こんにちは。${messageLine}\n\n` +
-        `HexAstral という相性鑑定アプリで、あなたを「${relationshipLabel}」として登録しました。よかったら一緒に見てみませんか？\n\n` +
-        `こちらのリンクから生年月日等のご入力をお願いします：${resonateUrl}\n\n` +
-        'リンクは 7 日間有効です。入力された情報は私には見えず、鑑定結果のみが共有されます。\n\n' +
-        `— ${inviterName}`,
+        `${note}HexAstral で相性を見てみたくて、あなたを追加しました。\n\n` +
+        `生年月日を入力すると二人の結果が出ます（入力内容は私には見えず、結果だけ共有されます）：\n${resonateUrl}\n\n` +
+        '7日間有効です。',
     }
   }
   // en + fallback
-  const messageLine = message ? `\n\n${message}\n` : ''
   return {
-    subject: `${inviterName} invited you to a compatibility reading`,
+    subject: 'Curious how our two charts line up?',
     body:
-      `Hey,${messageLine}\n\n` +
-      `I'm using an app called HexAstral to look at birth-chart compatibility, and I added you as my "${relationshipLabel}". Curious to see what comes up?\n\n` +
-      `Use this link to confirm your birth details: ${resonateUrl}\n\n` +
-      `The link expires in 7 days. I won't see your exact birth info — only the reading result.\n\n` +
-      `— ${inviterName}`,
+      `${note}I ran a birth-chart compatibility reading on HexAstral and added you.\n\n` +
+      `Add your birth details to see how the two charts fit — I only see the result, never your info:\n${resonateUrl}\n\n` +
+      'Expires in 7 days.',
   }
 }
 

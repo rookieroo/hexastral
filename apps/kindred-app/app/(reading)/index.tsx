@@ -25,7 +25,7 @@ import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
-import { type BondData, useBondList } from '@zhop/scenario-kindred'
+import { AncientSeal, type BondData, useBondList, WUXING_GLYPH } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -51,6 +51,17 @@ interface HomeCopy {
   threadsPending: string
   noBirthTitle: string
   noBirthCta: string
+}
+
+/** Day-master element → an intuitive word per locale. The home hero is now the
+ *  element's ancient pictograph seal (AncientSeal), NOT the obscure 天干 char (乙);
+ *  EN reads "Wood"/"Fire" while zh/ja keep the familiar character below it. */
+const WUXING_LABEL: Record<string, Record<string, string>> = {
+  木: { en: 'Wood', zh: '木', 'zh-Hant': '木', ja: '木' },
+  火: { en: 'Fire', zh: '火', 'zh-Hant': '火', ja: '火' },
+  土: { en: 'Earth', zh: '土', 'zh-Hant': '土', ja: '土' },
+  金: { en: 'Metal', zh: '金', 'zh-Hant': '金', ja: '金' },
+  水: { en: 'Water', zh: '水', 'zh-Hant': '水', ja: '水' },
 }
 
 const HOME_COPY: Record<Locale, HomeCopy> = {
@@ -199,32 +210,7 @@ export default function ReadingHomeScreen() {
           paddingBottom: kindredSpacing.xxl,
         }}
       >
-        {/* DEV-only shortcuts — relaunch the intro animation / onboarding form
-            directly, no manual reset + shake-menu dance required. */}
-        {__DEV__ && (
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: kindredSpacing.lg,
-              marginBottom: kindredSpacing.md,
-            }}
-          >
-            <Pressable onPress={() => router.push('/(onboarding)/intro')} hitSlop={8}>
-              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                DEV intro →
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={8}>
-              <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-                DEV form →
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/chapter-preview')} hitSlop={8}>
-              <Text style={[kindredType.caption, { color: kindredDark.accent }]}>DEV 报告 →</Text>
-            </Pressable>
-          </View>
-        )}
+        {/* DEV shortcuts moved to Settings → "DEV tools" (decluttered the home top). */}
 
         {/* Header chrome — just the new-thread "+". Settings moved to the
             bottom-floating ··· (relocated from the top-left) + the swipe-left
@@ -247,11 +233,20 @@ export default function ReadingHomeScreen() {
           <KindredMoon size={56} />
         </View>
 
-        {/* Identity — single day-master glyph, the ADR-0018 "one CJK glyph" hero */}
+        {/* Identity — the day-master's ELEMENT as a hand-authored ancient
+            pictograph (甲骨/金文) stamped as a 朱砂 seal (AncientSeal), replacing
+            the obscure 天干 character (乙). The designed 意象 reads across
+            cultures; the element word below names it. */}
         <View style={{ alignItems: 'center', gap: kindredSpacing.sm }}>
-          <Text style={[kindredType.hero, { color: kindredDark.text }]}>{natal.dayMaster}</Text>
+          <AncientSeal
+            glyph={WUXING_GLYPH[natal.dayMasterWuXing] ?? '木'}
+            size={92}
+            tile={kindredDark.seal}
+            ink={kindredDark.text}
+          />
           <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-            {birth.solarDate} · {natal.dayMasterWuXing}
+            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
+            {birth.solarDate}
           </Text>
           <View style={{ marginTop: kindredSpacing.lg }}>
             <PrimaryButton label={copy.open} onPress={() => setReadingOpen(true)} block={false} />

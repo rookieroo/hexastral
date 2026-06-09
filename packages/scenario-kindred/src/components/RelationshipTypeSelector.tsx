@@ -22,25 +22,57 @@ import { RELATIONSHIP_TYPES, type RelationshipType } from '../types'
 export interface RelationshipTypeSelectorProps {
   value: RelationshipType | null
   onChange: (value: RelationshipType) => void
-  /** Override labels per locale */
+  /** Locale for the built-in chip labels (en fallback). */
+  locale?: string
+  /** Explicit label overrides (win over `locale`). */
   labels?: Partial<Record<RelationshipType, string>>
 }
 
-const DEFAULT_LABELS: Record<RelationshipType, string> = {
-  romantic: '恋人',
-  friend: '朋友',
-  family: '家人',
-  partner: '合伙人',
-  colleague: '同事',
-  other: '其他',
+/** Localized chip labels. Was a single hardcoded zh map, so EVERY locale saw
+ *  Chinese chips — the selector now localizes by `locale`, EN as the fallback. */
+const LOCALIZED_LABELS: Record<string, Record<RelationshipType, string>> = {
+  en: {
+    romantic: 'Partner',
+    friend: 'Friend',
+    family: 'Family',
+    partner: 'Cofounder',
+    colleague: 'Colleague',
+    other: 'Other',
+  },
+  zh: {
+    romantic: '恋人',
+    friend: '朋友',
+    family: '家人',
+    partner: '合伙人',
+    colleague: '同事',
+    other: '其他',
+  },
+  'zh-Hant': {
+    romantic: '戀人',
+    friend: '朋友',
+    family: '家人',
+    partner: '合夥人',
+    colleague: '同事',
+    other: '其他',
+  },
+  ja: {
+    romantic: '恋人',
+    friend: '友人',
+    family: '家族',
+    partner: 'ビジネス',
+    colleague: '同僚',
+    other: 'その他',
+  },
 }
 
 export function RelationshipTypeSelector({
   value,
   onChange,
   labels,
+  locale,
 }: RelationshipTypeSelectorProps) {
-  const merged = { ...DEFAULT_LABELS, ...(labels ?? {}) }
+  const base = LOCALIZED_LABELS[locale ?? 'en'] ?? LOCALIZED_LABELS.en
+  const merged = { ...base, ...(labels ?? {}) }
   return (
     <View
       style={{

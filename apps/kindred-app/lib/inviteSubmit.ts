@@ -18,7 +18,7 @@ export const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, Record<string,
   romantic: { en: 'Partner', zh: '恋人', 'zh-Hant': '戀人', ja: '恋人' },
   friend: { en: 'Friend', zh: '朋友', 'zh-Hant': '朋友', ja: '友人' },
   family: { en: 'Family', zh: '家人', 'zh-Hant': '家人', ja: '家族' },
-  partner: { en: 'Business partner', zh: '合伙人', 'zh-Hant': '合夥人', ja: 'パートナー' },
+  partner: { en: 'Cofounder', zh: '合伙人', 'zh-Hant': '合夥人', ja: 'パートナー' },
   colleague: { en: 'Colleague', zh: '同事', 'zh-Hant': '同事', ja: '同僚' },
   other: { en: 'Other', zh: '其他', 'zh-Hant': '其他', ja: 'その他' },
 }

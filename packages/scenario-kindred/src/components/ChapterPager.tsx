@@ -39,6 +39,10 @@ export interface ChapterPagerProps {
   locale?: string
   /** Provides each chapter's centerpiece (水墨粒子 Skia ink) — supplied by the app. */
   renderCenterpiece?: (chapter: SynastryReport['chapters'][number], index: number) => ReactNode
+  /** 划词 — long-press a body paragraph to pick it (drives the selection bar). */
+  onPickQuote?: (quote: string) => void
+  /** Highlighted paragraph texts — rendered with a cinnabar wash. */
+  highlightedQuotes?: string[]
 }
 
 export function ChapterPager({
@@ -51,6 +55,8 @@ export function ChapterPager({
   bElement,
   locale,
   renderCenterpiece,
+  onPickQuote,
+  highlightedQuotes,
 }: ChapterPagerProps) {
   const screenWidth = Dimensions.get('window').width
 
@@ -85,6 +91,8 @@ export function ChapterPager({
             bElement={bElement}
             locale={locale}
             centerpiece={renderCenterpiece?.(chapter, idx)}
+            onPickQuote={onPickQuote}
+            highlightedQuotes={highlightedQuotes}
           />
         </View>
       ))}

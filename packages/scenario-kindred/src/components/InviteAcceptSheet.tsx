@@ -14,7 +14,7 @@
  */
 
 import {
-  kindredLight,
+  kindredDark,
   kindredPresets,
   kindredSpacing,
   kindredType,
@@ -37,11 +37,15 @@ export interface InviteAcceptSheetProps {
   onDismiss: () => void
   /** When true, the "open" CTA is visually disabled */
   openDisabled?: boolean
-  /** Slot rendered between note and CTA (e.g. privacy consent checkbox) */
+  /** Fine-print rendered BELOW the open CTA (e.g. an inline privacy-consent line —
+   *  tapping "open" IS the affirmative consent, so no separate gating checkbox). */
   consentSlot?: ReactNode
   /** Localized relationship label; falls back to English defaults when omitted */
   relationshipLabel?: string
   copy?: Partial<InviteAcceptCopy>
+  /** Logo/hero at the top. Defaults to the cinnabar Kindred seal; the app passes
+   *  the phase-moon so the accept sheet matches the rest of the brand. */
+  hero?: ReactNode
 }
 
 type InviteAcceptCopy = {
@@ -64,7 +68,7 @@ const RELATIONSHIP_LABEL: Record<RelationshipType, string> = {
   romantic: 'Partner',
   friend: 'Friend',
   family: 'Family',
-  partner: 'Business partner',
+  partner: 'Cofounder',
   colleague: 'Colleague',
   other: 'Other',
 }
@@ -79,6 +83,7 @@ export function InviteAcceptSheet({
   consentSlot,
   relationshipLabel,
   copy,
+  hero,
 }: InviteAcceptSheetProps) {
   const merged = { ...DEFAULT_COPY, ...(copy ?? {}) }
   const relationship = relationshipLabel ?? RELATIONSHIP_LABEL[relationshipType]
@@ -86,7 +91,7 @@ export function InviteAcceptSheet({
   return (
     <View
       style={{
-        backgroundColor: kindredLight.bg,
+        backgroundColor: kindredDark.bg,
         paddingHorizontal: kindredSpacing.screenH,
         paddingTop: kindredSpacing.xl,
         paddingBottom: kindredSpacing.xxl,
@@ -102,19 +107,19 @@ export function InviteAcceptSheet({
           width: 36,
           height: 3,
           borderRadius: 2,
-          backgroundColor: kindredLight.borderStrong,
+          backgroundColor: kindredDark.borderStrong,
           marginBottom: kindredSpacing.md,
         }}
       />
 
       <View style={{ alignItems: 'center', gap: kindredSpacing.md }}>
-        <KindredSeal mode='static' size={72} />
-        <Text style={[kindredType.heading, { color: kindredLight.text, textAlign: 'center' }]}>
+        {hero ?? <KindredSeal mode='static' size={72} />}
+        <Text style={[kindredType.heading, { color: kindredDark.text, textAlign: 'center' }]}>
           {merged.prefix}
-          <Text style={{ color: kindredLight.accent }}>{inviterName}</Text>
+          <Text style={{ color: kindredDark.accent }}>{inviterName}</Text>
           {merged.suffix}
         </Text>
-        <Text style={[kindredType.caption, { color: kindredLight.textSecondary }]}>
+        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
           {merged.relationshipPrefix}
           {relationship}
         </Text>
@@ -124,18 +129,16 @@ export function InviteAcceptSheet({
         <View
           style={{
             padding: kindredSpacing.lg,
-            backgroundColor: kindredLight.bgWarm,
+            backgroundColor: kindredDark.card,
             borderLeftWidth: 2,
-            borderLeftColor: kindredLight.accent,
+            borderLeftColor: kindredDark.accent,
           }}
         >
-          <Text style={[kindredType.body, { color: kindredLight.text, fontStyle: 'italic' }]}>
+          <Text style={[kindredType.body, { color: kindredDark.text, fontStyle: 'italic' }]}>
             "{inviterNote}"
           </Text>
         </View>
       )}
-
-      {consentSlot}
 
       <View style={{ alignItems: 'center', gap: kindredSpacing.md }}>
         <Pressable onPress={onOpen} hitSlop={12} disabled={openDisabled}>
@@ -143,8 +146,9 @@ export function InviteAcceptSheet({
             {merged.open}
           </Text>
         </Pressable>
+        {consentSlot}
         <Pressable onPress={onDismiss} hitSlop={12}>
-          <Text style={[kindredType.caption, { color: kindredLight.textMuted }]}>
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
             {merged.later}
           </Text>
         </Pressable>

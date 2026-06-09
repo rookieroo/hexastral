@@ -30,7 +30,7 @@ import { CoreUIProvider } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useFonts } from 'expo-font'
 import * as Linking from 'expo-linking'
-import { router, Stack } from 'expo-router'
+import { type Href, router, Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
 import { View } from 'react-native'
@@ -43,6 +43,7 @@ import { attemptKindredDdlRestore, setKindredDdlToken } from '@/lib/ddl'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
+import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
 
 /**
  * Boot cover — the client gate paints the kindred bg ONLY while session
@@ -112,6 +113,14 @@ export default function RootLayout() {
     void attemptKindredDdlRestore().then((claim) => {
       if (claim) router.push({ pathname: '/accept/[token]', params: { token: claim.token } })
     })
+  }, [])
+
+  // Relationship-timeline reminders: set the foreground display behaviour once and
+  // route taps to the timeline. The schedule itself is laid down lazily when the
+  // timeline is viewed (Pro-gated server-side) — see lib/timeline-push.ts.
+  useEffect(() => {
+    configureTimelineNotifications()
+    return attachTimelineTapHandler((route) => router.push(route as Href))
   }, [])
 
   return (

@@ -352,6 +352,7 @@ export default function PairInputScreen() {
               <RelationshipTypeSelector
                 value={relType}
                 onChange={(rt) => updateDraft({ relationshipLabel: rt })}
+                locale={locale}
               />
             </Field>
             <BirthForm

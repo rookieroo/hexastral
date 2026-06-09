@@ -17,7 +17,7 @@
 
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import type { ReactNode } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { CHAPTER_SEAL } from '../glyphs'
 import { isCjkLocale, kindredFonts } from '../kindredFonts'
 import type { SynastryChapter } from '../types'
@@ -69,6 +69,11 @@ export interface ChapterCardProps {
   locale?: string
   /** The centerpiece ink image (水墨粒子, Skia) — rendered in a grey well. */
   centerpiece?: ReactNode
+  /** 划词 — long-press a body paragraph to "pick" it as a quote, which drives
+   *  the report's selection action bar (copy / chat / highlight / make-if). */
+  onPickQuote?: (quote: string) => void
+  /** Paragraph texts the user has highlighted — rendered with a cinnabar wash. */
+  highlightedQuotes?: string[]
 }
 
 export function ChapterCard({
@@ -79,6 +84,8 @@ export function ChapterCard({
   bElement,
   locale,
   centerpiece,
+  onPickQuote,
+  highlightedQuotes,
 }: ChapterCardProps) {
   const cjk = isCjkLocale(locale)
   const L = labels(cjk)
@@ -211,16 +218,32 @@ export function ChapterCard({
                 >
                   {l.label}
                 </Text>
-                <Text
-                  style={{
-                    fontFamily: bodyFont,
-                    fontSize: cjk ? 16.5 : 18,
-                    lineHeight: cjk ? 30 : 27,
-                    color: kindredPaper.inkSoft,
-                  }}
+                <Pressable
+                  onLongPress={() => l.text && onPickQuote?.(l.text)}
+                  delayLongPress={300}
+                  disabled={!onPickQuote}
+                  style={
+                    l.text && highlightedQuotes?.includes(l.text)
+                      ? {
+                          backgroundColor: `${kindredPaper.cinnabar}1F`,
+                          borderRadius: 4,
+                          marginHorizontal: -4,
+                          paddingHorizontal: 4,
+                        }
+                      : undefined
+                  }
                 >
-                  {l.text}
-                </Text>
+                  <Text
+                    style={{
+                      fontFamily: bodyFont,
+                      fontSize: cjk ? 16.5 : 18,
+                      lineHeight: cjk ? 30 : 27,
+                      color: kindredPaper.inkSoft,
+                    }}
+                  >
+                    {l.text}
+                  </Text>
+                </Pressable>
               </View>
             </View>
           ) : null

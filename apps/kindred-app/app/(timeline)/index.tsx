@@ -36,12 +36,13 @@ import {
   useBondsTimeline,
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { ensureTimelinePushPermission, syncTimelinePush } from '@/lib/timeline-push'
 
 /** Significance → accent tint for the node's leading dot. */
 function significanceColor(sig: BondsTimelineSignificance): string {
@@ -73,9 +74,22 @@ function groupByYear(
 export default function TimelineScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { nodes, liuyue, pro, isLoading, error, refetch, explainNode } = useBondsTimeline()
+  const { nodes, liuyue, notifications, pro, isLoading, error, refetch, explainNode } =
+    useBondsTimeline()
 
   const grouped = useMemo(() => groupByYear(nodes), [nodes])
+
+  // Lay the (Pro-only, server-computed) reminder timetable onto the device as
+  // local notifications — prompts for permission on the first Pro timeline view,
+  // then reschedules the rolling window on every visit (idempotent by node id).
+  // Free users get an empty timetable → nothing scheduled + stale items cleared.
+  useEffect(() => {
+    if (!pro || notifications.length === 0) return
+    void (async () => {
+      await ensureTimelinePushPermission()
+      await syncTimelinePush(notifications, locale)
+    })()
+  }, [pro, notifications, locale])
 
   if (isLoading) {
     return (

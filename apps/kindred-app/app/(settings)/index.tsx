@@ -13,11 +13,12 @@ import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
+import { devClearReportCache, devWipeUserAndRestart } from '@/lib/dev-tools'
 import { resolveLocale, t } from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
@@ -447,6 +448,57 @@ export default function SettingsScreen() {
                 {`DEV · Pro: ${devPro === null ? 'off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}`}
               </Text>
             </Pressable>
+            <Text
+              selectable
+              style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 10 }]}
+            >
+              {`uid · ${userId ?? '—'}`}
+            </Text>
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  'DEV · 抹除用户',
+                  '清除本机该用户的全部本地信息（userId / deviceSecret / onboarding / 报告缓存）后重载，重新走 intro。服务端旧账号不动，本机会换一个新 id。',
+                  [
+                    { text: '取消', style: 'cancel' },
+                    {
+                      text: '抹除并重启',
+                      style: 'destructive',
+                      onPress: () => void devWipeUserAndRestart(),
+                    },
+                  ]
+                )
+              }
+              hitSlop={12}
+            >
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.seal, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 抹除用户 + 重开 intro
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                const n = await devClearReportCache()
+                Alert.alert(
+                  'DEV · 清报告缓存',
+                  `已清除 ${n} 个键（章节 + chart-ready）。重开报告会重新取数 + 生成。`
+                )
+              }}
+              hitSlop={12}
+            >
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 清报告缓存（强制重生成）
+              </Text>
+            </Pressable>
             <Pressable
               onPress={async () => {
                 await resetOnboarding()
@@ -462,6 +514,26 @@ export default function SettingsScreen() {
                 ]}
               >
                 DEV · replay intro + reset onboarding
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/chapter-preview')} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 报告预览 (chapter-preview) →
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(onboarding)/pair-input')} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textMuted, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 配对表单 (pair-input) →
               </Text>
             </Pressable>
           </View>

@@ -196,6 +196,13 @@ export interface ResonanceInviteInput {
    * has no mail composer; client must also supply `targetEmail`.
    */
   deliveryMode?: 'user' | 'server'
+  /**
+   * BCP-47 / app locale A is composing in (e.g. 'en', 'zh-Hant'). Drives the
+   * server-built share message AND the resonate landing URL's locale so the
+   * whole invite stays in A's language. Falls back to the stored user locale,
+   * then 'en' (US-market default) — never silently 'zh'.
+   */
+  language?: string
 }
 
 export interface ResonanceInviteMailto {

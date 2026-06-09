@@ -27,16 +27,19 @@ import { ensureSelfBirthSynced } from '@/lib/selfBirth'
 
 type Intent = 'know' | 'invite'
 
+// Invite FIRST + default-selected: it's the viral path, and you rarely know
+// someone's full birth info — so "invite them to fill it" is the primary intent;
+// "I'll enter it myself" is the fallback.
 const OPTS: { key: Intent; label: TranslationKey; subtitle: TranslationKey }[] = [
-  { key: 'know', label: 'pair.other.intent.know', subtitle: 'mode.know.hint' },
   { key: 'invite', label: 'pair.other.intent.invite', subtitle: 'mode.invite.hint' },
+  { key: 'know', label: 'pair.other.intent.know', subtitle: 'mode.know.hint' },
 ]
 
 export default function ModeScreen() {
   const router = useRouter()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const { userId } = useAuth()
-  const [intent, setIntent] = useState<Intent>('know')
+  const [intent, setIntent] = useState<Intent>('invite')
 
   // Pre-sync person A's birth to the server (no-op when already synced) so
   // the bond-creation calls at the end of either path never 400.

@@ -27,7 +27,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -46,7 +46,9 @@ export default function InviteScreen() {
   const [relType, setRelType] = useState<RelationshipType>('romantic')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showNameField, setShowNameField] = useState(name.trim().length > 0)
+  // Open by default — don't make the user tap to reveal the "what you call them"
+  // field (the relationship name is still a fine fallback if they leave it blank).
+  const [showNameField, setShowNameField] = useState(true)
 
   const handleShare = async () => {
     if (sending) return
@@ -57,7 +59,9 @@ export default function InviteScreen() {
       // targetName: what A calls B. Falls back to the relationship label when
       // no name is given — the channel is anonymous, so there's no other id.
       const targetName = name.trim() || label
-      const result = await create({ targetName, relationshipLabel: label })
+      // Pass A's locale so the server composes the share message + landing URL
+      // in A's language (else it falls back to the stored locale / 'en').
+      const result = await create({ targetName, relationshipLabel: label, language: locale })
       await shareInvite(result.mailto)
       updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
       await markOnboardingComplete()
@@ -81,7 +85,10 @@ export default function InviteScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      <View
+      {/* Tap anywhere off an input dismisses the keyboard. */}
+      <Pressable
+        accessible={false}
+        onPress={() => Keyboard.dismiss()}
         style={{
           flex: 1,
           paddingHorizontal: kindredSpacing.screenH,
@@ -114,7 +121,7 @@ export default function InviteScreen() {
         </Text>
 
         {/* Focal block — the one decision the user is here to make. */}
-        <RelationshipTypeSelector value={relType} onChange={setRelType} />
+        <RelationshipTypeSelector value={relType} onChange={setRelType} locale={locale} />
 
         {/* Optional name — collapsed by default to keep this page about the
             relationship choice. Tap to expand if the user wants a personal
@@ -169,7 +176,7 @@ export default function InviteScreen() {
           loading={sending}
         />
         <View style={{ height: kindredSpacing.lg }} />
-      </View>
+      </Pressable>
     </SafeAreaView>
   )
 }

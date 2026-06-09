@@ -210,9 +210,17 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
       const sig = await signRequest({ method: 'POST', path, body, userId })
       if (!sig) throw new Error('Missing device secret')
 
+      // `Authorization: Bearer <userId>` is REQUIRED — hmacVerify reads the
+      // userId from it to look up the device secret. signRequest only returns
+      // the x-* signature headers, so omitting this makes the server reject the
+      // (otherwise valid) signed request. Mirrors lib/solo/reading-cache.ts.
       const res = await fetch(`${config.apiUrl}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...sig },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userId}`,
+          ...sig,
+        },
         body,
       })
       const json = (await res.json()) as

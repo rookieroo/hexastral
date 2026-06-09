@@ -17,6 +17,7 @@ import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
+import { loadSelfBirth } from '@/lib/selfBirth'
 
 const ONBOARDING_DONE_KEY = 'yuan_onboarding_complete_v1'
 const INTRO_SEEN_KEY = 'yuan_intro_seen_v1'
@@ -30,12 +31,18 @@ export default function EntryScreen() {
     let cancelled = false
     ;(async () => {
       try {
-        const [done, intro] = await Promise.all([
+        const [done, intro, selfBirth] = await Promise.all([
           AsyncStorage.getItem(ONBOARDING_DONE_KEY),
           AsyncStorage.getItem(INTRO_SEEN_KEY),
+          loadSelfBirth(),
         ])
         if (cancelled) return
-        if (done) {
+        // A saved self-birth means the user already has a chart — notably an
+        // invited B who accepted via /accept (which persists their birth). Treat
+        // as returning so they land on the home and are never bounced back into
+        // the onboarding birth form. Backfill the flag so reality + flag agree.
+        if (done || selfBirth) {
+          if (!done) void markOnboardingComplete()
           setStatus('returning')
         } else if (!intro) {
           await AsyncStorage.setItem(INTRO_SEEN_KEY, '1')

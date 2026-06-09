@@ -130,9 +130,23 @@ async function signedApiFetch(
 /**
  * Ensure the user's natal chart exists server-side — the report engine reads the
  * `userCharts` table, which the birth-sync doesn't populate. POST /api/natal is
- * idempotent (cached by input hash), so repeat calls are cheap.
+ * idempotent (cached by input hash), so once it has succeeded we remember it and
+ * stop re-POSTing: the previous behaviour re-called it on EVERY chapter fetch,
+ * which burned the shared chart rate-limiter (5/min) and made the endpoint 429.
+ * A 429 then made this return false → fetchChapter bailed → the report was stuck
+ * on the "Synthesizing…" placeholder forever even though the chart existed. So we
+ * also treat 429 as "proceed" (the limit is only hit because we've called it
+ * enough already — i.e. the chart is almost certainly there).
  */
+function chartReadyKey(userId: string, birth: ReadingBirthInputs): string {
+  return `kindred_chart_ready_v1_${userId}_${birth.solarDate}_${birth.timeIndex}_${birth.gender}`
+}
+
 async function ensureServerChart(userId: string, birth: ReadingBirthInputs): Promise<boolean> {
+  const key = chartReadyKey(userId, birth)
+  try {
+    if (await AsyncStorage.getItem(key)) return true
+  } catch {}
   try {
     const res = await signedApiFetch(userId, 'POST', '/api/natal', {
       solarDate: birth.solarDate,
@@ -141,7 +155,14 @@ async function ensureServerChart(userId: string, birth: ReadingBirthInputs): Pro
       userId,
       requestId: `kindred-${Date.now()}`,
     })
-    return !!res && res.ok
+    if (res?.ok) {
+      try {
+        await AsyncStorage.setItem(key, '1')
+      } catch {}
+      return true
+    }
+    // 429 → throttled because we've already created it; don't block the report.
+    return res?.status === 429
   } catch {
     return false
   }

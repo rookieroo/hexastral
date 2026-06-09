@@ -176,7 +176,9 @@ reportChapterRoutes.post('/chapter', async (c) => {
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,
     preferFlash: timeBoundSlugs.has(input.slug),
-    maxTokens: 2400,
+    // Trimmed from 2400 → fits a flagship generation inside its per-model timeout
+    // (router PER_MODEL_TIMEOUT_MS) so a slow Kimi falls back instead of 504-ing.
+    maxTokens: 2000,
     temperature: 0.85,
     thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',
     metricLabel: `report-chapter:${input.slug}`,

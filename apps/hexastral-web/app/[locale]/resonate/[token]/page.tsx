@@ -44,7 +44,7 @@ const RELATIONSHIP_LABELS: Record<string, Record<string, string>> = {
   romantic: { en: 'Partner', zh: '恋人', tw: '戀人', ja: '恋人' },
   friend: { en: 'Friend', zh: '朋友', tw: '朋友', ja: '友人' },
   family: { en: 'Family', zh: '家人', tw: '家人', ja: '家族' },
-  partner: { en: 'Business partner', zh: '合伙人', tw: '合夥人', ja: 'パートナー' },
+  partner: { en: 'Cofounder', zh: '合伙人', tw: '合夥人', ja: 'パートナー' },
   colleague: { en: 'Colleague', zh: '同事', tw: '同事', ja: '同僚' },
   other: { en: 'Other', zh: '其他', tw: '其他', ja: 'その他' },
 }
@@ -59,19 +59,24 @@ function localizeRelationship(rawLabel: string, locale: string): string {
 }
 
 /**
- * Inline cinnabar phase-moon — a still SVG approximation of the in-app
- * KindredMoon (SKIN_CINNABAR_INK at phase 0.25, right-lit crescent).
+ * Inline cinnabar phase-moon — a faithful SVG port of the in-app KindredMoon
+ * (MoonPhaseLoader + SKIN_CINNABAR_INK at phase 0.25). The earlier web version
+ * was a smooth gradient sphere — the exact "表面光滑 vs 水墨阴影不搭" the app's
+ * own skin comment warns against. This reproduces the app's three layers so the
+ * landing logo matches the app, not just approximates it:
  *
- * The native moon is rendered with Skia + shaders (rich noise + paper grain);
- * on the web we approximate with:
- *   - a base disk filled with a radial gradient (cinnabar lit face)
- *   - a darker disk offset to the LEFT to mask the shadow side
- *   - both inside a circular clip path so the crescent reads cleanly
+ *   - Lit face: radial per SKIN_CINNABAR_INK faceStops/center/radius (moon.ts).
+ *   - Water-ink shadow disc: DEFAULT_SHADOW_STOPS, centred at the phase-0.25
+ *     disc position (phaseToCx(0.25) = cx 5, r 48 → the ~46% crescent the app
+ *     shows), with `inkTerm` turbulence DISPLACING the terminator into organic
+ *     ink tongues (port of the Skia 3-frequency displacement chain).
+ *   - Paper grain: fractalNoise overlay-blended at ~0.26 (skin.surface paper
+ *     0.28) so the lit face reads as MATTE ink-on-paper, not a plastic sphere.
  *
- * Same color stops as SKIN_CINNABAR_INK (packages/hexastral-tokens/src/moon.ts:
- * faceStops #f3d8c0 / #c87454 / #7a2418, shadow #0e0d0c).
+ * Geometry uses the app's viewBox-100 constants (moon cx50/cy50/r40, shadow
+ * r48) so the phase + proportions are identical, not eyeballed.
  */
-function CinnabarMoon({ size = 88 }: { size?: number }) {
+function CinnabarMoon({ size = 96 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -79,32 +84,79 @@ function CinnabarMoon({ size = 88 }: { size?: number }) {
       viewBox='0 0 100 100'
       aria-hidden
       role='img'
-      style={{ display: 'block' }}
+      style={{ display: 'block', filter: 'drop-shadow(0 0 12px rgba(232,224,205,0.05))' }}
     >
       <defs>
-        <radialGradient id='kindred-face' cx='36%' cy='30%' r='68%'>
-          <stop offset='0%' stopColor='#f3d8c0' />
-          <stop offset='55%' stopColor='#c87454' />
-          <stop offset='100%' stopColor='#7a2418' />
+        {/* Lit face — SKIN_CINNABAR_INK faceCenter (0.36,0.30)·faceRadius 0.68 in
+            the moon bbox (10,10)-(90,90) → centre (38.8,34) r 54.4. */}
+        <radialGradient id='kindred-face' gradientUnits='userSpaceOnUse' cx='38.8' cy='34' r='54.4'>
+          <stop offset='0' stopColor='#f3d8c0' />
+          <stop offset='0.55' stopColor='#c87454' />
+          <stop offset='1' stopColor='#7a2418' />
         </radialGradient>
-        <radialGradient id='kindred-shadow' cx='50%' cy='50%' r='60%'>
-          <stop offset='0%' stopColor='#0e0d0c' />
-          <stop offset='78%' stopColor='#1a1922' stopOpacity='0.94' />
-          <stop offset='100%' stopColor='#1a1922' stopOpacity='0' />
+        {/* Water-ink shadow disc — DEFAULT_SHADOW_STOPS, at phaseToCx(0.25)=5. */}
+        <radialGradient id='kindred-shadow' gradientUnits='userSpaceOnUse' cx='5' cy='50' r='48'>
+          <stop offset='0' stopColor='#0e0d0c' />
+          <stop offset='0.5' stopColor='#131218' />
+          <stop offset='0.78' stopColor='#1a1922' />
+          <stop offset='0.94' stopColor='#1a1922' stopOpacity='0.4' />
+          <stop offset='1' stopColor='#1a1922' stopOpacity='0' />
         </radialGradient>
+        {/* inkTerm — organic terminator (feTurbulence + feDisplacementMap port of
+            the Skia 3-freq displacement chain). */}
+        <filter
+          id='kindred-ink'
+          x='-35%'
+          y='-35%'
+          width='170%'
+          height='170%'
+          colorInterpolationFilters='sRGB'
+        >
+          <feTurbulence
+            type='fractalNoise'
+            baseFrequency='0.026'
+            numOctaves={3}
+            seed={7}
+            result='n'
+          />
+          <feDisplacementMap
+            in='SourceGraphic'
+            in2='n'
+            scale={13}
+            xChannelSelector='R'
+            yChannelSelector='G'
+          />
+        </filter>
+        {/* Paper grain — matte ink-on-paper surface (skin.surface paper). */}
+        <filter id='kindred-grain' colorInterpolationFilters='sRGB'>
+          <feTurbulence
+            type='fractalNoise'
+            baseFrequency='0.9'
+            numOctaves={2}
+            seed={11}
+            result='n'
+          />
+          <feColorMatrix in='n' type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1' />
+        </filter>
         <clipPath id='kindred-disk'>
-          <circle cx='50' cy='50' r='44' />
+          <circle cx='50' cy='50' r='40' />
         </clipPath>
       </defs>
-      {/* Lit face — cinnabar */}
       <g clipPath='url(#kindred-disk)'>
-        <circle cx='50' cy='50' r='44' fill='url(#kindred-face)' />
-        {/* Shadow side — a darker disk shifted LEFT so the crescent sits on
-            the right (phase 0.25). cx shifted by ~30% of the radius. */}
-        <circle cx='27' cy='50' r='44' fill='url(#kindred-shadow)' />
+        <circle cx='50' cy='50' r='40' fill='url(#kindred-face)' />
+        <g filter='url(#kindred-ink)'>
+          <circle cx='5' cy='50' r='48' fill='url(#kindred-shadow)' />
+        </g>
+        <rect
+          x='10'
+          y='10'
+          width='80'
+          height='80'
+          filter='url(#kindred-grain)'
+          opacity={0.26}
+          style={{ mixBlendMode: 'overlay' }}
+        />
       </g>
-      {/* Rim — a thin warm outline so the moon doesn't melt into the paper. */}
-      <circle cx='50' cy='50' r='44' fill='none' stroke='rgba(122,36,24,0.18)' strokeWidth='0.75' />
     </svg>
   )
 }
@@ -180,8 +232,8 @@ export default async function ResonatePage({ params }: PageProps) {
     <main
       style={{
         minHeight: '100dvh',
-        backgroundColor: '#F5F0E8',
-        color: '#3C2415',
+        backgroundColor: '#0B0B0C',
+        color: '#F5F0E8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -191,7 +243,7 @@ export default async function ResonatePage({ params }: PageProps) {
       <div style={{ width: '100%', maxWidth: 420, textAlign: 'center' }}>
         {/* Brand mark — same cinnabar phase-moon as the in-app KindredMoon. */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-          <CinnabarMoon size={88} />
+          <CinnabarMoon size={96} />
         </div>
         <p
           style={{
@@ -199,7 +251,7 @@ export default async function ResonatePage({ params }: PageProps) {
             fontWeight: 700,
             letterSpacing: 4,
             textTransform: 'uppercase',
-            color: 'rgba(60,36,21,0.55)',
+            color: 'rgba(245,240,232,0.5)',
             marginBottom: 36,
           }}
         >
@@ -216,7 +268,7 @@ export default async function ResonatePage({ params }: PageProps) {
                     fontWeight: 700,
                     letterSpacing: 4,
                     textTransform: 'uppercase',
-                    color: 'rgba(60,36,21,0.55)',
+                    color: 'rgba(245,240,232,0.5)',
                     marginBottom: 14,
                   }}
                 >
@@ -226,7 +278,7 @@ export default async function ResonatePage({ params }: PageProps) {
                   style={{
                     fontSize: 30,
                     fontWeight: 400,
-                    color: '#3C2415',
+                    color: '#F5F0E8',
                     letterSpacing: -0.4,
                     marginBottom: showRelationshipPrefix ? 10 : 36,
                   }}
@@ -238,7 +290,7 @@ export default async function ResonatePage({ params }: PageProps) {
                     style={{
                       fontSize: 13,
                       letterSpacing: 2,
-                      color: '#9B2226',
+                      color: '#C0392B',
                       marginBottom: invite.message ? 24 : 36,
                     }}
                   >
@@ -257,7 +309,7 @@ export default async function ResonatePage({ params }: PageProps) {
                   style={{
                     fontSize: 28,
                     fontWeight: 400,
-                    color: '#3C2415',
+                    color: '#F5F0E8',
                     letterSpacing: -0.4,
                     marginBottom: invite.relationshipLabel ? 10 : 36,
                   }}
@@ -269,7 +321,7 @@ export default async function ResonatePage({ params }: PageProps) {
                     style={{
                       fontSize: 13,
                       letterSpacing: 2,
-                      color: '#9B2226',
+                      color: '#C0392B',
                       marginBottom: invite.message ? 24 : 36,
                     }}
                   >
@@ -285,7 +337,7 @@ export default async function ResonatePage({ params }: PageProps) {
                   fontSize: 15,
                   lineHeight: 1.7,
                   fontStyle: 'italic',
-                  color: 'rgba(60,36,21,0.75)',
+                  color: 'rgba(245,240,232,0.78)',
                   marginBottom: 36,
                   paddingLeft: 16,
                   paddingRight: 16,
@@ -302,23 +354,26 @@ export default async function ResonatePage({ params }: PageProps) {
                 apps/kindred-app/app/accept/[token].tsx). When the app isn't
                 installed the scheme fails silently and the App Store fallback
                 below picks it up. */}
-            <a
-              href={deepLink}
-              style={{
-                display: 'block',
-                fontSize: 18,
-                fontWeight: 500,
-                color: '#C4A882',
-                letterSpacing: 0.5,
-                borderBottom: '1px solid #C4A882',
-                paddingBottom: 12,
-                paddingTop: 12,
-                textDecoration: 'none',
-                marginBottom: 24,
-              }}
-            >
-              {t('openInApp')} →
-            </a>
+            {/* Block wrapper so the pill sits on its OWN line — the DDL button
+                below is display:inline-flex and was colliding onto the same row. */}
+            <div style={{ marginBottom: 20 }}>
+              <a
+                href={deepLink}
+                style={{
+                  display: 'inline-block',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: '#0B0B0C',
+                  background: '#C4A882',
+                  letterSpacing: 0.5,
+                  padding: '15px 36px',
+                  borderRadius: 999,
+                  textDecoration: 'none',
+                }}
+              >
+                {t('openInApp')} →
+              </a>
+            </div>
 
             {/* Secondary — App Store via a Deferred Deep Link. Registers a DDL
                 session keyed by this device's fingerprint carrying the invite
@@ -332,9 +387,12 @@ export default async function ResonatePage({ params }: PageProps) {
               targetApp='kindred'
               appStoreUrl={appStoreUrl}
               style={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%',
                 fontSize: 13,
                 letterSpacing: 2,
-                color: 'rgba(60,36,21,0.55)',
+                color: 'rgba(245,240,232,0.5)',
                 textDecoration: 'underline',
                 textUnderlineOffset: 4,
                 marginBottom: 28,
@@ -343,12 +401,12 @@ export default async function ResonatePage({ params }: PageProps) {
               {t('downloadApp')}
             </DDLRedirectButton>
 
-            <p style={{ fontSize: 11, color: 'rgba(60,36,21,0.35)', letterSpacing: 0.8 }}>
+            <p style={{ fontSize: 11, color: 'rgba(245,240,232,0.3)', letterSpacing: 0.8 }}>
               {t('expires')}: {expiresLabel}
             </p>
           </>
         ) : (
-          <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(60,36,21,0.65)' }}>
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(245,240,232,0.6)' }}>
             {expired ? t('expired') : t('notFound')}
           </p>
         )}

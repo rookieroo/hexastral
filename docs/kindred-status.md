@@ -1,6 +1,6 @@
 # Kindred — Status & Task Board
 
-_Last updated: 2026-06-08. A living tracking layer over the detailed plans — it
+_Last updated: 2026-06-09. A living tracking layer over the detailed plans — it
 records **what's done** and **what's next**, and points to the ADRs / plan docs
 rather than restating them._
 
@@ -18,6 +18,92 @@ moat) — it always shows two people; cross-sell via the auspice⇄kindred hando
 feng-app is deprioritized. Money = **one-time deep report** (合盘 $6.99 /
 personal $4.99) **+ subscription living layer** (合盘 timeline / make-if / node
 notifications / 划词 chat quota).
+
+---
+
+## Session 2026-06-09 — viral funnel repair + reading-experience overhaul
+
+The invite→accept→report loop was **completing for nobody**; the report's
+reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
+**client-only → reload** (no native rebuild except where noted).
+
+### ✅ Viral funnel — fixed end-to-end (was 100% broken)
+
+- **Accept page collects B's birth.** `app/accept/[token].tsx` rewritten — the
+  web `/resonate` is form-LESS by design and DELEGATES the birth form to the
+  app, but the app never built it → every accept 400'd "Birth data required".
+  Now mounts the onboarding `BirthForm`, sends `birthData` to `respond`, and
+  saves B's birth as their own self-chart.
+- **Accept paywall removed.** `bonds.ts` respond → resonance is FREE for both by
+  design, but the handler called `checkReadingAccess(allowBondInviteCredit)`,
+  which tried to CONSUME a credit only GRANTED ~200 lines below → 403'd before
+  the grant. The flow never completed for anyone. Gate removed.
+- **Full report free for both.** Set `chaptersUnlocked: true` on BOTH resonance
+  bonds (was asymmetric — only A got the user-level bump). $6.99 wall now lives
+  only on SOLO bonds + Pro (timeline / make-if).
+- **Accept returns `bondId`.** respond returned the bond as `mirrorBondId`, but
+  the client navigates to `result.bondId` (undefined) → "Open the thread" routed
+  to `/(bonds)/undefined`, a dead screen that looked "pending" though the accept
+  fully succeeded. Now returns `bondId`.
+- **B no longer trapped on the onboarding form.** Accept never marked onboarding
+  complete → the launch gate bounced B to `/(onboarding)/pair-input` forever.
+  Fixed two ways: accept calls `markOnboardingComplete()` (success/410/Later →
+  home), and the launch gate (`app/index.tsx`) treats a **saved self-birth** as
+  "returning → home" (auto-unsticks anyone with a chart).
+- **Web `/resonate` redesigned** — dark `#0B0B0C` + a **faithful 水墨 moon**
+  (feTurbulence+feDisplacementMap inkTerm + paper-grain overlay + the app's exact
+  phase-0.25 geometry from `moon.ts`, not a smooth gradient sphere); CTA stacking
+  fixed; filled gold pill. Deployed.
+- **Invite locale consistency** — `resonanceInviteSchema` gained `language`; the
+  app passes its locale; server priority `request.language → user.locale → 'en'`
+  (never silently `zh`); `resonateUrl` is locale-prefixed so the landing matches.
+- **Relationship labels** — 恋人 → **"Partner"** (kept), 合伙人 → **"Cofounder"**
+  (de-collided from "Business partner") across all 5 label tables.
+- **Home hero** — the obscure 天干 char (乙) replaced by the day-master's element
+  as a 朱砂 `AncientSeal` (木 ancient pictograph), element word localized.
+
+### ✅ / ☐ Report reading experience
+
+- ✅ **Report page is clean.** `app/(bonds)/[id].tsx` multi-chapter view — removed
+  ALL top chrome (back / title / "Sent · Info complete" / time / the two entries).
+  Exit via edge-swipe; post-accept lands home→report so swipe-back has a home.
+- ✅ **划词 SelectionActionBar v1.** Long-press a report paragraph → a bottom bar
+  with **copy · chat · highlight · make-if**. Highlight = session cinnabar wash;
+  copy via **expo-clipboard** (installed `@8.0.8`); chat/make-if carry the quote.
+  Threaded `ChapterPager → ChapterCard`. `components/SelectionActionBar.tsx`.
+- ☐ **Real text-range selection** — the user wants to select *words/sentences*
+  (not just long-press a whole paragraph) with the bubble **following the
+  selection**, and the bubble as a minimal **one-row of icons** (meanings in the
+  primer). RN has no reliable text-range selection geometry → needs a
+  selectable-text lib (e.g. `@alentoma/react-native-selectable-text`) or a native
+  module. v1 is paragraph-long-press + bottom bar. **Device-QA + dep decision.**
+- ☐ **水墨晕开 transition on list→report** — reuse the solo reader's `InkBloomMask`
+  (`core-ui/motion/InkWipeReveal`). The report page itself can be **black bg**;
+  the **list/home page needs 宣纸 (`kindredPaper`) texture** so the ink blooms on
+  paper. Fix the "weird black safe-area edges" as part of this.
+- ☐ **Highlight persistence** — session-local now; AsyncStorage-per-bond follow-up.
+- ☐ **chat / make-if consume the `quote` param** — it now flows to both routes;
+  the screens should seed their context from it.
+
+### ☐ New feedback queue (2026-06-09) — design-led, prioritized
+
+1. **Home ⇄ Threads merge** — promote the Threads list ONTO the home (kill the
+   extra `/(bonds)` list level; home → report is one hop, not two). Dedup
+   same-relation threads by **invite date → 时辰 → random 意象** when neither
+   distinguishes. (`app/(reading)/index.tsx` + `app/(bonds)/index.tsx`.)
+2. **Per-recipient language (#6)** — generate A's report in A's locale + B's in
+   B's (two versions); the report is currently one interpretation (accepter's
+   locale) shared by both. Backend: generate B's at accept-time, A's lazily so
+   accept doesn't pay 2× AI latency. (`bonds.ts` respond.)
+3. **Softer score (#3)** — replace the blunt number (e.g. 53) on the list with
+   the **生 / 克 / 平** imagery (already derived by `deriveCenterpieceMode`).
+4. **Reading primer (#2)** — a "how to read this" guide: 甲/乙 (inviter/you),
+   五行, 生克, what the 意象 (centerpiece) shows, what each of the 6 chapters
+   covers, what to focus on, AND the 划词 icon meanings. Shown entering the
+   report (first time) + a **persistent entry on the list**. Extends the Symbol
+   Glossary (already built at `app/(settings)/glossary.tsx`).
+5. **Theming / skins** — report = black; list = 宣纸; (stretch) a skin config
+   with several paper textures.
 
 ---
 

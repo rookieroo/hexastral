@@ -415,17 +415,25 @@ app.route('/api/ddl', ddlRoutes)
 // Onboarding — 公开端点，无 HMAC/Auth，IP 限速（已在全局中间件处理）
 // Exception: /api/onboarding/reveal and /api/onboarding/static-traits require
 // HMAC (post-auth, write to user row / daily_signals).
-app.use('/api/onboarding/reveal*', hmacVerify)
-app.use('/api/onboarding/static-traits*', hmacVerify)
-app.use('/api/onboarding/bootstrap*', hmacVerify)
+//
+// IMPORTANT: these MUST be EXACT paths, not a `…*` suffix wildcard. Hono does
+// not match a suffix star (`/reveal*`) against the bare path `/reveal`, so the
+// previous `…*` mounts silently never ran — hmacVerify was skipped, userId was
+// never set, and the handler's requireUserId() 401'd ("Authentication
+// required"). (Slash-star `/foo/*` works, but wouldn't match the bare path
+// either; these are all single POST endpoints, so exact is correct — mirrors
+// the working `app.use('/api/bonds', hmacVerify)`.)
+app.use('/api/onboarding/reveal', hmacVerify)
+app.use('/api/onboarding/static-traits', hmacVerify)
+app.use('/api/onboarding/bootstrap', hmacVerify)
 // Provider-link endpoints attach an Apple/Google identity to the current
 // (anonymous) user, so they MUST run hmacVerify to put userId in scope —
 // each handler calls requireUserId(c). Without this the signed request is
 // ignored, userId is undefined, and the route 401s right after the Apple
 // sheet returns ("能弹出Apple框但之后报错"). The turnstile mounted above on
 // /api/onboarding/* is a no-op for iOS (x-client-platform check).
-app.use('/api/onboarding/apple-link*', hmacVerify)
-app.use('/api/onboarding/google-link*', hmacVerify)
+app.use('/api/onboarding/apple-link', hmacVerify)
+app.use('/api/onboarding/google-link', hmacVerify)
 app.route('/api/onboarding', onboardingRoutes)
 
 // Daily Signal — iOS only, HMAC required

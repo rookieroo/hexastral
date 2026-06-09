@@ -134,6 +134,7 @@ export default function OtherMetaScreen() {
           <RelationshipTypeSelector
             value={relType}
             onChange={(rt) => updateDraft({ relationshipLabel: rt })}
+            locale={locale}
           />
         </Field>
 

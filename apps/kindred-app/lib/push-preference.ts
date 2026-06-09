@@ -7,9 +7,10 @@
  * profile sync. The toggle is debounced through AsyncStorage so a quick
  * tap-tap doesn't fight pending writes.
  *
- * Kindred (unlike auspice) has no on-device notification scheduling — push
- * delivery happens centrally so the same morning prompt can be issued
- * across devices once a user is signed in.
+ * NOTE: the DAILY READING reminder (this file) stays server-side. The separate
+ * relationship-TIMELINE reminders ARE scheduled on-device (local notifications),
+ * since their fire dates are deterministic future 命理 nodes the server returns
+ * as a Pro-only timetable — see lib/timeline-push.ts.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
