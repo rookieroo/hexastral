@@ -15,7 +15,7 @@
  * (`elementRelation`), so the chip and the ink never disagree.
  */
 
-import { kindredDark } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, kindredFonts } from '@zhop/scenario-kindred'
 import { Text, View } from 'react-native'
 import { elementRelation, hasValidElements, type Relation } from '@/components/ink/InkCenterpiece'
@@ -40,10 +40,16 @@ const COPY_EN: Record<Relation, EssenceCopy> = {
   overcome: { label: 'Tempering', remedy: 'a path', tone: 'soft' },
 }
 
-const TONE_COLOR: Record<EssenceCopy['tone'], string> = {
+const TONE_COLOR_DARK: Record<EssenceCopy['tone'], string> = {
   warm: kindredDark.accent,
   neutral: kindredDark.text,
   soft: kindredDark.textSecondary,
+}
+
+const TONE_COLOR_PAPER: Record<EssenceCopy['tone'], string> = {
+  warm: kindredPaper.cinnabar,
+  neutral: kindredPaper.ink,
+  soft: kindredPaper.inkSoft,
 }
 
 export interface EssenceTagProps {
@@ -51,19 +57,23 @@ export interface EssenceTagProps {
   bElement?: string | null
   /** Defaults to the app locale; pass to avoid a redundant resolve in a list. */
   locale?: string
+  /** Render with paper-document ink colors (the home/list are 宣纸 now). */
+  onPaper?: boolean
 }
 
 /**
  * Renders null when elements are missing/legacy — callers fall back to their
  * own affordance (a chevron on the list, nothing on the home row).
  */
-export function EssenceTag({ aElement, bElement, locale }: EssenceTagProps) {
+export function EssenceTag({ aElement, bElement, locale, onPaper }: EssenceTagProps) {
   if (!hasValidElements(aElement ?? undefined, bElement ?? undefined)) return null
   const lc = locale ?? resolveLocale()
   const cjk = isCjkLocale(lc)
   const relation = elementRelation(aElement ?? undefined, bElement ?? undefined)
   const copy = (cjk ? COPY_CJK : COPY_EN)[relation]
   const serif = cjk ? kindredFonts.cjk : kindredFonts.serif
+  const tone = onPaper ? TONE_COLOR_PAPER : TONE_COLOR_DARK
+  const remedyColor = onPaper ? kindredPaper.muted : kindredDark.textMuted
 
   return (
     <View style={{ alignItems: 'flex-end' }}>
@@ -72,7 +82,7 @@ export function EssenceTag({ aElement, bElement, locale }: EssenceTagProps) {
           fontFamily: serif,
           fontSize: cjk ? 17 : 15,
           letterSpacing: cjk ? 2 : 0.3,
-          color: TONE_COLOR[copy.tone],
+          color: tone[copy.tone],
         }}
       >
         {copy.label}
@@ -84,7 +94,7 @@ export function EssenceTag({ aElement, bElement, locale }: EssenceTagProps) {
             fontSize: 9.5,
             letterSpacing: cjk ? 1.5 : 0.5,
             marginTop: 2,
-            color: kindredDark.textMuted,
+            color: remedyColor,
           }}
         >
           {copy.remedy}
