@@ -35,7 +35,7 @@ import {
   type UseBondsTimelineResult,
   useBondsTimeline,
 } from '@zhop/scenario-kindred'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -74,9 +74,24 @@ function groupByYear(
 export default function TimelineScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { nodes, liuyue, notifications, pro, isLoading, error, refetch, explainNode } =
-    useBondsTimeline()
+  // Per-bond entry (row left-swipe / report 划词): scope the ego axis to ONE bond
+  // (2026-06: "timeline & make-if 以合盘为单位"). No param → the full ego axis.
+  const { bondId, bondName } = useLocalSearchParams<{ bondId?: string; bondName?: string }>()
+  const {
+    nodes: allNodes,
+    liuyue,
+    notifications,
+    pro,
+    isLoading,
+    error,
+    refetch,
+    explainNode,
+  } = useBondsTimeline()
 
+  const nodes = useMemo(
+    () => (bondId ? allNodes.filter((n) => n.bonds.some((b) => b.bondId === bondId)) : allNodes),
+    [allNodes, bondId]
+  )
   const grouped = useMemo(() => groupByYear(nodes), [nodes])
 
   // Lay the (Pro-only, server-computed) reminder timetable onto the device as
@@ -154,20 +169,24 @@ export default function TimelineScreen() {
         >
           <KindredMoon size={48} />
           <Text style={[kindredType.title, { color: kindredDark.text }]}>
-            {t(locale, 'timeline.title')}
+            {bondName || t(locale, 'timeline.title')}
           </Text>
-          <Text
-            style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
-          >
-            {t(locale, 'timeline.subtitle')}
-          </Text>
+          {/* The "across every bond" subtitle only fits the full ego axis. */}
+          {!bondId ? (
+            <Text
+              style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
+            >
+              {t(locale, 'timeline.subtitle')}
+            </Text>
+          ) : null}
         </View>
 
         {!pro ? (
           <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
         ) : null}
 
-        {liuyue.length > 0 ? (
+        {/* Near-term 流月 strip is the ego (all-bonds) view — hide it in per-bond mode. */}
+        {!bondId && liuyue.length > 0 ? (
           <LiuYueStrip
             liuyue={liuyue}
             pro={pro}
