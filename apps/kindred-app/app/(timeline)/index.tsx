@@ -135,7 +135,7 @@ export default function TimelineScreen() {
   if (nodes.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        <Header locale={locale} onBack={() => router.back()} />
+        <Header onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
             illustration={<KindredMoon size={96} />}
@@ -156,7 +156,7 @@ export default function TimelineScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      <Header locale={locale} onBack={() => router.back()} />
+      <Header onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: kindredSpacing.screenH,
@@ -407,7 +407,7 @@ function MonthChip({
   )
 }
 
-function Header({ locale, onBack }: { locale: Locale; onBack: () => void }) {
+function Header({ onBack }: { onBack: () => void }) {
   return (
     <View
       style={{
