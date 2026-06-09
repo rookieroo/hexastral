@@ -495,7 +495,10 @@ export default function IntroScreen() {
   const centerFigTop = groundYAt(slot1, width, height) - FEET_Y
 
   return (
-    <Pressable style={{ flex: 1, backgroundColor: BG }} onPress={done ? handleAdvance : undefined}>
+    // Tap ANYWHERE, at ANY time, skips straight to pair-input — the intro is
+    // never a wall (2026-06: "用户可以随时 tap 跳过"). The persistent bottom hint
+    // advertises it from the first frame.
+    <Pressable style={{ flex: 1, backgroundColor: BG }} onPress={handleAdvance}>
       {/* Stage — scenery + figures; pushes in slightly during the final act */}
       <Animated.View style={[StyleSheet.absoluteFillObject, stageStyle]}>
         {/* Scenery — stars + galaxy + planet ground (or AI backdrop plates) */}

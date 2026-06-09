@@ -221,10 +221,13 @@ export function StickFigure({
 
   return (
     <Svg width={size} height={size * 2} viewBox='0 0 40 80'>
-      {/* Head — big + round (chibi). */}
+      {/* Head — big + round (chibi), the heaviest ink. */}
       <Ellipse cx={20 + headDx} cy={headCy} rx={headRx} ry={headRy} fill={stroke} />
+      {/* 墨色浓淡 — body strokes (the nib-anchored torso/seat) carry full ink; the
+          limbs sit a shade lighter, so the figure has depth instead of reading as
+          a flat single-tone cutout. */}
       {strokes.map((s, i) => (
-        <Path key={i} d={s.d} fill={stroke} />
+        <Path key={i} d={s.d} fill={stroke} fillOpacity={s.nib ? 1 : 0.82} />
       ))}
       {strokes.map((s, i) =>
         s.nib ? (
