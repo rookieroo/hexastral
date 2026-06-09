@@ -79,7 +79,14 @@ export default function RootLayout() {
 
   // Report fonts (free-commercial SIL OFL). Non-gating: they pop in when ready;
   // the report uses them, falling back to system fonts for the first frames.
-  // CJK (Noto Serif CJK) is bundled separately once subsetted (full font ~25 MB).
+  //
+  // CJK serif (kindredFonts.cjk === 'NotoSerifSC') is NOT yet bundled — the card,
+  // glossary and share artefact already reference that family name, so CJK
+  // currently falls back to the system serif. To finish: drop a SUBSETTED
+  // assets/fonts/NotoSerifSC-Regular.ttf (full variable font ≈ 25 MB — subset to
+  // the report's glyph range) and add `NotoSerifSC: require('../assets/fonts/
+  // NotoSerifSC-Regular.ttf')` below. Deferred: needs the font binary + a
+  // subsetting pass in an env with network/tooling (see docs/kindred-status.md).
   useFonts({
     LibreBaskerville: require('../assets/fonts/LibreBaskerville-Regular.ttf'),
     CrimsonPro: require('../assets/fonts/CrimsonPro-Regular.ttf'),

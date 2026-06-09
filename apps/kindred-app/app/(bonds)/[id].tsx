@@ -59,6 +59,7 @@ import { emitUnlockFunnel } from '@/lib/analytics'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
 import { useAuth } from '@/lib/auth'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
+import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
@@ -69,11 +70,21 @@ export default function BondDetailScreen() {
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
   const [chapterIndex, setChapterIndex] = useState<number>(0)
-  // 划词 — the paragraph the user long-pressed (drives the SelectionActionBar),
-  // and the set of highlighted paragraphs (session-local for now; persistence is
-  // a follow-up). See components/SelectionActionBar.tsx.
+  // 划词 — the sentence the user long-pressed (drives the SelectionActionBar),
+  // and the set of highlighted sentences. Highlights persist per-bond via
+  // AsyncStorage (lib/highlights.ts): loaded on mount, saved on every toggle.
   const [pickedQuote, setPickedQuote] = useState<string | null>(null)
   const [highlights, setHighlights] = useState<string[]>([])
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    void loadHighlights(id).then((saved) => {
+      if (!cancelled) setHighlights(saved)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
   const { createShareUrl } = useShareBond()
   const { t } = useI18n()
 
@@ -473,9 +484,9 @@ export default function BondDetailScreen() {
             across devices (links Apple to the same userId; non-blocking). */}
         <SignInSheet visible={showSaveSheet} onClose={() => setShowSaveSheet(false)} />
 
-        {/* 划词 action bar — slides up when a paragraph is long-pressed. Houses
-            the actions that used to clutter the header. (copy is omitted until
-            expo-clipboard is added; highlight is session-local for now.) */}
+        {/* 划词 action bar — slides up when a sentence is long-pressed. Houses
+            the actions that used to clutter the header: copy (expo-clipboard),
+            chat, highlight (persisted per-bond), make-if. */}
         <SelectionActionBar
           quote={pickedQuote}
           highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
@@ -504,7 +515,11 @@ export default function BondDetailScreen() {
           onHighlight={() => {
             const q = pickedQuote
             if (!q) return
-            setHighlights((prev) => (prev.includes(q) ? prev.filter((x) => x !== q) : [...prev, q]))
+            const next = highlights.includes(q)
+              ? highlights.filter((x) => x !== q)
+              : [...highlights, q]
+            setHighlights(next)
+            if (id) void saveHighlights(id, next)
             setPickedQuote(null)
           }}
           onMakeif={() => {

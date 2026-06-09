@@ -71,19 +71,36 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
   with **copy · chat · highlight · make-if**. Highlight = session cinnabar wash;
   copy via **expo-clipboard** (installed `@8.0.8`); chat/make-if carry the quote.
   Threaded `ChapterPager → ChapterCard`. `components/SelectionActionBar.tsx`.
-- ☐ **Real text-range selection** — the user wants to select *words/sentences*
-  (not just long-press a whole paragraph) with the bubble **following the
-  selection**, and the bubble as a minimal **one-row of icons** (meanings in the
-  primer). RN has no reliable text-range selection geometry → needs a
-  selectable-text lib (e.g. `@alentoma/react-native-selectable-text`) or a native
-  module. v1 is paragraph-long-press + bottom bar. **Device-QA + dep decision.**
+- ◑ **Real text-range selection — dep decision MADE; partial ship (Phase 6).**
+  Two halves: (a) the *granularity* and (b) the *bubble*.
+  - ✅ Granularity moved from whole-paragraph to **per-sentence**: `ChapterCard`
+    `splitSentences()` makes each sentence its own `onLongPress` span, so a
+    long-press picks the sentence under the finger (and only that sentence gets
+    the cinnabar wash) — no dep needed.
+  - ✅ The bubble is now a **minimal one-row of icons** (copy / chat / highlight /
+    make-if as lucide glyphs, a11y labels retained); meanings live in the
+    primer + glossary (Phase 3). `components/SelectionActionBar.tsx`.
+  - ☐ **Deferred (dep):** true sub-sentence / word ranges + a bubble that
+    *follows the selection* still need a native selectable-text view
+    (`@alentoma/react-native-selectable-text` or equivalent). **Decision: do NOT
+    add it now** — it's a native module (EAS rebuild + offline-blocked install)
+    and sentence-level + icon bar already satisfies the core "select a passage,
+    act on it" need. Revisit with the next native batch if users ask for it.
 - ✅ **水墨晕开 transition on list→report** — DONE (Phase 4, `ReportBloom`). The
   report blooms in through `InkBloomMask` over a dark surround; the report is
   paper edge-to-edge (`kindredPaper`), which also fixed the black safe-area edges.
   No list inversion needed — `ChapterCard` is already paper. The list stays dark.
-- ☐ **Highlight persistence** — session-local now; AsyncStorage-per-bond follow-up.
-- ☐ **chat / make-if consume the `quote` param** — it now flows to both routes;
-  the screens should seed their context from it.
+- ✅ **Highlight persistence** — DONE (Phase 6). Per-bond in AsyncStorage
+  (`lib/highlights.ts`, modeled on `primer-seen.ts`): the report loads a bond's
+  highlighted sentences on mount and saves on every toggle, so a marked passage
+  survives navigating away. Keyed `kindred_highlights_v1_<bondId>`; best-effort
+  (a storage failure degrades to no highlights, never throws into render).
+- ✅ **chat / make-if consume the `quote` param** — DONE (Phase 6). Chat
+  (`(bonds)/chat.tsx`) now seeds the input with the quoted sentence as an
+  editable, never-auto-sent draft (`「…」\n`, capped at 140 chars), mirroring the
+  solo reader's `(reading)/chat.tsx`. Make-if (`(bonds)/makeif.tsx`) shows the
+  prompting sentence as a cinnabar-edged context line ("Prompted by this line" /
+  「由这句而起」, i18n `makeif.fromQuote` × 4 locales) above the timing read.
 - ✅ **Missing-name display (the "Unknown" the user saw).** DONE (Phase 1, B1).
   `bonds.ts:1164` mirror bond no longer stores the literal "Unknown" — it falls
   back to the relationship label, else empty, and the client resolves a graceful
@@ -110,12 +127,18 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
 
 ## Execution plan (sequenced 2026-06-09) — ordered to minimise rework
 
-> **STATUS (2026-06-09): Phases 1–5 are COMPLETE and pushed to `main`.**
-> 1 (B1 names + B2 static essence + 解法 morph), 2 (#3 essence chip), 3 (#4 reading
-> primer + glossary), 4 (#5 水墨晕开 + paper edges), 5 (#2 per-recipient language).
-> Remaining = **Phase 6 only** (needs a dep or device): real text-range 划词,
-> highlight persistence, chat/make-if quote seeding, NotoSerifSC bundle, device QA,
-> B3 headline element mismatch.
+> **STATUS (2026-06-09): Phases 1–6 are COMPLETE except two externally-blocked items.**
+> 1–5 recap: 1 (B1 names + B2 static essence + 解法 morph), 2 (#3 essence chip), 3 (#4
+> reading primer + glossary), 4 (#5 水墨晕开 + paper edges), 5 (#2 per-recipient language).
+> **Phase 6 shipped this session** (everything that needed neither a new dep nor a
+> device): highlight persistence (AsyncStorage, per-bond), chat + make-if quote
+> seeding, the 划词 bar reworked into a minimal icon row, the B3 goldenLine
+> element-mismatch prompt fix, and the real-text-range **dep decision** (defer the
+> native selectable-text lib — sentence-level long-press + the icon bar is the
+> shipped answer). **Only two items remain, both externally blocked:** bundling
+> NotoSerifSC (needs the font binary + a subsetting pass in a networked env — the
+> family-name code path is already wired) and on-device QA (centerpiece morph +
+> 划词 inside MaskedView). See the Phase 6 subsection for the per-item detail.
 
 Device screenshots (2026-06-09 18:15) confirmed: **Home⇄Threads merge (#1) is
 DONE**; the report page is clean ✅; two new bugs surfaced. Do these IN ORDER —
@@ -154,9 +177,11 @@ get re-done.
     to 生** (用神 = the flowing/generative ideal): 克→生 通关 / 平→生 泄秀引流 /
     生→生 续生. (d) The **living layer** (timeline/make-if) may morph ANY direction
     — a 大运 where 忌神/冲 dominates can degrade 生→克. Same `(from,to)` feeds both.
-- **B3 (minor) — headline element mismatch.** goldenLine "木火相生" leads with the
-  用神 (火), not the actual pair 木×土 — reads as a mismatch against the 木克土 body.
-  Content/prompt tweak; low priority.
+- **B3 (minor) — headline element mismatch.** DONE (Phase 6, prompt fix). goldenLine
+  "木火相生" led with the 用神 (火), not the actual pair 木×土 — a mismatch against the
+  木克土 body. `hehun.ts buildChapterPrompt` now constrains title/goldenLine to name
+  the real day-master pair + its 生/克/比和, with 用神 allowed only as an explicit
+  解法/通关 (never passed off as the pair's own 相生). LLM-output fix; tests green.
 
 **Phase 1 — correctness bugs (small, foundational; everything sits on these)** — DONE (92a0200)
 1. **B1 "Unknown"** — DONE. `bonds.ts:1164` mirror-bond fallback now
@@ -238,10 +263,34 @@ get re-done.
      after accept where A sees the B-language fallback until the bg regen lands
      (acceptable — "A lazily"). Solo bonds are single-viewer, already A's locale.
 
-**Phase 6 — polish / deferred (needs a dep or device)**
-7. Real text-range 划词 selection (selectable-text dep decision) · highlight
-   persistence (AsyncStorage) · chat/make-if seed from `quote` · bundle
-   `NotoSerifSC` · centerpiece-morph Device QA.
+**Phase 6 — polish / deferred** — executed 2026-06-09; everything that needed
+neither a new dep nor a device is DONE.
+7. **Done this session:**
+   - ✅ **Highlight persistence** — `lib/highlights.ts` (AsyncStorage, per-bond);
+     loaded on mount + saved on toggle in `(bonds)/[id].tsx`.
+   - ✅ **chat / make-if seed from `quote`** — chat pre-fills an editable quoted
+     draft; make-if shows the prompting sentence as context (`makeif.fromQuote`).
+   - ✅ **划词 bar → minimal icon row** — `SelectionActionBar` now renders lucide
+     icons (copy/chat/highlight/make-if) instead of text labels; meanings in the
+     primer/glossary. (The no-dep half of "real text-range 划词".)
+   - ✅ **B3 goldenLine element mismatch** — prompt fix in
+     `hehun.ts buildChapterPrompt`: title/goldenLine must name the **real
+     day-master pair** + its 生/克/比和; 用神 may appear only as the 解法/通关 and
+     must say so (no more "木火相生" on a 木克土 pair). 13/13 hehun tests still pass.
+   - ✅ **Real text-range — dep decision** — defer the native selectable-text lib;
+     sentence-level long-press + the icon bar is the shipped answer (see the
+     reading-experience ◑ item above).
+8. **Remaining — externally blocked (NOT executable offline / without a device):**
+   - ☐ **Bundle `NotoSerifSC`** — the family name (`kindredFonts.cjk`) is already
+     wired into the card / glossary / share artefact, so CJK falls back to the
+     system serif today. To finish: drop a **subsetted**
+     `apps/kindred-app/assets/fonts/NotoSerifSC-Regular.ttf` and add one
+     `require(...)` to the `useFonts` block in `app/_layout.tsx` (exact TODO is in
+     that comment). Blocked here: the ~25 MB binary + subsetting need a networked
+     env. No code change made (a `require` of a missing asset breaks Metro).
+   - ☐ **Device QA** — centerpiece static + 2 transition morphs (the spot that
+     overheated before), and confirm the horizontal pager swipe + sentence
+     long-press work inside `MaskedView` (ReportBloom) on a real device.
 
 ---
 
@@ -308,7 +357,10 @@ from auspice's git-graph.
 
 ### ☐ Remaining
 - **Bundle CJK font.** `NotoSerifSC` (subsetted — full variable font ≈ 25 MB) for
-  zh/ja; today CJK falls back to system. Latin set already bundled.
+  zh/ja; today CJK falls back to system. Latin set already bundled. **Code path is
+  wired** (`kindredFonts.cjk === 'NotoSerifSC'`, consumed by card/glossary/share) —
+  only the asset + one `useFonts` `require` remain; exact TODO sits in
+  `app/_layout.tsx`. Blocked offline (binary + subsetting need a networked env).
 - **碑拓 / ink textures.** `AncientSeal` renders clean solid forms; the stone-rubbing
   erosion + the centerpiece's wash/飞白 texture are a Skia follow-up (not RN-SVG
   filter portable).

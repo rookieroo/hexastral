@@ -3,26 +3,30 @@
  *
  * The report has no native text-range selection (RN doesn't expose selection
  * geometry to position an at-cursor popover reliably). Instead — matching the
- * solo reader's established 划词 pattern (long-press a paragraph) — long-pressing
- * a report paragraph "picks" it as the quote, and this bar slides up from the
- * bottom with the actions: 复制 / chat / highlight / make-if.
+ * solo reader's established 划词 pattern — long-pressing a report SENTENCE
+ * "picks" it as the quote (ChapterCard splits each paragraph into long-pressable
+ * sentences), and this bar slides up from the bottom with a minimal one-row of
+ * icons: copy / chat / highlight / make-if. The meanings are taught once in the
+ * reading primer + the Symbol Glossary (gesture section), so the bar itself can
+ * stay icon-only; each icon keeps an accessibilityLabel for screen readers.
  *
  * Presentational only — the host (bond detail) owns the quote state + wires the
  * handlers (clipboard, chat route, highlight persistence, make-if route).
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { Copy, Highlighter, type LucideIcon, MessageCircle, Wand2 } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 export interface SelectionActionBarProps {
-  /** The picked paragraph; null hides the bar. */
+  /** The picked sentence; null hides the bar. */
   quote: string | null
   labels: { copy: string; chat: string; highlight: string; makeif: string }
-  /** Whether the picked quote is already highlighted (toggles the label tone). */
+  /** Whether the picked quote is already highlighted (toggles the icon tone). */
   highlighted?: boolean
-  /** Each action renders only when its handler is provided (e.g. copy is omitted
-   *  until expo-clipboard is added). */
+  /** Each action renders only when its handler is provided (e.g. chat is omitted
+   *  until a pair reading exists). */
   onCopy?: () => void
   onChat?: () => void
   onHighlight?: () => void
@@ -43,12 +47,26 @@ export function SelectionActionBar({
   if (!quote) return null
 
   const actions = [
-    { key: 'copy', label: labels.copy, onPress: onCopy },
-    { key: 'chat', label: labels.chat, onPress: onChat },
-    { key: 'highlight', label: labels.highlight, onPress: onHighlight, active: highlighted },
-    { key: 'makeif', label: labels.makeif, onPress: onMakeif },
-  ].filter((a): a is { key: string; label: string; onPress: () => void; active?: boolean } =>
-    Boolean(a.onPress)
+    { key: 'copy', label: labels.copy, Icon: Copy, onPress: onCopy },
+    { key: 'chat', label: labels.chat, Icon: MessageCircle, onPress: onChat },
+    {
+      key: 'highlight',
+      label: labels.highlight,
+      Icon: Highlighter,
+      onPress: onHighlight,
+      active: highlighted,
+    },
+    { key: 'makeif', label: labels.makeif, Icon: Wand2, onPress: onMakeif },
+  ].filter(
+    (
+      a
+    ): a is {
+      key: string
+      label: string
+      Icon: LucideIcon
+      onPress: () => void
+      active?: boolean
+    } => Boolean(a.onPress)
   )
 
   return (
@@ -89,8 +107,8 @@ export function SelectionActionBar({
         </Pressable>
       </View>
 
-      {/* Action row. */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      {/* Action row — a minimal row of icons (meanings live in the primer/glossary). */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         {actions.map((a) => (
           <Pressable
             key={a.key}
@@ -98,16 +116,13 @@ export function SelectionActionBar({
             hitSlop={8}
             accessibilityRole='button'
             accessibilityLabel={a.label}
-            style={{ flex: 1, alignItems: 'center', paddingVertical: kindredSpacing.xs }}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: kindredSpacing.sm }}
           >
-            <Text
-              style={[
-                kindredType.caption,
-                { color: a.active ? kindredDark.accent : kindredDark.text, fontWeight: '600' },
-              ]}
-            >
-              {a.label}
-            </Text>
+            <a.Icon
+              size={20}
+              strokeWidth={1.6}
+              color={a.active ? kindredDark.accent : kindredDark.text}
+            />
           </Pressable>
         ))}
       </View>

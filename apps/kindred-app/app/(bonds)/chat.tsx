@@ -18,8 +18,15 @@ import { useAuth } from '@/lib/auth'
 import { fetchChatHistory, sendChatMessage } from '@/lib/chat'
 import { useI18n } from '@/lib/i18n'
 
+/** Quoted-draft cap — keeps a long passage from flooding the input. */
+const QUOTE_MAX_CHARS = 140
+
 export default function BondChatScreen() {
-  const { id, title } = useLocalSearchParams<{ id: string; title?: string }>()
+  const { id, title, quote } = useLocalSearchParams<{
+    id: string
+    title?: string
+    quote?: string
+  }>()
   const router = useRouter()
   const { userId } = useAuth()
   const { t } = useI18n()
@@ -39,6 +46,15 @@ export default function BondChatScreen() {
     }),
     [t]
   )
+
+  // 划词 → chat: a long-pressed sentence pre-fills the input as a quoted draft
+  // the user completes with their question (never auto-sent). Mirrors the solo
+  // reader's (reading)/chat.tsx pattern.
+  const initialDraft = useMemo(() => {
+    if (!quote) return undefined
+    const trimmed = quote.length > QUOTE_MAX_CHARS ? `${quote.slice(0, QUOTE_MAX_CHARS)}…` : quote
+    return `「${trimmed}」\n`
+  }, [quote])
 
   if (!userId || !id) {
     return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
@@ -81,6 +97,7 @@ export default function BondChatScreen() {
       }
       copy={copy}
       header={header}
+      initialDraft={initialDraft}
     />
   )
 }

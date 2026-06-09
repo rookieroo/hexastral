@@ -53,7 +53,7 @@ function leanColor(lean: DecisionLean): string {
 export default function MakeIfScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { id } = useLocalSearchParams<{ id: string; title?: string }>()
+  const { id, quote } = useLocalSearchParams<{ id: string; title?: string; quote?: string }>()
   const { data, isLoading, error, run } = useBondMakeIf()
 
   useEffect(() => {
@@ -98,7 +98,12 @@ export default function MakeIfScreen() {
           }
         />
       ) : data ? (
-        <Body data={data} locale={locale} onUpsell={() => router.push('/(commerce)/paywall')} />
+        <Body
+          data={data}
+          locale={locale}
+          quote={quote}
+          onUpsell={() => router.push('/(commerce)/paywall')}
+        />
       ) : null}
     </SafeAreaView>
   )
@@ -107,12 +112,15 @@ export default function MakeIfScreen() {
 function Body({
   data,
   locale,
+  quote,
   onUpsell,
 }: {
   data: RelMakeIfResponse
   locale: Locale
+  quote?: string
   onUpsell: () => void
 }) {
+  const trimmedQuote = quote ? (quote.length > 120 ? `${quote.slice(0, 120)}…` : quote) : null
   return (
     <ScrollView
       contentContainerStyle={{
@@ -132,6 +140,31 @@ function Body({
           {t(locale, 'makeif.subtitle')}
         </Text>
       </View>
+
+      {/* 划词 → make-if: the report sentence that launched this read, shown as
+          context (a cinnabar-edged quote) so the timing read is anchored to it. */}
+      {trimmedQuote ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: kindredSpacing.sm,
+            marginBottom: kindredSpacing.lg,
+            paddingHorizontal: kindredSpacing.md,
+          }}
+        >
+          <View style={{ width: 2, alignSelf: 'stretch', backgroundColor: kindredDark.accent }} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
+              {t(locale, 'makeif.fromQuote')}
+            </Text>
+            <Text
+              style={[kindredType.caption, { color: kindredDark.textSecondary, lineHeight: 19 }]}
+            >
+              {trimmedQuote}
+            </Text>
+          </View>
+        </View>
+      ) : null}
 
       {!data.pro ? (
         <View
