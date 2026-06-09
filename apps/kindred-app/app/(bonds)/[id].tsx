@@ -59,6 +59,7 @@ import { emitUnlockFunnel } from '@/lib/analytics'
 import { openAuspiceCompose } from '@/lib/auspice-handoff'
 import { useAuth } from '@/lib/auth'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
+import { resolveBondDisplayName } from '@/lib/bondName'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
@@ -261,13 +262,11 @@ export default function BondDetailScreen() {
   }
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
-        </View>
-      </SafeAreaView>
-    )
+    // Plain dark hold — NO moon-phase loader here. Fetching an already-generated
+    // report is brief, and the report's entrance IS the 水墨晕开 bloom (ReportBloom).
+    // A spinner before the bloom read as two competing animations (2026-06 device
+    // QA). The long LLM wait (202 → isGenerating) keeps its loader below.
+    return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
   }
 
   if (isGenerating) {
@@ -308,12 +307,9 @@ export default function BondDetailScreen() {
   const selfName = detail.interpretation?.personAName as string | undefined
   const otherName = detail.targetName
 
-  // Title = a specific name; fall back to the relationship so it's never blank,
-  // and only tag the relationship when it isn't already the title (avoids
-  // "媳妇 · 媳妇"). Matches the threads list. (2026-06: "只显示关系很难分清".)
-  const rawName = (detail.targetName || detail.targetUser?.name || '').trim()
-  const displayName = rawName || detail.relationshipLabel
-  const relTag = rawName && detail.relationshipLabel !== rawName ? detail.relationshipLabel : null
+  // Title = a specific name; fall back to the relationship so it's never blank
+  // (and strip the legacy literal "Unknown"). Matches the threads list.
+  const { displayName, relTag } = resolveBondDisplayName(detail)
 
   // Re-send this bond's invite (share THIS bond's resonate link when it exists,
   // else fall back to the generic invite flow). Surfaced both on the unlock wall

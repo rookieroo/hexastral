@@ -21,18 +21,16 @@ import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { type BondData, type BondStatus, kindredFonts, useBondList } from '@zhop/scenario-kindred'
 import { useRouter } from 'expo-router'
-import { ChevronRight, GitCommitVertical, Plus } from 'lucide-react-native'
+import { GitCommitVertical, Plus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { EssenceTag } from '@/components/EssenceTag'
 import { HomeSplash } from '@/components/HomeSplash'
-import { hasValidElements } from '@/components/ink/InkCenterpiece'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { ThreadListItem } from '@/components/ThreadListItem'
 import { useAuth } from '@/lib/auth'
-import { relativeSentLabel, resolveLocale, t } from '@/lib/i18n'
+import { resolveLocale, t } from '@/lib/i18n'
 import { consumeSplashDecision } from '@/lib/splash-control'
 
 // Pending threads need attention (resend/cancel); actives are destinations;
@@ -205,7 +203,7 @@ export default function BondListScreen() {
           data={threads}
           keyExtractor={(b) => b.id}
           renderItem={({ item }) => (
-            <ThreadRow
+            <ThreadListItem
               bond={item}
               locale={locale}
               onPress={() => router.push(`/(bonds)/${item.id}`)}
@@ -299,110 +297,5 @@ function HeaderPill({
         {label}
       </Text>
     </Pressable>
-  )
-}
-
-/** Per-status label + tint for the row's "info filled?" line. */
-function statusMeta(status: BondStatus, locale: ReturnType<typeof resolveLocale>) {
-  switch (status) {
-    case 'active':
-      return { label: t(locale, 'bond.statusActive'), color: kindredDark.accent }
-    case 'pending_invite':
-      return { label: t(locale, 'bond.statusPending'), color: kindredDark.textSecondary }
-    case 'declined':
-      return { label: t(locale, 'bond.statusDeclined'), color: kindredDark.textMuted }
-    case 'expired':
-      return { label: t(locale, 'bond.statusExpired'), color: kindredDark.textMuted }
-    default:
-      return { label: '', color: kindredDark.textMuted }
-  }
-}
-
-/**
- * ThreadRow — one lean, swipe-to-delete list item. Shows name, relationship,
- * when it was started, and a status line (whether their info is in). Tapping
- * opens the thread; swiping left reveals Delete.
- */
-function ThreadRow({
-  bond,
-  locale,
-  onPress,
-  onDelete,
-}: {
-  bond: BondData
-  locale: ReturnType<typeof resolveLocale>
-  onPress: () => void
-  onDelete: () => void
-}) {
-  const status = statusMeta(bond.status, locale)
-  // A specific name is the title; fall back to the relationship so a row is
-  // never blank, and only show the relationship as a tag when it ISN'T already
-  // the title (avoids "媳妇 / 媳妇"). (2026-06: "只显示关系很难分清".)
-  const rawName = (bond.targetName || bond.targetUser?.name || '').trim()
-  const displayName = rawName || bond.relationshipLabel
-  const relTag = rawName && bond.relationshipLabel !== rawName ? bond.relationshipLabel : null
-
-  return (
-    <ReanimatedSwipeable
-      friction={2}
-      rightThreshold={40}
-      overshootRight={false}
-      // The action is delivered the swipeable's own methods, so the row can
-      // animate closed before the confirm dialog pops (no ref plumbing).
-      renderRightActions={(_progress, _translation, methods) => (
-        <Pressable
-          onPress={() => {
-            methods.close()
-            onDelete()
-          }}
-          accessibilityRole='button'
-          accessibilityLabel={t(locale, 'bondList.delete')}
-          style={{
-            width: 92,
-            backgroundColor: kindredDark.seal,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: kindredDark.text, fontSize: 15, fontWeight: '600' }}>
-            {t(locale, 'bondList.delete')}
-          </Text>
-        </Pressable>
-      )}
-    >
-      <Pressable
-        onPress={onPress}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: kindredSpacing.md,
-          paddingHorizontal: kindredSpacing.screenH,
-          paddingVertical: kindredSpacing.lg,
-          // Opaque so the red Delete action stays hidden until swiped.
-          backgroundColor: kindredDark.bg,
-        }}
-      >
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
-            {displayName}
-          </Text>
-          <Text
-            style={[kindredType.caption, { color: kindredDark.textSecondary }]}
-            numberOfLines={1}
-          >
-            {relTag ? `${relTag} · ` : ''}
-            {relativeSentLabel(locale, bond.createdAt)}
-          </Text>
-          {status.label ? (
-            <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
-          ) : null}
-        </View>
-        {hasValidElements(bond.aElement ?? undefined, bond.bElement ?? undefined) ? (
-          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
-        ) : (
-          <ChevronRight color={kindredDark.textMuted} size={20} strokeWidth={1.2} />
-        )}
-      </Pressable>
-    </ReanimatedSwipeable>
   )
 }

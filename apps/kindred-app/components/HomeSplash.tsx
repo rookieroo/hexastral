@@ -1,21 +1,22 @@
 /**
  * HomeSplash — a V15Moon logo flourish on cold launch.
  *
- * The matrix anchor (V15Moon, ADR-0018 rule 7) holds centered for a beat, then
- * translates UP + shrinks to LAND on the home header's V15Moon anchor (same
- * brand glyph, just bigger). The dark cover fades during the move; once the
- * splash moon overlaps the resting home anchor, it briefly cross-fades out so
- * you don't see two moons. That's the magic-move feel — same logo, smaller,
- * exactly where the home shows it.
+ * The brand moon (ADR-0018 rule 7) holds centered for a beat, then translates +
+ * shrinks to LAND on the home's top-left brand moon (same glyph, smaller, exactly
+ * where the home shows it). The dark cover fades during the move; once the splash
+ * moon overlaps the resting anchor it cross-fades out so you don't see two moons.
  *
- * Gated by `consumeSplashDecision()` so it plays once per cold launch, never
- * right after onboarding (the exits call `suppressNextSplash()`).
+ * 2026-06: the home brand moved to the TOP-LEFT (was center-top), and the old
+ * target ignored the safe-area inset, so the moon landed high. The landing is now
+ * computed from the real insets + the top-bar padding (matches app/(reading)/
+ * index.tsx). The "Kindred" wordmark is the home's own inline mark (revealed as
+ * the cover lifts), so the splash flies the moon alone — no stacked wordmark to
+ * mis-place. Gated by `consumeSplashDecision()` (once per cold launch).
  */
 
-import { ricePaper } from '@zhop/hexastral-tokens'
-import { kindredDark } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
 import { useEffect } from 'react'
-import { StyleSheet, Text, useWindowDimensions } from 'react-native'
+import { StyleSheet, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
   runOnJS,
@@ -25,22 +26,23 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 
 const SPLASH_MOON = 132
-const HOME_MOON = 56
-// Header anchor distance from the top of the safe-area screen, roughly:
-// SafeArea + ··· header row + small margin + half the moon height.
-const HOME_MOON_TOP = 60 + HOME_MOON / 2
+// Matches the home top-left brand moon (app/(reading)/index.tsx topBar).
+const HOME_MOON = 30
 const HOLD = 700
 const MOVE = 620
 const CROSSFADE = 220
 
 export function HomeSplash({ onDone }: { onDone: () => void }) {
   const reduced = useReducedMotion()
-  const { height } = useWindowDimensions()
-  const moonTy = useSharedValue(0)
-  const moonScale = useSharedValue(1)
+  const { width, height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const tx = useSharedValue(0)
+  const ty = useSharedValue(0)
+  const scale = useSharedValue(1)
   const moonOp = useSharedValue(1)
   const bgOp = useSharedValue(1)
 
@@ -49,40 +51,34 @@ export function HomeSplash({ onDone }: { onDone: () => void }) {
       runOnJS(onDone)()
       return
     }
-    // Distance from screen center to the home anchor.
-    const targetY = -(height / 2 - HOME_MOON_TOP)
-    moonTy.value = withDelay(
-      HOLD,
-      withTiming(targetY, { duration: MOVE, easing: Easing.inOut(Easing.cubic) })
-    )
-    moonScale.value = withDelay(
-      HOLD,
-      withTiming(HOME_MOON / SPLASH_MOON, {
-        duration: MOVE,
-        easing: Easing.inOut(Easing.cubic),
-      })
-    )
-    // Dark cover lifts halfway through the move (~bg starts lifting once the
-    // moon is on its way) so the home reveals underneath.
+    const move = { duration: MOVE, easing: Easing.inOut(Easing.cubic) }
+    // Resting center of the home's top-left brand moon: inside the SafeAreaView,
+    // the top bar pads by screenH (left) and sm (top). The splash moon starts
+    // centered, so translate its center from screen-center to that rest point.
+    const restCx = insets.left + kindredSpacing.screenH + HOME_MOON / 2
+    const restCy = insets.top + kindredSpacing.sm + HOME_MOON / 2
+    tx.value = withDelay(HOLD, withTiming(restCx - width / 2, move))
+    ty.value = withDelay(HOLD, withTiming(restCy - height / 2, move))
+    scale.value = withDelay(HOLD, withTiming(HOME_MOON / SPLASH_MOON, move))
+    // Dark cover lifts partway through the move so the home reveals underneath.
     bgOp.value = withDelay(
       HOLD + MOVE * 0.4,
       withTiming(0, { duration: MOVE * 0.6, easing: Easing.in(Easing.quad) })
     )
-    // After the moon has landed on the anchor, cross-fade the splash moon out
-    // so we don't see two stacked moons. The home anchor is already painted
-    // underneath; this hand-off is invisible.
+    // After the moon lands on the anchor, cross-fade the splash moon out (the home
+    // anchor is painted underneath; the hand-off is invisible).
     moonOp.value = withDelay(
       HOLD + MOVE,
       withTiming(0, { duration: CROSSFADE }, (finished) => {
         if (finished) runOnJS(onDone)()
       })
     )
-  }, [moonTy, moonScale, moonOp, bgOp, onDone, reduced, height])
+  }, [tx, ty, scale, moonOp, bgOp, onDone, reduced, width, height, insets.left, insets.top])
 
   const bgStyle = useAnimatedStyle(() => ({ opacity: bgOp.value }))
   const moonStyle = useAnimatedStyle(() => ({
     opacity: moonOp.value,
-    transform: [{ translateY: moonTy.value }, { scale: moonScale.value }],
+    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
   }))
 
   return (
@@ -90,7 +86,6 @@ export function HomeSplash({ onDone }: { onDone: () => void }) {
       <Animated.View style={[StyleSheet.absoluteFill, styles.bg, bgStyle]} pointerEvents='none' />
       <Animated.View style={[styles.center, moonStyle]} pointerEvents='none'>
         <KindredMoon size={SPLASH_MOON} />
-        <Text style={styles.word}>Kindred</Text>
       </Animated.View>
     </>
   )
@@ -104,12 +99,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-  },
-  word: {
-    fontSize: 13,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
-    color: ricePaper.ivory,
   },
 })
