@@ -77,46 +77,45 @@ reading surface needed a pass. All API/web fixes are **deployed**; app fixes are
   primer). RN has no reliable text-range selection geometry → needs a
   selectable-text lib (e.g. `@alentoma/react-native-selectable-text`) or a native
   module. v1 is paragraph-long-press + bottom bar. **Device-QA + dep decision.**
-- ☐ **水墨晕开 transition on list→report** — reuse the solo reader's `InkBloomMask`
-  (`core-ui/motion/InkWipeReveal`). The report page itself can be **black bg**;
-  the **list/home page needs 宣纸 (`kindredPaper`) texture** so the ink blooms on
-  paper. Fix the "weird black safe-area edges" as part of this.
+- ✅ **水墨晕开 transition on list→report** — DONE (Phase 4, `ReportBloom`). The
+  report blooms in through `InkBloomMask` over a dark surround; the report is
+  paper edge-to-edge (`kindredPaper`), which also fixed the black safe-area edges.
+  No list inversion needed — `ChapterCard` is already paper. The list stays dark.
 - ☐ **Highlight persistence** — session-local now; AsyncStorage-per-bond follow-up.
 - ☐ **chat / make-if consume the `quote` param** — it now flows to both routes;
   the screens should seed their context from it.
-- ☐ **Missing-name display (the "Unknown" the user saw).** Server already falls
-  back to 甲方/乙方 (`hehun.ts:166`); the client must match — any place a nameless
-  bond renders should show **甲 (inviter) / 乙 (you)** or the relationship, never
-  the bare "Unknown" / blank. List + detail headers already do name‖relationship
-  (2026-06-09); audit the report body + share card + identity line for stragglers.
-  Pairs with the primer (#4), which is what *teaches* 甲=邀请方 / 乙=被邀请方.
+- ✅ **Missing-name display (the "Unknown" the user saw).** DONE (Phase 1, B1).
+  `bonds.ts:1164` mirror bond no longer stores the literal "Unknown" — it falls
+  back to the relationship label, else empty, and the client resolves a graceful
+  name (relationshipLabel/你). The primer (#4) teaches 甲=邀请方 / 乙=被邀请方.
 
-### ☐ New feedback queue (2026-06-09) — design-led, prioritized
+### ✅ New feedback queue (2026-06-09) — resolved (see Execution plan below)
 
-1. **Home ⇄ Threads merge** — promote the Threads list ONTO the home (kill the
-   extra `/(bonds)` list level; home → report is one hop, not two). Dedup
-   same-relation threads by **invite date → 时辰 → random 意象** when neither
-   distinguishes. (`app/(reading)/index.tsx` + `app/(bonds)/index.tsx`.)
-2. **Per-recipient language (#6)** — generate A's report in A's locale + B's in
-   B's (two versions); the report is currently one interpretation (accepter's
-   locale) shared by both. Backend: generate B's at accept-time, A's lazily so
-   accept doesn't pay 2× AI latency. (`bonds.ts` respond.)
-3. **Softer score (#3)** — replace the blunt number (e.g. 53) on the list with
-   the **生 / 克 / 平** imagery (derived by `deriveCenterpieceMode`). **Finer than
-   the bare label:** show the **静态 + 解法方向** (`克 → 生`) — the same `(from,to)`
-   model as B2, so the list reads as a path (current + how the 用神 carries it),
-   not a verdict. One model, two consumers (意象 morph + list score).
-4. **Reading primer (#2)** — a "how to read this" guide: 甲/乙 (inviter/you),
-   五行, 生克, what the 意象 (centerpiece) shows, what each of the 6 chapters
-   covers, what to focus on, AND the 划词 icon meanings. Shown entering the
-   report (first time) + a **persistent entry on the list**. Extends the Symbol
-   Glossary (already built at `app/(settings)/glossary.tsx`).
-5. **Theming / skins** — report = black; list = 宣纸; (stretch) a skin config
-   with several paper textures.
+1. ✅ **Home ⇄ Threads merge** — DONE (parallel session): Threads promoted onto
+   the home; home → report is one hop. Dedup by invite date → 时辰 → 意象.
+2. ✅ **Per-recipient language (#6)** — DONE (Phase 5). A reads A's locale, B
+   reads B's: `/invite` persists A's compose locale; accept generates B's
+   synchronously and regenerates A's mirror row in A's locale in the background.
+3. ✅ **Softer score (#3)** — DONE (Phase 2). The blunt number is replaced on the
+   list + home by the `EssenceTag` 生 / 克 / 比和 chip (相克 softened by its 解法
+   名 通关). The finer from→to read stays the report centerpiece's job (Phase 1).
+4. ✅ **Reading primer (#2)** — DONE (Phase 3). One-time `ReadingPrimer` on first
+   report open (甲/乙, the ink 意象, the 划词 long-press) + extended Symbol Glossary
+   (roles, the four 意象, 划词 actions) reachable from a list-footer entry.
+5. ✅ **Theming / skins** — DONE for the core split (Phase 4): report = paper
+   document edge-to-edge, list/home stay dark, ink-bloom entrance. The
+   multi-paper-texture **skin config** remains a stretch/deferred item.
 
 ---
 
 ## Execution plan (sequenced 2026-06-09) — ordered to minimise rework
+
+> **STATUS (2026-06-09): Phases 1–5 are COMPLETE and pushed to `main`.**
+> 1 (B1 names + B2 static essence + 解法 morph), 2 (#3 essence chip), 3 (#4 reading
+> primer + glossary), 4 (#5 水墨晕开 + paper edges), 5 (#2 per-recipient language).
+> Remaining = **Phase 6 only** (needs a dep or device): real text-range 划词,
+> highlight persistence, chat/make-if quote seeding, NotoSerifSC bundle, device QA,
+> B3 headline element mismatch.
 
 Device screenshots (2026-06-09 18:15) confirmed: **Home⇄Threads merge (#1) is
 DONE**; the report page is clean ✅; two new bugs surfaced. Do these IN ORDER —
