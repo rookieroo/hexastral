@@ -12,8 +12,15 @@
  *   merge      生    the two diffuse into one
  *   oppose     克    two masses crowd a seam; neither crosses
  *   resonate   比和  distinct yet entwined — the 太極 swirl
- *   transition 克→生 the 解法 frozen at its turn: two energies fusing through a
- *                    central 用神 bridge (distinct at the poles, one in the middle)
+ *   transition from→to  the 解法 frozen at its turn: the `from` static essence
+ *                       morphs once into the `to` essence (default 克→生). The
+ *                       endpoints are parameterized so every remedy reads as its
+ *                       own path — 克→生 通关 / 比和→生 泄秀 / 生→生 续生
+ *                       (see `deriveTransitionEndpoints`).
+ *
+ * The three static essences (merge / oppose / resonate) ARE the fixed 静态本质 of
+ * a couple — day-master 五行 生/克/比和. `transition` is the 动态 layer: ch6 解法
+ * always resolves toward 生; the living timeline layer may morph any direction.
  *
  * Composition is ported from the approved 2D study (gen_states.py / states.png).
  */
@@ -28,6 +35,8 @@ const CX = 280
 const CY = 160
 
 export type Mode = 'merge' | 'oppose' | 'resonate' | 'transition'
+/** The three fixed static essences — a transition morphs between two of them. */
+export type StaticMode = 'merge' | 'oppose' | 'resonate'
 
 // Fallback arc, used when no real relation is supplied (kind alone). Real data
 // should call `deriveCenterpieceMode` so the state reflects the actual couple.
@@ -93,12 +102,19 @@ export function deriveCenterpieceMode(
   bEl?: string,
   severity?: string
 ): Mode {
-  if (kind === 'first_impression') return 'resonate'
   const rel = elementRelation(aEl, bEl)
+  // ch1 (first_impression) is the 静态本质 summary — paint the couple's REAL
+  // fixed essence (生→merge / 克→oppose / 比和→resonate), not a hardcoded swirl.
+  if (kind === 'first_impression') {
+    return rel === 'generate' ? 'merge' : rel === 'overcome' ? 'oppose' : 'resonate'
+  }
   const intent = chapterIntent(kind)
   const hot = severity === 'high'
   if (intent === 'remedy') {
-    return rel === 'overcome' ? 'transition' : rel === 'generate' ? 'merge' : 'resonate'
+    // 解法 chapter — drive the static essence toward 生. 克 and 比和 both morph
+    // (通关 / 泄秀) via `transition`; 生 is already union, so it rests on merge.
+    // The from→to endpoints are supplied by `deriveTransitionEndpoints`.
+    return rel === 'generate' ? 'merge' : 'transition'
   }
   if (intent === 'tension') {
     if (rel === 'overcome') return 'oppose'
@@ -109,6 +125,24 @@ export function deriveCenterpieceMode(
   if (rel === 'generate') return 'merge'
   if (rel === 'peer') return 'resonate'
   return hot ? 'oppose' : 'merge'
+}
+
+/**
+ * The two endpoints of a 解法 morph for this couple — every remedy resolves
+ * toward 生 (merge), but from its own static essence:
+ *   克   →  oppose → merge   通关 (a 用神 bridges the wall)
+ *   比和 →  resonate → merge  泄秀 (the swirl pours into one)
+ *   生   →  merge → merge     续生 (already union; a still, breathing field)
+ * Pass these to `InkCenterpiece` as `from`/`to` when `mode === 'transition'`.
+ */
+export function deriveTransitionEndpoints(
+  aEl?: string,
+  bEl?: string
+): { from: StaticMode; to: StaticMode } {
+  const rel = elementRelation(aEl, bEl)
+  if (rel === 'overcome') return { from: 'oppose', to: 'merge' }
+  if (rel === 'peer') return { from: 'resonate', to: 'merge' }
+  return { from: 'merge', to: 'merge' }
 }
 
 // ── deterministic rng + value noise (stable, always-good layout) ─────────────
@@ -355,9 +389,16 @@ export interface InkCenterpieceProps {
   /** Explicit state, derived from real 命理 (via `deriveCenterpieceMode`). */
   mode?: Mode
   /**
+   * Transition endpoints. Only read when `mode === 'transition'`; the field
+   * morphs `from` → `to` once. Default 克→生 (`oppose`→`merge`) for back-compat;
+   * supply via `deriveTransitionEndpoints` to reflect the couple's real 解法.
+   */
+  from?: StaticMode
+  to?: StaticMode
+  /**
    * Whether this chapter is the one on screen. Only the `transition` state uses
-   * it: when it becomes active it plays the 克→生 morph ONCE (~3s) and rests on
-   * 生. Every other state is fully static and ignores this. Default true.
+   * it: when it becomes active it plays the from→to morph ONCE (~3s) and rests
+   * on `to`. Every other state is fully static and ignores this. Default true.
    */
   active?: boolean
 }
@@ -366,6 +407,8 @@ export function InkCenterpiece({
   kind,
   width,
   mode: modeProp,
+  from = 'oppose',
+  to = 'merge',
   active = true,
 }: InkCenterpieceProps) {
   const mode = modeProp ?? CHAPTER_MODE[kind] ?? 'oppose'
@@ -374,18 +417,19 @@ export function InkCenterpiece({
   const salt = useMemo(() => saltFromKind(kind), [kind])
   const isTransition = mode === 'transition'
 
-  // Static geometry. Non-transition: one field. Transition: the 克 and 生 endpoints
-  // of the morph — both generated ONCE; only opacity + slide animate between them.
+  // Static geometry. Non-transition: one field. Transition: the `from` and `to`
+  // endpoints of the morph — both generated ONCE; only opacity + slide animate
+  // between them.
   const single = useMemo(
     () => (isTransition ? null : generate(mode, s, salt)),
     [isTransition, mode, s, salt]
   )
   const morph = useMemo(
-    () => (isTransition ? { o: generate('oppose', s, salt), m: generate('merge', s, salt) } : null),
-    [isTransition, s, salt]
+    () => (isTransition ? { from: generate(from, s, salt), to: generate(to, s, salt) } : null),
+    [isTransition, from, to, s, salt]
   )
 
-  // 克→生 progress (0 = 克, 1 = 生). Driven through opacity + transform only —
+  // from→to progress (0 = from, 1 = to). Driven through opacity + transform only —
   // GPU-side, no per-particle work, no per-frame allocation. Plays once when the
   // chapter becomes active, then rests on 生 (animation stops → zero ongoing cost).
   const t = useSharedValue(0)
@@ -405,17 +449,17 @@ export function InkCenterpiece({
       <Fill color='#bdbcb7' />
       {morph ? (
         <>
-          {/* 克 endpoint — the two camps slide toward centre and fade out */}
+          {/* from endpoint — its two masses slide toward centre and fade out */}
           <Group opacity={fadeOut} transform={slideInk}>
-            <InkPoints faint={morph.o.inkFaint} bold={morph.o.inkBold} />
+            <InkPoints faint={morph.from.inkFaint} bold={morph.from.inkBold} />
           </Group>
           <Group opacity={fadeOut} transform={slidePale}>
-            <PalePoints faint={morph.o.paleFaint} bold={morph.o.paleBold} />
+            <PalePoints faint={morph.from.paleFaint} bold={morph.from.paleBold} />
           </Group>
-          {/* 生 endpoint — the merged whole fades in */}
+          {/* to endpoint — the resolved field fades in */}
           <Group opacity={fadeIn}>
-            <PalePoints faint={morph.m.paleFaint} bold={morph.m.paleBold} />
-            <InkPoints faint={morph.m.inkFaint} bold={morph.m.inkBold} />
+            <PalePoints faint={morph.to.paleFaint} bold={morph.to.paleBold} />
+            <InkPoints faint={morph.to.inkFaint} bold={morph.to.inkBold} />
           </Group>
         </>
       ) : single ? (

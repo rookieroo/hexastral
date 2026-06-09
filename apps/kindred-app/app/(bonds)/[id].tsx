@@ -44,7 +44,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
-import { deriveCenterpieceMode, InkCenterpiece } from '@/components/ink/InkCenterpiece'
+import {
+  deriveCenterpieceMode,
+  deriveTransitionEndpoints,
+  InkCenterpiece,
+} from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { SignInSheet } from '@/components/SignInSheet'
@@ -401,6 +405,7 @@ export default function BondDetailScreen() {
                   <InkCenterpiece
                     kind={ch.kind}
                     mode={deriveCenterpieceMode(ch.kind, aElement, bElement, ch.severity)}
+                    {...deriveTransitionEndpoints(aElement, bElement)}
                     active={i === chapterIndex}
                     width={Dimensions.get('window').width - 44}
                   />

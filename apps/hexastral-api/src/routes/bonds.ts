@@ -1161,7 +1161,11 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     id: mirrorBondId,
     ownerId: respondUserId,
     targetUserId: invitation.inviterUserId,
-    targetName: inviter.name ?? 'Unknown',
+    // Never store the literal "Unknown": when the inviter signed up without a
+    // name (no Apple full-name scope), fall back to the relationship label A
+    // chose for the bond, else empty — the client gracefully resolves a display
+    // name from relationshipLabel/你 (see (bonds)/[id].tsx, ThreadRow).
+    targetName: inviter.name ?? (bond?.relationshipLabel || ''),
     relationshipLabel: bond?.relationshipLabel ?? '',
     mode: 'resonance',
     hehunReadingId: readingIdForResponder,

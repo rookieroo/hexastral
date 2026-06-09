@@ -16,7 +16,11 @@ import { Stack } from 'expo-router'
 import { useState } from 'react'
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { deriveCenterpieceMode, InkCenterpiece } from '@/components/ink/InkCenterpiece'
+import {
+  deriveCenterpieceMode,
+  deriveTransitionEndpoints,
+  InkCenterpiece,
+} from '@/components/ink/InkCenterpiece'
 
 const A_ELEMENT = 'Metal'
 const B_ELEMENT = 'Fire'
@@ -183,6 +187,7 @@ export default function ChapterPreview() {
             <InkCenterpiece
               kind={ch.kind}
               mode={deriveCenterpieceMode(ch.kind, A_ELEMENT, B_ELEMENT, ch.severity)}
+              {...deriveTransitionEndpoints(A_ELEMENT, B_ELEMENT)}
               active={i === index}
               width={Dimensions.get('window').width - 44}
             />
