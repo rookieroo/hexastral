@@ -17,7 +17,7 @@
 
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import type { ReactNode } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 import { CHAPTER_SEAL } from '../glyphs'
 import { isCjkLocale, kindredFonts } from '../kindredFonts'
 import type { SynastryChapter } from '../types'
@@ -54,6 +54,17 @@ const ELEMENT_EN: Record<string, string> = {
   金: 'Metal',
   水: 'Water',
   木: 'Wood',
+}
+
+/**
+ * Split prose into sentences for 划词 selection — keeps terminal punctuation +
+ * trailing whitespace so the paragraph still flows naturally. CJK 。！？；and
+ * Latin .!? (and hard newlines) end a sentence; commas (，,) do NOT. Falls back
+ * to the whole text when there's nothing to split.
+ */
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^。！？.!?；;\n]+[。！？.!?；;]?[\s\n]*/g)
+  return parts && parts.length > 0 ? parts : [text]
 }
 
 export interface ChapterCardProps {
@@ -218,32 +229,35 @@ export function ChapterCard({
                 >
                   {l.label}
                 </Text>
-                <Pressable
-                  onLongPress={() => l.text && onPickQuote?.(l.text)}
-                  delayLongPress={300}
-                  disabled={!onPickQuote}
-                  style={
-                    l.text && highlightedQuotes?.includes(l.text)
-                      ? {
-                          backgroundColor: `${kindredPaper.cinnabar}1F`,
-                          borderRadius: 4,
-                          marginHorizontal: -4,
-                          paddingHorizontal: 4,
-                        }
-                      : undefined
-                  }
+                {/* 划词 — the paragraph flows as one Text, but each SENTENCE is
+                    its own long-pressable span, so a long-press picks the
+                    sentence under the finger (not the whole paragraph) and that
+                    sentence gets the cinnabar marker. (Word/arbitrary-range needs
+                    a native selectable-text view — see kindred-status.md.) */}
+                <Text
+                  style={{
+                    fontFamily: bodyFont,
+                    fontSize: cjk ? 16.5 : 18,
+                    lineHeight: cjk ? 30 : 27,
+                    color: kindredPaper.inkSoft,
+                  }}
                 >
-                  <Text
-                    style={{
-                      fontFamily: bodyFont,
-                      fontSize: cjk ? 16.5 : 18,
-                      lineHeight: cjk ? 30 : 27,
-                      color: kindredPaper.inkSoft,
-                    }}
-                  >
-                    {l.text}
-                  </Text>
-                </Pressable>
+                  {l.text
+                    ? splitSentences(l.text).map((s, i) => (
+                        <Text
+                          key={`${l.n}-${i}`}
+                          onLongPress={onPickQuote ? () => onPickQuote(s) : undefined}
+                          style={
+                            highlightedQuotes?.includes(s)
+                              ? { backgroundColor: `${kindredPaper.cinnabar}2E` }
+                              : undefined
+                          }
+                        >
+                          {s}
+                        </Text>
+                      ))
+                    : null}
+                </Text>
               </View>
             </View>
           ) : null
