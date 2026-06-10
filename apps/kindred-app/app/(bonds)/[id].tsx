@@ -39,7 +39,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
@@ -95,7 +95,13 @@ function getSharing(): SharingModule | null {
 }
 
 export default function BondDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  // ox/oy — the page coords of the thread row the user tapped, so the 水墨晕开
+  // entrance spreads from there (passed by the home list; absent for deep links).
+  const { id, ox, oy } = useLocalSearchParams<{ id: string; ox?: string; oy?: string }>()
+  const bloomOrigin = useMemo(
+    () => (ox != null && oy != null ? { x: Number(ox), y: Number(oy) } : null),
+    [ox, oy]
+  )
   const router = useRouter()
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
@@ -433,17 +439,18 @@ export default function BondDetailScreen() {
             emitUnlockFunnel({ step: 'subscribe_tap', bond_id: detail.id })
             router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
           }}
+          theme='dark'
         />
       ) : null
 
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        {/* 水墨晕开 entrance — the paper report blooms in over the dark surround.
-            Wraps ONLY the pager; the off-screen capture target + chrome below
-            stay outside the mask. The inner SafeAreaView is paper (kindredPaper),
-            so the report reads edge-to-edge with no dark safe-area bands. */}
-        <ReportBloom>
-          <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+        {/* 水墨晕开 entrance — the 水墨黑 report floods in from the tapped row over
+            the paper home (ReportBloom's surround is 宣纸). Wraps ONLY the pager;
+            the off-screen capture target + chrome below stay outside the mask. The
+            inner SafeAreaView is dark so the report reads edge-to-edge. */}
+        <ReportBloom origin={bloomOrigin}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
             {/* Clean report — NO top chrome at all (2026-06 feedback: "报告页应该
                 干干净净的显示报告即可，甚至不需要返回按钮，顶部的两个入口也去掉"). Exit
                 via the iOS edge-swipe-back gesture. Every action (copy / chat /
@@ -466,6 +473,7 @@ export default function BondDetailScreen() {
               locale={locale}
               onPickQuote={setPickedQuote}
               highlightedQuotes={highlights}
+              theme='dark'
               renderCenterpiece={
                 aElement && bElement
                   ? (ch, i) => (

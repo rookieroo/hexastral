@@ -205,10 +205,7 @@ export function ChapterUnlockWall({
         style={{ marginTop: kindredSpacing.xl, alignSelf: 'center' }}
       >
         <Text
-          style={[
-            kindredType.caption,
-            { color: C.textSecondary, textDecorationLine: 'underline' },
-          ]}
+          style={[kindredType.caption, { color: C.textSecondary, textDecorationLine: 'underline' }]}
         >
           {labels.subscribeCta}
         </Text>

@@ -37,7 +37,8 @@ function statusMeta(status: BondStatus, locale: Locale): { label: string; color:
 export interface ThreadListItemProps {
   bond: BondData
   locale: Locale
-  onPress: () => void
+  /** Receives the tap's page coords so the report blooms from the tapped row. */
+  onPress: (origin?: { x: number; y: number }) => void
   onDelete: () => void
   /** Per-bond living-layer entries (active bonds only). */
   onTimeline: () => void
@@ -102,7 +103,7 @@ export function ThreadListItem({
       )}
     >
       <Pressable
-        onPress={onPress}
+        onPress={(e) => onPress({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
         style={{
           flexDirection: 'row',
           alignItems: 'center',

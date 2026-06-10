@@ -1,17 +1,22 @@
 /**
- * Home — the solo 八字紫微 reading + the thread list, on one 宣纸 surface.
+ * Home — the solo 八字紫微 reading + the thread list, on a 宣纸 surface.
  *
- * 2026-06 device QA reshaped this twice:
+ * 2026-06 device QA reshaped this:
  *   - Threads flattened onto the home; tapping a row → its report directly.
- *   - The whole home is now 宣纸 (rice paper), so home → report is one continuous
- *     paper plane and the 水墨晕开 bloom reads as ink spreading on paper (point 1).
+ *   - The home is 宣纸 (rice paper); the reading/合盘 reports are 水墨黑 and bloom
+ *     IN from the tapped point, so the transition reads as ink spreading on paper
+ *     (point 1 — origin is captured on press-in and handed to the bloom).
+ *   - The chart card is the home's HERO — a paper "命书" object that lifts off
+ *     the page (2026-06: "把命书卡做成主角").
  *   - timeline & make-if are per-合盘, so they moved OFF a global chip onto each
  *     row's left-swipe (+ the report 划词 bar) (point 2).
  *
- *   ◐ Kindred                              ⚙   ← brand top-left · Settings top-right
+ *   ◐ Yuel                                 ⚙   ← brand top-left · Settings top-right
  *   ┌─────────────────────────────────────┐
- *   │ 土   Earth · 1994-06-22              │   ← your own chart, one compact card
- *   │      Open your reading  →            │     (tap → solo ReadingOverlay bloom)
+ *   │ ▣   YOUR READING                    │   ← the hero card: large 碑拓 seal,
+ *   │ 土   Earth · 1994-06-22             │     kicker + day-master element + date,
+ *   │ ─────────────────────────────────── │     a hairline, then the cinnabar CTA.
+ *   │      Open your reading  →            │     (tap → ReadingOverlay 水墨 bloom)
  *   └─────────────────────────────────────┘
  *   Threads                              +
  *   林朝英 · Partner                  生 ›    ← tap → report; swipe ← → Timeline /
@@ -54,6 +59,8 @@ import { consumeSplashDecision } from '@/lib/splash-control'
 /* ── Home copy (4 locales, local — keeps lib/i18n.ts untouched) ─────────── */
 
 interface HomeCopy {
+  /** Kicker over the hero card — "this is YOUR book of fate". */
+  cardKicker: string
   open: string
   threads: string
   threadsHint: string
@@ -72,6 +79,7 @@ const WUXING_LABEL: Record<string, Record<string, string>> = {
 
 const HOME_COPY: Record<Locale, HomeCopy> = {
   en: {
+    cardKicker: 'Your reading',
     open: 'Open your reading →',
     threads: 'Threads',
     threadsHint: 'Readings for two — invite or add someone',
@@ -79,6 +87,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: 'Enter your birth info →',
   },
   zh: {
+    cardKicker: '你的命书',
     open: '打开命书 →',
     threads: '牵绊',
     threadsHint: '两个人的合盘 — 邀请或录入对方',
@@ -86,6 +95,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: '填写生辰 →',
   },
   'zh-Hant': {
+    cardKicker: '你的命書',
     open: '打開命書 →',
     threads: '牽絆',
     threadsHint: '兩個人的合盤 — 邀請或錄入對方',
@@ -93,6 +103,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: '填寫生辰 →',
   },
   ja: {
+    cardKicker: 'あなたの命書',
     open: '命書を開く →',
     threads: '絆',
     threadsHint: 'ふたりの相性 — 招待または入力',
@@ -117,6 +128,9 @@ export default function ReadingHomeScreen() {
   const copy = HOME_COPY[locale]
   const birth = useSelfBirth()
   const [readingOpen, setReadingOpen] = useState(false)
+  // Where the reading bloom starts — the point on the card the user pressed, so
+  // the 水墨 spreads from the tap (set on press-in, read by ReadingOverlay).
+  const [readingOrigin, setReadingOrigin] = useState<{ x: number; y: number } | null>(null)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
@@ -262,37 +276,64 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* Your own chart — one compact, tappable card (opens the solo reading). */}
+      {/* Your own chart — the hero of the home (2026-06: "把命书卡做成主角"). A
+          paper "命书" object that lifts off the 宣纸: a large 碑拓 seal anchors
+          your day-master element, a quiet kicker names it as YOURS, and the
+          cinnabar CTA opens the reading. Press-in records the tap point so the
+          ink blooms from exactly where the finger lands. */}
       <Pressable
+        onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
         onPress={() => setReadingOpen(true)}
         accessibilityRole='button'
+        accessibilityLabel={copy.cardKicker}
         style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: kindredSpacing.md,
           marginHorizontal: kindredSpacing.screenH,
           marginBottom: kindredSpacing.xl,
-          padding: kindredSpacing.lg,
-          borderRadius: 14,
+          paddingVertical: kindredSpacing.lg,
+          paddingHorizontal: kindredSpacing.lg,
+          gap: kindredSpacing.lg,
+          borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: kindredPaper.hair,
-          backgroundColor: kindredPaper.hairSoft,
-          opacity: pressed ? 0.7 : 1,
+          backgroundColor: kindredPaper.bg,
+          // Soft lift off the 宣纸 so the card reads as a held object, not a row.
+          shadowColor: '#3c2415',
+          shadowOpacity: 0.1,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          transform: [{ scale: pressed ? 0.985 : 1 }],
         })}
       >
-        <AncientSeal
-          glyph={WUXING_GLYPH[natal.dayMasterWuXing] ?? '木'}
-          size={46}
-          tile={kindredDark.bg}
-          ink={kindredPaper.bg}
-        />
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[kindredType.caption, { color: kindredPaper.inkSoft }]}>
-            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
-            {birth.solarDate}
-          </Text>
-          <Text style={[kindredType.body, { color: kindredPaper.cinnabar }]}>{copy.open}</Text>
+        {/* Identity — large essence seal + day-master element + birthdate. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.md }}>
+          <AncientSeal
+            glyph={WUXING_GLYPH[natal.dayMasterWuXing] ?? '木'}
+            size={60}
+            tile={kindredDark.bg}
+            ink={kindredPaper.bg}
+            inset={0.82}
+          />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={[kindredType.seal, { color: kindredPaper.bronze, letterSpacing: 3 }]}>
+              {copy.cardKicker}
+            </Text>
+            <Text style={[kindredType.heading, { color: kindredPaper.ink }]}>
+              {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
+              {birth.solarDate}
+            </Text>
+          </View>
         </View>
+
+        {/* Hairline rule + cinnabar CTA. */}
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: kindredPaper.hair }} />
+        <Text
+          style={[
+            kindredType.body,
+            { color: kindredPaper.cinnabar, fontWeight: '600', letterSpacing: 0.3 },
+          ]}
+        >
+          {copy.open}
+        </Text>
       </Pressable>
 
       {/* Threads header — title + New. (Timeline/make-if are per-bond → row swipe.) */}
@@ -348,7 +389,17 @@ export default function ReadingHomeScreen() {
             <ThreadListItem
               bond={item}
               locale={locale}
-              onPress={() => router.push(`/(bonds)/${item.id}`)}
+              onPress={(origin) =>
+                router.push({
+                  pathname: '/(bonds)/[id]',
+                  params: {
+                    id: item.id,
+                    ...(origin
+                      ? { ox: String(Math.round(origin.x)), oy: String(Math.round(origin.y)) }
+                      : {}),
+                  },
+                })
+              }
               onDelete={() => confirmDelete(item)}
               onTimeline={() =>
                 router.push({
@@ -413,11 +464,14 @@ export default function ReadingHomeScreen() {
         />
       </SafeAreaView>
 
-      {/* Full reading — ink-bloom overlay (kept mounted for open/close animation) */}
+      {/* Full reading — ink-bloom overlay (kept mounted for open/close animation).
+          `origin` is the tapped point on the hero card, so the 水墨 spreads from
+          the finger. */}
       <ReadingOverlay
         visible={readingOpen}
         onClose={() => setReadingOpen(false)}
         onAskAI={handleAskAI}
+        origin={readingOrigin}
       />
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
