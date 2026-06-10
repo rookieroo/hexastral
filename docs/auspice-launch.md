@@ -32,6 +32,14 @@ Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = th
 - [ ] `cd apps/hexastral-api && bun deploy` — picks up the wider `.ics` window + the signed-token + sign route
 - [ ] RC dashboard: `auspice_pro_monthly` + `auspice_pro_annual` products live; entitlement `auspice_pro` mapped
 
+### Timeline node push (流月/流年/大运 — the #1 Pro hook) — deploy-gated
+Code-complete + typecheck-clean (4 workspaces) as of 2026-06-10; CANNOT be verified in-sandbox (needs D1 + cron). Full detail + rationale in `timeline-deep-read-plan.md` (§7).
+- [ ] `cd apps/hexastral-api && bun run db:migrate:prod` — applies migration `0012_petite_tana_nile` (creates `timeline_readings` 落库 table + `auspice_push_subs.timeline_remind_on`)
+- [ ] Deploy the three workers in order (targets before the cron): `services/svc-astro` → `apps/hexastral-api` → `services/svc-notify`, each `bun deploy`
+- [ ] Tune the svc-astro `/timeline/explain` prompt — marked DRAFT; sanity-check 流月/流年 wording (reflection-not-prediction register, the reason→flag mapping) against a few real charts
+- [ ] On-device verify (Pro + birth set + `timelineRemindToggle` on): open a 流月 node → rich read swaps in over the deterministic summary; re-open instant (落库 hit); navigate to a further year → "generating" → persists; evening daily push shows the 对你而言 fit line; on the 1st of a month confirm EXACTLY ONE node push (~09:00 local, server) and no duplicate local one (defer guard)
+- [ ] Watch `llm-guard` `timeline-explain` cost — 落库 (generate-once) should flatten the curve fast
+
 ### App Store Connect
 - [ ] Create the Auspice App Store Connect record (display name: **Auspice**, subtitle: 黄历 / Chinese Almanac, category: Reference)
 - [ ] App Group `group.com.hexastral.cycle` added to the provisioning profile (Developer portal → Identifiers → enable App Groups for the bundle id)

@@ -49,6 +49,31 @@ See `auspice-launch.md` for the gate UI; `yuan-launch.md` for the receive path.
 - `yuan-launch.md` — Kindred-only checklist
 - `launch-checklist.md` — shared App Store / Play Store steps (privacy manifests, screenshots, reviewer notes)
 
+---
+
+## Outstanding work — snapshot 2026-06-10
+
+A single "what's left" view across the work streams in play. Detail lives in the linked docs; this is the index.
+
+### A. Timeline node push — the #1 Pro hook (Auspice/Yuun) — **deploy-gated**
+Code-complete + typecheck-clean (svc-notify cron + `/api/auspice/timeline/explain` + 落库 `timeline_readings` + `timeline_remind_on` plumbing + What-If 干支 de-emphasis). CANNOT be built/verified in-sandbox (D1 + cron). **Remaining = local deploy only:**
+- Apply migration `0012_petite_tana_nile` to prod D1; deploy svc-astro → hexastral-api → svc-notify; tune the DRAFT svc-astro `/timeline/explain` prompt; on-device verify (no double-fire, 落库 hit, evening fit line).
+- Detail: `timeline-deep-read-plan.md` §7 + `auspice-launch.md` → "Timeline node push".
+
+### B. Brand rename Yuun / Yuel — finalization (human, not code)
+In-app code/config rename is **done** (app.json, Info.plist, strings.xml, share cards, i18n). **Remaining:**
+- Trademark filing for **Yuun** (cl. 9/42) + **Yuel** (cl. 9/42) — founder accepted the rejection risk; file or sit on it. Detail: `trademark-clearance-and-filing.md`.
+- Create the App Store Connect records under the new display names (gated on clearance comfort).
+- Stale: `auspice-launch.md` / `yuan-launch.md` headers still say "Auspice" / "Kindred" as display names — refresh to Yuun / Yuel when the ASC records are cut. Dirs + bundle ids stay (`com.hexastral.cycle`, etc.).
+
+### C. ASO + store entry (human)
+- `aso-metadata.json` rewritten for 8 locales (+ en-GB / ms / th / es-MX) — **done**. Detail: `brand-aso-gtm-plan.md`.
+- **Remaining:** enter the metadata into ASC; per-locale screenshots (`launch-checklist.md`).
+
+### D. Per-app June-launch checklists (pre-existing, still open)
+- Auspice: secrets (`CYCLE_CALENDAR_SECRET`), RC products live, ASC record, onboarding redesign, non-zh i18n sweep — `auspice-launch.md`.
+- Kindred: solo-first ming-pan frame (K1–K4), report redesign to justify $6.99 (墨儀 visual + per-chapter 4-layer) — `yuan-launch.md`, `kindred-status.md`, `kindred-report-redesign.md`.
+
 ## Reference
 
 - `decisions/` — every ADR (historical reasoning)

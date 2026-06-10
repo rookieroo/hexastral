@@ -136,7 +136,33 @@ becomes a complaint, add ONE frequency/quiet option later — never per-type.
 
 ## 6. What's buildable here vs needs local deploy
 
-- **In-sandbox (typecheck only)**: P0 client; P1's client wiring + the `lib/api.ts`
-  fetch + the D1 schema definition (Drizzle) + the endpoint code — all compile-checkable.
-- **Needs `bun deploy` (local, human)**: the D1 migration, the svc-astro prompt
-  deploy, the worker deploy, and any real LLM/cron verification.
+- **In-sandbox (typecheck only) — DONE**: P0 client; P1 endpoint + `lib/api.ts`
+  fetch + the D1 schema (Drizzle) + client wiring; P2 cron; the pref plumbing —
+  all coded and typecheck-clean (hexastral-api, svc-astro, svc-notify, auspice-app).
+- **Needs `bun deploy` (local, human)**: apply the migration to remote D1, deploy
+  the three workers, tune the svc-astro prompt, and verify the LLM/cron on-device.
+
+## 7. Deploy checklist (human, local — the only thing left)
+
+1. **Migrate D1** (creates `timeline_readings` + adds `auspice_push_subs.timeline_remind_on`):
+   ```bash
+   cd apps/hexastral-api && bun run db:migrate:prod   # applies 0012_petite_tana_nile
+   ```
+2. **Deploy the three workers** (order: astro + api before notify so the cron has its targets):
+   ```bash
+   cd services/svc-astro     && bun deploy
+   cd apps/hexastral-api      && bun deploy
+   cd services/svc-notify     && bun deploy
+   ```
+3. **Tune the svc-astro prompt** — `/timeline/explain` is marked DRAFT; sanity-check the
+   流月/流年 wording (reflection-not-prediction register, the reason→flag mapping) against a
+   few real charts before trusting the deep-read copy.
+4. **On-device verify** (Pro account, birth set, `timelineRemindToggle` on):
+   - Open a 流月 node in the next-12-months window → rich read appears, swaps in over the
+     deterministic `summary`; re-open is instant (落库 hit).
+   - Navigate to a further year → "generating" → read appears + persists.
+   - Evening daily push shows the 对你而言 fit line.
+   - 1st-of-month: confirm exactly ONE timeline node push arrives (server, ~09:00 local)
+     and NO duplicate local one (the defer guard).
+5. **Watch cost** — `llm-guard` metrics for `timeline-explain`; 落库 should make the
+   curve flatten fast (generate-once).
