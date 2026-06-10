@@ -1,6 +1,6 @@
 # Kindred — Status & Task Board
 
-_Last updated: 2026-06-09. A living tracking layer over the detailed plans — it
+_Last updated: 2026-06-10. A living tracking layer over the detailed plans — it
 records **what's done** and **what's next**, and points to the ADRs / plan docs
 rather than restating them._
 
@@ -18,6 +18,47 @@ moat) — it always shows two people; cross-sell via the auspice⇄kindred hando
 feng-app is deprioritized. Money = **one-time deep report** (合盘 $6.99 /
 personal $4.99) **+ subscription living layer** (合盘 timeline / make-if / node
 notifications / 划词 chat quota).
+
+---
+
+## Current state (2026-06-10) — reconciled with main
+
+Two things landed since this board's body was written; the sections below predate
+them, so read this banner first.
+
+- **Brand rename DECIDED + in progress.** **Kindred → Yuel (缘)**, **Auspice/Cycle →
+  Yuun (运)** — coined wordmarks, brand family on the engine's own concepts. Both
+  `.app` domains registered (UseONE); both 🟢 cleared (knockout). Launch storefronts
+  FIXED: **US · JP · SG · MY · TH**. App display names already flipped
+  (`app.json`: Yuel / Yuun); in-app wordmarks + ASO being propagated. Refs:
+  [ADR-0024](decisions/0024-app-brand-naming.md) · [brand-aso-gtm-plan.md](brand-aso-gtm-plan.md)
+  · [trademark-clearance-and-filing.md](trademark-clearance-and-filing.md).
+  - The doc body below still says "Kindred"/"Auspice" — treat as the old names.
+- **Timeline deep-read BUILT, deploy-gated.** The **流月/流年/大运 three-dimension
+  node deep-read + push** (运's headline, **#1 Pro hook**) is coded + typecheck-clean
+  with migration `0012`. It is a server + D1 + LLM + cron feature → **CANNOT be
+  verified from the agent sandbox**; needs a human `bun deploy` + on-device verify.
+  Ref: [timeline-deep-read-plan.md](timeline-deep-read-plan.md).
+
+### Critical path to launch (what's actually left, by owner)
+
+1. **HUMAN deploy** — `cd apps/hexastral-api && bun deploy` (timeline deep-read +
+   migration 0012 + the #9 server fix), `svc-notify` + `svc-astro` deploys for the
+   node push. Nothing below the API tier takes effect until this runs.
+2. **HUMAN legal** — counsel's live USPTO phonetic sweep on YUEL/YUUN (cl 9/42),
+   then file (ITU/use) — runs PARALLEL to App Review, never gates publishing.
+3. **HUMAN App Store Connect** — create `hexastral_personal` ($4.99) → unblocks
+   **#8** (the only open in-app monetization gap; client+server wiring spec is
+   ready, see #8 below — ship as one pass once the product exists).
+4. **HUMAN launch ops** — Apple portal capabilities, ASC records + metadata +
+   screenshots, RevenueCat products/entitlements, privacy labels (see
+   [launch-checklist.md](launch-checklist.md) · [auspice-launch.md](auspice-launch.md)).
+5. **Blocked-on-dep/device** — bundle NotoSerifSC; on-device QA (MaskedView pager +
+   划词, centerpiece morphs, timeline deep-read).
+
+> **Agent-side status:** all phases 1–6 of the earlier execution plan are shipped;
+> the remaining work is the human/deploy/legal column above, plus finishing the
+> in-flight rename propagation. No unblocked, non-colliding app-code task remains.
 
 ---
 
