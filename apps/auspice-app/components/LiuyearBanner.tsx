@@ -31,13 +31,16 @@ function shichenToHour(timeIndex: number | null): number {
   return timeIndex * 2
 }
 
-/** Short localized hook that introduces make-if under its CTA — the 干支 that used
- *  to sit on its own said nothing to users; this teases what the feature does. */
+/** Short localized hook under the make-if CTA. Motivation, NOT novelty: the old
+ *  "推演另一种人生 / your alternate timelines" read as a parallel-universe toy with
+ *  no reason to tap. make-if is a decision engine — "weighing a choice? see which
+ *  timing your chart favors" — so the subtitle states that intent (ADR-0023b). The
+ *  title stays the brand metaphor (假如 / What-If — itself decision-flavored). */
 const MAKEIF_TAGLINE: Record<string, string> = {
-  'zh-Hans': '推演另一种人生',
-  'zh-Hant': '推演另一種人生',
-  ja: 'もしもの人生を試す',
-  en: 'your alternate timelines',
+  'zh-Hans': '抉择之前,先看时机',
+  'zh-Hant': '抉擇之前,先看時機',
+  ja: '決断の前に、時機を読む',
+  en: 'time a real decision',
 }
 
 export function LiuyearBanner() {
