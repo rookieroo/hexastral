@@ -748,19 +748,60 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
 
     const yi = day.goodFor.slice(0, 4).join('、') || '—'
     const ji = day.avoid.slice(0, 4).join('、') || '—'
-    const forYou = personalization ? (FIT_LABEL[personalization.fit] ?? personalization.fit) : null
-    const summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}${forYou ? ` · 你${forYou}` : ''}`
-    const descParts = [
-      `干支日：${day.ganZhi}（${day.element}）`,
-      `日辰：${day.dayOfficer}日`,
-      day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
-      day.festivalToday ? `节日：${day.festivalToday.name}` : null,
-      `宜：${day.goodFor.join('、') || '—'}`,
-      `忌：${day.avoid.join('、') || '—'}`,
-      `冲：${day.clash.clashAnimal}`,
-      forYou ? `对你而言：${forYou}` : null,
-    ].filter(Boolean) as string[]
-    const description = descParts.join('\\n')
+
+    // The PERSONAL feed (subject defined) must genuinely be 专属 — not the
+    // universal 黄历 with one fit word tacked on. Lead with YOUR verdict + the
+    // 用神/忌神/冲 drivers, and call out where it DIVERGES from the 通书 (a day
+    // good for everyone can be 凶 for YOU — that divergence IS the value).
+    let summary: string
+    let descParts: (string | null)[]
+    if (personalization) {
+      const fitLabel = FIT_LABEL[personalization.fit] ?? personalization.fit
+      const reasonWords = (personalization.reasons ?? [])
+        .map((r) =>
+          r === 'favorable_element_present'
+            ? '用神得力'
+            : r === 'unfavorable_element_present'
+              ? '忌神当值'
+              : r === 'personal_clash'
+                ? '冲犯本命'
+                : ''
+        )
+        .filter(Boolean)
+      if (personalization.benming) reasonWords.push('本命值年')
+      const reasonShort = reasonWords.join('、')
+      const universallyGood = day.goodFor.length > 0
+      const diverge =
+        personalization.fit === '凶'
+          ? universallyGood
+            ? '通书有宜事，于你却宜缓'
+            : '于你宜缓，量力而行'
+          : personalization.fit === '吉'
+            ? '于你得力，宜把握'
+            : ''
+      summary = `于你${fitLabel}${reasonShort ? `·${reasonShort}` : ''} ${day.ganZhi}日`
+      descParts = [
+        `对你而言：${fitLabel}${reasonShort ? `（${reasonShort}）` : ''}`,
+        diverge || null,
+        `干支日：${day.ganZhi}（${day.element}）`,
+        day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
+        `通书 · 宜：${day.goodFor.join('、') || '—'}`,
+        `通书 · 忌：${day.avoid.join('、') || '—'}`,
+        `冲：${day.clash.clashAnimal}`,
+      ]
+    } else {
+      summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}`
+      descParts = [
+        `干支日：${day.ganZhi}（${day.element}）`,
+        `日辰：${day.dayOfficer}日`,
+        day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
+        day.festivalToday ? `节日：${day.festivalToday.name}` : null,
+        `宜：${day.goodFor.join('、') || '—'}`,
+        `忌：${day.avoid.join('、') || '—'}`,
+        `冲：${day.clash.clashAnimal}`,
+      ]
+    }
+    const description = (descParts.filter(Boolean) as string[]).join('\\n')
 
     events.push(
       [

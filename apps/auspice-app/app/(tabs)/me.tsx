@@ -685,22 +685,9 @@ export default function MeScreen() {
         {/* ── Apple Calendar subscribe — opens webcal:// in system Calendar ── */}
         <View>
           <SectionLabel>{t.appleCalendarSection}</SectionLabel>
-          {/* ONE calendar entry (2026-06: the universal + "专属" rows were
-              near-identical — both synced daily 黄历 to Calendar, just one added
-              the fit → two redundant calendars). Free subscribes to the 黄历
-              feed; Pro's subscription is the SAME calendar, enriched with the
-              daily 对你而言 吉/平/凶. */}
           <Pressable
             onPress={() => {
-              if (isPro) {
-                if (!birthValid) {
-                  setEditingBirth(true)
-                  return
-                }
-                void openPersonalCalendarSubscribe(birth.solarDate)
-              } else {
-                void openCalendarSubscribe()
-              }
+              void openCalendarSubscribe()
             }}
             accessibilityRole='button'
             accessibilityLabel={t.appleCalendarSubscribeRow}
@@ -722,8 +709,46 @@ export default function MeScreen() {
               <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
                 {t.appleCalendarSubscribeHint}
               </Text>
-              {/* The Pro layer — same calendar, your daily 吉/平/凶 baked in. */}
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginTop: 2 }}>
+            </View>
+            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+          </Pressable>
+          {/* Pro 对你而言 calendar — a GENUINELY personal feed: the day overlaid
+              with YOUR 用神/忌神/六冲, leading with where it DIVERGES from the
+              universal 黄历 (that divergence is the 专属 value). */}
+          <Pressable
+            onPress={() => {
+              if (!isPro) {
+                setCalPaywallOpen(true)
+                return
+              }
+              if (!birthValid) {
+                setEditingBirth(true)
+                return
+              }
+              void openPersonalCalendarSubscribe(birth.solarDate)
+            }}
+            accessibilityRole='button'
+            accessibilityLabel={t.personalCalendarRow}
+            style={({ pressed }) => ({
+              marginTop: spacing.md,
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: colors.text, fontSize: 15 }}>{t.personalCalendarRow}</Text>
+                {!isPro ? (
+                  <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
+                ) : null}
+              </View>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
                 {t.personalCalendarHint}
               </Text>
             </View>
