@@ -451,6 +451,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
   // that replaces local notifications' rolling-window unreliability:
   await runAuspicePush(env, 'morning', 8)
   await runAuspicePush(env, 'evening', 20)
+  // Auspice 人生时间线 node push (流月/流年/大运) — month-starts only, 09:00 local.
+  // THE #1 paid hook; deterministic teaser, lazy in-app LLM read on tap (落库).
+  await runAuspiceTimelinePush(env, 9)
 }
 
 /** Two-digit pad. */
@@ -561,6 +564,78 @@ async function runAuspicePush(
   }
 
   logger.info('auspice push complete', { slot, sent, invalidTokens: invalidTokens.length })
+}
+
+/**
+ * Auspice 人生时间线 node push — THE headline Pro hook (流月 / 流年 / 大运 节点通知).
+ * Fires on MONTH-STARTS only, at `targetHour` local. hexastral-api picks ONE
+ * deterministic node per device (大运 boundary > 流年 Jan-1 > 流月) and renders a
+ * teaser body; the rich LLM read is generated lazily in-app on tap (落库 → reused
+ * by re-views), so this cron NEVER fans LLM calls out — no per-user generation, no
+ * thundering herd. Pro + opted-in (timelineRemindOn) is gated server-side; here we
+ * just dispatch. Separated from the 08:00 daily 宜忌 push so the two don't collide.
+ */
+async function runAuspiceTimelinePush(env: Env, targetHour: number): Promise<void> {
+  const now = new Date()
+  // Only zones that are BOTH at the dispatch hour AND on a month-start right now.
+  const zones = TIMEZONE_POOL.filter(
+    (tz) => tzLocalHour(tz, now) === targetHour && tzLocalDate(tz, now).endsWith('-01')
+  )
+  if (zones.length === 0) return
+  logger.info('auspice timeline push check', { targetHour, zones: zones.length })
+
+  const invalidTokens: string[] = []
+  let sent = 0
+
+  for (const tz of zones) {
+    const date = tzLocalDate(tz, now) // already a YYYY-MM-01
+    let cursor: string | null = '0'
+    while (cursor !== null) {
+      const url = new URL('https://internal/api/auspice/timeline/push/targets')
+      url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('date', date)
+      url.searchParams.set('limit', '200')
+      url.searchParams.set('cursor', cursor)
+      const res = await env.SVC_API.fetch(url, { headers: { 'X-Internal-Key': env.INTERNAL_KEY } })
+      if (!res.ok) {
+        logger.error('auspice timeline push-targets failed', { tz, status: String(res.status) })
+        break
+      }
+      const json = await res.json<{
+        data: {
+          messages: Array<{
+            deviceId: string
+            token: string
+            title: string
+            body: string
+            data: Record<string, string>
+          }>
+          nextCursor: number | null
+        }
+      }>()
+      const msgs = json.data.messages
+      if (msgs.length > 0) {
+        const { invalidTokens: bad } = await sendExpoMessages(
+          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        )
+        invalidTokens.push(...bad)
+        sent += msgs.length - bad.length
+      }
+      cursor = json.data.nextCursor == null ? null : String(json.data.nextCursor)
+    }
+  }
+
+  // Reuse the daily-push stale-token cleanup (same registry).
+  if (invalidTokens.length > 0) {
+    await env.SVC_API.fetch('https://internal/api/auspice/push/unregister-stale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ tokens: invalidTokens.slice(0, 100) }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
+
+  logger.info('auspice timeline push complete', { sent, invalidTokens: invalidTokens.length })
 }
 
 /**
