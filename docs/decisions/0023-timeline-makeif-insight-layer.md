@@ -124,3 +124,43 @@ not plumbing. These principles say where the value is and where context must NOT
      energy of that time," never "and so you will…". Reuse the hardened timeline
      prompt principles (name the domain, reflection-not-prediction, no fatalism,
      close on agency).
+
+## Amendment (2026-06-10b) — make-if as the macro 择时 decision engine
+
+Founder: this turns make-if into "一款绝妙的决策机". Two scales of 择时 exist; make-if
+is the missing MACRO one and funnels into the existing MICRO one.
+
+- **MICRO 择时 (BUILT) = 择日.** `/event` reverse-择日: `event ∈ CYCLE_EVENTS`
+  (wedding/business/signing/move/move-in/travel/burial/groundbreaking/medical/study)
+  + `range:{from,to}` (≤92d) → top-3 auspicious DAYS. The timeline already deep-links
+  a chosen future 流年 → `/event` prefilled with that year's 立春 window (`ZejiLink`).
+  Answers "within this date range, which DAY."
+- **MACRO 择时 (the gap make-if fills) = 择运.** "This life-move — which 运/年 does my
+  命理 favor?" Today make-if only gives a single "current window favors this KIND of
+  move" verdict, and user-fork verdicts are **hash-seeded (fiction)** — not the real
+  node read. The new value is a **cross-window ranking** of one decision via
+  `periodSignals` over candidate windows (this 流年 / next / next 大运).
+
+**Design (decided):**
+1. **Reuse `CYCLE_EVENTS` as the shared decision vocabulary** — do NOT invent a new
+   archetype taxonomy. make-if's pickable decisions are the CYCLE_EVENTS subset that
+   are genuine life-moves with a 择日 landing (business/wedding/move/study/signing),
+   plus a couple of macro-only classes (守成/转向) that carry no 择日 handoff.
+2. **The funnel / closed loop:** make-if macro verdict ("creating a business sits
+   better in 2028 — 用神得力 that year, 忌神当值 now") → **deep-link the existing
+   `/event` 择日** (event + that window's range) → day-level picks. One event
+   vocabulary, two zoom levels: make-if picks the YEAR/运, 择日 picks the DAY. The
+   timeline today makes the user pick the year themselves; make-if supplies the
+   *which-year* judgment above it. Loop with the node push: timeline says WHEN to
+   watch → make-if says which WINDOW a move sits best → 择日 says which DAY.
+3. **Fix the fake verdict:** replace `buildUserBranch`'s hash-seeded dots' headline
+   fit with the real `periodSignals` read at the diverge window (keep locale-invariant
+   structural seeding for the lane shape only).
+4. **Deterministic vs LLM:** the cross-window fit + ranking is deterministic
+   (`periodSignals`, free, cacheable, the trust spine); LLM writes only the synthesis
+   prose (落库-cached, Pro/flagship tier, premise-agnostic tone per the timeline
+   hardening + the make-if doctrine above).
+
+**Phasing:** P1 (in-sandbox-verifiable) = CYCLE_EVENTS-driven macro 择时 comparison
++ real fork verdict + the `/event` deep-link handoff (client + astro-core, typecheck/
+test). P2 (deploy-gated) = the LLM synthesis + 落库 + Pro gate.
