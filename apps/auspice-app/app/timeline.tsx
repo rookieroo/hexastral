@@ -32,7 +32,7 @@ import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -48,8 +48,14 @@ import type { DrilldownYear } from '@/components/DrilldownGraph'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { DOMAIN_COLORS, ReadingBubble } from '@/components/TimelineGraph'
 import { TimelineYearGraph } from '@/components/TimelineYearGraph'
-import { fetchTimeline, type PersonalFit, type TimelinePayload } from '@/lib/api'
+import {
+  fetchTimeline,
+  fetchTimelineExplain,
+  type PersonalFit,
+  type TimelinePayload,
+} from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceDeviceId } from '@/lib/device'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { computeLiuyue, type LiuyueCell } from '@/lib/liuyue'
@@ -685,6 +691,60 @@ function Body({
     [selectedId, payload, t, favEl, lang]
   )
 
+  // Pro per-node deep-read (LLM, server-落库). Lazy — fetched only when a
+  // 大运/流年/流月 node is open. The deterministic `detail.body` renders instantly;
+  // the deep-read swaps in when it returns (and only for the still-selected node).
+  // Free → no fetch; the upsell under the reading carries the Pro cue.
+  const [deepRead, setDeepRead] = useState<{ id: string; reading: string } | null>(null)
+  useEffect(() => {
+    if (!selectedId || !isPro) {
+      setDeepRead(null)
+      return
+    }
+    let nodeType: '大运' | '流年' | '流月' | null = null
+    let year = 0
+    let month = 0
+    if (selectedId.startsWith('dayun-')) {
+      const row = payload.dayun.find((d) => d.index === Number(selectedId.slice('dayun-'.length)))
+      if (row) {
+        nodeType = '大运'
+        year = row.startYear
+      }
+    } else if (selectedId.startsWith('liunian-')) {
+      nodeType = '流年'
+      year = Number(selectedId.slice('liunian-'.length))
+    } else if (selectedId.startsWith('liuyue-')) {
+      const parts = selectedId.split('-')
+      nodeType = '流月'
+      year = Number(parts[1])
+      month = Number(parts[2])
+    }
+    if (!nodeType || !Number.isFinite(year)) {
+      setDeepRead(null)
+      return
+    }
+    const nt = nodeType
+    let cancelled = false
+    void (async () => {
+      const deviceId = await getAuspiceDeviceId()
+      const res = await fetchTimelineExplain({
+        birthDate: payload.birth.date,
+        birthHour: payload.birth.hour,
+        gender: payload.birth.gender,
+        nodeType: nt,
+        year,
+        month,
+        locale: lang,
+        deviceId,
+        isPro: true,
+      }).catch(() => null)
+      if (!cancelled && res?.reading) setDeepRead({ id: selectedId, reading: res.reading })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedId, isPro, payload, lang])
+
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
   const birthBranch = useMemo<EarthlyBranch | null>(() => {
     const [y, m, d] = payload.birth.date.split('-').map(Number)
@@ -797,7 +857,7 @@ function Body({
       {detail ? (
         <ReadingBubble
           heading={detail.heading}
-          body={detail.body}
+          body={deepRead?.id === selectedId ? deepRead.reading : detail.body}
           fit={detail.fit}
           colors={colors}
         />

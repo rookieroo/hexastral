@@ -1357,6 +1357,10 @@ export const auspicePushSubs = sqliteTable(
     holidayOn: integer('holiday_on', { mode: 'boolean' }).notNull().default(true),
     /** 关系桥 nudge: "今日 你和 [亲友] 同气" on a resonance day (morning, rare). */
     relationshipOn: integer('relationship_on', { mode: 'boolean' }).notNull().default(true),
+    /** 人生时间线 node push (流月 month-start / 流年 year-start / 大运 transition).
+     *  Mirrors the client `timelineRemindToggle`; Pro-gated. The push is a
+     *  deterministic personalized teaser → tap opens the in-app LLM deep-read. */
+    timelineRemindOn: integer('timeline_remind_on', { mode: 'boolean' }).notNull().default(true),
     /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
     isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
     lastActiveAt: text('last_active_at').notNull(),

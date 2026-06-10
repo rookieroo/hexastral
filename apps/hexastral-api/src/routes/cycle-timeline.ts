@@ -53,7 +53,12 @@ import { and, eq, gt } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { lifeTimelineCache, TIMELINE_CACHE_VERSION, timelineReadings } from '../db/schema'
+import {
+  auspicePushSubs,
+  lifeTimelineCache,
+  TIMELINE_CACHE_VERSION,
+  timelineReadings,
+} from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
@@ -608,6 +613,159 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
   }
 
   return jsonOk(c, { reading: null, source: 'template', upsell: guard.upsellAfterExhaust })
+})
+
+// ── GET /push/targets — 人生时间线 node push (P2, the headline Pro hook). ──────
+//
+// 流月 (month-start) / 流年 (year-start) / 大运 (transition year) — ONE node/day,
+// most-significant first: 大运 boundary > 流年 (Jan 1) > 流月 (every month start).
+// The push is a DETERMINISTIC personalized teaser (干支 + 对你 fit + a deep-link);
+// the rich LLM read is generated LAZILY in-app on tap (reuses /explain + 落库), so
+// the cron stays cheap (no per-user LLM). Internal-key gated; svc-notify cron calls
+// it per timezone on month-starts. See docs/timeline-deep-read-plan.md §P2.
+
+interface TimelinePushLabels {
+  dayun: { title: string; tap: string }
+  liunian: (y: number) => { title: string; tap: string }
+  liuyue: (m: number) => { title: string; tap: string }
+  forYou: string
+  fit: Record<string, string>
+}
+
+const TIMELINE_PUSH_LABELS: Record<string, TimelinePushLabels> = {
+  'zh-Hans': {
+    dayun: { title: '新的十年大运', tap: '点开看人生新章' },
+    liunian: (y) => ({ title: `${y} 年 · 新流年`, tap: '点开看这一年' }),
+    liuyue: (m) => ({ title: `${m} 月 · 新流月`, tap: '点开看这个月' }),
+    forYou: '对你',
+    fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
+  },
+  'zh-Hant': {
+    dayun: { title: '新的十年大運', tap: '點開看人生新章' },
+    liunian: (y) => ({ title: `${y} 年 · 新流年`, tap: '點開看這一年' }),
+    liuyue: (m) => ({ title: `${m} 月 · 新流月`, tap: '點開看這個月' }),
+    forYou: '對你',
+    fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
+  },
+  ja: {
+    dayun: { title: '新しい十年の大運', tap: '人生の新章を見る' },
+    liunian: (y) => ({ title: `${y} 年 · 新しい流年`, tap: 'この一年を見る' }),
+    liuyue: (m) => ({ title: `${m} 月 · 新しい流月`, tap: 'この月を見る' }),
+    forYou: 'あなたへ',
+    fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
+  },
+  en: {
+    dayun: { title: 'A new 10-year chapter', tap: 'open your new chapter' },
+    liunian: (y) => ({ title: `${y} · your year ahead`, tap: 'open this year' }),
+    liuyue: (m) => ({ title: `Month ${m} · the month ahead`, tap: 'open this month' }),
+    forYou: 'You',
+    fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
+  },
+}
+
+function timelinePushLabels(locale: string): TimelinePushLabels {
+  const en = TIMELINE_PUSH_LABELS.en as TimelinePushLabels // 'en' always exists
+  if (locale.startsWith('zh-Hant')) return TIMELINE_PUSH_LABELS['zh-Hant'] ?? en
+  if (locale.startsWith('zh')) return TIMELINE_PUSH_LABELS['zh-Hans'] ?? en
+  if (locale.startsWith('ja')) return TIMELINE_PUSH_LABELS.ja ?? en
+  return en
+}
+
+auspiceTimelineRoutes.get('/push/targets', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const timezoneId = c.req.query('timezoneId')
+  const date = c.req.query('date')
+  if (!timezoneId || !date || !DATE_RE.test(date)) {
+    throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
+  }
+  const [yy, mm, dd] = date.split('-').map((n) => Number.parseInt(n, 10)) as [
+    number,
+    number,
+    number,
+  ]
+  // Timeline node pushes fire on MONTH-STARTS only (the cron schedules accordingly).
+  if (dd !== 1) return jsonOk(c, { messages: [], hasMore: false, nextCursor: null })
+
+  const db = c.get('db')
+  if (!db) return jsonOk(c, { messages: [], hasMore: false, nextCursor: null })
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
+  const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
+  const page0 = await db
+    .select({
+      deviceId: auspicePushSubs.deviceId,
+      token: auspicePushSubs.token,
+      locale: auspicePushSubs.locale,
+      birthDate: auspicePushSubs.birthDate,
+      birthHour: auspicePushSubs.birthHour,
+      gender: auspicePushSubs.gender,
+      isPro: auspicePushSubs.isPro,
+      timelineRemindOn: auspicePushSubs.timelineRemindOn,
+    })
+    .from(auspicePushSubs)
+    .where(eq(auspicePushSubs.timezoneId, timezoneId))
+    .limit(limit + 1)
+    .offset(offset)
+  const hasMore = page0.length > limit
+  const page = hasMore ? page0.slice(0, limit) : page0
+
+  const messages: Array<{
+    deviceId: string
+    token: string
+    title: string
+    body: string
+    data: Record<string, string>
+  }> = []
+
+  for (const sub of page) {
+    // Pro + opted-in + full birth (大运 direction needs gender).
+    if (
+      !sub.isPro ||
+      !sub.timelineRemindOn ||
+      !sub.birthDate ||
+      sub.birthHour == null ||
+      (sub.gender !== 'M' && sub.gender !== 'F')
+    ) {
+      continue
+    }
+    // Pick ONE node/day: 大运 boundary > 流年 (Jan 1) > 流月 (every month start).
+    let nodeType: '大运' | '流年' | '流月'
+    let month: number
+    let facts: NodeFacts | null
+    if (mm === 1) {
+      const dy = resolveNodeFacts(sub.birthDate, sub.birthHour, sub.gender, '大运', yy, 0)
+      if (dy && dy.year === yy) {
+        nodeType = '大运'
+        facts = dy
+      } else {
+        nodeType = '流年'
+        facts = resolveNodeFacts(sub.birthDate, sub.birthHour, sub.gender, '流年', yy, 0)
+      }
+      month = 0
+    } else {
+      nodeType = '流月'
+      month = mm
+      facts = resolveNodeFacts(sub.birthDate, sub.birthHour, sub.gender, '流月', yy, mm)
+    }
+    if (!facts) continue
+    const L = timelinePushLabels(sub.locale)
+    const head = nodeType === '大运' ? L.dayun : nodeType === '流年' ? L.liunian(yy) : L.liuyue(mm)
+    const fitLabel = L.fit[facts.fit] ?? String(facts.fit)
+    messages.push({
+      deviceId: sub.deviceId,
+      token: sub.token,
+      title: head.title,
+      body: `${facts.ganZhi} · ${L.forYou} ${fitLabel} · ${head.tap}`,
+      data: {
+        type: 'auspice_timeline',
+        route: '/timeline',
+        nodeType,
+        year: String(yy),
+        month: String(month),
+      },
+    })
+  }
+  return jsonOk(c, { messages, hasMore, nextCursor: hasMore ? offset + limit : null })
 })
 
 // Re-export for callers that need the deterministic computer (Agent D's iOS
