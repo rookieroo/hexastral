@@ -169,3 +169,87 @@ export function favoredMove(signals: RetrodictionSignals): FavoredMove {
   // Neutral window — nothing pulling strongly; steady is the safe default.
   return { primary: 'hold', reasons: [] }
 }
+
+// ── Window ranking (Make-If MACRO 择时: which window best fits a move) ─────────
+
+/** The actionable moves a user can TIME. `hold` ("don't act now") is a verdict,
+ *  never a thing the user schedules, so it is excluded. */
+export type TimeableMove = Exclude<MoveArchetype, 'hold'>
+
+/** A candidate window to time a move against (a 流年 / 大运 / 流月 pillar). */
+export interface MoveWindow {
+  /** Caller's stable key for the window (e.g. a year `'2028'` or `'dayun-3'`). */
+  key: string
+  period: PeriodInput
+}
+
+/** A window scored + explained for an intended move, in the macro 择时 ranking. */
+export interface RankedMoveWindow {
+  key: string
+  fit: PersonalFit
+  /** Higher = the window better supports the intended move. */
+  score: number
+  /** Signals driving the score (edge-localized). */
+  reasons: SignalKey[]
+  signals: PeriodSignals
+}
+
+/**
+ * Score one window for an intended move. Honest + deterministic: EVERY move
+ * gains from 用神 and loses to 忌神 / 冲 (a volatile window is poor for any
+ * deliberate step); `connect` / `move` additionally gain from their own 神煞
+ * (桃花 / 驿马). `expand` keys purely on 用神, so it carries no special bonus.
+ */
+function scoreWindowForMove(
+  move: TimeableMove,
+  s: PeriodSignals
+): { score: number; reasons: SignalKey[] } {
+  let score = 0
+  const reasons: SignalKey[] = []
+  if (move === 'connect' && s.taohua) {
+    score += 3
+    reasons.push('taohua')
+  }
+  if (move === 'move' && s.yima) {
+    score += 3
+    reasons.push('yima')
+  }
+  if (s.favorsElement === true) {
+    score += 2
+    reasons.push('favorable')
+  }
+  if (s.harmsElement === true) {
+    score -= 2
+    reasons.push('unfavorable')
+  }
+  if (s.clashesBenming) {
+    score -= 2
+    reasons.push('clash')
+  }
+  return { score, reasons }
+}
+
+/**
+ * Make-if MACRO 择时: rank candidate windows by how well each supports an
+ * intended move — the deterministic core of "this step sits better in 2028 than
+ * now". Pure; the edge localizes `reasons` and (later) an LLM writes the
+ * synthesis, then a 择日 hand-off picks the day inside the winning window.
+ *
+ * Sort is higher-score-first with an explicit original-order tiebreak, so the
+ * ranking is stable across engines (the timeline's byte-for-byte contract) and
+ * ties fall back to chronology when the caller passes windows in time order.
+ */
+export function rankWindowsForMove(
+  subject: PersonalAlmanacSubject,
+  move: TimeableMove,
+  windows: MoveWindow[]
+): RankedMoveWindow[] {
+  return windows
+    .map((w, i) => {
+      const signals = periodSignals(subject, w.period)
+      const { score, reasons } = scoreWindowForMove(move, signals)
+      return { i, ranked: { key: w.key, fit: signals.fit, score, reasons, signals } }
+    })
+    .sort((a, b) => b.ranked.score - a.ranked.score || a.i - b.i)
+    .map((x) => x.ranked)
+}

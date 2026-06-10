@@ -295,13 +295,17 @@ export {
   favoredMove,
   type LifeEventCategory,
   type MoveArchetype,
+  type MoveWindow,
   type PeriodInput,
   type PeriodSignals,
   periodSignals,
+  type RankedMoveWindow,
+  rankWindowsForMove,
   type RetrodictionMatch,
   type RetrodictionSignals,
   retrodictionMatch,
   type SignalKey,
+  type TimeableMove,
 } from './period-signals'
 // 关系决策推演 (Relationship Make-If — Kindred Workstream B)
 export type {

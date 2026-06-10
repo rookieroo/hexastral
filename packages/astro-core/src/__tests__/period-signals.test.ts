@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { PersonalAlmanacSubject } from '../almanac'
 import {
   favoredMove,
+  type MoveWindow,
   periodSignals,
   type RetrodictionSignals,
+  rankWindowsForMove,
   retrodictionMatch,
 } from '../period-signals'
 
@@ -115,5 +117,47 @@ describe('favoredMove', () => {
     const r = favoredMove(SIG())
     expect(r.primary).toBe('hold')
     expect(r.reasons).toEqual([])
+  })
+})
+
+describe('rankWindowsForMove', () => {
+  // subject: 甲, 用神 水, 忌神 金, 本命支 子 (桃花 → 酉, 冲 → 午, 驿马 → 寅).
+  const W = {
+    fav: { key: 'fav', period: { element: '水', branch: '卯' } }, // 用神
+    harm: { key: 'harm', period: { element: '金', branch: '卯' } }, // 忌神
+    clash: { key: 'clash', period: { element: '木', branch: '午' } }, // 冲
+    neutral: { key: 'neutral', period: { element: '木', branch: '卯' } },
+    taohua: { key: 'taohua', period: { element: '土', branch: '酉' } }, // 桃花
+    yima: { key: 'yima', period: { element: '木', branch: '寅' } }, // 驿马
+  } satisfies Record<string, MoveWindow>
+
+  it('ranks an expand move: 用神 window first, 忌神/冲 windows last', () => {
+    const r = rankWindowsForMove(subject, 'expand', [W.neutral, W.fav, W.harm, W.clash])
+    expect(r.map((x) => x.key)).toEqual(['fav', 'neutral', 'harm', 'clash'])
+    expect(r[0]?.reasons).toContain('favorable')
+  })
+
+  it('boosts the 桃花 window for a connect move', () => {
+    const r = rankWindowsForMove(subject, 'connect', [W.fav, W.taohua])
+    expect(r[0]?.key).toBe('taohua')
+    expect(r[0]?.reasons).toContain('taohua')
+  })
+
+  it('boosts the 驿马 window for a move', () => {
+    const r = rankWindowsForMove(subject, 'move', [W.fav, W.yima])
+    expect(r[0]?.key).toBe('yima')
+    expect(r[0]?.reasons).toContain('yima')
+  })
+
+  it('surfaces a clash as a negative-scoring reason', () => {
+    const r = rankWindowsForMove(subject, 'expand', [W.clash])
+    expect(r[0]?.reasons).toContain('clash')
+    expect(r[0]?.score).toBeLessThan(0)
+  })
+
+  it('keeps caller order on ties (stable, chronological)', () => {
+    const a: MoveWindow = { key: 'a', period: { element: '木', branch: '卯' } }
+    const b: MoveWindow = { key: 'b', period: { element: '木', branch: '卯' } }
+    expect(rankWindowsForMove(subject, 'expand', [a, b]).map((x) => x.key)).toEqual(['a', 'b'])
   })
 })
