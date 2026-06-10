@@ -286,6 +286,8 @@ export async function syncServerPush(locale: string): Promise<void> {
     // store; IP-gating it would be a 2.3.1 hidden-feature violation). The holiday
     // scheduler below + cn-holidays stay dormant for an easy restore.
     holidayOn: false,
+    // 人生时间线 node push (流月/流年/大运) — the Pro hook; server gates on isPro.
+    timelineRemindOn: await isTimelineRemindersEnabled(),
   }).catch(() => {})
 }
 
@@ -687,6 +689,11 @@ export async function isTimelineRemindersEnabled(): Promise<boolean> {
  */
 export async function scheduleTimelineReminders(opts: TimelineReminderOpts): Promise<void> {
   await cancelTimeline()
+  // When registered for SERVER push, life-timeline node pushes (流月/流年/大运) are
+  // delivered remotely by the cron (the #1 Pro hook) — don't also schedule them
+  // locally or the user gets two of each month-start. Local stays the fallback for
+  // unregistered devices. Mirrors scheduleDailyAlmanac's defer.
+  if (await isServerPushActive()) return
   if (!(await isTimelineRemindersEnabled())) return
   const perm = await Notifications.getPermissionsAsync().catch(() => null)
   if (!perm || perm.status !== 'granted') return

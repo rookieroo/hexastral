@@ -2371,6 +2371,9 @@ const pushRegisterSchema = z.object({
   birthdayOn: z.boolean().default(true),
   holidayOn: z.boolean().default(true),
   relationshipOn: z.boolean().default(true),
+  // 人生时间线 node push (流月/流年/大运) — Pro-gated, mirrors the in-app
+  // timelineRemindToggle. Default on so the cron fires once the client syncs.
+  timelineRemindOn: z.boolean().default(true),
   isPro: z.boolean().default(false),
 })
 
@@ -2397,6 +2400,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       birthdayOn: b.birthdayOn,
       holidayOn: b.holidayOn,
       relationshipOn: b.relationshipOn,
+      timelineRemindOn: b.timelineRemindOn,
       isPro: b.isPro,
       lastActiveAt: now,
       createdAt: now,
@@ -2416,6 +2420,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         birthdayOn: b.birthdayOn,
         holidayOn: b.holidayOn,
         relationshipOn: b.relationshipOn,
+        timelineRemindOn: b.timelineRemindOn,
         isPro: b.isPro,
         lastActiveAt: now,
       },

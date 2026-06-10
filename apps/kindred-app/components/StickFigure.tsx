@@ -129,13 +129,10 @@ function brushStroke(
   const mLy = my + py * hb
   const mRx = mx - px * hb
   const mRy = my - py * hb
-  return `M${r(aLx)} ${r(aLy)} Q${r(mLx)} ${r(mLy)} ${r(bLx)} ${r(bLy)} L${r(bRx)} ${r(bRy)} Q${r(mRx)} ${r(mRy)} ${r(aRx)} ${r(aRy)} Z`
-}
-
-/** Round to 2dp to keep path strings short + stable. Worklet — called inside brushStroke. */
-function r(n: number): number {
-  'worklet'
-  return Math.round(n * 100) / 100
+  // Round inline — nested worklet helpers are not in closure when brushStroke
+  // runs on the UI thread from useAnimatedProps (Reanimated v4).
+  const rnd = (n: number) => Math.round(n * 100) / 100
+  return `M${rnd(aLx)} ${rnd(aLy)} Q${rnd(mLx)} ${rnd(mLy)} ${rnd(bLx)} ${rnd(bLy)} L${rnd(bRx)} ${rnd(bRy)} Q${rnd(mRx)} ${rnd(mRy)} ${rnd(aRx)} ${rnd(aRy)} Z`
 }
 
 /**

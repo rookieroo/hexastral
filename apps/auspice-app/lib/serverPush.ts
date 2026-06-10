@@ -36,6 +36,9 @@ export interface ServerPushPrefs {
   dailyEvening: boolean
   birthdayOn: boolean
   holidayOn: boolean
+  /** 人生时间线 node push (流月/流年/大运). Pro-gated server-side; mirrors the
+   *  in-app timelineRemindToggle so turning it off here stops the cron push. */
+  timelineRemindOn: boolean
 }
 
 export interface ServerPushProfile extends Partial<ServerPushPrefs> {
@@ -86,6 +89,7 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
         dailyEvening: p.dailyEvening ?? true,
         birthdayOn: p.birthdayOn ?? true,
         holidayOn: p.holidayOn ?? true,
+        timelineRemindOn: p.timelineRemindOn ?? true,
         isPro: p.isPro,
       }),
     })
