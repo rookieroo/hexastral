@@ -81,3 +81,46 @@ verdict → A3 windows. A1 and B both consume `periodSignals`.
 - Strong visual stays; insight layer makes it credible + decision-useful.
 - Retrodiction creates a belief loop + a proprietary life-event dataset.
 - Compliance unchanged: all LLM output stays 趋势·参考 under existing guardrails.
+
+## Amendment (2026-06-10) — the context boundary + make-if's honest value
+
+Founder framing, resolved into three principles. The make-if STRUCTURE already
+exists (interactive forks `user-{age}-{event}` on tappable mainline nodes, chips +
+free text, future=时机 / past=reflection, compare-vs-mainline); the gap is VALUE,
+not plumbing. These principles say where the value is and where context must NOT go.
+
+1. **Timeline stays context-free — by design, not omission.** Do NOT add a
+   "tell me your situation" box to the timeline. The 命理 rhythm (大运/流年/流月) is
+   fixed from birth and does not bend to what the user types — interrogating them
+   on the spine would be both philosophically wrong and the exact "AI agent forces
+   context-association" fatigue users now resent. The timeline reads the
+   unchangeable rhythm; it never asks.
+
+2. **Make-if is the SOLE context surface — opt-in + premise-agnostic.** Context
+   belongs only in make-if, where the user *volunteers* a branch ("假如 I do X at
+   age N"). The engine reads only the **node energy × decision-class**, never the
+   truth of the premise — so the supplied context may be real or hypothetical, past
+   or future, and it is never validated, never pried into. That premise-agnosticism
+   IS the feature: total freedom to explore, zero intrusion. A make-if is, exactly,
+   "a timeline with a volunteered branch" — the parallel-universe framing is what
+   makes the context welcome rather than creepy.
+
+3. **The honest value is 择时 / decision-fit, not outcome-prediction.** Because the
+   rhythm doesn't change with choice, make-if must NOT imply "choose X → fate Y."
+   Its real, defensible value is the one piece of genuine user agency: **where on
+   the fixed rhythm you place an action.** So the under-developed value unlocks via:
+   - **Comparison-first** — the headline is 2–3 branches' fit *side by side* + the
+     synthesis verdict (ADR-0023 §B), not a single fictional narrative. The decision
+     moment is the product.
+   - **择时 mode** — slide the SAME intended move across 2–3 future windows; show
+     which the 命理 favors ("this move sits better in the 2028 window than now").
+     This is the most honest and most valuable what-if — it uses the fixed-rhythm
+     truth instead of fighting it.
+   - **Decision archetypes** — structured chips (advance/hold · change path · commit
+     to a person · big commitment/spend · relocate · start something) as the
+     welcoming default, free text as the escape hatch. Pick a branch-*type*, never
+     write an essay.
+   - **Premise-agnostic tone** — the narrative reads "how this move sits with the
+     energy of that time," never "and so you will…". Reuse the hardened timeline
+     prompt principles (name the domain, reflection-not-prediction, no fatalism,
+     close on agency).
