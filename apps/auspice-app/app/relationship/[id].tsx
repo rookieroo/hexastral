@@ -18,13 +18,25 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { openKindredCompose } from '@/lib/kindred-handoff'
 import { type AuspicePerson, getPeople } from '@/lib/people'
 import { getSynastryUnlockPrice, purchaseSynastryUnlock } from '@/lib/synastry-iap'
 import { buildSynastryForwardMonths, resolveSolarInput } from '@/lib/synastry-timeline'
 import { isRelationshipUnlocked, markRelationshipUnlocked } from '@/lib/synastry-unlock'
 
 const SIG_COLOR = { major: '#9A6A3A', notable: '#B8860B', routine: '#8E8E93' } as const
+
+/** The cross-app depth upsell: this screen is the TASTE (next-6-months timing);
+ *  the full lifetime 合盘 reading lives in Yuel (ADR-0024 positioning — Yuel owns
+ *  deep compatibility). Local copy, keeps lib/i18n.ts untouched. */
+const YUEL_ENTRY: Record<Locale, string> = {
+  'zh-Hans': '在 Yuel 看完整合盘 →',
+  'zh-Hant': '在 Yuel 看完整合盤 →',
+  ja: 'Yuel で詳しい相性を見る →',
+  en: 'See the full reading in Yuel →',
+}
 
 function pillarsOf(b: {
   solarDate: string
@@ -42,7 +54,7 @@ type State =
 
 export default function RelationshipTimelineScreen() {
   const { colors, spacing } = useTheme()
-  const { t } = useStrings()
+  const { t, locale } = useStrings()
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
@@ -271,6 +283,26 @@ export default function RelationshipTimelineScreen() {
               </Pressable>
             </View>
           ) : null}
+
+          {/* Cross-app depth upsell — this screen is the TASTE (next-6-months
+              timing); the full lifetime 合盘 lives in Yuel (ADR-0024). A quiet
+              footer, shown regardless of unlock state. */}
+          <Pressable
+            onPress={() => void openKindredCompose({ self: state.self, person: state.person })}
+            accessibilityRole='button'
+            style={({ pressed }) => ({
+              marginTop: spacing.sm,
+              paddingVertical: spacing.md,
+              borderTopWidth: 0.5,
+              borderTopColor: colors.separator,
+              alignItems: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+              {YUEL_ENTRY[locale]}
+            </Text>
+          </Pressable>
         </ScrollView>
       )}
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />

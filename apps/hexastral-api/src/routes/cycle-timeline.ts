@@ -510,7 +510,9 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
   if (!facts) return jsonOk(c, { reading: null, source: 'none' })
 
   const owner = body.userId ? `user:${body.userId}` : `device:${body.deviceId ?? 'anon'}`
-  const id = `${body.nodeType}:${body.year}:${body.month}:${body.locale}`
+  // Include the cache version so a prompt/language fix invalidates stale readings
+  // (e.g. en-keyed rows that the old prompt wrote in Chinese — see svc-astro/timeline).
+  const id = `${body.nodeType}:${body.year}:${body.month}:${body.locale}:${TIMELINE_CACHE_VERSION}`
   const db = c.get('db')
 
   // 1. 落库 hit — instant, no LLM spend (the generate-once substrate the push shares).

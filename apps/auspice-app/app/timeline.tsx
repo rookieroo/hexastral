@@ -58,7 +58,7 @@ import { getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
-import { computeLiuyue, type LiuyueCell } from '@/lib/liuyue'
+import { forwardLiuyue, type LiuyueCell } from '@/lib/liuyue'
 import { shareTaglineFor, timelineShareChrome, timelineShareUrl } from '@/lib/share'
 
 function shichenToHour(timeIndex: number | null): number {
@@ -307,7 +307,9 @@ export default function TimelineScreen() {
       years,
       selectedYearIndex,
       selectedYear,
-      liuyue: selectedYear != null ? computeLiuyue(selectedYear, favEl) : null,
+      // Forward-window only: a year outside the next-12-months drills into nothing,
+      // and the current year shows this-month-forward (no foreknowledge / no past).
+      liuyue: selectedYear != null ? forwardLiuyue(selectedYear, favEl) : null,
       // Lunar≈Gregorian month for the now-highlight (节气 precision is a TODO).
       liuyueNowMonth: selectedYear === new Date().getFullYear() ? new Date().getMonth() + 1 : null,
       selectedMonth: monthRaw != null && Number.isFinite(monthRaw) ? monthRaw : null,
@@ -322,7 +324,11 @@ export default function TimelineScreen() {
     share: shareImage,
   } = useImageShare({
     prewarm: state.kind === 'data',
-    warmKey: state.kind === 'data' ? 'ready' : 'pending',
+    // Re-warm whenever the user drills into a different node — the off-screen card
+    // bakes the CURRENT graph, so a static key shared the FIRST node's image (or
+    // fell back to a slow on-tap capture). selectedId encodes the full node
+    // (dayun-N / liunian-YYYY / liuyue-YYYY-M); the cleanup debounces rapid taps.
+    warmKey: state.kind === 'data' ? `${selectedDayunIndex}:${selectedId ?? 'root'}` : 'pending',
   })
 
   const load = useCallback(() => {

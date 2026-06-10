@@ -2041,7 +2041,10 @@ export const fengJobsRelations = relations(fengJobs, ({ one }) => ({
 // 对你而言 fit/reasons on 大运/流年/流月; `thisYearLiuyue` renamed `liuyue`.
 // v3 (git-graph): each 大运 carries its own 流年 commits (DayunRow.liunian) so the
 // client can render every 大运 as a real branch that merges back.
-export const TIMELINE_CACHE_VERSION = 'v3'
+// v4 (2026-06): the deep-read reading id now folds in this version, and
+// svc-astro's output-language directive was hardened — flush en-keyed rows the
+// old prompt mistakenly wrote in Chinese.
+export const TIMELINE_CACHE_VERSION = 'v4'
 
 export const lifeTimelineCache = sqliteTable(
   'life_timeline_cache',

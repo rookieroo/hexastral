@@ -72,3 +72,24 @@ export function computeLiuyue(year: number, favEl: WuXing | null): LiuyueCell[] 
     }
   })
 }
+
+/**
+ * The 流月 worth showing: the rolling next-12-month window ONLY. Foreknowledge of
+ * far-future months is meaningless and past months are behind us (founder,
+ * 2026-06: "一般展示未来12个月的节点就可以了, 提前预知没有意义"). So a year outside
+ * [now, now+11 months] expands to NOTHING (returns null — the year row simply
+ * doesn't drill into 流月), and the current year shows only this-month-forward.
+ * (Months are Gregorian≈lunar, matching the now-highlight + the server window.)
+ */
+export function forwardLiuyue(
+  year: number,
+  favEl: WuXing | null,
+  now: Date = new Date()
+): LiuyueCell[] | null {
+  const absNow = now.getFullYear() * 12 + now.getMonth() // local, 0-based month
+  const cells = computeLiuyue(year, favEl).filter((c) => {
+    const abs = year * 12 + (c.month - 1)
+    return abs >= absNow && abs <= absNow + 11
+  })
+  return cells.length > 0 ? cells : null
+}
