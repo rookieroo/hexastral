@@ -100,14 +100,31 @@ timelineRoutes.post('/explain', async (c) => {
     .filter(Boolean)
     .join('、')
 
-  const systemPrompt = `你是一位通晓八字大运流年流月的东方智慧顾问。用 ${lengthHint}${langLabel}解释「这个时间节点对命主意味着什么」。
-规则：
+  // Fit-calibrated tone (auspice caller passes 吉/平/凶). A cautious node is the
+  // highest panic-risk + the place the user most needs a way through — so it MUST
+  // name the concrete area plainly, frame difficulty as a navigable tendency, give
+  // a 化解/approach, and close on the person's own agency. Never doom. When fit is
+  // absent (fate caller), stay balanced.
+  const fitTone =
+    input.fit === '凶'
+      ? '这是一个「宜谨慎」的节点：用具体、平实的话点明该留意的生活面向（如责任与压力、人际关系、财务节奏、变动与取舍、情绪与表达等，择其与本节点最相关者），把它讲成「需要留心、可以应对的倾向」，绝不渲染成必然的坏事。务必给出务实的应对与化解之道，并把落点收在命主自己能着手、能掌控之处——读完让人心里有数、有抓手，而非惶恐。'
+      : input.fit === '吉'
+        ? '这是一个「宜把握」的节点：具体点出可借力的方向以及如何把握，但不打包票、不承诺必然的好结果。'
+        : input.fit === '平'
+          ? '这是一个「平稳」的节点：讲成蓄力、稳住节奏、巩固既有的阶段即可。'
+          : '客观呈现此节点的机遇与挑战，凡属挑战都转述为「可留意、可应对的倾向」，不偏不倚。'
+
+  const systemPrompt = `你是一位通晓八字大运流年流月的东方智慧顾问。用 ${lengthHint}${langLabel}向命主讲清「这个时间节点意味着什么、该如何面对」，像对朋友说话，不堆术语。
+顺着把三件事融成自然段落（不要小标题、不要分条罗列）：
+1）这个节点带来的趋势——结合它与命主日主的关系（${relationClause || '生克'}），具体说出会落在哪个生活面向，不要空泛、不要只说「会有变化」；
+2）务实、可操作的应对方式；
+3）收束在命主自己能着手、能掌控之处。
+口吻规则：
 - ${kindClause}
-- 结合本节点与命主日主的关系（${relationClause || '生克'}）说明此节点的机遇与挑战，并给出一句可操作、用于「省思」的建议。
-- 这是反思与参考，不是预测、不是命运定论，也不替命主做决定。
-- 语气务实，讲成「趋势 / 参考」。
+- ${fitTone}
+- 这是反思与参考，不是预测、不是命运定论，也不替命主做决定；讲成「趋势 / 参考」。
+- 不渲染恐惧：不得预言具体的坏事（生病、伤亡、破财、事故、分手、官司输赢等），也不用「灾、祸、厄运、危险、劫数」这类字眼；凡挑战一律转述为「可留意、可应对的倾向」。
 - 禁止使用：命中注定、必然、一定、注定、宿命、预测、must、definitely、certainly、predict。
-- 不要罗列术语表，像对朋友解释。
 - 只输出解释正文，不要标题、不要 JSON。`
 
   const userPrompt = `【时间节点事实】\n${facts}\n\n请解释这个「${input.nodeType}」节点对命主的意义（反思视角，非预测）。`

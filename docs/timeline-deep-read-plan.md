@@ -31,6 +31,21 @@
 >   → `push.ts` reads `isTimelineRemindersEnabled()`. Local `scheduleTimelineReminders`
 >   **defers when server push is active** (mirrors daily) → no double-fire.
 > - **Bonus** evening daily push now appends the deterministic 对你而言 fit (zero cost).
+>
+> **Prompt review (2026-06-10, founder ask — "warn without panic, clear not cryptic").**
+> The node deep-read prompt (`svc-astro/routes/timeline.ts`) was hardened — it IS
+> the subscription's core expression, so tone is the product. Now enforced:
+> (1) a mandated **3-beat** read woven as prose — trend → concrete how-to-respond →
+> **close on the user's own agency** (the 化解 is no longer optional); (2)
+> **fit-calibrated tone** — a 凶/「宜谨慎」 node must name the concrete life domain
+> plainly, frame difficulty as a *navigable tendency*, and land on a way through,
+> never doom; 吉 never over-promises; 平 = consolidation; (3) **anti-cryptic** —
+> must name which life area (responsibility / relationships / finances-rhythm /
+> change / expression), never "things will change"; (4) **panic + 4.3(b) guardrail**
+> — forbids predicting concrete adverse events (illness, loss, accident, breakup,
+> lawsuit outcome) and fear words (灾/祸/厄运/危险/劫), on top of the existing
+> fatalism bans. The push *teaser* already reframes 凶 → 宜谨慎/cautious (no change
+> needed). Typecheck-clean + tests green; ships with the same deploy.
 
 ## 0. The problem (from on-device feedback)
 
