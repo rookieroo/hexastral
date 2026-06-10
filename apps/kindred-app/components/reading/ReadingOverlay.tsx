@@ -32,13 +32,16 @@ export interface ReadingOverlayProps {
   onClose: () => void
   /** 划词 AI chat (K3) — forwarded to ReadingReport's ask affordances. */
   onAskAI?: (args: { slug: string; quote: string | null }) => void
+  /** Where the ink starts spreading — the card the user tapped (page coords).
+   *  Falls back to lower-centre when the opener didn't pass a point. */
+  origin?: { x: number; y: number } | null
 }
 
-export function ReadingOverlay({ visible, onClose, onAskAI }: ReadingOverlayProps) {
+export function ReadingOverlay({ visible, onClose, onAskAI, origin }: ReadingOverlayProps) {
   // Hooks-free outer wrapper: gate render so the inner re-mounts on each open
   // (fresh reveal phase, fresh mask + Skia canvas).
   if (!visible) return null
-  return <OverlayInner onClose={onClose} onAskAI={onAskAI} />
+  return <OverlayInner onClose={onClose} onAskAI={onAskAI} origin={origin} />
 }
 
 type Phase = 'cover' | 'wipe' | 'done' | 'closing'
@@ -49,9 +52,11 @@ const CLOSE_DURATION = 700
 function OverlayInner({
   onClose,
   onAskAI,
+  origin: originProp,
 }: {
   onClose: () => void
   onAskAI?: (args: { slug: string; quote: string | null }) => void
+  origin?: { x: number; y: number } | null
 }) {
   const { width, height } = useWindowDimensions()
   const [revealPhase, setRevealPhase] = useState<Phase>('cover')
@@ -59,7 +64,11 @@ function OverlayInner({
   // right-swipe can pop a detail before falling through to close.
   const [activeChapter, setActiveChapter] = useState<ChapterRef | null>(null)
 
-  const origin = useMemo(() => ({ x: width / 2, y: height * 0.86 }), [width, height])
+  // Ink spreads from the tapped card (continuity), or lower-centre as a default.
+  const origin = useMemo(
+    () => originProp ?? { x: width / 2, y: height * 0.86 },
+    [originProp, width, height]
+  )
   const maxRadius = useMemo(() => Math.hypot(width, height) * 1.1, [width, height])
 
   // Home + report are one continuous 宣纸 plane now (2026-06). The overlay root
