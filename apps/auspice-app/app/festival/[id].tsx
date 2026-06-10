@@ -50,7 +50,7 @@ function formatLocalInstant(iso: string): string {
 
 export default function FestivalDetailScreen() {
   const { colors, spacing } = useTheme()
-  const { t, locale } = useStrings()
+  const { locale } = useStrings()
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
@@ -123,7 +123,12 @@ export default function FestivalDetailScreen() {
             gap: spacing.sm,
           }}
         >
-          <Text style={{ color: colors.text, fontSize: 32, fontWeight: '300' }}>{displayName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Text style={{ color: colors.text, fontSize: 32, fontWeight: '300', flexShrink: 1 }}>
+              {displayName}
+            </Text>
+            {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
+          </View>
           {tagline ? (
             <Text style={{ color: colors.secondary, fontSize: 14, letterSpacing: 1 }}>
               {tagline}
@@ -158,11 +163,6 @@ export default function FestivalDetailScreen() {
             >
               {summary}
             </Text>
-          ) : null}
-          {wikiUrl ? (
-            <View style={{ marginTop: spacing.sm }}>
-              <CultureWikiLink url={wikiUrl} />
-            </View>
           ) : null}
         </View>
 

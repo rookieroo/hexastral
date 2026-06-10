@@ -205,7 +205,7 @@ export const translations: Translations = {
     'bond.statusDeclined': 'Declined',
     'bond.statusExpired': 'Expired',
     'bond.matching': 'Aligning your charts…',
-    'bond.toAuspice': 'Add to Auspice almanac  →',
+    'bond.toAuspice': 'Add to Yuun almanac  →',
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' invited you',
@@ -337,7 +337,7 @@ export const translations: Translations = {
     'paywall.signInHint':
       'Tie your purchase to an account so it survives a device wipe. Apple gives us nothing but a stable id and (optionally) your email.',
     'paywall.signInCta': 'Continue with Apple',
-    'paywall.title': 'Unlock Kindred Pro',
+    'paywall.title': 'Unlock Yuel Pro',
     'paywall.subtitle': "You've reached the free limit of 3 bonds.",
     'paywall.subtitleChat': "You've used your free messages for this reading.",
     'paywall.subtitleChapters': 'Unlock all six chapters of this reading.',
@@ -361,7 +361,7 @@ export const translations: Translations = {
     'paywall.unavailable': 'Purchases unavailable in this build',
     'paywall.cancelled': 'Purchase cancelled',
     'paywall.failed': 'Purchase failed — please try again',
-    'paywall.success': 'Welcome to Kindred Pro',
+    'paywall.success': 'Welcome to Yuel Pro',
     'paywall.close': 'Close',
 
     'chat.title': 'Ask about this synastry',
@@ -369,7 +369,7 @@ export const translations: Translations = {
     'chat.placeholder': 'Type a question…',
     'chat.loading': 'Thinking…',
     'chat.error': 'Something went wrong. Please try again.',
-    'chat.proUnlimited': 'Kindred Pro · unlimited',
+    'chat.proUnlimited': 'Yuel Pro · unlimited',
     'chat.buyCredits': "You're out of chat replies — tap to get more.",
     'chat.freeRemaining': '{remaining} free replies left',
     'chat.poolRemaining': '{remaining} replies left this month',
@@ -540,7 +540,7 @@ export const translations: Translations = {
     'bond.statusDeclined': '已婉拒',
     'bond.statusExpired': '已过期',
     'bond.matching': '合盘中…',
-    'bond.toAuspice': '加入 Auspice 黄历提醒  →',
+    'bond.toAuspice': '加入 Yuun 黄历提醒  →',
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' 邀请你合盘',
@@ -662,7 +662,7 @@ export const translations: Translations = {
     'paywall.signInHint':
       '订阅会绑定到账户上，换设备不会丢失。Apple 只给我们一个稳定的 ID 和（可选的）邮箱。',
     'paywall.signInCta': '使用 Apple 继续',
-    'paywall.title': '解锁 Kindred Pro',
+    'paywall.title': '解锁 Yuel Pro',
     'paywall.subtitle': '你已达到免费 3 段缘分的上限',
     'paywall.subtitleChat': '本篇合盘的免费消息已用完。',
     'paywall.subtitleChapters': '解锁这份合盘的全部六章。',
@@ -686,7 +686,7 @@ export const translations: Translations = {
     'paywall.unavailable': '当前构建不支持购买',
     'paywall.cancelled': '已取消',
     'paywall.failed': '购买失败，请重试',
-    'paywall.success': '欢迎加入 Kindred Pro',
+    'paywall.success': '欢迎加入 Yuel Pro',
     'paywall.close': '关闭',
 
     'chat.title': '聊聊你们的合盘',
@@ -694,7 +694,7 @@ export const translations: Translations = {
     'chat.placeholder': '输入你的问题…',
     'chat.loading': '正在思考…',
     'chat.error': '出错了，请稍后再试。',
-    'chat.proUnlimited': 'Kindred Pro · 无限畅聊',
+    'chat.proUnlimited': 'Yuel Pro · 无限畅聊',
     'chat.buyCredits': '对话次数已用完 — 点此获取更多。',
     'chat.freeRemaining': '还剩 {remaining} 次免费回复',
     'chat.poolRemaining': '本月还剩 {remaining} 次回复',
@@ -865,7 +865,7 @@ export const translations: Translations = {
     'bond.statusDeclined': '已婉拒',
     'bond.statusExpired': '已過期',
     'bond.matching': '合盤中…',
-    'bond.toAuspice': '加入 Auspice 黃曆提醒  →',
+    'bond.toAuspice': '加入 Yuun 黃曆提醒  →',
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' 邀請你合盤',
@@ -987,7 +987,7 @@ export const translations: Translations = {
     'paywall.signInHint':
       '訂閱會綁定到帳號上，換裝置不會遺失。Apple 只給我們穩定 ID 和（可選的）信箱。',
     'paywall.signInCta': '使用 Apple 繼續',
-    'paywall.title': '解鎖 Kindred Pro',
+    'paywall.title': '解鎖 Yuel Pro',
     'paywall.subtitle': '你已達到免費 3 段緣分的上限',
     'paywall.subtitleChat': '本篇合盤的免費訊息已用完。',
     'paywall.subtitleChapters': '解鎖這份合盤的全部六章。',
@@ -1011,7 +1011,7 @@ export const translations: Translations = {
     'paywall.unavailable': '此版本無法購買',
     'paywall.cancelled': '已取消',
     'paywall.failed': '購買失敗，請重試',
-    'paywall.success': '歡迎加入 Kindred Pro',
+    'paywall.success': '歡迎加入 Yuel Pro',
     'paywall.close': '關閉',
 
     'chat.title': '聊聊你們的合盤',
@@ -1019,7 +1019,7 @@ export const translations: Translations = {
     'chat.placeholder': '輸入你的問題…',
     'chat.loading': '正在思考…',
     'chat.error': '發生錯誤，請稍後再試。',
-    'chat.proUnlimited': 'Kindred Pro · 無限暢聊',
+    'chat.proUnlimited': 'Yuel Pro · 無限暢聊',
     'chat.buyCredits': '對話次數已用完 — 點此取得更多。',
     'chat.freeRemaining': '還剩 {remaining} 次免費回覆',
     'chat.poolRemaining': '本月還剩 {remaining} 次回覆',
@@ -1192,7 +1192,7 @@ export const translations: Translations = {
     'bond.statusDeclined': '辞退されました',
     'bond.statusExpired': '期限切れ',
     'bond.matching': '相性を計算中…',
-    'bond.toAuspice': 'Auspice の暦に追加  →',
+    'bond.toAuspice': 'Yuun の暦に追加  →',
 
     'invite.accept.prefix': 'さんが',
     'invite.accept.suffix': 'あなたを誘っています',
@@ -1319,7 +1319,7 @@ export const translations: Translations = {
     'paywall.signInHint':
       '購入をアカウントに紐づけ、端末が変わっても失われません。Apple が渡すのは安定したIDと（任意で）メールのみです。',
     'paywall.signInCta': 'Appleで続行',
-    'paywall.title': 'Kindred Proを解放',
+    'paywall.title': 'Yuel Proを解放',
     'paywall.subtitle': '無料3件の上限に達しました',
     'paywall.subtitleChat': 'この相性診断の無料メッセージを使い切りました。',
     'paywall.subtitleChapters': 'この相性診断の全6章を解放します。',
@@ -1343,7 +1343,7 @@ export const translations: Translations = {
     'paywall.unavailable': 'このビルドでは購入できません',
     'paywall.cancelled': 'キャンセルしました',
     'paywall.failed': '購入に失敗しました',
-    'paywall.success': 'Kindred Proへようこそ',
+    'paywall.success': 'Yuel Proへようこそ',
     'paywall.close': '閉じる',
 
     'chat.title': '二人の相性について聞く',
@@ -1351,7 +1351,7 @@ export const translations: Translations = {
     'chat.placeholder': '質問を入力…',
     'chat.loading': '考えています…',
     'chat.error': 'エラーが発生しました。もう一度お試しください。',
-    'chat.proUnlimited': 'Kindred Pro · 無制限',
+    'chat.proUnlimited': 'Yuel Pro · 無制限',
     'chat.buyCredits': 'チャット回数を使い切りました — タップで追加。',
     'chat.freeRemaining': '無料の返信があと {remaining} 回',
     'chat.poolRemaining': '今月の返信があと {remaining} 回',

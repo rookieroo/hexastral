@@ -189,6 +189,9 @@ export interface Strings {
   timelineAgeFrom: string
   /** Paywall CTA shown beneath the gated sections for Free users. */
   timelineProLocked: string
+  /** Free upsell under a current/future 流年 reading — advertises the Pro 流月
+   *  (monthly) weave that free users don't see, and notes its scope. */
+  timelineLiuyueUpsell: string
   /** 择吉 deep-link shown when a future 流年 is selected — routes to /event with
    *  prefilled year-window. `{year}` is the gregorian year. */
   timelineZejiCta: string
@@ -303,6 +306,10 @@ export interface Strings {
   timelineClashNote: string
   /** Compact label for the LiuyearBanner on Today (above the hero). */
   timelineBannerHint: string
+  /** Birth-less invitation card on Today — title + one-line value prop that
+   *  surfaces the timeline/what-if promise before any birth is entered. */
+  timelineInviteTitle: string
+  timelineInviteBody: string
   // ── 干支 grid (Glossary chunk 2 / ADR-0020) ─────────────────────────────
   /** Section label above the 10 天干 strip. */
   ganzhiStemsTitle: string
@@ -404,12 +411,12 @@ export interface Strings {
      *  (合盘 / 八字 detail) in a single glance, without burying it in fine print. */
     compatibilityHook: string
     /** Long-form hint that appears only AFTER the Switch is on, before the extra
-     *  fields. Explains the two-person report + Kindred hand-off in detail. */
+     *  fields. Explains the two-person report + Yuel hand-off in detail. */
     compatibilityHint: string
     /** Shown inside the expanded 合盘 section when the solar birth year is missing —
      *  合盘 silently can't compute without it, so make the requirement explicit. */
     compatYearRequired: string
-    /** Label above the deterministic 合盘 score taste shown before the Kindred hand-off. */
+    /** Label above the deterministic 合盘 score taste shown before the Yuel hand-off. */
     synastryScore: string
     /** Hint under the live 合盘 taste — full relationship timeline opens after adding. */
     synastryAddHint: string
@@ -428,14 +435,14 @@ export interface Strings {
   /** Small "coming soon" badge. */
   comingSoon: string
   themeAccent: string
-  /** CTA below the 生肖 reading that opens Kindred for full 合盘. */
+  /** CTA below the 生肖 reading that opens Yuel for full 合盘. */
   kindredComposeCta: string
-  /** Cross-app data-sharing consent shown before the Kindred 合盘 hand-off. */
+  /** Cross-app data-sharing consent shown before the Yuel 合盘 hand-off. */
   kindredShareConsent: { title: string; body: string; confirm: string; cancel: string }
-  /** Shown when the contact's birthday is 农历 — Kindred only accepts solar. */
+  /** Shown when the contact's birthday is 农历 — Yuel only accepts solar. */
   kindredComposeLunarNote: string
-  /** 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 (the calendar-shaped
-   *  relationship action; the deep 合盘 report stays in Kindred). */
+  /** 关系桥 (Auspice×Yuel) — 今日你和TA + 合婚择吉日 (the calendar-shaped
+   *  relationship action; the deep 合盘 report stays in Yuel). */
   pair: {
     todayHeading: string
     picksHeading: string
@@ -461,7 +468,7 @@ export interface Strings {
 }
 
 const zhHans: Strings = {
-  appName: 'Auspice 黄历',
+  appName: 'Yuun 黄历',
   todayTab: '今',
   monthTab: '月',
   festivalsTab: '节',
@@ -500,7 +507,7 @@ const zhHans: Strings = {
   lunarLabel: '农历',
   personalClashLabel: '今日冲你',
   unlockMore: '解锁更多',
-  proTitle: 'Auspice Pro',
+  proTitle: 'Yuun Pro',
   proSubtitle: '对你而言逐条解读 · 完整人生时间线 · 择日自定义日期范围',
   proBenefits: [
     '对你而言 · 每条宜忌的逐条解读',
@@ -512,7 +519,7 @@ const zhHans: Strings = {
   proAnnual: '年度订阅',
   proRestore: '恢复购买',
   signInToSubscribe: '订阅前请先登录',
-  signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Kindred」等其他应用时延续。',
+  signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Yuel」等其他应用时延续。',
   signInWithGoogle: '使用 Google 登录',
   signInError: '登录失败，请重试。',
   specializedActive: '专项择日 已启用',
@@ -564,6 +571,7 @@ const zhHans: Strings = {
   timelineCurrentBadge: '当前',
   timelineAgeFrom: '{age} 岁起',
   timelineProLocked: '解锁完整人生时间线',
+  timelineLiuyueUpsell: '→ 逐月流月详情 · Pro（本年及未来）',
   timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
@@ -662,6 +670,8 @@ const zhHans: Strings = {
     },
   },
   timelineBannerHint: '大运 · 流年',
+  timelineInviteTitle: '看见你的人生时间线',
+  timelineInviteBody: '录入生辰，展开大运与流年，推演另一种人生',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
   ganzhiSixtyTitle: '六十甲子',
@@ -765,7 +775,7 @@ const zhHans: Strings = {
     compatibilityToggle: '看你我如何相契',
     compatibilityHook: '打开后录入八字，解锁你们的关系合盘',
     compatibilityHint:
-      '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Kindred App 中查看。',
+      '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Yuel App 中查看。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
     synastryScore: '你们的缘分指数',
     synastryAddHint: '添加后,点亲友名字可查看你们的关系时间轴。',
@@ -779,14 +789,14 @@ const zhHans: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '即将推出',
   themeAccent: '主题色',
-  kindredComposeCta: '在 Kindred 看完整合盘 →',
+  kindredComposeCta: '在 Yuel 看完整合盘 →',
   kindredShareConsent: {
-    title: '分享生辰给 Kindred?',
-    body: '将把你和 TA 的出生信息发送到 Kindred,用于生成关系合盘。前几章免费阅读,完整报告在 Kindred 内解锁(下载并不会全部解锁)。仅在你同意后共享。',
+    title: '分享生辰给 Yuel?',
+    body: '将把你和 TA 的出生信息发送到 Yuel,用于生成关系合盘。前几章免费阅读,完整报告在 Yuel 内解锁(下载并不会全部解锁)。仅在你同意后共享。',
     confirm: '同意并打开',
     cancel: '取消',
   },
-  kindredComposeLunarNote: 'Kindred 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
+  kindredComposeLunarNote: 'Yuel 暂仅支持阳历生日。可在编辑亲友时换成阳历再试。',
   pair: {
     todayHeading: '今日 · 你和TA',
     picksHeading: '为你俩择吉日',
@@ -810,7 +820,7 @@ const zhHans: Strings = {
 
 const zhHant: Strings = {
   ...zhHans,
-  appName: 'Auspice 黃曆',
+  appName: 'Yuun 黃曆',
   festivalsTab: '節',
   dutyMansion: '值日星宿',
   dayOfficerLabel: '值神',
@@ -836,7 +846,7 @@ const zhHant: Strings = {
   lunarLabel: '農曆',
   personalClashLabel: '今日沖你',
   unlockMore: '解鎖更多',
-  proTitle: 'Auspice Pro',
+  proTitle: 'Yuun Pro',
   proSubtitle: '對你而言逐條解讀 · 完整人生時間線 · 擇日自訂日期範圍',
   proBenefits: [
     '對你而言 · 每條宜忌的逐條解讀',
@@ -848,7 +858,7 @@ const zhHant: Strings = {
   proAnnual: '年度訂閱',
   proRestore: '恢復購買',
   signInToSubscribe: '訂閱前請先登入',
-  signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Kindred」等其他應用時延續。',
+  signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Yuel」等其他應用時延續。',
   signInWithGoogle: '使用 Google 登入',
   signInError: '登入失敗，請重試。',
   specializedActive: '專項擇日 已啟用',
@@ -900,6 +910,7 @@ const zhHant: Strings = {
   timelineCurrentBadge: '當前',
   timelineAgeFrom: '{age} 歲起',
   timelineProLocked: '解鎖完整人生時間線',
+  timelineLiuyueUpsell: '→ 逐月流月詳情 · Pro（本年及未來）',
   timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
@@ -998,6 +1009,8 @@ const zhHant: Strings = {
     },
   },
   timelineBannerHint: '大運 · 流年',
+  timelineInviteTitle: '看見你的人生時間線',
+  timelineInviteBody: '錄入生辰，展開大運與流年，推演另一種人生',
   ganzhiStemsTitle: '十天干',
   ganzhiBranchesTitle: '十二地支',
   ganzhiSixtyTitle: '六十甲子',
@@ -1087,7 +1100,7 @@ const zhHant: Strings = {
     compatibilityToggle: '看你我如何相契',
     compatibilityHook: '打開後錄入八字，解鎖你們的關係合盤',
     compatibilityHint:
-      '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Kindred App 中查看。',
+      '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Yuel App 中查看。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
     synastryScore: '你們的緣分指數',
     synastryAddHint: '添加後,點親友名字可查看你們的關係時間軸。',
@@ -1101,14 +1114,14 @@ const zhHant: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '即將推出',
   themeAccent: '主題色',
-  kindredComposeCta: '在 Kindred 看完整合盤 →',
+  kindredComposeCta: '在 Yuel 看完整合盤 →',
   kindredShareConsent: {
-    title: '分享生辰給 Kindred?',
-    body: '將把你和 TA 的出生資訊傳送到 Kindred,用於產生關係合盤。前幾章免費閱讀,完整報告在 Kindred 內解鎖(下載並不會全部解鎖)。僅在你同意後共享。',
+    title: '分享生辰給 Yuel?',
+    body: '將把你和 TA 的出生資訊傳送到 Yuel,用於產生關係合盤。前幾章免費閱讀,完整報告在 Yuel 內解鎖(下載並不會全部解鎖)。僅在你同意後共享。',
     confirm: '同意並開啟',
     cancel: '取消',
   },
-  kindredComposeLunarNote: 'Kindred 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
+  kindredComposeLunarNote: 'Yuel 暫僅支援陽曆生日。可在編輯親友時換成陽曆再試。',
   pair: {
     todayHeading: '今日 · 你和TA',
     picksHeading: '為你倆擇吉日',
@@ -1131,7 +1144,7 @@ const zhHant: Strings = {
 }
 
 const ja: Strings = {
-  appName: 'Auspice 暦',
+  appName: 'Yuun 暦',
   todayTab: '今日',
   monthTab: '月',
   festivalsTab: '節句',
@@ -1182,7 +1195,7 @@ const ja: Strings = {
   lunarLabel: '旧暦',
   personalClashLabel: '本日と冲',
   unlockMore: 'もっと見る',
-  proTitle: 'Auspice Pro',
+  proTitle: 'Yuun Pro',
   proSubtitle: 'あなたへの個別解説 · 人生タイムライン全期間 · 日選びの期間指定',
   proBenefits: [
     'あなたへの個別解説 · 宜忌を一項目ずつ',
@@ -1247,6 +1260,7 @@ const ja: Strings = {
   timelineCurrentBadge: '現在',
   timelineAgeFrom: '{age} 歳から',
   timelineProLocked: '人生タイムラインを全期間解錠',
+  timelineLiuyueUpsell: '→ 月ごとの流月 · Pro（今年から先）',
   timelineZejiCta: '→ {year}年の吉日候補',
   timelineFreePreviewNote:
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
@@ -1345,6 +1359,8 @@ const ja: Strings = {
     },
   },
   timelineBannerHint: '大運 · 流年',
+  timelineInviteTitle: '人生タイムラインを見る',
+  timelineInviteBody: '生年月日を登録し、大運と流年を表示。もしもの人生も',
   ganzhiStemsTitle: '十干',
   ganzhiBranchesTitle: '十二支',
   ganzhiSixtyTitle: '六十干支',
@@ -1435,7 +1451,7 @@ const ja: Strings = {
     compatibilityToggle: '二人の相性を観る',
     compatibilityHook: 'オンにして八字を入力すれば、二人の相性が見えます',
     compatibilityHint:
-      '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Kindred アプリで閲覧）。',
+      '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Yuel アプリで閲覧）。',
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
     synastryScore: '二人の相性スコア',
@@ -1450,14 +1466,14 @@ const ja: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '近日公開',
   themeAccent: 'テーマカラー',
-  kindredComposeCta: 'Kindred で本格相性鑑定 →',
+  kindredComposeCta: 'Yuel で本格相性鑑定 →',
   kindredShareConsent: {
-    title: 'Kindred に生年月日を共有しますか?',
-    body: 'あなたと相手の出生情報を Kindred に送り、相性鑑定を作成します。最初の数章は無料、完全版は Kindred 内でアンロックします(ダウンロードだけで全章解放ではありません)。同意した場合のみ共有します。',
+    title: 'Yuel に生年月日を共有しますか?',
+    body: 'あなたと相手の出生情報を Yuel に送り、相性鑑定を作成します。最初の数章は無料、完全版は Yuel 内でアンロックします(ダウンロードだけで全章解放ではありません)。同意した場合のみ共有します。',
     confirm: '同意して開く',
     cancel: 'キャンセル',
   },
-  kindredComposeLunarNote: 'Kindred は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
+  kindredComposeLunarNote: 'Yuel は新暦の誕生日のみ対応。編集画面で新暦に切り替えてください。',
   pair: {
     todayHeading: '今日 · あなたと相手',
     picksHeading: '二人の吉日を選ぶ',
@@ -1480,7 +1496,7 @@ const ja: Strings = {
 }
 
 const en: Strings = {
-  appName: 'Auspice',
+  appName: 'Yuun',
   todayTab: 'Today',
   monthTab: 'Month',
   festivalsTab: 'Festivals',
@@ -1519,11 +1535,11 @@ const en: Strings = {
   lunarLabel: 'Lunar',
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
-  proTitle: 'Auspice Pro',
-  proSubtitle: 'Per-reason For-you reading · Full life timeline · Custom date-picker range',
+  proTitle: 'Yuun Pro',
+  proSubtitle: 'Per-reason For-you reading · Life in 10-year luck cycles · Custom date range',
   proBenefits: [
     'For-you reading — every Suitable / Avoid explained, reason by reason',
-    'Full life timeline — decade cycles, yearly, and all 12 months',
+    'Your whole life in 10-year luck cycles — decade, year, and every month',
     'Custom date-picker range — up to ~3 months (Free is the next 30 days; specialized scoring is free)',
     'Personal almanac calendar — subscribe to your system Calendar',
   ],
@@ -1532,7 +1548,7 @@ const en: Strings = {
   proRestore: 'Restore purchase',
   signInToSubscribe: 'Sign in to subscribe',
   signInBenefit:
-    'Signing in lets your subscription restore on every device and carry into other apps like Kindred.',
+    'Signing in lets your subscription restore on every device and carry into other apps like Yuel.',
   signInWithGoogle: 'Sign in with Google',
   signInError: 'Sign-in failed. Please try again.',
   specializedActive: 'Specialized scoring on',
@@ -1585,6 +1601,7 @@ const en: Strings = {
   timelineCurrentBadge: 'Now',
   timelineAgeFrom: 'From age {age}',
   timelineProLocked: 'Unlock the full life timeline',
+  timelineLiuyueUpsell: '→ Monthly detail (流月) · Pro — this year & ahead',
   timelineZejiCta: '→ Best dates in {year}',
   timelineFreePreviewNote:
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
@@ -1642,9 +1659,9 @@ const en: Strings = {
     purchaseFailed: "Purchase didn't complete — please try again.",
   },
   makeifDiff: {
-    header: 'Side-by-side · Real vs What-if',
+    header: 'Side-by-side · Real vs What-If',
     realCol: 'Real',
-    altCol: 'What-if',
+    altCol: 'What-If',
     forkRow: 'Fork · age {age}',
     mergeRow: 'Merge · age {age}',
     help: 'favored ↑',
@@ -1684,7 +1701,9 @@ const en: Strings = {
       zixing: 'a self-friction year',
     },
   },
-  timelineBannerHint: 'Decade · Year',
+  timelineBannerHint: 'Your 10-year luck cycles',
+  timelineInviteTitle: 'See your life in 10-year chapters',
+  timelineInviteBody: 'Add your birth to map each chapter — and branch alternate timelines',
   ganzhiStemsTitle: 'Ten Stems',
   ganzhiBranchesTitle: 'Twelve Branches',
   ganzhiSixtyTitle: 'Sixty Auspice',
@@ -1788,7 +1807,7 @@ const en: Strings = {
     compatibilityToggle: 'See how your charts align',
     compatibilityHook: 'Switch on + add their 八字 to unlock your compatibility report',
     compatibilityHint:
-      'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Kindred app.',
+      'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Yuel app.',
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
     synastryScore: 'Your compatibility',
@@ -1803,15 +1822,15 @@ const en: Strings = {
   moonSkinLabel: 'Moon skin',
   comingSoon: 'Soon',
   themeAccent: 'Accent color',
-  kindredComposeCta: 'Open full reading in Kindred →',
+  kindredComposeCta: 'Open full reading in Yuel →',
   kindredShareConsent: {
-    title: 'Share birth details with Kindred?',
-    body: 'We will send both birth details to Kindred to generate your compatibility reading. The first chapters are free; the full report unlocks inside Kindred (downloading does not unlock everything). Shared only with your consent.',
+    title: 'Share birth details with Yuel?',
+    body: 'We will send both birth details to Yuel to generate your compatibility reading. The first chapters are free; the full report unlocks inside Yuel (downloading does not unlock everything). Shared only with your consent.',
     confirm: 'Agree & open',
     cancel: 'Cancel',
   },
   kindredComposeLunarNote:
-    'Kindred supports solar birthdays only. Edit this person to a solar date and try again.',
+    'Yuel supports solar birthdays only. Edit this person to a solar date and try again.',
   pair: {
     todayHeading: 'Today · You & them',
     picksHeading: 'Good days for the two of you',

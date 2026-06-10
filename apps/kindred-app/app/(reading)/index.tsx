@@ -205,7 +205,7 @@ export default function ReadingHomeScreen() {
             color: kindredPaper.ink,
           }}
         >
-          Kindred
+          Yuel
         </Text>
       </View>
       <Pressable

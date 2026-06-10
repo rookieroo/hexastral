@@ -611,6 +611,39 @@ export function fetchAuspiceExplain(params: {
   return postJson<AuspiceExplainResult>('/api/auspice/explain', { ...params, dev: __DEV__ })
 }
 
+/**
+ * Per-node timeline deep-read (大运/流年/流月) — the Pro depth layer. Lazy, never
+ * pre-fetched: called when a node is opened. The server persists it (落库) so a
+ * re-open + the push reuse the SAME read. `reading` is null when free/exhausted —
+ * the caller renders its own deterministic node reading instead.
+ * `deviceId` scopes the 落库 owner (matches the push subscription).
+ */
+export interface TimelineExplainResult {
+  reading: string | null
+  source: 'llm' | 'cache' | 'template' | 'none'
+  tier?: 'default' | 'deep'
+  upsell?: boolean
+}
+
+export function fetchTimelineExplain(params: {
+  birthDate: string
+  birthHour: number
+  gender: 'M' | 'F'
+  nodeType: '大运' | '流年' | '流月'
+  year: number
+  /** 1-12 for 流月; 0 (default) for 流年/大运. */
+  month?: number
+  locale: string
+  deviceId: string
+  /** Pro unlocks the LLM read; free → reading:null (deterministic fallback). */
+  isPro?: boolean
+}): Promise<TimelineExplainResult> {
+  return postJson<TimelineExplainResult>('/api/auspice/timeline/explain', {
+    ...params,
+    month: params.month ?? 0,
+  })
+}
+
 // ── 关系桥 (Auspice×Kindred) — 今日你和TA + 合婚择吉日 ──────────────────────────
 //
 // Calendar-shaped relationship actionability (the deep 合盘 report stays in

@@ -37,9 +37,7 @@ import {
   useShareBond,
   useSynastryReport,
 } from '@zhop/scenario-kindred'
-import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import * as Sharing from 'expo-sharing'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
@@ -64,6 +62,37 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
+
+type ClipboardModule = typeof import('expo-clipboard')
+type SharingModule = typeof import('expo-sharing')
+
+let clipboardModule: ClipboardModule | null | undefined
+let sharingModule: SharingModule | null | undefined
+
+/** Lazy — stale dev clients may lack ExpoClipboard / expo-sharing native modules. */
+function getClipboard(): ClipboardModule | null {
+  if (clipboardModule !== undefined) return clipboardModule
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    clipboardModule = require('expo-clipboard') as ClipboardModule
+    return clipboardModule
+  } catch {
+    clipboardModule = null
+    return null
+  }
+}
+
+function getSharing(): SharingModule | null {
+  if (sharingModule !== undefined) return sharingModule
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    sharingModule = require('expo-sharing') as SharingModule
+    return sharingModule
+  } catch {
+    sharingModule = null
+    return null
+  }
+}
 
 export default function BondDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -221,9 +250,10 @@ export default function BondDetailScreen() {
         })
         if (!cancelled) {
           await haptic('light')
-          if (await Sharing.isAvailableAsync()) {
+          const Sharing = getSharing()
+          if (Sharing && (await Sharing.isAvailableAsync())) {
             await Sharing.shareAsync(uri, {
-              dialogTitle: 'Kindred',
+              dialogTitle: 'Yuel',
               mimeType: 'image/png',
               UTI: 'public.png',
             })
@@ -494,7 +524,8 @@ export default function BondDetailScreen() {
             timeline: t('timeline.title'),
           }}
           onCopy={() => {
-            if (pickedQuote) void Clipboard.setStringAsync(pickedQuote)
+            const Clipboard = getClipboard()
+            if (pickedQuote && Clipboard) void Clipboard.setStringAsync(pickedQuote)
             setPickedQuote(null)
           }}
           onChat={

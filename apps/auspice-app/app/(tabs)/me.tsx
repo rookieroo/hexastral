@@ -48,17 +48,15 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { resetOnboarding } from '@/lib/onboarding-seen'
 import { getPeople } from '@/lib/people'
 import {
   disableDailyPush,
-  disableHolidayHeadsUp,
   disableSynastryReminders,
   disableTimelineReminders,
   enableDailyPush,
-  enableHolidayHeadsUp,
   enableSynastryReminders,
   enableTimelineReminders,
-  isHolidayHeadsUpEnabled,
   isPushEnabled,
   isSynastryRemindersEnabled,
   isTimelineRemindersEnabled,
@@ -152,6 +150,11 @@ export default function MeScreen() {
     const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setDevEntitlementOverride(next)
     setDevPro(next)
+  }
+  // DEV-only: clear the first-launch flag and jump straight to the welcome so it
+  // can be re-previewed without reinstalling. Entering it re-marks seen.
+  const resetWelcome = () => {
+    void resetOnboarding().then(() => router.replace('/welcome'))
   }
 
   // ── Birth info form state ───────────────────────────────────────────────
@@ -273,21 +276,11 @@ export default function MeScreen() {
       .catch(() => {})
   }, [])
 
-  // 节假日 / 调休 heads-up toggle (opt-in; same enable/disable shape as daily push).
-  const [holidayOn, setHolidayOn] = useState(false)
-  const toggleHoliday = async (next: boolean) => {
-    if (next) {
-      setHolidayOn(await enableHolidayHeadsUp(locale))
-    } else {
-      await disableHolidayHeadsUp(locale)
-      setHolidayOn(false)
-    }
-  }
-  useEffect(() => {
-    isHolidayHeadsUpEnabled()
-      .then(setHolidayOn)
-      .catch(() => {})
-  }, [])
+  // 节假日 / 调休 heads-up (CN-resident-specific: 调休 makeup-workday alarms) is
+  // removed 2026-06 — not on the mainland-CN store, and IP-gating it to mainland
+  // China would be a hidden-feature violation (App Store 2.3.1). The lib/push.ts
+  // holiday fns + cn-holidays data stay dormant for an easy restore if a mainland
+  // listing ever ships.
 
   // 人生节点提醒 (Pro) — month-start / 大运 transition nudges to /timeline. Needs a
   // saved birth (gender + date) to compute the timeline; gates on Pro first.
@@ -356,7 +349,7 @@ export default function MeScreen() {
   // instead of three near-identical Switch blocks (the settings tree had grown
   // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
   const pushToggles: Array<{
-    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'synastry' | 'holiday'>
+    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'synastry'>
     label: string
     hint?: string
     value: boolean
@@ -376,13 +369,6 @@ export default function MeScreen() {
       hint: t.synastryRemindHint,
       value: synastryRemindOn,
       onToggle: toggleSynastryRemind,
-    },
-    {
-      id: 'holiday',
-      label: t.holidayHeadsUp,
-      hint: t.holidayHeadsUpHint,
-      value: holidayOn,
-      onToggle: toggleHoliday,
     },
   ]
 
@@ -861,6 +847,31 @@ export default function MeScreen() {
                 <Text style={{ color: colors.text, fontSize: 16 }}>Force entitlement</Text>
                 <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
                   {devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}
+                </Text>
+              </Pressable>
+            </View>
+            <SectionLabel>ONBOARDING · DEV</SectionLabel>
+            <View
+              style={{
+                borderRadius: 14,
+                backgroundColor: colors.card,
+                overflow: 'hidden',
+                marginBottom: spacing.lg,
+              }}
+            >
+              <Pressable
+                onPress={resetWelcome}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 16 }}>Reset welcome</Text>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
+                  Show →
                 </Text>
               </Pressable>
             </View>

@@ -20,43 +20,41 @@ import { useStrings } from '@/lib/i18n-context'
 import { markOnboardingSeen } from '@/lib/onboarding-seen'
 import { useAppTheme } from '@/lib/theme'
 
+/** The store wordmark. One-line flip when the Auspice→Yuun rename ships (it must
+ *  land together with i18n.appName + app.json name + ASO — a coordinated sweep,
+ *  not a piecemeal edit). Kept a constant so this screen isn't the thing that
+ *  drifts. */
+const BRAND = 'YUUN'
+
 interface WelcomeCopy {
-  tagline: string
-  points: [string, string, string]
+  /** One paragraph — calendar-anchored on purpose: App Review launches the app,
+   *  and the welcome is the first thing it sees, so it must read as a utility,
+   *  not a fortune product (docs/screenshot-direction.md). The timeline/what-if
+   *  story is sold in the store CPP, not here. */
+  intro: string
   cta: string
   birthHint: string
 }
 
 const COPY: Record<Locale, WelcomeCopy> = {
   'zh-Hans': {
-    tagline: '一份为今日而生的中华日历',
-    points: ['每日 干支 · 宜忌 · 节气', '二十四节气与节日深读', '记录家人的农历生日，到点提醒'],
+    intro: '一份为日常而生的中华日历——每日宜忌、二十四节气，与家人的农历生日，到点提醒。',
     cta: '进入今天',
     birthHint: '随时在「我」中录入生辰，解锁「对你而言」',
   },
   'zh-Hant': {
-    tagline: '一份為今日而生的中華日曆',
-    points: ['每日 干支 · 宜忌 · 節氣', '二十四節氣與節日深讀', '記錄家人的農曆生日，到點提醒'],
+    intro: '一份為日常而生的中華日曆——每日宜忌、二十四節氣，與家人的農曆生日，到點提醒。',
     cta: '進入今天',
     birthHint: '隨時在「我」中錄入生辰，解鎖「對你而言」',
   },
   ja: {
-    tagline: '今日のための中華暦',
-    points: [
-      '毎日の 干支 · 宜忌 · 節気',
-      '二十四節気と節句の深掘り',
-      '家族の旧暦の誕生日を登録して通知',
-    ],
+    intro: '暮らしのための中華暦。毎日の暦注、二十四節気、そして家族の旧暦の誕生日を、その日にそっとお知らせ。',
     cta: '今日をひらく',
     birthHint: 'いつでも「設定」で生年月日を登録し「あなたへ」を解放',
   },
   en: {
-    tagline: 'The Chinese calendar, built for today',
-    points: [
-      'Daily 干支 · favorable & avoided · solar terms',
-      'Deep reads on the 24 solar terms & festivals',
-      'Track family lunar birthdays — reminded on the day',
-    ],
+    intro:
+      'A Chinese calendar made for everyday life — the daily almanac, the 24 solar terms, and your family’s lunar birthdays, reminded right on the day.',
     cta: 'Open today',
     birthHint: 'Add your birth anytime in Me to unlock “For You”',
   },
@@ -83,22 +81,14 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={[S.root, { backgroundColor: colors.bg }]}>
       <View style={S.body}>
-        {/* Brand + date hero — reads as a calendar, not a horoscope. */}
+        {/* Logo lockup: wordmark + today's date — one mark, reads as a calendar. */}
         <View style={S.head}>
-          <Text style={[S.brand, { color: colors.dim }]}>AUSPICE</Text>
+          <Text style={[S.brand, { color: colors.dim }]}>{BRAND}</Text>
           <Text style={[S.date, { color: colors.text }]}>{todayStamp()}</Text>
-          <Text style={[S.tagline, { color: colors.dim }]}>{copy.tagline}</Text>
         </View>
 
-        {/* Three plain value lines. */}
-        <View style={S.points}>
-          {copy.points.map((p) => (
-            <View key={p} style={S.pointRow}>
-              <View style={[S.tick, { backgroundColor: colors.accent }]} />
-              <Text style={[S.pointText, { color: colors.text }]}>{p}</Text>
-            </View>
-          ))}
-        </View>
+        {/* One paragraph. */}
+        <Text style={[S.intro, { color: colors.text }]}>{copy.intro}</Text>
       </View>
 
       {/* CTA + the (optional) birth invitation — never a gate. */}
@@ -122,15 +112,11 @@ export default function WelcomeScreen() {
 
 const S = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 28 },
-  body: { flex: 1, justifyContent: 'center', gap: 44 },
+  body: { flex: 1, justifyContent: 'center', gap: 28 },
   head: { gap: 12 },
   brand: { fontSize: 12, letterSpacing: 6, fontWeight: '600' },
   date: { fontSize: 46, fontWeight: '300', letterSpacing: 1 },
-  tagline: { fontSize: 15, lineHeight: 22 },
-  points: { gap: 16 },
-  pointRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  tick: { width: 6, height: 6, borderRadius: 3 },
-  pointText: { flex: 1, fontSize: 15, lineHeight: 21 },
+  intro: { fontSize: 16, lineHeight: 26 },
   footer: { paddingBottom: 24, gap: 14, alignItems: 'center' },
   cta: {
     borderWidth: 1,

@@ -29,7 +29,6 @@ export function CultureWikiLink({ url }: CultureWikiLinkProps) {
       accessibilityLabel={t.cultureWikipediaCta}
       hitSlop={10}
       style={({ pressed }) => ({
-        alignSelf: 'flex-start',
         width: 20,
         height: 20,
         borderRadius: 5,

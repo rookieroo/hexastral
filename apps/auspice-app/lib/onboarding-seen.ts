@@ -29,3 +29,12 @@ export async function markOnboardingSeen(): Promise<void> {
     // Best-effort; worst case the welcome shows once more next launch.
   }
 }
+
+/** Clear the flag so the welcome shows again — DEV-only affordance (Me → DEV). */
+export async function resetOnboarding(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY)
+  } catch {
+    // Best-effort; DEV-only.
+  }
+}

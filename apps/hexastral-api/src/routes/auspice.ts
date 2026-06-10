@@ -2040,9 +2040,13 @@ interface PushLabelSet {
   forYou: string
   daySuffix: string
   tomorrow: string
-  /** Evening (20:00) title — a recap of today + a look ahead to tomorrow. */
+  /** Evening (20:00) title — recap today + a wind-down for tonight. */
   eveningTitle: string
-  /** Short words for the evening body's two halves. */
+  /** Evening wind-down line. 命理/养生 advocates being asleep by 子时 (23:00),
+   *  so the 20:00 push nudges rest instead of previewing tomorrow's 宜忌 — which
+   *  the next 08:00 push already carries (that overlap was the duplication). */
+  restLine: string
+  /** Short words for the evening body. */
   today: string
   tomorrowShort: string
   fit: Record<string, string>
@@ -2054,7 +2058,8 @@ const EN_PUSH_LABELS: PushLabelSet = {
   forYou: 'You',
   daySuffix: '',
   tomorrow: 'Tomorrow',
-  eveningTitle: "Today's recap · tomorrow",
+  eveningTitle: "Today's recap · wind down",
+  restLine: 'rest before 11pm (子时) to restore for tomorrow',
   today: 'Today',
   tomorrowShort: 'Tomorrow',
   fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
@@ -2067,7 +2072,8 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: '你',
     daySuffix: '日',
     tomorrow: '明日预告',
-    eveningTitle: '今日小结 · 明日预告',
+    eveningTitle: '今日小结 · 今夜安歇',
+    restLine: '亥子之交宜安睡，养明日之气',
     today: '今日',
     tomorrowShort: '明日',
     fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
@@ -2078,7 +2084,8 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: '你',
     daySuffix: '日',
     tomorrow: '明日預告',
-    eveningTitle: '今日小結 · 明日預告',
+    eveningTitle: '今日小結 · 今夜安歇',
+    restLine: '亥子之交宜安睡，養明日之氣',
     today: '今日',
     tomorrowShort: '明日',
     fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
@@ -2089,7 +2096,8 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     forYou: 'あなた',
     daySuffix: '日',
     tomorrow: '明日の予報',
-    eveningTitle: '今日のまとめ · 明日の予報',
+    eveningTitle: '今日のまとめ · 今宵の養生',
+    restLine: '子の刻までに就寝し、明日の英気を養う',
     today: '今日',
     tomorrowShort: '明日',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
@@ -2314,27 +2322,23 @@ function renderAuspicePush(
 ): { title: string; body: string; data: Record<string, string> } {
   const L = pushLabels(sub.locale)
   const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
-  const yiji = (ymd: Ymd, n: number) => {
-    const { day } = buildDay(ymd, subject)
-    return {
-      yi: day.goodFor.slice(0, n).join('、') || '—',
-      ji: day.avoid.slice(0, n).join('、') || '—',
-      ganZhi: day.ganZhi,
-    }
-  }
-
-  // Evening (20:00): the cron advanced dateYmd to tomorrow. RECAP today + PREVIEW
-  // tomorrow — so it never duplicates tomorrow's 08:00 push (which is tomorrow only).
+  // Evening (20:00): the cron advanced dateYmd to tomorrow, so the real current
+  // day is the one before. RECAP today's 宜 + (Pro) the deterministic 对你而言 fit
+  // — the SAME `personalAlmanacOverlay` as the 08:00 push, so morning + evening
+  // personalization align at ZERO extra cost — then nudge rest for tonight
+  // (子时前入睡). No tomorrow 宜忌 preview (the next 08:00 push carries it).
   if (slot === 'evening') {
-    const tmrYmd = dateYmd
     const todayYmd = ymdShift(dateYmd, -1)
-    const td = yiji(todayYmd, 2)
-    const tm = yiji(tmrYmd, 2)
-    const body = `${L.today}${L.yi} ${td.yi} · ${L.tomorrowShort}${L.yi} ${tm.yi}·${L.ji} ${tm.ji}`
+    const { day, personalization } = buildDay(todayYmd, subject)
+    const yi = day.goodFor.slice(0, 2).join('、') || '—'
+    let body = `${L.today}${L.yi} ${yi}`
+    if (sub.isPro && personalization)
+      body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
+    body += ` · ${L.restLine}`
     return {
       title: L.eveningTitle,
       body,
-      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(tmrYmd)) },
+      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(todayYmd)) },
     }
   }
 

@@ -279,17 +279,19 @@ function EntryCard({
       <View
         style={{
           flexDirection: 'row',
-          alignItems: 'baseline',
+          alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+          {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
+        </View>
         <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
       </View>
       {summary ? (
         <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{summary}</Text>
       ) : null}
-      {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
     </View>
   )
 }

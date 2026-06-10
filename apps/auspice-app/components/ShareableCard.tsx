@@ -40,10 +40,10 @@ const DAY_FOOTER: Record<string, string> = {
 
 /** Locale-aware brand eyebrow default for the DAY card (en stays CJK-free). */
 const DAY_EYEBROW: Record<string, string> = {
-  'zh-Hans': 'AUSPICE 黄历',
-  'zh-Hant': 'AUSPICE 黃曆',
-  ja: 'AUSPICE 暦',
-  en: 'AUSPICE · ALMANAC',
+  'zh-Hans': 'YUUN 黄历',
+  'zh-Hant': 'YUUN 黃曆',
+  ja: 'YUUN 暦',
+  en: 'YUUN · ALMANAC',
 }
 
 export interface ShareableCardProps {

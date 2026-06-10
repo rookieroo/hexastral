@@ -39,7 +39,10 @@ export function CultureSnippetCard({ snippet, upcomingTagline }: CultureSnippetC
         </Text>
         {canReadMore ? <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} /> : null}
       </View>
-      <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>{snippet.title}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>{snippet.title}</Text>
+        {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
+      </View>
       {upcomingTagline ? (
         <Text style={{ color: colors.accent, fontSize: 13, lineHeight: 19 }}>
           {upcomingTagline}
@@ -79,7 +82,6 @@ export function CultureSnippetCard({ snippet, upcomingTagline }: CultureSnippetC
       ) : (
         <View style={{ gap: spacing.sm }}>{inner}</View>
       )}
-      {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
     </View>
   )
 }

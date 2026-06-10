@@ -53,9 +53,16 @@ import { and, eq, gt } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { lifeTimelineCache, TIMELINE_CACHE_VERSION } from '../db/schema'
+import { lifeTimelineCache, TIMELINE_CACHE_VERSION, timelineReadings } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
+import { astroClient } from '../lib/service-clients'
+import {
+  evaluateLlmGuard,
+  type LlmGuardConfig,
+  recordLlmGuardGrant,
+  resolveLlmGuardSubject,
+} from '../services/shared/llm-guard'
 
 export const auspiceTimelineRoutes = new Hono<AppEnv>()
 
@@ -355,11 +362,259 @@ auspiceTimelineRoutes.post('/', async (c) => {
   return jsonOk(c, payload)
 })
 
+// ── POST /explain — per-node LLM deep-read, persisted (落库). ──────────────────
+//
+// The Pro depth layer over the deterministic timeline: a rich reading for ONE
+// 大运/流年/流月 node, generated on demand and PERSISTED to `timeline_readings`
+// so re-views AND the cron push (流月/流年/大运 node notifications — the #1 paid
+// hook) reuse the SAME row. Deterministic inputs → a reading never changes →
+// cached FOREVER (no TTL), bounding LLM spend to "nodes actually surfaced".
+// Free / guard-exhausted → `reading: null`; the client renders its own
+// deterministic `resolveNodeDetail`. Mirrors fate `/api/timeline/explain` + the
+// make-if 落库 pattern. See docs/timeline-deep-read-plan.md.
+//
+// DEPLOY DEPENDENCIES (not exercised in CI): svc-astro `/timeline/explain` must
+// accept this body (nodeType incl. 流月 + element/fit/reasons), and the D1
+// migration for `timeline_readings` must be generated + applied.
+
+const EXPLAIN_GUARD = {
+  app: 'auspice-timeline',
+  dailyLimitAnon: 1,
+  dailyLimitSigned: 5,
+  lifetimePeakPass: 1,
+  globalDailyBudget: 5000,
+  noRollover: true,
+  noPeriodicRefill: true,
+} as const satisfies LlmGuardConfig
+
+const explainSchema = z.object({
+  deviceId: z.string().max(128).optional(),
+  userId: z.string().max(128).optional(),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  birthHour: z.number().int().min(-1).max(23),
+  gender: z.enum(['M', 'F']),
+  nodeType: z.enum(['大运', '流年', '流月']),
+  year: z.number().int().min(1900).max(2200),
+  /** 1-12 for 流月; 0 (default) for 流年/大运. */
+  month: z.number().int().min(0).max(12).default(0),
+  locale: z.string().max(16).default('en'),
+})
+
+/** Tiny non-crypto hash so raw IPs never land in guard keys (mirrors timeline.ts). */
+function hashIp(ip: string): string {
+  let h = 2_166_136_261
+  for (let i = 0; i < ip.length; i++) {
+    h ^= ip.charCodeAt(i)
+    h = Math.imul(h, 16_777_619)
+  }
+  return (h >>> 0).toString(36)
+}
+
+interface NodeFacts {
+  ganZhi: string
+  element: WuXing
+  fit: PersonalFit
+  reasons: PersonalReasonCode[]
+  year: number
+  month: number
+  startAge?: number
+  endAge?: number
+  age?: number
+}
+
+/** Deterministic facts for ONE timeline node — the LLM prompt inputs (the engine
+ *  computes them; the client never sends an authoritative reading). Reuses the
+ *  SAME `personalAlmanacOverlay` 对你而言 engine as buildTimelinePayload. */
+function resolveNodeFacts(
+  birthDate: string,
+  birthHour: number,
+  gender: 'M' | 'F',
+  nodeType: '大运' | '流年' | '流月',
+  targetYear: number,
+  month: number
+): NodeFacts | null {
+  const [by, bm, bd] = birthDate.split('-').map((n) => Number.parseInt(n, 10)) as [
+    number,
+    number,
+    number,
+  ]
+  const hourForPillars = birthHour >= 0 ? birthHour : 0
+  const pillars = getFourPillars({ year: by, month: bm, day: bd, hour: hourForPillars })
+  const subject: PersonalAlmanacSubject = {
+    dayMasterStem: pillars.day.stem,
+    birthBranch: pillars.year.branch,
+  }
+  const fitOf = (stem: HeavenlyStem, branch: EarthlyBranch): PeriodFit => {
+    const o = personalAlmanacOverlay(subject, { dayElement: STEM_WUXING[stem], dayBranch: branch })
+    return { fit: o.fit, reasons: o.reasons }
+  }
+
+  if (nodeType === '流年') {
+    const ln = getLiuNianRange(by, targetYear, targetYear)[0]
+    if (!ln) return null
+    return {
+      ganZhi: `${ln.ganZhi.stem}${ln.ganZhi.branch}`,
+      element: STEM_WUXING[ln.ganZhi.stem],
+      year: targetYear,
+      month: 0,
+      age: ln.age,
+      ...fitOf(ln.ganZhi.stem, ln.ganZhi.branch),
+    }
+  }
+  if (nodeType === '流月') {
+    const yStemIdx = HEAVENLY_STEMS.indexOf(yearGanZhi(targetYear).stem)
+    const gz = monthGanZhi(yStemIdx, (month + 1) % 12)
+    return {
+      ganZhi: `${gz.stem}${gz.branch}`,
+      element: STEM_WUXING[gz.stem],
+      year: targetYear,
+      month,
+      ...fitOf(gz.stem, gz.branch),
+    }
+  }
+  // 大运 — the step covering targetYear.
+  const astroGender = gender === 'M' ? '男' : '女'
+  const steps = calculateDaYun(
+    { year: by, month: bm, day: bd, hour: hourForPillars },
+    astroGender,
+    8
+  ).steps
+  const step = steps.find((s) => targetYear >= s.startYear && targetYear <= s.endYear)
+  if (!step) return null
+  return {
+    ganZhi: `${step.ganZhi.stem}${step.ganZhi.branch}`,
+    element: STEM_WUXING[step.ganZhi.stem],
+    year: step.startYear,
+    month: 0,
+    startAge: step.startAge,
+    endAge: step.endAge,
+    ...fitOf(step.ganZhi.stem, step.ganZhi.branch),
+  }
+}
+
+auspiceTimelineRoutes.post('/explain', async (c) => {
+  const body = explainSchema.parse(await c.req.json().catch(() => ({})))
+  const facts = resolveNodeFacts(
+    body.birthDate,
+    body.birthHour,
+    body.gender,
+    body.nodeType,
+    body.year,
+    body.month
+  )
+  if (!facts) return jsonOk(c, { reading: null, source: 'none' })
+
+  const owner = body.userId ? `user:${body.userId}` : `device:${body.deviceId ?? 'anon'}`
+  const id = `${body.nodeType}:${body.year}:${body.month}:${body.locale}`
+  const db = c.get('db')
+
+  // 1. 落库 hit — instant, no LLM spend (the generate-once substrate the push shares).
+  if (db) {
+    try {
+      const hit = await db
+        .select()
+        .from(timelineReadings)
+        .where(
+          and(
+            eq(timelineReadings.owner, owner),
+            eq(timelineReadings.id, id),
+            eq(timelineReadings.birthDate, body.birthDate),
+            eq(timelineReadings.birthHour, body.birthHour),
+            eq(timelineReadings.gender, body.gender)
+          )
+        )
+        .limit(1)
+      if (hit[0]) return jsonOk(c, { reading: hit[0].reading, source: 'cache' })
+    } catch (err) {
+      console.warn('[auspice.timeline.explain] 落库 read failed', err)
+    }
+  }
+
+  // 2. Guard (subject userId > deviceId > ipHash). No subject / exhausted → null
+  //    reading; the client renders its own deterministic resolveNodeDetail.
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const subject = resolveLlmGuardSubject({
+    userId: body.userId,
+    deviceId: body.deviceId,
+    ipHash: hashIp(ip),
+  })
+  if (!subject) return jsonOk(c, { reading: null, source: 'template' })
+  const guard = await evaluateLlmGuard(c.env, { subject, config: EXPLAIN_GUARD })
+
+  if (guard.decision === 'allow_llm') {
+    try {
+      const resp = await astroClient.post<{ explanation: string }>(
+        c.env.SVC_ASTRO,
+        '/timeline/explain',
+        {
+          nodeType: body.nodeType,
+          year: facts.year,
+          month: body.month,
+          ganZhi: facts.ganZhi,
+          element: facts.element,
+          fit: facts.fit,
+          reasons: facts.reasons,
+          locale: body.locale,
+          isPro: guard.tier === 'deep',
+        }
+      )
+      const reading = (resp.explanation ?? '').trim()
+      if (reading) {
+        // 落库 — generate-ONCE, no TTL: deterministic input → stable reading, so
+        // re-views + the cron push all reuse this row. Best-effort write.
+        if (db) {
+          try {
+            await db
+              .insert(timelineReadings)
+              .values({
+                owner,
+                id,
+                birthDate: body.birthDate,
+                birthHour: body.birthHour,
+                gender: body.gender,
+                nodeType: body.nodeType,
+                year: facts.year,
+                month: body.month,
+                reading,
+                tier: guard.tier === 'deep' ? 'deep' : 'standard',
+                locale: body.locale,
+                createdAt: new Date().toISOString(),
+              })
+              .onConflictDoUpdate({
+                target: [timelineReadings.owner, timelineReadings.id],
+                set: {
+                  reading,
+                  tier: guard.tier === 'deep' ? 'deep' : 'standard',
+                  birthDate: body.birthDate,
+                  birthHour: body.birthHour,
+                  gender: body.gender,
+                },
+              })
+          } catch (err) {
+            console.warn('[auspice.timeline.explain] 落库 write failed', err)
+          }
+        }
+        await recordLlmGuardGrant(c.env, {
+          subject,
+          config: EXPLAIN_GUARD,
+          consumesPeakPass: guard.consumesPeakPass,
+        })
+        return jsonOk(c, { reading, source: 'llm', tier: guard.tier })
+      }
+    } catch (err) {
+      console.error('[auspice.timeline.explain] svc-astro failed', err)
+    }
+    return jsonOk(c, { reading: null, source: 'template' })
+  }
+
+  return jsonOk(c, { reading: null, source: 'template', upsell: guard.upsellAfterExhaust })
+})
+
 // Re-export for callers that need the deterministic computer (Agent D's iOS
 // timeline preview screen + jest tests in cycle-app).
 export { computeContextKey }
 
 // Reject anything other than POST on the sub-path with a clean 405.
-auspiceTimelineRoutes.all('/', (c) => {
+auspiceTimelineRoutes.all('/', () => {
   throw new HTTPException(405, { message: 'method not allowed' })
 })

@@ -40,7 +40,6 @@ import {
   refreshSynastryReminders,
   refreshTimelineReminders,
   scheduleBirthdayReminders,
-  scheduleHolidayHeadsUp,
   syncServerPush,
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
@@ -106,15 +105,14 @@ function RootLayoutInner() {
       const info = await getAuspiceBirthInfo().catch(() => null)
       const people = await getPeople().catch(() => [])
       // Real server push: register/unregister this device to match the local
-      // enable flags (daily + holiday; birthday rides along). The cron then
-      // delivers reliably even if the app isn't reopened. Once registered, the
-      // local daily/birthday/holiday schedulers below no-op (server owns them);
-      // on failure they run as the local fallback.
+      // enable flags (daily; birthday rides along). The cron then delivers
+      // reliably even if the app isn't reopened. Once registered, the local
+      // daily/birthday schedulers below no-op (server owns them); on failure
+      // they run as the local fallback. (节假日 heads-up removed — see me.tsx.)
       await syncServerPush(locale)
       await migrateBirthdaysToServerOnce(people, await getAuspiceProActive().catch(() => false))
       await refreshDailyPush({ locale, birthDate })
       await scheduleBirthdayReminders(people, locale)
-      await scheduleHolidayHeadsUp(locale)
       // 人生节点提醒 (Pro) — self-clears if disabled / not Pro / no birth gender.
       if (info?.gender) {
         await refreshTimelineReminders({

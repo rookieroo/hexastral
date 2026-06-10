@@ -118,8 +118,11 @@ function resolveNodeDetail(
   selectedId: string | null,
   t: ReturnType<typeof useStrings>['t'],
   /** Chart 用神 五行 — appended as a 化解 ("支线解法") on conflict / 忌神 nodes. */
-  favorableEl?: WuXing | null
+  favorableEl?: WuXing | null,
+  /** UI locale — headings drop the raw 干支 outside zh (jargon to non-CJK readers). */
+  lang?: string
 ): NodeDetail | null {
+  const cjk = (lang ?? 'zh').startsWith('zh')
   // The 用神/忌神 element note — the per-node "why" the per-grade advice drops.
   const elementNote = (reasons: string[], element: string): string => {
     if (reasons.includes('favorable_element_present'))
@@ -139,7 +142,9 @@ function resolveNodeDetail(
   if (!selectedId) return null
   if (selectedId === 'source') {
     return {
-      heading: `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`,
+      heading: cjk
+        ? `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`
+        : t.baziDayMaster,
       fit: null,
       body: t.personal.birthHint,
     }
@@ -150,7 +155,9 @@ function resolveNodeDetail(
     if (!row) return null
     const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
     return {
-      heading: `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
+      heading: cjk
+        ? `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`
+        : `${t.timelineDayun} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
       body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
     }
@@ -161,7 +168,9 @@ function resolveNodeDetail(
     if (!row) return null
     const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
     return {
-      heading: `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+      heading: cjk
+        ? `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
+        : `${row.year}.${row.month} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
       body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
     }
@@ -175,7 +184,9 @@ function resolveNodeDetail(
   if (!row) return null
   const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
   return {
-    heading: `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`,
+    heading: cjk
+      ? `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
+      : `${row.year} · ${t.personal.fit[row.fit]}`,
     fit: row.fit,
     body: `${t.timelineAdvice[row.fit]}${clash}${huajie(row.reasons)}`,
   }
@@ -281,7 +292,11 @@ export default function TimelineScreen() {
     }
     const monthRaw = selectedId?.startsWith('liuyue-') ? Number(selectedId.split('-')[2]) : null
     return {
-      dayunLabel: `${dy.pillar.stem}${dy.pillar.branch} 大运`,
+      // zh keeps the 干支 大运 label; en/ja get the decade's age span instead —
+      // universal, and short enough not to clip (the cut-off 大运 label, 2026-06).
+      dayunLabel: locale.startsWith('zh')
+        ? `${dy.pillar.stem}${dy.pillar.branch} 大运`
+        : `${dy.startAge}–${dy.endAge}`,
       domainColor: domainColorFor(p, dy.pillar.stem),
       years,
       selectedYearIndex,
@@ -291,7 +306,7 @@ export default function TimelineScreen() {
       liuyueNowMonth: selectedYear === new Date().getFullYear() ? new Date().getMonth() + 1 : null,
       selectedMonth: monthRaw != null && Number.isFinite(monthRaw) ? monthRaw : null,
     }
-  }, [state, selectedDayunIndex, selectedId])
+  }, [state, selectedDayunIndex, selectedId, locale])
   // Image share: capture the real graph (not a server reconstruction) to a PNG.
   // Pre-warm once data lands — the Skia graph is the slow part of the capture, so
   // baking it ahead of the tap makes Share feel instant.
@@ -435,7 +450,7 @@ export default function TimelineScreen() {
             // reading), falling back to the current 大运 so a fresh share still has a
             // takeaway. What they see on screen = what they share.
             const shareDetail =
-              resolveNodeDetail(state.payload, selectedId, t, favEl) ??
+              resolveNodeDetail(state.payload, selectedId, t, favEl, locale) ??
               (snap
                 ? {
                     heading: `${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`,
@@ -666,8 +681,8 @@ function Body({
   const [liuyueOpenYear, setLiuyueOpenYear] = useState<number | null>(null)
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
   const detail = useMemo(
-    () => resolveNodeDetail(payload, selectedId, t, favEl),
-    [selectedId, payload, t, favEl]
+    () => resolveNodeDetail(payload, selectedId, t, favEl, lang),
+    [selectedId, payload, t, favEl, lang]
   )
 
   // 印证 — the subject's 本命支 (year branch) drives the 桃花/驿马 retrodiction check.
@@ -732,12 +747,16 @@ function Body({
                 opacity: locked ? 0.45 : 1,
               }}
             >
+              {/* Age leads (universal); 干支 demoted to a muted zh-only second line
+                  — raw 干支 reads as jargon outside Chinese (2026-06 feedback). */}
               <Text style={{ color: sel ? '#fff' : colors.text, fontSize: 16, fontWeight: '500' }}>
-                {`${d.pillar.stem}${d.pillar.branch}`}
-              </Text>
-              <Text style={{ color: sel ? '#fff' : colors.dim, fontSize: 10, marginTop: 1 }}>
                 {`${d.startAge}+`}
               </Text>
+              {lang.startsWith('zh') ? (
+                <Text style={{ color: sel ? '#fff' : colors.dim, fontSize: 10, marginTop: 1 }}>
+                  {`${d.pillar.stem}${d.pillar.branch}`}
+                </Text>
+              ) : null}
             </Pressable>
           )
         })}
@@ -754,7 +773,13 @@ function Body({
           selectedYearIndex={drill.selectedYearIndex}
           onSelectYear={(idx) => {
             const r = drill.years[idx]
-            if (r) onSelect(`liunian-${r.year}`)
+            if (!r) return
+            onSelect(`liunian-${r.year}`)
+            // 流月 only for THIS year + ahead — past months aren't actionable, so we
+            // don't weave them (2026-06 feedback). Pro: tapping opens it (re-tap
+            // closes); Free: stays locked → the upsell under the reading.
+            const past = r.year < new Date().getFullYear()
+            if (isPro && !past) setLiuyueOpenYear((c) => (c === r.year ? null : r.year))
           }}
           fitColor={FIT_COLOR}
           lang={lang}
@@ -762,14 +787,9 @@ function Body({
           liuyue={drill.liuyue}
           liuyueOpen={drill.selectedYear != null && liuyueOpenYear === drill.selectedYear}
           selectedMonth={drill.selectedMonth}
-          onToggleLiuyue={() => {
-            const yr = drill.selectedYear
-            if (yr != null) setLiuyueOpenYear((c) => (c === yr ? null : yr))
-          }}
           onSelectMonth={(mo) => {
             if (drill.selectedYear != null) onSelect(`liuyue-${drill.selectedYear}-${mo}`)
           }}
-          onLockedTap={onLockedTap}
         />
       ) : null}
 
@@ -781,6 +801,21 @@ function Body({
           fit={detail.fit}
           colors={colors}
         />
+      ) : null}
+
+      {/* Free: advertise the Pro 流月 (monthly) weave under the reading, for THIS
+          year + ahead — restores the value cue the removed popover used to carry,
+          without blocking the year column (2026-06 feedback). */}
+      {!isPro && drill?.selectedYear != null && drill.selectedYear >= new Date().getFullYear() ? (
+        <Pressable
+          onPress={onLockedTap}
+          accessibilityRole='button'
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+            {t.timelineLiuyueUpsell}
+          </Text>
+        </Pressable>
       ) : null}
 
       {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}

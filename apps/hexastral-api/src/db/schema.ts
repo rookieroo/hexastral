@@ -967,9 +967,7 @@ export const userBonds = sqliteTable(
      * 免费 resonance bond 默认 false，经单次购买 (POST /:id/unlock) 翻转。订阅 /
      * 邀请解锁走全局信号 (capability / users.unlockedChapterCount)，不依赖此列。
      */
-    chaptersUnlocked: integer('chapters_unlocked', { mode: 'boolean' })
-      .default(false)
-      .notNull(),
+    chaptersUnlocked: integer('chapters_unlocked', { mode: 'boolean' }).default(false).notNull(),
     /** 是否已分享给对方（用于 Resonance 模式社交裂变） */
     sharedByOwner: integer('shared_by_owner', { mode: 'boolean' }).default(false).notNull(),
 
@@ -1230,6 +1228,49 @@ export const makeifForks = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.owner, t.id] }),
     index('makeif_forks_owner_profile_idx').on(t.owner, t.birthDate, t.birthHour, t.gender),
+  ]
+)
+
+/**
+ * Timeline per-node deep-read cache (落库) — the durable store BOTH the in-app Pro
+ * reading AND the cron push (流月/流年/大运 node notifications — the #1 paid hook)
+ * draw from. Generate-once: whichever surfaces a period first (an in-app open or
+ * the cron) runs the LLM via svc-astro and persists here; the other reuses it.
+ * Inputs are deterministic (chart + period), so a reading never changes → cached
+ * FOREVER (no TTL), which bounds total LLM spend to "periods actually surfaced"
+ * and is exactly why 落库 (not KV-24h) is mandatory.
+ *
+ * `owner` = `device:<deviceId>` (anon) or `user:<userId>`, matching makeif_forks.
+ * Chart inputs are stored + indexed so a birth change misses + regenerates; the
+ * endpoint upserts on the deterministic period `id`. See
+ * docs/timeline-deep-read-plan.md.
+ */
+export const timelineReadings = sqliteTable(
+  'timeline_readings',
+  {
+    owner: text('owner').notNull(),
+    /** Deterministic period id within a chart: `${nodeType}:${year}:${month}:${locale}`. */
+    id: text('id').notNull(),
+    birthDate: text('birth_date').notNull(),
+    birthHour: integer('birth_hour').notNull(),
+    gender: text('gender').notNull(),
+    /** '大运' | '流年' | '流月'. */
+    nodeType: text('node_type').notNull(),
+    year: integer('year').notNull(),
+    /** 1-12 for 流月; 0 for 流年/大运 (a node spans no single month). */
+    month: integer('month').notNull().default(0),
+    /** The cached LLM deep-read (the value both view + push render). */
+    reading: text('reading').notNull(),
+    /** Guard tier the read was generated at ('deep' = Pro). */
+    tier: text('tier').notNull().default('standard'),
+    locale: text('locale').notNull().default('en'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    primaryKey({ columns: [t.owner, t.id] }),
+    index('timeline_readings_owner_profile_idx').on(t.owner, t.birthDate, t.birthHour, t.gender),
   ]
 )
 

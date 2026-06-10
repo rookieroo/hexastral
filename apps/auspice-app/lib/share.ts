@@ -18,11 +18,11 @@ import { Share } from 'react-native'
 const WEB_BASE = 'https://hexastral.com'
 
 /** Localized "shared from" + soft CTA prepended to the share-page link. */
-const EN_TAGLINE = '— from Auspice, the Chinese calendar · see yours'
+const EN_TAGLINE = '— from Yuun, the Chinese calendar · see yours'
 const TAGLINE: Record<string, string> = {
-  'zh-Hans': '—— 由 Auspice 中华万年历生成 · 看看你的',
-  'zh-Hant': '—— 由 Auspice 中華萬年曆生成 · 看看你的',
-  ja: '—— Auspice 中華万年暦より · あなたのも見てみる',
+  'zh-Hans': '—— 由 Yuun 中华万年历生成 · 看看你的',
+  'zh-Hant': '—— 由 Yuun 中華萬年曆生成 · 看看你的',
+  ja: '—— Yuun 中華万年暦より · あなたのも見てみる',
   en: EN_TAGLINE,
 }
 
@@ -54,24 +54,24 @@ const TIMELINE_FOOTER: Record<string, string> = {
 }
 
 const TIMELINE_EYEBROW: Record<string, string> = {
-  'zh-Hans': 'AUSPICE · 人生时间线',
-  'zh-Hant': 'AUSPICE · 人生時間線',
-  ja: 'AUSPICE · 人生タイムライン',
-  en: 'AUSPICE · LIFE TIMELINE',
+  'zh-Hans': 'YUUN · 人生时间线',
+  'zh-Hant': 'YUUN · 人生時間線',
+  ja: 'YUUN · 人生タイムライン',
+  en: 'YUUN · LIFE TIMELINE',
 }
 
 const MAKEIF_FOOTER: Record<string, string> = {
   'zh-Hans': '八字推演 · 看见另一种人生',
   'zh-Hant': '八字推演 · 看見另一種人生',
   ja: '四柱推命 · もうひとつの人生',
-  en: 'Bazi what-if · see a parallel life',
+  en: 'BaZi what-if · see an alternate timeline',
 }
 
 const MAKEIF_EYEBROW: Record<string, string> = {
-  'zh-Hans': 'AUSPICE · 假如人生',
-  'zh-Hant': 'AUSPICE · 假如人生',
-  ja: 'AUSPICE · もしもの人生',
-  en: 'AUSPICE · MAKE-IF',
+  'zh-Hans': 'YUUN · 假如人生',
+  'zh-Hant': 'YUUN · 假如人生',
+  ja: 'YUUN · もしもの人生',
+  en: 'YUUN · WHAT-IF',
 }
 
 function pick(map: Record<string, string>, locale: string): string {

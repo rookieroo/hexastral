@@ -481,7 +481,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
         'make-if 是基於你八字的命理推演與參考，並非預言，也不替你做決定。過去無法改變，所以是「假如」；改變現在或未來的假設僅用於自我探索。現實中的每個選擇與後果，都由你自己獨立判斷、自行承擔。',
       disclaimerAck: '我已理解，繼續',
       footer: '僅供參考與省思，非預測或建議；一切現實決定由你自行承擔。',
-      unlockTitle: 'make-if · 假如人生',
+      unlockTitle: 'What-If · 假如人生',
       unlockBody: '解鎖後，可在你真實人生線的任一節點假設一個選擇，由你的八字推演出另一種人生。',
       unlockCta: '解鎖假如人生',
       swipeHint: '向左滑動分支以分享或刪除',
@@ -507,7 +507,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
         'make-if 是基于你八字的命理推演与参考，并不是预言，也不替你做决定。过去无法改变，所以是「假如」；改变现在或未来的假设只用于自我探索。现实中的每一个选择与后果，都由你自己独立判断、自行承担。',
       disclaimerAck: '我已理解，继续',
       footer: '仅供参考与省思，非预测或建议；一切现实决定由你自行承担。',
-      unlockTitle: 'make-if · 假如人生',
+      unlockTitle: 'What-If · 假如人生',
       unlockBody: '解锁后，可在你真实人生线的任一节点假设一个选择，由你的八字推演出另一种人生。',
       unlockCta: '解锁假如人生',
       swipeHint: '向左滑动分支以分享或删除',
@@ -534,7 +534,7 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
       disclaimerAck: '理解しました。続ける',
       footer:
         '参考と内省のためのもので、予測や助言ではありません。現実の決定はすべてご自身の責任です。',
-      unlockTitle: 'make-if · もしもの人生',
+      unlockTitle: 'What-If · もしもの人生',
       unlockBody:
         '解錠すると、あなたの本当の人生線の任意の節点で選択を仮定し、八字からもう一つの人生を描けます。',
       unlockCta: 'もしもの人生を解錠',
@@ -546,8 +546,8 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
     }
   }
   return {
-    screenTitle: 'make-if',
-    tapHint: 'Tap any node on your line, assume a choice, and explore another life.',
+    screenTitle: 'What-If',
+    tapHint: 'Tap any node on your line, assume a choice, and branch an alternate timeline.',
     forkTitle: (age, isPast) => (isPast ? `If, back at ${age}…` : `If, at ${age}…`),
     eventChips: EN_PRESET_CHIPS,
     eventPlaceholder: 'Or type your own event…',
@@ -557,13 +557,13 @@ export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiv
     limited: 'Daily limit reached',
     disclaimerTitle: 'Before you begin',
     disclaimerBody:
-      'make-if is Ba Zi-based exploration and reflection — not a prediction, and it does not decide for you. The past cannot be changed, so it is a "what-if"; exploring a present or future choice is for self-reflection only. Every real-world choice and consequence is yours alone, at your own judgment and responsibility.',
+      'What-If is Ba Zi-based exploration and reflection — not a prediction, and it does not decide for you. The past cannot be changed, so it is a "what-if"; exploring a present or future choice is for self-reflection only. Every real-world choice and consequence is yours alone, at your own judgment and responsibility.',
     disclaimerAck: 'I understand — continue',
     footer: 'For reflection only, not prediction or advice; all real decisions are your own.',
-    unlockTitle: 'make-if · what-if lives',
+    unlockTitle: 'What-If · alternate timelines',
     unlockBody:
-      'Unlock to assume a choice at any node of your real life line and let your 八字 explore another life.',
-    unlockCta: 'Unlock make-if',
+      'Unlock to assume a choice at any node of your real life line and let your 八字 branch an alternate timeline.',
+    unlockCta: 'Unlock What-If',
     swipeHint: 'Swipe a branch left to share or delete',
     share: 'Share',
     delete: 'Delete',
