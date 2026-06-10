@@ -45,6 +45,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { MakeIfGraph } from '@/components/MakeIfGraph'
 import { MakeIfYearGraph } from '@/components/MakeIfYearGraph'
+import { MakeIfZeshiCard } from '@/components/MakeIfZeshiCard'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
@@ -649,6 +650,10 @@ function Sandbox({
           ) : null}
         </View>
       ) : null}
+
+      {/* 择时 decision台 — pick a decision, see which of the next few years the
+          chart favors, then drop into day-level 择日 (ADR-0023b, the decision engine). */}
+      <MakeIfZeshiCard birth={birth} payload={payload} />
 
       {/* 大运 strip — moves the year-window to a far decade so you can scroll the
           whole life + fork there (the graph itself only shows one decade window). */}
