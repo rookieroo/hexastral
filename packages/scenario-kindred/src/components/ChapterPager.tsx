@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native'
 import type { SynastryReport } from '../types'
-import { ChapterCard } from './ChapterCard'
+import { ChapterCard, type ChapterCardTheme } from './ChapterCard'
 
 export interface ChapterPagerProps {
   report: SynastryReport
@@ -43,6 +43,8 @@ export interface ChapterPagerProps {
   onPickQuote?: (quote: string) => void
   /** Highlighted paragraph texts — rendered with a cinnabar wash. */
   highlightedQuotes?: string[]
+  /** Surface theme — 'paper' (default) or 'dark' (in-app 水墨黑 report). */
+  theme?: ChapterCardTheme
 }
 
 export function ChapterPager({
@@ -57,6 +59,7 @@ export function ChapterPager({
   renderCenterpiece,
   onPickQuote,
   highlightedQuotes,
+  theme = 'paper',
 }: ChapterPagerProps) {
   const screenWidth = Dimensions.get('window').width
 
@@ -93,6 +96,7 @@ export function ChapterPager({
             centerpiece={renderCenterpiece?.(chapter, idx)}
             onPickQuote={onPickQuote}
             highlightedQuotes={highlightedQuotes}
+            theme={theme}
           />
         </View>
       ))}

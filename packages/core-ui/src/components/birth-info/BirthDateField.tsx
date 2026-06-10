@@ -74,6 +74,14 @@ export interface BirthDateFieldProps {
    * quieter inline look.
    */
   prominent?: boolean
+  /**
+   * Hide the built-in 公历/农历 segmented control. The host then owns the
+   * calendar switch (e.g. a compact 农历 toggle beside the field's section
+   * title) and flips `value.calendar` via `onChange` itself — keeps the form
+   * from reading as "好多 select/button" when solar is the default. The lunar
+   * hint + picker behaviour are unchanged. Defaults to false.
+   */
+  hideCalendarToggle?: boolean
 }
 
 /** Auto-insert dashes → YYYY-MM-DD; strips non-digits, caps at 8 digits. */
@@ -164,6 +172,7 @@ export function BirthDateField({
   labels,
   locale,
   prominent = false,
+  hideCalendarToggle = false,
 }: BirthDateFieldProps) {
   const { colors, spacing, isDark } = useTheme()
   // Pin the native iOS DateTimePicker to the CoreUI theme — otherwise the
@@ -228,44 +237,47 @@ export function BirthDateField({
 
   return (
     <View style={{ gap: spacing.sm }}>
-      {/* Calendar toggle — 公历 / 农历 */}
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        {(
-          [
-            ['solar', labels.solar],
-            ['lunar', labels.lunar],
-          ] as const
-        ).map(([key, label]) => {
-          const selected = calendar === key
-          return (
-            <Pressable
-              key={key}
-              onPress={() => handleCalendar(key)}
-              accessibilityRole='button'
-              accessibilityState={{ selected }}
-              style={{
-                flex: 1,
-                paddingVertical: spacing.sm,
-                borderRadius: 10,
-                borderWidth: 0.5,
-                borderColor: selected ? accent : colors.separator,
-                backgroundColor: selected ? `${accent}1F` : 'transparent',
-                alignItems: 'center',
-              }}
-            >
-              <Text
+      {/* Calendar toggle — 公历 / 农历. Hidden when the host owns the switch
+          (hideCalendarToggle) so solar can be the quiet default. */}
+      {hideCalendarToggle ? null : (
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          {(
+            [
+              ['solar', labels.solar],
+              ['lunar', labels.lunar],
+            ] as const
+          ).map(([key, label]) => {
+            const selected = calendar === key
+            return (
+              <Pressable
+                key={key}
+                onPress={() => handleCalendar(key)}
+                accessibilityRole='button'
+                accessibilityState={{ selected }}
                 style={{
-                  color: selected ? accent : colors.text,
-                  fontSize: 14,
-                  fontWeight: selected ? '600' : '400',
+                  flex: 1,
+                  paddingVertical: spacing.sm,
+                  borderRadius: 10,
+                  borderWidth: 0.5,
+                  borderColor: selected ? accent : colors.separator,
+                  backgroundColor: selected ? `${accent}1F` : 'transparent',
+                  alignItems: 'center',
                 }}
               >
-                {label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </View>
+                <Text
+                  style={{
+                    color: selected ? accent : colors.text,
+                    fontSize: 14,
+                    fontWeight: selected ? '600' : '400',
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      )}
 
       {/* The input row — compact text entry + wheel affordance. `prominent`
           boxes it (border + larger type) so it's unmistakably an input. */}

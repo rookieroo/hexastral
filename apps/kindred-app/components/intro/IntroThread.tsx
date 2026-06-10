@@ -1,26 +1,38 @@
 /**
  * IntroThread — the Yuel (缘) intro, re-staged thread-first (ADR-0024 / director's
- * treatment 2026-06-10).
+ * treatment 2026-06-10), then clarified to read as THREE relationships (2026-06).
  *
  * The articulated stick-figure rig chased realism (joints / grounded gait) and
  * fell into the uncanny valley — adding anatomy invited a standard the symbol
  * can't meet, so it read MORE fake. The fix is the opposite: MORE abstraction +
  * better timing. Here the PROTAGONIST is the thread (缘 = the line between two
  * people), and people are simple ink dots — a curve has no "wrong anatomy", so
- * it's fully controllable and believable. Pip-and-Posy craft: simple shapes,
- * eased arcs, generous HOLDS, emotion through minimalism.
+ * it's fully controllable and believable.
  *
- * The four-beat parable (kept from the original, captions supplied by the host):
- *   0 you, alone           — a dot breathing, a short unspent thread-tail
- *   1 the reach that misses — a thread reaches toward another and falls short
- *   2 the tie that loosens  — the thread connects, then the other drifts away
- *   3 the one who stays     — the thread holds; the two settle close, calm
+ * CLARITY PASS (2026-06: "没看出来是 A 和 B、C、D 分别交往得出的三段感情"): the
+ * first thread cut reused ONE partner dot that entered/exited three times at the
+ * same spot, so it read as a single on-off person, not three relationships — and
+ * so was HARDER to parse than the old stick figures. Now there are THREE distinct
+ * others (B / C / D), each at its own station, and the ones whose act has passed
+ * LINGER as faint ghosts. So by the final beat you literally see four dots — you,
+ * two faded loves behind you, and the one, lit and tied close. The parable's
+ * meaning ("you, then some you couldn't hold, then the one who stays") is now
+ * spatial, not temporal.
+ *
+ * The four-beat parable (captions supplied by the host):
+ *   0 you, alone            — a dot breathing, a short unspent thread-tail
+ *   1 B — the reach that misses — a thread reaches toward B and falls short; B
+ *                                  lingers, faint, upper-right
+ *   2 C — the tie that loosens  — the thread ties to C, then C drifts away and
+ *                                  fades to a ghost, lower-right
+ *   3 D — the one who stays     — the thread holds; D settles close and lit
  * then a persistent "tap to begin" resolves to onboarding (the host owns the tap).
  *
  * One master progress drives everything via worklet-derived sub-phases, so the
  * choreography lives in one place and stays tempo-scalable. Skia + reanimated,
  * mirroring InkCenterpiece's value→Skia pattern. NOTE: hand-feel (timing, arc
- * shapes) wants on-device tuning — the constants below are the score, not gospel.
+ * shapes, the four stations) wants on-device tuning — the constants below are the
+ * score, not gospel.
  */
 
 import { Canvas, Circle, Fill, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia'
@@ -49,6 +61,22 @@ const A1 = 0.22
 const A2 = 0.48
 const A3 = 0.74
 
+// ── stations — fractions of (width, height). The four dots sit at FOUR distinct
+// places so they read as four people, not one blinking on and off. Faded loves
+// stay where their act left them (the ghost spots).
+const YOU = { x: 0.38, y: 0.4 }
+// B — reached for, missed: drifts in from the right wing to a far upper-right
+// station and stays there, faint.
+const B = { fromX: 1.2, fromY: 0.2, x: 0.74, y: 0.24 }
+// C — known, then let go: enters low, ties close, then drifts off to a faint
+// lower-right ghost.
+const C = { fromX: 1.2, fromY: 0.66, x: 0.58, y: 0.56, ghostX: 0.86, ghostY: 0.64 }
+// D — the one who stays: enters at your height and settles close, lit.
+const D = { fromX: 1.2, fromY: 0.4, x: 0.55, y: 0.42 }
+const GHOST_OP = 0.16 // a past love, still faintly there
+
+const DOT_R = 4.5
+
 // ── worklet helpers ──────────────────────────────────────────────────────────
 function clamp01(x: number): number {
   'worklet'
@@ -71,6 +99,32 @@ function bell(x: number): number {
   'worklet'
   return smooth(clamp01(x / 0.55)) * (1 - smooth(clamp01((x - 0.55) / 0.45)))
 }
+/** An eased S-curve thread from (sx,sy) to (ex,ey), bowed by `sag` on the
+ *  perpendicular so a 2-D line still reads as a hand-drawn ink stroke. */
+function makeThread(
+  sx: number,
+  sy: number,
+  ex: number,
+  ey: number,
+  sag: number,
+  quiver: number
+): SkPath {
+  'worklet'
+  const path = Skia.Path.Make()
+  const dx = ex - sx
+  const dy = ey - sy
+  const len = Math.max(1, Math.hypot(dx, dy))
+  // perpendicular unit — the bow direction
+  const nx = -dy / len
+  const ny = dx / len
+  const m1x = lerp(sx, ex, 0.33) + nx * sag + quiver
+  const m1y = lerp(sy, ey, 0.33) + ny * sag
+  const m2x = lerp(sx, ex, 0.66) - nx * sag + quiver
+  const m2y = lerp(sy, ey, 0.66) - ny * sag
+  path.moveTo(sx, sy)
+  path.cubicTo(m1x, m1y, m2x, m2y, ex, ey)
+  return path
+}
 
 export interface IntroThreadProps {
   /** Four parable captions (arrival / near-miss / parts / stays). */
@@ -85,9 +139,9 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
   const { width, height } = useWindowDimensions()
   const reduced = useReducedMotion()
 
-  // "You" — fixed, the constant the parable returns to. The partner moves.
-  const yx = width * 0.4
-  const yy = height * 0.5
+  // "You" — fixed, the constant the parable returns to. The others come and go.
+  const yx = width * YOU.x
+  const yy = height * YOU.y
 
   const p = useSharedValue(0)
   useEffect(() => {
@@ -100,7 +154,7 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
     })
   }, [reduced, onDone, p])
 
-  // Breath — a slow, independent pulse on "you" + a tiny bob on the dots.
+  // Breath — a slow, independent pulse on "you".
   const breath = useSharedValue(0)
   useEffect(() => {
     breath.value = withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) })
@@ -113,98 +167,145 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
     return () => clearInterval(id)
   }, [breath])
 
-  // ── partner position + presence ──────────────────────────────────────────
-  // One dot makes three approaches: misses (act1), ties-then-leaves (act2),
-  // stays (act3). Off-screen right is the wing it enters/exits from.
-  const off = width * 1.18
-  const partner = useDerivedValue(() => {
+  // ── one frame worklet drives the whole scene ───────────────────────────────
+  // Returns every dot's position+opacity AND the active thread path, so the
+  // station math lives in ONE place and the <Circle>/<Path> nodes just read it.
+  const frame = useDerivedValue(() => {
     const pv = p.value
-    if (pv < A1) return { x: off, y: yy, op: 0 }
-    if (pv < A2) {
-      const a = seg(pv, A1, A2)
-      const reachX = width * 0.66 // stays a GAP from you — the near-miss
-      const x =
-        a < 0.6 ? lerp(off, reachX, smooth(a / 0.6)) : lerp(reachX, off, smooth((a - 0.6) / 0.4))
-      return { x, y: yy, op: bell(a) }
-    }
-    if (pv < A3) {
-      const a = seg(pv, A2, A3)
-      const tieX = width * 0.56 // closer — the thread connects
-      const x =
-        a < 0.62 ? lerp(off, tieX, smooth(a / 0.62)) : lerp(tieX, off, smooth((a - 0.62) / 0.38))
-      return { x, y: yy, op: bell(a) }
-    }
-    const a = seg(pv, A3, 1)
-    const stayX = width * 0.52 // close, and stays
-    return {
-      x: lerp(off, stayX, smooth(Math.min(1, a / 0.45))),
-      y: yy,
-      op: smooth(Math.min(1, a / 0.45)),
-    }
-  })
-
-  const partnerCx = useDerivedValue(() => partner.value.x)
-  const partnerCy = useDerivedValue(() => partner.value.y)
-  const partnerOp = useDerivedValue(() => partner.value.op)
-
-  const youHaloR = useDerivedValue(() => 16 + breath.value * 5)
-  const youHaloOp = useDerivedValue(() => 0.1 + breath.value * 0.08)
-
-  // ── the thread ────────────────────────────────────────────────────────────
-  // A cubic from "you" toward the partner. In act1 the far end FALLS SHORT of the
-  // partner (the miss) and sags; from act2 it CONNECTS; in act3 it goes calm — a
-  // gentle taut S between two close dots. A faint trailing tail in act0 (unspent).
-  const threadPath = useDerivedValue<SkPath>(() => {
-    const pv = p.value
-    const path = Skia.Path.Make()
+    const w = width
+    const h = height
     const sx = yx
     const sy = yy
 
+    // — B: reached for in act1, then a lingering ghost upper-right —
+    let bx = B.fromX * w
+    let by = B.fromY * h
+    let bop = 0
+    if (pv >= A1 && pv < A2) {
+      const a = seg(pv, A1, A2)
+      const came = smooth(Math.min(1, a / 0.6))
+      bx = lerp(B.fromX * w, B.x * w, came)
+      by = lerp(B.fromY * h, B.y * h, came)
+      const appear = 0.9 * smooth(Math.min(1, a / 0.5))
+      bop = lerp(appear, GHOST_OP, smooth(Math.max(0, (a - 0.62) / 0.38)))
+    } else if (pv >= A2) {
+      bx = B.x * w
+      by = B.y * h
+      bop = GHOST_OP
+    }
+
+    // — C: ties close in act2, then drifts to a ghost lower-right —
+    let cx = C.fromX * w
+    let cy = C.fromY * h
+    let cop = 0
+    if (pv >= A2 && pv < A3) {
+      const a = seg(pv, A2, A3)
+      if (a < 0.5) {
+        const came = smooth(Math.min(1, a / 0.42))
+        cx = lerp(C.fromX * w, C.x * w, came)
+        cy = lerp(C.fromY * h, C.y * h, came)
+        cop = 0.9 * came
+      } else {
+        const gone = smooth(Math.max(0, (a - 0.5) / 0.5))
+        cx = lerp(C.x * w, C.ghostX * w, gone)
+        cy = lerp(C.y * h, C.ghostY * h, gone)
+        cop = lerp(0.9, GHOST_OP, gone)
+      }
+    } else if (pv >= A3) {
+      cx = C.ghostX * w
+      cy = C.ghostY * h
+      cop = GHOST_OP
+    }
+
+    // — D: enters in act3, settles close, stays lit —
+    let dx = D.fromX * w
+    let dy = D.fromY * h
+    let dop = 0
+    if (pv >= A3) {
+      const a = seg(pv, A3, 1)
+      const came = smooth(Math.min(1, a / 0.45))
+      dx = lerp(D.fromX * w, D.x * w, came)
+      dy = lerp(D.fromY * h, D.y * h, came)
+      dop = came
+    }
+
+    // — the active thread — from you toward whoever this beat belongs to —
+    let ex = sx
+    let ey = sy
+    let top = 0
+    let sag = 0
+    let quiver = 0
+    let wide = false
     if (pv < A1) {
       // unspent tail — a short stroke drifting from "you", drawing on.
       const a = seg(pv, 0, A1)
-      const len = 36 * smooth(a)
-      path.moveTo(sx, sy)
-      path.cubicTo(sx + len * 0.5, sy - 10, sx + len, sy + 6 * Math.sin(a * 6), sx + len, sy + 2)
-      return path
-    }
-
-    const tx = partner.value.x
-    // How far along to the partner the thread actually reaches: act1 short (miss),
-    // act2/3 full (connect). Quiver while reaching, calm once held.
-    let reach = 1
-    let sag = 0
-    let quiver = 0
-    if (pv < A2) {
+      const len = 42 * smooth(a)
+      ex = sx + len
+      ey = sy + 4
+      sag = 8 * Math.sin(a * 6)
+      top = 0.45 * smooth(a)
+    } else if (pv < A2) {
+      // reach toward B — but never gets there (reach < 1), and recoils.
       const a = seg(pv, A1, A2)
-      reach = 0.78 * bell(a) // never gets there, recoils
-      sag = 26 * bell(a)
+      const reach = 0.82 * bell(a)
+      ex = lerp(sx, bx, reach)
+      ey = lerp(sy, by, reach)
+      sag = 22 * bell(a)
       quiver = 5 * bell(a) * Math.sin(a * 30)
+      top = 0.7 * smooth(Math.min(1, a / 0.18))
     } else if (pv < A3) {
+      // tie to C, then loosen + fade as C drifts off.
       const a = seg(pv, A2, A3)
-      reach = bell(a) > 0 ? 1 : 0
-      sag = 14 * (1 - smooth(Math.min(1, a / 0.5))) // settles, then loosens as partner leaves
-      quiver = 3 * bell(a) * Math.sin(a * 22)
+      const connect = smooth(Math.min(1, a / 0.42))
+      const release = smooth(Math.max(0, (a - 0.55) / 0.45))
+      ex = lerp(sx, cx, connect)
+      ey = lerp(sy, cy, connect)
+      sag = 16 * (1 - connect) + 12 * release
+      quiver = 3 * (1 - connect) * Math.sin(a * 22)
+      top = 0.7 * (1 - 0.85 * release)
     } else {
+      // hold to D — a calm taut line that settles.
       const a = seg(pv, A3, 1)
-      reach = smooth(Math.min(1, a / 0.45))
-      sag = 10 - 6 * smooth(Math.min(1, a / 0.6)) // eases to a calm taut line
+      const reach = smooth(Math.min(1, a / 0.45))
+      ex = lerp(sx, dx, reach)
+      ey = lerp(sy, dy, reach)
+      sag = 10 - 6 * smooth(Math.min(1, a / 0.6))
+      top = 0.8 * reach
+      wide = true
     }
 
-    const ex = lerp(sx, tx, reach)
-    const midx = (sx + ex) / 2
-    const c1x = lerp(sx, midx, 0.5)
-    const c2x = lerp(midx, ex, 0.5)
-    path.moveTo(sx, sy)
-    path.cubicTo(c1x, sy + sag + quiver, c2x, sy - sag + quiver, ex, sy)
-    return path
+    return {
+      path: makeThread(sx, sy, ex, ey, sag, quiver),
+      threadOp: top,
+      threadW: wide ? 2.4 : 1.8,
+      bx,
+      by,
+      bop,
+      cx,
+      cy,
+      cop,
+      dx,
+      dy,
+      dop,
+    }
   })
-  const threadOp = useDerivedValue(() => {
-    const pv = p.value
-    if (pv < A1) return 0.5 * smooth(seg(pv, 0, A1))
-    return 0.7
-  })
-  const threadW = useDerivedValue(() => (p.value >= A3 ? 2.4 : 1.8))
+
+  // Derive the Skia node inputs from the single frame value.
+  const threadPath = useDerivedValue<SkPath>(() => frame.value.path)
+  const threadOp = useDerivedValue(() => frame.value.threadOp)
+  const threadW = useDerivedValue(() => frame.value.threadW)
+  const bCx = useDerivedValue(() => frame.value.bx)
+  const bCy = useDerivedValue(() => frame.value.by)
+  const bOp = useDerivedValue(() => frame.value.bop)
+  const cCx = useDerivedValue(() => frame.value.cx)
+  const cCy = useDerivedValue(() => frame.value.cy)
+  const cOp = useDerivedValue(() => frame.value.cop)
+  const dCx = useDerivedValue(() => frame.value.dx)
+  const dCy = useDerivedValue(() => frame.value.dy)
+  const dOp = useDerivedValue(() => frame.value.dop)
+
+  const youHaloR = useDerivedValue(() => 16 + breath.value * 5)
+  const youHaloOp = useDerivedValue(() => 0.1 + breath.value * 0.08)
 
   // ── captions (RN overlay, one visible at a time; cross-faded by the timeline) ─
   const cap0 = useAnimatedStyle(() => ({ opacity: bell(seg(p.value, 0, A1)) }))
@@ -234,10 +335,12 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
         {/* you — breathing halo + soul dot */}
         <Group>
           <Circle cx={yx} cy={yy} r={youHaloR} color={HALO} opacity={youHaloOp} />
-          <Circle cx={yx} cy={yy} r={4.5} color={INK} />
+          <Circle cx={yx} cy={yy} r={DOT_R} color={INK} />
         </Group>
-        {/* the other — a soul dot that comes and goes, then stays */}
-        <Circle cx={partnerCx} cy={partnerCy} r={4.5} color={INK} opacity={partnerOp} />
+        {/* the three others — B & C linger as ghosts; D stays lit */}
+        <Circle cx={bCx} cy={bCy} r={DOT_R} color={INK} opacity={bOp} />
+        <Circle cx={cCx} cy={cCy} r={DOT_R} color={INK} opacity={cOp} />
+        <Circle cx={dCx} cy={dCy} r={DOT_R} color={INK} opacity={dOp} />
       </Canvas>
 
       {/* captions — stacked, cross-faded by the timeline */}
@@ -262,7 +365,7 @@ const S = StyleSheet.create({
     position: 'absolute',
     left: 24,
     right: 24,
-    top: '64%',
+    top: '70%',
     alignItems: 'center',
   },
   caption: {

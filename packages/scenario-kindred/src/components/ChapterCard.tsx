@@ -57,6 +57,42 @@ const ELEMENT_EN: Record<string, string> = {
 }
 
 /**
+ * Surface theme. The shareable PNG card + any other consumer stay on the
+ * default 宣纸 (paper); the in-app report passes 'dark' so it blooms into
+ * 水墨黑 from the tap (2026-06: "报告的背景逐步从宣纸变成水墨黑色"). The
+ * centerpiece ink-image plate stays a light mount on BOTH — a framed painting
+ * on the dark scroll — since the 水墨粒子 draw dark ink.
+ */
+export type ChapterCardTheme = 'paper' | 'dark'
+
+function cardPalette(theme: ChapterCardTheme) {
+  if (theme === 'dark') {
+    return {
+      bg: kindredDark.bg,
+      ink: kindredDark.text,
+      inkSoft: kindredDark.textSecondary,
+      muted: kindredDark.textMuted,
+      cinnabar: kindredDark.seal,
+      // Essence seal — a raised weathered-stone tile (the void tile would vanish
+      // on the ink ground) with the ivory rubbing glyph.
+      sealTile: kindredDark.card,
+      sealInk: kindredPaper.bg,
+      well: '#c4c3bf',
+    }
+  }
+  return {
+    bg: kindredPaper.bg,
+    ink: kindredPaper.ink,
+    inkSoft: kindredPaper.inkSoft,
+    muted: kindredPaper.muted,
+    cinnabar: kindredPaper.cinnabar,
+    sealTile: kindredDark.bg,
+    sealInk: kindredPaper.bg,
+    well: '#c4c3bf',
+  }
+}
+
+/**
  * Split prose into sentences for 划词 selection — keeps terminal punctuation +
  * trailing whitespace so the paragraph still flows naturally. CJK 。！？；and
  * Latin .!? (and hard newlines) end a sentence; commas (，,) do NOT. Falls back
@@ -85,6 +121,8 @@ export interface ChapterCardProps {
   onPickQuote?: (quote: string) => void
   /** Paragraph texts the user has highlighted — rendered with a cinnabar wash. */
   highlightedQuotes?: string[]
+  /** Surface theme — 'paper' (default, share card) or 'dark' (in-app report). */
+  theme?: ChapterCardTheme
 }
 
 export function ChapterCard({
@@ -97,7 +135,9 @@ export function ChapterCard({
   centerpiece,
   onPickQuote,
   highlightedQuotes,
+  theme = 'paper',
 }: ChapterCardProps) {
+  const C = cardPalette(theme)
   const cjk = isCjkLocale(locale)
   const L = labels(cjk)
   const titleFont = cjk ? kindredFonts.cjk : kindredFonts.display
@@ -126,20 +166,14 @@ export function ChapterCard({
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: kindredPaper.bg }}
+      style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 54, paddingBottom: 44 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header — 碑拓 essence seal + dominant title */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
         {seal && (
-          <AncientSeal
-            glyph={seal}
-            size={62}
-            tile={kindredDark.bg}
-            ink={kindredPaper.bg}
-            inset={0.84}
-          />
+          <AncientSeal glyph={seal} size={62} tile={C.sealTile} ink={C.sealInk} inset={0.84} />
         )}
         <View style={{ flex: 1 }}>
           <Text
@@ -147,7 +181,7 @@ export function ChapterCard({
               fontFamily: titleFont,
               fontSize: cjk ? 44 : 34,
               lineHeight: cjk ? 48 : 38,
-              color: kindredPaper.ink,
+              color: C.ink,
               letterSpacing: cjk ? 2 : 0,
             }}
           >
@@ -160,7 +194,7 @@ export function ChapterCard({
                 fontFamily: cjk ? kindredFonts.cjk : kindredFonts.mono,
                 fontSize: cjk ? 14 : 12,
                 letterSpacing: cjk ? 3 : 2,
-                color: kindredPaper.muted,
+                color: C.muted,
               }}
             >
               {subtitle}
@@ -169,10 +203,11 @@ export function ChapterCard({
         </View>
       </View>
 
-      {/* Centerpiece (水墨粒子) — grey ink well */}
+      {/* Centerpiece (水墨粒子) — a light ink-image plate (a mounted painting,
+          kept light on the dark scroll so the dark 粒子 read). */}
       {centerpiece ? (
         <View
-          style={{ marginTop: 28, borderRadius: 4, overflow: 'hidden', backgroundColor: '#c4c3bf' }}
+          style={{ marginTop: 28, borderRadius: 4, overflow: 'hidden', backgroundColor: C.well }}
         >
           {centerpiece}
         </View>
@@ -186,7 +221,7 @@ export function ChapterCard({
               width: 7,
               height: 7,
               borderRadius: 4,
-              backgroundColor: kindredPaper.cinnabar,
+              backgroundColor: C.cinnabar,
               marginTop: 11,
               marginRight: 9,
             }}
@@ -198,7 +233,7 @@ export function ChapterCard({
               fontStyle: cjk ? 'normal' : 'italic',
               fontSize: cjk ? 23 : 23,
               lineHeight: cjk ? 38 : 35,
-              color: kindredPaper.ink,
+              color: C.ink,
             }}
           >
             {chapter.goldenLine}
@@ -212,7 +247,7 @@ export function ChapterCard({
           l.text ? (
             <View key={l.n} style={{ flexDirection: 'row', gap: 17, marginBottom: 27 }}>
               <View style={{ width: 40, alignItems: 'center', paddingTop: 3 }}>
-                <AncientNumeral n={l.n} size={26} color={kindredPaper.inkSoft} strokeWidth={3} />
+                <AncientNumeral n={l.n} size={26} color={C.inkSoft} strokeWidth={3} />
                 {l.reef ? <RiskMark severity={chapter.severity} /> : null}
                 {l.key ? <YongshenKey element={chapter.yongshen} /> : null}
               </View>
@@ -223,7 +258,7 @@ export function ChapterCard({
                     fontSize: cjk ? 13 : 11,
                     letterSpacing: cjk ? 2 : 2.4,
                     textTransform: cjk ? 'none' : 'uppercase',
-                    color: kindredPaper.cinnabar,
+                    color: C.cinnabar,
                     marginBottom: 7,
                   }}
                 >
@@ -239,7 +274,7 @@ export function ChapterCard({
                     fontFamily: bodyFont,
                     fontSize: cjk ? 16.5 : 18,
                     lineHeight: cjk ? 30 : 27,
-                    color: kindredPaper.inkSoft,
+                    color: C.inkSoft,
                   }}
                 >
                   {l.text
@@ -249,7 +284,7 @@ export function ChapterCard({
                           onLongPress={onPickQuote ? () => onPickQuote(s) : undefined}
                           style={
                             highlightedQuotes?.includes(s)
-                              ? { backgroundColor: `${kindredPaper.cinnabar}2E` }
+                              ? { backgroundColor: `${C.cinnabar}2E` }
                               : undefined
                           }
                         >
@@ -268,7 +303,7 @@ export function ChapterCard({
             fontFamily: bodyFont,
             fontSize: cjk ? 16.5 : 18,
             lineHeight: cjk ? 30 : 27,
-            color: kindredPaper.ink,
+            color: C.ink,
           }}
         >
           {chapter.body}
@@ -284,7 +319,7 @@ export function ChapterCard({
               fontStyle: cjk ? 'normal' : 'italic',
               fontSize: cjk ? 15 : 17,
               lineHeight: cjk ? 26 : 26,
-              color: kindredPaper.muted,
+              color: C.muted,
             }}
           >
             {chapter.counterpoint}
@@ -306,7 +341,7 @@ export function ChapterCard({
             fontFamily: kindredFonts.mono,
             fontSize: 11,
             letterSpacing: 2,
-            color: kindredPaper.muted,
+            color: C.muted,
             textTransform: 'uppercase',
           }}
         >
@@ -318,15 +353,15 @@ export function ChapterCard({
               fontFamily: kindredFonts.mono,
               fontSize: 11,
               letterSpacing: 2,
-              color: kindredPaper.muted,
+              color: C.muted,
               textTransform: 'uppercase',
             }}
           >
             {L.chapter}
           </Text>
-          <AncientNumeral n={index + 1} size={13} color={kindredPaper.muted} strokeWidth={3.4} />
-          <Text style={{ color: kindredPaper.muted, fontSize: 11 }}>/</Text>
-          <AncientNumeral n={total} size={13} color={kindredPaper.muted} strokeWidth={3.4} />
+          <AncientNumeral n={index + 1} size={13} color={C.muted} strokeWidth={3.4} />
+          <Text style={{ color: C.muted, fontSize: 11 }}>/</Text>
+          <AncientNumeral n={total} size={13} color={C.muted} strokeWidth={3.4} />
         </View>
       </View>
     </ScrollView>

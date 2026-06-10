@@ -24,6 +24,7 @@ import {
   BirthDateField,
   type BirthDateFieldLabels,
   type BirthDateFieldValue,
+  birthInputToSolar,
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
@@ -122,9 +123,41 @@ export function BirthForm({
 
   const shichenLabels = shichenFieldLabelsForLocale(lang)
 
+  // Solar is the quiet default; a small 农历 switch sits beside the "生日" title
+  // instead of a full-width 公历/农历 segmented control (2026-06: "默认就是 Solar
+  // birth，Birthday 标题右侧放一个小的农历开关"). Flipping it recomputes the
+  // canonical solar date from the same typed input, exactly like the field's own
+  // (now hidden) toggle did.
+  const toggleCalendar = () => {
+    const next = date.calendar === 'lunar' ? 'solar' : 'lunar'
+    void Haptics.selectionAsync().catch(() => undefined)
+    onDate({
+      input: date.input,
+      calendar: next,
+      isLeap: false,
+      solarDate: birthInputToSolar(date.input, next, false),
+    })
+  }
+
   return (
     <View style={{ gap: kindredSpacing.lg }}>
-      <Field label={t(locale, 'date.title')}>
+      <View style={{ gap: kindredSpacing.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
+            {t(locale, 'date.title')}
+          </Text>
+          <LunarSwitch
+            on={date.calendar === 'lunar'}
+            label={dateLabels.lunar}
+            onToggle={toggleCalendar}
+          />
+        </View>
         <BirthDateField
           value={date}
           onChange={onDate}
@@ -132,8 +165,9 @@ export function BirthForm({
           labels={dateLabels}
           locale={lang}
           prominent
+          hideCalendarToggle
         />
-      </Field>
+      </View>
 
       <Field label={t(locale, 'fill.gender')}>
         <Segmented
@@ -252,6 +286,61 @@ export function NameInput({
         paddingVertical: kindredSpacing.sm,
       }}
     />
+  )
+}
+
+/** Compact 农历 switch — sits to the right of the "生日" title. Off = solar
+ *  (the default); on = lunar. A label + tiny track/thumb so it reads as a
+ *  switch, not another segmented control. */
+function LunarSwitch({
+  on,
+  label,
+  onToggle,
+}: {
+  on: boolean
+  label: string
+  onToggle: () => void
+}) {
+  return (
+    <Pressable
+      onPress={onToggle}
+      accessibilityRole='switch'
+      accessibilityState={{ checked: on }}
+      accessibilityLabel={label}
+      hitSlop={10}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}
+    >
+      <Text
+        style={[
+          kindredType.caption,
+          { color: on ? kindredDark.accent : kindredDark.textMuted, letterSpacing: 1 },
+        ]}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          width: 36,
+          height: 20,
+          borderRadius: 10,
+          padding: 2,
+          borderWidth: 0.5,
+          borderColor: on ? kindredDark.accent : kindredDark.border,
+          backgroundColor: on ? `${kindredDark.accent}33` : 'transparent',
+          alignItems: on ? 'flex-end' : 'flex-start',
+          justifyContent: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: on ? kindredDark.accent : kindredDark.textMuted,
+          }}
+        />
+      </View>
+    </Pressable>
   )
 }
 

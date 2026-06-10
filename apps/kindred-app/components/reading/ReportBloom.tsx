@@ -1,13 +1,14 @@
 /**
  * ReportBloom — the 水墨晕开 entrance for the 合盘 report.
  *
- * The solo reader blooms its paper report in over the live home (ReadingOverlay).
+ * The solo reader blooms its dark report in over the live home (ReadingOverlay).
  * The bond report is a navigated route, so it had no such entrance — opening a
  * bond was a plain push (founder note, 2026-06-09). This wraps the report and,
- * on mount, blooms it in through the same organic ink mask: the cream report
- * grows from the centre against the dark surround, the feathered edge IS the
- * 墨晕. Once open it rests (the mask stays full so paging/long-press are
- * untouched); it never collapses — leaving the report is the route pop.
+ * on mount, blooms it in through the same organic ink mask: the 水墨黑 report
+ * grows from the TAP POINT against the paper surround, the feathered edge IS the
+ * 墨晕 — ink spreading on 宣纸 (2026-06: "从点击的位置开始墨汁晕开…背景逐步从
+ * 宣纸变成水墨黑色"). Once open it rests (the mask stays full so paging/long-press
+ * are untouched); it never collapses — leaving the report is the route pop.
  *
  * Wrap ONLY the visible report (the pager). Keep the off-screen share-capture
  * target, the selection bar and the primer OUTSIDE — a full-screen mask would
@@ -22,12 +23,24 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
 const OPEN_DURATION = 1400
 
-export function ReportBloom({ children }: { children: ReactNode }) {
+export function ReportBloom({
+  children,
+  origin: originProp,
+}: {
+  children: ReactNode
+  /** Where the ink starts spreading — the row the user tapped (page coords).
+   *  Falls back to mid-page when the opener didn't pass a point. */
+  origin?: { x: number; y: number } | null
+}) {
   const { width, height } = useWindowDimensions()
   const [phase, setPhase] = useState<'cover' | 'wipe' | 'done'>('cover')
 
-  // Centre-of-page origin — the report unfolds from the middle, not a corner.
-  const origin = useMemo(() => ({ x: width / 2, y: height * 0.45 }), [width, height])
+  // The ink spreads from the tap (continuity with the home row), or mid-page
+  // when no point was handed in.
+  const origin = useMemo(
+    () => originProp ?? { x: width / 2, y: height * 0.45 },
+    [originProp, width, height]
+  )
   const maxRadius = useMemo(() => Math.hypot(width, height) * 1.1, [width, height])
 
   // A short cover hold lets MaskedView + the Skia mask mount and paint their
@@ -40,10 +53,9 @@ export function ReportBloom({ children }: { children: ReactNode }) {
   const open = phase === 'wipe' || phase === 'done'
 
   return (
-    // 宣纸 surround — home + report are one continuous paper plane now (2026-06:
-    // "首页以宣纸为背景，水墨晕开展开报告"). The bloom reveals the report's INK
-    // (seals / centerpiece / text) spreading onto the paper; the organic mask
-    // edge IS the 墨晕. (Was a dark surround when the home was dark.)
+    // 宣纸 surround — the paper home you came from. The masked child is the
+    // 水墨黑 report, so the bloom reads as INK flooding the paper from the tap;
+    // outside the growing shape stays 宣纸. The organic mask edge IS the 墨晕.
     <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredPaper.bg }]}>
       <MaskedView
         style={StyleSheet.absoluteFill}

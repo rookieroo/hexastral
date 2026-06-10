@@ -15,9 +15,38 @@
  */
 
 import { cinnabar, ink } from '@zhop/hexastral-tokens'
-import { kindredLight, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import {
+  kindredDark,
+  kindredLight,
+  kindredSpacing,
+  kindredType,
+} from '@zhop/hexastral-tokens/kindred'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import type { LockedSynastryChapter } from '../types'
+
+/** Surface theme — matches the report it trails (paper share/default · dark in-app). */
+export type UnlockWallTheme = 'paper' | 'dark'
+
+function wallPalette(theme: UnlockWallTheme) {
+  if (theme === 'dark') {
+    return {
+      bg: kindredDark.bg,
+      text: kindredDark.text,
+      textSecondary: kindredDark.textSecondary,
+      textMuted: kindredDark.textMuted,
+      border: kindredDark.border,
+      sealText: kindredDark.seal,
+    }
+  }
+  return {
+    bg: kindredLight.bg,
+    text: kindredLight.text,
+    textSecondary: kindredLight.textSecondary,
+    textMuted: kindredLight.textMuted,
+    border: kindredLight.border,
+    sealText: cinnabar.seal,
+  }
+}
 
 export interface ChapterUnlockWallLabels {
   /** e.g. "还有 3 章未解锁" — app formats the count in. */
@@ -40,6 +69,8 @@ export interface ChapterUnlockWallProps {
   onInvite: () => void
   onPurchase: () => void
   onSubscribe: () => void
+  /** Surface theme — 'paper' (default) or 'dark' (in-app 水墨黑 report). */
+  theme?: UnlockWallTheme
 }
 
 export function ChapterUnlockWall({
@@ -49,10 +80,12 @@ export function ChapterUnlockWall({
   onInvite,
   onPurchase,
   onSubscribe,
+  theme = 'paper',
 }: ChapterUnlockWallProps) {
+  const C = wallPalette(theme)
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: kindredLight.bg }}
+      style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={{
         paddingHorizontal: kindredSpacing.screenH,
         paddingTop: kindredSpacing.xxl,
@@ -71,14 +104,14 @@ export function ChapterUnlockWall({
               marginBottom: kindredSpacing.lg,
             }}
           />
-          <Text style={[kindredType.title, { color: kindredLight.text }]}>{ahaHook}</Text>
+          <Text style={[kindredType.title, { color: C.text }]}>{ahaHook}</Text>
         </View>
       ) : null}
 
       <Text
         style={[
           kindredType.caption,
-          { color: kindredLight.textSecondary, marginBottom: kindredSpacing.lg, letterSpacing: 2 },
+          { color: C.textSecondary, marginBottom: kindredSpacing.lg, letterSpacing: 2 },
         ]}
       >
         {labels.heading}
@@ -91,7 +124,7 @@ export function ChapterUnlockWall({
             key={`${ch.kind}-${i}`}
             style={{
               borderWidth: 0.5,
-              borderColor: kindredLight.border,
+              borderColor: C.border,
               borderRadius: 10,
               paddingVertical: kindredSpacing.md,
               paddingHorizontal: kindredSpacing.lg,
@@ -99,12 +132,12 @@ export function ChapterUnlockWall({
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 12, color: kindredLight.textMuted }}>🔒</Text>
-              <Text style={[kindredType.caption, { color: kindredLight.text }]}>{ch.title}</Text>
+              <Text style={{ fontSize: 12, color: C.textMuted }}>🔒</Text>
+              <Text style={[kindredType.caption, { color: C.text }]}>{ch.title}</Text>
             </View>
             {ch.goldenLine ? (
               <Text
-                style={[kindredType.body, { color: kindredLight.textMuted, fontStyle: 'italic' }]}
+                style={[kindredType.body, { color: C.textMuted, fontStyle: 'italic' }]}
                 numberOfLines={2}
               >
                 {ch.goldenLine}
@@ -135,7 +168,7 @@ export function ChapterUnlockWall({
           style={[
             kindredType.caption,
             {
-              color: kindredLight.textMuted,
+              color: C.textMuted,
               textAlign: 'center',
               marginTop: kindredSpacing.sm,
             },
@@ -159,7 +192,7 @@ export function ChapterUnlockWall({
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Text style={[kindredType.body, { color: cinnabar.seal, fontWeight: '500' }]}>
+        <Text style={[kindredType.body, { color: C.sealText, fontWeight: '500' }]}>
           {labels.purchaseCta}
         </Text>
       </Pressable>
@@ -174,7 +207,7 @@ export function ChapterUnlockWall({
         <Text
           style={[
             kindredType.caption,
-            { color: kindredLight.textSecondary, textDecorationLine: 'underline' },
+            { color: C.textSecondary, textDecorationLine: 'underline' },
           ]}
         >
           {labels.subscribeCta}
