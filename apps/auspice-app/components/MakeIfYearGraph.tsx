@@ -80,6 +80,8 @@ interface Band {
   index: number
   color: string
   label: string
+  /** 大运 start age — the locale-aware label for non-zh (干支 is opaque there). */
+  startAge: number
   top: number
   bottom: number
 }
@@ -174,6 +176,7 @@ function buildLayout(dayun: DayunRow[], branches: MakeIfBranch[], focusAge: numb
         index: c.dayunIndex,
         color: d ? wxColor(d.pillar.element) : '#A0845C',
         label: d ? `${d.pillar.stem}${d.pillar.branch}` : '',
+        startAge: d ? d.startAge : 0,
         top: c.y,
         bottom: c.y,
       })
@@ -426,7 +429,9 @@ export function MakeIfYearGraph({
             fontWeight: '600',
           }}
         >
-          {`${b.label}运`}
+          {/* Match the 流年 labels: 干支 only in zh; en/ja get the decade's start age
+              (干支 is opaque there, and "甲子运" overflows the left gutter). */}
+          {cjk ? `${b.label}运` : `${b.startAge}${lang === 'ja' ? '歳' : ''}`}
         </Text>
       ))}
 

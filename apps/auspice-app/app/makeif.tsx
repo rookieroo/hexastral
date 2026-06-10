@@ -656,12 +656,22 @@ function Sandbox({
         {payload.dayun.map((d) => {
           const f = focusAge ?? currentAge ?? d.startAge
           const active = f >= d.startAge && f <= d.endAge
+          const gz = `${d.pillar.stem}${d.pillar.branch}`
+          // This strip is ~8 chips at flex:1 — even 2 CJK chars (干支) overflow, and
+          // an age SPAN ("28–37") is wider still. So the visual is the bare start age
+          // (digits are ~half a CJK glyph → always fits); the 干支 lives in the 五行
+          // dot colour + the a11y label (zh hears it). The graph below shows detail.
+          const ageFrom = t.timelineAgeFrom.replace('{age}', String(d.startAge))
           return (
             <Pressable
               key={d.index}
               onPress={() => setFocusAge((cur) => (active && cur != null ? null : d.startAge))}
               accessibilityRole='button'
-              accessibilityLabel={`${d.pillar.stem}${d.pillar.branch}运`}
+              accessibilityLabel={
+                locale.startsWith('zh')
+                  ? `${gz}${t.timelineDayun} · ${ageFrom}`
+                  : `${t.timelineDayun} · ${ageFrom}`
+              }
               style={{ alignItems: 'center', gap: 3, flex: 1 }}
             >
               <View
@@ -669,16 +679,14 @@ function Sandbox({
                   width: active ? 12 : 8,
                   height: active ? 12 : 8,
                   borderRadius: 6,
-                  backgroundColor: active
-                    ? colors.accent
-                    : ganZhiGraphColor(`${d.pillar.stem}${d.pillar.branch}`),
+                  backgroundColor: active ? colors.accent : ganZhiGraphColor(gz),
                 }}
               />
               <Text
-                style={{ fontSize: 9, color: active ? colors.text : colors.dim }}
+                style={{ fontSize: 10, color: active ? colors.text : colors.dim }}
                 numberOfLines={1}
               >
-                {`${d.pillar.stem}${d.pillar.branch}`}
+                {d.startAge}
               </Text>
             </Pressable>
           )
