@@ -85,6 +85,13 @@
       "when": 1780643303551,
       "tag": "0011_light_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1781085701407,
+      "tag": "0012_petite_tana_nile",
+      "breakpoints": true
     }
   ]
 }
