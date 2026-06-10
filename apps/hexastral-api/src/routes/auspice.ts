@@ -2383,19 +2383,25 @@ function renderAuspicePush(
     }
   }
 
-  // Morning (08:00): today's almanac.
+  // Morning (08:00): today's almanac. The title leads with the 干支 day + (Pro)
+  // the personal verdict — NOT the date (the notification timestamps itself, so
+  // a date there wastes the most valuable line; founder 2026-06). A 节气/节日 folds
+  // in: the title for free, the body for Pro (whose title already has the verdict).
   const { day, personalization } = buildDay(dateYmd, subject)
   const dateStr = fmtUtc(ymdToDate(dateYmd))
   const yi = day.goodFor.slice(0, 3).join('、') || '—'
   const ji = day.avoid.slice(0, 3).join('、') || '—'
+  const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
+  const dayId = `${day.ganZhi}${L.daySuffix}`
+  const pers = sub.isPro ? personalization : null
+  const title = pers
+    ? `${dayId} · ${L.forYou}${L.fit[pers.fit] ?? pers.fit}`
+    : special
+      ? `${dayId} · ${special}`
+      : dayId
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
-  if (sub.isPro && personalization)
-    body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
-  return {
-    title: `${dateStr} · ${day.ganZhi}${L.daySuffix}`,
-    body,
-    data: { type: 'auspice_daily', day: dateStr },
-  }
+  if (pers && special) body += ` · ${special}`
+  return { title, body, data: { type: 'auspice_daily', day: dateStr } }
 }
 
 const pushRegisterSchema = z.object({

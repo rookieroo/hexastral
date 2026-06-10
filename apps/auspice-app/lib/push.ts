@@ -177,13 +177,22 @@ function dailyContent(
   const loc = (v: string) => localizeYijiVerb(v, locale)
   const yi = d.goodFor.slice(0, 2).map(loc).join(sep) || '—'
   const ji = d.avoid.slice(0, 2).map(loc).join(sep) || '—'
+  // The TITLE shouldn't waste itself on the date — the notification already
+  // timestamps itself (founder, 2026-06). Lead with the 干支 day + (Pro) the
+  // personal verdict (the auspice_pro hook); fold a 节气, when today is one, in.
+  const special = d.solarTerm.prev.date === dateStr ? d.solarTerm.prev.name : null
+  const dayId = `${d.ganZhi}日`
+  // Pro: the title carries the personal verdict, so a 节气 rides in the body.
+  // Free: no verdict, so a 节气 rides in the title (the body stays just 宜忌).
+  const pers = isPro ? payload.personalization : null
+  const title = pers
+    ? `${dayId} · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]}`
+    : special
+      ? `${dayId} · ${special}`
+      : dayId
   let body = `${t.suitable} ${yi} · ${t.avoid} ${ji}`
-  if (isPro && payload.personalization) {
-    body += ` · ${t.personal.forYou}${colon}${t.personal.fit[payload.personalization.fit]}`
-  }
-  // Fold the 节气 into the body when this very day is a 节气 (covers C.5.3 lightly).
-  if (d.solarTerm.prev.date === dateStr) body += ` · ${d.solarTerm.prev.name}`
-  return { title: `${dateStr} · ${d.ganZhi}日`, body }
+  if (pers && special) body += ` · ${special}`
+  return { title, body }
 }
 
 /** (Re)schedule the rolling daily window with fresh deterministic content. */
