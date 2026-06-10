@@ -1,11 +1,12 @@
 # Timeline deep-read + 流月 window + 落库 + push — build spec
 
-> **Status**: SPEC (2026-06-10). Founder decisions baked in: 流月 window = next
-> **12 months**; navigating to a **further year → on-demand LLM generate + 落库**;
-> **finish Timeline first** (What-If 干支 de-emphasis deferred). This is a
-> server + D1 + LLM + cron feature — it CANNOT be built/verified/deployed from the
+> **Status**: BUILT — typecheck-clean, **deploy-gated** (2026-06-10). P0 + P1 + P2
+> all coded; migration `0012_petite_tana_nile` generated and in sync. Founder
+> decisions baked in: 流月 window = next **12 months**; navigating to a **further
+> year → on-demand LLM generate + 落库**. This is a server + D1 + LLM + cron
+> feature — code is done and compiles, but it CANNOT be verified/deployed from the
 > agent sandbox (CI is validation-only; svc-astro + D1 + cron run only on a local
-> `bun deploy`). So: spec now, build phase-by-phase with local deploy.
+> `bun deploy`). Remaining work is the human deploy + on-device verify (see §7).
 >
 > **HEADLINE (founder, 2026-06-10):** the **流月 / 流年 / 大运 three-dimension node
 > push is the #1 paid-subscription hook** — the primary reason to go Pro, not a
@@ -13,6 +14,23 @@
 > the LLM regenerates the same (deterministic-input) reading every time. So the
 > build is really one thing: a **persisted per-node deep-read** that BOTH the
 > in-app view AND the push draw from — generate-once, reuse-everywhere.
+>
+> **Build log (what shipped, 2026-06-10):**
+> - **P0** `timeline.tsx` — 流月 next-12-months window, default-open current period,
+>   age-primary chips (干支 zh-only/muted), locale-aware 大运 labels.
+> - **P1** `POST /api/auspice/timeline/explain` (`cycle-timeline.ts`) — `resolveNodeFacts`
+>   reuses `personalAlmanacOverlay`; reads/writes **`timeline_readings`** D1 table
+>   (落库, permanent); `llm-guard` for spend; calls svc-astro `/timeline/explain`
+>   (superset schema, now serves 流月 + the 对你而言 overlay); client `fetchTimelineExplain`
+>   + `timeline.tsx` deep-read swap-in.
+> - **P2** `runAuspiceTimelinePush` (`svc-notify/index.ts`) — month-starts 09:00 local;
+>   `GET …/timeline/push/targets` picks ONE node/device (大运 boundary > 流年 Jan-1 >
+>   流月), deterministic teaser; rich LLM read generated lazily in-app on tap (落库,
+>   reused). No per-user LLM in the cron → no thundering herd.
+> - **Pref plumbing** `timeline_remind_on` column → register endpoint → `serverPush`
+>   → `push.ts` reads `isTimelineRemindersEnabled()`. Local `scheduleTimelineReminders`
+>   **defers when server push is active** (mirrors daily) → no double-fire.
+> - **Bonus** evening daily push now appends the deterministic 对你而言 fit (zero cost).
 
 ## 0. The problem (from on-device feedback)
 
