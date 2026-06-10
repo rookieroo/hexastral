@@ -18,6 +18,8 @@ import {
   type HeavenlyStem,
   type MoveWindow,
   type PersonalAlmanacSubject,
+  type PersonalFit,
+  periodSignals,
   type RankedMoveWindow,
   rankWindowsForMove,
   STEM_WUXING,
@@ -104,4 +106,23 @@ export function rankMakeIfWindows(
   const move = eventToMove(event)
   if (!move) return []
   return rankWindowsForMove(buildMakeIfSubject(birth), move, futureYearWindows(payload))
+}
+
+/**
+ * The REAL fit at a fork's diverge age — the 大运 the age sits in (always inside
+ * the payload's 80-year coverage, so a far-future / past fork still resolves).
+ * Replaces `buildUserBranch`'s hash-seeded fork-point verdict with the actual
+ * periodSignals read, so the 现实 vs 假如 comparison is no longer fiction.
+ */
+export function forkDivergeFit(
+  birth: MakeIfBirth,
+  payload: TimelinePayload,
+  divergeAtAge: number
+): PersonalFit | undefined {
+  const dy = payload.dayun.find((d) => divergeAtAge >= d.startAge && divergeAtAge <= d.endAge)
+  if (!dy) return undefined
+  return periodSignals(buildMakeIfSubject(birth), {
+    element: STEM_WUXING[dy.pillar.stem as HeavenlyStem],
+    branch: dy.pillar.branch as EarthlyBranch,
+  }).fit
 }

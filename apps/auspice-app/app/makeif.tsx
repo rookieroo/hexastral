@@ -72,6 +72,7 @@ import {
   makeIfTeaser,
   relocalizeEventLabel,
 } from '@/lib/makeIfBranches'
+import { forkDivergeFit } from '@/lib/makeIfZeshi'
 import { makeifShareChrome, makeifShareUrl, shareMakeifFork, shareTaglineFor } from '@/lib/share'
 
 const ACK_KEY = 'auspice.makeif.disclaimer.v1'
@@ -385,6 +386,7 @@ function Sandbox({
               mergeAtAge: f.mergeAtAge,
               endAge: model.endAge,
               isPast: f.isPast,
+              divergeFit: forkDivergeFit(birth, payload, f.divergeAtAge),
             }),
             outcome: f.narrative,
             // Summary isn't persisted; derive a takeaway from the stored narrative
@@ -567,6 +569,7 @@ function Sandbox({
       mergeAtAge: merge,
       endAge: model.endAge,
       isPast,
+      divergeFit: forkDivergeFit(birth, payload, age),
     })
     setBranches((prev) => [...prev.filter((b) => b.id !== id), fork].slice(-MAX_FORKS))
     runFork(fork)

@@ -3,6 +3,7 @@ import type { TimelinePayload } from '../api'
 import {
   buildMakeIfSubject,
   eventToMove,
+  forkDivergeFit,
   futureYearWindows,
   MAKEIF_EVENTS,
   rankMakeIfWindows,
@@ -83,5 +84,27 @@ describe('rankMakeIfWindows', () => {
     }
     expect(STEMS.length).toBeGreaterThan(0) // sanity
     expect(['吉', '平', '凶']).toContain(r[0]?.fit)
+  })
+})
+
+describe('forkDivergeFit', () => {
+  const withDayun = {
+    dayun: [
+      { startAge: 30, endAge: 39, pillar: { stem: '甲', branch: '子' } },
+      { startAge: 40, endAge: 49, pillar: { stem: '乙', branch: '丑' } },
+    ],
+  } as unknown as TimelinePayload
+
+  it('returns the real fit for an age inside the 80-year 大运 coverage', () => {
+    const fit = forkDivergeFit(BIRTH, withDayun, 35)
+    expect(['吉', '平', '凶']).toContain(fit)
+  })
+
+  it('returns undefined for an age outside coverage', () => {
+    expect(forkDivergeFit(BIRTH, withDayun, 200)).toBeUndefined()
+  })
+
+  it('is deterministic for the same fork', () => {
+    expect(forkDivergeFit(BIRTH, withDayun, 42)).toBe(forkDivergeFit(BIRTH, withDayun, 42))
   })
 })

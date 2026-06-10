@@ -196,6 +196,11 @@ export function buildUserBranch(opts: {
   mergeAtAge: number | null
   endAge: number
   isPast?: boolean
+  /** The REAL fit at the fork point (periodSignals at the diverge 大运). Overrides
+   *  the seeded dot[0] verdict so the fork-POINT read the user compares against the
+   *  mainline is real, not fiction. The trajectory dots stay seeded — the branch
+   *  itself is a hypothetical, so its onward path is honestly speculative. */
+  divergeFit?: MakeIfFit
 }): MakeIfBranch {
   // Seed the structure (dots + verdicts) from the STABLE fork id, not the
   // localized event label. The label re-localizes on a language switch (结婚 ↔
@@ -205,6 +210,10 @@ export function buildUserBranch(opts: {
   const seed = hashString(opts.id) + opts.divergeAtAge
   const color =
     USER_BRANCH_COLORS[hashString(opts.id) % USER_BRANCH_COLORS.length] ?? USER_BRANCH_COLORS[0]
+  const dots = dotsBetween(opts.divergeAtAge, opts.mergeAtAge ?? opts.endAge, seed)
+  // Real fork-point verdict (the dot the 现实 vs 假如 diff reads) — the seeded
+  // value was fiction; the onward trajectory stays seeded (a hypothetical path).
+  if (opts.divergeFit && dots[0]) dots[0] = { age: dots[0].age, fit: opts.divergeFit }
   return {
     id: opts.id,
     color,
@@ -212,7 +221,7 @@ export function buildUserBranch(opts: {
     outcome: '',
     divergeAtAge: opts.divergeAtAge,
     mergeAtAge: opts.mergeAtAge,
-    dots: dotsBetween(opts.divergeAtAge, opts.mergeAtAge ?? opts.endAge, seed),
+    dots,
     isPast: opts.isPast,
   }
 }
