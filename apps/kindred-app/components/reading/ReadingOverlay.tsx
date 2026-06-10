@@ -71,11 +71,10 @@ function OverlayInner({
   )
   const maxRadius = useMemo(() => Math.hypot(width, height) * 1.1, [width, height])
 
-  // Home + report are one continuous 宣纸 plane now (2026-06). The overlay root
-  // is paper, so the bloom reveals the report's INK (text / seals / centerpiece)
-  // spreading onto the paper as the organic mask grows — the same transition the
-  // 合盘 report uses (ReportBloom). The earlier paper-over-dark contrast is gone
-  // by design; the ink content appearing IS the 墨晕.
+  // The overlay root is 宣纸 (the paper home shows outside the mask); the masked
+  // child is the 水墨黑 report. So as the organic mask grows from the tapped
+  // card, INK floods the paper — "背景逐步从宣纸变成水墨黑色" — and the feathered
+  // edge IS the 墨晕. Same transition the 合盘 report uses (ReportBloom).
 
   // Short cover hold lets MaskedView + the Skia canvas mount and paint their
   // first (empty) frame before the bloom kicks in.
