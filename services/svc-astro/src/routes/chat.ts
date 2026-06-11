@@ -61,6 +61,17 @@ const LOCALE_OUTPUT_MAP: Record<string, string> = {
   th: 'กรุณาตอบเป็นภาษาไทย',
 }
 
+/** Optional reply-tone steer (client config). 'balanced'/undefined = default. */
+export type ChatTone = 'warm' | 'balanced' | 'direct'
+
+/** Tone → a single appended directive (bilingual). 'balanced' adds nothing. */
+const TONE_DIRECTIVE: Record<ChatTone, string | null> = {
+  balanced: null,
+  warm: '语气温暖、体贴、给予鼓励，像一位真心关心你的朋友。/ Reply in a warm, caring, encouraging tone, like a friend who genuinely cares.',
+  direct:
+    '语气直率坦诚、不绕弯子，直陈要点、机会与风险。/ Reply directly and candidly — state the point, the opportunity, and the risk plainly.',
+}
+
 /** Map the primary reading type to the most fitting interpreter persona. */
 const DOMAIN_BY_READING: Record<string, PromptDomain> = {
   natal: 'natal',
@@ -80,9 +91,10 @@ chatRoutes.post('/', async (c) => {
     messages: ChatMessage[]
     isPro: boolean
     locale?: string
+    tone?: ChatTone
   }>()
 
-  const { context, readingContext, memoryContext, messages, isPro, locale = 'zh-CN' } = body
+  const { context, readingContext, memoryContext, messages, isPro, locale = 'zh-CN', tone } = body
 
   // Normalize the legacy flat form into the structured bundle.
   const ctx: ReadingContextLike | null =
@@ -100,7 +112,7 @@ chatRoutes.post('/', async (c) => {
     return c.json({ error: 'context and messages are required' }, 400)
   }
 
-  const systemPrompt = buildChatSystemPrompt({ context: ctx, locale })
+  const systemPrompt = buildChatSystemPrompt({ context: ctx, locale, tone })
 
   const reply = await callChatWithFallback(c.env, systemPrompt, messages, {
     isPro,
@@ -125,6 +137,7 @@ function pad2(n: number): string {
 export function buildChatSystemPrompt(input: {
   context: ReadingContextLike
   locale?: string
+  tone?: ChatTone
 }): string {
   const { context } = input
   const locale = input.locale ?? context.user.locale ?? 'zh-CN'
@@ -182,6 +195,11 @@ export function buildChatSystemPrompt(input: {
     '- 言简意赅、有理有据；命理术语需附带通俗解释。',
     localeInstruction
   )
+
+  // Optional client tone steer — appended last so it colors delivery without
+  // overriding the persona or the rules above.
+  const toneDirective = input.tone ? TONE_DIRECTIVE[input.tone] : null
+  if (toneDirective) segments.push(toneDirective)
 
   return segments.join('\n')
 }

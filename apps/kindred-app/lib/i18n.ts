@@ -366,6 +366,9 @@ export const translations: Translations = {
 
     'chat.title': 'Ask about this synastry',
     'chat.newConversation': 'New chat',
+    'chat.tone.warm': 'Warm',
+    'chat.tone.balanced': 'Balanced',
+    'chat.tone.direct': 'Direct',
     'chat.empty': 'Ask anything about you two.',
     'chat.placeholder': 'Type a question…',
     'chat.loading': 'Thinking…',
@@ -692,6 +695,9 @@ export const translations: Translations = {
 
     'chat.title': '聊聊你们的合盘',
     'chat.newConversation': '开新对话',
+    'chat.tone.warm': '温暖',
+    'chat.tone.balanced': '中立',
+    'chat.tone.direct': '直率',
     'chat.empty': '关于你们俩，问我任何问题。',
     'chat.placeholder': '输入你的问题…',
     'chat.loading': '正在思考…',
@@ -1018,6 +1024,9 @@ export const translations: Translations = {
 
     'chat.title': '聊聊你們的合盤',
     'chat.newConversation': '開新對話',
+    'chat.tone.warm': '溫暖',
+    'chat.tone.balanced': '中立',
+    'chat.tone.direct': '直率',
     'chat.empty': '關於你們倆，問我任何問題。',
     'chat.placeholder': '輸入你的問題…',
     'chat.loading': '正在思考…',
@@ -1351,6 +1360,9 @@ export const translations: Translations = {
 
     'chat.title': '二人の相性について聞く',
     'chat.newConversation': '新しいチャット',
+    'chat.tone.warm': '温かい',
+    'chat.tone.balanced': '中立',
+    'chat.tone.direct': '率直',
     'chat.empty': '二人のことを何でも聞いてください。',
     'chat.placeholder': '質問を入力…',
     'chat.loading': '考えています…',

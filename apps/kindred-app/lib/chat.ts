@@ -52,15 +52,25 @@ export async function fetchChatHistory(
  *  can show an error + a retry instead of "Thinking…" forever. */
 const CHAT_TIMEOUT_MS = 45_000
 
+/** Reply-tone steer (chat config). 'balanced'/undefined keeps the default voice. */
+export type ChatTone = 'warm' | 'balanced' | 'direct'
+
 export async function sendChatMessage(
   userId: string,
   readingType: string,
   readingId: string,
   message: string,
-  requestId: string
+  requestId: string,
+  tone?: ChatTone
 ): Promise<ReadingChatSendResult> {
   const path = '/api/chat'
-  const body = JSON.stringify({ readingType, readingId, message, requestId })
+  const body = JSON.stringify({
+    readingType,
+    readingId,
+    message,
+    requestId,
+    ...(tone && tone !== 'balanced' ? { tone } : {}),
+  })
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
   let res: Response

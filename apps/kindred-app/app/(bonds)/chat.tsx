@@ -12,11 +12,13 @@ import { ReadingChatScreen, type ReadingChatStrings } from '@zhop/core-ui'
 import { kindredDark, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
-import { clearChatHistory, fetchChatHistory, sendChatMessage } from '@/lib/chat'
+import { type ChatTone, clearChatHistory, fetchChatHistory, sendChatMessage } from '@/lib/chat'
 import { useI18n } from '@/lib/i18n'
+
+const TONES: ChatTone[] = ['warm', 'balanced', 'direct']
 
 /** Quoted-draft cap — keeps a long passage from flooding the input. */
 const QUOTE_MAX_CHARS = 140
@@ -30,6 +32,8 @@ export default function BondChatScreen() {
   const router = useRouter()
   const { userId } = useAuth()
   const { t } = useI18n()
+  // Reply-tone steer (chat config). Default 'balanced' = the unchanged voice.
+  const [tone, setTone] = useState<ChatTone>('balanced')
 
   const copy = useMemo<ReadingChatStrings>(
     () => ({
@@ -64,26 +68,57 @@ export default function BondChatScreen() {
   const header = (
     <View
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingHorizontal: 16,
         paddingTop: 56,
-        paddingBottom: 12,
-        gap: 8,
+        paddingBottom: 10,
+        gap: 10,
         borderBottomWidth: 0.5,
         borderBottomColor: '#00000014',
         backgroundColor: kindredDark.bg,
       }}
     >
-      <Pressable onPress={() => router.back()} hitSlop={12}>
-        <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
-      </Pressable>
-      <Text
-        style={[kindredType.heading, { color: kindredDark.text, fontSize: 17 }]}
-        numberOfLines={1}
-      >
-        {title || copy.title}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
+        </Pressable>
+        <Text
+          style={[kindredType.heading, { color: kindredDark.text, fontSize: 17, flex: 1 }]}
+          numberOfLines={1}
+        >
+          {title || copy.title}
+        </Text>
+      </View>
+      {/* Reply-tone steer — 3 chips. 'balanced' is the unchanged default voice. */}
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {TONES.map((tn) => {
+          const on = tn === tone
+          return (
+            <Pressable
+              key={tn}
+              onPress={() => setTone(tn)}
+              accessibilityRole='button'
+              accessibilityState={{ selected: on }}
+              style={{
+                paddingVertical: 4,
+                paddingHorizontal: 11,
+                borderRadius: 999,
+                borderWidth: 0.5,
+                borderColor: on ? kindredDark.accent : kindredDark.border,
+                backgroundColor: on ? `${kindredDark.accent}22` : 'transparent',
+              }}
+            >
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: on ? kindredDark.accent : kindredDark.textMuted, fontSize: 12 },
+                ]}
+              >
+                {t(`chat.tone.${tn}`)}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 
@@ -92,7 +127,7 @@ export default function BondChatScreen() {
       readingType='pair'
       readingId={id}
       fetchHistory={() => fetchChatHistory(userId, 'pair', id)}
-      sendMessage={(msg, requestId) => sendChatMessage(userId, 'pair', id, msg, requestId)}
+      sendMessage={(msg, requestId) => sendChatMessage(userId, 'pair', id, msg, requestId, tone)}
       onNewConversation={() => clearChatHistory(userId, 'pair', id)}
       onPaywallRequest={() =>
         router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })

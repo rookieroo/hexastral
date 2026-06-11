@@ -62,6 +62,8 @@ const sendMessageSchema = z.object({
   readingId: z.string().min(1),
   message: z.string().min(1).max(2000),
   requestId: z.string().min(1),
+  /** Optional reply-tone steer (client chat config); forwarded to svc-astro. */
+  tone: z.enum(['warm', 'balanced', 'direct']).optional(),
 })
 
 /** POST /api/chat — 发送消息，获取 AI 回复 */
@@ -208,6 +210,7 @@ chatRoutes.post('/', async (c) => {
       messages: geminiMessages,
       isPro: isPaid,
       locale: user.locale ?? 'zh-CN',
+      tone: input.tone,
     })
   } catch (err) {
     console.warn('[chat] svc-astro chat failed', err)
