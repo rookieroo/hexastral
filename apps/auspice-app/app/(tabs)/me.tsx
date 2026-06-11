@@ -15,12 +15,16 @@
  * `@zhop/core-ui` for apps that need the deeper flow.
  */
 
+import { resolveBirthHour } from '@zhop/astro-core'
 import {
+  BirthClockField,
   BirthDateField,
   type BirthDateFieldValue,
   birthDateFieldLabelsForLocale,
   CityPicker,
+  type CityRecord,
   DEFAULT_TOP_CITIES,
+  formatHourMinute,
   isCjkScript,
   ShichenField,
   type ShichenIndex,
@@ -46,6 +50,7 @@ import { AccentPicker } from '@/components/AccentPicker'
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
+import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
@@ -86,6 +91,25 @@ function shichenSummaryLabel(index: number, locale: string): string {
   return isCjkScript(locale)
     ? shichenInlineLabel(index, sc.branch, locale)
     : shichenRange(sc.range, locale)
+}
+
+/* ── precise-time helpers (真太阳时 disclosure, synced from kindred) ─────────── */
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+function formatMinutes(min: number): string {
+  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`
+}
+/** Clock minutes → 时辰 index 0..11 (子时 = 0, covers 23:00–01:00). A precise
+ *  clock snaps the 时辰 wheel to its window. */
+function clockToShichenIndex(min: number): ShichenIndex {
+  const h = Math.floor(min / 60)
+  return (Math.floor((h + 1) / 2) % 12) as ShichenIndex
+}
+/** 排盘小时 → collapsed 时辰 label, for the 真太阳时 before→after preview line. */
+function shichenLabelForHour(hour: number, locale: string): string {
+  const idx = hour === 23 ? 0 : Math.floor((hour + 1) / 2) % 12
+  return shichenSummaryLabel(idx, locale)
 }
 
 function SectionLabel({ children }: { children: string }) {
@@ -192,10 +216,11 @@ export default function MeScreen() {
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
-  // Birth place is optional + most users don't know it, so the field is collapsed
-  // by default (synced from kindred 2026-06). Auto-expanded when a city is already
-  // on record so a returning editor sees it.
-  const [showCity, setShowCity] = useState(false)
+  // Precise time + birthplace are an opt-in disclosure, collapsed by default so
+  // the everyday 时辰 path stays short (synced from kindred 2026-06: the exact
+  // clock is folded away, and the birth city appears dynamically inside it once a
+  // precise time is set). Auto-expanded when a precise clock or city is on record.
+  const [showPrecise, setShowPrecise] = useState(false)
 
   // Shared field labels — core-ui defaults, with the app's own calendar copy.
   const dateLabels = useMemo(
@@ -238,13 +263,62 @@ export default function MeScreen() {
     return parts.join(' · ')
   }, [birth, t, locale])
 
+  // ── precise-time disclosure (真太阳时) ──────────────────────────────────────
+  const preciseCopy = auspiceBirthCopy(locale)
+  const cityValue: CityRecord | null = birth.city
+    ? {
+        name: birth.city,
+        country: '',
+        lat: birth.lat ?? 0,
+        lng: birth.lng ?? 0,
+        timezone: birth.timezone ?? null,
+      }
+    : null
+  // A precise clock also snaps the 时辰 wheel to that clock's 时辰 (the 八字
+  // calibrates the clock on top — they can differ for a birth near a boundary).
+  const handleClock = (min: number) => {
+    setBirth((prev) => ({ ...prev, clockMinutes: min, timeIndex: clockToShichenIndex(min) }))
+  }
+  const handlePreciseCity = (city: CityRecord) =>
+    setBirth((prev) => ({
+      ...prev,
+      city: city.name,
+      lat: city.lat,
+      lng: city.lng,
+      timezone: city.timezone ?? null,
+    }))
+  // Live 真太阳时 before→after preview — only when a clock + city are present and
+  // calibration is on. Computed through the SAME resolver the chart uses.
+  let calibrationPreview: string | null = null
+  if (birth.clockMinutes != null && birth.lng != null && computedSolarDate) {
+    const [yStr, mStr, dStr] = computedSolarDate.split('-')
+    const y = Number.parseInt(yStr ?? '', 10)
+    const mo = Number.parseInt(mStr ?? '', 10)
+    const d = Number.parseInt(dStr ?? '', 10)
+    if (y && mo && d) {
+      const resolved = resolveBirthHour({
+        year: y,
+        month: mo,
+        day: d,
+        clockMinutes: birth.clockMinutes,
+        calibrate: birth.calibrate ?? undefined,
+        longitude: birth.lng,
+        timezoneId: birth.timezone ?? undefined,
+        city: birth.city || undefined,
+      })
+      if (resolved.calibrated) {
+        calibrationPreview = `${formatHourMinute(formatMinutes(birth.clockMinutes), locale)} → ${preciseCopy.trueSolarLabel} ${formatHourMinute(`${pad2(resolved.hour)}:${pad2(resolved.minute)}`, locale)} · ${shichenLabelForHour(resolved.hour, locale)}`
+      }
+    }
+  }
+
   useEffect(() => {
     getAuspiceBirthInfo()
       .then((info) => {
         if (!info) return
         setBirth(info)
         setHasSavedBirth(true)
-        if (info.city?.trim()) setShowCity(true)
+        if (info.clockMinutes != null || info.city?.trim()) setShowPrecise(true)
         // Seed the editor with what the user originally entered (农历 stays 农历).
         const isLunar = info.calendar === 'lunar' && !!info.lunarInput
         setDateField({
@@ -541,65 +615,83 @@ export default function MeScreen() {
                 </View>
               </View>
 
-              {/* City — geocode-backed picker (resolves coords + IANA timezone).
-                  Kept OPTIONAL deliberately, and now COLLAPSED by default: forcing
-                  (or even pre-showing) a city would block / distract users who don't
-                  know their birth city (adopted, refugee, casual). The disclosure
-                  surfaces the accuracy upside for those who want it — 真太阳时 (TST)
-                  correction is where city earns its keep, mostly for 时柱 /
-                  日柱-near-23:00 cases far from the standard meridian. (Collapse
-                  synced from kindred 2026-06.) */}
+              {/* Precise time + birthplace — opt-in disclosure (synced from kindred
+                  2026-06: "折叠起来的准确时间" + "动态出现的出生地"). 真太阳时
+                  correction only earns its keep at minute precision, so the exact
+                  clock is folded away here, and the birth city appears DYNAMICALLY
+                  once a precise time is entered — picking it is what enables 真太阳时
+                  calibration of the 时柱. 时辰-only entry collects no birthplace. */}
               <View style={{ gap: spacing.sm }}>
                 <Pressable
-                  onPress={() => setShowCity((s) => !s)}
+                  onPress={() => setShowPrecise((s) => !s)}
                   hitSlop={8}
                   accessibilityRole='button'
-                  accessibilityLabel={t.birthCityLabel}
+                  accessibilityLabel={preciseCopy.precisePrompt}
                   style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 >
                   <Text style={{ color: colors.accent, fontSize: 13 }}>
-                    {`${showCity ? '▾  ' : '▸  '}${birth.city?.trim() || t.birthCityToggle}`}
+                    {`${showPrecise ? '▾  ' : '▸  '}${preciseCopy.precisePrompt}`}
                   </Text>
                 </Pressable>
-                {showCity ? (
-                  <CityPicker
-                    value={
-                      birth.city
-                        ? {
-                            name: birth.city,
-                            country: '',
-                            lat: birth.lat ?? 0,
-                            lng: birth.lng ?? 0,
-                            timezone: birth.timezone ?? null,
-                          }
-                        : null
-                    }
-                    onSelect={(city) =>
-                      setBirth((prev) => ({
-                        ...prev,
-                        city: city.name,
-                        lat: city.lat,
-                        lng: city.lng,
-                        timezone: city.timezone ?? null,
-                      }))
-                    }
-                    search={searchCity}
-                    topCities={DEFAULT_TOP_CITIES}
-                    placeholder={t.birthCityPlaceholder}
-                    scrollRef={scrollRef}
-                  />
-                ) : null}
-                {showCity ? (
-                  <Text
-                    style={{
-                      color: colors.dim,
-                      fontSize: 12,
-                      lineHeight: 18,
-                      marginTop: 2,
-                    }}
-                  >
-                    {t.birthCityHint}
-                  </Text>
+
+                {showPrecise ? (
+                  <View style={{ gap: spacing.md }}>
+                    <BirthClockField
+                      value={birth.clockMinutes ?? null}
+                      onChange={handleClock}
+                      accent={colors.accent}
+                      locale={locale}
+                      labels={{
+                        placeholder: preciseCopy.preciseTimeLabel,
+                        done: preciseCopy.done,
+                      }}
+                    />
+
+                    {/* Birthplace appears only once a precise clock is set. */}
+                    {birth.clockMinutes != null ? (
+                      <View style={{ gap: spacing.md }}>
+                        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                          {preciseCopy.preciseCityLabel}
+                        </Text>
+                        <CityPicker
+                          value={cityValue}
+                          onSelect={handlePreciseCity}
+                          search={searchCity}
+                          topCities={DEFAULT_TOP_CITIES}
+                          placeholder={preciseCopy.preciseCityPlaceholder}
+                          scrollRef={scrollRef}
+                        />
+
+                        {birth.lng != null ? (
+                          <View style={{ gap: spacing.sm }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Text style={{ color: colors.text, fontSize: 15 }}>
+                                {preciseCopy.calibrateLabel}
+                              </Text>
+                              <Switch
+                                value={birth.calibrate !== false}
+                                onValueChange={(on) =>
+                                  setBirth((prev) => ({ ...prev, calibrate: on }))
+                                }
+                                trackColor={{ true: colors.accent }}
+                              />
+                            </View>
+                            {calibrationPreview ? (
+                              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                                {calibrationPreview}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
 

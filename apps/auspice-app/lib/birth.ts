@@ -56,6 +56,13 @@ export interface AuspiceBirthInfo {
   lng?: number
   /** IANA timezone of the birth city, e.g. "Asia/Shanghai". */
   timezone?: string | null
+  /** Precise birth clock — minutes since midnight 0..1439. Present when the user
+   *  opted into the precise-time disclosure (真太阳时 calibration). null / absent
+   *  = 时辰-only entry (synced from kindred 2026-06). */
+  clockMinutes?: number | null
+  /** 真太阳时 calibration toggle for the precise clock; `false` = off, otherwise
+   *  on. Only meaningful when `clockMinutes` is set + a city longitude exists. */
+  calibrate?: boolean | null
 }
 
 interface AuspiceBirthInfoStored extends AuspiceBirthInfo {
@@ -120,6 +127,13 @@ export async function getAuspiceBirthInfo(): Promise<AuspiceBirthInfo | null> {
       lat: typeof parsed.lat === 'number' ? parsed.lat : undefined,
       lng: typeof parsed.lng === 'number' ? parsed.lng : undefined,
       timezone: typeof parsed.timezone === 'string' ? parsed.timezone : undefined,
+      clockMinutes:
+        typeof parsed.clockMinutes === 'number' &&
+        parsed.clockMinutes >= 0 &&
+        parsed.clockMinutes <= 1439
+          ? parsed.clockMinutes
+          : null,
+      calibrate: typeof parsed.calibrate === 'boolean' ? parsed.calibrate : undefined,
     }
   } catch {
     return null
