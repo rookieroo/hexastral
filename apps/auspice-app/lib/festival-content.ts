@@ -8,14 +8,18 @@
 
 import {
   CHONGYANG,
+  CHUNFEN,
   CHUNJIE,
   DONGZHI,
   DUANWU,
   type FestivalContent,
+  GUYU,
+  JINGZHE,
   LICHUN,
   QINGMING,
   QIXI,
   YUANXIAO,
+  YUSHUI,
   ZHONGQIU,
 } from './culture/festivals'
 
@@ -35,6 +39,11 @@ const REGISTRY: Record<string, FestivalContent> = {
   [QIXI.id]: QIXI,
   [CHONGYANG.id]: CHONGYANG,
   [DONGZHI.id]: DONGZHI,
+  // 节气 (jieqi-*) — 立春 ships in lichun.ts; the rest fill in by season.
+  [YUSHUI.id]: YUSHUI,
+  [JINGZHE.id]: JINGZHE,
+  [CHUNFEN.id]: CHUNFEN,
+  [GUYU.id]: GUYU,
 }
 
 /**
