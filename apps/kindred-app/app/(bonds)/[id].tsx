@@ -41,7 +41,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft, X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { runOnJS } from 'react-native-reanimated'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { captureRef } from 'react-native-view-shot'
 import {
   deriveCenterpieceMode,
@@ -170,6 +172,20 @@ export default function BondDetailScreen({
   }, [originProp, routeParams.ox, routeParams.oy])
   const router = useRouter()
   const handleClose = onCloseProp ?? (() => router.back())
+  const insets = useSafeAreaInsets()
+  // Overlay has no OS edge-swipe-back — a left-edge swipe-right dismisses it
+  // (matches iOS). A thin left-edge strip owns the gesture so it never fights the
+  // horizontal ChapterPager in the content. (Routes keep the real OS gesture.)
+  const edgeSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([12, 9999])
+        .failOffsetY([-28, 28])
+        .onEnd((e) => {
+          if (e.translationX > 60) runOnJS(handleClose)()
+        }),
+    [handleClose]
+  )
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
   const [chapterIndex, setChapterIndex] = useState<number>(0)
@@ -558,9 +574,15 @@ export default function BondDetailScreen({
             report document reads edge-to-edge. */}
         <ReportBloom origin={bloomOrigin} surroundColor={isOverlay ? 'transparent' : undefined}>
           <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
-            {/* Overlay close — no edge-swipe-back to lean on, so an ✕ rests in the
-                top-right (matches the solo reading overlay). Routes keep their
-                clean no-chrome look + the OS edge-swipe. */}
+            {/* Overlay exits: a left-edge swipe-right (strip below) + an ✕. Routes
+                keep their clean no-chrome look + the OS edge-swipe. */}
+            {isOverlay ? (
+              <GestureDetector gesture={edgeSwipe}>
+                <View
+                  style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 28, zIndex: 9 }}
+                />
+              </GestureDetector>
+            ) : null}
             {isOverlay ? (
               <Pressable
                 onPress={handleClose}
@@ -569,7 +591,9 @@ export default function BondDetailScreen({
                 accessibilityLabel={t('common.close')}
                 style={{
                   position: 'absolute',
-                  top: kindredSpacing.sm,
+                  // Absolute children ignore the SafeAreaView's inset PADDING, so
+                  // offset by the notch ourselves (was overlapping the 刘海).
+                  top: insets.top + kindredSpacing.sm,
                   right: kindredSpacing.md,
                   zIndex: 10,
                   padding: 6,

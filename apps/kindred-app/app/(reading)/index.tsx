@@ -136,6 +136,8 @@ export default function ReadingHomeScreen() {
     id: string
     origin: { x: number; y: number } | null
   } | null>(null)
+  // Stable so the report overlay's swipe-back gesture doesn't re-create each render.
+  const closeBond = useCallback(() => setOpenBond(null), [])
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
   // A faint, calm ambient star field behind the whole screen (dimmed by the
@@ -488,11 +490,7 @@ export default function ReadingHomeScreen() {
           live home (rendered here, not pushed as a route, so there's no jump). */}
       {openBond ? (
         <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
-          <BondReportScreen
-            id={openBond.id}
-            origin={openBond.origin}
-            onClose={() => setOpenBond(null)}
-          />
+          <BondReportScreen id={openBond.id} origin={openBond.origin} onClose={closeBond} />
         </View>
       ) : null}
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
