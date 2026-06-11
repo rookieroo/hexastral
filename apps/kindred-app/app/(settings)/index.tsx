@@ -19,11 +19,12 @@ import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devWipeUserAndRestart } from '@/lib/dev-tools'
-import { resolveLocale, t } from '@/lib/i18n'
+import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
+import { devReplaySplash } from '@/lib/splash-control'
 import { resetOnboarding } from '../index'
 
 // Privacy + Terms URLs — Apple App Store requires both to be reachable from
@@ -45,6 +46,31 @@ function maskEmail(email: string): string {
   if (!local || !domain) return email
   if (local.length <= 2) return `${local[0]}***@${domain}`
   return `${local.slice(0, 2)}***@${domain}`
+}
+
+// Birth-info edit row — self-contained strings (the spam/quota policy is
+// specific to this entry). Routes to the shared self form in edit mode.
+const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }> = {
+  en: {
+    section: 'Birth info',
+    row: 'Edit birth info',
+    hint: 'Date · time · place. Editing regenerates your reading — one free change, then unlock.',
+  },
+  zh: {
+    section: '出生信息',
+    row: '修改出生信息',
+    hint: '出生日期 · 时辰 · 地点。修改会重新生成个人报告——免费仅 1 次，之后需解锁。',
+  },
+  'zh-Hant': {
+    section: '出生資訊',
+    row: '修改出生資訊',
+    hint: '出生日期 · 時辰 · 地點。修改會重新生成個人報告——免費僅 1 次，之後需解鎖。',
+  },
+  ja: {
+    section: '出生情報',
+    row: '出生情報を編集',
+    hint: '生年月日 · 時辰 · 場所。編集するとレポートが再生成され、無料は1回まで、以降は解除が必要です。',
+  },
 }
 
 export default function SettingsScreen() {
@@ -245,6 +271,45 @@ export default function SettingsScreen() {
               ✓ {t(locale, 'settings.recovered')}
             </Text>
           ) : null}
+        </Card>
+
+        <View style={{ height: kindredSpacing.lg }} />
+
+        {/* Birth info — the only edit entry for an existing user. The shared
+            self form (mode=edit) carries the regenerate + one-free-change
+            warning; a free user's 2nd chart-altering edit 403s → paywall. */}
+        <Text
+          style={[
+            kindredType.seal,
+            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
+          ]}
+        >
+          {BIRTH_COPY[locale].section}
+        </Text>
+
+        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: '/(onboarding)/self', params: { mode: 'edit' } })
+            }
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {BIRTH_COPY[locale].row}
+            </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {BIRTH_COPY[locale].hint}
+            </Text>
+          </Pressable>
         </Card>
 
         <View style={{ height: kindredSpacing.lg }} />
@@ -534,6 +599,44 @@ export default function SettingsScreen() {
                 ]}
               >
                 DEV · 配对表单 (pair-input) →
+              </Text>
+            </Pressable>
+            {/* DEV launchers — jump straight into a scene without resetting state,
+                so intro / splash / report are quick to iterate on + repro. */}
+            <Pressable onPress={() => router.push('/(onboarding)/intro')} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · intro (红线动画) →
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                devReplaySplash()
+                router.replace('/')
+              }}
+              hitSlop={12}
+            >
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 进场动画 (home splash) →
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(reading)')} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                DEV · 个人报告首页 (reading) →
               </Text>
             </Pressable>
           </View>

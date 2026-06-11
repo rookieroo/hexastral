@@ -1,17 +1,27 @@
 /**
- * Intro — the Yuel (缘) cold-open, now THREAD-LED (see components/intro/IntroThread).
+ * Intro — the Yuel (缘) cold-open, framed on TWO STARS and the gravity between
+ * them. The red-thread (红线) framing read as nothing to a Western audience, so
+ * the metaphor is now universal physics that lives in the starfield: a star pulled
+ * toward you that slings past, one that flares and repels, and the one that settles
+ * into your orbit — the widest ache anyone who's looked for their person knows.
  *
- * The previous articulated stick-figure rig chased realism (joints + grounded
- * gait) and read MORE fake for it — the uncanny valley for a symbol. This screen
- * is now a thin shell: it owns the locale copy (the four-beat parable) and the
- * tap contract (tap ANYWHERE, at ANY time → onboarding, never a wall); all the
- * craft lives in IntroThread, where the thread between two ink dots — 缘 itself —
- * is the protagonist (controllable, believable, on-brand) instead of a walk.
+ * This screen is a thin shell: it owns the locale copy + the tap contract (tap
+ * ANYWHERE, ANY time → onboarding, never a wall) + the 定格 hand-off (the final
+ * frame holds, then fades to the dark the pair-input moon rises from, so the
+ * transition is continuous, not a hard cut). All the craft lives in IntroThread.
  */
 
+import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useMemo, useRef } from 'react'
-import { Pressable } from 'react-native'
+import { Pressable, StyleSheet } from 'react-native'
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { IntroThread } from '@/components/intro/IntroThread'
 import { resolveLocale } from '@/lib/i18n'
 
@@ -19,48 +29,48 @@ type CopyLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
 interface IntroCopy {
   continue: string
-  /** One caption per act — arrival, the near-miss, the one who parts, the one who stays. */
+  /** One caption per act — among the stars, the pull that misses, the flare that repels, the orbit. */
   acts: [string, string, string, string]
 }
 
 const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
-  // The thesis builds across four captions, each more personal and warmer than
-  // the last: you start alone → some you reach for but can't hold → some you
-  // come to know then part → but one is meant to stay (the CTA picks it up).
+  // Four beats on gravity: among countless stars → the ones that pull then drift
+  // → the ones that flare then push you away → the one that settles into orbit.
+  // Pure physics, no cultural key — it lands East and West alike.
   en: {
-    continue: 'tap to begin',
+    continue: 'find your star',
     acts: [
-      'you come into the world alone',
-      'some you reach for, but never hold',
-      'some you come to know, then let go',
-      'but one of them is meant to stay',
+      'among countless stars, two are drawn together',
+      'some pull you close, then drift past',
+      'some flare bright, then push you away',
+      'one settles into your orbit, and stays',
     ],
   },
   zh: {
-    continue: '轻触开始',
+    continue: '寻你的那颗星',
     acts: [
-      '你来到这世上，独自一人',
-      '有人与你相识，却没能在一起',
-      '有人与你相知，却终究分开',
-      '但总有一个人，会留在你身边',
+      '茫茫星海，总有两颗，彼此吸引',
+      '有的把你拉近，却又擦身而过',
+      '有的骤然炽烈，转身将你推开',
+      '而那一颗，落入你的轨道，不再离开',
     ],
   },
   'zh-Hant': {
-    continue: '輕觸開始',
+    continue: '尋你的那顆星',
     acts: [
-      '你來到這世上，獨自一人',
-      '有人與你相識，卻沒能在一起',
-      '有人與你相知，卻終究分開',
-      '但總有一個人，會留在你身邊',
+      '茫茫星海，總有兩顆，彼此吸引',
+      '有的把你拉近，卻又擦身而過',
+      '有的驟然熾烈，轉身將你推開',
+      '而那一顆，落入你的軌道，不再離開',
     ],
   },
   ja: {
-    continue: 'タップで始める',
+    continue: 'あなたの星を探す',
     acts: [
-      'あなたはひとりで、この世に来た',
-      '出会っても、結ばれない人がいる',
-      '深く知り合っても、別れる人もいる',
-      'それでも、あなたのそばに残る人がいる',
+      '無数の星の中で、惹かれ合う二つがある',
+      '近づいても、すれ違って離れる星がある',
+      '激しく輝いて、あなたを弾く星もある',
+      'けれど一つは、あなたの軌道に留まる',
     ],
   },
 }
@@ -77,15 +87,26 @@ export default function IntroScreen() {
   const copy = useMemo(() => pickIntroCopy(resolveLocale()), [])
   // Advance exactly once — the tap and the timeline's onDone can both fire.
   const advanced = useRef(false)
+  const exit = useSharedValue(0)
+  const exitStyle = useAnimatedStyle(() => ({ opacity: exit.value }))
+  const go = () => router.replace('/(onboarding)/pair-input')
   const advance = () => {
     if (advanced.current) return
     advanced.current = true
-    router.replace('/(onboarding)/pair-input')
+    // 定格 → graceful fade to the dark ground, THEN swap routes. pair-input
+    // rises from the same dark, so the hand-off reads continuous, not a cut.
+    exit.value = withTiming(1, { duration: 440, easing: Easing.inOut(Easing.quad) }, (done) => {
+      if (done) runOnJS(go)()
+    })
   }
 
   return (
     <Pressable style={{ flex: 1 }} onPress={advance} accessibilityRole='button'>
       <IntroThread acts={copy.acts} continueLabel={copy.continue} onDone={advance} />
+      <Animated.View
+        pointerEvents='none'
+        style={[StyleSheet.absoluteFill, { backgroundColor: kindredDark.bg }, exitStyle]}
+      />
     </Pressable>
   )
 }

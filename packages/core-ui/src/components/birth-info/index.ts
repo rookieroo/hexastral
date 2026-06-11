@@ -7,6 +7,7 @@
  * in core-ui instead of a per-scenario package.
  */
 
+export { BirthClockField, type BirthClockFieldLabels } from './BirthClockField'
 export {
   type BirthCalendar,
   BirthDateField,

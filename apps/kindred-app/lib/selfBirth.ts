@@ -94,8 +94,17 @@ export function useSelfBirth(): SelfBirth | null | undefined {
  *
  * Failures are non-fatal: the solo reading works fully offline; Threads
  * re-attempts via ensureSelfBirthSynced() before bond creation.
+ *
+ * Returns a status so the EDIT flow can react: 'quota_exhausted' (free user's
+ * 2nd chart-altering edit → server 403 BIRTH_EDIT_QUOTA_EXHAUSTED) routes the
+ * caller to the paywall; first-add and unchanged resubmits always return 'ok'.
  */
-export async function syncSelfBirthToServer(userId: string, birth: SelfBirth): Promise<boolean> {
+export type BirthSyncResult = 'ok' | 'quota_exhausted' | 'error'
+
+export async function syncSelfBirthToServer(
+  userId: string,
+  birth: SelfBirth
+): Promise<BirthSyncResult> {
   const path = `/api/user/${userId}/birth-info`
   const body = JSON.stringify({
     birthSolarDate: birth.solarDate,
@@ -115,7 +124,7 @@ export async function syncSelfBirthToServer(userId: string, birth: SelfBirth): P
   })
   try {
     const sig = await signRequest({ method: 'PUT', path, body, userId })
-    if (!sig) return false
+    if (!sig) return 'error'
     const res = await fetch(`${config.apiUrl}${path}`, {
       method: 'PUT',
       headers: {
@@ -127,11 +136,12 @@ export async function syncSelfBirthToServer(userId: string, birth: SelfBirth): P
     })
     if (res.ok) {
       await AsyncStorage.setItem(SELF_BIRTH_SYNCED_KEY, '1')
-      return true
+      return 'ok'
     }
-    return false
+    if (res.status === 403) return 'quota_exhausted'
+    return 'error'
   } catch {
-    return false
+    return 'error'
   }
 }
 
@@ -149,5 +159,5 @@ export async function ensureSelfBirthSynced(userId: string): Promise<boolean> {
   }
   const birth = await loadSelfBirth()
   if (!birth) return false
-  return syncSelfBirthToServer(userId, birth)
+  return (await syncSelfBirthToServer(userId, birth)) === 'ok'
 }

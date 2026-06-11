@@ -16,6 +16,12 @@ export function suppressNextSplash(): void {
   suppressOnce = true
 }
 
+/** DEV — re-arm the splash so the next home mount plays it again (dev launcher). */
+export function devReplaySplash(): void {
+  played = false
+  suppressOnce = false
+}
+
 /**
  * Decide once, on home mount, whether to skip the splash. Skips if it already
  * ran this JS session or a one-shot suppression was requested. Records that

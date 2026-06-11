@@ -13,10 +13,12 @@ import {
   calculateHeHun,
   type FourPillars,
   formatHeHunForPrompt,
+  getCityLongitude,
   getFourPillars,
   getFourPillarsShiShen,
   type HeavenlyStem,
   type HeHunResult,
+  resolveBirthHour,
   STEM_WUXING,
   WUXING_GENERATE,
   WUXING_OVERCOME,
@@ -38,6 +40,16 @@ export interface HeHunPersonInput {
   solarDate: string
   /** 时辰序号 0-12 */
   timeIndex: number
+  /** 精确出生分钟数 0-1439（精确模式）。存在则启用真太阳时校准。 */
+  clockMinutes?: number
+  /** 真太阳时校准开关（默认开）。仅精确模式生效。 */
+  calibrate?: boolean
+  /** 经度（东经正、西经负）。校准用。 */
+  longitude?: number
+  /** IANA 时区 ID（含历史 DST）。校准用。 */
+  timezoneId?: string
+  /** 出生城市（可选；无经度时用于查中国城市经度表）。 */
+  city?: string
   /** 性别 */
   gender: '男' | '女'
   /** 姓名/昵称（可选，用于 prompt 称呼） */
@@ -110,19 +122,36 @@ export interface HeHunInterpretation {
 // 核心计算
 // ========================================
 
-function parseSolarDate(
-  solarDate: string,
+function parsePersonDate(person: {
+  solarDate: string
   timeIndex: number
-): { year: number; month: number; day: number; hour: number } {
-  const [yearStr, monthStr, dayStr] = solarDate.split('-')
+  clockMinutes?: number
+  calibrate?: boolean
+  longitude?: number
+  timezoneId?: string
+  city?: string
+}): { year: number; month: number; day: number; hour: number } {
+  const [yearStr, monthStr, dayStr] = person.solarDate.split('-')
   const year = Number.parseInt(yearStr!, 10)
   const month = Number.parseInt(monthStr!, 10)
   const day = Number.parseInt(dayStr!, 10)
-  let hour: number
-  if (timeIndex === 0) hour = 0
-  else if (timeIndex === 12) hour = 23
-  else hour = timeIndex * 2 - 1
-  return { year, month, day, hour }
+  // The SAME shared resolver solo + the natal service use: 时辰 midpoint (NOT the
+  // old `timeIndex*2-1` edge, which silently shifted the hour pillar one 时辰),
+  // plus 真太阳时 calibration in precise mode. This unifies 合盘 with every other
+  // chart in the suite (it had drifted to its own stale, 时辰-only logic).
+  const longitude = person.longitude ?? (person.city ? getCityLongitude(person.city) : undefined)
+  const resolved = resolveBirthHour({
+    year,
+    month,
+    day,
+    timeIndex: person.timeIndex,
+    clockMinutes: person.clockMinutes,
+    calibrate: person.calibrate,
+    longitude,
+    timezoneId: person.timezoneId,
+    city: person.city,
+  })
+  return { year: resolved.year, month: resolved.month, day: resolved.day, hour: resolved.hour }
 }
 
 function buildChartSummary(pillars: FourPillars): HeHunChartSummary {
@@ -142,8 +171,8 @@ function buildChartSummary(pillars: FourPillars): HeHunChartSummary {
  * 执行合婚计算
  */
 export function computeHeHun(input: HeHunInput): HeHunFullResult {
-  const dateA = parseSolarDate(input.personA.solarDate, input.personA.timeIndex)
-  const dateB = parseSolarDate(input.personB.solarDate, input.personB.timeIndex)
+  const dateA = parsePersonDate(input.personA)
+  const dateB = parsePersonDate(input.personB)
 
   const pillarsA = getFourPillars(dateA)
   const pillarsB = getFourPillars(dateB)
@@ -169,8 +198,8 @@ function buildPairFacts(result: HeHunFullResult, input: HeHunInput): string {
   const compatText = formatHeHunForPrompt(compatibility)
 
   // 神煞补充（双方）
-  const dateA = parseSolarDate(input.personA.solarDate, input.personA.timeIndex)
-  const dateB = parseSolarDate(input.personB.solarDate, input.personB.timeIndex)
+  const dateA = parsePersonDate(input.personA)
+  const dateB = parsePersonDate(input.personB)
   const shenShaA = analyzeShenSha(getFourPillars(dateA))
   const shenShaB = analyzeShenSha(getFourPillars(dateB))
   const shenShaAStr =
@@ -769,8 +798,14 @@ export interface AnnualForecastInterpretation {
 function buildAnnualForecastPrompt(input: AnnualForecastInput): string {
   const nameA = input.personAName ?? '甲方'
   const nameB = input.personBName ?? '乙方'
-  const dateA = parseSolarDate(input.personASolarDate, input.personATimeIndex)
-  const dateB = parseSolarDate(input.personBSolarDate, input.personBTimeIndex)
+  const dateA = parsePersonDate({
+    solarDate: input.personASolarDate,
+    timeIndex: input.personATimeIndex,
+  })
+  const dateB = parsePersonDate({
+    solarDate: input.personBSolarDate,
+    timeIndex: input.personBTimeIndex,
+  })
   const pillarsA = getFourPillars(dateA)
   const pillarsB = getFourPillars(dateB)
   const summaryA = buildChartSummary(pillarsA)

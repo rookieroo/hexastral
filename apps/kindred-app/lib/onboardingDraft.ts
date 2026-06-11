@@ -46,6 +46,10 @@ export interface OnboardingDraft {
   otherBirthLat: number | null
   otherBirthLng: number | null
   otherBirthTimezone: string | null
+  /** Partner's precise birth clock (minutes since midnight). null = 时辰 mode.
+   *  Mirrors self* — the 合盘 form offers the same opt-in precise path. */
+  otherClockMinutes: number | null
+  otherCalibrate: boolean | null
   otherGender: '男' | '女' | null
   // Both modes
   relationshipLabel: string
@@ -76,6 +80,8 @@ const EMPTY: OnboardingDraft = {
   otherBirthLat: null,
   otherBirthLng: null,
   otherBirthTimezone: null,
+  otherClockMinutes: null,
+  otherCalibrate: null,
   otherGender: null,
   relationshipLabel: '',
   message: '',

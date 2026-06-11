@@ -19,7 +19,6 @@
 
 import MaskedView from '@react-native-masked-view/masked-view'
 import { InkBloomMask } from '@zhop/core-ui/motion'
-import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -149,9 +148,13 @@ function OverlayInner({
 }
 
 const S = StyleSheet.create({
-  // 宣纸 ground so the bloom reveals the report's ink over continuous paper (the
-  // home is paper too now). zIndex 100 keeps it above the home's brand mark.
-  root: { zIndex: 100, backgroundColor: kindredPaper.bg },
+  // TRANSPARENT ground — the live home (itself 宣纸) stays visible behind the
+  // overlay during the cover-hold, so opening a reading no longer flashes a blank
+  // paper page before the bloom. The report carries its OWN paper bg
+  // (ReadingReport `paper`), so inside the growing ink mask you still get solid
+  // paper; outside stays transparent → the home shows through (the documented
+  // intent). zIndex 100 keeps it above the home's brand mark.
+  root: { zIndex: 100, backgroundColor: 'transparent' },
   content: { flex: 1 },
   coverHidden: { opacity: 0 },
 })

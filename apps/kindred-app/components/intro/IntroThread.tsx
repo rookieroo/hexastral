@@ -1,41 +1,25 @@
 /**
- * IntroThread — the Yuel (缘) intro, re-staged thread-first (ADR-0024 / director's
- * treatment 2026-06-10), then clarified to read as THREE relationships (2026-06).
+ * IntroThread — the Yuel (缘) intro, re-conceived as TWO STARS and the gravity
+ * between them (2026-06). The red-thread (红线) framing was East-Asian-specific —
+ * a Western user reads nothing into a red line — so the metaphor is now pure,
+ * universal physics that lives in the starfield: attraction, repulsion, orbit.
  *
- * The articulated stick-figure rig chased realism (joints / grounded gait) and
- * fell into the uncanny valley — adding anatomy invited a standard the symbol
- * can't meet, so it read MORE fake. The fix is the opposite: MORE abstraction +
- * better timing. Here the PROTAGONIST is the thread (缘 = the line between two
- * people), and people are simple ink dots — a curve has no "wrong anatomy", so
- * it's fully controllable and believable.
+ * The four beats (captions supplied by the host):
+ *   0 you, alone           — a warm star breathing among the cosmos
+ *   1 the pull that misses  — a star curves IN toward you, grazes close, then its
+ *                             momentum slings it past and away
+ *   2 the flare that repels — a star nears, FLARES bright, and is flung off (a clash)
+ *   3 the one who stays     — a star decelerates and settles into a stable ORBIT
+ *                             around you: a binary pair, bound, both lit
+ * then a 定格 holds the two-of-you in orbit before the host fades on.
  *
- * CLARITY PASS (2026-06: "没看出来是 A 和 B、C、D 分别交往得出的三段感情"): the
- * first thread cut reused ONE partner dot that entered/exited three times at the
- * same spot, so it read as a single on-off person, not three relationships — and
- * so was HARDER to parse than the old stick figures. Now there are THREE distinct
- * others (B / C / D), each at its own station, and the ones whose act has passed
- * LINGER as faint ghosts. So by the final beat you literally see four dots — you,
- * two faded loves behind you, and the one, lit and tied close. The parable's
- * meaning ("you, then some you couldn't hold, then the one who stays") is now
- * spatial, not temporal.
- *
- * The four-beat parable (captions supplied by the host):
- *   0 you, alone            — a dot breathing, a short unspent thread-tail
- *   1 B — the reach that misses — a thread reaches toward B and falls short; B
- *                                  lingers, faint, upper-right
- *   2 C — the tie that loosens  — the thread ties to C, then C drifts away and
- *                                  fades to a ghost, lower-right
- *   3 D — the one who stays     — the thread holds; D settles close and lit
- * then a persistent "tap to begin" resolves to onboarding (the host owns the tap).
- *
- * One master progress drives everything via worklet-derived sub-phases, so the
- * choreography lives in one place and stays tempo-scalable. Skia + reanimated,
- * mirroring InkCenterpiece's value→Skia pattern. NOTE: hand-feel (timing, arc
- * shapes, the four stations) wants on-device tuning — the constants below are the
- * score, not gospel.
+ * The orbit IS the bond — bound stars orbit each other forever, legible to anyone,
+ * no cultural key required. One master progress drives everything via worklet
+ * sub-phases. Skia + reanimated. Hand-feel (timings, orbit radius, the flare)
+ * wants on-device tuning — the constants below are the score, not gospel.
  */
 
-import { Canvas, Circle, Fill, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia'
+import { Canvas, Circle, Group, vec } from '@shopify/react-native-skia'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useEffect } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
@@ -48,36 +32,37 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import { GalaxyBand, StarField } from '@/components/IntroScene'
+import { KindredMoon } from '@/components/KindredMoon'
 
 const BG = kindredDark.bg
-const INK = '#f4f3ef' // pale ink — the soul dots + the thread
-const HALO = kindredDark.accent // warm gold breath around "you"
+const INK = '#f4f3ef' // pale starlight — neutral stars (people)
+const HALO = kindredDark.accent // warm gold — you + the one
+const FLARE = '#fff7e8' // hot white-gold — the clash that repels
 
-const DURATION = 15000
+// The story plays, then the resolved frame FREEZES (定格) — a held beat before
+// the host fades on. The user can tap to skip the whole thing at any time.
+const STORY_DURATION = 12000
+const FREEZE_HOLD = 3200
 
-// Act boundaries on the master progress [0,1]. Act 3 (the one who stays) gets the
-// longest stretch — it's the emotional payoff and wants the longest HOLD.
-const A1 = 0.22
-const A2 = 0.48
+// Beat boundaries on the master progress [0,1].
+const A1 = 0.24
+const A2 = 0.5
 const A3 = 0.74
 
-// ── stations — fractions of (width, height). The four dots sit at FOUR distinct
-// places so they read as four people, not one blinking on and off. Faded loves
-// stay where their act left them (the ghost spots).
-const YOU = { x: 0.38, y: 0.4 }
-// B — reached for, missed: drifts in from the right wing to a far upper-right
-// station and stays there, faint.
-const B = { fromX: 1.2, fromY: 0.2, x: 0.74, y: 0.24 }
-// C — known, then let go: enters low, ties close, then drifts off to a faint
-// lower-right ghost.
-const C = { fromX: 1.2, fromY: 0.66, x: 0.58, y: 0.56, ghostX: 0.86, ghostY: 0.64 }
-// D — the one who stays: enters at your height and settles close, lit.
-const D = { fromX: 1.2, fromY: 0.4, x: 0.55, y: 0.42 }
-const GHOST_OP = 0.16 // a past love, still faintly there
+// — You: the fixed warm star the others move around.
+const YOU = { x: 0.4, y: 0.43 }
+// B — pulled in, slings past: enters upper-right, curves toward you, exits lower-left.
+const B = { fromX: 1.25, fromY: 0.16, toX: -0.28, toY: 0.66 }
+// C — nears, flares, flung away: enters lower-right, recoils to upper-right.
+const C = { fromX: 1.22, fromY: 0.8, flungX: 1.32, flungY: 0.3 }
+// D — the one: enters from the left, settles into orbit around you.
+const D = { fromX: -0.32, fromY: 0.46 }
 
+const GHOST_OP = 0.14 // a distant, faded star (a past encounter)
 const DOT_R = 4.5
 
-// ── worklet helpers ──────────────────────────────────────────────────────────
+// — worklet helpers —
 function clamp01(x: number): number {
   'worklet'
   return x < 0 ? 0 : x > 1 ? 1 : x
@@ -94,44 +79,24 @@ function lerp(a: number, b: number, t: number): number {
   'worklet'
   return a + (b - a) * t
 }
-/** A bell 0→1→0 over [0,1] — a fade-in-then-out for a transient figure. */
+/** Quadratic bezier on one axis — S → C → E (C bows the path). */
+function qbez(t: number, s: number, c: number, e: number): number {
+  'worklet'
+  const u = 1 - t
+  return u * u * s + 2 * u * t * c + t * t * e
+}
+/** A bell 0→1→0 over [0,1] — fade-in-then-out for a transient star. */
 function bell(x: number): number {
   'worklet'
-  return smooth(clamp01(x / 0.55)) * (1 - smooth(clamp01((x - 0.55) / 0.45)))
-}
-/** An eased S-curve thread from (sx,sy) to (ex,ey), bowed by `sag` on the
- *  perpendicular so a 2-D line still reads as a hand-drawn ink stroke. */
-function makeThread(
-  sx: number,
-  sy: number,
-  ex: number,
-  ey: number,
-  sag: number,
-  quiver: number
-): SkPath {
-  'worklet'
-  const path = Skia.Path.Make()
-  const dx = ex - sx
-  const dy = ey - sy
-  const len = Math.max(1, Math.hypot(dx, dy))
-  // perpendicular unit — the bow direction
-  const nx = -dy / len
-  const ny = dx / len
-  const m1x = lerp(sx, ex, 0.33) + nx * sag + quiver
-  const m1y = lerp(sy, ey, 0.33) + ny * sag
-  const m2x = lerp(sx, ex, 0.66) - nx * sag + quiver
-  const m2y = lerp(sy, ey, 0.66) - ny * sag
-  path.moveTo(sx, sy)
-  path.cubicTo(m1x, m1y, m2x, m2y, ex, ey)
-  return path
+  return smooth(clamp01(x / 0.5)) * (1 - smooth(clamp01((x - 0.5) / 0.5)))
 }
 
 export interface IntroThreadProps {
-  /** Four parable captions (arrival / near-miss / parts / stays). */
+  /** Four parable captions (alone / the miss / the flare / the orbit). */
   acts: string[]
   /** Persistent "tap to begin" hint. */
   continueLabel: string
-  /** Fires once when the timeline completes (the host also advances on tap). */
+  /** Fires once when the timeline + freeze complete (the host also advances on tap). */
   onDone: () => void
 }
 
@@ -139,9 +104,10 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
   const { width, height } = useWindowDimensions()
   const reduced = useReducedMotion()
 
-  // "You" — fixed, the constant the parable returns to. The others come and go.
+  // "You" — fixed, the warm star the others move around.
   const yx = width * YOU.x
   const yy = height * YOU.y
+  const orbitR = Math.min(width, height) * 0.15
 
   const p = useSharedValue(0)
   useEffect(() => {
@@ -149,12 +115,21 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
       onDone()
       return
     }
-    p.value = withTiming(1, { duration: DURATION, easing: Easing.linear }, (done) => {
-      if (done) runOnJS(onDone)()
+    let holdTimer: ReturnType<typeof setTimeout> | null = null
+    // 定格: once the story reaches its final frame, HOLD it for a beat before the
+    // host advances — the frame stays at p=1; only the breath + star twinkle live on.
+    const startFreeze = () => {
+      holdTimer = setTimeout(onDone, FREEZE_HOLD)
+    }
+    p.value = withTiming(1, { duration: STORY_DURATION, easing: Easing.linear }, (done) => {
+      if (done) runOnJS(startFreeze)()
     })
+    return () => {
+      if (holdTimer) clearTimeout(holdTimer)
+    }
   }, [reduced, onDone, p])
 
-  // Breath — a slow, independent pulse on "you".
+  // Breath — a slow, independent pulse on "you" + the one.
   const breath = useSharedValue(0)
   useEffect(() => {
     breath.value = withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) })
@@ -167,153 +142,121 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
     return () => clearInterval(id)
   }, [breath])
 
-  // ── one frame worklet drives the whole scene ───────────────────────────────
-  // Returns every dot's position+opacity AND the active thread path, so the
-  // station math lives in ONE place and the <Circle>/<Path> nodes just read it.
+  // One frame worklet positions all three encounter-stars + the clash flare, so
+  // the gravity choreography lives in ONE place and the nodes just read it.
   const frame = useDerivedValue(() => {
     const pv = p.value
     const w = width
     const h = height
-    const sx = yx
-    const sy = yy
 
-    // — B: reached for in act1, then a lingering ghost upper-right —
+    // — B: attraction that misses — a curve bowed toward you, then gone —
     let bx = B.fromX * w
     let by = B.fromY * h
     let bop = 0
     if (pv >= A1 && pv < A2) {
       const a = seg(pv, A1, A2)
-      const came = smooth(Math.min(1, a / 0.6))
-      bx = lerp(B.fromX * w, B.x * w, came)
-      by = lerp(B.fromY * h, B.y * h, came)
-      const appear = 0.9 * smooth(Math.min(1, a / 0.5))
-      bop = lerp(appear, GHOST_OP, smooth(Math.max(0, (a - 0.62) / 0.38)))
+      // Bow toward you but the control is OFFSET from your star by a clear gap —
+      // B passes to the SIDE, never through you (not your kind; it passes by).
+      bx = qbez(a, B.fromX * w, yx + w * 0.13, B.toX * w)
+      by = qbez(a, B.fromY * h, yy - h * 0.05, B.toY * h)
+      bop = 0.95 * bell(a)
     } else if (pv >= A2) {
-      bx = B.x * w
-      by = B.y * h
+      bx = B.toX * w
+      by = B.toY * h
       bop = GHOST_OP
     }
 
-    // — C: ties close in act2, then drifts to a ghost lower-right —
+    // — C: repulsion — pulled in, FLARE at the clash, flung away —
     let cx = C.fromX * w
     let cy = C.fromY * h
     let cop = 0
+    let cflare = 0
     if (pv >= A2 && pv < A3) {
       const a = seg(pv, A2, A3)
+      const nearX = lerp(yx, C.fromX * w, 0.34)
+      const nearY = lerp(yy, C.fromY * h, 0.34)
       if (a < 0.5) {
-        const came = smooth(Math.min(1, a / 0.42))
-        cx = lerp(C.fromX * w, C.x * w, came)
-        cy = lerp(C.fromY * h, C.y * h, came)
+        const came = smooth(a / 0.5)
+        cx = lerp(C.fromX * w, nearX, came)
+        cy = lerp(C.fromY * h, nearY, came)
         cop = 0.9 * came
       } else {
-        const gone = smooth(Math.max(0, (a - 0.5) / 0.5))
-        cx = lerp(C.x * w, C.ghostX * w, gone)
-        cy = lerp(C.y * h, C.ghostY * h, gone)
-        cop = lerp(0.9, GHOST_OP, gone)
+        const gone = smooth((a - 0.5) / 0.5)
+        cx = lerp(nearX, C.flungX * w, gone)
+        cy = lerp(nearY, C.flungY * h, gone)
+        cop = lerp(0.95, GHOST_OP, gone)
       }
+      const f = 1 - Math.abs(a - 0.5) / 0.12
+      cflare = f > 0 ? smooth(f) : 0
     } else if (pv >= A3) {
-      cx = C.ghostX * w
-      cy = C.ghostY * h
+      cx = C.flungX * w
+      cy = C.flungY * h
       cop = GHOST_OP
     }
 
-    // — D: enters in act3, settles close, stays lit —
+    // — D: the one — approach, then a stable orbit around you —
     let dx = D.fromX * w
     let dy = D.fromY * h
     let dop = 0
     if (pv >= A3) {
       const a = seg(pv, A3, 1)
-      const came = smooth(Math.min(1, a / 0.45))
-      dx = lerp(D.fromX * w, D.x * w, came)
-      dy = lerp(D.fromY * h, D.y * h, came)
-      dop = came
+      if (a < 0.4) {
+        const came = smooth(a / 0.4)
+        dx = lerp(D.fromX * w, yx + orbitR, came)
+        dy = lerp(D.fromY * h, yy, came)
+        dop = came
+      } else {
+        const angle = ((a - 0.4) / 0.6) * 1.7 * Math.PI
+        dx = yx + orbitR * Math.cos(angle)
+        dy = yy + orbitR * Math.sin(angle)
+        dop = 1
+      }
     }
 
-    // — the active thread — from you toward whoever this beat belongs to —
-    let ex = sx
-    let ey = sy
-    let top = 0
-    let sag = 0
-    let quiver = 0
-    let wide = false
-    if (pv < A1) {
-      // unspent tail — a short stroke drifting from "you", drawing on.
-      const a = seg(pv, 0, A1)
-      const len = 42 * smooth(a)
-      ex = sx + len
-      ey = sy + 4
-      sag = 8 * Math.sin(a * 6)
-      top = 0.45 * smooth(a)
-    } else if (pv < A2) {
-      // reach toward B — but never gets there (reach < 1), and recoils.
-      const a = seg(pv, A1, A2)
-      const reach = 0.82 * bell(a)
-      ex = lerp(sx, bx, reach)
-      ey = lerp(sy, by, reach)
-      sag = 22 * bell(a)
-      quiver = 5 * bell(a) * Math.sin(a * 30)
-      top = 0.7 * smooth(Math.min(1, a / 0.18))
-    } else if (pv < A3) {
-      // tie to C, then loosen + fade as C drifts off.
-      const a = seg(pv, A2, A3)
-      const connect = smooth(Math.min(1, a / 0.42))
-      const release = smooth(Math.max(0, (a - 0.55) / 0.45))
-      ex = lerp(sx, cx, connect)
-      ey = lerp(sy, cy, connect)
-      sag = 16 * (1 - connect) + 12 * release
-      quiver = 3 * (1 - connect) * Math.sin(a * 22)
-      top = 0.7 * (1 - 0.85 * release)
-    } else {
-      // hold to D — a calm taut line that settles.
-      const a = seg(pv, A3, 1)
-      const reach = smooth(Math.min(1, a / 0.45))
-      ex = lerp(sx, dx, reach)
-      ey = lerp(sy, dy, reach)
-      sag = 10 - 6 * smooth(Math.min(1, a / 0.6))
-      top = 0.8 * reach
-      wide = true
-    }
-
-    return {
-      path: makeThread(sx, sy, ex, ey, sag, quiver),
-      threadOp: top,
-      threadW: wide ? 2.4 : 1.8,
-      bx,
-      by,
-      bop,
-      cx,
-      cy,
-      cop,
-      dx,
-      dy,
-      dop,
-    }
+    return { bx, by, bop, cx, cy, cop, cflare, dx, dy, dop }
   })
 
-  // Derive the Skia node inputs from the single frame value.
-  const threadPath = useDerivedValue<SkPath>(() => frame.value.path)
-  const threadOp = useDerivedValue(() => frame.value.threadOp)
-  const threadW = useDerivedValue(() => frame.value.threadW)
   const bCx = useDerivedValue(() => frame.value.bx)
   const bCy = useDerivedValue(() => frame.value.by)
   const bOp = useDerivedValue(() => frame.value.bop)
   const cCx = useDerivedValue(() => frame.value.cx)
   const cCy = useDerivedValue(() => frame.value.cy)
   const cOp = useDerivedValue(() => frame.value.cop)
+  const cFlareR = useDerivedValue(() => 6 + frame.value.cflare * 26)
+  const cFlareOp = useDerivedValue(() => frame.value.cflare * 0.7)
   const dCx = useDerivedValue(() => frame.value.dx)
   const dCy = useDerivedValue(() => frame.value.dy)
   const dOp = useDerivedValue(() => frame.value.dop)
 
   const youHaloR = useDerivedValue(() => 16 + breath.value * 5)
-  const youHaloOp = useDerivedValue(() => 0.1 + breath.value * 0.08)
+  const youHaloOp = useDerivedValue(() => 0.12 + breath.value * 0.1)
+  // The one (D) warms like you do once it settles — gold breath, mirroring yours.
+  const dHaloR = useDerivedValue(() => 13 + breath.value * 4)
+  const dHaloOp = useDerivedValue(() => frame.value.dop * (0.14 + breath.value * 0.08))
 
-  // ── captions (RN overlay, one visible at a time; cross-faded by the timeline) ─
+  // Stars start faintly lit (visible from frame 0) and brighten as the story
+  // resolves — the cosmos "comes up" toward the 定格. Galaxy follows.
+  const bright = useDerivedValue(() => smooth(clamp01(p.value)))
+  // Brand moon — breathing, fades in over the first beat; the cosmic anchor +
+  // the hand-off point into pair-input's moon entrance.
+  const moonStyle = useAnimatedStyle(() => ({
+    opacity: (0.5 + breath.value * 0.22) * smooth(clamp01(p.value / 0.12)),
+  }))
+
+  // — Camera (运镜): a gentle dolly-in across the story + a slow orbital rotation
+  // on the final beat, scaling/rotating around YOU. The far starfield stays put,
+  // so the foreground sliding over it reads as depth (cheap parallax).
+  const camTransform = useDerivedValue(() => [
+    { scale: lerp(1, 1.14, smooth(clamp01(p.value))) },
+    { rotate: 0.1 * smooth(seg(p.value, A3, 1)) },
+  ])
+
+  // captions — one visible at a time, cross-faded by the timeline.
   const cap0 = useAnimatedStyle(() => ({ opacity: bell(seg(p.value, 0, A1)) }))
   const cap1 = useAnimatedStyle(() => ({ opacity: bell(seg(p.value, A1, A2)) }))
   const cap2 = useAnimatedStyle(() => ({ opacity: bell(seg(p.value, A2, A3)) }))
-  // The final caption fades IN and holds (it carries the resolve into the CTA).
   const cap3 = useAnimatedStyle(() => ({
-    opacity: smooth(Math.min(1, seg(p.value, A3, 1) / 0.25)),
+    opacity: smooth(clamp01(seg(p.value, A3, 1) / 0.25)),
   }))
   const caps = [cap0, cap1, cap2, cap3]
 
@@ -321,26 +264,31 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
 
   return (
     <View style={{ flex: 1, backgroundColor: BG }}>
+      {/* 星空 — visible from the first frame, brightening toward the 定格. */}
+      <StarField width={width} height={height} brightSv={bright} />
+      <GalaxyBand width={width} height={height} brightSv={bright} />
+      {/* 月相 logo — the brand anchor + the hand-off point into onboarding's moon. */}
+      <Animated.View style={[S.moon, moonStyle]} pointerEvents='none'>
+        <KindredMoon size={76} />
+      </Animated.View>
+      {/* the stars, on a TRANSPARENT canvas so the starfield shows through. The
+          camera Group scales/rotates the whole foreground around YOU (运镜). */}
       <Canvas style={StyleSheet.absoluteFill}>
-        <Fill color={BG} />
-        {/* the thread — the hero */}
-        <Path
-          path={threadPath}
-          style='stroke'
-          strokeWidth={threadW}
-          strokeCap='round'
-          color={INK}
-          opacity={threadOp}
-        />
-        {/* you — breathing halo + soul dot */}
-        <Group>
-          <Circle cx={yx} cy={yy} r={youHaloR} color={HALO} opacity={youHaloOp} />
-          <Circle cx={yx} cy={yy} r={DOT_R} color={INK} />
+        <Group transform={camTransform} origin={vec(yx, yy)}>
+          {/* B — a pale star pulled past */}
+          <Circle cx={bCx} cy={bCy} r={DOT_R} color={INK} opacity={bOp} />
+          {/* C — the clash: a hot flare + the star flung away */}
+          <Circle cx={cCx} cy={cCy} r={cFlareR} color={FLARE} opacity={cFlareOp} />
+          <Circle cx={cCx} cy={cCy} r={DOT_R} color={INK} opacity={cOp} />
+          {/* you — a warm star, breathing */}
+          <Group>
+            <Circle cx={yx} cy={yy} r={youHaloR} color={HALO} opacity={youHaloOp} />
+            <Circle cx={yx} cy={yy} r={DOT_R} color={INK} />
+          </Group>
+          {/* D — the one: warm-haloed, settled into orbit */}
+          <Circle cx={dCx} cy={dCy} r={dHaloR} color={HALO} opacity={dHaloOp} />
+          <Circle cx={dCx} cy={dCy} r={DOT_R} color={INK} opacity={dOp} />
         </Group>
-        {/* the three others — B & C linger as ghosts; D stays lit */}
-        <Circle cx={bCx} cy={bCy} r={DOT_R} color={INK} opacity={bOp} />
-        <Circle cx={cCx} cy={cCy} r={DOT_R} color={INK} opacity={cOp} />
-        <Circle cx={dCx} cy={dCy} r={DOT_R} color={INK} opacity={dOp} />
       </Canvas>
 
       {/* captions — stacked, cross-faded by the timeline */}
@@ -361,6 +309,13 @@ export function IntroThread({ acts, continueLabel, onDone }: IntroThreadProps) {
 }
 
 const S = StyleSheet.create({
+  moon: {
+    position: 'absolute',
+    top: '12%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   captionWrap: {
     position: 'absolute',
     left: 24,

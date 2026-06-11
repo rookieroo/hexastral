@@ -57,6 +57,15 @@ export interface PersonBirth {
   timeIndex: TimeIndex
   gender: '男' | '女'
   city?: string
+  /** Precise birth clock, minutes since midnight 0..1439 (precise mode). Enables
+   *  真太阳时 calibration for this person in 合盘 — mirrors the self side. */
+  clockMinutes?: number
+  /** 真太阳时 calibration toggle (precise mode); default on. */
+  calibrate?: boolean
+  /** Decimal longitude as string (matches the bonds API personBirthSchema). */
+  longitude?: string
+  /** IANA timezone id — calibration needs it for historical DST. */
+  timezoneId?: string
 }
 
 // ── Daily synastry (transit reading) ────────────────────────────────────────

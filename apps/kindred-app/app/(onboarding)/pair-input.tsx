@@ -154,11 +154,12 @@ export default function PairInputScreen() {
   const relType: RelationshipType | null = (draft.relationshipLabel as RelationshipType) || null
   const selfFilled =
     selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
+  // Name is optional (hehun falls back to a generic label); relationship + the
+  // chart inputs (date / gender / 时辰) are what the pairing actually needs.
   const otherFilled =
     otherSolar !== null &&
     draft.otherGender !== null &&
     typeof draft.otherTimeIndex === 'number' &&
-    draft.otherName.trim().length > 0 &&
     relType !== null
 
   const searchCity = (query: string) => searchCityApi(query, lang, 7)
@@ -277,6 +278,11 @@ export default function PairInputScreen() {
               onCity={(patch) => updateDraft(patch)}
               searchCity={searchCity}
               fieldPrefix='self'
+              allowPreciseTime
+              clockMinutes={draft.selfClockMinutes}
+              onClock={(min) => updateDraft({ selfClockMinutes: min })}
+              calibrate={draft.selfCalibrate}
+              onCalibrate={(on) => updateDraft({ selfCalibrate: on })}
               scrollRef={scrollRef}
             />
             <View style={{ marginTop: kindredSpacing.sm }}>
@@ -338,9 +344,6 @@ export default function PairInputScreen() {
         {step === 'other' && (
           <Animated.View entering={FadeInDown.duration(260)} style={{ gap: kindredSpacing.lg }}>
             <BackLink label={t(locale, 'pairInput.back')} onPress={() => setStep('choose')} />
-            <Text style={[kindredType.heading, { color: kindredDark.text }]}>
-              {t(locale, 'pair.other.about')}
-            </Text>
             <Field label={t(locale, 'pairInput.name.other')}>
               <NameInput
                 value={draft.otherName}
@@ -372,6 +375,11 @@ export default function PairInputScreen() {
               onCity={(patch) => updateDraft(patch)}
               searchCity={searchCity}
               fieldPrefix='other'
+              allowPreciseTime
+              clockMinutes={draft.otherClockMinutes}
+              onClock={(min) => updateDraft({ otherClockMinutes: min })}
+              calibrate={draft.otherCalibrate}
+              onCalibrate={(on) => updateDraft({ otherCalibrate: on })}
               scrollRef={scrollRef}
             />
             <View style={{ marginTop: kindredSpacing.sm }}>

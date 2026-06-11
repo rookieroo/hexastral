@@ -155,6 +155,11 @@ export default function OtherMetaScreen() {
           onCity={(patch: Partial<OnboardingDraft>) => updateDraft(patch)}
           searchCity={searchCity}
           fieldPrefix='other'
+          allowPreciseTime
+          clockMinutes={draft.otherClockMinutes}
+          onClock={(min) => updateDraft({ otherClockMinutes: min })}
+          calibrate={draft.otherCalibrate}
+          onCalibrate={(on) => updateDraft({ otherCalibrate: on })}
           scrollRef={scrollRef}
         />
 

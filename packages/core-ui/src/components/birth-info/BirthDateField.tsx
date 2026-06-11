@@ -52,7 +52,7 @@ export interface BirthDateFieldLabels {
   lunarHint?: string
   /** Suffix shown when a leap month was picked from the wheels (e.g. "闰月"). */
   leapLabel?: string
-  /** Input placeholder. Defaults to '1995-08-12'. */
+  /** Input placeholder. Defaults to 'YYYY-MM-DD'. */
   placeholder?: string
   /** a11y label for the open-picker affordance. */
   openPicker?: string
@@ -303,7 +303,7 @@ export function BirthDateField({
         <TextInput
           value={input}
           onChangeText={handleType}
-          placeholder={labels.placeholder ?? '1995-08-12'}
+          placeholder={labels.placeholder ?? 'YYYY-MM-DD'}
           placeholderTextColor={colors.dim}
           keyboardType='numeric'
           maxLength={10}
@@ -464,7 +464,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       pickerDone: '完成',
       lunarHint: '輸入農曆日期，我們會自動換算為陽曆排盤。',
       leapLabel: '閏月',
-      placeholder: '1995-08-12',
+      placeholder: 'YYYY-MM-DD',
       openPicker: '開啟選擇器',
     }
   }
@@ -475,7 +475,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       pickerDone: '完成',
       lunarHint: '输入农历日期，我们会自动换算为阳历排盘。',
       leapLabel: '闰月',
-      placeholder: '1995-08-12',
+      placeholder: 'YYYY-MM-DD',
       openPicker: '打开选择器',
     }
   }
@@ -486,7 +486,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       pickerDone: '完了',
       lunarHint: '旧暦の日付を入力すると、自動的に新暦へ換算します。',
       leapLabel: '閏月',
-      placeholder: '1995-08-12',
+      placeholder: 'YYYY-MM-DD',
       openPicker: 'ピッカーを開く',
     }
   }
@@ -496,7 +496,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
     pickerDone: 'Done',
     lunarHint: 'Enter a Chinese (lunar) calendar date — we convert it for the chart.',
     leapLabel: 'leap',
-    placeholder: '1995-08-12',
+    placeholder: 'YYYY-MM-DD',
     openPicker: 'Open picker',
   }
 }
