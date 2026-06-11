@@ -6,7 +6,18 @@
  * it shows a "coming soon" placeholder.
  */
 
-import { CHUNJIE, DUANWU, type FestivalContent, LICHUN, ZHONGQIU } from './culture/festivals'
+import {
+  CHONGYANG,
+  CHUNJIE,
+  DONGZHI,
+  DUANWU,
+  type FestivalContent,
+  LICHUN,
+  QINGMING,
+  QIXI,
+  YUANXIAO,
+  ZHONGQIU,
+} from './culture/festivals'
 
 export type {
   FestivalContent,
@@ -19,6 +30,11 @@ const REGISTRY: Record<string, FestivalContent> = {
   [ZHONGQIU.id]: ZHONGQIU,
   [LICHUN.id]: LICHUN,
   [DUANWU.id]: DUANWU,
+  [YUANXIAO.id]: YUANXIAO,
+  [QINGMING.id]: QINGMING,
+  [QIXI.id]: QIXI,
+  [CHONGYANG.id]: CHONGYANG,
+  [DONGZHI.id]: DONGZHI,
 }
 
 /**
