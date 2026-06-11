@@ -11,7 +11,7 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
-import { useLocalSearchParams } from 'expo-router'
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -33,7 +33,7 @@ import {
   localizeFestival,
   localizeSolarTermName,
 } from '@/lib/culture'
-import { solarTermTargetId } from '@/lib/festival-content'
+import { getFestivalContent, solarTermTargetId } from '@/lib/festival-content'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 
@@ -245,10 +245,14 @@ function CategoryBody({
 }
 
 /**
- * Flat inline entry card — no drill-in. Shows name + date + the 1-2 sentence
- * CULTURE_SUMMARIES blurb + a Wikipedia link. Replaces the prior ListRow that
- * pushed /festival/[id] (per 2026-06 feedback: the 3rd-level page felt too
- * deep for browsing the 8 festivals or 24 solar terms).
+ * Inline entry card — name + date + the 1-2 sentence CULTURE_SUMMARIES blurb.
+ * When the entry has an authored detail page (the full 历史/物候/诗… sections),
+ * the whole card becomes a drill-in into /festival/[id] (a chevron signals it,
+ * and the detail hero carries the Wikipedia link). Entries without authored
+ * content stay flat and keep the inline Wikipedia link as the only "more".
+ *
+ * (Restores the drill-in dropped in 2026-06 — at the time the detail pages were
+ * mostly empty shells; now every festival + 节气 has full content worth opening.)
  */
 function EntryCard({
   entryId,
@@ -265,8 +269,60 @@ function EntryCard({
   spacing: ThemeSpacing
   locale: Locale
 }) {
+  const router = useRouter()
   const summary = entryId ? cultureSummary(entryId, locale) : null
+  const hasDetail = entryId ? getFestivalContent(entryId) !== null : false
   const wikiUrl = entryId ? getCultureEntryWikipediaUrl(entryId, locale) : null
+
+  const header = (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        {/* Detail page carries the Wikipedia link in its hero; only show it inline
+            when there is no drill-in. */}
+        {!hasDetail && wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
+        {hasDetail ? <ChevronRightIcon size={15} color={colors.dim} strokeWidth={1.4} /> : null}
+      </View>
+    </View>
+  )
+
+  const body = (
+    <>
+      {header}
+      {summary ? (
+        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{summary}</Text>
+      ) : null}
+    </>
+  )
+
+  if (hasDetail && entryId) {
+    return (
+      <Pressable
+        onPress={() => router.push(`/festival/${entryId}` as Href)}
+        accessibilityRole='button'
+        accessibilityLabel={label}
+        style={({ pressed }) => ({
+          paddingVertical: spacing.sm,
+          borderTopWidth: 0.5,
+          borderTopColor: colors.separator,
+          gap: 4,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        {body}
+      </Pressable>
+    )
+  }
+
   return (
     <View
       style={{
@@ -276,22 +332,7 @@ function EntryCard({
         gap: 4,
       }}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
-          {wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
-        </View>
-        <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
-      </View>
-      {summary ? (
-        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{summary}</Text>
-      ) : null}
+      {body}
     </View>
   )
 }
