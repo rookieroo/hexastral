@@ -94,6 +94,53 @@ function getSharing(): SharingModule | null {
   }
 }
 
+/**
+ * Per-viewer framing (#7): the synastry prose refers to the two people with the
+ * neutral slots 甲方/乙方. Render them for THIS viewer — 你 for whoever is reading,
+ * the other by name — so 乙 reads the report framed around 乙, not 甲. The
+ * underlying pair-reading is identical for both; only the labels localise. (For
+ * non-CJK reports the 甲方/乙方 tokens don't appear, so this is a no-op there — an
+ * English placeholder pass is a follow-up.)
+ */
+function personalizeSynastryChapters<
+  T extends {
+    title?: string
+    evidence?: string
+    dynamic?: string
+    reef?: string
+    remedy?: string
+    goldenLine?: string
+    counterpoint?: string
+    body?: string
+  },
+>(
+  chapters: readonly T[] | null | undefined,
+  isPersonA: boolean,
+  aName: string | null,
+  bName: string | null
+): T[] | undefined {
+  if (!chapters) return undefined
+  const subA = isPersonA ? '你' : (aName ?? '对方') // 甲方 = person A
+  const subB = isPersonA ? (bName ?? '对方') : '你' // 乙方 = person B
+  if (subA === '甲方' && subB === '乙方') return chapters as T[]
+  const sub = (s: string | undefined): string | undefined =>
+    s == null ? s : s.replace(/甲方/g, subA).replace(/乙方/g, subB)
+  return chapters.map(
+    (ch) =>
+      ({
+        ...ch,
+        title: sub(ch.title),
+        evidence: sub(ch.evidence),
+        dynamic: sub(ch.dynamic),
+        reef: sub(ch.reef),
+        remedy: sub(ch.remedy),
+        goldenLine: sub(ch.goldenLine),
+        counterpoint: sub(ch.counterpoint),
+        body: sub(ch.body),
+      }) as T
+  )
+}
+
 export default function BondDetailScreen() {
   // ox/oy — the page coords of the thread row the user tapped, so the 水墨晕开
   // entrance spreads from there (passed by the home list; absent for deep links).
@@ -149,8 +196,20 @@ export default function BondDetailScreen() {
   const [unlocking, setUnlocking] = useState(false)
   // Anonymous buyers may purchase the one-time report with no sign-in gate; after
   // success we nudge sign-in so the purchase becomes Apple-recoverable.
-  const { userEmail } = useAuth()
+  const { userEmail, userId } = useAuth()
   const [showSaveSheet, setShowSaveSheet] = useState(false)
+
+  // Per-viewer framing (#7) — the prose calls the two people 甲方/乙方; render
+  // them as 你 + the other's name for whoever is reading. THIS viewer is person A
+  // when they own the bond (the inviter), else person B. Names: personAName = A,
+  // targetName = B (both always present, regardless of viewer).
+  const isPersonA = userId == null || detail?.ownerId === userId
+  const aName = (detail?.interpretation?.personAName as string | undefined)?.trim() || null
+  const bName = detail?.targetName?.trim() || null
+  const viewedChapters = useMemo(
+    () => personalizeSynastryChapters(chapters, isPersonA, aName, bName),
+    [chapters, isPersonA, aName, bName]
+  )
   useEffect(() => {
     void getKindredSinglePrice('compatibility').then((p) => {
       if (p) setUnlockPrice(p)
@@ -340,9 +399,10 @@ export default function BondDetailScreen() {
     )
   }
 
-  // Names for the share card — fall back to "你" / targetName for solo bonds
-  const selfName = detail.interpretation?.personAName as string | undefined
-  const otherName = detail.targetName
+  // Names for the share card — per-viewer (mirror the prose substitution): the
+  // reader is 你 / their own name, the other by name.
+  const selfName = isPersonA ? aName : bName
+  const otherName = isPersonA ? bName : aName
 
   // Title = a specific name; fall back to the relationship so it's never blank
   // (and strip the legacy literal "Unknown"). Matches the threads list.
@@ -416,7 +476,7 @@ export default function BondDetailScreen() {
 
   // Chapter-based report (v2): horizontal pager. No entry animation — straight
   // to the report under a basic-info header (2026-06: "点进去不用做动画").
-  if (chapters && chapters.length > 0) {
+  if (viewedChapters && viewedChapters.length > 0) {
     // Unlock wall — trailing pager page shown only when chapters remain locked.
     const lockedChapters = detail.interpretation?.lockedChapters ?? []
     const unlockWall =
@@ -462,7 +522,7 @@ export default function BondDetailScreen() {
                 id: detail.id,
                 bondId: detail.id,
                 generatedAt: detail.createdAt,
-                chapters,
+                chapters: viewedChapters,
                 headline: detail.archetypeTagline ?? '',
               }}
               currentIndex={chapterIndex}
@@ -499,9 +559,9 @@ export default function BondDetailScreen() {
             style={{ position: 'absolute', top: -20000, left: 0 }}
           >
             <ShareableChapterCard
-              chapter={chapters[shareTarget.index] ?? chapters[0]!}
+              chapter={viewedChapters[shareTarget.index] ?? viewedChapters[0]!}
               selfName={selfName ?? '你'}
-              otherName={otherName}
+              otherName={otherName ?? '对方'}
               width={1080}
               height={1920}
               locale={locale}

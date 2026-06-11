@@ -192,8 +192,12 @@ export function computeHeHun(input: HeHunInput): HeHunFullResult {
 
 function buildPairFacts(result: HeHunFullResult, input: HeHunInput): string {
   const { compatibility, personA, personB } = result
-  const nameA = input.personA.name ?? '甲方'
-  const nameB = input.personB.name ?? '乙方'
+  // Neutral role slots — the prose refers to the two people ONLY as 甲方/乙方, so
+  // each device can render them per-viewer (你 + the other's name). We therefore
+  // never feed the real names into the prompt; the model can't leak a name it
+  // never saw. (2026-06 #7: 乙 should read the report framed around 乙, not 甲.)
+  const nameA = '甲方'
+  const nameB = '乙方'
 
   const compatText = formatHeHunForPrompt(compatibility)
 
@@ -614,6 +618,7 @@ export async function generateSynastryChapters(
     '## 合盘正文原则',
     '- 每章必须落到双方命盘的具体特征上，给出可感、可执行的洞察',
     '- 结尾正面、温暖，传递"相遇即是缘"的核心信念',
+    '- 正文中一律以「甲方」「乙方」称呼两人，不要使用或杜撰任何具体姓名（客户端会把称呼替换为「你」与对方名字）',
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
 
