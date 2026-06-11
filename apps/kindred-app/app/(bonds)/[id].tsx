@@ -39,7 +39,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft, X } from 'lucide-react-native'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
@@ -51,6 +51,7 @@ import {
   InkCenterpiece,
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
@@ -173,6 +174,11 @@ export default function BondDetailScreen({
   const router = useRouter()
   const handleClose = onCloseProp ?? (() => router.back())
   const insets = useSafeAreaInsets()
+  // Overlay close plays the REVERSE 水墨 bloom first (the ink collapses back to
+  // the tap), then unmounts — mirroring the solo reading overlay. `closing` drives
+  // ReportBloom; its onCollapsed runs the real close. (Routes pop instantly.)
+  const [closing, setClosing] = useState(false)
+  const requestClose = useCallback(() => setClosing(true), [])
   // Overlay has no OS edge-swipe-back — a left-edge swipe-right dismisses it
   // (matches iOS). A thin left-edge strip owns the gesture so it never fights the
   // horizontal ChapterPager in the content. (Routes keep the real OS gesture.)
@@ -182,9 +188,9 @@ export default function BondDetailScreen({
         .activeOffsetX([12, 9999])
         .failOffsetY([-28, 28])
         .onEnd((e) => {
-          if (e.translationX > 60) runOnJS(handleClose)()
+          if (e.translationX > 60) runOnJS(requestClose)()
         }),
-    [handleClose]
+    [requestClose]
   )
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
@@ -572,7 +578,12 @@ export default function BondDetailScreen({
             home). Wraps ONLY the pager; the off-screen capture target + chrome
             below stay outside the mask. The inner SafeAreaView is paper so the
             report document reads edge-to-edge. */}
-        <ReportBloom origin={bloomOrigin} surroundColor={isOverlay ? 'transparent' : undefined}>
+        <ReportBloom
+          origin={bloomOrigin}
+          surroundColor={isOverlay ? 'transparent' : undefined}
+          closing={closing}
+          onClosed={handleClose}
+        >
           <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
             {/* Overlay exits: a left-edge swipe-right (strip below) + an ✕. Routes
                 keep their clean no-chrome look + the OS edge-swipe. */}
@@ -585,7 +596,7 @@ export default function BondDetailScreen({
             ) : null}
             {isOverlay ? (
               <Pressable
-                onPress={handleClose}
+                onPress={requestClose}
                 hitSlop={12}
                 accessibilityRole='button'
                 accessibilityLabel={t('common.close')}
@@ -642,6 +653,29 @@ export default function BondDetailScreen({
             />
           </SafeAreaView>
         </ReportBloom>
+
+        {/* Living layer (the subscription surfaces) — Timeline + What-if as a
+            floating bottom-right entry, icons matching auspice. Hidden while a
+            sentence is picked (the selection bar owns the bottom) or while the
+            overlay is collapsing. Active bonds only. */}
+        {detail.status === 'active' && !pickedQuote && !closing ? (
+          <LivingLayerFab
+            labels={{ timeline: t('timeline.title'), whatif: t('makeif.cta') }}
+            onTimeline={() =>
+              router.push({
+                pathname: '/(timeline)',
+                params: { bondId: detail.id, bondName: displayName },
+              })
+            }
+            onWhatIf={() =>
+              router.push({
+                pathname: '/(bonds)/makeif',
+                params: { id: detail.id, title: displayName },
+              })
+            }
+            insetBottom={insets.bottom}
+          />
+        ) : null}
 
         {/* Off-screen capture target — positioned far outside viewport but mounted. */}
         {shareTarget ? (

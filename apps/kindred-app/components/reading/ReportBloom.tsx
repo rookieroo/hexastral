@@ -22,11 +22,14 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
 const OPEN_DURATION = 1400
+const CLOSE_DURATION = 700
 
 export function ReportBloom({
   children,
   origin: originProp,
   surroundColor,
+  closing,
+  onClosed,
 }: {
   children: ReactNode
   /** Where the ink starts spreading — the row the user tapped (page coords).
@@ -36,6 +39,11 @@ export function ReportBloom({
    *  'transparent' when overlaying the live home so the report blooms over the
    *  actual night sky (in-place, like the solo reading overlay). */
   surroundColor?: string
+  /** Flip true to play the REVERSE bloom — the ink collapses back to the origin,
+   *  for the in-place overlay close (mirrors the solo reading overlay). */
+  closing?: boolean
+  /** Fires once the reverse bloom finishes collapsing (unmount the overlay here). */
+  onClosed?: () => void
 }) {
   const { width, height } = useWindowDimensions()
   const [phase, setPhase] = useState<'cover' | 'wipe' | 'done'>('cover')
@@ -55,7 +63,8 @@ export function ReportBloom({
     return () => clearTimeout(id)
   }, [])
 
-  const open = phase === 'wipe' || phase === 'done'
+  // closing flips the mask inactive → it collapses back to the origin (reverse 墨晕).
+  const open = !closing && (phase === 'wipe' || phase === 'done')
 
   return (
     // Surround OUTSIDE the growing ink shape. Default dark (matches the SkyHero
@@ -73,8 +82,9 @@ export function ReportBloom({
             maxRadius={maxRadius}
             width={width}
             height={height}
-            duration={OPEN_DURATION}
+            duration={closing ? CLOSE_DURATION : OPEN_DURATION}
             onOpened={() => setPhase('done')}
+            onCollapsed={onClosed}
           />
         }
       >

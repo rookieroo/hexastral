@@ -46,7 +46,6 @@ import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
-import { resolveBondDisplayName } from '@/lib/bondName'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
@@ -415,18 +414,6 @@ export default function ReadingHomeScreen() {
               locale={locale}
               onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
               onDelete={() => confirmDelete(item)}
-              onTimeline={() =>
-                router.push({
-                  pathname: '/(timeline)',
-                  params: { bondId: item.id, bondName: resolveBondDisplayName(item).displayName },
-                })
-              }
-              onMakeif={() =>
-                router.push({
-                  pathname: '/(bonds)/makeif',
-                  params: { id: item.id, title: resolveBondDisplayName(item).displayName },
-                })
-              }
             />
           )}
           ItemSeparatorComponent={() => (

@@ -3,15 +3,14 @@
  *
  * Each row carries a small gold star at the left, echoing the SkyHero above (a
  * thread IS a star in your orbit). Tap → the thread's report. Left-swipe reveals
- * the per-bond entries (2026-06: "timeline & make-if 以合盘为单位 … 列表 item 左滑
- * 给入口"): for an active bond, [Timeline · Make-if · Delete]; otherwise just
- * Delete. Timeline + make-if are the subscription living layer, scoped to THIS
- * bond.
+ * Delete. (Timeline + What-if — the subscription living layer — moved OFF the
+ * swipe to a prominent floating entry IN the report, 2026-06: "核心功能左滑出现
+ * 有点浪费" — see components/reading/LivingLayerFab.)
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
-import { ChevronRight, GitCommitVertical, Trash2, Wand2 } from 'lucide-react-native'
+import { ChevronRight, Trash2 } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -42,19 +41,9 @@ export interface ThreadListItemProps {
   /** Receives the tap's page coords so the report blooms from the tapped row. */
   onPress: (origin?: { x: number; y: number }) => void
   onDelete: () => void
-  /** Per-bond living-layer entries (active bonds only). */
-  onTimeline: () => void
-  onMakeif: () => void
 }
 
-export function ThreadListItem({
-  bond,
-  locale,
-  onPress,
-  onDelete,
-  onTimeline,
-  onMakeif,
-}: ThreadListItemProps) {
+export function ThreadListItem({ bond, locale, onPress, onDelete }: ThreadListItemProps) {
   const status = statusMeta(bond.status, locale)
   // Specific name as title; fall back to the relationship (and strip the legacy
   // literal "Unknown"). See lib/bondName.ts.
@@ -68,31 +57,6 @@ export function ThreadListItem({
       overshootRight={false}
       renderRightActions={(_progress, _translation, methods) => (
         <View style={{ flexDirection: 'row' }}>
-          {isActive ? (
-            <>
-              <SwipeAction
-                icon={
-                  <GitCommitVertical color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />
-                }
-                label={t(locale, 'timeline.title')}
-                bg={kindredDark.bgWarm}
-                onPress={() => {
-                  methods.close()
-                  onTimeline()
-                }}
-              />
-              <SwipeAction
-                icon={<Wand2 color={kindredDark.bg} size={18} strokeWidth={1.7} />}
-                label={t(locale, 'makeif.cta')}
-                bg={kindredDark.accent}
-                fg={kindredDark.bg}
-                onPress={() => {
-                  methods.close()
-                  onMakeif()
-                }}
-              />
-            </>
-          ) : null}
           <SwipeAction
             icon={<Trash2 color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />}
             label={t(locale, 'bondList.delete')}
