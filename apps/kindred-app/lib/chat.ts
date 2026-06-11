@@ -91,3 +91,21 @@ export async function sendChatMessage(
   }
   return (await res.json()) as ReadingChatSendResult
 }
+
+/**
+ * Start a new conversation — clears this reading's chat context server-side
+ * (keeps the free-taste counter; see the route). The screen resets its local
+ * thread on success.
+ */
+export async function clearChatHistory(
+  userId: string,
+  readingType: string,
+  readingId: string
+): Promise<void> {
+  const path = `/api/chat/${readingType}/${readingId}`
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'DELETE',
+    headers: await authedHeaders(userId, 'DELETE', path, ''),
+  })
+  if (!res.ok) throw new Error(`chat_clear_failed:${res.status}`)
+}

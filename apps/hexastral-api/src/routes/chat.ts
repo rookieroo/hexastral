@@ -311,3 +311,42 @@ chatRoutes.get('/:type/:readingId', async (c) => {
 
   return c.json({ conversationId: conv.id, messages, messageCount: conv.messageCount })
 })
+
+/**
+ * DELETE /api/chat/:type/:readingId — 开始新对话.
+ *
+ * Clears this reading's conversation context (deletes its messages, resets the
+ * display count) but KEEPS the conversation row, so `freeMessagesUsed` survives:
+ * a new conversation gives a fresh context, never a way to refill the free-taste
+ * cap. Idempotent — a no-op when no conversation exists yet.
+ */
+chatRoutes.delete('/:type/:readingId', async (c) => {
+  const userId = requireUserId(c)
+  const readingId = c.req.param('readingId')
+  const db = c.get('db')
+  const targetApp = resolvePortfolioTargetApp(c.req.header('x-target-app'))
+
+  const conv = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.userId, userId),
+        eq(conversations.readingId, readingId),
+        eq(conversations.targetApp, targetApp)
+      )
+    )
+    .get()
+
+  if (conv) {
+    await db.batch([
+      db.delete(conversationMessages).where(eq(conversationMessages.conversationId, conv.id)),
+      db
+        .update(conversations)
+        .set({ messageCount: 0, updatedAt: new Date().toISOString() })
+        .where(eq(conversations.id, conv.id)),
+    ])
+  }
+
+  return c.json({ ok: true })
+})

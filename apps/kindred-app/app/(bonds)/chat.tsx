@@ -15,7 +15,7 @@ import { ChevronLeft } from 'lucide-react-native'
 import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
-import { fetchChatHistory, sendChatMessage } from '@/lib/chat'
+import { clearChatHistory, fetchChatHistory, sendChatMessage } from '@/lib/chat'
 import { useI18n } from '@/lib/i18n'
 
 /** Quoted-draft cap — keeps a long passage from flooding the input. */
@@ -43,6 +43,7 @@ export default function BondChatScreen() {
       freeRemaining: t('chat.freeRemaining'),
       poolRemaining: t('chat.poolRemaining'),
       suggestions: [t('chat.suggest1'), t('chat.suggest2'), t('chat.suggest3')],
+      newConversation: t('chat.newConversation'),
     }),
     [t]
   )
@@ -92,6 +93,7 @@ export default function BondChatScreen() {
       readingId={id}
       fetchHistory={() => fetchChatHistory(userId, 'pair', id)}
       sendMessage={(msg, requestId) => sendChatMessage(userId, 'pair', id, msg, requestId)}
+      onNewConversation={() => clearChatHistory(userId, 'pair', id)}
       onPaywallRequest={() =>
         router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
       }

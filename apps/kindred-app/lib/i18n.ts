@@ -365,6 +365,7 @@ export const translations: Translations = {
     'paywall.close': 'Close',
 
     'chat.title': 'Ask about this synastry',
+    'chat.newConversation': 'New chat',
     'chat.empty': 'Ask anything about you two.',
     'chat.placeholder': 'Type a question…',
     'chat.loading': 'Thinking…',
@@ -690,6 +691,7 @@ export const translations: Translations = {
     'paywall.close': '关闭',
 
     'chat.title': '聊聊你们的合盘',
+    'chat.newConversation': '开新对话',
     'chat.empty': '关于你们俩，问我任何问题。',
     'chat.placeholder': '输入你的问题…',
     'chat.loading': '正在思考…',
@@ -1015,6 +1017,7 @@ export const translations: Translations = {
     'paywall.close': '關閉',
 
     'chat.title': '聊聊你們的合盤',
+    'chat.newConversation': '開新對話',
     'chat.empty': '關於你們倆，問我任何問題。',
     'chat.placeholder': '輸入你的問題…',
     'chat.loading': '正在思考…',
@@ -1347,6 +1350,7 @@ export const translations: Translations = {
     'paywall.close': '閉じる',
 
     'chat.title': '二人の相性について聞く',
+    'chat.newConversation': '新しいチャット',
     'chat.empty': '二人のことを何でも聞いてください。',
     'chat.placeholder': '質問を入力…',
     'chat.loading': '考えています…',

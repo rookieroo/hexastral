@@ -20,7 +20,7 @@
  * brand logo). When omitted, only the message list + input bar render.
  */
 
-import { Send } from 'lucide-react-native'
+import { Send, SquarePen } from 'lucide-react-native'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -87,6 +87,8 @@ export interface ReadingChatStrings {
   poolRemaining: string
   /** Optional quick-start prompt strings (already translated) */
   suggestions?: ReadonlyArray<string>
+  /** "New conversation" action label (shown only when `onNewConversation` is set). */
+  newConversation?: string
 }
 
 export interface ReadingChatScreenProps {
@@ -123,6 +125,12 @@ export interface ReadingChatScreenProps {
    * clear it before sending; it is never auto-sent.
    */
   initialDraft?: string
+  /**
+   * Optional "new conversation" adapter — clears the server-side thread. When
+   * provided, a small reset action renders once the thread has messages; on
+   * success the local list is emptied. Omit to keep the single-thread behavior.
+   */
+  onNewConversation?: () => Promise<void> | void
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -169,9 +177,11 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     disableBillingUI = false,
     newRequestId = defaultRequestId,
     initialDraft,
+    onNewConversation,
   } = props
 
   const { colors, isDark } = useTheme()
+  const [isResetting, setIsResetting] = useState(false)
 
   const [history, setHistory] = useState<ReadingChatHistory>({
     conversationId: null,
@@ -266,7 +276,24 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     }
   }
 
+  const handleNewConversation = async () => {
+    if (!onNewConversation || isResetting || isSending) return
+    setIsResetting(true)
+    try {
+      await onNewConversation()
+      setHistory({ conversationId: null, messages: [] })
+      setBillingMode(null)
+      setFreeRemaining(null)
+      setInput('')
+    } catch {
+      Alert.alert(copy.errorGeneric)
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   const showOverflowWarning = !disableBillingUI && billingMode === 'chat_credits'
+  const showNewConversation = !!onNewConversation && messages.length > 0
   const showCounter =
     !disableBillingUI &&
     (billingMode === 'free' || billingMode === 'pool') &&
@@ -285,6 +312,32 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
       keyboardVerticalOffset={0}
     >
       {header ?? null}
+
+      {/* New conversation — clears the server thread + local list. Right-aligned
+          under the header; only shown once a thread exists. */}
+      {showNewConversation ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12 }}>
+          <Pressable
+            onPress={() => void handleNewConversation()}
+            disabled={isResetting}
+            accessibilityRole='button'
+            accessibilityLabel={copy.newConversation}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 5,
+              paddingVertical: 6,
+              paddingHorizontal: 8,
+              opacity: pressed || isResetting ? 0.5 : 1,
+            })}
+          >
+            <SquarePen size={14} color={colors.secondary} strokeWidth={1.8} />
+            {copy.newConversation ? (
+              <Text style={{ fontSize: 12, color: colors.secondary }}>{copy.newConversation}</Text>
+            ) : null}
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* Message list */}
       {isLoadingHistory ? (
