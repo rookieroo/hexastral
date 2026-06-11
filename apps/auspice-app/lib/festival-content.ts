@@ -6,7 +6,7 @@
  * it shows a "coming soon" placeholder.
  */
 
-import { CHUNJIE, type FestivalContent, LICHUN, ZHONGQIU } from './culture/festivals'
+import { CHUNJIE, DUANWU, type FestivalContent, LICHUN, ZHONGQIU } from './culture/festivals'
 
 export type {
   FestivalContent,
@@ -18,6 +18,7 @@ const REGISTRY: Record<string, FestivalContent> = {
   [CHUNJIE.id]: CHUNJIE,
   [ZHONGQIU.id]: ZHONGQIU,
   [LICHUN.id]: LICHUN,
+  [DUANWU.id]: DUANWU,
 }
 
 /**
