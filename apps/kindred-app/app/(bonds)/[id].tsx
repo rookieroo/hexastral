@@ -38,7 +38,7 @@ import {
   useSynastryReport,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ChevronLeft } from 'lucide-react-native'
+import { ChevronLeft, X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -141,15 +141,35 @@ function personalizeSynastryChapters<
   )
 }
 
-export default function BondDetailScreen() {
+export interface BondReportProps {
+  /** Bond id — when omitted, read from the route params (route usage). */
+  id?: string
+  /** Bloom origin — the tapped point. Omit for the route (reads ox/oy params). */
+  origin?: { x: number; y: number } | null
+  /** When provided, the report renders as an in-place OVERLAY on the home (not a
+   *  pushed route): the bloom plays over the live night (transparent surround)
+   *  and an ✕ closes it (no edge-swipe-back to lean on). Matches the solo reading
+   *  overlay so 合盘 + personal reports share one transition. */
+  onClose?: () => void
+}
+
+export default function BondDetailScreen({
+  id: idProp,
+  origin: originProp,
+  onClose: onCloseProp,
+}: BondReportProps = {}) {
   // ox/oy — the page coords of the thread row the user tapped, so the 水墨晕开
-  // entrance spreads from there (passed by the home list; absent for deep links).
-  const { id, ox, oy } = useLocalSearchParams<{ id: string; ox?: string; oy?: string }>()
-  const bloomOrigin = useMemo(
-    () => (ox != null && oy != null ? { x: Number(ox), y: Number(oy) } : null),
-    [ox, oy]
-  )
+  // entrance spreads from there (props when an overlay; route params for a route).
+  const routeParams = useLocalSearchParams<{ id: string; ox?: string; oy?: string }>()
+  const id = idProp ?? routeParams.id
+  const isOverlay = onCloseProp != null
+  const bloomOrigin = useMemo(() => {
+    if (originProp !== undefined) return originProp
+    const { ox, oy } = routeParams
+    return ox != null && oy != null ? { x: Number(ox), y: Number(oy) } : null
+  }, [originProp, routeParams.ox, routeParams.oy])
   const router = useRouter()
+  const handleClose = onCloseProp ?? (() => router.back())
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
   const [chapterIndex, setChapterIndex] = useState<number>(0)
@@ -356,18 +376,41 @@ export default function BondDetailScreen() {
     setShareTarget({ index: idx, brandUrl, installUrl })
   }
 
+  // Overlay close (✕) for the DARK pre-report states (generating / error). As an
+  // overlay there's no edge-swipe-back, so every branch needs a way out.
+  const overlayCloseRow = isOverlay ? (
+    <View
+      style={{
+        alignItems: 'flex-end',
+        paddingHorizontal: kindredSpacing.md,
+        paddingTop: kindredSpacing.sm,
+      }}
+    >
+      <Pressable
+        onPress={handleClose}
+        hitSlop={12}
+        accessibilityRole='button'
+        accessibilityLabel={t('common.close')}
+        style={{ padding: 6 }}
+      >
+        <X color={kindredDark.textMuted} size={22} strokeWidth={1.5} />
+      </Pressable>
+    </View>
+  ) : null
+
   if (isLoading) {
-    // Dark hold — NO moon-phase loader. Fetching an already-generated report is
-    // brief, and the report's entrance IS the 水墨晕开 bloom (ReportBloom). Dark
-    // (not paper) so there's no 大白页 flash: it stays continuous with the dark
-    // home until the cream report blooms in from the tap. The long LLM wait
-    // (202 → isGenerating) keeps its own loader below.
-    return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+    // Brief hold — NO loader. Fetching an already-generated report is quick, and
+    // the entrance IS the 水墨晕开 bloom (ReportBloom). As an overlay this is
+    // transparent so the live home shows until the report blooms in from the tap;
+    // as a route it's dark (continuous with the dark home). No 大白页 flash either
+    // way. The long LLM wait (202 → isGenerating) keeps its own loader below.
+    return <View style={{ flex: 1, backgroundColor: isOverlay ? 'transparent' : kindredDark.bg }} />
   }
 
   if (isGenerating) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        {overlayCloseRow}
         <View
           style={{
             flex: 1,
@@ -388,6 +431,7 @@ export default function BondDetailScreen() {
   if (error || !detail) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        {overlayCloseRow}
         <ErrorState
           variant='fullscreen'
           title={error?.message ?? 'Bond not found'}
@@ -504,14 +548,36 @@ export default function BondDetailScreen() {
       ) : null
 
     return (
-      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        {/* 水墨晕开 entrance — the cream 宣纸 report unrolls in from the tapped row
-            over the dark night (ReportBloom's surround is dark, matching the
+      <View style={{ flex: 1, backgroundColor: isOverlay ? 'transparent' : kindredDark.bg }}>
+        {/* 水墨晕开 entrance — the cream 宣纸 report unrolls in from the tapped row.
+            As an OVERLAY the surround is transparent, so it blooms over the LIVE
+            home (the night sky shows outside the shape) exactly like the solo
+            reading — no route jump. As a route the surround is dark (matching the
             home). Wraps ONLY the pager; the off-screen capture target + chrome
             below stay outside the mask. The inner SafeAreaView is paper so the
             report document reads edge-to-edge. */}
-        <ReportBloom origin={bloomOrigin}>
+        <ReportBloom origin={bloomOrigin} surroundColor={isOverlay ? 'transparent' : undefined}>
           <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+            {/* Overlay close — no edge-swipe-back to lean on, so an ✕ rests in the
+                top-right (matches the solo reading overlay). Routes keep their
+                clean no-chrome look + the OS edge-swipe. */}
+            {isOverlay ? (
+              <Pressable
+                onPress={handleClose}
+                hitSlop={12}
+                accessibilityRole='button'
+                accessibilityLabel={t('common.close')}
+                style={{
+                  position: 'absolute',
+                  top: kindredSpacing.sm,
+                  right: kindredSpacing.md,
+                  zIndex: 10,
+                  padding: 6,
+                }}
+              >
+                <X color={kindredPaper.muted} size={22} strokeWidth={1.5} />
+              </Pressable>
+            ) : null}
             {/* Clean report — NO top chrome at all (2026-06 feedback: "报告页应该
                 干干净净的显示报告即可，甚至不需要返回按钮，顶部的两个入口也去掉"). Exit
                 via the iOS edge-swipe-back gesture. Every action (copy / chat /
@@ -647,7 +713,7 @@ export default function BondDetailScreen() {
         <View
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={handleClose} hitSlop={12}>
             <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
           </Pressable>
           <Pressable

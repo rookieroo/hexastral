@@ -38,6 +38,7 @@ import {
 } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
 import { SkyHero } from '@/components/home/SkyHero'
 import { StarField } from '@/components/IntroScene'
@@ -127,6 +128,14 @@ export default function ReadingHomeScreen() {
   // Where the reading bloom starts — the point the user pressed, so the 水墨
   // spreads from the tap (set on press-in, read by ReadingOverlay).
   const [readingOrigin, setReadingOrigin] = useState<{ x: number; y: number } | null>(null)
+  // The 合盘 report opens as an in-place OVERLAY on the home (not a pushed route),
+  // so it shares the solo reading's transition: the cream report blooms from the
+  // tapped row over the live night, no jump. (The [id] route stays for deep links
+  // / the accept flow.)
+  const [openBond, setOpenBond] = useState<{
+    id: string
+    origin: { x: number; y: number } | null
+  } | null>(null)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
 
   // A faint, calm ambient star field behind the whole screen (dimmed by the
@@ -143,7 +152,9 @@ export default function ReadingHomeScreen() {
     const sub = AppState.addEventListener('change', (s) => setAppActive(s === 'active'))
     return () => sub.remove()
   }, [])
-  const skyPaused = !focused || !appActive
+  // Also freeze the sky while a report overlay covers the home — no point
+  // animating a night nobody can see behind the paper.
+  const skyPaused = !focused || !appActive || readingOpen || openBond != null
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
@@ -311,28 +322,29 @@ export default function ReadingHomeScreen() {
             paused={skyPaused}
           />
         </View>
-        {/* Caption — names your star (kicker + day-master element + date), then
-            the cinnabar open. Pulled up under the central star. */}
+        {/* Compact entry — a small identity caption + the cinnabar open. Slimmed
+            down (2026-06: "个人报告入口占据较大篇幅，需要简化") so the stars + the
+            threads list breathe; the element is already carried by the star's
+            colour, so the date line stays quiet and the CTA does the work. */}
         <View
           style={{
             alignItems: 'center',
-            gap: 5,
-            marginTop: -kindredSpacing.lg,
-            marginBottom: kindredSpacing.xl,
+            gap: 3,
+            marginTop: -kindredSpacing.md,
+            marginBottom: kindredSpacing.lg,
             paddingHorizontal: kindredSpacing.screenH,
           }}
         >
-          <Text style={[kindredType.seal, { color: kindredDark.accent, letterSpacing: 3 }]}>
-            {copy.cardKicker}
-          </Text>
-          <Text style={[kindredType.heading, { color: kindredDark.text }]}>
+          <Text
+            style={[kindredType.caption, { color: kindredDark.textSecondary, letterSpacing: 0.5 }]}
+          >
             {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
             {birth.solarDate}
           </Text>
           <Text
             style={[
               kindredType.body,
-              { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3, marginTop: 2 },
+              { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3 },
             ]}
           >
             {copy.open}
@@ -399,17 +411,7 @@ export default function ReadingHomeScreen() {
             <ThreadListItem
               bond={item}
               locale={locale}
-              onPress={(origin) =>
-                router.push({
-                  pathname: '/(bonds)/[id]',
-                  params: {
-                    id: item.id,
-                    ...(origin
-                      ? { ox: String(Math.round(origin.x)), oy: String(Math.round(origin.y)) }
-                      : {}),
-                  },
-                })
-              }
+              onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
               onDelete={() => confirmDelete(item)}
               onTimeline={() =>
                 router.push({
@@ -482,6 +484,17 @@ export default function ReadingHomeScreen() {
         onAskAI={handleAskAI}
         origin={readingOrigin}
       />
+      {/* 合盘 report — the SAME in-place ink bloom as the solo reading, over the
+          live home (rendered here, not pushed as a route, so there's no jump). */}
+      {openBond ? (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
+          <BondReportScreen
+            id={openBond.id}
+            origin={openBond.origin}
+            onClose={() => setOpenBond(null)}
+          />
+        </View>
+      ) : null}
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
   )

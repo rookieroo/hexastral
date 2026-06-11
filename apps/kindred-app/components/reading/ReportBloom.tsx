@@ -26,11 +26,16 @@ const OPEN_DURATION = 1400
 export function ReportBloom({
   children,
   origin: originProp,
+  surroundColor,
 }: {
   children: ReactNode
   /** Where the ink starts spreading — the row the user tapped (page coords).
    *  Falls back to mid-page when the opener didn't pass a point. */
   origin?: { x: number; y: number } | null
+  /** Colour OUTSIDE the growing ink shape. Default dark (matches the home). Pass
+   *  'transparent' when overlaying the live home so the report blooms over the
+   *  actual night sky (in-place, like the solo reading overlay). */
+  surroundColor?: string
 }) {
   const { width, height } = useWindowDimensions()
   const [phase, setPhase] = useState<'cover' | 'wipe' | 'done'>('cover')
@@ -53,12 +58,12 @@ export function ReportBloom({
   const open = phase === 'wipe' || phase === 'done'
 
   return (
-    // Dark night surround — matches the SkyHero home you came from. The masked
-    // child is the cream 宣纸 report, so the bloom reads as the precious paper
-    // unrolling over the night from the tap; outside the growing shape stays
-    // dark. The organic mask edge IS the 墨晕. (Dark — not paper — so there's no
-    // 大白页 flash before the bloom, and it reads continuous with the home.)
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredDark.bg }]}>
+    // Surround OUTSIDE the growing ink shape. Default dark (matches the SkyHero
+    // home for a route); 'transparent' when overlaying the live home, so the
+    // cream 宣纸 report blooms over the ACTUAL night sky from the tap. The masked
+    // child is the paper report; the organic mask edge IS the 墨晕. (No 大白页
+    // flash either way.)
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: surroundColor ?? kindredDark.bg }]}>
       <MaskedView
         style={StyleSheet.absoluteFill}
         maskElement={
