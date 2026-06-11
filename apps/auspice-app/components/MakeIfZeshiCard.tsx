@@ -18,8 +18,9 @@ import { useRouter } from 'expo-router'
 import { ChevronRight } from 'lucide-react-native'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import type { AuspiceEvent, TimelinePayload } from '@/lib/api'
-import { type Locale, useStrings } from '@/lib/i18n-context'
+import type { AuspiceEvent, PersonalFit, TimelinePayload } from '@/lib/api'
+import type { Locale } from '@/lib/i18n'
+import { useStrings } from '@/lib/i18n-context'
 import { MAKEIF_EVENTS, rankMakeIfWindows } from '@/lib/makeIfZeshi'
 
 interface ZeshiCopy {
@@ -58,7 +59,7 @@ const ZESHI_COPY: Record<Locale, ZeshiCopy> = {
   },
 }
 
-const FIT_DOT: Record<string, (c: ReturnType<typeof useTheme>['colors']) => string> = {
+const FIT_DOT: Record<PersonalFit, (c: ReturnType<typeof useTheme>['colors']) => string> = {
   吉: (c) => c.accent,
   平: (c) => c.secondary,
   凶: (c) => c.dim,
@@ -74,7 +75,7 @@ export function MakeIfZeshiCard({
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
-  const copy = ZESHI_COPY[locale]
+  const copy = ZESHI_COPY[locale] ?? ZESHI_COPY['zh-Hans']
   const [event, setEvent] = useState<AuspiceEvent | null>(null)
 
   const ranked = useMemo(
@@ -162,7 +163,7 @@ export function MakeIfZeshiCard({
                     width: 7,
                     height: 7,
                     borderRadius: 4,
-                    backgroundColor: (FIT_DOT[w.fit] ?? FIT_DOT.平)(colors),
+                    backgroundColor: FIT_DOT[w.fit](colors),
                   }}
                 />
                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', width: 48 }}>

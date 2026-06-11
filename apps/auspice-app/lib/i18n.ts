@@ -12,6 +12,9 @@ import type { AuspiceEvent, DayOfficer, PersonalFit, PersonalReasonCode } from '
 
 export type Locale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 
+/** 五行 char — keys the 用神 → 吉色/吉方 localized name maps on the 对你而言 card. */
+export type WuXingChar = '木' | '火' | '土' | '金' | '水'
+
 /**
  * 六曜 (Rokuyo) strings — JP-only. Surfaced solely in the ja DayView, so this
  * block is optional on `Strings` and lives only on the `ja` table; other locales
@@ -381,6 +384,23 @@ export interface Strings {
     setBirth: string
     birthDatePlaceholder: string
     birthHint: string
+    /** 用神 → 吉色/吉方/吉时 — the actionable personal daily increment shown on the
+     *  对你而言 card. App-only (never in the export/push, to protect DAU + sub value). */
+    lucky: {
+      /** Section labels. */
+      color: string
+      direction: string
+      time: string
+      /** Suffix appended to the 地支 to form the 时辰 name (e.g. '时'); '' for en
+       *  (which shows a clock range instead). */
+      shichenSuffix: string
+      /** Separator between multiple 吉时. */
+      shichenSep: string
+      /** 用神五行 → localized 吉色 name (aligned with the ELEMENT_COLORS swatch). */
+      colorName: Record<WuXingChar, string>
+      /** 用神五行 → localized 吉方 name. */
+      directionName: Record<WuXingChar, string>
+    }
   }
   people: {
     title: string
@@ -748,6 +768,15 @@ const zhHans: Strings = {
     setBirth: '设置出生日期',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '用于「对你而言」个性化',
+    lucky: {
+      color: '吉色',
+      direction: '吉方',
+      time: '吉时',
+      shichenSuffix: '时',
+      shichenSep: '、',
+      colorName: { 木: '绿', 火: '红', 土: '黄', 金: '白', 水: '蓝' },
+      directionName: { 木: '东', 火: '南', 土: '中', 金: '西', 水: '北' },
+    },
   },
   people: {
     title: '亲友生日',
@@ -1073,6 +1102,15 @@ const zhHant: Strings = {
     setBirth: '設定出生日期',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '用於「對你而言」個性化',
+    lucky: {
+      color: '吉色',
+      direction: '吉方',
+      time: '吉時',
+      shichenSuffix: '時',
+      shichenSep: '、',
+      colorName: { 木: '綠', 火: '紅', 土: '黃', 金: '白', 水: '藍' },
+      directionName: { 木: '東', 火: '南', 土: '中', 金: '西', 水: '北' },
+    },
   },
   people: {
     title: '親友生日',
@@ -1424,6 +1462,15 @@ const ja: Strings = {
     setBirth: '生年月日を設定',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '「あなたへ」の個別化に使用',
+    lucky: {
+      color: '吉色',
+      direction: '吉方',
+      time: '吉時',
+      shichenSuffix: 'の刻',
+      shichenSep: '・',
+      colorName: { 木: '緑', 火: '赤', 土: '黄', 金: '白', 水: '青' },
+      directionName: { 木: '東', 火: '南', 土: '中央', 金: '西', 水: '北' },
+    },
   },
   people: {
     title: '記念日',
@@ -1780,6 +1827,15 @@ const en: Strings = {
     setBirth: 'Set birth date',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: 'Powers "For you" personalization',
+    lucky: {
+      color: 'Color',
+      direction: 'Direction',
+      time: 'Hours',
+      shichenSuffix: '',
+      shichenSep: ', ',
+      colorName: { 木: 'Green', 火: 'Red', 土: 'Yellow', 金: 'White', 水: 'Blue' },
+      directionName: { 木: 'East', 火: 'South', 土: 'Center', 金: 'West', 水: 'North' },
+    },
   },
   people: {
     title: 'Birthdays',

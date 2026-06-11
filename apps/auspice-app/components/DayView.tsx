@@ -14,13 +14,15 @@ import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { localizeSolarTermName } from '@/lib/culture'
 import type { RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
+import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 import { localizeYijiVerb } from '@/lib/yiji-vocab'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
@@ -116,6 +118,24 @@ export function DayView({
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
+  // 用神 → 吉色/吉方/吉时 — loaded once from local birth info (the /day payload
+  // never carries it; these increments are app-only). 用神 is per-user, so it
+  // outlives a single day; the 吉时 then derives from THIS day's hour pillars.
+  const [favEl, setFavEl] = useState<ReturnType<typeof favorableElementOf>>(null)
+  useEffect(() => {
+    let alive = true
+    void getAuspiceBirthInfo().then((b) => {
+      if (alive) setFavEl(favorableElementOf(b))
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const lucky = useMemo(
+    () => (payload.personalization ? buildLuckyGuide(favEl, day.hours) : null),
+    [favEl, day.hours, payload.personalization]
+  )
+
   return (
     <View style={{ gap: spacing.xl }}>
       {/* 六曜 (JP only) —旧暦-derived calendar annotation Japanese users expect on
@@ -173,6 +193,7 @@ export function DayView({
       {payload.personalization ? (
         <PersonalCard
           data={payload.personalization}
+          lucky={lucky}
           locked={!isPro}
           onUnlock={() => setPaywallOpen(true)}
           // Pro: open the deep LLM reading of today's 对你而言 (ExplainSheet carries
