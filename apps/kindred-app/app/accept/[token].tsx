@@ -129,8 +129,21 @@ export default function AcceptTokenScreen() {
 
   // Auto-fail safe if we somehow land here without a token
   useEffect(() => {
-    if (!token) router.replace('/(bonds)')
+    if (!token) router.replace('/(reading)')
   }, [token, router])
+
+  // Already-accepted (B re-opens the link, or the web already POSTed /respond) →
+  // the bond is DONE and sits in their Threads. Don't strand them on the error
+  // screen ("Invitation already accepted" with no way out): mark onboarded + send
+  // them home so they can open the finished 合盘. Mirrors the handleOpen catch.
+  const alreadyAccepted =
+    error != null && (/already.?accepted/i.test(error.message) || /\b410\b/.test(error.message))
+  useEffect(() => {
+    if (alreadyAccepted) {
+      void markOnboardingComplete()
+      router.replace('/(reading)')
+    }
+  }, [alreadyAccepted, router])
 
   const commitDate = (next: BirthDateFieldValue) => {
     setSelfDate(next)
@@ -215,6 +228,17 @@ export default function AcceptTokenScreen() {
   }
 
   if (error || !invitation) {
+    // Already-accepted is being auto-redirected by the effect above — show a calm
+    // hold, not the red dead-end, while that happens.
+    if (alreadyAccepted) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <KindredMoon size={72} />
+          </View>
+        </SafeAreaView>
+      )
+    }
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <View
@@ -223,11 +247,22 @@ export default function AcceptTokenScreen() {
             padding: kindredSpacing.lg,
             justifyContent: 'center',
             alignItems: 'center',
+            gap: kindredSpacing.xl,
           }}
         >
           <Text style={[kindredType.body, { color: kindredDark.seal, textAlign: 'center' }]}>
             {error?.message ?? 'Invitation not found'}
           </Text>
+          {/* Never a hard dead-end — always a way to the home (any finished bond
+              is in Threads). */}
+          <PrimaryButton
+            label={t('invite.accept.later')}
+            onPress={() => {
+              void markOnboardingComplete()
+              router.replace('/(reading)')
+            }}
+            block={false}
+          />
         </View>
       </SafeAreaView>
     )
