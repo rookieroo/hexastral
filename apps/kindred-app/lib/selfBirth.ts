@@ -26,6 +26,11 @@ export interface SelfBirth {
   solarDate: string // YYYY-MM-DD
   /** 时辰 index 0..12; null = unknown (charts fall back to 子时, index 0). */
   timeIndex: number | null
+  /** Precise birth clock, minutes since midnight 0..1439. Present = precise mode
+   *  (enables 真太阳时 calibration); absent = 时辰 mode only. */
+  clockMinutes?: number
+  /** 真太阳时 calibration toggle (precise mode only). undefined/true = on. */
+  calibrate?: boolean
   gender: '男' | '女'
   city?: string
   lat?: number
@@ -98,8 +103,15 @@ export async function syncSelfBirthToServer(userId: string, birth: SelfBirth): P
     birthGender: birth.gender,
     ...(birth.city ? { birthCity: birth.city } : {}),
     ...(birth.lng != null ? { birthLongitude: String(birth.lng) } : {}),
-    ...(birth.lat != null ? { birthLatitude: String(birth.lat) } : {}),
+    // birthLatitude intentionally NOT sent. Kindred launches North America +
+    // Southeast Asia only and treats every birth as northern-hemisphere, so the
+    // server never applies 南半球月令置换 (contested in 命理, and a design/friction
+    // cost we're not taking). 真太阳时 calibration only needs longitude + timezone,
+    // so omitting latitude costs the chart nothing. lat is still captured by the
+    // city picker for its own round-trip display — it just isn't persisted.
     ...(birth.timezone ? { birthTimezoneId: birth.timezone } : {}),
+    ...(birth.clockMinutes != null ? { birthClockMinutes: birth.clockMinutes } : {}),
+    ...(birth.calibrate != null ? { birthSolarCalibrate: birth.calibrate } : {}),
   })
   try {
     const sig = await signRequest({ method: 'PUT', path, body, userId })

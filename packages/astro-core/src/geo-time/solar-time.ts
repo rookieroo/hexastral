@@ -423,12 +423,15 @@ export function calcGlobalTrueSolarTime(params: {
   const standardMeridian = (offsetMinutes / 60) * 15
   const longitudeCorrectionMinutes = ((longitude - standardMeridian) / 15) * 60
 
-  // 4. 时差方程
-  const eotMinutes = equationOfTime(utcTime)
+  // 4. 时差方程（按出生当日）
+  const eotMinutes = equationOfTime(localDatetime)
 
-  // 5. 真太阳时 = UTC + 经度修正 + 时差方程
+  // 5. 真太阳时 = 当地民用钟点 + 经度修正 + 时差方程
+  //    修正量是相对「本时区标准子午线」算的，必须叠加在当地民用时间 (localDatetime) 上。
+  //    旧实现叠加在 utcTime 上，会凭空多出一个等于时区偏移的误差（纽约 14:30 → 17:36、
+  //    上海正午 → 02:02 之类的离谱结果）。utcTime 仅作结果信息字段保留。
   const trueSolarTime = new Date(
-    utcTime.getTime() + (longitudeCorrectionMinutes + eotMinutes) * 60000
+    localDatetime.getTime() + (longitudeCorrectionMinutes + eotMinutes) * 60000
   )
 
   // 6. 生成展示说明

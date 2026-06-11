@@ -12,7 +12,6 @@ import {
   analyzeShenSha,
   applySouthernHemisphereAdjustment,
   type CombinationAnalysis,
-  calcGlobalTrueSolarTime,
   calculateDaYun,
   type DaYunResult,
   type EarthlyBranch,
@@ -28,13 +27,12 @@ import {
   getFourPillarsShiShen,
   getNaYin,
   getTiaohou,
-  getTrueSolarHour,
   type HeavenlyStem,
   type HemisphereAdjustmentResult,
   hasTiaohouGod,
+  resolveBirthHour,
   type ShenShaAnalysis,
   STEM_WUXING,
-  searchCity,
   type TiaohouResult,
   type WuXing,
 } from '@zhop/astro-core'
@@ -51,8 +49,12 @@ import { getSystemRole } from '../../lib/prompts/system-role'
 export interface NatalInput {
   /** 公历出生日期 YYYY-M-D */
   solarDate: string
-  /** 时辰序号 0-12（0=早子时, 1=丑, ..., 12=晚子时） */
+  /** 时辰序号 0-12（0=早子时, 1=丑, ..., 12=晚子时）。clockMinutes 存在时忽略此值。 */
   timeIndex: number
+  /** 精确出生时间：当天 00:00 起的分钟数 0-1439。存在 = 精确模式，启用真太阳时校准。 */
+  clockMinutes?: number
+  /** 是否对精确钟点做真太阳时校准（默认 true）。仅精确模式 + 有经度时生效。 */
+  calibrate?: boolean
   /** 性别 */
   gender: '男' | '女'
   /** 经度（可选, 用于真太阳时修正） */
@@ -152,49 +154,34 @@ export function generateNatalChart(input: NatalInput): NatalChart {
   const month = Number.parseInt(monthStr!, 10)
   const day = Number.parseInt(dayStr!, 10)
 
-  // 时辰 → 小时
-  let hour: number
-  if (input.timeIndex === 0) {
-    hour = 0 // 早子时 (00:00-01:00)
-  } else if (input.timeIndex === 12) {
-    hour = 23 // 晚子时 (23:00-24:00)
-  } else {
-    hour = input.timeIndex * 2 - 1 // 丑=1→1, 寅=2→3, ...
-  }
-
   // ==============================
-  // 全球真太阳时修正（v2 出海核心）
+  // 出生时刻解析（时辰中点 / 精确钟点 + 真太阳时校准）
   // ==============================
-  let correctedHour = hour
-  let solarTimeResult: GlobalSolarTimeResult | undefined
-
-  if (input.timezoneId && input.longitude !== undefined) {
-    // v2 路径: 使用全球真太阳时引擎（IANA 时区 + 历史 DST）
-    const localDatetime = new Date(year, month - 1, day, hour, 0, 0)
-    const cityMatch = input.city ? searchCity(input.city)[0] : undefined
-
-    solarTimeResult = calcGlobalTrueSolarTime({
-      localDatetime,
-      timezoneId: input.timezoneId,
-      longitude: input.longitude,
-      cityName: cityMatch?.nameZh ?? input.city,
-    })
-
-    correctedHour = solarTimeResult.trueSolarTime.getHours()
-  } else if (input.longitude ?? input.city) {
-    // v1 兜底: 仅经度修正（中国城市表）
-    const longitude = input.longitude ?? getCityLongitude(input.city ?? '')
-    if (longitude) {
-      const birthDate = new Date(year, month - 1, day, hour, 0, 0)
-      correctedHour = getTrueSolarHour(birthDate, longitude)
-    }
-  }
-
-  // 生成四柱
-  let pillars = getFourPillars({
+  // 单一入口 resolveBirthHour 决定排盘小时:
+  //  - 时辰模式（无 clockMinutes）: 用时辰「中点」，永不做真太阳时校准 —— 经度对一个已经
+  //    粗粒度化的时辰没有意义，旧实现对左边界做修正会系统性把时辰推前一格。
+  //  - 精确模式（有 clockMinutes）: 钟点 + 经度/时差/DST 校准（calibrate 默认开）。
+  // 校准跨午夜时返回位移后的日历日期，日柱随之正确。
+  const longitude = input.longitude ?? (input.city ? getCityLongitude(input.city) : undefined)
+  const resolved = resolveBirthHour({
     year,
     month,
     day,
+    timeIndex: input.timeIndex,
+    clockMinutes: input.clockMinutes,
+    calibrate: input.calibrate,
+    longitude,
+    timezoneId: input.timezoneId,
+    city: input.city,
+  })
+  const correctedHour = resolved.hour
+  const solarTimeResult: GlobalSolarTimeResult | undefined = resolved.solarTimeResult
+
+  // 生成四柱（使用校准后的真太阳时日历日期）
+  let pillars = getFourPillars({
+    year: resolved.year,
+    month: resolved.month,
+    day: resolved.day,
     hour: correctedHour,
   })
 
@@ -266,7 +253,10 @@ export function generateNatalChart(input: NatalInput): NatalChart {
   // ==============================
   let daYun: DaYunResult | undefined
   try {
-    daYun = calculateDaYun({ year, month, day, hour: correctedHour }, input.gender as Gender)
+    daYun = calculateDaYun(
+      { year: resolved.year, month: resolved.month, day: resolved.day, hour: correctedHour },
+      input.gender as Gender
+    )
   } catch {
     // 大运计算失败不影响主流程
   }

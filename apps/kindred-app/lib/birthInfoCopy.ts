@@ -2,48 +2,65 @@
  * Kindred-specific BirthInfoForm copy.
  *
  * Extends the shared core-ui defaults with Kindred's editorial tone AND the
- * field-importance hints that the synastry reading relies on:
+ * field-importance hints the synastry reading relies on:
  *
- *   - 时辰 is required (drives the hour pillar — without it 八字 has only
- *     three pillars and the chart engine has to guess). The host therefore
- *     passes `requireTime` and we drop the "I don't know" subtitle that the
- *     shared default carries.
- *   - 出生地 is optional but recommended — the city's longitude lets the
- *     engine apply 真太阳时 correction to the hour pillar; skipping it is
- *     OK, but the user should know the tradeoff. The host passes
- *     `placeOptional` and we render a "later" skip with the explanation in
- *     the subtitle.
+ *   - 时辰 is required (drives the hour pillar — without it 八字 has only three
+ *     pillars and the chart engine has to guess). The host passes `requireTime`.
+ *   - 出生地 is NOT collected in the default 时辰 flow (the place step is
+ *     skipped). True-solar-time correction only makes sense on a precise clock
+ *     time, so the birth city lives inside the opt-in precise-time disclosure
+ *     (`allowPreciseTime`) — picking a city there is what enables 真太阳时
+ *     calibration of the hour pillar.
  */
 
 import { type BirthInfoCopy, birthInfoCopyForLocale } from '@zhop/core-ui'
 
 interface KindredOverride {
   timeSubtitle: string
-  placeSubtitle: string
-  placeSkipLabel: string
+  precisePrompt: string
+  preciseTimeLabel: string
+  preciseCityLabel: string
+  preciseCityPlaceholder: string
+  calibrateLabel: string
+  trueSolarLabel: string
 }
 
 const OVERRIDES: Record<string, KindredOverride> = {
   en: {
     timeSubtitle: 'Twelve two-hour 时辰 windows. Required — your hour pillar depends on it.',
-    placeSubtitle:
-      'Optional. Your birth city sharpens the hour pillar via true-solar time; skip if unknown.',
-    placeSkipLabel: 'Skip for now',
+    precisePrompt: 'Know your exact birth time? More precise',
+    preciseTimeLabel: 'Exact birth time',
+    preciseCityLabel: 'Birth city (for true-solar-time)',
+    preciseCityPlaceholder: 'Search birth city',
+    calibrateLabel: 'True-solar-time calibration',
+    trueSolarLabel: 'TST',
   },
   zh: {
     timeSubtitle: '十二时辰，每个对应两小时。必填——直接决定你的时柱。',
-    placeSubtitle: '选填。出生城市用于真太阳时修正，会让时柱更准；不清楚可以跳过。',
-    placeSkipLabel: '暂时跳过',
+    precisePrompt: '知道确切出生时间？更精准',
+    preciseTimeLabel: '确切出生时间',
+    preciseCityLabel: '出生城市（用于真太阳时校准）',
+    preciseCityPlaceholder: '搜索出生城市',
+    calibrateLabel: '真太阳时校准',
+    trueSolarLabel: '真太阳时',
   },
   'zh-Hant': {
     timeSubtitle: '十二時辰，每個對應兩小時。必填——直接決定你的時柱。',
-    placeSubtitle: '選填。出生城市用於真太陽時修正，會讓時柱更準；不清楚可以跳過。',
-    placeSkipLabel: '暫時跳過',
+    precisePrompt: '知道確切出生時間？更精準',
+    preciseTimeLabel: '確切出生時間',
+    preciseCityLabel: '出生城市（用於真太陽時校準）',
+    preciseCityPlaceholder: '搜尋出生城市',
+    calibrateLabel: '真太陽時校準',
+    trueSolarLabel: '真太陽時',
   },
   ja: {
     timeSubtitle: '12 の時辰（2 時間単位）。必須 — 時柱の決定に必要です。',
-    placeSubtitle: '任意。出生地は真太陽時補正に使い、時柱の精度が上がります。不明なら省略可。',
-    placeSkipLabel: '後で',
+    precisePrompt: '正確な出生時刻が分かる？より正確に',
+    preciseTimeLabel: '正確な出生時刻',
+    preciseCityLabel: '出生地（真太陽時補正用）',
+    preciseCityPlaceholder: '出生地を検索',
+    calibrateLabel: '真太陽時補正',
+    trueSolarLabel: '真太陽時',
   },
 }
 
@@ -60,7 +77,11 @@ export function kindredBirthCopy(locale: string): BirthInfoCopy {
   return {
     ...base,
     timeSubtitle: o.timeSubtitle,
-    placeSubtitle: o.placeSubtitle,
-    placeSkipLabel: o.placeSkipLabel,
+    precisePrompt: o.precisePrompt,
+    preciseTimeLabel: o.preciseTimeLabel,
+    preciseCityLabel: o.preciseCityLabel,
+    preciseCityPlaceholder: o.preciseCityPlaceholder,
+    calibrateLabel: o.calibrateLabel,
+    trueSolarLabel: o.trueSolarLabel,
   }
 }

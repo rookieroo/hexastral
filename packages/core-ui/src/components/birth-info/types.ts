@@ -20,6 +20,15 @@ export interface BirthInfoValue {
   /** 0–11 shichen index, or null if the form did not require it (legacy
    *  skip path). When the host passes `requireTime`, this is never null. */
   timeIndex: ShichenIndex | null
+  /** Precise birth clock as minutes since midnight 0..1439. Set only when the
+   *  user opts into the precise-time path (`allowPreciseTime`). Present = the
+   *  chart engine runs 真太阳时 calibration on this clock instead of using the
+   *  时辰 midpoint. The 时辰 wheel (`timeIndex`) still commits alongside it for
+   *  紫微 + display. */
+  clockMinutes?: number
+  /** 真太阳时 calibration toggle — only meaningful when `clockMinutes` is set.
+   *  Defaults on once a birth city is present; the user can turn it off. */
+  calibrate?: boolean
   /** 男 / 女 — 八字 mandates one. */
   gender: '男' | '女'
   /** Localized city name for review display. Optional — when the host passes
@@ -45,6 +54,21 @@ export interface BirthInfoCopy {
   /** Label for the "I don't know" affordance. Only rendered when the host
    *  does NOT pass `requireTime` — otherwise the time step is mandatory. */
   timeSkipLabel: string
+
+  /** Precise-time disclosure (only rendered when host passes `allowPreciseTime`).
+   *  All optional — the disclosure hides cleanly when a string is absent. */
+  /** Collapsed link, e.g. "知道确切出生时间? 更精准". */
+  precisePrompt?: string
+  /** Label above the HH:MM picker, e.g. "确切出生时间". */
+  preciseTimeLabel?: string
+  /** Label above the city picker inside the disclosure, e.g. "出生城市（用于真太阳时校准）". */
+  preciseCityLabel?: string
+  /** City search placeholder inside the disclosure. */
+  preciseCityPlaceholder?: string
+  /** Calibration toggle label, e.g. "真太阳时校准". */
+  calibrateLabel?: string
+  /** Word shown in the before→after line, e.g. "真太阳时". */
+  trueSolarLabel?: string
 
   genderTitle: string
   genderSubtitle?: string
@@ -114,6 +138,12 @@ export interface BirthInfoFormProps {
    *  that want their birth-time input to match a native picker (kindred) opt
    *  into `'wheel'`; everyone else keeps the grid. */
   timeInputStyle?: 'grid' | 'wheel'
+  /** Opt into the precise-time path: the time step shows a collapsed
+   *  "know your exact time?" disclosure that reveals an HH:MM picker, a birth
+   *  city picker, and a 真太阳时 calibration toggle. Off for every app by
+   *  default (the 时辰 wheel is the low-friction default); kindred turns it on.
+   *  Requires `searchCity` to be passed for the in-disclosure city picker. */
+  allowPreciseTime?: boolean
 }
 
 /** Props shared by every step component. */
@@ -133,4 +163,12 @@ export interface BirthStepProps {
   placeOptional?: boolean
   /** Forwarded from BirthInfoFormProps.timeInputStyle — read by BirthTimeStep. */
   timeInputStyle?: 'grid' | 'wheel'
+  /** Forwarded from BirthInfoFormProps.allowPreciseTime — read by BirthTimeStep. */
+  allowPreciseTime?: boolean
+  /** Geocode search — forwarded so BirthTimeStep's precise-time city picker can
+   *  reuse the same callback BirthPlaceStep uses. */
+  searchCity?: (query: string) => Promise<CityRecord[]>
+  /** Optional offline top-cities fallback for the in-disclosure city picker.
+   *  ReadonlyArray to match BirthPlaceStep's existing override of this prop. */
+  topCities?: ReadonlyArray<CityRecord>
 }

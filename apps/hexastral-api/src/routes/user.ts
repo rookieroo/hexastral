@@ -108,6 +108,10 @@ const updateProfileSchema = z.object({
 const saveBirthInfoSchema = z.object({
   birthSolarDate: solarDateSchema,
   birthTimeIndex: z.int().min(0).max(12),
+  /** 精确出生分钟数 0-1439（精确模式）。缺省 = 仅时辰，不做真太阳时校准。 */
+  birthClockMinutes: z.int().min(0).max(1439).optional(),
+  /** 真太阳时校准开关（默认 true）；仅精确模式生效。 */
+  birthSolarCalibrate: z.boolean().optional(),
   birthGender: z.enum(['男', '女']),
   birthCity: z.string().max(100).optional(),
   birthLongitude: z.string().max(20).optional(),
@@ -358,6 +362,8 @@ export const userRoutes = new Hono<AppEnv>()
           userId,
           birthSolarDate: user.birthSolarDate,
           birthTimeIndex: user.birthTimeIndex,
+          birthClockMinutes: user.birthClockMinutes,
+          birthSolarCalibrate: user.birthSolarCalibrate,
           birthGender: user.birthGender as '男' | '女',
           birthCity: user.birthCity,
           birthLongitude: user.birthLongitude,
@@ -901,6 +907,8 @@ export const userRoutes = new Hono<AppEnv>()
     const nextInput: BirthEditInput = {
       birthSolarDate: input.birthSolarDate,
       birthTimeIndex: input.birthTimeIndex,
+      birthClockMinutes: input.birthClockMinutes ?? null,
+      birthSolarCalibrate: input.birthSolarCalibrate ?? null,
       gender: input.birthGender,
     }
     const isPro = await userHasCapability(db, userId, 'fate')
@@ -911,6 +919,8 @@ export const userRoutes = new Hono<AppEnv>()
       .set({
         birthSolarDate: input.birthSolarDate,
         birthTimeIndex: input.birthTimeIndex,
+        birthClockMinutes: input.birthClockMinutes ?? null,
+        birthSolarCalibrate: input.birthSolarCalibrate ?? null,
         birthGender: input.birthGender,
         birthCity: input.birthCity ?? null,
         birthLongitude: input.birthLongitude ?? null,

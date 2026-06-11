@@ -5,10 +5,12 @@
  * ADR-0022 (kindred rebuilt on the ming-pan frame).
  *
  * Mirrors svc-astro `generateNatalChart` (services/svc-astro/src/services/natal/natal.ts):
- *   getFourPillars → getFourPillarsShiShen → analyzeGeJu → getNaYin.
- * True-solar-time + southern-hemisphere correction are server-only (need lat/lng/tz);
- * this v1 uses the representative hour, matching the server's fallback when those are
- * absent. AI interpretation (the deep layer) is added on top via reading-cache.
+ *   resolveBirthHour → getFourPillars → getFourPillarsShiShen → analyzeGeJu → getNaYin.
+ * The hour is resolved through the SAME shared `resolveBirthHour` the server uses, so
+ * solo and 合盘 can never disagree on the 时柱: 时辰 mode uses the 时辰 midpoint (never
+ * corrected), precise mode (clockMinutes) applies 真太阳时 calibration. 南半球月令置换
+ * stays server-only (needs latitude + the heavier engine). AI interpretation (the deep
+ * layer) is added on top via reading-cache.
  */
 
 import {
@@ -20,6 +22,7 @@ import {
   getFourPillarsShiShen,
   getNaYin,
   type HeavenlyStem,
+  resolveBirthHour,
   STEM_WUXING,
 } from '@zhop/astro-core'
 
@@ -28,8 +31,16 @@ export type FateGender = '男' | '女'
 export interface FateBirthInput {
   /** Gregorian birth date, `YYYY-MM-DD`. */
   solarDate: string
-  /** 时辰 index 0-12 (0 = 早子 00:00, 12 = 晚子 23:00). */
+  /** 时辰 index 0-12 (0 = 早子 00:00, 12 = 晚子 23:00). Ignored when clockMinutes set. */
   timeIndex: number
+  /** Precise birth clock, minutes since midnight 0..1439. Present = precise mode. */
+  clockMinutes?: number
+  /** 真太阳时 calibration toggle (precise mode only); default on. */
+  calibrate?: boolean
+  /** Birth-city geo — only consumed in precise mode for 真太阳时 calibration. */
+  longitude?: number
+  timezoneId?: string
+  city?: string
   gender: FateGender
 }
 
@@ -42,21 +53,31 @@ export interface FateNatalChart {
   dayMasterWuXing: string
 }
 
-/** 时辰 index → representative hour (mirrors svc-astro generateNatalChart). */
-function timeIndexToHour(timeIndex: number): number {
-  if (timeIndex <= 0) return 0 // 早子时 00:00-01:00
-  if (timeIndex >= 12) return 23 // 晚子时 23:00-24:00
-  return timeIndex * 2 - 1 // 丑=1→1, 寅=2→3, ...
-}
-
 export function computeFateNatalChart(input: FateBirthInput): FateNatalChart {
   const parts = input.solarDate.split('-')
   const year = Number.parseInt(parts[0] ?? '', 10)
   const month = Number.parseInt(parts[1] ?? '', 10)
   const day = Number.parseInt(parts[2] ?? '', 10)
-  const hour = timeIndexToHour(input.timeIndex)
 
-  const pillars = getFourPillars({ year, month, day, hour })
+  // Same resolver the server uses → identical 时柱 in solo and 合盘.
+  const resolved = resolveBirthHour({
+    year,
+    month,
+    day,
+    timeIndex: input.timeIndex,
+    clockMinutes: input.clockMinutes,
+    calibrate: input.calibrate,
+    longitude: input.longitude,
+    timezoneId: input.timezoneId,
+    city: input.city,
+  })
+
+  const pillars = getFourPillars({
+    year: resolved.year,
+    month: resolved.month,
+    day: resolved.day,
+    hour: resolved.hour,
+  })
   const shishen = getFourPillarsShiShen(pillars)
   const geju = analyzeGeJu(pillars, shishen)
   const dayMaster = pillars.day.stem as HeavenlyStem

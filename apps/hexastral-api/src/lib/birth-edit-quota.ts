@@ -17,15 +17,24 @@ export type BirthEditDisposition = 'first_add' | 'consume_quota' | 'no_change'
 export interface BirthEditInput {
   birthSolarDate: string
   birthTimeIndex: number
+  /** 精确出生分钟数 0-1439（精确模式）。改变它会改变时柱 → chart-altering。 */
+  birthClockMinutes?: number | null
+  /** 真太阳时校准开关（null/undefined = 默认开）。 */
+  birthSolarCalibrate?: boolean | null
   gender: '男' | '女'
 }
 
 export interface BirthEditPriorState {
   birthSolarDate: string | null
   birthTimeIndex: number | null
+  birthClockMinutes?: number | null
+  birthSolarCalibrate?: boolean | null
   birthGender: string | null
   birthEditUsed: boolean
 }
+
+/** 校准默认开：null / undefined / true 都视作「开」，只有显式 false 才是「关」。 */
+const calibrateOn = (v: boolean | null | undefined): boolean => v !== false
 
 /**
  * Pure classifier — given the user's prior birth state and the incoming
@@ -42,6 +51,8 @@ export function classifyBirthEdit(
   const isChange =
     prior.birthSolarDate !== next.birthSolarDate ||
     prior.birthTimeIndex !== next.birthTimeIndex ||
+    (prior.birthClockMinutes ?? null) !== (next.birthClockMinutes ?? null) ||
+    calibrateOn(prior.birthSolarCalibrate) !== calibrateOn(next.birthSolarCalibrate) ||
     prior.birthGender !== next.gender
   return isChange ? 'consume_quota' : 'no_change'
 }

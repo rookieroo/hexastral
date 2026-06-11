@@ -18,6 +18,10 @@ export const staticChartRoutes = new Hono<AppEnv>()
 const inputSchema = z.object({
   solarDate: z.string(),
   timeIndex: z.number().int().min(0).max(12),
+  /** 精确出生时间：当天 00:00 起分钟数 0-1439。存在 = 精确模式 + 真太阳时校准。 */
+  clockMinutes: z.number().int().min(0).max(1439).optional(),
+  /** 是否做真太阳时校准（默认 true）；仅精确模式 + 有经度时生效。 */
+  calibrate: z.boolean().optional(),
   gender: z.enum(['男', '女']),
   longitude: z.number().optional(),
   latitude: z.number().optional(),

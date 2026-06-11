@@ -207,11 +207,14 @@ export {
   analyzeGeJu,
   calculateDayMasterStrength,
 } from './geju'
-// Geo-Time Engine (全球真太阳時 + 南半球置换)
+// Geo-Time Engine (全球真太阳時 + 南半球置换 + 出生时刻解析)
 export type {
+  BirthHourInput,
+  BirthTimeMode,
   CityGeoInfo,
   GlobalSolarTimeResult,
   HemisphereAdjustmentResult,
+  ResolvedBirthHour,
 } from './geo-time'
 export {
   applySouthernHemisphereAdjustment,
@@ -220,7 +223,9 @@ export {
   getSouthernMonthBranch,
   getTimezoneOffset,
   isSouthernHemisphere,
+  resolveBirthHour,
   searchCity,
+  shichenMidpointHour,
 } from './geo-time'
 // 八字合婚 (Marriage Compatibility)
 export type {
@@ -300,9 +305,9 @@ export {
   type PeriodSignals,
   periodSignals,
   type RankedMoveWindow,
-  rankWindowsForMove,
   type RetrodictionMatch,
   type RetrodictionSignals,
+  rankWindowsForMove,
   retrodictionMatch,
   type SignalKey,
   type TimeableMove,

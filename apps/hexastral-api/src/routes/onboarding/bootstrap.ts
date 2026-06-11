@@ -84,6 +84,8 @@ export const onboardingBootstrapRoutes = new Hono<AppEnv>().post(
         userId,
         birthSolarDate: user.birthSolarDate,
         birthTimeIndex: user.birthTimeIndex,
+        birthClockMinutes: user.birthClockMinutes,
+        birthSolarCalibrate: user.birthSolarCalibrate,
         birthGender: user.birthGender as '男' | '女',
         birthCity: user.birthCity,
         birthLongitude: user.birthLongitude,

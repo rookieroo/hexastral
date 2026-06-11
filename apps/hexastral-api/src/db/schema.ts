@@ -69,6 +69,11 @@ export const users = sqliteTable(
     birthLatitude: text('birth_latitude'),
     birthTimezoneId: text('birth_timezone_id'),
 
+    /** 精确出生时间：当天 00:00 起分钟数 0-1439。null = 仅时辰（不做真太阳时校准）。 */
+    birthClockMinutes: integer('birth_clock_minutes'),
+    /** 真太阳时校准开关（仅精确模式生效，默认开；false = 用户显式关闭）。 */
+    birthSolarCalibrate: integer('birth_solar_calibrate', { mode: 'boolean' }),
+
     /** 南半球月令置换开关 (opt-in, 影响命格月支) */
     hemisphereReversalEnabled: integer('hemisphere_reversal_enabled', { mode: 'boolean' })
       .default(false)

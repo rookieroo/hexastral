@@ -6,14 +6,35 @@
  * affordance, and the Next CTA.
  */
 
+import { resolveBirthHour } from '@zhop/astro-core'
 import * as Haptics from 'expo-haptics'
 import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useTheme } from '../../theme'
+import { CityPicker, type CityRecord } from '../CityPicker'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
+import { BirthClockField } from './BirthClockField'
 import { BirthProgressIndicator } from './BirthProgressIndicator'
 import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
+
+const SHICHEN_BRANCHES = '子丑寅卯辰巳午未申酉戌亥'
+
+/** Clock minutes → 时辰 index 0..11 (子时 = index 0, covers 23:00–01:00). */
+function clockToShichenIndex(min: number): ShichenIndex {
+  const h = Math.floor(min / 60)
+  return (Math.floor((h + 1) / 2) % 12) as ShichenIndex
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+/**排盘小时 → 时辰 label (e.g. 14 → 未时). */
+function shichenLabelForHour(hour: number): string {
+  const idx = hour === 23 ? 0 : Math.floor((hour + 1) / 2) % 12
+  return `${SHICHEN_BRANCHES[idx]}时`
+}
 
 export function BirthTimeStep({
   value,
@@ -25,6 +46,10 @@ export function BirthTimeStep({
   totalSteps,
   requireTime,
   timeInputStyle = 'grid',
+  allowPreciseTime,
+  searchCity,
+  topCities,
+  locale,
 }: BirthStepProps) {
   const { colors, spacing } = useTheme()
   const isWheel = timeInputStyle === 'wheel'
@@ -39,6 +64,59 @@ export function BirthTimeStep({
     Haptics.selectionAsync()
     onChange({ timeIndex: picked })
     onNext()
+  }
+
+  // ── Precise-time disclosure (opt-in via allowPreciseTime) ─────────────────
+  const [showPrecise, setShowPrecise] = useState(value.clockMinutes != null)
+
+  // Entering a precise clock also snaps the 时辰 wheel to that clock's 时辰, so
+  // 紫微 (which reads timeIndex) stays consistent with the 八字 the precise clock
+  // calibrates. The before→after line below shows the calibrated 时辰 separately
+  // (it can differ for births near a 时辰 boundary).
+  const handleClock = (min: number) => {
+    const idx = clockToShichenIndex(min)
+    setPicked(idx)
+    onChange({ clockMinutes: min, timeIndex: idx })
+  }
+  const handleCity = (c: CityRecord) => {
+    Haptics.selectionAsync()
+    onChange({ city: c.name, lat: c.lat, lng: c.lng, timezone: c.timezone ?? undefined })
+  }
+  const cityValue: CityRecord | null = value.city
+    ? {
+        name: value.city,
+        country: '',
+        lat: value.lat ?? 0,
+        lng: value.lng ?? 0,
+        timezone: value.timezone ?? null,
+      }
+    : null
+
+  // Live 真太阳时 before→after preview — only when a clock + city are present and
+  // calibration is on. Computed through the SAME resolver the chart uses.
+  let calibrationPreview: string | null = null
+  if (allowPreciseTime && value.clockMinutes != null && value.lng != null && value.solarDate) {
+    const [yStr, mStr, dStr] = value.solarDate.split('-')
+    const y = Number.parseInt(yStr ?? '', 10)
+    const m = Number.parseInt(mStr ?? '', 10)
+    const d = Number.parseInt(dStr ?? '', 10)
+    if (y && m && d) {
+      const resolved = resolveBirthHour({
+        year: y,
+        month: m,
+        day: d,
+        clockMinutes: value.clockMinutes,
+        calibrate: value.calibrate,
+        longitude: value.lng,
+        timezoneId: value.timezone,
+        city: value.city,
+      })
+      if (resolved.calibrated) {
+        const from = `${pad2(Math.floor(value.clockMinutes / 60))}:${pad2(value.clockMinutes % 60)}`
+        const to = `${pad2(resolved.hour)}:${pad2(resolved.minute)}`
+        calibrationPreview = `${from} → ${copy.trueSolarLabel ?? '真太阳时'} ${to} · ${shichenLabelForHour(resolved.hour)}`
+      }
+    }
   }
 
   // Skip is only available when the host hasn't marked time as required.
@@ -84,6 +162,92 @@ export function BirthTimeStep({
           )}
         </View>
 
+        {/* Precise-time opt-in — collapsed by default so the 时辰 wheel stays the
+            low-friction hero. Revealing it adds an HH:MM picker, a birth-city
+            picker, and a 真太阳时 calibration toggle (default on once a city is
+            set). Only rendered for hosts that pass allowPreciseTime. */}
+        {allowPreciseTime ? (
+          <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
+            <Pressable
+              onPress={() => {
+                void Haptics.selectionAsync().catch(() => undefined)
+                setShowPrecise((s) => !s)
+              }}
+              hitSlop={8}
+              accessibilityRole='button'
+            >
+              <Text style={{ color: accent, fontSize: 13, fontWeight: '500' }}>
+                {`${showPrecise ? '▾  ' : '▸  '}${copy.precisePrompt ?? '知道确切出生时间？更精准'}`}
+              </Text>
+            </Pressable>
+
+            {showPrecise ? (
+              <View style={{ gap: spacing.md }}>
+                {copy.preciseTimeLabel ? (
+                  <Text style={[styles.fieldLabel, { color: colors.secondary }]}>
+                    {copy.preciseTimeLabel}
+                  </Text>
+                ) : null}
+                <BirthClockField
+                  value={value.clockMinutes ?? null}
+                  onChange={handleClock}
+                  accent={accent}
+                  locale={locale}
+                  labels={{
+                    placeholder: copy.preciseTimeLabel ?? '选择确切时间',
+                    done: copy.next,
+                  }}
+                />
+
+                {value.clockMinutes != null ? (
+                  <View style={{ gap: spacing.md }}>
+                    {copy.preciseCityLabel ? (
+                      <Text style={[styles.fieldLabel, { color: colors.secondary }]}>
+                        {copy.preciseCityLabel}
+                      </Text>
+                    ) : null}
+                    {searchCity ? (
+                      <CityPicker
+                        value={cityValue}
+                        onSelect={handleCity}
+                        search={searchCity}
+                        topCities={topCities ? Array.from(topCities) : undefined}
+                        placeholder={copy.preciseCityPlaceholder ?? '搜索出生城市'}
+                      />
+                    ) : null}
+
+                    {value.lng != null ? (
+                      <View style={{ gap: spacing.sm }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <Text style={{ color: colors.text, fontSize: 14 }}>
+                            {copy.calibrateLabel ?? '真太阳时校准'}
+                          </Text>
+                          <Switch
+                            value={value.calibrate !== false}
+                            onValueChange={(on) => onChange({ calibrate: on })}
+                            trackColor={{ true: accent, false: colors.separator }}
+                          />
+                        </View>
+                        {calibrationPreview ? (
+                          <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                            {calibrationPreview}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={{ flex: 1, minHeight: spacing.lg }} />
 
         <View
@@ -126,6 +290,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '300',
     lineHeight: 20,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0.6,
   },
   footer: {
     flexDirection: 'row',

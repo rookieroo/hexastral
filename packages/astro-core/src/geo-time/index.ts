@@ -4,6 +4,8 @@
  * 全球真太阳时 + 南半球月令置换
  */
 
+export type { BirthHourInput, BirthTimeMode, ResolvedBirthHour } from './birth-hour'
+export { resolveBirthHour, shichenMidpointHour } from './birth-hour'
 export type { HemisphereAdjustmentResult } from './hemisphere'
 export {
   applySouthernHemisphereAdjustment,

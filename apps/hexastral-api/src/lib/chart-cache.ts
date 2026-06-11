@@ -21,6 +21,10 @@ export type GlobalChartType = 'stellar' | 'natal'
 export interface ChartCacheInput {
   solarDate: string
   timeIndex: number
+  /** 精确出生分钟数 0-1439（精确模式）。改变它会改变真太阳时校准结果 → 必须进 hash。 */
+  clockMinutes?: number | null
+  /** 真太阳时校准开关（默认 true）。关掉 = 不同的盘 → 必须进 hash。 */
+  calibrate?: boolean | null
   gender: string
   longitude?: string | number | null
   latitude?: string | number | null
@@ -50,6 +54,10 @@ export async function computeInputHash(input: ChartCacheInput): Promise<string> 
     input.gender,
     String(input.longitude ?? ''),
     String(input.timezoneId ?? ''),
+    // 精确出生时间 + 校准开关 —— 精确模式下决定真太阳时结果。追加在末尾，旧盘的 hash
+    // 随之改变 → 强制重算，自然失效掉旧的「时辰左边界 + 坏引擎」缓存。
+    String(input.clockMinutes ?? ''),
+    String(input.calibrate ?? ''),
   ]
 
   // Southern hemisphere reversal changes the chart — differentiate in hash
@@ -164,8 +172,11 @@ export async function upsertChartCache(
 
 // ==================== 全局跨用户缓存 ====================
 
-/** 当前引擎版本 — 递增此值使旧缓存失效 */
-export const CURRENT_ENGINE_VERSION = 'v2'
+/**
+ * 当前引擎版本 — 递增此值使旧缓存失效。
+ * v3: 真太阳时引擎修复（UTC 叠加 bug）+ 时辰中点取代左边界 + 校准仅限精确钟点模式。
+ */
+export const CURRENT_ENGINE_VERSION = 'v3'
 
 export interface GlobalCacheResult<T> {
   chartData: T

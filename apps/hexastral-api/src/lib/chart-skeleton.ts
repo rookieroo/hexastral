@@ -67,6 +67,10 @@ export interface BuildSkeletonInput {
   userId: string
   birthSolarDate: string
   birthTimeIndex: number
+  /** 精确出生分钟数 0-1439（精确模式）。null/缺省 = 时辰模式。 */
+  birthClockMinutes?: number | null
+  /** 真太阳时校准开关（默认 true，关掉为 false）。仅精确模式生效。 */
+  birthSolarCalibrate?: boolean | null
   birthGender: '男' | '女'
   birthCity?: string | null
   birthLongitude?: number | string | null
@@ -91,6 +95,8 @@ export async function buildChartSkeleton(
   const cacheInput: ChartCacheInput = {
     solarDate: input.birthSolarDate,
     timeIndex: input.birthTimeIndex,
+    clockMinutes: input.birthClockMinutes ?? null,
+    calibrate: input.birthSolarCalibrate ?? null,
     gender: input.birthGender,
     longitude: input.birthLongitude ?? null,
     latitude: input.birthLatitude ?? null,
@@ -130,6 +136,8 @@ export async function buildChartSkeleton(
       const fresh = await astroClient.post<StaticChartResponse>(env.SVC_ASTRO, '/chart/static', {
         solarDate: input.birthSolarDate,
         timeIndex: input.birthTimeIndex,
+        clockMinutes: input.birthClockMinutes ?? undefined,
+        calibrate: input.birthSolarCalibrate ?? undefined,
         gender: input.birthGender,
         longitude:
           typeof input.birthLongitude === 'string'
@@ -252,6 +260,8 @@ export async function rebuildUserCharts(
       userId,
       birthSolarDate: u.birthSolarDate,
       birthTimeIndex: u.birthTimeIndex,
+      birthClockMinutes: u.birthClockMinutes,
+      birthSolarCalibrate: u.birthSolarCalibrate,
       birthGender: u.birthGender as '男' | '女',
       birthCity: u.birthCity,
       birthLongitude: u.birthLongitude,

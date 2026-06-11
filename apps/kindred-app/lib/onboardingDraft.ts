@@ -26,6 +26,13 @@ export interface OnboardingDraft {
   selfBirthLat: number | null
   selfBirthLng: number | null
   selfBirthTimezone: string | null
+  /** Precise birth clock as minutes since midnight 0..1439. null = 时辰 mode
+   *  (the default low-friction path; no 真太阳时 correction). Set only when the
+   *  user opts into "I know my exact birth time". */
+  selfClockMinutes: number | null
+  /** 真太阳时 calibration toggle — only meaningful in precise mode. null/true =
+   *  on (default when a birth city is present), false = user turned it off. */
+  selfCalibrate: boolean | null
   selfGender: '男' | '女' | null
   /** 'invite' = email B, 'fill' = A fills in B */
   otherMode: 'invite' | 'fill' | null
@@ -57,6 +64,8 @@ const EMPTY: OnboardingDraft = {
   selfBirthLat: null,
   selfBirthLng: null,
   selfBirthTimezone: null,
+  selfClockMinutes: null,
+  selfCalibrate: null,
   selfGender: null,
   otherMode: null,
   otherEmail: '',

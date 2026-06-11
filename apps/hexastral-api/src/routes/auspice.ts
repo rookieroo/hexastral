@@ -757,7 +757,7 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
     let descParts: (string | null)[]
     if (personalization) {
       const fitLabel = FIT_LABEL[personalization.fit] ?? personalization.fit
-      const reasonWords = (personalization.reasons ?? [])
+      const reasonWords: string[] = (personalization.reasons ?? [])
         .map((r) =>
           r === 'favorable_element_present'
             ? '用神得力'

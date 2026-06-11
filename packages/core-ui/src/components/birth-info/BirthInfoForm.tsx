@@ -41,6 +41,7 @@ export function BirthInfoForm({
   requireTime,
   placeOptional,
   timeInputStyle,
+  allowPreciseTime,
 }: BirthInfoFormProps) {
   const order = DEFAULT_ORDER.filter((s) => !skipSteps?.includes(s))
   const [current, setCurrent] = useState<BirthInfoStep>(order[0] ?? 'date')
@@ -88,13 +89,14 @@ export function BirthInfoForm({
     requireTime,
     placeOptional,
     timeInputStyle,
+    allowPreciseTime,
   }
 
   switch (current) {
     case 'date':
       return <BirthDateStep {...sharedProps} crown={crown} />
     case 'time':
-      return <BirthTimeStep {...sharedProps} />
+      return <BirthTimeStep {...sharedProps} searchCity={searchCity} topCities={topCities} />
     case 'gender':
       return <BirthGenderStep {...sharedProps} />
     case 'place':

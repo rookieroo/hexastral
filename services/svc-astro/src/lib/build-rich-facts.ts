@@ -16,6 +16,8 @@ import { generateChart } from '../services/stellar/stellar'
 export interface BuildRichFactsInput {
   solarDate: string
   timeIndex: number
+  clockMinutes?: number
+  calibrate?: boolean
   gender: '男' | '女'
   longitude?: number
   latitude?: number
@@ -35,6 +37,8 @@ export function buildRichFacts(input: BuildRichFactsInput): string | null {
     const natal = generateNatalChart({
       solarDate: input.solarDate,
       timeIndex: input.timeIndex,
+      clockMinutes: input.clockMinutes,
+      calibrate: input.calibrate,
       gender: input.gender,
       longitude: input.longitude,
       latitude: input.latitude,

@@ -34,6 +34,8 @@ export const previewRoutes = new Hono<AppEnv>()
 const inputSchema = z.object({
   solarDate: z.string().min(1),
   timeIndex: z.int().min(0).max(12),
+  clockMinutes: z.number().int().min(0).max(1439).optional(),
+  calibrate: z.boolean().optional(),
   gender: z.enum(['男', '女']),
   longitude: z.number().optional(),
   latitude: z.number().optional(),
@@ -58,6 +60,8 @@ previewRoutes.post('/preview', async (c) => {
   const natal = generateNatalChart({
     solarDate: input.solarDate,
     timeIndex: input.timeIndex,
+    clockMinutes: input.clockMinutes,
+    calibrate: input.calibrate,
     gender: input.gender,
     longitude: input.longitude,
     latitude: input.latitude,

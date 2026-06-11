@@ -189,6 +189,11 @@ export default function ReadingHomeScreen() {
       return computeFateNatalChart({
         solarDate: birth.solarDate,
         timeIndex: birth.timeIndex ?? 0,
+        clockMinutes: birth.clockMinutes,
+        calibrate: birth.calibrate,
+        longitude: birth.lng,
+        timezoneId: birth.timezone,
+        city: birth.city,
         gender: birth.gender,
       })
     } catch {

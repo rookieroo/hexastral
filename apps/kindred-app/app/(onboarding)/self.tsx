@@ -49,9 +49,11 @@ export default function SelfBirthScreen() {
   const { userId } = useAuth()
   const draft = useDraft()
   const lang = useMemo(() => localeToLang(locale), [locale])
-  // Kindred reads the hour pillar, so timeIndex is mandatory; the city is
-  // optional but improves 真太阳时 accuracy of the hour stem/branch. Override
-  // the shared copy's hint lines so the user knows which fields matter.
+  // Kindred reads the hour pillar, so 时辰 is mandatory (requireTime). The
+  // standalone place step is dropped (skipSteps place) — 真太阳时 correction
+  // only makes sense on a precise clock time, so the birth city lives inside
+  // the opt-in precise-time disclosure (allowPreciseTime), not as an always-on
+  // field. Override the shared copy with Kindred's hints + precise-time strings.
   const copy = useMemo(() => kindredBirthCopy(locale), [locale])
 
   const value: Partial<BirthInfoValue> = {
@@ -67,6 +69,8 @@ export default function SelfBirthScreen() {
     lat: draft.selfBirthLat ?? undefined,
     lng: draft.selfBirthLng ?? undefined,
     timezone: draft.selfBirthTimezone ?? undefined,
+    clockMinutes: draft.selfClockMinutes ?? undefined,
+    calibrate: draft.selfCalibrate ?? undefined,
   }
 
   const handleChange = (next: Partial<BirthInfoValue>) => {
@@ -78,6 +82,8 @@ export default function SelfBirthScreen() {
     if (next.lat !== undefined) patch.selfBirthLat = next.lat
     if (next.lng !== undefined) patch.selfBirthLng = next.lng
     if (next.timezone !== undefined) patch.selfBirthTimezone = next.timezone
+    if (next.clockMinutes !== undefined) patch.selfClockMinutes = next.clockMinutes
+    if (next.calibrate !== undefined) patch.selfCalibrate = next.calibrate
     updateDraft(patch)
   }
 
@@ -96,6 +102,8 @@ export default function SelfBirthScreen() {
         lat: draft.selfBirthLat ?? undefined,
         lng: draft.selfBirthLng ?? undefined,
         timezone: draft.selfBirthTimezone ?? undefined,
+        clockMinutes: draft.selfClockMinutes ?? undefined,
+        calibrate: draft.selfCalibrate ?? undefined,
       }
       await saveSelfBirth(birth)
       // Server sync (K2) — the bonds API reads person A's birth from the users
@@ -128,7 +136,8 @@ export default function SelfBirthScreen() {
           searchCity={handleSearchCity}
           locale={locale}
           requireTime
-          placeOptional
+          skipSteps={['place']}
+          allowPreciseTime
           timeInputStyle='wheel'
         />
       </View>

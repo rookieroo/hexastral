@@ -63,6 +63,8 @@ const birthSchema = z
   .object({
     solarDate: z.string().min(1),
     timeIndex: z.int().min(0).max(12),
+    clockMinutes: z.number().int().min(0).max(1439).optional(),
+    calibrate: z.boolean().optional(),
     gender: z.enum(['男', '女']),
     longitude: z.number().optional(),
     latitude: z.number().optional(),
@@ -140,6 +142,8 @@ reportChapterRoutes.post('/chapter', async (c) => {
     ? buildRichFacts({
         solarDate: input.birth.solarDate,
         timeIndex: input.birth.timeIndex,
+        clockMinutes: input.birth.clockMinutes,
+        calibrate: input.birth.calibrate,
         gender: input.birth.gender,
         longitude: input.birth.longitude,
         latitude: input.birth.latitude,

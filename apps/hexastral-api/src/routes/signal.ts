@@ -153,6 +153,8 @@ export const signalTodayRoutes = new Hono<AppEnv>().get('/', async (c) => {
             userId,
             birthSolarDate: user.birthSolarDate,
             birthTimeIndex: user.birthTimeIndex,
+            birthClockMinutes: user.birthClockMinutes,
+            birthSolarCalibrate: user.birthSolarCalibrate,
             birthGender: user.birthGender as '男' | '女',
             birthCity: user.birthCity,
             birthLongitude: user.birthLongitude,
