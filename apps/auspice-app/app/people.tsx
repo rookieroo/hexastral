@@ -11,9 +11,12 @@ import {
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
+  isCjkScript,
   ShichenField,
   type ShichenIndex,
   shichenFieldLabelsForLocale,
+  shichenInlineLabel,
+  shichenRange,
   useTheme,
 } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
@@ -39,9 +42,18 @@ import {
 } from '@/lib/people'
 import { FREE_BIRTHDAY_LIMIT, requestPushPermission, scheduleBirthdayReminders } from '@/lib/push'
 import { animalOf } from '@/lib/relationship'
+import { TWELVE_SHICHEN } from '@/lib/shichen-content'
 import { resolveSolarInput } from '@/lib/synastry-timeline'
 
-const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+/** 时辰 label for a 亲友 summary. CJK shows 「未时」; Latin scripts show the AM/PM
+ *  clock range (am/pm for North America — same shichen-i18n source as the field). */
+function shichenSummaryLabel(index: number, locale: string): string {
+  const sc = TWELVE_SHICHEN[index]
+  if (!sc) return ''
+  return isCjkScript(locale)
+    ? shichenInlineLabel(index, sc.branch, locale)
+    : shichenRange(sc.range, locale)
+}
 const ADVANCE_OPTIONS = [0, 1, 3, 7] as const
 const MD_RE = /^\d{2}-\d{2}$/
 
@@ -218,7 +230,7 @@ export default function PeopleScreen() {
     const parts = [`${p.calendar === 'lunar' ? `${t.people.lunar} ` : ''}${shown}`]
     const animal = animalOf(p.solarDate)
     if (animal) parts.push(`属${animal}`)
-    if (p.timeIndex != null) parts.push(`${SHICHEN_BRANCHES[p.timeIndex]}时`)
+    if (p.timeIndex != null) parts.push(shichenSummaryLabel(p.timeIndex, locale))
     if (p.city) parts.push(p.city)
     return parts.join(' · ')
   }
@@ -391,6 +403,7 @@ export default function PeopleScreen() {
                     onChange={(idx: ShichenIndex) => setTimeIndex(idx)}
                     accent={colors.accent}
                     labels={shichenFieldLabelsForLocale(locale)}
+                    locale={locale}
                   />
                 </View>
 

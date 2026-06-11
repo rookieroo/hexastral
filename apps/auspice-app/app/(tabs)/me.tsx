@@ -21,9 +21,12 @@ import {
   birthDateFieldLabelsForLocale,
   CityPicker,
   DEFAULT_TOP_CITIES,
+  isCjkScript,
   ShichenField,
   type ShichenIndex,
   shichenFieldLabelsForLocale,
+  shichenInlineLabel,
+  shichenRange,
   useTheme,
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
@@ -62,6 +65,7 @@ import {
   isTimelineRemindersEnabled,
 } from '@/lib/push'
 import { type PushTypeMeta, pushTypeById } from '@/lib/pushRegistry'
+import { TWELVE_SHICHEN } from '@/lib/shichen-content'
 
 const LOCALES: { key: Locale; label: string }[] = [
   { key: 'zh-Hans', label: '简体中文' },
@@ -70,8 +74,19 @@ const LOCALES: { key: Locale; label: string }[] = [
   { key: 'en', label: 'English' },
 ]
 
-/** 0-11 → 地支, for the collapsed birth summary (e.g. index 6 → 午时). */
-const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+/**
+ * 时辰 label for the collapsed birth summary. CJK shows 「未时」; Latin scripts
+ * (North America) show the AM/PM clock range (e.g. "1 PM – 3 PM") — the branch
+ * glyph is opaque to a Latin reader, and the brief is am/pm for NA (synced from
+ * kindred 2026-06; same shichen-i18n source the ShichenField uses).
+ */
+function shichenSummaryLabel(index: number, locale: string): string {
+  const sc = TWELVE_SHICHEN[index]
+  if (!sc) return ''
+  return isCjkScript(locale)
+    ? shichenInlineLabel(index, sc.branch, locale)
+    : shichenRange(sc.range, locale)
+}
 
 function SectionLabel({ children }: { children: string }) {
   const { colors } = useTheme()
@@ -177,6 +192,10 @@ export default function MeScreen() {
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
+  // Birth place is optional + most users don't know it, so the field is collapsed
+  // by default (synced from kindred 2026-06). Auto-expanded when a city is already
+  // on record so a returning editor sees it.
+  const [showCity, setShowCity] = useState(false)
 
   // Shared field labels — core-ui defaults, with the app's own calendar copy.
   const dateLabels = useMemo(
@@ -208,14 +227,16 @@ export default function MeScreen() {
         : birth.solarDate
     const parts: string[] = [dateLabel]
     parts.push(
-      birth.timeIndex === null ? t.birthShichenUnknown : `${SHICHEN_BRANCHES[birth.timeIndex]}时`
+      birth.timeIndex === null
+        ? t.birthShichenUnknown
+        : shichenSummaryLabel(birth.timeIndex, locale)
     )
     if (birth.gender === '男') parts.push(t.birthGenderMale)
     else if (birth.gender === '女') parts.push(t.birthGenderFemale)
     const city = birth.city?.trim()
     if (city) parts.push(city)
     return parts.join(' · ')
-  }, [birth, t])
+  }, [birth, t, locale])
 
   useEffect(() => {
     getAuspiceBirthInfo()
@@ -223,6 +244,7 @@ export default function MeScreen() {
         if (!info) return
         setBirth(info)
         setHasSavedBirth(true)
+        if (info.city?.trim()) setShowCity(true)
         // Seed the editor with what the user originally entered (农历 stays 农历).
         const isLunar = info.calendar === 'lunar' && !!info.lunarInput
         setDateField({
@@ -473,6 +495,7 @@ export default function MeScreen() {
                   }
                   accent={colors.accent}
                   labels={shichenFieldLabelsForLocale(locale)}
+                  locale={locale}
                 />
               </View>
 
@@ -519,53 +542,65 @@ export default function MeScreen() {
               </View>
 
               {/* City — geocode-backed picker (resolves coords + IANA timezone).
-                  Kept OPTIONAL deliberately: forcing a city would block users
-                  who don't know their birth city (adopted, refugee, casual).
-                  But the why-it-matters hint underneath surfaces the accuracy
-                  cost so users can make an informed choice — 真太阳时 (TST)
-                  correction is where city earns its keep, and that mostly
-                  matters for 时柱 / 日柱-near-23:00 cases far from the standard
-                  meridian. (2026-06 follow-up after For-you accuracy audit.) */}
+                  Kept OPTIONAL deliberately, and now COLLAPSED by default: forcing
+                  (or even pre-showing) a city would block / distract users who don't
+                  know their birth city (adopted, refugee, casual). The disclosure
+                  surfaces the accuracy upside for those who want it — 真太阳时 (TST)
+                  correction is where city earns its keep, mostly for 时柱 /
+                  日柱-near-23:00 cases far from the standard meridian. (Collapse
+                  synced from kindred 2026-06.) */}
               <View style={{ gap: spacing.sm }}>
-                <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
-                  {t.birthCityLabel}
-                </Text>
-                <CityPicker
-                  value={
-                    birth.city
-                      ? {
-                          name: birth.city,
-                          country: '',
-                          lat: birth.lat ?? 0,
-                          lng: birth.lng ?? 0,
-                          timezone: birth.timezone ?? null,
-                        }
-                      : null
-                  }
-                  onSelect={(city) =>
-                    setBirth((prev) => ({
-                      ...prev,
-                      city: city.name,
-                      lat: city.lat,
-                      lng: city.lng,
-                      timezone: city.timezone ?? null,
-                    }))
-                  }
-                  search={searchCity}
-                  topCities={DEFAULT_TOP_CITIES}
-                  placeholder={t.birthCityPlaceholder}
-                  scrollRef={scrollRef}
-                />
-                <Text
-                  style={{
-                    color: colors.dim,
-                    fontSize: 12,
-                    lineHeight: 18,
-                    marginTop: 2,
-                  }}
+                <Pressable
+                  onPress={() => setShowCity((s) => !s)}
+                  hitSlop={8}
+                  accessibilityRole='button'
+                  accessibilityLabel={t.birthCityLabel}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 >
-                  {t.birthCityHint}
-                </Text>
+                  <Text style={{ color: colors.accent, fontSize: 13 }}>
+                    {`${showCity ? '▾  ' : '▸  '}${birth.city?.trim() || t.birthCityToggle}`}
+                  </Text>
+                </Pressable>
+                {showCity ? (
+                  <CityPicker
+                    value={
+                      birth.city
+                        ? {
+                            name: birth.city,
+                            country: '',
+                            lat: birth.lat ?? 0,
+                            lng: birth.lng ?? 0,
+                            timezone: birth.timezone ?? null,
+                          }
+                        : null
+                    }
+                    onSelect={(city) =>
+                      setBirth((prev) => ({
+                        ...prev,
+                        city: city.name,
+                        lat: city.lat,
+                        lng: city.lng,
+                        timezone: city.timezone ?? null,
+                      }))
+                    }
+                    search={searchCity}
+                    topCities={DEFAULT_TOP_CITIES}
+                    placeholder={t.birthCityPlaceholder}
+                    scrollRef={scrollRef}
+                  />
+                ) : null}
+                {showCity ? (
+                  <Text
+                    style={{
+                      color: colors.dim,
+                      fontSize: 12,
+                      lineHeight: 18,
+                      marginTop: 2,
+                    }}
+                  >
+                    {t.birthCityHint}
+                  </Text>
+                ) : null}
               </View>
 
               {/* Save — disabled until date is valid. "Saved" feedback briefly. */}

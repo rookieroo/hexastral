@@ -365,6 +365,8 @@ export interface Strings {
   birthGenderMale: string
   birthGenderFemale: string
   birthCityLabel: string
+  /** Disclosure label when the (optional) birth-place field is collapsed. */
+  birthCityToggle: string
   birthCityPlaceholder: string
   /** Why the city field matters — true-solar-time correction for 时柱/日柱
    *  accuracy. Shown beneath the city picker. */
@@ -719,6 +721,7 @@ const zhHans: Strings = {
   birthGenderMale: '男',
   birthGenderFemale: '女',
   birthCityLabel: '出生地（可选）',
+  birthCityToggle: '添加出生地（可选，更精准）',
   birthCityPlaceholder: '城市',
   birthCityHint:
     '用于真太阳时校准 — 让时柱、日柱更准。远离标准经度的出生地（美洲、欧洲、中国西部）影响最高可达 2 小时；东部中国通常 ≤15 分钟。',
@@ -1069,6 +1072,7 @@ const zhHant: Strings = {
   birthGenderMale: '男',
   birthGenderFemale: '女',
   birthCityLabel: '出生地（可選）',
+  birthCityToggle: '新增出生地（可選，更精準）',
   birthCityPlaceholder: '城市',
   birthCityHint:
     '用於真太陽時校準 — 讓時柱、日柱更準。遠離標準經度的出生地（美洲、歐洲、中國西部）影響最高可達 2 小時；東部中國通常 ≤15 分鐘。',
@@ -1430,6 +1434,7 @@ const ja: Strings = {
   birthGenderMale: '男性',
   birthGenderFemale: '女性',
   birthCityLabel: '出生地（任意）',
+  birthCityToggle: '出生地を追加（任意・より正確に）',
   birthCityPlaceholder: '都市名',
   birthCityHint:
     '真太陽時補正に使用 — 時柱・日柱の精度を上げます。標準経度から離れた出生地（米国・欧州・中国西部）では最大 2 時間ずれることがあります。日本国内は通常 30 分以内。',
@@ -1784,6 +1789,7 @@ const en: Strings = {
   birthGenderMale: 'Male',
   birthGenderFemale: 'Female',
   birthCityLabel: 'Birth city (optional)',
+  birthCityToggle: 'Add birth city (optional · more precise)',
   birthCityPlaceholder: 'City',
   birthCityHint:
     'Used for true-solar-time correction — sharpens the hour and day pillars. Births far from the standard meridian (US, Europe, Western China) can shift by up to 2 hours; Eastern China is usually ≤15 minutes.',
