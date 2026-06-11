@@ -10,10 +10,11 @@
  * (was a column of raw CJK marks 甲乙/水墨/划词, which read as cryptic for
  * non-Chinese users). The icon carries the meaning cross-culturally; CJK keeps
  * its characters in the title, non-CJK gets plain words. The English copy no
- * longer leans on 甲/乙 or 生/克/比和 at all. Dark, to match the report it sits over.
+ * longer leans on 甲/乙 or 生/克/比和 at all. Paper (宣纸), to match the cream
+ * report document it sits over — a dark scrim clashed once the report went paper.
  */
 
-import { kindredDark, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
+import { kindredPaper, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, kindredFonts } from '@zhop/scenario-kindred'
 import { type LucideIcon, Pointer, Sparkles, Users } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
@@ -49,7 +50,8 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
         right: 0,
         bottom: 0,
         zIndex: 50,
-        backgroundColor: 'rgba(12,10,9,0.94)',
+        // 宣纸 scrim — near-opaque cream so the report rests faintly behind.
+        backgroundColor: 'rgba(244,243,239,0.97)',
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: kindredSpacing.xl,
@@ -61,7 +63,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
             fontFamily: titleFont,
             fontSize: 26,
             letterSpacing: cjk ? 2 : 0,
-            color: kindredDark.text,
+            color: kindredPaper.ink,
             textAlign: 'center',
           }}
         >
@@ -80,13 +82,13 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
                   height: 34,
                   borderRadius: 17,
                   borderWidth: 0.5,
-                  borderColor: kindredDark.accent,
+                  borderColor: kindredPaper.bronze,
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginTop: 1,
                 }}
               >
-                <p.Icon size={17} color={kindredDark.accent} strokeWidth={1.6} />
+                <p.Icon size={17} color={kindredPaper.bronze} strokeWidth={1.6} />
               </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <Text
@@ -94,7 +96,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
                     fontFamily: serif,
                     fontSize: 16,
                     letterSpacing: cjk ? 1 : 0,
-                    color: kindredDark.text,
+                    color: kindredPaper.ink,
                   }}
                 >
                   {p.title}
@@ -104,7 +106,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
                     fontFamily: serif,
                     fontSize: 14,
                     lineHeight: 21,
-                    color: kindredDark.textSecondary,
+                    color: kindredPaper.inkSoft,
                   }}
                 >
                   {p.body}
@@ -122,7 +124,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
             accessibilityRole='button'
             style={{
               borderBottomWidth: 1,
-              borderBottomColor: kindredDark.accent,
+              borderBottomColor: kindredPaper.cinnabar,
               paddingBottom: 3,
             }}
           >
@@ -130,7 +132,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
               style={{
                 fontFamily: serif,
                 fontSize: 18,
-                color: kindredDark.text,
+                color: kindredPaper.ink,
                 letterSpacing: cjk ? 1 : 0,
               }}
             >
@@ -143,7 +145,7 @@ export function ReadingPrimer({ locale, onStart, onOpenGlossary }: ReadingPrimer
                 fontFamily: kindredFonts.mono,
                 fontSize: 11,
                 letterSpacing: 1.5,
-                color: kindredDark.textMuted,
+                color: kindredPaper.muted,
                 textTransform: 'uppercase',
               }}
             >

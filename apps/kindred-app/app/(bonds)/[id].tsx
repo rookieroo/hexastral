@@ -298,11 +298,12 @@ export default function BondDetailScreen() {
   }
 
   if (isLoading) {
-    // Plain 宣纸 hold — NO moon-phase loader here. Fetching an already-generated
-    // report is brief, and the report's entrance IS the 水墨晕开 bloom (ReportBloom).
-    // Paper (not dark) so it's continuous with the paper home + the bloom. The
-    // long LLM wait (202 → isGenerating) keeps its loader below.
-    return <View style={{ flex: 1, backgroundColor: kindredPaper.bg }} />
+    // Dark hold — NO moon-phase loader. Fetching an already-generated report is
+    // brief, and the report's entrance IS the 水墨晕开 bloom (ReportBloom). Dark
+    // (not paper) so there's no 大白页 flash: it stays continuous with the dark
+    // home until the cream report blooms in from the tap. The long LLM wait
+    // (202 → isGenerating) keeps its own loader below.
+    return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
   }
 
   if (isGenerating) {
@@ -439,18 +440,18 @@ export default function BondDetailScreen() {
             emitUnlockFunnel({ step: 'subscribe_tap', bond_id: detail.id })
             router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
           }}
-          theme='dark'
         />
       ) : null
 
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-        {/* 水墨晕开 entrance — the 水墨黑 report floods in from the tapped row over
-            the paper home (ReportBloom's surround is 宣纸). Wraps ONLY the pager;
-            the off-screen capture target + chrome below stay outside the mask. The
-            inner SafeAreaView is dark so the report reads edge-to-edge. */}
+        {/* 水墨晕开 entrance — the cream 宣纸 report unrolls in from the tapped row
+            over the dark night (ReportBloom's surround is dark, matching the
+            home). Wraps ONLY the pager; the off-screen capture target + chrome
+            below stay outside the mask. The inner SafeAreaView is paper so the
+            report document reads edge-to-edge. */}
         <ReportBloom origin={bloomOrigin}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
             {/* Clean report — NO top chrome at all (2026-06 feedback: "报告页应该
                 干干净净的显示报告即可，甚至不需要返回按钮，顶部的两个入口也去掉"). Exit
                 via the iOS edge-swipe-back gesture. Every action (copy / chat /
@@ -473,7 +474,6 @@ export default function BondDetailScreen() {
               locale={locale}
               onPickQuote={setPickedQuote}
               highlightedQuotes={highlights}
-              theme='dark'
               renderCenterpiece={
                 aElement && bElement
                   ? (ch, i) => (

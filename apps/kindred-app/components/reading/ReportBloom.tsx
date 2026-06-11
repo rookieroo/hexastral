@@ -17,7 +17,7 @@
 
 import MaskedView from '@react-native-masked-view/masked-view'
 import { InkBloomMask } from '@zhop/core-ui/motion'
-import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
@@ -53,10 +53,12 @@ export function ReportBloom({
   const open = phase === 'wipe' || phase === 'done'
 
   return (
-    // 宣纸 surround — the paper home you came from. The masked child is the
-    // 水墨黑 report, so the bloom reads as INK flooding the paper from the tap;
-    // outside the growing shape stays 宣纸. The organic mask edge IS the 墨晕.
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredPaper.bg }]}>
+    // Dark night surround — matches the SkyHero home you came from. The masked
+    // child is the cream 宣纸 report, so the bloom reads as the precious paper
+    // unrolling over the night from the tap; outside the growing shape stays
+    // dark. The organic mask edge IS the 墨晕. (Dark — not paper — so there's no
+    // 大白页 flash before the bloom, and it reads continuous with the home.)
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: kindredDark.bg }]}>
       <MaskedView
         style={StyleSheet.absoluteFill}
         maskElement={

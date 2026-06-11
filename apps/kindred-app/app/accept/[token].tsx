@@ -156,12 +156,19 @@ export default function AcceptTokenScreen() {
       lat: draft.selfBirthLat ?? undefined,
       lng: draft.selfBirthLng ?? undefined,
       timezone: draft.selfBirthTimezone ?? undefined,
+      clockMinutes: draft.selfClockMinutes ?? undefined,
+      calibrate: draft.selfCalibrate ?? undefined,
     }
     const birthData: PersonBirth = {
       solarDate: selfSolar,
       timeIndex: draft.selfTimeIndex as TimeIndex,
       gender: draft.selfGender,
       city: draft.selfBirthCity || undefined,
+      // Precise time + place → B's half of the chart gets 真太阳时 calibration too.
+      clockMinutes: draft.selfClockMinutes ?? undefined,
+      calibrate: draft.selfCalibrate ?? undefined,
+      longitude: draft.selfBirthLng != null ? String(draft.selfBirthLng) : undefined,
+      timezoneId: draft.selfBirthTimezone ?? undefined,
     }
     try {
       // Persist B's birth as their own self-chart first, so even if they bail
@@ -310,6 +317,11 @@ export default function AcceptTokenScreen() {
             onCity={(patch) => updateDraft(patch)}
             searchCity={searchCity}
             fieldPrefix='self'
+            allowPreciseTime
+            clockMinutes={draft.selfClockMinutes}
+            onClock={(min) => updateDraft({ selfClockMinutes: min })}
+            calibrate={draft.selfCalibrate}
+            onCalibrate={(on) => updateDraft({ selfCalibrate: on })}
             scrollRef={scrollRef}
           />
         </View>

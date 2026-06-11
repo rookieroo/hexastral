@@ -19,14 +19,13 @@
  *   - Removed ming-pan-only growth surfaces: SatelliteFlagshipUpsellCard,
  *     satellite-runtime analytics emits, usePushPrime, markReadingViewed,
  *     portfolio public-profile links, cross-app discovery taps.
- *   - Theme: 水墨黑 ground (2026-06-11 — "报告的背景逐步从宣纸变成水墨黑色").
- *     The home is now 宣纸 too, so a paper report left the ink-bloom invisible
- *     (paper-on-paper). Inverting the report back to dark ink restores the
- *     transition: ReadingOverlay's paper root shows the home outside the mask,
- *     and the dark report floods IN from the tap — ink spreading on paper.
- *     Body type is ivory on void; bronze stays the section accent and the
- *     bright cinnabar anchors the seal + CTA. (The whole surface is driven by
- *     the single `P` palette below, so this is one swap, not a per-style edit.)
+ *   - Theme: 宣纸 (rice-paper) ground. The HOME is now the dark night sky
+ *     (SkyHero), so the precious cream document is what blooms IN from the tap
+ *     and unrolls against the night — ReadingOverlay's root is the dark night
+ *     (shown outside the mask), and the PAPER report floods in. (A brief
+ *     2026-06-11 experiment made the report dark, but once the home went dark
+ *     that left the bloom invisible — dark-on-dark — so the report is paper
+ *     again; the single `P` palette below drives the whole surface in one swap.)
  *   - Icons: lucide-react-native (ArrowLeft / ChevronRight) — kindred's icon
  *     set — replacing `@zhop/hexastral-icons` (not a kindred dep).
  *   - i18n: reading-i18n.ts (this folder).
@@ -63,27 +62,12 @@ import {
   useReadingI18n,
 } from './reading-i18n'
 
-/* ── palette — the 水墨黑 report layer (2026-06-11): void ground, ivory body
-   ink, gold section accent, bright cinnabar for the seal + CTA. Mirrors the
-   key SHAPE of kindredPaper so every `P.*` style below re-themes in one swap;
-   the dark report blooms in over the paper home (ReadingOverlay). */
-const P = {
-  /** 水墨黑 ground. */
-  bg: kindredDark.bg,
-  /** Ivory body ink. */
-  ink: kindredDark.text,
-  inkSoft: kindredDark.textSecondary,
-  /** Section accent (gold). */
-  bronze: kindredDark.accent,
-  muted: kindredDark.textMuted,
-  /** Bright seal red — the one warm CTA anchor on the dark scroll. */
-  cinnabar: kindredDark.seal,
-  /** Hairline rules on the dark ground. */
-  hair: kindredDark.border,
-  hairSoft: 'rgba(245,240,232,0.06)',
-  /** Light glyph/text sitting on a cinnabar fill (unchanged — ivory). */
-  ctaText: kindredPaper.ctaText,
-} as const
+/* ── palette — the shared 宣纸 document layer (kindredPaper): paper ground, dark
+   ink body, bronze section accent, cinnabar seal. Promoted to @zhop/hexastral-
+   tokens so the paywall + settings cream surfaces present on the exact same
+   surface — one "document" the dark night unrolls (ReadingOverlay blooms it in
+   over the SkyHero home). */
+const P = kindredPaper
 
 /* ── 墨儀 type system — the same bundled serifs the 合盘 report uses, so the solo
    report reads as the same hand-set document (display/CJK title · old-style serif
@@ -102,9 +86,9 @@ function resolveFonts(locale: string): Fonts {
   }
 }
 
-/** 碑拓 numeral seal — a raised weathered-stone tile holding an ancient numeral;
- *  the chapter marker. On the dark report a void tile would vanish into the
- *  ground, so it rides the lighter `card` stone with the ivory rubbing glyph. */
+/** 碑拓 numeral seal — a dark stone-rubbing tile holding an ancient numeral; the
+ *  chapter marker that fills the 合盘 report's essence-seal slot (dark tile +
+ *  ivory rubbing glyph, on the paper document). */
 function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
   return (
     <View
@@ -112,7 +96,7 @@ function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
         width: size,
         height: size,
         borderRadius: size * 0.16,
-        backgroundColor: kindredDark.card,
+        backgroundColor: kindredDark.bg,
         alignItems: 'center',
         justifyContent: 'center',
       }}
