@@ -25,9 +25,10 @@ import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import { type BondData, type BondStatus, kindredFonts, useBondList } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Plus, Settings } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
+  AppState,
   FlatList,
   Pressable,
   StyleSheet,
@@ -133,12 +134,25 @@ export default function ReadingHomeScreen() {
   const skyBright = useSharedValue(0.55)
   const heroH = Math.min(width * 0.84, 320)
 
+  // Animate the night sky ONLY while the home is visible + foreground (2026-06
+  // "手机发烫"): the SkyHero orbit + the StarField twinkles are continuous Skia
+  // loops, so we freeze them when the screen is blurred or the app backgrounds.
+  const [focused, setFocused] = useState(true)
+  const [appActive, setAppActive] = useState(true)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => setAppActive(s === 'active'))
+    return () => sub.remove()
+  }, [])
+  const skyPaused = !focused || !appActive
+
   // Threads — the bond list lives inline on the home. Refetched on focus so a
-  // bond created/accepted elsewhere shows up on return.
+  // bond created/accepted elsewhere shows up on return; focus also gates the sky.
   const { bonds, refetch, deleteBond } = useBondList()
   useFocusEffect(
     useCallback(() => {
+      setFocused(true)
       void refetch()
+      return () => setFocused(false)
     }, [refetch])
   )
   const threads = useMemo(
@@ -289,7 +303,13 @@ export default function ReadingHomeScreen() {
         accessibilityLabel={copy.cardKicker}
       >
         <View style={{ width: '100%', height: heroH }}>
-          <SkyHero width={width} height={heroH} threadCount={threads.length} />
+          <SkyHero
+            width={width}
+            height={heroH}
+            threadCount={threads.length}
+            element={natal.dayMasterWuXing}
+            paused={skyPaused}
+          />
         </View>
         {/* Caption — names your star (kicker + day-master element + date), then
             the cinnabar open. Pulled up under the central star. */}
@@ -361,7 +381,7 @@ export default function ReadingHomeScreen() {
     <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       {/* Ambient night — a faint full-frame star field behind everything. */}
       <View style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} pointerEvents='none'>
-        <StarField width={width} height={height} brightSv={skyBright} />
+        <StarField width={width} height={height} brightSv={skyBright} paused={skyPaused} />
       </View>
 
       <SafeAreaView style={{ flex: 1 }}>

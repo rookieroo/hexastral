@@ -77,9 +77,12 @@ const T_RISE = 3200 // shot 1: the sky fills, unhurried
 const T_AB = T_RISE + 4800 // shot 2 (wide): comet SWEEPS past; a short lonely beat
 const T_AC = T_AB + 5900 // shot 3 (closer): the slow 1½-turn orbit; C spirals away
 const T_AD = T_AC + 6000 // shot 4 (close-up): the pair settles into its turn
-// After T_AD nothing new happens — the pair keeps orbiting while the clock
-// idles on (long tail), and the screen waits for the user's tap.
-const CLOCK_END = T_AD + 600000
+// After T_AD nothing new happens — the pair keeps orbiting while the clock idles
+// on, and the screen waits for the user's tap. The idle tail is capped at 90s
+// (was 600s) so the heavy per-frame Skia scene doesn't redraw for ten minutes if
+// the intro is left open (2026-06 "手机发烫"); the breath keeps the "tap" hint
+// alive after the orbit settles, so a frozen sky never reads as a hang.
+const CLOCK_END = T_AD + 90000
 
 const C0 = { x: 0.5, y: 0.46 } // the barycentre (A's resting spot)
 const TILT = 0.46 // orbit ellipse Y-squash → tilted orbital plane

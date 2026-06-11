@@ -2,15 +2,18 @@
  * SkyHero — the home's living night sky.
  *
  * The persistent form of the intro's two-stars-gravity: you woke in the same
- * night, and the ones who stayed are orbiting you. YOU are the central gold star;
- * each thread (relationship) is a cool star drifting in slow orbit, joined to you
- * by a faint gravity line.
+ * night, and the ones who stayed are orbiting you. YOU are the central star —
+ * tinted to your day-master 五行 (你 are 木/火/土/金/水), a quiet 意象 so the hero
+ * means something, not a generic light; each thread (relationship) is a cool star
+ * drifting in slow orbit, joined to you by a faint gravity line.
  *
- * CALM by design — this is a hub you return to, not a show: very slow orbital
- * drift + a gentle breath, no camera, no comet. Reduced-motion → a still
- * composition. It is pure atmosphere (no touch handling); the host wraps it in a
- * Pressable and owns "open your reading". The element/date live in the caption
- * below, so the central star stays abstract and luminous.
+ * CALM by design — a hub you return to, not a show: very slow orbital drift + a
+ * gentle breath, no camera, no comet. Reduced-motion → a still composition.
+ *
+ * PERF (2026-06 "手机发烫"): the orbital clock + breath only run while the home is
+ * actually visible + foreground — the host passes `paused` (true when the screen
+ * is blurred or the app is backgrounded), and we cancel/resume the animations so
+ * the GPU isn't redrawing the sky for a screen nobody is looking at.
  */
 
 import {
@@ -24,9 +27,10 @@ import {
   type SkPath,
   vec,
 } from '@shopify/react-native-skia'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { StyleSheet } from 'react-native'
 import {
+  cancelAnimation,
   Easing,
   type SharedValue,
   useDerivedValue,
@@ -37,13 +41,22 @@ import {
 
 const INK = '#f4f3ef'
 const INK_CLR = '#f4f3ef00'
-const HALO = '#c4a882' // gold — you (the warm centre)
+const HALO = '#c4a882' // default gold — you, when no element is known yet
 const HALO_HOT = '#e6c88c'
-const HALO_CLR = '#c4a88200'
 const COOL = '#bcccea' // cool silver — the others in your orbit
 const COOL_HOT = '#e4edff'
 const COOL_CLR = '#bcccea00'
 const STAR_HOT = '#ffffff'
+
+/** Your central star, coloured by day-master 五行 — a quiet elemental 意象. The
+ *  white-hot core stays white; only the halo + glow take the element's light. */
+const ELEMENT_STAR: Record<string, { halo: string; hot: string }> = {
+  木: { halo: '#86b66f', hot: '#cbe8b0' }, // wood — green
+  火: { halo: '#d2745a', hot: '#f3b98c' }, // fire — warm red
+  土: { halo: '#c4a067', hot: '#e6cc95' }, // earth — ochre gold
+  金: { halo: '#cfc8b0', hot: '#f0ead8' }, // metal — white gold
+  水: { halo: '#6f9cc8', hot: '#b8d6f0' }, // water — blue
+}
 
 const TILT = 0.5 // orbit ellipse Y-squash → a tilted plane (3D feel)
 const ORBIT_W = 0.00018 // rad/ms — very slow; the sky barely turns
@@ -66,36 +79,69 @@ export interface SkyHeroProps {
   height: number
   /** How many thread-stars to seat in orbit (capped at six). */
   threadCount: number
+  /** Day-master 五行 (木/火/土/金/水) — tints your central star. */
+  element?: string
+  /** Pause the drift + breath (screen blurred / app backgrounded) to save heat. */
+  paused?: boolean
 }
 
-export function SkyHero({ width, height, threadCount }: SkyHeroProps) {
+export function SkyHero({ width, height, threadCount, element, paused }: SkyHeroProps) {
   const reduced = useReducedMotion()
   const cx = width / 2
   const cy = height * 0.5
   const heroMin = Math.min(width, height)
   const n = Math.min(Math.max(threadCount, 0), MAX_STARS)
 
+  const star = (element && ELEMENT_STAR[element]) || { halo: HALO, hot: HALO_HOT }
+  const youHalo = star.halo
+  const youHot = star.hot
+  const youHaloClr = `${star.halo}00`
+
   const clock = useSharedValue(0)
   const breath = useSharedValue(0)
   const appear = useSharedValue(0)
+  const breathTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
+    const stopBreath = () => {
+      if (breathTimer.current) {
+        clearInterval(breathTimer.current)
+        breathTimer.current = null
+      }
+    }
     if (reduced) {
       clock.value = 120000
       breath.value = 0.5
       appear.value = 1
-      return
+      return stopBreath
     }
-    appear.value = withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) })
-    clock.value = withTiming(CLOCK_END, { duration: CLOCK_END, easing: Easing.linear })
-    breath.value = withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) })
-    const id = setInterval(() => {
+    if (paused) {
+      // Freeze in place — no GPU work while the home isn't being looked at.
+      cancelAnimation(clock)
+      cancelAnimation(breath)
+      stopBreath()
+      return stopBreath
+    }
+    // Run / resume from wherever we froze (the orbit continues, doesn't restart).
+    if (appear.value < 1) {
+      appear.value = withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) })
+    }
+    clock.value = withTiming(CLOCK_END, {
+      duration: Math.max(1, CLOCK_END - clock.value),
+      easing: Easing.linear,
+    })
+    breath.value = withTiming(breath.value < 0.5 ? 1 : 0, {
+      duration: 3000,
+      easing: Easing.inOut(Easing.sin),
+    })
+    breathTimer.current = setInterval(() => {
       breath.value = withTiming(breath.value < 0.5 ? 1 : 0, {
         duration: 3000,
         easing: Easing.inOut(Easing.sin),
       })
     }, 3000)
-    return () => clearInterval(id)
-  }, [reduced, clock, breath, appear])
+    return stopBreath
+  }, [reduced, paused, clock, breath, appear])
 
   // Live positions of all six slots (one source — the gravity lines + each star
   // both read this).
@@ -136,7 +182,7 @@ export function SkyHero({ width, height, threadCount }: SkyHeroProps) {
         style='stroke'
         strokeWidth={1}
         strokeCap='round'
-        color={HALO}
+        color={youHalo}
         opacity={linesOp}
       >
         <BlurMask blur={0.6} style='normal' />
@@ -147,16 +193,16 @@ export function SkyHero({ width, height, threadCount }: SkyHeroProps) {
         <ThreadStar key={i} idx={i} pos={pos} appear={appear} active={i < n} />
       ))}
 
-      {/* you — the centre */}
+      {/* you — the centre, tinted to your element */}
       <Group transform={youT}>
         <Circle c={vec(0, 0)} r={26} opacity={youHaloOp}>
-          <RadialGradient c={vec(0, 0)} r={26} colors={[HALO, HALO_CLR]} positions={[0, 1]} />
+          <RadialGradient c={vec(0, 0)} r={26} colors={[youHalo, youHaloClr]} positions={[0, 1]} />
         </Circle>
         <Circle c={vec(0, 0)} r={10} opacity={youGlowOp}>
           <RadialGradient
             c={vec(0, 0)}
             r={10}
-            colors={[HALO_HOT, HALO, HALO_CLR]}
+            colors={[youHot, youHalo, youHaloClr]}
             positions={[0, 0.5, 1]}
           />
         </Circle>

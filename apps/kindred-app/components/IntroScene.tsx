@@ -55,10 +55,14 @@ export function StarField({
   width,
   height,
   brightSv,
+  paused,
 }: {
   width: number
   height: number
   brightSv: SharedValue<number>
+  /** Freeze the per-star twinkle (e.g. on the home when blurred/backgrounded) so
+   *  30 infinite loops aren't redrawing for a screen nobody is looking at. */
+  paused?: boolean
 }) {
   // Hand-placed primary stars across the WHOLE frame (these twinkle, and appear
   // staggered as the sky brightens). The field wraps the pair on every side now
@@ -129,16 +133,28 @@ export function StarField({
         <Circle key={`m${i}`} cx={s.x} cy={s.y} r={s.r} fill={STAR} opacity={0.16} />
       ))}
       {stars.map((s, i) => (
-        <StarDot key={i} star={s} brightSv={brightSv} />
+        <StarDot key={i} star={s} brightSv={brightSv} paused={paused} />
       ))}
     </Svg>
   )
 }
 
-function StarDot({ star, brightSv }: { star: Star; brightSv: SharedValue<number> }) {
+function StarDot({
+  star,
+  brightSv,
+  paused,
+}: {
+  star: Star
+  brightSv: SharedValue<number>
+  paused?: boolean
+}) {
   // Each star has a per-star phase offset so they twinkle out of sync.
   const twinkle = useSharedValue(0)
   useEffect(() => {
+    if (paused) {
+      cancelAnimation(twinkle)
+      return
+    }
     twinkle.value = withDelay(
       star.phase * 1000,
       withRepeat(
@@ -151,7 +167,7 @@ function StarDot({ star, brightSv }: { star: Star; brightSv: SharedValue<number>
       )
     )
     return () => cancelAnimation(twinkle)
-  }, [])
+  }, [paused])
 
   const animatedProps = useAnimatedProps(() => {
     // Stagger appearance by phase — the sky lights sparse→dense as it brightens.
