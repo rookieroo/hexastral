@@ -36,7 +36,7 @@ import {
   useBondsTimeline,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
@@ -195,21 +195,26 @@ export default function TimelineScreen() {
           />
         ) : null}
 
+        {/* Git-graph spine — one through-line (你) runs the whole axis; each year is
+            a ring node on it, each turning-point branches off as a significance
+            dot (matches auspice's timeline read, adapted to the ego×bonds data). */}
         {grouped.map(({ year, nodes: yearNodes }) => (
-          <View key={year} style={{ marginBottom: kindredSpacing.lg }}>
-            <Text
-              style={[
-                kindredType.seal,
-                { color: kindredDark.textSecondary, marginBottom: kindredSpacing.sm },
-              ]}
-            >
-              {year}
-            </Text>
-            <View style={{ gap: kindredSpacing.sm }}>
-              {yearNodes.map((node) => (
-                <NodeCard key={node.key} node={node} locale={locale} explainNode={explainNode} />
-              ))}
-            </View>
+          <View key={year}>
+            <SpineRow ring dotColor={kindredDark.accent} dotSize={11}>
+              <Text
+                style={[
+                  kindredType.seal,
+                  { color: kindredDark.textSecondary, paddingTop: 1, marginBottom: 2 },
+                ]}
+              >
+                {year}
+              </Text>
+            </SpineRow>
+            {yearNodes.map((node) => (
+              <SpineRow key={node.key} dotColor={significanceColor(node.significance)}>
+                <NodeCard node={node} locale={locale} explainNode={explainNode} />
+              </SpineRow>
+            ))}
           </View>
         ))}
 
@@ -459,6 +464,54 @@ function UpsellBanner({ locale, onPress }: { locale: Locale; onPress: () => void
  * One merged node card. Tapping "深入解读" lazily fetches the deep explanation
  * (bondId-keyed; first touched bond) and reveals it inline.
  */
+/**
+ * One row of the timeline git-graph: a fixed rail cell (the continuous spine +
+ * this row's node) and the content to its right. `ring` marks a year node (open
+ * ring on the line); a solid dot marks a turning-point. The line is absolute +
+ * full-height so stacked rows read as one unbroken spine.
+ */
+function SpineRow({
+  dotColor,
+  dotSize = 8,
+  ring = false,
+  children,
+}: {
+  dotColor: string
+  dotSize?: number
+  ring?: boolean
+  children: ReactNode
+}) {
+  const RAIL_W = 26
+  return (
+    <View style={{ flexDirection: 'row' }}>
+      <View style={{ width: RAIL_W, alignItems: 'center' }}>
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: 1.5,
+            left: RAIL_W / 2 - 0.75,
+            backgroundColor: kindredDark.border,
+          }}
+        />
+        <View
+          style={{
+            width: dotSize,
+            height: dotSize,
+            borderRadius: dotSize / 2,
+            marginTop: 5,
+            backgroundColor: ring ? kindredDark.bg : dotColor,
+            borderWidth: ring ? 2 : 0,
+            borderColor: dotColor,
+          }}
+        />
+      </View>
+      <View style={{ flex: 1, paddingBottom: kindredSpacing.sm }}>{children}</View>
+    </View>
+  )
+}
+
 function NodeCard({
   node,
   locale,
@@ -507,19 +560,10 @@ function NodeCard({
         gap: kindredSpacing.sm,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: significanceColor(node.significance),
-          }}
-        />
-        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-          {formatNodeKind(node.kind, locale)} · {node.ganZhi}
-        </Text>
-      </View>
+      {/* Significance dot now lives on the spine; the card leads with the kind. */}
+      <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
+        {formatNodeKind(node.kind, locale)} · {node.ganZhi}
+      </Text>
 
       <Text style={[kindredType.body, { color: kindredDark.text, lineHeight: 22 }]}>
         {formatNodeSummary(node, locale)}
