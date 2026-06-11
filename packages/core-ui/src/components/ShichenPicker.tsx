@@ -16,6 +16,7 @@
 
 import { Pressable, type StyleProp, Text, View, type ViewStyle } from 'react-native'
 import { useTheme } from '../theme'
+import { shichenDisplay, shichenRange } from './shichen-i18n'
 
 export type ShichenIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11
 
@@ -61,6 +62,12 @@ export interface ShichenPickerProps {
    * than a brand-neutral near-black.
    */
   accentColor?: string
+  /**
+   * BCP-47 locale. Latin scripts (e.g. 'en') lead each cell with the zodiac
+   * ANIMAL + clock range instead of the opaque 「子」branch glyph; CJK / unset
+   * keeps the glyph. See shichen-i18n.
+   */
+  locale?: string
 }
 
 export function ShichenPicker({
@@ -69,6 +76,7 @@ export function ShichenPicker({
   onSelect,
   style,
   accentColor,
+  locale,
 }: ShichenPickerProps) {
   const { colors } = useTheme()
   const activeBg = accentColor ?? colors.accent
@@ -81,6 +89,12 @@ export function ShichenPicker({
     <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, style]}>
       {SHICHEN.map((s) => {
         const active = value === s.index
+        const disp = shichenDisplay(s.index, s.branch, locale)
+        // CJK leads with the 「子」glyph (big); Latin leads with the zodiac animal
+        // (readable). The clock range is localised (24h for CJK, AM/PM for Latin);
+        // the grid stays clean (the branch seal lives in the field summary).
+        const lead = disp.cjk ? s.branch : disp.animal
+        const sub = shichenRange(s.range, locale)
         return (
           <Pressable
             key={s.index}
@@ -98,26 +112,30 @@ export function ShichenPicker({
             }}
             accessibilityRole='button'
             accessibilityState={{ selected: active }}
-            accessibilityLabel={`${s.branch} ${s.range}`}
+            accessibilityLabel={
+              disp.cjk
+                ? `${s.branch} ${s.range}`
+                : `${disp.animal}, ${shichenRange(s.range, locale)}`
+            }
           >
             <Text
               style={{
                 color: active ? activeFg : inactiveLabel,
-                fontSize: 22,
+                fontSize: disp.cjk ? 22 : 16,
                 fontWeight: '500',
               }}
             >
-              {s.branch}
+              {lead}
             </Text>
             <Text
               style={{
                 color: active ? activeFg : inactiveRange,
-                fontSize: 10,
+                fontSize: disp.cjk ? 10 : 11,
                 fontWeight: '300',
                 marginTop: 2,
               }}
             >
-              {s.range}
+              {sub}
             </Text>
           </Pressable>
         )

@@ -49,14 +49,8 @@ import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
-import Animated, {
-  Easing,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import Animated, { FadeInDown, useSharedValue, withTiming } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm, Field, NameInput } from '@/components/BirthForm'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -89,7 +83,6 @@ function dateValueFromDraft(solar: string): BirthDateFieldValue {
 
 export default function PairInputScreen() {
   const router = useRouter()
-  const { height } = useWindowDimensions()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const { userId } = useAuth()
   const draft = useDraft()
@@ -98,26 +91,14 @@ export default function PairInputScreen() {
   const [step, setStep] = useState<Step>('self')
   // Brand moon — a controlled MoonPhaseLoader that morphs to the OPPOSITE phase
   // once you finish your own side (step leaves 'self') and back again on return.
-  // phase 0.25 = right-lit; 0.75 = its mirror (left-lit). It shares look + size
-  // with the intro's outro moon (pair-input route = fade) for a magic-move feel.
+  // phase 0.25 = right-lit; 0.75 = its mirror (left-lit). Position + size are
+  // STATIC at the resting spot: the intro hands the moon off here already at this
+  // exact state (centred, size 64), so the cross-fade route swap reads as ONE
+  // continuous moon — no entrance, no jump.
   const moonPhase = useSharedValue(0.25)
-  // Magic-move entrance: the moon arrives BIG + low (matching the intro's swollen
-  // focal moon) and shrinks + rises into its resting spot — "从大到小并且有位移",
-  // not a fade. Tune the START values on device to seat against the intro hand-off.
-  const moonScale = useSharedValue(2.6)
-  // Start ~0.32h below the resting spot so it sits roughly where the intro's
-  // focal moon ended (~0.45h), then rises into place — that's the displacement.
-  const moonTy = useSharedValue(height * 0.32)
   useEffect(() => {
     moonPhase.value = withTiming(step === 'self' ? 0.25 : 0.75, { duration: 720 })
   }, [step, moonPhase])
-  useEffect(() => {
-    moonScale.value = withTiming(1, { duration: 820, easing: Easing.out(Easing.cubic) })
-    moonTy.value = withTiming(0, { duration: 820, easing: Easing.out(Easing.cubic) })
-  }, [moonScale, moonTy])
-  const moonStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: moonTy.value }, { scale: moonScale.value }],
-  }))
 
   // The date fields hold what the user is typing/picking (which may be a 农历
   // date); the shared BirthDateField derives the canonical solar form on every
@@ -246,11 +227,9 @@ export default function PairInputScreen() {
       >
         {/* Brand moon — shared with the intro outro (route = fade) for continuity;
             morphs to the opposite phase once your own side is done. */}
-        <Animated.View
-          style={[{ alignItems: 'center', marginBottom: kindredSpacing.sm }, moonStyle]}
-        >
+        <View style={{ alignItems: 'center', marginBottom: kindredSpacing.sm }}>
           <MoonPhaseLoader size={64} phase={moonPhase} skin={SKIN_CINNABAR_INK} />
-        </Animated.View>
+        </View>
 
         {step === 'self' && (
           <Animated.View entering={FadeInDown.duration(260)} style={{ gap: kindredSpacing.lg }}>

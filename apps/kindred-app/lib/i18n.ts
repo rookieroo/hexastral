@@ -67,7 +67,7 @@ export const translations: Translations = {
     'pairInput.alt.invite': 'Invite them to fill it in',
     'pairInput.alt.skip': 'Skip — show me mine first',
     'pairInput.timeHint':
-      'Required — your hour pillar (时柱) is set by which two-hour 时辰 you were born in.',
+      'Required — your hour pillar depends on it. Each two-hour window is named for a zodiac animal (the animal of the hour, not your birth-year sign).',
     'pairInput.cityHint':
       'Optional — your birth city sharpens the hour pillar via 真太阳时 correction.',
     'pairInput.cityOptional': 'Optional',

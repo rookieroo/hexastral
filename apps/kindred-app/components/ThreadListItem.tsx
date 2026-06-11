@@ -1,13 +1,15 @@
 /**
- * ThreadListItem — one lean thread row on the home's 宣纸 list.
+ * ThreadListItem — one thread row on the home's night-sky list.
  *
- * Tap → the thread's report. Left-swipe reveals the per-bond entries (2026-06:
- * "timeline & make-if 以合盘为单位 … 列表 item 左滑给入口"): for an active bond,
- * [Timeline · Make-if · Delete]; otherwise just Delete. Timeline + make-if are
- * the subscription living layer, scoped to THIS bond.
+ * Each row carries a small gold star at the left, echoing the SkyHero above (a
+ * thread IS a star in your orbit). Tap → the thread's report. Left-swipe reveals
+ * the per-bond entries (2026-06: "timeline & make-if 以合盘为单位 … 列表 item 左滑
+ * 给入口"): for an active bond, [Timeline · Make-if · Delete]; otherwise just
+ * Delete. Timeline + make-if are the subscription living layer, scoped to THIS
+ * bond.
  */
 
-import { kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
 import { ChevronRight, GitCommitVertical, Trash2, Wand2 } from 'lucide-react-native'
 import type { ReactNode } from 'react'
@@ -18,19 +20,19 @@ import { hasValidElements } from '@/components/ink/InkCenterpiece'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { type Locale, relativeSentLabel, t } from '@/lib/i18n'
 
-/** Per-status label + paper-ink tint for the row's "info filled?" line. */
+/** Per-status label + tint for the row's "info filled?" line. */
 function statusMeta(status: BondStatus, locale: Locale): { label: string; color: string } {
   switch (status) {
     case 'active':
-      return { label: t(locale, 'bond.statusActive'), color: kindredPaper.cinnabar }
+      return { label: t(locale, 'bond.statusActive'), color: kindredDark.seal }
     case 'pending_invite':
-      return { label: t(locale, 'bond.statusPending'), color: kindredPaper.inkSoft }
+      return { label: t(locale, 'bond.statusPending'), color: kindredDark.textSecondary }
     case 'declined':
-      return { label: t(locale, 'bond.statusDeclined'), color: kindredPaper.muted }
+      return { label: t(locale, 'bond.statusDeclined'), color: kindredDark.textMuted }
     case 'expired':
-      return { label: t(locale, 'bond.statusExpired'), color: kindredPaper.muted }
+      return { label: t(locale, 'bond.statusExpired'), color: kindredDark.textMuted }
     default:
-      return { label: '', color: kindredPaper.muted }
+      return { label: '', color: kindredDark.textMuted }
   }
 }
 
@@ -70,19 +72,20 @@ export function ThreadListItem({
             <>
               <SwipeAction
                 icon={
-                  <GitCommitVertical color={kindredPaper.ctaText} size={18} strokeWidth={1.7} />
+                  <GitCommitVertical color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />
                 }
                 label={t(locale, 'timeline.title')}
-                bg={kindredPaper.ink}
+                bg={kindredDark.bgWarm}
                 onPress={() => {
                   methods.close()
                   onTimeline()
                 }}
               />
               <SwipeAction
-                icon={<Wand2 color={kindredPaper.ctaText} size={18} strokeWidth={1.7} />}
+                icon={<Wand2 color={kindredDark.bg} size={18} strokeWidth={1.7} />}
                 label={t(locale, 'makeif.cta')}
-                bg={kindredPaper.bronze}
+                bg={kindredDark.accent}
+                fg={kindredDark.bg}
                 onPress={() => {
                   methods.close()
                   onMakeif()
@@ -91,9 +94,9 @@ export function ThreadListItem({
             </>
           ) : null}
           <SwipeAction
-            icon={<Trash2 color={kindredPaper.ctaText} size={18} strokeWidth={1.7} />}
+            icon={<Trash2 color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />}
             label={t(locale, 'bondList.delete')}
-            bg={kindredPaper.cinnabar}
+            bg={kindredDark.seal}
             onPress={() => {
               methods.close()
               onDelete()
@@ -110,15 +113,28 @@ export function ThreadListItem({
           gap: kindredSpacing.md,
           paddingHorizontal: kindredSpacing.screenH,
           paddingVertical: kindredSpacing.lg,
-          // Opaque paper so the swipe actions stay hidden until swiped.
-          backgroundColor: kindredPaper.bg,
+          // Opaque ground so the swipe actions stay hidden until swiped.
+          backgroundColor: kindredDark.bg,
         }}
       >
+        {/* A small gold star — this thread, a body in your orbit (echoes SkyHero). */}
+        <View
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: 4,
+            backgroundColor: kindredDark.accent,
+            opacity: isActive ? 0.9 : 0.4,
+          }}
+        />
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[kindredType.heading, { color: kindredPaper.ink }]} numberOfLines={1}>
+          <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
             {displayName}
           </Text>
-          <Text style={[kindredType.caption, { color: kindredPaper.inkSoft }]} numberOfLines={1}>
+          <Text
+            style={[kindredType.caption, { color: kindredDark.textSecondary }]}
+            numberOfLines={1}
+          >
             {relTag ? `${relTag} · ` : ''}
             {relativeSentLabel(locale, bond.createdAt)}
           </Text>
@@ -127,25 +143,28 @@ export function ThreadListItem({
           ) : null}
         </View>
         {hasValidElements(bond.aElement ?? undefined, bond.bElement ?? undefined) ? (
-          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} onPaper />
+          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
         ) : (
-          <ChevronRight color={kindredPaper.muted} size={20} strokeWidth={1.2} />
+          <ChevronRight color={kindredDark.textMuted} size={20} strokeWidth={1.2} />
         )}
       </Pressable>
     </ReanimatedSwipeable>
   )
 }
 
-/** One swipe-reveal action — icon over a short label on a solid ink/bronze/cinnabar block. */
+/** One swipe-reveal action — icon over a short label on a solid block. */
 function SwipeAction({
   icon,
   label,
   bg,
+  fg,
   onPress,
 }: {
   icon: ReactNode
   label: string
   bg: string
+  /** Label colour — defaults to ivory; pass the dark ground for light-on-gold. */
+  fg?: string
   onPress: () => void
 }) {
   return (
@@ -163,7 +182,7 @@ function SwipeAction({
     >
       {icon}
       <Text
-        style={{ color: kindredPaper.ctaText, fontSize: 11, fontWeight: '600' }}
+        style={{ color: fg ?? kindredDark.textOnDark, fontSize: 11, fontWeight: '600' }}
         numberOfLines={1}
       >
         {label}

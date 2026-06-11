@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { useTheme } from '../../theme'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
+import { shichenDisplay, shichenRange } from '../shichen-i18n'
 import { SHICHEN } from './ShichenWheel'
 
 export interface ShichenFieldLabels {
@@ -38,9 +39,14 @@ export interface ShichenFieldProps {
   /** Brand accent for the selection band + confirm CTA. */
   accent: string
   labels: ShichenFieldLabels
+  /**
+   * BCP-47 locale. Latin scripts (e.g. 'en') show 「Rat · 子」+ range instead of
+   * the opaque 「子时」; CJK / unset keeps the Chinese label. See shichen-i18n.
+   */
+  locale?: string
 }
 
-export function ShichenField({ value, onChange, accent, labels }: ShichenFieldProps) {
+export function ShichenField({ value, onChange, accent, labels, locale }: ShichenFieldProps) {
   const { colors } = useTheme()
   const [open, setOpen] = useState(false)
   // Draft index while the sheet is open — only committed on confirm so a
@@ -48,6 +54,7 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
   const [draft, setDraft] = useState<ShichenIndex>(value ?? 0)
 
   const selected = value != null ? SHICHEN[value] : null
+  const selectedDisp = selected ? shichenDisplay(selected.index, selected.branch, locale) : null
 
   const openSheet = () => {
     void Haptics.selectionAsync().catch(() => undefined)
@@ -75,12 +82,20 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
           paddingVertical: 10,
         }}
       >
-        {selected ? (
+        {selected && selectedDisp ? (
           <View style={{ flexDirection: 'row', alignItems: 'baseline', flex: 1, gap: 8 }}>
-            <Text style={{ fontSize: 18, color: colors.text, fontWeight: '500' }}>
-              {`${selected.branch}时`}
+            <Text
+              style={{
+                fontSize: selectedDisp.cjk ? 18 : 16,
+                color: colors.text,
+                fontWeight: '500',
+              }}
+            >
+              {selectedDisp.cjk ? selectedDisp.cjkLabel : selectedDisp.latinSub}
             </Text>
-            <Text style={{ fontSize: 13, color: colors.secondary }}>{selected.range}</Text>
+            <Text style={{ fontSize: 13, color: colors.secondary }}>
+              {shichenRange(selected.range, locale)}
+            </Text>
           </View>
         ) : (
           <Text style={{ fontSize: 16, color: colors.dim, flex: 1 }}>{labels.placeholder}</Text>
@@ -157,6 +172,7 @@ export function ShichenField({ value, onChange, accent, labels }: ShichenFieldPr
                 void Haptics.selectionAsync().catch(() => undefined)
               }}
               accentColor={accent}
+              locale={locale}
             />
           ) : null}
         </View>
@@ -194,8 +210,8 @@ export function shichenFieldLabelsForLocale(locale: string): ShichenFieldLabels 
     }
   }
   return {
-    placeholder: 'Pick a 时辰',
-    title: 'Twelve 时辰',
+    placeholder: 'Pick your birth hour',
+    title: 'The twelve hours',
     done: 'Done',
     openPicker: 'Open picker',
   }

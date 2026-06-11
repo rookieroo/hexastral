@@ -1,51 +1,45 @@
 /**
- * Home — the solo 八字紫微 reading + the thread list, on a 宣纸 surface.
+ * Home — your living night sky: YOU as the central star, your threads
+ * (relationships) drifting in orbit, on the dark ink ground the whole app shares.
  *
- * 2026-06 device QA reshaped this:
- *   - Threads flattened onto the home; tapping a row → its report directly.
- *   - The home is 宣纸 (rice paper); the reading/合盘 reports are 水墨黑 and bloom
- *     IN from the tapped point, so the transition reads as ink spreading on paper
- *     (point 1 — origin is captured on press-in and handed to the bloom).
- *   - The chart card is the home's HERO — a paper "命书" object that lifts off
- *     the page (2026-06: "把命书卡做成主角").
- *   - timeline & make-if are per-合盘, so they moved OFF a global chip onto each
- *     row's left-swipe (+ the report 划词 bar) (point 2).
+ * The persistent form of the intro's two-stars-gravity (you woke in the same
+ * night; the ones who stayed orbit you). The SkyHero is the hero; tapping it
+ * opens your reading — the one cream 宣纸 document blooms IN from the tap, so the
+ * precious paper reads against the night like an unrolled scroll. Threads are a
+ * scannable list below, each row a small star echoing the sky.
  *
  *   ◐ Yuel                                 ⚙   ← brand top-left · Settings top-right
- *   ┌─────────────────────────────────────┐
- *   │ ▣   YOUR READING                    │   ← the hero card: large 碑拓 seal,
- *   │ 土   Earth · 1994-06-22             │     kicker + day-master element + date,
- *   │ ─────────────────────────────────── │     a hairline, then the cinnabar CTA.
- *   │      Open your reading  →            │     (tap → ReadingOverlay 水墨 bloom)
+ *   ┌─ live night sky ────────────────────┐
+ *   │      ·   ✦      ◉ (you)    ·   ✦     │   ← faint star field + gravity orbits
  *   └─────────────────────────────────────┘
+ *        YOUR READING · Earth · 1994-06-22       ← caption names your star
  *   Threads                              +
- *   林朝英 · Partner                  生 ›    ← tap → report; swipe ← → Timeline /
- *   王重阳 · Friend                   克 ›       Make-if / Delete
+ *   ✦ 林朝英 · Partner                  生 ›    ← tap → report; swipe ← → Timeline /
+ *   ✦ 王重阳 · Friend                   克 ›       Make-if / Delete
  */
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import {
-  kindredDark,
-  kindredPaper,
-  kindredSpacing,
-  kindredType,
-} from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import {
-  AncientSeal,
-  type BondData,
-  type BondStatus,
-  kindredFonts,
-  useBondList,
-  WUXING_GLYPH,
-} from '@zhop/scenario-kindred'
+import { type BondData, type BondStatus, kindredFonts, useBondList } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Plus, Settings } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
+import { useSharedValue } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { HomeSplash } from '@/components/HomeSplash'
+import { SkyHero } from '@/components/home/SkyHero'
+import { StarField } from '@/components/IntroScene'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
@@ -59,7 +53,7 @@ import { consumeSplashDecision } from '@/lib/splash-control'
 /* ── Home copy (4 locales, local — keeps lib/i18n.ts untouched) ─────────── */
 
 interface HomeCopy {
-  /** Kicker over the hero card — "this is YOUR book of fate". */
+  /** Kicker over the caption — "this is YOUR book of fate". */
   cardKicker: string
   open: string
   threads: string
@@ -68,7 +62,7 @@ interface HomeCopy {
   noBirthCta: string
 }
 
-/** Day-master element → an intuitive word per locale (named under the seal). */
+/** Day-master element → an intuitive word per locale (named in the caption). */
 const WUXING_LABEL: Record<string, Record<string, string>> = {
   木: { en: 'Wood', zh: '木', 'zh-Hant': '木', ja: '木' },
   火: { en: 'Fire', zh: '火', 'zh-Hant': '火', ja: '火' },
@@ -82,7 +76,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: 'Your reading',
     open: 'Open your reading →',
     threads: 'Threads',
-    threadsHint: 'Readings for two — invite or add someone',
+    threadsHint: 'No one orbits you yet — invite or add someone',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },
@@ -90,7 +84,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: '你的命书',
     open: '打开命书 →',
     threads: '牵绊',
-    threadsHint: '两个人的合盘 — 邀请或录入对方',
+    threadsHint: '还没有人绕着你 — 邀请或录入对方',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
   },
@@ -98,7 +92,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: '你的命書',
     open: '打開命書 →',
     threads: '牽絆',
-    threadsHint: '兩個人的合盤 — 邀請或錄入對方',
+    threadsHint: '還沒有人繞著你 — 邀請或錄入對方',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
   },
@@ -106,7 +100,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: 'あなたの命書',
     open: '命書を開く →',
     threads: '絆',
-    threadsHint: 'ふたりの相性 — 招待または入力',
+    threadsHint: 'まだ誰もあなたの周りに — 招待または入力',
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
@@ -124,14 +118,20 @@ const STATUS_ORDER: Record<BondStatus, number> = {
 
 export default function ReadingHomeScreen() {
   const router = useRouter()
+  const { width, height } = useWindowDimensions()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const copy = HOME_COPY[locale]
   const birth = useSelfBirth()
   const [readingOpen, setReadingOpen] = useState(false)
-  // Where the reading bloom starts — the point on the card the user pressed, so
-  // the 水墨 spreads from the tap (set on press-in, read by ReadingOverlay).
+  // Where the reading bloom starts — the point the user pressed, so the 水墨
+  // spreads from the tap (set on press-in, read by ReadingOverlay).
   const [readingOrigin, setReadingOrigin] = useState<{ x: number; y: number } | null>(null)
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
+
+  // A faint, calm ambient star field behind the whole screen (dimmed by the
+  // container opacity); the meaningful stars (you + threads) live in SkyHero.
+  const skyBright = useSharedValue(0.55)
+  const heroH = Math.min(width * 0.84, 320)
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return.
@@ -221,7 +221,7 @@ export default function ReadingHomeScreen() {
             fontSize: 13,
             letterSpacing: 3,
             textTransform: 'uppercase',
-            color: kindredPaper.ink,
+            color: kindredDark.text,
           }}
         >
           Yuel
@@ -233,7 +233,7 @@ export default function ReadingHomeScreen() {
         accessibilityRole='button'
         accessibilityLabel={t(locale, 'settings.title')}
       >
-        <Settings color={kindredPaper.muted} size={22} strokeWidth={1.5} />
+        <Settings color={kindredDark.textMuted} size={22} strokeWidth={1.5} />
       </Pressable>
     </View>
   )
@@ -243,7 +243,7 @@ export default function ReadingHomeScreen() {
   // Loading the persisted birth.
   if (birth === undefined) {
     return (
-      <View style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+      <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <AutoMoonPhaseLoader size={72} skin={SKIN_CINNABAR} />
@@ -254,8 +254,7 @@ export default function ReadingHomeScreen() {
     )
   }
 
-  // Never onboarded with birth info (e.g. pre-K1 installs) → self form. Kept on
-  // the dark ground (a rare pre-onboarding edge; core-ui EmptyState is dark-themed).
+  // Never onboarded with birth info (e.g. pre-K1 installs) → self form.
   if (birth === null || natal === null) {
     return (
       <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -281,64 +280,44 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* Your own chart — the hero of the home (2026-06: "把命书卡做成主角"). A
-          paper "命书" object that lifts off the 宣纸: a large 碑拓 seal anchors
-          your day-master element, a quiet kicker names it as YOURS, and the
-          cinnabar CTA opens the reading. Press-in records the tap point so the
-          ink blooms from exactly where the finger lands. */}
+      {/* You + those in your orbit — the living night sky. Tap to open your
+          reading; press-in seeds the ink bloom from the finger. */}
       <Pressable
         onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
         onPress={() => setReadingOpen(true)}
         accessibilityRole='button'
         accessibilityLabel={copy.cardKicker}
-        style={({ pressed }) => ({
-          marginHorizontal: kindredSpacing.screenH,
-          marginBottom: kindredSpacing.xl,
-          paddingVertical: kindredSpacing.lg,
-          paddingHorizontal: kindredSpacing.lg,
-          gap: kindredSpacing.lg,
-          borderRadius: 18,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: kindredPaper.hair,
-          backgroundColor: kindredPaper.bg,
-          // Soft lift off the 宣纸 so the card reads as a held object, not a row.
-          shadowColor: '#3c2415',
-          shadowOpacity: 0.1,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
-          transform: [{ scale: pressed ? 0.985 : 1 }],
-        })}
       >
-        {/* Identity — large essence seal + day-master element + birthdate. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.md }}>
-          <AncientSeal
-            glyph={WUXING_GLYPH[natal.dayMasterWuXing] ?? '木'}
-            size={60}
-            tile={kindredDark.bg}
-            ink={kindredPaper.bg}
-            inset={0.82}
-          />
-          <View style={{ flex: 1, gap: 6 }}>
-            <Text style={[kindredType.seal, { color: kindredPaper.bronze, letterSpacing: 3 }]}>
-              {copy.cardKicker}
-            </Text>
-            <Text style={[kindredType.heading, { color: kindredPaper.ink }]}>
-              {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
-              {birth.solarDate}
-            </Text>
-          </View>
+        <View style={{ width: '100%', height: heroH }}>
+          <SkyHero width={width} height={heroH} threadCount={threads.length} />
         </View>
-
-        {/* Hairline rule + cinnabar CTA. */}
-        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: kindredPaper.hair }} />
-        <Text
-          style={[
-            kindredType.body,
-            { color: kindredPaper.cinnabar, fontWeight: '600', letterSpacing: 0.3 },
-          ]}
+        {/* Caption — names your star (kicker + day-master element + date), then
+            the cinnabar open. Pulled up under the central star. */}
+        <View
+          style={{
+            alignItems: 'center',
+            gap: 5,
+            marginTop: -kindredSpacing.lg,
+            marginBottom: kindredSpacing.xl,
+            paddingHorizontal: kindredSpacing.screenH,
+          }}
         >
-          {copy.open}
-        </Text>
+          <Text style={[kindredType.seal, { color: kindredDark.accent, letterSpacing: 3 }]}>
+            {copy.cardKicker}
+          </Text>
+          <Text style={[kindredType.heading, { color: kindredDark.text }]}>
+            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
+            {birth.solarDate}
+          </Text>
+          <Text
+            style={[
+              kindredType.body,
+              { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3, marginTop: 2 },
+            ]}
+          >
+            {copy.open}
+          </Text>
+        </View>
       </Pressable>
 
       {/* Threads header — title + New. (Timeline/make-if are per-bond → row swipe.) */}
@@ -351,7 +330,7 @@ export default function ReadingHomeScreen() {
           marginBottom: kindredSpacing.sm,
         }}
       >
-        <Text style={[kindredType.heading, { color: kindredPaper.ink }]}>{copy.threads}</Text>
+        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
         <Pressable
           onPress={() => router.push('/(onboarding)/mode')}
           accessibilityRole='button'
@@ -365,12 +344,12 @@ export default function ReadingHomeScreen() {
             paddingHorizontal: 12,
             borderRadius: 999,
             borderWidth: StyleSheet.hairlineWidth,
-            borderColor: kindredPaper.cinnabar,
+            borderColor: kindredDark.seal,
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Plus color={kindredPaper.cinnabar} size={16} strokeWidth={1.9} />
-          <Text style={[kindredType.caption, { color: kindredPaper.cinnabar, fontWeight: '600' }]}>
+          <Plus color={kindredDark.seal} size={16} strokeWidth={1.9} />
+          <Text style={[kindredType.caption, { color: kindredDark.seal, fontWeight: '600' }]}>
             {t(locale, 'bondList.add')}
           </Text>
         </Pressable>
@@ -379,10 +358,16 @@ export default function ReadingHomeScreen() {
   )
 
   return (
-    <View style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      {/* Ambient night — a faint full-frame star field behind everything. */}
+      <View style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} pointerEvents='none'>
+        <StarField width={width} height={height} brightSv={skyBright} />
+      </View>
+
       <SafeAreaView style={{ flex: 1 }}>
         {topBar}
         <FlatList
+          style={{ backgroundColor: 'transparent' }}
           contentContainerStyle={{
             paddingTop: kindredSpacing.md,
             paddingBottom: kindredSpacing.xxl,
@@ -424,7 +409,7 @@ export default function ReadingHomeScreen() {
             <View
               style={{
                 height: StyleSheet.hairlineWidth,
-                backgroundColor: kindredPaper.hair,
+                backgroundColor: kindredDark.border,
                 marginLeft: kindredSpacing.screenH,
               }}
             />
@@ -433,7 +418,7 @@ export default function ReadingHomeScreen() {
             <Text
               style={[
                 kindredType.caption,
-                { color: kindredPaper.inkSoft, paddingHorizontal: kindredSpacing.screenH },
+                { color: kindredDark.textSecondary, paddingHorizontal: kindredSpacing.screenH },
               ]}
             >
               {copy.threadsHint}
@@ -455,7 +440,7 @@ export default function ReadingHomeScreen() {
                     fontFamily: kindredFonts.mono,
                     fontSize: 11,
                     letterSpacing: 1.5,
-                    color: kindredPaper.muted,
+                    color: kindredDark.textMuted,
                     textTransform: 'uppercase',
                   }}
                 >
@@ -470,8 +455,7 @@ export default function ReadingHomeScreen() {
       </SafeAreaView>
 
       {/* Full reading — ink-bloom overlay (kept mounted for open/close animation).
-          `origin` is the tapped point on the hero card, so the 水墨 spreads from
-          the finger. */}
+          `origin` is the tapped point, so the 水墨 spreads from the finger. */}
       <ReadingOverlay
         visible={readingOpen}
         onClose={() => setReadingOpen(false)}

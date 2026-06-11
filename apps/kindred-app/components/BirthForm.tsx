@@ -32,9 +32,11 @@ import {
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
+  formatHourMinute,
   ShichenField,
   type ShichenIndex,
   shichenFieldLabelsForLocale,
+  shichenInlineLabel,
 } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Haptics from 'expo-haptics'
@@ -58,10 +60,10 @@ function pad2(n: number): string {
 function formatMinutes(min: number): string {
   return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`
 }
-/** 排盘小时 → 时辰 label (14 → 未时). */
-function shichenLabelForHour(hour: number): string {
+/** 排盘小时 → 时辰 label (14 → 未时 / "Goat"), locale-aware. */
+function shichenLabelForHour(hour: number, locale: string): string {
   const idx = hour === 23 ? 0 : Math.floor((hour + 1) / 2) % 12
-  return `${SHICHEN_BRANCHES[idx]}时`
+  return shichenInlineLabel(idx, SHICHEN_BRANCHES[idx] ?? '', locale)
 }
 
 export interface BirthFormProps {
@@ -192,7 +194,7 @@ export function BirthForm({
         city: city || undefined,
       })
       if (resolved.calibrated) {
-        calibrationPreview = `${formatMinutes(clockMinutes)} → ${preciseCopy.trueSolarLabel ?? '真太阳时'} ${pad2(resolved.hour)}:${pad2(resolved.minute)} · ${shichenLabelForHour(resolved.hour)}`
+        calibrationPreview = `${formatHourMinute(formatMinutes(clockMinutes), locale)} → ${preciseCopy.trueSolarLabel ?? '真太阳时'} ${formatHourMinute(`${pad2(resolved.hour)}:${pad2(resolved.minute)}`, locale)} · ${shichenLabelForHour(resolved.hour, locale)}`
       }
     }
   }
@@ -268,6 +270,7 @@ export function BirthForm({
           onChange={(idx) => onTime(idx)}
           accent={kindredDark.accent}
           labels={shichenLabels}
+          locale={locale}
         />
       </View>
 

@@ -51,4 +51,14 @@ export {
   ShichenPicker,
   type ShichenPickerProps,
 } from './ShichenPicker'
+export {
+  cjkHourSuffix,
+  formatHourMinute,
+  isCjkScript,
+  SHICHEN_ANIMALS_EN,
+  type ShichenDisplay,
+  shichenDisplay,
+  shichenInlineLabel,
+  shichenRange,
+} from './shichen-i18n'
 export { Text, type TextProps, type TextVariant } from './Text'
