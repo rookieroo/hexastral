@@ -411,6 +411,26 @@ export function buildLanguageBlock(language: string, domain: TermDomain): string
   ].join('\n')
 }
 
+/**
+ * A TERSE per-call language reminder for the END of the USER prompt — the
+ * highest-recency signal a model sees before generating. `buildLanguageBlock`
+ * (in the shared system prompt) is the full spec; this short, authoritative
+ * repeat stops a PARALLEL chapter call from drifting back to Chinese.
+ *
+ * 2026-06 bug it fixes: an en-locale 合盘 report came back with one chapter in
+ * English and five in Chinese — the language directive lived only in the system
+ * prompt, so individual chapter calls ignored it. Appending this to every
+ * chapter's user prompt makes the instruction local + recent per call.
+ */
+export function buildLanguageReminder(language: string): string {
+  if (isChineseLocale(language)) {
+    const variant = language === 'zh-TW' || language === 'zh-Hant' ? '繁體中文' : '简体中文'
+    return `\n\n【语言】本次输出的所有 JSON 文本字段必须使用${variant}，不得夹杂其他语言。只输出 JSON。`
+  }
+  const langName = LANGUAGE_NAMES[language] ?? language
+  return `\n\nLANGUAGE — write EVERY JSON string value in ${langName} only. Do NOT output Chinese (or any other language) in any text field. Output JSON only.`
+}
+
 // ─── 交叉盘面参考 (Cross-Chart Context) ───────────────────────
 
 /** 星宫盘面摘要，注入命格 prompt 作为交叉验证上下文 */

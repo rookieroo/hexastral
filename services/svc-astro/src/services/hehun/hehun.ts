@@ -27,7 +27,7 @@ import {
 import { calculateAge } from '../../lib/age'
 import { type AiRouterEnv, callWithFallback } from '../../lib/ai-router'
 import { extractJson } from '../../lib/extract-json'
-import { buildLanguageBlock } from '../../lib/i18n-prompt'
+import { buildLanguageBlock, buildLanguageReminder } from '../../lib/i18n-prompt'
 import { buildEnhancedGuardrails } from '../../lib/prompts/guardrails'
 import { getSystemRole } from '../../lib/prompts/system-role'
 
@@ -617,27 +617,51 @@ export async function generateSynastryChapters(
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
 
+  // Per-chapter language reminder (highest-recency repeat of the system block) +
+  // a drift guard: when the report is non-Chinese, a chapter that comes back
+  // overwhelmingly CJK has ignored the directive, so retry it ONCE (2026-06 bug:
+  // 1 of 6 en chapters in English, the rest Chinese).
+  const langReminder = buildLanguageReminder(language)
+  const expectsNonChinese = !language.startsWith('zh')
+  const driftedToChinese = (text: string): boolean => {
+    if (!expectsNonChinese) return false
+    const cjk = (text.match(/[一-鿿]/g) ?? []).length
+    const latin = (text.match(/[A-Za-z]/g) ?? []).length
+    // Overwhelmingly CJK in a non-CJK locale → the chapter drifted. Conservative
+    // threshold so a few quoted 命理 terms don't trigger a needless retry.
+    return cjk > 40 && cjk > latin
+  }
+
   // One flagship call per chapter (+ a tiny aha-hook call), fired in parallel.
   // Per-chapter generation lets each chapter be deeper and cited, and lets a
   // single failed chapter drop out instead of nuking the whole report.
-  const chapterCall = (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number]) =>
-    callWithFallback(
-      env,
-      systemPrompt,
-      buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note),
-      {
-        tier: 'flagship',
-        maxTokens: 2200,
-        metricLabel: `hehun-chapter-${spec.kind}`,
-        locale: language,
-      }
-    ).then((text) => parseSynastryChapterResponse(text, spec, yong.element))
+  const chapterCall = async (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number]) => {
+    const userPrompt =
+      buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note) + langReminder
+    const opts = {
+      tier: 'flagship' as const,
+      maxTokens: 2200,
+      metricLabel: `hehun-chapter-${spec.kind}`,
+      locale: language,
+    }
+    let text = await callWithFallback(env, systemPrompt, userPrompt, opts)
+    if (driftedToChinese(text)) {
+      const retry = await callWithFallback(
+        env,
+        systemPrompt,
+        `${userPrompt}\n\n(Your previous attempt was in the wrong language. Re-output this chapter with every text field in the target language ONLY.)`,
+        opts
+      ).catch(() => '')
+      if (retry && !driftedToChinese(retry)) text = retry
+    }
+    return parseSynastryChapterResponse(text, spec, yong.element)
+  }
 
   // Kick off the aha-hook call in parallel; it never rejects (defaults to '').
   const ahaPromise: Promise<string> = callWithFallback(
     env,
     systemPrompt,
-    buildAhaHookPrompt(result, input),
+    buildAhaHookPrompt(result, input) + langReminder,
     { tier: 'flagship', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
   )
     .then(parseAhaHook)
