@@ -17,7 +17,6 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { CultureIntroBlock } from '@/components/culture/CultureIntroBlock'
-import { CultureWikiLink } from '@/components/culture/CultureWikiLink'
 import { BaziPillars } from '@/components/glossary/BaziPillars'
 import { GanzhiGrid } from '@/components/glossary/GanzhiGrid'
 import { ShichenWheel } from '@/components/glossary/ShichenWheel'
@@ -28,7 +27,6 @@ import {
   type CultureCategoryKey,
   cultureSummary,
   getCultureCategory,
-  getCultureEntryWikipediaUrl,
   isCultureCategoryKey,
   localizeFestival,
   localizeSolarTermName,
@@ -247,9 +245,9 @@ function CategoryBody({
 /**
  * Inline entry card — name + date + the 1-2 sentence CULTURE_SUMMARIES blurb.
  * When the entry has an authored detail page (the full 历史/物候/诗… sections),
- * the whole card becomes a drill-in into /festival/[id] (a chevron signals it,
- * and the detail hero carries the Wikipedia link). Entries without authored
- * content stay flat and keep the inline Wikipedia link as the only "more".
+ * the whole card becomes a drill-in into /festival/[id] (a chevron signals it).
+ * The Wikipedia external link lives on the detail page's hero, not here — the
+ * list is a teaser, the外链 belongs with the full content.
  *
  * (Restores the drill-in dropped in 2026-06 — at the time the detail pages were
  * mostly empty shells; now every festival + 节气 has full content worth opening.)
@@ -272,7 +270,6 @@ function EntryCard({
   const router = useRouter()
   const summary = entryId ? cultureSummary(entryId, locale) : null
   const hasDetail = entryId ? getFestivalContent(entryId) !== null : false
-  const wikiUrl = entryId ? getCultureEntryWikipediaUrl(entryId, locale) : null
 
   const header = (
     <View
@@ -282,12 +279,9 @@ function EntryCard({
         justifyContent: 'space-between',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
-        {/* Detail page carries the Wikipedia link in its hero; only show it inline
-            when there is no drill-in. */}
-        {!hasDetail && wikiUrl ? <CultureWikiLink url={wikiUrl} /> : null}
-      </View>
+      <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>
+        {label}
+      </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>{sub}</Text>
         {hasDetail ? <ChevronRightIcon size={15} color={colors.dim} strokeWidth={1.4} /> : null}
