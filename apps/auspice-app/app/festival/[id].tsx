@@ -71,6 +71,12 @@ export default function FestivalDetailScreen() {
   // (returns 24 + 8 entries cached at edge), so the per-page roundtrip is
   // cheap and avoids passing complex objects via router params.
   useEffect(() => {
+    // Topic explainers (干支 / 八字) carry no calendar date — skip the
+    // year-overview round-trip; the hero renders name + tagline + sections.
+    if (id && getFestivalContent(id)?.kind === 'topic') {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     fetchAuspiceYearOverview(new Date().getFullYear())
       .then((overview) => {

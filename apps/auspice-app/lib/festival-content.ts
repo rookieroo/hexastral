@@ -30,6 +30,8 @@ import {
   QIUFEN,
   QIXI,
   SHUANGJIANG,
+  TOPIC_BAZI,
+  TOPIC_GANZHI,
   XIAOHAN,
   XIAOMAN,
   XIAOSHU,
@@ -78,6 +80,9 @@ const REGISTRY: Record<string, FestivalContent> = {
   [DAXUE.id]: DAXUE,
   [XIAOHAN.id]: XIAOHAN,
   [DAHAN.id]: DAHAN,
+  // Topic explainers — the product mechanics behind timeline / 黄历 / make-if.
+  [TOPIC_GANZHI.id]: TOPIC_GANZHI,
+  [TOPIC_BAZI.id]: TOPIC_BAZI,
 }
 
 /**

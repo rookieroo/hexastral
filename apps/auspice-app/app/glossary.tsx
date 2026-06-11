@@ -182,8 +182,24 @@ function CategoryBody({
   locale: Locale
 }) {
   if (cat === 'shichen') return <ShichenWheel />
-  if (cat === 'ganzhi') return <GanzhiGrid />
-  if (cat === 'sizhu') return <BaziPillars />
+  // 干支 / 八字 keep their inline reference visual + a drill-in to the full
+  // explainer (the product mechanics behind timeline / 黄历 / make-if).
+  if (cat === 'ganzhi') {
+    return (
+      <View style={{ gap: spacing.md }}>
+        <GanzhiGrid />
+        <TopicLinkRow topicId='topic-ganzhi' label={t.cultureReadMore} colors={colors} />
+      </View>
+    )
+  }
+  if (cat === 'sizhu') {
+    return (
+      <View style={{ gap: spacing.md }}>
+        <BaziPillars />
+        <TopicLinkRow topicId='topic-bazi' label={t.cultureReadMore} colors={colors} />
+      </View>
+    )
+  }
   if (cat === 'ziwei') return <ZiweiIntro />
 
   if (loading) {
@@ -328,5 +344,36 @@ function EntryCard({
     >
       {body}
     </View>
+  )
+}
+
+/** Drill-in to a topic explainer page (干支 / 八字) from its glossary section. */
+function TopicLinkRow({
+  topicId,
+  label,
+  colors,
+}: {
+  topicId: string
+  label: string
+  colors: ThemeColors
+}) {
+  const router = useRouter()
+  return (
+    <Pressable
+      onPress={() => router.push(`/festival/${topicId}` as Href)}
+      accessibilityRole='button'
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 }}>
+        {label}
+      </Text>
+      <ChevronRightIcon size={14} color={colors.accent} strokeWidth={1.6} />
+    </Pressable>
   )
 }

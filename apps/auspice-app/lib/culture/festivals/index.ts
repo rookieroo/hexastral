@@ -25,6 +25,8 @@ export type {
   LocalizedSection,
 } from './schema'
 export { SHUANGJIANG } from './shuangjiang'
+export { TOPIC_BAZI } from './topic-bazi'
+export { TOPIC_GANZHI } from './topic-ganzhi'
 export { XIAOHAN } from './xiaohan'
 export { XIAOMAN } from './xiaoman'
 export { XIAOSHU } from './xiaoshu'
