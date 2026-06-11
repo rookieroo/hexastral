@@ -334,40 +334,48 @@ function generate(mode: Mode, s: number, salt: number): Clouds {
 }
 
 // ── render helpers ───────────────────────────────────────────────────────────
-const INK_FAINT = 'rgba(20,19,18,0.5)'
-const INK_BOLD = 'rgba(20,19,18,0.74)'
-const PALE_FAINT = 'rgba(244,243,239,0.5)'
-const PALE_BOLD = 'rgba(244,243,239,0.82)'
-
-function InkPoints({ faint, bold }: { faint: SkPoint[]; bold: SkPoint[] }) {
-  return (
-    <>
-      <Points
-        points={faint}
-        mode='points'
-        color={INK_FAINT}
-        style='stroke'
-        strokeWidth={2.1}
-        strokeCap='round'
-      />
-      <Points
-        points={bold}
-        mode='points'
-        color={INK_BOLD}
-        style='stroke'
-        strokeWidth={2.9}
-        strokeCap='round'
-      />
-    </>
-  )
+// The two masses are the two people; their ARRANGEMENT is the 生/克/比和 relation.
+// Their COLOUR is now the day-master 五行 of each (2026-06: "五行意象图的组合" —
+// so the imagery echoes the 木 × 土 title). One mass stays the DARK ink tier, the
+// other the PALE tier (preserving the tonal her/his split + on-grey contrast); we
+// just tint each toward its element. Kept muted + inky so it still reads 水墨, not
+// a poster. Falls back to neutral ink/ivory when an element is unknown.
+interface Tier {
+  faint: string
+  bold: string
 }
-function PalePoints({ faint, bold }: { faint: SkPoint[]; bold: SkPoint[] }) {
+const DEFAULT_DARK: Tier = { faint: 'rgba(20,19,18,0.5)', bold: 'rgba(20,19,18,0.74)' }
+const DEFAULT_PALE: Tier = { faint: 'rgba(244,243,239,0.5)', bold: 'rgba(244,243,239,0.82)' }
+const ELEMENT_DARK: Record<string, Tier> = {
+  wood: { faint: 'rgba(50,76,48,0.6)', bold: 'rgba(34,56,32,0.86)' },
+  fire: { faint: 'rgba(124,48,38,0.6)', bold: 'rgba(100,34,26,0.86)' },
+  earth: { faint: 'rgba(116,88,44,0.6)', bold: 'rgba(92,68,32,0.86)' },
+  metal: { faint: 'rgba(92,88,76,0.58)', bold: 'rgba(70,66,56,0.84)' },
+  water: { faint: 'rgba(42,62,90,0.6)', bold: 'rgba(28,46,72,0.86)' },
+}
+const ELEMENT_PALE: Record<string, Tier> = {
+  wood: { faint: 'rgba(214,224,200,0.55)', bold: 'rgba(228,236,214,0.86)' },
+  fire: { faint: 'rgba(232,206,198,0.55)', bold: 'rgba(244,222,214,0.86)' },
+  earth: { faint: 'rgba(228,216,190,0.55)', bold: 'rgba(240,230,206,0.86)' },
+  metal: { faint: 'rgba(232,228,216,0.55)', bold: 'rgba(244,242,232,0.86)' },
+  water: { faint: 'rgba(206,220,234,0.55)', bold: 'rgba(222,232,244,0.86)' },
+}
+function darkTierFor(el?: string): Tier {
+  const k = el ? ELEMENT_KEY[el.trim().toLowerCase()] : undefined
+  return (k && ELEMENT_DARK[k]) || DEFAULT_DARK
+}
+function paleTierFor(el?: string): Tier {
+  const k = el ? ELEMENT_KEY[el.trim().toLowerCase()] : undefined
+  return (k && ELEMENT_PALE[k]) || DEFAULT_PALE
+}
+
+function TierPoints({ faint, bold, tier }: { faint: SkPoint[]; bold: SkPoint[]; tier: Tier }) {
   return (
     <>
       <Points
         points={faint}
         mode='points'
-        color={PALE_FAINT}
+        color={tier.faint}
         style='stroke'
         strokeWidth={2.1}
         strokeCap='round'
@@ -375,7 +383,7 @@ function PalePoints({ faint, bold }: { faint: SkPoint[]; bold: SkPoint[] }) {
       <Points
         points={bold}
         mode='points'
-        color={PALE_BOLD}
+        color={tier.bold}
         style='stroke'
         strokeWidth={2.9}
         strokeCap='round'
@@ -409,6 +417,10 @@ export interface InkCenterpieceProps {
    * on `to`. Every other state is fully static and ignores this. Default true.
    */
   active?: boolean
+  /** Day-master 五行 of the two people — tints the dark mass (aEl) + pale mass
+   *  (bEl) so the imagery echoes the 木 × 土 title. Neutral ink/ivory if omitted. */
+  aEl?: string
+  bEl?: string
 }
 
 export function InkCenterpiece({
@@ -418,12 +430,17 @@ export function InkCenterpiece({
   from = 'oppose',
   to = 'merge',
   active = true,
+  aEl,
+  bEl,
 }: InkCenterpieceProps) {
   const mode = modeProp ?? CHAPTER_MODE[kind] ?? 'oppose'
   const height = (width * VH) / VW
   const s = width / VW
   const salt = useMemo(() => saltFromKind(kind), [kind])
   const isTransition = mode === 'transition'
+  // Element tiers — the dark mass takes aEl, the pale mass bEl.
+  const darkTier = darkTierFor(aEl)
+  const paleTier = paleTierFor(bEl)
 
   // Static geometry. Non-transition: one field. Transition: the `from` and `to`
   // endpoints of the morph — both generated ONCE; only opacity + slide animate
@@ -459,21 +476,21 @@ export function InkCenterpiece({
         <>
           {/* from endpoint — its two masses slide toward centre and fade out */}
           <Group opacity={fadeOut} transform={slideInk}>
-            <InkPoints faint={morph.from.inkFaint} bold={morph.from.inkBold} />
+            <TierPoints faint={morph.from.inkFaint} bold={morph.from.inkBold} tier={darkTier} />
           </Group>
           <Group opacity={fadeOut} transform={slidePale}>
-            <PalePoints faint={morph.from.paleFaint} bold={morph.from.paleBold} />
+            <TierPoints faint={morph.from.paleFaint} bold={morph.from.paleBold} tier={paleTier} />
           </Group>
           {/* to endpoint — the resolved field fades in */}
           <Group opacity={fadeIn}>
-            <PalePoints faint={morph.to.paleFaint} bold={morph.to.paleBold} />
-            <InkPoints faint={morph.to.inkFaint} bold={morph.to.inkBold} />
+            <TierPoints faint={morph.to.paleFaint} bold={morph.to.paleBold} tier={paleTier} />
+            <TierPoints faint={morph.to.inkFaint} bold={morph.to.inkBold} tier={darkTier} />
           </Group>
         </>
       ) : single ? (
         <>
-          <PalePoints faint={single.paleFaint} bold={single.paleBold} />
-          <InkPoints faint={single.inkFaint} bold={single.inkBold} />
+          <TierPoints faint={single.paleFaint} bold={single.paleBold} tier={paleTier} />
+          <TierPoints faint={single.inkFaint} bold={single.inkBold} tier={darkTier} />
         </>
       ) : null}
     </Canvas>

@@ -609,6 +609,8 @@ export default function BondDetailScreen({
                         {...deriveTransitionEndpoints(aElement, bElement)}
                         active={i === chapterIndex}
                         width={Dimensions.get('window').width - 44}
+                        aEl={aElement}
+                        bEl={bElement}
                       />
                     )
                   : undefined
