@@ -57,6 +57,59 @@ const ELEMENT_EN: Record<string, string> = {
 }
 
 /**
+ * Pair signature for the essence seal. The 六章之印 (見言北合月永) mark chapter
+ * TYPE, so they're identical across every report — leaving the imagery feeling
+ * templated, the same stark 北 (二人相背) in each ("意象重复"). We can't vary the
+ * glyph (it IS the chapter type), so we vary its INK by the couple's own 五行
+ * relation: a 生 pair's seals read sage, a 克 pair's cinnabar, a 比和 pair's gold.
+ * Every report now carries a colour identity, and the conflict seal is no longer
+ * the same red-stone 北 for everyone. CJK + english element forms both accepted.
+ */
+const ELEMENT_KEY: Record<string, 'wood' | 'fire' | 'earth' | 'metal' | 'water'> = {
+  木: 'wood',
+  wood: 'wood',
+  火: 'fire',
+  fire: 'fire',
+  土: 'earth',
+  earth: 'earth',
+  金: 'metal',
+  metal: 'metal',
+  水: 'water',
+  water: 'water',
+}
+const GEN: Record<string, string> = {
+  wood: 'fire',
+  fire: 'earth',
+  earth: 'metal',
+  metal: 'water',
+  water: 'wood',
+}
+const OVR: Record<string, string> = {
+  wood: 'earth',
+  earth: 'water',
+  water: 'fire',
+  fire: 'metal',
+  metal: 'wood',
+}
+function pairRelation(a?: string, b?: string): 'generate' | 'overcome' | 'peer' | null {
+  const ak = a ? ELEMENT_KEY[a.trim().toLowerCase()] : undefined
+  const bk = b ? ELEMENT_KEY[b.trim().toLowerCase()] : undefined
+  if (!ak || !bk) return null
+  if (ak === bk) return 'peer'
+  if (GEN[ak] === bk || GEN[bk] === ak) return 'generate'
+  if (OVR[ak] === bk || OVR[bk] === ak) return 'overcome'
+  return 'peer'
+}
+/** Relation → seal-glyph ink. `overcome` borrows the surface cinnabar; the other
+ *  two are muted earth tones that sit inside the 碑拓 aesthetic. */
+function sealInkFor(rel: 'generate' | 'overcome' | 'peer' | null, cinnabar: string): string | null {
+  if (rel === 'generate') return '#6e8f63' // 生 — sage jade (mutual nourishment)
+  if (rel === 'peer') return '#b18f5a' // 比和 — antique gold (resonance)
+  if (rel === 'overcome') return cinnabar // 克 — cinnabar (tension)
+  return null
+}
+
+/**
  * Surface theme. The shareable PNG card + any other consumer stay on the
  * default 宣纸 (paper); the in-app report passes 'dark' so it blooms into
  * 水墨黑 from the tap (2026-06: "报告的背景逐步从宣纸变成水墨黑色"). The
@@ -148,6 +201,9 @@ export function ChapterCard({
   const seal = CHAPTER_SEAL[chapter.kind]
   const title = chapter.title || CHAPTER_TITLES[chapter.kind]
   const subtitle = aElement && bElement ? `${aElement}${cjk ? ' · ' : ' × '}${bElement}` : undefined
+  // Seal ink takes the couple's 五行 relation, so the report has a colour identity
+  // and the chapter seals aren't the same stone glyph for every pair.
+  const sealInk = sealInkFor(pairRelation(aElement, bElement), C.cinnabar) ?? C.sealInk
 
   const layers = [
     { n: 1, label: L.chart, text: chapter.evidence },
@@ -173,7 +229,7 @@ export function ChapterCard({
       {/* Header — 碑拓 essence seal + dominant title */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
         {seal && (
-          <AncientSeal glyph={seal} size={62} tile={C.sealTile} ink={C.sealInk} inset={0.84} />
+          <AncientSeal glyph={seal} size={62} tile={C.sealTile} ink={sealInk} inset={0.84} />
         )}
         <View style={{ flex: 1 }}>
           <Text
