@@ -7,20 +7,26 @@
  */
 
 import {
+  BAILU,
   CHONGYANG,
   CHUNFEN,
   CHUNJIE,
+  CHUSHU,
   DASHU,
   DONGZHI,
   DUANWU,
   type FestivalContent,
   GUYU,
+  HANLU,
   JINGZHE,
   LICHUN,
+  LIQIU,
   LIXIA,
   MANGZHONG,
   QINGMING,
+  QIUFEN,
   QIXI,
+  SHUANGJIANG,
   XIAOMAN,
   XIAOSHU,
   XIAZHI,
@@ -56,6 +62,12 @@ const REGISTRY: Record<string, FestivalContent> = {
   [XIAZHI.id]: XIAZHI,
   [XIAOSHU.id]: XIAOSHU,
   [DASHU.id]: DASHU,
+  [LIQIU.id]: LIQIU,
+  [CHUSHU.id]: CHUSHU,
+  [BAILU.id]: BAILU,
+  [QIUFEN.id]: QIUFEN,
+  [HANLU.id]: HANLU,
+  [SHUANGJIANG.id]: SHUANGJIANG,
 }
 
 /**
