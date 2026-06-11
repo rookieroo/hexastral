@@ -1,5 +1,5 @@
 /**
- * SkyHero — the home's living night sky.
+ * SkyHero — the home's living night sky (SVG).
  *
  * The persistent form of the intro's two-stars-gravity: you woke in the same
  * night, and the ones who stayed are orbiting you. YOU are the central star —
@@ -7,45 +7,38 @@
  * means something, not a generic light; each thread (relationship) is a cool star
  * drifting in slow orbit, joined to you by a faint gravity line.
  *
- * CALM by design — a hub you return to, not a show: very slow orbital drift + a
- * gentle breath, no camera, no comet. Reduced-motion → a still composition.
+ * 2026-06: ported off Skia to react-native-svg (per "skia → svg" — drop the Skia
+ * canvas + the GPU BlurMask for a lighter, cooler hero). Reanimated drives the
+ * SVG attributes (cx/cy/r/opacity + the gravity Path `d`), the same pattern the
+ * ambient StarField already uses. CALM by design — very slow orbital drift + a
+ * gentle breath, no camera. Reduced-motion → a still composition.
  *
- * PERF (2026-06 "手机发烫"): the orbital clock + breath only run while the home is
- * actually visible + foreground — the host passes `paused` (true when the screen
- * is blurred or the app is backgrounded), and we cancel/resume the animations so
- * the GPU isn't redrawing the sky for a screen nobody is looking at.
+ * PERF: the orbit clock + breath only run while the home is visible + foreground
+ * (the host passes `paused`); we cancel/resume so the GPU isn't redrawing a sky
+ * nobody is looking at.
  */
 
-import {
-  BlurMask,
-  Canvas,
-  Circle,
-  Group,
-  Path,
-  RadialGradient,
-  Skia,
-  type SkPath,
-  vec,
-} from '@shopify/react-native-skia'
-import { useEffect, useRef } from 'react'
-import { StyleSheet } from 'react-native'
-import {
+import { useEffect, useMemo, useRef } from 'react'
+import { StyleSheet, View } from 'react-native'
+import Animated, {
   cancelAnimation,
   Easing,
-  type SharedValue,
+  useAnimatedProps,
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import Svg, { Circle, Defs, type NumberProp, Path, RadialGradient, Stop } from 'react-native-svg'
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
+const AnimatedPath = Animated.createAnimatedComponent(Path)
 
 const INK = '#f4f3ef'
-const INK_CLR = '#f4f3ef00'
 const HALO = '#c4a882' // default gold — you, when no element is known yet
 const HALO_HOT = '#e6c88c'
 const COOL = '#bcccea' // cool silver — the others in your orbit
 const COOL_HOT = '#e4edff'
-const COOL_CLR = '#bcccea00'
 const STAR_HOT = '#ffffff'
 
 /** Your central star, coloured by day-master 五行 — a quiet elemental 意象. The
@@ -93,9 +86,6 @@ export function SkyHero({ width, height, threadCount, element, paused }: SkyHero
   const n = Math.min(Math.max(threadCount, 0), MAX_STARS)
 
   const star = (element && ELEMENT_STAR[element]) || { halo: HALO, hot: HALO_HOT }
-  const youHalo = star.halo
-  const youHot = star.hot
-  const youHaloClr = `${star.halo}00`
 
   const clock = useSharedValue(0)
   const breath = useSharedValue(0)
@@ -116,13 +106,11 @@ export function SkyHero({ width, height, threadCount, element, paused }: SkyHero
       return stopBreath
     }
     if (paused) {
-      // Freeze in place — no GPU work while the home isn't being looked at.
       cancelAnimation(clock)
       cancelAnimation(breath)
       stopBreath()
       return stopBreath
     }
-    // Run / resume from wherever we froze (the orbit continues, doesn't restart).
     if (appear.value < 1) {
       appear.value = withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) })
     }
@@ -143,7 +131,7 @@ export function SkyHero({ width, height, threadCount, element, paused }: SkyHero
     return stopBreath
   }, [reduced, paused, clock, breath, appear])
 
-  // Live positions of all six slots (one source — the gravity lines + each star
+  // Live positions of all six slots (one source — the gravity Path + each star
   // both read this).
   const pos = useDerivedValue(() =>
     SLOTS.map((s) => {
@@ -153,69 +141,78 @@ export function SkyHero({ width, height, threadCount, element, paused }: SkyHero
     })
   )
 
-  // Gravity lines — centre → each active star; they sweep as the sky turns.
-  const lines = useDerivedValue<SkPath>(() => {
-    const p = Skia.Path.Make()
+  // Gravity lines — centre → each active star, as one Path's `d`.
+  const linesProps = useAnimatedProps(() => {
+    let d = ''
     for (let i = 0; i < n; i++) {
       const q = pos.value[i] ?? { x: cx, y: cy }
-      p.moveTo(cx, cy)
-      p.lineTo(q.x, q.y)
+      d += `M${cx} ${cy}L${q.x} ${q.y}`
     }
-    return p
+    return { d, opacity: appear.value * 0.14 } as { d: string; opacity: NumberProp }
   })
-  const linesOp = useDerivedValue(() => appear.value * 0.14)
 
-  // Central star — you. Breath on scale + halo.
-  const youT = useDerivedValue(() => {
-    const k = 1 + breath.value * 0.06
-    return [{ translateX: cx }, { translateY: cy }, { scale: k }]
-  })
-  const youHaloOp = useDerivedValue(() => appear.value * (0.2 + breath.value * 0.12))
-  const youGlowOp = useDerivedValue(() => appear.value * 0.5)
-  const youOp = useDerivedValue(() => appear.value)
+  // Central star — you. Breath grows r + halo a touch (≈ the old scale breath).
+  const k = useDerivedValue(() => 1 + breath.value * 0.06)
+  const haloProps = useAnimatedProps(
+    () => ({ r: 26 * k.value, opacity: appear.value * (0.2 + breath.value * 0.12) }) as object
+  )
+  const glowProps = useAnimatedProps(
+    () => ({ r: 10 * k.value, opacity: appear.value * 0.5 }) as object
+  )
+  const coreProps = useAnimatedProps(() => ({ r: 3.6 * k.value, opacity: appear.value }) as object)
 
   return (
-    <Canvas style={StyleSheet.absoluteFill} pointerEvents='none'>
-      {/* gravity lines (under the stars) */}
-      <Path
-        path={lines}
-        style='stroke'
-        strokeWidth={1}
-        strokeCap='round'
-        color={youHalo}
-        opacity={linesOp}
-      >
-        <BlurMask blur={0.6} style='normal' />
-      </Path>
+    <View style={StyleSheet.absoluteFill} pointerEvents='none'>
+      <Svg width={width} height={height}>
+        <Defs>
+          {/* element-tinted central star */}
+          <RadialGradient id='youHalo'>
+            <Stop offset='0' stopColor={star.halo} stopOpacity={1} />
+            <Stop offset='1' stopColor={star.halo} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id='youGlow'>
+            <Stop offset='0' stopColor={star.hot} stopOpacity={1} />
+            <Stop offset='0.5' stopColor={star.halo} stopOpacity={1} />
+            <Stop offset='1' stopColor={star.halo} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id='youCore'>
+            <Stop offset='0' stopColor={STAR_HOT} stopOpacity={1} />
+            <Stop offset='0.45' stopColor={INK} stopOpacity={1} />
+            <Stop offset='1' stopColor={INK} stopOpacity={0} />
+          </RadialGradient>
+          {/* cool thread stars */}
+          <RadialGradient id='threadGlow'>
+            <Stop offset='0' stopColor={COOL_HOT} stopOpacity={1} />
+            <Stop offset='0.5' stopColor={COOL} stopOpacity={1} />
+            <Stop offset='1' stopColor={COOL} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id='threadCore'>
+            <Stop offset='0' stopColor={STAR_HOT} stopOpacity={1} />
+            <Stop offset='0.5' stopColor={COOL} stopOpacity={1} />
+            <Stop offset='1' stopColor={COOL} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
 
-      {/* threads in orbit */}
-      {SLOTS.map((_, i) => (
-        <ThreadStar key={i} idx={i} pos={pos} appear={appear} active={i < n} />
-      ))}
+        {/* gravity lines (under the stars) */}
+        <AnimatedPath
+          animatedProps={linesProps}
+          stroke={star.halo}
+          strokeWidth={1}
+          strokeLinecap='round'
+          fill='none'
+        />
 
-      {/* you — the centre, tinted to your element */}
-      <Group transform={youT}>
-        <Circle c={vec(0, 0)} r={26} opacity={youHaloOp}>
-          <RadialGradient c={vec(0, 0)} r={26} colors={[youHalo, youHaloClr]} positions={[0, 1]} />
-        </Circle>
-        <Circle c={vec(0, 0)} r={10} opacity={youGlowOp}>
-          <RadialGradient
-            c={vec(0, 0)}
-            r={10}
-            colors={[youHot, youHalo, youHaloClr]}
-            positions={[0, 0.5, 1]}
-          />
-        </Circle>
-        <Circle c={vec(0, 0)} r={3.6} opacity={youOp}>
-          <RadialGradient
-            c={vec(0, 0)}
-            r={3.6}
-            colors={[STAR_HOT, INK, INK_CLR]}
-            positions={[0, 0.45, 1]}
-          />
-        </Circle>
-      </Group>
-    </Canvas>
+        {/* threads in orbit */}
+        {SLOTS.map((_, i) => (
+          <ThreadStar key={i} idx={i} pos={pos} appear={appear} active={i < n} />
+        ))}
+
+        {/* you — the centre, tinted to your element */}
+        <AnimatedCircle cx={cx} cy={cy} fill='url(#youHalo)' animatedProps={haloProps} />
+        <AnimatedCircle cx={cx} cy={cy} fill='url(#youGlow)' animatedProps={glowProps} />
+        <AnimatedCircle cx={cx} cy={cy} fill='url(#youCore)' animatedProps={coreProps} />
+      </Svg>
+    </View>
   )
 }
 
@@ -226,34 +223,22 @@ function ThreadStar({
   active,
 }: {
   idx: number
-  pos: SharedValue<Array<{ x: number; y: number }>>
-  appear: SharedValue<number>
+  pos: ReturnType<typeof useDerivedValue<Array<{ x: number; y: number }>>>
+  appear: ReturnType<typeof useSharedValue<number>>
   active: boolean
 }) {
-  const t = useDerivedValue(() => {
+  const glowProps = useAnimatedProps(() => {
     const q = pos.value[idx] ?? { x: 0, y: 0 }
-    return [{ translateX: q.x }, { translateY: q.y }]
+    return { cx: q.x, cy: q.y, r: 7, opacity: (active ? appear.value : 0) * 0.55 } as object
   })
-  const op = useDerivedValue(() => (active ? appear.value : 0))
-  const glowOp = useDerivedValue(() => (active ? appear.value : 0) * 0.55)
+  const coreProps = useAnimatedProps(() => {
+    const q = pos.value[idx] ?? { x: 0, y: 0 }
+    return { cx: q.x, cy: q.y, r: 2.4, opacity: active ? appear.value : 0 } as object
+  })
   return (
-    <Group transform={t}>
-      <Circle c={vec(0, 0)} r={7} opacity={glowOp}>
-        <RadialGradient
-          c={vec(0, 0)}
-          r={7}
-          colors={[COOL_HOT, COOL, COOL_CLR]}
-          positions={[0, 0.5, 1]}
-        />
-      </Circle>
-      <Circle c={vec(0, 0)} r={2.4} opacity={op}>
-        <RadialGradient
-          c={vec(0, 0)}
-          r={2.4}
-          colors={[STAR_HOT, COOL, COOL_CLR]}
-          positions={[0, 0.5, 1]}
-        />
-      </Circle>
-    </Group>
+    <>
+      <AnimatedCircle fill='url(#threadGlow)' animatedProps={glowProps} />
+      <AnimatedCircle fill='url(#threadCore)' animatedProps={coreProps} />
+    </>
   )
 }
