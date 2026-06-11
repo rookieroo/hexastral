@@ -11,7 +11,7 @@
  */
 
 import { kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import { GitBranch, GitCommitVertical, type LucideIcon, Sparkles, X } from 'lucide-react-native'
+import { GitBranch, GitCommitVertical, GitFork, type LucideIcon, X } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
@@ -80,7 +80,15 @@ export function LivingLayerFab({ labels, onTimeline, onWhatIf, insetBottom }: Li
         {open ? (
           <X color={kindredPaper.ctaText} size={22} strokeWidth={1.8} />
         ) : (
-          <Sparkles color={kindredPaper.ctaText} size={22} strokeWidth={1.7} />
+          // git-family glyph: branching futures = the Timeline + What-if layer
+          // (reads as one family with auspice's git icons; rotated so the fork
+          // opens upward toward the two pills it reveals).
+          <GitFork
+            color={kindredPaper.ctaText}
+            size={22}
+            strokeWidth={1.8}
+            style={{ transform: [{ rotate: '180deg' }] }}
+          />
         )}
       </Pressable>
     </View>

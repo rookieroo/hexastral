@@ -153,9 +153,25 @@ export default function ReadingHomeScreen() {
     const sub = AppState.addEventListener('change', (s) => setAppActive(s === 'active'))
     return () => sub.remove()
   }, [])
-  // Also freeze the sky while a report overlay covers the home — no point
-  // animating a night nobody can see behind the paper.
-  const skyPaused = !focused || !appActive || readingOpen || openBond != null
+  // Also freeze the sky while a report overlay COVERS the home — no point
+  // animating a night nobody can see behind the paper. But the report enters via
+  // a 水墨 bloom with a TRANSPARENT surround, so the live sky is visible AROUND the
+  // growing shape during the open (and the reverse bloom on close). Pausing at the
+  // tap froze that visible sky mid-bloom ("点进报告星象就停了"). So we delay the
+  // pause until the paper has fully covered (~bloom duration), and lift it the
+  // instant a report starts closing — the sky drifts through both transitions, and
+  // only the fully-occluded steady state is frozen for heat.
+  const reportOpen = readingOpen || openBond != null
+  const [coveredBySheet, setCoveredBySheet] = useState(false)
+  useEffect(() => {
+    if (!reportOpen) {
+      setCoveredBySheet(false)
+      return
+    }
+    const id = setTimeout(() => setCoveredBySheet(true), 700)
+    return () => clearTimeout(id)
+  }, [reportOpen])
+  const skyPaused = !focused || !appActive || coveredBySheet
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
