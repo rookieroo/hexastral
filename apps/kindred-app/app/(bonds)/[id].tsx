@@ -528,8 +528,6 @@ export default function BondDetailScreen() {
             copy: t('reading.copy'),
             chat: t('chat.cta'),
             highlight: t('reading.highlight'),
-            makeif: t('makeif.cta'),
-            timeline: t('timeline.title'),
           }}
           onCopy={() => {
             const Clipboard = getClipboard()
@@ -557,21 +555,6 @@ export default function BondDetailScreen() {
             setHighlights(next)
             if (id) void saveHighlights(id, next)
             setPickedQuote(null)
-          }}
-          onMakeif={() => {
-            const q = pickedQuote
-            setPickedQuote(null)
-            router.push({
-              pathname: '/(bonds)/makeif',
-              params: { id: detail.id, title: detail.targetName, quote: q ?? '' },
-            })
-          }}
-          onTimeline={() => {
-            setPickedQuote(null)
-            router.push({
-              pathname: '/(timeline)',
-              params: { bondId: detail.id, bondName: displayName },
-            })
           }}
           onClose={() => setPickedQuote(null)}
         />

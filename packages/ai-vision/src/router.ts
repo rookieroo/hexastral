@@ -208,6 +208,14 @@ function extractAiText(result: unknown): string {
  */
 const PER_MODEL_TIMEOUT_MS = 24_000
 
+/**
+ * Chat is INTERACTIVE — a user is staring at "Thinking…", so a stalled model
+ * must cascade sooner than for a batch reading. 18s per model keeps the whole
+ * chain (3 flagship tiers) under ~40s wall-clock, comfortably inside the
+ * client's 45s abort, instead of the 24×3 ≈ 72s that read as "hang then die".
+ */
+const CHAT_PER_MODEL_TIMEOUT_MS = 18_000
+
 function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
@@ -285,7 +293,7 @@ async function callCfAiChat(
       max_tokens: options?.maxTokens ?? 2048,
       temperature: options?.temperature ?? 0.7,
     }),
-    PER_MODEL_TIMEOUT_MS,
+    CHAT_PER_MODEL_TIMEOUT_MS,
     model
   )
 

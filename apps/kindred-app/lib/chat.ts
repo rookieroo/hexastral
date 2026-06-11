@@ -47,6 +47,11 @@ export async function fetchChatHistory(
   return (await res.json()) as ReadingChatHistory
 }
 
+/** Client-side ceiling on a chat turn. The server fast-fails its LLM chain well
+ *  under this; the abort is the backstop for a stalled connection so the screen
+ *  can show an error + a retry instead of "Thinking…" forever. */
+const CHAT_TIMEOUT_MS = 45_000
+
 export async function sendChatMessage(
   userId: string,
   readingType: string,
@@ -56,11 +61,25 @@ export async function sendChatMessage(
 ): Promise<ReadingChatSendResult> {
   const path = '/api/chat'
   const body = JSON.stringify({ readingType, readingId, message, requestId })
-  const res = await fetch(`${config.apiUrl}${path}`, {
-    method: 'POST',
-    headers: await authedHeaders(userId, 'POST', path, body),
-    body,
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(`${config.apiUrl}${path}`, {
+      method: 'POST',
+      headers: await authedHeaders(userId, 'POST', path, body),
+      body,
+      signal: controller.signal,
+    })
+  } catch (err) {
+    // Aborted by our timeout (or a dropped connection) → a clear, retryable code
+    // instead of a hang. 'chat_timeout' is non-paywall, so the screen surfaces a
+    // plain error + lets the user send again.
+    if (controller.signal.aborted) throw new Error('chat_timeout')
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
   if (!res.ok) {
     // Error envelope is `{ ok: false, error: { code, message } }`; `message`
     // carries the business code ('pro_required' / 'no_chat_credits') that

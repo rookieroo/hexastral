@@ -197,13 +197,22 @@ chatRoutes.post('/', async (c) => {
     c.header('x-chat-context-dropped', droppedLayers.join(','))
   }
 
-  // Call svc-astro chat with the structured context bundle (CC.5).
-  const astroResp = await callAstro<{ reply: string }>(c.env.SVC_ASTRO, '/chat', {
-    context: trimmedBundle,
-    messages: geminiMessages,
-    isPro: isPaid,
-    locale: user.locale ?? 'zh-CN',
-  })
+  // Call svc-astro chat with the structured context bundle (CC.5). If the LLM
+  // chain is exhausted / times out, surface a clean retryable envelope ('chat_
+  // unavailable') rather than letting the throw become a raw 500/504 — the
+  // client can parse this and show an error + retry instead of a silent hang.
+  let astroResp: { reply: string }
+  try {
+    astroResp = await callAstro<{ reply: string }>(c.env.SVC_ASTRO, '/chat', {
+      context: trimmedBundle,
+      messages: geminiMessages,
+      isPro: isPaid,
+      locale: user.locale ?? 'zh-CN',
+    })
+  } catch (err) {
+    console.warn('[chat] svc-astro chat failed', err)
+    throw new HTTPException(503, { message: 'chat_unavailable' })
+  }
 
   const userMsgId = nanoid()
   const assistantMsgId = nanoid()

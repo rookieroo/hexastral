@@ -6,39 +6,33 @@
  * solo reader's established 划词 pattern — long-pressing a report SENTENCE
  * "picks" it as the quote (ChapterCard splits each paragraph into long-pressable
  * sentences), and this bar slides up from the bottom with a minimal one-row of
- * icons: copy / chat / highlight / make-if. The meanings are taught once in the
- * reading primer + the Symbol Glossary (gesture section), so the bar itself can
- * stay icon-only; each icon keeps an accessibilityLabel for screen readers.
+ * SENTENCE-scoped icons: copy / chat / highlight. (Make-if + timeline used to
+ * live here too, but they're BOND-level — already on the thread-row swipe — so
+ * in a sentence bar they were redundant + off-concept; 2026-06 they're dropped,
+ * leaving the clean loop: copy/highlight to keep, chat to ask = the engagement →
+ * free-taste cap → paywall path.) The meanings are taught once in the reading
+ * primer + Symbol Glossary, so the bar stays icon-only with a11y labels.
  *
  * Presentational only — the host (bond detail) owns the quote state + wires the
- * handlers (clipboard, chat route, highlight persistence, make-if route).
+ * handlers (clipboard, chat route, highlight persistence).
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import {
-  Copy,
-  GitCommitVertical,
-  Highlighter,
-  type LucideIcon,
-  MessageCircle,
-  Wand2,
-} from 'lucide-react-native'
+import { Copy, Highlighter, type LucideIcon, MessageCircle } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 export interface SelectionActionBarProps {
   /** The picked sentence; null hides the bar. */
   quote: string | null
-  labels: { copy: string; chat: string; highlight: string; makeif: string; timeline: string }
+  labels: { copy: string; chat: string; highlight: string }
   /** Whether the picked quote is already highlighted (toggles the icon tone). */
   highlighted?: boolean
   /** Each action renders only when its handler is provided (e.g. chat is omitted
-   *  until a pair reading exists; timeline/make-if are the per-bond living layer). */
+   *  until a pair reading exists). */
   onCopy?: () => void
   onChat?: () => void
   onHighlight?: () => void
-  onMakeif?: () => void
-  onTimeline?: () => void
   onClose: () => void
 }
 
@@ -49,8 +43,6 @@ export function SelectionActionBar({
   onCopy,
   onChat,
   onHighlight,
-  onMakeif,
-  onTimeline,
   onClose,
 }: SelectionActionBarProps) {
   if (!quote) return null
@@ -65,8 +57,6 @@ export function SelectionActionBar({
       onPress: onHighlight,
       active: highlighted,
     },
-    { key: 'makeif', label: labels.makeif, Icon: Wand2, onPress: onMakeif },
-    { key: 'timeline', label: labels.timeline, Icon: GitCommitVertical, onPress: onTimeline },
   ].filter(
     (
       a
