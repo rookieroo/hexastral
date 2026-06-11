@@ -618,6 +618,34 @@ function YinzhengPanel({
   )
 }
 
+/** Contextual drill-in to the 八字 explainer (大运/流年 section) from the node
+ *  reading — quiet education for terms the reading uses. Free, no paywall. */
+function AboutLuckLink({
+  t,
+  colors,
+}: {
+  t: ReturnType<typeof useStrings>['t']
+  colors: BodyColors
+}) {
+  const router = useRouter()
+  return (
+    <Pressable
+      onPress={() => router.push('/festival/topic-bazi' as Parameters<typeof router.push>[0])}
+      accessibilityRole='button'
+      accessibilityLabel={t.timelineAboutLuck}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+        opacity: pressed ? 0.55 : 1,
+      })}
+    >
+      <Text style={{ color: colors.dim, fontSize: 12 }}>{t.timelineAboutLuck}</Text>
+      <Text style={{ color: colors.dim, fontSize: 12 }}>›</Text>
+    </Pressable>
+  )
+}
+
 /** 择吉 deep-link — opens /event with the selected future 流年's window prefilled.
  *  Uses `business` as a sensible default (a Specialized free-tier event); the user
  *  can switch event types once they land. */
@@ -868,6 +896,10 @@ function Body({
           colors={colors}
         />
       ) : null}
+
+      {/* Contextual education — the reading speaks of 大运/流年; a quiet drill-in
+          to the 八字 explainer answers what they are. Free; no paywall. */}
+      {detail ? <AboutLuckLink t={t} colors={colors} /> : null}
 
       {/* Free: advertise the Pro 流月 (monthly) weave under the reading, for THIS
           year + ahead — restores the value cue the removed popover used to carry,

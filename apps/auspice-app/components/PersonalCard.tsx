@@ -11,6 +11,7 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { type Href, useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 import type { AuspicePersonalization } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
@@ -42,6 +43,7 @@ export function PersonalCard({
 }) {
   const { colors, spacing } = useTheme()
   const { t } = useStrings()
+  const router = useRouter()
   const fitColor =
     data.fit === '吉' ? colors.success : data.fit === '凶' ? colors.danger : colors.secondary
   const hasWhy = locked && data.reasons.length > 0
@@ -123,6 +125,25 @@ export function PersonalCard({
             </View>
           ) : null}
         </View>
+      ) : null}
+
+      {/* 吉色/吉方/吉时 all derive from your 用神 — a quiet contextual drill-in to
+          the 八字 explainer answers "why these?". Free; pure education, no paywall. */}
+      {lucky ? (
+        <Pressable
+          onPress={() => router.push('/festival/topic-bazi' as Href)}
+          accessibilityRole='button'
+          accessibilityLabel={t.personal.lucky.about}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 2,
+            opacity: pressed ? 0.55 : 1,
+          })}
+        >
+          <Text style={{ color: colors.dim, fontSize: 12 }}>{t.personal.lucky.about}</Text>
+          <ChevronRightIcon size={13} color={colors.dim} strokeWidth={1.5} />
+        </Pressable>
       ) : null}
 
       {locked ? (

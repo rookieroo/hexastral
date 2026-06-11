@@ -195,6 +195,8 @@ export interface Strings {
   /** Free upsell under a current/future 流年 reading — advertises the Pro 流月
    *  (monthly) weave that free users don't see, and notes its scope. */
   timelineLiuyueUpsell: string
+  /** Contextual drill-in under the node reading → the 八字 explainer (大运/流年). */
+  timelineAboutLuck: string
   /** 择吉 deep-link shown when a future 流年 is selected — routes to /event with
    *  prefilled year-window. `{year}` is the gregorian year. */
   timelineZejiCta: string
@@ -400,6 +402,8 @@ export interface Strings {
       colorName: Record<WuXingChar, string>
       /** 用神五行 → localized 吉方 name. */
       directionName: Record<WuXingChar, string>
+      /** Contextual drill-in → the 八字 explainer (吉色/吉方/吉时 derive from 用神). */
+      about: string
     }
   }
   people: {
@@ -592,6 +596,7 @@ const zhHans: Strings = {
   timelineAgeFrom: '{age} 岁起',
   timelineProLocked: '解锁完整人生时间线',
   timelineLiuyueUpsell: '→ 逐月流月详情 · Pro（本年及未来）',
+  timelineAboutLuck: '什么是大运·流年',
   timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
@@ -776,6 +781,7 @@ const zhHans: Strings = {
       shichenSep: '、',
       colorName: { 木: '绿', 火: '红', 土: '黄', 金: '白', 水: '蓝' },
       directionName: { 木: '东', 火: '南', 土: '中', 金: '西', 水: '北' },
+      about: '为什么是这些',
     },
   },
   people: {
@@ -940,6 +946,7 @@ const zhHant: Strings = {
   timelineAgeFrom: '{age} 歲起',
   timelineProLocked: '解鎖完整人生時間線',
   timelineLiuyueUpsell: '→ 逐月流月詳情 · Pro（本年及未來）',
+  timelineAboutLuck: '什麼是大運·流年',
   timelineZejiCta: '→ {year}年的吉日窗口',
   timelineFreePreviewNote:
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
@@ -1110,6 +1117,7 @@ const zhHant: Strings = {
       shichenSep: '、',
       colorName: { 木: '綠', 火: '紅', 土: '黃', 金: '白', 水: '藍' },
       directionName: { 木: '東', 火: '南', 土: '中', 金: '西', 水: '北' },
+      about: '為什麼是這些',
     },
   },
   people: {
@@ -1299,6 +1307,7 @@ const ja: Strings = {
   timelineAgeFrom: '{age} 歳から',
   timelineProLocked: '人生タイムラインを全期間解錠',
   timelineLiuyueUpsell: '→ 月ごとの流月 · Pro（今年から先）',
+  timelineAboutLuck: '大運·流年とは',
   timelineZejiCta: '→ {year}年の吉日候補',
   timelineFreePreviewNote:
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
@@ -1470,6 +1479,7 @@ const ja: Strings = {
       shichenSep: '・',
       colorName: { 木: '緑', 火: '赤', 土: '黄', 金: '白', 水: '青' },
       directionName: { 木: '東', 火: '南', 土: '中央', 金: '西', 水: '北' },
+      about: 'なぜこれら？',
     },
   },
   people: {
@@ -1649,6 +1659,7 @@ const en: Strings = {
   timelineAgeFrom: 'From age {age}',
   timelineProLocked: 'Unlock the full life timeline',
   timelineLiuyueUpsell: '→ Monthly detail (流月) · Pro — this year & ahead',
+  timelineAboutLuck: 'What are 大运 & 流年?',
   timelineZejiCta: '→ Best dates in {year}',
   timelineFreePreviewNote:
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
@@ -1835,6 +1846,7 @@ const en: Strings = {
       shichenSep: ', ',
       colorName: { 木: 'Green', 火: 'Red', 土: 'Yellow', 金: 'White', 水: 'Blue' },
       directionName: { 木: 'East', 火: 'South', 土: 'Center', 金: 'West', 水: 'North' },
+      about: 'Why these?',
     },
   },
   people: {
