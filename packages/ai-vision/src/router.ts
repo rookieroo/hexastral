@@ -113,7 +113,7 @@ export interface FallbackCallOptions {
 
 export type ChatCallOptions = Pick<
   FallbackCallOptions,
-  'isPro' | 'maxTokens' | 'temperature' | 'metricLabel' | 'locale'
+  'isPro' | 'maxTokens' | 'temperature' | 'metricLabel' | 'locale' | 'noThink'
 >
 
 // ==================== Metrics ====================
@@ -284,12 +284,18 @@ async function callCfAiChat(
   messages: readonly ChatMessage[],
   options?: ChatCallOptions
 ): Promise<string> {
+  const cfMessages = messages.map((m) => ({ role: toCfRole(m.role), content: m.content }))
+  // Suppress the qwen3 <think> chain on the final user turn. In chat the budget is
+  // small (512 for free) — without this, qwen3 spends it ALL on reasoning and
+  // returns EMPTY content (→ "Empty response", chat fails). /no_think puts the
+  // reply straight into content; GLM/non-qwen models ignore the token harmlessly.
+  if (options?.noThink && cfMessages.length > 0) {
+    const last = cfMessages[cfMessages.length - 1]
+    if (last) last.content = `${last.content}\n\n/no_think`
+  }
   const result = await withTimeout(
     ai.run(model, {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.map((m) => ({ role: toCfRole(m.role), content: m.content })),
-      ],
+      messages: [{ role: 'system', content: systemPrompt }, ...cfMessages],
       max_tokens: options?.maxTokens ?? 2048,
       temperature: options?.temperature ?? 0.7,
     }),

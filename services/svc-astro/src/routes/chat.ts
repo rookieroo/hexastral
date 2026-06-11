@@ -104,7 +104,11 @@ chatRoutes.post('/', async (c) => {
 
   const reply = await callChatWithFallback(c.env, systemPrompt, messages, {
     isPro,
-    maxTokens: isPro ? 1024 : 512,
+    // /no_think stops qwen3 (a reasoning model) from spending the whole budget on
+    // a hidden <think> block and returning EMPTY. The slightly larger free budget
+    // also gives the GLM fallback (which ignores /no_think) headroom to finish.
+    maxTokens: isPro ? 1024 : 768,
+    noThink: true,
   })
 
   return c.json({ reply })
