@@ -660,7 +660,7 @@ export default function BondDetailScreen({
             overlay is collapsing. Active bonds only. */}
         {detail.status === 'active' && !pickedQuote && !closing ? (
           <LivingLayerFab
-            labels={{ timeline: t('timeline.title'), whatif: t('makeif.cta') }}
+            labels={{ timeline: t('timeline.title'), whatif: t('makeif.title') }}
             onTimeline={() =>
               router.push({
                 pathname: '/(timeline)',

@@ -14,34 +14,48 @@
  *   └─────────────────────────────────────┘
  *        YOUR READING · Earth · 1994-06-22       ← caption names your star
  *   Threads                              +
- *   ✦ 林朝英 · Partner                  生 ›    ← tap → report; swipe ← → Timeline /
- *   ✦ 王重阳 · Friend                   克 ›       Make-if / Delete
+ *   ✦ 林朝英 · Partner                  生 ›    ← tap → report; swipe ← → 解缘
+ *   ✦ 王重阳 · Friend                   克 ›       (Timeline / What-if live in the report)
  */
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
-import { type BondData, type BondStatus, kindredFonts, useBondList } from '@zhop/scenario-kindred'
+import {
+  type BondData,
+  type BondStatus,
+  kindredFonts,
+  prefetchBondReport,
+  useBondList,
+  useKindredClient,
+} from '@zhop/scenario-kindred'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Plus, Settings } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   AppState,
-  FlatList,
   Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native'
-import { useSharedValue } from 'react-native-reanimated'
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
+import { ElementGlyph } from '@/components/home/ElementGlyph'
+import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
-import { StarField } from '@/components/IntroScene'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
@@ -61,15 +75,6 @@ interface HomeCopy {
   threadsHint: string
   noBirthTitle: string
   noBirthCta: string
-}
-
-/** Day-master element → an intuitive word per locale (named in the caption). */
-const WUXING_LABEL: Record<string, Record<string, string>> = {
-  木: { en: 'Wood', zh: '木', 'zh-Hant': '木', ja: '木' },
-  火: { en: 'Fire', zh: '火', 'zh-Hant': '火', ja: '火' },
-  土: { en: 'Earth', zh: '土', 'zh-Hant': '土', ja: '土' },
-  金: { en: 'Metal', zh: '金', 'zh-Hant': '金', ja: '金' },
-  水: { en: 'Water', zh: '水', 'zh-Hant': '水', ja: '水' },
 }
 
 const HOME_COPY: Record<Locale, HomeCopy> = {
@@ -105,6 +110,15 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
+}
+
+/** Quiet kicker over the home-bottom 五行 card (the element imagery lives here, off
+ *  the hero — "放首页不太合适"). */
+const ELEMENT_KICKER: Record<Locale, string> = {
+  en: 'Your element',
+  zh: '你的五行',
+  'zh-Hant': '你的五行',
+  ja: 'あなたの五行',
 }
 
 // Pending threads need attention; actives are destinations; declined/expired are
@@ -145,8 +159,9 @@ export default function ReadingHomeScreen() {
   const heroH = Math.min(width * 0.84, 320)
 
   // Animate the night sky ONLY while the home is visible + foreground (2026-06
-  // "手机发烫"): the SkyHero orbit + the StarField twinkles are continuous Skia
-  // loops, so we freeze them when the screen is blurred or the app backgrounds.
+  // "手机发烫"): both layers are Skia/GPU now (SkyField is one twinkle shader,
+  // SkyHero the orbit) — pausing stops the shader's time clock + the orbit, so the
+  // GPU draws a static frame for ~0 cost when the screen is blurred / backgrounded.
   const [focused, setFocused] = useState(true)
   const [appActive, setAppActive] = useState(true)
   useEffect(() => {
@@ -172,6 +187,25 @@ export default function ReadingHomeScreen() {
     return () => clearTimeout(id)
   }, [reportOpen])
   const skyPaused = !focused || !appActive || coveredBySheet
+  // Don't even MOUNT the sky canvases while the cold-launch splash plays. Pausing
+  // them wasn't enough ("Logo 转场还是卡"): a Skia surface pays its init cost at
+  // MOUNT regardless of `paused`, so two extra surfaces spinning up under the
+  // splash (which is itself animating a third Skia moon center→top-left) hitched
+  // the logo landing. Deferring the mount to after the hand-off keeps the splash
+  // window light; the sky then fades in (SkyHero's own `appear`).
+  const skyReady = !showSplash
+
+  // Scroll-receding: the star map is FIXED above the list; as you scroll, the
+  // "you" card shrinks + fades toward it (越来越小 朝向星空) and rows dissolve into
+  // the sky through a top gradient. One shared scrollY drives it.
+  const scrollY = useSharedValue(0)
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y
+  })
+  const youCardStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
+    transform: [{ scale: interpolate(scrollY.value, [0, 130], [1, 0.8], Extrapolation.CLAMP) }],
+  }))
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
@@ -193,6 +227,17 @@ export default function ReadingHomeScreen() {
     [bonds]
   )
 
+  // Warm the report cache for the active threads on screen, so tapping a row
+  // opens instantly (the 水墨 bloom plays over a ready report instead of the
+  // 1-2s "tap → blank → bloom" wait). Best-effort + cache-guarded, so this only
+  // hits the network once per bond per session; pending/declined have no report.
+  const { client } = useKindredClient()
+  useEffect(() => {
+    for (const b of bonds) {
+      if (b.status === 'active') prefetchBondReport(client, b.id)
+    }
+  }, [bonds, client])
+
   const confirmDelete = useCallback(
     (bond: BondData) => {
       Alert.alert(t(locale, 'bondList.deleteTitle'), t(locale, 'bondList.deleteBody'), [
@@ -209,6 +254,20 @@ export default function ReadingHomeScreen() {
       ])
     },
     [deleteBond, locale]
+  )
+
+  // Star-map taps: your central star (or empty sky) → your reading; a thread's
+  // star → that bond. SkyHero hands back the orbit-slot index + page coords.
+  const openSelfReading = useCallback((x: number, y: number) => {
+    setReadingOrigin({ x, y })
+    setReadingOpen(true)
+  }, [])
+  const openThreadReading = useCallback(
+    (index: number, x: number, y: number) => {
+      const b = threads[index]
+      if (b) setOpenBond({ id: b.id, origin: { x, y } })
+    },
+    [threads]
   )
 
   // 划词 AI chat (K3): close the overlay, then push the chat seeded with the
@@ -322,52 +381,43 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* You + those in your orbit — the living night sky. Tap to open your
-          reading; press-in seeds the ink bloom from the finger. */}
-      <Pressable
-        onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
-        onPress={() => setReadingOpen(true)}
-        accessibilityRole='button'
-        accessibilityLabel={copy.cardKicker}
-      >
-        <View style={{ width: '100%', height: heroH }}>
-          <SkyHero
-            width={width}
-            height={heroH}
-            threadCount={threads.length}
-            element={natal.dayMasterWuXing}
-            paused={skyPaused}
-          />
-        </View>
-        {/* Compact entry — a small identity caption + the cinnabar open. Slimmed
-            down (2026-06: "个人报告入口占据较大篇幅，需要简化") so the stars + the
-            threads list breathe; the element is already carried by the star's
-            colour, so the date line stays quiet and the CTA does the work. */}
-        <View
-          style={{
+      {/* YOU — the central star as a QUIET tappable entry (no card bg/border now):
+          your 五行 意象 (system cinnabar) + "Open your reading", merging the old
+          element card + CTA. The star map itself is FIXED above (in the return);
+          this shrinks + fades toward it as you scroll (youCardStyle). */}
+      <Animated.View style={[{ transformOrigin: 'center top' }, youCardStyle]}>
+        <Pressable
+          onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
+          onPress={() => setReadingOpen(true)}
+          accessibilityRole='button'
+          accessibilityLabel={copy.cardKicker}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
             alignItems: 'center',
-            gap: 3,
-            marginTop: -kindredSpacing.md,
+            gap: kindredSpacing.md,
+            marginTop: kindredSpacing.xs,
             marginBottom: kindredSpacing.lg,
-            paddingHorizontal: kindredSpacing.screenH,
-          }}
+            marginHorizontal: kindredSpacing.screenH,
+            paddingVertical: kindredSpacing.sm,
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
-          <Text
-            style={[kindredType.caption, { color: kindredDark.textSecondary, letterSpacing: 0.5 }]}
-          >
-            {WUXING_LABEL[natal.dayMasterWuXing]?.[locale] ?? natal.dayMasterWuXing} ·{' '}
-            {birth.solarDate}
-          </Text>
-          <Text
-            style={[
-              kindredType.body,
-              { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3 },
-            ]}
-          >
-            {copy.open}
-          </Text>
-        </View>
-      </Pressable>
+          <ElementGlyph element={natal.dayMasterWuXing} color={kindredDark.seal} size={34} />
+          <View style={{ flex: 1 }}>
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted, letterSpacing: 1 }]}>
+              {ELEMENT_KICKER[locale]}
+            </Text>
+            <Text
+              style={[
+                kindredType.body,
+                { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3 },
+              ]}
+            >
+              {copy.open}
+            </Text>
+          </View>
+        </Pressable>
+      </Animated.View>
 
       {/* Threads header — title + New. (Timeline/make-if are per-bond → row swipe.) */}
       <View
@@ -408,77 +458,108 @@ export default function ReadingHomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      {/* Ambient night — a faint full-frame star field behind everything. */}
-      <View style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} pointerEvents='none'>
-        <StarField width={width} height={height} brightSv={skyBright} paused={skyPaused} />
-      </View>
+      {/* Ambient night — a faint full-frame star field behind everything. Mounted
+          only after the splash hands off (skyReady), so its Skia surface doesn't
+          spin up under the logo transition. */}
+      {skyReady ? (
+        <View style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} pointerEvents='none'>
+          <SkyField width={width} height={height} brightSv={skyBright} paused={skyPaused} />
+        </View>
+      ) : null}
 
       <SafeAreaView style={{ flex: 1 }}>
         {topBar}
-        <FlatList
-          style={{ backgroundColor: 'transparent' }}
-          contentContainerStyle={{
-            paddingTop: kindredSpacing.md,
-            paddingBottom: kindredSpacing.xxl,
-          }}
-          ListHeaderComponent={listHeader}
-          data={threads}
-          keyExtractor={(b) => b.id}
-          renderItem={({ item }) => (
-            <ThreadListItem
-              bond={item}
-              locale={locale}
-              onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
-              onDelete={() => confirmDelete(item)}
+        {/* FIXED star map — pinned; pull-down / list scroll never moves it. Tap
+            your star → your reading; a thread's star → that bond. */}
+        <View style={{ width: '100%', height: heroH }}>
+          {skyReady ? (
+            <SkyHero
+              width={width}
+              height={heroH}
+              threadCount={threads.length}
+              element={natal.dayMasterWuXing}
+              paused={skyPaused}
+              onTapSelf={openSelfReading}
+              onTapThread={openThreadReading}
             />
-          )}
-          ItemSeparatorComponent={() => (
-            <View
-              style={{
-                height: StyleSheet.hairlineWidth,
-                backgroundColor: kindredDark.border,
-                marginLeft: kindredSpacing.screenH,
-              }}
-            />
-          )}
-          ListEmptyComponent={
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textSecondary, paddingHorizontal: kindredSpacing.screenH },
-              ]}
-            >
-              {copy.threadsHint}
-            </Text>
-          }
-          ListFooterComponent={
-            threads.length > 0 ? (
-              <Pressable
-                onPress={() => router.push('/(settings)/glossary')}
-                hitSlop={8}
+          ) : null}
+        </View>
+        {/* The list scrolls BELOW the fixed sky; a top gradient dissolves rows
+            into the night as they rise toward it. */}
+        <View style={{ flex: 1 }}>
+          <Animated.FlatList
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            style={{ backgroundColor: 'transparent' }}
+            contentContainerStyle={{
+              // Clear the top fade (height 28) so the "you" card isn't dimmed at rest.
+              paddingTop: 40,
+              paddingBottom: kindredSpacing.xxl,
+            }}
+            ListHeaderComponent={listHeader}
+            data={threads}
+            keyExtractor={(b) => b.id}
+            renderItem={({ item }) => (
+              <ThreadListItem
+                bond={item}
+                locale={locale}
+                onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
+                onDelete={() => confirmDelete(item)}
+              />
+            )}
+            ItemSeparatorComponent={() => (
+              <View
                 style={{
-                  alignSelf: 'center',
-                  marginTop: kindredSpacing.xl,
-                  paddingVertical: kindredSpacing.sm,
+                  height: StyleSheet.hairlineWidth,
+                  backgroundColor: kindredDark.border,
+                  marginLeft: kindredSpacing.screenH,
                 }}
+              />
+            )}
+            ListEmptyComponent={
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textSecondary, paddingHorizontal: kindredSpacing.screenH },
+                ]}
               >
-                <Text
+                {copy.threadsHint}
+              </Text>
+            }
+            ListFooterComponent={
+              threads.length > 0 ? (
+                <Pressable
+                  onPress={() => router.push('/(settings)/glossary')}
+                  hitSlop={8}
                   style={{
-                    fontFamily: kindredFonts.mono,
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    color: kindredDark.textMuted,
-                    textTransform: 'uppercase',
+                    alignSelf: 'center',
+                    marginTop: kindredSpacing.xl,
+                    paddingVertical: kindredSpacing.sm,
                   }}
                 >
-                  {t(locale, 'primer.more')}
-                </Text>
-              </Pressable>
-            ) : null
-          }
-          onRefresh={() => void refetch()}
-          refreshing={false}
-        />
+                  <Text
+                    style={{
+                      fontFamily: kindredFonts.mono,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                      color: kindredDark.textMuted,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {t(locale, 'primer.more')}
+                  </Text>
+                </Pressable>
+              ) : null
+            }
+            onRefresh={() => void refetch()}
+            refreshing={false}
+          />
+          <LinearGradient
+            colors={[kindredDark.bg, 'transparent']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 28 }}
+            pointerEvents='none'
+          />
+        </View>
       </SafeAreaView>
 
       {/* Full reading — ink-bloom overlay (kept mounted for open/close animation).

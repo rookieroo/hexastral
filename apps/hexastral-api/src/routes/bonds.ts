@@ -1566,7 +1566,9 @@ bondRoutes.get('/timeline', async (c) => {
     gender: ego.birthGender as '男' | '女',
   }
 
-  const isPro = await userHasCapability(db, userId, 'kindred')
+  // `c` opts this gate into the DEV userId-allowlist preview (DEV_PRO_USER_IDS),
+  // so a dev sees the full Pro timeline without a real entitlement; no-op in prod.
+  const isPro = await userHasCapability(db, userId, 'kindred', c)
 
   // active bonds — 最早创建在前, 让免费层「第 1 个 bond」稳定。
   const rows = await db

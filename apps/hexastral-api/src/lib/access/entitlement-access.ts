@@ -6,16 +6,29 @@
  * `capabilities.ts` stays pure (no DB) for unit-testing; this is the thin async layer.
  */
 
-import type { AppDb } from '../../infra-types'
+import type { Context } from 'hono'
+import type { AppDb, AppEnv } from '../../infra-types'
 import { getActiveEntitlements } from '../../services/entitlements'
 import { type Capability, hasCapability } from './capabilities'
+import { isDevForcedPro } from './dev-pro'
 
-/** Does the user's active entitlement set unlock `capability`? (universe_pro unlocks all.) */
+/**
+ * Does the user's active entitlement set unlock `capability`? (universe_pro
+ * unlocks all.)
+ *
+ * Pass the request `Context` to opt a gate into the DEV userId-allowlist preview
+ * (`DEV_PRO_USER_IDS`) — handy for previewing server-gated Pro surfaces in dev
+ * without a real entitlement. Omit `c` and the gate behaves exactly as before
+ * (no dev bypass). Prod leaves the allowlist empty, so passing `c` is a no-op
+ * there. See ./dev-pro.ts.
+ */
 export async function userHasCapability(
   db: AppDb,
   userId: string,
-  capability: Capability
+  capability: Capability,
+  c?: Context<AppEnv>
 ): Promise<boolean> {
+  if (c && isDevForcedPro(c)) return true
   const ents = (await getActiveEntitlements(db, userId)).map((e) => e.key)
   return hasCapability(ents, capability)
 }

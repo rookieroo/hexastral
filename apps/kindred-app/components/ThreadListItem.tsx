@@ -3,14 +3,16 @@
  *
  * Each row carries a small gold star at the left, echoing the SkyHero above (a
  * thread IS a star in your orbit). Tap → the thread's report. Left-swipe reveals
- * Delete. (Timeline + What-if — the subscription living layer — moved OFF the
+ * 解缘 (release the bond — gentler than "delete", matching the 缘 brand; the
+ * destructive confirm still spells out that it's irreversible). (Timeline +
+ * What-if — the subscription living layer — moved OFF the
  * swipe to a prominent floating entry IN the report, 2026-06: "核心功能左滑出现
  * 有点浪费" — see components/reading/LivingLayerFab.)
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
-import { ChevronRight, Trash2 } from 'lucide-react-native'
+import { ChevronRight, Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -58,7 +60,7 @@ export function ThreadListItem({ bond, locale, onPress, onDelete }: ThreadListIt
       renderRightActions={(_progress, _translation, methods) => (
         <View style={{ flexDirection: 'row' }}>
           <SwipeAction
-            icon={<Trash2 color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />}
+            icon={<Unlink color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />}
             label={t(locale, 'bondList.delete')}
             bg={kindredDark.seal}
             onPress={() => {
