@@ -21,7 +21,8 @@ import {
   type RelationshipPerson,
   type RelLiuYueOptions,
 } from './relationship-timeline'
-import type { WuXing } from './types'
+import { getTaoHua, getYiMa } from './shensha'
+import type { EarthlyBranch, WuXing } from './types'
 
 export type DecisionLean = 'favorable' | 'mixed' | 'caution'
 
@@ -43,6 +44,15 @@ export interface RelDecisionWindow {
   feedsYongshen: boolean
   harmony: boolean
   clash: boolean
+  /**
+   * Move-SPECIFIC 神煞 signals — the month branch is either party's 桃花 (romance),
+   * 驿马 (movement), or the month feeds either party's 食伤 (output/children). These
+   * are NOT in `score` (they don't make a month universally better to advance); the
+   * client weights them per decision-move (求婚→桃花, 异地→驿马, 要孩子→食伤).
+   */
+  taohua: boolean
+  yima: boolean
+  shishang: boolean
   /** Deterministic zh reasons (one per active signal). */
   reasons: string[]
 }
@@ -86,10 +96,6 @@ export function relationshipYongshen(a: WuXing, b: WuXing): { element: WuXing; n
   return { element: x, note: `${a}与${b}相生流通，以${x}续其生机、令气不滞` }
 }
 
-function dayElement(person: RelationshipPerson): WuXing {
-  return STEM_WUXING[calculateDaYun(person.input, person.gender).pillars.day.stem]
-}
-
 function leanOf(score: number): DecisionLean {
   if (score >= 3) return 'favorable'
   if (score <= -1) return 'caution'
@@ -107,20 +113,34 @@ export function planRelationshipDecision(
   personB: RelationshipPerson,
   opts: RelMakeIfOptions = {}
 ): RelDecisionResult {
-  const elA = dayElement(personA)
-  const elB = dayElement(personB)
+  // Each chart once — day-master 五行 (for 用神 + 食伤) + 本命支 (for 桃花 / 驿马).
+  const chartA = calculateDaYun(personA.input, personA.gender).pillars
+  const chartB = calculateDaYun(personB.input, personB.gender).pillars
+  const elA = STEM_WUXING[chartA.day.stem]
+  const elB = STEM_WUXING[chartB.day.stem]
   const ys = relationshipYongshen(elA, elB)
+  // 桃花 / 驿马 reckoned off each 本命支 (年支); 食伤 = the month feeds the day master.
+  const taohuaA = getTaoHua(chartA.year.branch as EarthlyBranch)
+  const taohuaB = getTaoHua(chartB.year.branch as EarthlyBranch)
+  const yimaA = getYiMa(chartA.year.branch as EarthlyBranch)
+  const yimaB = getYiMa(chartB.year.branch as EarthlyBranch)
+  const shishangElA = WUXING_GENERATE[elA] // 我生者 = 食伤
+  const shishangElB = WUXING_GENERATE[elB]
 
   const { nodes } = getRelationshipLiuYueNodes(personA, personB, opts)
 
   const windows: RelDecisionWindow[] = nodes.map((n) => {
     const element = STEM_WUXING[n.ganZhi.stem]
+    const branch = n.ganZhi.branch as EarthlyBranch
     const isYongshen = element === ys.element
     const feedsYongshen = !isYongshen && WUXING_GENERATE[element] === ys.element
     const harmony = n.harmonyA || n.harmonyB
     const bothHarmony = n.harmonyA && n.harmonyB
     const clash = n.clashA || n.clashB
     const bothClash = n.clashA && n.clashB
+    const taohua = branch === taohuaA || branch === taohuaB
+    const yima = branch === yimaA || branch === yimaB
+    const shishang = element === shishangElA || element === shishangElB
 
     let score = 0
     const reasons: string[] = []
@@ -152,6 +172,9 @@ export function planRelationshipDecision(
       feedsYongshen,
       harmony,
       clash,
+      taohua,
+      yima,
+      shishang,
       reasons,
     }
   })

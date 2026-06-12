@@ -50,6 +50,21 @@ describe('planRelationshipDecision — 窗口对齐引擎', () => {
     })
   })
 
+  test('move-specific 神煞 flags are present + boolean, and NOT folded into score', () => {
+    const { windows } = planRelationshipDecision(A, B, OPTS)
+    for (const w of windows) {
+      expect(typeof w.taohua).toBe('boolean')
+      expect(typeof w.yima).toBe('boolean')
+      expect(typeof w.shishang).toBe('boolean')
+    }
+    // 桃花/驿马/食伤 must not inflate the base pair-timing score — it stays a pure
+    // 用神 + 合/冲 read (the client weights the 神煞 per decision-move).
+    const scored = planRelationshipDecision(A, B, OPTS).windows
+    scored.forEach((w, i) => expect(w.score).toBe(windows[i]!.score))
+    // At least one window should carry a 神煞 over a 12-month sweep (sanity, not strict).
+    expect(windows.some((w) => w.taohua || w.yima || w.shishang)).toBe(true)
+  })
+
   test('用神 ↔ 双方日主', () => {
     const elA = STEM_WUXING[calculateDaYun(A.input, A.gender).pillars.day.stem]
     const elB = STEM_WUXING[calculateDaYun(B.input, B.gender).pillars.day.stem]

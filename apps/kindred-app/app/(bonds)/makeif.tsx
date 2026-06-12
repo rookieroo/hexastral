@@ -49,16 +49,27 @@ import { type Locale, resolveLocale, t } from '@/lib/i18n'
  */
 type RelMove = 'commit' | 'cohabit' | 'distance' | 'child'
 const REL_MOVES: readonly RelMove[] = ['commit', 'cohabit', 'distance', 'child']
-const MOVE_WEIGHTS: Record<RelMove, { harmony: number; yongshen: number }> = {
-  commit: { harmony: 3, yongshen: 1 }, // 求婚 — 合 is everything
-  cohabit: { harmony: 2, yongshen: 1 }, // 同居 — 合 + a stable base
-  distance: { harmony: 0, yongshen: 3 }, // 异地 — resilience over closeness
-  child: { harmony: 1, yongshen: 2 }, // 要孩子 — a strong foundation
+/** Each move leans on its real 神煞 (now surfaced by the engine): 求婚/同居 → 桃花·合,
+ *  异地 → 驿马·用神, 要孩子 → 食伤·合. The base score (用神 + 合/冲) stays shared. */
+const MOVE_WEIGHTS: Record<
+  RelMove,
+  { harmony: number; yongshen: number; taohua: number; yima: number; shishang: number }
+> = {
+  commit: { harmony: 2, yongshen: 1, taohua: 3, yima: 0, shishang: 0 }, // 求婚 — 桃花 + 合
+  cohabit: { harmony: 2, yongshen: 1, taohua: 2, yima: 0, shishang: 0 }, // 同居 — 合 + 桃花 + 稳
+  distance: { harmony: 0, yongshen: 1, taohua: 0, yima: 3, shishang: 0 }, // 异地 — 驿马 + 用神
+  child: { harmony: 1, yongshen: 1, taohua: 0, yima: 0, shishang: 3 }, // 要孩子 — 食伤 + 合
 }
 function moveBonus(w: RelMakeIfWindow, move: RelMove): number {
   const wt = MOVE_WEIGHTS[move]
   const ys = w.isYongshen ? 1 : w.feedsYongshen ? 0.5 : 0
-  return (w.harmony ? wt.harmony : 0) + ys * wt.yongshen
+  return (
+    (w.harmony ? wt.harmony : 0) +
+    ys * wt.yongshen +
+    (w.taohua ? wt.taohua : 0) +
+    (w.yima ? wt.yima : 0) +
+    (w.shishang ? wt.shishang : 0)
+  )
 }
 
 function leanColor(lean: DecisionLean): string {

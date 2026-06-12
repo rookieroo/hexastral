@@ -26,6 +26,10 @@ export interface RelMakeIfWindowDTO {
   feedsYongshen: boolean
   harmony: boolean
   clash: boolean
+  /** Move-specific 神煞: month is either party's 桃花 / 驿马, or feeds their 食伤. */
+  taohua: boolean
+  yima: boolean
+  shishang: boolean
   reasons: string[]
 }
 
@@ -73,6 +77,9 @@ export function buildBondMakeIf(
     feedsYongshen: w.feedsYongshen,
     harmony: w.harmony,
     clash: w.clash,
+    taohua: w.taohua,
+    yima: w.yima,
+    shishang: w.shishang,
     reasons: w.reasons,
   }))
   return {

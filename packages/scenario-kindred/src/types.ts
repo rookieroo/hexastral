@@ -431,6 +431,10 @@ export interface RelMakeIfWindow {
   feedsYongshen: boolean
   harmony: boolean
   clash: boolean
+  /** move-specific 神煞: month is either party's 桃花 / 驿马, or feeds their 食伤 */
+  taohua: boolean
+  yima: boolean
+  shishang: boolean
   /** deterministic zh reasons (client may localize from the structured flags) */
   reasons: string[]
 }
