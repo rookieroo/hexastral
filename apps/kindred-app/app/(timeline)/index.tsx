@@ -98,6 +98,11 @@ export default function TimelineScreen() {
   )
   const grouped = useMemo(() => groupByYear(nodes), [nodes])
 
+  // Thread labels for the per-bond weave (你 + TA). TA falls back to a neutral
+  // pronoun when the bond name didn't ride the route params.
+  const youLabel = locale.startsWith('zh') ? '你' : locale === 'ja' ? 'あなた' : 'You'
+  const taFallback = locale.startsWith('zh') ? 'TA' : locale === 'ja' ? '相手' : 'Them'
+
   // Lay the (Pro-only, server-computed) reminder timetable onto the device as
   // local notifications — prompts for permission on the first Pro timeline view,
   // then reschedules the rolling window on every visit (idempotent by node id).
@@ -203,28 +208,33 @@ export default function TimelineScreen() {
           />
         ) : null}
 
-        {/* Git-graph spine — one through-line (你) runs the whole axis; each year is
-            a ring node on it, each turning-point branches off as a significance
-            dot (matches auspice's timeline read, adapted to the ego×bonds data). */}
-        {grouped.map(({ year, nodes: yearNodes }) => (
-          <View key={year}>
-            <SpineRow ring dotColor={kindredDark.accent} dotSize={11}>
-              <Text
-                style={[
-                  kindredType.seal,
-                  { color: kindredDark.textSecondary, paddingTop: 1, marginBottom: 2 },
-                ]}
-              >
-                {year}
-              </Text>
-            </SpineRow>
-            {yearNodes.map((node) => (
-              <SpineRow key={node.key} dotColor={significanceColor(node.significance)}>
-                <NodeCard node={node} locale={locale} explainNode={explainNode} />
-              </SpineRow>
-            ))}
-          </View>
-        ))}
+        {/* Per-bond axis (opened from the 合盘 report) → a TWO-THREAD WEAVE: 你 + TA
+            run as parallel threads, tied at each turning point — a relationship
+            graph, distinct from auspice's solo life-line. The all-bonds ego axis
+            (你 × many) keeps the single spine. */}
+        {bondId ? <ThreadLegend youLabel={youLabel} taLabel={bondName || taFallback} /> : null}
+        {grouped.map(({ year, nodes: yearNodes }) => {
+          const Row = bondId ? ThreadRow : SpineRow
+          return (
+            <View key={year}>
+              <Row ring dotColor={kindredDark.accent} dotSize={11}>
+                <Text
+                  style={[
+                    kindredType.seal,
+                    { color: kindredDark.textSecondary, paddingTop: 1, marginBottom: 2 },
+                  ]}
+                >
+                  {year}
+                </Text>
+              </Row>
+              {yearNodes.map((node) => (
+                <Row key={node.key} dotColor={significanceColor(node.significance)}>
+                  <NodeCard node={node} locale={locale} explainNode={explainNode} />
+                </Row>
+              ))}
+            </View>
+          )
+        })}
 
         {!pro ? (
           <Text
@@ -516,6 +526,124 @@ function SpineRow({
         />
       </View>
       <View style={{ flex: 1, paddingBottom: kindredSpacing.sm }}>{children}</View>
+    </View>
+  )
+}
+
+// The two threads of a PER-BOND timeline — 你 (gold) + TA (cool silver), the same
+// pairing the night-sky hero uses. Drawn instead of the single self-spine so the
+// per-bond axis reads as a RELATIONSHIP graph (Yuel = 缘 = the thread between two),
+// never a copy of auspice's solo life-line.
+const YOU_THREAD = kindredDark.accent
+const TA_THREAD = '#9ab0cf'
+
+/**
+ * One row of the two-thread weave: 你 + TA run as parallel threads down the loom;
+ * each turning point is the moment they're tied — a connector bridges the two
+ * threads with a significance dot at the midpoint (the shared node). `ring` marks
+ * a year. Continuous full-height threads → the rows read as one unbroken weave.
+ */
+function ThreadRow({
+  dotColor,
+  dotSize = 8,
+  ring = false,
+  children,
+}: {
+  dotColor: string
+  dotSize?: number
+  ring?: boolean
+  children: ReactNode
+}) {
+  const W = 56
+  const X_YOU = 17
+  const X_TA = 39
+  return (
+    <View style={{ flexDirection: 'row' }}>
+      <View style={{ width: W }}>
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: 1.5,
+            left: X_YOU,
+            backgroundColor: YOU_THREAD,
+            opacity: 0.65,
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: 1.5,
+            left: X_TA,
+            backgroundColor: TA_THREAD,
+            opacity: 0.65,
+          }}
+        />
+        {/* the shared moment — a connector ties the two threads, dot at the midpoint */}
+        <View
+          style={{
+            marginTop: 5,
+            marginLeft: X_YOU,
+            width: X_TA - X_YOU,
+            height: dotSize,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: (dotSize - 1.5) / 2,
+              height: 1.5,
+              backgroundColor: dotColor,
+              opacity: 0.5,
+            }}
+          />
+          <View
+            style={{
+              width: dotSize,
+              height: dotSize,
+              borderRadius: dotSize / 2,
+              backgroundColor: ring ? kindredDark.bg : dotColor,
+              borderWidth: ring ? 2 : 0,
+              borderColor: dotColor,
+            }}
+          />
+        </View>
+      </View>
+      <View style={{ flex: 1, paddingBottom: kindredSpacing.sm }}>{children}</View>
+    </View>
+  )
+}
+
+/** Small legend that names the two threads (per-bond mode only). */
+function ThreadLegend({ youLabel, taLabel }: { youLabel: string; taLabel: string }) {
+  const swatch = (color: string) => (
+    <View style={{ width: 14, height: 1.5, borderRadius: 1, backgroundColor: color }} />
+  )
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: kindredSpacing.sm,
+        marginBottom: kindredSpacing.md,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {swatch(YOU_THREAD)}
+        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>{youLabel}</Text>
+      </View>
+      <Text style={{ color: kindredDark.textMuted, fontSize: 12 }}>·</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {swatch(TA_THREAD)}
+        <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>{taLabel}</Text>
+      </View>
     </View>
   )
 }
