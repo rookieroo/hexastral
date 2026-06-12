@@ -511,7 +511,14 @@ app.route('/api/feng/declination', fengDeclinationRoutes)
 // Dev-only — HARD-BLOCKED in production (these routes self-grant pro / full-reset /
 // repair-user; previously only hmacVerify-gated, so any signed device could hit them).
 app.use('/api/dev/*', async (c, next) => {
-  if (c.env.ENVIRONMENT === 'production') return c.json({ error: 'not_found' }, 404)
+  // TEMPORARY (remove before launch): allow the dev Pro-grant (`set-subscription`)
+  // on the PROD api too, so the in-app DEV toggle can self-grant `universe_pro`
+  // without a staging api — acceptable while there are NO real users (pre-PMF).
+  // The destructive routes (wipe / full-reset / repair-user) stay hard-blocked.
+  const isDevProGrant = c.req.path.endsWith('/set-subscription')
+  if (c.env.ENVIRONMENT === 'production' && !isDevProGrant) {
+    return c.json({ error: 'not_found' }, 404)
+  }
   return next()
 })
 app.use('/api/dev/*', hmacVerify)

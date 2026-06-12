@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
-import { devClearReportCache, devWipeUserAndRestart } from '@/lib/dev-tools'
+import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
@@ -84,13 +84,18 @@ export default function SettingsScreen() {
   const [crossAppBusy, setCrossAppBusy] = useState(false)
   const [dailyPush, setDailyPushState] = useState(false)
   const [dailyPushBusy, setDailyPushBusy] = useState(false)
-  // DEV-only Pro override — cycles Off (real RC) → PRO → FREE. The reading reads
-  // it on open, so flip then re-open the report to see locked chapters change.
+  // DEV-only Pro override — cycles Off (real RC) → PRO → FREE. Sets the client
+  // override AND (TEMPORARY, removed at launch) grants/expires the real
+  // `universe_pro` in the DB via devSetServerPro, so SERVER-gated Pro (timeline /
+  // what-if / chapter wall / daily synastry) actually unlocks. Flip then re-open
+  // the report to see it change.
   const [devPro, setDevPro] = useState<KindredDevPro>(getKindredDevPro())
   const cycleDevPro = () => {
     const next: KindredDevPro = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setKindredDevPro(next)
     setDevPro(next)
+    // TEMPORARY (remove at launch): also flip the real server entitlement.
+    if (userId) void devSetServerPro(userId, next === 'pro')
   }
 
   useEffect(() => {
