@@ -32,12 +32,34 @@ import {
   useBondMakeIf,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+
+/**
+ * Relationship-move chips (the auspice make-if parallel, honestly adapted). The
+ * pair-timing ranking is genuinely SHARED across moves — the best month to advance
+ * is the best month whether you propose or cohabit (it's your 用神 + 合/冲, which
+ * don't change with the move). So a chip doesn't fabricate a different ranking; it
+ * re-WEIGHTS the same windows by what that move leans on (合 vs 用神, from the real
+ * per-window flags) and frames the read for that step. No engine change.
+ */
+type RelMove = 'commit' | 'cohabit' | 'distance' | 'child'
+const REL_MOVES: readonly RelMove[] = ['commit', 'cohabit', 'distance', 'child']
+const MOVE_WEIGHTS: Record<RelMove, { harmony: number; yongshen: number }> = {
+  commit: { harmony: 3, yongshen: 1 }, // 求婚 — 合 is everything
+  cohabit: { harmony: 2, yongshen: 1 }, // 同居 — 合 + a stable base
+  distance: { harmony: 0, yongshen: 3 }, // 异地 — resilience over closeness
+  child: { harmony: 1, yongshen: 2 }, // 要孩子 — a strong foundation
+}
+function moveBonus(w: RelMakeIfWindow, move: RelMove): number {
+  const wt = MOVE_WEIGHTS[move]
+  const ys = w.isYongshen ? 1 : w.feedsYongshen ? 0.5 : 0
+  return (w.harmony ? wt.harmony : 0) + ys * wt.yongshen
+}
 
 function leanColor(lean: DecisionLean): string {
   switch (lean) {
@@ -121,6 +143,17 @@ function Body({
   onUpsell: () => void
 }) {
   const trimmedQuote = quote ? (quote.length > 120 ? `${quote.slice(0, 120)}…` : quote) : null
+  // Optional relationship-move lens — re-weights the shared pair-timing by what
+  // the chosen step leans on. null = the general "advance" view (server order).
+  const [move, setMove] = useState<RelMove | null>(null)
+  const ranked = useMemo(() => {
+    const windows = data.windows ?? []
+    if (!move) return windows
+    return [...windows].sort(
+      (a, b) => b.score + moveBonus(b, move) - (a.score + moveBonus(a, move))
+    )
+  }, [data.windows, move])
+  const bestKey = move ? ranked[0]?.key : data.bestKey
   return (
     <ScrollView
       contentContainerStyle={{
@@ -218,22 +251,81 @@ function Body({
             {formatVerdict(data, locale)}
           </Text>
 
-          {/* Month by month */}
+          {/* Relationship-move lens — pick the step you're weighing; the windows
+              re-order to what it leans on (合 / 用神), with a one-line framing. */}
           <Text
             style={[
               kindredType.seal,
               { color: kindredDark.textSecondary, marginBottom: kindredSpacing.sm },
             ]}
           >
+            {t(locale, 'makeif.movePrompt')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: kindredSpacing.sm }}>
+            {REL_MOVES.map((m) => {
+              const on = m === move
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => setMove(on ? null : m)}
+                  accessibilityRole='button'
+                  accessibilityState={{ selected: on }}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 13,
+                    borderRadius: 999,
+                    borderWidth: 0.5,
+                    borderColor: on ? kindredDark.accent : kindredDark.border,
+                    backgroundColor: on ? `${kindredDark.accent}22` : 'transparent',
+                  }}
+                >
+                  <Text
+                    style={[
+                      kindredType.caption,
+                      { color: on ? kindredDark.accent : kindredDark.textSecondary },
+                    ]}
+                  >
+                    {t(locale, `makeif.move.${m}`)}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          {move ? (
+            <Text
+              style={[
+                kindredType.caption,
+                {
+                  color: kindredDark.textMuted,
+                  lineHeight: 19,
+                  marginTop: kindredSpacing.sm,
+                },
+              ]}
+            >
+              {t(locale, `makeif.guide.${move}`)}
+            </Text>
+          ) : null}
+
+          {/* Month by month */}
+          <Text
+            style={[
+              kindredType.seal,
+              {
+                color: kindredDark.textSecondary,
+                marginTop: kindredSpacing.lg,
+                marginBottom: kindredSpacing.sm,
+              },
+            ]}
+          >
             {t(locale, 'makeif.windows.label')}
           </Text>
           <View style={{ gap: kindredSpacing.sm }}>
-            {(data.windows ?? []).map((w) => (
+            {ranked.map((w) => (
               <WindowCard
                 key={w.key}
                 w={w}
                 yongshen={data.yongshen ?? ''}
-                isBest={w.key === data.bestKey}
+                isBest={w.key === bestKey}
                 locale={locale}
               />
             ))}
