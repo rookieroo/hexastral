@@ -62,7 +62,7 @@ export default function InviteScreen() {
       // Pass A's locale so the server composes the share message + landing URL
       // in A's language (else it falls back to the stored locale / 'en').
       const result = await create({ targetName, relationshipLabel: label, language: locale })
-      await shareInvite(result.mailto)
+      await shareInvite(result.mailto, result.resonateUrl)
       updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
       await markOnboardingComplete()
       await clearDraft()

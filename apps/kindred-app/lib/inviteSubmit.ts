@@ -10,7 +10,7 @@
  */
 
 import type { RelationshipType, ResonanceInviteMailto } from '@zhop/scenario-kindred'
-import { Share } from 'react-native'
+import { Platform, Share } from 'react-native'
 import type { Locale } from './i18n'
 
 /** Localized relationship label sent to the server as `relationshipLabel`. */
@@ -39,8 +39,26 @@ export function isPaywall(err: unknown): boolean {
 /**
  * Hand the server-composed invitation to the system share sheet so A can send
  * the bond link through any channel (Messages, WhatsApp, WeChat, Mail, AirDrop…).
- * The bond is already pending server-side; the link in the body is all B needs.
+ * The bond is already pending server-side; the link is all B needs.
+ *
+ * The server composes the link INTO the body. On iOS we lift it out into Share's
+ * `url` item so AirDrop / social treat it as a LINK: AirDrop opens the resonate
+ * webpage (and deep-links into the app via the hexastral.com Universal Link)
+ * instead of dropping text into Pages, and the page's opengraph-image renders a
+ * rich card. SMS / Mail still get the text + a tappable link (unchanged). Android
+ * Share has no `url` field, so keep the link inline there.
  */
-export async function shareInvite(mailto: ResonanceInviteMailto): Promise<void> {
+export async function shareInvite(
+  mailto: ResonanceInviteMailto,
+  resonateUrl: string
+): Promise<void> {
+  if (Platform.OS === 'ios') {
+    const text = mailto.body
+      .replace(resonateUrl, '')
+      .replace(/\n{2,}/g, '\n')
+      .trim()
+    await Share.share({ message: text, url: resonateUrl }).catch(() => undefined)
+    return
+  }
   await Share.share({ message: mailto.body }).catch(() => undefined)
 }

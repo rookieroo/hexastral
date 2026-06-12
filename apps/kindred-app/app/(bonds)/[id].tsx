@@ -40,7 +40,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Dimensions, Pressable, ScrollView, Share, Text, View } from 'react-native'
+import { Alert, Dimensions, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -481,14 +481,18 @@ export default function BondDetailScreen({
     emitUnlockFunnel({ step: 'invite_tap', bond_id: detail.id })
     const url = detail.invitation?.resonateUrl
     if (url) {
-      const message = [
+      const lead = [
         t('unlock.inviteShareLead').replace('{name}', displayName),
         detail.interpretation?.ahaHook ?? '',
-        url,
       ]
         .filter(Boolean)
         .join('\n')
-      void Share.share({ message })
+      // iOS: the link goes in Share's `url` item (not buried in text) so AirDrop
+      // opens the webpage / deep-links into the app, not Pages; SMS & Mail still
+      // get the text + a tappable link. Android Share has no `url` → keep inline.
+      void Share.share(
+        Platform.OS === 'ios' ? { message: lead, url } : { message: `${lead}\n${url}` }
+      )
     } else {
       router.push('/(onboarding)/invite')
     }
