@@ -52,7 +52,9 @@ export {
 } from './lib/timeline-format'
 export {
   type BuildTimelineNotificationPlanOptions,
+  buildLiuyueDigestPlan,
   buildTimelineNotificationPlan,
+  LIUYUE_DIGEST_ID_PREFIX,
   TIMELINE_NOTIFY_ID_PREFIX,
   type TimelineNotificationPlanItem,
 } from './lib/timeline-notify'

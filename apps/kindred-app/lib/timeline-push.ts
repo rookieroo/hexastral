@@ -19,9 +19,12 @@
  */
 
 import {
+  type BondsTimelineNode,
   type BondsTimelineNotification,
+  buildLiuyueDigestPlan,
   buildTimelineNotificationPlan,
   type KindredLocale,
+  LIUYUE_DIGEST_ID_PREFIX,
   TIMELINE_NOTIFY_ID_PREFIX,
 } from '@zhop/scenario-kindred'
 import { Platform } from 'react-native'
@@ -107,6 +110,55 @@ export async function syncTimelinePush(
   if (!N || Platform.OS === 'web') return 0
   await cancelTimelineNotifications(N)
   const plan = buildTimelineNotificationPlan(notifications, { locale })
+  if (plan.length === 0) return 0
+  try {
+    const perm = await N.getPermissionsAsync()
+    if (perm.status !== 'granted') return 0
+  } catch {
+    return 0
+  }
+  let scheduled = 0
+  for (const item of plan) {
+    try {
+      await N.scheduleNotificationAsync({
+        identifier: item.identifier,
+        content: { title: item.title, body: item.body, data: item.data },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: item.fireDate },
+      })
+      scheduled += 1
+    } catch {}
+  }
+  return scheduled
+}
+
+/** Cancel every 流月 digest notification by id prefix (idempotent). */
+async function cancelLiuyueDigest(N: Notif): Promise<void> {
+  try {
+    const scheduled = (await N.getAllScheduledNotificationsAsync()) as Array<{ identifier: string }>
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(LIUYUE_DIGEST_ID_PREFIX))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+    )
+  } catch {}
+}
+
+/**
+ * (Re)schedule the MONTHLY 流月 relationship digest — one gentle push at the start
+ * of each upcoming month that has an actual 冲/合 with someone. Same local-only,
+ * cancel-then-reschedule, permission-gated pattern as `syncTimelinePush`; uses a
+ * SEPARATE id prefix so the two sets never clobber each other. The data is already
+ * Pro-gated (free = current month only → nothing future to schedule). Returns the
+ * number scheduled (0 if the native module is absent / no permission).
+ */
+export async function syncLiuyueDigest(
+  liuyue: readonly BondsTimelineNode[],
+  locale: KindredLocale
+): Promise<number> {
+  const N = notif()
+  if (!N || Platform.OS === 'web') return 0
+  await cancelLiuyueDigest(N)
+  const plan = buildLiuyueDigestPlan(liuyue, { locale })
   if (plan.length === 0) return 0
   try {
     const perm = await N.getPermissionsAsync()

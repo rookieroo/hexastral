@@ -13,11 +13,14 @@
  * app (apps/kindred-app/lib/timeline-push.ts).
  */
 
-import type { BondsTimelineNotification } from '../types'
+import type { BondsTimelineNode, BondsTimelineNotification } from '../types'
 import { formatLeadLabel, formatNodeKind, type KindredLocale } from './timeline-format'
 
 /** Stable identifier prefix — lets the app cancel-by-prefix idempotently. */
 export const TIMELINE_NOTIFY_ID_PREFIX = 'kindred-timeline-'
+
+/** Separate prefix for the monthly 流月 relationship digest (cancel independently). */
+export const LIUYUE_DIGEST_ID_PREFIX = 'kindred-liuyue-'
 
 /** One ready-to-schedule local notification (device-agnostic). */
 export interface TimelineNotificationPlanItem {
@@ -106,6 +109,102 @@ export function buildTimelineNotificationPlan(
       body: notifyBody(n, options.locale),
       fireDate,
       data: { route, key: n.key, year: String(n.year) },
+    })
+  }
+
+  return plan
+}
+
+// ── 流月 monthly relationship digest ─────────────────────────────────────────
+
+function digestTitle(locale: KindredLocale): string {
+  switch (locale) {
+    case 'zh':
+      return '本月缘分'
+    case 'zh-Hant':
+      return '本月緣分'
+    case 'ja':
+      return '今月の縁'
+    default:
+      return 'This month'
+  }
+}
+
+/** Cap the named bonds so the body stays short; the rest fold into "…". */
+function digestNames(node: BondsTimelineNode, locale: KindredLocale): string {
+  const names = node.bonds.map((b) => b.name.trim()).filter((n) => n.length > 0)
+  if (names.length === 0) {
+    switch (locale) {
+      case 'zh':
+        return '你的关系'
+      case 'zh-Hant':
+        return '你的關係'
+      case 'ja':
+        return 'あなたの縁'
+      default:
+        return 'your bonds'
+    }
+  }
+  if (names.length <= 2) return names.join(locale === 'en' ? ' & ' : '、')
+  const head = names.slice(0, 2).join(locale === 'en' ? ', ' : '、')
+  switch (locale) {
+    case 'zh':
+    case 'zh-Hant':
+      return `${head} 等`
+    case 'ja':
+      return `${head} ほか`
+    default:
+      return `${head} & more`
+  }
+}
+
+function digestBody(node: BondsTimelineNode, locale: KindredLocale): string {
+  const who = digestNames(node, locale)
+  switch (locale) {
+    case 'zh':
+      return `本月，你与${who}有缘分的交会。点开看此刻你们的关系。`
+    case 'zh-Hant':
+      return `本月，你與${who}有緣分的交會。點開看此刻你們的關係。`
+    case 'ja':
+      return `今月、${who}との縁の交わり。今の二人を確かめましょう。`
+    default:
+      return `This month, your path crosses with ${who}. Tap to see where you stand.`
+  }
+}
+
+/**
+ * Build the MONTHLY relationship digest from the 流月 living layer — one gentle
+ * push at the start of each upcoming month that has an actual 冲/合 with someone
+ * (`bonds` non-empty). Quiet when nothing's happening (no fabricated nudge). This
+ * is the recurring touch that keeps the subscription alive between the rarer
+ * lifetime-axis nodes (the founder's sub-sustainability lever). Pro-gated by data:
+ * free users only get the current month (past fireDate → nothing scheduled).
+ *
+ * Fires on the 1st of the calendar month at 09:00 local — a clean "本月" cadence
+ * (the 节气-based 流月 boundary is an in-app detail, not a push trigger).
+ */
+export function buildLiuyueDigestPlan(
+  liuyue: readonly BondsTimelineNode[],
+  options: BuildTimelineNotificationPlanOptions
+): TimelineNotificationPlanItem[] {
+  const now = options.now ?? new Date()
+  const route = options.route ?? '/(timeline)'
+  const nowMs = now.getTime()
+  const seen = new Set<string>()
+  const plan: TimelineNotificationPlanItem[] = []
+
+  for (const node of liuyue) {
+    if (node.month == null || node.bonds.length === 0) continue
+    if (seen.has(node.key)) continue
+    const fireDate = new Date(node.year, node.month - 1, 1, 9, 0, 0)
+    if (fireDate.getTime() <= nowMs) continue
+    seen.add(node.key)
+    plan.push({
+      identifier: `${LIUYUE_DIGEST_ID_PREFIX}${node.key}`,
+      title: digestTitle(options.locale),
+      body: digestBody(node, options.locale),
+      fireDate,
+      data: { route, key: node.key, year: String(node.year) },
     })
   }
 

@@ -42,7 +42,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
-import { ensureTimelinePushPermission, syncTimelinePush } from '@/lib/timeline-push'
+import {
+  ensureTimelinePushPermission,
+  syncLiuyueDigest,
+  syncTimelinePush,
+} from '@/lib/timeline-push'
 
 /** Significance → accent tint for the node's leading dot. */
 function significanceColor(sig: BondsTimelineSignificance): string {
@@ -98,13 +102,17 @@ export default function TimelineScreen() {
   // local notifications — prompts for permission on the first Pro timeline view,
   // then reschedules the rolling window on every visit (idempotent by node id).
   // Free users get an empty timetable → nothing scheduled + stale items cleared.
+  // Two Pro local-push sets: the lifetime-axis key nodes (server timetable) + the
+  // monthly 流月 relationship digest (the recurring touch between rarer nodes,
+  // derived client-side from the liuyue window). Separate id prefixes → no clash.
   useEffect(() => {
-    if (!pro || notifications.length === 0) return
+    if (!pro || (notifications.length === 0 && liuyue.length === 0)) return
     void (async () => {
       await ensureTimelinePushPermission()
       await syncTimelinePush(notifications, locale)
+      await syncLiuyueDigest(liuyue, locale)
     })()
-  }, [pro, notifications, locale])
+  }, [pro, notifications, liuyue, locale])
 
   if (isLoading) {
     return (

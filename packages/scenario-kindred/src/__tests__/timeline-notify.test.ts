@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test'
-import { buildTimelineNotificationPlan, TIMELINE_NOTIFY_ID_PREFIX } from '../lib/timeline-notify'
-import type { BondsTimelineNotification } from '../types'
+import {
+  buildLiuyueDigestPlan,
+  buildTimelineNotificationPlan,
+  LIUYUE_DIGEST_ID_PREFIX,
+  TIMELINE_NOTIFY_ID_PREFIX,
+} from '../lib/timeline-notify'
+import type { BondsTimelineNode, BondsTimelineNotification } from '../types'
 
 function notif(over: Partial<BondsTimelineNotification> = {}): BondsTimelineNotification {
   return {
@@ -73,5 +78,40 @@ describe('buildTimelineNotificationPlan', () => {
       route: '/custom',
     })
     expect(plan[0]!.data.route).toBe('/custom')
+  })
+})
+
+function liuyueNode(over: Partial<BondsTimelineNode> = {}): BondsTimelineNode {
+  return {
+    key: '2026-9',
+    date: '2026-09-08',
+    year: 2026,
+    month: 9,
+    kind: '流月',
+    ganZhi: '丁酉',
+    significance: 'notable',
+    summary: '本月与某关系相合。',
+    bonds: [{ bondId: 'b1', name: '阿明' }],
+    ...over,
+  }
+}
+
+describe('buildLiuyueDigestPlan', () => {
+  it('schedules one digest on the 1st of each future month that has a 冲/合', () => {
+    const plan = buildLiuyueDigestPlan([liuyueNode()], { locale: 'zh', now: NOW })
+    expect(plan).toHaveLength(1)
+    expect(plan[0]!.identifier).toBe(`${LIUYUE_DIGEST_ID_PREFIX}2026-9`)
+    // 1st of Sept, 09:00 LOCAL (constructed via new Date(y, m-1, 1, 9))
+    expect(plan[0]!.fireDate.getMonth()).toBe(8)
+    expect(plan[0]!.fireDate.getDate()).toBe(1)
+    expect(plan[0]!.body).toContain('阿明')
+  })
+
+  it('skips months with no bonds (a calm month — no fabricated nudge) and past months', () => {
+    const calm = liuyueNode({ key: '2026-10', month: 10, bonds: [] })
+    const past = liuyueNode({ key: '2026-3', month: 3 })
+    const future = liuyueNode({ key: '2026-11', month: 11 })
+    const plan = buildLiuyueDigestPlan([calm, past, future], { locale: 'en', now: NOW })
+    expect(plan.map((p) => p.data.key)).toEqual(['2026-11'])
   })
 })
