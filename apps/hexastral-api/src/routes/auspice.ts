@@ -320,7 +320,12 @@ function resolveHolidayDayInMonth(
     case 'lunar-fixed': {
       try {
         const d = lunarToSolar(year, rule.lunarMonth, rule.lunarDay, false)
-        return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month ? d.getUTCDate() : null
+        // lunarToSolar returns a LOCAL-midnight Date whose civil Y/M/D are read
+        // via local getters in any timezone (astro-core UTC-anchors the day count
+        // internally). Workers run in UTC so local === UTC in prod; using local
+        // getters additionally keeps this correct when the suite runs in a non-UTC
+        // TZ (e.g. 东八区 dev machines) instead of silently shifting a day back.
+        return d.getFullYear() === year && d.getMonth() + 1 === month ? d.getDate() : null
       } catch {
         return null
       }
@@ -1121,13 +1126,16 @@ function buildYearOverview(year: number) {
   for (const f of FESTIVALS_LUNAR) {
     try {
       const solarDate = lunarToSolar(year, f.lunarMonth, f.lunarDay, false)
-      const m = String(solarDate.getUTCMonth() + 1).padStart(2, '0')
-      const d = String(solarDate.getUTCDate()).padStart(2, '0')
+      // Local getters: lunarToSolar returns a local-midnight Date (civil date is
+      // correct in any TZ). Prod is UTC so this is unchanged there; it also makes
+      // the formatted date correct when the suite runs outside UTC (东八区). See ~L323.
+      const m = String(solarDate.getMonth() + 1).padStart(2, '0')
+      const d = String(solarDate.getDate()).padStart(2, '0')
       festivals.push({
         id: f.id,
         name: f.name,
         kind: 'lunar',
-        solarDate: `${solarDate.getUTCFullYear()}-${m}-${d}`,
+        solarDate: `${solarDate.getFullYear()}-${m}-${d}`,
         lunarLabel: f.lunarLabel,
       })
     } catch {

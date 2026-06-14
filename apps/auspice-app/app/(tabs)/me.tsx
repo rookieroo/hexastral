@@ -15,7 +15,7 @@
  * `@zhop/core-ui` for apps that need the deeper flow.
  */
 
-import { resolveBirthHour } from '@zhop/astro-core'
+import { resolveBirthHour, solarToLunar } from '@zhop/astro-core'
 import {
   BirthClockField,
   BirthDateField,
@@ -91,6 +91,25 @@ function shichenSummaryLabel(index: number, locale: string): string {
   return isCjkScript(locale)
     ? shichenInlineLabel(index, sc.branch, locale)
     : shichenRange(sc.range, locale)
+}
+
+/**
+ * 农历生日的展示串 — for the collapsed birth summary when the user entered their
+ * birthday as 农历. CJK shows the full 干支年 + 农历月日 (e.g. 「壬申年 正月初六」);
+ * en falls back to a numeric "Lunar M/D" since the 农历 month/day glyphs are
+ * opaque to a non-CJK reader. Derived from the canonical solar date — the
+ * conversion round-trips correctly, so 闰月 birthdays render with the 闰 prefix.
+ */
+function lunarBirthLabel(solarDate: string, locale: string): string | null {
+  const [y, mo, d] = solarDate.split('-').map(Number)
+  if (!y || !mo || !d) return null
+  try {
+    const l = solarToLunar(y, mo, d)
+    if (locale === 'en') return `Lunar ${l.month}/${l.day}`
+    return `${l.yearGanZhi}年 ${l.monthName}${l.dayName}`
+  } catch {
+    return null
+  }
 }
 
 /* ── precise-time helpers (真太阳时 disclosure, synced from kindred) ─────────── */
@@ -243,12 +262,15 @@ export default function MeScreen() {
   const scrollRef = useRef<ScrollView>(null)
 
   const birthSummary = useMemo(() => {
-    // When the user entered their birthday as 农历, show that form in the
-    // summary so what they see matches what they typed — the solar conversion
-    // is an internal detail. The 时辰 / gender / city pieces are unchanged.
+    // When the user entered their birthday as 农历, show it AS 农历 (壬申年 正月初六)
+    // — what they see matches what they entered, and the solar date is an internal
+    // detail for 排盘 only. Derived from the canonical solarDate via solarToLunar
+    // (which now round-trips correctly), so leap months format with the 闰 prefix.
+    // en falls back to a numeric "Lunar M/D" (农历 names are opaque to non-CJK
+    // readers). The 时辰 / gender / city pieces are unchanged.
     const dateLabel =
-      birth.calendar === 'lunar' && birth.lunarInput
-        ? `${birth.lunarInput} (${t.birthCalendarLunar})`
+      birth.calendar === 'lunar'
+        ? (lunarBirthLabel(birth.solarDate, locale) ?? birth.solarDate)
         : birth.solarDate
     const parts: string[] = [dateLabel]
     parts.push(

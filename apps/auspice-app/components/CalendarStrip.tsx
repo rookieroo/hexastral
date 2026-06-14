@@ -309,6 +309,18 @@ function MonthCell({
     })),
   ]
 
+  // Lay the grid out as explicit 7-cell week rows with an EXACT pixel cell width
+  // derived from the measured page width. The prior `width: '14.2857%'` + a single
+  // flexWrap row dropped the 周六 (Saturday) column on Android: percentage→pixel
+  // rounding nudged seven 14.28% cells past 100%, so each row wrapped after six and
+  // the rightmost column stayed permanently empty. Numeric widths in non-wrapping
+  // rows align 1:1 with the flex:1 weekday header above and can never wrap.
+  const innerWidth = width - spacing.xl * 2
+  const cellW = innerWidth / 7
+  const cellH = cellW / CELL_ASPECT
+  const weeks: Array<typeof cells> = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+
   return (
     <View style={{ width, paddingHorizontal: spacing.xl, paddingTop: 2 }}>
       {loading && !data ? (
@@ -317,38 +329,34 @@ function MonthCell({
         </View>
       ) : null}
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {cells.map((cell, i) => {
-          if (cell === null) {
+      {weeks.map((week, wi) => (
+        <View key={`w-${wi}`} style={{ flexDirection: 'row' }}>
+          {week.map((cell, ci) => {
+            if (cell === null) {
+              return <View key={`pad-${wi}-${ci}`} style={{ width: cellW, height: cellH }} />
+            }
+            const key = ymd(year, month, cell.day)
+            const isToday = key === todayKey
+            const isSelected = key === selectedDay
             return (
-              <View key={`pad-${i}`} style={{ width: `${100 / 7}%`, aspectRatio: CELL_ASPECT }} />
+              <Pressable
+                key={key}
+                onPress={() => onPressDay(key)}
+                style={{ width: cellW, height: cellH, padding: 2 }}
+              >
+                <DayCell
+                  dayNum={cell.day}
+                  data={cell.data}
+                  isToday={isToday}
+                  isSelected={isSelected}
+                  colors={colors}
+                  locale={locale}
+                />
+              </Pressable>
             )
-          }
-          const key = ymd(year, month, cell.day)
-          const isToday = key === todayKey
-          const isSelected = key === selectedDay
-          return (
-            <Pressable
-              key={key}
-              onPress={() => onPressDay(key)}
-              style={{
-                width: `${100 / 7}%`,
-                aspectRatio: CELL_ASPECT,
-                padding: 2,
-              }}
-            >
-              <DayCell
-                dayNum={cell.day}
-                data={cell.data}
-                isToday={isToday}
-                isSelected={isSelected}
-                colors={colors}
-                locale={locale}
-              />
-            </Pressable>
-          )
-        })}
-      </View>
+          })}
+        </View>
+      ))}
     </View>
   )
 }

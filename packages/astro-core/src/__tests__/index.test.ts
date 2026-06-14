@@ -10,6 +10,7 @@ import {
   getNearestJieQiForGregorianDate,
   getShiChen,
   getTrueSolarTime,
+  lunarToSolar,
   solarToLunar,
   yearGanZhi,
   yearZodiac,
@@ -147,6 +148,36 @@ describe('lunar', () => {
     expect(lunar.year).toBe(2024)
     expect(lunar.month).toBeGreaterThan(0)
     expect(lunar.day).toBeGreaterThan(0)
+  })
+
+  // lunarToSolar previously read local-time Date components, so in 东八区
+  // (the primary user timezone) the pre-1901 LMT offset pushed every result
+  // back one day — 1992 正月初六 came out 1992-02-08 instead of 02-09. These
+  // assert the UTC-anchored conversion is correct AND timezone-independent.
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+  it('lunarToSolar 1992 正月初六 = 1992-02-09', () => {
+    expect(fmt(lunarToSolar(1992, 1, 6, false))).toBe('1992-02-09')
+  })
+
+  it('lunarToSolar 正月初一 lands on Chinese New Year (2024/2025)', () => {
+    expect(fmt(lunarToSolar(2024, 1, 1, false))).toBe('2024-02-10')
+    expect(fmt(lunarToSolar(2025, 1, 1, false))).toBe('2025-01-29')
+  })
+
+  it('solar→lunar→solar round-trips across a 50-year span', () => {
+    for (let y = 1970; y <= 2020; y += 7) {
+      for (const [mo, d] of [
+        [3, 15],
+        [7, 1],
+        [11, 28],
+      ] as const) {
+        const l = solarToLunar(y, mo, d)
+        const back = lunarToSolar(l.year, l.month, l.day, l.isLeap)
+        expect(fmt(back)).toBe(`${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+      }
+    }
   })
 })
 

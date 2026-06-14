@@ -285,10 +285,13 @@ export function solarToLunar(year: number, month: number, day: number): LunarDat
     throw new RangeError('Year must be between 1900 and 2100')
   }
 
-  // 计算距离 1900 年 1 月 31 日（1900 年正月初一）的天数
-  const baseDate = new Date(1900, 0, 31) // 1900-01-31
-  const targetDate = new Date(year, month - 1, day)
-  let offset = Math.floor((targetDate.getTime() - baseDate.getTime()) / 86400000)
+  // 计算距离 1900 年 1 月 31 日（1900 年正月初一）的天数。
+  // 必须用 UTC 锚点做差：本地 new Date(...) 在 1901 年前会落入历史 LMT 偏移（如
+  // 上海 1900 年为 +08:05:43），与现代 +08:00 的目标日相减后并非整天，Math.floor
+  // 会丢一天，导致整条换算在东八区差一天（1992 正月初六错算成 02-08 而非 02-09）。
+  const baseUTC = Date.UTC(1900, 0, 31) // 1900-01-31
+  const targetUTC = Date.UTC(year, month - 1, day)
+  let offset = Math.round((targetUTC - baseUTC) / 86400000)
 
   if (offset < 0) {
     throw new RangeError('Date is before 1900-01-31')
@@ -408,8 +411,12 @@ export function lunarToSolar(
   // 加日
   offset += lunarDay - 1
 
-  const baseDate = new Date(1900, 0, 31)
-  return new Date(baseDate.getTime() + offset * 86400000)
+  // 同样以 UTC 锚点累加天数（避免 1901 年前 LMT 偏移污染天数差），再用得到的
+  // 公历年月日以「本地午夜」重新构造返回 —— 这样调用方用 getFullYear/getMonth/
+  // getDate 读出的就是正确的公历日期，且与运行时区无关（直接用 UTC 时间戳返回
+  // 时，负偏移时区如美洲读出的本地日期会退一天）。
+  const utc = new Date(Date.UTC(1900, 0, 31) + offset * 86400000)
+  return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate())
 }
 
 // ========================================
