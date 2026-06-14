@@ -103,7 +103,14 @@ export function ShichenField({ value, onChange, accent, labels, locale }: Shiche
         <ShichenGlyph color={colors.secondary} />
       </Pressable>
 
-      <Modal visible={open} transparent animationType='slide' onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        animationType='slide'
+        onRequestClose={() => setOpen(false)}
+      >
         {/* Backdrop is transparent — the half-screen above the sheet stays fully
             visible (no grey scrim in either light or dark, 2026-06 feedback). It
             still catches taps to dismiss; the sheet separates by its own shadow +
@@ -181,14 +188,27 @@ export function ShichenField({ value, onChange, accent, labels, locale }: Shiche
   )
 }
 
-/** Tiny 3-row "wheel" glyph — the open affordance (matches BirthDateField). */
+/** Tiny 2×2 grid glyph — the affordance opens a 时辰 GRID (not a wheel), so the
+ *  icon now signals a grid rather than a scroll-wheel (2026-06 feedback). */
 function ShichenGlyph({ color }: { color: string }) {
-  const edge = { width: 14, height: 1.5, borderRadius: 1, backgroundColor: color, opacity: 0.5 }
+  const cell = {
+    width: 7,
+    height: 7,
+    borderRadius: 1.5,
+    borderWidth: 1.2,
+    borderColor: color,
+    opacity: 0.7,
+  }
   return (
-    <View style={{ gap: 2.5, alignItems: 'center', paddingLeft: 8 }}>
-      <View style={edge} />
-      <View style={{ width: 18, height: 2, borderRadius: 1, backgroundColor: color }} />
-      <View style={edge} />
+    <View style={{ gap: 3, paddingLeft: 8 }}>
+      <View style={{ flexDirection: 'row', gap: 3 }}>
+        <View style={cell} />
+        <View style={cell} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 3 }}>
+        <View style={cell} />
+        <View style={cell} />
+      </View>
     </View>
   )
 }

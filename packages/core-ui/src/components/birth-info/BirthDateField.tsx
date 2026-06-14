@@ -19,12 +19,20 @@
  */
 
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { lunarToSolar, solarToLunar } from '@zhop/astro-core'
+import {
+  EARTHLY_BRANCHES,
+  HEAVENLY_STEMS,
+  LUNAR_DAY_NAMES,
+  LUNAR_MONTH_NAMES,
+  lunarToSolar,
+  solarToLunar,
+} from '@zhop/astro-core'
 import * as Haptics from 'expo-haptics'
 import { useCallback, useState } from 'react'
 import { Modal, Platform, Pressable, Text, TextInput, View } from 'react-native'
 import { useTheme } from '../../theme'
 import { type LunarDateValue, LunarDateWheels } from './LunarDateWheels'
+import { type SolarDateValue, SolarDateWheels } from './SolarDateWheels'
 
 export type BirthCalendar = 'solar' | 'lunar'
 
@@ -54,6 +62,9 @@ export interface BirthDateFieldLabels {
   leapLabel?: string
   /** Input placeholder. Defaults to 'YYYY-MM-DD'. */
   placeholder?: string
+  /** Placeholder for the 农历 display field before a date is picked (lunar mode
+   *  is tap-to-pick, not free-text). Defaults to the solar placeholder. */
+  lunarPlaceholder?: string
   /** a11y label for the open-picker affordance. */
   openPicker?: string
 }
@@ -125,6 +136,21 @@ function formatSolar(d: Date): string {
   return `${y}-${m}-${dd}`
 }
 
+/** 农历 input ("YYYY-MM-DD" holding 农历 Y/M/D) → display label. CJK shows the full
+ *  干支年 + 农历月日 (壬申年 正月初六) so the field never reads as a 公历 date; en falls
+ *  back to numeric "Lunar Y/M/D" (the 农历 glyphs are opaque to a non-CJK reader). */
+function formatLunarDisplay(input: string, isLeap: boolean, locale?: string): string | null {
+  if (!DATE_RE.test(input)) return null
+  const [y, m, d] = input.split('-').map(Number)
+  if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 30) return null
+  if (locale === 'en') return `Lunar ${y}/${m}/${d}`
+  const stem = HEAVENLY_STEMS[(((y - 4) % 10) + 10) % 10] ?? ''
+  const branch = EARTHLY_BRANCHES[(((y - 4) % 12) + 12) % 12] ?? ''
+  const mon = `${isLeap ? '闰' : ''}${LUNAR_MONTH_NAMES[m - 1] ?? `${m}月`}`
+  const dayName = LUNAR_DAY_NAMES[d - 1] ?? `${d}`
+  return `${stem}${branch}年 ${mon}${dayName}`
+}
+
 function parseInput(input: string): { y: number; m: number; d: number } | null {
   if (!DATE_RE.test(input)) return null
   const [y, m, d] = input.split('-').map(Number)
@@ -182,6 +208,8 @@ export function BirthDateField({
   const pickerTheme: 'dark' | 'light' = isDark ? 'dark' : 'light'
   const { input, calendar } = value
   const isLeap = value.isLeap ?? false
+  // In 农历 mode the field is tap-to-pick and shows the date AS 农历 (壬申年 正月初六).
+  const lunarLabel = calendar === 'lunar' ? formatLunarDisplay(input, isLeap, locale) : null
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // ── Commit helpers — every change reports the full derived value up ──────
@@ -205,18 +233,26 @@ export function BirthDateField({
   const handleCalendar = (next: BirthCalendar) => {
     if (next === calendar) return
     void Haptics.selectionAsync().catch(() => undefined)
-    emit(input, next, false)
+    // Clear on switch — the same digits are a DIFFERENT day in each calendar, so
+    // reinterpreting them silently mis-reads the date. User re-picks once (2026-06).
+    emit('', next, false)
   }
 
   // ── Picker sheet state (seeded from the current input on open) ───────────
   const [pickSolar, setPickSolar] = useState<Date>(defaultSolarSeed)
+  const [pickSolarYMD, setPickSolarYMD] = useState<SolarDateValue>(() => {
+    const d = defaultSolarSeed()
+    return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() }
+  })
   const [pickLunar, setPickLunar] = useState<LunarDateValue>(defaultLunarSeed)
 
   const openPicker = () => {
     void Haptics.selectionAsync().catch(() => undefined)
     // Seed from what's currently typed (or sensible defaults) — done here, not
     // in render, so typing never pays for conversions it doesn't need.
-    setPickSolar(solarSeedFrom(input, calendar))
+    const seed = solarSeedFrom(input, calendar)
+    setPickSolar(seed)
+    setPickSolarYMD({ year: seed.getFullYear(), month: seed.getMonth() + 1, day: seed.getDate() })
     setPickLunar(lunarSeedFrom(input, calendar, isLeap))
     setPickerOpen(true)
   }
@@ -224,16 +260,22 @@ export function BirthDateField({
   const confirmPicker = () => {
     setPickerOpen(false)
     if (calendar === 'solar') {
-      emit(formatSolar(pickSolar), 'solar', false)
+      // Android reads the custom wheels (pickSolarYMD); iOS reads the native
+      // spinner's Date (pickSolar).
+      const solarDate =
+        Platform.OS === 'android'
+          ? new Date(pickSolarYMD.year, pickSolarYMD.month - 1, pickSolarYMD.day)
+          : pickSolar
+      emit(formatSolar(solarDate), 'solar', false)
     } else {
       const padded = `${pickLunar.year}-${String(pickLunar.month).padStart(2, '0')}-${String(pickLunar.day).padStart(2, '0')}`
       emit(padded, 'lunar', pickLunar.isLeap)
     }
   }
 
-  // Android's solar picker is its own system dialog — no surrounding sheet.
-  const androidSolarPicker = pickerOpen && calendar === 'solar' && Platform.OS === 'android'
-  const sheetPicker = pickerOpen && !androidSolarPicker
+  // Every picker now renders in the shared bottom sheet — solar on Android uses
+  // the custom SolarDateWheels (matches 农历); iOS keeps its native spinner.
+  const sheetPicker = pickerOpen
 
   return (
     <View style={{ gap: spacing.sm }}>
@@ -300,24 +342,45 @@ export function BirthDateField({
               }
         }
       >
-        <TextInput
-          value={input}
-          onChangeText={handleType}
-          placeholder={labels.placeholder ?? 'YYYY-MM-DD'}
-          placeholderTextColor={colors.dim}
-          keyboardType='numeric'
-          maxLength={10}
-          style={{
-            flex: 1,
-            fontSize: prominent ? 19 : 16,
-            letterSpacing: prominent ? 1 : 0,
-            color: colors.text,
-            // `padding: 0` first kills Android's default TextInput inset; the
-            // explicit paddingVertical then sets the row height.
-            padding: 0,
-            paddingVertical: prominent ? spacing.md : spacing.sm,
-          }}
-        />
+        {calendar === 'solar' ? (
+          <TextInput
+            value={input}
+            onChangeText={handleType}
+            placeholder={labels.placeholder ?? 'YYYY-MM-DD'}
+            placeholderTextColor={colors.dim}
+            keyboardType='numeric'
+            maxLength={10}
+            style={{
+              flex: 1,
+              fontSize: prominent ? 19 : 16,
+              letterSpacing: prominent ? 1 : 0,
+              color: colors.text,
+              // `padding: 0` first kills Android's default TextInput inset; the
+              // explicit paddingVertical then sets the row height.
+              padding: 0,
+              paddingVertical: prominent ? spacing.md : spacing.sm,
+            }}
+          />
+        ) : (
+          // 农历 is tap-to-pick (typing 农历 on a numeric keypad is meaningless, and
+          // an ISO string here read as a 公历 date). Show the picked date AS 农历.
+          <Pressable
+            onPress={openPicker}
+            accessibilityRole='button'
+            accessibilityLabel={labels.openPicker ?? labels.pickerDone}
+            style={{ flex: 1, paddingVertical: prominent ? spacing.md : spacing.sm }}
+          >
+            <Text
+              style={{
+                fontSize: prominent ? 19 : 16,
+                letterSpacing: prominent ? 1 : 0,
+                color: lunarLabel ? colors.text : colors.dim,
+              }}
+            >
+              {lunarLabel ?? labels.lunarPlaceholder ?? labels.placeholder ?? 'YYYY-MM-DD'}
+            </Text>
+          </Pressable>
+        )}
         {calendar === 'lunar' && isLeap && labels.leapLabel ? (
           <Text style={{ color: accent, fontSize: 12, marginRight: spacing.sm }}>
             {labels.leapLabel}
@@ -339,26 +402,15 @@ export function BirthDateField({
         <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>{labels.lunarHint}</Text>
       ) : null}
 
-      {/* Android solar — the system date dialog handles its own chrome. */}
-      {androidSolarPicker ? (
-        <DateTimePicker
-          value={pickSolar}
-          mode='date'
-          display='spinner'
-          minimumDate={MIN_DATE}
-          maximumDate={MAX_DATE}
-          themeVariant={pickerTheme}
-          onChange={(event, picked) => {
-            setPickerOpen(false)
-            if (event.type === 'set' && picked) emit(formatSolar(picked), 'solar', false)
-          }}
-        />
-      ) : null}
-
-      {/* iOS solar spinner + all-platform lunar wheels — bottom sheet. */}
+      {/* Solar (iOS native spinner / Android custom wheels) + all-platform lunar
+          wheels — one shared bottom sheet. statusBar/navigationBarTranslucent make
+          the Modal edge-to-edge so the sheet reaches the true screen bottom on
+          Android (no dimmed gap strip under the gesture bar, 2026-06 feedback). */}
       <Modal
         visible={sheetPicker}
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         animationType='slide'
         onRequestClose={() => setPickerOpen(false)}
       >
@@ -414,19 +466,31 @@ export function BirthDateField({
             </Pressable>
           </View>
           {calendar === 'solar' ? (
-            <DateTimePicker
-              value={pickSolar}
-              mode='date'
-              display='spinner'
-              minimumDate={MIN_DATE}
-              maximumDate={MAX_DATE}
-              themeVariant={pickerTheme}
-              onChange={(_, picked) => {
-                if (picked) setPickSolar(picked)
-              }}
-              locale={locale}
-              style={{ alignSelf: 'center' }}
-            />
+            Platform.OS === 'android' ? (
+              <SolarDateWheels
+                year={pickSolarYMD.year}
+                month={pickSolarYMD.month}
+                day={pickSolarYMD.day}
+                accent={accent}
+                minYear={MIN_DATE.getFullYear()}
+                maxYear={MAX_DATE.getFullYear()}
+                onChange={setPickSolarYMD}
+              />
+            ) : (
+              <DateTimePicker
+                value={pickSolar}
+                mode='date'
+                display='spinner'
+                minimumDate={MIN_DATE}
+                maximumDate={MAX_DATE}
+                themeVariant={pickerTheme}
+                onChange={(_, picked) => {
+                  if (picked) setPickSolar(picked)
+                }}
+                locale={locale}
+                style={{ alignSelf: 'center' }}
+              />
+            )
           ) : (
             <LunarDateWheels
               year={pickLunar.year}
@@ -465,6 +529,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       lunarHint: '輸入農曆日期，我們會自動換算為陽曆排盤。',
       leapLabel: '閏月',
       placeholder: 'YYYY-MM-DD',
+      lunarPlaceholder: '選擇農曆日期',
       openPicker: '開啟選擇器',
     }
   }
@@ -476,6 +541,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       lunarHint: '输入农历日期，我们会自动换算为阳历排盘。',
       leapLabel: '闰月',
       placeholder: 'YYYY-MM-DD',
+      lunarPlaceholder: '选择农历日期',
       openPicker: '打开选择器',
     }
   }
@@ -487,6 +553,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
       lunarHint: '旧暦の日付を入力すると、自動的に新暦へ換算します。',
       leapLabel: '閏月',
       placeholder: 'YYYY-MM-DD',
+      lunarPlaceholder: '旧暦の日付を選ぶ',
       openPicker: 'ピッカーを開く',
     }
   }
@@ -497,6 +564,7 @@ export function birthDateFieldLabelsForLocale(locale: string): BirthDateFieldLab
     lunarHint: 'Enter a Chinese (lunar) calendar date — we convert it for the chart.',
     leapLabel: 'leap',
     placeholder: 'YYYY-MM-DD',
+    lunarPlaceholder: 'Pick a lunar date',
     openPicker: 'Open picker',
   }
 }

@@ -17,12 +17,13 @@ import {
   shichenFieldLabelsForLocale,
   shichenInlineLabel,
   shichenRange,
+  Toggle,
   useTheme,
 } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
@@ -356,10 +357,10 @@ export default function PeopleScreen() {
                   {t.people.compatibilityHook}
                 </Text>
               </View>
-              <Switch
+              <Toggle
                 value={compatExpanded}
                 onValueChange={setCompatExpanded}
-                trackColor={{ true: colors.accent }}
+                accent={colors.accent}
               />
             </View>
 
@@ -501,11 +502,7 @@ export default function PeopleScreen() {
               }}
             >
               <Text style={{ color: colors.text, fontSize: 14 }}>{t.people.remindOnDay}</Text>
-              <Switch
-                value={remindOnDay}
-                onValueChange={setRemindOnDay}
-                trackColor={{ true: colors.accent }}
-              />
+              <Toggle value={remindOnDay} onValueChange={setRemindOnDay} accent={colors.accent} />
             </View>
           </View>
 

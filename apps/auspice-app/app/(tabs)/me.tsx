@@ -31,6 +31,7 @@ import {
   shichenFieldLabelsForLocale,
   shichenInlineLabel,
   shichenRange,
+  Toggle,
   useTheme,
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
@@ -43,7 +44,7 @@ import {
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
@@ -184,7 +185,7 @@ function PushToggleRow({
             <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>{hint}</Text>
           ) : null}
         </View>
-        <Switch value={value} onValueChange={onToggle} trackColor={{ true: colors.accent }} />
+        <Toggle value={value} onValueChange={onToggle} accent={colors.accent} />
       </View>
     </View>
   )
@@ -696,12 +697,12 @@ export default function MeScreen() {
                               <Text style={{ color: colors.text, fontSize: 15 }}>
                                 {preciseCopy.calibrateLabel}
                               </Text>
-                              <Switch
+                              <Toggle
                                 value={birth.calibrate !== false}
                                 onValueChange={(on) =>
                                   setBirth((prev) => ({ ...prev, calibrate: on }))
                                 }
-                                trackColor={{ true: colors.accent }}
+                                accent={colors.accent}
                               />
                             </View>
                             {calibrationPreview ? (

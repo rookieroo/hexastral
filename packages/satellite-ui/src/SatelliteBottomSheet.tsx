@@ -44,8 +44,10 @@ import {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MAX_SHEET_HEIGHT = SCREEN_HEIGHT * 0.85
-/** iPhone home-indicator clearance; Android safe-area handled by the OS. */
-const HOME_INDICATOR_PADDING = Platform.OS === 'ios' ? 34 : 16
+/** Bottom clearance over the home indicator (iOS) / gesture bar (Android). The
+ *  Modal is edge-to-edge (see navigationBarTranslucent below) so the sheet bg
+ *  reaches the true screen bottom; this padding keeps content off the gesture bar. */
+const HOME_INDICATOR_PADDING = Platform.OS === 'ios' ? 34 : 24
 
 interface SatelliteBottomSheetProps {
   visible: boolean
@@ -153,7 +155,14 @@ export function SatelliteBottomSheet({
   )
 
   return (
-    <Modal transparent visible={visible} animationType='none' onRequestClose={onClose}>
+    <Modal
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      visible={visible}
+      animationType='none'
+      onRequestClose={onClose}
+    >
       <View style={StyleSheet.absoluteFill}>
         {/* Backdrop — independent opacity fade. Tap to close. */}
         <Animated.View

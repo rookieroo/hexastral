@@ -36,6 +36,7 @@ export {
   type ShichenFieldProps,
   shichenFieldLabelsForLocale,
 } from './ShichenField'
+export { type SolarDateValue, SolarDateWheels } from './SolarDateWheels'
 export type {
   BirthInfoCopy,
   BirthInfoFormProps,

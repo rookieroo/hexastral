@@ -5,10 +5,10 @@
  * `onChange`, and it derives the leap month for the year, the day-count of the
  * selected month, and clamps the day when the month changes underneath it.
  *
- * Plain ScrollView-based wheels (no extra picker dep). Each column is a
- * vertical snap-scroll list; the centred row is the selection. Extracted from
- * BirthDateStep so the single-page settings forms (e.g. auspice Me) can reuse
- * the exact same lunar input as the onboarding wizard.
+ * Columns are the shared `Wheel` (so 农历 and 阳历 entry look identical); month +
+ * day wrap (首尾相连), year is a bounded range. Extracted from BirthDateStep so the
+ * single-page settings forms (e.g. auspice Me) reuse the exact same lunar input
+ * as the onboarding wizard.
  */
 
 import {
@@ -18,15 +18,11 @@ import {
   LUNAR_DAY_NAMES,
   LUNAR_MONTH_NAMES,
 } from '@zhop/astro-core'
-import * as Haptics from 'expo-haptics'
 import { useEffect, useMemo } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { View } from 'react-native'
 import { useTheme } from '../../theme'
+import { WHEEL_HEIGHT, Wheel } from '../Wheel'
 
-const WHEEL_ITEM_HEIGHT = 36
-// 7 visible rows (was 5) — 5-row wheels read as "crammed at the top" on
-// modern phone heights. 7 rows = 252px, centred wheel feels balanced.
-const WHEEL_HEIGHT = WHEEL_ITEM_HEIGHT * 7
 const LUNAR_YEAR_MIN = 1901 // safe lower bound (1900 partial)
 const LUNAR_YEAR_MAX = 2099
 
@@ -107,7 +103,6 @@ export function LunarDateWheels({
         selectedKey={String(year)}
         onSelect={(v) => onChange({ year: v as number, month, day: safeDay, isLeap })}
         accent={accent}
-        colors={colors}
       />
       <Wheel
         items={months.map((m) => ({
@@ -121,7 +116,7 @@ export function LunarDateWheels({
           onChange({ year, month: m.value, day: safeDay, isLeap: m.isLeap })
         }}
         accent={accent}
-        colors={colors}
+        loop
       />
       <Wheel
         items={days.map((d) => ({
@@ -132,111 +127,8 @@ export function LunarDateWheels({
         selectedKey={String(safeDay)}
         onSelect={(v) => onChange({ year, month, day: v as number, isLeap })}
         accent={accent}
-        colors={colors}
+        loop
       />
-    </View>
-  )
-}
-
-interface WheelItem<T> {
-  key: string
-  label: string
-  value: T
-}
-
-function Wheel<T>({
-  items,
-  selectedKey,
-  onSelect,
-  accent,
-  colors,
-}: {
-  items: WheelItem<T>[]
-  selectedKey: string
-  onSelect: (value: T) => void
-  accent: string
-  colors: ReturnType<typeof useTheme>['colors']
-}) {
-  const selectedIdx = Math.max(
-    0,
-    items.findIndex((it) => it.key === selectedKey)
-  )
-  const initialOffset = selectedIdx * WHEEL_ITEM_HEIGHT
-
-  return (
-    <View style={{ flex: 1, position: 'relative' }}>
-      {/* Center selection band — 3 rows above the centred slot in a 7-row wheel.
-          The band is the wheel's primary affordance, so it needs to read clearly
-          on EITHER mode: the border is rendered at full accent opacity (was
-          `${accent}66` ≈ 40%, which dissolved into light surfaces), and the
-          inner wash is ~13% accent — visible on both ink-dark and rice-paper. */}
-      <View
-        pointerEvents='none'
-        style={{
-          position: 'absolute',
-          top: WHEEL_ITEM_HEIGHT * 3,
-          left: 0,
-          right: 0,
-          height: WHEEL_ITEM_HEIGHT,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: accent,
-          backgroundColor: `${accent}22`,
-        }}
-      />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        snapToInterval={WHEEL_ITEM_HEIGHT}
-        decelerationRate='fast'
-        contentOffset={{ x: 0, y: initialOffset }}
-        contentContainerStyle={{
-          // 3 padding rows top + 3 bottom = centred item at row 4 of 7
-          paddingVertical: WHEEL_ITEM_HEIGHT * 3,
-        }}
-        onMomentumScrollEnd={(e) => {
-          const y = e.nativeEvent.contentOffset.y
-          const idx = Math.round(y / WHEEL_ITEM_HEIGHT)
-          const clamped = Math.max(0, Math.min(items.length - 1, idx))
-          const picked = items[clamped]
-          if (picked) {
-            Haptics.selectionAsync()
-            onSelect(picked.value)
-          }
-        }}
-      >
-        {items.map((it, i) => {
-          // Soften items that are not the selection AND not the immediate
-          // neighbours, so the wheel still reads as a centred slot rather than
-          // a flat list. Neighbours stay near full text colour so the next
-          // value is always legible — the prior 65%-opacity secondary token
-          // was too faint on light surfaces ("看不清" in light mode).
-          const distance = Math.abs(i - selectedIdx)
-          const colorForRow =
-            distance === 0 ? colors.text : distance <= 1 ? colors.text : colors.secondary
-          const opacity = distance === 0 ? 1 : distance === 1 ? 0.7 : 0.45
-          return (
-            <View
-              key={it.key}
-              style={{
-                height: WHEEL_ITEM_HEIGHT,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: colorForRow,
-                  fontWeight: distance === 0 ? '600' : '400',
-                  opacity,
-                }}
-              >
-                {it.label}
-              </Text>
-            </View>
-          )
-        })}
-      </ScrollView>
     </View>
   )
 }
