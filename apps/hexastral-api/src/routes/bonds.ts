@@ -1556,31 +1556,17 @@ bondRoutes.get('/', async (c) => {
 // 无 KV 缓存 → 永不陈旧。plan §2.2 明示「缓存非必需」, 且 §7 把「失效点漏一处则轴不更新」
 // 列为风险 —— 重算即读消除该风险类。若日后 compute 成本显现再加 per-user KV 缓存 + 失效。
 //
-// 闸 (BT.6, 2026-06 收紧): timeline 与 make-if 对称 = 订阅硬墙。免费层在顶部即提前返回
-// upsell (零节点)，不跑 ego 合并 —— founder「订阅解锁全部节点」。kindred_pro/universe_pro =
-// 全部 bond 合并 + 前瞻全轴(+15y) + 满 12 月流月 + 主动推送时刻表 (护城河)。
-// (旧行为「免费=当前年全部 bond」那条免费重路径偶发请求悬挂 → 客户端一直 loading; 提前
-//  返回既对齐定价又根除悬挂。)
+// 闸 (BT.6 → Phase 3, 2026-06): 深度分层, 不再是硬墙。免费层得「近 3 月流月」近期尝鲜
+// (轻量), 十年全轴 + 满 12 月流月 + 主动推送时刻表 仍为 Pro 护城河。免费层**绝不**跑
+// buildEgoTimeline (旧「免费=当前年全部 bond」那条偶发悬挂的重路径) —— 只跑小窗口
+// buildEgoLiuYue; 配合客户端 20s 超时, 即使偶发慢也退化为 error+retry, 不再无限 loading。
 //
 // 注意路由顺序: 静态 `/timeline` 须先于 `/:id` 命中 (Hono RegExpRouter 静态优先, 仍置于前)。
 bondRoutes.get('/timeline', async (c) => {
   const userId = requireUserId(c)
   const db = c.get('db')
 
-  // 闸 (BT.6) — 与 make-if 对称: 订阅是 living layer 的护城河，免费层在此即见 paywall。
-  // 历史行为是免费层也跑全量 ego 查询 + 合并 (只是窗口收窄到当前年)，那条重路径偶发悬挂
-  // → 客户端「一直 loading」(make-if 因提前返回反而即时弹 paywall)。现按 founder「订阅解锁
-  // 全部节点」对齐: 免费层不返回任何节点，提前返回 upsell；全轴/流月/推送均 Pro only。
   const isPro = await userHasCapability(db, userId, 'kindred')
-  if (!isPro) {
-    return jsonOk(c, {
-      nodes: [],
-      liuyue: [],
-      notifications: [],
-      pro: false,
-      upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
-    })
-  }
 
   // 本我生辰 (canonical, D2: 仅 users 表持全精度本我盘)
   const ego = await db
@@ -1670,9 +1656,21 @@ bondRoutes.get('/timeline', async (c) => {
     })
   }
 
-  // Pro only (免费层已在顶部提前返回): 全部 bond 进合并，前瞻 + 流月 + 推送时刻表。
-  // 默认前瞻 10 年(短期最有意义); `?horizon=far` 打开更远(隐蔽口子, 30 年)。每年保留
-  // 平年锚点(keepRoutineYears) → 这 10 年都有可读节点, 而非稀疏的几个大运/冲合。
+  // 免费层 (Phase 3): 只给近 3 月流月尝鲜 —— 轻量(小窗口), 绝不跑 buildEgoTimeline。
+  // 十年全轴 / 满 12 月流月 / 推送 均 Pro 护城河。
+  if (!isPro) {
+    const liuyue = buildEgoLiuYue(egoBirth, resolved, { fromDate: new Date(), months: 3 })
+    return jsonOk(c, {
+      nodes: [],
+      liuyue,
+      notifications: [],
+      pro: false,
+      upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
+    })
+  }
+
+  // Pro: 全部 bond 进合并，前瞻全轴 + 满 12 月流月 + 推送时刻表。默认前瞻 10 年(短期最有
+  // 意义); `?horizon=far` 打开更远(隐蔽口子, 30 年)。每年保留平年锚点(keepRoutineYears)。
   const currentYear = new Date().getUTCFullYear()
   const far = c.req.query('horizon') === 'far'
   const timeline = buildEgoTimeline(egoBirth, resolved, {
@@ -1800,13 +1798,10 @@ bondRoutes.post('/:id/makeif', async (c) => {
   const userId = requireUserId(c)
   const db = c.get('db')
 
+  // Depth-gated (Phase 3): both tiers compute below; free is handed the near-term
+  // monthly windows and the 10-year `longterm` tier is withheld (Pro moat). The
+  // make-if is a per-bond compute (no heavy ego merge), so the free path is light.
   const isPro = await userHasCapability(db, userId, 'kindred')
-  if (!isPro) {
-    return jsonOk(c, {
-      pro: false,
-      upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
-    })
-  }
 
   // 本我盘 (D2: 仅 users 持全精度本我盘)
   const ego = await db
@@ -1882,16 +1877,19 @@ bondRoutes.post('/:id/makeif', async (c) => {
     )
   }
 
-  // Near-term monthly windows (next 12 months) + the long-horizon yearly tier
-  // (the next 10 years — "哪一年最适合推进重大一步"). One call, both tiers.
+  // Near-term monthly windows (always, free taste) + the 10-year `longterm` tier
+  // (Pro only — withheld for free so the upsell has something to sell).
   const now = new Date()
   const makeif = buildBondMakeIf(egoBirth, counterpart, {
     fromDate: now,
     months: 12,
-    fromYear: now.getUTCFullYear(),
-    years: 10,
+    ...(isPro ? { fromYear: now.getUTCFullYear(), years: 10 } : {}),
   })
-  return jsonOk(c, { ...makeif, pro: true })
+  return jsonOk(c, {
+    ...makeif,
+    pro: isPro,
+    ...(isPro ? {} : { upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS } }),
+  })
 })
 
 // ── GET /:id — detail with filtered dimensions ────────────────

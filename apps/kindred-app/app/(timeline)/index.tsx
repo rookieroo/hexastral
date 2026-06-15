@@ -148,10 +148,10 @@ export default function TimelineScreen() {
     )
   }
 
-  // Free tier = the wall (the server returns no nodes for non-Pro now — the living
-  // layer is the subscription moat, mirroring what-if). Show the paywall as the
-  // screen's primary content so a free user always lands on the upsell, never an
-  // endless loader or the onboarding empty state.
+  // Free tier (Phase 3): a near-term taste — the next ~3 months of 流月 the server
+  // sends for free — then the upsell. The 10-year axis + full 12-month 流月 + push
+  // stay the Pro moat. Never an endless loader (server returns the light slice; the
+  // hook has a 20s timeout).
   if (!pro) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -176,6 +176,14 @@ export default function TimelineScreen() {
               {bondName || t(locale, 'timeline.title')}
             </Text>
           </View>
+          {liuyue.length > 0 ? (
+            <LiuYueStrip
+              liuyue={liuyue}
+              pro={false}
+              locale={locale}
+              onUpsell={() => router.push('/(commerce)/paywall')}
+            />
+          ) : null}
           <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
           <LockedPreview locale={locale} />
         </ScrollView>

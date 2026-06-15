@@ -228,25 +228,9 @@ function Body({
         </View>
       ) : null}
 
-      {!data.pro ? (
-        <View
-          style={{
-            borderWidth: 0.5,
-            borderColor: kindredDark.accent,
-            borderRadius: kindredRadius.md,
-            padding: kindredSpacing.lg,
-            gap: kindredSpacing.sm,
-          }}
-        >
-          <Text style={[kindredType.heading, { color: kindredDark.text }]}>
-            {t(locale, 'makeif.upsell.title')}
-          </Text>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t(locale, 'makeif.upsell.body')}
-          </Text>
-          <PrimaryButton label={t(locale, 'makeif.upsell.cta')} onPress={onUpsell} />
-        </View>
-      ) : (
+      {/* Content shows for free + Pro now (free = the near-term monthly taste); the
+          10-year tier below is the Pro depth — free gets an upsell card in its place. */}
+      {
         <>
           {/* 用神 — the bridging element */}
           {data.yongshen ? (
@@ -395,9 +379,28 @@ function Body({
                 ))}
               </View>
             </>
+          ) : !data.pro ? (
+            <View
+              style={{
+                marginTop: kindredSpacing.xl,
+                borderWidth: 0.5,
+                borderColor: kindredDark.accent,
+                borderRadius: kindredRadius.md,
+                padding: kindredSpacing.lg,
+                gap: kindredSpacing.sm,
+              }}
+            >
+              <Text style={[kindredType.heading, { color: kindredDark.text }]}>
+                {t(locale, 'makeif.upsell.title')}
+              </Text>
+              <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+                {t(locale, 'makeif.upsell.body')}
+              </Text>
+              <PrimaryButton label={t(locale, 'makeif.upsell.cta')} onPress={onUpsell} />
+            </View>
           ) : null}
         </>
-      )}
+      }
     </ScrollView>
   )
 }
