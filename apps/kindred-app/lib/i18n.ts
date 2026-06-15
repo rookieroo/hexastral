@@ -218,6 +218,10 @@ export const translations: Translations = {
     'bond.statusDeclined': 'Declined',
     'bond.statusExpired': 'Expired',
     'bond.matching': 'Aligning your charts…',
+    'bond.stage.align': 'Aligning the stems & branches…',
+    'bond.stage.bazi': 'Casting both BaZi charts…',
+    'bond.stage.synastry': 'Reading the synastry between you…',
+    'bond.stage.report': 'Writing your relationship report…',
     'bond.toAuspice': 'Add to Yuun almanac  →',
 
     'invite.accept.prefix': '',
@@ -566,6 +570,10 @@ export const translations: Translations = {
     'bond.statusDeclined': '已婉拒',
     'bond.statusExpired': '已过期',
     'bond.matching': '合盘中…',
+    'bond.stage.align': '正在对齐天干地支…',
+    'bond.stage.bazi': '正在推演双方八字…',
+    'bond.stage.synastry': '正在进行合盘分析…',
+    'bond.stage.report': '正在编写关系报告…',
     'bond.toAuspice': '加入 Yuun 黄历提醒  →',
 
     'invite.accept.prefix': '',
@@ -904,6 +912,10 @@ export const translations: Translations = {
     'bond.statusDeclined': '已婉拒',
     'bond.statusExpired': '已過期',
     'bond.matching': '合盤中…',
+    'bond.stage.align': '正在對齊天干地支…',
+    'bond.stage.bazi': '正在推演雙方八字…',
+    'bond.stage.synastry': '正在進行合盤分析…',
+    'bond.stage.report': '正在編寫關係報告…',
     'bond.toAuspice': '加入 Yuun 黃曆提醒  →',
 
     'invite.accept.prefix': '',
@@ -1244,6 +1256,10 @@ export const translations: Translations = {
     'bond.statusDeclined': '辞退されました',
     'bond.statusExpired': '期限切れ',
     'bond.matching': '相性を計算中…',
+    'bond.stage.align': '干支を整えています…',
+    'bond.stage.bazi': '二人の四柱を立てています…',
+    'bond.stage.synastry': '二人の相性を読み解いています…',
+    'bond.stage.report': 'レポートを書いています…',
     'bond.toAuspice': 'Yuun の暦に追加  →',
 
     'invite.accept.prefix': 'さんが',

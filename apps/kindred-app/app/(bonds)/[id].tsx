@@ -51,6 +51,7 @@ import {
   InkCenterpiece,
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { ReportBloom } from '@/components/reading/ReportBloom'
@@ -442,9 +443,15 @@ export default function BondDetailScreen({
           }}
         >
           <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
-          <Text style={[kindredType.body, { color: kindredDark.textSecondary }]}>
-            {t('bond.matching')}
-          </Text>
+          <GeneratingStages
+            color={kindredDark.textSecondary}
+            stages={[
+              t('bond.stage.align'),
+              t('bond.stage.bazi'),
+              t('bond.stage.synastry'),
+              t('bond.stage.report'),
+            ]}
+          />
         </View>
       </SafeAreaView>
     )
