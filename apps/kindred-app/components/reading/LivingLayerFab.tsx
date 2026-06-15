@@ -11,10 +11,18 @@
  */
 
 import { kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import { GitBranch, GitCommitVertical, GitFork, type LucideIcon, X } from 'lucide-react-native'
-import { useState } from 'react'
+import { GitBranch, GitCommitVertical, GitFork, GitMerge, type LucideIcon } from 'lucide-react-native'
+import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeOutDown,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 export interface LivingLayerFabProps {
   labels: { timeline: string; whatif: string }
@@ -77,20 +85,49 @@ export function LivingLayerFab({ labels, onTimeline, onWhatIf, insetBottom }: Li
           shadowOffset: { width: 0, height: 6 },
         }}
       >
-        {open ? (
-          <X color={kindredPaper.ctaText} size={22} strokeWidth={1.8} />
-        ) : (
-          // git-family glyph: branching futures = the Timeline + What-if layer
-          // (reads as one family with auspice's git icons; rotated so the fork
-          // opens upward toward the two pills it reveals).
-          <GitFork
-            color={kindredPaper.ctaText}
-            size={22}
-            strokeWidth={1.8}
-            style={{ transform: [{ rotate: '180deg' }] }}
-          />
-        )}
+        <FabToggleIcon open={open} />
       </Pressable>
+    </View>
+  )
+}
+
+/**
+ * The FAB glyph morphs between two git-family icons instead of swapping them:
+ * GitFork (collapsed — two futures branching upward, inviting the open) crossfades
+ * and counter-rotates into GitMerge (expanded — the threads converging back, i.e.
+ * "tap to collapse"). Same hamburger↔✕ language the user asked for, but kept in the
+ * git-graph family so it reads as one product with auspice + the Timeline spine.
+ */
+function FabToggleIcon({ open }: { open: boolean }) {
+  const progress = useSharedValue(open ? 1 : 0)
+  useEffect(() => {
+    progress.value = withTiming(open ? 1 : 0, {
+      duration: 260,
+      easing: Easing.bezier(0.2, 0, 0, 1),
+    })
+  }, [open, progress])
+
+  // Counter-rotate in the same direction so the two glyphs feel like one spinning
+  // morph rather than a cut. Fork fades out as it turns away; Merge turns in.
+  const forkStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: interpolate(progress.value, [0, 0.55, 1], [1, 0, 0]),
+    transform: [{ rotate: `${180 - progress.value * 90}deg` }],
+  }))
+  const mergeStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: interpolate(progress.value, [0, 0.45, 1], [0, 0, 1]),
+    transform: [{ rotate: `${(1 - progress.value) * 90}deg` }],
+  }))
+
+  return (
+    <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={forkStyle}>
+        <GitFork color={kindredPaper.ctaText} size={22} strokeWidth={1.8} />
+      </Animated.View>
+      <Animated.View style={mergeStyle}>
+        <GitMerge color={kindredPaper.ctaText} size={22} strokeWidth={1.8} />
+      </Animated.View>
     </View>
   )
 }
