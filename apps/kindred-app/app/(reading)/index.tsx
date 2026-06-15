@@ -200,7 +200,7 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, refetch, deleteBond } = useBondList()
+  const { bonds, refetch, deleteBond, recompute } = useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
@@ -245,6 +245,29 @@ export default function ReadingHomeScreen() {
       ])
     },
     [deleteBond, locale]
+  )
+
+  // Recompute a stale bond's reading with the user's current birth (Pro). In-place
+  // + irreversible (overwrites the existing reading), so confirm before firing;
+  // non-Pro is routed to the paywall by the server's 403 → 'needs_pro'.
+  const confirmRecompute = useCallback(
+    (bond: BondData) => {
+      Alert.alert(t(locale, 'bond.recomputeConfirmTitle'), t(locale, 'bond.recomputeConfirmBody'), [
+        { text: t(locale, 'bondList.cancel'), style: 'cancel' },
+        {
+          text: t(locale, 'bond.recompute'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const outcome = await recompute(bond.id)
+              if (outcome === 'needs_pro') router.push('/(commerce)/paywall')
+              else if (outcome === 'error') Alert.alert(t(locale, 'bond.recomputeFailed'))
+            })()
+          },
+        },
+      ])
+    },
+    [recompute, router, locale]
   )
 
   // Star-map taps: your central star (or empty sky) → your reading; a thread's
@@ -497,6 +520,7 @@ export default function ReadingHomeScreen() {
                 locale={locale}
                 onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
                 onDelete={() => confirmDelete(item)}
+                onRecompute={item.basedOnStaleBirth ? () => confirmRecompute(item) : undefined}
               />
             )}
             ItemSeparatorComponent={() => (

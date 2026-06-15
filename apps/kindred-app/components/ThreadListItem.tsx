@@ -43,9 +43,18 @@ export interface ThreadListItemProps {
   /** Receives the tap's page coords so the report blooms from the tapped row. */
   onPress: (origin?: { x: number; y: number }) => void
   onDelete: () => void
+  /** When the report is based on an earlier birth, offer a Pro recompute. Only
+   *  wired (and only shown) for stale bonds. */
+  onRecompute?: () => void
 }
 
-export function ThreadListItem({ bond, locale, onPress, onDelete }: ThreadListItemProps) {
+export function ThreadListItem({
+  bond,
+  locale,
+  onPress,
+  onDelete,
+  onRecompute,
+}: ThreadListItemProps) {
   const status = statusMeta(bond.status, locale)
   // Specific name as title; fall back to the relationship (and strip the legacy
   // literal "Unknown"). See lib/bondName.ts.
@@ -108,22 +117,29 @@ export function ThreadListItem({ bond, locale, onPress, onDelete }: ThreadListIt
             <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
           ) : null}
           {/* This report predates a later birth-info edit — it stays as-is, but the
-              basis is flagged so the older 生辰 it used is clear. */}
+              basis is flagged (and, for Pro, a recompute-with-new-birth CTA). */}
           {bond.basedOnStaleBirth ? (
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                marginTop: 2,
-                borderWidth: 0.5,
-                borderColor: kindredDark.border,
-                borderRadius: 4,
-                paddingHorizontal: 6,
-                paddingVertical: 1,
-              }}
-            >
-              <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11 }]}>
-                {t(locale, 'bond.staleBirth')}
-              </Text>
+            <View style={{ marginTop: 2, gap: 4, alignItems: 'flex-start' }}>
+              <View
+                style={{
+                  borderWidth: 0.5,
+                  borderColor: kindredDark.border,
+                  borderRadius: 4,
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                }}
+              >
+                <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11 }]}>
+                  {t(locale, 'bond.staleBirth')}
+                </Text>
+              </View>
+              {onRecompute ? (
+                <Pressable onPress={onRecompute} hitSlop={6} accessibilityRole='button'>
+                  <Text style={[kindredType.caption, { color: kindredDark.accent, fontSize: 11 }]}>
+                    {t(locale, 'bond.recompute')} →
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
         </View>

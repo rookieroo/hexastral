@@ -1942,6 +1942,10 @@ bondRoutes.get('/:id', async (c) => {
   } | null = null
 
   let interpretation: Record<string, unknown> | null = null
+  // True when the reading's birth snapshot no longer matches the viewer's current
+  // birth (they edited it after generation). Powers the report's "recompute with
+  // new birth" affordance. Same rule as GET / (neither snapshot matches current).
+  let basedOnStaleBirth = false
 
   if (bond.hehunReadingId) {
     const rawReading = await db
@@ -1956,8 +1960,10 @@ bondRoutes.get('/:id', async (c) => {
         interpretation: pairReadings.interpretation,
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
+        personAGender: pairReadings.personAGender,
         personBSolarDate: pairReadings.personBSolarDate,
         personBTimeIndex: pairReadings.personBTimeIndex,
+        personBGender: pairReadings.personBGender,
       })
       .from(pairReadings)
       .where(eq(pairReadings.id, bond.hehunReadingId))
@@ -1987,6 +1993,26 @@ bondRoutes.get('/:id', async (c) => {
         if (elA) interpretation.personAElement = elA
         if (elB) interpretation.personBElement = elB
       }
+      // Flag a report that predates a later birth-info edit — its snapshot no longer
+      // matches the viewer's current birth. Report stays as-is; the client offers a
+      // Pro "recompute with new birth". (Rule mirrors GET /: neither slot matches.)
+      const me = await db
+        .select({ d: users.birthSolarDate, ti: users.birthTimeIndex, g: users.birthGender })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get()
+      basedOnStaleBirth =
+        me?.d != null &&
+        !(
+          rawReading.personASolarDate === me.d &&
+          rawReading.personATimeIndex === me.ti &&
+          rawReading.personAGender === me.g
+        ) &&
+        !(
+          rawReading.personBSolarDate === me.d &&
+          rawReading.personBTimeIndex === me.ti &&
+          rawReading.personBGender === me.g
+        )
       // '4' or null (legacy) means full access; '1' means restricted to hookDimension only
       const canSeeAll = bond.unlockedDimensions === '4' || bond.unlockedDimensions === null
 
@@ -2080,6 +2106,7 @@ bondRoutes.get('/:id', async (c) => {
       : null,
     dimensions: dimensionData,
     interpretation,
+    basedOnStaleBirth,
   })
 })
 
@@ -2142,6 +2169,166 @@ bondRoutes.post('/:id/unlock', async (c) => {
     .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
 
   return jsonOk(c, { unlocked: true, via: access.via })
+})
+
+// ── POST /:id/recompute — re-run THIS bond's reading with the viewer's CURRENT
+// birth (Pro). For when the viewer edited their birth after the report was made
+// (the list/detail flag it `basedOnStaleBirth`). owner-local + IN-PLACE: only the
+// viewer's slot is refreshed to their current birth; the counterpart's stored birth
+// — and the counterpart's OWN mirror reading — are untouched. Destructive: the old
+// reading is overwritten (the client confirms the irreversible action first).
+bondRoutes.post('/:id/recompute', async (c) => {
+  const bondId = c.req.param('id')
+  const userId = requireUserId(c)
+  const db = c.get('db')
+
+  if (!(await userHasCapability(db, userId, 'kindred'))) {
+    return jsonErr(c, 403, ApiErrorCode.paywall_required, 'Recompute requires Kindred Pro')
+  }
+
+  const bond = await db
+    .select({
+      mode: userBonds.mode,
+      invitationId: userBonds.invitationId,
+      hehunReadingId: userBonds.hehunReadingId,
+    })
+    .from(userBonds)
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+    .get()
+  if (!bond?.hehunReadingId) return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
+
+  const [reading, user] = await Promise.all([
+    db
+      .select({
+        relationshipCategory: pairReadings.relationshipCategory,
+        customRelationshipLabel: pairReadings.customRelationshipLabel,
+        personASolarDate: pairReadings.personASolarDate,
+        personATimeIndex: pairReadings.personATimeIndex,
+        personAGender: pairReadings.personAGender,
+        personAName: pairReadings.personAName,
+        personBSolarDate: pairReadings.personBSolarDate,
+        personBTimeIndex: pairReadings.personBTimeIndex,
+        personBGender: pairReadings.personBGender,
+        personBName: pairReadings.personBName,
+        personBLongitude: pairReadings.personBLongitude,
+        personBTimezoneId: pairReadings.personBTimezoneId,
+      })
+      .from(pairReadings)
+      .where(eq(pairReadings.id, bond.hehunReadingId))
+      .get(),
+    db
+      .select({
+        name: users.name,
+        locale: users.locale,
+        birthSolarDate: users.birthSolarDate,
+        birthTimeIndex: users.birthTimeIndex,
+        birthGender: users.birthGender,
+        birthClockMinutes: users.birthClockMinutes,
+        birthSolarCalibrate: users.birthSolarCalibrate,
+        birthLongitude: users.birthLongitude,
+        birthTimezoneId: users.birthTimezoneId,
+        birthCity: users.birthCity,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get(),
+  ])
+  if (!reading) return jsonErr(c, 404, ApiErrorCode.not_found, 'Reading not found')
+  if (!user?.birthSolarDate || user.birthTimeIndex == null || !user.birthGender) {
+    return jsonErr(c, 400, ApiErrorCode.missing_required, 'Complete your birth info first')
+  }
+
+  // Which slot is the viewer? solo + the inviter's bond (carries invitationId) → A;
+  // the responder's mirror bond (no invitationId) → B. personA is always the
+  // inviter / solo creator (see the /solo + /invite/:token/respond paths).
+  const ownerIsPersonA = bond.mode === 'solo' || bond.invitationId != null
+
+  // Viewer's CURRENT birth (full) → their slot; counterpart keeps its stored birth.
+  // (personB's clockMinutes/calibrate were never persisted, so the counterpart is
+  // recomputed at 时辰 granularity — the same fidelity the stored reading had.)
+  const self = {
+    solarDate: user.birthSolarDate,
+    timeIndex: user.birthTimeIndex,
+    gender: user.birthGender,
+    name: user.name ?? undefined,
+    clockMinutes: user.birthClockMinutes ?? undefined,
+    calibrate: user.birthSolarCalibrate ?? undefined,
+    longitude: user.birthLongitude != null ? Number(user.birthLongitude) : undefined,
+    timezoneId: user.birthTimezoneId ?? undefined,
+    city: user.birthCity ?? undefined,
+  }
+  const otherA = {
+    solarDate: reading.personASolarDate,
+    timeIndex: reading.personATimeIndex,
+    gender: reading.personAGender,
+    name: reading.personAName ?? undefined,
+  }
+  const otherB = {
+    solarDate: reading.personBSolarDate,
+    timeIndex: reading.personBTimeIndex,
+    gender: reading.personBGender,
+    name: reading.personBName ?? undefined,
+    longitude: reading.personBLongitude != null ? Number(reading.personBLongitude) : undefined,
+    timezoneId: reading.personBTimezoneId ?? undefined,
+  }
+  const language = user.locale ?? 'zh-CN'
+
+  const { result, interpretation } = await callAstro<{
+    result: { compatibility: Record<string, unknown> }
+    interpretation: Record<string, string>
+  }>(c.env.SVC_ASTRO, '/pair/compute', {
+    personA: ownerIsPersonA ? self : otherA,
+    personB: ownerIsPersonA ? otherB : self,
+    userId,
+    isPro: true,
+    language,
+    relationshipCategory: reading.relationshipCategory ?? undefined,
+    customRelationshipLabel: reading.customRelationshipLabel ?? undefined,
+  })
+  interpretation.language = language
+
+  // In-place overwrite: refresh the viewer's slot to current + the new score/prose.
+  const refreshedSlot = ownerIsPersonA
+    ? {
+        personASolarDate: user.birthSolarDate,
+        personATimeIndex: user.birthTimeIndex,
+        personAGender: user.birthGender,
+      }
+    : {
+        personBSolarDate: user.birthSolarDate,
+        personBTimeIndex: user.birthTimeIndex,
+        personBGender: user.birthGender,
+      }
+
+  await db
+    .update(pairReadings)
+    .set({
+      ...refreshedSlot,
+      score: result.compatibility.score as number,
+      grade: result.compatibility.grade as string,
+      archetypeName: interpretation.archetypeName ?? null,
+      archetypeTagline: interpretation.archetypeTagline ?? null,
+      archetypeCategory:
+        (interpretation.archetypeCategory as
+          | 'harmony'
+          | 'tension'
+          | 'growth'
+          | 'karmic'
+          | 'volatile'
+          | undefined) ?? null,
+      hookDimension:
+        (interpretation.hookDimension as
+          | 'long_term'
+          | 'communication'
+          | 'attraction'
+          | 'emotional'
+          | undefined) ?? null,
+      compatibilityData: JSON.stringify(result.compatibility),
+      interpretation: JSON.stringify(interpretation),
+    })
+    .where(eq(pairReadings.id, bond.hehunReadingId))
+
+  return jsonOk(c, { recomputed: true })
 })
 
 // ── GET /:id/synastry — 流日感应 (daily synastry for a bond) ──

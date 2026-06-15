@@ -37,6 +37,10 @@ export type KindredBondsRpc = {
     unlock: {
       $post: (opts: { param: { id: string } }) => Promise<Response>
     }
+    /** Re-run THIS bond's reading with the viewer's current birth (Pro, in-place). */
+    recompute: {
+      $post: (opts: { param: { id: string } }) => Promise<Response>
+    }
     /** 关系决策推演 (make-if): rank the bond's forward windows. Pro-gated. */
     makeif: {
       $post: (opts: { param: { id: string } }) => Promise<Response>
