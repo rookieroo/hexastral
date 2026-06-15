@@ -1167,11 +1167,11 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
 
   const mirrorBondId = crypto.randomUUID()
 
-  // Update invitation + A's bond (A always has full access). Also flip A's
-  // unlockedChapterCount to the full cap — B showed up and accepted the
-  // bond, which is the product trigger for "your partner is here, unlock
-  // the whole reading" (see lib/chapter-access.ts). MAX-clamp guards
-  // against a future Pro tier pushing the count above CAP.
+  // Update invitation + A's bond. A's synastry chapters for THIS bond unlock via
+  // the per-bond `chaptersUnlocked` flag set below — the only synastry unlock path
+  // now. The users.unlockedChapterCount bump remains for the NATAL deep report only
+  // ("your partner showed up, unlock your own reading" — see lib/chapter-access.ts);
+  // it no longer opens any other synastry bond. MAX-clamp guards a future Pro tier.
   await db.batch([
     db
       .update(bondInvitations)
@@ -1186,8 +1186,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         mirrorBondId,
         unlockedDimensions: '4',
         // Resonance = full report free for BOTH parties (product decision):
-        // unlock all 6 chapters on A's bond, not just the free 3. (A's
-        // user-level count is also bumped below; this makes it bond-explicit.)
+        // this real connection unlocks all 6 chapters on A's bond. Per-bond is the
+        // authoritative (and only) synastry unlock path now.
         chaptersUnlocked: true,
         updatedAt: new Date().toISOString(),
       })
@@ -2021,22 +2021,15 @@ bondRoutes.get('/:id', async (c) => {
     viewerLocale = v?.locale ?? 'en'
   }
 
-  // Gate the six synastry chapters before they leave the server: free viewers
-  // get the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest. Locked
-  // BODIES never ship. Subscribers / invite-or-purchase-unlocked users see all.
+  // Gate the six synastry chapters before they leave the server: free viewers get
+  // the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest (locked BODIES
+  // never ship). Unlock is PER BOND — a subscription, or THIS bond unlocked (real
+  // Resonance accept / single purchase). A global invite no longer opens every bond.
   if (interpretation && Array.isArray(interpretation.chapters)) {
-    const [isSubscriber, viewer] = await Promise.all([
-      userHasCapability(db, userId, 'kindred'),
-      db
-        .select({ unlockedChapterCount: users.unlockedChapterCount })
-        .from(users)
-        .where(eq(users.id, userId))
-        .get(),
-    ])
+    const isSubscriber = await userHasCapability(db, userId, 'kindred')
     const unlockedCount = resolveUnlockedChapterCount({
       isSubscriber,
       bondUnlocked: bond.chaptersUnlocked,
-      unlockedChapterCount: viewer?.unlockedChapterCount ?? null,
     })
     interpretation = gateInterpretationChapters(interpretation, unlockedCount)
   }

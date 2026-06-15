@@ -186,6 +186,7 @@ export default function ChapterPreview() {
           renderCenterpiece={(ch, i) => (
             <InkCenterpiece
               kind={ch.kind}
+              severity={ch.severity}
               mode={deriveCenterpieceMode(ch.kind, A_ELEMENT, B_ELEMENT, ch.severity)}
               {...deriveTransitionEndpoints(A_ELEMENT, B_ELEMENT)}
               active={i === index}

@@ -214,33 +214,64 @@ function saltFromKind(kind: string): number {
  * perturbs the speckle, so when a couple's essence resolves to one mode for most
  * chapters (a 生 pair is `merge` almost everywhere), all five looked alike.
  *
- * A composition reorients the whole field — it rotates the two-mass arrangement
- * axis and scales how tight/loose the masses sit — so two chapters in the SAME
- * mode read as different paintings (one horizontal + fused, the next tilted +
- * open, …) without touching the mode's meaning. ch1 stays canonical (rot 0) since
- * it's the couple's at-rest essence; later chapters each take their own tilt.
+ * The differentiator is now a MEANINGFUL quantity, not an arbitrary rotation. Each
+ * chapter has an INTENSITY (how charged it is): high → the masses sit tight and,
+ * for 克/oppose, the no-man's-land narrows (a hot, nearly-touching standoff); low →
+ * loose + a wide calm gap. So "looks different" == "is different" (conflict reads
+ * hotter than monthly_outlook). Real per-chapter `severity` from the report
+ * overrides the baseline. A small fixed tilt (≤ ~8.6°, was up to 24°) adds gentle
+ * variety without reading as "the image got rotated". ch1 = neutral intensity,
+ * tilt 0 — the couple's at-rest essence.
  */
 interface Composition {
+  /** Gentle view tilt in radians, kept within ±0.15 (~8.6°). */
   rot: number
+  /** Spread of the two masses: < 1 tighter/closer, > 1 looser/apart. */
   sep: number
-}
-const CHAPTER_COMPOSITION: Record<string, Composition> = {
-  first_impression: { rot: 0, sep: 1.0 },
-  communication: { rot: 0.34, sep: 0.9 },
-  conflict: { rot: -0.42, sep: 1.16 },
-  complement: { rot: 0.54, sep: 0.96 },
-  monthly_outlook: { rot: -0.2, sep: 1.1 },
-  long_term_advice: { rot: 0.16, sep: 1.04 },
-}
-function deriveComposition(kind: string): Composition {
-  const known = CHAPTER_COMPOSITION[kind]
-  if (known) return known
-  // Unknown kinds: derive a stable tilt from the salt so they still differ.
-  const salt = saltFromKind(kind)
-  return { rot: ((salt % 9) - 4) * 0.12, sep: 0.92 + (salt % 5) * 0.05 }
+  /** 克/oppose seam-width multiplier: < 1 narrower (hotter), > 1 wider (calmer). */
+  gapScale: number
 }
 
-function generate(mode: Mode, s: number, salt: number, comp: Composition): Clouds {
+// How charged each chapter is, 0 (calm) … 1 (hot). Drives sep + the oppose seam so
+// same-mode chapters differ by meaning; real `severity` overrides this baseline.
+const CHAPTER_INTENSITY: Record<string, number> = {
+  first_impression: 0.5,
+  communication: 0.4,
+  conflict: 0.9,
+  complement: 0.45,
+  monthly_outlook: 0.32,
+  long_term_advice: 0.4,
+}
+// A small fixed per-chapter tilt for gentle variety (carries NO meaning). ch1 = 0.
+const CHAPTER_TILT: Record<string, number> = {
+  first_impression: 0,
+  communication: 0.1,
+  conflict: -0.13,
+  complement: 0.15,
+  monthly_outlook: -0.07,
+  long_term_advice: 0.06,
+}
+
+/** Spread + seam multipliers from an intensity (0..1), carrying the chapter tilt. */
+function intensityToComposition(intensity: number, rot: number): Composition {
+  const i = Math.max(0, Math.min(1, intensity))
+  return {
+    rot,
+    sep: 1.16 - 0.28 * i, // calm 1.16 (open) … hot 0.88 (tight)
+    gapScale: 1.34 - 0.82 * i, // calm wide seam … hot narrow seam
+  }
+}
+
+function deriveComposition(kind: string, severity?: string): Composition {
+  // Real report severity wins; else the per-chapter baseline; else neutral 0.5.
+  const sev = severity === 'high' ? 0.88 : severity === 'low' ? 0.3 : undefined
+  const intensity = sev ?? CHAPTER_INTENSITY[kind] ?? 0.5
+  // Known chapters get a hand-picked small tilt; unknown ones a stable tiny one.
+  const rot = CHAPTER_TILT[kind] ?? ((saltFromKind(kind) % 7) - 3) * 0.045
+  return intensityToComposition(intensity, rot)
+}
+
+function generate(mode: Mode, s: number, salt: number, composition: Composition): Clouds {
   const inkFaint: SkPoint[] = []
   const inkBold: SkPoint[] = []
   const paleFaint: SkPoint[] = []
@@ -251,13 +282,13 @@ function generate(mode: Mode, s: number, salt: number, comp: Composition): Cloud
   // canonical space (so seams / falloffs stay coherent), then the composition tilts
   // + spreads the finished field. Pure rotation preserves mass shape; `sep` (kept
   // near 1) gently tightens or opens the spread.
-  const cos = Math.cos(comp.rot)
-  const sin = Math.sin(comp.rot)
+  const cos = Math.cos(composition.rot)
+  const sin = Math.sin(composition.rot)
   const push = (ink: boolean, x: number, y: number) => {
     const bold = rnd() < 0.36
     const arr = ink ? (bold ? inkBold : inkFaint) : bold ? paleBold : paleFaint
-    const dx = (x - CX) * comp.sep
-    const dy = (y - CY) * comp.sep
+    const dx = (x - CX) * composition.sep
+    const dy = (y - CY) * composition.sep
     arr.push({ x: (CX + dx * cos - dy * sin) * s, y: (CY + dx * sin + dy * cos) * s })
   }
 
@@ -288,7 +319,8 @@ function generate(mode: Mode, s: number, salt: number, comp: Composition): Cloud
     const nz = makeNoise(9 + salt)
     const nf = makeNoise(57 + salt)
     const seamAt = (y: number) => CX + 26 * (nf(150, y * 2.3) - 0.5)
-    const halfGapAt = (y: number) => 5 + 16 * nf(610, y * 1.6)
+    // Seam width scales with the chapter's intensity (hot → narrower no-man's-land).
+    const halfGapAt = (y: number) => (5 + 16 * nf(610, y * 1.6)) * composition.gapScale
     for (const [ink, cx, sign] of [
       [true, 205, 1],
       [false, 355, -1],
@@ -456,6 +488,13 @@ export interface InkCenterpieceProps {
    * on `to`. Every other state is fully static and ignores this. Default true.
    */
   active?: boolean
+  /**
+   * Per-chapter severity from the report ('high' | 'mid' | 'low'). Drives the
+   * composition's intensity so a charged chapter (conflict) reads tighter with a
+   * narrower 克 seam than a calm one (monthly_outlook). Falls back to a per-chapter
+   * baseline when omitted.
+   */
+  severity?: string
   /** Day-master 五行 of the two people — tints the dark mass (aEl) + pale mass
    *  (bEl) so the imagery echoes the 木 × 土 title. Neutral ink/ivory if omitted. */
   aEl?: string
@@ -464,6 +503,7 @@ export interface InkCenterpieceProps {
 
 export function InkCenterpiece({
   kind,
+  severity,
   width,
   mode: modeProp,
   from = 'oppose',
@@ -476,7 +516,7 @@ export function InkCenterpiece({
   const height = (width * VH) / VW
   const s = width / VW
   const salt = useMemo(() => saltFromKind(kind), [kind])
-  const comp = useMemo(() => deriveComposition(kind), [kind])
+  const comp = useMemo(() => deriveComposition(kind, severity), [kind, severity])
   const isTransition = mode === 'transition'
   // Element tiers — the dark mass takes aEl, the pale mass bEl.
   const darkTier = darkTierFor(aEl)

@@ -651,6 +651,7 @@ export default function BondDetailScreen({
                   ? (ch, i) => (
                       <InkCenterpiece
                         kind={ch.kind}
+                        severity={ch.severity}
                         mode={deriveCenterpieceMode(ch.kind, aElement, bElement, ch.severity)}
                         {...deriveTransitionEndpoints(aElement, bElement)}
                         active={i === chapterIndex}
@@ -665,13 +666,18 @@ export default function BondDetailScreen({
           </SafeAreaView>
         </ReportBloom>
 
-        {/* Living layer (the subscription surfaces) — Timeline + What-if as a
-            floating bottom-right entry, icons matching auspice. Hidden while a
+        {/* Living layer (the subscription surfaces) — Timeline + What-if + Chat as
+            icon-only discs that pop from a floating bottom-right FAB. Hidden while a
             sentence is picked (the selection bar owns the bottom) or while the
-            overlay is collapsing. Active bonds only. */}
+            overlay is collapsing. Active bonds only. Chat disc only appears once the
+            bond has a pair reading (same gate as the 划词 chat action). */}
         {detail.status === 'active' && !pickedQuote && !closing ? (
           <LivingLayerFab
-            labels={{ timeline: t('timeline.title'), whatif: t('makeif.title') }}
+            labels={{
+              timeline: t('timeline.title'),
+              whatif: t('makeif.title'),
+              chat: t('chat.cta'),
+            }}
             onTimeline={() =>
               router.push({
                 pathname: '/(timeline)',
@@ -683,6 +689,15 @@ export default function BondDetailScreen({
                 pathname: '/(bonds)/makeif',
                 params: { id: detail.id, title: displayName },
               })
+            }
+            onChat={
+              pairReadingId != null
+                ? () =>
+                    router.push({
+                      pathname: '/(bonds)/chat',
+                      params: { id: pairReadingId, title: displayName },
+                    })
+                : undefined
             }
             insetBottom={insets.bottom}
           />

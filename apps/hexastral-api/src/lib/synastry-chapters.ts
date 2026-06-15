@@ -5,14 +5,15 @@
  *
  * Free viewers see the first `SYNASTRY_FREE_CHAPTERS`; the rest are returned as
  * teasers (kind + title + goldenLine, no body) so the client can render the
- * unlock wall. The viewer unlocks the full set by:
- *   - holding the `kindred` capability (subscription), or
- *   - having `users.unlockedChapterCount` flipped to the cap via the invite
- *     mechanic (a partner showed up) or a single-purchase consume.
+ * unlock wall. The full set unlocks PER BOND — so free value tracks a real viral
+ * action 1:1 — by either:
+ *   - holding the `kindred` capability (subscription → every bond), or
+ *   - THIS bond being unlocked: a real Resonance connection (the partner showed up
+ *     and accepted THIS invite) or a single-purchase consume on THIS bond.
  *
- * This mirrors the solo deep-report policy in `chapter-access.ts`; kept separate
- * because the synastry chapter set is its own ordered six (first_impression …
- * long_term_advice), distinct from the natal slugs.
+ * Deliberately NOT unlocked by the per-user `users.unlockedChapterCount` global —
+ * that mechanic stays with the natal deep report (`chapter-access.ts`). One invite
+ * must not flip every other bond's report open for free; each bond earns its own.
  */
 
 /** Chapters a free viewer sees without unlocking. */
@@ -65,19 +66,15 @@ export function gateInterpretationChapters(
 }
 
 /**
- * How many synastry chapters this viewer may read in full. The full set is
- * unlocked by ANY of:
- *   - a subscription (kindred capability),
- *   - this specific bond being unlocked (solo-created, or single-purchased),
- *   - the global invite mechanic (users.unlockedChapterCount flipped to cap).
- * Everyone else gets the free taste.
+ * How many synastry chapters this viewer may read in full, PER BOND. The full set
+ * is unlocked only by a subscription (kindred capability → every bond) or by THIS
+ * bond being unlocked (a real Resonance connection, solo-created paid, or a
+ * single-purchase consume). Everyone else gets the free taste. The per-user global
+ * count is intentionally NOT consulted — see the file header.
  */
 export function resolveUnlockedChapterCount(opts: {
   isSubscriber: boolean
   bondUnlocked: boolean
-  unlockedChapterCount: number | null
 }): number {
-  if (opts.isSubscriber || opts.bondUnlocked) return SYNASTRY_TOTAL_CHAPTERS
-  const stored = opts.unlockedChapterCount ?? SYNASTRY_FREE_CHAPTERS
-  return Math.min(Math.max(stored, SYNASTRY_FREE_CHAPTERS), SYNASTRY_TOTAL_CHAPTERS)
+  return opts.isSubscriber || opts.bondUnlocked ? SYNASTRY_TOTAL_CHAPTERS : SYNASTRY_FREE_CHAPTERS
 }
