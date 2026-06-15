@@ -1,37 +1,8 @@
 # Kindred (yuel) — living-layer & report TODO
 
-Carry-over backlog from the 2026-06 review session. Phase 1 of the timeline value
-work shipped (default 10y + per-year density + Pro "see-further" door, commit
-`a47b859`). What remains, in priority order, with enough context to act cold.
-
----
-
-## Phase 2 — 10-year what-if (decision推演) — BIGGEST piece
-
-**Why:** the what-if currently ranks only the **next 12 months** of 流月 windows
-(`buildBondMakeIf(..., { months: 12 })`, `apps/hexastral-api/src/routes/bonds.ts`
-POST `/:id/makeif`). The product needs a **10-year decision horizon**: for big moves
-(结婚 / 要孩子 / 同居 / 异地), rank the best *years* ahead, with reasons.
-
-**Current building blocks**
-- `planRelationshipDecision(ego, other, { months })` in astro-core — month-granular
-  window ranker (`apps/hexastral-api/src/lib/relationship-makeif.ts` wraps it →
-  `RelMakeIfDTO { yongshen, windows[], verdict, bestKey }`).
-- Each window is `{ year, month, ... }` keyed `${year}-${month}`.
-
-**Proposed approach**
-1. New astro-core fn `planRelationshipDecisionByYear(ego, other, { fromYear, years })`
-   (parallel to the monthly one) → ranks the next N **years** by relationship
-   favorability (流年 合/冲 to the pair's 用神 + 桃花/驿马/食伤 per the existing
-   move-signal logic), returning `{ year, score, rationale, bestMonthsInYear? }`.
-2. Server: extend `/:id/makeif` (or a new `/:id/makeif/longterm`) to return both the
-   near-term monthly windows AND the 10-year yearly ranking. Pro-gated.
-3. Client: the what-if screen (`app/(bonds)/makeif.tsx`) gets a two-tier view —
-   "near term (next 12 months, monthly)" + "the decade ahead (best years)".
-
-**Watch out:** 120 months is too noisy at month granularity — the long horizon must
-be **yearly**, not monthly. Keep the monthly view for near-term only. New domain
-logic deserves a golden test in `packages/astro-core/src/__tests__/`.
+Carry-over backlog from the 2026-06 review session. Phases 1 + 2 of the timeline /
+what-if value work shipped (see "Already shipped" below). What remains, in priority
+order, with enough context to act cold.
 
 ---
 
@@ -49,9 +20,10 @@ split (decided in the audit) is **gate depth, not span**:
 - Timeline gate: `app/(timeline)/index.tsx` (`if (!pro)` wall) +
   `bonds.ts` GET `/timeline` (currently early-returns for non-Pro). Give free the
   near-term slice instead of nothing.
-- What-if gate: `bonds.ts` POST `/:id/makeif`.
-- Depends on Phase 2 (the 10y tier must exist before we can gate it apart from the
-  free near-term tier).
+- What-if gate: `bonds.ts` POST `/:id/makeif` (returns `windows` + `longterm`).
+- Phase 2 (the 10y tier) is now SHIPPED, so this is UNBLOCKED: gate the `longterm`
+  years (and the 10y timeline nodes) for Pro; hand free the near-term slice
+  (≤12 months of `windows` + the current-year timeline) instead of an empty wall.
 
 ---
 
@@ -73,7 +45,10 @@ leaking) before touching it.
 - Centerpiece: intensity-driven (severity) differentiation, tilt capped ~8.6°.
 - Birth-edit: stale-birth list tag (`basedOnStaleBirth`), edit-copy, and the Pro
   in-place **recompute** (`POST /:id/recompute`).
-- Timeline Phase 1 (this doc's top): 10y default + density + see-further door.
+- Timeline Phase 1: 10y default + per-year density + Pro see-further door (`a47b859`).
+- What-if Phase 2: 10-year yearly decision ranker — `planRelationshipDecisionByYear`
+  (astro-core, +5 golden tests), `longterm` DTO on `/:id/makeif`, and the "未来十年"
+  tier in the make-if screen with localized year formatters (`52c7132` + `0908139`).
 - Solo reading 划词 bar (copy / chat / highlight; highlights persist by chartHash).
 - Let-go black-hole animation: the released thread is swallowed by an accretion-ring
   collapse in SkyHero (was: drift outward + fade). Wants an on-device tuning pass.
