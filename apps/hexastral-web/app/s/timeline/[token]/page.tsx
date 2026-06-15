@@ -77,10 +77,10 @@ interface ShareCopy {
 }
 
 const EN_COPY: ShareCopy = {
-  hero: 'AUSPICE · LIFE TIMELINE',
+  hero: 'YUUN · LIFE TIMELINE',
   tagline: 'See your real timeline branch by branch',
   cta: 'See your own',
-  footer: 'Auspice — your life as a branching timeline · 大运 · 流年 · 流月',
+  footer: 'Yuun — your life as a branching timeline · 大运 · 流年 · 流月',
   source: 'Source 命',
   dayun: 'Current cycle',
   liunian: 'This year',
@@ -90,10 +90,10 @@ const EN_COPY: ShareCopy = {
 
 const COPY: Record<string, ShareCopy> = {
   'zh-Hans': {
-    hero: 'AUSPICE · 人生时间线',
+    hero: 'YUUN · 人生时间线',
     tagline: '把你的命局看清——按大运一段一段看',
     cta: '看看你自己的',
-    footer: 'Auspice · 大运 · 流年 · 流月 —— 把一生看成一条分叉的时间线',
+    footer: 'Yuun · 大运 · 流年 · 流月 —— 把一生看成一条分叉的时间线',
     source: '命 · 日主',
     dayun: '当前大运',
     liunian: '当年流年',
@@ -101,10 +101,10 @@ const COPY: Record<string, ShareCopy> = {
     fitOf: (fit) => fit,
   },
   'zh-Hant': {
-    hero: 'AUSPICE · 人生時間線',
+    hero: 'YUUN · 人生時間線',
     tagline: '把你的命局看清 —— 按大運一段一段看',
     cta: '看看你自己的',
-    footer: 'Auspice · 大運 · 流年 · 流月 —— 把一生看成一條分叉的時間線',
+    footer: 'Yuun · 大運 · 流年 · 流月 —— 把一生看成一條分叉的時間線',
     source: '命 · 日主',
     dayun: '當前大運',
     liunian: '當年流年',
@@ -112,10 +112,10 @@ const COPY: Record<string, ShareCopy> = {
     fitOf: (fit) => fit,
   },
   ja: {
-    hero: 'AUSPICE · 人生タイムライン',
+    hero: 'YUUN · 人生タイムライン',
     tagline: 'あなたの命局を、大運ごとに見つめる',
     cta: 'あなたのも見てみる',
-    footer: 'Auspice · 大運 · 流年 · 流月 —— 人生を枝分かれする時間軸として',
+    footer: 'Yuun · 大運 · 流年 · 流月 —— 人生を枝分かれする時間軸として',
     source: '命 · 日主',
     dayun: '今の大運',
     liunian: 'この一年',
@@ -143,14 +143,14 @@ export async function generateMetadata({
   const { token } = await params
   const payload = decodeToken(token)
   if (!payload) {
-    return { title: 'Auspice — 人生时间线', description: 'A life-timeline snapshot.' }
+    return { title: 'Yuun — 人生时间线', description: 'A life-timeline snapshot.' }
   }
   const copy = copyFor(payload.lc)
-  const title = `${payload.d} · ${payload.da} — Auspice ${copy.hero.replace('AUSPICE · ', '')}`
+  const title = `${payload.d} · ${payload.da} — Yuun ${copy.hero.replace('YUUN · ', '')}`
   return {
     title,
     description: copy.tagline,
-    openGraph: { title, description: copy.tagline, siteName: 'Auspice' },
+    openGraph: { title, description: copy.tagline, siteName: 'Yuun' },
   }
 }
 
@@ -265,7 +265,7 @@ export default async function TimelineSharePage({
               fontSize: '0.95rem',
             }}
           >
-            This timeline link is malformed or has been truncated. Open Auspice to share again.
+            This timeline link is malformed or has been truncated. Open Yuun to share again.
           </div>
         )}
 

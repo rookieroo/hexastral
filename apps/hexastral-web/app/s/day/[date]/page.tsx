@@ -53,11 +53,11 @@ export async function generateMetadata({
   const L = yijiLabels(lc)
   const loc = (v: string) => localizeYijiVerb(v, lc)
   const cjk = lc !== 'en'
-  const title = day ? `${date} ${day.ganZhi}${cjk ? '日' : ''} · Auspice` : `${date} · Auspice`
+  const title = day ? `${date} ${day.ganZhi}${cjk ? '日' : ''} · Yuun` : `${date} · Yuun`
   const description = day
     ? `${L.good} ${day.goodFor.slice(0, 3).map(loc).join(' ')} · ${L.avoid} ${day.avoid.slice(0, 3).map(loc).join(' ')}`
-    : 'Auspice — the Chinese calendar, for the world.'
-  return { title, description, openGraph: { title, description, siteName: 'Auspice' } }
+    : 'Yuun — the Chinese calendar, for the world.'
+  return { title, description, openGraph: { title, description, siteName: 'Yuun' } }
 }
 
 const Chip = ({ label, color, bg }: { label: string; color: string; bg: string }) => (
@@ -214,7 +214,7 @@ export default async function AuspiceDaySharePage({
               lineHeight: 1.6,
             }}
           >
-            Auspice — the Chinese calendar, for the world.
+            Yuun — the Chinese calendar, for the world.
           </p>
           <DDLRedirectButton
             payload={{ source: 'auspice_day_share', date }}
@@ -232,7 +232,7 @@ export default async function AuspiceDaySharePage({
                 fontWeight: 500,
               }}
             >
-              Get Auspice
+              Get Yuun
             </span>
           </DDLRedirectButton>
         </div>

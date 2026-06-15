@@ -11,6 +11,17 @@ import { type ReactNode, useState } from 'react'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 const DEFAULT_APP_STORE_URL =
   process.env.NEXT_PUBLIC_APP_STORE_URL ?? 'https://apps.apple.com/app/hexastral/id6739739495'
+// MOCK Google Play URL — Yuel/Yuun aren't on Google Play yet (2026-06). Swap this
+// default (or set NEXT_PUBLIC_PLAY_STORE_URL) for the real listing at launch; the
+// platform routing + token handoff below is already wired so only the URL changes.
+const DEFAULT_PLAY_STORE_URL =
+  process.env.NEXT_PUBLIC_PLAY_STORE_URL ??
+  'https://play.google.com/store/apps/details?id=com.hexastral.yuel'
+
+/** Coarse client-side platform sniff for store routing. */
+function isAndroidUA(): boolean {
+  return typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)
+}
 
 export interface DDLPayload {
   mode?: 'personal' | 'pairing'
@@ -25,6 +36,8 @@ interface DDLRedirectButtonProps {
   payload?: DDLPayload
   /** Override App Store URL (e.g. future FaceOracle bundle). Defaults to `NEXT_PUBLIC_APP_STORE_URL`. */
   appStoreUrl?: string
+  /** Override Google Play URL (per-app listing). Defaults to `NEXT_PUBLIC_PLAY_STORE_URL` (mock until launch). */
+  playStoreUrl?: string
   /** Persisted with DDL session for growth analytics (portfolio app key). */
   targetApp?: string
   style?: React.CSSProperties
@@ -35,6 +48,7 @@ export function DDLRedirectButton({
   children,
   payload,
   appStoreUrl,
+  playStoreUrl,
   targetApp,
   style,
   className,
@@ -55,12 +69,23 @@ export function DDLRedirectButton({
         ...(targetApp?.trim() ? { targetApp: targetApp.trim() } : {}),
         payload,
       })
-      const store = appStoreUrl?.trim() || DEFAULT_APP_STORE_URL
-      redirectToAppStore(store, token)
+      if (isAndroidUA()) {
+        // Android → Google Play. The iOS DDL handoff (universal link + cookie)
+        // doesn't apply; pass the token as Play's `referrer` so the app can resolve
+        // the same DDL session after install. (Full Android deferred-deep-link via
+        // the Install Referrer API is a launch follow-up once the listing is live.)
+        const play = new URL(playStoreUrl?.trim() || DEFAULT_PLAY_STORE_URL)
+        play.searchParams.set('referrer', token)
+        window.location.href = play.toString()
+      } else {
+        redirectToAppStore(appStoreUrl?.trim() || DEFAULT_APP_STORE_URL, token)
+      }
     } catch (err) {
       console.warn('[DDLRedirectButton] DDL session failed', err)
-      // Fallback: direct link without DDL token
-      window.location.href = appStoreUrl?.trim() || DEFAULT_APP_STORE_URL
+      // Fallback: direct store link without the DDL token.
+      window.location.href = isAndroidUA()
+        ? playStoreUrl?.trim() || DEFAULT_PLAY_STORE_URL
+        : appStoreUrl?.trim() || DEFAULT_APP_STORE_URL
     } finally {
       setLoading(false)
     }
@@ -83,7 +108,7 @@ export function DDLRedirectButton({
         justifyContent: 'center',
         ...style,
       }}
-      aria-label='Download on the App Store'
+      aria-label='Get the app'
     >
       {loading ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -22,9 +22,9 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Start a connection · Kindred',
-    zh: '开始一段缘 · Kindred',
-    tw: '開始一段緣 · Kindred',
+    en: 'Start a connection · Yuel',
+    zh: '开始一段缘 · Yuel',
+    tw: '開始一段緣 · Yuel',
     ja: '縁を結ぶ · 縁',
   }
   return { title: titles[locale] ?? titles.en }
@@ -59,7 +59,7 @@ export default async function KindredStartPage({ params }: PageProps) {
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882' }}>Kindred</span>
+          <span style={{ fontSize: 48, color: '#C4A882' }}>Yuel</span>
         </div>
 
         <h1
@@ -100,7 +100,7 @@ export default async function KindredStartPage({ params }: PageProps) {
             marginBottom: 32,
           }}
         >
-          {isZh ? '获取 Kindred →' : 'Get Kindred →'}
+          {isZh ? '获取 Yuel →' : 'Get Yuel →'}
         </a>
 
         <div>
@@ -115,7 +115,7 @@ export default async function KindredStartPage({ params }: PageProps) {
               textDecoration: 'none',
             }}
           >
-            {isZh ? '← 返回 Kindred' : '← Back to Kindred'}
+            {isZh ? '← 返回 Yuel' : '← Back to Yuel'}
           </Link>
         </div>
       </div>

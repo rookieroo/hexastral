@@ -183,8 +183,8 @@
     "anonymousLead": "你收到了一份邀请",
     "relationshipPrefix": "作为",
     "expires": "失效时间",
-    "openInApp": "在 Kindred 中打开",
-    "downloadApp": "在 iOS 上获取 Kindred",
+    "openInApp": "在 Yuel 中打开",
+    "downloadApp": "在 iOS 上获取 Yuel",
     "expired": "此邀请已过期，请让对方重新发送。",
     "notFound": "邀请不存在或已失效。"
   },

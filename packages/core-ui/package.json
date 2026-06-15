@@ -22,6 +22,7 @@
   },
   "peerDependencies": {
     "@react-native-community/datetimepicker": ">=8.4.0",
+    "@react-native-picker/picker": ">=2.11.0",
     "@shopify/react-native-skia": ">=2.0.0",
     "expo-haptics": "~15.0.8",
     "expo-image-picker": ">=17.0.0",
@@ -30,6 +31,11 @@
     "react-native": ">=0.81.0",
     "react-native-reanimated": ">=4.0.0",
     "react-native-svg": ">=15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-picker/picker": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@shopify/react-native-skia": "2.2.12",

@@ -9,7 +9,7 @@ import { ImageResponse } from 'next/og'
 import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — Life Timeline'
+export const alt = 'Yuun — Life Timeline'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -152,7 +152,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
             marginBottom: 18,
           }}
         >
-          {copy.eyebrow.replace('AUSPICE · ', '').replace('AUSPICE ', '')}
+          {copy.eyebrow.replace('YUUN · ', '').replace('YUUN ', '')}
         </span>
         {payload ? (
           <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -174,7 +174,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           </div>
         ) : (
           <span style={{ fontSize: 32, color: '#8A7866', display: 'flex' }}>
-            Link malformed — open Auspice.
+            Link malformed — open Yuun.
           </span>
         )}
       </div>

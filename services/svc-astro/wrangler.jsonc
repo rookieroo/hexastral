@@ -26,6 +26,13 @@
   // Tail Worker -- centralized log aggregation
   "tail_consumers": [{ "service": "svc-tail" }],
 
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
+  },
+
   // Rate Limiting — defense-in-depth (service binding only)
   "unsafe": {
     "bindings": [

@@ -8,7 +8,7 @@ import { ImageResponse } from 'next/og'
 import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — Deep Reading'
+export const alt = 'Yuun — Deep Reading'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -109,7 +109,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
         </div>
       ) : (
         <span style={{ fontSize: 36, color: '#8A7866', display: 'flex' }}>
-          A deep reading from Auspice — link malformed.
+          A deep reading from Yuun — link malformed.
         </span>
       )}
 

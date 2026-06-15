@@ -63,30 +63,30 @@ interface ShareCopy {
 }
 
 const EN_COPY: ShareCopy = {
-  hero: 'AUSPICE · DEEP READING',
+  hero: 'YUUN · DEEP READING',
   tagline: 'Why today favors what it favors',
   cta: 'See your own',
-  footer: 'Auspice — the Chinese calendar · daily 干支 · 农历 · 宜忌',
+  footer: 'Yuun — the Chinese calendar · daily 干支 · 农历 · 宜忌',
 }
 
 const COPY: Record<string, ShareCopy> = {
   'zh-Hans': {
-    hero: 'AUSPICE · 深度解读',
+    hero: 'YUUN · 深度解读',
     tagline: '今天为什么宜这个、忌那个',
     cta: '看看你自己的',
-    footer: 'Auspice · 每日干支 · 农历 · 节气 · 宜忌',
+    footer: 'Yuun · 每日干支 · 农历 · 节气 · 宜忌',
   },
   'zh-Hant': {
-    hero: 'AUSPICE · 深度解讀',
+    hero: 'YUUN · 深度解讀',
     tagline: '今天為什麼宜這個、忌那個',
     cta: '看看你自己的',
-    footer: 'Auspice · 每日干支 · 農曆 · 節氣 · 宜忌',
+    footer: 'Yuun · 每日干支 · 農曆 · 節氣 · 宜忌',
   },
   ja: {
-    hero: 'AUSPICE · 詳しい解説',
+    hero: 'YUUN · 詳しい解説',
     tagline: '今日、なぜそれが吉でそれが凶なのか',
     cta: 'あなたのも見てみる',
-    footer: 'Auspice · 干支 · 旧暦 · 二十四節気 · 宜忌',
+    footer: 'Yuun · 干支 · 旧暦 · 二十四節気 · 宜忌',
   },
   en: EN_COPY,
 }
@@ -103,14 +103,14 @@ export async function generateMetadata({
   const { token } = await params
   const payload = decodeToken(token)
   if (!payload) {
-    return { title: 'Auspice — 深度解读', description: 'A deep reading from Auspice.' }
+    return { title: 'Yuun — 深度解读', description: 'A deep reading from Yuun.' }
   }
   const copy = copyFor(payload.lc)
-  const title = `${payload.fl} · ${payload.gz}日 — Auspice ${copy.hero.replace('AUSPICE · ', '')}`
+  const title = `${payload.fl} · ${payload.gz}日 — Yuun ${copy.hero.replace('YUUN · ', '')}`
   return {
     title,
     description: copy.tagline,
-    openGraph: { title, description: copy.tagline, siteName: 'Auspice' },
+    openGraph: { title, description: copy.tagline, siteName: 'Yuun' },
   }
 }
 
@@ -209,7 +209,7 @@ export default async function ExplainSharePage({ params }: { params: Promise<{ t
               fontSize: '0.95rem',
             }}
           >
-            This reading link is malformed or has been truncated. Open Auspice to share again.
+            This reading link is malformed or has been truncated. Open Yuun to share again.
           </div>
         )}
 

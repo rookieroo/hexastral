@@ -48,9 +48,9 @@ async function fetchTeaser(token: string): Promise<TeaserData | null> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Your resonance · Kindred',
-    zh: '你们的共鸣 · Kindred',
-    tw: '你們的共鳴 · Kindred',
+    en: 'Your resonance · Yuel',
+    zh: '你们的共鸣 · Yuel',
+    tw: '你們的共鳴 · Yuel',
     ja: '二人の共鳴 · 縁',
   }
   return { title: titles[locale] ?? titles.en }
@@ -120,7 +120,7 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
             marginBottom: 32,
           }}
         >
-          Kindred
+          Yuel
         </p>
 
         {/* Names + tag */}
@@ -222,7 +222,7 @@ export default async function KindredInviteTeaserPage({ params }: PageProps) {
             textDecoration: 'none',
           }}
         >
-          {isZh ? '在 iOS 上获取 Kindred →' : 'Get Kindred on iOS →'}
+          {isZh ? '在 iOS 上获取 Yuel →' : 'Get Yuel on iOS →'}
         </a>
 
         <p

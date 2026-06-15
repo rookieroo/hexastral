@@ -28,7 +28,6 @@ import {
   BirthDateField,
   type BirthDateFieldLabels,
   type BirthDateFieldValue,
-  birthInputToSolar,
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
@@ -37,6 +36,7 @@ import {
   type ShichenIndex,
   shichenFieldLabelsForLocale,
   shichenInlineLabel,
+  switchBirthCalendar,
 } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Haptics from 'expo-haptics'
@@ -203,18 +203,13 @@ export function BirthForm({
 
   // Solar is the quiet default; a small 农历 switch sits beside the "生日" title
   // instead of a full-width 公历/农历 segmented control (2026-06: "默认就是 Solar
-  // birth，Birthday 标题右侧放一个小的农历开关"). Flipping it recomputes the
-  // canonical solar date from the same typed input, exactly like the field's own
-  // (now hidden) toggle did.
+  // birth，Birthday 标题右侧放一个小的农历开关"). Flipping CONVERTS the held date to
+  // the other calendar (shared switchBirthCalendar) — previously it reinterpreted
+  // the raw lunar digits "1992-04-06" as a solar date, which is a different day.
   const toggleCalendar = () => {
     const next = date.calendar === 'lunar' ? 'solar' : 'lunar'
     void Haptics.selectionAsync().catch(() => undefined)
-    onDate({
-      input: date.input,
-      calendar: next,
-      isLeap: false,
-      solarDate: birthInputToSolar(date.input, next, false),
-    })
+    onDate(switchBirthCalendar(date.input, date.calendar, date.isLeap ?? false, next))
   }
 
   return (

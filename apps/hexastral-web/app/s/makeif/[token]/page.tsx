@@ -69,32 +69,32 @@ interface ShareCopy {
 const EN_COPY: ShareCopy = {
   tagline: 'A "what if" branch from a bāzì life',
   cta: 'See your own',
-  hero: 'AUSPICE · MAKE IF',
-  footer: 'Auspice — explore a parallel life, drawn from your bāzì',
-  malformed: 'This 假如 link is malformed or has been truncated. Open Auspice to make a new one.',
+  hero: 'YUUN · MAKE IF',
+  footer: 'Yuun — explore a parallel life, drawn from your bāzì',
+  malformed: 'This 假如 link is malformed or has been truncated. Open Yuun to make a new one.',
 }
 
 const COPY: Record<string, ShareCopy> = {
   'zh-Hans': {
     tagline: '一个「假如」的命运分支',
     cta: '看看你自己的',
-    hero: 'AUSPICE 假如',
-    footer: 'Auspice · 八字推演 —— 探一条平行的人生',
-    malformed: '这个「假如」链接已失效或被截断。打开 Auspice 重新生成一个。',
+    hero: 'YUUN 假如',
+    footer: 'Yuun · 八字推演 —— 探一条平行的人生',
+    malformed: '这个「假如」链接已失效或被截断。打开 Yuun 重新生成一个。',
   },
   'zh-Hant': {
     tagline: '一個「假如」的命運分支',
     cta: '看看你自己的',
-    hero: 'AUSPICE 假如',
-    footer: 'Auspice · 八字推演 —— 探一條平行的人生',
-    malformed: '這個「假如」連結已失效或被截斷。打開 Auspice 重新生成一個。',
+    hero: 'YUUN 假如',
+    footer: 'Yuun · 八字推演 —— 探一條平行的人生',
+    malformed: '這個「假如」連結已失效或被截斷。打開 Yuun 重新生成一個。',
   },
   ja: {
     tagline: '「もしも」のもう一つの人生',
     cta: 'あなたのも見てみる',
-    hero: 'AUSPICE 假如',
-    footer: 'Auspice · 八字から導く、もう一つの人生',
-    malformed: 'この「假如」リンクは無効か、切り詰められています。Auspice で作り直してください。',
+    hero: 'YUUN 假如',
+    footer: 'Yuun · 八字から導く、もう一つの人生',
+    malformed: 'この「假如」リンクは無効か、切り詰められています。Yuun で作り直してください。',
   },
   en: EN_COPY,
 }
@@ -111,14 +111,14 @@ export async function generateMetadata({
   const { token } = await params
   const payload = decodeToken(token)
   if (!payload) {
-    return { title: 'Auspice — 假如', description: 'A make-if branch from Auspice.' }
+    return { title: 'Yuun — 假如', description: 'A make-if branch from Yuun.' }
   }
   const copy = copyFor(payload.lc)
-  const title = `${payload.t} · ${payload.l} — Auspice 假如`
+  const title = `${payload.t} · ${payload.l} — Yuun 假如`
   return {
     title,
     description: copy.tagline,
-    openGraph: { title, description: copy.tagline, siteName: 'Auspice' },
+    openGraph: { title, description: copy.tagline, siteName: 'Yuun' },
   }
 }
 

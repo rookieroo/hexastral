@@ -9,7 +9,7 @@ import { ImageResponse } from 'next/og'
 import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — 假如 (Make If)'
+export const alt = 'Yuun — 假如 (Make If)'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -57,10 +57,10 @@ const TAGLINE: Record<string, string> = {
 
 /** Localized fallback shown when the token is malformed (no English leak in zh/ja). */
 const MALFORMED: Record<string, string> = {
-  'zh-Hans': 'Auspice「假如」的命运分支 —— 链接无效。',
-  'zh-Hant': 'Auspice「假如」的命運分支 —— 連結無效。',
-  ja: 'Auspice「假如」のもう一つの人生 —— リンクが無効です。',
-  en: 'A "what if" branch from Auspice — link malformed.',
+  'zh-Hans': 'Yuun「假如」的命运分支 —— 链接无效。',
+  'zh-Hant': 'Yuun「假如」的命運分支 —— 連結無效。',
+  ja: 'Yuun「假如」のもう一つの人生 —— リンクが無効です。',
+  en: 'A "what if" branch from Yuun — link malformed.',
 }
 
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {

@@ -339,9 +339,14 @@ export async function generateHeHunInterpretation(
   ].join('\n')
 
   const text = await callWithFallback(env, systemPrompt, prompt, {
+    // standard (Qwen3 → GLM) not flagship: the flagship tier-1 is KIMI, which was
+    // timing out and blowing the 55s budget for the SYNCHRONOUS accept (respond)
+    // → 504 / "Network request failed" on mobile. Dropping the slow model keeps the
+    // whole synastry generation fast + reliable; Qwen3 is strong for this. (The real
+    // fix is to make report generation async; this removes the immediate failure.)
+    tier: 'standard',
     isPro,
-    maxTokens: isPro ? 4096 : 2048,
-    thinkingLevel: isPro ? 'HIGH' : 'MEDIUM',
+    maxTokens: isPro ? 3000 : 2048,
     metricLabel: 'hehun-pair',
     locale: language,
   })
@@ -644,7 +649,10 @@ export async function generateSynastryChapters(
     const userPrompt =
       buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note) + langReminder
     const opts = {
-      tier: 'flagship' as const,
+      // standard (Qwen3 → GLM): see the hehun-pair note — flagship's KIMI tier-1 was
+      // the slow model 504-ing the synchronous accept. 6 of these run in parallel, so
+      // the model count matters doubly (fewer concurrent CF-AI calls = less contention).
+      tier: 'standard' as const,
       maxTokens: 2200,
       metricLabel: `hehun-chapter-${spec.kind}`,
       locale: language,
@@ -667,7 +675,7 @@ export async function generateSynastryChapters(
     env,
     systemPrompt,
     buildAhaHookPrompt(result, input) + langReminder,
-    { tier: 'flagship', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
+    { tier: 'standard', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
   )
     .then(parseAhaHook)
     .catch(() => '')

@@ -4,7 +4,7 @@ import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 import { localizeYijiVerb, resolveShareLc, yijiLabels } from '@/lib/yiji-i18n'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — Chinese Calendar'
+export const alt = 'Yuun — Chinese Calendar'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 

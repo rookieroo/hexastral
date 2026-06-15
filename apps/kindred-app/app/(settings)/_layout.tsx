@@ -9,6 +9,8 @@ export default function SettingsLayout() {
         // Shared 宣纸 document layer — same surface as the reading + paywall.
         contentStyle: { backgroundColor: kindredPaper.bg },
         animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
       }}
     />
   )

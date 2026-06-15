@@ -32,6 +32,7 @@ import { useCallback, useState } from 'react'
 import { Modal, Platform, Pressable, Text, TextInput, View } from 'react-native'
 import { useTheme } from '../../theme'
 import { type LunarDateValue, LunarDateWheels } from './LunarDateWheels'
+import { LunarPickerIOS } from './LunarPickerIOS'
 import { type SolarDateValue, SolarDateWheels } from './SolarDateWheels'
 
 export type BirthCalendar = 'solar' | 'lunar'
@@ -168,9 +169,49 @@ function defaultSolarSeed(): Date {
 function defaultLunarSeed(): LunarDateValue {
   try {
     const l = solarToLunar(new Date().getFullYear() - 25, 6, 15)
-    return { year: l.year, month: l.month, day: l.day, isLeap: l.isLeap }
+    // NEVER seed onto a 闰月. An unfilled field that defaulted to e.g. 2001 闰四月
+    // let the leap flag survive when the user scrolled the year to one with no leap
+    // month (壬申/1992) — confirming "壬申年 闰四月初六". The non-leap month of the
+    // same ordinal is always valid; the day clamps to it if it's shorter.
+    return { year: l.year, month: l.month, day: Math.min(l.day, 29), isLeap: false }
   } catch {
     return { year: 1995, month: 6, day: 15, isLeap: false }
+  }
+}
+
+/**
+ * Switch the entry calendar, CONVERTING the held date to the other calendar so the
+ * SAME real day is preserved (lunar 1992 正月初六 ⇄ solar 1992-02-09). The earlier
+ * behaviour either cleared the field or — in a host's own toggle — reinterpreted the
+ * raw "1992-04-06" digits as the other calendar (a different, wrong day). Conversion
+ * matches what users expect and keeps the canonical `solarDate` stable. Falls back to
+ * an empty field only when there's no complete/valid date to convert.
+ */
+export function switchBirthCalendar(
+  input: string,
+  fromCalendar: BirthCalendar,
+  isLeap: boolean,
+  next: BirthCalendar
+): BirthDateFieldValue {
+  if (next === fromCalendar) {
+    return {
+      input,
+      calendar: fromCalendar,
+      isLeap,
+      solarDate: birthInputToSolar(input, fromCalendar, isLeap),
+    }
+  }
+  const solar = birthInputToSolar(input, fromCalendar, isLeap)
+  if (!solar) return { input: '', calendar: next, isLeap: false, solarDate: null }
+  if (next === 'solar') return { input: solar, calendar: 'solar', isLeap: false, solarDate: solar }
+  // solar → lunar: convert the canonical solar date into 农历 Y/M/D (+ 闰 flag).
+  try {
+    const [y, m, d] = solar.split('-').map(Number)
+    const l = solarToLunar(y as number, m as number, d as number)
+    const lunarInput = `${l.year}-${String(l.month).padStart(2, '0')}-${String(l.day).padStart(2, '0')}`
+    return { input: lunarInput, calendar: 'lunar', isLeap: l.isLeap, solarDate: solar }
+  } catch {
+    return { input: '', calendar: 'lunar', isLeap: false, solarDate: null }
   }
 }
 
@@ -233,9 +274,9 @@ export function BirthDateField({
   const handleCalendar = (next: BirthCalendar) => {
     if (next === calendar) return
     void Haptics.selectionAsync().catch(() => undefined)
-    // Clear on switch — the same digits are a DIFFERENT day in each calendar, so
-    // reinterpreting them silently mis-reads the date. User re-picks once (2026-06).
-    emit('', next, false)
+    // Convert the held date across calendars (lunar 正月初六 ⇄ its solar day) rather
+    // than clearing — the same real birthday, shown in the other calendar.
+    onChange(switchBirthCalendar(input, calendar, isLeap, next))
   }
 
   // ── Picker sheet state (seeded from the current input on open) ───────────
@@ -491,6 +532,19 @@ export function BirthDateField({
                 style={{ alignSelf: 'center' }}
               />
             )
+          ) : Platform.OS === 'ios' ? (
+            // iOS gets the REAL native UIPickerView (1:1 feel) — same precedent as
+            // the solar spinner above; it self-falls-back to the custom wheels until
+            // the native module ships in a build. Android keeps the custom wheels
+            // (the picker lib renders a dropdown dialog there, not inline wheels).
+            <LunarPickerIOS
+              year={pickLunar.year}
+              month={pickLunar.month}
+              day={pickLunar.day}
+              isLeap={pickLunar.isLeap}
+              accent={accent}
+              onChange={setPickLunar}
+            />
           ) : (
             <LunarDateWheels
               year={pickLunar.year}

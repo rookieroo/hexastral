@@ -26,9 +26,9 @@ interface KindredLandingPageProps {
 export async function generateMetadata({ params }: KindredLandingPageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Kindred: BaZi Couples Chart',
-    zh: 'Kindred · 八字合盤',
-    tw: 'Kindred · 八字合盤',
+    en: 'Yuel: BaZi Couples Chart',
+    zh: 'Yuel · 八字合盤',
+    tw: 'Yuel · 八字合盤',
     ja: '縁・四柱推命の相性',
   }
   const title = titles[locale] ?? titles.en
@@ -102,7 +102,7 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
               lineHeight: 1,
             }}
           >
-            Kindred
+            Yuel
           </span>
         </div>
 
@@ -143,7 +143,7 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
         >
           {get(
             'body',
-            'Kindred 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以一探究竟。基于八字与紫微的合盘传统，结合 AI 解读，揭示你们之间真实的共鸣与张力。'
+            'Yuel 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以一探究竟。基于八字与紫微的合盘传统，结合 AI 解读，揭示你们之间真实的共鸣与张力。'
           )}
         </p>
 
@@ -174,7 +174,7 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
               fontWeight: 500,
             }}
           >
-            {get('cta_app', 'Get Kindred on iOS')}
+            {get('cta_app', 'Get Yuel on iOS')}
           </a>
         </div>
 

@@ -197,7 +197,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // `title.absolute` bypasses the root layout's "%s · HexAstral" template so
   // the Kindred invite landing doesn't render as "... · Kindred · HexAstral".
   // This is a Kindred-branded surface; HexAstral is the umbrella, not the page.
-  const fullTitle = `${baseTitle} · Kindred`
+  const fullTitle = `${baseTitle} · Yuel`
 
   return {
     title: { absolute: fullTitle },
@@ -255,7 +255,7 @@ export default async function ResonatePage({ params }: PageProps) {
             marginBottom: 36,
           }}
         >
-          Kindred
+          Yuel
         </p>
 
         {invite && !expired ? (

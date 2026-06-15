@@ -25,11 +25,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { lang } = await searchParams
   const acceptLanguage = (await headers()).get('accept-language')
   const copy = COPY[resolveLocale(lang, acceptLanguage)]
-  const title = `Auspice — ${copy.hero}`
+  const title = `Yuun — ${copy.hero}`
   return {
     title,
     description: copy.sub,
-    openGraph: { title, description: copy.sub, siteName: 'Auspice' },
+    openGraph: { title, description: copy.sub, siteName: 'Yuun' },
   }
 }
 

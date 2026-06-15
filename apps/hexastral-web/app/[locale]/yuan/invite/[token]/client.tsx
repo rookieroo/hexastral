@@ -134,7 +134,7 @@ export function KindredInviteClient({
             justifyContent: 'center',
           }}
         >
-          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>Kindred</span>
+          <span style={{ fontSize: 48, color: '#C4A882', fontWeight: 400 }}>Yuel</span>
         </div>
 
         {/* Inviter intro */}

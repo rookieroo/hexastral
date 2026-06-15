@@ -34,13 +34,13 @@ export async function generateMetadata({ params }: InvitePageProps): Promise<Met
   const { bondId } = await params
   const invite = await fetchInvite(bondId)
 
-  if (!invite) return { title: 'HexAstral' }
+  if (!invite) return { title: 'Yuel' }
 
   return {
-    title: `${invite.inviterName} invited you · HexAstral`,
-    description: `${invite.inviterName} wants to explore cosmic compatibility with you on HexAstral.`,
+    title: `${invite.inviterName} invited you · Yuel`,
+    description: `${invite.inviterName} wants to explore cosmic compatibility with you on Yuel.`,
     openGraph: {
-      title: `${invite.inviterName} invited you · HexAstral`,
+      title: `${invite.inviterName} invited you · Yuel`,
       description: 'Discover your cosmic compatibility — free on iOS.',
     },
   }
@@ -87,7 +87,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
               textTransform: 'uppercase',
             }}
           >
-            HexAstral
+            Yuel
           </span>
         </div>
 
@@ -202,7 +202,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
               margin: 0,
             }}
           >
-            Accept the invitation in HexAstral
+            Accept the invitation in Yuel
           </p>
           <p
             style={{
@@ -233,7 +233,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 letterSpacing: '0.02em',
               }}
             >
-              Open in HexAstral
+              Open in Yuel
             </span>
           </DDLRedirectButton>
         </div>

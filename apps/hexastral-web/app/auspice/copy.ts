@@ -29,11 +29,11 @@ export interface LandingCopy {
 }
 
 const EN: LandingCopy = {
-  eyebrow: 'AUSPICE',
+  eyebrow: 'YUUN',
   hero: 'The Chinese calendar, for the world.',
   sub: 'Daily 干支 · lunar date · 节气 · 宜忌 — and a reading that knows your chart.',
   intro:
-    'Auspice turns the classical almanac (黄历) into something you actually open: every day’s 干支, lunar date, solar term, and what it favors or warns against — then makes it personal with your own bāzì.',
+    'Yuun turns the classical almanac (黄历) into something you actually open: every day’s 干支, lunar date, solar term, and what it favors or warns against — then makes it personal with your own bāzì.',
   features: [
     {
       title: 'Daily almanac',
@@ -48,19 +48,19 @@ const EN: LandingCopy = {
       body: 'Explore a parallel life drawn from your bāzì: pick a fork and read how the branch plays out.',
     },
   ],
-  cta: 'Get Auspice on iOS',
+  cta: 'Get Yuun on iOS',
   ctaNote: 'Free to start. The almanac is yours; the personal readings unlock with your chart.',
-  footer: 'Auspice — daily 干支 · 农历 · 节气 · 宜忌',
+  footer: 'Yuun — daily 干支 · 农历 · 节气 · 宜忌',
 }
 
 export const COPY: Record<AuspiceLocale, LandingCopy> = {
   en: EN,
   'zh-Hans': {
-    eyebrow: 'AUSPICE 黄历',
+    eyebrow: 'YUUN 黄历',
     hero: '一部，给世界的中华黄历。',
     sub: '每日干支 · 农历 · 节气 · 宜忌 —— 还有一份懂你命盘的解读。',
     intro:
-      'Auspice 把古老的黄历，变成你每天真的会打开的东西：当日的干支、农历、节气，以及宜什么、忌什么——再用你自己的八字，把它变成只属于你的那一份。',
+      'Yuun 把古老的黄历，变成你每天真的会打开的东西：当日的干支、农历、节气，以及宜什么、忌什么——再用你自己的八字，把它变成只属于你的那一份。',
     features: [
       {
         title: '每日黄历',
@@ -75,16 +75,16 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
         body: '从你的八字推演一条平行的人生：选一个分叉，读读那条支线如何展开。',
       },
     ],
-    cta: 'iOS 下载 Auspice',
+    cta: 'iOS 下载 Yuun',
     ctaNote: '免费起步。黄历本就属于你；个人化解读，随你的命盘解锁。',
-    footer: 'Auspice · 每日干支 · 农历 · 节气 · 宜忌',
+    footer: 'Yuun · 每日干支 · 农历 · 节气 · 宜忌',
   },
   'zh-Hant': {
-    eyebrow: 'AUSPICE 黃曆',
+    eyebrow: 'YUUN 黃曆',
     hero: '一部，給世界的中華黃曆。',
     sub: '每日干支 · 農曆 · 節氣 · 宜忌 —— 還有一份懂你命盤的解讀。',
     intro:
-      'Auspice 把古老的黃曆，變成你每天真的會打開的東西：當日的干支、農曆、節氣，以及宜什麼、忌什麼——再用你自己的八字，把它變成只屬於你的那一份。',
+      'Yuun 把古老的黃曆，變成你每天真的會打開的東西：當日的干支、農曆、節氣，以及宜什麼、忌什麼——再用你自己的八字，把它變成只屬於你的那一份。',
     features: [
       {
         title: '每日黃曆',
@@ -99,16 +99,16 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
         body: '從你的八字推演一條平行的人生：選一個分叉，讀讀那條支線如何展開。',
       },
     ],
-    cta: 'iOS 下載 Auspice',
+    cta: 'iOS 下載 Yuun',
     ctaNote: '免費起步。黃曆本就屬於你；個人化解讀，隨你的命盤解鎖。',
-    footer: 'Auspice · 每日干支 · 農曆 · 節氣 · 宜忌',
+    footer: 'Yuun · 每日干支 · 農曆 · 節氣 · 宜忌',
   },
   ja: {
-    eyebrow: 'AUSPICE 黄暦',
+    eyebrow: 'YUUN 黄暦',
     hero: '世界へひらく、中華の暦。',
     sub: '干支 · 旧暦 · 二十四節気 · 宜忌 —— そして、あなたの命盤を知る解説を。',
     intro:
-      'Auspice は古来の黄暦を、毎日ひらきたくなるものに変えます。その日の干支・旧暦・節気、そして何が吉で何が凶か——さらにあなた自身の八字で、あなただけの一枚に。',
+      'Yuun は古来の黄暦を、毎日ひらきたくなるものに変えます。その日の干支・旧暦・節気、そして何が吉で何が凶か——さらにあなた自身の八字で、あなただけの一枚に。',
     features: [
       {
         title: '毎日の暦',
@@ -123,10 +123,10 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
         body: '八字から導く、もう一つの人生。分岐を選び、その枝がどう展開するかを読む。',
       },
     ],
-    cta: 'iOS で Auspice を入手',
+    cta: 'iOS で Yuun を入手',
     ctaNote:
       '無料ではじめられます。暦はあなたのもの。個人向けの解説は、あなたの命盤で解放されます。',
-    footer: 'Auspice · 干支 · 旧暦 · 二十四節気 · 宜忌',
+    footer: 'Yuun · 干支 · 旧暦 · 二十四節気 · 宜忌',
   },
 }
 

@@ -85,23 +85,23 @@ const CHAPTER_TITLES_BY_LOCALE: Record<string, ChapterTitleRow> & { en: ChapterT
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { shareId, locale } = await params
   const data = await fetchShared(shareId)
-  if (!data) return { title: 'Kindred' }
+  if (!data) return { title: 'Yuel' }
 
   const titleMap = CHAPTER_TITLES_BY_LOCALE[locale] ?? CHAPTER_TITLES_BY_LOCALE.en
   const chapterTitle = titleMap[data.chapter.kind]
 
   return {
-    title: `${chapterTitle} · ${data.selfName} & ${data.otherName} · Kindred`,
+    title: `${chapterTitle} · ${data.selfName} & ${data.otherName} · Yuel`,
     description: data.chapter.goldenLine,
     openGraph: {
       title: `${chapterTitle} · ${data.selfName} & ${data.otherName}`,
       description: data.chapter.goldenLine,
-      siteName: 'Kindred by HexAstral',
+      siteName: 'Yuel',
       images: [{ url: `${API_URL}/api/share/yuan/${shareId}/og.png`, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${chapterTitle} · Kindred`,
+      title: `${chapterTitle} · Yuel`,
       description: data.chapter.goldenLine,
     },
   }
@@ -143,7 +143,7 @@ export default async function KindredReportSharePage({ params }: PageProps) {
               justifyContent: 'center',
             }}
           >
-            <span style={{ fontSize: 40, color: '#C4A882' }}>Kindred</span>
+            <span style={{ fontSize: 40, color: '#C4A882' }}>Yuel</span>
           </div>
           <p
             style={{
@@ -221,7 +221,7 @@ export default async function KindredReportSharePage({ params }: PageProps) {
               textDecoration: 'none',
             }}
           >
-            {isZh ? '在 iOS 上获取 Kindred →' : 'Get Kindred on iOS →'}
+            {isZh ? '在 iOS 上获取 Yuel →' : 'Get Yuel on iOS →'}
           </a>
         </div>
       </div>

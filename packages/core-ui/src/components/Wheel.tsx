@@ -13,7 +13,7 @@
  */
 
 import * as Haptics from 'expo-haptics'
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -68,6 +68,18 @@ export function Wheel<T>({
   )
   const restingIdx = canLoop ? n + selectedIdx : selectedIdx
   const initialOffset = restingIdx * WHEEL_ITEM_HEIGHT
+
+  // Re-pin the physical scroll position whenever the selection or the item set
+  // changes from OUTSIDE a user scroll — the day clamping when a month shrinks, a
+  // leap month appearing/disappearing as the year changes, or a controlled reset.
+  // `contentOffset` only positions the ScrollView at mount, so without this the
+  // highlight band + fade moved to the new selection but the wheel physically
+  // stayed put; the next settle then read the OLD position and reported a value
+  // that didn't match what looked centred (the 壬申年 闰四月 leak). A settle from the
+  // user's own scroll already sits at restingIdx, so this is a no-op there.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: restingIdx * WHEEL_ITEM_HEIGHT, animated: false })
+  }, [restingIdx])
 
   const onMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {

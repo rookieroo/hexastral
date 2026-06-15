@@ -9,6 +9,10 @@
  * day wrap (首尾相连), year is a bounded range. Extracted from BirthDateStep so the
  * single-page settings forms (e.g. auspice Me) reuse the exact same lunar input
  * as the onboarding wizard.
+ *
+ * The column-derivation + clamp/sanitize lives in `useLunarColumns` so the native
+ * iOS picker (`LunarPickerIOS`) shares the exact same leap-month + day logic — only
+ * the rendering differs.
  */
 
 import {
@@ -28,35 +32,44 @@ const LUNAR_YEAR_MAX = 2099
 
 export type LunarDateValue = { year: number; month: number; day: number; isLeap: boolean }
 
-export function LunarDateWheels({
-  year,
-  month,
-  day,
-  isLeap,
-  accent,
-  onChange,
-}: {
-  year: number
-  month: number
-  day: number
-  isLeap: boolean
-  accent: string
+export interface LunarColumns {
+  years: number[]
+  months: { value: number; isLeap: boolean; label: string }[]
+  days: { value: number; label: string }[]
+  /** The day clamped into the selected month (≤ its real length). */
+  safeDay: number
+  /** `isLeap` after dropping it if the selected year has no such leap month. */
+  safeLeap: boolean
+}
+
+/**
+ * Derive the three lunar columns for {year, month, day, isLeap} and keep the
+ * controlling parent in sync when the selection becomes impossible underneath it.
+ * Two corrections, both emitted up via `onChange`:
+ *   • day clamp — 廿九/三十 when the month shrinks (a 29-day month, or 闰月).
+ *   • leap sanitize — drop a stale 闰 flag the moment the year no longer HAS that
+ *     leap month. The picker seeds (or is left) on e.g. 2001 闰四月, the year then
+ *     scrolls to 壬申/1992 which has NO leap month, and without this the flag rode
+ *     all the way to confirm and produced the reported "壬申年 闰四月初六".
+ */
+export function useLunarColumns(
+  { year, month, day, isLeap }: LunarDateValue,
   onChange: (next: LunarDateValue) => void
-}) {
-  const { colors } = useTheme()
-
+): LunarColumns {
   const leapMonthOfYear = useMemo(() => getLeapMonth(year), [year])
-  const daysInSelectedMonth = useMemo(() => {
-    if (isLeap) return getLeapMonthDays(year)
-    return getLunarMonthDays(year, month) || 30
-  }, [year, month, isLeap])
 
-  // Clamp the day when the month changes underneath it — emit the corrected
-  // value up so the controlling parent's state stays in sync.
+  const safeLeap = isLeap && leapMonthOfYear === month
+  const daysInSelectedMonth = useMemo(() => {
+    if (safeLeap) return getLeapMonthDays(year)
+    return getLunarMonthDays(year, month) || 30
+  }, [year, month, safeLeap])
   const safeDay = Math.min(day, daysInSelectedMonth)
+
   useEffect(() => {
-    if (safeDay !== day) onChange({ year, month, day: safeDay, isLeap })
-  }, [safeDay, day, year, month, isLeap, onChange])
+    if (safeDay !== day || safeLeap !== isLeap) {
+      onChange({ year, month, day: safeDay, isLeap: safeLeap })
+    }
+  }, [safeDay, safeLeap, day, isLeap, year, month, onChange])
 
   const years = useMemo(() => {
     const out: number[] = []
@@ -83,10 +96,36 @@ export function LunarDateWheels({
     return out
   }, [leapMonthOfYear])
   const days = useMemo(() => {
-    const out: number[] = []
-    for (let d = 1; d <= daysInSelectedMonth; d++) out.push(d)
+    const out: { value: number; label: string }[] = []
+    for (let d = 1; d <= daysInSelectedMonth; d++) {
+      out.push({ value: d, label: LUNAR_DAY_NAMES[d - 1] ?? `${d}` })
+    }
     return out
   }, [daysInSelectedMonth])
+
+  return { years, months, days, safeDay, safeLeap }
+}
+
+export function LunarDateWheels({
+  year,
+  month,
+  day,
+  isLeap,
+  accent,
+  onChange,
+}: {
+  year: number
+  month: number
+  day: number
+  isLeap: boolean
+  accent: string
+  onChange: (next: LunarDateValue) => void
+}) {
+  const { colors } = useTheme()
+  const { years, months, days, safeDay, safeLeap } = useLunarColumns(
+    { year, month, day, isLeap },
+    onChange
+  )
 
   return (
     <View
@@ -101,7 +140,7 @@ export function LunarDateWheels({
       <Wheel
         items={years.map((y) => ({ key: String(y), label: `${y}`, value: y }))}
         selectedKey={String(year)}
-        onSelect={(v) => onChange({ year: v as number, month, day: safeDay, isLeap })}
+        onSelect={(v) => onChange({ year: v as number, month, day: safeDay, isLeap: safeLeap })}
         accent={accent}
       />
       <Wheel
@@ -110,7 +149,7 @@ export function LunarDateWheels({
           label: m.label,
           value: m,
         }))}
-        selectedKey={`${month}-${isLeap}`}
+        selectedKey={`${month}-${safeLeap}`}
         onSelect={(v) => {
           const m = v as { value: number; isLeap: boolean }
           onChange({ year, month: m.value, day: safeDay, isLeap: m.isLeap })
@@ -120,12 +159,12 @@ export function LunarDateWheels({
       />
       <Wheel
         items={days.map((d) => ({
-          key: String(d),
-          label: LUNAR_DAY_NAMES[d - 1] ?? `${d}`,
-          value: d,
+          key: String(d.value),
+          label: d.label,
+          value: d.value,
         }))}
         selectedKey={String(safeDay)}
-        onSelect={(v) => onChange({ year, month, day: v as number, isLeap })}
+        onSelect={(v) => onChange({ year, month, day: v as number, isLeap: safeLeap })}
         accent={accent}
         loop
       />

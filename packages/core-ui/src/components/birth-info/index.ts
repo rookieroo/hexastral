@@ -17,6 +17,7 @@ export {
   birthDateFieldLabelsForLocale,
   birthInputToSolar,
   formatBirthDateInput,
+  switchBirthCalendar,
 } from './BirthDateField'
 export { BirthDateStep } from './BirthDateStep'
 export { BirthGenderStep } from './BirthGenderStep'

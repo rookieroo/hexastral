@@ -21,6 +21,7 @@ import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { fetchAuspiceDay, fetchTimeline, type PersonalFit, type PersonalReasonCode } from './api'
 import { upcomingHolidayHeadsUps } from './cn-holidays'
+import { localizeFestival, localizeSolarTermName } from './culture'
 import { getStrings, type Locale } from './i18n'
 import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
@@ -40,23 +41,109 @@ const PUSH_HOUR = 8
 const EVENING_HOUR = 20
 const WINDOW_DAYS = 5
 
-/** Evening-slot (8pm) labels — recap today + a wind-down nudge for tonight. 命理/
- *  养生 advocates being asleep by 子时 (23:00), so the evening push nudges rest
- *  instead of previewing tomorrow's 宜忌 — which the next 8am push already carries
- *  (that overlap was the duplication the two pushes used to read as). */
-const EVENING_TEXT: Record<Locale, { title: string; today: string; rest: string }> = {
-  'zh-Hans': { title: '今日小结 · 今夜安歇', today: '今日', rest: '亥子之交宜安睡，养明日之气' },
-  'zh-Hant': { title: '今日小結 · 今夜安歇', today: '今日', rest: '亥子之交宜安睡，養明日之氣' },
+/**
+ * Evening-slot (8pm) copy — an EVENT-DRIVEN "tomorrow heads-up", not a daily recap.
+ * It fires only when tomorrow is worth flagging (a 节气 / 节日, or — Pro — a day that
+ * is 大吉/凶 for you), so most evenings it stays silent. The old slot recapped today's
+ * 宜 + a constant "rest before 11pm" tail EVERY night — identical day to day and a
+ * near-dupe of the 08:00 push, which read as filler with no value. `is` takes one
+ * `{x}` (the 节气/节日 name and/or the personal clause); `good`/`caution` are the Pro
+ * personal clauses; `sep` joins them when both apply.
+ */
+const EVENING_TEXT: Record<
+  Locale,
+  { title: string; is: string; good: string; caution: string; sep: string }
+> = {
+  'zh-Hans': {
+    title: '明日提醒',
+    is: '明天{x}',
+    good: '对你而言难得吉日，宜把握',
+    caution: '对你而言宜谨慎，凡事缓行',
+    sep: ' · ',
+  },
+  'zh-Hant': {
+    title: '明日提醒',
+    is: '明天{x}',
+    good: '對你而言難得吉日，宜把握',
+    caution: '對你而言宜謹慎，凡事緩行',
+    sep: ' · ',
+  },
   ja: {
-    title: '今日のまとめ · 今宵の養生',
-    today: '今日',
-    rest: '子の刻までに就寝し、明日の英気を養う',
+    title: '明日のお知らせ',
+    is: '明日は{x}',
+    good: 'あなたにとって好機の日、ぜひ活かして',
+    caution: 'あなたには慎重な日、無理せず穏やかに',
+    sep: ' · ',
   },
   en: {
-    title: "Today's recap · wind down",
-    today: 'Today',
-    rest: 'rest before 11pm (子时) to restore for tomorrow',
+    title: 'Tomorrow',
+    is: 'Tomorrow: {x}',
+    good: 'a strong day for you — worth seizing',
+    caution: 'a day to stay careful — take it steady',
+    sep: ' · ',
   },
+}
+
+/** 五行 → English element — for the readable en day label. */
+const WUXING_EN: Record<string, string> = {
+  金: 'Metal',
+  木: 'Wood',
+  水: 'Water',
+  火: 'Fire',
+  土: 'Earth',
+}
+
+/** 地支 → English zodiac animal — for the readable en day label. */
+const BRANCH_ANIMAL_EN: Record<string, string> = {
+  子: 'Rat',
+  丑: 'Ox',
+  寅: 'Tiger',
+  卯: 'Rabbit',
+  辰: 'Dragon',
+  巳: 'Snake',
+  午: 'Horse',
+  未: 'Goat',
+  申: 'Monkey',
+  酉: 'Rooster',
+  戌: 'Dog',
+  亥: 'Pig',
+}
+
+/**
+ * Push-title day label. CJK keeps the 干支日 ("庚申日"); en glosses it into the
+ * readable "Metal Monkey day" — a bare 干支 is opaque to a non-CJK reader (the
+ * "早八点 en 还加天干地支是否合理" feedback). element = the day-stem 五行 (金 → Metal);
+ * animal = the day-branch 生肖 (申 → Monkey).
+ */
+function ganzhiDayLabel(ganZhi: string, element: string, locale: Locale): string {
+  if (locale !== 'en') return `${ganZhi}日`
+  const animal = BRANCH_ANIMAL_EN[ganZhi[1] ?? ''] ?? ''
+  const el = WUXING_EN[element] ?? ''
+  return el && animal ? `${el} ${animal} day` : ganZhi
+}
+
+/**
+ * Evening heads-up body for `payload` (tomorrow). Returns null when nothing is worth
+ * flagging — the caller then schedules NOTHING for that evening (the whole point: no
+ * filler). A 节气/节日 fires for everyone; a 大吉/凶 personal day fires for Pro only.
+ */
+function eveningHeadsUp(
+  locale: Locale,
+  ev: (typeof EVENING_TEXT)[Locale],
+  payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
+  isPro: boolean
+): { title: string; body: string } | null {
+  const d = payload.day
+  const special = d.festivalToday
+    ? localizeFestival(d.festivalToday.id, locale, d.festivalToday.name)
+    : d.solarTermToday
+      ? localizeSolarTermName(d.solarTermToday.name, locale)
+      : null
+  const pers = isPro ? payload.personalization : null
+  const fitClause = pers?.fit === '吉' ? ev.good : pers?.fit === '凶' ? ev.caution : null
+  if (!special && !fitClause) return null
+  const x = special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? '')
+  return { title: ev.title, body: ev.is.replace('{x}', x) }
 }
 
 /** Retro-check copy ({event} = the localized event label). */
@@ -166,7 +253,6 @@ async function cancelDaily(): Promise<void> {
 function dailyContent(
   locale: Locale,
   t: ReturnType<typeof getStrings>,
-  dateStr: string,
   payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
   isPro: boolean
 ): { title: string; body: string } {
@@ -178,10 +264,16 @@ function dailyContent(
   const yi = d.goodFor.slice(0, 2).map(loc).join(sep) || '—'
   const ji = d.avoid.slice(0, 2).map(loc).join(sep) || '—'
   // The TITLE shouldn't waste itself on the date — the notification already
-  // timestamps itself (founder, 2026-06). Lead with the 干支 day + (Pro) the
-  // personal verdict (the auspice_pro hook); fold a 节气, when today is one, in.
-  const special = d.solarTerm.prev.date === dateStr ? d.solarTerm.prev.name : null
-  const dayId = `${d.ganZhi}日`
+  // timestamps itself (founder, 2026-06). Lead with the day label + (Pro) the
+  // personal verdict (the auspice_pro hook); fold a 节气/节日, when today is one, in.
+  // `special` is LOCALIZED (raw CJK 清明/中秋 was leaking into en/ja titles).
+  const special = d.festivalToday
+    ? localizeFestival(d.festivalToday.id, locale, d.festivalToday.name)
+    : d.solarTermToday
+      ? localizeSolarTermName(d.solarTermToday.name, locale)
+      : null
+  // CJK: "庚申日"; en: readable "Metal Monkey day" (bare 干支 is opaque to en readers).
+  const dayId = ganzhiDayLabel(d.ganZhi, d.element, locale)
   // Pro: the title carries the personal verdict, so a 节气 rides in the body.
   // Free: no verdict, so a 节气 rides in the title (the body stays just 宜忌).
   const pers = isPro ? payload.personalization : null
@@ -215,13 +307,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
 
     let content: { title: string; body: string } = { title: t.appName, body: t.today }
     try {
-      content = dailyContent(
-        opts.locale,
-        t,
-        dateStr,
-        await fetchAuspiceDay(dateStr, opts.birthDate),
-        isPro
-      )
+      content = dailyContent(opts.locale, t, await fetchAuspiceDay(dateStr, opts.birthDate), isPro)
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
     }
@@ -237,36 +323,33 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
     } catch {}
   }
 
-  // Evening (8pm) slot — the second of 早晚各一条. Recap today + (Pro) the 对你而言
-  // fit + a wind-down nudge for tonight (命理 advocates sleeping by 子时), still
-  // 100% deterministic — the fit is the SAME overlay the 8am push uses, so morning
-  // + evening personalization align at zero LLM cost. No tomorrow 宜忌 preview (that
-  // duplicated the next 8am push). Bundled under the SAME daily toggle.
-  const et = EVENING_TEXT[opts.locale]
-  const sep = opts.locale === 'en' ? ', ' : '、'
-  const colon = opts.locale === 'en' ? ': ' : '：'
-  const loc = (v: string) => localizeYijiVerb(v, opts.locale)
+  // Evening (8pm) slot — EVENT-DRIVEN "tomorrow heads-up", NOT a daily recap. The
+  // old slot recapped today's 宜 + a constant "rest before 11pm" tail every night —
+  // identical day to day and a near-dupe of the 08:00 push, so it read as filler.
+  // Now it fires only when TOMORROW is worth flagging (a 节气/节日, or — Pro — a 大吉/凶
+  // day for you), and stays silent otherwise. `eveningHeadsUp` returns null on an
+  // ordinary day → nothing scheduled (no filler). Tap opens tomorrow (the flagged day).
+  const ev = EVENING_TEXT[opts.locale]
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightPm(i)
     if (when.getTime() <= now) continue // skip past 8pm
-    const todayDate = localYmd(eightAm(i)) // the evening's OWN day
-    let content: { title: string; body: string } = { title: et.title, body: et.rest }
+    const tomorrow = localYmd(eightAm(i + 1)) // the day this evening looks ahead to
+    let headsUp: { title: string; body: string } | null = null
     try {
-      const tdP = await fetchAuspiceDay(todayDate, opts.birthDate)
-      const tdYi = tdP.day.goodFor.slice(0, 2).map(loc).join(sep) || '—'
-      let body = `${et.today}${t.suitable} ${tdYi}`
-      if (isPro && tdP.personalization)
-        body += ` · ${t.personal.forYou}${colon}${t.personal.fit[tdP.personalization.fit]}`
-      body += ` · ${et.rest}`
-      content = { title: et.title, body }
+      headsUp = eveningHeadsUp(
+        opts.locale,
+        ev,
+        await fetchAuspiceDay(tomorrow, opts.birthDate),
+        isPro
+      )
     } catch {
-      // keep the generic fallback — a push that opens the app is still useful
+      headsUp = null // no payload → stay silent rather than schedule filler
     }
+    if (!headsUp) continue
     try {
-      // Tap opens TODAY (the 时辰 wheel shows tonight's hours), not tomorrow.
       await Notifications.scheduleNotificationAsync({
-        identifier: `${EVENING_ID_PREFIX}${todayDate}`,
-        content: { ...content, data: { day: todayDate } },
+        identifier: `${EVENING_ID_PREFIX}${tomorrow}`,
+        content: { ...headsUp, data: { day: tomorrow } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}

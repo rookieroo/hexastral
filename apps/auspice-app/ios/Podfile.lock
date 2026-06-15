@@ -2065,6 +2065,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNCPicker (2.11.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNDateTimePicker (8.4.5):
     - hermes-engine
     - RCTRequired
@@ -2473,6 +2495,7 @@ DEPENDENCIES:
   - "ReactCommon/turbomodule/core (from `../../../node_modules/.bun/react-native@0.81.5+395f71ae3c4cac51/node_modules/react-native/ReactCommon`)"
   - "ReactNativeDependencies (from `../../../node_modules/.bun/react-native@0.81.5+395f71ae3c4cac51/node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)"
   - "RNCAsyncStorage (from `../../../node_modules/.bun/@react-native-async-storage+async-storage@2.2.0+395f71ae3c4cac51/node_modules/@react-native-async-storage/async-storage`)"
+  - "RNCPicker (from `../../../node_modules/.bun/@react-native-picker+picker@2.11.1+395f71ae3c4cac51/node_modules/@react-native-picker/picker`)"
   - "RNDateTimePicker (from `../../../node_modules/.bun/@react-native-community+datetimepicker@8.4.5+da394b4df4511c20/node_modules/@react-native-community/datetimepicker`)"
   - "RNGestureHandler (from `../../../node_modules/.bun/react-native-gesture-handler@2.28.0+395f71ae3c4cac51/node_modules/react-native-gesture-handler`)"
   - "RNGoogleSignin (from `../../../node_modules/.bun/@react-native-google-signin+google-signin@15.0.0+da394b4df4511c20/node_modules/@react-native-google-signin/google-signin`)"
@@ -2691,6 +2714,8 @@ EXTERNAL SOURCES:
     :podspec: "../../../node_modules/.bun/react-native@0.81.5+395f71ae3c4cac51/node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   RNCAsyncStorage:
     :path: "../../../node_modules/.bun/@react-native-async-storage+async-storage@2.2.0+395f71ae3c4cac51/node_modules/@react-native-async-storage/async-storage"
+  RNCPicker:
+    :path: "../../../node_modules/.bun/@react-native-picker+picker@2.11.1+395f71ae3c4cac51/node_modules/@react-native-picker/picker"
   RNDateTimePicker:
     :path: "../../../node_modules/.bun/@react-native-community+datetimepicker@8.4.5+da394b4df4511c20/node_modules/@react-native-community/datetimepicker"
   RNGestureHandler:
@@ -2817,6 +2842,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: 71ce9c28beb282aa720ea7b46980fff9669f428a
   RevenueCat: f30d8ee4fd36ce56afa40923d314239761eb58a2
   RNCAsyncStorage: 3a4f5e2777dae1688b781a487923a08569e27fe4
+  RNCPicker: a7170edbcbf8288de8edb2502e08e7fc757fa755
   RNDateTimePicker: 7dda2673bd2a6022ea8888fe669d735b2eac0b2d
   RNGestureHandler: 2914750df066d89bf9d8f48a10ad5f0051108ac3
   RNGoogleSignin: 5f5468c9a3ee3be44072d2278d27741e5b6dfe07

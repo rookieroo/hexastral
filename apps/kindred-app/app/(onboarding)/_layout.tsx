@@ -9,6 +9,7 @@ export default function OnboardingLayout() {
         contentStyle: { backgroundColor: kindredDark.bg },
         animation: 'slide_from_right',
         gestureEnabled: true,
+        fullScreenGestureEnabled: true,
       }}
     >
       {/* Intro is a one-shot cinematic — suppress edge-swipe back to nothing. */}

@@ -9,7 +9,7 @@ import { ImageResponse } from 'next/og'
 import { AUSPICE_FOOTER_LINK } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — the Chinese calendar, for the world'
+export const alt = 'Yuun — the Chinese calendar, for the world'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -28,7 +28,7 @@ export default function Image() {
       }}
     >
       <span style={{ fontSize: 32, letterSpacing: 10, color: '#9A6A3A', display: 'flex' }}>
-        AUSPICE 黄历
+        YUUN 黄历
       </span>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

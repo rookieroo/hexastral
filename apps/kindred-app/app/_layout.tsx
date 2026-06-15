@@ -143,6 +143,12 @@ export default function RootLayout() {
                   headerShown: false,
                   contentStyle: { backgroundColor: kindredDark.bg },
                   animation: 'slide_from_right',
+                  // Swipe-back was off everywhere but the report (which has its own
+                  // gesture): the default edge gesture doesn't apply under a custom
+                  // `slide_from_right`, so enable it explicitly. fullScreen = swipe
+                  // from anywhere, not just the 20px edge.
+                  gestureEnabled: true,
+                  fullScreenGestureEnabled: true,
                 }}
               >
                 <Stack.Screen name='index' />

@@ -68,9 +68,9 @@ const EN_COPY: ShareCopy = {
   title: 'Good days for you & {name}',
   tagline: 'The best days for the two of you, from both charts',
   cta: 'Find yours',
-  hero: 'AUSPICE · GOOD DAYS',
-  footer: 'Auspice — the days the two of you are in sync',
-  malformed: 'This good-days link is malformed or truncated. Open Auspice to make a new one.',
+  hero: 'YUUN · GOOD DAYS',
+  footer: 'Yuun — the days the two of you are in sync',
+  malformed: 'This good-days link is malformed or truncated. Open Yuun to make a new one.',
 }
 
 const COPY: Record<string, ShareCopy> = {
@@ -78,25 +78,25 @@ const COPY: Record<string, ShareCopy> = {
     title: '你和{name}的好日子',
     tagline: '你和TA同气的好日子，来自两人合盘',
     cta: '看看你俩的',
-    hero: 'AUSPICE 好日子',
-    footer: 'Auspice · 两人同气的好日子',
-    malformed: '这个「好日子」链接已失效或被截断。打开 Auspice 重新生成一个。',
+    hero: 'YUUN 好日子',
+    footer: 'Yuun · 两人同气的好日子',
+    malformed: '这个「好日子」链接已失效或被截断。打开 Yuun 重新生成一个。',
   },
   'zh-Hant': {
     title: '你和{name}的好日子',
     tagline: '你和TA同氣的好日子，來自兩人合盤',
     cta: '看看你倆的',
-    hero: 'AUSPICE 好日子',
-    footer: 'Auspice · 兩人同氣的好日子',
-    malformed: '這個「好日子」連結已失效或被截斷。打開 Auspice 重新生成一個。',
+    hero: 'YUUN 好日子',
+    footer: 'Yuun · 兩人同氣的好日子',
+    malformed: '這個「好日子」連結已失效或被截斷。打開 Yuun 重新生成一個。',
   },
   ja: {
     title: 'あなたと{name}の吉日',
     tagline: '二人の命式から導く、相性の良い日',
     cta: 'あなたのも見る',
-    hero: 'AUSPICE 吉日',
-    footer: 'Auspice · 二人の相性が良い日',
-    malformed: 'この「吉日」リンクは無効か、切り詰められています。Auspice で作り直してください。',
+    hero: 'YUUN 吉日',
+    footer: 'Yuun · 二人の相性が良い日',
+    malformed: 'この「吉日」リンクは無効か、切り詰められています。Yuun で作り直してください。',
   },
   en: EN_COPY,
 }
@@ -131,14 +131,14 @@ export async function generateMetadata({
   const { token } = await params
   const payload = decodeToken(token)
   if (!payload) {
-    return { title: 'Auspice — 好日子', description: 'Good days for the two of you, from Auspice.' }
+    return { title: 'Yuun — 好日子', description: 'Good days for the two of you, from Yuun.' }
   }
   const copy = copyFor(payload.lc)
-  const title = `${copy.title.replace('{name}', payload.n)} — Auspice`
+  const title = `${copy.title.replace('{name}', payload.n)} — Yuun`
   return {
     title,
     description: copy.tagline,
-    openGraph: { title, description: copy.tagline, siteName: 'Auspice' },
+    openGraph: { title, description: copy.tagline, siteName: 'Yuun' },
   }
 }
 

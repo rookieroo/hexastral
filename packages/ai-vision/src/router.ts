@@ -232,12 +232,40 @@ function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T>
   })
 }
 
+/**
+ * Whole-chain wall-clock budgets — kept UNDER the caller's outer timeout so the
+ * caller never times out MID-cascade (which surfaces as a 504). The bug this fixes:
+ * the flagship chain is THREE models, so PER_MODEL_TIMEOUT_MS × 3 = 72s blew past
+ * svc-astro's 55s `callAstro` budget — when KIMI + QWEN3 were both slow, GLM never
+ * finished and every report chapter 504'd. We now give each remaining model an EQUAL
+ * share of the time LEFT (capped at the per-model ceiling), so the serial chain fits
+ * the budget and a slow tier-1 model can't starve the reliable last fallback.
+ *   - report/reading budget < svc-astro's 55s caller timeout (astro-client.ts)
+ *   - chat budget < the client's ~45s abort (apps' chat fetch)
+ */
+const TOTAL_BUDGET_MS = 48_000
+const CHAT_TOTAL_BUDGET_MS = 40_000
+/** Below this, a model can't produce anything useful — stop cascading, fail clean. */
+const MIN_MODEL_SLOT_MS = 5_000
+
+/** Per-model timeout = min(per-model cap, equal split of the remaining budget). */
+function modelSlotMs(
+  totalBudgetMs: number,
+  startedAt: number,
+  modelsLeft: number,
+  perModelCap: number
+): number {
+  const remaining = totalBudgetMs - (Date.now() - startedAt)
+  return Math.min(perModelCap, Math.floor(remaining / Math.max(1, modelsLeft)))
+}
+
 async function callCfAi(
   ai: WorkersAiBinding,
   model: string,
   systemPrompt: string,
   userPrompt: string,
-  options?: FallbackCallOptions
+  options?: FallbackCallOptions,
+  timeoutMs: number = PER_MODEL_TIMEOUT_MS
 ): Promise<string> {
   let finalSystem = systemPrompt
   if (options?.responseSchema) {
@@ -256,7 +284,7 @@ async function callCfAi(
       max_tokens: options?.maxTokens ?? 4096,
       temperature: options?.temperature ?? 0.7,
     }),
-    PER_MODEL_TIMEOUT_MS,
+    timeoutMs,
     model
   )
 
@@ -282,7 +310,8 @@ async function callCfAiChat(
   model: string,
   systemPrompt: string,
   messages: readonly ChatMessage[],
-  options?: ChatCallOptions
+  options?: ChatCallOptions,
+  timeoutMs: number = CHAT_PER_MODEL_TIMEOUT_MS
 ): Promise<string> {
   const cfMessages = messages.map((m) => ({ role: toCfRole(m.role), content: m.content }))
   // Suppress the qwen3 <think> chain on the final user turn. In chat the budget is
@@ -299,7 +328,7 @@ async function callCfAiChat(
       max_tokens: options?.maxTokens ?? 2048,
       temperature: options?.temperature ?? 0.7,
     }),
-    CHAT_PER_MODEL_TIMEOUT_MS,
+    timeoutMs,
     model
   )
 
@@ -339,8 +368,20 @@ export async function callWithFallback(
   let lastError = ''
   for (let depth = 0; depth < chain.length; depth++) {
     const model = chain[depth] as string
+    const slotMs = modelSlotMs(
+      TOTAL_BUDGET_MS,
+      startedAt,
+      chain.length - depth,
+      PER_MODEL_TIMEOUT_MS
+    )
+    // No usable time left before the caller's outer timeout — stop cascading and
+    // throw a clean error rather than starting a model that will 504 the API.
+    if (slotMs < MIN_MODEL_SLOT_MS) {
+      lastError = lastError || `budget exhausted before ${model}`
+      break
+    }
     try {
-      const text = await callCfAi(env.AI, model, systemPrompt, userPrompt, options)
+      const text = await callCfAi(env.AI, model, systemPrompt, userPrompt, options, slotMs)
       emitMetric({
         model,
         tier: depth === 0 ? 'tier1' : depth === 1 ? 'fallback1' : 'fallback2',
@@ -388,8 +429,18 @@ export async function callChatWithFallback(
   let lastError = ''
   for (let depth = 0; depth < chain.length; depth++) {
     const model = chain[depth] as string
+    const slotMs = modelSlotMs(
+      CHAT_TOTAL_BUDGET_MS,
+      startedAt,
+      chain.length - depth,
+      CHAT_PER_MODEL_TIMEOUT_MS
+    )
+    if (slotMs < MIN_MODEL_SLOT_MS) {
+      lastError = lastError || `budget exhausted before ${model}`
+      break
+    }
     try {
-      const text = await callCfAiChat(env.AI, model, systemPrompt, messages, options)
+      const text = await callCfAiChat(env.AI, model, systemPrompt, messages, options, slotMs)
       emitMetric({
         model,
         tier: depth === 0 ? 'tier1' : depth === 1 ? 'fallback1' : 'fallback2',

@@ -110,7 +110,7 @@ export default async function Image({
           marginBottom: '20px',
         }}
       >
-        Kindred
+        Yuel
       </div>
 
       {/* "invites you" label */}

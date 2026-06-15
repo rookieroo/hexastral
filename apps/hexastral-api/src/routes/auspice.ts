@@ -84,12 +84,6 @@ function ymdToDate(ymd: Ymd): Date {
   return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day))
 }
 
-function ymdShift(ymd: Ymd, days: number): Ymd {
-  const d = ymdToDate(ymd)
-  d.setUTCDate(d.getUTCDate() + days)
-  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
-}
-
 function fmtUtc(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')
   const day = String(d.getUTCDate()).padStart(2, '0')
@@ -2088,16 +2082,17 @@ interface PushLabelSet {
   ji: string
   forYou: string
   daySuffix: string
-  tomorrow: string
-  /** Evening (20:00) title — recap today + a wind-down for tonight. */
+  /** Evening (20:00) is now an EVENT-DRIVEN "tomorrow heads-up", not a daily recap.
+   *  It fires only when tomorrow is notable (a 节气/节日, or — Pro — a 大吉/凶 day for
+   *  you); most evenings it stays silent. The old slot recapped today + a constant
+   *  "rest before 11pm" tail EVERY night, a near-dupe of the 08:00 push. */
   eveningTitle: string
-  /** Evening wind-down line. 命理/养生 advocates being asleep by 子时 (23:00),
-   *  so the 20:00 push nudges rest instead of previewing tomorrow's 宜忌 — which
-   *  the next 08:00 push already carries (that overlap was the duplication). */
-  restLine: string
-  /** Short words for the evening body. */
-  today: string
-  tomorrowShort: string
+  /** "{x}" = the 节气/节日 name (CJK v1, like the 宜忌 verbs) and/or the clause below. */
+  eveningIs: string
+  /** Pro personal clauses for a 大吉 / 凶 day tomorrow. */
+  eveningGood: string
+  eveningCaution: string
+  eveningSep: string
   fit: Record<string, string>
 }
 
@@ -2106,11 +2101,11 @@ const EN_PUSH_LABELS: PushLabelSet = {
   ji: 'Avoid',
   forYou: 'You',
   daySuffix: '',
-  tomorrow: 'Tomorrow',
-  eveningTitle: "Today's recap · wind down",
-  restLine: 'rest before 11pm (子时) to restore for tomorrow',
-  today: 'Today',
-  tomorrowShort: 'Tomorrow',
+  eveningTitle: 'Tomorrow',
+  eveningIs: 'Tomorrow: {x}',
+  eveningGood: 'a strong day for you — worth seizing',
+  eveningCaution: 'a day to stay careful — take it steady',
+  eveningSep: ' · ',
   fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
 }
 
@@ -2120,11 +2115,11 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     ji: '忌',
     forYou: '你',
     daySuffix: '日',
-    tomorrow: '明日预告',
-    eveningTitle: '今日小结 · 今夜安歇',
-    restLine: '亥子之交宜安睡，养明日之气',
-    today: '今日',
-    tomorrowShort: '明日',
+    eveningTitle: '明日提醒',
+    eveningIs: '明天{x}',
+    eveningGood: '对你而言难得吉日，宜把握',
+    eveningCaution: '对你而言宜谨慎，凡事缓行',
+    eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
   },
   'zh-Hant': {
@@ -2132,11 +2127,11 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     ji: '忌',
     forYou: '你',
     daySuffix: '日',
-    tomorrow: '明日預告',
-    eveningTitle: '今日小結 · 今夜安歇',
-    restLine: '亥子之交宜安睡，養明日之氣',
-    today: '今日',
-    tomorrowShort: '明日',
+    eveningTitle: '明日提醒',
+    eveningIs: '明天{x}',
+    eveningGood: '對你而言難得吉日，宜把握',
+    eveningCaution: '對你而言宜謹慎，凡事緩行',
+    eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
   },
   ja: {
@@ -2144,11 +2139,11 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     ji: '凶',
     forYou: 'あなた',
     daySuffix: '日',
-    tomorrow: '明日の予報',
-    eveningTitle: '今日のまとめ · 今宵の養生',
-    restLine: '子の刻までに就寝し、明日の英気を養う',
-    today: '今日',
-    tomorrowShort: '明日',
+    eveningTitle: '明日のお知らせ',
+    eveningIs: '明日は{x}',
+    eveningGood: 'あなたにとって好機の日、ぜひ活かして',
+    eveningCaution: 'あなたには慎重な日、無理せず穏やかに',
+    eveningSep: ' · ',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
   },
   en: EN_PUSH_LABELS,
@@ -2363,31 +2358,36 @@ function birthdayFiresOn(
 }
 
 /** Render a deterministic push for one subscriber + date (morning = that day,
- *  evening = a preview of `dateYmd` which the cron already advanced to tomorrow). */
+ *  evening = a heads-up about `dateYmd` which the cron already advanced to tomorrow).
+ *  The evening returns null when tomorrow isn't notable → caller schedules nothing. */
 function renderAuspicePush(
   slot: 'morning' | 'evening',
   dateYmd: Ymd,
   sub: AuspicePushSubRow
-): { title: string; body: string; data: Record<string, string> } {
+): { title: string; body: string; data: Record<string, string> } | null {
   const L = pushLabels(sub.locale)
   const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
-  // Evening (20:00): the cron advanced dateYmd to tomorrow, so the real current
-  // day is the one before. RECAP today's 宜 + (Pro) the deterministic 对你而言 fit
-  // — the SAME `personalAlmanacOverlay` as the 08:00 push, so morning + evening
-  // personalization align at ZERO extra cost — then nudge rest for tonight
-  // (子时前入睡). No tomorrow 宜忌 preview (the next 08:00 push carries it).
+  // Evening (20:00): EVENT-DRIVEN heads-up about TOMORROW (the cron already advanced
+  // dateYmd to tomorrow). Fires only when tomorrow is notable — a 节气/节日, or (Pro) a
+  // 大吉/凶 day for you — else returns null and nothing is scheduled. The old slot
+  // recapped today + a constant "rest before 11pm" tail EVERY night, a near-dupe of
+  // the 08:00 push that read as filler. 节气/节日 names stay CJK in v1 (like 宜忌).
   if (slot === 'evening') {
-    const todayYmd = ymdShift(dateYmd, -1)
-    const { day, personalization } = buildDay(todayYmd, subject)
-    const yi = day.goodFor.slice(0, 2).join('、') || '—'
-    let body = `${L.today}${L.yi} ${yi}`
-    if (sub.isPro && personalization)
-      body += ` · ${L.forYou}${L.fit[personalization.fit] ?? personalization.fit}`
-    body += ` · ${L.restLine}`
+    const { day, personalization } = buildDay(dateYmd, subject)
+    const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
+    const fitClause =
+      sub.isPro && personalization?.fit === '吉'
+        ? L.eveningGood
+        : sub.isPro && personalization?.fit === '凶'
+          ? L.eveningCaution
+          : null
+    if (!special && !fitClause) return null
+    const x =
+      special && fitClause ? `${special}${L.eveningSep}${fitClause}` : (special ?? fitClause ?? '')
     return {
       title: L.eveningTitle,
-      body,
-      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(todayYmd)) },
+      body: L.eveningIs.replace('{x}', x),
+      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(dateYmd)) },
     }
   }
 
@@ -2565,10 +2565,10 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }> = []
 
   for (const sub of page) {
-    // Daily reading / preview.
+    // Daily morning reading / event-driven evening heads-up (null on a quiet evening).
     if (slot === 'evening' ? sub.dailyEvening : sub.dailyMorning) {
       const m = renderAuspicePush(slot, ymd, sub)
-      messages.push({ deviceId: sub.deviceId, token: sub.token, ...m })
+      if (m) messages.push({ deviceId: sub.deviceId, token: sub.token, ...m })
     }
     // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders.
     if (slot === 'morning' && sub.birthdayOn) {

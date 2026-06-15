@@ -8,6 +8,8 @@ export default function ReadingLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: kindredDark.bg },
         animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
       }}
     >
       <Stack.Screen name='index' />

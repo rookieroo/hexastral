@@ -53,7 +53,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
-import { ElementGlyph } from '@/components/home/ElementGlyph'
+import { ElementGlyph, WUXING_COLOR } from '@/components/home/ElementGlyph'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
 import { KindredMoon } from '@/components/KindredMoon'
@@ -110,15 +110,6 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
-}
-
-/** Quiet kicker over the home-bottom 五行 card (the element imagery lives here, off
- *  the hero — "放首页不太合适"). */
-const ELEMENT_KICKER: Record<Locale, string> = {
-  en: 'Your element',
-  zh: '你的五行',
-  'zh-Hant': '你的五行',
-  ja: 'あなたの五行',
 }
 
 // Pending threads need attention; actives are destinations; declined/expired are
@@ -381,10 +372,11 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* YOU — the central star as a QUIET tappable entry (no card bg/border now):
-          your 五行 意象 (system cinnabar) + "Open your reading", merging the old
-          element card + CTA. The star map itself is FIXED above (in the return);
-          this shrinks + fades toward it as you scroll (youCardStyle). */}
+      {/* YOU — a QUIET caption sitting just under the central star (not a block):
+          a small element glyph (echoes your star's colour) + "Open your reading".
+          Deliberately small — the personal reading is the anchor, but the 合盘 list
+          below is the focus, so this recedes. Tap = tap your star. It shrinks + fades
+          toward the sky as you scroll (youCardStyle). */}
       <Animated.View style={[{ transformOrigin: 'center top' }, youCardStyle]}>
         <Pressable
           onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
@@ -394,28 +386,27 @@ export default function ReadingHomeScreen() {
           style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
-            gap: kindredSpacing.md,
-            marginTop: kindredSpacing.xs,
+            justifyContent: 'center',
+            gap: kindredSpacing.sm,
+            marginTop: 0,
             marginBottom: kindredSpacing.lg,
-            marginHorizontal: kindredSpacing.screenH,
-            paddingVertical: kindredSpacing.sm,
+            paddingVertical: kindredSpacing.xs,
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <ElementGlyph element={natal.dayMasterWuXing} color={kindredDark.seal} size={34} />
-          <View style={{ flex: 1 }}>
-            <Text style={[kindredType.caption, { color: kindredDark.textMuted, letterSpacing: 1 }]}>
-              {ELEMENT_KICKER[locale]}
-            </Text>
-            <Text
-              style={[
-                kindredType.body,
-                { color: kindredDark.seal, fontWeight: '600', letterSpacing: 0.3 },
-              ]}
-            >
-              {copy.open}
-            </Text>
-          </View>
+          <ElementGlyph
+            element={natal.dayMasterWuXing}
+            color={WUXING_COLOR[natal.dayMasterWuXing] ?? kindredDark.accent}
+            size={16}
+          />
+          <Text
+            style={[
+              kindredType.caption,
+              { color: kindredDark.accent, fontWeight: '500', letterSpacing: 0.3 },
+            ]}
+          >
+            {copy.open}
+          </Text>
         </Pressable>
       </Animated.View>
 
@@ -443,12 +434,12 @@ export default function ReadingHomeScreen() {
             paddingHorizontal: 12,
             borderRadius: 999,
             borderWidth: StyleSheet.hairlineWidth,
-            borderColor: kindredDark.seal,
+            borderColor: kindredDark.border,
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Plus color={kindredDark.seal} size={16} strokeWidth={1.9} />
-          <Text style={[kindredType.caption, { color: kindredDark.seal, fontWeight: '600' }]}>
+          <Plus color={kindredDark.accent} size={16} strokeWidth={1.9} />
+          <Text style={[kindredType.caption, { color: kindredDark.accent, fontWeight: '600' }]}>
             {t(locale, 'bondList.add')}
           </Text>
         </Pressable>

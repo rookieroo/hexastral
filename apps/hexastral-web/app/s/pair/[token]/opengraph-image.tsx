@@ -8,7 +8,7 @@ import { ImageResponse } from 'next/og'
 import { AUSPICE_FOOTER_LINK, pickCopy } from '@/lib/auspice-share'
 
 export const runtime = 'nodejs'
-export const alt = 'Auspice — 好日子 (Good Days)'
+export const alt = 'Yuun — 好日子 (Good Days)'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -60,9 +60,9 @@ const TITLE: Record<string, string> = {
 }
 
 const MALFORMED: Record<string, string> = {
-  'zh-Hans': 'Auspice 两人好日子 —— 链接无效。',
-  'zh-Hant': 'Auspice 兩人好日子 —— 連結無效。',
-  ja: 'Auspice 二人の吉日 —— リンクが無効です。',
+  'zh-Hans': 'Yuun 两人好日子 —— 链接无效。',
+  'zh-Hant': 'Yuun 兩人好日子 —— 連結無效。',
+  ja: 'Yuun 二人の吉日 —— リンクが無効です。',
   en: 'Good days for the two of you — link malformed.',
 }
 

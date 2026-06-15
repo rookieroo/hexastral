@@ -55,12 +55,12 @@ async function resolveInvitation(token: string): Promise<InvitationContext | nul
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { token, locale } = await params
   const ctx = await resolveInvitation(token)
-  if (!ctx) return { title: 'Kindred' }
+  if (!ctx) return { title: 'Yuel' }
 
   const titles: Record<string, (name: string) => string> & { en: (name: string) => string } = {
-    en: (n) => `${n} invited you · Kindred`,
-    zh: (n) => `${n} 邀你看看 · Kindred`,
-    tw: (n) => `${n} 邀你看看 · Kindred`,
+    en: (n) => `${n} invited you · Yuel`,
+    zh: (n) => `${n} 邀你看看 · Yuel`,
+    tw: (n) => `${n} 邀你看看 · Yuel`,
     ja: (n) => `${n} さんからの招待 · 縁`,
   }
   const titleFn = titles[locale] ?? titles.en
