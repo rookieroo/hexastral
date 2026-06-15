@@ -64,22 +64,6 @@ seal, `backgroundColor: kindredDark.bg`, ~line 99), which is intentional. Don't
 guess-fix; get a marked screenshot to pinpoint (seal vs a divider vs a dark ground
 leaking) before touching it.
 
-### Personal-report 划词 SelectionActionBar
-The solo reading long-press jumps **straight to chat**; it should show the same
-划词 bar the synastry report uses (copy / chat / highlight), modelled on
-`components/SelectionActionBar.tsx` + the `(bonds)/[id].tsx` wiring. NOTE: the
-personal report has **no** timeline/what-if, so it gets the bar only — no
-`LivingLayerFab`. (The return-to-report nav + personal chat framing already shipped,
-commit `9e58ad3`.) Long-press wiring lives in `ReadingReport.tsx` (`onLongPress` →
-`askParagraph`) → `(reading)/index.tsx` `handleAskAI`.
-
-### "Let go" black-hole animation
-Releasing a thread (解缘) should play an animation: the night sky spawns a black hole
-that swallows the let-go node, then it's gone. Today it's a plain `confirmDelete`
-Alert + optimistic list removal (`(reading)/index.tsx` `confirmDelete`, `useBondList`
-`deleteBond`). Home sky is Skia (`components/home/SkyField.tsx` / `SkyHero.tsx`) —
-the black hole would live there, triggered on a successful `deleteBond`.
-
 ---
 
 ## Already shipped this session (for context)
@@ -90,3 +74,6 @@ the black hole would live there, triggered on a successful `deleteBond`.
 - Birth-edit: stale-birth list tag (`basedOnStaleBirth`), edit-copy, and the Pro
   in-place **recompute** (`POST /:id/recompute`).
 - Timeline Phase 1 (this doc's top): 10y default + density + see-further door.
+- Solo reading 划词 bar (copy / chat / highlight; highlights persist by chartHash).
+- Let-go black-hole animation: the released thread is swallowed by an accretion-ring
+  collapse in SkyHero (was: drift outward + fade). Wants an on-device tuning pass.
