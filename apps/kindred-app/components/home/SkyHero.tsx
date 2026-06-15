@@ -32,6 +32,7 @@ import {
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -41,6 +42,10 @@ const HALO_HOT = '#e6c88c'
 const COOL = '#bcccea' // cool silver — the others in your orbit
 const COOL_HOT = '#e4edff'
 const STAR_HOT = '#ffffff'
+// 解缘 black hole — a faint ring of light (accretion) that opens at the let-go star
+// then collapses. Transparent center + edge, bright at ~0.8 → reads as a ring, not
+// a disc (a dark disc would vanish on the dark sky).
+const VOID_RING = ['#e4edff00', '#e4edff00', '#e4edffcc', '#e4edff00']
 
 /** Hue-preserving fade to alpha 0 (mirrors the SVG stops: same colour, opacity→0).
  *  Skia parses #RRGGBBAA, so appending '00' is a transparent twin of the colour. */
@@ -278,34 +283,53 @@ function ThreadStar({
   glowColors: string[]
   coreColors: string[]
 }) {
-  // presence: 1 = seated in orbit, 0 = gone. A vacated slot (a bond you let go of)
-  // animates OUT — drifting outward off its tether as it fades — instead of
-  // popping; a new bond fades IN, settling inward to its orbit. The faint gravity
-  // line is cut instantly (解缘 severs the tie, the star drifts free into the dark).
+  // presence: 1 = seated in orbit, 0 = gone. 解缘 (active true→false) opens a black
+  // hole AT the star: an accretion ring blooms, the star is pulled in (shrinks) and
+  // fades, then the ring collapses to nothing. A new bond simply fades in at its
+  // seat. The gravity line is cut instantly (the tie severs the moment you let go).
   const presence = useSharedValue(active ? 1 : 0)
+  const swallow = useSharedValue(0)
+  const wasActive = useRef(active)
   useEffect(() => {
     presence.value = withTiming(active ? 1 : 0, {
       duration: active ? 520 : 760,
       easing: active ? Easing.out(Easing.cubic) : Easing.in(Easing.quad),
     })
-  }, [active, presence])
+    if (wasActive.current && !active) {
+      // The swallow pulse: ring opens fast, then collapses as the star is consumed.
+      swallow.value = 0
+      swallow.value = withSequence(
+        withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 480, easing: Easing.in(Easing.cubic) })
+      )
+    }
+    wasActive.current = active
+  }, [active, presence, swallow])
+
+  // Seated at its live orbit point — the hole forms here, so the star collapses in
+  // place (no outward drift now; the black hole does the work).
   const c = useDerivedValue(() => {
     const q = pos.value[idx] ?? { x: cx, y: cy }
-    const dx = q.x - cx
-    const dy = q.y - cy
-    const len = Math.hypot(dx, dy) || 1
-    const drift = (1 - presence.value) * 60 // px outward as it leaves / inward as it arrives
-    return vec(q.x + (dx / len) * drift, q.y + (dy / len) * drift)
+    return vec(q.x, q.y)
   })
+  // Star shrinks as the hole pulls it in (swallow), fades as it leaves (presence).
+  const glowR = useDerivedValue(() => 7 * (1 - swallow.value * 0.92))
+  const coreR = useDerivedValue(() => 2.4 * (1 - swallow.value * 0.92))
   const glowOpacity = useDerivedValue(() => appear.value * presence.value * 0.55)
   const coreOpacity = useDerivedValue(() => appear.value * presence.value)
+  // Accretion ring — radius opens then collapses with the swallow pulse.
+  const ringR = useDerivedValue(() => Math.max(0.01, swallow.value * 18))
+  const ringOpacity = useDerivedValue(() => swallow.value)
   return (
     <>
-      <Circle c={c} r={7} opacity={glowOpacity}>
-        <RadialGradient c={c} r={7} colors={glowColors} positions={[0, 0.5, 1]} />
+      <Circle c={c} r={ringR} opacity={ringOpacity}>
+        <RadialGradient c={c} r={ringR} colors={VOID_RING} positions={[0, 0.55, 0.82, 1]} />
       </Circle>
-      <Circle c={c} r={2.4} opacity={coreOpacity}>
-        <RadialGradient c={c} r={2.4} colors={coreColors} positions={[0, 0.5, 1]} />
+      <Circle c={c} r={glowR} opacity={glowOpacity}>
+        <RadialGradient c={c} r={glowR} colors={glowColors} positions={[0, 0.5, 1]} />
+      </Circle>
+      <Circle c={c} r={coreR} opacity={coreOpacity}>
+        <RadialGradient c={c} r={coreR} colors={coreColors} positions={[0, 0.5, 1]} />
       </Circle>
     </>
   )
