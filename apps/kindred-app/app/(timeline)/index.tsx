@@ -5,9 +5,10 @@
  * turning points ahead (流年 冲/合, either side's 大运 transition), merged and
  * privacy-projected server-side (no counterpart birth ever crosses the wire).
  *
- * Free = current year + all (≤3) bonds, no look-ahead. Pro (kindred_pro /
- * universe_pro) = full +15y path. The server is authoritative on the gate; this
- * screen renders what it returns and surfaces the upsell when `pro` is false.
+ * Gate (2026-06): a subscription wall, symmetric with what-if. Free = no nodes
+ * (the server early-returns the upsell) → this screen shows the paywall + a
+ * locked preview. Pro (kindred_pro / universe_pro) = the full +15y path, 12-month
+ * 流月, and the push timetable. The server is authoritative on the gate.
  *
  * Tapping a node deep-explains it via POST /api/bonds/timeline/explain
  * (bondId-keyed; the counterpart's chart stays server-side, D2).
@@ -145,6 +146,41 @@ export default function TimelineScreen() {
     )
   }
 
+  // Free tier = the wall (the server returns no nodes for non-Pro now — the living
+  // layer is the subscription moat, mirroring what-if). Show the paywall as the
+  // screen's primary content so a free user always lands on the upsell, never an
+  // endless loader or the onboarding empty state.
+  if (!pro) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        <Header onBack={() => router.back()} />
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: kindredSpacing.screenH,
+            paddingTop: kindredSpacing.xl,
+            paddingBottom: kindredSpacing.xxl,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={{
+              alignItems: 'center',
+              gap: kindredSpacing.sm,
+              marginBottom: kindredSpacing.xl,
+            }}
+          >
+            <KindredMoon size={64} />
+            <Text style={[kindredType.title, { color: kindredDark.text }]}>
+              {bondName || t(locale, 'timeline.title')}
+            </Text>
+          </View>
+          <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
+          <LockedPreview locale={locale} />
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
   if (nodes.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -194,11 +230,9 @@ export default function TimelineScreen() {
           ) : null}
         </View>
 
-        {!pro ? (
-          <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
-        ) : null}
-
-        {/* Near-term 流月 strip is the ego (all-bonds) view — hide it in per-bond mode. */}
+        {/* Past the `!pro` wall above this is the Pro view (server returns nodes
+            only for Pro). Near-term 流月 strip is the ego (all-bonds) view — hide
+            it in per-bond mode. */}
         {!bondId && liuyue.length > 0 ? (
           <LiuYueStrip
             liuyue={liuyue}
@@ -235,17 +269,6 @@ export default function TimelineScreen() {
             </View>
           )
         })}
-
-        {!pro ? (
-          <Text
-            style={[
-              kindredType.caption,
-              { color: kindredDark.textMuted, textAlign: 'center', marginTop: kindredSpacing.sm },
-            ]}
-          >
-            {t(locale, 'timeline.freeNote')}
-          </Text>
-        ) : null}
       </ScrollView>
     </SafeAreaView>
   )
@@ -475,6 +498,52 @@ function UpsellBanner({ locale, onPress }: { locale: Locale; onPress: () => void
         {t(locale, 'timeline.upsell.cta')}
       </Text>
     </Pressable>
+  )
+}
+
+/** The locked feature list shown under the wall — what Pro unlocks, as calm
+ *  dashed ghost rows so the value is legible without showing real nodes. */
+function LockedPreview({ locale }: { locale: Locale }) {
+  const items = [
+    t(locale, 'timeline.locked.years'),
+    t(locale, 'timeline.locked.liuyue'),
+    t(locale, 'timeline.locked.push'),
+  ]
+  return (
+    <View style={{ marginTop: kindredSpacing.xl, gap: kindredSpacing.sm }}>
+      <Text style={[kindredType.seal, { color: kindredDark.textSecondary }]}>
+        {t(locale, 'timeline.locked.title')}
+      </Text>
+      {items.map((label) => (
+        <View
+          key={label}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: kindredSpacing.sm,
+            borderWidth: 0.5,
+            borderColor: kindredDark.border,
+            borderStyle: 'dashed',
+            borderRadius: kindredRadius.md,
+            paddingVertical: kindredSpacing.md,
+            paddingHorizontal: kindredSpacing.lg,
+          }}
+        >
+          <View
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: 3.5,
+              borderWidth: 1.5,
+              borderColor: kindredDark.textMuted,
+            }}
+          />
+          <Text style={[kindredType.caption, { color: kindredDark.textSecondary, flex: 1 }]}>
+            {label}
+          </Text>
+        </View>
+      ))}
+    </View>
   )
 }
 

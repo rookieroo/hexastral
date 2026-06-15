@@ -5,9 +5,11 @@
  *   GET  /api/bonds/timeline           — merged, privacy-projected nodes + Pro push timetable
  *   POST /api/bonds/timeline/explain   — deep-explain one node (bondId-keyed; D2-safe)
  *
- * Free tier = current year + all (≤3) bonds, no push. Pro (kindred_pro /
- * universe_pro) = +15y look-ahead + the `notifications` timetable (the moat).
- * The server is authoritative on the gate; `pro`/`upsell` come straight back.
+ * Gate (2026-06): the timeline is a subscription wall, symmetric with what-if.
+ * Free tier = no nodes (the server early-returns `{ pro:false, upsell }`); Pro
+ * (kindred_pro / universe_pro) = the full +15y axis, 12-month 流月, and the
+ * `notifications` push timetable (the moat). Server is authoritative on the gate;
+ * `pro`/`upsell` come straight back.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -23,7 +25,7 @@ import type {
 
 export interface UseBondsTimelineResult {
   nodes: BondsTimelineNode[]
-  /** 流月 living layer — near-term months. Free = current month; Pro = 12. */
+  /** 流月 living layer — near-term months. Free = none (wall); Pro = 12. */
   liuyue: BondsTimelineNode[]
   /** Pro-only local-push timetable; empty for free tier. */
   notifications: BondsTimelineNotification[]
@@ -35,6 +37,24 @@ export interface UseBondsTimelineResult {
   refetch: () => Promise<void>
   /** Deep-explain a node. Returns the result, or null on failure. */
   explainNode: (input: BondsTimelineExplainInput) => Promise<BondsTimelineExplainResult | null>
+}
+
+/** Reject if `p` hasn't settled within `ms` — so a stalled request surfaces as a
+ *  retryable error instead of an endless loading state. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Request timed out')), ms)
+    p.then(
+      (v) => {
+        clearTimeout(timer)
+        resolve(v)
+      },
+      (e) => {
+        clearTimeout(timer)
+        reject(e)
+      }
+    )
+  })
 }
 
 export function useBondsTimeline(): UseBondsTimelineResult {
@@ -51,7 +71,14 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await unwrap<BondsTimelineResponse>(await kindredBonds(client).timeline.$get())
+      // Bound the request so a stalled response can never leave the screen on its
+      // loader forever (the "一直 loading" bug). The server early-returns for free
+      // users now, so this mainly guards the Pro +15y path / a flaky network — on
+      // timeout we surface an error with Retry instead of an endless spinner.
+      const data = await withTimeout(
+        (async () => unwrap<BondsTimelineResponse>(await kindredBonds(client).timeline.$get()))(),
+        20_000
+      )
       setNodes(data.nodes)
       setLiuyue(data.liuyue ?? [])
       setNotifications(data.notifications)

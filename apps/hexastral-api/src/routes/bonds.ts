@@ -1530,14 +1530,31 @@ bondRoutes.get('/', async (c) => {
 // 无 KV 缓存 → 永不陈旧。plan §2.2 明示「缓存非必需」, 且 §7 把「失效点漏一处则轴不更新」
 // 列为风险 —— 重算即读消除该风险类。若日后 compute 成本显现再加 per-user KV 缓存 + 失效。
 //
-// 闸 (BT.6, plan §5-Q3 已定): kindred_pro/universe_pro = 前瞻全轴(+15y) + 主动推送;
-// 免费 = 当前年 + **全部** bond (免费上限 3 个 resonance, 已够慷慨; 奖励裂变 —— 拉来 3 段
-// 关系的用户能看到全部 3 段的本年节点), 无推送。前瞻全轴与推送是护城河, Pro only。
+// 闸 (BT.6, 2026-06 收紧): timeline 与 make-if 对称 = 订阅硬墙。免费层在顶部即提前返回
+// upsell (零节点)，不跑 ego 合并 —— founder「订阅解锁全部节点」。kindred_pro/universe_pro =
+// 全部 bond 合并 + 前瞻全轴(+15y) + 满 12 月流月 + 主动推送时刻表 (护城河)。
+// (旧行为「免费=当前年全部 bond」那条免费重路径偶发请求悬挂 → 客户端一直 loading; 提前
+//  返回既对齐定价又根除悬挂。)
 //
 // 注意路由顺序: 静态 `/timeline` 须先于 `/:id` 命中 (Hono RegExpRouter 静态优先, 仍置于前)。
 bondRoutes.get('/timeline', async (c) => {
   const userId = requireUserId(c)
   const db = c.get('db')
+
+  // 闸 (BT.6) — 与 make-if 对称: 订阅是 living layer 的护城河，免费层在此即见 paywall。
+  // 历史行为是免费层也跑全量 ego 查询 + 合并 (只是窗口收窄到当前年)，那条重路径偶发悬挂
+  // → 客户端「一直 loading」(make-if 因提前返回反而即时弹 paywall)。现按 founder「订阅解锁
+  // 全部节点」对齐: 免费层不返回任何节点，提前返回 upsell；全轴/流月/推送均 Pro only。
+  const isPro = await userHasCapability(db, userId, 'kindred')
+  if (!isPro) {
+    return jsonOk(c, {
+      nodes: [],
+      liuyue: [],
+      notifications: [],
+      pro: false,
+      upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
+    })
+  }
 
   // 本我生辰 (canonical, D2: 仅 users 表持全精度本我盘)
   const ego = await db
@@ -1565,8 +1582,6 @@ bondRoutes.get('/timeline', async (c) => {
     timeIndex: ego.birthTimeIndex,
     gender: ego.birthGender as '男' | '女',
   }
-
-  const isPro = await userHasCapability(db, userId, 'kindred')
 
   // active bonds — 最早创建在前, 让免费层「第 1 个 bond」稳定。
   const rows = await db
@@ -1629,28 +1644,21 @@ bondRoutes.get('/timeline', async (c) => {
     })
   }
 
-  // 闸 (BT.6) + 视图窗口: 全部 bond 都进合并 (免费层奖励裂变); 前瞻深度与推送区分 Pro/免费。
+  // Pro only (免费层已在顶部提前返回): 全部 bond 进合并，前瞻全轴 + 流月 + 推送时刻表。
   const currentYear = new Date().getUTCFullYear()
   const timeline = buildEgoTimeline(egoBirth, resolved, {
     fromYear: currentYear,
-    toYear: isPro ? currentYear + 15 : currentYear, // 免费仅当前年, Pro 前瞻 15 年
+    toYear: currentYear + 15, // Pro 前瞻 15 年
     notifyFromDate: new Date(),
   })
-  // 主动推送是护城河 → Pro only。免费层全展示当前年(全部 bond)钩子节点, 但不排程推送。
-  if (!isPro) timeline.notifications = []
 
-  // 流月 living layer (近期月度明细) —— 订阅价值。免费层尝鲜本月一格, Pro 看满 12 个月,
-  // 与「免费=当前年 / Pro=前瞻」在月粒度上一致。无推送 (流月不推)。
+  // 流月 living layer (近期月度明细) —— 满 12 个月 (订阅价值)。无推送 (流月不推)。
   timeline.liuyue = buildEgoLiuYue(egoBirth, resolved, {
     fromDate: new Date(),
-    months: isPro ? 12 : 1,
+    months: 12,
   })
 
-  return jsonOk(c, {
-    ...timeline,
-    pro: isPro,
-    ...(isPro ? {} : { upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS } }),
-  })
+  return jsonOk(c, { ...timeline, pro: true })
 })
 
 // ── POST /timeline/explain — 节点深解分发 (BT.4, ADR-0014) ─────────────────────
