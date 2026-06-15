@@ -1,29 +1,7 @@
 # Kindred (yuel) — living-layer & report TODO
 
-Carry-over backlog from the 2026-06 review session. Phases 1 + 2 of the timeline /
-what-if value work shipped (see "Already shipped" below). What remains, in priority
-order, with enough context to act cold.
-
----
-
-## Phase 3 — free/Pro depth gating (锁纵深, not 年限)
-
-**Why:** today timeline + what-if are **fully** Pro-gated (free sees nothing — the
-server early-returns `{ pro:false, upsell }`). That hides all the value; the cleaner
-split (decided in the audit) is **gate depth, not span**:
-
-- **Free**: the **next 12 months** — a near-term taste of both timeline + what-if.
-- **Pro**: the **10-year** node interpretations + the 10-year decision推演 + the
-  hidden "看更远" (already built) + the push timetable (already Pro).
-
-**Where**
-- Timeline gate: `app/(timeline)/index.tsx` (`if (!pro)` wall) +
-  `bonds.ts` GET `/timeline` (currently early-returns for non-Pro). Give free the
-  near-term slice instead of nothing.
-- What-if gate: `bonds.ts` POST `/:id/makeif` (returns `windows` + `longterm`).
-- Phase 2 (the 10y tier) is now SHIPPED, so this is UNBLOCKED: gate the `longterm`
-  years (and the 10y timeline nodes) for Pro; hand free the near-term slice
-  (≤12 months of `windows` + the current-year timeline) instead of an empty wall.
+Carry-over backlog from the 2026-06 review session. Phases 1–3 of the timeline /
+what-if value work shipped (see "Already shipped" below). One item remains.
 
 ---
 
@@ -52,3 +30,7 @@ leaking) before touching it.
 - Solo reading 划词 bar (copy / chat / highlight; highlights persist by chartHash).
 - Let-go black-hole animation: the released thread is swallowed by an accretion-ring
   collapse in SkyHero (was: drift outward + fade). Wants an on-device tuning pass.
+- Free/Pro depth gating (Phase 3): free now gets a near-term taste — the monthly
+  what-if windows + a ~3-month 流月 timeline slice + upsell cards; the 10-year
+  `longterm` + full axis + push stay the Pro moat. Timeline free path runs only the
+  light buildEgoLiuYue, never the heavy buildEgoTimeline (no loading regression).
