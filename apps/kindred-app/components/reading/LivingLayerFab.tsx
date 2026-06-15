@@ -12,10 +12,11 @@
  * of nodes), What-if = GitBranch (the branching futures), Chat = MessageCircle.
  *
  * One shared `progress` (0 closed … 1 open) drives BOTH the FAB glyph morph and the
- * discs, so they read as a single gesture: on open the discs pop out of the cinnabar
- * FAB one by one (staggered translate-up + scale + fade, starting from behind it)
- * while the glyph pivots; on close they retract back into it. Paper-styled (it
- * floats over the 宣纸 report).
+ * discs, so they read as a single gesture: on open the discs fan out one by one
+ * along a quarter-ring around the cinnabar toggle (translate along the radius +
+ * scale + fade, starting from behind it); on close they retract back into it. The
+ * arc opens up-and-left so nothing leaves the screen at the bottom-right. Sits well
+ * above the bottom edge so the 划词 selection bar never crowds it. Paper-styled.
  */
 
 import { kindredPaper, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
@@ -41,7 +42,12 @@ import Animated, {
 
 const FAB_SIZE = 52
 const DISC_SIZE = 46
-const DISC_GAP = 14
+// Distance from the FAB centre to each disc centre — just clear of the FAB ring.
+const ARC_RADIUS = 74
+// Square that fully contains the FAB + the up-and-left arc, so every disc stays
+// inside the wrapper's bounds (touches outside an ancestor's frame aren't reliably
+// delivered). FAB anchors bottom-right; the arc fills up + left from there.
+const WRAP = ARC_RADIUS + DISC_SIZE / 2 + FAB_SIZE / 2 + 8
 
 export interface LivingLayerFabProps {
   labels: { timeline: string; whatif: string; chat: string }
@@ -69,7 +75,7 @@ export function LivingLayerFab({
     })
   }, [open, progress])
 
-  // Bottom → top (nearest the FAB first). Chat only when the report can route to it.
+  // First disc nearest "up", last nearest "left". Chat only when routable.
   const actions: Array<{ key: string; Icon: LucideIcon; label: string; onPress: () => void }> = [
     { key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline },
     { key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf },
@@ -82,8 +88,9 @@ export function LivingLayerFab({
       style={{
         position: 'absolute',
         right: kindredSpacing.lg,
-        bottom: insetBottom + kindredSpacing.lg,
-        alignItems: 'center',
+        bottom: insetBottom + kindredSpacing.xxl,
+        width: WRAP,
+        height: WRAP,
         zIndex: 20,
       }}
     >
@@ -92,6 +99,7 @@ export function LivingLayerFab({
           key={action.key}
           progress={progress}
           index={i}
+          total={actions.length}
           open={open}
           Icon={action.Icon}
           label={action.label}
@@ -106,6 +114,9 @@ export function LivingLayerFab({
         accessibilityRole='button'
         accessibilityState={{ expanded: open }}
         style={{
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
           width: FAB_SIZE,
           height: FAB_SIZE,
           borderRadius: FAB_SIZE / 2,
@@ -129,7 +140,7 @@ export function LivingLayerFab({
  * GitCommitHorizontal (collapsed — a node resting on the line) pivots a quarter
  * turn and crossfades into GitCommitVertical (expanded — the same node turned up
  * onto the spine, i.e. "tap to collapse"). Driven by the shared progress so it
- * pivots in lockstep with the discs popping out.
+ * pivots in lockstep with the discs fanning out.
  */
 function FabToggleIcon({ progress }: { progress: SharedValue<number> }) {
   // The two glyphs are 90° rotations of each other, so a continuous quarter-turn
@@ -159,14 +170,16 @@ function FabToggleIcon({ progress }: { progress: SharedValue<number> }) {
 }
 
 /**
- * One action disc. At rest it sits `rest` px above the FAB; closed it collapses
- * onto the FAB (translateY down + scale + fade) so opening looks like it pops out
- * from behind the cinnabar disc. A per-index stagger window makes them emerge one
- * by one. `pointerEvents` follows `open` so the hidden discs never eat taps.
+ * One action disc. It rests centred on the FAB and, when open, slides out to its
+ * seat on the arc (angle by index, spread across the up→left quarter); closed it
+ * collapses back onto the FAB (scale + fade) so opening looks like it pops from
+ * behind the cinnabar disc. A per-index stagger window makes them emerge one by
+ * one. `pointerEvents` follows `open` so the hidden discs never eat taps.
  */
 function FabDisc({
   progress,
   index,
+  total,
   open,
   Icon,
   label,
@@ -174,25 +187,37 @@ function FabDisc({
 }: {
   progress: SharedValue<number>
   index: number
+  total: number
   open: boolean
   Icon: LucideIcon
   label: string
   onPress: () => void
 }) {
-  const rest = FAB_SIZE + DISC_GAP + index * (DISC_SIZE + DISC_GAP)
+  // Seat angle: 90° (straight up) → 180° (straight left); a lone disc sits up-left.
+  const deg = total > 1 ? 90 + (index / (total - 1)) * 90 : 135
+  const rad = (deg * Math.PI) / 180
+  const dx = ARC_RADIUS * Math.cos(rad) // 90°→0, 180°→−R (left)
+  const dy = -ARC_RADIUS * Math.sin(rad) // 90°→−R (up), 180°→0
   const start = index * 0.12
   const style = useAnimatedStyle(() => {
     const p = interpolate(progress.value, [start, start + 0.55], [0, 1], Extrapolation.CLAMP)
     return {
       opacity: p,
-      transform: [{ translateY: (1 - p) * rest }, { scale: 0.4 + 0.6 * p }],
+      transform: [{ translateX: dx * p }, { translateY: dy * p }, { scale: 0.4 + 0.6 * p }],
     }
   })
 
   return (
     <Animated.View
       pointerEvents={open ? 'auto' : 'none'}
-      style={[{ position: 'absolute', bottom: rest, left: (FAB_SIZE - DISC_SIZE) / 2 }, style]}
+      style={[
+        {
+          position: 'absolute',
+          right: (FAB_SIZE - DISC_SIZE) / 2,
+          bottom: (FAB_SIZE - DISC_SIZE) / 2,
+        },
+        style,
+      ]}
     >
       <Pressable
         onPress={onPress}

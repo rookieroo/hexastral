@@ -42,7 +42,6 @@ import {
   type ResolvedBond,
   resolveResonanceCounterpart,
 } from '../lib/bonds-timeline'
-import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { logEvent } from '../lib/event-log'
 import { sendPushEvent } from '../lib/push'
 import { buildBondMakeIf } from '../lib/relationship-makeif'
@@ -1168,10 +1167,10 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   const mirrorBondId = crypto.randomUUID()
 
   // Update invitation + A's bond. A's synastry chapters for THIS bond unlock via
-  // the per-bond `chaptersUnlocked` flag set below — the only synastry unlock path
-  // now. The users.unlockedChapterCount bump remains for the NATAL deep report only
-  // ("your partner showed up, unlock your own reading" — see lib/chapter-access.ts);
-  // it no longer opens any other synastry bond. MAX-clamp guards a future Pro tier.
+  // the per-bond `chaptersUnlocked` flag set below — the only synastry unlock path.
+  // A 合盘 accept deliberately does NOT touch users.unlockedChapterCount: the natal
+  // deep report (chapter-access.ts) has its own invite mechanic and must not be
+  // unlocked for free by a relationship invitation.
   await db.batch([
     db
       .update(bondInvitations)
@@ -1192,13 +1191,6 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(userBonds.id, invitation.bondId)),
-    db
-      .update(users)
-      .set({
-        unlockedChapterCount: sql`MAX(${users.unlockedChapterCount}, ${CHAPTER_UNLOCK_CAP})`,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(users.id, invitation.inviterUserId)),
   ])
 
   await db.insert(userBonds).values({
