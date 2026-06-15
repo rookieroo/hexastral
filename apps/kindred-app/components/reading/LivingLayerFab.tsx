@@ -11,7 +11,13 @@
  */
 
 import { kindredPaper, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import { GitBranch, GitCommitVertical, GitFork, GitMerge, type LucideIcon } from 'lucide-react-native'
+import {
+  GitBranch,
+  GitCommitVertical,
+  GitFork,
+  GitMerge,
+  type LucideIcon,
+} from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, {
