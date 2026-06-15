@@ -1882,7 +1882,15 @@ bondRoutes.post('/:id/makeif', async (c) => {
     )
   }
 
-  const makeif = buildBondMakeIf(egoBirth, counterpart, { fromDate: new Date(), months: 12 })
+  // Near-term monthly windows (next 12 months) + the long-horizon yearly tier
+  // (the next 10 years — "哪一年最适合推进重大一步"). One call, both tiers.
+  const now = new Date()
+  const makeif = buildBondMakeIf(egoBirth, counterpart, {
+    fromDate: now,
+    months: 12,
+    fromYear: now.getUTCFullYear(),
+    years: 10,
+  })
   return jsonOk(c, { ...makeif, pro: true })
 })
 

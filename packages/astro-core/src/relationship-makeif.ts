@@ -18,6 +18,7 @@ import { STEM_WUXING, WUXING_GENERATE, WUXING_OVERCOME } from './constants'
 import { calculateDaYun } from './dayun'
 import {
   getRelationshipLiuYueNodes,
+  getRelationshipTimelineNodes,
   type RelationshipPerson,
   type RelLiuYueOptions,
 } from './relationship-timeline'
@@ -218,6 +219,166 @@ function buildVerdict(
   const tail =
     worst.score < 0 && worst.date !== best.date
       ? `而${ym(worst)}（${worst.ganZhi}）流月冲日支，宜避其锋、少做重大决定。`
+      : ''
+
+  return `${head}${tail}（此为趋势参考，非定论；真正的决定仍在你们手中。）`
+}
+
+// ── 长程 (按年) 决策推演 — 未来 N 年里哪一年最适合推进重大一步 ────────────────────
+
+/** One candidate YEAR, scored + flagged. The long-horizon analogue of a window. */
+export interface RelDecisionYear {
+  year: number
+  /** 立春 of the year, ISO `YYYY-MM-DD` (UTC). */
+  date: string
+  /** Year pillar 干支 label (e.g. "乙巳"). */
+  ganZhi: string
+  /** Year stem 五行. */
+  element: WuXing
+  /** Higher = more favorable to act in. */
+  score: number
+  lean: DecisionLean
+  isYongshen: boolean
+  feedsYongshen: boolean
+  harmony: boolean
+  clash: boolean
+  /** Move-specific 神煞 (same semantics as the monthly window; not in `score`). */
+  taohua: boolean
+  yima: boolean
+  shishang: boolean
+  reasons: string[]
+}
+
+export interface RelDecisionYearResult {
+  yongshen: WuXing
+  yongshenNote: string
+  /** Candidate years in chronological order (each scored). */
+  years: RelDecisionYear[]
+  /** Highest-scoring year (the recommended window); undefined if none. */
+  best?: RelDecisionYear
+  verdict: string
+}
+
+export interface RelDecisionYearOptions {
+  /** First calendar year to rank (inclusive). */
+  fromYear: number
+  /** How many years forward (default 10 — the near-term that matters). */
+  years?: number
+}
+
+/**
+ * 推演这段关系未来 N 年里「哪一年最适合推进重大一步」(结婚 / 要孩子 / 同居…)。纯函数。
+ *
+ * 与按月版同一评分体系, 粒度改为流年: 用神当令 +3 / 流年生用神 +1 / 流年合双方日支 +2(双方
+ * +1) / 流年冲日支 −2(双方 −1)。复用已测的 getRelationshipTimelineNodes 逐年 冲/合 标注,
+ * 故无新增 五行/冲合 数学。A = 用户, B = 对方。
+ */
+export function planRelationshipDecisionByYear(
+  personA: RelationshipPerson,
+  personB: RelationshipPerson,
+  opts: RelDecisionYearOptions
+): RelDecisionYearResult {
+  const chartA = calculateDaYun(personA.input, personA.gender).pillars
+  const chartB = calculateDaYun(personB.input, personB.gender).pillars
+  const elA = STEM_WUXING[chartA.day.stem]
+  const elB = STEM_WUXING[chartB.day.stem]
+  const ys = relationshipYongshen(elA, elB)
+  const taohuaA = getTaoHua(chartA.year.branch as EarthlyBranch)
+  const taohuaB = getTaoHua(chartB.year.branch as EarthlyBranch)
+  const yimaA = getYiMa(chartA.year.branch as EarthlyBranch)
+  const yimaB = getYiMa(chartB.year.branch as EarthlyBranch)
+  const shishangElA = WUXING_GENERATE[elA]
+  const shishangElB = WUXING_GENERATE[elB]
+
+  const span = Math.max(1, opts.years ?? 10)
+  const fromYear = opts.fromYear
+  const toYear = fromYear + span - 1
+  const { nodes } = getRelationshipTimelineNodes(personA, personB, { fromYear, toYear })
+
+  const years: RelDecisionYear[] = nodes
+    .filter((n) => n.type === '流年' && n.year >= fromYear && n.year <= toYear)
+    .map((n) => {
+      const element = STEM_WUXING[n.ganZhi.stem]
+      const branch = n.ganZhi.branch as EarthlyBranch
+      const isYongshen = element === ys.element
+      const feedsYongshen = !isYongshen && WUXING_GENERATE[element] === ys.element
+      const harmony = n.harmonyA || n.harmonyB
+      const bothHarmony = n.harmonyA && n.harmonyB
+      const clash = n.clashA || n.clashB
+      const bothClash = n.clashA && n.clashB
+      const taohua = branch === taohuaA || branch === taohuaB
+      const yima = branch === yimaA || branch === yimaB
+      const shishang = element === shishangElA || element === shishangElB
+
+      let score = 0
+      const reasons: string[] = []
+      if (isYongshen) {
+        score += 3
+        reasons.push(`流年${element}当令，正合你们的用神【${ys.element}】，这一年气最顺`)
+      } else if (feedsYongshen) {
+        score += 1
+        reasons.push(`流年${element}生用神【${ys.element}】，为推进蓄势`)
+      }
+      if (harmony) {
+        score += bothHarmony ? 3 : 2
+        reasons.push(bothHarmony ? '流年合双方日支，彼此皆顺' : '流年合一方日支，气氛和缓')
+      }
+      if (clash) {
+        score += bothClash ? -3 : -2
+        reasons.push(bothClash ? '流年冲双方日支，易两头起波' : '流年冲一方日支，留心摩擦')
+      }
+
+      return {
+        year: n.year,
+        date: n.effectiveDate,
+        ganZhi: n.ganZhi.label,
+        element,
+        score,
+        lean: leanOf(score),
+        isYongshen,
+        feedsYongshen,
+        harmony,
+        clash,
+        taohua,
+        yima,
+        shishang,
+        reasons,
+      }
+    })
+
+  let best: RelDecisionYear | undefined
+  for (const y of years) {
+    if (!best || y.score > best.score) best = y
+  }
+
+  return {
+    yongshen: ys.element,
+    yongshenNote: ys.note,
+    years,
+    best,
+    verdict: buildYearVerdict(ys.element, years, best),
+  }
+}
+
+function buildYearVerdict(
+  yongshen: WuXing,
+  years: RelDecisionYear[],
+  best?: RelDecisionYear
+): string {
+  if (years.length === 0 || !best) {
+    return '未来十年内关系大致平稳，没有特别突出的时机，顺其自然、重在日常经营。'
+  }
+  let worst = years[0]!
+  for (const y of years) if (y.score < worst.score) worst = y
+
+  const head =
+    best.score > 0
+      ? `这段关系的用神是【${yongshen}】。未来十年里，${best.year}年（${best.ganZhi}）最合用神，气最顺，宜把重大的一步放在这一年前后。`
+      : `这段关系的用神是【${yongshen}】。未来十年没有特别旺的年份，宜稳扎稳打，把重心放在日常经营上。`
+
+  const tail =
+    worst.score < 0 && worst.year !== best.year
+      ? `而${worst.year}年（${worst.ganZhi}）流年冲日支，宜避其锋、缓做重大决定。`
       : ''
 
   return `${head}${tail}（此为趋势参考，非定论；真正的决定仍在你们手中。）`

@@ -317,9 +317,16 @@ export type {
   DecisionLean,
   RelDecisionResult,
   RelDecisionWindow,
+  RelDecisionYear,
+  RelDecisionYearOptions,
+  RelDecisionYearResult,
   RelMakeIfOptions,
 } from './relationship-makeif'
-export { planRelationshipDecision, relationshipYongshen } from './relationship-makeif'
+export {
+  planRelationshipDecision,
+  planRelationshipDecisionByYear,
+  relationshipYongshen,
+} from './relationship-makeif'
 // 关系命运时间轴 (Relationship Timeline — Kindred B-yuan.1)
 export type {
   RelationshipPerson,
