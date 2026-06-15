@@ -111,20 +111,36 @@ async function signedApiFetch(
   userId: string,
   method: 'GET' | 'POST',
   path: string,
-  body?: unknown
+  body?: unknown,
+  // Bound EVERY signed call. Chapter generation is a slow inline LLM call; without
+  // a ceiling a stalled connection leaves `fetch` pending forever → the report's
+  // Promise.all never settles → the skeleton screen is stuck (the bug). On abort
+  // we return null so the caller degrades to its placeholder + a retry, never a
+  // frozen skeleton. Generous (60s) so a real generation isn't cut short.
+  timeoutMs = 60_000
 ): Promise<Response | null> {
   const requestBody = body != null ? JSON.stringify(body) : ''
   const signed = await signRequest({ body: requestBody, userId, method, path })
   if (!signed) return null
-  return fetch(`${config.apiUrl}${path}`, {
-    method,
-    headers: {
-      ...(body != null ? { 'Content-Type': 'application/json' } : {}),
-      Authorization: `Bearer ${userId}`,
-      ...signed,
-    },
-    ...(body != null ? { body: requestBody } : {}),
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(`${config.apiUrl}${path}`, {
+      method,
+      headers: {
+        ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+        Authorization: `Bearer ${userId}`,
+        ...signed,
+      },
+      ...(body != null ? { body: requestBody } : {}),
+      signal: controller.signal,
+    })
+  } catch {
+    // Aborted (timeout) or a network error → null; callers fall back gracefully.
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /**

@@ -177,46 +177,62 @@ reportChapterRoutes.post('/chapter', async (c) => {
 
   const timeBoundSlugs = new Set(['ch4_timeline', 'ch5_hidden', 'ch6_action'])
 
-  const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
-    isPro: input.isPro,
-    preferFlash: timeBoundSlugs.has(input.slug),
-    // Trimmed from 2400 → fits a flagship generation inside its per-model timeout
-    // (router PER_MODEL_TIMEOUT_MS) so a slow Kimi falls back instead of 504-ing.
-    maxTokens: 2000,
-    temperature: 0.85,
-    thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',
-    metricLabel: `report-chapter:${input.slug}`,
-    locale: input.locale,
-    jsonMode: true,
-    responseSchema: toJsonSchema(outputSchema),
-  })
+  // Generate + validate with ONE retry. A model can return valid JSON of the
+  // WRONG shape (e.g. ch4 yields a single yearlyRhythm item, ch1 zero sections) —
+  // that passes callWithFallback (no model error) but fails the schema, and a hard
+  // 500 there left the report's first chapters un-generated. A single re-roll
+  // self-heals the transient under-production before we give up.
+  let parsed: z.infer<typeof outputSchema> | null = null
+  let lastIssue = ''
+  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
+    const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
+      isPro: input.isPro,
+      preferFlash: timeBoundSlugs.has(input.slug),
+      // Trimmed from 2400 → fits a flagship generation inside its per-model timeout
+      // (router PER_MODEL_TIMEOUT_MS) so a slow Kimi falls back instead of 504-ing.
+      maxTokens: 2000,
+      // Nudge the re-roll a touch lower so it's steadier on the shape.
+      temperature: attempt === 0 ? 0.85 : 0.6,
+      thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',
+      metricLabel: `report-chapter:${input.slug}${attempt > 0 ? ':retry' : ''}`,
+      locale: input.locale,
+      jsonMode: true,
+      responseSchema: toJsonSchema(outputSchema),
+    })
 
-  const jsonStr = extractJson(raw)
-  if (!jsonStr) {
-    console.error('[report-chapter] failed to extract JSON', input.slug, raw.slice(0, 500))
-    throw new HTTPException(500, { message: 'Failed to parse chapter response' })
+    const jsonStr = extractJson(raw)
+    if (!jsonStr) {
+      lastIssue = 'extract'
+      console.error('[report-chapter] failed to extract JSON', input.slug, raw.slice(0, 500))
+      continue
+    }
+    let parsedRaw: unknown
+    try {
+      parsedRaw = JSON.parse(jsonStr)
+    } catch (err) {
+      lastIssue = 'parse'
+      console.error('[report-chapter] JSON.parse failed', input.slug, err, jsonStr.slice(0, 500))
+      continue
+    }
+    const result = outputSchema.safeParse(parsedRaw)
+    if (!result.success) {
+      lastIssue = 'shape'
+      console.error(
+        `[report-chapter] schema validation failed (attempt ${attempt + 1})`,
+        input.slug,
+        result.error.issues,
+        jsonStr.slice(0, 500)
+      )
+      continue
+    }
+    parsed = result.data
   }
 
-  let parsedRaw: unknown
-  try {
-    parsedRaw = JSON.parse(jsonStr)
-  } catch (err) {
-    console.error('[report-chapter] JSON.parse failed', input.slug, err, jsonStr.slice(0, 500))
-    throw new HTTPException(500, { message: 'Invalid chapter response structure' })
+  if (!parsed) {
+    throw new HTTPException(500, { message: `Invalid chapter response (${lastIssue})` })
   }
 
-  const result = outputSchema.safeParse(parsedRaw)
-  if (!result.success) {
-    console.error(
-      '[report-chapter] schema validation failed',
-      input.slug,
-      result.error.issues,
-      jsonStr.slice(0, 500)
-    )
-    throw new HTTPException(500, { message: 'Invalid chapter response shape' })
-  }
-
-  return c.json(result.data)
+  return c.json(parsed)
 })
 
 function getLangLabel(lang: string): string {
