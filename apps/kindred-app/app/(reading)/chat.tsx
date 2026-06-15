@@ -39,8 +39,11 @@ export default function ReadingChatRoute() {
 
   const copy = useMemo<ReadingChatStrings>(
     () => ({
-      title: t('chat.title'),
-      emptyHint: t('chat.empty'),
+      // Personal-reading framing — the synastry chat (couple-framed `chat.*`) lives
+      // on /(bonds)/chat. The functional strings stay shared; only the framing
+      // (title / empty / suggestions) is "about your own chart", not "you two".
+      title: t('readingChat.title'),
+      emptyHint: t('readingChat.empty'),
       placeholder: t('chat.placeholder'),
       loading: t('chat.loading'),
       errorGeneric: t('chat.error'),
@@ -48,7 +51,11 @@ export default function ReadingChatRoute() {
       buyCredits: t('chat.buyCredits'),
       freeRemaining: t('chat.freeRemaining'),
       poolRemaining: t('chat.poolRemaining'),
-      suggestions: [t('chat.suggest1'), t('chat.suggest2'), t('chat.suggest3')],
+      suggestions: [
+        t('readingChat.suggest1'),
+        t('readingChat.suggest2'),
+        t('readingChat.suggest3'),
+      ],
     }),
     [t]
   )

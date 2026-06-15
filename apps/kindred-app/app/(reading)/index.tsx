@@ -261,11 +261,12 @@ export default function ReadingHomeScreen() {
     [threads]
   )
 
-  // 划词 AI chat (K3): close the overlay, then push the chat seeded with the
-  // chapter slug + (optionally) the long-pressed paragraph as a quoted draft.
+  // 划词 AI chat (K3): push the chat seeded with the chapter slug + (optionally)
+  // the long-pressed paragraph as a quoted draft. Keep the reading overlay mounted
+  // underneath (chat is a route pushed above it) so popping the chat returns to the
+  // report — not the home, as it did when we closed the overlay first.
   const handleAskAI = useCallback(
     ({ slug, quote }: { slug: string; quote: string | null }) => {
-      setReadingOpen(false)
       router.push({
         pathname: '/(reading)/chat',
         params: { slug, ...(quote ? { quote } : {}) },
