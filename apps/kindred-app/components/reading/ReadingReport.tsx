@@ -42,6 +42,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { SelectionActionBar } from '@/components/SelectionActionBar'
+import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart } from '@/lib/solo/natal'
@@ -61,6 +63,21 @@ import {
   strengthLabel,
   useReadingI18n,
 } from './reading-i18n'
+
+type ClipboardModule = typeof import('expo-clipboard')
+let clipboardModule: ClipboardModule | null | undefined
+/** Lazy — stale dev clients may lack the ExpoClipboard native module. */
+function getClipboard(): ClipboardModule | null {
+  if (clipboardModule !== undefined) return clipboardModule
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    clipboardModule = require('expo-clipboard') as ClipboardModule
+    return clipboardModule
+  } catch {
+    clipboardModule = null
+    return null
+  }
+}
 
 /* ── palette — the shared 宣纸 document layer (kindredPaper): paper ground, dark
    ink body, bronze section accent, cinnabar seal. Promoted to @zhop/hexastral-
@@ -259,6 +276,14 @@ export function ReadingReport({
     return computeChartHash(birth.solarDate, birth.timeIndex ?? 0, birth.gender)
   }, [birth])
 
+  // 划词 (K3): the picked paragraph drives the action bar; highlights persist per
+  // chart (the solo report has no bondId, so chartHash is the stable key).
+  const [pickedQuote, setPickedQuote] = useState<string | null>(null)
+  const [highlights, setHighlights] = useState<string[]>([])
+  useEffect(() => {
+    if (chartHash) void loadHighlights(chartHash).then(setHighlights)
+  }, [chartHash])
+
   const draftSolarDate = birth?.solarDate ?? null
   const draftGender = birth?.gender ?? null
 
@@ -390,6 +415,8 @@ export function ReadingReport({
           : undefined,
         askChapterLabel: t('reading.askChapter'),
         askHint: t('reading.askParagraphHint'),
+        onPickQuote: setPickedQuote,
+        highlightedQuotes: highlights,
       }
     } else {
       const lc = LOCKED_CHAPTERS[detailChapter.idx]
@@ -521,6 +548,45 @@ export function ReadingReport({
           <ChapterDetail {...detailProps} fonts={fonts} />
         </Animated.View>
       ) : null}
+
+      {/* 划词 action bar — slides up when a paragraph is long-pressed. Mirrors the
+          synastry report (copy / chat / highlight). The solo report has no
+          timeline/what-if, so there's no LivingLayerFab here — just this bar. */}
+      <SelectionActionBar
+        quote={pickedQuote}
+        highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
+        labels={{
+          copy: t('reading.copy'),
+          chat: t('reading.chat'),
+          highlight: t('reading.highlight'),
+        }}
+        onCopy={() => {
+          const Clip = getClipboard()
+          if (pickedQuote && Clip) void Clip.setStringAsync(pickedQuote)
+          setPickedQuote(null)
+        }}
+        onChat={
+          onAskAI
+            ? () => {
+                const q = pickedQuote
+                setPickedQuote(null)
+                // Reuse the active chapter's slug-aware ask (detailProps.onAsk).
+                if (q) detailProps?.onAsk?.(q)
+              }
+            : undefined
+        }
+        onHighlight={() => {
+          const q = pickedQuote
+          if (!q) return
+          const next = highlights.includes(q)
+            ? highlights.filter((x) => x !== q)
+            : [...highlights, q]
+          setHighlights(next)
+          if (chartHash) void saveHighlights(chartHash, next)
+          setPickedQuote(null)
+        }}
+        onClose={() => setPickedQuote(null)}
+      />
     </View>
   )
 }
@@ -594,6 +660,8 @@ function ChapterDetail({
   onAsk,
   askChapterLabel,
   askHint,
+  onPickQuote,
+  highlightedQuotes,
   fonts,
 }: {
   label: string
@@ -613,15 +681,21 @@ function ChapterDetail({
   onAsk?: (quote: string | null) => void
   askChapterLabel?: string
   askHint?: string
+  /** 划词 (K3): long-press a paragraph → raise the action bar with this quote. */
+  onPickQuote?: (quote: string) => void
+  /** Persisted highlighted paragraphs — painted with a cinnabar wash. */
+  highlightedQuotes?: string[]
   fonts: Fonts
 }) {
   // Paragraph-level ask: split the prose into its '\n\n' blocks (the shape
   // flattenChapterContent produces) so each one can be long-pressed.
   const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
   const askParagraph = (para: string) => {
-    if (!onAsk) return
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
-    onAsk(para)
+    // Long-press raises the 划词 action bar (copy / chat / highlight) with this
+    // paragraph; fall back to direct chat when no picker is wired.
+    if (onPickQuote) onPickQuote(para)
+    else onAsk?.(para)
   }
   return (
     <View style={S.paper}>
@@ -657,18 +731,24 @@ function ChapterDetail({
                 {askHint ? (
                   <Text style={[S.askHint, { fontFamily: fonts.label }]}>{askHint}</Text>
                 ) : null}
-                {paragraphs.map((para, i) => (
-                  <Pressable
-                    key={i}
-                    onLongPress={() => askParagraph(para)}
-                    delayLongPress={350}
-                    style={({ pressed }) => [pressed && S.paraPressed]}
-                  >
-                    <Text style={[S.detailBody, S.paraBlock, { fontFamily: fonts.body }]}>
-                      {para}
-                    </Text>
-                  </Pressable>
-                ))}
+                {paragraphs.map((para, i) => {
+                  const isHighlighted = highlightedQuotes?.includes(para)
+                  return (
+                    <Pressable
+                      key={i}
+                      onLongPress={() => askParagraph(para)}
+                      delayLongPress={350}
+                      style={({ pressed }) => [
+                        isHighlighted && S.paraHighlighted,
+                        pressed && S.paraPressed,
+                      ]}
+                    >
+                      <Text style={[S.detailBody, S.paraBlock, { fontFamily: fonts.body }]}>
+                        {para}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
                 {askChapterLabel ? (
                   <Pressable
                     onPress={() => onAsk(null)}
@@ -820,6 +900,12 @@ const S = StyleSheet.create({
   askHint: { color: P.muted, fontSize: 12, letterSpacing: 0.5, marginBottom: 16 },
   paraBlock: { marginBottom: 20 },
   paraPressed: { backgroundColor: P.hairSoft, marginHorizontal: -8, paddingHorizontal: 8 },
+  paraHighlighted: {
+    backgroundColor: 'rgba(176,74,52,0.1)',
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
   askChapterBtn: { marginTop: 24, alignSelf: 'flex-start' },
   askChapterText: {
     color: P.bronze,
