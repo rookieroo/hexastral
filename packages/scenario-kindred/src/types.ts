@@ -443,6 +443,26 @@ export interface RelMakeIfWindow {
   reasons: string[]
 }
 
+/** One scored candidate YEAR from the long-horizon (10y) tier. */
+export interface RelMakeIfYear {
+  /** stable key `${year}` */
+  key: string
+  year: number
+  date: string
+  ganZhi: string
+  element: string
+  score: number
+  lean: DecisionLean
+  isYongshen: boolean
+  feedsYongshen: boolean
+  harmony: boolean
+  clash: boolean
+  taohua: boolean
+  yima: boolean
+  shishang: boolean
+  reasons: string[]
+}
+
 /** Response from POST /api/bonds/:id/makeif. */
 export interface RelMakeIfResponse {
   /** True iff kindred_pro / universe_pro. */
@@ -460,6 +480,12 @@ export interface RelMakeIfResponse {
   bestKey?: string
   /** deterministic zh synthesis verdict. */
   verdict?: string
+  /** Long-horizon yearly ranking — "哪一年最适合推进重大一步" (the next 10 years). */
+  longterm?: {
+    years: RelMakeIfYear[]
+    bestYearKey?: string
+    verdict: string
+  }
 }
 
 // ── Credit / quota status ───────────────────────────────────────────────────

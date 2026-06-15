@@ -24,11 +24,15 @@ import {
   type DecisionLean,
   elementName,
   formatLean,
+  formatLongtermVerdict,
   formatVerdict,
   formatWindowMonth,
   formatWindowReasons,
+  formatYearLabel,
+  formatYearReasons,
   type RelMakeIfResponse,
   type RelMakeIfWindow,
+  type RelMakeIfYear,
   useBondMakeIf,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -60,7 +64,13 @@ const MOVE_WEIGHTS: Record<
   distance: { harmony: 0, yongshen: 1, taohua: 0, yima: 3, shishang: 0 }, // 异地 — 驿马 + 用神
   child: { harmony: 1, yongshen: 1, taohua: 0, yima: 0, shishang: 3 }, // 要孩子 — 食伤 + 合
 }
-function moveBonus(w: RelMakeIfWindow, move: RelMove): number {
+function moveBonus(
+  w: Pick<
+    RelMakeIfWindow,
+    'isYongshen' | 'feedsYongshen' | 'harmony' | 'taohua' | 'yima' | 'shishang'
+  >,
+  move: RelMove
+): number {
   const wt = MOVE_WEIGHTS[move]
   const ys = w.isYongshen ? 1 : w.feedsYongshen ? 0.5 : 0
   return (
@@ -165,6 +175,14 @@ function Body({
     )
   }, [data.windows, move])
   const bestKey = move ? ranked[0]?.key : data.bestKey
+  // The decade-ahead tier — same move re-weighting, year granularity.
+  const longterm = data.longterm
+  const rankedYears = useMemo(() => {
+    const years = longterm?.years ?? []
+    if (!move) return years
+    return [...years].sort((a, b) => b.score + moveBonus(b, move) - (a.score + moveBonus(a, move)))
+  }, [longterm, move])
+  const bestYearKey = move ? rankedYears[0]?.key : longterm?.bestYearKey
   return (
     <ScrollView
       contentContainerStyle={{
@@ -341,6 +359,43 @@ function Body({
               />
             ))}
           </View>
+
+          {/* The decade ahead — the 10-year tier: which YEAR best fits a big step. */}
+          {longterm && rankedYears.length > 0 ? (
+            <>
+              <Text
+                style={[
+                  kindredType.seal,
+                  {
+                    color: kindredDark.textSecondary,
+                    marginTop: kindredSpacing.xl,
+                    marginBottom: kindredSpacing.sm,
+                  },
+                ]}
+              >
+                {t(locale, 'makeif.years.label')}
+              </Text>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textMuted, lineHeight: 19, marginBottom: kindredSpacing.sm },
+                ]}
+              >
+                {formatLongtermVerdict(data, locale)}
+              </Text>
+              <View style={{ gap: kindredSpacing.sm }}>
+                {rankedYears.map((y) => (
+                  <YearRow
+                    key={y.key}
+                    y={y}
+                    yongshen={data.yongshen ?? ''}
+                    isBest={y.key === bestYearKey}
+                    locale={locale}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
         </>
       )}
     </ScrollView>
@@ -385,6 +440,56 @@ function WindowCard({
         ) : (
           <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
             {formatLean(w.lean, locale)}
+          </Text>
+        )}
+      </View>
+      {reasons.length > 0 ? (
+        <Text style={[kindredType.caption, { color: kindredDark.textSecondary, lineHeight: 19 }]}>
+          {reasons.join(locale === 'en' ? ' · ' : '；')}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+function YearRow({
+  y,
+  yongshen,
+  isBest,
+  locale,
+}: {
+  y: RelMakeIfYear
+  yongshen: string
+  isBest: boolean
+  locale: Locale
+}) {
+  const reasons = formatYearReasons(y, yongshen, locale)
+  return (
+    <View
+      style={{
+        borderWidth: isBest ? 1 : 0.5,
+        borderColor: isBest ? kindredDark.accent : kindredDark.border,
+        borderRadius: kindredRadius.md,
+        padding: kindredSpacing.lg,
+        backgroundColor: kindredDark.card,
+        gap: kindredSpacing.xs,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
+        <View
+          style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: leanColor(y.lean) }}
+        />
+        <Text style={[kindredType.body, { color: kindredDark.text }]}>
+          {formatYearLabel(y, locale)} · {y.ganZhi}
+        </Text>
+        <View style={{ flex: 1 }} />
+        {isBest ? (
+          <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
+            {t(locale, 'makeif.best')}
+          </Text>
+        ) : (
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+            {formatLean(y.lean, locale)}
           </Text>
         )}
       </View>

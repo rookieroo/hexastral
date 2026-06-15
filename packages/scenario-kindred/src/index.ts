@@ -40,9 +40,12 @@ export { isCjkLocale, kindredFonts } from './kindredFonts'
 export {
   elementName,
   formatLean,
+  formatLongtermVerdict,
   formatVerdict,
   formatWindowMonth,
   formatWindowReasons,
+  formatYearLabel,
+  formatYearReasons,
 } from './lib/makeif-format'
 export {
   formatLeadLabel,
