@@ -1670,11 +1670,15 @@ bondRoutes.get('/timeline', async (c) => {
     })
   }
 
-  // Pro only (免费层已在顶部提前返回): 全部 bond 进合并，前瞻全轴 + 流月 + 推送时刻表。
+  // Pro only (免费层已在顶部提前返回): 全部 bond 进合并，前瞻 + 流月 + 推送时刻表。
+  // 默认前瞻 10 年(短期最有意义); `?horizon=far` 打开更远(隐蔽口子, 30 年)。每年保留
+  // 平年锚点(keepRoutineYears) → 这 10 年都有可读节点, 而非稀疏的几个大运/冲合。
   const currentYear = new Date().getUTCFullYear()
+  const far = c.req.query('horizon') === 'far'
   const timeline = buildEgoTimeline(egoBirth, resolved, {
     fromYear: currentYear,
-    toYear: currentYear + 15, // Pro 前瞻 15 年
+    toYear: currentYear + (far ? 30 : 10),
+    keepRoutineYears: true,
     notifyFromDate: new Date(),
   })
 

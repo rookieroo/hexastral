@@ -49,7 +49,8 @@ export type KindredBondsRpc = {
   // Bonds timeline (BT.3/BT.4, ADR-0014). Registered before `/:id` server-side
   // so the static path wins; typed here for Kindred hooks.
   timeline: {
-    $get: () => Promise<Response>
+    /** `horizon: 'far'` opens the hidden beyond-10y view (Pro). */
+    $get: (opts?: { query?: { horizon?: 'far' } }) => Promise<Response>
     explain: {
       $post: (opts: { json: BondsTimelineExplainInput }) => Promise<Response>
     }

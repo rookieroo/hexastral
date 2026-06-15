@@ -90,6 +90,8 @@ export default function TimelineScreen() {
     isLoading,
     error,
     refetch,
+    far,
+    loadFurther,
     explainNode,
   } = useBondsTimeline()
 
@@ -269,6 +271,21 @@ export default function TimelineScreen() {
             </View>
           )
         })}
+
+        {/* Hidden door: the default axis is 10y (what matters near-term); a quiet
+            tap loads the beyond-10y view for those who want the long arc. */}
+        {pro && !far && nodes.length > 0 ? (
+          <Pressable
+            onPress={loadFurther}
+            hitSlop={8}
+            accessibilityRole='button'
+            style={{ alignItems: 'center', paddingTop: kindredSpacing.md }}
+          >
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
+              {t(locale, 'timeline.seeFurther')}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   )

@@ -161,6 +161,7 @@ export const translations: Translations = {
 
     'timeline.title': 'Timeline',
     'timeline.subtitle': 'The turning points ahead across every bond',
+    'timeline.seeFurther': 'See further out →',
     'timeline.empty.title': 'No nodes yet',
     'timeline.empty.body':
       'Add someone with their birth details to see the turning points you share.',
@@ -537,6 +538,7 @@ export const translations: Translations = {
 
     'timeline.title': '时间轴',
     'timeline.subtitle': '你与每段关系即将到来的转折点',
+    'timeline.seeFurther': '看更远 →',
     'timeline.empty.title': '还没有节点',
     'timeline.empty.body': '添加一位填好生辰的亲友,看看你们共有的关系转折。',
     'timeline.empty.cta': '添加牵绊 →',
@@ -895,6 +897,7 @@ export const translations: Translations = {
 
     'timeline.title': '時間軸',
     'timeline.subtitle': '你與每段關係即將到來的轉折點',
+    'timeline.seeFurther': '看更遠 →',
     'timeline.empty.title': '還沒有節點',
     'timeline.empty.body': '添加一位填好生辰的親友,看看你們共有的關係轉折。',
     'timeline.empty.cta': '添加牽絆 →',
@@ -1253,6 +1256,7 @@ export const translations: Translations = {
 
     'timeline.title': 'タイムライン',
     'timeline.subtitle': 'それぞれの関係に訪れる転機',
+    'timeline.seeFurther': 'もっと先を見る →',
     'timeline.empty.title': 'まだ節目がありません',
     'timeline.empty.body': '生年月日を入れた相手を追加すると、二人に訪れる関係の転機が見えます。',
     'timeline.empty.cta': '縁を追加 →',

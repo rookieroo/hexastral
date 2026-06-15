@@ -84,6 +84,10 @@ export interface ComposeBondsTimelineOptions {
   fromYear?: number
   /** 节点结束公历年(含)。默认 = 起始 + 90。 */
   toYear?: number
+  /** 保留 routine 流年(平年)作为低显著度节点 —— 给前瞻窗口足够密度(每年都有锚点),
+   *  而非只剩稀疏的 大运/冲合。默认 false(合并视图只留显著节点)。不影响推送(routine
+   *  从不推送)。 */
+  keepRoutineYears?: boolean
   /** 推送窗口起点 (默认现在)。 */
   notifyFromDate?: Date
   /** 推送窗口天数 (默认 400)。 */
@@ -153,6 +157,7 @@ export function composeBondsTimeline(
       kind: RelTimelineNodeType
       ganZhi: GanZhi
       daYunOf?: 'A' | 'B'
+      significance: RelNodeSignificance
       bonds: MergedBondRef[]
     }
   >()
@@ -163,7 +168,9 @@ export function composeBondsTimeline(
 
     for (const node of nodes) {
       // 流年: 仅当对「本我或该对方」构成 冲/合 才进合并视图 (per-bond 显著)。
-      if (node.type === '流年' && node.significance === 'routine') continue
+      // keepRoutineYears 时保留 routine 平年(作低显著度锚点, 给前瞻窗口密度)。
+      if (node.type === '流年' && node.significance === 'routine' && !opts.keepRoutineYears)
+        continue
 
       let key: string
       if (node.type === '流年') {
@@ -189,6 +196,10 @@ export function composeBondsTimeline(
         if (!existing.bonds.some((b) => b.bondId === bond.bondId)) {
           existing.bonds.push(ref)
         }
+        // 同年(LN:year)跨 bond 合并: 任一 bond 显著 → 整条升格(routine→notable)。
+        if (sigRank(node.significance) < sigRank(existing.significance)) {
+          existing.significance = node.significance
+        }
       } else {
         acc.set(key, {
           date: node.effectiveDate,
@@ -196,16 +207,18 @@ export function composeBondsTimeline(
           kind: node.type,
           ganZhi: node.ganZhi,
           daYunOf: node.daYunOf,
+          significance: node.significance,
           bonds: [ref],
         })
       }
     }
   }
 
-  // acc 里只有 大运(major) 与 至少对一个 bond 显著的 流年(notable); routine 流年 已在扇出时滤除。
+  // acc: 大运(major) + 显著 流年(notable); keepRoutineYears 时还含 routine 平年。
   const nodes: MergedNode[] = []
   for (const [key, m] of acc) {
-    const significance: RelNodeSignificance = m.kind === '大运' ? 'major' : 'notable'
+    // 大运 恒为 major; 流年 用累积的显著度 (notable 若任一 bond 冲/合, 否则 routine)。
+    const significance: RelNodeSignificance = m.kind === '大运' ? 'major' : m.significance
     nodes.push({
       key,
       date: m.date,

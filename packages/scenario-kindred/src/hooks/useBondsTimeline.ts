@@ -35,6 +35,10 @@ export interface UseBondsTimelineResult {
   isLoading: boolean
   error: Error | null
   refetch: () => Promise<void>
+  /** True once the viewer opened the hidden beyond-10y horizon. */
+  far: boolean
+  /** Open the beyond-10y horizon (Pro) — refetches the axis with `horizon=far`. */
+  loadFurther: () => void
   /** Deep-explain a node. Returns the result, or null on failure. */
   explainNode: (input: BondsTimelineExplainInput) => Promise<BondsTimelineExplainResult | null>
 }
@@ -66,6 +70,9 @@ export function useBondsTimeline(): UseBondsTimelineResult {
   const [upsell, setUpsell] = useState<BondsTimelineResponse['upsell']>(undefined)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
+  // Default axis is 10y; `loadFurther` flips this and the effect refetches the
+  // beyond-10y view (Pro hidden door). Stays on once opened for the session.
+  const [far, setFar] = useState<boolean>(false)
 
   const refetch = useCallback(async () => {
     setIsLoading(true)
@@ -73,10 +80,15 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     try {
       // Bound the request so a stalled response can never leave the screen on its
       // loader forever (the "一直 loading" bug). The server early-returns for free
-      // users now, so this mainly guards the Pro +15y path / a flaky network — on
+      // users now, so this mainly guards the Pro axis / a flaky network — on
       // timeout we surface an error with Retry instead of an endless spinner.
       const data = await withTimeout(
-        (async () => unwrap<BondsTimelineResponse>(await kindredBonds(client).timeline.$get()))(),
+        (async () =>
+          unwrap<BondsTimelineResponse>(
+            await kindredBonds(client).timeline.$get(
+              far ? { query: { horizon: 'far' } } : undefined
+            )
+          ))(),
         20_000
       )
       setNodes(data.nodes)
@@ -91,11 +103,15 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     } finally {
       setIsLoading(false)
     }
-  }, [client, onError])
+  }, [client, onError, far])
 
   useEffect(() => {
     void refetch()
   }, [refetch])
+
+  // Flipping `far` changes refetch's identity → the effect above refetches with
+  // the beyond-10y horizon. One-way for the session (no need to collapse back).
+  const loadFurther = useCallback(() => setFar(true), [])
 
   const explainNode = useCallback(
     async (input: BondsTimelineExplainInput): Promise<BondsTimelineExplainResult | null> => {
@@ -111,5 +127,17 @@ export function useBondsTimeline(): UseBondsTimelineResult {
     [client, onError]
   )
 
-  return { nodes, liuyue, notifications, pro, upsell, isLoading, error, refetch, explainNode }
+  return {
+    nodes,
+    liuyue,
+    notifications,
+    pro,
+    upsell,
+    isLoading,
+    error,
+    refetch,
+    far,
+    loadFurther,
+    explainNode,
+  }
 }
