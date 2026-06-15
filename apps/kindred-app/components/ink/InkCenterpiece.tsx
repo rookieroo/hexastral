@@ -209,17 +209,56 @@ function saltFromKind(kind: string): number {
   return (h >>> 0) % 4099
 }
 
-function generate(mode: Mode, s: number, salt: number): Clouds {
+/**
+ * Per-chapter COMPOSITION — the fix for "前五章的主图几乎一样". The salt above only
+ * perturbs the speckle, so when a couple's essence resolves to one mode for most
+ * chapters (a 生 pair is `merge` almost everywhere), all five looked alike.
+ *
+ * A composition reorients the whole field — it rotates the two-mass arrangement
+ * axis and scales how tight/loose the masses sit — so two chapters in the SAME
+ * mode read as different paintings (one horizontal + fused, the next tilted +
+ * open, …) without touching the mode's meaning. ch1 stays canonical (rot 0) since
+ * it's the couple's at-rest essence; later chapters each take their own tilt.
+ */
+interface Composition {
+  rot: number
+  sep: number
+}
+const CHAPTER_COMPOSITION: Record<string, Composition> = {
+  first_impression: { rot: 0, sep: 1.0 },
+  communication: { rot: 0.34, sep: 0.9 },
+  conflict: { rot: -0.42, sep: 1.16 },
+  complement: { rot: 0.54, sep: 0.96 },
+  monthly_outlook: { rot: -0.2, sep: 1.1 },
+  long_term_advice: { rot: 0.16, sep: 1.04 },
+}
+function deriveComposition(kind: string): Composition {
+  const known = CHAPTER_COMPOSITION[kind]
+  if (known) return known
+  // Unknown kinds: derive a stable tilt from the salt so they still differ.
+  const salt = saltFromKind(kind)
+  return { rot: ((salt % 9) - 4) * 0.12, sep: 0.92 + (salt % 5) * 0.05 }
+}
+
+function generate(mode: Mode, s: number, salt: number, comp: Composition): Clouds {
   const inkFaint: SkPoint[] = []
   const inkBold: SkPoint[] = []
   const paleFaint: SkPoint[] = []
   const paleBold: SkPoint[] = []
   const rnd = mulberry32(BASE_SEED[mode] + salt * 1009)
   const gauss = gaussFrom(rnd)
+  // Reorient every point around the field centre: the mode lays out its masses in
+  // canonical space (so seams / falloffs stay coherent), then the composition tilts
+  // + spreads the finished field. Pure rotation preserves mass shape; `sep` (kept
+  // near 1) gently tightens or opens the spread.
+  const cos = Math.cos(comp.rot)
+  const sin = Math.sin(comp.rot)
   const push = (ink: boolean, x: number, y: number) => {
     const bold = rnd() < 0.36
     const arr = ink ? (bold ? inkBold : inkFaint) : bold ? paleBold : paleFaint
-    arr.push({ x: x * s, y: y * s })
+    const dx = (x - CX) * comp.sep
+    const dy = (y - CY) * comp.sep
+    arr.push({ x: (CX + dx * cos - dy * sin) * s, y: (CY + dx * sin + dy * cos) * s })
   }
 
   if (mode === 'merge') {
@@ -437,6 +476,7 @@ export function InkCenterpiece({
   const height = (width * VH) / VW
   const s = width / VW
   const salt = useMemo(() => saltFromKind(kind), [kind])
+  const comp = useMemo(() => deriveComposition(kind), [kind])
   const isTransition = mode === 'transition'
   // Element tiers — the dark mass takes aEl, the pale mass bEl.
   const darkTier = darkTierFor(aEl)
@@ -444,14 +484,18 @@ export function InkCenterpiece({
 
   // Static geometry. Non-transition: one field. Transition: the `from` and `to`
   // endpoints of the morph — both generated ONCE; only opacity + slide animate
-  // between them.
+  // between them. The per-chapter `comp` reorients each so same-mode chapters
+  // don't render the same painting.
   const single = useMemo(
-    () => (isTransition ? null : generate(mode, s, salt)),
-    [isTransition, mode, s, salt]
+    () => (isTransition ? null : generate(mode, s, salt, comp)),
+    [isTransition, mode, s, salt, comp]
   )
   const morph = useMemo(
-    () => (isTransition ? { from: generate(from, s, salt), to: generate(to, s, salt) } : null),
-    [isTransition, from, to, s, salt]
+    () =>
+      isTransition
+        ? { from: generate(from, s, salt, comp), to: generate(to, s, salt, comp) }
+        : null,
+    [isTransition, from, to, s, salt, comp]
   )
 
   // from→to progress (0 = from, 1 = to). Driven through opacity + transform only —
