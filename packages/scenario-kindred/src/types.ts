@@ -107,6 +107,10 @@ export interface BondData {
   invitation: { expiresAt: string; targetEmail: string; resonateUrl?: string } | null
   relationshipStage: RelationshipStage | null
   todaySynastry: DailySynastry | null
+  /** True when this reading's birth snapshot no longer matches the viewer's current
+   *  birth info (they edited it after the report was generated). The report stays
+   *  as-is; the list tags it so the basis is clear. */
+  basedOnStaleBirth?: boolean
 }
 
 // ── Bond detail (single bond with full interpretation) ──────────────────────

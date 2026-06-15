@@ -1397,8 +1397,10 @@ bondRoutes.get('/', async (c) => {
       hookDimension: string | null
       personASolarDate: string
       personATimeIndex: number
+      personAGender: string
       personBSolarDate: string
       personBTimeIndex: number
+      personBGender: string
     }
   >()
   if (readingIds.length > 0) {
@@ -1413,8 +1415,10 @@ bondRoutes.get('/', async (c) => {
         hookDimension: pairReadings.hookDimension,
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
+        personAGender: pairReadings.personAGender,
         personBSolarDate: pairReadings.personBSolarDate,
         personBTimeIndex: pairReadings.personBTimeIndex,
+        personBGender: pairReadings.personBGender,
       })
       .from(pairReadings)
       .where(inArray(pairReadings.id, readingIds))
@@ -1457,6 +1461,16 @@ bondRoutes.get('/', async (c) => {
   // Check subscription for Pro-only features (todaySynastry)
   const isPro = await userHasCapability(db, userId, 'kindred')
 
+  // Viewer's current birth — used to flag bonds whose reading predates a later
+  // birth-info edit. The report is a snapshot; changing your birth doesn't touch
+  // it (see GET /:id), so the list tags those reports as "based on earlier birth".
+  // Coarse fields only (solarDate / timeIndex / gender) — matches the snapshot grain.
+  const viewer = await db
+    .select({ d: users.birthSolarDate, ti: users.birthTimeIndex, g: users.birthGender })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+
   // Compute today's day pillar once for synastry
   const now = new Date()
   const todayGanZhi = dayGanZhi(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate())
@@ -1466,6 +1480,25 @@ bondRoutes.get('/', async (c) => {
     const reading = b.hehunReadingId ? readingMap.get(b.hehunReadingId) : null
     const targetUser = b.targetUserId ? userMap.get(b.targetUserId) : null
     const invitation = invitationMap.get(b.id)
+
+    // A report is "stale" once it no longer reflects the viewer's current birth.
+    // The viewer is personA or personB depending on the bond; rather than resolve
+    // the side, flag stale when NEITHER snapshot matches current birth — exactly the
+    // case after the viewer edits their own birth (their old slot stops matching,
+    // and the counterpart never matched).
+    const basedOnStaleBirth =
+      !!reading &&
+      viewer?.d != null &&
+      !(
+        reading.personASolarDate === viewer.d &&
+        reading.personATimeIndex === viewer.ti &&
+        reading.personAGender === viewer.g
+      ) &&
+      !(
+        reading.personBSolarDate === viewer.d &&
+        reading.personBTimeIndex === viewer.ti &&
+        reading.personBGender === viewer.g
+      )
 
     // Compute daily synastry when both birth dates are available (Pro only)
     let todaySynastry = null
@@ -1506,6 +1539,7 @@ bondRoutes.get('/', async (c) => {
       targetUser,
       invitation: invitation ?? null,
       todaySynastry,
+      basedOnStaleBirth,
     }
   })
 

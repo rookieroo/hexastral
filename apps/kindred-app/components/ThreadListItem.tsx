@@ -107,6 +107,25 @@ export function ThreadListItem({ bond, locale, onPress, onDelete }: ThreadListIt
           {status.label ? (
             <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
           ) : null}
+          {/* This report predates a later birth-info edit — it stays as-is, but the
+              basis is flagged so the older 生辰 it used is clear. */}
+          {bond.basedOnStaleBirth ? (
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                marginTop: 2,
+                borderWidth: 0.5,
+                borderColor: kindredDark.border,
+                borderRadius: 4,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+              }}
+            >
+              <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11 }]}>
+                {t(locale, 'bond.staleBirth')}
+              </Text>
+            </View>
+          ) : null}
         </View>
         {hasValidElements(bond.aElement ?? undefined, bond.bElement ?? undefined) ? (
           <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
