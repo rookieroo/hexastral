@@ -746,7 +746,10 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
     const dtEnd = ymdCompact(ymdAdd(ymd, 1))
 
     const yi = day.goodFor.slice(0, 4).join('、') || '—'
-    const ji = day.avoid.slice(0, 4).join('、') || '—'
+    // 农历 date — leads every event title so the subscribed feed reads as a clean
+    // 万年历. It's the line most people want; the 通书 detail is demoted behind it,
+    // and the full 宜忌 lives in the notes (tap the event in Calendar to see it).
+    const lunar = `${day.lunarDate.monthName}${day.lunarDate.dayName}`
 
     // The PERSONAL feed (subject defined) must genuinely be 专属 — not the
     // universal 黄历 with one fit word tacked on. Lead with YOUR verdict + the
@@ -778,8 +781,9 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
           : personalization.fit === '吉'
             ? '于你得力，宜把握'
             : ''
-      summary = `于你${fitLabel}${reasonShort ? `·${reasonShort}` : ''} ${day.ganZhi}日`
+      summary = `${lunar} · 于你${fitLabel}${reasonShort ? `·${reasonShort}` : ''} · ${day.ganZhi}日`
       descParts = [
+        `农历：${lunar}`,
         `对你而言：${fitLabel}${reasonShort ? `（${reasonShort}）` : ''}`,
         diverge || null,
         `干支日：${day.ganZhi}（${day.element}）`,
@@ -789,8 +793,13 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
         `冲：${day.clash.clashAnimal}`,
       ]
     } else {
-      summary = `${day.ganZhi}日 · 宜 ${yi} · 忌 ${ji}`
+      // 万年历 title: 农历 first (always shown + complete), then the actionable 宜,
+      // then 干支日 LAST — it truncates first on a narrow widget, which is right:
+      // the 干支 is for 择日/八字 readers, who still get it in the wider month grid
+      // + the notes. 忌 moves to the notes only (the full 宜忌 is in-app by design).
+      summary = `${lunar} · 宜 ${yi} · ${day.ganZhi}日`
       descParts = [
+        `农历：${lunar}`,
         `干支日：${day.ganZhi}（${day.element}）`,
         `日辰：${day.dayOfficer}日`,
         day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
