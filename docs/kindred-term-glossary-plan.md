@@ -14,10 +14,22 @@ differentiator vs other 命理 apps — worth doing rigorously.
 4. Terms render consistently across all six chapters (today they drift: "Day Master's
    Wood" in one, "Jia's 乙木" in another).
 
-## Part A — canonical term data (the spine)
+## Part A — canonical term data (the spine) — ✅ DONE (P1)
 A curated table is the single source of truth for BOTH the generation prompt and the
 Settings page. Home: **`packages/astro-i18n`** — it already holds
 `explanations/{en,zh,ja}.ts` + signature types; add a `terms` module:
+
+> **Shipped.** `packages/astro-i18n/src/terms.ts` (types + accessors) +
+> `terms-data.ts` (69 curated terms, zh + en authored meaning-first; ja/ko fall
+> back to en). Accessors: `getTermByZh` / `getTerm` / `getTermsByCategory` /
+> `resolveTermMeaning` / `getTermCategoryLabel` / `getAllTerms`, all exported from
+> the package index. **Key design call:** this is deliberately SEPARATE from the
+> pre-existing `explainTerm` — that gives chart-MECHANICS captions ("Day Master
+> generates, same polarity") for the detail UI; `terms` gives plain-language
+> EFFECT ("their ambitions align") for synastry prose + a layperson glossary.
+> Same tokens, different register, different surfaces. Coverage: 五行(5) 天干(10)
+> 地支(12) 十神(10) 神煞(8) 格局(12) 合冲(6) 关系/用神通关日主(3) 周期(3).
+> `zh` keys match the engine/labelize tokens so lookups line up.
 
 ```
 interface TermEntry {
@@ -57,11 +69,11 @@ report's VISUAL seals/marks; this one decodes the 命理 TERMS). Renders the ast
 in the device locale. Reachable from Settings + (P4) from a tapped term in the report.
 
 ## Phasing
-- **P1** Curate the term table in `astro-i18n` (zh + en meaning-first; ja next). Highest
-  effort — it's the content.
+- **P1** ✅ Curate the term table in `astro-i18n` (zh + en meaning-first; ja/ko fall
+  back to en). 69 terms shipped in `terms.ts` + `terms-data.ts`.
 - **P2** svc-astro: zh/ja meaning-first directive + import the table for consistent
   glosses + the consistent person-reference rule. Deploy + generate-and-review.
-- **P3** The Settings 命理 glossary page (render the table).
+- **P3** The Settings 命理 glossary page (render `getTermsByCategory(locale)`).
 - **P4** (optional) In-report term linking: tap a term → its glossary entry / a sheet.
 
 ## Acceptance
