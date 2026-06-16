@@ -10,29 +10,19 @@ screenshots) opened more — see "Round 2" below.
 
 Done this round: en chapter title shrunk (no 3-line wrap); svc-astro en term handling
 made meaning-based (no literal "tiger-horse trinity"); **accept-invite skips the birth
-form when a saved birth exists** (`accept/[token].tsx` loads `loadSelfBirth()`, accepts
-with it); **pair-input name now required** (self + partner). Confirmed for the user: the
-synastry report + timeline + what-if are **八字-only** — no 紫薇/Zi Wei in the compute
-(that's a separate app, ming-pan). Still open:
+form when a saved birth exists**; **staged moon loader now shows while accepting an
+invite** (对齐天干地支 → 八字 → 合盘 → 生成报告, same loader the report uses); **reverted the
+pair-input name-requirement** (no onboarding friction — the user's call). Confirmed for
+the user: the synastry report + timeline + what-if are **八字-only** — no 紫薇/Zi Wei.
 
-- **Staged moon loader missing on form→reading.** The bond report (`(bonds)/[id].tsx`)
-  shows `GeneratingStages` on `isGenerating` (202), but the SOLO create flow
-  (`(onboarding)/reveal.tsx`) shows the plain `AutoMoonPhaseLoader` — no staged
-  carousel. Wire `GeneratingStages` into the create→reveal path (the stages exist).
-- **Name required for the RESONANCE path too** (pair-input/solo is done). Resonance
-  reports use the two ACCOUNT names (`users.name`): the inviter's + the accepter's.
-  Onboarding `self.tsx` collects no name today, and `accept/[token].tsx` collects none
-  (uses the account name, which may be null). To guarantee real names everywhere:
-  add a required name field to onboarding self + accept, persisted to `users.name`.
-- **Person references still inconsistent in the LLM output** (the deeper 甲乙/you/zy
-  root). The model writes "Jia's / Yi's" (romanized 甲乙), real names, AND "Day Master's
-  Wood" across chapters — so the client's 甲方/乙方 personalization only catches some.
-  Fix generation-side: prompt the model to refer to the pair by ONE consistent scheme
-  (ideally the real names, never 甲乙 / jiǎ-yǐ).
-- **Meaning-first terms in zh too.** 寅午三合局 is opaque even to zh readers; extend the
-  meaning-based directive to the zh path (only the en tone guide is refined so far),
-  and consider a curated term→meaning gloss for the worst offenders
-  (亡神 / 用神 / 日主 / 建禄格…). Heavy but a real differentiator — tune via generate+review.
+Remaining splits into two planned features + small follow-ups:
+
+- **命理 term meaning-first + a Settings glossary page** → see
+  **[docs/kindred-term-glossary-plan.md](kindred-term-glossary-plan.md)**. Also folds in
+  the **person-reference fix** (one consistent scheme, never 甲乙/jiǎ-yǐ) — solving that
+  generation-side is what lets name stay OPTIONAL (no required-name friction).
+- **合盘 on 八字 + 紫薇** (timeline / what-if grounded in both, cross-validating) → see
+  **[docs/kindred-ziwei-synastry-plan.md](kindred-ziwei-synastry-plan.md)**.
 
 ---
 
