@@ -491,6 +491,8 @@ export interface Strings {
   /** Pro 对你而言 calendar subscribe row + hint. */
   personalCalendarRow: string
   personalCalendarHint: string
+  /** Shown when minting / opening the personal calendar subscription fails. */
+  personalCalendarFailed: string
 }
 
 const zhHans: Strings = {
@@ -851,6 +853,7 @@ const zhHans: Strings = {
   appleCalendarSection: '系统日历',
   personalCalendarRow: '对你而言 · 专属日历',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系统日历（Pro）',
+  personalCalendarFailed: '暂时无法打开专属日历，请稍后重试。',
   appleCalendarSubscribeRow: '在 Apple 日历订阅黄历',
   appleCalendarSubscribeHint:
     '把每日干支、节气、宜忌同步到 iPhone / Mac 日历，不用打开 App 也能看见。',
@@ -1188,6 +1191,7 @@ const zhHant: Strings = {
   appleCalendarSection: '系統日曆',
   personalCalendarRow: '對你而言 · 專屬日曆',
   personalCalendarHint: '把每天的吉 / 平 / 凶同步到系統日曆（Pro）',
+  personalCalendarFailed: '暫時無法打開專屬日曆，請稍後重試。',
   appleCalendarSubscribeRow: '在 Apple 日曆訂閱黃曆',
   appleCalendarSubscribeHint:
     '把每日干支、節氣、宜忌同步到 iPhone / Mac 日曆，不用打開 App 也能看見。',
@@ -1552,6 +1556,7 @@ const ja: Strings = {
   appleCalendarSection: 'システムカレンダー',
   personalCalendarRow: 'あなたへ · 専用カレンダー',
   personalCalendarHint: '毎日の吉凶をシステムカレンダーに同期（Pro）',
+  personalCalendarFailed: '専用カレンダーを開けませんでした。しばらくして再試行してください。',
   appleCalendarSubscribeRow: 'Apple カレンダーに暦を購読',
   appleCalendarSubscribeHint:
     '毎日の干支・節気・宜忌を iPhone / Mac のカレンダーへ同期。アプリを開かなくても確認できます。',
@@ -1921,6 +1926,7 @@ const en: Strings = {
   appleCalendarSection: 'System calendar',
   personalCalendarRow: 'For-you calendar',
   personalCalendarHint: 'Sync your daily verdict to the system Calendar (Pro)',
+  personalCalendarFailed: "Couldn't open your personal calendar — please try again.",
   appleCalendarSubscribeRow: 'Subscribe in Apple Calendar',
   appleCalendarSubscribeHint:
     'Sync daily 干支, solar terms, and yi/ji to your iPhone / Mac Calendar so you see them without opening the app.',

@@ -54,19 +54,41 @@ const SIGN_PATH = '/api/auspice/calendar/sign'
  * HMAC-signed, opaque token URL — then opens the system Calendar subscribe. The
  * caller also gates on Pro + birth set for snappy UX; the server is the real gate.
  */
-export async function openPersonalCalendarSubscribe(birthDate: string): Promise<boolean> {
+export async function openPersonalCalendarSubscribe(
+  birthDate: string
+): Promise<{ ok: boolean; detail?: string }> {
+  let signUrl = ''
   try {
+    // RC must be configured for this; if it isn't, getAppUserID throws → 'rc:'.
     const appUserId = await Purchases.getAppUserID()
-    const signUrl = `${resolvePortfolioApiUrl()}${SIGN_PATH}?birthDate=${encodeURIComponent(
+    signUrl = `${resolvePortfolioApiUrl()}${SIGN_PATH}?birthDate=${encodeURIComponent(
       birthDate
     )}&u=${encodeURIComponent(appUserId)}`
+  } catch (err) {
+    console.warn('[calendar] getAppUserID failed', err)
+    return { ok: false, detail: `rc:${String((err as Error)?.message ?? err).slice(0, 60)}` }
+  }
+  let data: { url?: string }
+  try {
     const res = await fetch(signUrl, { headers: { accept: 'application/json' } })
-    if (!res.ok) return false
-    const data = (await res.json()) as { url?: string }
-    if (!data.url) return false
+    if (!res.ok) {
+      // 403 = server RC check says not-Pro; 503 = secret missing; 404 = route not
+      // deployed. (The prod endpoint currently returns 200, so a non-200 here means
+      // the app is hitting a DIFFERENT host — check EXPO_PUBLIC_API_URL in the build.)
+      console.warn('[calendar] personal sign failed', res.status, signUrl)
+      return { ok: false, detail: `sign:${res.status}` }
+    }
+    data = (await res.json()) as { url?: string }
+  } catch (err) {
+    console.warn('[calendar] sign fetch error', err, signUrl)
+    return { ok: false, detail: `fetch:${String((err as Error)?.message ?? err).slice(0, 60)}` }
+  }
+  if (!data.url) return { ok: false, detail: 'nourl' }
+  try {
     await Linking.openURL(data.url)
-    return true
-  } catch {
-    return false
+    return { ok: true }
+  } catch (err) {
+    console.warn('[calendar] openURL failed', err)
+    return { ok: false, detail: `open:${String((err as Error)?.message ?? err).slice(0, 60)}` }
   }
 }

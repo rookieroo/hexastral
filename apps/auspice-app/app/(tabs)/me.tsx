@@ -44,7 +44,7 @@ import {
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccentPicker } from '@/components/AccentPicker'
@@ -871,11 +871,25 @@ export default function MeScreen() {
                 setCalPaywallOpen(true)
                 return
               }
-              if (!birthValid) {
+              if (!computedSolarDate) {
                 setEditingBirth(true)
                 return
               }
-              void openPersonalCalendarSubscribe(birth.solarDate)
+              // Await the result so a failed sign/open isn't silent ("点击没反应").
+              // Pass the VALIDATED computedSolarDate (birthValid guards it). In DEV
+              // the alert appends the failure tag (rc / sign:NNN / fetch / open) so
+              // the exact client-side cause is visible without digging Metro logs.
+              void (async () => {
+                const r = await openPersonalCalendarSubscribe(computedSolarDate)
+                if (!r.ok) {
+                  Alert.alert(
+                    t.personalCalendarRow,
+                    __DEV__ && r.detail
+                      ? `${t.personalCalendarFailed}\n\n[${r.detail}]`
+                      : t.personalCalendarFailed
+                  )
+                }
+              })()
             }}
             accessibilityRole='button'
             accessibilityLabel={t.personalCalendarRow}
