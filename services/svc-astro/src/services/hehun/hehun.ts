@@ -30,6 +30,11 @@ import { extractJson } from '../../lib/extract-json'
 import { buildLanguageBlock, buildLanguageReminder } from '../../lib/i18n-prompt'
 import { buildEnhancedGuardrails } from '../../lib/prompts/guardrails'
 import { getSystemRole } from '../../lib/prompts/system-role'
+import {
+  analyzeZiweiSynastry,
+  formatZiweiSynastryForPrompt,
+  summarizeZiwei,
+} from './ziwei-synastry'
 
 // ========================================
 // Types
@@ -190,7 +195,7 @@ export function computeHeHun(input: HeHunInput): HeHunFullResult {
 // AI Prompt
 // ========================================
 
-function buildPairFacts(result: HeHunFullResult, input: HeHunInput): string {
+function buildPairFacts(result: HeHunFullResult, input: HeHunInput, ziweiBlock = ''): string {
   const { compatibility, personA, personB } = result
   // Neutral role slots — the prose refers to the two people ONLY as 甲方/乙方, so
   // each device can render them per-viewer (你 + the other's name). We therefore
@@ -281,7 +286,34 @@ ${physioSectionA}
 ${physioSectionB}
 ${physioCrossRef}
 
-${compatText}`
+${compatText}${ziweiBlock ? `\n\n${ziweiBlock}` : ''}`
+}
+
+/**
+ * Compute the 紫微 synastry block for the prompt — the SECOND system woven in for
+ * cross-validation (docs/kindred-ziwei-synastry-plan.md P3). Best-effort: if the
+ * 紫微 compute throws (bad date/time), the report gracefully stays 八字-only rather
+ * than failing. Forward-looking — only the 6-chapter premium report uses it.
+ */
+function buildZiweiBlock(input: HeHunInput): string {
+  try {
+    const toInput = (p: HeHunPersonInput) => ({
+      solarDate: p.solarDate,
+      timeIndex: p.timeIndex,
+      gender: p.gender,
+      longitude: p.longitude,
+      city: p.city,
+    })
+    const a = summarizeZiwei(toInput(input.personA))
+    const b = summarizeZiwei(toInput(input.personB))
+    // Romantic by default (the app's primary bond); skip the 夫妻宫 cross-read for
+    // explicitly non-romantic relationship types.
+    const cat = input.relationshipCategory
+    const romantic = cat === undefined || cat === 'spouse' || cat === 'partner'
+    return formatZiweiSynastryForPrompt(analyzeZiweiSynastry(a, b), { romantic })
+  } catch {
+    return ''
+  }
 }
 
 function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
@@ -527,7 +559,8 @@ function buildSynastryChapterPrompt(
   input: HeHunInput,
   ym: string,
   yongshen: WuXing,
-  yongshenNote: string
+  yongshenNote: string,
+  ziweiBlock: string
 ): string {
   const monthlyNote =
     spec.kind === 'monthly_outlook'
@@ -536,7 +569,7 @@ function buildSynastryChapterPrompt(
 
   return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写「六章深度合盘」中的一章：**${spec.label}**。
 
-${buildPairFacts(result, input)}
+${buildPairFacts(result, input, ziweiBlock)}
 
 ## 本章聚焦
 ${spec.focus}${monthlyNote}
@@ -547,8 +580,8 @@ ${spec.focus}${monthlyNote}
 **用神【${yongshen}】是「解法」，并非双方日主本来的关系。** 凡 title／goldenLine 提到五行关系，必须落在双方日主真实的两个五行及其生/克/比和上（如日主为木与土，则言「木土」之相克），用神之五行只可作为「通关／解法」点出且须明示其为解法——切勿把用神当作双方日主的相生来写（例如不可因用神为火便写「木火相生」），以免与正文相克/相生的判断自相矛盾。
 
 ## 写作要求（这一章要"值钱"：详尽、精准、可执行）
-分四层撰写，每层都**必须直接引用上方命盘事实**（具体日主/格局/地支刑冲合/神煞/五行喜忌），禁止泛泛而谈、禁止占星化通用语：
-1. evidence（命盘依据，90–150字）：这一维度上双方命盘到底发生了什么——点名具体的干支/十神/刑冲合/神煞，把机理讲清楚。
+分四层撰写，每层都**必须直接引用上方命盘事实**（具体日主/格局/地支刑冲合/神煞/五行喜忌，以及紫微命盘要点：命宫/夫妻宫主星、飞星落宫），禁止泛泛而谈、禁止占星化通用语：
+1. evidence（命盘依据，90–150字）：这一维度上双方命盘到底发生了什么——点名具体的干支/十神/刑冲合/神煞，把机理讲清楚；若八字与紫微（上方第二套系统）指向一致，明确点出「两套系统不约而同」以增强可信度。
 2. dynamic（关系动态，90–150字）：上述命理如何落到两人**真实相处**的样子，具体可感。
 3. reef（暗礁·风险，70–130字）：本章最该警惕的**一个**具体风险/危机——如何被触发、会演变成什么。点到痛处，但不下"天命定论"。
 4. remedy（解法，90–150字）：围绕**用神**给出具体、可执行的化解/增进之道，落到能动的一面（命定其界、运在人为）。
@@ -577,10 +610,14 @@ ${spec.focus}${monthlyNote}
 }
 
 /** A tiny separate call for the whole-report 破冰断言 (aha hook). */
-function buildAhaHookPrompt(result: HeHunFullResult, input: HeHunInput): string {
+function buildAhaHookPrompt(
+  result: HeHunFullResult,
+  input: HeHunInput,
+  ziweiBlock: string
+): string {
   return `你是一位精通命盘配对的 AI 命理师。基于以下两人命盘的**真实互动**，提炼一句最抓人的破冰断言。
 
-${buildPairFacts(result, input)}
+${buildPairFacts(result, input, ziweiBlock)}
 
 ## 要求
 - 基于两人命盘的真实互动，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间。
@@ -615,6 +652,10 @@ export async function generateSynastryChapters(
     result.personB.dayMasterWuXing
   )
 
+  // 紫微 second-system block (best-effort) — woven into each chapter + the aha
+  // hook for 八字/紫微 cross-validation. Computed once; empty string if it fails.
+  const ziweiBlock = buildZiweiBlock(input)
+
   const systemPrompt = [
     getSystemRole('hehun'),
     '',
@@ -647,7 +688,8 @@ export async function generateSynastryChapters(
   // single failed chapter drop out instead of nuking the whole report.
   const chapterCall = async (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number]) => {
     const userPrompt =
-      buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note) + langReminder
+      buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note, ziweiBlock) +
+      langReminder
     const opts = {
       // standard (Qwen3 → GLM): see the hehun-pair note — flagship's KIMI tier-1 was
       // the slow model 504-ing the synchronous accept. 6 of these run in parallel, so
@@ -674,7 +716,7 @@ export async function generateSynastryChapters(
   const ahaPromise: Promise<string> = callWithFallback(
     env,
     systemPrompt,
-    buildAhaHookPrompt(result, input) + langReminder,
+    buildAhaHookPrompt(result, input, ziweiBlock) + langReminder,
     { tier: 'standard', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
   )
     .then(parseAhaHook)

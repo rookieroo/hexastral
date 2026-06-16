@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { analyzeZiweiSynastry, summarizeZiwei } from './ziwei-synastry'
+import {
+  analyzeZiweiSynastry,
+  formatZiweiSynastryForPrompt,
+  summarizeZiwei,
+} from './ziwei-synastry'
 
 const A = { solarDate: '1990-08-15', timeIndex: 5, gender: '男' as const }
 const B = { solarDate: '1992-03-20', timeIndex: 8, gender: '女' as const }
@@ -58,7 +62,9 @@ describe('analyzeZiweiSynastry', () => {
     expect(f?.star).toBe('武曲')
     expect(f?.landsIn).toBe('命宫')
     expect(f?.tone).toBe('tension')
-    expect(f?.note).toContain('乙方的化忌（武曲）落入甲方的命宫')
+    // em-dash immediately after 命宫 proves we didn't double the 宫 (命宫宫)
+    expect(f?.note).toContain('落入甲方的命宫——')
+    expect(f?.note).not.toContain('命宫宫')
   })
 
   it('lands A 化权 (武曲) in B 夫妻 — drive in the relationship realm', () => {
@@ -90,5 +96,29 @@ describe('analyzeZiweiSynastry', () => {
     // B's 化忌 武曲 → A 命宫 becomes, after swap, A's 化忌 武曲 → B 命宫
     expect(back?.star).toBe('武曲')
     expect(back?.landsIn).toBe('命宫')
+  })
+})
+
+describe('formatZiweiSynastryForPrompt', () => {
+  const syn = analyzeZiweiSynastry(summarizeZiwei(A), summarizeZiwei(B))
+
+  it('cross-validation header + flying stars, no double-宫', () => {
+    const block = formatZiweiSynastryForPrompt(syn)
+    expect(block).toContain('与八字互相印证')
+    expect(block).toContain('飞星')
+    expect(block).not.toContain('命宫宫')
+  })
+
+  it('includes the 婚恋/夫妻宫 cross-read for romantic bonds (default)', () => {
+    expect(formatZiweiSynastryForPrompt(syn)).toContain('婚恋互配')
+    expect(formatZiweiSynastryForPrompt(syn, { romantic: true })).toContain('婚恋互配')
+  })
+
+  it('omits the 夫妻宫 cross-read for non-romantic bonds', () => {
+    const block = formatZiweiSynastryForPrompt(syn, { romantic: false })
+    expect(block).not.toContain('婚恋互配')
+    // 命宫 resonance + 飞星 still present (universal to any bond)
+    expect(block).toContain('命宫相会')
+    expect(block).toContain('飞星')
   })
 })

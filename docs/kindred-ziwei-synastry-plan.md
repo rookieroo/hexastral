@@ -58,11 +58,15 @@ the placement engine is the **`iztro`** npm lib, already wrapped server-side in
   (golden-tested). (No package extraction needed; see reframe above.)
 - **P2** ✅ Pair 紫薇 analysis (命宫 resonance + 夫妻宫 cross-read + 飞星) → structured
   facts. `analyzeZiweiSynastry`, golden-tested.
-- **P3** ⏭️ NEXT — weave into the report + the 八字/紫薇 cross-validation framing: have
-  `generateSynastryChapters` compute both summaries, feed the 紫微 facts + a "where both
-  systems agree" reconciliation into the prompt. Forward-looking — existing reports stay
-  八字-only (archival). Needs an svc-astro deploy.
-- **P4** 紫薇 cycles in timeline + what-if (cross-confirmed turning points rank higher).
+- **P3** ✅ Woven into the 6-chapter report. `generateSynastryChapters` computes the
+  紫微 block once (`buildZiweiBlock`, best-effort → 八字-only on failure) and threads it
+  through every chapter prompt + the aha hook via `buildPairFacts`. The block is framed
+  as the SECOND system with an explicit cross-validation directive ("八字与紫微指向一致
+  时点出『两套系统不约而同』"), and the evidence layer may cite 紫微. 夫妻宫 cross-read
+  gated to romantic bonds. Forward-looking — archived reports stay 八字-only. **Needs an
+  svc-astro deploy + a generate-and-review pass.** (The flat quick reading stays 八字-only.)
+- **P4** ⏭️ NEXT — 紫薇 cycles in timeline + what-if (大限/流年 + their 四化 alongside the
+  八字 大运/流年; cross-confirmed turning points rank higher in `planRelationshipDecisionByYear`).
 
 ## Risks / decisions
 - 紫薇 placement correctness is unforgiving — P1 needs golden tests vs a trusted source.
