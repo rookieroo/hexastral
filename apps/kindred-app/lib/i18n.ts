@@ -361,11 +361,6 @@ export const translations: Translations = {
     'glossary.sealstyle.bei.desc': 'A solid stone-rubbing chop names each chapter.',
     'glossary.sealstyle.zhu.label': '朱文 — outline',
     'glossary.sealstyle.zhu.desc': 'A cinnabar outline marks the bridging element.',
-    'glossary.roles.section': '甲 and 乙',
-    'glossary.roles.caption':
-      'The report names the two of you 甲 and 乙 — an old, neutral way to say "the first" and "the second", with no ranking implied.',
-    'glossary.roles.jia': '甲 — the one who started the thread (sent the invite)',
-    'glossary.roles.yi': '乙 — the one who accepted',
     'glossary.essence.section': 'The ink states (意象)',
     'glossary.essence.caption':
       'Each chapter draws your two energies as ink, not a number. Their arrangement is the relationship.',
@@ -731,11 +726,6 @@ export const translations: Translations = {
     'glossary.sealstyle.bei.desc': '实心碑拓印，为每一章命名。',
     'glossary.sealstyle.zhu.label': '朱文——空印',
     'glossary.sealstyle.zhu.desc': '朱文空心印，标出通关用神。',
-    'glossary.roles.section': '甲与乙',
-    'glossary.roles.caption':
-      '报告以「甲」「乙」称呼你们二人——古来中性的「其一」「其二」，并无高下之分。',
-    'glossary.roles.jia': '甲——发起这段关系的人（发出邀请的一方）',
-    'glossary.roles.yi': '乙——接受邀请的一方',
     'glossary.essence.section': '意象（水墨之态）',
     'glossary.essence.caption': '每一章把你们两股气以水墨写出，而非打分。其排布即是关系本身。',
     'glossary.essence.merge': '相生——二气交融为一',
@@ -1097,11 +1087,6 @@ export const translations: Translations = {
     'glossary.sealstyle.bei.desc': '實心碑拓印，為每一章命名。',
     'glossary.sealstyle.zhu.label': '硃文——空印',
     'glossary.sealstyle.zhu.desc': '硃文空心印，標出通關用神。',
-    'glossary.roles.section': '甲與乙',
-    'glossary.roles.caption':
-      '報告以「甲」「乙」稱呼你們二人——古來中性的「其一」「其二」，並無高下之分。',
-    'glossary.roles.jia': '甲——發起這段關係的人（發出邀請的一方）',
-    'glossary.roles.yi': '乙——接受邀請的一方',
     'glossary.essence.section': '意象（水墨之態）',
     'glossary.essence.caption': '每一章把你們兩股氣以水墨寫出，而非打分。其排布即是關係本身。',
     'glossary.essence.merge': '相生——二氣交融為一',
@@ -1466,11 +1451,6 @@ export const translations: Translations = {
     'glossary.sealstyle.bei.desc': '塗りつぶしの拓本印が各章を名づけます。',
     'glossary.sealstyle.zhu.label': '朱文——輪郭',
     'glossary.sealstyle.zhu.desc': '朱文の輪郭印が通関用神を指します。',
-    'glossary.roles.section': '甲と乙',
-    'glossary.roles.caption':
-      'レポートは二人を「甲」「乙」と呼びます。古くから中立的な「一人目」「二人目」の意で、優劣はありません。',
-    'glossary.roles.jia': '甲——この関係を始めた人（招待を送った側）',
-    'glossary.roles.yi': '乙——招待を受けた側',
     'glossary.essence.section': '意象（墨のすがた）',
     'glossary.essence.caption':
       '各章は二つの気を点数ではなく墨で描きます。その配置こそが関係そのものです。',

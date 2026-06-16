@@ -137,12 +137,6 @@ export default function GlossaryScreen() {
           </Text>
         </Pressable>
 
-        {/* ── 甲 / 乙 roles ── */}
-        <Section title={tr('glossary.roles.section')} caption={tr('glossary.roles.caption')}>
-          <Row symbol={<RoleGlyph char='甲' />} label={tr('glossary.roles.jia')} />
-          <Row symbol={<RoleGlyph char='乙' />} label={tr('glossary.roles.yi')} />
-        </Section>
-
         {/* ── The ink states (意象) — the actual centerpiece each chapter draws ── */}
         <Section title={tr('glossary.essence.section')} caption={tr('glossary.essence.caption')}>
           {ESSENCE_MODES.map(({ mode, key }) => (
@@ -366,26 +360,6 @@ function Row({ symbol, label, sub }: { symbol: React.ReactNode; label: string; s
           </Text>
         ) : null}
       </View>
-    </View>
-  )
-}
-
-/** 甲 / 乙 in a stone-rubbing tile, matching the chapter-seal motif. */
-function RoleGlyph({ char }: { char: string }) {
-  return (
-    <View
-      style={{
-        width: 46,
-        height: 46,
-        borderRadius: 6,
-        backgroundColor: kindredDark.bg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ fontFamily: kindredFonts.serif, fontSize: 24, color: kindredPaper.bg }}>
-        {char}
-      </Text>
     </View>
   )
 }
