@@ -275,6 +275,8 @@ export const translations: Translations = {
     'invite.accept.anonTitle': "You've been invited",
     'invite.accept.birthHeading': 'Your birth details',
     'invite.accept.birthHint': 'We cast your half of the chart from this — date, time and place.',
+    'invite.accept.usingSavedBirth':
+      "We'll use the birth info you already saved — no need to re-enter it.",
     'invite.accept.consent.anon':
       'I agree to share my birth data for a synastry compatibility reading. ',
     'invite.accept.open': 'Open the thread  →',
@@ -645,6 +647,7 @@ export const translations: Translations = {
     'invite.accept.anonTitle': '你被邀请合盘',
     'invite.accept.birthHeading': '你的生辰',
     'invite.accept.birthHint': '用来推算你这一半的命盘 — 出生日期、时辰与地点。',
+    'invite.accept.usingSavedBirth': '将使用你已保存的生辰，无需重新录入。',
     'invite.accept.consent.anon': '我同意分享我的生辰信息，用于生成合盘相性解读。',
     'invite.accept.open': '打开合盘报告  →',
     'invite.accept.later': '稍后',
@@ -1005,6 +1008,7 @@ export const translations: Translations = {
     'invite.accept.anonTitle': '你被邀請合盤',
     'invite.accept.birthHeading': '你的生辰',
     'invite.accept.birthHint': '用來推算你這一半的命盤 — 出生日期、時辰與地點。',
+    'invite.accept.usingSavedBirth': '將使用你已儲存的生辰，無需重新錄入。',
     'invite.accept.consent.anon': '我同意分享我的生辰資訊，用於生成合盤相性解讀。',
     'invite.accept.open': '開啟合盤報告  →',
     'invite.accept.later': '稍後',
@@ -1366,6 +1370,7 @@ export const translations: Translations = {
     'invite.accept.anonTitle': '招待が届いています',
     'invite.accept.birthHeading': 'あなたの生年月日',
     'invite.accept.birthHint': 'あなたの命式を出すために使います（生年月日・時刻・場所）。',
+    'invite.accept.usingSavedBirth': '保存済みの出生情報を使います。再入力は不要です。',
     'invite.accept.consent.anon': '相性鑑定のために生年月日を共有することに同意します。',
     'invite.accept.open': '縁レポートを開く  →',
     'invite.accept.later': '後で',

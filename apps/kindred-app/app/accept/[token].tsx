@@ -48,7 +48,12 @@ import { searchCity as searchCityApi } from '@/lib/geocode'
 import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
 import { isPaywall } from '@/lib/inviteSubmit'
 import { updateDraft, useDraft } from '@/lib/onboardingDraft'
-import { type SelfBirth, saveSelfBirth, syncSelfBirthToServer } from '@/lib/selfBirth'
+import {
+  loadSelfBirth,
+  type SelfBirth,
+  saveSelfBirth,
+  syncSelfBirthToServer,
+} from '@/lib/selfBirth'
 import { markOnboardingComplete } from '../index'
 
 const RELATIONSHIP_I18N: Record<RelationshipType, TranslationKey> = {
@@ -117,9 +122,23 @@ export default function AcceptTokenScreen() {
   const scrollRef = useRef<ScrollView>(null)
   const searchCity = (query: string) => searchCityApi(query, lang, 7)
 
+  // If B already has a saved self-birth (onboarded, or used the app before), skip the
+  // birth form entirely and accept with it — re-entering birth on every invite is
+  // pointless. `undefined` = still reading AsyncStorage; `null` = none on file.
+  const [savedBirth, setSavedBirth] = useState<SelfBirth | null | undefined>(undefined)
+  useEffect(() => {
+    void loadSelfBirth().then(setSavedBirth)
+  }, [])
+  const hasSavedBirth =
+    savedBirth != null &&
+    !!savedBirth.solarDate &&
+    savedBirth.timeIndex != null &&
+    !!savedBirth.gender
+
   const selfSolar = selfDate.solarDate
   const birthFilled =
-    selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
+    hasSavedBirth ||
+    (selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number')
 
   // A's display name. The server sends the literal 'Someone' sentinel when A
   // gave no name (bonds.ts) — render a name-less phrasing in that case rather
@@ -151,37 +170,37 @@ export default function AcceptTokenScreen() {
   }
 
   const handleOpen = async () => {
-    if (
-      !token ||
-      !selfSolar ||
-      draft.selfGender === null ||
-      typeof draft.selfTimeIndex !== 'number'
-    ) {
-      return
-    }
+    if (!token) return
+    // Prefer the saved self-birth (skip-form path); else the form-filled draft.
+    const birth: SelfBirth | null =
+      savedBirth?.solarDate && savedBirth.timeIndex != null && savedBirth.gender
+        ? savedBirth
+        : selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
+          ? {
+              solarDate: selfSolar,
+              timeIndex: draft.selfTimeIndex,
+              gender: draft.selfGender,
+              city: draft.selfBirthCity || undefined,
+              lat: draft.selfBirthLat ?? undefined,
+              lng: draft.selfBirthLng ?? undefined,
+              timezone: draft.selfBirthTimezone ?? undefined,
+              clockMinutes: draft.selfClockMinutes ?? undefined,
+              calibrate: draft.selfCalibrate ?? undefined,
+            }
+          : null
+    if (!birth || birth.timeIndex == null) return
     setAccepting(true)
     setRespondError(null)
-    const birth: SelfBirth = {
-      solarDate: selfSolar,
-      timeIndex: draft.selfTimeIndex,
-      gender: draft.selfGender,
-      city: draft.selfBirthCity || undefined,
-      lat: draft.selfBirthLat ?? undefined,
-      lng: draft.selfBirthLng ?? undefined,
-      timezone: draft.selfBirthTimezone ?? undefined,
-      clockMinutes: draft.selfClockMinutes ?? undefined,
-      calibrate: draft.selfCalibrate ?? undefined,
-    }
     const birthData: PersonBirth = {
-      solarDate: selfSolar,
-      timeIndex: draft.selfTimeIndex as TimeIndex,
-      gender: draft.selfGender,
-      city: draft.selfBirthCity || undefined,
+      solarDate: birth.solarDate,
+      timeIndex: birth.timeIndex as TimeIndex,
+      gender: birth.gender,
+      city: birth.city || undefined,
       // Precise time + place → B's half of the chart gets 真太阳时 calibration too.
-      clockMinutes: draft.selfClockMinutes ?? undefined,
-      calibrate: draft.selfCalibrate ?? undefined,
-      longitude: draft.selfBirthLng != null ? String(draft.selfBirthLng) : undefined,
-      timezoneId: draft.selfBirthTimezone ?? undefined,
+      clockMinutes: birth.clockMinutes ?? undefined,
+      calibrate: birth.calibrate ?? undefined,
+      longitude: birth.lng != null ? String(birth.lng) : undefined,
+      timezoneId: birth.timezone ?? undefined,
     }
     try {
       // Persist B's birth as their own self-chart first, so even if they bail
@@ -326,40 +345,53 @@ export default function AcceptTokenScreen() {
           </View>
         ) : null}
 
-        {/* B's own birth — the form the web delegates here. Without it /respond
-            fails with "Birth data required to accept". */}
-        <View style={{ gap: kindredSpacing.md }}>
-          <Text style={[kindredType.title, { color: kindredDark.text }]}>
-            {t('invite.accept.birthHeading')}
+        {/* B's own birth — the form the web delegates here. Skipped entirely when B
+            already has a saved birth (Open in Yuel shouldn't re-ask): we accept with
+            the saved chart. Without a birth at all, /respond fails "Birth data
+            required to accept", so the form fills that gap. */}
+        {hasSavedBirth ? (
+          <Text
+            style={[
+              kindredType.caption,
+              { color: kindredDark.textMuted, lineHeight: 18, textAlign: 'center' },
+            ]}
+          >
+            {t('invite.accept.usingSavedBirth')}
           </Text>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t('invite.accept.birthHint')}
-          </Text>
-          <BirthForm
-            locale={locale}
-            lang={lang}
-            date={selfDate}
-            onDate={commitDate}
-            dateLabels={dateLabels}
-            timeIndex={draft.selfTimeIndex}
-            onTime={(idx) => updateDraft({ selfTimeIndex: idx })}
-            gender={draft.selfGender}
-            onGender={(g) => updateDraft({ selfGender: g })}
-            city={draft.selfBirthCity}
-            lat={draft.selfBirthLat}
-            lng={draft.selfBirthLng}
-            timezone={draft.selfBirthTimezone}
-            onCity={(patch) => updateDraft(patch)}
-            searchCity={searchCity}
-            fieldPrefix='self'
-            allowPreciseTime
-            clockMinutes={draft.selfClockMinutes}
-            onClock={(min) => updateDraft({ selfClockMinutes: min })}
-            calibrate={draft.selfCalibrate}
-            onCalibrate={(on) => updateDraft({ selfCalibrate: on })}
-            scrollRef={scrollRef}
-          />
-        </View>
+        ) : (
+          <View style={{ gap: kindredSpacing.md }}>
+            <Text style={[kindredType.title, { color: kindredDark.text }]}>
+              {t('invite.accept.birthHeading')}
+            </Text>
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+              {t('invite.accept.birthHint')}
+            </Text>
+            <BirthForm
+              locale={locale}
+              lang={lang}
+              date={selfDate}
+              onDate={commitDate}
+              dateLabels={dateLabels}
+              timeIndex={draft.selfTimeIndex}
+              onTime={(idx) => updateDraft({ selfTimeIndex: idx })}
+              gender={draft.selfGender}
+              onGender={(g) => updateDraft({ selfGender: g })}
+              city={draft.selfBirthCity}
+              lat={draft.selfBirthLat}
+              lng={draft.selfBirthLng}
+              timezone={draft.selfBirthTimezone}
+              onCity={(patch) => updateDraft(patch)}
+              searchCity={searchCity}
+              fieldPrefix='self'
+              allowPreciseTime
+              clockMinutes={draft.selfClockMinutes}
+              onClock={(min) => updateDraft({ selfClockMinutes: min })}
+              calibrate={draft.selfCalibrate}
+              onCalibrate={(on) => updateDraft({ selfCalibrate: on })}
+              scrollRef={scrollRef}
+            />
+          </View>
+        )}
 
         {/* Action-based consent — tapping "Open" IS the affirmative agreement. */}
         <Text
