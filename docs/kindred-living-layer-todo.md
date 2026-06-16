@@ -34,3 +34,22 @@ leaking) before touching it.
   what-if windows + a ~3-month 流月 timeline slice + upsell cards; the 10-year
   `longterm` + full axis + push stay the Pro moat. Timeline free path runs only the
   light buildEgoLiuYue, never the heavy buildEgoTimeline (no loading regression).
+- Report locale-freeze: the synastry report + its chrome (essence chip, chapter
+  section labels, primer, share card) render in the locale it was GENERATED in
+  (`interpretation.language` via `localeFromTag`), not the device — switching language
+  no longer re-wraps / half-translates an archived report. App chrome stays device.
+- Per-viewer person labels: 甲方/乙方 personalize in the report locale — reader = "you"
+  (no zh "你" in English), other = name or a localized "the other person" (no bare
+  ambiguous "Partner"); English viewer possessive "you's" → "your".
+- 命理 jargon density: svc-astro en tone guide now tells the LLM to use terms
+  sparingly + gloss with pinyin + English on first use (future generations only;
+  needs svc-astro deploy + a generate-and-review tuning pass).
+
+## Generation-side follow-ups (minor — svc-astro)
+- Person-label scheme: the client now personalizes 甲乙 away (user never sees them),
+  so the 天干 collision is moot in the UI. Cleanest future fix: have the LLM emit
+  neutral tokens (`{{A}}`/`{{B}}`) without an English possessive, so the client maps
+  without the "you's"→"your" patch. Low priority.
+- Term density: tune by generating a few en reports and trimming further if still
+  dense; consider adding the missing synastry terms (天干/三合/六合/六冲/亡神/劫煞)
+  to the `hehun` term map in `i18n-prompt.ts` for consistent glosses.
