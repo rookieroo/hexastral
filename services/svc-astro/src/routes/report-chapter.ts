@@ -23,6 +23,7 @@ import { z } from 'zod/v4'
 import { callWithFallback } from '../lib/ai-router'
 import { buildRichFacts } from '../lib/build-rich-facts'
 import { extractJson } from '../lib/extract-json'
+import { buildLanguageBlock, buildLanguageReminder } from '../lib/i18n-prompt'
 import { buildChapterFacts, CHAPTER_PROMPT_BUILDERS } from '../prompts/chapters'
 import {
   ch4TimelineOutputSchema,
@@ -161,7 +162,13 @@ reportChapterRoutes.post('/chapter', async (c) => {
     richFacts: richFacts ?? undefined,
   }
 
-  const systemPrompt = builder(ctx, langLabel)
+  // Language enforcement — was MISSING here (unlike fate/report + hehun), so the
+  // personal-report chapters drifted (whole chapters in Chinese under en, raw 命理
+  // terms glued into English prose with no pinyin/gloss). The shared block makes the
+  // model output ONLY in the target language and render 命理 terms as「term (pinyin,
+  // gloss)」; the terse reminder at the END of the user prompt stops a parallel
+  // chapter call drifting back to Chinese.
+  const systemPrompt = `${builder(ctx, langLabel)}\n${buildLanguageBlock(input.locale, 'fate')}`
   const factsBlock = buildChapterFacts(ctx)
   const perspectiveClause = input.perspectiveSeed
     ? `\n\n【视角种子】${input.perspectiveSeed} — 请以略微不同的切入点重写本章，保留事实与结论的一致性，但调整叙事重心。`
@@ -173,7 +180,7 @@ reportChapterRoutes.post('/chapter', async (c) => {
     ? `\n\n【语气补充】${input.styleSeed} — 在不改变命盘事实的前提下，按该风格组织表达。`
     : ''
 
-  const userPrompt = `${factsBlock}${perspectiveClause}${stylePresetClause}${styleSeedClause}\n\n${chapterSchemaHints[input.slug]}\n请基于以上事实生成严格 JSON，禁止输出额外字段。`
+  const userPrompt = `${factsBlock}${perspectiveClause}${stylePresetClause}${styleSeedClause}\n\n${chapterSchemaHints[input.slug]}\n请基于以上事实生成严格 JSON，禁止输出额外字段。${buildLanguageReminder(input.locale)}`
 
   const timeBoundSlugs = new Set(['ch4_timeline', 'ch5_hidden', 'ch6_action'])
 

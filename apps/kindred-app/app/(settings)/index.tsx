@@ -19,7 +19,7 @@ import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
-import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { getKindredDevLocale, type Locale, resolveLocale, setKindredDevLocale, t } from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
@@ -90,6 +90,16 @@ export default function SettingsScreen() {
   // what-if / chapter wall / daily synastry) actually unlocks. Flip then re-open
   // the report to see it change.
   const [devPro, setDevPro] = useState<KindredDevPro>(getKindredDevPro())
+  // DEV-only locale preview — cycle auto → en → zh → zh-Hant → ja so the report's
+  // en-vs-CJK rendering can be QA'd on one device. Reopen the screen/report to
+  // apply (resolveLocale is read once per mount).
+  const [devLocale, setDevLocale] = useState<Locale | null>(getKindredDevLocale())
+  const cycleDevLocale = () => {
+    const order: (Locale | null)[] = [null, 'en', 'zh', 'zh-Hant', 'ja']
+    const next = order[(order.indexOf(devLocale) + 1) % order.length] ?? null
+    setKindredDevLocale(next)
+    setDevLocale(next)
+  }
   const cycleDevPro = () => {
     const next: KindredDevPro = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setKindredDevPro(next)
@@ -516,6 +526,16 @@ export default function SettingsScreen() {
                 ]}
               >
                 {`DEV · Pro: ${devPro === null ? 'off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}`}
+              </Text>
+            </Pressable>
+            <Pressable onPress={cycleDevLocale} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                {`DEV · Locale: ${devLocale ?? 'auto (device)'}`}
               </Text>
             </Pressable>
             <Text

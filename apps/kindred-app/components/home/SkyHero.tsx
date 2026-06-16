@@ -20,7 +20,7 @@
  * nobody is looking at.
  */
 
-import { Canvas, Circle, Group, Path, RadialGradient, Skia, vec } from '@shopify/react-native-skia'
+import { Canvas, Circle, Group, RadialGradient, vec } from '@shopify/react-native-skia'
 import { useEffect, useMemo, useRef } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -92,6 +92,14 @@ export interface SkyHeroProps {
   /** Tap a thread's star → that bond. `index` is the orbit slot = the i-th thread
    *  the host passed (the host maps it to a bond id). */
   onTapThread?: (index: number, x: number, y: number) => void
+  /** Swipe LEFT on the blank sky → a horizontal destination (the home wires this
+   *  to Settings). Composed with the tap via Race, so a tap still opens a reading
+   *  and only a deliberate leftward drag navigates. */
+  onSwipeLeft?: () => void
+  /** Collapse progress 0→1, driven by the home's scroll. At 1 the orbit rings,
+   *  gravity spokes and orbiting threads fade out so only your central star is
+   *  left as the hero recedes to a slim header. */
+  collapse?: SharedValue<number>
 }
 
 export function SkyHero({
@@ -102,6 +110,8 @@ export function SkyHero({
   paused,
   onTapSelf,
   onTapThread,
+  onSwipeLeft,
+  collapse,
 }: SkyHeroProps) {
   const reduced = useReducedMotion()
   const cx = width / 2
@@ -163,7 +173,11 @@ export function SkyHero({
     return stopBreath
   }, [reduced, paused, clock, breath, appear])
 
-  // Live positions of all six slots — one source the gravity Path + each star read.
+  // Live positions of all six slots — each thread star reads its seat from here.
+  // The threads DRIFT in orbit (the motion implies "in your orbit"); we no longer
+  // draw the tracks or the spokes — only you + the active thread-stars. So the sky
+  // answers to the real bond count: 0 threads = just you, and a let-go star simply
+  // vanishes (its black-hole pulse) with no orphaned ring left behind.
   const pos = useDerivedValue(() =>
     SLOTS.map((s) => {
       const th = s.a0 + ORBIT_W * s.wf * clock.value
@@ -171,18 +185,6 @@ export function SkyHero({
       return { x: cx + r * Math.cos(th), y: cy + r * Math.sin(th) * TILT }
     })
   )
-
-  // Gravity lines — centre → each active star, as one Skia Path.
-  const linesPath = useDerivedValue(() => {
-    const p = Skia.Path.Make()
-    for (let i = 0; i < n; i++) {
-      const q = pos.value[i] ?? { x: cx, y: cy }
-      p.moveTo(cx, cy)
-      p.lineTo(q.x, q.y)
-    }
-    return p
-  })
-  const linesOpacity = useDerivedValue(() => appear.value * 0.14)
 
   // Central star — you. Breath grows it via a gentle group scale (≈ the old r
   // breath) about its own centre; opacity breathes per layer.
@@ -217,21 +219,35 @@ export function SkyHero({
     [n, pos, onTapSelf, onTapThread]
   )
 
+  // Leftward swipe on the blank sky → onSwipeLeft (home wires it to Settings).
+  // activeOffsetX keeps it from stealing stationary star-taps; failOffsetY yields
+  // to vertical drags. Raced with the tap: a deliberate leftward drag past the
+  // threshold wins, otherwise the tap opens a reading as before.
+  const swipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-15, 15])
+        .failOffsetY([-20, 20])
+        .onEnd((e) => {
+          if ((e.translationX < -55 || e.velocityX < -650) && onSwipeLeft) {
+            runOnJS(onSwipeLeft)()
+          }
+        }),
+    [onSwipeLeft]
+  )
+  // Only compose the swipe when a handler is wired, so SkyHero's tap behaviour is
+  // untouched for any caller that doesn't opt in.
+  const gesture = useMemo(
+    () => (onSwipeLeft ? Gesture.Race(swipe, tap) : tap),
+    [onSwipeLeft, swipe, tap]
+  )
+
   return (
     <View style={StyleSheet.absoluteFill}>
-      <GestureDetector gesture={tap}>
+      <GestureDetector gesture={gesture}>
         <Canvas style={StyleSheet.absoluteFill}>
-          {/* gravity lines (under the stars) */}
-          <Path
-            path={linesPath}
-            style='stroke'
-            color={star.halo}
-            strokeWidth={1}
-            strokeCap='round'
-            opacity={linesOpacity}
-          />
-
-          {/* threads in orbit */}
+          {/* threads in orbit — you + the active thread-stars only; no tracks, no
+              spokes, so the sky maps 1:1 to your bonds */}
           {SLOTS.map((_, i) => (
             <ThreadStar
               key={i}
@@ -241,6 +257,7 @@ export function SkyHero({
               cy={cy}
               appear={appear}
               active={i < n}
+              collapse={collapse}
               glowColors={threadGlowC}
               coreColors={threadCoreC}
             />
@@ -271,6 +288,7 @@ function ThreadStar({
   cy,
   appear,
   active,
+  collapse,
   glowColors,
   coreColors,
 }: {
@@ -280,6 +298,7 @@ function ThreadStar({
   cy: number
   appear: SharedValue<number>
   active: boolean
+  collapse?: SharedValue<number>
   glowColors: string[]
   coreColors: string[]
 }) {
@@ -315,8 +334,12 @@ function ThreadStar({
   // Star shrinks as the hole pulls it in (swallow), fades as it leaves (presence).
   const glowR = useDerivedValue(() => 7 * (1 - swallow.value * 0.92))
   const coreR = useDerivedValue(() => 2.4 * (1 - swallow.value * 0.92))
-  const glowOpacity = useDerivedValue(() => appear.value * presence.value * 0.55)
-  const coreOpacity = useDerivedValue(() => appear.value * presence.value)
+  const glowOpacity = useDerivedValue(
+    () => appear.value * presence.value * 0.55 * (1 - (collapse?.value ?? 0))
+  )
+  const coreOpacity = useDerivedValue(
+    () => appear.value * presence.value * (1 - (collapse?.value ?? 0))
+  )
   // Accretion ring — radius opens then collapses with the swallow pulse.
   const ringR = useDerivedValue(() => Math.max(0.01, swallow.value * 18))
   const ringOpacity = useDerivedValue(() => swallow.value)

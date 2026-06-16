@@ -19,7 +19,7 @@
  * established archetype words (see starArchetypeLabel).
  */
 
-import type { GeJuAnalysis, HeavenlyStem, WuXing } from '@zhop/astro-core'
+import type { GeJuAnalysis, GeJuType, HeavenlyStem, WuXing } from '@zhop/astro-core'
 import { useMemo } from 'react'
 
 import { type Locale, resolveLocale } from '@/lib/i18n'
@@ -313,6 +313,45 @@ export function genderLabel(g: '男' | '女', locale: Locale): string {
 /** Day master as a unit: zh keeps "甲木"; en parenthesises "甲 (Wood)". */
 export function dayMasterLabel(stem: HeavenlyStem, element: WuXing, locale: Locale): string {
   return locale === 'en' ? `${stem} (${ELEMENT_EN[element]})` : `${stem}${element}`
+}
+
+/**
+ * 格局 (chart structure) localisation. The identity line printed `geju.primary`
+ * raw — fine for CJK readers, but a bare 月刃格 leaks into English prose. en gets
+ * the standard BaZi English name; zh keeps the simplified source; zh-Hant + ja
+ * take the traditional/kanji form (Japanese 四柱推命 reads these). An unmapped
+ * value falls back to the raw string, so a future GeJuType never breaks the line.
+ */
+const GEJU: Record<GeJuType, { en: string; hant: string }> = {
+  正官格: { en: 'Direct Officer', hant: '正官格' },
+  七杀格: { en: 'Seven Killings', hant: '七殺格' },
+  正财格: { en: 'Direct Wealth', hant: '正財格' },
+  偏财格: { en: 'Indirect Wealth', hant: '偏財格' },
+  正印格: { en: 'Direct Resource', hant: '正印格' },
+  偏印格: { en: 'Indirect Resource', hant: '偏印格' },
+  伤官格: { en: 'Hurting Officer', hant: '傷官格' },
+  食神格: { en: 'Eating God', hant: '食神格' },
+  从财格: { en: 'Follow Wealth', hant: '從財格' },
+  从杀格: { en: 'Follow Killings', hant: '從殺格' },
+  从儿格: { en: 'Follow Output', hant: '從兒格' },
+  从势格: { en: 'Follow Momentum', hant: '從勢格' },
+  曲直格: { en: 'Wood Dominant', hant: '曲直格' },
+  炎上格: { en: 'Fire Dominant', hant: '炎上格' },
+  稼穑格: { en: 'Earth Dominant', hant: '稼穡格' },
+  从革格: { en: 'Metal Dominant', hant: '從革格' },
+  润下格: { en: 'Water Dominant', hant: '潤下格' },
+  建禄格: { en: 'Established Prosperity', hant: '建祿格' },
+  月刃格: { en: 'Month Blade', hant: '月刃格' },
+  普通格: { en: 'Ordinary', hant: '普通格' },
+}
+
+/** 格局 → localised name. zh = simplified source; en = BaZi term; zh-Hant/ja = traditional. */
+export function gejuLabel(geju: string, locale: Locale): string {
+  const entry = GEJU[geju as GeJuType]
+  if (!entry) return geju
+  if (locale === 'en') return entry.en
+  if (locale === 'zh') return geju
+  return entry.hant
 }
 
 const SHICHEN = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']

@@ -20,6 +20,7 @@ import type { ReactNode } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { CHAPTER_SEAL } from '../glyphs'
 import { isCjkLocale, kindredFonts } from '../kindredFonts'
+import { spaceCjkLatin } from '../text'
 import type { SynastryChapter } from '../types'
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
@@ -33,6 +34,19 @@ const CHAPTER_TITLES: Record<SynastryChapter['kind'], string> = {
   complement: '互补之处',
   monthly_outlook: '本月运势',
   long_term_advice: '长期建议',
+}
+
+/** 五行 → English element name. The subtitle renders raw 五行 chars (木 × 土), which
+ *  read as opaque to a non-CJK reader — localize to "Wood × Earth" on en/ja-Latin. */
+const WUXING_EN: Record<string, string> = {
+  木: 'Wood',
+  火: 'Fire',
+  土: 'Earth',
+  金: 'Metal',
+  水: 'Water',
+}
+function elName(el: string, cjk: boolean): string {
+  return cjk ? el : (WUXING_EN[el] ?? el)
 }
 
 function labels(cjk: boolean) {
@@ -192,6 +206,9 @@ export function ChapterCard({
 }: ChapterCardProps) {
   const C = cardPalette(theme)
   const cjk = isCjkLocale(locale)
+  // Non-CJK render guard: un-glue any 命理 term the model embedded directly in
+  // Latin prose ("clash of卯酉" → "clash of 卯酉"). No-op for CJK locales.
+  const space = (s: string) => (cjk ? s : spaceCjkLatin(s))
   const L = labels(cjk)
   const titleFont = cjk ? kindredFonts.cjk : kindredFonts.display
   const bodyFont = cjk ? kindredFonts.cjk : kindredFonts.serif
@@ -200,7 +217,10 @@ export function ChapterCard({
 
   const seal = CHAPTER_SEAL[chapter.kind]
   const title = chapter.title || CHAPTER_TITLES[chapter.kind]
-  const subtitle = aElement && bElement ? `${aElement}${cjk ? ' · ' : ' × '}${bElement}` : undefined
+  const subtitle =
+    aElement && bElement
+      ? `${elName(aElement, cjk)}${cjk ? ' · ' : ' × '}${elName(bElement, cjk)}`
+      : undefined
   // Seal ink takes the couple's 五行 relation, so the report has a colour identity
   // and the chapter seals aren't the same stone glyph for every pair.
   const sealInk = sealInkFor(pairRelation(aElement, bElement), C.cinnabar) ?? C.sealInk
@@ -241,7 +261,7 @@ export function ChapterCard({
               letterSpacing: cjk ? 2 : 0,
             }}
           >
-            {title}
+            {space(title)}
           </Text>
           {subtitle ? (
             <Text
@@ -292,7 +312,7 @@ export function ChapterCard({
               color: C.ink,
             }}
           >
-            {chapter.goldenLine}
+            {space(chapter.goldenLine)}
           </Text>
         </View>
       ) : null}
@@ -334,7 +354,7 @@ export function ChapterCard({
                   }}
                 >
                   {l.text
-                    ? splitSentences(l.text).map((s, i) => (
+                    ? splitSentences(space(l.text)).map((s, i) => (
                         <Text
                           key={`${l.n}-${i}`}
                           onLongPress={onPickQuote ? () => onPickQuote(s) : undefined}
@@ -362,7 +382,7 @@ export function ChapterCard({
             color: C.ink,
           }}
         >
-          {chapter.body}
+          {space(chapter.body)}
         </Text>
       )}
 
@@ -378,7 +398,7 @@ export function ChapterCard({
               color: C.muted,
             }}
           >
-            {chapter.counterpoint}
+            {space(chapter.counterpoint)}
           </Text>
         </View>
       ) : null}

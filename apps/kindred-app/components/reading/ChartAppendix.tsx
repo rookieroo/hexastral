@@ -29,6 +29,7 @@ import {
   dayMasterLabel,
   elementLabel,
   fiveElementsClassLabel,
+  gejuLabel,
   palaceLabel,
   type ReadingStringKey,
   starArchetypeLabel,
@@ -125,7 +126,7 @@ export function ChartAppendix({
           <Text style={S.metaLine}>
             {t('appendix.metaLine', {
               dm: dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale),
-              geju: chart.geju.primary,
+              geju: gejuLabel(chart.geju.primary, locale),
               self: t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) }),
             })}
           </Text>

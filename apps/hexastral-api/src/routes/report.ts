@@ -174,7 +174,12 @@ export async function generateChapter(ctx: {
     perspectiveSeed: mergedPerspectiveSeed,
     stylePreset,
     styleSeed,
-    isPro: await userHasCapability(c.get('db'), userId, 'fate'),
+    // Pro-tier generation (deeper thinking, flagship models) for both the
+    // flagship 'fate'/universe_pro path AND kindred_pro — kindred sells these
+    // 命 chapters under its own Pro, so its subscribers get the same quality.
+    isPro:
+      (await userHasCapability(c.get('db'), userId, 'fate')) ||
+      (await userHasCapability(c.get('db'), userId, 'kindred')),
     user: {
       dayMasterStem: user.dayMasterStem,
       dayMasterStrength: user.dayMasterStrength,
@@ -381,7 +386,15 @@ export const reportChapterRoutes = new Hono<AppEnv>()
     if (!slugParse.success) throw new HTTPException(400, { message: 'Invalid chapter slug' })
     const slug = slugParse.data
 
-    const isPro = await userHasCapability(db, userId, 'fate')
+    // The personal 命 report lives inside Kindred and is sold via Kindred Pro:
+    // the kindred client paywall routes locked chapters here (reason:'reading'),
+    // so a kindred_pro subscriber unlocks every chapter — not only the flagship
+    // 'fate'/universe_pro path. fate-app doesn't read these slugs and the flagship
+    // 命 app is unshipped, so honouring kindred here doesn't leak across surfaces.
+    // (universe_pro already satisfies 'fate' directly via hasCapability.)
+    const isPro =
+      (await userHasCapability(db, userId, 'fate')) ||
+      (await userHasCapability(db, userId, 'kindred'))
     const unlockedCount = await getUnlockedCount(db, userId)
     assertChapterAccess(slug, unlockedCount, isPro)
 
@@ -417,8 +430,9 @@ export const reportChapterRoutes = new Hono<AppEnv>()
 
     // Free tier: one onboarding-backed generation per chapter. If birth chart
     // identity drifted (new chartHash) but a current row exists, do not burn LLM —
-    // user must subscribe Pro (client also gates birth-info edits).
-    if (!(await userHasCapability(db, userId, 'fate')) && cur && cur.chartHash !== chartHash) {
+    // user must subscribe Pro (client also gates birth-info edits). Pro here
+    // includes kindred_pro (see isPro above), so a kindred subscriber can regen.
+    if (!isPro && cur && cur.chartHash !== chartHash) {
       return c.json(
         {
           error:

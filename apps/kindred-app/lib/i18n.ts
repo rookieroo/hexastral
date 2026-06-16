@@ -20,8 +20,24 @@ export type Locale = 'en' | 'zh' | 'zh-Hant' | 'ja'
 
 export const SUPPORTED_LOCALES: readonly Locale[] = ['en', 'zh', 'zh-Hant', 'ja']
 
-/** Resolve the device locale to one of the supported Kindred locales */
+// ── DEV-only locale override ──────────────────────────────────────────────────
+// In-memory toggle (Settings · DEV) to preview the app in any supported locale
+// without changing the device language — so en/zh/ja rendering (incl. the report's
+// CJK-vs-romanized prose) can be QA'd on one device. Resets on reload; gated on
+// __DEV__ so production always follows the device. Screens read `resolveLocale()`
+// once per mount, so reopen the screen (or report) after switching to apply.
+let devLocaleOverride: Locale | null = null
+export function getKindredDevLocale(): Locale | null {
+  return __DEV__ ? devLocaleOverride : null
+}
+export function setKindredDevLocale(next: Locale | null): void {
+  if (__DEV__) devLocaleOverride = next
+}
+
+/** Resolve the device locale to one of the supported Kindred locales (DEV override wins). */
 export function resolveLocale(): Locale {
+  const override = getKindredDevLocale()
+  if (override) return override
   const locales = getLocales()
   const first = locales[0]
   if (!first) return 'en'

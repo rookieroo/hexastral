@@ -33,7 +33,7 @@
 
 import type { WuXing } from '@zhop/astro-core'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
-import { AncientNumeral, isCjkLocale, kindredFonts } from '@zhop/scenario-kindred'
+import { AncientNumeral, isCjkLocale, kindredFonts, spaceCjkLatin } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, X } from 'lucide-react-native'
@@ -58,6 +58,7 @@ import { computeZiweiChart } from '@/lib/solo/ziwei'
 import {
   dayMasterLabel,
   elementLabel,
+  gejuLabel,
   type ReadingStringKey,
   shichenLabel,
   strengthLabel,
@@ -123,33 +124,48 @@ function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
   )
 }
 
+/**
+ * The 4 premium chapters. Each maps to a server report-chapter slug so a Pro
+ * user generates real, chart-grounded prose (parity with the free ch1/ch4);
+ * non-Pro keeps the static teaser + paywall. Mapping to the 命 report's 6 fixed
+ * chapters (best semantic + quality-tier fit):
+ *   Career & Wealth  → ch2_dimensions_static (事业/财富 framework — TERMINAL_PRO)
+ *   Relationships    → ch3_stellar           (星宫密码 incl. 夫妻宫 — TERMINAL_PRO)
+ *   Hidden Tensions  → ch5_hidden             (隐藏面 — exact)
+ *   Action Plan      → ch6_action             (行动指南 — exact)
+ */
 const LOCKED_CHAPTERS = [
   {
     sub: 'CAREER',
+    slug: 'ch2_dimensions_static',
     labelKey: 'reading.lcCareerLabel',
     descKey: 'reading.lcCareerDesc',
     detailKey: 'reading.lcCareerDetail',
   },
   {
     sub: 'RELATIONSHIPS',
+    slug: 'ch3_stellar',
     labelKey: 'reading.lcRelLabel',
     descKey: 'reading.lcRelDesc',
     detailKey: 'reading.lcRelDetail',
   },
   {
     sub: 'HIDDEN TENSIONS',
+    slug: 'ch5_hidden',
     labelKey: 'reading.lcHiddenLabel',
     descKey: 'reading.lcHiddenDesc',
     detailKey: 'reading.lcHiddenDetail',
   },
   {
     sub: 'ACTION PLAN',
+    slug: 'ch6_action',
     labelKey: 'reading.lcActionLabel',
     descKey: 'reading.lcActionDesc',
     detailKey: 'reading.lcActionDetail',
   },
 ] as const satisfies ReadonlyArray<{
   sub: string
+  slug: string
   labelKey: ReadingStringKey
   descKey: ReadingStringKey
   detailKey: ReadingStringKey
@@ -192,6 +208,12 @@ export function ReadingReport({
   const router = useRouter()
   const { t, locale } = useReadingI18n()
   const fonts = useMemo(() => resolveFonts(locale), [locale])
+  // Non-CJK render guard: un-glue any 命理 term the model embedded directly in
+  // Latin prose. No-op for CJK locales (see spaceCjkLatin).
+  const space = useMemo(() => {
+    const cjk = isCjkLocale(locale)
+    return (s: string) => (cjk ? s : spaceCjkLatin(s))
+  }, [locale])
 
   // Top-right close — same node in both the empty-guard and the full report.
   const closeBtn = onRequestClose ? (
@@ -270,6 +292,11 @@ export function ReadingReport({
   const [ch1, setCh1] = useState<CachedChapter | null>(null)
   const [ch4, setCh4] = useState<CachedChapter | null>(null)
   const [loading, setLoading] = useState(true)
+  // Premium chapters (the 4 LOCKED_CHAPTERS), keyed by server slug. Only fetched
+  // for Pro users — non-Pro keeps the static teaser. Each row fills in as its
+  // own fetch resolves (progressive, not a single all-or-nothing barrier).
+  const [premium, setPremium] = useState<Record<string, CachedChapter | null>>({})
+  const [premiumLoading, setPremiumLoading] = useState(false)
 
   const chartHash = useMemo(() => {
     if (!birth) return ''
@@ -317,6 +344,33 @@ export function ReadingReport({
     }
   }, [chartHash, draftSolarDate, draftGender, timeIndex])
 
+  // Premium chapters: fetch the 4 LOCKED_CHAPTERS once the user is Pro. Each is
+  // cache-first and resolves independently so rows fill in as they generate
+  // (server lazy-regens on first GET). Non-Pro never enters here — the teaser +
+  // paywall stay. The server honours kindred Pro for these 命 chapters (see
+  // hexastral-api report.ts access gate).
+  useEffect(() => {
+    if (!isPro) return
+    if (!chartHash || draftSolarDate == null || draftGender == null) return
+    let cancelled = false
+    const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
+    async function loadPremium() {
+      setPremiumLoading(true)
+      await Promise.all(
+        LOCKED_CHAPTERS.map(async ({ slug }) => {
+          const cached = await getCachedChapter(slug, chartHash)
+          const ch = cached ?? (await fetchChapter(slug, chartHash, b))
+          if (!cancelled) setPremium((prev) => ({ ...prev, [slug]: ch }))
+        })
+      )
+      if (!cancelled) setPremiumLoading(false)
+    }
+    void loadPremium()
+    return () => {
+      cancelled = true
+    }
+  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
+
   // Locked chapters route to the existing RevenueCat paywall. Pro users skip
   // this entirely (every card renders as a full Chapter — see below).
   const goToPaywall = () =>
@@ -349,7 +403,7 @@ export function ReadingReport({
   }`
 
   const identityLine =
-    `${dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)} · ${chart.geju.primary} · ${t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) })}` +
+    `${dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)} · ${gejuLabel(chart.geju.primary, locale)} · ${t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) })}` +
     (ziweiLabel ? ` · ${t('label.soulPalaceInline', { stars: ziweiLabel })}` : '')
 
   /* ── chapter metadata: gathered once so the detail view + list both consume
@@ -357,19 +411,19 @@ export function ReadingReport({
   const ch1Meta = {
     label: t('reading.ch1Label'),
     sub: 'PERSONALITY',
-    content: ch1?.content ?? null,
+    content: ch1?.content ? space(ch1.content) : null,
     loading: loading && !ch1,
     placeholder: t('reading.ch1Placeholder', {
       stem: chart.dayMaster,
       el: elementLabel(chart.dayMasterWuXing as WuXing, locale),
-      geju: chart.geju.primary,
+      geju: gejuLabel(chart.geju.primary, locale),
       soul: ziweiLabel ? t('reading.soulPalaceClause', { stars: ziweiLabel }) : '',
     }),
   }
   const ch4Meta = {
     label: t('reading.ch4Label'),
     sub: 'CURRENT PERIOD',
-    content: ch4?.content ?? null,
+    content: ch4?.content ? space(ch4.content) : null,
     loading: loading && !ch4,
     placeholder: dayunInfo?.active
       ? t('reading.ch4Placeholder', {
@@ -421,11 +475,14 @@ export function ReadingReport({
     } else {
       const lc = LOCKED_CHAPTERS[detailChapter.idx]
       if (lc) {
+        const raw = isPro ? (premium[lc.slug]?.content ?? null) : null
+        const content = raw ? space(raw) : null
         detailProps = {
           label: t(lc.labelKey),
           sub: lc.sub,
-          content: null,
-          loading: false,
+          content,
+          // Pro: show the generation skeleton until content lands; non-Pro: no spinner.
+          loading: isPro && premiumLoading && !content,
           // Drill-in copy is intentionally longer than the list-card teaser —
           // gives the locked chapter substance even before unlock.
           placeholder: t(lc.detailKey),
@@ -434,6 +491,21 @@ export function ReadingReport({
           backLabel: t('common.back'),
           onBack: back,
           onUnlock: goToPaywall,
+          // Once unlocked + generated, ground it in THIS chart and enable 划词
+          // chat — same treatment as the free chapters.
+          ...(content
+            ? {
+                identityLine,
+                birthBadge,
+                onAsk: onAskAI
+                  ? (quote: string | null) => onAskAI({ slug: lc.slug, quote })
+                  : undefined,
+                askChapterLabel: t('reading.askChapter'),
+                askHint: t('reading.askParagraphHint'),
+                onPickQuote: setPickedQuote,
+                highlightedQuotes: highlights,
+              }
+            : {}),
         }
       }
     }
@@ -502,6 +574,7 @@ export function ReadingReport({
            */}
           {LOCKED_CHAPTERS.map((ch, i) => {
             const idx = i as 0 | 1 | 2 | 3
+            const pc = isPro ? premium[ch.slug] : null
             return (
               <Pressable
                 key={ch.sub}
@@ -514,8 +587,10 @@ export function ReadingReport({
                   n={i + 3}
                   label={t(ch.labelKey)}
                   sub={ch.sub}
-                  summary={t(ch.descKey)}
-                  loading={false}
+                  // Pro: real generated preview (falls back to the teaser while it
+                  // generates); non-Pro: the teaser copy.
+                  summary={pc?.content ? space(pc.content) : t(ch.descKey)}
+                  loading={isPro && premiumLoading && !pc}
                   fonts={fonts}
                   locked={!isPro}
                 />

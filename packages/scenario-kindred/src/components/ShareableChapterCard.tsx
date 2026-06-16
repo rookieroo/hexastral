@@ -27,6 +27,7 @@ import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { Text, View, type ViewProps } from 'react-native'
 import { CHAPTER_SEAL } from '../glyphs'
 import { isCjkLocale, kindredFonts } from '../kindredFonts'
+import { spaceCjkLatin } from '../text'
 import type { SynastryChapter } from '../types'
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
@@ -84,6 +85,8 @@ export function ShareableChapterCard({
   const s = (n: number) => Math.round(n * scale)
 
   const cjk = isCjkLocale(locale)
+  // Non-CJK guard: un-glue any 命理 term embedded in Latin prose (no-op for CJK).
+  const space = (s: string) => (cjk ? s : spaceCjkLatin(s))
   const titleFont = cjk ? kindredFonts.cjk : kindredFonts.display
   const quoteFont = cjk ? kindredFonts.cjk : kindredFonts.serifItalic
   const labelFont = cjk ? kindredFonts.cjk : kindredFonts.mono
@@ -127,7 +130,7 @@ export function ShareableChapterCard({
             textAlign: 'center',
           }}
         >
-          {title}
+          {space(title)}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(10) }}>
           <Text
@@ -179,7 +182,7 @@ export function ShareableChapterCard({
             textAlign: 'center',
           }}
         >
-          {chapter.goldenLine}
+          {space(chapter.goldenLine)}
         </Text>
       </View>
 

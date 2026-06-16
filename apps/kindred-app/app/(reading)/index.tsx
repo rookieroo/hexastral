@@ -10,7 +10,7 @@
  *
  *   ◐ Yuel                                 ⚙   ← brand top-left · Settings top-right
  *   ┌─ live night sky ────────────────────┐
- *   │      ·   ✦      ◉ (you)    ·   ✦     │   ← faint star field + gravity orbits
+ *   │      ·   ✦      ◉ (you)    ·   ✦     │   ← you + thread-stars only; collapses on scroll
  *   └─────────────────────────────────────┘
  *        YOUR READING · Earth · 1994-06-22       ← caption names your star
  *   Threads                              +
@@ -30,7 +30,6 @@ import {
   useBondList,
   useKindredClient,
 } from '@zhop/scenario-kindred'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Plus, Settings } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -43,11 +42,14 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Extrapolation,
   interpolate,
+  runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -73,6 +75,8 @@ interface HomeCopy {
   open: string
   threads: string
   threadsHint: string
+  /** 0-thread empty state — the primary "bring someone into your sky" action. */
+  emptyCta: string
   noBirthTitle: string
   noBirthCta: string
 }
@@ -82,7 +86,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: 'Your reading',
     open: 'Open your reading →',
     threads: 'Threads',
-    threadsHint: 'No one orbits you yet — invite or add someone',
+    threadsHint: 'Your sky is yours alone — no one orbits you yet.',
+    emptyCta: 'Invite someone →',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },
@@ -90,7 +95,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: '你的命书',
     open: '打开命书 →',
     threads: '牵绊',
-    threadsHint: '还没有人绕着你 — 邀请或录入对方',
+    threadsHint: '此刻，夜空里只有你一个人。',
+    emptyCta: '邀请对方 →',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
   },
@@ -98,7 +104,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: '你的命書',
     open: '打開命書 →',
     threads: '牽絆',
-    threadsHint: '還沒有人繞著你 — 邀請或錄入對方',
+    threadsHint: '此刻，夜空裡只有你一個人。',
+    emptyCta: '邀請對方 →',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
   },
@@ -106,7 +113,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     cardKicker: 'あなたの命書',
     open: '命書を開く →',
     threads: '絆',
-    threadsHint: 'まだ誰もあなたの周りに — 招待または入力',
+    threadsHint: '今はまだ、夜空にいるのはあなただけ。',
+    emptyCta: '相手を招待 →',
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
@@ -148,6 +156,12 @@ export default function ReadingHomeScreen() {
   // container opacity); the meaningful stars (you + threads) live in SkyHero.
   const skyBright = useSharedValue(0.55)
   const heroH = Math.min(width * 0.84, 320)
+  // Collapsing sky: the hero recedes to a slim header as you scroll into your
+  // threads, handing the list the screen (the metaphor stays — your star is still
+  // the anchor, just quieted). HERO_MIN is the pinned header height; the collapse
+  // tracks scroll 1:1 (scroll up by X → sky shrinks by X) until fully collapsed.
+  const HERO_MIN = 92
+  const collapseRange = Math.max(1, heroH - HERO_MIN)
 
   // Animate the night sky ONLY while the home is visible + foreground (2026-06
   // "手机发烫"): both layers are Skia/GPU now (SkyField is one twinkle shader,
@@ -197,6 +211,23 @@ export default function ReadingHomeScreen() {
     opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
     transform: [{ scale: interpolate(scrollY.value, [0, 130], [1, 0.8], Extrapolation.CLAMP) }],
   }))
+  // Collapsing sky — coupled animations off scrollY. The list layout is STATIC
+  // (overlap model below), so none of this reflows the list → no scroll⇄layout
+  // jitter (the bug in the in-flow version):
+  //  • the outer clip shrinks heroH → HERO_MIN, uncovering the list beneath it;
+  //  • the inner scales (top-anchored) + lifts SkyHero so your star recedes to a
+  //    small anchor in the slim header instead of being clipped away;
+  //  • `collapse` (into SkyHero) fades the rings/spokes/threads so only the star is left.
+  const skyCollapseStyle = useAnimatedStyle(() => ({
+    height: interpolate(scrollY.value, [0, collapseRange], [heroH, HERO_MIN], Extrapolation.CLAMP),
+  }))
+  const skyHeroStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(scrollY.value, [0, collapseRange], [0, -28], Extrapolation.CLAMP) },
+      { scale: interpolate(scrollY.value, [0, collapseRange], [1, 0.5], Extrapolation.CLAMP) },
+    ],
+  }))
+  const collapseSv = useDerivedValue(() => Math.min(1, Math.max(0, scrollY.value / collapseRange)))
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
@@ -283,6 +314,27 @@ export default function ReadingHomeScreen() {
     },
     [threads]
   )
+  // Settings — reached by the top-right gear AND a left-swipe on the blank sky
+  // (SkyHero.onSwipeLeft). It pushes in from the right; swipe-right inside Settings
+  // pops back, so the two motions mirror.
+  const openSettings = useCallback(() => router.push('/(settings)'), [router])
+
+  // Same left-swipe → Settings over the list area's blank space. activeOffsetX
+  // keeps taps/presses working; failOffsetY yields to vertical scroll; a row's own
+  // swipe-to-解缘 (a deeper ReanimatedSwipeable) wins the gesture arena when the
+  // touch lands on a row, so only the blank space triggers this.
+  const listSwipeToSettings = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-18, 18])
+        .failOffsetY([-16, 16])
+        .onEnd((e) => {
+          if (e.translationX < -55 || e.velocityX < -650) {
+            runOnJS(openSettings)()
+          }
+        }),
+    [openSettings]
+  )
 
   // 划词 AI chat (K3): push the chat seeded with the chapter slug + (optionally)
   // the long-pressed paragraph as a quoted draft. Keep the reading overlay mounted
@@ -344,7 +396,7 @@ export default function ReadingHomeScreen() {
         </Text>
       </View>
       <Pressable
-        onPress={() => router.push('/(settings)')}
+        onPress={openSettings}
         hitSlop={12}
         accessibilityRole='button'
         accessibilityLabel={t(locale, 'settings.title')}
@@ -434,40 +486,44 @@ export default function ReadingHomeScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* Threads header — title + New. (Timeline/make-if are per-bond → row swipe.) */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: kindredSpacing.screenH,
-          marginBottom: kindredSpacing.sm,
-        }}
-      >
-        <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
-        <Pressable
-          onPress={() => router.push('/(onboarding)/mode')}
-          accessibilityRole='button'
-          accessibilityLabel={t(locale, 'bondList.add')}
-          hitSlop={8}
-          style={({ pressed }) => ({
+      {/* Threads header — title + New. Only once you HAVE threads; the 0-thread
+          state shows the centered invite (ListEmptyComponent) instead, so this
+          header would just be a label over nothing. */}
+      {threads.length > 0 ? (
+        <View
+          style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: kindredDark.border,
-            opacity: pressed ? 0.6 : 1,
-          })}
+            justifyContent: 'space-between',
+            paddingHorizontal: kindredSpacing.screenH,
+            marginBottom: kindredSpacing.sm,
+          }}
         >
-          <Plus color={kindredDark.accent} size={16} strokeWidth={1.9} />
-          <Text style={[kindredType.caption, { color: kindredDark.accent, fontWeight: '600' }]}>
-            {t(locale, 'bondList.add')}
-          </Text>
-        </Pressable>
-      </View>
+          <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
+          <Pressable
+            onPress={() => router.push('/(onboarding)/mode')}
+            accessibilityRole='button'
+            accessibilityLabel={t(locale, 'bondList.add')}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: kindredDark.border,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Plus color={kindredDark.accent} size={16} strokeWidth={1.9} />
+            <Text style={[kindredType.caption, { color: kindredDark.accent, fontWeight: '600' }]}>
+              {t(locale, 'bondList.add')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   )
 
@@ -484,97 +540,125 @@ export default function ReadingHomeScreen() {
 
       <SafeAreaView style={{ flex: 1 }}>
         {topBar}
-        {/* FIXED star map — pinned; pull-down / list scroll never moves it. Tap
-            your star → your reading; a thread's star → that bond. */}
-        <View style={{ width: '100%', height: heroH }}>
-          {skyReady ? (
-            <SkyHero
-              width={width}
-              height={heroH}
-              threadCount={threads.length}
-              element={natal.dayMasterWuXing}
-              paused={skyPaused}
-              onTapSelf={openSelfReading}
-              onTapThread={openThreadReading}
-            />
-          ) : null}
-        </View>
-        {/* The list scrolls BELOW the fixed sky; a top gradient dissolves rows
-            into the night as they rise toward it. */}
+        {/* Overlap layout (matches the HTML prototype): the list FILLS the area and
+            its layout never changes on scroll — content just starts below the sky via
+            paddingTop, so collapsing the sky can't reflow it (that reflow was the
+            jitter). The caption rides the sky's bottom edge as it collapses. */}
         <View style={{ flex: 1 }}>
-          <Animated.FlatList
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            style={{ backgroundColor: 'transparent' }}
-            contentContainerStyle={{
-              // Clear the top fade (height 28) so the "you" card isn't dimmed at rest.
-              paddingTop: 40,
-              paddingBottom: kindredSpacing.xxl,
-            }}
-            ListHeaderComponent={listHeader}
-            data={threads}
-            keyExtractor={(b) => b.id}
-            renderItem={({ item }) => (
-              <ThreadListItem
-                bond={item}
-                locale={locale}
-                onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
-                onDelete={() => confirmDelete(item)}
-                onRecompute={item.basedOnStaleBirth ? () => confirmRecompute(item) : undefined}
-              />
-            )}
-            ItemSeparatorComponent={() => (
-              <View
-                style={{
-                  height: StyleSheet.hairlineWidth,
-                  backgroundColor: kindredDark.border,
-                  marginLeft: kindredSpacing.screenH,
-                }}
-              />
-            )}
-            ListEmptyComponent={
-              <Text
-                style={[
-                  kindredType.caption,
-                  { color: kindredDark.textSecondary, paddingHorizontal: kindredSpacing.screenH },
-                ]}
-              >
-                {copy.threadsHint}
-              </Text>
-            }
-            ListFooterComponent={
-              threads.length > 0 ? (
-                <Pressable
-                  onPress={() => router.push('/(settings)/glossary')}
-                  hitSlop={8}
+          {/* list — swipe-left on its blank space → Settings (the gear's mirror) */}
+          <GestureDetector gesture={listSwipeToSettings}>
+            <Animated.FlatList
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={StyleSheet.absoluteFill}
+              contentContainerStyle={{
+                // Start flush under the full sky; the sky collapses 1:1 with scroll,
+                // so the caption tracks its bottom edge down. flexGrow lets the
+                // 0-thread invite center in the space below the sky.
+                flexGrow: 1,
+                paddingTop: heroH + 8,
+                paddingBottom: kindredSpacing.xxl,
+              }}
+              ListHeaderComponent={listHeader}
+              data={threads}
+              keyExtractor={(b) => b.id}
+              renderItem={({ item }) => (
+                <ThreadListItem
+                  bond={item}
+                  locale={locale}
+                  onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
+                  onDelete={() => confirmDelete(item)}
+                  onRecompute={item.basedOnStaleBirth ? () => confirmRecompute(item) : undefined}
+                />
+              )}
+              ItemSeparatorComponent={() => (
+                <View
                   style={{
-                    alignSelf: 'center',
-                    marginTop: kindredSpacing.xl,
-                    paddingVertical: kindredSpacing.sm,
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: kindredDark.border,
+                    marginLeft: kindredSpacing.screenH,
                   }}
-                >
-                  <Text
+                />
+              )}
+              ListEmptyComponent={
+                // 0-thread state: don't leave the bottom an empty void — center a
+                // calm first-connection invite under your lone star (no illustration;
+                // the sky above IS the illustration — you, alone, for now).
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <EmptyState
+                    title={copy.threadsHint}
+                    customAction={
+                      <PrimaryButton
+                        label={copy.emptyCta}
+                        onPress={() => router.push('/(onboarding)/mode')}
+                        block={false}
+                      />
+                    }
+                  />
+                </View>
+              }
+              ListFooterComponent={
+                threads.length > 0 ? (
+                  <Pressable
+                    onPress={() => router.push('/(settings)/glossary')}
+                    hitSlop={8}
                     style={{
-                      fontFamily: kindredFonts.mono,
-                      fontSize: 11,
-                      letterSpacing: 1.5,
-                      color: kindredDark.textMuted,
-                      textTransform: 'uppercase',
+                      alignSelf: 'center',
+                      marginTop: kindredSpacing.xl,
+                      paddingVertical: kindredSpacing.sm,
                     }}
                   >
-                    {t(locale, 'primer.more')}
-                  </Text>
-                </Pressable>
-              ) : null
-            }
-            onRefresh={() => void refetch()}
-            refreshing={false}
-          />
-          <LinearGradient
-            colors={[kindredDark.bg, 'transparent']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 28 }}
-            pointerEvents='none'
-          />
+                    <Text
+                      style={{
+                        fontFamily: kindredFonts.mono,
+                        fontSize: 11,
+                        letterSpacing: 1.5,
+                        color: kindredDark.textMuted,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t(locale, 'primer.more')}
+                    </Text>
+                  </Pressable>
+                ) : null
+              }
+              onRefresh={() => void refetch()}
+              refreshing={false}
+            />
+          </GestureDetector>
+
+          {/* sky overlay — absolute, collapsing height; box-none so SkyHero keeps its
+              taps while the list scrolls beneath it. The inner view scales + lifts the
+              star into the slim header; `collapse` fades the rings/spokes/threads. */}
+          <Animated.View
+            style={[
+              { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
+              skyCollapseStyle,
+            ]}
+            pointerEvents='box-none'
+          >
+            <Animated.View
+              style={[
+                { width: '100%', height: heroH, transformOrigin: 'center top' },
+                skyHeroStyle,
+              ]}
+              pointerEvents='box-none'
+            >
+              {skyReady ? (
+                <SkyHero
+                  width={width}
+                  height={heroH}
+                  threadCount={threads.length}
+                  element={natal.dayMasterWuXing}
+                  paused={skyPaused}
+                  onTapSelf={openSelfReading}
+                  onTapThread={openThreadReading}
+                  onSwipeLeft={openSettings}
+                  collapse={collapseSv}
+                />
+              ) : null}
+            </Animated.View>
+          </Animated.View>
         </View>
       </SafeAreaView>
 

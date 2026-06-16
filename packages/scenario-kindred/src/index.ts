@@ -61,4 +61,5 @@ export {
   TIMELINE_NOTIFY_ID_PREFIX,
   type TimelineNotificationPlanItem,
 } from './lib/timeline-notify'
+export { spaceCjkLatin } from './text'
 export * from './types'
