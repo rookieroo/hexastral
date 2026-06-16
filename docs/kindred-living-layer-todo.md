@@ -9,24 +9,26 @@ screenshots) opened more — see "Round 2" below.
 ## Round 2 — report review (2026-06 screenshots)
 
 Done this round: en chapter title shrunk (no 3-line wrap); svc-astro en term handling
-made meaning-based (no literal "tiger-horse trinity"). Confirmed for the user: the
+made meaning-based (no literal "tiger-horse trinity"); **accept-invite skips the birth
+form when a saved birth exists** (`accept/[token].tsx` loads `loadSelfBirth()`, accepts
+with it); **pair-input name now required** (self + partner). Confirmed for the user: the
 synastry report + timeline + what-if are **八字-only** — no 紫薇/Zi Wei in the compute
 (that's a separate app, ming-pan). Still open:
 
-- **Accept-invite must skip the birth form when birth already exists.**
-  `app/accept/[token].tsx` always shows `BirthForm`. If `loadSelfBirth()` returns a
-  saved birth, skip the form and POST `/respond` with it (auto-accept); only show the
-  form when there's genuinely no birth on file.
 - **Staged moon loader missing on form→reading.** The bond report (`(bonds)/[id].tsx`)
   shows `GeneratingStages` on `isGenerating` (202), but the SOLO create flow
   (`(onboarding)/reveal.tsx`) shows the plain `AutoMoonPhaseLoader` — no staged
   carousel. Wire `GeneratingStages` into the create→reveal path (the stages exist).
-- **Person references are inconsistent in the LLM output** (root of the 甲乙/you/zy
-  mess). Across chapters the model writes "Jia's / Yi's" (romanized 甲乙), real names
-  ("you" / "zy"), AND "Day Master's Wood" — so the client's 甲方/乙方 personalization
-  only catches some. Fix generation-side: prompt the model to refer to the two people
-  by ONE consistent scheme — ideally the real names, so **make name required** in
-  onboarding self + accept + pair-input (the user's suggestion); never 甲乙 / jiǎ-yǐ.
+- **Name required for the RESONANCE path too** (pair-input/solo is done). Resonance
+  reports use the two ACCOUNT names (`users.name`): the inviter's + the accepter's.
+  Onboarding `self.tsx` collects no name today, and `accept/[token].tsx` collects none
+  (uses the account name, which may be null). To guarantee real names everywhere:
+  add a required name field to onboarding self + accept, persisted to `users.name`.
+- **Person references still inconsistent in the LLM output** (the deeper 甲乙/you/zy
+  root). The model writes "Jia's / Yi's" (romanized 甲乙), real names, AND "Day Master's
+  Wood" across chapters — so the client's 甲方/乙方 personalization only catches some.
+  Fix generation-side: prompt the model to refer to the pair by ONE consistent scheme
+  (ideally the real names, never 甲乙 / jiǎ-yǐ).
 - **Meaning-first terms in zh too.** 寅午三合局 is opaque even to zh readers; extend the
   meaning-based directive to the zh path (only the en tone guide is refined so far),
   and consider a curated term→meaning gloss for the worst offenders
