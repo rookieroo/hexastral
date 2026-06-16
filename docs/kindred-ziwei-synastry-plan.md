@@ -6,6 +6,24 @@ cross-validates and supplements the 八字 chart (two independent systems agreei
 stronger, more defensible read — and a differentiator). This is the heaviest item here;
 multi-phase.
 
+## Reframe after code-diving (2026-06) — P1 + P2 SHIPPED
+The plan's biggest fear — hand-porting exacting 紫薇 placement logic — is **moot**:
+the placement engine is the **`iztro`** npm lib, already wrapped server-side in
+`stellar.ts` (`generateChart`), and `shuangpan.ts` already proves a 八字×紫薇
+*consensus* pattern (single-person). Two consequences:
+- "Share the compute" (P1) = **reuse `generateChart`**, not extract a package. The
+  synastry compute is server-side only (the app renders the *result*), so it lives in
+  svc-astro — no cross-platform `packages/ziwei` needed.
+- **Shipped:** `services/svc-astro/src/services/hehun/ziwei-synastry.ts` (+ golden tests):
+  - **P1** `summarizeZiwei(person)` → compact 紫薇 summary (12 palaces, 生年四化 read
+    off stars, star→palace map). iztro owns placement; we map its single-char mutagen
+    (禄/权/科/忌) → 化禄/权/科/忌 ourselves (note: `parseMutagen` expects the full token,
+    so `stellar.ts`'s `siHua` is null — latent bug there, sidestepped here).
+  - **P2** `analyzeZiweiSynastry(a, b)` → structured pair facts: 命宫 resonance, 夫妻宫
+    cross-read, and **飞星** (one chart's 生年四化 landing in the other's palaces — the
+    heart of it: 化禄=ease there, 化忌=deep entanglement/friction there) with a tone +
+    a zh note per landing, A↔B mirrored. Output is structured facts (zh), no LLM.
+
 ## Current state (what exists)
 - `services/svc-astro/services/hehun/hehun.ts` — `computeHeHun(personA, personB)` builds
   chart summaries from `FourPillars` (八字): 十神 + 格局 + 日主五行. No 紫薇.
@@ -36,10 +54,14 @@ multi-phase.
    "best year" weights 八字 用神 timing AND 紫薇 大限 favorability.
 
 ## Phasing (each its own focused change + tests)
-- **P1** Share the 紫薇 chart compute (extract from ming-pan → package, golden-tested).
-- **P2** Pair 紫薇 analysis (palace synastry + 飞星) → structured facts.
-- **P3** Weave into the report + the 八字/紫薇 cross-validation framing (svc-astro
-  compute + prompt). Forward-looking — existing reports stay 八字-only (archival).
+- **P1** ✅ Share the 紫薇 chart compute — reuse `generateChart` via `summarizeZiwei`
+  (golden-tested). (No package extraction needed; see reframe above.)
+- **P2** ✅ Pair 紫薇 analysis (命宫 resonance + 夫妻宫 cross-read + 飞星) → structured
+  facts. `analyzeZiweiSynastry`, golden-tested.
+- **P3** ⏭️ NEXT — weave into the report + the 八字/紫薇 cross-validation framing: have
+  `generateSynastryChapters` compute both summaries, feed the 紫微 facts + a "where both
+  systems agree" reconciliation into the prompt. Forward-looking — existing reports stay
+  八字-only (archival). Needs an svc-astro deploy.
 - **P4** 紫薇 cycles in timeline + what-if (cross-confirmed turning points rank higher).
 
 ## Risks / decisions
