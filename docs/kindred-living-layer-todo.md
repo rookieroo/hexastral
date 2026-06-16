@@ -18,9 +18,16 @@ the user: the synastry report + timeline + what-if are **八字-only** — no �
 Remaining splits into two planned features + small follow-ups:
 
 - **命理 term meaning-first + a Settings glossary page** → see
-  **[docs/kindred-term-glossary-plan.md](kindred-term-glossary-plan.md)**. Also folds in
-  the **person-reference fix** (one consistent scheme, never 甲乙/jiǎ-yǐ) — solving that
-  generation-side is what lets name stay OPTIONAL (no required-name friction).
+  **[docs/kindred-term-glossary-plan.md](kindred-term-glossary-plan.md)**. **P1–P3 shipped:**
+  - P1 — `@zhop/astro-i18n` curated `terms` table (69 terms, meaning-first zh+en;
+    ja/ko fall back to en).
+  - P2 — svc-astro `buildLanguageBlock`: zh meaning-first directive + verbatim
+    甲方/乙方 person rule (the person-reference fix — what lets name stay OPTIONAL).
+    **Needs `cd services/svc-astro && bun deploy` + a generate-and-review pass.**
+  - P3 — `(settings)/terms.tsx` glossary page rendering the table; Settings row added.
+    Also dropped the now-stale 甲/乙 roles section from the SYMBOL glossary (it
+    collided with the new 天干 entries; the report shows 你/name now). On-device QA pending.
+  - P4 (optional, not done) — in-report term linking: tap a term → its glossary entry.
 - **合盘 on 八字 + 紫薇** (timeline / what-if grounded in both, cross-validating) → see
   **[docs/kindred-ziwei-synastry-plan.md](kindred-ziwei-synastry-plan.md)**.
 
@@ -70,10 +77,12 @@ leaking) before touching it.
   "tiger-horse trinity"). Both need an svc-astro deploy + on-device check.
 
 ## Generation-side follow-ups (minor — svc-astro)
-- Person-label scheme: the client now personalizes 甲乙 away (user never sees them),
-  so the 天干 collision is moot in the UI. Cleanest future fix: have the LLM emit
-  neutral tokens (`{{A}}`/`{{B}}`) without an English possessive, so the client maps
-  without the "you's"→"your" patch. Low priority.
-- Term density: tune by generating a few en reports and trimming further if still
-  dense; consider adding the missing synastry terms (天干/三合/六合/六冲/亡神/劫煞)
-  to the `hehun` term map in `i18n-prompt.ts` for consistent glosses.
+- Person-label scheme: P2 hardened the rule (keep 甲方/乙方 verbatim, never romanize)
+  so the client's per-viewer swap always lands. Even cleaner future option: emit
+  `{{A}}`/`{{B}}` placeholders (no English possessive → drop the "you's"→"your" patch).
+  Low priority; needs a coordinated client change. **Needs an svc-astro deploy first.**
+- Term density / meaning-first: the curated `astro-i18n` `terms` table is the canonical
+  content source and P2 added the zh/cross-lingual meaning-first directives. Optional
+  later: wire svc-astro to IMPORT `getAllTerms()` for one literal source of glosses
+  (deferred — needs adding the `@zhop/astro-i18n` workspace dep to the Worker + verifying
+  the bundle/install). After deploy, generate a few zh+en reports and trim if still dense.
