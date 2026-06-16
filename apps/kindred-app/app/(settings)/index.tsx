@@ -446,6 +446,32 @@ export default function SettingsScreen() {
               {t(locale, 'settings.glossary.hint')}
             </Text>
           </Pressable>
+
+          <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
+
+          {/* The 命理 TERM glossary — decodes the words (五行/十神/神煞/格局/合冲/
+              用神…), as opposed to the symbol glossary above which decodes the
+              report's visual marks. Shares astro-i18n's curated terms table. */}
+          <Pressable
+            onPress={() => router.push('/(settings)/terms')}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {t(locale, 'settings.terms.row')}
+            </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {t(locale, 'settings.terms.hint')}
+            </Text>
+          </Pressable>
         </Card>
 
         <View style={{ height: kindredSpacing.lg }} />

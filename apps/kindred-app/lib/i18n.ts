@@ -323,6 +323,11 @@ export const translations: Translations = {
     'settings.reference.section': 'Reference',
     'settings.glossary.row': 'Symbol glossary',
     'settings.glossary.hint': 'What the seals, marks and elements in a report mean.',
+    'settings.terms.row': 'Term glossary',
+    'settings.terms.hint': 'Plain-language meanings of the astrology terms a reading can use.',
+    'terms.title': 'Term Glossary',
+    'terms.intro':
+      'A reading may name a few classical concepts. Here is what each one means, in plain language. You never need this to follow your report — it is here if you are curious.',
     'glossary.title': 'Symbol Glossary',
     'glossary.intro':
       'A report is set in seals, brush marks and ancient numerals rather than web widgets. Here is how to read them.',
@@ -692,6 +697,11 @@ export const translations: Translations = {
     'settings.reference.section': '符号说明',
     'settings.glossary.row': '符号图鉴',
     'settings.glossary.hint': '解读报告里的印、批与五行用神。',
+    'settings.terms.row': '命理词典',
+    'settings.terms.hint': '报告里出现的命理术语，用大白话解释。',
+    'terms.title': '命理词典',
+    'terms.intro':
+      '报告偶尔会提到一些命理概念。这里用大白话解释每个词的意思——读报告时并不需要它，纯粹是给好奇的你准备的。',
     'glossary.title': '符号图鉴',
     'glossary.intro': '报告以印章、朱批与古数书写，而非网页控件。下面是它们的读法。',
     'glossary.seals.section': '章印',
@@ -1053,6 +1063,11 @@ export const translations: Translations = {
     'settings.reference.section': '符號說明',
     'settings.glossary.row': '符號圖鑑',
     'settings.glossary.hint': '解讀報告裡的印、批與五行用神。',
+    'settings.terms.row': '命理詞典',
+    'settings.terms.hint': '報告裡出現的命理術語，用白話解釋。',
+    'terms.title': '命理詞典',
+    'terms.intro':
+      '報告偶爾會提到一些命理概念。這裡用白話解釋每個詞的意思——讀報告時並不需要它，純粹是給好奇的你準備的。',
     'glossary.title': '符號圖鑑',
     'glossary.intro': '報告以印章、硃批與古數書寫，而非網頁控件。下面是它們的讀法。',
     'glossary.seals.section': '章印',
@@ -1416,6 +1431,11 @@ export const translations: Translations = {
     'settings.reference.section': '記号について',
     'settings.glossary.row': '記号の手引き',
     'settings.glossary.hint': 'レポートの印・朱批・五行用神の読み方。',
+    'settings.terms.row': '命理用語集',
+    'settings.terms.hint': 'レポートに出てくる命理用語を、平易な言葉で解説。',
+    'terms.title': '命理用語集',
+    'terms.intro':
+      'レポートにはときどき命理の概念が登場します。ここでは各用語の意味を平易な言葉で解説します。レポートを読むのに必須ではなく、気になる方のための手引きです。',
     'glossary.title': '記号の手引き',
     'glossary.intro':
       'レポートは画面ウィジェットではなく、印章・朱批・古代数字で記されています。その読み方です。',

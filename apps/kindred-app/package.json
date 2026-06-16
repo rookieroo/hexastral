@@ -21,6 +21,7 @@
     "@react-native-picker/picker": "2.11.1",
     "@shopify/react-native-skia": "2.2.12",
     "@zhop/astro-core": "workspace:*",
+    "@zhop/astro-i18n": "workspace:*",
     "@zhop/core-ui": "workspace:*",
     "@zhop/ddl-client": "workspace:*",
     "@zhop/hexastral-client": "workspace:*",
