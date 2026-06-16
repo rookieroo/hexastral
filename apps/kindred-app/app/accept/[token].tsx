@@ -29,7 +29,9 @@ import {
   birthDateFieldLabelsForLocale,
   birthInputToSolar,
 } from '@zhop/core-ui'
+import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import {
   type PersonBirth,
   type RelationshipType,
@@ -43,6 +45,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
@@ -241,6 +244,36 @@ export default function AcceptTokenScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <KindredMoon size={72} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Accepting (B tapped Open) → the 合盘 is computing + the report generating. Show the
+  // staged moon loader (对齐天干地支 → 八字 → 合盘 → 生成报告) at the moment B starts the
+  // reading — not a bare button spinner. Same loader + stages the report uses, so the
+  // wait reads as one continuous transition into the report.
+  if (accepting) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: kindredSpacing.lg,
+          }}
+        >
+          <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
+          <GeneratingStages
+            color={kindredDark.textSecondary}
+            stages={[
+              t('bond.stage.align'),
+              t('bond.stage.bazi'),
+              t('bond.stage.synastry'),
+              t('bond.stage.report'),
+            ]}
+          />
         </View>
       </SafeAreaView>
     )

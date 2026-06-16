@@ -133,15 +133,12 @@ export default function PairInputScreen() {
   // guess); the partner additionally needs a name + relationship type (the
   // reveal create reads targetName + relationshipLabel). City stays optional.
   const relType: RelationshipType | null = (draft.relationshipLabel as RelationshipType) || null
-  // Name is now REQUIRED (2026-06): a named pair keeps every report reading with real
-  // names instead of falling back to ambiguous labels (甲/乙, "the other person").
+  // Name stays OPTIONAL — a required name in onboarding/solo is friction that loses
+  // users (2026-06 decision). The report's 甲/乙 ambiguity is fixed generation-side
+  // (a consistent person-reference) instead — see docs/kindred-term-glossary-plan.md.
   const selfFilled =
-    !!draft.selfName?.trim() &&
-    selfSolar !== null &&
-    draft.selfGender !== null &&
-    typeof draft.selfTimeIndex === 'number'
+    selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
   const otherFilled =
-    !!draft.otherName?.trim() &&
     otherSolar !== null &&
     draft.otherGender !== null &&
     typeof draft.otherTimeIndex === 'number' &&
