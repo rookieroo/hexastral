@@ -746,10 +746,15 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
     const dtEnd = ymdCompact(ymdAdd(ymd, 1))
 
     const yi = day.goodFor.slice(0, 4).join('、') || '—'
-    // 农历 date — leads every event title so the subscribed feed reads as a clean
-    // 万年历. It's the line most people want; the 通书 detail is demoted behind it,
-    // and the full 宜忌 lives in the notes (tap the event in Calendar to see it).
-    const lunar = `${day.lunarDate.monthName}${day.lunarDate.dayName}`
+    // 农历 — the narrow month-grid pill only fits ~3 chars after iOS's own
+    // subscribed-calendar icon, so the title leads with an all-numeric lunar date:
+    // "5/21" (month/day), "闰6/29" for a leap month. Digits are narrow (even 12/29
+    // fits), collision-free, and consistent (no Chinese/Arabic mix); the 闰 prefix
+    // marks the year's single leap month. It looks like a date by design — fine for
+    // a 黄历 feed (the grid cell is the solar date; this is the lunar one). The full
+    // 月+日 ("五月廿一" / "闰四月廿一") stays in the notes.
+    const lunarShort = `${day.lunarDate.isLeap ? '闰' : ''}${day.lunarDate.month}/${day.lunarDate.day}`
+    const lunarFull = `${day.lunarDate.monthName}${day.lunarDate.dayName}`
 
     // The PERSONAL feed (subject defined) must genuinely be 专属 — not the
     // universal 黄历 with one fit word tacked on. Lead with YOUR verdict + the
@@ -781,9 +786,9 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
           : personalization.fit === '吉'
             ? '于你得力，宜把握'
             : ''
-      summary = `${lunar} · 于你${fitLabel}${reasonShort ? `·${reasonShort}` : ''} · ${day.ganZhi}日`
+      summary = `${lunarShort} · 于你${fitLabel}${reasonShort ? `·${reasonShort}` : ''} · ${day.ganZhi}日`
       descParts = [
-        `农历：${lunar}`,
+        `农历：${lunarFull}`,
         `对你而言：${fitLabel}${reasonShort ? `（${reasonShort}）` : ''}`,
         diverge || null,
         `干支日：${day.ganZhi}（${day.element}）`,
@@ -797,9 +802,9 @@ function renderAlmanacIcs(subject: PersonalAlmanacSubject | undefined, calName: 
       // then 干支日 LAST — it truncates first on a narrow widget, which is right:
       // the 干支 is for 择日/八字 readers, who still get it in the wider month grid
       // + the notes. 忌 moves to the notes only (the full 宜忌 is in-app by design).
-      summary = `${lunar} · 宜 ${yi} · ${day.ganZhi}日`
+      summary = `${lunarShort} · 宜 ${yi} · ${day.ganZhi}日`
       descParts = [
-        `农历：${lunar}`,
+        `农历：${lunarFull}`,
         `干支日：${day.ganZhi}（${day.element}）`,
         `日辰：${day.dayOfficer}日`,
         day.solarTermToday ? `节气：${day.solarTermToday.name}` : null,
@@ -845,7 +850,7 @@ auspiceRoutes.get('/calendar.ics', (c) => {
   c.header('Content-Type', 'text/calendar; charset=utf-8')
   c.header('Cache-Control', 'public, max-age=3600')
   c.header('Content-Disposition', 'inline; filename="auspice-almanac.ics"')
-  return c.body(renderAlmanacIcs(undefined, 'Auspice 黄历'))
+  return c.body(renderAlmanacIcs(undefined, 'Yuun 黄历'))
 })
 
 // ── Pro 对你而言 calendar feed — signed token + server-side Pro check ─────────
@@ -954,7 +959,7 @@ auspiceRoutes.get('/calendar/p/:token', async (c) => {
   c.header('Content-Type', 'text/calendar; charset=utf-8')
   c.header('Cache-Control', 'private, max-age=3600')
   c.header('Content-Disposition', 'inline; filename="auspice-foryou.ics"')
-  return c.body(renderAlmanacIcs(subjectFromBirthDate(birthDate), 'Auspice · 对你而言'))
+  return c.body(renderAlmanacIcs(subjectFromBirthDate(birthDate), 'Yuun · 对你而言'))
 })
 
 // ── GET /month?year=&month= — batched month grid (Sprint 2 deliverable #2) ──
