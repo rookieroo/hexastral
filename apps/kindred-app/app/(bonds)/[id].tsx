@@ -199,13 +199,19 @@ export default function BondDetailScreen({
   // Overlay has no OS edge-swipe-back — a left-edge swipe-right dismisses it
   // (matches iOS). A thin left-edge strip owns the gesture so it never fights the
   // horizontal ChapterPager in the content. (Routes keep the real OS gesture.)
+  // Guard against off-axis up-swipes (the bug): tighten the vertical fail band so a
+  // mostly-vertical drag cancels early, and require horizontal motion to genuinely
+  // dominate at release (translationX > 2× |translationY|) before we close. Matches
+  // the sturdier ReadingOverlay pattern.
   const edgeSwipe = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX([12, 9999])
-        .failOffsetY([-28, 28])
+        .activeOffsetX([14, 9999])
+        .failOffsetY([-14, 14])
         .onEnd((e) => {
-          if (e.translationX > 60) runOnJS(requestClose)()
+          if (e.translationX > 64 && e.translationX > Math.abs(e.translationY) * 2) {
+            runOnJS(requestClose)()
+          }
         }),
     [requestClose]
   )
