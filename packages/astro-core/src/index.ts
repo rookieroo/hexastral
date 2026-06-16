@@ -449,3 +449,5 @@ export type {
   WuXing,
   YinYang,
 } from './types'
+export type { ZiweiRelationSignal, ZiweiTimingSummary, ZiweiTone } from './ziwei-timing'
+export { ziweiRelationMonthSignal, ziweiRelationYearSignal } from './ziwei-timing'

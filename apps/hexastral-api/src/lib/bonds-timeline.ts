@@ -18,6 +18,7 @@ import {
   type DateTimeInput,
   type MergedNode,
   type RelationshipPerson,
+  type ZiweiTimingSummary,
 } from '@zhop/astro-core'
 
 /** 生辰三元组 (排盘最小输入)。 */
@@ -33,6 +34,8 @@ export interface ResolvedBond {
   name: string
   relationshipLabel?: string
   counterpart: BirthTriple
+  /** 对方的紫微时序摘要 (来自已存合盘报告; 仅 resonance 且已生成报告的 bond 有)。 */
+  counterpartZiwei?: ZiweiTimingSummary
 }
 
 /** pairReadings 行里与排盘相关的双方字段 (resonance 解析用)。 */
@@ -43,6 +46,44 @@ export interface PairReadingBirth {
   personBSolarDate: string
   personBTimeIndex: number
   personBGender: string
+  /** 双方紫微摘要 JSON (可空)；存在时供 timeline / what-if 复用印证。 */
+  ziweiSummaryA?: string | null
+  ziweiSummaryB?: string | null
+}
+
+/** 安全解析存储的紫微摘要 → 仅取时序印证所需的 star→宫 映射 (ZiweiTimingSummary)。 */
+export function parseZiweiTimingSummary(
+  raw: string | null | undefined
+): ZiweiTimingSummary | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(raw) as { starToPalace?: Record<string, string> }
+    if (parsed && typeof parsed.starToPalace === 'object' && parsed.starToPalace) {
+      return { starToPalace: parsed.starToPalace }
+    }
+  } catch {}
+  return undefined
+}
+
+/** resonance reading 里本我是否为 personA (镜像 bond 时本我=personB)。 */
+function egoIsPersonA(egoBirth: BirthTriple, reading: PairReadingBirth): boolean {
+  return (
+    reading.personASolarDate === egoBirth.solarDate &&
+    reading.personATimeIndex === egoBirth.timeIndex &&
+    reading.personAGender === egoBirth.gender
+  )
+}
+
+/** 按本我视角拆分存储的双方紫微摘要 → { 本我, 对方 }。 */
+export function resolveResonanceZiwei(
+  egoBirth: BirthTriple,
+  reading: PairReadingBirth
+): { egoZiwei?: ZiweiTimingSummary; counterpartZiwei?: ZiweiTimingSummary } {
+  const a = parseZiweiTimingSummary(reading.ziweiSummaryA)
+  const b = parseZiweiTimingSummary(reading.ziweiSummaryB)
+  return egoIsPersonA(egoBirth, reading)
+    ? { egoZiwei: a, counterpartZiwei: b }
+    : { egoZiwei: b, counterpartZiwei: a }
 }
 
 /** 隐私投影后的时间轴节点 DTO —— 只含派生字段, 无原始生辰。 */
@@ -189,6 +230,7 @@ function resolveEgoAndBonds(
         bondId: b.bondId,
         name: b.name,
         relationshipLabel: b.relationshipLabel,
+        ziwei: b.counterpartZiwei,
       },
     ]
   })

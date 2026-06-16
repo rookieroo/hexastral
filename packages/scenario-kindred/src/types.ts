@@ -439,6 +439,8 @@ export interface RelMakeIfWindow {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  /** 紫微 流月四化 also lights a bond palace (命宫/夫妻/福德) — second-system corroboration. */
+  ziwei: boolean
   /** deterministic zh reasons (client may localize from the structured flags) */
   reasons: string[]
 }
@@ -460,6 +462,7 @@ export interface RelMakeIfYear {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  ziwei: boolean
   reasons: string[]
 }
 

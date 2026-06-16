@@ -24,6 +24,11 @@ import {
 } from './relationship-timeline'
 import { getTaoHua, getYiMa } from './shensha'
 import type { EarthlyBranch, WuXing } from './types'
+import {
+  type ZiweiTimingSummary,
+  ziweiRelationMonthSignal,
+  ziweiRelationYearSignal,
+} from './ziwei-timing'
 
 export type DecisionLean = 'favorable' | 'mixed' | 'caution'
 
@@ -54,6 +59,9 @@ export interface RelDecisionWindow {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  /** 紫微 流月四化 also lights a bond palace (命宫/夫妻/福德) this month — the second
+   *  system corroborating the timing. Folded into `score` when present. */
+  ziwei: boolean
   /** Deterministic zh reasons (one per active signal). */
   reasons: string[]
 }
@@ -71,7 +79,12 @@ export interface RelDecisionResult {
   verdict: string
 }
 
-export interface RelMakeIfOptions extends RelLiuYueOptions {}
+export interface RelMakeIfOptions extends RelLiuYueOptions {
+  /** Persisted 紫微 summaries (from the 合盘 report). When BOTH are present, each
+   *  window also gets a 紫微 流月 corroboration folded into its score. */
+  ziweiA?: ZiweiTimingSummary
+  ziweiB?: ZiweiTimingSummary
+}
 
 /**
  * 关系通关用神 (与 svc-astro hehun.computeRelationshipYongshen 同算法, 纯 五行):
@@ -160,6 +173,23 @@ export function planRelationshipDecision(
       score += bothClash ? -3 : -2
       reasons.push(bothClash ? '流月冲双方日支，易两头起波' : '流月冲一方日支，留心摩擦')
     }
+    // 紫微 流月印证 (第二套系统): 本月四化点亮任一方的关系宫 → 顺势加分 / 摩擦减分。
+    let ziwei = false
+    if (opts.ziweiA && opts.ziweiB) {
+      const zSig = ziweiRelationMonthSignal(opts.ziweiA, opts.ziweiB, n.ganZhi.stem)
+      if (zSig.significant) {
+        ziwei = true
+        if (zSig.tone === 'harmony') {
+          score += 2
+          reasons.push('紫微流月四化亦顺势点亮关系宫，两套系统皆利推进')
+        } else if (zSig.tone === 'tension') {
+          score -= 2
+          reasons.push('紫微流月四化触动关系宫且偏忌，宜缓不宜急')
+        } else {
+          reasons.push('紫微流月四化亦牵动关系宫，能量升而需善用')
+        }
+      }
+    }
 
     return {
       year: n.year,
@@ -176,6 +206,7 @@ export function planRelationshipDecision(
       taohua,
       yima,
       shishang,
+      ziwei,
       reasons,
     }
   })
@@ -246,6 +277,8 @@ export interface RelDecisionYear {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  /** 紫微 流年四化 also lights a bond palace this year (folded into `score`). */
+  ziwei: boolean
   reasons: string[]
 }
 
@@ -264,6 +297,9 @@ export interface RelDecisionYearOptions {
   fromYear: number
   /** How many years forward (default 10 — the near-term that matters). */
   years?: number
+  /** Persisted 紫微 summaries — when BOTH present, fold 紫微 流年 into each year's score. */
+  ziweiA?: ZiweiTimingSummary
+  ziweiB?: ZiweiTimingSummary
 }
 
 /**
@@ -327,6 +363,22 @@ export function planRelationshipDecisionByYear(
         score += bothClash ? -3 : -2
         reasons.push(bothClash ? '流年冲双方日支，易两头起波' : '流年冲一方日支，留心摩擦')
       }
+      let ziwei = false
+      if (opts.ziweiA && opts.ziweiB) {
+        const zSig = ziweiRelationYearSignal(opts.ziweiA, opts.ziweiB, n.year)
+        if (zSig.significant) {
+          ziwei = true
+          if (zSig.tone === 'harmony') {
+            score += 2
+            reasons.push('紫微流年四化亦顺势点亮关系宫，两套系统皆利推进')
+          } else if (zSig.tone === 'tension') {
+            score -= 2
+            reasons.push('紫微流年四化触动关系宫且偏忌，宜缓不宜急')
+          } else {
+            reasons.push('紫微流年四化亦牵动关系宫，能量升而需善用')
+          }
+        }
+      }
 
       return {
         year: n.year,
@@ -342,6 +394,7 @@ export function planRelationshipDecisionByYear(
         taohua,
         yima,
         shishang,
+        ziwei,
         reasons,
       }
     })

@@ -10,7 +10,7 @@
  */
 
 import type { ExecutionContext } from '@cloudflare/workers-types/2023-07-01'
-import { STEM_WUXING } from '@zhop/astro-core'
+import { STEM_WUXING, type ZiweiTimingSummary } from '@zhop/astro-core'
 import { dayGanZhi, getFourPillars } from '@zhop/astro-core/ganzhi'
 import { calculateDailySynastry } from '@zhop/astro-core/synastry'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
@@ -41,6 +41,7 @@ import {
   type PairReadingBirth,
   type ResolvedBond,
   resolveResonanceCounterpart,
+  resolveResonanceZiwei,
 } from '../lib/bonds-timeline'
 import { logEvent } from '../lib/event-log'
 import { sendPushEvent } from '../lib/push'
@@ -1626,15 +1627,20 @@ bondRoutes.get('/timeline', async (c) => {
         personBSolarDate: pairReadings.personBSolarDate,
         personBTimeIndex: pairReadings.personBTimeIndex,
         personBGender: pairReadings.personBGender,
+        ziweiSummaryA: pairReadings.ziweiSummaryA,
+        ziweiSummaryB: pairReadings.ziweiSummaryB,
       })
       .from(pairReadings)
       .where(inArray(pairReadings.id, resonanceReadingIds))
     for (const r of readings) readingMap.set(r.id, r)
   }
 
+  // 本我紫微摘要 — 任一 resonance reading 里本我侧的摘要 (跨 bond 同一人, 取首个有效)。
+  let egoZiwei: ZiweiTimingSummary | undefined
   const resolved: ResolvedBond[] = []
   for (const r of rows) {
     let counterpart: BirthTriple | null = null
+    let counterpartZiwei: ZiweiTimingSummary | undefined
     if (r.mode === 'solo') {
       if (r.targetBirthSolarDate && r.targetBirthTimeIndex != null && r.targetBirthGender) {
         counterpart = {
@@ -1645,7 +1651,12 @@ bondRoutes.get('/timeline', async (c) => {
       }
     } else if (r.hehunReadingId) {
       const reading = readingMap.get(r.hehunReadingId)
-      if (reading) counterpart = resolveResonanceCounterpart(egoBirth, reading)
+      if (reading) {
+        counterpart = resolveResonanceCounterpart(egoBirth, reading)
+        const z = resolveResonanceZiwei(egoBirth, reading)
+        counterpartZiwei = z.counterpartZiwei
+        if (!egoZiwei && z.egoZiwei) egoZiwei = z.egoZiwei
+      }
     }
     if (!counterpart) continue
     resolved.push({
@@ -1653,6 +1664,7 @@ bondRoutes.get('/timeline', async (c) => {
       name: r.targetName,
       relationshipLabel: r.relationshipLabel,
       counterpart,
+      counterpartZiwei,
     })
   }
 
@@ -1678,6 +1690,8 @@ bondRoutes.get('/timeline', async (c) => {
     toYear: currentYear + (far ? 30 : 10),
     keepRoutineYears: true,
     notifyFromDate: new Date(),
+    // 紫微 第二系统印证: 八字显著 + 紫微亦点亮关系宫的年份升档显著度 (两套系统不约而同)。
+    egoZiwei,
   })
 
   // 流月 living layer (近期月度明细) —— 满 12 个月 (订阅价值)。无推送 (流月不推)。
@@ -1848,6 +1862,8 @@ bondRoutes.post('/:id/makeif', async (c) => {
 
   // 对方盘: solo → userBonds.targetBirth*; resonance → pairReadings + 非对称解析 (D2 服务端持盘)
   let counterpart: BirthTriple | null = null
+  let egoZiwei: ZiweiTimingSummary | undefined
+  let counterpartZiwei: ZiweiTimingSummary | undefined
   if (bond.mode === 'solo') {
     if (bond.targetBirthSolarDate && bond.targetBirthTimeIndex != null && bond.targetBirthGender) {
       counterpart = {
@@ -1865,11 +1881,18 @@ bondRoutes.post('/:id/makeif', async (c) => {
         personBSolarDate: pairReadings.personBSolarDate,
         personBTimeIndex: pairReadings.personBTimeIndex,
         personBGender: pairReadings.personBGender,
+        ziweiSummaryA: pairReadings.ziweiSummaryA,
+        ziweiSummaryB: pairReadings.ziweiSummaryB,
       })
       .from(pairReadings)
       .where(eq(pairReadings.id, bond.hehunReadingId))
       .get()
-    if (reading) counterpart = resolveResonanceCounterpart(egoBirth, reading)
+    if (reading) {
+      counterpart = resolveResonanceCounterpart(egoBirth, reading)
+      const z = resolveResonanceZiwei(egoBirth, reading)
+      egoZiwei = z.egoZiwei
+      counterpartZiwei = z.counterpartZiwei
+    }
   }
   if (!counterpart) {
     return jsonErr(
@@ -1881,11 +1904,14 @@ bondRoutes.post('/:id/makeif', async (c) => {
   }
 
   // Near-term monthly windows (always, free taste) + the 10-year `longterm` tier
-  // (Pro only — withheld for free so the upsell has something to sell).
+  // (Pro only — withheld for free so the upsell has something to sell). 紫微 第二
+  // 系统印证 folds into each window's score when both summaries exist (A=本我/B=对方).
   const now = new Date()
   const makeif = buildBondMakeIf(egoBirth, counterpart, {
     fromDate: now,
     months: 12,
+    ziweiA: egoZiwei,
+    ziweiB: counterpartZiwei,
     ...(isPro ? { fromYear: now.getUTCFullYear(), years: 10 } : {}),
   })
   return jsonOk(c, {

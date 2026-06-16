@@ -139,13 +139,16 @@ export const pairRoutes = new Hono<AppEnv>()
     if (!isPro) throw new HTTPException(403, { message: 'pro_required' })
 
     // 1. 合婚计算 + AI 解读
-    const { result, interpretation } = await callAstro<{
+    const { result, interpretation, ziweiSummaryA, ziweiSummaryB } = await callAstro<{
       result: {
         compatibility: Record<string, unknown>
         personA: Record<string, unknown>
         personB: Record<string, unknown>
       }
       interpretation: Record<string, string>
+      // 双方紫微摘要 (star→宫 等), 持久化供 timeline / what-if 复用; 可空。
+      ziweiSummaryA: Record<string, unknown> | null
+      ziweiSummaryB: Record<string, unknown> | null
     }>(c.env.SVC_ASTRO, '/pair/compute', {
       ...input,
       isPro,
@@ -189,6 +192,8 @@ export const pairRoutes = new Hono<AppEnv>()
       customRelationshipLabel: input.customRelationshipLabel ?? null,
       compatibilityData: JSON.stringify(result.compatibility),
       interpretation: JSON.stringify(interpretation),
+      ziweiSummaryA: ziweiSummaryA ? JSON.stringify(ziweiSummaryA) : null,
+      ziweiSummaryB: ziweiSummaryB ? JSON.stringify(ziweiSummaryB) : null,
       createdAt: new Date().toISOString(),
     })
 

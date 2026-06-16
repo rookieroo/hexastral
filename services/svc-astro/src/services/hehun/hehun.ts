@@ -34,6 +34,7 @@ import {
   analyzeZiweiSynastry,
   formatZiweiSynastryForPrompt,
   summarizeZiwei,
+  type ZiweiSummary,
 } from './ziwei-synastry'
 
 // ========================================
@@ -295,6 +296,32 @@ ${compatText}${ziweiBlock ? `\n\n${ziweiBlock}` : ''}`
  * 紫微 compute throws (bad date/time), the report gracefully stays 八字-only rather
  * than failing. Forward-looking — only the 6-chapter premium report uses it.
  */
+/**
+ * Both persons' 紫微 summaries, for PERSISTENCE (pairReadings) so the living layer
+ * (timeline / what-if) can reuse them without recomputing iztro. Pure-ish (iztro);
+ * returns nulls on failure so a chart error never blocks report creation.
+ */
+export function summarizeZiweiPair(input: HeHunInput): {
+  ziweiSummaryA: ZiweiSummary | null
+  ziweiSummaryB: ZiweiSummary | null
+} {
+  const toInput = (p: HeHunPersonInput) => ({
+    solarDate: p.solarDate,
+    timeIndex: p.timeIndex,
+    gender: p.gender,
+    longitude: p.longitude,
+    city: p.city,
+  })
+  try {
+    return {
+      ziweiSummaryA: summarizeZiwei(toInput(input.personA)),
+      ziweiSummaryB: summarizeZiwei(toInput(input.personB)),
+    }
+  } catch {
+    return { ziweiSummaryA: null, ziweiSummaryB: null }
+  }
+}
+
 function buildZiweiBlock(input: HeHunInput): string {
   try {
     const toInput = (p: HeHunPersonInput) => ({

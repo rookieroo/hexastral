@@ -29,6 +29,7 @@ import {
   type RelTimelineNodeType,
 } from './relationship-timeline'
 import type { DateTimeInput, GanZhi } from './types'
+import { type ZiweiTimingSummary, ziweiRelationYearSignal } from './ziwei-timing'
 
 /** 一个 bond 的入参: 生辰命格 + 标识。 */
 export interface BondInput {
@@ -39,6 +40,8 @@ export interface BondInput {
   name: string
   /** 关系标签 e.g. spouse / partner / friend (可选, 透传给客户端)。 */
   relationshipLabel?: string
+  /** 该对方的 紫微 时序摘要 (来自已生成的合盘报告; 缺省则不做紫微印证)。 */
+  ziwei?: ZiweiTimingSummary
 }
 
 /** 合并节点里某个 bond 的具体贡献。 */
@@ -96,6 +99,9 @@ export interface ComposeBondsTimelineOptions {
   minGapDays?: number
   /** 推送窗口内最多条数 (可选, 月度 top-N 风格的硬上限)。 */
   maxNotifications?: number
+  /** 本我的 紫微 时序摘要。与 bond.ziwei 同时存在时, 对该年「八字显著 + 紫微亦点亮关系宫」
+   *  的节点升一档显著度 (两套系统不约而同 → 更高置信)。缺省则纯八字 (向后兼容)。 */
+  egoZiwei?: ZiweiTimingSummary
 }
 
 const DAY_MS = 86_400_000
@@ -214,11 +220,27 @@ export function composeBondsTimeline(
     }
   }
 
+  // 紫微 印证: bondId → 该对方紫微摘要 (仅含已带摘要的 bond)。
+  const egoZiwei = opts.egoZiwei
+  const bondZiwei = new Map<string, ZiweiTimingSummary>()
+  if (egoZiwei) {
+    for (const b of bonds) if (b.ziwei) bondZiwei.set(b.bondId, b.ziwei)
+  }
+
   // acc: 大运(major) + 显著 流年(notable); keepRoutineYears 时还含 routine 平年。
   const nodes: MergedNode[] = []
   for (const [key, m] of acc) {
     // 大运 恒为 major; 流年 用累积的显著度 (notable 若任一 bond 冲/合, 否则 routine)。
-    const significance: RelNodeSignificance = m.kind === '大运' ? 'major' : m.significance
+    let significance: RelNodeSignificance = m.kind === '大运' ? 'major' : m.significance
+    // 紫微 不约而同: 该年八字显著(notable)且紫微亦点亮某 bond 的关系宫 → 升 major;
+    // routine 年(keepRoutineYears)被紫微点亮 → 升 notable。八字仍是确定性骨架。
+    if (m.kind === '流年' && egoZiwei && bondZiwei.size > 0 && significance !== 'major') {
+      const corroborated = m.bonds.some((b) => {
+        const z = bondZiwei.get(b.bondId)
+        return z ? ziweiRelationYearSignal(egoZiwei, z, m.year).significant : false
+      })
+      if (corroborated) significance = significance === 'notable' ? 'major' : 'notable'
+    }
     nodes.push({
       key,
       date: m.date,

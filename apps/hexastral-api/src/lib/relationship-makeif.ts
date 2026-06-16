@@ -12,6 +12,7 @@ import {
   planRelationshipDecision,
   planRelationshipDecisionByYear,
   type RelationshipPerson,
+  type ZiweiTimingSummary,
 } from '@zhop/astro-core'
 import { type BirthTriple, birthToInput } from './bonds-timeline'
 
@@ -34,6 +35,8 @@ export interface RelMakeIfWindowDTO {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  /** 紫微 流月四化 also lights a bond palace this month (second-system corroboration). */
+  ziwei: boolean
   reasons: string[]
 }
 
@@ -54,6 +57,7 @@ export interface RelMakeIfYearDTO {
   taohua: boolean
   yima: boolean
   shishang: boolean
+  ziwei: boolean
   reasons: string[]
 }
 
@@ -86,7 +90,15 @@ function windowKey(year: number, month: number): string {
 export function buildBondMakeIf(
   egoBirth: BirthTriple,
   counterpart: BirthTriple,
-  opts: { fromDate?: Date; months?: number; fromYear?: number; years?: number } = {}
+  opts: {
+    fromDate?: Date
+    months?: number
+    fromYear?: number
+    years?: number
+    /** 双方紫微摘要 (来自合盘报告)。A=本我, B=对方。两者皆有时折入评分。 */
+    ziweiA?: ZiweiTimingSummary
+    ziweiB?: ZiweiTimingSummary
+  } = {}
 ): RelMakeIfDTO {
   const egoInput = birthToInput(egoBirth)
   const otherInput = birthToInput(counterpart)
@@ -103,6 +115,8 @@ export function buildBondMakeIf(
     const yr = planRelationshipDecisionByYear(ego, other, {
       fromYear: opts.fromYear,
       years: opts.years,
+      ziweiA: opts.ziweiA,
+      ziweiB: opts.ziweiB,
     })
     longterm = {
       years: yr.years.map((y) => ({
@@ -120,6 +134,7 @@ export function buildBondMakeIf(
         taohua: y.taohua,
         yima: y.yima,
         shishang: y.shishang,
+        ziwei: y.ziwei,
         reasons: y.reasons,
       })),
       bestYearKey: yr.best ? String(yr.best.year) : undefined,
@@ -144,6 +159,7 @@ export function buildBondMakeIf(
     taohua: w.taohua,
     yima: w.yima,
     shishang: w.shishang,
+    ziwei: w.ziwei,
     reasons: w.reasons,
   }))
   return {

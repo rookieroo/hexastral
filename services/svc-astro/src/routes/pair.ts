@@ -8,6 +8,7 @@ import {
   generateAnnualForecast,
   generateHeHunInterpretation,
   generateSynastryChapters,
+  summarizeZiweiPair,
 } from '../services/hehun/hehun'
 import type { Env } from '../types'
 
@@ -45,7 +46,11 @@ pairRoutes.post('/compute', async (c) => {
         }
       : null
 
-  return c.json({ result, interpretation })
+  // 紫微 summaries — persisted by the API layer so the living layer (timeline /
+  // what-if) can fold a deterministic 紫微 signal without recomputing iztro.
+  const { ziweiSummaryA, ziweiSummaryB } = summarizeZiweiPair(input)
+
+  return c.json({ result, interpretation, ziweiSummaryA, ziweiSummaryB })
 })
 
 /** POST /annual-forecast — 年度双人运势解读（基于已有合盘数据） */

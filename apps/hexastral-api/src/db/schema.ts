@@ -375,6 +375,10 @@ export const pairReadings = sqliteTable(
     customRelationshipLabel: text('custom_relationship_label'),
     compatibilityData: text('compatibility_data').notNull(),
     interpretation: text('interpretation').notNull(),
+    /** 双方紫微时序摘要 (JSON.stringify(ZiweiSummary))，供 timeline / what-if 复用，
+     *  无需重算 iztro。可空 (旧报告 / 排盘失败)。star→宫 映射即足够印证流年/流月。 */
+    ziweiSummaryA: text('ziwei_summary_a'),
+    ziweiSummaryB: text('ziwei_summary_b'),
     bookmarked: integer('bookmarked', { mode: 'boolean' }).default(false).notNull(),
     rating: integer('rating'),
     createdAt: text('created_at')
