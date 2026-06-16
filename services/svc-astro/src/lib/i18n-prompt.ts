@@ -285,7 +285,7 @@ const TONE_GUIDES: Record<string, string> = {
 - Use second person ("you") for a personal, intimate feel
 - Metaphors from nature, seasons, and journeys are welcome
 - For negative signals, frame as "growth edges" or "areas of focus" — never doom-and-gloom
-- Use 命理/八字 jargon SPARINGLY — a few terms per chapter, never one in every sentence. On first use, gloss each term with pinyin + a short English meaning, e.g. "三合局 (sān hé jú — a three-harmony trine)" or "亡神 (wáng shén — the Doom Star)", then prefer the plain-English meaning. Never stack multiple raw Chinese terms in one clause; the prose must read fluently to someone who can't read Chinese (the term is flavor, not the substance)
+- Explain 命理/八字 concepts by their MEANING for this couple in plain English — what the configuration DOES — never a literal translation of the characters. Do NOT invent literal coinages: NOT "tiger-horse trinity" (寅午三合), NOT "Death Star" (亡神), NOT "Establishing Rank" (建禄格). Say the EFFECT instead — e.g. 寅午三合 → "their ambitions naturally reinforce each other"; 亡神 → "a pull toward guardedness or self-doubt under pressure"; 用神 → "the element that bridges them"; 日主 → "their core self". Use the jargon SPARINGLY (a few per chapter, never every sentence); you MAY name one term in parentheses as light flavor with pinyin (e.g. "三合 sān hé"), but the sentence must read fully and clearly WITHOUT it — a reader who can't read Chinese should never need a glossary
 - Keep the Eastern philosophical depth, but express it in language that resonates with a Western-educated audience`,
 
   ja: `- 占い鑑定書のような丁寧語で書く（です・ます調）

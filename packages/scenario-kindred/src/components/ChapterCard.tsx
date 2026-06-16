@@ -255,8 +255,11 @@ export function ChapterCard({
           <Text
             style={{
               fontFamily: titleFont,
-              fontSize: cjk ? 44 : 34,
-              lineHeight: cjk ? 48 : 38,
+              // en titles are LLM-generated + can run long; 34 wrapped to 3 lines
+              // ("First Impressions: Fire's Mediation"). 28 keeps the hero weight but
+              // fits in ≤2 lines for the typical title. (cjk titles are short — 44 ok.)
+              fontSize: cjk ? 44 : 28,
+              lineHeight: cjk ? 48 : 33,
               color: C.ink,
               letterSpacing: cjk ? 2 : 0,
             }}
