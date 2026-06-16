@@ -16,6 +16,7 @@
     "format": "biome format . --write"
   },
   "dependencies": {
+    "@zhop/astro-i18n": "workspace:*",
     "@zhop/hexastral-client": "workspace:*",
     "@zhop/hexastral-tokens": "workspace:*"
   },

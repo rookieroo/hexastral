@@ -15,8 +15,14 @@
  * assembled `body` for legacy/partial chapters.
  */
 
+import {
+  getTermByZh,
+  type ResolvedTerm,
+  segmentTextByTerms,
+  type Locale as TermLocale,
+} from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { CHAPTER_SEAL } from '../glyphs'
 import { isCjkLocale, kindredFonts } from '../kindredFonts'
@@ -26,6 +32,15 @@ import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
 import { YongshenKey } from './ChapterMeta'
 import { RiskMark } from './RiskMark'
+import { TermBubble } from './TermBubble'
+
+/** Narrow the free-form `locale` string to the astro-i18n term locale. */
+function termLocale(locale?: string): TermLocale {
+  if (locale === 'zh-Hant' || locale === 'zh-TW' || locale === 'zh-HK') return 'zh-Hant'
+  if (locale?.startsWith('zh')) return 'zh'
+  if (locale?.startsWith('ja')) return 'ja'
+  return 'en'
+}
 
 const CHAPTER_TITLES: Record<SynastryChapter['kind'], string> = {
   first_impression: '第一印象',
@@ -215,6 +230,35 @@ export function ChapterCard({
   const quoteFont = cjk ? kindredFonts.cjk : kindredFonts.serifItalic
   const labelFont = cjk ? kindredFonts.cjk : kindredFonts.mono
 
+  // Tap-to-explain: terms in the prose (用神 / 命宫 / 化忌 / 七杀…) open a meaning
+  // bubble. Only the interactive in-app report wires this (gated on onPickQuote, the
+  // same signal the 划词 long-press uses) — the off-screen share-capture card stays
+  // plain. For non-CJK prose the matcher finds nothing, so it renders verbatim.
+  const tLocale = termLocale(locale)
+  const [activeTerm, setActiveTerm] = useState<ResolvedTerm | null>(null)
+  const interactive = onPickQuote != null
+  const renderProse = (s: string): ReactNode => {
+    if (!interactive) return s
+    const segs = segmentTextByTerms(s)
+    if (segs.length === 1 && !segs[0]?.termZh) return s
+    return segs.map((seg, j) =>
+      seg.termZh ? (
+        <Text
+          key={`${j}-${seg.termZh}`}
+          onPress={() => {
+            const term = getTermByZh(seg.termZh as string, tLocale)
+            if (term) setActiveTerm(term)
+          }}
+          style={{ textDecorationLine: 'underline', textDecorationStyle: 'dotted' }}
+        >
+          {seg.text}
+        </Text>
+      ) : (
+        seg.text
+      )
+    )
+  }
+
   const seal = CHAPTER_SEAL[chapter.kind]
   const title = chapter.title || CHAPTER_TITLES[chapter.kind]
   const subtitle =
@@ -367,7 +411,7 @@ export function ChapterCard({
                               : undefined
                           }
                         >
-                          {s}
+                          {renderProse(s)}
                         </Text>
                       ))
                     : null}
@@ -443,6 +487,19 @@ export function ChapterCard({
           <AncientNumeral n={total} size={13} color={C.muted} strokeWidth={3.4} />
         </View>
       </View>
+
+      <TermBubble
+        term={activeTerm}
+        onClose={() => setActiveTerm(null)}
+        cjk={cjk}
+        colors={{
+          bg: C.bg,
+          ink: C.ink,
+          inkSoft: C.inkSoft,
+          muted: C.muted,
+          cinnabar: C.cinnabar,
+        }}
+      />
     </ScrollView>
   )
 }

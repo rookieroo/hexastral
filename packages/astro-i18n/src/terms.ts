@@ -32,6 +32,8 @@ export type TermCategory =
   | 'hechong' // 合冲
   | 'relation' // 关系/方法 — 用神/通关/日主
   | 'cycle' // 周期 — 大运/流年/流月
+  | 'ziwei' // 紫微斗数 — 宫位/四化/概念
+  | 'ziweistar' // 紫微 14 主星
 
 export interface TermMeaning {
   /** ≤~8-word plain-language gist — the EFFECT. Inline gloss + prompt feed. */
@@ -73,6 +75,8 @@ export const TERM_CATEGORY_ORDER: TermCategory[] = [
   'hechong',
   'relation',
   'cycle',
+  'ziwei',
+  'ziweistar',
 ]
 
 const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
@@ -86,6 +90,8 @@ const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
     hechong: '合冲',
     relation: '核心概念',
     cycle: '时间周期',
+    ziwei: '紫微斗数',
+    ziweistar: '紫微主星',
   },
   'zh-Hant': {
     wuxing: '五行',
@@ -97,6 +103,8 @@ const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
     hechong: '合衝',
     relation: '核心概念',
     cycle: '時間週期',
+    ziwei: '紫微斗數',
+    ziweistar: '紫微主星',
   },
   en: {
     wuxing: 'Five Elements',
@@ -108,6 +116,8 @@ const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
     hechong: 'Harmonies & Clashes',
     relation: 'Core Concepts',
     cycle: 'Time Cycles',
+    ziwei: 'Zi Wei Dou Shu',
+    ziweistar: 'Major Stars',
   },
   ja: {
     wuxing: '五行',
@@ -119,6 +129,8 @@ const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
     hechong: '合冲',
     relation: '中心概念',
     cycle: '時間サイクル',
+    ziwei: '紫微斗数',
+    ziweistar: '紫微の主星',
   },
 }
 
@@ -177,4 +189,48 @@ export function getTermsByCategory(
 /** Raw entries (all locales), e.g. for svc-astro prompt construction. */
 export function getAllTerms(): readonly TermEntry[] {
   return TERMS
+}
+
+// ── in-prose term detection (tap-to-explain) ─────────────────────────────────
+//
+// Only MULTI-character tokens are detectable in prose: the single-char 五行 /
+// 天干 / 地支 (金, 甲, 子…) recur constantly in ordinary text, so underlining
+// every one would shred the reading — the load-bearing tap targets are the 2+
+// char domain terms (用神, 三合, 命宫, 化忌, 紫微…). Matched longest-first so
+// 夫妻宫 wins over a bare 宫, 三方四正 over 三方.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+const PROSE_TOKENS: string[] = Array.from(
+  new Set(TERMS.filter((t) => t.zh.length >= 2).map((t) => t.zh))
+).sort((a, b) => b.length - a.length)
+const PROSE_RE = new RegExp(`(${PROSE_TOKENS.map(escapeRegExp).join('|')})`, 'g')
+
+export interface TermSegment {
+  text: string
+  /** The canonical 命理 token when this segment is a known term, else null. */
+  termZh: string | null
+}
+
+/**
+ * Split prose into plain + term segments for tap-to-explain. Term segments carry
+ * `termZh` (look up the meaning with `getTermByZh`). For non-CJK prose (the model
+ * writes the term's effect, not the characters) nothing matches → one plain
+ * segment, so callers render exactly as before. Tokens are matched against the
+ * canonical (simplified) form; traditional-only variants are a follow-up.
+ */
+export function segmentTextByTerms(text: string): TermSegment[] {
+  if (!text) return [{ text, termZh: null }]
+  const out: TermSegment[] = []
+  let last = 0
+  PROSE_RE.lastIndex = 0
+  let m: RegExpExecArray | null = PROSE_RE.exec(text)
+  while (m !== null) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index), termZh: null })
+    out.push({ text: m[0], termZh: m[0] })
+    last = m.index + m[0].length
+    m = PROSE_RE.exec(text)
+  }
+  if (last < text.length) out.push({ text: text.slice(last), termZh: null })
+  return out.length > 0 ? out : [{ text, termZh: null }]
 }

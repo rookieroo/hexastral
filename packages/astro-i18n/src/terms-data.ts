@@ -10,8 +10,10 @@
  */
 
 import type { TermEntry } from './terms'
+import { ZIWEI_TERMS } from './terms-ziwei-data'
 
 export const TERMS: TermEntry[] = [
+  ...ZIWEI_TERMS,
   // ─── 五行 Five Elements ───
   {
     id: 'wuxing_jin',
