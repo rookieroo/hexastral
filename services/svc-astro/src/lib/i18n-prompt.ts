@@ -373,12 +373,28 @@ function isChineseLocale(language: string): boolean {
  * @param domain - 服务领域，决定注入哪些术语
  */
 export function buildLanguageBlock(language: string, domain: TermDomain): string {
+  const isPairDomain = domain === 'hehun' || domain === 'shuangpan'
+
   if (isChineseLocale(language)) {
     const variant = language === 'zh-TW' || language === 'zh-Hant' ? '繁體中文' : '简体中文'
+    // Meaning-first is enforced for EN via TONE_GUIDES.en; the zh path had no
+    // such directive, so zh synastry prose still came out dense with raw jargon
+    // (寅午三合局 is opaque to a zh layperson too). Apply it to the pair domains.
+    const meaningFirstZh = isPairDomain
+      ? [
+          '',
+          '## 命理术语：意义优先（重要）',
+          '- 用命理概念对这段关系「意味着什么」来表达，而不是堆砌术语本身——先说效果与感受，术语可省略或仅作点缀。',
+          '- 不要让读者必须懂命理才能读懂正文：「寅午三合局」「亡神」「建禄格」这类术语应改写为含义，例如「两人的目标天然相互助长」「压力下容易转向自我保护」「靠独立打拼立身」。',
+          '- 每章最多出现一两个术语，首次出现时用括号补一句白话；若不补白话就读不懂，则直接改写为白话。',
+          '- 正文一律以「甲方」「乙方」称呼两人，不得使用或杜撰具体姓名（客户端会替换为「你」与对方名字）。',
+        ].join('\n')
+      : ''
     return [
       '',
       `所有 JSON 文本内容必须使用${variant}输出。JSON 字段名保持英文不变。`,
       '禁止在任何中文文本字段中夹杂英文词汇或英文句式开头（禁止使用 "I\'m"、"I am"、"My"、"This"、"The" 等英文开头短语）。',
+      meaningFirstZh,
       '',
       '只输出纯 JSON，不要输出任何其他内容。',
     ].join('\n')
@@ -407,6 +423,24 @@ export function buildLanguageBlock(language: string, domain: TermDomain): string
     '- 保留东方智慧的深度和独特性，但用现代、可触达的语言传递',
     '- 首次出现的核心术语用「本地化表达」格式，后续可简写',
     '- 输出的个人建议应符合目标文化的生活场景',
+    // The two people enter the prompt as the neutral tokens 甲方/乙方 so the
+    // client can swap them per reader (你 / the other's name). The model used to
+    // romanize them into "Jia"/"Yi" (or invent "Person A", "Day Master's Wood")
+    // in non-zh output, which the client's 甲方/乙方 replacement then missed.
+    // Force the literal tokens through verbatim so the swap always lands —
+    // this is what lets onboarding keep the name OPTIONAL.
+    ...(isPairDomain
+      ? [
+          '',
+          '### Synastry register — meaning first',
+          '- Lead with what each 命理 configuration MEANS for these two people; the Chinese term is optional parenthetical flavor, never required for the sentence to make sense. Use terms sparingly (a couple per chapter at most).',
+          '',
+          '### People — keep the labels verbatim',
+          '- The two people are labelled 甲方 and 乙方. Keep these EXACT two Chinese characters verbatim wherever you refer to them, in EVERY language.',
+          '- Do NOT romanize them ("Jia", "Yi", "jiǎ"/"yǐ"), translate them ("Person A", "the first one", "she/he"), or rename them ("the Day Master", "Day Master\'s Wood").',
+          "- Write a possessive as 甲方's … / 乙方's … (the literal token + 's). The client replaces 甲方/乙方 per reader, so verbatim consistency is essential.",
+        ]
+      : []),
     '',
     '只输出纯 JSON，不要输出任何其他内容。',
   ].join('\n')

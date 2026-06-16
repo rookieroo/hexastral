@@ -52,15 +52,31 @@ review. (Some already exist literal-ish in `svc-astro/lib/i18n-prompt.ts` SHISHE
 maps — migrate + rewrite those meaning-first, then have svc-astro import from astro-i18n
 so there's ONE table.)
 
-## Part B — generation uses the table (svc-astro)
-- The en tone guide is already meaning-first (commit 2483bf6); extend the same directive
-  to the **zh path** (寅午三合局 is opaque to zh readers too) and to ja/ko.
-- Feed the curated `short` meanings into the prompt so glosses are consistent, not
-  re-improvised per chapter.
-- **Person-reference fix (kills the 甲乙/you/zy mess without requiring names):** instruct
-  the model to refer to the two people by ONE scheme for the whole report — the real
-  names when present, else a stable role ("you" / "your partner") — and NEVER 甲乙 /
-  jiǎ-yǐ / "Day Master's Wood". This is what lets us keep name OPTIONAL in onboarding.
+## Part B — generation uses the table (svc-astro) — ✅ DONE (P2)
+- ✅ **zh meaning-first directive.** The zh path of `buildLanguageBlock` had NO tone
+  guidance (only "output in 简体中文"); added a meaning-first block for the pair
+  domains (`hehun`/`shuangpan`) — rewrite 寅午三合局/亡神/建禄格 as their effect, ≤1-2
+  terms/chapter, gloss in parens on first use. (en was already meaning-first via
+  `TONE_GUIDES.en`.) A light cross-lingual meaning-first reminder also covers
+  ja/ko/de/es pair reports. ja/ko TONE_GUIDES intentionally KEEP 漢字 terms (those
+  are natively readable for that audience — the literal-translation problem was an
+  en problem), so they're not forced term-free.
+- ✅ **Person-reference fix.** Root cause: the two people enter the prompt as the
+  neutral tokens 甲方/乙方 (so the client swaps them per reader → 你 / the other's
+  name), but in non-zh output the model romanized them to "Jia"/"Yi" (or invented
+  "Person A" / "Day Master's Wood"), which the client's 甲方/乙方 replacement missed.
+  Fix = a hard rule in the non-zh path: keep 甲方/乙方 EXACTLY verbatim in every
+  language, never romanize/translate/rename, possessive = `甲方's`. This is what
+  lets onboarding keep the name OPTIONAL. Forward-looking — archived reports keep
+  their original text. **Needs `cd services/svc-astro && bun deploy` + a
+  generate-and-review pass.**
+- ⏭️ **Deferred: feeding the curated `short` table into the prompt.** svc-astro does
+  NOT currently depend on `@zhop/astro-i18n` (only astro-core), and adding a
+  workspace dep to a CF Worker risks the bundle/`bun install`. Since the en path is
+  already meaning-first via the tone guide, importing the table is marginal upside
+  for real risk — deferred. The curated table is still the canonical CONTENT source
+  (it feeds the glossary page, P3) and the prompt's example glosses were authored to
+  match it. Wire it in later behind a verified install if we want one literal source.
 
 ## Part C — Settings glossary page
 A new screen, distinct from the existing `(settings)/glossary.tsx` (that one decodes the
@@ -71,9 +87,10 @@ in the device locale. Reachable from Settings + (P4) from a tapped term in the r
 ## Phasing
 - **P1** ✅ Curate the term table in `astro-i18n` (zh + en meaning-first; ja/ko fall
   back to en). 69 terms shipped in `terms.ts` + `terms-data.ts`.
-- **P2** svc-astro: zh/ja meaning-first directive + import the table for consistent
-  glosses + the consistent person-reference rule. Deploy + generate-and-review.
-- **P3** The Settings 命理 glossary page (render `getTermsByCategory(locale)`).
+- **P2** ✅ svc-astro: zh meaning-first directive + cross-lingual meaning-first
+  reminder + the verbatim 甲方/乙方 person rule (pair domains only). Table-import
+  deferred (see Part B). **Needs an svc-astro deploy + generate-and-review.**
+- **P3** ⏭️ NEXT — the Settings 命理 glossary page (render `getTermsByCategory(locale)`).
 - **P4** (optional) In-report term linking: tap a term → its glossary entry / a sheet.
 
 ## Acceptance
