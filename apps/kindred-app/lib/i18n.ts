@@ -50,6 +50,23 @@ export function resolveLocale(): Locale {
   return 'en'
 }
 
+/**
+ * Map a stored/generated language tag (e.g. 'zh-CN', 'en', 'ja', 'zh-TW') to the
+ * app Locale. Returns null when absent/unrecognized so callers can fall back to the
+ * device. Used to render a frozen report in the locale it was GENERATED in (it's
+ * archived LLM output; switching the device language must not re-wrap or
+ * half-translate it — it can't be regenerated).
+ */
+export function localeFromTag(tag?: string | null): Locale | null {
+  if (!tag) return null
+  const t = tag.toLowerCase()
+  if (t.startsWith('zh-tw') || t.startsWith('zh-hk') || t.startsWith('zh-hant')) return 'zh-Hant'
+  if (t.startsWith('zh')) return 'zh'
+  if (t.startsWith('ja')) return 'ja'
+  if (t.startsWith('en')) return 'en'
+  return null
+}
+
 type Translations = Record<Locale, Record<string, string>>
 
 export const translations: Translations = {

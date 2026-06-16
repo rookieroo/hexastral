@@ -63,7 +63,7 @@ import { useAuth } from '@/lib/auth'
 import { type CachedBondBirth, getBondBirth } from '@/lib/bondBirthCache'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
-import { relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
+import { type Locale, localeFromTag, relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
 
@@ -98,13 +98,22 @@ function getSharing(): SharingModule | null {
   }
 }
 
+const VIEWER_LABEL: Record<Locale, string> = { en: 'you', zh: '你', 'zh-Hant': '你', ja: 'あなた' }
+const OTHER_FALLBACK_LABEL: Record<Locale, string> = {
+  en: 'the other person',
+  zh: '对方',
+  'zh-Hant': '對方',
+  ja: 'お相手',
+}
+
 /**
- * Per-viewer framing (#7): the synastry prose refers to the two people with the
- * neutral slots 甲方/乙方. Render them for THIS viewer — 你 for whoever is reading,
- * the other by name — so 乙 reads the report framed around 乙, not 甲. The
- * underlying pair-reading is identical for both; only the labels localise. (For
- * non-CJK reports the 甲方/乙方 tokens don't appear, so this is a no-op there — an
- * English placeholder pass is a follow-up.)
+ * Per-viewer framing: the synastry prose carries the neutral slots 甲方/乙方 even in
+ * non-zh reports. Render them for THIS viewer in the REPORT's locale — the reader is
+ * "you", the other by name (or a localized "the other person" when nameless, so an
+ * invite-only bond never shows a bare ambiguous label). Also fixes the viewer's
+ * English possessive ("you's" → "your"). The pair-reading is identical for both
+ * sides; only the labels localise. (甲乙 stay internal tokens, never shown — avoids
+ * the 天干 collision; a cleaner generation-side label scheme is a follow-up.)
  */
 function personalizeSynastryChapters<
   T extends {
@@ -121,14 +130,21 @@ function personalizeSynastryChapters<
   chapters: readonly T[] | null | undefined,
   isPersonA: boolean,
   aName: string | null,
-  bName: string | null
+  bName: string | null,
+  locale: Locale
 ): T[] | undefined {
   if (!chapters) return undefined
-  const subA = isPersonA ? '你' : (aName ?? '对方') // 甲方 = person A
-  const subB = isPersonA ? (bName ?? '对方') : '你' // 乙方 = person B
-  if (subA === '甲方' && subB === '乙方') return chapters as T[]
-  const sub = (s: string | undefined): string | undefined =>
-    s == null ? s : s.replace(/甲方/g, subA).replace(/乙方/g, subB)
+  const viewer = VIEWER_LABEL[locale]
+  const other = OTHER_FALLBACK_LABEL[locale]
+  const subA = isPersonA ? viewer : (aName ?? other) // 甲方 = person A
+  const subB = isPersonA ? (bName ?? other) : viewer // 乙方 = person B
+  const sub = (s: string | undefined): string | undefined => {
+    if (s == null) return s
+    let out = s.replace(/甲方/g, subA).replace(/乙方/g, subB)
+    // The engine emits 甲方/乙方 + an English possessive 's; "you's" reads wrong.
+    if (locale === 'en') out = out.replace(/\byou's\b/g, 'your').replace(/\bYou's\b/g, 'Your')
+    return out
+  }
   return chapters.map(
     (ch) =>
       ({
@@ -195,6 +211,14 @@ export default function BondDetailScreen({
   )
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
     useSynastryReport(id ?? null)
+  // Frozen LLM output: render the report's content + report-chrome (essence chip,
+  // chapter section labels, primer, share card) in the locale it was GENERATED in
+  // (interpretation.language), NOT the device locale — switching the app language
+  // must not re-wrap or half-translate an archived report (it can't be regenerated).
+  // App chrome (relative time, the FAB) stays device-locale; legacy reports without
+  // a stamp fall back to the device.
+  const reportLocale =
+    localeFromTag(detail?.interpretation?.language as string | undefined) ?? resolveLocale()
   const [chapterIndex, setChapterIndex] = useState<number>(0)
   // 划词 — the sentence the user long-pressed (drives the SelectionActionBar),
   // and the set of highlighted sentences. Highlights persist per-bond via
@@ -250,8 +274,8 @@ export default function BondDetailScreen({
   const aName = (detail?.interpretation?.personAName as string | undefined)?.trim() || null
   const bName = detail?.targetName?.trim() || null
   const viewedChapters = useMemo(
-    () => personalizeSynastryChapters(chapters, isPersonA, aName, bName),
-    [chapters, isPersonA, aName, bName]
+    () => personalizeSynastryChapters(chapters, isPersonA, aName, bName, reportLocale),
+    [chapters, isPersonA, aName, bName, reportLocale]
   )
   useEffect(() => {
     void getKindredSinglePrice('compatibility').then((p) => {
@@ -643,7 +667,7 @@ export default function BondDetailScreen({
               trailing={unlockWall}
               aElement={aElement}
               bElement={bElement}
-              locale={locale}
+              locale={reportLocale}
               onPickQuote={setPickedQuote}
               highlightedQuotes={highlights}
               renderCenterpiece={
@@ -712,11 +736,11 @@ export default function BondDetailScreen({
           >
             <ShareableChapterCard
               chapter={viewedChapters[shareTarget.index] ?? viewedChapters[0]!}
-              selfName={selfName ?? '你'}
-              otherName={otherName ?? '对方'}
+              selfName={selfName ?? VIEWER_LABEL[reportLocale]}
+              otherName={otherName ?? OTHER_FALLBACK_LABEL[reportLocale]}
               width={1080}
               height={1920}
-              locale={locale}
+              locale={reportLocale}
               aElement={aElement}
               bElement={bElement}
               chapterNumber={shareTarget.index + 1}
@@ -774,7 +798,7 @@ export default function BondDetailScreen({
         {/* One-time "how to read this" overlay (甲/乙, the ink 意象, 划词). */}
         {showPrimer ? (
           <ReadingPrimer
-            locale={locale}
+            locale={reportLocale}
             onStart={dismissPrimer}
             onOpenGlossary={() => {
               dismissPrimer()
