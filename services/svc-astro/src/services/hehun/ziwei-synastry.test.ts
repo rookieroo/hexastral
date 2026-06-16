@@ -15,6 +15,7 @@ import {
   analyzeZiweiSynastry,
   formatZiweiSynastryForPrompt,
   summarizeZiwei,
+  ziweiYearCrossConfirm,
 } from './ziwei-synastry'
 
 const A = { solarDate: '1990-08-15', timeIndex: 5, gender: '男' as const }
@@ -122,3 +123,45 @@ describe('formatZiweiSynastryForPrompt', () => {
     expect(block).toContain('飞星')
   })
 })
+
+describe('ziweiYearCrossConfirm', () => {
+  const a = summarizeZiwei(A)
+  const b = summarizeZiwei(B)
+
+  it('flags a harmonious year when 流年化禄 lands in a bond palace', () => {
+    // 2028 (戊): 流年化禄 贪狼 → A 夫妻 + B 福德
+    const sig = ziweiYearCrossConfirm(a, b, 2028)
+    expect(sig.significant).toBe(true)
+    expect(sig.tone).toBe('harmony')
+    expect(sig.hits).toContainEqual({
+      who: 'A',
+      siHua: '化禄',
+      star: '贪狼',
+      palace: '夫妻',
+      tone: 'harmony',
+    })
+    expect(sig.note).toContain('紫微流年印证：2028年')
+    expect(sig.note).not.toContain('宫宫')
+  })
+
+  it('flags a testing year when 流年化忌 lands in a bond palace', () => {
+    // 2032 (壬): 流年化忌 武曲 → A 命宫 + B 夫妻
+    const sig = ziweiYearCrossConfirm(a, b, 2032)
+    expect(sig.significant).toBe(true)
+    expect(sig.tone).toBe('tension')
+    expect(sig.hits.some((h) => h.siHua === '化忌' && BOND.includes(h.palace))).toBe(true)
+  })
+
+  it('stays quiet (no note) for a year with no bond-palace activation', () => {
+    const sig = ziweiYearCrossConfirm(a, b, 2026)
+    expect(sig.significant).toBe(false)
+    expect(sig.note).toBe('')
+    expect(sig.tone).toBe('neutral')
+  })
+
+  it('is deterministic', () => {
+    expect(ziweiYearCrossConfirm(a, b, 2028)).toEqual(ziweiYearCrossConfirm(a, b, 2028))
+  })
+})
+
+const BOND = ['命宫', '夫妻', '福德']

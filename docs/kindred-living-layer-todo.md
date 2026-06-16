@@ -29,11 +29,13 @@ Remaining splits into two planned features + small follow-ups:
     collided with the new 天干 entries; the report shows 你/name now). On-device QA pending.
   - P4 (optional, not done) — in-report term linking: tap a term → its glossary entry.
 - **合盘 on 八字 + 紫薇** (timeline / what-if grounded in both, cross-validating) → see
-  **[docs/kindred-ziwei-synastry-plan.md](kindred-ziwei-synastry-plan.md)**. **P1–P3 shipped:**
-  the 紫微 synastry compute core (`ziwei-synastry.ts`: summarize + 飞星 pair analysis, iztro
-  via stellar.ts, golden-tested) is now woven into the 6-chapter report as a second system
-  with 八字/紫微 cross-validation framing. **Needs an svc-astro deploy.** P4 (紫薇 cycles in
-  timeline/what-if) is next.
+  **[docs/kindred-ziwei-synastry-plan.md](kindred-ziwei-synastry-plan.md)**. **P1–P4 shipped:**
+  the 紫微 synastry compute core (`ziwei-synastry.ts`: summarize + 飞星 pair analysis +
+  流年 cross-confirm, iztro via stellar.ts, golden-tested) is woven into the 6-chapter
+  report (P3, second system + cross-validation framing) and the timeline-node explain
+  prose (P4, "八字与紫微双双指向此节点"). The deterministic ranker stays 八字 (full
+  紫微 ranker-fusion deferred — needs iztro-in-api or precompute+store). **Needs an
+  svc-astro + hexastral-api deploy.**
 
 ---
 

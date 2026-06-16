@@ -31,6 +31,13 @@ const REL_TIMELINE_GUARD_CONFIG = {
   noPeriodicRefill: true,
 } as const satisfies LlmGuardConfig
 
+/** Raw birth (server-side only) for 紫微 流年 cross-confirmation. */
+export interface ZiweiBirth {
+  solarDate: string
+  timeIndex: number
+  gender: '男' | '女'
+}
+
 export interface RelExplainInput {
   /** 你(A). */
   self: RelationshipPerson
@@ -43,6 +50,9 @@ export interface RelExplainInput {
   locale: string
   /** 已解析的 K.4 配额主体 (userId > deviceId > ipHash); null → 直接兜底模板. */
   subject: LlmGuardSubject | null
+  /** 双方原始生辰 (仅服务端) → 启用 紫微 流年印证 (P4)。两者俱全才生效。 */
+  selfBirth?: ZiweiBirth
+  partnerBirth?: ZiweiBirth
 }
 
 export interface RelExplainResult {
@@ -74,7 +84,10 @@ export async function explainRelationshipTimelineNode(
   )
   if (!node) return { explanation: null, source: 'none', upsell: false }
 
-  const cacheKey = `yuan:timeline:explain:${personKey(input.self)}:${personKey(input.partner)}:${input.year}:${input.nodeType}:${input.daYunOf ?? '-'}:${input.locale}`
+  // `z1` when 紫微 cross-confirmation is in play — keeps 紫微-enriched prose from
+  // colliding with the 八字-only entries and forces a one-time regen post-deploy.
+  const ziweiTag = input.selfBirth && input.partnerBirth ? 'z1' : 'z0'
+  const cacheKey = `yuan:timeline:explain:${personKey(input.self)}:${personKey(input.partner)}:${input.year}:${input.nodeType}:${input.daYunOf ?? '-'}:${input.locale}:${ziweiTag}`
 
   const cached = await env.GUARD_KV.get(cacheKey)
   if (cached) return { explanation: cached, source: 'cache', upsell: false }
@@ -108,6 +121,9 @@ export async function explainRelationshipTimelineNode(
           summary: node.summary,
           locale: input.locale,
           isPro: guard.tier === 'deep',
+          // server-to-server only → 紫微 流年印证 (P4); svc-astro treats as optional
+          personA: input.selfBirth,
+          personB: input.partnerBirth,
         }
       )
       const explanation = (resp.explanation ?? '').trim()

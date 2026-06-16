@@ -20,7 +20,7 @@
  * into the report. Nothing here calls an LLM.
  */
 
-import type { Gender } from '@zhop/astro-core'
+import { type Gender, getYearlySiHua } from '@zhop/astro-core'
 import { generateChart } from '../stellar/stellar'
 
 export type SiHua = '化禄' | '化权' | '化科' | '化忌'
@@ -173,12 +173,13 @@ const PALACE_MEANING: Record<string, string> = {
 
 const LABEL: Record<'A' | 'B', string> = { A: '甲方', B: '乙方' }
 
+/** iztro returns 命宫 already suffixed but the others bare — don't double the 宫. */
+const palaceLabel = (palace: string): string => (palace.endsWith('宫') ? palace : `${palace}宫`)
+
 function flyingStarNote(from: 'A' | 'B', siHua: SiHua, star: string, palace: string): string {
   const to = from === 'A' ? 'B' : 'A'
   const realm = PALACE_MEANING[palace] ?? palace
-  // iztro returns 命宫 already suffixed but the others bare — don't double the 宫.
-  const palaceFull = palace.endsWith('宫') ? palace : `${palace}宫`
-  return `${LABEL[from]}的${siHua}（${star}）落入${LABEL[to]}的${palaceFull}——${LABEL[from]}在${LABEL[to]}的「${realm}」上${SIHUA_VERB[siHua]}。`
+  return `${LABEL[from]}的${siHua}（${star}）落入${LABEL[to]}的${palaceLabel(palace)}——${LABEL[from]}在${LABEL[to]}的「${realm}」上${SIHUA_VERB[siHua]}。`
 }
 
 function collectFlyingStars(
@@ -283,4 +284,77 @@ export function formatZiweiSynastryForPrompt(
     flying || '  - （无显著飞星互动）',
     `- 紫微总体倾向：${OVERALL_ZH[syn.overall]}`,
   ].join('\n')
+}
+
+// ─── 流年 cross-confirmation (P4) ────────────────────────────
+
+/** Bond-relevant palaces for a year signal: the self, the relationship, the heart. */
+const BOND_PALACES = ['命宫', '夫妻', '福德']
+
+const PALACE_YEAR_REALM: Record<string, string> = {
+  命宫: '自我状态',
+  夫妻: '亲密关系',
+  福德: '心境与幸福感',
+}
+
+export interface ZiweiYearHit {
+  who: 'A' | 'B'
+  siHua: SiHua
+  star: string
+  palace: string
+  tone: ZiweiTone
+}
+
+export interface ZiweiYearSignal {
+  year: number
+  hits: ZiweiYearHit[]
+  /** Whether 紫微 also flags this year as relationship-relevant. */
+  significant: boolean
+  tone: ZiweiTone
+  /** A zh corroboration note (empty when not significant). */
+  note: string
+}
+
+function buildYearNote(year: number, hits: ZiweiYearHit[]): string {
+  const parts = hits.map((h) => {
+    const realm = PALACE_YEAR_REALM[h.palace] ?? h.palace
+    return `${h.siHua}（${h.star}）入${LABEL[h.who]}${palaceLabel(h.palace)}（牵动其${realm}）`
+  })
+  return `紫微流年印证：${year}年${parts.join('；')}——紫微亦在此年触动关系宫位，与八字此节点相互呼应。`
+}
+
+/**
+ * 紫微 流年 cross-confirmation for a single year: do this year's 流年四化 stars land
+ * in either person's natal bond palaces (命宫/夫妻/福德)? When they do, 紫微 is ALSO
+ * flagging that year as relationship-relevant — corroborating an 八字 turning point.
+ * Pure; enriches the timeline-node EXPLANATION prose, never the ranking (八字 stays
+ * the deterministic spine — see docs/kindred-ziwei-synastry-plan.md P4).
+ */
+export function ziweiYearCrossConfirm(
+  a: ZiweiSummary,
+  b: ZiweiSummary,
+  year: number
+): ZiweiYearSignal {
+  const yearly = getYearlySiHua(year).sihua.all
+  const hits: ZiweiYearHit[] = []
+  for (const [who, summ] of [['A', a] as const, ['B', b] as const]) {
+    for (const s of yearly) {
+      const palace = summ.starToPalace[s.starName]
+      if (palace && BOND_PALACES.includes(palace)) {
+        hits.push({ who, siHua: s.type, star: s.starName, palace, tone: SIHUA_TONE[s.type] })
+      }
+    }
+  }
+  const significant = hits.length > 0
+  const score = hits.reduce(
+    (acc, h) => acc + (h.tone === 'harmony' ? 1 : h.tone === 'tension' ? -1 : 0),
+    0
+  )
+  let tone: ZiweiTone = 'neutral'
+  if (significant) {
+    if (score > 0) tone = 'harmony'
+    else if (score < 0) tone = 'tension'
+    else tone = 'growth'
+  }
+  return { year, hits, significant, tone, note: significant ? buildYearNote(year, hits) : '' }
 }

@@ -1783,6 +1783,9 @@ bondRoutes.post('/timeline/explain', async (c) => {
     daYunOf: body.daYunOf,
     locale: body.locale,
     subject,
+    // server-to-server births → 紫微 流年印证 (P4); never sent to the device.
+    selfBirth: egoBirth,
+    partnerBirth: counterpart,
   })
   return jsonOk(c, result)
 })

@@ -12,11 +12,19 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
 import { callWithFallback } from '../lib/ai-router'
+import { summarizeZiwei, ziweiYearCrossConfirm } from '../services/hehun/ziwei-synastry'
 import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
 
 export const relationshipTimelineRoutes = new Hono<AppEnv>()
+
+/** Optional births (server-to-server only) so we can cross-confirm with 紫微. */
+const birthSchema = z.object({
+  solarDate: z.string().max(12),
+  timeIndex: z.number().int().min(0).max(12),
+  gender: z.enum(['男', '女']),
+})
 
 const inputSchema = z.object({
   nodeType: z.enum(['大运', '流年']),
@@ -35,6 +43,9 @@ const inputSchema = z.object({
   summary: z.string().max(200).optional(),
   locale: z.string().default('en'),
   isPro: z.boolean().optional().default(false),
+  /** Both births → 紫微 流年 cross-confirmation woven into the prose (P4). */
+  personA: birthSchema.optional(),
+  personB: birthSchema.optional(),
 })
 
 relationshipTimelineRoutes.post('/explain', async (c) => {
@@ -58,6 +69,21 @@ relationshipTimelineRoutes.post('/explain', async (c) => {
     if (input.harmonyB) rel.push('合对方日支')
     if (rel.length > 0) facts.push(`流年与双方：${rel.join('、')}`)
   }
+  // 紫微 流年 cross-confirmation (P4) — best-effort; the node stays 八字-driven, 紫微
+  // only corroborates in the prose. Births arrive server-to-server (never to device).
+  let ziweiNote = ''
+  if (input.personA && input.personB) {
+    try {
+      const za = summarizeZiwei(input.personA)
+      const zb = summarizeZiwei(input.personB)
+      const sig = ziweiYearCrossConfirm(za, zb, input.year)
+      if (sig.significant) ziweiNote = sig.note
+    } catch {
+      // 紫微 compute failed → degrade silently to a 八字-only explanation.
+    }
+  }
+  if (ziweiNote) facts.push(ziweiNote)
+
   const factText = facts.join('\n')
 
   const kindClause =
@@ -65,10 +91,14 @@ relationshipTimelineRoutes.post('/explain', async (c) => {
       ? `这是${input.daYunOf === 'A' ? '你' : '对方'}的一步十年大运换运，两人的相处节奏会随之调整。`
       : '这是某一年的流年，影响这一年两人相处的整体气场。'
 
+  const ziweiClause = ziweiNote
+    ? '\n- 事实中已附「紫微流年印证」：请自然点出八字与紫微「双双指向此节点」，作为可信度的加强（一句带过即可，不要堆砌术语）。'
+    : ''
+
   const systemPrompt = `你是一位通晓八字合婚的东方智慧顾问。用 80–200 字${langLabel}解释「这个时间节点对这段关系意味着什么」。
 规则：
 - ${kindClause}
-- 结合流年对双方日主的十神，以及与双方日支的冲（波动）/合（和顺）关系，说明这段时间关系的机遇与课题，并给出一句可操作的相处建议。
+- 结合流年对双方日主的十神，以及与双方日支的冲（波动）/合（和顺）关系，说明这段时间关系的机遇与课题，并给出一句可操作的相处建议。${ziweiClause}
 - 称呼用「你」与「对方」。语气务实，讲成「趋势 / 参考」，不是命运定论。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
 - 不要罗列术语表，像对朋友解释。

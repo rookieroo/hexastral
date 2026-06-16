@@ -65,8 +65,17 @@ the placement engine is the **`iztro`** npm lib, already wrapped server-side in
   时点出『两套系统不约而同』"), and the evidence layer may cite 紫微. 夫妻宫 cross-read
   gated to romantic bonds. Forward-looking — archived reports stay 八字-only. **Needs an
   svc-astro deploy + a generate-and-review pass.** (The flat quick reading stays 八字-only.)
-- **P4** ⏭️ NEXT — 紫薇 cycles in timeline + what-if (大限/流年 + their 四化 alongside the
-  八字 大运/流年; cross-confirmed turning points rank higher in `planRelationshipDecisionByYear`).
+- **P4** ✅ (prose corroboration) — `ziweiYearCrossConfirm(a, b, year)` checks whether the
+  year's 流年四化 stars land in either person's natal bond palaces (命宫/夫妻/福德); when
+  they do, 紫薇 is corroborating that year. Woven into the timeline-node EXPLAIN prose
+  (svc-astro `/relationship-timeline/explain` accepts optional births server-to-server →
+  computes the signal → "八字与紫微双双指向此节点"). The deterministic RANKING stays 八字
+  (the spine) — consistent with P1–P3; cache key tagged `z1` so 紫薇 prose regens post-deploy.
+  **Needs an svc-astro + hexastral-api deploy.**
+  - ⏭️ Deferred (heavier, optional): **full ranker fusion** — making `buildBondMakeIf` /
+    `buildEgoTimeline` (deterministic, in hexastral-api, no iztro) actually weight 紫薇 so
+    cross-confirmed years RANK higher. Needs either iztro-in-api or a precomputed+stored
+    per-year 紫薇 signal. The prose path above delivers the user-visible value first.
 
 ## Risks / decisions
 - 紫薇 placement correctness is unforgiving — P1 needs golden tests vs a trusted source.
