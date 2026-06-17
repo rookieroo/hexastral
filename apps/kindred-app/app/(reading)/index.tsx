@@ -62,6 +62,7 @@ import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -506,7 +507,10 @@ export default function ReadingHomeScreen() {
             marginBottom: kindredSpacing.sm,
           }}
         >
-          <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+            <RedThreadGlyph size={20} color={kindredDark.seal} />
+            <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
+          </View>
           <Pressable
             onPress={() => router.push('/(onboarding)/mode')}
             accessibilityRole='button'
