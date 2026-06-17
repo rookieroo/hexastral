@@ -13,6 +13,7 @@ export default function ReadingLayout() {
       }}
     >
       <Stack.Screen name='index' />
+      <Stack.Screen name='summary' />
       <Stack.Screen name='chat' />
     </Stack>
   )

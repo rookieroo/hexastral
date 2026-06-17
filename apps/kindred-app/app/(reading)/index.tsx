@@ -61,9 +61,7 @@ import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
-import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
-import { openAuspiceReading } from '@/lib/auspice-handoff'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -139,10 +137,6 @@ export default function ReadingHomeScreen() {
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const copy = HOME_COPY[locale]
   const birth = useSelfBirth()
-  const [readingOpen, setReadingOpen] = useState(false)
-  // Where the reading bloom starts — the point the user pressed, so the 水墨
-  // spreads from the tap (set on press-in, read by ReadingOverlay).
-  const [readingOrigin, setReadingOrigin] = useState<{ x: number; y: number } | null>(null)
   // The 合盘 report opens as an in-place OVERLAY on the home (not a pushed route),
   // so it shares the solo reading's transition: the cream report blooms from the
   // tapped row over the live night, no jump. (The [id] route stays for deep links
@@ -184,7 +178,7 @@ export default function ReadingHomeScreen() {
   // pause until the paper has fully covered (~bloom duration), and lift it the
   // instant a report starts closing — the sky drifts through both transitions, and
   // only the fully-occluded steady state is frozen for heat.
-  const reportOpen = readingOpen || openBond != null
+  const reportOpen = openBond != null
   const [coveredBySheet, setCoveredBySheet] = useState(false)
   useEffect(() => {
     if (!reportOpen) {
@@ -310,38 +304,13 @@ export default function ReadingHomeScreen() {
     [recompute, router, locale]
   )
 
-  // Open MY personal reading. Yuun owns the 命书 now (Yuel/Yuun split, Phase 3):
-  // hand off to it via `auspice://reading` carrying the self birth; if Yuun isn't
-  // installed (openAuspiceReading → false), fall back to Yuel's own in-app overlay
-  // (which still renders from the shared engine — no install wall on your reading).
-  const openMyReading = useCallback(async () => {
-    const opened = await openAuspiceReading(
-      birth
-        ? {
-            solarDate: birth.solarDate,
-            timeIndex: birth.timeIndex,
-            gender: birth.gender,
-            city: birth.city,
-            lng: birth.lng,
-            timezone: birth.timezone,
-            clockMinutes: birth.clockMinutes,
-            calibrate: birth.calibrate,
-          }
-        : null
-    )
-    if (!opened) setReadingOpen(true)
-  }, [birth])
-
-  // Star-map taps: your central star (or empty sky) → your reading; a thread's
-  // star → that bond. SkyHero hands back the orbit-slot index + page coords (the
-  // origin seeds the fallback overlay's ink-bloom).
-  const openSelfReading = useCallback(
-    (x: number, y: number) => {
-      setReadingOrigin({ x, y })
-      void openMyReading()
-    },
-    [openMyReading]
-  )
+  // Star-map taps: your central star (or empty sky) → your personal 命书 SUMMARY.
+  // Yuel keeps only a concise, local-compute 概要 now (Yuel/Yuun split); the full
+  // chaptered 命书 lives in Yuun and is reached from inside that summary. A thread's
+  // star → that bond. (No more in-app full report on the home.)
+  const openSelfReading = useCallback(() => {
+    router.push('/(reading)/summary')
+  }, [router])
   const openThreadReading = useCallback(
     (index: number, x: number, y: number) => {
       const b = threads[index]
@@ -369,20 +338,6 @@ export default function ReadingHomeScreen() {
           }
         }),
     [openSettings]
-  )
-
-  // 划词 AI chat (K3): push the chat seeded with the chapter slug + (optionally)
-  // the long-pressed paragraph as a quoted draft. Keep the reading overlay mounted
-  // underneath (chat is a route pushed above it) so popping the chat returns to the
-  // report — not the home, as it did when we closed the overlay first.
-  const handleAskAI = useCallback(
-    ({ slug, quote }: { slug: string; quote: string | null }) => {
-      router.push({
-        pathname: '/(reading)/chat',
-        params: { slug, ...(quote ? { quote } : {}) },
-      })
-    },
-    [router]
   )
 
   // Identity block — chart computes client-side from the persisted birth.
@@ -490,8 +445,7 @@ export default function ReadingHomeScreen() {
           toward the sky as you scroll (youCardStyle). */}
       <Animated.View style={[{ transformOrigin: 'center top' }, youCardStyle]}>
         <Pressable
-          onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
-          onPress={() => void openMyReading()}
+          onPress={() => router.push('/(reading)/summary')}
           accessibilityRole='button'
           accessibilityLabel={copy.cardKicker}
           style={({ pressed }) => ({
@@ -703,14 +657,6 @@ export default function ReadingHomeScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Full reading — ink-bloom overlay (kept mounted for open/close animation).
-          `origin` is the tapped point, so the 水墨 spreads from the finger. */}
-      <ReadingOverlay
-        visible={readingOpen}
-        onClose={() => setReadingOpen(false)}
-        onAskAI={handleAskAI}
-        origin={readingOrigin}
-      />
       {/* 合盘 report — the SAME in-place ink bloom as the solo reading, over the
           live home (rendered here, not pushed as a route, so there's no jump). */}
       {openBond ? (

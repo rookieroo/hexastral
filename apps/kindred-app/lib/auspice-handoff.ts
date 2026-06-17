@@ -116,15 +116,22 @@ export function buildAuspiceReadingUrl(self?: AuspiceReadingHandoff | null): str
 }
 
 /**
- * Open Yuun's personal reading. Returns true when Yuun handled the link; false
- * when it isn't installed (no App-Store hop) so the caller degrades to the
- * in-app reading.
+ * Open Yuun's personal reading. Yuel now shows only a concise local 概要; the FULL
+ * 命书 lives in Yuun, so when Yuun isn't installed we send the user to the App
+ * Store to get it (NOT an in-app full report — that would hollow out Yuun). The
+ * 概要 already delivered standalone value, so the store hop is an upsell, not a
+ * wall. Resolves true once a target (Yuun or the Store) was opened.
  */
 export async function openAuspiceReading(self?: AuspiceReadingHandoff | null): Promise<boolean> {
   try {
     await Linking.openURL(buildAuspiceReadingUrl(self))
     return true
   } catch {
-    return false
+    try {
+      await Linking.openURL(AUSPICE_APP_STORE)
+      return true
+    } catch {
+      return false
+    }
   }
 }

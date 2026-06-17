@@ -73,6 +73,14 @@ const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }>
   },
 }
 
+/** "Your reading" row — opens the concise 命书 概要 (the full book is in Yuun). */
+const READING_COPY: Record<Locale, { row: string; hint: string }> = {
+  en: { row: 'Your reading', hint: 'A quick look at your chart — the full 命书 is in Yuun.' },
+  zh: { row: '你的命书', hint: '你命盘的速览 —— 完整命书在 Yuun 里。' },
+  'zh-Hant': { row: '你的命書', hint: '你命盤的速覽 —— 完整命書在 Yuun 裡。' },
+  ja: { row: 'あなたの命書', hint: '命式のクイックビュー —— 完全版は Yuun に。' },
+}
+
 export default function SettingsScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
@@ -323,6 +331,30 @@ export default function SettingsScreen() {
               ]}
             >
               {BIRTH_COPY[locale].hint}
+            </Text>
+          </Pressable>
+
+          {/* 你的命书概要 — Yuel keeps a concise local taste; the full book is in Yuun. */}
+          <Pressable
+            onPress={() => router.push('/(reading)/summary')}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              paddingVertical: kindredSpacing.md,
+              borderTopWidth: 0.5,
+              borderTopColor: kindredDark.border,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[kindredType.body, { color: kindredDark.text }]}>
+              {READING_COPY[locale].row}
+            </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {READING_COPY[locale].hint}
             </Text>
           </Pressable>
         </Card>
