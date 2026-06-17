@@ -3,10 +3,10 @@
  *
  * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
  * (their element imagery = their star in your orbit), then their name + a quiet
- * relationship line. STATUS shows ONLY for a pending invite — a quiet clock
- * (awaiting their reply); a completed thread carries no icon at all (a "done"
- * check read as odd). No essence chip, no coloured status text, no bullet. Tap →
- * the thread's report; left-swipe reveals 解缘 (release the bond).
+ * relationship line, then a RIGHT-SLOT mark: a pending invite shows a quiet clock
+ * (awaiting their reply); a completed bond shows its 合盘综合评价 imagery
+ * (相生/相克/比和 — see SynastryGlyph, monochrome, non-alarmist). No essence chip,
+ * no coloured status text. Tap → the report; left-swipe reveals 解缘.
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
@@ -16,6 +16,7 @@ import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { ElementGlyph } from '@/components/home/ElementGlyph'
+import { SynastryGlyph } from '@/components/home/SynastryGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, relativeSentLabel, relativeTimeLabel, t } from '@/lib/i18n'
@@ -180,11 +181,16 @@ export function ThreadListItem({
           ) : null}
         </View>
 
-        {/* Pending invite → a quiet clock (awaiting their reply). Completed (and
-            every other) state carries NO icon — the row is clean. */}
+        {/* Right slot: a pending invite shows a quiet clock (awaiting their reply);
+            a completed bond shows its 合盘综合评价 imagery (相生/相克/比和). Other
+            states (declined/expired) carry nothing. */}
         {isPending ? (
-          <View style={{ width: 22, alignItems: 'center' }}>
+          <View style={{ width: 24, alignItems: 'center' }}>
             <Clock color={kindredDark.textMuted} size={16} strokeWidth={1.7} />
+          </View>
+        ) : isActive ? (
+          <View style={{ width: 24, alignItems: 'center' }}>
+            <SynastryGlyph quality={bondQuality(bond)} />
           </View>
         ) : null}
       </Pressable>
