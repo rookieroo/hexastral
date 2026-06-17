@@ -119,6 +119,33 @@ interface NodeDetail {
  * live Body and the share capture, so the PNG bakes exactly the node the user has
  * selected (WYSIWYG) instead of a hardcoded "current 大运".
  */
+/** 紫微 second-system note per locale × tone (local copy; neutral carries none). */
+const ZIWEI_NOTE: Record<
+  'zh' | 'zh-Hant' | 'ja' | 'en',
+  Record<'harmony' | 'tension' | 'growth', string>
+> = {
+  zh: {
+    harmony: '紫微亦见助力，两套系统不约而同。',
+    tension: '紫微亦显摩擦，宜稳不宜冒进。',
+    growth: '紫微见张力，宜借势化解而非硬冲。',
+  },
+  'zh-Hant': {
+    harmony: '紫微亦見助力，兩套系統不約而同。',
+    tension: '紫微亦顯摩擦，宜穩不宜冒進。',
+    growth: '紫微見張力，宜借勢化解而非硬衝。',
+  },
+  ja: {
+    harmony: '紫微も後押し。二つの系統が一致。',
+    tension: '紫微も摩擦を示す。慎重に。',
+    growth: '紫微に張りあり。勢いを借りて化す。',
+  },
+  en: {
+    harmony: 'Zi Wei agrees — both systems align.',
+    tension: 'Zi Wei flags friction; steady over bold.',
+    growth: 'Zi Wei shows tension; ride it, don’t force.',
+  },
+}
+
 function resolveNodeDetail(
   payload: TimelinePayload,
   selectedId: string | null,
@@ -145,6 +172,15 @@ function resolveNodeDetail(
       return ` ${t.timelineHuajie.replace('{el}', favorableEl)}`
     return ''
   }
+  // 紫微 second-system note — when the server folded a 流年/流月四化 into this node,
+  // surface whether 紫微 echoes the 八字 verdict (kept as local copy, like the
+  // make-if card, so the shared i18n table stays untouched).
+  const langKey =
+    lang === 'zh-Hant' ? 'zh-Hant' : lang === 'ja' ? 'ja' : lang === 'en' ? 'en' : 'zh'
+  const ziweiNote = (z?: { tone: 'harmony' | 'tension' | 'growth' | 'neutral' }): string => {
+    if (!z || z.tone === 'neutral') return ''
+    return ` ${ZIWEI_NOTE[langKey][z.tone]}`
+  }
   if (!selectedId) return null
   if (selectedId === 'source') {
     return {
@@ -165,7 +201,7 @@ function resolveNodeDetail(
         ? `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`
         : `${t.timelineDayun} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
     }
   }
   if (selectedId.startsWith('liuyue-')) {
@@ -178,7 +214,7 @@ function resolveNodeDetail(
         ? `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
         : `${row.year}.${row.month} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}`,
+      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
     }
   }
   const year = Number(selectedId.slice('liunian-'.length))
@@ -194,7 +230,7 @@ function resolveNodeDetail(
       ? `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
       : `${row.year} · ${t.personal.fit[row.fit]}`,
     fit: row.fit,
-    body: `${t.timelineAdvice[row.fit]}${clash}${huajie(row.reasons)}`,
+    body: `${t.timelineAdvice[row.fit]}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
   }
 }
 

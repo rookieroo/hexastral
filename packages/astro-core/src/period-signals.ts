@@ -23,6 +23,7 @@ import {
 } from './almanac'
 import { getTaoHua, getYiMa } from './shensha'
 import type { EarthlyBranch, WuXing } from './types'
+import type { ZiweiTone } from './ziwei-timing'
 
 /** A period's stem-element + branch — from a 流年/大运/流月 pillar. */
 export interface PeriodInput {
@@ -181,6 +182,9 @@ export interface MoveWindow {
   /** Caller's stable key for the window (e.g. a year `'2028'` or `'dayun-3'`). */
   key: string
   period: PeriodInput
+  /** 紫微 second-system tone for this window (carried from the timeline's solo fold,
+   *  if any). When present it nudges the score — corroboration, never the spine. */
+  ziwei?: { tone: ZiweiTone }
 }
 
 /** A window scored + explained for an intended move, in the macro 择时 ranking. */
@@ -192,6 +196,8 @@ export interface RankedMoveWindow {
   /** Signals driving the score (edge-localized). */
   reasons: SignalKey[]
   signals: PeriodSignals
+  /** 紫微 corroboration carried through from the window (for the marker + the fold). */
+  ziwei?: { tone: ZiweiTone }
 }
 
 /**
@@ -199,10 +205,15 @@ export interface RankedMoveWindow {
  * gains from 用神 and loses to 忌神 / 冲 (a volatile window is poor for any
  * deliberate step); `connect` / `move` additionally gain from their own 神煞
  * (桃花 / 驿马). `expand` keys purely on 用神, so it carries no special bonus.
+ *
+ * 紫微 (when the window carries a tone) folds in last as a ±1 corroboration: a
+ * harmony year leans the step a touch better, a tension year a touch worse — the
+ * 八字 score above stays the spine.
  */
 function scoreWindowForMove(
   move: TimeableMove,
-  s: PeriodSignals
+  s: PeriodSignals,
+  ziwei?: { tone: ZiweiTone }
 ): { score: number; reasons: SignalKey[] } {
   let score = 0
   const reasons: SignalKey[] = []
@@ -226,6 +237,10 @@ function scoreWindowForMove(
     score -= 2
     reasons.push('clash')
   }
+  if (ziwei) {
+    if (ziwei.tone === 'harmony') score += 1
+    else if (ziwei.tone === 'tension') score -= 1
+  }
   return { score, reasons }
 }
 
@@ -247,8 +262,11 @@ export function rankWindowsForMove(
   return windows
     .map((w, i) => {
       const signals = periodSignals(subject, w.period)
-      const { score, reasons } = scoreWindowForMove(move, signals)
-      return { i, ranked: { key: w.key, fit: signals.fit, score, reasons, signals } }
+      const { score, reasons } = scoreWindowForMove(move, signals, w.ziwei)
+      return {
+        i,
+        ranked: { key: w.key, fit: signals.fit, score, reasons, signals, ziwei: w.ziwei },
+      }
     })
     .sort((a, b) => b.ranked.score - a.ranked.score || a.i - b.i)
     .map((x) => x.ranked)

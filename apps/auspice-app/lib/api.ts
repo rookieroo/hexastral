@@ -491,6 +491,10 @@ export interface PillarUnit {
 export interface PeriodFit {
   fit: PersonalFit
   reasons: PersonalReasonCode[]
+  /** 紫微 second-system corroboration (server folds it into 流年/流月 when the user
+   *  has a birth hour). Present → the period's verdict is echoed by 紫微; the tone
+   *  drives a small marker and the make-if score nudge. */
+  ziwei?: { tone: 'harmony' | 'tension' | 'growth' | 'neutral' }
 }
 
 export interface DayunRow extends PeriodFit {

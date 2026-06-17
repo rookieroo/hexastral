@@ -66,6 +66,9 @@ export function futureYearWindows(payload: TimelinePayload): MoveWindow[] {
         element: STEM_WUXING[r.pillar.stem as HeavenlyStem],
         branch: r.pillar.branch as EarthlyBranch,
       },
+      // Reuse the 紫微 tone the timeline already folded into this 流年 — no extra
+      // fetch; the make-if ranking gets the same second-system corroboration.
+      ziwei: r.ziwei,
     }))
 }
 

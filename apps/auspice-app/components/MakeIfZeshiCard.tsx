@@ -28,6 +28,8 @@ interface ZeshiCopy {
   prompt: string
   best: string
   cta: string
+  /** Marker shown when 紫微 (the second system) also speaks to a window. */
+  ziwei: string
 }
 
 /** Card chrome only (event names + reasons come from `t`); keeps lib/i18n.ts
@@ -38,24 +40,28 @@ const ZESHI_COPY: Record<Locale, ZeshiCopy> = {
     prompt: '你在权衡一件事? 选一项,看命势更宜哪一年',
     best: '最宜',
     cta: '看吉日',
+    ziwei: '紫微',
   },
   'zh-Hant': {
     title: '擇時 · 哪一年更宜',
     prompt: '你在權衡一件事? 選一項,看命勢更宜哪一年',
     best: '最宜',
     cta: '看吉日',
+    ziwei: '紫微',
   },
   ja: {
     title: '択時 · どの年が向くか',
     prompt: '迷っている選択を一つ。命勢が向く年を見る',
     best: '最適',
     cta: '吉日を見る',
+    ziwei: '紫微',
   },
   en: {
     title: 'Timing · which year fits',
     prompt: 'Weighing a choice? Pick one — see which year your chart favors',
     best: 'best',
     cta: 'see days',
+    ziwei: 'Zi Wei',
   },
 }
 
@@ -63,6 +69,14 @@ const FIT_DOT: Record<PersonalFit, (c: ReturnType<typeof useTheme>['colors']) =>
   吉: (c) => c.accent,
   平: (c) => c.secondary,
   凶: (c) => c.dim,
+}
+
+type ZiweiTone = 'harmony' | 'tension' | 'growth' | 'neutral'
+const ZIWEI_DOT: Record<ZiweiTone, (c: ReturnType<typeof useTheme>['colors']) => string> = {
+  harmony: (c) => c.accent,
+  tension: (c) => c.dim,
+  growth: (c) => c.secondary,
+  neutral: (c) => c.secondary,
 }
 
 export function MakeIfZeshiCard({
@@ -172,6 +186,21 @@ export function MakeIfZeshiCard({
                 <Text style={{ color: colors.dim, fontSize: 12, flex: 1 }} numberOfLines={1}>
                   {reasons || '—'}
                 </Text>
+                {w.ziwei ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <View
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: 3,
+                        backgroundColor: ZIWEI_DOT[w.ziwei.tone](colors),
+                      }}
+                    />
+                    <Text style={{ color: colors.dim, fontSize: 10, fontWeight: '600' }}>
+                      {copy.ziwei}
+                    </Text>
+                  </View>
+                ) : null}
                 {isBest ? (
                   <Text style={{ color: colors.accent, fontSize: 11, fontWeight: '700' }}>
                     {copy.best}

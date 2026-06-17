@@ -137,6 +137,19 @@ describe('rankWindowsForMove', () => {
     expect(r[0]?.reasons).toContain('favorable')
   })
 
+  it('folds a 紫微 tone into the score and carries it through (±1 corroboration)', () => {
+    const base = { key: 'n', period: { element: '木', branch: '卯' } } satisfies MoveWindow
+    const harmony: MoveWindow = { ...base, key: 'harm+', ziwei: { tone: 'harmony' } }
+    const tension: MoveWindow = { ...base, key: 'tens-', ziwei: { tone: 'tension' } }
+    const r = rankWindowsForMove(subject, 'expand', [base, harmony, tension])
+    // identical 八字 → 紫微 harmony ranks above neutral above 紫微 tension.
+    expect(r.map((x) => x.key)).toEqual(['harm+', 'n', 'tens-'])
+    expect(r[0]?.ziwei?.tone).toBe('harmony')
+    const neutralScore = r.find((x) => x.key === 'n')?.score ?? 0
+    expect(r.find((x) => x.key === 'harm+')?.score).toBe(neutralScore + 1)
+    expect(r.find((x) => x.key === 'tens-')?.score).toBe(neutralScore - 1)
+  })
+
   it('boosts the 桃花 window for a connect move', () => {
     const r = rankWindowsForMove(subject, 'connect', [W.fav, W.taohua])
     expect(r[0]?.key).toBe('taohua')
