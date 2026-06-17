@@ -37,6 +37,8 @@ export interface ChapterPagerProps {
   bElement?: string
   /** Report locale — drives the card's fonts + static labels. */
   locale?: string
+  /** Device/UI locale — the language a tapped term's explanation shows in. */
+  glossaryLocale?: string
   /** Provides each chapter's centerpiece (水墨粒子 Skia ink) — supplied by the app. */
   renderCenterpiece?: (chapter: SynastryReport['chapters'][number], index: number) => ReactNode
   /** 划词 — long-press a body paragraph to pick it (drives the selection bar). */
@@ -56,6 +58,7 @@ export function ChapterPager({
   aElement,
   bElement,
   locale,
+  glossaryLocale,
   renderCenterpiece,
   onPickQuote,
   highlightedQuotes,
@@ -93,6 +96,7 @@ export function ChapterPager({
             aElement={aElement}
             bElement={bElement}
             locale={locale}
+            glossaryLocale={glossaryLocale}
             centerpiece={renderCenterpiece?.(chapter, idx)}
             onPickQuote={onPickQuote}
             highlightedQuotes={highlightedQuotes}

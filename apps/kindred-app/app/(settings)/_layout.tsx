@@ -10,13 +10,13 @@ export default function SettingsLayout() {
         contentStyle: { backgroundColor: kindredPaper.bg },
         animation: 'slide_from_right',
         gestureEnabled: true,
-        fullScreenGestureEnabled: true,
+        // Edge-only back-swipe (NOT full-screen): the glossary + settings are long
+        // vertical scrolls, and a full-screen back-swipe fired on an up-flick that
+        // drifted sideways — and dismissed the whole group to home instead of popping
+        // one screen. Edge-only requires a deliberate left-edge horizontal intent;
+        // an up-swipe is never mistaken for it.
+        fullScreenGestureEnabled: false,
       }}
-    >
-      {/* The 命理 glossary is a long vertical scroll — a full-screen back-swipe
-          fires on an up-flick that drifts sideways. Keep edge-swipe-back, drop the
-          full-screen variant so scrolling never navigates. */}
-      <Stack.Screen name='terms' options={{ fullScreenGestureEnabled: false }} />
-    </Stack>
+    />
   )
 }

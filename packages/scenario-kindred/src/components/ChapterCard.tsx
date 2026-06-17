@@ -196,6 +196,10 @@ export interface ChapterCardProps {
   bElement?: string
   /** Report locale; drives fonts + static labels. */
   locale?: string
+  /** UI/device locale — the language to show a tapped term's EXPLANATION in (the
+   *  reader's own language, even when the report content is Chinese). Falls back to
+   *  `locale`. The term tokens themselves are always Chinese. */
+  glossaryLocale?: string
   /** The centerpiece ink image (水墨粒子, Skia) — rendered in a grey well. */
   centerpiece?: ReactNode
   /** 划词 — long-press a body paragraph to "pick" it as a quote, which drives
@@ -214,6 +218,7 @@ export function ChapterCard({
   aElement,
   bElement,
   locale,
+  glossaryLocale,
   centerpiece,
   onPickQuote,
   highlightedQuotes,
@@ -234,7 +239,9 @@ export function ChapterCard({
   // bubble. Only the interactive in-app report wires this (gated on onPickQuote, the
   // same signal the 划词 long-press uses) — the off-screen share-capture card stays
   // plain. For non-CJK prose the matcher finds nothing, so it renders verbatim.
-  const tLocale = termLocale(locale)
+  // Explanations resolve in the READER's language (device), not the report's content
+  // language — so an English reader tapping 用神 in a Chinese report gets English.
+  const tLocale = termLocale(glossaryLocale ?? locale)
   const [activeTerm, setActiveTerm] = useState<ResolvedTerm | null>(null)
   const interactive = onPickQuote != null
   const renderProse = (s: string): ReactNode => {

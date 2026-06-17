@@ -684,6 +684,7 @@ export default function BondDetailScreen({
               aElement={aElement}
               bElement={bElement}
               locale={reportLocale}
+              glossaryLocale={locale}
               onPickQuote={setPickedQuote}
               highlightedQuotes={highlights}
               renderCenterpiece={
