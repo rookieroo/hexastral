@@ -1,11 +1,20 @@
 import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { Stack } from 'expo-router'
 
-// Anchor the group on `index` (Settings). Deep-linking to a sub-page — e.g. the home
-// shortcut to /(settings)/glossary — then mounts [index, glossary], so back from the
-// glossary / 命理词典 pops to Settings, not all the way out to home. Both reference
-// pages live UNDER Settings regardless of where you opened them from.
-export const unstable_settings = { initialRouteName: 'index' }
+// DO NOT add `unstable_settings = { initialRouteName: 'index' }` here.
+// `(settings)/index` resolves to the bare path `/` (group segments are stripped),
+// same as app/index.tsx (the onboarding gatekeeper), (reading)/index and
+// (timeline)/index. Anchoring this group on its index marks (settings)/index as the
+// initial route, which gives it priority in Expo Router's empty-path resolver
+// (matchForEmptyPath). On a cold reload, getStateFromPath('/') runs with no previous
+// segments, so the anchor wins and the app boots into Settings instead of running
+// app/index.tsx → home. (A root anchor pointed at the gatekeeper `index` would also
+// fix the boot, but it parks a dormant Redirect beneath every screen — we keep the
+// router anchor-free instead.)
+//
+// Trade-off accepted: glossary / 命理词典 opened from the HOME footer now pops back to
+// home, not Settings (there's no Settings index beneath it). Opened from WITHIN
+// Settings they still pop back to Settings — the index is already in the stack.
 
 export default function SettingsLayout() {
   return (
