@@ -1987,6 +1987,12 @@ bondRoutes.get('/:id', async (c) => {
   // birth (they edited it after generation). Powers the report's "recompute with
   // new birth" affordance. Same rule as GET / (neither snapshot matches current).
   let basedOnStaleBirth = false
+  // Which side of the reading the VIEWER is. Both mirror rows store personA=inviter /
+  // personB=invitee and the prose is written once with 甲方/乙方 tokens, so the client
+  // must know the viewer's role to render "you" correctly. Owner-id can't tell them
+  // apart (each viewer owns their own bond), so match the viewer's birth to the
+  // snapshot (same rule as basedOnStaleBirth). Default A on a stale/absent match.
+  let viewerIsPersonA = true
 
   if (bond.hehunReadingId) {
     const rawReading = await db
@@ -2054,6 +2060,14 @@ bondRoutes.get('/:id', async (c) => {
           rawReading.personBTimeIndex === me.ti &&
           rawReading.personBGender === me.g
         )
+      // The viewer is person B only when their birth matches the B snapshot; every
+      // other case (matches A, or stale/absent) defaults to A (legacy behaviour).
+      viewerIsPersonA = !(
+        me?.d != null &&
+        rawReading.personBSolarDate === me.d &&
+        rawReading.personBTimeIndex === me.ti &&
+        rawReading.personBGender === me.g
+      )
       // '4' or null (legacy) means full access; '1' means restricted to hookDimension only
       const canSeeAll = bond.unlockedDimensions === '4' || bond.unlockedDimensions === null
 
@@ -2148,6 +2162,7 @@ bondRoutes.get('/:id', async (c) => {
     dimensions: dimensionData,
     interpretation,
     basedOnStaleBirth,
+    viewerIsPersonA,
   })
 })
 

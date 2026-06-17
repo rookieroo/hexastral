@@ -129,6 +129,11 @@ export interface BondDetailData extends BondData {
   dimensions: BondDimension[] | null
   /** Full AI interpretation: overview, day-master, branches, highlights, advice */
   interpretation: PairInterpretation | null
+  /** Which side of the reading the VIEWER is. The prose is written once with
+   *  甲方/乙方 tokens (甲=personA=inviter); the report screen reads this to render
+   *  "you" + order the 五行 subtitle from the viewer's own perspective. Server-set
+   *  by matching the viewer's birth to the snapshot; absent on legacy responses. */
+  viewerIsPersonA?: boolean
 }
 
 export interface PairInterpretation {

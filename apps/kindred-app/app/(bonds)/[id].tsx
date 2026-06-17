@@ -276,7 +276,12 @@ export default function BondDetailScreen({
   // them as 你 + the other's name for whoever is reading. THIS viewer is person A
   // when they own the bond (the inviter), else person B. Names: personAName = A,
   // targetName = B (both always present, regardless of viewer).
-  const isPersonA = userId == null || detail?.ownerId === userId
+  // Whose perspective to render. The two mirror reading rows BOTH store
+  // 甲=personA=inviter, so owner-id can't tell the viewer apart (each owns their own
+  // bond) — that showed the invitee the inviter's chart as "you". The server now
+  // resolves the real side (`viewerIsPersonA`) by matching the viewer's birth; fall
+  // back to the old owner heuristic only when an older API omits it.
+  const isPersonA = detail?.viewerIsPersonA ?? (userId == null || detail?.ownerId === userId)
   const aName = (detail?.interpretation?.personAName as string | undefined)?.trim() || null
   const bName = detail?.targetName?.trim() || null
   const viewedChapters = useMemo(
@@ -555,8 +560,13 @@ export default function BondDetailScreen({
   // Day-master 五行 for both people — server computes these from the stored
   // births (coarse element only, privacy-safe) and drops them on the
   // interpretation. They drive the ink centerpiece's 生/克/比和 mode.
-  const aElement = detail.interpretation?.personAElement
-  const bElement = detail.interpretation?.personBElement
+  // Order per VIEWER: the subtitle (五行 × 五行) leads with the viewer's own element
+  // and the centerpiece's dark ink mass is the viewer — so the invitee sees
+  // "Earth × Wood" + themselves as the ink, not the inviter's "Wood × Earth".
+  const personAElement = detail.interpretation?.personAElement
+  const personBElement = detail.interpretation?.personBElement
+  const aElement = isPersonA ? personAElement : personBElement
+  const bElement = isPersonA ? personBElement : personAElement
   const startedLabel = relativeSentLabel(locale, detail.createdAt)
   const status = detailStatus(detail.status, t)
   const metaRow = (justify: 'flex-start' | 'center') => (
