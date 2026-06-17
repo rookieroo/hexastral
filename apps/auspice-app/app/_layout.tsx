@@ -45,15 +45,6 @@ import {
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
 
-/**
- * Anchor deep links on the home. When Yuel hands off via `auspice://reading`,
- * Expo Router would otherwise open /reading with an empty stack (back → "GO_BACK
- * not handled"). Naming the home group as the initial route mounts it beneath the
- * deep-linked screen, so the report reads as if Yuun opened it itself and back
- * lands on Today. (reading.tsx still keeps a canGoBack guard as a belt-and-braces.)
- */
-export const unstable_settings = { initialRouteName: '(tabs)' }
-
 function SatelliteGrowthMount() {
   usePortfolioSatelliteBootstrap({
     storagePrefix: PORTFOLIO_STORAGE_PREFIX,
