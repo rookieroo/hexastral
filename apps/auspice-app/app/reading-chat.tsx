@@ -91,7 +91,11 @@ export default function ReadingChatRoute() {
         backgroundColor: colors.bg,
       }}
     >
-      <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole='button'>
+      <Pressable
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/reading'))}
+        hitSlop={12}
+        accessibilityRole='button'
+      >
         <ChevronLeft color={colors.text} size={24} strokeWidth={1.2} />
       </Pressable>
       <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }} numberOfLines={1}>

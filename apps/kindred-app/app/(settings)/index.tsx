@@ -188,7 +188,10 @@ export default function SettingsScreen() {
           paddingTop: kindredSpacing.xl,
         }}
       >
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(reading)'))}
+          hitSlop={12}
+        >
           <Text style={[kindredType.heading, { color: kindredDark.textMuted }]}>←</Text>
         </Pressable>
         <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>

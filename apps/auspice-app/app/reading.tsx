@@ -396,7 +396,13 @@ export default function ReadingScreen() {
     if (chartHash) void loadHighlights(chartHash).then(setHighlights)
   }, [chartHash])
 
-  const goBack = () => router.back()
+  // Robust back: this screen is also reached via the `auspice://reading` deep link
+  // from Yuel, where there's no history to pop — go to the home instead of a
+  // no-op `back()` ("GO_BACK was not handled by any navigator").
+  const goBack = () => {
+    if (router.canGoBack()) router.back()
+    else router.replace('/(tabs)')
+  }
   const openPaywall = () => setPaywallOpen(true)
 
   // 划词 AI chat: push the chat seeded with the chapter slug + (optionally) the

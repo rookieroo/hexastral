@@ -93,7 +93,10 @@ export default function ReadingSummaryScreen() {
     }
   }, [chart, birth])
 
-  const goBack = () => router.back()
+  const goBack = () => {
+    if (router.canGoBack()) router.back()
+    else router.replace('/(reading)')
+  }
 
   const openFull = () => {
     void openAuspiceReading(
