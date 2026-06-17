@@ -462,8 +462,14 @@ export function buildLanguageReminder(language: string): string {
     const variant = language === 'zh-TW' || language === 'zh-Hant' ? '繁體中文' : '简体中文'
     return `\n\n【语言】本次输出的所有 JSON 文本字段必须使用${variant}，不得夹杂其他语言。只输出 JSON。`
   }
+  // Non-Chinese: the FACTS above are in Chinese for reference, which biases the model
+  // back to Chinese unless the directive is emphatic + acknowledges that bias. ja gets
+  // it in-language; others in their own name. 八字 干支/术语 tokens may stay Han.
+  if (language === 'ja') {
+    return '\n\n【出力言語 — 厳守】上の分析データは中国語だが、出力するJSONの文章はすべて必ず自然な日本語で書くこと。中国語（簡体・繁体）の文章を書いてはならない。干支・術語（乙木・三合・命宮・化忌 等）の漢字のみ可。JSONのみ出力。'
+  }
   const langName = LANGUAGE_NAMES[language] ?? language
-  return `\n\nLANGUAGE — write EVERY JSON string value in ${langName} only. Do NOT output Chinese (or any other language) in any text field. Output JSON only.`
+  return `\n\nOUTPUT LANGUAGE — CRITICAL: the analysis facts above are in Chinese for your reference ONLY. Write EVERY JSON string value in ${langName}. Do NOT write any sentence or phrase in Chinese. Ba Zi / 紫微 tokens (乙木, 三合, 命宫, 化忌…) may stay as-is, but ALL surrounding prose must be ${langName}. Output JSON only.`
 }
 
 // ─── 交叉盘面参考 (Cross-Chart Context) ───────────────────────

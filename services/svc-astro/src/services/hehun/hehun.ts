@@ -403,7 +403,7 @@ export async function generateHeHunInterpretation(
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
 
-  const text = await callWithFallback(env, systemPrompt, prompt, {
+  const text = await callWithFallback(env, systemPrompt, prompt + buildLanguageReminder(language), {
     // standard (Qwen3 → GLM) not flagship: the flagship tier-1 is KIMI, which was
     // timing out and blowing the 55s budget for the SYNCHRONOUS accept (respond)
     // → 504 / "Network request failed" on mobile. Dropping the slow model keeps the

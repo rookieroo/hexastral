@@ -12,6 +12,11 @@ export default function SettingsLayout() {
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
       }}
-    />
+    >
+      {/* The 命理 glossary is a long vertical scroll — a full-screen back-swipe
+          fires on an up-flick that drifts sideways. Keep edge-swipe-back, drop the
+          full-screen variant so scrolling never navigates. */}
+      <Stack.Screen name='terms' options={{ fullScreenGestureEnabled: false }} />
+    </Stack>
   )
 }
