@@ -30,7 +30,27 @@ export const LLM_MODELS = {
   QWEN3: '@cf/qwen/qwen3-30b-a3b-fp8',
   /** 最终兜底 — 智谱, 中文原生, 131k ctx, 超低价 */
   GLM: '@cf/zai-org/glm-4.7-flash',
+  /**
+   * Non-zh output lead. Kimi/Qwen3/GLM are all China-trained and, against a
+   * Chinese-heavy 命理 prompt, ignore an explicit "output in English / 日本語"
+   * directive and drift back to Chinese (confirmed in prod: an en 合盘 report came
+   * back ~87% CJK). Llama 3.3 reliably honors the requested output language; the
+   * fp8-fast build keeps it inside the parallel-chapter latency budget.
+   */
+  LLAMA: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
 } as const
+
+/**
+ * Output-language routing. For a non-zh locale, lead with {@link LLM_MODELS.LLAMA}
+ * (reliable output-language adherence) and keep the China stack behind it as a
+ * reliability fallback. zh (and an absent locale) keep the original chain verbatim.
+ */
+function leadForLocale(baseChain: readonly string[], locale?: string): string[] {
+  if (locale && !locale.toLowerCase().startsWith('zh')) {
+    return [LLM_MODELS.LLAMA, ...baseChain]
+  }
+  return [...baseChain]
+}
 
 /** flagship: Kimi → Qwen3 → GLM. standard: Qwen3 → GLM. */
 export type RoutingTier = 'flagship' | 'standard'
@@ -359,11 +379,12 @@ export async function callWithFallback(
   const isPro = options?.isPro ?? false
   const startedAt = Date.now()
 
-  // flagship 多一个 Kimi 头部；standard 从 Qwen3 起。
-  const chain =
+  // flagship 多一个 Kimi 头部；standard 从 Qwen3 起。Non-zh leads with Llama (see leadForLocale).
+  const baseChain =
     routingTier === 'flagship'
       ? [LLM_MODELS.KIMI, LLM_MODELS.QWEN3, LLM_MODELS.GLM]
       : [LLM_MODELS.QWEN3, LLM_MODELS.GLM]
+  const chain = leadForLocale(baseChain, options?.locale)
 
   let lastError = ''
   for (let depth = 0; depth < chain.length; depth++) {
@@ -422,9 +443,10 @@ export async function callChatWithFallback(
   const routingTier: RoutingTier = isPro ? 'flagship' : 'standard'
   const startedAt = Date.now()
 
-  const chain = isPro
+  const baseChain = isPro
     ? [LLM_MODELS.KIMI, LLM_MODELS.QWEN3, LLM_MODELS.GLM]
     : [LLM_MODELS.QWEN3, LLM_MODELS.GLM]
+  const chain = leadForLocale(baseChain, options?.locale)
 
   let lastError = ''
   for (let depth = 0; depth < chain.length; depth++) {
