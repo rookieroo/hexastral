@@ -82,6 +82,13 @@ describe('relationship palace lens', () => {
     expect(labelToBondCategory('老婆')).toBe('spouse')
     expect(labelToBondCategory('Dad')).toBe('parent')
     expect(labelToBondCategory('我女儿')).toBe('child')
+    // Generational family sub-types (长辈/平辈/晚辈) normalize to the right axis.
+    expect(labelToBondCategory('长辈')).toBe('parent')
+    expect(labelToBondCategory('長輩')).toBe('parent')
+    expect(labelToBondCategory('平辈')).toBe('sibling')
+    expect(labelToBondCategory('晚辈')).toBe('child')
+    expect(labelToBondCategory('Elder')).toBe('parent')
+    expect(labelToBondCategory('Junior')).toBe('child')
     expect(labelToBondCategory('好朋友')).toBe('friend')
     expect(labelToBondCategory('同事')).toBe('colleague')
     expect(labelToBondCategory('我老板')).toBe('boss')

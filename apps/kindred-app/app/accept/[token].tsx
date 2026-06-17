@@ -63,6 +63,9 @@ const RELATIONSHIP_I18N: Record<RelationshipType, TranslationKey> = {
   romantic: 'common.relationship.romantic',
   friend: 'common.relationship.friend',
   family: 'common.relationship.family',
+  elder: 'common.relationship.elder',
+  sibling: 'common.relationship.sibling',
+  junior: 'common.relationship.junior',
   partner: 'common.relationship.partner',
   colleague: 'common.relationship.colleague',
   other: 'invite.accept.relationship.other',
@@ -76,7 +79,10 @@ function inferRelationshipType(label: string): RelationshipType {
   const lower = label.toLowerCase()
   if (/恋人|伴侣|partner|romantic/.test(lower)) return 'romantic'
   if (/朋友|friend/.test(lower)) return 'friend'
-  if (/家人|父母|兄弟|姐妹|family|parent|sibling/.test(lower)) return 'family'
+  if (/长辈|長輩|父母|目上|elder|senior/.test(lower)) return 'elder'
+  if (/平辈|平輩|兄弟|姐妹|兄弟姉妹|sibling|peer/.test(lower)) return 'sibling'
+  if (/晚辈|晚輩|子女|目下|junior|child/.test(lower)) return 'junior'
+  if (/家人|family/.test(lower)) return 'family' // legacy coarse label
   if (/合伙|business|cofounder/.test(lower)) return 'partner'
   if (/同事|上司|colleague|manager/.test(lower)) return 'colleague'
   return 'other'

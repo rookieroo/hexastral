@@ -93,10 +93,48 @@ export function labelToBondCategory(label?: string | null): BondCategory | undef
     return 'spouse'
   if (has('情侣', '对象', '男友', '女友', '恋人', '伴侣', 'partner', 'boyfriend', 'girlfriend'))
     return 'partner'
-  if (has('父', '母', '爸', '妈', '爹', '娘', 'dad', 'mom', 'mother', 'father', 'parent'))
+  // 长辈/平辈/晚辈 (generational family sub-types) + the concrete kin terms. The
+  // axis is what the palace lens cares about: 长辈/晚辈 → the 父母·子女 vertical,
+  // 平辈 → 兄弟. (Gender is captured by each person's birth, not the label.)
+  if (
+    has(
+      '父',
+      '母',
+      '爸',
+      '妈',
+      '爹',
+      '娘',
+      '长辈',
+      '長輩',
+      '目上',
+      'dad',
+      'mom',
+      'mother',
+      'father',
+      'parent',
+      'elder'
+    )
+  )
     return 'parent'
-  if (has('子', '女儿', '儿', '孩子', 'son', 'daughter', 'child', 'kid')) return 'child'
-  if (has('兄', '弟', '姐', '妹', '手足', 'brother', 'sister', 'sibling')) return 'sibling'
+  if (
+    has(
+      '子',
+      '女儿',
+      '儿',
+      '孩子',
+      '晚辈',
+      '晚輩',
+      '目下',
+      'son',
+      'daughter',
+      'child',
+      'kid',
+      'junior'
+    )
+  )
+    return 'child'
+  if (has('兄', '弟', '姐', '妹', '手足', '平辈', '平輩', 'brother', 'sister', 'sibling', 'peer'))
+    return 'sibling'
   if (has('朋友', '闺蜜', '哥们', '好友', 'friend', 'bestie')) return 'friend'
   return undefined
 }
