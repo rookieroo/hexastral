@@ -325,6 +325,15 @@ export default function ReadingScreen() {
 
   useEffect(() => {
     if (!chartHash || draftSolarDate == null || draftGender == null) return
+    // Free tier = the deterministic taste only (identity + computed chapter
+    // summaries), no LLM — aligning the 命书's Free/Pro depth with the timeline's
+    // (free = deterministic current period; Pro = the LLM deep-read + breadth).
+    // Non-Pro never fetches a chapter; the rows + detail fall back to the
+    // computed placeholders and the chapter detail carries the unlock CTA.
+    if (!isPro) {
+      setLoading(false)
+      return
+    }
     let cancelled = false
     const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
     async function load() {
@@ -349,7 +358,7 @@ export default function ReadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [chartHash, draftSolarDate, draftGender, timeIndex])
+  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
   // Premium chapters: fetch the 4 LOCKED_CHAPTERS once the user is Pro. Each is
   // cache-first + resolves independently so rows fill in as they generate.
@@ -475,25 +484,32 @@ export default function ReadingScreen() {
     if (detailChapter.kind === 'free') {
       const key = detailChapter.key
       const m = key === 'ch1' ? ch1Meta : ch4Meta
+      // Free → the deterministic placeholder + unlock CTA (no LLM). The 划词 chat
+      // only attaches once a Pro user has the real generated chapter.
+      const llm = m.content
       detailProps = {
         label: m.label,
         sub: m.sub,
-        content: m.content,
+        content: llm,
         loading: m.loading,
         placeholder: m.placeholder,
-        locked: false,
+        locked: !isPro,
         unlockLabel: t('reading.unlock'),
         backLabel: t('common.back'),
         onBack: back,
         onUnlock: openPaywall,
         identityLine,
         birthBadge,
-        // 划词 AI chat (K3) — long-press a paragraph or tap the chapter CTA.
-        onAsk: (quote: string | null) => handleAskAI({ slug: CHAPTER_SLUG[key], quote }),
-        askChapterLabel: t('reading.askChapter'),
-        askHint: t('reading.askParagraphHint'),
-        onPickQuote: setPickedQuote,
-        highlightedQuotes: highlights,
+        ...(llm
+          ? {
+              // 划词 AI chat (K3) — long-press a paragraph or tap the chapter CTA.
+              onAsk: (quote: string | null) => handleAskAI({ slug: CHAPTER_SLUG[key], quote }),
+              askChapterLabel: t('reading.askChapter'),
+              askHint: t('reading.askParagraphHint'),
+              onPickQuote: setPickedQuote,
+              highlightedQuotes: highlights,
+            }
+          : {}),
       }
     } else {
       const lc = LOCKED_CHAPTERS[detailChapter.idx]

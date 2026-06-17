@@ -31,7 +31,7 @@ import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Share2 } from 'lucide-react-native'
+import { BookOpen, ChevronRight, Share2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -449,6 +449,37 @@ export default function TimelineScreen() {
               })()
             : null}
         </View>
+
+        {/* 你是谁 · 完整命书 — the WHO to the timeline's WHEN. The 命书 (八字+紫微
+            chaptered deep-read) is the same chart read as identity; it lives here,
+            beside its time-axis view, rather than competing for a Today-home CTA.
+            /reading guards its own no-birth case, so this is always safe to tap. */}
+        <Pressable
+          onPress={() => router.push('/reading')}
+          accessibilityRole='button'
+          accessibilityLabel={t.personal.readingTitle}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            backgroundColor: colors.card,
+            borderRadius: 14,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <BookOpen size={20} color={colors.accent} strokeWidth={1.6} />
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>
+              {t.personal.readingTitle}
+            </Text>
+            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 16 }}>
+              {t.personal.readingHint}
+            </Text>
+          </View>
+          <ChevronRight size={16} color={colors.dim} strokeWidth={1.6} />
+        </Pressable>
 
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
