@@ -26,6 +26,7 @@ import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { EdgeBackSwipe } from '@/components/EdgeBackSwipe'
 import { InkCenterpiece, type Mode } from '@/components/ink/InkCenterpiece'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
@@ -69,7 +70,8 @@ export default function GlossaryScreen() {
   const [showPrimer, setShowPrimer] = useState(false)
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+    <EdgeBackSwipe onBack={() => router.back()}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -270,7 +272,8 @@ export default function GlossaryScreen() {
           onOpenGlossary={() => setShowPrimer(false)}
         />
       ) : null}
-    </SafeAreaView>
+      </SafeAreaView>
+    </EdgeBackSwipe>
   )
 }
 

@@ -256,6 +256,22 @@ export const ZIWEI_TERMS: TermEntry[] = [
     },
   },
   {
+    id: 'ziwei_konggong',
+    zh: '空宫',
+    pinyin: 'kōng gōng',
+    category: 'ziwei',
+    meaning: {
+      zh: {
+        short: '宫无主星，借对宫论',
+        long: '空宫：某一宫位没有主星坐守，需借对宫的星曜来论断，气质更需后天塑造、可塑性强。',
+      },
+      en: {
+        short: 'an empty palace — read via its opposite',
+        long: 'Empty Palace: a house with no major star of its own; it borrows the stars of the palace opposite, so its qualities are more shaped by circumstance — open, malleable.',
+      },
+    },
+  },
+  {
     id: 'ziwei_feixing',
     zh: '飞星',
     pinyin: 'fēi xīng',

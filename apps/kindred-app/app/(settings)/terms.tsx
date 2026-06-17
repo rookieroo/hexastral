@@ -19,6 +19,7 @@ import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { EdgeBackSwipe } from '@/components/EdgeBackSwipe'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 
 export default function TermGlossaryScreen() {
@@ -28,7 +29,8 @@ export default function TermGlossaryScreen() {
   const groups = useMemo(() => getTermsByCategory(locale), [locale])
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+    <EdgeBackSwipe onBack={() => router.back()}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -83,7 +85,8 @@ export default function TermGlossaryScreen() {
           </Section>
         ))}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </EdgeBackSwipe>
   )
 }
 

@@ -747,6 +747,22 @@ export const TERMS: TermEntry[] = [
     },
   },
   {
+    id: 'geju_yueren',
+    zh: '月刃格',
+    pinyin: 'yuè rèn gé',
+    category: 'geju',
+    meaning: {
+      zh: {
+        short: '月令羊刃，刚强好胜',
+        long: '月刃格：羊刃当月令的格局，性情刚强、爆发力足、好胜，宜在竞争或开创的领域发力。',
+      },
+      en: {
+        short: 'month-blade — strong, driven',
+        long: 'Month-Blade structure: the Ram-Blade falling on the month branch — a forceful, competitive, high-energy temperament that thrives in rivalrous or pioneering arenas.',
+      },
+    },
+  },
+  {
     id: 'geju_congruo',
     zh: '从弱格',
     pinyin: 'cóng ruò gé',

@@ -17,6 +17,12 @@ export default function SettingsLayout() {
         // an up-swipe is never mistaken for it.
         fullScreenGestureEnabled: false,
       }}
-    />
+    >
+      {/* The glossary + symbol gallery are long scroll pages — replace the native
+          back-swipe with EdgeBackSwipe (angle-gated, so a diagonal up-flick can't
+          trigger it). Native gesture off here so the two don't both grab the swipe. */}
+      <Stack.Screen name='terms' options={{ gestureEnabled: false }} />
+      <Stack.Screen name='glossary' options={{ gestureEnabled: false }} />
+    </Stack>
   )
 }

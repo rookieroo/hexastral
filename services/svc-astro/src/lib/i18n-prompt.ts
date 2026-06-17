@@ -463,13 +463,15 @@ export function buildLanguageReminder(language: string): string {
     return `\n\n【语言】本次输出的所有 JSON 文本字段必须使用${variant}，不得夹杂其他语言。只输出 JSON。`
   }
   // Non-Chinese: the FACTS above are in Chinese for reference, which biases the model
-  // back to Chinese unless the directive is emphatic + acknowledges that bias. ja gets
-  // it in-language; others in their own name. 八字 干支/术语 tokens may stay Han.
+  // back to Chinese unless the directive is emphatic + acknowledges that bias. KEY: the
+  // app has a tap-to-explain glossary layer, so 命理 terms should STAY in their Chinese
+  // form (用神 / 月刃格 / 卯卯 / 干支) — translating or inventing English for them drifts
+  // / hallucinates. So: prose in the target language, terms kept Chinese verbatim.
   if (language === 'ja') {
-    return '\n\n【出力言語 — 厳守】上の分析データは中国語だが、出力するJSONの文章はすべて必ず自然な日本語で書くこと。中国語（簡体・繁体）の文章を書いてはならない。干支・術語（乙木・三合・命宮・化忌 等）の漢字のみ可。JSONのみ出力。'
+    return '\n\n【出力言語 — 厳守】上の分析データは中国語だが、出力するJSONの「文章」はすべて必ず自然な日本語で書くこと。ただし命理の専門用語（用神・月刃格・卯卯・三合・命宮・化忌・干支 等）はそのまま漢字で残すこと——無理に翻訳・英訳・造語してはならない（アプリが用語解説を表示する）。用語以外の地の文に中国語の文章を書いてはならない。JSONのみ出力。'
   }
   const langName = LANGUAGE_NAMES[language] ?? language
-  return `\n\nOUTPUT LANGUAGE — CRITICAL: the analysis facts above are in Chinese for your reference ONLY. Write EVERY JSON string value in ${langName}. Do NOT write any sentence or phrase in Chinese. Ba Zi / 紫微 tokens (乙木, 三合, 命宫, 化忌…) may stay as-is, but ALL surrounding prose must be ${langName}. Output JSON only.`
+  return `\n\nOUTPUT LANGUAGE — CRITICAL: the analysis facts above are in Chinese for your reference ONLY. Write all PROSE (sentences) in ${langName}. KEEP 命理 terms in their original Chinese — 用神, 月刃格, 卯卯, 三合, 命宫, 化忌, 干支 like 乙木 / 己土 — do NOT translate them or invent English equivalents (the app shows a tap-to-explain gloss for each). Only the prose around the terms must be ${langName}; never write a full Chinese sentence. Output JSON only.`
 }
 
 // ─── 交叉盘面参考 (Cross-Chart Context) ───────────────────────
