@@ -446,6 +446,7 @@
         "@zhop/hexastral-tokens": "workspace:*",
         "@zhop/satellite-ui": "workspace:*",
         "@zhop/scenario-kindred": "workspace:*",
+        "@zhop/scenario-yuan": "workspace:*",
         "babel-preset-expo": "~54.0.10",
         "expo": "~54.0.33",
         "expo-apple-authentication": "~8.0.8",
@@ -964,6 +965,17 @@
         "react-native": ">=0.81.0",
         "react-native-reanimated": ">=4.0.0",
         "react-native-svg": ">=15.0.0",
+      },
+    },
+    "packages/scenario-yuan": {
+      "name": "@zhop/scenario-yuan",
+      "version": "0.1.0",
+      "dependencies": {
+        "@zhop/astro-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@zhop/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
       },
     },
     "packages/ui": {
@@ -2806,6 +2818,8 @@
     "@zhop/scenario-feng": ["@zhop/scenario-feng@workspace:packages/scenario-feng"],
 
     "@zhop/scenario-kindred": ["@zhop/scenario-kindred@workspace:packages/scenario-kindred"],
+
+    "@zhop/scenario-yuan": ["@zhop/scenario-yuan@workspace:packages/scenario-yuan"],
 
     "@zhop/svc-admin-notify": ["@zhop/svc-admin-notify@workspace:services/svc-admin-notify"],
 

@@ -1,0 +1,23 @@
+{
+  "name": "@zhop/scenario-yuan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared personal-reading (八字 + 紫微) compute, components, and types — the 命 report behind Yuel's solo reading and Yuun's personal deep read. Mirrors scenario-kindred (synastry) for the single-person side.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./natal": "./src/natal.ts",
+    "./reading": "./src/reading.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@zhop/astro-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@zhop/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

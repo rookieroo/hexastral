@@ -28,6 +28,7 @@
     "@zhop/hexastral-tokens": "workspace:*",
     "@zhop/satellite-ui": "workspace:*",
     "@zhop/scenario-kindred": "workspace:*",
+    "@zhop/scenario-yuan": "workspace:*",
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.33",
     "expo-apple-authentication": "~8.0.8",
