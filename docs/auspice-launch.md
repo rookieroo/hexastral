@@ -48,6 +48,7 @@ Code-complete + typecheck-clean (4 workspaces) as of 2026-06-10; CANNOT be verif
 - [ ] Apple Sign In capability live on the bundle id (uses the dormant `usesAppleSignIn` we now actually need)
 - [ ] Privacy nutrition labels: collected = Apple/Google email (only on sign-in), Purchases. No tracking.
 - [ ] ASO metadata: name + subtitle + 4-locale keywords + description (4 locales: zh-Hans / zh-Hant / ja / en)
+- [ ] **Primary Language = English (en-US)** so every storefront without a zh/ja localization falls back to the en-US listing. **Availability ≠ localization:** keep sales territories broad (US / JP / SG / MY / HK / TW, TH optional) — the app still ships + is purchasable everywhere; the 4-locale scope knowingly forgoes only organic search rank + local-language conversion in TH/Malay (add th/ms later if those markets become priorities). **Same scope + rule applies to Yuel** (`apps/kindred-app/aso-metadata.json`, both narrowed to 4 locales 2026-06).
 - [ ] Screenshots: see `launch-checklist.md` for the per-locale set
 
 ### Build + smoke

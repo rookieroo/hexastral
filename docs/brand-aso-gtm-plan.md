@@ -59,9 +59,21 @@ Which App Store metadata locales are **search-indexed** on our five storefronts
 > **deferred, not pursued for now**. Ship only the **4 languages the apps
 > actually localize in-product — en-US, zh-Hans, zh-Hant, ja** — and drop the
 > ASO-overflow locales (en-GB, ms, th, es-MX) + the SG/MY/TH storefront push.
-> Applied to Yuun (`apps/auspice-app/aso-metadata.json` now holds 4 locales);
-> this is the default scope for the suite unless revisited. The reasoning below
-> is retained as the case for a future re-expansion, not the current plan.
+> Applied **suite-wide** — both `apps/auspice-app/aso-metadata.json` (Yuun) and
+> `apps/kindred-app/aso-metadata.json` (Yuel) now hold 4 locales each. The
+> reasoning below is retained as the case for a future re-expansion, not the
+> current plan.
+>
+> **Operational rule (why this is safe):** set each app's App Store Connect
+> **Primary Language to English (en-US)** — every storefront without a zh/ja
+> localization then falls back to the en-US listing. **Availability ≠
+> localization:** keep sales territories broad (US/JP/SG/MY/HK/TW, TH optional);
+> the app still ships + is purchasable everywhere. What the 4-locale scope
+> knowingly forgoes is **organic search rank + local-language conversion in
+> TH/Malay** (en-GB was the English locale Apple indexes in SG/MY/TH; ms/th were
+> the local fields; es-MX was a US keyword-overflow vehicle, not a country). Add
+> th/ms back if those markets become priorities — Apple Ads in those countries
+> works regardless.
 
 Consequences:
 
