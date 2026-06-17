@@ -19,7 +19,6 @@ import { useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { EdgeBackSwipe } from '@/components/EdgeBackSwipe'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 
 export default function TermGlossaryScreen() {
@@ -28,9 +27,11 @@ export default function TermGlossaryScreen() {
   const tr = (key: TranslationKey) => t(locale, key)
   const groups = useMemo(() => getTermsByCategory(locale), [locale])
 
+  // No swipe-back here (2026-06 feedback): a long vertical scroll + a horizontal
+  // back-gesture fought each other and felt sticky. Layout sets gestureEnabled:false
+  // for this screen; exit is ONLY the ← button below so scrolling stays smooth.
   return (
-    <EdgeBackSwipe onBack={() => router.back()}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -85,8 +86,7 @@ export default function TermGlossaryScreen() {
           </Section>
         ))}
       </ScrollView>
-      </SafeAreaView>
-    </EdgeBackSwipe>
+    </SafeAreaView>
   )
 }
 

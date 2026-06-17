@@ -26,7 +26,6 @@ import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { EdgeBackSwipe } from '@/components/EdgeBackSwipe'
 import { InkCenterpiece, type Mode } from '@/components/ink/InkCenterpiece'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { resolveLocale, type TranslationKey, t } from '@/lib/i18n'
@@ -69,9 +68,12 @@ export default function GlossaryScreen() {
   const tr = (key: TranslationKey) => t(locale, key)
   const [showPrimer, setShowPrimer] = useState(false)
 
+  // No swipe-back here (2026-06 feedback): the glossary is a long vertical scroll,
+  // and any horizontal back-gesture (native or the custom EdgeBackSwipe) competed
+  // with the ScrollView and made it feel sticky. The layout sets gestureEnabled:false
+  // for this screen, so exit is ONLY the ← button below — scrolling stays smooth.
   return (
-    <EdgeBackSwipe onBack={() => router.back()}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -272,8 +274,7 @@ export default function GlossaryScreen() {
           onOpenGlossary={() => setShowPrimer(false)}
         />
       ) : null}
-      </SafeAreaView>
-    </EdgeBackSwipe>
+    </SafeAreaView>
   )
 }
 

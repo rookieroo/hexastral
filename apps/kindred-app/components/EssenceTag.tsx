@@ -59,13 +59,17 @@ export interface EssenceTagProps {
   locale?: string
   /** Render with paper-document ink colors (the home/list are 宣纸 now). */
   onPaper?: boolean
+  /** List context — show only the essence word, no 解法 sub-line. A thread row needs
+   *  one scannable signal; the remedy (通关 / "a path") is detail that belongs in the
+   *  report, not stacked under a list item. */
+  compact?: boolean
 }
 
 /**
  * Renders null when elements are missing/legacy — callers fall back to their
  * own affordance (a chevron on the list, nothing on the home row).
  */
-export function EssenceTag({ aElement, bElement, locale, onPaper }: EssenceTagProps) {
+export function EssenceTag({ aElement, bElement, locale, onPaper, compact }: EssenceTagProps) {
   if (!hasValidElements(aElement ?? undefined, bElement ?? undefined)) return null
   const lc = locale ?? resolveLocale()
   const cjk = isCjkLocale(lc)
@@ -87,7 +91,7 @@ export function EssenceTag({ aElement, bElement, locale, onPaper }: EssenceTagPr
       >
         {copy.label}
       </Text>
-      {copy.remedy ? (
+      {copy.remedy && !compact ? (
         <Text
           style={{
             fontFamily: kindredFonts.mono,

@@ -451,29 +451,46 @@ export default function ReadingHomeScreen() {
             marginBottom: kindredSpacing.sm,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+          {/* Section title — the woven 红线 mark + a quiet count, so the header reads
+              as a real section, not a floating label. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <RedThreadGlyph size={20} color={kindredDark.seal} />
             <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
+            <Text
+              style={{
+                fontFamily: kindredFonts.mono,
+                fontSize: 12,
+                color: kindredDark.textMuted,
+                marginLeft: 1,
+              }}
+            >
+              {threads.length}
+            </Text>
           </View>
+          {/* New thread — borderless + editorial (matches the small-caps footer links,
+              not a generic pill): the 红线 "+" glyph + a mono small-caps accent label. */}
           <Pressable
             onPress={() => router.push('/(onboarding)/mode')}
             accessibilityRole='button'
             accessibilityLabel={t(locale, 'bondList.add')}
-            hitSlop={8}
+            hitSlop={10}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 999,
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: kindredDark.border,
-              opacity: pressed ? 0.6 : 1,
+              gap: 7,
+              opacity: pressed ? 0.55 : 1,
             })}
           >
-            <NewThreadGlyph size={17} color={kindredDark.seal} />
-            <Text style={[kindredType.caption, { color: kindredDark.accent, fontWeight: '600' }]}>
+            <NewThreadGlyph size={16} color={kindredDark.accent} />
+            <Text
+              style={{
+                fontFamily: kindredFonts.mono,
+                fontSize: 11,
+                letterSpacing: 1.5,
+                textTransform: 'uppercase',
+                color: kindredDark.accent,
+              }}
+            >
               {t(locale, 'bondList.add')}
             </Text>
           </Pressable>

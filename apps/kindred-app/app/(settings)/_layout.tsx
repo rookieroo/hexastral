@@ -33,9 +33,11 @@ export default function SettingsLayout() {
         fullScreenGestureEnabled: false,
       }}
     >
-      {/* The glossary + symbol gallery are long scroll pages — replace the native
-          back-swipe with EdgeBackSwipe (angle-gated, so a diagonal up-flick can't
-          trigger it). Native gesture off here so the two don't both grab the swipe. */}
+      {/* The glossary + 命理词典 are long vertical scroll pages with NO swipe-back at
+          all (2026-06 feedback): any horizontal back-gesture — native OR a custom
+          angle-gated one — still contended with the ScrollView and made scrolling feel
+          sticky. gestureEnabled:false kills the native swipe; the screens themselves no
+          longer wrap a gesture either. Exit is the ← button only. */}
       <Stack.Screen name='terms' options={{ gestureEnabled: false }} />
       <Stack.Screen name='glossary' options={{ gestureEnabled: false }} />
     </Stack>

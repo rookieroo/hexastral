@@ -190,7 +190,7 @@ export function ThreadListItem({
             <Clock color={kindredDark.textMuted} size={16} strokeWidth={1.7} />
           </View>
         ) : isActive ? (
-          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
+          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} compact />
         ) : null}
       </Pressable>
     </ReanimatedSwipeable>
