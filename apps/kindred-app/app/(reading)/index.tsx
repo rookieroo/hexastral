@@ -56,13 +56,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
 import { ElementGlyph, WUXING_COLOR } from '@/components/home/ElementGlyph'
+import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
-import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -610,27 +610,29 @@ export default function ReadingHomeScreen() {
               }
               ListFooterComponent={
                 threads.length > 0 ? (
-                  <Pressable
-                    onPress={() => router.push('/(settings)/glossary')}
-                    hitSlop={8}
+                  // Two quiet reference entries — symbols (the visual legend) + terms
+                  // (the vocabulary). Plain text, no icons: the home is literary, and
+                  // two glyphs here would just compete. Both root under Settings now.
+                  <View
                     style={{
+                      flexDirection: 'row',
                       alignSelf: 'center',
+                      alignItems: 'center',
+                      gap: 10,
                       marginTop: kindredSpacing.xl,
                       paddingVertical: kindredSpacing.sm,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: kindredFonts.mono,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        color: kindredDark.textMuted,
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t(locale, 'primer.more')}
-                    </Text>
-                  </Pressable>
+                    <FooterRefLink
+                      label={t(locale, 'settings.glossary.row')}
+                      onPress={() => router.push('/(settings)/glossary')}
+                    />
+                    <Text style={{ color: kindredDark.textMuted, fontSize: 11 }}>·</Text>
+                    <FooterRefLink
+                      label={t(locale, 'settings.terms.row')}
+                      onPress={() => router.push('/(settings)/terms')}
+                    />
+                  </View>
                 ) : null
               }
               onRefresh={() => void refetch()}
@@ -691,5 +693,27 @@ export default function ReadingHomeScreen() {
       ) : null}
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
     </View>
+  )
+}
+
+/** A quiet small-caps reference link for the home footer (symbols / terms). */
+function FooterRefLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole='button'>
+      {({ pressed }) => (
+        <Text
+          style={{
+            fontFamily: kindredFonts.mono,
+            fontSize: 11,
+            letterSpacing: 1.5,
+            color: kindredDark.textMuted,
+            textTransform: 'uppercase',
+            opacity: pressed ? 0.6 : 1,
+          }}
+        >
+          {label}
+        </Text>
+      )}
+    </Pressable>
   )
 }

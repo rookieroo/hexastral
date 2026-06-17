@@ -1,6 +1,12 @@
 import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { Stack } from 'expo-router'
 
+// Anchor the group on `index` (Settings). Deep-linking to a sub-page — e.g. the home
+// shortcut to /(settings)/glossary — then mounts [index, glossary], so back from the
+// glossary / 命理词典 pops to Settings, not all the way out to home. Both reference
+// pages live UNDER Settings regardless of where you opened them from.
+export const unstable_settings = { initialRouteName: 'index' }
+
 export default function SettingsLayout() {
   return (
     <Stack
