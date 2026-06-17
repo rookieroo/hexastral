@@ -175,6 +175,7 @@ function RootLayoutInner() {
         <Stack.Screen name='event' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='festival/[id]' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='glossary' options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name='reading' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='people' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='remote-tz' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='timeline' options={{ animation: 'slide_from_right' }} />

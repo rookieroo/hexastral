@@ -749,6 +749,35 @@ export default function MeScreen() {
           )}
         </View>
 
+        {/* ── 你的命书 — the full personal 合参 deep read (八字 + 紫微). Sits right
+            under the birth form since it's powered by exactly that data; routes to
+            the shared scenario-yuan report engine (the Yuun side of the Yuel/Yuun
+            split). ── */}
+        <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
+          <Pressable
+            onPress={() => router.push('/reading' as Href)}
+            accessibilityRole='button'
+            accessibilityLabel={t.personal.readingTitle}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.md,
+              gap: spacing.md,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 15 }}>{t.personal.readingTitle}</Text>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                {t.personal.readingHint}
+              </Text>
+            </View>
+            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+          </Pressable>
+        </View>
+
         {/* ── 主题色 — global accent variant (朱泥 default + 3 alts). Lives here
             because watch face + widget have their own brand-anchored palettes
             and don't honor the app accent — the picker would be misleading on

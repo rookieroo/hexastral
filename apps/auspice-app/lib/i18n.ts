@@ -388,6 +388,9 @@ export interface Strings {
     setBirth: string
     birthDatePlaceholder: string
     birthHint: string
+    /** Drill-in to the full personal 合参命书 (八字 + 紫微 deep read). */
+    readingTitle: string
+    readingHint: string
     /** 用神 → 吉色/吉方/吉时 — the actionable personal daily increment shown on the
      *  对你而言 card. App-only (never in the export/push, to protect DAU + sub value). */
     lucky: {
@@ -778,6 +781,8 @@ const zhHans: Strings = {
     setBirth: '设置出生日期',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '用于「对你而言」个性化',
+    readingTitle: '你的命书',
+    readingHint: '八字 + 紫微合参的完整个人解读',
     lucky: {
       color: '吉色',
       direction: '吉方',
@@ -1116,6 +1121,8 @@ const zhHant: Strings = {
     setBirth: '設定出生日期',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '用於「對你而言」個性化',
+    readingTitle: '你的命書',
+    readingHint: '八字 + 紫微合參的完整個人解讀',
     lucky: {
       color: '吉色',
       direction: '吉方',
@@ -1480,6 +1487,8 @@ const ja: Strings = {
     setBirth: '生年月日を設定',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: '「あなたへ」の個別化に使用',
+    readingTitle: 'あなたの鑑定書',
+    readingHint: '八字 + 紫微を総合した個人鑑定',
     lucky: {
       color: '吉色',
       direction: '吉方',
@@ -1849,6 +1858,8 @@ const en: Strings = {
     setBirth: 'Set birth date',
     birthDatePlaceholder: 'YYYY-MM-DD',
     birthHint: 'Powers "For you" personalization',
+    readingTitle: 'Your Reading',
+    readingHint: 'Your full personal reading — BaZi + Zi Wei',
     lucky: {
       color: 'Color',
       direction: 'Direction',
