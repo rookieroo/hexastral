@@ -4,9 +4,9 @@
  * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
  * (their element imagery = their star in your orbit), then their name + a quiet
  * relationship line, then a RIGHT-SLOT mark: a pending invite shows a quiet clock
- * (awaiting their reply); a completed bond shows its 合盘综合评价 imagery
- * (相生/相克/比和 — see SynastryGlyph, monochrome, non-alarmist). No essence chip,
- * no coloured status text. Tap → the report; left-swipe reveals 解缘.
+ * (awaiting their reply); a completed bond shows its 合盘综合评价 essence
+ * (相生/比和/相克) via the shared EssenceTag — the same 意象 the report uses, so
+ * the list and the report never disagree. Tap → the report; left-swipe reveals 解缘.
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
@@ -15,8 +15,8 @@ import { Clock, Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
+import { EssenceTag } from '@/components/EssenceTag'
 import { ElementGlyph } from '@/components/home/ElementGlyph'
-import { SynastryGlyph } from '@/components/home/SynastryGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, relativeSentLabel, relativeTimeLabel, t } from '@/lib/i18n'
@@ -182,16 +182,15 @@ export function ThreadListItem({
         </View>
 
         {/* Right slot: a pending invite shows a quiet clock (awaiting their reply);
-            a completed bond shows its 合盘综合评价 imagery (相生/相克/比和). Other
-            states (declined/expired) carry nothing. */}
+            a completed bond shows its 合盘综合评价 essence (相生/比和/相克) via the
+            shared EssenceTag — the same 意象 the report + InkCenterpiece use. Other
+            states (declined/expired), or a bond with no elements yet, show nothing. */}
         {isPending ? (
           <View style={{ width: 24, alignItems: 'center' }}>
             <Clock color={kindredDark.textMuted} size={16} strokeWidth={1.7} />
           </View>
         ) : isActive ? (
-          <View style={{ width: 24, alignItems: 'center' }}>
-            <SynastryGlyph quality={bondQuality(bond)} />
-          </View>
+          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
         ) : null}
       </Pressable>
     </ReanimatedSwipeable>
