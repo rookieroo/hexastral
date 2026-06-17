@@ -36,6 +36,29 @@ export const rubbing = {
   grain: 'rgba(255,255,255,0.03)',
 } as const
 
+/**
+ * Stone — the Kindred warm-neutral base ramp (dark-first). Distinct from `rubbing`
+ * (which stays the cool 碑拓 black for report cards): these grays carry a slight
+ * warm cast so the shell sits with cinnabar + ink instead of fighting them with
+ * zinc's cool blue. The app shell reads in ONE disciplined neutral ramp; colour
+ * (cinnabar = brand, 五行 = identity) sits ON it, never competes with it.
+ *
+ * `moonlight` is the interaction tier — the BRIGHTEST neutral, reserved for CTAs /
+ * links / status that must stand out. Achromatic on purpose: an interaction accent
+ * must never read as a 五行 hue, so it carries no hue at all (the affordance is
+ * brightness + an underline/arrow, not colour).
+ */
+export const stone = {
+  void: '#0C0A09',
+  deep: '#16130F',
+  surface: '#1B1815',
+  raised: '#221E1A',
+  edge: '#2A2521',
+  /** Interaction — moonlight: the brightest, achromatic-warm tier (never a 五行 hue). */
+  moonlight: '#FBF8F2',
+  moonlightMuted: 'rgba(251,248,242,0.12)',
+} as const
+
 /** 宣纸 — rice paper: warm off-whites for light mode surfaces */
 export const ricePaper = {
   ivory: '#F5F0E8',

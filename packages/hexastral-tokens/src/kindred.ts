@@ -15,7 +15,7 @@
  * See docs/decisions/0001-yuan-naming.md for product context.
  */
 
-import { cinnabar, ink, ricePaper, rubbing, zinc } from './palette'
+import { cinnabar, ink, ricePaper, rubbing, stone } from './palette'
 
 // ── Semantic theme — light mode (web teaser surface ONLY; the app is dark-only
 //    per ADR-0021 §5 and never reads these tokens) ───────────────────────────────
@@ -53,19 +53,25 @@ export const kindredLight = {
 // ── Dark mode (the app's only mode — ADR-0021 §5) ───────────────────────────
 
 export const kindredDark = {
-  bg: rubbing.void,
-  bgWarm: rubbing.stone,
-  bgAged: rubbing.weathered,
-  card: rubbing.weathered,
-  cardElevated: rubbing.weathered,
-  archiveCard: rubbing.void,
-  separator: zinc[800],
+  // Warm-neutral Stone base (was the cool 碑拓 void/zinc) — one disciplined ramp the
+  // shell reads in; colour sits ON it, never competes with it.
+  bg: stone.void,
+  bgWarm: stone.deep,
+  bgAged: stone.surface,
+  card: stone.surface,
+  cardElevated: stone.raised,
+  archiveCard: stone.void,
+  separator: stone.edge,
   text: ricePaper.ivory,
   textOnDark: ricePaper.ivory,
   textSecondary: 'rgba(245,240,232,0.65)',
   textMuted: 'rgba(245,240,232,0.35)',
-  accent: ink.gold,
-  accentMuted: ink.goldMuted,
+  // Interaction = moonlight (the brightest neutral), NOT gold: gold was both the 金
+  // element colour and the CTA accent — one colour, two jobs. Interaction now carries
+  // no hue, so it can never collide with a 五行 colour; cinnabar (`seal`) is the only
+  // reserved brand colour. The CTA affordance is brightness + underline/arrow.
+  accent: stone.moonlight,
+  accentMuted: stone.moonlightMuted,
   seal: cinnabar.bright,
   sealGhost: 'rgba(155,34,38,0.25)',
   border: 'rgba(245,240,232,0.12)',
@@ -218,15 +224,17 @@ export const yuanMotion = {
 // reaching into individual tokens.
 
 export const kindredPresets = {
-  /** Primary CTA — gold underline text, not a button box */
+  /** Primary CTA — moonlight underline text (the interaction tier), not a button box.
+   *  Affordance is the bright neutral + the underline; no hue, so it never reads as
+   *  a 五行 colour. */
   ctaText: {
-    color: ink.gold,
+    color: stone.moonlight,
     fontSize: kindredType.heading.fontSize,
     fontWeight: '500' as const,
     letterSpacing: 0.5,
     paddingVertical: kindredSpacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: ink.gold,
+    borderBottomColor: stone.moonlight,
   },
   /** Cinnabar Kindred seal container — round red ground, gold glyph */
   sealCircle: {
