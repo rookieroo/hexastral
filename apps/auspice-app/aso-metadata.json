@@ -1,5 +1,5 @@
 {
-  "_comment": "Yuun (was Auspice; consumer brand per ADR-0024 — bundleId stays com.hexastral.auspice, internal codename stays 'auspice'). App Store Connect ASO. V4 rewrite 2026-06-10: (a) rebranded Auspice->Yuun; (b) expanded 4->8 indexed locales for the fixed storefronts US/JP/SG/MY/TH — added en-GB (mandatory: the only English indexed in SG/MY/TH, shared across all three), ms (MY local + romanized-English overflow), th (TH local), es-MX (US keyword-overflow vehicle; visible fields mirror en-US); (c) repositioned per ADR-0024: en-US + ja LEAD with the BaZi life-timeline + what-if (universal curiosity), while en-GB + zh keep the calendar-led face where the diaspora English/Chinese calendar demand actually lives (SG = #1 APAC for Lunar-New-Year search). REFERENCE category + the v1 review screenshot deck stay calendar-utility-led for Guideline 4.3(b) safety; the aggressive timeline-first story is carried by Custom Product Pages, not this default listing. Storefront->indexed-locale map: US<-en-US,zh-Hans,zh-Hant,es-MX | JP<-ja(+en-US) | SG<-en-GB,zh-Hans | MY<-en-GB,ms (Chinese NOT indexed in MY) | TH<-en-GB,th. Constraints: title<=30c, subtitle<=30c (CJK=1), keywords<=100c comma-separated NO spaces after commas, promotionalText<=170c, description<=4000c. iOS description is NOT search-indexed (conversion copy only); the indexed fields are name>subtitle>keywords.",
+  "_comment": "Yuun (was Auspice; consumer brand per ADR-0024 — bundleId stays com.hexastral.auspice, internal codename stays auspice). App Store Connect ASO. LOCALE SCOPE NARROWED 2026-06 to the 4 languages the app actually ships: en-US, zh-Hans, zh-Hant, ja (founder decision — the earlier 8-locale en-GB/ms/th/es-MX keyword-overflow expansion for SG/MY/TH/US-Spanish is deferred, not pursued for now). REFERENCE primary category + a calendar-utility-led v1 screenshot deck for Guideline 4.3(b) safety; the personal 命书 (BaZi+ZiWei) deep-read is disclosed mid-deck (S6) + in the description (Guideline 2.3.1), kept in the classical register (never 算命/运势/预测). Constraints: title<=30c, subtitle<=30c (CJK=1), keywords<=100c comma-separated NO spaces after commas, promotionalText<=170c, description<=4000c. iOS description is NOT search-indexed (conversion copy only); the indexed fields are name>subtitle>keywords.",
   "bundleId": "com.hexastral.auspice",
   "appName": "Yuun",
   "primaryCategory": "REFERENCE",
@@ -7,12 +7,42 @@
   "contentRating": "4+",
   "_categoryRationale": "REFERENCE primary (Chinese calendar utility, multi-tab structure, family-account model — distances from the saturated Lifestyle horoscope cluster and protects against 4.3(b)). LIFESTYLE secondary for personal-planning + family-events discovery. The timeline/what-if repositioning lives in the title + Custom Product Pages, NOT a category change.",
   "_doNotUse": [
-    "astrology", "horoscope", "zodiac", "fortune", "lucky", "auspicious", "destiny", "psychic", "predict your future",
-    "占星", "算命", "命运", "运势", "运程", "黄道吉日", "通胜", "吉时", "开运", "预测",
-    "占星術", "占い", "運勢", "運命", "開運", "吉凶", "大安", "仏滅",
-    "ดูดวง", "หมอดู", "เนื้อคู่", "ดวง", "ดวงคู่", "ฤกษ์ดี", "วันมงคล"
+    "astrology",
+    "horoscope",
+    "zodiac",
+    "fortune",
+    "lucky",
+    "auspicious",
+    "destiny",
+    "psychic",
+    "predict your future",
+    "占星",
+    "算命",
+    "命运",
+    "运势",
+    "运程",
+    "黄道吉日",
+    "通胜",
+    "吉时",
+    "开运",
+    "预测",
+    "占星術",
+    "占い",
+    "運勢",
+    "運命",
+    "開運",
+    "吉凶",
+    "大安",
+    "仏滅",
+    "ดูดวง",
+    "หมอดู",
+    "เนื้อคู่",
+    "ดวง",
+    "ดวงคู่",
+    "ฤกษ์ดี",
+    "วันมงคล"
   ],
-  "_repositioningNote": "en-US/ja titles lead with Life Timeline + 人生グラフ (timeline-led, the global face). en-GB/zh titles lead with Chinese Calendar/万年历 (calendar-led, the SEA + diaspora face). Same single app/record; per-locale store names give it two faces. Default screenshot deck = calendar-led at v1 review; timeline-led deck = Custom Product Pages for ASA/social/web traffic.",
+  "_repositioningNote": "en-US/ja titles lead with the BaZi life-timeline (global curiosity hook); zh keeps the 万年历/calendar-led face (diaspora calendar demand). Same single app/record; per-locale store names give it two faces. Default screenshot deck = calendar-led at v1 review; a timeline-led deck can live in Custom Product Pages for ASA/social/web traffic.",
   "locales": {
     "en-US": {
       "title": "Yuun: Life Timeline & Almanac",
@@ -20,13 +50,6 @@
       "keywords": "lunar,bazi,what if,journal,life map,birthday reminder,festival,new year,widget,family",
       "promotionalText": "Your life as a timeline: 大运 (decade) & 流年 (year) chapters and a what-if path — plus the Chinese calendar, 24 solar terms & family lunar birthdays. No ads.",
       "description": "Yuun lays your life out as a timeline — and keeps a 1000-year Chinese calendar underneath it.\n\nYOUR LIFE TIMELINE\n\n• Your 大运 (10-year major-fortune) and 流年 (annual) chapters laid out as an interactive Ba Zi timeline — see how the classical periods map across a whole lifetime\n• Optional what-if branches — explore how a different past or future choice reads against each chapter. A reflective thought-exercise grounded in classical Ba Zi, explicitly for contemplation — not a prediction, not advice\n\nYOUR BIRTH CHART, IN DEPTH\n\n• Your full Ba Zi (Four Pillars) and Zi Wei (Purple Star) chart, opened into chaptered readings — who you are, your current decade, career, relationships and more — with an ask-anything follow-up grounded in your own chart. A study of the classical chart: reflection, not prediction\n\nAND A COMPLETE CHINESE CALENDAR\n\n• Daily 干支, lunar date, and the 24 solar terms (节气), in a polished 4-tab structure (Today / Calendar / Festivals / Me)\n• A month grid showing solar + lunar + 节气 + festivals at once, navigable to any year\n• A family events tracker — add family with their 农历 / 公历 birthdays; Yuun reminds you on the correct day each year\n• 8 major Chinese festivals with cultural depth, and a classical 黄历 layer (daily favorable / avoided activities, 28 lunar mansions, day-officer, 12 double-hours) grounded in classical sources\n\nWHAT IT IS NOT\n\n• Not Western astrology, not horoscopes, not zodiac signs\n• Not fortune-telling, not predictive\n• Not generic daily readings\n\nFREE vs PRO\n\nFree: 4 tabs, month grid, 1 self profile, 24 节气 + 4 festival pushes, Small widget, basic 黄历\nPro $4.99/mo · $39.99/yr: Ba Zi life timeline & what-if + personal Ba Zi & Zi Wei deep-read + family unlimited + 农历 birthday push + full 黄历 + 24 节气 pages + reverse date-planning + Widget × 3 + Apple Watch + cross-device sync\n\nCLASSICAL GROUNDING\n\n《三命通会》 (Wan Yuwu, Ming) · 《滴天髓》 (Liu Bowen, late Yuan–early Ming) · 《青囊经》\n\nFour languages: English, 简体中文, 繁體中文, 日本語\n\nPRIVACY-FIRST\n\nYour birth and family info stay on-device by default. Cross-device sync (Pro) is iCloud-encrypted. No tracking, no ads.\n\nABOUT\n\nYuun is published by UseONE, LLC. Privacy: hexastral.com/privacy. Terms: hexastral.com/terms."
-    },
-    "en-GB": {
-      "title": "Yuun: Chinese Calendar & BaZi",
-      "subtitle": "Life Timeline · Solar Terms",
-      "keywords": "chinese almanac,lunar calendar,date selection,wedding date,festival,cny,birthday",
-      "promotionalText": "The Chinese calendar for the world: almanac, 24 solar terms, festivals and family lunar birthdays — with a Ba Zi life-timeline as a deeper layer. Widget + Watch. No ads.",
-      "description": "Yuun is the Chinese calendar — a multi-locale utility built around the 1000-year Chinese calendar tradition, with a Ba Zi life-timeline as a deeper layer.\n\nWHAT IT IS\n\n• A Chinese calendar utility — daily 干支, lunar date, 24 solar terms (节气), 8 major festivals, in a polished 4-tab structure (Today / Calendar / Festivals / Me)\n• A month grid showing solar + lunar + 节气 + festivals at once, navigable to any year\n• A family events tracker — add family with their 农历 / 公历 birthdays; the app reminds you on the correct day each year. The strongest single feature for the overseas Chinese diaspora\n• A 24-节气 reference — each term unfolds into food / agriculture / poetry / wellness / customs\n• A classical 黄历 layer — daily favorable / avoided activities, 28 lunar mansions, day-officer, 12 double-hours, grounded in classical sources, not invented\n• A Ba Zi life-timeline (Pro) — your 大运 / 流年 chapters and an optional what-if reflection\n• A personal birth-chart deep-read (Pro) — your full Ba Zi (Four Pillars) and Zi Wei (Purple Star) chart, opened into chaptered readings with an ask-anything follow-up grounded in your own chart. A study of the classical chart — reflection, not prediction\n\nWHAT IT IS NOT\n\n• Not Western astrology, not horoscopes, not zodiac signs\n• Not fortune-telling, not predictive\n\nFREE vs PRO\n\nFree: 4 tabs, month grid, 1 self profile, 24 节气 + 4 festival pushes, Small widget, basic 黄历\nPro $4.99/mo · $39.99/yr: family unlimited + 农历 birthday push + full 黄历 + 24 节气 pages + reverse date-planning + Ba Zi life timeline & what-if + personal Ba Zi & Zi Wei deep-read + Widget × 3 + Apple Watch + cross-device sync\n\nCLASSICAL GROUNDING\n\n《三命通会》 · 《滴天髓》 · 《青囊经》\n\nFour languages: English, 简体中文, 繁體中文, 日本語\n\nPRIVACY-FIRST\n\nBirth and family info stay on-device by default. Cross-device sync (Pro) is iCloud-encrypted. No tracking, no ads.\n\nABOUT\n\nYuun is published by UseONE, LLC. Privacy: hexastral.com/privacy. Terms: hexastral.com/terms."
     },
     "zh-Hans": {
       "title": "Yuun 中华万年历",
@@ -48,32 +71,11 @@
       "keywords": "四柱推命,命式,カレンダー,誕生日,中華暦,春節,ウィジェット,もしも",
       "promotionalText": "あなたの人生をタイムラインで。大運・流年の章と「もしも」分岐、さらに万年暦・二十四節気・六曜・家族の旧暦誕生日。ウィジェット＋Watch。多言語・広告なし。",
       "description": "ユーン（Yuun）は、人生をタイムラインで見る —— そして 1000 年の中華暦をその下に備えたアプリです。\n\n人生グラフ\n\n• あなたの大運（十年大運）と流年を、操作できる四柱推命のタイムラインに展開。古典の周期が人生の章にどう対応するかを俯瞰\n• 任意の「もしも」分岐 —— 過去や未来の別の選択が各章にどう読めるかを探る。古典に基づく内省的な思考の遊びで、予測でも助言でもありません\n\nあなたの命式を深く読む\n\n• 四柱推命と紫微斗数の命盤を、章立ての解説（あなたは誰か・現在の大運・仕事・人間関係など）に展開し、自分の命盤について AI に質問できます。古典の命盤の読み解き —— 予測ではなく内省です\n\nそして中華暦\n\n• 毎日の干支・旧暦、二十四節気、8 つの中華祝日を 4 タブ（今日 / カレンダー / 節句 / 設定）に整理\n• 太陽暦 + 旧暦 + 節気 + 祝日を同時表示する月カレンダー\n• 家族イベント追跡 —— 家族の旧暦 / 太陽暦の誕生日を登録、毎年正しい日に通知\n• 古典黄暦の暦注、そして六曜（先勝・友引など）を毎日表示\n\nこれは何ではないか\n\n• 西洋占星術ではありません。占いでも、運命予測でもありません\n\nFree vs Pro\n\nFree：4 タブ、月カレンダー、本人 1 名、24 節気 + 4 祝日通知、Small ウィジェット、基本黄暦、六曜\nPro ¥600/月 · ¥4,800/年：四柱推命の人生グラフ & もしも + 四柱推命・紫微斗数の命式深掘り + 家族無制限 + 旧暦誕生日通知 + 完全黄暦 + 24 節気ページ + ウィジェット × 3 + Apple Watch + 端末間同期\n\n古典出典\n\n『三命通会』 · 『滴天髓』 · 『青囊経』\n\n4 言語：日本語 / 簡体中文 / 繁體中文 / English\n\nプライバシー優先\n\n生年月日と家族情報はデフォルトで端末内のみ。端末間同期（Pro）は iCloud 暗号化。トラッキングなし、広告なし。\n\nアプリ情報\n\nYuun は UseONE, LLC が発行。プライバシー：hexastral.com/privacy。利用規約：hexastral.com/terms。"
-    },
-    "ms": {
-      "title": "Yuun: Chinese Calendar & BaZi",
-      "subtitle": "Life Timeline · Solar Terms",
-      "keywords": "kalendar cina,almanak cina,tarikh,cny,kalendar lunar,bazi,festival",
-      "promotionalText": "Kalendar Cina: almanak, 24 solar terms, perayaan dan hari lahir lunar keluarga — dengan garis masa Ba Zi sebagai lapisan lebih dalam. Tanpa iklan.",
-      "description": "Yuun ialah kalendar Cina — utiliti berbilang bahasa yang dibina di sekeliling tradisi kalendar Cina 1000 tahun, dengan garis masa hidup Ba Zi sebagai lapisan lebih dalam.\n\nAPA INI\n\n• Utiliti kalendar Cina — 干支 harian, tarikh lunar, 24 solar terms (节气), 8 perayaan utama, dalam struktur 4 tab (Today / Calendar / Festivals / Me)\n• Grid bulan menunjukkan solar + lunar + 节气 + perayaan serentak, boleh dilayari ke mana-mana tahun\n• Penjejak acara keluarga — tambah ahli keluarga dengan tarikh lahir 农历 / 公历; aplikasi mengingatkan anda pada hari yang betul setiap tahun\n• Rujukan 24 节气, dan lapisan 黄历 klasik (aktiviti digalakkan / dielakkan harian) berasaskan sumber klasik\n• Garis masa hidup Ba Zi (Pro) — bab 大运 / 流年 anda dan refleksi what-if pilihan\n• Baca mendalam carta kelahiran peribadi (Pro) — carta penuh Ba Zi (Empat Tonggak) dan Zi Wei (Bintang Ungu), dibuka kepada bacaan berbab dengan susulan tanya-AI berdasarkan carta anda sendiri. Satu kajian carta klasik — refleksi, bukan ramalan\n\nAPA INI BUKAN\n\n• Bukan astrologi Barat, bukan horoskop, bukan ramalan nasib\n\nFREE vs PRO\n\nFree: 4 tab, grid bulan, 1 profil diri, notifikasi 24 节气 + 4 perayaan, widget Small, 黄历 asas\nPro: keluarga tanpa had + notifikasi hari lahir 农历 + 黄历 penuh + garis masa Ba Zi & what-if + baca mendalam Ba Zi & Zi Wei peribadi + Widget × 3 + Apple Watch + penyegerakan merentas peranti\n\nEmpat bahasa: English, 简体中文, 繁體中文, 日本語\n\nPRIVASI DAHULU\n\nMaklumat kelahiran dan keluarga kekal pada peranti secara lalai. Penyegerakan (Pro) disulitkan iCloud. Tiada penjejakan, tiada iklan.\n\nTENTANG\n\nYuun diterbitkan oleh UseONE, LLC. Privasi: hexastral.com/privacy. Terma: hexastral.com/terms."
-    },
-    "th": {
-      "title": "Yuun ปฏิทินจีน",
-      "subtitle": "ตรุษจีน · ปฏิทินจันทรคติ",
-      "keywords": "ปฏิทินจีน,ตรุษจีน,ปาจื้อ,ปฏิทินจันทรคติ",
-      "promotionalText": "ปฏิทินจีน 1000 ปีสำหรับโลกยุคนี้: ปฏิทินจันทรคติ 24 สารทจีน เทศกาล และวันเกิดครอบครัว พร้อมไทม์ไลน์ชีวิตแบบ BaZi เป็นชั้นที่ลึกกว่า ไม่มีโฆษณา",
-      "description": "Yuun คือปฏิทินจีน — เครื่องมือหลายภาษาที่สร้างขึ้นรอบประเพณีปฏิทินจีนอายุ 1000 ปี พร้อมไทม์ไลน์ชีวิตแบบ BaZi (สี่เสาหลัก) เป็นชั้นที่ลึกกว่า\n\nสิ่งที่เป็น\n\n• ปฏิทินจีนรายวัน 干支 วันที่จันทรคติ 24 สารทจีน และเทศกาลจีนสำคัญ ในโครงสร้าง 4 แท็บ\n• ตารางเดือนแสดงสุริยคติ + จันทรคติ + สารท + เทศกาลพร้อมกัน\n• ตัวติดตามวันเกิดครอบครัว — เพิ่มสมาชิกพร้อมวันเกิดจันทรคติ/สุริยคติ แล้วแอปเตือนในวันที่ถูกต้องทุกปี\n• ไทม์ไลน์ชีวิต BaZi (Pro) — ช่วง 大运 / 流年 ของคุณ และการสะท้อนแบบ what-if\n• อ่าน BaZi เชิงลึกส่วนบุคคล (Pro) — BaZi (สี่เสาหลัก) และ Zi Wei (จื่อเวย) ฉบับเต็ม แยกเป็นบท พร้อมถาม-ตอบ AI จากผังของคุณเอง การสะท้อน ไม่ใช่การทำนาย\n\nสิ่งที่ไม่ใช่\n\n• ไม่ใช่โหราศาสตร์ตะวันตก ไม่ใช่การทำนายอนาคต\n\nสี่ภาษา: English, 简体中文, 繁體中文, 日本語\n\nความเป็นส่วนตัว: ข้อมูลวันเกิดและครอบครัวอยู่ในเครื่องโดยค่าเริ่มต้น ไม่มีการติดตาม ไม่มีโฆษณา\n\nเผยแพร่โดย UseONE, LLC · hexastral.com/privacy · hexastral.com/terms"
-    },
-    "es-MX": {
-      "title": "Yuun: Life Timeline & Almanac",
-      "subtitle": "Chinese Calendar · Solar Terms",
-      "keywords": "calendario chino,lunar,planner,seasons,life journal,bazi,festival",
-      "promotionalText": "Tu vida como línea de tiempo: capítulos de década (大运) y año (流年) y un camino what-if — más el calendario chino, 24 términos solares y cumpleaños. Sin anuncios.",
-      "description": "Yuun traza tu vida como una línea de tiempo — y mantiene debajo un calendario chino de 1000 años.\n\nTU LÍNEA DE TIEMPO\n\n• Tus capítulos 大运 (década) y 流年 (año) como una línea de tiempo Ba Zi interactiva\n• Ramas what-if opcionales — un ejercicio reflexivo basado en el Ba Zi clásico, para la contemplación; no es una predicción ni un consejo\n\nTU CARTA NATAL, EN PROFUNDIDAD\n\n• Tu carta completa de Ba Zi (Cuatro Pilares) y Zi Wei (Estrella Púrpura), desplegada en lecturas por capítulos —quién eres, tu década actual, carrera, relaciones y más— con preguntas de seguimiento basadas en tu propia carta. Un estudio de la carta clásica: reflexión, no predicción\n\nY UN CALENDARIO CHINO COMPLETO\n\n• 干支 diario, fecha lunar y los 24 términos solares (节气) en una estructura de 4 pestañas\n• Cuadrícula mensual con solar + lunar + 节气 + festivales a la vez\n• Seguimiento de cumpleaños familiares (农历 / 公历) con recordatorio en el día correcto\n• Capa 黄历 clásica basada en fuentes clásicas\n\nQUÉ NO ES\n\n• No es astrología occidental, no es horóscopo, no predice el futuro\n\nCuatro idiomas: English, 简体中文, 繁體中文, 日本語\n\nPRIVACIDAD: los datos de nacimiento y familia permanecen en el dispositivo de forma predeterminada. Sin rastreo, sin anuncios.\n\nPublicado por UseONE, LLC. Privacidad: hexastral.com/privacy. Términos: hexastral.com/terms."
     }
   },
   "_charCounts": {
     "_note": "Recompute via node String.length (CJK=1) before submit. Limits: title 30, subtitle 30, keywords 100, promotionalText 170, description 4000.",
-    "_status": "Verified 2026-06-10: all 8 locales within limits (title<=30, subtitle<=30, keywords<=100 comma-tight, promotionalText<=170, description<=4000) and no _doNotUse term in any indexed field. Re-run the node count script if any field is edited."
+    "_status": "Verified 2026-06: 4 locales (en-US, zh-Hans, zh-Hant, ja) within limits (title<=30, subtitle<=30, keywords<=100 comma-tight, promotionalText<=170, description<=4000) and no _doNotUse term in any indexed field. Re-run the node count script if any field is edited."
   },
   "_screenshotDirection": "See docs/screenshot-direction.md. v1 REVIEW DEFAULT deck stays calendar-utility-led (timeline at S5) per the doctrine — fresh publisher + 4.3(b). Order: (1) Today 干支/农历/节气 hero, (2) Month grid solar+lunar+节气+节日, (3) 24-节气 timeline, (4) Family 农历 birthdays, (5) Ba Zi life timeline + what-if (framed 'reflection, not prediction'), (6) Personal Ba Zi/Zi Wei chart deep-read report (Pro, framed 'a study, not a prediction' — discloses the signed-in 命书 per Guideline 2.3.1 without leading the carousel with it), (7) Widget + Apple Watch. JP deck adds the 六曜 badge to S1. TIMELINE-LED deck (timeline+what-if as S1-S2) lives ONLY in Custom Product Pages for ASA/social/web traffic — ratchet the default toward it only after approval. Avoid: moon phases, zodiac wheels, mystic motifs."
 }

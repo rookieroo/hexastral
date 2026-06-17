@@ -4,7 +4,7 @@
 
 Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = the full almanac; **Pro = 对你而言 personalization + personal 八字/紫微 命书 deep-read (chaptered report + 划词 ask-AI) + personal calendar feed + 关系 reading + specialized 择日**, gated behind sign-in.
 
-> **ASO / review note (2026-06, Yuel/Yuun split):** the personal 命书 deep-read is now a primary Pro surface, so the store listing must **disclose** it (Guideline 2.3.1) without **leading** with it (Guideline 4.3(b)). Done via: `aso-metadata.json` descriptions + Pro lines (8 locales — 命理 kept in the classical register: 八字/紫微/命盘/大运/流年, never 算命/运势/预测) and a mid-deck screenshot (S6, "a study, not a prediction"). The calendar stays the headline; 命理 is the disclosed second act. th/ms wording is draft — native-review before submit.
+> **ASO / review note (2026-06, Yuel/Yuun split):** the personal 命书 deep-read is now a primary Pro surface, so the store listing must **disclose** it (Guideline 2.3.1) without **leading** with it (Guideline 4.3(b)). Done via: `aso-metadata.json` descriptions + Pro lines (4 locales — en-US / zh-Hans / zh-Hant / ja; 命理 kept in the classical register: 八字/紫微/命盘/大运/流年, never 算命/运势/预测) and a mid-deck screenshot (S6, "a study, not a prediction"). The calendar stays the headline; 命理 is the disclosed second act. Locale scope narrowed 2026-06 to the 4 shipped languages (en-GB/ms/th/es-MX ASO-overflow deferred).
 
 ---
 

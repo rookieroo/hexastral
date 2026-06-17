@@ -55,6 +55,14 @@ Which App Store metadata locales are **search-indexed** on our five storefronts
 | Malaysia | **en-GB** + ms | **Chinese is NOT indexed in MY** — MY Chinese search "bazi" in English; ms field = English/romanized overflow |
 | Thailand | **en-GB** + th | English-only reaches almost nobody organically in TH |
 
+> **NARROWED 2026-06 (founder decision):** the 8-locale expansion below is
+> **deferred, not pursued for now**. Ship only the **4 languages the apps
+> actually localize in-product — en-US, zh-Hans, zh-Hant, ja** — and drop the
+> ASO-overflow locales (en-GB, ms, th, es-MX) + the SG/MY/TH storefront push.
+> Applied to Yuun (`apps/auspice-app/aso-metadata.json` now holds 4 locales);
+> this is the default scope for the suite unless revisited. The reasoning below
+> is retained as the case for a future re-expansion, not the current plan.
+
 Consequences:
 
 1. **Ship 8 iOS metadata locales per app**: en-US, **en-GB (new — mandatory, the
