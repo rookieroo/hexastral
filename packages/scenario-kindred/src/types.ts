@@ -99,6 +99,9 @@ export interface BondData {
   /** The OTHER person's 五行 from the VIEWER's perspective — colours this thread's
    *  star in the sky + its list dot, so each bond reads in its own element hue. */
   counterpartElement?: string | null
+  /** ISO time the report was generated (resonance: the accept time, not the invite).
+   *  null until a reading exists. The list shows it for completed threads. */
+  generatedAt?: string | null
   archetypeName: string | null
   archetypeTagline: string | null
   archetypeCategory: ArchetypeCategory | null

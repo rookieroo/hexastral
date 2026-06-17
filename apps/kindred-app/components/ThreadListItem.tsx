@@ -17,7 +17,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import { ElementGlyph } from '@/components/home/ElementGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { bondQuality } from '@/lib/bondQuality'
-import { type Locale, relativeSentLabel, t } from '@/lib/i18n'
+import { type Locale, relativeSentLabel, relativeTimeLabel, t } from '@/lib/i18n'
 
 /** The counterpart's 意象图 colour = their SkyHero star hue (same halo colours), so
  *  the glyph reads as "their star, here in the list". Unknown → cool silver. */
@@ -88,6 +88,12 @@ export function ThreadListItem({
   const { displayName, relTag } = resolveBondDisplayName(bond)
   const isActive = bond.status === 'active'
   const isPending = bond.status === 'pending_invite'
+  // Pending → when the invite went out; completed → when the report was generated.
+  const timeLabel = isPending
+    ? relativeSentLabel(locale, bond.createdAt)
+    : isActive && bond.generatedAt
+      ? relativeTimeLabel(locale, bond.generatedAt)
+      : ''
   const el = bond.counterpartElement ?? undefined
   const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
   const stat = statusIcon(bond.status)
@@ -151,15 +157,16 @@ export function ThreadListItem({
           <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
             {displayName}
           </Text>
-          {/* One quiet line: who they are to you (+ when an invite went out). */}
-          {relTag || isPending ? (
+          {/* One quiet line: who they are to you · when. Pending shows the invite-sent
+              time; a completed thread shows when its report was generated. */}
+          {relTag || timeLabel ? (
             <Text
               style={[kindredType.caption, { color: kindredDark.textSecondary }]}
               numberOfLines={1}
             >
               {relTag ?? ''}
-              {relTag && isPending ? ' · ' : ''}
-              {isPending ? relativeSentLabel(locale, bond.createdAt) : ''}
+              {relTag && timeLabel ? ' · ' : ''}
+              {timeLabel}
             </Text>
           ) : null}
           {/* This report predates a later birth-info edit — it stays as-is, but the

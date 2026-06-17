@@ -1403,6 +1403,7 @@ bondRoutes.get('/', async (c) => {
       archetypeCategory: string | null
       hookDimension: string | null
       ownerIsPersonA: boolean | null
+      generatedAt: string
       personASolarDate: string
       personATimeIndex: number
       personAGender: string
@@ -1422,6 +1423,7 @@ bondRoutes.get('/', async (c) => {
         archetypeCategory: pairReadings.archetypeCategory,
         hookDimension: pairReadings.hookDimension,
         ownerIsPersonA: pairReadings.ownerIsPersonA,
+        generatedAt: pairReadings.createdAt,
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
         personAGender: pairReadings.personAGender,
@@ -1546,6 +1548,8 @@ bondRoutes.get('/', async (c) => {
       aElement,
       bElement,
       counterpartElement,
+      // When the report was generated (resonance: B-accept time, not the invite).
+      generatedAt: reading?.generatedAt ?? null,
       archetypeName: reading?.archetypeName ?? null,
       archetypeTagline: reading?.archetypeTagline ?? null,
       archetypeCategory: reading?.archetypeCategory ?? null,

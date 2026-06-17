@@ -1586,21 +1586,22 @@ export function t(locale: Locale, key: TranslationKey): string {
  * Localized "Sent · N ago" label for the invite waiting screen. Channel-neutral
  * (no email/phone) — just how long ago the invite link went out.
  */
-export function relativeSentLabel(locale: Locale, iso: string): string {
-  let rel: string
+/** Bare "X ago" (no prefix) — for a report's generated time, where "Sent" is wrong. */
+export function relativeTimeLabel(locale: Locale, iso: string): string {
   try {
     const minutes = Math.floor((Date.now() - Date.parse(iso)) / 60_000)
-    if (minutes < 1) rel = t(locale, 'waiting.justNow')
-    else if (minutes < 60) rel = `${minutes} ${t(locale, 'waiting.minutesAgo')}`
-    else {
-      const hours = Math.floor(minutes / 60)
-      if (hours < 24) rel = `${hours} ${t(locale, 'waiting.hoursAgo')}`
-      else rel = `${Math.floor(hours / 24)} ${t(locale, 'waiting.daysAgo')}`
-    }
+    if (minutes < 1) return t(locale, 'waiting.justNow')
+    if (minutes < 60) return `${minutes} ${t(locale, 'waiting.minutesAgo')}`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} ${t(locale, 'waiting.hoursAgo')}`
+    return `${Math.floor(hours / 24)} ${t(locale, 'waiting.daysAgo')}`
   } catch {
-    rel = t(locale, 'waiting.justNow')
+    return t(locale, 'waiting.justNow')
   }
-  return `${t(locale, 'waiting.sentAtPrefix')}${rel}`
+}
+
+export function relativeSentLabel(locale: Locale, iso: string): string {
+  return `${t(locale, 'waiting.sentAtPrefix')}${relativeTimeLabel(locale, iso)}`
 }
 
 /** HexAstral web privacy page path segment for each Kindred locale */

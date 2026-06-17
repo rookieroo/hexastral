@@ -249,7 +249,14 @@ export function ChapterCard({
             const term = getTermByZh(seg.termZh as string, tLocale)
             if (term) setActiveTerm(term)
           }}
-          style={{ textDecorationLine: 'underline', textDecorationStyle: 'dotted' }}
+          // A soft cinnabar dotted underline — RN can't offset the line off the
+          // baseline (it crowds CJK glyphs), so muting the colour keeps the "this is
+          // a defined term" hint without a harsh rule pressed against the characters.
+          style={{
+            textDecorationLine: 'underline',
+            textDecorationStyle: 'dotted',
+            textDecorationColor: C.muted,
+          }}
         >
           {seg.text}
         </Text>
