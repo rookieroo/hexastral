@@ -31,7 +31,7 @@ import {
   useKindredClient,
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Plus, Settings } from 'lucide-react-native'
+import { Settings } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
@@ -55,6 +55,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
+import { NewThreadGlyph } from '@/components/home/NewThreadGlyph'
 import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
@@ -471,7 +472,7 @@ export default function ReadingHomeScreen() {
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Plus color={kindredDark.accent} size={16} strokeWidth={1.9} />
+            <NewThreadGlyph size={17} color={kindredDark.seal} />
             <Text style={[kindredType.caption, { color: kindredDark.accent, fontWeight: '600' }]}>
               {t(locale, 'bondList.add')}
             </Text>

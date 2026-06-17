@@ -3,14 +3,16 @@
  *
  * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
  * (their element imagery = their star in your orbit), then their name + a quiet
- * relationship line, then a small STATUS ICON (waiting vs complete). No essence
- * chip, no coloured status text, no bullet — only what the row needs. Tap → the
- * thread's report; left-swipe reveals 解缘 (release the bond).
+ * relationship line. STATUS is carried by the ROW BACKGROUND, not an icon — a
+ * pending invite sits on a lifted surface (awaiting), a completed thread recedes
+ * onto the base ground (a "done" check icon read as odd). No essence chip, no
+ * coloured status text, no bullet. Tap → the thread's report; left-swipe reveals
+ * 解缘 (release the bond).
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
-import { Check, Clock, Unlink, X } from 'lucide-react-native'
+import { Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -30,26 +32,7 @@ const STAR_HUE: Record<string, string> = {
 }
 const STAR_HUE_FALLBACK = '#bcccea'
 
-/** Status → a small neutral icon (no colour highlight — 朱红 is reserved for brand).
- *  Two real states (waiting for them / both in) plus the quiet edge states. */
-function statusIcon(
-  status: BondStatus
-): { Icon: typeof Clock; color: string; label: BondStatus } | null {
-  switch (status) {
-    case 'active':
-      return { Icon: Check, color: kindredDark.textSecondary, label: status }
-    case 'pending_invite':
-      return { Icon: Clock, color: kindredDark.textMuted, label: status }
-    case 'declined':
-      return { Icon: X, color: kindredDark.textMuted, label: status }
-    case 'expired':
-      return { Icon: Clock, color: kindredDark.textMuted, label: status }
-    default:
-      return null
-  }
-}
-
-/** Localized accessibility label for the status icon (text no longer shown). */
+/** Localized accessibility label for the status (carried by the row bg, not an icon). */
 function statusA11y(status: BondStatus, locale: Locale): string {
   switch (status) {
     case 'active':
@@ -96,7 +79,9 @@ export function ThreadListItem({
       : ''
   const el = bond.counterpartElement ?? undefined
   const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
-  const stat = statusIcon(bond.status)
+  // Status by background: a pending invite is lifted (awaiting their reply), every
+  // other state recedes onto the base ground. Both opaque so the swipe stays hidden.
+  const rowBg = isPending ? kindredDark.cardElevated : kindredDark.bg
 
   return (
     <ReanimatedSwipeable
@@ -122,14 +107,16 @@ export function ThreadListItem({
     >
       <Pressable
         onPress={(e) => onPress({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
+        accessibilityRole='button'
+        accessibilityLabel={`${displayName} · ${statusA11y(bond.status, locale)}`}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           gap: kindredSpacing.md,
           paddingHorizontal: kindredSpacing.screenH,
           paddingVertical: kindredSpacing.lg,
-          // Opaque ground so the swipe actions stay hidden until swiped.
-          backgroundColor: kindredDark.bg,
+          // Status by background (opaque so the swipe actions stay hidden until swiped).
+          backgroundColor: rowBg,
         }}
       >
         {/* The other person's 五行 意象图 — their star, here in the list. A faint ring
@@ -196,17 +183,6 @@ export function ThreadListItem({
             </View>
           ) : null}
         </View>
-
-        {/* Status as a quiet icon (waiting vs complete) — no colour highlight. */}
-        {stat ? (
-          <View
-            accessibilityRole='image'
-            accessibilityLabel={statusA11y(bond.status, locale)}
-            style={{ width: 22, alignItems: 'center' }}
-          >
-            <stat.Icon color={stat.color} size={17} strokeWidth={1.7} />
-          </View>
-        ) : null}
       </Pressable>
     </ReanimatedSwipeable>
   )
