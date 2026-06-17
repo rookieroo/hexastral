@@ -9,9 +9,12 @@ import { getYearlySiHua } from '../sihua'
 import {
   labelToBondCategory,
   relationshipBondPalaces,
+  SOLO_LIFE_PALACES,
   type ZiweiTimingSummary,
   ziweiRelationMonthSignal,
   ziweiRelationYearSignal,
+  ziweiSelfMonthSignal,
+  ziweiSelfYearSignal,
 } from '../ziwei-timing'
 
 const empty: ZiweiTimingSummary = { starToPalace: {} }
@@ -103,5 +106,34 @@ describe('relationship palace lens', () => {
     expect(
       ziweiRelationYearSignal(a, empty, 2024, relationshipBondPalaces('spouse')).significant
     ).toBe(false)
+  })
+})
+
+describe('solo signal (auspice life-line)', () => {
+  test('SOLO_LIFE_PALACES covers self / career / wealth / heart / world', () => {
+    expect(SOLO_LIFE_PALACES).toEqual(['命宫', '官禄', '财帛', '福德', '迁移'])
+  })
+
+  test('流年化忌 in 官禄 → significant + tension (one chart, no double-count)', () => {
+    const self: ZiweiTimingSummary = { starToPalace: { 太阳: '官禄' } }
+    const sig = ziweiSelfYearSignal(self, 2024)
+    expect(sig.significant).toBe(true)
+    expect(sig.tone).toBe('tension')
+    expect(sig.hitCount).toBe(1) // not 2 — solo counts the chart once
+  })
+
+  test('流年化禄 (廉贞) in 财帛 → harmony', () => {
+    const self: ZiweiTimingSummary = { starToPalace: { 廉贞: '财帛' } }
+    expect(ziweiSelfYearSignal(self, 2024).tone).toBe('harmony')
+  })
+
+  test('四化 landing outside life palaces (兄弟) → not significant', () => {
+    const self: ZiweiTimingSummary = { starToPalace: { 太阳: '兄弟', 廉贞: '夫妻' } }
+    expect(ziweiSelfYearSignal(self, 2024).significant).toBe(false)
+  })
+
+  test('solo month signal mirrors the year lens', () => {
+    const self: ZiweiTimingSummary = { starToPalace: { 廉贞: '福德' } }
+    expect(ziweiSelfMonthSignal(self, '甲').tone).toBe('harmony')
   })
 })

@@ -459,6 +459,9 @@ export {
   DEFAULT_BOND_PALACES,
   labelToBondCategory,
   relationshipBondPalaces,
+  SOLO_LIFE_PALACES,
   ziweiRelationMonthSignal,
   ziweiRelationYearSignal,
+  ziweiSelfMonthSignal,
+  ziweiSelfYearSignal,
 } from './ziwei-timing'

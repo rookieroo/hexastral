@@ -63,6 +63,14 @@ const CATEGORY_PALACES: Record<BondCategory, readonly string[]> = {
 /** Default lens (romantic) — also the back-compat set for callers that pass none. */
 export const DEFAULT_BOND_PALACES: readonly string[] = [...CORE_PALACES, '夫妻']
 
+/**
+ * Solo life palaces — the lens for a SINGLE person's own timeline / what-if (auspice).
+ * Not a relationship; the year is "significant for ME" when its 四化 lights a major
+ * life domain: 命宫 (self), 官禄 (career/path), 财帛 (resources), 福德 (heart/fortune),
+ * 迁移 (the outer world & moves). Mirrors the 八字 spine's life-phase framing.
+ */
+export const SOLO_LIFE_PALACES: readonly string[] = ['命宫', '官禄', '财帛', '福德', '迁移']
+
 /** Relationship type → the palaces a year/month must light to count, 命宫/福德 always. */
 export function relationshipBondPalaces(category?: BondCategory | null): readonly string[] {
   if (!category) return DEFAULT_BOND_PALACES
@@ -161,4 +169,40 @@ export function ziweiRelationMonthSignal(
 ): ZiweiRelationSignal {
   const stars = getSiHua(monthStem).all
   return toSignal(landings(a, b, stars, palaces))
+}
+
+/** Like {@link landings} but for ONE chart (no double-count) — the solo case. */
+function selfLandings(
+  self: ZiweiTimingSummary,
+  stars: ReadonlyArray<{ starName: string; type: keyof typeof SIHUA_TONE }>,
+  palaces: readonly string[]
+): ZiweiTone[] {
+  const tones: ZiweiTone[] = []
+  for (const s of stars) {
+    const palace = self.starToPalace[s.starName]
+    if (palace && palaces.includes(palace)) tones.push(SIHUA_TONE[s.type])
+  }
+  return tones
+}
+
+/**
+ * 紫微 流年 corroboration for ONE person (auspice solo timeline): does this YEAR's
+ * 流年四化 light any of the native's life palaces? Pure — reads the persisted
+ * `starToPalace` map + the year 四化 table.
+ */
+export function ziweiSelfYearSignal(
+  self: ZiweiTimingSummary,
+  year: number,
+  palaces: readonly string[] = SOLO_LIFE_PALACES
+): ZiweiRelationSignal {
+  return toSignal(selfLandings(self, getYearlySiHua(year).sihua.all, palaces))
+}
+
+/** 紫微 流月 corroboration for ONE person — the solo what-if monthly weight. */
+export function ziweiSelfMonthSignal(
+  self: ZiweiTimingSummary,
+  monthStem: HeavenlyStem,
+  palaces: readonly string[] = SOLO_LIFE_PALACES
+): ZiweiRelationSignal {
+  return toSignal(selfLandings(self, getSiHua(monthStem).all, palaces))
 }
