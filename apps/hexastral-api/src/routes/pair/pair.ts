@@ -161,6 +161,8 @@ export const pairRoutes = new Hono<AppEnv>()
     await db.insert(pairReadings).values({
       id: readingId,
       userId: input.userId,
+      // Direct pair compute: the requester is personA (甲).
+      ownerIsPersonA: true,
       personASolarDate: input.personA.solarDate,
       personATimeIndex: input.personA.timeIndex,
       personAGender: input.personA.gender,

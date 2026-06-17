@@ -379,6 +379,11 @@ export const pairReadings = sqliteTable(
      *  无需重算 iztro。可空 (旧报告 / 排盘失败)。star→宫 映射即足够印证流年/流月。 */
     ziweiSummaryA: text('ziwei_summary_a'),
     ziweiSummaryB: text('ziwei_summary_b'),
+    /** Whether THIS row's owner (userId) is personA (甲, the inviter) in the prose.
+     *  Stamped at creation, so the report renders the right "you" even if the viewer
+     *  later edits their birth. null on legacy rows → the read path falls back to
+     *  birth-matching. Resonance writes two rows: inviter=true, responder=false. */
+    ownerIsPersonA: integer('owner_is_person_a', { mode: 'boolean' }),
     bookmarked: integer('bookmarked', { mode: 'boolean' }).default(false).notNull(),
     rating: integer('rating'),
     createdAt: text('created_at')

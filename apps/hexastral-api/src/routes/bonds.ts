@@ -412,6 +412,8 @@ bondRoutes.post('/solo', async (c) => {
     db.insert(pairReadings).values({
       id: readingId,
       userId,
+      // Solo bond: the creator is personA (甲).
+      ownerIsPersonA: true,
       personASolarDate: user.birthSolarDate,
       personATimeIndex: user.birthTimeIndex,
       personAGender: user.birthGender,
@@ -1077,6 +1079,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     db.insert(pairReadings).values({
       id: readingIdForInviter,
       userId: invitation.inviterUserId,
+      // Inviter's library row — the inviter IS personA (甲).
+      ownerIsPersonA: true,
       personASolarDate: inviter.birthSolarDate,
       personATimeIndex: inviter.birthTimeIndex,
       personAGender: inviter.birthGender,
@@ -1118,6 +1122,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     db.insert(pairReadings).values({
       id: readingIdForResponder,
       userId: respondUserId,
+      // Responder's library row — the responder is personB (乙), never personA.
+      ownerIsPersonA: false,
       personASolarDate: inviter.birthSolarDate,
       personATimeIndex: inviter.birthTimeIndex,
       personAGender: inviter.birthGender,
@@ -2005,6 +2011,7 @@ bondRoutes.get('/:id', async (c) => {
         hookDimension: pairReadings.hookDimension,
         compatibilityData: pairReadings.compatibilityData,
         interpretation: pairReadings.interpretation,
+        ownerIsPersonA: pairReadings.ownerIsPersonA,
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
         personAGender: pairReadings.personAGender,
@@ -2060,14 +2067,18 @@ bondRoutes.get('/:id', async (c) => {
           rawReading.personBTimeIndex === me.ti &&
           rawReading.personBGender === me.g
         )
-      // The viewer is person B only when their birth matches the B snapshot; every
-      // other case (matches A, or stale/absent) defaults to A (legacy behaviour).
-      viewerIsPersonA = !(
-        me?.d != null &&
-        rawReading.personBSolarDate === me.d &&
-        rawReading.personBTimeIndex === me.ti &&
-        rawReading.personBGender === me.g
-      )
+      // Prefer the role STAMPED on the row at creation (immune to a later birth
+      // edit — the invitee stays the invitee). Fall back to birth-matching only for
+      // legacy rows written before the flag existed (null): viewer is B only when
+      // their birth matches the B snapshot, else default A.
+      viewerIsPersonA =
+        rawReading.ownerIsPersonA ??
+        !(
+          me?.d != null &&
+          rawReading.personBSolarDate === me.d &&
+          rawReading.personBTimeIndex === me.ti &&
+          rawReading.personBGender === me.g
+        )
       // '4' or null (legacy) means full access; '1' means restricted to hookDimension only
       const canSeeAll = bond.unlockedDimensions === '4' || bond.unlockedDimensions === null
 
