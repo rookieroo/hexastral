@@ -37,11 +37,12 @@ import {
   shichenFieldLabelsForLocale,
   shichenInlineLabel,
   switchBirthCalendar,
+  Toggle,
 } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Haptics from 'expo-haptics'
 import { type ReactNode, type RefObject, useState } from 'react'
-import { Pressable, type ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { Pressable, type ScrollView, Text, TextInput, View } from 'react-native'
 
 import { kindredBirthCopy } from '@/lib/birthInfoCopy'
 import { type Locale, t } from '@/lib/i18n'
@@ -325,10 +326,11 @@ export function BirthForm({
                         <Text style={[kindredType.body, { color: kindredDark.text }]}>
                           {preciseCopy.calibrateLabel ?? '真太阳时校准'}
                         </Text>
-                        <Switch
+                        <Toggle
                           value={calibrate !== false}
                           onValueChange={(on) => onCalibrate?.(on)}
-                          trackColor={{ true: kindredDark.accent, false: kindredDark.border }}
+                          accent={kindredDark.seal}
+                          accessibilityLabel={preciseCopy.calibrateLabel ?? '真太阳时校准'}
                         />
                       </View>
                       {calibrationPreview ? (

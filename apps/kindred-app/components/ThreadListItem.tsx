@@ -3,16 +3,15 @@
  *
  * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
  * (their element imagery = their star in your orbit), then their name + a quiet
- * relationship line. STATUS is carried by the ROW BACKGROUND, not an icon — a
- * pending invite sits on a lifted surface (awaiting), a completed thread recedes
- * onto the base ground (a "done" check icon read as odd). No essence chip, no
- * coloured status text, no bullet. Tap → the thread's report; left-swipe reveals
- * 解缘 (release the bond).
+ * relationship line. STATUS shows ONLY for a pending invite — a quiet clock
+ * (awaiting their reply); a completed thread carries no icon at all (a "done"
+ * check read as odd). No essence chip, no coloured status text, no bullet. Tap →
+ * the thread's report; left-swipe reveals 解缘 (release the bond).
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
-import { Unlink } from 'lucide-react-native'
+import { Clock, Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -79,9 +78,6 @@ export function ThreadListItem({
       : ''
   const el = bond.counterpartElement ?? undefined
   const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
-  // Status by background: a pending invite is lifted (awaiting their reply), every
-  // other state recedes onto the base ground. Both opaque so the swipe stays hidden.
-  const rowBg = isPending ? kindredDark.cardElevated : kindredDark.bg
 
   return (
     <ReanimatedSwipeable
@@ -115,8 +111,8 @@ export function ThreadListItem({
           gap: kindredSpacing.md,
           paddingHorizontal: kindredSpacing.screenH,
           paddingVertical: kindredSpacing.lg,
-          // Status by background (opaque so the swipe actions stay hidden until swiped).
-          backgroundColor: rowBg,
+          // Opaque ground so the swipe actions stay hidden until swiped.
+          backgroundColor: kindredDark.bg,
         }}
       >
         {/* The other person's 五行 意象图 — their star, here in the list. A faint ring
@@ -183,6 +179,14 @@ export function ThreadListItem({
             </View>
           ) : null}
         </View>
+
+        {/* Pending invite → a quiet clock (awaiting their reply). Completed (and
+            every other) state carries NO icon — the row is clean. */}
+        {isPending ? (
+          <View style={{ width: 22, alignItems: 'center' }}>
+            <Clock color={kindredDark.textMuted} size={16} strokeWidth={1.7} />
+          </View>
+        ) : null}
       </Pressable>
     </ReanimatedSwipeable>
   )

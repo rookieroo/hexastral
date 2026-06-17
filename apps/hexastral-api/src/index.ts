@@ -602,7 +602,15 @@ app.onError((err, c) => {
   return c.json(
     {
       ok: false,
-      error: { code: 'internal_error', message: 'Internal server error' },
+      error: {
+        code: 'internal_error',
+        // Pre-PMF debug aid (no real users yet): surface the REAL cause so a
+        // deployed 500 is diagnosable in-app without `wrangler tail`. Replace the
+        // message with a generic "Internal server error" before launch — leaking
+        // raw error text is an info-disclosure smell once there are real users.
+        message: err instanceof Error ? err.message : 'Internal server error',
+        details: { requestId },
+      },
     },
     500
   )
