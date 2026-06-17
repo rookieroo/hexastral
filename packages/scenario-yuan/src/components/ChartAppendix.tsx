@@ -21,10 +21,10 @@ import { ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-
-import type { FateNatalChart } from '@/lib/solo/natal'
-import type { DayunVisible, WuxingCount } from '@/lib/solo/reading'
-import type { ZiweiChart } from '@/lib/solo/ziwei'
+import type { FateNatalChart } from '../natal'
+import type { DayunVisible, WuxingCount } from '../reading'
+import type { ZiweiChart } from '../ziwei'
+import type { Locale } from './reading-i18n'
 import {
   dayMasterLabel,
   elementLabel,
@@ -61,6 +61,8 @@ interface ChartAppendixProps {
   yongElem: WuXing
   dayunSteps: DayunVisible[]
   ziwei?: ZiweiChart | null
+  /** Reader's locale — injected by the app (shared package never auto-resolves). */
+  locale: Locale
 }
 
 export function ChartAppendix({
@@ -70,8 +72,9 @@ export function ChartAppendix({
   yongElem,
   dayunSteps,
   ziwei,
+  locale,
 }: ChartAppendixProps) {
-  const { t, locale } = useReadingI18n()
+  const { t } = useReadingI18n(locale)
   const archetype = usesStarArchetype(locale)
   const [expanded, setExpanded] = useState(false)
   const rotation = useSharedValue(0)

@@ -2,6 +2,7 @@
   "extends": "@zhop/typescript-config/base.json",
   "compilerOptions": {
     "strict": true,
+    "jsx": "react-native",
     "moduleResolution": "bundler"
   },
   "include": ["**/*.ts", "**/*.tsx"],

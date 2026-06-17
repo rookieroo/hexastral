@@ -8,7 +8,8 @@
     "./natal": "./src/natal.ts",
     "./reading": "./src/reading.ts",
     "./reading-cache": "./src/reading-cache.ts",
-    "./ziwei": "./src/ziwei.ts"
+    "./ziwei": "./src/ziwei.ts",
+    "./components": "./src/components/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -16,16 +17,27 @@
     "format": "biome format . --write"
   },
   "dependencies": {
-    "@zhop/astro-core": "workspace:*"
+    "@zhop/astro-core": "workspace:*",
+    "@zhop/astro-i18n": "workspace:*",
+    "@zhop/hexastral-tokens": "workspace:*"
   },
   "peerDependencies": {
     "intl-pluralrules": ">=2.0.0",
-    "iztro": ">=2.5.0"
+    "iztro": ">=2.5.0",
+    "lucide-react-native": ">=0.500.0",
+    "react": "^19.2.3",
+    "react-native": ">=0.81.0",
+    "react-native-reanimated": ">=4.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.1.10",
     "@zhop/typescript-config": "workspace:*",
     "intl-pluralrules": "2.0.1",
     "iztro": "2.5.7",
+    "lucide-react-native": "0.544.0",
+    "react": "^19.2.3",
+    "react-native": "0.81.5",
+    "react-native-reanimated": "~4.1.1",
     "typescript": "^5.9.3"
   }
 }
