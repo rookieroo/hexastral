@@ -98,6 +98,8 @@ export function buildBondMakeIf(
     /** 双方紫微摘要 (来自合盘报告)。A=本我, B=对方。两者皆有时折入评分。 */
     ziweiA?: ZiweiTimingSummary
     ziweiB?: ZiweiTimingSummary
+    /** bond 关系标签 — 决定紫微按哪些宫位印证 (婚恋→夫妻, 亲子→父母/子女…)。 */
+    relationshipLabel?: string
   } = {}
 ): RelMakeIfDTO {
   const egoInput = birthToInput(egoBirth)
@@ -117,6 +119,7 @@ export function buildBondMakeIf(
       years: opts.years,
       ziweiA: opts.ziweiA,
       ziweiB: opts.ziweiB,
+      relationshipLabel: opts.relationshipLabel,
     })
     longterm = {
       years: yr.years.map((y) => ({

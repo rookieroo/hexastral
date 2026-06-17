@@ -268,7 +268,7 @@ const OVERALL_ZH: Record<ZiweiTone, string> = {
  */
 export function formatZiweiSynastryForPrompt(
   syn: ZiweiSynastry,
-  opts: { romantic?: boolean } = {}
+  opts: { romantic?: boolean; focusPalaces?: string } = {}
 ): string {
   // 夫妻宫 cross-read is romantic framing — omit it for non-romantic bonds
   // (parent/child/sibling/friend…), matching the 八字 side's "避免桃花/婚嫁意象".
@@ -277,6 +277,12 @@ export function formatZiweiSynastryForPrompt(
   return [
     '## 紫微斗数 合盘（第二套系统 — 与八字互相印证）',
     '以下是两人紫微命盘的互动要点。请与上方八字判断**交叉验证**：当八字与紫微指向一致时，明确点出「两套系统不约而同」（可信度更高）；当二者侧重不同时，作为互补的层次呈现，切勿自相矛盾。这些紫微要点可作为 evidence 的第二重佐证。',
+    // 紫微之长在于十二宫即关系地图 —— 按关系类型点名其主场宫位，让模型优先解读落入该宫的飞星/星曜。
+    ...(opts.focusPalaces
+      ? [
+          `> 本段关系的紫微主场是【${opts.focusPalaces}】：请优先解读落入此宫的飞星与星曜组合，这是这段关系最吃重的宫位。`,
+        ]
+      : []),
     '',
     `- 命宫相会：${syn.mingResonance.note}`,
     ...(romantic ? [`- 婚恋互配：${syn.spouseCross.note}`] : []),
@@ -284,6 +290,23 @@ export function formatZiweiSynastryForPrompt(
     flying || '  - （无显著飞星互动）',
     `- 紫微总体倾向：${OVERALL_ZH[syn.overall]}`,
   ].join('\n')
+}
+
+/** 关系类型 → 紫微主场宫位 (the home palace[s] this bond inhabits). */
+const RELATIONSHIP_FOCUS_PALACES: Record<string, string> = {
+  spouse: '夫妻宫',
+  partner: '夫妻宫',
+  parent: '父母宫 / 子女宫',
+  child: '父母宫 / 子女宫',
+  sibling: '兄弟宫',
+  friend: '仆役宫（朋友）',
+  colleague: '仆役宫 / 官禄宫',
+  boss: '官禄宫 / 父母宫',
+}
+
+/** The 紫微 home-palace label for a relationship category (undefined → no focus line). */
+export function focusPalacesForCategory(category?: string): string | undefined {
+  return category ? RELATIONSHIP_FOCUS_PALACES[category] : undefined
 }
 
 // ─── 流年 cross-confirmation (P4) ────────────────────────────

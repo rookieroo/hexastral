@@ -7,6 +7,8 @@
 import { describe, expect, test } from 'bun:test'
 import { getYearlySiHua } from '../sihua'
 import {
+  labelToBondCategory,
+  relationshipBondPalaces,
   type ZiweiTimingSummary,
   ziweiRelationMonthSignal,
   ziweiRelationYearSignal,
@@ -68,5 +70,38 @@ describe('ziweiRelationMonthSignal', () => {
   test('a 甲 month with 太阳(化忌) in 命宫 → tension', () => {
     const a: ZiweiTimingSummary = { starToPalace: { 太阳: '命宫' } }
     expect(ziweiRelationMonthSignal(a, empty, '甲').tone).toBe('tension')
+  })
+})
+
+describe('relationship palace lens', () => {
+  test('labelToBondCategory normalizes preset + custom labels', () => {
+    expect(labelToBondCategory('配偶')).toBe('spouse')
+    expect(labelToBondCategory('老婆')).toBe('spouse')
+    expect(labelToBondCategory('Dad')).toBe('parent')
+    expect(labelToBondCategory('我女儿')).toBe('child')
+    expect(labelToBondCategory('好朋友')).toBe('friend')
+    expect(labelToBondCategory('同事')).toBe('colleague')
+    expect(labelToBondCategory('我老板')).toBe('boss')
+    expect(labelToBondCategory('上下级')).toBe('boss')
+    expect(labelToBondCategory('神秘人')).toBeUndefined()
+    expect(labelToBondCategory(undefined)).toBeUndefined()
+  })
+
+  test('palaces are type-aware, always including 命宫 + 福德', () => {
+    expect(relationshipBondPalaces('parent')).toEqual(['命宫', '福德', '父母', '子女'])
+    expect(relationshipBondPalaces('friend')).toEqual(['命宫', '福德', '仆役'])
+    // unknown → romantic default
+    expect(relationshipBondPalaces(undefined)).toEqual(['命宫', '福德', '夫妻'])
+  })
+
+  test('lens gates the signal — a 父母宫 landing counts for parent, not for spouse', () => {
+    // 2024 甲 year, 化忌 star = 太阳; put it in 父母 (a family palace).
+    const a: ZiweiTimingSummary = { starToPalace: { 太阳: '父母' } }
+    expect(
+      ziweiRelationYearSignal(a, empty, 2024, relationshipBondPalaces('parent')).significant
+    ).toBe(true)
+    expect(
+      ziweiRelationYearSignal(a, empty, 2024, relationshipBondPalaces('spouse')).significant
+    ).toBe(false)
   })
 })

@@ -25,6 +25,8 @@ import {
 import { getTaoHua, getYiMa } from './shensha'
 import type { EarthlyBranch, WuXing } from './types'
 import {
+  labelToBondCategory,
+  relationshipBondPalaces,
   type ZiweiTimingSummary,
   ziweiRelationMonthSignal,
   ziweiRelationYearSignal,
@@ -80,10 +82,12 @@ export interface RelDecisionResult {
 }
 
 export interface RelMakeIfOptions extends RelLiuYueOptions {
-  /** Persisted 紫微 summaries (from the 合盘 report). When BOTH are present, each
+  /** Persisted 紫微 summaries (from the 合盘 报告). When BOTH are present, each
    *  window also gets a 紫微 流月 corroboration folded into its score. */
   ziweiA?: ZiweiTimingSummary
   ziweiB?: ZiweiTimingSummary
+  /** Free-text bond label (配偶/父母/朋友…) — selects which 紫微 palaces count. */
+  relationshipLabel?: string
 }
 
 /**
@@ -140,6 +144,7 @@ export function planRelationshipDecision(
   const yimaB = getYiMa(chartB.year.branch as EarthlyBranch)
   const shishangElA = WUXING_GENERATE[elA] // 我生者 = 食伤
   const shishangElB = WUXING_GENERATE[elB]
+  const bondPalaces = relationshipBondPalaces(labelToBondCategory(opts.relationshipLabel))
 
   const { nodes } = getRelationshipLiuYueNodes(personA, personB, opts)
 
@@ -174,9 +179,10 @@ export function planRelationshipDecision(
       reasons.push(bothClash ? '流月冲双方日支，易两头起波' : '流月冲一方日支，留心摩擦')
     }
     // 紫微 流月印证 (第二套系统): 本月四化点亮任一方的关系宫 → 顺势加分 / 摩擦减分。
+    // 宫位 lens 按关系类型选 (婚恋→夫妻, 亲子→父母/子女, 朋友→仆役…)。
     let ziwei = false
     if (opts.ziweiA && opts.ziweiB) {
-      const zSig = ziweiRelationMonthSignal(opts.ziweiA, opts.ziweiB, n.ganZhi.stem)
+      const zSig = ziweiRelationMonthSignal(opts.ziweiA, opts.ziweiB, n.ganZhi.stem, bondPalaces)
       if (zSig.significant) {
         ziwei = true
         if (zSig.tone === 'harmony') {
@@ -300,6 +306,8 @@ export interface RelDecisionYearOptions {
   /** Persisted 紫微 summaries — when BOTH present, fold 紫微 流年 into each year's score. */
   ziweiA?: ZiweiTimingSummary
   ziweiB?: ZiweiTimingSummary
+  /** Free-text bond label — selects which 紫微 palaces count (type-aware lens). */
+  relationshipLabel?: string
 }
 
 /**
@@ -325,6 +333,7 @@ export function planRelationshipDecisionByYear(
   const yimaB = getYiMa(chartB.year.branch as EarthlyBranch)
   const shishangElA = WUXING_GENERATE[elA]
   const shishangElB = WUXING_GENERATE[elB]
+  const bondPalaces = relationshipBondPalaces(labelToBondCategory(opts.relationshipLabel))
 
   const span = Math.max(1, opts.years ?? 10)
   const fromYear = opts.fromYear
@@ -365,7 +374,7 @@ export function planRelationshipDecisionByYear(
       }
       let ziwei = false
       if (opts.ziweiA && opts.ziweiB) {
-        const zSig = ziweiRelationYearSignal(opts.ziweiA, opts.ziweiB, n.year)
+        const zSig = ziweiRelationYearSignal(opts.ziweiA, opts.ziweiB, n.year, bondPalaces)
         if (zSig.significant) {
           ziwei = true
           if (zSig.tone === 'harmony') {

@@ -32,6 +32,7 @@ import { buildEnhancedGuardrails } from '../../lib/prompts/guardrails'
 import { getSystemRole } from '../../lib/prompts/system-role'
 import {
   analyzeZiweiSynastry,
+  focusPalacesForCategory,
   formatZiweiSynastryForPrompt,
   summarizeZiwei,
   type ZiweiSummary,
@@ -334,10 +335,15 @@ function buildZiweiBlock(input: HeHunInput): string {
     const a = summarizeZiwei(toInput(input.personA))
     const b = summarizeZiwei(toInput(input.personB))
     // Romantic by default (the app's primary bond); skip the 夫妻宫 cross-read for
-    // explicitly non-romantic relationship types.
+    // explicitly non-romantic relationship types. 紫微's twelve palaces are a
+    // relationship map, so we also tell the model which palace is THIS bond's home
+    // turf (父母/子女 for family, 仆役 for friends, 官禄 for work…) to foreground.
     const cat = input.relationshipCategory
     const romantic = cat === undefined || cat === 'spouse' || cat === 'partner'
-    return formatZiweiSynastryForPrompt(analyzeZiweiSynastry(a, b), { romantic })
+    return formatZiweiSynastryForPrompt(analyzeZiweiSynastry(a, b), {
+      romantic,
+      focusPalaces: focusPalacesForCategory(cat),
+    })
   } catch {
     return ''
   }

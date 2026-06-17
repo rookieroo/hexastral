@@ -29,7 +29,12 @@ import {
   type RelTimelineNodeType,
 } from './relationship-timeline'
 import type { DateTimeInput, GanZhi } from './types'
-import { type ZiweiTimingSummary, ziweiRelationYearSignal } from './ziwei-timing'
+import {
+  labelToBondCategory,
+  relationshipBondPalaces,
+  type ZiweiTimingSummary,
+  ziweiRelationYearSignal,
+} from './ziwei-timing'
 
 /** 一个 bond 的入参: 生辰命格 + 标识。 */
 export interface BondInput {
@@ -237,7 +242,10 @@ export function composeBondsTimeline(
     if (m.kind === '流年' && egoZiwei && bondZiwei.size > 0 && significance !== 'major') {
       const corroborated = m.bonds.some((b) => {
         const z = bondZiwei.get(b.bondId)
-        return z ? ziweiRelationYearSignal(egoZiwei, z, m.year).significant : false
+        if (!z) return false
+        // 按关系类型选宫 (亲子→父母/子女, 朋友→仆役, 同事→官禄…)，紫微才打在该关系真正的宫位。
+        const palaces = relationshipBondPalaces(labelToBondCategory(b.relationshipLabel))
+        return ziweiRelationYearSignal(egoZiwei, z, m.year, palaces).significant
       })
       if (corroborated) significance = significance === 'notable' ? 'major' : 'notable'
     }

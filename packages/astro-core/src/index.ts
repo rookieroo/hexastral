@@ -449,5 +449,16 @@ export type {
   WuXing,
   YinYang,
 } from './types'
-export type { ZiweiRelationSignal, ZiweiTimingSummary, ZiweiTone } from './ziwei-timing'
-export { ziweiRelationMonthSignal, ziweiRelationYearSignal } from './ziwei-timing'
+export type {
+  BondCategory,
+  ZiweiRelationSignal,
+  ZiweiTimingSummary,
+  ZiweiTone,
+} from './ziwei-timing'
+export {
+  DEFAULT_BOND_PALACES,
+  labelToBondCategory,
+  relationshipBondPalaces,
+  ziweiRelationMonthSignal,
+  ziweiRelationYearSignal,
+} from './ziwei-timing'

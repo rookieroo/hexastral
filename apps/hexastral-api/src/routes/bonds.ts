@@ -1848,6 +1848,7 @@ bondRoutes.post('/:id/makeif', async (c) => {
     .select({
       id: userBonds.id,
       mode: userBonds.mode,
+      relationshipLabel: userBonds.relationshipLabel,
       hehunReadingId: userBonds.hehunReadingId,
       targetBirthSolarDate: userBonds.targetBirthSolarDate,
       targetBirthTimeIndex: userBonds.targetBirthTimeIndex,
@@ -1912,6 +1913,7 @@ bondRoutes.post('/:id/makeif', async (c) => {
     months: 12,
     ziweiA: egoZiwei,
     ziweiB: counterpartZiwei,
+    relationshipLabel: bond.relationshipLabel,
     ...(isPro ? { fromYear: now.getUTCFullYear(), years: 10 } : {}),
   })
   return jsonOk(c, {
