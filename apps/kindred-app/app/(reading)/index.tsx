@@ -63,6 +63,7 @@ import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { openAuspiceReading } from '@/lib/auspice-handoff'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -309,12 +310,38 @@ export default function ReadingHomeScreen() {
     [recompute, router, locale]
   )
 
+  // Open MY personal reading. Yuun owns the 命书 now (Yuel/Yuun split, Phase 3):
+  // hand off to it via `auspice://reading` carrying the self birth; if Yuun isn't
+  // installed (openAuspiceReading → false), fall back to Yuel's own in-app overlay
+  // (which still renders from the shared engine — no install wall on your reading).
+  const openMyReading = useCallback(async () => {
+    const opened = await openAuspiceReading(
+      birth
+        ? {
+            solarDate: birth.solarDate,
+            timeIndex: birth.timeIndex,
+            gender: birth.gender,
+            city: birth.city,
+            lng: birth.lng,
+            timezone: birth.timezone,
+            clockMinutes: birth.clockMinutes,
+            calibrate: birth.calibrate,
+          }
+        : null
+    )
+    if (!opened) setReadingOpen(true)
+  }, [birth])
+
   // Star-map taps: your central star (or empty sky) → your reading; a thread's
-  // star → that bond. SkyHero hands back the orbit-slot index + page coords.
-  const openSelfReading = useCallback((x: number, y: number) => {
-    setReadingOrigin({ x, y })
-    setReadingOpen(true)
-  }, [])
+  // star → that bond. SkyHero hands back the orbit-slot index + page coords (the
+  // origin seeds the fallback overlay's ink-bloom).
+  const openSelfReading = useCallback(
+    (x: number, y: number) => {
+      setReadingOrigin({ x, y })
+      void openMyReading()
+    },
+    [openMyReading]
+  )
   const openThreadReading = useCallback(
     (index: number, x: number, y: number) => {
       const b = threads[index]
@@ -464,7 +491,7 @@ export default function ReadingHomeScreen() {
       <Animated.View style={[{ transformOrigin: 'center top' }, youCardStyle]}>
         <Pressable
           onPressIn={(e) => setReadingOrigin({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
-          onPress={() => setReadingOpen(true)}
+          onPress={() => void openMyReading()}
           accessibilityRole='button'
           accessibilityLabel={copy.cardKicker}
           style={({ pressed }) => ({

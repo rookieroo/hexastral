@@ -73,3 +73,58 @@ export async function openAuspiceCompose(person: AuspicePersonHandoff): Promise<
     }
   }
 }
+
+/* ── Personal reading hand-off (Yuel/Yuun split, Phase 3) ─────────────────────
+ * Yuun owns the personal 命书 now. Yuel opens it via `auspice://reading`, carrying
+ * the user's OWN birth so Yuun renders the same chart without re-entry (it seeds
+ * its 亲友-less personal store only when empty — Yuun stays authoritative once set).
+ * Unlike compose, this DOESN'T fall back to the App Store: the caller (home) falls
+ * back to Yuel's own in-app reading overlay when Yuun isn't installed, so a solo
+ * user never hits an install wall on their own reading.
+ *
+ *   auspice://reading?v=1&from=kindred
+ *     &date=YYYY-MM-DD&time=N&gender=男|女&city=<enc>
+ *     &lng=<num>&tz=<iana>&clock=<min>&calibrate=0|1
+ */
+export interface AuspiceReadingHandoff {
+  solarDate: string
+  timeIndex?: number | null
+  gender?: '男' | '女' | null
+  city?: string | null
+  lng?: number | null
+  timezone?: string | null
+  clockMinutes?: number | null
+  calibrate?: boolean | null
+}
+
+/** Build the `auspice://reading?...` deep link, carrying the self birth (if known). */
+export function buildAuspiceReadingUrl(self?: AuspiceReadingHandoff | null): string {
+  const p = new URLSearchParams()
+  p.set('v', '1')
+  p.set('from', 'kindred')
+  if (self) {
+    append(p, 'date', self.solarDate)
+    append(p, 'time', self.timeIndex)
+    append(p, 'gender', self.gender)
+    append(p, 'city', self.city)
+    append(p, 'lng', self.lng)
+    append(p, 'tz', self.timezone)
+    append(p, 'clock', self.clockMinutes)
+    if (self.calibrate != null) p.set('calibrate', self.calibrate ? '1' : '0')
+  }
+  return `${AUSPICE_SCHEME}reading?${p.toString()}`
+}
+
+/**
+ * Open Yuun's personal reading. Returns true when Yuun handled the link; false
+ * when it isn't installed (no App-Store hop) so the caller degrades to the
+ * in-app reading.
+ */
+export async function openAuspiceReading(self?: AuspiceReadingHandoff | null): Promise<boolean> {
+  try {
+    await Linking.openURL(buildAuspiceReadingUrl(self))
+    return true
+  } catch {
+    return false
+  }
+}

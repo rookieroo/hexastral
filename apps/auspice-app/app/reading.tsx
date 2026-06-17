@@ -43,7 +43,7 @@ import {
 } from '@zhop/scenario-yuan/reading'
 import { computeZiweiChart, type ZiweiChart } from '@zhop/scenario-yuan/ziwei'
 import * as Haptics from 'expo-haptics'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -52,7 +52,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
-import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import {
+  type AuspiceBirthInfo,
+  getAuspiceBirthInfo,
+  type ShichenIndex,
+  setAuspiceBirthInfo,
+} from '@/lib/birth'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import type { Locale as AppLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -152,6 +157,42 @@ const LOCKED_CHAPTERS = [
   detailKey: ReadingStringKey
 }>
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * Build an AuspiceBirthInfo from a Yuel `auspice://reading?...` hand-off (Phase 3).
+ * Yuel passes the user's own birth so Yuun renders the same chart without re-entry;
+ * we only seed Yuun's store when it's empty (Yuun stays authoritative once set).
+ * Returns null when the hand-off carries no usable date.
+ */
+function birthFromHandoff(p: {
+  date?: string
+  time?: string
+  gender?: string
+  city?: string
+  lng?: string
+  tz?: string
+  clock?: string
+  calibrate?: string
+}): AuspiceBirthInfo | null {
+  if (!p.date || !DATE_RE.test(p.date)) return null
+  const ti = p.time != null ? Number.parseInt(p.time, 10) : Number.NaN
+  const timeIndex: ShichenIndex | null =
+    Number.isInteger(ti) && ti >= 0 && ti <= 11 ? (ti as ShichenIndex) : null
+  const lng = p.lng != null ? Number.parseFloat(p.lng) : Number.NaN
+  const clock = p.clock != null ? Number.parseInt(p.clock, 10) : Number.NaN
+  return {
+    solarDate: p.date,
+    timeIndex,
+    gender: p.gender === '男' || p.gender === '女' ? p.gender : undefined,
+    city: p.city || undefined,
+    lng: Number.isFinite(lng) ? lng : undefined,
+    timezone: p.tz || undefined,
+    clockMinutes: Number.isInteger(clock) && clock >= 0 && clock <= 1439 ? clock : undefined,
+    calibrate: p.calibrate == null ? undefined : p.calibrate === '1',
+  }
+}
+
 /** Targets the chapter detail view — null = list view. */
 type ChapterRef = { kind: 'free'; key: 'ch1' | 'ch4' } | { kind: 'locked'; idx: 0 | 1 | 2 | 3 }
 
@@ -171,13 +212,48 @@ export default function ReadingScreen() {
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const [paywallOpen, setPaywallOpen] = useState(false)
 
-  /* ── birth (async from AsyncStorage) ── */
+  /* ── birth (async from AsyncStorage; seeded from a Yuel hand-off when empty) ── */
+  const handoff = useLocalSearchParams<{
+    date?: string
+    time?: string
+    gender?: string
+    city?: string
+    lng?: string
+    tz?: string
+    clock?: string
+    calibrate?: string
+  }>()
+  // Primitives so the load effect doesn't re-run on each render (useLocalSearchParams
+  // returns a fresh object every render).
+  const { date, time, gender, city, lng, tz, clock, calibrate } = handoff
   const [birth, setBirth] = useState<AuspiceBirthInfo | null | undefined>(undefined)
   useEffect(() => {
-    getAuspiceBirthInfo()
-      .then(setBirth)
-      .catch(() => setBirth(null))
-  }, [])
+    let cancelled = false
+    void (async () => {
+      try {
+        const saved = await getAuspiceBirthInfo()
+        if (cancelled) return
+        if (saved) {
+          setBirth(saved)
+          return
+        }
+        // No Yuun birth yet — seed from the Yuel hand-off (and persist, so the
+        // next Yuun open already has it). Yuun stays authoritative once set.
+        const seeded = birthFromHandoff({ date, time, gender, city, lng, tz, clock, calibrate })
+        if (seeded) {
+          await setAuspiceBirthInfo(seeded).catch(() => {})
+          if (!cancelled) setBirth(seeded)
+        } else if (!cancelled) {
+          setBirth(null)
+        }
+      } catch {
+        if (!cancelled) setBirth(null)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [date, time, gender, city, lng, tz, clock, calibrate])
 
   // A reading needs a date AND a gender (大运 direction). timeIndex may be null
   // (子时 estimate). Anything short of that routes the user back to Me to finish.
