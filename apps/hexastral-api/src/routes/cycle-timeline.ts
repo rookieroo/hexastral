@@ -46,8 +46,13 @@ import {
   type PersonalReasonCode,
   personalAlmanacOverlay,
   STEM_WUXING,
+  timeIndexFromHour,
   type WuXing,
   yearGanZhi,
+  type ZiweiTimingSummary,
+  type ZiweiTone,
+  ziweiSelfMonthSignal,
+  ziweiSelfYearSignal,
 } from '@zhop/astro-core'
 import { and, eq, gt } from 'drizzle-orm'
 import { Hono } from 'hono'
@@ -89,6 +94,10 @@ interface PillarUnit {
 interface PeriodFit {
   fit: PersonalFit
   reasons: PersonalReasonCode[]
+  /** 紫微 second-system corroboration for this period (present only when the user
+   *  has a birth hour + the 流年/流月四化 lights a life palace). The 八字 verdict above
+   *  stays authoritative; 紫微 only breaks a 平 tie (see `applyZiweiToTimeline`). */
+  ziwei?: { tone: ZiweiTone }
 }
 
 interface DayunRow extends PeriodFit {
@@ -288,6 +297,58 @@ export function buildTimelinePayload(body: RequestBody, now: Date): TimelinePayl
   }
 }
 
+// ── 紫微 second-system fold (auspice solo, ADR-0014 P5) ──────────────────────────
+//
+// The 八字 payload above is the deterministic spine. When the user has a birth hour
+// (紫微 命宫 needs it) we fetch their star→palace summary once (svc-astro, on cache
+// miss) and fold a 流年/流月四化 corroboration into each period: record the 紫微 tone,
+// and let 紫微 BREAK A 平 TIE only (harmony→吉, tension→凶). A 八字 吉/凶 is never
+// overridden — 紫微 raises confidence / informs the neutral, it doesn't outvote 八字.
+
+/** Apply a year's 紫微 signal to a 流年 row (and never override a 八字 吉/凶). */
+function foldYearZiwei<T extends PeriodFit & { year: number }>(
+  row: T,
+  summary: ZiweiTimingSummary
+): T {
+  const sig = ziweiSelfYearSignal(summary, row.year)
+  if (!sig.significant) return row
+  return { ...row, fit: tieBreak(row.fit, sig.tone), ziwei: { tone: sig.tone } }
+}
+
+/** Apply a month's 紫微 signal to a 流月 row. */
+function foldMonthZiwei<T extends PeriodFit & { pillar: PillarUnit }>(
+  row: T,
+  summary: ZiweiTimingSummary
+): T {
+  const sig = ziweiSelfMonthSignal(summary, row.pillar.stem as HeavenlyStem)
+  if (!sig.significant) return row
+  return { ...row, fit: tieBreak(row.fit, sig.tone), ziwei: { tone: sig.tone } }
+}
+
+/** 紫微 only decides a 平 (neutral) verdict; 吉/凶 from 八字 are kept as-is. */
+export function tieBreak(fit: PersonalFit, tone: ZiweiTone): PersonalFit {
+  if (fit !== '平') return fit
+  if (tone === 'harmony') return '吉'
+  if (tone === 'tension') return '凶'
+  return '平'
+}
+
+/** Fold the solo 紫微 signal into every 流年 + 流月 row (top-level + per-大运). Pure. */
+export function applyZiweiToTimeline(
+  payload: TimelinePayload,
+  summary: ZiweiTimingSummary
+): TimelinePayload {
+  return {
+    ...payload,
+    dayun: payload.dayun.map((d) => ({
+      ...d,
+      liunian: d.liunian.map((ln) => foldYearZiwei(ln, summary)),
+    })),
+    liunian: payload.liunian.map((ln) => foldYearZiwei(ln, summary)),
+    liuyue: payload.liuyue.map((ly) => foldMonthZiwei(ly, summary)),
+  }
+}
+
 // ── Cache adapter (D1 + Drizzle) ────────────────────────────────
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -354,7 +415,26 @@ auspiceTimelineRoutes.post('/', async (c) => {
     }
   }
 
-  const payload = buildTimelinePayload(body, now)
+  let payload = buildTimelinePayload(body, now)
+
+  // 紫微 second-system fold — best-effort, only on this (cache-miss) path so the
+  // svc-astro hop is amortised by the birth-hash cache (≈once per unique birth).
+  // Needs a birth hour (命宫 depends on it); any failure degrades to 八字-only.
+  if (body.birthHour >= 0) {
+    try {
+      const { summary } = await astroClient.post<{
+        summary: { starToPalace: Record<string, string> } | null
+      }>(c.env.SVC_ASTRO, '/stellar/ziwei-summary', {
+        solarDate: body.birthDate,
+        timeIndex: timeIndexFromHour(body.birthHour),
+        gender: body.gender === 'M' ? '男' : '女',
+      })
+      if (summary?.starToPalace) payload = applyZiweiToTimeline(payload, summary)
+    } catch (err) {
+      console.warn('[auspice.timeline] 紫微 fold skipped', err)
+    }
+  }
+
   const contentJson = JSON.stringify(payload)
   if (db) {
     // Cache writes are best-effort; a D1 hiccup must not bork the response.

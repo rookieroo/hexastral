@@ -81,6 +81,19 @@ export function shichenMidpointHour(timeIndex: number): number {
 }
 
 /**
+ * Clock hour (0–23) → shichen timeIndex (0–12) — the inverse of
+ * {@link shichenMidpointHour}. 0:00 = 早子(0), 23:00 = 晚子(12); each other shichen
+ * spans two hours (h ∈ {2i−1, 2i} → i). Used to排盘 紫微 (which keys on timeIndex)
+ * from a clock-hour-based birth input.
+ */
+export function timeIndexFromHour(hour: number): number {
+  const h = Math.max(0, Math.min(23, Math.floor(hour)))
+  if (h === 0) return 0 // 早子
+  if (h === 23) return 12 // 晚子
+  return Math.floor((h + 1) / 2) // 1,2→丑(1); 3,4→寅(2); … 21,22→亥(11)
+}
+
+/**
  * 解析出生时刻 → 排盘小时 (+ 可能位移的日历日期)。
  *
  * @example 时辰模式（永不校准）

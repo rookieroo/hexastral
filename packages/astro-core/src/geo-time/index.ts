@@ -5,7 +5,7 @@
  */
 
 export type { BirthHourInput, BirthTimeMode, ResolvedBirthHour } from './birth-hour'
-export { resolveBirthHour, shichenMidpointHour } from './birth-hour'
+export { resolveBirthHour, shichenMidpointHour, timeIndexFromHour } from './birth-hour'
 export type { HemisphereAdjustmentResult } from './hemisphere'
 export {
   applySouthernHemisphereAdjustment,

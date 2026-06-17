@@ -4,6 +4,7 @@
 
 import { Hono } from 'hono'
 import type { NatalCrossRef } from '../lib/i18n-prompt'
+import { summarizeZiwei } from '../services/hehun/ziwei-synastry'
 import { generateNatalChart } from '../services/natal/natal'
 import { generateChart, generateInterpretation, getHoroscope } from '../services/stellar/stellar'
 import type { Env } from '../types'
@@ -11,6 +12,29 @@ import type { Env } from '../types'
 type AppEnv = { Bindings: Env }
 
 export const stellarRoutes = new Hono<AppEnv>()
+
+/**
+ * POST /ziwei-summary — a person's compact 紫微 summary (star→palace map etc.),
+ * NO LLM. Lets the API layer fold a deterministic 紫微 timing signal into auspice's
+ * solo timeline / what-if (reuses the same `summarizeZiwei` the 合盘 report persists).
+ * Returns `{ summary: null }` on a chart error so the caller degrades to 八字-only.
+ */
+stellarRoutes.post('/ziwei-summary', async (c) => {
+  const input = await c.req.json()
+  try {
+    const summary = summarizeZiwei({
+      solarDate: input.solarDate,
+      timeIndex: input.timeIndex,
+      gender: input.gender,
+      longitude: input.longitude,
+      city: input.city,
+    })
+    return c.json({ summary })
+  } catch (err) {
+    console.error('[svc-astro/stellar] ziwei-summary failed:', err)
+    return c.json({ summary: null })
+  }
+})
 
 /** POST /chart — 排盘 + AI 解读（双盘交叉验证） */
 stellarRoutes.post('/chart', async (c) => {

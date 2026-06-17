@@ -2053,7 +2053,9 @@ export const fengJobsRelations = relations(fengJobs, ({ one }) => ({
 // v4 (2026-06): the deep-read reading id now folds in this version, and
 // svc-astro's output-language directive was hardened — flush en-keyed rows the
 // old prompt mistakenly wrote in Chinese.
-export const TIMELINE_CACHE_VERSION = 'v4'
+// v5 (2026-06): 流年/流月 rows now carry a 紫微 second-system fold (a `ziwei` tone +
+// a 平-tie break to 吉/凶); flush 八字-only payloads.
+export const TIMELINE_CACHE_VERSION = 'v5'
 
 export const lifeTimelineCache = sqliteTable(
   'life_timeline_cache',

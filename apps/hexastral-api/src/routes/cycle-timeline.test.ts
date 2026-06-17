@@ -11,7 +11,12 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
 import type { AppEnv } from '../infra-types'
-import { auspiceTimelineRoutes, buildTimelinePayload } from './cycle-timeline'
+import {
+  applyZiweiToTimeline,
+  auspiceTimelineRoutes,
+  buildTimelinePayload,
+  tieBreak,
+} from './cycle-timeline'
 
 /**
  * Build a fresh Hono app that wraps the sub-router with an in-memory `db`
@@ -218,6 +223,39 @@ describe('buildTimelinePayload', () => {
       expect(row.pillar.branch).toBeDefined()
       expect(row.pillar.element).toBeDefined()
       expect(['吉', '平', '凶']).toContain(row.fit)
+    }
+  })
+})
+
+describe('紫微 fold (auspice solo)', () => {
+  test('tieBreak: 紫微 only decides a 平; never overrides 八字 吉/凶', () => {
+    expect(tieBreak('平', 'harmony')).toBe('吉')
+    expect(tieBreak('平', 'tension')).toBe('凶')
+    expect(tieBreak('平', 'growth')).toBe('平')
+    expect(tieBreak('平', 'neutral')).toBe('平')
+    // 八字 has an opinion → kept regardless of 紫微 tone
+    expect(tieBreak('吉', 'tension')).toBe('吉')
+    expect(tieBreak('凶', 'harmony')).toBe('凶')
+  })
+
+  test('empty 紫微 summary leaves the 八字 payload untouched (no ziwei fields)', () => {
+    const payload = buildTimelinePayload(BODY, new Date('2026-05-31T00:00:00Z'))
+    const folded = applyZiweiToTimeline(payload, { starToPalace: {} })
+    expect(folded.liunian.every((r) => r.ziwei === undefined)).toBe(true)
+    expect(folded.liuyue.every((r) => r.ziwei === undefined)).toBe(true)
+    expect(folded.liunian.map((r) => r.fit)).toEqual(payload.liunian.map((r) => r.fit))
+  })
+
+  test('a 紫微 landing in a life palace records the tone (and may break a 平 tie)', () => {
+    const payload = buildTimelinePayload(BODY, new Date('2026-05-31T00:00:00Z'))
+    // 2026 is 丙午; 丙 四化 = [天同禄, 天机权, 文昌科, 廉贞忌]. Put 廉贞 (化忌) in 官禄
+    // (a life palace) so 2026 carries a tension signal.
+    const folded = applyZiweiToTimeline(payload, { starToPalace: { 廉贞: '官禄' } })
+    const row2026 = folded.liunian.find((r) => r.year === 2026)
+    expect(row2026?.ziwei?.tone).toBe('tension')
+    // 八字 verdict is preserved unless it was 平 (then → 凶 for a tension tone).
+    if (payload.liunian.find((r) => r.year === 2026)?.fit === '平') {
+      expect(row2026?.fit).toBe('凶')
     }
   })
 })

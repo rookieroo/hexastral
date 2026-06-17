@@ -226,6 +226,7 @@ export {
   resolveBirthHour,
   searchCity,
   shichenMidpointHour,
+  timeIndexFromHour,
 } from './geo-time'
 // 八字合婚 (Marriage Compatibility)
 export type {
