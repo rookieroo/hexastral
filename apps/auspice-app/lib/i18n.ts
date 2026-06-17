@@ -464,6 +464,23 @@ export interface Strings {
   /** Small "coming soon" badge. */
   comingSoon: string
   themeAccent: string
+  /** 划词 AI follow-up chat over the personal 命书 (the /reading-chat screen). */
+  readingChat: {
+    title: string
+    empty: string
+    placeholder: string
+    loading: string
+    error: string
+    proUnlimited: string
+    buyCredits: string
+    /** Must contain `{remaining}`. */
+    freeRemaining: string
+    /** Must contain `{remaining}`. */
+    poolRemaining: string
+    suggest1: string
+    suggest2: string
+    suggest3: string
+  }
   /** CTA below the 生肖 reading that opens Yuel for full 合盘. */
   kindredComposeCta: string
   /** Cross-app data-sharing consent shown before the Yuel 合盘 hand-off. */
@@ -834,6 +851,20 @@ const zhHans: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '即将推出',
   themeAccent: '主题色',
+  readingChat: {
+    title: '聊聊你的命盘',
+    empty: '关于你自己的命盘，问我任何问题。',
+    placeholder: '输入你的问题…',
+    loading: '正在思考…',
+    error: '出错了，请稍后再试。',
+    proUnlimited: 'Auspice Pro · 无限畅聊',
+    buyCredits: '对话次数已用完 — 点此获取更多。',
+    freeRemaining: '还剩 {remaining} 次免费回复',
+    poolRemaining: '本月还剩 {remaining} 次回复',
+    suggest1: '我的优势在哪里？',
+    suggest2: '我要注意些什么？',
+    suggest3: '我今年运势如何？',
+  },
   kindredComposeCta: '在 Yuel 看完整合盘 →',
   kindredShareConsent: {
     title: '分享生辰给 Yuel?',
@@ -1174,6 +1205,20 @@ const zhHant: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '即將推出',
   themeAccent: '主題色',
+  readingChat: {
+    title: '聊聊你的命盤',
+    empty: '關於你自己的命盤，問我任何問題。',
+    placeholder: '輸入你的問題…',
+    loading: '正在思考…',
+    error: '發生錯誤，請稍後再試。',
+    proUnlimited: 'Auspice Pro · 無限暢聊',
+    buyCredits: '對話次數已用完 — 點此取得更多。',
+    freeRemaining: '還剩 {remaining} 次免費回覆',
+    poolRemaining: '本月還剩 {remaining} 次回覆',
+    suggest1: '我的優勢在哪裡？',
+    suggest2: '我要注意些什麼？',
+    suggest3: '我今年運勢如何？',
+  },
   kindredComposeCta: '在 Yuel 看完整合盤 →',
   kindredShareConsent: {
     title: '分享生辰給 Yuel?',
@@ -1541,6 +1586,20 @@ const ja: Strings = {
   moonSkinLabel: '月相',
   comingSoon: '近日公開',
   themeAccent: 'テーマカラー',
+  readingChat: {
+    title: 'あなたの命盤について',
+    empty: 'あなた自身の命盤について何でも聞いてください。',
+    placeholder: '質問を入力…',
+    loading: '考えています…',
+    error: 'エラーが発生しました。もう一度お試しください。',
+    proUnlimited: 'Auspice Pro · 無制限',
+    buyCredits: 'チャット回数を使い切りました — タップで追加。',
+    freeRemaining: '無料の返信があと {remaining} 回',
+    poolRemaining: '今月の返信があと {remaining} 回',
+    suggest1: '私の強みは？',
+    suggest2: '気をつけることは？',
+    suggest3: '今年の運勢は？',
+  },
   kindredComposeCta: 'Yuel で本格相性鑑定 →',
   kindredShareConsent: {
     title: 'Yuel に生年月日を共有しますか?',
@@ -1912,6 +1971,20 @@ const en: Strings = {
   moonSkinLabel: 'Moon skin',
   comingSoon: 'Soon',
   themeAccent: 'Accent color',
+  readingChat: {
+    title: 'Ask about your chart',
+    empty: 'Ask anything about your own chart.',
+    placeholder: 'Type a question…',
+    loading: 'Thinking…',
+    error: 'Something went wrong. Please try again.',
+    proUnlimited: 'Auspice Pro · unlimited',
+    buyCredits: "You're out of chat replies — tap to get more.",
+    freeRemaining: '{remaining} free replies left',
+    poolRemaining: '{remaining} replies left this month',
+    suggest1: 'What are my strengths?',
+    suggest2: 'What should I watch out for?',
+    suggest3: 'How is my year ahead?',
+  },
   kindredComposeCta: 'Open full reading in Yuel →',
   kindredShareConsent: {
     title: 'Share birth details with Yuel?',

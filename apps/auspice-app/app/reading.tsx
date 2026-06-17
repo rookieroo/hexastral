@@ -42,6 +42,7 @@ import {
   parseBirthInput,
 } from '@zhop/scenario-yuan/reading'
 import { computeZiweiChart, type ZiweiChart } from '@zhop/scenario-yuan/ziwei'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -50,7 +51,9 @@ import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
+import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import type { Locale as AppLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import {
@@ -59,6 +62,25 @@ import {
   fetchChapter,
   getCachedChapter,
 } from '@/lib/reading-cache'
+
+/** Minimal shape we use — typed locally so the screen needs no expo-clipboard
+ *  type dep (auspice doesn't list it yet). */
+interface ClipboardModule {
+  setStringAsync: (text: string) => Promise<void>
+}
+let clipboardModule: ClipboardModule | null | undefined
+/** Lazy — copy degrades to a no-op when the native module is absent rather than
+ *  throwing (parity with Yuel's defensive getClipboard). */
+function getClipboard(): ClipboardModule | null {
+  if (clipboardModule !== undefined) return clipboardModule
+  try {
+    clipboardModule = require('expo-clipboard') as ClipboardModule
+    return clipboardModule
+  } catch {
+    clipboardModule = null
+    return null
+  }
+}
 
 /* ── palette — the shared 宣纸 document layer (kindredPaper): paper ground, dark
    ink body, bronze section accent, cinnabar seal. The SAME tokens Yuel's report
@@ -132,6 +154,12 @@ const LOCKED_CHAPTERS = [
 
 /** Targets the chapter detail view — null = list view. */
 type ChapterRef = { kind: 'free'; key: 'ch1' | 'ch4' } | { kind: 'locked'; idx: 0 | 1 | 2 | 3 }
+
+/** Free ChapterRef.key → server report-chapter slug (chat readingId grounding). */
+const CHAPTER_SLUG: Record<'ch1' | 'ch4', string> = {
+  ch1: 'ch1_personality',
+  ch4: 'ch4_timeline',
+}
 
 export default function ReadingScreen() {
   const router = useRouter()
@@ -275,8 +303,22 @@ export default function ReadingScreen() {
   const lastActiveRef = useRef<ChapterRef | null>(null)
   if (activeChapter) lastActiveRef.current = activeChapter
 
+  // 划词 (K3): the long-pressed paragraph drives the action bar; highlights persist
+  // per chart (the personal report has no bondId, so chartHash is the stable key).
+  const [pickedQuote, setPickedQuote] = useState<string | null>(null)
+  const [highlights, setHighlights] = useState<string[]>([])
+  useEffect(() => {
+    if (chartHash) void loadHighlights(chartHash).then(setHighlights)
+  }, [chartHash])
+
   const goBack = () => router.back()
   const openPaywall = () => setPaywallOpen(true)
+
+  // 划词 AI chat: push the chat seeded with the chapter slug + (optionally) the
+  // long-pressed paragraph as a quoted draft. lib/chat gates it under auspice_pro.
+  const handleAskAI = ({ slug, quote }: { slug: string; quote: string | null }) => {
+    router.push({ pathname: '/reading-chat', params: { slug, ...(quote ? { quote } : {}) } })
+  }
 
   /* ── empty / not-ready guard ── */
   if (birth === undefined) {
@@ -370,6 +412,12 @@ export default function ReadingScreen() {
         onUnlock: openPaywall,
         identityLine,
         birthBadge,
+        // 划词 AI chat (K3) — long-press a paragraph or tap the chapter CTA.
+        onAsk: (quote: string | null) => handleAskAI({ slug: CHAPTER_SLUG[key], quote }),
+        askChapterLabel: t('reading.askChapter'),
+        askHint: t('reading.askParagraphHint'),
+        onPickQuote: setPickedQuote,
+        highlightedQuotes: highlights,
       }
     } else {
       const lc = LOCKED_CHAPTERS[detailChapter.idx]
@@ -386,7 +434,18 @@ export default function ReadingScreen() {
           backLabel: t('common.back'),
           onBack: back,
           onUnlock: openPaywall,
-          ...(raw ? { identityLine, birthBadge } : {}),
+          // Once unlocked + generated, ground it + enable 划词 chat (same as free).
+          ...(raw
+            ? {
+                identityLine,
+                birthBadge,
+                onAsk: (quote: string | null) => handleAskAI({ slug: lc.slug, quote }),
+                askChapterLabel: t('reading.askChapter'),
+                askHint: t('reading.askParagraphHint'),
+                onPickQuote: setPickedQuote,
+                highlightedQuotes: highlights,
+              }
+            : {}),
         }
       }
     }
@@ -478,6 +537,41 @@ export default function ReadingScreen() {
         </Animated.View>
       ) : null}
 
+      {/* 划词 action bar — slides up when a paragraph is long-pressed (copy / chat /
+          highlight). Mirrors Yuel's reading; the personal report has no
+          timeline/what-if, so there's no living-layer fab — just this bar. */}
+      <SelectionActionBar
+        quote={pickedQuote}
+        highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
+        labels={{
+          copy: t('reading.copy'),
+          chat: t('reading.chat'),
+          highlight: t('reading.highlight'),
+        }}
+        onCopy={() => {
+          const Clip = getClipboard()
+          if (pickedQuote && Clip) void Clip.setStringAsync(pickedQuote)
+          setPickedQuote(null)
+        }}
+        onChat={() => {
+          const q = pickedQuote
+          setPickedQuote(null)
+          // Reuse the active chapter's slug-aware ask (detailProps.onAsk).
+          if (q) detailProps?.onAsk?.(q)
+        }}
+        onHighlight={() => {
+          const q = pickedQuote
+          if (!q) return
+          const next = highlights.includes(q)
+            ? highlights.filter((x) => x !== q)
+            : [...highlights, q]
+          setHighlights(next)
+          if (chartHash) void saveHighlights(chartHash, next)
+          setPickedQuote(null)
+        }}
+        onClose={() => setPickedQuote(null)}
+      />
+
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </View>
   )
@@ -567,6 +661,11 @@ function ChapterDetail({
   onUnlock,
   identityLine,
   birthBadge,
+  onAsk,
+  askChapterLabel,
+  askHint,
+  onPickQuote,
+  highlightedQuotes,
 }: {
   label: string
   sub: string
@@ -580,8 +679,21 @@ function ChapterDetail({
   onUnlock: () => void
   identityLine?: string
   birthBadge?: string
+  /** 划词 chat (K3): quote = long-pressed paragraph, null = whole chapter. */
+  onAsk?: (quote: string | null) => void
+  askChapterLabel?: string
+  askHint?: string
+  /** 划词: long-press a paragraph → raise the action bar with this quote. */
+  onPickQuote?: (quote: string) => void
+  /** Persisted highlighted paragraphs — painted with a cinnabar wash. */
+  highlightedQuotes?: string[]
 }) {
   const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
+  const askParagraph = (para: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
+    if (onPickQuote) onPickQuote(para)
+    else onAsk?.(para)
+  }
   return (
     <View style={S.paper}>
       <SafeAreaView style={S.safe} edges={['top']}>
@@ -606,11 +718,44 @@ function ChapterDetail({
           ) : null}
           <Text style={S.detailLabel}>{label}</Text>
           {content ? (
-            paragraphs.map((para, i) => (
-              <Text key={i} style={[S.detailBody, S.paraBlock]}>
-                {para}
-              </Text>
-            ))
+            onAsk ? (
+              // 划词 mode: each paragraph is long-pressable → ask AI about it.
+              <View>
+                {askHint ? <Text style={S.askHint}>{askHint}</Text> : null}
+                {paragraphs.map((para, i) => {
+                  const isHighlighted = highlightedQuotes?.includes(para)
+                  return (
+                    <Pressable
+                      key={i}
+                      onLongPress={() => askParagraph(para)}
+                      delayLongPress={350}
+                      style={({ pressed }) => [
+                        isHighlighted && S.paraHighlighted,
+                        pressed && S.paraPressed,
+                      ]}
+                    >
+                      <Text style={[S.detailBody, S.paraBlock]}>{para}</Text>
+                    </Pressable>
+                  )
+                })}
+                {askChapterLabel ? (
+                  <Pressable
+                    onPress={() => onAsk(null)}
+                    hitSlop={12}
+                    accessibilityRole='button'
+                    style={({ pressed }) => [S.askChapterBtn, pressed && { opacity: 0.7 }]}
+                  >
+                    <Text style={S.askChapterText}>{askChapterLabel}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : (
+              paragraphs.map((para, i) => (
+                <Text key={i} style={[S.detailBody, S.paraBlock]}>
+                  {para}
+                </Text>
+              ))
+            )
           ) : loading ? (
             <View style={S.skeleton}>
               <View style={S.skelLine} />
@@ -726,4 +871,22 @@ const S = StyleSheet.create({
   paraBlock: { marginBottom: 20 },
   detailPlaceholder: { color: P.inkSoft, fontSize: 16, lineHeight: 28, fontStyle: 'italic' },
   detailUnlock: { marginTop: 40 },
+
+  // 划词 AI chat (K3)
+  askHint: { color: P.muted, fontSize: 12, letterSpacing: 0.5, marginBottom: 16 },
+  paraPressed: { backgroundColor: P.hairSoft, marginHorizontal: -8, paddingHorizontal: 8 },
+  paraHighlighted: {
+    backgroundColor: 'rgba(176,74,52,0.1)',
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  askChapterBtn: { marginTop: 24, alignSelf: 'flex-start' },
+  askChapterText: {
+    color: P.bronze,
+    fontSize: 14,
+    letterSpacing: 1,
+    textDecorationLine: 'underline',
+    textDecorationColor: P.bronze,
+  },
 })
