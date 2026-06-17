@@ -88,7 +88,21 @@ export function labelToBondCategory(label?: string | null): BondCategory | undef
   const has = (...ks: string[]) => ks.some((k) => s.includes(k))
   // Boss / report-line before generic "同事" (上下级 implies hierarchy).
   if (has('上司', '老板', '领导', '下属', '上下级', 'boss', 'manager')) return 'boss'
-  if (has('同事', '同僚', 'colleague', 'coworker', 'co-worker')) return 'colleague'
+  // 合伙人/business partner reads as a work peer (官禄/仆役), not a romantic 'partner'.
+  if (
+    has(
+      '同事',
+      '同僚',
+      '合伙',
+      '合作',
+      'colleague',
+      'coworker',
+      'co-worker',
+      'cofounder',
+      'business'
+    )
+  )
+    return 'colleague'
   if (has('配偶', '老婆', '老公', '丈夫', '妻', '夫人', 'wife', 'husband', 'spouse'))
     return 'spouse'
   if (has('情侣', '对象', '男友', '女友', '恋人', '伴侣', 'partner', 'boyfriend', 'girlfriend'))

@@ -66,13 +66,14 @@ const DEFAULT_COPY: InviteAcceptCopy = {
 
 const RELATIONSHIP_LABEL: Record<RelationshipType, string> = {
   romantic: 'Partner',
-  friend: 'Friend',
   family: 'Family',
-  elder: 'Elder',
+  parent: 'Parent',
+  child: 'Child',
   sibling: 'Sibling',
-  junior: 'Junior',
-  partner: 'Cofounder',
+  friend: 'Friend',
+  boss: 'Boss',
   colleague: 'Colleague',
+  partner: 'Cofounder',
   other: 'Other',
 }
 

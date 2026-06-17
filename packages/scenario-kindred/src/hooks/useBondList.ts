@@ -36,13 +36,14 @@ export interface UseBondListResult {
 
 const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, ReadonlyArray<string>> = {
   romantic: ['恋人', '伴侣', 'partner', 'romantic'],
-  friend: ['朋友', 'friend'],
   family: ['家人', 'family'],
-  elder: ['长辈', '長輩', '父母', '目上', 'elder', 'parent', 'senior'],
-  sibling: ['平辈', '平輩', '兄弟', '姐妹', '兄弟姉妹', 'sibling', 'peer'],
-  junior: ['晚辈', '晚輩', '子女', '目下', 'junior', 'child'],
+  parent: ['父母', '长辈', '長輩', '目上', 'parent', 'elder'],
+  child: ['子女', '晚辈', '晚輩', '目下', 'child', 'junior'],
+  sibling: ['兄弟', '姐妹', '姊妹', '兄弟姉妹', '平辈', 'sibling', 'peer'],
+  friend: ['朋友', 'friend'],
+  boss: ['上司', '老板', '领导', 'boss', 'manager'],
+  colleague: ['同事', '同僚', 'colleague', 'coworker'],
   partner: ['合伙人', '商业伙伴', 'business partner', 'cofounder'],
-  colleague: ['同事', '上司', 'colleague', 'manager'],
   other: [],
 }
 

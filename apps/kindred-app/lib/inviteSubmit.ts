@@ -16,15 +16,17 @@ import type { Locale } from './i18n'
 /** Localized relationship label sent to the server as `relationshipLabel`. */
 export const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, Record<string, string>> = {
   romantic: { en: 'Partner', zh: '恋人', 'zh-Hant': '戀人', ja: '恋人' },
-  friend: { en: 'Friend', zh: '朋友', 'zh-Hant': '朋友', ja: '友人' },
   family: { en: 'Family', zh: '家人', 'zh-Hant': '家人', ja: '家族' },
-  // Generational family sub-types — the LABEL is chosen so labelToBondCategory
-  // normalizes it to parent / sibling / child (→ the 父母·子女 / 兄弟 palace lens).
-  elder: { en: 'Elder', zh: '长辈', 'zh-Hant': '長輩', ja: '目上' },
-  sibling: { en: 'Sibling', zh: '平辈', 'zh-Hant': '平輩', ja: '兄弟姉妹' },
-  junior: { en: 'Junior', zh: '晚辈', 'zh-Hant': '晚輩', ja: '目下' },
-  partner: { en: 'Cofounder', zh: '合伙人', 'zh-Hant': '合夥人', ja: 'パートナー' },
+  // 紫微-palace-aligned — the LABEL is the concrete kin/role term so
+  // labelToBondCategory normalizes it (父母→parent, 子女→child, 兄弟姐妹→sibling,
+  // 上司→boss, 合伙人→colleague), firing the right palace lens.
+  parent: { en: 'Parent', zh: '父母', 'zh-Hant': '父母', ja: '親' },
+  child: { en: 'Child', zh: '子女', 'zh-Hant': '子女', ja: '子女' },
+  sibling: { en: 'Sibling', zh: '兄弟姐妹', 'zh-Hant': '兄弟姊妹', ja: '兄弟姉妹' },
+  friend: { en: 'Friend', zh: '朋友', 'zh-Hant': '朋友', ja: '友人' },
+  boss: { en: 'Boss', zh: '上司', 'zh-Hant': '上司', ja: '上司' },
   colleague: { en: 'Colleague', zh: '同事', 'zh-Hant': '同事', ja: '同僚' },
+  partner: { en: 'Cofounder', zh: '合伙人', 'zh-Hant': '合夥人', ja: 'パートナー' },
   other: { en: 'Other', zh: '其他', 'zh-Hant': '其他', ja: 'その他' },
 }
 

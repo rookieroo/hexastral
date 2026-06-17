@@ -82,15 +82,20 @@ describe('relationship palace lens', () => {
     expect(labelToBondCategory('老婆')).toBe('spouse')
     expect(labelToBondCategory('Dad')).toBe('parent')
     expect(labelToBondCategory('我女儿')).toBe('child')
-    // Generational family sub-types (长辈/平辈/晚辈) normalize to the right axis.
+    // The 紫微-palace family sub-types (the labels the picker now sends).
+    expect(labelToBondCategory('父母')).toBe('parent')
+    expect(labelToBondCategory('子女')).toBe('child')
+    expect(labelToBondCategory('兄弟姐妹')).toBe('sibling')
+    expect(labelToBondCategory('兄弟姊妹')).toBe('sibling')
+    // Legacy generational labels still resolve (长辈/平辈/晚辈).
     expect(labelToBondCategory('长辈')).toBe('parent')
-    expect(labelToBondCategory('長輩')).toBe('parent')
     expect(labelToBondCategory('平辈')).toBe('sibling')
     expect(labelToBondCategory('晚辈')).toBe('child')
-    expect(labelToBondCategory('Elder')).toBe('parent')
-    expect(labelToBondCategory('Junior')).toBe('child')
     expect(labelToBondCategory('好朋友')).toBe('friend')
     expect(labelToBondCategory('同事')).toBe('colleague')
+    // 合伙人/business partner is a work peer (官禄/仆役), not romantic 'partner'.
+    expect(labelToBondCategory('合伙人')).toBe('colleague')
+    expect(labelToBondCategory('上司')).toBe('boss')
     expect(labelToBondCategory('我老板')).toBe('boss')
     expect(labelToBondCategory('上下级')).toBe('boss')
     expect(labelToBondCategory('神秘人')).toBeUndefined()

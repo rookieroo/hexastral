@@ -36,29 +36,31 @@ export type HookDimension = 'long_term' | 'communication' | 'attraction' | 'emot
  * Kindred's selector renders these chips; the chip's label becomes
  * `relationshipLabel` on the wire.
  */
-// 'family' is kept as a LEGACY type (old bonds whose label is 家人/Family) but no
-// longer offered in the picker — it was too coarse for the 紫微 palace lens, which
-// distinguishes the generational axis. New family bonds pick elder/sibling/junior
-// (长辈/平辈/晚辈), which normalize to parent/sibling/child (see labelToBondCategory).
+// Relationship types are 紫微-palace-aligned: each maps to the 宫 it inhabits
+// (夫妻/父母/子女/兄弟/仆役/官禄), so the type-aware palace lens fires. 'family' is a
+// LEGACY type (old 家人 bonds) kept valid but no longer in the picker — it was too
+// coarse for the lens, which reads the 父母/子女/兄弟 axis.
 export type RelationshipType =
   | 'romantic'
-  | 'friend'
   | 'family'
-  | 'elder'
+  | 'parent'
+  | 'child'
   | 'sibling'
-  | 'junior'
-  | 'partner'
+  | 'friend'
+  | 'boss'
   | 'colleague'
+  | 'partner'
   | 'other'
 
 export const RELATIONSHIP_TYPES: readonly RelationshipType[] = [
   'romantic',
-  'friend',
-  'elder',
+  'parent',
+  'child',
   'sibling',
-  'junior',
-  'partner',
+  'friend',
+  'boss',
   'colleague',
+  'partner',
   'other',
 ] as const
 
