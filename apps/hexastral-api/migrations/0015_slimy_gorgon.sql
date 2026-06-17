@@ -1,0 +1,1 @@
+ALTER TABLE `pair_readings` ADD `owner_is_person_a` integer;
