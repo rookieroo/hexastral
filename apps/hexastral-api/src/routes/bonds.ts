@@ -211,6 +211,44 @@ function generateShareId(): string {
   return Array.from(array, (b) => chars[b % 62] ?? 'a').join('')
 }
 
+/** The pair_combo_uniq columns — one reading per (user, A-birth, B-birth). */
+const PAIR_COMBO_TARGET = [
+  pairReadings.userId,
+  pairReadings.personASolarDate,
+  pairReadings.personATimeIndex,
+  pairReadings.personBSolarDate,
+  pairReadings.personBTimeIndex,
+]
+
+/**
+ * Insert a pair reading, or — when one already exists for this
+ * (userId, A-birth, B-birth) combo (pair_combo_uniq) — refresh it in place and reuse
+ * its id. Returns the id the bond should link to. Makes reading creation idempotent so
+ * a re-accept, a solo bond recreated after a delete, or a same-device self-invite
+ * (where the inviter + responder rows resolve to the same combo) no longer 500 with
+ * "UNIQUE constraint failed: pair_readings…".
+ */
+async function upsertPairReading(
+  db: AppDb,
+  values: typeof pairReadings.$inferInsert
+): Promise<string> {
+  const {
+    id: _id,
+    userId: _userId,
+    personASolarDate: _aDate,
+    personATimeIndex: _aTime,
+    personBSolarDate: _bDate,
+    personBTimeIndex: _bTime,
+    ...refresh
+  } = values
+  const [row] = await db
+    .insert(pairReadings)
+    .values(values)
+    .onConflictDoUpdate({ target: PAIR_COMBO_TARGET, set: refresh })
+    .returning({ id: pairReadings.id })
+  return row?.id ?? values.id
+}
+
 /** Bond limit check result. `allowed: false` callers should respond via jsonErr. */
 type BondLimitResult =
   | { allowed: true }
@@ -237,12 +275,23 @@ async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResul
   const isPro = await userHasCapability(db, userId, 'kindred')
   if (isPro) return { allowed: true }
 
-  const [countRow] = await db
+  // Free quota = generations consumed, NON-refundable. A soft delete ("Let go")
+  // keeps the pair_reading row, so counting readings — not live bonds — means
+  // deleting can't refund a free slot (that was the bypass). Add outstanding pending
+  // invites (each consumes a generation on accept) so a sent-but-unaccepted invite
+  // still holds a slot; a declined/expired one, or re-reading the same pair (the
+  // idempotent upsert reuses the row), correctly does NOT inflate the count.
+  const [readingRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(pairReadings)
+    .where(eq(pairReadings.userId, userId))
+  const [pendingRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(userBonds)
-    .where(and(eq(userBonds.ownerId, userId), ne(userBonds.status, 'removed')))
+    .where(and(eq(userBonds.ownerId, userId), eq(userBonds.status, 'pending_invite')))
+  const used = (readingRow?.count ?? 0) + (pendingRow?.count ?? 0)
 
-  if ((countRow?.count ?? 0) >= FREE_BOND_LIMIT) {
+  if (used >= FREE_BOND_LIMIT) {
     return {
       allowed: false,
       reason: 'paywall_required',
@@ -404,78 +453,77 @@ bondRoutes.post('/solo', async (c) => {
     interpretation: Record<string, string>
   }>(c.env.SVC_ASTRO, '/pair/compute', hehunPayload)
 
-  // Save hehun reading
-  const readingId = crypto.randomUUID()
+  // Save hehun reading (idempotent: reuse the existing row if this exact pair was
+  // read before, so recreating a deleted solo bond can't 500 on pair_combo_uniq).
   const bondId = crypto.randomUUID()
 
-  await db.batch([
-    db.insert(pairReadings).values({
-      id: readingId,
-      userId,
-      // Solo bond: the creator is personA (甲).
-      ownerIsPersonA: true,
-      personASolarDate: user.birthSolarDate,
-      personATimeIndex: user.birthTimeIndex,
-      personAGender: user.birthGender,
-      personAName: user.name ?? null,
-      personBSolarDate: input.targetBirth.solarDate,
-      personBTimeIndex: input.targetBirth.timeIndex,
-      personBGender: input.targetBirth.gender,
-      personBName: input.targetName,
-      personBLongitude: input.targetBirth.longitude ?? null,
-      personBLatitude: input.targetBirth.latitude ?? null,
-      personBTimezoneId: input.targetBirth.timezoneId ?? null,
-      personBCalendarType: input.targetBirth.calendarType ?? null,
-      personBLunarDate: input.targetBirth.lunarDate ?? null,
-      personBIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
-      score: result.compatibility.score as number,
-      grade: result.compatibility.grade as string,
-      archetypeName: (interpretation as Record<string, string>).archetypeName ?? null,
-      archetypeTagline: (interpretation as Record<string, string>).archetypeTagline ?? null,
-      archetypeCategory:
-        ((interpretation as Record<string, string>).archetypeCategory as
-          | 'harmony'
-          | 'tension'
-          | 'growth'
-          | 'karmic'
-          | 'volatile'
-          | undefined) ?? null,
-      hookDimension:
-        ((interpretation as Record<string, string>).hookDimension as
-          | 'long_term'
-          | 'communication'
-          | 'attraction'
-          | 'emotional'
-          | undefined) ?? null,
-      relationshipCategory: derivedCategory ?? null,
-      customRelationshipLabel: derivedCustomLabel ?? null,
-      compatibilityData: JSON.stringify(result.compatibility),
-      interpretation: JSON.stringify(interpretation),
-    }),
-    db.insert(userBonds).values({
-      id: bondId,
-      ownerId: userId,
-      targetName: input.targetName,
-      relationshipLabel: input.relationshipLabel,
-      mode: 'solo',
-      hehunReadingId: readingId,
-      targetBirthSolarDate: input.targetBirth.solarDate,
-      targetBirthTimeIndex: input.targetBirth.timeIndex,
-      targetBirthGender: input.targetBirth.gender,
-      targetBirthCity: input.targetBirth.city ?? null,
-      targetBirthLongitude: input.targetBirth.longitude ?? null,
-      targetBirthLatitude: input.targetBirth.latitude ?? null,
-      targetBirthTimezoneId: input.targetBirth.timezoneId ?? null,
-      targetBirthCalendarType: input.targetBirth.calendarType ?? null,
-      targetBirthLunarDate: input.targetBirth.lunarDate ?? null,
-      targetBirthIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
-      unlockedDimensions: '4',
-      // Paid solo create includes the full six chapters; the free Auspice
-      // hand-off lands on the free 3 + unlock wall instead.
-      chaptersUnlocked: !input.fromHandoff,
-      status: 'active',
-    }),
-  ])
+  const readingId = await upsertPairReading(db, {
+    id: crypto.randomUUID(),
+    userId,
+    // Solo bond: the creator is personA (甲).
+    ownerIsPersonA: true,
+    personASolarDate: user.birthSolarDate,
+    personATimeIndex: user.birthTimeIndex,
+    personAGender: user.birthGender,
+    personAName: user.name ?? null,
+    personBSolarDate: input.targetBirth.solarDate,
+    personBTimeIndex: input.targetBirth.timeIndex,
+    personBGender: input.targetBirth.gender,
+    personBName: input.targetName,
+    personBLongitude: input.targetBirth.longitude ?? null,
+    personBLatitude: input.targetBirth.latitude ?? null,
+    personBTimezoneId: input.targetBirth.timezoneId ?? null,
+    personBCalendarType: input.targetBirth.calendarType ?? null,
+    personBLunarDate: input.targetBirth.lunarDate ?? null,
+    personBIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
+    score: result.compatibility.score as number,
+    grade: result.compatibility.grade as string,
+    archetypeName: (interpretation as Record<string, string>).archetypeName ?? null,
+    archetypeTagline: (interpretation as Record<string, string>).archetypeTagline ?? null,
+    archetypeCategory:
+      ((interpretation as Record<string, string>).archetypeCategory as
+        | 'harmony'
+        | 'tension'
+        | 'growth'
+        | 'karmic'
+        | 'volatile'
+        | undefined) ?? null,
+    hookDimension:
+      ((interpretation as Record<string, string>).hookDimension as
+        | 'long_term'
+        | 'communication'
+        | 'attraction'
+        | 'emotional'
+        | undefined) ?? null,
+    relationshipCategory: derivedCategory ?? null,
+    customRelationshipLabel: derivedCustomLabel ?? null,
+    compatibilityData: JSON.stringify(result.compatibility),
+    interpretation: JSON.stringify(interpretation),
+  })
+
+  await db.insert(userBonds).values({
+    id: bondId,
+    ownerId: userId,
+    targetName: input.targetName,
+    relationshipLabel: input.relationshipLabel,
+    mode: 'solo',
+    hehunReadingId: readingId,
+    targetBirthSolarDate: input.targetBirth.solarDate,
+    targetBirthTimeIndex: input.targetBirth.timeIndex,
+    targetBirthGender: input.targetBirth.gender,
+    targetBirthCity: input.targetBirth.city ?? null,
+    targetBirthLongitude: input.targetBirth.longitude ?? null,
+    targetBirthLatitude: input.targetBirth.latitude ?? null,
+    targetBirthTimezoneId: input.targetBirth.timezoneId ?? null,
+    targetBirthCalendarType: input.targetBirth.calendarType ?? null,
+    targetBirthLunarDate: input.targetBirth.lunarDate ?? null,
+    targetBirthIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
+    unlockedDimensions: '4',
+    // Paid solo create includes the full six chapters; the free Auspice
+    // hand-off lands on the free 3 + unlock wall instead.
+    chaptersUnlocked: !input.fromHandoff,
+    status: 'active',
+  })
 
   c.executionCtx.waitUntil(
     logEvent(db, userId, 'bond_create', {
@@ -1073,96 +1121,96 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   interpretation.language = input.language
 
   // Save two mirrored reading rows so both A/B history libraries can resolve by ownerId.
-  const readingIdForInviter = crypto.randomUUID()
-  const readingIdForResponder = crypto.randomUUID()
-  await db.batch([
-    db.insert(pairReadings).values({
-      id: readingIdForInviter,
-      userId: invitation.inviterUserId,
-      // Inviter's library row — the inviter IS personA (甲).
-      ownerIsPersonA: true,
-      personASolarDate: inviter.birthSolarDate,
-      personATimeIndex: inviter.birthTimeIndex,
-      personAGender: inviter.birthGender,
-      personAName: inviter.name ?? null,
-      personBSolarDate: input.birthData.solarDate,
-      personBTimeIndex: input.birthData.timeIndex,
-      personBGender: input.birthData.gender,
-      personBName: responder.name ?? null,
-      personBLongitude: input.birthData.longitude ?? null,
-      personBLatitude: input.birthData.latitude ?? null,
-      personBTimezoneId: input.birthData.timezoneId ?? null,
-      personBCalendarType: input.birthData.calendarType ?? null,
-      personBLunarDate: input.birthData.lunarDate ?? null,
-      personBIsLeapMonth: input.birthData.isLeapMonth ?? null,
-      score: result.compatibility.score as number,
-      grade: result.compatibility.grade as string,
-      archetypeName: interpretation.archetypeName ?? null,
-      archetypeTagline: interpretation.archetypeTagline ?? null,
-      archetypeCategory:
-        (interpretation.archetypeCategory as
-          | 'harmony'
-          | 'tension'
-          | 'growth'
-          | 'karmic'
-          | 'volatile'
-          | undefined) ?? null,
-      hookDimension:
-        (interpretation.hookDimension as
-          | 'long_term'
-          | 'communication'
-          | 'attraction'
-          | 'emotional'
-          | undefined) ?? null,
-      relationshipCategory: resonanceDerivedCategory ?? null,
-      customRelationshipLabel: resonanceDerivedCustomLabel ?? null,
-      compatibilityData: JSON.stringify(result.compatibility),
-      interpretation: JSON.stringify(interpretation),
-    }),
-    db.insert(pairReadings).values({
-      id: readingIdForResponder,
-      userId: respondUserId,
-      // Responder's library row — the responder is personB (乙), never personA.
-      ownerIsPersonA: false,
-      personASolarDate: inviter.birthSolarDate,
-      personATimeIndex: inviter.birthTimeIndex,
-      personAGender: inviter.birthGender,
-      personAName: inviter.name ?? null,
-      personBSolarDate: input.birthData.solarDate,
-      personBTimeIndex: input.birthData.timeIndex,
-      personBGender: input.birthData.gender,
-      personBName: responder.name ?? null,
-      personBLongitude: input.birthData.longitude ?? null,
-      personBLatitude: input.birthData.latitude ?? null,
-      personBTimezoneId: input.birthData.timezoneId ?? null,
-      personBCalendarType: input.birthData.calendarType ?? null,
-      personBLunarDate: input.birthData.lunarDate ?? null,
-      personBIsLeapMonth: input.birthData.isLeapMonth ?? null,
-      score: result.compatibility.score as number,
-      grade: result.compatibility.grade as string,
-      archetypeName: interpretation.archetypeName ?? null,
-      archetypeTagline: interpretation.archetypeTagline ?? null,
-      archetypeCategory:
-        (interpretation.archetypeCategory as
-          | 'harmony'
-          | 'tension'
-          | 'growth'
-          | 'karmic'
-          | 'volatile'
-          | undefined) ?? null,
-      hookDimension:
-        (interpretation.hookDimension as
-          | 'long_term'
-          | 'communication'
-          | 'attraction'
-          | 'emotional'
-          | undefined) ?? null,
-      relationshipCategory: resonanceDerivedCategory ?? null,
-      customRelationshipLabel: resonanceDerivedCustomLabel ?? null,
-      compatibilityData: JSON.stringify(result.compatibility),
-      interpretation: JSON.stringify(interpretation),
-    }),
-  ])
+  // Idempotent: reuse each side's existing row if this pair was already read (a
+  // re-accept, or a same-device self-invite where both rows share the combo) so the
+  // accept can't 500 on pair_combo_uniq.
+  const readingIdForInviter = await upsertPairReading(db, {
+    id: crypto.randomUUID(),
+    userId: invitation.inviterUserId,
+    // Inviter's library row — the inviter IS personA (甲).
+    ownerIsPersonA: true,
+    personASolarDate: inviter.birthSolarDate,
+    personATimeIndex: inviter.birthTimeIndex,
+    personAGender: inviter.birthGender,
+    personAName: inviter.name ?? null,
+    personBSolarDate: input.birthData.solarDate,
+    personBTimeIndex: input.birthData.timeIndex,
+    personBGender: input.birthData.gender,
+    personBName: responder.name ?? null,
+    personBLongitude: input.birthData.longitude ?? null,
+    personBLatitude: input.birthData.latitude ?? null,
+    personBTimezoneId: input.birthData.timezoneId ?? null,
+    personBCalendarType: input.birthData.calendarType ?? null,
+    personBLunarDate: input.birthData.lunarDate ?? null,
+    personBIsLeapMonth: input.birthData.isLeapMonth ?? null,
+    score: result.compatibility.score as number,
+    grade: result.compatibility.grade as string,
+    archetypeName: interpretation.archetypeName ?? null,
+    archetypeTagline: interpretation.archetypeTagline ?? null,
+    archetypeCategory:
+      (interpretation.archetypeCategory as
+        | 'harmony'
+        | 'tension'
+        | 'growth'
+        | 'karmic'
+        | 'volatile'
+        | undefined) ?? null,
+    hookDimension:
+      (interpretation.hookDimension as
+        | 'long_term'
+        | 'communication'
+        | 'attraction'
+        | 'emotional'
+        | undefined) ?? null,
+    relationshipCategory: resonanceDerivedCategory ?? null,
+    customRelationshipLabel: resonanceDerivedCustomLabel ?? null,
+    compatibilityData: JSON.stringify(result.compatibility),
+    interpretation: JSON.stringify(interpretation),
+  })
+
+  const readingIdForResponder = await upsertPairReading(db, {
+    id: crypto.randomUUID(),
+    userId: respondUserId,
+    // Responder's library row — the responder is personB (乙), never personA.
+    ownerIsPersonA: false,
+    personASolarDate: inviter.birthSolarDate,
+    personATimeIndex: inviter.birthTimeIndex,
+    personAGender: inviter.birthGender,
+    personAName: inviter.name ?? null,
+    personBSolarDate: input.birthData.solarDate,
+    personBTimeIndex: input.birthData.timeIndex,
+    personBGender: input.birthData.gender,
+    personBName: responder.name ?? null,
+    personBLongitude: input.birthData.longitude ?? null,
+    personBLatitude: input.birthData.latitude ?? null,
+    personBTimezoneId: input.birthData.timezoneId ?? null,
+    personBCalendarType: input.birthData.calendarType ?? null,
+    personBLunarDate: input.birthData.lunarDate ?? null,
+    personBIsLeapMonth: input.birthData.isLeapMonth ?? null,
+    score: result.compatibility.score as number,
+    grade: result.compatibility.grade as string,
+    archetypeName: interpretation.archetypeName ?? null,
+    archetypeTagline: interpretation.archetypeTagline ?? null,
+    archetypeCategory:
+      (interpretation.archetypeCategory as
+        | 'harmony'
+        | 'tension'
+        | 'growth'
+        | 'karmic'
+        | 'volatile'
+        | undefined) ?? null,
+    hookDimension:
+      (interpretation.hookDimension as
+        | 'long_term'
+        | 'communication'
+        | 'attraction'
+        | 'emotional'
+        | undefined) ?? null,
+    relationshipCategory: resonanceDerivedCategory ?? null,
+    customRelationshipLabel: resonanceDerivedCustomLabel ?? null,
+    compatibilityData: JSON.stringify(result.compatibility),
+    interpretation: JSON.stringify(interpretation),
+  })
 
   // Get or create B's bond (mirror)
   const bond = await db
