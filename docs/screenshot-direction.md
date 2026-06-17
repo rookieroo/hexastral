@@ -53,12 +53,15 @@ First **3** are what 90% of viewers see in the carousel — front-load the value
 
 ---
 
-## 1. Auspice — Chinese Calendar (HERO deck, 6 shots)
+## 1. Auspice — Chinese Calendar (HERO deck, 7 shots)
 
 Background tint: warm paper / ink (calendar-utility register, not mystical).
-Positioning: a **calendar utility**, not fortune-telling. The Ba Zi timeline is
-real value but stays **mid-deck (S5)** so the carousel's first impression is
-"Chinese calendar," protecting the 4.3(b) posture.
+Positioning: a **calendar utility**, not fortune-telling. The Ba Zi timeline +
+personal chart deep-read are real value but stay **mid-deck (S5–S6)** so the
+carousel's first impression is "Chinese calendar," protecting the 4.3(b) posture.
+S6 is the signed-in personal 命书 (八字 + 紫微 chaptered reading) — included so the
+deck **discloses the primary Pro feature (Guideline 2.3.1)** without ever leading
+with it. Same honest register as S5: "a study, not a prediction."
 
 | # | Screen | Visual notes |
 | --- | --- | --- |
@@ -67,7 +70,8 @@ real value but stays **mid-deck (S5)** so the carousel's first impression is
 | S3 | 24 solar-terms timeline (节庆 tab) | Horizontal year timeline, one 节气 expanded into food/poetry/wellness depth. |
 | S4 | Family events | Member list with an upcoming 农历 birthday + reminder toggle. The diaspora hook. |
 | S5 | Ba Zi life timeline (Pro) | The 大运/流年 git-graph with one what-if branch. Caption MUST carry "reflection, not prediction." |
-| S6 | Widget + Watch | Home-screen widget × (small/medium/lock) and the Watch complication on a wrist. |
+| S6 | Personal chart deep-read (Pro) | The 宣纸 "命书" report — identity line + chaptered reading (who you are / current period / …), one 八字+紫微 chart visible. Cultural/reflective register; NO mystic motifs. Caption MUST carry "a study, not a prediction." |
+| S7 | Widget + Watch | Home-screen widget × (small/medium/lock) and the Watch complication on a wrist. |
 
 **Captions**
 
@@ -80,7 +84,9 @@ real value but stays **mid-deck (S5)** so the carousel's first impression is
 | S4 | Never miss a lunar birthday | 再不错过家人的农历生日 | 再不錯過家人的農曆生日 | 家族の旧暦の誕生日を逃さない |
 | S5 | Your life as a Ba Zi timeline | 把人生看成一条八字时间轴 | 把人生看成一條八字時間軸 | 人生を、八字のタイムラインで |
 | S5 sub | A reflection — not a prediction | 供观照，不作预测 | 供觀照，不作預測 | 予測ではなく、内省のために |
-| S6 | On your home screen & wrist | 主屏与手腕，随时一瞥 | 主屏與手腕，隨時一瞥 | ホーム画面と、手首に |
+| S6 | Your chart, read in depth | 你的命盘，深读一层 | 你的命盤，深讀一層 | 命式を、深く読む |
+| S6 sub | Ba Zi & Zi Wei — a study, not a prediction | 八字 · 紫微——研读，不作预测 | 八字 · 紫微——研讀，不作預測 | 四柱推命・紫微斗数 —— 予測ではなく内省 |
+| S7 | On your home screen & wrist | 主屏与手腕，随时一瞥 | 主屏與手腕，隨時一瞥 | ホーム画面と、手首に |
 
 ---
 
