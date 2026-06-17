@@ -62,6 +62,7 @@ import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ReadingOverlay } from '@/components/reading/ReadingOverlay'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
@@ -262,11 +263,17 @@ export default function ReadingHomeScreen() {
 
   const confirmDelete = useCallback(
     (bond: BondData) => {
-      Alert.alert(t(locale, 'bondList.deleteTitle'), t(locale, 'bondList.deleteBody'), [
+      // The product has a stance, grounded in their own chart (see lib/bondQuality):
+      // a 相生 bond is a real loss to cut; a 相克 one is often the healthier cut. The
+      // copy says so in plain, fact-first terms. Pure compute — no LLM, no latency on
+      // a destructive confirm; the verdict is already in the reading. The button is
+      // NOT styled destructive (no red) — 解缘 isn't always a tragedy; the words carry
+      // the weight, and for a hard bond, letting go is the calm call, not an alarm.
+      const body = t(locale, `bondList.deleteBody.${bondQuality(bond)}`)
+      Alert.alert(t(locale, 'bondList.deleteTitle'), body, [
         { text: t(locale, 'bondList.cancel'), style: 'cancel' },
         {
           text: t(locale, 'bondList.delete'),
-          style: 'destructive',
           onPress: () => {
             void deleteBond(bond.id).catch((err) => {
               if (__DEV__) console.warn('[Kindred home] delete failed', err)

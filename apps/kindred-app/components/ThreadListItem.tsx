@@ -16,6 +16,7 @@ import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { ElementGlyph } from '@/components/home/ElementGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
+import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, relativeSentLabel, t } from '@/lib/i18n'
 
 /** The counterpart's 意象图 colour = their SkyHero star hue (same halo colours), so
@@ -101,7 +102,10 @@ export function ThreadListItem({
           <SwipeAction
             icon={<Unlink color={kindredDark.textOnDark} size={18} strokeWidth={1.7} />}
             label={t(locale, 'bondList.delete')}
-            bg={kindredDark.seal}
+            // 解缘 isn't always a loss. Only a 相生 bond (a real loss to cut) gets the
+            // cinnabar weight; everything else reveals a calm neutral — releasing a
+            // 相克 knot isn't an alarm. (Copy carries the stance; see lib/bondQuality.)
+            bg={bondQuality(bond) === 'good' ? kindredDark.seal : '#3A3531'}
             onPress={() => {
               methods.close()
               onDelete()

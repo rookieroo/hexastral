@@ -251,6 +251,14 @@ export const translations: Translations = {
     'bondList.delete': 'Let go',
     'bondList.deleteTitle': 'Let this thread go?',
     'bondList.deleteBody': "This removes your synastry with them. It can't be undone.",
+    'bondList.deleteBody.good':
+      "These two charts read generative — the kind that actually feed each other, and the report graded it high. That's not common. Cut the thread and it's gone; you don't get to run the same two people twice. Worth being sure it's actually over, not just a bad week.",
+    'bondList.deleteBody.peer':
+      'You two read as resonant — same wavelength, which cuts both ways: quick to click, quick to butt heads. Letting it go is reasonable; so is keeping it. Either way there is no undo, so decide on purpose.',
+    'bondList.deleteBody.hard':
+      "The reading leans tempering — more friction than flow, and you've probably felt it. Holding a knot that won't loosen usually costs more than the cut does. If it has genuinely run its course, letting go isn't giving up — it's just honest.",
+    'bondList.deleteBody.plain':
+      'This removes your synastry with them, for good — no undo, no second reading. Only if you mean it.',
     'bondList.cancel': 'Cancel',
     'bond.statusActive': 'Info complete',
     'bond.statusPending': 'Awaiting them',
@@ -623,6 +631,14 @@ export const translations: Translations = {
     'bondList.delete': '解缘',
     'bondList.deleteTitle': '解开这段缘？',
     'bondList.deleteBody': '会移除你与 ta 的合盘记录，且无法恢复。',
+    'bondList.deleteBody.good':
+      '你们这段是相生——真正彼此滋养的那种，报告分也不低。这种缘分不算多。解了就没了，同样两个人不会再有第二次合盘。值得先确认是真到头了，而不是刚好撞上一阵心烦。',
+    'bondList.deleteBody.peer':
+      '你们是比和——同一个频率，好处坏处都在这：容易一拍即合，也容易针尖对麦芒。解，合理；留，也合理。横竖不可逆，想清楚再动手。',
+    'bondList.deleteBody.hard':
+      '你们这段以相克为底——摩擦多过顺遂，你大概早有体感。当断不断，反受其乱：硬撑一个解不开的结，通常比剪断它更耗人。如果是真走到头了，放手不算认输，只是诚实。',
+    'bondList.deleteBody.plain':
+      '这会永久移除你与 ta 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
     'bondList.cancel': '取消',
     'bond.statusActive': '资料完整',
     'bond.statusPending': '待对方填写',
@@ -984,6 +1000,14 @@ export const translations: Translations = {
     'bondList.delete': '解緣',
     'bondList.deleteTitle': '解開這段緣？',
     'bondList.deleteBody': '會移除你與 ta 的合盤記錄，且無法復原。',
+    'bondList.deleteBody.good':
+      '你們這段是相生——真正彼此滋養的那種，報告分也不低。這種緣分不算多。解了就沒了，同樣兩個人不會再有第二次合盤。值得先確認是真到頭了，而不是剛好撞上一陣心煩。',
+    'bondList.deleteBody.peer':
+      '你們是比和——同一個頻率，好處壞處都在這：容易一拍即合，也容易針尖對麥芒。解，合理；留，也合理。橫豎不可逆，想清楚再動手。',
+    'bondList.deleteBody.hard':
+      '你們這段以相克為底——摩擦多過順遂，你大概早有體感。當斷不斷，反受其亂：硬撐一個解不開的結，通常比剪斷它更耗人。如果是真走到頭了，放手不算認輸，只是誠實。',
+    'bondList.deleteBody.plain':
+      '這會永久移除你與 ta 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
     'bondList.cancel': '取消',
     'bond.statusActive': '資料完整',
     'bond.statusPending': '待對方填寫',
@@ -1346,6 +1370,14 @@ export const translations: Translations = {
     'bondList.delete': '縁を解く',
     'bondList.deleteTitle': 'この縁を解きますか？',
     'bondList.deleteBody': '相手との相性記録が削除されます。元に戻せません。',
+    'bondList.deleteBody.good':
+      'この二人は相生——互いを養い合う間柄で、報告の評価も高い。そう多くはない縁です。解けば消える。同じ二人の合盤は二度と出ません。本当に終わったのか、ただ虫の居所が悪いだけか、確かめてからでも遅くない。',
+    'bondList.deleteBody.peer':
+      '二人は比和——同じ波長ゆえ、合うのも早ければ衝突も早い。解くのも妥当、残すのも妥当。どちらにせよ取り消せないので、意志を持って決めて。',
+    'bondList.deleteBody.hard':
+      'この縁は相克が下地——順風より摩擦が多く、薄々感じているはず。解けない結びを抱え続ける方が、断つより消耗することが多い。本当に役目を終えたのなら、手放すのは負けではなく、ただ正直なだけ。',
+    'bondList.deleteBody.plain':
+      '相手との相性記録を完全に削除します——取り消しも、二度目もありません。本気のときだけ。',
     'bondList.cancel': 'キャンセル',
     'bond.statusActive': '入力済み',
     'bond.statusPending': '相手の入力待ち',
