@@ -45,8 +45,13 @@ export interface ReadingCacheConfig {
   apiUrl: string
   signRequest: SignReadingRequest
   storage: ReadingCacheStorage
-  /** AsyncStorage key the provisioned userId lives under. */
-  userIdKey: string
+  /** Resolve the signed-in userId. Use this when the id lives outside AsyncStorage
+   *  (e.g. auspice's secure-store `getPortfolioUserId()`). Takes precedence over
+   *  `userIdKey`. */
+  getUserId?: () => Promise<string | null>
+  /** AsyncStorage key the provisioned userId lives under (the simple case — Yuel).
+   *  Ignored when `getUserId` is supplied. */
+  userIdKey?: string
   /** Per-app cache-key prefix (default keeps slugs namespaced per app). */
   cachePrefix?: string
   /** Per-app "chart bootstrapped" marker prefix. */
@@ -122,7 +127,8 @@ export function createReadingCache(cfg: ReadingCacheConfig): ReadingCache {
 
   async function getUserId(): Promise<string | null> {
     try {
-      return await storage.getItem(userIdKey)
+      if (cfg.getUserId) return await cfg.getUserId()
+      return userIdKey ? await storage.getItem(userIdKey) : null
     } catch {
       return null
     }
