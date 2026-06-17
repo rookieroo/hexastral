@@ -1,52 +1,66 @@
 /**
  * ThreadListItem — one thread row on the home's night-sky list.
  *
- * Each row carries a small gold star at the left, echoing the SkyHero above (a
- * thread IS a star in your orbit). Tap → the thread's report. Left-swipe reveals
- * 解缘 (release the bond — gentler than "delete", matching the 缘 brand; the
- * destructive confirm still spells out that it's irreversible). (Timeline +
- * What-if — the subscription living layer — moved OFF the
- * swipe to a prominent floating entry IN the report, 2026-06: "核心功能左滑出现
- * 有点浪费" — see components/reading/LivingLayerFab.)
+ * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
+ * (their element imagery = their star in your orbit), then their name + a quiet
+ * relationship line, then a small STATUS ICON (waiting vs complete). No essence
+ * chip, no coloured status text, no bullet — only what the row needs. Tap → the
+ * thread's report; left-swipe reveals 解缘 (release the bond).
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import type { BondData, BondStatus } from '@zhop/scenario-kindred'
-import { ChevronRight, Unlink } from 'lucide-react-native'
+import { Check, Clock, Unlink, X } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
-import { EssenceTag } from '@/components/EssenceTag'
-import { hasValidElements } from '@/components/ink/InkCenterpiece'
+import { ElementGlyph } from '@/components/home/ElementGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { type Locale, relativeSentLabel, t } from '@/lib/i18n'
 
-/** This thread's star colour = the OTHER person's 五行, matching the SkyHero star
- *  exactly (same halo hues). Unknown element → cool silver (the sky's fallback), so
- *  the dot is never gold — gold stays reserved for the actual CTAs, and the dot now
- *  *means* something (it's that person's star). */
-const STAR_DOT: Record<string, string> = {
+/** The counterpart's 意象图 colour = their SkyHero star hue (same halo colours), so
+ *  the glyph reads as "their star, here in the list". Unknown → cool silver. */
+const STAR_HUE: Record<string, string> = {
   木: '#86b66f',
   火: '#d2745a',
   土: '#c4a067',
   金: '#cfc8b0',
   水: '#6f9cc8',
 }
-const STAR_DOT_FALLBACK = '#bcccea'
+const STAR_HUE_FALLBACK = '#bcccea'
 
-/** Per-status label + tint for the row's "info filled?" line. */
-function statusMeta(status: BondStatus, locale: Locale): { label: string; color: string } {
+/** Status → a small neutral icon (no colour highlight — 朱红 is reserved for brand).
+ *  Two real states (waiting for them / both in) plus the quiet edge states. */
+function statusIcon(
+  status: BondStatus
+): { Icon: typeof Clock; color: string; label: BondStatus } | null {
   switch (status) {
     case 'active':
-      return { label: t(locale, 'bond.statusActive'), color: kindredDark.seal }
+      return { Icon: Check, color: kindredDark.textSecondary, label: status }
     case 'pending_invite':
-      return { label: t(locale, 'bond.statusPending'), color: kindredDark.textSecondary }
+      return { Icon: Clock, color: kindredDark.textMuted, label: status }
     case 'declined':
-      return { label: t(locale, 'bond.statusDeclined'), color: kindredDark.textMuted }
+      return { Icon: X, color: kindredDark.textMuted, label: status }
     case 'expired':
-      return { label: t(locale, 'bond.statusExpired'), color: kindredDark.textMuted }
+      return { Icon: Clock, color: kindredDark.textMuted, label: status }
     default:
-      return { label: '', color: kindredDark.textMuted }
+      return null
+  }
+}
+
+/** Localized accessibility label for the status icon (text no longer shown). */
+function statusA11y(status: BondStatus, locale: Locale): string {
+  switch (status) {
+    case 'active':
+      return t(locale, 'bond.statusActive')
+    case 'pending_invite':
+      return t(locale, 'bond.statusPending')
+    case 'declined':
+      return t(locale, 'bond.statusDeclined')
+    case 'expired':
+      return t(locale, 'bond.statusExpired')
+    default:
+      return ''
   }
 }
 
@@ -68,11 +82,14 @@ export function ThreadListItem({
   onDelete,
   onRecompute,
 }: ThreadListItemProps) {
-  const status = statusMeta(bond.status, locale)
   // Specific name as title; fall back to the relationship (and strip the legacy
   // literal "Unknown"). See lib/bondName.ts.
   const { displayName, relTag } = resolveBondDisplayName(bond)
   const isActive = bond.status === 'active'
+  const isPending = bond.status === 'pending_invite'
+  const el = bond.counterpartElement ?? undefined
+  const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
+  const stat = statusIcon(bond.status)
 
   return (
     <ReanimatedSwipeable
@@ -105,32 +122,41 @@ export function ThreadListItem({
           backgroundColor: kindredDark.bg,
         }}
       >
-        {/* This thread's star, in the other person's 五行 colour — the same star as
-            in the SkyHero above, so the dot reads as "their star in your orbit". */}
-        <View
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: 4,
-            backgroundColor: bond.counterpartElement
-              ? (STAR_DOT[bond.counterpartElement] ?? STAR_DOT_FALLBACK)
-              : STAR_DOT_FALLBACK,
-            opacity: isActive ? 0.9 : 0.4,
-          }}
-        />
-        <View style={{ flex: 1, gap: 4 }}>
+        {/* The other person's 五行 意象图 — their star, here in the list. A faint ring
+            stands in for an unlit star while they haven't filled their birth in. */}
+        <View style={{ width: 26, alignItems: 'center', justifyContent: 'center' }}>
+          {el && STAR_HUE[el] ? (
+            <View style={{ opacity: isActive ? 1 : 0.5 }}>
+              <ElementGlyph element={el} color={hue} size={30} />
+            </View>
+          ) : (
+            <View
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: 5,
+                borderWidth: 1,
+                borderColor: kindredDark.textMuted,
+                opacity: 0.6,
+              }}
+            />
+          )}
+        </View>
+
+        <View style={{ flex: 1, gap: 3 }}>
           <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
             {displayName}
           </Text>
-          <Text
-            style={[kindredType.caption, { color: kindredDark.textSecondary }]}
-            numberOfLines={1}
-          >
-            {relTag ? `${relTag} · ` : ''}
-            {relativeSentLabel(locale, bond.createdAt)}
-          </Text>
-          {status.label ? (
-            <Text style={[kindredType.caption, { color: status.color }]}>{status.label}</Text>
+          {/* One quiet line: who they are to you (+ when an invite went out). */}
+          {relTag || isPending ? (
+            <Text
+              style={[kindredType.caption, { color: kindredDark.textSecondary }]}
+              numberOfLines={1}
+            >
+              {relTag ?? ''}
+              {relTag && isPending ? ' · ' : ''}
+              {isPending ? relativeSentLabel(locale, bond.createdAt) : ''}
+            </Text>
           ) : null}
           {/* This report predates a later birth-info edit — it stays as-is, but the
               basis is flagged (and, for Pro, a recompute-with-new-birth CTA). */}
@@ -159,11 +185,17 @@ export function ThreadListItem({
             </View>
           ) : null}
         </View>
-        {hasValidElements(bond.aElement ?? undefined, bond.bElement ?? undefined) ? (
-          <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} />
-        ) : (
-          <ChevronRight color={kindredDark.textMuted} size={20} strokeWidth={1.2} />
-        )}
+
+        {/* Status as a quiet icon (waiting vs complete) — no colour highlight. */}
+        {stat ? (
+          <View
+            accessibilityRole='image'
+            accessibilityLabel={statusA11y(bond.status, locale)}
+            style={{ width: 22, alignItems: 'center' }}
+          >
+            <stat.Icon color={stat.color} size={17} strokeWidth={1.7} />
+          </View>
+        ) : null}
       </Pressable>
     </ReanimatedSwipeable>
   )
