@@ -96,6 +96,9 @@ export interface BondData {
    *  the list/home 意象 chip (生克平 essence). Null until a reading exists. */
   aElement?: string | null
   bElement?: string | null
+  /** The OTHER person's 五行 from the VIEWER's perspective — colours this thread's
+   *  star in the sky + its list dot, so each bond reads in its own element hue. */
+  counterpartElement?: string | null
   archetypeName: string | null
   archetypeTagline: string | null
   archetypeCategory: ArchetypeCategory | null

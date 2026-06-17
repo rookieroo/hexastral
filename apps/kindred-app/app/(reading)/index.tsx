@@ -650,6 +650,7 @@ export default function ReadingHomeScreen() {
                   height={heroH}
                   threadCount={threads.length}
                   element={natal.dayMasterWuXing}
+                  threadElements={threads.map((t) => t.counterpartElement)}
                   paused={skyPaused}
                   onTapSelf={openSelfReading}
                   onTapThread={openThreadReading}

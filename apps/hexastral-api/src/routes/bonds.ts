@@ -1402,6 +1402,7 @@ bondRoutes.get('/', async (c) => {
       archetypeTagline: string | null
       archetypeCategory: string | null
       hookDimension: string | null
+      ownerIsPersonA: boolean | null
       personASolarDate: string
       personATimeIndex: number
       personAGender: string
@@ -1420,6 +1421,7 @@ bondRoutes.get('/', async (c) => {
         archetypeTagline: pairReadings.archetypeTagline,
         archetypeCategory: pairReadings.archetypeCategory,
         hookDimension: pairReadings.hookDimension,
+        ownerIsPersonA: pairReadings.ownerIsPersonA,
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
         personAGender: pairReadings.personAGender,
@@ -1532,6 +1534,10 @@ bondRoutes.get('/', async (c) => {
     const bElement = reading
       ? dayMasterElement(reading.personBSolarDate, reading.personBTimeIndex)
       : null
+    // The OTHER person's element from the VIEWER's side — drives this thread's star
+    // (sky) + list dot, so each bond shows up in its own 五行 colour. Viewer is
+    // personA unless the stamped flag says otherwise (legacy null → assume A).
+    const counterpartElement = reading?.ownerIsPersonA === false ? aElement : bElement
 
     return {
       ...b,
@@ -1539,6 +1545,7 @@ bondRoutes.get('/', async (c) => {
       grade: reading?.grade ?? null,
       aElement,
       bElement,
+      counterpartElement,
       archetypeName: reading?.archetypeName ?? null,
       archetypeTagline: reading?.archetypeTagline ?? null,
       archetypeCategory: reading?.archetypeCategory ?? null,

@@ -84,6 +84,9 @@ export interface SkyHeroProps {
   threadCount: number
   /** Day-master 五行 (木/火/土/金/水) — tints your central star. */
   element?: string
+  /** Per-thread 五行 (the OTHER person's element), in orbit-slot order — tints each
+   *  bond star so it reads in that person's colour. Falls back to cool silver. */
+  threadElements?: Array<string | null | undefined>
   /** Pause the drift + breath (screen blurred / app backgrounded) to save heat. */
   paused?: boolean
   /** Tap your central star (or empty sky) → your personal reading. Receives page
@@ -107,6 +110,7 @@ export function SkyHero({
   height,
   threadCount,
   element,
+  threadElements,
   paused,
   onTapSelf,
   onTapThread,
@@ -126,8 +130,22 @@ export function SkyHero({
   const youHaloC = useMemo(() => [star.halo, fade(star.halo)], [star.halo])
   const youGlowC = useMemo(() => [star.hot, star.halo, fade(star.halo)], [star.hot, star.halo])
   const youCoreC = useMemo(() => [STAR_HOT, INK, fade(INK)], [])
-  const threadGlowC = useMemo(() => [COOL_HOT, COOL, fade(COOL)], [])
-  const threadCoreC = useMemo(() => [STAR_HOT, COOL, fade(COOL)], [])
+  // Per-slot thread-star colours: each bond star takes the OTHER person's 五行 light
+  // (so the sky reads as a constellation of elements), falling back to cool silver
+  // when that bond's element isn't known yet. Mirrors the central star's glow/core
+  // build so a thread star is the same form, just in its own hue.
+  const threadColors = useMemo(
+    () =>
+      SLOTS.map((_, i) => {
+        const el = threadElements?.[i]
+        const s = (el && ELEMENT_STAR[el]) || { halo: COOL, hot: COOL_HOT }
+        return {
+          glow: [s.hot, s.halo, fade(s.halo)],
+          core: [STAR_HOT, s.halo, fade(s.halo)],
+        }
+      }),
+    [threadElements]
+  )
 
   const clock = useSharedValue(0)
   const breath = useSharedValue(0)
@@ -258,8 +276,8 @@ export function SkyHero({
               appear={appear}
               active={i < n}
               collapse={collapse}
-              glowColors={threadGlowC}
-              coreColors={threadCoreC}
+              glowColors={threadColors[i]?.glow ?? [COOL_HOT, COOL, fade(COOL)]}
+              coreColors={threadColors[i]?.core ?? [STAR_HOT, COOL, fade(COOL)]}
             />
           ))}
 

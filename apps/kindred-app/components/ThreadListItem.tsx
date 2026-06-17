@@ -21,6 +21,19 @@ import { hasValidElements } from '@/components/ink/InkCenterpiece'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { type Locale, relativeSentLabel, t } from '@/lib/i18n'
 
+/** This thread's star colour = the OTHER person's 五行, matching the SkyHero star
+ *  exactly (same halo hues). Unknown element → cool silver (the sky's fallback), so
+ *  the dot is never gold — gold stays reserved for the actual CTAs, and the dot now
+ *  *means* something (it's that person's star). */
+const STAR_DOT: Record<string, string> = {
+  木: '#86b66f',
+  火: '#d2745a',
+  土: '#c4a067',
+  金: '#cfc8b0',
+  水: '#6f9cc8',
+}
+const STAR_DOT_FALLBACK = '#bcccea'
+
 /** Per-status label + tint for the row's "info filled?" line. */
 function statusMeta(status: BondStatus, locale: Locale): { label: string; color: string } {
   switch (status) {
@@ -92,13 +105,16 @@ export function ThreadListItem({
           backgroundColor: kindredDark.bg,
         }}
       >
-        {/* A small gold star — this thread, a body in your orbit (echoes SkyHero). */}
+        {/* This thread's star, in the other person's 五行 colour — the same star as
+            in the SkyHero above, so the dot reads as "their star in your orbit". */}
         <View
           style={{
             width: 7,
             height: 7,
             borderRadius: 4,
-            backgroundColor: kindredDark.accent,
+            backgroundColor: bond.counterpartElement
+              ? (STAR_DOT[bond.counterpartElement] ?? STAR_DOT_FALLBACK)
+              : STAR_DOT_FALLBACK,
             opacity: isActive ? 0.9 : 0.4,
           }}
         />
