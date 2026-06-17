@@ -35,10 +35,12 @@ import { computeZiweiChart } from '@/lib/solo/ziwei'
 const P = kindredPaper
 
 /** The full 命书's six chapters — listed here as a teaser of what Yuun unlocks. */
+/** The 命书's chapters — a teaser of what the full book in Yuun covers. NOTE:
+ *  Relationships is intentionally omitted here — that's Yuel's own turf (synastry
+ *  合盘), so the personal-report TOC doesn't advertise a competing chapter. */
 const CHAPTER_LABEL_KEYS = [
   'reading.ch1Label',
   'reading.lcCareerLabel',
-  'reading.lcRelLabel',
   'reading.ch4Label',
   'reading.lcHiddenLabel',
   'reading.lcActionLabel',
@@ -182,13 +184,14 @@ export default function ReadingSummaryScreen() {
             </>
           ) : null}
 
-          {/* What the full 命书 covers — a dimmed table of contents, the upsell. */}
+          {/* What the full 命书 covers — a numbered contents list, the upsell. */}
           <Text style={S.tocKicker}>{t('reading.moreChapters')}</Text>
           <View style={S.tocList}>
-            {CHAPTER_LABEL_KEYS.map((k) => (
-              <Text key={k} style={S.tocItem}>
-                {t(k)}
-              </Text>
+            {CHAPTER_LABEL_KEYS.map((k, i) => (
+              <View key={k} style={S.tocRow}>
+                <Text style={S.tocNum}>{String(i + 1).padStart(2, '0')}</Text>
+                <Text style={S.tocLabel}>{t(k)}</Text>
+              </View>
             ))}
           </View>
 
@@ -268,10 +271,19 @@ const S = StyleSheet.create({
     letterSpacing: 3,
     textTransform: 'uppercase',
     marginTop: 36,
-    marginBottom: 10,
+    marginBottom: 2,
   },
-  tocList: { gap: 8 },
-  tocItem: { color: P.inkSoft, fontSize: 15, opacity: 0.65 },
+  tocList: { marginTop: 2 },
+  tocRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 13,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: P.hair,
+  },
+  tocNum: { color: P.bronze, fontSize: 12, letterSpacing: 1, minWidth: 20 },
+  tocLabel: { color: P.ink, fontSize: 16, letterSpacing: 0.3, opacity: 0.9 },
 
   cta: {
     alignSelf: 'stretch',

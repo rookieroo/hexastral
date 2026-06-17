@@ -55,7 +55,6 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
-import { ElementGlyph, WUXING_COLOR } from '@/components/home/ElementGlyph'
 import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
@@ -204,10 +203,6 @@ export default function ReadingHomeScreen() {
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y
   })
-  const youCardStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
-    transform: [{ scale: interpolate(scrollY.value, [0, 130], [1, 0.8], Extrapolation.CLAMP) }],
-  }))
   // Collapsing sky — coupled animations off scrollY. The list layout is STATIC
   // (overlap model below), so none of this reflows the list → no scroll⇄layout
   // jitter (the bug in the in-flow version):
@@ -438,42 +433,9 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* YOU — a QUIET caption sitting just under the central star (not a block):
-          a small element glyph (echoes your star's colour) + "Open your reading".
-          Deliberately small — the personal reading is the anchor, but the 合盘 list
-          below is the focus, so this recedes. Tap = tap your star. It shrinks + fades
-          toward the sky as you scroll (youCardStyle). */}
-      <Animated.View style={[{ transformOrigin: 'center top' }, youCardStyle]}>
-        <Pressable
-          onPress={() => router.push('/(reading)/summary')}
-          accessibilityRole='button'
-          accessibilityLabel={copy.cardKicker}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: kindredSpacing.sm,
-            marginTop: 0,
-            marginBottom: kindredSpacing.lg,
-            paddingVertical: kindredSpacing.xs,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <ElementGlyph
-            element={natal.dayMasterWuXing}
-            color={WUXING_COLOR[natal.dayMasterWuXing] ?? kindredDark.accent}
-            size={16}
-          />
-          <Text
-            style={[
-              kindredType.caption,
-              { color: kindredDark.accent, fontWeight: '500', letterSpacing: 0.3 },
-            ]}
-          >
-            {copy.open}
-          </Text>
-        </Pressable>
-      </Animated.View>
+      {/* No explicit "open your reading" CTA — your personal 命书 概要 is reached by
+          tapping your central star (SkyHero.onTapSelf). Yuel's home is the threads
+          (synastry); the personal reading is a quiet, secondary tap. */}
 
       {/* Threads header — title + New. Only once you HAVE threads; the 0-thread
           state shows the centered invite (ListEmptyComponent) instead, so this

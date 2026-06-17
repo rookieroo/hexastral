@@ -46,6 +46,17 @@ import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
 import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
 
 /**
+ * Anchor deep links / dev reloads on the home. Without this, a route restored
+ * with no history (e.g. Settings after a dev reload) sits on an empty stack —
+ * "back" fails and returning home RE-MOUNTS it (the moon-loader flash). Naming
+ * (reading) as the initial route keeps the home mounted beneath, so back is
+ * instant with no re-loader. (Cosmetic note: Expo Router's dev route-restoration
+ * still lands you on the last screen visually; production cold-boots via
+ * app/index.tsx → home. settings/summary keep canGoBack guards as a fallback.)
+ */
+export const unstable_settings = { initialRouteName: '(reading)' }
+
+/**
  * Boot cover — the client gate paints the kindred bg ONLY while session
  * provisioning resolves (a frame or two of automatic network setup, not a
  * user-initiated action). A moon-phase spinner here read as a redundant
