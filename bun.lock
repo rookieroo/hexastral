@@ -973,8 +973,14 @@
       "dependencies": {
         "@zhop/astro-core": "workspace:*",
       },
+      "peerDependencies": {
+        "intl-pluralrules": ">=2.0.0",
+        "iztro": ">=2.5.0",
+      },
       "devDependencies": {
         "@zhop/typescript-config": "workspace:*",
+        "intl-pluralrules": "2.0.1",
+        "iztro": "2.5.7",
         "typescript": "^5.9.3",
       },
     },

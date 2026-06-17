@@ -10,3 +10,5 @@
 
 export * from './natal'
 export * from './reading'
+export * from './reading-cache'
+export * from './ziwei'
