@@ -360,7 +360,37 @@ export function buildCrisisFraming(): string {
 // ─── 核心输出: 语言指令块 ────────────────────────────────────
 
 function isChineseLocale(language: string): boolean {
-  return language.startsWith('zh')
+  return language.toLowerCase().startsWith('zh')
+}
+
+/**
+ * Normalize a client locale tag to the canonical code this module keys on.
+ *
+ * Clients send BCP-47-ish variants — the kindred onboarding maps en→'en-US',
+ * ja→'ja-JP' (see localeToBackendLang). Those region tags miss every exact-match
+ * lookup here (LANGUAGE_NAMES has 'en'/'ja', getTermsForDomain tests `=== 'ja'`,
+ * TONE_GUIDES is keyed 'en'/'ja'), so the output directive degraded to the raw
+ * code ("output in en-US") with the English term map only by fallback and NO
+ * Japanese map/tone at all. Against a Chinese-heavy system prompt + facts, that
+ * weak signal let the model drift back to Chinese — the "合盘 report came out
+ * Chinese on an en device" bug. Collapse to the base code so every lookup fires.
+ */
+function normalizeLang(language: string): string {
+  const l = (language || '').toLowerCase()
+  if (l.startsWith('zh')) {
+    return l.startsWith('zh-tw') || l.startsWith('zh-hk') || l.startsWith('zh-hant')
+      ? 'zh-TW'
+      : 'zh-CN'
+  }
+  if (l.startsWith('ja')) return 'ja'
+  if (l.startsWith('ko')) return 'ko'
+  if (l.startsWith('en')) return 'en'
+  if (l.startsWith('de')) return 'de'
+  if (l.startsWith('es')) return 'es'
+  if (l.startsWith('vi')) return 'vi'
+  if (l.startsWith('th')) return 'th'
+  // Unknown — keep the primary subtag so LANGUAGE_NAMES[...] ?? language still resolves.
+  return l.split('-')[0] || language
 }
 
 /**
@@ -372,7 +402,8 @@ function isChineseLocale(language: string): boolean {
  * @param language - 目标语言代码 (e.g. 'en', 'ja', 'zh-CN')
  * @param domain - 服务领域，决定注入哪些术语
  */
-export function buildLanguageBlock(language: string, domain: TermDomain): string {
+export function buildLanguageBlock(rawLanguage: string, domain: TermDomain): string {
+  const language = normalizeLang(rawLanguage)
   const isPairDomain = domain === 'hehun' || domain === 'shuangpan'
 
   if (isChineseLocale(language)) {
@@ -457,7 +488,8 @@ export function buildLanguageBlock(language: string, domain: TermDomain): string
  * prompt, so individual chapter calls ignored it. Appending this to every
  * chapter's user prompt makes the instruction local + recent per call.
  */
-export function buildLanguageReminder(language: string): string {
+export function buildLanguageReminder(rawLanguage: string): string {
+  const language = normalizeLang(rawLanguage)
   if (isChineseLocale(language)) {
     const variant = language === 'zh-TW' || language === 'zh-Hant' ? '繁體中文' : '简体中文'
     return `\n\n【语言】本次输出的所有 JSON 文本字段必须使用${variant}，不得夹杂其他语言。只输出 JSON。`
