@@ -74,12 +74,12 @@ const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }>
   },
 }
 
-/** "Your reading" row — opens the concise 命书 概要 (the full book is in Yuun). */
+/** "Your reading" row — opens the full six-chapter personal 命书 directly. */
 const READING_COPY: Record<Locale, { row: string; hint: string }> = {
-  en: { row: 'Your reading', hint: 'A quick look at your chart — the full 命书 is in Yuun.' },
-  zh: { row: '你的命书', hint: '你命盘的速览 —— 完整命书在 Yuun 里。' },
-  'zh-Hant': { row: '你的命書', hint: '你命盤的速覽 —— 完整命書在 Yuun 裡。' },
-  ja: { row: 'あなたの命書', hint: '命式のクイックビュー —— 完全版は Yuun に。' },
+  en: { row: 'Your reading', hint: 'Your full six-chapter 命书' },
+  zh: { row: '你的命书', hint: '你的六章完整命书' },
+  'zh-Hant': { row: '你的命書', hint: '你的六章完整命書' },
+  ja: { row: 'あなたの命書', hint: '全6章の命書' },
 }
 
 export default function SettingsScreen() {
@@ -347,9 +347,10 @@ export default function SettingsScreen() {
             </Text>
           </Pressable>
 
-          {/* 你的命书概要 — Yuel keeps a concise local taste; the full book is in Yuun. */}
+          {/* 你的命书 — opens the full six-chapter report directly (the 概要 interstitial
+              was dropped, 2026-06). */}
           <Pressable
-            onPress={() => router.push('/(reading)/summary')}
+            onPress={() => router.push('/(reading)/full')}
             hitSlop={4}
             style={({ pressed }) => ({
               paddingVertical: kindredSpacing.md,

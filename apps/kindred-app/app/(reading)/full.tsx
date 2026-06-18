@@ -1,8 +1,10 @@
 /**
  * Yuel (kindred) personal deep read — the FULL 合参命书, ported in-app from Yuun
  * (apps/auspice-app/app/reading.tsx). The Yuel/Yuun split, Phase 1: the full
- * personal report now lives self-contained in Yuel, so the 概要 (summary.tsx) no
- * longer hands off to Yuun — it pushes here.
+ * personal report now lives self-contained in Yuel. The home self-star and the
+ * Settings "your reading" row open this directly — the old 概要 interstitial
+ * (summary.tsx) was dropped (2026-06). A kindred://reading hand-off deep-links
+ * straight here too.
  *
  * Same 宣纸 document (kindredPaper), same shared engine (@zhop/scenario-yuan
  * compute + cache), so the report reads identically to the Yuun original. Deltas

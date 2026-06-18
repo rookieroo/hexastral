@@ -300,12 +300,12 @@ export default function ReadingHomeScreen() {
     [recompute, router, locale]
   )
 
-  // Star-map taps: your central star (or empty sky) → your personal 命书 SUMMARY.
-  // Yuel keeps only a concise, local-compute 概要 now (Yuel/Yuun split); the full
-  // chaptered 命书 lives in Yuun and is reached from inside that summary. A thread's
-  // star → that bond. (No more in-app full report on the home.)
+  // Star-map taps: your central star (or empty sky) → your personal 命书, straight
+  // into the full six-chapter report ((reading)/full). The concise 概要 interstitial
+  // was dropped (2026-06 feedback: an unnecessary stop on the way in). A thread's
+  // star → that bond.
   const openSelfReading = useCallback(() => {
-    router.push('/(reading)/summary')
+    router.push('/(reading)/full')
   }, [router])
   const openThreadReading = useCallback(
     (index: number, x: number, y: number) => {
