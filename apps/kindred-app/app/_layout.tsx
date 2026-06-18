@@ -43,8 +43,8 @@ import { attemptKindredDdlRestore, setKindredDdlToken } from '@/lib/ddl'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
-import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
 import { syncPushRegistration } from '@/lib/serverPush'
+import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
 
 /**
  * Boot cover — the client gate paints the kindred bg ONLY while session
