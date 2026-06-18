@@ -31,7 +31,7 @@ import {
   useKindredClient,
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Settings } from 'lucide-react-native'
+import { Infinity as InfinityIcon, Plus, SlidersHorizontal } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
@@ -55,8 +55,6 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
-import { NewThreadGlyph } from '@/components/home/NewThreadGlyph'
-import { RedThreadGlyph } from '@/components/home/RedThreadGlyph'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
 import { KindredMoon } from '@/components/KindredMoon'
@@ -406,7 +404,7 @@ export default function ReadingHomeScreen() {
         accessibilityRole='button'
         accessibilityLabel={t(locale, 'settings.title')}
       >
-        <Settings color={kindredDark.textMuted} size={22} strokeWidth={1.5} />
+        <SlidersHorizontal color={kindredDark.textMuted} size={20} strokeWidth={1.5} />
       </Pressable>
     </View>
   )
@@ -498,7 +496,7 @@ export default function ReadingHomeScreen() {
             {/* Section title — the woven 红线 mark + a quiet count, so the header reads
               as a real section, not a floating label. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <RedThreadGlyph size={20} color={kindredDark.seal} />
+              <InfinityIcon size={22} color={kindredDark.seal} strokeWidth={1.7} />
               <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
               <Text
                 style={{
@@ -525,7 +523,7 @@ export default function ReadingHomeScreen() {
                 opacity: pressed ? 0.55 : 1,
               })}
             >
-              <NewThreadGlyph size={16} color={kindredDark.accent} />
+              <Plus size={16} color={kindredDark.accent} strokeWidth={2} />
               <Text
                 style={{
                   fontFamily: kindredFonts.mono,
@@ -586,6 +584,7 @@ export default function ReadingHomeScreen() {
             <Animated.FlatList
               onScroll={onScroll}
               scrollEventThrottle={16}
+              showsVerticalScrollIndicator={false}
               style={StyleSheet.absoluteFill}
               contentContainerStyle={{
                 // Start flush under the full sky; the sky collapses 1:1 with scroll,
