@@ -1,6 +1,14 @@
 /**
  * IntroThread — the Yuel (缘) intro: two stars and the gravity between them,
- * scored on a millisecond timeline (2026-06 director pass · v4).
+ * scored on a millisecond timeline (2026-06 director pass · v5).
+ *
+ * v5 tightening pass (per the user's review — "节奏拖沓 / 没信心放生产"): the whole
+ * score is ~halved (≈20s → ≈11.4s narrative). Dead beats trimmed (the "A alone"
+ * pause, the long lead-ins, the 5.4s push-in → ~2.6s); captions are continuous now
+ * (the worst ≈4.9s silent gap before the climax is gone) and brighter (0.62 → 0.8);
+ * and the SVG star twinkle FREEZES after settle (`paused`) — 30 react-native-svg
+ * AnimatedCircles looping forever was the intro's "手机发烫" liability (the home's
+ * SkyField moved to Skia for this; the intro hadn't). The v4 craft below is intact.
  *
  * v4 craft pass (per the user's review):
  *   - GLOWS are real now: every star is a layered RADIAL light (soft outer halo →
@@ -33,7 +41,7 @@ import {
   vec,
 } from '@shopify/react-native-skia'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
@@ -72,17 +80,18 @@ const STAR_HOT = '#ffffff' // tiny white pip at each star's heart
 
 const MOON_BASE = 96 // moon render size; transform-scaled per state
 
-/* ── the score (absolute ms) ─────────────────────────────────────────────── */
-const T_RISE = 3200 // shot 1: the sky fills, unhurried
-const T_AB = T_RISE + 4800 // shot 2 (wide): comet SWEEPS past; a short lonely beat
-const T_AC = T_AB + 5900 // shot 3 (closer): the slow 1½-turn orbit; C spirals away
-const T_AD = T_AC + 6000 // shot 4 (close-up): the pair settles into its turn
-// After T_AD nothing new happens — the pair keeps orbiting while the clock idles
-// on, and the screen waits for the user's tap. The idle tail is capped at 90s
-// (was 600s) so the heavy per-frame Skia scene doesn't redraw for ten minutes if
-// the intro is left open (2026-06 "手机发烫"); the breath keeps the "tap" hint
-// alive after the orbit settles, so a frozen sky never reads as a hang.
-const CLOCK_END = T_AD + 90000
+/* ── the score (absolute ms) — v5 tightened (~halved from v4) ─────────────── */
+const T_RISE = 1800 // shot 1: the sky fills (was 3200)
+const T_AB = T_RISE + 3000 // shot 2 (wide): comet sweeps past, one brief beat (was 4800)
+const T_AC = T_AB + 3300 // shot 3 (closer): the orbit; C slips away (was 5900)
+const T_AD = T_AC + 3300 // shot 4 (close-up): the pair settles into its turn (was 6000)
+// After T_AD nothing new happens — the pair keeps orbiting while the clock idles on,
+// and the screen waits for the user's tap. The idle tail is capped at 15s (was 90s):
+// the heavy per-frame Skia scene stops redrawing once the clock completes, and the
+// SVG starfield is `paused` ~1.8s after settle, so a left-open intro no longer churns
+// (2026-06 "手机发烫"). The moon/CTA breath keeps the "tap" hint alive so the held
+// final never reads as a hang.
+const CLOCK_END = T_AD + 15000
 
 const C0 = { x: 0.5, y: 0.46 } // the barycentre (A's resting spot)
 const TILT = 0.46 // orbit ellipse Y-squash → tilted orbital plane
@@ -187,6 +196,18 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
     return () => clearInterval(id)
   }, [reduced, breath])
 
+  // Freeze the SVG star twinkle once the story settles — 30 react-native-svg
+  // AnimatedCircles looping forever was the intro's "手机发烫" liability (the home's
+  // SkyField moved to Skia for exactly this; the intro hadn't). After settle the
+  // field holds bright + still; the moon/CTA breath keeps the screen from reading
+  // frozen. Reduced motion never twinkles.
+  const [settled, setSettled] = useState(reduced)
+  useEffect(() => {
+    if (reduced) return
+    const id = setTimeout(() => setSettled(true), T_AD + 1800)
+    return () => clearTimeout(id)
+  }, [reduced])
+
   // A faint diffraction cross for the hero stars — drawn at the star's local
   // origin (inside its animated Group), shown only in the close-up.
   const spikePath = useMemo(() => {
@@ -206,8 +227,8 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
     const h = height
     const r = orbitR
 
-    // shot 1 — the rise: A + the field translate up into place, unhurried.
-    const rise = easeOutC(between(t, 800, 2600))
+    // shot 1 — the rise: A + the field translate up into place (v5: quicker).
+    const rise = easeOutC(between(t, 400, 1600))
     const riseY = (1 - rise) * h * 0.42
     const aOp = rise
 
@@ -239,9 +260,9 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
       //   whole sky past A's side (an even arc you can watch, not a blink), then a
       //   short beat with A alone — present, not a wait.
       const u = t - T_RISE
-      aTw = twinkle(u, 400, 600)
-      const bTw = twinkle(u, 1200, 600)
-      const su = smooth(between(u, 2000, 3900)) // a real sweep — even speed, ~1.9s
+      aTw = twinkle(u, 250, 450)
+      const bTw = twinkle(u, 700, 450)
+      const su = smooth(between(u, 700, 2100)) // a real sweep — even speed, ~1.4s
       const ex_ = 1.4 * w
       const ey_ = 0.72 * h
       const cpx = mx - 0.16 * w // control point offset — passes A's side
@@ -254,31 +275,31 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
       tailUx = vx / vl
       tailUy = vy / vl
       tailL = su > 0.01 && su < 0.995 ? 18 + 110 * su : 0 // tail vanishes as it exits
-      const appear = smooth(between(u, 1000, 1600))
-      const gone = smooth(between(u, 3750, 3950))
+      const appear = smooth(between(u, 450, 950))
+      const gone = smooth(between(u, 1950, 2200))
       bop = Math.max(bTw, appear * (1 - gone) * 0.95)
-      // … 3900–4800: A alone. A short held beat, then we cut.
+      // … 2100–3000: A alone — one short held beat (v5: trimmed), then we cut.
     } else if (t >= T_AB && t < T_AC) {
       // — SHOT 3 · the orbit that parts (one step CLOSER) — a quick settle, then
       //   1½ turns played out IN FULL; C then SPIRALS out of orbit and fades —
       //   slipping away along its own arc, not jerked sideways.
       const u = t - T_AB
-      aTw = twinkle(u, 300, 600)
-      cTw = twinkle(u, 900, 600)
+      aTw = twinkle(u, 250, 450)
+      cTw = twinkle(u, 600, 450)
       const rA = r * 0.42 // unequal masses — A swings less
       const rC = r * 0.58
       const csx = 0.74 * w
       const csy = 0.32 * h
-      if (u < 2200) {
-        const ap = smooth(between(u, 1200, 2200))
+      if (u < 1400) {
+        const ap = smooth(between(u, 500, 1400))
         ax = lerp(mx, mx + rA, ap)
         ay = my
         cx = lerp(csx, mx - rC, ap)
         cy = lerp(csy, my, ap)
-        cop = smooth(between(u, 800, 1200))
-      } else if (u < 4600) {
-        // 1.5 turns over 2.4s — smoothstep: gentle start, steady middle, soft end.
-        const theta = smooth(between(u, 2200, 4600)) * 3 * Math.PI
+        cop = smooth(between(u, 300, 700))
+      } else if (u < 2400) {
+        // 1.5 turns over ~1.0s — smoothstep: gentle start, steady middle, soft end.
+        const theta = smooth(between(u, 1400, 2400)) * 3 * Math.PI
         ax = mx + rA * Math.cos(theta)
         ay = my + rA * Math.sin(theta) * TILT
         cx = mx - rC * Math.cos(theta)
@@ -287,14 +308,14 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
       } else {
         // release at θ=3π: C keeps curving (spiral OUT) and fades — a graceful
         // slingshot, not a sideways jerk. A eases back to the barycentre.
-        const lv = between(u, 4600, 5700)
+        const lv = between(u, 2400, 3300)
         const e = easeInC(lv)
         const spiral = 3 * Math.PI + lv * 1.5
         const rOut = rC * (1 + e * 2.6)
         cx = mx - rOut * Math.cos(spiral)
         cy = my - rOut * Math.sin(spiral) * TILT
         cop = 1 - smooth(lv)
-        ax = lerp(mx - rA, mx, easeOutC(between(u, 4600, 5500)))
+        ax = lerp(mx - rA, mx, easeOutC(between(u, 2400, 3100)))
         ay = my
       }
     } else if (t >= T_AC) {
@@ -302,22 +323,22 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
       //   a gentle perpetual turn. After T_AD nothing new: the pair just keeps
       //   orbiting while the screen waits for the user's tap.
       const u = t - T_AC
-      aTw = Math.max(twinkle(u, 400, 500), twinkle(u, 1700, 500))
-      dTw = Math.max(twinkle(u, 1000, 500), twinkle(u, 2300, 500))
-      dop = smooth(between(u, 900, 1400))
+      aTw = Math.max(twinkle(u, 300, 450), twinkle(u, 1300, 450))
+      dTw = Math.max(twinkle(u, 700, 450), twinkle(u, 1700, 450))
+      dop = smooth(between(u, 500, 900))
       const rr = r * 0.34 // a TIGHT pair — stays framed inside the 2.7× close-up
-      if (u < 3500) {
+      if (u < 2000) {
         // D slides in EARLY (while the lens is still pushing) so it never parks at
         // the edge to be shoved off-frame.
-        const ap = smooth(between(u, 1500, 3500))
+        const ap = smooth(between(u, 700, 2000))
         ax = lerp(mx, mx + rr, ap)
         ay = my
         dx = lerp(dsx, mx - rr, ap)
         dy = lerp(dsy, my, ap)
       } else {
         // angular velocity ramps over R ms, then a constant slow turn — forever.
-        const ou = u - 3500
-        const R = 1000
+        const ou = u - 2000
+        const R = 800
         const theta = ou < R ? (ORBIT_W * ou * ou) / (2 * R) : ORBIT_W * (R / 2 + (ou - R))
         ax = mx + rr * Math.cos(theta)
         ay = my + rr * Math.sin(theta) * TILT
@@ -358,25 +379,25 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
     const zoom =
       1.1 -
       0.18 * smooth(between(t, 0, T_RISE)) + // → 0.92 wide (the comet sweeps)
-      0.34 * smooth(between(t, T_AB - 600, T_AB + 800)) + // → 1.26 closer (the orbit)
-      0.4 * smooth(between(t, T_AC - 600, T_AC + 800)) + // → 1.66 in (the pair forms)
-      1.04 * smooth(between(t, T_AC + 1400, T_AC + 6800)) // → 2.70 the slow push-in
+      0.34 * smooth(between(t, T_AB - 500, T_AB + 600)) + // → 1.26 closer (the orbit)
+      0.4 * smooth(between(t, T_AC - 500, T_AC + 600)) + // → 1.66 in (the pair forms)
+      1.04 * smooth(between(t, T_AC + 700, T_AC + 3300)) // → 2.70 the push-in (v5: ~2.6s)
     const rot =
-      0.14 * smooth(between(t, T_AB - 600, T_AB + 800)) - // ease into the orbit's tilt
-      0.19 * smooth(between(t, T_AC - 600, T_AC + 800)) // ease back for the close-up
+      0.14 * smooth(between(t, T_AB - 500, T_AB + 600)) - // ease into the orbit's tilt
+      0.19 * smooth(between(t, T_AC - 500, T_AC + 600)) // ease back for the close-up
     // pan: a faint chase on the comet (returns to 0), then the close-up lateral
     // drift + a final tilt UP so the pair rises to the presiding moon. Every term
     // starts at 0 → no jump at a boundary.
     const us = t - T_RISE
-    const chase = smooth(between(us, 2000, 3400)) * (1 - smooth(between(us, 3500, 4300)))
-    const panX = -16 * chase - 12 * smooth(between(t, T_AC + 800, T_AC + 5800))
-    const panY = -height * 0.05 * smooth(between(t, T_AC + 1500, T_AC + 6800))
+    const chase = smooth(between(us, 700, 1800)) * (1 - smooth(between(us, 1950, 2400)))
+    const panX = -16 * chase - 12 * smooth(between(t, T_AC + 600, T_AC + 3300))
+    const panY = -height * 0.05 * smooth(between(t, T_AC + 900, T_AC + 3300))
     return [{ translateX: panX }, { translateY: panY }, { scale: zoom }, { rotate: rot }]
   })
 
   /* ── node inputs — each star is an animated Group; paints stay static ────── */
   const f = frame
-  const closeup = useDerivedValue(() => smooth(between(clock.value, T_AC, T_AC + 2500)))
+  const closeup = useDerivedValue(() => smooth(between(clock.value, T_AC, T_AC + 1500)))
 
   // A — the warm protagonist.
   const aT = useDerivedValue(() => {
@@ -440,7 +461,7 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
   })
   const cOp = useDerivedValue(() => Math.max(f.value.cop, f.value.cTw * 0.85))
 
-  const bright = useDerivedValue(() => smooth(between(clock.value, 1000, 3200)))
+  const bright = useDerivedValue(() => smooth(between(clock.value, 500, 1800)))
 
   /* ── RN-side styles (moon + bloom, starfield, captions, cta, exit) ───────── */
   // The moon: rises from below FIRST, presides through the story, BRIGHTENS +
@@ -449,8 +470,8 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
   const moonStyle = useAnimatedStyle(() => {
     const t = clock.value
     const e = exit.value
-    const rise = easeOutC(between(t, 200, 1900))
-    const crown = smooth(between(t, T_AC + 1500, T_AD + 800))
+    const rise = easeOutC(between(t, 150, 1400))
+    const crown = smooth(between(t, T_AC + 800, T_AD + 600))
     const fromBelow = (1 - rise) * height * 0.26
     // exit (e→1): settle to pair-input's resting moon — centred, restY, size 64 —
     // so the cross-fade route swap reads as ONE continuous moon (no jump/flicker).
@@ -464,8 +485,8 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
   })
   const bloomStyle = useAnimatedStyle(() => {
     const t = clock.value
-    const arrive = Math.sin(clamp01(between(t, 200, 2500)) * Math.PI) // 0→1→0 on the rise
-    const crown = smooth(between(t, T_AC + 1500, T_AD + 800))
+    const arrive = Math.sin(clamp01(between(t, 150, 1700)) * Math.PI) // 0→1→0 on the rise
+    const crown = smooth(between(t, T_AC + 800, T_AD + 600))
     return {
       opacity: (arrive * 0.6 + crown * 0.5) * (1 - exit.value),
       transform: [{ scale: 0.75 + 0.45 * arrive + 0.3 * crown }],
@@ -474,12 +495,12 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
 
   const starfieldStyle = useAnimatedStyle(() => {
     const t = clock.value
-    const sRise = easeOutC(between(t, 800, 2600))
+    const sRise = easeOutC(between(t, 400, 1600))
     return {
       opacity: sRise,
       transform: [
         { translateY: (1 - sRise) * height * 0.35 },
-        { scale: 1 + 0.02 * smooth(between(t, T_AC, T_AC + 6000)) },
+        { scale: 1 + 0.02 * smooth(between(t, T_AC, T_AC + 3300)) },
         { rotate: `${-0.03 * smooth(between(t, T_AB, T_AB + 600))}rad` },
       ],
     }
@@ -487,25 +508,25 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
 
   // captions — trapezoids timed to the shots; the last line holds.
   const cap0 = useAnimatedStyle(() => ({
-    opacity: fade(clock.value, 1500, 2100, 3200, 3800) * 0.62,
+    opacity: fade(clock.value, 600, 1100, 2500, 3000) * 0.8,
   }))
   const cap1 = useAnimatedStyle(() => ({
-    opacity: fade(clock.value, T_RISE + 1800, T_RISE + 2400, T_RISE + 3800, T_RISE + 4300) * 0.62,
+    opacity: fade(clock.value, T_RISE + 900, T_RISE + 1400, T_AB - 400, T_AB + 100) * 0.8,
   }))
   const cap2 = useAnimatedStyle(() => ({
-    opacity: fade(clock.value, T_AB + 2400, T_AB + 3000, T_AB + 5000, T_AB + 5500) * 0.62,
+    opacity: fade(clock.value, T_AB + 700, T_AB + 1200, T_AC - 400, T_AC + 100) * 0.8,
   }))
   const cap3 = useAnimatedStyle(() => ({
-    opacity: fade(clock.value, T_AC + 4500, T_AC + 5200, CLOCK_END + 1, CLOCK_END + 2) * 0.62,
+    opacity: fade(clock.value, T_AC + 1000, T_AC + 1500, CLOCK_END + 1, CLOCK_END + 2) * 0.8,
   }))
   const caps = [cap0, cap1, cap2, cap3]
 
   // The hint stays hidden through the opening, then breathes up; brightens once
   // the story resolves, and fades with the exit.
   const ctaStyle = useAnimatedStyle(() => {
-    const show = smooth(between(clock.value, T_RISE + 600, T_RISE + 2100))
-    const settle = smooth(between(clock.value, T_AD - 800, T_AD + 1400))
-    return { opacity: show * (0.4 + 0.16 * breath.value + 0.34 * settle) * (1 - exit.value) }
+    const show = smooth(between(clock.value, T_RISE + 400, T_RISE + 1600))
+    const settle = smooth(between(clock.value, T_AD - 800, T_AD + 1200))
+    return { opacity: show * (0.5 + 0.14 * breath.value + 0.34 * settle) * (1 - exit.value) }
   })
 
   const exitStyle = useAnimatedStyle(() => ({ opacity: exit.value }))
@@ -514,7 +535,7 @@ export function IntroThread({ acts, continueLabel, exit }: IntroThreadProps) {
     <View style={{ flex: 1, backgroundColor: BG }}>
       {/* 星空 — rises with the night; echoes the camera faintly (parallax). */}
       <Animated.View style={[StyleSheet.absoluteFill, starfieldStyle]} pointerEvents='none'>
-        <StarField width={width} height={height} brightSv={bright} />
+        <StarField width={width} height={height} brightSv={bright} paused={settled} />
         <GalaxyBand width={width} height={height} brightSv={bright} />
       </Animated.View>
 
