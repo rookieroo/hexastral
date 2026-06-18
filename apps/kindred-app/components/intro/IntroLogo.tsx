@@ -15,7 +15,7 @@
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { kindredFonts } from '@zhop/scenario-kindred'
 import { useEffect } from 'react'
-import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { type StyleProp, StyleSheet, type TextStyle, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -99,11 +99,9 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
     transform: [{ scale: 0.8 + 0.2 * appear.value }],
   }))
 
-  // Wordmark + lines fade up under the moon; everything fades on exit.
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: clamp01(appear.value * 1.15 - 0.15) * (1 - exit.value),
-    transform: [{ translateY: (1 - appear.value) * 10 }],
-  }))
+  // Wordmark + lines fade + rise in under the moon on a slight per-line stagger (see
+  // StaggerText); the whole block fades out together on exit.
+  const textWrapStyle = useAnimatedStyle(() => ({ opacity: 1 - exit.value }))
   const hintStyle = useAnimatedStyle(() => ({
     opacity: appear.value * (0.42 + 0.18 * breath.value) * (1 - exit.value),
   }))
@@ -115,13 +113,19 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
         <StarField width={width} height={height} brightSv={fieldBright} paused />
       </View>
 
-      {/* wordmark + lines, centred under the moon's rest spot */}
-      <Animated.View style={[S.textWrap, { top: height * 0.52 }, textStyle]} pointerEvents='none'>
-        <Animated.Text style={S.wordmark}>YUEL</Animated.Text>
-        {lines.map((line) => (
-          <Animated.Text key={line} style={S.line}>
+      {/* wordmark + lines, centred under the moon's rest spot — each fades + rises in
+          on a slight stagger (wordmark → line 1 → line 2). */}
+      <Animated.View
+        style={[S.textWrap, { top: height * 0.52 }, textWrapStyle]}
+        pointerEvents='none'
+      >
+        <StaggerText appear={appear} order={0} style={S.wordmark}>
+          YUEL
+        </StaggerText>
+        {lines.map((line, i) => (
+          <StaggerText key={line} appear={appear} order={i + 1} style={S.line}>
             {line}
-          </Animated.Text>
+          </StaggerText>
         ))}
       </Animated.View>
 
@@ -159,6 +163,26 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
   )
 }
 
+/** One line of cold-open text that fades + rises in on a per-line stagger, driven by
+ *  the shared `appear` clock + its `order` (wordmark 0 → line 1 → line 2). */
+function StaggerText({
+  appear,
+  order,
+  style,
+  children,
+}: {
+  appear: SharedValue<number>
+  order: number
+  style: StyleProp<TextStyle>
+  children: string
+}) {
+  const aStyle = useAnimatedStyle(() => {
+    const o = clamp01((appear.value - (0.08 + order * 0.22)) / 0.32)
+    return { opacity: o, transform: [{ translateY: (1 - o) * 6 }] }
+  })
+  return <Animated.Text style={[style, aStyle]}>{children}</Animated.Text>
+}
+
 const S = StyleSheet.create({
   moonBox: {
     position: 'absolute',
@@ -181,13 +205,13 @@ const S = StyleSheet.create({
     fontSize: 15,
     letterSpacing: 5,
     color: INK,
-    marginBottom: 18,
+    marginBottom: 22,
   },
   line: {
     fontFamily: kindredFonts.serif,
     fontSize: 16,
-    lineHeight: 24,
-    color: 'rgba(244,243,239,0.66)',
+    lineHeight: 25,
+    color: 'rgba(244,243,239,0.72)',
     textAlign: 'center',
   },
   hint: {

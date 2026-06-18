@@ -27,10 +27,13 @@ interface IntroCopy {
 }
 
 const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
-  en: { continue: 'tap to begin', lines: ["Some people you're drawn to.", 'It was never chance.'] },
-  zh: { continue: '轻触开始', lines: ['有些人，你总会被吸引。', '这从来不是偶然。'] },
-  'zh-Hant': { continue: '輕觸開始', lines: ['有些人，你總會被吸引。', '這從來不是偶然。'] },
-  ja: { continue: 'タップして始める', lines: ['惹かれてしまう人がいる。', 'それは偶然ではない。'] },
+  en: {
+    continue: 'tap to begin',
+    lines: ["You're drawn to certain people.", 'It was never chance.'],
+  },
+  zh: { continue: '轻触开始', lines: ['你总会被某些人吸引。', '这从来不是偶然。'] },
+  'zh-Hant': { continue: '輕觸開始', lines: ['你總會被某些人吸引。', '這從來不是偶然。'] },
+  ja: { continue: 'タップして始める', lines: ['惹かれてしまう人がいる。', 'それは偶然じゃない。'] },
 }
 
 function pickIntroCopy(locale: string): IntroCopy {

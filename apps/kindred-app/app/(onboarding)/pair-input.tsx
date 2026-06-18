@@ -38,7 +38,7 @@ import {
   birthDateFieldLabelsForLocale,
   birthInputToSolar,
 } from '@zhop/core-ui'
-import { MoonPhaseLoader, SKIN_CINNABAR_INK, usePressScale } from '@zhop/core-ui/motion'
+import { usePressScale } from '@zhop/core-ui/motion'
 import {
   kindredDark,
   kindredRadius,
@@ -48,11 +48,12 @@ import {
 import { type RelationshipType, RelationshipTypeSelector } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import Animated, { FadeInDown, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm, Field, NameInput } from '@/components/BirthForm'
+import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
@@ -89,16 +90,6 @@ export default function PairInputScreen() {
   const lang = useMemo(() => localeToLang(locale), [locale])
 
   const [step, setStep] = useState<Step>('self')
-  // Brand moon — a controlled MoonPhaseLoader that morphs to the OPPOSITE phase
-  // once you finish your own side (step leaves 'self') and back again on return.
-  // phase 0.25 = right-lit; 0.75 = its mirror (left-lit). Position + size are
-  // STATIC at the resting spot: the intro hands the moon off here already at this
-  // exact state (centred, size 64), so the cross-fade route swap reads as ONE
-  // continuous moon — no entrance, no jump.
-  const moonPhase = useSharedValue(0.25)
-  useEffect(() => {
-    moonPhase.value = withTiming(step === 'self' ? 0.25 : 0.75, { duration: 720 })
-  }, [step, moonPhase])
 
   // The date fields hold what the user is typing/picking (which may be a 农历
   // date); the shared BirthDateField derives the canonical solar form on every
@@ -226,10 +217,11 @@ export default function PairInputScreen() {
         keyboardShouldPersistTaps='handled'
         automaticallyAdjustKeyboardInsets
       >
-        {/* Brand moon — shared with the intro outro (route = fade) for continuity;
-            morphs to the opposite phase once your own side is done. */}
+        {/* Brand moon — the shared KindredMoon (the exact component the cold-open
+            splash lands on), held at the same centred size-64 resting spot, so the
+            hand-off into this screen is pixel-identical, no hop. */}
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.sm }}>
-          <MoonPhaseLoader size={64} phase={moonPhase} skin={SKIN_CINNABAR_INK} />
+          <KindredMoon size={64} />
         </View>
 
         {step === 'self' && (
