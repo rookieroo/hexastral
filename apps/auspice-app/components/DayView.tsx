@@ -86,15 +86,17 @@ function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoS
  *  the top of the day-view so opening the notification lands on the same sentence.
  *  en slice; CJK locales keep the 干支日 + 宜忌 lead. */
 function DailyHookHero({ hook }: { hook: { title: string; lens: string } }) {
-  const { colors, spacing } = useTheme()
+  const { colors } = useTheme()
+  // No left rule (read as dated/clip-art) — the headline carries itself as an
+  // editorial lead: a large, tight title with a quiet lens line beneath it.
   return (
-    <View
-      style={{ gap: 6, paddingLeft: spacing.md, borderLeftWidth: 2, borderLeftColor: colors.accent }}
-    >
-      <Text style={{ color: colors.text, fontSize: 19, fontWeight: '600', lineHeight: 26 }}>
+    <View style={{ gap: 8 }}>
+      <Text
+        style={{ color: colors.text, fontSize: 23, fontWeight: '700', lineHeight: 30, letterSpacing: -0.3 }}
+      >
         {hook.title}
       </Text>
-      <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>{hook.lens}</Text>
+      <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 21 }}>{hook.lens}</Text>
     </View>
   )
 }

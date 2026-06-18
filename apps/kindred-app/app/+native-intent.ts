@@ -14,14 +14,22 @@
 
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string {
   try {
-    // `path` arrives as a normalized in-app path with the scheme/host already
-    // resolved to a leading segment (e.g. "/reading?date=...") — match the
-    // `reading` segment regardless of a leading slash, keep the query string.
     const qIndex = path.indexOf('?')
     const rawPath = qIndex === -1 ? path : path.slice(0, qIndex)
     const query = qIndex === -1 ? '' : path.slice(qIndex + 1)
-    const segment = rawPath.replace(/^\/+/, '')
-    if (segment === 'reading') {
+    // `path` arrives in several shapes across dev / standalone / iOS cold-start:
+    // "kindred://reading?…", "/reading?…", or an Expo Go "/--/reading?…". All of
+    // them carry `reading` as the first REAL segment, so normalize before matching
+    // (strip a leading scheme, the Expo Go `--` separator, and leading slashes).
+    // This matters: if we don't rewrite, a bare "/reading" falls through to the
+    // root dynamic route `(bonds)/[id]` (id="reading") and renders "Bond not
+    // found" instead of the personal reading the Yuun hand-off intended.
+    const firstSegment = rawPath
+      .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '') // strip a leading URL scheme
+      .replace(/^\/?--\//, '') // strip the Expo Go dev separator
+      .split('/')
+      .find((s) => s.length > 0)
+    if (firstSegment === 'reading') {
       return query ? `/(reading)/full?${query}` : '/(reading)/full'
     }
   } catch {

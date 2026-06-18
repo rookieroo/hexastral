@@ -403,10 +403,14 @@ function DayCell({
   // 历法/命理 a non-CJK audience can't read (founder call: prefer holidays over
   // terms users won't understand). zh / tw / ja keep the full almanac chain.
   const hasHoliday = data?.publicHoliday !== null && data?.publicHoliday !== undefined
-  const lowerText =
-    locale === 'en'
-      ? (data?.publicHoliday ?? '')
-      : (data?.publicHoliday ?? data?.solarTermName ?? data?.lunarDayName ?? '')
+  // en holiday names ("Dragon Boat Festival") never fit a 9px cell — they
+  // truncated to "Dragon B…", which reads as broken. Mark the day with a small
+  // dot instead; the full localized name shows in the day-detail chip on tap
+  // (CultureAccentChip). CJK/ja labels are 2–3 glyphs and fit, so keep the text.
+  const showHolidayDot = locale === 'en'
+  const lowerText = showHolidayDot
+    ? ''
+    : (data?.publicHoliday ?? data?.solarTermName ?? data?.lunarDayName ?? '')
   const strong =
     locale === 'en'
       ? hasHoliday
@@ -440,7 +444,18 @@ function DayCell({
       <Text style={{ color: numColor, fontSize: 14, fontWeight: isSelected ? '700' : '400' }}>
         {dayNum}
       </Text>
-      {lowerText ? (
+      {showHolidayDot ? (
+        hasHoliday ? (
+          <View
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: isSelected ? '#fff' : colors.accent,
+            }}
+          />
+        ) : null
+      ) : lowerText ? (
         <Text
           style={{ color: lowerColor, fontSize: 9, fontWeight: strong ? '600' : '400' }}
           numberOfLines={1}

@@ -49,7 +49,7 @@ export const readingTranslations: ReadingTranslations = {
     'reading.openFullInYuun': 'Read your full chart in Yuun →',
     'reading.fullInYuunHint': 'Your complete Ba Zi + Zi Wei reading lives in Yuun.',
     'reading.openFull': 'Read your full reading →',
-    'reading.openFullInYuel': 'Read your full 命书 in Yuel →',
+    'reading.openFullInYuel': 'Read your full reading in Yuel →',
     'reading.moreChapters': 'More Chapters',
     'reading.askChapter': 'Ask AI about this chapter →',
     'reading.copy': 'Copy',
