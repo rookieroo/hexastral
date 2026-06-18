@@ -67,16 +67,21 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
   const restY = useSafeAreaInsets().top + 24 + 32
 
   const appear = useSharedValue(reduced ? 1 : 0)
+  // Text reveal runs on its OWN slower clock so the wordmark + lines fade in one at a
+  // time, perceptibly — the shared `appear` (moon/hint) was too quick to read the
+  // stagger ("太快了没有感知"). The moon/hint keep the snappier `appear`.
+  const textIn = useSharedValue(reduced ? 1 : 0)
   const breath = useSharedValue(0)
   useEffect(() => {
     if (reduced) return
     appear.value = withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) })
+    textIn.value = withTiming(1, { duration: 2800, easing: Easing.out(Easing.quad) })
     breath.value = withRepeat(
       withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
       -1,
       true
     )
-  }, [reduced, appear, breath])
+  }, [reduced, appear, textIn, breath])
 
   // Static faint field — one constant brightness, `paused` so the deterministic sky
   // just sits there for depth (no 30-node twinkle loop).
@@ -119,11 +124,11 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
         style={[S.textWrap, { top: height * 0.52 }, textWrapStyle]}
         pointerEvents='none'
       >
-        <StaggerText appear={appear} order={0} style={S.wordmark}>
+        <StaggerText progress={textIn} order={0} style={S.wordmark}>
           YUEL
         </StaggerText>
         {lines.map((line, i) => (
-          <StaggerText key={line} appear={appear} order={i + 1} style={S.line}>
+          <StaggerText key={line} progress={textIn} order={i + 1} style={S.line}>
             {line}
           </StaggerText>
         ))}
@@ -164,21 +169,24 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
 }
 
 /** One line of cold-open text that fades + rises in on a per-line stagger, driven by
- *  the shared `appear` clock + its `order` (wordmark 0 → line 1 → line 2). */
+ *  the slow `textIn` clock + its `order` (wordmark 0 → line 1 → line 2). */
 function StaggerText({
-  appear,
+  progress,
   order,
   style,
   children,
 }: {
-  appear: SharedValue<number>
+  progress: SharedValue<number>
   order: number
   style: StyleProp<TextStyle>
   children: string
 }) {
   const aStyle = useAnimatedStyle(() => {
-    const o = clamp01((appear.value - (0.08 + order * 0.22)) / 0.32)
-    return { opacity: o, transform: [{ translateY: (1 - o) * 6 }] }
+    // base + order*offset = when this line starts; /window = how long it fades. Wide
+    // offset + slow window (on the 2.8s textIn clock) so the stagger is perceptible:
+    // ≈0.67s between lines, each fading over ≈0.95s.
+    const o = clamp01((progress.value - (0.06 + order * 0.24)) / 0.34)
+    return { opacity: o, transform: [{ translateY: (1 - o) * 8 }] }
   })
   return <Animated.Text style={[style, aStyle]}>{children}</Animated.Text>
 }
