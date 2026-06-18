@@ -464,7 +464,9 @@ export interface Strings {
   /** Small "coming soon" badge. */
   comingSoon: string
   themeAccent: string
-  /** 划词 AI follow-up chat over the personal 命书 (the /reading-chat screen). */
+  /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
+   *  chat) moved to Yuel in the Yuel/Yuun split; Yuun now shows only the free 概要.
+   *  These strings are retained pending dictionary cleanup but are no longer wired. */
   readingChat: {
     title: string
     empty: string

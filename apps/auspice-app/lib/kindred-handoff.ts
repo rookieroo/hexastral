@@ -33,6 +33,13 @@ import type { AuspicePerson } from './people'
 /** Kindred's URL scheme — fixed once at hand-off contract v1. */
 const YUAN_SCHEME = 'yuan://'
 
+/** Kindred's repositioned consumer scheme (Yuel, 缘) + bundle. */
+const KINDRED_SCHEME = 'kindred://'
+// App-Store fallback when Yuel (Kindred, bundle com.hexastral.kindred) isn't
+// installed. Placeholder id until the listing is live — same REPLACE_*
+// convention as config.ts; fill once App Store Connect issues the app id.
+const KINDRED_APP_STORE = 'https://apps.apple.com/app/idREPLACE_KINDRED'
+
 interface BuildArgs {
   person: AuspicePerson
   self: AuspiceBirthInfo | null
@@ -129,4 +136,54 @@ export function confirmAndOpenKindred(args: BuildArgs, consent: KindredShareCons
       },
     },
   ])
+}
+
+/* ── Personal reading hand-off (Yuel/Yuun split, Phase 2) ─────────────────────
+ * Yuel owns the FULL personal 命书 now. Yuun shows only a concise local 概要 and
+ * opens the full read via `kindred://reading`, carrying the user's OWN birth so
+ * Yuel renders the same chart without re-entry. The exact mirror of Yuel's
+ * apps/kindred-app/lib/auspice-handoff.ts `openAuspiceReading` (opposite direction).
+ *
+ * When Yuel isn't installed we send the user to the App Store to get it (the 概要
+ * already delivered standalone value, so the store hop is an upsell, not a wall).
+ *
+ *   kindred://reading?v=1&from=auspice
+ *     &date=YYYY-MM-DD&time=N&gender=男|女&city=<enc>
+ *     &lng=<num>&tz=<iana>&clock=<min>&calibrate=0|1
+ */
+
+/** Build the `kindred://reading?...` deep link, carrying the self birth (if known). */
+export function buildKindredReadingUrl(self?: AuspiceBirthInfo | null): string {
+  const p = new URLSearchParams()
+  p.set('v', '1')
+  p.set('from', 'auspice')
+  if (self) {
+    append(p, 'date', self.solarDate)
+    append(p, 'time', self.timeIndex)
+    append(p, 'gender', self.gender)
+    append(p, 'city', self.city)
+    append(p, 'lng', self.lng)
+    append(p, 'tz', self.timezone)
+    append(p, 'clock', self.clockMinutes)
+    if (self.calibrate != null) p.set('calibrate', self.calibrate ? '1' : '0')
+  }
+  return `${KINDRED_SCHEME}reading?${p.toString()}`
+}
+
+/**
+ * Open Yuel's full personal 命书, carrying the self birth to skip re-entry. Falls
+ * back to the App Store when Yuel isn't installed (degrades gracefully — a missing
+ * scheme throws and we hop to the store; if even that fails we resolve false).
+ * Resolves true once a target (Yuel or the Store) was opened.
+ */
+export async function openKindredReading(self?: AuspiceBirthInfo | null): Promise<void> {
+  try {
+    await Linking.openURL(buildKindredReadingUrl(self))
+  } catch {
+    try {
+      await Linking.openURL(KINDRED_APP_STORE)
+    } catch {
+      // Neither Yuel nor the Store could be opened — nothing more we can do.
+    }
+  }
 }

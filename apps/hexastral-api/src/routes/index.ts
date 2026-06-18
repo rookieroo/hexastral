@@ -31,6 +31,8 @@ export { glossaryRoutes } from './glossary'
 export { growthFunnelEventRoutes } from './growth-funnel-events'
 export { healthRoutes } from './health'
 export { internalAlmanacRoutes } from './internal-almanac'
+// Kindred relationship push scheduler — internal (X-Internal-Key), svc-notify cron
+export { kindredPushRoutes } from './kindred-push'
 // Life Log
 export { lifeEventRoutes } from './life-events'
 // Media proxy — user avatars, palm photos, floor plan images (hexastral-media R2)

@@ -454,6 +454,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
   // Auspice 人生时间线 node push (流月/流年/大运) — month-starts only, 09:00 local.
   // THE #1 paid hook; deterministic teaser, lazy in-app LLM read on tap (落库).
   await runAuspiceTimelinePush(env, 9)
+  // Kindred relationship nudge (ADR-0025): deterministic daily synastry over each
+  // user's Threads picks a pre-harvested queue snippet. Evening slot, no LLM.
+  await runKindredPush(env, 19)
 }
 
 /** Two-digit pad. */
@@ -636,6 +639,72 @@ async function runAuspiceTimelinePush(env: Env, targetHour: number): Promise<voi
   }
 
   logger.info('auspice timeline push complete', { sent, invalidTokens: invalidTokens.length })
+}
+
+/**
+ * Kindred relationship push (ADR-0025 read-path). Once daily per timezone: the
+ * /targets endpoint runs the deterministic daily synastry over each user's
+ * Threads and returns a pre-harvested queue snippet (no LLM at send time). This
+ * cron just paginates + dispatches. Tokens live in the shared pushTokens registry,
+ * so stale ones go through the generic /api/notify/unregister-stale cleanup.
+ */
+async function runKindredPush(env: Env, targetHour: number): Promise<void> {
+  const now = new Date()
+  const zones = TIMEZONE_POOL.filter((tz) => tzLocalHour(tz, now) === targetHour)
+  if (zones.length === 0) return
+  logger.info('kindred push check', { targetHour, zones: zones.length })
+
+  const invalidTokens: string[] = []
+  let sent = 0
+
+  for (const tz of zones) {
+    const date = tzLocalDate(tz, now)
+    let cursor: string | null = '0'
+    while (cursor !== null) {
+      const url = new URL('https://internal/api/kindred/push/targets')
+      url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('date', date)
+      url.searchParams.set('limit', '200')
+      url.searchParams.set('cursor', cursor)
+      const res = await env.SVC_API.fetch(url, { headers: { 'X-Internal-Key': env.INTERNAL_KEY } })
+      if (!res.ok) {
+        logger.error('kindred push-targets failed', { tz, status: String(res.status) })
+        break
+      }
+      const json = await res.json<{
+        data: {
+          messages: Array<{
+            userId: string
+            token: string
+            title: string
+            body: string
+            data: Record<string, string>
+          }>
+          nextCursor: number | null
+        }
+      }>()
+      const msgs = json.data.messages
+      if (msgs.length > 0) {
+        const { invalidTokens: bad } = await sendExpoMessages(
+          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        )
+        invalidTokens.push(...bad)
+        sent += msgs.length - bad.length
+      }
+      cursor = json.data.nextCursor == null ? null : String(json.data.nextCursor)
+    }
+  }
+
+  if (invalidTokens.length > 0) {
+    await env.SVC_API.fetch('https://internal/api/notify/unregister-stale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ tokens: invalidTokens.slice(0, 100) }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
+
+  logger.info('kindred push complete', { sent, invalidTokens: invalidTokens.length })
 }
 
 /**

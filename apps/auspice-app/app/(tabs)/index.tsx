@@ -17,7 +17,7 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { BackArrowIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Cake, CalendarCheck } from 'lucide-react-native'
+import { Cake, CalendarCheck, ScrollText } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -234,7 +234,8 @@ export default function HomeScreen() {
 
                   <DayView payload={dayData} afterYiji={<LiuyearBanner />} />
 
-                  {/* Actions — 择日 + 记录亲友生日 (carries the selected month-day, no year). */}
+                  {/* Actions — 你的命书 (free 概要) + 择日 + 记录亲友生日 (carries the
+                      selected month-day, no year). */}
                   <View
                     style={{
                       borderRadius: 14,
@@ -242,6 +243,14 @@ export default function HomeScreen() {
                       overflow: 'hidden',
                     }}
                   >
+                    <NavRow
+                      icon={ScrollText}
+                      label={t.personal.readingTitle}
+                      onPress={() => router.push('/reading' as Href)}
+                      colors={colors}
+                      spacing={spacing}
+                      divider
+                    />
                     <NavRow
                       icon={CalendarCheck}
                       label={t.eventSearch}

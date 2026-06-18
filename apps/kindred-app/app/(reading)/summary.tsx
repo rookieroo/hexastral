@@ -26,7 +26,6 @@ import {
   strengthLabel,
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
-import { openAuspiceReading } from '@/lib/auspice-handoff'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart } from '@/lib/solo/natal'
 import { analyzeDayunRelation, computeDayunChain, parseBirthInput } from '@/lib/solo/reading'
@@ -100,21 +99,10 @@ export default function ReadingSummaryScreen() {
     else router.replace('/(reading)')
   }
 
+  // The full 命书 now lives in-app (Yuel/Yuun split, Phase 1) — open the routed
+  // screen, which reads the same self birth + shared engine.
   const openFull = () => {
-    void openAuspiceReading(
-      birth
-        ? {
-            solarDate: birth.solarDate,
-            timeIndex: birth.timeIndex,
-            gender: birth.gender,
-            city: birth.city,
-            lng: birth.lng,
-            timezone: birth.timezone,
-            clockMinutes: birth.clockMinutes,
-            calibrate: birth.calibrate,
-          }
-        : null
-    )
+    router.push('/(reading)/full')
   }
 
   // Loading / no-birth → send to the self form (Yuel's onboarding self step).
@@ -195,13 +183,13 @@ export default function ReadingSummaryScreen() {
             ))}
           </View>
 
+          {/* The full 命书 is now in-app — open the chaptered deep-read directly. */}
           <Pressable
             style={({ pressed }) => [S.cta, pressed && { opacity: 0.85 }]}
             onPress={openFull}
           >
-            <Text style={S.ctaText}>{t('reading.openFullInYuun')}</Text>
+            <Text style={S.ctaText}>{t('reading.openFull')}</Text>
           </Pressable>
-          <Text style={S.ctaHint}>{t('reading.fullInYuunHint')}</Text>
 
           <View style={{ height: 60 }} />
         </ScrollView>
@@ -294,5 +282,4 @@ const S = StyleSheet.create({
     alignItems: 'center',
   },
   ctaText: { color: P.ctaText, fontSize: 14, fontWeight: '600', letterSpacing: 2 },
-  ctaHint: { color: P.muted, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 10 },
 })

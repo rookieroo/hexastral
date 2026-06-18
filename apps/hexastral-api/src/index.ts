@@ -45,6 +45,7 @@ import {
   healthRoutes,
   hexagramRoutes,
   internalAlmanacRoutes,
+  kindredPushRoutes,
   lifeEventRoutes,
   mediaRoutes,
   natalRoutes,
@@ -461,6 +462,9 @@ app.route('/api/internal/almanac', internalAlmanacRoutes)
 
 // Bonds — 关系图谱
 app.route('/api/bonds', bondRoutes)
+// Kindred relationship push scheduler — internal (X-Internal-Key in-handler),
+// consumed by the svc-notify daily cron. Reads the kindred_push_queue (ADR-0025).
+app.route('/api/kindred/push', kindredPushRoutes)
 
 // Contacts — 通讯录隐私匹配
 app.route('/api/contacts', contactRoutes)
