@@ -265,22 +265,29 @@ const YUAN_PRO_PRODUCT_IDS = {
   annual: 'hexastral_kindred_pro_annual',
 } as const
 
-/** Check bond limit for free users — returns instead of throws so route can emit envelope. */
-async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResult> {
-  const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
-  if (!user) {
-    return { allowed: false, reason: 'user_not_found', message: 'User not found' }
-  }
+/** Free-bond quota usage. Surfaced on GET / so the client can pre-empt the paywall
+ *  at "New Thread" (before the user fills the invite / birth form) using the SAME
+ *  number the server enforces at create.
+ *
+ *  `used` counts NON-refundable generations: a soft delete ("Let go") keeps the
+ *  pair_reading row, so counting readings — not live bonds — means deleting an
+ *  ACCEPTED bond can't refund a free slot (that was the farming bypass). Outstanding
+ *  pending invites are added (each consumes a generation on accept) so a
+ *  sent-but-unaccepted invite still holds a slot — but letting THAT go flips it out
+ *  of `pending_invite` (no reading was ever generated), which correctly frees the
+ *  slot. A declined/expired invite, or re-reading the same pair (the idempotent
+ *  upsert reuses the row), does NOT inflate the count. Pro is unbounded; `used` is
+ *  still returned for display but never gates. */
+interface BondQuota {
+  isPro: boolean
+  used: number
+  limit: number
+}
 
+async function getBondQuota(db: AppDb, userId: string): Promise<BondQuota> {
   const isPro = await userHasCapability(db, userId, 'kindred')
-  if (isPro) return { allowed: true }
-
-  // Free quota = generations consumed, NON-refundable. A soft delete ("Let go")
-  // keeps the pair_reading row, so counting readings — not live bonds — means
-  // deleting can't refund a free slot (that was the bypass). Add outstanding pending
-  // invites (each consumes a generation on accept) so a sent-but-unaccepted invite
-  // still holds a slot; a declined/expired one, or re-reading the same pair (the
-  // idempotent upsert reuses the row), correctly does NOT inflate the count.
+  // Pro is unbounded — skip the counts (used is informational and never gates).
+  if (isPro) return { isPro: true, used: 0, limit: FREE_BOND_LIMIT }
   const [readingRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(pairReadings)
@@ -290,17 +297,26 @@ async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResul
     .from(userBonds)
     .where(and(eq(userBonds.ownerId, userId), eq(userBonds.status, 'pending_invite')))
   const used = (readingRow?.count ?? 0) + (pendingRow?.count ?? 0)
+  return { isPro, used, limit: FREE_BOND_LIMIT }
+}
 
-  if (used >= FREE_BOND_LIMIT) {
-    return {
-      allowed: false,
-      reason: 'paywall_required',
-      message: `Free users are limited to ${FREE_BOND_LIMIT} bonds. Upgrade to Kindred Pro for unlimited.`,
-      limit: FREE_BOND_LIMIT,
-      iapProductIds: YUAN_PRO_PRODUCT_IDS,
-    }
+/** Check bond limit for free users — returns instead of throws so route can emit envelope. */
+async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResult> {
+  const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
+  if (!user) {
+    return { allowed: false, reason: 'user_not_found', message: 'User not found' }
   }
-  return { allowed: true }
+
+  const quota = await getBondQuota(db, userId)
+  if (quota.isPro || quota.used < quota.limit) return { allowed: true }
+
+  return {
+    allowed: false,
+    reason: 'paywall_required',
+    message: `Free users are limited to ${FREE_BOND_LIMIT} bonds. Upgrade to Kindred Pro for unlimited.`,
+    limit: FREE_BOND_LIMIT,
+    iapProductIds: YUAN_PRO_PRODUCT_IDS,
+  }
 }
 
 /** Translate a denied BondLimitResult to a properly-coded jsonErr response. */
@@ -1609,7 +1625,12 @@ bondRoutes.get('/', async (c) => {
     }
   })
 
-  return jsonOk(c, { bonds: enriched }, 200, { total: enriched.length })
+  // Quota rides along on the list (the home already fetches this) so the client can
+  // gate "New Thread" up-front instead of letting the user fill the form and bounce
+  // off the create-time 403 (2026-06 feedback).
+  const quota = await getBondQuota(db, userId)
+
+  return jsonOk(c, { bonds: enriched, quota }, 200, { total: enriched.length })
 })
 
 // ── GET /timeline — 本我中心多关系时间轴 (BT.3 + BT.6, ADR-0014) ─────────────

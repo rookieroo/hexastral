@@ -254,6 +254,9 @@ export const translations: Translations = {
     'bondList.add': 'New thread',
     'bondList.delete': 'Let go',
     'bondList.deleteTitle': 'Let this thread go?',
+    'bondList.cancelInvite': 'Withdraw',
+    'bondList.cancelInviteTitle': 'Withdraw this invite?',
+    'bondList.cancelInviteBody': "They haven't joined yet — this withdraws the invitation.",
     'bondList.deleteBody': "This removes your synastry with them. It can't be undone.",
     'bondList.deleteBody.good':
       "These two charts read generative — the kind that actually feed each other, and the report graded it high. That's not common. Cut the thread and it's gone; you don't get to run the same two people twice. Worth being sure it's actually over, not just a bad week.",
@@ -638,6 +641,9 @@ export const translations: Translations = {
     'bondList.add': '新缘',
     'bondList.delete': '解缘',
     'bondList.deleteTitle': '解开这段缘？',
+    'bondList.cancelInvite': '撤回',
+    'bondList.cancelInviteTitle': '撤回这个邀请？',
+    'bondList.cancelInviteBody': '对方还没加入，这会撤回邀请。',
     'bondList.deleteBody': '会移除你与 ta 的合盘记录，且无法恢复。',
     'bondList.deleteBody.good':
       '你们这段是相生——真正彼此滋养的那种，报告分也不低。这种缘分不算多。解了就没了，同样两个人不会再有第二次合盘。值得先确认是真到头了，而不是刚好撞上一阵心烦。',
@@ -1011,6 +1017,9 @@ export const translations: Translations = {
     'bondList.add': '新緣',
     'bondList.delete': '解緣',
     'bondList.deleteTitle': '解開這段緣？',
+    'bondList.cancelInvite': '撤回',
+    'bondList.cancelInviteTitle': '撤回這個邀請？',
+    'bondList.cancelInviteBody': '對方還沒加入，這會撤回邀請。',
     'bondList.deleteBody': '會移除你與 ta 的合盤記錄，且無法復原。',
     'bondList.deleteBody.good':
       '你們這段是相生——真正彼此滋養的那種，報告分也不低。這種緣分不算多。解了就沒了，同樣兩個人不會再有第二次合盤。值得先確認是真到頭了，而不是剛好撞上一陣心煩。',
@@ -1385,6 +1394,9 @@ export const translations: Translations = {
     'bondList.add': '新しい縁',
     'bondList.delete': '縁を解く',
     'bondList.deleteTitle': 'この縁を解きますか？',
+    'bondList.cancelInvite': '取り消す',
+    'bondList.cancelInviteTitle': 'この招待を取り消しますか？',
+    'bondList.cancelInviteBody': '相手はまだ参加していません。招待を取り消します。',
     'bondList.deleteBody': '相手との相性記録が削除されます。元に戻せません。',
     'bondList.deleteBody.good':
       'この二人は相生——互いを養い合う間柄で、報告の評価も高い。そう多くはない縁です。解けば消える。同じ二人の合盤は二度と出ません。本当に終わったのか、ただ虫の居所が悪いだけか、確かめてからでも遅くない。',

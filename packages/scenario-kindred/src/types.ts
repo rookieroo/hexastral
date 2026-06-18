@@ -136,6 +136,17 @@ export interface BondData {
   basedOnStaleBirth?: boolean
 }
 
+/** Free-bond quota, returned alongside the bond list (GET /api/bonds). Lets the UI
+ *  pre-empt the paywall at "New Thread". `used` counts non-refundable generations
+ *  (readings kept through a "Let go" soft-delete) plus outstanding pending invites,
+ *  so it matches what the server enforces at create. Pro is unbounded (`used` is
+ *  informational and never gates when `isPro`). */
+export interface BondQuota {
+  isPro: boolean
+  used: number
+  limit: number
+}
+
 // ── Bond detail (single bond with full interpretation) ──────────────────────
 
 export interface BondDimension {

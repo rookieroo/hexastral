@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useKindredClient } from '../context'
 import { kindredBonds, unwrap } from '../lib/kindred-bonds-api'
-import type { BondData, RelationshipType } from '../types'
+import type { BondData, BondQuota, RelationshipType } from '../types'
 
 export interface UseBondListOptions {
   /** Filter by relationship type label (client-side) */
@@ -32,6 +32,9 @@ export interface UseBondListResult {
   /** Re-run a bond's reading with the viewer's current birth (Pro, destructive).
    *  Refetches on success. 'needs_pro' → route to the paywall. */
   recompute: (id: string) => Promise<'recomputed' | 'needs_pro' | 'error'>
+  /** Free-bond quota (Pro flag + used/limit). undefined until the first fetch
+   *  resolves; the UI gates "New Thread" on it to pre-empt the create-time paywall. */
+  quota?: BondQuota
 }
 
 const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, ReadonlyArray<string>> = {
@@ -59,13 +62,17 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
   const [allBonds, setAllBonds] = useState<BondData[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<Error | null>(null)
+  const [quota, setQuota] = useState<BondQuota | undefined>(undefined)
 
   const refetch = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await unwrap<{ bonds: BondData[] }>(await kindredBonds(client).$get())
+      const data = await unwrap<{ bonds: BondData[]; quota?: BondQuota }>(
+        await kindredBonds(client).$get()
+      )
       setAllBonds(data.bonds)
+      setQuota(data.quota)
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err))
       setError(e)
@@ -126,5 +133,5 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
     return true
   })
 
-  return { bonds: filtered, isLoading, error, refetch, deleteBond, recompute }
+  return { bonds: filtered, isLoading, error, refetch, deleteBond, recompute, quota }
 }

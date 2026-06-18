@@ -224,7 +224,7 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, refetch, deleteBond, recompute } = useBondList()
+  const { bonds, refetch, deleteBond, recompute, quota } = useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
@@ -255,17 +255,22 @@ export default function ReadingHomeScreen() {
 
   const confirmDelete = useCallback(
     (bond: BondData) => {
-      // The product has a stance, grounded in their own chart (see lib/bondQuality):
-      // a 相生 bond is a real loss to cut; a 相克 one is often the healthier cut. The
-      // copy says so in plain, fact-first terms. Pure compute — no LLM, no latency on
-      // a destructive confirm; the verdict is already in the reading. The button is
-      // NOT styled destructive (no red) — 解缘 isn't always a tragedy; the words carry
-      // the weight, and for a hard bond, letting go is the calm call, not an alarm.
-      const body = t(locale, `bondList.deleteBody.${bondQuality(bond)}`)
-      Alert.alert(t(locale, 'bondList.deleteTitle'), body, [
+      // A pending invite has no reading yet — letting it go WITHDRAWS the invitation
+      // (and frees its quota slot), so it gets cancel-an-invite copy, not the 解缘
+      // "removes your synastry" wording a generated bond gets.
+      const pending = bond.status === 'pending_invite'
+      // For a generated bond the product has a stance, grounded in their own chart
+      // (see lib/bondQuality): a 相生 bond is a real loss to cut; a 相克 one is often
+      // the healthier cut. Pure compute — no LLM, no latency on the confirm. The
+      // button is NOT styled destructive — 解缘 isn't always a tragedy.
+      const title = t(locale, pending ? 'bondList.cancelInviteTitle' : 'bondList.deleteTitle')
+      const body = pending
+        ? t(locale, 'bondList.cancelInviteBody')
+        : t(locale, `bondList.deleteBody.${bondQuality(bond)}`)
+      Alert.alert(title, body, [
         { text: t(locale, 'bondList.cancel'), style: 'cancel' },
         {
-          text: t(locale, 'bondList.delete'),
+          text: t(locale, pending ? 'bondList.cancelInvite' : 'bondList.delete'),
           onPress: () => {
             void deleteBond(bond.id).catch((err) => {
               if (__DEV__) console.warn('[Kindred home] delete failed', err)
@@ -318,6 +323,20 @@ export default function ReadingHomeScreen() {
   // (SkyHero.onSwipeLeft). It pushes in from the right; swipe-right inside Settings
   // pops back, so the two motions mirror.
   const openSettings = useCallback(() => router.push('/(settings)'), [router])
+
+  // New thread — pre-empt the free-bond paywall HERE (2026-06) instead of letting the
+  // user pick a mode and fill the invite / birth form only to bounce off the
+  // create-time 403. quota.used counts non-refundable generations + outstanding
+  // pending invites (the same number the server enforces), so a free user at the cap
+  // goes straight to the paywall; letting go a pending thread frees a slot and this
+  // opens the flow again. quota undefined (pre-fetch) → fall through; server backstops.
+  const startNewThread = useCallback(() => {
+    if (quota && !quota.isPro && quota.used >= quota.limit) {
+      router.push({ pathname: '/(commerce)/paywall', params: { reason: 'bonds' } })
+      return
+    }
+    router.push('/(onboarding)/mode')
+  }, [quota, router])
 
   // Same left-swipe → Settings over the list area's blank space. activeOffsetX
   // keeps taps/presses working; failOffsetY yields to vertical scroll; a row's own
@@ -494,7 +513,7 @@ export default function ReadingHomeScreen() {
           {/* New thread — borderless + editorial (matches the small-caps footer links,
               not a generic pill): the 红线 "+" glyph + a mono small-caps accent label. */}
           <Pressable
-            onPress={() => router.push('/(onboarding)/mode')}
+            onPress={startNewThread}
             accessibilityRole='button'
             accessibilityLabel={t(locale, 'bondList.add')}
             hitSlop={10}
@@ -584,11 +603,7 @@ export default function ReadingHomeScreen() {
                   <EmptyState
                     title={copy.threadsHint}
                     customAction={
-                      <PrimaryButton
-                        label={copy.emptyCta}
-                        onPress={() => router.push('/(onboarding)/mode')}
-                        block={false}
-                      />
+                      <PrimaryButton label={copy.emptyCta} onPress={startNewThread} block={false} />
                     }
                   />
                 </View>
