@@ -691,7 +691,7 @@ export default function SettingsScreen() {
                   { color: kindredDark.accent, textDecorationLine: 'underline' },
                 ]}
               >
-                DEV · intro (星引力动画) →
+                DEV · intro (Logo 首屏) →
               </Text>
             </Pressable>
             <Pressable

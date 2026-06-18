@@ -1,15 +1,16 @@
 /**
  * Kindred entry — decides where the user lands on app open.
  *
- * - First-ever launch, intro not seen → /(onboarding)/intro (stick-figure
- *   parable, once) → pair-input dual-tab form → solo reading (ADR-0021 solo-first)
- * - Onboarding not yet done but intro seen → /(onboarding)/pair-input
- * - Returning user with onboarding done → /(reading) — the solo reading IS
- *   the home; Threads (bonds) hang off it
+ * - Onboarding NOT done (first launch OR a half-finished flow) → /(onboarding)/intro,
+ *   a calm Logo first-screen that taps into the onboarding form. (The elaborate
+ *   two-stars intro was retired 2026-06 — see git history / IntroLogo.)
+ * - Onboarding done — or a saved self-birth (notably an invited B who accepted via
+ *   /accept, which persists their birth) → /(reading), the home. The solo reading IS
+ *   the home; Threads hang off it.
  *
- * Intro is single-shot: we set `INTRO_SEEN_KEY` up-front so a force-quit
- * mid-animation doesn't replay it. Use `resetOnboarding()` (DEV, in Settings)
- * to replay from scratch.
+ * No more "intro seen" flag: the Logo splash is cheap (a moon + a tap), so it just
+ * shows on every not-done launch. Use `resetOnboarding()` (DEV, in Settings) to drop
+ * back to it.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -20,9 +21,8 @@ import { View } from 'react-native'
 import { loadSelfBirth } from '@/lib/selfBirth'
 
 const ONBOARDING_DONE_KEY = 'yuan_onboarding_complete_v1'
-const INTRO_SEEN_KEY = 'yuan_intro_seen_v1'
 
-type EntryStatus = 'pending' | 'intro' | 'welcome' | 'returning'
+type EntryStatus = 'pending' | 'splash' | 'returning'
 
 export default function EntryScreen() {
   const [status, setStatus] = useState<EntryStatus>('pending')
@@ -31,27 +31,22 @@ export default function EntryScreen() {
     let cancelled = false
     ;(async () => {
       try {
-        const [done, intro, selfBirth] = await Promise.all([
+        const [done, selfBirth] = await Promise.all([
           AsyncStorage.getItem(ONBOARDING_DONE_KEY),
-          AsyncStorage.getItem(INTRO_SEEN_KEY),
           loadSelfBirth(),
         ])
         if (cancelled) return
-        // A saved self-birth means the user already has a chart — notably an
-        // invited B who accepted via /accept (which persists their birth). Treat
-        // as returning so they land on the home and are never bounced back into
-        // the onboarding birth form. Backfill the flag so reality + flag agree.
+        // A saved self-birth means the user already has a chart — treat as returning
+        // so they land on the home and are never bounced back to the splash. Backfill
+        // the flag so reality + flag agree.
         if (done || selfBirth) {
           if (!done) void markOnboardingComplete()
           setStatus('returning')
-        } else if (!intro) {
-          await AsyncStorage.setItem(INTRO_SEEN_KEY, '1')
-          if (!cancelled) setStatus('intro')
         } else {
-          setStatus('welcome')
+          setStatus('splash')
         }
       } catch {
-        if (!cancelled) setStatus('welcome')
+        if (!cancelled) setStatus('splash')
       }
     })()
     return () => {
@@ -59,16 +54,12 @@ export default function EntryScreen() {
     }
   }, [])
 
-  // While the AsyncStorage probes resolve, paint the kindred bg only —
-  // no loader spinner. The check completes in a frame or two; a moon-phase
-  // loader before the intro would compete with the intro's own moon
-  // animation and break the first-launch beat (intro → onboarding → home).
-  // Returning users land on the splash inside (reading) instead.
+  // While the AsyncStorage probes resolve, paint the kindred bg only — the check
+  // completes in a frame or two, and the splash / home own their own entrances.
   if (status === 'pending') {
     return <View style={{ flex: 1, backgroundColor: kindredDark.bg }} />
   }
-  if (status === 'intro') return <Redirect href='/(onboarding)/intro' />
-  if (status === 'welcome') return <Redirect href='/(onboarding)/pair-input' />
+  if (status === 'splash') return <Redirect href='/(onboarding)/intro' />
   return <Redirect href='/(reading)' />
 }
 
@@ -81,7 +72,7 @@ export async function isOnboardingComplete(): Promise<boolean> {
   return (await AsyncStorage.getItem(ONBOARDING_DONE_KEY)) != null
 }
 
-/** DEV-only: wipe first-launch flags so the intro + onboarding replay. */
+/** DEV-only: wipe the done flag so the Logo splash + onboarding replay. */
 export async function resetOnboarding(): Promise<void> {
-  await AsyncStorage.multiRemove([ONBOARDING_DONE_KEY, INTRO_SEEN_KEY])
+  await AsyncStorage.removeItem(ONBOARDING_DONE_KEY)
 }
