@@ -1,17 +1,17 @@
 /**
  * Yuel (kindred) 姻缘符 logo — vector source generator.
  *
- * A vertical interlaced 同心结 (lover's knot) traced from the 天师婚书 talisman
- * crop: two upper loops + two lower loops, split by a woven waist, with small
- * curl-eyes at the crowns and two 符脚 at the base. Strokes are VARIABLE-WIDTH
- * brush ribbons (centerline + width profile -> filled outline), so they read as
- * ink, not uniform vectors — a talisman, not a tidy Chinese-knot ribbon.
+ * The 姻缘符 knot drawn as ONE continuous calligraphic brushstroke (一笔), traced
+ * from the 碑拓 crop: top-left loop -> top-right loop (crossing) -> centre cross
+ * -> bottom-left loop -> bottom-right loop -> foot. A single self-crossing
+ * centerline, swept with a varying width profile (thin entry, full body, tapered
+ * 符脚) into one filled ink ribbon — asymmetric and hand-irregular, NOT mirrored.
  *
  * Run:  node docs/brand/yuel-logo.gen.mjs        # writes the two demo SVGs
  *       node docs/brand/yuel-logo.gen.mjs --png  # also rasterizes (needs @resvg/resvg-js)
  *
- * Retouch the calligraphy by editing the stroke table below; all output derives
- * from it.
+ * Retouch the calligraphy by editing `KNOT` (the anchor points the brush passes
+ * through, in drawing order) or `WIDTH` (brush pressure along the stroke).
  */
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -19,67 +19,65 @@ import { dirname, join } from 'node:path'
 
 const DIR = dirname(fileURLToPath(import.meta.url))
 
-// ── brush engine ────────────────────────────────────────────────────────────
+// ── brush engine: one centerline (Catmull-Rom through anchors) -> filled ribbon
 const R = (n) => Math.round(n * 100) / 100
-const cubic = (a, b, c, d, n) => Array.from({ length: n + 1 }, (_, i) => {
-  const t = i / n, m = 1 - t
-  return [
-    m*m*m*a[0] + 3*m*m*t*b[0] + 3*m*t*t*c[0] + t*t*t*d[0],
-    m*m*m*a[1] + 3*m*m*t*b[1] + 3*m*t*t*c[1] + t*t*t*d[1],
-  ]
-})
-const centerline = (segs, per) => segs.reduce((p, s, i) => {
-  const g = cubic(s[0], s[1], s[2], s[3], per)
-  return p.concat(i === 0 ? g : g.slice(1))
-}, [])
-const widthProfile = (nw, sc, len) => Array.from({ length: len }, (_, i) => {
-  const f = i / (len - 1) * sc, lo = Math.floor(f), hi = Math.min(sc, lo + 1), t = f - lo
-  return nw[lo] * (1 - t) + nw[hi] * t
-})
-function ribbon(c, wd) {
-  const L = [], Rr = []
-  for (let i = 0; i < c.length; i++) {
-    const p = c[Math.max(0, i - 1)], n = c[Math.min(c.length - 1, i + 1)]
+function crSpline(pts, per = 20, tension = 1) {
+  const out = []
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || pts[i + 1]
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6 * tension, p1[1] + (p2[1] - p0[1]) / 6 * tension]
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6 * tension, p2[1] - (p3[1] - p1[1]) / 6 * tension]
+    for (let j = 0; j <= per; j++) {
+      const t = j / per, m = 1 - t
+      out.push([
+        m*m*m*p1[0] + 3*m*m*t*c1[0] + 3*m*t*t*c2[0] + t*t*t*p2[0],
+        m*m*m*p1[1] + 3*m*m*t*c1[1] + 3*m*t*t*c2[1] + t*t*t*p2[1],
+      ])
+    }
+  }
+  return out
+}
+function widthAt(keys, f) {
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [p0, w0] = keys[i], [p1, w1] = keys[i + 1]
+    if (f <= p1) { const t = (f - p0) / (p1 - p0 || 1); return w0 + (w1 - w0) * t }
+  }
+  return keys[keys.length - 1][1]
+}
+function ribbon(c, wfn) {
+  const L = [], Rr = [], N = c.length
+  for (let i = 0; i < N; i++) {
+    const p = c[Math.max(0, i - 1)], n = c[Math.min(N - 1, i + 1)]
     let dx = n[0] - p[0], dy = n[1] - p[1]
     const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l
-    const w = wd[i] / 2
+    const w = wfn(i / (N - 1)) / 2
     L.push([c[i][0] - dy*w, c[i][1] + dx*w])
     Rr.push([c[i][0] + dy*w, c[i][1] - dx*w])
   }
   Rr.reverse()
   return 'M' + [...L, ...Rr].map((p) => `${R(p[0])} ${R(p[1])}`).join('L') + 'Z'
 }
-function brush(s, per = 36) {
-  const c = centerline(s.segs, per)
-  return ribbon(c, widthProfile(s.w, s.segs.length, c.length))
-}
-const mirX = (s) => ({ w: s.w, segs: s.segs.map((seg) => seg.map(([x, y]) => [240 - x, y])) })
 
-// ── the knot — each stroke: chained cubics + per-node widths (segs+1) ─────────
-const TOP = { w: [10,12,12,12,12,10], segs: [
-  [[120,122],[94,120],[84,86],[102,79]],      // centre-bottom -> left hump
-  [[102,79],[113,74],[119,90],[120,108]],      // left eye -> centre dip
-  [[120,108],[120,118],[120,118],[120,108]],   // hold the dip
-  [[120,108],[121,90],[127,74],[138,79]],      // dip -> right hump
-  [[138,79],[156,86],[146,120],[120,122]],     // right hump -> centre-bottom
-]}
-const BOT = { w: [10,12,12,12,12,10], segs: [
-  [[120,138],[94,140],[84,174],[102,181]],
-  [[102,181],[113,186],[119,170],[120,152]],
-  [[120,152],[120,142],[120,142],[120,152]],
-  [[120,152],[121,170],[127,186],[138,181]],
-  [[138,181],[156,174],[146,140],[120,138]],
-]}
-const WAIST = { w: [11,14,14,11], segs: [[[120,110],[120,120],[120,140],[120,150]]] }
-const EYE_L = { w: [5,2], segs: [[[102,79],[92,72],[88,80],[95,84]]] }
-const FOOT_L = { w: [7,2], segs: [[[102,182],[98,193],[95,203],[100,211]]] }
+// ── the stroke: anchors in drawing order (the brush never lifts) ─────────────
+const KNOT = [
+  [101,107],[82,92],[94,71],[109,89],[101,105],         // top-left loop
+  [117,93],                                              // bridge up-right
+  [121,99],[127,71],[141,68],[149,89],[136,105],         // top-right loop (crosses the first)
+  [121,122],                                             // centre crossing
+  [104,131],                                             // diagonal down-left
+  [97,141],[78,151],[87,173],[105,166],[101,145],        // bottom-left loop
+  [117,148],                                             // bridge across
+  [125,143],[139,139],[150,157],[137,175],[121,164],     // bottom-right loop
+  [125,182],[123,201],                                   // 符脚 (foot), tapering out
+]
+const WIDTH = [[0,6],[0.04,12],[0.5,12.5],[0.9,11],[0.96,3],[1,1]]
 
-export const strokes = [TOP, BOT, WAIST, EYE_L, mirX(EYE_L), FOOT_L, mirX(FOOT_L)]
-export const knotPaths = (fill = 'url(#c)') => strokes.map((s) => `<path d="${brush(s)}" fill="${fill}"/>`).join('')
+export const knotPaths = (fill = 'url(#c)') =>
+  `<path d="${ribbon(crSpline(KNOT, 20, 1), (f) => widthAt(WIDTH, f))}" fill="${fill}"/>`
 
 // ── tiles ────────────────────────────────────────────────────────────────────
 const DEFS = `
-    <linearGradient id="c" x1="120" y1="70" x2="120" y2="206" gradientUnits="userSpaceOnUse">
+    <linearGradient id="c" x1="120" y1="66" x2="120" y2="200" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#D14A3A"/><stop offset="1" stop-color="#9B2226"/>
     </linearGradient>
     <radialGradient id="v" cx="0.5" cy="0.42" r="0.62">
