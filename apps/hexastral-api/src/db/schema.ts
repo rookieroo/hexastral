@@ -1009,6 +1009,61 @@ export const userBonds = sqliteTable(
   ]
 )
 
+// ==================== 关系推送队列（Kindred Push Queue） ====================
+
+/**
+ * Pre-generated relationship push 语料, harvested from the LLM moments that already
+ * run for a Thread (合盘报告 / timeline / what-if). A cheap deterministic cron later
+ * sends the right line on a matching day — NO per-day LLM (ADR-0025).
+ *
+ *   - kind='conditional' → fires when the day's calculateDailySynastry().status
+ *     equals `triggerKind` (e.g. 'resonance' on a high-契合 day).
+ *   - kind='dated'       → fires on `fireOn` (anniversaries, transit dates).
+ *
+ * `bondId` may be null when harvested from a raw /pair compute that precedes bond
+ * creation; the cron resolves the Thread via `sourceReadingId` (userBonds.hehunReadingId).
+ */
+export const kindredPushQueue = sqliteTable(
+  'kindred_push_queue',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    bondId: text('bond_id').references(() => userBonds.id, { onDelete: 'cascade' }),
+    sourceReadingId: text('source_reading_id').references(() => pairReadings.id, {
+      onDelete: 'set null',
+    }),
+    locale: text('locale').notNull().default('zh-CN'),
+    kind: text('kind', { enum: ['conditional', 'dated'] })
+      .notNull()
+      .default('conditional'),
+    /** kind='conditional': matches calculateDailySynastry().status — 'resonance' | 'tension' | 'neutral'. */
+    triggerKind: text('trigger_kind'),
+    /** kind='dated': YYYY-MM-DD the snippet should fire on. */
+    fireOn: text('fire_on'),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    source: text('source', {
+      enum: ['report', 'timeline', 'whatif', 'planner', 'template'],
+    })
+      .notNull()
+      .default('report'),
+    status: text('status', { enum: ['queued', 'sent', 'expired'] })
+      .notNull()
+      .default('queued'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    sentAt: text('sent_at'),
+  },
+  (t) => [
+    index('kpq_user_status_idx').on(t.userId, t.status),
+    index('kpq_bond_idx').on(t.bondId),
+    index('kpq_fireon_idx').on(t.fireOn),
+  ]
+)
+
 // ==================== 共振邀请（Resonance Invitations） ====================
 
 /**

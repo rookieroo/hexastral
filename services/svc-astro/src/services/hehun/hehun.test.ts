@@ -10,7 +10,11 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { computeRelationshipYongshen, parseSynastryChaptersResponse } from './hehun'
+import {
+  computeRelationshipYongshen,
+  parsePushSnippets,
+  parseSynastryChaptersResponse,
+} from './hehun'
 
 const KINDS = [
   'first_impression',
@@ -28,6 +32,49 @@ function chapter(kind: string, over: Record<string, unknown> = {}) {
 function fullResponse(over: Record<string, unknown> = {}): string {
   return JSON.stringify({ ahaHook: 'AHA', chapters: KINDS.map((k) => chapter(k)), ...over })
 }
+
+describe('parsePushSnippets (ADR-0025 harvest)', () => {
+  test('parses valid snippets and keeps the three triggers', () => {
+    const raw = JSON.stringify({
+      snippets: [
+        { trigger: 'resonance', title: '高契合', body: '今天适合靠近' },
+        { trigger: 'tension', title: '易摩擦', body: '今天话要慢说' },
+        { trigger: 'neutral', title: '平稳', body: '维持就好' },
+      ],
+    })
+    const out = parsePushSnippets(raw)
+    expect(out).toHaveLength(3)
+    expect(out.map((s) => s.trigger)).toEqual(['resonance', 'tension', 'neutral'])
+  })
+
+  test('coerces an unknown trigger to neutral', () => {
+    const out = parsePushSnippets(
+      JSON.stringify({ snippets: [{ trigger: 'whatever', title: 'a', body: 'b' }] })
+    )
+    expect(out[0]?.trigger).toBe('neutral')
+  })
+
+  test('drops snippets missing title or body', () => {
+    const out = parsePushSnippets(
+      JSON.stringify({
+        snippets: [
+          { trigger: 'resonance', title: '', body: 'b' },
+          { trigger: 'resonance', title: 'a', body: '' },
+          { trigger: 'resonance', title: 'a', body: 'b' },
+        ],
+      })
+    )
+    expect(out).toHaveLength(1)
+  })
+
+  test('extracts JSON from fenced prose, returns [] on garbage', () => {
+    const fenced =
+      '```json\n{ "snippets": [ { "trigger": "neutral", "title": "x", "body": "y" } ] }\n```'
+    expect(parsePushSnippets(fenced)).toHaveLength(1)
+    expect(parsePushSnippets('not json at all')).toEqual([])
+    expect(parsePushSnippets(JSON.stringify({ snippets: 'nope' }))).toEqual([])
+  })
+})
 
 describe('parseSynastryChaptersResponse', () => {
   test('parses a full six-chapter response in canonical order', () => {

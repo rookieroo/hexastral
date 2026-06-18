@@ -33,6 +33,11 @@ import {
   type SynastryResult,
   solarToLunar,
 } from '@zhop/astro-core'
+import {
+  computeDailyHook,
+  type Locale as CorpusLocale,
+  type Stem as CorpusStem,
+} from '@zhop/astro-i18n'
 import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -104,6 +109,18 @@ function subjectFromBirthDate(birthDate: string): PersonalAlmanacSubject {
   const b = parseYmd(birthDate)
   const pillars = getFourPillars({ ...b, hour: 0 })
   return { dayMasterStem: pillars.day.stem, birthBranch: pillars.year.branch }
+}
+
+/**
+ * Map an Auspice client locale (zh-Hans/zh-Hant/ja/en) to the corpus locale set —
+ * `@zhop/astro-i18n` keys on `zh`, not `zh-Hans`. Unknown → `en` (the corpus's own
+ * fallback), which is also the right default for the en daily-hook slice.
+ */
+function toCorpusLocale(locale?: string): CorpusLocale {
+  if (locale === 'zh-Hans') return 'zh'
+  if (locale === 'zh-Hant') return 'zh-Hant'
+  if (locale === 'ja') return 'ja'
+  return 'en'
 }
 
 /**
@@ -336,7 +353,11 @@ function resolveHolidayDayInMonth(
 }
 
 /** Almanac facts + 节气 context + 12 时辰 (+ optional deterministic 对你而言 overlay). */
-function buildDay(ymd: Ymd, subject?: PersonalAlmanacSubject) {
+function buildDay(
+  ymd: Ymd,
+  subject?: PersonalAlmanacSubject,
+  opts?: { seed?: string; locale?: string }
+) {
   const almanac: DailyAlmanac = calculateDailyAlmanac(ymd)
   const term = getNearestJieQiForGregorianDate(ymd.year, ymd.month, ymd.day)
   // Year pillar (立春-aware) — drives `yearGanZhi` for the hero card 生肖年 chip
@@ -478,7 +499,22 @@ function buildDay(ymd: Ymd, subject?: PersonalAlmanacSubject) {
       }
     : null
 
-  return { day, personalization }
+  // Daily hook (语料钩子) — the non-CJK DAU one-liner, drawn from the same corpus
+  // `computeAlmanac` uses (relation × energy → headline/lens). Needs only the 日主
+  // (from birthDate); 用神 stays undefined so energy falls to the no-boost band.
+  // `seed` keys the deterministic A/B pick, so the push and the home hero render the
+  // IDENTICAL line (echo). Null when there's no birth subject.
+  const dailyHook = subject
+    ? computeDailyHook({
+        seed: opts?.seed ?? subject.dayMasterStem,
+        dayMasterStem: subject.dayMasterStem as CorpusStem,
+        dayStem: almanac.todayGanZhi[0] as CorpusStem,
+        date: fmtUtc(ymdToDate(ymd)),
+        locale: toCorpusLocale(opts?.locale),
+      })
+    : null
+
+  return { day, personalization, dailyHook }
 }
 
 // ── GET /day?date=YYYY-MM-DD&birthDate=YYYY-MM-DD ─────────────
@@ -531,11 +567,15 @@ auspiceRoutes.get('/day', (c) => {
   const dateParam = c.req.query('date')
   const ymd = dateParam ? parseYmd(dateParam) : dateToYmd(new Date())
   const birthDate = c.req.query('birthDate')
+  // `locale` keys the hook's corpus language. The client doesn't send it on per-day
+  // taps yet (the en slice), so it defaults to en here — and the edge cache keys on
+  // the full URL, so once `locale` rides the query it varies the cache correctly.
+  const locale = c.req.query('locale')
   const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
 
   const build = () => {
-    const { day, personalization } = buildDay(ymd, subject)
-    return { date: fmtUtc(ymdToDate(ymd)), day, personalization, explanation: null }
+    const { day, personalization, dailyHook } = buildDay(ymd, subject, { seed: birthDate, locale })
+    return { date: fmtUtc(ymdToDate(ymd)), day, personalization, dailyHook, explanation: null }
   }
   // Only edge-cache an explicit `date` — the no-date "today" shares a key across
   // the midnight boundary and would go stale, so it always computes fresh.
@@ -1086,11 +1126,12 @@ auspiceRoutes.get('/bootstrap', (c) => {
   const ymd = parseYmd(date)
   const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
   return edgeCachedJson(c, () => {
-    const { day, personalization } = buildDay(ymd, subject)
+    const { day, personalization, dailyHook } = buildDay(ymd, subject, { seed: birthDate, locale })
     return {
       date: fmtUtc(ymdToDate(ymd)),
       day,
       personalization,
+      dailyHook,
       explanation: null,
       month: buildMonth(ymd.year, ymd.month, locale),
     }
@@ -2374,7 +2415,7 @@ function birthdayFiresOn(
 /** Render a deterministic push for one subscriber + date (morning = that day,
  *  evening = a heads-up about `dateYmd` which the cron already advanced to tomorrow).
  *  The evening returns null when tomorrow isn't notable → caller schedules nothing. */
-function renderAuspicePush(
+export function renderAuspicePush(
   slot: 'morning' | 'evening',
   dateYmd: Ymd,
   sub: AuspicePushSubRow
@@ -2387,8 +2428,30 @@ function renderAuspicePush(
   // recapped today + a constant "rest before 11pm" tail EVERY night, a near-dupe of
   // the 08:00 push that read as filler. 节气/节日 names stay CJK in v1 (like 宜忌).
   if (slot === 'evening') {
-    const { day, personalization } = buildDay(dateYmd, subject)
+    const { day, personalization, dailyHook } = buildDay(dateYmd, subject, {
+      seed: sub.birthDate ?? undefined,
+      locale: sub.locale,
+    })
     const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
+    // en: lead with tomorrow's corpus hook (varied, personalized) rather than the single
+    // static "a strong day for you" clause, and don't repeat "Tomorrow" (the title says it).
+    if (sub.locale.startsWith('en')) {
+      const hook =
+        sub.isPro && (personalization?.fit === '吉' || personalization?.fit === '凶')
+          ? (dailyHook?.title ?? null)
+          : null
+      if (!special && !hook) return null
+      const body = special && hook ? `${special}${L.eveningSep}${hook}` : (special ?? hook ?? '')
+      return {
+        title: L.eveningTitle,
+        body,
+        data: {
+          type: 'auspice_evening',
+          day: fmtUtc(ymdToDate(dateYmd)),
+          ...(hook && dailyHook ? { hookKey: dailyHook.hookKey } : {}),
+        },
+      }
+    }
     const fitClause =
       sub.isPro && personalization?.fit === '吉'
         ? L.eveningGood
@@ -2409,8 +2472,21 @@ function renderAuspicePush(
   // the personal verdict — NOT the date (the notification timestamps itself, so
   // a date there wastes the most valuable line; founder 2026-06). A 节气/节日 folds
   // in: the title for free, the body for Pro (whose title already has the verdict).
-  const { day, personalization } = buildDay(dateYmd, subject)
+  const { day, personalization, dailyHook } = buildDay(dateYmd, subject, {
+    seed: sub.birthDate ?? undefined,
+    locale: sub.locale,
+  })
   const dateStr = fmtUtc(ymdToDate(dateYmd))
+  // Non-CJK (en this slice): lead with the personalized hook, NOT the opaque 干支
+  // day-label ("Water Pig day"). Body = the natural-language lens (no 宜忌 verbs).
+  // Free for everyone — the hook is the DAU lure; the deep reading stays the Pro wall.
+  if (sub.locale.startsWith('en') && dailyHook) {
+    return {
+      title: dailyHook.title,
+      body: dailyHook.lens,
+      data: { type: 'auspice_daily', day: dateStr, hookKey: dailyHook.hookKey },
+    }
+  }
   const yi = day.goodFor.slice(0, 3).join('、') || '—'
   const ji = day.avoid.slice(0, 3).join('、') || '—'
   const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null

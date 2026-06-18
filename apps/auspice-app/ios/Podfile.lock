@@ -225,6 +225,8 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (12.0.12):
     - ExpoModulesCore
+  - ExpoClipboard (8.0.8):
+    - ExpoModulesCore
   - ExpoCrypto (15.0.9):
     - ExpoModulesCore
   - ExpoFileSystem (19.0.21):
@@ -2411,6 +2413,7 @@ DEPENDENCIES:
   - "ExpoAdapterGoogleSignIn (from `../../../node_modules/.bun/@react-native-google-signin+google-signin@15.0.0+da394b4df4511c20/node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - "ExpoAppleAuthentication (from `../../../node_modules/.bun/expo-apple-authentication@8.0.8+da394b4df4511c20/node_modules/expo-apple-authentication/ios`)"
   - "ExpoAsset (from `../../../node_modules/.bun/expo-asset@12.0.12+7df444b6aae63dbc/node_modules/expo-asset/ios`)"
+  - "ExpoClipboard (from `../../../node_modules/.bun/expo-clipboard@8.0.8+da394b4df4511c20/node_modules/expo-clipboard/ios`)"
   - "ExpoCrypto (from `../../../node_modules/.bun/expo-crypto@15.0.9+da394b4df4511c20/node_modules/expo-crypto/ios`)"
   - "ExpoFileSystem (from `../../../node_modules/.bun/expo-file-system@19.0.21+e4fd16ac8ffee978/node_modules/expo-file-system/ios`)"
   - "ExpoFont (from `../../../node_modules/.bun/expo-font@14.0.11+e4fd16ac8ffee978/node_modules/expo-font/ios`)"
@@ -2547,6 +2550,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.bun/expo-apple-authentication@8.0.8+da394b4df4511c20/node_modules/expo-apple-authentication/ios"
   ExpoAsset:
     :path: "../../../node_modules/.bun/expo-asset@12.0.12+7df444b6aae63dbc/node_modules/expo-asset/ios"
+  ExpoClipboard:
+    :path: "../../../node_modules/.bun/expo-clipboard@8.0.8+da394b4df4511c20/node_modules/expo-clipboard/ios"
   ExpoCrypto:
     :path: "../../../node_modules/.bun/expo-crypto@15.0.9+da394b4df4511c20/node_modules/expo-crypto/ios"
   ExpoFileSystem:
@@ -2752,6 +2757,7 @@ SPEC CHECKSUMS:
   ExpoAdapterGoogleSignIn: cde973fe0134b1c0204502eeae5ec701cc379a57
   ExpoAppleAuthentication: 9413ae9a5e631a424cc04c1b13b0694dbab7d594
   ExpoAsset: f867e55ceb428aab99e1e8c082b5aee7c159ea18
+  ExpoClipboard: b36b287d8356887844bb08ed5c84b5979bb4dd1e
   ExpoCrypto: e2a2c4c748aac8485e5675f027b7901f511d43ff
   ExpoFileSystem: 858a44267a3e6e9057e0888ad7c7cfbf55d52063
   ExpoFont: f543ce20a228dd702813668b1a07b46f51878d47

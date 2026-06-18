@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { auspiceRoutes } from './auspice'
+import { auspiceRoutes, renderAuspicePush } from './auspice'
 
 // The handlers only read query params + @zhop/astro-core (no db / env / rate-limit),
 // so the sub-app can be exercised directly via .request() without bindings.
@@ -50,6 +50,8 @@ describe('GET /api/auspice/day', () => {
 
     // Forward-compat placeholders for C.3 / C.4.
     expect(body.data.personalization).toBeNull()
+    // No birth subject → no personalized hook (the generic no-八字 corpus is a later slice).
+    expect(body.data.dailyHook).toBeNull()
     expect(body.data.explanation).toBeNull()
   })
 
@@ -77,8 +79,60 @@ describe('GET /api/auspice/day', () => {
     // matches the current year-pillar branch. 1990 is 庚午年 (post-立春),
     // 2026 is 丙午年 (post-立春) — both 午, so this user is in their 本命年.
     expect(body.data.personalization.benming).toBe(true)
+    // Daily hook (en slice): a birthDate subject gets a personalized corpus one-liner
+    // (the non-CJK DAU hook), keyed deterministically so push + home echo the same line.
+    expect(body.data.dailyHook).not.toBeNull()
+    expect(typeof body.data.dailyHook.title).toBe('string')
+    expect(body.data.dailyHook.title.length).toBeGreaterThan(0)
+    expect(typeof body.data.dailyHook.lens).toBe('string')
+    expect(body.data.dailyHook.hookKey).toMatch(/^(support|output|wealth|pressure|peer):/)
     // explanation stays a placeholder — the LLM (C.4) is never in this deterministic path
     expect(body.data.explanation).toBeNull()
+  })
+})
+
+describe('renderAuspicePush — daily hook (en slice)', () => {
+  const ymd = { year: 2026, month: 6, day: 12 } // 丁巳日
+  const mkSub = (over: Record<string, unknown>) =>
+    ({ locale: 'en', birthDate: '1990-08-15', isPro: false, ...over }) as unknown as Parameters<
+      typeof renderAuspicePush
+    >[2]
+
+  test('en morning push leads with the hook, not the 干支 day-label', () => {
+    const msg = renderAuspicePush('morning', ymd, mkSub({ locale: 'en' }))
+    expect(msg).not.toBeNull()
+    // Title is the English corpus hook — NOT the raw 干支 "丁巳"/"… day" label; the body
+    // is the natural-language lens (no 宜/Good list).
+    expect(msg?.title).toBeTruthy()
+    expect(msg?.title).not.toMatch(/[一-鿿]/)
+    expect(msg?.body).not.toMatch(/Good|Avoid/)
+    expect(msg?.data.type).toBe('auspice_daily')
+    expect(typeof msg?.data.hookKey).toBe('string')
+  })
+
+  test('en morning push without a birthDate falls back to the legacy 宜忌 body', () => {
+    const msg = renderAuspicePush('morning', ymd, mkSub({ birthDate: null }))
+    expect(msg).not.toBeNull()
+    // No subject → no hook → legacy path (the body carries the 宜/忌 list).
+    expect(msg?.body).toMatch(/Good|Avoid|—/)
+    expect(msg?.data.hookKey).toBeUndefined()
+  })
+
+  test('en evening heads-up no longer repeats "Tomorrow" in the body', () => {
+    // Jun 19 2026 = 端午 (festivalToday), so the evening fires regardless of fit — lets us
+    // assert the dedup without depending on a 吉/凶 day. Old body was "Tomorrow: …".
+    const msg = renderAuspicePush('evening', { year: 2026, month: 6, day: 19 }, mkSub({}))
+    expect(msg).not.toBeNull()
+    expect(msg?.title).toBe('Tomorrow')
+    expect(msg?.body).not.toMatch(/Tomorrow/)
+  })
+
+  test('zh morning push is unchanged — keeps 干支日 + 宜忌', () => {
+    const msg = renderAuspicePush('morning', ymd, mkSub({ locale: 'zh-Hans' }))
+    expect(msg).not.toBeNull()
+    expect(msg?.title).toContain('丁巳日') // zh still leads with the 干支日 label
+    expect(msg?.body).toContain('宜')
+    expect(msg?.data.hookKey).toBeUndefined() // zh path untouched this slice
   })
 })
 

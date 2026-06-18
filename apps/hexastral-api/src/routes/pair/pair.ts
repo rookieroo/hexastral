@@ -13,7 +13,13 @@ import { and, desc, eq, inArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { pairReadings, userBonds, userPhysiognomyFeatures, users } from '../../db/schema'
+import {
+  kindredPushQueue,
+  pairReadings,
+  userBonds,
+  userPhysiognomyFeatures,
+  users,
+} from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
 import { userHasCapability } from '../../lib/access/entitlement-access'
 import { callAstro } from '../../lib/astro-client'
@@ -139,7 +145,7 @@ export const pairRoutes = new Hono<AppEnv>()
     if (!isPro) throw new HTTPException(403, { message: 'pro_required' })
 
     // 1. 合婚计算 + AI 解读
-    const { result, interpretation, ziweiSummaryA, ziweiSummaryB } = await callAstro<{
+    const { result, interpretation, ziweiSummaryA, ziweiSummaryB, pushSnippets } = await callAstro<{
       result: {
         compatibility: Record<string, unknown>
         personA: Record<string, unknown>
@@ -149,6 +155,8 @@ export const pairRoutes = new Hono<AppEnv>()
       // 双方紫微摘要 (star→宫 等), 持久化供 timeline / what-if 复用; 可空。
       ziweiSummaryA: Record<string, unknown> | null
       ziweiSummaryB: Record<string, unknown> | null
+      // ADR-0025: LLM-harvested relationship push 语料, 落库 to kindredPushQueue below.
+      pushSnippets?: Array<{ trigger: string; title: string; body: string }>
     }>(c.env.SVC_ASTRO, '/pair/compute', {
       ...input,
       isPro,
@@ -208,10 +216,33 @@ export const pairRoutes = new Hono<AppEnv>()
       })
       .where(eq(users.id, input.userId))
 
+    // Harvest (ADR-0025): 落库 the LLM-authored relationship push 语料 onto the queue, so
+    // a cheap deterministic cron can later send the right line on a matching-energy day —
+    // no per-day LLM. Conditional triggers map to calculateDailySynastry().status; bondId
+    // is null here (raw compute precedes bond creation) — the cron resolves the Thread via
+    // sourceReadingId (userBonds.hehunReadingId).
+    const harvested = pushSnippets ?? []
     c.executionCtx.waitUntil(
       Promise.all([
         recordChartSuccess('pair', { pair: guardKey }, input.userId, c.env.GUARD_KV),
         logEvent(db, input.userId, 'reading_pair', { readingId }),
+        harvested.length > 0
+          ? db.insert(kindredPushQueue).values(
+              harvested.slice(0, 6).map((s) => ({
+                id: crypto.randomUUID(),
+                userId: input.userId,
+                bondId: null,
+                sourceReadingId: readingId,
+                locale: input.language ?? 'zh-CN',
+                kind: 'conditional' as const,
+                triggerKind: s.trigger,
+                title: s.title,
+                body: s.body,
+                source: 'report' as const,
+                status: 'queued' as const,
+              }))
+            )
+          : Promise.resolve(),
       ])
     )
 

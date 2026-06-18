@@ -140,6 +140,18 @@ function eveningHeadsUp(
       ? localizeSolarTermName(d.solarTermToday.name, locale)
       : null
   const pers = isPro ? payload.personalization : null
+  // en: the title already says "Tomorrow", so the body must NOT repeat it (the old
+  // `is`="Tomorrow: {x}" template double-printed it). Lead with tomorrow's corpus hook
+  // headline — personalized + varied — when a 大吉/凶 fit fires it, instead of the single
+  // static "a strong day for you — worth seizing" line. A 节气/节日 rides in front.
+  if (locale === 'en') {
+    const hook = pers?.fit === '吉' || pers?.fit === '凶' ? (payload.dailyHook?.title ?? null) : null
+    if (!special && !hook) return null
+    return {
+      title: ev.title,
+      body: special && hook ? `${special}${ev.sep}${hook}` : (special ?? hook ?? ''),
+    }
+  }
   const fitClause = pers?.fit === '吉' ? ev.good : pers?.fit === '凶' ? ev.caution : null
   if (!special && !fitClause) return null
   const x = special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? '')
@@ -257,6 +269,12 @@ function dailyContent(
   isPro: boolean
 ): { title: string; body: string } {
   const d = payload.day
+  // en (daily-hook slice): lead with the personalized corpus hook, NOT the opaque
+  // "Water Pig day" 干支 gloss. Body = the natural-language lens. Mirrors the server
+  // push (renderAuspicePush) so the local fallback shows the identical line.
+  if (locale === 'en' && payload.dailyHook) {
+    return { title: payload.dailyHook.title, body: payload.dailyHook.lens }
+  }
   // Localize the 宜忌 verbs (were leaking raw CJK under en/ja) + locale separators.
   const sep = locale === 'en' ? ', ' : '、'
   const colon = locale === 'en' ? ': ' : '：'
@@ -354,6 +372,41 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
       })
     } catch {}
   }
+}
+
+/**
+ * DEV: fire today's daily push RIGHT NOW (~2s) with the REAL deterministic content,
+ * so the rendered hook / 宜忌 can be eyeballed on device without waiting for the 08:00
+ * cron or the local 8am schedule. Uses the same `dailyContent` the live push builds, so
+ * en shows the personalized 语料钩子 (when the /day API serves `dailyHook` — i.e. the
+ * worker change is deployed or running locally; otherwise it falls back to the 干支 label).
+ * Foreground banners are on (configureNotifications), so it shows even with the app open.
+ * Returns the fired content for an in-app preview. NOT wired in production builds.
+ */
+export async function fireTestDailyPush(
+  opts: PushOpts & { isPro?: boolean }
+): Promise<{ title: string; body: string }> {
+  const t = getStrings(opts.locale)
+  const dateStr = localYmd(new Date())
+  const isPro = opts.isPro ?? (await getAuspiceProActive())
+  let content: { title: string; body: string } = { title: t.appName, body: t.today }
+  try {
+    content = dailyContent(opts.locale, t, await fetchAuspiceDay(dateStr, opts.birthDate), isPro)
+  } catch {
+    // keep the generic fallback — a push that opens the app is still useful
+  }
+  await requestPushPermission()
+  // Stable `…dev` id → re-firing REPLACES the prior test instead of stacking.
+  await Notifications.scheduleNotificationAsync({
+    identifier: `${DAILY_ID_PREFIX}dev`,
+    content: { ...content, data: { day: dateStr, dev: '1' } },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 2,
+      repeats: false,
+    },
+  })
+  return content
 }
 
 /**

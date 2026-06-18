@@ -32,6 +32,7 @@
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
     "@zhop/astro-core": "workspace:*",
+    "@zhop/astro-i18n": "workspace:*",
     "@zhop/growth-funnel": "workspace:*",
     "@zhop/logger": "workspace:*",
     "drizzle-orm": "^0.44.5",

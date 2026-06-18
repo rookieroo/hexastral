@@ -7,6 +7,7 @@ import {
   computeHeHun,
   generateAnnualForecast,
   generateHeHunInterpretation,
+  generateRelationshipPushSnippets,
   generateSynastryChapters,
   summarizeZiweiPair,
 } from '../services/hehun/hehun'
@@ -26,9 +27,12 @@ pairRoutes.post('/compute', async (c) => {
   // Flat interpretation (cards/teaser/share) and the six deep chapters + aha
   // hook are independent LLM calls — run them in parallel so the deep report
   // adds no extra latency. Either can fail independently without 500-ing.
-  const [interpResult, chaptersResult] = await Promise.allSettled([
+  const [interpResult, chaptersResult, snippetsResult] = await Promise.allSettled([
     generateHeHunInterpretation(c.env, result, input, input.isPro ?? false, language),
     generateSynastryChapters(c.env, result, input, language),
+    // Harvest (ADR-0025): pre-write relationship push 语料 in the same LLM moment, so
+    // the kindred push queue is fed with zero per-day cron LLM. Non-fatal.
+    generateRelationshipPushSnippets(c.env, result, input, language),
   ])
 
   if (interpResult.status === 'rejected') {
@@ -46,11 +50,13 @@ pairRoutes.post('/compute', async (c) => {
         }
       : null
 
+  const pushSnippets = snippetsResult.status === 'fulfilled' ? snippetsResult.value : []
+
   // 紫微 summaries — persisted by the API layer so the living layer (timeline /
   // what-if) can fold a deterministic 紫微 signal without recomputing iztro.
   const { ziweiSummaryA, ziweiSummaryB } = summarizeZiweiPair(input)
 
-  return c.json({ result, interpretation, ziweiSummaryA, ziweiSummaryB })
+  return c.json({ result, interpretation, ziweiSummaryA, ziweiSummaryB, pushSnippets })
 })
 
 /** POST /annual-forecast — 年度双人运势解读（基于已有合盘数据） */

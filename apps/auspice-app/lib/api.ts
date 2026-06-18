@@ -165,6 +165,12 @@ export interface AuspiceDayPayload {
   day: AuspiceDay
   /** C.3 deterministic overlay — non-null when `birthDate` was passed to the endpoint. */
   personalization: AuspicePersonalization | null
+  /**
+   * Daily hook (语料钩子) — the non-CJK DAU one-liner from the relation×energy corpus,
+   * present when a birthDate subject was supplied. The push leads with `title`; the
+   * home day-view echoes the same line. `hookKey` rides along for A/B attribution.
+   */
+  dailyHook?: { title: string; lens: string; hookKey: string } | null
   /** Filled by C.4 (Pro AI explanation) once requested. */
   explanation: null
 }

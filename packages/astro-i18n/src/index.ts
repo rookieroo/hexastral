@@ -19,6 +19,8 @@ export type {
   AlmanacResult,
   Branch,
   ComputeAlmanacInput,
+  DailyHookInput,
+  DailyHookResult,
   DayContext,
   Direction,
   EnergyLevel,
@@ -26,7 +28,7 @@ export type {
   UserStaticTraits,
   WuXing,
 } from './almanac/computeAlmanac'
-export { computeAlmanac } from './almanac/computeAlmanac'
+export { computeAlmanac, computeDailyHook } from './almanac/computeAlmanac'
 export type { ExplanationDict } from './explain'
 export { explainTerm } from './explain'
 export { getLocalizedDictionary, labelize, labelizeMany } from './labelize'

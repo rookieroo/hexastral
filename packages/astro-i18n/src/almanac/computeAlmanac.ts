@@ -176,11 +176,16 @@ function fnv1a(s: string): number {
   return h >>> 0
 }
 
-/** Stable per-user-per-day index in [0, n). */
+/** Stable per-seed-per-day index in [0, len). Exposed so callers that need the
+ *  chosen index (e.g. a `hookKey` for A/B attribution) don't re-hash. */
+function pickIndex(len: number, seed: string, date: string, salt: string): number {
+  if (len <= 0) throw new Error('almanac: empty template array')
+  return fnv1a(`${seed}|${date}|${salt}`) % len
+}
+
+/** Stable per-user-per-day pick from `arr`. */
 function pick<T>(arr: readonly T[], userId: string, date: string, salt: string): T {
-  if (arr.length === 0) throw new Error('almanac: empty template array')
-  const idx = fnv1a(`${userId}|${date}|${salt}`) % arr.length
-  return arr[idx] as T
+  return arr[pickIndex(arr.length, userId, date, salt)] as T
 }
 
 // ============================================================================
@@ -198,9 +203,11 @@ function relationOf(dayEl: WuXing, dayMasterEl: WuXing): Relation {
   return 'peer'
 }
 
-function energyOf(relation: Relation, dayEl: WuXing, favorable: WuXing): EnergyLevel {
+function energyOf(relation: Relation, dayEl: WuXing, favorable?: WuXing): EnergyLevel {
   // Day element matches user's favorable element → tilts upward regardless of relation.
-  const favorableBoost = dayEl === favorable
+  // `favorable` is optional: an Auspice subject derived from birthDate alone has no
+  // 用神, so it falls to the no-boost branch (the relation still resolves the band).
+  const favorableBoost = favorable != null && dayEl === favorable
   switch (relation) {
     case 'support':
       return favorableBoost ? 'rising' : 'steady'
@@ -259,5 +266,59 @@ export function computeAlmanac(input: ComputeAlmanacInput): AlmanacResult {
     headline: pick(cell.headlines, user.userId, day.date, 'headline'),
     todayLens: pick(cell.lenses, user.userId, day.date, 'lens'),
     watchFor: pick(cell.watchFor, user.userId, day.date, 'watch'),
+  }
+}
+
+// ============================================================================
+// Daily hook — the Auspice DAU one-liner
+// ============================================================================
+//
+// A thin, subject-light wrapper over the same corpus `computeAlmanac` uses. The
+// Auspice daily push (non-zh) leads with this instead of an opaque 干支纪日 label,
+// and the home screen echoes the identical line. Unlike `computeAlmanac` it needs
+// no 用神/birthBranch — birthDate alone (→ dayMasterStem) is enough to resolve the
+// relation; energy falls to the no-boost band when 用神 is unknown. `seed` (not a
+// userId) keys the deterministic pick, so push and app agree on the same line.
+
+export interface DailyHookInput {
+  /** Stable seed so push + app pick the same line. Auspice passes the birthDate. */
+  seed: string
+  dayMasterStem: Stem
+  /** 用神 — optional; sharpens the energy band when known (else relation-only). */
+  favorableElement?: WuXing
+  /** Today's day-pillar heavenly stem. */
+  dayStem: Stem
+  /** ISO date (YYYY-MM-DD), the user's local-tz day. */
+  date: string
+  locale: Locale
+}
+
+export interface DailyHookResult {
+  relation: Relation
+  energyLevel: EnergyLevel
+  /** Localized one-line hook — push title / home hero. */
+  title: string
+  /** Localized 1–2 sentence frame — push body / home subline. */
+  lens: string
+  /** `relation:energyLevel:idx` — opaque key carried for future A/B attribution. */
+  hookKey: string
+}
+
+export function computeDailyHook(input: DailyHookInput): DailyHookResult {
+  const { seed, dayMasterStem, favorableElement, dayStem, date, locale } = input
+  const dayMasterEl = STEM_TO_ELEMENT[dayMasterStem]
+  const dayEl = STEM_TO_ELEMENT[dayStem]
+  const relation = relationOf(dayEl, dayMasterEl)
+  const energyLevel = energyOf(relation, dayEl, favorableElement)
+
+  const tpl = almanacTemplates[locale] ?? almanacTemplates.en
+  const cell = tpl[relation][energyLevel]
+  const titleIdx = pickIndex(cell.headlines.length, seed, date, 'hook-title')
+  return {
+    relation,
+    energyLevel,
+    title: cell.headlines[titleIdx] as string,
+    lens: pick(cell.lenses, seed, date, 'hook-lens'),
+    hookKey: `${relation}:${energyLevel}:${titleIdx}`,
   }
 }

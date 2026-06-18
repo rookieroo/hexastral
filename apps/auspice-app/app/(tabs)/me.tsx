@@ -64,6 +64,7 @@ import {
   disableSynastryReminders,
   disableTimelineReminders,
   enableDailyPush,
+  fireTestDailyPush,
   enableSynastryReminders,
   enableTimelineReminders,
   isPushEnabled,
@@ -1043,6 +1044,41 @@ export default function MeScreen() {
                 <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
                   {devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}
                 </Text>
+              </Pressable>
+            </View>
+            {/* Fire today's daily push now (~2s) to eyeball the real rendered content —
+                the en 语料钩子 when birth info is set + the /day API serves `dailyHook`. */}
+            <SectionLabel>PUSH · DEV</SectionLabel>
+            <View
+              style={{
+                borderRadius: 14,
+                backgroundColor: colors.card,
+                overflow: 'hidden',
+                marginBottom: spacing.lg,
+              }}
+            >
+              <Pressable
+                onPress={async () => {
+                  try {
+                    const fired = await fireTestDailyPush({
+                      locale,
+                      birthDate: birthValid ? birth.solarDate : undefined,
+                    })
+                    Alert.alert('Fired in ~2s', `${fired.title}\n\n${fired.body}`)
+                  } catch (e) {
+                    Alert.alert('Push failed', String(e))
+                  }
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 16 }}>Fire daily push now</Text>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Send →</Text>
               </Pressable>
             </View>
             <SectionLabel>ONBOARDING · DEV</SectionLabel>

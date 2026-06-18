@@ -82,6 +82,23 @@ function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoS
   )
 }
 
+/** Daily hook (语料钩子) — the non-CJK DAU one-liner the push leads with, echoed at
+ *  the top of the day-view so opening the notification lands on the same sentence.
+ *  en slice; CJK locales keep the 干支日 + 宜忌 lead. */
+function DailyHookHero({ hook }: { hook: { title: string; lens: string } }) {
+  const { colors, spacing } = useTheme()
+  return (
+    <View
+      style={{ gap: 6, paddingLeft: spacing.md, borderLeftWidth: 2, borderLeftColor: colors.accent }}
+    >
+      <Text style={{ color: colors.text, fontSize: 19, fontWeight: '600', lineHeight: 26 }}>
+        {hook.title}
+      </Text>
+      <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>{hook.lens}</Text>
+    </View>
+  )
+}
+
 export function DayView({
   payload,
   afterYiji,
@@ -138,6 +155,10 @@ export function DayView({
 
   return (
     <View style={{ gap: spacing.xl }}>
+      {/* Daily hook (en slice) — the line the push leads with, echoed here so opening
+          the notification lands on the same sentence. CJK locales keep 干支日 + 宜忌. */}
+      {locale === 'en' && payload.dailyHook ? <DailyHookHero hook={payload.dailyHook} /> : null}
+
       {/* 六曜 (JP only) —旧暦-derived calendar annotation Japanese users expect on
           any カレンダー. Sits above 宜忌 to group the day-quality read together. */}
       {locale === 'ja' && day.rokuyo && t.rokuyo ? (

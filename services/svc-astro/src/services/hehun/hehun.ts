@@ -774,6 +774,93 @@ export async function generateSynastryChapters(
 }
 
 /**
+ * One relationship daily-push teaser, harvested at report-generation time (ADR-0025).
+ * `trigger` maps to `calculateDailySynastry().status`, so a cheap deterministic cron
+ * can later send the matching line on a matching-energy day — no per-day LLM.
+ */
+export interface RelationshipPushSnippet {
+  trigger: 'resonance' | 'tension' | 'neutral'
+  title: string
+  body: string
+}
+
+const VALID_PUSH_TRIGGER = new Set(['resonance', 'tension', 'neutral'])
+
+function buildPushSnippetsPrompt(
+  result: HeHunFullResult,
+  input: HeHunInput,
+  ziweiBlock: string
+): string {
+  return `你是一位精通命盘配对的 AI 命理师。基于以下两人命盘的**真实互动**，预先撰写三条"关系日活推送"语料 —— 未来某天两人当日能量呈现对应状态时，App 会作为推送发出，唤起用户打开看这段关系。
+
+${buildPairFacts(result, input, ziweiBlock)}
+
+## 要求
+- 为三种"当日能量状态"各写一条，trigger 取值固定为：resonance(高契合日)、tension(易摩擦日)、neutral(平稳日)。
+- 每条含 title(≤12字 钩子) 与 body(≤30字 一句话)，必须落到这两人命盘的具体互动上，典雅克制，不下天命定论，严禁网络话术。
+- 以「你」称呼接收推送的一方，对方称「对方」（客户端会替换为真实名字）。
+
+## 输出（严格 JSON）
+{ "snippets": [ { "trigger": "resonance", "title": "…", "body": "…" }, { "trigger": "tension", "title": "…", "body": "…" }, { "trigger": "neutral", "title": "…", "body": "…" } ] }
+
+只输出纯 JSON，不要任何其他内容。`
+}
+
+/**
+ * Harvest relationship push 语料 during the same LLM moment as the report (ADR-0025).
+ * One small structured call, run in parallel with the chapters; never fatal (returns
+ * [] on any failure — the report must not 500 over a push side-output).
+ */
+export async function generateRelationshipPushSnippets(
+  env: AiRouterEnv,
+  result: HeHunFullResult,
+  input: HeHunInput,
+  language: string
+): Promise<RelationshipPushSnippet[]> {
+  const ziweiBlock = buildZiweiBlock(input)
+  const systemPrompt = [
+    getSystemRole('hehun'),
+    '',
+    buildEnhancedGuardrails('相遇即是缘'),
+    '',
+    buildLanguageBlock(language, 'hehun'),
+  ].join('\n')
+  const text = await callWithFallback(
+    env,
+    systemPrompt,
+    buildPushSnippetsPrompt(result, input, ziweiBlock) + buildLanguageReminder(language),
+    { tier: 'standard', maxTokens: 512, metricLabel: 'hehun-push-snippets', locale: language }
+  )
+  return parsePushSnippets(text)
+}
+
+/** Parse the push-snippets JSON; returns [] on any failure (non-fatal). */
+export function parsePushSnippets(text: string): RelationshipPushSnippet[] {
+  try {
+    const jsonStr = extractJson(text)
+    if (!jsonStr) return []
+    const parsed = JSON.parse(jsonStr) as { snippets?: unknown }
+    if (!Array.isArray(parsed.snippets)) return []
+    const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+    return parsed.snippets
+      .map((s) => {
+        const o = (s ?? {}) as Record<string, unknown>
+        const trigger = str(o.trigger)
+        return {
+          trigger: (VALID_PUSH_TRIGGER.has(trigger)
+            ? trigger
+            : 'neutral') as RelationshipPushSnippet['trigger'],
+          title: str(o.title),
+          body: str(o.body),
+        }
+      })
+      .filter((s) => s.title && s.body)
+  } catch {
+    return []
+  }
+}
+
+/**
  * Parse one chapter's structured JSON into a SynastryChapterOutput. Assembles a
  * rich `body` from the four layers so even the current text-only card shows the
  * full depth. Throws if the chapter has no usable content (caller drops it).
