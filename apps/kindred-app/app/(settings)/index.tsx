@@ -24,6 +24,7 @@ import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/ia
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
+import { registerPushToken, unregisterPushToken } from '@/lib/serverPush'
 import { devReplaySplash } from '@/lib/splash-control'
 import { resetOnboarding } from '../index'
 
@@ -126,6 +127,18 @@ export default function SettingsScreen() {
     setDailyPushState(value)
     try {
       await setDailyPushEnabled(value)
+      // Register / unregister this device's token so the server relationship cron
+      // can (or can no longer) reach it. Enabling prompts for OS permission — if the
+      // user denies, revert the toggle (a stored pref with no token pushes nothing).
+      if (value) {
+        const ok = await registerPushToken(userId, { prompt: true })
+        if (!ok) {
+          await setDailyPushEnabled(false)
+          setDailyPushState(false)
+        }
+      } else {
+        await unregisterPushToken(userId)
+      }
     } catch {
       setDailyPushState(!value)
     } finally {

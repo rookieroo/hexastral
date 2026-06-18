@@ -44,6 +44,7 @@ import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
 import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
+import { syncPushRegistration } from '@/lib/serverPush'
 
 /**
  * Boot cover — the client gate paints the kindred bg ONLY while session
@@ -70,6 +71,9 @@ function IapInitializer(): null {
   useEffect(() => {
     if (!userId) return
     void loginYuanIap(userId)
+    // Reconcile push registration with the opt-in. Never prompts on launch — only
+    // registers when permission is already granted (the toggle does the prompting).
+    void syncPushRegistration(userId)
   }, [userId])
   return null
 }
