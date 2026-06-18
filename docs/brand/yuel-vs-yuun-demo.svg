@@ -1,0 +1,47 @@
+<svg width="1120" height="640" viewBox="0 0 560 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="moon" x1="70" y1="70" x2="230" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0.18" stop-color="#0B0B0C"/>
+      <stop offset="0.5" stop-color="#3A3B40"/>
+      <stop offset="1" stop-color="#D7D8DC"/>
+    </linearGradient>
+    <linearGradient id="cinnabar2" x1="420" y1="92" x2="420" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C0392B"/>
+      <stop offset="1" stop-color="#8E1F22"/>
+    </linearGradient>
+    <radialGradient id="vignette2" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#1A1512"/>
+      <stop offset="1" stop-color="#0C0A09"/>
+    </radialGradient>
+    <radialGradient id="goldNode2" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#E4CFA6"/>
+      <stop offset="1" stop-color="#B89968"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="560" height="320" fill="#080706"/>
+
+  <!-- ── Yuun: the shared moon-phase sphere stays here ── -->
+  <g>
+    <rect x="40" y="40" width="200" height="200" rx="45" fill="#0B0B0C"/>
+    <circle cx="140" cy="140" r="78" fill="url(#moon)"/>
+    <text x="140" y="276" fill="#C4A882" font-family="Georgia, 'Times New Roman', serif" font-size="20" letter-spacing="3" text-anchor="middle">YUUN</text>
+    <text x="140" y="298" fill="#6E6A63" font-family="Georgia, serif" font-size="12" letter-spacing="1" text-anchor="middle">almanac · moon</text>
+  </g>
+
+  <!-- ── Yuel: the new 同心结 lover's-knot ── -->
+  <g>
+    <rect x="320" y="40" width="200" height="200" rx="45" fill="url(#vignette2)"/>
+    <rect x="328" y="48" width="184" height="184" rx="38" fill="none" stroke="#C4A882" stroke-opacity="0.16" stroke-width="1.2"/>
+    <g transform="translate(300,30)" stroke="url(#cinnabar2)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8.4">
+      <path d="M120 104 C92 80 58 90 60 106 C62 121 94 127 120 104 C130 118 138 162 146 196"/>
+      <path d="M120 104 C148 80 182 90 180 106 C178 121 146 127 120 104 C110 118 102 162 94 196"/>
+    </g>
+    <circle cx="446" cy="226" r="4.2" fill="url(#cinnabar2)"/>
+    <circle cx="394" cy="226" r="4.2" fill="url(#cinnabar2)"/>
+    <circle cx="420" cy="136" r="6.4" fill="url(#goldNode2)"/>
+    <circle cx="420" cy="136" r="2.5" fill="#8E1F22"/>
+    <text x="420" y="276" fill="#C4A882" font-family="Georgia, 'Times New Roman', serif" font-size="20" letter-spacing="3" text-anchor="middle">YUEL</text>
+    <text x="420" y="298" fill="#6E6A63" font-family="Georgia, serif" font-size="12" letter-spacing="1" text-anchor="middle">姻缘 · 红线</text>
+  </g>
+</svg>

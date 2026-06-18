@@ -1,0 +1,46 @@
+<svg width="1024" height="1024" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Yuel (kindred) app-logo demo — 姻缘符 / 同心结 (lover's knot).
+
+    Brand split: Yuun (auspice, almanac) keeps the moon-phase sphere; Yuel
+    (relationships / 姻缘) takes the 月老红线 thread of fate. Grown from the in-app
+    RedThreadGlyph (two braided cinnabar strands) into a full mark: two strands
+    bow open, then CROSS at the heart — left loop runs into the right tail and
+    vice-versa — tying a true lover's knot rather than a gift bow. One gold seal
+    node sits at the crossing; two cinnabar tips are the pair the thread binds.
+
+    Tokens: stone.void #0C0A09 · cinnabar.seal #9B2226 · ink.gold #C4A882.
+  -->
+  <defs>
+    <linearGradient id="cinnabar" x1="120" y1="60" x2="120" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C0392B"/>
+      <stop offset="1" stop-color="#8E1F22"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#1A1512"/>
+      <stop offset="1" stop-color="#0C0A09"/>
+    </radialGradient>
+    <radialGradient id="goldNode" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#E4CFA6"/>
+      <stop offset="1" stop-color="#B89968"/>
+    </radialGradient>
+  </defs>
+
+  <!-- icon tile: stone-void squircle, warm centre, faint gold seal keyline -->
+  <rect x="0" y="0" width="240" height="240" rx="54" fill="url(#vignette)"/>
+  <rect x="9" y="9" width="222" height="222" rx="46" fill="none" stroke="#C4A882" stroke-opacity="0.16" stroke-width="1.4"/>
+
+  <!-- the 同心结 — two cinnabar strands that cross at the heart -->
+  <g stroke="url(#cinnabar)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="10">
+    <!-- strand 1: left loop, through the heart, crossing into the RIGHT tail -->
+    <path d="M120 104 C92 80 58 90 60 106 C62 121 94 127 120 104 C130 118 138 162 146 196"/>
+    <!-- strand 2: right loop, through the heart, crossing into the LEFT tail -->
+    <path d="M120 104 C148 80 182 90 180 106 C178 121 146 127 120 104 C110 118 102 162 94 196"/>
+  </g>
+  <!-- the pair the thread binds -->
+  <circle cx="146" cy="198" r="5" fill="url(#cinnabar)"/>
+  <circle cx="94" cy="198" r="5" fill="url(#cinnabar)"/>
+  <!-- gold seal node at the knot's heart -->
+  <circle cx="120" cy="106" r="7.5" fill="url(#goldNode)"/>
+  <circle cx="120" cy="106" r="3" fill="#8E1F22"/>
+</svg>
