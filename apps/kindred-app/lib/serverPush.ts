@@ -73,7 +73,7 @@ async function signedHeaders(
  * `{ prompt: true }` from the explicit settings toggle to request permission.
  */
 export async function registerPushToken(
-  userId: string,
+  userId: string | null | undefined,
   opts?: { prompt?: boolean }
 ): Promise<boolean> {
   const N = notif()
@@ -108,7 +108,7 @@ export async function registerPushToken(
 }
 
 /** Drop this user's push tokens (opt-out / logout). Best-effort, silent. */
-export async function unregisterPushToken(userId: string): Promise<void> {
+export async function unregisterPushToken(userId: string | null | undefined): Promise<void> {
   if (!userId) return
   try {
     const headers = await signedHeaders(userId, 'DELETE', '')
@@ -124,7 +124,7 @@ export async function unregisterPushToken(userId: string): Promise<void> {
  * (+ permission already granted — never prompts here), else unregister. Call on
  * launch once userId is available, and after the settings toggle flips.
  */
-export async function syncPushRegistration(userId: string): Promise<void> {
+export async function syncPushRegistration(userId: string | null | undefined): Promise<void> {
   if (!userId || Platform.OS === 'web') return
   if (await getDailyPushEnabled()) {
     await registerPushToken(userId)
