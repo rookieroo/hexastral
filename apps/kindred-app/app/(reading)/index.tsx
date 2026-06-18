@@ -485,59 +485,80 @@ export default function ReadingHomeScreen() {
           state shows the centered invite (ListEmptyComponent) instead, so this
           header would just be a label over nothing. */}
       {threads.length > 0 ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: kindredSpacing.screenH,
-            marginBottom: kindredSpacing.sm,
-          }}
-        >
-          {/* Section title — the woven 红线 mark + a quiet count, so the header reads
-              as a real section, not a floating label. */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <RedThreadGlyph size={20} color={kindredDark.seal} />
-            <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
-            <Text
-              style={{
-                fontFamily: kindredFonts.mono,
-                fontSize: 12,
-                color: kindredDark.textMuted,
-                marginLeft: 1,
-              }}
-            >
-              {threads.length}
-            </Text>
-          </View>
-          {/* New thread — borderless + editorial (matches the small-caps footer links,
-              not a generic pill): the 红线 "+" glyph + a mono small-caps accent label. */}
-          <Pressable
-            onPress={startNewThread}
-            accessibilityRole='button'
-            accessibilityLabel={t(locale, 'bondList.add')}
-            hitSlop={10}
-            style={({ pressed }) => ({
+        <>
+          <View
+            style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 7,
-              opacity: pressed ? 0.55 : 1,
-            })}
+              justifyContent: 'space-between',
+              paddingHorizontal: kindredSpacing.screenH,
+              marginBottom: kindredSpacing.sm,
+            }}
           >
-            <NewThreadGlyph size={16} color={kindredDark.accent} />
-            <Text
-              style={{
-                fontFamily: kindredFonts.mono,
-                fontSize: 11,
-                letterSpacing: 1.5,
-                textTransform: 'uppercase',
-                color: kindredDark.accent,
-              }}
+            {/* Section title — the woven 红线 mark + a quiet count, so the header reads
+              as a real section, not a floating label. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <RedThreadGlyph size={20} color={kindredDark.seal} />
+              <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
+              <Text
+                style={{
+                  fontFamily: kindredFonts.mono,
+                  fontSize: 12,
+                  color: kindredDark.textMuted,
+                  marginLeft: 1,
+                }}
+              >
+                {threads.length}
+              </Text>
+            </View>
+            {/* New thread — borderless + editorial (matches the small-caps footer links,
+              not a generic pill): the 红线 "+" glyph + a mono small-caps accent label. */}
+            <Pressable
+              onPress={startNewThread}
+              accessibilityRole='button'
+              accessibilityLabel={t(locale, 'bondList.add')}
+              hitSlop={10}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 7,
+                opacity: pressed ? 0.55 : 1,
+              })}
             >
-              {t(locale, 'bondList.add')}
-            </Text>
-          </Pressable>
-        </View>
+              <NewThreadGlyph size={16} color={kindredDark.accent} />
+              <Text
+                style={{
+                  fontFamily: kindredFonts.mono,
+                  fontSize: 11,
+                  letterSpacing: 1.5,
+                  textTransform: 'uppercase',
+                  color: kindredDark.accent,
+                }}
+              >
+                {t(locale, 'bondList.add')}
+              </Text>
+            </Pressable>
+          </View>
+          {/* 红线 rule — a hairline that begins cinnabar under the 红线 mark and fades to
+            neutral, descending into the thread that strings the beads below. */}
+          <View style={{ flexDirection: 'row', marginHorizontal: kindredSpacing.screenH }}>
+            <View
+              style={{
+                width: 30,
+                height: StyleSheet.hairlineWidth,
+                backgroundColor: kindredDark.seal,
+                opacity: 0.5,
+              }}
+            />
+            <View
+              style={{
+                flex: 1,
+                height: StyleSheet.hairlineWidth,
+                backgroundColor: kindredDark.border,
+              }}
+            />
+          </View>
+        </>
       ) : null}
     </View>
   )
@@ -577,13 +598,14 @@ export default function ReadingHomeScreen() {
               ListHeaderComponent={listHeader}
               data={threads}
               keyExtractor={(b) => b.id}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <ThreadListItem
                   bond={item}
                   locale={locale}
                   onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
                   onDelete={() => confirmDelete(item)}
                   onRecompute={item.basedOnStaleBirth ? () => confirmRecompute(item) : undefined}
+                  isLast={index === threads.length - 1}
                 />
               )}
               ItemSeparatorComponent={() => (

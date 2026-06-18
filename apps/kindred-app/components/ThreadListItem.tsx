@@ -1,28 +1,33 @@
 /**
- * ThreadListItem — one thread row on the home's night-sky list.
+ * ThreadListItem — one thread on the home's night-sky list (Variant A "红线串星",
+ * 2026-06 redesign).
  *
- * Minimal by design (2026-06 "不要过度设计"): the OTHER person's 五行 意象图 leads
- * (their element imagery = their star in your orbit), then their name + a quiet
- * relationship line, then a RIGHT-SLOT mark: a pending invite shows a quiet clock
- * (awaiting their reply); a completed bond shows its 合盘综合评价 essence
- * (相生/比和/相克) via the shared EssenceTag — the same 意象 the report uses, so
- * the list and the report never disagree. Tap → the report; left-swipe reveals 解缘.
+ * Each relationship reads as a STAR strung on a faint cinnabar 红线: a glowing
+ * element-coloured node (the OTHER person's 五行, the same hue as their star in the
+ * SkyHero above — list and sky never disagree), a serif name, a mono small-caps
+ * meta line (relationship · time), and a right-slot essence (相生/比和/相克 via the
+ * shared EssenceTag, so the chip and the report's ink stay in sync). Pending shows
+ * an unlit hollow star + a quiet status; a stale report carries an INLINE
+ * "earlier birth · recompute" (no boxed badge). Tap → the report; left-swipe → 解缘.
+ *
+ * The 红线: a hairline cinnabar line runs down the node column behind the beads
+ * (each node is an opaque disc that "breaks" it), tying the threads to the header's
+ * 红线 mark above. It terminates at the last bead (isLast).
  */
 
-import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import type { BondData, BondStatus } from '@zhop/scenario-kindred'
+import { kindredDark, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
+import { type BondData, type BondStatus, kindredFonts } from '@zhop/scenario-kindred'
 import { Clock, Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { EssenceTag } from '@/components/EssenceTag'
-import { ElementGlyph } from '@/components/home/ElementGlyph'
 import { resolveBondDisplayName } from '@/lib/bondName'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, relativeSentLabel, relativeTimeLabel, t } from '@/lib/i18n'
 
-/** The counterpart's 意象图 colour = their SkyHero star hue (same halo colours), so
- *  the glyph reads as "their star, here in the list". Unknown → cool silver. */
+/** The counterpart's 意象 colour = their SkyHero star hue (same halo colours), so the
+ *  bead reads as "their star, here in the list". Unknown → cool silver. */
 const STAR_HUE: Record<string, string> = {
   木: '#86b66f',
   火: '#d2745a',
@@ -32,7 +37,12 @@ const STAR_HUE: Record<string, string> = {
 }
 const STAR_HUE_FALLBACK = '#bcccea'
 
-/** Localized accessibility label for the status (carried by the row bg, not an icon). */
+/** x of the 红线 + every bead's centre: the node column is the first child, flush to
+ *  the screen inset, 30 wide → its centre sits 15 past the inset. Absolute children
+ *  ignore padding, so this same number positions the thread line. */
+const THREAD_X = kindredSpacing.screenH + 15
+
+/** Localized accessibility label for the status (carried by the row, not an icon). */
 function statusA11y(status: BondStatus, locale: Locale): string {
   switch (status) {
     case 'active':
@@ -57,6 +67,8 @@ export interface ThreadListItemProps {
   /** When the report is based on an earlier birth, offer a Pro recompute. Only
    *  wired (and only shown) for stale bonds. */
   onRecompute?: () => void
+  /** Last row in the list → the 红线 stops at this bead instead of running on. */
+  isLast?: boolean
 }
 
 export function ThreadListItem({
@@ -65,20 +77,24 @@ export function ThreadListItem({
   onPress,
   onDelete,
   onRecompute,
+  isLast,
 }: ThreadListItemProps) {
   // Specific name as title; fall back to the relationship (and strip the legacy
   // literal "Unknown"). See lib/bondName.ts.
   const { displayName, relTag } = resolveBondDisplayName(bond)
   const isActive = bond.status === 'active'
   const isPending = bond.status === 'pending_invite'
+  const el = bond.counterpartElement ?? undefined
+  const lit = isActive && !!(el && STAR_HUE[el])
+  const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
+
   // Pending → when the invite went out; completed → when the report was generated.
   const timeLabel = isPending
     ? relativeSentLabel(locale, bond.createdAt)
     : isActive && bond.generatedAt
       ? relativeTimeLabel(locale, bond.generatedAt)
       : ''
-  const el = bond.counterpartElement ?? undefined
-  const hue = (el && STAR_HUE[el]) || STAR_HUE_FALLBACK
+  const meta = [relTag, timeLabel].filter(Boolean).join(' · ')
 
   return (
     <ReanimatedSwipeable
@@ -116,63 +132,71 @@ export function ThreadListItem({
           backgroundColor: kindredDark.bg,
         }}
       >
-        {/* The other person's 五行 意象图 — their star, here in the list. A faint ring
-            stands in for an unlit star while they haven't filled their birth in. */}
-        <View style={{ width: 26, alignItems: 'center', justifyContent: 'center' }}>
-          {el && STAR_HUE[el] ? (
-            <View style={{ opacity: isActive ? 1 : 0.5 }}>
-              <ElementGlyph element={el} color={hue} size={30} />
-            </View>
-          ) : (
-            <View
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: 5,
-                borderWidth: 1,
-                borderColor: kindredDark.textMuted,
-                opacity: 0.6,
-              }}
-            />
-          )}
-        </View>
+        {/* 红线 — a hairline cinnabar thread the beads are strung on. Behind the node
+            (drawn first); the node's opaque disc breaks it into beads. Stops at the
+            last bead so the thread doesn't dangle past the final star. */}
+        <View
+          pointerEvents='none'
+          style={{
+            position: 'absolute',
+            left: THREAD_X,
+            top: 0,
+            bottom: isLast ? '50%' : 0,
+            width: StyleSheet.hairlineWidth,
+            backgroundColor: kindredDark.seal,
+            opacity: 0.28,
+          }}
+        />
 
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text style={[kindredType.heading, { color: kindredDark.text }]} numberOfLines={1}>
+        {/* The bead — their star, in their 五行 hue (lit) or an unlit ring (pending /
+            no reading yet). The opaque disc is what breaks the 红线 at each bead. */}
+        <ThreadStar hue={hue} lit={lit} />
+
+        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+          <Text
+            style={{
+              fontFamily: kindredFonts.serif,
+              fontSize: 21,
+              lineHeight: 27,
+              color: isActive ? kindredDark.text : kindredDark.textSecondary,
+            }}
+            numberOfLines={1}
+          >
             {displayName}
           </Text>
-          {/* One quiet line: who they are to you · when. Pending shows the invite-sent
-              time; a completed thread shows when its report was generated. */}
-          {relTag || timeLabel ? (
+          {/* One quiet line: who they are to you · when — mono small-caps, the
+              editorial counter to the serif name. */}
+          {meta ? (
             <Text
-              style={[kindredType.caption, { color: kindredDark.textSecondary }]}
+              style={{
+                fontFamily: kindredFonts.mono,
+                fontSize: 11,
+                letterSpacing: 1.1,
+                textTransform: 'uppercase',
+                color: kindredDark.textMuted,
+              }}
               numberOfLines={1}
             >
-              {relTag ?? ''}
-              {relTag && timeLabel ? ' · ' : ''}
-              {timeLabel}
+              {meta}
             </Text>
           ) : null}
-          {/* This report predates a later birth-info edit — it stays as-is, but the
-              basis is flagged (and, for Pro, a recompute-with-new-birth CTA). */}
+          {/* Stale basis — INLINE now (was a bordered badge): a quiet sentence, then
+              the Pro recompute link. The report stays as-is; this just flags the basis. */}
           {bond.basedOnStaleBirth ? (
-            <View style={{ marginTop: 2, gap: 4, alignItems: 'flex-start' }}>
-              <View
-                style={{
-                  borderWidth: 0.5,
-                  borderColor: kindredDark.border,
-                  borderRadius: 4,
-                  paddingHorizontal: 6,
-                  paddingVertical: 1,
-                }}
-              >
-                <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11 }]}>
-                  {t(locale, 'bond.staleBirth')}
-                </Text>
-              </View>
+            <View style={{ marginTop: 3, gap: 4, alignItems: 'flex-start' }}>
+              <Text style={{ fontSize: 11, lineHeight: 15, color: kindredDark.textMuted }}>
+                {t(locale, 'bond.staleBirth')}
+              </Text>
               {onRecompute ? (
                 <Pressable onPress={onRecompute} hitSlop={6} accessibilityRole='button'>
-                  <Text style={[kindredType.caption, { color: kindredDark.accent, fontSize: 11 }]}>
+                  <Text
+                    style={{
+                      fontFamily: kindredFonts.mono,
+                      fontSize: 11,
+                      letterSpacing: 0.6,
+                      color: kindredDark.accent,
+                    }}
+                  >
                     {t(locale, 'bond.recompute')} →
                   </Text>
                 </Pressable>
@@ -181,19 +205,102 @@ export function ThreadListItem({
           ) : null}
         </View>
 
-        {/* Right slot: a pending invite shows a quiet clock (awaiting their reply);
-            a completed bond shows its 合盘综合评价 essence (相生/比和/相克) via the
-            shared EssenceTag — the same 意象 the report + InkCenterpiece use. Other
-            states (declined/expired), or a bond with no elements yet, show nothing. */}
-        {isPending ? (
-          <View style={{ width: 24, alignItems: 'center' }}>
-            <Clock color={kindredDark.textMuted} size={16} strokeWidth={1.7} />
-          </View>
-        ) : isActive ? (
+        {/* Right slot: a completed bond shows its 合盘综合评价 essence (相生/比和/相克)
+            via the shared EssenceTag — the same 意象 the report + InkCenterpiece use; a
+            pending invite shows a quiet clock + status; declined/expired show nothing. */}
+        {isActive ? (
           <EssenceTag aElement={bond.aElement} bElement={bond.bElement} locale={locale} compact />
+        ) : isPending ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Clock color={kindredDark.textMuted} size={14} strokeWidth={1.7} />
+            <Text
+              style={{
+                fontFamily: kindredFonts.mono,
+                fontSize: 11,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                color: kindredDark.textMuted,
+              }}
+            >
+              {t(locale, 'bond.statusPending')}
+            </Text>
+          </View>
         ) : null}
       </Pressable>
     </ReanimatedSwipeable>
+  )
+}
+
+/** A bead on the 红线: a glowing element star (lit) or an unlit ring (pending / no
+ *  reading). The 30px disc is opaque (screen ground) so it breaks the thread line
+ *  behind it; the glow is a cheap 3-layer stack (no Skia surface per row). */
+function ThreadStar({ hue, lit }: { hue: string; lit: boolean }) {
+  return (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: kindredDark.bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {lit ? (
+        <>
+          <View
+            style={{
+              position: 'absolute',
+              width: 26,
+              height: 26,
+              borderRadius: 13,
+              backgroundColor: hue,
+              opacity: 0.12,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              width: 15,
+              height: 15,
+              borderRadius: 8,
+              backgroundColor: hue,
+              opacity: 0.22,
+            }}
+          />
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: hue,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <View
+              style={{
+                width: 3,
+                height: 3,
+                borderRadius: 1.5,
+                backgroundColor: kindredDark.accent,
+              }}
+            />
+          </View>
+        </>
+      ) : (
+        <View
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: kindredDark.textMuted,
+            opacity: 0.7,
+          }}
+        />
+      )}
+    </View>
   )
 }
 
