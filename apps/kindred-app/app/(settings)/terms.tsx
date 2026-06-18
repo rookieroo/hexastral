@@ -27,9 +27,10 @@ export default function TermGlossaryScreen() {
   const tr = (key: TranslationKey) => t(locale, key)
   const groups = useMemo(() => getTermsByCategory(locale), [locale])
 
-  // No swipe-back here (2026-06 feedback): a long vertical scroll + a horizontal
-  // back-gesture fought each other and felt sticky. Layout sets gestureEnabled:false
-  // for this screen; exit is ONLY the ← button below so scrolling stays smooth.
+  // Back: a left-EDGE swipe pops back (set in the layout) — to home when opened from
+  // the home footer (2026-06). Edge-only is deliberate: it never contends with this long
+  // ScrollView the way a full-screen horizontal gesture did, so scrolling stays smooth.
+  // The ← button below also exits.
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View

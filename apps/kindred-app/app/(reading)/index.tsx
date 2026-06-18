@@ -434,9 +434,33 @@ export default function ReadingHomeScreen() {
 
   const listHeader = (
     <View style={{ paddingBottom: kindredSpacing.sm }}>
-      {/* No explicit "open your reading" CTA — your personal 命书 概要 is reached by
-          tapping your central star (SkyHero.onTapSelf). Yuel's home is the threads
-          (synastry); the personal reading is a quiet, secondary tap. */}
+      {/* Personal reading entry. Tapping your central star opens it too
+          (SkyHero.onTapSelf), but that gesture isn't discoverable — this is the visible
+          doorway the home was missing (2026-06 feedback). Centered under your star,
+          quiet gold so it reads as YOUR entry without shouting over the sky. */}
+      <Pressable
+        onPress={openSelfReading}
+        hitSlop={8}
+        accessibilityRole='button'
+        accessibilityLabel={copy.cardKicker}
+        style={({ pressed }) => ({
+          alignSelf: 'center',
+          marginBottom: kindredSpacing.lg,
+          opacity: pressed ? 0.55 : 1,
+        })}
+      >
+        <Text
+          style={{
+            fontFamily: kindredFonts.mono,
+            fontSize: 12,
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            color: kindredDark.accent,
+          }}
+        >
+          {copy.open}
+        </Text>
+      </Pressable>
 
       {/* Threads header — title + New. Only once you HAVE threads; the 0-thread
           state shows the centered invite (ListEmptyComponent) instead, so this

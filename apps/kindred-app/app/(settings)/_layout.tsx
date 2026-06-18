@@ -30,16 +30,15 @@ export default function SettingsLayout() {
         // drifted sideways — and dismissed the whole group to home instead of popping
         // one screen. Edge-only requires a deliberate left-edge horizontal intent;
         // an up-swipe is never mistaken for it.
+        //
+        // glossary + 命理词典 inherit this edge-only swipe (re-enabled 2026-06; they
+        // were briefly button-only). Opened from the HOME footer the left-edge swipe
+        // pops straight back to home — there's no settings index beneath them (see the
+        // anchor note above). Edge-only is the key: a left-edge start never contends
+        // with these long ScrollViews, so swipe-back works AND scrolling stays smooth.
+        // The ← button on each screen still exits too.
         fullScreenGestureEnabled: false,
       }}
-    >
-      {/* The glossary + 命理词典 are long vertical scroll pages with NO swipe-back at
-          all (2026-06 feedback): any horizontal back-gesture — native OR a custom
-          angle-gated one — still contended with the ScrollView and made scrolling feel
-          sticky. gestureEnabled:false kills the native swipe; the screens themselves no
-          longer wrap a gesture either. Exit is the ← button only. */}
-      <Stack.Screen name='terms' options={{ gestureEnabled: false }} />
-      <Stack.Screen name='glossary' options={{ gestureEnabled: false }} />
-    </Stack>
+    />
   )
 }

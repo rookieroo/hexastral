@@ -55,22 +55,22 @@ const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }>
   en: {
     section: 'Birth info',
     row: 'Edit birth info',
-    hint: 'Date · time · place. Editing regenerates your personal reading — one free change, then unlock. Synastry reports you have already generated are unchanged (they keep the birth info used at the time).',
+    hint: 'Date · time · place',
   },
   zh: {
     section: '出生信息',
     row: '修改出生信息',
-    hint: '出生日期 · 时辰 · 地点。修改会重新生成个人报告（免费仅 1 次，之后需解锁）；已生成的合盘报告不受影响，仍基于当时录入的生辰。',
+    hint: '出生日期 · 时辰 · 地点',
   },
   'zh-Hant': {
     section: '出生資訊',
     row: '修改出生資訊',
-    hint: '出生日期 · 時辰 · 地點。修改會重新生成個人報告（免費僅 1 次，之後需解鎖）；已生成的合盤報告不受影響，仍基於當時錄入的生辰。',
+    hint: '出生日期 · 時辰 · 地點',
   },
   ja: {
     section: '出生情報',
     row: '出生情報を編集',
-    hint: '生年月日 · 時辰 · 場所。編集すると個人レポートが再生成されます（無料は1回まで、以降は解除が必要）。すでに生成した相性レポートは当時の出生情報のまま変わりません。',
+    hint: '生年月日 · 時辰 · 場所',
   },
 }
 
@@ -255,9 +255,6 @@ export default function SettingsScreen() {
               {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
             </Text>
           </Pressable>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t(locale, 'settings.email.hint')}
-          </Text>
         </Card>
 
         <Text
@@ -485,14 +482,6 @@ export default function SettingsScreen() {
             <Text style={[kindredType.body, { color: kindredDark.text }]}>
               {t(locale, 'settings.glossary.row')}
             </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {t(locale, 'settings.glossary.hint')}
-            </Text>
           </Pressable>
 
           <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
@@ -510,14 +499,6 @@ export default function SettingsScreen() {
           >
             <Text style={[kindredType.body, { color: kindredDark.text }]}>
               {t(locale, 'settings.terms.row')}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {t(locale, 'settings.terms.hint')}
             </Text>
           </Pressable>
         </Card>

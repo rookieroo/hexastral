@@ -68,10 +68,11 @@ export default function GlossaryScreen() {
   const tr = (key: TranslationKey) => t(locale, key)
   const [showPrimer, setShowPrimer] = useState(false)
 
-  // No swipe-back here (2026-06 feedback): the glossary is a long vertical scroll,
-  // and any horizontal back-gesture (native or the custom EdgeBackSwipe) competed
-  // with the ScrollView and made it feel sticky. The layout sets gestureEnabled:false
-  // for this screen, so exit is ONLY the ← button below — scrolling stays smooth.
+  // Back: a left-EDGE swipe pops back (layout sets gestureEnabled true +
+  // fullScreenGestureEnabled false) — to home when opened from the home footer
+  // (2026-06). Edge-only is deliberate: it never contends with this long ScrollView the
+  // way a full-screen horizontal gesture did, so scrolling stays smooth. The ← button
+  // below also exits.
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
       <View

@@ -160,7 +160,11 @@ export default function RootLayout() {
                 <Stack.Screen name='(reading)' />
                 <Stack.Screen name='(bonds)' />
                 <Stack.Screen name='(timeline)' />
-                <Stack.Screen name='(settings)' />
+                {/* Settings dismiss is EDGE-ONLY (overrides the screenOptions default):
+                    a full-screen back-swipe on the long settings scroll was too easy to
+                    fire by accident (2026-06 feedback) — require a deliberate left-edge
+                    start instead. */}
+                <Stack.Screen name='(settings)' options={{ fullScreenGestureEnabled: false }} />
                 <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
                 <Stack.Screen name='accept/[token]' options={{ presentation: 'modal' }} />
               </Stack>
