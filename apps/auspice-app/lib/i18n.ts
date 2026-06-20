@@ -62,6 +62,8 @@ export interface Strings {
   settings: string
   language: string
   dailyPush: string
+  eveningPush: string
+  eveningPushHint: string
   /** 节假日 / 调休 heads-up toggle label + hint. */
   holidayHeadsUp: string
   holidayHeadsUpHint: string
@@ -546,6 +548,8 @@ const zhHans: Strings = {
   settings: '设置',
   language: '语言',
   dailyPush: '每日提醒',
+  eveningPush: '明日提醒',
+  eveningPushHint: '仅当明天值得留意时（节气/节日）于晚 8 点提醒。',
   holidayHeadsUp: '节假日提醒',
   holidayHeadsUpHint: '法定节假日 / 调休前一晚提醒你，别记错闹钟（中国大陆）。',
   privacy: '隐私政策',
@@ -914,6 +918,8 @@ const zhHant: Strings = {
   settings: '設定',
   language: '語言',
   dailyPush: '每日提醒',
+  eveningPush: '明日提醒',
+  eveningPushHint: '僅當明天值得留意時（節氣/節日）於晚 8 點提醒。',
   holidayHeadsUp: '節假日提醒',
   holidayHeadsUpHint: '法定節假日 / 調休前一晚提醒你，別記錯鬧鐘（中國大陸）。',
   privacy: '隱私政策',
@@ -1292,6 +1298,8 @@ const ja: Strings = {
   settings: '設定',
   language: '言語',
   dailyPush: '毎日の通知',
+  eveningPush: '明日のお知らせ',
+  eveningPushHint: '明日が特別な日（祝日・二十四節気）のときだけ、夜8時にお知らせ。',
   holidayHeadsUp: '祝日リマインド',
   holidayHeadsUpHint: '法定祝日 / 振替出勤の前夜に通知（中国本土）。',
   privacy: 'プライバシー',
@@ -1661,6 +1669,8 @@ const en: Strings = {
   settings: 'Settings',
   language: 'Language',
   dailyPush: 'Daily reminder',
+  eveningPush: 'Tomorrow heads-up',
+  eveningPushHint: 'An 8pm heads-up — only when tomorrow is notable (a festival or solar term).',
   holidayHeadsUp: 'Holiday heads-up',
   holidayHeadsUpHint: 'Night-before alert for public holidays / makeup workdays (mainland China).',
   privacy: 'Privacy',

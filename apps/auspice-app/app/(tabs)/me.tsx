@@ -64,12 +64,14 @@ import {
   disableSynastryReminders,
   disableTimelineReminders,
   enableDailyPush,
-  fireTestDailyPush,
   enableSynastryReminders,
   enableTimelineReminders,
+  fireTestDailyPush,
+  isEveningPushEnabled,
   isPushEnabled,
   isSynastryRemindersEnabled,
   isTimelineRemindersEnabled,
+  setEveningPushEnabled,
 } from '@/lib/push'
 import { type PushTypeMeta, pushTypeById } from '@/lib/pushRegistry'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
@@ -396,6 +398,23 @@ export default function MeScreen() {
       .catch(() => {})
   }, [])
 
+  // Evening (8pm "tomorrow heads-up") sub-toggle — independent of the 8am reading, so
+  // the user can keep mornings but silence the evening. Only shown (in pushToggles)
+  // when the master daily push is on.
+  const [eveningOn, setEveningOn] = useState(true)
+  const toggleEvening = async (next: boolean) => {
+    await setEveningPushEnabled(next, {
+      locale,
+      birthDate: birthValid ? birth.solarDate : undefined,
+    })
+    setEveningOn(next)
+  }
+  useEffect(() => {
+    isEveningPushEnabled()
+      .then(setEveningOn)
+      .catch(() => {})
+  }, [])
+
   // 节假日 / 调休 heads-up (CN-resident-specific: 调休 makeup-workday alarms) is
   // removed 2026-06 — not on the mainland-CN store, and IP-gating it to mainland
   // China would be a hidden-feature violation (App Store 2.3.1). The lib/push.ts
@@ -469,13 +488,25 @@ export default function MeScreen() {
   // instead of three near-identical Switch blocks (the settings tree had grown
   // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
   const pushToggles: Array<{
-    id: Extract<PushTypeMeta['id'], 'daily' | 'timeline' | 'synastry'>
+    id: Extract<PushTypeMeta['id'], 'daily' | 'evening' | 'timeline' | 'synastry'>
     label: string
     hint?: string
     value: boolean
     onToggle: (next: boolean) => void | Promise<void>
   }> = [
     { id: 'daily', label: t.dailyPush, value: pushOn, onToggle: togglePush },
+    // 8pm "tomorrow heads-up" — a sub-row of the daily push, so only when it's on.
+    ...(pushOn
+      ? [
+          {
+            id: 'evening' as const,
+            label: t.eveningPush,
+            hint: t.eveningPushHint,
+            value: eveningOn,
+            onToggle: toggleEvening,
+          },
+        ]
+      : []),
     {
       id: 'timeline',
       label: t.timelineRemindToggle,
@@ -1078,7 +1109,9 @@ export default function MeScreen() {
                 }}
               >
                 <Text style={{ color: colors.text, fontSize: 16 }}>Fire daily push now</Text>
-                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Send →</Text>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
+                  Send →
+                </Text>
               </Pressable>
             </View>
             <SectionLabel>ONBOARDING · DEV</SectionLabel>

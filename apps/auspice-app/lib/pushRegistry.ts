@@ -28,7 +28,7 @@ export type PushDataSource = 'static' | 'daily-fetch' | 'rolling'
 
 export interface PushTypeMeta {
   /** Stable key — also the AsyncStorage enable-flag namespace in lib/push.ts. */
-  id: 'daily' | 'birthday' | 'holiday' | 'timeline' | 'synastry'
+  id: 'daily' | 'evening' | 'birthday' | 'holiday' | 'timeline' | 'synastry'
   /** Settings label / description i18n hooks live with the screen, not here. */
   tier: PushTier
   dataSource: PushDataSource
@@ -58,6 +58,18 @@ export const PUSH_TYPES: readonly PushTypeMeta[] = [
       'Server: auspice_push_subs (one row/device, refreshed on open). Local fallback: ' +
       'a rolling WINDOW_DAYS window (morning + evening), deferred once server-registered.',
     slots: ['morning', 'evening'],
+  },
+  {
+    id: 'evening',
+    tier: 'free',
+    dataSource: 'daily-fetch',
+    cadence:
+      'A 20:00 "tomorrow heads-up" — fires only when tomorrow is notable (a 节气/节日, or ' +
+      '— Pro — a 大吉/凶 day for you); silent otherwise. A sub-toggle of the daily push: ' +
+      'the 8pm slot can be silenced without losing the 8am reading.',
+    storage:
+      'Rides the daily push subscription (dailyEvening pref); local evening window as fallback.',
+    slots: ['evening'],
   },
   {
     id: 'birthday',

@@ -34,9 +34,9 @@ import {
   solarToLunar,
 } from '@zhop/astro-core'
 import {
-  computeDailyHook,
   type Locale as CorpusLocale,
   type Stem as CorpusStem,
+  computeDailyHook,
 } from '@zhop/astro-i18n'
 import { and, eq, inArray } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
@@ -2428,28 +2428,31 @@ export function renderAuspicePush(
   // recapped today + a constant "rest before 11pm" tail EVERY night, a near-dupe of
   // the 08:00 push that read as filler. 节气/节日 names stay CJK in v1 (like 宜忌).
   if (slot === 'evening') {
-    const { day, personalization, dailyHook } = buildDay(dateYmd, subject, {
+    const { day, personalization } = buildDay(dateYmd, subject, {
       seed: sub.birthDate ?? undefined,
       locale: sub.locale,
     })
     const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
-    // en: lead with tomorrow's corpus hook (varied, personalized) rather than the single
-    // static "a strong day for you" clause, and don't repeat "Tomorrow" (the title says it).
+    // The evening verdict is a GENERIC forward clause (好機 / 慎重) — NOT tomorrow's
+    // dailyHook. The hook is exactly what the next 08:00 push leads with, so previewing
+    // it here made 8pm ≈ 8am ("晚八点和早八点内容完全一样"). en used to lead with the hook;
+    // it now matches CJK and uses the generic clause. The title already says "Tomorrow".
     if (sub.locale.startsWith('en')) {
-      const hook =
-        sub.isPro && (personalization?.fit === '吉' || personalization?.fit === '凶')
-          ? (dailyHook?.title ?? null)
-          : null
-      if (!special && !hook) return null
-      const body = special && hook ? `${special}${L.eveningSep}${hook}` : (special ?? hook ?? '')
+      const fitClause =
+        sub.isPro && personalization?.fit === '吉'
+          ? L.eveningGood
+          : sub.isPro && personalization?.fit === '凶'
+            ? L.eveningCaution
+            : null
+      if (!special && !fitClause) return null
+      const body =
+        special && fitClause
+          ? `${special}${L.eveningSep}${fitClause}`
+          : (special ?? fitClause ?? '')
       return {
         title: L.eveningTitle,
         body,
-        data: {
-          type: 'auspice_evening',
-          day: fmtUtc(ymdToDate(dateYmd)),
-          ...(hook && dailyHook ? { hookKey: dailyHook.hookKey } : {}),
-        },
+        data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(dateYmd)) },
       }
     }
     const fitClause =

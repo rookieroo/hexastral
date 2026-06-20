@@ -31,6 +31,10 @@ import { buildSynastryTimeline, type SynastryBirth } from './synastry-timeline'
 import { localizeYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'auspice.push.enabled'
+/** Evening (8pm "tomorrow heads-up") sub-toggle — independent of the 8am reading so
+ *  the user can keep mornings but silence the evening. Absent = ON (preserves the
+ *  prior single-toggle behaviour); only '0' is off. */
+const EVENING_ENABLED_KEY = 'auspice.push.eveningEnabled'
 /** One-time purge flag — clears notifications scheduled by older id schemes. */
 const PURGE_FLAG = 'auspice.push.purgedV2'
 /** Stable per-date identifier prefix — makes scheduling idempotent (no dupes). */
@@ -140,16 +144,15 @@ function eveningHeadsUp(
       ? localizeSolarTermName(d.solarTermToday.name, locale)
       : null
   const pers = isPro ? payload.personalization : null
-  // en: the title already says "Tomorrow", so the body must NOT repeat it (the old
-  // `is`="Tomorrow: {x}" template double-printed it). Lead with tomorrow's corpus hook
-  // headline — personalized + varied — when a 大吉/凶 fit fires it, instead of the single
-  // static "a strong day for you — worth seizing" line. A 节气/节日 rides in front.
+  // en: the title already says "Tomorrow", so the body must NOT repeat it. Use the
+  // GENERIC forward clause (good / caution) — NOT tomorrow's dailyHook, which is exactly
+  // what the next 08:00 push leads with (echoing it made 8pm ≈ 8am). Matches CJK below.
   if (locale === 'en') {
-    const hook = pers?.fit === '吉' || pers?.fit === '凶' ? (payload.dailyHook?.title ?? null) : null
-    if (!special && !hook) return null
+    const fitClause = pers?.fit === '吉' ? ev.good : pers?.fit === '凶' ? ev.caution : null
+    if (!special && !fitClause) return null
     return {
       title: ev.title,
-      body: special && hook ? `${special}${ev.sep}${hook}` : (special ?? hook ?? ''),
+      body: special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? ''),
     }
   }
   const fitClause = pers?.fit === '吉' ? ev.good : pers?.fit === '凶' ? ev.caution : null
@@ -220,6 +223,25 @@ async function setEnabledFlag(on: boolean): Promise<void> {
   try {
     await AsyncStorage.setItem(ENABLED_KEY, on ? '1' : '0')
   } catch {}
+}
+
+export async function isEveningPushEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(EVENING_ENABLED_KEY)) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/** Flip the evening (8pm) sub-toggle, then re-sync server push (dailyEvening) + the
+ *  local fallback window — so the 8pm slot is added/removed WITHOUT touching the 8am
+ *  reading. No-op effect when the master daily push is off (nothing is registered). */
+export async function setEveningPushEnabled(on: boolean, opts: PushOpts): Promise<void> {
+  try {
+    await AsyncStorage.setItem(EVENING_ENABLED_KEY, on ? '1' : '0')
+  } catch {}
+  await syncServerPush(opts.locale)
+  await scheduleDailyAlmanac(opts)
 }
 
 /** Foreground display behavior — call once at root. */
@@ -347,6 +369,8 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // Now it fires only when TOMORROW is worth flagging (a 节气/节日, or — Pro — a 大吉/凶
   // day for you), and stays silent otherwise. `eveningHeadsUp` returns null on an
   // ordinary day → nothing scheduled (no filler). Tap opens tomorrow (the flagged day).
+  // Gated on the evening sub-toggle (Settings) — off → schedule no evening at all.
+  if (!(await isEveningPushEnabled())) return
   const ev = EVENING_TEXT[opts.locale]
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightPm(i)
@@ -425,7 +449,8 @@ export async function syncServerPush(locale: string): Promise<void> {
   }
   await syncAuspiceServerPush(locale, {
     dailyMorning: daily,
-    dailyEvening: daily,
+    // Evening rides its own sub-toggle (default on) — independent of the 8am reading.
+    dailyEvening: await isEveningPushEnabled(),
     birthdayOn: true,
     // 节假日/调休 heads-up unwired (CN-resident-specific, not on the mainland-CN
     // store; IP-gating it would be a 2.3.1 hidden-feature violation). The holiday
