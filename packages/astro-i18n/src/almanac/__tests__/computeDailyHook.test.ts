@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { computeDailyHook, type Relation, type Stem } from '../computeAlmanac'
+import { type Branch, computeDailyHook, type Relation, type Stem } from '../computeAlmanac'
 
-// 丙(火) day-master so each day-stem below maps to a known wuxing relation.
+// 丙(火) day-master so each day-stem below maps to a known wuxing relation (theme);
+// 午(火) branch → 火比火 → peer → 'steady' energy, the baseline for the cases below.
 const base = {
   seed: '1990-06-18',
   dayMasterStem: '丙' as Stem,
-  dayStem: '甲' as Stem, // 甲(木) vs 丙(火) → 木生火 → support
+  dayStem: '甲' as Stem, // 甲(木) vs 丙(火) → 木生火 → support (theme, from the stem)
+  dayBranch: '午' as Branch, // 午(火) vs 丙(火) → peer → 'steady' (energy, from the branch)
   date: '2026-04-15',
   locale: 'en' as const,
 }
@@ -15,18 +17,22 @@ describe('computeDailyHook()', () => {
     expect(computeDailyHook(base)).toEqual(computeDailyHook(base))
   })
 
-  it('resolves relation + energy with no 用神 (favorable absent)', () => {
+  it('resolves theme from the day-stem + energy from the day-branch', () => {
     const out = computeDailyHook(base)
-    expect(out.relation).toBe('support')
-    expect(out.energyLevel).toBe('steady') // no favorable → no boost band
+    expect(out.relation).toBe('support') // stem 甲(木) → 木生火 → support
+    expect(out.energyLevel).toBe('steady') // branch 午(火) → peer → steady
     expect(out.title).toBeTruthy()
     expect(out.lens).toBeTruthy()
     expect(out.hookKey).toMatch(/^support:steady:\d+$/)
   })
 
-  it('用神 boost lifts the band when favorable === day element', () => {
-    // support + (day element 木 === favorable 木) → rising, vs steady without.
-    expect(computeDailyHook({ ...base, favorableElement: '木' }).energyLevel).toBe('rising')
+  it('energy is driven by the day BRANCH, so it varies day-to-day even when the stem holds', () => {
+    // Same 甲 stem (support theme) all three; only the branch differs → a different
+    // energy band → a different corpus cell. This is the "跨天不变" fix: before, a
+    // push subject (no 用神) was locked to one energy per relation.
+    expect(computeDailyHook({ ...base, dayBranch: '午' }).energyLevel).toBe('steady') // 火 → peer
+    expect(computeDailyHook({ ...base, dayBranch: '子' }).energyLevel).toBe('volatile') // 水克火 → pressure
+    expect(computeDailyHook({ ...base, dayBranch: '寅' }).energyLevel).toBe('rising') // 木生火 → support
   })
 
   it('varies the picked line across seeds (the A/B surface is live)', () => {

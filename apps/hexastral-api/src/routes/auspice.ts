@@ -34,6 +34,7 @@ import {
   solarToLunar,
 } from '@zhop/astro-core'
 import {
+  type Branch as CorpusBranch,
   type Locale as CorpusLocale,
   type Stem as CorpusStem,
   computeDailyHook,
@@ -501,14 +502,17 @@ function buildDay(
 
   // Daily hook (语料钩子) — the non-CJK DAU one-liner, drawn from the same corpus
   // `computeAlmanac` uses (relation × energy → headline/lens). Needs only the 日主
-  // (from birthDate); 用神 stays undefined so energy falls to the no-boost band.
-  // `seed` keys the deterministic A/B pick, so the push and the home hero render the
+  // (from birthDate): the day-STEM gives the theme, the day-BRANCH gives the energy
+  // band (which turns over daily → the hook varies day-to-day; see computeDailyHook).
+  // `seed` keys the deterministic line pick so the push + the home hero render the
   // IDENTICAL line (echo). Null when there's no birth subject.
   const dailyHook = subject
     ? computeDailyHook({
         seed: opts?.seed ?? subject.dayMasterStem,
         dayMasterStem: subject.dayMasterStem as CorpusStem,
+        // 干支日: stem → THEME (row), branch → ENERGY (column, varies daily).
         dayStem: almanac.todayGanZhi[0] as CorpusStem,
+        dayBranch: almanac.todayGanZhi[1] as CorpusBranch,
         date: fmtUtc(ymdToDate(ymd)),
         locale: toCorpusLocale(opts?.locale),
       })

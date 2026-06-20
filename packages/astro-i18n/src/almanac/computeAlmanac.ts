@@ -222,6 +222,20 @@ function energyOf(relation: Relation, dayEl: WuXing, favorable?: WuXing): Energy
   }
 }
 
+/**
+ * Energy band from a RELATION. The daily hook reads its energy off the day-pillar
+ * BRANCH's relation to the day-master (the 地支 turns over daily), so the hook's cell
+ * moves day-to-day even when the stem-element theme holds for two days. 命理-coherent:
+ * each cell is (today's 天干十神 theme) × (today's 地支十神 intensity).
+ */
+const ENERGY_BY_RELATION: Record<Relation, EnergyLevel> = {
+  support: 'rising', // 生我 (印) — nourishing
+  peer: 'steady', // 比和 (比劫) — level
+  output: 'productive', // 我生 (食伤) — outflowing
+  wealth: 'guarded', // 我克 (财) — effortful
+  pressure: 'volatile', // 克我 (官杀) — pressing
+}
+
 function luckyHourOf(favorable: WuXing, userId: string, date: string): string {
   // Pick a shichen whose branch element equals or generates the favorable element.
   const candidates = SHICHEN.filter((s) => {
@@ -275,19 +289,23 @@ export function computeAlmanac(input: ComputeAlmanacInput): AlmanacResult {
 //
 // A thin, subject-light wrapper over the same corpus `computeAlmanac` uses. The
 // Auspice daily push (non-zh) leads with this instead of an opaque 干支纪日 label,
-// and the home screen echoes the identical line. Unlike `computeAlmanac` it needs
-// no 用神/birthBranch — birthDate alone (→ dayMasterStem) is enough to resolve the
-// relation; energy falls to the no-boost band when 用神 is unknown. `seed` (not a
-// userId) keys the deterministic pick, so push and app agree on the same line.
+// and the home screen echoes the identical line. Needs no 用神 — the day-PILLAR alone
+// resolves the cell: the day-STEM's element vs the day-master is the THEME (row), the
+// day-BRANCH's relation is the ENERGY (column). The 地支 turns over daily, so the hook
+// varies day-to-day even when the stem-theme holds for two days (it used to be
+// relation-locked → only 5 cells ever for a push user → "跨天不变"). `seed` (not a
+// userId) keys the deterministic line pick, so push + app agree on the same line.
 
 export interface DailyHookInput {
   /** Stable seed so push + app pick the same line. Auspice passes the birthDate. */
   seed: string
   dayMasterStem: Stem
-  /** 用神 — optional; sharpens the energy band when known (else relation-only). */
-  favorableElement?: WuXing
-  /** Today's day-pillar heavenly stem. */
+  /** Today's day-pillar heavenly STEM — its element vs the day-master is the THEME
+   *  (relation row). Holds ~2 days (stems pair by element), so not enough alone. */
   dayStem: Stem
+  /** Today's day-pillar earthly BRANCH — its element vs the day-master drives the
+   *  ENERGY band, which turns over daily (地支 cycles 12) → daily variety. */
+  dayBranch: Branch
   /** ISO date (YYYY-MM-DD), the user's local-tz day. */
   date: string
   locale: Locale
@@ -305,11 +323,14 @@ export interface DailyHookResult {
 }
 
 export function computeDailyHook(input: DailyHookInput): DailyHookResult {
-  const { seed, dayMasterStem, favorableElement, dayStem, date, locale } = input
+  const { seed, dayMasterStem, dayStem, dayBranch, date, locale } = input
   const dayMasterEl = STEM_TO_ELEMENT[dayMasterStem]
-  const dayEl = STEM_TO_ELEMENT[dayStem]
-  const relation = relationOf(dayEl, dayMasterEl)
-  const energyLevel = energyOf(relation, dayEl, favorableElement)
+  // THEME (格子 row): the day-STEM's element vs the day-master. Holds ~2 days.
+  const relation = relationOf(STEM_TO_ELEMENT[dayStem], dayMasterEl)
+  // ENERGY (格子 column): the day-BRANCH's relation vs the day-master — the 地支 turns
+  // over daily, so the cell moves day-to-day even when the theme holds. (Was
+  // relation-locked → only 5 cells ever for a push user → "跨天不变".)
+  const energyLevel = ENERGY_BY_RELATION[relationOf(BRANCH_TO_ELEMENT[dayBranch], dayMasterEl)]
 
   const tpl = almanacTemplates[locale] ?? almanacTemplates.en
   const cell = tpl[relation][energyLevel]
