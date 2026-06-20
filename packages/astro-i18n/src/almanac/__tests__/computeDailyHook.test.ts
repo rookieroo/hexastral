@@ -35,6 +35,17 @@ describe('computeDailyHook()', () => {
     expect(computeDailyHook({ ...base, dayBranch: '寅' }).energyLevel).toBe('rising') // 木生火 → support
   })
 
+  it('rotates the line by calendar day — consecutive days never repeat in the same cell', () => {
+    // Same stem (甲) + same branch (午) both days → identical cell (support/steady);
+    // only the date advances by 1. The rotation must pick a different title AND lens.
+    const d1 = computeDailyHook({ ...base, date: '2026-04-15' })
+    const d2 = computeDailyHook({ ...base, date: '2026-04-16' })
+    expect(d1.relation).toBe(d2.relation)
+    expect(d1.energyLevel).toBe(d2.energyLevel) // same cell…
+    expect(d1.title).not.toBe(d2.title) // …but a different line
+    expect(d1.lens).not.toBe(d2.lens)
+  })
+
   it('varies the picked line across seeds (the A/B surface is live)', () => {
     const titles = new Set(
       ['a', 'b', 'c', 'd', 'e', 'f'].map((s) => computeDailyHook({ ...base, seed: s }).title)

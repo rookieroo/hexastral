@@ -188,6 +188,23 @@ function pick<T>(arr: readonly T[], userId: string, date: string, salt: string):
   return arr[pickIndex(arr.length, userId, date, salt)] as T
 }
 
+/** YYYY-MM-DD → a calendar-day ordinal (+1 per day; month/leap-correct via `Date.UTC`,
+ *  which is a pure function of its args — no clock read). Drives the rotation below. */
+function dayOrdinal(date: string): number {
+  const [y, m, d] = date.split('-')
+  return Math.floor(Date.UTC(Number(y), Number(m) - 1, Number(d)) / 86_400_000)
+}
+
+/** Like `pickIndex`, but ROTATED by the calendar-day ordinal so CONSECUTIVE days always
+ *  land on different indices (for len>1) — the per-seed hash only sets the starting
+ *  phase, so it stays personalized + deterministic. The daily hook uses this so a rare
+ *  same-cell two-day run (where the day-pillar leaves the cell unchanged) still reads
+ *  differently day-to-day. */
+function rotateIndex(len: number, seed: string, date: string, salt: string): number {
+  if (len <= 0) throw new Error('almanac: empty template array')
+  return (fnv1a(`${seed}|${salt}`) + dayOrdinal(date)) % len
+}
+
 // ============================================================================
 // Core derivations
 // ============================================================================
@@ -334,12 +351,16 @@ export function computeDailyHook(input: DailyHookInput): DailyHookResult {
 
   const tpl = almanacTemplates[locale] ?? almanacTemplates.en
   const cell = tpl[relation][energyLevel]
-  const titleIdx = pickIndex(cell.headlines.length, seed, date, 'hook-title')
+  // ROTATE by the calendar-day ordinal (not a pure hash) so consecutive days never pick
+  // the same line, even on the rare two-day run where the day-pillar leaves the cell
+  // unchanged. title + lens rotate on independent phases (different salt).
+  const titleIdx = rotateIndex(cell.headlines.length, seed, date, 'hook-title')
+  const lensIdx = rotateIndex(cell.lenses.length, seed, date, 'hook-lens')
   return {
     relation,
     energyLevel,
     title: cell.headlines[titleIdx] as string,
-    lens: pick(cell.lenses, seed, date, 'hook-lens'),
+    lens: cell.lenses[lensIdx] as string,
     hookKey: `${relation}:${energyLevel}:${titleIdx}`,
   }
 }
