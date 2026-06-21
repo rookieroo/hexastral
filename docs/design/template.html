@@ -1,0 +1,115 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Yuel · 碑拓 icon studio</title>
+<style>
+  :root{
+    --void:#0C0A09; --deep:#16130F; --surface:#1B1815; --raised:#221E1A; --edge:#2A2521;
+    --ivory:#F5F0E8; --gold:#C4A882; --goldHi:#E6C277; --cinnabar:#9B2226; --cinnaBr:#C0392B;
+    --muted:rgba(245,240,232,.42); --soft:rgba(245,240,232,.66);
+    --serif:"Songti SC","STSong",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--void);color:var(--ivory);font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;padding:40px 22px 90px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-family:var(--serif);font-weight:400;font-size:30px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:0 0 22px}
+  h2{font-family:var(--serif);font-weight:400;font-size:21px;margin:46px 0 4px;
+    border-top:1px solid var(--edge);padding-top:22px}
+  .note{color:var(--soft);font-size:12.5px;line-height:1.75;max-width:700px;margin:6px 0 20px}
+  .row{display:flex;flex-wrap:wrap;gap:20px}
+  .card{background:var(--surface);border:1px solid var(--edge);border-radius:14px;padding:20px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;min-width:210px;flex:1}
+  .tag{font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase}
+  .cap{font-size:11.5px;color:var(--muted);text-align:center;line-height:1.6;max-width:210px}
+  .tile{width:188px;height:188px;border-radius:42px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .sizes{display:flex;align-items:flex-end;gap:14px;margin-top:2px}
+  .phone{width:248px;height:430px;background:var(--void);border:1px solid var(--edge);
+    border-radius:30px;position:relative;overflow:hidden}
+  .ptl{position:absolute;top:17px;left:17px;z-index:3}
+  .pset{position:absolute;top:18px;right:17px;z-index:3}
+  .plist{position:absolute;top:60px;left:0;right:0;padding:0 18px}
+  .thr{display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid #15110d}
+  .star{width:9px;height:9px;border-radius:50%;background:var(--goldHi);box-shadow:0 0 8px 1px rgba(230,194,119,.8)}
+  .tn{font-family:var(--serif);font-size:15px}
+  .tm{font-size:9.5px;color:var(--muted);letter-spacing:1px}
+  .fab{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:58px;height:58px;
+    border-radius:50%;background:var(--cinnabar);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 22px rgba(155,34,38,.55);z-index:3}
+  .scrim{position:absolute;bottom:0;left:0;right:0;height:120px;
+    background:linear-gradient(to top,var(--void),transparent);z-index:2}
+  .chip{width:64px;height:64px;border-radius:14px;background:var(--deep);
+    border:1px solid var(--edge);display:flex;align-items:center;justify-content:center}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <radialGradient id="gold" cx="40%" cy="33%" r="78%">
+    <stop offset="0" stop-color="#EFCB6A"/><stop offset="45%" stop-color="#DCA93C"/>
+    <stop offset="80%" stop-color="#BB8A22"/><stop offset="100%" stop-color="#9C7016"/>
+  </radialGradient>
+  <radialGradient id="paper" cx="42%" cy="34%" r="80%">
+    <stop offset="0" stop-color="#F4EEE0"/><stop offset="100%" stop-color="#E5DAC2"/>
+  </radialGradient>
+  <radialGradient id="inkbg" cx="50%" cy="38%" r="75%">
+    <stop offset="0" stop-color="#221C16"/><stop offset="100%" stop-color="#0D0A08"/>
+  </radialGradient>
+  <g id="yuelmark" transform="__MARKTF__" fill="currentColor">
+__MARK__
+  </g>
+</defs></svg>
+
+<div class="wrap">
+  <h1>Yuel &nbsp;·&nbsp; 碑拓笔意 v2</h1>
+  <p class="sub">redrawn mark (de-noised · re-weighted) · settings-2 · spline</p>
+
+  <h2>① 应用图标 — 临摹填充版（裁 2 段 · 旋转 90° · 去噪）· 朱砂</h2>
+  <p class="note">放弃自描中心线，改回「临摹填充」：先裁两段重复节点、旋转 90°、去噪点，再 potrace 忠实描出填充剪影 —— 保留毛笔本身的提按厚薄，朱砂落在宣纸上。下排真实尺寸。</p>
+  <div class="row">__TAKE_C__</div>
+
+  <h2>② 首页改版 — 左上保留 Logo，右上 settings-2，底部 spline 悬浮</h2>
+  <p class="note">无标题栏。左上角保留应用图标（同心结 logo），右上角 lucide settings-2，列表在其下顶起；New Thread 是底部居中朱砂悬浮 FAB，里面是 lucide spline（两点连线＝牵一段新缘），不再用应用图标。</p>
+  <div class="row" style="align-items:flex-start">
+    <div class="phone">
+      <div class="ptl">__LOGO_TL__</div>
+      <div class="pset">__SET2_TR__</div>
+      <div class="plist">
+        <div class="thr"><span class="star"></span><div><div class="tn">她 · он</div><div class="tm">SYNASTRY · 92</div></div></div>
+        <div class="thr"><span class="star" style="background:#C0392B;box-shadow:0 0 8px 1px rgba(192,57,43,.7)"></span><div><div class="tn">M. R.</div><div class="tm">PENDING</div></div></div>
+        <div class="thr"><span class="star" style="background:#8a7e6a;box-shadow:none"></span><div><div class="tn">父亲</div><div class="tm">SYNASTRY · 74</div></div></div>
+        <div class="thr"><span class="star"></span><div><div class="tn">K.</div><div class="tm">SYNASTRY · 88</div></div></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="fab">__SPLINE_FAB__</div>
+    </div>
+    <div class="card" style="max-width:300px;align-items:flex-start">
+      <span class="tag">变更点</span>
+      <span class="cap" style="text-align:left;max-width:280px;line-height:1.9">
+        · 无标题栏；列表顶起<br/>
+        · 左上角保留 Logo（同心结）<br/>
+        · 右上角 Settings → lucide settings-2<br/>
+        · 底部悬浮 FAB → lucide spline<br/>
+        · 底部渐隐不压字
+      </span>
+    </div>
+  </div>
+
+  <h2>③ Settings & New Thread 图标</h2>
+  <p class="note">Settings＝lucide settings-2（更简洁）；New Thread＝lucide spline（两节点贝塞尔，连接＝牵线）。左放大、右真实尺寸/落位。</p>
+  <div class="row">
+    <div class="card">
+      <span class="tag">Settings · settings-2</span>
+      <div class="chip">__SET2_BIG__</div>
+      <div class="chip" style="width:40px;height:40px">__SET2_22__</div>
+      <span class="cap">右上角裸图标 21px</span>
+    </div>
+    <div class="card">
+      <span class="tag">New Thread · spline</span>
+      <div class="chip" style="background:#1B1815">__SPLINE_BIG__</div>
+      <div class="fab" style="position:static;transform:none">__SPLINE_FAB__</div>
+      <span class="cap">朱砂 FAB · lucide spline</span>
+    </div>
+  </div>
+
+  <h2>挑一版</h2>
+  <p class="note">应用图标选底：A / B / C。去噪/调形如还想更清或更糙、横向收窄再多/再少，我都能调。确认后落地：导出 1024 图标 + 改首页 + settings-2／spline 接 lucide-react-native。</p>
+</div>
