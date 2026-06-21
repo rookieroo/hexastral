@@ -375,7 +375,7 @@ export function ChapterCard({
               color: C.ink,
             }}
           >
-            {space(chapter.goldenLine)}
+            {renderProse(space(chapter.goldenLine))}
           </Text>
         </View>
       ) : null}
@@ -445,7 +445,7 @@ export function ChapterCard({
             color: C.ink,
           }}
         >
-          {space(chapter.body)}
+          {renderProse(space(chapter.body))}
         </Text>
       )}
 
@@ -461,7 +461,7 @@ export function ChapterCard({
               color: C.muted,
             }}
           >
-            {space(chapter.counterpoint)}
+            {renderProse(space(chapter.counterpoint))}
           </Text>
         </View>
       ) : null}
