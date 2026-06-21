@@ -463,8 +463,14 @@ export function buildLanguageBlock(rawLanguage: string, domain: TermDomain): str
     ...(isPairDomain
       ? [
           '',
-          '### Synastry register — meaning first',
-          '- Lead with what each 命理 configuration MEANS for these two people; the Chinese term is optional parenthetical flavor, never required for the sentence to make sense. Use terms sparingly (a couple per chapter at most).',
+          '### 命理 terms — keep them Chinese, put the meaning in the prose',
+          'This app shows a tap-to-explain gloss for every 命理 term, so you never translate, romanize, or coin English for a term — keep it in its canonical Chinese form and let the target-language sentence carry the meaning:',
+          '- Write each term in Chinese characters ONLY: 七杀, 三合, 命宫, 化忌, 建禄格, 亡神, 用神, 日主, 八字, 紫微斗数, and 干支 like 乙木 / 己土 / pillars 甲戌. NEVER romanize to pinyin — "Qi Sha", "San He", "Wang Shen", "Ming Gong", "Mao", "Jia Fang" are all FORBIDDEN. (Ignore any earlier allowance of pinyin flavor; the pinyin in the term map above is for YOUR understanding only — do not emit it.)',
+          '- Carry the MEANING in the sentence AROUND the term, never as a gloss inside it: write "their ambitions reinforce each other (三合)" — NOT "三合 (three harmony)", NOT "三合 (San He)". The sentence must read fully and clearly even if the Chinese tail were deleted.',
+          '- NEVER put an explanation inside the parentheses, and NEVER put Chinese inside parentheses to gloss English: NOT "their yearly bond (年支缘分)", NOT "a clash (相破)". Parentheses, if used at all, hold only the bare Chinese term.',
+          '- 八字 means "BaZi" / the Four Pillars of birth — NEVER call it "eight trigrams" (那是八卦, an unrelated system). Keep 八字 and 紫微斗数 in Chinese.',
+          '- Do NOT dump a raw four-pillar string (e.g. "甲戌 庚午 己卯 丙寅") at the reader — it is opaque noise in a non-Chinese sentence. Describe the chart in the target language and name at most the one load-bearing pillar or day master (e.g. their 日主 己土) when it carries the point.',
+          '- Use terms sparingly — a few per chapter, never one per sentence.',
           '',
           '### People — keep the labels verbatim',
           '- The two people are labelled 甲方 and 乙方. Keep these EXACT two Chinese characters verbatim wherever you refer to them, in EVERY language.',
@@ -503,7 +509,7 @@ export function buildLanguageReminder(rawLanguage: string): string {
     return '\n\n【出力言語 — 厳守】上の分析データは中国語だが、出力するJSONの「文章」はすべて必ず自然な日本語で書くこと。ただし命理の専門用語（用神・月刃格・卯卯・三合・命宮・化忌・干支 等）はそのまま漢字で残すこと——無理に翻訳・英訳・造語してはならない（アプリが用語解説を表示する）。用語以外の地の文に中国語の文章を書いてはならない。JSONのみ出力。'
   }
   const langName = LANGUAGE_NAMES[language] ?? language
-  return `\n\nOUTPUT LANGUAGE — CRITICAL: the analysis facts above are in Chinese for your reference ONLY. Write all PROSE (sentences) in ${langName}. KEEP 命理 terms in their original Chinese — 用神, 月刃格, 卯卯, 三合, 命宫, 化忌, 干支 like 乙木 / 己土 — do NOT translate them or invent English equivalents (the app shows a tap-to-explain gloss for each). Only the prose around the terms must be ${langName}; never write a full Chinese sentence. Output JSON only.`
+  return `\n\nOUTPUT LANGUAGE — CRITICAL: the analysis facts above are in Chinese for your reference ONLY. Write all PROSE (sentences) in ${langName}. KEEP 命理 terms in their original Chinese — 用神, 月刃格, 卯卯, 三合, 命宫, 化忌, 八字, 干支 like 乙木 / 己土 — do NOT translate them or invent English equivalents (the app shows a tap-to-explain gloss for each); never render 八字 as "eight trigrams" (那是八卦, an unrelated system). Only the prose around the terms must be ${langName}; never write a full Chinese sentence. Output JSON only.`
 }
 
 // ─── 交叉盘面参考 (Cross-Chart Context) ───────────────────────
