@@ -20,7 +20,7 @@
 
 import { EmptyState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
-import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
 import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import {
   type BondData,
@@ -31,7 +31,7 @@ import {
   useKindredClient,
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Infinity as InfinityIcon, Plus, SlidersHorizontal } from 'lucide-react-native'
+import { Settings2, Spline } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
@@ -60,6 +60,7 @@ import { SkyHero } from '@/components/home/SkyHero'
 import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { YuelMark } from '@/components/YuelMark'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -384,8 +385,8 @@ export default function ReadingHomeScreen() {
         paddingBottom: kindredSpacing.md,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
-        <KindredMoon size={30} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+        <YuelMark width={40} color={kindredDark.seal} />
         <Text
           style={{
             fontFamily: kindredFonts.mono,
@@ -404,7 +405,7 @@ export default function ReadingHomeScreen() {
         accessibilityRole='button'
         accessibilityLabel={t(locale, 'settings.title')}
       >
-        <SlidersHorizontal color={kindredDark.textMuted} size={20} strokeWidth={1.5} />
+        <Settings2 color={kindredDark.textMuted} size={20} strokeWidth={1.5} />
       </Pressable>
     </View>
   )
@@ -479,84 +480,28 @@ export default function ReadingHomeScreen() {
         </Text>
       </Pressable>
 
-      {/* Threads header — title + New. Only once you HAVE threads; the 0-thread
-          state shows the centered invite (ListEmptyComponent) instead, so this
-          header would just be a label over nothing. */}
+      {/* The threads-section header (title + inline "add") is gone: New Thread now
+          lives in the bottom-center floating FAB, and the rows stand on their own
+          under "Open your reading" + the sky. A faint 红线 rule keeps a quiet
+          separator between the doorway and the beads it strings. */}
       {threads.length > 0 ? (
-        <>
+        <View style={{ flexDirection: 'row', marginHorizontal: kindredSpacing.screenH }}>
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: kindredSpacing.screenH,
-              marginBottom: kindredSpacing.sm,
+              width: 30,
+              height: StyleSheet.hairlineWidth,
+              backgroundColor: kindredDark.seal,
+              opacity: 0.5,
             }}
-          >
-            {/* Section title — the woven 红线 mark + a quiet count, so the header reads
-              as a real section, not a floating label. */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <InfinityIcon size={22} color={kindredDark.seal} strokeWidth={1.7} />
-              <Text style={[kindredType.heading, { color: kindredDark.text }]}>{copy.threads}</Text>
-              <Text
-                style={{
-                  fontFamily: kindredFonts.mono,
-                  fontSize: 12,
-                  color: kindredDark.textMuted,
-                  marginLeft: 1,
-                }}
-              >
-                {threads.length}
-              </Text>
-            </View>
-            {/* New thread — borderless + editorial (matches the small-caps footer links,
-              not a generic pill): the 红线 "+" glyph + a mono small-caps accent label. */}
-            <Pressable
-              onPress={startNewThread}
-              accessibilityRole='button'
-              accessibilityLabel={t(locale, 'bondList.add')}
-              hitSlop={10}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 7,
-                opacity: pressed ? 0.55 : 1,
-              })}
-            >
-              <Plus size={16} color={kindredDark.accent} strokeWidth={2} />
-              <Text
-                style={{
-                  fontFamily: kindredFonts.mono,
-                  fontSize: 11,
-                  letterSpacing: 1.5,
-                  textTransform: 'uppercase',
-                  color: kindredDark.accent,
-                }}
-              >
-                {t(locale, 'bondList.add')}
-              </Text>
-            </Pressable>
-          </View>
-          {/* 红线 rule — a hairline that begins cinnabar under the 红线 mark and fades to
-            neutral, descending into the thread that strings the beads below. */}
-          <View style={{ flexDirection: 'row', marginHorizontal: kindredSpacing.screenH }}>
-            <View
-              style={{
-                width: 30,
-                height: StyleSheet.hairlineWidth,
-                backgroundColor: kindredDark.seal,
-                opacity: 0.5,
-              }}
-            />
-            <View
-              style={{
-                flex: 1,
-                height: StyleSheet.hairlineWidth,
-                backgroundColor: kindredDark.border,
-              }}
-            />
-          </View>
-        </>
+          />
+          <View
+            style={{
+              flex: 1,
+              height: StyleSheet.hairlineWidth,
+              backgroundColor: kindredDark.border,
+            }}
+          />
+        </View>
       ) : null}
     </View>
   )
@@ -592,7 +537,8 @@ export default function ReadingHomeScreen() {
                 // 0-thread invite center in the space below the sky.
                 flexGrow: 1,
                 paddingTop: heroH + 8,
-                paddingBottom: kindredSpacing.xxl,
+                // Extra bottom room so the last row clears the floating New-Thread FAB.
+                paddingBottom: kindredSpacing.xxl + 60,
               }}
               ListHeaderComponent={listHeader}
               data={threads}
@@ -696,6 +642,47 @@ export default function ReadingHomeScreen() {
           </Animated.View>
         </View>
       </SafeAreaView>
+
+      {/* New thread — bottom-center floating FAB. lucide `spline` (two nodes + a
+          curve = 牵一段新缘 / connect two charts) in the cinnabar seal, the one
+          persistent action. The wrapper is box-none so the list scrolls around it;
+          the report overlay (zIndex 100) covers it when a reading opens. */}
+      {threads.length > 0 ? (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 36,
+            left: 0,
+            right: 0,
+            alignItems: 'center',
+            zIndex: 50,
+          }}
+          pointerEvents='box-none'
+        >
+          <Pressable
+            onPress={startNewThread}
+            accessibilityRole='button'
+            accessibilityLabel={t(locale, 'bondList.add')}
+            style={({ pressed }) => ({
+              width: 58,
+              height: 58,
+              borderRadius: 29,
+              backgroundColor: kindredDark.seal,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+              shadowColor: kindredDark.seal,
+              shadowOpacity: 0.5,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 8,
+            })}
+          >
+            <Spline color={kindredDark.text} size={24} strokeWidth={2} />
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* 合盘 report — the SAME in-place ink bloom as the solo reading, over the
           live home (rendered here, not pushed as a route, so there's no jump). */}
