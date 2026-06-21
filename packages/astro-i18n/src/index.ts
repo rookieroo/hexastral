@@ -42,7 +42,14 @@ export type {
   TenGod,
   ZiweiMainStar,
 } from './signature-types'
-export type { ResolvedTerm, TermCategory, TermEntry, TermMeaning, TermSegment } from './terms'
+export type {
+  ResolvedTerm,
+  SegmentOptions,
+  TermCategory,
+  TermEntry,
+  TermMeaning,
+  TermSegment,
+} from './terms'
 export {
   getAllTerms,
   getTerm,

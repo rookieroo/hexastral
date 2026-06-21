@@ -86,6 +86,57 @@ export const TERMS: TermEntry[] = [
       },
     },
   },
+  // 五行生克 — the three ways two elements relate. The reports lean on these
+  // constantly ("木土相克", "比和", "相生") yet none were in the table, so a
+  // non-CJK reader hit them raw. Voice rule: name the EFFECT, not the characters.
+  {
+    id: 'wuxing_xiangsheng',
+    zh: '相生',
+    pinyin: 'xiāng shēng',
+    category: 'wuxing',
+    meaning: {
+      zh: {
+        short: '一方滋养另一方',
+        long: '相生：一种五行生出、滋养另一种（如水生木），顺势相助、循环不息。',
+      },
+      en: {
+        short: 'one element feeds the next',
+        long: 'Mutual generation: one element nourishes another (as Water feeds Wood) — a supportive, forward-flowing cycle.',
+      },
+    },
+  },
+  {
+    id: 'wuxing_xiangke',
+    zh: '相克',
+    pinyin: 'xiāng kè',
+    category: 'wuxing',
+    meaning: {
+      zh: {
+        short: '一方制约另一方',
+        long: '相克：一种五行克制、约束另一种（如木克土），既是压力，也是平衡的力量。',
+      },
+      en: {
+        short: 'one element checks another',
+        long: 'Mutual control: one element restrains another (as Wood checks Earth) — a source of pressure, but also of balance.',
+      },
+    },
+  },
+  {
+    id: 'wuxing_bihe',
+    zh: '比和',
+    pinyin: 'bǐ hé',
+    category: 'wuxing',
+    meaning: {
+      zh: {
+        short: '同类相助、势均力敌',
+        long: '比和：两个同类五行相遇，彼此呼应、势均力敌——能并肩，也可能相争。',
+      },
+      en: {
+        short: 'same element — equals reinforce',
+        long: 'Like meets like: two of the same element echo and reinforce each other — equals who stand together, though sameness can also breed rivalry.',
+      },
+    },
+  },
 
   // ─── 天干 Heavenly Stems ───
   {

@@ -246,7 +246,9 @@ export function ChapterCard({
   const interactive = onPickQuote != null
   const renderProse = (s: string): ReactNode => {
     if (!interactive) return s
-    const segs = segmentTextByTerms(s)
+    // Non-CJK readers also get single 干支/五行 + their 干支柱/日主 compounds (己土,
+    // 甲戌, 卯) as tap targets — each is opaque to them; a CJK reader doesn't need it.
+    const segs = segmentTextByTerms(s, { includeSingleChar: !cjk })
     if (segs.length === 1 && !segs[0]?.termZh) return s
     return segs.map((seg, j) =>
       seg.termZh ? (
