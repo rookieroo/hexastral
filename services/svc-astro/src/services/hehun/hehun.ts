@@ -286,6 +286,8 @@ ${physioSectionA}
 - 年龄：${ageB}岁
 - 命带神煞：${shenShaBStr}
 ${physioSectionB}
+
+**务必区分甲乙、全文不可对调**：「甲方」始终指日主【${personA.dayMaster}${personA.dayMasterWuXing}】者，「乙方」始终指日主【${personB.dayMaster}${personB.dayMasterWuXing}】者。凡提及任一方，其称呼（甲/乙）与日主、格局、神煞的归属必须与上方一一对应，切勿交换两者——尤其在谈"互补/一方补另一方"等对称表述时，先想清楚谁是甲方谁是乙方再下笔。
 ${physioCrossRef}
 
 ${compatText}${ziweiBlock ? `\n\n${ziweiBlock}` : ''}`
@@ -536,7 +538,8 @@ const SYNASTRY_CHAPTER_SPECS: ReadonlyArray<{
   {
     kind: 'complement',
     label: '互补之处',
-    focus: '彼此补足的能量：一方喜用恰是另一方所缺，长处如何对冲对方盲区',
+    focus:
+      '彼此补足的能量：甲方的喜用与长处如何补足乙方所缺、对冲乙方盲区，乙方又如何反向补足甲方——务必分清是谁补谁，全程不可把甲乙对调',
   },
   {
     kind: 'monthly_outlook',
@@ -663,6 +666,55 @@ ${buildPairFacts(result, input, ziweiBlock)}
 }
 
 /**
+ * Detect + correct a 甲方/乙方 role swap. The model occasionally crosses the two neutral
+ * role tokens in a symmetrically-framed chapter (互补/complement is the usual trigger),
+ * binding 甲方 to person B's day-master instead of A's. The device then renders a FLIPPED
+ * 你/对方 (2026-06: ch4 read 你=己土 for a 乙木 viewer). The chart FACTS are right — only
+ * the labels crossed — so swapping the 甲方↔乙方 tokens across every text field fully
+ * corrects it. Detection: in the cited prose, 甲方 should sit next to A's day-master; if
+ * B's day-master binds to 甲方 instead, it's swapped. No-op when the two day-masters are
+ * identical (can't disambiguate) or 甲方 isn't cited.
+ */
+export function fixRoleSwap(
+  ch: SynastryChapterOutput,
+  a: HeHunChartSummary,
+  b: HeHunChartSummary
+): SynastryChapterOutput {
+  const dmA = `${a.dayMaster}${a.dayMasterWuXing}`
+  const dmB = `${b.dayMaster}${b.dayMasterWuXing}`
+  if (!a.dayMaster || !a.dayMasterWuXing || !b.dayMaster || !b.dayMasterWuXing || dmA === dmB) {
+    return ch
+  }
+  const probe = `${ch.evidence ?? ''}\n${ch.body}\n${ch.goldenLine}`
+  // After a role token's first mention, which day-master binds to it (the nearer one)?
+  // A swap is when BOTH are crossed — 甲方→B's day-master AND 乙方→A's. Requiring both
+  // keeps a single misleading relational phrase from triggering a false correction.
+  const bindsWrong = (role: string, wrong: string, right: string): boolean => {
+    const i = probe.indexOf(role)
+    if (i < 0) return false
+    const w = probe.indexOf(wrong, i)
+    const r = probe.indexOf(right, i)
+    return w >= 0 && (r < 0 || w < r)
+  }
+  const swapped = bindsWrong('甲方', dmB, dmA) && bindsWrong('乙方', dmA, dmB)
+  if (!swapped) return ch
+  const swap = (s: string): string =>
+    s.replace(/甲方|乙方/g, (m) => (m === '甲方' ? '乙方' : '甲方'))
+  const swapOpt = (s?: string): string | undefined => (s == null ? undefined : swap(s))
+  return {
+    ...ch,
+    title: swap(ch.title),
+    goldenLine: swap(ch.goldenLine),
+    body: swap(ch.body),
+    evidence: swapOpt(ch.evidence),
+    dynamic: swapOpt(ch.dynamic),
+    reef: swapOpt(ch.reef),
+    remedy: swapOpt(ch.remedy),
+    counterpoint: swapOpt(ch.counterpoint),
+  }
+}
+
+/**
  * AI 生成六章深度合盘 + 破冰断言。
  *
  * Generated once at bond creation, in parallel with the flat interpretation.
@@ -742,7 +794,13 @@ export async function generateSynastryChapters(
       ).catch(() => '')
       if (retry && !driftedToChinese(retry)) text = retry
     }
-    return parseSynastryChapterResponse(text, spec, yong.element)
+    // The model occasionally crosses 甲方/乙方 in a symmetric chapter (complement is the
+    // usual trigger) → the device would render a flipped 你/对方. Detect + relabel.
+    return fixRoleSwap(
+      parseSynastryChapterResponse(text, spec, yong.element),
+      result.personA,
+      result.personB
+    )
   }
 
   // Kick off the aha-hook call in parallel; it never rejects (defaults to '').

@@ -12,8 +12,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
   computeRelationshipYongshen,
+  fixRoleSwap,
+  type HeHunChartSummary,
   parsePushSnippets,
   parseSynastryChaptersResponse,
+  type SynastryChapterOutput,
 } from './hehun'
 
 const KINDS = [
@@ -157,5 +160,53 @@ describe('computeRelationshipYongshen', () => {
 
   test('相生 → flow outlet (木生火 → 土)', () => {
     expect(computeRelationshipYongshen('木', '火').element).toBe('土')
+  })
+})
+
+describe('fixRoleSwap (甲方/乙方 cross-label guard)', () => {
+  const A: HeHunChartSummary = {
+    pillarsLabel: '',
+    dayMaster: '乙',
+    dayMasterWuXing: '木',
+    gejuPrimary: '',
+    dayMasterStrength: '',
+  }
+  const B: HeHunChartSummary = {
+    pillarsLabel: '',
+    dayMaster: '己',
+    dayMasterWuXing: '土',
+    gejuPrimary: '',
+    dayMasterStrength: '',
+  }
+  const mkCh = (over: Partial<SynastryChapterOutput>): SynastryChapterOutput => ({
+    kind: 'complement',
+    title: 'T',
+    goldenLine: 'G',
+    body: 'B',
+    ...over,
+  })
+
+  test('swapped chapter (甲方 bound to B day-master) is relabelled back', () => {
+    const out = fixRoleSwap(
+      mkCh({ evidence: '甲方己土日主受乙方乙木日主克制', body: '甲方己土宜静，乙方乙木宜柔' }),
+      A,
+      B
+    )
+    expect(out.evidence).toBe('乙方己土日主受甲方乙木日主克制')
+    expect(out.body).toBe('乙方己土宜静，甲方乙木宜柔')
+  })
+
+  test('correct chapter (甲方 bound to A day-master) is left untouched', () => {
+    const ch = mkCh({ evidence: '甲方乙木日主克乙方己土日主', body: '甲方乙木宜柔，乙方己土宜静' })
+    const out = fixRoleSwap(ch, A, B)
+    expect(out.evidence).toBe(ch.evidence)
+    expect(out.body).toBe(ch.body)
+  })
+
+  test('same day-master pair → no-op (can not disambiguate)', () => {
+    const ch = mkCh({ evidence: '甲方乙木受乙方乙木牵引', body: '甲方乙木宜柔' })
+    const out = fixRoleSwap(ch, A, A)
+    expect(out.evidence).toBe(ch.evidence)
+    expect(out.body).toBe(ch.body)
   })
 })
