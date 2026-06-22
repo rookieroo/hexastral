@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hexastral.kindred",
+      "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:hexastral.com",
@@ -88,6 +89,7 @@
       "expo-router",
       "expo-dev-client",
       "expo-notifications",
+      "./plugins/withIosPodDeploymentTarget.cjs",
       [
         "expo-apple-authentication",
         {

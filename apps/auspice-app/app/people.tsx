@@ -6,7 +6,6 @@
  * The user's OWN birth lives in Settings (lib/birth.ts).
  */
 
-import { calculateHeHun, getFourPillars } from '@zhop/astro-core'
 import {
   CityPicker,
   type CityRecord,
@@ -21,15 +20,15 @@ import {
   useTheme,
 } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
 import { deleteBirthdayReminder, saveBirthdayReminder } from '@/lib/api'
-import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
@@ -44,7 +43,6 @@ import {
 import { FREE_BIRTHDAY_LIMIT, requestPushPermission, scheduleBirthdayReminders } from '@/lib/push'
 import { animalOf } from '@/lib/relationship'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
-import { resolveSolarInput } from '@/lib/synastry-timeline'
 
 /** 时辰 label for a 亲友 summary. CJK shows 「未时」; Latin scripts show the AM/PM
  *  clock range (am/pm for North America — same shichen-i18n source as the field). */
@@ -65,24 +63,15 @@ function formatMonthDay(raw: string): string {
   return `${digits.slice(0, 2)}-${digits.slice(2)}`
 }
 
-/** FourPillars from a (possibly 农历) birth — lunar handled via resolveSolarInput. */
-function pillarsOf(b: { solarDate: string; timeIndex?: number | null; calendar?: PersonCalendar }) {
-  const input = resolveSolarInput(b)
-  return input ? getFourPillars(input) : null
-}
-
 export default function PeopleScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const params = useLocalSearchParams<{ md?: string }>()
-  const router = useRouter()
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   const [people, setPeople] = useState<AuspicePerson[]>([])
   const [selfDate, setSelfDate] = useState<string | null>(null)
-  // Full self birth info — needed (beyond selfDate) to seed the Kindred 合盘 hand-off.
-  const [selfInfo, setSelfInfo] = useState<AuspiceBirthInfo | null>(null)
 
   // ── add form ──
   const [name, setName] = useState('')
@@ -112,32 +101,11 @@ export default function PeopleScreen() {
       .then(setPeople)
       .catch(() => {})
     getAuspiceBirthInfo()
-      .then((info) => {
-        setSelfDate(info?.solarDate ?? null)
-        setSelfInfo(info ?? null)
-      })
+      .then((info) => setSelfDate(info?.solarDate ?? null))
       .catch(() => {})
   }, [])
 
   const canAdd = MD_RE.test(monthDay) && name.trim().length > 0
-  // A 合盘 taste needs a full birth-year (生肖/score) — works for solar AND 农历
-  // now (Kindred's solar-only hand-off is frozen; the relationship reading lives
-  // in Auspice). Score + grade computed on-device from self + the 亲友 form.
-  const tasteReady = canAdd && /^\d{4}$/.test(birthYear)
-  const synastryTaste = useMemo(() => {
-    if (!tasteReady || !selfInfo?.solarDate) return null
-    const selfP = pillarsOf({
-      solarDate: selfInfo.solarDate,
-      timeIndex: selfInfo.timeIndex ?? null,
-    })
-    const otherP = pillarsOf({ solarDate: `${birthYear}-${monthDay}`, timeIndex, calendar })
-    if (!selfP || !otherP) return null
-    try {
-      return calculateHeHun(selfP, otherP)
-    } catch {
-      return null
-    }
-  }, [tasteReady, selfInfo, birthYear, monthDay, timeIndex, calendar])
 
   const add = async () => {
     if (!canAdd) return
@@ -437,45 +405,6 @@ export default function PeopleScreen() {
                     scrollRef={scrollRef}
                   />
                 </View>
-
-                {/* Deterministic 合盘 taste (on-device, no LLM) — score + grade +
-                    one highlight, shown live as the form is filled (solar OR 农历).
-                    The full relationship timeline opens after adding (tap the name).
-                    The Kindred hand-off is frozen — synastry lives in Auspice now. */}
-                {synastryTaste ? (
-                  <View style={{ gap: spacing.sm }}>
-                    <View
-                      style={{
-                        borderRadius: 12,
-                        borderWidth: 0.5,
-                        borderColor: colors.separator,
-                        backgroundColor: colors.card,
-                        padding: spacing.md,
-                        gap: 4,
-                      }}
-                    >
-                      <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
-                        {t.people.synastryScore}
-                      </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                        <Text style={{ color: colors.accent, fontSize: 28, fontWeight: '700' }}>
-                          {synastryTaste.score}
-                        </Text>
-                        <Text style={{ color: colors.text, fontSize: 14 }}>
-                          {synastryTaste.gradeLabel}
-                        </Text>
-                      </View>
-                      {synastryTaste.highlights[0] ? (
-                        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                          {synastryTaste.highlights[0]}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                      {t.people.synastryAddHint}
-                    </Text>
-                  </View>
-                ) : null}
               </View>
             ) : null}
           </Pressable>
@@ -548,15 +477,10 @@ export default function PeopleScreen() {
                   borderTopColor: colors.separator,
                 }}
               >
-                <Pressable
-                  onPress={() => router.push(`/relationship/${p.id}`)}
-                  accessibilityRole='button'
-                  accessibilityLabel={`${p.name} ${t.synastryTl.title}`}
-                  style={{ flex: 1 }}
-                >
+                <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.text, fontSize: 16 }}>{p.name}</Text>
                   <Text style={{ color: colors.dim, fontSize: 12 }}>{personLine(p)}</Text>
-                </Pressable>
+                </View>
                 <Pressable
                   onPress={() => openRelation(p)}
                   accessibilityRole='button'

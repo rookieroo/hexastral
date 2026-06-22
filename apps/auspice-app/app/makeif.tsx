@@ -30,15 +30,7 @@ import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Share2, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -46,6 +38,7 @@ import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { MakeIfGraph } from '@/components/MakeIfGraph'
 import { MakeIfYearGraph } from '@/components/MakeIfYearGraph'
 import { MakeIfZeshiCard } from '@/components/MakeIfZeshiCard'
+import { MoonLoader } from '@/components/MoonLoader'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
@@ -160,7 +153,7 @@ export default function MakeIfScreen() {
       >
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
           </View>
         ) : state.kind === 'error' ? (
           <Text style={{ color: colors.secondary }}>{state.message}</Text>
@@ -1474,7 +1467,7 @@ function ForkRow({
           </Pressable>
           {st === 'loading' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <ActivityIndicator size='small' color={colors.accent} />
+              <MoonLoader size={28} />
               <Text style={{ color: colors.dim, fontSize: 12 }}>{ic.generating}</Text>
             </View>
           ) : st === 'error' ? (

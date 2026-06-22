@@ -13,14 +13,14 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
 import { CultureIntroBlock } from '@/components/culture/CultureIntroBlock'
 import { BaziPillars } from '@/components/glossary/BaziPillars'
 import { GanzhiGrid } from '@/components/glossary/GanzhiGrid'
 import { ShichenWheel } from '@/components/glossary/ShichenWheel'
 import { ZiweiIntro } from '@/components/glossary/ZiweiIntro'
+import { MoonLoader } from '@/components/MoonLoader'
 import { type AuspiceYearOverviewPayload, fetchAuspiceYearOverview } from '@/lib/api'
 import {
   CULTURE_CATEGORIES,
@@ -205,7 +205,7 @@ function CategoryBody({
   if (loading) {
     return (
       <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-        <ActivityIndicator color={colors.accent} />
+        <MoonLoader />
       </View>
     )
   }

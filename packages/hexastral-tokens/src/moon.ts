@@ -193,6 +193,27 @@ export const SKIN_CINNABAR_INK: MoonFaceSkin = {
   surface: { kind: 'paper', opacity: 0.28 },
 }
 
+/**
+ * 苍墨 ink moon — Auspice's (Yuun) brand loader phase-moon. The almanac is a lunar
+ * tradition, so the turning moon IS its loading motif; in the locked ink theme it's
+ * an achromatic warm-gray (苍墨) face with the same matte paper grain as Kindred's
+ * cinnabar-ink moon — the two apps share one motion language in two inks.
+ * In MOON_SKINS_BY_ID (resolvable by id) + Auspice's widget/loader default; kept OUT
+ * of the shared ALL_MOON_SKINS so other apps' pickers don't show it.
+ */
+export const SKIN_INK: MoonFaceSkin = {
+  id: 'ink',
+  name: '苍墨',
+  faceCenter: { cx: 0.36, cy: 0.3 },
+  faceRadius: 0.68,
+  faceStops: [
+    { offset: 0, color: '#d8d2c8' },
+    { offset: 0.55, color: '#8c857b' },
+    { offset: 1, color: '#4d4540' },
+  ],
+  surface: { kind: 'paper', opacity: 0.28 },
+}
+
 /** All built-in skins in display order (for pickers). */
 export const ALL_MOON_SKINS: MoonFaceSkin[] = [
   SKIN_RICE_PAPER,
@@ -208,7 +229,9 @@ export const DEFAULT_MOON_SKIN = SKIN_RICE_PAPER
 
 /** Convenience lookup map by id. */
 export const MOON_SKINS_BY_ID: Record<string, MoonFaceSkin> = Object.fromEntries(
-  ALL_MOON_SKINS.map((s) => [s.id, s])
+  // SKIN_INK is resolvable by id (Auspice's widget/watch default) but stays out of
+  // ALL_MOON_SKINS so it doesn't leak into other apps' skin pickers.
+  [...ALL_MOON_SKINS, SKIN_INK].map((s) => [s.id, s])
 )
 
 /** HTML v15Shadow — used when a skin doesn't override shadowStops. */

@@ -33,18 +33,12 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { BookOpen, ChevronRight, Share2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import type { DrilldownYear } from '@/components/DrilldownGraph'
+import { MoonLoader } from '@/components/MoonLoader'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { DOMAIN_COLORS, ReadingBubble } from '@/components/TimelineGraph'
 import { TimelineYearGraph } from '@/components/TimelineYearGraph'
@@ -483,7 +477,7 @@ export default function TimelineScreen() {
 
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
           </View>
         ) : state.kind === 'no-birth' ? (
           <NoBirthCard

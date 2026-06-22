@@ -18,7 +18,7 @@
  * onboarding intro + empty-state hero, not the cold-launch logo.
  *
  * Landing is computed from the real safe-area insets + the top-bar padding
- * (matches app/(reading)/index.tsx topBar: screenH left, sm top, mark width 40).
+ * (matches app/(reading)/index.tsx topBar: screenH left, sm top, vertical mark height 26).
  * The "Yuel" wordmark is the home's own inline text (revealed as the cover lifts),
  * so the splash flies the knot alone. Gated by `consumeSplashDecision()` (once per
  * cold launch); honours reduced-motion.
@@ -39,11 +39,12 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { YuelMark } from '@/components/YuelMark'
 
-// YuelMark is landscape (VB 1229×563 ≈ 2.18:1); size it by width.
+// The whole suite is the VERTICAL seal, so the splash flies the vertical YuelMark
+// (size = its HEIGHT / long axis). MARK_RATIO = short ÷ long (the mark's width ÷ height).
 const MARK_RATIO = 563 / 1229
 const SPLASH_MARK = 200
-// Matches the home top-left brand mark (app/(reading)/index.tsx topBar YuelMark).
-const HOME_MARK = 40
+// Matches the home top-left brand mark HEIGHT (app/(reading)/index.tsx topBar YuelMark).
+const HOME_MARK = 26
 const HOLD = 520
 const MOVE = 640
 const CROSSFADE = 200
@@ -65,12 +66,12 @@ export function HomeSplash({ onDone }: { onDone: () => void }) {
     }
     const move = { duration: MOVE, easing: Easing.inOut(Easing.cubic) }
     const target = HOME_MARK / SPLASH_MARK
-    // Resting rect of the home's top-left YuelMark: inside the SafeAreaView the top
-    // bar pads by screenH (left) + sm (top); the mark sits at that corner at
-    // HOME_MARK width. Translate the splash knot's CENTER to the home mark's center
-    // — same aspect ratio, so scaling lands it pixel-aligned.
-    const restCx = insets.left + kindredSpacing.screenH + HOME_MARK / 2
-    const restCy = insets.top + kindredSpacing.sm + (HOME_MARK * MARK_RATIO) / 2
+    // Resting rect of the home's top-left vertical YuelMark: inside the SafeAreaView
+    // the top bar pads by screenH (left) + sm (top); the mark sits at that corner at
+    // HOME_MARK height (× MARK_RATIO wide). Translate the splash knot's CENTER to the
+    // home mark's center — same aspect ratio, so the uniform scale lands it aligned.
+    const restCx = insets.left + kindredSpacing.screenH + (HOME_MARK * MARK_RATIO) / 2
+    const restCy = insets.top + kindredSpacing.sm + HOME_MARK / 2
 
     // Single motion: after a still beat, the centered knot flies to the home logo
     // (shrink + cover lift), then cross-fades onto the resting anchor.
@@ -99,7 +100,7 @@ export function HomeSplash({ onDone }: { onDone: () => void }) {
     <>
       <Animated.View style={[StyleSheet.absoluteFill, styles.bg, bgStyle]} pointerEvents='none' />
       <Animated.View style={[styles.center, markStyle]} pointerEvents='none'>
-        <YuelMark width={SPLASH_MARK} color={kindredDark.seal} />
+        <YuelMark vertical size={SPLASH_MARK} color={kindredDark.seal} />
       </Animated.View>
     </>
   )

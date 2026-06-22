@@ -18,8 +18,8 @@ import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 import { updateDraft } from '@/lib/onboardingDraft'
@@ -67,7 +67,7 @@ export default function ModeScreen() {
         }}
       >
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <KindredMoon size={56} />
+          <YuelMark vertical size={56} color={kindredDark.seal} />
         </View>
         <Text style={[kindredType.title, { color: kindredDark.text }]}>
           {t(locale, 'pair.other.title')}

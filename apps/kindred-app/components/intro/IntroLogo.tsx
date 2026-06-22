@@ -1,11 +1,13 @@
 /**
- * IntroLogo — the calm cold-open visual (2026-06): the brand moon (a soft bloom +
- * slow breath), the YUEL wordmark, a couple of quiet lines, and a "tap to begin"
- * hint, on the shared dark ground. Replaces the retired two-stars IntroThread
- * (turned off for pacing/perf — see git history if it's ever wanted back).
+ * IntroLogo — the calm cold-open visual (2026-06): the brand knot (YuelMark — a soft
+ * bloom + slow breath), the YUEL wordmark, a couple of quiet lines, and a "tap to
+ * begin" hint, on the shared dark ground. Replaces the retired two-stars IntroThread
+ * (turned off for pacing/perf — see git history if it's ever wanted back). The moon is
+ * retired as the logo (2026-06): the knot is THE brand mark everywhere; the moon
+ * survives only as the loading spinner.
  *
  * The hand-off (`exit` 0→1, host-driven on tap): the scene fades to the dark ground
- * while the moon settles to pair-input's centred resting moon (restY, size 64), so
+ * while the knot settles to pair-input's centred resting knot (restY, height 64), so
  * the route swap into onboarding reads as ONE continuous Logo, not a cut.
  *
  * The starfield is STATIC here (`paused`) — no per-star twinkle loop — so the
@@ -33,7 +35,7 @@ import Svg, {
   Stop as SvgStop,
 } from 'react-native-svg'
 import { StarField } from '@/components/IntroScene'
-import { KindredMoon } from '@/components/KindredMoon'
+import { YuelMark } from '@/components/YuelMark'
 
 const BG = kindredDark.bg
 const INK = '#f4f3ef'
@@ -62,8 +64,8 @@ export interface IntroLogoProps {
 export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
   const { width, height } = useWindowDimensions()
   const reduced = useReducedMotion()
-  // pair-input's moon rests at safeTop + scroll-paddingTop(lg 24) + half-moon(32);
-  // the exit lands the moon EXACTLY here so the cross-fade swap doesn't hop.
+  // pair-input's knot rests at safeTop + scroll-paddingTop(lg 24) + half-its-height(32);
+  // the exit lands the knot EXACTLY here so the cross-fade swap doesn't hop.
   const restY = useSafeAreaInsets().top + 24 + 32
 
   const appear = useSharedValue(reduced ? 1 : 0)
@@ -87,8 +89,9 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
   // just sits there for depth (no 30-node twinkle loop).
   const fieldBright = useSharedValue(0.5)
 
-  // The moon: blooms in centre-high, then on exit settles to pair-input's resting
-  // moon (centred, restY, size 64). A faint breath while it presides.
+  // The knot: blooms in centre-high, then on exit settles to pair-input's resting
+  // knot (centred, restY, height 64 → the box scales to 64/MOON). A faint breath while
+  // it presides. (Box stays MOON×MOON; the narrower vertical knot centers within it.)
   const moonStyle = useAnimatedStyle(() => {
     const a = appear.value
     const e = exit.value
@@ -145,7 +148,7 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
         style={[StyleSheet.absoluteFill, { backgroundColor: BG }, exitStyle]}
       />
 
-      {/* the moon (logo) — blooms, presides, then settles to pair-input's mark. */}
+      {/* the knot (logo) — blooms, presides, then settles to pair-input's mark. */}
       <Animated.View
         pointerEvents='none'
         style={[S.moonBox, { left: (width - MOON) / 2 }, moonStyle]}
@@ -162,7 +165,7 @@ export function IntroLogo({ lines, hint, exit }: IntroLogoProps) {
             <SvgCircle cx={MOON * 1.3} cy={MOON * 1.3} r={MOON * 1.3} fill='url(#logobloom)' />
           </Svg>
         </Animated.View>
-        <KindredMoon size={MOON} />
+        <YuelMark vertical size={MOON} color={kindredDark.seal} />
       </Animated.View>
     </View>
   )

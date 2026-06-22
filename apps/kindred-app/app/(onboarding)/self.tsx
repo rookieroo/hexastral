@@ -29,8 +29,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
@@ -197,7 +197,7 @@ export default function SelfBirthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.sm }}>
-          <KindredMoon size={64} />
+          <YuelMark vertical size={64} color={kindredDark.seal} />
         </View>
 
         {isEdit ? (

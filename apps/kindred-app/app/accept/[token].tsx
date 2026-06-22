@@ -43,9 +43,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { GeneratingStages } from '@/components/reading/GeneratingStages'
+import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
@@ -251,7 +251,7 @@ export default function AcceptTokenScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <KindredMoon size={72} />
+          <YuelMark vertical size={72} color={kindredDark.seal} />
         </View>
       </SafeAreaView>
     )
@@ -294,7 +294,7 @@ export default function AcceptTokenScreen() {
       return (
         <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <KindredMoon size={72} />
+            <YuelMark vertical size={72} color={kindredDark.seal} />
           </View>
         </SafeAreaView>
       )
@@ -353,7 +353,7 @@ export default function AcceptTokenScreen() {
       >
         {/* Invite context — moon + who + relationship + optional note. */}
         <View style={{ alignItems: 'center', gap: kindredSpacing.md }}>
-          <KindredMoon size={72} />
+          <YuelMark vertical size={72} color={kindredDark.seal} />
           <Text style={[kindredType.heading, { color: kindredDark.text, textAlign: 'center' }]}>
             {hasName ? (
               <>

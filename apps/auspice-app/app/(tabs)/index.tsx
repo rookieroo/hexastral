@@ -19,7 +19,7 @@ import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Cake, CalendarCheck, ScrollText } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -37,6 +37,7 @@ import { CultureTopicsGrid } from '@/components/culture/CultureTopicsGrid'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
 import { LiuyearBanner } from '@/components/LiuyearBanner'
+import { MoonLoader } from '@/components/MoonLoader'
 import {
   type AuspiceDayPayload,
   fetchAuspiceBootstrap,
@@ -201,7 +202,7 @@ export default function HomeScreen() {
             <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
               {dayLoading && !dayData ? (
                 <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
-                  <ActivityIndicator color={colors.accent} />
+                  <MoonLoader />
                 </View>
               ) : dayError ? (
                 <View style={{ gap: spacing.md, paddingVertical: spacing.xl }}>

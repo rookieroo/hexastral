@@ -28,7 +28,7 @@ export type PushDataSource = 'static' | 'daily-fetch' | 'rolling'
 
 export interface PushTypeMeta {
   /** Stable key — also the AsyncStorage enable-flag namespace in lib/push.ts. */
-  id: 'daily' | 'evening' | 'birthday' | 'holiday' | 'timeline' | 'synastry'
+  id: 'daily' | 'evening' | 'birthday' | 'holiday' | 'timeline'
   /** Settings label / description i18n hooks live with the screen, not here. */
   tier: PushTier
   dataSource: PushDataSource
@@ -96,17 +96,6 @@ export const PUSH_TYPES: readonly PushTypeMeta[] = [
       'open. NEVER precomputed for years — only the bounded near-term window is materialized.',
     storage: 'A rolling window of month-start + 大运-transition local notifications.',
     slots: ['morning'],
-  },
-  {
-    id: 'synastry',
-    tier: 'pro', // the relationship-timeline reminders are the 合盘 Pro / one-time perk
-    dataSource: 'rolling',
-    cadence:
-      'Per-亲友 relationship nodes (双方 大运 换运 / 流年 冲合) computed ON-DEVICE from both ' +
-      'local charts; nearest upcoming node(s) per relationship, capped globally, re-scheduled ' +
-      'on app open. (A one-time 合盘 purchase will unlock this per relationship in S3.)',
-    storage: 'A small rolling set of local notifications (nearest nodes across 亲友).',
-    slots: ['on-date'],
   },
 ] as const
 

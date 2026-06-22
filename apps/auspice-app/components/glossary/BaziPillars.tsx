@@ -23,7 +23,8 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { MoonLoader } from '@/components/MoonLoader'
 
 import { fetchTimeline, type PillarUnit, type TimelinePayload } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
@@ -87,7 +88,7 @@ export function BaziPillars() {
   if (state.kind === 'loading') {
     return (
       <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
-        <ActivityIndicator color={colors.accent} />
+        <MoonLoader />
       </View>
     )
   }

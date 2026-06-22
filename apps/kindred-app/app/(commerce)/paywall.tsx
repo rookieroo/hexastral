@@ -12,8 +12,8 @@
  * lifts the multi-provider `<SignInSheet>` (Apple + Google), same drawer
  * the user sees in Settings.
  *
- * Hero uses the cinnabar phase-moon (KindredMoon) — not the KindredSeal,
- * which carried the 緣 glyph the user asked us to drop from the paywall.
+ * Hero uses the vertical Yuel knot mark (YuelMark) in cinnabar — the brand
+ * crest the rest of the suite leads with.
  *
  * Reached via:
  *   router.push({ pathname: '/(commerce)/paywall', params: { reason } })
@@ -25,8 +25,8 @@ import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { KindredMoon } from '@/components/KindredMoon'
 import { SignInSheet } from '@/components/SignInSheet'
+import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, t } from '@/lib/i18n'
 import {
@@ -121,7 +121,7 @@ export default function PaywallScreen() {
         copy={copy}
         brand={palette}
         defaultPlan='annual'
-        hero={<KindredMoon size={96} />}
+        hero={<YuelMark vertical size={96} color={kindredDark.seal} />}
         onClose={() => router.back()}
         onPurchase={async (productId) => {
           const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'

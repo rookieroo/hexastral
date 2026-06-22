@@ -26,8 +26,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm, Field, NameInput } from '@/components/BirthForm'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { type OnboardingDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
@@ -115,7 +115,7 @@ export default function OtherMetaScreen() {
         </Pressable>
 
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.sm }}>
-          <KindredMoon size={56} />
+          <YuelMark vertical size={56} color={kindredDark.seal} />
         </View>
 
         <Text style={[kindredType.title, { color: kindredDark.text }]}>

@@ -29,8 +29,8 @@ import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { isPaywall, relationshipLabel, shareInvite } from '@/lib/inviteSubmit'
 import { clearDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
@@ -97,7 +97,7 @@ export default function InviteScreen() {
       >
         {/* Brand mark + one prompt — no separate title + subtitle stack. */}
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.xl }}>
-          <KindredMoon size={56} />
+          <YuelMark vertical size={56} color={kindredDark.seal} />
         </View>
         <Text
           style={[

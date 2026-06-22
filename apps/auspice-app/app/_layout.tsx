@@ -14,18 +14,11 @@ import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-ru
 import * as Linking from 'expo-linking'
 import { type Href, Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import {
-  AccentProvider,
-  type AuspiceAccentVariant,
-  DEFAULT_ACCENT_VARIANT,
-  getAccentVariant,
-  setAccentVariant,
-} from '@/lib/accent'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
@@ -37,7 +30,6 @@ import {
   configureNotifications,
   purgeStaleNotificationsOnce,
   refreshDailyPush,
-  refreshSynastryReminders,
   refreshTimelineReminders,
   scheduleBirthdayReminders,
   syncServerPush,
@@ -59,29 +51,15 @@ export default function RootLayout() {
   // Auspice defaults light — 黄历 reads best on warm paper; honor explicit dark mode.
   const mode: 'light' | 'dark' = scheme === 'dark' ? 'dark' : 'light'
 
-  // Lift the accent variant here so the picker (downstream in /display) can
-  // mutate it via context and the CoreUIProvider re-renders with the new
-  // accent immediately — no app restart.
-  const [variant, setVariantState] = useState<AuspiceAccentVariant>(DEFAULT_ACCENT_VARIANT)
-  useEffect(() => {
-    getAccentVariant()
-      .then(setVariantState)
-      .catch(() => {})
-  }, [])
-  const setVariant = useCallback((v: AuspiceAccentVariant) => {
-    setVariantState(v)
-    void setAccentVariant(v)
-  }, [])
-
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <CoreUIProvider brand='cycle' mode={mode} accentVariant={variant}>
-          <AccentProvider value={{ variant, setVariant }}>
-            <LocaleProvider>
-              <RootLayoutInner />
-            </LocaleProvider>
-          </AccentProvider>
+        {/* Accent LOCKED to 苍墨 ink (2026-06): the brand mark + page feel are one
+            fixed ink identity — no user accent switcher. */}
+        <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
+          <LocaleProvider>
+            <RootLayoutInner />
+          </LocaleProvider>
         </CoreUIProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -120,12 +98,6 @@ function RootLayoutInner() {
           birthDate: info.solarDate,
           birthHour: info.timeIndex === null ? -1 : info.timeIndex * 2,
           gender: info.gender === '男' ? 'M' : 'F',
-        })
-        // 合盘节点提醒 (Pro) — per-亲友 relationship nodes; self-clears if off / not Pro.
-        await refreshSynastryReminders({
-          locale,
-          self: { solarDate: info.solarDate, timeIndex: info.timeIndex, gender: info.gender },
-          people,
         })
       }
     })()
@@ -180,7 +152,6 @@ function RootLayoutInner() {
         <Stack.Screen name='remote-tz' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='timeline' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='makeif' options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name='relationship/[id]' options={{ animation: 'slide_from_right' }} />
       </Stack>
     </>
   )

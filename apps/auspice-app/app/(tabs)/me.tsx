@@ -47,7 +47,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { AccentPicker } from '@/components/AccentPicker'
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
@@ -58,18 +57,14 @@ import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { resetOnboarding } from '@/lib/onboarding-seen'
-import { getPeople } from '@/lib/people'
 import {
   disableDailyPush,
-  disableSynastryReminders,
   disableTimelineReminders,
   enableDailyPush,
-  enableSynastryReminders,
   enableTimelineReminders,
   fireTestDailyPush,
   isEveningPushEnabled,
   isPushEnabled,
-  isSynastryRemindersEnabled,
   isTimelineRemindersEnabled,
   setEveningPushEnabled,
 } from '@/lib/push'
@@ -452,43 +447,12 @@ export default function MeScreen() {
       .catch(() => {})
   }, [])
 
-  // 合盘节点提醒 (Pro) — per-亲友 relationship-timeline nodes (synastry-in-auspice S2).
-  // Needs the user's own birth + at least one 亲友; computed on-device.
-  const [synastryRemindOn, setSynastryRemindOn] = useState(false)
-  const toggleSynastryRemind = async (next: boolean) => {
-    if (!next) {
-      await disableSynastryReminders()
-      setSynastryRemindOn(false)
-      return
-    }
-    if (!isPro) {
-      setCalPaywallOpen(true)
-      return
-    }
-    if (!birth.gender || !birth.solarDate) {
-      setEditingBirth(true)
-      return
-    }
-    const people = await getPeople().catch(() => [])
-    const ok = await enableSynastryReminders({
-      locale,
-      self: { solarDate: birth.solarDate, timeIndex: birth.timeIndex, gender: birth.gender },
-      people,
-    })
-    setSynastryRemindOn(ok)
-  }
-  useEffect(() => {
-    isSynastryRemindersEnabled()
-      .then(setSynastryRemindOn)
-      .catch(() => {})
-  }, [])
-
   // Registry-driven push toggles — order + PRO flag from lib/pushRegistry (single
   // source of truth), so the three rows render from one config + PushToggleRow
   // instead of three near-identical Switch blocks (the settings tree had grown
   // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
   const pushToggles: Array<{
-    id: Extract<PushTypeMeta['id'], 'daily' | 'evening' | 'timeline' | 'synastry'>
+    id: Extract<PushTypeMeta['id'], 'daily' | 'evening' | 'timeline'>
     label: string
     hint?: string
     value: boolean
@@ -513,13 +477,6 @@ export default function MeScreen() {
       hint: t.timelineRemindHint,
       value: timelineRemindOn,
       onToggle: toggleTimelineRemind,
-    },
-    {
-      id: 'synastry',
-      label: t.synastryRemindToggle,
-      hint: t.synastryRemindHint,
-      value: synastryRemindOn,
-      onToggle: toggleSynastryRemind,
     },
   ]
 
@@ -808,15 +765,6 @@ export default function MeScreen() {
             </View>
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
-        </View>
-
-        {/* ── 主题色 — global accent variant (朱泥 default + 3 alts). Lives here
-            because watch face + widget have their own brand-anchored palettes
-            and don't honor the app accent — the picker would be misleading on
-            the /display screen. ── */}
-        <View>
-          <SectionLabel>{t.themeAccent}</SectionLabel>
-          <AccentPicker />
         </View>
 
         {/* ── 亲友生日 + 表盘与桌面组件 drill-ins ── */}

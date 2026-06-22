@@ -14,10 +14,10 @@
 import { useTheme } from '@zhop/core-ui'
 import { useLocalSearchParams } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
 import { CultureWikiLink } from '@/components/culture/CultureWikiLink'
+import { MoonLoader } from '@/components/MoonLoader'
 import {
   type AuspiceFestival,
   type AuspiceSolarTermEntry,
@@ -160,7 +160,7 @@ export default function FestivalDetailScreen() {
               ) : null}
             </View>
           ) : loading ? (
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
           ) : null}
           {/* Real explanation up front — not just a bare Wikipedia link. */}
           {summary ? (

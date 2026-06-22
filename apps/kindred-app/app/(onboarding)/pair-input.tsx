@@ -53,8 +53,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BirthForm, Field, NameInput } from '@/components/BirthForm'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
@@ -217,11 +217,11 @@ export default function PairInputScreen() {
         keyboardShouldPersistTaps='handled'
         automaticallyAdjustKeyboardInsets
       >
-        {/* Brand moon — the shared KindredMoon (the exact component the cold-open
-            splash lands on), held at the same centred size-64 resting spot, so the
-            hand-off into this screen is pixel-identical, no hop. */}
+        {/* Brand knot — the shared YuelMark vertical (the exact mark the cold-open
+            lands on), held at the same centred height-64 resting spot, so the hand-off
+            into this screen is pixel-identical, no hop. */}
         <View style={{ alignItems: 'center', marginBottom: kindredSpacing.sm }}>
-          <KindredMoon size={64} />
+          <YuelMark vertical size={64} color={kindredDark.seal} />
         </View>
 
         {step === 'self' && (

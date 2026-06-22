@@ -14,7 +14,8 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { MoonLoader } from '@/components/MoonLoader'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
@@ -124,7 +125,7 @@ export function ExplainSheet({
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.md }}>
         {loading ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
             <Text style={{ color: colors.secondary, marginTop: spacing.sm }}>{L.loading}</Text>
           </View>
         ) : error ? (

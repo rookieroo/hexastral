@@ -10,7 +10,7 @@
  */
 
 import { MoonPhaseLoader } from '@zhop/core-ui/motion'
-import { MOON_SKINS_BY_ID, SKIN_SILVER } from '@zhop/hexastral-tokens/moon'
+import { MOON_SKINS_BY_ID, SKIN_INK } from '@zhop/hexastral-tokens/moon'
 import { useEffect } from 'react'
 import { Easing, useSharedValue, withTiming } from 'react-native-reanimated'
 import type { MoonSkinId } from '@/lib/widget-config'
@@ -28,7 +28,7 @@ export function StaticMoon({
   useEffect(() => {
     p.value = withTiming(phase, { duration: 1200, easing: Easing.out(Easing.cubic) })
   }, [phase, p])
-  const skinBase = (skinId && MOON_SKINS_BY_ID[skinId]) || SKIN_SILVER
+  const skinBase = (skinId && MOON_SKINS_BY_ID[skinId]) || SKIN_INK
   const sizeK = Math.min(1, size / 120)
   // Keep the water-ink shadow (the brand differentiator) but scale its edge
   // displacement down with size so it stays a fine texture, not big tongues.

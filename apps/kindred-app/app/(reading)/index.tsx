@@ -57,7 +57,6 @@ import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
@@ -386,7 +385,7 @@ export default function ReadingHomeScreen() {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-        <YuelMark width={40} color={kindredDark.seal} />
+        <YuelMark vertical size={26} color={kindredDark.seal} />
         <Text
           style={{
             fontFamily: kindredFonts.mono,
@@ -434,7 +433,7 @@ export default function ReadingHomeScreen() {
           style={{ flex: 1, justifyContent: 'center', paddingHorizontal: kindredSpacing.screenH }}
         >
           <EmptyState
-            illustration={<KindredMoon size={96} />}
+            illustration={<YuelMark vertical size={96} color={kindredDark.seal} />}
             title={copy.noBirthTitle}
             customAction={
               <PrimaryButton

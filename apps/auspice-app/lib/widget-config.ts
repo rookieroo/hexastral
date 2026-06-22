@@ -7,12 +7,23 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 /** Moon-face skins from @zhop/hexastral-tokens/moon. */
-export type MoonSkinId = 'rice-paper' | 'moon-white' | 'silver' | 'bronze' | 'jade' | 'cinnabar'
+export type MoonSkinId =
+  | 'ink'
+  | 'rice-paper'
+  | 'moon-white'
+  | 'silver'
+  | 'bronze'
+  | 'jade'
+  | 'cinnabar'
 
-export const DEFAULT_MOON_SKIN_ID: MoonSkinId = 'silver'
+// 苍墨 ink — the brand default, matching the locked ink theme. Users can still pick
+// another moon FACE for their widget/watch (a personal customization, unlike the
+// app accent which is locked).
+export const DEFAULT_MOON_SKIN_ID: MoonSkinId = 'ink'
 
 /** Picker options (id + the skin's 中文 name from moon.ts). */
 export const MOON_SKIN_OPTIONS: ReadonlyArray<{ id: MoonSkinId; name: string }> = [
+  { id: 'ink', name: '苍墨' },
   { id: 'silver', name: '银' },
   { id: 'rice-paper', name: '宣纸' },
   { id: 'moon-white', name: '月白' },

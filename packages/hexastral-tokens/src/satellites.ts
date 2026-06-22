@@ -121,12 +121,16 @@ export const auspiceAccentVariants: Record<
     accentMute: auspicePalette.terraMute,
     accentGhost: auspicePalette.terraGhost,
   },
-  // 苍墨 — warm dark-gray, the body ink of an almanac
+  // 苍墨 — warm ink-gray. Brightened 2026-06 (founder "图标颜色不太对"): the original
+  // #4D4540 base read dark-on-dark — thin accent strokes (row + card icons, chevrons,
+  // selected-date) were muddy on the near-black dark theme (the satellite accent has
+  // no light/dark pivot, unlike the flagship per-mode accents). These mid-luminance
+  // greys read on the near-black AND still on cream as a restrained ink.
   ink: {
-    accent: '#4D4540',
-    accentBright: '#6B5F55',
-    accentMute: 'rgba(77,69,64,0.45)',
-    accentGhost: 'rgba(77,69,64,0.08)',
+    accent: '#897C6C',
+    accentBright: '#A2937E',
+    accentMute: 'rgba(137,124,108,0.45)',
+    accentGhost: 'rgba(137,124,108,0.08)',
   },
   // 靛青 — textile indigo (intentionally aligned with the 水元素 hue so
   // 干支水日 + brand accent feel of one cloth when this variant is picked)
@@ -229,8 +233,11 @@ export function getSatelliteAccent(key: SatelliteKey, accentVariant?: string): S
         accentBright: v.accentBright,
         accentMute: v.accentMute,
         accentGhost: v.accentGhost,
-        // paperGrain stays brand-anchored — variant changes highlights, not page feel
-        surfaceTint: auspicePalette.paperGrain,
+        // The 黄历纸 ambient page-tint now FOLLOWS the accent (2026-06): with the ink
+        // default brand, a warm terra page-feel under a neutral ink accent read
+        // incoherent. Tracking the active accent keeps the page + highlights one cloth
+        // (ink → neutral warm-gray, terra → warm clay, etc.).
+        surfaceTint: v.accentGhost,
       }
     }
   }

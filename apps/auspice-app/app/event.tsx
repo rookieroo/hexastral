@@ -17,11 +17,12 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
+import { MoonLoader } from '@/components/MoonLoader'
 import {
   type AuspiceEvent,
   type AuspiceSearchPayload,
@@ -251,7 +252,7 @@ export default function EventScreen() {
 
         {loading ? (
           <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
             <Text style={{ color: colors.secondary, marginTop: spacing.sm }}>{t.searching}</Text>
           </View>
         ) : error ? (

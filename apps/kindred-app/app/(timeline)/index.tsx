@@ -40,8 +40,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { KindredMoon } from '@/components/KindredMoon'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import {
   ensureTimelinePushPermission,
@@ -137,7 +137,7 @@ export default function TimelineScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
         <ErrorState
           variant='fullscreen'
-          illustration={<KindredMoon size={72} />}
+          illustration={<YuelMark vertical size={72} color={kindredDark.seal} />}
           title={t(locale, 'timeline.error.title')}
           message={error.message}
           customAction={
@@ -171,7 +171,7 @@ export default function TimelineScreen() {
               marginBottom: kindredSpacing.xl,
             }}
           >
-            <KindredMoon size={64} />
+            <YuelMark vertical size={64} color={kindredDark.seal} />
             <Text style={[kindredType.title, { color: kindredDark.text }]}>
               {bondName || t(locale, 'timeline.title')}
             </Text>
@@ -197,7 +197,7 @@ export default function TimelineScreen() {
         <Header onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
-            illustration={<KindredMoon size={96} />}
+            illustration={<YuelMark vertical size={96} color={kindredDark.seal} />}
             title={t(locale, 'timeline.empty.title')}
             subtitle={t(locale, 'timeline.empty.body')}
             customAction={
@@ -226,7 +226,7 @@ export default function TimelineScreen() {
         <View
           style={{ alignItems: 'center', gap: kindredSpacing.sm, marginBottom: kindredSpacing.lg }}
         >
-          <KindredMoon size={48} />
+          <YuelMark vertical size={48} color={kindredDark.seal} />
           <Text style={[kindredType.title, { color: kindredDark.text }]}>
             {bondName || t(locale, 'timeline.title')}
           </Text>

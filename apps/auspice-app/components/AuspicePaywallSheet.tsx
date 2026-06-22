@@ -12,7 +12,8 @@ import { useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet, SatellitePaywall } from '@zhop/satellite-ui'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Platform, Pressable, Text, useColorScheme, View } from 'react-native'
+import { Platform, Pressable, Text, useColorScheme, View } from 'react-native'
+import { MoonLoader } from '@/components/MoonLoader'
 
 import { isSignedIn, signInWithApple, signInWithGoogle } from '@/lib/account'
 import { useStrings } from '@/lib/i18n-context'
@@ -77,7 +78,7 @@ export function AuspicePaywallSheet({
 
         {signedIn === null ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
-            <ActivityIndicator color={colors.accent} />
+            <MoonLoader />
           </View>
         ) : signedIn === false ? (
           // ── Login-at-subscribe gate ──
@@ -90,7 +91,7 @@ export function AuspicePaywallSheet({
             </Text>
             {signingIn ? (
               <View style={{ height: 48, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.accent} />
+                <MoonLoader size={32} />
               </View>
             ) : (
               <View style={{ gap: 10 }}>

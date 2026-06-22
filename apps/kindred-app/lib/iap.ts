@@ -1,9 +1,11 @@
 /**
  * Kindred IAP — RevenueCat wrapper.
  *
- * Two products gate "unlimited bonds":
- *   - `hexastral_kindred_pro_monthly`  — $1.99 / mo
- *   - `hexastral_kindred_pro_annual`   — $14.99 / yr
+ * Two products gate "unlimited bonds". Flagship pricing (2026-06, founder-agreed —
+ * Yuel is the premium tier vs Yuun's mass-market almanac); actual price is set in App
+ * Store Connect / RevenueCat (authoritative). Intended targets:
+ *   - `hexastral_kindred_pro_monthly`  — $7.99 / mo
+ *   - `hexastral_kindred_pro_annual`   — $47.99 / yr
  *
  * Both grant the `hexastral_kindred_pro` entitlement.
  *

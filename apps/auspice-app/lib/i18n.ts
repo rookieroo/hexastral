@@ -208,9 +208,6 @@ export interface Strings {
   timelineRemindToggle: string
   /** Hint under the 人生节点提醒 toggle. */
   timelineRemindHint: string
-  /** 合盘节点提醒 toggle + hint (per-亲友 relationship-timeline reminders). */
-  synastryRemindToggle: string
-  synastryRemindHint: string
   /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
   timelineAdvice: Record<PersonalFit, string>
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
@@ -232,25 +229,6 @@ export interface Strings {
    *  real line. {el} = 用神 五行; {year} = nearest favorable 流年. */
   makeifCherrypick: string
   /** 合盘 (synastry) relationship timeline screen. */
-  synastryTl: {
-    title: string
-    subtitle: string
-    score: string
-    yourDayun: string
-    theirDayun: string
-    clash: string
-    harmony: string
-    needBirth: string
-    empty: string
-    freeNote: string
-    back: string
-    /** Unlock wall (S3): one-time view buyout ({price}) vs subscribe (adds reminders). */
-    unlockOneTime: string
-    unlockOneTimeNoPrice: string
-    unlockSubscribe: string
-    unlocking: string
-    purchaseFailed: string
-  }
   /** Make-if diff panel — labels for the 现实 vs 假如 side-by-side comparison. */
   makeifDiff: {
     /** Panel header (eyebrow caption). */
@@ -447,10 +425,6 @@ export interface Strings {
     /** Shown inside the expanded 合盘 section when the solar birth year is missing —
      *  合盘 silently can't compute without it, so make the requirement explicit. */
     compatYearRequired: string
-    /** Label above the deterministic 合盘 score taste shown before the Yuel hand-off. */
-    synastryScore: string
-    /** Hint under the live 合盘 taste — full relationship timeline opens after adding. */
-    synastryAddHint: string
   }
   watchWidgets: string
   /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
@@ -464,9 +438,7 @@ export interface Strings {
   /** Picker label for the 月相 palette (applies to the shipping widget). */
   moonSkinLabel: string
   /** Small "coming soon" badge. */
-  comingSoon: string
-  themeAccent: string
-  /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
+  comingSoon: string /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
    *  chat) moved to Yuel in the Yuel/Yuun split; Yuun now shows only the free 概要.
    *  These strings are retained pending dictionary cleanup but are no longer wired. */
   readingChat: {
@@ -632,8 +604,6 @@ const zhHans: Strings = {
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
   timelineRemindToggle: '人生节点提醒',
   timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
-  synastryRemindToggle: '合盘节点提醒',
-  synastryRemindHint: '在亲友关系的显著节点临近时提醒你（双方大运换运、流年冲合）。',
   timelineAdvice: {
     吉: '气运相生，宜主动进取、顺势把握时机。',
     平: '运势平稳，按部就班、稳中求进即可。',
@@ -663,24 +633,6 @@ const zhHans: Strings = {
   },
   makeifBackdrop: '命主干 · {domain}运 —— 选择之外,命势自有牵引。',
   makeifCherrypick: '带回现实 · 借{el}行之力,{year}年顺势而为。',
-  synastryTl: {
-    title: '关系时间轴',
-    subtitle: '接下来几个月，你与TA的关系气候',
-    score: '合缘',
-    yourDayun: '你换大运',
-    theirDayun: 'TA换大运',
-    clash: '相冲',
-    harmony: '相合',
-    needBirth: '需要双方完整生辰才能推演这段关系。',
-    empty: '这段关系暂无显著节点。',
-    freeNote: '免费仅显示本月；未来几个月可解锁。',
-    back: '返回',
-    unlockOneTime: '解锁完整时间轴 · {price}(一次性)',
-    unlockOneTimeNoPrice: '解锁完整时间轴(一次性)',
-    unlockSubscribe: '或订阅 Pro · 含节点提醒',
-    unlocking: '解锁中…',
-    purchaseFailed: '购买未完成,请稍后再试。',
-  },
   makeifDiff: {
     header: '对照 · 现实 vs 假如',
     realCol: '现实',
@@ -845,8 +797,6 @@ const zhHans: Strings = {
     compatibilityHint:
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Yuel App 中查看。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
-    synastryScore: '你们的缘分指数',
-    synastryAddHint: '添加后,点亲友名字可查看你们的关系时间轴。',
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
@@ -856,7 +806,6 @@ const zhHans: Strings = {
   watchStyleLabel: '表盘样式',
   moonSkinLabel: '月相',
   comingSoon: '即将推出',
-  themeAccent: '主题色',
   readingChat: {
     title: '聊聊你的命盘',
     empty: '关于你自己的命盘，问我任何问题。',
@@ -1002,8 +951,6 @@ const zhHant: Strings = {
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
   timelineRemindToggle: '人生節點提醒',
   timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
-  synastryRemindToggle: '合盤節點提醒',
-  synastryRemindHint: '在親友關係的顯著節點臨近時提醒你（雙方大運換運、流年沖合）。',
   timelineAdvice: {
     吉: '氣運相生，宜主動進取、順勢把握時機。',
     平: '運勢平穩，按部就班、穩中求進即可。',
@@ -1033,24 +980,6 @@ const zhHant: Strings = {
   },
   makeifBackdrop: '命主幹 · {domain}運 —— 選擇之外,命勢自有牽引。',
   makeifCherrypick: '帶回現實 · 借{el}行之力,{year}年順勢而為。',
-  synastryTl: {
-    title: '關係時間軸',
-    subtitle: '接下來幾個月，你與TA的關係氣候',
-    score: '合緣',
-    yourDayun: '你換大運',
-    theirDayun: 'TA換大運',
-    clash: '相沖',
-    harmony: '相合',
-    needBirth: '需要雙方完整生辰才能推演這段關係。',
-    empty: '這段關係暫無顯著節點。',
-    freeNote: '免費僅顯示本月；未來幾個月可解鎖。',
-    back: '返回',
-    unlockOneTime: '解鎖完整時間軸 · {price}(一次性)',
-    unlockOneTimeNoPrice: '解鎖完整時間軸(一次性)',
-    unlockSubscribe: '或訂閱 Pro · 含節點提醒',
-    unlocking: '解鎖中…',
-    purchaseFailed: '購買未完成,請稍後再試。',
-  },
   makeifDiff: {
     header: '對照 · 現實 vs 假如',
     realCol: '現實',
@@ -1201,8 +1130,6 @@ const zhHant: Strings = {
     compatibilityHint:
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Yuel App 中查看。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
-    synastryScore: '你們的緣分指數',
-    synastryAddHint: '添加後,點親友名字可查看你們的關係時間軸。',
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
@@ -1212,7 +1139,6 @@ const zhHant: Strings = {
   watchStyleLabel: '錶盤樣式',
   moonSkinLabel: '月相',
   comingSoon: '即將推出',
-  themeAccent: '主題色',
   readingChat: {
     title: '聊聊你的命盤',
     empty: '關於你自己的命盤，問我任何問題。',
@@ -1383,8 +1309,6 @@ const ja: Strings = {
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
   timelineRemindToggle: '人生の節目リマインド',
   timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
-  synastryRemindToggle: '相性の節目リマインド',
-  synastryRemindHint: '相手との関係に節目が近づくとお知らせします（双方の大運・流年の冲合）。',
   timelineAdvice: {
     吉: '運気が味方します。積極的に動き、好機を掴みましょう。',
     平: '運気は穏やか。着実に、無理なく進めましょう。',
@@ -1414,24 +1338,6 @@ const ja: Strings = {
   },
   makeifBackdrop: '命の主軸 · {domain}運 —— 選択を超えて、命勢が静かに導きます。',
   makeifCherrypick: '現実へ持ち帰る · {el}の力を借り、{year}年に動きましょう。',
-  synastryTl: {
-    title: '関係タイムライン',
-    subtitle: 'これからの数か月、二人の関係の空気感',
-    score: '相性',
-    yourDayun: 'あなたの大運',
-    theirDayun: '相手の大運',
-    clash: '冲',
-    harmony: '合',
-    needBirth: '二人の完全な生年月日が必要です。',
-    empty: 'この関係に目立った節目はまだありません。',
-    freeNote: '無料は今月のみ。先の数か月はアンロックで。',
-    back: '戻る',
-    unlockOneTime: '全タイムラインを解放 · {price}(買い切り)',
-    unlockOneTimeNoPrice: '全タイムラインを解放(買い切り)',
-    unlockSubscribe: 'または Pro 購読 · 通知つき',
-    unlocking: '処理中…',
-    purchaseFailed: '購入が完了しませんでした。',
-  },
   makeifDiff: {
     header: '対比 · 現実 vs もしも',
     realCol: '現実',
@@ -1584,8 +1490,6 @@ const ja: Strings = {
       '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Yuel アプリで閲覧）。',
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
-    synastryScore: '二人の相性スコア',
-    synastryAddHint: '追加後、相手の名前をタップすると関係タイムラインを表示。',
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
@@ -1595,7 +1499,6 @@ const ja: Strings = {
   watchStyleLabel: '文字盤スタイル',
   moonSkinLabel: '月相',
   comingSoon: '近日公開',
-  themeAccent: 'テーマカラー',
   readingChat: {
     title: 'あなたの命盤について',
     empty: 'あなた自身の命盤について何でも聞いてください。',
@@ -1755,9 +1658,6 @@ const en: Strings = {
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
-  synastryRemindToggle: 'Relationship reminders',
-  synastryRemindHint:
-    'A heads-up as a relationship reaches a significant node (either 大运 shift, 流年 冲/合).',
   timelineAdvice: {
     吉: 'The energy supports you — take initiative and seize the moment.',
     平: 'Steady energy — keep a measured pace and build gradually.',
@@ -1788,24 +1688,6 @@ const en: Strings = {
   makeifBackdrop:
     'Your real line · a {domain} chapter — beyond the choice, your chart still pulls.',
   makeifCherrypick: 'Carry it back · lean on {el}, act around {year}.',
-  synastryTl: {
-    title: 'Relationship timeline',
-    subtitle: 'The next few months between you',
-    score: 'Match',
-    yourDayun: 'Your luck cycle',
-    theirDayun: 'Their luck cycle',
-    clash: 'clash',
-    harmony: 'harmony',
-    needBirth: 'Both full birth charts are needed for this relationship.',
-    empty: 'No significant nodes for this relationship yet.',
-    freeNote: 'Free shows this month; the next few months unlock.',
-    back: 'Back',
-    unlockOneTime: 'Unlock the full timeline · {price} (one-time)',
-    unlockOneTimeNoPrice: 'Unlock the full timeline (one-time)',
-    unlockSubscribe: 'Or subscribe to Pro · adds reminders',
-    unlocking: 'Unlocking…',
-    purchaseFailed: "Purchase didn't complete — please try again.",
-  },
   makeifDiff: {
     header: 'Side-by-side · Real vs What-If',
     realCol: 'Real',
@@ -1971,8 +1853,6 @@ const en: Strings = {
       'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Yuel app.',
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
-    synastryScore: 'Your compatibility',
-    synastryAddHint: 'After adding, tap their name to see your relationship timeline.',
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:
@@ -1982,7 +1862,6 @@ const en: Strings = {
   watchStyleLabel: 'Watch styles',
   moonSkinLabel: 'Moon skin',
   comingSoon: 'Soon',
-  themeAccent: 'Accent color',
   readingChat: {
     title: 'Ask about your chart',
     empty: 'Ask anything about your own chart.',

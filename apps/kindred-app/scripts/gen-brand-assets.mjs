@@ -6,14 +6,15 @@
  *
  *   node scripts/gen-brand-assets.mjs
  *
- * Requires `rsvg-convert` (librsvg) on PATH. Re-balanced 2026-06: the mark is
- * landscape ~2.18:1, so it sits as a centered cinnabar seal (~58% width) with
- * generous margin — fixes the "too flat / edge-stuck" read and keeps the whole
- * mark inside the Android adaptive-icon 66% safe zone (no clipping under round /
- * squircle masks). Colours come from the kindred tokens:
- *   - icon / adaptive: cinnabar.seal #9B2226 on ricePaper.ivory #F5F0E8
- *   - splash: cinnabar.bright #C0392B on stone.void #0C0A09 (= kindredDark.seal,
- *     matches the home top-left logo the JS HomeSplash lands on)
+ * Requires `rsvg-convert` (librsvg) on PATH. The mark is landscape ~2.18:1, but the
+ * WHOLE SUITE is the VERTICAL seal (90° CW + horizontal mirror): icon / adaptive /
+ * favicon AND splash — and the in-app `<YuelMark vertical>` (home logo + HomeSplash)
+ * matches it, so there is no orientation switch anywhere. Vertical plants like an 印章
+ * (L/R margin > T/B; the lead-in stroke sweeps down-left as a 收锋 flourish) and the
+ * long axis stays inside the Android adaptive 66% safe zone. Colours from the kindred
+ * tokens:
+ *   - icon / adaptive / favicon: cinnabar.seal #9B2226 on ricePaper.ivory #F5F0E8
+ *   - splash: cinnabar.bright #C0392B on stone.void #0C0A09 (= kindredDark.seal)
  * stone.void (#0C0A09) / ivory (#F5F0E8) are set as backgroundColor in app.json.
  */
 import { execFileSync } from 'node:child_process'
@@ -37,12 +38,27 @@ const ON_IVORY = '#9B2226' // cinnabar.seal — knot on the light icon ground
 const ON_DARK = '#C0392B' // cinnabar.bright — knot on the dark splash
 const IVORY = '#F5F0E8' // ricePaper.ivory
 
-/** Centered knot at `widthFrac` of a square canvas; optional ivory ground + vignette. */
-function knotSvg({ size, widthFrac, color, ground }) {
-  const w = Math.round(size * widthFrac)
-  const h = Math.round((w * vbH) / vbW)
-  const x = Math.round((size - w) / 2)
-  const y = Math.round((size - h) / 2)
+/**
+ * Place the knot centered on a square canvas; optional ivory ground + vignette.
+ * `frac` = the mark's dominant dimension as a fraction of the canvas — width when
+ * horizontal, the vertical long axis when `rotate`. `rotate` renders the vertical
+ * icon seal: 90° CW + horizontal mirror (so the lead-in stroke exits down-left as a
+ * 收锋 flourish and L/R margin > T/B). Horizontal (`rotate` off) stays for the splash.
+ */
+function knotSvg({ size, frac, color, ground, rotate }) {
+  const inner = `<g transform="translate(0,${vbH}) scale(0.1,-0.1)"><path d="${knot}" fill="${color}"/></g>`
+  let placed
+  if (rotate) {
+    const s = (frac * size) / vbW // long axis (vbW) → `frac` of the canvas, vertical
+    const c = size / 2
+    placed = `<g transform="translate(${c},${c}) scale(-1,1) rotate(90) scale(${s}) translate(${-vbW / 2},${-vbH / 2})">${inner}</g>`
+  } else {
+    const w = Math.round(frac * size)
+    const h = Math.round((w * vbH) / vbW)
+    const x = Math.round((size - w) / 2)
+    const y = Math.round((size - h) / 2)
+    placed = `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 ${vbW} ${vbH}">${inner}</svg>`
+  }
   const defs = ground
     ? '<defs><radialGradient id="paper" cx="50%" cy="47%" r="66%">' +
       '<stop offset="0%" stop-color="#F8F3EB"/>' +
@@ -54,9 +70,8 @@ function knotSvg({ size, widthFrac, color, ground }) {
     `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">` +
     defs +
     bg +
-    `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 ${vbW} ${vbH}">` +
-    `<g transform="translate(0,${vbH}) scale(0.1,-0.1)"><path d="${knot}" fill="${color}"/></g>` +
-    '</svg></svg>'
+    placed +
+    '</svg>'
   )
 }
 
@@ -87,18 +102,32 @@ function render(name, svg, px) {
   throw lastErr ?? new Error('rsvg-convert not found')
 }
 
-// iOS app icon — full-bleed ivory ground + cinnabar seal, centered with margin.
-render('icon', knotSvg({ size: 1024, widthFrac: 0.58, color: ON_IVORY, ground: true }), 1024)
-// Android adaptive foreground — transparent (bg ivory set in app.json). 0.58 width
-// keeps the whole mark inside the central 66% safe zone.
+// iOS app icon — VERTICAL cinnabar seal on the ivory ground; long axis ~62% of the
+// tile, so L/R margin exceeds T/B (planted, not floating).
 render(
-  'adaptive-icon',
-  knotSvg({ size: 1024, widthFrac: 0.58, color: ON_IVORY, ground: false }),
+  'icon',
+  knotSvg({ size: 1024, frac: 0.62, color: ON_IVORY, ground: true, rotate: true }),
   1024
 )
-// Native splash — transparent knot on the dark backgroundColor (#0C0A09 via app.json),
-// in bright cinnabar so it matches the home YuelMark the JS HomeSplash flies onto.
-render('splash', knotSvg({ size: 1284, widthFrac: 0.48, color: ON_DARK, ground: false }), 1284)
-// Web favicon.
-render('favicon', knotSvg({ size: 256, widthFrac: 0.62, color: ON_IVORY, ground: true }), 256)
+// Android adaptive foreground — transparent (bg ivory set in app.json). Long axis
+// 0.58 keeps the whole vertical mark inside the central 66% safe zone.
+render(
+  'adaptive-icon',
+  knotSvg({ size: 1024, frac: 0.58, color: ON_IVORY, ground: false, rotate: true }),
+  1024
+)
+// Native splash — VERTICAL too, so native splash → JS HomeSplash → home logo → icon
+// are one orientation. Transparent bright-cinnabar knot on the dark backgroundColor;
+// long axis ~0.48 ≈ the JS HomeSplash's 200pt mark, so the native→JS seam is seamless.
+render(
+  'splash',
+  knotSvg({ size: 1284, frac: 0.48, color: ON_DARK, ground: false, rotate: true }),
+  1284
+)
+// Web favicon — matches the vertical app-icon family.
+render(
+  'favicon',
+  knotSvg({ size: 256, frac: 0.66, color: ON_IVORY, ground: true, rotate: true }),
+  256
+)
 console.log('done')
