@@ -21,11 +21,18 @@
  */
 
 import type { WuXing } from '@zhop/astro-core'
+import {
+  getTermByZh,
+  type ResolvedTerm,
+  segmentTextByTerms,
+  type Locale as TermLocale,
+} from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
+import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -80,6 +87,15 @@ function getClipboard(): ClipboardModule | null {
    ink body, bronze section accent, cinnabar seal. The SAME tokens the 概要 uses,
    so the full read presents as the identical hand-set document. */
 const P = kindredPaper
+
+/** Narrow the reading locale to the astro-i18n term locale (drives the language a
+ *  tapped term's explanation shows in; the term tokens themselves stay Chinese). */
+function termLocale(locale?: string): TermLocale {
+  if (locale === 'zh-Hant' || locale === 'zh-TW' || locale === 'zh-HK') return 'zh-Hant'
+  if (locale?.startsWith('zh')) return 'zh'
+  if (locale?.startsWith('ja')) return 'ja'
+  return 'en'
+}
 
 /** 碑拓 numeral seal — dark stone-rubbing tile holding the chapter number. */
 function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
@@ -477,6 +493,7 @@ export default function FullReadingScreen() {
       // only attaches once a Pro user has the real generated chapter.
       const llm = m.content
       detailProps = {
+        locale,
         label: m.label,
         sub: m.sub,
         content: llm,
@@ -505,6 +522,7 @@ export default function FullReadingScreen() {
       if (lc) {
         const raw = isPro ? (premium[lc.slug]?.content ?? null) : null
         detailProps = {
+          locale,
           label: t(lc.labelKey),
           sub: lc.sub,
           content: raw,
@@ -730,6 +748,7 @@ function Chapter({
 function ChapterDetail({
   label,
   sub,
+  locale,
   content,
   loading,
   placeholder,
@@ -748,6 +767,8 @@ function ChapterDetail({
 }: {
   label: string
   sub: string
+  /** Reading locale — drives term-gloss explanation language + CJK font choice. */
+  locale: string
   content: string | null
   loading: boolean
   placeholder?: string
@@ -768,6 +789,37 @@ function ChapterDetail({
   highlightedQuotes?: string[]
 }) {
   const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
+  const cjk = isCjkLocale(locale)
+  const tLocale = termLocale(locale)
+  const [activeTerm, setActiveTerm] = useState<ResolvedTerm | null>(null)
+  // Tap-to-explain (parity with the synastry ChapterCard): gloss 命理 terms in the
+  // prose — 日主 / 用神 / 七杀 / 命宫 / 大运 … — each a soft dotted underline, a tap
+  // opens its plain-language meaning in the reader's language. Non-CJK prose has no
+  // Chinese tokens to match, so it renders verbatim.
+  const renderProse = (s: string): ReactNode => {
+    const segs = segmentTextByTerms(s, { includeSingleChar: !cjk })
+    if (segs.length === 1 && !segs[0]?.termZh) return s
+    return segs.map((seg, j) =>
+      seg.termZh ? (
+        <Text
+          key={`${j}-${seg.termZh}`}
+          onPress={() => {
+            const term = getTermByZh(seg.termZh as string, tLocale)
+            if (term) setActiveTerm(term)
+          }}
+          style={{
+            textDecorationLine: 'underline',
+            textDecorationStyle: 'dotted',
+            textDecorationColor: P.muted,
+          }}
+        >
+          {seg.text}
+        </Text>
+      ) : (
+        seg.text
+      )
+    )
+  }
   const askParagraph = (para: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
     if (onPickQuote) onPickQuote(para)
@@ -791,7 +843,7 @@ function ChapterDetail({
         <ScrollView contentContainerStyle={S.detailScroll} showsVerticalScrollIndicator={false}>
           {identityLine ? (
             <View style={S.detailIdentity}>
-              <Text style={S.detailIdentityLine}>{identityLine}</Text>
+              <Text style={S.detailIdentityLine}>{renderProse(identityLine)}</Text>
               {birthBadge ? <Text style={S.detailBirth}>{birthBadge}</Text> : null}
             </View>
           ) : null}
@@ -813,7 +865,7 @@ function ChapterDetail({
                         pressed && S.paraPressed,
                       ]}
                     >
-                      <Text style={[S.detailBody, S.paraBlock]}>{para}</Text>
+                      <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
                     </Pressable>
                   )
                 })}
@@ -831,7 +883,7 @@ function ChapterDetail({
             ) : (
               paragraphs.map((para, i) => (
                 <Text key={i} style={[S.detailBody, S.paraBlock]}>
-                  {para}
+                  {renderProse(para)}
                 </Text>
               ))
             )
@@ -844,7 +896,7 @@ function ChapterDetail({
               <View style={[S.skelLine, { width: '60%' }]} />
             </View>
           ) : placeholder ? (
-            <Text style={S.detailPlaceholder}>{placeholder}</Text>
+            <Text style={S.detailPlaceholder}>{renderProse(placeholder)}</Text>
           ) : null}
 
           {locked ? (
@@ -859,6 +911,12 @@ function ChapterDetail({
           <View style={{ height: 60 }} />
         </ScrollView>
       </SafeAreaView>
+      <TermBubble
+        term={activeTerm}
+        onClose={() => setActiveTerm(null)}
+        cjk={cjk}
+        colors={{ bg: P.bg, ink: P.ink, inkSoft: P.inkSoft, muted: P.muted, cinnabar: P.cinnabar }}
+      />
     </View>
   )
 }
