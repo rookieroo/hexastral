@@ -55,7 +55,7 @@ import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
-import type { Locale } from '@/lib/i18n'
+import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { resetOnboarding } from '@/lib/onboarding-seen'
 import { getPeople } from '@/lib/people'
@@ -196,7 +196,7 @@ function PushToggleRow({
 
 export default function MeScreen() {
   const { colors, spacing } = useTheme()
-  const { t, locale, setLocale } = useStrings()
+  const { t, locale, setLocale, followSystem, isOverridden } = useStrings()
   const router = useRouter()
   // Discover (flagship funnel) is collapsed by default so Me stays quiet —
   // matches the ming-pan 生态 pattern (ADR-0018: no ad slots on funnel surfaces).
@@ -1141,7 +1141,28 @@ export default function MeScreen() {
             </View>
             <SectionLabel>{`${t.language} · DEV`}</SectionLabel>
             <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-              {LOCALES.map((l, i) => (
+              {/* Follow system — clears the AsyncStorage override so locale (and the
+                  server push registration) tracks the device again. Without this the
+                  DEV override sticks forever and masks the device-locale path. */}
+              <Pressable
+                onPress={followSystem}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ color: colors.text, fontSize: 16 }}>Follow system</Text>
+                  <Text style={{ color: colors.dim, fontSize: 12 }}>{resolveLocale()}</Text>
+                </View>
+                {!isOverridden ? (
+                  <Text style={{ color: colors.accent, fontSize: 16 }}>✓</Text>
+                ) : null}
+              </Pressable>
+              {LOCALES.map((l) => (
                 <Pressable
                   key={l.key}
                   onPress={() => setLocale(l.key)}
@@ -1151,12 +1172,12 @@ export default function MeScreen() {
                     justifyContent: 'space-between',
                     paddingVertical: spacing.md,
                     paddingHorizontal: spacing.lg,
-                    borderTopWidth: i === 0 ? 0 : 0.5,
+                    borderTopWidth: 0.5,
                     borderTopColor: colors.separator,
                   }}
                 >
                   <Text style={{ color: colors.text, fontSize: 16 }}>{l.label}</Text>
-                  {locale === l.key ? (
+                  {isOverridden && locale === l.key ? (
                     <Text style={{ color: colors.accent, fontSize: 16 }}>✓</Text>
                   ) : null}
                 </Pressable>

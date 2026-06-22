@@ -223,7 +223,7 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, refetch, deleteBond, recompute, quota } = useBondList()
+  const { bonds, isLoading: bondsLoading, refetch, deleteBond, recompute, quota } = useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
@@ -563,17 +563,32 @@ export default function ReadingHomeScreen() {
                 />
               )}
               ListEmptyComponent={
-                // 0-thread state: don't leave the bottom an empty void — center a
-                // calm first-connection invite under your lone star (no illustration;
-                // the sky above IS the illustration — you, alone, for now).
-                <View style={{ flex: 1, justifyContent: 'center' }}>
-                  <EmptyState
-                    title={copy.threadsHint}
-                    customAction={
-                      <PrimaryButton label={copy.emptyCta} onPress={startNewThread} block={false} />
-                    }
-                  />
-                </View>
+                bondsLoading ? (
+                  // Still fetching — `bonds` starts [] so without this the "你一个人 /
+                  // no one orbits you yet" invite flashes before a returning user's
+                  // threads arrive (2026-06 feedback: rendering the empty list before
+                  // the query resolves). Quiet moon loader (same idiom as the
+                  // birth-load branch), never the empty copy.
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <AutoMoonPhaseLoader size={56} skin={SKIN_CINNABAR} />
+                  </View>
+                ) : (
+                  // 0-thread state: don't leave the bottom an empty void — center a
+                  // calm first-connection invite under your lone star (no illustration;
+                  // the sky above IS the illustration — you, alone, for now).
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <EmptyState
+                      title={copy.threadsHint}
+                      customAction={
+                        <PrimaryButton
+                          label={copy.emptyCta}
+                          onPress={startNewThread}
+                          block={false}
+                        />
+                      }
+                    />
+                  </View>
+                )
               }
               ListFooterComponent={
                 threads.length > 0 ? (

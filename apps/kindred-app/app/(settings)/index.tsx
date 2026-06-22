@@ -55,31 +55,23 @@ const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }>
   en: {
     section: 'Birth info',
     row: 'Edit birth info',
-    hint: 'Date · time · place',
+    hint: 'Date · time · place. Editing regenerates your personal reading — one free change, then unlock. Synastry reports you have already generated are unchanged (they keep the birth info used at the time).',
   },
   zh: {
     section: '出生信息',
     row: '修改出生信息',
-    hint: '出生日期 · 时辰 · 地点',
+    hint: '出生日期 · 时辰 · 地点。修改会重新生成个人报告（免费仅 1 次，之后需解锁）；已生成的合盘报告不受影响，仍基于当时录入的生辰。',
   },
   'zh-Hant': {
     section: '出生資訊',
     row: '修改出生資訊',
-    hint: '出生日期 · 時辰 · 地點',
+    hint: '出生日期 · 時辰 · 地點。修改會重新生成個人報告（免費僅 1 次，之後需解鎖）；已生成的合盤報告不受影響，仍基於當時錄入的生辰。',
   },
   ja: {
     section: '出生情報',
     row: '出生情報を編集',
-    hint: '生年月日 · 時辰 · 場所',
+    hint: '生年月日 · 時辰 · 場所。編集すると個人レポートが再生成されます（無料は1回まで、以降は解除が必要）。すでに生成した相性レポートは当時の出生情報のまま変わりません。',
   },
-}
-
-/** "Your reading" row — opens the full six-chapter personal 命书 directly. */
-const READING_COPY: Record<Locale, { row: string; hint: string }> = {
-  en: { row: 'Your reading', hint: 'Your full six-chapter 命书' },
-  zh: { row: '你的命书', hint: '你的六章完整命书' },
-  'zh-Hant': { row: '你的命書', hint: '你的六章完整命書' },
-  ja: { row: 'あなたの命書', hint: '全6章の命書' },
 }
 
 export default function SettingsScreen() {
@@ -201,10 +193,7 @@ export default function SettingsScreen() {
           paddingTop: kindredSpacing.xl,
         }}
       >
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(reading)'))}
-          hitSlop={12}
-        >
+        <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={[kindredType.heading, { color: kindredDark.textMuted }]}>←</Text>
         </Pressable>
         <Text style={[kindredType.seal, { color: kindredDark.textMuted }]}>
@@ -255,6 +244,9 @@ export default function SettingsScreen() {
               {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
             </Text>
           </Pressable>
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
+            {t(locale, 'settings.email.hint')}
+          </Text>
         </Card>
 
         <Text
@@ -344,31 +336,6 @@ export default function SettingsScreen() {
               ]}
             >
               {BIRTH_COPY[locale].hint}
-            </Text>
-          </Pressable>
-
-          {/* 你的命书 — opens the full six-chapter report directly (the 概要 interstitial
-              was dropped, 2026-06). */}
-          <Pressable
-            onPress={() => router.push('/(reading)/full')}
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              borderTopWidth: 0.5,
-              borderTopColor: kindredDark.border,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {READING_COPY[locale].row}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {READING_COPY[locale].hint}
             </Text>
           </Pressable>
         </Card>
@@ -483,6 +450,14 @@ export default function SettingsScreen() {
             <Text style={[kindredType.body, { color: kindredDark.text }]}>
               {t(locale, 'settings.glossary.row')}
             </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {t(locale, 'settings.glossary.hint')}
+            </Text>
           </Pressable>
 
           <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
@@ -500,6 +475,14 @@ export default function SettingsScreen() {
           >
             <Text style={[kindredType.body, { color: kindredDark.text }]}>
               {t(locale, 'settings.terms.row')}
+            </Text>
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
+              ]}
+            >
+              {t(locale, 'settings.terms.hint')}
             </Text>
           </Pressable>
         </Card>
@@ -691,7 +674,7 @@ export default function SettingsScreen() {
                   { color: kindredDark.accent, textDecorationLine: 'underline' },
                 ]}
               >
-                DEV · intro (Logo 首屏) →
+                DEV · intro (星引力动画) →
               </Text>
             </Pressable>
             <Pressable

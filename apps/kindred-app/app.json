@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F5F0E8"
+      "backgroundColor": "#0C0A09"
     },
     "ios": {
       "supportsTablet": false,
@@ -67,7 +67,7 @@
       "package": "com.hexastral.kindred",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#9B2226"
+        "backgroundColor": "#F5F0E8"
       }
     },
     "extra": {

@@ -13,6 +13,10 @@ interface LocaleCtx {
   locale: Locale
   t: Strings
   setLocale: (l: Locale) => void
+  /** Clear the manual override and fall back to the device locale. */
+  followSystem: () => void
+  /** True when a manual locale override is active (vs. following the device). */
+  isOverridden: boolean
 }
 
 const LocaleContext = createContext<LocaleCtx | null>(null)
@@ -23,11 +27,18 @@ function isLocale(v: string | null): v is Locale {
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => resolveLocale())
+  // Whether a manual override (from the DEV picker) is in effect. When false the
+  // app follows the device locale, so a device-locale change is picked up on the
+  // next cold launch (and re-registered for push by the app-open effect).
+  const [overridden, setOverridden] = useState(false)
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((v) => {
-        if (isLocale(v)) setLocaleState(v)
+        if (isLocale(v)) {
+          setLocaleState(v)
+          setOverridden(true)
+        }
       })
       .catch(() => {})
   }, [])
@@ -35,13 +46,20 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const value = useMemo<LocaleCtx>(
     () => ({
       locale,
+      isOverridden: overridden,
       t: getStrings(locale),
       setLocale: (l: Locale) => {
         setLocaleState(l)
+        setOverridden(true)
         AsyncStorage.setItem(STORAGE_KEY, l).catch(() => {})
       },
+      followSystem: () => {
+        setLocaleState(resolveLocale())
+        setOverridden(false)
+        AsyncStorage.removeItem(STORAGE_KEY).catch(() => {})
+      },
     }),
-    [locale]
+    [locale, overridden]
   )
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
