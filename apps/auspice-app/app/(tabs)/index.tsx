@@ -288,6 +288,16 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
 
+          {/* Initial-load veil — ONE full-screen moon over the (otherwise empty)
+              calendar + day-detail, so first paint shows a single loader instead of
+              several inline ones. Lifts the moment day data lands; day-switches
+              reload in place (dayData persists, so this won't re-veil). */}
+          {!dayData && !dayError ? (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+              <MoonLoader fullScreen />
+            </View>
+          ) : null}
+
           {/* Bottom swipe-hint — primary visual affordance for swipe-to-Me. */}
           <Animated.View
             pointerEvents='none'

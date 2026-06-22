@@ -214,6 +214,25 @@ export const SKIN_INK: MoonFaceSkin = {
   surface: { kind: 'paper', opacity: 0.28 },
 }
 
+/**
+ * 苍墨·昼 — the LIGHT-mode ink moon (Auspice loads on cream paper by default). The
+ * dark SKIN_INK's pale lit face blends into cream; this darkens the face to a mid
+ * taupe-grey so the disc + its sweeping phase read on the 黄历纸 ground. MoonLoader
+ * picks it via the theme mode. NOT in ALL_MOON_SKINS.
+ */
+export const SKIN_INK_LIGHT: MoonFaceSkin = {
+  id: 'ink-light',
+  name: '苍墨·昼',
+  faceCenter: { cx: 0.36, cy: 0.3 },
+  faceRadius: 0.68,
+  faceStops: [
+    { offset: 0, color: '#8e8170' },
+    { offset: 0.55, color: '#675c4e' },
+    { offset: 1, color: '#453d35' },
+  ],
+  surface: { kind: 'paper', opacity: 0.28 },
+}
+
 /** All built-in skins in display order (for pickers). */
 export const ALL_MOON_SKINS: MoonFaceSkin[] = [
   SKIN_RICE_PAPER,
