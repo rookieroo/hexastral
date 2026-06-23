@@ -174,12 +174,10 @@ export async function generateChapter(ctx: {
     perspectiveSeed: mergedPerspectiveSeed,
     stylePreset,
     styleSeed,
-    // Pro-tier generation (deeper thinking, flagship models) for both the
-    // flagship 'fate'/universe_pro path AND kindred_pro — kindred sells these
-    // 命 chapters under its own Pro, so its subscribers get the same quality.
-    isPro:
-      (await userHasCapability(c.get('db'), userId, 'fate')) ||
-      (await userHasCapability(c.get('db'), userId, 'kindred')),
+    // Pro-tier generation (deeper thinking, flagship models). The deep 命书 is a
+    // Yuel/kindred surface (Yuun does the almanac, not the deep report), so quality
+    // gates on `kindred` — universe_pro auto-satisfies it.
+    isPro: await userHasCapability(c.get('db'), userId, 'kindred'),
     user: {
       dayMasterStem: user.dayMasterStem,
       dayMasterStrength: user.dayMasterStrength,
@@ -244,7 +242,10 @@ export const reportManifestRoutes = new Hono<AppEnv>().get('/', async (c) => {
   const userId = requireUserId(c)
   const db = c.get('db')
 
-  const isPro = await userHasCapability(db, userId, 'fate')
+  // The deep 命书 is a Yuel/kindred surface, so accessibility flags gate on
+  // `kindred` (universe_pro auto-satisfies). A fate-only user sees them locked —
+  // the report unlocks in Yuel.
+  const isPro = await userHasCapability(db, userId, 'kindred')
   const unlockedCount = await getUnlockedCount(db, userId)
   // Surface email-bound state + birth-edit quota so the client can pick
   // "bind email first" vs "send invite" in the unlock UI, and gate the Me-tab
@@ -386,15 +387,12 @@ export const reportChapterRoutes = new Hono<AppEnv>()
     if (!slugParse.success) throw new HTTPException(400, { message: 'Invalid chapter slug' })
     const slug = slugParse.data
 
-    // The personal 命 report lives inside Kindred and is sold via Kindred Pro:
-    // the kindred client paywall routes locked chapters here (reason:'reading'),
-    // so a kindred_pro subscriber unlocks every chapter — not only the flagship
-    // 'fate'/universe_pro path. fate-app doesn't read these slugs and the flagship
-    // 命 app is unshipped, so honouring kindred here doesn't leak across surfaces.
-    // (universe_pro already satisfies 'fate' directly via hasCapability.)
-    const isPro =
-      (await userHasCapability(db, userId, 'fate')) ||
-      (await userHasCapability(db, userId, 'kindred'))
+    // The personal 命书 is a Yuel/kindred surface and the Yuel Pro anchor: it
+    // unlocks via `kindred` ONLY (Yuun = fate does the almanac, not the deep report,
+    // so it must not unlock this). universe_pro auto-satisfies kindred. The only
+    // shipped consumer of these slugs is Yuel; Yuun's reading screen is a pure
+    // teaser, so gating on kindred doesn't break any fate surface.
+    const isPro = await userHasCapability(db, userId, 'kindred')
     const unlockedCount = await getUnlockedCount(db, userId)
     assertChapterAccess(slug, unlockedCount, isPro)
 
@@ -430,8 +428,8 @@ export const reportChapterRoutes = new Hono<AppEnv>()
 
     // Free tier: one onboarding-backed generation per chapter. If birth chart
     // identity drifted (new chartHash) but a current row exists, do not burn LLM —
-    // user must subscribe Pro (client also gates birth-info edits). Pro here
-    // includes kindred_pro (see isPro above), so a kindred subscriber can regen.
+    // user must subscribe Yuel Pro (client also gates birth-info edits). `isPro`
+    // here is the kindred capability (see above), so a Pro subscriber can regen.
     if (!isPro && cur && cur.chartHash !== chartHash) {
       return c.json(
         {
@@ -455,10 +453,10 @@ export const reportChapterRoutes = new Hono<AppEnv>()
     if (!slugParse.success) throw new HTTPException(400, { message: 'Invalid chapter slug' })
     const slug = slugParse.data
 
-    if (!(await userHasCapability(db, userId, 'fate'))) {
+    if (!(await userHasCapability(db, userId, 'kindred'))) {
       throw new HTTPException(403, { message: 'History drawer is Pro-only' })
     }
-    // History view is Pro-only by design — pass cap + isPro=true to bypass.
+    // History view is a Yuel Pro benefit — pass cap + isPro=true to bypass.
     assertChapterAccess(slug, CHAPTER_UNLOCK_CAP, true)
 
     const rows = await db.query.reportChapters.findMany({
@@ -486,7 +484,8 @@ export const reportChapterRoutes = new Hono<AppEnv>()
       if (!slugParse.success) throw new HTTPException(400, { message: 'Invalid chapter slug' })
       const slug = slugParse.data
 
-      if (!(await userHasCapability(db, userId, 'fate'))) {
+      // 换视角 (re-roll) is a Yuel Pro benefit — gate on `kindred`.
+      if (!(await userHasCapability(db, userId, 'kindred'))) {
         throw new HTTPException(403, { message: 'Re-roll is Pro-only' })
       }
 

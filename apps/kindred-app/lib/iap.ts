@@ -172,14 +172,10 @@ export async function restoreKindredPurchases(): Promise<boolean> {
 // store call resolved without throwing.
 
 export const KINDRED_SINGLE_PRODUCT_IDS = {
-  /** Full six-chapter synastry report for one bond ($6.99). Consumable (per-bond). */
+  /** Full six-chapter synastry report for one bond ($6.99). Consumable (per-bond).
+   *  The personal 命书 is NOT here — it's a Yuel Pro benefit (the subscription
+   *  anchor), not a single purchase. 合盘 is the only single-purchase product. */
   compatibility: 'hexastral_compatibility',
-  /** Full six-chapter personal 命书 (one-time). Non-consumable → grants the
-   *  `hexastral_self_report` entitlement permanently (you own your own reading;
-   *  restorable across reinstalls). Set the real price in App Store Connect.
-   *  NOTE: create this product in RevenueCat before it resolves; until then the
-   *  purchase + status calls degrade to unavailable/locked (no crash). */
-  report: 'hexastral_self_report',
 } as const
 
 export type KindredSingleSku = keyof typeof KINDRED_SINGLE_PRODUCT_IDS
@@ -202,67 +198,6 @@ export async function purchaseKindredSingle(sku: KindredSingleSku): Promise<Kind
   try {
     await p.purchaseProduct(KINDRED_SINGLE_PRODUCT_IDS[sku])
     return 'success'
-  } catch (err) {
-    const code = (err as { code?: string; userCancelled?: boolean }).code
-    if (code === 'PURCHASE_CANCELLED' || (err as { userCancelled?: boolean }).userCancelled) {
-      return 'cancelled'
-    }
-    return 'failed'
-  }
-}
-
-// ── Personal 命书 unlock (non-consumable, entitlement-backed) ─────────────────
-// The own-reading is a permanent one-time unlock, so it grants a RevenueCat
-// ENTITLEMENT we can read directly (unlike the consumable bond purchase, which is
-// applied server-side per bond). Yuel Pro (subscription) deliberately does NOT
-// unlock the report — it's the 体验层 (追问 / 时间线 / 假如 / 节点提醒).
-//
-// SERVER FOLLOW-UP (not yet wired): the personal report's chapters are served by
-// the shared natal endpoint (/api/report/chapter/:slug), gated by the `fate`
-// capability + users.unlockedChapterCount. A RevenueCat webhook must flip the
-// buyer's unlockedChapterCount to the cap on `hexastral_self_report` purchase for
-// the premium chapters to actually generate. Until then this status stays false.
-const REPORT_ENTITLEMENT_ID = 'hexastral_self_report'
-
-// DEV-only report override (Settings · DEV) — force the report unlocked/locked
-// without a real purchase. Resets on reload; gated on __DEV__.
-export type KindredDevReport = 'unlocked' | 'locked' | null
-let devReportOverride: KindredDevReport = null
-
-export function getKindredDevReport(): KindredDevReport {
-  return __DEV__ ? devReportOverride : null
-}
-
-export function setKindredDevReport(next: KindredDevReport): void {
-  if (__DEV__) devReportOverride = next
-}
-
-export interface KindredReportStatus {
-  unlocked: boolean
-}
-
-/** Whether the personal 命书 is unlocked (the `hexastral_self_report` entitlement
- *  is active). False when the product isn't configured yet or in preview env. */
-export async function getYuanReportStatus(): Promise<KindredReportStatus> {
-  const dev = getKindredDevReport()
-  if (dev) return { unlocked: dev === 'unlocked' }
-  const p = loadPurchases()
-  if (!p || !initialized) return { unlocked: false }
-  try {
-    const info = await p.getCustomerInfo()
-    return { unlocked: !!info.entitlements.active[REPORT_ENTITLEMENT_ID] }
-  } catch {
-    return { unlocked: false }
-  }
-}
-
-/** Buy the personal 命书 unlock. Success once the entitlement is active. */
-export async function purchaseYuanReport(): Promise<KindredPurchaseResult> {
-  const p = loadPurchases()
-  if (!p || !initialized) return 'unavailable'
-  try {
-    const { customerInfo } = await p.purchaseProduct(KINDRED_SINGLE_PRODUCT_IDS.report)
-    return customerInfo.entitlements.active[REPORT_ENTITLEMENT_ID] ? 'success' : 'failed'
   } catch (err) {
     const code = (err as { code?: string; userCancelled?: boolean }).code
     if (code === 'PURCHASE_CANCELLED' || (err as { userCancelled?: boolean }).userCancelled) {

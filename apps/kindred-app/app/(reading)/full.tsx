@@ -15,10 +15,9 @@
  *   - Chapter engine: the kindred-bound reading-cache (lib/solo/reading-cache) —
  *     its own `kindred_reading_ch_` namespace + kindred's HMAC signer.
  *   - i18n: kindred's local reading-i18n (no-arg useReadingI18n()).
- *   - Monetization: a one-time SINGLE PURCHASE unlocks the full report (lib/iap
- *     getYuanReportStatus / purchaseYuanReport, the `hexastral_self_report`
- *     entitlement) — NOT the Pro subscription (Yuel Pro is the 体验层). 划词追问 stays
- *     a Pro feature, gated server-side by the chat route.
+ *   - Monetization: the full 命书 is the Yuel Pro anchor — unlocked by the kindred
+ *     Pro subscription (getYuanProStatus), NOT a separate purchase and NOT the 合盘
+ *     path. The deep chapters are also gated server-side on the `kindred` capability.
  *   - 划词 chat: pushes the in-app (reading)/reading-chat route.
  */
 
@@ -58,7 +57,7 @@ import {
 import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
-import { getKindredSinglePrice, getYuanReportStatus, purchaseYuanReport } from '@/lib/iap'
+import { getYuanProStatus } from '@/lib/iap'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import {
@@ -219,19 +218,14 @@ export default function FullReadingScreen() {
   const router = useRouter()
   const { t, locale } = useReadingI18n()
 
-  // The personal 命书 unlocks as a one-time SINGLE PURCHASE (体验层 model: Yuel Pro
-  // = 追问/时间线/假如/提醒, NOT chapter unlock). `reportUnlocked` rides the
-  // `hexastral_self_report` entitlement; until that product exists it stays false,
-  // so the report shows the free teaser + unlock wall (no crash).
-  const [reportUnlocked, setReportUnlocked] = useState(false)
-  const [reportPrice, setReportPrice] = useState<string | null>(null)
+  // The personal 命书 is included in Yuel Pro (the subscription anchor) — NOT a
+  // separate purchase, and NOT the 合盘 path. `unlocked` rides the kindred Pro
+  // entitlement; unbought → the free teaser + a subscribe-to-unlock wall.
+  const [isPro, setIsPro] = useState(false)
   useEffect(() => {
     let cancelled = false
-    void getYuanReportStatus().then((s) => {
-      if (!cancelled) setReportUnlocked(s.unlocked)
-    })
-    void getKindredSinglePrice('report').then((price) => {
-      if (!cancelled) setReportPrice(price)
+    void getYuanProStatus().then((s) => {
+      if (!cancelled) setIsPro(s.isPro)
     })
     return () => {
       cancelled = true
@@ -361,7 +355,7 @@ export default function FullReadingScreen() {
     // Free tier = the deterministic taste only (the computed teaser), no LLM. An
     // unbought report never fetches; ch1/ch4 fall back to the teaser and the rest
     // live behind the unlock wall.
-    if (!reportUnlocked) {
+    if (!isPro) {
       setLoading(false)
       return
     }
@@ -389,12 +383,12 @@ export default function FullReadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [reportUnlocked, chartHash, draftSolarDate, draftGender, timeIndex])
+  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
   // Premium chapters: fetch the four premium slugs once the report is unlocked.
   // Each is cache-first + resolves independently so pages fill in as they generate.
   useEffect(() => {
-    if (!reportUnlocked) return
+    if (!isPro) return
     if (!chartHash || draftSolarDate == null || draftGender == null) return
     let cancelled = false
     const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
@@ -413,7 +407,7 @@ export default function FullReadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [reportUnlocked, chartHash, draftSolarDate, draftGender, timeIndex])
+  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
   // The current pager page (drives 划词 grounding + the page indicator).
   const [chapterIndex, setChapterIndex] = useState(0)
@@ -433,18 +427,10 @@ export default function FullReadingScreen() {
     if (router.canGoBack()) router.back()
     else router.replace('/(reading)')
   }
-  // Unlock the full 命书 — a one-time single purchase (NOT the Pro subscription).
-  // On success the entitlement is live, so flip `reportUnlocked` and the premium
-  // fetch effect runs. Until the `hexastral_self_report` product exists the store
-  // returns 'unavailable'; we fall back to the Pro paywall so dev still has a path
-  // (and the upsell isn't a dead end). TODO: drop the fallback once the product ships.
-  const handleUnlockReport = () => {
-    void (async () => {
-      const result = await purchaseYuanReport()
-      if (result === 'success') setReportUnlocked(true)
-      else if (result === 'unavailable')
-        router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
-    })()
+  // The full 命书 is a Yuel Pro benefit, so the unlock wall routes to the
+  // subscription paywall (reason:'reading' → the 命书-anchored Pro pitch).
+  const openPaywall = () => {
+    router.push({ pathname: '/(commerce)/paywall', params: { reason: 'reading' } })
   }
 
   // 划词 AI chat: push the chat seeded with the chapter slug + (optionally) the
@@ -502,7 +488,7 @@ export default function FullReadingScreen() {
   // teaser (composeTeaserNarrator) until unlocked, then swap to their LLM prose;
   // the four premium slugs resolve into `premium`. No "生成中…" ever shows for a
   // free reader — the teaser is real computed 命理 prose.
-  const unlocked = reportUnlocked
+  const unlocked = isPro
   const contentBySlug = (slug: string): string | null =>
     slug === 'ch1_personality'
       ? (ch1?.content ?? null)
@@ -605,10 +591,8 @@ export default function FullReadingScreen() {
                     title: t(c.labelKey),
                     line: c.descKey ? t(c.descKey) : '',
                   }))}
-                  ctaLabel={
-                    reportPrice ? `${t('reading.unlock')} · ${reportPrice}` : t('reading.unlock')
-                  }
-                  onUnlock={handleUnlockReport}
+                  ctaLabel={t('reading.unlock')}
+                  onUnlock={openPaywall}
                 />
               </View>
             ) : null}
