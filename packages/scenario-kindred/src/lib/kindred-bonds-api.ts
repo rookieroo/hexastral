@@ -1,6 +1,7 @@
 import type { HexastralClient } from '@zhop/hexastral-client'
 import type {
   BondsTimelineExplainInput,
+  MakeIfExplainInput,
   ResonanceInviteInput,
   RespondInput,
   SoloCreateInput,
@@ -46,6 +47,10 @@ export type KindredBondsRpc = {
     /** 关系决策推演 (make-if): rank the bond's forward windows. Pro-gated. */
     makeif: {
       $post: (opts: { param: { id: string } }) => Promise<Response>
+      /** Per-window LLM deep-read ("这个月对推进这一步合不合适"). */
+      explain: {
+        $post: (opts: { param: { id: string }; json: MakeIfExplainInput }) => Promise<Response>
+      }
     }
   }
   // Bonds timeline (BT.3/BT.4, ADR-0014). Registered before `/:id` server-side

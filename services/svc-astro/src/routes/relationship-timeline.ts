@@ -119,6 +119,76 @@ relationshipTimelineRoutes.post('/explain', async (c) => {
   return c.json({ explanation: explanation.trim() })
 })
 
+// ── POST /relationship-timeline/makeif-explain — 关系择时窗口深解 (Workstream B) ──
+//
+// Sibling of /explain, but for a forward 流月 DECISION window (make-if): "这个月对
+// 推进『求婚/同居/…/自定义』这一步合不合适？". Pure DERIVED facts (lean / 用神 / 神煞),
+// never raw birth → privacy D2-safe; supports a free-text `note` (custom step).
+const makeifInputSchema = z.object({
+  year: z.number().int(),
+  month: z.number().int().min(1).max(12),
+  ganZhi: z.string().max(8),
+  element: z.string().max(8).optional(),
+  lean: z.enum(['favorable', 'mixed', 'caution']).optional(),
+  yongshen: z.string().max(8).optional(),
+  isYongshen: z.boolean().optional().default(false),
+  feedsYongshen: z.boolean().optional().default(false),
+  harmony: z.boolean().optional().default(false),
+  taohua: z.boolean().optional().default(false),
+  yima: z.boolean().optional().default(false),
+  shishang: z.boolean().optional().default(false),
+  /** The step being weighed — a preset move label or a free-text custom note. */
+  step: z.string().max(120).optional(),
+  locale: z.string().default('en'),
+  isPro: z.boolean().optional().default(false),
+})
+
+relationshipTimelineRoutes.post('/makeif-explain', async (c) => {
+  const input = makeifInputSchema.parse(await c.req.json())
+  const langLabel = getLangLabel(input.locale)
+  const step = input.step?.trim() || '推进这段关系'
+
+  const facts: string[] = [`月份：${input.year}年${input.month}月`, `干支：${input.ganZhi}`]
+  if (input.element) facts.push(`五行：${input.element}`)
+  if (input.yongshen) facts.push(`两人通关用神：${input.yongshen}`)
+  facts.push(
+    `窗口气象：${input.lean === 'favorable' ? '气顺（宜推进）' : input.lean === 'caution' ? '宜守（不宜硬推）' : '中性（取舍在人）'}`
+  )
+  const sig: string[] = []
+  if (input.isYongshen) sig.push('流月正合用神')
+  else if (input.feedsYongshen) sig.push('流月生用神（蓄势）')
+  if (input.harmony) sig.push('与命盘相合（和顺）')
+  if (input.taohua) sig.push('桃花动')
+  if (input.yima) sig.push('驿马动')
+  if (input.shishang) sig.push('食伤显')
+  if (sig.length > 0) facts.push(`神煞：${sig.join('、')}`)
+  facts.push(`考虑的一步：${step}`)
+  const factText = facts.join('\n')
+
+  const systemPrompt = `你是一位通晓八字合婚的东方智慧顾问。用 80–180 字${langLabel}解释「这个月对『${step}』这一步意味着什么」。
+规则：
+- 这是未来某个流月窗口，正在权衡「${step}」这一步；只谈这个窗口的时机适配，不预测结果、不替人做决定。
+- 结合该月与两人通关用神的关系、相合 / 神煞（桃花·驿马·食伤），说明这个窗口适不适合推进这一步、要注意什么，并给一句可操作的相处 / 择时建议。
+- 称呼用「你」与「对方 / 你们」。语气务实，讲成「趋势 / 参考」，决定权在你们手中，不是命运定论。
+- 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
+- 不要罗列术语表，像对朋友解释。
+- 只输出解释正文，不要标题、不要 JSON。`
+
+  const userPrompt = `【关系择时窗口事实】\n${factText}\n\n请解释 ${input.year}年${input.month}月 这个窗口，对「${step}」这一步是否合适、要注意什么。`
+
+  const explanation = await callWithFallback(c.env, systemPrompt, userPrompt, {
+    isPro: input.isPro,
+    maxTokens: 300,
+    temperature: 0.7,
+    thinkingLevel: 'MINIMAL',
+    tier: 'standard',
+    metricLabel: 'relationship-makeif-explain',
+    locale: input.locale,
+  })
+
+  return c.json({ explanation: explanation.trim() })
+})
+
 function getLangLabel(lang: string): string {
   if (lang.startsWith('zh-Hant') || lang === 'zh-TW') return '繁體中文'
   if (lang.startsWith('zh')) return '简体中文'

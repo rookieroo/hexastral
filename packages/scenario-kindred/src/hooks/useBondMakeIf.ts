@@ -10,7 +10,7 @@
 import { useCallback, useState } from 'react'
 import { useKindredClient } from '../context'
 import { kindredBonds, unwrap } from '../lib/kindred-bonds-api'
-import type { RelMakeIfResponse } from '../types'
+import type { MakeIfExplainInput, RelMakeIfResponse } from '../types'
 
 export interface UseBondMakeIfResult {
   data: RelMakeIfResponse | null
@@ -18,6 +18,8 @@ export interface UseBondMakeIfResult {
   error: Error | null
   /** Run the推演 for `bondId`. Returns the result, or null on failure. */
   run: (bondId: string) => Promise<RelMakeIfResponse | null>
+  /** Per-window LLM deep-read. Returns the explanation, or null on failure. */
+  explainWindow: (bondId: string, input: MakeIfExplainInput) => Promise<string | null>
 }
 
 export function useBondMakeIf(): UseBondMakeIfResult {
@@ -48,5 +50,23 @@ export function useBondMakeIf(): UseBondMakeIfResult {
     [client, onError]
   )
 
-  return { data, isLoading, error, run }
+  const explainWindow = useCallback(
+    async (bondId: string, input: MakeIfExplainInput): Promise<string | null> => {
+      try {
+        const res = await unwrap<{ explanation: string | null }>(
+          await kindredBonds(client)[':id'].makeif.explain.$post({
+            param: { id: bondId },
+            json: input,
+          })
+        )
+        return res.explanation ?? null
+      } catch (err) {
+        onError?.(err instanceof Error ? err : new Error(String(err)))
+        return null
+      }
+    },
+    [client, onError]
+  )
+
+  return { data, isLoading, error, run, explainWindow }
 }

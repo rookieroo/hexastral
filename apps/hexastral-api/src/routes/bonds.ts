@@ -10,11 +10,11 @@
  */
 
 import type { ExecutionContext } from '@cloudflare/workers-types/2023-07-01'
+import { zValidator } from '@hono/zod-validator'
 import { STEM_WUXING, type ZiweiTimingSummary } from '@zhop/astro-core'
 import { dayGanZhi, getFourPillars } from '@zhop/astro-core/ganzhi'
 import { calculateDailySynastry } from '@zhop/astro-core/synastry'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
-import { zValidator } from '@hono/zod-validator'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
@@ -47,6 +47,7 @@ import {
 import { logEvent } from '../lib/event-log'
 import { sendPushEvent } from '../lib/push'
 import { buildBondMakeIf } from '../lib/relationship-makeif'
+import { explainRelationshipMakeIfWindow } from '../lib/relationship-makeif-explain'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
 import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
@@ -2017,6 +2018,98 @@ bondRoutes.post('/:id/makeif', async (c) => {
   })
 })
 
+// ── POST /:id/makeif/explain — 关系择时窗口 LLM 深解 (Workstream B) ──────────────
+//
+// The make-if windows are deterministic; this is the per-window LLM read ("这个月对
+// 推进这一步合不合适") — the make-if sibling of /timeline/explain. Pro-gated; the
+// window's DERIVED facts ride the request (privacy D2-safe → no pair re-load), and a
+// free-text `step` lets the reader weigh a custom move. Deterministic `fallback` shown
+// when the K.4 guard / svc-astro is unavailable, so it is never blank.
+const makeifExplainSchema = z.object({
+  windowKey: z.string().max(40),
+  year: z.number().int(),
+  month: z.number().int().min(1).max(12),
+  ganZhi: z.string().max(8),
+  element: z.string().max(8).optional(),
+  lean: z.enum(['favorable', 'mixed', 'caution']).optional(),
+  yongshen: z.string().max(8).optional(),
+  isYongshen: z.boolean().optional(),
+  feedsYongshen: z.boolean().optional(),
+  harmony: z.boolean().optional(),
+  taohua: z.boolean().optional(),
+  yima: z.boolean().optional(),
+  shishang: z.boolean().optional(),
+  step: z.string().max(120).optional(),
+  fallback: z.string().max(400),
+  locale: z.string().max(16).optional(),
+})
+
+bondRoutes.post('/:id/makeif/explain', zValidator('json', makeifExplainSchema), async (c) => {
+  const bondId = c.req.param('id')
+  const userId = requireUserId(c)
+  const db = c.get('db')
+  const body = c.req.valid('json')
+  const locale = body.locale ?? 'en'
+
+  // Pro benefit (mirrors /timeline/explain + the make-if itself).
+  if (!(await userHasCapability(db, userId, 'kindred'))) {
+    return c.json(
+      {
+        error: 'upgrade_required',
+        capability: 'kindred',
+        upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
+      },
+      402
+    )
+  }
+
+  // Ownership — the window facts are derived (D2-safe), but the bond must be the caller's.
+  const bond = await db
+    .select({ id: userBonds.id })
+    .from(userBonds)
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+    .get()
+  if (!bond) return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
+
+  // Monthly allowance (shared with /timeline/explain) — soft cap before the LLM.
+  const allowance = await consumeProAllowance(db, userId, 'explain')
+  if (!allowance.granted) {
+    return c.json(
+      {
+        error: 'quota_exhausted',
+        feature: 'explain',
+        used: allowance.used,
+        limit: allowance.limit,
+        resetsOn: allowance.resetsOn,
+      },
+      429
+    )
+  }
+
+  const subject = resolveLlmGuardSubject({ userId })
+  const result = await explainRelationshipMakeIfWindow(c.env, {
+    bondId,
+    windowKey: body.windowKey,
+    year: body.year,
+    month: body.month,
+    ganZhi: body.ganZhi,
+    element: body.element,
+    lean: body.lean,
+    yongshen: body.yongshen,
+    isYongshen: body.isYongshen,
+    feedsYongshen: body.feedsYongshen,
+    harmony: body.harmony,
+    taohua: body.taohua,
+    yima: body.yima,
+    shishang: body.shishang,
+    step: body.step,
+    locale,
+    subject,
+    fallback: body.fallback,
+  })
+  return jsonOk(c, result)
+})
+
 // ── GET /:id — detail with filtered dimensions ────────────────
 
 // Semantic key mapping matches calculateHeHun dimension order:
@@ -2334,18 +2427,6 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
           .where(eq(bondInvitations.id, bond.invitationId))
           .get()
       : null
-
-  // Re-share link should open the landing in the viewer's (A's) language, same
-  // as the create path. Only looked up when there's actually a pending invite.
-  let viewerLocale = 'en'
-  if (invitation) {
-    const v = await db
-      .select({ locale: users.locale })
-      .from(users)
-      .where(eq(users.id, userId))
-      .get()
-    viewerLocale = v?.locale ?? 'en'
-  }
 
   // Gate the six synastry chapters before they leave the server: free viewers get
   // the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest (locked BODIES

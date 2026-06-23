@@ -530,6 +530,28 @@ export interface RelMakeIfResponse {
   }
 }
 
+/** Per-window make-if LLM deep-read request — DERIVED facts only (privacy D2-safe). */
+export interface MakeIfExplainInput {
+  windowKey: string
+  year: number
+  month: number
+  ganZhi: string
+  element?: string
+  lean?: DecisionLean
+  yongshen?: string
+  isYongshen?: boolean
+  feedsYongshen?: boolean
+  harmony?: boolean
+  taohua?: boolean
+  yima?: boolean
+  shishang?: boolean
+  /** The step being weighed — a preset move label or a free-text custom note. */
+  step?: string
+  /** Deterministic one-liner shown if the LLM is unavailable (never blank). */
+  fallback: string
+  locale?: string
+}
+
 // ── Credit / quota status ───────────────────────────────────────────────────
 
 export interface BondInviteCredits {

@@ -33,12 +33,13 @@ import {
   type RelMakeIfResponse,
   type RelMakeIfWindow,
   type RelMakeIfYear,
+  type UseBondMakeIfResult,
   useBondMakeIf,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { type RailItem, RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
@@ -99,7 +100,7 @@ export default function MakeIfScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
   const { id, quote } = useLocalSearchParams<{ id: string; title?: string; quote?: string }>()
-  const { data, isLoading, error, run } = useBondMakeIf()
+  const { data, isLoading, error, run, explainWindow } = useBondMakeIf()
 
   useEffect(() => {
     if (id) void run(id)
@@ -150,6 +151,8 @@ export default function MakeIfScreen() {
           data={data}
           locale={locale}
           quote={quote}
+          bondId={id ?? ''}
+          explainWindow={explainWindow}
           onUpsell={() => router.push('/(commerce)/paywall')}
         />
       ) : null}
@@ -161,11 +164,15 @@ function Body({
   data,
   locale,
   quote,
+  bondId,
+  explainWindow,
   onUpsell,
 }: {
   data: RelMakeIfResponse
   locale: Locale
   quote?: string
+  bondId: string
+  explainWindow: UseBondMakeIfResult['explainWindow']
   onUpsell: () => void
 }) {
   const trimmedQuote = quote ? (quote.length > 120 ? `${quote.slice(0, 120)}…` : quote) : null
@@ -210,6 +217,56 @@ function Body({
   )
   const shownWindowKey = selectedWindowKey ?? bestKey ?? null
   const shownWindow = (data.windows ?? []).find((w) => w.key === shownWindowKey) ?? null
+
+  // Per-window LLM deep-read (the make-if sibling of the timeline node explain). The
+  // step = a custom note if typed, else the selected preset move; changing either
+  // re-keys the read so a stale explanation never lingers.
+  const [customNote, setCustomNote] = useState('')
+  const [explanation, setExplanation] = useState<string | null>(null)
+  const [explaining, setExplaining] = useState(false)
+  const [explainedFor, setExplainedFor] = useState<string | null>(null)
+  const step = customNote.trim() || (move ? t(locale, `makeif.move.${move}`) : undefined)
+  const explainKey = shownWindow ? `${shownWindow.key}:${step ?? ''}` : null
+  const explainShown = explainKey && explainedFor === explainKey ? explanation : null
+  const onExplainWindow = async () => {
+    if (!shownWindow || explaining || (explainedFor === explainKey && explanation)) return
+    setExplaining(true)
+    const reasons = formatWindowReasons(shownWindow, data.yongshen ?? '', locale)
+    const fallback =
+      reasons.length > 0
+        ? reasons.join(locale === 'en' ? ' · ' : '；')
+        : formatLean(shownWindow.lean, locale)
+    const res = await explainWindow(bondId, {
+      windowKey: shownWindow.key,
+      year: shownWindow.year,
+      month: shownWindow.month,
+      ganZhi: shownWindow.ganZhi,
+      lean: shownWindow.lean,
+      yongshen: data.yongshen,
+      isYongshen: shownWindow.isYongshen,
+      feedsYongshen: shownWindow.feedsYongshen,
+      harmony: shownWindow.harmony,
+      taohua: shownWindow.taohua,
+      yima: shownWindow.yima,
+      shishang: shownWindow.shishang,
+      step,
+      fallback,
+      locale,
+    })
+    setExplanation(res)
+    setExplainedFor(explainKey)
+    setExplaining(false)
+  }
+  const explainCta = locale.startsWith('zh')
+    ? '深入解读'
+    : locale === 'ja'
+      ? '詳しく読む'
+      : 'Read deeper'
+  const customPlaceholder = locale.startsWith('zh')
+    ? '自定义这一步（可选，如「求婚」）'
+    : locale === 'ja'
+      ? 'カスタムの一歩（任意）'
+      : 'Custom step (optional)'
 
   return (
     <ScrollView
@@ -367,13 +424,48 @@ function Body({
             width={winW - kindredSpacing.screenH * 2}
           />
           {shownWindow ? (
-            <View style={{ marginTop: kindredSpacing.sm }}>
+            <View style={{ marginTop: kindredSpacing.sm, gap: kindredSpacing.sm }}>
               <WindowCard
                 w={shownWindow}
                 yongshen={data.yongshen ?? ''}
                 isBest={shownWindow.key === bestKey}
                 locale={locale}
               />
+              {/* Per-window LLM deep-read — a 求婚/同居/… preset or a custom step. */}
+              <TextInput
+                value={customNote}
+                onChangeText={setCustomNote}
+                placeholder={customPlaceholder}
+                placeholderTextColor={kindredDark.textMuted}
+                maxLength={40}
+                style={{
+                  borderWidth: 0.5,
+                  borderColor: kindredDark.border,
+                  borderRadius: kindredRadius.md,
+                  paddingHorizontal: kindredSpacing.md,
+                  paddingVertical: kindredSpacing.sm,
+                  color: kindredDark.text,
+                }}
+              />
+              <Pressable
+                onPress={() => void onExplainWindow()}
+                hitSlop={8}
+                accessibilityRole='button'
+              >
+                <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
+                  {explaining ? `${explainCta}…` : explainCta}
+                </Text>
+              </Pressable>
+              {explainShown ? (
+                <Text
+                  style={[
+                    kindredType.caption,
+                    { color: kindredDark.textSecondary, lineHeight: 20 },
+                  ]}
+                >
+                  {explainShown}
+                </Text>
+              ) : null}
             </View>
           ) : null}
 
