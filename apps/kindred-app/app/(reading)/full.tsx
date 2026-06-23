@@ -56,6 +56,7 @@ import {
   strengthLabel,
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
+import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import {
   labelForSeed,
   PERSPECTIVE_PRESETS,
@@ -225,6 +226,14 @@ function birthFromHandoff(p: {
     clockMinutes: Number.isInteger(clock) && clock >= 0 && clock <= 1439 ? clock : undefined,
     calibrate: p.calibrate == null ? undefined : p.calibrate === '1',
   }
+}
+
+/** a11y labels for the living-layer FAB discs (icon-only). */
+const LIVING_LABELS: Record<string, { timeline: string; whatif: string; chat: string }> = {
+  en: { timeline: 'Your year', whatif: 'What if', chat: 'Ask' },
+  zh: { timeline: '流年', whatif: '假如', chat: '追问' },
+  'zh-Hant': { timeline: '流年', whatif: '假如', chat: '追問' },
+  ja: { timeline: '流年', whatif: 'もしも', chat: '質問' },
 }
 
 export default function FullReadingScreen() {
@@ -725,9 +734,20 @@ export default function FullReadingScreen() {
         <X size={22} color={P.muted} strokeWidth={1.5} />
       </Pressable>
 
-      {/* 划词 action bar — slides up when a paragraph is long-pressed (copy / chat /
-          highlight). The personal report has no timeline/what-if, so there's no
-          living-layer fab — just this bar. */}
+      {/* Living layer — the bottom-right FAB into 流年 timeline + chat (parity with the
+          合盘 report). What-if is wired in a later slice. Hidden while a sentence is
+          picked (the selection bar owns the bottom). */}
+      {!pickedQuote ? (
+        <LivingLayerFab
+          labels={LIVING_LABELS[locale] ?? LIVING_LABELS.en}
+          onTimeline={() => router.push('/(reading)/timeline')}
+          onChat={() => handleAskAI({ slug: activeSlug ?? 'ch1_personality', quote: null })}
+          insetBottom={insets.bottom}
+        />
+      ) : null}
+
+      {/* 划词 action bar — slides up when a sentence is long-pressed (copy / chat /
+          highlight). */}
       <SelectionActionBar
         quote={pickedQuote}
         highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
