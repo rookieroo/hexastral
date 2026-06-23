@@ -25,6 +25,7 @@ import { SKIN_CINNABAR } from '@zhop/hexastral-tokens/moon'
 import {
   type BondData,
   type BondStatus,
+  isCjkLocale,
   kindredFonts,
   prefetchBondReport,
   useBondList,
@@ -32,7 +33,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Settings2, Spline } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   AppState,
@@ -44,13 +45,17 @@ import {
 } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useDerivedValue,
+  useReducedMotion,
   useSharedValue,
+  withRepeat,
+  withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
@@ -76,6 +81,8 @@ interface HomeCopy {
   threadsHint: string
   /** 0-thread empty state — the primary "bring someone into your sky" action. */
   emptyCta: string
+  /** 0-thread sub-line under the lone-sky title — what a thread is, gently. */
+  emptySub: string
   noBirthTitle: string
   noBirthCta: string
 }
@@ -87,6 +94,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: 'Threads',
     threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
+    emptySub: 'Invite someone close, and their star takes a place in your orbit.',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },
@@ -96,6 +104,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '牵绊',
     threadsHint: '此刻，夜空里只有你一个人。',
     emptyCta: '邀请对方 →',
+    emptySub: '邀请一个在意的人，TA 的星会在你的夜空里亮起。',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
   },
@@ -105,6 +114,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '牽絆',
     threadsHint: '此刻，夜空裡只有你一個人。',
     emptyCta: '邀請對方 →',
+    emptySub: '邀請一個在意的人，TA 的星會在你的夜空裡亮起。',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
   },
@@ -114,10 +124,19 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '絆',
     threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
+    emptySub: '大切な人を招くと、その星があなたの夜空にともる。',
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
 }
+
+// Bond ids seen so far THIS app session — module-scoped so it survives the home
+// remounting (the create flow `replace`s back to a fresh home instance). null =
+// never loaded: the first resolve seeds it WITHOUT firing births, so a cold launch
+// with existing threads stays calm; only an id that appears afterwards (you just
+// made a bond) reads as newly born. Capped to the sky's slot count.
+let seenBondIds: Set<string> | null = null
+const SKY_SLOTS = 6
 
 // Pending threads need attention; actives are destinations; declined/expired are
 // tail noise. Sort accordingly.
@@ -242,6 +261,34 @@ export default function ReadingHomeScreen() {
       }),
     [bonds]
   )
+
+  // First-thread (and any new-thread) BIRTH — diff the visible thread ids against
+  // what we've seen this session; a freshly-appeared id is a bond YOU just made, so
+  // its orbit slot flares with a gravity line in the sky (SkyHero). Module-scoped
+  // `seenBondIds` survives the home remounting after the create flow returns; the
+  // first resolve only seeds (no flare on launch). The nonce is the trigger edge.
+  const [bornNonce, setBornNonce] = useState(0)
+  const bornSlotsRef = useRef<number[]>([])
+  useEffect(() => {
+    // Wait for the FIRST real resolve before baselining — `bonds` starts [] while
+    // the cold-launch fetch is in flight, and seeding off that empty list would
+    // then flag every existing thread as "born" when the data lands.
+    if (bondsLoading) return
+    const ids = threads.map((thr) => thr.id)
+    if (seenBondIds === null) {
+      seenBondIds = new Set(ids)
+      return
+    }
+    const born: number[] = []
+    ids.forEach((id, i) => {
+      if (i < SKY_SLOTS && !seenBondIds?.has(id)) born.push(i)
+    })
+    seenBondIds = new Set(ids)
+    if (born.length > 0) {
+      bornSlotsRef.current = born
+      setBornNonce((nonce) => nonce + 1)
+    }
+  }, [threads, bondsLoading])
 
   // Warm the report cache for the active threads on screen, so tapping a row
   // opens instantly (the 水墨 bloom plays over a ready report instead of the
@@ -571,19 +618,16 @@ export default function ReadingHomeScreen() {
                 ) : (
                   // 0-thread state: don't leave the bottom an empty void — center a
                   // calm first-connection invite under your lone star (no illustration;
-                  // the sky above IS the illustration — you, alone, for now).
-                  <View style={{ flex: 1, justifyContent: 'center' }}>
-                    <EmptyState
-                      title={copy.threadsHint}
-                      customAction={
-                        <PrimaryButton
-                          label={copy.emptyCta}
-                          onPress={startNewThread}
-                          block={false}
-                        />
-                      }
-                    />
-                  </View>
+                  // the sky above IS the illustration — you, alone, for now). A faint
+                  // 红线 descends from the star toward the invite — the thread of fate,
+                  // dangling, not yet tied — ending in a latent bead waiting to ignite.
+                  <FirstThreadInvite
+                    cjk={isCjkLocale(locale)}
+                    title={copy.threadsHint}
+                    sub={copy.emptySub}
+                    cta={copy.emptyCta}
+                    onPress={startNewThread}
+                  />
                 )
               }
               ListFooterComponent={
@@ -647,6 +691,8 @@ export default function ReadingHomeScreen() {
                   onTapThread={openThreadReading}
                   onSwipeLeft={openSettings}
                   collapse={collapseSv}
+                  bornSlots={bornSlotsRef.current}
+                  bornNonce={bornNonce}
                 />
               ) : null}
             </Animated.View>
@@ -703,6 +749,92 @@ export default function ReadingHomeScreen() {
         </View>
       ) : null}
       {showSplash && <HomeSplash onDone={() => setShowSplash(false)} />}
+    </View>
+  )
+}
+
+/**
+ * 0-thread invite — the calm first-connection state under your lone star. A faint
+ * 红线 (the thread of fate) descends from the sky above into a latent bead that
+ * breathes, waiting to ignite; tying it (the invite) is the one action. No
+ * illustration — the lone star overhead IS the picture.
+ */
+function FirstThreadInvite({
+  cjk,
+  title,
+  sub,
+  cta,
+  onPress,
+}: {
+  cjk: boolean
+  title: string
+  sub: string
+  cta: string
+  onPress: () => void
+}) {
+  const reduced = useReducedMotion()
+  const pulse = useSharedValue(reduced ? 0.6 : 0)
+  useEffect(() => {
+    if (reduced) return
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    )
+  }, [reduced, pulse])
+  const beadStyle = useAnimatedStyle(() => ({
+    opacity: 0.4 + pulse.value * 0.45,
+    transform: [{ scale: 0.9 + pulse.value * 0.3 }],
+  }))
+  const bodyFont = cjk ? kindredFonts.cjk : kindredFonts.serif
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: kindredSpacing.screenH,
+      }}
+    >
+      <View style={{ width: 1, height: 38, backgroundColor: kindredDark.seal, opacity: 0.32 }} />
+      <Animated.View
+        style={[
+          {
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: kindredDark.seal,
+            marginBottom: kindredSpacing.lg,
+          },
+          beadStyle,
+        ]}
+      />
+      <Text
+        style={{
+          fontFamily: bodyFont,
+          fontSize: 17,
+          lineHeight: 26,
+          color: kindredDark.text,
+          textAlign: 'center',
+          marginBottom: kindredSpacing.sm,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          fontFamily: bodyFont,
+          fontSize: 13.5,
+          lineHeight: 21,
+          color: kindredDark.textMuted,
+          textAlign: 'center',
+          maxWidth: 270,
+          marginBottom: kindredSpacing.xl,
+        }}
+      >
+        {sub}
+      </Text>
+      <PrimaryButton label={cta} onPress={onPress} block={false} />
     </View>
   )
 }

@@ -20,8 +20,9 @@
  * nobody is looking at.
  */
 
-import { Canvas, Circle, Group, RadialGradient, vec } from '@shopify/react-native-skia'
-import { useEffect, useMemo, useRef } from 'react'
+import { Canvas, Circle, Group, Line, LinearGradient, RadialGradient, vec } from '@shopify/react-native-skia'
+import * as Haptics from 'expo-haptics'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import {
@@ -103,6 +104,12 @@ export interface SkyHeroProps {
    *  gravity spokes and orbiting threads fade out so only your central star is
    *  left as the hero recedes to a slim header. */
   collapse?: SharedValue<number>
+  /** Orbit slots that just gained a brand-new bond (home's id diff) — those stars
+   *  play the birth flare + a transient gravity line from you. */
+  bornSlots?: number[]
+  /** Bumped on each birth event; the edge that fires the flare (so it survives the
+   *  home remounting after the create flow `replace`s back). */
+  bornNonce?: number
 }
 
 export function SkyHero({
@@ -116,6 +123,8 @@ export function SkyHero({
   onTapThread,
   onSwipeLeft,
   collapse,
+  bornSlots,
+  bornNonce,
 }: SkyHeroProps) {
   const reduced = useReducedMotion()
   const cx = width / 2
@@ -142,9 +151,13 @@ export function SkyHero({
         return {
           glow: [s.hot, s.halo, fade(s.halo)],
           core: [STAR_HOT, s.halo, fade(s.halo)],
+          // The transient gravity line drawn at a bond's birth: YOUR light reaching
+          // out (your halo) and fading into their hue — a one-time "结成此线" beat,
+          // not a permanent spoke.
+          line: [fade(star.halo), star.halo, s.halo, fade(s.halo)],
         }
       }),
-    [threadElements]
+    [threadElements, star.halo]
   )
 
   const clock = useSharedValue(0)
@@ -273,11 +286,16 @@ export function SkyHero({
               pos={pos}
               cx={cx}
               cy={cy}
+              center={center}
               appear={appear}
               active={i < n}
+              reduced={!!reduced}
+              born={bornSlots?.includes(i) ?? false}
+              bornNonce={bornNonce ?? 0}
               collapse={collapse}
               glowColors={threadColors[i]?.glow ?? [COOL_HOT, COOL, fade(COOL)]}
               coreColors={threadColors[i]?.core ?? [STAR_HOT, COOL, fade(COOL)]}
+              lineColors={threadColors[i]?.line ?? [fade(COOL), COOL, COOL, fade(COOL)]}
             />
           ))}
 
@@ -299,33 +317,53 @@ export function SkyHero({
   )
 }
 
+/** A bond being born is worth a beat — a soft success tick (only on a genuine,
+ *  in-session creation, never on app launch with existing threads). */
+function birthHaptic() {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+}
+
 function ThreadStar({
   idx,
   pos,
   cx,
   cy,
+  center,
   appear,
   active,
+  reduced,
+  born,
+  bornNonce,
   collapse,
   glowColors,
   coreColors,
+  lineColors,
 }: {
   idx: number
   pos: SharedValue<Array<{ x: number; y: number }>>
   cx: number
   cy: number
+  center: { x: number; y: number }
   appear: SharedValue<number>
   active: boolean
+  reduced: boolean
+  /** This slot just gained a brand-new bond (per the home's id diff) — play the
+   *  birth flare + gravity line. Gated by `bornNonce` so it fires once per event. */
+  born: boolean
+  /** Bumped by the home each time a bond is newly born; the trigger edge. */
+  bornNonce: number
   collapse?: SharedValue<number>
   glowColors: string[]
   coreColors: string[]
+  lineColors: string[]
 }) {
   // presence: 1 = seated in orbit, 0 = gone. 解缘 (active true→false) opens a black
   // hole AT the star: an accretion ring blooms, the star is pulled in (shrinks) and
-  // fades, then the ring collapses to nothing. A new bond simply fades in at its
-  // seat. The gravity line is cut instantly (the tie severs the moment you let go).
+  // fades, then the ring collapses to nothing.
   const presence = useSharedValue(active ? 1 : 0)
   const swallow = useSharedValue(0)
+  // birth: 0→1→0 pulse on creation, drives the flare + the transient gravity line.
+  const birth = useSharedValue(0)
   const wasActive = useRef(active)
   useEffect(() => {
     presence.value = withTiming(active ? 1 : 0, {
@@ -343,17 +381,48 @@ function ThreadStar({
     wasActive.current = active
   }, [active, presence, swallow])
 
+  // A bond's BIRTH — driven by the home's id-diff (survives the home remounting
+  // when the create flow `replace`s back to it), so the flare fires once when YOU
+  // just made the bond, never on a cold launch with existing threads. A gravity
+  // line draws from you to the new star and the star flares before settling; the
+  // line is transient — it fades, never a permanent spoke. Reduced-motion: skip.
+  // The gravity line only exists during a birth — mount it for the pulse window,
+  // then drop it, so the steady-state sky draws exactly what it did before (no
+  // per-frame zero-opacity line, mindful of the "手机发烫" budget).
+  const [showLine, setShowLine] = useState(false)
+  const handledNonce = useRef(bornNonce)
+  useEffect(() => {
+    if (bornNonce === handledNonce.current) return
+    handledNonce.current = bornNonce
+    if (!born || !active || reduced) return
+    birth.value = 0
+    birth.value = withSequence(
+      withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) })
+    )
+    setShowLine(true)
+    const id = setTimeout(() => setShowLine(false), 1700)
+    birthHaptic()
+    return () => clearTimeout(id)
+  }, [bornNonce, born, active, reduced, birth])
+
   // Seated at its live orbit point — the hole forms here, so the star collapses in
   // place (no outward drift now; the black hole does the work).
   const c = useDerivedValue(() => {
     const q = pos.value[idx] ?? { x: cx, y: cy }
     return vec(q.x, q.y)
   })
-  // Star shrinks as the hole pulls it in (swallow), fades as it leaves (presence).
-  const glowR = useDerivedValue(() => 7 * (1 - swallow.value * 0.92))
-  const coreR = useDerivedValue(() => 2.4 * (1 - swallow.value * 0.92))
+  // Star shrinks as the hole pulls it in (swallow), fades as it leaves (presence);
+  // a birth flare briefly swells it past its resting size before it settles.
+  const flare = useDerivedValue(() => 1 - swallow.value * 0.92 + birth.value * 0.7)
+  const glowR = useDerivedValue(() => 7 * flare.value)
+  const coreR = useDerivedValue(() => 2.4 * flare.value)
   const glowOpacity = useDerivedValue(
-    () => appear.value * presence.value * 0.55 * (1 - (collapse?.value ?? 0))
+    () =>
+      appear.value *
+      presence.value *
+      Math.min(1, 0.55 + birth.value * 0.4) *
+      (1 - (collapse?.value ?? 0))
   )
   const coreOpacity = useDerivedValue(
     () => appear.value * presence.value * (1 - (collapse?.value ?? 0))
@@ -361,8 +430,21 @@ function ThreadStar({
   // Accretion ring — radius opens then collapses with the swallow pulse.
   const ringR = useDerivedValue(() => Math.max(0.01, swallow.value * 18))
   const ringOpacity = useDerivedValue(() => swallow.value)
+  // Transient gravity line — your light reaching the new star at its birth, then
+  // fading. Hidden the moment the home starts collapsing on scroll.
+  const lineOpacity = useDerivedValue(() => birth.value * 0.6 * (1 - (collapse?.value ?? 0)))
   return (
     <>
+      {showLine ? (
+        <Line p1={center} p2={c} style='stroke' strokeWidth={1.4} opacity={lineOpacity}>
+          <LinearGradient
+            start={center}
+            end={c}
+            colors={lineColors}
+            positions={[0, 0.18, 0.7, 1]}
+          />
+        </Line>
+      ) : null}
       <Circle c={c} r={ringR} opacity={ringOpacity}>
         <RadialGradient c={c} r={ringR} colors={VOID_RING} positions={[0, 0.55, 0.82, 1]} />
       </Circle>
