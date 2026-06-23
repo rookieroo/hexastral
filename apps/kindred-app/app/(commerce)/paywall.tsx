@@ -107,7 +107,6 @@ export default function PaywallScreen() {
           anonymous userId (loginYuanIap at boot), so the buy attaches to it; we
           nudge sign-in AFTER a successful purchase to make it Apple-recoverable. */}
       <PaywallView
-        reason={reason}
         productIds={YUAN_PRODUCT_IDS}
         prices={{
           monthly: offerings?.monthlyPriceString ?? null,
