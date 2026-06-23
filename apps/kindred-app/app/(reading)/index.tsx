@@ -222,7 +222,7 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, isLoading: bondsLoading, refetch, deleteBond, recompute, quota } = useBondList()
+  const { bonds, isLoading: bondsLoading, refetch, deleteBond, recompute } = useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
@@ -322,19 +322,13 @@ export default function ReadingHomeScreen() {
   // pops back, so the two motions mirror.
   const openSettings = useCallback(() => router.push('/(settings)'), [router])
 
-  // New thread — pre-empt the free-bond paywall HERE (2026-06) instead of letting the
-  // user pick a mode and fill the invite / birth form only to bounce off the
-  // create-time 403. quota.used counts non-refundable generations + outstanding
-  // pending invites (the same number the server enforces), so a free user at the cap
-  // goes straight to the paywall; letting go a pending thread frees a slot and this
-  // opens the flow again. quota undefined (pre-fetch) → fall through; server backstops.
+  // New thread — never gated. Inviting is the viral action and is uncapped, and a
+  // solo bond is always free to CREATE; the free-vs-teaser decision is made by the
+  // server per bond (chaptersUnlocked) and surfaced as the in-report unlock wall.
+  // So we no longer pre-empt a paywall here — the flow always opens.
   const startNewThread = useCallback(() => {
-    if (quota && !quota.isPro && quota.used >= quota.limit) {
-      router.push({ pathname: '/(commerce)/paywall', params: { reason: 'bonds' } })
-      return
-    }
     router.push('/(onboarding)/mode')
-  }, [quota, router])
+  }, [router])
 
   // Same left-swipe → Settings over the list area's blank space. activeOffsetX
   // keeps taps/presses working; failOffsetY yields to vertical scroll; a row's own
