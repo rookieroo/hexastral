@@ -215,7 +215,7 @@ export default function BondDetailScreen({
         }),
     [requestClose]
   )
-  const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
+  const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond, relocalize } =
     useSynastryReport(id ?? null, resolveLocale())
   // Frozen LLM output: render the report's content + report-chrome (essence chip,
   // chapter section labels, primer, share card) in the locale it was GENERATED in
@@ -226,6 +226,7 @@ export default function BondDetailScreen({
   const reportLocale =
     localeFromTag(detail?.interpretation?.language as string | undefined) ?? resolveLocale()
   const [chapterIndex, setChapterIndex] = useState<number>(0)
+  const [relocalizing, setRelocalizing] = useState(false)
   // 划词 — the sentence the user long-pressed (drives the SelectionActionBar),
   // and the set of highlighted sentences. Highlights persist per-bond via
   // AsyncStorage (lib/highlights.ts): loaded on mount, saved on every toggle.
@@ -715,6 +716,33 @@ export default function BondDetailScreen({
                   : undefined
               }
             />
+            {/* Per-reader locale is frozen (ADR-0027); a quiet end-of-report line is the
+                ONLY switch — explicit + metered (spends a reroll). Shown only when the
+                report's language differs from this device's, so it's not chrome. */}
+            {reportLocale !== resolveLocale() ? (
+              <Pressable
+                onPress={async () => {
+                  if (relocalizing) return
+                  setRelocalizing(true)
+                  const r = await relocalize(resolveLocale())
+                  setRelocalizing(false)
+                  if (r === 'needs_pro') router.push('/(commerce)/paywall')
+                }}
+                hitSlop={8}
+                accessibilityRole='button'
+                style={{ paddingVertical: kindredSpacing.md, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, letterSpacing: 0.5, color: kindredPaper.cinnabar }}>
+                  {relocalizing
+                    ? resolveLocale().startsWith('zh')
+                      ? '重读中…'
+                      : 'Re-reading…'
+                    : resolveLocale().startsWith('zh')
+                      ? '用你的语言重读本报告'
+                      : 'Re-read in your language'}
+                </Text>
+              </Pressable>
+            ) : null}
           </SafeAreaView>
         </ReportBloom>
 
