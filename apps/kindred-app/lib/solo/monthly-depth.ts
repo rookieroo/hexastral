@@ -29,6 +29,9 @@ export interface MonthlyDepthInput {
   element: string
   headline: string
   body: string
+  /** The OPENING device's locale — the depth is generated + cached in THIS language,
+   *  not the inviter's / the account's stored locale. */
+  locale: string
 }
 
 export type MonthlyDepthResult =
@@ -36,8 +39,8 @@ export type MonthlyDepthResult =
   | { kind: 'needs_pro' }
   | { kind: 'error' }
 
-const cacheKey = (chartHash: string, monthKey: string) =>
-  `kindred_monthly_depth_${chartHash}_${monthKey}`
+const cacheKey = (chartHash: string, monthKey: string, locale: string) =>
+  `kindred_monthly_depth_${chartHash}_${monthKey}_${locale}`
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -47,13 +50,14 @@ async function getUserId(): Promise<string | null> {
   }
 }
 
-/** Cached depth for this chart + month, or null. Lets the card paint instantly on revisit. */
+/** Cached depth for this chart + month + locale, or null. Paints instantly on revisit. */
 export async function getCachedMonthlyDepth(
   chartHash: string,
-  monthKey: string
+  monthKey: string,
+  locale: string
 ): Promise<MonthlyDepth | null> {
   try {
-    const raw = await AsyncStorage.getItem(cacheKey(chartHash, monthKey))
+    const raw = await AsyncStorage.getItem(cacheKey(chartHash, monthKey, locale))
     return raw ? (JSON.parse(raw) as MonthlyDepth) : null
   } catch {
     return null
@@ -81,7 +85,7 @@ export async function fetchMonthlyDepth(
   chartHash: string,
   input: MonthlyDepthInput
 ): Promise<MonthlyDepthResult> {
-  const cached = await getCachedMonthlyDepth(chartHash, input.monthKey)
+  const cached = await getCachedMonthlyDepth(chartHash, input.monthKey, input.locale)
   if (cached) return { kind: 'ok', depth: cached }
 
   const userId = await getUserId()
@@ -95,6 +99,7 @@ export async function fetchMonthlyDepth(
     element: input.element,
     headline: input.headline,
     body: input.body,
+    locale: input.locale,
   })
   const signed = await signRequest({ body: requestBody, userId, method: 'POST', path })
   if (!signed) return { kind: 'error' }
@@ -125,7 +130,10 @@ export async function fetchMonthlyDepth(
       generatedAt: json.generatedAt ?? new Date().toISOString(),
     }
     try {
-      await AsyncStorage.setItem(cacheKey(chartHash, input.monthKey), JSON.stringify(depth))
+      await AsyncStorage.setItem(
+        cacheKey(chartHash, input.monthKey, input.locale),
+        JSON.stringify(depth)
+      )
     } catch {}
     return { kind: 'ok', depth }
   } catch {

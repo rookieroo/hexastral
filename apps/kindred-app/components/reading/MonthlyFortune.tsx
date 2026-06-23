@@ -83,22 +83,27 @@ export function MonthlyFortune({
 }) {
   const fortune = composeMonthlyFortune({ chart, locale })
   const du = DEPTH_UI[locale] ?? DEPTH_UI.en
+  // Fixed tag column so the 宜/忌 (DO/WATCH) labels share one width and the advice
+  // text in both rows starts at the same x — the longest label is en "WATCH".
+  const tagWidth = locale === 'en' ? 56 : locale === 'ja' ? 34 : 22
 
   const [depth, setDepth] = useState<MonthlyDepth | null>(null)
   const [depthLoading, setDepthLoading] = useState(false)
   const [depthFailed, setDepthFailed] = useState(false)
 
-  // Cache-first: a depth generated earlier this month paints instantly, no tap needed.
+  // Cache-first: a depth generated earlier this month (in THIS language) paints
+  // instantly. Keyed by locale so an en device never shows a previously-cached zh depth.
   useEffect(() => {
     if (!isPro || !chartHash) return
     let cancelled = false
-    void getCachedMonthlyDepth(chartHash, fortune.monthKey).then((d) => {
-      if (!cancelled && d) setDepth(d)
+    void getCachedMonthlyDepth(chartHash, fortune.monthKey, locale).then((d) => {
+      // Always set (null clears a stale other-locale depth on a language switch).
+      if (!cancelled) setDepth(d)
     })
     return () => {
       cancelled = true
     }
-  }, [isPro, chartHash, fortune.monthKey])
+  }, [isPro, chartHash, fortune.monthKey, locale])
 
   const loadDepth = () => {
     if (depthLoading) return
@@ -111,6 +116,7 @@ export function MonthlyFortune({
       element: fortune.element,
       headline: fortune.headline,
       body: fortune.body,
+      locale,
     }).then((r) => {
       setDepthLoading(false)
       if (r.kind === 'ok') setDepth(r.depth)
@@ -148,11 +154,11 @@ export function MonthlyFortune({
               </View>
             ))}
             <View style={S.depthAdviceRow}>
-              <Text style={S.depthTag}>{du.advice}</Text>
+              <Text style={[S.depthTag, { width: tagWidth }]}>{du.advice}</Text>
               <Text style={S.depthAdviceText}>{depth.advice}</Text>
             </View>
             <View style={S.depthAdviceRow}>
-              <Text style={[S.depthTag, S.depthTagWatch]}>{du.watch}</Text>
+              <Text style={[S.depthTag, S.depthTagWatch, { width: tagWidth }]}>{du.watch}</Text>
               <Text style={S.depthAdviceText}>{depth.watchFor}</Text>
             </View>
           </View>
@@ -211,7 +217,7 @@ const S = StyleSheet.create({
   depthTitle: { color: P.ink, fontSize: 16, letterSpacing: 0.8 },
   depthThemeLabel: { color: P.bronze, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
   depthAdviceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 14 },
-  depthTag: { color: P.cinnabar, fontSize: 12, letterSpacing: 1, minWidth: 28, fontWeight: '600' },
+  depthTag: { color: P.cinnabar, fontSize: 12, letterSpacing: 1, fontWeight: '600' },
   depthTagWatch: { color: P.muted },
   depthAdviceText: { flex: 1, color: P.inkSoft, fontSize: 14, lineHeight: 22 },
 })

@@ -62,6 +62,9 @@ const monthlyDepthRequestSchema = z.object({
   /** The deterministic card's headline + body — the grounding the LLM expands. */
   headline: z.string().min(1).max(200),
   body: z.string().min(1).max(1200),
+  /** The OPENING device's locale — the depth is generated in THIS language, not the
+   *  account's stored locale (an en device must not get a zh depth). */
+  locale: z.enum(['en', 'zh', 'zh-Hant', 'ja']).optional(),
 })
 
 interface ChapterRowOut {
@@ -367,12 +370,15 @@ export const reportManifestRoutes = new Hono<AppEnv>().get('/', async (c) => {
     await ensureUserChart(c, userId)
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
     if (!user) throw new HTTPException(404, { message: 'User not found' })
-    const locale = user.locale ?? 'en'
+    // Generate in the OPENING device's locale (client-sent), NOT the account's stored
+    // locale — an en device must not get a zh depth. Fall back to stored/`en`.
+    const locale = input.locale ?? user.locale ?? 'en'
     const { chartHash } = await loadChartContext(db, userId)
 
     const { model, promptVersion } = MONTHLY_DEPTH_MODEL
+    // locale folds into the cache key so en/zh depths never collide.
     const contextHash = await sha256Hex(
-      [chartHash, MONTHLY_DEPTH_CHAPTER, input.monthKey, promptVersion, model].join('|')
+      [chartHash, MONTHLY_DEPTH_CHAPTER, input.monthKey, locale, promptVersion, model].join('|')
     )
 
     const cached = await db.query.reportChapters.findFirst({

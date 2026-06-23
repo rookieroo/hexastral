@@ -456,15 +456,11 @@ export default function BondDetailScreen({
     </View>
   ) : null
 
-  if (isLoading) {
-    // Brief hold — NO loader. Fetching an already-generated report is quick, and
-    // the entrance IS the 水墨晕开 bloom (ReportBloom). As an overlay this is
-    // transparent so the live home shows until the report blooms in from the tap;
-    // as a route it's dark (continuous with the dark home). No 大白页 flash either
-    // way. The long LLM wait (202 → isGenerating) keeps its own loader below.
-    return <View style={{ flex: 1, backgroundColor: isOverlay ? 'transparent' : kindredDark.bg }} />
-  }
-
+  // 生成中 takes precedence over isLoading: while a 202 is being polled, each poll's
+  // refetch() briefly flips isLoading=true (the report isn't cached yet) — if that
+  // were checked first, the blank view would preempt the loader every poll, so the
+  // moon cut out and the screen flashed black before the report. Hold the moon until
+  // the report is actually ready.
   if (isGenerating) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
@@ -487,6 +483,26 @@ export default function BondDetailScreen({
               t('bond.stage.report'),
             ]}
           />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (isLoading) {
+    // Overlay open (home tap): stay transparent so the live home shows through until
+    // the report blooms in (it's usually prefetched, so this is a blink). Route open
+    // (just-accepted → still generating): hold the SAME moon loader instead of a blank
+    // dark view, so the transition from the accept screen INTO the report is one
+    // continuous moon — the old blank flashed black between the accept loader and the
+    // report (2026-06 feedback: "月相Loader过早中断…画面闪回到黑屏").
+    if (isOverlay) {
+      return <View style={{ flex: 1, backgroundColor: 'transparent' }} />
+    }
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+        {overlayCloseRow}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <AutoMoonPhaseLoader size={96} skin={SKIN_CINNABAR} />
         </View>
       </SafeAreaView>
     )
