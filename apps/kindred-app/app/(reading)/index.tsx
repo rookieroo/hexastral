@@ -32,7 +32,7 @@ import {
   useKindredClient,
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Settings2, Spline } from 'lucide-react-native'
+import { Moon, Settings2, Spline } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -89,7 +89,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   en: {
     cardKicker: 'Your reading',
     open: 'Open your reading →',
-    monthly: 'This month →',
+    monthly: 'This month',
     threads: 'Threads',
     threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
@@ -100,7 +100,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   zh: {
     cardKicker: '你的命书',
     open: '打开命书 →',
-    monthly: '本月运势 →',
+    monthly: '本月运势',
     threads: '牵绊',
     threadsHint: '此刻，夜空里只有你一个人。',
     emptyCta: '邀请对方 →',
@@ -111,7 +111,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   'zh-Hant': {
     cardKicker: '你的命書',
     open: '打開命書 →',
-    monthly: '本月運勢 →',
+    monthly: '本月運勢',
     threads: '牽絆',
     threadsHint: '此刻，夜空裡只有你一個人。',
     emptyCta: '邀請對方 →',
@@ -122,7 +122,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   ja: {
     cardKicker: 'あなたの命書',
     open: '命書を開く →',
-    monthly: '今月の運勢 →',
+    monthly: '今月の運勢',
     threads: '絆',
     threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
@@ -553,8 +553,16 @@ export default function ReadingHomeScreen() {
           hitSlop={8}
           accessibilityRole='button'
           accessibilityLabel={copy.monthly}
-          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            opacity: pressed ? 0.55 : 1,
+          })}
         >
+          {/* A small 月相 glyph instead of an arrow — the monthly hook reads as its
+              own kind of doorway, not a second "open". */}
+          <Moon size={12} color={kindredDark.textMuted} strokeWidth={1.6} />
           <Text
             style={{
               fontFamily: kindredFonts.mono,
