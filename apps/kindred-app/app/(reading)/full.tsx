@@ -56,7 +56,6 @@ import {
   strengthLabel,
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
-import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import {
   labelForSeed,
   PERSPECTIVE_PRESETS,
@@ -228,14 +227,6 @@ function birthFromHandoff(p: {
   }
 }
 
-/** a11y labels for the living-layer FAB discs (icon-only). */
-const LIVING_LABELS: Record<string, { timeline: string; whatif: string; chat: string }> = {
-  en: { timeline: 'Your year', whatif: 'What if', chat: 'Ask' },
-  zh: { timeline: '流年', whatif: '假如', chat: '追问' },
-  'zh-Hant': { timeline: '流年', whatif: '假如', chat: '追問' },
-  ja: { timeline: '流年', whatif: 'もしも', chat: '質問' },
-}
-
 export default function FullReadingScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -349,7 +340,10 @@ export default function FullReadingScreen() {
   const teaser = useMemo(() => {
     if (!chart) return null
     const soulStars =
-      ziwei?.palaces.find((p) => p.name === '命宫')?.majorStars.map((s) => s.name).join(' ') ?? ''
+      ziwei?.palaces
+        .find((p) => p.name === '命宫')
+        ?.majorStars.map((s) => s.name)
+        .join(' ') ?? ''
     return composeTeaserNarrator({
       chart,
       dayun: dayunInfo ?? { active: null, relation: null },
@@ -734,16 +728,8 @@ export default function FullReadingScreen() {
         <X size={22} color={P.muted} strokeWidth={1.5} />
       </Pressable>
 
-      {/* Living layer — the bottom-right FAB into chat. The personal 流年/假如 surfaces
-          moved to 运 (Yuun) per ADR-0026; Yuel keeps only 本月 (home doorway) + chat.
-          Hidden while a sentence is picked (the selection bar owns the bottom). */}
-      {!pickedQuote ? (
-        <LivingLayerFab
-          labels={LIVING_LABELS[locale] ?? LIVING_LABELS.en}
-          onChat={() => handleAskAI({ slug: activeSlug ?? 'ch1_personality', quote: null })}
-          insetBottom={insets.bottom}
-        />
-      ) : null}
+      {/* No living-layer FAB on the personal report (ADR-0026): 本月 lives on the home
+          doorway, and chat is the 划词 selection bar below. */}
 
       {/* 划词 action bar — slides up when a sentence is long-pressed (copy / chat /
           highlight). */}
@@ -908,7 +894,10 @@ function HistoryView({
           >
             {versions.map((v, i) => (
               <View key={i} style={{ width: screenWidth }}>
-                <ScrollView contentContainerStyle={S.historyPageScroll} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  contentContainerStyle={S.historyPageScroll}
+                  showsVerticalScrollIndicator={false}
+                >
                   <Text style={S.historyVoice}>{labelForSeed(v.perspectiveSeed, locale)}</Text>
                   {v.content.split('\n\n').map((para, j) => (
                     <Text key={j} style={[S.detailBody, S.paraBlock]}>
