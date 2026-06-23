@@ -30,11 +30,10 @@ import {
 } from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
-import { composeMonthlyFortune } from '@zhop/scenario-yuan/monthly-fortune'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Clock, Lock, RefreshCw, Sparkles, X } from 'lucide-react-native'
+import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dimensions,
@@ -47,6 +46,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import Animated, { SlideInDown } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   dayMasterLabel,
@@ -69,11 +69,6 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
 import { fetchProAllowance } from '@/lib/pro-allowance'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
-import {
-  fetchMonthlyDepth,
-  getCachedMonthlyDepth,
-  type MonthlyDepth,
-} from '@/lib/solo/monthly-depth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import {
   analyzeDayunRelation,
@@ -504,6 +499,9 @@ export default function FullReadingScreen() {
   const [rerolling, setRerolling] = useState(false)
   const [rerollNotice, setRerollNotice] = useState<string | null>(null)
   const [rerollRemaining, setRerollRemaining] = useState<number | null>(null)
+  // Chapters re-rolled this session — gates the 历史视角 entry, which is pointless until
+  // there's a second voice to compare (no 换视角 → no 历史视角, per 2026-06 feedback).
+  const [rerolledSlugs, setRerolledSlugs] = useState<Set<string>>(() => new Set())
   useEffect(() => {
     if (!rerollNotice) return
     const id = setTimeout(() => setRerollNotice(null), 4500)
@@ -520,6 +518,7 @@ export default function FullReadingScreen() {
     if (chapter.slug === 'ch1_personality') setCh1(chapter)
     else if (chapter.slug === 'ch4_timeline') setCh4(chapter)
     else setPremium((prev) => ({ ...prev, [chapter.slug]: chapter }))
+    setRerolledSlugs((prev) => new Set(prev).add(chapter.slug))
   }
   const doReroll = (preset: PerspectivePreset) => {
     const slug = rerollFor
@@ -669,17 +668,6 @@ export default function FullReadingScreen() {
                     content={content}
                     loading={loadingBySlug(c.slug)}
                     teaser={teaserBySlug(c.slug)}
-                    topSlot={
-                      c.slug === 'ch4_timeline' ? (
-                        <ReportMonthlyFortune
-                          chart={chart}
-                          locale={locale}
-                          isPro={isPro}
-                          chartHash={chartHash}
-                          onNeedPro={openPaywall}
-                        />
-                      ) : undefined
-                    }
                     identityLine={i === 0 ? identityLine : undefined}
                     birthBadge={i === 0 ? birthBadge : undefined}
                     timeCaveat={
@@ -699,7 +687,9 @@ export default function FullReadingScreen() {
                     rerollLabel={ru.button}
                     onReroll={content ? () => setRerollFor(c.slug) : undefined}
                     historyLabel={ru.historyButton}
-                    onHistory={content ? () => openHistory(c.slug) : undefined}
+                    onHistory={
+                      content && rerolledSlugs.has(c.slug) ? () => openHistory(c.slug) : undefined
+                    }
                   />
                 </View>
               )
@@ -830,28 +820,33 @@ function PerspectivePicker({
   onClose: () => void
 }) {
   return (
-    <Modal visible={visible} transparent animationType='slide' onRequestClose={onClose}>
+    // animationType='fade' so the dim backdrop FADES in (it used to 'slide', which
+    // dragged the whole grey overlay up from the bottom — the "老问题"). Only the sheet
+    // slides up, via reanimated SlideInDown.
+    <Modal visible={visible} transparent animationType='fade' onRequestClose={onClose}>
       <Pressable style={S.sheetBackdrop} onPress={onClose}>
-        <Pressable style={S.sheet} onPress={(e) => e.stopPropagation()}>
-          <View style={S.sheetHandle} />
-          <View style={S.sheetTitleRow}>
-            <Text style={S.sheetTitle}>{title}</Text>
-            {remainingLabel ? <Text style={S.sheetRemaining}>{remainingLabel}</Text> : null}
-          </View>
-          <Text style={S.sheetSubtitle}>{subtitle}</Text>
-          <View style={{ gap: 10, marginTop: 18 }}>
-            {PERSPECTIVE_PRESETS.map((p) => (
-              <Pressable
-                key={p.id}
-                onPress={() => onPick(p)}
-                style={({ pressed }) => [S.voiceCard, pressed && { opacity: 0.7 }]}
-              >
-                <Text style={S.voiceLabel}>{p.label[locale]}</Text>
-                <Text style={S.voiceDesc}>{p.desc[locale]}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
+        <Animated.View entering={SlideInDown.duration(240)}>
+          <Pressable style={S.sheet} onPress={(e) => e.stopPropagation()}>
+            <View style={S.sheetHandle} />
+            <View style={S.sheetTitleRow}>
+              <Text style={S.sheetTitle}>{title}</Text>
+              {remainingLabel ? <Text style={S.sheetRemaining}>{remainingLabel}</Text> : null}
+            </View>
+            <Text style={S.sheetSubtitle}>{subtitle}</Text>
+            <View style={{ gap: 10, marginTop: 18 }}>
+              {PERSPECTIVE_PRESETS.map((p) => (
+                <Pressable
+                  key={p.id}
+                  onPress={() => onPick(p)}
+                  style={({ pressed }) => [S.voiceCard, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={S.voiceLabel}>{p.label[locale]}</Text>
+                  <Text style={S.voiceDesc}>{p.desc[locale]}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   )
@@ -941,166 +936,16 @@ function Header({
   )
 }
 
-/* ── ReportMonthlyFortune (本月运势, inline on the 当前大运 page) ──────── */
-
-const FORTUNE_KICKER: Record<string, string> = {
-  en: 'THIS MONTH',
-  zh: '本月运势',
-  'zh-Hant': '本月運勢',
-  ja: '今月の運勢',
-}
-
-/** Copy for the Pro 流年深读 affordance + its section labels. */
-const DEPTH_UI: Record<
-  string,
-  { cta: string; loading: string; failed: string; advice: string; watch: string }
-> = {
-  en: {
-    cta: 'Read deeper',
-    loading: 'Reading this month…',
-    failed: 'Couldn’t load the deep read — tap to retry',
-    advice: 'DO',
-    watch: 'WATCH',
-  },
-  zh: {
-    cta: '深读本月',
-    loading: '正在深读本月…',
-    failed: '深读加载失败，点按重试',
-    advice: '宜',
-    watch: '忌',
-  },
-  'zh-Hant': {
-    cta: '深讀本月',
-    loading: '正在深讀本月…',
-    failed: '深讀載入失敗，點按重試',
-    advice: '宜',
-    watch: '忌',
-  },
-  ja: {
-    cta: '今月を深読み',
-    loading: '今月を深読み中…',
-    failed: '深読みの取得に失敗しました。タップで再試行',
-    advice: '吉',
-    watch: '注意',
-  },
-}
-
 /**
- * The 本月运势 (this-month forecast) as a paper-styled block, inlined at the top of
- * the 当前大运 chapter. Moved off the home (it isn't strongly Yuel-related there); it
- * belongs inside the personal 命理 report, next to the 大运 it refines.
- *
- * Two layers: the deterministic taste (composeMonthlyFortune) is free + instant for
- * everyone; for Pro, a "深读本月" affordance fetches an LLM depth that expands the same
- * grounding (P6b). The depth is cached per month + chart, so it paints instantly on a
- * revisit and only generates about once a month — the natural cap (no allowance).
+ * Split prose into sentences for 划句 selection — keeps terminal punctuation +
+ * trailing whitespace so the paragraph still flows as one block. CJK 。！？；and
+ * Latin .!?; (and hard newlines) end a sentence; commas (，,) do NOT. Falls back to
+ * the whole text when there's nothing to split. Mirrors the 合盘 report's splitter
+ * (scenario-kindred ChapterCard) so both reports select at the same granularity.
  */
-function ReportMonthlyFortune({
-  chart,
-  locale,
-  isPro,
-  chartHash,
-  onNeedPro,
-}: {
-  chart: FateNatalChart
-  locale: ReturnType<typeof useReadingI18n>['locale']
-  isPro: boolean
-  chartHash: string
-  onNeedPro: () => void
-}) {
-  const fortune = useMemo(() => composeMonthlyFortune({ chart, locale }), [chart, locale])
-  const du = DEPTH_UI[locale] ?? DEPTH_UI.en
-
-  const [depth, setDepth] = useState<MonthlyDepth | null>(null)
-  const [depthLoading, setDepthLoading] = useState(false)
-  const [depthFailed, setDepthFailed] = useState(false)
-
-  // Cache-first: a depth generated earlier this month paints instantly, no tap needed.
-  useEffect(() => {
-    if (!isPro || !chartHash) return
-    let cancelled = false
-    void getCachedMonthlyDepth(chartHash, fortune.monthKey).then((d) => {
-      if (!cancelled && d) setDepth(d)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [isPro, chartHash, fortune.monthKey])
-
-  const loadDepth = () => {
-    if (depthLoading) return
-    setDepthLoading(true)
-    setDepthFailed(false)
-    void fetchMonthlyDepth(chartHash, {
-      monthKey: fortune.monthKey,
-      monthLabel: fortune.monthLabel,
-      ganZhi: fortune.ganZhi,
-      element: fortune.element,
-      headline: fortune.headline,
-      body: fortune.body,
-    }).then((r) => {
-      setDepthLoading(false)
-      if (r.kind === 'ok') setDepth(r.depth)
-      else if (r.kind === 'needs_pro') onNeedPro()
-      else setDepthFailed(true)
-    })
-  }
-
-  return (
-    <View style={S.fortuneBlock}>
-      <View style={S.fortuneHead}>
-        <Text style={S.fortuneKicker}>{FORTUNE_KICKER[locale] ?? FORTUNE_KICKER.en}</Text>
-        <Text style={S.fortuneMeta}>
-          {fortune.monthLabel} · {fortune.ganZhi}
-        </Text>
-      </View>
-      <Text style={S.fortuneHeadline}>{fortune.headline}</Text>
-      {fortune.body.split('\n\n').map((para, i) => (
-        <Text key={i} style={[S.fortuneBody, i > 0 && { marginTop: 8 }]}>
-          {para}
-        </Text>
-      ))}
-
-      {/* 流年深读 (Pro) — the LLM depth, lazily fetched under the free taste. */}
-      {isPro ? (
-        depth ? (
-          <View style={S.depthBlock}>
-            <View style={S.depthRule} />
-            <Text style={S.depthTitle}>{depth.title}</Text>
-            <Text style={[S.fortuneBody, { marginTop: 8 }]}>{depth.overview}</Text>
-            {depth.themes.map((th, i) => (
-              <View key={i} style={{ marginTop: 14 }}>
-                <Text style={S.depthThemeLabel}>{th.label}</Text>
-                <Text style={[S.fortuneBody, { marginTop: 3 }]}>{th.body}</Text>
-              </View>
-            ))}
-            <View style={S.depthAdviceRow}>
-              <Text style={S.depthTag}>{du.advice}</Text>
-              <Text style={S.depthAdviceText}>{depth.advice}</Text>
-            </View>
-            <View style={S.depthAdviceRow}>
-              <Text style={[S.depthTag, S.depthTagWatch]}>{du.watch}</Text>
-              <Text style={S.depthAdviceText}>{depth.watchFor}</Text>
-            </View>
-          </View>
-        ) : depthLoading ? (
-          <View style={[S.depthBlock, S.depthSkeleton]}>
-            <Text style={S.depthCtaText}>{du.loading}</Text>
-          </View>
-        ) : (
-          <Pressable
-            onPress={loadDepth}
-            hitSlop={8}
-            accessibilityRole='button'
-            style={({ pressed }) => [S.depthCta, pressed && { opacity: 0.6 }]}
-          >
-            <Sparkles size={13} color={P.cinnabar} strokeWidth={1.6} />
-            <Text style={S.depthCtaText}>{depthFailed ? du.failed : du.cta}</Text>
-          </Pressable>
-        )
-      ) : null}
-    </View>
-  )
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^。！？.!?；;\n]+[。！？.!?；;]?[\s\n]*/g)
+  return parts && parts.length > 0 ? parts : [text]
 }
 
 /* ── ChapterPage (one pager page) ───────────────────────────────────── */
@@ -1113,7 +958,6 @@ function ChapterPage({
   content,
   loading,
   teaser,
-  topSlot,
   identityLine,
   birthBadge,
   timeCaveat,
@@ -1133,9 +977,6 @@ function ChapterPage({
   loading: boolean
   /** Deterministic free teaser (free chapters, pre-unlock) — real computed prose. */
   teaser: string | null
-  /** Optional block rendered between the chapter header and the body (e.g. the
-   *  本月运势 card on the 当前大运 page). */
-  topSlot?: ReactNode
   /** Shown on the first page only — regrounds the chart facts. */
   identityLine?: string
   birthBadge?: string
@@ -1191,9 +1032,9 @@ function ChapterPage({
       )
     )
   }
-  const askParagraph = (para: string) => {
+  const pickSentence = (sentence: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
-    ask?.onPickQuote(para)
+    ask?.onPickQuote(sentence)
   }
 
   return (
@@ -1213,8 +1054,6 @@ function ChapterPage({
         </View>
         <Text style={S.detailLabel}>{label}</Text>
 
-        {topSlot ?? null}
-
         {body ? (
           // 划词 + 解释层 over the body. Each paragraph is long-pressable (→ action
           // bar) when `ask` is wired; terms gloss on tap either way. The whole-chapter
@@ -1222,23 +1061,29 @@ function ChapterPage({
           <View>
             {ask?.askHint ? <Text style={S.askHint}>{ask.askHint}</Text> : null}
             {paragraphs.map((para, i) => {
-              const proseText = <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
               if (!ask) {
-                return <View key={i}>{proseText}</View>
+                return (
+                  <Text key={i} style={[S.detailBody, S.paraBlock]}>
+                    {renderProse(para)}
+                  </Text>
+                )
               }
-              const isHighlighted = ask.highlightedQuotes.includes(para)
+              // 划句: the paragraph flows as one Text, but each SENTENCE is its own
+              // long-pressable span — a long-press picks the sentence under the finger
+              // (not the whole paragraph), and renderProse keeps the term-gloss tap
+              // inside it. Matches the 合盘 report's selection granularity.
               return (
-                <Pressable
-                  key={i}
-                  onLongPress={() => askParagraph(para)}
-                  delayLongPress={350}
-                  style={({ pressed }) => [
-                    isHighlighted && S.paraHighlighted,
-                    pressed && S.paraPressed,
-                  ]}
-                >
-                  {proseText}
-                </Pressable>
+                <Text key={i} style={[S.detailBody, S.paraBlock]}>
+                  {splitSentences(para).map((s, j) => (
+                    <Text
+                      key={j}
+                      onLongPress={() => pickSentence(s)}
+                      style={ask.highlightedQuotes.includes(s) ? S.sentenceHighlighted : undefined}
+                    >
+                      {renderProse(s)}
+                    </Text>
+                  ))}
+                </Text>
               )
             })}
             {content && ask ? (
@@ -1420,63 +1265,6 @@ const S = StyleSheet.create({
   detailBody: { color: P.ink, fontSize: 17, lineHeight: 32, letterSpacing: 0.3 },
   paraBlock: { marginBottom: 20 },
 
-  // ── 本月运势 inline block (当前大运 page) ──
-  fortuneBlock: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: P.hair,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginBottom: 32,
-    backgroundColor: P.hairSoft,
-  },
-  fortuneHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  fortuneKicker: { color: P.cinnabar, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  fortuneMeta: { color: P.muted, fontSize: 10, letterSpacing: 1 },
-  fortuneHeadline: {
-    color: P.ink,
-    fontSize: 17,
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
-  fortuneBody: { color: P.inkSoft, fontSize: 14, lineHeight: 23, letterSpacing: 0.2 },
-
-  // 流年深读 (Pro depth, under the free taste)
-  depthCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 14,
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-  },
-  depthCtaText: { color: P.cinnabar, fontSize: 13, letterSpacing: 0.8 },
-  depthBlock: { marginTop: 16 },
-  depthSkeleton: { opacity: 0.6 },
-  depthRule: { width: 28, height: 1, backgroundColor: P.cinnabar, marginBottom: 14, opacity: 0.7 },
-  depthTitle: { color: P.ink, fontSize: 16, letterSpacing: 0.8 },
-  depthThemeLabel: {
-    color: P.bronze,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  depthAdviceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 14 },
-  depthTag: {
-    color: P.cinnabar,
-    fontSize: 12,
-    letterSpacing: 1,
-    minWidth: 28,
-    fontWeight: '600',
-  },
-  depthTagWatch: { color: P.muted },
-  depthAdviceText: { flex: 1, color: P.inkSoft, fontSize: 14, lineHeight: 22 },
-
   // ── unlock wall (trailing page) ──
   wallScroll: { paddingHorizontal: 32, paddingTop: 64, paddingBottom: 48 },
   wallRule: { width: 40, height: 2, backgroundColor: P.cinnabar, marginBottom: 24 },
@@ -1507,15 +1295,10 @@ const S = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.hair },
   dotActive: { backgroundColor: P.cinnabar },
 
-  // 划词 AI chat (K3)
+  // 划句 / 划词 AI chat (K3) — a picked sentence gets a cinnabar wash (inline on the
+  // nested sentence Text, so it tints just that sentence within the flowing paragraph).
   askHint: { color: P.muted, fontSize: 12, letterSpacing: 0.5, marginBottom: 16 },
-  paraPressed: { backgroundColor: P.hairSoft, marginHorizontal: -8, paddingHorizontal: 8 },
-  paraHighlighted: {
-    backgroundColor: 'rgba(176,74,52,0.1)',
-    marginHorizontal: -8,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
+  sentenceHighlighted: { backgroundColor: 'rgba(176,74,52,0.16)' },
   askChapterBtn: { marginTop: 24, alignSelf: 'flex-start' },
   askChapterText: {
     color: P.bronze,
