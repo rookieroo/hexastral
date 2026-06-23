@@ -23,6 +23,7 @@ import { requireUserId } from '../lib/auth'
 import { resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
 import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
 import { getActiveEntitlements } from '../services/entitlements'
+import { consumeProAllowance } from '../services/pro-allowance'
 import {
   evaluateLlmGuard,
   type LlmGuardConfig,
@@ -127,6 +128,26 @@ chatRoutes.post('/', async (c) => {
       },
       402
     )
+  }
+
+  // Yuel Pro monthly chat allowance — Pro is "更宽裕的额度", not unlimited. Meter the
+  // kindred 追问 at PRO_MONTHLY_LIMITS.chat/month (the shared daily abuse guard still
+  // applies on top). Soft cap → a structured 'quota_exhausted' (with resetsOn), no LLM
+  // and no writes. Scoped to kindred so other apps' chat is unaffected.
+  if (isPaid && access.capability === 'kindred') {
+    const allowance = await consumeProAllowance(db, userId, 'chat')
+    if (!allowance.granted) {
+      return c.json(
+        {
+          error: 'quota_exhausted',
+          feature: 'chat',
+          used: allowance.used,
+          limit: allowance.limit,
+          resetsOn: allowance.resetsOn,
+        },
+        429
+      )
+    }
   }
 
   // Build the layered reading-context bundle (L1 primary + L2 user brief + L4 memory).

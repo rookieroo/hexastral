@@ -1767,6 +1767,47 @@ export const freeMonthlyQuotasRelations = relations(freeMonthlyQuotas, ({ one })
   user: one(users, { fields: [freeMonthlyQuotas.userId], references: [users.id] }),
 }))
 
+/**
+ * Yuel Pro 月度额度 (per-user, per-month metering for the LLM-cost 体验层 features).
+ *
+ * Pro 订阅不再是“无限”，而是“更宽裕的额度”：追问/假如/换视角 各有月度上限，按月重置
+ * （新月 = 新行，懒初始化 + 原子自增；旧月行自然失效）。上限见 lib/pro-allowance.ts。
+ * 这是订阅内的计量层（与 free_monthly_quotas 的免费计量分开，语义清晰）。
+ */
+export const proMonthlyUsage = sqliteTable(
+  'pro_monthly_usage',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** 额度月份 YYYY-MM (UTC) */
+    month: text('month').notNull(),
+    /** 当月已用 追问/chat 条数 */
+    chatUsed: integer('chat_used').default(0).notNull(),
+    /** 当月已用 时间线节点深解 (LLM 假如/timeline) 次数 — reserved; not yet metered
+     *  (the deterministic makeif is free; the LLM /timeline/explain isn't Pro-gated
+     *  yet, see Phase 3 notes). */
+    explainUsed: integer('explain_used').default(0).notNull(),
+    /** 当月已用 换视角/reroll 次数 */
+    rerollUsed: integer('reroll_used').default(0).notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique('pmu_user_month_uniq').on(t.userId, t.month),
+    index('pmu_user_month_idx').on(t.userId, t.month),
+  ]
+)
+
+export const proMonthlyUsageRelations = relations(proMonthlyUsage, ({ one }) => ({
+  user: one(users, { fields: [proMonthlyUsage.userId], references: [users.id] }),
+}))
+
 // ==================== 单次消耗信用 (per-use credit ledger) ====================
 
 /**

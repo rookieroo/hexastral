@@ -50,6 +50,7 @@ import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-ex
 import { mailerClient } from '../lib/service-clients'
 import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
 import { solarDateSchema } from '../lib/validation'
+import { getProAllowanceStatus } from '../services/pro-allowance'
 import { getBondInviteCreditStatus } from '../services/quota'
 import { resolveLlmGuardSubject } from '../services/shared/llm-guard'
 
@@ -1394,6 +1395,16 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
 })
 
 // ── GET / — 列出当前用户的关系 ───────────────────────────────
+
+// GET /pro/allowance — this month's Yuel Pro 额度 (chat / explain / reroll) for the
+// client to show remaining + the soft "下月重置" notice. Read-only, no consume.
+// Two-segment path so it never collides with GET /:id.
+bondRoutes.get('/pro/allowance', async (c) => {
+  const userId = requireUserId(c)
+  const db = c.get('db')
+  const status = await getProAllowanceStatus(db, userId)
+  return jsonOk(c, status)
+})
 
 bondRoutes.get('/', async (c) => {
   const userId = requireUserId(c)

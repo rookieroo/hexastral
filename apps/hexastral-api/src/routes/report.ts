@@ -19,7 +19,7 @@
  */
 
 import { zValidator } from '@hono/zod-validator'
-import { and, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -40,6 +40,7 @@ import { buildChartSkeleton } from '../lib/chart-skeleton'
 import { CHAPTER_MODEL_REGISTRY } from '../lib/model-registry'
 import { astroClient } from '../lib/service-clients'
 import { markCurrentAndInsert } from '../lib/versioned-store'
+import { consumeProAllowance } from '../services/pro-allowance'
 
 const slugSchema = z.enum(CHAPTER_SLUGS)
 
@@ -499,26 +500,24 @@ export const reportChapterRoutes = new Hono<AppEnv>()
         throw new HTTPException(400, { message: 'Perspective or style seed is required' })
       }
 
-      // True monthly window: query the most recent re-roll (perspectiveSeed != null)
-      // for this (user, chapter) and reject if within 30 days. Cloudflare RL is a
-      // sliding-second window and can't express "1 per 30 days" naturally.
-      const lastReroll = await db.query.reportChapters.findFirst({
-        where: and(
-          eq(reportChapters.userId, userId),
-          eq(reportChapters.chapter, slug),
-          isNotNull(reportChapters.perspectiveSeed)
-        ),
-        orderBy: [desc(reportChapters.generatedAt)],
-      })
-      if (lastReroll) {
-        const lastMs = Date.parse(lastReroll.generatedAt)
-        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
-        if (Number.isFinite(lastMs) && Date.now() - lastMs < thirtyDaysMs) {
-          const nextEligibleAt = new Date(lastMs + thirtyDaysMs).toISOString()
-          throw new HTTPException(429, {
-            message: `Re-roll available once per chapter per month. Next available at ${nextEligibleAt}`,
-          })
-        }
+      // Monthly allowance: 换视角 is metered at PRO_MONTHLY_LIMITS.reroll per month
+      // ACROSS all chapters (resets monthly), replacing the old per-chapter 30-day
+      // window. Soft cap — when exhausted return a structured 'quota_exhausted' (with
+      // resetsOn) so the client shows a gentle "本月已用完，下月重置" notice. Consume-
+      // before (atomic, like the free-quota pattern); a rare generation failure may
+      // cost a unit, acceptable for a soft allowance.
+      const allowance = await consumeProAllowance(db, userId, 'reroll')
+      if (!allowance.granted) {
+        return c.json(
+          {
+            error: 'quota_exhausted',
+            feature: 'reroll',
+            used: allowance.used,
+            limit: allowance.limit,
+            resetsOn: allowance.resetsOn,
+          },
+          429
+        )
       }
 
       const fresh = await generateChapter({
