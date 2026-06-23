@@ -56,7 +56,6 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
 import { HomeSplash } from '@/components/HomeSplash'
-import { MonthlyFortuneCard } from '@/components/home/MonthlyFortuneCard'
 import { SkyField } from '@/components/home/SkyField'
 import { SkyHero } from '@/components/home/SkyHero'
 import { PrimaryButton } from '@/components/PrimaryButton'
@@ -531,9 +530,6 @@ export default function ReadingHomeScreen() {
           {copy.open}
         </Text>
       </Pressable>
-
-      {/* 本月运势 — the recurring hook, recomputed each month from the current 流月. */}
-      <MonthlyFortuneCard chart={natal} locale={locale} />
 
       {/* The threads-section header (title + inline "add") is gone: New Thread now
           lives in the bottom-center floating FAB, and the rows stand on their own

@@ -30,6 +30,7 @@ import {
 } from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
+import { composeMonthlyFortune } from '@zhop/scenario-yuan/monthly-fortune'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -46,7 +47,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   dayMasterLabel,
   gejuLabel,
@@ -228,6 +229,7 @@ function birthFromHandoff(p: {
 
 export default function FullReadingScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const { t, locale } = useReadingI18n()
 
   // The personal 命书 is included in Yuel Pro (the subscription anchor) — NOT a
@@ -600,18 +602,6 @@ export default function FullReadingScreen() {
           outside the mask. */}
       <ReportBloom origin={bloomOrigin}>
         <SafeAreaView style={S.safe} edges={['top']}>
-          {/* Clean report — no header chrome (parity with the 合盘 report). A quiet
-              close sits top-left; the iOS edge-swipe-back also pops the route. */}
-          <Pressable
-            onPress={goBack}
-            hitSlop={12}
-            accessibilityRole='button'
-            accessibilityLabel={t('common.back')}
-            style={S.closeBtn}
-          >
-            <X size={22} color={P.muted} strokeWidth={1.5} />
-          </Pressable>
-
           {/* Six chapters as one continuous horizontal flip; the locked four fold
               into a trailing unlock wall while the report is unbought. */}
           <ScrollView
@@ -624,23 +614,33 @@ export default function FullReadingScreen() {
           >
             {pages.map((c, i) => {
               const content = contentBySlug(c.slug)
+              // body = real LLM prose once unlocked, else the deterministic teaser.
+              // 划词 (long-press → action bar) + 解释层 (term tap) ride on whichever
+              // is shown, so the free reader gets the same explained, selectable
+              // document as a Pro reader — parity with the 合盘 report.
+              const body = content ?? teaserBySlug(c.slug)
               return (
                 <View key={c.slug} style={{ width: screenWidth }}>
                   <ChapterPage
-                    n={c.n}
+                    n={i + 1}
                     label={t(c.labelKey)}
                     sub={c.sub}
                     locale={locale}
                     content={content}
                     loading={loadingBySlug(c.slug)}
                     teaser={teaserBySlug(c.slug)}
+                    topSlot={
+                      c.slug === 'ch4_timeline' ? (
+                        <ReportMonthlyFortune chart={chart} locale={locale} />
+                      ) : undefined
+                    }
                     identityLine={i === 0 ? identityLine : undefined}
                     birthBadge={i === 0 ? birthBadge : undefined}
                     timeCaveat={
                       i === 0 && timeIndex == null ? t('reading.timeUnknownEst') : undefined
                     }
                     ask={
-                      content
+                      body
                         ? {
                             onAsk: (quote: string | null) => handleAskAI({ slug: c.slug, quote }),
                             askChapterLabel: t('reading.askChapter'),
@@ -676,6 +676,18 @@ export default function FullReadingScreen() {
           {pageCount > 1 ? <PageDots count={pageCount} index={chapterIndex} /> : null}
         </SafeAreaView>
       </ReportBloom>
+
+      {/* Quiet close — top-left, OUTSIDE ReportBloom's mask so it always responds
+          (parity with the 合盘 report's overlay X). The iOS edge-swipe also pops. */}
+      <Pressable
+        onPress={goBack}
+        hitSlop={12}
+        accessibilityRole='button'
+        accessibilityLabel={t('common.back')}
+        style={[S.closeBtn, { top: insets.top + 6 }]}
+      >
+        <X size={22} color={P.muted} strokeWidth={1.5} />
+      </Pressable>
 
       {/* 划词 action bar — slides up when a paragraph is long-pressed (copy / chat /
           highlight). The personal report has no timeline/what-if, so there's no
@@ -883,6 +895,47 @@ function Header({
   )
 }
 
+/* ── ReportMonthlyFortune (本月运势, inline on the 当前大运 page) ──────── */
+
+const FORTUNE_KICKER: Record<string, string> = {
+  en: 'THIS MONTH',
+  zh: '本月运势',
+  'zh-Hant': '本月運勢',
+  ja: '今月の運勢',
+}
+
+/**
+ * The 本月运势 (this-month forecast) as a paper-styled block, inlined at the top of
+ * the 当前大运 chapter. Moved off the home (it isn't strongly Yuel-related there); it
+ * belongs inside the personal 命理 report, next to the 大运 it refines. Deterministic
+ * (composeMonthlyFortune) — instant, free, and self-refreshing as the 流月 turns.
+ */
+function ReportMonthlyFortune({
+  chart,
+  locale,
+}: {
+  chart: FateNatalChart
+  locale: ReturnType<typeof useReadingI18n>['locale']
+}) {
+  const fortune = useMemo(() => composeMonthlyFortune({ chart, locale }), [chart, locale])
+  return (
+    <View style={S.fortuneBlock}>
+      <View style={S.fortuneHead}>
+        <Text style={S.fortuneKicker}>{FORTUNE_KICKER[locale] ?? FORTUNE_KICKER.en}</Text>
+        <Text style={S.fortuneMeta}>
+          {fortune.monthLabel} · {fortune.ganZhi}
+        </Text>
+      </View>
+      <Text style={S.fortuneHeadline}>{fortune.headline}</Text>
+      {fortune.body.split('\n\n').map((para, i) => (
+        <Text key={i} style={[S.fortuneBody, i > 0 && { marginTop: 8 }]}>
+          {para}
+        </Text>
+      ))}
+    </View>
+  )
+}
+
 /* ── ChapterPage (one pager page) ───────────────────────────────────── */
 
 function ChapterPage({
@@ -893,12 +946,15 @@ function ChapterPage({
   content,
   loading,
   teaser,
+  topSlot,
   identityLine,
   birthBadge,
   timeCaveat,
   ask,
   rerollLabel,
   onReroll,
+  historyLabel,
+  onHistory,
 }: {
   n: number
   label: string
@@ -910,11 +966,15 @@ function ChapterPage({
   loading: boolean
   /** Deterministic free teaser (free chapters, pre-unlock) — real computed prose. */
   teaser: string | null
+  /** Optional block rendered between the chapter header and the body (e.g. the
+   *  本月运势 card on the 当前大运 page). */
+  topSlot?: ReactNode
   /** Shown on the first page only — regrounds the chart facts. */
   identityLine?: string
   birthBadge?: string
   timeCaveat?: string
-  /** 划词 — only wired when the page has real (unlocked) content. */
+  /** 划词 — wired whenever the page shows body text (real prose OR free teaser),
+   *  so the term-gloss + selection layer works for free and Pro readers alike. */
   ask?: {
     onAsk: (quote: string | null) => void
     askChapterLabel: string
@@ -932,7 +992,11 @@ function ChapterPage({
   const cjk = isCjkLocale(locale)
   const tLocale = termLocale(locale)
   const [activeTerm, setActiveTerm] = useState<ResolvedTerm | null>(null)
-  const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
+  // Body = real LLM prose once generated, else the deterministic teaser. Both render
+  // through the same 划词 + 解释层 path so a free reader gets the explained, selectable
+  // document, not a flat block.
+  const body = content ?? teaser
+  const paragraphs = useMemo(() => (body ? body.split('\n\n') : []), [body])
 
   // Tap-to-explain: gloss 命理 terms (日主 / 用神 / 大运 …) with a dotted underline;
   // a tap opens the plain-language meaning. Non-CJK prose renders verbatim.
@@ -982,27 +1046,35 @@ function ChapterPage({
         </View>
         <Text style={S.detailLabel}>{label}</Text>
 
-        {content ? (
-          ask ? (
-            // 划词 mode: each paragraph is long-pressable → raise the action bar.
-            <View>
-              {ask.askHint ? <Text style={S.askHint}>{ask.askHint}</Text> : null}
-              {paragraphs.map((para, i) => {
-                const isHighlighted = ask.highlightedQuotes.includes(para)
-                return (
-                  <Pressable
-                    key={i}
-                    onLongPress={() => askParagraph(para)}
-                    delayLongPress={350}
-                    style={({ pressed }) => [
-                      isHighlighted && S.paraHighlighted,
-                      pressed && S.paraPressed,
-                    ]}
-                  >
-                    <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
-                  </Pressable>
-                )
-              })}
+        {topSlot ?? null}
+
+        {body ? (
+          // 划词 + 解释层 over the body. Each paragraph is long-pressable (→ action
+          // bar) when `ask` is wired; terms gloss on tap either way. The whole-chapter
+          // ask button only shows on real (unlocked) prose, never on the free teaser.
+          <View>
+            {ask?.askHint ? <Text style={S.askHint}>{ask.askHint}</Text> : null}
+            {paragraphs.map((para, i) => {
+              const proseText = <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
+              if (!ask) {
+                return <View key={i}>{proseText}</View>
+              }
+              const isHighlighted = ask.highlightedQuotes.includes(para)
+              return (
+                <Pressable
+                  key={i}
+                  onLongPress={() => askParagraph(para)}
+                  delayLongPress={350}
+                  style={({ pressed }) => [
+                    isHighlighted && S.paraHighlighted,
+                    pressed && S.paraPressed,
+                  ]}
+                >
+                  {proseText}
+                </Pressable>
+              )
+            })}
+            {content && ask ? (
               <Pressable
                 onPress={() => ask.onAsk(null)}
                 hitSlop={12}
@@ -1011,14 +1083,8 @@ function ChapterPage({
               >
                 <Text style={S.askChapterText}>{ask.askChapterLabel}</Text>
               </Pressable>
-            </View>
-          ) : (
-            paragraphs.map((para, i) => (
-              <Text key={i} style={[S.detailBody, S.paraBlock]}>
-                {renderProse(para)}
-              </Text>
-            ))
-          )
+            ) : null}
+          </View>
         ) : loading ? (
           <View style={S.skeleton}>
             <View style={S.skelLine} />
@@ -1027,13 +1093,6 @@ function ChapterPage({
             <View style={[S.skelLine, { width: '90%' }]} />
             <View style={[S.skelLine, { width: '60%' }]} />
           </View>
-        ) : teaser ? (
-          // Deterministic free teaser — render the multi-paragraph prose as body.
-          teaser.split('\n\n').map((para, i) => (
-            <Text key={i} style={[S.detailBody, S.paraBlock]}>
-              {renderProse(para)}
-            </Text>
-          ))
         ) : null}
 
         {/* 换视角 + 历史视角 — re-read in another voice / compare saved voices.
@@ -1146,14 +1205,15 @@ const S = StyleSheet.create({
   },
   headerTitle: { color: P.bronze, fontSize: 11, letterSpacing: 4, fontWeight: '300' },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  // Quiet close — top-left over the clean report (the OS edge-swipe also pops).
+  // Quiet close — root-level overlay (top set from safe-area insets at the call
+  // site), elevated above the pager so the tap always lands.
   closeBtn: {
     position: 'absolute',
-    top: 6,
     left: 12,
-    zIndex: 10,
-    width: 36,
-    height: 36,
+    zIndex: 20,
+    elevation: 20,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1192,6 +1252,32 @@ const S = StyleSheet.create({
   detailLabel: { color: P.ink, fontSize: 30, letterSpacing: 2, marginBottom: 28 },
   detailBody: { color: P.ink, fontSize: 17, lineHeight: 32, letterSpacing: 0.3 },
   paraBlock: { marginBottom: 20 },
+
+  // ── 本月运势 inline block (当前大运 page) ──
+  fortuneBlock: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: P.hair,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginBottom: 32,
+    backgroundColor: P.hairSoft,
+  },
+  fortuneHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  fortuneKicker: { color: P.cinnabar, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
+  fortuneMeta: { color: P.muted, fontSize: 10, letterSpacing: 1 },
+  fortuneHeadline: {
+    color: P.ink,
+    fontSize: 17,
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  fortuneBody: { color: P.inkSoft, fontSize: 14, lineHeight: 23, letterSpacing: 0.2 },
 
   // ── unlock wall (trailing page) ──
   wallScroll: { paddingHorizontal: 32, paddingTop: 64, paddingBottom: 48 },
