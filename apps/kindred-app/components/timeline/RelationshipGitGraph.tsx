@@ -1,42 +1,40 @@
 /**
- * RelationshipGitGraph — the 合盘 relationship timeline as a Skia git-graph.
+ * RelationshipGitGraph — a 合盘 Skia git-graph rail: 你 (gold spine) + TA (moonlight
+ * lane) run down the loom, tied at each node. Yuun's aesthetic (bg-halo nodes that
+ * punch the thread, an accent glow, S-curve peel/merge), built fresh on the shared
+ * Skia version so Yuun's graphs are untouched (ADR-0026 §5).
  *
- * Yuel's answer to Yuun's solo life-graph (ADR-0026 §5): two threads — 你 (gold spine)
- * and TA (moonlight lane) — run down the loom and are TIED at each turning point (a
- * relationship node). Same git aesthetic as auspice's TimelineGraph (bg-halo nodes that
- * punch the thread, an accent glow on the current year, S-curve peel/merge where the
- * threads meet) but the STRUCTURE is the bond, not a single life. Built fresh on the
- * shared Skia version rather than genericizing Yuun's engine, so Yuun's graphs are
- * untouched.
- *
- * Renders the graph rail (Skia) + a tappable label per node (RN overlay sharing the
- * canvas coordinate space). Selection is owned by the parent (graph + selected NodeCard).
+ * Generic over the rail items, so the SAME rail drives both 合盘 surfaces: the
+ * relationship TIMELINE (turning points, coloured by significance, current year aglow)
+ * and the WHAT-IF (forward decision windows, coloured by lean, the best window aglow).
+ * The parent maps its domain rows → RailItem[] and owns selection (graph + selected card).
  */
 
 import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
-import type { BondsTimelineNode, BondsTimelineSignificance } from '@zhop/scenario-kindred'
 import { Pressable, Text, View } from 'react-native'
 
 const X_YOU = 22 // 你 thread — the gold spine
 const X_TA = 46 // TA thread — the moonlight lane
 const MID = (X_YOU + X_TA) / 2 // the tie node sits between the threads
 const PAD = 16
-const STEP = 48 // vertical rhythm between turning points
+const STEP = 48 // vertical rhythm between nodes
 const LABEL_X = 66 // node labels begin clear of the rail
+
 const YOU = kindredDark.accent
 const TA = '#9ab0cf'
 
-function nodeRadius(sig: BondsTimelineSignificance): number {
-  return sig === 'major' ? 7 : sig === 'notable' ? 5.5 : 4.5
-}
-
-function sigColor(sig: BondsTimelineSignificance): string {
-  return sig === 'major'
-    ? kindredDark.accent
-    : sig === 'notable'
-      ? kindredDark.seal
-      : kindredDark.textMuted
+export interface RailItem {
+  key: string
+  /** Node + tie colour — significance (timeline) or decision lean (what-if). */
+  color: string
+  radius: number
+  /** Accent glow halo — the current year, or the best decision window. */
+  glow?: boolean
+  /** Past / inactive — dimmed. */
+  dim?: boolean
+  title: string
+  sub: string
 }
 
 /** A tight git-graph S-elbow: leave vertically, arrive vertically (Yuun's `curve`). */
@@ -53,27 +51,23 @@ function elbow(
 }
 
 export function RelationshipGitGraph({
-  nodes,
+  items,
   selectedKey,
   onSelect,
   width,
-  yearLabel,
 }: {
-  /** The bond's turning points, chronological. */
-  nodes: BondsTimelineNode[]
+  /** The rail's nodes, in display order (chronological). */
+  items: RailItem[]
   selectedKey: string | null
   onSelect: (key: string) => void
   width: number
-  /** Localised "{year} · {ganZhi}" line for a node. */
-  yearLabel: (node: BondsTimelineNode) => string
 }) {
-  if (nodes.length === 0) return null
+  if (items.length === 0) return null
 
-  const rows = nodes.map((node, i) => ({ node, y: PAD + i * STEP }))
-  const height = PAD * 2 + Math.max(0, nodes.length - 1) * STEP
+  const rows = items.map((item, i) => ({ item, y: PAD + i * STEP }))
+  const height = PAD * 2 + Math.max(0, items.length - 1) * STEP
   const firstY = rows[0]?.y ?? PAD
   const lastY = rows[rows.length - 1]?.y ?? height - PAD
-  const currentYear = new Date().getFullYear()
 
   // 你 spine — a continuous through-line.
   const youPath = Skia.Path.Make()
@@ -106,29 +100,26 @@ export function RelationshipGitGraph({
           color={TA}
           opacity={0.5}
         />
-        {rows.map(({ node, y }) => {
-          const r = nodeRadius(node.significance)
-          const c = sigColor(node.significance)
-          const isCurrent = node.year === currentYear
-          const selected = node.key === selectedKey
-          const past = node.year < currentYear
-          // The tie — the moment the two threads are bound at a turning point.
+        {rows.map(({ item, y }) => {
+          const r = item.radius
+          const selected = item.key === selectedKey
+          // The tie — the moment the two threads are bound at this node.
           const tie = Skia.Path.Make()
           tie.moveTo(X_YOU, y)
           tie.lineTo(X_TA, y)
           return (
-            <Group key={node.key}>
+            <Group key={item.key}>
               <Path
                 path={tie}
                 style='stroke'
                 strokeWidth={1.2}
-                color={c}
-                opacity={past ? 0.25 : 0.4}
+                color={item.color}
+                opacity={item.dim ? 0.25 : 0.4}
               />
               {/* bg halo punches the threads so the node sits on them with a clean gap */}
               <Circle cx={MID} cy={y} r={r + 3} color={kindredDark.bg} />
-              {isCurrent ? <Circle cx={MID} cy={y} r={r + 7} color={YOU} opacity={0.14} /> : null}
-              <Circle cx={MID} cy={y} r={r} color={c} opacity={past ? 0.55 : 1} />
+              {item.glow ? <Circle cx={MID} cy={y} r={r + 7} color={YOU} opacity={0.14} /> : null}
+              <Circle cx={MID} cy={y} r={r} color={item.color} opacity={item.dim ? 0.55 : 1} />
               {selected ? (
                 <Circle
                   cx={MID}
@@ -145,12 +136,12 @@ export function RelationshipGitGraph({
       </Canvas>
 
       {/* Labels + tap targets — share the canvas coordinate space. */}
-      {rows.map(({ node, y }) => {
-        const selected = node.key === selectedKey
+      {rows.map(({ item, y }) => {
+        const selected = item.key === selectedKey
         return (
           <Pressable
-            key={node.key}
-            onPress={() => onSelect(node.key)}
+            key={item.key}
+            onPress={() => onSelect(item.key)}
             accessibilityRole='button'
             style={{
               position: 'absolute',
@@ -171,13 +162,13 @@ export function RelationshipGitGraph({
                 letterSpacing: 0.3,
               }}
             >
-              {yearLabel(node)}
+              {item.title}
             </Text>
             <Text
               numberOfLines={1}
               style={{ color: kindredDark.textMuted, fontSize: 12, marginTop: 2 }}
             >
-              {node.summary}
+              {item.sub}
             </Text>
           </Pressable>
         )

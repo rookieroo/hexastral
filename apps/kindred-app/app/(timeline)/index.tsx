@@ -41,7 +41,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
-import { RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
+import { type RailItem, RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import {
@@ -112,6 +112,18 @@ export default function TimelineScreen() {
   const { width: winW } = useWindowDimensions()
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null)
   const selectedNode = nodes.find((n) => n.key === selectedNodeKey) ?? nodes[0] ?? null
+  const bondItems = useMemo<RailItem[]>(() => {
+    const cy = new Date().getFullYear()
+    return nodes.map((n) => ({
+      key: n.key,
+      color: significanceColor(n.significance),
+      radius: n.significance === 'major' ? 7 : n.significance === 'notable' ? 5.5 : 4.5,
+      glow: n.year === cy,
+      dim: n.year < cy,
+      title: `${n.year} · ${n.ganZhi}`,
+      sub: n.summary,
+    }))
+  }, [nodes])
 
   // Lay the (Pro-only, server-computed) reminder timetable onto the device as
   // local notifications — prompts for permission on the first Pro timeline view,
@@ -267,11 +279,10 @@ export default function TimelineScreen() {
           <>
             <ThreadLegend youLabel={youLabel} taLabel={bondName || taFallback} />
             <RelationshipGitGraph
-              nodes={nodes}
+              items={bondItems}
               selectedKey={selectedNode?.key ?? null}
               onSelect={setSelectedNodeKey}
               width={winW - kindredSpacing.screenH * 2}
-              yearLabel={(node) => `${node.year} · ${node.ganZhi}`}
             />
             {selectedNode ? (
               <View style={{ marginTop: kindredSpacing.md }}>

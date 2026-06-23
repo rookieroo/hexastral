@@ -37,9 +37,10 @@ import {
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { type RailItem, RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 
@@ -183,6 +184,29 @@ function Body({
     return [...years].sort((a, b) => b.score + moveBonus(b, move) - (a.score + moveBonus(a, move)))
   }, [longterm, move])
   const bestYearKey = move ? rankedYears[0]?.key : longterm?.bestYearKey
+
+  // The monthly windows as a git-graph: chronological 你+TA rail, each window coloured
+  // by its decision lean, the best window (for the selected move) aglow. Tapping a node
+  // shows its window card. (Time axis on the rail; the move chip moves the glow.)
+  const { width: winW } = useWindowDimensions()
+  const [selectedWindowKey, setSelectedWindowKey] = useState<string | null>(null)
+  const windowItems = useMemo<RailItem[]>(
+    () =>
+      [...(data.windows ?? [])]
+        .sort((a, b) => a.year - b.year || a.month - b.month)
+        .map((w) => ({
+          key: w.key,
+          color: leanColor(w.lean),
+          radius: w.lean === 'favorable' ? 7 : w.lean === 'caution' ? 6 : 5,
+          glow: w.key === bestKey,
+          title: `${formatWindowMonth(w, locale)} · ${w.ganZhi}`,
+          sub: w.key === bestKey ? t(locale, 'makeif.best') : formatLean(w.lean, locale),
+        })),
+    [data.windows, bestKey, locale]
+  )
+  const shownWindowKey = selectedWindowKey ?? bestKey ?? null
+  const shownWindow = (data.windows ?? []).find((w) => w.key === shownWindowKey) ?? null
+
   return (
     <ScrollView
       contentContainerStyle={{
@@ -332,17 +356,22 @@ function Body({
           >
             {t(locale, 'makeif.windows.label')}
           </Text>
-          <View style={{ gap: kindredSpacing.sm }}>
-            {ranked.map((w) => (
+          <RelationshipGitGraph
+            items={windowItems}
+            selectedKey={shownWindowKey}
+            onSelect={setSelectedWindowKey}
+            width={winW - kindredSpacing.screenH * 2}
+          />
+          {shownWindow ? (
+            <View style={{ marginTop: kindredSpacing.sm }}>
               <WindowCard
-                key={w.key}
-                w={w}
+                w={shownWindow}
                 yongshen={data.yongshen ?? ''}
-                isBest={w.key === bestKey}
+                isBest={shownWindow.key === bestKey}
                 locale={locale}
               />
-            ))}
-          </View>
+            </View>
+          ) : null}
 
           {/* The decade ahead — the 10-year tier: which YEAR best fits a big step. */}
           {longterm && rankedYears.length > 0 ? (
