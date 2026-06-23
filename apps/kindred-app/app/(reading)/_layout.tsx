@@ -14,7 +14,7 @@ export default function ReadingLayout() {
     >
       <Stack.Screen name='index' />
       <Stack.Screen name='full' />
-      <Stack.Screen name='monthly' />
+      <Stack.Screen name='timeline' />
       <Stack.Screen name='reading-chat' />
     </Stack>
   )
