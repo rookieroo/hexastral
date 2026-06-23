@@ -65,6 +65,7 @@ import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
+import { fetchProAllowance } from '@/lib/pro-allowance'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import {
@@ -457,11 +458,18 @@ export default function FullReadingScreen() {
   const [rerollFor, setRerollFor] = useState<string | null>(null)
   const [rerolling, setRerolling] = useState(false)
   const [rerollNotice, setRerollNotice] = useState<string | null>(null)
+  const [rerollRemaining, setRerollRemaining] = useState<number | null>(null)
   useEffect(() => {
     if (!rerollNotice) return
     const id = setTimeout(() => setRerollNotice(null), 4500)
     return () => clearTimeout(id)
   }, [rerollNotice])
+  // Refresh the monthly 换视角 remaining whenever the picker opens, so the count is
+  // current (it also drops as the user re-rolls within the session).
+  useEffect(() => {
+    if (rerollFor == null) return
+    void fetchProAllowance().then((s) => setRerollRemaining(s?.reroll.remaining ?? null))
+  }, [rerollFor])
 
   const applyRerolled = (chapter: CachedChapter) => {
     if (chapter.slug === 'ch1_personality') setCh1(chapter)
@@ -481,9 +489,13 @@ export default function FullReadingScreen() {
       }
       const result = await rerollChapter(slug, chartHash, b, perspectiveSeed(preset, locale))
       setRerolling(false)
-      if (result.kind === 'ok') applyRerolled(result.chapter)
-      else if (result.kind === 'exhausted') setRerollNotice(ru.exhausted)
-      else if (result.kind === 'needs_pro') openPaywall()
+      if (result.kind === 'ok') {
+        applyRerolled(result.chapter)
+        setRerollRemaining((r) => (r != null ? Math.max(0, r - 1) : r))
+      } else if (result.kind === 'exhausted') {
+        setRerollRemaining(0)
+        setRerollNotice(ru.exhausted)
+      } else if (result.kind === 'needs_pro') openPaywall()
       else setRerollNotice(ru.failed)
     })()
   }
@@ -691,6 +703,7 @@ export default function FullReadingScreen() {
         locale={locale}
         title={ru.title}
         subtitle={ru.subtitle}
+        remainingLabel={rerollRemaining != null ? ru.remaining(rerollRemaining) : null}
         onPick={doReroll}
         onClose={() => setRerollFor(null)}
       />
@@ -720,6 +733,7 @@ function PerspectivePicker({
   locale,
   title,
   subtitle,
+  remainingLabel,
   onPick,
   onClose,
 }: {
@@ -727,6 +741,8 @@ function PerspectivePicker({
   locale: ReturnType<typeof useReadingI18n>['locale']
   title: string
   subtitle: string
+  /** "本月还剩 N 次" — null while loading or signed out. */
+  remainingLabel?: string | null
   onPick: (preset: PerspectivePreset) => void
   onClose: () => void
 }) {
@@ -735,7 +751,10 @@ function PerspectivePicker({
       <Pressable style={S.sheetBackdrop} onPress={onClose}>
         <Pressable style={S.sheet} onPress={(e) => e.stopPropagation()}>
           <View style={S.sheetHandle} />
-          <Text style={S.sheetTitle}>{title}</Text>
+          <View style={S.sheetTitleRow}>
+            <Text style={S.sheetTitle}>{title}</Text>
+            {remainingLabel ? <Text style={S.sheetRemaining}>{remainingLabel}</Text> : null}
+          </View>
           <Text style={S.sheetSubtitle}>{subtitle}</Text>
           <View style={{ gap: 10, marginTop: 18 }}>
             {PERSPECTIVE_PRESETS.map((p) => (
@@ -1154,7 +1173,14 @@ const S = StyleSheet.create({
     backgroundColor: P.hair,
     marginBottom: 18,
   },
-  sheetTitle: { color: P.ink, fontSize: 20, letterSpacing: 1, marginBottom: 4 },
+  sheetTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  sheetTitle: { color: P.ink, fontSize: 20, letterSpacing: 1 },
+  sheetRemaining: { color: P.bronze, fontSize: 12, letterSpacing: 0.5 },
   sheetSubtitle: { color: P.muted, fontSize: 13, lineHeight: 19 },
   voiceCard: {
     borderWidth: StyleSheet.hairlineWidth,

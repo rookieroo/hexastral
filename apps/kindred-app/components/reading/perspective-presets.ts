@@ -92,7 +92,15 @@ export function perspectiveSeed(p: PerspectivePreset, locale: Locale): string {
 /** UI copy for the 换视角 entry + picker + soft notices. */
 export const REROLL_UI: Record<
   Locale,
-  { button: string; title: string; subtitle: string; rerolling: string; exhausted: string; failed: string }
+  {
+    button: string
+    title: string
+    subtitle: string
+    rerolling: string
+    exhausted: string
+    failed: string
+    remaining: (n: number) => string
+  }
 > = {
   zh: {
     button: '换个视角',
@@ -101,6 +109,7 @@ export const REROLL_UI: Record<
     rerolling: '正在以新视角重读…',
     exhausted: '本月换视角已用完，下月重置',
     failed: '重读失败，请稍后再试',
+    remaining: (n) => `本月还剩 ${n} 次`,
   },
   'zh-Hant': {
     button: '換個視角',
@@ -109,6 +118,7 @@ export const REROLL_UI: Record<
     rerolling: '正在以新視角重讀…',
     exhausted: '本月換視角已用完，下月重置',
     failed: '重讀失敗，請稍後再試',
+    remaining: (n) => `本月還剩 ${n} 次`,
   },
   ja: {
     button: '視点を変える',
@@ -117,6 +127,7 @@ export const REROLL_UI: Record<
     rerolling: '新しい視点で読み直し中…',
     exhausted: '今月の視点替えは上限に達しました（来月リセット）',
     failed: '読み直しに失敗しました。後でお試しください',
+    remaining: (n) => `今月あと ${n} 回`,
   },
   en: {
     button: 'Another voice',
@@ -125,5 +136,6 @@ export const REROLL_UI: Record<
     rerolling: 'Re-reading in a new voice…',
     exhausted: "You've used this month's re-reads — resets next month",
     failed: 'Re-read failed — please try again',
+    remaining: (n) => `${n} left this month`,
   },
 }
