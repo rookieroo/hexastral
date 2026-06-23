@@ -89,6 +89,26 @@ export function perspectiveSeed(p: PerspectivePreset, locale: Locale): string {
   return locale === 'zh' || locale === 'zh-Hant' ? p.seedZh : p.seedEn
 }
 
+const ORIGINAL_LABEL: Record<Locale, string> = {
+  zh: '原版',
+  'zh-Hant': '原版',
+  ja: '原文',
+  en: 'Original',
+}
+const CUSTOM_LABEL: Record<Locale, string> = {
+  zh: '自定视角',
+  'zh-Hant': '自定視角',
+  ja: 'カスタム視点',
+  en: 'Custom voice',
+}
+
+/** Label a saved version by its perspective seed (null = the first/原版 generation). */
+export function labelForSeed(seed: string | null, locale: Locale): string {
+  if (!seed) return ORIGINAL_LABEL[locale]
+  const p = PERSPECTIVE_PRESETS.find((x) => x.seedZh === seed || x.seedEn === seed)
+  return p ? p.label[locale] : CUSTOM_LABEL[locale]
+}
+
 /** UI copy for the 换视角 entry + picker + soft notices. */
 export const REROLL_UI: Record<
   Locale,
@@ -100,6 +120,9 @@ export const REROLL_UI: Record<
     exhausted: string
     failed: string
     remaining: (n: number) => string
+    historyButton: string
+    historyTitle: string
+    historyEmpty: string
   }
 > = {
   zh: {
@@ -110,6 +133,9 @@ export const REROLL_UI: Record<
     exhausted: '本月换视角已用完，下月重置',
     failed: '重读失败，请稍后再试',
     remaining: (n) => `本月还剩 ${n} 次`,
+    historyButton: '历史视角',
+    historyTitle: '读过的视角',
+    historyEmpty: '本章暂无其他视角',
   },
   'zh-Hant': {
     button: '換個視角',
@@ -119,6 +145,9 @@ export const REROLL_UI: Record<
     exhausted: '本月換視角已用完，下月重置',
     failed: '重讀失敗，請稍後再試',
     remaining: (n) => `本月還剩 ${n} 次`,
+    historyButton: '歷史視角',
+    historyTitle: '讀過的視角',
+    historyEmpty: '本章暫無其他視角',
   },
   ja: {
     button: '視点を変える',
@@ -128,6 +157,9 @@ export const REROLL_UI: Record<
     exhausted: '今月の視点替えは上限に達しました（来月リセット）',
     failed: '読み直しに失敗しました。後でお試しください',
     remaining: (n) => `今月あと ${n} 回`,
+    historyButton: '過去の視点',
+    historyTitle: '読んだ視点',
+    historyEmpty: 'この章に他の視点はまだありません',
   },
   en: {
     button: 'Another voice',
@@ -137,5 +169,8 @@ export const REROLL_UI: Record<
     exhausted: "You've used this month's re-reads — resets next month",
     failed: 'Re-read failed — please try again',
     remaining: (n) => `${n} left this month`,
+    historyButton: 'Past voices',
+    historyTitle: 'Voices you’ve read',
+    historyEmpty: 'No other voices for this chapter yet',
   },
 }

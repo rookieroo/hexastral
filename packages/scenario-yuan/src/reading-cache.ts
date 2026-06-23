@@ -98,6 +98,14 @@ export type RerollResult =
   | { kind: 'needs_pro' }
   | { kind: 'error' }
 
+/** One past version of a chapter (for the 历史视角 compare view). Newest first. */
+export interface ChapterVersion {
+  content: string
+  /** The ≤64-char perspective seed this version was re-rolled with; null = 原版. */
+  perspectiveSeed: string | null
+  generatedAt: string
+}
+
 export interface ReadingCache {
   getCachedChapter(slug: string, chartHash: string): Promise<CachedChapter | null>
   setCachedChapter(chapter: CachedChapter): Promise<void>
@@ -114,6 +122,9 @@ export interface ReadingCache {
     birth: ReadingBirthInputs,
     perspectiveSeed: string
   ): Promise<RerollResult>
+  /** All saved versions of a chapter, newest first (Pro · 历史视角). [] on failure
+   *  or when signed out / not Pro. */
+  fetchChapterHistory(slug: string): Promise<ChapterVersion[]>
 }
 
 /** Build a reading cache bound to one app's signer / storage / api-url. */
@@ -307,5 +318,34 @@ export function createReadingCache(cfg: ReadingCacheConfig): ReadingCache {
     }
   }
 
-  return { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter }
+  /** All versions of a chapter (newest first) for the 历史视角 compare view. */
+  async function fetchChapterHistory(slug: string): Promise<ChapterVersion[]> {
+    const userId = await getUserId()
+    if (!userId) return []
+    try {
+      const res = await signedApiFetch(userId, 'GET', `/api/report/chapter/${slug}/history`)
+      if (!res?.ok) return []
+      const json = (await res.json()) as {
+        items?: Array<{ contentJson?: unknown; perspectiveSeed?: string | null; generatedAt?: string }>
+      }
+      const items = json.items ?? []
+      return items
+        .map((it) => ({
+          content: flattenChapterContent(it.contentJson),
+          perspectiveSeed: it.perspectiveSeed ?? null,
+          generatedAt: it.generatedAt ?? '',
+        }))
+        .filter((v) => v.content.length > 0)
+    } catch {
+      return []
+    }
+  }
+
+  return {
+    getCachedChapter,
+    setCachedChapter,
+    fetchChapter,
+    rerollChapter,
+    fetchChapterHistory,
+  }
 }

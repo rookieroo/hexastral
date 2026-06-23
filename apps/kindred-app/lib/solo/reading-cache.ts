@@ -9,6 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   type CachedChapter,
+  type ChapterVersion,
   computeChartHash,
   createReadingCache,
   type ReadingBirthInputs,
@@ -27,6 +28,7 @@ const cache = createReadingCache({
   requestIdTag: 'kindred',
 })
 
-export const { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter } = cache
-export type { CachedChapter, ReadingBirthInputs, RerollResult }
+export const { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter, fetchChapterHistory } =
+  cache
+export type { CachedChapter, ChapterVersion, ReadingBirthInputs, RerollResult }
 export { computeChartHash }

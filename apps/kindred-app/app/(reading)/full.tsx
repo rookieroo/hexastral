@@ -33,7 +33,7 @@ import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Lock, RefreshCw, X } from 'lucide-react-native'
+import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   Dimensions,
@@ -56,6 +56,7 @@ import {
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
 import {
+  labelForSeed,
   PERSPECTIVE_PRESETS,
   type PerspectivePreset,
   perspectiveSeed,
@@ -77,8 +78,10 @@ import {
 } from '@/lib/solo/reading'
 import {
   type CachedChapter,
+  type ChapterVersion,
   computeChartHash,
   fetchChapter,
+  fetchChapterHistory,
   getCachedChapter,
   rerollChapter,
 } from '@/lib/solo/reading-cache'
@@ -500,6 +503,16 @@ export default function FullReadingScreen() {
     })()
   }
 
+  // 历史视角 (P4b): all saved versions of a chapter, to swipe-compare. <2 versions
+  // (just the original) → a soft "暂无其他视角" notice rather than an empty sheet.
+  const [historyVersions, setHistoryVersions] = useState<ChapterVersion[] | null>(null)
+  const openHistory = (slug: string) => {
+    void fetchChapterHistory(slug).then((versions) => {
+      if (versions.length >= 2) setHistoryVersions(versions)
+      else setRerollNotice(ru.historyEmpty)
+    })
+  }
+
   /* ── empty / not-ready guard ── */
   if (birth === undefined) {
     // Still loading birth from storage — a quiet header, no flash of the prompt.
@@ -639,6 +652,8 @@ export default function FullReadingScreen() {
                     }
                     rerollLabel={ru.button}
                     onReroll={content ? () => setRerollFor(c.slug) : undefined}
+                    historyLabel={ru.historyButton}
+                    onHistory={content ? () => openHistory(c.slug) : undefined}
                   />
                 </View>
               )
@@ -708,6 +723,16 @@ export default function FullReadingScreen() {
         onClose={() => setRerollFor(null)}
       />
 
+      {/* 历史视角 — swipe-compare saved versions of a chapter. */}
+      {historyVersions ? (
+        <HistoryView
+          versions={historyVersions}
+          locale={locale}
+          title={ru.historyTitle}
+          onClose={() => setHistoryVersions(null)}
+        />
+      ) : null}
+
       {/* Regen in progress — a quiet full-screen veil with the 墨晕 idiom. */}
       {rerolling ? (
         <View style={S.rerollVeil} pointerEvents='auto'>
@@ -770,6 +795,62 @@ function PerspectivePicker({
           </View>
         </Pressable>
       </Pressable>
+    </Modal>
+  )
+}
+
+/* ── HistoryView (历史视角 compare) ──────────────────────────────────── */
+
+function HistoryView({
+  versions,
+  locale,
+  title,
+  onClose,
+}: {
+  versions: ChapterVersion[]
+  locale: ReturnType<typeof useReadingI18n>['locale']
+  title: string
+  onClose: () => void
+}) {
+  const screenWidth = Dimensions.get('window').width
+  const [idx, setIdx] = useState(0)
+  return (
+    <Modal visible transparent animationType='slide' onRequestClose={onClose}>
+      <View style={S.paper}>
+        <SafeAreaView style={S.safe} edges={['top']}>
+          <View style={S.historyHeader}>
+            <Text style={S.historyTitle}>{title}</Text>
+            <Pressable onPress={onClose} hitSlop={12} accessibilityRole='button'>
+              <X size={22} color={P.muted} strokeWidth={1.5} />
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const next = Math.round(e.nativeEvent.contentOffset.x / screenWidth)
+              if (next !== idx) setIdx(next)
+            }}
+            style={{ flex: 1 }}
+          >
+            {versions.map((v, i) => (
+              <View key={i} style={{ width: screenWidth }}>
+                <ScrollView contentContainerStyle={S.historyPageScroll} showsVerticalScrollIndicator={false}>
+                  <Text style={S.historyVoice}>{labelForSeed(v.perspectiveSeed, locale)}</Text>
+                  {v.content.split('\n\n').map((para, j) => (
+                    <Text key={j} style={[S.detailBody, S.paraBlock]}>
+                      {para}
+                    </Text>
+                  ))}
+                  <View style={{ height: 60 }} />
+                </ScrollView>
+              </View>
+            ))}
+          </ScrollView>
+          <PageDots count={versions.length} index={idx} />
+        </SafeAreaView>
+      </View>
     </Modal>
   )
 }
@@ -844,6 +925,9 @@ function ChapterPage({
   /** 换视角 — opens the perspective picker for this chapter (Pro, content pages). */
   rerollLabel?: string
   onReroll?: () => void
+  /** 历史视角 — opens the saved-versions compare view. */
+  historyLabel?: string
+  onHistory?: () => void
 }) {
   const cjk = isCjkLocale(locale)
   const tLocale = termLocale(locale)
@@ -952,18 +1036,31 @@ function ChapterPage({
           ))
         ) : null}
 
-        {/* 换视角 — re-read this chapter in another voice (Pro · metered). Only on
-            generated (unlocked) pages, under the prose. */}
+        {/* 换视角 + 历史视角 — re-read in another voice / compare saved voices.
+            Only on generated (unlocked) pages, under the prose. */}
         {content && onReroll && rerollLabel ? (
-          <Pressable
-            onPress={onReroll}
-            hitSlop={8}
-            accessibilityRole='button'
-            style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
-          >
-            <RefreshCw size={13} color={P.bronze} strokeWidth={1.6} />
-            <Text style={S.rerollText}>{rerollLabel}</Text>
-          </Pressable>
+          <View style={S.chapterToolRow}>
+            <Pressable
+              onPress={onReroll}
+              hitSlop={8}
+              accessibilityRole='button'
+              style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
+            >
+              <RefreshCw size={13} color={P.bronze} strokeWidth={1.6} />
+              <Text style={S.rerollText}>{rerollLabel}</Text>
+            </Pressable>
+            {onHistory && historyLabel ? (
+              <Pressable
+                onPress={onHistory}
+                hitSlop={8}
+                accessibilityRole='button'
+                style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
+              >
+                <Clock size={13} color={P.muted} strokeWidth={1.6} />
+                <Text style={S.historyText}>{historyLabel}</Text>
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
 
         <View style={{ height: 80 }} />
@@ -1144,16 +1241,29 @@ const S = StyleSheet.create({
     textDecorationColor: P.bronze,
   },
 
-  // 换视角 entry
-  rerollBtn: {
+  // 换视角 + 历史视角 entries
+  chapterToolRow: { flexDirection: 'row', alignItems: 'center', gap: 22, marginTop: 36 },
+  rerollBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 8 },
+  rerollText: { color: P.bronze, fontSize: 13, letterSpacing: 1 },
+  historyText: { color: P.muted, fontSize: 13, letterSpacing: 1 },
+
+  // 历史视角 compare view
+  historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    alignSelf: 'flex-start',
-    marginTop: 36,
-    paddingVertical: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
   },
-  rerollText: { color: P.bronze, fontSize: 13, letterSpacing: 1 },
+  historyTitle: { color: P.bronze, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase' },
+  historyPageScroll: { paddingHorizontal: 32, paddingTop: 8, paddingBottom: 24 },
+  historyVoice: {
+    color: P.cinnabar,
+    fontSize: 13,
+    letterSpacing: 2,
+    marginBottom: 22,
+    textTransform: 'uppercase',
+  },
 
   // 换视角 picker (bottom sheet)
   sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
