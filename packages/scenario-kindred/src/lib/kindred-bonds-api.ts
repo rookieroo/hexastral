@@ -26,7 +26,9 @@ export type KindredBondsRpc = {
     }
   }
   ':id': {
-    $get: (opts: { param: { id: string } }) => Promise<Response>
+    /** `lc` retargets this viewer's mirror report to their device locale (per-reader
+     *  locale — the server re-runs the interp in `lc`; matches bondGetQuerySchema). */
+    $get: (opts: { param: { id: string }; query?: { lc?: string } }) => Promise<Response>
     /** Soft-delete a bond (DELETE /api/bonds/:id → { id, status: 'removed' }).
      *  Server marks status 'removed' and the list query filters it out. */
     $delete: (opts: { param: { id: string } }) => Promise<Response>
