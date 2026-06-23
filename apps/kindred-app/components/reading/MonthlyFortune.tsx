@@ -176,7 +176,18 @@ export function MonthlyFortune({
             <Text style={S.depthCtaText}>{depthFailed ? du.failed : du.cta}</Text>
           </Pressable>
         )
-      ) : null}
+      ) : (
+        // Non-Pro: the same 深读本月 affordance, but it opens the paywall.
+        <Pressable
+          onPress={onNeedPro}
+          hitSlop={8}
+          accessibilityRole='button'
+          style={({ pressed }) => [S.depthCta, pressed && { opacity: 0.6 }]}
+        >
+          <Moon size={13} color={P.cinnabar} strokeWidth={1.6} />
+          <Text style={S.depthCtaText}>{du.cta}</Text>
+        </Pressable>
+      )}
     </View>
   )
 }
@@ -214,7 +225,12 @@ const S = StyleSheet.create({
   depthSkeleton: { opacity: 0.6 },
   depthRule: { width: 28, height: 1, backgroundColor: P.cinnabar, marginBottom: 14, opacity: 0.7 },
   depthTitle: { color: P.ink, fontSize: 16, letterSpacing: 0.8 },
-  depthThemeLabel: { color: P.bronze, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
+  depthThemeLabel: {
+    color: P.bronze,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
   depthAdviceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 14 },
   depthTag: { color: P.cinnabar, fontSize: 12, letterSpacing: 1, fontWeight: '600' },
   depthTagWatch: { color: P.muted },

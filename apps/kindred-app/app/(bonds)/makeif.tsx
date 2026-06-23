@@ -36,6 +36,7 @@ import {
   useBondMakeIf,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { ChevronLeft } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -106,18 +107,21 @@ export default function MakeIfScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      <View
+      {/* Just a back icon — no header bar (2026-06 feedback). */}
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={12}
+        accessibilityRole='button'
+        accessibilityLabel='Back'
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
+          alignSelf: 'flex-start',
           paddingHorizontal: kindredSpacing.screenH,
-          paddingTop: kindredSpacing.xl,
+          paddingTop: kindredSpacing.lg,
+          paddingBottom: kindredSpacing.xs,
         }}
       >
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole='button'>
-          <Text style={[kindredType.heading, { color: kindredDark.textMuted }]}>←</Text>
-        </Pressable>
-      </View>
+        <ChevronLeft size={26} color={kindredDark.textMuted} strokeWidth={1.8} />
+      </Pressable>
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
