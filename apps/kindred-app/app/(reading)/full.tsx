@@ -35,7 +35,7 @@ import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dimensions,
   Modal,
@@ -353,8 +353,22 @@ export default function FullReadingScreen() {
   const [ch1, setCh1] = useState<CachedChapter | null>(null)
   const [ch4, setCh4] = useState<CachedChapter | null>(null)
   const [loading, setLoading] = useState(true)
+  // Premium chapters are generated LAZILY (Phase 5): a Pro reader who opens the
+  // report and reads only the first chapter shouldn't pay for four LLM generations.
+  // `premium` holds resolved chapters (undefined = never attempted; null = fetched
+  // but empty/failed); `premiumLoadingSlugs` is the per-slug skeleton flag.
   const [premium, setPremium] = useState<Record<string, CachedChapter | null>>({})
-  const [premiumLoading, setPremiumLoading] = useState(false)
+  const [premiumLoadingSlugs, setPremiumLoadingSlugs] = useState<Record<string, boolean>>({})
+  // In-flight slugs (a ref so re-renders don't re-fire a generation) + a mounted
+  // guard so a fetch that resolves after the user leaves never setStates a ghost.
+  const inFlightRef = useRef<Set<string>>(new Set())
+  const mountedRef = useRef(true)
+  useEffect(
+    () => () => {
+      mountedRef.current = false
+    },
+    []
+  )
 
   const chartHash = useMemo(() => {
     if (!birth) return ''
@@ -399,32 +413,53 @@ export default function FullReadingScreen() {
     }
   }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
-  // Premium chapters: fetch the four premium slugs once the report is unlocked.
-  // Each is cache-first + resolves independently so pages fill in as they generate.
+  // Editing birth (new chartHash) invalidates every generated premium chapter — drop
+  // the old chart's prose so lazy fetch re-runs against the new chart, not a stale hit.
   useEffect(() => {
-    if (!isPro) return
-    if (!chartHash || draftSolarDate == null || draftGender == null) return
-    let cancelled = false
-    const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
-    async function loadPremium() {
-      setPremiumLoading(true)
-      await Promise.all(
-        PREMIUM_SLUGS.map(async (slug) => {
-          const cached = await getCachedChapter(slug, chartHash)
-          const ch = cached ?? (await fetchChapter(slug, chartHash, b))
-          if (!cancelled) setPremium((prev) => ({ ...prev, [slug]: ch }))
-        })
-      )
-      if (!cancelled) setPremiumLoading(false)
-    }
-    void loadPremium()
-    return () => {
-      cancelled = true
-    }
-  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
+    setPremium({})
+    setPremiumLoadingSlugs({})
+    inFlightRef.current.clear()
+  }, [chartHash])
+
+  // Lazily generate a single premium chapter (cache-first). No-ops for non-Pro, the
+  // free slugs (handled above), already-resolved chapters, and in-flight ones — so it's
+  // safe to call on every page settle. The server caches in D1, so a 换视角/revisit is
+  // instant; this only gates the FIRST generation to chapters the reader actually opens.
+  const ensurePremium = useCallback(
+    (slug: string) => {
+      if (!isPro || !chartHash || draftSolarDate == null || draftGender == null) return
+      if (!PREMIUM_SLUGS.includes(slug as (typeof PREMIUM_SLUGS)[number])) return
+      if (premium[slug] !== undefined || inFlightRef.current.has(slug)) return
+      inFlightRef.current.add(slug)
+      setPremiumLoadingSlugs((p) => ({ ...p, [slug]: true }))
+      const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
+      void (async () => {
+        const cached = await getCachedChapter(slug, chartHash)
+        const ch = cached ?? (await fetchChapter(slug, chartHash, b))
+        inFlightRef.current.delete(slug)
+        if (!mountedRef.current) return
+        setPremium((prev) => ({ ...prev, [slug]: ch }))
+        setPremiumLoadingSlugs((p) => ({ ...p, [slug]: false }))
+      })()
+    },
+    [isPro, chartHash, draftSolarDate, draftGender, timeIndex, premium]
+  )
 
   // The current pager page (drives 划词 grounding + the page indicator).
   const [chapterIndex, setChapterIndex] = useState(0)
+
+  // Lazy generation driver: warm the chapter in view AND the next one, so the reader
+  // only waits on the very first premium page — subsequent pages pre-generate while
+  // they read. Stops short of the four-up-front cost: a reader who halts mid-report
+  // never pays for the chapters past where they stopped (+1 lookahead).
+  useEffect(() => {
+    if (!isPro) return
+    const visible = REPORT_CHAPTERS.filter((c) => c.free || isPro)
+    const cur = visible[chapterIndex]?.slug
+    const next = visible[chapterIndex + 1]?.slug
+    if (cur) ensurePremium(cur)
+    if (next) ensurePremium(next)
+  }, [isPro, chapterIndex, ensurePremium])
 
   // 划词 (K3): the long-pressed paragraph drives the action bar; highlights persist
   // per chart (the personal report has no bondId, so chartHash is the stable key).
@@ -579,7 +614,7 @@ export default function FullReadingScreen() {
       ? loading && !ch1
       : slug === 'ch4_timeline'
         ? loading && !ch4
-        : unlocked && premiumLoading && !premium[slug]
+        : unlocked && (premiumLoadingSlugs[slug] ?? false) && !premium[slug]
 
   // The pages the pager flips through: every chapter once unlocked; only the free
   // taste (ch1/ch4) while unbought, with the locked four folded into the wall.
