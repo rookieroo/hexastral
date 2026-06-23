@@ -34,7 +34,7 @@ import { composeMonthlyFortune } from '@zhop/scenario-yuan/monthly-fortune'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
+import { ArrowLeft, Clock, Lock, RefreshCw, Sparkles, X } from 'lucide-react-native'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dimensions,
@@ -69,6 +69,11 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
 import { fetchProAllowance } from '@/lib/pro-allowance'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
+import {
+  fetchMonthlyDepth,
+  getCachedMonthlyDepth,
+  type MonthlyDepth,
+} from '@/lib/solo/monthly-depth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import {
   analyzeDayunRelation,
@@ -666,7 +671,13 @@ export default function FullReadingScreen() {
                     teaser={teaserBySlug(c.slug)}
                     topSlot={
                       c.slug === 'ch4_timeline' ? (
-                        <ReportMonthlyFortune chart={chart} locale={locale} />
+                        <ReportMonthlyFortune
+                          chart={chart}
+                          locale={locale}
+                          isPro={isPro}
+                          chartHash={chartHash}
+                          onNeedPro={openPaywall}
+                        />
                       ) : undefined
                     }
                     identityLine={i === 0 ? identityLine : undefined}
@@ -939,20 +950,102 @@ const FORTUNE_KICKER: Record<string, string> = {
   ja: '今月の運勢',
 }
 
+/** Copy for the Pro 流年深读 affordance + its section labels. */
+const DEPTH_UI: Record<
+  string,
+  { cta: string; loading: string; failed: string; advice: string; watch: string }
+> = {
+  en: {
+    cta: 'Read deeper',
+    loading: 'Reading this month…',
+    failed: 'Couldn’t load the deep read — tap to retry',
+    advice: 'DO',
+    watch: 'WATCH',
+  },
+  zh: {
+    cta: '深读本月',
+    loading: '正在深读本月…',
+    failed: '深读加载失败，点按重试',
+    advice: '宜',
+    watch: '忌',
+  },
+  'zh-Hant': {
+    cta: '深讀本月',
+    loading: '正在深讀本月…',
+    failed: '深讀載入失敗，點按重試',
+    advice: '宜',
+    watch: '忌',
+  },
+  ja: {
+    cta: '今月を深読み',
+    loading: '今月を深読み中…',
+    failed: '深読みの取得に失敗しました。タップで再試行',
+    advice: '吉',
+    watch: '注意',
+  },
+}
+
 /**
  * The 本月运势 (this-month forecast) as a paper-styled block, inlined at the top of
  * the 当前大运 chapter. Moved off the home (it isn't strongly Yuel-related there); it
- * belongs inside the personal 命理 report, next to the 大运 it refines. Deterministic
- * (composeMonthlyFortune) — instant, free, and self-refreshing as the 流月 turns.
+ * belongs inside the personal 命理 report, next to the 大运 it refines.
+ *
+ * Two layers: the deterministic taste (composeMonthlyFortune) is free + instant for
+ * everyone; for Pro, a "深读本月" affordance fetches an LLM depth that expands the same
+ * grounding (P6b). The depth is cached per month + chart, so it paints instantly on a
+ * revisit and only generates about once a month — the natural cap (no allowance).
  */
 function ReportMonthlyFortune({
   chart,
   locale,
+  isPro,
+  chartHash,
+  onNeedPro,
 }: {
   chart: FateNatalChart
   locale: ReturnType<typeof useReadingI18n>['locale']
+  isPro: boolean
+  chartHash: string
+  onNeedPro: () => void
 }) {
   const fortune = useMemo(() => composeMonthlyFortune({ chart, locale }), [chart, locale])
+  const du = DEPTH_UI[locale] ?? DEPTH_UI.en
+
+  const [depth, setDepth] = useState<MonthlyDepth | null>(null)
+  const [depthLoading, setDepthLoading] = useState(false)
+  const [depthFailed, setDepthFailed] = useState(false)
+
+  // Cache-first: a depth generated earlier this month paints instantly, no tap needed.
+  useEffect(() => {
+    if (!isPro || !chartHash) return
+    let cancelled = false
+    void getCachedMonthlyDepth(chartHash, fortune.monthKey).then((d) => {
+      if (!cancelled && d) setDepth(d)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isPro, chartHash, fortune.monthKey])
+
+  const loadDepth = () => {
+    if (depthLoading) return
+    setDepthLoading(true)
+    setDepthFailed(false)
+    void fetchMonthlyDepth(chartHash, {
+      monthKey: fortune.monthKey,
+      monthLabel: fortune.monthLabel,
+      ganZhi: fortune.ganZhi,
+      element: fortune.element,
+      headline: fortune.headline,
+      body: fortune.body,
+    }).then((r) => {
+      setDepthLoading(false)
+      if (r.kind === 'ok') setDepth(r.depth)
+      else if (r.kind === 'needs_pro') onNeedPro()
+      else setDepthFailed(true)
+    })
+  }
+
   return (
     <View style={S.fortuneBlock}>
       <View style={S.fortuneHead}>
@@ -967,6 +1060,45 @@ function ReportMonthlyFortune({
           {para}
         </Text>
       ))}
+
+      {/* 流年深读 (Pro) — the LLM depth, lazily fetched under the free taste. */}
+      {isPro ? (
+        depth ? (
+          <View style={S.depthBlock}>
+            <View style={S.depthRule} />
+            <Text style={S.depthTitle}>{depth.title}</Text>
+            <Text style={[S.fortuneBody, { marginTop: 8 }]}>{depth.overview}</Text>
+            {depth.themes.map((th, i) => (
+              <View key={i} style={{ marginTop: 14 }}>
+                <Text style={S.depthThemeLabel}>{th.label}</Text>
+                <Text style={[S.fortuneBody, { marginTop: 3 }]}>{th.body}</Text>
+              </View>
+            ))}
+            <View style={S.depthAdviceRow}>
+              <Text style={S.depthTag}>{du.advice}</Text>
+              <Text style={S.depthAdviceText}>{depth.advice}</Text>
+            </View>
+            <View style={S.depthAdviceRow}>
+              <Text style={[S.depthTag, S.depthTagWatch]}>{du.watch}</Text>
+              <Text style={S.depthAdviceText}>{depth.watchFor}</Text>
+            </View>
+          </View>
+        ) : depthLoading ? (
+          <View style={[S.depthBlock, S.depthSkeleton]}>
+            <Text style={S.depthCtaText}>{du.loading}</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={loadDepth}
+            hitSlop={8}
+            accessibilityRole='button'
+            style={({ pressed }) => [S.depthCta, pressed && { opacity: 0.6 }]}
+          >
+            <Sparkles size={13} color={P.cinnabar} strokeWidth={1.6} />
+            <Text style={S.depthCtaText}>{depthFailed ? du.failed : du.cta}</Text>
+          </Pressable>
+        )
+      ) : null}
     </View>
   )
 }
@@ -1313,6 +1445,37 @@ const S = StyleSheet.create({
     marginBottom: 10,
   },
   fortuneBody: { color: P.inkSoft, fontSize: 14, lineHeight: 23, letterSpacing: 0.2 },
+
+  // 流年深读 (Pro depth, under the free taste)
+  depthCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  depthCtaText: { color: P.cinnabar, fontSize: 13, letterSpacing: 0.8 },
+  depthBlock: { marginTop: 16 },
+  depthSkeleton: { opacity: 0.6 },
+  depthRule: { width: 28, height: 1, backgroundColor: P.cinnabar, marginBottom: 14, opacity: 0.7 },
+  depthTitle: { color: P.ink, fontSize: 16, letterSpacing: 0.8 },
+  depthThemeLabel: {
+    color: P.bronze,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  depthAdviceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 14 },
+  depthTag: {
+    color: P.cinnabar,
+    fontSize: 12,
+    letterSpacing: 1,
+    minWidth: 28,
+    fontWeight: '600',
+  },
+  depthTagWatch: { color: P.muted },
+  depthAdviceText: { flex: 1, color: P.inkSoft, fontSize: 14, lineHeight: 22 },
 
   // ── unlock wall (trailing page) ──
   wallScroll: { paddingHorizontal: 32, paddingTop: 64, paddingBottom: 48 },

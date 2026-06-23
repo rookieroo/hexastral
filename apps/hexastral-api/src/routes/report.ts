@@ -34,6 +34,7 @@ import {
   type ChapterSlug,
   computeContextHash,
   loadChartContext,
+  sha256Hex,
   STATIC_CHAPTERS,
 } from '../lib/chart-context'
 import { buildChartSkeleton } from '../lib/chart-skeleton'
@@ -43,6 +44,26 @@ import { markCurrentAndInsert } from '../lib/versioned-store'
 import { consumeProAllowance } from '../services/pro-allowance'
 
 const slugSchema = z.enum(CHAPTER_SLUGS)
+
+// 流年深读 (monthly LLM depth) — stored in report_chapters under a synthetic chapter
+// key so it reuses the versioned store (no new migration). One row per user+month+chart:
+// the contextHash folds in the month, so a new month lazily regenerates and the old
+// stays as history. Provenance/cache-version tag — bump promptVersion to force regen.
+const MONTHLY_DEPTH_CHAPTER = 'monthly_depth'
+const MONTHLY_DEPTH_MODEL = { model: 'cf-flagship@2026-05', promptVersion: 'v1.0' } as const
+
+const monthlyDepthRequestSchema = z.object({
+  /** YYYY-MM — the month this depth is for (drives the per-month cache key). */
+  monthKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, 'monthKey must be YYYY-MM'),
+  monthLabel: z.string().min(1).max(40),
+  ganZhi: z.string().min(1).max(8),
+  element: z.string().min(1).max(8),
+  /** The deterministic card's headline + body — the grounding the LLM expands. */
+  headline: z.string().min(1).max(200),
+  body: z.string().min(1).max(1200),
+})
 
 interface ChapterRowOut {
   id: string
@@ -332,6 +353,104 @@ export const reportManifestRoutes = new Hono<AppEnv>().get('/', async (c) => {
     chapters,
   })
 })
+  // 流年深读 (Pro · 本月运势 LLM depth). The deterministic 本月运势 card is free for
+  // everyone; this expands it into a deeper monthly read. No allowance — one row per
+  // user+month+chart, so a revisit within the month is a free cache hit (the natural cap).
+  .post('/monthly', zValidator('json', monthlyDepthRequestSchema), async (c) => {
+    const userId = requireUserId(c)
+    const db = c.get('db')
+    const input = c.req.valid('json')
+
+    // Yuel Pro benefit — gate on the `kindred` capability (universe_pro satisfies it).
+    const isPro = await userHasCapability(db, userId, 'kindred')
+    if (!isPro) throw new HTTPException(402, { message: 'Pro required' })
+
+    await ensureUserChart(c, userId)
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+    if (!user) throw new HTTPException(404, { message: 'User not found' })
+    const locale = user.locale ?? 'en'
+    const { chartHash } = await loadChartContext(db, userId)
+
+    const { model, promptVersion } = MONTHLY_DEPTH_MODEL
+    const contextHash = await sha256Hex(
+      [chartHash, MONTHLY_DEPTH_CHAPTER, input.monthKey, promptVersion, model].join('|')
+    )
+
+    const cached = await db.query.reportChapters.findFirst({
+      where: and(
+        eq(reportChapters.userId, userId),
+        eq(reportChapters.chapter, MONTHLY_DEPTH_CHAPTER),
+        eq(reportChapters.isCurrent, true)
+      ),
+    })
+    if (cached && cached.contextHash === contextHash) {
+      return c.json({ depth: JSON.parse(cached.contentJson), generatedAt: cached.generatedAt })
+    }
+
+    const generated = await astroClient.post<unknown>(c.env.SVC_ASTRO, '/report/monthly', {
+      chartHash,
+      contextHash,
+      locale,
+      isPro,
+      user: {
+        dayMasterStem: user.dayMasterStem,
+        dayMasterStrength: user.dayMasterStrength,
+        favorableElement: user.favorableElement,
+        unfavorableElement: user.unfavorableElement,
+        ziweiMingPalaceStar: user.ziweiMingPalaceStar,
+        birthBranch: user.birthBranch,
+      },
+      birth:
+        user.birthSolarDate && user.birthTimeIndex != null && user.birthGender
+          ? {
+              solarDate: user.birthSolarDate,
+              timeIndex: user.birthTimeIndex,
+              gender: user.birthGender as '男' | '女',
+              longitude: user.birthLongitude != null ? Number(user.birthLongitude) : undefined,
+              latitude: user.birthLatitude != null ? Number(user.birthLatitude) : undefined,
+              timezoneId: user.birthTimezoneId ?? undefined,
+              city: user.birthCity ?? undefined,
+            }
+          : undefined,
+      month: {
+        key: input.monthKey,
+        label: input.monthLabel,
+        ganZhi: input.ganZhi,
+        element: input.element,
+        headline: input.headline,
+        body: input.body,
+      },
+    })
+
+    const generatedAt = new Date().toISOString()
+    const row = {
+      id: crypto.randomUUID(),
+      userId,
+      chapter: MONTHLY_DEPTH_CHAPTER,
+      chartHash,
+      contextHash,
+      contentJson: JSON.stringify(generated),
+      locale,
+      explanationMode: 'plain',
+      model,
+      promptVersion,
+      perspectiveSeed: null,
+      isCurrent: true,
+      generatedAt,
+    }
+    await markCurrentAndInsert(
+      db,
+      reportChapters,
+      and(
+        eq(reportChapters.userId, userId),
+        eq(reportChapters.chapter, MONTHLY_DEPTH_CHAPTER),
+        eq(reportChapters.isCurrent, true)
+      )!,
+      row
+    )
+
+    return c.json({ depth: generated, generatedAt })
+  })
 
 // ============================================================================
 // Chapter (current + lazy regen)

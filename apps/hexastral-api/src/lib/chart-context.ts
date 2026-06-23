@@ -34,7 +34,7 @@ export const STATIC_CHAPTERS: ReadonlySet<ChapterSlug> = new Set([
   'ch3_stellar',
 ])
 
-async function sha256Hex(input: string): Promise<string> {
+export async function sha256Hex(input: string): Promise<string> {
   const enc = new TextEncoder().encode(input)
   const buf = await crypto.subtle.digest('SHA-256', enc)
   const bytes = new Uint8Array(buf)

@@ -29,6 +29,7 @@ import {
   ch4TimelineOutputSchema,
   ch5HiddenOutputSchema,
   ch6ActionOutputSchema,
+  monthlyDepthOutputSchema,
   reportChapterOutputSchema,
   toJsonSchema,
 } from '../schemas'
@@ -237,6 +238,125 @@ reportChapterRoutes.post('/chapter', async (c) => {
 
   if (!parsed) {
     throw new HTTPException(500, { message: `Invalid chapter response (${lastIssue})` })
+  }
+
+  return c.json(parsed)
+})
+
+/**
+ * 流年深读 — POST /report/monthly
+ *
+ * The Pro LLM enrichment of the deterministic 本月运势 card. The caller (hexastral-api)
+ * supplies the month's deterministic atoms (干支 · 五行 · 已算好的 headline/body) plus the
+ * user's birth so we can rebuild the full chart facts. We expand that grounded taste into
+ * a short multi-theme monthly read — consistent with the free card, just deeper.
+ *
+ * No allowance: the API caches one depth per user+month+chart, so this naturally fires
+ * about once a month. Output: MonthlyDepthOutput (strict JSON).
+ */
+const monthInputSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  ganZhi: z.string().min(1),
+  element: z.string().min(1),
+  headline: z.string().min(1),
+  body: z.string().min(1),
+})
+
+const monthlyRequestSchema = z.object({
+  chartHash: z.string().min(1),
+  contextHash: z.string().min(1),
+  locale: z.string().default('en'),
+  user: userSchema,
+  birth: birthSchema,
+  month: monthInputSchema,
+  isPro: z.boolean().optional().default(true),
+})
+
+reportChapterRoutes.post('/monthly', async (c) => {
+  const body = await c.req.json()
+  const input = monthlyRequestSchema.parse(body)
+  const { month } = input
+
+  const richFacts = input.birth
+    ? buildRichFacts({
+        solarDate: input.birth.solarDate,
+        timeIndex: input.birth.timeIndex,
+        clockMinutes: input.birth.clockMinutes,
+        calibrate: input.birth.calibrate,
+        gender: input.birth.gender,
+        longitude: input.birth.longitude,
+        latitude: input.birth.latitude,
+        timezoneId: input.birth.timezoneId,
+        city: input.birth.city,
+        userId: `report-monthly:${input.chartHash}`,
+        language: input.locale,
+      })
+    : null
+
+  const ctx = {
+    user: input.user,
+    timeContext: null,
+    perspectiveSeed: undefined,
+    richFacts: richFacts ?? undefined,
+  }
+
+  const systemPrompt = `你是一位深谙子平与紫微的命理顾问，正在为客户写「本月运势」的深读。
+你拿到的是本月流月与其命盘的确定性判断（干支、五行、十神关系、喜忌、以及一段已写好的简版结论）。
+你的任务是把这段简版结论展开成一篇简短但有洞见的本月深读：保持与简版一致的基调，不要推翻它，而是补充机理、落到具体生活场景、并给出可执行的建议。
+只谈本月，不要泛泛而谈一生；语气克制、具体、不夸大吉凶。
+${buildLanguageBlock(input.locale, 'fate')}`
+
+  const factsBlock = buildChapterFacts(ctx)
+  const monthBlock = `【本月流月】${month.label} · ${month.ganZhi}（${month.element}）
+【确定性基调】${month.headline}
+【简版结论】${month.body}`
+
+  const schemaHint =
+    'Output schema: MonthlyDepthOutput = { title, overview, themes[{ label, body }] (2-4), advice, watchFor }'
+  const userPrompt = `${factsBlock}\n\n${monthBlock}\n\n${schemaHint}\n请基于以上事实生成严格 JSON，只针对本月，禁止输出额外字段。${buildLanguageReminder(input.locale)}`
+
+  let parsed: z.infer<typeof monthlyDepthOutputSchema> | null = null
+  let lastIssue = ''
+  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
+    const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
+      isPro: input.isPro,
+      // Monthly depth is light + time-bound — Flash tier keeps it inside its timeout.
+      preferFlash: true,
+      maxTokens: 1400,
+      temperature: attempt === 0 ? 0.85 : 0.6,
+      thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',
+      metricLabel: `report-monthly${attempt > 0 ? ':retry' : ''}`,
+      locale: input.locale,
+      jsonMode: true,
+      responseSchema: toJsonSchema(monthlyDepthOutputSchema),
+    })
+
+    const jsonStr = extractJson(raw)
+    if (!jsonStr) {
+      lastIssue = 'extract'
+      console.error('[report-monthly] failed to extract JSON', raw.slice(0, 500))
+      continue
+    }
+    let parsedRaw: unknown
+    try {
+      parsedRaw = JSON.parse(jsonStr)
+    } catch (err) {
+      lastIssue = 'parse'
+      console.error('[report-monthly] JSON.parse failed', err, jsonStr.slice(0, 500))
+      continue
+    }
+    const result = monthlyDepthOutputSchema.safeParse(parsedRaw)
+    if (!result.success) {
+      lastIssue = 'shape'
+      console.error('[report-monthly] schema validation failed', result.error.issues)
+      continue
+    }
+    parsed = result.data
+  }
+
+  if (!parsed) {
+    throw new HTTPException(500, { message: `Invalid monthly response (${lastIssue})` })
   }
 
   return c.json(parsed)

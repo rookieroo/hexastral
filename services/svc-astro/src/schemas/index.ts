@@ -14,6 +14,7 @@ export { type Ch5HiddenOutput, ch5HiddenOutputSchema } from './ch5-hidden-output
 export { type Ch6ActionOutput, ch6ActionOutputSchema } from './ch6-action-output'
 export { type FateOutput, fateOutputSchema } from './fate-output'
 export { type HehunOutput, hehunOutputSchema } from './hehun-output'
+export { type MonthlyDepthOutput, monthlyDepthOutputSchema } from './monthly-depth-output'
 export { type PhysiognomyOutput, physiognomyOutputSchema } from './physiognomy-output'
 export {
   type Dimension,

@@ -34,6 +34,8 @@ export interface MonthlyFortune {
   monthLabel: string
   /** 流月干支, e.g. "甲午". */
   ganZhi: string
+  /** 流月五行 label (localised), e.g. "木" / "Wood". */
+  element: string
   /** One-line tone for the month. */
   headline: string
   /** The forecast body (2 short paragraphs). */
@@ -137,6 +139,7 @@ export function composeMonthlyFortune(input: MonthlyFortuneInput): MonthlyFortun
     monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
     monthLabel: monthLabel(d, lang),
     ganZhi: `${monthGz.stem}${monthGz.branch}`,
+    element: elementLabel(monthEl, lang === 'zh' ? 'zh' : 'en'),
     headline,
     body,
   }
