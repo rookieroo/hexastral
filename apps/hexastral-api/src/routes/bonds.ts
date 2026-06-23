@@ -50,7 +50,7 @@ import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-ex
 import { mailerClient } from '../lib/service-clients'
 import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
 import { solarDateSchema } from '../lib/validation'
-import { getProAllowanceStatus } from '../services/pro-allowance'
+import { consumeProAllowance, getProAllowanceStatus } from '../services/pro-allowance'
 import { getBondInviteCreditStatus } from '../services/quota'
 import { resolveLlmGuardSubject } from '../services/shared/llm-guard'
 
@@ -1783,6 +1783,20 @@ bondRoutes.post('/timeline/explain', async (c) => {
   const db = c.get('db')
   const body = timelineExplainSchema.parse(await c.req.json().catch(() => ({})))
 
+  // 节点深解 is a Yuel Pro benefit (the LLM depth on a timeline node) — free users
+  // get the deterministic what-if (`/makeif`) instead. Gate on kindred; the monthly
+  // allowance is consumed AFTER validation (below), just before the LLM call.
+  if (!(await userHasCapability(db, userId, 'kindred'))) {
+    return c.json(
+      {
+        error: 'upgrade_required',
+        capability: 'kindred',
+        upsell: { capability: 'kindred', iapProductIds: YUAN_PRO_PRODUCT_IDS },
+      },
+      402
+    )
+  }
+
   const ego = await db
     .select({
       birthSolarDate: users.birthSolarDate,
@@ -1847,6 +1861,21 @@ bondRoutes.post('/timeline/explain', async (c) => {
   const partnerInput = counterpart ? birthToInput(counterpart) : null
   if (!egoInput || !counterpart || !partnerInput) {
     return jsonErr(c, 422, ApiErrorCode.conflict, 'Bond birth data incomplete')
+  }
+
+  // Monthly allowance (consume after validation, before the LLM) — soft cap.
+  const allowance = await consumeProAllowance(db, userId, 'explain')
+  if (!allowance.granted) {
+    return c.json(
+      {
+        error: 'quota_exhausted',
+        feature: 'explain',
+        used: allowance.used,
+        limit: allowance.limit,
+        resetsOn: allowance.resetsOn,
+      },
+      429
+    )
   }
 
   const subject = resolveLlmGuardSubject({ userId })
