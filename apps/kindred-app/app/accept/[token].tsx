@@ -117,6 +117,18 @@ export default function AcceptTokenScreen() {
   const [accepting, setAccepting] = useState(false)
   const [respondError, setRespondError] = useState<string | null>(null)
 
+  // Reset the stack to the home so Back can't return to onboarding/accept. This screen
+  // is a MODAL pushed over the launch gate's screen — which is (onboarding) for a fresh
+  // B — so a plain replace('/(reading)') only swapped the modal and left onboarding
+  // underneath (2026-06: "走完合盘邀请流程后能从首页返回到 onboarding"). Dismiss the modal
+  // first, then replace whatever's beneath (onboarding / home) with the home.
+  const resetToHome = () => {
+    try {
+      router.dismissAll()
+    } catch {}
+    router.replace('/(reading)')
+  }
+
   const lang = useMemo(() => localeToLang(locale), [locale])
   const privacyUrl = useMemo(() => privacyPolicyUrl(locale), [locale])
   const relationshipType = useMemo(
@@ -171,6 +183,9 @@ export default function AcceptTokenScreen() {
   useEffect(() => {
     if (alreadyAccepted) {
       void markOnboardingComplete()
+      try {
+        router.dismissAll()
+      } catch {}
       router.replace('/(reading)')
     }
   }, [alreadyAccepted, router])
@@ -223,10 +238,10 @@ export default function AcceptTokenScreen() {
       // done so the launch gate routes future opens to the home, NOT back into
       // the onboarding birth form (the trap that left B "stuck on the form").
       await markOnboardingComplete()
-      // Land on the home first (B's base — the bond shows in Threads), THEN open
-      // the report on top, so the now-back-button-less report still has a home
-      // to swipe back to instead of dead-ending.
-      router.replace('/(reading)')
+      // Reset to the home first (B's base — the bond shows in Threads), THEN open the
+      // report on top, so the now-back-button-less report still has a home to swipe back
+      // to instead of dead-ending.
+      resetToHome()
       router.push(`/(bonds)/${result.bondId}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
@@ -234,7 +249,7 @@ export default function AcceptTokenScreen() {
       // Still mark onboarded + send home — the bond is already in their Threads.
       if (/already accepted/i.test(msg) || /410/.test(msg)) {
         await markOnboardingComplete()
-        router.replace('/(reading)')
+        resetToHome()
         return
       }
       if (isPaywall(err)) {
@@ -319,7 +334,7 @@ export default function AcceptTokenScreen() {
             label={t('invite.accept.later')}
             onPress={() => {
               void markOnboardingComplete()
-              router.replace('/(reading)')
+              resetToHome()
             }}
             block={false}
           />
@@ -475,10 +490,11 @@ export default function AcceptTokenScreen() {
           </View>
           <Pressable
             onPress={() => {
-              // Always leave a clean exit to the home — mark onboarded so the
-              // launch gate doesn't bounce B back into onboarding next open.
+              // Always leave a clean exit to the home — mark onboarded so the launch
+              // gate doesn't bounce B back into onboarding next open, and reset the stack
+              // so Back from home can't return to onboarding either.
               void markOnboardingComplete()
-              router.replace('/(reading)')
+              resetToHome()
             }}
             hitSlop={12}
           >
