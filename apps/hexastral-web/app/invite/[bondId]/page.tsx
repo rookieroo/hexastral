@@ -162,22 +162,6 @@ export default async function InvitePage({ params }: InvitePageProps) {
               wants to explore your cosmic bond
             </p>
           </div>
-
-          {/* Relationship pill */}
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '0.4rem 1rem',
-              background: 'rgba(196,168,98,0.1)',
-              border: '1px solid rgba(196,168,98,0.2)',
-              borderRadius: 20,
-              fontSize: '0.8rem',
-              color: 'var(--color-gold)',
-              letterSpacing: '0.05em',
-            }}
-          >
-            {invite.relationshipLabel}
-          </span>
         </div>
 
         {/* CTA */}

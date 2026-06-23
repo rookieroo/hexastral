@@ -29,34 +29,9 @@ interface PageProps {
   params: Promise<{ locale: string; token: string }>
 }
 
-/**
- * Relationship label reverse-localize.
- *
- * The Kindred app stores the relationship as a FROZEN localized string (the
- * label A picked in A's locale, e.g. '恋人' if A was in zh). When B opens the
- * invite link, the server returns that frozen label — so a zh-locale A's bond
- * displays '恋人' even to an en-locale B. We reverse-look it up here against
- * the same label table the app uses (kindred-app/lib/inviteSubmit.ts) and
- * re-localize it for the recipient's locale. Falls back to the original
- * string if A typed a custom label that doesn't match any preset.
- */
-const RELATIONSHIP_LABELS: Record<string, Record<string, string>> = {
-  romantic: { en: 'Partner', zh: '恋人', tw: '戀人', ja: '恋人' },
-  friend: { en: 'Friend', zh: '朋友', tw: '朋友', ja: '友人' },
-  family: { en: 'Family', zh: '家人', tw: '家人', ja: '家族' },
-  partner: { en: 'Cofounder', zh: '合伙人', tw: '合夥人', ja: 'パートナー' },
-  colleague: { en: 'Colleague', zh: '同事', tw: '同事', ja: '同僚' },
-  other: { en: 'Other', zh: '其他', tw: '其他', ja: 'その他' },
-}
-function localizeRelationship(rawLabel: string, locale: string): string {
-  const want = locale === 'zh-Hant' ? 'tw' : locale === 'zh-CN' ? 'zh' : locale
-  for (const labels of Object.values(RELATIONSHIP_LABELS)) {
-    if (Object.values(labels).includes(rawLabel)) {
-      return labels[want] ?? labels.en ?? rawLabel
-    }
-  }
-  return rawLabel
-}
+// The relationship label is intentionally NOT shown on this public landing: it
+// would leak the inviter's intent (many inviters don't want B to know what 合盘
+// relation they picked). B is told WHO invited them, never the relationship.
 
 /**
  * Inline cinnabar phase-moon — a faithful SVG port of the in-app KindredMoon
@@ -226,7 +201,6 @@ export default async function ResonatePage({ params }: PageProps) {
   const expiresLabel = invite ? new Date(invite.expiresAt).toLocaleDateString(dateLocale) : ''
 
   const inviterHasName = invite?.inviterHasName ?? false
-  const showRelationshipPrefix = inviterHasName && !!invite?.relationshipLabel
 
   return (
     <main
@@ -280,30 +254,17 @@ export default async function ResonatePage({ params }: PageProps) {
                     fontWeight: 400,
                     color: '#F5F0E8',
                     letterSpacing: -0.4,
-                    marginBottom: showRelationshipPrefix ? 10 : 36,
+                    marginBottom: 36,
                   }}
                 >
                   {invite.inviterName}
                 </h1>
-                {showRelationshipPrefix ? (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      letterSpacing: 2,
-                      color: '#C0392B',
-                      marginBottom: invite.message ? 24 : 36,
-                    }}
-                  >
-                    {t('relationshipPrefix')}{' '}
-                    {localizeRelationship(invite.relationshipLabel, locale)}
-                  </p>
-                ) : null}
               </>
             ) : (
               // Anonymous inviter — no Apple link, no profile name. The "From
               // Someone" line would lie about identity; surface a generic lead
-              // instead. The relationship label still appears (it's real data
-              // A picked) so B knows what the bond is.
+              // instead. (B reached this page through a link A shared in person /
+              // by SMS / email, so A's identity is known out-of-band.)
               <>
                 <h1
                   style={{
@@ -311,23 +272,11 @@ export default async function ResonatePage({ params }: PageProps) {
                     fontWeight: 400,
                     color: '#F5F0E8',
                     letterSpacing: -0.4,
-                    marginBottom: invite.relationshipLabel ? 10 : 36,
+                    marginBottom: 36,
                   }}
                 >
                   {t('anonymousLead')}
                 </h1>
-                {invite.relationshipLabel ? (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      letterSpacing: 2,
-                      color: '#C0392B',
-                      marginBottom: invite.message ? 24 : 36,
-                    }}
-                  >
-                    {localizeRelationship(invite.relationshipLabel, locale)}
-                  </p>
-                ) : null}
               </>
             )}
 
