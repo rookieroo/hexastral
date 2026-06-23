@@ -52,3 +52,11 @@ export const CHAPTER_MODEL_REGISTRY: Record<ChapterSlug, ChapterModelMeta> = {
   ch5_hidden: TIMEBOUND_FLASH,
   ch6_action: TIMEBOUND_FLASH,
 }
+
+// 流年深读 (本月运势 Pro LLM depth). Stored in report_chapters under the synthetic
+// 'monthly_depth' key; this tag feeds its per-month contextHash, so bumping the
+// promptVersion force-regenerates every cached monthly depth at the next read.
+export const MONTHLY_DEPTH_MODEL: ChapterModelMeta = {
+  model: 'cf-flagship@2026-05',
+  promptVersion: 'v1.0',
+}

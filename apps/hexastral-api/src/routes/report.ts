@@ -38,7 +38,7 @@ import {
   STATIC_CHAPTERS,
 } from '../lib/chart-context'
 import { buildChartSkeleton } from '../lib/chart-skeleton'
-import { CHAPTER_MODEL_REGISTRY } from '../lib/model-registry'
+import { CHAPTER_MODEL_REGISTRY, MONTHLY_DEPTH_MODEL } from '../lib/model-registry'
 import { astroClient } from '../lib/service-clients'
 import { markCurrentAndInsert } from '../lib/versioned-store'
 import { consumeProAllowance } from '../services/pro-allowance'
@@ -48,9 +48,8 @@ const slugSchema = z.enum(CHAPTER_SLUGS)
 // 流年深读 (monthly LLM depth) — stored in report_chapters under a synthetic chapter
 // key so it reuses the versioned store (no new migration). One row per user+month+chart:
 // the contextHash folds in the month, so a new month lazily regenerates and the old
-// stays as history. Provenance/cache-version tag — bump promptVersion to force regen.
+// stays as history. The model/promptVersion live in the shared model-registry.
 const MONTHLY_DEPTH_CHAPTER = 'monthly_depth'
-const MONTHLY_DEPTH_MODEL = { model: 'cf-flagship@2026-05', promptVersion: 'v1.0' } as const
 
 const monthlyDepthRequestSchema = z.object({
   /** YYYY-MM — the month this depth is for (drives the per-month cache key). */
