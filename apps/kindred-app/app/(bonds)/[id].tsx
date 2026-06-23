@@ -216,7 +216,7 @@ export default function BondDetailScreen({
     [requestClose]
   )
   const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond } =
-    useSynastryReport(id ?? null)
+    useSynastryReport(id ?? null, resolveLocale())
   // Frozen LLM output: render the report's content + report-chrome (essence chip,
   // chapter section labels, primer, share card) in the locale it was GENERATED in
   // (interpretation.language), NOT the device locale — switching the app language

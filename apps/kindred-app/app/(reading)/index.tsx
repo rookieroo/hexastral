@@ -299,7 +299,7 @@ export default function ReadingHomeScreen() {
   const { client } = useKindredClient()
   useEffect(() => {
     for (const b of bonds) {
-      if (b.status === 'active') prefetchBondReport(client, b.id)
+      if (b.status === 'active') prefetchBondReport(client, b.id, resolveLocale())
     }
   }, [bonds, client])
 

@@ -35,11 +35,18 @@ const inflightPrefetch = new Map<string, Promise<void>>()
  * (kills the "tap → blank → bloom" wait). Best-effort, idempotent GET: skips
  * bonds already cached or in flight, and never caches a 202 (still generating).
  */
-export function prefetchBondReport(client: HexastralClient, bondId: string): void {
+export function prefetchBondReport(
+  client: HexastralClient,
+  bondId: string,
+  viewerLocale?: string
+): void {
   if (!bondId || reportCache.has(bondId) || inflightPrefetch.has(bondId)) return
   const run = (async () => {
     try {
-      const res = await kindredBonds(client)[':id'].$get({ param: { id: bondId } })
+      const res = await kindredBonds(client)[':id'].$get({
+        param: { id: bondId },
+        query: { lc: viewerLocale },
+      })
       if (res.status === 202) return
       reportCache.set(bondId, await unwrap<BondDetailData>(res))
     } catch {
@@ -69,7 +76,12 @@ export interface UseSynastryReportResult {
   unlockBond: () => Promise<'unlocked' | 'needs_purchase' | 'error'>
 }
 
-export function useSynastryReport(bondId: string | null): UseSynastryReportResult {
+export function useSynastryReport(
+  bondId: string | null,
+  /** The OPENING device's locale — the server retargets this viewer's mirror report to
+   *  it (per-reader locale), so A and B each read in their own language. */
+  viewerLocale?: string
+): UseSynastryReportResult {
   const { client, onError } = useKindredClient()
   // Paint any cached copy on the very first render so the bloom has content to
   // open over (no blank hold). The effect below covers prop-driven id changes.
@@ -86,7 +98,10 @@ export function useSynastryReport(bondId: string | null): UseSynastryReportResul
     if (!reportCache.has(bondId)) setIsLoading(true)
     setError(null)
     try {
-      const res = await kindredBonds(client)[':id'].$get({ param: { id: bondId } })
+      const res = await kindredBonds(client)[':id'].$get({
+        param: { id: bondId },
+        query: { lc: viewerLocale },
+      })
       if (res.status === 202) {
         // Backend signals generation in progress
         setIsGenerating(true)
@@ -104,7 +119,7 @@ export function useSynastryReport(bondId: string | null): UseSynastryReportResul
       setIsLoading(false)
       onError?.(e)
     }
-  }, [bondId, client, onError])
+  }, [bondId, client, onError, viewerLocale])
 
   const unlockBond = useCallback(async (): Promise<'unlocked' | 'needs_purchase' | 'error'> => {
     if (!bondId) return 'error'

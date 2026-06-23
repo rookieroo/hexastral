@@ -14,6 +14,7 @@ import { STEM_WUXING, type ZiweiTimingSummary } from '@zhop/astro-core'
 import { dayGanZhi, getFourPillars } from '@zhop/astro-core/ganzhi'
 import { calculateDailySynastry } from '@zhop/astro-core/synastry'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { zValidator } from '@hono/zod-validator'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
@@ -2025,7 +2026,107 @@ bondRoutes.post('/:id/makeif', async (c) => {
 //  dimensions[3] 日支亲密 (20%) → emotional
 const DIMENSION_SEMANTIC_KEYS = ['long_term', 'attraction', 'communication', 'emotional'] as const
 
-bondRoutes.get('/:id', async (c) => {
+/**
+ * Per-reader locale: regenerate THIS viewer's mirror reading in their DEVICE locale
+ * when the stored interpretation is in another language. The compute is deterministic
+ * (same births → identical score/grade/dimensions); only the AI prose differs, so we
+ * re-call /pair/compute in `lc` and update the viewer's own row in place — the other
+ * party's mirror row is untouched. Returns the updated fields to merge into the
+ * response, or null (no change / failure → serve the existing copy, never a dead-end).
+ *
+ * No migration: each side already has its OWN pairReadings row, so this just retargets
+ * the viewer's row to their device language. Synchronous (the GET holds while it
+ * regenerates, surfacing the report's normal loading state), and one-shot — once the
+ * row's language matches the device, later opens skip it.
+ */
+async function maybeRelocalizeReading(
+  svcAstro: Parameters<typeof callAstro>[0],
+  db: AppDb,
+  readingId: string,
+  row: {
+    interpretation: string
+    personASolarDate: string
+    personATimeIndex: number
+    personAGender: string
+    personAName: string | null
+    personBSolarDate: string
+    personBTimeIndex: number
+    personBGender: string
+    personBName: string | null
+    relationshipCategory: string | null
+    customRelationshipLabel: string | null
+  },
+  lc: string | undefined,
+  userId: string
+) {
+  if (!lc) return null
+  let storedLang: string | null = null
+  try {
+    storedLang =
+      ((JSON.parse(row.interpretation) as Record<string, unknown>).language as string) ?? null
+  } catch {
+    return null
+  }
+  if (!storedLang || normalizeInviteLocale(storedLang) === normalizeInviteLocale(lc)) return null
+
+  try {
+    const a = await callAstro<{
+      result: { compatibility: Record<string, unknown> }
+      interpretation: Record<string, string>
+    }>(svcAstro, '/pair/compute', {
+      personA: {
+        solarDate: row.personASolarDate,
+        timeIndex: row.personATimeIndex,
+        gender: row.personAGender,
+        name: row.personAName ?? undefined,
+      },
+      personB: {
+        solarDate: row.personBSolarDate,
+        timeIndex: row.personBTimeIndex,
+        gender: row.personBGender,
+        name: row.personBName ?? undefined,
+      },
+      userId,
+      isPro: true,
+      language: lc,
+      relationshipCategory: row.relationshipCategory ?? undefined,
+      customRelationshipLabel: row.customRelationshipLabel ?? undefined,
+    })
+    const interp = a.interpretation
+    interp.language = lc
+    const updated = {
+      score: a.result.compatibility.score as number,
+      grade: a.result.compatibility.grade as string,
+      archetypeName: interp.archetypeName ?? null,
+      archetypeTagline: interp.archetypeTagline ?? null,
+      archetypeCategory:
+        (interp.archetypeCategory as
+          | 'harmony'
+          | 'tension'
+          | 'growth'
+          | 'karmic'
+          | 'volatile'
+          | undefined) ?? null,
+      hookDimension:
+        (interp.hookDimension as
+          | 'long_term'
+          | 'communication'
+          | 'attraction'
+          | 'emotional'
+          | undefined) ?? null,
+      compatibilityData: JSON.stringify(a.result.compatibility),
+      interpretation: JSON.stringify(interp),
+    }
+    await db.update(pairReadings).set(updated).where(eq(pairReadings.id, readingId))
+    return updated
+  } catch {
+    return null
+  }
+}
+
+const bondGetQuerySchema = z.object({ lc: z.string().max(16).optional() })
+
+bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
   const bondId = c.req.param('id')
   const userId = requireUserId(c)
   const db = c.get('db')
@@ -2088,7 +2189,7 @@ bondRoutes.get('/:id', async (c) => {
   let viewerIsPersonA = true
 
   if (bond.hehunReadingId) {
-    const rawReading = await db
+    const rawReadingRaw = await db
       .select({
         score: pairReadings.score,
         grade: pairReadings.grade,
@@ -2102,13 +2203,33 @@ bondRoutes.get('/:id', async (c) => {
         personASolarDate: pairReadings.personASolarDate,
         personATimeIndex: pairReadings.personATimeIndex,
         personAGender: pairReadings.personAGender,
+        personAName: pairReadings.personAName,
         personBSolarDate: pairReadings.personBSolarDate,
         personBTimeIndex: pairReadings.personBTimeIndex,
         personBGender: pairReadings.personBGender,
+        personBName: pairReadings.personBName,
+        relationshipCategory: pairReadings.relationshipCategory,
+        customRelationshipLabel: pairReadings.customRelationshipLabel,
       })
       .from(pairReadings)
       .where(eq(pairReadings.id, bond.hehunReadingId))
       .get()
+
+    // Per-reader locale: retarget this viewer's mirror row to their device locale (?lc)
+    // before building the response, so A and B each read in their own language. No-op
+    // (returns null) when it already matches or on failure — never a dead-end.
+    let rawReading = rawReadingRaw
+    if (rawReadingRaw) {
+      const relocalized = await maybeRelocalizeReading(
+        c.env.SVC_ASTRO,
+        db,
+        bond.hehunReadingId,
+        rawReadingRaw,
+        c.req.valid('query').lc,
+        userId
+      )
+      if (relocalized) rawReading = { ...rawReadingRaw, ...relocalized }
+    }
 
     if (rawReading) {
       reading = {
