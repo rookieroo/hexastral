@@ -8,6 +8,7 @@
  * dependency injection.
  */
 
+export * from './monthly-fortune'
 export * from './natal'
 export * from './personality-presets'
 export * from './reading'

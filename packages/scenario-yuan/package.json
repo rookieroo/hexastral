@@ -5,6 +5,7 @@
   "description": "Shared personal-reading (八字 + 紫微) compute, components, and types — the 命 report behind Yuel's solo reading and Yuun's personal deep read. Mirrors scenario-kindred (synastry) for the single-person side.",
   "exports": {
     ".": "./src/index.ts",
+    "./monthly-fortune": "./src/monthly-fortune.ts",
     "./natal": "./src/natal.ts",
     "./personality-presets": "./src/personality-presets.ts",
     "./reading": "./src/reading.ts",
