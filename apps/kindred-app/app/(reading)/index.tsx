@@ -32,7 +32,7 @@ import {
   useKindredClient,
 } from '@zhop/scenario-kindred'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Milestone, Settings2, Spline } from 'lucide-react-native'
+import { Moon, Settings2, Spline } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -73,8 +73,8 @@ interface HomeCopy {
   /** Kicker over the caption — "this is YOUR book of fate". */
   cardKicker: string
   open: string
-  /** Short doorway to the 流年 timeline screen (大运 arc + 本月运势), beside `open`. */
-  timeline: string
+  /** Short doorway to the 本月 screen (the lightweight 本月运势 card), beside `open`. */
+  month: string
   threads: string
   threadsHint: string
   /** 0-thread empty state — the primary "bring someone into your sky" action. */
@@ -89,7 +89,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   en: {
     cardKicker: 'Your reading',
     open: 'Open your reading →',
-    timeline: 'Your year',
+    month: 'This month',
     threads: 'Threads',
     threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
@@ -100,7 +100,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   zh: {
     cardKicker: '你的命书',
     open: '打开命书 →',
-    timeline: '流年',
+    month: '本月',
     threads: '牵绊',
     threadsHint: '此刻，夜空里只有你一个人。',
     emptyCta: '邀请对方 →',
@@ -111,7 +111,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   'zh-Hant': {
     cardKicker: '你的命書',
     open: '打開命書 →',
-    timeline: '流年',
+    month: '本月',
     threads: '牽絆',
     threadsHint: '此刻，夜空裡只有你一個人。',
     emptyCta: '邀請對方 →',
@@ -122,7 +122,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
   ja: {
     cardKicker: 'あなたの命書',
     open: '命書を開く →',
-    timeline: '流年',
+    month: '今月',
     threads: '絆',
     threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
@@ -385,8 +385,8 @@ export default function ReadingHomeScreen() {
   // (SkyHero.onSwipeLeft). It pushes in from the right; swipe-right inside Settings
   // pops back, so the two motions mirror.
   const openSettings = useCallback(() => router.push('/(settings)'), [router])
-  // 流年 — the personal timeline (大运 arc + 本月运势). A quiet doorway beside "打开命书".
-  const openTimeline = useCallback(() => router.push('/(reading)/timeline'), [router])
+  // 本月 — the lightweight 本月运势 card; ADR-0026 moved the interactive 流年/假如 to 运.
+  const openMonth = useCallback(() => router.push('/(reading)/month'), [router])
 
   // New thread — never gated. Inviting is the viral action and is uncapped, and a
   // solo bond is always free to CREATE; the free-vs-teaser decision is made by the
@@ -514,8 +514,8 @@ export default function ReadingHomeScreen() {
       {/* Personal reading entry. Tapping your central star opens it too
           (SkyHero.onTapSelf), but that gesture isn't discoverable — this is the visible
           doorway the home was missing (2026-06 feedback). Centered under your star,
-          quiet gold so it reads as YOUR entry without shouting over the sky. The 本月运势
-          doorway (大运 arc + 本月运势) sits on the same row. */}
+          quiet gold so it reads as YOUR entry without shouting over the sky. The 本月
+          doorway (the lightweight 本月运势 card) sits on the same row. */}
       <View
         style={{
           flexDirection: 'row',
@@ -548,10 +548,10 @@ export default function ReadingHomeScreen() {
           style={{ width: StyleSheet.hairlineWidth, height: 11, backgroundColor: kindredDark.border }}
         />
         <Pressable
-          onPress={openTimeline}
+          onPress={openMonth}
           hitSlop={8}
           accessibilityRole='button'
-          accessibilityLabel={copy.timeline}
+          accessibilityLabel={copy.month}
           style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
@@ -559,9 +559,9 @@ export default function ReadingHomeScreen() {
             opacity: pressed ? 0.55 : 1,
           })}
         >
-          {/* A small milestone glyph — the 流年 arc reads as its own kind of doorway,
-              a journey through time, not a second "open". */}
-          <Milestone size={12} color={kindredDark.textMuted} strokeWidth={1.6} />
+          {/* A small moon glyph — 本月 reads as its own kind of doorway (the lunar
+              month), not a second "open". */}
+          <Moon size={12} color={kindredDark.textMuted} strokeWidth={1.6} />
           <Text
             style={{
               fontFamily: kindredFonts.mono,
@@ -571,7 +571,7 @@ export default function ReadingHomeScreen() {
               color: kindredDark.textMuted,
             }}
           >
-            {copy.timeline}
+            {copy.month}
           </Text>
         </Pressable>
       </View>

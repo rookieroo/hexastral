@@ -51,9 +51,11 @@ const WRAP = ARC_RADIUS + DISC_SIZE / 2 + FAB_SIZE / 2 + 8
 
 export interface LivingLayerFabProps {
   labels: { timeline: string; whatif: string; chat: string }
-  onTimeline: () => void
-  /** Optional — the What-if disc only appears where the surface exists (the personal
-   *  report gains it in a later slice; the 合盘 report always passes it). */
+  /** Optional — the Timeline disc only appears where the surface exists (the 合盘 report
+   *  passes it; the personal report's 流年 moved to 运/Yuun per ADR-0026). */
+  onTimeline?: () => void
+  /** Optional — the What-if disc only appears where the surface exists (the 合盘 report
+   *  passes it; the personal report's 假如 moved to 运/Yuun per ADR-0026). */
   onWhatIf?: () => void
   /** Optional — the chat disc only appears once the bond has a pair reading. */
   onChat?: () => void
@@ -77,9 +79,11 @@ export function LivingLayerFab({
     })
   }, [open, progress])
 
-  // First disc nearest "up", last nearest "left". What-if/Chat only when routable.
+  // First disc nearest "up", last nearest "left". Each disc only when routable.
   const actions: Array<{ key: string; Icon: LucideIcon; label: string; onPress: () => void }> = [
-    { key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline },
+    ...(onTimeline
+      ? [{ key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline }]
+      : []),
     ...(onWhatIf
       ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }]
       : []),
