@@ -102,8 +102,13 @@ export function normalizeMonthlyDepth(raw: unknown): MonthlyDepth | null {
   }
 }
 
-/** The signed request body — the deterministic card's atoms + opening-device locale. */
-export function monthlyDepthRequestBody(input: MonthlyDepthInput): string {
+/** The signed request body — the deterministic card's atoms + opening-device locale,
+ *  plus any app-specific `extra` the backend needs (Yuun merges `{ birth, user, isPro }`;
+ *  kindred sends nothing, using its stored chart). */
+export function monthlyDepthRequestBody(
+  input: MonthlyDepthInput,
+  extra?: Record<string, unknown>
+): string {
   return JSON.stringify({
     monthKey: input.monthKey,
     monthLabel: input.monthLabel,
@@ -112,6 +117,7 @@ export function monthlyDepthRequestBody(input: MonthlyDepthInput): string {
     headline: input.headline,
     body: input.body,
     locale: input.locale,
+    ...(extra ?? {}),
   })
 }
 
@@ -127,7 +133,11 @@ export interface MonthlyDepthClient {
    * `error` covers signed-out / network / bad-shape so the caller keeps the free card.
    * On success the depth is cached per chart + month + locale.
    */
-  fetchMonthlyDepth(chartHash: string, input: MonthlyDepthInput): Promise<MonthlyDepthResult>
+  fetchMonthlyDepth(
+    chartHash: string,
+    input: MonthlyDepthInput,
+    extra?: Record<string, unknown>
+  ): Promise<MonthlyDepthResult>
 }
 
 export function createMonthlyDepthClient(t: MonthlyDepthTransport): MonthlyDepthClient {
@@ -146,14 +156,18 @@ export function createMonthlyDepthClient(t: MonthlyDepthTransport): MonthlyDepth
 
   async function fetchMonthlyDepth(
     chartHash: string,
-    input: MonthlyDepthInput
+    input: MonthlyDepthInput,
+    extra?: Record<string, unknown>
   ): Promise<MonthlyDepthResult> {
     const cached = await getCachedMonthlyDepth(chartHash, input.monthKey, input.locale)
     if (cached) return { kind: 'ok', depth: cached }
 
     let res: MonthlyDepthResponse | null
     try {
-      res = await t.post(t.endpoint ?? MONTHLY_DEPTH_ENDPOINT, monthlyDepthRequestBody(input))
+      res = await t.post(
+        t.endpoint ?? MONTHLY_DEPTH_ENDPOINT,
+        monthlyDepthRequestBody(input, extra)
+      )
     } catch {
       return { kind: 'error' }
     }

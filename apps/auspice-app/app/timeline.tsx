@@ -38,6 +38,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import type { DrilldownYear } from '@/components/DrilldownGraph'
+import { MonthlyDepthCard } from '@/components/MonthlyDepthCard'
 import { MoonLoader } from '@/components/MoonLoader'
 import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
 import { DOMAIN_COLORS, ReadingBubble } from '@/components/TimelineGraph'
@@ -474,6 +475,11 @@ export default function TimelineScreen() {
           </View>
           <ChevronRight size={16} color={colors.dim} strokeWidth={1.6} />
         </Pressable>
+
+        {/* 本月深度 — the "this month" HEAD anchor (ADR-0026): deterministic 本月运势 +
+            the Pro deep-read (the one tangible LLM, borrowed from Yuel). Self-gates on
+            birth, and it's where the month-start node push already lands (/timeline). */}
+        <MonthlyDepthCard isPro={isPro} locale={locale} onNeedPro={() => setPaywallOpen(true)} />
 
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>

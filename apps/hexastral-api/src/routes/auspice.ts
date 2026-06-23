@@ -1803,6 +1803,109 @@ auspiceRoutes.post('/makeif', async (c) => {
   return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
 })
 
+// ── POST /monthly — 本月深度 (流年深读) for Yuun's timeline HEAD (ADR-0026) ──────
+//
+// The deterministic 本月运势 card is free; this expands it into the SAME MonthlyDepth
+// shape Yuel's /api/report/monthly returns, so the shared @zhop/scenario-yuan
+// monthly-depth client reads both. Auspice-gated via the client's trusted `isPro`
+// (mirrors /makeif — Yuun is anonymous/device-scoped, no stored chart), so the client
+// sends birth + the derived `user` chart fields. GUARD_KV-cached 30d per birth+month+
+// locale (fires ~once a month — the natural cap). Returns the UNWRAPPED { depth,
+// generatedAt } the shared client expects (not jsonOk's envelope); 402 → the paywall.
+
+const auspiceMonthlySchema = z.object({
+  birthDate: z.string().regex(DATE_RE, 'birthDate must be YYYY-MM-DD'),
+  timeIndex: z.number().int().min(0).max(12).default(0),
+  gender: z.enum(['男', '女']),
+  monthKey: z.string().regex(/^\d{4}-\d{2}$/, 'monthKey must be YYYY-MM'),
+  monthLabel: z.string().min(1).max(40),
+  ganZhi: z.string().min(1).max(8),
+  element: z.string().min(1).max(8),
+  headline: z.string().min(1).max(200),
+  body: z.string().min(1).max(1200),
+  locale: z.string().max(16).default('en'),
+  isPro: z.boolean().default(false),
+  dev: z.boolean().default(false),
+  user: z
+    .object({
+      dayMasterStem: z.string().nullable().optional(),
+      dayMasterStrength: z.string().nullable().optional(),
+      favorableElement: z.string().nullable().optional(),
+      unfavorableElement: z.string().nullable().optional(),
+    })
+    .optional(),
+})
+
+auspiceRoutes.post('/monthly', async (c) => {
+  const body = auspiceMonthlySchema.parse(await c.req.json().catch(() => ({})))
+
+  // Pro-only (trusted client flag, mirrors /makeif). 402 → the client's paywall.
+  if (!body.isPro) return c.json({ error: 'pro_required' }, 402)
+
+  const cacheKey = `auspice:monthly:v1:${body.birthDate}:${body.timeIndex}:${body.gender}:${body.locale}:${body.monthKey}`
+  const cached = await c.env.GUARD_KV.get(cacheKey)
+  if (cached) {
+    try {
+      return c.json(JSON.parse(cached) as { depth: unknown; generatedAt: string })
+    } catch {
+      // fall through and regenerate on a corrupt row
+    }
+  }
+
+  // LLM budget guard (anonymous/device-scoped, like /makeif) unless a DEV build.
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
+  let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
+  if (!body.dev) {
+    if (!subject) return c.json({ error: 'rate_limited' }, 429)
+    guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
+    for (const ev of guard.events) console.info('[auspice.monthly.guard]', JSON.stringify(ev))
+    if (guard.decision !== 'allow_llm') return c.json({ error: 'rate_limited' }, 429)
+  }
+
+  const chartHash = hashIp(`${body.birthDate}:${body.timeIndex}:${body.gender}`)
+  const contextHash = hashIp(`${chartHash}:${body.monthKey}:${body.locale}`)
+
+  try {
+    const depth = await astroClient.post<unknown>(c.env.SVC_ASTRO, '/report/monthly', {
+      chartHash,
+      contextHash,
+      locale: body.locale,
+      isPro: true,
+      user: body.user ?? {},
+      birth: {
+        solarDate: body.birthDate,
+        timeIndex: body.timeIndex,
+        gender: body.gender,
+      },
+      month: {
+        key: body.monthKey,
+        label: body.monthLabel,
+        ganZhi: body.ganZhi,
+        element: body.element,
+        headline: body.headline,
+        body: body.body,
+      },
+    })
+
+    const generatedAt = new Date().toISOString()
+    await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ depth, generatedAt }), {
+      expirationTtl: 2_592_000,
+    })
+    if (!body.dev && subject && guard) {
+      await recordLlmGuardGrant(c.env, {
+        subject,
+        config: MAKEIF_GUARD_CONFIG,
+        consumesPeakPass: guard.consumesPeakPass,
+      })
+    }
+    return c.json({ depth, generatedAt })
+  } catch (err) {
+    console.error('[auspice.monthly] generate failed', err)
+    return c.json({ error: 'generate_failed' }, 502)
+  }
+})
+
 // ── POST /makeif/node — per-NODE expansion within a 假如 branch (Phase 6) ─────
 //
 // Zooms a single age on a 假如 branch into "at this age in that life, you would
