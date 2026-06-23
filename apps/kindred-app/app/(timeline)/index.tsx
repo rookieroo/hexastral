@@ -38,9 +38,10 @@ import {
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import {
@@ -105,6 +106,12 @@ export default function TimelineScreen() {
   // pronoun when the bond name didn't ride the route params.
   const youLabel = locale.startsWith('zh') ? '你' : locale === 'ja' ? 'あなた' : 'You'
   const taFallback = locale.startsWith('zh') ? 'TA' : locale === 'ja' ? '相手' : 'Them'
+
+  // Per-bond git-graph: the graph + the selected node's card (Yuun's graph+detail
+  // pattern). Defaults to the first turning point until the reader taps another.
+  const { width: winW } = useWindowDimensions()
+  const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null)
+  const selectedNode = nodes.find((n) => n.key === selectedNodeKey) ?? nodes[0] ?? null
 
   // Lay the (Pro-only, server-computed) reminder timetable onto the device as
   // local notifications — prompts for permission on the first Pro timeline view,
@@ -252,16 +259,30 @@ export default function TimelineScreen() {
           />
         ) : null}
 
-        {/* Per-bond axis (opened from the 合盘 report) → a TWO-THREAD WEAVE: 你 + TA
-            run as parallel threads, tied at each turning point — a relationship
-            graph, distinct from auspice's solo life-line. The all-bonds ego axis
-            (你 × many) keeps the single spine. */}
-        {bondId ? <ThreadLegend youLabel={youLabel} taLabel={bondName || taFallback} /> : null}
-        {grouped.map(({ year, nodes: yearNodes }) => {
-          const Row = bondId ? ThreadRow : SpineRow
-          return (
+        {/* Per-bond axis (opened from the 合盘 report) → a Skia git-graph: 你 + TA run
+            as two threads, tied at each turning point, with the selected node's card
+            below (Yuun's graph + detail pattern). The all-bonds ego axis (你 × many)
+            keeps the single year-grouped spine. */}
+        {bondId ? (
+          <>
+            <ThreadLegend youLabel={youLabel} taLabel={bondName || taFallback} />
+            <RelationshipGitGraph
+              nodes={nodes}
+              selectedKey={selectedNode?.key ?? null}
+              onSelect={setSelectedNodeKey}
+              width={winW - kindredSpacing.screenH * 2}
+              yearLabel={(node) => `${node.year} · ${node.ganZhi}`}
+            />
+            {selectedNode ? (
+              <View style={{ marginTop: kindredSpacing.md }}>
+                <NodeCard node={selectedNode} locale={locale} explainNode={explainNode} />
+              </View>
+            ) : null}
+          </>
+        ) : (
+          grouped.map(({ year, nodes: yearNodes }) => (
             <View key={year}>
-              <Row ring dotColor={kindredDark.accent} dotSize={11}>
+              <SpineRow ring dotColor={kindredDark.accent} dotSize={11}>
                 <Text
                   style={[
                     kindredType.seal,
@@ -270,15 +291,15 @@ export default function TimelineScreen() {
                 >
                   {year}
                 </Text>
-              </Row>
+              </SpineRow>
               {yearNodes.map((node) => (
-                <Row key={node.key} dotColor={significanceColor(node.significance)}>
+                <SpineRow key={node.key} dotColor={significanceColor(node.significance)}>
                   <NodeCard node={node} locale={locale} explainNode={explainNode} />
-                </Row>
+                </SpineRow>
               ))}
             </View>
-          )
-        })}
+          ))
+        )}
 
         {/* Hidden door: the default axis is 10y (what matters near-term); a quiet
             tap loads the beyond-10y view for those who want the long arc. */}
@@ -624,96 +645,11 @@ function SpineRow({
   )
 }
 
-// The two threads of a PER-BOND timeline — 你 (gold) + TA (cool silver), the same
-// pairing the night-sky hero uses. Drawn instead of the single self-spine so the
-// per-bond axis reads as a RELATIONSHIP graph (Yuel = 缘 = the thread between two),
-// never a copy of auspice's solo life-line.
+// The two threads of a PER-BOND timeline — 你 (gold) + TA (cool silver): the
+// ThreadLegend swatches. The rail itself is now RelationshipGitGraph (a Skia graph),
+// so the old plain-RN ThreadRow weave was retired.
 const YOU_THREAD = kindredDark.accent
 const TA_THREAD = '#9ab0cf'
-
-/**
- * One row of the two-thread weave: 你 + TA run as parallel threads down the loom;
- * each turning point is the moment they're tied — a connector bridges the two
- * threads with a significance dot at the midpoint (the shared node). `ring` marks
- * a year. Continuous full-height threads → the rows read as one unbroken weave.
- */
-function ThreadRow({
-  dotColor,
-  dotSize = 8,
-  ring = false,
-  children,
-}: {
-  dotColor: string
-  dotSize?: number
-  ring?: boolean
-  children: ReactNode
-}) {
-  const W = 56
-  const X_YOU = 17
-  const X_TA = 39
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      <View style={{ width: W }}>
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            width: 1.5,
-            left: X_YOU,
-            backgroundColor: YOU_THREAD,
-            opacity: 0.65,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            width: 1.5,
-            left: X_TA,
-            backgroundColor: TA_THREAD,
-            opacity: 0.65,
-          }}
-        />
-        {/* the shared moment — a connector ties the two threads, dot at the midpoint */}
-        <View
-          style={{
-            marginTop: 5,
-            marginLeft: X_YOU,
-            width: X_TA - X_YOU,
-            height: dotSize,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: (dotSize - 1.5) / 2,
-              height: 1.5,
-              backgroundColor: dotColor,
-              opacity: 0.5,
-            }}
-          />
-          <View
-            style={{
-              width: dotSize,
-              height: dotSize,
-              borderRadius: dotSize / 2,
-              backgroundColor: ring ? kindredDark.bg : dotColor,
-              borderWidth: ring ? 2 : 0,
-              borderColor: dotColor,
-            }}
-          />
-        </View>
-      </View>
-      <View style={{ flex: 1, paddingBottom: kindredSpacing.sm }}>{children}</View>
-    </View>
-  )
-}
 
 /** Small legend that names the two threads (per-bond mode only). */
 function ThreadLegend({ youLabel, taLabel }: { youLabel: string; taLabel: string }) {
