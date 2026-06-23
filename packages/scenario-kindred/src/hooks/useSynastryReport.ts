@@ -74,6 +74,8 @@ export interface UseSynastryReportResult {
    * `'error'`.
    */
   unlockBond: () => Promise<'unlocked' | 'needs_purchase' | 'error'>
+  /** Re-read this bond in another language (metered — spends a reroll). Refetches on success. */
+  relocalize: (lc: string) => Promise<'relocalized' | 'needs_pro' | 'quota' | 'error'>
 }
 
 export function useSynastryReport(
@@ -135,6 +137,27 @@ export function useSynastryReport(
     }
   }, [bondId, client, refetch, onError])
 
+  const relocalize = useCallback(
+    async (lc: string): Promise<'relocalized' | 'needs_pro' | 'quota' | 'error'> => {
+      if (!bondId) return 'error'
+      try {
+        const res = await kindredBonds(client)[':id'].relocalize.$post({
+          param: { id: bondId },
+          json: { lc },
+        })
+        if (res.status === 402) return 'needs_pro'
+        if (res.status === 429) return 'quota'
+        if (!res.ok) return 'error'
+        await refetch()
+        return 'relocalized'
+      } catch (err) {
+        onError?.(err instanceof Error ? err : new Error(String(err)))
+        return 'error'
+      }
+    },
+    [bondId, client, refetch, onError]
+  )
+
   useEffect(() => {
     if (!bondId) {
       setDetail(null)
@@ -158,6 +181,7 @@ export function useSynastryReport(
     refetch,
     chapters: extractChapters(detail?.interpretation),
     unlockBond,
+    relocalize,
   }
 }
 

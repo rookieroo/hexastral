@@ -52,6 +52,10 @@ export type KindredBondsRpc = {
         $post: (opts: { param: { id: string }; json: MakeIfExplainInput }) => Promise<Response>
       }
     }
+    /** Re-read this bond in another language (metered — spends a `reroll`, ADR-0027). */
+    relocalize: {
+      $post: (opts: { param: { id: string }; json: { lc: string } }) => Promise<Response>
+    }
   }
   // Bonds timeline (BT.3/BT.4, ADR-0014). Registered before `/:id` server-side
   // so the static path wins; typed here for Kindred hooks.
