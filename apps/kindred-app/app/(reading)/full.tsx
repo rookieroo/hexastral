@@ -30,7 +30,7 @@ import {
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
 import * as Haptics from 'expo-haptics'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -381,6 +381,21 @@ export default function FullReadingScreen() {
   const [activeChapter, setActiveChapter] = useState<ChapterRef | null>(null)
   const lastActiveRef = useRef<ChapterRef | null>(null)
   if (activeChapter) lastActiveRef.current = activeChapter
+
+  // The chapter DETAIL is an in-screen sub-view (state), not a route — so the iOS
+  // edge-swipe-back would pop the whole 命书 to the home, skipping the chapter
+  // list. Intercept the route removal while a chapter is open and fold back to
+  // the list instead; only the list view actually leaves the screen.
+  const navigation = useNavigation()
+  useEffect(() => {
+    const sub = navigation.addListener('beforeRemove', (e) => {
+      if (activeChapter) {
+        e.preventDefault()
+        setActiveChapter(null)
+      }
+    })
+    return sub
+  }, [navigation, activeChapter])
 
   // 划词 (K3): the long-pressed paragraph drives the action bar; highlights persist
   // per chart (the personal report has no bondId, so chartHash is the stable key).
