@@ -20,7 +20,6 @@
  *   - 划词 chat: pushes the in-app (reading)/reading-chat route.
  */
 
-import { usePreventRemove } from '@react-navigation/native'
 import type { WuXing } from '@zhop/astro-core'
 import {
   getTermByZh,
@@ -33,10 +32,18 @@ import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft } from 'lucide-react-native'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
+import { ArrowLeft, Lock, X } from 'lucide-react-native'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import {
+  Dimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
   dayMasterLabel,
@@ -46,6 +53,7 @@ import {
   strengthLabel,
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
+import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
@@ -117,46 +125,57 @@ function SealNumeral({ n, size = 46 }: { n: number; size?: number }) {
 }
 
 /**
- * The 4 premium chapters — each maps to a server report-chapter slug so a Pro
- * user generates real chart-grounded prose (parity with the free ch1/ch4);
- * non-Pro keeps the static teaser + paywall.
+ * The six chapters in reading order. ch1/ch4 are the free taste (deterministic
+ * teaser; LLM once unlocked); the other four are premium — server report-chapter
+ * slugs that generate real chart-grounded prose once the report is unlocked. The
+ * report flips through them as a continuous horizontal pager (parity with the 合盘
+ * report); the locked four collapse into a trailing unlock wall while unbought.
  */
-const LOCKED_CHAPTERS = [
+const REPORT_CHAPTERS = [
+  { slug: 'ch1_personality', n: 1, free: true, labelKey: 'reading.ch1Label', sub: 'PERSONALITY' },
   {
-    sub: 'CAREER',
     slug: 'ch2_dimensions_static',
+    n: 2,
+    free: false,
     labelKey: 'reading.lcCareerLabel',
     descKey: 'reading.lcCareerDesc',
-    detailKey: 'reading.lcCareerDetail',
+    sub: 'CAREER',
   },
   {
-    sub: 'RELATIONSHIPS',
     slug: 'ch3_stellar',
+    n: 3,
+    free: false,
     labelKey: 'reading.lcRelLabel',
     descKey: 'reading.lcRelDesc',
-    detailKey: 'reading.lcRelDetail',
+    sub: 'RELATIONSHIPS',
   },
+  { slug: 'ch4_timeline', n: 4, free: true, labelKey: 'reading.ch4Label', sub: 'CURRENT PERIOD' },
   {
-    sub: 'HIDDEN TENSIONS',
     slug: 'ch5_hidden',
+    n: 5,
+    free: false,
     labelKey: 'reading.lcHiddenLabel',
     descKey: 'reading.lcHiddenDesc',
-    detailKey: 'reading.lcHiddenDetail',
+    sub: 'HIDDEN TENSIONS',
   },
   {
-    sub: 'ACTION PLAN',
     slug: 'ch6_action',
+    n: 6,
+    free: false,
     labelKey: 'reading.lcActionLabel',
     descKey: 'reading.lcActionDesc',
-    detailKey: 'reading.lcActionDetail',
+    sub: 'ACTION PLAN',
   },
 ] as const satisfies ReadonlyArray<{
-  sub: string
   slug: string
+  n: number
+  free: boolean
   labelKey: ReadingStringKey
-  descKey: ReadingStringKey
-  detailKey: ReadingStringKey
+  descKey?: ReadingStringKey
+  sub: string
 }>
+
+const PREMIUM_SLUGS = REPORT_CHAPTERS.filter((c) => !c.free).map((c) => c.slug)
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -194,15 +213,6 @@ function birthFromHandoff(p: {
   }
 }
 
-/** Targets the chapter detail view — null = list view. */
-type ChapterRef = { kind: 'free'; key: 'ch1' | 'ch4' } | { kind: 'locked'; idx: 0 | 1 | 2 | 3 }
-
-/** Free ChapterRef.key → server report-chapter slug (chat readingId grounding). */
-const CHAPTER_SLUG: Record<'ch1' | 'ch4', string> = {
-  ch1: 'ch1_personality',
-  ch4: 'ch4_timeline',
-}
-
 export default function FullReadingScreen() {
   const router = useRouter()
   const { t, locale } = useReadingI18n()
@@ -231,10 +241,13 @@ export default function FullReadingScreen() {
     tz?: string
     clock?: string
     calibrate?: string
+    /** Tap point of the home star — the 墨晕 entrance spreads from here. */
+    ox?: string
+    oy?: string
   }>()
   // Primitives so the seed effect doesn't re-run on each render (useLocalSearchParams
   // returns a fresh object every render).
-  const { date, time, gender, city, lng, tz, clock, calibrate } = handoff
+  const { date, time, gender, city, lng, tz, clock, calibrate, ox, oy } = handoff
   const stored = useSelfBirth()
   // Local seed: when there's a hand-off but no stored birth yet, render from the
   // seed immediately and persist it (Yuel stays authoritative once set).
@@ -372,8 +385,8 @@ export default function FullReadingScreen() {
     }
   }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
-  // Premium chapters: fetch the 4 LOCKED_CHAPTERS once the user is Pro. Each is
-  // cache-first + resolves independently so rows fill in as they generate.
+  // Premium chapters: fetch the four premium slugs once the report is unlocked.
+  // Each is cache-first + resolves independently so pages fill in as they generate.
   useEffect(() => {
     if (!isPro) return
     if (!chartHash || draftSolarDate == null || draftGender == null) return
@@ -382,7 +395,7 @@ export default function FullReadingScreen() {
     async function loadPremium() {
       setPremiumLoading(true)
       await Promise.all(
-        LOCKED_CHAPTERS.map(async ({ slug }) => {
+        PREMIUM_SLUGS.map(async (slug) => {
           const cached = await getCachedChapter(slug, chartHash)
           const ch = cached ?? (await fetchChapter(slug, chartHash, b))
           if (!cancelled) setPremium((prev) => ({ ...prev, [slug]: ch }))
@@ -396,19 +409,8 @@ export default function FullReadingScreen() {
     }
   }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
 
-  const [activeChapter, setActiveChapter] = useState<ChapterRef | null>(null)
-  const lastActiveRef = useRef<ChapterRef | null>(null)
-  if (activeChapter) lastActiveRef.current = activeChapter
-
-  // The chapter DETAIL is an in-screen sub-view (state), not a route — so the iOS
-  // edge-swipe-back would pop the whole 命书 to the home, skipping the chapter list.
-  // `usePreventRemove` is the native-stack-supported way to intercept that pop (a
-  // raw `beforeRemove` + preventDefault desyncs JS↔native on native-stack and warns):
-  // while a chapter is open we cancel the removal and fold back to the list instead;
-  // on the list (nothing open) the swipe leaves the screen as normal.
-  usePreventRemove(activeChapter != null, () => {
-    setActiveChapter(null)
-  })
+  // The current pager page (drives 划词 grounding + the page indicator).
+  const [chapterIndex, setChapterIndex] = useState(0)
 
   // 划词 (K3): the long-pressed paragraph drives the action bar; highlights persist
   // per chart (the personal report has no bondId, so chartHash is the stable key).
@@ -480,179 +482,127 @@ export default function FullReadingScreen() {
     `${dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)} · ${gejuLabel(chart.geju.primary, locale)} · ${t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) })}` +
     (ziweiLabel ? ` · ${t('label.soulPalaceInline', { stars: ziweiLabel })}` : '')
 
-  // Free placeholder = the deterministic teaser (composeTeaserNarrator), NOT a
-  // "生成中…" string: it never generates for free, so we hand back real computed
-  // 命理 prose. `loading` only ever flips true for Pro (the LLM fetch); a non-Pro
-  // reader sees the teaser immediately.
-  const ch1Meta = {
-    label: t('reading.ch1Label'),
-    sub: 'PERSONALITY',
-    content: ch1?.content ?? null,
-    loading: loading && !ch1,
-    placeholder: teaser?.ch1 ?? t('reading.genAnalysis'),
-  }
-  const ch4Meta = {
-    label: t('reading.ch4Label'),
-    sub: 'CURRENT PERIOD',
-    content: ch4?.content ?? null,
-    loading: loading && !ch4,
-    placeholder: teaser?.ch4 ?? t('reading.genAnalysis'),
-  }
+  // Per-slug content sources. Free chapters (ch1/ch4) carry the deterministic
+  // teaser (composeTeaserNarrator) until unlocked, then swap to their LLM prose;
+  // the four premium slugs resolve into `premium`. No "生成中…" ever shows for a
+  // free reader — the teaser is real computed 命理 prose.
+  //
+  // `unlocked` currently rides the existing entitlement. TODO(monetization): once a
+  // dedicated single-purchase product exists, repoint this at it so Pro stays the
+  // 体验层 only and the report's chapters unlock per-purchase, not by subscription.
+  const unlocked = isPro
+  const contentBySlug = (slug: string): string | null =>
+    slug === 'ch1_personality'
+      ? (ch1?.content ?? null)
+      : slug === 'ch4_timeline'
+        ? (ch4?.content ?? null)
+        : (premium[slug]?.content ?? null)
+  const teaserBySlug = (slug: string): string | null =>
+    slug === 'ch1_personality'
+      ? (teaser?.ch1 ?? null)
+      : slug === 'ch4_timeline'
+        ? (teaser?.ch4 ?? null)
+        : null
+  const loadingBySlug = (slug: string): boolean =>
+    slug === 'ch1_personality'
+      ? loading && !ch1
+      : slug === 'ch4_timeline'
+        ? loading && !ch4
+        : unlocked && premiumLoading && !premium[slug]
 
-  /* ── detail view props (rendered as a slide-in overlay). ── */
-  const detailChapter = activeChapter ?? lastActiveRef.current
-  let detailProps: React.ComponentProps<typeof ChapterDetail> | null = null
-  if (detailChapter) {
-    const back = () => setActiveChapter(null)
-    if (detailChapter.kind === 'free') {
-      const key = detailChapter.key
-      const m = key === 'ch1' ? ch1Meta : ch4Meta
-      // Free → the deterministic placeholder + unlock CTA (no LLM). The 划词 chat
-      // only attaches once a Pro user has the real generated chapter.
-      const llm = m.content
-      detailProps = {
-        locale,
-        label: m.label,
-        sub: m.sub,
-        content: llm,
-        loading: m.loading,
-        placeholder: m.placeholder,
-        locked: !isPro,
-        unlockLabel: t('reading.unlock'),
-        backLabel: t('common.back'),
-        onBack: back,
-        onUnlock: openPaywall,
-        identityLine,
-        birthBadge,
-        ...(llm
-          ? {
-              // 划词 AI chat (K3) — long-press a paragraph or tap the chapter CTA.
-              onAsk: (quote: string | null) => handleAskAI({ slug: CHAPTER_SLUG[key], quote }),
-              askChapterLabel: t('reading.askChapter'),
-              askHint: t('reading.askParagraphHint'),
-              onPickQuote: setPickedQuote,
-              highlightedQuotes: highlights,
-            }
-          : {}),
-      }
-    } else {
-      const lc = LOCKED_CHAPTERS[detailChapter.idx]
-      if (lc) {
-        const raw = isPro ? (premium[lc.slug]?.content ?? null) : null
-        detailProps = {
-          locale,
-          label: t(lc.labelKey),
-          sub: lc.sub,
-          content: raw,
-          loading: isPro && premiumLoading && !raw,
-          placeholder: t(lc.detailKey),
-          locked: !isPro,
-          unlockLabel: t('reading.unlock'),
-          backLabel: t('common.back'),
-          onBack: back,
-          onUnlock: openPaywall,
-          // Once unlocked + generated, ground it + enable 划词 chat (same as free).
-          ...(raw
-            ? {
-                identityLine,
-                birthBadge,
-                onAsk: (quote: string | null) => handleAskAI({ slug: lc.slug, quote }),
-                askChapterLabel: t('reading.askChapter'),
-                askHint: t('reading.askParagraphHint'),
-                onPickQuote: setPickedQuote,
-                highlightedQuotes: highlights,
-              }
-            : {}),
-        }
-      }
-    }
+  // The pages the pager flips through: every chapter once unlocked; only the free
+  // taste (ch1/ch4) while unbought, with the locked four folded into the wall.
+  const pages = REPORT_CHAPTERS.filter((c) => unlocked || c.free)
+  const lockedChapters = REPORT_CHAPTERS.filter((c) => !c.free)
+  const screenWidth = Dimensions.get('window').width
+  const bloomOrigin = ox != null && oy != null ? { x: Number(ox), y: Number(oy) } : null
+  const pageCount = pages.length + (unlocked ? 0 : 1)
+  const activeSlug = pages[chapterIndex]?.slug ?? null
+
+  const onPageEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = Math.round(e.nativeEvent.contentOffset.x / screenWidth)
+    if (next !== chapterIndex) setChapterIndex(next)
   }
 
   return (
     <View style={S.paper}>
-      <SafeAreaView style={S.safe} edges={['top']}>
-        <Header title={t('reading.title')} onBack={goBack} backLabel={t('common.back')} />
-
-        <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={S.identity}>{identityLine}</Text>
-          <Text style={S.birth}>{birthBadge}</Text>
-          {timeIndex == null ? <Text style={S.caveat}>{t('reading.timeUnknownEst')}</Text> : null}
-
-          <Pressable onPress={() => setActiveChapter({ kind: 'free', key: 'ch1' })}>
-            {({ pressed }) => (
-              <View style={pressed ? S.chapterPressed : undefined}>
-                <Chapter
-                  n={1}
-                  label={ch1Meta.label}
-                  sub={ch1Meta.sub}
-                  summary={ch1Meta.content ?? ch1Meta.placeholder}
-                  loading={ch1Meta.loading}
-                />
-              </View>
-            )}
+      {/* 水墨晕开 entrance — the 宣纸 命书 unrolls in from the tapped star (origin
+          passed as ox/oy), then rests. Wraps only the pager; the 划词 bar stays
+          outside the mask. */}
+      <ReportBloom origin={bloomOrigin}>
+        <SafeAreaView style={S.safe} edges={['top']}>
+          {/* Clean report — no header chrome (parity with the 合盘 report). A quiet
+              close sits top-left; the iOS edge-swipe-back also pops the route. */}
+          <Pressable
+            onPress={goBack}
+            hitSlop={12}
+            accessibilityRole='button'
+            accessibilityLabel={t('common.back')}
+            style={S.closeBtn}
+          >
+            <X size={22} color={P.muted} strokeWidth={1.5} />
           </Pressable>
 
-          <Pressable onPress={() => setActiveChapter({ kind: 'free', key: 'ch4' })}>
-            {({ pressed }) => (
-              <View style={pressed ? S.chapterPressed : undefined}>
-                <Chapter
-                  n={2}
-                  label={ch4Meta.label}
-                  sub={ch4Meta.sub}
-                  summary={ch4Meta.content ?? ch4Meta.placeholder}
-                  loading={ch4Meta.loading}
+          {/* Six chapters as one continuous horizontal flip; the locked four fold
+              into a trailing unlock wall while the report is unbought. */}
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onPageEnd}
+            contentOffset={{ x: chapterIndex * screenWidth, y: 0 }}
+            style={{ flex: 1 }}
+          >
+            {pages.map((c, i) => {
+              const content = contentBySlug(c.slug)
+              return (
+                <View key={c.slug} style={{ width: screenWidth }}>
+                  <ChapterPage
+                    n={c.n}
+                    label={t(c.labelKey)}
+                    sub={c.sub}
+                    locale={locale}
+                    content={content}
+                    loading={loadingBySlug(c.slug)}
+                    teaser={teaserBySlug(c.slug)}
+                    identityLine={i === 0 ? identityLine : undefined}
+                    birthBadge={i === 0 ? birthBadge : undefined}
+                    timeCaveat={
+                      i === 0 && timeIndex == null ? t('reading.timeUnknownEst') : undefined
+                    }
+                    ask={
+                      content
+                        ? {
+                            onAsk: (quote: string | null) => handleAskAI({ slug: c.slug, quote }),
+                            askChapterLabel: t('reading.askChapter'),
+                            askHint: t('reading.askParagraphHint'),
+                            onPickQuote: setPickedQuote,
+                            highlightedQuotes: highlights,
+                          }
+                        : undefined
+                    }
+                  />
+                </View>
+              )
+            })}
+            {!unlocked ? (
+              <View key='__wall' style={{ width: screenWidth }}>
+                <UnlockWall
+                  heading={t('reading.moreChapters')}
+                  lockedChapters={lockedChapters.map((c) => ({
+                    title: t(c.labelKey),
+                    line: c.descKey ? t(c.descKey) : '',
+                  }))}
+                  ctaLabel={t('reading.unlock')}
+                  onUnlock={openPaywall}
                 />
               </View>
-            )}
-          </Pressable>
+            ) : null}
+          </ScrollView>
 
-          <Text style={S.sectionKicker}>{t('reading.moreChapters')}</Text>
-
-          {LOCKED_CHAPTERS.map((ch, i) => {
-            const idx = i as 0 | 1 | 2 | 3
-            const pc = isPro ? premium[ch.slug] : null
-            return (
-              <Pressable
-                key={ch.sub}
-                onPress={() => setActiveChapter({ kind: 'locked', idx })}
-                style={({ pressed }) => ({
-                  opacity: isPro ? (pressed ? 0.7 : 1) : (0.62 - i * 0.07) * (pressed ? 0.7 : 1),
-                })}
-              >
-                <Chapter
-                  n={i + 3}
-                  label={t(ch.labelKey)}
-                  sub={ch.sub}
-                  summary={pc?.content ?? t(ch.descKey)}
-                  loading={isPro && premiumLoading && !pc}
-                  locked={!isPro}
-                />
-              </Pressable>
-            )
-          })}
-
-          {!isPro ? (
-            <Pressable
-              style={({ pressed }) => [S.unlockBtn, pressed && { opacity: 0.85 }]}
-              onPress={openPaywall}
-            >
-              <Text style={S.unlockText}>{t('reading.unlock')}</Text>
-            </Pressable>
-          ) : null}
-
-          <View style={{ height: 60 }} />
-        </ScrollView>
-      </SafeAreaView>
-
-      {activeChapter && detailProps ? (
-        <Animated.View
-          entering={SlideInRight.duration(280)}
-          exiting={SlideOutRight.duration(240)}
-          style={S.detailOverlay}
-        >
-          <ChapterDetail {...detailProps} />
-        </Animated.View>
-      ) : null}
+          {pageCount > 1 ? <PageDots count={pageCount} index={chapterIndex} /> : null}
+        </SafeAreaView>
+      </ReportBloom>
 
       {/* 划词 action bar — slides up when a paragraph is long-pressed (copy / chat /
           highlight). The personal report has no timeline/what-if, so there's no
@@ -673,8 +623,8 @@ export default function FullReadingScreen() {
         onChat={() => {
           const q = pickedQuote
           setPickedQuote(null)
-          // Reuse the active chapter's slug-aware ask (detailProps.onAsk).
-          if (q) detailProps?.onAsk?.(q)
+          // Ground the chat in whatever chapter is currently in view.
+          if (q && activeSlug) handleAskAI({ slug: activeSlug, quote: q })
         }}
         onHighlight={() => {
           const q = pickedQuote
@@ -720,100 +670,51 @@ function Header({
   )
 }
 
-/* ── Chapter (list-card) ────────────────────────────────────────────── */
+/* ── ChapterPage (one pager page) ───────────────────────────────────── */
 
-function Chapter({
+function ChapterPage({
   n,
-  label,
-  sub,
-  summary,
-  loading,
-  locked,
-}: {
-  n: number
-  label: string
-  sub: string
-  summary: string | null
-  loading: boolean
-  locked?: boolean
-}) {
-  return (
-    <View style={S.chapter}>
-      <View style={S.chapterHead}>
-        <SealNumeral n={n} />
-        <View style={{ flex: 1, gap: 7 }}>
-          <Text style={S.chapterLabel}>{label}</Text>
-          <Text style={S.chapterSub}>{sub}</Text>
-        </View>
-        {locked ? <View style={S.lockDot} /> : null}
-      </View>
-      {loading && !summary ? (
-        <View style={S.skeleton}>
-          <View style={S.skelLine} />
-          <View style={[S.skelLine, { width: '70%' }]} />
-        </View>
-      ) : summary ? (
-        <Text style={S.chapterSummary} numberOfLines={2}>
-          {summary}
-        </Text>
-      ) : null}
-    </View>
-  )
-}
-
-/* ── ChapterDetail (single-chapter focused view) ────────────────────── */
-
-function ChapterDetail({
   label,
   sub,
   locale,
   content,
   loading,
-  placeholder,
-  locked,
-  unlockLabel,
-  backLabel,
-  onBack,
-  onUnlock,
+  teaser,
   identityLine,
   birthBadge,
-  onAsk,
-  askChapterLabel,
-  askHint,
-  onPickQuote,
-  highlightedQuotes,
+  timeCaveat,
+  ask,
 }: {
+  n: number
   label: string
   sub: string
   /** Reading locale — drives term-gloss explanation language + CJK font choice. */
   locale: string
+  /** LLM prose once unlocked + generated; null otherwise. */
   content: string | null
   loading: boolean
-  placeholder?: string
-  locked: boolean
-  unlockLabel: string
-  backLabel: string
-  onBack: () => void
-  onUnlock: () => void
+  /** Deterministic free teaser (free chapters, pre-unlock) — real computed prose. */
+  teaser: string | null
+  /** Shown on the first page only — regrounds the chart facts. */
   identityLine?: string
   birthBadge?: string
-  /** 划词 chat (K3): quote = long-pressed paragraph, null = whole chapter. */
-  onAsk?: (quote: string | null) => void
-  askChapterLabel?: string
-  askHint?: string
-  /** 划词: long-press a paragraph → raise the action bar with this quote. */
-  onPickQuote?: (quote: string) => void
-  /** Persisted highlighted paragraphs — painted with a cinnabar wash. */
-  highlightedQuotes?: string[]
+  timeCaveat?: string
+  /** 划词 — only wired when the page has real (unlocked) content. */
+  ask?: {
+    onAsk: (quote: string | null) => void
+    askChapterLabel: string
+    askHint: string
+    onPickQuote: (quote: string) => void
+    highlightedQuotes: string[]
+  }
 }) {
-  const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
   const cjk = isCjkLocale(locale)
   const tLocale = termLocale(locale)
   const [activeTerm, setActiveTerm] = useState<ResolvedTerm | null>(null)
-  // Tap-to-explain (parity with the synastry ChapterCard): gloss 命理 terms in the
-  // prose — 日主 / 用神 / 七杀 / 命宫 / 大运 … — each a soft dotted underline, a tap
-  // opens its plain-language meaning in the reader's language. Non-CJK prose has no
-  // Chinese tokens to match, so it renders verbatim.
+  const paragraphs = useMemo(() => (content ? content.split('\n\n') : []), [content])
+
+  // Tap-to-explain: gloss 命理 terms (日主 / 用神 / 大运 …) with a dotted underline;
+  // a tap opens the plain-language meaning. Non-CJK prose renders verbatim.
   const renderProse = (s: string): ReactNode => {
     const segs = segmentTextByTerms(s, { includeSingleChar: !cjk })
     if (segs.length === 1 && !segs[0]?.termZh) return s
@@ -840,106 +741,82 @@ function ChapterDetail({
   }
   const askParagraph = (para: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
-    if (onPickQuote) onPickQuote(para)
-    else onAsk?.(para)
+    ask?.onPickQuote(para)
   }
+
   return (
     <View style={S.paper}>
-      <SafeAreaView style={S.safe} edges={['top']}>
-        <View style={S.detailHeader}>
-          <Pressable
-            onPress={onBack}
-            hitSlop={12}
-            accessibilityLabel={backLabel}
-            style={({ pressed }) => [S.backBtn, pressed && { opacity: 0.6 }]}
-          >
-            <ArrowLeft size={20} color={P.inkSoft} strokeWidth={1.5} />
-          </Pressable>
+      <ScrollView contentContainerStyle={S.pageScroll} showsVerticalScrollIndicator={false}>
+        {identityLine ? (
+          <View style={S.detailIdentity}>
+            <Text style={S.detailIdentityLine}>{renderProse(identityLine)}</Text>
+            {birthBadge ? <Text style={S.detailBirth}>{birthBadge}</Text> : null}
+            {timeCaveat ? <Text style={S.caveat}>{timeCaveat}</Text> : null}
+          </View>
+        ) : null}
+
+        <View style={S.pageHead}>
+          <SealNumeral n={n} />
           <Text style={S.detailHeaderSub}>{sub}</Text>
-          <View style={S.backBtn} />
         </View>
-        <ScrollView contentContainerStyle={S.detailScroll} showsVerticalScrollIndicator={false}>
-          {identityLine ? (
-            <View style={S.detailIdentity}>
-              <Text style={S.detailIdentityLine}>{renderProse(identityLine)}</Text>
-              {birthBadge ? <Text style={S.detailBirth}>{birthBadge}</Text> : null}
-            </View>
-          ) : null}
-          <Text style={S.detailLabel}>{label}</Text>
-          {content ? (
-            onAsk ? (
-              // 划词 mode: each paragraph is long-pressable → ask AI about it.
-              <View>
-                {askHint ? <Text style={S.askHint}>{askHint}</Text> : null}
-                {paragraphs.map((para, i) => {
-                  const isHighlighted = highlightedQuotes?.includes(para)
-                  return (
-                    <Pressable
-                      key={i}
-                      onLongPress={() => askParagraph(para)}
-                      delayLongPress={350}
-                      style={({ pressed }) => [
-                        isHighlighted && S.paraHighlighted,
-                        pressed && S.paraPressed,
-                      ]}
-                    >
-                      <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
-                    </Pressable>
-                  )
-                })}
-                {askChapterLabel ? (
+        <Text style={S.detailLabel}>{label}</Text>
+
+        {content ? (
+          ask ? (
+            // 划词 mode: each paragraph is long-pressable → raise the action bar.
+            <View>
+              {ask.askHint ? <Text style={S.askHint}>{ask.askHint}</Text> : null}
+              {paragraphs.map((para, i) => {
+                const isHighlighted = ask.highlightedQuotes.includes(para)
+                return (
                   <Pressable
-                    onPress={() => onAsk(null)}
-                    hitSlop={12}
-                    accessibilityRole='button'
-                    style={({ pressed }) => [S.askChapterBtn, pressed && { opacity: 0.7 }]}
+                    key={i}
+                    onLongPress={() => askParagraph(para)}
+                    delayLongPress={350}
+                    style={({ pressed }) => [
+                      isHighlighted && S.paraHighlighted,
+                      pressed && S.paraPressed,
+                    ]}
                   >
-                    <Text style={S.askChapterText}>{askChapterLabel}</Text>
+                    <Text style={[S.detailBody, S.paraBlock]}>{renderProse(para)}</Text>
                   </Pressable>
-                ) : null}
-              </View>
-            ) : (
-              paragraphs.map((para, i) => (
-                <Text key={i} style={[S.detailBody, S.paraBlock]}>
-                  {renderProse(para)}
-                </Text>
-              ))
-            )
-          ) : loading ? (
-            <View style={S.skeleton}>
-              <View style={S.skelLine} />
-              <View style={[S.skelLine, { width: '85%' }]} />
-              <View style={[S.skelLine, { width: '70%' }]} />
-              <View style={[S.skelLine, { width: '90%' }]} />
-              <View style={[S.skelLine, { width: '60%' }]} />
+                )
+              })}
+              <Pressable
+                onPress={() => ask.onAsk(null)}
+                hitSlop={12}
+                accessibilityRole='button'
+                style={({ pressed }) => [S.askChapterBtn, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={S.askChapterText}>{ask.askChapterLabel}</Text>
+              </Pressable>
             </View>
-          ) : placeholder ? (
-            // A multi-paragraph placeholder is the deterministic free teaser
-            // (composeTeaserNarrator) — render it as real body prose. A single
-            // block is a premium chapter's short italic tease.
-            placeholder.includes('\n\n') ? (
-              placeholder.split('\n\n').map((para, i) => (
-                <Text key={i} style={[S.detailBody, S.paraBlock]}>
-                  {renderProse(para)}
-                </Text>
-              ))
-            ) : (
-              <Text style={S.detailPlaceholder}>{renderProse(placeholder)}</Text>
-            )
-          ) : null}
+          ) : (
+            paragraphs.map((para, i) => (
+              <Text key={i} style={[S.detailBody, S.paraBlock]}>
+                {renderProse(para)}
+              </Text>
+            ))
+          )
+        ) : loading ? (
+          <View style={S.skeleton}>
+            <View style={S.skelLine} />
+            <View style={[S.skelLine, { width: '85%' }]} />
+            <View style={[S.skelLine, { width: '70%' }]} />
+            <View style={[S.skelLine, { width: '90%' }]} />
+            <View style={[S.skelLine, { width: '60%' }]} />
+          </View>
+        ) : teaser ? (
+          // Deterministic free teaser — render the multi-paragraph prose as body.
+          teaser.split('\n\n').map((para, i) => (
+            <Text key={i} style={[S.detailBody, S.paraBlock]}>
+              {renderProse(para)}
+            </Text>
+          ))
+        ) : null}
 
-          {locked ? (
-            <Pressable
-              style={({ pressed }) => [S.unlockBtn, S.detailUnlock, pressed && { opacity: 0.85 }]}
-              onPress={onUnlock}
-            >
-              <Text style={S.unlockText}>{unlockLabel}</Text>
-            </Pressable>
-          ) : null}
-
-          <View style={{ height: 60 }} />
-        </ScrollView>
-      </SafeAreaView>
+        <View style={{ height: 80 }} />
+      </ScrollView>
       <TermBubble
         term={activeTerm}
         onClose={() => setActiveTerm(null)}
@@ -950,17 +827,67 @@ function ChapterDetail({
   )
 }
 
+/* ── UnlockWall (trailing pager page) ───────────────────────────────── */
+
+function UnlockWall({
+  heading,
+  lockedChapters,
+  ctaLabel,
+  onUnlock,
+}: {
+  heading: string
+  lockedChapters: Array<{ title: string; line: string }>
+  ctaLabel: string
+  onUnlock: () => void
+}) {
+  return (
+    <ScrollView contentContainerStyle={S.wallScroll} showsVerticalScrollIndicator={false}>
+      <View style={S.wallRule} />
+      <Text style={S.wallHeading}>{heading}</Text>
+      <View style={S.wallList}>
+        {lockedChapters.map((c, i) => (
+          <View key={i} style={S.wallCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Lock size={13} color={P.muted} strokeWidth={1.6} />
+              <Text style={S.wallCardTitle}>{c.title}</Text>
+            </View>
+            {c.line ? (
+              <Text style={S.wallCardLine} numberOfLines={2}>
+                {c.line}
+              </Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+      <Pressable
+        onPress={onUnlock}
+        accessibilityRole='button'
+        style={({ pressed }) => [S.unlockBtn, S.wallCta, pressed && { opacity: 0.85 }]}
+      >
+        <Text style={S.unlockText}>{ctaLabel}</Text>
+      </Pressable>
+    </ScrollView>
+  )
+}
+
+/* ── PageDots (chapter position) ────────────────────────────────────── */
+
+function PageDots({ count, index }: { count: number; index: number }) {
+  return (
+    <View style={S.dots} pointerEvents='none'>
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} style={[S.dot, i === index && S.dotActive]} />
+      ))}
+    </View>
+  )
+}
+
 /* ── styles ─────────────────────────────────────────────────────────── */
 
 const S = StyleSheet.create({
   paper: { flex: 1, backgroundColor: P.bg },
-  safe: { flex: 1 },
-  detailOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: P.bg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: P.hair,
-  },
+  // Paper-backed so the masked report reads as 宣纸 inside ReportBloom's dark surround.
+  safe: { flex: 1, backgroundColor: P.bg },
 
   header: {
     flexDirection: 'row',
@@ -971,38 +898,25 @@ const S = StyleSheet.create({
   },
   headerTitle: { color: P.bronze, fontSize: 11, letterSpacing: 4, fontWeight: '300' },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-
-  scroll: { paddingHorizontal: 24, paddingTop: 12 },
+  // Quiet close — top-left over the clean report (the OS edge-swipe also pops).
+  closeBtn: {
+    position: 'absolute',
+    top: 6,
+    left: 12,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   emptyBody: { paddingHorizontal: 24, paddingTop: 48, alignItems: 'center', gap: 8 },
   emptyText: { color: P.inkSoft, fontSize: 15, lineHeight: 23, textAlign: 'center' },
 
-  identity: { color: P.inkSoft, fontSize: 12, letterSpacing: 1, marginBottom: 4 },
-  birth: { color: P.muted, fontSize: 11, letterSpacing: 1, marginBottom: 4 },
   caveat: { color: P.muted, fontSize: 10, marginBottom: 4 },
 
-  chapter: {
-    paddingVertical: 26,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: P.hair,
-  },
-  chapterHead: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 16 },
-  chapterLabel: { color: P.ink, fontSize: 24, lineHeight: 30, letterSpacing: 0.5 },
-  chapterSub: { color: P.bronze, fontSize: 10, letterSpacing: 2.5 },
-  lockDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 1.2, borderColor: P.cinnabar },
-  chapterPressed: { opacity: 0.7 },
-  chapterSummary: { color: P.inkSoft, fontSize: 15, lineHeight: 23 },
   skeleton: { gap: 12 },
   skelLine: { height: 10, borderRadius: 5, backgroundColor: P.hairSoft, width: '100%' },
-
-  sectionKicker: {
-    color: P.muted,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    marginTop: 38,
-    marginBottom: 6,
-  },
 
   unlockBtn: {
     alignSelf: 'center',
@@ -1014,16 +928,11 @@ const S = StyleSheet.create({
   },
   unlockText: { color: P.ctaText, fontSize: 13, fontWeight: '600', letterSpacing: 3 },
 
-  detailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+  // ── chapter page ──
+  pageScroll: { paddingHorizontal: 32, paddingTop: 52, paddingBottom: 24 },
+  pageHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
   detailHeaderSub: { color: P.bronze, fontSize: 10, letterSpacing: 3, fontWeight: '600' },
-  detailScroll: { paddingHorizontal: 32, paddingTop: 12 },
-  detailIdentity: { marginBottom: 20 },
+  detailIdentity: { marginBottom: 24 },
   detailIdentityLine: {
     color: P.inkSoft,
     fontSize: 12,
@@ -1035,8 +944,36 @@ const S = StyleSheet.create({
   detailLabel: { color: P.ink, fontSize: 30, letterSpacing: 2, marginBottom: 28 },
   detailBody: { color: P.ink, fontSize: 17, lineHeight: 32, letterSpacing: 0.3 },
   paraBlock: { marginBottom: 20 },
-  detailPlaceholder: { color: P.inkSoft, fontSize: 16, lineHeight: 28, fontStyle: 'italic' },
-  detailUnlock: { marginTop: 40 },
+
+  // ── unlock wall (trailing page) ──
+  wallScroll: { paddingHorizontal: 32, paddingTop: 64, paddingBottom: 48 },
+  wallRule: { width: 40, height: 2, backgroundColor: P.cinnabar, marginBottom: 24 },
+  wallHeading: { color: P.bronze, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase' },
+  wallList: { gap: 12, marginTop: 24, marginBottom: 40 },
+  wallCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: P.hair,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  wallCardTitle: { color: P.ink, fontSize: 15, letterSpacing: 0.3 },
+  wallCardLine: { color: P.muted, fontSize: 13, lineHeight: 20, fontStyle: 'italic' },
+  wallCta: { alignSelf: 'stretch', marginTop: 0 },
+
+  // ── page dots ──
+  dots: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.hair },
+  dotActive: { backgroundColor: P.cinnabar },
 
   // 划词 AI chat (K3)
   askHint: { color: P.muted, fontSize: 12, letterSpacing: 0.5, marginBottom: 16 },

@@ -353,9 +353,21 @@ export default function ReadingHomeScreen() {
   // into the full six-chapter report ((reading)/full). The concise 概要 interstitial
   // was dropped (2026-06 feedback: an unnecessary stop on the way in). A thread's
   // star → that bond.
-  const openSelfReading = useCallback(() => {
-    router.push('/(reading)/full')
-  }, [router])
+  // Tapping your central star opens the 命书; pass the tap point so the report's
+  // 墨晕 entrance spreads from the star. The visible "打开命书" link calls this with
+  // no point → the bloom falls back to mid-page.
+  const openSelfReading = useCallback(
+    (x?: number, y?: number) => {
+      router.push({
+        pathname: '/(reading)/full',
+        params:
+          typeof x === 'number' && typeof y === 'number'
+            ? { ox: String(Math.round(x)), oy: String(Math.round(y)) }
+            : {},
+      })
+    },
+    [router]
+  )
   const openThreadReading = useCallback(
     (index: number, x: number, y: number) => {
       const b = threads[index]
@@ -496,7 +508,7 @@ export default function ReadingHomeScreen() {
           doorway the home was missing (2026-06 feedback). Centered under your star,
           quiet gold so it reads as YOUR entry without shouting over the sky. */}
       <Pressable
-        onPress={openSelfReading}
+        onPress={() => openSelfReading()}
         hitSlop={8}
         accessibilityRole='button'
         accessibilityLabel={copy.cardKicker}
