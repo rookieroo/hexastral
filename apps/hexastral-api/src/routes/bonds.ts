@@ -15,7 +15,7 @@ import { dayGanZhi, getFourPillars } from '@zhop/astro-core/ganzhi'
 import { calculateDailySynastry } from '@zhop/astro-core/synastry'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
-import { type Context, Hono } from 'hono'
+import { Hono } from 'hono'
 import { z } from 'zod/v4'
 import * as schemaAll from '../db/schema'
 import {
@@ -89,7 +89,10 @@ function dayMasterElement(solarDate: string, timeIndex: number): string | null {
 
 export const bondRoutes = new Hono<AppEnv>()
 
-const FREE_BOND_LIMIT = 3
+/** Free FULL *solo* readings before a solo bond falls back to the teaser (free
+ *  chapters + unlock wall). Invites are uncapped and never draw from this. Subject
+ *  to change — disclosed in Terms. */
+const FREE_SOLO_FULL_READS = 2
 const INVITATION_TTL_DAYS = 7
 
 // ── Schemas ──────────────────────────────────────────────────
@@ -250,34 +253,18 @@ async function upsertPairReading(
 }
 
 /** Bond limit check result. `allowed: false` callers should respond via jsonErr. */
-type BondLimitResult =
-  | { allowed: true }
-  | {
-      allowed: false
-      reason: 'user_not_found' | 'paywall_required'
-      message: string
-      limit?: number
-      iapProductIds?: { monthly: string; annual: string }
-    }
-
 const YUAN_PRO_PRODUCT_IDS = {
   monthly: 'hexastral_kindred_pro_monthly',
   annual: 'hexastral_kindred_pro_annual',
 } as const
 
-/** Free-bond quota usage. Surfaced on GET / so the client can pre-empt the paywall
- *  at "New Thread" (before the user fills the invite / birth form) using the SAME
- *  number the server enforces at create.
- *
- *  `used` counts NON-refundable generations: a soft delete ("Let go") keeps the
- *  pair_reading row, so counting readings — not live bonds — means deleting an
- *  ACCEPTED bond can't refund a free slot (that was the farming bypass). Outstanding
- *  pending invites are added (each consumes a generation on accept) so a
- *  sent-but-unaccepted invite still holds a slot — but letting THAT go flips it out
- *  of `pending_invite` (no reading was ever generated), which correctly frees the
- *  slot. A declined/expired invite, or re-reading the same pair (the idempotent
- *  upsert reuses the row), does NOT inflate the count. Pro is unbounded; `used` is
- *  still returned for display but never gates. */
+/** Informational free-tier usage, surfaced on GET / for display. `used` = FULL
+ *  *solo* readings consumed (mode='solo' + chaptersUnlocked); `limit` =
+ *  FREE_SOLO_FULL_READS. Counts all rows incl. soft-deleted, so "Let go" can't
+ *  refund a free slot. The server NEVER blocks create on this — over-allowance
+ *  solo bonds simply land on the teaser, and invites are uncapped. (The mobile
+ *  "pre-empt New Thread" gate is now informational only and must not block
+ *  invites — a client follow-up.) */
 interface BondQuota {
   isPro: boolean
   used: number
@@ -286,48 +273,18 @@ interface BondQuota {
 
 async function getBondQuota(db: AppDb, userId: string): Promise<BondQuota> {
   const isPro = await userHasCapability(db, userId, 'kindred')
-  // Pro is unbounded — skip the counts (used is informational and never gates).
-  if (isPro) return { isPro: true, used: 0, limit: FREE_BOND_LIMIT }
-  const [readingRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(pairReadings)
-    .where(eq(pairReadings.userId, userId))
-  const [pendingRow] = await db
+  if (isPro) return { isPro: true, used: 0, limit: FREE_SOLO_FULL_READS }
+  const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(userBonds)
-    .where(and(eq(userBonds.ownerId, userId), eq(userBonds.status, 'pending_invite')))
-  const used = (readingRow?.count ?? 0) + (pendingRow?.count ?? 0)
-  return { isPro, used, limit: FREE_BOND_LIMIT }
-}
-
-/** Check bond limit for free users — returns instead of throws so route can emit envelope. */
-async function checkBondLimit(db: AppDb, userId: string): Promise<BondLimitResult> {
-  const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
-  if (!user) {
-    return { allowed: false, reason: 'user_not_found', message: 'User not found' }
-  }
-
-  const quota = await getBondQuota(db, userId)
-  if (quota.isPro || quota.used < quota.limit) return { allowed: true }
-
-  return {
-    allowed: false,
-    reason: 'paywall_required',
-    message: `Free users are limited to ${FREE_BOND_LIMIT} bonds. Upgrade to Kindred Pro for unlimited.`,
-    limit: FREE_BOND_LIMIT,
-    iapProductIds: YUAN_PRO_PRODUCT_IDS,
-  }
-}
-
-/** Translate a denied BondLimitResult to a properly-coded jsonErr response. */
-function bondLimitError(c: Context<AppEnv>, denied: Extract<BondLimitResult, { allowed: false }>) {
-  if (denied.reason === 'user_not_found') {
-    return jsonErr(c, 404, ApiErrorCode.not_found, denied.message)
-  }
-  return jsonErr(c, 403, ApiErrorCode.paywall_required, denied.message, {
-    limit: denied.limit,
-    iapProductIds: denied.iapProductIds,
-  })
+    .where(
+      and(
+        eq(userBonds.ownerId, userId),
+        eq(userBonds.mode, 'solo'),
+        eq(userBonds.chaptersUnlocked, true)
+      )
+    )
+  return { isPro, used: row?.count ?? 0, limit: FREE_SOLO_FULL_READS }
 }
 
 /** Get user with email + birth data for pair reading */
@@ -366,25 +323,11 @@ bondRoutes.post('/solo', async (c) => {
   const input = soloCreateSchema.parse(body)
   const db = c.get('db')
 
-  // Bond limit check
-  const bondLimit = await checkBondLimit(db, userId)
-  if (!bondLimit.allowed) return bondLimitError(c, bondLimit)
-
-  // Access check — Pro quota or single IAP required. The Auspice → Kindred
-  // hand-off skips it: the imported bond should land on a real report (free 3
-  // chapters), with the full report gated by the unlock wall instead of an
-  // up-front paywall. Bounded by the free ≤3-bond limit checked above.
-  if (!input.fromHandoff) {
-    const access = await checkReadingAccess(db, userId, 'compatibility', {
-      allowBondInviteCredit: false,
-    })
-    if (!access.granted) {
-      return jsonErr(c, 403, ApiErrorCode.paywall_required, access.reason ?? 'Paywall required', {
-        iapProductId: access.iapProductId,
-        price: access.price,
-      })
-    }
-  }
+  // Free model: a solo bond is always free to CREATE (no up-front paywall, no
+  // bond cap). The first FREE_SOLO_FULL_READS solo bonds get the FULL report;
+  // beyond that — and for the Auspice hand-off — it lands on the teaser (free
+  // chapters + unlock wall), unlocked later via Pro or a single purchase. The
+  // unlock decision (`soloUnlock`) is computed below once Pro status is known.
 
   // Get user birth data for person A
   const user = await getUserForHehun(db, userId)
@@ -402,6 +345,11 @@ bondRoutes.post('/solo', async (c) => {
 
   // Call SVC_ASTRO hehun/compute
   const isPro = await userHasCapability(db, user.id, 'kindred')
+
+  // Full report for the first FREE_SOLO_FULL_READS free solo bonds (or Pro);
+  // beyond that, and for the Auspice hand-off, the bond lands on the teaser.
+  const soloUnlock =
+    !input.fromHandoff && (isPro || (await getBondQuota(db, userId)).used < FREE_SOLO_FULL_READS)
 
   // Map iOS preset label → relationshipCategory enum; freetext → customRelationshipLabel
   const PRESET_CATEGORIES = new Set([
@@ -535,9 +483,10 @@ bondRoutes.post('/solo', async (c) => {
     targetBirthLunarDate: input.targetBirth.lunarDate ?? null,
     targetBirthIsLeapMonth: input.targetBirth.isLeapMonth ?? null,
     unlockedDimensions: '4',
-    // Paid solo create includes the full six chapters; the free Auspice
-    // hand-off lands on the free 3 + unlock wall instead.
-    chaptersUnlocked: !input.fromHandoff,
+    // Full six chapters for the first FREE_SOLO_FULL_READS free solo bonds (or
+    // Pro); beyond that, and for the Auspice hand-off, land on the free chapters
+    // + unlock wall. See soloUnlock above.
+    chaptersUnlocked: soloUnlock,
     status: 'active',
   })
 
@@ -579,9 +528,8 @@ bondRoutes.post('/invite', async (c) => {
   const input = resonanceInviteSchema.parse(body)
   const db = c.get('db')
 
-  // Bond limit check
-  const bondLimit = await checkBondLimit(db, userId)
-  if (!bondLimit.allowed) return bondLimitError(c, bondLimit)
+  // Invites are uncapped — sharing is the viral action and is never blocked. The
+  // full-vs-teaser decision happens at accept (acquisition unlocks; see respond).
 
   // Validate inviter
   const user = await getUserForHehun(db, userId)
@@ -1237,6 +1185,20 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
 
   const mirrorBondId = crypto.randomUUID()
 
+  // Acquisition gate: a real connection unlocks the FULL report for both sides
+  // only when the accepter is NEW to 合盘 (no prior bonds) — the referral reward.
+  // If the accepter already has bonds, this isn't acquisition, so each side stays
+  // on the teaser unless they're Pro. The accepter's mirror bond isn't inserted
+  // yet, so a 0-count means a genuinely new member.
+  const [accepterPriorBonds] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(userBonds)
+    .where(eq(userBonds.ownerId, respondUserId))
+  const accepterIsNew = (accepterPriorBonds?.count ?? 0) === 0
+  const responderIsPro = await userHasCapability(db, respondUserId, 'kindred')
+  const inviterUnlock = isPro || accepterIsNew
+  const responderUnlock = responderIsPro || accepterIsNew
+
   // Update invitation + A's bond. A's synastry chapters for THIS bond unlock via
   // the per-bond `chaptersUnlocked` flag set below — the only synastry unlock path.
   // A 合盘 accept deliberately does NOT touch users.unlockedChapterCount: the natal
@@ -1255,10 +1217,10 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         targetUserId: respondUserId,
         mirrorBondId,
         unlockedDimensions: '4',
-        // Resonance = full report free for BOTH parties (product decision):
-        // this real connection unlocks all 6 chapters on A's bond. Per-bond is the
-        // authoritative (and only) synastry unlock path now.
-        chaptersUnlocked: true,
+        // Full report on A's bond only when this accept brought a NEW member
+        // (acquisition) or A is Pro; otherwise A stays on the teaser. Per-bond is
+        // the authoritative (and only) synastry unlock path now.
+        chaptersUnlocked: inviterUnlock,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(userBonds.id, invitation.bondId)),
@@ -1278,9 +1240,9 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     hehunReadingId: readingIdForResponder,
     mirrorBondId: invitation.bondId,
     unlockedDimensions: '4',
-    // Full report free for the invited party too — resonance is free for both,
-    // so B's mirror bond opens all 6 chapters, same as A's.
-    chaptersUnlocked: true,
+    // The invited party's mirror bond: a NEW accepter's first 合盘 is full (the
+    // hook); an existing accepter stays on the teaser unless they're Pro.
+    chaptersUnlocked: responderUnlock,
     status: 'active',
   })
   await db
