@@ -20,7 +20,14 @@ import { SignInSheet } from '@/components/SignInSheet'
 import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
 import { getKindredDevLocale, type Locale, resolveLocale, setKindredDevLocale, t } from '@/lib/i18n'
-import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
+import {
+  getKindredDevPro,
+  getKindredDevReport,
+  type KindredDevPro,
+  type KindredDevReport,
+  setKindredDevPro,
+  setKindredDevReport,
+} from '@/lib/iap'
 import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
@@ -107,6 +114,16 @@ export default function SettingsScreen() {
     setDevPro(next)
     // TEMPORARY (remove at launch): also flip the real server entitlement.
     if (userId) void devSetServerPro(userId, next === 'pro')
+  }
+  // DEV-only personal-report unlock override — cycles off → UNLOCKED → LOCKED.
+  // Client-side only (the premium chapters still need the server unlock to
+  // generate; this just exercises the pager/wall gating). Reopen the report to apply.
+  const [devReport, setDevReport] = useState<KindredDevReport>(getKindredDevReport())
+  const cycleDevReport = () => {
+    const next: KindredDevReport =
+      devReport === null ? 'unlocked' : devReport === 'unlocked' ? 'locked' : null
+    setKindredDevReport(next)
+    setDevReport(next)
   }
 
   useEffect(() => {
@@ -565,6 +582,18 @@ export default function SettingsScreen() {
                 ]}
               >
                 {`DEV · Pro: ${devPro === null ? 'off · real' : devPro === 'pro' ? 'PRO' : 'FREE'}`}
+              </Text>
+            </Pressable>
+            <Pressable onPress={cycleDevReport} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.accent, textDecorationLine: 'underline' },
+                ]}
+              >
+                {`DEV · Report: ${
+                  devReport === null ? 'off · real' : devReport === 'unlocked' ? 'UNLOCKED' : 'LOCKED'
+                }`}
               </Text>
             </Pressable>
             <Pressable onPress={cycleDevLocale} hitSlop={12}>

@@ -15,8 +15,10 @@
  *   - Chapter engine: the kindred-bound reading-cache (lib/solo/reading-cache) —
  *     its own `kindred_reading_ch_` namespace + kindred's HMAC signer.
  *   - i18n: kindred's local reading-i18n (no-arg useReadingI18n()).
- *   - Monetization: kindred Pro (lib/iap getYuanProStatus) + the /(commerce)/paywall
- *     route, in place of Yuun's auspice_pro + AuspicePaywallSheet.
+ *   - Monetization: a one-time SINGLE PURCHASE unlocks the full report (lib/iap
+ *     getYuanReportStatus / purchaseYuanReport, the `hexastral_self_report`
+ *     entitlement) — NOT the Pro subscription (Yuel Pro is the 体验层). 划词追问 stays
+ *     a Pro feature, gated server-side by the chat route.
  *   - 划词 chat: pushes the in-app (reading)/reading-chat route.
  */
 
@@ -56,7 +58,7 @@ import {
 import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
-import { getYuanProStatus } from '@/lib/iap'
+import { getKindredSinglePrice, getYuanReportStatus, purchaseYuanReport } from '@/lib/iap'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import {
@@ -217,14 +219,19 @@ export default function FullReadingScreen() {
   const router = useRouter()
   const { t, locale } = useReadingI18n()
 
-  // Kindred has no reactive entitlement context (bond reports are server-gated);
-  // the personal report gates client-side, so poll the IAP status once. Mirrors
-  // the Yuun original's hasEntitlement(…, 'auspice_pro') boolean.
-  const [isPro, setIsPro] = useState(false)
+  // The personal 命书 unlocks as a one-time SINGLE PURCHASE (体验层 model: Yuel Pro
+  // = 追问/时间线/假如/提醒, NOT chapter unlock). `reportUnlocked` rides the
+  // `hexastral_self_report` entitlement; until that product exists it stays false,
+  // so the report shows the free teaser + unlock wall (no crash).
+  const [reportUnlocked, setReportUnlocked] = useState(false)
+  const [reportPrice, setReportPrice] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    void getYuanProStatus().then((s) => {
-      if (!cancelled) setIsPro(s.isPro)
+    void getYuanReportStatus().then((s) => {
+      if (!cancelled) setReportUnlocked(s.unlocked)
+    })
+    void getKindredSinglePrice('report').then((price) => {
+      if (!cancelled) setReportPrice(price)
     })
     return () => {
       cancelled = true
@@ -351,11 +358,10 @@ export default function FullReadingScreen() {
 
   useEffect(() => {
     if (!chartHash || draftSolarDate == null || draftGender == null) return
-    // Free tier = the deterministic taste only (identity + computed chapter
-    // summaries), no LLM. Non-Pro never fetches a chapter; the rows + detail fall
-    // back to the computed placeholders and the chapter detail carries the
-    // unlock CTA.
-    if (!isPro) {
+    // Free tier = the deterministic taste only (the computed teaser), no LLM. An
+    // unbought report never fetches; ch1/ch4 fall back to the teaser and the rest
+    // live behind the unlock wall.
+    if (!reportUnlocked) {
       setLoading(false)
       return
     }
@@ -383,12 +389,12 @@ export default function FullReadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
+  }, [reportUnlocked, chartHash, draftSolarDate, draftGender, timeIndex])
 
   // Premium chapters: fetch the four premium slugs once the report is unlocked.
   // Each is cache-first + resolves independently so pages fill in as they generate.
   useEffect(() => {
-    if (!isPro) return
+    if (!reportUnlocked) return
     if (!chartHash || draftSolarDate == null || draftGender == null) return
     let cancelled = false
     const b = { solarDate: draftSolarDate, timeIndex: timeIndex ?? 0, gender: draftGender }
@@ -407,7 +413,7 @@ export default function FullReadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [isPro, chartHash, draftSolarDate, draftGender, timeIndex])
+  }, [reportUnlocked, chartHash, draftSolarDate, draftGender, timeIndex])
 
   // The current pager page (drives 划词 grounding + the page indicator).
   const [chapterIndex, setChapterIndex] = useState(0)
@@ -427,8 +433,18 @@ export default function FullReadingScreen() {
     if (router.canGoBack()) router.back()
     else router.replace('/(reading)')
   }
-  const openPaywall = () => {
-    router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
+  // Unlock the full 命书 — a one-time single purchase (NOT the Pro subscription).
+  // On success the entitlement is live, so flip `reportUnlocked` and the premium
+  // fetch effect runs. Until the `hexastral_self_report` product exists the store
+  // returns 'unavailable'; we fall back to the Pro paywall so dev still has a path
+  // (and the upsell isn't a dead end). TODO: drop the fallback once the product ships.
+  const handleUnlockReport = () => {
+    void (async () => {
+      const result = await purchaseYuanReport()
+      if (result === 'success') setReportUnlocked(true)
+      else if (result === 'unavailable')
+        router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
+    })()
   }
 
   // 划词 AI chat: push the chat seeded with the chapter slug + (optionally) the
@@ -486,11 +502,7 @@ export default function FullReadingScreen() {
   // teaser (composeTeaserNarrator) until unlocked, then swap to their LLM prose;
   // the four premium slugs resolve into `premium`. No "生成中…" ever shows for a
   // free reader — the teaser is real computed 命理 prose.
-  //
-  // `unlocked` currently rides the existing entitlement. TODO(monetization): once a
-  // dedicated single-purchase product exists, repoint this at it so Pro stays the
-  // 体验层 only and the report's chapters unlock per-purchase, not by subscription.
-  const unlocked = isPro
+  const unlocked = reportUnlocked
   const contentBySlug = (slug: string): string | null =>
     slug === 'ch1_personality'
       ? (ch1?.content ?? null)
@@ -593,8 +605,10 @@ export default function FullReadingScreen() {
                     title: t(c.labelKey),
                     line: c.descKey ? t(c.descKey) : '',
                   }))}
-                  ctaLabel={t('reading.unlock')}
-                  onUnlock={openPaywall}
+                  ctaLabel={
+                    reportPrice ? `${t('reading.unlock')} · ${reportPrice}` : t('reading.unlock')
+                  }
+                  onUnlock={handleUnlockReport}
                 />
               </View>
             ) : null}
