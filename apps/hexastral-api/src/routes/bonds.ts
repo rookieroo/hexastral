@@ -345,10 +345,6 @@ bondRoutes.post('/solo', async (c) => {
     )
   }
 
-  // Call SVC_ASTRO hehun/compute. `isPro` only sets the AI tier for generation — it
-  // no longer unlocks chapters (Yuel Pro = 体验层; 合盘 is single-purchase).
-  const isPro = await userHasCapability(db, user.id, 'kindred')
-
   // Full report for the first FREE_SOLO_FULL_READS free solo bonds; beyond that,
   // and for the Auspice hand-off, the bond lands on the teaser (unlocked later by a
   // single purchase — NOT by a subscription).
@@ -406,7 +402,11 @@ bondRoutes.post('/solo', async (c) => {
       city: input.targetBirth.city ?? undefined,
     },
     userId,
-    isPro,
+    // 合盘 always generates at HIGH tier — every report (purchased, free-acquisition,
+    // or 2-free-solo) gets the same quality; the subscription no longer factors in
+    // (Pro doesn't unlock 合盘). TODO(Phase 5): lazy-generate locked chapters on
+    // unlock so we don't pay HIGH for never-converting teasers.
+    isPro: true,
     language: input.language,
     relationshipCategory: derivedCategory,
     customRelationshipLabel: derivedCustomLabel,
@@ -1008,10 +1008,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // grant. Net effect: every invited user paywalled and the resonance flow never
   // completed for anyone. Removing the gate matches the "free for both" intent
   // documented immediately below.
-  const isPro = await userHasCapability(db, inviter.id, 'kindred')
-
-  // Resonance bonds use the standard AI tier (not Pro HIGH thinking); isPro only
-  // controls AI quality, not access gating.
+  // 合盘 always generates at HIGH tier (see the solo path) — the resonance report
+  // gets the same quality regardless of either party's subscription.
 
   // Derive relationship category from bond's relationshipLabel
   const bondForLabel = await db
@@ -1076,7 +1074,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
       city: input.birthData.city ?? undefined,
     },
     userId: invitation.inviterUserId,
-    isPro,
+    isPro: true,
     language: input.language,
     relationshipCategory: resonanceDerivedCategory,
     customRelationshipLabel: resonanceDerivedCustomLabel,
@@ -1320,7 +1318,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
               gender: aBirth.gender,
             },
             userId: invitation.inviterUserId,
-            isPro,
+            isPro: true,
             language: inviterLang,
             relationshipCategory: resonanceDerivedCategory,
             customRelationshipLabel: resonanceDerivedCustomLabel,
