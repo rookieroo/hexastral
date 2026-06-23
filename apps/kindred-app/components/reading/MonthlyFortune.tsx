@@ -7,13 +7,13 @@
  *   - for Pro, a "深读本月" affordance that fetches an LLM depth expanding the same
  *     grounding (P6b), cached per month + chart so it paints instantly on a revisit.
  *
- * Lives in its own screen (app/(reading)/monthly.tsx), reached from the home doorway —
+ * Lives in its own screen (app/(reading)/month.tsx), reached from the home doorway —
  * it used to sit inside the 当前大运 chapter, which buried it four pages deep (2026-06).
  */
 
 import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { composeMonthlyFortune } from '@zhop/scenario-yuan/monthly-fortune'
-import { Sparkles } from 'lucide-react-native'
+import { Moon } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { Locale } from '@/components/reading/reading-i18n'
@@ -34,17 +34,16 @@ const FORTUNE_KICKER: Record<string, string> = {
 }
 
 /** Copy for the Pro 流年深读 affordance + its section labels. */
-const DEPTH_UI: Record<
-  string,
-  { cta: string; loading: string; failed: string; advice: string; watch: string }
-> = {
-  en: {
-    cta: 'Read deeper',
-    loading: 'Reading this month…',
-    failed: 'Couldn’t load the deep read — tap to retry',
-    advice: 'DO',
-    watch: 'WATCH',
-  },
+const DEPTH_UI_EN = {
+  cta: 'Read deeper',
+  loading: 'Reading this month…',
+  failed: 'Couldn’t load the deep read — tap to retry',
+  advice: 'DO',
+  watch: 'WATCH',
+}
+
+const DEPTH_UI: Record<string, typeof DEPTH_UI_EN> = {
+  en: DEPTH_UI_EN,
   zh: {
     cta: '深读本月',
     loading: '正在深读本月…',
@@ -82,7 +81,7 @@ export function MonthlyFortune({
   onNeedPro: () => void
 }) {
   const fortune = composeMonthlyFortune({ chart, locale })
-  const du = DEPTH_UI[locale] ?? DEPTH_UI.en
+  const du = DEPTH_UI[locale] ?? DEPTH_UI_EN
   // Fixed tag column so the 宜/忌 (DO/WATCH) labels share one width and the advice
   // text in both rows starts at the same x — the longest label is en "WATCH".
   const tagWidth = locale === 'en' ? 56 : locale === 'ja' ? 34 : 22
@@ -173,7 +172,7 @@ export function MonthlyFortune({
             accessibilityRole='button'
             style={({ pressed }) => [S.depthCta, pressed && { opacity: 0.6 }]}
           >
-            <Sparkles size={13} color={P.cinnabar} strokeWidth={1.6} />
+            <Moon size={13} color={P.cinnabar} strokeWidth={1.6} />
             <Text style={S.depthCtaText}>{depthFailed ? du.failed : du.cta}</Text>
           </Pressable>
         )
