@@ -8,9 +8,10 @@
  *
  *   1. Invite the other person   — free + viral (drives the invite-unlock loop)
  *   2. One-time unlock           — single purchase of this one report
- *   3. Subscribe                 — unlimited, positioned last
  *
- * Presentational only: copy + handlers are injected so the package stays
+ * A subscription does NOT unlock a 合盘 (Yuel Pro is the 体验层), so the subscribe
+ * path is optional — only rendered when both `onSubscribe` + `subscribeCta` are
+ * passed. Presentational only: copy + handlers are injected so the package stays
  * i18n-agnostic (the app owns its locale layer).
  */
 
@@ -57,8 +58,8 @@ export interface ChapterUnlockWallLabels {
   inviteHint?: string
   /** Secondary CTA — one-time unlock; app formats the price in. */
   purchaseCta: string
-  /** Tertiary CTA — subscribe. */
-  subscribeCta: string
+  /** Tertiary CTA — subscribe (optional; a subscription does NOT unlock a 合盘). */
+  subscribeCta?: string
 }
 
 export interface ChapterUnlockWallProps {
@@ -68,7 +69,8 @@ export interface ChapterUnlockWallProps {
   labels: ChapterUnlockWallLabels
   onInvite: () => void
   onPurchase: () => void
-  onSubscribe: () => void
+  /** Optional — omit when a subscription doesn't unlock this report. */
+  onSubscribe?: () => void
   /** Surface theme — 'paper' (default) or 'dark' (in-app 水墨黑 report). */
   theme?: UnlockWallTheme
 }
@@ -197,19 +199,25 @@ export function ChapterUnlockWall({
         </Text>
       </Pressable>
 
-      {/* CTA 3 — subscribe (tertiary text link, positioned last). */}
-      <Pressable
-        onPress={onSubscribe}
-        accessibilityRole='button'
-        hitSlop={8}
-        style={{ marginTop: kindredSpacing.xl, alignSelf: 'center' }}
-      >
-        <Text
-          style={[kindredType.caption, { color: C.textSecondary, textDecorationLine: 'underline' }]}
+      {/* CTA 3 — subscribe (tertiary text link, positioned last). Only when a
+          subscription path is wired; a 合盘 unlock is single-purchase only. */}
+      {onSubscribe && labels.subscribeCta ? (
+        <Pressable
+          onPress={onSubscribe}
+          accessibilityRole='button'
+          hitSlop={8}
+          style={{ marginTop: kindredSpacing.xl, alignSelf: 'center' }}
         >
-          {labels.subscribeCta}
-        </Text>
-      </Pressable>
+          <Text
+            style={[
+              kindredType.caption,
+              { color: C.textSecondary, textDecorationLine: 'underline' },
+            ]}
+          >
+            {labels.subscribeCta}
+          </Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   )
 }

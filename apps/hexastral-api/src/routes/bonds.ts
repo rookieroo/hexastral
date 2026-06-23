@@ -272,8 +272,10 @@ interface BondQuota {
 }
 
 async function getBondQuota(db: AppDb, userId: string): Promise<BondQuota> {
+  // Count real solo unlocks for EVERYONE — Pro is the 体验层 and no longer grants
+  // free 合盘 unlocks, so a subscriber gets the same 2 free solo reads then buys
+  // per report. `isPro` stays in the payload for display only.
   const isPro = await userHasCapability(db, userId, 'kindred')
-  if (isPro) return { isPro: true, used: 0, limit: FREE_SOLO_FULL_READS }
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(userBonds)
@@ -343,13 +345,15 @@ bondRoutes.post('/solo', async (c) => {
     )
   }
 
-  // Call SVC_ASTRO hehun/compute
+  // Call SVC_ASTRO hehun/compute. `isPro` only sets the AI tier for generation — it
+  // no longer unlocks chapters (Yuel Pro = 体验层; 合盘 is single-purchase).
   const isPro = await userHasCapability(db, user.id, 'kindred')
 
-  // Full report for the first FREE_SOLO_FULL_READS free solo bonds (or Pro);
-  // beyond that, and for the Auspice hand-off, the bond lands on the teaser.
+  // Full report for the first FREE_SOLO_FULL_READS free solo bonds; beyond that,
+  // and for the Auspice hand-off, the bond lands on the teaser (unlocked later by a
+  // single purchase — NOT by a subscription).
   const soloUnlock =
-    !input.fromHandoff && (isPro || (await getBondQuota(db, userId)).used < FREE_SOLO_FULL_READS)
+    !input.fromHandoff && (await getBondQuota(db, userId)).used < FREE_SOLO_FULL_READS
 
   // Map iOS preset label → relationshipCategory enum; freetext → customRelationshipLabel
   const PRESET_CATEGORIES = new Set([
@@ -1186,18 +1190,18 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   const mirrorBondId = crypto.randomUUID()
 
   // Acquisition gate: a real connection unlocks the FULL report for both sides
-  // only when the accepter is NEW to 合盘 (no prior bonds) — the referral reward.
+  // ONLY when the accepter is NEW to 合盘 (no prior bonds) — the referral reward.
   // If the accepter already has bonds, this isn't acquisition, so each side stays
-  // on the teaser unless they're Pro. The accepter's mirror bond isn't inserted
-  // yet, so a 0-count means a genuinely new member.
+  // on the teaser (unlocked later by a single purchase — NOT by a subscription;
+  // Yuel Pro is the 体验层). The accepter's mirror bond isn't inserted yet, so a
+  // 0-count means a genuinely new member.
   const [accepterPriorBonds] = await db
     .select({ count: sql<number>`count(*)` })
     .from(userBonds)
     .where(eq(userBonds.ownerId, respondUserId))
   const accepterIsNew = (accepterPriorBonds?.count ?? 0) === 0
-  const responderIsPro = await userHasCapability(db, respondUserId, 'kindred')
-  const inviterUnlock = isPro || accepterIsNew
-  const responderUnlock = responderIsPro || accepterIsNew
+  const inviterUnlock = accepterIsNew
+  const responderUnlock = accepterIsNew
 
   // Update invitation + A's bond. A's synastry chapters for THIS bond unlock via
   // the per-bond `chaptersUnlocked` flag set below — the only synastry unlock path.
@@ -1218,8 +1222,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
         mirrorBondId,
         unlockedDimensions: '4',
         // Full report on A's bond only when this accept brought a NEW member
-        // (acquisition) or A is Pro; otherwise A stays on the teaser. Per-bond is
-        // the authoritative (and only) synastry unlock path now.
+        // (acquisition); otherwise A stays on the teaser (single-purchase to unlock,
+        // not subscription). Per-bond is the authoritative (and only) unlock path.
         chaptersUnlocked: inviterUnlock,
         updatedAt: new Date().toISOString(),
       })
@@ -1241,7 +1245,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     mirrorBondId: invitation.bondId,
     unlockedDimensions: '4',
     // The invited party's mirror bond: a NEW accepter's first 合盘 is full (the
-    // hook); an existing accepter stays on the teaser unless they're Pro.
+    // hook); an existing accepter stays on the teaser (single-purchase to unlock).
     chaptersUnlocked: responderUnlock,
     status: 'active',
   })
@@ -2183,12 +2187,11 @@ bondRoutes.get('/:id', async (c) => {
 
   // Gate the six synastry chapters before they leave the server: free viewers get
   // the first SYNASTRY_FREE_CHAPTERS in full + teasers for the rest (locked BODIES
-  // never ship). Unlock is PER BOND — a subscription, or THIS bond unlocked (real
-  // Resonance accept / single purchase). A global invite no longer opens every bond.
+  // never ship). Unlock is PER BOND only — THIS bond unlocked (a new-member Resonance
+  // accept / single purchase). A subscription no longer opens it (Yuel Pro = 体验层),
+  // and a global invite no longer opens every bond.
   if (interpretation && Array.isArray(interpretation.chapters)) {
-    const isSubscriber = await userHasCapability(db, userId, 'kindred')
     const unlockedCount = resolveUnlockedChapterCount({
-      isSubscriber,
       bondUnlocked: bond.chaptersUnlocked,
     })
     interpretation = gateInterpretationChapters(interpretation, unlockedCount)

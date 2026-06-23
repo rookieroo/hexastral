@@ -609,14 +609,9 @@ export default function BondDetailScreen({
               '{price}',
               unlockPrice
             ),
-            subscribeCta: t('unlock.subscribe'),
           }}
           onInvite={reInvite}
           onPurchase={() => void handlePurchaseUnlock()}
-          onSubscribe={() => {
-            emitUnlockFunnel({ step: 'subscribe_tap', bond_id: detail.id })
-            router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chapters' } })
-          }}
         />
       ) : null
 

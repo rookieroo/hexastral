@@ -6,14 +6,14 @@
  * Free viewers see the first `SYNASTRY_FREE_CHAPTERS`; the rest are returned as
  * teasers (kind + title + goldenLine, no body) so the client can render the
  * unlock wall. The full set unlocks PER BOND — so free value tracks a real viral
- * action 1:1 — by either:
- *   - holding the `kindred` capability (subscription → every bond), or
- *   - THIS bond being unlocked: a real Resonance connection (the partner showed up
- *     and accepted THIS invite) or a single-purchase consume on THIS bond.
+ * action 1:1 — only by THIS bond being unlocked: a real Resonance connection (the
+ * partner showed up and accepted THIS invite, when they're a new member) or a
+ * single-purchase consume on THIS bond.
  *
- * Deliberately NOT unlocked by the per-user `users.unlockedChapterCount` global —
- * that mechanic stays with the natal deep report (`chapter-access.ts`). One invite
- * must not flip every other bond's report open for free; each bond earns its own.
+ * Deliberately NOT unlocked by the subscription (Yuel Pro is the 体验层 — 追问 /
+ * 时间线 / 假如 / 节点提醒 — and must not give away the high-value 合盘 artifact), nor
+ * by the per-user `users.unlockedChapterCount` global (that mechanic stays with the
+ * natal deep report, `chapter-access.ts`). Each bond earns its own unlock.
  */
 
 /** Chapters a free viewer sees without unlocking. */
@@ -67,14 +67,11 @@ export function gateInterpretationChapters(
 
 /**
  * How many synastry chapters this viewer may read in full, PER BOND. The full set
- * is unlocked only by a subscription (kindred capability → every bond) or by THIS
- * bond being unlocked (a real Resonance connection, solo-created paid, or a
- * single-purchase consume). Everyone else gets the free taste. The per-user global
- * count is intentionally NOT consulted — see the file header.
+ * is unlocked ONLY by THIS bond being unlocked (a real Resonance connection that
+ * brought a new member, or a single-purchase consume on this bond). A subscription
+ * does NOT unlock it (Yuel Pro is the 体验层) and the per-user global count is not
+ * consulted — see the file header. Everyone else gets the free taste.
  */
-export function resolveUnlockedChapterCount(opts: {
-  isSubscriber: boolean
-  bondUnlocked: boolean
-}): number {
-  return opts.isSubscriber || opts.bondUnlocked ? SYNASTRY_TOTAL_CHAPTERS : SYNASTRY_FREE_CHAPTERS
+export function resolveUnlockedChapterCount(opts: { bondUnlocked: boolean }): number {
+  return opts.bondUnlocked ? SYNASTRY_TOTAL_CHAPTERS : SYNASTRY_FREE_CHAPTERS
 }
