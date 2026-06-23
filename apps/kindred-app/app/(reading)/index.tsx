@@ -222,11 +222,14 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, isLoading: bondsLoading, refetch, deleteBond, recompute } = useBondList()
+  const { bonds, isLoading: bondsLoading, isRefreshing, refetch, deleteBond, recompute } =
+    useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
-      void refetch()
+      // Silent revalidation: the cached list shows instantly; no loader/spinner
+      // on return. A manual pull-to-refresh is the only visible refresh.
+      void refetch({ silent: true })
       return () => setFocused(false)
     }, [refetch])
   )
@@ -611,7 +614,7 @@ export default function ReadingHomeScreen() {
                 ) : null
               }
               onRefresh={() => void refetch()}
-              refreshing={false}
+              refreshing={isRefreshing}
             />
           </GestureDetector>
 

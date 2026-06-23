@@ -23,9 +23,16 @@ export interface UseBondListOptions {
 
 export interface UseBondListResult {
   bonds: BondData[]
+  /** True ONLY on the first-ever load (no cache yet) — drives the full-screen
+   *  loader. A background/focus refresh over cached data does NOT set this. */
   isLoading: boolean
+  /** True during a background or pull-to-refresh refetch when a cache already
+   *  exists — drives the pull-to-refresh spinner, never the full-screen loader. */
+  isRefreshing: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  /** Refetch the list. `{ silent: true }` revalidates in the background with no
+   *  spinner (used on focus); a bare call shows the pull-to-refresh spinner. */
+  refetch: (opts?: { silent?: boolean }) => Promise<void>
   /** Soft-delete a bond. Removes it from the list optimistically and rolls
    *  back (re-inserting it) if the server call fails. */
   deleteBond: (id: string) => Promise<void>
@@ -33,9 +40,15 @@ export interface UseBondListResult {
    *  Refetches on success. 'needs_pro' → route to the paywall. */
   recompute: (id: string) => Promise<'recomputed' | 'needs_pro' | 'error'>
   /** Free-bond quota (Pro flag + used/limit). undefined until the first fetch
-   *  resolves; the UI gates "New Thread" on it to pre-empt the create-time paywall. */
+   *  resolves; surfaced for display only. */
   quota?: BondQuota
 }
+
+// Module-level session cache so returning to the list shows it INSTANTLY (no
+// loader) across re-mounts; we then revalidate silently in the background. Pull
+// to refresh for a manual, visible refresh.
+let cachedBonds: BondData[] | null = null
+let cachedQuota: BondQuota | undefined
 
 const RELATIONSHIP_LABEL_BY_TYPE: Record<RelationshipType, ReadonlyArray<string>> = {
   romantic: ['恋人', '伴侣', 'partner', 'romantic'],
@@ -59,13 +72,18 @@ function matchesRelationshipType(label: string, type: RelationshipType): boolean
 
 export function useBondList(options: UseBondListOptions = {}): UseBondListResult {
   const { client, onError } = useKindredClient()
-  const [allBonds, setAllBonds] = useState<BondData[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  // Seed from the session cache so a re-mount paints the last list immediately.
+  const [allBonds, setAllBonds] = useState<BondData[]>(cachedBonds ?? [])
+  const [isLoading, setIsLoading] = useState<boolean>(cachedBonds === null)
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
   const [error, setError] = useState<Error | null>(null)
-  const [quota, setQuota] = useState<BondQuota | undefined>(undefined)
+  const [quota, setQuota] = useState<BondQuota | undefined>(cachedQuota)
 
-  const refetch = useCallback(async () => {
-    setIsLoading(true)
+  const refetch = useCallback(async (opts?: { silent?: boolean }) => {
+    // First-ever load → full-screen loader. A manual pull → the refresh spinner.
+    // A silent (focus) revalidation shows nothing — the cached list just updates.
+    if (cachedBonds === null) setIsLoading(true)
+    else if (!opts?.silent) setIsRefreshing(true)
     setError(null)
     try {
       const data = await unwrap<{ bonds: BondData[]; quota?: BondQuota }>(
@@ -73,12 +91,15 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
       )
       setAllBonds(data.bonds)
       setQuota(data.quota)
+      cachedBonds = data.bonds
+      cachedQuota = data.quota
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err))
       setError(e)
       onError?.(e)
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }, [client, onError])
 
@@ -91,13 +112,18 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
       // Optimistic — drop it now; the server soft-deletes (status 'removed')
       // and the next fetch already filters it. Roll back on failure.
       const snapshot = allBonds
-      setAllBonds((prev) => prev.filter((b) => b.id !== id))
+      setAllBonds((prev) => {
+        const next = prev.filter((b) => b.id !== id)
+        cachedBonds = next // keep the session cache in sync so a re-mount agrees
+        return next
+      })
       try {
         await unwrap<{ id: string; status: string }>(
           await kindredBonds(client)[':id'].$delete({ param: { id } })
         )
       } catch (err) {
         setAllBonds(snapshot)
+        cachedBonds = snapshot // roll the cache back too
         const e = err instanceof Error ? err : new Error(String(err))
         onError?.(e)
         throw e
@@ -133,5 +159,5 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
     return true
   })
 
-  return { bonds: filtered, isLoading, error, refetch, deleteBond, recompute, quota }
+  return { bonds: filtered, isLoading, isRefreshing, error, refetch, deleteBond, recompute, quota }
 }
