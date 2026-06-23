@@ -45,17 +45,13 @@ import {
 } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  Easing,
   Extrapolation,
   interpolate,
   runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useDerivedValue,
-  useReducedMotion,
   useSharedValue,
-  withRepeat,
-  withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import BondReportScreen from '@/app/(bonds)/[id]'
@@ -616,16 +612,11 @@ export default function ReadingHomeScreen() {
                     <AutoMoonPhaseLoader size={56} skin={SKIN_CINNABAR} />
                   </View>
                 ) : (
-                  // 0-thread state: don't leave the bottom an empty void — center a
-                  // calm first-connection invite under your lone star (no illustration;
-                  // the sky above IS the illustration — you, alone, for now). A faint
-                  // 红线 descends from the star toward the invite — the thread of fate,
-                  // dangling, not yet tied — ending in a latent bead waiting to ignite.
+                  // 0-thread state: the New-Thread mark + one quiet line, nothing
+                  // more — the lone star above is the picture.
                   <FirstThreadInvite
                     cjk={isCjkLocale(locale)}
-                    title={copy.threadsHint}
-                    sub={copy.emptySub}
-                    cta={copy.emptyCta}
+                    line={copy.emptySub}
                     onPress={startNewThread}
                   />
                 )
@@ -754,38 +745,19 @@ export default function ReadingHomeScreen() {
 }
 
 /**
- * 0-thread invite — the calm first-connection state under your lone star. A faint
- * 红线 (the thread of fate) descends from the sky above into a latent bead that
- * breathes, waiting to ignite; tying it (the invite) is the one action. No
- * illustration — the lone star overhead IS the picture.
+ * 0-thread invite — deliberately minimal: the New-Thread mark (the cinnabar seal
+ * the FAB uses) over one quiet line. The lone star overhead is the picture; this
+ * is just the single doorway to bringing someone in.
  */
 function FirstThreadInvite({
   cjk,
-  title,
-  sub,
-  cta,
+  line,
   onPress,
 }: {
   cjk: boolean
-  title: string
-  sub: string
-  cta: string
+  line: string
   onPress: () => void
 }) {
-  const reduced = useReducedMotion()
-  const pulse = useSharedValue(reduced ? 0.6 : 0)
-  useEffect(() => {
-    if (reduced) return
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    )
-  }, [reduced, pulse])
-  const beadStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 + pulse.value * 0.45,
-    transform: [{ scale: 0.9 + pulse.value * 0.3 }],
-  }))
   const bodyFont = cjk ? kindredFonts.cjk : kindredFonts.serif
   return (
     <View
@@ -796,45 +768,44 @@ function FirstThreadInvite({
         paddingHorizontal: kindredSpacing.screenH,
       }}
     >
-      <View style={{ width: 1, height: 38, backgroundColor: kindredDark.seal, opacity: 0.32 }} />
-      <Animated.View
-        style={[
-          {
-            width: 6,
-            height: 6,
-            borderRadius: 3,
+      <Pressable
+        onPress={onPress}
+        accessibilityRole='button'
+        accessibilityLabel={line}
+        hitSlop={12}
+        style={({ pressed }) => ({ alignItems: 'center', opacity: pressed ? 0.65 : 1 })}
+      >
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
             backgroundColor: kindredDark.seal,
+            alignItems: 'center',
+            justifyContent: 'center',
             marginBottom: kindredSpacing.lg,
-          },
-          beadStyle,
-        ]}
-      />
-      <Text
-        style={{
-          fontFamily: bodyFont,
-          fontSize: 17,
-          lineHeight: 26,
-          color: kindredDark.text,
-          textAlign: 'center',
-          marginBottom: kindredSpacing.sm,
-        }}
-      >
-        {title}
-      </Text>
-      <Text
-        style={{
-          fontFamily: bodyFont,
-          fontSize: 13.5,
-          lineHeight: 21,
-          color: kindredDark.textMuted,
-          textAlign: 'center',
-          maxWidth: 270,
-          marginBottom: kindredSpacing.xl,
-        }}
-      >
-        {sub}
-      </Text>
-      <PrimaryButton label={cta} onPress={onPress} block={false} />
+            shadowColor: kindredDark.seal,
+            shadowOpacity: 0.45,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 8,
+          }}
+        >
+          <Spline color={kindredDark.text} size={24} strokeWidth={2} />
+        </View>
+        <Text
+          style={{
+            fontFamily: bodyFont,
+            fontSize: 15,
+            lineHeight: 23,
+            color: kindredDark.textSecondary,
+            textAlign: 'center',
+            maxWidth: 280,
+          }}
+        >
+          {line}
+        </Text>
+      </Pressable>
     </View>
   )
 }
