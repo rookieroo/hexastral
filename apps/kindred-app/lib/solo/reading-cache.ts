@@ -12,6 +12,7 @@ import {
   computeChartHash,
   createReadingCache,
   type ReadingBirthInputs,
+  type RerollResult,
 } from '@zhop/scenario-yuan/reading-cache'
 import { config } from '../config'
 import { signRequest } from '../hmac'
@@ -26,6 +27,6 @@ const cache = createReadingCache({
   requestIdTag: 'kindred',
 })
 
-export const { getCachedChapter, setCachedChapter, fetchChapter } = cache
-export type { CachedChapter, ReadingBirthInputs }
+export const { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter } = cache
+export type { CachedChapter, ReadingBirthInputs, RerollResult }
 export { computeChartHash }

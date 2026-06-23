@@ -88,6 +88,16 @@ function flattenChapterContent(raw: unknown): string {
   return parts.join('\n\n')
 }
 
+/**
+ * Result of a 换视角 (perspective re-roll) — a discriminated union so the caller
+ * can render the new version, the soft "本月已用完" notice, or a Pro upsell.
+ */
+export type RerollResult =
+  | { kind: 'ok'; chapter: CachedChapter }
+  | { kind: 'exhausted'; used: number; limit: number; resetsOn: string }
+  | { kind: 'needs_pro' }
+  | { kind: 'error' }
+
 export interface ReadingCache {
   getCachedChapter(slug: string, chartHash: string): Promise<CachedChapter | null>
   setCachedChapter(chapter: CachedChapter): Promise<void>
@@ -96,6 +106,14 @@ export interface ReadingCache {
     chartHash: string,
     birth: ReadingBirthInputs
   ): Promise<CachedChapter | null>
+  /** Re-roll a chapter with a perspective seed (≤64 chars). Updates the cache on
+   *  success; surfaces the monthly-allowance / Pro gate to the caller. */
+  rerollChapter(
+    slug: string,
+    chartHash: string,
+    birth: ReadingBirthInputs,
+    perspectiveSeed: string
+  ): Promise<RerollResult>
 }
 
 /** Build a reading cache bound to one app's signer / storage / api-url. */
@@ -238,5 +256,56 @@ export function createReadingCache(cfg: ReadingCacheConfig): ReadingCache {
     }
   }
 
-  return { getCachedChapter, setCachedChapter, fetchChapter }
+  /**
+   * Re-roll a chapter from a different perspective (Yuel Pro · metered). POSTs the
+   * perspective seed; the server regenerates + flips the current version, so we
+   * overwrite the local cache with the fresh prose. Maps the gate/allowance status
+   * codes (402 / 429) to a discriminated result.
+   */
+  async function rerollChapter(
+    slug: string,
+    chartHash: string,
+    birth: ReadingBirthInputs,
+    perspectiveSeed: string
+  ): Promise<RerollResult> {
+    const userId = await getUserId()
+    if (!userId) return { kind: 'needs_pro' }
+    if (!(await ensureServerChart(userId, birth))) return { kind: 'error' }
+    try {
+      const res = await signedApiFetch(userId, 'POST', `/api/report/chapter/${slug}/reroll`, {
+        perspectiveSeed,
+      })
+      if (!res) return { kind: 'error' }
+      if (res.status === 402) return { kind: 'needs_pro' }
+      if (res.status === 429) {
+        const body = (await res.json().catch(() => ({}))) as {
+          used?: number
+          limit?: number
+          resetsOn?: string
+        }
+        return {
+          kind: 'exhausted',
+          used: body.used ?? 0,
+          limit: body.limit ?? 0,
+          resetsOn: body.resetsOn ?? '',
+        }
+      }
+      if (!res.ok) return { kind: 'error' }
+      const json = (await res.json()) as { contentJson?: unknown; generatedAt?: string }
+      const content = flattenChapterContent(json.contentJson)
+      if (!content) return { kind: 'error' }
+      const chapter: CachedChapter = {
+        slug,
+        chartHash,
+        content,
+        generatedAt: json.generatedAt ?? new Date().toISOString(),
+      }
+      await setCachedChapter(chapter)
+      return { kind: 'ok', chapter }
+    } catch {
+      return { kind: 'error' }
+    }
+  }
+
+  return { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter }
 }

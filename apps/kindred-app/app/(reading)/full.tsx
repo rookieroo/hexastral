@@ -33,10 +33,11 @@ import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Lock, X } from 'lucide-react-native'
+import { ArrowLeft, Lock, RefreshCw, X } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   Dimensions,
+  Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -54,6 +55,12 @@ import {
   strengthLabel,
   useReadingI18n,
 } from '@/components/reading/reading-i18n'
+import {
+  PERSPECTIVE_PRESETS,
+  type PerspectivePreset,
+  perspectiveSeed,
+  REROLL_UI,
+} from '@/components/reading/perspective-presets'
 import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
@@ -72,6 +79,7 @@ import {
   computeChartHash,
   fetchChapter,
   getCachedChapter,
+  rerollChapter,
 } from '@/lib/solo/reading-cache'
 import { computeZiweiChart, type ZiweiChart } from '@/lib/solo/ziwei'
 
@@ -442,6 +450,44 @@ export default function FullReadingScreen() {
     })
   }
 
+  // 换视角 (Pro · metered): re-read a chapter through a different voice. The picker
+  // opens for `rerollFor`'s slug; a chosen preset regenerates the chapter and swaps
+  // its prose in place. Exhausted → soft notice; non-Pro → paywall (server-gated).
+  const ru = REROLL_UI[locale]
+  const [rerollFor, setRerollFor] = useState<string | null>(null)
+  const [rerolling, setRerolling] = useState(false)
+  const [rerollNotice, setRerollNotice] = useState<string | null>(null)
+  useEffect(() => {
+    if (!rerollNotice) return
+    const id = setTimeout(() => setRerollNotice(null), 4500)
+    return () => clearTimeout(id)
+  }, [rerollNotice])
+
+  const applyRerolled = (chapter: CachedChapter) => {
+    if (chapter.slug === 'ch1_personality') setCh1(chapter)
+    else if (chapter.slug === 'ch4_timeline') setCh4(chapter)
+    else setPremium((prev) => ({ ...prev, [chapter.slug]: chapter }))
+  }
+  const doReroll = (preset: PerspectivePreset) => {
+    const slug = rerollFor
+    setRerollFor(null)
+    if (!slug || !birth) return
+    setRerolling(true)
+    void (async () => {
+      const b = {
+        solarDate: birth.solarDate,
+        timeIndex: birth.timeIndex ?? 0,
+        gender: birth.gender,
+      }
+      const result = await rerollChapter(slug, chartHash, b, perspectiveSeed(preset, locale))
+      setRerolling(false)
+      if (result.kind === 'ok') applyRerolled(result.chapter)
+      else if (result.kind === 'exhausted') setRerollNotice(ru.exhausted)
+      else if (result.kind === 'needs_pro') openPaywall()
+      else setRerollNotice(ru.failed)
+    })()
+  }
+
   /* ── empty / not-ready guard ── */
   if (birth === undefined) {
     // Still loading birth from storage — a quiet header, no flash of the prompt.
@@ -579,6 +625,8 @@ export default function FullReadingScreen() {
                           }
                         : undefined
                     }
+                    rerollLabel={ru.button}
+                    onReroll={content ? () => setRerollFor(c.slug) : undefined}
                   />
                 </View>
               )
@@ -636,7 +684,74 @@ export default function FullReadingScreen() {
         }}
         onClose={() => setPickedQuote(null)}
       />
+
+      {/* 换视角 picker — pick a voice to re-read the current chapter through. */}
+      <PerspectivePicker
+        visible={rerollFor != null}
+        locale={locale}
+        title={ru.title}
+        subtitle={ru.subtitle}
+        onPick={doReroll}
+        onClose={() => setRerollFor(null)}
+      />
+
+      {/* Regen in progress — a quiet full-screen veil with the 墨晕 idiom. */}
+      {rerolling ? (
+        <View style={S.rerollVeil} pointerEvents='auto'>
+          <Text style={S.rerollVeilText}>{ru.rerolling}</Text>
+        </View>
+      ) : null}
+
+      {/* Soft notice (exhausted / failed) — a gentle bottom banner, auto-dismisses
+          after a few seconds (tap to dismiss sooner). */}
+      {rerollNotice ? (
+        <Pressable style={S.noticeBar} onPress={() => setRerollNotice(null)}>
+          <Text style={S.noticeText}>{rerollNotice}</Text>
+        </Pressable>
+      ) : null}
     </View>
+  )
+}
+
+/* ── PerspectivePicker (换视角 bottom sheet) ─────────────────────────── */
+
+function PerspectivePicker({
+  visible,
+  locale,
+  title,
+  subtitle,
+  onPick,
+  onClose,
+}: {
+  visible: boolean
+  locale: ReturnType<typeof useReadingI18n>['locale']
+  title: string
+  subtitle: string
+  onPick: (preset: PerspectivePreset) => void
+  onClose: () => void
+}) {
+  return (
+    <Modal visible={visible} transparent animationType='slide' onRequestClose={onClose}>
+      <Pressable style={S.sheetBackdrop} onPress={onClose}>
+        <Pressable style={S.sheet} onPress={(e) => e.stopPropagation()}>
+          <View style={S.sheetHandle} />
+          <Text style={S.sheetTitle}>{title}</Text>
+          <Text style={S.sheetSubtitle}>{subtitle}</Text>
+          <View style={{ gap: 10, marginTop: 18 }}>
+            {PERSPECTIVE_PRESETS.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => onPick(p)}
+                style={({ pressed }) => [S.voiceCard, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={S.voiceLabel}>{p.label[locale]}</Text>
+                <Text style={S.voiceDesc}>{p.desc[locale]}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   )
 }
 
@@ -682,6 +797,8 @@ function ChapterPage({
   birthBadge,
   timeCaveat,
   ask,
+  rerollLabel,
+  onReroll,
 }: {
   n: number
   label: string
@@ -705,6 +822,9 @@ function ChapterPage({
     onPickQuote: (quote: string) => void
     highlightedQuotes: string[]
   }
+  /** 换视角 — opens the perspective picker for this chapter (Pro, content pages). */
+  rerollLabel?: string
+  onReroll?: () => void
 }) {
   const cjk = isCjkLocale(locale)
   const tLocale = termLocale(locale)
@@ -811,6 +931,20 @@ function ChapterPage({
               {renderProse(para)}
             </Text>
           ))
+        ) : null}
+
+        {/* 换视角 — re-read this chapter in another voice (Pro · metered). Only on
+            generated (unlocked) pages, under the prose. */}
+        {content && onReroll && rerollLabel ? (
+          <Pressable
+            onPress={onReroll}
+            hitSlop={8}
+            accessibilityRole='button'
+            style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
+          >
+            <RefreshCw size={13} color={P.bronze} strokeWidth={1.6} />
+            <Text style={S.rerollText}>{rerollLabel}</Text>
+          </Pressable>
         ) : null}
 
         <View style={{ height: 80 }} />
@@ -990,4 +1124,66 @@ const S = StyleSheet.create({
     textDecorationLine: 'underline',
     textDecorationColor: P.bronze,
   },
+
+  // 换视角 entry
+  rerollBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    alignSelf: 'flex-start',
+    marginTop: 36,
+    paddingVertical: 8,
+  },
+  rerollText: { color: P.bronze, fontSize: 13, letterSpacing: 1 },
+
+  // 换视角 picker (bottom sheet)
+  sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet: {
+    backgroundColor: P.bg,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 40,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: P.hair,
+    marginBottom: 18,
+  },
+  sheetTitle: { color: P.ink, fontSize: 20, letterSpacing: 1, marginBottom: 4 },
+  sheetSubtitle: { color: P.muted, fontSize: 13, lineHeight: 19 },
+  voiceCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: P.hair,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 4,
+  },
+  voiceLabel: { color: P.ink, fontSize: 16, letterSpacing: 0.5 },
+  voiceDesc: { color: P.muted, fontSize: 13, lineHeight: 18 },
+
+  // regen veil + soft notice
+  rerollVeil: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20,18,16,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rerollVeilText: { color: P.bg, fontSize: 15, letterSpacing: 1 },
+  noticeBar: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 40,
+    backgroundColor: kindredDark.bg,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  noticeText: { color: P.bg, fontSize: 13, lineHeight: 19, textAlign: 'center' },
 })
