@@ -21,7 +21,7 @@ interface InviteInfo {
 export default async function Image({
   params,
 }: {
-  params: Promise<{ locale: string; token: string }>
+  params: Promise<{ token: string }>
 }) {
   const { token } = await params
 

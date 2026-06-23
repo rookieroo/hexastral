@@ -82,6 +82,7 @@ export default function middleware(request: NextRequest) {
     pathname.startsWith('/u/') ||
     pathname.startsWith('/hehun/') ||
     pathname.startsWith('/invite/') ||
+    pathname.startsWith('/resonate/') ||
     pathname.startsWith('/report/') ||
     pathname.startsWith('/s/') ||
     pathname.startsWith('/auspice')

@@ -44,10 +44,14 @@ const nextConfig: NextConfig = {
         destination: '/yuan/invite/:bondId',
         permanent: true,
       },
-      // /[locale]/resonate/[token] → /[locale]/yuan/invite/[token]
+      // Legacy locale-prefixed Yuel invite links → the fixed, locale-agnostic URL.
+      // `/resonate/[token]` is now a non-localized route that localises by the OPENING
+      // device (Accept-Language), so strip any `/zh|tw|ja/` prefix old links carried.
+      // (This rule previously sent them to /yuan/invite — the wrong product — which is
+      // why every non-en Yuel invite "wouldn't open".)
       {
         source: '/:locale(zh|tw|ja)/resonate/:token',
-        destination: '/:locale/yuan/invite/:token',
+        destination: '/resonate/:token',
         permanent: true,
       },
       // /[locale]/invite → /[locale]/yuan

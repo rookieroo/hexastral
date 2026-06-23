@@ -637,7 +637,10 @@ bondRoutes.post('/invite', async (c) => {
   // 'en'. Previously defaulted to 'zh', so any user without a stored locale got
   // a Chinese share message + landing even when composing in English.
   const locale = input.language ?? user.locale ?? 'en'
-  const resonateUrl = `https://hexastral.com/${webLocalePrefix(locale)}resonate/${token}`
+  // Fixed, locale-agnostic landing URL — the web page localises by the OPENING
+  // device (Accept-Language), not by A's locale. `locale` still drives the share
+  // MESSAGE body below (A writes it in A's language); only the URL stays neutral.
+  const resonateUrl = `https://hexastral.com/resonate/${token}`
 
   if (deliveryMode === 'server') {
     // Legacy / fallback path — server sends the hardened transactional invite.
@@ -2248,9 +2251,9 @@ bondRoutes.get('/:id', async (c) => {
       ? {
           expiresAt: invitation.expiresAt,
           targetEmail: invitation.targetEmail,
-          // Re-shareable invite link for the unlock wall's invite CTA (T2),
-          // locale-prefixed so the landing matches the viewer's language.
-          resonateUrl: `https://hexastral.com/${webLocalePrefix(viewerLocale)}resonate/${invitation.token}`,
+          // Re-shareable invite link for the unlock wall's invite CTA (T2). Fixed,
+          // locale-agnostic — the landing localises by the OPENING device.
+          resonateUrl: `https://hexastral.com/resonate/${invitation.token}`,
         }
       : null,
     dimensions: dimensionData,
@@ -3058,22 +3061,6 @@ function escapeHtml(s: string): string {
 }
 
 type InviteLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
-
-/**
- * App/user locale → web resonate-landing route prefix.
- *
- * Web routing (hexastral-web/i18n/routing.ts): locales zh|tw|en|ja, default en,
- * `as-needed` prefix → en has NO prefix, others use their short code. Keeps the
- * landing page in the same language A composed the invite in. Returns a trailing
- * slash so callers can interpolate `${prefix}resonate/...` directly.
- */
-function webLocalePrefix(locale: string): string {
-  const l = locale.toLowerCase()
-  if (l === 'zh' || l === 'zh-hans' || l.startsWith('zh-cn')) return 'zh/'
-  if (l === 'zh-hant' || l === 'tw' || l.startsWith('zh-tw') || l.startsWith('zh-hk')) return 'tw/'
-  if (l === 'ja' || l.startsWith('ja')) return 'ja/'
-  return '' // en — default locale, no prefix
-}
 
 function normalizeInviteLocale(locale: string): InviteLocale {
   if (locale === 'zh' || locale === 'zh-Hans' || locale.startsWith('zh-CN')) return 'zh'
