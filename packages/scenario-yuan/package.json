@@ -11,6 +11,7 @@
     "./reading": "./src/reading.ts",
     "./reading-cache": "./src/reading-cache.ts",
     "./teaser-narrator": "./src/teaser-narrator.ts",
+    "./what-if": "./src/what-if.ts",
     "./ziwei": "./src/ziwei.ts",
     "./components": "./src/components/index.ts"
   },

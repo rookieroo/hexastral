@@ -734,13 +734,14 @@ export default function FullReadingScreen() {
         <X size={22} color={P.muted} strokeWidth={1.5} />
       </Pressable>
 
-      {/* Living layer — the bottom-right FAB into 流年 timeline + chat (parity with the
-          合盘 report). What-if is wired in a later slice. Hidden while a sentence is
-          picked (the selection bar owns the bottom). */}
+      {/* Living layer — the bottom-right FAB into 流年 timeline + 假如 what-if + chat
+          (full parity with the 合盘 report). Hidden while a sentence is picked (the
+          selection bar owns the bottom). */}
       {!pickedQuote ? (
         <LivingLayerFab
           labels={LIVING_LABELS[locale] ?? LIVING_LABELS.en}
           onTimeline={() => router.push('/(reading)/timeline')}
+          onWhatIf={() => router.push('/(reading)/whatif')}
           onChat={() => handleAskAI({ slug: activeSlug ?? 'ch1_personality', quote: null })}
           insetBottom={insets.bottom}
         />
