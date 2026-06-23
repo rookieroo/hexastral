@@ -9,6 +9,8 @@
  */
 
 export * from './natal'
+export * from './personality-presets'
 export * from './reading'
 export * from './reading-cache'
+export * from './teaser-narrator'
 export * from './ziwei'

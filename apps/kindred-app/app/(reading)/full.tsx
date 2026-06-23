@@ -29,6 +29,7 @@ import {
 } from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
 import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
+import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
@@ -38,7 +39,6 @@ import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
   dayMasterLabel,
-  elementLabel,
   gejuLabel,
   type ReadingStringKey,
   shichenLabel,
@@ -303,6 +303,23 @@ export default function FullReadingScreen() {
     }
   }, [chart, birth])
 
+  // Deterministic free-tier 命书 taste (no LLM). The free chapters never call the
+  // model, so we compose ch1 (人格) + ch4 (现运) straight from the chart — 日主 ·
+  // 旺衰 · 格局 · 喜用神 · 当前大运十神 + the shared 命理词库 — so a non-Pro reader
+  // gets real, chart-grounded prose instead of a "生成中…" placeholder that never
+  // resolves. Pro users still get the richer LLM chapter; this is the fallback.
+  const teaser = useMemo(() => {
+    if (!chart) return null
+    const soulStars =
+      ziwei?.palaces.find((p) => p.name === '命宫')?.majorStars.map((s) => s.name).join(' ') ?? ''
+    return composeTeaserNarrator({
+      chart,
+      dayun: dayunInfo ?? { active: null, relation: null },
+      soulPalaceStars: soulStars || null,
+      locale,
+    })
+  }, [chart, ziwei, dayunInfo, locale])
+
   /* ── LLM cache + fetch ── */
   const [ch1, setCh1] = useState<CachedChapter | null>(null)
   const [ch4, setCh4] = useState<CachedChapter | null>(null)
@@ -467,33 +484,23 @@ export default function FullReadingScreen() {
     `${dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)} · ${gejuLabel(chart.geju.primary, locale)} · ${t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) })}` +
     (ziweiLabel ? ` · ${t('label.soulPalaceInline', { stars: ziweiLabel })}` : '')
 
+  // Free placeholder = the deterministic teaser (composeTeaserNarrator), NOT a
+  // "生成中…" string: it never generates for free, so we hand back real computed
+  // 命理 prose. `loading` only ever flips true for Pro (the LLM fetch); a non-Pro
+  // reader sees the teaser immediately.
   const ch1Meta = {
     label: t('reading.ch1Label'),
     sub: 'PERSONALITY',
     content: ch1?.content ?? null,
     loading: loading && !ch1,
-    placeholder: t('reading.ch1Placeholder', {
-      stem: chart.dayMaster,
-      el: elementLabel(chart.dayMasterWuXing as WuXing, locale),
-      geju: gejuLabel(chart.geju.primary, locale),
-      soul: ziweiLabel ? t('reading.soulPalaceClause', { stars: ziweiLabel }) : '',
-    }),
+    placeholder: teaser?.ch1 ?? t('reading.genAnalysis'),
   }
   const ch4Meta = {
     label: t('reading.ch4Label'),
     sub: 'CURRENT PERIOD',
     content: ch4?.content ?? null,
     loading: loading && !ch4,
-    placeholder: dayunInfo?.active
-      ? t('reading.ch4Placeholder', {
-          dayun: t('reading.dayunActive', {
-            gz: `${dayunInfo.active.ganZhi.stem}${dayunInfo.active.ganZhi.branch}`,
-            start: dayunInfo.active.startAge,
-            end: dayunInfo.active.endAge,
-          }),
-          rel: dayunInfo.relation ? ` · ${dayunInfo.relation.label}` : '',
-        })
-      : t('reading.genAnalysis'),
+    placeholder: teaser?.ch4 ?? t('reading.genAnalysis'),
   }
 
   /* ── detail view props (rendered as a slide-in overlay). ── */
@@ -911,7 +918,18 @@ function ChapterDetail({
               <View style={[S.skelLine, { width: '60%' }]} />
             </View>
           ) : placeholder ? (
-            <Text style={S.detailPlaceholder}>{renderProse(placeholder)}</Text>
+            // A multi-paragraph placeholder is the deterministic free teaser
+            // (composeTeaserNarrator) — render it as real body prose. A single
+            // block is a premium chapter's short italic tease.
+            placeholder.includes('\n\n') ? (
+              placeholder.split('\n\n').map((para, i) => (
+                <Text key={i} style={[S.detailBody, S.paraBlock]}>
+                  {renderProse(para)}
+                </Text>
+              ))
+            ) : (
+              <Text style={S.detailPlaceholder}>{renderProse(placeholder)}</Text>
+            )
           ) : null}
 
           {locked ? (

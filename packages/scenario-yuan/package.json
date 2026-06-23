@@ -6,8 +6,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./natal": "./src/natal.ts",
+    "./personality-presets": "./src/personality-presets.ts",
     "./reading": "./src/reading.ts",
     "./reading-cache": "./src/reading-cache.ts",
+    "./teaser-narrator": "./src/teaser-narrator.ts",
     "./ziwei": "./src/ziwei.ts",
     "./components": "./src/components/index.ts"
   },
