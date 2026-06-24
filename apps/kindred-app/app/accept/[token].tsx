@@ -390,9 +390,15 @@ export default function AcceptTokenScreen() {
               t('invite.accept.anonTitle')
             )}
           </Text>
+          {/* The relationship A declared, from B's side. relationshipLabel is the
+              counterpart's role relative to the inviter (same direction as the bond
+              list / solo / report), so it reads "你是 TA 的父母" — B is A's parent. The
+              'other' catch-all isn't a role noun, so it stands alone instead of taking
+              the possessive frame ("你们因缘相系"). */}
           <Text style={[kindredType.caption, { color: kindredDark.textSecondary }]}>
-            {t('invite.accept.relationshipPrefix')}
-            {relationshipLabel}
+            {relationshipType === 'other'
+              ? relationshipLabel
+              : `${t('invite.accept.relationshipPrefix')}${relationshipLabel}`}
           </Text>
         </View>
 

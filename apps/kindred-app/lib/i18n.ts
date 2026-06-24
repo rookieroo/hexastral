@@ -286,7 +286,7 @@ export const translations: Translations = {
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' invited you',
-    'invite.accept.relationshipPrefix': 'You are ',
+    'invite.accept.relationshipPrefix': 'You are their ',
     'invite.accept.anonTitle': "You've been invited",
     'invite.accept.birthHeading': 'Your birth details',
     'invite.accept.birthHint': 'We cast your half of the chart from this — date, time and place.',
@@ -299,7 +299,7 @@ export const translations: Translations = {
     'invite.accept.consent.lead': 'I agree to share my birth data with ',
     'invite.accept.consent.trail': ' for a synastry compatibility reading. ',
     'invite.accept.consent.privacyPolicy': 'Privacy Policy',
-    'invite.accept.relationship.other': 'connected by fate',
+    'invite.accept.relationship.other': 'Connected by fate',
 
     'settings.title': 'Settings',
     'settings.account': 'Account',
@@ -673,7 +673,7 @@ export const translations: Translations = {
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' 邀请你合盘',
-    'invite.accept.relationshipPrefix': '你们是 ',
+    'invite.accept.relationshipPrefix': '你是 TA 的',
     'invite.accept.anonTitle': '你被邀请合盘',
     'invite.accept.birthHeading': '你的生辰',
     'invite.accept.birthHint': '用来推算你这一半的命盘 — 出生日期、时辰与地点。',
@@ -684,7 +684,7 @@ export const translations: Translations = {
     'invite.accept.consent.lead': '我同意与 ',
     'invite.accept.consent.trail': ' 分享我的生辰信息，用于生成合盘相性解读。',
     'invite.accept.consent.privacyPolicy': '隐私政策',
-    'invite.accept.relationship.other': '有缘人',
+    'invite.accept.relationship.other': '你们因缘相系',
 
     'settings.title': '设置',
     'settings.account': '账户',
@@ -1049,7 +1049,7 @@ export const translations: Translations = {
 
     'invite.accept.prefix': '',
     'invite.accept.suffix': ' 邀請你合盤',
-    'invite.accept.relationshipPrefix': '你們是 ',
+    'invite.accept.relationshipPrefix': '你是 TA 的',
     'invite.accept.anonTitle': '你被邀請合盤',
     'invite.accept.birthHeading': '你的生辰',
     'invite.accept.birthHint': '用來推算你這一半的命盤 — 出生日期、時辰與地點。',
@@ -1060,7 +1060,7 @@ export const translations: Translations = {
     'invite.accept.consent.lead': '我同意與 ',
     'invite.accept.consent.trail': ' 分享我的生辰資訊，用於生成合盤相性解讀。',
     'invite.accept.consent.privacyPolicy': '隱私政策',
-    'invite.accept.relationship.other': '有緣人',
+    'invite.accept.relationship.other': '你們因緣相繫',
 
     'settings.title': '設定',
     'settings.account': '帳號',
@@ -1426,7 +1426,7 @@ export const translations: Translations = {
 
     'invite.accept.prefix': 'さんが',
     'invite.accept.suffix': 'あなたを誘っています',
-    'invite.accept.relationshipPrefix': '二人は ',
+    'invite.accept.relationshipPrefix': 'あなたは相手の',
     'invite.accept.anonTitle': '招待が届いています',
     'invite.accept.birthHeading': 'あなたの生年月日',
     'invite.accept.birthHint': 'あなたの命式を出すために使います（生年月日・時刻・場所）。',
@@ -1438,7 +1438,7 @@ export const translations: Translations = {
     'invite.accept.consent.trail':
       'さんと出生情報を共有し、相性鑑定のために使用することに同意します。',
     'invite.accept.consent.privacyPolicy': 'プライバシーポリシー',
-    'invite.accept.relationship.other': '縁の相手',
+    'invite.accept.relationship.other': 'ご縁で結ばれた二人',
 
     'settings.title': '設定',
     'settings.account': 'アカウント',
