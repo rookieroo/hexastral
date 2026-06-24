@@ -272,21 +272,13 @@ function Body({
     <ScrollView
       contentContainerStyle={{
         paddingHorizontal: kindredSpacing.screenH,
+        paddingTop: kindredSpacing.sm,
         paddingBottom: kindredSpacing.xxl,
       }}
       showsVerticalScrollIndicator={false}
     >
-      <View
-        style={{ alignItems: 'center', gap: kindredSpacing.sm, marginBottom: kindredSpacing.lg }}
-      >
-        <YuelMark vertical size={48} color={kindredDark.seal} />
-        <Text style={[kindredType.title, { color: kindredDark.text }]}>
-          {t(locale, 'makeif.title')}
-        </Text>
-        <Text style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}>
-          {t(locale, 'makeif.subtitle')}
-        </Text>
-      </View>
+      {/* No hero header (2026-06 feedback: "header 去掉，再极简") — the 用神 card
+          below leads the page; the back chevron is the only chrome. */}
 
       {/* 划词 → make-if: the report sentence that launched this read, shown as
           context (a cinnabar-edged quote) so the timing read is anchored to it. */}

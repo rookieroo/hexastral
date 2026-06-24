@@ -51,6 +51,8 @@ import { searchCity as searchCityApi } from '@/lib/geocode'
 import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
 import { isPaywall } from '@/lib/inviteSubmit'
 import { updateDraft, useDraft } from '@/lib/onboardingDraft'
+import { setPendingOpenBond } from '@/lib/pending-open'
+import { suppressNextSplash } from '@/lib/splash-control'
 import {
   loadSelfBirth,
   type SelfBirth,
@@ -238,11 +240,14 @@ export default function AcceptTokenScreen() {
       // done so the launch gate routes future opens to the home, NOT back into
       // the onboarding birth form (the trap that left B "stuck on the form").
       await markOnboardingComplete()
-      // Reset to the home first (B's base — the bond shows in Threads), THEN open the
-      // report on top, so the now-back-button-less report still has a home to swipe back
-      // to instead of dead-ending.
+      // Hand the new bond to the home, which blooms its report in as the in-place
+      // 水墨 overlay (the same smooth transition a thread tap uses) — no second
+      // `/(bonds)/[id]` route pushed on top of the just-reset home (2026-06: "很容易
+      // 产生多余的路由栈…没法丝滑的跳到报告页"). Suppress the cold-launch splash so the
+      // hand-off into the report is one continuous motion.
+      suppressNextSplash()
+      setPendingOpenBond(result.bondId)
       resetToHome()
-      router.push(`/(bonds)/${result.bondId}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       // Already accepted (web POSTed respond, or a retry) → 410; treat as done.
@@ -257,8 +262,13 @@ export default function AcceptTokenScreen() {
         router.push({ pathname: '/(commerce)/paywall', params: { reason: msg } })
         return
       }
-      setRespondError(err instanceof Error ? err.message : 'Failed')
-      setAccepting(false)
+      // Any other failure: don't strand B on the accept screen — return to the
+      // home, which auto-refreshes the thread list on focus, so the bond (created
+      // server-side even if the report lagged) surfaces there (2026-06 feedback:
+      // "如果中间有任何问题应该回到首页自动刷新列表").
+      if (__DEV__) console.warn('[Yuel accept] open failed', err)
+      suppressNextSplash()
+      resetToHome()
     }
   }
 

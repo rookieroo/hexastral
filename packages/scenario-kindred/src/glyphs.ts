@@ -112,14 +112,14 @@ export const GLYPHS = {
     ],
   },
   火: {
-    // 丷 (two flames) over 人 (splaying base) — the true 火 structure. No central
-    // spine (the old form read as a stick figure / trident).
+    // 甲骨文 火 — three rising flame tongues (a 篝火), the attested pictograph: a
+    // tall central flame flanked by two shorter ones. Filled, so as a 朱文 chop it
+    // reads unmistakably as fire (the old 4-stroke 丷+人 read as a sparse X).
     box: [100, 130],
-    strokes: [
-      'M50,56 C46,77 40,97 32,116', // 丿 left leg
-      'M50,56 C54,77 60,97 68,116', // 乀 right leg
-      'M44,50 C41,42 37,36 31,31', // 丷 left flame
-      'M56,50 C59,42 63,36 69,31', // 丷 right flame
+    fills: [
+      'M50,106 C41,90 44,58 50,26 C56,58 59,90 50,106 Z', // central flame
+      'M33,106 C27,94 29,74 37,58 C40,76 39,94 33,106 Z', // left flame
+      'M67,106 C73,94 71,74 63,58 C60,76 61,94 67,106 Z', // right flame
     ],
   },
   土: {

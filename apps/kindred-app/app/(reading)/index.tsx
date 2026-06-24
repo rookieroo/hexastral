@@ -63,6 +63,7 @@ import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
 import { bondQuality } from '@/lib/bondQuality'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { consumePendingOpenBond } from '@/lib/pending-open'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import { consumeSplashDecision } from '@/lib/splash-control'
@@ -251,6 +252,11 @@ export default function ReadingHomeScreen() {
       // Silent revalidation: the cached list shows instantly; no loader/spinner
       // on return. A manual pull-to-refresh is the only visible refresh.
       void refetch({ silent: true })
+      // A flow that finished elsewhere (the invite accept) may have asked us to
+      // open a bond's report — bloom it in as the in-place overlay (no extra
+      // route), the same smooth transition a thread tap uses.
+      const pendingOpen = consumePendingOpenBond()
+      if (pendingOpen) setOpenBond({ id: pendingOpen, origin: null })
       return () => setFocused(false)
     }, [refetch])
   )

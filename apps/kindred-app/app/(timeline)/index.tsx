@@ -184,18 +184,13 @@ export default function TimelineScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={{
-              alignItems: 'center',
-              gap: kindredSpacing.sm,
-              marginBottom: kindredSpacing.xl,
-            }}
+          {/* No brand crest (2026-06 feedback: "header 去掉，再极简") — a quiet
+              left title only. */}
+          <Text
+            style={[kindredType.title, { color: kindredDark.text, marginBottom: kindredSpacing.lg }]}
           >
-            <YuelMark vertical size={64} color={kindredDark.seal} />
-            <Text style={[kindredType.title, { color: kindredDark.text }]}>
-              {bondName || t(locale, 'timeline.title')}
-            </Text>
-          </View>
+            {bondName || t(locale, 'timeline.title')}
+          </Text>
           {liuyue.length > 0 ? (
             <LiuYueStrip
               liuyue={liuyue}
@@ -243,18 +238,14 @@ export default function TimelineScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{ alignItems: 'center', gap: kindredSpacing.sm, marginBottom: kindredSpacing.lg }}
-        >
-          <YuelMark vertical size={48} color={kindredDark.seal} />
+        {/* No brand crest (2026-06 feedback: "header 去掉，再极简") — a quiet left
+            title; the "across every bond" subtitle only fits the full ego axis. */}
+        <View style={{ marginBottom: kindredSpacing.lg, gap: kindredSpacing.xs }}>
           <Text style={[kindredType.title, { color: kindredDark.text }]}>
             {bondName || t(locale, 'timeline.title')}
           </Text>
-          {/* The "across every bond" subtitle only fits the full ego axis. */}
           {!bondId ? (
-            <Text
-              style={[kindredType.caption, { color: kindredDark.textMuted, textAlign: 'center' }]}
-            >
+            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
               {t(locale, 'timeline.subtitle')}
             </Text>
           ) : null}
