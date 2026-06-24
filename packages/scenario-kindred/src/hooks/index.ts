@@ -14,6 +14,12 @@ export type { UseBondsTimelineResult } from './useBondsTimeline'
 export { useBondsTimeline } from './useBondsTimeline'
 export type { BondShareResult, UseShareBondResult } from './useShareBond'
 export { useShareBond } from './useShareBond'
+export type {
+  ReadingShareInput,
+  ReadingShareResult,
+  UseShareReadingResult,
+} from './useShareReading'
+export { useShareReading } from './useShareReading'
 export type { UseSoloBondResult } from './useSoloBond'
 export { useSoloBond } from './useSoloBond'
 export type { UseSynastryReportResult } from './useSynastryReport'

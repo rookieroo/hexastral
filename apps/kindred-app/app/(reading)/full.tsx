@@ -29,11 +29,16 @@ import {
   type Locale as TermLocale,
 } from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
-import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
+import {
+  isCjkLocale,
+  ShareableReadingCard,
+  TermBubble,
+  useShareReading,
+} from '@zhop/scenario-kindred'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
+import { ArrowLeft, Clock, Lock, RefreshCw, Share2, X } from 'lucide-react-native'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dimensions,
@@ -48,6 +53,7 @@ import {
 } from 'react-native'
 import Animated, { SlideInDown } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { captureRef } from 'react-native-view-shot'
 import {
   dayMasterLabel,
   gejuLabel,
@@ -65,6 +71,7 @@ import {
 } from '@/components/reading/perspective-presets'
 import { ReportBloom } from '@/components/reading/ReportBloom'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
+import { useAuth } from '@/lib/auth'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
 import { fetchProAllowance } from '@/lib/pro-allowance'
@@ -102,6 +109,21 @@ function getClipboard(): ClipboardModule | null {
     return clipboardModule
   } catch {
     clipboardModule = null
+    return null
+  }
+}
+
+/** expo-sharing, lazily required (parity with getClipboard) — the share sheet
+ *  degrades to a no-op when the native module is absent rather than throwing. */
+type SharingModule = typeof import('expo-sharing')
+let sharingModule: SharingModule | null | undefined
+function getSharing(): SharingModule | null {
+  if (sharingModule !== undefined) return sharingModule
+  try {
+    sharingModule = require('expo-sharing') as SharingModule
+    return sharingModule
+  } catch {
+    sharingModule = null
     return null
   }
 }
@@ -378,6 +400,80 @@ export default function FullReadingScreen() {
     return computeChartHash(birth.solarDate, birth.timeIndex ?? 0, birth.gender)
   }, [birth])
 
+  // ── Share the personal 命书 as a branded cover card ───────────────────────
+  // Same on-device capture path as the 合盘 report: register a /report/<shareId>
+  // link (reportType 'fate'), render ShareableReadingCard off-screen, view-shot →
+  // PNG → native share sheet. Open to free readers — the cover markets the app.
+  const { userId } = useAuth()
+  const { createShareUrl: createReadingShareUrl } = useShareReading()
+  const [shareTarget, setShareTarget] = useState<{ brandUrl: string; installUrl?: string } | null>(
+    null
+  )
+  const [isCapturing, setIsCapturing] = useState(false)
+  const shotRef = useRef<View>(null)
+
+  useEffect(() => {
+    if (!shareTarget) return
+    let cancelled = false
+    const handle = setTimeout(async () => {
+      if (cancelled || !shotRef.current) return
+      try {
+        const uri = await captureRef(shotRef.current, {
+          format: 'png',
+          quality: 1,
+          width: 1080,
+          height: 1920,
+        })
+        if (!cancelled) {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
+          const Sharing = getSharing()
+          if (Sharing && (await Sharing.isAvailableAsync())) {
+            await Sharing.shareAsync(uri, {
+              dialogTitle: 'Yuel',
+              mimeType: 'image/png',
+              UTI: 'public.png',
+            })
+          }
+        }
+      } catch (err) {
+        if (__DEV__) console.warn('[Yuel reading share]', err)
+      } finally {
+        if (!cancelled) {
+          setShareTarget(null)
+          setIsCapturing(false)
+        }
+      }
+    }, 80)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [shareTarget])
+
+  const handleShareReading = async () => {
+    if (!chart || isCapturing) return
+    setIsCapturing(true)
+    const essence = dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)
+    const pattern = gejuLabel(chart.geju.primary, locale)
+    let brandUrl = 'kindred.hexastral.com'
+    let installUrl: string | undefined
+    try {
+      const res = await createReadingShareUrl({
+        userId: userId ?? 'self',
+        reportId: chartHash,
+        titleHint: essence,
+        dayMaster: essence,
+        geju: pattern,
+        interpretation: teaser?.ch1 ?? undefined,
+      })
+      installUrl = res.url
+      brandUrl = res.url.replace(/^https?:\/\//, '')
+    } catch (err) {
+      if (__DEV__) console.warn('[Yuel reading share/url]', err)
+    }
+    setShareTarget({ brandUrl, installUrl })
+  }
+
   const draftSolarDate = birth?.solarDate ?? null
   const draftGender = birth?.gender ?? null
 
@@ -599,6 +695,15 @@ export default function FullReadingScreen() {
     `${dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)} · ${gejuLabel(chart.geju.primary, locale)} · ${t('label.self', { s: strengthLabel(chart.geju.dayMasterStrength, locale) })}` +
     (ziweiLabel ? ` · ${t('label.soulPalaceInline', { stars: ziweiLabel })}` : '')
 
+  // The share card's human hook — the first sentence of the (free) teaser, capped.
+  const readingShareTagline = (() => {
+    const ch1 = teaser?.ch1
+    if (!ch1) return undefined
+    const first = splitSentences(ch1)[0]?.trim()
+    if (!first) return undefined
+    return first.length > 52 ? `${first.slice(0, 50)}…` : first
+  })()
+
   // Per-slug content sources. Free chapters (ch1/ch4) carry the deterministic
   // teaser (composeTeaserNarrator) until unlocked, then swap to their LLM prose;
   // the four premium slugs resolve into `premium`. No "生成中…" ever shows for a
@@ -728,6 +833,18 @@ export default function FullReadingScreen() {
         <X size={22} color={P.muted} strokeWidth={1.5} />
       </Pressable>
 
+      {/* Quiet share — top-right, mirroring the close ✕. Captures the 命书 cover
+          (日主 印章 + a teaser hook) and opens the native share sheet. */}
+      <Pressable
+        onPress={() => void handleShareReading()}
+        hitSlop={12}
+        accessibilityRole='button'
+        accessibilityLabel={locale.startsWith('zh') ? '分享' : 'Share'}
+        style={[S.shareBtn, { top: insets.top + 6 }]}
+      >
+        <Share2 size={20} color={P.muted} strokeWidth={1.5} />
+      </Pressable>
+
       {/* No living-layer FAB on the personal report (ADR-0026): 本月 lives on the home
           doorway, and chat is the 划词 selection bar below. */}
 
@@ -799,6 +916,27 @@ export default function FullReadingScreen() {
         <Pressable style={S.noticeBar} onPress={() => setRerollNotice(null)}>
           <Text style={S.noticeText}>{rerollNotice}</Text>
         </Pressable>
+      ) : null}
+
+      {/* Off-screen capture target for the share cover — far outside the viewport. */}
+      {shareTarget ? (
+        <View
+          ref={shotRef}
+          collapsable={false}
+          style={{ position: 'absolute', top: -20000, left: 0 }}
+        >
+          <ShareableReadingCard
+            element={chart.dayMasterWuXing}
+            essence={dayMasterLabel(chart.dayMaster, chart.dayMasterWuXing as WuXing, locale)}
+            pattern={gejuLabel(chart.geju.primary, locale)}
+            tagline={readingShareTagline}
+            width={1080}
+            height={1920}
+            locale={locale}
+            brandUrl={shareTarget.brandUrl}
+            installUrl={shareTarget.installUrl}
+          />
+        </View>
       ) : null}
     </View>
   )
@@ -1230,6 +1368,17 @@ const S = StyleSheet.create({
   closeBtn: {
     position: 'absolute',
     left: 12,
+    zIndex: 20,
+    elevation: 20,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Share — mirrors closeBtn on the right edge.
+  shareBtn: {
+    position: 'absolute',
+    right: 12,
     zIndex: 20,
     elevation: 20,
     width: 40,
