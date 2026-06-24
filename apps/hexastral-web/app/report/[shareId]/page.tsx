@@ -5,13 +5,19 @@ import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 import { HexastralPlanetLogo } from '@/components/HexastralPlanetLogo'
 import { ReportBackground } from '@/components/ReportBackground'
 import { StarBackground } from '@/components/StarBackground'
+import { KindredShareLanding } from './KindredShareLanding'
 
 interface SharedReportPageProps {
   params: Promise<{ shareId: string }>
 }
 
+/** The report types the generic star-theme page renders. Kindred shares (`pair`,
+ *  or `fate` + `brand: 'yuel'`) branch to KindredShareLanding before this is used. */
+type GenericReportType = 'stellar' | 'natal' | 'yiching' | 'fate' | 'physiognomy'
+
 interface ReportContent {
-  type: 'stellar' | 'natal' | 'yiching' | 'fate' | 'physiognomy'
+  /** Any `sharedReports.reportType`; narrowed to GenericReportType on the generic path. */
+  type: string
   titleHint: string | null
   contentJson: string
   viewCount: number
@@ -20,8 +26,26 @@ interface ReportContent {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 
+/** Parse a content snapshot into a plain object (null on malformed / non-object). */
+function parseContent(contentJson: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(contentJson) as unknown
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {
+    // malformed JSON
+  }
+  return null
+}
+
+/** True when this share should render the Yuel-branded Kindred landing. */
+function isKindredShare(type: string, content: Record<string, unknown> | null): boolean {
+  return type === 'pair' || content?.brand === 'yuel'
+}
+
 const REPORT_TYPE_LABELS: Record<
-  ReportContent['type'],
+  GenericReportType,
   { en: string; zh: string; icon: string; color: string; tokenType: ReportType }
 > = {
   stellar: {
@@ -147,7 +171,24 @@ export async function generateMetadata({ params }: SharedReportPageProps): Promi
 
   if (!share) return { title: 'HexAstral' }
 
-  const label = REPORT_TYPE_LABELS[share.type]
+  const content = parseContent(share.contentJson)
+  if (isKindredShare(share.type, content)) {
+    const isPair = share.type === 'pair'
+    const hero =
+      (typeof content?.archetypeName === 'string' && content.archetypeName) ||
+      (typeof content?.dayMaster === 'string' && content.dayMaster) ||
+      share.titleHint
+    const zh = isPair ? '合盘' : '命书'
+    const title = hero ? `${hero} · ${zh} · Yuel` : `${zh} · Yuel`
+    return {
+      title,
+      description: isPair ? 'Yuel 合盘 · 你们的缘分解读' : 'Yuel 命书 · 你的命理解读',
+      openGraph: { title, siteName: 'Yuel' },
+    }
+  }
+
+  const label = REPORT_TYPE_LABELS[share.type as GenericReportType]
+  if (!label) return { title: 'HexAstral' }
   const title = share.titleHint
     ? `${share.titleHint} · ${label.zh} · HexAstral`
     : `${label.zh} · HexAstral`
@@ -174,7 +215,20 @@ export default async function SharedReportPage({ params }: SharedReportPageProps
 
   if (!share) notFound()
 
-  const label = REPORT_TYPE_LABELS[share.type]
+  const content = parseContent(share.contentJson)
+  if (isKindredShare(share.type, content)) {
+    return (
+      <KindredShareLanding
+        type={share.type}
+        content={content}
+        titleHint={share.titleHint}
+        shareId={shareId}
+      />
+    )
+  }
+
+  const label = REPORT_TYPE_LABELS[share.type as GenericReportType]
+  if (!label) notFound()
   const { highlights, fullText, fateInsights } = extractContent(share.contentJson)
   const previewText = fullText.slice(0, PREVIEW_CHAR_LIMIT)
   const hasMore = fullText.length > PREVIEW_CHAR_LIMIT
