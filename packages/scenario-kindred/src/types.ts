@@ -168,6 +168,10 @@ export interface BondDetailData extends BondData {
    *  "you" + order the 五行 subtitle from the viewer's own perspective. Server-set
    *  by matching the viewer's birth to the snapshot; absent on legacy responses. */
   viewerIsPersonA?: boolean
+  /** Progressive report: true while the server is still generating the remaining
+   *  chapters in the background. The client renders the shell + first chapter
+   *  immediately and polls until this clears. Absent on legacy responses. */
+  chaptersPending?: boolean
 }
 
 export interface PairInterpretation {

@@ -17,10 +17,16 @@
  */
 
 import type { HexastralClient } from '@zhop/hexastral-client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useKindredClient } from '../context'
 import { kindredBonds, unwrap } from '../lib/kindred-bonds-api'
 import type { BondDetailData, PairInterpretation, SynastryChapter } from '../types'
+
+// Progressive report: poll cadence while the server fills in the remaining
+// chapters. ~16 × 2.5s ≈ 40s budget — comfortably covers five chapters generated
+// in parallel; after that the reader keeps a usable (if shorter) report.
+const CHAPTER_POLL_INTERVAL_MS = 2500
+const CHAPTER_POLL_MAX = 16
 
 // Session-scoped report cache (in-memory only; cleared on reload). Keyed by
 // bondId. Written by both the hook's refetch and prefetchBondReport.
@@ -63,6 +69,10 @@ export interface UseSynastryReportResult {
   isLoading: boolean
   isGenerating: boolean
   error: Error | null
+  /** Progressive report: true while the server is still composing the remaining
+   *  chapters. The hook polls until it clears; the screen shows skeletons for the
+   *  not-yet-arrived chapters. */
+  chaptersPending: boolean
   /** Force re-fetch — does not regenerate, just clears local state */
   refetch: () => Promise<void>
   /** Convenience accessor: returns chapters if interpretation includes them */
@@ -94,6 +104,17 @@ export function useSynastryReport(
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const [error, setError] = useState<Error | null>(null)
 
+  // Progressive report: a pending poll timer + its attempt count. Refs (not state)
+  // so re-scheduling never re-renders and the cleanup can always cancel in flight.
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollCount = useRef(0)
+  const clearPoll = useCallback(() => {
+    if (pollTimer.current) {
+      clearTimeout(pollTimer.current)
+      pollTimer.current = null
+    }
+  }, [])
+
   const refetch = useCallback(async () => {
     if (!bondId) return
     // Revalidate silently when a cached copy is already on screen — no spinner.
@@ -115,13 +136,24 @@ export function useSynastryReport(
       setDetail(data)
       setIsGenerating(false)
       setIsLoading(false)
+      // Progressive report: keep polling (silently — the cache is warm so no spinner)
+      // until the background pass has filled in every chapter, then stop.
+      clearPoll()
+      if (data.chaptersPending && pollCount.current < CHAPTER_POLL_MAX) {
+        pollCount.current += 1
+        pollTimer.current = setTimeout(() => {
+          void refetch()
+        }, CHAPTER_POLL_INTERVAL_MS)
+      } else {
+        pollCount.current = 0
+      }
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err))
       setError(e)
       setIsLoading(false)
       onError?.(e)
     }
-  }, [bondId, client, onError, viewerLocale])
+  }, [bondId, client, onError, viewerLocale, clearPoll])
 
   const unlockBond = useCallback(async (): Promise<'unlocked' | 'needs_purchase' | 'error'> => {
     if (!bondId) return 'error'
@@ -170,14 +202,18 @@ export function useSynastryReport(
     const cached = reportCache.get(bondId)
     setDetail(cached ?? null)
     setIsLoading(!cached)
+    // Fresh bond → fresh poll budget (a previous bond may have exhausted it).
+    pollCount.current = 0
     void refetch()
-  }, [bondId, refetch])
+    return () => clearPoll()
+  }, [bondId, refetch, clearPoll])
 
   return {
     detail,
     isLoading,
     isGenerating,
     error,
+    chaptersPending: detail?.chaptersPending ?? false,
     refetch,
     chapters: extractChapters(detail?.interpretation),
     unlockBond,

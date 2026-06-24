@@ -265,6 +265,92 @@ async function upsertPairReading(
   return row?.id ?? values.id
 }
 
+// Canonical synastry chapter order (mirrors svc-astro's SYNASTRY_CHAPTER_SPECS).
+// The create/accept path generates only `first_impression` synchronously (the
+// report shell), then `REST_SYNASTRY_CHAPTERS` are filled in by a background pass.
+const FIRST_SYNASTRY_CHAPTER = 'first_impression' as const
+const REST_SYNASTRY_CHAPTERS = [
+  'communication',
+  'conflict',
+  'complement',
+  'monthly_outlook',
+  'long_term_advice',
+] as const
+const SYNASTRY_CANON_KINDS: readonly string[] = [
+  FIRST_SYNASTRY_CHAPTER,
+  ...REST_SYNASTRY_CHAPTERS,
+]
+
+type ChapterLike = { kind?: unknown }
+
+/**
+ * Background top-up of the remaining five synastry chapters (2026-06 progressive
+ * report). The create/accept path persists the SHELL (flat interpretation + the
+ * first chapter, marked `chaptersPending`) and returns immediately so the client
+ * leaves the moon loader; this then re-calls svc-astro for the rest and merges
+ * them into the given reading row(s), clearing the pending flag. Designed to run
+ * inside `executionCtx.waitUntil`.
+ *
+ * Best-effort and self-contained: any failure leaves the shell (with ch1) intact
+ * and `chaptersPending` true — the client's poll simply stops after its budget and
+ * the reader keeps a usable, if shorter, report. Idempotent across the mirror rows.
+ */
+async function topUpRestChapters(
+  env: CloudflareBindings,
+  db: AppDb,
+  readingIds: readonly string[],
+  // The same payload sent to /pair/compute for the shell — reused verbatim with a
+  // chapter subset so the background chapters share the exact chart context.
+  hehunPayload: Record<string, unknown>
+): Promise<void> {
+  const { interpretation: rest } = await callAstro<{
+    interpretation: { chapters?: ChapterLike[] } | null
+  }>(env.SVC_ASTRO, '/pair/compute', {
+    ...hehunPayload,
+    chapterKinds: REST_SYNASTRY_CHAPTERS,
+    skipInterpretation: true,
+    skipSnippets: true,
+  })
+
+  const restChapters = Array.isArray(rest?.chapters) ? rest.chapters : []
+  if (restChapters.length === 0) return
+
+  for (const readingId of readingIds) {
+    const row = await db
+      .select({ interpretation: pairReadings.interpretation })
+      .from(pairReadings)
+      .where(eq(pairReadings.id, readingId))
+      .get()
+    if (!row) continue
+
+    let interp: Record<string, unknown>
+    try {
+      interp = JSON.parse(row.interpretation) as Record<string, unknown>
+    } catch {
+      continue
+    }
+
+    // Merge shell (ch1) + the freshly generated rest, dedupe by kind, re-emit in
+    // canonical order. Newer (rest) wins on collision, but ch1 isn't in `rest`.
+    const existing = Array.isArray(interp.chapters) ? (interp.chapters as ChapterLike[]) : []
+    const byKind = new Map<string, ChapterLike>()
+    for (const ch of [...existing, ...restChapters]) {
+      const k = (ch as ChapterLike).kind
+      if (typeof k === 'string') byKind.set(k, ch)
+    }
+    interp.chapters = SYNASTRY_CANON_KINDS.flatMap((k) => {
+      const ch = byKind.get(k)
+      return ch ? [ch] : []
+    })
+    interp.chaptersPending = false
+
+    await db
+      .update(pairReadings)
+      .set({ interpretation: JSON.stringify(interp) })
+      .where(eq(pairReadings.id, readingId))
+  }
+}
+
 /** Bond limit check result. `allowed: false` callers should respond via jsonErr. */
 const YUAN_PRO_PRODUCT_IDS = {
   monthly: 'hexastral_kindred_pro_monthly',
@@ -432,7 +518,16 @@ bondRoutes.post('/solo', async (c) => {
       personB: Record<string, unknown>
     }
     interpretation: Record<string, string>
-  }>(c.env.SVC_ASTRO, '/pair/compute', hehunPayload)
+  }>(c.env.SVC_ASTRO, '/pair/compute', {
+    ...hehunPayload,
+    // Progressive report: generate ONLY the first chapter now (the report shell)
+    // so this request returns + the client leaves the moon loader fast. The other
+    // five are topped up in the background (waitUntil) just below.
+    chapterKinds: [FIRST_SYNASTRY_CHAPTER],
+  })
+  // Signal the client (via GET /:id) to poll for the remaining chapters while the
+  // background pass fills them in.
+  ;(interpretation as Record<string, unknown>).chaptersPending = true
 
   // Save hehun reading (idempotent: reuse the existing row if this exact pair was
   // read before, so recreating a deleted solo bond can't 500 on pair_combo_uniq).
@@ -506,6 +601,15 @@ bondRoutes.post('/solo', async (c) => {
     chaptersUnlocked: soloUnlock,
     status: 'active',
   })
+
+  // Background: generate + merge the remaining five chapters into this reading row.
+  // The report is already usable (shell + ch1); this clears `chaptersPending` when
+  // done and the client's poll picks the chapters up.
+  c.executionCtx.waitUntil(
+    topUpRestChapters(c.env, db, [readingId], hehunPayload).catch((err) => {
+      console.error('[bonds] solo background chapter top-up failed:', err)
+    })
+  )
 
   c.executionCtx.waitUntil(
     logEvent(db, userId, 'bond_create', {
@@ -1077,14 +1181,9 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     : bondLabel || undefined
 
   // Call SVC_ASTRO hehun/compute
-  const { result, interpretation } = await callAstro<{
-    result: {
-      compatibility: Record<string, unknown>
-      personA: Record<string, unknown>
-      personB: Record<string, unknown>
-    }
-    interpretation: Record<string, string>
-  }>(c.env.SVC_ASTRO, '/pair/compute', {
+  // Captured so the background chapter top-up (below) reuses the EXACT chart
+  // context — same births/calibration — for the remaining five chapters.
+  const acceptHehunPayload = {
     personA: {
       solarDate: inviter.birthSolarDate,
       timeIndex: inviter.birthTimeIndex,
@@ -1111,6 +1210,20 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     language: input.language,
     relationshipCategory: resonanceDerivedCategory,
     customRelationshipLabel: resonanceDerivedCustomLabel,
+  }
+
+  const { result, interpretation } = await callAstro<{
+    result: {
+      compatibility: Record<string, unknown>
+      personA: Record<string, unknown>
+      personB: Record<string, unknown>
+    }
+    interpretation: Record<string, string>
+  }>(c.env.SVC_ASTRO, '/pair/compute', {
+    ...acceptHehunPayload,
+    // Progressive report: only the first chapter now; the rest are topped up in the
+    // background below so the responder leaves the moon loader fast.
+    chapterKinds: [FIRST_SYNASTRY_CHAPTER],
   })
 
   // Stamp the language this prose was generated in. B (the responder) reads in
@@ -1118,6 +1231,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // A's is upgraded to A's locale in the background below. The stamp lets a
   // future GET-time check tell which language a row holds.
   interpretation.language = input.language
+  // The remaining chapters are still composing — GET /:id signals the client to poll.
+  ;(interpretation as Record<string, unknown>).chaptersPending = true
 
   // Save two mirrored reading rows so both A/B history libraries can resolve by ownerId.
   // Idempotent: reuse each side's existing row if this pair was already read (a
@@ -1349,7 +1464,28 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // failure A keeps the B-language version stored above. Skipped when A and B
   // share a locale (the version we already stored is correct for both).
   const inviterLang = inviter.locale ?? null
-  if (inviterLang && inviterLang !== input.language && input.birthData) {
+  // A's row is FULLY regenerated in A's locale below when A and B differ — that pass
+  // produces all six chapters, so the background top-up must NOT also touch A's row
+  // (it would race + mix locales). When locales match, the relocalize is skipped and
+  // A's row needs the same top-up as B's.
+  const inviterRelocalizing = Boolean(inviterLang && inviterLang !== input.language && input.birthData)
+
+  // Background: fill in the remaining five chapters. Always for B (the responder,
+  // who is watching the loader right now); for A only when not being relocalized.
+  c.executionCtx.waitUntil(
+    topUpRestChapters(
+      c.env,
+      db,
+      inviterRelocalizing
+        ? [readingIdForResponder]
+        : [readingIdForResponder, readingIdForInviter],
+      acceptHehunPayload
+    ).catch((err) => {
+      console.error('[bonds] accept background chapter top-up failed:', err)
+    })
+  )
+
+  if (inviterRelocalizing && input.birthData) {
     const aBirth = input.birthData
     c.executionCtx.waitUntil(
       (async () => {
@@ -2583,6 +2719,10 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
     interpretation = gateInterpretationChapters(interpretation, unlockedCount)
   }
 
+  // Progressive report: true while the background pass is still generating the
+  // remaining chapters. The client renders what's here (shell + ch1) and polls.
+  const chaptersPending = interpretation?.chaptersPending === true
+
   return jsonOk(c, {
     ...bond,
     score: reading?.score ?? null,
@@ -2603,6 +2743,7 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
       : null,
     dimensions: dimensionData,
     interpretation,
+    chaptersPending,
     basedOnStaleBirth,
     viewerIsPersonA,
   })

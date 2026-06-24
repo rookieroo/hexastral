@@ -726,8 +726,23 @@ export async function generateSynastryChapters(
   env: AiRouterEnv,
   result: HeHunFullResult,
   input: HeHunInput,
-  language: string
+  language: string,
+  /**
+   * Generate only a SUBSET of chapters (progressive reports): the create/accept
+   * path asks for `['first_impression']` to return + paint fast, then a background
+   * pass requests the remaining five and merges them in. Omit to generate all six
+   * (the default for relocalize / any one-shot caller). The aha hook rides the
+   * subset that contains `first_impression` (the report shell), so it's generated
+   * once, on the fast path, and skipped on the background top-up.
+   */
+  opts?: { which?: readonly string[] }
 ): Promise<SynastryChaptersResult> {
+  // Which chapters this call produces (canonical order preserved by filtering the
+  // canonical spec list, never the caller's array order).
+  const specs = opts?.which
+    ? SYNASTRY_CHAPTER_SPECS.filter((s) => opts.which?.includes(s.kind))
+    : SYNASTRY_CHAPTER_SPECS
+  const includeAha = specs.some((s) => s.kind === 'first_impression')
   const now = new Date()
   const ym = `${now.getFullYear()}年${now.getMonth() + 1}月`
 
@@ -804,16 +819,20 @@ export async function generateSynastryChapters(
   }
 
   // Kick off the aha-hook call in parallel; it never rejects (defaults to '').
-  const ahaPromise: Promise<string> = callWithFallback(
-    env,
-    systemPrompt,
-    buildAhaHookPrompt(result, input, ziweiBlock) + langReminder,
-    { tier: 'standard', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
-  )
-    .then(parseAhaHook)
-    .catch(() => '')
+  // Only on the shell-bearing pass (first_impression) — a background top-up of the
+  // remaining chapters must not regenerate (and overwrite) the already-stored hook.
+  const ahaPromise: Promise<string> = includeAha
+    ? callWithFallback(
+        env,
+        systemPrompt,
+        buildAhaHookPrompt(result, input, ziweiBlock) + langReminder,
+        { tier: 'standard', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
+      )
+        .then(parseAhaHook)
+        .catch(() => '')
+    : Promise.resolve('')
 
-  const settled = await Promise.allSettled(SYNASTRY_CHAPTER_SPECS.map(chapterCall))
+  const settled = await Promise.allSettled(specs.map(chapterCall))
 
   const byKind = new Map<string, SynastryChapterOutput>()
   for (const s of settled) {
@@ -824,7 +843,7 @@ export async function generateSynastryChapters(
   // Retry any chapter whose call/parse failed (a transient LLM/JSON hiccup) before
   // accepting a short report — without this a single failure silently ships 5/6
   // chapters (the report footer then reads "第 N / 五"). One retry clears almost all.
-  const missing = SYNASTRY_CHAPTER_SPECS.filter((spec) => !byKind.has(spec.kind))
+  const missing = specs.filter((spec) => !byKind.has(spec.kind))
   if (missing.length > 0) {
     console.warn(
       `[svc-astro/hehun] ${missing.length} chapter(s) missing, retrying: ${missing
@@ -839,14 +858,14 @@ export async function generateSynastryChapters(
   }
 
   // Canonical order; drop any chapter whose call still failed after the retry.
-  const chapters = SYNASTRY_CHAPTER_SPECS.flatMap((spec) => {
+  const chapters = specs.flatMap((spec) => {
     const ch = byKind.get(spec.kind)
     return ch ? [ch] : []
   })
   if (chapters.length === 0) throw new Error('Synastry chapters: every chapter failed')
-  if (chapters.length < SYNASTRY_CHAPTER_SPECS.length) {
+  if (chapters.length < specs.length) {
     console.error(
-      `[svc-astro/hehun] incomplete report: ${chapters.length}/${SYNASTRY_CHAPTER_SPECS.length} chapters after retry`
+      `[svc-astro/hehun] incomplete report: ${chapters.length}/${specs.length} chapters after retry`
     )
   }
 

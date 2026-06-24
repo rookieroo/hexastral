@@ -357,7 +357,11 @@ export default function FullReadingScreen() {
   /* ── LLM cache + fetch ── */
   const [ch1, setCh1] = useState<CachedChapter | null>(null)
   const [ch4, setCh4] = useState<CachedChapter | null>(null)
+  // `loading` gates the screen-level wait — dropped the instant ch1 lands so the
+  // report paints immediately. `ch4Loading` keeps ONLY ch4's page in its skeleton
+  // until it arrives, instead of holding the whole report on the slower chapter.
   const [loading, setLoading] = useState(true)
+  const [ch4Loading, setCh4Loading] = useState(false)
   // Premium chapters are generated LAZILY (Phase 5): a Pro reader who opens the
   // report and reads only the first chapter shouldn't pay for four LLM generations.
   // `premium` holds resolved chapters (undefined = never attempted; null = fetched
@@ -406,11 +410,22 @@ export default function FullReadingScreen() {
       const ch4Promise = cached4
         ? Promise.resolve(cached4)
         : fetchChapter('ch4_timeline', chartHash, b)
-      const [fresh1, fresh4] = await Promise.all([ch1Promise, ch4Promise])
-      if (cancelled) return
-      setCh1(fresh1)
-      setCh4(fresh4)
-      setLoading(false)
+      // ch4 keeps its own skeleton until it lands (unless it was cached and is
+      // already in hand) — don't let the slower chapter hold back the whole report.
+      if (!cached4) setCh4Loading(true)
+      // Dismiss the screen-level loader the moment ch1 lands; ch4 fills in behind
+      // its per-chapter skeleton. (Was: await BOTH before painting either — ch1 sat
+      // in its loading state until the slower ch4 finished.)
+      void ch1Promise.then((fresh1) => {
+        if (cancelled) return
+        setCh1(fresh1)
+        setLoading(false)
+      })
+      void ch4Promise.then((fresh4) => {
+        if (cancelled) return
+        setCh4(fresh4)
+        setCh4Loading(false)
+      })
     }
     void load()
     return () => {
@@ -627,7 +642,7 @@ export default function FullReadingScreen() {
     slug === 'ch1_personality'
       ? loading && !ch1
       : slug === 'ch4_timeline'
-        ? loading && !ch4
+        ? (loading || ch4Loading) && !ch4
         : unlocked && (premiumLoadingSlugs[slug] ?? false) && !premium[slug]
 
   // The pages the pager flips through: every chapter once unlocked; only the free

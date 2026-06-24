@@ -227,8 +227,17 @@ export default function BondDetailScreen({
         }),
     [requestClose]
   )
-  const { detail, isLoading, isGenerating, error, refetch, chapters, unlockBond, relocalize } =
-    useSynastryReport(id ?? null, resolveLocale())
+  const {
+    detail,
+    isLoading,
+    isGenerating,
+    chaptersPending,
+    error,
+    refetch,
+    chapters,
+    unlockBond,
+    relocalize,
+  } = useSynastryReport(id ?? null, resolveLocale())
   // Frozen LLM output: render the report's content + report-chrome (essence chip,
   // chapter section labels, primer, share card) in the locale it was GENERATED in
   // (interpretation.language), NOT the device locale — switching the app language
@@ -607,6 +616,14 @@ export default function BondDetailScreen({
     // tapping it must hit the wall first (2026-06: "点 timeline 和 what if 也应该触发
     // paywall，实际没有拦住"). Gate the FAB actions on this.
     const reportLocked = lockedChapters.length > 0
+    // Progressive report: an UNLOCKED report still composing shows skeleton pages for
+    // the chapters not yet topped up (they fill in as the poll lands them). A LOCKED
+    // report shows the unlock wall instead, so no skeletons there.
+    const totalChapters = detail.interpretation?.totalChapters ?? viewedChapters.length
+    const pendingChapterCount =
+      chaptersPending && !reportLocked
+        ? Math.max(0, totalChapters - viewedChapters.length)
+        : 0
     // Same subscription paywall the timeline / what-if screens raise for their own
     // Pro upsell (no special reason → the default subtitle).
     const openPaywall = () => router.push('/(commerce)/paywall')
@@ -690,6 +707,7 @@ export default function BondDetailScreen({
               onIndexChange={setChapterIndex}
               onShareChapter={() => void handleShare()}
               trailing={unlockWall}
+              pendingCount={pendingChapterCount}
               aElement={aElement}
               bElement={bElement}
               locale={reportLocale}

@@ -32,6 +32,12 @@ export interface ChapterPagerProps {
   onShareChapter: (chapterIndex: number) => void
   /** Optional trailing page rendered after the last chapter (e.g. the unlock wall). */
   trailing?: ReactNode
+  /** Progressive report: how many chapters are still composing in the background.
+   *  Rendered as swipeable skeleton pages AFTER the present chapters so the reader
+   *  sees the report has more coming (instead of an abrupt end), and each fills in
+   *  as the poll lands it. Only meaningful for an unlocked report (a locked report
+   *  shows the unlock wall instead). */
+  pendingCount?: number
   /** Day-master elements — shown in the chapter subtitle. */
   aElement?: string
   bElement?: string
@@ -63,6 +69,7 @@ export function ChapterPager({
   onPickQuote,
   highlightedQuotes,
   theme = 'paper',
+  pendingCount = 0,
 }: ChapterPagerProps) {
   const screenWidth = Dimensions.get('window').width
 
@@ -104,7 +111,47 @@ export function ChapterPager({
           />
         </View>
       ))}
+      {Array.from({ length: Math.max(0, pendingCount) }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-order placeholder pages
+        <View key={`pending-${i}`} style={{ width: screenWidth }}>
+          <ChapterSkeletonPage theme={theme} />
+        </View>
+      ))}
       {trailing ? <View style={{ width: screenWidth }}>{trailing}</View> : null}
     </ScrollView>
+  )
+}
+
+/**
+ * Placeholder page for a chapter still being composed by the background pass. Pure
+ * faint ink bars (no text) so it's i18n-free and reads as "more is coming" against
+ * both the paper and 水墨黑 surfaces.
+ */
+function ChapterSkeletonPage({ theme }: { theme: ChapterCardTheme }) {
+  const bar = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+  const barStrong = theme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.10)'
+  const widths = ['82%', '94%', '70%', '90%', '88%', '64%']
+  return (
+    <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 96, gap: 18 }}>
+      {/* Title bar + centerpiece placeholder */}
+      <View style={{ width: '48%', height: 22, borderRadius: 6, backgroundColor: barStrong }} />
+      <View
+        style={{
+          width: 120,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: bar,
+          alignSelf: 'center',
+          marginVertical: 16,
+        }}
+      />
+      {widths.map((w, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: static decorative bars
+          key={i}
+          style={{ width: w, height: 13, borderRadius: 4, backgroundColor: bar }}
+        />
+      ))}
+    </View>
   )
 }
