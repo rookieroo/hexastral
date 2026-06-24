@@ -26,6 +26,7 @@ import {
   GitCommitVertical,
   type LucideIcon,
   MessageCircle,
+  Share2,
   Timeline,
 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
@@ -50,7 +51,7 @@ const ARC_RADIUS = 74
 const WRAP = ARC_RADIUS + DISC_SIZE / 2 + FAB_SIZE / 2 + 8
 
 export interface LivingLayerFabProps {
-  labels: { timeline: string; whatif: string; chat: string }
+  labels: { timeline: string; whatif: string; chat: string; share?: string }
   /** Optional — the Timeline disc only appears where the surface exists (the 合盘 report
    *  passes it; the personal report's 流年 moved to 运/Yuun per ADR-0026). */
   onTimeline?: () => void
@@ -59,6 +60,8 @@ export interface LivingLayerFabProps {
   onWhatIf?: () => void
   /** Optional — the chat disc only appears once the bond has a pair reading. */
   onChat?: () => void
+  /** Optional — share the whole report as a branded card (the 合盘 cover). */
+  onShare?: () => void
   /** Safe-area bottom inset so the button clears the home indicator. */
   insetBottom: number
 }
@@ -68,6 +71,7 @@ export function LivingLayerFab({
   onTimeline,
   onWhatIf,
   onChat,
+  onShare,
   insetBottom,
 }: LivingLayerFabProps) {
   const [open, setOpen] = useState(false)
@@ -88,6 +92,9 @@ export function LivingLayerFab({
       ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }]
       : []),
     ...(onChat ? [{ key: 'chat', Icon: MessageCircle, label: labels.chat, onPress: onChat }] : []),
+    ...(onShare && labels.share
+      ? [{ key: 'share', Icon: Share2, label: labels.share, onPress: onShare }]
+      : []),
   ]
 
   return (

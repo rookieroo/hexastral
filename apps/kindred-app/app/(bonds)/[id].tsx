@@ -34,6 +34,7 @@ import {
   ChapterUnlockWall,
   CompatibilityScore,
   ShareableChapterCard,
+  ShareableSynastryCard,
   useShareBond,
   useSynastryReport,
 } from '@zhop/scenario-kindred'
@@ -105,6 +106,8 @@ const OTHER_FALLBACK_LABEL: Record<Locale, string> = {
   'zh-Hant': '對方',
   ja: 'お相手',
 }
+/** Accessibility label for the share disc (icon-only) — device-locale, not report. */
+const SHARE_LABEL: Record<Locale, string> = { en: 'Share', zh: '分享', 'zh-Hant': '分享', ja: '共有' }
 
 /**
  * Per-viewer framing: the synastry prose carries the neutral slots 甲方/乙方 even in
@@ -367,14 +370,15 @@ export default function BondDetailScreen({
     })
   }
 
-  // Off-screen render target for ShareableChapterCard.
-  // When shareTarget is set, the hidden View renders the card for that chapter
-  // and the effect below captures it via view-shot, then opens share sheet.
-  const [shareTarget, setShareTarget] = useState<{
-    index: number
-    brandUrl: string
-    installUrl?: string
-  } | null>(null)
+  // Off-screen render target. When shareTarget is set, the hidden View renders the
+  // matching card (one chapter's golden line, OR the whole-report 合盘 cover) and the
+  // effect below captures it via view-shot, then opens the share sheet. Same capture
+  // path for both — only the card rendered differs by `kind`.
+  const [shareTarget, setShareTarget] = useState<
+    | { kind: 'chapter'; index: number; brandUrl: string; installUrl?: string }
+    | { kind: 'cover'; brandUrl: string; installUrl?: string }
+    | null
+  >(null)
   const [isCapturing, setIsCapturing] = useState(false)
   const captureRefView = useRef<View>(null)
   const haptic = useHaptic()
@@ -418,11 +422,13 @@ export default function BondDetailScreen({
     }
   }, [shareTarget, haptic])
 
-  const handleShareChapter = async (idx: number) => {
-    if (!id || isCapturing) return
-    setIsCapturing(true)
+  // Register a public /report/<shareId> link for this bond (the card's QR + footer
+  // url). Best-effort: a failure falls through to the generic brand url so the card
+  // is still shareable. Shared by both the per-chapter and whole-report shares.
+  const resolveShareUrl = async (): Promise<{ brandUrl: string; installUrl?: string }> => {
     let brandUrl = 'kindred.hexastral.com'
     let installUrl: string | undefined
+    if (!id) return { brandUrl, installUrl }
     try {
       const res = await createShareUrl(id)
       // Full URL (with scheme) → scannable QR; stripped form → footer text.
@@ -430,9 +436,23 @@ export default function BondDetailScreen({
       brandUrl = res.url.replace(/^https?:\/\//, '')
     } catch (err) {
       if (__DEV__) console.warn('[Kindred share/url]', err)
-      // Fall through with default brandUrl — still shareable as a generic card.
     }
-    setShareTarget({ index: idx, brandUrl, installUrl })
+    return { brandUrl, installUrl }
+  }
+
+  const handleShareChapter = async (idx: number) => {
+    if (!id || isCapturing) return
+    setIsCapturing(true)
+    const { brandUrl, installUrl } = await resolveShareUrl()
+    setShareTarget({ kind: 'chapter', index: idx, brandUrl, installUrl })
+  }
+
+  // Share the whole report as the branded 合盘 cover (archetype + the two of you).
+  const handleShareCover = async () => {
+    if (!id || isCapturing) return
+    setIsCapturing(true)
+    const { brandUrl, installUrl } = await resolveShareUrl()
+    setShareTarget({ kind: 'cover', brandUrl, installUrl })
   }
 
   // Overlay close (✕) for the DARK pre-report states (generating / error). As an
@@ -757,6 +777,7 @@ export default function BondDetailScreen({
               timeline: t('timeline.title'),
               whatif: t('makeif.title'),
               chat: t('chat.cta'),
+              share: SHARE_LABEL[resolveLocale()],
             }}
             onTimeline={() =>
               router.push({
@@ -779,6 +800,8 @@ export default function BondDetailScreen({
                     })
                 : undefined
             }
+            // Whole-report cover share — only when there's an archetype hero to show.
+            onShare={detail.archetypeName ? () => void handleShareCover() : undefined}
             insetBottom={insets.bottom}
           />
         ) : null}
@@ -790,19 +813,36 @@ export default function BondDetailScreen({
             collapsable={false}
             style={{ position: 'absolute', top: -20000, left: 0 }}
           >
-            <ShareableChapterCard
-              chapter={viewedChapters[shareTarget.index] ?? viewedChapters[0]!}
-              selfName={selfName ?? VIEWER_LABEL[reportLocale]}
-              otherName={otherName ?? OTHER_FALLBACK_LABEL[reportLocale]}
-              width={1080}
-              height={1920}
-              locale={reportLocale}
-              aElement={aElement}
-              bElement={bElement}
-              chapterNumber={shareTarget.index + 1}
-              brandUrl={shareTarget.brandUrl}
-              installUrl={shareTarget.installUrl}
-            />
+            {shareTarget.kind === 'chapter' ? (
+              <ShareableChapterCard
+                chapter={viewedChapters[shareTarget.index] ?? viewedChapters[0]!}
+                selfName={selfName ?? VIEWER_LABEL[reportLocale]}
+                otherName={otherName ?? OTHER_FALLBACK_LABEL[reportLocale]}
+                width={1080}
+                height={1920}
+                locale={reportLocale}
+                aElement={aElement}
+                bElement={bElement}
+                chapterNumber={shareTarget.index + 1}
+                brandUrl={shareTarget.brandUrl}
+                installUrl={shareTarget.installUrl}
+              />
+            ) : (
+              <ShareableSynastryCard
+                archetypeName={detail.archetypeName ?? displayName}
+                tagline={detail.archetypeTagline ?? undefined}
+                archetypeCategory={detail.archetypeCategory ?? undefined}
+                youName={selfName ?? VIEWER_LABEL[reportLocale]}
+                taName={otherName ?? OTHER_FALLBACK_LABEL[reportLocale]}
+                youElement={aElement}
+                taElement={bElement}
+                width={1080}
+                height={1920}
+                locale={reportLocale}
+                brandUrl={shareTarget.brandUrl}
+                installUrl={shareTarget.installUrl}
+              />
+            )}
           </View>
         ) : null}
 
