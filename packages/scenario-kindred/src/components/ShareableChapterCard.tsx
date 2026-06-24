@@ -7,8 +7,7 @@
  *
  *   Top      碑拓 essence seal + chapter title + ancient chapter numeral
  *            + 五行 element subtitle
- *   Center   the goldenLine — the star of the card (serif/cjk, a cinnabar
- *            seal-dot above it, never any body text)
+ *   Center   the goldenLine — the star of the card (serif/cjk, never any body text)
  *   Bottom   the two bond names + a cinnabar 朱文 Kindred seal (合) + brand url
  *
  * No web widgets: no rounded-rect "logo bubble", no gradients. Pure 宣纸
@@ -96,6 +95,10 @@ export function ShareableChapterCard({
   const subtitle = aElement && bElement ? `${aElement}${cjk ? ' · ' : ' × '}${bElement}` : undefined
   // Ancient numerals only span 1-6; the report has exactly 6 chapters, but guard.
   const numeral = chapterNumber >= 1 && chapterNumber <= 6 ? chapterNumber : undefined
+  // en chapter titles are LLM-generated and run long ("Parental Bond: Navigating
+  // Communication Challenges"); s(74) wrapped that to 4 lines. Step the size down by
+  // length so long titles settle to ≤2-3 lines. cjk titles stay short → keep the hero.
+  const enTitleSize = title.length > 42 ? 50 : title.length > 28 ? 60 : 74
 
   return (
     <View
