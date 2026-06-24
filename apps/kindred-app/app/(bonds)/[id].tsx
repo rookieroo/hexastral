@@ -532,6 +532,15 @@ export default function BondDetailScreen({
     }
   }
 
+  // The unlock wall's invite is a GROWTH action, not "re-invite this counterpart"
+  // (they're already here — that's why the wall is showing). It opens a fresh
+  // invite so the viewer brings a NEW friend into Yuel; that new bond is the one
+  // their referral unlocks for free. THIS report still unlocks via single purchase.
+  const inviteNewFriend = () => {
+    emitUnlockFunnel({ step: 'invite_tap', bond_id: detail?.id })
+    router.push('/(onboarding)/invite')
+  }
+
   // Pro chat over this synastry. The server's 'pair' context query keys on the
   // pairReadings id (hehunReadingId), NOT the bond id — only offer chat once a
   // reading exists.
@@ -588,6 +597,13 @@ export default function BondDetailScreen({
   if (viewedChapters && viewedChapters.length > 0) {
     // Unlock wall — trailing pager page shown only when chapters remain locked.
     const lockedChapters = detail.interpretation?.lockedChapters ?? []
+    // A locked report = a free viewer; the living layer (时间线 / 假如) is paid, so
+    // tapping it must hit the wall first (2026-06: "点 timeline 和 what if 也应该触发
+    // paywall，实际没有拦住"). Gate the FAB actions on this.
+    const reportLocked = lockedChapters.length > 0
+    // Same subscription paywall the timeline / what-if screens raise for their own
+    // Pro upsell (no special reason → the default subtitle).
+    const openPaywall = () => router.push('/(commerce)/paywall')
     const unlockWall =
       lockedChapters.length > 0 ? (
         <ChapterUnlockWall
@@ -602,7 +618,7 @@ export default function BondDetailScreen({
               unlockPrice
             ),
           }}
-          onInvite={reInvite}
+          onInvite={inviteNewFriend}
           onPurchase={() => void handlePurchaseUnlock()}
         />
       ) : null
@@ -750,16 +766,20 @@ export default function BondDetailScreen({
             }}
             onShare={() => void handleShare()}
             onTimeline={() =>
-              router.push({
-                pathname: '/(timeline)',
-                params: { bondId: detail.id, bondName: displayName },
-              })
+              reportLocked
+                ? openPaywall()
+                : router.push({
+                    pathname: '/(timeline)',
+                    params: { bondId: detail.id, bondName: displayName },
+                  })
             }
             onWhatIf={() =>
-              router.push({
-                pathname: '/(bonds)/makeif',
-                params: { id: detail.id, title: displayName },
-              })
+              reportLocked
+                ? openPaywall()
+                : router.push({
+                    pathname: '/(bonds)/makeif',
+                    params: { id: detail.id, title: displayName },
+                  })
             }
             onChat={
               pairReadingId != null

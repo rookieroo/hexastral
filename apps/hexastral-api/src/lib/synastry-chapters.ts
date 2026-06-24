@@ -16,10 +16,28 @@
  * natal deep report, `chapter-access.ts`). Each bond earns its own unlock.
  */
 
-/** Chapters a free viewer sees without unlocking. */
-export const SYNASTRY_FREE_CHAPTERS = 3
+/**
+ * Chapters a free viewer sees without unlocking. The single free chapter is also
+ * HALVED (see `gateInterpretationChapters`): a free viewer gets only the first
+ * half of chapter 1 (golden line + 命盤依據 + 關係動態), with 暗礁 + 解法·用神 and the
+ * remaining five chapters behind the wall — "free is half of ch1; the rest unlock".
+ */
+export const SYNASTRY_FREE_CHAPTERS = 1
 /** Total chapters svc-astro generates. */
 export const SYNASTRY_TOTAL_CHAPTERS = 6
+
+/**
+ * Fields that make up the SECOND half of a chapter — the 暗礁 (reef) + 解法·用神
+ * (remedy) layers and their adornments. Stripped from the lone free chapter so a
+ * free viewer sees only its opening half (the hook), never the payoff.
+ */
+const CHAPTER_BACK_HALF_FIELDS = [
+  'reef',
+  'remedy',
+  'counterpoint',
+  'yongshen',
+  'severity',
+] as const
 
 interface ChapterLike {
   kind?: unknown
@@ -40,6 +58,11 @@ export interface LockedChapterTeaser {
  * Returns a copy of `interpretation` with `chapters` truncated to `unlockedCount`
  * full chapters and the remainder exposed as `lockedChapters` teasers. Adds
  * `totalChapters`. No-op (minus the count field) when there are no chapters.
+ *
+ * When the report is GATED (some chapters locked) the LAST unlocked chapter is
+ * halved — its 暗礁 + 解法·用神 layers are stripped so a free viewer sees only the
+ * opening half of that chapter (the hook). A fully unlocked report keeps every
+ * chapter whole.
  */
 export function gateInterpretationChapters(
   interpretation: Record<string, unknown>,
@@ -49,7 +72,17 @@ export function gateInterpretationChapters(
   if (!Array.isArray(raw) || raw.length === 0) return interpretation
 
   const n = Math.min(Math.max(unlockedCount, 0), raw.length)
-  const unlocked = raw.slice(0, n)
+  const isGated = n < raw.length
+  const unlocked = raw.slice(0, n).map((ch: ChapterLike, i) => {
+    // Halve the LAST unlocked chapter when gated: strip its back-half fields so
+    // the free taste is only the opening (golden line + 命盤依據 + 關係動態).
+    if (isGated && i === n - 1 && ch && typeof ch === 'object') {
+      const trimmed = { ...(ch as Record<string, unknown>), halved: true }
+      for (const f of CHAPTER_BACK_HALF_FIELDS) delete trimmed[f]
+      return trimmed
+    }
+    return ch
+  })
   const locked: LockedChapterTeaser[] = raw.slice(n).map((ch: ChapterLike) => ({
     kind: typeof ch.kind === 'string' ? ch.kind : '',
     title: typeof ch.title === 'string' ? ch.title : '',

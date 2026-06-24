@@ -126,8 +126,9 @@ const soloCreateSchema = z.object({
   /**
    * Cross-app hand-off from Auspice (the 亲友 → Kindred funnel). When set, the
    * compatibility paywall is skipped so the imported bond lands on a real report
-   * — but only the free 3 chapters (chaptersUnlocked stays false; the rest unlock
-   * via the wall). Abuse is bounded by the free ≤3-bond limit checked above, so
+   * — but only the free taste (chaptersUnlocked stays false; the half-chapter free
+   * preview, then the rest unlock via the wall). Abuse is bounded by the free
+   * ≤3-bond limit checked above, so
    * no extra cap is needed.
    */
   fromHandoff: z.boolean().optional().default(false),

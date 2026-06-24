@@ -23,7 +23,24 @@ import {
   kindredType,
 } from '@zhop/hexastral-tokens/kindred'
 import { Pressable, ScrollView, Text, View } from 'react-native'
+import Svg, { Path, Rect } from 'react-native-svg'
 import type { LockedSynastryChapter } from '../types'
+
+/** A small padlock, drawn with react-native-svg (the package's icon dep) — a real
+ *  vector glyph in place of the 🔒 emoji. */
+function LockGlyph({ size = 13, color }: { size?: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox='0 0 24 24' fill='none'>
+      <Rect x={4} y={10.5} width={16} height={10} rx={2.5} stroke={color} strokeWidth={1.8} />
+      <Path
+        d='M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3'
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap='round'
+      />
+    </Svg>
+  )
+}
 
 /** Surface theme — matches the report it trails (paper share/default · dark in-app). */
 export type UnlockWallTheme = 'paper' | 'dark'
@@ -134,7 +151,7 @@ export function ChapterUnlockWall({
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 12, color: C.textMuted }}>🔒</Text>
+              <LockGlyph size={13} color={C.textMuted} />
               <Text style={[kindredType.caption, { color: C.text }]}>{ch.title}</Text>
             </View>
             {ch.goldenLine ? (

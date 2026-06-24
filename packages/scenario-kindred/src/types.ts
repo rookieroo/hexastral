@@ -199,7 +199,7 @@ export interface SoloCreateInput {
   targetBirth: PersonBirth
   language?: string
   /** Cross-app hand-off from Auspice — skips the compatibility paywall; the bond
-   *  lands on the free 3 chapters + unlock wall (server gates the full report). */
+   *  lands on the free taste (half of ch1) + unlock wall (server gates the rest). */
   fromHandoff?: boolean
 }
 
@@ -327,6 +327,10 @@ export interface SynastryChapter {
   counterpoint?: string
   /** Optional visual data for the chapter (e.g., radar chart data) */
   visualData?: unknown
+  /** Server-set on the lone free chapter of a gated report: only its opening half
+   *  (golden line + 命盤依據 + 關係動態) is present; the 暗礁 + 解法·用神 fields are
+   *  withheld until unlock. */
+  halved?: boolean
 }
 
 /** A locked chapter as sent to the client — teaser only, never a body. */
