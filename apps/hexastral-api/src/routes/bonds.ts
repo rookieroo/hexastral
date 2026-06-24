@@ -3076,6 +3076,9 @@ bondRoutes.post('/:id/share', async (c) => {
       compatibilityData: pairReadings.compatibilityData,
       personAName: pairReadings.personAName,
       personBName: pairReadings.personBName,
+      archetypeName: pairReadings.archetypeName,
+      archetypeTagline: pairReadings.archetypeTagline,
+      archetypeCategory: pairReadings.archetypeCategory,
     })
     .from(pairReadings)
     .where(eq(pairReadings.id, bond.hehunReadingId))
@@ -3085,13 +3088,19 @@ bondRoutes.post('/:id/share', async (c) => {
     return jsonErr(c, 404, ApiErrorCode.not_found, 'Reading not found')
   }
 
-  // Build share content snapshot
+  // Build share content snapshot. `brand: 'yuel'` + the archetype let the web
+  // /report/<shareId> page render the Yuel-branded 合盘 landing (the archetype is
+  // the hero) instead of the generic star-theme card.
   const shareContent = {
+    brand: 'yuel',
     score: reading.score,
     grade: reading.grade,
     personAName: reading.personAName,
     personBName: reading.personBName ?? bond.targetName,
     relationshipLabel: bond.relationshipLabel,
+    archetypeName: reading.archetypeName,
+    archetypeTagline: reading.archetypeTagline,
+    archetypeCategory: reading.archetypeCategory,
     compatibility: JSON.parse(reading.compatibilityData),
   }
 

@@ -62,6 +62,10 @@ export function useShareReading(): UseShareReadingResult {
       setError(null)
       try {
         const contentJson = JSON.stringify({
+          // Brand marker — lets the web /report/<shareId> page render the Yuel
+          // 命书 landing for this 'fate' share (other apps' 'fate' shares stay
+          // on the generic star-theme page).
+          brand: 'yuel',
           ...(input.dayMaster ? { dayMaster: input.dayMaster } : {}),
           ...(input.geju ? { geju: input.geju } : {}),
           ...(input.interpretation ? { fullInterpretation: input.interpretation } : {}),
