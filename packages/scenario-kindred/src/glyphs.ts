@@ -31,22 +31,28 @@ const PR = ['M40,15 C37,40 41,64 50,87 C55,101 59,112 61,124', 'M43,41 C51,54 57
 export const GLYPHS = {
   // ── 六章之印 ──
   見: {
+    // 甲骨文 見 — a big eye (目) over a kneeling figure who looks. The body is a
+    // clear back-curve folding into a knee, not a thin squiggle, so the person
+    // reads at chop scale.
     box: [100, 130],
     strokes: [
       'M22,33 C38,21 62,21 78,33 C62,45 38,45 22,33 Z', // 目 (eye)
-      'M48,50 C46,72 44,92 40,113', // 人 body
-      'M49,66 C56,80 61,95 66,113', // 人 leg/arm
+      'M50,50 C49,66 47,82 44,96 C42,104 47,110 55,109', // back + kneel
+      'M48,74 C57,82 64,90 70,100', // arm/knee forward
     ],
     dots: [[50, 33, 4.6]], // 瞳 (pupil)
   },
   言: {
+    // 甲骨文 言 — a tongue (舌) rising from a mouth with a sound-bar. The 口 is a
+    // rounded brush bowl (the old rigid rectangle read as machine-drawn); the
+    // tongue forks at the tip, the way speech "issues" from the mouth.
     box: [100, 130],
+    fills: ['M37,94 C37,108 63,108 63,94 C56,100 44,100 37,94 Z'], // 口 bowl
     strokes: [
-      'M40,100 L60,100 L60,115 L40,115 Z', // 口 (mouth)
-      'M50,100 L50,50', // 舌 stem
-      'M29,66 L71,66', // bar
-      'M50,50 L43,38',
-      'M50,50 L57,38', // forked tongue tip
+      'M50,94 L50,52', // 舌 tongue stem
+      'M30,66 C43,63 57,63 70,66', // sound bar (brushed)
+      'M50,52 C46,46 43,42 41,38', // fork left
+      'M50,52 C54,46 57,42 59,38', // fork right
     ],
   },
   北: {
@@ -57,8 +63,13 @@ export const GLYPHS = {
     ],
   }, // 二人相背
   合: {
+    // 甲骨文 合 — a lid (亼) seated on a vessel (口): two things that fit. The
+    // vessel is a round-bottomed brush cup (was a box), so the "fit" reads.
     box: [100, 130],
-    strokes: ['M28,58 L50,25 L72,58', 'M38,70 L62,70 L62,98 L38,98 Z'], // 亼 lid + 口 vessel
+    strokes: [
+      'M27,57 C38,44 50,30 50,26 C50,30 62,44 73,57', // 亼 lid (peaked, brushed)
+      'M37,70 L63,70 C61,90 58,98 50,100 C42,98 39,90 37,70 Z', // 口 vessel (cup)
+    ],
   },
   月: {
     box: [100, 130],
@@ -68,13 +79,19 @@ export const GLYPHS = {
     strokes: ['M49,56 L57,60'],
   },
   永: {
+    // 甲骨文 永 — a person swimming in a stream (the origin of 泳, later borrowed
+    // for "perpetual / long-lasting"). A head + S-curved body riding the current,
+    // an arm reaching back, a forward arm, and the flow forking at the foot. The
+    // old paths were the regular-script 永字八法 skeleton, not the oracle graph.
     box: [100, 130],
     strokes: [
-      'M30,33 C45,29 58,31 64,40 C61,52 57,72 57,92 C57,103 51,109 43,107',
-      'M53,57 C45,66 37,77 27,92',
-      'M55,59 C63,71 71,86 79,101',
+      'M49,24 C57,40 43,54 52,70 C60,86 47,100 50,116', // swimmer body / current
+      'M50,44 C39,49 31,57 25,69', // upper arm reaching back
+      'M51,64 C62,69 71,77 79,89', // lower arm forward
+      'M50,96 C44,104 39,110 33,119', // foot / flow split left
+      'M50,96 C56,104 61,110 66,119', // foot / flow split right
     ],
-    dots: [[47, 17, 4.2]],
+    dots: [[49, 18, 4.3]],
   },
   // ── 五行 (用神 keys) ──
   金: {
