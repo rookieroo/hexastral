@@ -259,6 +259,13 @@ export interface ResonanceInviteInput {
    * then 'en' (US-market default) — never silently 'zh'.
    */
   language?: string
+  /**
+   * Optional referral-unlock target — the id of a LOCKED report this invite is
+   * meant to open. Set when the invite is launched from a report's unlock wall
+   * ("邀请新朋友解锁"); if the invitee joins as a genuinely new member, the server
+   * unlocks that report for A. Re-validated server-side (ownership + still-locked).
+   */
+  unlockBondId?: string
 }
 
 export interface ResonanceInviteMailto {

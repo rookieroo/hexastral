@@ -1,0 +1,1 @@
+ALTER TABLE `bond_invitations` ADD `unlock_bond_id` text;

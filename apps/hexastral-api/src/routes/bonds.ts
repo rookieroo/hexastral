@@ -165,6 +165,15 @@ const resonanceInviteSchema = z.object({
    * stored user locale, then 'en'.
    */
   language: z.string().max(16).optional(),
+  /**
+   * Optional referral-unlock target. When A starts this invite from a LOCKED
+   * report's unlock wall ("邀请新朋友解锁"), the id of THAT locked bond. If the
+   * invitee turns out to be a genuinely new member, the accept handler unlocks
+   * this bond for A (see /invite/:token/respond). Re-validated server-side, so a
+   * bogus / already-unlocked / not-owned id is simply ignored. Kept a loose string
+   * (not `.uuid()`) so a malformed id never 400s the whole invite — it's dropped.
+   */
+  unlockBondId: z.string().min(1).max(64).optional(),
 })
 
 const respondSchema = z.object({
@@ -593,6 +602,22 @@ bondRoutes.post('/invite', async (c) => {
     }
   }
 
+  // Referral-unlock target (optional): only honour a bond THIS user owns that is
+  // still locked, so the stored promise can never open something already unlocked
+  // or not theirs. Anything else is silently dropped — the invite still goes out
+  // as a pure growth action.
+  let referralUnlockBondId: string | null = null
+  if (input.unlockBondId) {
+    const target = await db
+      .select({ owner: userBonds.ownerId, unlocked: userBonds.chaptersUnlocked })
+      .from(userBonds)
+      .where(eq(userBonds.id, input.unlockBondId))
+      .get()
+    if (target && target.owner === userId && !target.unlocked) {
+      referralUnlockBondId = input.unlockBondId
+    }
+  }
+
   // Create bond + invitation
   const bondId = crypto.randomUUID()
   const invitationId = crypto.randomUUID()
@@ -623,6 +648,7 @@ bondRoutes.post('/invite', async (c) => {
       status: 'pending',
       message: input.message ?? null,
       expiresAt: expiresAt(),
+      unlockBondId: referralUnlockBondId,
     }),
   ])
 
@@ -1271,6 +1297,25 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
       },
     ])
     .onConflictDoNothing()
+
+  // Referral unlock (定向解锁): if A started this invite from a LOCKED report's
+  // unlock wall AND this accept brought a genuinely NEW member (their first 合盘),
+  // open THAT report for A too — so "邀请新朋友解锁" is rigorously honoured, not just
+  // copy. Re-check ownership + still-locked here (the target may have been bought /
+  // unlocked since the invite, or not belong to A) so we never over-grant.
+  if (accepterIsNew && invitation.unlockBondId) {
+    const target = await db
+      .select({ owner: userBonds.ownerId, unlocked: userBonds.chaptersUnlocked })
+      .from(userBonds)
+      .where(eq(userBonds.id, invitation.unlockBondId))
+      .get()
+    if (target && target.owner === invitation.inviterUserId && !target.unlocked) {
+      await db
+        .update(userBonds)
+        .set({ chaptersUnlocked: true, updatedAt: new Date().toISOString() })
+        .where(eq(userBonds.id, invitation.unlockBondId))
+    }
+  }
 
   // Notify inviter (fire-and-forget)
   c.executionCtx.waitUntil(

@@ -534,11 +534,17 @@ export default function BondDetailScreen({
 
   // The unlock wall's invite is a GROWTH action, not "re-invite this counterpart"
   // (they're already here — that's why the wall is showing). It opens a fresh
-  // invite so the viewer brings a NEW friend into Yuel; that new bond is the one
-  // their referral unlocks for free. THIS report still unlocks via single purchase.
+  // invite carrying THIS report as the referral-unlock target: when the invited
+  // person joins as a genuinely new member, the server opens this report for the
+  // viewer (see bonds.ts /invite + /respond). Single purchase stays the instant path.
   const inviteNewFriend = () => {
     emitUnlockFunnel({ step: 'invite_tap', bond_id: detail?.id })
-    router.push('/(onboarding)/invite')
+    // Carry THIS locked bond as the referral-unlock target: when the invited
+    // person joins as a new member, the server opens this report for the viewer.
+    router.push({
+      pathname: '/(onboarding)/invite',
+      params: detail?.id ? { unlockBondId: detail.id } : {},
+    })
   }
 
   // Pro chat over this synastry. The server's 'pair' context query keys on the

@@ -25,7 +25,7 @@ import {
   RelationshipTypeSelector,
   useBondInvitation,
 } from '@zhop/scenario-kindred'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -42,6 +42,9 @@ export default function InviteScreen() {
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const draft = useDraft()
   const { create } = useBondInvitation()
+  // Referral-unlock target — set when this invite was launched from a locked
+  // report's unlock wall, so a new member joining opens THAT report for A.
+  const { unlockBondId } = useLocalSearchParams<{ unlockBondId?: string }>()
   const [name, setName] = useState<string>(draft.otherName)
   const [relType, setRelType] = useState<RelationshipType>('romantic')
   const [sending, setSending] = useState(false)
@@ -61,7 +64,13 @@ export default function InviteScreen() {
       const targetName = name.trim() || label
       // Pass A's locale so the server composes the share message + landing URL
       // in A's language (else it falls back to the stored locale / 'en').
-      const result = await create({ targetName, relationshipLabel: label, language: locale })
+      const result = await create({
+        targetName,
+        relationshipLabel: label,
+        language: locale,
+        // Carry the locked report through, so a new-member accept unlocks it for A.
+        unlockBondId: unlockBondId || undefined,
+      })
       await shareInvite(result.mailto, result.resonateUrl)
       updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
       await markOnboardingComplete()

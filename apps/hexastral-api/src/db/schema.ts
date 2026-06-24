@@ -1109,6 +1109,15 @@ export const bondInvitations = sqliteTable(
     expiresAt: text('expires_at').notNull(),
     /** B 响应时间 */
     respondedAt: text('responded_at'),
+    /**
+     * Referral-unlock target: when A starts this invite from a LOCKED report's
+     * unlock wall ("邀请新朋友解锁"), this holds that locked bond's id. If B turns
+     * out to be a genuinely NEW member (their first 合盘), the accept handler
+     * unlocks THIS bond for A too — so bringing in a new user rigorously opens
+     * the report A invited from. Plain id (no FK, like `mirror_bond_id`); the
+     * accept handler re-validates ownership + locked state before unlocking.
+     */
+    unlockBondId: text('unlock_bond_id'),
   },
   (t) => [
     index('bi_token_idx').on(t.token),
