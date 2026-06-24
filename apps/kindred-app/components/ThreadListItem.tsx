@@ -1,25 +1,23 @@
 /**
- * ThreadListItem — one thread on the home's night-sky list (Variant A "红线串星",
- * 2026-06 redesign).
+ * ThreadListItem — one thread on the home's night-sky list.
  *
- * Each relationship reads as a STAR strung on a faint cinnabar 红线: a glowing
- * element-coloured node (the OTHER person's 五行, the same hue as their star in the
- * SkyHero above — list and sky never disagree), a serif name, a mono small-caps
- * meta line (relationship · time), and a right-slot essence (相生/比和/相克 via the
- * shared EssenceTag, so the chip and the report's ink stay in sync). Pending shows
- * an unlit hollow star + a quiet status; a stale report carries an INLINE
- * "earlier birth · recompute" (no boxed badge). Tap → the report; left-swipe → 解缘.
+ * Each relationship reads as a STAR: a glowing element-coloured node (the OTHER
+ * person's 五行, the same hue as their star in the SkyHero above — list and sky never
+ * disagree), a serif name, a mono small-caps meta line (relationship · time), and a
+ * right-slot essence (相生/比和/相克 via the shared EssenceTag, so the chip and the
+ * report's ink stay in sync). Pending shows an unlit hollow star + a quiet status; a
+ * stale report carries an INLINE "earlier birth · recompute" (no boxed badge). Tap →
+ * the report; left-swipe → 解缘.
  *
- * The 红线: a hairline cinnabar line runs down the node column behind the beads
- * (each node is an opaque disc that "breaks" it), tying the threads to the header's
- * 红线 mark above. It terminates at the last bead (isLast).
+ * The stars stand on their own as a quiet list — the earlier cinnabar 红线 that strung
+ * them down the node column was dropped (2026-06) as too busy.
  */
 
 import { kindredDark, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
 import { type BondData, type BondStatus, kindredFonts } from '@zhop/scenario-kindred'
 import { Clock, Unlink } from 'lucide-react-native'
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { EssenceTag } from '@/components/EssenceTag'
 import { resolveBondDisplayName } from '@/lib/bondName'
@@ -36,11 +34,6 @@ const STAR_HUE: Record<string, string> = {
   水: '#6f9cc8',
 }
 const STAR_HUE_FALLBACK = '#bcccea'
-
-/** x of the 红线 + every bead's centre: the node column is the first child, flush to
- *  the screen inset, 30 wide → its centre sits 15 past the inset. Absolute children
- *  ignore padding, so this same number positions the thread line. */
-const THREAD_X = kindredSpacing.screenH + 15
 
 /** Localized accessibility label for the status (carried by the row, not an icon). */
 function statusA11y(status: BondStatus, locale: Locale): string {
@@ -67,8 +60,6 @@ export interface ThreadListItemProps {
   /** When the report is based on an earlier birth, offer a Pro recompute. Only
    *  wired (and only shown) for stale bonds. */
   onRecompute?: () => void
-  /** Last row in the list → the 红线 stops at this bead instead of running on. */
-  isLast?: boolean
 }
 
 export function ThreadListItem({
@@ -77,7 +68,6 @@ export function ThreadListItem({
   onPress,
   onDelete,
   onRecompute,
-  isLast,
 }: ThreadListItemProps) {
   // Specific name as title; fall back to the relationship (and strip the legacy
   // literal "Unknown"). See lib/bondName.ts.
@@ -132,24 +122,8 @@ export function ThreadListItem({
           backgroundColor: kindredDark.bg,
         }}
       >
-        {/* 红线 — a hairline cinnabar thread the beads are strung on. Behind the node
-            (drawn first); the node's opaque disc breaks it into beads. Stops at the
-            last bead so the thread doesn't dangle past the final star. */}
-        <View
-          pointerEvents='none'
-          style={{
-            position: 'absolute',
-            left: THREAD_X,
-            top: 0,
-            bottom: isLast ? '50%' : 0,
-            width: StyleSheet.hairlineWidth,
-            backgroundColor: kindredDark.seal,
-            opacity: 0.28,
-          }}
-        />
-
-        {/* The bead — their star, in their 五行 hue (lit) or an unlit ring (pending /
-            no reading yet). The opaque disc is what breaks the 红线 at each bead. */}
+        {/* Their star — in their 五行 hue (lit) or an unlit ring (pending / no reading
+            yet), centred in the row's 30px node column. */}
         <ThreadStar hue={hue} lit={lit} />
 
         <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
@@ -231,9 +205,9 @@ export function ThreadListItem({
   )
 }
 
-/** A bead on the 红线: a glowing element star (lit) or an unlit ring (pending / no
- *  reading). The 30px disc is opaque (screen ground) so it breaks the thread line
- *  behind it; the glow is a cheap 3-layer stack (no Skia surface per row). */
+/** A star node: a glowing element star (lit) or an unlit ring (pending / no reading).
+ *  A 30px disc on the screen ground holds it centred in the row's node column; the
+ *  glow is a cheap 3-layer stack (no Skia surface per row). */
 function ThreadStar({ hue, lit }: { hue: string; lit: boolean }) {
   return (
     <View

@@ -8,7 +8,7 @@
  *   Top      碑拓 essence seal (one of the six 章印, by chapter number) +
  *            chapter label + ancient chapter numeral
  *   Center   the lead line — a pulled line from the chapter, the star of the
- *            card (serif/cjk, a cinnabar seal-dot above it, never body text)
+ *            card (serif/cjk, never body text)
  *   Bottom   the identity line (日主 · 格局 — abstract, NEVER the birth date)
  *            + a cinnabar 永 signature seal + scannable install QR + brand url
  *
@@ -139,16 +139,8 @@ export function ShareablePersonalCard({
         </View>
       </View>
 
-      {/* Center — the lead line, the star of the card. Cinnabar seal-dot above. */}
-      <View style={{ alignItems: 'center', gap: s(48) }}>
-        <View
-          style={{
-            width: s(14),
-            height: s(14),
-            borderRadius: s(7),
-            backgroundColor: kindredPaper.cinnabar,
-          }}
-        />
+      {/* Center — the lead line, the star of the card. */}
+      <View style={{ alignItems: 'center' }}>
         <Text
           style={{
             fontFamily: quoteFont,

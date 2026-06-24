@@ -79,19 +79,17 @@ export const GLYPHS = {
     strokes: ['M49,56 L57,60'],
   },
   永: {
-    // 甲骨文 永 — a person swimming in a stream (the origin of 泳, later borrowed
-    // for "perpetual / long-lasting"). A head + S-curved body riding the current,
-    // an arm reaching back, a forward arm, and the flow forking at the foot. The
-    // old paths were the regular-script 永字八法 skeleton, not the oracle graph.
+    // 甲骨文 永 — flowing water: the origin of 泳 ("to swim"), borrowed for "long /
+    // perpetual". A long meandering current (length = 永) springing from a source at
+    // its head, with two tributaries peeling off and flowing downward — water in
+    // motion, not the limbs-and-fork "swimmer" the older form read as at chop scale.
     box: [100, 130],
     strokes: [
-      'M49,24 C57,40 43,54 52,70 C60,86 47,100 50,116', // swimmer body / current
-      'M50,44 C39,49 31,57 25,69', // upper arm reaching back
-      'M51,64 C62,69 71,77 79,89', // lower arm forward
-      'M50,96 C44,104 39,110 33,119', // foot / flow split left
-      'M50,96 C56,104 61,110 66,119', // foot / flow split right
+      'M50,24 C44,42 57,57 49,73 C42,88 52,102 49,116', // main current (the long flow)
+      'M49,50 C40,56 33,66 29,80', // tributary peeling down-left
+      'M49,80 C59,85 67,95 71,109', // tributary peeling down-right
     ],
-    dots: [[49, 18, 4.3]],
+    dots: [[50, 16, 4.2]], // spring at the source
   },
   // ── 五行 (用神 keys) ──
   金: {

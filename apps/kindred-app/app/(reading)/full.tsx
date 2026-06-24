@@ -1332,13 +1332,20 @@ const S = StyleSheet.create({
 
   unlockBtn: {
     alignSelf: 'center',
+    alignItems: 'center',
     marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 32,
     backgroundColor: P.cinnabar,
     borderRadius: 22,
   },
-  unlockText: { color: P.ctaText, fontSize: 13, fontWeight: '600', letterSpacing: 3 },
+  unlockText: {
+    color: P.ctaText,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
 
   // ── chapter page ──
   pageScroll: { paddingHorizontal: 32, paddingTop: 52, paddingBottom: 24 },

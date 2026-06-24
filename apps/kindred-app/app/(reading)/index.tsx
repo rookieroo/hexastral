@@ -584,26 +584,16 @@ export default function ReadingHomeScreen() {
 
       {/* The threads-section header (title + inline "add") is gone: New Thread now
           lives in the bottom-center floating FAB, and the rows stand on their own
-          under "Open your reading" + the sky. A faint 红线 rule keeps a quiet
-          separator between the doorway and the beads it strings. */}
+          under "Open your reading" + the sky. A quiet neutral hairline separates the
+          doorway from the threads (the earlier cinnabar 红线 串联 was dropped — 2026-06). */}
       {threads.length > 0 ? (
-        <View style={{ flexDirection: 'row', marginHorizontal: kindredSpacing.screenH }}>
-          <View
-            style={{
-              width: 30,
-              height: StyleSheet.hairlineWidth,
-              backgroundColor: kindredDark.seal,
-              opacity: 0.5,
-            }}
-          />
-          <View
-            style={{
-              flex: 1,
-              height: StyleSheet.hairlineWidth,
-              backgroundColor: kindredDark.border,
-            }}
-          />
-        </View>
+        <View
+          style={{
+            height: StyleSheet.hairlineWidth,
+            backgroundColor: kindredDark.border,
+            marginHorizontal: kindredSpacing.screenH,
+          }}
+        />
       ) : null}
     </View>
   )
@@ -645,14 +635,13 @@ export default function ReadingHomeScreen() {
               ListHeaderComponent={listHeader}
               data={threads}
               keyExtractor={(b) => b.id}
-              renderItem={({ item, index }) => (
+              renderItem={({ item }) => (
                 <ThreadListItem
                   bond={item}
                   locale={locale}
                   onPress={(origin) => setOpenBond({ id: item.id, origin: origin ?? null })}
                   onDelete={() => confirmDelete(item)}
                   onRecompute={item.basedOnStaleBirth ? () => confirmRecompute(item) : undefined}
-                  isLast={index === threads.length - 1}
                 />
               )}
               ItemSeparatorComponent={() => (
