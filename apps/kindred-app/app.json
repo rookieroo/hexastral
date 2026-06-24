@@ -20,7 +20,8 @@
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:hexastral.com",
-        "applinks:www.hexastral.com"
+        "applinks:www.hexastral.com",
+        "applinks:yuel.hexastral.com"
       ],
       "infoPlist": {
         "CFBundleLocalizations": [
@@ -93,7 +94,7 @@
       [
         "expo-apple-authentication",
         {
-          "iosTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+          "iosTeamId": "L9Z47DW56X"
         }
       ]
     ]

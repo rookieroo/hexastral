@@ -27,7 +27,8 @@
       },
       "associatedDomains": [
         "applinks:hexastral.com",
-        "applinks:www.hexastral.com"
+        "applinks:www.hexastral.com",
+        "applinks:yuun.hexastral.com"
       ],
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [

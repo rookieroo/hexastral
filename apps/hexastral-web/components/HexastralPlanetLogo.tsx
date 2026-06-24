@@ -76,10 +76,10 @@ export function HexastralPlanetLogo({
           gradientUnits='userSpaceOnUse'
         >
           <stop offset='0' stopColor={voidColor} stopOpacity={1} />
-          <stop offset={String(s0)} stopColor={voidColor} stopOpacity={1} />
-          <stop offset={String(s1)} stopColor={voidColor} stopOpacity={0.55} />
-          <stop offset={String(s2)} stopColor={voidColor} stopOpacity={0.12} />
-          <stop offset={String(s3)} stopColor={voidColor} stopOpacity={0} />
+          <stop offset={s0.toFixed(4)} stopColor={voidColor} stopOpacity={1} />
+          <stop offset={s1.toFixed(4)} stopColor={voidColor} stopOpacity={0.55} />
+          <stop offset={s2.toFixed(4)} stopColor={voidColor} stopOpacity={0.12} />
+          <stop offset={s3.toFixed(4)} stopColor={voidColor} stopOpacity={0} />
           <stop offset='1' stopColor={voidColor} stopOpacity={0} />
         </linearGradient>
         <radialGradient
