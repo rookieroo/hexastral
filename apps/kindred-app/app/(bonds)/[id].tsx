@@ -200,6 +200,13 @@ export default function BondDetailScreen({
     const { ox, oy } = routeParams
     return ox != null && oy != null ? { x: Number(ox), y: Number(oy) } : null
   }, [originProp, routeParams.ox, routeParams.oy])
+  // Only an overlay opened FROM A TAP (a real origin point) should bloom over the
+  // live home with a transparent surround — that's the thread-tap reveal. The accept
+  // hand-off opens the overlay with no origin (it arrives from the generate loader,
+  // not a tap), so the transparent surround would flash the home for the full 1.4s
+  // bloom ("先回到了首页，然后才进入报告页"). For that case keep the surround OPAQUE so the
+  // 宣纸 report blooms from centre over the dark ground — no home shows through.
+  const bloomOverLiveHome = isOverlay && bloomOrigin != null
   const router = useRouter()
   const handleClose = onCloseProp ?? (() => router.back())
   const insets = useSafeAreaInsets()
@@ -647,17 +654,18 @@ export default function BondDetailScreen({
       ) : null
 
     return (
-      <View style={{ flex: 1, backgroundColor: isOverlay ? 'transparent' : kindredDark.bg }}>
+      <View style={{ flex: 1, backgroundColor: bloomOverLiveHome ? 'transparent' : kindredDark.bg }}>
         {/* 水墨晕开 entrance — the cream 宣纸 report unrolls in from the tapped row.
-            As an OVERLAY the surround is transparent, so it blooms over the LIVE
+            A TAP overlay keeps a transparent surround, so it blooms over the LIVE
             home (the night sky shows outside the shape) exactly like the solo
-            reading — no route jump. As a route the surround is dark (matching the
-            home). Wraps ONLY the pager; the off-screen capture target + chrome
-            below stay outside the mask. The inner SafeAreaView is paper so the
+            reading — no route jump. A route, or the accept hand-off (no tap origin),
+            uses a dark surround so the report blooms over the dark ground instead of
+            flashing the home. Wraps ONLY the pager; the off-screen capture target +
+            chrome below stay outside the mask. The inner SafeAreaView is paper so the
             report document reads edge-to-edge. */}
         <ReportBloom
           origin={bloomOrigin}
-          surroundColor={isOverlay ? 'transparent' : undefined}
+          surroundColor={bloomOverLiveHome ? 'transparent' : undefined}
           closing={closing}
           onClosed={handleClose}
         >

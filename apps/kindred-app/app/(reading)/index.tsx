@@ -161,10 +161,20 @@ export default function ReadingHomeScreen() {
   // so it shares the solo reading's transition: the cream report blooms from the
   // tapped row over the live night, no jump. (The [id] route stays for deep links
   // / the accept flow.)
+  // Seed from a pending hand-off SYNCHRONOUSLY (mirrors `showSplash` below). A flow
+  // that finished on another screen (the invite accept) drops a bond id in pending-
+  // open and resets to the home; consuming it here in the initializer — not only in
+  // useFocusEffect — mounts the report overlay on the FIRST frame, so the home never
+  // paints "naked" before the report appears (2026-06: "月相 loader 结束先回到了首页，
+  // 然后才进入生成的报告页"). useFocusEffect still consumes as a fallback for a re-focus
+  // that didn't remount the home.
   const [openBond, setOpenBond] = useState<{
     id: string
     origin: { x: number; y: number } | null
-  } | null>(null)
+  } | null>(() => {
+    const pending = consumePendingOpenBond()
+    return pending ? { id: pending, origin: null } : null
+  })
   // Stable so the report overlay's swipe-back gesture doesn't re-create each render.
   const closeBond = useCallback(() => setOpenBond(null), [])
   const [showSplash, setShowSplash] = useState(() => !consumeSplashDecision())
@@ -252,9 +262,9 @@ export default function ReadingHomeScreen() {
       // Silent revalidation: the cached list shows instantly; no loader/spinner
       // on return. A manual pull-to-refresh is the only visible refresh.
       void refetch({ silent: true })
-      // A flow that finished elsewhere (the invite accept) may have asked us to
-      // open a bond's report — bloom it in as the in-place overlay (no extra
-      // route), the same smooth transition a thread tap uses.
+      // Fallback only — the useState initializer above is the primary, flash-free
+      // path (it catches the pending bond before the first paint when the reset
+      // remounted the home). This covers the rare re-focus that did NOT remount.
       const pendingOpen = consumePendingOpenBond()
       if (pendingOpen) setOpenBond({ id: pendingOpen, origin: null })
       return () => setFocused(false)
