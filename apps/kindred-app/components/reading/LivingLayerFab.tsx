@@ -26,6 +26,7 @@ import {
   GitCommitVertical,
   type LucideIcon,
   MessageCircle,
+  Share,
   Timeline,
 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
@@ -42,15 +43,17 @@ import Animated, {
 
 const FAB_SIZE = 52
 const DISC_SIZE = 46
-// Distance from the FAB centre to each disc centre — just clear of the FAB ring.
-const ARC_RADIUS = 74
+// Distance from the FAB centre to each disc centre. Sized so the full set of
+// discs (up to 4: timeline · what-if · chat · share) seats on the quarter-ring
+// without overlapping — the tighter 74 collided once share was added.
+const ARC_RADIUS = 104
 // Square that fully contains the FAB + the up-and-left arc, so every disc stays
 // inside the wrapper's bounds (touches outside an ancestor's frame aren't reliably
 // delivered). FAB anchors bottom-right; the arc fills up + left from there.
 const WRAP = ARC_RADIUS + DISC_SIZE / 2 + FAB_SIZE / 2 + 8
 
 export interface LivingLayerFabProps {
-  labels: { timeline: string; whatif: string; chat: string }
+  labels: { timeline: string; whatif: string; chat: string; share: string }
   /** Optional — the Timeline disc only appears where the surface exists (the 合盘 report
    *  passes it; the personal report's 流年 moved to 运/Yuun per ADR-0026). */
   onTimeline?: () => void
@@ -59,6 +62,9 @@ export interface LivingLayerFabProps {
   onWhatIf?: () => void
   /** Optional — the chat disc only appears once the bond has a pair reading. */
   onChat?: () => void
+  /** Optional — share the current chapter as a card (the viral export). Trails the
+   *  living-layer trio so it never crowds the subscription surfaces. */
+  onShare?: () => void
   /** Safe-area bottom inset so the button clears the home indicator. */
   insetBottom: number
 }
@@ -68,6 +74,7 @@ export function LivingLayerFab({
   onTimeline,
   onWhatIf,
   onChat,
+  onShare,
   insetBottom,
 }: LivingLayerFabProps) {
   const [open, setOpen] = useState(false)
@@ -88,6 +95,7 @@ export function LivingLayerFab({
       ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }]
       : []),
     ...(onChat ? [{ key: 'chat', Icon: MessageCircle, label: labels.chat, onPress: onChat }] : []),
+    ...(onShare ? [{ key: 'share', Icon: Share, label: labels.share, onPress: onShare }] : []),
   ]
 
   return (

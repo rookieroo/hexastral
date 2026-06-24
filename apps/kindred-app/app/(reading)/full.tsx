@@ -29,11 +29,11 @@ import {
   type Locale as TermLocale,
 } from '@zhop/astro-i18n'
 import { kindredDark, kindredPaper } from '@zhop/hexastral-tokens/kindred'
-import { isCjkLocale, TermBubble } from '@zhop/scenario-kindred'
+import { isCjkLocale, ShareablePersonalCard, TermBubble } from '@zhop/scenario-kindred'
 import { composeTeaserNarrator } from '@zhop/scenario-yuan/teaser-narrator'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Clock, Lock, RefreshCw, X } from 'lucide-react-native'
+import { ArrowLeft, Clock, Lock, RefreshCw, Share, X } from 'lucide-react-native'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dimensions,
@@ -49,14 +49,6 @@ import {
 import Animated, { SlideInDown } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-  dayMasterLabel,
-  gejuLabel,
-  type ReadingStringKey,
-  shichenLabel,
-  strengthLabel,
-  useReadingI18n,
-} from '@/components/reading/reading-i18n'
-import {
   labelForSeed,
   PERSPECTIVE_PRESETS,
   type PerspectivePreset,
@@ -64,9 +56,19 @@ import {
   REROLL_UI,
 } from '@/components/reading/perspective-presets'
 import { ReportBloom } from '@/components/reading/ReportBloom'
+import {
+  dayMasterLabel,
+  gejuLabel,
+  type ReadingStringKey,
+  shichenLabel,
+  strengthLabel,
+  useReadingI18n,
+} from '@/components/reading/reading-i18n'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { getYuanProStatus } from '@/lib/iap'
+import { useImageShare } from '@/lib/imageShare'
+import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
 import { fetchProAllowance } from '@/lib/pro-allowance'
 import { type SelfBirth, saveSelfBirth, useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
@@ -451,6 +453,11 @@ export default function FullReadingScreen() {
   // The current pager page (drives 划词 grounding + the page indicator).
   const [chapterIndex, setChapterIndex] = useState(0)
 
+  // Share fires the off-screen ShareablePersonalCard, mounted ONLY during capture
+  // (useImageShare) so swiping chapters stays smooth. Free teaser chapters share
+  // too (the install funnel works pre-Pro).
+  const { shotRef, capturing, share: shareImage } = useImageShare()
+
   // Lazy generation driver: warm the chapter in view AND the next one, so the reader
   // only waits on the very first premium page — subsequent pages pre-generate while
   // they read. Stops short of the four-up-front cost: a reader who halts mid-report
@@ -632,6 +639,24 @@ export default function FullReadingScreen() {
   const pageCount = pages.length + (unlocked ? 0 : 1)
   const activeSlug = pages[chapterIndex]?.slug ?? null
 
+  // Current chapter's share artefact: the pulled lead line (first sentence) + the
+  // abstract identity signature (日主·格局 — NEVER the birth date). Free teaser
+  // chapters share too, so the install funnel works pre-Pro.
+  const curPage = pages[chapterIndex] ?? pages[0] ?? null
+  const curShareBody = curPage ? (contentBySlug(curPage.slug) ?? teaserBySlug(curPage.slug)) : null
+  const curLeadLine = curShareBody ? (splitSentences(curShareBody)[0]?.trim() ?? '') : ''
+  const canShareSelf = curLeadLine.length > 0
+  const shareLabel = locale.startsWith('zh') ? '分享' : locale.startsWith('ja') ? 'シェア' : 'Share'
+  const handleShare = () => {
+    if (!canShareSelf) return
+    const lead = locale.startsWith('zh')
+      ? '我的命书 · Yuel'
+      : locale.startsWith('ja')
+        ? '私の命書 · Yuel'
+        : 'My reading · Yuel'
+    void shareImage(kindredShareCaption(locale, lead))
+  }
+
   const onPageEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const next = Math.round(e.nativeEvent.contentOffset.x / screenWidth)
     if (next !== chapterIndex) setChapterIndex(next)
@@ -693,6 +718,8 @@ export default function FullReadingScreen() {
                     onHistory={
                       content && rerolledSlugs.has(c.slug) ? () => openHistory(c.slug) : undefined
                     }
+                    shareLabel={shareLabel}
+                    onShare={handleShare}
                   />
                 </View>
               )
@@ -730,6 +757,30 @@ export default function FullReadingScreen() {
 
       {/* No living-layer FAB on the personal report (ADR-0026): 本月 lives on the home
           doorway, and chat is the 划词 selection bar below. */}
+
+      {/* Off-screen capture target — the current chapter's share card, mounted
+          ONLY while capturing (keeps the pager smooth). Far outside the viewport;
+          captured by useImageShare then unmounted. Identity line only — the birth
+          date is NEVER put on a shared image. */}
+      {capturing && curPage ? (
+        <View
+          ref={shotRef}
+          collapsable={false}
+          style={{ position: 'absolute', top: -20000, left: 0 }}
+        >
+          <ShareablePersonalCard
+            leadLine={curLeadLine}
+            chapterLabel={t(curPage.labelKey)}
+            chapterNumber={curPage.n}
+            identityLine={identityLine}
+            width={1080}
+            height={1920}
+            locale={locale}
+            brandUrl={KINDRED_BRAND_URL}
+            installUrl={KINDRED_INSTALL_URL}
+          />
+        </View>
+      ) : null}
 
       {/* 划词 action bar — slides up when a sentence is long-pressed (copy / chat /
           highlight). */}
@@ -974,6 +1025,8 @@ function ChapterPage({
   onReroll,
   historyLabel,
   onHistory,
+  shareLabel,
+  onShare,
 }: {
   n: number
   label: string
@@ -1004,6 +1057,9 @@ function ChapterPage({
   /** 历史视角 — opens the saved-versions compare view. */
   historyLabel?: string
   onHistory?: () => void
+  /** 分享 — capture this chapter as a share card (free teaser chapters too). */
+  shareLabel?: string
+  onShare?: () => void
 }) {
   const cjk = isCjkLocale(locale)
   const tLocale = termLocale(locale)
@@ -1115,20 +1171,22 @@ function ChapterPage({
           </View>
         ) : null}
 
-        {/* 换视角 + 历史视角 — re-read in another voice / compare saved voices.
-            Only on generated (unlocked) pages, under the prose. */}
-        {content && onReroll && rerollLabel ? (
+        {/* Chapter tools — 换视角 / 历史视角 (generated pages only) + 分享. Share
+            also rides the free teaser, so a non-Pro reader can spread the card. */}
+        {(body && onShare && shareLabel) || (content && onReroll && rerollLabel) ? (
           <View style={S.chapterToolRow}>
-            <Pressable
-              onPress={onReroll}
-              hitSlop={8}
-              accessibilityRole='button'
-              style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
-            >
-              <RefreshCw size={13} color={P.bronze} strokeWidth={1.6} />
-              <Text style={S.rerollText}>{rerollLabel}</Text>
-            </Pressable>
-            {onHistory && historyLabel ? (
+            {content && onReroll && rerollLabel ? (
+              <Pressable
+                onPress={onReroll}
+                hitSlop={8}
+                accessibilityRole='button'
+                style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
+              >
+                <RefreshCw size={13} color={P.bronze} strokeWidth={1.6} />
+                <Text style={S.rerollText}>{rerollLabel}</Text>
+              </Pressable>
+            ) : null}
+            {content && onHistory && historyLabel ? (
               <Pressable
                 onPress={onHistory}
                 hitSlop={8}
@@ -1137,6 +1195,17 @@ function ChapterPage({
               >
                 <Clock size={13} color={P.muted} strokeWidth={1.6} />
                 <Text style={S.historyText}>{historyLabel}</Text>
+              </Pressable>
+            ) : null}
+            {body && onShare && shareLabel ? (
+              <Pressable
+                onPress={onShare}
+                hitSlop={8}
+                accessibilityRole='button'
+                style={({ pressed }) => [S.rerollBtn, pressed && { opacity: 0.6 }]}
+              >
+                <Share size={13} color={P.bronze} strokeWidth={1.6} />
+                <Text style={S.rerollText}>{shareLabel}</Text>
               </Pressable>
             ) : null}
           </View>

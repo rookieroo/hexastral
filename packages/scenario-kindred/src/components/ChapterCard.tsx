@@ -484,7 +484,7 @@ export function ChapterCard({
             textTransform: 'uppercase',
           }}
         >
-          Kindred · Synastry
+          Yuel · Synastry
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text

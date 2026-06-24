@@ -1,5 +1,6 @@
 /**
- * AncientNumeral — 一二三亖㐅六 (1–6) in hand-authored 积画 brush strokes.
+ * AncientNumeral — 一二三亖𠄡六 (1–6) in hand-authored 积画 brush strokes. The 5
+ * is the barred 𠄡 (not a bare ✕) so it never reads as a multiply sign.
  * The single numeral system for the whole report: chapter layer indices in the
  * gutter, and the chapter number in the footer. Never Arabic/Roman.
  */

@@ -8,17 +8,20 @@
  *
  * Status 202 → "generating" UI; on 4xx/5xx → error state + retry.
  *
- * Share flow: tapping the chapter's share button registers a shareId via
- * POST /api/bonds/:id/share, renders ShareableChapterCard off-screen, captures
- * it as a 1080×1920 PNG via react-native-view-shot, then opens the system
- * share sheet via expo-sharing.
+ * Share flow: the LivingLayerFab's share disc fires a ShareableChapterCard that
+ * is PRE-WARMED off-screen (lib/imageShare captures the current chapter as a
+ * 1080×1920 PNG ahead of the tap), so the OS share sheet opens with no latency.
+ * The card bakes in the brand + a scannable install QR (lib/kindredShare) so the
+ * image self-markets even when a social app strips the caption. (The per-bond
+ * deep link via POST /api/bonds/:id/share is off the path until its web landing
+ * is fixed; the QR drives the install funnel meanwhile.)
  *
  * Phase F migration: loading / generating / error states use core-ui patterns.
  * Editorial typography (kindredType) and gold-underline CTAs (kindredPresets) stay
  * Kindred-specific.
  */
 
-import { ErrorState, useHaptic } from '@zhop/core-ui'
+import { ErrorState } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'
 import {
   kindredDark,
@@ -34,17 +37,15 @@ import {
   ChapterUnlockWall,
   CompatibilityScore,
   ShareableChapterCard,
-  useShareBond,
   useSynastryReport,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft, X } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Dimensions, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { captureRef } from 'react-native-view-shot'
 import {
   deriveCenterpieceMode,
   deriveTransitionEndpoints,
@@ -65,15 +66,15 @@ import { resolveBondDisplayName } from '@/lib/bondName'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { type Locale, localeFromTag, relativeSentLabel, resolveLocale, useI18n } from '@/lib/i18n'
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
+import { useImageShare } from '@/lib/imageShare'
+import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
 
 type ClipboardModule = typeof import('expo-clipboard')
-type SharingModule = typeof import('expo-sharing')
 
 let clipboardModule: ClipboardModule | null | undefined
-let sharingModule: SharingModule | null | undefined
 
-/** Lazy — stale dev clients may lack ExpoClipboard / expo-sharing native modules. */
+/** Lazy — stale dev clients may lack the ExpoClipboard native module. */
 function getClipboard(): ClipboardModule | null {
   if (clipboardModule !== undefined) return clipboardModule
   try {
@@ -86,24 +87,34 @@ function getClipboard(): ClipboardModule | null {
   }
 }
 
-function getSharing(): SharingModule | null {
-  if (sharingModule !== undefined) return sharingModule
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    sharingModule = require('expo-sharing') as SharingModule
-    return sharingModule
-  } catch {
-    sharingModule = null
-    return null
-  }
-}
-
 const VIEWER_LABEL: Record<Locale, string> = { en: 'you', zh: '你', 'zh-Hant': '你', ja: 'あなた' }
 const OTHER_FALLBACK_LABEL: Record<Locale, string> = {
   en: 'the other person',
   zh: '对方',
   'zh-Hant': '對方',
   ja: 'お相手',
+}
+
+/** The report's source language, named in the READER's own language — for the
+ *  quiet relocalize line. Indexed [deviceLocale][reportLocale]. */
+const LANGUAGE_NAME: Record<Locale, Record<Locale, string>> = {
+  en: { en: 'English', zh: 'Chinese', 'zh-Hant': 'Traditional Chinese', ja: 'Japanese' },
+  zh: { en: '英文', zh: '中文', 'zh-Hant': '繁体中文', ja: '日文' },
+  'zh-Hant': { en: '英文', zh: '簡體中文', 'zh-Hant': '繁體中文', ja: '日文' },
+  ja: { en: '英語', zh: '中国語', 'zh-Hant': '繁体中国語', ja: '日本語' },
+}
+
+/**
+ * The quiet end-of-report relocalize line (ADR-0027, option A): names the
+ * report's source language AND its cost up front, so it's transparent, not
+ * chrome. Shown only when the report's language ≠ this device's.
+ */
+function relocalizeLabel(reportLocale: Locale, device: Locale): string {
+  const src = LANGUAGE_NAME[device][reportLocale]
+  if (device === 'zh-Hant') return `本報告為${src} · 用你的語言重讀（消耗 1 次換視角）`
+  if (device.startsWith('zh')) return `本报告为${src} · 用你的语言重读（消耗 1 次换视角）`
+  if (device.startsWith('ja')) return `本鑑定は${src}です · あなたの言語で読み直す（視点1回）`
+  return `This report is in ${src} · Re-read in your language (uses 1 re-read)`
 }
 
 /**
@@ -242,7 +253,11 @@ export default function BondDetailScreen({
       cancelled = true
     }
   }, [id])
-  const { createShareUrl } = useShareBond()
+  // Share fires the off-screen ShareableChapterCard, which is mounted ONLY during
+  // capture (useImageShare) so swiping chapters stays smooth. The per-bond deep
+  // link is off the path for now (its web landing is a pending fix); the card's QR
+  // drives the install funnel via KINDRED_INSTALL_URL.
+  const { shotRef, capturing, share: shareImage } = useImageShare()
   const { t } = useI18n()
 
   // First-report-entry primer (shown once; lib/primer-seen.ts gates it). Armed
@@ -367,72 +382,15 @@ export default function BondDetailScreen({
     })
   }
 
-  // Off-screen render target for ShareableChapterCard.
-  // When shareTarget is set, the hidden View renders the card for that chapter
-  // and the effect below captures it via view-shot, then opens share sheet.
-  const [shareTarget, setShareTarget] = useState<{
-    index: number
-    brandUrl: string
-    installUrl?: string
-  } | null>(null)
-  const [isCapturing, setIsCapturing] = useState(false)
-  const captureRefView = useRef<View>(null)
-  const haptic = useHaptic()
-
-  // When shareTarget changes, capture-and-share on the next layout pass.
-  useEffect(() => {
-    if (!shareTarget) return
-    let cancelled = false
-    const handle = setTimeout(async () => {
-      if (cancelled || !captureRefView.current) return
-      try {
-        const uri = await captureRef(captureRefView.current, {
-          format: 'png',
-          quality: 1,
-          width: 1080,
-          height: 1920,
-        })
-        if (!cancelled) {
-          await haptic('light')
-          const Sharing = getSharing()
-          if (Sharing && (await Sharing.isAvailableAsync())) {
-            await Sharing.shareAsync(uri, {
-              dialogTitle: 'Yuel',
-              mimeType: 'image/png',
-              UTI: 'public.png',
-            })
-          }
-        }
-      } catch (err) {
-        if (__DEV__) console.warn('[Kindred share]', err)
-      } finally {
-        if (!cancelled) {
-          setShareTarget(null)
-          setIsCapturing(false)
-        }
-      }
-    }, 80)
-    return () => {
-      cancelled = true
-      clearTimeout(handle)
-    }
-  }, [shareTarget, haptic])
-
-  const handleShareChapter = async (idx: number) => {
-    if (!id || isCapturing) return
-    setIsCapturing(true)
-    let brandUrl = 'kindred.hexastral.com'
-    let installUrl: string | undefined
-    try {
-      const res = await createShareUrl(id)
-      // Full URL (with scheme) → scannable QR; stripped form → footer text.
-      installUrl = res.url
-      brandUrl = res.url.replace(/^https?:\/\//, '')
-    } catch (err) {
-      if (__DEV__) console.warn('[Kindred share/url]', err)
-      // Fall through with default brandUrl — still shareable as a generic card.
-    }
-    setShareTarget({ index: idx, brandUrl, installUrl })
+  // Share the chapter in view: fire the pre-warmed card. The caption is iOS
+  // secondary (Android drops it — the baked-in brand + QR carry the funnel).
+  const handleShare = () => {
+    const lead = reportLocale.startsWith('zh')
+      ? '一段关系的命书 · Yuel'
+      : reportLocale.startsWith('ja')
+        ? 'ふたりの命書 · Yuel'
+        : 'A reading of us · Yuel'
+    void shareImage(kindredShareCaption(reportLocale, lead))
   }
 
   // Overlay close (✕) for the DARK pre-report states (generating / error). As an
@@ -691,7 +649,7 @@ export default function BondDetailScreen({
               }}
               currentIndex={chapterIndex}
               onIndexChange={setChapterIndex}
-              onShareChapter={(idx) => void handleShareChapter(idx)}
+              onShareChapter={() => handleShare()}
               trailing={unlockWall}
               aElement={aElement}
               bElement={bElement}
@@ -732,14 +690,24 @@ export default function BondDetailScreen({
                 accessibilityRole='button'
                 style={{ paddingVertical: kindredSpacing.md, alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 13, letterSpacing: 0.5, color: kindredPaper.cinnabar }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 20,
+                    letterSpacing: 0.5,
+                    textAlign: 'center',
+                    color: kindredPaper.cinnabar,
+                  }}
+                >
                   {relocalizing
-                    ? resolveLocale().startsWith('zh')
-                      ? '重读中…'
-                      : 'Re-reading…'
-                    : resolveLocale().startsWith('zh')
-                      ? '用你的语言重读本报告'
-                      : 'Re-read in your language'}
+                    ? resolveLocale() === 'zh-Hant'
+                      ? '重讀中…'
+                      : resolveLocale().startsWith('zh')
+                        ? '重读中…'
+                        : resolveLocale().startsWith('ja')
+                          ? '読み直し中…'
+                          : 'Re-reading…'
+                    : relocalizeLabel(reportLocale, resolveLocale())}
                 </Text>
               </Pressable>
             ) : null}
@@ -757,7 +725,13 @@ export default function BondDetailScreen({
               timeline: t('timeline.title'),
               whatif: t('makeif.title'),
               chat: t('chat.cta'),
+              share: locale.startsWith('zh')
+                ? '分享'
+                : locale.startsWith('ja')
+                  ? 'シェア'
+                  : 'Share',
             }}
+            onShare={handleShare}
             onTimeline={() =>
               router.push({
                 pathname: '/(timeline)',
@@ -783,15 +757,17 @@ export default function BondDetailScreen({
           />
         ) : null}
 
-        {/* Off-screen capture target — positioned far outside viewport but mounted. */}
-        {shareTarget ? (
+        {/* Off-screen capture target — the CURRENT chapter's card, mounted ONLY
+            while a share is capturing (keeps the pager smooth). Far outside the
+            viewport; captured by useImageShare then unmounted. */}
+        {capturing && viewedChapters ? (
           <View
-            ref={captureRefView}
+            ref={shotRef}
             collapsable={false}
             style={{ position: 'absolute', top: -20000, left: 0 }}
           >
             <ShareableChapterCard
-              chapter={viewedChapters[shareTarget.index] ?? viewedChapters[0]!}
+              chapter={viewedChapters[chapterIndex] ?? viewedChapters[0]!}
               selfName={selfName ?? VIEWER_LABEL[reportLocale]}
               otherName={otherName ?? OTHER_FALLBACK_LABEL[reportLocale]}
               width={1080}
@@ -799,9 +775,9 @@ export default function BondDetailScreen({
               locale={reportLocale}
               aElement={aElement}
               bElement={bElement}
-              chapterNumber={shareTarget.index + 1}
-              brandUrl={shareTarget.brandUrl}
-              installUrl={shareTarget.installUrl}
+              chapterNumber={chapterIndex + 1}
+              brandUrl={KINDRED_BRAND_URL}
+              installUrl={KINDRED_INSTALL_URL}
             />
           </View>
         ) : null}

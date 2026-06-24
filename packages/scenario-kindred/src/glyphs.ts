@@ -112,13 +112,14 @@ export const GLYPHS = {
     ],
   },
   火: {
+    // 丷 (two flames) over 人 (splaying base) — the true 火 structure. No central
+    // spine (the old form read as a stick figure / trident).
     box: [100, 130],
     strokes: [
-      'M50,120 C49,98 51,80 50,56 C49,47 50,40 51,33',
-      'M44,112 C41,93 35,80 31,62 C29,55 30,50 32,45',
-      'M56,112 C59,93 65,80 69,62 C71,55 70,50 68,45',
-      'M46,86 L43,75',
-      'M54,86 L57,75',
+      'M50,56 C46,77 40,97 32,116', // 丿 left leg
+      'M50,56 C54,77 60,97 68,116', // 乀 right leg
+      'M44,50 C41,42 37,36 31,31', // 丷 left flame
+      'M56,50 C59,42 63,36 69,31', // 丷 right flame
     ],
   },
   土: {
@@ -150,7 +151,7 @@ export const WUXING_GLYPH: Record<string, GlyphKey> = {
 }
 
 /**
- * Ancient 积画 numerals 一二三亖㐅六 = 1–6, as stroked brush paths in a 0 0 46 46
+ * Ancient 积画 numerals 一二三亖𠄡六 = 1–6, as stroked brush paths in a 0 0 46 46
  * box. Used for the chapter layer indices + footer chapter number (one unified
  * numeral system — never Arabic/Roman). Hand-authored, not a font.
  */
@@ -164,6 +165,6 @@ export const NUMERALS: Record<number, string[]> = {
     'M9,28 C19,26 27,26 37,28',
     'M9,36 C19,34 27,34 37,36',
   ],
-  5: ['M12,12 L34,34', 'M34,12 L12,34'],
+  5: ['M11,11 C19,9 27,9 35,11', 'M15,15 L31,31', 'M31,15 L15,31', 'M11,35 C19,33 27,33 35,35'],
   6: ['M16,13 L30,13', 'M23,13 L14,34', 'M23,13 L32,34'],
 }
