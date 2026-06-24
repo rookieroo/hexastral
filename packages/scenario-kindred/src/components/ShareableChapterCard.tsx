@@ -126,8 +126,8 @@ export function ShareableChapterCard({
         <Text
           style={{
             fontFamily: titleFont,
-            fontSize: cjk ? s(88) : s(74),
-            lineHeight: cjk ? s(96) : s(82),
+            fontSize: cjk ? s(88) : s(enTitleSize),
+            lineHeight: cjk ? s(96) : s(Math.round(enTitleSize * 1.12)),
             color: kindredPaper.ink,
             letterSpacing: cjk ? s(4) : 0,
             textAlign: 'center',
@@ -165,16 +165,8 @@ export function ShareableChapterCard({
         ) : null}
       </View>
 
-      {/* Center — the golden line, the star of the card. Cinnabar seal-dot above. */}
-      <View style={{ alignItems: 'center', gap: s(48) }}>
-        <View
-          style={{
-            width: s(14),
-            height: s(14),
-            borderRadius: s(7),
-            backgroundColor: kindredPaper.cinnabar,
-          }}
-        />
+      {/* Center — the golden line, the star of the card. */}
+      <View style={{ alignItems: 'center' }}>
         <Text
           style={{
             fontFamily: quoteFont,

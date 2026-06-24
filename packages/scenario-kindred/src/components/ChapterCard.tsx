@@ -277,6 +277,10 @@ export function ChapterCard({
 
   const seal = CHAPTER_SEAL[chapter.kind]
   const title = chapter.title || CHAPTER_TITLES[chapter.kind]
+  // en titles are LLM-named and vary a lot in length; a fixed size wrapped a long one
+  // ("Parental Bond: Navigating Communication Challenges") to 4 lines. Step the size
+  // down by length so long titles stay compact. cjk titles run short → keep the hero 30.
+  const enTitleSize = title.length > 42 ? 21 : title.length > 28 ? 24 : 28
   const subtitle =
     aElement && bElement
       ? `${elName(aElement, cjk)}${cjk ? ' · ' : ' × '}${elName(bElement, cjk)}`
@@ -316,13 +320,8 @@ export function ChapterCard({
           <Text
             style={{
               fontFamily: titleFont,
-              // en titles are LLM-generated + can run long; 34 wrapped to 3 lines
-              // ("First Impressions: Fire's Mediation"). 28 keeps the hero weight but
-              // fits in ≤2 lines for the typical title. cjk titles are also LLM-named
-              // and run 8-12 chars ("木土交锋中的火之调和") — 44 wrapped + overpowered the
-              // page, so 30 holds the hero weight at one clean line for most titles.
-              fontSize: cjk ? 30 : 28,
-              lineHeight: cjk ? 40 : 33,
+              fontSize: cjk ? 30 : enTitleSize,
+              lineHeight: cjk ? 40 : Math.round(enTitleSize * 1.2),
               color: C.ink,
               letterSpacing: cjk ? 1 : 0,
             }}
