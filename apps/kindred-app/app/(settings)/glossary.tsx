@@ -258,11 +258,7 @@ export default function GlossaryScreen() {
         {/* ── 划词 long-press actions ── */}
         <Section title={tr('glossary.gesture.section')} caption={tr('glossary.gesture.caption')}>
           {GESTURE_ACTIONS.map((key) => (
-            <Row
-              key={key}
-              symbol={<GestureDot />}
-              label={tr(`glossary.gesture.${key}` as TranslationKey)}
-            />
+            <Row key={key} label={tr(`glossary.gesture.${key}` as TranslationKey)} />
           ))}
         </Section>
       </ScrollView>
@@ -327,7 +323,7 @@ function Section({
   )
 }
 
-function Row({ symbol, label, sub }: { symbol: React.ReactNode; label: string; sub?: string }) {
+function Row({ symbol, label, sub }: { symbol?: React.ReactNode; label: string; sub?: string }) {
   return (
     <View
       style={{
@@ -339,7 +335,9 @@ function Row({ symbol, label, sub }: { symbol: React.ReactNode; label: string; s
         borderBottomColor: kindredPaper.hair,
       }}
     >
-      <View style={{ width: 46, alignItems: 'center' }}>{symbol}</View>
+      {/* Symbol gutter only when there's a mark to show — the 长按段落 actions are
+          plain text rows (the red dots there read as noise, not legend). */}
+      {symbol ? <View style={{ width: 46, alignItems: 'center' }}>{symbol}</View> : null}
       <View style={{ flex: 1 }}>
         <Text
           style={{
@@ -398,14 +396,5 @@ function EssenceRow({ mode, label }: { mode: Mode; label: string }) {
         {label}
       </Text>
     </View>
-  )
-}
-
-/** A small cinnabar tick standing in for "an action in the slide-up bar". */
-function GestureDot() {
-  return (
-    <View
-      style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: kindredPaper.cinnabar }}
-    />
   )
 }

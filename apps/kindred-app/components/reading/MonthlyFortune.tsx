@@ -26,13 +26,6 @@ import type { FateNatalChart } from '@/lib/solo/natal'
 
 const P = kindredPaper
 
-const FORTUNE_KICKER: Record<string, string> = {
-  en: 'THIS MONTH',
-  zh: '本月运势',
-  'zh-Hant': '本月運勢',
-  ja: '今月の運勢',
-}
-
 /** Copy for the Pro 流年深读 affordance + its section labels. */
 const DEPTH_UI_EN = {
   cta: 'Read deeper',
@@ -126,12 +119,12 @@ export function MonthlyFortune({
 
   return (
     <View style={S.block}>
-      <View style={S.head}>
-        <Text style={S.kicker}>{FORTUNE_KICKER[locale] ?? FORTUNE_KICKER.en}</Text>
-        <Text style={S.meta}>
-          {fortune.monthLabel} · {fortune.ganZhi}
-        </Text>
-      </View>
+      {/* No card chrome + no 本月运势 kicker: the screen already labels this 本月, and
+          the report design is flush paper (no bordered/filled cards). Lead with the
+          headline; the 流月 date sits as a quiet meta line above it. */}
+      <Text style={S.meta}>
+        {fortune.monthLabel} · {fortune.ganZhi}
+      </Text>
       <Text style={S.headline}>{fortune.headline}</Text>
       {fortune.body.split('\n\n').map((para, i) => (
         <Text key={i} style={[S.body, i > 0 && { marginTop: 8 }]}>
@@ -193,23 +186,11 @@ export function MonthlyFortune({
 }
 
 const S = StyleSheet.create({
-  block: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: P.hair,
-    borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    backgroundColor: P.hairSoft,
-  },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  kicker: { color: P.cinnabar, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  meta: { color: P.muted, fontSize: 10, letterSpacing: 1 },
-  headline: { color: P.ink, fontSize: 18, letterSpacing: 1, marginBottom: 10 },
+  // Flush on the paper — no border / fill / radius (the report design avoids
+  // bordered cards). The screen supplies the horizontal padding.
+  block: {},
+  meta: { color: P.muted, fontSize: 11, letterSpacing: 1, marginBottom: 6 },
+  headline: { color: P.ink, fontSize: 20, letterSpacing: 1, marginBottom: 12 },
   body: { color: P.inkSoft, fontSize: 14, lineHeight: 23, letterSpacing: 0.2 },
 
   depthCta: {

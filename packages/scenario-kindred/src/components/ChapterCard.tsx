@@ -318,11 +318,13 @@ export function ChapterCard({
               fontFamily: titleFont,
               // en titles are LLM-generated + can run long; 34 wrapped to 3 lines
               // ("First Impressions: Fire's Mediation"). 28 keeps the hero weight but
-              // fits in ≤2 lines for the typical title. (cjk titles are short — 44 ok.)
-              fontSize: cjk ? 44 : 28,
-              lineHeight: cjk ? 48 : 33,
+              // fits in ≤2 lines for the typical title. cjk titles are also LLM-named
+              // and run 8-12 chars ("木土交锋中的火之调和") — 44 wrapped + overpowered the
+              // page, so 30 holds the hero weight at one clean line for most titles.
+              fontSize: cjk ? 30 : 28,
+              lineHeight: cjk ? 40 : 33,
               color: C.ink,
-              letterSpacing: cjk ? 2 : 0,
+              letterSpacing: cjk ? 1 : 0,
             }}
           >
             {space(title)}
