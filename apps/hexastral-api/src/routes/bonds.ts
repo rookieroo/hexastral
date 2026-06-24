@@ -642,7 +642,7 @@ bondRoutes.post('/invite', async (c) => {
   // Fixed, locale-agnostic landing URL — the web page localises by the OPENING
   // device (Accept-Language), not by A's locale. `locale` still drives the share
   // MESSAGE body below (A writes it in A's language); only the URL stays neutral.
-  const resonateUrl = `https://hexastral.com/resonate/${token}`
+  const resonateUrl = `https://yuel.hexastral.com/resonate/${token}`
 
   if (deliveryMode === 'server') {
     // Legacy / fallback path — server sends the hardened transactional invite.
@@ -2280,7 +2280,8 @@ bondRoutes.post('/:id/relocalize', zValidator('json', relocalizeSchema), async (
   // Already in that language → no spend, no work (idempotent).
   let storedLang: string | null = null
   try {
-    storedLang = ((JSON.parse(row.interpretation) as Record<string, unknown>).language as string) ?? null
+    storedLang =
+      ((JSON.parse(row.interpretation) as Record<string, unknown>).language as string) ?? null
   } catch {}
   if (storedLang && normalizeInviteLocale(storedLang) === normalizeInviteLocale(lc)) {
     return jsonOk(c, { relocalized: false, alreadyInLocale: true })
@@ -2551,7 +2552,7 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
           targetEmail: invitation.targetEmail,
           // Re-shareable invite link for the unlock wall's invite CTA (T2). Fixed,
           // locale-agnostic — the landing localises by the OPENING device.
-          resonateUrl: `https://hexastral.com/resonate/${invitation.token}`,
+          resonateUrl: `https://yuel.hexastral.com/resonate/${invitation.token}`,
         }
       : null,
     dimensions: dimensionData,
@@ -3105,7 +3106,7 @@ bondRoutes.post('/:id/share', async (c) => {
   }
 
   const shareId = generateShareId()
-  const titleHint = `${reading.personAName ?? ''} · Kindred · ${reading.personBName ?? bond.targetName}`
+  const titleHint = `${reading.personAName ?? ''} · Yuel · ${reading.personBName ?? bond.targetName}`
 
   await db.insert(sharedReports).values({
     id: shareId,
@@ -3116,8 +3117,10 @@ bondRoutes.post('/:id/share', async (c) => {
     contentJson: JSON.stringify(shareContent),
   })
 
+  // Yuel-branded host for the 合盘 share landing (subdomain on the existing zone;
+  // live once the hexastral-web CF route is deployed). Apex yuel.app stays parked.
   const baseUrl =
-    c.env.ENVIRONMENT === 'production' ? 'https://hexastral.com' : 'http://localhost:3000'
+    c.env.ENVIRONMENT === 'production' ? 'https://yuel.hexastral.com' : 'http://localhost:3000'
 
   c.executionCtx.waitUntil(
     logEvent(db, userId, 'share_create', { shareId, reportType: 'pair', bondId })
@@ -3355,7 +3358,7 @@ const OPERATOR = {
   brand: 'HexAstral',
   legal: 'UseOne Tech LLC',
   postal: '30 N Gould St, Ste R, Sheridan, WY 82801, USA',
-  privacyUrl: 'https://hexastral.com/privacy',
+  privacyUrl: 'https://yuel.hexastral.com/privacy/kindred',
 } as const
 
 function escapeHtml(s: string): string {

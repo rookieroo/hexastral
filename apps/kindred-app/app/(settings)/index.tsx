@@ -28,16 +28,18 @@ import { registerPushToken, unregisterPushToken } from '@/lib/serverPush'
 import { devReplaySplash } from '@/lib/splash-control'
 import { resetOnboarding } from '../index'
 
-// Privacy + Terms URLs — Apple App Store requires both to be reachable from
-// inside a signed-in surface. Hosted on the LLC corp site so the legal
-// document lives under our company entity, independent of the app brand.
-const LEGAL_BASE = 'https://hexastral.com'
+// Privacy + Terms URLs — Apple App Store requires both reachable from inside a
+// signed-in surface. Served on the Yuel brand subdomain: privacy is the per-app
+// `kindred` appendix (/[locale]/privacy/kindred); terms stay the shared suite
+// document (/[locale]/terms). The LLC entity is named within the document text.
+const LEGAL_BASE = 'https://yuel.hexastral.com'
 function legalUrl(path: '/privacy' | '/terms', locale: string): string {
   // Locale prefix matches hexastral-web's [locale] segment. Default falls
   // through to the English version when the user's locale isn't published.
   const known = ['en', 'zh', 'tw', 'ja']
   const seg = known.includes(locale) ? locale : 'en'
-  return `${LEGAL_BASE}/${seg}${path}`
+  const suffix = path === '/privacy' ? '/privacy/kindred' : path
+  return `${LEGAL_BASE}/${seg}${suffix}`
 }
 
 type Status = 'idle' | 'pending' | 'linked' | 'recovered' | 'already_linked' | 'error'

@@ -71,7 +71,7 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
 ) {
   const footerLine = footer ?? DAY_FOOTER[locale] ?? DAY_FOOTER.en
   const eyebrowLine = eyebrow ?? DAY_EYEBROW[locale] ?? DAY_EYEBROW.en
-  const landing = footerUrl ?? 'hexastral.com/auspice'
+  const landing = footerUrl ?? 'yuun.hexastral.com'
   return (
     <View
       ref={ref}

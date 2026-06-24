@@ -15,7 +15,7 @@ import { Share } from 'react-native'
  * Why not plain text: prose + hexastral.com ROOT has no virality (no preview,
  * wrong destination — the user flagged it). A card image + store-bound CTA does.
  */
-const WEB_BASE = 'https://hexastral.com'
+const WEB_BASE = 'https://yuun.hexastral.com'
 
 /** Localized "shared from" + soft CTA prepended to the share-page link. */
 const EN_TAGLINE = '— from Yuun, the Chinese calendar · see yours'
@@ -38,7 +38,7 @@ export function shareTaglineFor(locale = 'en'): string {
 // The landing label funnels to the app-specific page rather than the site root.
 
 /** App-specific landing the share image funnels to (shown bottom-right). */
-export const SHARE_LANDING = 'hexastral.com/auspice'
+export const SHARE_LANDING = 'yuun.hexastral.com'
 
 export interface ShareChrome {
   eyebrow: string

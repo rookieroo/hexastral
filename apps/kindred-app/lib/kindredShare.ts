@@ -7,18 +7,18 @@
  * (Android), so the brand text + a scannable QR are baked into the image. Both
  * the 合盘 and the personal 命书 cards read from here.
  *
- * NOTE: these point at `yuel.app`, the decided consumer domain. The DNS +
- * landing migration (yuun.app/yuel.app, ADR-0024) is NOT live yet, so the QR
- * won't RESOLVE until that ships — but the brand is correct and this is the one
- * line to flip. The per-bond deep link (POST /api/bonds/:id/share) is also off
- * the path until its landing is fixed; the QR carries the install funnel.
+ * NOTE: brand host is `yuel.hexastral.com` — a subdomain on the existing zone,
+ * live once the hexastral-web CF route is deployed (apex yuel.app is parked for
+ * launch, then 301s here). These are the FALLBACK + the personal-share URL; the
+ * 合盘 share bakes the per-bond /report/<shareId> link (createShareUrl) into the
+ * QR so a scan lands on the real Yuel synastry page.
  */
 
 /** Footer text under the card — the human-readable brand domain (no scheme). */
-export const KINDRED_BRAND_URL = 'yuel.app'
+export const KINDRED_BRAND_URL = 'yuel.hexastral.com'
 
 /** Full URL (with scheme) baked into the scannable QR — the image → install path. */
-export const KINDRED_INSTALL_URL = 'https://yuel.app'
+export const KINDRED_INSTALL_URL = 'https://yuel.hexastral.com'
 
 /**
  * Caption carried alongside the image on iOS (Android drops it — the baked-in

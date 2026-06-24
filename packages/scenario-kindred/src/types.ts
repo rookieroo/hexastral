@@ -349,16 +349,6 @@ export interface InvitationTeaserData {
   score?: number
 }
 
-/**
- * Public shared-chapter payload — fetched by /yuan/report/[shareId].
- */
-export interface SharedChapterData {
-  chapter: SynastryChapter
-  selfName: string
-  otherName: string
-  expiresAt: string | null
-}
-
 export interface SynastryReport {
   /** Optional metadata for app shells that also show bond id / headline */
   id?: string

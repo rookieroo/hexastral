@@ -595,7 +595,7 @@ function Sandbox({
           },
           locale
         )
-      : 'https://hexastral.com/s/timeline' // graph-only fallback (no narrated fork yet)
+      : 'https://yuun.hexastral.com/s/timeline' // graph-only fallback (no narrated fork yet)
     shareImage(`${shareTaglineFor(locale)}\n${url}`)
   }
 

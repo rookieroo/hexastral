@@ -24,8 +24,14 @@
       "id": "ada443775299408a8e0e9642f87b8ede"
     }
   ],
-  // Custom domain: hexastral.com
-  // "routes": [{ "pattern": "hexastral.com", "custom_domain": true }],
+  // Custom domains — one worker serves every brand host; the brand is resolved
+  // per request host (yuel.* = Yuel, yuun.* = Yuun). Activated on `bun deploy`.
+  // The apex yuel.app / yuun.app stay parked until launch, then point here too.
+  "routes": [
+    { "pattern": "hexastral.com", "custom_domain": true },
+    { "pattern": "yuel.hexastral.com", "custom_domain": true },
+    { "pattern": "yuun.hexastral.com", "custom_domain": true }
+  ],
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://hexastral.com",
     "NEXT_PUBLIC_API_URL": "https://api.hexastral.com",

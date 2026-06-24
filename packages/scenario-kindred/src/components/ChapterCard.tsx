@@ -281,9 +281,10 @@ export function ChapterCard({
     aElement && bElement
       ? `${elName(aElement, cjk)}${cjk ? ' · ' : ' × '}${elName(bElement, cjk)}`
       : undefined
-  // Seal ink takes the couple's 五行 relation, so the report has a colour identity
-  // and the chapter seals aren't the same stone glyph for every pair.
-  const sealInk = sealInkFor(pairRelation(aElement, bElement), C.cinnabar) ?? C.sealInk
+  // The couple's 五行 relation drives a subtle colour identity — now on the
+  // golden-line seal-dot (生 sage / 克 cinnabar / 比和 gold), leaving the essence
+  // seal a clean 碑拓 (ivory glyph on stone) to match the share card.
+  const relationInk = sealInkFor(pairRelation(aElement, bElement), C.cinnabar) ?? C.cinnabar
 
   const layers = [
     { n: 1, label: L.chart, text: chapter.evidence },
@@ -309,7 +310,7 @@ export function ChapterCard({
       {/* Header — 碑拓 essence seal + dominant title */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
         {seal && (
-          <AncientSeal glyph={seal} size={62} tile={C.sealTile} ink={sealInk} inset={0.84} />
+          <AncientSeal glyph={seal} size={62} tile={C.sealTile} ink={C.sealInk} inset={0.84} />
         )}
         <View style={{ flex: 1 }}>
           <Text
@@ -360,7 +361,7 @@ export function ChapterCard({
               width: 7,
               height: 7,
               borderRadius: 4,
-              backgroundColor: C.cinnabar,
+              backgroundColor: relationInk,
               marginTop: 11,
               marginRight: 9,
             }}

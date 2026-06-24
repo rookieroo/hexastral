@@ -1,5 +1,6 @@
 import type { ReportType } from '@zhop/hexastral-tokens/reports'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 import { HexastralPlanetLogo } from '@/components/HexastralPlanetLogo'
@@ -25,6 +26,18 @@ interface ReportContent {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
+
+/** Host-aware base so a yuel.hexastral.com / yuun.hexastral.com share unfurls with
+ *  its OWN brand host (OG image + canonical), not the shared hexastral.com. Falls
+ *  back to APP_URL when there's no host header (build / static). */
+async function requestMetadataBase(): Promise<URL> {
+  try {
+    const h = await headers()
+    const host = h.get('host')
+    if (host) return new URL(`${h.get('x-forwarded-proto') ?? 'https'}://${host}`)
+  } catch {}
+  return new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://hexastral.com')
+}
 
 /** Parse a content snapshot into a plain object (null on malformed / non-object). */
 function parseContent(contentJson: string): Record<string, unknown> | null {
@@ -88,12 +101,32 @@ const REPORT_TYPE_LABELS: Record<
 /** Max characters to show in preview before blur */
 const PREVIEW_CHAR_LIMIT = 200
 
+/** Public share row as returned by GET /api/share/:shareId — the raw D1 row, so
+ *  the discriminant is `reportType` (column `report_type`), NOT `type`. */
+interface ShareApiRow {
+  reportType: string
+  titleHint: string | null
+  contentJson: string
+  viewCount: number
+  createdAt: string
+}
+
 async function fetchShare(shareId: string): Promise<ReportContent | null> {
   try {
     const res = await fetch(`${API_URL}/api/share/${shareId}`, { next: { revalidate: 300 } })
     if (!res.ok) return null
-    const json = (await res.json()) as { data: ReportContent }
-    return json.data
+    const json = (await res.json()) as { data?: ShareApiRow }
+    const d = json.data
+    if (!d || typeof d.reportType !== 'string' || typeof d.contentJson !== 'string') return null
+    // Map the API's `reportType` onto the page's `type` discriminant — without this
+    // every share falls through to the generic/solo path (a `pair` reads as solo).
+    return {
+      type: d.reportType,
+      titleHint: d.titleHint ?? null,
+      contentJson: d.contentJson,
+      viewCount: d.viewCount ?? 0,
+      createdAt: d.createdAt,
+    }
   } catch {
     return null
   }
@@ -168,8 +201,9 @@ function extractContent(contentJson: string): {
 export async function generateMetadata({ params }: SharedReportPageProps): Promise<Metadata> {
   const { shareId } = await params
   const share = await fetchShare(shareId)
+  const metadataBase = await requestMetadataBase()
 
-  if (!share) return { title: 'HexAstral' }
+  if (!share) return { metadataBase, title: 'HexAstral' }
 
   const content = parseContent(share.contentJson)
   if (isKindredShare(share.type, content)) {
@@ -181,6 +215,7 @@ export async function generateMetadata({ params }: SharedReportPageProps): Promi
     const zh = isPair ? '合盘' : '命书'
     const title = hero ? `${hero} · ${zh} · Yuel` : `${zh} · Yuel`
     return {
+      metadataBase,
       title,
       description: isPair ? 'Yuel 合盘 · 你们的缘分解读' : 'Yuel 命书 · 你的命理解读',
       openGraph: { title, siteName: 'Yuel' },
@@ -199,6 +234,7 @@ export async function generateMetadata({ params }: SharedReportPageProps): Promi
     : `${label.zh} — powered by AI on HexAstral`
 
   return {
+    metadataBase,
     title,
     description,
     openGraph: {

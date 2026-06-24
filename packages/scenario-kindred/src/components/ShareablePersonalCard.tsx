@@ -54,7 +54,7 @@ export interface ShareablePersonalCardProps extends Omit<ViewProps, 'style'> {
   height?: number
   /** Report locale — drives the title/quote fonts (Latin vs CJK serif). */
   locale?: string
-  /** Brand URL shown at the footer (e.g. kindred.hexastral.com). */
+  /** Brand URL shown at the footer (e.g. yuel.hexastral.com). */
   brandUrl?: string
   /** Full install URL (with scheme) baked into a SCANNABLE QR. */
   installUrl?: string
@@ -68,7 +68,7 @@ export function ShareablePersonalCard({
   width = 1080,
   height = 1920,
   locale,
-  brandUrl = 'kindred.hexastral.com',
+  brandUrl = 'yuel.hexastral.com',
   installUrl,
   ...rest
 }: ShareablePersonalCardProps) {

@@ -820,12 +820,35 @@ export async function generateSynastryChapters(
     if (s.status === 'fulfilled') byKind.set(s.value.kind, s.value)
     else console.error('[svc-astro/hehun] chapter failed:', s.reason)
   }
-  // Canonical order; drop any chapter whose call failed.
+
+  // Retry any chapter whose call/parse failed (a transient LLM/JSON hiccup) before
+  // accepting a short report — without this a single failure silently ships 5/6
+  // chapters (the report footer then reads "第 N / 五"). One retry clears almost all.
+  const missing = SYNASTRY_CHAPTER_SPECS.filter((spec) => !byKind.has(spec.kind))
+  if (missing.length > 0) {
+    console.warn(
+      `[svc-astro/hehun] ${missing.length} chapter(s) missing, retrying: ${missing
+        .map((m) => m.kind)
+        .join(', ')}`
+    )
+    const retried = await Promise.allSettled(missing.map(chapterCall))
+    for (const s of retried) {
+      if (s.status === 'fulfilled') byKind.set(s.value.kind, s.value)
+      else console.error('[svc-astro/hehun] chapter retry failed:', s.reason)
+    }
+  }
+
+  // Canonical order; drop any chapter whose call still failed after the retry.
   const chapters = SYNASTRY_CHAPTER_SPECS.flatMap((spec) => {
     const ch = byKind.get(spec.kind)
     return ch ? [ch] : []
   })
   if (chapters.length === 0) throw new Error('Synastry chapters: every chapter failed')
+  if (chapters.length < SYNASTRY_CHAPTER_SPECS.length) {
+    console.error(
+      `[svc-astro/hehun] incomplete report: ${chapters.length}/${SYNASTRY_CHAPTER_SPECS.length} chapters after retry`
+    )
+  }
 
   const ahaHook = await ahaPromise
   return { ahaHook, chapters, yongshen: yong.element }

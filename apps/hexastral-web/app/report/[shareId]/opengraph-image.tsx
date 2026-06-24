@@ -176,11 +176,18 @@ export default async function Image({ params }: { params: Promise<{ shareId: str
   try {
     const res = await fetch(`${API_URL}/api/share/${shareId}`)
     if (res.ok) {
-      const json = (await res.json()) as { data: { type: string; titleHint: string | null; contentJson: string } }
-      type = json.data.type
-      titleHint = json.data.titleHint
-      content = parseContent(json.data.contentJson)
-      snippet = extractSnippet(json.data.contentJson)
+      // GET /api/share returns the raw D1 row — discriminant is `reportType`, not
+      // `type` (mapping it is what keeps a `pair` share on the pair OG, not solo).
+      const json = (await res.json()) as {
+        data?: { reportType?: string; titleHint: string | null; contentJson: string }
+      }
+      const d = json.data
+      if (d?.reportType && typeof d.contentJson === 'string') {
+        type = d.reportType
+        titleHint = d.titleHint
+        content = parseContent(d.contentJson)
+        snippet = extractSnippet(d.contentJson)
+      }
     }
   } catch {
     // fallback to defaults

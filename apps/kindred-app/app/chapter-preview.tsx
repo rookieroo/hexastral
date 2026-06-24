@@ -25,7 +25,7 @@ import {
 const A_ELEMENT = 'Metal'
 const B_ELEMENT = 'Fire'
 // A real, scannable URL so device QA can verify the share-card QR end to end.
-const PREVIEW_INSTALL_URL = 'https://kindred.hexastral.com/r/dev-preview'
+const PREVIEW_INSTALL_URL = 'https://yuel.hexastral.com/r/dev-preview'
 
 const CHAPTERS: SynastryChapter[] = [
   {

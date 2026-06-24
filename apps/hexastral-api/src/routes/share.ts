@@ -3,7 +3,6 @@
  *
  * POST   /api/share           — 创建分享快照，返回分享 URL
  * GET    /api/share/:shareId  — 查询分享内容（供 hexastral-web 渲染，公开无鉴权）
- * GET    /api/share/yuan/:shareId — Kindred-specific single-chapter share view (公开)
  * DELETE /api/share/:shareId  — 撤销分享（设 expiresAt 为过去时间）
  *
  * 注意：分享的是 AI 文字报告（命理/占卜/风水），不是结构化命盘数据。
@@ -13,11 +12,11 @@
  * `lib/api-response.ts`). Public reads (GET) return `{ ok: true, data: ... }`;
  * errors return `{ ok: false, error: { code, message } }`.
  *
- * Client coordination: hexastral-web's `/report/[shareId]/page.tsx` +
- * `/yuan/report/[shareId]/page.tsx` must access `result.data` after checking
- * `result.ok === true` (was `result.data` before — same field, but the `ok`
- * gate is new). hexastral-app + yuan-app share consumers similarly. Update
- * in the same PR.
+ * Client coordination: hexastral-web's `/report/[shareId]/page.tsx` accesses
+ * `result.data` after checking `result.ok === true`. Kindred (Yuel) 合盘 shares
+ * are created via `POST /api/bonds/:id/share` and ALSO land on `/report/[shareId]`
+ * — that page branches to the Yuel-branded landing when
+ * `reportType === 'pair'` (or `content.brand === 'yuel'`).
  */
 
 import { eq } from 'drizzle-orm'
@@ -123,65 +122,6 @@ export const shareRoutes = new Hono<AppEnv>()
     )
 
     return jsonOk(c, share)
-  })
-  /**
-   * GET /api/share/yuan/:shareId — Kindred-specific single-chapter share view.
-   *
-   * Renders the chapter as expected by [apps/hexastral-web/app/[locale]/yuan/report/[shareId]/page.tsx].
-   * Public — no auth. The shareId is a normal `sharedReports.id` but the
-   * `contentJson` is expected to follow the SynastryChapter + names shape.
-   *
-   * Validates reportType === 'pair' and that the content has `chapter` +
-   * `selfName` + `otherName` keys before returning.
-   */
-  .get('/yuan/:shareId', async (c) => {
-    const shareId = c.req.param('shareId')
-
-    if (!shareIdSchema.safeParse(shareId).success) {
-      return jsonErr(c, 404, ApiErrorCode.not_found, 'Share not found')
-    }
-
-    const db = c.get('db')
-    const share = await db.select().from(sharedReports).where(eq(sharedReports.id, shareId)).get()
-
-    if (!share) {
-      return jsonErr(c, 404, ApiErrorCode.not_found, 'Share not found')
-    }
-    if (share.reportType !== 'pair') {
-      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Not a Kindred share')
-    }
-    if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
-      return jsonErr(c, 410, ApiErrorCode.gone, 'This share link has expired')
-    }
-
-    let parsed: {
-      chapter?: unknown
-      selfName?: string
-      otherName?: string
-    } = {}
-    try {
-      parsed = JSON.parse(share.contentJson) as typeof parsed
-    } catch {
-      return jsonErr(c, 500, ApiErrorCode.internal_error, 'Malformed share content')
-    }
-
-    if (!parsed.chapter || !parsed.selfName || !parsed.otherName) {
-      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Share content missing chapter or names')
-    }
-
-    c.executionCtx.waitUntil(
-      db
-        .update(sharedReports)
-        .set({ viewCount: (share.viewCount ?? 0) + 1 })
-        .where(eq(sharedReports.id, shareId))
-    )
-
-    return jsonOk(c, {
-      chapter: parsed.chapter,
-      selfName: parsed.selfName,
-      otherName: parsed.otherName,
-      expiresAt: share.expiresAt,
-    })
   })
   /** DELETE /api/share/:shareId — revoke a shared report */
   .delete('/:shareId', async (c) => {

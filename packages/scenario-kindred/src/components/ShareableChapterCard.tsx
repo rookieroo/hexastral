@@ -56,7 +56,7 @@ export interface ShareableChapterCardProps extends Omit<ViewProps, 'style'> {
   bElement?: string
   /** 1-based chapter index for the ancient numeral; defaults to 1. */
   chapterNumber?: number
-  /** Optional brand URL shown at footer (e.g., kindred.hexastral.com) */
+  /** Optional brand URL shown at footer (e.g., yuel.hexastral.com) */
   brandUrl?: string
   /**
    * Full install/share URL (with scheme) baked into a SCANNABLE QR — the
@@ -76,7 +76,7 @@ export function ShareableChapterCard({
   aElement,
   bElement,
   chapterNumber = 1,
-  brandUrl = 'kindred.hexastral.com',
+  brandUrl = 'yuel.hexastral.com',
   installUrl,
   ...rest
 }: ShareableChapterCardProps) {

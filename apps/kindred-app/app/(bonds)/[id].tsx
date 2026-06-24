@@ -8,13 +8,13 @@
  *
  * Status 202 → "generating" UI; on 4xx/5xx → error state + retry.
  *
- * Share flow: the LivingLayerFab's share disc fires a ShareableChapterCard that
- * is PRE-WARMED off-screen (lib/imageShare captures the current chapter as a
- * 1080×1920 PNG ahead of the tap), so the OS share sheet opens with no latency.
- * The card bakes in the brand + a scannable install QR (lib/kindredShare) so the
- * image self-markets even when a social app strips the caption. (The per-bond
- * deep link via POST /api/bonds/:id/share is off the path until its web landing
- * is fixed; the QR drives the install funnel meanwhile.)
+ * Share flow: the LivingLayerFab's share disc resolves a per-bond
+ * /report/<shareId> link (POST /api/bonds/:id/share) and bakes it into a
+ * ShareableChapterCard's QR + footer, captured off-screen ON DEMAND (lib/
+ * imageShare mounts the card only while capturing → the pager stays smooth) as a
+ * 1080×1920 PNG handed to the OS share sheet. The card self-markets even when a
+ * social app strips the caption; a scan lands on the Yuel synastry landing
+ * (falls back to the brand install URL in lib/kindredShare if registration fails).
  *
  * Phase F migration: loading / generating / error states use core-ui patterns.
  * Editorial typography (kindredType) and gold-underline CTAs (kindredPresets) stay
@@ -37,6 +37,7 @@ import {
   ChapterUnlockWall,
   CompatibilityScore,
   ShareableChapterCard,
+  useShareBond,
   useSynastryReport,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -253,11 +254,13 @@ export default function BondDetailScreen({
       cancelled = true
     }
   }, [id])
-  // Share fires the off-screen ShareableChapterCard, which is mounted ONLY during
-  // capture (useImageShare) so swiping chapters stays smooth. The per-bond deep
-  // link is off the path for now (its web landing is a pending fix); the card's QR
-  // drives the install funnel via KINDRED_INSTALL_URL.
+  // Share fires the off-screen ShareableChapterCard, mounted ONLY during capture
+  // (useImageShare) so swiping chapters stays smooth. The card's QR carries the
+  // per-bond /report/<shareId> link (resolved on share via useShareBond) so a scan
+  // lands on the real Yuel synastry page; falls back to the brand install URL.
   const { shotRef, capturing, share: shareImage } = useImageShare()
+  const { createShareUrl } = useShareBond()
+  const [shareUrl, setShareUrl] = useState<{ install: string; brand: string } | null>(null)
   const { t } = useI18n()
 
   // First-report-entry primer (shown once; lib/primer-seen.ts gates it). Armed
@@ -382,9 +385,23 @@ export default function BondDetailScreen({
     })
   }
 
-  // Share the chapter in view: fire the pre-warmed card. The caption is iOS
-  // secondary (Android drops it — the baked-in brand + QR carry the funnel).
-  const handleShare = () => {
+  // Share the chapter in view. Resolve the per-bond /report/<shareId> link first
+  // (baked into the card QR → the real Yuel synastry landing), then fire the
+  // capture; fall back to the brand install URL if registration fails. The caption
+  // is iOS-secondary (Android drops it — the baked-in brand + QR carry the funnel).
+  const handleShare = async () => {
+    let install = KINDRED_INSTALL_URL
+    let brand = KINDRED_BRAND_URL
+    if (id) {
+      try {
+        const res = await createShareUrl(id)
+        install = res.url
+        brand = res.url.replace(/^https?:\/\//, '')
+      } catch (err) {
+        if (__DEV__) console.warn('[Yuel share/url]', err)
+      }
+    }
+    setShareUrl({ install, brand })
     const lead = reportLocale.startsWith('zh')
       ? '一段关系的命书 · Yuel'
       : reportLocale.startsWith('ja')
@@ -649,7 +666,7 @@ export default function BondDetailScreen({
               }}
               currentIndex={chapterIndex}
               onIndexChange={setChapterIndex}
-              onShareChapter={() => handleShare()}
+              onShareChapter={() => void handleShare()}
               trailing={unlockWall}
               aElement={aElement}
               bElement={bElement}
@@ -731,7 +748,7 @@ export default function BondDetailScreen({
                   ? 'シェア'
                   : 'Share',
             }}
-            onShare={handleShare}
+            onShare={() => void handleShare()}
             onTimeline={() =>
               router.push({
                 pathname: '/(timeline)',
@@ -776,8 +793,8 @@ export default function BondDetailScreen({
               aElement={aElement}
               bElement={bElement}
               chapterNumber={chapterIndex + 1}
-              brandUrl={KINDRED_BRAND_URL}
-              installUrl={KINDRED_INSTALL_URL}
+              brandUrl={shareUrl?.brand ?? KINDRED_BRAND_URL}
+              installUrl={shareUrl?.install ?? KINDRED_INSTALL_URL}
             />
           </View>
         ) : null}

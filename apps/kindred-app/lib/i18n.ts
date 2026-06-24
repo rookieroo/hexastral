@@ -1632,11 +1632,11 @@ export function relativeSentLabel(locale: Locale, iso: string): string {
   return `${t(locale, 'waiting.sentAtPrefix')}${relativeTimeLabel(locale, iso)}`
 }
 
-/** HexAstral web privacy page path segment for each Kindred locale */
+/** Yuel per-app privacy page (the `kindred` appendix) on the brand subdomain. */
 export function privacyPolicyUrl(locale: Locale): string {
   const segment =
     locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
-  return `https://www.hexastral.com/${segment}/privacy`
+  return `https://yuel.hexastral.com/${segment}/privacy/kindred`
 }
 
 export function useI18n() {
