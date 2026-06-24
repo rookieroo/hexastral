@@ -77,7 +77,7 @@ export function gateInterpretationChapters(
     // Halve the LAST unlocked chapter when gated: strip its back-half fields so
     // the free taste is only the opening (golden line + 命盤依據 + 關係動態).
     if (isGated && i === n - 1 && ch && typeof ch === 'object') {
-      const trimmed = { ...(ch as Record<string, unknown>), halved: true }
+      const trimmed: Record<string, unknown> = { ...(ch as Record<string, unknown>), halved: true }
       for (const f of CHAPTER_BACK_HALF_FIELDS) delete trimmed[f]
       return trimmed
     }

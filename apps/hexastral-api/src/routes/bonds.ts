@@ -1490,6 +1490,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     c.executionCtx.waitUntil(
       (async () => {
         try {
+          if (!inviterLang) return
           const a = await callAstro<{
             result: { compatibility: Record<string, unknown> }
             interpretation: Record<string, string>
