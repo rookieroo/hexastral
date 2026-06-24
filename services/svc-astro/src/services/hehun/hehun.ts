@@ -738,9 +738,11 @@ export async function generateSynastryChapters(
   opts?: { which?: readonly string[] }
 ): Promise<SynastryChaptersResult> {
   // Which chapters this call produces (canonical order preserved by filtering the
-  // canonical spec list, never the caller's array order).
-  const specs = opts?.which
-    ? SYNASTRY_CHAPTER_SPECS.filter((s) => opts.which?.includes(s.kind))
+  // canonical spec list, never the caller's array order). `which` is hoisted to a
+  // const so its narrowing survives into the filter closure.
+  const which = opts?.which
+  const specs = which
+    ? SYNASTRY_CHAPTER_SPECS.filter((s) => which.includes(s.kind))
     : SYNASTRY_CHAPTER_SPECS
   const includeAha = specs.some((s) => s.kind === 'first_impression')
   const now = new Date()

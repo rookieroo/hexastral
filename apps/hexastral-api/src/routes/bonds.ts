@@ -312,7 +312,7 @@ async function topUpRestChapters(
     skipSnippets: true,
   })
 
-  const restChapters = Array.isArray(rest?.chapters) ? rest.chapters : []
+  const restChapters = rest && Array.isArray(rest.chapters) ? rest.chapters : []
   if (restChapters.length === 0) return
 
   for (const readingId of readingIds) {
