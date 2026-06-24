@@ -41,14 +41,12 @@ export const metadata: Metadata = {
     description:
       'Generate your BaZi and ZiWei chart with AI-augmented insights, grounded in classical Chinese cosmology.',
     url: APP_URL,
-    images: [{ url: '/og-default.png', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'HexAstral — BaZi · ZiWei · AI',
     description:
       'Generate your BaZi and ZiWei chart with AI-augmented insights, grounded in classical Chinese cosmology.',
-    images: ['/og-default.png'],
   },
   robots: { index: true, follow: true },
   appleWebApp: {

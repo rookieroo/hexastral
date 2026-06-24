@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
-import { getTranslations } from 'next-intl/server'
+import { headers } from 'next/headers'
+import { getLocale, getTranslations } from 'next-intl/server'
+import { YuelHome } from '@/components/brand/YuelHome'
+import { YuunHome } from '@/components/brand/YuunHome'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { StarBackground } from '@/components/StarBackground'
 import { Link } from '@/i18n/navigation'
 
 interface PageProps {
   params: Promise<{ locale: string }>
+  searchParams?: Promise<{ brand?: string }>
 }
 
 interface FeatureItem {
@@ -21,16 +25,71 @@ interface TestimonialItem {
 
 const FEATURE_ICONS = ['⊕', '☽', '☰', '☷'] as const
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+type Brand = 'yuel' | 'yuun' | 'hexastral'
+
+/** Resolve the brand from the request host — one worker serves three homes. A
+ *  `?brand=` query override makes local preview / QA trivial (no host spoofing). */
+async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<Brand> {
+  const o = (searchParams ? await searchParams : undefined)?.brand
+  if (o === 'yuel' || o === 'yuun' || o === 'hexastral') return o
+  const host = (await headers()).get('host') ?? ''
+  if (host.startsWith('yuel.')) return 'yuel'
+  if (host.startsWith('yuun.')) return 'yuun'
+  return 'hexastral'
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { locale } = await params
+  const brand = await resolveBrand(searchParams)
+  const h = await headers()
+  const host = h.get('host') ?? 'hexastral.com'
+  const metadataBase = new URL(`${h.get('x-forwarded-proto') ?? 'https'}://${host}`)
+
+  if (brand === 'yuel') {
+    return {
+      metadataBase,
+      title: { absolute: 'Yuel — your reading, and the people you’re bound to' },
+      description:
+        'A personal 命書 grounded in BaZi (八字) and ZiWei (紫微), plus two-chart synastry for the people who matter. Educational, not predictive. From UseONE, LLC.',
+      icons: { icon: '/brand/yuel.png' },
+      openGraph: {
+        title: 'Yuel · 缘',
+        description: 'Your reading, and the people you’re bound to.',
+        siteName: 'Yuel',
+      },
+      alternates: { canonical: '/' },
+    }
+  }
+  if (brand === 'yuun') {
+    return {
+      metadataBase,
+      title: { absolute: 'Yuun — the Chinese almanac, every day' },
+      description:
+        'A daily 黄历: 宜忌, GanZhi (干支), the lunar calendar and your annual cycle, grounded in classical Chinese cosmology. Educational, not predictive. From UseONE, LLC.',
+      icons: { icon: '/brand/yuun.png' },
+      openGraph: {
+        title: 'Yuun · 运',
+        description: 'The Chinese almanac, every day.',
+        siteName: 'Yuun',
+      },
+      alternates: { canonical: '/' },
+    }
+  }
   const t = await getTranslations({ locale, namespace: 'meta' })
   return {
+    metadataBase,
     title: t('title'),
     description: t('description'),
+    alternates: { canonical: '/' },
   }
 }
 
-export default async function LandingPage() {
+export default async function LandingPage({ searchParams }: PageProps) {
+  const brand = await resolveBrand(searchParams)
+  if (brand === 'yuel' || brand === 'yuun') {
+    const locale = await getLocale()
+    return brand === 'yuel' ? <YuelHome locale={locale} /> : <YuunHome locale={locale} />
+  }
   const t = await getTranslations('landing')
   const nt = await getTranslations('nav')
   const features = t.raw('features') as FeatureItem[]
