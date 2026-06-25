@@ -130,7 +130,7 @@ export function ChapterPager({
 function ChapterSkeletonPage({ theme }: { theme: ChapterCardTheme }) {
   const bar = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
   const barStrong = theme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.10)'
-  const widths = ['82%', '94%', '70%', '90%', '88%', '64%']
+  const widths = ['82%', '94%', '70%', '90%', '88%', '64%'] as const
   return (
     <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 96, gap: 18 }}>
       {/* Title bar + centerpiece placeholder */}

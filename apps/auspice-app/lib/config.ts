@@ -3,13 +3,32 @@
  * the upsell card. No secrets here (RevenueCat keys live in app.json `extra`).
  */
 
+import type { Locale } from '@/lib/i18n'
+
 /** App Store listing — filled after App Store Connect app creation (manual). */
 export const APP_STORE_URL = 'https://apps.apple.com/app/idREPLACE_WITH_ASC_APP_ID'
 
 // Per-app privacy appendix → hexastral-web `/[locale]/privacy/[appKey]` (registered
-// in `satellite-privacy-appendices.ts`); Terms is the shared `/[locale]/terms`.
-export const PRIVACY_URL = 'https://yuun.hexastral.com/privacy/auspice'
-export const TERMS_URL = 'https://yuun.hexastral.com/terms'
+// in `satellite-privacy-appendices.ts`); Terms is the shared `/[locale]/terms`. Both
+// are locale-segmented (en|zh|tw|ja) so a non-English store listing or in-app link lands
+// on a page in the reader's language — the web app's `localePrefix: 'as-needed'` would
+// otherwise resolve a bare path to English. Mirrors Yuel's `privacyPolicyUrl` (lib/i18n.ts).
+const LEGAL_BASE = 'https://yuun.hexastral.com'
+
+/** App Locale → hexastral-web `[locale]` URL segment. */
+function legalSegment(locale: Locale): string {
+  return locale === 'zh-Hant' ? 'tw' : locale === 'zh-Hans' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
+}
+
+/** Yuun per-app privacy appendix (the `auspice` appendix) on the brand subdomain. */
+export function privacyUrl(locale: Locale): string {
+  return `${LEGAL_BASE}/${legalSegment(locale)}/privacy/auspice`
+}
+
+/** Shared suite Terms document on the brand subdomain. */
+export function termsUrl(locale: Locale): string {
+  return `${LEGAL_BASE}/${legalSegment(locale)}/terms`
+}
 
 /**
  * Flagship funnel deep links (ADR-0010 §4): wedding date-picking → Kindred;

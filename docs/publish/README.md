@@ -62,13 +62,18 @@ For **each** app (Yuel, then Yuun):
 - [ ] **Privacy Policy URL** and **Terms URL** (the binding ASC fields — must resolve):
   - Yuel privacy: `https://yuel.hexastral.com/<seg>/privacy/kindred` · terms: `https://yuel.hexastral.com/<seg>/terms`
     (`<seg>` = `en` | `zh` | `tw` | `ja`)
-  - Yuun privacy: `https://yuun.hexastral.com/privacy/auspice` · terms: `https://yuun.hexastral.com/terms`
-    — **VERIFY THIS RESOLVES**: the web route is `/[locale]/privacy/[appKey]`, and
-    Yuun's in-app URL (`apps/auspice-app/lib/config.ts`) omits the locale segment.
-    Confirm `yuun.hexastral.com/privacy/auspice` redirects to a localized page, or
-    switch it to the locale-segmented form like Yuel. (Yuel's aso-metadata is already
-    aligned; Yuun's aso-metadata still cites the wrong `hexastral.com/privacy` — fix
-    it to match whatever the verified live URL is.)
+  - Yuun privacy: `https://yuun.hexastral.com/<seg>/privacy/auspice` · terms: `https://yuun.hexastral.com/<seg>/terms`
+    (`<seg>` = `en` | `zh` | `tw` | `ja`) — **RESOLVED 2026-06-25**: Yuun was switched to the
+    locale-segmented form so it matches Yuel. `apps/auspice-app/lib/config.ts` now exports
+    `privacyUrl(locale)` / `termsUrl(locale)` (were static locale-blind constants), the
+    settings screen (`app/(tabs)/me.tsx`) passes the active locale, and the 4
+    `aso-metadata.json` descriptions were corrected from the bare `hexastral.com/privacy`
+    to `yuun.hexastral.com/<seg>/{privacy/auspice,terms}`. The web route
+    `app/[locale]/privacy/[appKey]` exists with `localePrefix: 'as-needed'` (defaultLocale
+    `en`) and `appKey=auspice` is registered, so each segmented URL maps to a real page.
+    **Still human:** the web routes are code-only until `hexastral-web` is deployed (§5) —
+    confirm the URLs return 200 live after that deploy, then paste them into the ASC
+    Privacy/Terms fields per App Store locale.
 - [ ] Privacy "nutrition" labels:
   - Both apps: **No tracking** (`NSPrivacyTracking: false`), no ATT.
   - Data collected: Apple email (sign-in only), Purchases. Yuel also: user-typed
@@ -82,9 +87,11 @@ For **each** app (Yuel, then Yuun):
 Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md).
 **MVP scope (decided 2026-06): ship per-app Pro only.** See §7.
 
-> ⚠️ The setup doc's §1/§2 are **stale**: they list `feng_pro` / `hexastral_pro`,
-> but the live catalog (`products.ts`) uses `auspice_pro` / `fate_pro`. Trust
-> `products.ts`, not the doc's entitlement list.
+> ✅ **RECONCILED 2026-06-25:** the setup doc previously listed defunct `feng_pro` /
+> `hexastral_pro` entitlements and standalone `feng_pro_*` / `hexastral_pro_*` products
+> (none of which exist in the live catalog). It has been rewritten to match `products.ts` —
+> per-app `kindred_pro` (Yuel) + `auspice_pro` (Yuun); `fate_pro` universe-only;
+> `universe_pro` deferred to Phase 2 (§7). `products.ts` is still the source of truth.
 
 ### 3.1 Entitlements (create these)
 - [ ] `kindred_pro` (Yuel) — display name "Yuel Pro"
@@ -188,8 +195,13 @@ For `apps/kindred-app/eas.json` **and** `apps/auspice-app/eas.json`:
       [docs/screenshot-direction.md](../screenshot-direction.md) (two-chart compare /
       invite / AI chat for Yuel; almanac / timeline for Yuun — avoid zodiac/fortune visuals)
 - [ ] Reviewer notes + a demo account (template in [launch-checklist.md](../launch-checklist.md))
-- [ ] `bun typecheck && bun lint && bun test` clean
-- [ ] Re-run the aso-metadata char-count check if any listing field was edited
+- [~] `bun typecheck && bun lint && bun test` (2026-06-25): **typecheck clean** (36/36;
+      fixed a pre-existing type error in `packages/scenario-kindred/src/components/ChapterPager.tsx`
+      — the `widths` array needed `as const` for RN's `DimensionValue`), **test clean**
+      (993 pass / 0 fail). **lint is NOT clean** — pre-existing format drift, see §9.
+- [x] aso-metadata char-count — script added at `scripts/aso-charcount.mjs`; run
+      `node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-app/aso-metadata.json`.
+      Both apps verified within limits 2026-06-25 (Yuun en-US description 2228/4000 after the URL edit).
 - [ ] Build + submit:
       ```bash
       cd apps/kindred-app   # then apps/auspice-app
@@ -204,11 +216,21 @@ build publisher credibility, then Yuel.
 
 ## 9. Known issues to resolve before/at submission
 
-- [ ] **Yuun privacy/terms URL** — verify `yuun.hexastral.com/privacy/auspice`
-      resolves (no locale segment), then align `apps/auspice-app/aso-metadata.json`
-      (still cites `hexastral.com/privacy`). Yuel is already aligned.
-- [ ] **revenuecat-entitlements.md is stale** (`feng_pro`/`hexastral_pro` vs the
-      live `auspice_pro`/`fate_pro`) — update or just follow `products.ts`.
+- [x] **Yuun privacy/terms URL** — RESOLVED 2026-06-25 (see §2). Switched Yuun to the
+      locale-segmented form like Yuel: `lib/config.ts` now exports `privacyUrl(locale)` /
+      `termsUrl(locale)`, `me.tsx` passes the locale, and the 4 `aso-metadata.json`
+      descriptions were corrected to `yuun.hexastral.com/<seg>/...`. Live 200-check still
+      pending the `hexastral-web` deploy (§5).
+- [x] **revenuecat-entitlements.md was stale** — RESOLVED 2026-06-25: rewritten to match
+      `products.ts` (`kindred_pro`/`auspice_pro`; `fate_pro` universe-only; `universe_pro`
+      Phase 2). See §3.
+- [ ] **`bun lint` is red on `main` (pre-existing format drift)** — found 2026-06-25:
+      ~21 Biome errors across 7 workspaces (astro-core, auspice-app, hexastral-api,
+      hexastral-web, kindred-app, scenario-kindred, scenario-yuan), almost all `format`
+      category + one `organizeImports`. **Not introduced by the URL/doc work** — those
+      files pass Biome. Fix is mechanical and safe: `bun lint:fix` (≈400 lines across ~22
+      files); kept out of this pass so it doesn't muddy the launch diff. Run it as a
+      dedicated formatting commit, confirm `bun lint` green, then re-run `bun typecheck && bun test`.
 - [ ] **CJK font** (`NotoSerifSC`) not bundled in Yuel (offline blocker) — ships on
       system serif; revisit post-launch for polish.
 - [x] **Yuun orphan one-time-purchase scaffolding** — `apps/auspice-app/lib/synastry-iap.ts`

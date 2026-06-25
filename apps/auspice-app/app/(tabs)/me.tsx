@@ -52,7 +52,7 @@ import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
-import { PRIVACY_URL, TERMS_URL } from '@/lib/config'
+import { privacyUrl, termsUrl } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -964,7 +964,7 @@ export default function MeScreen() {
         {/* ── Privacy / Terms (row-style) ── */}
         <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
           <Pressable
-            onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+            onPress={() => Linking.openURL(privacyUrl(locale)).catch(() => {})}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -980,7 +980,7 @@ export default function MeScreen() {
             <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
           </Pressable>
           <Pressable
-            onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+            onPress={() => Linking.openURL(termsUrl(locale)).catch(() => {})}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
