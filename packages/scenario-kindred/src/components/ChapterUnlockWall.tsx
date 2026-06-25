@@ -4,10 +4,14 @@
  * Shown after the free chapters when `lockedChapters` is non-empty. It leads
  * with the `ahaHook` (the single most striking, chart-specific assertion about
  * the pair) to create the curiosity gap, previews the locked chapters' golden
- * lines as teasers, and offers the three unlock paths in conversion order:
+ * lines as teasers, and offers the unlock paths in this order:
  *
- *   1. Invite the other person   — free + viral (drives the invite-unlock loop)
- *   2. One-time unlock           — single purchase of this one report
+ *   1. One-time unlock — single purchase of this one report (PRIMARY)
+ *   2. Share with a friend — the optional social path (secondary)
+ *
+ * The single purchase (IAP) is the primary, always-available unlock so the wall
+ * never gates content behind a store action (App Store Review 3.2.2(x)) — the
+ * share path is a soft, secondary alternative, never the only way through.
  *
  * A subscription does NOT unlock a 合盘 (Yuel Pro is the 体验层), so the subscribe
  * path is optional — only rendered when both `onSubscribe` + `subscribeCta` are
@@ -69,11 +73,11 @@ function wallPalette(theme: UnlockWallTheme) {
 export interface ChapterUnlockWallLabels {
   /** e.g. "还有 3 章未解锁" — app formats the count in. */
   heading: string
-  /** Primary CTA — invite the other person (free). */
+  /** Secondary CTA — share with a friend (the soft, optional social path). */
   inviteCta: string
-  /** One-line nudge under the invite CTA, e.g. "对方加入后即解锁全部". */
+  /** One-line nudge under the share CTA, e.g. "对方加入后这一篇也会为你打开". */
   inviteHint?: string
-  /** Secondary CTA — one-time unlock; app formats the price in. */
+  /** Primary CTA — one-time unlock; app formats the price in. */
   purchaseCta: string
   /** Tertiary CTA — subscribe (optional; a subscription does NOT unlock a 合盘). */
   subscribeCta?: string
@@ -166,9 +170,10 @@ export function ChapterUnlockWall({
         ))}
       </View>
 
-      {/* CTA 1 — invite (primary, free + viral). */}
+      {/* CTA 1 — one-time unlock (PRIMARY, filled). The IAP path is the headline
+          unlock so content is never gated behind a store action (3.2.2(x)). */}
       <Pressable
-        onPress={onInvite}
+        onPress={onPurchase}
         accessibilityRole='button'
         style={({ pressed }) => ({
           backgroundColor: cinnabar.seal,
@@ -179,6 +184,26 @@ export function ChapterUnlockWall({
         })}
       >
         <Text style={[kindredType.body, { color: ink.gold, fontWeight: '600' }]}>
+          {labels.purchaseCta}
+        </Text>
+      </Pressable>
+
+      {/* CTA 2 — share with a friend (secondary outline). A soft, optional social
+          alternative — never the only way through the wall. */}
+      <Pressable
+        onPress={onInvite}
+        accessibilityRole='button'
+        style={({ pressed }) => ({
+          marginTop: kindredSpacing.lg,
+          borderWidth: 1,
+          borderColor: cinnabar.seal,
+          borderRadius: 10,
+          paddingVertical: kindredSpacing.md,
+          alignItems: 'center',
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <Text style={[kindredType.body, { color: C.sealText, fontWeight: '500' }]}>
           {labels.inviteCta}
         </Text>
       </Pressable>
@@ -196,25 +221,6 @@ export function ChapterUnlockWall({
           {labels.inviteHint}
         </Text>
       ) : null}
-
-      {/* CTA 2 — one-time unlock (secondary outline). */}
-      <Pressable
-        onPress={onPurchase}
-        accessibilityRole='button'
-        style={({ pressed }) => ({
-          marginTop: kindredSpacing.lg,
-          borderWidth: 1,
-          borderColor: cinnabar.seal,
-          borderRadius: 10,
-          paddingVertical: kindredSpacing.md,
-          alignItems: 'center',
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Text style={[kindredType.body, { color: C.sealText, fontWeight: '500' }]}>
-          {labels.purchaseCta}
-        </Text>
-      </Pressable>
 
       {/* CTA 3 — subscribe (tertiary text link, positioned last). Only when a
           subscription path is wired; a 合盘 unlock is single-purchase only. */}
