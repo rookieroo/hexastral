@@ -28,6 +28,7 @@ export function PersonalCard({
   locked = false,
   onUnlock,
   onDeepRead,
+  hideSummaryLine = false,
 }: {
   data: AuspicePersonalization
   /** 用神 → 吉色/吉方/吉时 — the actionable personal daily increment. Shown for
@@ -40,6 +41,11 @@ export function PersonalCard({
   /** Pro tier: open the LLM deep reading of the day's 对你而言 (the per-reason
    *  text alone was a dead end — paid users had nowhere deeper to go). */
   onDeepRead?: () => void
+  /** Fold the free one-line takeaway (`summary[fit]`) when another surface on the
+   *  same screen already states today's read — specifically the en daily-hook hero
+   *  above 宜忌, whose lens line says the same thing. The verdict WORD + 吉色/吉方/吉时
+   *  stay (additive, not duplicated). Default false (CJK home has no hook hero). */
+  hideSummaryLine?: boolean
 }) {
   const { colors, spacing } = useTheme()
   const { t } = useStrings()
@@ -81,10 +87,14 @@ export function PersonalCard({
         </Text>
       </View>
 
-      {/* Free natural takeaway — a sentence, not an upsell. */}
-      <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
-        {t.personal.summary[data.fit]}
-      </Text>
+      {/* Free natural takeaway — a sentence, not an upsell. Folded when the daily
+          hook hero already carries the day's one-line read (en home), so the screen
+          doesn't say the same thing twice. */}
+      {hideSummaryLine ? null : (
+        <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
+          {t.personal.summary[data.fit]}
+        </Text>
+      )}
 
       {/* 用神 → 吉色/吉方/吉时 — the actionable daily glance, keyed off the user's
           用神 (not the universal day-pillar color). Shown free; it's the daily

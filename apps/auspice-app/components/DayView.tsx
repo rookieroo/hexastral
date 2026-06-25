@@ -143,6 +143,12 @@ export function DayView({
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
+  // The en home leads with the daily-hook hero (its lens line states today's read).
+  // When it's shown, fold PersonalCard's duplicate one-line summary so the screen
+  // doesn't say the same thing twice; the verdict word + 吉色/吉方/吉时 still carry the
+  // card. CJK home has no hook hero, so the summary stays there.
+  const hookShown = locale === 'en' && payload.dailyHook != null
+
   // 用神 → 吉色/吉方/吉时 — loaded once from local birth info (the /day payload
   // never carries it; these increments are app-only). 用神 is per-user, so it
   // outlives a single day; the 吉时 then derives from THIS day's hour pillars.
@@ -165,7 +171,7 @@ export function DayView({
     <View style={{ gap: spacing.xl }}>
       {/* Daily hook (en slice) — the line the push leads with, echoed here so opening
           the notification lands on the same sentence. CJK locales keep 干支日 + 宜忌. */}
-      {locale === 'en' && payload.dailyHook ? <DailyHookHero hook={payload.dailyHook} /> : null}
+      {hookShown && payload.dailyHook ? <DailyHookHero hook={payload.dailyHook} /> : null}
 
       {/* 六曜 (JP only) —旧暦-derived calendar annotation Japanese users expect on
           any カレンダー. Sits above 宜忌 to group the day-quality read together. */}
@@ -224,6 +230,9 @@ export function DayView({
           data={payload.personalization}
           lucky={lucky}
           locked={!isPro}
+          // En home already states today's read in the hook hero above 宜忌 — fold the
+          // duplicate one-line verdict summary here (keep the verdict word + 色/方/时).
+          hideSummaryLine={hookShown}
           onUnlock={() => setPaywallOpen(true)}
           // Pro: open the deep LLM reading of today's 对你而言 (ExplainSheet carries
           // dayMaster, so it's personalized). The verdict is the explain subject.
