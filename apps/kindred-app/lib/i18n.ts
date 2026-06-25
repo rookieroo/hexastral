@@ -424,7 +424,8 @@ export const translations: Translations = {
     'paywall.bullet.deep': 'AI follow-up + a fresh monthly forecast',
     'unlock.heading': '{n} more chapters locked',
     'unlock.invite': 'Share Yuel with a friend',
-    'unlock.inviteHint': 'If a friend you share with starts their own reading, this chapter opens for you too',
+    'unlock.inviteHint':
+      'If a friend you share with starts their own reading, this chapter opens for you too',
     'unlock.purchase': 'Unlock this report · {price}',
     'unlock.subscribe': 'Subscribe — unlock every bond',
     'unlock.processing': 'Processing…',

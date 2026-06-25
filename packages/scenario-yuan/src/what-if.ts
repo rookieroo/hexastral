@@ -92,8 +92,11 @@ export function composeWhatIf(input: WhatIfInput): WhatIfResult {
   for (let i = 0; i < months; i++) {
     // Mid-month date keeps the 流月 off the 节气 boundary for a stable pillar.
     const d = new Date(start.getFullYear(), start.getMonth() + i, 15)
-    const gz = getFourPillars({ year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() })
-      .month
+    const gz = getFourPillars({
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+    }).month
     const monthEl = STEM_WUXING[gz.stem]
     const favor = favorOf(monthEl, chart)
     windows.push({

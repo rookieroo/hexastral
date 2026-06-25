@@ -39,10 +39,10 @@ function withIosPodDeploymentTarget(config) {
       let contents = fs.readFileSync(podfilePath, 'utf8')
       if (isAlreadyPatched(contents)) return cfg
 
-      const postInstallClose = /react_native_post_install\([\s\S]*?\n    \)\n/
+      const postInstallClose = /react_native_post_install\([\s\S]*?\n {4}\)\n/
       if (!postInstallClose.test(contents)) {
         throw new Error(
-          `withIosPodDeploymentTarget: could not find react_native_post_install block in ${podfilePath}`,
+          `withIosPodDeploymentTarget: could not find react_native_post_install block in ${podfilePath}`
         )
       }
       contents = contents.replace(postInstallClose, (match) => `${match}${PODFILE_SNIPPET}\n`)

@@ -80,7 +80,11 @@ const RELATION_LINE: Record<Relation, Record<Lang, string>> = {
 }
 
 /** 流月五行 vs 喜忌 → the month's headline tone. */
-function favorability(monthEl: WuXing, chart: FateNatalChart, lang: Lang): 'good' | 'guard' | 'mixed' {
+function favorability(
+  monthEl: WuXing,
+  chart: FateNatalChart,
+  lang: Lang
+): 'good' | 'guard' | 'mixed' {
   if (monthEl === chart.geju.favorableElement) return 'good'
   if (monthEl === chart.geju.unfavorableElement) return 'guard'
   return 'mixed'
@@ -110,7 +114,9 @@ const NOTE: Record<'good' | 'guard' | 'mixed', Record<Lang, string>> = {
 function monthLabel(d: Date, lang: Lang): string {
   const y = d.getFullYear()
   const m = d.getMonth() + 1
-  return lang === 'zh' ? `${y}年${m}月` : new Date(y, m - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
+  return lang === 'zh'
+    ? `${y}年${m}月`
+    : new Date(y, m - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
 }
 
 export function composeMonthlyFortune(input: MonthlyFortuneInput): MonthlyFortune {
@@ -118,7 +124,11 @@ export function composeMonthlyFortune(input: MonthlyFortuneInput): MonthlyFortun
   const d = input.date ?? new Date()
   const lang = langOf(locale)
 
-  const pillars = getFourPillars({ year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() })
+  const pillars = getFourPillars({
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+  })
   const monthGz = pillars.month
   const monthEl = STEM_WUXING[monthGz.stem]
   const dayEl = chart.dayMasterWuXing as WuXing

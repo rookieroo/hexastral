@@ -20,7 +20,15 @@
  * nobody is looking at.
  */
 
-import { Canvas, Circle, Group, Line, LinearGradient, RadialGradient, vec } from '@shopify/react-native-skia'
+import {
+  Canvas,
+  Circle,
+  Group,
+  Line,
+  LinearGradient,
+  RadialGradient,
+  vec,
+} from '@shopify/react-native-skia'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'

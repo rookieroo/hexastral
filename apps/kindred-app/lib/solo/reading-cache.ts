@@ -28,7 +28,12 @@ const cache = createReadingCache({
   requestIdTag: 'kindred',
 })
 
-export const { getCachedChapter, setCachedChapter, fetchChapter, rerollChapter, fetchChapterHistory } =
-  cache
+export const {
+  getCachedChapter,
+  setCachedChapter,
+  fetchChapter,
+  rerollChapter,
+  fetchChapterHistory,
+} = cache
 export type { CachedChapter, ChapterVersion, ReadingBirthInputs, RerollResult }
 export { computeChartHash }

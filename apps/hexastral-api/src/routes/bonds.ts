@@ -276,10 +276,7 @@ const REST_SYNASTRY_CHAPTERS = [
   'monthly_outlook',
   'long_term_advice',
 ] as const
-const SYNASTRY_CANON_KINDS: readonly string[] = [
-  FIRST_SYNASTRY_CHAPTER,
-  ...REST_SYNASTRY_CHAPTERS,
-]
+const SYNASTRY_CANON_KINDS: readonly string[] = [FIRST_SYNASTRY_CHAPTER, ...REST_SYNASTRY_CHAPTERS]
 
 type ChapterLike = { kind?: unknown }
 
@@ -1468,7 +1465,9 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // produces all six chapters, so the background top-up must NOT also touch A's row
   // (it would race + mix locales). When locales match, the relocalize is skipped and
   // A's row needs the same top-up as B's.
-  const inviterRelocalizing = Boolean(inviterLang && inviterLang !== input.language && input.birthData)
+  const inviterRelocalizing = Boolean(
+    inviterLang && inviterLang !== input.language && input.birthData
+  )
 
   // Background: fill in the remaining five chapters. Always for B (the responder,
   // who is watching the loader right now); for A only when not being relocalized.
@@ -1476,9 +1475,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     topUpRestChapters(
       c.env,
       db,
-      inviterRelocalizing
-        ? [readingIdForResponder]
-        : [readingIdForResponder, readingIdForInviter],
+      inviterRelocalizing ? [readingIdForResponder] : [readingIdForResponder, readingIdForInviter],
       acceptHehunPayload
     ).catch((err) => {
       console.error('[bonds] accept background chapter top-up failed:', err)

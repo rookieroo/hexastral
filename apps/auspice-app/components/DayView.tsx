@@ -92,7 +92,13 @@ function DailyHookHero({ hook }: { hook: { title: string; lens: string } }) {
   return (
     <View style={{ gap: 8 }}>
       <Text
-        style={{ color: colors.text, fontSize: 23, fontWeight: '700', lineHeight: 30, letterSpacing: -0.3 }}
+        style={{
+          color: colors.text,
+          fontSize: 23,
+          fontWeight: '700',
+          lineHeight: 30,
+          letterSpacing: -0.3,
+        }}
       >
         {hook.title}
       </Text>

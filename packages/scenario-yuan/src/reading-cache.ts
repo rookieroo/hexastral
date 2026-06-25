@@ -326,7 +326,11 @@ export function createReadingCache(cfg: ReadingCacheConfig): ReadingCache {
       const res = await signedApiFetch(userId, 'GET', `/api/report/chapter/${slug}/history`)
       if (!res?.ok) return []
       const json = (await res.json()) as {
-        items?: Array<{ contentJson?: unknown; perspectiveSeed?: string | null; generatedAt?: string }>
+        items?: Array<{
+          contentJson?: unknown
+          perspectiveSeed?: string | null
+          generatedAt?: string
+        }>
       }
       const items = json.items ?? []
       return items

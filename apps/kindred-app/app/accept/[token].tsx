@@ -52,13 +52,13 @@ import { privacyPolicyUrl, type TranslationKey, useI18n } from '@/lib/i18n'
 import { isPaywall } from '@/lib/inviteSubmit'
 import { updateDraft, useDraft } from '@/lib/onboardingDraft'
 import { setPendingOpenBond } from '@/lib/pending-open'
-import { suppressNextSplash } from '@/lib/splash-control'
 import {
   loadSelfBirth,
   type SelfBirth,
   saveSelfBirth,
   syncSelfBirthToServer,
 } from '@/lib/selfBirth'
+import { suppressNextSplash } from '@/lib/splash-control'
 import { markOnboardingComplete } from '../index'
 
 const RELATIONSHIP_I18N: Record<RelationshipType, TranslationKey> = {

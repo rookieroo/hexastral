@@ -31,13 +31,7 @@ export const SYNASTRY_TOTAL_CHAPTERS = 6
  * (remedy) layers and their adornments. Stripped from the lone free chapter so a
  * free viewer sees only its opening half (the hook), never the payoff.
  */
-const CHAPTER_BACK_HALF_FIELDS = [
-  'reef',
-  'remedy',
-  'counterpoint',
-  'yongshen',
-  'severity',
-] as const
+const CHAPTER_BACK_HALF_FIELDS = ['reef', 'remedy', 'counterpoint', 'yongshen', 'severity'] as const
 
 interface ChapterLike {
   kind?: unknown

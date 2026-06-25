@@ -254,8 +254,14 @@ export default function ReadingHomeScreen() {
 
   // Threads — the bond list lives inline on the home. Refetched on focus so a
   // bond created/accepted elsewhere shows up on return; focus also gates the sky.
-  const { bonds, isLoading: bondsLoading, isRefreshing, refetch, deleteBond, recompute } =
-    useBondList()
+  const {
+    bonds,
+    isLoading: bondsLoading,
+    isRefreshing,
+    refetch,
+    deleteBond,
+    recompute,
+  } = useBondList()
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
@@ -561,7 +567,11 @@ export default function ReadingHomeScreen() {
           </Text>
         </Pressable>
         <View
-          style={{ width: StyleSheet.hairlineWidth, height: 11, backgroundColor: kindredDark.border }}
+          style={{
+            width: StyleSheet.hairlineWidth,
+            height: 11,
+            backgroundColor: kindredDark.border,
+          }}
         />
         <Pressable
           onPress={openMonth}

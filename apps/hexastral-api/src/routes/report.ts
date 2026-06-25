@@ -34,8 +34,8 @@ import {
   type ChapterSlug,
   computeContextHash,
   loadChartContext,
-  sha256Hex,
   STATIC_CHAPTERS,
+  sha256Hex,
 } from '../lib/chart-context'
 import { buildChartSkeleton } from '../lib/chart-skeleton'
 import { CHAPTER_MODEL_REGISTRY, MONTHLY_DEPTH_MODEL } from '../lib/model-registry'
@@ -53,9 +53,7 @@ const MONTHLY_DEPTH_CHAPTER = 'monthly_depth'
 
 const monthlyDepthRequestSchema = z.object({
   /** YYYY-MM — the month this depth is for (drives the per-month cache key). */
-  monthKey: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/, 'monthKey must be YYYY-MM'),
+  monthKey: z.string().regex(/^\d{4}-\d{2}$/, 'monthKey must be YYYY-MM'),
   monthLabel: z.string().min(1).max(40),
   ganZhi: z.string().min(1).max(8),
   element: z.string().min(1).max(8),
@@ -262,99 +260,100 @@ export async function generateChapter(ctx: {
 // Manifest
 // ============================================================================
 
-export const reportManifestRoutes = new Hono<AppEnv>().get('/', async (c) => {
-  const userId = requireUserId(c)
-  const db = c.get('db')
+export const reportManifestRoutes = new Hono<AppEnv>()
+  .get('/', async (c) => {
+    const userId = requireUserId(c)
+    const db = c.get('db')
 
-  // The deep 命书 is a Yuel/kindred surface, so accessibility flags gate on
-  // `kindred` (universe_pro auto-satisfies). A fate-only user sees them locked —
-  // the report unlocks in Yuel.
-  const isPro = await userHasCapability(db, userId, 'kindred')
-  const unlockedCount = await getUnlockedCount(db, userId)
-  // Surface email-bound state + birth-edit quota so the client can pick
-  // "bind email first" vs "send invite" in the unlock UI, and gate the Me-tab
-  // edit affordance, without separate round-trips.
-  const userMetaRow = await db
-    .select({ email: users.email, birthEditUsed: users.birthEditUsed })
-    .from(users)
-    .where(eq(users.id, userId))
-    .get()
-  const hasEmail = !!userMetaRow?.email
-  const birthEditUsed = !!userMetaRow?.birthEditUsed
+    // The deep 命书 is a Yuel/kindred surface, so accessibility flags gate on
+    // `kindred` (universe_pro auto-satisfies). A fate-only user sees them locked —
+    // the report unlocks in Yuel.
+    const isPro = await userHasCapability(db, userId, 'kindred')
+    const unlockedCount = await getUnlockedCount(db, userId)
+    // Surface email-bound state + birth-edit quota so the client can pick
+    // "bind email first" vs "send invite" in the unlock UI, and gate the Me-tab
+    // edit affordance, without separate round-trips.
+    const userMetaRow = await db
+      .select({ email: users.email, birthEditUsed: users.birthEditUsed })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get()
+    const hasEmail = !!userMetaRow?.email
+    const birthEditUsed = !!userMetaRow?.birthEditUsed
 
-  const currentRows = await db.query.reportChapters.findMany({
-    where: and(eq(reportChapters.userId, userId), eq(reportChapters.isCurrent, true)),
-  })
-  const versionsByChapter = new Map<ChapterSlug, number>()
-  const allRows = await db
-    .select({ chapter: reportChapters.chapter })
-    .from(reportChapters)
-    .where(eq(reportChapters.userId, userId))
-  for (const r of allRows) {
-    const k = r.chapter as ChapterSlug
-    versionsByChapter.set(k, (versionsByChapter.get(k) ?? 0) + 1)
-  }
-
-  const chapters = CHAPTER_SLUGS.map((slug) => {
-    const cur = currentRows.find((r) => r.chapter === slug)
-    const generatedAt = cur?.generatedAt ?? null
-    /** UTC minute bucket — client may collapse chapters generated in the same batch window. */
-    const generationBatchId =
-      generatedAt && generatedAt.length >= 16 ? generatedAt.slice(0, 16) : null
-    const position = chapterUnlockPosition(slug)
-    const accessible = isPro || isChapterUnlocked(slug, unlockedCount)
-    return {
-      slug,
-      isStatic: STATIC_CHAPTERS.has(slug),
-      /** 1-based position in the unlock order; null for Pro-only chapters. */
-      unlockPosition: position,
-      accessible,
-      hasCurrent: !!cur,
-      generatedAt,
-      generationBatchId,
-      model: cur?.model ?? CHAPTER_MODEL_REGISTRY[slug].model,
-      promptVersion: cur?.promptVersion ?? CHAPTER_MODEL_REGISTRY[slug].promptVersion,
-      versions: versionsByChapter.get(slug) ?? 0,
+    const currentRows = await db.query.reportChapters.findMany({
+      where: and(eq(reportChapters.userId, userId), eq(reportChapters.isCurrent, true)),
+    })
+    const versionsByChapter = new Map<ChapterSlug, number>()
+    const allRows = await db
+      .select({ chapter: reportChapters.chapter })
+      .from(reportChapters)
+      .where(eq(reportChapters.userId, userId))
+    for (const r of allRows) {
+      const k = r.chapter as ChapterSlug
+      versionsByChapter.set(k, (versionsByChapter.get(k) ?? 0) + 1)
     }
-  })
 
-  // Best-effort background warm: any accessible chapter still missing gets
-  // retried whenever the user opens the TOC. This covers free chapters that
-  // failed during onboarding AND Pro chapters (ch4-6) that are never
-  // pre-generated. Failures are logged but do not block the manifest response.
-  const missing = chapters.filter((ch) => ch.accessible && !ch.hasCurrent)
-  if (missing.length > 0) {
-    c.executionCtx.waitUntil(
-      Promise.allSettled(missing.map((ch) => generateChapter({ c, userId, slug: ch.slug }))).then(
-        (results) => {
-          for (const r of results) {
-            if (r.status === 'rejected') {
-              console.error('[report-manifest] background warm failed', r.reason)
+    const chapters = CHAPTER_SLUGS.map((slug) => {
+      const cur = currentRows.find((r) => r.chapter === slug)
+      const generatedAt = cur?.generatedAt ?? null
+      /** UTC minute bucket — client may collapse chapters generated in the same batch window. */
+      const generationBatchId =
+        generatedAt && generatedAt.length >= 16 ? generatedAt.slice(0, 16) : null
+      const position = chapterUnlockPosition(slug)
+      const accessible = isPro || isChapterUnlocked(slug, unlockedCount)
+      return {
+        slug,
+        isStatic: STATIC_CHAPTERS.has(slug),
+        /** 1-based position in the unlock order; null for Pro-only chapters. */
+        unlockPosition: position,
+        accessible,
+        hasCurrent: !!cur,
+        generatedAt,
+        generationBatchId,
+        model: cur?.model ?? CHAPTER_MODEL_REGISTRY[slug].model,
+        promptVersion: cur?.promptVersion ?? CHAPTER_MODEL_REGISTRY[slug].promptVersion,
+        versions: versionsByChapter.get(slug) ?? 0,
+      }
+    })
+
+    // Best-effort background warm: any accessible chapter still missing gets
+    // retried whenever the user opens the TOC. This covers free chapters that
+    // failed during onboarding AND Pro chapters (ch4-6) that are never
+    // pre-generated. Failures are logged but do not block the manifest response.
+    const missing = chapters.filter((ch) => ch.accessible && !ch.hasCurrent)
+    if (missing.length > 0) {
+      c.executionCtx.waitUntil(
+        Promise.allSettled(missing.map((ch) => generateChapter({ c, userId, slug: ch.slug }))).then(
+          (results) => {
+            for (const r of results) {
+              if (r.status === 'rejected') {
+                console.error('[report-manifest] background warm failed', r.reason)
+              }
             }
           }
-        }
+        )
       )
-    )
-  }
+    }
 
-  return c.json({
-    isPro,
-    /**
-     * Invite-driven unlock state. The client renders progressive affordance
-     * ("X / Y chapters unlocked — invite a friend for the next one") without
-     * having to iterate `chapters[]`. Pro users see `unlockedChapterCount`
-     * already equal to `chapterUnlockCap` because `accessible` bypasses the
-     * cap, but the count itself reflects raw invite-redeem progress.
-     */
-    unlockedChapterCount: unlockedCount,
-    chapterUnlockCap: CHAPTER_UNLOCK_CAP,
-    /** True iff `users.email` is set — drives the "bind email first" UX gate. */
-    hasEmail,
-    /** True once the lifetime free birth-info correction has been consumed. */
-    birthEditUsed,
-    chapters,
+    return c.json({
+      isPro,
+      /**
+       * Invite-driven unlock state. The client renders progressive affordance
+       * ("X / Y chapters unlocked — invite a friend for the next one") without
+       * having to iterate `chapters[]`. Pro users see `unlockedChapterCount`
+       * already equal to `chapterUnlockCap` because `accessible` bypasses the
+       * cap, but the count itself reflects raw invite-redeem progress.
+       */
+      unlockedChapterCount: unlockedCount,
+      chapterUnlockCap: CHAPTER_UNLOCK_CAP,
+      /** True iff `users.email` is set — drives the "bind email first" UX gate. */
+      hasEmail,
+      /** True once the lifetime free birth-info correction has been consumed. */
+      birthEditUsed,
+      chapters,
+    })
   })
-})
   // 流年深读 (Pro · 本月运势 LLM depth). The deterministic 本月运势 card is free for
   // everyone; this expands it into a deeper monthly read. No allowance — one row per
   // user+month+chart, so a revisit within the month is a free cache hit (the natural cap).

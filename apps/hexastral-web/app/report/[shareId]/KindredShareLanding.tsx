@@ -37,7 +37,12 @@ function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim() ? v : null
 }
 
-export function KindredShareLanding({ type, content, titleHint, shareId }: KindredShareLandingProps) {
+export function KindredShareLanding({
+  type,
+  content,
+  titleHint,
+  shareId,
+}: KindredShareLandingProps) {
   const isPair = type === 'pair'
   const c = content ?? {}
 
@@ -66,18 +71,18 @@ export function KindredShareLanding({ type, content, titleHint, shareId }: Kindr
           {isPair ? '缘 · YUEL' : '命 · YUEL'}
         </div>
 
-        {isPair ? (
-          <PairHero content={c} />
-        ) : (
-          <SoloHero content={c} titleHint={titleHint} />
-        )}
+        {isPair ? <PairHero content={c} /> : <SoloHero content={c} titleHint={titleHint} />}
 
         {/* Teaser */}
         {isPair ? <PairTeaser /> : <SoloTeaser content={c} />}
 
         {/* Download CTA */}
-        <div style={{ marginTop: '2.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <DDLRedirectButton payload={{ source: isPair ? 'yuel_pair_share' : 'yuel_reading_share', shareId }}>
+        <div
+          style={{ marginTop: '2.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+        >
+          <DDLRedirectButton
+            payload={{ source: isPair ? 'yuel_pair_share' : 'yuel_reading_share', shareId }}
+          >
             <span
               style={{
                 display: 'block',

@@ -187,7 +187,10 @@ export default function TimelineScreen() {
           {/* No brand crest (2026-06 feedback: "header 去掉，再极简") — a quiet
               left title only. */}
           <Text
-            style={[kindredType.title, { color: kindredDark.text, marginBottom: kindredSpacing.lg }]}
+            style={[
+              kindredType.title,
+              { color: kindredDark.text, marginBottom: kindredSpacing.lg },
+            ]}
           >
             {bondName || t(locale, 'timeline.title')}
           </Text>

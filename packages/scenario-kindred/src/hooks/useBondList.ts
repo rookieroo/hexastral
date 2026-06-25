@@ -79,29 +79,32 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
   const [error, setError] = useState<Error | null>(null)
   const [quota, setQuota] = useState<BondQuota | undefined>(cachedQuota)
 
-  const refetch = useCallback(async (opts?: { silent?: boolean }) => {
-    // First-ever load → full-screen loader. A manual pull → the refresh spinner.
-    // A silent (focus) revalidation shows nothing — the cached list just updates.
-    if (cachedBonds === null) setIsLoading(true)
-    else if (!opts?.silent) setIsRefreshing(true)
-    setError(null)
-    try {
-      const data = await unwrap<{ bonds: BondData[]; quota?: BondQuota }>(
-        await kindredBonds(client).$get()
-      )
-      setAllBonds(data.bonds)
-      setQuota(data.quota)
-      cachedBonds = data.bonds
-      cachedQuota = data.quota
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err))
-      setError(e)
-      onError?.(e)
-    } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [client, onError])
+  const refetch = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      // First-ever load → full-screen loader. A manual pull → the refresh spinner.
+      // A silent (focus) revalidation shows nothing — the cached list just updates.
+      if (cachedBonds === null) setIsLoading(true)
+      else if (!opts?.silent) setIsRefreshing(true)
+      setError(null)
+      try {
+        const data = await unwrap<{ bonds: BondData[]; quota?: BondQuota }>(
+          await kindredBonds(client).$get()
+        )
+        setAllBonds(data.bonds)
+        setQuota(data.quota)
+        cachedBonds = data.bonds
+        cachedQuota = data.quota
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error(String(err))
+        setError(e)
+        onError?.(e)
+      } finally {
+        setIsLoading(false)
+        setIsRefreshing(false)
+      }
+    },
+    [client, onError]
+  )
 
   useEffect(() => {
     void refetch()

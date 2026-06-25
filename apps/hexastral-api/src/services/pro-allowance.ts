@@ -86,10 +86,7 @@ export async function consumeProAllowance(
   const column = FEATURE_COLUMN[feature]
 
   // Lazy-init this month's row (idempotent).
-  await db
-    .insert(proMonthlyUsage)
-    .values({ id: nanoid(), userId, month })
-    .onConflictDoNothing()
+  await db.insert(proMonthlyUsage).values({ id: nanoid(), userId, month }).onConflictDoNothing()
 
   // Atomically increment only if still under the cap.
   const result = await db
@@ -119,7 +116,9 @@ export async function consumeProAllowance(
 export async function getProAllowanceStatus(
   db: AppDb,
   userId: string
-): Promise<Record<ProFeature, { used: number; limit: number; remaining: number }> & { resetsOn: string }> {
+): Promise<
+  Record<ProFeature, { used: number; limit: number; remaining: number }> & { resetsOn: string }
+> {
   const month = currentMonth()
   const row = await db
     .select({

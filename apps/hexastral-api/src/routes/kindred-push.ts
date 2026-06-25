@@ -86,7 +86,11 @@ kindredPushRoutes.get('/targets', async (c) => {
   if (!timezoneId || !date || !DATE_RE.test(date)) {
     throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
   }
-  const [yy, mm, dd] = date.split('-').map((n) => Number.parseInt(n, 10)) as [number, number, number]
+  const [yy, mm, dd] = date.split('-').map((n) => Number.parseInt(n, 10)) as [
+    number,
+    number,
+    number,
+  ]
   const db = c.get('db')
   if (!db) return jsonOk(c, { messages: [], hasMore: false, nextCursor: null })
 

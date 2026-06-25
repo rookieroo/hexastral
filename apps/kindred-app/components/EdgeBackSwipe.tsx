@@ -15,13 +15,7 @@ import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 
-export function EdgeBackSwipe({
-  onBack,
-  children,
-}: {
-  onBack: () => void
-  children: ReactNode
-}) {
+export function EdgeBackSwipe({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   const pan = Gesture.Pan()
     // Activate only on a rightward horizontal lead; a vertical move past ±24 first
     // fails the gesture so the page scrolls instead.

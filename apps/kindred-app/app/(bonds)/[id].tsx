@@ -628,9 +628,7 @@ export default function BondDetailScreen({
     // report shows the unlock wall instead, so no skeletons there.
     const totalChapters = detail.interpretation?.totalChapters ?? viewedChapters.length
     const pendingChapterCount =
-      chaptersPending && !reportLocked
-        ? Math.max(0, totalChapters - viewedChapters.length)
-        : 0
+      chaptersPending && !reportLocked ? Math.max(0, totalChapters - viewedChapters.length) : 0
     // Same subscription paywall the timeline / what-if screens raise for their own
     // Pro upsell (no special reason → the default subtitle).
     const openPaywall = () => router.push('/(commerce)/paywall')
@@ -654,7 +652,9 @@ export default function BondDetailScreen({
       ) : null
 
     return (
-      <View style={{ flex: 1, backgroundColor: bloomOverLiveHome ? 'transparent' : kindredDark.bg }}>
+      <View
+        style={{ flex: 1, backgroundColor: bloomOverLiveHome ? 'transparent' : kindredDark.bg }}
+      >
         {/* 水墨晕开 entrance — the cream 宣纸 report unrolls in from the tapped row.
             A TAP overlay keeps a transparent surround, so it blooms over the LIVE
             home (the night sky shows outside the shape) exactly like the solo

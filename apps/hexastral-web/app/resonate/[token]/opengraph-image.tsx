@@ -18,11 +18,7 @@ interface InviteInfo {
   archetypeCategory: string | null
 }
 
-export default async function Image({
-  params,
-}: {
-  params: Promise<{ token: string }>
-}) {
+export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
   let inviterName = 'Someone'

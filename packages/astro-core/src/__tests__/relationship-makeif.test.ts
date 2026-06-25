@@ -68,7 +68,9 @@ describe('planRelationshipDecision — 窗口对齐引擎', () => {
     // 桃花/驿马/食伤 must not inflate the base pair-timing score — it stays a pure
     // 用神 + 合/冲 read (the client weights the 神煞 per decision-move).
     const scored = planRelationshipDecision(A, B, OPTS).windows
-    scored.forEach((w, i) => expect(w.score).toBe(windows[i]!.score))
+    scored.forEach((w, i) => {
+      expect(w.score).toBe(windows[i]!.score)
+    })
     // At least one window should carry a 神煞 over a 12-month sweep (sanity, not strict).
     expect(windows.some((w) => w.taohua || w.yima || w.shishang)).toBe(true)
   })
