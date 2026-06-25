@@ -21,7 +21,6 @@ import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
 import { getKindredDevLocale, type Locale, resolveLocale, setKindredDevLocale, t } from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
-import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
 import { registerPushToken, unregisterPushToken } from '@/lib/serverPush'
@@ -83,8 +82,6 @@ export default function SettingsScreen() {
   const [signInOpen, setSignInOpen] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [emailModalOpen, setEmailModalOpen] = useState(false)
-  const [crossAppMemory, setCrossAppMemoryState] = useState(false)
-  const [crossAppBusy, setCrossAppBusy] = useState(false)
   const [dailyPush, setDailyPushState] = useState(false)
   const [dailyPushBusy, setDailyPushBusy] = useState(false)
   // DEV-only Pro override — cycles Off (real RC) → PRO → FREE. Sets the client
@@ -150,26 +147,6 @@ export default function SettingsScreen() {
   useEffect(() => {
     void refreshProfile()
   }, [refreshProfile])
-
-  useEffect(() => {
-    if (!userId) return
-    fetchMemoryPreference(userId)
-      .then((p) => setCrossAppMemoryState(p.crossAppEnabled))
-      .catch(() => {})
-  }, [userId])
-
-  const handleCrossAppToggle = async (value: boolean) => {
-    if (!userId || crossAppBusy) return
-    setCrossAppBusy(true)
-    setCrossAppMemoryState(value)
-    try {
-      await setCrossAppMemory(userId, value)
-    } catch {
-      setCrossAppMemoryState(!value)
-    } finally {
-      setCrossAppBusy(false)
-    }
-  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -344,45 +321,10 @@ export default function SettingsScreen() {
 
         <View style={{ height: kindredSpacing.lg }} />
 
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.privacy.section')}
-        </Text>
-
-        <Card
-          variant='outlined'
-          padding='lg'
-          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.sm }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: kindredSpacing.md,
-            }}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text, flex: 1 }]}>
-              {t(locale, 'settings.crossAppMemory.label')}
-            </Text>
-            <Switch
-              value={crossAppMemory}
-              onValueChange={handleCrossAppToggle}
-              disabled={crossAppBusy || !userId}
-              trackColor={{ false: kindredDark.border, true: kindredDark.seal }}
-              ios_backgroundColor={kindredDark.border}
-            />
-          </View>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t(locale, 'settings.crossAppMemory.hint')}
-          </Text>
-        </Card>
-
-        <View style={{ height: kindredSpacing.lg }} />
+        {/* No Privacy section at MVP: its only item was the cross-app memory
+            toggle, intentionally NOT shipped at MVP (business scope 2026-06: no
+            cross-app memory). Server flag stays default-false; restore the
+            section + toggle here when the feature ships post-MVP. */}
 
         {/* Notifications — daily reading nudge. Delivery is server-driven
             (svc-notify cron), so the toggle persists the user's preference

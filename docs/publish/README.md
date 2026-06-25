@@ -25,6 +25,7 @@ Last updated: 2026-06-25.
 | Brand domain (live) | `yuel.hexastral.com` | `yuun.hexastral.com` |
 | Apple Team ID | `L9Z47DW56X` | `L9Z47DW56X` |
 | Version / build | 0.1.0 / EAS auto-increment | 0.1.0 / EAS auto-increment |
+| **IAP model (MVP)** | Subscription (`kindred_pro`) **+ one-time** (合盘 unlock `hexastral_compatibility`) | **Subscription only** (`auspice_pro`) |
 
 > **Naming policy (ADR-0024 + decided 2026-06):** Yuel/Yuun are the *brand /
 > display* layer only. The internal codenames (`kindred`, `auspice`) and the
@@ -170,10 +171,12 @@ For `apps/kindred-app/eas.json` **and** `apps/auspice-app/eas.json`:
   at MVP. Reason: cross-app value is ~nil with only 2 apps live, it complicates
   pricing and enlarges the review surface. Add it as a Phase-2 upsell once 3+ apps
   ship. No code change needed — the paywalls already can't surface it.
-- **Cross-app memory** (`crossAppMemoryEnabled`): opt-in, default false, and gated
-  to the universe tier — so with no universe sold, it is already effectively off.
-  Do **not** surface the toggle or advertise it at MVP, and keep "links data across
-  apps" **off** the privacy labels. Same-app portfolio memory (Pro) is fine to keep.
+- **Cross-app memory** (`crossAppMemoryEnabled`): opt-in, default false, gated to
+  the universe tier — so with no universe sold, it is already off. The Yuel settings
+  toggle that surfaced it has been **removed from the app** (server flag stays
+  default-false; `lib/memory-preference.ts` kept dormant for post-MVP restore). Keep
+  "links data across apps" **off** the privacy labels even though terms/privacy text
+  mentions the capability. Same-app portfolio memory (Pro) is fine to keep.
 - **Yuel solo personal report** (`hexastral_personal`, $4.99): client button is
   null-guarded and won't render until the product exists in ASC. Optional post-launch.
 
@@ -208,4 +211,9 @@ build publisher credibility, then Yuel.
       live `auspice_pro`/`fate_pro`) — update or just follow `products.ts`.
 - [ ] **CJK font** (`NotoSerifSC`) not bundled in Yuel (offline blocker) — ships on
       system serif; revisit post-launch for polish.
+- [ ] **Yuun orphan one-time-purchase scaffolding** — `apps/auspice-app/lib/synastry-iap.ts`
+      defines a `hexastral_compatibility` one-time purchase but is **imported by nothing**
+      (the synastry-in-auspice feature is an explicit future PLAN, "no code yet"). Yuun is
+      subscription-only at MVP, so this file currently just muddies the IAP model. Decide:
+      delete it now (restore from git when synastry-in-auspice is built) or keep the slot.
 </content>
