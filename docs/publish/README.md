@@ -211,9 +211,11 @@ build publisher credibility, then Yuel.
       live `auspice_pro`/`fate_pro`) — update or just follow `products.ts`.
 - [ ] **CJK font** (`NotoSerifSC`) not bundled in Yuel (offline blocker) — ships on
       system serif; revisit post-launch for polish.
-- [ ] **Yuun orphan one-time-purchase scaffolding** — `apps/auspice-app/lib/synastry-iap.ts`
-      defines a `hexastral_compatibility` one-time purchase but is **imported by nothing**
-      (the synastry-in-auspice feature is an explicit future PLAN, "no code yet"). Yuun is
-      subscription-only at MVP, so this file currently just muddies the IAP model. Decide:
-      delete it now (restore from git when synastry-in-auspice is built) or keep the slot.
+- [x] **Yuun orphan one-time-purchase scaffolding** — `apps/auspice-app/lib/synastry-iap.ts`
+      (unused `hexastral_compatibility` one-time purchase) **deleted** so Yuun's code matches
+      its subscription-only MVP. Restore from git when the synastry-in-auspice PLAN is built.
+- [x] **Dead duplicate route** — `bonds.ts` had `POST /:id/unlock` registered twice; the
+      second (legacy coins / `unlockedDimensions` model) was shadowed by the live
+      `single_purchase` handler and **deleted**. (Project-wide scan: the only other duplicate,
+      `signal.ts` `.get('/')`, is two distinct routers — not dead.)
 </content>

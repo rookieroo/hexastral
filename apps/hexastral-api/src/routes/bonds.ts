@@ -3109,63 +3109,6 @@ bondRoutes.patch('/:id', async (c) => {
   return jsonOk(c, { id: bondId, ...input })
 })
 
-// ── POST /:id/unlock — B 解锁完整合盘 (消耗 5 coins) ────────
-
-bondRoutes.post('/:id/unlock', async (c) => {
-  const bondId = c.req.param('id')
-  const userId = requireUserId(c)
-  const db = c.get('db')
-
-  const bond = await db
-    .select({
-      id: userBonds.id,
-      ownerId: userBonds.ownerId,
-      unlockedDimensions: userBonds.unlockedDimensions,
-      status: userBonds.status,
-      hehunReadingId: userBonds.hehunReadingId,
-    })
-    .from(userBonds)
-    .where(eq(userBonds.id, bondId))
-    .get()
-
-  if (!bond) {
-    return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
-  }
-  if (bond.status !== 'active') {
-    return jsonErr(c, 400, ApiErrorCode.conflict, 'Bond is not active')
-  }
-  // Only B (non-owner) can call unlock; A already has full access
-  if (bond.ownerId === userId) {
-    return jsonErr(
-      c,
-      400,
-      ApiErrorCode.conflict,
-      'You already have full access as the bond creator'
-    )
-  }
-  // Must own this bond (it must be the mirror bond in B's list)
-  const accessible = await db
-    .select({ id: userBonds.id })
-    .from(userBonds)
-    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
-    .get()
-  if (!accessible) {
-    return jsonErr(c, 403, ApiErrorCode.forbidden, 'Not your bond')
-  }
-
-  // Already fully unlocked
-  if (bond.unlockedDimensions === '4') {
-    return jsonOk(c, { alreadyUnlocked: true })
-  }
-
-  await db
-    .update(userBonds)
-    .set({ unlockedDimensions: '4', updatedAt: new Date().toISOString() })
-    .where(eq(userBonds.id, bondId))
-
-  return jsonOk(c, { unlocked: true })
-})
-
 // ── POST /:id/gift — A 免费赠送完整报告给 B ────────────────
 
 bondRoutes.post('/:id/gift', async (c) => {
