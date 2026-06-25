@@ -353,8 +353,8 @@ async function topUpRestChapters(
 
 /** Bond limit check result. `allowed: false` callers should respond via jsonErr. */
 const YUAN_PRO_PRODUCT_IDS = {
-  monthly: 'hexastral_kindred_pro_monthly',
-  annual: 'hexastral_kindred_pro_annual',
+  monthly: 'kindred_pro_monthly',
+  annual: 'kindred_pro_annual',
 } as const
 
 /** Informational free-tier usage, surfaced on GET / for display. `used` = FULL

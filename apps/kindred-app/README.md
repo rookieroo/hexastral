@@ -95,7 +95,7 @@ See `aso-metadata.json` for the full per-locale ASC strings. Brand display title
 - [ ] Create EAS project: `eas init` → fill `EAS_PROJECT_ID` in `.env` + `app.json`
 - [ ] Register `com.hexastral.kindred` bundle id in Apple Developer + App Store Connect
 - [ ] Create Kindred app in RevenueCat → fill `EXPO_PUBLIC_REVENUECAT_IOS_KEY`
-- [ ] Create RevenueCat products: `hexastral_kindred_pro_monthly`, `hexastral_kindred_pro_annual`
+- [ ] Create RevenueCat products: `kindred_pro_monthly`, `kindred_pro_annual` (entitlement `kindred_pro`)
 - [ ] Add `applinks:hexastral.com` association in App Store Connect
 - [ ] Upload icon + splash to `assets/`
 - [ ] Localize listing in App Store Connect for 4 markets

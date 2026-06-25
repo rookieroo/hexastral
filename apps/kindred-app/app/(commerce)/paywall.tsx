@@ -2,7 +2,7 @@
  * Kindred paywall — modal triggered when bond quota is exhausted (≥4 bonds on free).
  *
  * Two SKUs: monthly + annual (default highlight = annual). Both grant the
- * `hexastral_kindred_pro` RevenueCat entitlement.
+ * `kindred_pro` RevenueCat entitlement.
  *
  * Auth gate (2026-06): if the user has no recovery method attached (no
  * Apple-link, no Google-link, no email), we render an inline sign-in step

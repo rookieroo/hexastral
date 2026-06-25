@@ -3,11 +3,13 @@
  *
  * Two products gate "unlimited bonds". Flagship pricing (2026-06, founder-agreed —
  * Yuel is the premium tier vs Yuun's mass-market almanac); actual price is set in App
- * Store Connect / RevenueCat (authoritative). Intended targets:
- *   - `hexastral_kindred_pro_monthly`  — $7.99 / mo
- *   - `hexastral_kindred_pro_annual`   — $47.99 / yr
+ * Store Connect / RevenueCat (authoritative). Product + entitlement ids match the
+ * server catalog (apps/hexastral-api/src/config/products.ts — the single source of
+ * truth; see docs/setup/revenuecat-entitlements.md):
+ *   - `kindred_pro_monthly`  — $7.99 / mo
+ *   - `kindred_pro_annual`   — $47.99 / yr
  *
- * Both grant the `hexastral_kindred_pro` entitlement.
+ * Both grant the `kindred_pro` entitlement.
  *
  * `react-native-purchases` is unavailable in Expo Go; all entry points no-op
  * silently in that env (the paywall surfaces a "preview only" message).
@@ -16,11 +18,11 @@
 import { Platform } from 'react-native'
 import { config } from './config'
 
-const ENTITLEMENT_ID = 'hexastral_kindred_pro'
+const ENTITLEMENT_ID = 'kindred_pro'
 
 export const YUAN_PRODUCT_IDS = {
-  monthly: 'hexastral_kindred_pro_monthly',
-  annual: 'hexastral_kindred_pro_annual',
+  monthly: 'kindred_pro_monthly',
+  annual: 'kindred_pro_annual',
 } as const
 
 type PurchasesModule = typeof import('react-native-purchases')
