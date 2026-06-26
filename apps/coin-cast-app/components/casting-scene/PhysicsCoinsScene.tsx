@@ -94,8 +94,8 @@ function finalizeCoinsOnTable(
 
 const ALTAR_ALBEDO = require('./textures/altar-wood-albedo.png')
 const ALTAR_NORMAL = require('./textures/altar-wood-normal.png')
-const COIN_YANG = require('./textures/coin-yang-cap.png')
-const COIN_YIN = require('./textures/coin-yin-cap.png')
+const COIN_YANG = require('./textures/skins/huaxia/dist/back-su-yin.png')
+const COIN_YIN = require('./textures/skins/huaxia/dist/back-su-yin.png')
 
 const WOOD_REPEAT = 2.8
 
@@ -211,6 +211,9 @@ export interface PhysicsCoinsSceneProps {
    * retreat so the scene does not read as a dice cup still covering the line.
    */
   vesselVisible: boolean
+  /** Selected skin's cap textures (RN asset ids); falls back to the classic coin. */
+  coinYang?: number
+  coinYin?: number
 }
 
 function createFallbackCoinMaterials(): THREE.MeshStandardMaterial[] {
@@ -237,7 +240,10 @@ function createFallbackCoinMaterials(): THREE.MeshStandardMaterial[] {
  * Loads altar + coin cap textures (expo-three). Falls back to solid materials on failure.
  * Note: keep `color` white when `map` is set — multiplying by scene backdrop crushes albedo detail.
  */
-function useCastingTextures(): {
+function useCastingTextures(
+  coinYang: number,
+  coinYin: number
+): {
   floorMaterial: THREE.MeshStandardMaterial | null
   coinMaterials: THREE.MeshStandardMaterial[]
 } {
@@ -277,8 +283,8 @@ function useCastingTextures(): {
         }
 
         const [yangTex, yinTex] = await Promise.all([
-          ExpoTHREE.loadAsync(COIN_YANG),
-          ExpoTHREE.loadAsync(COIN_YIN),
+          ExpoTHREE.loadAsync(coinYang),
+          ExpoTHREE.loadAsync(coinYin),
         ])
         if (cancelled) {
           albedo.dispose()
@@ -348,7 +354,7 @@ function useCastingTextures(): {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [coinYang, coinYin])
 
   return { floorMaterial, coinMaterials }
 }
@@ -357,7 +363,10 @@ const VESSEL_RETREAT_DURATION_SEC = 0.42
 
 export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
   const { world, coinBodies: bodies } = useCoinPhysics()
-  const { floorMaterial, coinMaterials } = useCastingTextures()
+  const { floorMaterial, coinMaterials } = useCastingTextures(
+    props.coinYang ?? COIN_YANG,
+    props.coinYin ?? COIN_YIN
+  )
 
   const vesselMeshRef = useRef<THREE.Mesh | null>(null)
   const prevVesselVisible = useRef(props.vesselVisible)

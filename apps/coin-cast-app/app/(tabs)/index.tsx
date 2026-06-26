@@ -4,6 +4,7 @@ import {
   PortfolioQuotaExceededError,
   PortfolioSessionExpiredError,
 } from '@zhop/portfolio-client'
+import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { X } from 'lucide-react-native'
@@ -38,6 +39,7 @@ import {
   seedUInt32FromHashHex,
 } from '@/lib/casting-entropy'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
+import { type CoinSkinId, DEFAULT_SKIN_ID, getCoinSkin, loadSelectedSkinId } from '@/lib/coin-skins'
 import {
   checkDuplicateQuestion,
   cooldownRemainingMs,
@@ -194,6 +196,9 @@ export default function CoinCastHomeScreen() {
   const [error, setError] = useState<string | null>(null)
   const lastShakeRef = useRef(0)
   const glEnabled = useMemo(() => canUseExpoGl(), [])
+  const entitlements = useEntitlements()
+  const coincastPro = hasEntitlement(entitlements, 'coincast_pro')
+  const [selectedSkinId, setSelectedSkinId] = useState<CoinSkinId>(DEFAULT_SKIN_ID)
   /**
    * iOS dev builds: RN reserves device shake for the developer menu. Accel-driven cast is off unless
    * `EXPO_PUBLIC_IOS_DEV_ALLOW_ACCEL_SHAKE=1` (see `.env.example`). Physics uses the same path as the Shake button.
@@ -289,6 +294,7 @@ export default function CoinCastHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void getFirstRitualAcknowledged().then(setFirstAck)
+      void loadSelectedSkinId().then(setSelectedSkinId)
     }, [])
   )
 
@@ -627,6 +633,9 @@ export default function CoinCastHomeScreen() {
     ? coinCastSceneColors.castingBackdropDark
     : coinCastSceneColors.castingBackdropLight
 
+  const activeSkin = getCoinSkin(selectedSkinId)
+  const effectiveSkin = activeSkin.pro && !coincastPro ? getCoinSkin(DEFAULT_SKIN_ID) : activeSkin
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.bg }]}
@@ -671,6 +680,8 @@ export default function CoinCastHomeScreen() {
                 onPhysicsSettled={handlePhysicsSettled}
                 onImpact={impactHaptic}
                 shakeDriveRef={shakeDriveRef}
+                coinYang={effectiveSkin.yang}
+                coinYin={effectiveSkin.yin}
                 style={{ width: '100%', flex: 1, minHeight: 0 }}
               />
             ) : (

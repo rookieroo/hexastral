@@ -2,20 +2,33 @@ import {
   fetchPortfolioMemoryPreference,
   setPortfolioMemoryPreference,
 } from '@zhop/portfolio-client'
-import { getPortfolioUserId } from '@zhop/satellite-runtime'
-import { Stack } from 'expo-router'
+import { getPortfolioUserId, hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
+import { Stack, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
+import {
+  COIN_SKINS,
+  type CoinSkinId,
+  coinSkinLabel,
+  coinSkinNote,
+  coinSkinUi,
+  DEFAULT_SKIN_ID,
+  loadSelectedSkinId,
+  saveSelectedSkinId,
+} from '@/lib/coin-skins'
 import { getMotionShakeEnabled, setMotionShakeEnabled } from '@/lib/coincast-ritual'
 import { useSatelliteI18n } from '@/lib/i18n'
 import { SheetHandle } from '@/lib/SheetHandle'
 import { useAppTheme } from '@/lib/theme'
 
 export default function CoinCastSettingsScreen() {
+  const router = useRouter()
   const { colors } = useAppTheme()
-  const { t } = useSatelliteI18n()
+  const { t, uiLocale } = useSatelliteI18n()
+  const entitlements = useEntitlements()
+  const coincastPro = hasEntitlement(entitlements, 'coincast_pro')
+  const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_SKIN_ID)
   const [motion, setMotion] = useState(true)
   const [loaded, setLoaded] = useState(false)
   const [memory, setMemory] = useState(false)
@@ -29,6 +42,7 @@ export default function CoinCastSettingsScreen() {
       setMotion(v)
       setLoaded(true)
     })()
+    void loadSelectedSkinId().then(setSkinId)
   }, [])
 
   const loadMemory = useCallback(async () => {
@@ -57,6 +71,15 @@ export default function CoinCastSettingsScreen() {
     const next = !motion
     setMotion(next)
     await setMotionShakeEnabled(next)
+  }
+
+  const selectSkin = async (id: CoinSkinId, pro: boolean) => {
+    if (pro && !coincastPro) {
+      router.push('/paywall')
+      return
+    }
+    setSkinId(id)
+    await saveSelectedSkinId(id)
   }
 
   const toggleMemory = async () => {
@@ -131,6 +154,64 @@ export default function CoinCastSettingsScreen() {
               </Text>
             )}
           </Pressable>
+
+          <Text style={[styles.label, { color: colors.secondary, marginTop: 28 }]}>
+            {coinSkinUi(uiLocale).title}
+          </Text>
+          <Text style={[styles.hint, { color: colors.dim }]}>{coinSkinUi(uiLocale).hint}</Text>
+          {COIN_SKINS.map((skin) => {
+            const selected = skin.id === skinId
+            const locked = skin.pro && !coincastPro
+            return (
+              <Pressable
+                key={skin.id}
+                style={[
+                  styles.skinRow,
+                  {
+                    borderColor: selected ? colors.text : colors.separator,
+                    backgroundColor: colors.card,
+                  },
+                ]}
+                onPress={() => void selectSkin(skin.id, skin.pro)}
+                accessibilityRole='button'
+                accessibilityState={{ selected }}
+              >
+                <View style={styles.skinInfo}>
+                  <Text style={[styles.skinName, { color: colors.text }]}>
+                    {coinSkinLabel(skin, uiLocale)}
+                  </Text>
+                  <Text style={[styles.skinNote, { color: colors.dim }]}>
+                    {coinSkinNote(skin, uiLocale)}
+                  </Text>
+                </View>
+                {locked ? (
+                  <Text style={[styles.skinTag, { color: colors.secondary }]}>
+                    {coinSkinUi(uiLocale).locked}
+                  </Text>
+                ) : selected ? (
+                  <View style={[styles.skinDot, { backgroundColor: colors.text }]} />
+                ) : null}
+              </Pressable>
+            )
+          })}
+
+          <Pressable
+            style={[
+              styles.toggle,
+              { borderColor: colors.separator, backgroundColor: colors.card, marginTop: 28 },
+            ]}
+            onPress={() => router.push('/credits')}
+            accessibilityRole='button'
+          >
+            <Text style={[styles.toggleText, { color: colors.text }]}>
+              {{
+                en: 'Credits & sources',
+                zh: '来源与致谢',
+                'zh-Hant': '來源與致謝',
+                ja: 'クレジット',
+              }[uiLocale as 'en' | 'zh' | 'zh-Hant' | 'ja'] ?? 'Credits & sources'}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -153,4 +234,19 @@ const styles = StyleSheet.create({
   },
   toggleText: { fontSize: 14, fontWeight: '500' },
   row: { flexDirection: 'row', alignItems: 'center' },
+  skinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 0.5,
+    borderRadius: 0,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 6,
+  },
+  skinInfo: { flex: 1, gap: 2 },
+  skinName: { fontSize: 14, fontWeight: '500' },
+  skinNote: { fontSize: 11, lineHeight: 15 },
+  skinTag: { fontSize: 12, fontWeight: '500', marginLeft: 12 },
+  skinDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 12 },
 })

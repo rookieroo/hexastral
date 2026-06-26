@@ -5,7 +5,12 @@
  * RevenueCat dashboard per docs/setup/revenuecat-entitlements.md §7.
  */
 
-export type EntitlementKey = 'kindred_pro' | 'auspice_pro' | 'fate_pro' | 'universe_pro'
+export type EntitlementKey =
+  | 'kindred_pro'
+  | 'auspice_pro'
+  | 'fate_pro'
+  | 'universe_pro'
+  | 'coincast_pro'
 // NOTE: fate is a funnel app — no standalone fate_pro subscription. The
 // `fate_pro` entitlement is universe_pro-only (Universe-Pro users get the Pro
 // experience inside fate, e.g. all chapters unlocked + daily LLM insights).
@@ -58,6 +63,7 @@ export const ALL_ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
   'auspice_pro',
   'fate_pro',
   'universe_pro',
+  'coincast_pro',
 ] as const
 
 export const PRODUCTS: readonly ProductSpec[] = [
@@ -96,31 +102,33 @@ export const PRODUCTS: readonly ProductSpec[] = [
     productId: 'universe_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro'],
+    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro', 'coincast_pro'],
   },
   {
     productId: 'universe_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro'],
+    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro', 'coincast_pro'],
   },
 
-  // ── Legacy satellite subscription (CoinCast Pro — funnels to HexAstral) ─
-  // Kept separate from the new entitlement model: still writes the legacy
-  // `users.coincast_pro_expires_at` column to avoid breaking existing CoinCast
-  // gating. Grant a real entitlement only after CoinCast UI migrates to
-  // `useEntitlements()`.
+  // ── CoinCast Pro subscription ──────────────────────────────────────────
+  // Now grants a real `coincast_pro` entitlement (read client-side via
+  // useEntitlements) — gates the cosmetic coin-skin vault + custom upload.
+  // Still ALSO writes the legacy `users.coincast_pro_expires_at` column (see
+  // COINCAST_PRO_PRODUCT_IDS) so existing server-side cast gating keeps working.
+  // RC dashboard: create the `coincast_pro` entitlement and attach these two
+  // products + universe_pro (docs/setup/revenuecat-entitlements.md §7).
   {
     productId: 'coincast_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: [],
+    grantsEntitlements: ['coincast_pro'],
   },
   {
     productId: 'coincast_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: [],
+    grantsEntitlements: ['coincast_pro'],
   },
 
   // ── Consumables ────────────────────────────────────────────────────────
