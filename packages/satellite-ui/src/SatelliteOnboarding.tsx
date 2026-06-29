@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getTokens } from '@zhop/hexastral-tokens/palette'
-import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native'
 import { SatelliteAppleAuth } from './SatelliteAppleAuth'
@@ -27,6 +26,8 @@ export interface SatelliteOnboardingProps {
   }
   onBirthSubmit?: (birth: SatelliteBirthInputValue) => Promise<void> | void
   onDone?: (birth: SatelliteBirthInputValue | null) => Promise<void> | void
+  /** Navigation after onboarding completes — must be wired from app code (expo-router). */
+  onFinish?: () => void | Promise<void>
 }
 
 type Step = 'hero' | 'birth' | 'auth'
@@ -53,7 +54,6 @@ export async function markSatelliteOnboardingDone(onboardingKey = DEFAULT_KEY): 
 }
 
 export function SatelliteOnboarding(props: SatelliteOnboardingProps) {
-  const router = useRouter()
   const isDark = useColorScheme() === 'dark'
   const colors = getTokens(isDark)
   const [step, setStep] = useState<Step>('hero')
@@ -79,7 +79,7 @@ export function SatelliteOnboarding(props: SatelliteOnboardingProps) {
     }
     await props.onDone?.(props.requireBirthInput ? birth : null)
     await markSatelliteOnboardingDone(props.onboardingKey ?? DEFAULT_KEY)
-    router.replace('/(tabs)')
+    await props.onFinish?.()
   }
 
   const back = () => {

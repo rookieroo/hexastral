@@ -1,4 +1,5 @@
 import { SatelliteOnboarding } from '@zhop/satellite-ui'
+import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { COIN_CAST_ONBOARDING_STORAGE_KEY } from '@/lib/coincast-constants'
@@ -7,6 +8,7 @@ import { useSatelliteI18n } from '@/lib/i18n'
 import { useAppTheme } from '@/lib/theme'
 
 export default function CoinCastOnboardingScreen() {
+  const router = useRouter()
   const { colors } = useAppTheme()
   const { t } = useSatelliteI18n()
   return (
@@ -32,6 +34,7 @@ export default function CoinCastOnboardingScreen() {
           continue: t('onboardContinue'),
           back: t('onboardBack'),
         }}
+        onFinish={() => router.replace('/(tabs)')}
       />
     </SafeAreaView>
   )

@@ -1,7 +1,9 @@
 import { SatelliteOnboarding } from '@zhop/satellite-ui'
+import { useRouter } from 'expo-router'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 
 export default function FaceOracleOnboardingScreen() {
+  const router = useRouter()
   return (
     <SatelliteOnboarding
       appTitle='FaceOracle'
@@ -10,6 +12,7 @@ export default function FaceOracleOnboardingScreen() {
       targetApp={PORTFOLIO_TARGET_APP}
       requireBirthInput={false}
       onboardingKey='face_oracle_onboarded'
+      onFinish={() => router.replace('/(tabs)')}
     />
   )
 }

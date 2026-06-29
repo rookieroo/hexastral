@@ -1,4 +1,5 @@
 import { SatelliteOnboarding } from '@zhop/satellite-ui'
+import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { useI18n } from '@/lib/i18n'
@@ -6,6 +7,7 @@ import { NUMEROLOGY_ONBOARDING_STORAGE_KEY } from '@/lib/numerology-constants'
 import { useAppTheme } from '@/lib/theme'
 
 export default function NumerologyOnboardingScreen() {
+  const router = useRouter()
   const { colors } = useAppTheme()
   const { t } = useI18n()
   return (
@@ -30,6 +32,7 @@ export default function NumerologyOnboardingScreen() {
           continue: t('onboardContinue'),
           back: t('onboardBack'),
         }}
+        onFinish={() => router.replace('/(tabs)')}
       />
     </SafeAreaView>
   )
