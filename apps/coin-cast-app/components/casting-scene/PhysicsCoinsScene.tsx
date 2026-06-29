@@ -94,7 +94,7 @@ function finalizeCoinsOnTable(
 
 const ALTAR_ALBEDO = require('./textures/altar-wood-albedo.png')
 const ALTAR_NORMAL = require('./textures/altar-wood-normal.png')
-const COIN_YANG = require('./textures/skins/huaxia/dist/back-su-yin.png')
+const COIN_YANG = require('./textures/skins/huaxia/dist/back-su-yang.png')
 const COIN_YIN = require('./textures/skins/huaxia/dist/back-su-yin.png')
 
 const WOOD_REPEAT = 2.8

@@ -1,13 +1,12 @@
-import { SatelliteTabLayout } from '@zhop/satellite-ui'
-import { Coins, UserCircle2 } from 'lucide-react-native'
+import { Tabs } from 'expo-router'
+
+import { CoinCastTabBar } from '@/components/CoinCastTabBar'
 
 export default function CoinCastTabsLayout() {
   return (
-    <SatelliteTabLayout
-      tabs={[
-        { name: 'index', title: 'Oracle', icon: Coins },
-        { name: 'me', title: 'Me', icon: UserCircle2 },
-      ]}
-    />
+    <Tabs tabBar={(props) => <CoinCastTabBar {...props} />} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name='index' />
+      <Tabs.Screen name='me' />
+    </Tabs>
   )
 }

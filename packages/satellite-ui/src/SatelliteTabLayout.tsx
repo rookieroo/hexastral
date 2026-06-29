@@ -1,7 +1,22 @@
 import { useTheme } from '@zhop/core-ui'
-import { Tabs } from 'expo-router'
 import type React from 'react'
+import { useMemo } from 'react'
 import { View } from 'react-native'
+
+type TabBarIconProps = { color: string; size: number }
+
+/** Options shape accepted by expo-router `<Tabs screenOptions>` / `<Tabs.Screen options>`. */
+export type SatelliteTabScreenOptions = {
+  headerShown?: boolean
+  href?: null
+  title?: string
+  tabBarBackground?: () => React.ReactNode
+  tabBarStyle?: Record<string, unknown>
+  tabBarActiveTintColor?: string
+  tabBarInactiveTintColor?: string
+  tabBarLabelStyle?: Record<string, unknown>
+  tabBarIcon?: (props: TabBarIconProps) => React.ReactNode
+}
 
 /**
  * Tab icon type — accepts both @zhop/hexastral-icons components and
@@ -12,7 +27,7 @@ type TabIcon = React.ComponentType<{
   color?: string
   size?: number
   strokeWidth?: number
-  [k: string]: any
+  [k: string]: unknown
 }>
 
 export interface SatelliteTabItem {
@@ -43,44 +58,39 @@ export function buildSatelliteTabBarStyle(colors: { bg: string; separator: strin
   }
 }
 
-export function SatelliteTabLayout(props: SatelliteTabLayoutProps) {
+/** Shared `screenOptions` for expo-router `<Tabs>` — call from app/(tabs)/_layout.tsx. */
+export function useSatelliteTabScreenOptions(): SatelliteTabScreenOptions {
   const { colors } = useTheme()
 
-  return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarBackground: () => <View style={{ flex: 1, backgroundColor: colors.bg }} />,
-        tabBarStyle: buildSatelliteTabBarStyle({ bg: colors.bg, separator: colors.separator }),
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: `${colors.secondary}88`,
-        tabBarLabelStyle: {
-          fontWeight: '600',
-          letterSpacing: 1,
-          fontSize: 11,
-        },
-      }}
-    >
-      {props.tabs.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{
-            href: tab.hidden ? null : undefined,
-            title: tab.title,
-            tabBarIcon: ({ color, size }) => {
-              const Icon = tab.icon
-              // Wrap in a pointerEvents="none" View so the SVG element
-              // doesn't intercept touches meant for the tab bar Pressable.
-              return (
-                <View pointerEvents='none'>
-                  <Icon color={color} size={size} strokeWidth={1} />
-                </View>
-              )
-            },
-          }}
-        />
-      ))}
-    </Tabs>
+  return useMemo(
+    () => ({
+      headerShown: false,
+      tabBarBackground: () => <View style={{ flex: 1, backgroundColor: colors.bg }} />,
+      tabBarStyle: buildSatelliteTabBarStyle({ bg: colors.bg, separator: colors.separator }),
+      tabBarActiveTintColor: colors.text,
+      tabBarInactiveTintColor: `${colors.secondary}88`,
+      tabBarLabelStyle: {
+        fontWeight: '600' as const,
+        letterSpacing: 1,
+        fontSize: 11,
+      },
+    }),
+    [colors.bg, colors.secondary, colors.separator, colors.text],
   )
+}
+
+/** Per-tab options for `<Tabs.Screen options={…} />`. */
+export function buildSatelliteTabScreenOptions(tab: SatelliteTabItem): SatelliteTabScreenOptions {
+  return {
+    ...(tab.hidden ? { href: null } : {}),
+    title: tab.title,
+    tabBarIcon: ({ color, size }: TabBarIconProps) => {
+      const Icon = tab.icon
+      return (
+        <View pointerEvents='none'>
+          <Icon color={color} size={size} strokeWidth={1} />
+        </View>
+      )
+    },
+  }
 }

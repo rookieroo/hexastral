@@ -15,6 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      },
       "bundleIdentifier": "com.hexastral.coincast",
       "usesAppleSignIn": true,
       "associatedDomains": [

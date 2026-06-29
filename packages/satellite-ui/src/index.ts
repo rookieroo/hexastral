@@ -49,8 +49,16 @@ export type { SatelliteResultCardProps } from './SatelliteResultCard'
 export { SatelliteResultCard } from './SatelliteResultCard'
 export type { SatelliteShareCardProps } from './SatelliteShareCard'
 export { SatelliteShareCard } from './SatelliteShareCard'
-export type { SatelliteTabItem, SatelliteTabLayoutProps } from './SatelliteTabLayout'
-export { SatelliteTabLayout } from './SatelliteTabLayout'
+export type {
+  SatelliteTabItem,
+  SatelliteTabLayoutProps,
+  SatelliteTabScreenOptions,
+} from './SatelliteTabLayout'
+export {
+  buildSatelliteTabBarStyle,
+  buildSatelliteTabScreenOptions,
+  useSatelliteTabScreenOptions,
+} from './SatelliteTabLayout'
 export type { CaptureAndShareInput, CaptureAndShareResult } from './share-poster'
 export { captureAndSharePoster } from './share-poster'
 export { SWIPE_TO_ME } from './swipe-nav'

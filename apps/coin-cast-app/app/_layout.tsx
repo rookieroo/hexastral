@@ -118,7 +118,7 @@ function RootLayoutInner() {
             presentation: 'formSheet',
             sheetGrabberVisible: true,
             ...(Platform.OS === 'ios'
-              ? { sheetAllowedDetents: [0.32, 0.52], sheetInitialDetentIndex: 0 }
+              ? { sheetAllowedDetents: [0.65, 0.95], sheetInitialDetentIndex: 1 }
               : {}),
           }}
         />

@@ -1,8 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getPortfolioUserId, resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
+import {
+  type DevEntitlementOverride,
+  getDevEntitlementOverride,
+  getPortfolioUserId,
+  resolvePortfolioApiUrl,
+  setDevEntitlementOverride,
+} from '@zhop/satellite-runtime'
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useState } from 'react'
+import { Alert, DevSettings, Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { COIN_CAST_ONBOARDING_STORAGE_KEY } from '@/lib/coincast-constants'
 import { wipeCoinCastRitualPrefsForDev } from '@/lib/coincast-ritual'
@@ -14,8 +21,17 @@ export function MeDevTools() {
   const { colors } = useAppTheme()
   const { t } = useSatelliteI18n()
   const router = useRouter()
+  const [devPro, setDevPro] = useState<DevEntitlementOverride>(getDevEntitlementOverride())
 
   if (!__DEV__) return null
+
+  // Cycle Off (real RC) → PRO → FREE so Pro skins / gates can be exercised without a purchase.
+  const cycleDevPro = () => {
+    const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
+    setDevEntitlementOverride(next)
+    setDevPro(next)
+  }
+  const devProLabel = devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'
 
   const resetOnboarding = async () => {
     try {
@@ -50,6 +66,22 @@ export function MeDevTools() {
   return (
     <View style={[styles.box, { borderColor: colors.separator, backgroundColor: colors.card }]}>
       <Text style={[styles.kicker, { color: colors.secondary }]}>{t('devtoolsTitle')}</Text>
+      <Pressable
+        style={[styles.rowSplit, { borderColor: colors.separator }]}
+        onPress={cycleDevPro}
+        accessibilityRole='button'
+      >
+        <Text style={[styles.rowText, { color: colors.text }]}>Force entitlement</Text>
+        <Text style={[styles.rowValue, { color: colors.accent }]}>{devProLabel}</Text>
+      </Pressable>
+      <Pressable
+        style={[styles.rowSplit, { borderColor: colors.separator }]}
+        onPress={() => DevSettings.reload()}
+        accessibilityRole='button'
+      >
+        <Text style={[styles.rowText, { color: colors.text }]}>Reload app</Text>
+        <Text style={[styles.rowValue, { color: colors.accent }]}>↻</Text>
+      </Pressable>
       <Pressable
         style={[styles.row, { borderColor: colors.separator }]}
         onPress={() => void resetOnboarding()}
@@ -102,5 +134,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
+  rowSplit: {
+    borderWidth: 0.5,
+    borderRadius: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   rowText: { fontSize: 13, fontWeight: '500' },
+  rowValue: { fontSize: 13, fontWeight: '700' },
 })

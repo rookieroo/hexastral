@@ -18,6 +18,7 @@ config.resolver.extraNodeModules = {
   react: path.resolve(projectRoot, 'node_modules/react'),
   'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
   'react-native-reanimated': path.resolve(projectRoot, 'node_modules/react-native-reanimated'),
+  'expo-router': path.resolve(projectRoot, 'node_modules/expo-router'),
 }
 config.resolver.disableHierarchicalLookup = false
 

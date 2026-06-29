@@ -43,12 +43,14 @@ export interface CoinSkin {
 
 /** Shared 素背 (plain reverse) rubbing for the huaxia skins until per-coin backs land. */
 const SU_BACK = require('../components/casting-scene/textures/skins/huaxia/dist/back-su-yin.png')
+/** Default coin's 字面 (front) — plain rubbing + 四出文 so heads/tails read apart. */
+const SU_FACE = require('../components/casting-scene/textures/skins/huaxia/dist/back-su-yang.png')
 
 export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'classic',
     pro: false,
-    yang: SU_BACK,
+    yang: SU_FACE,
     yin: SU_BACK,
     label: { en: 'Plain', zh: '素钱', 'zh-Hant': '素錢', ja: '無文銭' },
     note: {

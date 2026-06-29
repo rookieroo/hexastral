@@ -1,3 +1,4 @@
+import { useTheme } from '@zhop/core-ui'
 import { coinCastSceneColors } from '@zhop/hexastral-tokens/satellites'
 import {
   PortfolioBannedError,
@@ -5,9 +6,10 @@ import {
   PortfolioSessionExpiredError,
 } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
+import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { X } from 'lucide-react-native'
+import { Pencil, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -50,10 +52,8 @@ import {
   recordReadingCompleted,
   rememberRecentQuestion,
 } from '@/lib/coincast-ritual'
-import { sampleDevSyntheticAccel } from '@/lib/dev-synthetic-accel'
 import { canUseExpoGl } from '@/lib/gl-capabilities'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
-import { useAppTheme } from '@/lib/theme'
 
 interface AccelerometerSample {
   x: number
@@ -186,8 +186,12 @@ function AnimatedYaoLine({
 export default function CoinCastHomeScreen() {
   const router = useRouter()
   const { locale, uiLocale, t } = useSatelliteI18n()
-  const { colors, isDark } = useAppTheme()
+  const { colors, isDark } = useTheme()
   const [question, setQuestion] = useState('')
+  // Question entry now lives in a bottom sheet (opened on the first 摇卦), not a
+  // persistent input at the top. `draftQuestion` is the in-sheet editor buffer.
+  const [questionSheetOpen, setQuestionSheetOpen] = useState(false)
+  const [draftQuestion, setDraftQuestion] = useState('')
   const [yaoResults, setYaoResults] = useState<YaoResult[]>([])
   const [roundEntropyHashes, setRoundEntropyHashes] = useState<string[]>([])
   const [motionEnabled, setMotionEnabled] = useState(true)
@@ -234,7 +238,6 @@ export default function CoinCastHomeScreen() {
   const shakeDriveRef = useRef({ x: 0, y: 0, z: 0, mag: 0 })
   /** Dev physics toss: keep synthetic accel for whole flight (and skip real accelerometer overwriting ref). */
   const devPhysicsAutoShakeRef = useRef(false)
-  const [devHoldSyntheticDrive, setDevHoldSyntheticDrive] = useState(false)
   const { pushSample, snapshot, clear: clearAccel } = useSensorEntropy()
 
   const live = useRef({
@@ -297,23 +300,6 @@ export default function CoinCastHomeScreen() {
       void loadSelectedSkinId().then(setSelectedSkinId)
     }, [])
   )
-
-  /** Dev: synthetic accelerometer during toss — Dev physics button runs whole flight; hold boosts intensity. */
-  useEffect(() => {
-    if (!__DEV__ || !glEnabled) return
-    if (!tossAnimating) return
-    if (!devHoldSyntheticDrive && !devPhysicsAutoShakeRef.current) return
-    const t0 = performance.now()
-    const id = setInterval(() => {
-      const t = (performance.now() - t0) / 1000
-      const intensity = devHoldSyntheticDrive ? 1.34 : 1.08
-      shakeDriveRef.current = sampleDevSyntheticAccel(t, { intensity })
-    }, 16)
-    return () => {
-      clearInterval(id)
-      shakeDriveRef.current = { x: 0, y: 0, z: 0, mag: 0 }
-    }
-  }, [devHoldSyntheticDrive, tossAnimating, glEnabled])
 
   const completed = yaoResults.length
   const canShakeBase =
@@ -461,14 +447,26 @@ export default function CoinCastHomeScreen() {
     await resolveToss()
   }, [resolveToss])
 
-  const tryDevPhysicsToss = useCallback(async () => {
-    if (!__DEV__) return
-    devPhysicsAutoShakeRef.current = true
-    await resolveToss({ devBypassGuards: true })
-    if (!live.current.tossAnimating) {
-      devPhysicsAutoShakeRef.current = false
-    }
-  }, [resolveToss])
+  // Open the question sheet (only before any line is cast — the question is
+  // locked once the hexagram starts building).
+  const openQuestionSheet = useCallback(() => {
+    if (live.current.yaoResults.length > 0) return
+    setDraftQuestion(live.current.question)
+    setQuestionSheetOpen(true)
+  }, [])
+
+  // Confirm the sheet's question, then kick off the casting flow immediately.
+  const confirmQuestion = useCallback(() => {
+    const q = draftQuestion.trim()
+    if (q.length < 2) return
+    setQuestion(q)
+    // resolveToss reads the question from the live ref — set it synchronously so
+    // the first toss begins right after the sheet confirms (no extra tap).
+    live.current.question = q
+    setQuestionSheetOpen(false)
+    Keyboard.dismiss()
+    void resolveToss()
+  }, [draftQuestion, resolveToss])
 
   const requestAbort = useCallback(() => {
     const n = live.current.yaoResults.length
@@ -636,6 +634,28 @@ export default function CoinCastHomeScreen() {
   const activeSkin = getCoinSkin(selectedSkinId)
   const effectiveSkin = activeSkin.pro && !coincastPro ? getCoinSkin(DEFAULT_SKIN_ID) : activeSkin
 
+  // One adaptive primary button drives the whole flow: write the question (sheet)
+  // → 摇卦 each line → 成卦 to commit. The device-shake path stays live in parallel.
+  const hasQuestion = question.trim().length >= 2
+  const primaryIsCommit = completed === 6
+  const primaryLabel = primaryIsCommit
+    ? loading
+      ? t('homeCastingButton')
+      : t('homeCast')
+    : t('homeShake')
+  const primaryDisabled = primaryIsCommit ? !canCommit : hasQuestion ? !canShakeBase : loading
+  const onPrimary = () => {
+    if (primaryIsCommit) {
+      void castNow()
+      return
+    }
+    if (!hasQuestion) {
+      openQuestionSheet()
+      return
+    }
+    void tryShake()
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.bg }]}
@@ -647,22 +667,33 @@ export default function CoinCastHomeScreen() {
             <CoinCastSealLogo />
           </View>
 
-          <TextInput
-            placeholder={t('castPlaceholder')}
+          <Pressable
+            onPress={openQuestionSheet}
+            disabled={completed > 0}
+            accessibilityRole='button'
             accessibilityLabel={t('homeInputA11y')}
-            placeholderTextColor={colors.dim}
-            multiline
-            numberOfLines={3}
-            editable={yaoResults.length === 0}
-            style={[
-              styles.input,
-              { borderColor: colors.separator, color: colors.text, backgroundColor: colors.card },
+            style={({ pressed }) => [
+              styles.questionChip,
+              {
+                borderColor: colors.separator,
+                backgroundColor: colors.card,
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
-            value={question}
-            onChangeText={setQuestion}
-            blurOnSubmit
-            returnKeyType='done'
-          />
+          >
+            <Text
+              numberOfLines={2}
+              style={{
+                flex: 1,
+                fontSize: 15,
+                lineHeight: 21,
+                color: hasQuestion ? colors.text : colors.dim,
+              }}
+            >
+              {hasQuestion ? question : t('homeQuestionPrompt')}
+            </Text>
+            {completed === 0 ? <Pencil size={16} color={colors.dim} strokeWidth={1.6} /> : null}
+          </Pressable>
 
           <View
             style={[
@@ -749,70 +780,18 @@ export default function CoinCastHomeScreen() {
           <View style={styles.actions}>
             <Pressable
               style={[
-                styles.shakeBtn,
-                { borderColor: colors.separator, backgroundColor: colors.card },
+                styles.primaryBtn,
+                { backgroundColor: primaryDisabled ? colors.accentGhost : colors.accent },
               ]}
-              onPress={() => void tryShake()}
+              onPress={onPrimary}
               accessibilityRole='button'
-              disabled={!canShakeBase}
+              disabled={primaryDisabled}
             >
-              <Text style={[styles.actionText, { color: canShakeBase ? colors.text : colors.dim }]}>
-                {t('homeShake')}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.castBtn,
-                {
-                  borderColor: colors.separator,
-                  backgroundColor: canCommit ? (isDark ? colors.text : colors.tint) : colors.card,
-                },
-              ]}
-              onPress={() => void castNow()}
-              accessibilityRole='button'
-              disabled={!canCommit}
-            >
-              <Text
-                style={[
-                  styles.actionText,
-                  {
-                    color: canCommit ? (isDark ? colors.bg : colors.tintFg) : colors.dim,
-                  },
-                ]}
-              >
-                {loading ? t('homeCastingButton') : t('homeCast')}
+              <Text style={[styles.actionText, { color: primaryDisabled ? colors.dim : '#fff' }]}>
+                {primaryLabel}
               </Text>
             </Pressable>
           </View>
-
-          {__DEV__ && glEnabled ? (
-            <View style={styles.devPhysicsBlock}>
-              <Pressable
-                style={[styles.devPhysicsBtn, { borderColor: colors.separator }]}
-                onPress={() => void tryDevPhysicsToss()}
-                onPressIn={() => setDevHoldSyntheticDrive(true)}
-                onPressOut={() => setDevHoldSyntheticDrive(false)}
-                accessibilityRole='button'
-                accessibilityLabel={t('homeDevPhysicsButton')}
-                accessibilityHint={t('homeDevPhysicsJiggleHint')}
-                disabled={loading || completed >= 6}
-              >
-                <Text
-                  style={[
-                    styles.devPhysicsBtnText,
-                    {
-                      color: loading || completed >= 6 ? colors.dim : colors.secondary,
-                    },
-                  ]}
-                >
-                  {t('homeDevPhysicsButton')}
-                </Text>
-              </Pressable>
-              <Text style={[styles.devPhysicsJiggleHint, { color: colors.dim }]}>
-                {t('homeDevPhysicsJiggleHint')}
-              </Text>
-            </View>
-          ) : null}
 
           {error ? <Text style={[styles.error, { color: colors.secondary }]}>{error}</Text> : null}
           {blockIosDevAccelShake && motionEnabled ? (
@@ -842,6 +821,55 @@ export default function CoinCastHomeScreen() {
           />
         </View>
       ) : null}
+
+      {/* Question sheet — the single point of text entry. The iOS keyboard's
+          built-in dictation mic covers voice input with no extra dependency. */}
+      <SatelliteBottomSheet
+        visible={questionSheetOpen}
+        onClose={() => setQuestionSheetOpen(false)}
+        title={t('questionSheetTitle')}
+      >
+        <View style={styles.sheetBody}>
+          <TextInput
+            autoFocus
+            placeholder={t('castPlaceholder')}
+            accessibilityLabel={t('homeInputA11y')}
+            placeholderTextColor={colors.dim}
+            multiline
+            style={[
+              styles.sheetInput,
+              {
+                borderColor: colors.separator,
+                color: colors.text,
+                backgroundColor: colors.cardElevated,
+              },
+            ]}
+            value={draftQuestion}
+            onChangeText={setDraftQuestion}
+          />
+          <Pressable
+            onPress={confirmQuestion}
+            disabled={draftQuestion.trim().length < 2}
+            accessibilityRole='button'
+            style={[
+              styles.primaryBtn,
+              {
+                backgroundColor:
+                  draftQuestion.trim().length < 2 ? colors.accentGhost : colors.accent,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionText,
+                { color: draftQuestion.trim().length < 2 ? colors.dim : '#fff' },
+              ]}
+            >
+              {t('questionSheetCta')}
+            </Text>
+          </Pressable>
+        </View>
+      </SatelliteBottomSheet>
     </SafeAreaView>
   )
 }
@@ -870,17 +898,21 @@ const styles = StyleSheet.create({
   },
   inner: { flex: 1, gap: 10, minHeight: 0 },
   logoWrap: { alignItems: 'center', paddingVertical: 2 },
-  input: {
+  questionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     borderWidth: 0.5,
-    padding: 12,
-    borderRadius: 0,
-    textAlignVertical: 'top',
-    minHeight: 64,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    minHeight: 52,
   },
   sceneHost: {
     flex: 1,
     minHeight: 200,
     borderWidth: 0.5,
+    borderRadius: 18,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -913,7 +945,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0.5,
-    borderRadius: 0,
+    borderRadius: 18,
   },
   hexRow: {
     flexDirection: 'row',
@@ -955,29 +987,21 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   actions: { flexDirection: 'row', gap: 10, paddingBottom: 8 },
-  devPhysicsBlock: { alignSelf: 'stretch', gap: 4, marginBottom: 4 },
-  devPhysicsBtn: {
-    alignSelf: 'stretch',
-    borderWidth: 0.5,
-    borderRadius: 0,
-    paddingVertical: 8,
+  primaryBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
   },
-  devPhysicsBtnText: { fontSize: 11, fontWeight: '500', letterSpacing: 0.3 },
-  devPhysicsJiggleHint: { fontSize: 10, textAlign: 'center', lineHeight: 14, paddingHorizontal: 6 },
-  shakeBtn: {
-    flex: 1,
+  sheetBody: { gap: 16, paddingTop: 4 },
+  sheetInput: {
     borderWidth: 0.5,
-    borderRadius: 0,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  castBtn: {
-    flex: 1,
-    borderWidth: 0.5,
-    borderRadius: 0,
-    paddingVertical: 14,
-    alignItems: 'center',
+    borderRadius: 12,
+    padding: 14,
+    textAlignVertical: 'top',
+    minHeight: 96,
+    fontSize: 16,
+    lineHeight: 22,
   },
   actionText: { fontSize: 14, fontWeight: '600', letterSpacing: 0.5 },
   error: { fontSize: 13, textAlign: 'center' },
