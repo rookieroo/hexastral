@@ -1,6 +1,14 @@
 import { Stack, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { setFirstRitualAcknowledged } from '@/lib/coincast-ritual'
@@ -15,43 +23,31 @@ export default function BeforeCastScreen() {
   const { colors } = useAppTheme()
   const { t } = useSatelliteI18n()
   const [step, setStep] = useState(0)
-  const fade = useRef(new Animated.Value(1)).current
-  const calmPulse = useRef(new Animated.Value(1)).current
+  const fade = useSharedValue(1)
+  const calmPulse = useSharedValue(1)
 
   useEffect(() => {
-    fade.setValue(0.72)
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 180,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start()
+    fade.value = 0.72
+    fade.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) })
   }, [fade, step])
 
   useEffect(() => {
     if (step !== 1) {
-      calmPulse.setValue(1)
+      calmPulse.value = 1
       return
     }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(calmPulse, {
-          toValue: 1.45,
-          duration: 2200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(calmPulse, {
-          toValue: 1,
-          duration: 2200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
+    calmPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.45, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
     )
-    loop.start()
-    return () => loop.stop()
   }, [calmPulse, step])
+
+  const cardStyle = useAnimatedStyle(() => ({ opacity: fade.value }))
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: calmPulse.value }] }))
 
   const acknowledge = async () => {
     await setFirstRitualAcknowledged()
@@ -73,7 +69,8 @@ export default function BeforeCastScreen() {
         <Animated.View
           style={[
             styles.card,
-            { opacity: fade, borderColor: colors.separator, backgroundColor: colors.card },
+            cardStyle,
+            { borderColor: colors.separator, backgroundColor: colors.card },
           ]}
         >
           <Text style={[styles.cardTitle, { color: colors.text }]}>{titles[step]}</Text>
@@ -83,11 +80,8 @@ export default function BeforeCastScreen() {
               <Animated.View
                 style={[
                   styles.pulseDot,
-                  {
-                    backgroundColor: colors.accent,
-                    opacity: 0.85,
-                    transform: [{ scale: calmPulse }],
-                  },
+                  pulseStyle,
+                  { backgroundColor: colors.accent, opacity: 0.85 },
                 ]}
               />
             </View>
