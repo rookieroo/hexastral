@@ -7,10 +7,12 @@ No fabricated script, geometric + owned, and composited onto the EXACT same
 rubbing texture as the back so the two faces are a matched pair.
 """
 import math
+import os
 from PIL import Image, ImageDraw, ImageFilter
 
-SRC = "apps/coin-cast-app/components/casting-scene/textures/skins/huaxia/dist/back-su-yin.png"
-OUT = "apps/coin-cast-app/components/casting-scene/textures/skins/huaxia/dist/back-su-yang.png"
+HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(HERE, "dist", "back-su-yin.png")
+OUT = os.path.join(HERE, "dist", "back-su-yang.png")
 
 img = Image.open(SRC).convert("RGB")
 W, H = img.size

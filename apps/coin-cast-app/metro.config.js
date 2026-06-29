@@ -25,7 +25,10 @@ config.resolver.extraNodeModules = {
 const expoRouterRoot = path.dirname(
   require.resolve('expo-router/package.json', { paths: [projectRoot] }),
 )
-const threeRoot = path.dirname(require.resolve('three/package.json', { paths: [projectRoot] }))
+// three@0.184+ does not export ./package.json; main resolves to build/three.cjs
+const threeRoot = path.dirname(
+  path.dirname(require.resolve('three', { paths: [projectRoot] })),
+)
 
 const PINNED = ['expo-router', 'react', 'react-native', 'react-native-reanimated', 'three']
 

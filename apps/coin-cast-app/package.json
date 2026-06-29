@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "node_modules/.bin/expo start --dev-client",
     "dev:go": "node_modules/.bin/expo start",
-    "ios": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo run:ios",
+    "ios": "bun run textures:build && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo run:ios",
     "android": "node_modules/.bin/expo run:android",
-    "prebuild": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node ../../scripts/sync-satellite-colors.mjs app.json && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo prebuild",
+    "prebuild": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node ../../scripts/sync-satellite-colors.mjs app.json && bun run textures:build && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 node_modules/.bin/expo prebuild",
+    "textures:build": "node scripts/build-coin-textures.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format . --write"
