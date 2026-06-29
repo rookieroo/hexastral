@@ -13,8 +13,6 @@ import { Pencil, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
-  Animated,
-  Easing,
   Keyboard,
   Platform,
   Pressable,
@@ -24,6 +22,16 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CoinCastSealLogo } from '@/components/CoinCastSealLogo'
 import { CastingScene } from '@/components/casting-scene/CastingScene'
@@ -129,16 +137,16 @@ function AnimatedYaoLine({
   accentColor: string
   t: (key: SatelliteLocaleKey, vars?: Record<string, string | number>) => string
 }) {
-  const anim = useRef(new Animated.Value(0)).current
+  const anim = useSharedValue(0)
 
   useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1,
-      tension: 150,
-      friction: 11,
-      useNativeDriver: true,
-    }).start()
+    anim.value = withSpring(1, { stiffness: 150, damping: 11 })
   }, [anim])
+
+  const rowStyle = useAnimatedStyle(() => ({
+    opacity: anim.value,
+    transform: [{ translateY: interpolate(anim.value, [0, 1], [14, 0]) }],
+  }))
 
   const isChanging = line.total === 6 || line.total === 9
   const isYang = line.total === 7 || line.total === 9
@@ -149,19 +157,7 @@ function AnimatedYaoLine({
   const rowA11y = t('homeYaoRowA11y', { n: yaoNumber, faces: facesText, total: line.total })
 
   return (
-    <Animated.View
-      style={[
-        styles.hexRow,
-        {
-          opacity: anim,
-          transform: [
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
-          ],
-        },
-      ]}
-      accessibilityLabel={rowA11y}
-      accessible
-    >
+    <Animated.View style={[styles.hexRow, rowStyle]} accessibilityLabel={rowA11y} accessible>
       <Text style={[styles.hexLabel, { color: secondaryColor }]}>{yaoNumber}</Text>
       <View style={styles.coinFacesRow} accessible={false}>
         {line.coins.map((c, i) => (
@@ -233,7 +229,8 @@ export default function CoinCastHomeScreen() {
 
   const [breathingOverlayVisible, setBreathingOverlayVisible] = useState(false)
   const breathingShownRef = useRef(false)
-  const overlayPulse = useRef(new Animated.Value(1)).current
+  const overlayPulse = useSharedValue(1)
+  const overlayRingStyle = useAnimatedStyle(() => ({ transform: [{ scale: overlayPulse.value }] }))
   const pendingCommitRef = useRef<{ hash: string; seed: number } | null>(null)
   const shakeDriveRef = useRef({ x: 0, y: 0, z: 0, mag: 0 })
   /** Dev physics toss: keep synthetic accel for whole flight (and skip real accelerometer overwriting ref). */
@@ -269,29 +266,17 @@ export default function CoinCastHomeScreen() {
 
   useEffect(() => {
     if (!breathingOverlayVisible) {
-      overlayPulse.setValue(1)
+      overlayPulse.value = 1
       return
     }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(overlayPulse, {
-          toValue: 1.25,
-          duration: 1250,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayPulse, {
-          toValue: 1,
-          duration: 1250,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
+    overlayPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.25, { duration: 1250, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 1250, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
     )
-    loop.start()
-    return () => {
-      loop.stop()
-    }
   }, [breathingOverlayVisible, overlayPulse])
 
   useFocusEffect(
@@ -811,13 +796,7 @@ export default function CoinCastHomeScreen() {
             {t('breathingOverlayText')}
           </Text>
           <Animated.View
-            style={[
-              styles.breathOverlayRing,
-              {
-                borderColor: colors.accent,
-                transform: [{ scale: overlayPulse }],
-              },
-            ]}
+            style={[styles.breathOverlayRing, overlayRingStyle, { borderColor: colors.accent }]}
           />
         </View>
       ) : null}

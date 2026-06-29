@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 const LOCALE_STORAGE_KEY = 'satellite_locale'
 
-/** All UI strings for coin-cast-app (en + zh + zh-Hant + ja). */
+/** All UI strings for coin-cast-app (en + zh + zh-Hant + ja + ko). */
 const EN = {
   homeShake: 'Shake',
   homeCast: 'Cast',
@@ -103,6 +103,11 @@ const EN = {
   detailTitle: 'Detailed reading',
   detailFallbackAdvice: 'Keep your next move simple and observable. Let action answer anxiety.',
   detailFallbackSummary: 'Hold center and move.',
+  detailClassicalTitle: 'Classical reference',
+  detailJudgment: 'Judgment',
+  detailImage: 'Image',
+  detailLines: 'Line statements',
+  detailKeywords: 'Themes',
   resultFallbackInterpretation:
     'Your cast result is ready. Continue to full detail for chapter-style guidance.',
   paywallUnlock: 'Unlock Pro',
@@ -233,6 +238,11 @@ const ZH: Record<keyof typeof EN, string> = {
   detailTitle: '详细解读',
   detailFallbackAdvice: '把下一步做得简单、可观察。用行动回应焦虑。',
   detailFallbackSummary: '守中而行。',
+  detailClassicalTitle: '原文参考',
+  detailJudgment: '卦辞',
+  detailImage: '大象',
+  detailLines: '爻辞',
+  detailKeywords: '主题',
   resultFallbackInterpretation: '卦象已就绪，可进入全文解读获取更多层次说明。',
   paywallUnlock: '解锁 Pro',
   paywallRestore: '恢复购买',
@@ -361,6 +371,11 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   detailTitle: '詳細解讀',
   detailFallbackAdvice: '把下一步做得簡單、可觀察。用行動回應焦慮。',
   detailFallbackSummary: '守中而行。',
+  detailClassicalTitle: '原文參考',
+  detailJudgment: '卦辭',
+  detailImage: '大象',
+  detailLines: '爻辭',
+  detailKeywords: '主題',
   resultFallbackInterpretation: '卦象已就緒，可進入全文解讀取得更多層次說明。',
   paywallUnlock: '解鎖 Pro',
   paywallRestore: '恢復購買',
@@ -493,6 +508,11 @@ const JA: Record<keyof typeof EN, string> = {
   detailTitle: '詳しい解釈',
   detailFallbackAdvice: '次の一歩を小さく、確かめられる形に。行動が不安に答えます。',
   detailFallbackSummary: '中心を保ち、進む。',
+  detailClassicalTitle: '原典の参照',
+  detailJudgment: '卦辞',
+  detailImage: '大象',
+  detailLines: '爻辞',
+  detailKeywords: 'テーマ',
   resultFallbackInterpretation: '卦が出揃いました。全文の解釈で深い読み解きへ。',
   paywallUnlock: 'Pro を解放',
   paywallRestore: '購入を復元',
@@ -531,11 +551,148 @@ const JA: Record<keyof typeof EN, string> = {
   onboardBack: '戻る',
 }
 
+const KO: Record<keyof typeof EN, string> = {
+  homeShake: '흔들기',
+  homeCast: '점치기',
+  homeCastingButton: '해석 중…',
+  homeInputA11y: '이번 점의 질문',
+  homeQuestionPrompt: '탭하여 질문을 입력하세요',
+  questionSheetTitle: '당신의 질문',
+  questionSheetCta: '점 시작하기',
+  homeAbortA11y: '이번 점 중단',
+  homeProgressA11y: '여섯 효 중 {n}효 완료',
+  homeYaoCoinBarLegend:
+    '세 개의 작은 표시는 동전 면입니다. 효는 주역 작괘법을 따르며 7/8은 다수결로 음양을 정하지 않습니다.',
+  homeYaoRowA11y: '제{n}효: {faces}. 합계 {total}.',
+  coinFaceA11yYin: '음면',
+  coinFaceA11yYang: '양면',
+  homeGlFallback:
+    '3D 미리보기에는 WebGL 개발 빌드가 필요합니다. 던지기는 정상 작동하며, 효는 던질 때마다 표시됩니다.',
+  homeDevShakeHint: '개발 빌드: 아래 「흔들기」 버튼을 사용하세요(시스템이 흔들기를 개발 메뉴로 예약할 수 있습니다).',
+  homeDevPhysicsButton: '개발 · 물리 던지기',
+  homeDevPhysicsJiggleHint: '길게 누르면 더 강한 합성 흔들림.',
+  settingsTitle: '설정',
+  settingsMotionLabel: '흔들어 점치기',
+  settingsMotionHint: '켜면 세게 흔드는 동작이 세 동전을 한 번 던진 것으로 간주됩니다.',
+  settingsMotionOn: '켜짐',
+  settingsMotionOff: '꺼짐',
+  settingsMemoryLabel: '개인화 해석 메모리',
+  settingsMemoryHint:
+    '켜면 과거 CoinCast 기록의 짧은 요약을 불러와 새 해석을 풍부하게 할 수 있습니다. 데이터는 HexAstral 서버에 저장되며 판매되지 않습니다. 언제든지 끌 수 있습니다.',
+  settingsMemoryOn: '켜짐',
+  settingsMemoryOff: '꺼짐',
+  settingsMemoryGuestHint: 'Apple로 로그인하면 여러 기기에서 메모리를 사용할 수 있습니다.',
+  settingsMemorySaving: '저장 중…',
+  beforeCastTitle: '점 보기 전에',
+  beforeCastC1Title: '한 가지 질문, 정성스러운 마음',
+  beforeCastC1Body:
+    '이번에는 한 가지 질문에 집중하고, 효가 시작되면 바꾸지 마세요. 진정한 의문으로, 정직하게, 남을 해치지 않는 일을 물으세요.',
+  beforeCastC2Title: '마음 가다듬기',
+  beforeCastC2Body: '빛의 박동에 맞춰 천천히 호흡하고, 안정되면 다음으로 넘어가세요.',
+  beforeCastC3Title: '준비 완료',
+  beforeCastC3Body: '아래를 탭하여 점을 시작하세요.',
+  beforeCastNext: '다음',
+  beforeCastReady: '준비되었습니다',
+  breathingOverlayText: '호흡을 가다듬고… 질문에 마음을 두세요.',
+  alertDuplicateTitle: '최근 같은 질문',
+  alertDuplicateMsg: '지난 하루 안에 똑같은 질문을 하셨습니다. 정말 다시 묻고자 할 때만 계속하세요.',
+  alertDuplicateContinue: '그래도 계속',
+  alertDuplicateCancel: '취소',
+  alertRefusedTitle: '이번에는 해석하지 않습니다',
+  alertRefusedTradition: '역경은 정성스러운 마음으로 다가올 것을 청합니다.',
+  alertRefusedWarn: '가볍거나 무관한 질문을 반복하면 CoinCast가 잠시 중단될 수 있습니다.',
+  alertBannedTitle: 'CoinCast 일시 중단',
+  alertBannedMsg: '이 중단은 {time} 후에 해제됩니다. 정성스러운 질문과 함께 다시 찾아주세요.',
+  alertFirstTitle: '먼저 읽어 주세요',
+  alertFirstMsg: '첫 점을 보기 전에 짧은 안내를 한 번 열어 주세요.',
+  alertFirstOpen: '열기',
+  alertCooldownTitle: '잠시 기다려 주세요',
+  alertCooldownMsg: '새 해석까지 약 {m}분 더 기다려 주세요.',
+  alertAbortTitle: '점을 중단할까요?',
+  alertAbortMsg: '도중에 멈추는 것은 권장되지 않습니다. 초기화하고 마음을 가다듬어 다시 시작할 수 있습니다.',
+  alertContinue: '계속',
+  alertAbortConfirm: '그래도 중단',
+  meHistoryTitle: '해석 기록',
+  meEmpty: '아직 점 기록이 없습니다.',
+  meViewAllHistory: '전체 기록 보기',
+  meSettings: '점·모션 설정',
+  meUpgrade: 'Pro로 업그레이드',
+  restorePurchases: '구매 복원',
+  mePrivacy: '개인정보 처리방침',
+  meSignOut: '로그아웃',
+  meSignInSectionTitle: '로그인',
+  meSignInHint: 'Apple로 로그인하면 기기 간 해석 기록을 동기화할 수 있습니다.',
+  meAppleContinue: 'Apple로 계속하기',
+  meApplePreparing: '로그인 준비 중…',
+  meAppleUnavailable: 'Apple 로그인은 개발 빌드 또는 App Store 빌드가 필요합니다(Expo Go에서는 사용할 수 없습니다).',
+  meSignInIosOnly: 'iOS에서 Apple 로그인으로 기록을 동기화할 수 있습니다.',
+  meSealByline: 'HexAstral 제공',
+  mePromoBody: '대표 앱에서 완전한 명반을 잠금 해제하세요.',
+  mePromoCta: 'HexAstral 열기',
+  stackMe: '내 정보',
+  stackHistory: '기록',
+  stackResult: '결과',
+  stackDetail: '해석',
+  stackCast: '점치기',
+  stackPaywall: 'CoinCast Pro',
+  stackSettings: '설정',
+  stackBeforeCast: '점 보기 전에',
+  resultOpenDetail: '전체 해석 보기',
+  resultReadingId: '기록 번호: {id}',
+  resultMemoryNote: '이번 해석은 당신의 보관함에서 과거 메모 {n}건을 참조했습니다.',
+  resultHexagramTitle: '제{num}괘 {name}',
+  detailTitle: '상세 해석',
+  detailFallbackAdvice: '다음 한 걸음을 단순하고 관찰 가능하게 만드세요. 행동이 불안에 답합니다.',
+  detailFallbackSummary: '중심을 지키며 나아가세요.',
+  detailClassicalTitle: '원문 참조',
+  detailJudgment: '괘사',
+  detailImage: '대상',
+  detailLines: '효사',
+  detailKeywords: '주제',
+  resultFallbackInterpretation: '괘가 준비되었습니다. 전체 해석에서 장(章) 형식의 안내를 확인하세요.',
+  paywallUnlock: 'Pro 잠금 해제',
+  paywallRestore: '구매 복원',
+  paywallRestoreRow: '복원',
+  paywallPlanMonthly: '월간 Pro',
+  paywallPlanAnnual: '연간 Pro',
+  paywallPlanCastPack: '점 패키지 (10회)',
+  devtoolsTitle: '개발자 도구',
+  devtoolsReplayOnboarding: '온보딩 초기화',
+  devtoolsClearRitual: '의식·쿨다운 등 로컬 설정 지우기',
+  devtoolsPortfolioUser: 'Portfolio 사용자',
+  devtoolsShowEnv: '빌드 정보 보기',
+  devtoolsDone: '로컬에 저장되었습니다.',
+  devtoolsOk: '확인',
+  castTitle: '점 묻기',
+  castPlaceholder: '이번 주에 무엇을 주의해야 할까요?',
+  castSubmit: '괘 만들기',
+  castBack: '뒤로',
+  castError: '해석 생성에 실패했습니다. 다시 시도해 주세요.',
+  homeError: '해석 생성에 실패했습니다. 다시 시도해 주세요.',
+  alertQuotaTitle: '해석 횟수 제한',
+  alertQuotaMsg: '이번 달 무료 해석 횟수를 모두 사용했습니다. 업그레이드하거나 점 패키지를 구매해 계속하세요.',
+  alertQuotaGuestDailyMsg:
+    '오늘(UTC) 비로그인 점 3회를 모두 사용했습니다. Apple로 로그인하여 계정 횟수로 계속하거나 유료 옵션을 확인하세요.',
+  alertQuotaSignIn: '로그인',
+  alertQuotaUpgrade: '요금제 보기',
+  waYingTitle: '외응 · 이 괘는 무효',
+  waYingMessage:
+    '동전이 모서리에 서서 음양을 정할 수 없습니다. 전통 육효에서는 괘 전체가 무효(이미 나온 효 포함)가 되니, 마음을 가다듬고 첫 효부터 여섯 효를 다시 만드세요. 흔히 일이 미결이거나 변수가 정해지지 않았음을 암시하며, 길흉을 억지로 단정할 필요는 없습니다.',
+  waYingAck: '알겠습니다',
+  onboardKicker: 'HEXASTRAL SATELLITE',
+  onboardSubtitle:
+    '동전 셋을 던져 여섯 효로 괘를 세웁니다. CoinCast는 천 년의 역경 점을 당신의 손끝으로 가져옵니다 — 한 가지를 묻고, 괘를 세우고, AI의 안내를 받으세요.',
+  onboardGetStarted: '시작하기',
+  onboardContinue: '계속',
+  onboardBack: '뒤로',
+}
+
 const DICT: Record<string, Record<keyof typeof EN, string>> = {
   en: EN,
   zh: ZH,
   'zh-Hant': ZH_HANT,
   ja: JA,
+  ko: KO,
 }
 
 function normalizeLocale(input: string): keyof typeof DICT | 'en' {
@@ -568,9 +725,17 @@ export function useSatelliteI18n() {
     return Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), base)
   }
 
-  /** API / backend locale tag */
+  /** API / backend locale tag (svc-astro i18n-prompt supports en/zh/zh-Hant/ja/ko) */
   const apiLocale =
-    locale === 'zh' ? 'zh' : locale === 'zh-Hant' ? 'zh-Hant' : locale === 'ja' ? 'ja' : 'en'
+    locale === 'zh'
+      ? 'zh'
+      : locale === 'zh-Hant'
+        ? 'zh-Hant'
+        : locale === 'ja'
+          ? 'ja'
+          : locale === 'ko'
+            ? 'ko'
+            : 'en'
 
   return { locale: apiLocale, uiLocale: locale, t }
 }
