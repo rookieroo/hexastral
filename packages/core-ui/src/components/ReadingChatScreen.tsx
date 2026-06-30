@@ -89,6 +89,11 @@ export interface ReadingChatStrings {
   suggestions?: ReadonlyArray<string>
   /** "New conversation" action label (shown only when `onNewConversation` is set). */
   newConversation?: string
+  /** Report-message affordance (shown only when `onReportMessage` is set). */
+  report?: string
+  reportConfirmTitle?: string
+  reportConfirmBody?: string
+  reportDone?: string
 }
 
 export interface ReadingChatScreenProps {
@@ -131,6 +136,11 @@ export interface ReadingChatScreenProps {
    * success the local list is emptied. Omit to keep the single-thread behavior.
    */
   onNewConversation?: () => Promise<void> | void
+  /**
+   * Optional report adapter (App Store 1.2 objectionable-content mechanism).
+   * When provided, long-pressing an assistant message offers a "report" action.
+   */
+  onReportMessage?: (messageId: string) => Promise<void> | void
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -178,9 +188,32 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     newRequestId = defaultRequestId,
     initialDraft,
     onNewConversation,
+    onReportMessage,
   } = props
 
   const { colors, isDark } = useTheme()
+
+  const handleReport = (messageId: string) => {
+    if (!onReportMessage) return
+    Alert.alert(
+      copy.reportConfirmTitle ?? 'Report message',
+      copy.reportConfirmBody ?? 'Report this response as objectionable?',
+      [
+        {
+          text: copy.report ?? 'Report',
+          style: 'destructive',
+          onPress: () => {
+            Promise.resolve(onReportMessage(messageId))
+              .then(() => {
+                if (copy.reportDone) Alert.alert(copy.reportDone)
+              })
+              .catch(() => {})
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    )
+  }
   const [isResetting, setIsResetting] = useState(false)
 
   const [history, setHistory] = useState<ReadingChatHistory>({
@@ -381,7 +414,11 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
                   marginBottom: 12,
                 }}
               >
-                <View
+                <Pressable
+                  onLongPress={!isUser && onReportMessage ? () => handleReport(item.id) : undefined}
+                  accessibilityHint={
+                    !isUser && onReportMessage ? (copy.report ?? 'Report message') : undefined
+                  }
                   style={{
                     maxWidth: '80%',
                     backgroundColor: isUser ? colors.accent : colors.card,
@@ -400,7 +437,7 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
                   >
                     {isUser ? item.content : renderAssistantContent(item.content)}
                   </Text>
-                </View>
+                </Pressable>
               </View>
             )
           }}

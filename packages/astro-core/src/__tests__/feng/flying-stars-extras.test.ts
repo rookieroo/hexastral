@@ -33,10 +33,20 @@ describe('describePalaceCombination (phase by 旺衰)', () => {
   })
   test('8运 2-5 失令 → 衰读 (病符大凶)', () => {
     const d = describePalaceCombination(2, 5, 8)
-    // 2 is 生气 in 8运 (wrap(8+2)=1? no) — verify phase is 衰: neither 2 nor 5 旺/生
     expect(d.name).toBe('二五交加')
     expect(d.phase).toBe('衰')
     expect(d.reading).toContain('大凶')
+  })
+  test('9运 2-5 → 衰读 (煞组合: 2虽生气但5黄非当令,不作旺)', () => {
+    // malefic combo: 旺 only on true 当令; in 9运 neither 2 nor 5 is 当令.
+    const d = describePalaceCombination(2, 5, 9)
+    expect(d.phase).toBe('衰')
+    expect(d.reading).toContain('大凶')
+  })
+  test('9运 7-9 → 旺读 (七九合辙, 9当令故旺财)', () => {
+    const d = describePalaceCombination(7, 9, 9)
+    expect(d.phase).toBe('旺')
+    expect(d.reading).toContain('旺财')
   })
 })
 

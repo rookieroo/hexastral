@@ -195,6 +195,9 @@ export default function FacingScreen() {
               <Pressable
                 key={target}
                 onPress={() => setEditTarget(target)}
+                accessibilityRole='button'
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={label}
                 style={{
                   flex: 1,
                   paddingVertical: spacing.sm,
@@ -299,6 +302,8 @@ export default function FacingScreen() {
         </Text>
         <Pressable
           onPress={() => nudge(-1)}
+          accessibilityRole='button'
+          accessibilityLabel='−1°'
           style={{
             width: 40,
             height: 40,
@@ -313,6 +318,8 @@ export default function FacingScreen() {
         </Pressable>
         <Pressable
           onPress={() => nudge(1)}
+          accessibilityRole='button'
+          accessibilityLabel='+1°'
           style={{
             width: 40,
             height: 40,
@@ -334,6 +341,13 @@ export default function FacingScreen() {
       <Pressable
         onPress={() => captureHeading(editTarget === 'door' ? 'door' : 'face')}
         disabled={!canCapture}
+        accessibilityRole='button'
+        accessibilityState={{ disabled: !canCapture }}
+        accessibilityLabel={
+          editTarget === 'door' && doorDifferent
+            ? strings.new_site_facing_capture_unit_door
+            : strings.new_site_facing_capture_building
+        }
         style={{
           backgroundColor: canCapture ? colors.accent : colors.surfaceMute,
           paddingVertical: spacing.md,
@@ -355,6 +369,7 @@ export default function FacingScreen() {
         <Switch
           value={doorDifferent}
           onValueChange={toggleDoorDifferent}
+          accessibilityLabel={strings.new_site_facing_door_toggle}
           trackColor={{ false: colors.surfaceMute, true: colors.accent }}
         />
       </View>
@@ -363,6 +378,8 @@ export default function FacingScreen() {
 
       <Pressable
         onPress={next}
+        accessibilityRole='button'
+        accessibilityLabel={strings.new_site_facing_next}
         style={{
           backgroundColor: colors.accent,
           paddingVertical: spacing.lg,

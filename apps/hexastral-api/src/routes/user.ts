@@ -522,6 +522,11 @@ export const userRoutes = new Hono<AppEnv>()
     await db.delete(fengReports).where(eq(fengReports.userId, userId))
     await db.delete(fengSites).where(eq(fengSites.userId, userId))
 
+    // 2b. Purge chat history (universal user content; conversationMessages
+    // auto-cascade via FK on conversations.id). singlePurchases are retained
+    // (financial audit) but de-identified once the user row is anonymized.
+    await db.delete(conversations).where(eq(conversations.userId, userId))
+
     // 3. Anonymize + unlink the identity (only nullable PII columns).
     await db
       .update(users)

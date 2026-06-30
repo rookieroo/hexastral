@@ -17,6 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.hexastral.feng",
       "usesAppleSignIn": true,
+      "appleTeamId": "L9Z47DW56X",
+      "deploymentTarget": "15.1",
       "associatedDomains": [
         "applinks:hexastral.com",
         "applinks:www.hexastral.com"

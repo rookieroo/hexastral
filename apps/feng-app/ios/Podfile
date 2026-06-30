@@ -39,6 +39,11 @@ target 'Feng' do
     ]
   end
 
+  # Google Sign-In → AppCheckCore (Swift) imports Obj-C pods that lack module maps
+  # when CocoaPods links statically (default for RN/Expo).
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+
   config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
@@ -59,5 +64,20 @@ target 'Feng' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Xcode 16+ rejects pod / resource-bundle targets still pinned below iOS 15.
+    ios_deployment_target = podfile_properties['ios.deploymentTarget'] || '15.1'
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |bc|
+        bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = ios_deployment_target
+      end
+    end
+    installer.target_installation_results.pod_target_installation_results.each do |_pod_name, target_installation_result|
+      target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
+        resource_bundle_target.build_configurations.each do |bc|
+          bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = ios_deployment_target
+        end
+      end
+    end
   end
 end

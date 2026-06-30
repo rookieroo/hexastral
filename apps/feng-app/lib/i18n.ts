@@ -99,6 +99,8 @@ export type Strings = {
   report_pending: string
   report_chapter_pager_hint: string
   report_data_quality_footer: string
+  /** Confidence note: 理气 deterministic vs 形势 AI/DEM-inferred. */
+  report_confidence_note: string
   report_map_close: string
   report_map_mid: string
   report_map_wide: string
@@ -188,6 +190,10 @@ export type Strings = {
   chat_suggest_1: string
   chat_suggest_2: string
   chat_suggest_3: string
+  chat_report: string
+  chat_report_confirm_title: string
+  chat_report_confirm_body: string
+  chat_report_done: string
 
   // Privacy (cross-app memory)
   privacy_section: string
@@ -256,6 +262,8 @@ const EN: Strings = {
   report_chapter_pager_hint: 'Swipe to read each chapter.',
   report_data_quality_footer:
     'Some inputs were estimated. You can re-run with better data anytime.',
+  report_confidence_note:
+    'Flying-stars & eight-mansions are computed exactly. Landform (砂/水/形煞) is AI- and elevation-inferred — treat it as guidance, not measurement.',
   report_map_close: 'Close-up',
   report_map_mid: 'Surrounding',
   report_map_wide: 'Wide',
@@ -278,8 +286,7 @@ const EN: Strings = {
   nav_back: 'Back',
   new_site_review_ai_disclaimer:
     'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
-  new_site_review_iap_note:
-    'One report per site. Pro subscribers use their monthly quota; otherwise a single purchase unlocks this site.',
+  new_site_review_iap_note: 'One report per site, unlocked with a one-time purchase.',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
   sign_in_guest: 'Continue as guest',
@@ -322,15 +329,20 @@ const EN: Strings = {
   chat_placeholder: 'Type a question…',
   chat_loading: 'Thinking…',
   chat_error: 'Something went wrong. Please try again.',
-  chat_pro_unlimited: 'Fēng Pro · unlimited',
+  chat_pro_unlimited: 'Unlimited follow-ups',
   chat_buy_credits: "You're out of chat replies — tap to get more.",
   chat_free_remaining: '{remaining} free replies left',
   chat_pool_remaining: '{remaining} replies left this month',
-  chat_pro_required: 'AI chat is a Fēng Pro feature.',
+  chat_pro_required: 'Unlock this report to ask follow-up questions.',
   chat_cta: 'Ask about this report',
   chat_suggest_1: 'How do I improve my wealth corner?',
   chat_suggest_2: 'What should I fix first?',
   chat_suggest_3: 'Which direction suits me best?',
+  chat_report: 'Report',
+  chat_report_confirm_title: 'Report this response?',
+  chat_report_confirm_body:
+    'Flag this AI response as objectionable. We review reports and take action.',
+  chat_report_done: 'Thanks — your report was sent.',
   privacy_section: 'Privacy',
   cross_app_memory_label: 'Cross-app memory',
   cross_app_memory_hint:
@@ -396,6 +408,7 @@ const ZH_HANS: Strings = {
   report_pending: '尚未生成 — 点击站点开始分析。',
   report_chapter_pager_hint: '左右滑动逐章阅读。',
   report_data_quality_footer: '部分输入是估算值，可随时用更准的数据重新分析。',
+  report_confidence_note: '玄空飞星与八宅为精确演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
   report_map_close: '近景',
   report_map_mid: '周边',
   report_map_wide: '全景',
@@ -417,7 +430,7 @@ const ZH_HANS: Strings = {
   nav_back: '返回',
   new_site_review_ai_disclaimer:
     '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
-  new_site_review_iap_note: '每个地点一份报告。Pro 会员消耗月度配额；非会员可单次购买解锁此地点。',
+  new_site_review_iap_note: '每个地点一份报告，单次购买永久解锁。',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
   sign_in_guest: '以访客身份继续',
@@ -458,15 +471,19 @@ const ZH_HANS: Strings = {
   chat_placeholder: '输入你的问题…',
   chat_loading: '正在思考…',
   chat_error: '出错了，请稍后再试。',
-  chat_pro_unlimited: 'Fēng Pro · 无限畅聊',
+  chat_pro_unlimited: '无限追问',
   chat_buy_credits: '对话次数已用完 — 点此获取更多。',
   chat_free_remaining: '还剩 {remaining} 次免费回复',
   chat_pool_remaining: '本月还剩 {remaining} 次回复',
-  chat_pro_required: 'AI 对话是 Fēng Pro 功能。',
+  chat_pro_required: '解锁本报告后即可追问。',
   chat_cta: '聊聊这份报告',
   chat_suggest_1: '财位怎么催旺？',
   chat_suggest_2: '我该先化解什么？',
   chat_suggest_3: '哪个方位最适合我？',
+  chat_report: '举报',
+  chat_report_confirm_title: '举报这条回复？',
+  chat_report_confirm_body: '将这条 AI 回复标记为不当内容。我们会审核并处理。',
+  chat_report_done: '已收到你的举报，谢谢。',
   privacy_section: '隐私',
   cross_app_memory_label: '跨应用记忆',
   cross_app_memory_hint: '允许对话参考你在所有 HexAstral 应用中的解读。仅限同一账户，绝不外泄。',
@@ -527,6 +544,7 @@ const ZH_HANT: Strings = {
   report_pending: '尚未生成 — 點選地點開始分析。',
   report_chapter_pager_hint: '左右滑動逐章閱讀。',
   report_data_quality_footer: '部分輸入為估算，可隨時用更準的資料重新分析。',
+  report_confidence_note: '玄空飛星與八宅為精確演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
   report_map_close: '近景',
   report_map_mid: '周邊',
   report_map_wide: '全景',
@@ -544,7 +562,7 @@ const ZH_HANT: Strings = {
   chapter_auspicious_objects: '改運',
   new_site_review_ai_disclaimer:
     '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
-  new_site_review_iap_note: '每個地點一份報告。Pro 會員消耗月度配額；非會員可單次購買解鎖此地點。',
+  new_site_review_iap_note: '每個地點一份報告，單次購買永久解鎖。',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
   sign_in_guest: '以訪客身份繼續',
@@ -585,15 +603,19 @@ const ZH_HANT: Strings = {
   chat_placeholder: '輸入你的問題…',
   chat_loading: '正在思考…',
   chat_error: '發生錯誤，請稍後再試。',
-  chat_pro_unlimited: 'Fēng Pro · 無限暢聊',
+  chat_pro_unlimited: '無限追問',
   chat_buy_credits: '對話次數已用完 — 點此取得更多。',
   chat_free_remaining: '還剩 {remaining} 次免費回覆',
   chat_pool_remaining: '本月還剩 {remaining} 次回覆',
-  chat_pro_required: 'AI 對話是 Fēng Pro 功能。',
+  chat_pro_required: '解鎖本報告後即可追問。',
   chat_cta: '聊聊這份報告',
   chat_suggest_1: '財位怎麼催旺？',
   chat_suggest_2: '我該先化解什麼？',
   chat_suggest_3: '哪個方位最適合我？',
+  chat_report: '檢舉',
+  chat_report_confirm_title: '檢舉這則回覆？',
+  chat_report_confirm_body: '將這則 AI 回覆標記為不當內容。我們會審核並處理。',
+  chat_report_done: '已收到你的檢舉，謝謝。',
   privacy_section: '隱私',
   cross_app_memory_label: '跨應用記憶',
   cross_app_memory_hint: '允許對話參考你在所有 HexAstral 應用中的解讀。僅限同一帳號，絕不外洩。',
@@ -659,6 +681,8 @@ const JA: Strings = {
   report_pending: 'まだ分析されていません — 場所をタップして開始します。',
   report_chapter_pager_hint: '左右にスワイプして章を読みます。',
   report_data_quality_footer: '一部の入力は推定値です。より正確なデータでいつでも再分析できます。',
+  report_confidence_note:
+    '玄空飛星と八宅は厳密に算出。巒頭（砂水形煞）は AI と標高からの推定で、参考としてご覧ください。',
   report_map_close: '近景',
   report_map_mid: '周辺',
   report_map_wide: '全景',
@@ -680,8 +704,7 @@ const JA: Strings = {
   nav_back: '戻る',
   new_site_review_ai_disclaimer:
     '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
-  new_site_review_iap_note:
-    '1 地点につき 1 レポート。Pro 会員は月間クォータを消費、それ以外は単発購入でこの地点を解放できます。',
+  new_site_review_iap_note: '1 地点につき 1 レポート。単発購入で解放されます。',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',
   sign_in_guest: 'ゲストとして続ける',
@@ -723,15 +746,19 @@ const JA: Strings = {
   chat_placeholder: '質問を入力…',
   chat_loading: '考えています…',
   chat_error: 'エラーが発生しました。もう一度お試しください。',
-  chat_pro_unlimited: 'Fēng Pro · 無制限',
+  chat_pro_unlimited: '無制限の追加質問',
   chat_buy_credits: 'チャット回数を使い切りました — タップで追加。',
   chat_free_remaining: '無料の返信があと {remaining} 回',
   chat_pool_remaining: '今月の返信があと {remaining} 回',
-  chat_pro_required: 'AI チャットは Fēng Pro の機能です。',
+  chat_pro_required: 'このレポートを解放すると追加で質問できます。',
   chat_cta: 'このレポートについて聞く',
   chat_suggest_1: '財方位を強めるには？',
   chat_suggest_2: 'まず何を直すべき？',
   chat_suggest_3: '私に最も合う方位は？',
+  chat_report: '報告',
+  chat_report_confirm_title: 'この返信を報告しますか？',
+  chat_report_confirm_body: 'この AI の返信を不適切として報告します。確認のうえ対応します。',
+  chat_report_done: '報告を受け付けました。ありがとうございます。',
   privacy_section: 'プライバシー',
   cross_app_memory_label: 'アプリ間メモリ',
   cross_app_memory_hint:

@@ -18,8 +18,10 @@ import { z } from 'zod/v4'
 import { conversationMessages, conversations, users } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { FREE_TASTE_MESSAGES_PER_READING, resolveChatTier } from '../lib/access/capabilities'
+import { alertAdmin } from '../lib/admin-alert'
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
+import { moderationRefusal, screenChatText } from '../lib/chat-moderation'
 import { resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
 import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
 import { getActiveEntitlements } from '../services/entitlements'
@@ -88,6 +90,29 @@ chatRoutes.post('/', async (c) => {
     .where(eq(users.id, userId))
     .get()
   if (!user) throw new HTTPException(404, { message: 'User not found' })
+
+  // Content moderation (App Store 1.2) — screen the user message BEFORE any LLM
+  // call / billing / writes. Blocked input → a safe refusal, no side effects.
+  const inputScreen = screenChatText(input.message)
+  if (!inputScreen.allowed) {
+    c.executionCtx.waitUntil(
+      alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+        title: 'Chat input blocked by moderation',
+        message: 'A user chat message was blocked before reaching the LLM.',
+        level: 'warning',
+        context: { userId, category: inputScreen.category ?? '', targetApp },
+      }).catch(() => {})
+    )
+    return c.json({
+      conversationId: '',
+      reply: moderationRefusal(user.locale),
+      isPro: false,
+      tier: 'free',
+      billingMode: 'free',
+      freeMessagesRemaining: null,
+      moderated: true,
+    })
+  }
 
   const entitlements = await getActiveEntitlements(db, userId)
   const activeEntitlements = entitlements.map((e) => e.key)
@@ -238,6 +263,21 @@ chatRoutes.post('/', async (c) => {
     throw new HTTPException(503, { message: 'chat_unavailable' })
   }
 
+  // Output moderation — replace an objectionable AI reply with a safe refusal
+  // before it is persisted or returned.
+  const outputScreen = screenChatText(astroResp.reply)
+  if (!outputScreen.allowed) {
+    c.executionCtx.waitUntil(
+      alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+        title: 'Chat AI reply blocked by moderation',
+        message: 'An AI reply was blocked and replaced before persist.',
+        level: 'error',
+        context: { userId, category: outputScreen.category ?? '', targetApp },
+      }).catch(() => {})
+    )
+    astroResp = { reply: moderationRefusal(user.locale) }
+  }
+
   const userMsgId = nanoid()
   const assistantMsgId = nanoid()
   const now = new Date().toISOString()
@@ -297,6 +337,53 @@ chatRoutes.post('/', async (c) => {
       hitCount: bundle.memory.hitCount,
     },
   })
+})
+
+/**
+ * POST /api/chat/report — flag an AI message as objectionable (App Store 1.2).
+ * Verifies the message belongs to the caller, then dispatches to admin-notify.
+ */
+const reportSchema = z.object({
+  messageId: z.string().min(1),
+  reason: z.string().max(500).optional(),
+})
+
+chatRoutes.post('/report', async (c) => {
+  const userId = requireUserId(c)
+  const { messageId, reason } = reportSchema.parse(await c.req.json())
+  const db = c.get('db')
+
+  const row = await db
+    .select({
+      role: conversationMessages.role,
+      content: conversationMessages.content,
+      ownerId: conversations.userId,
+    })
+    .from(conversationMessages)
+    .innerJoin(conversations, eq(conversationMessages.conversationId, conversations.id))
+    .where(eq(conversationMessages.id, messageId))
+    .get()
+
+  if (!row || row.ownerId !== userId) {
+    throw new HTTPException(404, { message: 'message not found' })
+  }
+
+  c.executionCtx.waitUntil(
+    alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+      title: 'Chat message reported by user',
+      message: 'A user reported an AI chat message as objectionable.',
+      level: 'warning',
+      context: {
+        userId,
+        messageId,
+        role: row.role,
+        reason: reason ?? '',
+        excerpt: row.content.slice(0, 200),
+      },
+    }).catch(() => {})
+  )
+
+  return c.json({ ok: true })
 })
 
 /** GET /api/chat/:type/:readingId — 加载对话历史 */

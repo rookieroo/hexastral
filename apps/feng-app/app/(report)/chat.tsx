@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Alert, Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
-import { fetchChatHistory, sendChatMessage } from '@/lib/chat'
+import { fetchChatHistory, reportChatMessage, sendChatMessage } from '@/lib/chat'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 
 export default function ReportChatScreen() {
@@ -37,6 +37,10 @@ export default function ReportChatScreen() {
       freeRemaining: t.chat_free_remaining,
       poolRemaining: t.chat_pool_remaining,
       suggestions: [t.chat_suggest_1, t.chat_suggest_2, t.chat_suggest_3],
+      report: t.chat_report,
+      reportConfirmTitle: t.chat_report_confirm_title,
+      reportConfirmBody: t.chat_report_confirm_body,
+      reportDone: t.chat_report_done,
     }),
     [t]
   )
@@ -74,6 +78,7 @@ export default function ReportChatScreen() {
       readingId={reportId}
       fetchHistory={() => fetchChatHistory(userId, 'feng', reportId)}
       sendMessage={(msg, requestId) => sendChatMessage(userId, 'feng', reportId, msg, requestId)}
+      onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
       onPaywallRequest={() => Alert.alert(t.chat_pro_required)}
       copy={copy}
       header={header}

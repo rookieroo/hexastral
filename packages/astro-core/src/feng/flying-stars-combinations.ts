@@ -211,17 +211,24 @@ export interface PalaceCombination {
  * `phase` reads 旺 when either star is 当令/生气 (the combination's auspicious
  * face shows), otherwise 衰 (its 失令 face).
  */
+/** 煞-natured domains: such combinations only read 旺 when a star is truly 当令
+ *  (not merely 生气) — e.g. 二五交加 must NOT read auspicious just because 2 is
+ *  the future 生气 star; the 五黄 keeps it malefic until actually 当运. */
+const MALEFIC_DOMAINS: ReadonlySet<CombinationDomain> = new Set(['灾', '病', '是非', '盗'])
+
 export function describePalaceCombination(
   mountainStar: YuanYun,
   facingStar: YuanYun,
   yuanYun: YuanYun
 ): PalaceCombination {
   const combination = lookupCombination(mountainStar, facingStar)
-  const prosperous =
-    classifyStar(mountainStar, yuanYun) === '当令' ||
-    classifyStar(mountainStar, yuanYun) === '生气' ||
-    classifyStar(facingStar, yuanYun) === '当令' ||
-    classifyStar(facingStar, yuanYun) === '生气'
+  const mq = classifyStar(mountainStar, yuanYun)
+  const fq = classifyStar(facingStar, yuanYun)
+  const hasDangling = mq === '当令' || fq === '当令'
+  const hasSheng = mq === '生气' || fq === '生气'
+  const malefic = combination ? combination.domain.some((d) => MALEFIC_DOMAINS.has(d)) : false
+  // Benefic combos: 当令 or 生气 → 旺. Malefic combos: only true 当令 → 旺.
+  const prosperous = malefic ? hasDangling : hasDangling || hasSheng
   const phase: '旺' | '衰' = prosperous ? '旺' : '衰'
   return {
     mountainStar,

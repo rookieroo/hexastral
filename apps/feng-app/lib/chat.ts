@@ -45,6 +45,17 @@ export async function fetchChatHistory(
   return (await res.json()) as ReadingChatHistory
 }
 
+export async function reportChatMessage(userId: string, messageId: string): Promise<void> {
+  const path = '/api/chat/report'
+  const body = JSON.stringify({ messageId })
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'POST',
+    headers: await authedHeaders(userId, 'POST', path, body),
+    body,
+  })
+  if (!res.ok) throw new Error(`chat_report_failed:${res.status}`)
+}
+
 export async function sendChatMessage(
   userId: string,
   readingType: string,

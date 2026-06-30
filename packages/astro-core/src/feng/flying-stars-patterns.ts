@@ -9,9 +9,11 @@
  *   - 合十 — 山盘 or 向盘 与运盘合十 (通气)
  *   - 父母三般卦 (147/258/369) / 连珠三般卦 (连续) — 通气贯三元
  *   - 全盘伏吟 / 全盘反吟 — vs 元旦盘 (洛书)
+ *   - 七星打劫 (离宫真 / 坎宫假) — 旺向到向首 + 三宫向盘三般卦
+ *   - 城门诀 — 向首两旁宫, 合河图为正城门, 当令旺星到则可用
  *
- * Lineage: 沈氏玄空 (consistent with flying-stars.ts). 七星打劫 / 城门诀 are
- * deferred to a later increment (they need extra context + careful test corpora).
+ * Lineage: 沈氏玄空 (consistent with flying-stars.ts). 七星打劫 / 城门诀 follow the
+ * 沈氏 operational rules (conservative: 真打劫 needs 旺向到向首 + strict 三般 set).
  *
  * Pure functions, no I/O. Pairs with `flying-stars.ts` + the form-li engine.
  */
@@ -19,6 +21,7 @@
 import type { NineChart, YuanYun } from './flying-stars'
 import { NINE_CHART_KEYS } from './flying-stars'
 import type { BaguaPalace } from './twenty-four-mountains'
+import { PALACE_LUOSHU } from './twenty-four-mountains'
 
 export type FlyingStarPatternKind =
   | '旺山旺向'
@@ -30,6 +33,8 @@ export type FlyingStarPatternKind =
   | '连珠三般卦'
   | '全盘伏吟'
   | '全盘反吟'
+  | '七星打劫'
+  | '城门诀'
 
 export interface FlyingStarPattern {
   kind: FlyingStarPatternKind
@@ -87,6 +92,77 @@ function isConsecutiveTriple(nums: readonly number[]): boolean {
   if (s[0] === 1 && s[1] === 2 && s[2] === 9) return true // 9,1,2
   if (s[0] === 1 && s[1] === 8 && s[2] === 9) return true // 8,9,1
   return false
+}
+
+// ── 七星打劫 (沈氏) ──────────────────────────────────────────────────────────
+// 真打劫(离宫): 向首 ∈ {离,震,乾} 且当旺向星到向首,且 离震乾 三宫向盘成父母三般卦。
+// 假打劫(坎宫): 向首 ∈ {坎,巽,兑},坎巽兑 三宫向盘成三般卦。
+// Source: 沈氏玄空学 — "离、震、乾三方山向二星合成一四七二五八三六九父母三般卦"。
+const ROBBERY_TRUE: readonly BaguaPalace[] = ['离', '震', '乾']
+const ROBBERY_FALSE: readonly BaguaPalace[] = ['坎', '巽', '兑']
+
+function detectSevenStarRobbery(
+  facePalace: BaguaPalace,
+  facingChart: NineChart<YuanYun>,
+  yuanYun: YuanYun
+): FlyingStarPattern | null {
+  if (facingChart[facePalace] !== yuanYun) return null // 必当旺向星到向首
+  const group = ROBBERY_TRUE.includes(facePalace)
+    ? { palaces: ROBBERY_TRUE, label: '离宫真打劫' }
+    : ROBBERY_FALSE.includes(facePalace)
+      ? { palaces: ROBBERY_FALSE, label: '坎宫假打劫' }
+      : null
+  if (!group) return null
+  const triplet = group.palaces.map((p) => facingChart[p])
+  if (!SANBAN_GROUPS.some((g) => sameTriple(triplet, g))) return null
+  return {
+    kind: '七星打劫',
+    quality: 'special',
+    scope: '向盘',
+    note: `${group.label}：向盘成父母三般卦，可劫向未来之旺气（犯反伏吟则不取）`,
+  }
+}
+
+// ── 城门诀 (沈氏) ────────────────────────────────────────────────────────────
+// 向首左右两旁之宫为城门候选；与向首洛书数合河图(1-6/2-7/3-8/4-9)者为正城门,余为副;
+// 当令旺星到该宫则可用(可开门、放水、催财)。Source: 沈氏 — "离向→巽坤为城门"。
+const PALACE_RING: readonly BaguaPalace[] = ['坎', '艮', '震', '巽', '离', '坤', '兑', '乾']
+
+function isHeTu(a: number, b: number): boolean {
+  const lo = Math.min(a, b)
+  const hi = Math.max(a, b)
+  return (
+    (lo === 1 && hi === 6) ||
+    (lo === 2 && hi === 7) ||
+    (lo === 3 && hi === 8) ||
+    (lo === 4 && hi === 9)
+  )
+}
+
+function detectCityGate(
+  facePalace: BaguaPalace,
+  facingChart: NineChart<YuanYun>,
+  yuanYun: YuanYun
+): FlyingStarPattern | null {
+  const i = PALACE_RING.indexOf(facePalace)
+  if (i < 0) return null
+  const flanks = [PALACE_RING[(i + 7) % 8], PALACE_RING[(i + 1) % 8]] as BaguaPalace[]
+  const faceLuo = PALACE_LUOSHU[facePalace]
+  const usable = flanks
+    .map((g) => ({
+      palace: g,
+      zheng: isHeTu(PALACE_LUOSHU[g], faceLuo),
+      on: facingChart[g] === yuanYun,
+    }))
+    .filter((x) => x.on)
+  if (usable.length === 0) return null
+  const desc = usable.map((x) => `${x.zheng ? '正' : '副'}城门${x.palace}`).join('、')
+  return {
+    kind: '城门诀',
+    quality: 'auspicious',
+    scope: '向盘',
+    note: `${desc}：当令旺星临城门，可于此宫开门、放水、催财（仅当运可用）`,
+  }
 }
 
 /** Detect all structural 格局 present in a chart set. */
@@ -207,6 +283,17 @@ export function detectPatterns(input: DetectPatternsInput): FlyingStarPattern[] 
       note: '向盘反吟，主破耗反复。',
     })
   }
+
+  // ── 七星打劫 + 城门诀 (向盘格局, 沈氏) ──
+  // Skip 打劫 if the 向盘 is 反吟/伏吟 (犯者不取).
+  const facingFuYin = NINE_CHART_KEYS.every((k) => facingChart[k] === YUAN_DAN[k])
+  const facingFanYin = NINE_CHART_KEYS.every((k) => facingChart[k] === complement10(YUAN_DAN[k]))
+  if (!facingFuYin && !facingFanYin) {
+    const robbery = detectSevenStarRobbery(facePalace, facingChart, yuanYun)
+    if (robbery) out.push(robbery)
+  }
+  const cityGate = detectCityGate(facePalace, facingChart, yuanYun)
+  if (cityGate) out.push(cityGate)
 
   return out
 }

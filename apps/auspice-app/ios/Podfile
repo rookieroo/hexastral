@@ -39,6 +39,11 @@ target 'Auspice' do
     ]
   end
 
+  # Google Sign-In → AppCheckCore (Swift) imports Obj-C pods that lack module maps
+  # when CocoaPods links statically (default for RN/Expo).
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+
   config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']

@@ -11,16 +11,7 @@
  * with loading state + progress label; empty/error states use core-ui primitives.
  */
 
-import {
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  LoadingTextBlock,
-  Pill,
-  useHaptic,
-  useTheme,
-} from '@zhop/core-ui'
+import { Button, EmptyState, ErrorState, useHaptic, useTheme } from '@zhop/core-ui'
 import {
   BaZhaiWheel,
   type FengChapter,
@@ -34,8 +25,10 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnotatedMapSwiper } from '@/components/AnnotatedMapSwiper'
+import { LuopanLoader } from '@/components/LuopanLoader'
 import { ShareFengChapterButton } from '@/components/ShareFengChapterButton'
 import { resolveLocale, type Strings, useStrings } from '@/lib/i18n'
+import { FENG_PAPER } from '@/lib/theme'
 
 /** form-li verdicts that read as auspicious (accent color); others = danger. */
 const AUSPICIOUS_VERDICTS = new Set(['旺丁', '旺财'])
@@ -54,9 +47,20 @@ export default function ReportScreen() {
   const analyzeOnceRef = useRef(false)
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { colors, spacing } = useTheme()
+  const { spacing } = useTheme()
   const t = useStrings(resolveLocale())
   const haptic = useHaptic()
+
+  // 宣纸 document palette — the report reads as ink-on-paper regardless of mode.
+  const c = {
+    bg: FENG_PAPER.bg,
+    text: FENG_PAPER.ink,
+    secondary: FENG_PAPER.inkSoft,
+    accent: FENG_PAPER.bronze,
+    danger: FENG_PAPER.cinnabar,
+    card: FENG_PAPER.sheet,
+    separator: FENG_PAPER.hair,
+  }
 
   const chapterTag = (kind: string): string => {
     const key = CHAPTER_TAG_KEYS[kind]
@@ -88,7 +92,7 @@ export default function ReportScreen() {
         paddingTop: insets.top + spacing.md,
         paddingBottom: insets.bottom + spacing.xl,
       }}
-      style={{ backgroundColor: colors.bg }}
+      style={{ backgroundColor: c.bg }}
     >
       <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.md }}>
         <Pressable
@@ -100,14 +104,13 @@ export default function ReportScreen() {
           accessibilityLabel={t.nav_back}
           hitSlop={12}
         >
-          <Text style={{ color: colors.accent, fontSize: 14 }}>‹ {t.nav_back}</Text>
+          <Text style={{ color: c.accent, fontSize: 14 }}>‹ {t.nav_back}</Text>
         </Pressable>
       </View>
 
       {isLoading ? (
-        <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
-          <LoadingTextBlock />
-          <LoadingTextBlock />
+        <View style={{ paddingVertical: spacing.xl * 3, alignItems: 'center' }}>
+          <LuopanLoader label={t.report_loading} />
         </View>
       ) : !site ? (
         <ErrorState
@@ -118,8 +121,8 @@ export default function ReportScreen() {
       ) : (
         <>
           <View style={{ paddingHorizontal: spacing.xl, gap: spacing.xs }}>
-            <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>{site.name}</Text>
-            <Text style={{ fontSize: 13, color: colors.secondary }}>{site.formattedAddress}</Text>
+            <Text style={{ fontSize: 26, fontWeight: '700', color: c.text }}>{site.name}</Text>
+            <Text style={{ fontSize: 13, color: c.secondary }}>{site.formattedAddress}</Text>
           </View>
 
           {reportId && annotatedTiles.length > 0 ? (
@@ -142,7 +145,16 @@ export default function ReportScreen() {
               <EmptyState
                 title={t.report_pending}
                 customAction={
-                  <View style={{ gap: spacing.sm, alignItems: 'center' }}>
+                  <View style={{ gap: spacing.lg, alignItems: 'center' }}>
+                    {analyze.isRunning ? (
+                      <LuopanLoader
+                        size={140}
+                        label={t.new_site_review_processing.replace(
+                          '{stage}',
+                          analyze.stage ?? 'maps'
+                        )}
+                      />
+                    ) : null}
                     <Button
                       variant='primary'
                       size='lg'
@@ -159,7 +171,7 @@ export default function ReportScreen() {
                         : t.new_site_review_confirm}
                     </Button>
                     {analyze.error ? (
-                      <Text style={{ color: colors.danger, fontSize: 13, textAlign: 'center' }}>
+                      <Text style={{ color: c.danger, fontSize: 13, textAlign: 'center' }}>
                         {t.report_failed.replace('{message}', analyze.error.message)}
                       </Text>
                     ) : null}
@@ -180,7 +192,16 @@ export default function ReportScreen() {
                   key={chapter.kind}
                   entering={FadeInDown.duration(260).delay(idx * 60)}
                 >
-                  <Card variant='elevated' padding='lg' style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      backgroundColor: c.card,
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: c.separator,
+                      padding: spacing.lg,
+                      gap: spacing.sm,
+                    }}
+                  >
                     <View
                       style={{
                         flexDirection: 'row',
@@ -188,24 +209,27 @@ export default function ReportScreen() {
                         gap: spacing.sm,
                       }}
                     >
-                      <Pill variant='accent'>{`CH ${idx + 1}`}</Pill>
                       <Text
                         style={{
-                          color: colors.secondary,
+                          color: FENG_PAPER.cinnabar,
                           fontSize: 11,
-                          letterSpacing: 2,
+                          fontWeight: '700',
+                          letterSpacing: 1,
                         }}
                       >
+                        {`CH ${idx + 1}`}
+                      </Text>
+                      <Text style={{ color: c.accent, fontSize: 11, letterSpacing: 3 }}>
                         {chapterTag(chapter.kind)}
                       </Text>
                     </View>
-                    <Text style={{ color: colors.text, fontSize: 19, fontWeight: '700' }}>
+                    <Text style={{ color: c.text, fontSize: 19, fontWeight: '700' }}>
                       {chapter.title}
                     </Text>
-                    <Text style={{ color: colors.accent, fontSize: 14, fontStyle: 'italic' }}>
+                    <Text style={{ color: FENG_PAPER.cinnabar, fontSize: 14, fontStyle: 'italic' }}>
                       {chapter.goldenLine}
                     </Text>
-                    <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
+                    <Text style={{ color: c.text, fontSize: 15, lineHeight: 22 }}>
                       {chapter.body}
                     </Text>
 
@@ -213,19 +237,19 @@ export default function ReportScreen() {
                       <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
                         <FlyingStarsGrid
                           result={compute.flyingStars}
-                          backgroundColor={colors.card}
-                          borderColor={colors.separator}
-                          labelColor={colors.text}
+                          backgroundColor={FENG_PAPER.bg}
+                          borderColor={c.separator}
+                          labelColor={c.text}
                         />
                         {compute.patterns && compute.patterns.length > 0 ? (
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                             {compute.patterns.map((p) => {
                               const tone =
                                 p.quality === 'auspicious'
-                                  ? colors.accent
+                                  ? c.accent
                                   : p.quality === 'inauspicious'
-                                    ? colors.danger
-                                    : colors.secondary
+                                    ? c.danger
+                                    : c.secondary
                               return (
                                 <View
                                   key={`${p.kind}-${p.scope ?? ''}`}
@@ -250,7 +274,7 @@ export default function ReportScreen() {
                         {compute.flyingStars.isCompoundFacing ? (
                           <Text
                             style={{
-                              color: colors.secondary,
+                              color: c.secondary,
                               fontSize: 12,
                               fontStyle: 'italic',
                             }}
@@ -262,7 +286,7 @@ export default function ReportScreen() {
                           <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
                             <Text
                               style={{
-                                color: colors.secondary,
+                                color: c.secondary,
                                 fontSize: 11,
                                 letterSpacing: 1,
                               }}
@@ -272,10 +296,10 @@ export default function ReportScreen() {
                             {compute.formLi.palaces.flatMap((pl) =>
                               pl.findings.map((f, i) => {
                                 const tone = AUSPICIOUS_VERDICTS.has(f.verdict)
-                                  ? colors.accent
+                                  ? c.accent
                                   : f.verdict === '化煞' || f.verdict === '平'
-                                    ? colors.secondary
-                                    : colors.danger
+                                    ? c.secondary
+                                    : c.danger
                                 return (
                                   <View
                                     key={`${pl.palace}-${f.verdict}-${i}`}
@@ -293,7 +317,7 @@ export default function ReportScreen() {
                                     </Text>
                                     <Text
                                       style={{
-                                        color: colors.text,
+                                        color: c.text,
                                         fontSize: 12,
                                         flex: 1,
                                         lineHeight: 18,
@@ -309,7 +333,7 @@ export default function ReportScreen() {
                               <Text
                                 key={`zl-${z.palace}-${i}`}
                                 style={{
-                                  color: z.auspicious ? colors.accent : colors.danger,
+                                  color: z.auspicious ? c.accent : c.danger,
                                   fontSize: 12,
                                   lineHeight: 18,
                                 }}
@@ -321,7 +345,7 @@ export default function ReportScreen() {
                               <Text
                                 key={r.pattern}
                                 style={{
-                                  color: r.favourable ? colors.accent : colors.danger,
+                                  color: r.favourable ? c.accent : c.danger,
                                   fontSize: 12,
                                   fontStyle: 'italic',
                                   lineHeight: 18,
@@ -339,13 +363,11 @@ export default function ReportScreen() {
                       <View
                         style={{ marginTop: spacing.md, alignItems: 'center', gap: spacing.sm }}
                       >
-                        <BaZhaiWheel result={compute.baZhai} size={240} strokeColor={colors.text} />
+                        <BaZhaiWheel result={compute.baZhai} size={240} strokeColor={c.text} />
                         {compute.baZhai.concord ? (
                           <Text
                             style={{
-                              color: compute.baZhai.concord.concordant
-                                ? colors.accent
-                                : colors.danger,
+                              color: compute.baZhai.concord.concordant ? c.accent : c.danger,
                               fontSize: 13,
                               fontWeight: '700',
                             }}
@@ -354,7 +376,7 @@ export default function ReportScreen() {
                           </Text>
                         ) : null}
                         <View style={{ alignSelf: 'stretch', gap: spacing.xs }}>
-                          <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 1 }}>
+                          <Text style={{ color: c.secondary, fontSize: 11, letterSpacing: 1 }}>
                             {t.report_placement_heading}
                           </Text>
                           {(
@@ -366,10 +388,10 @@ export default function ReportScreen() {
                             ] as const
                           ).map(([label, v]) => (
                             <View key={label} style={{ flexDirection: 'row', gap: spacing.sm }}>
-                              <Text style={{ color: colors.secondary, fontSize: 12, width: 56 }}>
+                              <Text style={{ color: c.secondary, fontSize: 12, width: 56 }}>
                                 {label}
                               </Text>
-                              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
+                              <Text style={{ color: c.text, fontSize: 12, fontWeight: '600' }}>
                                 {v.kind}·{v.palace}
                               </Text>
                             </View>
@@ -393,13 +415,13 @@ export default function ReportScreen() {
                         />
                       </View>
                     ) : null}
-                  </Card>
+                  </View>
                 </Animated.View>
               ))}
 
               <Text
                 style={{
-                  color: colors.secondary,
+                  color: c.secondary,
                   fontSize: 12,
                   fontStyle: 'italic',
                   textAlign: 'center',
@@ -409,10 +431,21 @@ export default function ReportScreen() {
                 {t.report_data_quality_footer}
               </Text>
 
+              <Text
+                style={{
+                  color: c.secondary,
+                  fontSize: 11,
+                  textAlign: 'center',
+                  paddingHorizontal: spacing.xl,
+                }}
+              >
+                {t.report_confidence_note}
+              </Text>
+
               {compute?.streetAttribution ? (
                 <Text
                   style={{
-                    color: colors.secondary,
+                    color: c.secondary,
                     opacity: 0.6,
                     fontSize: 10,
                     textAlign: 'center',

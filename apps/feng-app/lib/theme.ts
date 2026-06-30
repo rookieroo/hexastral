@@ -34,6 +34,23 @@ export const FENG_PALETTE = {
   black: '#020608',
 } as const
 
+/**
+ * 宣纸 document palette for the report ("墨儀" ink-on-paper look, à la kindred's
+ * kindredPaper but in Fēng's own 墨青/铜金/朱砂 brand). Fixed regardless of
+ * light/dark mode — the report reads as an unrolled scroll.
+ */
+export const FENG_PAPER = {
+  bg: '#F3ECDD', // warm 宣纸 ground
+  sheet: '#F8F2E6', // chapter-card surface (lifts off the ground)
+  ink: '#1A2A30', // 墨 body text (warm dark, legible on cream)
+  inkSoft: 'rgba(26,42,48,0.70)',
+  muted: 'rgba(26,42,48,0.45)',
+  bronze: '#8A6D3B', // 铜金 section accent (darkened for contrast on cream)
+  cinnabar: '#9B2226', // 朱砂 — peak / golden-line / inauspicious
+  hair: 'rgba(26,42,48,0.14)', // hairline rules + card border
+  hairSoft: 'rgba(26,42,48,0.07)',
+} as const
+
 export interface FengColors {
   bg: string
   surface: string

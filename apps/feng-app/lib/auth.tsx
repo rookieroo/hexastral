@@ -10,7 +10,7 @@ import type { ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
 import { config } from './config'
-import { getDeviceSecret, storeDeviceSecret } from './hmac'
+import { clearDeviceSecret, storeDeviceSecret } from './hmac'
 import { clearFengSessionCaches } from './session-reset'
 import {
   clearFengUserSession,
@@ -142,6 +142,10 @@ export interface AuthState {
   signInAsGuest: () => Promise<boolean>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
+  /** Re-sync deviceSecret from POST /api/user (e.g. after 403 Authentication failed). */
+  resyncCredentials: () => Promise<void>
+  /** Bumps after deviceSecret is refreshed so API clients re-bind and hooks refetch. */
+  credentialVersion: number
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -149,6 +153,7 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FengUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [credentialVersion, setCredentialVersion] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -157,21 +162,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const storedUserId = await getStoredFengUserId()
         if (!storedUserId) return
 
-        const secret = await getDeviceSecret()
-        if (!secret) {
-          try {
-            const apiUser = await registerUser(storedUserId)
-            if (!cancelled) setUser(apiUser)
-          } catch {
-            if (!cancelled) setUser(makeLocalUser(storedUserId))
-          }
-          return
-        }
-
+        // Always re-register on boot. POST /api/user is idempotent and returns
+        // the server's canonical deviceSecret, so a device whose secret is
+        // missing OR stale (e.g. the D1 row was reset/re-migrated in dev, or the
+        // app was reinstalled) self-heals — otherwise every signed request 403s
+        // ("Authentication failed") because the device secret no longer matches.
         try {
-          const restored = await fetchUser(storedUserId)
-          if (!cancelled) setUser(restored)
+          const apiUser = await registerUser(storedUserId)
+          if (!cancelled) setUser(apiUser)
         } catch {
+          // Offline / registration unavailable — drop stale secret so we do not
+          // sign with a userId/secret pair the server no longer recognizes.
+          await clearDeviceSecret()
           if (!cancelled) setUser(makeLocalUser(storedUserId))
         }
       } catch (err) {
@@ -184,6 +186,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [])
+
+  const resyncCredentials = useCallback(async () => {
+    const id = user?.id ?? (await getStoredFengUserId())
+    if (!id) return
+    const apiUser = await registerUser(id)
+    setUser(apiUser)
+    setCredentialVersion((v) => v + 1)
+  }, [user?.id])
 
   const signInWithApple = useCallback(async () => {
     try {
@@ -245,14 +255,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInAsGuest = useCallback(async () => {
     const guestId = `guest_${uuidv4()}`
-    const localUser = makeLocalUser(guestId, 'Guest')
+    await clearDeviceSecret()
+    const newUser = await registerUser(guestId, undefined, 'Guest')
     await setStoredFengUserId(guestId)
-    setUser(localUser)
-    registerUser(guestId, undefined, localUser.name ?? undefined)
-      .then((apiUser) => setUser(apiUser))
-      .catch((err) => {
-        if (__DEV__) console.error('[Fēng auth] guest register failed', err)
-      })
+    setUser(newUser)
     return true
   }, [])
 
@@ -291,8 +297,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInAsGuest,
       signOut,
       refreshUser,
+      resyncCredentials,
+      credentialVersion,
     }),
-    [user, isLoading, signInWithApple, signInWithGoogle, signInAsGuest, signOut, refreshUser]
+    [user, isLoading, credentialVersion, signInWithApple, signInWithGoogle, signInAsGuest, signOut, refreshUser, resyncCredentials]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

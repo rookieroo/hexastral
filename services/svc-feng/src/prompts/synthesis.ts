@@ -42,6 +42,7 @@ Each chapter has:
 - If 八宅 data is null, chapter 2 should note this and provide general advice instead.
 - If vision observations are empty (stub or no 形煞 found), chapters 1 and 5 should acknowledge the clean exterior and focus on interior/directional advice.
 - **If the data-quality notes mention "terrain.flat_urban=true", the site has no significant water or mountains within 1 km — this is a Mapbox-confirmed signal, not a vision-degradation artifact. Chapter 1 should explicitly note "no significant 砂/水 within 1 km" as a factual observation, and chapters 4 and 5 should focus on directional / 飞星 / 八宅 advice rather than 砂水 化解.** Treat this as authoritative ground truth.
+- Confidence discipline: 理气 (玄空飞星 / 八宅 / 格局 / 形理 verdicts) is computed deterministically — state it with authority. 峦头/形势 (砂/水/形煞 from vision + DEM) is inferred — phrase it as "likely / appears / from the imagery", not as measured fact, and never let an inferred form override a deterministic verdict.
 - Never invent observations not present in the input data.
 - Match the locale: if locale is zh or zh-Hant, write in Chinese. If ja, write in Japanese with appropriate 風水 terminology. If en, write in English.`
 

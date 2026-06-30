@@ -97,3 +97,45 @@ describe('合十 / 三般卦 / 反伏吟 (predicate logic)', () => {
     expect(kinds).toContain('全盘伏吟')
   })
 })
+
+describe('七星打劫 + 城门诀 (沈氏 向盘格局)', () => {
+  const mk = (vals: Record<string, number>): NineChart<YuanYun> => vals as NineChart<YuanYun>
+  // 9运 periodChart (used as a filler for mountain/period inputs).
+  const period = mk({ 巽: 8, 离: 4, 坤: 6, 震: 7, 中: 9, 兑: 2, 艮: 3, 坎: 5, 乾: 1 })
+
+  function kinds(facePalace: '离', facing: NineChart<YuanYun>) {
+    return detectPatterns({
+      yuanYun: 9,
+      sitPalace: '坎',
+      facePalace,
+      periodChart: period,
+      mountainChart: period,
+      facingChart: facing,
+    })
+  }
+
+  test('七星打劫: 向首离当旺 + 离震乾向盘成三般卦 {3,6,9}', () => {
+    // 离=9(当旺到向首), 震=3, 乾=6 → {3,6,9} 三般.
+    const facing = mk({ 离: 9, 震: 3, 乾: 6, 巽: 1, 坤: 2, 中: 4, 兑: 5, 艮: 7, 坎: 8 })
+    expect(kinds('离', facing).map((p) => p.kind)).toContain('七星打劫')
+  })
+
+  test('七星打劫 不成立: 离震乾 非三般', () => {
+    const facing = mk({ 离: 9, 震: 2, 乾: 6, 巽: 1, 坤: 3, 中: 4, 兑: 5, 艮: 7, 坎: 8 })
+    expect(kinds('离', facing).map((p) => p.kind)).not.toContain('七星打劫')
+  })
+
+  test('城门诀: 离向 → 正城门巽 (当令旺星到巽)', () => {
+    // f[巽]=9 当令; 离=4 (避免触发七星打劫). flanking(离)=巽,坤; 巽洛书4 合河图 离洛书9.
+    const facing = mk({ 巽: 9, 离: 4, 震: 3, 乾: 6, 坤: 2, 中: 1, 兑: 5, 艮: 7, 坎: 8 })
+    const result = kinds('离', facing)
+    const gate = result.find((p) => p.kind === '城门诀')
+    expect(gate).toBeDefined()
+    expect(gate?.note).toContain('正城门巽')
+  })
+
+  test('城门诀 不成立: 两旁宫均无当令旺星', () => {
+    const facing = mk({ 巽: 1, 坤: 2, 离: 4, 震: 3, 乾: 6, 中: 5, 兑: 7, 艮: 8, 坎: 9 })
+    expect(kinds('离', facing).map((p) => p.kind)).not.toContain('城门诀')
+  })
+})

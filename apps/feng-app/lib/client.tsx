@@ -8,7 +8,7 @@
 
 import { createHexastralClient, type HexastralClient } from '@zhop/hexastral-client'
 import { FengClientProvider } from '@zhop/scenario-feng'
-import { type ReactNode, useMemo } from 'react'
+import { type ReactNode, useCallback, useMemo } from 'react'
 import { useAuth } from './auth'
 import { config } from './config'
 import { signRequest } from './hmac'
@@ -36,9 +36,27 @@ export interface FengClientGateProps {
  * <FengClientProvider>. Before that, renders the fallback (or null).
  */
 export function FengClientGate({ children, fallback = null }: FengClientGateProps) {
-  const { userId, isLoading } = useAuth()
-  const client = useMemo(() => (userId ? buildClient(userId) : null), [userId])
+  const { userId, isLoading, resyncCredentials, credentialVersion } = useAuth()
+  const client = useMemo(
+    () => (userId ? buildClient(userId) : null),
+    [userId, credentialVersion],
+  )
+
+  const onError = useCallback(
+    (err: Error) => {
+      if (err.message.includes('Authentication failed')) {
+        void resyncCredentials().catch((syncErr) => {
+          if (__DEV__) console.warn('[Fēng client] credential resync failed', syncErr)
+        })
+      }
+    },
+    [resyncCredentials],
+  )
 
   if (isLoading || !client) return <>{fallback}</>
-  return <FengClientProvider client={client}>{children}</FengClientProvider>
+  return (
+    <FengClientProvider client={client} onError={onError}>
+      {children}
+    </FengClientProvider>
+  )
 }
