@@ -104,9 +104,24 @@ export function AnnotatedMapSwiper({ reportId, tiles, strings, horizontalPadding
           <PagerDot key={tile} label={labelFor(tile, strings)} active={idx === page} />
         ))}
       </View>
+
+      <Text
+        style={{
+          textAlign: 'center',
+          color: FENG_PALETTE.rice,
+          opacity: 0.5,
+          fontSize: 10,
+          paddingHorizontal: pad,
+        }}
+      >
+        {MAP_ATTRIBUTION}
+      </Text>
     </View>
   )
 }
+
+/** Required imagery attribution (Mapbox ToS). Not localized — provider names. */
+export const MAP_ATTRIBUTION = '© Mapbox © Maxar © OpenStreetMap'
 
 function MapTile({
   reportId,

@@ -9,7 +9,7 @@
  * Phase F migration: rows use <Card>; empty state uses <EmptyState>.
  */
 
-import { Card, EmptyState, useTheme } from '@zhop/core-ui'
+import { Card, EmptyState, useHaptic, useTheme } from '@zhop/core-ui'
 import { useFengSiteList } from '@zhop/scenario-feng'
 import { useRouter } from 'expo-router'
 import { FlatList, Pressable, Text, View } from 'react-native'
@@ -20,6 +20,7 @@ export default function ReadingsTab() {
   const router = useRouter()
   const { colors, spacing } = useTheme()
   const t = useStrings(resolveLocale())
+  const haptic = useHaptic()
   const insets = useSafeAreaInsets()
   const { sites, isLoading } = useFengSiteList()
 
@@ -52,22 +53,29 @@ export default function ReadingsTab() {
             </View>
           )
         }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: '/(report)/[siteId]', params: { siteId: item.id } })
-            }
-          >
-            <Card variant='elevated' padding='lg' style={{ gap: 4 }}>
-              <Text style={{ fontWeight: '700', fontSize: 16, color: colors.text }}>
-                {item.name}
-              </Text>
-              <Text style={{ color: colors.secondary, fontSize: 12 }}>
-                Updated {new Date(item.updatedAt).toLocaleDateString()}
-              </Text>
-            </Card>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const updated = t.readings_updated.replace(
+            '{date}',
+            new Date(item.updatedAt).toLocaleDateString()
+          )
+          return (
+            <Pressable
+              onPress={() => {
+                void haptic('light')
+                router.push({ pathname: '/(report)/[siteId]', params: { siteId: item.id } })
+              }}
+              accessibilityRole='button'
+              accessibilityLabel={`${item.name}, ${updated}`}
+            >
+              <Card variant='elevated' padding='lg' style={{ gap: 4 }}>
+                <Text style={{ fontWeight: '700', fontSize: 16, color: colors.text }}>
+                  {item.name}
+                </Text>
+                <Text style={{ color: colors.secondary, fontSize: 12 }}>{updated}</Text>
+              </Card>
+            </Pressable>
+          )
+        }}
       />
     </View>
   )

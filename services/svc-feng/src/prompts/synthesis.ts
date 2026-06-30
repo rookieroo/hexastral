@@ -18,15 +18,21 @@ Each chapter has:
 
 ## Chapter guide
 
-1. **external_landform** (外巒頭概览): Summarize what the satellite reveals. Reference specific 形煞/砂/水 observations with their directions and severity. Paint a spatial picture.
+1. **external_landform** (外巒頭概览): Summarize what the satellite reveals. Reference specific 形煞/砂/水 observations with their directions and severity. Paint a spatial picture. The compute "macroTerrain" (when present) gives DEM-derived 来龙方向 ("laiLong" 八卦宫) and per-sector relative elevation — use it to describe the 龙脉/砂 backdrop authoritatively (it is height data the satellite image cannot convey).
 
-2. **personal_fit** (个人命卦匹配): Analyze the 八宅命卦 fit. Which palaces match the user's lucky/unlucky directions? How does the sit/face axis interact with their 命卦? If 八宅 data is null (no birth info), pivot to general palace-quality analysis.
+2. **personal_fit** (个人命卦匹配): Analyze the 八宅命卦 fit. The baZhai object includes: the person's 命卦 lucky/unlucky directions; "house" (宅卦游年 — the building's own 8-direction verdicts); "concord" (宅命合参 — whether 宅卦 and 命卦 align, with a "verdict" 宅命相配/不配 and "advice"); and "placement" (床/灶/门/书桌吉位, e.g. door=生气, bedHead=天医, stove 坐凶向吉). State the 宅命合参 verdict plainly, then give the concrete 床/灶/门 placement from "placement" (name the directions). If 八宅 data is null (no birth info), pivot to general palace-quality analysis.
 
-3. **flying_stars** (玄空当运): Discuss the current 元运 period, the mountain-star and water-star distribution across the 9 palaces. Highlight the 旺 (prosperous), 退 (declining), and 死 (dead) positions. Note any special combinations (合十, 三般卦, 双星会向/会坐).
+3. **flying_stars** (玄空当运): Discuss the current 元运 period, the mountain-star and water-star distribution across the 9 palaces. Highlight the 旺 (prosperous), 退 (declining), and 死 (dead) positions. The compute results include a "patterns" array (旺山旺向 / 上山下水 / 双星会向 / 双星会坐 / 合十 / 三般卦 / 反伏吟). These are computed deterministically and are AUTHORITATIVE — name and interpret EVERY pattern present, use each pattern's note as the basis, and never re-derive or contradict them. If "patterns" is empty, say the chart is a 平局 (no special disposition) rather than inventing one. The compute also includes a "combinations" array — per-palace 山向二星断语 (e.g. 一四文昌 / 二五交加 / 六七交剑煞), each already phase-adjusted (旺/衰) by the current 元运 with a ready "reading". Weave the most consequential palace combinations into chapter 3 (and into 化解 / 改运 chapters where the combination is a 煞). Use the provided reading; do not invent combinations.
 
 4. **annual_directions** (流年方位): This year's 紫白 annual star overlay. Which rooms/sectors to use, which to avoid. Practical: "use the study in the 震 palace this year" not just "震 has 一白."
 
 5. **remediation** (化解建议): Concrete fixes for each 形煞 identified in vision. Material + placement + reasoning. If no 形煞 were found, focus on strengthening weak sectors.
+
+**形理整合 (compute "formLi") — use it across chapters 1, 3, 5, 6.** It is the AUTHORITATIVE join of 玄空理气 × 峦头形势 (山管人丁、水管财), computed deterministically:
+  - "formLi.palaces" — per-palace findings, each a verdict (旺丁/旺财/损丁/破财/动凶/化煞) + reason. Lead chapter 3's per-sector analysis from these; route 化煞/动凶 items into chapter 5 and 改运 into chapter 6.
+  - "formLi.zhengLing" — 零正神 form check (正神宜山、零神宜水). Mention any 正神下水/零神上山 warnings.
+  - "formLi.patternRescue" — whether each 格局 (上山下水/旺山旺向 等) is rescued by the actual 形势. State 真旺 vs 待补/无救 plainly.
+  Use the provided reasons; do not contradict or re-derive. When "formLi.palaces" is empty, the exterior is clean — say so.
 
 6. **auspicious_objects** (改运配饰): Recommended feng-shui objects and placements. Be specific: material, color, palace, and why. Tie back to the flying-star and 八宅 analysis.
 

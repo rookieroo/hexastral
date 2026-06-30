@@ -27,7 +27,7 @@ export function resolveLocale(): Locale {
   return 'en'
 }
 
-type Strings = {
+export type Strings = {
   appName: string
 
   // Boot / empty state
@@ -41,6 +41,9 @@ type Strings = {
   new_site_address_placeholder: string
   new_site_address_geocode_error: string
   new_site_address_geocoding: string
+  new_site_address_name_label: string
+  new_site_address_field_label: string
+  new_site_address_use_location: string
 
   new_site_facing_title: string
   new_site_facing_subtitle: string
@@ -60,6 +63,7 @@ type Strings = {
 
   new_site_building_title: string
   new_site_building_year_label: string
+  new_site_building_moveIn_label: string
   new_site_building_year_accuracy: string
   new_site_building_accuracy_exact: string
   new_site_building_accuracy_decade: string
@@ -86,6 +90,9 @@ type Strings = {
   compass_heading_title: string
   compass_no_permission: string
 
+  // Readings tab
+  readings_updated: string
+
   // Report screen
   report_loading: string
   report_failed: string
@@ -97,6 +104,18 @@ type Strings = {
   report_map_wide: string
   report_map_loading: string
   report_map_failed: string
+  /** Shown under the 飞星 chart when the facing is 兼向 (replacement-star chart). */
+  report_compound_facing_note: string
+  /** Heading above the per-palace 形理 (form-li) verdict list. */
+  report_formli_heading: string
+  /** Short chapter tags rendered next to the "CH n" pill. */
+  chapter_external_landform: string
+  chapter_personal_fit: string
+  chapter_flying_stars: string
+  chapter_annual_directions: string
+  chapter_remediation: string
+  chapter_auspicious_objects: string
+  nav_back: string
   /** AI / VLM processing notice rendered above the "Generate report" button. */
   new_site_review_ai_disclaimer: string
   /** One-time IAP / Pro cost note rendered next to the AI disclaimer. */
@@ -120,6 +139,11 @@ type Strings = {
   profile_birth_edit_cta: string
   profile_sign_out: string
   profile_sign_out_confirm: string
+  profile_delete_account: string
+  profile_delete_confirm_title: string
+  profile_delete_confirm_body: string
+  profile_delete_confirm_cta: string
+  profile_delete_failed: string
   cancel: string
 
   // Birth info screen
@@ -171,11 +195,14 @@ const EN: Strings = {
   empty_subtitle: 'Add your home or office to get a feng-shui report rooted in the satellite view.',
   empty_cta: 'Add a site',
   new_site_address_title: 'Pick your address',
-  new_site_address_subtitle: 'Search or long-press the map to drop a pin.',
+  new_site_address_subtitle: 'Type an address or use your current location.',
   new_site_address_placeholder: 'Street, city, country',
   new_site_address_geocode_error:
     'Could not find coordinates for this address. Try "Use current location" or refine the address.',
   new_site_address_geocoding: 'Looking up location…',
+  new_site_address_name_label: 'Name',
+  new_site_address_field_label: 'Address',
+  new_site_address_use_location: 'Use current location',
   new_site_facing_title: 'Confirm facing direction',
   new_site_facing_subtitle:
     'Map is true north (N on the ring). Drag the highlighted arrow, or use Record while aiming your phone.',
@@ -195,6 +222,7 @@ const EN: Strings = {
   new_site_facing_next: 'Next',
   new_site_building_title: 'About your building',
   new_site_building_year_label: 'Year built',
+  new_site_building_moveIn_label: 'Move-in year',
   new_site_building_year_accuracy: 'How sure are you?',
   new_site_building_accuracy_exact: 'Exact',
   new_site_building_accuracy_decade: 'Decade',
@@ -215,6 +243,7 @@ const EN: Strings = {
   tab_profile: 'Profile',
   compass_heading_title: 'Heading',
   compass_no_permission: 'Location permission is required to compute true north.',
+  readings_updated: 'Updated {date}',
   report_loading: 'Loading report…',
   report_failed: 'Analysis failed: {message}',
   report_pending: 'Analysis pending — tap a site to generate a report.',
@@ -226,6 +255,16 @@ const EN: Strings = {
   report_map_wide: 'Wide',
   report_map_loading: 'Rendering map…',
   report_map_failed: 'Map unavailable',
+  report_compound_facing_note:
+    'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
+  report_formli_heading: 'FORM × STARS (山水合参)',
+  chapter_external_landform: 'Landform',
+  chapter_personal_fit: 'Trigram',
+  chapter_flying_stars: 'Stars',
+  chapter_annual_directions: 'Annual',
+  chapter_remediation: 'Remedy',
+  chapter_auspicious_objects: 'Charms',
+  nav_back: 'Back',
   new_site_review_ai_disclaimer:
     'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
   new_site_review_iap_note:
@@ -244,6 +283,12 @@ const EN: Strings = {
   profile_sign_out: 'Sign out',
   profile_sign_out_confirm:
     'You will return to the sign-in screen. Your sites and reports stay on the server under this account.',
+  profile_delete_account: 'Delete account',
+  profile_delete_confirm_title: 'Delete account?',
+  profile_delete_confirm_body:
+    'This permanently erases your birth info, sites, and reports, and unlinks your sign-in. This cannot be undone.',
+  profile_delete_confirm_cta: 'Delete',
+  profile_delete_failed: 'Could not delete your account. Please try again.',
   cancel: 'Cancel',
   birth_info_title: 'Birth info',
   birth_info_subtitle:
@@ -287,10 +332,13 @@ const ZH_HANS: Strings = {
   empty_subtitle: '添加住宅或办公室，结合卫星影像生成风水报告。',
   empty_cta: '添加站点',
   new_site_address_title: '选择地址',
-  new_site_address_subtitle: '搜索或长按地图落点。',
+  new_site_address_subtitle: '输入地址或使用当前定位。',
   new_site_address_placeholder: '街道、城市、国家',
   new_site_address_geocode_error: '无法解析该地址的坐标，请使用「当前定位」或修改地址。',
   new_site_address_geocoding: '正在查询位置…',
+  new_site_address_name_label: '名称',
+  new_site_address_field_label: '地址',
+  new_site_address_use_location: '使用当前定位',
   new_site_facing_title: '确认朝向',
   new_site_facing_subtitle:
     '地图真北朝上（环上 N）。拖动当前选中的箭头，或在户外对准后点「记录」。',
@@ -310,6 +358,7 @@ const ZH_HANS: Strings = {
   new_site_facing_next: '下一步',
   new_site_building_title: '建筑信息',
   new_site_building_year_label: '建成年份',
+  new_site_building_moveIn_label: '入住年份',
   new_site_building_year_accuracy: '准确度',
   new_site_building_accuracy_exact: '准确年份',
   new_site_building_accuracy_decade: '只记得是哪个十年',
@@ -330,6 +379,7 @@ const ZH_HANS: Strings = {
   tab_profile: '我',
   compass_heading_title: '方位',
   compass_no_permission: '需要定位权限以获取真北。',
+  readings_updated: '更新于 {date}',
   report_loading: '正在加载报告…',
   report_failed: '分析失败：{message}',
   report_pending: '尚未生成 — 点击站点开始分析。',
@@ -340,6 +390,15 @@ const ZH_HANS: Strings = {
   report_map_wide: '全景',
   report_map_loading: '地图渲染中…',
   report_map_failed: '地图加载失败',
+  report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
+  report_formli_heading: '形理合参（山水×飞星）',
+  chapter_external_landform: '外峦头',
+  chapter_personal_fit: '命卦',
+  chapter_flying_stars: '飞星',
+  chapter_annual_directions: '流年',
+  chapter_remediation: '化解',
+  chapter_auspicious_objects: '改运',
+  nav_back: '返回',
   new_site_review_ai_disclaimer:
     '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
   new_site_review_iap_note: '每个地点一份报告。Pro 会员消耗月度配额；非会员可单次购买解锁此地点。',
@@ -356,6 +415,12 @@ const ZH_HANS: Strings = {
   profile_birth_edit_cta: '编辑生辰',
   profile_sign_out: '退出登录',
   profile_sign_out_confirm: '将返回登录页。你的站点与报告仍保存在当前账号下。',
+  profile_delete_account: '删除账号',
+  profile_delete_confirm_title: '删除账号？',
+  profile_delete_confirm_body:
+    '这将永久清除你的生辰信息、站点与报告,并解除登录绑定。此操作无法撤销。',
+  profile_delete_confirm_cta: '删除',
+  profile_delete_failed: '删除账号失败,请重试。',
   cancel: '取消',
   birth_info_title: '生辰信息',
   birth_info_subtitle: '用于风水报告中的八字 / 命卦章节，安全保存在你的账号下。',
@@ -398,9 +463,11 @@ const ZH_HANT: Strings = {
   empty_subtitle: '加入住家或辦公室，結合衛星影像生成風水報告。',
   empty_cta: '新增地點',
   new_site_address_title: '選擇地址',
-  new_site_address_subtitle: '搜尋或長按地圖標示位置。',
+  new_site_address_subtitle: '輸入地址或使用目前位置。',
   new_site_address_geocode_error: '無法解析此地址的座標，請使用「目前位置」或修改地址。',
   new_site_address_geocoding: '正在查詢位置…',
+  new_site_address_name_label: '名稱',
+  new_site_address_use_location: '使用目前位置',
   new_site_facing_title: '確認朝向',
   new_site_facing_subtitle:
     '地圖真北朝上（環上 N）。拖曳目前選中的箭頭，或在戶外對準後點「記錄」。',
@@ -438,6 +505,7 @@ const ZH_HANT: Strings = {
   tab_profile: '我',
   compass_heading_title: '方位',
   compass_no_permission: '需要定位權限以取得真北。',
+  readings_updated: '更新於 {date}',
   report_loading: '正在載入報告…',
   report_failed: '分析失敗：{message}',
   report_pending: '尚未生成 — 點選地點開始分析。',
@@ -448,6 +516,11 @@ const ZH_HANT: Strings = {
   report_map_wide: '全景',
   report_map_loading: '地圖渲染中…',
   report_map_failed: '地圖載入失敗',
+  report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
+  report_formli_heading: '形理合參（山水×飛星）',
+  chapter_external_landform: '外巒頭',
+  chapter_flying_stars: '飛星',
+  chapter_auspicious_objects: '改運',
   new_site_review_ai_disclaimer:
     '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
   new_site_review_iap_note: '每個地點一份報告。Pro 會員消耗月度配額；非會員可單次購買解鎖此地點。',
@@ -464,6 +537,12 @@ const ZH_HANT: Strings = {
   profile_birth_edit_cta: '編輯生辰',
   profile_sign_out: '登出',
   profile_sign_out_confirm: '將返回登入頁。你的地點與報告仍保存在目前帳號下。',
+  profile_delete_account: '刪除帳號',
+  profile_delete_confirm_title: '刪除帳號？',
+  profile_delete_confirm_body:
+    '這將永久清除你的生辰資訊、地點與報告,並解除登入綁定。此操作無法撤銷。',
+  profile_delete_confirm_cta: '刪除',
+  profile_delete_failed: '刪除帳號失敗,請重試。',
   cancel: '取消',
   birth_info_title: '生辰資訊',
   birth_info_subtitle: '用於風水報告中的八字／命卦章節，安全保存在你的帳號下。',
@@ -506,10 +585,13 @@ const JA: Strings = {
   empty_subtitle: '自宅やオフィスを追加すると、衛星画像に基づいた風水レポートを生成できます。',
   empty_cta: '場所を追加',
   new_site_address_title: '住所を選ぶ',
-  new_site_address_subtitle: '検索するか地図を長押ししてピンを置きます。',
+  new_site_address_subtitle: '住所を入力するか、現在地を使います。',
   new_site_address_geocode_error:
     '住所から座標を取得できませんでした。「現在地を使う」か住所を修正してください。',
   new_site_address_geocoding: '位置を検索中…',
+  new_site_address_name_label: '名前',
+  new_site_address_field_label: '住所',
+  new_site_address_use_location: '現在地を使う',
   new_site_facing_title: '建物の向きを確認',
   new_site_facing_subtitle:
     '地図は真北（リングの N）。選択中の矢印をドラッグするか、屋外で向けて「記録」を押します。',
@@ -534,6 +616,7 @@ const JA: Strings = {
   new_site_building_accuracy_decade: '年代まで',
   new_site_building_accuracy_moveIn: '入居年のみ',
   new_site_building_accuracy_unknown: 'スキップ',
+  new_site_building_moveIn_label: '入居年',
   new_site_building_floor_label: '階(任意)',
   new_site_building_next: '続ける',
   new_site_review_title: '確認',
@@ -549,6 +632,7 @@ const JA: Strings = {
   tab_profile: 'プロフィール',
   compass_heading_title: '方位',
   compass_no_permission: '真北を計算するには位置情報の許可が必要です。',
+  readings_updated: '更新日 {date}',
   report_loading: 'レポートを読み込み中…',
   report_failed: '分析失敗：{message}',
   report_pending: 'まだ分析されていません — 場所をタップして開始します。',
@@ -559,6 +643,15 @@ const JA: Strings = {
   report_map_wide: '全景',
   report_map_loading: '地図を生成中…',
   report_map_failed: '地図を読み込めません',
+  report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
+  report_formli_heading: '形理合参（山水×飛星）',
+  chapter_external_landform: '巒頭',
+  chapter_personal_fit: '命卦',
+  chapter_flying_stars: '飛星',
+  chapter_annual_directions: '流年',
+  chapter_remediation: '化解',
+  chapter_auspicious_objects: '開運',
+  nav_back: '戻る',
   new_site_review_ai_disclaimer:
     '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
   new_site_review_iap_note:
@@ -577,6 +670,12 @@ const JA: Strings = {
   profile_sign_out: 'サインアウト',
   profile_sign_out_confirm:
     'サインイン画面に戻ります。サイトとレポートはこのアカウントに残ります。',
+  profile_delete_account: 'アカウントを削除',
+  profile_delete_confirm_title: 'アカウントを削除しますか？',
+  profile_delete_confirm_body:
+    '生年月日・場所・レポートを完全に削除し、サインインの連携も解除します。この操作は取り消せません。',
+  profile_delete_confirm_cta: '削除',
+  profile_delete_failed: 'アカウントを削除できませんでした。もう一度お試しください。',
   cancel: 'キャンセル',
   birth_info_title: '生年月日',
   birth_info_subtitle: '風水レポートの八字・命卦章に使用します。アカウントに安全に保存されます。',

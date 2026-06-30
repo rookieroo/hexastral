@@ -7,6 +7,7 @@
  * type any address and we forward-geocode via expo-location on iOS.
  */
 
+import { Button, useHaptic } from '@zhop/core-ui'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -22,13 +23,14 @@ export default function AddressScreen() {
   const { colors } = useFengTheme()
   const locale = resolveLocale()
   const strings = useStrings(locale)
+  const haptic = useHaptic()
   const insets = useSafeAreaInsets()
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [busy, setBusy] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
 
-  const useCurrentLocation = async () => {
+  const captureCurrentLocation = async () => {
     setBusy(true)
     setGeocodeError(null)
     try {
@@ -123,11 +125,12 @@ export default function AddressScreen() {
             letterSpacing: 1,
           }}
         >
-          Name
+          {strings.new_site_address_name_label}
         </Text>
         <TextInput
           value={name}
           onChangeText={setName}
+          accessibilityLabel={strings.new_site_address_name_label}
           placeholder='Home / Office / 父母家'
           placeholderTextColor={colors.textMute}
           style={{
@@ -151,7 +154,7 @@ export default function AddressScreen() {
             letterSpacing: 1,
           }}
         >
-          Address
+          {strings.new_site_address_field_label}
         </Text>
         <TextInput
           value={address}
@@ -159,6 +162,7 @@ export default function AddressScreen() {
             setAddress(text)
             setGeocodeError(null)
           }}
+          accessibilityLabel={strings.new_site_address_field_label}
           placeholder={strings.new_site_address_placeholder}
           placeholderTextColor={colors.textMute}
           multiline
@@ -180,8 +184,14 @@ export default function AddressScreen() {
       ) : null}
 
       <Pressable
-        onPress={useCurrentLocation}
+        onPress={() => {
+          void haptic('light')
+          void captureCurrentLocation()
+        }}
         disabled={busy}
+        accessibilityRole='button'
+        accessibilityLabel={strings.new_site_address_use_location}
+        accessibilityState={{ disabled: busy }}
         style={{
           alignSelf: 'flex-start',
           paddingHorizontal: spacing.lg,
@@ -192,26 +202,22 @@ export default function AddressScreen() {
         }}
       >
         <Text style={{ color: colors.accent, fontWeight: '600' }}>
-          {busy ? '…' : 'Use current location'}
+          {busy ? '…' : strings.new_site_address_use_location}
         </Text>
       </Pressable>
 
       <View style={{ flex: 1 }} />
 
-      <Pressable
-        onPress={next}
+      <Button
+        variant='primary'
+        size='lg'
+        fullWidth
+        loading={busy}
         disabled={!address.trim() || busy}
-        style={{
-          backgroundColor: address.trim() && !busy ? colors.accent : colors.surfaceMute,
-          paddingVertical: spacing.lg,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
+        onPress={next}
       >
-        <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
-          {busy ? strings.new_site_address_geocoding : strings.new_site_facing_next}
-        </Text>
-      </Pressable>
+        {busy ? strings.new_site_address_geocoding : strings.new_site_facing_next}
+      </Button>
     </ScrollView>
   )
 }

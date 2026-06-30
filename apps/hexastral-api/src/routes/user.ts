@@ -489,6 +489,80 @@ export const userRoutes = new Hono<AppEnv>()
   })
 
   /**
+   * DELETE /api/user/:userId — in-app account deletion (Apple 5.1.1(v)).
+   *
+   * `users` is the shared cross-app identity and 23 of its child tables do NOT
+   * cascade, so a hard row-delete would fail FK. Instead we make the account
+   * irrecoverable + erase personal data:
+   *   1. delete the owned avatar from R2
+   *   2. purge feng-owned content (sites / reports / jobs)
+   *   3. null every PII column + unlink Apple/Google ids — a subsequent login
+   *      creates a fresh user, so the old account can never be reached again.
+   *
+   * NOTE (follow-up before kindred/auspice/fate ship): extend the content purge
+   * to each of those apps' user-owned tables. The PII on the user row is fully
+   * erased here, which is the core compliance requirement; the residual de-
+   * identified rows in other apps' tables carry no personal data on their own.
+   */
+  .delete('/:userId', async (c) => {
+    const userId = requireUserId(c)
+    if (userId !== c.req.param('userId')) throw new HTTPException(403, { message: 'Forbidden' })
+    const db = c.get('db')
+
+    const user = await db.select().from(users).where(eq(users.id, userId)).get()
+    if (!user) throw new HTTPException(404, { message: 'User not found' })
+
+    // 1. Best-effort delete of the owned avatar object.
+    if (user.avatarKey?.startsWith(`avatars/${userId}/`)) {
+      c.executionCtx.waitUntil(c.env.MEDIA_BUCKET.delete(user.avatarKey))
+    }
+
+    // 2. Purge feng-owned content (children first to respect FK).
+    await db.delete(fengJobs).where(eq(fengJobs.userId, userId))
+    await db.delete(fengReports).where(eq(fengReports.userId, userId))
+    await db.delete(fengSites).where(eq(fengSites.userId, userId))
+
+    // 3. Anonymize + unlink the identity (only nullable PII columns).
+    await db
+      .update(users)
+      .set({
+        email: null,
+        name: null,
+        displayName: null,
+        username: null,
+        phone: null,
+        phoneHash: null,
+        appleUserId: null,
+        googleUserId: null,
+        avatarKey: null,
+        chartPublic: false,
+        publicVisibilityJson: null,
+        birthSolarDate: null,
+        birthTimeIndex: null,
+        birthGender: null,
+        birthCity: null,
+        birthLongitude: null,
+        birthLatitude: null,
+        birthTimezoneId: null,
+        birthClockMinutes: null,
+        birthSolarCalibrate: null,
+        birthCalendarType: null,
+        birthLunarDate: null,
+        fateSignature: null,
+        fateSignatureExplanation: null,
+        fateSignatureCustomPrompt: null,
+        fateSignatureGeneratedAt: null,
+        activePhysiognomyId: null,
+        activePalmFeatureId: null,
+        revenueCatUserId: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, userId))
+
+    return c.json({ data: { deleted: true } })
+  })
+
+  /**
    * 邮箱验证 Step 1 — 发送 OTP
    * POST /api/user/:userId/email/request
    *

@@ -34,6 +34,10 @@ const ComputeInputSchema = z.object({
   baZhai: z.unknown(),
   auspiciousPalaces: z.array(z.string()),
   inauspiciousPalaces: z.array(z.string()),
+  patterns: z.array(z.unknown()).optional(),
+  combinations: z.array(z.unknown()).optional(),
+  formLi: z.unknown().optional(),
+  macroTerrain: z.unknown().optional(),
 })
 
 const SynthesizeRequestSchema = z.object({

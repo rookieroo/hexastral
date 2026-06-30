@@ -20,12 +20,19 @@ import { fengLogger } from './logger'
 export type FengAnalyzeQueueMessage = {
   jobId: string
   siteId: string
+  /**
+   * Single-purchase entitlement to consume on success. Present only for the
+   * user-triggered `single_purchase` path; absent for subscriber analyses and
+   * the annual 立春 cron re-synthesis (those are free).
+   */
+  purchaseId?: string
 }
 
 export async function enqueueFengAnalyzeJob(
   env: CloudflareBindings,
   jobId: string,
-  siteId: string
+  siteId: string,
+  purchaseId?: string
 ): Promise<void> {
   const queue = env.FENG_ANALYZE_QUEUE
   if (!queue) {
@@ -34,8 +41,8 @@ export async function enqueueFengAnalyzeJob(
     })
     throw new Error('feng_analyze_queue_unavailable')
   }
-  await queue.send({ jobId, siteId } satisfies FengAnalyzeQueueMessage)
-  fengLogger.info('queue.enqueued', { jobId, siteId })
+  await queue.send({ jobId, siteId, purchaseId } satisfies FengAnalyzeQueueMessage)
+  fengLogger.info('queue.enqueued', { jobId, siteId, hasPurchase: !!purchaseId })
 }
 
 export async function processFengAnalyzeQueueBatch(
@@ -47,7 +54,7 @@ export async function processFengAnalyzeQueueBatch(
   fengLogger.info('queue.batch.start', { size: batch.messages.length })
 
   for (const msg of batch.messages) {
-    const { jobId, siteId } = msg.body
+    const { jobId, siteId, purchaseId } = msg.body
     const started = Date.now()
     try {
       const site = await db
@@ -62,7 +69,7 @@ export async function processFengAnalyzeQueueBatch(
         continue
       }
 
-      await runAnalyzeJob(env, db, jobId, site)
+      await runAnalyzeJob(env, db, jobId, site, purchaseId)
       fengLogger.info('queue.batch.message.done', {
         jobId,
         siteId,

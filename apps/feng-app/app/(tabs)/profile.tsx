@@ -2,11 +2,12 @@
  * (tabs)/profile — account, birth info, sign-out.
  */
 
-import { Button, Card, useTheme } from '@zhop/core-ui'
+import { Button, Card, useHaptic, useTheme } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { deleteAccount } from '@/lib/account'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
 import { resolveLocale, useStrings } from '@/lib/i18n'
@@ -25,6 +26,7 @@ export default function ProfileTab() {
   const insets = useSafeAreaInsets()
   const { colors, spacing } = useTheme()
   const t = useStrings(resolveLocale())
+  const haptic = useHaptic()
   const { user, userId, signOut } = useAuth()
 
   const [birthInfo, setBirthInfo] = useState<FengBirthInfo | null>(null)
@@ -64,6 +66,7 @@ export default function ProfileTab() {
   }
 
   const handleSignOut = () => {
+    void haptic('light')
     Alert.alert(t.profile_sign_out, t.profile_sign_out_confirm, [
       { text: t.cancel, style: 'cancel' },
       {
@@ -71,6 +74,27 @@ export default function ProfileTab() {
         style: 'destructive',
         onPress: () => {
           void signOut()
+        },
+      },
+    ])
+  }
+
+  const handleDeleteAccount = () => {
+    void haptic('warning')
+    Alert.alert(t.profile_delete_confirm_title, t.profile_delete_confirm_body, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.profile_delete_confirm_cta,
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              await deleteAccount()
+              await signOut()
+            } catch {
+              Alert.alert(t.profile_delete_failed)
+            }
+          })()
         },
       },
     ])
@@ -144,6 +168,7 @@ export default function ProfileTab() {
             value={crossAppMemory}
             onValueChange={handleCrossAppToggle}
             disabled={crossAppBusy || !userId}
+            accessibilityLabel={t.cross_app_memory_label}
           />
         </View>
         <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
@@ -155,6 +180,9 @@ export default function ProfileTab() {
 
       <Pressable
         onPress={handleSignOut}
+        accessibilityRole='button'
+        accessibilityLabel={t.profile_sign_out}
+        hitSlop={8}
         style={{
           alignSelf: 'flex-start',
           paddingHorizontal: spacing.lg,
@@ -162,6 +190,22 @@ export default function ProfileTab() {
         }}
       >
         <Text style={{ color: colors.danger, fontSize: 14 }}>{t.profile_sign_out}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={handleDeleteAccount}
+        accessibilityRole='button'
+        accessibilityLabel={t.profile_delete_account}
+        hitSlop={8}
+        style={{
+          alignSelf: 'flex-start',
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+        }}
+      >
+        <Text style={{ color: colors.secondary, fontSize: 13, textDecorationLine: 'underline' }}>
+          {t.profile_delete_account}
+        </Text>
       </Pressable>
     </ScrollView>
   )

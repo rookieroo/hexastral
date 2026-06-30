@@ -16,7 +16,7 @@
  */
 
 import { getJieQiDay } from '@zhop/astro-core/jieqi'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { nanoid } from 'nanoid'
 import * as schema from '../db/schema'
@@ -90,4 +90,25 @@ export async function runAnnualFengRefresh(env: CloudflareBindings): Promise<Ann
   }
 
   return { fengYear, enqueued: rows.length, considered: rows.length }
+}
+
+/** Terminal (done/failed) jobs older than this are pruned by the daily cron. */
+const JOB_RETENTION_DAYS = 30
+
+/**
+ * Delete terminal `feng_jobs` rows older than {@link JOB_RETENTION_DAYS}.
+ *
+ * Only `done` / `failed` rows are touched — in-flight jobs have a null
+ * `finishedAt`, which `lt(...)` never matches, so they are always safe. The
+ * report rows the client actually reads live in `feng_reports`; jobs are just
+ * progress scratch space, so a 30-day window is generous.
+ */
+export async function pruneStaleFengJobs(env: CloudflareBindings): Promise<{ deleted: number }> {
+  const db = drizzle(env.DB, { schema })
+  const cutoff = new Date(Date.now() - JOB_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const deleted = await db
+    .delete(fengJobs)
+    .where(and(inArray(fengJobs.stage, ['done', 'failed']), lt(fengJobs.finishedAt, cutoff)))
+    .returning({ id: fengJobs.id })
+  return { deleted: deleted.length }
 }

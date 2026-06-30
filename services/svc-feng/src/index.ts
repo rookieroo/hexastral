@@ -19,7 +19,9 @@ import { logger } from './lib/logger'
 import { annotateRouter } from './routes/annotate'
 import { mapsRouter } from './routes/maps'
 import { prefetchRouter } from './routes/prefetch'
+import { streetRouter } from './routes/street'
 import { synthesizeRouter } from './routes/synthesize'
+import { terrainRouter } from './routes/terrain'
 import { visionRouter } from './routes/vision'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -77,6 +79,8 @@ app.get('/health', (c) =>
 )
 
 app.route('/prefetch', prefetchRouter)
+app.route('/terrain', terrainRouter)
+app.route('/street', streetRouter)
 app.route('/maps', mapsRouter)
 app.route('/annotate', annotateRouter)
 app.route('/vision', visionRouter)

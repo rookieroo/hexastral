@@ -5,9 +5,9 @@
  * When done, the response includes `reportId` so the client can navigate to
  * `/(report)/[siteId]` (which reads via `/api/feng/sites/:id`).
  *
- * Job rows are kept indefinitely so the client can show "last analyzed"
- * timestamp + retry chain. A weekly cron (not yet wired) prunes terminal
- * jobs older than 30 days.
+ * Job rows are kept for the "last analyzed" timestamp + retry chain; the daily
+ * cron (`pruneStaleFengJobs` in `feng-annual-cron.ts`) deletes terminal jobs
+ * older than 30 days.
  *
  * Phase F: migrated to shared response envelope (`jsonOk` / `jsonErr`).
  */

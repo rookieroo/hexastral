@@ -15,6 +15,13 @@ declare global {
     MAPBOX_TOKEN: string
     /** Gemini API key — VLM (Stage-1 vision) ONLY. Text synthesis runs on Workers AI. */
     GEMINI_API_KEY: string
+    /**
+     * Mapillary access token (OPTIONAL). When set, /street/sha pulls street-level
+     * imagery for 小峦头 形煞 detection. Unset = feature off (degraded). Mapillary
+     * imagery is CC-BY-SA — attribution MUST be shown wherever it is surfaced, and
+     * derived-use must be legally confirmed before enabling in production.
+     */
+    MAPILLARY_TOKEN?: string
 
     // ── Workers AI ───────────────────────────────────────────────────────
     /** Cloudflare Workers AI binding — Stage-3 text synthesis via @zhop/ai-vision/router. */

@@ -16,7 +16,7 @@ import { HTTPException } from 'hono/http-exception'
 import type { CloudflareBindings, ContextVariables } from './infra-types'
 import type { FengAnalyzeQueueMessage } from './lib/feng-analyze-queue'
 import { processFengAnalyzeQueueBatch } from './lib/feng-analyze-queue'
-import { runAnnualFengRefresh } from './lib/feng-annual-cron'
+import { pruneStaleFengJobs, runAnnualFengRefresh } from './lib/feng-annual-cron'
 import { runReconcileSweep } from './lib/reconcile-sweep'
 import { setAdminNotifyFetcher } from './lib/service-clients'
 import { createChartRateLimitMiddleware } from './middleware/chart-rate-limit'
@@ -674,6 +674,7 @@ export default {
   /** Daily cron (04:00 UTC):
    *  - Expire stale bond invitations
    *  - 立春 annual Fēng refresh — re-synthesize site reports after 流年 rollover
+   *  - Prune terminal Fēng jobs older than 30 days
    *
    *  (Removed in deep refactor: archiveOldDailyFortunes — dailyFortunes table dropped;
    *  daily_signals retention will be added when the new signal cron lands in Phase 4.) */
@@ -699,6 +700,18 @@ export default {
           }
         } catch (err) {
           console.error('[cron:feng-annual]', err)
+        }
+      })()
+    )
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const { deleted } = await pruneStaleFengJobs(env)
+          if (deleted > 0) {
+            console.info(`[cron:feng-prune] deleted=${deleted}`)
+          }
+        } catch (err) {
+          console.error('[cron:feng-prune]', err)
         }
       })()
     )

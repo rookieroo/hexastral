@@ -9,6 +9,7 @@
  * surfaces this to the user.
  */
 
+import { Button, useHaptic } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
@@ -26,6 +27,7 @@ export default function BuildingScreen() {
   const router = useRouter()
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
+  const haptic = useHaptic()
   const insets = useSafeAreaInsets()
 
   const [accuracy, setAccuracy] = useState<Accuracy>('unknown')
@@ -108,7 +110,13 @@ export default function BuildingScreen() {
             return (
               <Pressable
                 key={opt}
-                onPress={() => setAccuracy(opt)}
+                onPress={() => {
+                  void haptic('selection')
+                  setAccuracy(opt)
+                }}
+                accessibilityRole='button'
+                accessibilityState={{ selected }}
+                accessibilityLabel={accuracyLabel(opt)}
                 style={{
                   paddingHorizontal: spacing.md,
                   paddingVertical: spacing.sm,
@@ -168,7 +176,7 @@ export default function BuildingScreen() {
               letterSpacing: 1,
             }}
           >
-            Move-in year
+            {t.new_site_building_moveIn_label}
           </Text>
           <TextInput
             value={moveInYear}
@@ -220,19 +228,9 @@ export default function BuildingScreen() {
 
       <View style={{ flex: 1 }} />
 
-      <Pressable
-        onPress={next}
-        style={{
-          backgroundColor: colors.accent,
-          paddingVertical: spacing.lg,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
-          {t.new_site_building_next}
-        </Text>
-      </Pressable>
+      <Button variant='primary' size='lg' fullWidth onPress={next}>
+        {t.new_site_building_next}
+      </Button>
     </ScrollView>
   )
 }

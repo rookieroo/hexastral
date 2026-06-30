@@ -18,6 +18,7 @@ import {
   ErrorState,
   LoadingTextBlock,
   Pill,
+  useHaptic,
   useTheme,
 } from '@zhop/core-ui'
 import {
@@ -30,18 +31,22 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnotatedMapSwiper } from '@/components/AnnotatedMapSwiper'
 import { ShareFengChapterButton } from '@/components/ShareFengChapterButton'
-import { resolveLocale, useStrings } from '@/lib/i18n'
+import { resolveLocale, type Strings, useStrings } from '@/lib/i18n'
 
-const CHAPTER_LABELS: Record<string, string> = {
-  external_landform: '外巒頭',
-  personal_fit: '命卦',
-  flying_stars: '飛星',
-  annual_directions: '流年',
-  remediation: '化解',
-  auspicious_objects: '改運',
+/** form-li verdicts that read as auspicious (accent color); others = danger. */
+const AUSPICIOUS_VERDICTS = new Set(['旺丁', '旺财'])
+
+const CHAPTER_TAG_KEYS: Record<string, keyof Strings> = {
+  external_landform: 'chapter_external_landform',
+  personal_fit: 'chapter_personal_fit',
+  flying_stars: 'chapter_flying_stars',
+  annual_directions: 'chapter_annual_directions',
+  remediation: 'chapter_remediation',
+  auspicious_objects: 'chapter_auspicious_objects',
 }
 
 export default function ReportScreen() {
@@ -51,6 +56,12 @@ export default function ReportScreen() {
   const insets = useSafeAreaInsets()
   const { colors, spacing } = useTheme()
   const t = useStrings(resolveLocale())
+  const haptic = useHaptic()
+
+  const chapterTag = (kind: string): string => {
+    const key = CHAPTER_TAG_KEYS[kind]
+    return key ? t[key] : kind.toUpperCase()
+  }
 
   const { site, latestReport, isLoading, refetch } = useFengSite(siteId ?? null)
   const analyze = useAnalyzeJob(siteId ?? null)
@@ -80,8 +91,16 @@ export default function ReportScreen() {
       style={{ backgroundColor: colors.bg }}
     >
       <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.md }}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={{ color: colors.accent, fontSize: 14 }}>‹ Back</Text>
+        <Pressable
+          onPress={() => {
+            void haptic('light')
+            router.back()
+          }}
+          accessibilityRole='button'
+          accessibilityLabel={t.nav_back}
+          hitSlop={12}
+        >
+          <Text style={{ color: colors.accent, fontSize: 14 }}>‹ {t.nav_back}</Text>
         </Pressable>
       </View>
 
@@ -157,73 +176,176 @@ export default function ReportScreen() {
               }}
             >
               {chapters.map((chapter, idx) => (
-                <Card
+                <Animated.View
                   key={chapter.kind}
-                  variant='elevated'
-                  padding='lg'
-                  style={{ gap: spacing.sm }}
+                  entering={FadeInDown.duration(260).delay(idx * 60)}
                 >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: spacing.sm,
-                    }}
-                  >
-                    <Pill variant='accent'>{`CH ${idx + 1}`}</Pill>
-                    <Text
+                  <Card variant='elevated' padding='lg' style={{ gap: spacing.sm }}>
+                    <View
                       style={{
-                        color: colors.secondary,
-                        fontSize: 11,
-                        letterSpacing: 2,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.sm,
                       }}
                     >
-                      {CHAPTER_LABELS[chapter.kind] ?? chapter.kind.toUpperCase()}
+                      <Pill variant='accent'>{`CH ${idx + 1}`}</Pill>
+                      <Text
+                        style={{
+                          color: colors.secondary,
+                          fontSize: 11,
+                          letterSpacing: 2,
+                        }}
+                      >
+                        {chapterTag(chapter.kind)}
+                      </Text>
+                    </View>
+                    <Text style={{ color: colors.text, fontSize: 19, fontWeight: '700' }}>
+                      {chapter.title}
                     </Text>
-                  </View>
-                  <Text style={{ color: colors.text, fontSize: 19, fontWeight: '700' }}>
-                    {chapter.title}
-                  </Text>
-                  <Text style={{ color: colors.accent, fontSize: 14, fontStyle: 'italic' }}>
-                    {chapter.goldenLine}
-                  </Text>
-                  <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
-                    {chapter.body}
-                  </Text>
+                    <Text style={{ color: colors.accent, fontSize: 14, fontStyle: 'italic' }}>
+                      {chapter.goldenLine}
+                    </Text>
+                    <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
+                      {chapter.body}
+                    </Text>
 
-                  {compute && chapter.kind === 'flying_stars' ? (
-                    <View style={{ marginTop: spacing.md }}>
-                      <FlyingStarsGrid
-                        result={compute.flyingStars}
-                        backgroundColor={colors.card}
-                        borderColor={colors.separator}
-                        labelColor={colors.text}
-                      />
-                    </View>
-                  ) : null}
+                    {compute && chapter.kind === 'flying_stars' ? (
+                      <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+                        <FlyingStarsGrid
+                          result={compute.flyingStars}
+                          backgroundColor={colors.card}
+                          borderColor={colors.separator}
+                          labelColor={colors.text}
+                        />
+                        {compute.patterns && compute.patterns.length > 0 ? (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                            {compute.patterns.map((p) => {
+                              const tone =
+                                p.quality === 'auspicious'
+                                  ? colors.accent
+                                  : p.quality === 'inauspicious'
+                                    ? colors.danger
+                                    : colors.secondary
+                              return (
+                                <View
+                                  key={`${p.kind}-${p.scope ?? ''}`}
+                                  accessibilityLabel={`${p.kind}${p.scope && p.scope !== '全局' ? ` ${p.scope}` : ''}`}
+                                  style={{
+                                    paddingHorizontal: spacing.sm,
+                                    paddingVertical: 4,
+                                    borderRadius: 999,
+                                    borderWidth: 1,
+                                    borderColor: tone,
+                                  }}
+                                >
+                                  <Text style={{ fontSize: 11, fontWeight: '600', color: tone }}>
+                                    {p.kind}
+                                    {p.scope && p.scope !== '全局' ? `·${p.scope}` : ''}
+                                  </Text>
+                                </View>
+                              )
+                            })}
+                          </View>
+                        ) : null}
+                        {compute.flyingStars.isCompoundFacing ? (
+                          <Text
+                            style={{
+                              color: colors.secondary,
+                              fontSize: 12,
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {t.report_compound_facing_note}
+                          </Text>
+                        ) : null}
+                        {compute.formLi && compute.formLi.palaces.length > 0 ? (
+                          <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+                            <Text
+                              style={{
+                                color: colors.secondary,
+                                fontSize: 11,
+                                letterSpacing: 1,
+                              }}
+                            >
+                              {t.report_formli_heading}
+                            </Text>
+                            {compute.formLi.palaces.flatMap((pl) =>
+                              pl.findings.map((f, i) => {
+                                const tone = AUSPICIOUS_VERDICTS.has(f.verdict)
+                                  ? colors.accent
+                                  : f.verdict === '化煞' || f.verdict === '平'
+                                    ? colors.secondary
+                                    : colors.danger
+                                return (
+                                  <View
+                                    key={`${pl.palace}-${f.verdict}-${i}`}
+                                    style={{ flexDirection: 'row', gap: spacing.sm }}
+                                  >
+                                    <Text
+                                      style={{
+                                        color: tone,
+                                        fontSize: 12,
+                                        fontWeight: '700',
+                                        width: 56,
+                                      }}
+                                    >
+                                      {pl.palace}·{f.verdict}
+                                    </Text>
+                                    <Text
+                                      style={{
+                                        color: colors.text,
+                                        fontSize: 12,
+                                        flex: 1,
+                                        lineHeight: 18,
+                                      }}
+                                    >
+                                      {f.reason}
+                                    </Text>
+                                  </View>
+                                )
+                              })
+                            )}
+                            {compute.formLi.patternRescue.map((r) => (
+                              <Text
+                                key={r.pattern}
+                                style={{
+                                  color: r.favourable ? colors.accent : colors.danger,
+                                  fontSize: 12,
+                                  fontStyle: 'italic',
+                                  lineHeight: 18,
+                                }}
+                              >
+                                {r.note}
+                              </Text>
+                            ))}
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
 
-                  {compute?.baZhai && chapter.kind === 'personal_fit' ? (
-                    <View style={{ marginTop: spacing.md, alignItems: 'center' }}>
-                      <BaZhaiWheel result={compute.baZhai} size={240} strokeColor={colors.text} />
-                    </View>
-                  ) : null}
+                    {compute?.baZhai && chapter.kind === 'personal_fit' ? (
+                      <View style={{ marginTop: spacing.md, alignItems: 'center' }}>
+                        <BaZhaiWheel result={compute.baZhai} size={240} strokeColor={colors.text} />
+                      </View>
+                    ) : null}
 
-                  {reportId ? (
-                    <View style={{ marginTop: spacing.sm }}>
-                      <ShareFengChapterButton
-                        reportId={reportId}
-                        chapterKind={chapter.kind}
-                        chapterTitle={chapter.title}
-                        contentJson={JSON.stringify({
-                          kind: chapter.kind,
-                          title: chapter.title,
-                          goldenLine: chapter.goldenLine,
-                          body: chapter.body,
-                        })}
-                      />
-                    </View>
-                  ) : null}
-                </Card>
+                    {reportId ? (
+                      <View style={{ marginTop: spacing.sm }}>
+                        <ShareFengChapterButton
+                          reportId={reportId}
+                          chapterKind={chapter.kind}
+                          chapterTitle={chapter.title}
+                          contentJson={JSON.stringify({
+                            kind: chapter.kind,
+                            title: chapter.title,
+                            goldenLine: chapter.goldenLine,
+                            body: chapter.body,
+                          })}
+                        />
+                      </View>
+                    ) : null}
+                  </Card>
+                </Animated.View>
               ))}
 
               <Text

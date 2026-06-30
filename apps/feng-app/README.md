@@ -1,9 +1,14 @@
 # @zhop/feng-app — Fēng / 風
 
-Flagship Expo app for the feng-shui product surface. Phase E Week 4 scaffold;
-real Mapbox imagery, Gemini Vision, and Claude synthesis land Weeks 5–6.
+Flagship Expo app for the feng-shui product surface. Active V1 launch wave
+(cycle / feng / yuan trio, ADR-0019). The analysis pipeline is live end-to-end:
+real Mapbox satellite imagery, Gemini Vision (外巒頭), deterministic 玄空 + 八宅
+compute (`@zhop/astro-core/feng`), and CF Workers AI synthesis (flagship tier:
+Kimi → Qwen → GLM) — wired in `services/svc-feng/`.
 
-See [docs/feng-plan.md](../../docs/feng-plan.md) for the full plan.
+See [docs/feng-fix-plan.md](../../docs/feng-fix-plan.md) for the current
+fix/polish backlog and [ADR-0019](../../docs/decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md)
+for launch scope.
 
 ## Quick start
 

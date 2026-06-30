@@ -307,8 +307,12 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       startedAt: new Date().toISOString(),
     })
 
+    // Carry the single-purchase id so the queue consumer can consume it on
+    // success. Subscribers (pro_quota) pass nothing — their analyses are free.
+    const purchaseId = access.via === 'single_purchase' ? access.purchaseId : undefined
+
     // Queue consumer runs the pipeline (not waitUntil — 30s cap after 202).
-    await enqueueFengAnalyzeJob(c.env, jobId, id)
+    await enqueueFengAnalyzeJob(c.env, jobId, id, purchaseId)
 
     return jsonOk(c, { jobId, siteId: id, stage: 'maps', progress: 0, accessVia: access.via }, 202)
   })

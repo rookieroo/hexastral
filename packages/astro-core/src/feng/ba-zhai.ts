@@ -159,6 +159,97 @@ export function unluckyDirections(mingGua: MingGua): DirectionVerdict[] {
   }))
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 宅卦游年 + 宅命合参 + 家具吉位 (D2)
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 宅卦 = 坐山所在之卦 (坐北为坎宅、坐南为离宅 …). The 大游年 table
+ * (`DIRECTION_MAP`) applies identically to a 宅卦 and a 命卦.
+ */
+export function houseGuaFromSit(sitPalace: BaguaPalace): MingGua {
+  return sitPalace
+}
+
+export interface HouseDirections {
+  zhaiGua: MingGua
+  group: EastWest
+  /** 宅卦 8方游年 — 生气/天医/延年/伏位. */
+  lucky: DirectionVerdict[]
+  /** 宅卦 8方游年 — 绝命/五鬼/六煞/祸害. */
+  unlucky: DirectionVerdict[]
+}
+
+/** 宅卦大游年 — the house's own 8-direction 游年 verdicts. */
+export function houseDirections(sitPalace: BaguaPalace): HouseDirections {
+  const zhaiGua = houseGuaFromSit(sitPalace)
+  return {
+    zhaiGua,
+    group: eastWestGroup(zhaiGua),
+    lucky: luckyDirections(zhaiGua),
+    unlucky: unluckyDirections(zhaiGua),
+  }
+}
+
+export interface ZhaiMingConcord {
+  zhaiGua: MingGua
+  zhaiGroup: EastWest
+  mingGua: MingGua
+  mingGroup: EastWest
+  /** true when 宅 与 命 同属东四 / 西四. */
+  concordant: boolean
+  verdict: '宅命相配' | '宅命不配'
+  advice: string
+}
+
+/** 宅命合参 — whether 东四宅×东四命 (or 西四×西四) align, + remedy advice. */
+export function zhaiMingConcord(mingGua: MingGua, sitPalace: BaguaPalace): ZhaiMingConcord {
+  const zhaiGua = houseGuaFromSit(sitPalace)
+  const zhaiGroup = eastWestGroup(zhaiGua)
+  const mingGroup = eastWestGroup(mingGua)
+  const concordant = zhaiGroup === mingGroup
+  return {
+    zhaiGua,
+    zhaiGroup,
+    mingGua,
+    mingGroup,
+    concordant,
+    verdict: concordant ? '宅命相配' : '宅命不配',
+    advice: concordant
+      ? '宅卦与命卦同组，宅之吉方即命之吉方，门、床、灶顺势安于吉方即可。'
+      : '宅卦与命卦异组，以人为本：大门、床位、灶口取命卦吉方化解，不必拘泥宅卦。',
+  }
+}
+
+export interface FurniturePlacement {
+  /** 大门宜开于 生气方 (纳旺气). */
+  door: DirectionVerdict
+  /** 床头宜朝 天医方 (主健康). */
+  bedHead: DirectionVerdict
+  /** 书桌宜朝 生气方 (主进取). */
+  desk: DirectionVerdict
+  /** 灶: 坐凶 (压绝命) 向吉 (火口朝天医) — 坐凶向吉. */
+  stove: { sitAt: DirectionVerdict; mouthToward: DirectionVerdict }
+}
+
+/**
+ * 床、灶、门、书桌吉位 — derived from the person's 命卦 吉凶方.
+ * 灶 follows the classical 坐凶向吉 rule (灶身压最凶之绝命方, 火口朝天医吉方).
+ */
+export function furniturePlacement(mingGua: MingGua): FurniturePlacement {
+  const lucky = luckyDirections(mingGua) // [生气, 天医, 延年, 伏位]
+  const unlucky = unluckyDirections(mingGua) // [绝命, 五鬼, 六煞, 祸害]
+  const sheng = lucky[0] as DirectionVerdict
+  const tianyi = lucky[1] as DirectionVerdict
+  const jueming = unlucky[0] as DirectionVerdict
+  return {
+    door: sheng,
+    bedHead: tianyi,
+    desk: sheng,
+    stove: { sitAt: jueming, mouthToward: tianyi },
+  }
+}
+
 /**
  * Score how well a building suits a person.
  *
@@ -248,6 +339,12 @@ export interface BaZhaiResult {
   lucky: DirectionVerdict[]
   unlucky: DirectionVerdict[]
   fit?: BaZhaiFit
+  /** 床、灶、门、书桌吉位 (always, from 命卦). */
+  placement: FurniturePlacement
+  /** 宅卦游年 (when `sitPalace` provided). */
+  house?: HouseDirections
+  /** 宅命合参 (when `sitPalace` provided). */
+  concord?: ZhaiMingConcord
 }
 
 export function computeBaZhai(input: BaZhaiInput): BaZhaiResult {
@@ -258,6 +355,7 @@ export function computeBaZhai(input: BaZhaiInput): BaZhaiResult {
     group: eastWestGroup(mingGua),
     lucky: luckyDirections(mingGua),
     unlucky: unluckyDirections(mingGua),
+    placement: furniturePlacement(mingGua),
   }
   if (input.sitPalace && input.doorPalace) {
     result.fit = baZhaiFit({
@@ -265,6 +363,10 @@ export function computeBaZhai(input: BaZhaiInput): BaZhaiResult {
       sitPalace: input.sitPalace,
       doorPalace: input.doorPalace,
     })
+  }
+  if (input.sitPalace) {
+    result.house = houseDirections(input.sitPalace)
+    result.concord = zhaiMingConcord(mingGua, input.sitPalace)
   }
   return result
 }

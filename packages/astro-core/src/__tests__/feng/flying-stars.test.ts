@@ -20,9 +20,12 @@ import {
   computeFlyingStars,
   dateToFlyingYear,
   facingChart,
+  facingChartReplaced,
   fillChartFromCenter,
   mountainChart,
+  mountainChartReplaced,
   periodChart,
+  REPLACEMENT_STAR,
   wrapStar,
   yuanYunForYear,
 } from '../../feng/flying-stars'
@@ -267,10 +270,12 @@ describe('annualChart', () => {
 describe('classifyStar (in 9运)', () => {
   test('9 is 当令', () => expect(classifyStar(9, 9)).toBe('当令'))
   test('1 is 生气 (next 元运)', () => expect(classifyStar(1, 9)).toBe('生气'))
+  test('2 is 生气 (未来二运将旺)', () => expect(classifyStar(2, 9)).toBe('生气'))
   test('8 is 退气 (just-past 元运)', () => expect(classifyStar(8, 9)).toBe('退气'))
-  test('5 is 煞气', () => expect(classifyStar(5, 9)).toBe('煞气'))
-  test('7 is 煞气 (yuanYun - 2 = 7 in 9运)', () => expect(classifyStar(7, 9)).toBe('煞气'))
-  test('2 is 死气', () => expect(classifyStar(2, 9)).toBe('死气'))
+  test('5 is 煞气 (五黄永为灾煞)', () => expect(classifyStar(5, 9)).toBe('煞气'))
+  test('7 is 死气 (过气二运)', () => expect(classifyStar(7, 9)).toBe('死气'))
+  test('3 is 死气', () => expect(classifyStar(3, 9)).toBe('死气'))
+  test('5运 的 5 为当令 (非煞)', () => expect(classifyStar(5, 5)).toBe('当令'))
 })
 
 describe('computeFlyingStars driver', () => {
@@ -299,5 +304,138 @@ describe('computeFlyingStars driver', () => {
       buildYear: 2024,
     })
     expect(result.isCompoundFacing).toBe(true)
+  })
+})
+
+// ────────────────────────────────────────────────────────────────────────────
+// 替卦 (起星 / replacement star) — 兼向
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('REPLACEMENT_STAR table (沈氏玄空學 24山替星)', () => {
+  // Each replacement star covers exactly 3 mountains; 5黄 has none.
+  // Source: 楊筠松《青囊奧語》+ 沈氏 expansion (see flying-stars.ts header).
+  test('青囊奧語 verse anchors (坤壬乙/艮丙辛/巽辰亥/甲癸申)', () => {
+    // 坤壬乙 → 巨門(2)
+    expect(REPLACEMENT_STAR.坤).toBe(2)
+    expect(REPLACEMENT_STAR.壬).toBe(2)
+    expect(REPLACEMENT_STAR.乙).toBe(2)
+    // 艮丙辛 → 破軍(7)
+    expect(REPLACEMENT_STAR.艮).toBe(7)
+    expect(REPLACEMENT_STAR.丙).toBe(7)
+    expect(REPLACEMENT_STAR.辛).toBe(7)
+    // 巽辰亥 → 武曲(6)
+    expect(REPLACEMENT_STAR.巽).toBe(6)
+    expect(REPLACEMENT_STAR.辰).toBe(6)
+    expect(REPLACEMENT_STAR.亥).toBe(6)
+    // 甲申 → 貪狼(1)  (沈氏 puts 子 with 甲申; 癸 → 祿存3)
+    expect(REPLACEMENT_STAR.甲).toBe(1)
+    expect(REPLACEMENT_STAR.申).toBe(1)
+  })
+
+  test('full 24-mountain table (每星三山)', () => {
+    const byStar: Record<number, string[]> = {
+      1: ['子', '申', '甲'],
+      2: ['壬', '坤', '乙'],
+      3: ['癸', '未', '卯'],
+      4: ['巳', '戌', '乾'],
+      6: ['辰', '巽', '亥'],
+      7: ['辛', '艮', '丙'],
+      8: ['庚', '寅', '午'],
+      9: ['酉', '丑', '丁'],
+    }
+    let count = 0
+    for (const [star, mountains] of Object.entries(byStar)) {
+      for (const m of mountains) {
+        expect(REPLACEMENT_STAR[m as keyof typeof REPLACEMENT_STAR]).toBe(Number(star))
+        count++
+      }
+    }
+    expect(count).toBe(24) // every mountain covered, none doubled
+  })
+})
+
+describe('七运 子山午向 兼壬丙 — published 替卦 worked example', () => {
+  // Source: 阐微堂 "玄空风水替卦起星原理和用法探讨".
+  //   山盘: 运星3 到坐(坎) → 3 的洛书宫=震, 子是天元 → 震宫天元=卯(proxy);
+  //         卯阴→逆飞; 替星(卯)=3碧 → 三碧入中逆飞 ("用替不能替", 替==下卦).
+  //   向盘: 运星2 到向(离) → 2 的洛书宫=坤, 午是天元 → 坤宫天元=坤(proxy);
+  //         坤阳→顺飞; 替星(坤)=2黑 → 二黑入中顺飞 ("用替不能替").
+  const sit = sitMountainForFacing(180) // 子
+  const face = mountainAtDegree(180) // 午
+
+  test('坐子 向午', () => {
+    expect(sit.name).toBe('子')
+    expect(face.name).toBe('午')
+  })
+
+  test('山盘: 三碧入中 (替==下卦)', () => {
+    const replaced = mountainChartReplaced(7, sit)
+    expect(replaced['中']).toBe(3)
+    // 用替不能替: identical to the 下卦 chart for this mountain.
+    expect(replaced).toEqual(mountainChart(7, sit))
+  })
+
+  test('向盘: 二黑入中 (替==下卦)', () => {
+    const replaced = facingChartReplaced(7, face)
+    expect(replaced['中']).toBe(2)
+    expect(replaced).toEqual(facingChart(7, face))
+  })
+})
+
+describe('七运 壬山丙向 — 能替 (替卦 ≠ 下卦)', () => {
+  // Derived from the sourced 替星 table + the worked-example algorithm.
+  //   山盘: 运星3 到坐(坎); 壬是地元 → 震宫地元=甲(proxy); 甲阳→顺;
+  //         替星(甲)=1白 → 下卦三碧 变 一白入中 (能替).
+  //   向盘: 运星2 到向(离); 丙是地元 → 坤宫地元=未(proxy); 未阴→逆;
+  //         替星(未)=3碧 → 下卦二黑 变 三碧入中 (能替).
+  const sit = sitMountainForFacing(165) // 壬 (坐), 向 = 丙(165°)
+  const face = mountainAtDegree(165) // 丙
+
+  test('坐壬 向丙', () => {
+    expect(sit.name).toBe('壬')
+    expect(face.name).toBe('丙')
+  })
+
+  test('山盘 下卦 三碧入中 → 替卦 一白入中', () => {
+    expect(mountainChart(7, sit)['中']).toBe(3)
+    expect(mountainChartReplaced(7, sit)['中']).toBe(1)
+  })
+
+  test('向盘 下卦 二黑入中 → 替卦 三碧入中', () => {
+    expect(facingChart(7, face)['中']).toBe(2)
+    expect(facingChartReplaced(7, face)['中']).toBe(3)
+  })
+})
+
+describe('5黄入中 — 无替 ("用替不能替")', () => {
+  // 8运 坤宫 holds period number 5 (periodChart(8)[坤]=5). 5黄 has no 替星,
+  // so a 坐 in 坤宫 keeps 5 at center even on the 替卦 path.
+  const kun = mountainAtDegree(225) // 坤 (坤宫天元)
+
+  test('坐坤 8运: 替卦 5入中 == 下卦', () => {
+    expect(kun.name).toBe('坤')
+    const replaced = mountainChartReplaced(8, kun)
+    expect(replaced['中']).toBe(5)
+    expect(replaced).toEqual(mountainChart(8, kun))
+  })
+})
+
+describe('computeFlyingStars — 替卦 wiring', () => {
+  test('non-compound facing → chartMethod 下卦, effective == 下卦', () => {
+    const r = computeFlyingStars({ facingDegTrue: 180, buildYear: 2024 }) // 子山午向, 9运
+    expect(r.isCompoundFacing).toBe(false)
+    expect(r.chartMethod).toBe('下卦')
+    expect(r.mountainChart).toEqual(r.mountainChartXiaGua)
+    expect(r.facingChart).toEqual(r.facingChartXiaGua)
+  })
+
+  test('compound facing → chartMethod 替卦, effective == 替卦, raw 下卦 retained', () => {
+    const r = computeFlyingStars({ facingDegTrue: 172.6, buildYear: 2024 }) // 兼向, 9运
+    expect(r.isCompoundFacing).toBe(true)
+    expect(r.chartMethod).toBe('替卦')
+    expect(r.mountainChart).toEqual(mountainChartReplaced(9, r.sitMountain))
+    expect(r.facingChart).toEqual(facingChartReplaced(9, r.faceMountain))
+    expect(r.mountainChartXiaGua).toEqual(mountainChart(9, r.sitMountain))
+    expect(r.facingChartXiaGua).toEqual(facingChart(9, r.faceMountain))
   })
 })

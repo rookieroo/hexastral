@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { MAP_ATTRIBUTION } from '@/components/AnnotatedMapSwiper'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { resolveLocale, t, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
@@ -253,16 +254,29 @@ export default function FacingScreen() {
           )}
         </View>
         {hasSatellite ? (
-          <Text
-            style={{
-              marginTop: spacing.sm,
-              fontSize: 13,
-              color: colors.textMute,
-              textAlign: 'center',
-            }}
-          >
-            {strings.new_site_facing_map_legend}
-          </Text>
+          <>
+            <Text
+              style={{
+                marginTop: spacing.sm,
+                fontSize: 13,
+                color: colors.textMute,
+                textAlign: 'center',
+              }}
+            >
+              {strings.new_site_facing_map_legend}
+            </Text>
+            <Text
+              style={{
+                marginTop: spacing.xs,
+                fontSize: 10,
+                color: colors.textMute,
+                opacity: 0.6,
+                textAlign: 'center',
+              }}
+            >
+              {MAP_ATTRIBUTION}
+            </Text>
+          </>
         ) : null}
       </View>
 

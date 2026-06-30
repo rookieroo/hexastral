@@ -129,18 +129,25 @@ export type {
   DirectionKind,
   DirectionVerdict,
   EastWest,
+  FurniturePlacement,
+  HouseDirections,
   LuckyKind,
   MingGua,
   UnluckyKind,
+  ZhaiMingConcord,
 } from './feng/ba-zhai'
 export {
   baZhaiFit,
   computeBaZhai,
   dateToMingGuaYear,
   eastWestGroup,
+  furniturePlacement,
+  houseDirections,
+  houseGuaFromSit,
   luckyDirections,
   mingGuaForYearGender,
   unluckyDirections,
+  zhaiMingConcord,
 } from './feng/ba-zhai'
 // 风水 — 玄空飞星 (Flying Stars)
 export type {
@@ -159,13 +166,45 @@ export {
   computeFlyingStars,
   dateToFlyingYear,
   facingChart,
+  facingChartReplaced,
   fillChartFromCenter,
+  isProsperous,
+  monthlyCenterStar,
+  monthlyChart,
   mountainChart,
+  mountainChartReplaced,
   NINE_CHART_KEYS,
   periodChart,
+  REPLACEMENT_STAR,
   wrapStar,
   yuanYunForYear,
 } from './feng/flying-stars'
+export type {
+  CombinationDomain,
+  PalaceCombination,
+  StarCombination,
+} from './feng/flying-stars-combinations'
+export {
+  describePalaceCombination,
+  lookupCombination,
+} from './feng/flying-stars-combinations'
+export type {
+  DetectPatternsInput,
+  FlyingStarPattern,
+  FlyingStarPatternKind,
+} from './feng/flying-stars-patterns'
+export { detectPatterns } from './feng/flying-stars-patterns'
+export type {
+  FormByPalace,
+  FormLiInput,
+  FormLiResult,
+  FormLiVerdict,
+  PalaceForm,
+  PalaceFormLi,
+  PatternRescue,
+  ZhengLingShen,
+} from './feng/form-li'
+export { correlateFormAndStars, emptyFormByPalace } from './feng/form-li'
 // 风水 — 二十四山 (24 Mountains)
 export type {
   BaguaPalace,

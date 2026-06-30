@@ -10,7 +10,7 @@
  * brand glyph stays inline (it's identity, not chrome).
  */
 
-import { Button, Card, EmptyState, useTheme } from '@zhop/core-ui'
+import { Button, Card, EmptyState, useHaptic, useTheme } from '@zhop/core-ui'
 import { type FengSite, useFengSiteList } from '@zhop/scenario-feng'
 import { useRouter } from 'expo-router'
 import { Plus } from 'lucide-react-native'
@@ -23,6 +23,7 @@ export default function SitesTab() {
   const router = useRouter()
   const { colors, spacing } = useTheme()
   const t = useStrings(resolveLocale())
+  const haptic = useHaptic()
   const insets = useSafeAreaInsets()
   const { sites, isLoading, refetch } = useFengSiteList()
 
@@ -32,9 +33,10 @@ export default function SitesTab() {
 
   const openSite = useCallback(
     (site: FengSite) => {
+      void haptic('light')
       router.push({ pathname: '/(report)/[siteId]', params: { siteId: site.id } })
     },
-    [router]
+    [router, haptic]
   )
 
   return (
@@ -79,7 +81,11 @@ export default function SitesTab() {
           )
         }
         renderItem={({ item }) => (
-          <Pressable onPress={() => openSite(item)}>
+          <Pressable
+            onPress={() => openSite(item)}
+            accessibilityRole='button'
+            accessibilityLabel={`${item.name}, ${item.formattedAddress}`}
+          >
             <Card variant='elevated' padding='lg'>
               <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>
                 {item.name}

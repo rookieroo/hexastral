@@ -100,6 +100,24 @@ export async function prefetchTerrain(
   return postJson<TerrainSignals>(svc, '/prefetch', input, TIMEOUTS.prefetch)
 }
 
+// ── Elevation profile (大峦头 DEM 砂) ────────────────────────────
+
+export type Palace8 = '坎' | '艮' | '震' | '巽' | '离' | '坤' | '兑' | '乾'
+
+export interface ElevationProfile {
+  centerEle: number | null
+  byPalace: Record<Palace8, { ele: number | null; relativeM: number; isMountain: boolean }>
+  laiLong: Palace8 | null
+  degraded: boolean
+}
+
+export async function elevationProfile(
+  svc: FetcherLike,
+  input: PrefetchInput
+): Promise<ElevationProfile> {
+  return postJson<ElevationProfile>(svc, '/terrain/profile', input, TIMEOUTS.prefetch)
+}
+
 // ── Maps ────────────────────────────────────────────────────────
 
 export type MapMode = 'satellite' | 'satellite-streets' | 'streets' | 'outdoors'
@@ -206,6 +224,10 @@ export interface SynthesizeInput {
     baZhai: unknown
     auspiciousPalaces: string[]
     inauspiciousPalaces: string[]
+    patterns?: unknown[]
+    combinations?: unknown[]
+    formLi?: unknown
+    macroTerrain?: unknown
   }
   userProfile: {
     birthDate: string

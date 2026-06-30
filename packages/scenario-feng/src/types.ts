@@ -24,7 +24,9 @@
 import type {
   BaguaPalace,
   BaZhaiResult,
+  FlyingStarPattern,
   FlyingStarsResult,
+  FormLiResult,
   MingGua,
   Mountain,
   YuanYun,
@@ -121,6 +123,19 @@ export interface FengComputeJson {
    *  rendering needs. */
   auspiciousPalaces: BaguaPalace[]
   inauspiciousPalaces: BaguaPalace[]
+  /** Deterministic 格局 detected from the flying-star charts (旺山旺向 等). */
+  patterns?: FlyingStarPattern[]
+  /** Per-palace 山向二星组合断语 (named, phase-adjusted by current 元运). */
+  combinations?: FengPalaceCombination[]
+  /** 形理整合 — 玄空理气 × 峦头形势 的山管人丁水管财断语 (D4). */
+  formLi?: FormLiResult
+}
+
+export interface FengPalaceCombination {
+  palace: string
+  name: string
+  phase: '旺' | '衰'
+  reading: string
 }
 
 // ── Report (Stage 3 output — synthesis) ─────────────────────────────────────
@@ -273,4 +288,13 @@ export interface MapRenderResponse {
 
 // ── Re-exports for convenient consumer imports ──────────────────────────────
 
-export type { BaguaPalace, BaZhaiResult, FlyingStarsResult, MingGua, Mountain, YuanYun }
+export type {
+  BaguaPalace,
+  BaZhaiResult,
+  FlyingStarPattern,
+  FlyingStarsResult,
+  FormLiResult,
+  MingGua,
+  Mountain,
+  YuanYun,
+}

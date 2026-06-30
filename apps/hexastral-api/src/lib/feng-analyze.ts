@@ -19,16 +19,27 @@
  * integration lands.
  */
 
-import type { Gender } from '@zhop/astro-core'
-import { computeBaZhai, computeFlyingStars, palaceAtDegree } from '@zhop/astro-core'
-import { eq } from 'drizzle-orm'
+import type { BaguaPalace, Gender } from '@zhop/astro-core'
+import {
+  computeBaZhai,
+  computeFlyingStars,
+  correlateFormAndStars,
+  describePalaceCombination,
+  detectPatterns,
+  emptyFormByPalace,
+  NINE_CHART_KEYS,
+  palaceAtDegree,
+} from '@zhop/astro-core'
+import { and, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { fengJobs as fengJobsTable, fengSites } from '../db/schema'
-import { fengJobs, fengReports, users } from '../db/schema'
+import { fengJobs, fengReports, singlePurchases, users } from '../db/schema'
 import type { AppDb, CloudflareBindings } from '../infra-types'
 import {
   type AdaptiveTile,
   annotateMap,
+  type ElevationProfile,
+  elevationProfile,
   type OverlayArrow,
   prefetchTerrain,
   renderMap,
@@ -74,17 +85,46 @@ async function markFailed(db: AppDb, jobId: string, message: string): Promise<vo
     .where(eq(fengJobs.id, jobId))
 }
 
-/** Convenience — pull birthDate + gender for the site owner. */
-async function loadUserProfile(
-  db: AppDb,
-  userId: string
-): Promise<{ birthDate: string; gender: '男' | '女' } | null> {
+/** The 4 locales the Fēng report pipeline (vision + synthesis) supports. */
+type ReportLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
+
+/**
+ * Map a stored BCP-47 user locale (`users.locale`, default 'zh') onto the
+ * report's 4-locale union. Unknown / null falls back to 'zh' to preserve the
+ * historical default.
+ */
+function resolveReportLocale(raw: string | null | undefined): ReportLocale {
+  if (!raw) return 'zh'
+  const v = raw.toLowerCase()
+  if (v.startsWith('ja')) return 'ja'
+  if (v.startsWith('en')) return 'en'
+  // Traditional-script variants (zh-Hant / zh-TW / zh-HK / zh-MO).
+  if (v.startsWith('zh-hant') || v === 'zh-tw' || v === 'zh-hk' || v === 'zh-mo') {
+    return 'zh-Hant'
+  }
+  if (v.startsWith('zh')) return 'zh'
+  return 'zh'
+}
+
+interface UserContext {
+  locale: ReportLocale
+  /** null when the user has no usable birth profile — 八宅 chapter is omitted. */
+  profile: { birthDate: string; gender: '男' | '女' } | null
+}
+
+/**
+ * Pull the report locale (always available) + birth profile (when present) for
+ * the site owner in a single query. Locale is independent of the profile so
+ * users without birth info still get a localized 玄空 + 外巒頭 report.
+ */
+async function loadUserContext(db: AppDb, userId: string): Promise<UserContext> {
   const row = await db.select().from(users).where(eq(users.id, userId)).get()
-  if (!row) return null
+  const locale = resolveReportLocale(row?.locale)
+  if (!row) return { locale, profile: null }
   const solar = row.birthSolarDate
   const gender = row.birthGender
-  if (!solar || (gender !== '男' && gender !== '女')) return null
-  return { birthDate: solar, gender }
+  if (!solar || (gender !== '男' && gender !== '女')) return { locale, profile: null }
+  return { locale, profile: { birthDate: solar, gender } }
 }
 
 function deriveDataQuality(site: Site, terrain?: TerrainSignals) {
@@ -130,11 +170,34 @@ function arrowsFor(site: Site): OverlayArrow[] {
   return arrows
 }
 
+/** Map a vision direction string (八卦宫名, may be 繁体/含杂字) to a BaguaPalace. */
+const PALACE_CHARS: Record<string, BaguaPalace> = {
+  乾: '乾',
+  兑: '兑',
+  兌: '兑',
+  离: '离',
+  離: '离',
+  震: '震',
+  巽: '巽',
+  坎: '坎',
+  艮: '艮',
+  坤: '坤',
+}
+function directionToPalace(dir: string): BaguaPalace | null {
+  for (const ch of dir) {
+    const p = PALACE_CHARS[ch]
+    if (p) return p
+  }
+  return null
+}
+
 export async function runAnalyzeJob(
   env: CloudflareBindings,
   db: AppDb,
   jobId: string,
-  site: Site
+  site: Site,
+  /** When set (single-purchase path), consumed once the report is persisted. */
+  purchaseId?: string
 ): Promise<void> {
   const jobStarted = Date.now()
   fengLogger.info('job.start', { jobId, siteId: site.id, userId: site.userId })
@@ -246,8 +309,7 @@ export async function runAnalyzeJob(
     // ── Stage: vision ──
     await setStage(db, jobId, 'vision', 55)
     const visionStarted = Date.now()
-    const profile = await loadUserProfile(db, site.userId)
-    const locale: 'en' | 'zh' | 'zh-Hant' | 'ja' = 'zh' // TODO: persist per-user pref
+    const { locale, profile } = await loadUserContext(db, site.userId)
     const vision: VisionAnalyzeResult = await visionAnalyze(env.SVC_FENG, {
       annotatedKeys,
       facingDegTrue,
@@ -292,6 +354,78 @@ export async function runAnalyzeJob(
     const auspiciousPalaces = baZhaiResult ? baZhaiResult.lucky.map((d) => d.palace) : []
     const inauspiciousPalaces = baZhaiResult ? baZhaiResult.unlucky.map((d) => d.palace) : []
 
+    // 玄空格局 (deterministic) — fed to synthesis as authoritative + persisted.
+    const patterns = detectPatterns({
+      yuanYun: flyingStars.buildYuanYun.yuanYun,
+      sitPalace: flyingStars.sitMountain.palace,
+      facePalace: flyingStars.faceMountain.palace,
+      periodChart: flyingStars.periodChart,
+      mountainChart: flyingStars.mountainChart,
+      facingChart: flyingStars.facingChart,
+    })
+
+    // 山向二星组合断事 — per-palace named combinations, phase-adjusted by the
+    // CURRENT 元运 (present-day 旺衰). Only named combinations are kept.
+    const combinations = NINE_CHART_KEYS.map((k) => {
+      const d = describePalaceCombination(
+        flyingStars.mountainChart[k],
+        flyingStars.facingChart[k],
+        flyingStars.currentYuanYun.yuanYun
+      )
+      return d.combination
+        ? { palace: k, name: d.name ?? '', phase: d.phase, reading: d.reading }
+        : null
+    }).filter((x): x is NonNullable<typeof x> => x !== null)
+
+    // 大峦头 DEM — per-8宫 elevation 砂 (a top-down VLM can't read height). Only
+    // when the prefetch flagged elevation; fail-open. Merged into formByPalace below.
+    let elevation: ElevationProfile | null = null
+    if (terrain.hasMountain && !terrain.degraded) {
+      try {
+        elevation = await elevationProfile(env.SVC_FENG, { lat, lng })
+      } catch (err) {
+        fengLogger.warn('job.elevation.error', {
+          jobId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+
+    // 形理整合 — bin vision 砂/水/形煞 into palaces (vision uses 八卦宫名 directly),
+    // overlay DEM 砂 by elevation, then correlate with the flying-star charts
+    // (山管人丁、水管财). Uses the CURRENT 元运 for 旺衰, like the combination phase.
+    const formByPalace = emptyFormByPalace()
+    if (elevation && !elevation.degraded) {
+      for (const p of Object.keys(formByPalace) as (keyof typeof formByPalace)[]) {
+        if (elevation.byPalace[p]?.isMountain) formByPalace[p].hasMountain = true
+      }
+    }
+    for (const s of vision.砂) {
+      const p = directionToPalace(s.direction)
+      if (p) formByPalace[p].hasMountain = true
+    }
+    for (const c of vision.朝案) {
+      const p = directionToPalace(c.direction)
+      if (p) formByPalace[p].hasMountain = true
+    }
+    for (const w of vision.水) {
+      const p = directionToPalace(w.direction)
+      if (p) formByPalace[p].hasWater = true
+    }
+    for (const x of vision.形煞) {
+      const p = directionToPalace(x.direction)
+      if (p) formByPalace[p].hasSha = true
+    }
+    const formLi = correlateFormAndStars({
+      yuanYun: flyingStars.currentYuanYun.yuanYun,
+      mountainChart: flyingStars.mountainChart,
+      facingChart: flyingStars.facingChart,
+      formByPalace,
+      sitPalace: flyingStars.sitMountain.palace,
+      facePalace: flyingStars.faceMountain.palace,
+      patterns,
+    })
+
     // ── Stage: synthesis ──
     await setStage(db, jobId, 'synthesis', 85)
     const synthesisStarted = Date.now()
@@ -319,6 +453,10 @@ export async function runAnalyzeJob(
         baZhai: baZhaiResult ?? null,
         auspiciousPalaces,
         inauspiciousPalaces,
+        patterns,
+        combinations,
+        formLi,
+        macroTerrain: elevation ? { laiLong: elevation.laiLong } : null,
       },
       userProfile: {
         birthDate: profile?.birthDate ?? '',
@@ -349,6 +487,12 @@ export async function runAnalyzeJob(
         baZhai: baZhaiResult,
         auspiciousPalaces,
         inauspiciousPalaces,
+        patterns,
+        combinations,
+        formLi,
+        macroTerrain: elevation
+          ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
+          : null,
       }),
       chapters: JSON.stringify(synth.chapters),
       dataQuality: JSON.stringify(dataQuality),
@@ -364,6 +508,27 @@ export async function runAnalyzeJob(
       reportId,
       finishedAt: new Date().toISOString(),
     })
+
+    // Consume the single purchase only after the report is safely persisted —
+    // consuming on enqueue would burn the entitlement on a failed analysis.
+    // The status guard makes this idempotent under queue retries.
+    if (purchaseId) {
+      const consumed = await db
+        .update(singlePurchases)
+        .set({
+          status: 'consumed',
+          readingId: reportId,
+          consumedAt: new Date().toISOString(),
+        })
+        .where(and(eq(singlePurchases.id, purchaseId), eq(singlePurchases.status, 'purchased')))
+        .returning({ id: singlePurchases.id })
+      fengLogger.info('job.purchase_consumed', {
+        jobId,
+        purchaseId,
+        consumed: consumed.length > 0,
+      })
+    }
+
     fengLogger.info('job.done', {
       jobId,
       siteId: site.id,
