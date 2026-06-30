@@ -305,6 +305,18 @@ export default function ReportScreen() {
                                 )
                               })
                             )}
+                            {compute.formLi.zhengLing.findings.map((z, i) => (
+                              <Text
+                                key={`zl-${z.palace}-${i}`}
+                                style={{
+                                  color: z.auspicious ? colors.accent : colors.danger,
+                                  fontSize: 12,
+                                  lineHeight: 18,
+                                }}
+                              >
+                                {z.reason}
+                              </Text>
+                            ))}
                             {compute.formLi.patternRescue.map((r) => (
                               <Text
                                 key={r.pattern}
@@ -324,8 +336,45 @@ export default function ReportScreen() {
                     ) : null}
 
                     {compute?.baZhai && chapter.kind === 'personal_fit' ? (
-                      <View style={{ marginTop: spacing.md, alignItems: 'center' }}>
+                      <View
+                        style={{ marginTop: spacing.md, alignItems: 'center', gap: spacing.sm }}
+                      >
                         <BaZhaiWheel result={compute.baZhai} size={240} strokeColor={colors.text} />
+                        {compute.baZhai.concord ? (
+                          <Text
+                            style={{
+                              color: compute.baZhai.concord.concordant
+                                ? colors.accent
+                                : colors.danger,
+                              fontSize: 13,
+                              fontWeight: '700',
+                            }}
+                          >
+                            {compute.baZhai.concord.verdict}
+                          </Text>
+                        ) : null}
+                        <View style={{ alignSelf: 'stretch', gap: spacing.xs }}>
+                          <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 1 }}>
+                            {t.report_placement_heading}
+                          </Text>
+                          {(
+                            [
+                              [t.placement_door, compute.baZhai.placement.door],
+                              [t.placement_bed, compute.baZhai.placement.bedHead],
+                              [t.placement_stove, compute.baZhai.placement.stove.mouthToward],
+                              [t.placement_desk, compute.baZhai.placement.desk],
+                            ] as const
+                          ).map(([label, v]) => (
+                            <View key={label} style={{ flexDirection: 'row', gap: spacing.sm }}>
+                              <Text style={{ color: colors.secondary, fontSize: 12, width: 56 }}>
+                                {label}
+                              </Text>
+                              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
+                                {v.kind}·{v.palace}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
                       </View>
                     ) : null}
 
@@ -359,6 +408,20 @@ export default function ReportScreen() {
               >
                 {t.report_data_quality_footer}
               </Text>
+
+              {compute?.streetAttribution ? (
+                <Text
+                  style={{
+                    color: colors.secondary,
+                    opacity: 0.6,
+                    fontSize: 10,
+                    textAlign: 'center',
+                    paddingHorizontal: spacing.xl,
+                  }}
+                >
+                  {compute.streetAttribution}
+                </Text>
+              ) : null}
 
               {reportId ? (
                 <Button

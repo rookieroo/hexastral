@@ -83,7 +83,7 @@ export async function fetchStreetImages(input: FetchStreetImagesInput): Promise<
         if (!imgRes.ok) return null
         return {
           id: m.id,
-          compassAngle: ((m.compass_angle ?? 0) % 360 + 360) % 360,
+          compassAngle: (((m.compass_angle ?? 0) % 360) + 360) % 360,
           base64: toBase64(await imgRes.arrayBuffer()),
           mimeType: 'image/jpeg',
         }

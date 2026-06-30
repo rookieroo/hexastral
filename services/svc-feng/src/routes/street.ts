@@ -72,7 +72,12 @@ streetRouter.post('/sha', async (c) => {
   const started = Date.now()
 
   if (!c.env.MAPILLARY_TOKEN) {
-    return c.json({ degraded: true, imageCount: 0, attribution: MAPILLARY_ATTRIBUTION, findings: [] })
+    return c.json({
+      degraded: true,
+      imageCount: 0,
+      attribution: MAPILLARY_ATTRIBUTION,
+      findings: [],
+    })
   }
 
   let images: Awaited<ReturnType<typeof fetchStreetImages>> = []
@@ -88,7 +93,12 @@ streetRouter.post('/sha', async (c) => {
   }
 
   if (images.length === 0) {
-    return c.json({ degraded: true, imageCount: 0, attribution: MAPILLARY_ATTRIBUTION, findings: [] })
+    return c.json({
+      degraded: true,
+      imageCount: 0,
+      attribution: MAPILLARY_ATTRIBUTION,
+      findings: [],
+    })
   }
 
   const userPrompt = `You are given ${images.length} street photo(s) near the site (image index 0..${images.length - 1}). Output locale: ${locale}. List 形煞 per the rules.`

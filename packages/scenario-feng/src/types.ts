@@ -129,6 +129,10 @@ export interface FengComputeJson {
   combinations?: FengPalaceCombination[]
   /** 形理整合 — 玄空理气 × 峦头形势 的山管人丁水管财断语 (D4). */
   formLi?: FormLiResult
+  /** 大峦头 DEM — 来龙方向 (八卦宫) from elevation sampling. */
+  macroTerrain?: { laiLong: string | null } | null
+  /** Mapillary CC-BY-SA attribution when street imagery contributed 形煞. */
+  streetAttribution?: string | null
 }
 
 export interface FengPalaceCombination {

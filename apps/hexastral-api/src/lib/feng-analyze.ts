@@ -24,9 +24,12 @@ import {
   computeBaZhai,
   computeFlyingStars,
   correlateFormAndStars,
+  dateToFlyingYear,
   describePalaceCombination,
   detectPatterns,
   emptyFormByPalace,
+  getMonthByJie,
+  monthlyChart,
   NINE_CHART_KEYS,
   palaceAtDegree,
 } from '@zhop/astro-core'
@@ -43,6 +46,7 @@ import {
   type OverlayArrow,
   prefetchTerrain,
   renderMap,
+  streetSha,
   synthesizeReport,
   type TerrainSignals,
   type VisionAnalyzeResult,
@@ -338,6 +342,20 @@ export async function runAnalyzeJob(
       asOf: today,
     })
 
+    // 月紫白 (流月) — 立春-aligned 年支 + 节-aligned 月支 → this month's 9-palace stars.
+    const flyingYear = dateToFlyingYear(today)
+    const yearBranchIndex = (((flyingYear - 4) % 12) + 12) % 12
+    const monthBranchIndex = getMonthByJie(
+      today.getUTCFullYear(),
+      today.getUTCMonth() + 1,
+      today.getUTCDate()
+    )
+    const lunarMonth = ((monthBranchIndex - 2 + 12) % 12) + 1 // 寅月=正月=1
+    const monthlyStars = {
+      lunarMonth,
+      chart: monthlyChart(yearBranchIndex, lunarMonth),
+    }
+
     const sitPalace = palaceAtDegree(sitDegTrue)
     const doorPalace =
       site.doorDegTrue == null ? sitPalace : palaceAtDegree(Number(site.doorDegTrue))
@@ -389,6 +407,32 @@ export async function runAnalyzeJob(
           error: err instanceof Error ? err.message : String(err),
         })
       }
+    }
+
+    // 小峦头街景形煞 (Mapillary, off unless MAPILLARY_TOKEN). Merge into vision.形煞
+    // (binned by the capturing image's compass angle → 宫) so it flows to both
+    // formByPalace and synthesis. Fail-open.
+    let streetAttribution: string | null = null
+    try {
+      const street = await streetSha(env.SVC_FENG, { lat, lng, locale })
+      if (!street.degraded && street.findings.length > 0) {
+        streetAttribution = street.attribution
+        for (const f of street.findings) {
+          const sev = Math.min(5, Math.max(1, Math.round(f.severity))) as 1 | 2 | 3 | 4 | 5
+          vision.形煞.push({
+            type: f.type,
+            direction: palaceAtDegree(f.compassAngle),
+            distance: 'near',
+            severity: sev,
+            evidence: f.evidence,
+          })
+        }
+      }
+    } catch (err) {
+      fengLogger.warn('job.street.error', {
+        jobId,
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
 
     // 形理整合 — bin vision 砂/水/形煞 into palaces (vision uses 八卦宫名 directly),
@@ -457,6 +501,7 @@ export async function runAnalyzeJob(
         combinations,
         formLi,
         macroTerrain: elevation ? { laiLong: elevation.laiLong } : null,
+        monthlyStars,
       },
       userProfile: {
         birthDate: profile?.birthDate ?? '',
@@ -493,6 +538,8 @@ export async function runAnalyzeJob(
         macroTerrain: elevation
           ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
           : null,
+        streetAttribution,
+        monthlyStars,
       }),
       chapters: JSON.stringify(synth.chapters),
       dataQuality: JSON.stringify(dataQuality),

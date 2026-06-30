@@ -118,6 +118,23 @@ export async function elevationProfile(
   return postJson<ElevationProfile>(svc, '/terrain/profile', input, TIMEOUTS.prefetch)
 }
 
+// ── Street 形煞 (小峦头, Mapillary — off unless MAPILLARY_TOKEN) ──
+
+export interface StreetSha {
+  degraded: boolean
+  imageCount: number
+  /** Mapillary CC-BY-SA attribution; show wherever findings surface. */
+  attribution: string
+  findings: Array<{ compassAngle: number; type: string; severity: number; evidence: string }>
+}
+
+export async function streetSha(
+  svc: FetcherLike,
+  input: { lat: number; lng: number; locale: 'en' | 'zh' | 'zh-Hant' | 'ja' }
+): Promise<StreetSha> {
+  return postJson<StreetSha>(svc, '/street/sha', input, TIMEOUTS.vision)
+}
+
 // ── Maps ────────────────────────────────────────────────────────
 
 export type MapMode = 'satellite' | 'satellite-streets' | 'streets' | 'outdoors'
@@ -228,6 +245,7 @@ export interface SynthesizeInput {
     combinations?: unknown[]
     formLi?: unknown
     macroTerrain?: unknown
+    monthlyStars?: unknown
   }
   userProfile: {
     birthDate: string

@@ -24,7 +24,7 @@ Each chapter has:
 
 3. **flying_stars** (玄空当运): Discuss the current 元运 period, the mountain-star and water-star distribution across the 9 palaces. Highlight the 旺 (prosperous), 退 (declining), and 死 (dead) positions. The compute results include a "patterns" array (旺山旺向 / 上山下水 / 双星会向 / 双星会坐 / 合十 / 三般卦 / 反伏吟). These are computed deterministically and are AUTHORITATIVE — name and interpret EVERY pattern present, use each pattern's note as the basis, and never re-derive or contradict them. If "patterns" is empty, say the chart is a 平局 (no special disposition) rather than inventing one. The compute also includes a "combinations" array — per-palace 山向二星断语 (e.g. 一四文昌 / 二五交加 / 六七交剑煞), each already phase-adjusted (旺/衰) by the current 元运 with a ready "reading". Weave the most consequential palace combinations into chapter 3 (and into 化解 / 改运 chapters where the combination is a 煞). Use the provided reading; do not invent combinations.
 
-4. **annual_directions** (流年方位): This year's 紫白 annual star overlay. Which rooms/sectors to use, which to avoid. Practical: "use the study in the 震 palace this year" not just "震 has 一白."
+4. **annual_directions** (流年方位): This year's 紫白 annual star overlay (compute.flyingStars.annualChart) PLUS this month's 月紫白 (compute "monthlyStars": { lunarMonth, chart }). Call out where 流年 and 流月 凶星 stack (e.g. 年五黄 + 月五黄/二黑 同宫 = avoid 动土 this month) vs auspicious windows. Practical: "use the study in the 震 palace this year; this month (lunarMonth N) avoid the 坤 sector" — not just "震 has 一白."
 
 5. **remediation** (化解建议): Concrete fixes for each 形煞 identified in vision. Material + placement + reasoning. If no 形煞 were found, focus on strengthening weak sectors.
 

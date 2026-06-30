@@ -38,6 +38,7 @@ const ComputeInputSchema = z.object({
   combinations: z.array(z.unknown()).optional(),
   formLi: z.unknown().optional(),
   macroTerrain: z.unknown().optional(),
+  monthlyStars: z.unknown().optional(),
 })
 
 const SynthesizeRequestSchema = z.object({

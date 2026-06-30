@@ -44,8 +44,9 @@ word "专业" — budget for it.
   双读;`describePalaceCombination` 按当前元运旺衰选读。**已接管线**:feng-analyze
   逐宫算 → computeJson + synthesis(prompt 要求权威采用)→ scenario-feng 类型。
 - ✅ **D1.4 月紫白** — `monthlyChart` / `monthlyCenterStar`(三元月白诀:年支定
-  正月入中→逐月递减→顺飞)。引擎+测试完成;**接入待办**(需 节-month 解析喂
-  annual_directions 章节做流月)。
+  正月入中→逐月递减→顺飞)。**已接管线**:feng-analyze 用 `dateToFlyingYear`(立春年支)
+  + `getMonthByJie`(节月)算当月 `monthlyStars` → computeJson + synthesis(流年方位章
+  现叠流月,年月凶星同宫示警)。
 - astro-core 761/761 测试通过;全链路 typecheck + biome clean.
 - 待办:report UI 逐宫组合 chip 展示;月紫白接 synthesis;七星打劫/城门诀。
 
@@ -143,8 +144,15 @@ tied to the user's actual rooms (D-cross).
 - 全链路 typecheck + biome clean;astro-core 776/776.
 - Division of labor now: **砂/山 = DEM** (height, satellite can't see); **水/路/形煞
   = VLM** (visible top-down). 
-- 待办 (D3 remainder): 街景形煞 (Street View/Mapillary, 小峦头 路冲/天斩) — coverage +
-  ToS risk; 水系按宫归 (currently VLM-only); azimuth-from-coords for VLM features.
+- ✅ **D3.3 街景小峦头形煞** — `svc-feng/src/lib/mapillary.ts` + `POST /street/sha`:
+  Mapillary 取站点附近街景(按罗盘角去重成 8 方向)→ Gemini Vision 检测 路冲/天斩/
+  尖角冲射/电塔/烟囱/招牌煞 等(俯视卫星看不到)→ **每条按拍摄图的 compass_angle 归宫**
+  (不让 VLM 做站点相对几何)。feng-analyze 把街景形煞并入 `vision.形煞`(→ formByPalace
+  .hasSha + synthesis)。**默认关闭**:无 `MAPILLARY_TOKEN` 即 degraded(可安全上线)。
+  - ⚠️ Mapillary 影像 **CC-BY-SA**:`streetAttribution` 已持久化;启用 token 前必须
+    在展示处加署名 + 法务确认衍生用途。UI 署名待补。
+- 待办 (D3 remainder): 水系按宫归 (currently VLM-only); azimuth-from-coords for VLM
+  satellite features; UI 街景署名展示.
 
 ## D3 — 峦头/形势 → 10/10  (multi-scale, `svc-feng` + new geo step)
 

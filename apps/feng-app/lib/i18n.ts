@@ -108,6 +108,12 @@ export type Strings = {
   report_compound_facing_note: string
   /** Heading above the per-palace 形理 (form-li) verdict list. */
   report_formli_heading: string
+  /** 床灶门书桌吉位 block. */
+  report_placement_heading: string
+  placement_door: string
+  placement_bed: string
+  placement_stove: string
+  placement_desk: string
   /** Short chapter tags rendered next to the "CH n" pill. */
   chapter_external_landform: string
   chapter_personal_fit: string
@@ -258,6 +264,11 @@ const EN: Strings = {
   report_compound_facing_note:
     'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
   report_formli_heading: 'FORM × STARS (山水合参)',
+  report_placement_heading: 'PLACEMENT (床灶门)',
+  placement_door: 'Main door',
+  placement_bed: 'Bed (head)',
+  placement_stove: 'Stove',
+  placement_desk: 'Desk',
   chapter_external_landform: 'Landform',
   chapter_personal_fit: 'Trigram',
   chapter_flying_stars: 'Stars',
@@ -392,6 +403,11 @@ const ZH_HANS: Strings = {
   report_map_failed: '地图加载失败',
   report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
   report_formli_heading: '形理合参（山水×飞星）',
+  report_placement_heading: '吉位布局',
+  placement_door: '大门',
+  placement_bed: '床头',
+  placement_stove: '灶',
+  placement_desk: '书桌',
   chapter_external_landform: '外峦头',
   chapter_personal_fit: '命卦',
   chapter_flying_stars: '飞星',
@@ -518,6 +534,11 @@ const ZH_HANT: Strings = {
   report_map_failed: '地圖載入失敗',
   report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
   report_formli_heading: '形理合參（山水×飛星）',
+  report_placement_heading: '吉位佈局',
+  placement_door: '大門',
+  placement_bed: '床頭',
+  placement_stove: '灶',
+  placement_desk: '書桌',
   chapter_external_landform: '外巒頭',
   chapter_flying_stars: '飛星',
   chapter_auspicious_objects: '改運',
@@ -645,6 +666,11 @@ const JA: Strings = {
   report_map_failed: '地図を読み込めません',
   report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
   report_formli_heading: '形理合参（山水×飛星）',
+  report_placement_heading: '配置',
+  placement_door: '玄関',
+  placement_bed: 'ベッド(枕)',
+  placement_stove: 'かまど',
+  placement_desk: 'デスク',
   chapter_external_landform: '巒頭',
   chapter_personal_fit: '命卦',
   chapter_flying_stars: '飛星',
