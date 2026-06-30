@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F1E26"
+      "backgroundColor": "#0A1316"
     },
     "ios": {
       "supportsTablet": true,
@@ -71,7 +71,7 @@
       "package": "com.hexastral.feng",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F1E26"
+        "backgroundColor": "#0A1316"
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",

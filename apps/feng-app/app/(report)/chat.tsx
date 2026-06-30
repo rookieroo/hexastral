@@ -19,7 +19,11 @@ import { fetchChatHistory, reportChatMessage, sendChatMessage } from '@/lib/chat
 import { resolveLocale, useStrings } from '@/lib/i18n'
 
 export default function ReportChatScreen() {
-  const { reportId, title } = useLocalSearchParams<{ reportId: string; title?: string }>()
+  const { reportId, title, quote } = useLocalSearchParams<{
+    reportId: string
+    title?: string
+    quote?: string
+  }>()
   const router = useRouter()
   const { userId } = useAuth()
   const t = useStrings(resolveLocale())
@@ -82,6 +86,7 @@ export default function ReportChatScreen() {
       onPaywallRequest={() => Alert.alert(t.chat_pro_required)}
       copy={copy}
       header={header}
+      initialDraft={quote || undefined}
     />
   )
 }

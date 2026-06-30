@@ -9,9 +9,10 @@
 import { useAnalyzeJob, useCreateSite } from '@zhop/scenario-feng'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { getDevPro } from '@/lib/dev-flags'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { clearDraft, isDraftReady, loadDraft, type SiteDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
@@ -51,6 +52,15 @@ export default function ReviewScreen() {
     if (hasSubmitted || creating || analyze.isRunning) return
     if (!draft || !isDraftReady(draft)) {
       setSubmitError('Draft is incomplete — go back and finish each step.')
+      return
+    }
+    // Gate BEFORE the expensive analysis (Gemini vision + LLM + Mapbox). Without
+    // entitlement we never kick off the costly job — the paywall is one upfront
+    // prompt per report, not a late server error. DEV-Pro bypasses on-device;
+    // the real IAP purchase wires into this branch (W5 / RevenueCat).
+    const entitled = await getDevPro()
+    if (!entitled) {
+      Alert.alert(t.report_unlock_title, t.new_site_review_iap_note)
       return
     }
     setHasSubmitted(true)

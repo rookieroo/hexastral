@@ -4,6 +4,7 @@ import { Platform, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/lib/auth'
 import { resolveLocale, useStrings } from '@/lib/i18n'
+import { FengMark } from './FengMark'
 
 export function SignInScreen() {
   const insets = useSafeAreaInsets()
@@ -25,7 +26,9 @@ export function SignInScreen() {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: 56, color: colors.accent, textAlign: 'center' }}>風</Text>
+      <View style={{ alignItems: 'center' }}>
+        <FengMark size={68} color={colors.accent} />
+      </View>
       <Text
         style={{
           fontSize: 24,

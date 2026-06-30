@@ -72,8 +72,33 @@ the Yuel/kindred model:
   back, Card sections) — account / birth / privacy / sign-out / delete-account,
   and **folds the retired Compass + Readings tabs in as tool links**. Edge-only
   back-swipe.
-- ⬜ NEEDS DEVICE QA; remaining: dark-theme the compass + readings sub-screens to
-  match; optional Skia SkyHero; an onboarding cold-open intro (feng has none today).
+- ✅ **Shell color fix (2026-06-30)** — the home/settings ground read as a flat
+  mid-teal (`inkTeal #0F1E26`). Added `FENG_PALETTE.night #0A1316` (deep near-black
+  墨, whisper of teal) + `nightRaised` card tone + `hairline`; applied to home,
+  settings, stack ground, BootSplash, AuthGate so launch→home is one continuous
+  墨 ground. Per-screen `StatusBar` set (dark shells = light bars; cream report =
+  dark bar) — fixes invisible status text on the cream paper.
+- ✅ **Compass + readings dark-themed** to the Yuel night surface (night ground,
+  rice/copperGold/cinnabar, hairline cards, back-header parity with Settings).
+- ✅ **Brand mark redesigned (2026-06-30)** — the bare `風` character is replaced
+  by `components/FengMark.tsx`, an honest **trace** (potrace) of the oracle-bone
+  (甲骨文) 鳳/風 phoenix from a rubbing the founder supplied (in oracle bone 風/鳳
+  are one graph — the divine bird whose wingbeat raises the wind). Single tintable
+  fill path, pure react-native-svg (no Skia). Wired into BootSplash / sign-in /
+  intro / home (header at 44px — the glyph is too intricate to read below ~44).
+  App **icon / adaptive-icon / splash regenerated** from the same glyph (铜金 on
+  night) + `app.json` splash/adaptive backgroundColor → `#0A1316`. Reproducible:
+  `scripts/gen-feng-mark.sh` (+ `.ts`); source rubbing + traced SVG stored under
+  `assets/brand/`.
+- ✅ **Onboarding cold-open** (`app/(intro)`) — net-new: a slowly-turning 罗盘
+  (reused pure-SVG `BaguaCompassOverlay`, fixed 朱砂 磁针, no Skia) under the 風
+  wordmark + two locale lines + 朱砂 "tap to begin". Tap-only (never auto-advances),
+  fades into the home. One-shot via `lib/onboarding.ts` AsyncStorage flag; boot
+  (`app/index.tsx`) routes first-launch → `(intro)`, returning → home.
+  Note: shows **post-auth** (inside AuthGate), i.e. a welcome cold-open after
+  sign-in, not before. Pre-auth ordering = optional V1.1 polish.
+- ⬜ NEEDS DEVICE QA; remaining: dark-theme the (new-site) + (birth-info) flows
+  (still on core-ui light theme); optional Skia SkyHero.
 
 ---
 Direction (locked): kindred 水墨 aesthetic + bespoke 罗盘 loader.

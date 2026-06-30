@@ -23,10 +23,11 @@ import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
-import { ActivityIndicator, Text, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, useColorScheme, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthGate } from '@/components/AuthGate'
+import { FengMark } from '@/components/FengMark'
 import { AuthProvider } from '@/lib/auth'
 import { FengClientGate } from '@/lib/client'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
@@ -38,13 +39,13 @@ function BootSplash() {
     <View
       style={{
         flex: 1,
-        backgroundColor: FENG_PALETTE.inkTeal,
+        backgroundColor: FENG_PALETTE.night,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 24,
       }}
     >
-      <Text style={{ fontSize: 56, color: FENG_PALETTE.copperGold }}>風</Text>
+      <FengMark size={72} />
       <ActivityIndicator color={FENG_PALETTE.copperGold} />
     </View>
   )
@@ -79,10 +80,12 @@ export default function RootLayout() {
                   }}
                 >
                   <Stack.Screen name='index' />
+                  <Stack.Screen name='(intro)' />
                   <Stack.Screen name='(tabs)' />
                   <Stack.Screen name='(new-site)' />
                   <Stack.Screen name='(report)' />
                   <Stack.Screen name='(birth-info)' />
+                  <Stack.Screen name='(glossary)' />
                 </Stack>
               </FengClientGate>
             </AuthGate>

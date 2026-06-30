@@ -112,6 +112,13 @@ export type Strings = {
   report_formli_heading: string
   /** 床灶门书桌吉位 block. */
   report_placement_heading: string
+  reading_copy: string
+  reading_chat: string
+  reading_highlight: string
+  term_source: string
+  term_ask: string
+  tool_glossary: string
+  glossary_intro: string
   placement_door: string
   placement_bed: string
   placement_stove: string
@@ -128,6 +135,7 @@ export type Strings = {
   new_site_review_ai_disclaimer: string
   /** One-time IAP / Pro cost note rendered next to the AI disclaimer. */
   new_site_review_iap_note: string
+  report_unlock_title: string
 
   // Sign-in
   sign_in_hint: string
@@ -203,9 +211,9 @@ export type Strings = {
 
 const EN: Strings = {
   appName: 'Fēng',
-  empty_title: 'No sites yet',
-  empty_subtitle: 'Add your home or office to get a feng-shui report rooted in the satellite view.',
-  empty_cta: 'Add a site',
+  empty_title: 'No dwelling surveyed yet',
+  empty_subtitle: 'Add a home or office, and read its 风水 from the lay of the land.',
+  empty_cta: 'Survey a home',
   new_site_address_title: 'Pick your address',
   new_site_address_subtitle: 'Type an address or use your current location.',
   new_site_address_placeholder: 'Street, city, country',
@@ -273,6 +281,13 @@ const EN: Strings = {
     'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
   report_formli_heading: 'FORM × STARS (山水合参)',
   report_placement_heading: 'PLACEMENT (床灶门)',
+  reading_copy: 'Copy',
+  reading_chat: 'Ask AI',
+  reading_highlight: 'Highlight',
+  term_source: 'Source',
+  term_ask: 'Ask AI about this term',
+  tool_glossary: 'Glossary',
+  glossary_intro: 'The 风水 terms used across your reports, grouped by school.',
   placement_door: 'Main door',
   placement_bed: 'Bed (head)',
   placement_stove: 'Stove',
@@ -287,6 +302,7 @@ const EN: Strings = {
   new_site_review_ai_disclaimer:
     'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
   new_site_review_iap_note: 'One report per site, unlocked with a one-time purchase.',
+  report_unlock_title: 'Unlock this report',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
   sign_in_guest: 'Continue as guest',
@@ -351,9 +367,9 @@ const EN: Strings = {
 
 const ZH_HANS: Strings = {
   appName: '風',
-  empty_title: '还没有站点',
-  empty_subtitle: '添加住宅或办公室，结合卫星影像生成风水报告。',
-  empty_cta: '添加站点',
+  empty_title: '尚未勘宅',
+  empty_subtitle: '添一处住宅或办公室，从山水形势里读出它的风水。',
+  empty_cta: '勘察新宅',
   new_site_address_title: '选择地址',
   new_site_address_subtitle: '输入地址或使用当前定位。',
   new_site_address_placeholder: '街道、城市、国家',
@@ -417,6 +433,13 @@ const ZH_HANS: Strings = {
   report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
   report_formli_heading: '形理合参（山水×飞星）',
   report_placement_heading: '吉位布局',
+  reading_copy: '复制',
+  reading_chat: '问AI',
+  reading_highlight: '划重点',
+  term_source: '出处',
+  term_ask: '问问这个词',
+  tool_glossary: '术语表',
+  glossary_intro: '报告中用到的风水术语,按流派归类。',
   placement_door: '大门',
   placement_bed: '床头',
   placement_stove: '灶',
@@ -431,6 +454,7 @@ const ZH_HANS: Strings = {
   new_site_review_ai_disclaimer:
     '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
   new_site_review_iap_note: '每个地点一份报告，单次购买永久解锁。',
+  report_unlock_title: '解锁这份报告',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
   sign_in_guest: '以访客身份继续',
@@ -492,9 +516,9 @@ const ZH_HANS: Strings = {
 const ZH_HANT: Strings = {
   ...ZH_HANS,
   appName: '風',
-  empty_title: '尚未新增地點',
-  empty_subtitle: '加入住家或辦公室，結合衛星影像生成風水報告。',
-  empty_cta: '新增地點',
+  empty_title: '尚未勘宅',
+  empty_subtitle: '添一處住家或辦公室，從山水形勢裡讀出它的風水。',
+  empty_cta: '勘察新宅',
   new_site_address_title: '選擇地址',
   new_site_address_subtitle: '輸入地址或使用目前位置。',
   new_site_address_geocode_error: '無法解析此地址的座標，請使用「目前位置」或修改地址。',
@@ -553,6 +577,13 @@ const ZH_HANT: Strings = {
   report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
   report_formli_heading: '形理合參（山水×飛星）',
   report_placement_heading: '吉位佈局',
+  reading_copy: '複製',
+  reading_chat: '問AI',
+  reading_highlight: '劃重點',
+  term_source: '出處',
+  term_ask: '問問這個詞',
+  tool_glossary: '術語表',
+  glossary_intro: '報告中用到的風水術語,按流派歸類。',
   placement_door: '大門',
   placement_bed: '床頭',
   placement_stove: '灶',
@@ -563,6 +594,7 @@ const ZH_HANT: Strings = {
   new_site_review_ai_disclaimer:
     '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
   new_site_review_iap_note: '每個地點一份報告，單次購買永久解鎖。',
+  report_unlock_title: '解鎖這份報告',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
   sign_in_guest: '以訪客身份繼續',
@@ -624,9 +656,9 @@ const ZH_HANT: Strings = {
 const JA: Strings = {
   ...EN,
   appName: '風',
-  empty_title: 'まだ場所が登録されていません',
-  empty_subtitle: '自宅やオフィスを追加すると、衛星画像に基づいた風水レポートを生成できます。',
-  empty_cta: '場所を追加',
+  empty_title: 'まだ住まいを観ていません',
+  empty_subtitle: '自宅やオフィスを加えると、地形から風水を読み解きます。',
+  empty_cta: '住まいを観る',
   new_site_address_title: '住所を選ぶ',
   new_site_address_subtitle: '住所を入力するか、現在地を使います。',
   new_site_address_geocode_error:
@@ -691,6 +723,13 @@ const JA: Strings = {
   report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
   report_formli_heading: '形理合参（山水×飛星）',
   report_placement_heading: '配置',
+  reading_copy: 'コピー',
+  reading_chat: 'AIに聞く',
+  reading_highlight: 'ハイライト',
+  term_source: '出典',
+  term_ask: 'この語をAIに聞く',
+  tool_glossary: '用語集',
+  glossary_intro: 'レポートで使われる風水用語を流派別にまとめています。',
   placement_door: '玄関',
   placement_bed: 'ベッド(枕)',
   placement_stove: 'かまど',
@@ -705,6 +744,7 @@ const JA: Strings = {
   new_site_review_ai_disclaimer:
     '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
   new_site_review_iap_note: '1 地点につき 1 レポート。単発購入で解放されます。',
+  report_unlock_title: 'このレポートを解錠',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',
   sign_in_guest: 'ゲストとして続ける',

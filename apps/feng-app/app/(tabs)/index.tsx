@@ -9,22 +9,27 @@
 
 import { useHaptic } from '@zhop/core-ui'
 import { type FengSite, useFengSiteList } from '@zhop/scenario-feng'
-import { useRouter } from 'expo-router'
-import { Plus, Settings } from 'lucide-react-native'
-import { useCallback } from 'react'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { HousePlus, Settings } from 'lucide-react-native'
+import { useCallback, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { FengHomeSplash } from '@/components/FengHomeSplash'
+import { FengMark } from '@/components/FengMark'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { FENG_PALETTE, spacing } from '@/lib/theme'
 
 export default function HomeScreen() {
   const router = useRouter()
+  const { fromIntro } = useLocalSearchParams<{ fromIntro?: string }>()
   const t = useStrings(resolveLocale())
   const haptic = useHaptic()
   const insets = useSafeAreaInsets()
   const { sites, isLoading, refetch } = useFengSiteList()
+  const [splashDone, setSplashDone] = useState(fromIntro !== '1')
 
   const openSettings = useCallback(() => {
     void haptic('light')
@@ -53,7 +58,8 @@ export default function HomeScreen() {
     })
 
   return (
-    <View style={{ flex: 1, backgroundColor: FENG_PALETTE.inkTeal }}>
+    <View style={{ flex: 1, backgroundColor: FENG_PALETTE.night }}>
+      <StatusBar style='light' />
       <View
         style={{
           paddingTop: insets.top + spacing.sm,
@@ -64,7 +70,7 @@ export default function HomeScreen() {
           justifyContent: 'space-between',
         }}
       >
-        <Text style={{ fontSize: 30, color: FENG_PALETTE.copperGold, fontWeight: '700' }}>風</Text>
+        <FengMark size={44} />
         <Pressable
           onPress={openSettings}
           accessibilityRole='button'
@@ -120,9 +126,9 @@ export default function HomeScreen() {
               accessibilityRole='button'
               accessibilityLabel={`${item.name}, ${item.formattedAddress}`}
               style={{
-                backgroundColor: 'rgba(245,239,227,0.05)',
+                backgroundColor: FENG_PALETTE.nightRaised,
                 borderWidth: 1,
-                borderColor: 'rgba(176,141,91,0.18)',
+                borderColor: FENG_PALETTE.hairline,
                 borderRadius: 14,
                 padding: spacing.lg,
               }}
@@ -163,19 +169,21 @@ export default function HomeScreen() {
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.md,
           borderRadius: 999,
-          backgroundColor: FENG_PALETTE.cinnabar,
+          backgroundColor: FENG_PALETTE.copperGold,
           shadowColor: '#000',
-          shadowOpacity: 0.4,
+          shadowOpacity: 0.35,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 4 },
           elevation: 8,
         }}
       >
-        <Plus color={FENG_PALETTE.rice} size={18} />
-        <Text style={{ color: FENG_PALETTE.rice, fontWeight: '700', fontSize: 15 }}>
+        <HousePlus color={FENG_PALETTE.night} size={18} />
+        <Text style={{ color: FENG_PALETTE.night, fontWeight: '700', fontSize: 15 }}>
           {t.empty_cta}
         </Text>
       </Pressable>
+
+      {!splashDone ? <FengHomeSplash onDone={() => setSplashDone(true)} /> : null}
     </View>
   )
 }

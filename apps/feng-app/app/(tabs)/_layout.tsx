@@ -17,7 +17,7 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: FENG_PALETTE.inkTeal },
+        contentStyle: { backgroundColor: FENG_PALETTE.night },
       }}
     >
       <Stack.Screen name='index' />

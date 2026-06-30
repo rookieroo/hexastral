@@ -6,17 +6,19 @@
  * was killed during Phase K matrix simplification, see ADR-0003 Reverted).
  */
 
-import { BaguaCompassOverlay } from '@zhop/scenario-feng'
 import * as Location from 'expo-location'
+import { useRouter } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LuopanDial } from '@/components/LuopanDial'
 import { resolveLocale, useStrings } from '@/lib/i18n'
-import { FENG_PALETTE, spacing, useFengTheme } from '@/lib/theme'
+import { FENG_PALETTE, spacing } from '@/lib/theme'
 
 export default function CompassTab() {
+  const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
   const [trueDeg, setTrueDeg] = useState<number | null>(null)
   const [magDeg, setMagDeg] = useState<number | null>(null)
@@ -61,68 +63,104 @@ export default function CompassTab() {
   const heading = trueDeg ?? magDeg ?? 0
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: FENG_PALETTE.inkTeal,
-        paddingTop: insets.top + spacing.xl,
-        paddingHorizontal: spacing.xl,
-        paddingBottom: insets.bottom + spacing.xl,
-        alignItems: 'center',
-        gap: spacing.lg,
-      }}
-    >
-      <Text style={{ color: FENG_PALETTE.rice, fontSize: 14, opacity: 0.6, letterSpacing: 2 }}>
-        {t.compass_heading_title.toUpperCase()}
-      </Text>
-      <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 52, fontWeight: '300' }}>
-        {Math.round(heading)}°
-      </Text>
-
-      <View style={{ width: 320, height: 320, alignItems: 'center', justifyContent: 'center' }}>
-        <BaguaCompassOverlay
-          size={320}
-          rotation={-heading}
-          showWedges
-          showMountains
-          showCardinals
-          ringColor='rgba(245,239,227,0.5)'
-          labelColor='rgba(245,239,227,0.85)'
-          labelMajorColor={FENG_PALETTE.copperGold}
-          cardinalColor={FENG_PALETTE.rice}
-        />
+    <View style={{ flex: 1, backgroundColor: FENG_PALETTE.night }}>
+      <StatusBar style='light' />
+      <View
+        style={{
+          paddingTop: insets.top + spacing.sm,
+          paddingHorizontal: spacing.xl,
+          paddingBottom: spacing.md,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole='button'
+          accessibilityLabel={t.nav_back}
+          hitSlop={12}
+        >
+          <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 24 }}>‹</Text>
+        </Pressable>
+        <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '700' }}>
+          {t.tab_compass}
+        </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: spacing.xl, marginTop: spacing.lg }}>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>TRUE</Text>
-          <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
-            {trueDeg !== null ? `${Math.round(trueDeg)}°` : '—'}
-          </Text>
+      <View
+        style={{
+          flex: 1,
+          paddingHorizontal: spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl,
+          alignItems: 'center',
+          gap: spacing.lg,
+        }}
+      >
+        <Text style={{ color: FENG_PALETTE.rice, fontSize: 14, opacity: 0.6, letterSpacing: 2 }}>
+          {t.compass_heading_title.toUpperCase()}
+        </Text>
+        <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 52, fontWeight: '300' }}>
+          {Math.round(heading)}°
+        </Text>
+
+        <View style={{ width: 300, height: 300, alignItems: 'center', justifyContent: 'center' }}>
+          {/* the plate turns so its 子(north) mark holds geographic north */}
+          <View style={{ transform: [{ rotate: `${-heading}deg` }] }}>
+            <LuopanDial size={300} />
+          </View>
+          {/* fixed device-facing reference at the top */}
+          <View
+            style={{
+              position: 'absolute',
+              top: -2,
+              width: 0,
+              height: 0,
+              borderLeftWidth: 6,
+              borderRightWidth: 6,
+              borderTopWidth: 10,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderTopColor: FENG_PALETTE.rice,
+            }}
+          />
         </View>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>
-            MAGNETIC
-          </Text>
-          <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
-            {magDeg !== null ? `${Math.round(magDeg)}°` : '—'}
-          </Text>
+
+        <View style={{ flexDirection: 'row', gap: spacing.xl, marginTop: spacing.lg }}>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>
+              TRUE
+            </Text>
+            <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
+              {trueDeg !== null ? `${Math.round(trueDeg)}°` : '—'}
+            </Text>
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>
+              MAGNETIC
+            </Text>
+            <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
+              {magDeg !== null ? `${Math.round(magDeg)}°` : '—'}
+            </Text>
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>
+              DECLINATION
+            </Text>
+            <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
+              {decl !== null ? `${decl.toFixed(1)}°` : '—'}
+            </Text>
+          </View>
         </View>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 11, letterSpacing: 1 }}>
-            DECLINATION
+
+        <View style={{ flex: 1 }} />
+
+        {error ? (
+          <Text style={{ color: FENG_PALETTE.cinnabar, fontSize: 12, textAlign: 'center' }}>
+            {error}
           </Text>
-          <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '600' }}>
-            {decl !== null ? `${decl.toFixed(1)}°` : '—'}
-          </Text>
-        </View>
+        ) : null}
       </View>
-
-      <View style={{ flex: 1 }} />
-
-      {error ? (
-        <Text style={{ color: colors.warning, fontSize: 12, textAlign: 'center' }}>{error}</Text>
-      ) : null}
     </View>
   )
 }

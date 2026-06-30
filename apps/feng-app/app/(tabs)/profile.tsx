@@ -1,13 +1,16 @@
 /**
- * Settings — account, birth info, tools (罗盘 / 历史), privacy, sign-out, delete.
+ * Settings — account, birth info, tools (罗盘 / 历史 / 术语表), DEV, account actions.
  *
- * Yuel model: a full-screen 墨青 settings route reached from the home gear +
- * left-swipe (edge-only back). Replaces the old Profile tab; folds in the
- * retired Compass / Readings tabs as tool links.
+ * Yuel/Yuun model: a full-screen 墨 settings route reached from the home gear +
+ * left-swipe. Grouped rows (no fixed-height cards with dead whitespace); the
+ * destructive actions are centered small text with 删除账号 as the only red.
+ * Cross-app memory is hidden for MVP. A __DEV__-only block exposes reset-intro +
+ * a DEV-Pro bypass so analysis can be tested without IAP.
  */
 
-import { Button, useHaptic } from '@zhop/core-ui'
+import { useHaptic } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
 import { ChevronRight } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
@@ -15,16 +18,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { deleteAccount } from '@/lib/account'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
+import { getDevPro, setDevPro } from '@/lib/dev-flags'
 import { resolveLocale, useStrings } from '@/lib/i18n'
-import { fetchMemoryPreference, setCrossAppMemory } from '@/lib/memory-preference'
+import { resetFengIntro } from '@/lib/onboarding'
 import { FENG_PALETTE, spacing } from '@/lib/theme'
 
 const CARD = {
-  backgroundColor: 'rgba(245,239,227,0.05)',
+  backgroundColor: FENG_PALETTE.nightRaised,
   borderWidth: 1,
-  borderColor: 'rgba(176,141,91,0.18)',
+  borderColor: FENG_PALETTE.hairline,
   borderRadius: 14,
-  padding: spacing.lg,
+  paddingHorizontal: spacing.lg,
 } as const
 
 function accountKindLabel(userId: string | null, t: ReturnType<typeof useStrings>): string {
@@ -43,8 +47,7 @@ export default function SettingsScreen() {
   const { user, userId, signOut } = useAuth()
 
   const [birthInfo, setBirthInfo] = useState<FengBirthInfo | null>(null)
-  const [crossAppMemory, setCrossAppMemoryState] = useState(false)
-  const [crossAppBusy, setCrossAppBusy] = useState(false)
+  const [devPro, setDevProState] = useState(false)
 
   const loadBirth = useCallback(async () => {
     try {
@@ -56,27 +59,11 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     void loadBirth()
-  }, [loadBirth, userId])
+  }, [loadBirth])
 
   useEffect(() => {
-    if (!userId) return
-    fetchMemoryPreference(userId)
-      .then((p) => setCrossAppMemoryState(p.crossAppEnabled))
-      .catch(() => {})
-  }, [userId])
-
-  const handleCrossAppToggle = async (value: boolean) => {
-    if (!userId || crossAppBusy) return
-    setCrossAppBusy(true)
-    setCrossAppMemoryState(value)
-    try {
-      await setCrossAppMemory(userId, value)
-    } catch {
-      setCrossAppMemoryState(!value)
-    } finally {
-      setCrossAppBusy(false)
-    }
-  }
+    if (__DEV__) void getDevPro().then(setDevProState)
+  }, [])
 
   const handleSignOut = () => {
     void haptic('light')
@@ -107,7 +94,11 @@ export default function SettingsScreen() {
     ])
   }
 
-  const toolRow = (label: string, onPress: () => void) => (
+  const birthValue = birthInfo
+    ? `${birthInfo.birthSolarDate} · ${birthInfo.gender}${birthInfo.birthCity ? ` · ${birthInfo.birthCity}` : ''}`
+    : t.profile_birth_required
+
+  const navRow = (label: string, value: string | null, onPress: () => void, last?: boolean) => (
     <Pressable
       onPress={() => {
         void haptic('light')
@@ -115,15 +106,32 @@ export default function SettingsScreen() {
       }}
       accessibilityRole='button'
       accessibilityLabel={label}
-      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: FENG_PALETTE.hairline,
+        gap: spacing.sm,
+      }}
     >
       <Text style={{ color: FENG_PALETTE.rice, fontSize: 15 }}>{label}</Text>
+      <View style={{ flex: 1 }} />
+      {value ? (
+        <Text
+          numberOfLines={1}
+          style={{ color: FENG_PALETTE.riceMute, fontSize: 13, maxWidth: '60%' }}
+        >
+          {value}
+        </Text>
+      ) : null}
       <ChevronRight color={FENG_PALETTE.riceMute} size={18} />
     </Pressable>
   )
 
   return (
-    <View style={{ flex: 1, backgroundColor: FENG_PALETTE.inkTeal }}>
+    <View style={{ flex: 1, backgroundColor: FENG_PALETTE.night }}>
+      <StatusBar style='light' />
       <View
         style={{
           paddingTop: insets.top + spacing.sm,
@@ -154,7 +162,8 @@ export default function SettingsScreen() {
           gap: spacing.lg,
         }}
       >
-        <View style={[CARD, { gap: spacing.sm }]}>
+        {/* account */}
+        <View style={[CARD, { paddingVertical: spacing.lg, gap: spacing.xs }]}>
           <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 12, letterSpacing: 1 }}>
             {accountKindLabel(userId, t).toUpperCase()}
           </Text>
@@ -174,86 +183,72 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        <View style={[CARD, { gap: spacing.md }]}>
-          <Text style={{ color: FENG_PALETTE.rice, fontSize: 15, fontWeight: '600' }}>
-            {t.profile_birth_section}
-          </Text>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 14, lineHeight: 22 }}>
-            {birthInfo
-              ? `${birthInfo.birthSolarDate} · ${birthInfo.gender}${birthInfo.birthCity ? ` · ${birthInfo.birthCity}` : ''}`
-              : t.profile_birth_required}
-          </Text>
-          <View style={{ alignSelf: 'flex-start' }}>
-            <Button variant='secondary' size='md' onPress={() => router.push('/(birth-info)')}>
-              {birthInfo ? t.profile_birth_edit_cta : t.profile_birth_required_cta}
-            </Button>
-          </View>
+        {/* rows: birth + tools */}
+        <View style={CARD}>
+          {navRow(t.profile_birth_section, birthValue, () => router.push('/(birth-info)'))}
+          {navRow(t.tab_compass, null, () => router.push('/(tabs)/compass'))}
+          {navRow(t.tab_readings, null, () => router.push('/(tabs)/readings'))}
+          {navRow(t.tool_glossary, null, () => router.push('/(glossary)'), true)}
         </View>
 
-        <View style={[CARD, { gap: spacing.md }]}>
-          {toolRow(t.tab_compass, () => router.push('/(tabs)/compass'))}
-          <View style={{ height: 1, backgroundColor: 'rgba(176,141,91,0.14)' }} />
-          {toolRow(t.tab_readings, () => router.push('/(tabs)/readings'))}
-        </View>
-
-        <View style={[CARD, { gap: spacing.md }]}>
-          <Text style={{ color: FENG_PALETTE.rice, fontSize: 15, fontWeight: '600' }}>
-            {t.privacy_section}
-          </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-            }}
-          >
-            <Text style={{ color: FENG_PALETTE.rice, fontSize: 15, flex: 1 }}>
-              {t.cross_app_memory_label}
+        {/* DEV */}
+        {__DEV__ ? (
+          <View style={CARD}>
+            <Text
+              style={{
+                color: FENG_PALETTE.copperGold,
+                fontSize: 11,
+                letterSpacing: 2,
+                paddingTop: spacing.md,
+              }}
+            >
+              DEV
             </Text>
-            <Switch
-              value={crossAppMemory}
-              onValueChange={handleCrossAppToggle}
-              disabled={crossAppBusy || !userId}
-              accessibilityLabel={t.cross_app_memory_label}
-            />
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: spacing.md,
+                borderBottomWidth: 1,
+                borderBottomColor: FENG_PALETTE.hairline,
+              }}
+            >
+              <Text style={{ color: FENG_PALETTE.rice, fontSize: 15, flex: 1 }}>
+                DEV Pro (skip IAP)
+              </Text>
+              <Switch
+                value={devPro}
+                onValueChange={(v) => {
+                  setDevProState(v)
+                  void setDevPro(v)
+                }}
+              />
+            </View>
+            <Pressable
+              onPress={() => {
+                void haptic('light')
+                void resetFengIntro()
+                Alert.alert('Intro reset', 'The cold-open will replay next launch.')
+              }}
+              accessibilityRole='button'
+              style={{ paddingVertical: spacing.md }}
+            >
+              <Text style={{ color: FENG_PALETTE.rice, fontSize: 15 }}>Reset intro</Text>
+            </Pressable>
           </View>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 13, lineHeight: 20 }}>
-            {t.cross_app_memory_hint}
-          </Text>
+        ) : null}
+
+        {/* account actions — centered; 删除账号 is the only red */}
+        <View style={{ alignItems: 'center', gap: spacing.md, marginTop: spacing.lg }}>
+          <Pressable onPress={handleSignOut} accessibilityRole='button' hitSlop={8}>
+            <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 14 }}>{t.profile_sign_out}</Text>
+          </Pressable>
+          <Pressable onPress={handleDeleteAccount} accessibilityRole='button' hitSlop={8}>
+            <Text style={{ color: FENG_PALETTE.cinnabar, fontSize: 13 }}>
+              {t.profile_delete_account}
+            </Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          onPress={handleSignOut}
-          accessibilityRole='button'
-          accessibilityLabel={t.profile_sign_out}
-          hitSlop={8}
-          style={{
-            alignSelf: 'flex-start',
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.sm,
-          }}
-        >
-          <Text style={{ color: FENG_PALETTE.cinnabar, fontSize: 14 }}>{t.profile_sign_out}</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={handleDeleteAccount}
-          accessibilityRole='button'
-          accessibilityLabel={t.profile_delete_account}
-          hitSlop={8}
-          style={{
-            alignSelf: 'flex-start',
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.sm,
-          }}
-        >
-          <Text
-            style={{ color: FENG_PALETTE.riceMute, fontSize: 13, textDecorationLine: 'underline' }}
-          >
-            {t.profile_delete_account}
-          </Text>
-        </Pressable>
       </ScrollView>
     </View>
   )

@@ -1,8 +1,10 @@
 /**
- * Fēng authentication — Apple / Google / guest, aligned with hexastral-app.
+ * Fēng authentication — Apple / Google / guest.
  *
- * Persists userId + deviceSecret (HMAC) in SecureStore. Sign-out clears session
- * and returns to the sign-in surface (no silent re-provision).
+ * Guest and boot use POST /api/user (public). Apple / Google sign-in link the
+ * current anonymous session via POST /api/onboarding/{apple,google}-link (HMAC),
+ * matching Kindred — so an Apple ID already tied to another HexAstral app
+ * recovers the canonical users row instead of failing on apple_user_id UNIQUE.
  */
 
 import * as AppleAuthentication from 'expo-apple-authentication'
@@ -10,7 +12,7 @@ import type { ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
 import { config } from './config'
-import { clearDeviceSecret, storeDeviceSecret } from './hmac'
+import { clearDeviceSecret, signRequest, storeDeviceSecret } from './hmac'
 import { clearFengSessionCaches } from './session-reset'
 import {
   clearFengUserSession,
@@ -58,6 +60,99 @@ function makeLocalUser(userId: string, name?: string): FengUser {
   }
 }
 
+type LinkOutcome = 'linked' | 'recovered' | 'already_linked'
+
+interface ApiSuccess<T> {
+  ok: true
+  data: T
+}
+interface ApiError {
+  ok: false
+  error: { code?: string; message: string }
+}
+
+function userFromApiRow(apiUser: Record<string, unknown>, fallbackId: string): FengUser {
+  const id = typeof apiUser.id === 'string' ? apiUser.id : fallbackId
+  return {
+    id,
+    email: typeof apiUser.email === 'string' ? apiUser.email : null,
+    name: typeof apiUser.name === 'string' ? apiUser.name : null,
+    birthSolarDate: typeof apiUser.birthSolarDate === 'string' ? apiUser.birthSolarDate : null,
+    birthTimeIndex: typeof apiUser.birthTimeIndex === 'number' ? apiUser.birthTimeIndex : null,
+    birthGender:
+      apiUser.birthGender === '男' || apiUser.birthGender === '女' ? apiUser.birthGender : null,
+    birthCity: typeof apiUser.birthCity === 'string' ? apiUser.birthCity : null,
+  }
+}
+
+async function applyRegisterResponse(
+  requestedId: string,
+  apiUser: Record<string, unknown>
+): Promise<FengUser> {
+  if (typeof apiUser.deviceSecret === 'string') {
+    await storeDeviceSecret(apiUser.deviceSecret)
+  }
+  const fengUser = userFromApiRow(apiUser, requestedId)
+  if (fengUser.id !== requestedId) {
+    await setStoredFengUserId(fengUser.id)
+  }
+  return fengUser
+}
+
+async function linkProvider(
+  userId: string,
+  path: string,
+  payload: Record<string, unknown>
+): Promise<{ outcome: LinkOutcome; userId: string }> {
+  const body = JSON.stringify(payload)
+  const sig = await signRequest({ method: 'POST', path, body, userId })
+  if (!sig) throw new Error('missing_device_secret')
+
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${userId}`,
+      ...sig,
+    },
+    body,
+  })
+  const json = (await res.json()) as
+    | ApiSuccess<{ outcome: LinkOutcome; userId: string; deviceSecret?: string }>
+    | ApiError
+
+  if (!json.ok) {
+    const err = new Error(json.error.message) as Error & { code?: string }
+    err.code = json.error.code
+    throw err
+  }
+
+  const { outcome, userId: nextUserId, deviceSecret } = json.data
+  if (outcome === 'recovered') {
+    if (!deviceSecret) throw new Error('recovered_without_device_secret')
+    await storeDeviceSecret(deviceSecret)
+    await setStoredFengUserId(nextUserId)
+  }
+  return { outcome, userId: nextUserId }
+}
+
+/** Anonymous session required before apple-link / google-link (HMAC-gated). */
+async function ensureAnonymousSession(existingUser: FengUser | null): Promise<{
+  userId: string
+  user: FengUser
+}> {
+  const stored = existingUser?.id ?? (await getStoredFengUserId())
+  if (stored) {
+    const user = await registerUser(stored)
+    return { userId: user.id, user }
+  }
+  const guestId = `guest_${uuidv4()}`
+  await clearDeviceSecret()
+  const user = await registerUser(guestId, undefined, 'Guest')
+  await setStoredFengUserId(guestId)
+  return { userId: user.id, user }
+}
+
 async function getGoogleSigninModule(): Promise<GoogleSigninModule | null> {
   try {
     const module = await import('@react-native-google-signin/google-signin')
@@ -80,8 +175,7 @@ async function getGoogleSigninModule(): Promise<GoogleSigninModule | null> {
 async function registerUser(
   userId: string,
   email?: string,
-  name?: string,
-  appleUserId?: string
+  name?: string
 ): Promise<FengUser> {
   const res = await fetch(`${config.apiUrl}/api/user`, {
     method: 'POST',
@@ -90,7 +184,6 @@ async function registerUser(
       id: userId,
       email: normalizeOptionalEmail(email),
       name: name?.trim() || undefined,
-      appleUserId,
     }),
   })
   if (!res.ok) {
@@ -100,20 +193,7 @@ async function registerUser(
     )
   }
   const json = (await res.json()) as { data: Record<string, unknown> }
-  const apiUser = json.data
-  if (typeof apiUser.deviceSecret === 'string') {
-    await storeDeviceSecret(apiUser.deviceSecret)
-  }
-  return {
-    id: userId,
-    email: typeof apiUser.email === 'string' ? apiUser.email : null,
-    name: typeof apiUser.name === 'string' ? apiUser.name : null,
-    birthSolarDate: typeof apiUser.birthSolarDate === 'string' ? apiUser.birthSolarDate : null,
-    birthTimeIndex: typeof apiUser.birthTimeIndex === 'number' ? apiUser.birthTimeIndex : null,
-    birthGender:
-      apiUser.birthGender === '男' || apiUser.birthGender === '女' ? apiUser.birthGender : null,
-    birthCity: typeof apiUser.birthCity === 'string' ? apiUser.birthCity : null,
-  }
+  return applyRegisterResponse(userId, json.data)
 }
 
 async function fetchUser(userId: string): Promise<FengUser> {
@@ -203,27 +283,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       })
-      const userId = `apple_${credential.user}`
-      const name =
+      if (!credential.identityToken) {
+        throw new Error('apple_missing_identity_token')
+      }
+
+      const { userId: activeUserId, user: sessionUser } = await ensureAnonymousSession(user)
+      setUser(sessionUser)
+
+      const fullName =
         credential.fullName?.givenName && credential.fullName?.familyName
           ? `${credential.fullName.givenName} ${credential.fullName.familyName}`
           : undefined
-      const newUser = await registerUser(
-        userId,
-        normalizeOptionalEmail(credential.email),
-        name,
-        credential.user
-      )
-      await setStoredFengUserId(userId)
-      if (credential.identityToken) await setAuthToken(credential.identityToken)
-      setUser(newUser)
+
+      const link = await linkProvider(activeUserId, '/api/onboarding/apple-link', {
+        identityToken: credential.identityToken,
+        fullName: fullName || undefined,
+      })
+
+      if (link.outcome === 'recovered') {
+        setCredentialVersion((v) => v + 1)
+      }
+      await setAuthToken(credential.identityToken)
+      setUser(await fetchUser(link.userId))
       return true
     } catch (error: unknown) {
       const code = (error as { code?: string }).code
       if (code === 'ERR_REQUEST_CANCELED') return false
       throw error
     }
-  }, [])
+  }, [user])
 
   const signInWithGoogle = useCallback(async () => {
     try {
@@ -232,16 +320,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('google_signin_requires_dev_client')
       }
       await googleSigninModule.GoogleSignin.hasPlayServices()
-      const { data } = await googleSigninModule.GoogleSignin.signIn()
-      if (!data) return false
-      const userId = `google_${data.user.id}`
-      const newUser = await registerUser(
-        userId,
-        data.user.email ?? undefined,
-        data.user.name ?? undefined
-      )
-      await setStoredFengUserId(userId)
-      setUser(newUser)
+      const res = await googleSigninModule.GoogleSignin.signIn()
+      if (res?.type === 'cancelled') return false
+      const idToken =
+        res?.data?.idToken ?? (res as { idToken?: string | null }).idToken ?? null
+      if (!idToken) {
+        throw new Error('google_missing_id_token')
+      }
+
+      const { userId: activeUserId, user: sessionUser } = await ensureAnonymousSession(user)
+      setUser(sessionUser)
+
+      const link = await linkProvider(activeUserId, '/api/onboarding/google-link', {
+        identityToken: idToken,
+      })
+
+      if (link.outcome === 'recovered') {
+        setCredentialVersion((v) => v + 1)
+      }
+      setUser(await fetchUser(link.userId))
       return true
     } catch (error: unknown) {
       const googleSigninModule = await getGoogleSigninModule()
@@ -251,7 +348,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       throw error
     }
-  }, [])
+  }, [user])
 
   const signInAsGuest = useCallback(async () => {
     const guestId = `guest_${uuidv4()}`

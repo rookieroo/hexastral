@@ -32,6 +32,15 @@ export const FENG_PALETTE = {
   riceWarm: '#EAE3D0',
   riceMute: '#A89F8E',
   black: '#020608',
+  /**
+   * Yuel-aligned night shell — a deep near-black 墨 with only a whisper of teal
+   * (kindred's ground is a warm near-black; feng keeps its 墨青 identity but at
+   * this depth so it no longer reads as a flat mid-teal). Use for the app shell
+   * (home / settings / stack ground); keep `inkTeal` for accents + satellite art.
+   */
+  night: '#0A1316',
+  nightRaised: '#101D21',
+  hairline: 'rgba(176,141,91,0.16)',
 } as const
 
 /**

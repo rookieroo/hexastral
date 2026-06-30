@@ -226,6 +226,21 @@ async function fetchPlainIntroExcerptForPublic(db: AppDb, userId: string): Promi
   return excerptFromCh1ContentJson(row.contentJson)
 }
 
+type UserRow = typeof users.$inferSelect
+
+/** Issue or return deviceSecret for an existing users row (registration + recovery). */
+async function respondWithUserSecret(db: AppDb, row: UserRow) {
+  if (!row.deviceSecret) {
+    const deviceSecret = crypto.randomUUID()
+    await db
+      .update(users)
+      .set({ deviceSecret, updatedAt: new Date().toISOString() })
+      .where(eq(users.id, row.id))
+    return { data: { ...row, deviceSecret } }
+  }
+  return { data: row }
+}
+
 /** 创建或获取用户 */
 export const userRoutes = new Hono<AppEnv>()
   .post('/', async (c) => {
@@ -235,16 +250,31 @@ export const userRoutes = new Hono<AppEnv>()
 
     const existing = await db.select().from(users).where(eq(users.id, input.id)).get()
     if (existing) {
-      // Generate deviceSecret if not yet assigned (rolling upgrade)
-      if (!existing.deviceSecret) {
-        const deviceSecret = crypto.randomUUID()
-        await db
-          .update(users)
-          .set({ deviceSecret, updatedAt: new Date().toISOString() })
-          .where(eq(users.id, input.id))
-        return c.json({ data: { ...existing, deviceSecret } })
+      return c.json(await respondWithUserSecret(db, existing))
+    }
+
+    // Cross-app recovery: Apple/Google IDs are globally unique. A satellite that
+    // POSTs a fresh `apple_*` / `google_*` id for an already-linked provider
+    // must return the canonical row instead of inserting (UNIQUE violation).
+    if (input.appleUserId) {
+      const byApple = await db
+        .select()
+        .from(users)
+        .where(eq(users.appleUserId, input.appleUserId))
+        .get()
+      if (byApple) {
+        return c.json(await respondWithUserSecret(db, byApple))
       }
-      return c.json({ data: existing })
+    }
+    if (input.googleUserId) {
+      const byGoogle = await db
+        .select()
+        .from(users)
+        .where(eq(users.googleUserId, input.googleUserId))
+        .get()
+      if (byGoogle) {
+        return c.json(await respondWithUserSecret(db, byGoogle))
+      }
     }
 
     const deviceSecret = crypto.randomUUID()

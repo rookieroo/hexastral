@@ -12,7 +12,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <View
         style={{
           flex: 1,
-          backgroundColor: FENG_PALETTE.inkTeal,
+          backgroundColor: FENG_PALETTE.night,
           alignItems: 'center',
           justifyContent: 'center',
         }}

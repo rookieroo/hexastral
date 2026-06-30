@@ -10,7 +10,6 @@
  * wait itself carries the feng-shui identity.
  */
 
-import { BaguaCompassOverlay } from '@zhop/scenario-feng'
 import { useEffect } from 'react'
 import { Text, View } from 'react-native'
 import Animated, {
@@ -22,6 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { FENG_PALETTE, spacing } from '@/lib/theme'
+import { LuopanDial } from './LuopanDial'
 
 interface LuopanLoaderProps {
   size?: number
@@ -47,15 +47,7 @@ export function LuopanLoader({ size = 168, label }: LuopanLoaderProps) {
     >
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View style={plateStyle}>
-          <BaguaCompassOverlay
-            size={size}
-            showWedges
-            showMountains
-            showCardinals={false}
-            ringColor='rgba(176,141,91,0.40)'
-            labelColor='rgba(176,141,91,0.70)'
-            labelMajorColor={FENG_PALETTE.copperGold}
-          />
+          <LuopanDial size={size} />
         </Animated.View>
         {/* 天池磁针 — fixed center needle (does not rotate with the plate). */}
         <View
