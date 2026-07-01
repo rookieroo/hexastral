@@ -107,7 +107,7 @@ export default function CompassTab() {
         <View style={{ width: 300, height: 300, alignItems: 'center', justifyContent: 'center' }}>
           {/* the plate turns so its 子(north) mark holds geographic north */}
           <View style={{ transform: [{ rotate: `${-heading}deg` }] }}>
-            <LuopanDial size={300} />
+            <LuopanDial size={300} detail='full' />
           </View>
           {/* fixed device-facing reference at the top */}
           <View

@@ -174,14 +174,21 @@ export type Strings = {
   birth_info_title: string
   birth_info_subtitle: string
   birth_date_label: string
+  birth_calendar_solar: string
+  birth_calendar_lunar: string
+  birth_calendar_lunar_hint: string
   birth_time_label: string
   birth_time_unknown: string
   birth_gender_label: string
+  birth_gender_male: string
+  birth_gender_female: string
   birth_city_label: string
   birth_city_placeholder: string
   birth_city_required: string
   birth_save: string
+  birth_saved: string
   birth_saving: string
+  birth_hint: string
 
   // Share
   share_chapter: string
@@ -343,15 +350,22 @@ const EN: Strings = {
   birth_info_title: 'Birth info',
   birth_info_subtitle:
     'Used for the personal Ba Zi / Ming Gua chapter in your feng-shui report. Stored securely on your account.',
-  birth_date_label: 'Solar birth date',
+  birth_date_label: 'Birth date',
+  birth_calendar_solar: 'Solar',
+  birth_calendar_lunar: 'Chinese (lunar)',
+  birth_calendar_lunar_hint: 'Enter the lunar month and day (leap months not distinguished).',
   birth_time_label: 'Birth hour (shichen)',
   birth_time_unknown: 'Unknown hour',
   birth_gender_label: 'Gender',
+  birth_gender_male: 'Male',
+  birth_gender_female: 'Female',
   birth_city_label: 'Birth city',
   birth_city_placeholder: 'City where you were born',
   birth_city_required: 'Please select a birth city from the list.',
   birth_save: 'Save',
+  birth_saved: 'Saved',
   birth_saving: 'Saving…',
+  birth_hint: 'Powers the personal Ba Zi / Ming Gua chapter in your report.',
   share_chapter: 'Share',
   share_pending: 'Sharing…',
   share_needs_signin: 'Sign in to share chapters.',
@@ -501,15 +515,22 @@ const ZH_HANS: Strings = {
   cancel: '取消',
   birth_info_title: '生辰信息',
   birth_info_subtitle: '用于风水报告中的八字 / 命卦章节，安全保存在你的账号下。',
-  birth_date_label: '公历生日',
+  birth_date_label: '出生日期',
+  birth_calendar_solar: '阳历',
+  birth_calendar_lunar: '农历',
+  birth_calendar_lunar_hint: '输入农历月日（闰月不区分）',
   birth_time_label: '出生时辰',
   birth_time_unknown: '时辰不详',
   birth_gender_label: '性别',
+  birth_gender_male: '男',
+  birth_gender_female: '女',
   birth_city_label: '出生城市',
   birth_city_placeholder: '输入出生城市',
   birth_city_required: '请从列表中选择出生城市。',
   birth_save: '保存',
+  birth_saved: '已保存',
   birth_saving: '保存中…',
+  birth_hint: '用于风水报告中的个人八字 / 命卦章节。',
   share_chapter: '分享',
   share_pending: '分享中…',
   share_needs_signin: '登录后即可分享章节。',
@@ -647,15 +668,22 @@ const ZH_HANT: Strings = {
   cancel: '取消',
   birth_info_title: '生辰資訊',
   birth_info_subtitle: '用於風水報告中的八字／命卦章節，安全保存在你的帳號下。',
-  birth_date_label: '公曆生日',
+  birth_date_label: '出生日期',
+  birth_calendar_solar: '陽曆',
+  birth_calendar_lunar: '農曆',
+  birth_calendar_lunar_hint: '輸入農曆月日（閏月不區分）',
   birth_time_label: '出生時辰',
   birth_time_unknown: '時辰不詳',
   birth_gender_label: '性別',
+  birth_gender_male: '男',
+  birth_gender_female: '女',
   birth_city_label: '出生城市',
   birth_city_placeholder: '輸入出生城市',
   birth_city_required: '請從列表中選擇出生城市。',
   birth_save: '儲存',
+  birth_saved: '已儲存',
   birth_saving: '儲存中…',
+  birth_hint: '用於風水報告中的個人八字／命卦章節。',
   share_chapter: '分享',
   share_pending: '分享中…',
   share_needs_signin: '登入後即可分享章節。',
@@ -806,15 +834,22 @@ const JA: Strings = {
   cancel: 'キャンセル',
   birth_info_title: '生年月日',
   birth_info_subtitle: '風水レポートの八字・命卦章に使用します。アカウントに安全に保存されます。',
-  birth_date_label: '西暦の生年月日',
+  birth_date_label: '生年月日',
+  birth_calendar_solar: '新暦',
+  birth_calendar_lunar: '旧暦',
+  birth_calendar_lunar_hint: '旧暦の月日を入力（閏月は区別なし）',
   birth_time_label: '出生時刻（十二支）',
   birth_time_unknown: '時刻不明',
   birth_gender_label: '性別',
+  birth_gender_male: '男性',
+  birth_gender_female: '女性',
   birth_city_label: '出生地',
   birth_city_placeholder: '出生地の都市',
   birth_city_required: 'リストから出生地を選んでください。',
   birth_save: '保存',
+  birth_saved: '保存しました',
   birth_saving: '保存中…',
+  birth_hint: '風水レポートの個人八字・命卦章の生成に使用します。',
   share_chapter: '共有',
   share_pending: '共有中…',
   share_needs_signin: 'ログインして章を共有します。',

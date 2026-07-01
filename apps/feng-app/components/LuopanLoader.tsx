@@ -3,8 +3,8 @@
  *
  * Spins the pure-SVG `LuopanDial` (内盘) with Reanimated — no Skia. The 天心十道
  * alignment threads stay fixed over the turning plate, echoing a real 罗盘 in
- * use. Honors reduce-motion (renders static). `tone` defaults to 'paper' since
- * the loader appears on the 宣纸 report; pass 'dark' for a dark ground.
+ * use. Honors reduce-motion (renders static). `tone` defaults to 'dark' — the
+ * app + report are a dark zinc ground now; pass 'paper' only for a light surface.
  */
 
 import { useEffect } from 'react'
@@ -26,7 +26,7 @@ interface LuopanLoaderProps {
   tone?: LuopanTone
 }
 
-export function LuopanLoader({ size = 168, label, tone = 'paper' }: LuopanLoaderProps) {
+export function LuopanLoader({ size = 168, label, tone = 'dark' }: LuopanLoaderProps) {
   const spin = useSharedValue(0)
   const reduceMotion = useReducedMotion()
 
@@ -37,8 +37,8 @@ export function LuopanLoader({ size = 168, label, tone = 'paper' }: LuopanLoader
 
   const plateStyle = useAnimatedStyle(() => ({ transform: [{ rotateZ: `${spin.value}deg` }] }))
 
-  const thread = tone === 'paper' ? 'rgba(138,109,59,0.35)' : 'rgba(194,161,94,0.35)'
-  const labelColor = tone === 'paper' ? FENG_PAPER.inkSoft : FENG_PALETTE.riceMute
+  const thread = tone === 'paper' ? 'rgba(113,113,122,0.35)' : 'rgba(228,228,231,0.30)'
+  const labelColor = tone === 'paper' ? FENG_PAPER.muted : FENG_PALETTE.riceMute
 
   return (
     <View

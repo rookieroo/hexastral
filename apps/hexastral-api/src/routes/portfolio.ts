@@ -133,6 +133,17 @@ const portfolioBirthInfoSchema = z.object({
   birthLatitude: z.string().max(32).optional(),
   birthLongitude: z.string().max(32).optional(),
   birthTimezoneId: z.string().max(80).optional(),
+  /** Precise birth clock — minutes since midnight 0..1439. null = 时辰-only. */
+  birthClockMinutes: z.coerce.number().int().min(0).max(1439).nullish(),
+  /** 真太阳时 calibration toggle for the precise clock; default-on, false = off. */
+  birthSolarCalibrate: z.boolean().nullish(),
+  /** Original 农历 round-trip — calendar choice + raw lunar input + 闰月 flag. */
+  birthCalendarType: z.enum(['solar', 'lunar']).optional(),
+  birthLunarInput: z
+    .string()
+    .regex(/^\d{4}-\d{1,2}-\d{1,2}$/)
+    .optional(),
+  birthLunarIsLeap: z.boolean().optional(),
 })
 
 const coincastInputSchema = z.object({
@@ -1464,6 +1475,13 @@ portfolioRoutes.put('/birth-info', async (c) => {
       birthLatitude: parsed.data.birthLatitude,
       birthLongitude: parsed.data.birthLongitude,
       birthTimezoneId: parsed.data.birthTimezoneId,
+      // Precise-time disclosure (真太阳时) — clock minutes + calibration toggle.
+      birthClockMinutes: parsed.data.birthClockMinutes ?? null,
+      birthSolarCalibrate: parsed.data.birthSolarCalibrate ?? null,
+      // 农历 round-trip so re-editing restores the user's calendar choice exactly.
+      birthCalendarType: parsed.data.birthCalendarType,
+      birthLunarDate: parsed.data.birthLunarInput,
+      birthIsLeapMonth: parsed.data.birthLunarIsLeap ?? false,
       // Consume the lifetime correction the moment the free-tier write lands.
       ...(disposition === 'consume_quota' && !isPro ? { birthEditUsed: true } : {}),
       updatedAt: new Date().toISOString(),
@@ -1490,6 +1508,11 @@ portfolioRoutes.get('/birth-info', async (c) => {
       birthLatitude: users.birthLatitude,
       birthLongitude: users.birthLongitude,
       birthTimezoneId: users.birthTimezoneId,
+      birthClockMinutes: users.birthClockMinutes,
+      birthSolarCalibrate: users.birthSolarCalibrate,
+      birthCalendarType: users.birthCalendarType,
+      birthLunarInput: users.birthLunarDate,
+      birthLunarIsLeap: users.birthIsLeapMonth,
     })
     .from(users)
     .where(eq(users.id, userId))

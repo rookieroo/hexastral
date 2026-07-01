@@ -2,6 +2,18 @@ import { config } from './config'
 import { signRequest } from './hmac'
 import { getStoredFengUserId } from './user-session'
 
+/**
+ * Fēng birth info — the shape persisted to `/api/portfolio/birth-info`.
+ *
+ * Modelled on apps/auspice-app/lib/birth.ts: the canonical `birthSolarDate` is
+ * always the gregorian form (even when the user entered 农历). We additionally
+ * round-trip:
+ *   - the precise-time disclosure (`birthClockMinutes` + `birthSolarCalibrate`)
+ *     so 真太阳时 calibration survives a reload, and
+ *   - the original 农历 input (`birthCalendarType` / `birthLunarInput` /
+ *     `birthLunarIsLeap`) so re-editing restores the user's calendar choice
+ *     exactly instead of a possibly-leap-ambiguous reverse conversion.
+ */
 export interface FengBirthInfo {
   birthSolarDate: string
   birthTimeIndex: number
@@ -10,6 +22,18 @@ export interface FengBirthInfo {
   birthLatitude?: string
   birthLongitude?: string
   birthTimezoneId?: string
+  /** Precise birth clock — minutes since midnight 0..1439. null / absent =
+   *  时辰-only entry (no 真太阳时 calibration). */
+  birthClockMinutes?: number | null
+  /** 真太阳时 calibration toggle for the precise clock; `false` = off, otherwise
+   *  on. Only meaningful when `birthClockMinutes` is set + a longitude exists. */
+  birthSolarCalibrate?: boolean | null
+  /** Which calendar the user entered the date in — 'solar' (default) | 'lunar'. */
+  birthCalendarType?: 'solar' | 'lunar'
+  /** Original 农历 input as YYYY-MM-DD; present ONLY when calendar === 'lunar'. */
+  birthLunarInput?: string
+  /** Whether the picked 农历 month was a leap month (闰月); calendar === 'lunar' only. */
+  birthLunarIsLeap?: boolean
 }
 
 interface BirthInfoResponse {
@@ -21,6 +45,11 @@ interface BirthInfoResponse {
     birthLatitude: string | null
     birthLongitude: string | null
     birthTimezoneId: string | null
+    birthClockMinutes: number | null
+    birthSolarCalibrate: boolean | null
+    birthCalendarType: 'solar' | 'lunar' | null
+    birthLunarInput: string | null
+    birthLunarIsLeap: boolean | null
   } | null
 }
 
@@ -64,6 +93,11 @@ export async function fetchBirthInfo(): Promise<FengBirthInfo | null> {
     birthLatitude: row.birthLatitude ?? undefined,
     birthLongitude: row.birthLongitude ?? undefined,
     birthTimezoneId: row.birthTimezoneId ?? undefined,
+    birthClockMinutes: row.birthClockMinutes ?? null,
+    birthSolarCalibrate: row.birthSolarCalibrate ?? null,
+    birthCalendarType: row.birthCalendarType === 'lunar' ? 'lunar' : 'solar',
+    birthLunarInput: row.birthLunarInput ?? undefined,
+    birthLunarIsLeap: row.birthLunarIsLeap ?? undefined,
   }
 }
 

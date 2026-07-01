@@ -16,8 +16,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SRC="assets/brand/feng-glyph-src.png"
-NIGHT="#0A1316"   # FENG_PALETTE.night
-GOLD="#B08D5B"    # FENG_PALETTE.copperGold
+# Zinc-neutral brand (see FENG_PALETTE in lib/theme.ts) — a bright neutral phoenix
+# on a near-black zinc ground. 土黄/铜金 dropped for the 文化出海 mono look. The
+# `-gold` filename + var name are kept for script back-compat; the value is zinc.
+NIGHT="#09090B"   # zinc-950 (was 墨青 #0A1316)
+GOLD="#E4E4E7"    # zinc-200 mark (was copper #B08D5B)
 TMP="$(mktemp -d)"
 
 # 1. Isolate the glyph: crop generously, threshold, and KEEP ONLY large black

@@ -37,7 +37,7 @@ export default function ReviewScreen() {
   }, [])
 
   // Re-check birth info each time the screen regains focus, so returning from
-  // the (birth-info) wizard reflects immediately (birth info unlocks 命卦 ch2).
+  // the (birth-info) form reflects immediately (birth info unlocks 命卦 ch2).
   useFocusEffect(
     useCallback(() => {
       let alive = true

@@ -154,33 +154,32 @@ export default function HomeScreen() {
         />
       </GestureDetector>
 
-      {/* 朱砂 FAB — add a site (persistent). */}
+      {/* Icon-only 勘察 FAB — add a site. Circular, filled accent, 罗盘 icon. */}
       <Pressable
         onPress={addSite}
         accessibilityRole='button'
         accessibilityLabel={t.empty_cta}
-        style={{
+        style={({ pressed }) => ({
           position: 'absolute',
           bottom: insets.bottom + spacing.lg,
           alignSelf: 'center',
-          flexDirection: 'row',
+          width: 60,
+          height: 60,
+          borderRadius: 30,
           alignItems: 'center',
-          gap: spacing.xs,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          borderRadius: 999,
+          justifyContent: 'center',
           backgroundColor: FENG_PALETTE.copperGold,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.14)',
+          transform: [{ scale: pressed ? 0.94 : 1 }],
           shadowColor: '#000',
-          shadowOpacity: 0.35,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 8,
-        }}
+          shadowOpacity: 0.45,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 10,
+        })}
       >
-        <Compass color={FENG_PALETTE.night} size={18} />
-        <Text style={{ color: FENG_PALETTE.night, fontWeight: '700', fontSize: 15 }}>
-          {t.empty_cta}
-        </Text>
+        <Compass color={FENG_PALETTE.night} size={26} strokeWidth={2} />
       </Pressable>
 
       {!splashDone ? <FengHomeSplash onDone={() => setSplashDone(true)} /> : null}
