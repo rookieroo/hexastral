@@ -1,8 +1,8 @@
 /**
  * Home — the Fēng night surface (Yuel model: no tabs).
  *
- * Brand mark (風) top-left, Settings gear top-right; the user's sites as ink
- * cards on the 墨青 ground; a persistent 朱砂 FAB to add a site; a left-swipe
+ * Brand mark (風) top-left, fingerprint menu top-right (→ Settings); the user's
+ * sites as ink cards on the 墨青 ground; a persistent 铜金 FAB to add a site; a left-swipe
  * (blank space) opens Settings — mirroring kindred's home gesture. Tapping a
  * site opens its report. Empty state surfaces a first-site invite.
  */
@@ -11,7 +11,7 @@ import { useHaptic } from '@zhop/core-ui'
 import { type FengSite, useFengSiteList } from '@zhop/scenario-feng'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { HousePlus, Settings } from 'lucide-react-native'
+import { Compass, FingerprintPattern } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -77,7 +77,7 @@ export default function HomeScreen() {
           accessibilityLabel={t.tab_profile}
           hitSlop={12}
         >
-          <Settings color={FENG_PALETTE.riceMute} size={22} />
+          <FingerprintPattern color={FENG_PALETTE.copperGold} size={24} />
         </Pressable>
       </View>
 
@@ -177,7 +177,7 @@ export default function HomeScreen() {
           elevation: 8,
         }}
       >
-        <HousePlus color={FENG_PALETTE.night} size={18} />
+        <Compass color={FENG_PALETTE.night} size={18} />
         <Text style={{ color: FENG_PALETTE.night, fontWeight: '700', fontSize: 15 }}>
           {t.empty_cta}
         </Text>

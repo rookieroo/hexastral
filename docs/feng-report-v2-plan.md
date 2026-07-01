@@ -82,18 +82,24 @@ fully replicable as-is.
   FacingCalibrator/live-compass utility where it overlays a photo.)
 - **Intro spacing**: 風 mark now clears the 罗盘.
 
-### ⬜ Remaining
-1. **what-if (假如)** — feng-native, deterministic: `(report)/makeif` — pick a
-   hypothetical (改大门向 / 进入九运 / 移床灶位) → re-run `astro-core` flying-stars /
-   ba-zhai client-side → diff before/after plate, highlight changed palaces; optional
-   `explainWhatIf` LLM deep-read. Stronger than Yuel's because the engines are
-   deterministic (the fork needs no LLM). First check: confirm astro-core compute
-   fns are importable client-side in feng-app (via @zhop/astro-core / scenario-feng).
-2. **ReadingPrimer**: one-time "how to read" overlay on first report open
-   (精算 vs 推断 / 点词释义 / 长按追问) + `lib/primer-seen.ts` AsyncStorage flag.
-3. **i18n** for the above (makeif copy, primer copy).
-4. **Term definitions zh-Hant + ja** — `feng-terms.ts` is authored zh+en
-   (zh-Hant→zh, ja→en, same fallback Yuel uses for ja/ko). Full translation of the
-   40+ defs is a deferred content task, not a blocker.
-5. **Real IAP** — RevenueCat product `hexastral_feng_single`; wire purchase into
-   the review-screen `!entitled` branch (W5, founder/account task).
+### ⬜ Deferred / decided
+- **what-if (假如) — DROPPED for V1** (founder review). The report already gives
+  解法: the `remediation` chapter + 格局救应 (`formLi.patternRescue`) + 化煞 verdicts
+  cover remedies for the *current* layout; the AI chat handles counterfactual
+  "假如改门向/换运" questions conversationally with the compute context. feng is
+  single-purchase (no subscription-retention need that what-if serves in
+  auspice/kindred). A deterministic re-compute sandbox is V1.1+ if ever.
+- **ReadingPrimer**: one-time "how to read" overlay (精算 vs 推断 / 点词释义 /
+  长按追问) — still worth doing, low priority.
+- **Term definitions zh-Hant + ja** — `feng-terms.ts` is zh+en + pinyin
+  (zh-Hant→zh, ja→en). Full translation deferred (content task, not a blocker).
+
+### Paywall / DEV-Pro (server) — DONE
+- The server gate (`routes/feng/sites.ts` → `checkReadingAccess('feng_analysis')`)
+  had **no dev bypass**, so the client DEV-Pro toggle couldn't make analysis run.
+  Added a **`DEV_PRO_USER_IDS`** env allowlist (comma-separated userIds) that skips
+  the paywall — the only server-side bypass; empty/unset in prod ⇒ no bypass.
+- [YOU] To test without IAP: set `DEV_PRO_USER_IDS=<your apple_… userId>` in the
+  hexastral-api env + `bun deploy`. The userId is shown in feng Settings.
+- **Real IAP** — RevenueCat `hexastral_feng_single`; wire purchase into the
+  review-screen `!entitled` branch (W5, founder/account task).

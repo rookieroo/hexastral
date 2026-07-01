@@ -36,7 +36,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnotatedMapSwiper } from '@/components/AnnotatedMapSwiper'
 import { FengAnalyzing, type FengAnalyzingStep } from '@/components/FengAnalyzing'
-import { FengChapterImage } from '@/components/FengChapterImage'
+import { FengButton } from '@/components/FengButton'
+import { FengInkImage } from '@/components/FengInkImage'
 import { FengProse } from '@/components/FengProse'
 import { FengSelectionBar } from '@/components/FengSelectionBar'
 import { FengTermBubble } from '@/components/FengTermBubble'
@@ -212,42 +213,33 @@ export default function ReportScreen() {
     }))
   }, [analyze.stage, locale])
 
-  // ── top bar ──────────────────────────────────────────────
-  const topBar = (
-    <View
+  // ── floating back button (no header — the report reads as an unrolled scroll) ──
+  const backButton = (
+    <Pressable
+      onPress={() => {
+        void haptic('light')
+        router.back()
+      }}
+      accessibilityRole='button'
+      accessibilityLabel={t.nav_back}
+      hitSlop={12}
       style={{
-        paddingTop: insets.top + spacing.sm,
-        paddingHorizontal: spacing.xl,
-        paddingBottom: spacing.sm,
-        flexDirection: 'row',
+        position: 'absolute',
+        top: insets.top + spacing.xs,
+        left: spacing.lg,
+        zIndex: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         alignItems: 'center',
-        gap: spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: C.separator,
+        justifyContent: 'center',
+        backgroundColor: 'rgba(243,236,221,0.82)',
+        borderWidth: 1,
+        borderColor: C.separator,
       }}
     >
-      <Pressable
-        onPress={() => {
-          void haptic('light')
-          router.back()
-        }}
-        accessibilityRole='button'
-        accessibilityLabel={t.nav_back}
-        hitSlop={12}
-      >
-        <Text style={{ color: C.accent, fontSize: 24 }}>‹</Text>
-      </Pressable>
-      <View style={{ flex: 1 }}>
-        <Text numberOfLines={1} style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>
-          {site?.name ?? ''}
-        </Text>
-        {site?.formattedAddress ? (
-          <Text numberOfLines={1} style={{ color: C.secondary, fontSize: 12 }}>
-            {site.formattedAddress}
-          </Text>
-        ) : null}
-      </View>
-    </View>
+      <Text style={{ color: C.accent, fontSize: 22, marginTop: -2 }}>‹</Text>
+    </Pressable>
   )
 
   // ── states ───────────────────────────────────────────────
@@ -277,19 +269,17 @@ export default function ReportScreen() {
               title={t.report_pending}
               customAction={
                 <View style={{ gap: spacing.lg, alignItems: 'center' }}>
-                  <Button
-                    variant='primary'
-                    size='lg'
+                  <FengButton
+                    label={t.new_site_review_confirm}
                     loading={analyze.isRunning}
                     disabled={analyze.isRunning}
+                    fullWidth={false}
                     onPress={() => {
                       if (analyze.isRunning || analyzeOnceRef.current) return
                       analyzeOnceRef.current = true
                       void analyze.start()
                     }}
-                  >
-                    {t.new_site_review_confirm}
-                  </Button>
+                  />
                   {analyze.error ? (
                     <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center' }}>
                       {t.report_failed.replace('{message}', analyze.error.message)}
@@ -349,7 +339,7 @@ export default function ReportScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar style='dark' />
-      {topBar}
+      {backButton}
       {middle}
       <FengSelectionBar
         quote={pickedQuote}
@@ -381,7 +371,7 @@ export default function ReportScreen() {
 // ── one chapter page ───────────────────────────────────────
 interface ChapterPageProps {
   width: number
-  insets: { bottom: number }
+  insets: { top: number; bottom: number }
   chapter: FengChapter
   index: number
   tag: string
@@ -413,7 +403,8 @@ function ChapterPageView({
       style={{ width }}
       contentContainerStyle={{
         paddingHorizontal: spacing.xl,
-        paddingTop: spacing.lg,
+        // clear the floating back button (top: insets.top + xs, 36pt tall)
+        paddingTop: insets.top + spacing.xxl + spacing.xl,
         paddingBottom: insets.bottom + spacing.xxl + spacing.lg,
       }}
     >
@@ -426,7 +417,7 @@ function ChapterPageView({
         </View>
 
         <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
-          <FengChapterImage kind={chapter.kind} width={Math.min(width - spacing.xl * 2, 280)} />
+          <FengInkImage kind={chapter.kind} width={Math.min(width - spacing.xl * 2, 300)} />
         </View>
 
         <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', marginBottom: spacing.xs }}>
@@ -640,7 +631,7 @@ function ClosingPageView({
   t,
 }: {
   width: number
-  insets: { bottom: number }
+  insets: { top: number; bottom: number }
   reportId: string
   siteName: string
   streetAttribution: string | null

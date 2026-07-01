@@ -277,24 +277,47 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       return jsonErr(c, 404, ApiErrorCode.not_found, 'Site not found')
     }
 
+    // DEV-Pro bypass: skip the paywall so analysis can be tested without IAP.
+    // Two ways in, both server-gated (a stored client flag alone can't self-grant):
+    //   1. `ALLOW_DEV_PRO=1` (one-time) → honor the client's `x-feng-dev-pro`
+    //      header, so the in-app Settings DEV-Pro toggle is the only thing needed.
+    //   2. `DEV_PRO_USER_IDS=<userId,…>` allowlist (no client toggle required).
+    // Both empty/unset in prod ⇒ no bypass.
+    const env = c.env as { DEV_PRO_USER_IDS?: string; ALLOW_DEV_PRO?: string }
+    const headerDevPro = env.ALLOW_DEV_PRO === '1' && c.req.header('x-feng-dev-pro') === '1'
+    const idDevPro =
+      typeof env.DEV_PRO_USER_IDS === 'string' &&
+      env.DEV_PRO_USER_IDS.split(',')
+        .map((s) => s.trim())
+        .includes(userId)
+    const isDevPro = headerDevPro || idDevPro
+
     // Cost gate: each analysis runs Gemini Vision on 1–3 annotated satellite
     // tiles plus a synthesis LLM pass. Without this gate a free user could
     // burn unbounded VLM tokens by hitting /analyze repeatedly. Subscribers get
     // unlimited access; non-subscribers must hold a single-purchase entitlement
     // (`hexastral_feng_single`) — no free monthly quota for feng analyses.
-    const access = await checkReadingAccess(db, userId, 'feng_analysis')
-    if (!access.granted) {
-      return jsonErr(
-        c,
-        403,
-        ApiErrorCode.paywall_required,
-        `A feng-shui report requires Pro or a one-time purchase (${access.price}).`,
-        {
-          iapProductId: access.iapProductId,
-          price: access.price,
-          reason: access.reason,
-        }
-      )
+    let accessVia = 'dev_pro'
+    let purchaseId: string | undefined
+    if (!isDevPro) {
+      const access = await checkReadingAccess(db, userId, 'feng_analysis')
+      if (!access.granted) {
+        return jsonErr(
+          c,
+          403,
+          ApiErrorCode.paywall_required,
+          `A feng-shui report requires Pro or a one-time purchase (${access.price}).`,
+          {
+            iapProductId: access.iapProductId,
+            price: access.price,
+            reason: access.reason,
+          }
+        )
+      }
+      accessVia = access.via
+      // Carry the single-purchase id so the queue consumer can consume it on
+      // success. Subscribers (pro_quota) pass nothing — their analyses are free.
+      purchaseId = access.via === 'single_purchase' ? access.purchaseId : undefined
     }
 
     const jobId = nanoid()
@@ -307,12 +330,8 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       startedAt: new Date().toISOString(),
     })
 
-    // Carry the single-purchase id so the queue consumer can consume it on
-    // success. Subscribers (pro_quota) pass nothing — their analyses are free.
-    const purchaseId = access.via === 'single_purchase' ? access.purchaseId : undefined
-
     // Queue consumer runs the pipeline (not waitUntil — 30s cap after 202).
     await enqueueFengAnalyzeJob(c.env, jobId, id, purchaseId)
 
-    return jsonOk(c, { jobId, siteId: id, stage: 'maps', progress: 0, accessVia: access.via }, 202)
+    return jsonOk(c, { jobId, siteId: id, stage: 'maps', progress: 0, accessVia }, 202)
   })

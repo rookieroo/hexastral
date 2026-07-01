@@ -154,10 +154,11 @@ export default function BuildingScreen() {
             placeholderTextColor={colors.textMute}
             keyboardType='number-pad'
             style={{
+              backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
-              borderRadius: 10,
-              paddingHorizontal: spacing.md,
+              borderRadius: 12,
+              paddingHorizontal: spacing.lg,
               paddingVertical: spacing.md,
               color: colors.text,
               fontSize: 16,
@@ -185,10 +186,11 @@ export default function BuildingScreen() {
             placeholderTextColor={colors.textMute}
             keyboardType='number-pad'
             style={{
+              backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
-              borderRadius: 10,
-              paddingHorizontal: spacing.md,
+              borderRadius: 12,
+              paddingHorizontal: spacing.lg,
               paddingVertical: spacing.md,
               color: colors.text,
               fontSize: 16,

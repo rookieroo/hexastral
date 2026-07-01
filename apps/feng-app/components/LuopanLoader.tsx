@@ -1,13 +1,10 @@
 /**
  * LuopanLoader — a slowly-rotating 罗盘 (luopan) used as Fēng's loading state.
  *
- * Reuses the shared pure-SVG `BaguaCompassOverlay` (24山 ring + 八卦 wedges) and
- * spins it with Reanimated — no Skia dep. The center 朱砂 needle stays fixed
- * (天池/磁针) while the plate turns, echoing a real 罗盘 in use. Honors
- * reduce-motion (renders static).
- *
- * Replaces plain text/skeleton loaders on the report + analyze surfaces so the
- * wait itself carries the feng-shui identity.
+ * Spins the pure-SVG `LuopanDial` (内盘) with Reanimated — no Skia. The 天心十道
+ * alignment threads stay fixed over the turning plate, echoing a real 罗盘 in
+ * use. Honors reduce-motion (renders static). `tone` defaults to 'paper' since
+ * the loader appears on the 宣纸 report; pass 'dark' for a dark ground.
  */
 
 import { useEffect } from 'react'
@@ -20,15 +17,16 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated'
-import { FENG_PALETTE, spacing } from '@/lib/theme'
-import { LuopanDial } from './LuopanDial'
+import { FENG_PALETTE, FENG_PAPER } from '@/lib/theme'
+import { LuopanDial, type LuopanTone } from './LuopanDial'
 
 interface LuopanLoaderProps {
   size?: number
   label?: string
+  tone?: LuopanTone
 }
 
-export function LuopanLoader({ size = 168, label }: LuopanLoaderProps) {
+export function LuopanLoader({ size = 168, label, tone = 'paper' }: LuopanLoaderProps) {
   const spin = useSharedValue(0)
   const reduceMotion = useReducedMotion()
 
@@ -39,40 +37,25 @@ export function LuopanLoader({ size = 168, label }: LuopanLoaderProps) {
 
   const plateStyle = useAnimatedStyle(() => ({ transform: [{ rotateZ: `${spin.value}deg` }] }))
 
+  const thread = tone === 'paper' ? 'rgba(138,109,59,0.35)' : 'rgba(194,161,94,0.35)'
+  const labelColor = tone === 'paper' ? FENG_PAPER.inkSoft : FENG_PALETTE.riceMute
+
   return (
     <View
       accessibilityRole='progressbar'
       accessibilityLabel={label}
-      style={{ alignItems: 'center', gap: spacing.lg }}
+      style={{ alignItems: 'center', gap: 16 }}
     >
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View style={plateStyle}>
-          <LuopanDial size={size} />
+          <LuopanDial size={size} tone={tone} />
         </Animated.View>
-        {/* 天池磁针 — fixed center needle (does not rotate with the plate). */}
-        <View
-          style={{
-            position: 'absolute',
-            width: 2,
-            height: size * 0.34,
-            borderRadius: 1,
-            backgroundColor: FENG_PALETTE.cinnabar,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: 9,
-            height: 9,
-            borderRadius: 5,
-            backgroundColor: FENG_PALETTE.cinnabar,
-          }}
-        />
+        {/* 天心十道 — fixed alignment threads over the turning plate. */}
+        <View style={{ position: 'absolute', width: size, height: 0.6, backgroundColor: thread }} />
+        <View style={{ position: 'absolute', width: 0.6, height: size, backgroundColor: thread }} />
       </View>
       {label ? (
-        <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 13, letterSpacing: 1 }}>
-          {label}
-        </Text>
+        <Text style={{ color: labelColor, fontSize: 13, letterSpacing: 1 }}>{label}</Text>
       ) : null}
     </View>
   )

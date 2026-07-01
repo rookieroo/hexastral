@@ -39,6 +39,8 @@ export type Strings = {
   new_site_address_title: string
   new_site_address_subtitle: string
   new_site_address_placeholder: string
+  new_site_address_name_placeholder: string
+  new_site_default_name: string
   new_site_address_geocode_error: string
   new_site_address_geocoding: string
   new_site_address_name_label: string
@@ -217,6 +219,8 @@ const EN: Strings = {
   new_site_address_title: 'Pick your address',
   new_site_address_subtitle: 'Type an address or use your current location.',
   new_site_address_placeholder: 'Street, city, country',
+  new_site_address_name_placeholder: "Home / Office / Parents'",
+  new_site_default_name: 'My site',
   new_site_address_geocode_error:
     'Could not find coordinates for this address. Try "Use current location" or refine the address.',
   new_site_address_geocoding: 'Looking up location…',
@@ -373,6 +377,8 @@ const ZH_HANS: Strings = {
   new_site_address_title: '选择地址',
   new_site_address_subtitle: '输入地址或使用当前定位。',
   new_site_address_placeholder: '街道、城市、国家',
+  new_site_address_name_placeholder: '家 / 公司 / 父母家',
+  new_site_default_name: '我的宅',
   new_site_address_geocode_error: '无法解析该地址的坐标，请使用「当前定位」或修改地址。',
   new_site_address_geocoding: '正在查询位置…',
   new_site_address_name_label: '名称',
@@ -665,6 +671,8 @@ const JA: Strings = {
     '住所から座標を取得できませんでした。「現在地を使う」か住所を修正してください。',
   new_site_address_geocoding: '位置を検索中…',
   new_site_address_name_label: '名前',
+  new_site_address_name_placeholder: '自宅 / 職場 / 実家',
+  new_site_default_name: 'わたしの場所',
   new_site_address_field_label: '住所',
   new_site_address_use_location: '現在地を使う',
   new_site_facing_title: '建物の向きを確認',

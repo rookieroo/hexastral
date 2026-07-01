@@ -235,6 +235,7 @@
         "@react-native-async-storage/async-storage": "^2.2.0",
         "@react-native-community/datetimepicker": "8.4.5",
         "@react-native-google-signin/google-signin": "^16.1.2",
+        "@shopify/react-native-skia": "2.2.12",
         "@zhop/astro-core": "workspace:*",
         "@zhop/core-ui": "workspace:*",
         "@zhop/ddl-client": "workspace:*",

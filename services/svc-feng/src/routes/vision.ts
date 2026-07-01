@@ -9,7 +9,14 @@
  * R2 fetch helper + Zod-retry envelope. Identical behavior, far less code.
  */
 
-import { callGeminiVisionStructured, fetchR2AsBase64, withZodRetry } from '@zhop/ai-vision'
+import {
+  cacheKey,
+  callGeminiVisionStructured,
+  fetchR2AsBase64,
+  readCache,
+  withZodRetry,
+  writeCache,
+} from '@zhop/ai-vision'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
@@ -99,6 +106,28 @@ visionRouter.post('/analyze', async (c) => {
     terrainSummary,
   })
 
+  // Content-addressed cache of the structured result. The annotatedKeys are
+  // SHA-1 keys of the rendered+annotated tiles (deterministic per location /
+  // zoom / facing), so the same site — and any nearby site that falls on the
+  // same tile — reuses this without re-calling Gemini Vision. Checked BEFORE the
+  // R2 image fetch + model call, so a re-analysis (e.g. after a downstream
+  // insert retry) costs nothing. Stored in the shared ANNOTATED_CACHE bucket
+  // under a distinct prefix.
+  const vKey = await cacheKey('feng-vision', {
+    annotatedKeys,
+    facingDegTrue,
+    sitDegTrue,
+    doorDegTrue,
+    locale,
+    expectedFeatures,
+    terrainSummary,
+  })
+  const cachedVision = await readCache(c.env.ANNOTATED_CACHE, vKey)
+  if (cachedVision) {
+    logger.info('vision.analyze.cache', { hit: true, key: vKey, durationMs: Date.now() - started })
+    return c.json(JSON.parse(new TextDecoder().decode(cachedVision.bytes)) as VisionAnalysisResult)
+  }
+
   const images = await Promise.all(
     annotatedKeys.map(async (key) => ({
       base64: await fetchR2AsBase64(c.env.ANNOTATED_CACHE, key),
@@ -142,10 +171,21 @@ visionRouter.post('/analyze', async (c) => {
     ...validated,
     modelVersion: degraded ? `${MODEL_VERSION}-degraded` : MODEL_VERSION,
   }
+  // Cache only successful results — a degraded (model-failed) result must not be
+  // frozen in, or retries would keep returning the empty fallback.
+  if (!degraded) {
+    await writeCache(
+      c.env.ANNOTATED_CACHE,
+      vKey,
+      new TextEncoder().encode(JSON.stringify(result)).buffer as ArrayBuffer,
+      'application/json'
+    )
+  }
   logger.info('vision.analyze.done', {
     locale,
     durationMs: Date.now() - started,
     degraded,
+    cached: false,
     modelVersion: result.modelVersion,
     shapeShaCount: validated.形煞.length,
     shaCount: validated.砂.length,

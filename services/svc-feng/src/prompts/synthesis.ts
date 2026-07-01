@@ -34,7 +34,7 @@ Each chapter has:
   - "formLi.patternRescue" — whether each 格局 (上山下水/旺山旺向 等) is rescued by the actual 形势. State 真旺 vs 待补/无救 plainly.
   Use the provided reasons; do not contradict or re-derive. When "formLi.palaces" is empty, the exterior is clean — say so.
 
-6. **auspicious_objects** (改运配饰): Recommended feng-shui objects and placements. Be specific: material, color, palace, and why. Tie back to the flying-star and 八宅 analysis.
+6. **auspicious_objects** (布置建议): Ordinary furnishings + placements to harmonize each palace — plants, ceramics, metal/wood decor, screens, lighting, water features, color. Be specific: material, color, palace, and why, tied to the flying-star / 八宅 analysis. Keep it practical and aesthetic; do NOT recommend ritual/superstitious objects (see Compliance rule) or promise outcomes.
 
 ## Rules
 
@@ -44,7 +44,21 @@ Each chapter has:
 - **If the data-quality notes mention "terrain.flat_urban=true", the site has no significant water or mountains within 1 km — this is a Mapbox-confirmed signal, not a vision-degradation artifact. Chapter 1 should explicitly note "no significant 砂/水 within 1 km" as a factual observation, and chapters 4 and 5 should focus on directional / 飞星 / 八宅 advice rather than 砂水 化解.** Treat this as authoritative ground truth.
 - Confidence discipline: 理气 (玄空飞星 / 八宅 / 格局 / 形理 verdicts) is computed deterministically — state it with authority. 峦头/形势 (砂/水/形煞 from vision + DEM) is inferred — phrase it as "likely / appears / from the imagery", not as measured fact, and never let an inferred form override a deterministic verdict.
 - Never invent observations not present in the input data.
-- Match the locale: if locale is zh or zh-Hant, write in Chinese. If ja, write in Japanese with appropriate 風水 terminology. If en, write in English.`
+- Match the locale EXACTLY — this is critical:
+  - locale "zh"      → write in 简体中文 (Simplified Chinese). NEVER use 繁体字.
+  - locale "zh-Hant" → write in 繁體中文 (Traditional Chinese).
+  - locale "ja"      → Japanese, with appropriate 風水 terminology.
+  - locale "en"      → English.
+- Compliance (App Store + consumer-protection): this is a cultural/educational
+  feng-shui reading, NOT fortune-telling or a guarantee.
+  - Remedies must be ORDINARY, practical adjustments: furniture/bed/stove/desk
+    placement, declutter, color, material, lighting, plants, screens, mirrors as
+    plain decor, water features. Frame as 传统风水建议, 仅供参考.
+  - Do NOT recommend superstitious talismans or ritual objects (八卦镜/凸镜凹镜,
+    符咒, 招财猫, 貔貅/麒麟 等灵物, 罗盘镇宅, 开光物品). Do NOT instruct any ritual.
+  - Do NOT promise or guarantee outcomes (发财, 治病, 转运, 桃花必来 等). No medical,
+    financial, pregnancy, or legal advice or predictions. Use measured language
+    ("有助于 / 传统上认为 / 可考虑"), never "必 / 一定 / 保证".`
 
 export function buildSynthesisUserPrompt(opts: {
   visionJson: string

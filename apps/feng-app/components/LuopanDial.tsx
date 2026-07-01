@@ -21,28 +21,51 @@ const HOUTIAN = ['☵', '☶', '☳', '☴', '☲', '☷', '☱', '☰']
 // 先天八卦 from the top, clockwise: 乾 巽 坎 艮 坤 震 离 兑
 const XIANTIAN = ['☰', '☴', '☵', '☶', '☷', '☳', '☲', '☱']
 
+export type LuopanTone = 'dark' | 'paper'
+
 interface LuopanDialProps {
   size?: number
-  gold?: string
-  goldFaint?: string
-  /** The 海底十字红线 in the 天池 — the only red on the plate. */
-  accent?: string
-  pool?: string
-  ground?: string
+  /** 'dark' = gold-on-lacquer (intro/compass); 'paper' = ink-on-宣纸 (report). */
+  tone?: LuopanTone
 }
 
-export function LuopanDial({
-  size = 240,
-  gold = '#C2A15E',
-  goldFaint = 'rgba(194,161,94,0.5)',
-  accent = '#9B2226',
-  pool = '#0D171B',
-  ground = '#0A1316',
-}: LuopanDialProps) {
-  const faintFill = 'rgba(194,161,94,0.05)'
-  const goldStrong = 'rgba(194,161,94,0.8)'
+const TONES: Record<
+  LuopanTone,
+  {
+    gold: string
+    goldFaint: string
+    goldStrong: string
+    faintFill: string
+    accent: string
+    pool: string
+    ground: string
+  }
+> = {
+  dark: {
+    gold: '#C2A15E',
+    goldFaint: 'rgba(194,161,94,0.5)',
+    goldStrong: 'rgba(194,161,94,0.8)',
+    faintFill: 'rgba(194,161,94,0.05)',
+    accent: '#9B2226',
+    pool: '#0D171B',
+    ground: '#0A1316',
+  },
+  paper: {
+    gold: '#8A6D3B',
+    goldFaint: 'rgba(138,109,59,0.55)',
+    goldStrong: 'rgba(138,109,59,0.85)',
+    faintFill: 'rgba(138,109,59,0.06)',
+    accent: '#9B2226',
+    pool: '#F8F2E6',
+    ground: '#F3ECDD',
+  },
+}
+
+export function LuopanDial({ size = 240, tone = 'dark' }: LuopanDialProps) {
+  const { gold, goldFaint, goldStrong, faintFill, accent, pool, ground } = TONES[tone]
 
   const radial = (
+    key: string,
     x: number,
     y: number,
     deg: number,
@@ -51,6 +74,7 @@ export function LuopanDial({
     opacity = 1
   ) => (
     <SvgText
+      key={key}
       x={x}
       y={y}
       fontSize={fontSize}
@@ -120,7 +144,7 @@ export function LuopanDial({
         {MOUNTAINS.map((ch, i) => {
           const deg = i * 15
           const a = ((-90 + deg) * Math.PI) / 180
-          return radial(CX + 109 * Math.cos(a), CY + 109 * Math.sin(a), deg, ch, 9, 0.88)
+          return radial(`m-${i}`, CX + 109 * Math.cos(a), CY + 109 * Math.sin(a), deg, ch, 9, 0.88)
         })}
       </G>
 
@@ -147,7 +171,7 @@ export function LuopanDial({
         {HOUTIAN.map((sym, i) => {
           const deg = i * 45
           const a = ((-90 + deg) * Math.PI) / 180
-          return radial(CX + 80 * Math.cos(a), CY + 80 * Math.sin(a), deg, sym, 12)
+          return radial(`hou-${i}`, CX + 80 * Math.cos(a), CY + 80 * Math.sin(a), deg, sym, 12)
         })}
       </G>
 
@@ -174,15 +198,39 @@ export function LuopanDial({
         {XIANTIAN.map((sym, i) => {
           const deg = i * 45
           const a = ((-90 + deg) * Math.PI) / 180
-          return radial(CX + 49 * Math.cos(a), CY + 49 * Math.sin(a), deg, sym, 10, 0.85)
+          return radial(
+            `xian-${i}`,
+            CX + 49 * Math.cos(a),
+            CY + 49 * Math.sin(a),
+            deg,
+            sym,
+            10,
+            0.85
+          )
         })}
       </G>
 
       {/* 天池 well + 海底十字红线 (the only red on the plate) */}
       <Circle cx={CX} cy={CY} r={22} fill={pool} />
       <Circle cx={CX} cy={CY} r={22} fill='none' stroke={gold} strokeWidth={1} />
-      <Line x1={CX - 18} y1={CY} x2={CX + 18} y2={CY} stroke={accent} strokeWidth={0.8} opacity={0.55} />
-      <Line x1={CX} y1={CY - 18} x2={CX} y2={CY + 18} stroke={accent} strokeWidth={0.8} opacity={0.55} />
+      <Line
+        x1={CX - 18}
+        y1={CY}
+        x2={CX + 18}
+        y2={CY}
+        stroke={accent}
+        strokeWidth={0.8}
+        opacity={0.55}
+      />
+      <Line
+        x1={CX}
+        y1={CY - 18}
+        x2={CX}
+        y2={CY + 18}
+        stroke={accent}
+        strokeWidth={0.8}
+        opacity={0.55}
+      />
     </Svg>
   )
 }

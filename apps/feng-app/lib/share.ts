@@ -46,7 +46,17 @@ export async function shareFengChapter(args: {
     throw new Error(`share_create_failed: ${resp.status}`)
   }
 
-  const { shareId, url } = (await resp.json()) as { shareId: string; url: string }
+  // The API wraps payloads in a `{ data }` envelope (jsonOk); read through it.
+  const json = (await resp.json()) as {
+    data?: { shareId: string; url: string }
+    shareId?: string
+    url?: string
+  }
+  const shareId = json.data?.shareId ?? json.shareId
+  const url = json.data?.url ?? json.url
+  if (!url || !shareId) {
+    throw new Error('share_create_failed: malformed response')
+  }
 
   await Share.share({
     message: `${args.title}\n${url}`,

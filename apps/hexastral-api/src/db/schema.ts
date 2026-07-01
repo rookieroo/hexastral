@@ -2048,7 +2048,7 @@ export const fengReports = sqliteTable(
     /** Gregorian 流年 — 用来过滤"今年/明年"切换 */
     fengYear: integer('feng_year').notNull(),
     /** 当前玄空元运 1-9 */
-    currentYuan: integer('current_kindred').notNull(),
+    currentYuan: integer('current_yuan').notNull(),
 
     /** Stage 1 输出 — ShaObservationSet JSON */
     visionJson: text('vision_json').notNull(),

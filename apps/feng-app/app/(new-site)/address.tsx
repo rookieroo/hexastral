@@ -10,8 +10,9 @@
 import { Button, useHaptic } from '@zhop/core-ui'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
+import { LocateFixed } from 'lucide-react-native'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { resolveLocale, t, useStrings } from '@/lib/i18n'
@@ -84,7 +85,7 @@ export default function AddressScreen() {
       }
 
       await patchDraft({
-        name: name.trim() || 'My site',
+        name: name.trim() || strings.new_site_default_name,
         formattedAddress: address.trim(),
         lat,
         lng,
@@ -131,13 +132,14 @@ export default function AddressScreen() {
           value={name}
           onChangeText={setName}
           accessibilityLabel={strings.new_site_address_name_label}
-          placeholder='Home / Office / 父母家'
+          placeholder={strings.new_site_address_name_placeholder}
           placeholderTextColor={colors.textMute}
           style={{
+            backgroundColor: colors.surface,
             borderWidth: 1,
             borderColor: colors.border,
-            borderRadius: 10,
-            paddingHorizontal: spacing.md,
+            borderRadius: 12,
+            paddingHorizontal: spacing.lg,
             paddingVertical: spacing.md,
             color: colors.text,
             fontSize: 16,
@@ -167,14 +169,16 @@ export default function AddressScreen() {
           placeholderTextColor={colors.textMute}
           multiline
           style={{
+            backgroundColor: colors.surface,
             borderWidth: 1,
             borderColor: colors.border,
-            borderRadius: 10,
-            paddingHorizontal: spacing.md,
+            borderRadius: 12,
+            paddingHorizontal: spacing.lg,
             paddingVertical: spacing.md,
             color: colors.text,
             fontSize: 16,
-            minHeight: 72,
+            minHeight: 88,
+            textAlignVertical: 'top',
           }}
         />
       </View>
@@ -194,15 +198,24 @@ export default function AddressScreen() {
         accessibilityState={{ disabled: busy }}
         style={{
           alignSelf: 'flex-start',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.md,
           borderRadius: 999,
           borderWidth: 1,
           borderColor: colors.accent,
+          opacity: busy ? 0.6 : 1,
         }}
       >
+        {busy ? (
+          <ActivityIndicator size='small' color={colors.accent} />
+        ) : (
+          <LocateFixed size={16} color={colors.accent} />
+        )}
         <Text style={{ color: colors.accent, fontWeight: '600' }}>
-          {busy ? '…' : strings.new_site_address_use_location}
+          {strings.new_site_address_use_location}
         </Text>
       </Pressable>
 

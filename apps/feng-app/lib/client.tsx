@@ -8,16 +8,20 @@
 
 import { createHexastralClient, type HexastralClient } from '@zhop/hexastral-client'
 import { FengClientProvider } from '@zhop/scenario-feng'
-import { type ReactNode, useCallback, useMemo } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo } from 'react'
 import { useAuth } from './auth'
 import { config } from './config'
+import { getDevPro, isDevProSync } from './dev-flags'
 import { signRequest } from './hmac'
 
 function buildClient(userId: string): HexastralClient {
   return createHexastralClient(config.apiUrl, {
     signRequest: async (method, path, body) => {
       const sig = await signRequest({ method, path, body, userId })
-      return sig ?? {}
+      const base = sig ?? {}
+      // DEV-only: when the Settings DEV-Pro toggle is on, flag the request so the
+      // server can skip the paywall (it only honors this when ALLOW_DEV_PRO is set).
+      return isDevProSync() ? { ...base, 'x-feng-dev-pro': '1' } : base
     },
     headers: {
       Authorization: `Bearer ${userId}`,
@@ -37,10 +41,11 @@ export interface FengClientGateProps {
  */
 export function FengClientGate({ children, fallback = null }: FengClientGateProps) {
   const { userId, isLoading, resyncCredentials, credentialVersion } = useAuth()
-  const client = useMemo(
-    () => (userId ? buildClient(userId) : null),
-    [userId, credentialVersion],
-  )
+  // Prime the DEV-Pro cache so the signer attaches the header from first request.
+  useEffect(() => {
+    void getDevPro()
+  }, [])
+  const client = useMemo(() => (userId ? buildClient(userId) : null), [userId, credentialVersion])
 
   const onError = useCallback(
     (err: Error) => {
@@ -50,7 +55,7 @@ export function FengClientGate({ children, fallback = null }: FengClientGateProp
         })
       }
     },
-    [resyncCredentials],
+    [resyncCredentials]
   )
 
   if (isLoading || !client) return <>{fallback}</>

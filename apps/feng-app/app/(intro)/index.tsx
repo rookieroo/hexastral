@@ -115,22 +115,21 @@ export default function IntroScreen() {
           <Animated.View style={plateStyle}>
             <LuopanDial size={240} />
           </Animated.View>
+          {/* 天心十道 — fixed gold alignment threads over the turning plate. */}
           <View
             style={{
               position: 'absolute',
-              width: 2,
-              height: 240 * 0.32,
-              borderRadius: 1,
-              backgroundColor: FENG_PALETTE.cinnabar,
+              width: 240,
+              height: 0.6,
+              backgroundColor: 'rgba(194,161,94,0.35)',
             }}
           />
           <View
             style={{
               position: 'absolute',
-              width: 9,
-              height: 9,
-              borderRadius: 5,
-              backgroundColor: FENG_PALETTE.cinnabar,
+              width: 0.6,
+              height: 240,
+              backgroundColor: 'rgba(194,161,94,0.35)',
             }}
           />
         </View>

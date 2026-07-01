@@ -68,7 +68,7 @@ export default function ReviewScreen() {
     setCreating(true)
     try {
       const site = await createSite({
-        name: draft.name ?? 'My site',
+        name: draft.name ?? t.new_site_default_name,
         label: draft.label,
         lat: draft.lat,
         lng: draft.lng,
