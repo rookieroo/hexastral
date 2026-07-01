@@ -215,9 +215,21 @@ export default function ReportScreen() {
 
   const analyzeSteps: FengAnalyzingStep[] = useMemo(() => {
     const cur = STAGE_ORDER.indexOf(analyze.stage as AnalyzeStage)
+    // cur < 0 = not a pipeline stage yet (queued / starting) — the FIRST step is
+    // active and the rest pending. (The old `cur < 0 ? 'done'` painted every step
+    // complete before the job had even begun.)
     return STAGE_ORDER.map((s, i) => ({
       label: STAGE_LABELS[locale][s],
-      status: cur < 0 ? 'done' : i < cur ? 'done' : i === cur ? 'active' : 'pending',
+      status:
+        cur < 0
+          ? i === 0
+            ? 'active'
+            : 'pending'
+          : i < cur
+            ? 'done'
+            : i === cur
+              ? 'active'
+              : 'pending',
     }))
   }, [analyze.stage, locale])
 
@@ -264,6 +276,21 @@ export default function ReportScreen() {
         variant='fullscreen'
         title='Site not found'
         message='This site may have been deleted or you do not have access.'
+      />
+    )
+  } else if (chapters.length === 0 && compute) {
+    // Two-phase load: the computed SHELL (排盘/坐向/tiles/八宅) is ready while the
+    // written chapters are still generating. Show it now instead of a blank wait.
+    middle = (
+      <ReportShellView
+        compute={compute}
+        reportId={reportId}
+        annotatedTiles={annotatedTiles}
+        orient={orient}
+        insets={insets}
+        steps={analyzeSteps}
+        caption={ANALYZE_CAPTION[locale]}
+        t={t}
       />
     )
   } else if (chapters.length === 0) {
@@ -375,6 +402,76 @@ export default function ReportScreen() {
         askLabel={t.term_ask}
       />
     </View>
+  )
+}
+
+// ── report shell (two-phase load) ──────────────────────────
+// The computed report — 排盘 / 坐向 / satellite tiles / 八宅 — rendered as soon
+// as the pipeline persists the shell, while the written chapters synthesize. The
+// deterministic value is on screen in seconds; the loader footer shows progress.
+function ReportShellView({
+  compute,
+  reportId,
+  annotatedTiles,
+  orient,
+  insets,
+  steps,
+  caption,
+  t,
+}: {
+  compute: FengComputeJson
+  reportId: string
+  annotatedTiles: ('close' | 'mid' | 'wide')[]
+  orient: MapOrient | null
+  insets: { top: number; bottom: number }
+  steps: FengAnalyzingStep[]
+  caption: string
+  t: Strings
+}) {
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: spacing.xl,
+        paddingTop: insets.top + spacing.xxl + spacing.xl,
+        paddingBottom: insets.bottom + spacing.xxl,
+      }}
+    >
+      <Text style={{ color: C.accent, fontSize: 12, letterSpacing: 3 }}>
+        {t.report_shell_tag.toUpperCase()}
+      </Text>
+
+      {reportId && annotatedTiles.length > 0 ? (
+        <View style={{ marginTop: spacing.md, marginHorizontal: -spacing.xl }}>
+          <AnnotatedMapSwiper
+            reportId={reportId}
+            tiles={annotatedTiles}
+            orient={orient}
+            horizontalPadding={spacing.xl}
+            strings={{
+              report_map_close: t.report_map_close,
+              report_map_mid: t.report_map_mid,
+              report_map_wide: t.report_map_wide,
+              report_map_loading: t.report_map_loading,
+              report_map_failed: t.report_map_failed,
+            }}
+          />
+        </View>
+      ) : null}
+
+      {renderFlyingStars(compute, t)}
+      {compute.baZhai ? renderBaZhai(compute, t) : null}
+
+      <View
+        style={{
+          marginTop: spacing.xxl,
+          paddingTop: spacing.xl,
+          borderTopWidth: 0.5,
+          borderTopColor: C.separator,
+        }}
+      >
+        <FengAnalyzing steps={steps} label={caption} />
+      </View>
+    </ScrollView>
   )
 }
 

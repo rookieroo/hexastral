@@ -38,7 +38,7 @@ export function FengAnalyzing({ steps, label }: FengAnalyzingProps) {
   return (
     <View style={{ alignItems: 'center', gap: spacing.xl, paddingVertical: spacing.xl }}>
       <LuopanLoader size={156} label={label} />
-      <View style={{ gap: spacing.sm, alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
+      <View style={{ gap: spacing.sm, alignItems: 'center', paddingHorizontal: spacing.xl }}>
         {steps.map((step) => (
           <StepRow key={step.label} step={step} />
         ))}
@@ -63,13 +63,14 @@ function StepRow({ step }: { step: FengAnalyzingStep }) {
 
   const isDone = step.status === 'done'
   const isActive = step.status === 'active'
-  const tone = isDone ? FENG_PAPER.cinnabar : isActive ? FENG_PAPER.bronze : FENG_PAPER.muted
+  // done = calm accent (finished), active = brightest (current focus), pending = dim.
+  const tone = isDone ? FENG_PAPER.bronze : isActive ? FENG_PAPER.ink : FENG_PAPER.muted
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
       <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
         {isDone ? (
-          <Check color={FENG_PAPER.cinnabar} size={15} />
+          <Check color={FENG_PAPER.bronze} size={15} />
         ) : (
           <Animated.View
             style={[

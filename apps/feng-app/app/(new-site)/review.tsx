@@ -6,12 +6,13 @@
  * server message inline + lets the user retry.
  */
 
-import { useAnalyzeJob, useCreateSite } from '@zhop/scenario-feng'
-import { type Href, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useCreateSite } from '@zhop/scenario-feng'
+import { type Href, useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
 import { getDevPro } from '@/lib/dev-flags'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { clearDraft, isDraftReady, loadDraft, type SiteDraft } from '@/lib/siteDraft'
@@ -25,31 +26,36 @@ export default function ReviewScreen() {
   const createSite = useCreateSite()
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
-  const [siteId, setSiteId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  const analyze = useAnalyzeJob(siteId)
+  // undefined = not yet checked; null = none on file; value = birth info present.
+  const [birthInfo, setBirthInfo] = useState<FengBirthInfo | null | undefined>(undefined)
 
   useEffect(() => {
     void (async () => setDraft(await loadDraft()))()
   }, [])
 
-  // When the analyze job lands on 'done', route into the report. Cleaning
-  // the draft only happens after successful creation; if the analyze fails
-  // the site row remains, so the user can retry from (tabs).
-  useEffect(() => {
-    if (analyze.stage === 'done' && siteId) {
-      void clearDraft()
-      router.replace({
-        pathname: '/(report)/[siteId]',
-        params: { siteId, autoAnalyze: '0' },
-      } as Href)
-    }
-  }, [analyze.stage, siteId, router])
+  // Re-check birth info each time the screen regains focus, so returning from
+  // the (birth-info) wizard reflects immediately (birth info unlocks 命卦 ch2).
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true
+      fetchBirthInfo()
+        .then((bi) => {
+          if (alive) setBirthInfo(bi)
+        })
+        .catch(() => {
+          if (alive) setBirthInfo(null)
+        })
+      return () => {
+        alive = false
+      }
+    }, [])
+  )
 
   const confirm = async () => {
-    if (hasSubmitted || creating || analyze.isRunning) return
+    if (hasSubmitted || creating) return
     if (!draft || !isDraftReady(draft)) {
       setSubmitError('Draft is incomplete — go back and finish each step.')
       return
@@ -81,9 +87,14 @@ export default function ReviewScreen() {
         moveInYear: draft.moveInYear,
         floor: draft.floor,
       })
-      setSiteId(site.id)
-      await analyze.start(site.id)
-      setCreating(false)
+      // Hand off to the report screen, which OWNS the analyze job: it runs the
+      // pipeline, shows the computed shell (排盘/坐向/tiles) within seconds, and
+      // streams the written chapters in when synthesis finishes (two-phase).
+      await clearDraft()
+      router.replace({
+        pathname: '/(report)/[siteId]',
+        params: { siteId: site.id, autoAnalyze: '1' },
+      } as Href)
     } catch (err) {
       setHasSubmitted(false)
       setSubmitError(err instanceof Error ? err.message : String(err))
@@ -113,9 +124,9 @@ export default function ReviewScreen() {
     }
   }
 
-  const inProgress = creating || analyze.isRunning
+  const inProgress = creating
   const confirmDisabled = inProgress || !draft || !isDraftReady(draft) || hasSubmitted
-  const errMessage = submitError ?? analyze.error?.message ?? null
+  const errMessage = submitError
 
   return (
     <ScrollView
@@ -151,11 +162,40 @@ export default function ReviewScreen() {
         ))}
       </View>
 
+      {/* 命卦 chapter (ch2) — birth info is optional; with it the report is 6
+          chapters, without it 5. Surfaced here so the choice is explicit. */}
+      {birthInfo !== undefined ? (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 12,
+            padding: spacing.lg,
+            gap: spacing.sm,
+            borderLeftWidth: 2,
+            borderLeftColor: birthInfo ? colors.accent : colors.border,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+            {t.new_site_review_birth_title}
+          </Text>
+          <Text style={{ color: colors.textMute, fontSize: 12.5, lineHeight: 18 }}>
+            {birthInfo ? t.new_site_review_birth_have : t.new_site_review_birth_none}
+          </Text>
+          {birthInfo ? null : (
+            <Pressable onPress={() => router.push('/(birth-info)' as Href)} hitSlop={8}>
+              <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '700' }}>
+                {t.new_site_review_birth_add} →
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      ) : null}
+
       {inProgress ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <ActivityIndicator color={colors.accent} />
           <Text style={{ color: colors.textMute }}>
-            {t.new_site_review_processing.replace('{stage}', analyze.stage ?? 'maps')}
+            {t.new_site_review_processing.replace('{stage}', 'maps')}
           </Text>
         </View>
       ) : null}

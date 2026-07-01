@@ -478,8 +478,42 @@ export async function runAnalyzeJob(
       patterns,
     })
 
-    // ── Stage: synthesis ──
-    await setStage(db, jobId, 'synthesis', 85)
+    // ── Persist SHELL report (two-phase load) ──
+    // Everything except the written chapters is ready here: 排盘 / 八宅 / 形理 /
+    // 坐向 / satellite tiles. Persist it and expose the reportId NOW, before the
+    // slow LLM synthesis, so the client renders the computed report in seconds
+    // and streams the chapters in when they land (instead of a 60–90s blank wait).
+    const reportId = nanoid()
+    const dataQuality = deriveDataQuality(site, terrain)
+    const computeJson = JSON.stringify({
+      flyingStars,
+      baZhai: baZhaiResult,
+      auspiciousPalaces,
+      inauspiciousPalaces,
+      patterns,
+      combinations,
+      formLi,
+      macroTerrain: elevation ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace } : null,
+      streetAttribution,
+      monthlyStars,
+    })
+    await db.insert(fengReports).values({
+      id: reportId,
+      siteId: site.id,
+      userId: site.userId,
+      fengYear,
+      currentYuan: flyingStars.currentYuanYun.yuanYun,
+      visionJson: JSON.stringify(vision),
+      computeJson,
+      chapters: '[]', // filled by the UPDATE after synthesis (Phase 2)
+      dataQuality: JSON.stringify(dataQuality),
+      modelVersions: JSON.stringify({ vision: vision.modelVersion }),
+      annotatedMapKeys: JSON.stringify(annotatedByTile),
+      generatedAt: new Date().toISOString(),
+    })
+
+    // ── Stage: synthesis ── (reportId now set → client shows the shell)
+    await setStage(db, jobId, 'synthesis', 85, { reportId })
     const synthesisStarted = Date.now()
 
     const { context: memoryContext, hitCount: memoryHitCount } = await searchPortfolioReadingMemory(
@@ -497,7 +531,6 @@ export async function runAnalyzeJob(
       contextChars: memoryContext.length,
     })
 
-    const dataQuality = deriveDataQuality(site, terrain)
     const synth = await synthesizeReport(env.SVC_FENG, {
       vision,
       compute: {
@@ -545,41 +578,28 @@ export async function runAnalyzeJob(
       modelVersion: synth.modelVersion,
     })
 
-    // ── Persist report + flip job ──
-    const reportId = nanoid()
-    await db.insert(fengReports).values({
-      id: reportId,
-      siteId: site.id,
-      userId: site.userId,
-      fengYear,
-      currentYuan: flyingStars.currentYuanYun.yuanYun,
-      visionJson: JSON.stringify(vision),
-      computeJson: JSON.stringify({
-        flyingStars,
-        baZhai: baZhaiResult,
-        auspiciousPalaces,
-        inauspiciousPalaces,
-        patterns,
-        combinations,
-        formLi,
-        macroTerrain: elevation
-          ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
-          : null,
-        streetAttribution,
-        monthlyStars,
-      }),
-      chapters: JSON.stringify(synth.chapters),
-      dataQuality: JSON.stringify(dataQuality),
-      modelVersions: JSON.stringify({
-        vision: vision.modelVersion,
-        synthesis: synth.modelVersion,
-      }),
-      annotatedMapKeys: JSON.stringify(annotatedByTile),
-      generatedAt: new Date().toISOString(),
-    })
+    // 无生辰 → 无八宅命卦：drop the 个人命卦匹配 chapter entirely so the report
+    // is a clean 5 chapters rather than padding personal_fit with generic filler.
+    // Birth info unlocks it (6 chapters). The client renders whatever chapters
+    // land, so this alone drives the 5-vs-6 page count.
+    const chapters = baZhaiResult
+      ? synth.chapters
+      : synth.chapters.filter((ch) => ch.kind !== 'personal_fit')
+
+    // ── Phase 2: fill the shell with the written chapters + flip job done ──
+    await db
+      .update(fengReports)
+      .set({
+        chapters: JSON.stringify(chapters),
+        modelVersions: JSON.stringify({
+          vision: vision.modelVersion,
+          synthesis: synth.modelVersion,
+        }),
+        generatedAt: new Date().toISOString(),
+      })
+      .where(eq(fengReports.id, reportId))
 
     await setStage(db, jobId, 'done', 100, {
-      reportId,
       finishedAt: new Date().toISOString(),
     })
 

@@ -1,26 +1,23 @@
 /**
- * FlyingStarsGrid — 3×3 玄空 palace plate.
+ * FlyingStarsGrid — 玄空飞星盘 (an ink 排盘 plate, not a flexbox grid).
  *
- * Phase H · F3 Bucket B. Renders the 9 palaces in 洛书 layout with each
- * palace's mountain (山) / facing (水) / annual (流年) stars stacked as
- * numerals. Background tint is driven by `classifyStar` over the user's
- * `currentYuanYun`, so 当令/生气 palaces read warm and 死气/煞气 palaces
- * read cool — matching the synthesis-prompt's 旺/退/死 framing.
+ * Phase H · F3 Bucket B, redesigned. Renders the 9 palaces in 洛书 layout
+ * (南上 / 离 on top, the traditional 排盘 orientation) as a hand-inked square
+ * plate on 宣纸. Each palace carries the canonical 挨星 arrangement:
  *
- * The compute payload comes from `FengReport.compute.flyingStars`; the
- * report screen passes that subtree directly via `result`.
+ *     山★            向★        ← the two 挨星 (mountain top-left, facing top-right)
+ *          運              ← 地盘/元运 star, drawn as a faint watermark behind
+ *       卦名      年        ← palace trigram + this year's 流年 overlay
  *
- * Layout (洛书):
- *   ┌─────┬─────┬─────┐
- *   │  巽 │  离 │  坤 │  ← top row  (4 / 9 / 2)
- *   ├─────┼─────┼─────┤
- *   │  震 │  中 │  兑 │  ← middle   (3 / 5 / 7)
- *   ├─────┼─────┼─────┤
- *   │  艮 │  坎 │  乾 │  ← bottom   (8 / 1 / 6)
- *   └─────┴─────┴─────┘
+ * Star numerals are coloured by the 紫白九星 convention (muted for cream paper):
+ * 1白水 6白金 8白土=auspicious, 7赤 9紫 warm, 2黑 5黄 ominous earth. 旺衰 (from
+ * `classifyStar` over the reader's `currentYuanYun`) drives a subtle cell wash +
+ * a 朱砂 corner mark on 煞气 palaces — so the plate reads 旺/退/死 at a glance
+ * while staying legible ink-on-paper.
  *
- * Caller owns sizing and outer padding; component fills its container width
- * and computes height from it (square aspect).
+ * The compute payload comes from `FengReport.compute.flyingStars`; the report
+ * screen passes that subtree directly via `result`. Caller owns outer width;
+ * the plate is square and the caption/legend stack beneath it.
  */
 
 import {
@@ -31,6 +28,7 @@ import {
 } from '@zhop/astro-core'
 import { memo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg'
 
 /** 洛书 layout — order matches the 3×3 grid top-to-bottom, left-to-right. */
 const LUOSHU_ORDER: ReadonlyArray<BaguaPalace | '中'> = [
@@ -45,15 +43,34 @@ const LUOSHU_ORDER: ReadonlyArray<BaguaPalace | '中'> = [
   '乾',
 ]
 
-const QUALITY_TINT: Record<StarQuality, string> = {
-  当令: 'rgba(176, 141, 91, 0.32)', // copper, strongest
-  生气: 'rgba(176, 141, 91, 0.18)', // copper, mid
-  退气: 'rgba(168, 159, 142, 0.14)', // rice mute, neutral
-  死气: 'rgba(60, 70, 80, 0.10)', // ink, cool
-  煞气: 'rgba(155, 34, 38, 0.18)', // cinnabar, warning
+// Zinc-tonal 九星 — fortune is encoded by BRIGHTNESS on the dark plate, not hue
+// (紫白 rainbow dropped with the theme). Auspicious stars read bright; 凶 read
+// dim; only the great 五黄 煞 carries the single reserved desaturated red.
+const STAR9: Record<number, string> = {
+  1: '#E4E4E7', // 一白 · 旺 → bright
+  2: '#8A8083', // 二黑 · 病 → dim (warm-gray)
+  3: '#C7CACF', // 三碧
+  4: '#C7CACF', // 四绿
+  5: '#B4726E', // 五黄 · 廉贞大煞 → the ONLY red
+  6: '#E4E4E7', // 六白 · 金 → bright
+  7: '#8A8083', // 七赤 · 破军 → dim
+  8: '#FAFAFA', // 八白 · 财 → brightest
+  9: '#EDECEF', // 九紫 · 喜 → bright
 }
 
-const QUALITY_LABEL: Record<StarQuality, string> = {
+const INK = '#E4E4E7' // numerals / 卦名 on the dark plate
+const CINNABAR = '#B4726E' // reserved 煞 mark (desaturated), NOT decorative
+const COPPER = '#A1A1AA' // 流年 overlay — dim neutral
+
+const QUALITY_WASH: Record<StarQuality, string> = {
+  当令: 'rgba(250,250,250,0.07)', // brightest lift
+  生气: 'rgba(250,250,250,0.035)',
+  退气: 'rgba(0,0,0,0)',
+  死气: 'rgba(0,0,0,0.10)', // sink into the ground
+  煞气: 'rgba(180,114,110,0.10)', // the single danger tint
+}
+
+const QUALITY_TAG: Record<StarQuality, string> = {
   当令: '旺',
   生气: '生',
   退气: '退',
@@ -61,51 +78,121 @@ const QUALITY_LABEL: Record<StarQuality, string> = {
   煞气: '煞',
 }
 
-const STAR_COLORS = {
-  mountain: '#0F1E26', // ink teal — solid bone
-  facing: '#9B2226', // cinnabar — flowing
-  annual: '#B08D5B', // copper gold — the year's overlay
-} as const
+const CN_NUM = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+
+// Plate coordinate system (square). Everything is drawn in this space and the
+// <Svg> scales it to the container width.
+const S = 300
+const M = 12 // outer margin to the grid
+const C = (S - M * 2) / 3 // cell size
 
 export interface FlyingStarsGridProps {
   /** The full compute result. Component reads combined + currentYuanYun. */
   result: FlyingStarsResult
-  /** Surface background tint for the outer card. */
+  /** Surface background tint for the outer card (behind the plate). */
   backgroundColor?: string
-  /** Hairline border / divider color. */
+  /** Hairline border / divider color. Defaults to a warm ink. */
   borderColor?: string
-  /** Label color for palace names. */
+  /** Label color for palace names + caption. */
   labelColor?: string
 }
 
 function PalaceCell({
   palace,
+  index,
   data,
   yuanYun,
-  borderColor,
-  labelColor,
 }: {
   palace: BaguaPalace | '中'
+  index: number
   data: FlyingStarsResult['combined'][BaguaPalace | '中']
   yuanYun: FlyingStarsResult['currentYuanYun']['yuanYun']
-  borderColor: string
-  labelColor: string
 }) {
-  // 中宫 isn't classified the same way — show neutral. Other palaces classify
-  // by the *facing* star (主宰 palace fortune in 玄空).
+  const col = index % 3
+  const row = Math.floor(index / 3)
+  const x0 = M + col * C
+  const y0 = M + row * C
+  const cx = x0 + C / 2
+  // 中宫 has no 挨星 fortune the same way; classify others by their 向星.
   const quality: StarQuality = palace === '中' ? '退气' : classifyStar(data.facing, yuanYun)
+  const isSha = quality === '煞气'
+
   return (
-    <View style={[styles.cell, { borderColor, backgroundColor: QUALITY_TINT[quality] }]}>
-      <View style={styles.cellHeader}>
-        <Text style={[styles.palaceLabel, { color: labelColor }]}>{palace}</Text>
-        <Text style={[styles.qualityChip, { color: labelColor }]}>{QUALITY_LABEL[quality]}</Text>
-      </View>
-      <View style={styles.starsRow}>
-        <Text style={[styles.star, { color: STAR_COLORS.mountain }]}>{data.mountain}</Text>
-        <Text style={[styles.star, { color: STAR_COLORS.facing }]}>{data.facing}</Text>
-        <Text style={[styles.star, { color: STAR_COLORS.annual }]}>{data.annual}</Text>
-      </View>
-    </View>
+    <>
+      <Rect x={x0} y={y0} width={C} height={C} fill={QUALITY_WASH[quality]} />
+
+      {/* 運星 — the 地盘 base, a faint ghost behind the 挨星 */}
+      <SvgText
+        x={cx}
+        y={y0 + C / 2 + 15}
+        fill={INK}
+        opacity={0.1}
+        fontSize={46}
+        fontWeight='700'
+        textAnchor='middle'
+      >
+        {data.period}
+      </SvgText>
+
+      {/* 山星 top-left · 向星 top-right — the two 挨星 you actually read */}
+      <SvgText
+        x={x0 + 21}
+        y={y0 + 31}
+        fill={STAR9[data.mountain] ?? INK}
+        fontSize={20}
+        fontWeight='700'
+        textAnchor='middle'
+      >
+        {data.mountain}
+      </SvgText>
+      <SvgText
+        x={x0 + C - 21}
+        y={y0 + 31}
+        fill={STAR9[data.facing] ?? INK}
+        fontSize={20}
+        fontWeight='700'
+        textAnchor='middle'
+      >
+        {data.facing}
+      </SvgText>
+
+      {/* 旺衰 tag between the 挨星 */}
+      <SvgText
+        x={cx}
+        y={y0 + 22}
+        fill={isSha ? CINNABAR : INK}
+        opacity={0.62}
+        fontSize={10}
+        textAnchor='middle'
+      >
+        {QUALITY_TAG[quality]}
+      </SvgText>
+
+      {/* 卦名 bottom-left · 流年 bottom-right */}
+      <SvgText
+        x={x0 + 20}
+        y={y0 + C - 12}
+        fill={INK}
+        opacity={0.8}
+        fontSize={13}
+        fontWeight='600'
+        textAnchor='middle'
+      >
+        {palace}
+      </SvgText>
+      <SvgText
+        x={x0 + C - 18}
+        y={y0 + C - 12}
+        fill={COPPER}
+        fontSize={11}
+        fontWeight='600'
+        textAnchor='middle'
+      >
+        {data.annual}
+      </SvgText>
+
+      {isSha ? <Circle cx={x0 + C - 9} cy={y0 + 9} r={2.6} fill={CINNABAR} /> : null}
+    </>
   )
 }
 
@@ -114,34 +201,89 @@ const PalaceCellMemo = memo(PalaceCell)
 export const FlyingStarsGrid = memo(function FlyingStarsGrid({
   result,
   backgroundColor = 'transparent',
-  borderColor = 'rgba(176, 141, 91, 0.35)',
-  labelColor = '#0F1E26',
+  borderColor = 'rgba(228,228,231,0.30)',
+  labelColor = INK,
 }: FlyingStarsGridProps) {
   const yuanYun = result.currentYuanYun.yuanYun
+  const gridEnd = M + C * 3
+
   return (
-    <View style={[styles.root, { backgroundColor, borderColor }]}>
-      <View style={styles.grid}>
-        {LUOSHU_ORDER.map((palace) => (
-          <PalaceCellMemo
-            key={palace}
-            palace={palace}
-            data={result.combined[palace]}
-            yuanYun={yuanYun}
-            borderColor={borderColor}
-            labelColor={labelColor}
+    <View style={[styles.root, { backgroundColor }]}>
+      <View style={styles.plate}>
+        <Svg width='100%' height='100%' viewBox={`0 0 ${S} ${S}`}>
+          {/* double frame — a classic bordered plate */}
+          <Rect
+            x={4}
+            y={4}
+            width={S - 8}
+            height={S - 8}
+            fill='none'
+            stroke={borderColor}
+            strokeWidth={1.4}
           />
-        ))}
+          <Rect
+            x={M - 2}
+            y={M - 2}
+            width={C * 3 + 4}
+            height={C * 3 + 4}
+            fill='none'
+            stroke={borderColor}
+            strokeWidth={0.6}
+            opacity={0.7}
+          />
+
+          {LUOSHU_ORDER.map((palace, i) => (
+            <PalaceCellMemo
+              key={palace}
+              palace={palace}
+              index={i}
+              data={result.combined[palace]}
+              yuanYun={yuanYun}
+            />
+          ))}
+
+          {/* grid lines drawn last so they sit crisp over the washes */}
+          {[1, 2].map((k) => (
+            <Line
+              key={`v${k}`}
+              x1={M + C * k}
+              y1={M}
+              x2={M + C * k}
+              y2={gridEnd}
+              stroke={borderColor}
+              strokeWidth={0.8}
+            />
+          ))}
+          {[1, 2].map((k) => (
+            <Line
+              key={`h${k}`}
+              x1={M}
+              y1={M + C * k}
+              x2={gridEnd}
+              y2={M + C * k}
+              stroke={borderColor}
+              strokeWidth={0.8}
+            />
+          ))}
+        </Svg>
       </View>
+
+      <Text style={[styles.caption, { color: labelColor }]}>
+        坐 {result.sitMountain.name}　向 {result.faceMountain.name}　·
+        {CN_NUM[result.buildYuanYun.yuanYun]}運 {result.chartMethod}
+        {result.isCompoundFacing ? ' · 兼向' : ''}
+      </Text>
+
       <View style={styles.legend}>
-        <LegendDot color={STAR_COLORS.mountain} label='山' />
-        <LegendDot color={STAR_COLORS.facing} label='向' />
-        <LegendDot color={STAR_COLORS.annual} label='年' />
+        <LegendItem color={INK} label='山 挨星' />
+        <LegendItem color={CINNABAR} label='向 挨星' />
+        <LegendItem color={COPPER} label='流年' />
       </View>
     </View>
   )
 })
 
-function LegendDot({ color, label }: { color: string; label: string }) {
+function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendSwatch, { backgroundColor: color }]} />
@@ -152,65 +294,37 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   root: {
+    gap: 10,
+  },
+  plate: {
+    width: '100%',
     aspectRatio: 1,
-    borderWidth: 0.5,
-    padding: 8,
-    gap: 8,
   },
-  grid: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  cell: {
-    width: '33.3333%',
-    height: '33.3333%',
-    borderWidth: 0.5,
-    padding: 6,
-    gap: 4,
-    justifyContent: 'space-between',
-  },
-  cellHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  palaceLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  qualityChip: {
-    fontSize: 10,
-    letterSpacing: 1,
-    opacity: 0.7,
-  },
-  starsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  star: {
-    fontSize: 18,
-    fontWeight: '600',
+  caption: {
+    fontSize: 12.5,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    opacity: 0.85,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    paddingTop: 4,
+    gap: 18,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   legendSwatch: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   legendLabel: {
     fontSize: 11,
     fontWeight: '500',
+    letterSpacing: 0.5,
   },
 })

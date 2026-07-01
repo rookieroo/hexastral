@@ -42,14 +42,14 @@ const BAGUA_WEDGES: ReadonlyArray<{
   endDeg: number
   fill: string
 }> = [
-  { name: '坎', startDeg: 337.5, endDeg: 22.5, fill: 'rgba(20,40,90,0.12)' },
-  { name: '艮', startDeg: 22.5, endDeg: 67.5, fill: 'rgba(120,80,40,0.12)' },
-  { name: '震', startDeg: 67.5, endDeg: 112.5, fill: 'rgba(30,120,50,0.12)' },
-  { name: '巽', startDeg: 112.5, endDeg: 157.5, fill: 'rgba(70,140,40,0.12)' },
-  { name: '离', startDeg: 157.5, endDeg: 202.5, fill: 'rgba(190,40,30,0.12)' },
-  { name: '坤', startDeg: 202.5, endDeg: 247.5, fill: 'rgba(150,100,40,0.12)' },
-  { name: '兑', startDeg: 247.5, endDeg: 292.5, fill: 'rgba(190,170,40,0.12)' },
-  { name: '乾', startDeg: 292.5, endDeg: 337.5, fill: 'rgba(150,150,170,0.12)' },
+  { name: '坎', startDeg: 337.5, endDeg: 22.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '艮', startDeg: 22.5, endDeg: 67.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '震', startDeg: 67.5, endDeg: 112.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '巽', startDeg: 112.5, endDeg: 157.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '离', startDeg: 157.5, endDeg: 202.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '坤', startDeg: 202.5, endDeg: 247.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '兑', startDeg: 247.5, endDeg: 292.5, fill: 'rgba(228,228,231,0.12)' },
+  { name: '乾', startDeg: 292.5, endDeg: 337.5, fill: 'rgba(228,228,231,0.12)' },
 ]
 
 function compassToSvg(deg: number): number {
@@ -99,7 +99,7 @@ export const BaguaCompassOverlay = memo(function BaguaCompassOverlay({
   showCardinals = true,
   ringColor = 'rgba(255,255,255,0.55)',
   labelColor = 'rgba(255,255,255,0.85)',
-  labelMajorColor = '#E6B450',
+  labelMajorColor = '#D4D4D8',
   cardinalColor = '#ffffff',
 }: BaguaCompassOverlayProps) {
   const cx = size / 2

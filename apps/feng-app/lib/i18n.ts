@@ -99,6 +99,8 @@ export type Strings = {
   report_loading: string
   report_failed: string
   report_pending: string
+  /** Tag over the two-phase report shell (computed content, chapters still generating). */
+  report_shell_tag: string
   report_chapter_pager_hint: string
   report_data_quality_footer: string
   /** Confidence note: 理气 deterministic vs 形势 AI/DEM-inferred. */
@@ -137,6 +139,10 @@ export type Strings = {
   new_site_review_ai_disclaimer: string
   /** One-time IAP / Pro cost note rendered next to the AI disclaimer. */
   new_site_review_iap_note: string
+  new_site_review_birth_title: string
+  new_site_review_birth_add: string
+  new_site_review_birth_none: string
+  new_site_review_birth_have: string
   report_unlock_title: string
 
   // Sign-in
@@ -271,6 +277,7 @@ const EN: Strings = {
   report_loading: 'Loading report…',
   report_failed: 'Analysis failed: {message}',
   report_pending: 'Analysis pending — tap a site to generate a report.',
+  report_shell_tag: 'At a glance · reading generating',
   report_chapter_pager_hint: 'Swipe to read each chapter.',
   report_data_quality_footer:
     'Some inputs were estimated. You can re-run with better data anytime.',
@@ -306,6 +313,11 @@ const EN: Strings = {
   new_site_review_ai_disclaimer:
     'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
   new_site_review_iap_note: 'One report per site, unlocked with a one-time purchase.',
+  new_site_review_birth_title: 'Personal Trigram Chapter',
+  new_site_review_birth_add: 'Add birth info',
+  new_site_review_birth_none:
+    'No birth info: the report will have 5 chapters (no Personal Trigram Fit). Add birth info to unlock the 6th.',
+  new_site_review_birth_have: 'Birth info added · a Personal Trigram Fit chapter will be included.',
   report_unlock_title: 'Unlock this report',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
@@ -428,6 +440,7 @@ const ZH_HANS: Strings = {
   report_loading: '正在加载报告…',
   report_failed: '分析失败：{message}',
   report_pending: '尚未生成 — 点击站点开始分析。',
+  report_shell_tag: '堪舆速览 · 解读生成中',
   report_chapter_pager_hint: '左右滑动逐章阅读。',
   report_data_quality_footer: '部分输入是估算值，可随时用更准的数据重新分析。',
   report_confidence_note: '玄空飞星与八宅为精确演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
@@ -460,6 +473,11 @@ const ZH_HANS: Strings = {
   new_site_review_ai_disclaimer:
     '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
   new_site_review_iap_note: '每个地点一份报告，单次购买永久解锁。',
+  new_site_review_birth_title: '个人命卦章节',
+  new_site_review_birth_add: '添加生辰',
+  new_site_review_birth_none:
+    '未提供生辰：报告将生成 5 章（不含个人命卦匹配）。添加生辰即可解锁第 6 章。',
+  new_site_review_birth_have: '已提供生辰 · 报告将包含「个人命卦匹配」章节。',
   report_unlock_title: '解锁这份报告',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
@@ -572,6 +590,7 @@ const ZH_HANT: Strings = {
   report_loading: '正在載入報告…',
   report_failed: '分析失敗：{message}',
   report_pending: '尚未生成 — 點選地點開始分析。',
+  report_shell_tag: '堪輿速覽 · 解讀生成中',
   report_chapter_pager_hint: '左右滑動逐章閱讀。',
   report_data_quality_footer: '部分輸入為估算，可隨時用更準的資料重新分析。',
   report_confidence_note: '玄空飛星與八宅為精確演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
@@ -600,6 +619,11 @@ const ZH_HANT: Strings = {
   new_site_review_ai_disclaimer:
     '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
   new_site_review_iap_note: '每個地點一份報告，單次購買永久解鎖。',
+  new_site_review_birth_title: '個人命卦章節',
+  new_site_review_birth_add: '新增生辰',
+  new_site_review_birth_none:
+    '未提供生辰：報告將生成 5 章（不含個人命卦匹配）。新增生辰即可解鎖第 6 章。',
+  new_site_review_birth_have: '已提供生辰 · 報告將包含「個人命卦匹配」章節。',
   report_unlock_title: '解鎖這份報告',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
@@ -719,6 +743,7 @@ const JA: Strings = {
   report_loading: 'レポートを読み込み中…',
   report_failed: '分析失敗：{message}',
   report_pending: 'まだ分析されていません — 場所をタップして開始します。',
+  report_shell_tag: '概観 · 鑑定を生成中',
   report_chapter_pager_hint: '左右にスワイプして章を読みます。',
   report_data_quality_footer: '一部の入力は推定値です。より正確なデータでいつでも再分析できます。',
   report_confidence_note:
@@ -752,6 +777,11 @@ const JA: Strings = {
   new_site_review_ai_disclaimer:
     '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
   new_site_review_iap_note: '1 地点につき 1 レポート。単発購入で解放されます。',
+  new_site_review_birth_title: '個人命卦の章',
+  new_site_review_birth_add: '生年月日を追加',
+  new_site_review_birth_none:
+    '生年月日が未入力：レポートは 5 章（個人命卦の適合なし）。入力すると 6 章目が解放されます。',
+  new_site_review_birth_have: '生年月日を入力済み · 個人命卦の適合の章を含みます。',
   report_unlock_title: 'このレポートを解錠',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',

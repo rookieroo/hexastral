@@ -224,14 +224,17 @@ export interface FengJobResponse {
   errorMessage: string | null
   startedAt: string
   finishedAt: string | null
-  /** Populated only when stage === 'done'. Subset of FengReport — server-side
-   *  trims the raw vision JSON (large) but keeps `compute` (small + needed
-   *  for the in-chapter FlyingStarsGrid / BaZhaiWheel visuals). */
+  /** Populated as soon as `reportId` is set — which now happens at the SHELL
+   *  (compute ready, chapters still generating) BEFORE the slow synthesis, not
+   *  only at `done`. Server trims the raw vision JSON (large) but keeps `compute`
+   *  (small + needed for the in-chapter FlyingStarsGrid / BaZhaiWheel visuals). */
   report: null | {
     id: string
     fengYear: number
     currentYuan: number
     chapters: FengChapter[]
+    /** true while this is the shell (compute ready, chapters=[] still generating). */
+    chaptersPending?: boolean
     compute: FengComputeJson
     dataQuality: FengReport['dataQuality']
     modelVersions: FengReport['modelVersions']

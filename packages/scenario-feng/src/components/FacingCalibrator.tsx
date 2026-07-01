@@ -46,7 +46,7 @@ export interface FacingCalibratorProps {
   ringRotation?: number
 }
 
-const SIT_COLOR = '#9B2226'
+const SIT_COLOR = '#B4726E'
 const DOOR_COLOR = '#3A86FF'
 const FACING_SPRING = { damping: 18, stiffness: 220, mass: 1 } as const
 
@@ -59,7 +59,7 @@ export const FacingCalibrator = memo(function FacingCalibrator({
   size = 320,
   initialFacingDeg = 180,
   onChange,
-  arrowColor = '#E6B450',
+  arrowColor = '#D4D4D8',
   showSitArrow = false,
   doorDeg,
   onDoorChange,
@@ -210,7 +210,7 @@ export const FacingCalibrator = memo(function FacingCalibrator({
           height: size,
           borderRadius: 12,
           overflow: 'hidden',
-          backgroundColor: '#0F1E26',
+          backgroundColor: '#18181B',
         }}
       >
         {satelliteSource ? (

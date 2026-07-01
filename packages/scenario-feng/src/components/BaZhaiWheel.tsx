@@ -33,8 +33,8 @@ const PALACE_CENTER_DEG: Record<BaguaPalace, number> = {
 
 const PALACES_CW: ReadonlyArray<BaguaPalace> = ['坎', '艮', '震', '巽', '离', '坤', '兑', '乾']
 
-const LUCKY_COLOR = '#B08D5B' // copper
-const LUCKY_FILL = 'rgba(176, 141, 91, 0.20)'
+const LUCKY_COLOR = '#D4D4D8' // zinc-300 (neutral accent)
+const LUCKY_FILL = 'rgba(228, 228, 231, 0.20)'
 const UNLUCKY_COLOR = '#5F6770' // ink-mute
 const UNLUCKY_FILL = 'rgba(95, 103, 112, 0.10)'
 
@@ -68,14 +68,14 @@ export interface BaZhaiWheelProps {
   result: BaZhaiResult
   /** Diameter in points. */
   size: number
-  /** Ring + label color. Defaults to ink teal. */
+  /** Ring + label color. Defaults to zinc-50 (light on dark). */
   strokeColor?: string
 }
 
 export const BaZhaiWheel = memo(function BaZhaiWheel({
   result,
   size,
-  strokeColor = '#0F1E26',
+  strokeColor = '#FAFAFA',
 }: BaZhaiWheelProps) {
   const cx = size / 2
   const cy = size / 2
@@ -162,7 +162,7 @@ export const BaZhaiWheel = memo(function BaZhaiWheel({
             PALACE_CENTER_DEG[sitPalace] + 22.5
           )}
           fill='none'
-          stroke='#9B2226'
+          stroke='#B4726E'
           strokeWidth={1.5}
           strokeOpacity={0.85}
         />

@@ -119,6 +119,16 @@ export interface FallbackCallOptions {
   /** Optional locale tag forwarded to the metric log. */
   locale?: string
   /**
+   * Override the whole-chain wall-clock budget (default {@link TOTAL_BUDGET_MS} = 48s,
+   * tuned to sit under svc-astro's 55s caller). Heavy NON-interactive callers running
+   * in a queue consumer (e.g. feng's 6-chapter/16k-token synthesis) can raise this —
+   * but it MUST stay below that caller's own outer AbortSignal timeout, or the caller
+   * aborts mid-cascade. Only set this when the caller's timeout is correspondingly large.
+   */
+  totalBudgetMs?: number
+  /** Override the per-model cap (default {@link PER_MODEL_TIMEOUT_MS} = 24s). Pairs with `totalBudgetMs`. */
+  perModelTimeoutMs?: number
+  /**
    * @deprecated Gemini-only thinking budget — IGNORED by the CF router.
    * Retained as a no-op so existing callers compile; depth is now expressed via `tier`
    * (deep tasks default to `'flagship'`). Safe to drop in a later sweep.
@@ -378,6 +388,8 @@ export async function callWithFallback(
   const routingTier: RoutingTier = options?.tier ?? 'flagship'
   const isPro = options?.isPro ?? false
   const startedAt = Date.now()
+  const totalBudgetMs = options?.totalBudgetMs ?? TOTAL_BUDGET_MS
+  const perModelCapMs = options?.perModelTimeoutMs ?? PER_MODEL_TIMEOUT_MS
 
   // flagship 多一个 Kimi 头部；standard 从 Qwen3 起。Non-zh leads with Llama (see leadForLocale).
   const baseChain =
@@ -389,12 +401,7 @@ export async function callWithFallback(
   let lastError = ''
   for (let depth = 0; depth < chain.length; depth++) {
     const model = chain[depth] as string
-    const slotMs = modelSlotMs(
-      TOTAL_BUDGET_MS,
-      startedAt,
-      chain.length - depth,
-      PER_MODEL_TIMEOUT_MS
-    )
+    const slotMs = modelSlotMs(totalBudgetMs, startedAt, chain.length - depth, perModelCapMs)
     // No usable time left before the caller's outer timeout — stop cascading and
     // throw a clean error rather than starting a model that will 504 the API.
     if (slotMs < MIN_MODEL_SLOT_MS) {

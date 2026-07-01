@@ -39,6 +39,10 @@ const ComputeInputSchema = z.object({
   formLi: z.unknown().optional(),
   macroTerrain: z.unknown().optional(),
   monthlyStars: z.unknown().optional(),
+  // Chart identity (坐山向 / 卦运 / 元运 year-ranges). The flying_stars prompt
+  // OPENS with this — without it here, Zod's default object behavior would
+  // silently STRIP the field and the model loses its 坐山向 opening + 旺→退 window.
+  summary: z.unknown().optional(),
 })
 
 const SynthesizeRequestSchema = z.object({
@@ -120,6 +124,14 @@ synthesizeRouter.post('/', async (c) => {
         temperature: 0.7,
         metricLabel: 'feng-synthesis',
         locale: userProfile.locale,
+        // This is a heavy, quality-critical, NON-interactive (queue consumer)
+        // generation — 6 pro-grade chapters. The router's default 48s/24s budget
+        // starves it (≈16s/model → fail-clean), and the prior 60s outer timeout
+        // aborted it mid-generation (job.failed "operation was aborted due to
+        // timeout"). Give it a real budget (~43s/model) that still sits UNDER
+        // feng-client's synthesize AbortSignal (150s).
+        totalBudgetMs: 130_000,
+        perModelTimeoutMs: 70_000,
       })
       return JSON.parse(text)
     },

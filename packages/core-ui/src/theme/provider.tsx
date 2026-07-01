@@ -58,8 +58,11 @@ const FLAGSHIP_ACCENTS: Record<'hexastral' | 'yuan' | 'feng', { light: string; d
     dark: '#C4A882', // ink gold in dark mode for legibility
   },
   feng: {
-    light: '#0F1E26', // 墨青 (used as accent on light surfaces)
-    dark: '#B08D5B', // copper gold in dark mode
+    // Zinc-neutral, dark-by-default. 土黄/copper dropped as the brand accent —
+    // a clean monochrome reads more premium + travels better for 文化出海 than a
+    // warm ethnic palette. Emphasis comes from a bright neutral, not a hue.
+    light: '#27272A', // zinc-800 (rare light surfaces)
+    dark: '#E4E4E7', // zinc-200 — bright neutral accent on the zinc-950 shell
   },
 }
 
@@ -147,6 +150,10 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
   if (brand === 'hexastral' || brand === 'yuan' || brand === 'feng') {
     accent = FLAGSHIP_ACCENTS[brand][mode]
     accentBright = accent
+    if (brand === 'feng') {
+      // Neutral zinc ghost — the default is a warm copper rgba.
+      accentGhost = isDark ? 'rgba(228,228,231,0.10)' : 'rgba(24,24,27,0.06)'
+    }
   } else {
     // Satellite — use satellite accent factory (variant is satellite-specific).
     const sat = getSatelliteAccent(brand, accentVariant)

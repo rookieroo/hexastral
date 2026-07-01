@@ -19,12 +19,20 @@
 
 type FetcherLike = { fetch(input: RequestInfo, init?: RequestInit): Promise<Response> }
 
+// These run inside the feng-analyze QUEUE CONSUMER, which has a generous
+// wall-clock budget (not the 30s HTTP limit) — the LLM/VLM calls are I/O waits,
+// not CPU. Sized so the two slow AI stages don't self-abort:
+//   • vision now sees REAL satellite imagery (raw-tile fix) — richer than the
+//     old near-blank overlays, so Gemini takes longer than the prior 30s.
+//   • synthesize emits 6 pro-grade chapters at maxTokens 16384 — the old 60s
+//     cap fired mid-generation (job.failed "operation was aborted due to
+//     timeout", ~63s total) once bodies grew.
 const TIMEOUTS = {
   prefetch: 5_000,
   maps: 8_000,
   annotate: 4_000,
-  vision: 30_000,
-  synthesize: 60_000,
+  vision: 60_000,
+  synthesize: 150_000,
 } as const
 
 async function postJson<T>(

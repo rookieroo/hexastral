@@ -33,8 +33,12 @@ export const fengJobRoutes = new Hono<AppEnv>().get('/:id', async (c) => {
     return jsonErr(c, 404, ApiErrorCode.not_found, 'Job not found')
   }
 
+  // Return the report as soon as `reportId` is set — the pipeline persists a
+  // SHELL (排盘/八宅/形理/tiles, chapters=[]) before the slow LLM synthesis, so
+  // the client renders the computed report during the wait and fills chapters
+  // when they land (two-phase). `chaptersPending` distinguishes shell from final.
   let report = null
-  if (job.stage === 'done' && job.reportId) {
+  if (job.reportId) {
     const row = await db.select().from(fengReports).where(eq(fengReports.id, job.reportId)).get()
     if (row) {
       let annotatedTiles: Array<'close' | 'mid' | 'wide'> = []
@@ -48,16 +52,28 @@ export const fengJobRoutes = new Hono<AppEnv>().get('/:id', async (c) => {
           // ignore malformed JSON; treat as no tiles
         }
       }
-      report = {
-        id: row.id,
-        fengYear: row.fengYear,
-        currentYuan: row.currentYuan,
-        chapters: JSON.parse(row.chapters),
-        compute: JSON.parse(row.computeJson),
-        dataQuality: JSON.parse(row.dataQuality),
-        modelVersions: JSON.parse(row.modelVersions),
-        annotatedTiles,
-        generatedAt: row.generatedAt,
+      // Guard the inline report parse: a single malformed column must NOT 500
+      // the poller and make a DONE report read as a generation failure — the
+      // client re-fetches the full report via /api/feng/sites/:id on navigate.
+      try {
+        const parsedChapters = JSON.parse(row.chapters) as unknown[]
+        report = {
+          id: row.id,
+          fengYear: row.fengYear,
+          currentYuan: row.currentYuan,
+          chapters: parsedChapters,
+          /** true while this is the shell (compute ready, chapters still generating). */
+          chaptersPending: parsedChapters.length === 0,
+          compute: JSON.parse(row.computeJson),
+          dataQuality: JSON.parse(row.dataQuality),
+          modelVersions: JSON.parse(row.modelVersions),
+          annotatedTiles,
+          generatedAt: row.generatedAt,
+        }
+      } catch {
+        // leave report=null; job.stage stays 'done' so the client navigates
+        // and hydrates from the sites endpoint instead of erroring here.
+        report = null
       }
     }
   }

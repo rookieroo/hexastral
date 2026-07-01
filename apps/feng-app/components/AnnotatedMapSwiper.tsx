@@ -186,7 +186,9 @@ function MapTile({
 // Drawn client-side over the north-up satellite tile (the server no longer
 // bakes arrows — see services/svc-feng/src/routes/annotate.ts). A compass
 // bearing θ (0=N, clockwise) maps to screen angle θ−90° from the +x axis.
-const ORIENT_COLORS = { sit: '#9B2226', face: '#E6B450', door: '#3A86FF' } as const
+// Neutral, distinguished by brightness + the 向/坐/门 label (no brand red on the
+// map). 向 (primary) brightest, 坐 mid, 门 dim — all legible over the dark halo.
+const ORIENT_COLORS = { sit: '#D4D4D8', face: '#FAFAFA', door: '#A1A1AA' } as const
 
 function polar(cx: number, cy: number, r: number, deg: number) {
   const a = ((deg - 90) * Math.PI) / 180

@@ -33,13 +33,16 @@ const VH = 300
 const CX = 220
 const CY = 150
 
-// 五行 essence colors (rgb only — alpha applied per layer).
-const EAR = '146,112,54' // 土 / 山
-const WAT = '34,54,84' // 水
-const WIN = '42,82,62' // 风
-const QI = '192,152,78' // 气
-const INK = '26,42,48' // 墨
-const SHA = '150,42,40' // 煞 (red — only in 化解, and it disperses)
+// Monochrome-zinc essence (rgb only — alpha per layer). 五行 hues dropped with
+// the theme; 藏风聚气 now reads through BRIGHTNESS + DENSITY on the dark ground,
+// not colour — bright/dense = 聚气, dim/scattered = 散. Only 煞 keeps a single
+// reserved desaturated red. This actually reinforces 意绘 over 形绘.
+const EAR = '113,113,122' // 土 / 山 — dim solid mass (zinc-500)
+const WAT = '82,82,91' // 水 — dimmest, sinks (zinc-600)
+const WIN = '161,161,170' // 风 — streaming currents, mid (zinc-400)
+const QI = '250,250,250' // 气 — the gathered glow, BRIGHTEST (zinc-50)
+const INK = '63,63,70' // 墨 — base ground (zinc-700)
+const SHA = '180,114,110' // 煞 — the ONLY red (desaturated); disperses in 化解
 
 const SEED: Record<string, number> = {
   external_landform: 11,
@@ -340,7 +343,7 @@ function StaticInk({ kind, width }: { kind: FengChapterKind; width: number }) {
   const layers = useMemo(() => binize(genStaticRaw(kind), s), [kind, s])
   return (
     <Canvas style={{ width, height }}>
-      <Fill color='#F3ECDD' />
+      <Fill color='#111113' />
       {layers.map((l) => (
         <Points
           key={l.color}
@@ -421,7 +424,7 @@ function MorphInk({
 
   return (
     <Canvas style={{ width, height }}>
-      <Fill color='#F3ECDD' />
+      <Fill color='#111113' />
       <Group opacity={op0}>
         <Points
           points={pts0}

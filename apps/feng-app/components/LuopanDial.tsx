@@ -42,22 +42,22 @@ const TONES: Record<
   }
 > = {
   dark: {
-    gold: '#C2A15E',
-    goldFaint: 'rgba(194,161,94,0.5)',
-    goldStrong: 'rgba(194,161,94,0.8)',
-    faintFill: 'rgba(194,161,94,0.05)',
-    accent: '#9B2226',
-    pool: '#0D171B',
-    ground: '#0A1316',
+    gold: '#D4D4D8',
+    goldFaint: 'rgba(228,228,231,0.5)',
+    goldStrong: 'rgba(228,228,231,0.8)',
+    faintFill: 'rgba(228,228,231,0.05)',
+    accent: '#B4726E',
+    pool: '#18181B',
+    ground: '#18181B',
   },
   paper: {
-    gold: '#8A6D3B',
-    goldFaint: 'rgba(138,109,59,0.55)',
-    goldStrong: 'rgba(138,109,59,0.85)',
-    faintFill: 'rgba(138,109,59,0.06)',
-    accent: '#9B2226',
-    pool: '#F8F2E6',
-    ground: '#F3ECDD',
+    gold: '#71717A',
+    goldFaint: 'rgba(228,228,231,0.55)',
+    goldStrong: 'rgba(228,228,231,0.85)',
+    faintFill: 'rgba(228,228,231,0.06)',
+    accent: '#B4726E',
+    pool: '#F4F4F5',
+    ground: '#F4F4F5',
   },
 }
 
