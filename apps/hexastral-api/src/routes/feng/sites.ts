@@ -31,8 +31,21 @@ import { checkReadingAccess } from '../../lib/access-check'
 import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
 import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
+import { quoteFengAnalysis } from '../../lib/feng-pricing'
 
 const facingDeg = z.number().gte(0).lt(360)
+
+// 户型图 / 室内堪舆. `orientDeg` = the true-north bearing of the plans' top edge
+// (from the north-align step). 1 image = apartment · N = villa/multi-floor.
+const floorplanImageSchema = z.object({
+  key: z.string().min(1).max(96),
+  orientDeg: facingDeg.optional(),
+  label: z.string().max(40).optional(),
+})
+const floorplanSchema = z.object({
+  orientDeg: facingDeg,
+  images: z.array(floorplanImageSchema).min(1).max(6),
+})
 
 const createSiteSchema = z.object({
   name: z.string().min(1).max(40),
@@ -47,9 +60,20 @@ const createSiteSchema = z.object({
   buildYearAccuracy: z.enum(['exact', 'decade', 'moveIn', 'unknown']).default('unknown'),
   moveInYear: z.int().gte(1800).lte(2100).optional(),
   floor: z.int().gte(-10).lte(200).optional(),
+  floorplanKey: z.string().min(1).max(96).optional(),
+  floorplan: floorplanSchema.optional(),
 })
 
 const updateSiteSchema = createSiteSchema.partial()
+
+function parseFloorplan(json: string | null): unknown {
+  if (!json) return null
+  try {
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
 
 function serializeSite(row: typeof fengSites.$inferSelect) {
   return {
@@ -69,6 +93,8 @@ function serializeSite(row: typeof fengSites.$inferSelect) {
     buildYearAccuracy: row.buildYearAccuracy,
     moveInYear: row.moveInYear,
     floor: row.floor,
+    floorplanKey: row.floorplanKey,
+    floorplan: parseFloorplan(row.floorplanJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -124,6 +150,8 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       buildYearAccuracy: input.buildYearAccuracy,
       moveInYear: input.moveInYear ?? null,
       floor: input.floor ?? null,
+      floorplanKey: input.floorplanKey ?? null,
+      floorplanJson: input.floorplan ? JSON.stringify(input.floorplan) : null,
       createdAt: now,
       updatedAt: now,
     })
@@ -133,6 +161,17 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       return jsonErr(c, 500, ApiErrorCode.internal_error, 'Site create lost')
     }
     return jsonOk(c, { site: serializeSite(row) }, 201)
+  })
+  // ── Price estimate ──────────────────────────────────────────────────
+  // Fair tiering by floor-plan image count (base + per-extra-image). Called
+  // from the review screen BEFORE the site exists so the paywall shows the
+  // right 客单价 (apartment vs villa/multi-floor).
+  .post('/price', async (c) => {
+    requireUserId(c)
+    const body = await c.req.json().catch(() => ({}))
+    const parsed = z.object({ images: z.int().gte(0).lte(20).optional() }).safeParse(body)
+    const images = parsed.success ? (parsed.data.images ?? 1) : 1
+    return jsonOk(c, { quote: quoteFengAnalysis(images) })
   })
   // ── Read one + latest report ────────────────────────────────────────
   .get('/:id', async (c) => {
@@ -233,6 +272,10 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     if (input.buildYearAccuracy !== undefined) patch.buildYearAccuracy = input.buildYearAccuracy
     if (input.moveInYear !== undefined) patch.moveInYear = input.moveInYear
     if (input.floor !== undefined) patch.floor = input.floor
+    if (input.floorplanKey !== undefined) patch.floorplanKey = input.floorplanKey ?? null
+    if (input.floorplan !== undefined) {
+      patch.floorplanJson = input.floorplan ? JSON.stringify(input.floorplan) : null
+    }
 
     await db.update(fengSites).set(patch).where(eq(fengSites.id, id))
     const row = await db.select().from(fengSites).where(eq(fengSites.id, id)).get()

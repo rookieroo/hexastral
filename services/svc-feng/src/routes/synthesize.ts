@@ -39,6 +39,11 @@ const ComputeInputSchema = z.object({
   formLi: z.unknown().optional(),
   macroTerrain: z.unknown().optional(),
   monthlyStars: z.unknown().optional(),
+  // Interior (户型图) room-level join + interior 形煞. MUST be declared here or
+  // Zod strips them before they reach the prompt (same trap as `summary` below).
+  // Empty/omitted = exterior-only report; present = room-specific indoor advice.
+  roomFindings: z.array(z.unknown()).optional(),
+  interiorSha: z.array(z.unknown()).optional(),
   // Chart identity (坐山向 / 卦运 / 元运 year-ranges). The flying_stars prompt
   // OPENS with this — without it here, Zod's default object behavior would
   // silently STRIP the field and the model loses its 坐山向 opening + 旺→退 window.
@@ -161,7 +166,7 @@ const FALLBACK_TITLES_ZH: Record<string, string> = {
   flying_stars: '玄空当运',
   annual_directions: '流年方位',
   remediation: '化解建议',
-  auspicious_objects: '改运配饰',
+  auspicious_objects: '布置摆件',
 }
 
 const FALLBACK_TITLES_JA: Record<string, string> = {

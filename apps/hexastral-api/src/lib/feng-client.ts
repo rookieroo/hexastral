@@ -163,6 +163,33 @@ export async function renderMap(
   return postForBytes(svc, '/maps/render', input, TIMEOUTS.maps)
 }
 
+// ── Floor plan upload (interior 堪舆) ────────────────────────────
+
+/**
+ * Persist a user-uploaded floor-plan image (raw bytes) into svc-feng's owned
+ * FLOORPLAN_CACHE and get back its content-addressed key. EXIF/GPS is stripped
+ * server-side. hexastral-api does the HMAC/ownership check before calling this.
+ */
+export async function putFloorplan(
+  svc: FetcherLike,
+  bytes: ArrayBuffer,
+  contentType: string
+): Promise<{ key: string }> {
+  const res = await svc.fetch(
+    new Request('https://svc-feng.internal/floorplan/put', {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: bytes,
+      signal: AbortSignal.timeout(TIMEOUTS.maps),
+    })
+  )
+  if (!res.ok) {
+    const err = await res.text().catch(() => 'unknown')
+    throw new Error(`svc-feng /floorplan/put failed (${res.status}): ${err}`)
+  }
+  return res.json() as Promise<{ key: string }>
+}
+
 // ── Annotate ────────────────────────────────────────────────────
 
 export interface OverlayArrow {
@@ -240,6 +267,37 @@ export async function visionAnalyze(
   return postJson(svc, '/vision/analyze', input, TIMEOUTS.vision)
 }
 
+// ── Interior vision (Stage 1b — 户型图 / 室内堪舆) ─────────────────
+
+export interface InteriorVisionInput {
+  /** 1–6 owned floor-plan R2 keys (1 = apartment · N = villa/multi-floor). */
+  floorplanKeys: string[]
+  /** True-north bearing of the plans' top edge (from the north-align step). */
+  northUpBearing: number
+  locale: 'en' | 'zh' | 'zh-Hant' | 'ja'
+  floorLabels?: string[]
+}
+
+export interface InteriorFloorResult {
+  key: string
+  rooms: Array<{ type: string; palace: string; note?: string }>
+  形煞: Array<{ type: string; palace: string; severity: number; evidence: string }>
+  缺角: Array<{ palace: string; note?: string }>
+  notes?: string
+}
+
+export interface InteriorVisionResult {
+  floors: InteriorFloorResult[]
+  modelVersion: string
+}
+
+export async function visionInterior(
+  svc: FetcherLike,
+  input: InteriorVisionInput
+): Promise<InteriorVisionResult> {
+  return postJson(svc, '/vision/interior', input, TIMEOUTS.vision)
+}
+
 // ── Synthesize (Stage 3) ────────────────────────────────────────
 
 export interface SynthesizeInput {
@@ -255,6 +313,9 @@ export interface SynthesizeInput {
     formLi?: unknown
     macroTerrain?: unknown
     monthlyStars?: unknown
+    /** Room-level interior join (户型图). Empty/omitted = exterior-only report. */
+    roomFindings?: unknown[]
+    interiorSha?: unknown[]
   }
   userProfile: {
     birthDate: string

@@ -1,5 +1,5 @@
 /**
- * (new-site)/birth — step 4 of 5.
+ * (new-site)/birth — step 5 of 6.
  *
  * The 个人命卦 (八宅 / personal_fit) chapter is computed from the user's birth
  * year + gender, loaded server-side from the account's saved birth info (the
@@ -73,7 +73,7 @@ export default function BirthStepScreen() {
       }}
     >
       <StatusBar style='light' />
-      <ProgressIndicator step={4} total={5} />
+      <ProgressIndicator step={5} total={6} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_birth_title}
       </Text>

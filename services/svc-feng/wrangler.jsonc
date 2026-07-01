@@ -19,11 +19,13 @@
     // Default tile style; can be overridden per request.
     "MAPBOX_STATIC_STYLE": "mapbox/satellite-v9"
   },
-  // R2 buckets — cache raw and annotated map images.
+  // R2 buckets — raw + annotated map cache (transient), plus user floor plans
+  // (owned/permanent, purged with the site — NOT lifecycle-GC'd).
   //
   // Create with:
   //   wrangler r2 bucket create feng-maps
   //   wrangler r2 bucket create feng-annotated
+  //   wrangler r2 bucket create feng-floorplans
   // and paste preview names if developing against staging.
   "r2_buckets": [
     {
@@ -33,6 +35,10 @@
     {
       "binding": "ANNOTATED_CACHE",
       "bucket_name": "feng-annotated"
+    },
+    {
+      "binding": "FLOORPLAN_CACHE",
+      "bucket_name": "feng-floorplans"
     }
   ],
   // Tail worker for logs (matches the rest of the services).

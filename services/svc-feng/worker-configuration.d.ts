@@ -32,6 +32,9 @@ declare global {
     MAPS_CACHE: R2Bucket
     /** Server-annotated PNGs (with arrows + bagua overlay). */
     ANNOTATED_CACHE: R2Bucket
+    /** User-uploaded floor-plan images (owned per-site; interior 堪舆). Content
+     *  addressed under `floorplan/<sha1>.<ext>`; never lifecycle-GC'd. */
+    FLOORPLAN_CACHE: R2Bucket
   }
 }
 

@@ -175,7 +175,7 @@ export default function FacingScreen() {
         gap: spacing.md,
       }}
     >
-      <ProgressIndicator step={2} total={5} />
+      <ProgressIndicator step={2} total={6} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {strings.new_site_facing_title}
       </Text>

@@ -32,5 +32,13 @@ export {
 } from './context'
 export * from './hooks'
 export { normalizeFengDeg, nudgeFengDeg, pointToFengDeg } from './lib/facing-deg'
-export type { CreateSiteInput, LogBearingInput, PatchSiteInput } from './lib/feng-api'
+export type {
+  CreateSiteInput,
+  FengPriceQuote,
+  FloorplanImageInput,
+  FloorplanInput,
+  LogBearingInput,
+  PatchSiteInput,
+} from './lib/feng-api'
+export { fengPriceEstimate, uploadFloorplan } from './lib/feng-api'
 export * from './types'

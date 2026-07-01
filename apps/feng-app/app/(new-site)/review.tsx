@@ -1,5 +1,5 @@
 /**
- * (new-site)/review — step 5 of 5.
+ * (new-site)/review — step 6 of 6.
  *
  * Confirm summary → POST /api/feng/sites → enqueue analyze → poll job.
  * On stage='done' navigates into (report)/[siteId]. On 'failed' shows the
@@ -73,6 +73,8 @@ export default function ReviewScreen() {
     setSubmitError(null)
     setCreating(true)
     try {
+      const fpImages = draft.floorplanImages ?? []
+      const cover = fpImages[0]
       const site = await createSite({
         name: draft.name ?? t.new_site_default_name,
         label: draft.label,
@@ -86,6 +88,13 @@ export default function ReviewScreen() {
         buildYearAccuracy: draft.buildYearAccuracy,
         moveInYear: draft.moveInYear,
         floor: draft.floor,
+        floorplanKey: cover ? cover.key : undefined,
+        floorplan: cover
+          ? {
+              orientDeg: draft.floorplanOrientDeg ?? 0,
+              images: fpImages.map((im) => ({ key: im.key, label: im.label })),
+            }
+          : undefined,
       })
       // Hand off to the report screen, which OWNS the analyze job: it runs the
       // pipeline, shows the computed shell (排盘/坐向/tiles) within seconds, and
@@ -122,6 +131,15 @@ export default function ReviewScreen() {
     } else if (draft.buildYearAccuracy && draft.buildYearAccuracy !== 'unknown') {
       labels.push({ label: t.new_site_review_buildYear, value: draft.buildYearAccuracy })
     }
+    if (draft.floorplanImages && draft.floorplanImages.length > 0) {
+      labels.push({
+        label: t.new_site_review_floorplan,
+        value:
+          draft.floorplanImages.length > 1
+            ? t.new_site_floorplan_count_villa.replace('{n}', String(draft.floorplanImages.length))
+            : t.new_site_floorplan_count_one,
+      })
+    }
   }
 
   const inProgress = creating
@@ -139,7 +157,7 @@ export default function ReviewScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={5} total={5} />
+      <ProgressIndicator step={6} total={6} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_review_title}
       </Text>

@@ -41,6 +41,18 @@ function rpc(client: HexastralClient): ApiClient {
 
 // ── Sites ───────────────────────────────────────────────────────────────────
 
+export interface FloorplanImageInput {
+  key: string
+  orientDeg?: number
+  label?: string
+}
+
+export interface FloorplanInput {
+  /** True-north bearing of the plans' top edge (north-align step). */
+  orientDeg: number
+  images: FloorplanImageInput[]
+}
+
 export interface CreateSiteInput {
   name: string
   label?: string
@@ -54,6 +66,9 @@ export interface CreateSiteInput {
   buildYearAccuracy: 'exact' | 'decade' | 'moveIn' | 'unknown'
   moveInYear?: number
   floor?: number
+  /** 户型图 (interior 堪舆) — cover key + full set. Omit for exterior-only. */
+  floorplanKey?: string
+  floorplan?: FloorplanInput
 }
 
 export interface PatchSiteInput extends Partial<CreateSiteInput> {}
@@ -104,7 +119,55 @@ export function fengMaps(client: HexastralClient) {
         query: { lat: string; lng: string; zoom?: string; size?: string }
       }) => Promise<Response>
     }
+    floorplan: {
+      $post: (opts: {
+        json: { image: string; contentType: 'image/png' | 'image/jpeg' | 'image/webp' }
+      }) => Promise<Response>
+    }
   }
+}
+
+// ── Floor-plan upload (户型图) ───────────────────────────────────────────────
+
+export interface FloorplanUploadResponse {
+  key: string
+}
+
+/**
+ * Upload one floor-plan image (base64) and get back its owned R2 key. base64
+ * body fits the v2 HMAC (string-body) signing; the server strips EXIF/GPS.
+ */
+export async function uploadFloorplan(
+  client: HexastralClient,
+  image: string,
+  contentType: 'image/png' | 'image/jpeg' | 'image/webp'
+): Promise<FloorplanUploadResponse> {
+  const res = await fengMaps(client).floorplan.$post({ json: { image, contentType } })
+  return unwrap<FloorplanUploadResponse>(res)
+}
+
+// ── Price estimate (fair per-image tiering) ─────────────────────────────────
+
+export interface FengPriceQuote {
+  imageCount: number
+  tier: 'standard' | 'villa'
+  baseUnits: number
+  extraUnits: number
+  totalUnits: number
+  productId: string
+  displayPrice: string
+}
+
+export async function fengPriceEstimate(
+  client: HexastralClient,
+  images: number
+): Promise<FengPriceQuote> {
+  const sites = rpc(client).api.feng.sites as {
+    price: { $post: (opts: { json: { images: number } }) => Promise<Response> }
+  }
+  const res = await sites.price.$post({ json: { images } })
+  const data = await unwrap<{ quote: FengPriceQuote }>(res)
+  return data.quote
 }
 
 // ── Report annotated maps (F4) ──────────────────────────────────────────────

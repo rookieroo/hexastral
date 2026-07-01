@@ -109,7 +109,7 @@ export default function AddressScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={1} total={5} />
+      <ProgressIndicator step={1} total={6} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {strings.new_site_address_title}
       </Text>

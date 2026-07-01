@@ -43,6 +43,7 @@ import {
   annotateMap,
   type ElevationProfile,
   elevationProfile,
+  type InteriorVisionResult,
   type OverlayArrow,
   prefetchTerrain,
   renderMap,
@@ -51,17 +52,26 @@ import {
   type TerrainSignals,
   type VisionAnalyzeResult,
   visionAnalyze,
+  visionInterior,
 } from './feng-client'
+import {
+  deriveRoomFindings,
+  parseSiteFloorplan,
+  type RoomFinding,
+} from './feng-interior-compute'
 import { fengLogger } from './logger'
 import { searchPortfolioReadingMemory } from './portfolio-memory'
 
 type Site = typeof fengSites.$inferSelect
 type Job = typeof fengJobsTable.$inferSelect
 
+// size 640 (not 600) so the facing-calibrator preview (zoom 17 / size 640) and
+// the `mid` analyze tile hash to the SAME maps cache key — one Mapbox fetch
+// serves both instead of billing twice for the same location + zoom.
 const MAP_TILES: ReadonlyArray<{ key: 'close' | 'mid' | 'wide'; zoom: number; size: number }> = [
-  { key: 'close', zoom: 19, size: 600 },
-  { key: 'mid', zoom: 17, size: 600 },
-  { key: 'wide', zoom: 14, size: 600 },
+  { key: 'close', zoom: 19, size: 640 },
+  { key: 'mid', zoom: 17, size: 640 },
+  { key: 'wide', zoom: 14, size: 640 },
 ]
 
 async function setStage(
@@ -478,6 +488,49 @@ export async function runAnalyzeJob(
       patterns,
     })
 
+    // ── Stage 1b: interior (户型图 / 室内堪舆) ──
+    // When the site has an uploaded floor plan, read each image with Gemini
+    // (1 call/image, luopan-oriented via the stated north) and JOIN the rooms
+    // with the per-palace 飞星/八宅 already computed above. This is what makes
+    // the indoor advice room-specific. Fail-open: a floor-plan failure never
+    // blocks the exterior report. Runs before the shell persist so roomFindings
+    // are part of computeJson.
+    let interior: InteriorVisionResult | null = null
+    let roomFindings: RoomFinding[] = []
+    const floorplan = parseSiteFloorplan(site.floorplanJson)
+    if (floorplan && floorplan.images.length > 0) {
+      const interiorStarted = Date.now()
+      try {
+        interior = await visionInterior(env.SVC_FENG, {
+          floorplanKeys: floorplan.images.map((im) => im.key),
+          northUpBearing: floorplan.orientDeg,
+          locale,
+          floorLabels: floorplan.images.map((im) => im.label ?? ''),
+        })
+        roomFindings = deriveRoomFindings(interior, {
+          combinations,
+          auspiciousPalaces,
+          inauspiciousPalaces,
+          floorLabels: floorplan.images.map((im) => im.label),
+        })
+        fengLogger.info('job.stage.done', {
+          jobId,
+          stage: 'interior',
+          durationMs: Date.now() - interiorStarted,
+          floors: interior.floors.length,
+          rooms: roomFindings.length,
+          modelVersion: interior.modelVersion,
+        })
+      } catch (err) {
+        interior = null
+        roomFindings = []
+        fengLogger.warn('job.interior.error', {
+          jobId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+
     // ── Persist SHELL report (two-phase load) ──
     // Everything except the written chapters is ready here: 排盘 / 八宅 / 形理 /
     // 坐向 / satellite tiles. Persist it and expose the reportId NOW, before the
@@ -496,6 +549,8 @@ export async function runAnalyzeJob(
       macroTerrain: elevation ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace } : null,
       streetAttribution,
       monthlyStars,
+      interior: interior ? { floors: interior.floors, modelVersion: interior.modelVersion } : null,
+      roomFindings,
     })
     await db.insert(fengReports).values({
       id: reportId,
@@ -562,6 +617,9 @@ export async function runAnalyzeJob(
           ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
           : null,
         monthlyStars,
+        // Room-level interior join (户型图) — empty when no floor plan uploaded.
+        roomFindings,
+        interiorSha: interior ? interior.floors.flatMap((f) => f.形煞) : [],
       },
       userProfile: {
         birthDate: profile?.birthDate ?? '',

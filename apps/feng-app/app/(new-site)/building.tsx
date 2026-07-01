@@ -1,5 +1,5 @@
 /**
- * (new-site)/building — step 3 of 5.
+ * (new-site)/building — step 3 of 6.
  *
  * Implements the fallback ladder from feng-plan §6:
  *   exact / decade / move-in / unknown.
@@ -71,7 +71,7 @@ export default function BuildingScreen() {
     const f = Number.parseInt(floor, 10)
     if (Number.isFinite(f)) patch.floor = f
     await patchDraft(patch)
-    router.push('/(new-site)/birth')
+    router.push('/(new-site)/floorplan')
   }
 
   const showBuildYearInput = accuracy === 'exact' || accuracy === 'decade'
@@ -88,7 +88,7 @@ export default function BuildingScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={3} total={5} />
+      <ProgressIndicator step={3} total={6} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_building_title}
       </Text>

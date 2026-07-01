@@ -22,6 +22,11 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { logger } from '../lib/logger'
 import {
+  buildInteriorUserPrompt,
+  INTERIOR_RESPONSE_SCHEMA,
+  INTERIOR_SYSTEM_PROMPT,
+} from '../prompts/interior'
+import {
   buildVisionUserPrompt,
   VISION_RESPONSE_SCHEMA,
   VISION_SYSTEM_PROMPT,
@@ -78,6 +83,16 @@ export interface VisionAnalysisResult extends z.infer<typeof VisionResultSchema>
 }
 
 const MODEL_VERSION = 'gemini-3.1-pro-vision-v1'
+// Bump when the vision prompt or response schema changes — folded into the cache
+// key so a prompt edit busts stale results instead of serving pre-change output.
+const PROMPT_VERSION = 'v1'
+// Successful vision is bound to the (immutable) annotated-tile hashes, so it can
+// live long; a prompt/model bump is what should invalidate it, not time.
+const VISION_TTL_SECONDS = 180 * 24 * 60 * 60 // 180 days
+// A degraded (model-failed) result is negatively cached only briefly, so a burst
+// of retries doesn't re-hammer Gemini, while a transient failure still recovers
+// on the next analyze after it expires.
+const DEGRADED_TTL_SECONDS = 5 * 60 // 5 minutes
 
 export const visionRouter = new Hono<{ Bindings: Env }>()
 
@@ -121,6 +136,8 @@ visionRouter.post('/analyze', async (c) => {
     locale,
     expectedFeatures,
     terrainSummary,
+    promptVersion: PROMPT_VERSION,
+    modelVersion: MODEL_VERSION,
   })
   const cachedVision = await readCache(c.env.ANNOTATED_CACHE, vKey)
   if (cachedVision) {
@@ -171,16 +188,16 @@ visionRouter.post('/analyze', async (c) => {
     ...validated,
     modelVersion: degraded ? `${MODEL_VERSION}-degraded` : MODEL_VERSION,
   }
-  // Cache only successful results — a degraded (model-failed) result must not be
-  // frozen in, or retries would keep returning the empty fallback.
-  if (!degraded) {
-    await writeCache(
-      c.env.ANNOTATED_CACHE,
-      vKey,
-      new TextEncoder().encode(JSON.stringify(result)).buffer as ArrayBuffer,
-      'application/json'
-    )
-  }
+  // Cache success long (bound to immutable tile hashes) and degraded briefly:
+  // the short negative-cache TTL absorbs retry storms without freezing an empty
+  // reading in for months — it expires and the next analyze re-attempts Gemini.
+  await writeCache(
+    c.env.ANNOTATED_CACHE,
+    vKey,
+    new TextEncoder().encode(JSON.stringify(result)).buffer as ArrayBuffer,
+    'application/json',
+    degraded ? DEGRADED_TTL_SECONDS : VISION_TTL_SECONDS
+  )
   logger.info('vision.analyze.done', {
     locale,
     durationMs: Date.now() - started,
@@ -191,4 +208,139 @@ visionRouter.post('/analyze', async (c) => {
     shaCount: validated.砂.length,
   })
   return c.json(result)
+})
+
+// ── Interior (室内 / 阳宅) vision — 户型图 ──────────────────────────────────
+//
+// One floor plan = one Gemini call (villas send N images = N calls). Each image
+// is read against the stated north into 八卦九宫 rooms + interior 形煞; the
+// compute layer joins these with 飞星/八宅 per palace. Results are content-
+// addressed per (floorplan key, north, prompt/model version, locale) so a
+// re-analysis of the same plan is free.
+
+const InteriorRequestSchema = z.object({
+  floorplanKeys: z.array(z.string().min(1)).min(1).max(6),
+  /** True-north bearing of each plan's top edge (shared across floors). */
+  northUpBearing: z.number(),
+  locale: z.enum(['en', 'zh', 'zh-Hant', 'ja']).default('en'),
+  /** Optional per-image label, e.g. "1F" / "2F" / "阁楼". */
+  floorLabels: z.array(z.string()).optional(),
+})
+
+const InteriorResultSchema = z.object({
+  rooms: z.array(
+    z.object({
+      type: z.string(),
+      palace: z.string(),
+      note: z.string().optional(),
+    })
+  ),
+  形煞: z.array(
+    z.object({
+      type: z.string(),
+      palace: z.string(),
+      severity: z.number().int().min(1).max(5),
+      evidence: z.string(),
+    })
+  ),
+  缺角: z.array(
+    z.object({
+      palace: z.string(),
+      note: z.string().optional(),
+    })
+  ),
+  notes: z.string().optional(),
+})
+
+export interface InteriorFloorResult extends z.infer<typeof InteriorResultSchema> {
+  key: string
+}
+export interface InteriorAnalysisResult {
+  floors: InteriorFloorResult[]
+  modelVersion: string
+}
+
+const INTERIOR_MODEL_VERSION = 'gemini-3.1-pro-vision-interior-v1'
+const INTERIOR_PROMPT_VERSION = 'v1'
+
+function mimeForKey(key: string): 'image/png' | 'image/jpeg' | 'image/webp' {
+  if (key.endsWith('.jpg') || key.endsWith('.jpeg')) return 'image/jpeg'
+  if (key.endsWith('.webp')) return 'image/webp'
+  return 'image/png'
+}
+
+visionRouter.post('/interior', async (c) => {
+  const json = await c.req.json().catch(() => null)
+  const parsed = InteriorRequestSchema.safeParse(json)
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: parsed.error.message })
+  }
+  const { floorplanKeys, northUpBearing, locale, floorLabels } = parsed.data
+  const started = Date.now()
+  logger.info('vision.interior.start', { locale, imageCount: floorplanKeys.length })
+
+  const floors: InteriorFloorResult[] = []
+  let anyDegraded = false
+
+  for (const [i, key] of floorplanKeys.entries()) {
+    const floorLabel = floorLabels?.[i]
+    const vKey = await cacheKey('feng-interior', {
+      key,
+      northUpBearing,
+      locale,
+      promptVersion: INTERIOR_PROMPT_VERSION,
+      modelVersion: INTERIOR_MODEL_VERSION,
+    })
+    const cached = await readCache(c.env.ANNOTATED_CACHE, vKey)
+    if (cached) {
+      const result = JSON.parse(
+        new TextDecoder().decode(cached.bytes)
+      ) as z.infer<typeof InteriorResultSchema>
+      floors.push({ key, ...result })
+      continue
+    }
+
+    const base64 = await fetchR2AsBase64(c.env.FLOORPLAN_CACHE, key)
+    const validated = await withZodRetry({
+      label: 'interior',
+      schema: InteriorResultSchema,
+      call: () =>
+        callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
+          systemPrompt: INTERIOR_SYSTEM_PROMPT,
+          userPrompt: buildInteriorUserPrompt({ northUpBearing, locale, floorLabel }),
+          images: [{ base64, mimeType: mimeForKey(key) }],
+          responseSchema: INTERIOR_RESPONSE_SCHEMA,
+          maxOutputTokens: 4096,
+          temperature: 0.2,
+        }),
+      degraded: () => ({
+        rooms: [],
+        形煞: [],
+        缺角: [],
+        notes: 'Interior analysis failed after retries; report uses exterior + compute only.',
+      }),
+    })
+    const degraded = validated.notes?.includes('failed after retries')
+    if (degraded) anyDegraded = true
+    await writeCache(
+      c.env.ANNOTATED_CACHE,
+      vKey,
+      new TextEncoder().encode(JSON.stringify(validated)).buffer as ArrayBuffer,
+      'application/json',
+      degraded ? DEGRADED_TTL_SECONDS : VISION_TTL_SECONDS
+    )
+    floors.push({ key, ...validated })
+  }
+
+  logger.info('vision.interior.done', {
+    locale,
+    durationMs: Date.now() - started,
+    floors: floors.length,
+    degraded: anyDegraded,
+    roomCount: floors.reduce((n, f) => n + f.rooms.length, 0),
+  })
+  return c.json({
+    floors,
+    modelVersion: anyDegraded ? `${INTERIOR_MODEL_VERSION}-degraded` : INTERIOR_MODEL_VERSION,
+  } satisfies InteriorAnalysisResult)
 })

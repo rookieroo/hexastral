@@ -23,6 +23,15 @@ import { cacheKey, readCache, writeCache } from '../lib/cache'
 import { logger } from '../lib/logger'
 import { fetchMapImage, MapboxError } from '../lib/mapbox'
 
+// Bump to invalidate ALL cached map tiles (e.g. after a render-pipeline change).
+// Part of the versioned cache-key scheme so a code change can bust the cache
+// deterministically instead of relying on 30-day expiry.
+const MAP_RENDER_VERSION = 1
+// Satellite imagery changes on the order of months — a long soft TTL avoids
+// re-billing Mapbox monthly. R2 lifecycle (ops) does the hard delete; this soft
+// TTL is the read-side guard.
+const MAP_TTL_SECONDS = 180 * 24 * 60 * 60 // 180 days
+
 const MapRenderSchema = z.object({
   lat: z.number().gte(-85).lte(85),
   lng: z.number().gte(-180).lte(180),
@@ -56,7 +65,7 @@ mapsRouter.post('/render', async (c) => {
     pitch: input.pitch ?? 0,
   }
 
-  const key = await cacheKey('maps', cacheable)
+  const key = await cacheKey('maps', { ...cacheable, renderVersion: MAP_RENDER_VERSION })
   const cached = await readCache(c.env.MAPS_CACHE, key)
   if (cached) {
     logger.info('maps.render', {
@@ -71,7 +80,7 @@ mapsRouter.post('/render', async (c) => {
         'content-type': cached.contentType,
         'x-feng-cache': 'hit',
         'x-feng-cache-key': key,
-        'cache-control': 'public, max-age=2592000',
+        'cache-control': `public, max-age=${MAP_TTL_SECONDS}`,
       },
     })
   }
@@ -79,7 +88,7 @@ mapsRouter.post('/render', async (c) => {
   try {
     const fetchStarted = Date.now()
     const fetched = await fetchMapImage(cacheable, c.env.MAPBOX_TOKEN)
-    await writeCache(c.env.MAPS_CACHE, key, fetched.bytes, fetched.contentType)
+    await writeCache(c.env.MAPS_CACHE, key, fetched.bytes, fetched.contentType, MAP_TTL_SECONDS)
     logger.info('maps.render', {
       cache: 'miss',
       key,
@@ -92,7 +101,7 @@ mapsRouter.post('/render', async (c) => {
         'content-type': fetched.contentType,
         'x-feng-cache': 'miss',
         'x-feng-cache-key': key,
-        'cache-control': 'public, max-age=2592000',
+        'cache-control': `public, max-age=${MAP_TTL_SECONDS}`,
       },
     })
   } catch (err) {
@@ -117,14 +126,19 @@ mapsRouter.post('/render', async (c) => {
 mapsRouter.get('/image/:bucket/:key', async (c) => {
   const bucket = c.req.param('bucket')
   const key = c.req.param('key')
-  if (bucket !== 'raw' && bucket !== 'annotated') {
-    throw new HTTPException(400, { message: 'bucket must be raw|annotated' })
+  if (bucket !== 'raw' && bucket !== 'annotated' && bucket !== 'floorplan') {
+    throw new HTTPException(400, { message: 'bucket must be raw|annotated|floorplan' })
   }
   if (!key || key.length < 4 || key.length > 96) {
     throw new HTTPException(400, { message: 'invalid key' })
   }
 
-  const r2 = bucket === 'raw' ? c.env.MAPS_CACHE : c.env.ANNOTATED_CACHE
+  const r2 =
+    bucket === 'raw'
+      ? c.env.MAPS_CACHE
+      : bucket === 'annotated'
+        ? c.env.ANNOTATED_CACHE
+        : c.env.FLOORPLAN_CACHE
   const obj = await r2.get(key)
   if (!obj) {
     throw new HTTPException(404, { message: 'image not found' })

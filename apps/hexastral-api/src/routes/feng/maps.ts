@@ -1,15 +1,36 @@
 /**
- * GET /api/feng/maps/preview — satellite tile for the facing calibrator (HMAC).
+ * /api/feng/maps — satellite tile for the facing calibrator + floor-plan upload
+ * (both HMAC-protected via `/api/feng/maps/*`).
  *
- * Proxies to svc-feng POST /maps/render and returns base64 PNG in the standard
- * JSON envelope so mobile clients can use a data: URI without binary fetch plumbing.
+ * - GET  /preview   — proxies svc-feng /maps/render, returns base64 PNG envelope.
+ * - POST /floorplan — forwards raw image bytes to svc-feng /floorplan/put, returns
+ *                     the owned R2 key for the interior (户型图) analysis.
  */
 
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
 import type { AppEnv } from '../../infra-types'
 import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
-import { renderMap } from '../../lib/feng-client'
+import { requireUserId } from '../../lib/auth'
+import { putFloorplan, renderMap } from '../../lib/feng-client'
+
+const FLOORPLAN_MAX_BYTES = 8 * 1024 * 1024
+const floorplanSchema = z.object({
+  /** base64-encoded image bytes (fits the v2 HMAC string-body signing). */
+  image: z.string().min(1),
+  contentType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+})
+
+function decodeBase64(b64: string): ArrayBuffer | null {
+  try {
+    const bin = atob(b64)
+    const u8 = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i)
+    return u8.buffer
+  } catch {
+    return null
+  }
+}
 
 const querySchema = z.object({
   lat: z.coerce.number().gte(-85).lte(85),
@@ -68,6 +89,38 @@ export const fengMapRoutes = new Hono<AppEnv>().get('/preview', async (c) => {
       size,
       message,
     })
+    return jsonErr(c, 502, ApiErrorCode.internal_error, message)
+  }
+}).post('/floorplan', async (c) => {
+  // HMAC already verified by `/api/feng/maps/*`; bind identity so anonymous
+  // callers can't upload against the shared store.
+  requireUserId(c)
+
+  const json = await c.req.json().catch(() => null)
+  const parsed = floorplanSchema.safeParse(json)
+  if (!parsed.success) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'image (base64) + contentType required', {
+      issues: parsed.error.issues,
+    })
+  }
+
+  const bytes = decodeBase64(parsed.data.image)
+  if (!bytes) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid base64 image')
+  }
+  if (bytes.byteLength === 0) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'empty image')
+  }
+  if (bytes.byteLength > FLOORPLAN_MAX_BYTES) {
+    return jsonErr(c, 413, ApiErrorCode.invalid_input, 'image too large (max 8MB)')
+  }
+
+  try {
+    const { key } = await putFloorplan(c.env.SVC_FENG, bytes, parsed.data.contentType)
+    return jsonOk(c, { key })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[feng.maps.floorplan] upload failed', { message })
     return jsonErr(c, 502, ApiErrorCode.internal_error, message)
   }
 })

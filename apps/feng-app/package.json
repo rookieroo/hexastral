@@ -17,8 +17,8 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.5",
-    "@shopify/react-native-skia": "2.2.12",
     "@react-native-google-signin/google-signin": "^16.1.2",
+    "@shopify/react-native-skia": "2.2.12",
     "@zhop/astro-core": "workspace:*",
     "@zhop/core-ui": "workspace:*",
     "@zhop/ddl-client": "workspace:*",
@@ -32,6 +32,7 @@
     "expo-crypto": "~15.0.8",
     "expo-dev-client": "~6.0.20",
     "expo-haptics": "~15.0.8",
+    "expo-image-picker": "~17.0.11",
     "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.11",
     "expo-localization": "~17.0.8",

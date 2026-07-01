@@ -2013,6 +2013,22 @@ export const fengSites = sqliteTable(
     moveInYear: integer('move_in_year'),
     floor: integer('floor'),
 
+    // ── 户型图 / 室内堪舆 (interior layout) ──
+    /** R2 key (feng-floorplans bucket) of the primary/cover floor-plan image.
+     *  Owned per-site (purged with the site), NOT the shared satellite cache.
+     *  Null = no interior analysis (exterior-only report). */
+    floorplanKey: text('floorplan_key'),
+    /**
+     * Interior layout JSON. Shape:
+     *   {
+     *     orientDeg: number,               // true-north bearing of each image's "up" edge
+     *     images: [{ key, orientDeg?, label? }],  // 1 = apartment · N = villa/multi-floor
+     *     rooms?: [{ type, palace }]        // optional manual override / vision result cache
+     *   }
+     *  Nullable; billing tiers off `images.length`.
+     */
+    floorplanJson: text('floorplan_json'),
+
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),

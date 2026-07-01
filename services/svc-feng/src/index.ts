@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { logger } from './lib/logger'
 import { annotateRouter } from './routes/annotate'
+import { floorplanRouter } from './routes/floorplan'
 import { mapsRouter } from './routes/maps'
 import { prefetchRouter } from './routes/prefetch'
 import { streetRouter } from './routes/street'
@@ -70,6 +71,7 @@ app.get('/health', (c) =>
     buckets: {
       maps: !!c.env.MAPS_CACHE,
       annotated: !!c.env.ANNOTATED_CACHE,
+      floorplans: !!c.env.FLOORPLAN_CACHE,
     },
     secrets: {
       mapboxToken: !!c.env.MAPBOX_TOKEN,
@@ -83,6 +85,7 @@ app.route('/terrain', terrainRouter)
 app.route('/street', streetRouter)
 app.route('/maps', mapsRouter)
 app.route('/annotate', annotateRouter)
+app.route('/floorplan', floorplanRouter)
 app.route('/vision', visionRouter)
 app.route('/synthesize', synthesizeRouter)
 

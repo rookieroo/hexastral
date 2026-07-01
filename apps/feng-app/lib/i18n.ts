@@ -152,6 +152,18 @@ export type Strings = {
   new_site_birth_add: string
   new_site_birth_continue: string
   new_site_birth_skip: string
+  // ── 户型图 / floor plan (interior 堪舆) step ──
+  new_site_floorplan_title: string
+  new_site_floorplan_desc: string
+  new_site_floorplan_permission: string
+  new_site_floorplan_north_label: string
+  new_site_floorplan_north_reset: string
+  new_site_floorplan_add: string
+  new_site_floorplan_continue: string
+  new_site_floorplan_skip: string
+  new_site_floorplan_count_one: string
+  new_site_floorplan_count_villa: string
+  new_site_review_floorplan: string
   report_unlock_title: string
 
   // Sign-in
@@ -345,6 +357,19 @@ const EN: Strings = {
   new_site_birth_add: 'Set birth info',
   new_site_birth_continue: 'Continue',
   new_site_birth_skip: 'Skip (5-chapter report)',
+  new_site_floorplan_title: 'Floor plan (optional)',
+  new_site_floorplan_desc:
+    'Upload your floor plan for room-level analysis — one image for an apartment, or several for a villa / multi-floor home. Align the plan to true north below. GPS and metadata are stripped on upload.',
+  new_site_floorplan_permission:
+    'Photo access is needed to pick a floor plan. Enable it in Settings.',
+  new_site_floorplan_north_label: 'ALIGN TO NORTH',
+  new_site_floorplan_north_reset: 'Reset north',
+  new_site_floorplan_add: 'Add floor plan',
+  new_site_floorplan_continue: 'Continue',
+  new_site_floorplan_skip: 'Skip (exterior-only report)',
+  new_site_floorplan_count_one: '1 image · apartment',
+  new_site_floorplan_count_villa: '{n} images · villa / multi-floor',
+  new_site_review_floorplan: 'Floor plan',
   report_unlock_title: 'Unlock this report',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
@@ -522,6 +547,18 @@ const ZH_HANS: Strings = {
   new_site_birth_add: '设置生辰信息',
   new_site_birth_continue: '继续',
   new_site_birth_skip: '跳过，生成 5 章报告',
+  new_site_floorplan_title: '户型图（可选）',
+  new_site_floorplan_desc:
+    '上传户型图即可进行室内堪舆——公寓一张图，别墅或多层住宅可上传多张。请在下方将图纸对齐正北。上传时会自动清除 GPS 与元数据。',
+  new_site_floorplan_permission: '需要相册权限来选择户型图，请在系统设置中开启。',
+  new_site_floorplan_north_label: '对齐正北',
+  new_site_floorplan_north_reset: '重置正北',
+  new_site_floorplan_add: '添加户型图',
+  new_site_floorplan_continue: '继续',
+  new_site_floorplan_skip: '跳过（仅生成室外报告）',
+  new_site_floorplan_count_one: '1 张 · 公寓',
+  new_site_floorplan_count_villa: '{n} 张 · 别墅／多层',
+  new_site_review_floorplan: '户型图',
   report_unlock_title: '解锁这份报告',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
@@ -685,6 +722,18 @@ const ZH_HANT: Strings = {
   new_site_birth_add: '設定生辰資訊',
   new_site_birth_continue: '繼續',
   new_site_birth_skip: '略過，生成 5 章報告',
+  new_site_floorplan_title: '戶型圖（選填）',
+  new_site_floorplan_desc:
+    '上傳戶型圖即可進行室內堪輿——公寓一張圖，別墅或多層住宅可上傳多張。請在下方將圖紙對齊正北。上傳時會自動清除 GPS 與中繼資料。',
+  new_site_floorplan_permission: '需要相簿權限來選擇戶型圖，請在系統設定中開啟。',
+  new_site_floorplan_north_label: '對齊正北',
+  new_site_floorplan_north_reset: '重置正北',
+  new_site_floorplan_add: '新增戶型圖',
+  new_site_floorplan_continue: '繼續',
+  new_site_floorplan_skip: '略過（僅生成室外報告）',
+  new_site_floorplan_count_one: '1 張 · 公寓',
+  new_site_floorplan_count_villa: '{n} 張 · 別墅／多層',
+  new_site_review_floorplan: '戶型圖',
   report_unlock_title: '解鎖這份報告',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
@@ -853,13 +902,27 @@ const JA: Strings = {
     '生年月日が未入力：レポートは 5 章（個人命卦の適合なし）。入力すると 6 章目が解放されます。',
   new_site_review_birth_have: '生年月日を入力済み · 個人命卦の適合の章を含みます。',
   new_site_birth_title: '個人命卦',
-  new_site_birth_desc_have: '保存済みの生年月日を使用します。レポートに「個人命卦の適合」章を含みます。',
+  new_site_birth_desc_have:
+    '保存済みの生年月日を使用します。レポートに「個人命卦の適合」章を含みます。',
   new_site_birth_desc_none:
     '「個人命卦の適合」（八宅）章には生年と性別が必要です。今すぐ設定するか、スキップ（5 章のレポート）できます。',
   new_site_birth_edit: '生年月日を編集',
   new_site_birth_add: '生年月日を設定',
   new_site_birth_continue: '続ける',
   new_site_birth_skip: 'スキップ（5 章のレポート）',
+  new_site_floorplan_title: '間取り図（任意）',
+  new_site_floorplan_desc:
+    '間取り図をアップロードすると室内の堪輿分析ができます。マンションは1枚、戸建て・複数階は複数枚。下で図面を真北に合わせてください。アップロード時にGPSとメタデータは削除されます。',
+  new_site_floorplan_permission:
+    '間取り図を選ぶには写真へのアクセスが必要です。設定で許可してください。',
+  new_site_floorplan_north_label: '真北に合わせる',
+  new_site_floorplan_north_reset: '北をリセット',
+  new_site_floorplan_add: '間取り図を追加',
+  new_site_floorplan_continue: '続ける',
+  new_site_floorplan_skip: 'スキップ（屋外のみのレポート）',
+  new_site_floorplan_count_one: '1枚 · マンション',
+  new_site_floorplan_count_villa: '{n}枚 · 戸建て／複数階',
+  new_site_review_floorplan: '間取り図',
   report_unlock_title: 'このレポートを解錠',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',

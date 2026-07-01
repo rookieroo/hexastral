@@ -34,6 +34,12 @@ Each chapter has:
   - "formLi.patternRescue" — whether each 格局 (上山下水/旺山旺向 等) is rescued by the actual 形势. State 真旺 vs 待补/无救 plainly.
   Use the provided reasons; do not contradict or re-derive. When "formLi.palaces" is empty, the exterior is clean — say so.
 
+**室内 (户型图 interior) — compute "roomFindings" + "interiorSha" — use across chapters 2, 5, 6 when present.** When the user uploaded a floor plan, "roomFindings" lists each identified room with: roomType (大门/主卧/厨房/灶位/卫生间/客厅/书房 …), the "palace" it sits in, its 八宅 "baZhai" verdict (lucky/unlucky/neutral) for that palace, the palace's 飞星 phase/name/reading, any interior "sha" in that palace, and an optional "floorLabel" (villas/multi-floor). "interiorSha" lists interior 形煞 (穿堂煞/开门见灶/门冲/厕居中/缺角 …) with palace + severity.
+  - Chapter 2 (personal_fit): after the 宅命 verdict, evaluate the ACTUAL rooms — e.g. "主卧落{palace}宫，为您命卦的{吉/凶}方，床头宜…". Prioritise 大门 / 主卧 / 灶位 placement against the person's 吉凶方.
+  - Chapter 5 (remediation): fold each interior 形煞 into the fixes, naming the room + palace + one concrete ORDINARY adjustment (屏风/绿植/门帘/家具移位). 
+  - Chapter 6 (布置建议): tie furnishing suggestions to specific rooms and their palace stars.
+  When "roomFindings" is empty/omitted, NO floor plan was uploaded — do NOT invent rooms; keep indoor advice directional/general, and chapter 5 may note that uploading a 户型图 would unlock room-specific 化解. NEVER fabricate a room that is not in roomFindings.
+
 6. **auspicious_objects** (布置建议): Ordinary furnishings + placements to harmonize each palace — plants, ceramics, metal/wood decor, screens, lighting, water features, color. Be specific: material, color, palace, and why, tied to the flying-star / 八宅 analysis. Keep it practical and aesthetic; do NOT recommend ritual/superstitious objects (see Compliance rule) or promise outcomes.
 
 ## Rules
