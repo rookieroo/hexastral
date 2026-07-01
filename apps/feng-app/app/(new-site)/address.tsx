@@ -1,5 +1,5 @@
 /**
- * (new-site)/address — step 1 of 4.
+ * (new-site)/address — step 1 of 5.
  *
  * V1 keeps this simple: text input + a "Use current location" button. The
  * draft accumulates `lat`, `lng`, `formattedAddress`. Mapbox forward
@@ -109,7 +109,7 @@ export default function AddressScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={1} total={4} />
+      <ProgressIndicator step={1} total={5} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {strings.new_site_address_title}
       </Text>

@@ -23,7 +23,7 @@ import * as Linking from 'expo-linking'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
-import { ActivityIndicator, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthGate } from '@/components/AuthGate'
@@ -53,9 +53,10 @@ function BootSplash() {
 
 export default function RootLayout() {
   const locale = useMemo(() => resolveLocale(), [])
-  const scheme = useColorScheme()
-  // Fēng defaults to light (rice-paper report-friendly); flips with system dark mode.
-  const mode = scheme === 'dark' ? 'dark' : 'light'
+  // Fēng is a dark-first brand (zinc-on-near-black). A light theme isn't authored
+  // yet, and following the system scheme produced a half-adapted mix (dark report
+  // + light chrome). Pin dark until a real light surface exists.
+  const mode = 'dark' as const
 
   useEffect(() => {
     void Linking.getInitialURL().then((url) => captureOnboardAttribution(url))

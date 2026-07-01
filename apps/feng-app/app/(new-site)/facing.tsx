@@ -1,5 +1,5 @@
 /**
- * (new-site)/facing — step 2 of 4.
+ * (new-site)/facing — step 2 of 5.
  *
  * Map (true north): drag gold / blue arrows. Outdoors: Record copies phone true heading.
  */
@@ -175,7 +175,7 @@ export default function FacingScreen() {
         gap: spacing.md,
       }}
     >
-      <ProgressIndicator step={2} total={4} />
+      <ProgressIndicator step={2} total={5} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {strings.new_site_facing_title}
       </Text>

@@ -37,7 +37,7 @@ interface FengAnalyzingProps {
 export function FengAnalyzing({ steps, label }: FengAnalyzingProps) {
   return (
     <View style={{ alignItems: 'center', gap: spacing.xl, paddingVertical: spacing.xl }}>
-      <LuopanLoader size={156} label={label} />
+      <LuopanLoader size={188} label={label} />
       <View style={{ gap: spacing.sm, alignItems: 'center', paddingHorizontal: spacing.xl }}>
         {steps.map((step) => (
           <StepRow key={step.label} step={step} />

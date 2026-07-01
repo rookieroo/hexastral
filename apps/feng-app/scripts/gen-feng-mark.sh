@@ -53,5 +53,17 @@ magick -size 1024x1024 xc:none \
 magick -size 1024x1024 xc:none \
   \( "$TMP/phx.png" -resize 460x \) -gravity center -composite assets/splash.png
 
+# 5. Sync into ios/ asset catalog — `expo run:ios` / Xcode read these directly;
+#    editing assets/icon.png alone does NOT update the home-screen icon.
+IOS_ICON="ios/Feng/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
+IOS_SPLASH_DIR="ios/Feng/Images.xcassets/SplashScreenLegacy.imageset"
+if [[ -f "$IOS_ICON" && -d "$IOS_SPLASH_DIR" ]]; then
+  cp assets/icon.png "$IOS_ICON"
+  for f in image.png image@2x.png image@3x.png; do
+    cp assets/splash.png "$IOS_SPLASH_DIR/$f"
+  done
+  echo "synced icon + splash → ios/Feng/Images.xcassets/"
+fi
+
 rm -rf "$TMP"
 echo "feng mark + icons regenerated."

@@ -100,43 +100,27 @@ export default function IntroScreen() {
           <FengMark size={60} />
         </Animated.View>
 
-        {/* Slowly-turning 罗盘 with a fixed 朱砂 磁针 (天池). */}
-        <View style={{ width: 240, height: 240, alignItems: 'center', justifyContent: 'center' }}>
-          {/* soft radial glow behind the plate (layered translucent rings, no Skia). */}
+        {/* Slowly-turning 综合盘 — the same instrument as the Compass tab + loader,
+            with its own 磁针 + 海底十字 built in. */}
+        <View style={{ width: 264, height: 264, alignItems: 'center', justifyContent: 'center' }}>
+          {/* soft neutral glow behind the plate (layered translucent, no Skia). */}
           <View
             style={{
               position: 'absolute',
-              width: 290,
-              height: 290,
-              borderRadius: 145,
-              backgroundColor: 'rgba(176,141,91,0.04)',
+              width: 300,
+              height: 300,
+              borderRadius: 150,
+              backgroundColor: 'rgba(228,228,231,0.03)',
             }}
           />
           <Animated.View style={plateStyle}>
-            <LuopanDial size={240} />
+            <LuopanDial size={264} detail='full' />
           </Animated.View>
-          {/* 天心十道 — fixed gold alignment threads over the turning plate. */}
-          <View
-            style={{
-              position: 'absolute',
-              width: 240,
-              height: 0.6,
-              backgroundColor: 'rgba(194,161,94,0.35)',
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              width: 0.6,
-              height: 240,
-              backgroundColor: 'rgba(194,161,94,0.35)',
-            }}
-          />
         </View>
 
         <Animated.View
           entering={FadeIn.delay(400).duration(1000)}
-          style={{ alignItems: 'center', gap: 6 }}
+          style={{ alignItems: 'center', gap: 6, marginTop: spacing.xl }}
         >
           <Text style={{ color: FENG_PALETTE.rice, fontSize: 17, letterSpacing: 1 }}>
             {copy.lines[0]}

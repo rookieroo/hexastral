@@ -1,7 +1,7 @@
 /**
- * 4-segment progress indicator for the (new-site) flow.
+ * Segmented progress indicator for the (new-site) flow (currently 5 steps).
  *
- * Mirrors the yuan-app pattern; uses 铜金 accent for filled segments and
+ * Mirrors the yuan-app pattern; uses the accent for filled segments and
  * a translucent border for unfilled. Renders inline above the screen body.
  */
 

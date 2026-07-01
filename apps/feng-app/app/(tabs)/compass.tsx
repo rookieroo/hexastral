@@ -10,7 +10,7 @@ import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LuopanDial } from '@/components/LuopanDial'
 import { resolveLocale, useStrings } from '@/lib/i18n'
@@ -19,7 +19,11 @@ import { FENG_PALETTE, spacing } from '@/lib/theme'
 export default function CompassTab() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { width, height } = useWindowDimensions()
   const t = useStrings(resolveLocale())
+  // Maximize the 综合盘 to (near) full screen width — the instrument is the point —
+  // but cap by height so the heading readouts below stay on screen.
+  const dialSize = Math.round(Math.min(width - spacing.md * 2, height * 0.52))
   const [trueDeg, setTrueDeg] = useState<number | null>(null)
   const [magDeg, setMagDeg] = useState<number | null>(null)
   const [decl, setDecl] = useState<number | null>(null)
@@ -104,10 +108,17 @@ export default function CompassTab() {
           {Math.round(heading)}°
         </Text>
 
-        <View style={{ width: 300, height: 300, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            width: dialSize,
+            height: dialSize,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {/* the plate turns so its 子(north) mark holds geographic north */}
           <View style={{ transform: [{ rotate: `${-heading}deg` }] }}>
-            <LuopanDial size={300} detail='full' />
+            <LuopanDial size={dialSize} detail='full' />
           </View>
           {/* fixed device-facing reference at the top */}
           <View

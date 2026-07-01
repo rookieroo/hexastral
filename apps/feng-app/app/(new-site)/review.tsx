@@ -1,5 +1,5 @@
 /**
- * (new-site)/review — step 4 of 4.
+ * (new-site)/review — step 5 of 5.
  *
  * Confirm summary → POST /api/feng/sites → enqueue analyze → poll job.
  * On stage='done' navigates into (report)/[siteId]. On 'failed' shows the
@@ -139,7 +139,7 @@ export default function ReviewScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={4} total={4} />
+      <ProgressIndicator step={5} total={5} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_review_title}
       </Text>

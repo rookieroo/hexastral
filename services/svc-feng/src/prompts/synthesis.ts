@@ -29,7 +29,7 @@ Each chapter has:
 5. **remediation** (化解建议): Concrete fixes for each 形煞 identified in vision. Material + placement + reasoning. If no 形煞 were found, focus on strengthening weak sectors.
 
 **形理整合 (compute "formLi") — use it across chapters 1, 3, 5, 6.** It is the AUTHORITATIVE join of 玄空理气 × 峦头形势 (山管人丁、水管财), computed deterministically:
-  - "formLi.palaces" — per-palace findings, each a verdict (旺丁/旺财/损丁/破财/动凶/化煞) + reason. Lead chapter 3's per-sector analysis from these; route 化煞/动凶 items into chapter 5 and 改运 into chapter 6.
+  - "formLi.palaces" — per-palace findings, each a verdict (旺丁/旺财/损丁/破财/动凶/化煞) + reason. Lead chapter 3's per-sector analysis from these; route 化煞/动凶 items into chapter 5 and 增益/布置 items into chapter 6.
   - "formLi.zhengLing" — 零正神 form check (正神宜山、零神宜水). Mention any 正神下水/零神上山 warnings.
   - "formLi.patternRescue" — whether each 格局 (上山下水/旺山旺向 等) is rescued by the actual 形势. State 真旺 vs 待补/无救 plainly.
   Use the provided reasons; do not contradict or re-derive. When "formLi.palaces" is empty, the exterior is clean — say so.
@@ -57,9 +57,12 @@ Each chapter has:
     plain decor, water features. Frame as 传统风水建议, 仅供参考.
   - Do NOT recommend superstitious talismans or ritual objects (八卦镜/凸镜凹镜,
     符咒, 招财猫, 貔貅/麒麟 等灵物, 罗盘镇宅, 开光物品). Do NOT instruct any ritual.
-  - Do NOT promise or guarantee outcomes (发财, 治病, 转运, 桃花必来 等). No medical,
+  - Do NOT promise or guarantee outcomes (发财, 治病, 转运 / 改运, 桃花必来 等). No medical,
     financial, pregnancy, or legal advice or predictions. Use measured language
-    ("有助于 / 传统上认为 / 可考虑"), never "必 / 一定 / 保证".`
+    ("有助于 / 传统上认为 / 可考虑"), never "必 / 一定 / 保证".
+  - Frame adjustments as 化解 (mitigation) and 布置 (arrangement / 陈设), NOT as 改运
+    ("changing one's fate"). 风水 adjustments help at the margin — they are neither
+    permanent nor free of trade-offs, and the reading must never imply otherwise.`
 
 export function buildSynthesisUserPrompt(opts: {
   visionJson: string

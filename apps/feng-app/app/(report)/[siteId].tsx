@@ -253,7 +253,7 @@ export default function ReportScreen() {
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(243,236,221,0.82)',
+        backgroundColor: C.card,
         borderWidth: 1,
         borderColor: C.separator,
       }}
@@ -375,7 +375,7 @@ export default function ReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar style='dark' />
+      <StatusBar style='light' />
       {backButton}
       {middle}
       <FengSelectionBar
@@ -607,6 +607,9 @@ function renderFlyingStars(compute: FengComputeJson, t: Strings) {
         borderColor={C.separator}
         labelColor={C.text}
       />
+      <Text style={{ color: C.secondary, fontSize: 12, lineHeight: 18, marginTop: spacing.xs }}>
+        {t.flying_stars_explainer}
+      </Text>
       {compute.patterns && compute.patterns.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
           {compute.patterns.map((p) => {
@@ -766,7 +769,7 @@ function ClosingPageView({
       }}
     >
       <View style={{ alignItems: 'center' }}>
-        <LuopanLoader size={96} />
+        <LuopanLoader size={Math.min(width - spacing.xl * 2, 240)} />
       </View>
       <Text style={{ color: C.secondary, fontSize: 12, fontStyle: 'italic', textAlign: 'center' }}>
         {t.report_data_quality_footer}

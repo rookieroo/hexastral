@@ -134,6 +134,8 @@ export type Strings = {
   chapter_annual_directions: string
   chapter_remediation: string
   chapter_auspicious_objects: string
+  /** Plain-language "how to read the 飞星 plate" note under the chart. */
+  flying_stars_explainer: string
   nav_back: string
   /** AI / VLM processing notice rendered above the "Generate report" button. */
   new_site_review_ai_disclaimer: string
@@ -143,6 +145,13 @@ export type Strings = {
   new_site_review_birth_add: string
   new_site_review_birth_none: string
   new_site_review_birth_have: string
+  new_site_birth_title: string
+  new_site_birth_desc_have: string
+  new_site_birth_desc_none: string
+  new_site_birth_edit: string
+  new_site_birth_add: string
+  new_site_birth_continue: string
+  new_site_birth_skip: string
   report_unlock_title: string
 
   // Sign-in
@@ -315,7 +324,9 @@ const EN: Strings = {
   chapter_flying_stars: 'Stars',
   chapter_annual_directions: 'Annual',
   chapter_remediation: 'Remedy',
-  chapter_auspicious_objects: 'Charms',
+  chapter_auspicious_objects: 'Placement',
+  flying_stars_explainer:
+    'Each cell is one of the home’s nine directions. Top-left is the Mountain star (people, health, relationships); top-right is the Facing star (wealth). The faint large number is the Period star, and the bottom row shows the trigram and this year’s annual star. Bright numbers are thriving, dim ones are weak, and red marks a sector to treat with care.',
   nav_back: 'Back',
   new_site_review_ai_disclaimer:
     'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
@@ -325,6 +336,15 @@ const EN: Strings = {
   new_site_review_birth_none:
     'No birth info: the report will have 5 chapters (no Personal Trigram Fit). Add birth info to unlock the 6th.',
   new_site_review_birth_have: 'Birth info added · a Personal Trigram Fit chapter will be included.',
+  new_site_birth_title: 'Personal Trigram',
+  new_site_birth_desc_have:
+    'Using your saved birth info — the report will include the Personal Trigram Fit chapter.',
+  new_site_birth_desc_none:
+    'The Personal Trigram Fit (八宅) chapter needs your birth year and gender. Set it now, or skip for a 5-chapter report.',
+  new_site_birth_edit: 'Edit birth info',
+  new_site_birth_add: 'Set birth info',
+  new_site_birth_continue: 'Continue',
+  new_site_birth_skip: 'Skip (5-chapter report)',
   report_unlock_title: 'Unlock this report',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
@@ -482,7 +502,9 @@ const ZH_HANS: Strings = {
   chapter_flying_stars: '飞星',
   chapter_annual_directions: '流年',
   chapter_remediation: '化解',
-  chapter_auspicious_objects: '改运',
+  chapter_auspicious_objects: '布置',
+  flying_stars_explainer:
+    '盘面九格对应住宅的九个方位。每格左上是山星（管人丁、健康、关系），右上是向星（管财运）；淡色大字是运星，底部是卦名与今年的流年星。字偏亮为旺、生（较吉），偏暗为退、死（较弱），偏红的是煞位，宜留意化解。',
   nav_back: '返回',
   new_site_review_ai_disclaimer:
     '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
@@ -492,6 +514,14 @@ const ZH_HANS: Strings = {
   new_site_review_birth_none:
     '未提供生辰：报告将生成 5 章（不含个人命卦匹配）。添加生辰即可解锁第 6 章。',
   new_site_review_birth_have: '已提供生辰 · 报告将包含「个人命卦匹配」章节。',
+  new_site_birth_title: '个人命卦',
+  new_site_birth_desc_have: '已使用你保存的生辰，报告将包含「个人命卦匹配」章节。',
+  new_site_birth_desc_none:
+    '「个人命卦匹配」（八宅）章节需要出生年份与性别。可现在设置，或跳过（生成 5 章报告）。',
+  new_site_birth_edit: '编辑生辰',
+  new_site_birth_add: '设置生辰信息',
+  new_site_birth_continue: '继续',
+  new_site_birth_skip: '跳过，生成 5 章报告',
   report_unlock_title: '解锁这份报告',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
@@ -636,7 +666,9 @@ const ZH_HANT: Strings = {
   placement_desk: '書桌',
   chapter_external_landform: '外巒頭',
   chapter_flying_stars: '飛星',
-  chapter_auspicious_objects: '改運',
+  chapter_auspicious_objects: '佈置',
+  flying_stars_explainer:
+    '盤面九格對應住宅的九個方位。每格左上為山星（管人丁、健康、關係），右上為向星（管財運）；淡色大字是運星，底部為卦名與今年的流年星。字偏亮為旺、生（較吉），偏暗為退、死（較弱），偏紅者為煞位，宜留意化解。',
   new_site_review_ai_disclaimer:
     '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
   new_site_review_iap_note: '每個地點一份報告，單次購買永久解鎖。',
@@ -645,6 +677,14 @@ const ZH_HANT: Strings = {
   new_site_review_birth_none:
     '未提供生辰：報告將生成 5 章（不含個人命卦匹配）。新增生辰即可解鎖第 6 章。',
   new_site_review_birth_have: '已提供生辰 · 報告將包含「個人命卦匹配」章節。',
+  new_site_birth_title: '個人命卦',
+  new_site_birth_desc_have: '已使用你保存的生辰，報告將包含「個人命卦匹配」章節。',
+  new_site_birth_desc_none:
+    '「個人命卦匹配」（八宅）章節需要出生年份與性別。可現在設定，或略過（生成 5 章報告）。',
+  new_site_birth_edit: '編輯生辰',
+  new_site_birth_add: '設定生辰資訊',
+  new_site_birth_continue: '繼續',
+  new_site_birth_skip: '略過，生成 5 章報告',
   report_unlock_title: '解鎖這份報告',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
@@ -800,7 +840,9 @@ const JA: Strings = {
   chapter_flying_stars: '飛星',
   chapter_annual_directions: '流年',
   chapter_remediation: '化解',
-  chapter_auspicious_objects: '開運',
+  chapter_auspicious_objects: '設え',
+  flying_stars_explainer:
+    '九つのマスは住まいの九方位に対応します。各マスの左上が山星（人・健康・縁）、右上が向星（財）、薄い大きな数字が運星、下段は卦名と今年の流年星です。数字が明るいほど旺気、暗いほど衰え、赤は注意が必要な方位です。',
   nav_back: '戻る',
   new_site_review_ai_disclaimer:
     '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
@@ -810,6 +852,14 @@ const JA: Strings = {
   new_site_review_birth_none:
     '生年月日が未入力：レポートは 5 章（個人命卦の適合なし）。入力すると 6 章目が解放されます。',
   new_site_review_birth_have: '生年月日を入力済み · 個人命卦の適合の章を含みます。',
+  new_site_birth_title: '個人命卦',
+  new_site_birth_desc_have: '保存済みの生年月日を使用します。レポートに「個人命卦の適合」章を含みます。',
+  new_site_birth_desc_none:
+    '「個人命卦の適合」（八宅）章には生年と性別が必要です。今すぐ設定するか、スキップ（5 章のレポート）できます。',
+  new_site_birth_edit: '生年月日を編集',
+  new_site_birth_add: '生年月日を設定',
+  new_site_birth_continue: '続ける',
+  new_site_birth_skip: 'スキップ（5 章のレポート）',
   report_unlock_title: 'このレポートを解錠',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',
