@@ -274,10 +274,14 @@ export const FlyingStarsGrid = memo(function FlyingStarsGrid({
         {result.isCompoundFacing ? ' · 兼向' : ''}
       </Text>
 
+      {/* Legend describes the ACTUAL encoding: 山/向 are distinguished by POSITION
+          (top-left / top-right), fortune by numeral BRIGHTNESS, 流年 by the copper
+          corner, and the one reserved red marks the 五黄 煞 — NOT a per-role hue. */}
       <View style={styles.legend}>
-        <LegendItem color={INK} label='山 挨星' />
-        <LegendItem color={CINNABAR} label='向 挨星' />
+        <LegendItem color={INK} label='山左·向右' />
+        <LegendItem color={INK} label='亮=旺 暗=衰' />
         <LegendItem color={COPPER} label='流年' />
+        <LegendItem color={CINNABAR} label='五黄煞' />
       </View>
     </View>
   )

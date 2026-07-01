@@ -28,6 +28,10 @@ import { z } from 'zod'
 import { cacheKey, readCache, writeCache } from '../lib/cache'
 import { logger } from '../lib/logger'
 
+// Report-referenced tiles are effectively permanent (a persisted report can be
+// reopened years later). 10y == the FLOORPLAN owned-asset TTL; keep in sync.
+const REPORT_TILE_TTL_SECONDS = 10 * 365 * 24 * 60 * 60
+
 const OverlayArrowSchema = z.object({
   kind: z.enum(['sit', 'face', 'door']),
   /** 0-360 true-north degrees. */
@@ -86,7 +90,10 @@ annotateRouter.post('/', async (c) => {
   // Pass the raw satellite through — orientation is drawn client-side (see the
   // file header for why the resvg composite was removed). This keeps the real
   // photo intact for both Stage-1 vision and the report's map swiper.
-  await writeCache(c.env.ANNOTATED_CACHE, key, baseBytes, 'image/png')
+  // These tiles are REFERENCED BY PERSISTED REPORTS (annotated_map_keys), which
+  // are permanent — write an owned/long TTL so a future ANNOTATED_CACHE lifecycle
+  // sweep can't expire them out from under a live report (broken map swiper).
+  await writeCache(c.env.ANNOTATED_CACHE, key, baseBytes, 'image/png', REPORT_TILE_TTL_SECONDS)
   logger.info('annotate', {
     cache: 'miss',
     key,

@@ -279,64 +279,82 @@ visionRouter.post('/interior', async (c) => {
   const started = Date.now()
   logger.info('vision.interior.start', { locale, imageCount: floorplanKeys.length })
 
-  const floors: InteriorFloorResult[] = []
-  let anyDegraded = false
-
-  for (const [i, key] of floorplanKeys.entries()) {
-    const floorLabel = floorLabels?.[i]
-    const vKey = await cacheKey('feng-interior', {
-      key,
-      northUpBearing,
-      locale,
-      promptVersion: INTERIOR_PROMPT_VERSION,
-      modelVersion: INTERIOR_MODEL_VERSION,
-    })
-    const cached = await readCache(c.env.ANNOTATED_CACHE, vKey)
-    if (cached) {
-      const result = JSON.parse(
-        new TextDecoder().decode(cached.bytes)
-      ) as z.infer<typeof InteriorResultSchema>
-      floors.push({ key, ...result })
-      continue
-    }
-
-    const base64 = await fetchR2AsBase64(c.env.FLOORPLAN_CACHE, key)
-    const validated = await withZodRetry({
-      label: 'interior',
-      schema: InteriorResultSchema,
-      call: () =>
-        callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
-          systemPrompt: INTERIOR_SYSTEM_PROMPT,
-          userPrompt: buildInteriorUserPrompt({ northUpBearing, locale, floorLabel }),
-          images: [{ base64, mimeType: mimeForKey(key) }],
-          responseSchema: INTERIOR_RESPONSE_SCHEMA,
-          maxOutputTokens: 4096,
-          temperature: 0.2,
-        }),
-      degraded: () => ({
-        rooms: [],
-        形煞: [],
-        缺角: [],
-        notes: 'Interior analysis failed after retries; report uses exterior + compute only.',
-      }),
-    })
-    const degraded = validated.notes?.includes('failed after retries')
-    if (degraded) anyDegraded = true
-    await writeCache(
-      c.env.ANNOTATED_CACHE,
-      vKey,
-      new TextEncoder().encode(JSON.stringify(validated)).buffer as ArrayBuffer,
-      'application/json',
-      degraded ? DEGRADED_TTL_SECONDS : VISION_TTL_SECONDS
+  // Analyze floors CONCURRENTLY, not sequentially — a villa's N floors under one
+  // outer AbortSignal (feng-client TIMEOUTS.vision) would blow the budget in series
+  // and fail-open the WHOLE interior stage. In parallel the wall-clock ≈ the slowest
+  // single floor. Each floor is independently resilient: a missing image or a failed
+  // VLM call degrades THAT floor only (empty rooms), never the rest.
+  const perFloor = await Promise.all(
+    floorplanKeys.map(
+      async (key, i): Promise<{ floor: InteriorFloorResult; degraded: boolean }> => {
+        const floorLabel = floorLabels?.[i]
+        const vKey = await cacheKey('feng-interior', {
+          key,
+          northUpBearing,
+          locale,
+          promptVersion: INTERIOR_PROMPT_VERSION,
+          modelVersion: INTERIOR_MODEL_VERSION,
+        })
+        try {
+          const cached = await readCache(c.env.ANNOTATED_CACHE, vKey)
+          if (cached) {
+            const result = JSON.parse(new TextDecoder().decode(cached.bytes)) as z.infer<
+              typeof InteriorResultSchema
+            >
+            return { floor: { key, ...result }, degraded: false }
+          }
+          const base64 = await fetchR2AsBase64(c.env.FLOORPLAN_CACHE, key)
+          const validated = await withZodRetry({
+            label: 'interior',
+            schema: InteriorResultSchema,
+            call: () =>
+              callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
+                systemPrompt: INTERIOR_SYSTEM_PROMPT,
+                userPrompt: buildInteriorUserPrompt({ northUpBearing, locale, floorLabel }),
+                images: [{ base64, mimeType: mimeForKey(key) }],
+                responseSchema: INTERIOR_RESPONSE_SCHEMA,
+                maxOutputTokens: 4096,
+                temperature: 0.2,
+              }),
+            degraded: () => ({
+              rooms: [],
+              形煞: [],
+              缺角: [],
+              notes: 'Interior analysis failed after retries; report uses exterior + compute only.',
+            }),
+          })
+          const degraded = validated.notes?.includes('failed after retries') ?? false
+          await writeCache(
+            c.env.ANNOTATED_CACHE,
+            vKey,
+            new TextEncoder().encode(JSON.stringify(validated)).buffer as ArrayBuffer,
+            'application/json',
+            degraded ? DEGRADED_TTL_SECONDS : VISION_TTL_SECONDS
+          )
+          return { floor: { key, ...validated }, degraded }
+        } catch (err) {
+          // A single unreadable image / transport error must not fail the villa.
+          logger.warn('vision.interior.floor_failed', {
+            key,
+            error: err instanceof Error ? err.message : String(err),
+          })
+          return {
+            floor: { key, rooms: [], 形煞: [], 缺角: [], notes: 'floor unavailable' },
+            degraded: true,
+          }
+        }
+      }
     )
-    floors.push({ key, ...validated })
-  }
+  )
+  const floors: InteriorFloorResult[] = perFloor.map((r) => r.floor)
+  const degradedFloors = perFloor.filter((r) => r.degraded).length
+  const anyDegraded = degradedFloors > 0
 
   logger.info('vision.interior.done', {
     locale,
     durationMs: Date.now() - started,
     floors: floors.length,
-    degraded: anyDegraded,
+    degradedFloors,
     roomCount: floors.reduce((n, f) => n + f.rooms.length, 0),
   })
   return c.json({

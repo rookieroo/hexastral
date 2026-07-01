@@ -76,6 +76,24 @@ Same pattern for satellite apps (`coin-cast-app`, `dream-oracle-app`, `face-orac
 - Confirm required KV/D1/R2 bindings are configured in each worker `wrangler.jsonc`.
 - Confirm EAS env for mobile apps is synced via `bun sync-eas-env`.
 
+## R2 retention (svc-feng buckets)
+
+`writeCache` (`@zhop/ai-vision`) stamps an `expiresAt` metadata TTL that is a
+**soft read-side** guard only — `readCache` returns null past it, but nothing
+physically deletes the object. There is no sweep cron. Physical GC of the
+transient prefix must be a Cloudflare **R2 lifecycle rule** (dashboard or S3
+API — wrangler cannot manage these). Intended retention per bucket:
+
+| Bucket | Prefix | Intended TTL | Set how |
+| --- | --- | --- | --- |
+| `feng-maps` (`MAPS_CACHE`) | raw satellite tiles | ~90 d transient | R2 lifecycle rule (non-PII, regenerable) |
+| `feng-annotated` (`ANNOTATED_CACHE`) | `annotated-raw/*` (report tiles) | **permanent** (10y `ttlSeconds` in `annotate.ts`) | none — exempt from any lifecycle rule |
+| `feng-annotated` | `feng-vision/*`, `feng-interior/*` (JSON) | 180 d / 5 min (degraded) | soft TTL; optional lifecycle |
+| `feng-floorplans` (`FLOORPLAN_CACHE`) | uploaded floor plans (PII) | **owned** — deleted on site/account deletion (`/floorplan/delete`), NOT lifecycle-GC'd | none |
+
+If you add an R2 lifecycle rule to `feng-annotated`, it MUST exclude the
+`annotated-raw/` prefix or live reports lose their map imagery.
+
 ## What CI does (and does not)
 
 - **Does**: typecheck / lint / test / check-deps on every PR and push to main.

@@ -55,6 +55,8 @@ import {
 import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quota'
 import { CHAPTER_UNLOCK_DEFAULT, claimChapterUnlocksForEmail } from '../lib/chapter-access'
 import { buildChartSkeleton, rebuildUserCharts } from '../lib/chart-skeleton'
+import { deleteFloorplans } from '../lib/feng-client'
+import { collectFloorplanKeys } from '../lib/feng-interior-compute'
 import {
   ensureStellarChartForPublicProfile,
   parseStellarChartJson,
@@ -547,7 +549,22 @@ export const userRoutes = new Hono<AppEnv>()
       c.executionCtx.waitUntil(c.env.MEDIA_BUCKET.delete(user.avatarKey))
     }
 
-    // 2. Purge feng-owned content (children first to respect FK).
+    // 2. Purge feng-owned content. FIRST purge floor-plan images from R2 (owned
+    // PII — the FLOORPLAN_CACHE bucket has NO lifecycle GC, so deletion is the
+    // only cleanup path) BEFORE dropping the site rows that hold the keys.
+    const fengSiteRows = await db
+      .select({ floorplanKey: fengSites.floorplanKey, floorplanJson: fengSites.floorplanJson })
+      .from(fengSites)
+      .where(eq(fengSites.userId, userId))
+      .all()
+    const floorplanKeys = [...new Set(fengSiteRows.flatMap(collectFloorplanKeys))]
+    if (floorplanKeys.length > 0) {
+      c.executionCtx.waitUntil(
+        deleteFloorplans(c.env.SVC_FENG, floorplanKeys).catch((err) => {
+          console.error('feng.floorplan_purge_failed', { userId, error: String(err) })
+        })
+      )
+    }
     await db.delete(fengJobs).where(eq(fengJobs.userId, userId))
     await db.delete(fengReports).where(eq(fengReports.userId, userId))
     await db.delete(fengSites).where(eq(fengSites.userId, userId))
@@ -1059,6 +1076,24 @@ export const userRoutes = new Hono<AppEnv>()
     const user = await db.select().from(users).where(eq(users.id, userId)).get()
     if (!user) {
       throw new HTTPException(404, { message: 'User not found' })
+    }
+
+    // Purge floor-plan images from R2 (owned PII, no lifecycle GC) BEFORE the
+    // batch drops the site rows holding the keys. Belt-and-suspenders: this
+    // cascade is currently shadowed by the earlier :userId handler, but if
+    // routing ever changes, PII must still leave R2.
+    const fpRows = await db
+      .select({ floorplanKey: fengSites.floorplanKey, floorplanJson: fengSites.floorplanJson })
+      .from(fengSites)
+      .where(eq(fengSites.userId, userId))
+      .all()
+    const fpKeys = [...new Set(fpRows.flatMap(collectFloorplanKeys))]
+    if (fpKeys.length > 0) {
+      c.executionCtx.waitUntil(
+        deleteFloorplans(c.env.SVC_FENG, fpKeys).catch((err) => {
+          console.error('feng.floorplan_purge_failed', { userId, error: String(err) })
+        })
+      )
     }
 
     // 级联删除：使用 db.batch() 减少 D1 round-trips

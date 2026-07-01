@@ -1449,6 +1449,11 @@ portfolioRoutes.put('/birth-info', async (c) => {
     .select({
       birthSolarDate: users.birthSolarDate,
       birthTimeIndex: users.birthTimeIndex,
+      // Precise-time fields are chart-altering — include them so the quota
+      // classifier counts a 真太阳时 / clock-only edit (else prior≠next on the
+      // omitted field would either miss the edit or false-consume the quota).
+      birthClockMinutes: users.birthClockMinutes,
+      birthSolarCalibrate: users.birthSolarCalibrate,
       birthGender: users.birthGender,
       birthEditUsed: users.birthEditUsed,
     })
@@ -1460,6 +1465,8 @@ portfolioRoutes.put('/birth-info', async (c) => {
   const nextInput: BirthEditInput = {
     birthSolarDate: parsed.data.birthSolarDate,
     birthTimeIndex: parsed.data.birthTimeIndex,
+    birthClockMinutes: parsed.data.birthClockMinutes ?? null,
+    birthSolarCalibrate: parsed.data.birthSolarCalibrate ?? null,
     gender: (parsed.data.gender ?? prior.birthGender ?? '男') as '男' | '女',
   }
   const isPro = await userHasCapability(db, userId, 'fate')

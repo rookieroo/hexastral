@@ -54,11 +54,7 @@ import {
   visionAnalyze,
   visionInterior,
 } from './feng-client'
-import {
-  deriveRoomFindings,
-  parseSiteFloorplan,
-  type RoomFinding,
-} from './feng-interior-compute'
+import { deriveRoomFindings, parseSiteFloorplan, type RoomFinding } from './feng-interior-compute'
 import { fengLogger } from './logger'
 import { searchPortfolioReadingMemory } from './portfolio-memory'
 
@@ -215,6 +211,10 @@ export async function runAnalyzeJob(
 ): Promise<void> {
   const jobStarted = Date.now()
   fengLogger.info('job.start', { jobId, siteId: site.id, userId: site.userId })
+  // Tracks the two-phase SHELL row so a synthesis failure can delete it — an
+  // orphaned shell (chapters='[]') would otherwise render as a permanent fake
+  // loading state on every reopen (no chapters, no running job, no retry).
+  let shellReportId: string | null = null
   try {
     const facingDegTrue = Number(site.facingDegTrue)
     const sitDegTrue = Number(site.sitDegTrue)
@@ -567,6 +567,7 @@ export async function runAnalyzeJob(
       generatedAt: new Date().toISOString(),
     })
 
+    shellReportId = reportId
     // ── Stage: synthesis ── (reportId now set → client shows the shell)
     await setStage(db, jobId, 'synthesis', 85, { reportId })
     const synthesisStarted = Date.now()
@@ -636,6 +637,15 @@ export async function runAnalyzeJob(
       modelVersion: synth.modelVersion,
     })
 
+    // A degraded synthesis (all LLM tiers failed → generic stub chapters) is NOT a
+    // sellable report. Fail the job so (a) the single-purchase entitlement is NOT
+    // consumed (consume happens only after a successful UPDATE below) and (b) the
+    // orphan shell is deleted in the catch — the user retries a fresh run. The
+    // '-fallback' suffix is locale-independent (set in svc-feng synthesize.ts).
+    if (synth.modelVersion.endsWith('-fallback')) {
+      throw new Error('synthesis degraded to fallback chapters — not persisting a paid stub')
+    }
+
     // 无生辰 → 无八宅命卦：drop the 个人命卦匹配 chapter entirely so the report
     // is a clean 5 chapters rather than padding personal_fit with generic filler.
     // Birth info unlocks it (6 chapters). The client renders whatever chapters
@@ -695,6 +705,22 @@ export async function runAnalyzeJob(
       durationMs: Date.now() - jobStarted,
       error: message,
     })
+    // Delete the orphaned two-phase shell (only if synthesis never filled it —
+    // chapters still '[]'), so a failed job can't leave a permanent fake-loading
+    // report behind. Retry re-runs the whole pipeline from scratch.
+    if (shellReportId) {
+      try {
+        await db
+          .delete(fengReports)
+          .where(and(eq(fengReports.id, shellReportId), eq(fengReports.chapters, '[]')))
+      } catch (cleanupErr) {
+        fengLogger.warn('job.shell_cleanup_failed', {
+          jobId,
+          reportId: shellReportId,
+          error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr),
+        })
+      }
+    }
     await markFailed(db, jobId, message)
   }
 }

@@ -35,6 +35,18 @@ const EXTRA_IMAGE_USD = 2.0 // fair marginal: +1 Gemini vision pass + storage pe
 const VILLA_THRESHOLD = 2 // ≥ 2 plans ⇒ villa / multi-floor tier
 export const MAX_FLOORPLAN_IMAGES = 6
 
+/**
+ * The villa tier is DISPLAY-SAFE only when `hexastral_feng_villa` is live
+ * end-to-end: App Store Connect + RevenueCat product, the `SingleSkuId` union
+ * (access-check.ts), `SKU_IAP_META`, `VALID_SKU_IDS` (purchase.ts), the
+ * single_purchases schema enum, and an image-count-aware analyze gate. Until
+ * ALL of that ships, quoting a villa price the paywall can't collect ($14.99
+ * shown, $4.99 charged — or an unknown-SKU purchase rejection) is worse than not
+ * offering it. So while this is false we quote the single tier for every count:
+ * displayed == charged. Flip to true only after the checklist above is done.
+ */
+export const VILLA_SKU_PROVISIONED = false
+
 /** Clamp an arbitrary count into the billable [1, MAX] range. */
 export function normalizeImageCount(imageCount: number): number {
   if (!Number.isFinite(imageCount)) return 1
@@ -43,16 +55,18 @@ export function normalizeImageCount(imageCount: number): number {
 
 export function quoteFengAnalysis(imageCount: number): FengPriceQuote {
   const n = normalizeImageCount(imageCount)
-  const extraUnits = n - 1
-  const tier: FengTier = n >= VILLA_THRESHOLD ? 'villa' : 'standard'
+  const isVilla = VILLA_SKU_PROVISIONED && n >= VILLA_THRESHOLD
+  const extraUnits = isVilla ? n - 1 : 0
+  const tier: FengTier = isVilla ? 'villa' : 'standard'
   const totalUsd = BASE_PRICE_USD + extraUnits * EXTRA_IMAGE_USD
   return {
     imageCount: n,
     tier,
     baseUnits: 1,
     extraUnits,
-    totalUnits: n,
-    productId: tier === 'villa' ? 'hexastral_feng_villa' : 'hexastral_feng_single',
+    totalUnits: 1 + extraUnits,
+    // Only ever return a SKU the paywall can actually charge.
+    productId: isVilla ? 'hexastral_feng_villa' : 'hexastral_feng_single',
     displayPrice: `$${totalUsd.toFixed(2)}`,
   }
 }

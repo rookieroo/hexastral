@@ -177,9 +177,12 @@ export const BaZhaiWheel = memo(function BaZhaiWheel({
             PALACE_CENTER_DEG[doorPalace] + 22.5
           )}
           fill='none'
-          stroke='#3A86FF'
+          // Neutral zinc + a dash distinguishes 门 from the solid rose 坐 marker
+          // WITHOUT a saturated hue (the report's "brightness not colour" law).
+          stroke='#D4D4D8'
           strokeWidth={1.5}
-          strokeOpacity={0.85}
+          strokeOpacity={0.9}
+          strokeDasharray='4 3'
         />
       ) : null}
 

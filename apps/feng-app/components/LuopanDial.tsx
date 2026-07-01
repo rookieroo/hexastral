@@ -11,6 +11,7 @@
  * A tiny size floors to 'minimal', so detail + size compose.
  */
 
+import { memo } from 'react'
 import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from 'react-native-svg'
 
 const MOUNTAINS = '子癸丑艮寅甲卯乙辰巽巳丙午丁未坤申庚酉辛戌乾亥壬'.split('')
@@ -291,7 +292,10 @@ const FP = {
   roseDim: 'rgba(197,150,146,0.95)',
 }
 
-function FullLuopan({ size }: { size: number }) {
+// memo: the FULL plate emits ~1050 SVG nodes; its only prop is `size`, so memo
+// keeps a spinning loader (LuopanLoader re-renders on label/reduce-motion changes)
+// from reconciling the whole plate every frame-adjacent render.
+const FullLuopan = memo(function FullLuopan({ size }: { size: number }) {
   const VB = 460
   const C = VB / 2
   const px = (r: number, deg: number) => C + r * Math.cos(((deg - 90) * Math.PI) / 180)
@@ -559,4 +563,4 @@ function FullLuopan({ size }: { size: number }) {
       {els}
     </Svg>
   )
-}
+})

@@ -50,7 +50,10 @@ export function deriveRoomFindings(
   for (const [i, floor] of interior.floors.entries()) {
     const floorLabel = ctx.floorLabels?.[i]
     // Group this floor's interior 形煞 by palace for O(1) attach.
-    const shaByPalace = new Map<string, Array<{ type: string; severity: number; evidence: string }>>()
+    const shaByPalace = new Map<
+      string,
+      Array<{ type: string; severity: number; evidence: string }>
+    >()
     for (const s of floor.形煞) {
       const list = shaByPalace.get(s.palace) ?? []
       list.push({ type: s.type, severity: s.severity, evidence: s.evidence })
@@ -78,6 +81,22 @@ export function deriveRoomFindings(
     }
   }
   return findings
+}
+
+/**
+ * All FLOORPLAN_CACHE keys a site owns (cover `floorplanKey` + every image in
+ * `floorplanJson`), deduped. Used to purge the images from R2 on site/account
+ * deletion — the bucket has no lifecycle GC, so this is the only cleanup path.
+ */
+export function collectFloorplanKeys(site: {
+  floorplanKey: string | null
+  floorplanJson: string | null
+}): string[] {
+  const keys = new Set<string>()
+  if (site.floorplanKey) keys.add(site.floorplanKey)
+  const parsed = parseSiteFloorplan(site.floorplanJson)
+  if (parsed) for (const im of parsed.images) keys.add(im.key)
+  return [...keys]
 }
 
 /** Safe-parse the site's stored floorplan JSON into its typed shape (or null). */

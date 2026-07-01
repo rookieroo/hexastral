@@ -7,7 +7,8 @@
  * GC on this bucket) — so reports stay viewable indefinitely.
  *
  * Body: raw image bytes (image/png | image/jpeg | image/webp).
- * EXIF/GPS/XMP are stripped before storage (see image-sanitize).
+ * JPEG (APPn/COM) + PNG (eXIf/iTXt/tEXt/zTXt) metadata is stripped before storage;
+ * WebP is passed through (uncommon here). See image-sanitize.
  *
  * Reachable only via Service Binding from hexastral-api, which does the
  * HMAC/ownership check before forwarding — svc-feng has no public ingress.
@@ -63,4 +64,26 @@ floorplanRouter.post('/put', async (c) => {
     contentType: clean.contentType,
   })
   return c.json({ key }, { headers: { 'x-feng-cache-key': key } })
+})
+
+/**
+ * POST /floorplan/delete
+ *
+ * Purge user-uploaded floor-plan images from R2 (account / site deletion — the
+ * bucket has no lifecycle GC, so this is the ONLY way these owned PII assets
+ * leave storage). hexastral-api does the HMAC/ownership check before forwarding
+ * and only passes keys belonging to the deleting user's own sites.
+ */
+floorplanRouter.post('/delete', async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { keys?: unknown } | null
+  const keys = Array.isArray(body?.keys)
+    ? body.keys.filter((k): k is string => typeof k === 'string' && k.startsWith('floorplan/'))
+    : []
+  if (keys.length === 0) return c.json({ deleted: 0 })
+  // R2 supports bulk delete (up to 1000 keys); chunk defensively.
+  for (let i = 0; i < keys.length; i += 1000) {
+    await c.env.FLOORPLAN_CACHE.delete(keys.slice(i, i + 1000))
+  }
+  logger.info('floorplan.delete', { count: keys.length })
+  return c.json({ deleted: keys.length })
 })

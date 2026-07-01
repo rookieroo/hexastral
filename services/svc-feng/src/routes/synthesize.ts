@@ -116,9 +116,16 @@ synthesizeRouter.post('/', async (c) => {
     dataQuality: dataQuality || undefined,
   })
 
+  let usedFallback = false
   const validated = await withZodRetry({
     label: 'synthesize',
     schema: SynthesisResultSchema,
+    // Single attempt. The per-attempt budget (130s) already fits under feng-client's
+    // 150s synthesize AbortSignal; a 2nd attempt (default maxRetries:2) would double
+    // the wall-clock and blow the abort → a hard failure instead of a clean fallback.
+    // Malformed JSON → fallback here, and the caller (runAnalyzeJob) marks the job
+    // failed so the user can retry a fresh run.
+    maxRetries: 0,
     call: async () => {
       const text = await callWithFallback(c.env, SYNTHESIS_SYSTEM_PROMPT, userPrompt, {
         tier: 'flagship',
@@ -140,12 +147,15 @@ synthesizeRouter.post('/', async (c) => {
       })
       return JSON.parse(text)
     },
-    degraded: () => ({
-      chapters: buildFallbackChapters(userProfile.locale),
-    }),
+    degraded: () => {
+      usedFallback = true
+      return { chapters: buildFallbackChapters(userProfile.locale) }
+    },
   })
 
-  const isFallback = validated.chapters[0]?.goldenLine?.includes('生成遇到困难')
+  // Locale-independent (was a zh-only substring match on '生成遇到困难' that stamped
+  // en/ja fallback stubs as real reports → the caller consumed the paid entitlement).
+  const isFallback = usedFallback
   logger.info('synthesize.done', {
     locale: userProfile.locale,
     durationMs: Date.now() - started,

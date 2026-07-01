@@ -103,12 +103,25 @@ const JOB_RETENTION_DAYS = 30
  * report rows the client actually reads live in `feng_reports`; jobs are just
  * progress scratch space, so a 30-day window is generous.
  */
-export async function pruneStaleFengJobs(env: CloudflareBindings): Promise<{ deleted: number }> {
+export async function pruneStaleFengJobs(
+  env: CloudflareBindings
+): Promise<{ deleted: number; shellsDeleted: number }> {
   const db = drizzle(env.DB, { schema })
   const cutoff = new Date(Date.now() - JOB_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const deleted = await db
     .delete(fengJobs)
     .where(and(inArray(fengJobs.stage, ['done', 'failed']), lt(fengJobs.finishedAt, cutoff)))
     .returning({ id: fengJobs.id })
-  return { deleted: deleted.length }
+
+  // Defense-in-depth: purge orphaned two-phase SHELL reports (chapters='[]') that
+  // the failure-catch in runAnalyzeJob didn't clean — e.g. a worker crash between
+  // the shell insert and the catch. Synthesis takes minutes, so a shell older than
+  // a day is definitively orphaned; a live in-flight run's shell is always younger.
+  const shellCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const shells = await db
+    .delete(fengReports)
+    .where(and(eq(fengReports.chapters, '[]'), lt(fengReports.generatedAt, shellCutoff)))
+    .returning({ id: fengReports.id })
+
+  return { deleted: deleted.length, shellsDeleted: shells.length }
 }

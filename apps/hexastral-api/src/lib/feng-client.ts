@@ -190,6 +190,31 @@ export async function putFloorplan(
   return res.json() as Promise<{ key: string }>
 }
 
+/**
+ * Purge floor-plan images from svc-feng's owned FLOORPLAN_CACHE (account / site
+ * deletion). The bucket has no lifecycle GC, so this is the only way these PII
+ * assets leave storage. Caller must pass only keys owned by the deleting user.
+ */
+export async function deleteFloorplans(
+  svc: FetcherLike,
+  keys: string[]
+): Promise<{ deleted: number }> {
+  if (keys.length === 0) return { deleted: 0 }
+  const res = await svc.fetch(
+    new Request('https://svc-feng.internal/floorplan/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys }),
+      signal: AbortSignal.timeout(TIMEOUTS.maps),
+    })
+  )
+  if (!res.ok) {
+    const err = await res.text().catch(() => 'unknown')
+    throw new Error(`svc-feng /floorplan/delete failed (${res.status}): ${err}`)
+  }
+  return res.json() as Promise<{ deleted: number }>
+}
+
 // ── Annotate ────────────────────────────────────────────────────
 
 export interface OverlayArrow {

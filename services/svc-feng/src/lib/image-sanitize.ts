@@ -2,11 +2,60 @@
  * Image metadata stripping — removes EXIF / GPS / XMP from user uploads.
  *
  * A phone photo of a floor plan can embed the home's GPS coordinates + device
- * info in JPEG APPn segments. We strip those before the bytes ever hit R2, for
- * privacy and App Store review hygiene. PNG/WebP are passed through (they rarely
- * carry location in the common floor-plan-screenshot case); JPEG APP1..APP15 and
- * COM segments are dropped while the image data (SOF/DQT/DHT/SOS…) is preserved.
+ * info. We strip those before the bytes ever hit R2, for privacy + App Store
+ * review hygiene:
+ *   - JPEG: drop APP1..APP15 (EXIF/XMP/ICC) + COM; keep JFIF (APP0) + image data.
+ *   - PNG:  drop eXIf / iTXt / tEXt / zTXt chunks; keep IHDR/PLTE/IDAT/IEND etc.
+ *   - WebP: passed through (RIFF EXIF/XMP stripping not yet implemented; WebP is
+ *           an uncommon floor-plan upload format). Callers should not claim WebP
+ *           metadata is stripped.
  */
+
+/** Read a 4-byte ASCII chunk/marker type. */
+function ascii4(b: Uint8Array, off: number): string {
+  return String.fromCharCode(b[off] ?? 0, b[off + 1] ?? 0, b[off + 2] ?? 0, b[off + 3] ?? 0)
+}
+
+function concat(chunks: Uint8Array[]): Uint8Array {
+  let total = 0
+  for (const ch of chunks) total += ch.length
+  const out = new Uint8Array(total)
+  let off = 0
+  for (const ch of chunks) {
+    out.set(ch, off)
+    off += ch.length
+  }
+  return out
+}
+
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+const PNG_META_CHUNKS = new Set(['eXIf', 'iTXt', 'tEXt', 'zTXt'])
+
+/** Drop PNG metadata chunks (eXIf/iTXt/tEXt/zTXt); keep everything else verbatim. */
+function stripPngMetadata(input: Uint8Array): Uint8Array {
+  if (input.length < 8 || !PNG_SIG.every((v, i) => input[i] === v)) return input
+  const out: Uint8Array[] = [input.subarray(0, 8)]
+  let i = 8
+  while (i + 12 <= input.length) {
+    // length is a 32-bit big-endian unsigned; avoid <<24 sign issues.
+    const len =
+      (input[i] ?? 0) * 0x1000000 +
+      ((input[i + 1] ?? 0) << 16) +
+      ((input[i + 2] ?? 0) << 8) +
+      (input[i + 3] ?? 0)
+    const type = ascii4(input, i + 4)
+    const chunkEnd = i + 12 + len // length + type(4) + data + crc(4)
+    if (chunkEnd > input.length) {
+      out.push(input.subarray(i)) // malformed tail — keep verbatim, stop
+      i = input.length
+      break
+    }
+    if (!PNG_META_CHUNKS.has(type)) out.push(input.subarray(i, chunkEnd))
+    i = chunkEnd
+    if (type === 'IEND') break
+  }
+  return concat(out)
+}
 
 /** Drop JPEG metadata segments (APP1..APP15 + COM); keep JFIF (APP0) + image data. */
 function stripJpegMetadata(input: Uint8Array): Uint8Array {
@@ -50,9 +99,15 @@ export function sanitizeImageBytes(
     contentType.includes('jpeg') ||
     contentType.includes('jpg') ||
     (u8.length >= 2 && u8[0] === 0xff && u8[1] === 0xd8)
-  if (!isJpeg) return { bytes, contentType }
-
-  const stripped = stripJpegMetadata(u8)
-  // Return a tightly-sized ArrayBuffer (stripped owns its own buffer).
-  return { bytes: stripped.buffer as ArrayBuffer, contentType: 'image/jpeg' }
+  if (isJpeg) {
+    // Tightly-sized ArrayBuffer (stripped owns its own buffer).
+    return { bytes: stripJpegMetadata(u8).buffer as ArrayBuffer, contentType: 'image/jpeg' }
+  }
+  const isPng =
+    contentType.includes('png') || (u8.length >= 8 && PNG_SIG.every((v, i) => u8[i] === v))
+  if (isPng) {
+    return { bytes: stripPngMetadata(u8).buffer as ArrayBuffer, contentType: 'image/png' }
+  }
+  // WebP / other — passed through (see file header).
+  return { bytes, contentType }
 }

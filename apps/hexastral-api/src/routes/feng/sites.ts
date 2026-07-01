@@ -21,7 +21,7 @@
  *     to absorb this shape change with a 1-line adapter.
  */
 
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod/v4'
@@ -31,7 +31,9 @@ import { checkReadingAccess } from '../../lib/access-check'
 import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
 import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
-import { quoteFengAnalysis } from '../../lib/feng-pricing'
+import { deleteFloorplans } from '../../lib/feng-client'
+import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
+import { MAX_FLOORPLAN_IMAGES, quoteFengAnalysis } from '../../lib/feng-pricing'
 
 const facingDeg = z.number().gte(0).lt(360)
 
@@ -39,6 +41,10 @@ const facingDeg = z.number().gte(0).lt(360)
 // (from the north-align step). 1 image = apartment · N = villa/multi-floor.
 const floorplanImageSchema = z.object({
   key: z.string().min(1).max(96),
+  // RESERVED, currently ignored: the interior pipeline (parseSiteFloorplan +
+  // vision) orients ALL floors by the single top-level `orientDeg` below — floors
+  // of one building share a north. Do not rely on per-image orientation until the
+  // vision prompt + compute actually thread a per-floor bearing.
   orientDeg: facingDeg.optional(),
   label: z.string().max(40).optional(),
 })
@@ -171,7 +177,10 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     const body = await c.req.json().catch(() => ({}))
     const parsed = z.object({ images: z.int().gte(0).lte(20).optional() }).safeParse(body)
     const images = parsed.success ? (parsed.data.images ?? 1) : 1
-    return jsonOk(c, { quote: quoteFengAnalysis(images) })
+    const quote = quoteFengAnalysis(images)
+    // Signal when the requested count was clamped into the billable [1, MAX]
+    // range, so the client can warn instead of silently under/over-quoting.
+    return jsonOk(c, { quote, capped: images > MAX_FLOORPLAN_IMAGES })
   })
   // ── Read one + latest report ────────────────────────────────────────
   .get('/:id', async (c) => {
@@ -188,10 +197,14 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       return jsonErr(c, 404, ApiErrorCode.not_found, 'Site not found')
     }
 
+    // Exclude two-phase SHELL rows (chapters='[]', still synthesizing). A shell
+    // is surfaced ONLY on the live job.report channel during its own run; as the
+    // persisted "latest report" it would render a permanent fake-loading state on
+    // reopen. A finished report always has >=5 chapters, so '[]' uniquely = shell.
     const latestReport = await db
       .select()
       .from(fengReports)
-      .where(eq(fengReports.siteId, id))
+      .where(and(eq(fengReports.siteId, id), ne(fengReports.chapters, '[]')))
       .orderBy(desc(fengReports.generatedAt))
       .limit(1)
       .get()
@@ -297,6 +310,18 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       .get()
     if (!existing) {
       return jsonErr(c, 404, ApiErrorCode.not_found, 'Site not found')
+    }
+
+    // Purge the site's floor-plan images from R2 (owned PII, no lifecycle GC).
+    // The user deleted the site; there is no un-delete, so the raw images should
+    // leave storage now (the report keeps its already-computed roomFindings).
+    const fpKeys = collectFloorplanKeys(existing)
+    if (fpKeys.length > 0) {
+      c.executionCtx.waitUntil(
+        deleteFloorplans(c.env.SVC_FENG, fpKeys).catch((err) => {
+          console.error('feng.floorplan_purge_failed', { siteId: id, error: String(err) })
+        })
+      )
     }
 
     await db

@@ -8,8 +8,14 @@
  * Cache strategy:
  *   - Key = SHA-1 hex of canonicalized JSON payload.
  *   - Same input always hashes to the same key (no cache stampede).
- *   - 30-day soft TTL via metadata, enforced on read; expired entries return
- *     null but are NOT auto-deleted (a separate cron sweeps them).
+ *   - 30-day soft TTL (default) via `expiresAt` metadata, ENFORCED ON READ:
+ *     `readCache` returns null once past `expiresAt`, so the caller re-generates.
+ *     The object is NOT physically deleted — there is no sweep cron today, and
+ *     content-addressing means storage dedupes rather than grows per-request.
+ *     CALLERS whose data must outlive the default (report-referenced tiles) MUST
+ *     pass a long `ttlSeconds`, or `readCache` will start returning null (broken
+ *     images) at 30 days. Physical R2 GC of transient prefixes is a dashboard/
+ *     S3-API lifecycle rule (see deploy.md · R2 retention), not managed here.
  *   - PNG bytes stored directly; no compression layer.
  */
 

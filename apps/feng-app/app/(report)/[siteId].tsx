@@ -278,9 +278,11 @@ export default function ReportScreen() {
         message='This site may have been deleted or you do not have access.'
       />
     )
-  } else if (chapters.length === 0 && compute) {
+  } else if (chapters.length === 0 && compute && analyze.stage !== 'failed') {
     // Two-phase load: the computed SHELL (排盘/坐向/tiles/八宅) is ready while the
     // written chapters are still generating. Show it now instead of a blank wait.
+    // NOT when the job failed — the server deletes the orphan shell on failure, but
+    // guard here too so a stale in-memory shell can't become a permanent fake loader.
     middle = (
       <ReportShellView
         compute={compute}
@@ -310,7 +312,10 @@ export default function ReportScreen() {
                     disabled={analyze.isRunning}
                     fullWidth={false}
                     onPress={() => {
-                      if (analyze.isRunning || analyzeOnceRef.current) return
+                      // Manual (re)try — gate only on isRunning, NOT analyzeOnceRef
+                      // (the auto-analyze effect sets that true, which would
+                      // otherwise permanently disable retry after a failure).
+                      if (analyze.isRunning) return
                       analyzeOnceRef.current = true
                       void analyze.start()
                     }}

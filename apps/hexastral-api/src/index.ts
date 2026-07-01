@@ -706,9 +706,9 @@ export default {
     ctx.waitUntil(
       (async () => {
         try {
-          const { deleted } = await pruneStaleFengJobs(env)
-          if (deleted > 0) {
-            console.info(`[cron:feng-prune] deleted=${deleted}`)
+          const { deleted, shellsDeleted } = await pruneStaleFengJobs(env)
+          if (deleted > 0 || shellsDeleted > 0) {
+            console.info(`[cron:feng-prune] deleted=${deleted} shellsDeleted=${shellsDeleted}`)
           }
         } catch (err) {
           console.error('[cron:feng-prune]', err)
