@@ -43,3 +43,30 @@ re-verify before shipping.
   `back-su-yin.png`), wired via `lib/coin-skins.ts` → settings skin selector, gated on the
   `coincast_pro` entitlement. 半兩 / 大泉五十 / 大觀 stay WIP (scratchpad `ref/f_*.png`)
   pending cleaner 拓片 sources or a human polish pass.
+
+---
+
+## SHIPPED SET (2026-07-01): realistic bronze, two-sided
+
+Direction changed from 碑拓-rubbing to **realistic bronze** (founder call — "真实铜钱刻画",
+真实质感). Baked by `gen-huaxia.py` (Pillow + numpy + scipy), NOT the ImageMagick 碑拓
+pipeline above. Source photos are now committed under `huaxia/src/` so the set is fully
+reproducible (`python3 gen-huaxia.py` — defaults to `./src`). Each skin is **two-sided**:
+`<id>-yang.png` (字面/obverse) + `<id>-yin.png` (背面/reverse).
+
+| id | Coin | 朝代 | Faces | Source (huaxia/src/) |
+|---|---|---|---|---|
+| banliang | 半兩 | 秦 | obverse + synth 素背 | banliang.jpg (CC0) |
+| wuzhu | 五銖 | 汉 | obverse + synth 素背 | wuzhu.jpg (PD*) |
+| daquan | 大泉五十 | 新莽 | obverse + **real 素背** | daquan.jpg (CC0, 2-coin) |
+| kaiyuan | 開元通寶 | 唐 | obverse + synth 素背 | kaiyuan.png (PD*) |
+| daguan | 大觀通寶 | 宋徽宗 | obverse + **real 素背** | daguan.jpg (PD, 2-coin) |
+
+- **synth 素背** = plain reverse blurred from the coin's own patina (these issues ARE
+  plain-backed, so it's faithful) — used where the photo is obverse-only. 大泉/大觀 came as
+  2-coin obverse+reverse shots → real 素背.
+- **Provenance**: PD/CC0 per the ledger above, but 五銖 + 開元 are "gray" (museum photo
+  rights). Fine for now; re-source clean CC0 or commission before heavy monetization.
+- **Pipeline**: detect coin blob(s) (scipy CC over a bg-distance mask) → square crop →
+  enhance patina → circular cap mask → punch 方孔 dark → flatten on the dark scene ground.
+- **Do NOT delete `src/`** — losing it is how the previous realistic set was lost.

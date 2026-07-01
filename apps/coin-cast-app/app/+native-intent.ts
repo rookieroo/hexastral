@@ -16,9 +16,8 @@
 
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string {
   try {
-    const segments = path
-      .split('?')[0]
-      .split('#')[0]
+    const base = path.split('?')[0]?.split('#')[0] ?? path
+    const segments = base
       .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '') // strip a leading URL scheme
       .split('/')
       .filter((s) => s.length > 0)

@@ -8,16 +8,26 @@ type SkinLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
  * PNG. Metro only resolves STATIC `require()` literals, so every skin lists its
  * two requires inline (never build the path dynamically).
  *
- * Two kinds of 碑拓 (ink-rubbing) skin:
- *  - skins/original/* — ORIGINAL in-house designs (八卦/太极/五行…), owned IP,
- *    no real-coin copying, no scripture. Design system: original/ART-BRIEF.md.
- *  - skins/huaxia/back-su-yin.png — the shared plain 素背 reverse (also the free
- *    default coin). The old PD-extracted 五銖/開元 were retired (gray provenance,
- *    huaxia/SOURCING.md) and replaced by originals — the vault is now 100% owned IP.
+ * Three tiers:
+ *  - classic — the free default (素钱): plain 碑拓 rubbing, 四出文 front vs plain back.
+ *  - 华夏钱币史 (banliang…daguan) — REALISTIC two-sided bronze extracted from PD/CC0
+ *    coin photos (real obverse 字面 + real/synth 素背 背面). Baked by huaxia/gen-huaxia.py;
+ *    sources + licenses in huaxia/SOURCING.md. Provenance is PD/CC0 but some are
+ *    "gray" (museum photo rights) — re-verify before heavy monetization.
+ *  - 原创 (bagua/taiji/wuxing…) — ORIGINAL in-house vector 碑拓 designs, owned IP, no
+ *    real-coin copying, no scripture. They share the plain SU_BACK reverse.
+ *    Design system: original/ART-BRIEF.md.
  */
 
 export type CoinSkinId =
   | 'classic'
+  // 华夏钱币史 — realistic two-sided bronze, extracted from PD/CC0 coin photos.
+  | 'banliang'
+  | 'wuzhu'
+  | 'daquan'
+  | 'kaiyuan'
+  | 'daguan'
+  // 原创 — owned-IP vector 碑拓 designs.
   | 'bagua'
   | 'taiji'
   | 'wuxing-jin'
@@ -41,7 +51,7 @@ export interface CoinSkin {
   note: Record<SkinLocale, string>
 }
 
-/** Shared 素背 (plain reverse) rubbing for the huaxia skins until per-coin backs land. */
+/** Shared plain 素背 (reverse) rubbing for the 原创 vector skins (which have no back art). */
 const SU_BACK = require('../components/casting-scene/textures/skins/huaxia/dist/back-su-yin.png')
 /** Default coin's 字面 (front) — plain rubbing + 四出文 so heads/tails read apart. */
 const SU_FACE = require('../components/casting-scene/textures/skins/huaxia/dist/back-su-yang.png')
@@ -58,6 +68,73 @@ export const COIN_SKINS: readonly CoinSkin[] = [
       zh: '素拓 · 默认',
       'zh-Hant': '素拓 · 預設',
       ja: '無文拓 · 標準',
+    },
+  },
+  // ── 华夏钱币史 — realistic bronze, real obverse (字面) + real/plain reverse (背面).
+  //    Baked by huaxia/gen-huaxia.py from PD/CC0 photos (see huaxia/SOURCING.md). ──
+  {
+    id: 'banliang',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yin.png'),
+    label: { en: 'Ban Liang', zh: '半两', 'zh-Hant': '半兩', ja: '半両' },
+    note: {
+      en: 'Qin · seal script',
+      zh: '秦 · 小篆',
+      'zh-Hant': '秦 · 小篆',
+      ja: '秦 · 篆書',
+    },
+  },
+  {
+    id: 'wuzhu',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yin.png'),
+    label: { en: 'Wu Zhu', zh: '五铢', 'zh-Hant': '五銖', ja: '五銖' },
+    note: {
+      en: 'Han · seal script',
+      zh: '汉 · 篆书',
+      'zh-Hant': '漢 · 篆書',
+      ja: '漢 · 篆書',
+    },
+  },
+  {
+    id: 'daquan',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yin.png'),
+    label: { en: 'Da Quan', zh: '大泉五十', 'zh-Hant': '大泉五十', ja: '大泉五十' },
+    note: {
+      en: 'Xin · suspended-needle seal',
+      zh: '新莽 · 悬针篆',
+      'zh-Hant': '新莽 · 懸針篆',
+      ja: '新 · 懸針篆',
+    },
+  },
+  {
+    id: 'kaiyuan',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yin.png'),
+    label: { en: 'Kaiyuan', zh: '开元通宝', 'zh-Hant': '開元通寶', ja: '開元通宝' },
+    note: {
+      en: 'Tang · clerical-regular',
+      zh: '唐 · 隶楷',
+      'zh-Hant': '唐 · 隸楷',
+      ja: '唐 · 隷楷',
+    },
+  },
+  {
+    id: 'daguan',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yin.png'),
+    label: { en: 'Da Guan', zh: '大观通宝', 'zh-Hant': '大觀通寶', ja: '大觀通宝' },
+    note: {
+      en: 'Song · Slender Gold script',
+      zh: '宋徽宗 · 瘦金体',
+      'zh-Hant': '宋徽宗 · 瘦金體',
+      ja: '宋徽宗 · 痩金体',
     },
   },
   {
