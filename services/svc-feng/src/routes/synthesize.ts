@@ -114,7 +114,9 @@ synthesizeRouter.post('/', async (c) => {
       const text = await callWithFallback(c.env, SYNTHESIS_SYSTEM_PROMPT, userPrompt, {
         tier: 'flagship',
         responseSchema: SYNTHESIS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-        maxTokens: 8192,
+        // 6 chapters × ~300-char bodies + reasoning headroom — 8k truncated the
+        // longer pro-grade bodies into fallback stubs.
+        maxTokens: 16384,
         temperature: 0.7,
         metricLabel: 'feng-synthesis',
         locale: userProfile.locale,

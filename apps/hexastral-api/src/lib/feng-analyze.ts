@@ -382,18 +382,26 @@ export async function runAnalyzeJob(
       facingChart: flyingStars.facingChart,
     })
 
-    // 山向二星组合断事 — per-palace named combinations, phase-adjusted by the
-    // CURRENT 元运 (present-day 旺衰). Only named combinations are kept.
+    // 山向二星组合断事 — the full per-palace 山+向 pair for ALL nine palaces,
+    // phase-adjusted by the CURRENT 元运 (present-day 旺衰). We keep the raw star
+    // pair + domain + reading (not just named combos) so synthesis can reason on
+    // 五行生克 even where the corpus has no classical name.
     const combinations = NINE_CHART_KEYS.map((k) => {
       const d = describePalaceCombination(
         flyingStars.mountainChart[k],
         flyingStars.facingChart[k],
         flyingStars.currentYuanYun.yuanYun
       )
-      return d.combination
-        ? { palace: k, name: d.name ?? '', phase: d.phase, reading: d.reading }
-        : null
-    }).filter((x): x is NonNullable<typeof x> => x !== null)
+      return {
+        palace: k,
+        mountainStar: d.mountainStar,
+        facingStar: d.facingStar,
+        phase: d.phase,
+        name: d.name ?? null,
+        domain: d.combination?.domain ?? null,
+        reading: d.reading || null,
+      }
+    })
 
     // 大峦头 DEM — per-8宫 elevation 砂 (a top-down VLM can't read height). Only
     // when the prefetch flagged elevation; fail-open. Merged into formByPalace below.
@@ -493,6 +501,21 @@ export async function runAnalyzeJob(
     const synth = await synthesizeReport(env.SVC_FENG, {
       vision,
       compute: {
+        // Explicit identity so the model opens with 坐山向 + 卦运 and can reason
+        // about present-day 旺衰 (a chart built in one 元运, read in another).
+        summary: {
+          sit: flyingStars.sitMountain.name,
+          face: flyingStars.faceMountain.name,
+          buildYuanYun: flyingStars.buildYuanYun.yuanYun,
+          buildYuanYunYears: [flyingStars.buildYuanYun.startYear, flyingStars.buildYuanYun.endYear],
+          currentYuanYun: flyingStars.currentYuanYun.yuanYun,
+          currentYuanYunYears: [
+            flyingStars.currentYuanYun.startYear,
+            flyingStars.currentYuanYun.endYear,
+          ],
+          chartMethod: flyingStars.chartMethod,
+          isCompoundFacing: flyingStars.isCompoundFacing,
+        },
         flyingStars,
         baZhai: baZhaiResult ?? null,
         auspiciousPalaces,
@@ -500,7 +523,11 @@ export async function runAnalyzeJob(
         patterns,
         combinations,
         formLi,
-        macroTerrain: elevation ? { laiLong: elevation.laiLong } : null,
+        // Pass the per-8宫 relative elevation (already computed), not just 来龙,
+        // so chapter 1 can describe the 砂 backdrop per sector authoritatively.
+        macroTerrain: elevation
+          ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
+          : null,
         monthlyStars,
       },
       userProfile: {

@@ -1,20 +1,25 @@
 /**
  * POST /annotate
  *
- * Composes SVG overlays (sit/face/door arrows, 24山 ring, bagua sector
- * wedges) onto a previously-fetched map PNG and writes the annotated PNG
- * to R2.
+ * Copies the source satellite PNG into ANNOTATED_CACHE unchanged — the
+ * 坐/向/门 arrows + 24山 ring + bagua wedges are now drawn CLIENT-SIDE
+ * (react-native-svg over the <Image>), because `@resvg/resvg-wasm` silently
+ * drops the embedded raster base (`<image href="data:…">` never decodes),
+ * which turned every "annotated" tile into an overlay floating on a
+ * transparent/dark disc — and, worse, starved Stage-1 vision of the real
+ * photo. Passing the raw satellite through fixes BOTH: Gemini and the report
+ * now see the actual imagery, and orientation is a crisp vector layer on the
+ * client instead of a baked raster the server can't reliably produce.
  *
  * Pipeline:
  *   1. Validate request body (Zod).
  *   2. Read source PNG from MAPS_CACHE.
- *   3. Build a single SVG that embeds the PNG via data URI + draws overlays.
- *   4. Rasterize via @resvg/resvg-wasm.
- *   5. Write to ANNOTATED_CACHE keyed by sha1(request).
- *   6. Return PNG bytes + cache key header.
+ *   3. Write it to ANNOTATED_CACHE keyed by sha1(request) (arrows still in the
+ *      key so re-runs with different bearings stay distinct; harmless if equal).
+ *   4. Return PNG bytes + cache key header.
  *
- * The composition itself is sub-50ms on warm isolates; the wasm init runs
- * once per isolate and is cached in the overlay module.
+ * The arrow/ring/wedge params are still accepted (API compat + cache keying)
+ * but no longer rasterized here.
  */
 
 import { Hono } from 'hono'
@@ -22,7 +27,6 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { cacheKey, readCache, writeCache } from '../lib/cache'
 import { logger } from '../lib/logger'
-import { composeAnnotated } from '../lib/overlay'
 
 const OverlayArrowSchema = z.object({
   kind: z.enum(['sit', 'face', 'door']),
@@ -55,7 +59,12 @@ annotateRouter.post('/', async (c) => {
   }
   const input = parsed.data
 
-  const key = await cacheKey('annotated', input)
+  // 'annotated-raw' (was 'annotated'): the old namespace is poisoned with
+  // resvg composites that lost the satellite base. Bumping it forces a miss on
+  // re-analysis so the passthrough writes the real photo — and cascades to the
+  // vision-result cache (keyed off these annotated keys), re-running Stage 1 on
+  // the real imagery instead of serving the stale, blank-tile analysis.
+  const key = await cacheKey('annotated-raw', input)
   const cached = await readCache(c.env.ANNOTATED_CACHE, key)
   if (cached) {
     logger.info('annotate', { cache: 'hit', key, mapKey: input.mapKey })
@@ -74,47 +83,18 @@ annotateRouter.post('/', async (c) => {
   }
   const baseBytes = await sourceObj.arrayBuffer()
 
-  let composed: ArrayBuffer
-  const composeStarted = Date.now()
-  try {
-    composed = await composeAnnotated({
-      baseBytes,
-      width: input.width,
-      height: input.height,
-      arrows: input.arrows,
-      drawMountainRing: input.drawMountainRing,
-      drawBaguaWedges: input.drawBaguaWedges,
-    })
-  } catch (err) {
-    // Fall back to the unannotated PNG rather than 500-ing the whole job —
-    // the downstream pipeline can still proceed (vision will just see no
-    // arrows). Log so we know if resvg is misbehaving in prod.
-    logger.warn('annotate.compose_fallback', {
-      key,
-      mapKey: input.mapKey,
-      composeMs: Date.now() - composeStarted,
-      error: err instanceof Error ? err.message : String(err),
-    })
-    await writeCache(c.env.ANNOTATED_CACHE, key, baseBytes, 'image/png')
-    return new Response(baseBytes, {
-      headers: {
-        'content-type': 'image/png',
-        'x-feng-cache': 'miss-passthrough',
-        'x-feng-cache-key': key,
-        'x-feng-stage': 'resvg-failed',
-      },
-    })
-  }
-
-  await writeCache(c.env.ANNOTATED_CACHE, key, composed, 'image/png')
+  // Pass the raw satellite through — orientation is drawn client-side (see the
+  // file header for why the resvg composite was removed). This keeps the real
+  // photo intact for both Stage-1 vision and the report's map swiper.
+  await writeCache(c.env.ANNOTATED_CACHE, key, baseBytes, 'image/png')
   logger.info('annotate', {
     cache: 'miss',
     key,
     mapKey: input.mapKey,
-    composeMs: Date.now() - composeStarted,
-    bytes: composed.byteLength,
+    bytes: baseBytes.byteLength,
+    mode: 'passthrough',
   })
-  return new Response(composed, {
+  return new Response(baseBytes, {
     headers: {
       'content-type': 'image/png',
       'x-feng-cache': 'miss',

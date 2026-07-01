@@ -34,7 +34,7 @@ import {
 } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AnnotatedMapSwiper } from '@/components/AnnotatedMapSwiper'
+import { AnnotatedMapSwiper, type MapOrient } from '@/components/AnnotatedMapSwiper'
 import { FengAnalyzing, type FengAnalyzingStep } from '@/components/FengAnalyzing'
 import { FengButton } from '@/components/FengButton'
 import { FengInkImage } from '@/components/FengInkImage'
@@ -131,6 +131,14 @@ export default function ReportScreen() {
   const reportId = latestReport?.id ?? ''
   const annotatedTiles = latestReport?.annotatedTiles ?? analyze.job?.report?.annotatedTiles ?? []
   const compute = latestReport?.compute ?? analyze.job?.report?.compute ?? null
+  // 坐/向/门 bearings for the client-drawn map overlay (server ships raw tiles).
+  const orient: MapOrient | null = site
+    ? {
+        facing: Number(site.facingDegTrue),
+        sit: Number(site.sitDegTrue),
+        door: site.doorDegTrue != null ? Number(site.doorDegTrue) : null,
+      }
+    : null
 
   useEffect(() => {
     if (!reportId) return
@@ -309,10 +317,12 @@ export default function ReportScreen() {
               insets={insets}
               chapter={chapter}
               index={idx}
+              active={page === idx}
               tag={chapterTag(chapter.kind)}
               compute={compute}
               reportId={reportId}
               annotatedTiles={annotatedTiles}
+              orient={orient}
               highlights={highlights}
               onPickQuote={onPickQuote}
               onTapTerm={onTapTerm}
@@ -374,10 +384,12 @@ interface ChapterPageProps {
   insets: { top: number; bottom: number }
   chapter: FengChapter
   index: number
+  active: boolean
   tag: string
   compute: FengComputeJson | null
   reportId: string
   annotatedTiles: ('close' | 'mid' | 'wide')[]
+  orient: MapOrient | null
   highlights: string[]
   onPickQuote: (s: string) => void
   onTapTerm: (id: string) => void
@@ -389,10 +401,12 @@ function ChapterPageView({
   insets,
   chapter,
   index,
+  active,
   tag,
   compute,
   reportId,
   annotatedTiles,
+  orient,
   highlights,
   onPickQuote,
   onTapTerm,
@@ -417,7 +431,11 @@ function ChapterPageView({
         </View>
 
         <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
-          <FengInkImage kind={chapter.kind} width={Math.min(width - spacing.xl * 2, 300)} />
+          <FengInkImage
+            kind={chapter.kind}
+            width={Math.min(width - spacing.xl * 2, 300)}
+            active={active}
+          />
         </View>
 
         <Text style={{ color: C.text, fontSize: 24, fontWeight: '700', marginBottom: spacing.xs }}>
@@ -447,6 +465,7 @@ function ChapterPageView({
           <AnnotatedMapSwiper
             reportId={reportId}
             tiles={annotatedTiles}
+            orient={orient}
             horizontalPadding={spacing.xl}
             strings={{
               report_map_close: t.report_map_close,

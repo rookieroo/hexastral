@@ -137,9 +137,16 @@ export interface FengComputeJson {
 
 export interface FengPalaceCombination {
   palace: string
-  name: string
+  /** 山星 / 向星 in this palace (1–9) — the raw pair the model reasons on. */
+  mountainStar: number
+  facingStar: number
   phase: '旺' | '衰'
-  reading: string
+  /** Classical name of the pair, when the corpus has one (else null). */
+  name: string | null
+  /** 五行/事象 domain(s) of the combination (财/丁/病/桃花 …), when named. */
+  domain: string[] | null
+  /** Phase-appropriate reading, when the corpus has one (else null). */
+  reading: string | null
 }
 
 // ── Report (Stage 3 output — synthesis) ─────────────────────────────────────

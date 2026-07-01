@@ -237,6 +237,7 @@ export async function visionAnalyze(
 export interface SynthesizeInput {
   vision: VisionAnalyzeResult
   compute: {
+    summary?: unknown
     flyingStars: unknown
     baZhai: unknown
     auspiciousPalaces: string[]

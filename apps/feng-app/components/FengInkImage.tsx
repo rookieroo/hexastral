@@ -1,32 +1,56 @@
 /**
- * FengInkImage — the chapter 意象图, react-native-skia, STATIC.
+ * FengInkImage — the chapter 意象图, react-native-skia + reanimated.
  *
- * Feng-native ink/particle fields (NOT a Yuel clone — its own 风水 imagery),
- * built with the same proven technique as Yuel's InkCenterpiece: one settled,
- * deterministic point cloud per chapter, drawn as a few static `Points` clouds
- * on the 宣纸 ground — generated once, zero ongoing cost (no clock/frame loop).
+ * 意绘, not 形绘: each field is a soft, boundary-less density gradient — 势 emerges
+ * from where the particles cluster, and 留白 is the 界 (no drawn shapes, no
+ * connector particles). 五行 color: 土黄(山)/水蓝/风青/气金/墨; 红 only means 煞.
  *
- *   external_landform  峦头   layered 龙脉 ridges over a water band
- *   personal_fit       八宅   eight 卦 clusters ringing a 气 core
- *   flying_stars       玄空   the 洛书 nine-palace star field (5-yellow center 朱)
- *   annual_directions  流年   a 流转 spiral (the year's turning), 朱 head
- *   remediation        化煞   a dark knot dissolving into mist (煞 transmuted)
- *   auspicious_objects 布置   points gathering into a centered 聚气 bloom
+ *   峦头 觅   soft 砂 lobes (玄武/龙虎) embracing a 留白 明堂, 界水 diffuse below
+ *   八宅 察   命气 core, 吉方 warm lobes, 凶方 faint-ink + 留白
+ *   玄空 察   洛书 density field — 旺=金气密 / 衰=墨疏 (grid only implied)
+ *   流年 察   气 streaming toward the year's direction on 青风 currents
+ *   化解 调   MORPH: 煞(红)聚 knot → 煞散气宁 (the red 煞 disperses to calm)
+ *   布置 调   MORPH: 气散 → 藏风聚气 (particles gather to a core inside a 风 embrace)
  *
- * 墨 + 铜金 on cream, 朱砂 used sparingly. Requires @shopify/react-native-skia
- * (native rebuild).
+ * The two morphs are the SAME particles migrating — a one-shot Group scale +
+ * opacity about a fixed origin (radial), played once on open then static (zero
+ * sustained cost → no overheating). Requires @shopify/react-native-skia.
  */
 
-import { Canvas, Fill, Points, type SkPoint } from '@shopify/react-native-skia'
+import { Canvas, Fill, Group, Points, type SkPoint } from '@shopify/react-native-skia'
 import type { FengChapterKind } from '@zhop/scenario-feng'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import {
+  Easing,
+  useDerivedValue,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 const VW = 440
 const VH = 300
 const CX = 220
 const CY = 150
 
-// ── deterministic rng + value noise (stable, always-good layout) ──────────────
+// 五行 essence colors (rgb only — alpha applied per layer).
+const EAR = '146,112,54' // 土 / 山
+const WAT = '34,54,84' // 水
+const WIN = '42,82,62' // 风
+const QI = '192,152,78' // 气
+const INK = '26,42,48' // 墨
+const SHA = '150,42,40' // 煞 (red — only in 化解, and it disperses)
+
+const SEED: Record<string, number> = {
+  external_landform: 11,
+  personal_fit: 23,
+  flying_stars: 5,
+  annual_directions: 31,
+  remediation: 17,
+  auspicious_objects: 41,
+}
+
+// ── deterministic rng ─────────────────────────────────────────────────────────
 function mulberry32(seed: number) {
   let a = seed >>> 0
   return () => {
@@ -42,195 +66,382 @@ function gaussFrom(rnd: () => number) {
     sd * Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd())
 }
 
-interface Clouds {
-  inkF: SkPoint[]
-  inkB: SkPoint[]
-  brF: SkPoint[]
-  brB: SkPoint[]
-  acc: SkPoint[]
+interface Raw {
+  x: number
+  y: number
+  rgb: string
+  a: number
 }
 
-function generate(kind: FengChapterKind, s: number): Clouds {
-  const c: Clouds = { inkF: [], inkB: [], brF: [], brB: [], acc: [] }
+// Soft feathered blob — gaussian scatter with a falloff alpha (no edge).
+function blobInto(
+  A: Raw[],
+  rnd: () => number,
+  cx: number,
+  cy: number,
+  sx: number,
+  sy: number,
+  rgb: string,
+  peak: number,
+  count: number
+) {
+  const g = gaussFrom(rnd)
+  for (let i = 0; i < count; i++) {
+    const dx = g(sx)
+    const dy = g(sy)
+    const rr = (dx / sx) ** 2 + (dy / sy) ** 2
+    const a = peak * Math.exp(-rr * 0.9)
+    if (a < 0.05) continue
+    A.push({ x: cx + dx, y: cy + dy, rgb, a })
+  }
+}
+
+// ── static essence fields ─────────────────────────────────────────────────────
+function genStaticRaw(kind: FengChapterKind): Raw[] {
+  const A: Raw[] = []
   const rnd = mulberry32(SEED[kind] ?? 7)
-  const gauss = gaussFrom(rnd)
-  const put = (tier: 'ink' | 'bronze' | 'accent', x: number, y: number) => {
-    const p = { x: x * s, y: y * s }
-    if (tier === 'accent') c.acc.push(p)
-    else if (tier === 'ink') (rnd() < 0.36 ? c.inkB : c.inkF).push(p)
-    else (rnd() < 0.36 ? c.brB : c.brF).push(p)
-  }
+  const g = gaussFrom(rnd)
 
-  switch (kind) {
-    case 'external_landform': {
-      // 龙脉 — three ridge crests (back faint bronze → front bold ink), water below.
-      for (let k = 0; k < 3; k++) {
-        const baseY = 96 + k * 30
-        const tier = k === 2 ? 'ink' : 'bronze'
-        for (let i = 0; i < 1500; i++) {
-          const x = rnd() * VW
-          const hump = Math.max(0, Math.sin((x / VW) * Math.PI * 3 + k * 1.4))
-          const crestY = baseY - 30 * hump
-          const y = crestY + Math.abs(gauss(20))
-          const f = Math.exp(-(((y - crestY) / 26) ** 2)) * (k === 2 ? 1 : 0.7)
-          if (rnd() > f) continue
-          put(tier, x, y)
-        }
-      }
-      for (let i = 0; i < 900; i++) {
-        const x = rnd() * VW
-        const y = 252 + 9 * Math.sin(x / 26) + gauss(5)
-        put('bronze', x, y)
-      }
-      break
+  if (kind === 'external_landform') {
+    blobInto(A, rnd, 220, 74, 66, 48, EAR, 0.74, 1500) // 玄武靠山
+    blobInto(A, rnd, 108, 122, 46, 56, EAR, 0.66, 1000) // 青龙
+    blobInto(A, rnd, 332, 122, 46, 56, EAR, 0.66, 1000) // 白虎
+    for (let i = 0; i < 1000; i++) {
+      const x = rnd() * VW
+      const y = 228 + g(30)
+      const a = 0.62 * Math.exp(-(((y - 230) / 42) ** 2))
+      if (y < 194 || a < 0.05) continue
+      A.push({ x, y, rgb: WAT, a }) // 界水 diffuse; 明堂 (lower center) stays 留白
     }
-    case 'personal_fit': {
-      // 八宅 — eight 卦 clusters around a 气 core + a faint ring.
-      const R = 96
-      for (let k = 0; k < 8; k++) {
-        const ang = (Math.PI / 4) * k - Math.PI / 2
-        const bx = CX + R * Math.cos(ang)
-        const by = CY + R * Math.sin(ang) * 0.82
-        for (let i = 0; i < 300; i++) put('bronze', bx + gauss(15), by + gauss(15) * 0.82)
-      }
-      for (let i = 0; i < 900; i++) {
-        const ang = rnd() * 2 * Math.PI
-        const r = R + gauss(4)
-        put('ink', CX + r * Math.cos(ang), CY + r * Math.sin(ang) * 0.82)
-      }
-      for (let i = 0; i < 600; i++) put('ink', CX + gauss(16), CY + gauss(13))
-      break
+  } else if (kind === 'personal_fit') {
+    blobInto(A, rnd, CX, CY, 27, 23, QI, 0.82, 850) // 命气 core
+    for (const d of [-90, 25, 155]) {
+      const a = (d * Math.PI) / 180
+      blobInto(A, rnd, CX + 80 * Math.cos(a), CY + 80 * Math.sin(a) * 0.86, 36, 32, QI, 0.5, 520) // 吉方
     }
-    case 'flying_stars': {
-      // 玄空 — 洛书 nine-palace clusters; center (5黄) denser + 朱砂.
-      for (let r = 0; r < 3; r++) {
-        for (let col = 0; col < 3; col++) {
-          const gx = CX + (col - 1) * 86
-          const gy = CY + (r - 1) * 78
-          const center = r === 1 && col === 1
-          const n = center ? 520 : 300
-          for (let i = 0; i < n; i++) {
-            const x = gx + gauss(17)
-            const y = gy + gauss(15)
-            if (center && rnd() < 0.4) put('accent', x, y)
-            else put(center ? 'bronze' : 'ink', x, y)
-          }
-        }
-      }
-      break
+    for (const d of [90, -140]) {
+      const a = (d * Math.PI) / 180
+      blobInto(A, rnd, CX + 82 * Math.cos(a), CY + 82 * Math.sin(a) * 0.86, 30, 26, INK, 0.26, 200) // 凶方 whisper
     }
-    case 'annual_directions': {
-      // 流年 — a 流转 spiral outward; the head (current turn) in 朱砂.
-      const N = 2800
-      for (let i = 0; i < N; i++) {
-        const tt = i / N
-        const ang = tt * Math.PI * 6
-        const rad = 14 + tt * 118
-        const x = CX + rad * Math.cos(ang) + gauss(4)
-        const y = CY + rad * Math.sin(ang) * 0.8 + gauss(4)
-        if (tt > 0.93) put('accent', x, y)
-        else put(tt > 0.5 ? 'bronze' : 'ink', x, y)
-      }
-      break
+  } else if (kind === 'flying_stars') {
+    const LO = [
+      [4, 9, 2],
+      [3, 5, 7],
+      [8, 1, 6],
+    ]
+    LO.forEach((row, R) => {
+      row.forEach((v, c) => {
+        const rgb = v >= 6 ? QI : v >= 3 ? EAR : INK // 旺=金 / 中=土 / 衰=墨
+        const sd = 17 + v * 0.6
+        blobInto(
+          A,
+          rnd,
+          CX + (c - 1) * 82,
+          CY + (R - 1) * 74,
+          sd,
+          sd,
+          rgb,
+          Math.min(0.92, 0.18 + 0.088 * v),
+          90 + v * 34
+        )
+      })
+    })
+  } else {
+    // annual_directions — 气随风流转 toward the year's dominant direction
+    const dom = (-50 * Math.PI) / 180
+    for (let i = 0; i < 1500; i++) {
+      const t = rnd()
+      const ang = dom + g(0.5)
+      const rad = t * 128
+      const a = 0.78 * (1 - t * 0.55)
+      if (a < 0.05) continue
+      A.push({ x: CX + rad * Math.cos(ang), y: CY + rad * Math.sin(ang) * 0.86, rgb: QI, a })
     }
-    case 'remediation': {
-      // 化煞 — a dense ink knot (left) dissolving into bronze mist (right).
-      for (let i = 0; i < 3200; i++) {
-        const tt = rnd()
-        const x = CX - 96 + tt * 220 + gauss(16)
-        const y = CY + gauss(14 + tt * 58)
-        if (rnd() > 1 - tt * 0.72) continue
-        put(tt < 0.4 ? 'ink' : 'bronze', x, y)
-      }
-      break
+    for (let i = 0; i < 650; i++) {
+      const t = 0.45 + rnd() * 0.55
+      const ang = dom + g(0.6)
+      const rad = t * 142
+      A.push({
+        x: CX + rad * Math.cos(ang),
+        y: CY + rad * Math.sin(ang) * 0.86,
+        rgb: WIN,
+        a: 0.55 * (1 - t * 0.4),
+      })
     }
-    default: {
-      // auspicious_objects 布置 — points gathering into a centered 聚气 bloom.
-      for (let i = 0; i < 3000; i++) {
-        const ang = rnd() * 2 * Math.PI
-        const r = 112 * rnd() ** 0.66
-        const x = CX + r * Math.cos(ang)
-        const y = CY + r * Math.sin(ang) * 0.82
-        const f = Math.exp(-((r / 78) ** 2)) + 0.12
-        if (rnd() > f) continue
-        put(r < 46 ? 'bronze' : 'ink', x, y)
-      }
-      for (let i = 0; i < 240; i++) put('accent', CX + gauss(7), CY + gauss(6))
-      break
-    }
+    blobInto(A, rnd, CX, CY, 17, 15, QI, 0.6, 350)
   }
-  return c
+  return A
 }
 
-const SEED: Record<FengChapterKind, number> = {
-  external_landform: 11,
-  personal_fit: 23,
-  flying_stars: 5,
-  annual_directions: 31,
-  remediation: 17,
-  auspicious_objects: 41,
+// Quantize per-point alpha into a few tiers → each (color,tier) is one Points call.
+const ALPHA_BINS = [0.22, 0.4, 0.58, 0.78]
+function nearestBin(a: number): number {
+  let bi = 0
+  let bd = Number.POSITIVE_INFINITY
+  ALPHA_BINS.forEach((bv, i) => {
+    const d = Math.abs(a - bv)
+    if (d < bd) {
+      bd = d
+      bi = i
+    }
+  })
+  return bi
 }
 
-const INK_F = 'rgba(26,42,48,0.32)'
-const INK_B = 'rgba(26,42,48,0.6)'
-const BR_F = 'rgba(138,109,59,0.42)'
-const BR_B = 'rgba(138,109,59,0.74)'
-const ACCENT = 'rgba(155,34,38,0.66)'
+interface Layer {
+  color: string
+  pts: SkPoint[]
+}
+
+function binize(raw: Raw[], s: number): Layer[] {
+  const m = new Map<string, SkPoint[]>()
+  for (const r of raw) {
+    const key = `${r.rgb}|${nearestBin(r.a)}`
+    let arr = m.get(key)
+    if (!arr) {
+      arr = []
+      m.set(key, arr)
+    }
+    arr.push({ x: r.x * s, y: r.y * s })
+  }
+  const out: Layer[] = []
+  for (const [key, pts] of m) {
+    const [rgb, bi] = key.split('|')
+    out.push({ color: `rgba(${rgb},${ALPHA_BINS[Number(bi)]})`, pts })
+  }
+  return out
+}
+
+// ── morph fields (化解 / 布置) ─────────────────────────────────────────────────
+// Each layer holds the SAME particles in two arrangements — `from` (t=0) and
+// `to` (t=1). The transition lerps every point along its own path (intermediate
+// keyframes), matching the HTML preview — NOT a uniform scale/zoom.
+interface MorphLayer {
+  rgb: string
+  aFrom: number
+  aTo: number
+  from: SkPoint[]
+  to: SkPoint[]
+}
+interface MorphSpec {
+  layers: [MorphLayer, MorphLayer]
+}
+
+function genMorph(kind: FengChapterKind, s: number): MorphSpec {
+  const rnd = mulberry32(SEED[kind] ?? 7)
+  const g = gaussFrom(rnd)
+  const P = (x: number, y: number): SkPoint => ({ x: x * s, y: y * s })
+
+  if (kind === 'remediation') {
+    // 煞聚 (tight knot, t=0) → 煞散气宁 (dispersed calm, t=1). The 煞 (red) fades.
+    const shaFrom: SkPoint[] = []
+    const shaTo: SkPoint[] = []
+    const inkFrom: SkPoint[] = []
+    const inkTo: SkPoint[] = []
+    for (let i = 0; i < 1900; i++) {
+      const toX = CX + g(104)
+      const toY = CY + g(64)
+      const fx = 202 + g(25) // compressed toward the knot center
+      const fy = 150 + g(21)
+      const core = Math.hypot(fx - 202, fy - 150) < 22
+      ;(core ? shaFrom : inkFrom).push(P(fx, fy))
+      ;(core ? shaTo : inkTo).push(P(toX, toY))
+    }
+    return {
+      layers: [
+        { rgb: SHA, aFrom: 0.82, aTo: 0.12, from: shaFrom, to: shaTo },
+        { rgb: INK, aFrom: 0.66, aTo: 0.4, from: inkFrom, to: inkTo },
+      ],
+    }
+  }
+
+  // auspicious_objects — 气散 (scattered, t=0) → 藏风聚气 (gathered, t=1).
+  const qiFrom: SkPoint[] = []
+  const qiTo: SkPoint[] = []
+  const winFrom: SkPoint[] = []
+  const winTo: SkPoint[] = []
+  for (let i = 0; i < 1400; i++) {
+    const a = rnd() * 2 * Math.PI
+    const rad = 48 * rnd() ** 0.55
+    if (rnd() > Math.exp(-((rad / 30) ** 2)) + 0.06) continue
+    const gx = CX + rad * Math.cos(a) // gathered 气 core
+    const gy = CY + rad * Math.sin(a) * 0.9
+    const sf = 1.7 + rnd() * 0.9 // scattered outward + jitter
+    qiFrom.push(P(CX + (gx - CX) * sf + g(26), CY + (gy - CY) * sf + g(22)))
+    qiTo.push(P(gx, gy))
+  }
+  for (let i = 0; i < 1000; i++) {
+    const a = rnd() * 2 * Math.PI
+    const bottom = a > Math.PI * 0.22 && a < Math.PI * 0.78 // open at the 明堂 (留白)
+    if (bottom && rnd() < 0.88) continue
+    const rad = 94 + g(15)
+    const gx = CX + rad * Math.cos(a) // 风 embrace
+    const gy = CY + rad * Math.sin(a) * 0.86
+    const sf = 1.6 + rnd() * 0.8
+    winFrom.push(P(CX + (gx - CX) * sf + g(24), CY + (gy - CY) * sf + g(20)))
+    winTo.push(P(gx, gy))
+  }
+  return {
+    layers: [
+      { rgb: QI, aFrom: 0.5, aTo: 0.9, from: qiFrom, to: qiTo },
+      { rgb: WIN, aFrom: 0.46, aTo: 0.82, from: winFrom, to: winTo },
+    ],
+  }
+}
+
+export interface FengImagePoint {
+  /** In the 440×300 canonical space. */
+  x: number
+  y: number
+  rgb: string
+  a: number
+}
+
+/**
+ * The resolved (final) point set for any chapter — used by the SVG share card
+ * (which can't render Skia). Static kinds return their field; morph kinds return
+ * the settled 'to' state (化解=散宁 / 布置=聚). Same generators as the on-screen
+ * Skia image, so the card matches.
+ */
+export function fengImageRaw(kind: FengChapterKind): FengImagePoint[] {
+  if (kind === 'remediation' || kind === 'auspicious_objects') {
+    const spec = genMorph(kind, 1)
+    const out: FengImagePoint[] = []
+    for (const l of spec.layers) {
+      for (const p of l.to) out.push({ x: p.x, y: p.y, rgb: l.rgb, a: l.aTo })
+    }
+    return out
+  }
+  return genStaticRaw(kind)
+}
 
 interface FengInkImageProps {
   kind: FengChapterKind
   /** Rendered width; height follows the 440×300 aspect. */
   width?: number
+  /** Play the morph (for 调 chapters) when the chapter is on screen. Default true. */
+  active?: boolean
 }
 
-export function FengInkImage({ kind, width = 280 }: FengInkImageProps) {
+const POINT_W = 2.5
+
+export function FengInkImage({ kind, width = 300, active = true }: FengInkImageProps) {
+  const isMorph = kind === 'remediation' || kind === 'auspicious_objects'
+  return isMorph ? (
+    <MorphInk kind={kind} width={width} active={active} />
+  ) : (
+    <StaticInk kind={kind} width={width} />
+  )
+}
+
+function StaticInk({ kind, width }: { kind: FengChapterKind; width: number }) {
   const s = width / VW
   const height = (width * VH) / VW
-  const clouds = useMemo(() => generate(kind, s), [kind, s])
+  const layers = useMemo(() => binize(genStaticRaw(kind), s), [kind, s])
+  return (
+    <Canvas style={{ width, height }}>
+      <Fill color='#F3ECDD' />
+      {layers.map((l) => (
+        <Points
+          key={l.color}
+          points={l.pts}
+          mode='points'
+          color={l.color}
+          style='stroke'
+          strokeWidth={POINT_W}
+          strokeCap='round'
+        />
+      ))}
+    </Canvas>
+  )
+}
+
+function MorphInk({
+  kind,
+  width,
+  active,
+}: {
+  kind: FengChapterKind
+  width: number
+  active: boolean
+}) {
+  const s = width / VW
+  const height = (width * VH) / VW
+  const spec = useMemo(() => genMorph(kind, s), [kind, s])
+  const l0 = spec.layers[0]
+  const l1 = spec.layers[1]
+
+  // One-shot: 0 (气散/煞聚) → 1 (聚/散宁). Plays when the chapter becomes active
+  // (the pager mounts all pages up front, so an unmemoized play would finish
+  // before it's ever seen); resets when off-screen so it replays on return.
+  const t = useSharedValue(0)
+  const reduceMotion = useReducedMotion()
+  useEffect(() => {
+    if (reduceMotion) {
+      t.value = 1
+      return
+    }
+    if (!active) {
+      t.value = 0
+      return
+    }
+    t.value = withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.cubic) })
+  }, [active, reduceMotion, t])
+
+  // Per-point lerp: each particle travels its own path from→to. Rebuilt only
+  // while `t` is animating (the ~2.6s play), then it rests → no sustained cost.
+  const pts0 = useDerivedValue(() => {
+    const tt = t.value
+    const from = l0.from
+    const to = l0.to
+    const out: SkPoint[] = []
+    for (let i = 0; i < from.length; i++) {
+      const a = from[i]
+      const b = to[i]
+      if (!a || !b) continue
+      out.push({ x: a.x + (b.x - a.x) * tt, y: a.y + (b.y - a.y) * tt })
+    }
+    return out
+  })
+  const pts1 = useDerivedValue(() => {
+    const tt = t.value
+    const from = l1.from
+    const to = l1.to
+    const out: SkPoint[] = []
+    for (let i = 0; i < from.length; i++) {
+      const a = from[i]
+      const b = to[i]
+      if (!a || !b) continue
+      out.push({ x: a.x + (b.x - a.x) * tt, y: a.y + (b.y - a.y) * tt })
+    }
+    return out
+  })
+  const op0 = useDerivedValue(() => l0.aFrom + (l0.aTo - l0.aFrom) * t.value)
+  const op1 = useDerivedValue(() => l1.aFrom + (l1.aTo - l1.aFrom) * t.value)
 
   return (
     <Canvas style={{ width, height }}>
       <Fill color='#F3ECDD' />
-      <Points
-        points={clouds.brF}
-        mode='points'
-        color={BR_F}
-        style='stroke'
-        strokeWidth={2}
-        strokeCap='round'
-      />
-      <Points
-        points={clouds.inkF}
-        mode='points'
-        color={INK_F}
-        style='stroke'
-        strokeWidth={2}
-        strokeCap='round'
-      />
-      <Points
-        points={clouds.brB}
-        mode='points'
-        color={BR_B}
-        style='stroke'
-        strokeWidth={2.7}
-        strokeCap='round'
-      />
-      <Points
-        points={clouds.inkB}
-        mode='points'
-        color={INK_B}
-        style='stroke'
-        strokeWidth={2.7}
-        strokeCap='round'
-      />
-      <Points
-        points={clouds.acc}
-        mode='points'
-        color={ACCENT}
-        style='stroke'
-        strokeWidth={2.7}
-        strokeCap='round'
-      />
+      <Group opacity={op0}>
+        <Points
+          points={pts0}
+          mode='points'
+          color={`rgb(${l0.rgb})`}
+          style='stroke'
+          strokeWidth={POINT_W}
+          strokeCap='round'
+        />
+      </Group>
+      <Group opacity={op1}>
+        <Points
+          points={pts1}
+          mode='points'
+          color={`rgb(${l1.rgb})`}
+          style='stroke'
+          strokeWidth={POINT_W}
+          strokeCap='round'
+        />
+      </Group>
     </Canvas>
   )
 }
