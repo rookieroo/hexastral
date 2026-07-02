@@ -32,8 +32,16 @@ def detect_coins(im, min_frac=0.02):
         ]
     )
     bg = np.median(frame, 0)
-    dist = np.abs(arr - bg).sum(2)
-    mask = dist > 60
+    bg_brightness = float(np.mean(bg))
+
+    if bg_brightness < 80:
+        gray = arr.astype(float).mean(axis=2)
+        thresh = max(80, gray.mean() + gray.std() * 0.3)
+        mask = gray > thresh
+    else:
+        dist = np.abs(arr - bg).sum(2)
+        mask = dist > 60
+
     mask = ndimage.binary_closing(mask, iterations=4)
     mask = ndimage.binary_fill_holes(mask)
     mask = ndimage.binary_opening(mask, iterations=3)
@@ -160,19 +168,21 @@ def save_cap(im: Image.Image, path: str) -> None:
     print(f"  WARN {os.path.basename(jpath)} {os.path.getsize(jpath) // 1024}KB")
 
 
-# id, file, (contrast, sat, sharp, warm), reverse, obv_region, rev_region
+# id, file, (contrast, sat, sharp, warm), reverse, obv_region, rev_region, gamma
+# New CC0 sources: banliang-qin + wuzhu-han (Scott Semans), kaiyuan-tang (Gary Todd)
 COINS = [
-    ("banliang", "banliang.jpg", (1.34, 1.38, 2.15, 1.02), "su", (0.38, 0.25, 0.70, 0.74), None),
-    ("wuzhu", "wuzhu.jpg", (1.30, 1.32, 2.05, 1.05), "su", None, None),
-    ("daquan", "daquan.jpg", (1.36, 1.38, 2.2, 1.0), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0)),
-    ("kaiyuan", "kaiyuan.png", (1.32, 1.38, 2.1, 1.04), "su", None, None),
-    ("daguan", "daguan.jpg", (1.36, 1.32, 2.15, 1.0), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0)),
+    ("banliang", "banliang-qin.jpg", (1.18, 1.22, 1.85, 1.05), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 1.0),
+    ("wuzhu", "wuzhu-han.jpg", (1.20, 1.26, 1.95, 1.04), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 1.0),
+    ("daquan", "daquan.jpg", (1.36, 1.38, 2.2, 1.0), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 1.0),
+    ("kaiyuan", "kaiyuan-cc0.jpg", (1.20, 1.24, 1.90, 1.06), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 0.65),
+    ("daguan", "daguan.jpg", (1.32, 1.28, 2.0, 1.02), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 0.58),
+    ("hongwu", "hongwu.jpg", (1.20, 1.24, 1.85, 1.04), "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0), 1.0),
 ]
 
 
 def bake_all() -> None:
     """Bake photo-based 华夏 caps into dist/."""
-    for cid, fname, (c, sat, sh, warm), rev, obv_reg, rev_reg in COINS:
+    for cid, fname, (c, sat, sh, warm), rev, obv_reg, rev_reg, gamma in COINS:
         path = os.path.join(SRC, fname)
         if not os.path.exists(path):
             print("SKIP missing", fname)
@@ -184,11 +194,19 @@ def bake_all() -> None:
             print("SKIP no coin", fname)
             continue
         obv = square_coin(obv_src, obv_box)
+        if gamma != 1.0:
+            arr = np.array(obv, dtype=float)
+            arr = 255 * (arr / 255) ** gamma
+            obv = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
         yang = finish(obv, bg, c, sat, sh, warm)
         if rev == "pair":
             rev_src = region_crop(full, rev_reg)
             rev_box, rbg = pick_coin(rev_src)
             rvs = square_coin(rev_src, rev_box if rev_box else obv_box)
+            if gamma != 1.0:
+                arr_r = np.array(rvs, dtype=float)
+                arr_r = 255 * (arr_r / 255) ** gamma
+                rvs = Image.fromarray(np.clip(arr_r, 0, 255).astype(np.uint8))
             yin = finish(rvs, rbg, c, sat * 0.92, sh * 0.95, warm)
         else:
             yin = finish(synth_su(obv, bg), bg, c, sat * 0.9, sh * 0.88, warm)

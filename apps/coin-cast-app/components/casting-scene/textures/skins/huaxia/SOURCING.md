@@ -46,7 +46,7 @@ re-verify before shipping.
 
 ---
 
-## SHIPPED SET (2026-07-01): realistic bronze, two-sided
+## SHIPPED SET (2026-07-01, updated 2026-07-02): realistic bronze, two-sided
 
 Direction changed from 碑拓-rubbing to **realistic bronze** (founder call — "真实铜钱刻画",
 真实质感). Baked by `gen-huaxia.py` (Pillow + numpy + scipy), NOT the ImageMagick 碑拓
@@ -56,19 +56,36 @@ reproducible (`python3 gen-huaxia.py` — defaults to `./src`). Each skin is **t
 
 | id | Coin | 朝代 | Faces | Source (huaxia/src/) |
 |---|---|---|---|---|
-| banliang | 半兩 | 秦 | obverse + synth 素背 | banliang.jpg (CC0) |
-| wuzhu | 五銖 | 汉 | obverse + synth 素背 | wuzhu.jpg (PD*) |
+| banliang | 半兩 | 秦 | obverse + **real 素背** | banliang-qin.jpg (CC0, Scott Semans) |
+| wuzhu | 五銖 | 汉 | obverse + **real 素背** | wuzhu-han.jpg (CC0, Scott Semans) |
 | daquan | 大泉五十 | 新莽 | obverse + **real 素背** | daquan.jpg (CC0, 2-coin) |
-| kaiyuan | 開元通寶 | 唐 | obverse + synth 素背 | kaiyuan.png (PD*) |
+| kaiyuan | 開元通寶 | 唐 | obverse + synth 素背 | kaiyuan-tang.jpg (CC0, Gary Todd) |
 | daguan | 大觀通寶 | 宋徽宗 | obverse + **real 素背** | daguan.jpg (PD, 2-coin) |
 
-- **synth 素背** = plain reverse blurred from the coin's own patina (these issues ARE
-  plain-backed, so it's faithful) — used where the photo is obverse-only. 大泉/大觀 came as
-  2-coin obverse+reverse shots → real 素背.
-- **Provenance**: PD/CC0 per the ledger above, but 五銖 + 開元 are "gray" (museum photo
-  rights). Fine for now; re-source clean CC0 or commission before heavy monetization.
-- **Pipeline**: detect coin blob(s) → square crop 1024² → enhance + unsharp → circular
-  mask → punch 方孔 → save as **JPEG q88** (≤500KB/cap; opaque albedo for 3D).
-- **Vector prototype**: `huaxia/vector/gen-kaiyuan-vector.py` → `kaiyuan-vector-*.png`
-  (clean 隶楷 master for small-screen QA; not wired to skins yet).
-- **Do NOT delete `src/`** — losing it is how the previous realistic set was lost.
+### 2026-07-02 source refresh
+
+Replaced provenance-gray 五銖 (museum photo) and 開元 (unknown-origin uploader PD claim)
+with verified CC0 sources from Scott Semans and Gary Todd. Also upgraded 半兩 to a
+higher-contrast Scott Semans CC0 single-coin photo from the S-series (obverse+reverse
+pair in one frame — now generates a real 素背 reverse instead of synthetic).
+
+| Old source | New source | License | Improvement |
+|---|---|---|---|
+| banliang.jpg (CC0, Gary Todd, 2-coin white-bg) | banliang-qin.jpg (CC0, Scott Semans, 2-coin dark-bg) | CC0 → CC0 | better coin/background contrast, real reverse |
+| wuzhu.jpg (PD* museum, 751×750 white-bg) | wuzhu-han.jpg (CC0, Scott Semans, 4277×2591) | PD* → CC0 | **license clean**, higher resolution, 2-coin obv+rev pair |
+| kaiyuan.png (PD* unknown, 627×634) | kaiyuan-tang.jpg (CC0, Gary Todd, 3888×2592) | PD* → CC0 | **license clean**, higher resolution |
+| daquan.jpg | unchanged | CC0 | fine |
+| daguan.jpg | unchanged + gamma pre-brightening for dark patina | PD | better contrast |
+
+**Pipeline improvements**:
+- Brightness-based coin detection for dark-background photos (Scott Semans style)
+- Gamma correction stage for low-contrast coins (daguan: 0.58, kaiyuan: 0.65)
+- New `gen-huaxia-rubbing.py`: experimental photo-based 碑拓 ink-rubbing variant → `dist/rubbing/`
+
+### Historical sources (archived, not in current build)
+
+| File | Source | Reason retired |
+|---|---|---|
+| banliang.jpg | Gary Todd CC0 5184×3456 | white-bg 2-coin shot, coin detection gave loose crops |
+| wuzhu.jpg | NMC museum PD* 751×750 | provenance gray (museum photo rights) |
+| kaiyuan.png | unknown uploader PD* 627×634 | provenance gray, very low resolution |

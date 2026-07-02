@@ -25,6 +25,7 @@ export type CoinSkinId =
   | 'daquan'
   | 'kaiyuan'
   | 'daguan'
+  | 'hongwu'
   // 原创 — owned-IP vector 碑拓 designs.
   | 'bagua'
   | 'taiji'
@@ -133,6 +134,19 @@ export const COIN_SKINS: readonly CoinSkin[] = [
       zh: '宋徽宗 · 瘦金体',
       'zh-Hant': '宋徽宗 · 瘦金體',
       ja: '宋徽宗 · 痩金体',
+    },
+  },
+  {
+    id: 'hongwu',
+    pro: true,
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/hongwu-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/hongwu-yin.jpg'),
+    label: { en: 'Hong Wu', zh: '洪武通宝', 'zh-Hant': '洪武通寶', ja: '洪武通宝' },
+    note: {
+      en: 'Ming · regular script',
+      zh: '明 · 楷书',
+      'zh-Hant': '明 · 楷書',
+      ja: '明 · 楷書',
     },
   },
   {

@@ -42,6 +42,7 @@ STYLE = {
     "daquan": {"seed": 37, "blend": 0.74, "corrosion": 0.48, "wear": 0.28},
     "kaiyuan": {"seed": 41, "blend": 0.80, "corrosion": 0.40, "wear": 0.22},
     "daguan": {"seed": 53, "blend": 0.72, "corrosion": 0.45, "wear": 0.27},
+    "hongwu": {"seed": 59, "blend": 0.76, "corrosion": 0.40, "wear": 0.25},
 }
 
 
@@ -84,7 +85,7 @@ def load_photo_cap(gh, cid: str, fname: str, *, face: str = "yang") -> Image.Ima
     if not os.path.exists(path):
         return None
     full = Image.open(path).convert("RGB")
-    if cid in ("daquan", "daguan"):
+    if cid in ("daquan", "daguan", "hongwu"):
         obv_reg = (0.0, 0.0, 0.5, 1.0) if face == "yang" else (0.5, 0.0, 1.0, 1.0)
     elif cid == "banliang":
         obv_reg = (0.38, 0.25, 0.70, 0.74) if face == "yang" else None
