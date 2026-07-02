@@ -10,10 +10,8 @@ type SkinLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
  *
  * Three tiers:
  *  - classic — the free default (素钱): plain 碑拓 rubbing, 四出文 front vs plain back.
- *  - 华夏钱币史 (banliang…daguan) — REALISTIC two-sided bronze extracted from PD/CC0
- *    coin photos (real obverse 字面 + real/synth 素背 背面). Baked by huaxia/gen-huaxia.py;
- *    sources + licenses in huaxia/SOURCING.md. Provenance is PD/CC0 but some are
- *    "gray" (museum photo rights) — re-verify before heavy monetization.
+ *  - 华夏钱币史 (banliang…daguan) — REALISTIC two-sided bronze from PD/CC0 photos.
+ *    Baked as JPEG caps (≤500KB) by huaxia/gen-huaxia.py.
  *  - 原创 (bagua/taiji/wuxing…) — ORIGINAL in-house vector 碑拓 designs, owned IP, no
  *    real-coin copying, no scripture. They share the plain SU_BACK reverse.
  *    Design system: original/ART-BRIEF.md.
@@ -75,8 +73,8 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'banliang',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yang.png'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yin.png'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yin.jpg'),
     label: { en: 'Ban Liang', zh: '半两', 'zh-Hant': '半兩', ja: '半両' },
     note: {
       en: 'Qin · seal script',
@@ -88,8 +86,8 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'wuzhu',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yang.png'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yin.png'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yin.jpg'),
     label: { en: 'Wu Zhu', zh: '五铢', 'zh-Hant': '五銖', ja: '五銖' },
     note: {
       en: 'Han · seal script',
@@ -101,8 +99,8 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'daquan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yang.png'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yin.png'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yin.jpg'),
     label: { en: 'Da Quan', zh: '大泉五十', 'zh-Hant': '大泉五十', ja: '大泉五十' },
     note: {
       en: 'Xin · suspended-needle seal',
@@ -114,8 +112,8 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'kaiyuan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yang.png'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yin.png'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yin.jpg'),
     label: { en: 'Kaiyuan', zh: '开元通宝', 'zh-Hant': '開元通寶', ja: '開元通宝' },
     note: {
       en: 'Tang · clerical-regular',
@@ -127,8 +125,8 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   {
     id: 'daguan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yang.png'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yin.png'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yang.jpg'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yin.jpg'),
     label: { en: 'Da Guan', zh: '大观通宝', 'zh-Hant': '大觀通寶', ja: '大觀通宝' },
     note: {
       en: 'Song · Slender Gold script',
@@ -141,7 +139,7 @@ export const COIN_SKINS: readonly CoinSkin[] = [
     id: 'bagua',
     pro: true,
     yang: require('../components/casting-scene/textures/skins/original/dist/bagua-yang.png'),
-    yin: SU_BACK,
+    yin: require('../components/casting-scene/textures/skins/original/dist/bagua-yin.png'),
     label: { en: 'Bagua', zh: '八卦钱', 'zh-Hant': '八卦錢', ja: '八卦銭' },
     note: {
       en: 'Original · Fuxi eight trigrams',
@@ -154,7 +152,7 @@ export const COIN_SKINS: readonly CoinSkin[] = [
     id: 'taiji',
     pro: true,
     yang: require('../components/casting-scene/textures/skins/original/dist/taiji-yang.png'),
-    yin: SU_BACK,
+    yin: require('../components/casting-scene/textures/skins/original/dist/taiji-yin.png'),
     label: { en: 'Taiji', zh: '太极', 'zh-Hant': '太極', ja: '太極' },
     note: {
       en: 'Original · yin-yang',
@@ -282,11 +280,11 @@ export async function saveSelectedSkinId(id: CoinSkinId): Promise<void> {
   }
 }
 
-export const COIN_SKIN_UI: Record<SkinLocale, { title: string; hint: string; locked: string }> = {
-  en: { title: 'Coin skin', hint: 'The coin you cast with', locked: 'Pro' },
-  zh: { title: '卦钱皮肤', hint: '你摇卦用的那枚铜钱', locked: 'Pro' },
-  'zh-Hant': { title: '卦錢皮膚', hint: '你搖卦用的那枚銅錢', locked: 'Pro' },
-  ja: { title: '卦銭スキン', hint: '占いに使う銅銭', locked: 'Pro' },
+export const COIN_SKIN_UI: Record<SkinLocale, { title: string; hint: string; locked: string; faceYang: string; faceYin: string }> = {
+  en: { title: 'Coin skin', hint: 'The coin you cast with', locked: 'Pro', faceYang: 'Obv', faceYin: 'Rev' },
+  zh: { title: '卦钱皮肤', hint: '你摇卦用的那枚铜钱', locked: 'Pro', faceYang: '字', faceYin: '背' },
+  'zh-Hant': { title: '卦錢皮膚', hint: '你搖卦用的那枚銅錢', locked: 'Pro', faceYang: '字', faceYin: '背' },
+  ja: { title: '卦銭スキン', hint: '占いに使う銅銭', locked: 'Pro', faceYang: '表', faceYin: '裏' },
 }
 
 export function coinSkinUi(locale: string) {

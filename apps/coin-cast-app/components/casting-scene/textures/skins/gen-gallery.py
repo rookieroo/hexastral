@@ -4,10 +4,20 @@ coin skin, front (字面) + back (背面). Run after re-baking any set. Prevents
 import base64, io, os
 from PIL import Image
 
-SK = "/Users/chris/Desktop/code/web/hexastral/apps/coin-cast-app/components/casting-scene/textures/skins"
+SK = os.path.dirname(os.path.abspath(__file__))
 HX = os.path.join(SK, "huaxia", "dist")
+REP = os.path.join(HX, "replica")
+BRZ = os.path.join(HX, "replica-bronze")
 OR = os.path.join(SK, "original", "dist")
 SU_BACK = os.path.join(HX, "back-su-yin.png")
+REP_YIN = os.path.join(REP, "su-yin.png")
+
+def cap_path(dist_dir: str, cid: str, face: str) -> str:
+    for ext in (".jpg", ".png"):
+        p = os.path.join(dist_dir, f"{cid}-{face}{ext}")
+        if os.path.exists(p):
+            return p
+    return os.path.join(dist_dir, f"{cid}-{face}.jpg")
 
 def thumb(path, size=150):
     im = Image.open(path).convert("RGB"); im.thumbnail((size, size), Image.LANCZOS)
@@ -39,9 +49,22 @@ cards = []
 for cid, lab, note, yp, np_ in CLASSIC:
     cards.append(card(lab, note, yp, np_, "free"))
 for cid, lab, note in HUAXIA:
-    cards.append(card(lab, note, os.path.join(HX, f"{cid}-yang.png"), os.path.join(HX, f"{cid}-yin.png"), "华夏"))
+    cards.append(card(lab, note, cap_path(HX, cid, "yang"), cap_path(HX, cid, "yin"), "华夏"))
+for cid, lab, note in HUAXIA:
+    yp = cap_path(REP, cid, "yang")
+    np_ = REP_YIN if os.path.exists(REP_YIN) else cap_path(REP, cid, "yin")
+    if os.path.exists(yp):
+        cards.append(card(lab, note + " · 碑拓", yp, np_, "复刻"))
+for cid, lab, note in HUAXIA:
+    yp = cap_path(BRZ, cid, "yang")
+    np_ = cap_path(BRZ, cid, "yin")
+    if os.path.exists(yp):
+        cards.append(card(lab, note + " · 青铜写实", yp, np_, "写实"))
 for cid, lab, note in ORIG:
-    cards.append(card(lab, note, os.path.join(OR, f"{cid}-yang.png"), SU_BACK, "原创"))
+    np_ = os.path.join(OR, f"{cid}-yin.png")
+    if not os.path.exists(np_):
+        np_ = SU_BACK
+    cards.append(card(lab, note, os.path.join(OR, f"{cid}-yang.png"), np_, "原创"))
 
 html = f'''<!doctype html><meta charset="utf-8"><title>CoinCast 卦钱皮肤图鉴</title>
 <style>
@@ -55,7 +78,7 @@ h1{{font-weight:500;letter-spacing:2px;font-size:20px}}
 .lab{{margin-top:10px;font-size:14px}}
 .note{{color:#8a8478;font-size:11px;margin-top:2px}}
 .tier{{display:inline-block;margin-top:8px;font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:8px}}
-.free{{background:#1f2a1a;color:#9fce7e}} .华夏{{background:#2a1f14;color:#d9a441}} .原创{{background:#1a1f2a;color:#7e9fce}}
+.free{{background:#1f2a1a;color:#9fce7e}} .华夏{{background:#2a1f14;color:#d9a441}} .复刻{{background:#2a2414;color:#c9b896}} .写实{{background:#1f2418;color:#8fbc7a}} .原创{{background:#1a1f2a;color:#7e9fce}}
 </style>
 <h1>CoinCast · 卦钱皮肤图鉴</h1>
 <div class="sub">left = 字面 (obverse / 阳) · right = 背面 (reverse / 阴) — every skin two-sided</div>

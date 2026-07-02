@@ -35,6 +35,11 @@ taiji=(f'<path d="M300 {300-R} A {R} {R} 0 0 1 300 {300+R} A {R//2} {R//2} 0 0 1
  f'<circle cx="300" cy="{300-R//2}" r="26" fill="#e7ddc7" stroke="none"/><circle cx="300" cy="{300+R//2}" r="26" fill="#16110a" stroke="none"/>'
  '<circle cx="300" cy="300" r="78" fill="#e7ddc7" stroke="none"/>'+RING+'<rect x="258" y="258" width="84" height="84" fill="none" stroke-width="22"/>')
 render(taiji, os.path.join(D,"taiji-yang.png"))
+# 太极 yin — inverted fish (背面对读: 阴鱼朝上)
+taiji_yin=(f'<path d="M300 {300+R} A {R} {R} 0 0 0 300 {300-R} A {R//2} {R//2} 0 0 0 300 300 A {R//2} {R//2} 0 0 1 300 {300+R} Z" stroke="none"/>'
+ f'<circle cx="300" cy="{300+R//2}" r="26" fill="#e7ddc7" stroke="none"/><circle cx="300" cy="{300-R//2}" r="26" fill="#16110a" stroke="none"/>'
+ '<circle cx="300" cy="300" r="78" fill="#e7ddc7" stroke="none"/>'+RING+'<rect x="258" y="258" width="84" height="84" fill="none" stroke-width="22"/>')
+render(taiji_yin, os.path.join(D,"taiji-yin.png"))
 # 八卦 (bold trigrams, 先天)
 TRI={'乾':[1,1,1],'坤':[0,0,0],'坎':[0,1,0],'離':[1,0,1],'巽':[1,1,0],'震':[0,0,1],'艮':[1,0,0],'兌':[0,1,1]}
 POS=[('乾',270),('巽',315),('坎',0),('艮',45),('坤',90),('震',135),('離',180),('兌',225)]; Rb=186; bg=''
@@ -44,6 +49,15 @@ for n,ang in POS:
         ly=cy-16+i*16
         bg+= (f'<rect x="{cx-28:.0f}" y="{ly-4.5:.0f}" width="56" height="9" rx="2"/>' if b else f'<rect x="{cx-28:.0f}" y="{ly-4.5:.0f}" width="22" height="9" rx="2"/><rect x="{cx+6:.0f}" y="{ly-4.5:.0f}" width="22" height="9" rx="2"/>')
 render(RING+HOLE+bg, os.path.join(D,"bagua-yang.png"))
+# 八卦 yin — 后天八卦 (背纹与字面先天不同)
+HOUTIAN_POS=[('坎',270),('艮',315),('震',0),('巽',45),('離',90),('坤',135),('兌',180),('乾',225)]
+bg_yin=''
+for n,ang in HOUTIAN_POS:
+    a=math.radians(ang); cx=300+Rb*math.cos(a); cy=300+Rb*math.sin(a)
+    for i,b in enumerate(TRI[n]):
+        ly=cy-14+i*14
+        bg_yin+= (f'<rect x="{cx-24:.0f}" y="{ly-3.5:.0f}" width="48" height="7" rx="1.5"/>' if b else f'<rect x="{cx-24:.0f}" y="{ly-3.5:.0f}" width="18" height="7" rx="1.5"/><rect x="{cx+6:.0f}" y="{ly-3.5:.0f}" width="18" height="7" rx="1.5"/>')
+render(RING+HOLE+bg_yin, os.path.join(D,"bagua-yin.png"))
 # 北斗七星 (星象)
 SB=[(165,232),(150,176),(212,168),(232,224),(300,206),(356,178),(398,196)]
 def _star(x,y,r=8,sp=14): return (f'<circle cx="{x}" cy="{y}" r="{r}" fill="#16110a" stroke="none"/><line x1="{x-sp}" y1="{y}" x2="{x+sp}" y2="{y}" stroke="#16110a" stroke-width="2.4"/><line x1="{x}" y1="{y-sp}" x2="{x}" y2="{y+sp}" stroke="#16110a" stroke-width="2.4"/>')

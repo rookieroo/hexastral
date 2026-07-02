@@ -67,6 +67,8 @@ reproducible (`python3 gen-huaxia.py` — defaults to `./src`). Each skin is **t
   2-coin obverse+reverse shots → real 素背.
 - **Provenance**: PD/CC0 per the ledger above, but 五銖 + 開元 are "gray" (museum photo
   rights). Fine for now; re-source clean CC0 or commission before heavy monetization.
-- **Pipeline**: detect coin blob(s) (scipy CC over a bg-distance mask) → square crop →
-  enhance patina → circular cap mask → punch 方孔 dark → flatten on the dark scene ground.
+- **Pipeline**: detect coin blob(s) → square crop 1024² → enhance + unsharp → circular
+  mask → punch 方孔 → save as **JPEG q88** (≤500KB/cap; opaque albedo for 3D).
+- **Vector prototype**: `huaxia/vector/gen-kaiyuan-vector.py` → `kaiyuan-vector-*.png`
+  (clean 隶楷 master for small-screen QA; not wired to skins yet).
 - **Do NOT delete `src/`** — losing it is how the previous realistic set was lost.

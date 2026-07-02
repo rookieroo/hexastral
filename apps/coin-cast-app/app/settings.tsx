@@ -107,14 +107,15 @@ function ToggleCard({
   )
 }
 
-/** One coin tile in the skin gallery — circular rubbing thumbnail + name, with
- *  a selected ring (✓) or a Pro lock badge. */
+/** One coin tile — obverse | reverse dual preview (matches skins/gallery.html). */
 function SkinTile({
   skin,
   selected,
   locked,
   label,
   note,
+  faceYang,
+  faceYin,
   onPress,
 }: {
   skin: CoinSkin
@@ -122,15 +123,27 @@ function SkinTile({
   locked: boolean
   label: string
   note: string
+  faceYang: string
+  faceYin: string
   onPress: () => void
 }) {
   const { colors } = useTheme()
+  const faceOpacity = locked ? 0.45 : 1
+  const faceStyle = {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 999,
+    overflow: 'hidden' as const,
+    backgroundColor: colors.cardElevated,
+    borderWidth: 0.5,
+    borderColor: colors.separator,
+  }
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole='button'
       accessibilityState={{ selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={`${label} — ${faceYang} ${faceYin}`}
       style={({ pressed }) => ({
         width: '31%',
         alignItems: 'center',
@@ -142,20 +155,34 @@ function SkinTile({
         style={{
           width: '100%',
           aspectRatio: 1,
-          borderRadius: 999,
+          borderRadius: 14,
           backgroundColor: colors.cardElevated,
           borderWidth: selected ? 2 : 0.5,
           borderColor: selected ? colors.accent : colors.separator,
-          overflow: 'hidden',
-          alignItems: 'center',
-          justifyContent: 'center',
+          padding: 6,
+          gap: 4,
         }}
       >
-        <Image
-          source={skin.yang as number}
-          resizeMode='cover'
-          style={{ width: '100%', height: '100%', opacity: locked ? 0.45 : 1 }}
-        />
+        <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+          <View style={faceStyle}>
+            <Image
+              source={skin.yang as number}
+              resizeMode='cover'
+              style={{ width: '100%', height: '100%', opacity: faceOpacity }}
+            />
+          </View>
+          <View style={faceStyle}>
+            <Image
+              source={skin.yin as number}
+              resizeMode='cover'
+              style={{ width: '100%', height: '100%', opacity: faceOpacity }}
+            />
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+          <Text style={{ color: colors.dim, fontSize: 9, letterSpacing: 0.5 }}>{faceYang}</Text>
+          <Text style={{ color: colors.dim, fontSize: 9, letterSpacing: 0.5 }}>{faceYin}</Text>
+        </View>
         {locked ? (
           <View
             style={{
@@ -336,6 +363,8 @@ export default function CoinCastSettingsScreen() {
                 locked={skin.pro && !coincastPro}
                 label={coinSkinLabel(skin, uiLocale)}
                 note={coinSkinNote(skin, uiLocale)}
+                faceYang={skinUi.faceYang}
+                faceYin={skinUi.faceYin}
                 onPress={() => void selectSkin(skin.id, skin.pro)}
               />
             ))}
