@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <title>半两参考素材 · 选图</title>
+  <style>
+    :root { --bg: #0c0b0a; --card: #161412; --border: #2a2620; --text: #e8e0d4; --muted: #8a8070; --link: #9ab4d4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; }
+    header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+    h1 { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 0.85rem; max-width: 52rem; }
+    .sub a { color: var(--link); }
+    nav { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(12,11,10,0.92); backdrop-filter: blur(8px); z-index: 2; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.8rem; padding: 0.25rem 0.55rem; border: 1px solid var(--border); }
+    nav a:hover { color: var(--text); border-color: #4a4438; }
+    section { padding: 1rem 1.5rem 2rem; }
+    section h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--muted); letter-spacing: 0.04em; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+    .card { background: var(--card); border: 1px solid var(--border); display: flex; flex-direction: column; }
+    .card img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #0a0908; cursor: zoom-in; }
+    .card .meta { padding: 0.55rem 0.65rem 0.65rem; font-size: 0.75rem; }
+    .id { font-weight: 700; color: #d4bc82; margin-right: 0.35rem; }
+    .lic { color: var(--muted); font-size: 0.68rem; }
+    .card a.title { color: var(--text); text-decoration: none; }
+    .card a.title:hover { text-decoration: underline; }
+    .current { outline: 1px solid #d4bc82; }
+    footer { padding: 1rem 1.5rem 2rem; color: var(--muted); font-size: 0.75rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>半两 · 公开参考素材</h1>
+    <p class="sub">点击图片或标题打开 Wikimedia 原图。确认后回复 <strong>ID</strong>。完整列表见 <a href="BANLIANG-REFERENCES.md">BANLIANG-REFERENCES.md</a>。当前工程：<code>../src/banliang-xianyang.jpg</code>（<strong>F01</strong> 咸阳博）。</p>
+  </header>
+  <nav>
+    <a href="#sec-a">A 秦单枚</a>
+    <a href="#sec-b">B 战国秦合集</a>
+    <a href="#sec-c">C 钱范</a>
+    <a href="#sec-d">D Semans</a>
+    <a href="#sec-e">E Christensen</a>
+    <a href="#sec-f">F 馆藏</a>
+    <a href="#sec-g">G 拓片风</a>
+  </nav>
+
+  <section id="sec-a">
+    <h2>A · 秦代单枚高清（CC0 / CC-BY）</h2>
+    <div class="grid" id="grid-a"></div>
+  </section>
+  <section id="sec-b">
+    <h2>B · 战国秦 / 展柜合集</h2>
+    <div class="grid" id="grid-b"></div>
+  </section>
+  <section id="sec-c">
+    <h2>C · 钱范（阴文，笔画最利）</h2>
+    <div class="grid" id="grid-c"></div>
+  </section>
+  <section id="sec-d">
+    <h2>D · Scott Semans</h2>
+    <div class="grid" id="grid-d"></div>
+  </section>
+  <section id="sec-e">
+    <h2>E · Lars Bo Christensen（01–12 预览）</h2>
+    <div class="grid" id="grid-e"></div>
+  </section>
+  <section id="sec-f">
+    <h2>F · 博物馆实拍</h2>
+    <div class="grid" id="grid-f"></div>
+  </section>
+  <section id="sec-g">
+    <h2>G · 拓片 / 线图风</h2>
+    <div class="grid" id="grid-g"></div>
+  </section>
+
+  <footer>
+    Commons 全分类（115 文件）：<a href="https://commons.wikimedia.org/wiki/Category:Ban_Liang_coins">Ban Liang coins</a> ·
+    Gary Todd 检索：<a href="http://www.worldhistorypics.com/">WorldHistoryPics</a>
+  </footer>
+
+  <script>
+    const thumb = (file, w = 400) =>
+      `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w}`;
+    const page = (file) =>
+      `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file)}`;
+
+    const items = {
+      a: [
+        ["A01", "026_S-83_Qin_Ban_Liang,_221-208_BC,_30mm.jpg", "S-83 秦 221–208 BC", "CC0"],
+        ["A02", "027_S-83_Qin_Ban_Liang,_221-208,_30mm.jpg", "S-83 秦 另一枚", "CC0"],
+        ["A03", "028_S-83_Qin_or_Han_Ban_Liang,_28mm.jpg", "S-83 秦或汉 28mm", "CC0"],
+        ["A04", "S518_Qin_Banliang_(7210458082).jpg", "Qin Banliang S518", "CC-BY 2.0"],
+        ["A05", "S525_Qin_Banliang_(7274247836).jpg", "Qin Banliang S525", "CC-BY 2.0"],
+        ["A06", "S466_Qin_banliang_(6966377082).jpg", "Qin banliang S466", "CC-BY 2.0"],
+        ["A07", "S561_banliang_Qin_1_(8213170667).jpg", "banliang Qin 1", "CC-BY 2.0"],
+        ["A08", "Qin_Banliang_Coin_(10110060403).jpg", "Qin Banliang 特写", "CC0"],
+        ["A09", "Qin_Banliang_Coins_(10129197876).jpg", "Qin Banliang Coins", "CC0"],
+        ["A10", "Qin_Banliang_Coins_(16910956118).jpg", "Qin Banliang 大文件", "CC0"],
+        ["A11", "Qin_Bronze_Banliang_Coins_(9896365964).jpg", "Qin Bronze Banliang", "CC0"],
+        ["A12", "Qin_Banliang_Bronze_Coins_(9832254566).jpg", "Qin Banliang Bronze", "CC0"],
+        ["A13", "Qin_Ancient_Chinese_Banliang_Coins_(15437714964).jpg", "Qin Ancient Banliang", "CC0"],
+        ["A14", "Bronze_Banliang_Coin_of_Qin_State_(10342440264).jpg", "Bronze Banliang Qin", "CC0"],
+        ["A15", "Bronze_Banliang_Coin_of_Qin_State_(10342441145).jpg", "Bronze Banliang Qin 2", "CC0"],
+        ["A16", "Chinese_Money_8_-_Ban_Liang_Coin.jpg", "Chinese Money 8", "CC0"],
+        ["A17", "Banliang_Coin_(9910436285).jpg", "Banliang Coin", "CC0"],
+        ["A18", "20241025_Banliang_Coins,_Qin_Dynasty.jpg", "2024 秦半两", "?"],
+        ["A19", "Copper_cash,_Qin_dynasty,_Shaanxi_History_Museum.jpg", "陕历博 秦铜钱", "?"],
+        ["A20", "Qin_Coin.png", "Qin Coin PNG", "?"],
+      ],
+      b: [
+        ["B01", "025_S-82_or_88,_Warring_States_or_Qin_Ban_Liang,_34mm.jpg", "战国或秦 34mm", "CC0"],
+        ["B02", "Warring_States_Ancient_Chinese_Coins_(15437717734).jpg", "战国秦合集", "CC0"],
+        ["B03", "Warring_States_Ancient_Chinese_Coins_(15874251027).jpg", "战国秦合集 2", "CC0"],
+        ["B04", "Ancient_Chinese_Currency_(殷・周・秦).jpg", "殷周秦展板", "CC0"],
+        ["B05", "Banliang_Coins_of_Qin_and_Han_Dynasties_01.jpg", "上博 秦汉半两 01", "CC0"],
+        ["B06", "Banliang_Coins_of_Qin_and_Han_Dynasties_02.jpg", "上博 02", "CC0"],
+        ["B07", "Banliang_Coins_of_Qin_and_Han_Dynasties_03.jpg", "上博 03", "CC0"],
+        ["B08", "S443_banliang_(6996317362).jpg", "S443 banliang", "CC-BY 2.0"],
+        ["B09", "S467_banliang_(6996320060).jpg", "S467 banliang", "CC-BY 2.0"],
+        ["B10", "S468_banliang_(7142403029).jpg", "S468 banliang", "CC-BY 2.0"],
+      ],
+      c: [
+        ["C01", "Mould_for_Casting_Banliang_Copper_Coins_01.jpg", "半两铜范 01", "CC0"],
+        ["C02", "Mould_for_Casting_Banliang_Copper_Coins_02.jpg", "半两铜范 02", "CC0"],
+        ["C03", "Mould_for_Casting_Banliang_Copper_Coins_03.jpg", "半两铜范 03", "CC0"],
+        ["C04", "Western_Han_Master_Mould_for_Casting_Banliang_Copper_Coins.jpg", "西汉总母范", "CC0"],
+        ["C05", "Western_Han_Banliang_Coin_Mould_(15873204788).jpg", "西汉半两范", "CC0"],
+        ["C06", "Han_Stone_Coin_Mould_(10146700935).jpg", "汉石钱范", "CC0"],
+      ],
+      d: [
+        ["D01", "Ban_Liang_(Kingdom_of_Qin)_-_Scott_Semans.jpg", "Kingdom of Qin 大图", "CC-BY 3.0"],
+        ["D02", "Ban_Liang_(半兩)_-_Kingdom_of_Qin_-_Scott_Semans_01.jpg", "Kingdom of Qin 01", "CC-BY 3.0"],
+        ["D03", "Ban_Liang_(半兩)_-_Kingdom_of_Qin_-_Scott_Semans_02.jpg", "Kingdom of Qin 02 合集", "CC-BY 3.0"],
+        ["D04", "Ban_Liang_(半兩)_-_Qin_Dynasty_era_charm_-_Scott_Semans.jpg", "秦厌胜钱", "CC-BY 3.0"],
+      ],
+      e: Array.from({ length: 12 }, (_, i) => {
+        const n = String(i + 1).padStart(2, "0");
+        return [
+          `E${n}`,
+          `Ban_Liang_(半兩)_cash_coins_-_Lars_Bo_Christensen_(李博_-_丹麥)_${n}.jpg`,
+          `Christensen ${n}`,
+          "CC-BY?",
+        ];
+      }),
+      f: [
+        ["F01", "Bianliang_Coin,_Xianyang_Museum.jpg", "咸阳博物馆 · 当前参考", "CC-BY-SA", true],
+        ["F02", "2023-10-10_陕西历史博物馆展览_Collections_of_the_Shaanxi_History_Museum_68.jpg", "陕历博展览 68", "?"],
+        ["F03", "2023-10-10_陕西历史博物馆展览_Collections_of_the_Shaanxi_History_Museum_210.jpg", "陕历博展览 210", "?"],
+      ],
+      g: [
+        ["G01", "半兩錢.jpg", "半兩錢 剪影 PD", "PD"],
+        ["G02", "Bronze_ban-liang,_under_Eastern_Zhou_Dynasty,_%22Warring_State%22,_China_-_Hartill_7.5_-_Coinsandrings.jpg", "Hartill 7.5 线图", "?"],
+      ],
+    };
+
+    function render(gridId, list) {
+      const el = document.getElementById(gridId);
+      for (const row of list) {
+        const [id, file, title, lic, isCurrent] = row;
+        const card = document.createElement("article");
+        card.className = "card" + (isCurrent ? " current" : "");
+        card.innerHTML = `
+          <a href="${page(file)}" target="_blank" rel="noopener">
+            <img src="${thumb(file)}" alt="${id}" loading="lazy" />
+          </a>
+          <div class="meta">
+            <span class="id">${id}</span>
+            <a class="title" href="${page(file)}" target="_blank" rel="noopener">${title}</a>
+            <div class="lic">${lic}</div>
+          </div>`;
+        el.appendChild(card);
+      }
+    }
+
+    render("grid-a", items.a);
+    render("grid-b", items.b);
+    render("grid-c", items.c);
+    render("grid-d", items.d);
+    render("grid-e", items.e);
+    render("grid-f", items.f);
+    render("grid-g", items.g);
+  </script>
+</body>
+</html>

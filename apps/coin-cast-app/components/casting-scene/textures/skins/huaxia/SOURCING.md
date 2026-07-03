@@ -62,6 +62,18 @@ reproducible (`python3 gen-huaxia.py` — defaults to `./src`). Each skin is **t
 | kaiyuan | 開元通寶 | 唐 | obverse + synth 素背 | kaiyuan-tang.jpg (CC0, Gary Todd) |
 | daguan | 大觀通寶 | 宋徽宗 | obverse + **real 素背** | daguan.jpg (PD, 2-coin) |
 
+### 设计皮肤（`huaxia/design/`）
+
+| id | 参考 | 授权 |
+|----|------|------|
+| banliang | F01 `banliang-xianyang.jpg` 咸阳博 | CC BY-SA |
+| wuzhu | W01 `wuzhu-wudi.jpg` Todd S-114 武帝 | CC0 |
+
+烘焙：`gen-banliang.py` / `gen-wuzhu.py` → `design/dist/*.png`（已接入 `coin-skins.ts`）。  
+写实青铜照片仍保留于 `dist/`（gallery 华夏 tier）。
+
+---
+
 ### 2026-07-02 source refresh
 
 Replaced provenance-gray 五銖 (museum photo) and 開元 (unknown-origin uploader PD claim)
@@ -89,3 +101,32 @@ pair in one frame — now generates a real 素背 reverse instead of synthetic).
 | banliang.jpg | Gary Todd CC0 5184×3456 | white-bg 2-coin shot, coin detection gave loose crops |
 | wuzhu.jpg | NMC museum PD* 751×750 | provenance gray (museum photo rights) |
 | kaiyuan.png | unknown uploader PD* 627×634 | provenance gray, very low resolution |
+
+---
+
+## Gallery WIP: 碑拓 / 印章 / 手描 (2026-07-03)
+
+Shipped app skins remain **realistic bronze** (`gen-huaxia.py` → `dist/`). Gallery-only
+tiers documented in `GALLERY-TIERS.md` — **not** wired in `coin-skins.ts`.
+
+### Tracing sources (`tracing_config.json`)
+
+| id | Primary | Fallback | Notes |
+|---|---|---|---|
+| banliang | banliang-qin.jpg | banliang.jpg | fixed obv/rev crop on 2-coin frame |
+| wuzhu | wuzhu-trace.jpg | wuzhu-han.jpg | trace-optimized crop when present |
+| daquan | daquan.jpg | — | needs higher-contrast 拓片 long-term |
+| kaiyuan | kaiyuan-trace.jpg | kaiyuan-tang.jpg | trace-optimized crop when present |
+| daguan | daguan.jpg | — | gamma 0.58; needs 拓片 long-term |
+| hongwu | hongwu.jpg | — | 2-coin obv/rev split |
+
+Re-source targets for 大泉 / 大观: pre-1929 谱录拓片 (PD) or commissioned clean scan.
+
+### Scripts
+
+| Script | Output |
+|---|---|
+| `gen-huaxia-tracing.py` | `dist/tracing/`, `tracing-png/`, `tracing-masks/` |
+| `gen-seal-from-tracing.py` | `dist/seal-photo/` (masks → SVG seal palette) |
+| `gen-huaxia-hand-rubbing.py` | `dist/hand-rubbing/` (`glyph_paths.json` + Douglas–Peucker) |
+| `extract-glyph-paths.py` | regenerates `glyph_paths.json` from photos |

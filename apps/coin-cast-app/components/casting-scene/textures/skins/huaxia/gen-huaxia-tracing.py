@@ -1,240 +1,194 @@
-"""Bake 碑拓 (ink-rubbing) cap textures from PD/CC0 coin photos via
-edge-preserving line extraction — pure duotone (black ink on rice paper).
+#!/usr/bin/env python3
+"""华夏五枚 — 碑拓线稿（凸起字 relief 提取 + 分层滤镜 + 矢量廓/方孔）。
 
-Method: bilateral filter → difference of Gaussians → adaptive threshold
-→ morphological cleanup → stroke thickening. This suppresses surface
-corrosion noise while keeping glyph edges sharp and readable.
-
-Run: python3 gen-huaxia-tracing.py [threshold=0.5] [stroke_width=2]
+Run: python3 gen-huaxia-tracing.py
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
-import importlib.util
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageOps
 from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(HERE, "src")
 OUT = os.path.join(HERE, "dist", "tracing")
-SRC_DIR = os.path.join(HERE, "src")
-os.makedirs(OUT, exist_ok=True)
+PNG_OUT = os.path.join(HERE, "dist", "tracing-png")
+MASK_OUT = os.path.join(HERE, "dist", "tracing-masks")
+CFG_PATH = os.path.join(HERE, "tracing_config.json")
 
 S = 1024
-MAX_BYTES = 500 * 1024
-PAPER = (250, 245, 235)
-INK = (22, 17, 10)
+MAX_JPEG = 500_000
 
+sys.path.insert(0, HERE)
+from rubbing_style import (  # noqa: E402
+    PALETTE_RUB,
+    field_mask,
+    hole_exclusion,
+    render_rubbing_cap,
+    synth_plain_glyph_mask,
+)
 
-def load_gh():
-    spec = importlib.util.spec_from_file_location(
-        "gen_huaxia", os.path.join(HERE, "gen-huaxia.py")
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError("cannot load gen-huaxia.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def extract_ink_mask(coin_rgb: Image.Image, gamma: float) -> np.ndarray:
-    """DoG edge extraction: G(narrow) - G(wide).
-
-    Keeps glyph-scale edges (stroke width), suppresses fine corrosion
-    texture and slow illumination gradients.
-    """
-    arr = np.asarray(coin_rgb, dtype=np.float32)
-    if gamma != 1.0:
-        arr = 255 * (arr / 255) ** gamma
-    gray = arr.mean(axis=2)
-
-    narrow = ndimage.gaussian_filter(gray, sigma=2.5)
-    wide = ndimage.gaussian_filter(gray, sigma=18.0)
-    return narrow - wide
-
-
-def mask_to_duotone(dog: np.ndarray, percentile: float = 10.0) -> np.ndarray:
-    """Percentile threshold + aggressive cleanup → clean duotone.
-
-    Uses Nth percentile of DoG as ink threshold. Strong morphological
-    cleanup removes surface corrosion noise while keeping glyph strokes.
-    """
-    thresh = np.percentile(dog, percentile)
-    ink = dog < thresh
-
-    # Aggressive opening to kill isolated specks
-    se3 = np.ones((3, 3))
-    ink = ndimage.binary_opening(ink, structure=se3, iterations=3)
-
-    # Remove small components
-    lbl, n = ndimage.label(ink)
-    sizes = np.bincount(lbl.ravel())
-    min_size = 60
-    for i in range(1, n + 1):
-        if sizes[i] < min_size:
-            ink[lbl == i] = False
-
-    # Close to reconnect broken strokes
-    ink = ndimage.binary_closing(ink, structure=se3, iterations=3)
-
-    return np.where(ink, 0, 255).astype(np.uint8)
-
-
-def thicken_strokes(ink: np.ndarray, width: int = 2) -> np.ndarray:
-    """Dilate ink strokes to make them bolder and more readable."""
-    if width <= 0:
-        return ink
-    ink_bool = ink == 0
-    ink_bool = ndimage.binary_dilation(ink_bool, iterations=width)
-    return np.where(ink_bool, 0, 255).astype(np.uint8)
-
-
-def add_paper_texture(duotone: np.ndarray, seed: int = 42) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    h, w = duotone.shape
-    noise = rng.random((h, w), dtype=np.float32)
-    noise = ndimage.gaussian_filter(noise, sigma=3.5)
-    noise = (noise - noise.min()) / (noise.max() - noise.min())
-    paper = duotone == 255
-    textured = duotone.astype(np.float32).copy()
-    textured[paper] = 255 - noise[paper] * 10
-    return np.clip(textured, 0, 255).astype(np.uint8)
-
-
-def render_coin_ring(duotone: np.ndarray, coin_r: float = 0.48) -> np.ndarray:
-    """Reinforce the coin's outer ring with a bold ink border."""
-    h, w = duotone.shape
-    yy, xx = np.ogrid[:h, :w]
-    cx, cy = w // 2, h // 2
-    dist = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-
-    r_max = min(w, h) * coin_r
-    ring = (dist >= r_max * 0.92) & (dist <= r_max * 0.97)
-    duotone[ring] = 0
-
-    inner = (dist >= r_max * 0.12) & (dist <= r_max * 0.17)
-    duotone[inner] = 0
-
-    return duotone
-
-
-def punch_square_hole(im: Image.Image) -> Image.Image:
-    S = im.width
-    hole_margin = int(S * 0.34)
-    hole_outer = int(S * 0.38)
-    draw = ImageDraw.Draw(im)
-    draw.rectangle(
-        [hole_outer, hole_outer, S - hole_outer, S - hole_outer],
-        outline=(INK[0], INK[1], INK[2]),
-        width=6,
-    )
-    draw.rectangle(
-        [hole_margin, hole_margin, S - hole_margin, S - hole_margin],
-        fill=(255, 255, 255),
-    )
-    return im
-
-
-def raster_to_rgb(duotone: np.ndarray) -> Image.Image:
-    h, w = duotone.shape
-    rgb = np.zeros((h, w, 3), dtype=np.uint8)
-    paper_np = np.array(PAPER, dtype=np.float32) / 255.0
-    ink_np = np.array(INK, dtype=np.float32) / 255.0
-
-    df = duotone.astype(np.float32) / 255.0
-    for c in range(3):
-        rgb[..., c] = np.clip(
-            df * paper_np[c] * 255 + (1 - df) * ink_np[c] * 255,
-            0, 255,
-        )
-    return Image.fromarray(rgb.astype(np.uint8))
-
-
-def trace_coin(coin_rgb: Image.Image, gamma: float, threshold: float, stroke_width: int) -> Image.Image:
-    """Full pipeline: photo → DoG → adaptive threshold → clean → thicken → 碑拓."""
-
-    dog = extract_ink_mask(coin_rgb, gamma)
-    ink = mask_to_duotone(dog)
-    ink = thicken_strokes(ink, width=stroke_width)
-    ink = render_coin_ring(ink)
-    ink = add_paper_texture(ink)
-
-    out = raster_to_rgb(ink)
-
-    circ = Image.new("L", (S, S), 0)
-    r = int(S * 0.485)
-    ImageDraw.Draw(circ).ellipse(
-        [S // 2 - r, S // 2 - r, S // 2 + r, S // 2 + r], fill=255
-    )
-    bg = Image.new("RGB", (S, S), PAPER)
-    bg.paste(out, (0, 0), circ)
-    bg = punch_square_hole(bg)
-    return bg
-
-
-def save_cap(im: Image.Image, path: str) -> None:
-    jpath = path.rsplit(".", 1)[0] + ".jpg"
-    for q in (88, 84, 80, 76, 72):
-        im.save(jpath, format="JPEG", quality=q, optimize=True, progressive=True)
-        size = os.path.getsize(jpath)
-        if size <= MAX_BYTES:
-            print(f"  {os.path.basename(jpath)} {size // 1024}KB (q{q})")
-            return
-    print(f"  WARN {os.path.basename(jpath)} {os.path.getsize(jpath) // 1024}KB")
-
-
-# Tracing uses white-bg museum photos for cleaner DoG extraction.
-# Separate from the main COINS config which uses dark-bg photos for realistic bronze.
-TRACING_SOURCES = [
-    ("banliang", "banliang.jpg", 1.0, "pair", (0.38, 0.25, 0.70, 0.74), (0.30, 0.25, 0.38, 0.74)),
-    ("wuzhu", "wuzhu-trace.jpg", 1.0, "su", None, None),
-    ("daquan", "daquan.jpg", 1.0, "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0)),
-    ("kaiyuan", "kaiyuan-trace.jpg", 1.0, "su", None, None),
-    ("daguan", "daguan.jpg", 0.58, "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0)),
-    ("hongwu", "hongwu.jpg", 1.0, "pair", (0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 1.0, 1.0)),
+COINS = [
+    ("banliang", "半两", "秦"),
+    ("wuzhu", "五铢", "汉"),
+    ("daquan", "大泉五十", "新莽"),
+    ("kaiyuan", "开元通宝", "唐"),
+    ("daguan", "大观通宝", "宋"),
+    ("hongwu", "洪武通宝", "明"),
 ]
 
 
-def bake_all(threshold: float = 5.0, stroke_width: int = 2) -> None:
-    gh = load_gh()
-    for cid, fname, gamma, rev_type, obv_reg, rev_reg in TRACING_SOURCES:
-        path = os.path.join(SRC_DIR, fname)
-        if not os.path.exists(path):
-            print("SKIP missing", fname)
+def load_config() -> dict:
+    with open(CFG_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def pick_coin(path: str, crop: tuple[float, float, float, float] | None) -> Image.Image:
+    im = Image.open(path).convert("RGB")
+    if crop is not None:
+        w, h = im.size
+        x0, y0, x1, y1 = crop
+        im = im.crop((int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)))
+    return ImageOps.fit(im, (S, S), Image.LANCZOS, centering=(0.5, 0.5))
+
+
+def clean_stroke_mask(stroke: np.ndarray, min_pixels: int = 120) -> np.ndarray:
+    """Keep meaningful connected components; drop speckle."""
+    lbl, n = ndimage.label(stroke)
+    kept = np.zeros_like(stroke, dtype=bool)
+    for i in range(1, n + 1):
+        comp = lbl == i
+        if comp.sum() >= min_pixels:
+            kept |= comp
+    kept = ndimage.binary_closing(kept, iterations=2)
+    kept = ndimage.binary_opening(kept, iterations=1)
+    return kept
+
+
+def extract_glyph_mask(
+    coin: Image.Image,
+    *,
+    gamma: float,
+    ink_percentile: float,
+    stroke_width: int,
+    extract_mode: str = "relief",
+) -> np.ndarray:
+    """Return mask: 0 = ink stroke, 255 = paper."""
+    gray = np.asarray(coin.convert("L"), dtype=np.float32)
+    if gamma != 1.0:
+        gray = np.power(np.clip(gray / 255.0, 0, 1), gamma) * 255.0
+
+    roi = field_mask(S, 0.20, 0.80)
+    hole = hole_exclusion(S)
+
+    if extract_mode == "trace":
+        # Pre-made rubbing / high-contrast trace photo: dark glyphs
+        blur = ndimage.gaussian_filter(gray, sigma=2.5)
+        relief = blur - gray
+        thr = np.percentile(relief[roi], ink_percentile)
+        stroke = relief >= thr
+    else:
+        # Bronze coin photo: raised characters catch light → brighter than field
+        blur = ndimage.gaussian_filter(gray, sigma=4.0)
+        relief = gray - blur
+        thr = np.percentile(relief[roi], 100.0 - ink_percentile)
+        stroke = relief >= thr
+
+    stroke &= roi
+    stroke &= ~hole
+    stroke = clean_stroke_mask(stroke)
+
+    # Safety: never let >14% of the annulus become ink (was causing inverted dark coins)
+    for _ in range(6):
+        if stroke[roi].mean() <= 0.14:
+            break
+        stroke = ndimage.binary_erosion(stroke, iterations=1)
+
+    ink = np.where(stroke, 0, 255).astype(np.uint8)
+    if stroke_width > 1:
+        ink = ndimage.minimum_filter(ink, size=stroke_width)
+    return ink
+
+
+def save_mask(mask: np.ndarray, base: str, side: str) -> None:
+    os.makedirs(MASK_OUT, exist_ok=True)
+    Image.fromarray(mask).save(os.path.join(MASK_OUT, f"{base}-{side}.png"))
+
+
+def save_cap(im: Image.Image, base: str, side: str) -> None:
+    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(PNG_OUT, exist_ok=True)
+    png_path = os.path.join(PNG_OUT, f"{base}-{side}.png")
+    jpg_path = os.path.join(OUT, f"{base}-{side}.jpg")
+    im.save(png_path, format="PNG", optimize=True)
+    for q in range(94, 58, -2):
+        im.save(jpg_path, format="JPEG", quality=q, optimize=True, progressive=True)
+        if os.path.getsize(jpg_path) <= MAX_JPEG:
+            break
+    print(f"  {base}-{side}.jpg  {os.path.getsize(jpg_path) // 1024}KB")
+
+
+def resolve_src(cfg: dict) -> str:
+    primary = os.path.join(SRC, cfg["src"])
+    if os.path.isfile(primary):
+        return primary
+    fb = cfg.get("fallback_src")
+    if fb:
+        path = os.path.join(SRC, fb)
+        if os.path.isfile(path):
+            return path
+    raise FileNotFoundError(f"no source for {cfg['src']}")
+
+
+def bake_coin(coin_id: str, cfg: dict) -> None:
+    src_path = resolve_src(cfg)
+    obv_crop = tuple(cfg["obv_crop"]) if cfg.get("obv_crop") else None
+    rev_crop = tuple(cfg["rev_crop"]) if cfg.get("rev_crop") else None
+    mode = cfg.get("extract_mode", "relief")
+
+    obv_rgb = pick_coin(src_path, obv_crop)
+    yang_mask = extract_glyph_mask(
+        obv_rgb,
+        gamma=cfg.get("gamma", 1.0),
+        ink_percentile=cfg.get("ink_percentile", 18),
+        stroke_width=cfg.get("stroke_width", 2),
+        extract_mode=mode,
+    )
+    save_mask(yang_mask, coin_id, "yang")
+    save_cap(render_rubbing_cap(yang_mask, PALETTE_RUB), coin_id, "yang")
+
+    rev_type = cfg.get("reverse", "pair")
+    if rev_type == "su":
+        plain_mask = synth_plain_glyph_mask(obv_rgb)
+        save_mask(plain_mask, coin_id, "yin")
+        save_cap(render_rubbing_cap(plain_mask, PALETTE_RUB, plain_back=True), coin_id, "yin")
+    else:
+        rev_rgb = pick_coin(src_path, rev_crop)
+        yin_mask = extract_glyph_mask(
+            rev_rgb,
+            gamma=cfg.get("gamma", 1.0),
+            ink_percentile=cfg.get("yin_percentile", cfg.get("ink_percentile", 18) + 4),
+            stroke_width=cfg.get("yin_stroke_width", 1),
+            extract_mode=mode,
+        )
+        save_mask(yin_mask, coin_id, "yin")
+        save_cap(render_rubbing_cap(yin_mask, PALETTE_RUB), coin_id, "yin")
+
+
+def main() -> None:
+    cfg_all = load_config()
+    print("huaxia tracing (relief extract + gentle filters)")
+    for coin_id, _, _ in COINS:
+        if coin_id not in cfg_all:
             continue
-
-        full = Image.open(path).convert("RGB")
-
-        obv_src = gh.region_crop(full, obv_reg)
-        obv_box, _ = gh.pick_coin(obv_src)
-        if obv_box is None:
-            print("SKIP no coin in", fname)
-            continue
-        obv = gh.square_coin(obv_src, obv_box)
-
-        yang = trace_coin(obv, gamma, threshold, stroke_width)
-        save_cap(yang, os.path.join(OUT, f"{cid}-yang.png"))
-
-        if rev_type == "pair" and rev_reg is not None:
-            rev_src = gh.region_crop(full, rev_reg)
-            rev_box, _ = gh.pick_coin(rev_src)
-            if rev_box is not None:
-                rvs = gh.square_coin(rev_src, rev_box)
-                yin = trace_coin(rvs, gamma, threshold, stroke_width)
-                save_cap(yin, os.path.join(OUT, f"{cid}-yin.png"))
-                print(f"traced {cid} (obverse + reverse)")
-                continue
-
-        yin = trace_coin(obv, gamma, threshold, stroke_width)
-        save_cap(yin, os.path.join(OUT, f"{cid}-yin.png"))
-        print(f"traced {cid} (obverse {'+ reverse' if rev_type == 'pair' else 'x2'} )")
-
-    print("done ->", OUT)
+        print(f"  {coin_id}")
+        bake_coin(coin_id, cfg_all[coin_id])
+    print(f"done → {OUT}/")
 
 
 if __name__ == "__main__":
-    thresh = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
-    sw = int(sys.argv[2]) if len(sys.argv) > 2 else 2
-    bake_all(thresh, sw)
+    main()

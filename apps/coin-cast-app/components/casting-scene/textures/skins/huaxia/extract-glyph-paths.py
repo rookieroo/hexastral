@@ -73,7 +73,7 @@ def extract_character_contours(
     # Find contours using connected components boundaries
     lbl, n = ndimage.label(mask)
     contours = []
-    min_size = 40
+    min_size = 80
 
     for i in range(1, n + 1):
         ys, xs = np.where(lbl == i)
@@ -107,8 +107,35 @@ def extract_character_contours(
     return contours
 
 
+def douglas_peucker(points: list[tuple[float, float]], epsilon: float) -> list[tuple[float, float]]:
+    if len(points) < 3:
+        return points
+
+    def perp_dist(pt: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+        ax, ay = a
+        bx, by = b
+        px, py = pt
+        dx = bx - ax
+        dy = by - ay
+        if dx == 0 and dy == 0:
+            return ((px - ax) ** 2 + (py - ay) ** 2) ** 0.5
+        t = max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+        proj_x = ax + t * dx
+        proj_y = ay + t * dy
+        return ((px - proj_x) ** 2 + (py - proj_y) ** 2) ** 0.5
+
+    start, end = points[0], points[-1]
+    dists = [perp_dist(p, start, end) for p in points]
+    idx = int(np.argmax(dists))
+    if dists[idx] > epsilon:
+        left = douglas_peucker(points[: idx + 1], epsilon)
+        right = douglas_peucker(points[idx:], epsilon)
+        return left[:-1] + right
+    return [start, end]
+
+
 def contours_to_svg_path(contours: list, scale: float = 120.0) -> str:
-    """Convert extracted contours to an SVG path string."""
+    """Convert extracted contours to a simplified SVG path string."""
     if not contours:
         return ""
 
@@ -116,15 +143,15 @@ def contours_to_svg_path(contours: list, scale: float = 120.0) -> str:
     for contour in contours:
         if len(contour) < 3:
             continue
-        # Simplify: sample every N points for cleaner paths
-        step = max(1, len(contour) // 30)
-        sampled = contour[::step]
-        if sampled[-1] != sampled[0]:
-            sampled = list(sampled) + [sampled[0]]
+        simplified = douglas_peucker(contour, epsilon=0.012)
+        if len(simplified) < 3:
+            continue
+        if simplified[-1] != simplified[0]:
+            simplified = list(simplified) + [simplified[0]]
 
-        sx, sy = sampled[0]
+        sx, sy = simplified[0]
         d = f"M {sx * scale:.1f} {sy * scale:.1f}"
-        for px, py in sampled[1:]:
+        for px, py in simplified[1:]:
             d += f" L {px * scale:.1f} {py * scale:.1f}"
         d += " Z"
         paths.append(d)

@@ -10,8 +10,8 @@ type SkinLocale = 'en' | 'zh' | 'zh-Hant' | 'ja'
  *
  * Three tiers:
  *  - classic — the free default (素钱): plain 碑拓 rubbing, 四出文 front vs plain back.
- *  - 华夏钱币史 (banliang…daguan) — REALISTIC two-sided bronze from PD/CC0 photos.
- *    Baked as JPEG caps (≤500KB) by huaxia/gen-huaxia.py.
+ *  - 华夏钱币史 — 卦钱六爻原创套 SVG（dist/rub/ 碑拓；seal/ink 同目录）。
+ *    photo tiers remain in huaxia/dist for gallery comparison.
  *  - 原创 (bagua/taiji/wuxing…) — ORIGINAL in-house vector 碑拓 designs, owned IP, no
  *    real-coin copying, no scripture. They share the plain SU_BACK reverse.
  *    Design system: original/ART-BRIEF.md.
@@ -71,82 +71,83 @@ export const COIN_SKINS: readonly CoinSkin[] = [
   },
   // ── 华夏钱币史 — realistic bronze, real obverse (字面) + real/plain reverse (背面).
   //    Baked by huaxia/gen-huaxia.py from PD/CC0 photos (see huaxia/SOURCING.md). ──
+  // ── 半两 / 五铢：形制研读 → dark 青铜设计（design/）；其余华夏币仍为写实照片。 ──
   {
     id: 'banliang',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/banliang-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/banliang-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/banliang-yin.png'),
     label: { en: 'Ban Liang', zh: '半两', 'zh-Hant': '半兩', ja: '半両' },
     note: {
-      en: 'Qin · seal script',
-      zh: '秦 · 小篆',
-      'zh-Hant': '秦 · 小篆',
-      ja: '秦 · 篆書',
+      en: 'Cast · oracle rubbing',
+      zh: '起卦 · 半两',
+      'zh-Hant': '起卦 · 半兩',
+      ja: '起卦 · 半両',
     },
   },
   {
     id: 'wuzhu',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/wuzhu-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/wuzhu-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/wuzhu-yin.png'),
     label: { en: 'Wu Zhu', zh: '五铢', 'zh-Hant': '五銖', ja: '五銖' },
     note: {
-      en: 'Han · seal script',
-      zh: '汉 · 篆书',
-      'zh-Hant': '漢 · 篆書',
-      ja: '漢 · 篆書',
+      en: 'Stalk · oracle rubbing',
+      zh: '揲爻 · 五铢',
+      'zh-Hant': '揲爻 · 五銖',
+      ja: '揲爻 · 五銖',
     },
   },
   {
     id: 'daquan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daquan-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/daquan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/daquan-yin.png'),
     label: { en: 'Da Quan', zh: '大泉五十', 'zh-Hant': '大泉五十', ja: '大泉五十' },
     note: {
-      en: 'Xin · suspended-needle seal',
-      zh: '新莽 · 悬针篆',
-      'zh-Hant': '新莽 · 懸針篆',
-      ja: '新 · 懸針篆',
+      en: 'Change · oracle rubbing',
+      zh: '变卦 · 大泉',
+      'zh-Hant': '變卦 · 大泉',
+      ja: '変卦 · 大泉',
     },
   },
   {
     id: 'kaiyuan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/kaiyuan-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/kaiyuan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/kaiyuan-yin.png'),
     label: { en: 'Kaiyuan', zh: '开元通宝', 'zh-Hant': '開元通寶', ja: '開元通宝' },
     note: {
-      en: 'Tang · clerical-regular',
-      zh: '唐 · 隶楷',
-      'zh-Hant': '唐 · 隸楷',
-      ja: '唐 · 隷楷',
+      en: 'Flow · oracle rubbing',
+      zh: '流通 · 开元',
+      'zh-Hant': '流通 · 開元',
+      ja: '流通 · 開元',
     },
   },
   {
     id: 'daguan',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/daguan-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/daguan-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/daguan-yin.png'),
     label: { en: 'Da Guan', zh: '大观通宝', 'zh-Hant': '大觀通寶', ja: '大觀通宝' },
     note: {
-      en: 'Song · Slender Gold script',
-      zh: '宋徽宗 · 瘦金体',
-      'zh-Hant': '宋徽宗 · 瘦金體',
-      ja: '宋徽宗 · 痩金体',
+      en: 'Gaze · oracle rubbing',
+      zh: '观象 · 大观',
+      'zh-Hant': '觀象 · 大觀',
+      ja: '観象 · 大観',
     },
   },
   {
     id: 'hongwu',
     pro: true,
-    yang: require('../components/casting-scene/textures/skins/huaxia/dist/hongwu-yang.jpg'),
-    yin: require('../components/casting-scene/textures/skins/huaxia/dist/hongwu-yin.jpg'),
+    yang: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/hongwu-yang.png'),
+    yin: require('../components/casting-scene/textures/skins/huaxia/design/dist/rub/hongwu-yin.png'),
     label: { en: 'Hong Wu', zh: '洪武通宝', 'zh-Hant': '洪武通寶', ja: '洪武通宝' },
     note: {
-      en: 'Ming · regular script',
-      zh: '明 · 楷书',
-      'zh-Hant': '明 · 楷書',
-      ja: '明 · 楷書',
+      en: 'Yin-yang · oracle rubbing',
+      zh: '阴阳 · 洪武',
+      'zh-Hant': '陰陽 · 洪武',
+      ja: '陰陽 · 洪武',
     },
   },
   {

@@ -15,8 +15,12 @@ const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const skins = path.join(appRoot, 'components/casting-scene/textures/skins')
 const forceRebake = process.argv.includes('--rebake')
 
-const HUAXIA_IDS = ['banliang', 'wuzhu', 'daquan', 'kaiyuan', 'daguan']
-const huaxiaCaps = HUAXIA_IDS.flatMap((id) => [
+const HUAXIA_IDS = ['banliang', 'wuzhu', 'daquan', 'kaiyuan', 'daguan', 'hongwu']
+const HUAXIA_DESIGN_CAPS = HUAXIA_IDS.flatMap((id) => [
+  path.join(skins, 'huaxia/design/dist/rub', `${id}-yang.png`),
+  path.join(skins, 'huaxia/design/dist/rub', `${id}-yin.png`),
+])
+const huaxiaPhotoCaps = HUAXIA_IDS.flatMap((id) => [
   path.join(skins, 'huaxia/dist', `${id}-yang.jpg`),
   path.join(skins, 'huaxia/dist', `${id}-yin.jpg`),
 ])
@@ -37,7 +41,7 @@ const ORIGINAL_CAPS = [
   path.join(skins, 'original/dist/wuxing-tu-yang.png'),
 ]
 
-const ALL = [...huaxiaCaps, ...ORIGINAL_CAPS]
+const ALL = [...HUAXIA_DESIGN_CAPS, ...huaxiaPhotoCaps, ...ORIGINAL_CAPS]
 
 if (!forceRebake && ALL.every((f) => existsSync(f))) {
   console.log('coin textures present — skip bake')
@@ -64,9 +68,13 @@ process.env.PATH = `${path.dirname(rsvg)}:${process.env.PATH ?? ''}`
 run('python3', [path.join(skins, 'huaxia/gen-su-back.py')])
 run('python3', [path.join(skins, 'huaxia/gen-su-face.py')])
 run('python3', [path.join(skins, 'original/gen-coins.py'), skins])
-run('python3', [path.join(skins, 'huaxia/gen-huaxia-replica.py')])
-run('python3', [path.join(skins, 'huaxia/gen-huaxia-replica-bronze.py')])
+run('python3', [path.join(skins, 'huaxia/fonts/setup-fonts.py')])
+run('python3', [path.join(skins, 'huaxia/design/gen-pattern-skins.py')])
+run('python3', [path.join(skins, 'huaxia/design/gen-pattern-gallery.py')])
 run('python3', [path.join(skins, 'huaxia/gen-huaxia.py')])
+run('python3', [path.join(skins, 'huaxia/gen-huaxia-tracing.py')])
+run('python3', [path.join(skins, 'huaxia/gen-seal-from-tracing.py')])
+run('python3', [path.join(skins, 'huaxia/gen-huaxia-hand-rubbing.py')])
 
 const kaiyuanVec = path.join(skins, 'huaxia/vector/gen-kaiyuan-vector.py')
 if (existsSync(kaiyuanVec)) {
