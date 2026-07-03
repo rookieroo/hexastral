@@ -7,34 +7,13 @@ import {
   type DevEntitlementOverride,
   getDevEntitlementOverride,
   getPortfolioUserId,
-  hasEntitlement,
   setDevEntitlementOverride,
-  useEntitlements,
 } from '@zhop/satellite-runtime'
 import { Stack, useRouter } from 'expo-router'
-import { Check, ChevronRight, Lock } from 'lucide-react-native'
+import { ChevronRight } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  DevSettings,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, DevSettings, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import {
-  COIN_SKINS,
-  type CoinSkin,
-  type CoinSkinId,
-  coinSkinLabel,
-  coinSkinNote,
-  coinSkinUi,
-  DEFAULT_SKIN_ID,
-  loadSelectedSkinId,
-  saveSelectedSkinId,
-} from '@/lib/coin-skins'
 import { getMotionShakeEnabled, setMotionShakeEnabled } from '@/lib/coincast-ritual'
 import { useSatelliteI18n } from '@/lib/i18n'
 
@@ -107,148 +86,16 @@ function ToggleCard({
   )
 }
 
-/** One coin tile — obverse | reverse dual preview (matches skins/gallery.html). */
-function SkinTile({
-  skin,
-  selected,
-  locked,
-  label,
-  note,
-  faceYang,
-  faceYin,
-  onPress,
-}: {
-  skin: CoinSkin
-  selected: boolean
-  locked: boolean
-  label: string
-  note: string
-  faceYang: string
-  faceYin: string
-  onPress: () => void
-}) {
-  const { colors } = useTheme()
-  const faceOpacity = locked ? 0.45 : 1
-  const faceStyle = {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 999,
-    overflow: 'hidden' as const,
-    backgroundColor: colors.cardElevated,
-    borderWidth: 0.5,
-    borderColor: colors.separator,
-  }
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole='button'
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${label} — ${faceYang} ${faceYin}`}
-      style={({ pressed }) => ({
-        width: '31%',
-        alignItems: 'center',
-        gap: 6,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: '100%',
-          aspectRatio: 1,
-          borderRadius: 14,
-          backgroundColor: colors.cardElevated,
-          borderWidth: selected ? 2 : 0.5,
-          borderColor: selected ? colors.accent : colors.separator,
-          padding: 6,
-          gap: 4,
-        }}
-      >
-        <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
-          <View style={faceStyle}>
-            <Image
-              source={skin.yang as number}
-              resizeMode='cover'
-              style={{ width: '100%', height: '100%', opacity: faceOpacity }}
-            />
-          </View>
-          <View style={faceStyle}>
-            <Image
-              source={skin.yin as number}
-              resizeMode='cover'
-              style={{ width: '100%', height: '100%', opacity: faceOpacity }}
-            />
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-          <Text style={{ color: colors.dim, fontSize: 9, letterSpacing: 0.5 }}>{faceYang}</Text>
-          <Text style={{ color: colors.dim, fontSize: 9, letterSpacing: 0.5 }}>{faceYin}</Text>
-        </View>
-        {locked ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 22,
-              height: 22,
-              borderRadius: 11,
-              backgroundColor: `${colors.bg}cc`,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Lock size={12} color={colors.secondary} strokeWidth={2} />
-          </View>
-        ) : selected ? (
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 6,
-              right: 6,
-              width: 22,
-              height: 22,
-              borderRadius: 11,
-              backgroundColor: colors.accent,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Check size={13} color={colors.bg} strokeWidth={3} />
-          </View>
-        ) : null}
-      </View>
-      <Text
-        numberOfLines={1}
-        style={{
-          color: selected ? colors.text : colors.secondary,
-          fontSize: 12,
-          fontWeight: selected ? '600' : '400',
-        }}
-      >
-        {label}
-      </Text>
-      <Text numberOfLines={1} style={{ color: colors.dim, fontSize: 10 }}>
-        {locked ? coinSkinUi('en').locked : note}
-      </Text>
-    </Pressable>
-  )
-}
-
 export default function CoinCastSettingsScreen() {
   const router = useRouter()
   const { colors, spacing } = useTheme()
   const { t, uiLocale } = useSatelliteI18n()
-  const entitlements = useEntitlements()
-  const coincastPro = hasEntitlement(entitlements, 'coincast_pro')
-  const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_SKIN_ID)
   const [motion, setMotion] = useState(true)
   const [loaded, setLoaded] = useState(false)
   const [memory, setMemory] = useState(false)
   const [memoryLoaded, setMemoryLoaded] = useState(false)
   const [memoryGuest, setMemoryGuest] = useState(true)
   const [memorySaving, setMemorySaving] = useState(false)
-  // DEV-only Pro override — cycles Off (real RC) → PRO → FREE so the Pro coin
-  // skins can be previewed without a real purchase. `hasEntitlement` honours it.
   const [devPro, setDevPro] = useState<DevEntitlementOverride>(getDevEntitlementOverride())
 
   useEffect(() => {
@@ -257,7 +104,6 @@ export default function CoinCastSettingsScreen() {
       setMotion(v)
       setLoaded(true)
     })()
-    void loadSelectedSkinId().then(setSkinId)
   }, [])
 
   const loadMemory = useCallback(async () => {
@@ -287,15 +133,6 @@ export default function CoinCastSettingsScreen() {
     await setMotionShakeEnabled(next)
   }
 
-  const selectSkin = async (id: CoinSkinId, pro: boolean) => {
-    if (pro && !coincastPro) {
-      router.push('/paywall')
-      return
-    }
-    setSkinId(id)
-    await saveSelectedSkinId(id)
-  }
-
   const toggleMemory = async (next: boolean) => {
     if (memoryGuest || memorySaving) return
     setMemorySaving(true)
@@ -316,7 +153,6 @@ export default function CoinCastSettingsScreen() {
     setDevPro(nextOverride)
   }
 
-  const skinUi = coinSkinUi(uiLocale)
   const creditsLabel =
     { en: 'Credits & sources', zh: '来源与致谢', 'zh-Hant': '來源與致謝', ja: 'クレジット' }[
       uiLocale as 'en' | 'zh' | 'zh-Hant' | 'ja'
@@ -333,45 +169,6 @@ export default function CoinCastSettingsScreen() {
         keyboardShouldPersistTaps='handled'
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Coin skin gallery — the 换肤 surface (leads, it's the marquee perk) ── */}
-        <View>
-          <SectionLabel>{skinUi.title}</SectionLabel>
-          <Text
-            style={{
-              color: colors.dim,
-              fontSize: 12,
-              lineHeight: 17,
-              marginTop: -4,
-              marginBottom: spacing.lg,
-            }}
-          >
-            {skinUi.hint}
-          </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              rowGap: spacing.lg,
-            }}
-          >
-            {COIN_SKINS.map((skin) => (
-              <SkinTile
-                key={skin.id}
-                skin={skin}
-                selected={skin.id === skinId}
-                locked={skin.pro && !coincastPro}
-                label={coinSkinLabel(skin, uiLocale)}
-                note={coinSkinNote(skin, uiLocale)}
-                faceYang={skinUi.faceYang}
-                faceYin={skinUi.faceYin}
-                onPress={() => void selectSkin(skin.id, skin.pro)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* ── Cast feel ── */}
         <View style={{ gap: spacing.md }}>
           <SectionLabel>{t('settingsMotionLabel')}</SectionLabel>
           <ToggleCard
@@ -383,7 +180,6 @@ export default function CoinCastSettingsScreen() {
           />
         </View>
 
-        {/* ── Memory ── */}
         <View style={{ gap: spacing.md }}>
           <SectionLabel>{t('settingsMemoryLabel')}</SectionLabel>
           <ToggleCard
@@ -397,7 +193,6 @@ export default function CoinCastSettingsScreen() {
           />
         </View>
 
-        {/* ── Credits (drill-in) ── */}
         <Pressable
           onPress={() => router.push('/credits')}
           accessibilityRole='button'
@@ -417,7 +212,6 @@ export default function CoinCastSettingsScreen() {
           <ChevronRight size={18} color={colors.dim} strokeWidth={1.6} />
         </Pressable>
 
-        {/* ── DEV — force entitlement so the Pro skins above unlock for preview ── */}
         {__DEV__ ? (
           <View style={{ gap: spacing.md }}>
             <SectionLabel>PRO · DEV</SectionLabel>

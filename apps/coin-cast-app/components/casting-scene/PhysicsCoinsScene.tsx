@@ -35,6 +35,9 @@ import {
   WORLD_DT,
 } from './constants'
 import { createArenaWallBodies, createCupDeckBody, useCoinPhysics } from './useCoinPhysics'
+import { createProceduralAltarWoodTextures } from './proceduralAltarWood'
+
+const WOOD_REPEAT = 2.8
 
 /** Scratch — avoid allocating Vec3 inside hot `useFrame` cup loop. */
 const CUP_SCRATCH_IMP = new CANNON.Vec3()
@@ -92,12 +95,6 @@ function finalizeCoinsOnTable(
   }
 }
 
-const ALTAR_ALBEDO = require('./textures/altar-wood-albedo.png')
-const ALTAR_NORMAL = require('./textures/altar-wood-normal.png')
-const COIN_YANG = require('./textures/skins/huaxia/dist/back-su-yang.png')
-const COIN_YIN = require('./textures/skins/huaxia/dist/back-su-yin.png')
-
-const WOOD_REPEAT = 2.8
 
 /** Cylinder axis (local Y): if nearly horizontal in world space, the coin is standing on its rim. */
 const LOCAL_THICK = new CANNON.Vec3(0, 1, 0)
@@ -211,9 +208,6 @@ export interface PhysicsCoinsSceneProps {
    * retreat so the scene does not read as a dice cup still covering the line.
    */
   vesselVisible: boolean
-  /** Selected skin's cap textures (RN asset ids); falls back to the classic coin. */
-  coinYang?: number
-  coinYin?: number
 }
 
 function createFallbackCoinMaterials(): THREE.MeshStandardMaterial[] {
@@ -237,124 +231,37 @@ function createFallbackCoinMaterials(): THREE.MeshStandardMaterial[] {
 }
 
 /**
- * Loads altar + coin cap textures (expo-three). Falls back to solid materials on failure.
- * Note: keep `color` white when `map` is set — multiplying by scene backdrop crushes albedo detail.
+ * Procedural altar wood + solid yang/yin coin materials (no image assets).
  */
-function useCastingTextures(
-  coinYang: number,
-  coinYin: number
-): {
+function useCastingTextures(): {
   floorMaterial: THREE.MeshStandardMaterial | null
   coinMaterials: THREE.MeshStandardMaterial[]
 } {
   const [floorMaterial, setFloorMaterial] = useState<THREE.MeshStandardMaterial | null>(null)
-  const [coinMaterials, setCoinMaterials] = useState<THREE.MeshStandardMaterial[]>(() =>
-    createFallbackCoinMaterials()
-  )
+  const coinMaterials = useRef(createFallbackCoinMaterials()).current
 
   useEffect(() => {
-    let cancelled = false
+    const { albedo, normal } = createProceduralAltarWoodTextures()
+    albedo.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
+    normal.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
 
-    ;(async () => {
-      try {
-        const ExpoTHREE = require('expo-three') as {
-          loadAsync: (asset: number) => Promise<THREE.Texture>
-        }
-        const albedo = await ExpoTHREE.loadAsync(ALTAR_ALBEDO)
-        if (cancelled) {
-          albedo.dispose()
-          return
-        }
+    const floor = new THREE.MeshStandardMaterial({
+      map: albedo,
+      normalMap: normal,
+      normalScale: new THREE.Vector2(0.38, 0.38),
+      color: 0xffffff,
+      roughness: 0.88,
+      metalness: 0.02,
+    })
 
-        albedo.colorSpace = THREE.SRGBColorSpace
-        albedo.wrapS = albedo.wrapT = THREE.RepeatWrapping
-        albedo.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
-        albedo.needsUpdate = true
-
-        let normalTex: THREE.Texture | null = null
-        try {
-          normalTex = await ExpoTHREE.loadAsync(ALTAR_NORMAL)
-          normalTex.wrapS = normalTex.wrapT = THREE.RepeatWrapping
-          normalTex.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
-          normalTex.colorSpace = THREE.NoColorSpace
-          normalTex.needsUpdate = true
-        } catch (normErr) {
-          console.warn('[CoinCast] altar normal map skipped', normErr)
-        }
-
-        const [yangTex, yinTex] = await Promise.all([
-          ExpoTHREE.loadAsync(coinYang),
-          ExpoTHREE.loadAsync(coinYin),
-        ])
-        if (cancelled) {
-          albedo.dispose()
-          normalTex?.dispose()
-          yangTex.dispose()
-          yinTex.dispose()
-          return
-        }
-
-        for (const t of [yangTex, yinTex]) {
-          t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
-          t.colorSpace = THREE.SRGBColorSpace
-          t.needsUpdate = true
-        }
-
-        const floor = new THREE.MeshStandardMaterial({
-          map: albedo,
-          normalMap: normalTex ?? undefined,
-          normalScale: new THREE.Vector2(0.42, 0.42),
-          color: 0xffffff,
-          roughness: 0.86,
-          metalness: 0.03,
-        })
-
-        const edge = new THREE.MeshStandardMaterial({
-          color: coinCastSceneColors.coinEdge,
-          roughness: 0.52,
-          metalness: 0.14,
-        })
-        const yangMat = new THREE.MeshStandardMaterial({
-          map: yangTex,
-          color: 0xffffff,
-          roughness: 0.52,
-          metalness: 0.1,
-        })
-        const yinMat = new THREE.MeshStandardMaterial({
-          map: yinTex,
-          color: 0xffffff,
-          roughness: 0.58,
-          metalness: 0.08,
-        })
-
-        if (cancelled) {
-          floor.dispose()
-          edge.dispose()
-          yangMat.dispose()
-          yinMat.dispose()
-          return
-        }
-
-        setFloorMaterial((prev) => {
-          prev?.dispose()
-          return floor
-        })
-        setCoinMaterials((prev) => {
-          for (const m of prev) {
-            m.dispose()
-          }
-          return [edge, yangMat, yinMat]
-        })
-        console.log('[CoinCast] casting textures loaded')
-      } catch (err) {
-        console.warn('[CoinCast] casting textures failed, using fallbacks', err)
-      }
-    })()
+    setFloorMaterial(floor)
 
     return () => {
-      cancelled = true
+      albedo.dispose()
+      normal.dispose()
+      floor.dispose()
     }
-  }, [coinYang, coinYin])
+  }, [])
 
   return { floorMaterial, coinMaterials }
 }
@@ -363,10 +270,7 @@ const VESSEL_RETREAT_DURATION_SEC = 0.42
 
 export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
   const { world, coinBodies: bodies } = useCoinPhysics()
-  const { floorMaterial, coinMaterials } = useCastingTextures(
-    props.coinYang ?? COIN_YANG,
-    props.coinYin ?? COIN_YIN
-  )
+  const { floorMaterial, coinMaterials } = useCastingTextures()
 
   const vesselMeshRef = useRef<THREE.Mesh | null>(null)
   const prevVesselVisible = useRef(props.vesselVisible)

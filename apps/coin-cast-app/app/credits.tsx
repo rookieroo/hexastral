@@ -11,39 +11,23 @@ type L = 'en' | 'zh' | 'zh-Hant' | 'ja'
 const UI: Record<L, { title: string; intro: string }> = {
   en: {
     title: 'Credits & sources',
-    intro:
-      'Coin forms are public-domain historical artifacts. The rubbing-style art is reproduced from Public Domain / CC0 sources — never invented lettering. The full per-coin license ledger ships in the repository (SOURCING.md).',
+    intro: 'The casting scene uses procedural wood and coin materials — no third-party textures.',
   },
   zh: {
     title: '来源与致谢',
-    intro:
-      '钱币形制为公共领域历史文物。碑拓风格美术基于公共领域 / CC0 素材忠实再现,绝不杜撰文字。每枚钱的完整授权台账见仓库 SOURCING.md。',
+    intro: '摇卦场景的木案与铜钱均为程序生成材质，未使用第三方贴图。',
   },
   'zh-Hant': {
     title: '來源與致謝',
-    intro:
-      '錢幣形制為公共領域歷史文物。碑拓風格美術基於公共領域 / CC0 素材忠實再現,絕不杜撰文字。每枚錢的完整授權台帳見倉庫 SOURCING.md。',
+    intro: '搖卦場景的木案與銅錢均為程式生成材質，未使用第三方貼圖。',
   },
   ja: {
     title: 'クレジットと出典',
-    intro:
-      '貨幣の意匠は公共領域の歴史的遺物です。拓本風アートはパブリックドメイン / CC0 素材を基に忠実に再現しています。各貨幣のライセンス台帳はリポジトリ (SOURCING.md) に含まれます。',
+    intro: '占いシーンの木製台と銅銭はプロシージャル材質で、第三者テクスチャは使用していません。',
   },
 }
 
-const ENTRIES: { name: string; source: string; license: string }[] = [
-  { name: '素钱 · Plain (default)', source: 'Original artwork — CoinCast', license: '© CoinCast' },
-  {
-    name: '五銖 · Wu Zhu (Han)',
-    source: 'After a public-domain 五銖 coin image, Wikimedia Commons',
-    license: 'Public domain',
-  },
-  {
-    name: '開元通寶 · Kaiyuan Tongbao (Tang)',
-    source: 'After a public-domain 開元通寶 coin image, Wikimedia Commons',
-    license: 'Public domain',
-  },
-]
+const ENTRIES: { name: string; source: string; license: string }[] = []
 
 export default function CreditsScreen() {
   const { colors } = useAppTheme()

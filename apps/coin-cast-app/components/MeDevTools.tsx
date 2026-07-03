@@ -25,7 +25,7 @@ export function MeDevTools() {
 
   if (!__DEV__) return null
 
-  // Cycle Off (real RC) → PRO → FREE so Pro skins / gates can be exercised without a purchase.
+  // Cycle Off (real RC) → PRO → FREE so Pro gates can be exercised without a purchase.
   const cycleDevPro = () => {
     const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setDevEntitlementOverride(next)

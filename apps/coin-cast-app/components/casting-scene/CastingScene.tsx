@@ -38,9 +38,6 @@ export interface CastingSceneProps {
   onPhysicsSettled: (payload: PhysicsSettlePayload) => void
   onImpact?: () => void
   shakeDriveRef?: MutableRefObject<{ x: number; y: number; z: number; mag: number }>
-  /** Selected skin's cap textures (RN asset ids). */
-  coinYang?: number
-  coinYin?: number
 }
 
 export function CastingScene(props: CastingSceneProps) {
@@ -68,8 +65,6 @@ export function CastingScene(props: CastingSceneProps) {
             shakeDriveRef={props.shakeDriveRef}
             arenaWallsActive={props.arenaWallsActive}
             vesselVisible={props.cameraPhase === 'ritual' && props.arenaWallsActive}
-            coinYang={props.coinYang}
-            coinYin={props.coinYin}
           />
         </Suspense>
       </Canvas>
