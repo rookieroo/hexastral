@@ -1,6 +1,6 @@
-# Kindred / Kindred — June 2026 launch checklist
+# Yuel — launch checklist
 
-**Bundle:** `com.hexastral.kindred` · **Display name:** Kindred (or Kindred in CJK locales)
+**Bundle:** `com.hexastral.kindred` · **Display name:** Yuel · **Directory:** `apps/kindred-app`
 
 Kindred is the relationships product — a user-centred multi-bond graph with 八字 合婚 + relationship-timeline reading. Its **acquisition moat is Auspice**: every Pro Auspice user has already sketched their 亲友, and those are carry-over into Kindred automatically.
 

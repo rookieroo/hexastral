@@ -76,9 +76,12 @@ packages/
 tooling/
   typescript-config/    Shared tsconfig presets
 docs/
-  ROADMAP.md            Phase completion tracker
-  local-manual-checklist.md  Human-only: EAS, Apple, RevenueCat, CF, designer
-  decisions/            Architecture Decision Records
+  README.md             Doc index (apps · publish · setup · ADRs)
+  ROADMAP.md            Four-app launch scope (Yuun · Yuel · Feng · CoinCast)
+  apps/                 Per-app plans and TODOs
+  publish/              App Store / ASC / trademark (human-only)
+  setup/                RC, Sentry, funnel wiring
+  decisions/            Active ADRs · archive/decisions/ for superseded
 ```
 
 ## Dependency Graph (Service Bindings)
@@ -163,7 +166,9 @@ cd apps/yuan-app && eas build --profile production --platform ios
 
 ## Documentation Index
 
-- [docs/decisions/0001-yuan-naming.md](docs/decisions/0001-yuan-naming.md) — Yuán (緣) product naming
-- [docs/decisions/0002-brand-matrix.md](docs/decisions/0002-brand-matrix.md) — Brand architecture
+- [docs/README.md](docs/README.md) — full doc index
+- [docs/ROADMAP.md](docs/ROADMAP.md) — launch scope (Yuun · Yuel · Feng · CoinCast)
+- [docs/publish/README.md](docs/publish/README.md) — App Store / human-only checklist
+- [docs/decisions/0024-app-brand-naming.md](docs/decisions/0024-app-brand-naming.md) — Yuun / Yuel brand naming
 - [deploy.md](deploy.md) — Local deploy runbook
 - [apps/hexastral-api/README.md](apps/hexastral-api/README.md) — API deployment

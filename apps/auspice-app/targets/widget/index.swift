@@ -4,7 +4,7 @@
 // via `lib/widget-bridge.ts` (no network in the extension, no Swift port of the
 // engine). One timeline entry per cached day; refreshes at the next local midnight.
 //
-// Scaffolded 2026-06 — see docs/cycle-widget-watch-scope.md + the build runbook.
+// Scaffolded 2026-06 — see docs/apps/yuun/widget-watch-scope.md + the build runbook.
 // Wired into Xcode by `@bacons/apple-targets` on `expo prebuild`.
 
 import SwiftUI

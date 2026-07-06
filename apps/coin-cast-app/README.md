@@ -1,6 +1,8 @@
 # CoinCast
 
-Growth satellite — standalone I Ching oracle — Expo 54 scaffold only.
+Growth satellite — standalone I Ching oracle — Expo 54 scaffold.
+
+**Launch doc:** [docs/apps/coincast/README.md](../../docs/apps/coincast/README.md)
 
 Install once from the monorepo root (`bun install`), then:
 

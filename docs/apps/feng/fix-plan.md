@@ -1,7 +1,7 @@
 # Feng (風) — Fix & Polish Plan
 
 Status snapshot: **2026-06-30**. Supersedes the stale references in
-`apps/feng-app/README.md` (`docs/feng-plan.md`) and ADR-0019's
+`apps/feng-app/README.md` (`docs/apps/feng/fix-plan.md`) and ADR-0019's
 `docs/sprints/feng-*.md` — neither of those files exists anymore. Code is the
 source of truth; this doc reconciles the plan to it.
 
@@ -133,7 +133,7 @@ Original detail retained below for reference.
 
 - **Where**: `apps/feng-app/README.md` ("Phase E Week 4 scaffold; real Mapbox,
   Gemini Vision, Claude synthesis land Weeks 5-6"), and the dead
-  `docs/feng-plan.md` link.
+  `docs/apps/feng/fix-plan.md` link.
 - **Change**: rewrite status to reflect reality (pipeline live; synthesis runs
   on CF Workers AI flagship tier, not Claude); point the doc link here.
 - **Effort**: ~XS.

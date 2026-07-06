@@ -3,8 +3,7 @@
 The synastry-focused flagship in the HexAstral brand matrix. Standalone Expo
 app that consumes `@zhop/scenario-kindred` for all relationship-domain logic.
 
-See [ADR-0001](../../docs/decisions/0001-yuan-naming.md) and
-[ADR-0002](../../docs/decisions/0002-brand-matrix.md) for product / brand
+See [ADR-0024](../../docs/decisions/0024-app-brand-naming.md) for product / brand
 context.
 
 ## Architecture

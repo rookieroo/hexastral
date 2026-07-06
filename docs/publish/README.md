@@ -3,7 +3,7 @@
 > Every task here is **human / console work** that cannot be done from the repo:
 > App Store Connect, RevenueCat dashboard, Apple Developer portal, real secrets,
 > screenshots, and the production deploy. The code side is ready (see
-> [kindred-status.md](../kindred-status.md), [auspice-launch.md](../auspice-launch.md)).
+> [apps/yuel/status.md](../apps/yuel/status.md), [apps/yuun/launch.md](../apps/yuun/launch.md)).
 >
 > Canonical IAP mapping: [apps/hexastral-api/src/config/products.ts](../../apps/hexastral-api/src/config/products.ts).
 > RevenueCat walkthrough: [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md).
@@ -128,7 +128,7 @@ Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.
 
 - [ ] `REVENUECAT_WEBHOOK_SECRET` — must equal the RevenueCat webhook Bearer token
       (`cd apps/hexastral-api && wrangler secret put REVENUECAT_WEBHOOK_SECRET`)
-- [ ] Any Yuun calendar/push secret required by `auspice-launch.md` (e.g. the
+- [ ] Any Yuun calendar/push secret required by `apps/yuun/launch.md` (e.g. the
       calendar signing secret) — confirm against that doc before deploy
 
 ---
@@ -192,7 +192,7 @@ For `apps/kindred-app/eas.json` **and** `apps/auspice-app/eas.json`:
 ## 8. Screenshots & final preflight
 
 - [ ] Screenshots: 6.7" iPhone, 5–6 per locale × 4 locales, per
-      [docs/screenshot-direction.md](../screenshot-direction.md) (two-chart compare /
+      [docs/publish/screenshot-direction.md](./screenshot-direction.md) (two-chart compare /
       invite / AI chat for Yuel; almanac / timeline for Yuun — avoid zodiac/fortune visuals)
 - [ ] Reviewer notes + a demo account (template in [launch-checklist.md](../launch-checklist.md))
 - [~] `bun typecheck && bun lint && bun test` (2026-06-25): **typecheck clean** (36/36;

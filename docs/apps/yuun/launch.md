@@ -1,6 +1,6 @@
-# Auspice — June 2026 launch checklist
+# Yuun — launch checklist
 
-**Bundle:** `com.hexastral.cycle` · **Display name:** Auspice · **Slug stays:** `cycle`
+**Bundle:** `com.hexastral.auspice` · **Display name:** Yuun · **Directory:** `apps/auspice-app`
 
 Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = the full almanac; **Pro = 对你而言 personalization + personal 八字/紫微 命书 deep-read (chaptered report + 划词 ask-AI) + personal calendar feed + 关系 reading + specialized 择日**, gated behind sign-in.
 
@@ -20,7 +20,7 @@ Auspice is the renamed-but-internally-still-cycle 黄历 utility. Free tier = th
 - Notifications: stable per-date IDs, one-time purge of stale ID-scheme cruft, 节假日/调休 heads-up
 
 **Native scaffolded but not shipping in June:**
-- WidgetKit (3 sizes, App Group bridge) — see `cycle-widget-build-runbook.md`
+- WidgetKit (3 sizes, App Group bridge) — see [widget-build-runbook.md](./widget-build-runbook.md)
 - watchOS complications — same runbook
 - Skia 月相 lives in-app; widget will use a static moon
 

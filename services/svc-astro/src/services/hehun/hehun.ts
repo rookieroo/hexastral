@@ -295,7 +295,7 @@ ${compatText}${ziweiBlock ? `\n\n${ziweiBlock}` : ''}`
 
 /**
  * Compute the 紫微 synastry block for the prompt — the SECOND system woven in for
- * cross-validation (docs/kindred-ziwei-synastry-plan.md P3). Best-effort: if the
+ * cross-validation (docs/apps/yuel/ziwei-synastry-plan.md P3). Best-effort: if the
  * 紫微 compute throws (bad date/time), the report gracefully stays 八字-only rather
  * than failing. Forward-looking — only the 6-chapter premium report uses it.
  */

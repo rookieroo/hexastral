@@ -4,7 +4,7 @@ Decision (2026-06-30, user-directed): **V1 must take all four professional
 domains to 10/10**, not defer them. This doc is the execution plan. Lineage is
 locked to **沈氏玄空** (consistent with `astro-core/feng`), 八宅 to 八宅明镜.
 
-Companion to `docs/feng-fix-plan.md` (Waves 1-3). Code is source of truth.
+Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3). Code is source of truth.
 
 ## The four dimensions and the gap to 10/10
 

@@ -4,10 +4,10 @@ _Last updated: 2026-06-10. A living tracking layer over the detailed plans — i
 records **what's done** and **what's next**, and points to the ADRs / plan docs
 rather than restating them._
 
-**Master context:** [ROADMAP.md](ROADMAP.md) · solo-first frame
-[ADR-0021](decisions/0021-kindred-v2-solo-first-mingpan-frame.md) · bonds
-timeline [ADR-0014](decisions/0014-bonds-timeline-architecture.md) · make-if
-insight layer [ADR-0023](decisions/0023-timeline-makeif-insight-layer.md).
+**Master context:** [ROADMAP.md](../../ROADMAP.md) · solo-first frame
+[ADR-0021](../../decisions/0021-kindred-v2-solo-first-mingpan-frame.md) · bonds
+timeline [ADR-0014](../../decisions/0014-bonds-timeline-architecture.md) · make-if
+insight layer [ADR-0023](../../decisions/0023-timeline-makeif-insight-layer.md).
 
 ## Strategy in one paragraph
 
@@ -31,14 +31,14 @@ them, so read this banner first.
   `.app` domains registered (UseONE); both 🟢 cleared (knockout). Launch storefronts
   FIXED: **US · JP · SG · MY · TH**. App display names already flipped
   (`app.json`: Yuel / Yuun); in-app wordmarks + ASO being propagated. Refs:
-  [ADR-0024](decisions/0024-app-brand-naming.md) · [brand-aso-gtm-plan.md](brand-aso-gtm-plan.md)
-  · [trademark-clearance-and-filing.md](trademark-clearance-and-filing.md).
+  [ADR-0024](../../decisions/0024-app-brand-naming.md) · [brand-aso-gtm-plan.md](../../publish/brand-aso-gtm-plan.md)
+  · [trademark-clearance-and-filing.md](../../publish/trademark-clearance-and-filing.md).
   - The doc body below still says "Kindred"/"Auspice" — treat as the old names.
 - **Timeline deep-read BUILT, deploy-gated.** The **流月/流年/大运 three-dimension
   node deep-read + push** (运's headline, **#1 Pro hook**) is coded + typecheck-clean
   with migration `0012`. It is a server + D1 + LLM + cron feature → **CANNOT be
   verified from the agent sandbox**; needs a human `bun deploy` + on-device verify.
-  Ref: [timeline-deep-read-plan.md](timeline-deep-read-plan.md).
+  Ref: [timeline-deep-read-plan.md](../yuun/timeline-deep-read-plan.md).
 
 ### Critical path to launch (what's actually left, by owner)
 
@@ -52,7 +52,7 @@ them, so read this banner first.
    ready, see #8 below — ship as one pass once the product exists).
 4. **HUMAN launch ops** — Apple portal capabilities, ASC records + metadata +
    screenshots, RevenueCat products/entitlements, privacy labels (see
-   [launch-checklist.md](launch-checklist.md) · [auspice-launch.md](auspice-launch.md)).
+   [launch-checklist.md](../../publish/launch-checklist.md) · [launch.md](./launch.md) · [../yuun/launch.md](../yuun/launch.md)).
 5. **Blocked-on-dep/device** — bundle NotoSerifSC; on-device QA (MaskedView pager +
    划词, centerpiece morphs, timeline deep-read).
 

@@ -2,7 +2,7 @@
 
 Single consolidated checklist replacing the prior `launch-guide`, `launch-sequence`, `v1-submission-checklist`, `local-manual-checklist`, `reviewer-notes-templates`, and `screenshot-direction`.
 
-Per-app specifics: see `auspice-launch.md` and `yuan-launch.md`.
+Per-app specifics: see [apps/yuun/launch.md](../apps/yuun/launch.md) and [apps/yuel/launch.md](../apps/yuel/launch.md).
 
 ---
 

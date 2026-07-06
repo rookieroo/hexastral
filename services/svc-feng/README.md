@@ -54,5 +54,5 @@ bun dev                # wrangler dev — uses LocalR2 + dummy secrets
 
 The Mapbox-specific code is isolated to `src/lib/mapbox.ts`. Swapping
 providers (MapTiler, self-hosted OSM, etc.) is a contained change. See
-[docs/feng-plan.md §13](../../docs/feng-plan.md#13-locked-decisions-resolved-2026-05-15)
+[docs/apps/feng/fix-plan.md §13](../../docs/apps/feng/fix-plan.md#13-locked-decisions-resolved-2026-05-15)
 for the V1 decision to use Mapbox single-provider.

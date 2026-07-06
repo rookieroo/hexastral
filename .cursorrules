@@ -1,9 +1,11 @@
 # HexAstral Monorepo Standard Operating Procedures
 
+Navigation hub for agents: **[AGENTS.md](AGENTS.md)**. Architecture SSOT: **`docs/ROADMAP.md`** + **`docs/decisions/`**.
+
 ## 1. MANDATORY ARCHITECTURE RULES
 - **Package Manager**: Always use `bun`. Never `npm/pnpm`.
 - **Environment**: Cloudflare Workers (Hono) for API, Expo 54 for iOS, Next.js 15 for Web.
-- **Rules Overrides**: Sub-folder `.cursorrules` (e.g., `apps/hexastral-app/`, `services/`) override these.
+- **Rules overrides**: Sub-folder `.cursorrules` in `apps/hexastral-api/` and `services/` only. All `apps/*-app` satellite apps and all `packages/*` follow this file — no per-app or per-package rules files.
 
 ---
 
@@ -20,11 +22,11 @@
 - No empty `catch {}` → must log or handle
 - Use `// @ts-expect-error [reason]` with explanation if necessary
 
-### Style & UI
+### Style & UI (mobile + shared)
 - **Hardcoded colors**: Forbidden. Use `ios.*` palette from `useTheme()`
 - **Icons**: Monochrome Lucide only. No decorative icons "for interest".
   - **Exception**: Semantic controls (e.g. segment toggles, list/calendar mode switches, empty states) may use monochrome Lucide for affordance — not for ornament.
-- **Cards**: Flat design (`borderWidth: 0.5, borderRadius: 0, borderColor: colors.border`). NO rainbow/colorful borders
+- **Cards**: Flat design (`borderWidth: 0.5, borderRadius: 0, borderColor: colors.border`). NO rainbow/colorful borders or left-border accent patterns
 - **Database columns**: snake_case
 - **Environment vars**: UPPER_SNAKE_CASE
 - **File naming**: 
@@ -34,15 +36,33 @@
 
 ---
 
-## 3. MONOREPO SPECIFIC
+## 3. MOBILE SATELLITE APPS (`apps/*-app`)
+
+All satellite apps (e.g. `auspice-app`, `kindred-app`, `feng-app`) share these rules. Legacy `hexastral-app` is retired — do not treat as a launch target.
+
+| Rule | Do | Don't |
+|---|---|---|
+| Native modules | `npx expo install <pkg>` from the app dir | `bun add expo-*` (SDK mismatch) |
+| Network data | `useQuery` / `useMutation` in `hooks/` | `useState` + `useEffect` for API calls |
+| Images | `expo-image` + `cachePolicy="memory-disk"` | RN `Image` for network URLs |
+| API calls | `@zhop/hexastral-client` + HMAC signer | Raw `fetch` |
+| Motion | `react-native-reanimated` v4 + `expo-haptics` | RN `Animated` |
+| Shared glue | `@zhop/satellite-runtime`, `@zhop/satellite-ui` | Reimplement push/DDL/flags per app |
+
+Stack: Expo 54 · RN 0.81 · Expo Router 6 · NativeWind 4.1 + Tailwind **v3** · React Query · RevenueCat.
+
+---
+
+## 4. MONOREPO SPECIFIC
 
 ### Shared Packages
-Before modifying `@zhop/*` packages, verify impact on all consumers:
-- `astro-core` → used by: hexastral-api, hexastral-app, svc-astro
-- `hexastral-tokens` → used by: hexastral-app, hexastral-web, packages/ui
-- `hexastral-client` → used by: hexastral-app, hexastral-web
+Before modifying `@zhop/*` packages, verify impact on all consumers and run `bun typecheck`:
+- `astro-core` → hexastral-api, svc-astro, mobile apps, scenario packages
+- `hexastral-tokens` → mobile apps, hexastral-web, packages/ui
+- `hexastral-client` → mobile apps, hexastral-web
+- `satellite-runtime` / `satellite-ui` → all `apps/*-app`
 
-Run `bun typecheck` after changes.
+**Packages have no `.cursorrules`.** Constraints live in each `packages/*/README.md`.
 
 ### Database
 - **Single source of truth**: `apps/hexastral-api/src/db/schema.ts`
@@ -51,14 +71,14 @@ Run `bun typecheck` after changes.
 - Apply to production with: `bun db:migrate:prod`
 
 ### i18n
-- New UI text requires keys in ALL 9 locale files
+- New UI text requires keys in ALL 9 locale files (mobile)
 - Files: `locales/{zh, zh-Hant, en, ko, ja, de, es, vi, th}.ts`
 - Use `useI18n()` hook (iOS) or `next-intl` (Web)
 - Never hardcode UI text in components
 
 ---
 
-## 4. CLOUDFLARE, WRANGLER & AGENT CLI
+## 5. CLOUDFLARE, WRANGLER & AGENT CLI
 
 ### Wrangler (monorepo baseline)
 - All Worker `package.json` files pin **`wrangler` `^4.90.0`**; run **`bun install`** at the repo root after bumps.
@@ -67,7 +87,7 @@ Run `bun typecheck` after changes.
 ### Prefer `bun run` over ad-hoc flags
 - **hexastral-api**: `bun dev`, `bun deploy`, `bun db:generate|migrate|migrate:prod`, `bun run ai-search:info`, `bun cf-typegen` — see `apps/hexastral-api/package.json`.
 - **services/\***: `bun dev`, `bun deploy` inside each `services/<name>/`.
-- After **`wrangler.jsonc` binding changes** in any Worker: same directory, run **`bunx wrangler types`** (or that package’s `cf-typegen`) so `CloudflareBindings` stays accurate.
+- After **`wrangler.jsonc` binding changes** in any Worker: same directory, run **`bunx wrangler types`** (or that package's `cf-typegen`) so `CloudflareBindings` stays accurate.
 
 ### AI Search (`hexastral-api`)
 - `ai_search` entries use **`instance_name`**, equal to the instance API JSON field **`id`** (not `instance_id` in wrangler config).
@@ -124,11 +144,11 @@ try { await operation() } catch (err) {
 
 ---
 
-## 5. EXECUTION COMMANDS
+## 6. EXECUTION COMMANDS
 
 | Tool | Command | Purpose |
 |------|---------|---------|
-| **iOS** | `npx expo install <pkg>` | Native module install (NOT `bun add`) |
+| **iOS** | `npx expo install <pkg>` | Native module install (NOT `bun add`) — run from `apps/<name>-app/` |
 | **iOS** | `bunx expo start` | Metro bundler start |
 | **iOS** | `bunx expo run:ios` | Local simulator build |
 | **iOS** | `eas build --profile production --platform ios` | Cloud build for App Store |
@@ -140,24 +160,25 @@ try { await operation() } catch (err) {
 
 ---
 
-## 6. DEPLOYMENT POLICY
+## 7. DEPLOYMENT POLICY
 
 - **Do not** auto-deploy **production** on every change across `hexastral-api`, `hexastral-web`, and all `services/*` workers — risk of partial rollout, bad migrations, and noisy churn.
 - **Preferred**: CI runs `bun typecheck` / lint on PRs; merge to `main` feeds **staging or preview** only; production deploys use **path-filtered** jobs (e.g. Turborepo `--filter`), **manual approval** or **tagged releases**, and **explicit** D1 migrations (`bun db:migrate:prod`).
 
 ---
 
-## 7. RULES HIERARCHY
+## 8. RULES HIERARCHY
 
 When in doubt, follow this priority:
-1. **Sub-folder `.cursorrules`** (e.g., `apps/hexastral-app/.cursorrules`)
+1. **Sub-folder `.cursorrules`** — `apps/hexastral-api/`, `services/` only
 2. **This global `.cursorrules`**
-3. **ARCHITECTURE_SUMMARY.md** (architectural decisions)
+3. **`docs/ROADMAP.md`** + **`docs/decisions/`** (architecture SSOT)
 4. **Codebase patterns** (existing code style)
 
 For detailed guidance:
-- **iOS development**: See `apps/hexastral-app/.cursorrules`
-- **Backend development**: See `apps/hexastral-api/.cursorrules`
-- **Microservices**: See `services/.cursorrules`
-- **Project structure**: See `ARCHITECTURE_SUMMARY.md`
-- **Implementation help**: See `IMPLEMENTATION_GUIDE.md`
+- **Mobile satellite apps**: This file §3 (no per-app rules)
+- **API**: `apps/hexastral-api/.cursorrules`
+- **Microservices**: `services/.cursorrules`
+- **All AI tools entry**: `AGENTS.md`
+- **Copilot code-generation bans**: `.github/copilot-instructions.md`
+- **Implementation help**: `IMPLEMENTATION_GUIDE.md`

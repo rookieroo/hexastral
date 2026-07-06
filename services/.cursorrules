@@ -1,6 +1,8 @@
 # HexAstral Microservices (services/*) Development Rules
 
-**Loaded automatically when working under `services/`. Overrides root rules.**
+**Loaded when working under `services/`. Overrides root [`.cursorrules`](../.cursorrules).**
+
+Entry hub: [AGENTS.md](../AGENTS.md) · Architecture: [docs/ROADMAP.md](../docs/ROADMAP.md)
 
 ---
 

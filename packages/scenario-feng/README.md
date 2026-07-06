@@ -9,7 +9,7 @@ and the **Compass (羅) satellite**.
 
 Hooks and components will be filled in Phase E Week 4-5 once the API surface
 in `apps/hexastral-api/src/routes/feng.ts` and `services/svc-feng/` are
-in place. See [docs/feng-plan.md](../../docs/feng-plan.md) for the full plan.
+in place. See [docs/apps/feng/fix-plan.md](../../docs/apps/feng/fix-plan.md) for the full plan.
 
 ## Layout
 

@@ -16,7 +16,7 @@
  * NOTE: proactive LOCAL push for these nodes (the `notifications` timetable) is
  * the device/EAS batch step — the pure schedule builder ships ready + tested in
  * @zhop/scenario-kindred (buildTimelineNotificationPlan); wiring it needs
- * expo-notifications, added in the native build. See docs/bonds-timeline-plan.md.
+ * expo-notifications, added in the native build. See docs/apps/yuel/bonds-timeline-plan.md.
  */
 
 import { EmptyState, ErrorState } from '@zhop/core-ui'

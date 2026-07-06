@@ -60,7 +60,7 @@ dev machine; CI does not build native.**
   isn't available in extensions). Swap for a per-phase asset or a SwiftUI Canvas
   draw when polishing.
 
-## Follow-ups (per docs/cycle-widget-watch-scope.md)
+## Follow-ups (per [widget-watch-scope.md](./widget-watch-scope.md))
 - Write an **N-day window** (batch fetch), not just today, so the WidgetKit timeline
   spans several days between app opens.
 - Mirror the **auspice_pro entitlement** into the App Group so the widget can show the

@@ -10,7 +10,7 @@
  * callers do that locally; no HTTP hop.
  *
  * V1 routes are scaffolded; real Mapbox + Gemini wiring lands Week 3 and
- * Week 5 respectively. See docs/feng-plan.md §5.4.
+ * Week 5 respectively. See docs/apps/feng/fix-plan.md §5.4.
  */
 
 import { Hono } from 'hono'

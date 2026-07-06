@@ -19,7 +19,7 @@
  * Compute primitives (24山 / 玄空飞星 / 八宅) live in @zhop/astro-core/feng
  * and are mobile-runnable for the Compass satellite's offline needs.
  *
- * See docs/feng-plan.md and docs/decisions/0003-compass-satellite.md
+ * See docs/apps/feng/fix-plan.md and docs/decisions/0003-compass-satellite.md
  * for context.
  */
 

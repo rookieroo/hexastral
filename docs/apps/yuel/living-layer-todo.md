@@ -18,7 +18,7 @@ the user: the synastry report + timeline + what-if are **八字-only** — no �
 Remaining splits into two planned features + small follow-ups:
 
 - **命理 term meaning-first + a Settings glossary page** → see
-  **[docs/kindred-term-glossary-plan.md](kindred-term-glossary-plan.md)**. **P1–P3 shipped:**
+  **[term-glossary-plan.md](term-glossary-plan.md)**. **P1–P3 shipped:**
   - P1 — `@zhop/astro-i18n` curated `terms` table (69 terms, meaning-first zh+en;
     ja/ko fall back to en).
   - P2 — svc-astro `buildLanguageBlock`: zh meaning-first directive + verbatim
@@ -29,7 +29,7 @@ Remaining splits into two planned features + small follow-ups:
     collided with the new 天干 entries; the report shows 你/name now). On-device QA pending.
   - P4 (optional, not done) — in-report term linking: tap a term → its glossary entry.
 - **合盘 on 八字 + 紫薇** (timeline / what-if grounded in both, cross-validating) → see
-  **[docs/kindred-ziwei-synastry-plan.md](kindred-ziwei-synastry-plan.md)**. **P1–P4 shipped:**
+  **[ziwei-synastry-plan.md](ziwei-synastry-plan.md)**. **P1–P4 shipped:**
   the 紫微 synastry compute core (`ziwei-synastry.ts`: summarize + 飞星 pair analysis +
   流年 cross-confirm, iztro via stellar.ts, golden-tested) is woven into the 6-chapter
   report (P3, second system + cross-validation framing) and the timeline-node explain

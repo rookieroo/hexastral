@@ -4,7 +4,7 @@
  * Auspice had no onboarding at all (app/index.tsx booted straight into the
  * tabs), so a first-time user landed cold on a dense 黄历 with no framing. This
  * is a single, restrained welcome — date-led to read as a CALENDAR utility (per
- * docs/screenshot-direction.md: no moon-phase, no mystic motifs), three plain
+ * docs/publish/screenshot-direction.md: no moon-phase, no mystic motifs), three plain
  * value lines, and one CTA into Today. It never gates the almanac: the free
  * 黄历 works with no birth, so the welcome only ORIENTS, then steps aside. Birth
  * entry (for the 对你而言 layer) is invited, not required.
@@ -29,7 +29,7 @@ const BRAND = 'YUUN'
 interface WelcomeCopy {
   /** One paragraph — calendar-anchored on purpose: App Review launches the app,
    *  and the welcome is the first thing it sees, so it must read as a utility,
-   *  not a fortune product (docs/screenshot-direction.md). The timeline/what-if
+   *  not a fortune product (docs/publish/screenshot-direction.md). The timeline/what-if
    *  story is sold in the store CPP, not here. */
   intro: string
   cta: string

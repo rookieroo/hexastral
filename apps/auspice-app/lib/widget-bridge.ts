@@ -6,7 +6,7 @@
  * module directly via `NativeModules.RNSharedGroupPreferences` (registered by
  * `react-native-shared-group-preferences` once it's installed + the iOS target
  * rebuilt). So this file stays tsc-green BEFORE any native setup and simply
- * no-ops until the module is linked. See docs/cycle-widget-build-runbook.md.
+ * no-ops until the module is linked. See docs/apps/yuun/widget-build-runbook.md.
  */
 
 import { NativeModules, Platform } from 'react-native'

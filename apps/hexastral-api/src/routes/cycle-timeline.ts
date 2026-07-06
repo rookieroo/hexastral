@@ -456,7 +456,7 @@ auspiceTimelineRoutes.post('/', async (c) => {
 // cached FOREVER (no TTL), bounding LLM spend to "nodes actually surfaced".
 // Free / guard-exhausted → `reading: null`; the client renders its own
 // deterministic `resolveNodeDetail`. Mirrors fate `/api/timeline/explain` + the
-// make-if 落库 pattern. See docs/timeline-deep-read-plan.md.
+// make-if 落库 pattern. See docs/apps/yuun/timeline-deep-read-plan.md.
 //
 // DEPLOY DEPENDENCIES (not exercised in CI): svc-astro `/timeline/explain` must
 // accept this body (nodeType incl. 流月 + element/fit/reasons), and the D1
@@ -704,7 +704,7 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
 // The push is a DETERMINISTIC personalized teaser (干支 + 对你 fit + a deep-link);
 // the rich LLM read is generated LAZILY in-app on tap (reuses /explain + 落库), so
 // the cron stays cheap (no per-user LLM). Internal-key gated; svc-notify cron calls
-// it per timezone on month-starts. See docs/timeline-deep-read-plan.md §P2.
+// it per timezone on month-starts. See docs/apps/yuun/timeline-deep-read-plan.md §P2.
 
 interface TimelinePushLabels {
   dayun: { title: string; tap: string }

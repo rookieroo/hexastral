@@ -126,7 +126,7 @@ export default function PairInputScreen() {
   const relType: RelationshipType | null = (draft.relationshipLabel as RelationshipType) || null
   // Name stays OPTIONAL — a required name in onboarding/solo is friction that loses
   // users (2026-06 decision). The report's 甲/乙 ambiguity is fixed generation-side
-  // (a consistent person-reference) instead — see docs/kindred-term-glossary-plan.md.
+  // (a consistent person-reference) instead — see docs/apps/yuel/term-glossary-plan.md.
   const selfFilled =
     selfSolar !== null && draft.selfGender !== null && typeof draft.selfTimeIndex === 'number'
   const otherFilled =

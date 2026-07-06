@@ -5,8 +5,8 @@ Shared logic for the Kindred (Kindred) synastry product. Consumed by:
 - `apps/kindred-app` *(planned, Phase B)* — standalone Expo build
 - `apps/hexastral-app` *(migration planned, see [MIGRATION.md](./MIGRATION.md))* — the Kindred Bonds tab
 
-See [docs/decisions/0001-yuan-naming.md](../../docs/decisions/0001-yuan-naming.md)
-and [docs/decisions/0002-brand-matrix.md](../../docs/decisions/0002-brand-matrix.md)
+See [docs/decisions/0024-app-brand-naming.md](../../docs/decisions/0024-app-brand-naming.md)
+and [docs/apps/yuel/status.md](../../docs/apps/yuel/status.md)
 for product context.
 
 ## Setup

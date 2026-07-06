@@ -188,7 +188,7 @@ final capability menu lives in §7 below.
 - Kindred timeline **local push** wiring — needs `expo-notifications` (EAS/native;
   sandbox can't `bun install` it). Pure schedule builder ships ready + tested in
   `@zhop/scenario-kindred` (`buildTimelineNotificationPlan`). See
-  `docs/bonds-timeline-plan.md`.
+  [apps/yuel/bonds-timeline-plan.md](../yuel/bonds-timeline-plan.md).
 - T4 live synastry-chapter generation verification — needs CF Workers AI (the
   deterministic parser half is tested).
 - Track B widget (MoonDot/PNG) — needs Xcode.

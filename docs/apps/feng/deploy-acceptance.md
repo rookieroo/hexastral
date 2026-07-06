@@ -4,7 +4,7 @@ Everything that must happen by hand to take Feng (incl. the D1–D4 pro-grade wo
 from "code-complete + typecheck/test green" to "live + validated". CI does NOT
 deploy (house rule) — these run locally via `wrangler` / EAS.
 
-Companion to `docs/feng-fix-plan.md` (Waves 1-3) and `docs/feng-pro-grade-plan.md`
+Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3) and [pro-grade-plan.md](./pro-grade-plan.md)
 (四维 D1-D4). Last updated 2026-06-30.
 
 ---
@@ -54,7 +54,7 @@ secure-store) → **Expo Go won't work; a dev build is required**.
       App defaults to `https://api.hexastral.com` (deployed) — no config needed.
 - [ ] EAS prod: `eas build --profile production --platform ios` (needs `eas init`
       projectId in app.json/eas.json; Apple `com.hexastral.feng`; RevenueCat
-      products — see `docs/local-manual-checklist.md`).
+      products — see `docs/publish/README.md`).
 
 ## 5. Smoke tests (after deploy — generate a NEW report; old reports lack the new fields)
 

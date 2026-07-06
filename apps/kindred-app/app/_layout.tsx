@@ -90,7 +90,7 @@ export default function RootLayout() {
   // assets/fonts/NotoSerifSC-Regular.ttf (full variable font ≈ 25 MB — subset to
   // the report's glyph range) and add `NotoSerifSC: require('../assets/fonts/
   // NotoSerifSC-Regular.ttf')` below. Deferred: needs the font binary + a
-  // subsetting pass in an env with network/tooling (see docs/kindred-status.md).
+  // subsetting pass in an env with network/tooling (see docs/apps/yuel/status.md).
   useFonts({
     LibreBaskerville: require('../assets/fonts/LibreBaskerville-Regular.ttf'),
     CrimsonPro: require('../assets/fonts/CrimsonPro-Regular.ttf'),

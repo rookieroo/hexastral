@@ -1321,7 +1321,7 @@ export const makeifForks = sqliteTable(
  * `owner` = `device:<deviceId>` (anon) or `user:<userId>`, matching makeif_forks.
  * Chart inputs are stored + indexed so a birth change misses + regenerates; the
  * endpoint upserts on the deterministic period `id`. See
- * docs/timeline-deep-read-plan.md.
+ * docs/apps/yuun/timeline-deep-read-plan.md.
  */
 export const timelineReadings = sqliteTable(
   'timeline_readings',

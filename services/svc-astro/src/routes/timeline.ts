@@ -4,7 +4,7 @@
  * A short plain-text explanation of ONE timeline node, locale-aware, framed as
  * REFLECTION not prediction (Terms §3 / 4.3(b)). Two callers share this route:
  *   • fate/Yuán (B-fate.3): 大运 换运 / 流年, woven through the 十神-vs-日主 angle.
- *   • auspice 人生时间线 (P1, docs/timeline-deep-read-plan.md): + 流月, woven
+ *   • auspice 人生时间线 (P1, docs/apps/yuun/timeline-deep-read-plan.md): + 流月, woven
  *     through the 对你而言 overlay (element/fit/reasons — the SAME engine as the
  *     daily 黄历). Persisted (落库) UPSTREAM in hexastral-api so re-views + the
  *     cron push reuse one generation.

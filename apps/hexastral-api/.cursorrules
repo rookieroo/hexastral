@@ -1,6 +1,8 @@
 # HexAstral API (hexastral-api) Development Rules
 
-**Loaded automatically when working under `apps/hexastral-api/`. Overrides root rules.**
+**Loaded when working under `apps/hexastral-api/`. Overrides root [`.cursorrules`](../../.cursorrules).**
+
+Entry hub: [AGENTS.md](../../AGENTS.md) · Architecture: [docs/ROADMAP.md](../../docs/ROADMAP.md)
 
 ---
 

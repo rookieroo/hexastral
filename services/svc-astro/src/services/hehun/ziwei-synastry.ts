@@ -3,7 +3,7 @@
  *
  * The 八字 synastry (computeHeHun) reads how two 子平 charts interact; this adds
  * the SECOND system. Two independent traditions agreeing is a stronger, more
- * defensible read — and the differentiator (see docs/kindred-ziwei-synastry-plan.md).
+ * defensible read — and the differentiator (see docs/apps/yuel/ziwei-synastry-plan.md).
  *
  * Compute is iztro (via stellar.ts generateChart) — the same engine the 紫微
  * product uses, so placement correctness is owned by iztro, not re-derived here.
@@ -351,7 +351,7 @@ function buildYearNote(year: number, hits: ZiweiYearHit[]): string {
  * in either person's natal bond palaces (命宫/夫妻/福德)? When they do, 紫微 is ALSO
  * flagging that year as relationship-relevant — corroborating an 八字 turning point.
  * Pure; enriches the timeline-node EXPLANATION prose, never the ranking (八字 stays
- * the deterministic spine — see docs/kindred-ziwei-synastry-plan.md P4).
+ * the deterministic spine — see docs/apps/yuel/ziwei-synastry-plan.md P4).
  */
 export function ziweiYearCrossConfirm(
   a: ZiweiSummary,

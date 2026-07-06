@@ -1,7 +1,7 @@
 /**
  * Shared types for the BirthInfoForm flow.
  *
- * See docs/birth-info-form-spec.md for the contract this package implements.
+ * See docs/shared/birth-info-form-spec.md for the contract this package implements.
  */
 
 import type { LunarDate } from '@zhop/astro-core'

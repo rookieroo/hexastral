@@ -7,7 +7,7 @@ native chart views. Fully built, **never ships as a standalone app**.
 
 - **Frozen** per [ADR-0019](../../docs/decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md):
   must keep building + typechecking; it is the ADR-0018 design-language reference.
-- **Disposition** per [ADR-0022](../../docs/decisions/0022-mingpan-disposition-donor-not-launch.md):
+- **Disposition** per [archive ADR-0022](../../docs/archive/decisions/0022-mingpan-disposition-donor-not-launch.md):
   this app is the **donor frame for kindred-app** — its compute libs
   (`lib/natal.ts`, `lib/ziwei.ts`, `lib/reading.ts`, `lib/reading-cache.ts`),
   report UI, and chart views are being ported into Kindred (ADR-0021 phases

@@ -3480,7 +3480,7 @@ async function sendBondAcceptedEmails(
  *   - MY PDPA: data user identification
  *
  * TODO(legal): replace POSTAL with the registered UseOne Tech LLC address before
- * public launch. Tracked in docs/local-manual-checklist.md.
+ * public launch. Tracked in docs/publish/README.md.
  */
 const OPERATOR = {
   brand: 'HexAstral',
