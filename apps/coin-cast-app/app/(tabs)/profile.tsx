@@ -6,11 +6,12 @@
  */
 
 import { Toggle, useHaptic, useTheme } from '@zhop/core-ui'
-import { getBirthInfo } from '@zhop/portfolio-client'
 import {
   deletePortfolioAccount,
+  getPortfolioProfile,
   getPortfolioUserId,
   invalidatePortfolioSession,
+  type PortfolioProfile,
   repairPortfolioCredentialMismatch,
 } from '@zhop/satellite-runtime'
 import { SatelliteAppleAuth } from '@zhop/satellite-ui'
@@ -21,6 +22,7 @@ import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -31,13 +33,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MeDevTools } from '@/components/MeDevTools'
-import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { COIN_FACE_SOURCES } from '@/lib/coin-skin-assets'
 import {
   COIN_SKIN_IDS,
   COIN_SKIN_PRESETS,
+  DEFAULT_COIN_SKIN_ID,
+  type CoinSkinId,
   getCoinSkinId,
   setCoinSkinId,
-  type CoinSkinId,
 } from '@/lib/coin-skins'
 import {
   getCastHapticsEnabled,
@@ -45,9 +48,15 @@ import {
   setCastHapticsEnabled,
   setMotionShakeEnabled,
 } from '@/lib/coincast-ritual'
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
 
 type Session = 'loading' | 'out' | 'in'
+
+function emailLocalPart(email: string): string {
+  const at = email.indexOf('@')
+  return at > 0 ? email.slice(0, at) : email
+}
 
 export default function CoinCastProfileScreen() {
   const router = useRouter()
@@ -57,12 +66,11 @@ export default function CoinCastProfileScreen() {
   const { t, uiLocale } = useSatelliteI18n()
 
   const [session, setSession] = useState<Session>('loading')
-  const [userId, setUserId] = useState<string | null>(null)
+  const [profile, setProfile] = useState<PortfolioProfile | null>(null)
   const [motion, setMotion] = useState(true)
   const [haptics, setHaptics] = useState(true)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
-  const [skinId, setSkinId] = useState<CoinSkinId>('qing-tong')
-  const [birthSummary, setBirthSummary] = useState<string | null>(null)
+  const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
 
   const cardStyle = {
     backgroundColor: colors.card,
@@ -78,11 +86,17 @@ export default function CoinCastProfileScreen() {
       try {
         await repairPortfolioCredentialMismatch()
         const id = await getPortfolioUserId()
-        setUserId(id)
-        setSession(id ? 'in' : 'out')
+        if (id) {
+          const p = await getPortfolioProfile()
+          setProfile(p)
+          setSession('in')
+        } else {
+          setProfile(null)
+          setSession('out')
+        }
       } catch (err) {
         console.warn('[coincast-profile] refreshSession failed', err)
-        setUserId(null)
+        setProfile(null)
         setSession('out')
       }
     })()
@@ -92,26 +106,15 @@ export default function CoinCastProfileScreen() {
     useCallback(() => {
       refreshSession()
       void (async () => {
-        const [motionOn, hapticsOn, skin, uid] = await Promise.all([
+        const [motionOn, hapticsOn, skin] = await Promise.all([
           getMotionShakeEnabled(),
           getCastHapticsEnabled(),
           getCoinSkinId(),
-          getPortfolioUserId(),
         ])
         setMotion(motionOn)
         setHaptics(hapticsOn)
         setSkinId(skin)
         setPrefsLoaded(true)
-        if (uid) {
-          try {
-            const { birthInfo } = await getBirthInfo()
-            setBirthSummary(birthInfo?.birthSolarDate ?? null)
-          } catch {
-            setBirthSummary(null)
-          }
-        } else {
-          setBirthSummary(null)
-        }
       })()
     }, [refreshSession])
   )
@@ -247,7 +250,9 @@ export default function CoinCastProfileScreen() {
         >
           <Text style={{ color: colors.accent, fontSize: 24 }}>‹</Text>
         </Pressable>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{t('stackSettings')}</Text>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>
+          {t('stackSettings')}
+        </Text>
       </View>
 
       <ScrollView
@@ -271,7 +276,9 @@ export default function CoinCastProfileScreen() {
               <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
                 {t('meSignInSectionTitle').toUpperCase()}
               </Text>
-              <Text style={{ color: colors.text, fontSize: 15, lineHeight: 21 }}>{t('meSignInHint')}</Text>
+              <Text style={{ color: colors.text, fontSize: 15, lineHeight: 21 }}>
+                {t('meSignInHint')}
+              </Text>
               {Platform.OS === 'ios' ? (
                 <SatelliteAppleAuth
                   storagePrefix={PORTFOLIO_STORAGE_PREFIX}
@@ -282,18 +289,35 @@ export default function CoinCastProfileScreen() {
                   onAuthed={refreshSession}
                 />
               ) : (
-                <Text style={{ color: colors.secondary, fontSize: 13 }}>{t('meSignInIosOnly')}</Text>
+                <Text style={{ color: colors.secondary, fontSize: 13 }}>
+                  {t('meSignInIosOnly')}
+                </Text>
               )}
             </View>
           ) : (
-            <>
+            <View style={{ gap: 4 }}>
               <Text style={{ color: colors.secondary, fontSize: 12, letterSpacing: 1 }}>
-                {t('settingsAccountSection').toUpperCase()}
+                {t('settingsAccountAppleKind').toUpperCase()}
               </Text>
-              <Text style={{ color: colors.text, fontFamily: 'Menlo', fontSize: 11 }} selectable>
-                {userId ?? '—'}
-              </Text>
-            </>
+              {profile?.displayName ? (
+                <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>
+                  {profile.displayName}
+                </Text>
+              ) : profile?.email ? (
+                <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>
+                  {emailLocalPart(profile.email)}
+                </Text>
+              ) : (
+                <Text style={{ color: colors.text, fontSize: 15 }}>
+                  {t('settingsAccountSignedIn')}
+                </Text>
+              )}
+              {profile?.displayName && profile?.email ? (
+                <Text style={{ color: colors.secondary, fontSize: 14 }}>
+                  {emailLocalPart(profile.email)}
+                </Text>
+              ) : null}
+            </View>
           )}
         </View>
 
@@ -302,7 +326,10 @@ export default function CoinCastProfileScreen() {
           {navRow(t('meHistoryTitle'), () => router.push('/(tabs)/history'))}
           {navRow(t('meUpgrade'), () => router.push('/paywall'))}
           {navRow(t('restorePurchases'), () => router.push('/paywall'))}
-          {navRow(t('mePrivacy'), () => void Linking.openURL('https://www.hexastral.com/privacy/coincast'))}
+          {navRow(
+            t('mePrivacy'),
+            () => void Linking.openURL('https://www.hexastral.com/privacy/coincast')
+          )}
           {navRow(creditsLabel, () => router.push('/credits'), true)}
         </View>
 
@@ -319,10 +346,16 @@ export default function CoinCastProfileScreen() {
           >
             {t('settingsSensorySection').toUpperCase()}
           </Text>
-          {toggleRow(t('settingsMotionLabel'), t('settingsMotionHint'), motion, (next) => {
-            setMotion(next)
-            void setMotionShakeEnabled(next)
-          }, { disabled: !prefsLoaded })}
+          {toggleRow(
+            t('settingsMotionLabel'),
+            t('settingsMotionHint'),
+            motion,
+            (next) => {
+              setMotion(next)
+              void setMotionShakeEnabled(next)
+            },
+            { disabled: !prefsLoaded }
+          )}
           {toggleRow(
             t('settingsHapticsLabel'),
             t('settingsHapticsHint'),
@@ -348,7 +381,9 @@ export default function CoinCastProfileScreen() {
           >
             {t('settingsCoinSkinLabel').toUpperCase()}
           </Text>
-          <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm }}>
+          <Text
+            style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm }}
+          >
             {t('settingsCoinSkinHint')}
           </Text>
           {COIN_SKIN_IDS.map((id, index) => {
@@ -375,53 +410,22 @@ export default function CoinCastProfileScreen() {
                   borderBottomColor: colors.separator,
                 }}
               >
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                  <View
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: 10,
-                      backgroundColor: preset.yang,
-                      borderWidth: 0.5,
-                      borderColor: preset.edge,
-                    }}
-                  />
-                  <View
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: 10,
-                      backgroundColor: preset.yin,
-                      borderWidth: 0.5,
-                      borderColor: preset.edge,
-                    }}
-                  />
-                </View>
+                <Image
+                  source={COIN_FACE_SOURCES[id]}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    borderWidth: 0.5,
+                    borderColor: colors.separator,
+                  }}
+                  accessibilityIgnoresInvertColors
+                />
                 <Text style={{ flex: 1, color: colors.text, fontSize: 15 }}>{label}</Text>
                 {selected ? <Check size={18} color={colors.accent} strokeWidth={2} /> : null}
               </Pressable>
             )
           })}
-        </View>
-
-        {/* Birth + Pro interpretation */}
-        <View style={cardStyle}>
-          {navRow(
-            t('settingsBirthInfoLabel'),
-            () => router.push('/(birth-info)'),
-            false,
-            birthSummary ?? t('settingsBirthInfoEmpty')
-          )}
-          <View
-            style={{
-              paddingVertical: spacing.md,
-              borderBottomWidth: 0,
-              gap: 6,
-            }}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t('settingsProBirthTitle')}</Text>
-            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>{t('settingsProBirthHint')}</Text>
-          </View>
         </View>
 
         {__DEV__ ? (

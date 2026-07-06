@@ -1,0 +1,48 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs>
+  <clipPath id="clip-mingyongle"><circle cx="256" cy="256" r="231.936"/></clipPath>
+  <radialGradient id="wash-mingyongle" cx="0.4" cy="0.32" r="0.72">
+    <stop offset="0" stop-color="#b8c8bc"/>
+    <stop offset="0.5" stop-color="#7a9488"/>
+    <stop offset="1" stop-color="#3a5048"/>
+  </radialGradient>
+  <radialGradient id="mist-mingyongle" cx="0.64" cy="0.72" r="0.6">
+    <stop offset="0" stop-color="rgba(58,80,72,0)"/>
+    <stop offset="0.68" stop-color="rgba(58,80,72,0.28)"/>
+    <stop offset="1" stop-color="rgba(14,24,16,0.5)"/>
+  </radialGradient>
+  <radialGradient id="lift-mingyongle" cx="0.34" cy="0.24" r="0.5">
+    <stop offset="0" stop-color="rgba(205,221,206,0.32)"/>
+    <stop offset="1" stop-color="rgba(205,221,206,0)"/>
+  </radialGradient>
+  <filter id="paper-mingyongle" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62 0.72" numOctaves="4" seed="11" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.11 0 0 0 0.2 0" result="g"/>
+    <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+  </filter>
+  <filter id="brush-mingyongle">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03 0.05" numOctaves="2" seed="9" result="t"/>
+    <feDisplacementMap in="SourceGraphic" in2="t" scale="8.70" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="bleed-mingyongle" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="2.41"/>
+  </filter>
+  <filter id="bloom-mingyongle" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="10.24"/>
+  </filter>
+</defs><g clip-path="url(#clip-mingyongle)" filter="url(#paper-mingyongle)">
+  <circle cx="256" cy="256" r="231.936" fill="url(#wash-mingyongle)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#lift-mingyongle)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#mist-mingyongle)"/>
+  <circle cx="153.6" cy="143.4" r="51.2" fill="rgba(46,88,64,0.3)" filter="url(#bloom-mingyongle)"/><circle cx="358.4" cy="358.4" r="56.3" fill="rgba(30,60,44,0.3)" filter="url(#bloom-mingyongle)"/><circle cx="153.6" cy="358.4" r="25.6" fill="rgba(150,178,150,0.2)" filter="url(#bloom-mingyongle)"/>
+</g><g filter="url(#brush-mingyongle)">
+  <circle cx="256" cy="256" r="230.4" fill="none" stroke="#2e4038" stroke-width="9.01" opacity="0.72"/>
+  <circle cx="256" cy="256" r="204.8" fill="none" stroke="#2e4038" stroke-width="4.10" opacity="0.42"/>
+</g><g>
+  <circle cx="256.0" cy="102.4" r="13.3" fill="#22302a" opacity="0.5"/>
+  <circle cx="256.0" cy="102.4" r="22.6" fill="none" stroke="#b9d0bc" stroke-width="2.05" opacity="0.16"/>
+  <path d="M 256.0 381.4 A 25.6 25.6 0 1 0 256.0 432.6 A 25.6 25.6 0 1 1 240.1 388.6 Z" fill="#22302a" opacity="0.42"/>
+  <path d="M 256.0 381.4 A 25.6 25.6 0 1 0 256.0 432.6 A 25.6 25.6 0 1 1 240.1 388.6 Z" fill="none" stroke="#b9d0bc" stroke-width="2.05" opacity="0.16"/>
+</g><rect x="190.0" y="190.0" width="132.1" height="132.1" rx="7.17" fill="none" stroke="#2e4038" stroke-width="7.01" opacity="0.5" filter="url(#brush-mingyongle)"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="#080b09"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="#20302a" stroke-width="5.99" opacity="0.6"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="rgba(205,221,206,0.14)" stroke-width="1.54"/></svg>

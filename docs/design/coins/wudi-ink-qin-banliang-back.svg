@@ -1,0 +1,48 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs>
+  <clipPath id="clip-qinbanliang"><circle cx="256" cy="256" r="231.936"/></clipPath>
+  <radialGradient id="wash-qinbanliang" cx="0.4" cy="0.32" r="0.72">
+    <stop offset="0" stop-color="#e4e0d8"/>
+    <stop offset="0.5" stop-color="#b3afa6"/>
+    <stop offset="1" stop-color="#726f68"/>
+  </radialGradient>
+  <radialGradient id="mist-qinbanliang" cx="0.64" cy="0.72" r="0.6">
+    <stop offset="0" stop-color="rgba(150,146,138,0)"/>
+    <stop offset="0.68" stop-color="rgba(150,146,138,0.22)"/>
+    <stop offset="1" stop-color="rgba(20,16,8,0.42)"/>
+  </radialGradient>
+  <radialGradient id="lift-qinbanliang" cx="0.34" cy="0.24" r="0.5">
+    <stop offset="0" stop-color="rgba(236,228,212,0.34)"/>
+    <stop offset="1" stop-color="rgba(236,228,212,0)"/>
+  </radialGradient>
+  <filter id="paper-qinbanliang" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62 0.72" numOctaves="4" seed="11" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.12 0 0 0 0.16 0" result="g"/>
+    <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+  </filter>
+  <filter id="brush-qinbanliang">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03 0.05" numOctaves="2" seed="9" result="t"/>
+    <feDisplacementMap in="SourceGraphic" in2="t" scale="8.70" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="bleed-qinbanliang" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="2.41"/>
+  </filter>
+  <filter id="bloom-qinbanliang" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="10.24"/>
+  </filter>
+</defs><g clip-path="url(#clip-qinbanliang)" filter="url(#paper-qinbanliang)">
+  <circle cx="256" cy="256" r="231.936" fill="url(#wash-qinbanliang)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#lift-qinbanliang)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#mist-qinbanliang)"/>
+  <circle cx="148.5" cy="358.4" r="25.6" fill="rgba(20,16,12,0.16)" filter="url(#bloom-qinbanliang)"/><circle cx="373.8" cy="148.5" r="20.5" fill="rgba(236,232,222,0.18)" filter="url(#bloom-qinbanliang)"/>
+</g><g filter="url(#brush-qinbanliang)">
+  <circle cx="256" cy="256" r="230.4" fill="none" stroke="#4c4a45" stroke-width="9.01" opacity="0.72"/>
+  <circle cx="256" cy="256" r="204.8" fill="none" stroke="#4c4a45" stroke-width="4.10" opacity="0.42"/>
+</g><g>
+  <circle cx="256.0" cy="102.4" r="13.3" fill="#2b2118" opacity="0.5"/>
+  <circle cx="256.0" cy="102.4" r="22.6" fill="none" stroke="#d8c9ad" stroke-width="2.05" opacity="0.16"/>
+  <path d="M 256.0 381.4 A 25.6 25.6 0 1 0 256.0 432.6 A 25.6 25.6 0 1 1 240.1 388.6 Z" fill="#2b2118" opacity="0.42"/>
+  <path d="M 256.0 381.4 A 25.6 25.6 0 1 0 256.0 432.6 A 25.6 25.6 0 1 1 240.1 388.6 Z" fill="none" stroke="#d8c9ad" stroke-width="2.05" opacity="0.16"/>
+</g><rect x="190.0" y="190.0" width="132.1" height="132.1" rx="7.17" fill="none" stroke="#4c4a45" stroke-width="7.01" opacity="0.5" filter="url(#brush-qinbanliang)"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="#0a0a0b"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="#2c2820" stroke-width="5.99" opacity="0.6"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="rgba(236,228,212,0.14)" stroke-width="1.54"/></svg>

@@ -1,3 +1,4 @@
+import { useTheme } from '@zhop/core-ui'
 import { SatelliteHistoryList } from '@zhop/satellite-ui'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -5,7 +6,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { useSatelliteI18n } from '@/lib/i18n'
-import { useTheme } from '@zhop/core-ui'
 
 export default function CoinCastHistoryScreen() {
   const router = useRouter()
@@ -34,7 +34,9 @@ export default function CoinCastHistoryScreen() {
         >
           <Text style={{ color: colors.accent, fontSize: 24 }}>‹</Text>
         </Pressable>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{t('stackHistory')}</Text>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>
+          {t('stackHistory')}
+        </Text>
       </View>
       <SatelliteHistoryList target={PORTFOLIO_TARGET_APP} emptyText={t('meEmpty')} />
     </View>

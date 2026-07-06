@@ -16,12 +16,6 @@ import {
   EPISODIC_FREE_READINGS_PER_MONTH,
   resolveEpisodicAccess,
 } from '../lib/access/episodic'
-import {
-  buildCoincastBirthContext,
-  coincastBirthPillarsSummary,
-  hasCoincastBirthInfo,
-  userHasCoincastPro,
-} from '../lib/coincast-birth-context'
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../lib/biometric-consent'
@@ -451,34 +445,6 @@ async function runTargetPipeline(
       const parsed = coincastInputSchema.parse(input)
       const entropy = parsed.entropy ?? `${Date.now()}_${Math.random()}`
       const promptTemplate = buildCoincastPrompt({ question: parsed.question, locale })
-      const db = c.get('db')
-      let birthContext = ''
-      let birthUsed = false
-      let pillarsSummary: string | undefined
-      if (userId) {
-        const hasPro = await userHasCoincastPro(db, userId)
-        if (hasPro) {
-          const birthRow = await db
-            .select({
-              birthSolarDate: users.birthSolarDate,
-              birthTimeIndex: users.birthTimeIndex,
-              birthGender: users.birthGender,
-              birthClockMinutes: users.birthClockMinutes,
-              birthSolarCalibrate: users.birthSolarCalibrate,
-              birthLongitude: users.birthLongitude,
-              birthTimezoneId: users.birthTimezoneId,
-              birthCity: users.birthCity,
-            })
-            .from(users)
-            .where(eq(users.id, userId))
-            .get()
-          if (birthRow && hasCoincastBirthInfo(birthRow)) {
-            birthContext = buildCoincastBirthContext(birthRow)
-            birthUsed = birthContext.length > 0
-            pillarsSummary = coincastBirthPillarsSummary(birthRow)
-          }
-        }
-      }
       try {
         const astro = await callAstro<{
           refused?: boolean
@@ -496,7 +462,6 @@ async function runTargetPipeline(
           method: 'liuyao',
           isPro: false,
           yaoValues: parsed.yaoValues,
-          memoryContext: birthContext.length > 0 ? birthContext : undefined,
         })
         if (astro.refused === true) {
           if (requestId) {
@@ -504,7 +469,6 @@ async function runTargetPipeline(
               JSON.stringify({
                 event: 'portfolio_coincast_refused',
                 requestId,
-                birth_used: birthUsed,
               })
             )
           }
@@ -521,7 +485,6 @@ async function runTargetPipeline(
             JSON.stringify({
               event: 'portfolio_coincast_completed',
               requestId,
-              birth_used: birthUsed,
             })
           )
         }
@@ -530,10 +493,6 @@ async function runTargetPipeline(
           output: {
             ...astro,
             promptTemplate,
-            personalized_meta: {
-              birth_used: birthUsed,
-              pillars_summary: pillarsSummary,
-            },
           },
         }
       } catch (err) {
@@ -554,10 +513,6 @@ async function runTargetPipeline(
             summary: 'Ground first, then act.',
             fortune: 'neutral',
             promptTemplate,
-            personalized_meta: {
-              birth_used: birthUsed,
-              pillars_summary: pillarsSummary,
-            },
           },
         }
       }

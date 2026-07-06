@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 import { coinsFromSeed, mulberry32 } from '@/lib/casting-entropy'
-import { createCoinSkinMaterials, DEFAULT_COIN_SKIN_ID, type CoinSkinId } from '@/lib/coin-skins'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
+import { type CoinSkinId, DEFAULT_COIN_SKIN_ID, loadCoinSkinMaterials } from '@/lib/coin-skins'
 
 import {
   COIN_RADIAL_SEGMENTS,
@@ -25,20 +25,20 @@ import {
   HANDS_OPEN_DROP_CENTER_Y,
   HANDS_OPEN_RELEASE_ANGULAR_SCALE,
   HANDS_OPEN_XZ_SPREAD,
+  IDLE_COIN_TABLE_XZ,
+  IDLE_COIN_TABLE_Y,
   RIM_FORCE_SNAP_FRAMES,
   RIM_STUCK_LINEAR_SQ,
   SETTLE_ANGULAR_EPS,
   SETTLE_FRAMES_NEEDED,
   SETTLE_LINEAR_EPS,
   SETTLE_ROW_CENTER_SPACING,
-  IDLE_COIN_TABLE_XZ,
-  IDLE_COIN_TABLE_Y,
   VESSEL_FLOOR_Y,
   VESSEL_SPAWN_XZ,
   WORLD_DT,
 } from './constants'
-import { createArenaWallBodies, createCupDeckBody, useCoinPhysics } from './useCoinPhysics'
 import { createProceduralAltarInkStoneTextures } from './proceduralAltarInkStone'
+import { createArenaWallBodies, createCupDeckBody, useCoinPhysics } from './useCoinPhysics'
 
 const STONE_REPEAT = 3.6
 
@@ -97,7 +97,6 @@ function finalizeCoinsOnTable(
     b.sleep()
   }
 }
-
 
 /** Cylinder axis (local Y): if nearly horizontal in world space, the coin is standing on its rim. */
 const LOCAL_THICK = new CANNON.Vec3(0, 1, 0)
@@ -216,15 +215,19 @@ export interface PhysicsCoinsSceneProps {
 
 function useCastingTextures(coinSkinId: CoinSkinId): {
   floorMaterial: THREE.MeshStandardMaterial | null
-  coinMaterials: THREE.MeshStandardMaterial[]
+  coinMaterials: THREE.MeshStandardMaterial[] | null
 } {
   const [floorMaterial, setFloorMaterial] = useState<THREE.MeshStandardMaterial | null>(null)
-  const [coinMaterials, setCoinMaterials] = useState<THREE.MeshStandardMaterial[]>(() =>
-    createCoinSkinMaterials(coinSkinId)
-  )
+  const [coinMaterials, setCoinMaterials] = useState<THREE.MeshStandardMaterial[] | null>(null)
 
   useEffect(() => {
-    setCoinMaterials(createCoinSkinMaterials(coinSkinId))
+    let cancelled = false
+    void loadCoinSkinMaterials(coinSkinId).then((materials) => {
+      if (!cancelled) setCoinMaterials(materials)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [coinSkinId])
 
   useEffect(() => {
@@ -235,10 +238,10 @@ function useCastingTextures(coinSkinId: CoinSkinId): {
     const floor = new THREE.MeshStandardMaterial({
       map: albedo,
       normalMap: normal,
-      normalScale: new THREE.Vector2(0.22, 0.22),
+      normalScale: new THREE.Vector2(0.48, 0.48),
       color: 0xffffff,
-      roughness: 0.94,
-      metalness: 0,
+      roughness: 0.88,
+      metalness: 0.02,
     })
 
     setFloorMaterial(floor)
@@ -354,8 +357,14 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       body.angularVelocity.setZero()
       const [bx, bz] = IDLE_COIN_TABLE_XZ[i] ?? [0, 0]
       body.position.set(bx, IDLE_COIN_TABLE_Y, bz)
-      const yaw = (i - 1) * 0.22
-      body.quaternion.setFromEuler(0, yaw, 0)
+      // Rest showing 字面 (obverse) — bottom cap up, matching a committed face-2 settle.
+      const qYaw = new CANNON.Quaternion()
+      qYaw.setFromAxisAngle(AXIS_Y, (i - 1) * 0.22)
+      const qFlip = new CANNON.Quaternion()
+      qFlip.setFromAxisAngle(AXIS_X, Math.PI)
+      const q = new CANNON.Quaternion()
+      qFlip.mult(qYaw, q)
+      body.quaternion.copy(q)
     })
   }, [props.tossRevision, bodies, world])
 
@@ -595,7 +604,13 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       />
       <directionalLight position={[2.2, 9.5, 4.2]} intensity={1.28} color='#fff6ea' />
       <directionalLight position={[-2.8, 4.5, -2.6]} intensity={0.32} color='#c8d0dc' />
-      <pointLight position={[0, 2.2, 1.4]} intensity={0.22} color='#e8d4b0' distance={6} decay={2} />
+      <pointLight
+        position={[0, 2.2, 1.4]}
+        intensity={0.22}
+        color='#e8d4b0'
+        distance={6}
+        decay={2}
+      />
 
       {floorMaterial ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={floorMaterial}>
@@ -607,6 +622,24 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
           <meshStandardMaterial color={backdrop} roughness={0.93} metalness={0.02} />
         </mesh>
       )}
+
+      {/* Altar rim — four beveled edges give the stone slab depth */}
+      <mesh position={[0, -0.018, -4]}>
+        <boxGeometry args={[8.08, 0.04, 0.1]} />
+        <meshStandardMaterial color={backdrop} roughness={0.82} metalness={0.04} />
+      </mesh>
+      <mesh position={[0, -0.018, 4]}>
+        <boxGeometry args={[8.08, 0.04, 0.1]} />
+        <meshStandardMaterial color={backdrop} roughness={0.82} metalness={0.04} />
+      </mesh>
+      <mesh position={[-4, -0.018, 0]}>
+        <boxGeometry args={[0.1, 0.04, 8.08]} />
+        <meshStandardMaterial color={backdrop} roughness={0.82} metalness={0.04} />
+      </mesh>
+      <mesh position={[4, -0.018, 0]}>
+        <boxGeometry args={[0.1, 0.04, 8.08]} />
+        <meshStandardMaterial color={backdrop} roughness={0.82} metalness={0.04} />
+      </mesh>
 
       {(props.vesselVisible || vesselRetreating) && props.tossRevision > 0 ? (
         <mesh ref={vesselMeshRef}>
@@ -623,20 +656,22 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
         </mesh>
       ) : null}
 
-      {[0, 1, 2].map((i) => (
-        <group
-          key={i}
-          ref={(el) => {
-            groupRefs.current[i] = el
-          }}
-        >
-          <mesh material={coinMaterials}>
-            <cylinderGeometry
-              args={[COIN_RADIUS, COIN_RADIUS, COIN_THICKNESS, COIN_RADIAL_SEGMENTS]}
-            />
-          </mesh>
-        </group>
-      ))}
+      {coinMaterials
+        ? [0, 1, 2].map((i) => (
+            <group
+              key={i}
+              ref={(el) => {
+                groupRefs.current[i] = el
+              }}
+            >
+              <mesh material={coinMaterials}>
+                <cylinderGeometry
+                  args={[COIN_RADIUS, COIN_RADIUS, COIN_THICKNESS, COIN_RADIAL_SEGMENTS]}
+                />
+              </mesh>
+            </group>
+          ))
+        : null}
     </>
   )
 }

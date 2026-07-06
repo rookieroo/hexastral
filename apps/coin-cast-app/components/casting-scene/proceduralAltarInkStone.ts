@@ -4,9 +4,9 @@ const TEX_SIZE = 512
 
 let cachedStoneTextures: ProceduralAltarInkStoneTextures | null = null
 
-/** Cool zinc-stone — matches CoinCast shell, quieter than warm wood grain. */
-const STONE_DARK = { r: 22, g: 22, b: 26 }
-const STONE_LIGHT = { r: 48, g: 47, b: 52 }
+/** Warmer, more legible zinc-stone — visible on mobile screens. */
+const STONE_DARK = { r: 28, g: 28, b: 31 }
+const STONE_LIGHT = { r: 58, g: 56, b: 62 }
 
 function wrapIndex(i: number, period: number): number {
   return ((i % period) + period) % period
@@ -50,14 +50,14 @@ function fbm(px: number, py: number, period: number, octaves: number): number {
   return sum / norm
 }
 
-/** Tileable ink-stone height — fine grit + faint wash pools, no wood rings. */
+/** Tileable ink-stone height — fine grit + faint wash pools. */
 function stoneHeight(u: number, v: number, size: number): number {
   const px = u * size
   const py = v * size
   const grit = fbm(px, py, size, 5)
   const wash = fbm(px * 0.35 + 40, py * 0.35 - 22, size, 3)
   const scratch = Math.sin((u * 140 + wash * 2.1) * Math.PI * 2) * 0.018
-  const pool = Math.pow(1 - Math.hypot(u - 0.5, v - 0.5) * 1.35, 2) * 0.08
+  const pool = (1 - Math.hypot(u - 0.5, v - 0.5) * 1.35) ** 2 * 0.08
   const h = grit * 0.52 + wash * 0.28 + scratch + pool + 0.12
   return Math.min(1, Math.max(0, h))
 }
@@ -82,7 +82,7 @@ export type ProceduralAltarInkStoneTextures = {
 }
 
 /**
- * Matte ink-stone altar slab — low-contrast procedural surface (no external assets).
+ * Matte ink-stone altar slab — boosted normal strength for visible surface detail on mobile.
  */
 export function createProceduralAltarInkStoneTextures(): ProceduralAltarInkStoneTextures {
   if (cachedStoneTextures) return cachedStoneTextures
@@ -97,7 +97,7 @@ export function createProceduralAltarInkStoneTextures(): ProceduralAltarInkStone
     return heights[yi * size + xi]!
   }
 
-  const normalStrength = 2.4
+  const normalStrength = 4.0
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {

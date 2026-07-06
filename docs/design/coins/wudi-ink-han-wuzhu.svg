@@ -1,0 +1,51 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs>
+  <clipPath id="clip-hanwuzhu"><circle cx="256" cy="256" r="231.936"/></clipPath>
+  <radialGradient id="wash-hanwuzhu" cx="0.4" cy="0.32" r="0.72">
+    <stop offset="0" stop-color="#c6d0c4"/>
+    <stop offset="0.5" stop-color="#8ba593"/>
+    <stop offset="1" stop-color="#48604f"/>
+  </radialGradient>
+  <radialGradient id="mist-hanwuzhu" cx="0.64" cy="0.72" r="0.6">
+    <stop offset="0" stop-color="rgba(70,104,79,0)"/>
+    <stop offset="0.68" stop-color="rgba(70,104,79,0.28)"/>
+    <stop offset="1" stop-color="rgba(14,24,16,0.5)"/>
+  </radialGradient>
+  <radialGradient id="lift-hanwuzhu" cx="0.34" cy="0.24" r="0.5">
+    <stop offset="0" stop-color="rgba(214,228,210,0.34)"/>
+    <stop offset="1" stop-color="rgba(214,228,210,0)"/>
+  </radialGradient>
+  <filter id="paper-hanwuzhu" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62 0.72" numOctaves="4" seed="11" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.1 0 0 0 0 0.15 0 0 0 0 0.11 0 0 0 0.2 0" result="g"/>
+    <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+  </filter>
+  <filter id="brush-hanwuzhu">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03 0.05" numOctaves="2" seed="9" result="t"/>
+    <feDisplacementMap in="SourceGraphic" in2="t" scale="8.70" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="bleed-hanwuzhu" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="2.41"/>
+  </filter>
+  <filter id="bloom-hanwuzhu" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="10.24"/>
+  </filter>
+</defs><g clip-path="url(#clip-hanwuzhu)" filter="url(#paper-hanwuzhu)">
+  <circle cx="256" cy="256" r="231.936" fill="url(#wash-hanwuzhu)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#lift-hanwuzhu)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#mist-hanwuzhu)"/>
+  <circle cx="148.5" cy="148.5" r="51.2" fill="rgba(58,110,72,0.34)" filter="url(#bloom-hanwuzhu)"/><circle cx="363.5" cy="358.4" r="59.9" fill="rgba(40,88,58,0.32)" filter="url(#bloom-hanwuzhu)"/><circle cx="358.4" cy="148.5" r="29.7" fill="rgba(150,178,150,0.24)" filter="url(#bloom-hanwuzhu)"/>
+</g><g filter="url(#brush-hanwuzhu)">
+  <circle cx="256" cy="256" r="230.4" fill="none" stroke="#3a4d40" stroke-width="9.01" opacity="0.72"/>
+  <circle cx="256" cy="256" r="204.8" fill="none" stroke="#3a4d40" stroke-width="4.10" opacity="0.42"/>
+</g><g transform="translate(60.0,182.0) scale(1.4200)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#0e1a12" stroke-width="13" opacity="0.34" filter="url(#bleed-hanwuzhu)" transform="translate(2,3)"><path d="M24 12 L10 28 M24 12 L38 28 M24 12 V80 M12 40 H36 M12 55 H36 M8 80 H40 M15 66 L21 60 M33 66 L27 60 M78 16 C66 22 60 32 58 42 M48 48 H92 M70 20 V84 M70 58 L52 84 M70 58 L88 84"/></g>
+  <path stroke="#20302a" stroke-width="10" d="M24 12 L10 28 M24 12 L38 28 M24 12 V80 M12 40 H36 M12 55 H36 M8 80 H40 M15 66 L21 60 M33 66 L27 60 M78 16 C66 22 60 32 58 42 M48 48 H92 M70 20 V84 M70 58 L52 84 M70 58 L88 84"/>
+  <path stroke="#b9d0bc" stroke-width="2.4" opacity="0.22" d="M24 12 L10 28 M24 12 L38 28 M24 12 V80 M12 40 H36 M12 55 H36 M8 80 H40 M15 66 L21 60 M33 66 L27 60 M78 16 C66 22 60 32 58 42 M48 48 H92 M70 20 V84 M70 58 L52 84 M70 58 L88 84"/>
+</g><g transform="translate(310.0,182.0) scale(1.4200)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#0e1a12" stroke-width="13" opacity="0.34" filter="url(#bleed-hanwuzhu)" transform="translate(2,3)"><path d="M20 22 H80 M20 78 H80 M34 30 C48 44 52 56 66 70 M66 30 C52 44 48 56 34 70"/></g>
+  <path stroke="#20302a" stroke-width="10" d="M20 22 H80 M20 78 H80 M34 30 C48 44 52 56 66 70 M66 30 C52 44 48 56 34 70"/>
+  <path stroke="#b9d0bc" stroke-width="2.4" opacity="0.22" d="M20 22 H80 M20 78 H80 M34 30 C48 44 52 56 66 70 M66 30 C52 44 48 56 34 70"/>
+</g><rect x="190.0" y="190.0" width="132.1" height="132.1" rx="7.17" fill="none" stroke="#3a4d40" stroke-width="7.01" opacity="0.5" filter="url(#brush-hanwuzhu)"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="#080b09"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="#20302a" stroke-width="5.99" opacity="0.6"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="rgba(214,228,210,0.14)" stroke-width="1.54"/></svg>

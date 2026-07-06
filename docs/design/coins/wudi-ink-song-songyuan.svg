@@ -1,0 +1,59 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs>
+  <clipPath id="clip-songsongyuan"><circle cx="256" cy="256" r="231.936"/></clipPath>
+  <radialGradient id="wash-songsongyuan" cx="0.4" cy="0.32" r="0.72">
+    <stop offset="0" stop-color="#dcc8a0"/>
+    <stop offset="0.5" stop-color="#b89868"/>
+    <stop offset="1" stop-color="#7a6038"/>
+  </radialGradient>
+  <radialGradient id="mist-songsongyuan" cx="0.64" cy="0.72" r="0.6">
+    <stop offset="0" stop-color="rgba(122,96,56,0)"/>
+    <stop offset="0.68" stop-color="rgba(122,96,56,0.24)"/>
+    <stop offset="1" stop-color="rgba(26,18,6,0.44)"/>
+  </radialGradient>
+  <radialGradient id="lift-songsongyuan" cx="0.34" cy="0.24" r="0.5">
+    <stop offset="0" stop-color="rgba(232,216,176,0.32)"/>
+    <stop offset="1" stop-color="rgba(232,216,176,0)"/>
+  </radialGradient>
+  <filter id="paper-songsongyuan" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62 0.72" numOctaves="4" seed="11" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.15 0 0 0 0 0.12 0 0 0 0 0.08 0 0 0 0.16 0" result="g"/>
+    <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+  </filter>
+  <filter id="brush-songsongyuan">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03 0.05" numOctaves="2" seed="9" result="t"/>
+    <feDisplacementMap in="SourceGraphic" in2="t" scale="8.70" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="bleed-songsongyuan" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="2.41"/>
+  </filter>
+  <filter id="bloom-songsongyuan" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="10.24"/>
+  </filter>
+</defs><g clip-path="url(#clip-songsongyuan)" filter="url(#paper-songsongyuan)">
+  <circle cx="256" cy="256" r="231.936" fill="url(#wash-songsongyuan)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#lift-songsongyuan)"/>
+  <circle cx="256" cy="256" r="231.936" fill="url(#mist-songsongyuan)"/>
+  <circle cx="143.4" cy="153.6" r="41.0" fill="rgba(58,44,20,0.24)" filter="url(#bloom-songsongyuan)"/><circle cx="368.6" cy="358.4" r="51.2" fill="rgba(44,32,14,0.22)" filter="url(#bloom-songsongyuan)"/><circle cx="358.4" cy="153.6" r="25.6" fill="rgba(224,200,144,0.2)" filter="url(#bloom-songsongyuan)"/>
+</g><g filter="url(#brush-songsongyuan)">
+  <circle cx="256" cy="256" r="230.4" fill="none" stroke="#5a4828" stroke-width="9.01" opacity="0.72"/>
+  <circle cx="256" cy="256" r="204.8" fill="none" stroke="#5a4828" stroke-width="4.10" opacity="0.42"/>
+</g><g>
+  <text x="256.0" y="140.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#1c1408" opacity="0.4" filter="url(#bleed-songsongyuan)" transform="translate(1.6,2.4)">宋</text>
+  <text x="256.0" y="140.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#3a2c14" opacity="0.92">宋</text>
+  <text x="256.0" y="140.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="none" stroke="#e0c890" stroke-width="2.61" opacity="0.2">宋</text>
+</g><g>
+  <text x="256.0" y="372.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#1c1408" opacity="0.4" filter="url(#bleed-songsongyuan)" transform="translate(1.6,2.4)">元</text>
+  <text x="256.0" y="372.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#3a2c14" opacity="0.92">元</text>
+  <text x="256.0" y="372.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="none" stroke="#e0c890" stroke-width="2.61" opacity="0.2">元</text>
+</g><g>
+  <text x="140.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#1c1408" opacity="0.4" filter="url(#bleed-songsongyuan)" transform="translate(1.6,2.4)">寶</text>
+  <text x="140.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#3a2c14" opacity="0.92">寶</text>
+  <text x="140.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="none" stroke="#e0c890" stroke-width="2.61" opacity="0.2">寶</text>
+</g><g>
+  <text x="372.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#1c1408" opacity="0.4" filter="url(#bleed-songsongyuan)" transform="translate(1.6,2.4)">通</text>
+  <text x="372.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="#3a2c14" opacity="0.92">通</text>
+  <text x="372.0" y="256.0" font-family="LXGW WenKai, Noto Serif SC, Songti SC, STSong, serif" font-size="87.0" text-anchor="middle" dominant-baseline="central" fill="none" stroke="#e0c890" stroke-width="2.61" opacity="0.2">通</text>
+</g><rect x="190.0" y="190.0" width="132.1" height="132.1" rx="7.17" fill="none" stroke="#5a4828" stroke-width="7.01" opacity="0.5" filter="url(#brush-songsongyuan)"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="#0a0805"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="#3c2415" stroke-width="5.99" opacity="0.6"/>
+  <rect x="206.1" y="206.1" width="99.8" height="99.8" rx="8.19" fill="none" stroke="rgba(232,216,176,0.14)" stroke-width="1.54"/></svg>

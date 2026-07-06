@@ -36,7 +36,7 @@ const TARGET_DEFAULT_FLAGSHIP: Record<PortfolioTarget, FlagshipKey> = {
   fengshui: 'feng',
   dreamoracle: 'hexastral',
   eightpillars: 'hexastral',
-  coincast: 'hexastral',
+  coincast: 'auspice',
   numerology: 'hexastral',
 }
 

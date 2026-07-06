@@ -1,4 +1,4 @@
-import { useTheme, useHaptic } from '@zhop/core-ui'
+import { useHaptic, useTheme } from '@zhop/core-ui'
 import { coinCastSceneColors } from '@zhop/hexastral-tokens/satellites'
 import {
   PortfolioBannedError,
@@ -21,9 +21,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -31,15 +33,13 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { runOnJS } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CoinCastSealLogo } from '@/components/CoinCastSealLogo'
-import { LazyCastingScene, preloadCastingScene } from '@/components/casting-scene/LazyCastingScene'
 import {
   CONTAINER_SHAKE_DURATION_MS,
   PHYSICS_COMMIT_FALLBACK_MS,
 } from '@/components/casting-scene/constants'
+import { LazyCastingScene, preloadCastingScene } from '@/components/casting-scene/LazyCastingScene'
 import { useSensorEntropy } from '@/components/casting-scene/useSensorEntropy'
 import { runPortfolioPreview } from '@/lib/api'
 import {
@@ -50,6 +50,7 @@ import {
   seedUInt32FromHashHex,
 } from '@/lib/casting-entropy'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
+import { type CoinSkinId, DEFAULT_COIN_SKIN_ID, getCoinSkinId } from '@/lib/coin-skins'
 import {
   checkDuplicateQuestion,
   cooldownRemainingMs,
@@ -61,10 +62,9 @@ import {
   recordReadingCompleted,
   rememberRecentQuestion,
 } from '@/lib/coincast-ritual'
-import { DEFAULT_COIN_SKIN_ID, getCoinSkinId, type CoinSkinId } from '@/lib/coin-skins'
-import { yaoNumberForOverlayRow } from '@/lib/yao-display'
 import { canUseExpoGl } from '@/lib/gl-capabilities'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
+import { yaoNumberForOverlayRow } from '@/lib/yao-display'
 
 interface AccelerometerSample {
   x: number
@@ -133,7 +133,7 @@ function HexOverlayHeader({
   t: (key: SatelliteLocaleKey, vars?: Record<string, string | number>) => string
 }) {
   return (
-    <View style={styles.hexHeaderRow} accessible={false}>
+    <View style={[styles.hexHeaderRow, { borderBottomColor: secondaryColor }]} accessible={false}>
       <Text style={[styles.hexHeaderLabel, { color: secondaryColor }]}>{t('homeYaoPosition')}</Text>
       <View style={styles.hexHeaderSpacer} />
       <Text style={[styles.hexHeaderLabel, { color: secondaryColor }]}>{t('homeYaoThrow')}</Text>
@@ -699,139 +699,151 @@ export default function CoinCastHomeScreen() {
       <GestureDetector gesture={swipeToSettings}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.inner}>
-          <Pressable
-            onPress={openQuestionSheet}
-            disabled={completed > 0}
-            accessibilityRole='button'
-            accessibilityLabel={t('homeInputA11y')}
-            style={({ pressed }) => [
-              styles.questionChip,
-              {
-                borderColor: colors.separator,
-                backgroundColor: colors.card,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <Text
-              numberOfLines={2}
-              style={{
-                flex: 1,
-                fontSize: 15,
-                lineHeight: 21,
-                color: hasQuestion ? colors.text : colors.dim,
-              }}
-            >
-              {hasQuestion ? question : t('homeQuestionPrompt')}
-            </Text>
-            {completed === 0 ? <Pencil size={16} color={colors.dim} strokeWidth={1.6} /> : null}
-          </Pressable>
-
-          <View
-            style={[
-              styles.sceneHost,
-              { borderColor: colors.separator, backgroundColor: colors.inkWash },
-            ]}
-          >
-            {glEnabled ? (
-              <LazyCastingScene
-                tossRevision={tossRevision}
-                impulseSeed={activeToss?.seed ?? 0}
-                coinSkinId={coinSkinId}
-                sceneBg={castingBackdrop}
-                arenaWallsActive={tossAnimating}
-                cameraPhase={castCameraPhase}
-                onPhysicsSettled={handlePhysicsSettled}
-                onImpact={impactHaptic}
-                shakeDriveRef={shakeDriveRef}
-                style={{ width: '100%', flex: 1, minHeight: 0 }}
-              />
-            ) : (
-              <View style={styles.glFallback}>
-                <Text style={[styles.glFallbackText, { color: colors.secondary }]}>
-                  {t('homeGlFallback')}
-                </Text>
-              </View>
-            )}
-
-            {completed > 0 && completed < 6 ? (
-              <Pressable
-                style={[styles.abortBtnScene, { borderColor: colors.separator }]}
-                onPress={requestAbort}
-                accessibilityRole='button'
-                accessibilityLabel={t('homeAbortA11y')}
-                hitSlop={12}
-              >
-                <X size={18} color={colors.secondary} strokeWidth={1.5} />
-              </Pressable>
-            ) : null}
-
-            {lineRows.length > 0 ? (
-              <View
-                style={[
-                  styles.yaoOverlay,
-                  {
-                    backgroundColor: isDark
-                      ? coinCastSceneColors.yaoPanelOverlayDark
-                      : coinCastSceneColors.yaoPanelOverlayLight,
-                  },
-                ]}
-                accessibilityHint={t('homeYaoCoinBarLegend')}
-              >
-                <HexOverlayHeader secondaryColor={colors.secondary} t={t} />
-                {lineRows.map((row) => (
-                  <AnimatedYaoLine
-                    key={row.key}
-                    line={row.line}
-                    yaoNumber={row.yaoNumber}
-                    textColor={colors.text}
-                    secondaryColor={colors.secondary}
-                    accentColor={colors.accent}
-                    t={t}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.dotsRow} accessibilityLabel={t('homeProgressA11y', { n: completed })}>
-            {dots.map((on, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor: on ? colors.text : `${colors.secondary}33`,
-                    borderColor: colors.separator,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-
-          <View style={styles.actions}>
             <Pressable
-              style={[
-                styles.primaryBtn,
-                { backgroundColor: primaryDisabled ? colors.accentGhost : colors.accent },
-              ]}
-              onPress={onPrimary}
+              onPress={openQuestionSheet}
+              disabled={completed > 0}
               accessibilityRole='button'
-              disabled={primaryDisabled}
+              accessibilityLabel={t('homeInputA11y')}
+              style={({ pressed }) => [
+                styles.questionChip,
+                {
+                  borderColor: colors.separator,
+                  backgroundColor: colors.card,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
-              <Text style={[styles.actionText, { color: primaryDisabled ? colors.dim : colors.tintFg }]}>
-                {primaryLabel}
+              <Text
+                numberOfLines={2}
+                style={{
+                  flex: 1,
+                  fontSize: 15,
+                  lineHeight: 21,
+                  color: hasQuestion ? colors.text : colors.dim,
+                }}
+              >
+                {hasQuestion ? question : t('homeQuestionPrompt')}
               </Text>
+              {completed === 0 ? <Pencil size={16} color={colors.dim} strokeWidth={1.6} /> : null}
             </Pressable>
-          </View>
 
-          {error ? <Text style={[styles.error, { color: colors.secondary }]}>{error}</Text> : null}
-          {blockIosDevAccelShake && motionEnabled ? (
-            <Text style={[styles.devShakeHint, { color: colors.dim }]}>
-              {t('homeDevShakeHint')}
-            </Text>
-          ) : null}
-        </View>
+            <View
+              style={[
+                styles.sceneHost,
+                { borderColor: colors.separator, backgroundColor: colors.inkWash },
+              ]}
+            >
+              {glEnabled ? (
+                <LazyCastingScene
+                  tossRevision={tossRevision}
+                  impulseSeed={activeToss?.seed ?? 0}
+                  coinSkinId={coinSkinId}
+                  sceneBg={castingBackdrop}
+                  arenaWallsActive={tossAnimating}
+                  cameraPhase={castCameraPhase}
+                  onPhysicsSettled={handlePhysicsSettled}
+                  onImpact={impactHaptic}
+                  shakeDriveRef={shakeDriveRef}
+                  style={{ width: '100%', flex: 1, minHeight: 0 }}
+                />
+              ) : (
+                <View style={styles.glFallback}>
+                  <Text style={[styles.glFallbackText, { color: colors.secondary }]}>
+                    {t('homeGlFallback')}
+                  </Text>
+                </View>
+              )}
+
+              {completed > 0 && completed < 6 ? (
+                <Pressable
+                  style={[styles.abortBtnScene, { borderColor: colors.separator }]}
+                  onPress={requestAbort}
+                  accessibilityRole='button'
+                  accessibilityLabel={t('homeAbortA11y')}
+                  hitSlop={12}
+                >
+                  <X size={18} color={colors.secondary} strokeWidth={1.5} />
+                </Pressable>
+              ) : null}
+
+              {lineRows.length > 0 ? (
+                <View
+                  style={[
+                    styles.yaoOverlay,
+                    {
+                      backgroundColor: isDark
+                        ? coinCastSceneColors.yaoPanelOverlayDark
+                        : coinCastSceneColors.yaoPanelOverlayLight,
+                      borderTopColor: colors.separator,
+                      borderTopWidth: 0.5,
+                    },
+                  ]}
+                  accessibilityHint={t('homeYaoCoinBarLegend')}
+                >
+                  <HexOverlayHeader secondaryColor={colors.secondary} t={t} />
+                  {lineRows.map((row) => (
+                    <AnimatedYaoLine
+                      key={row.key}
+                      line={row.line}
+                      yaoNumber={row.yaoNumber}
+                      textColor={colors.text}
+                      secondaryColor={colors.secondary}
+                      accentColor={colors.accent}
+                      t={t}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
+
+            <View
+              style={styles.dotsRow}
+              accessibilityLabel={t('homeProgressA11y', { n: completed })}
+            >
+              {dots.map((on, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor: on ? colors.text : `${colors.secondary}33`,
+                      borderColor: colors.separator,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.actions}>
+              <Pressable
+                style={[
+                  styles.primaryBtn,
+                  { backgroundColor: primaryDisabled ? colors.accentGhost : colors.accent },
+                ]}
+                onPress={onPrimary}
+                accessibilityRole='button'
+                disabled={primaryDisabled}
+              >
+                <Text
+                  style={[
+                    styles.actionText,
+                    { color: primaryDisabled ? colors.dim : colors.tintFg },
+                  ]}
+                >
+                  {primaryLabel}
+                </Text>
+              </Pressable>
+            </View>
+
+            {error ? (
+              <Text style={[styles.error, { color: colors.secondary }]}>{error}</Text>
+            ) : null}
+            {blockIosDevAccelShake && motionEnabled ? (
+              <Text style={[styles.devShakeHint, { color: colors.dim }]}>
+                {t('homeDevShakeHint')}
+              </Text>
+            ) : null}
+          </View>
         </TouchableWithoutFeedback>
       </GestureDetector>
       {breathingOverlayVisible ? (
@@ -939,12 +951,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     minHeight: 52,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+      },
+      android: { elevation: 3 },
+      default: {},
+    }),
   },
   sceneHost: {
     flex: 1,
     minHeight: 200,
     borderWidth: 0.5,
-    borderRadius: 18,
+    borderRadius: 14,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -958,13 +980,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 6,
     maxHeight: 240,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+      default: {},
+    }),
   },
   hexHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingBottom: 2,
+    paddingBottom: 4,
+    borderBottomWidth: 0.5,
   },
   hexHeaderLabel: { fontSize: 9, letterSpacing: 0.6, width: 16, textAlign: 'center' },
   hexHeaderSpacer: { width: 162 },
@@ -1002,7 +1037,7 @@ const styles = StyleSheet.create({
     width: 44,
     justifyContent: 'center',
   },
-  coinFaceYangBar: { width: 12, height: 5 },
+  coinFaceYangBar: { width: 12, height: 5, borderRadius: 2 },
   coinFaceYinWrap: {
     width: 12,
     height: 5,
@@ -1010,10 +1045,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  coinFaceYinHalf: { width: 4, height: 5 },
-  lineFull: { width: 118, height: 6 },
+  coinFaceYinHalf: { width: 4, height: 5, borderRadius: 2 },
+  lineFull: { width: 118, height: 6, borderRadius: 3 },
   lineBrokenWrap: { width: 118, flexDirection: 'row', justifyContent: 'space-between' },
-  lineHalf: { width: 54, height: 6 },
+  lineHalf: { width: 54, height: 6, borderRadius: 3 },
   hexMark: { width: 16, textAlign: 'left', fontSize: 10, fontWeight: '600' },
   dotsRow: {
     flexDirection: 'row',
@@ -1033,6 +1068,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: { elevation: 4 },
+      default: {},
+    }),
   },
   sheetBody: { gap: 16, paddingTop: 4 },
   sheetInput: {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ComponentProps } from 'react'
+import { type ComponentProps, lazy, Suspense } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 
 import { useAppTheme } from '@/lib/theme'
@@ -30,13 +30,10 @@ export function LazyCastingScene(props: CastingSceneProps) {
   )
 }
 
-/** Warm Three.js + procedural textures off the critical path. */
+/** Warm Three.js + coin face textures off the critical path. */
 export function preloadCastingScene(): void {
   void import('./CastingScene')
   void import('@/lib/coin-skins').then((m) => {
-    m.createCoinSkinMaterials(m.DEFAULT_COIN_SKIN_ID)
-  })
-  void import('./proceduralAltarWood').then((m) => {
-    m.createProceduralAltarWoodTextures()
+    void m.loadCoinSkinMaterials(m.DEFAULT_COIN_SKIN_ID)
   })
 }

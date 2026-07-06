@@ -83,7 +83,6 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen name='paywall' />
-        <Stack.Screen name='(birth-info)' options={{ headerShown: false }} />
         <Stack.Screen
           name='result'
           options={{

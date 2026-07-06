@@ -2,7 +2,7 @@
 
 **Directory:** `apps/coin-cast-app` · **Bundle:** `com.hexastral.coincast` · **Display name:** CoinCast
 
-Growth satellite — standalone I Ching oracle with 3D coin casting, portfolio-linked history, and Pro chart-assisted interpretation.
+Growth satellite — standalone I Ching oracle with 3D coin casting and portfolio-linked history.
 
 ---
 
@@ -22,8 +22,8 @@ Growth satellite — standalone I Ching oracle with 3D coin casting, portfolio-l
 |---|---|---|
 | Casting | 3-coin physics + shake / button | WebGL scene lazy-loaded |
 | Output | Hexagram + AI interpretation via `svc-astro` `/yiching/cast` | `yaoValues` from client entropy |
-| Personalization | Birth info → four pillars context (Pro) | Replaces vector memory for CoinCast |
-| Monetization | **Consumable-first:** 1 / 5 / 10 cast packs | `coincast_pro_*` + `universe_pro` for chart + skins |
+| Personalization | None for divination — birth charts live in **Yuun** / **Yuel** | CoinCast is one-question-one-cast; no birth info in the cast pipeline |
+| Monetization | **Consumable-first:** 1 / 5 / 10 cast packs | `coincast_pro_*` for skins + quota; `universe_pro` cross-app |
 | Quota | Guest 3/day · linked 3/month + credits | `evaluateCoincastQuota` |
 | Platform | iOS (Expo 54) | Settings via top-right + left-swipe (Fēng model) |
 
@@ -40,26 +40,27 @@ Growth satellite — standalone I Ching oracle with 3D coin casting, portfolio-l
 | `coincast_cast_pack_1` | consumable | +1 cast credit |
 | `coincast_cast_pack_5` | consumable | +5 cast credits |
 | `coincast_cast_pack_10` | consumable | +10 cast credits |
-| `coincast_pro_monthly` / `_annual` | subscription | Chart-assisted readings + coin skins |
+| `coincast_pro_monthly` / `_annual` | subscription | Extra cast quota + coin skins (no birth-chart interpretation) |
 | `universe_pro_*` | subscription | All app Pros + shared birth info |
 
 Paywall surfaces **packs first**, subscriptions secondary.
 
 ---
 
-## Personalization (birth + Pro)
+## Birth info & chart apps
 
-1. User saves birth info via the **single-page HexAstral standard form** (Fēng / Yuun / Yuel pattern) at `/(birth-info)` → `GET/PUT /api/portfolio/birth-info`.
-2. On cast, API checks `coincast_pro` or `universe_pro` + birth on file.
-3. `buildCoincastBirthContext` injects a short four-pillars block into `memoryContext` — **does not alter cast randomness or hexagram facts**.
-4. CoinCast no longer indexes vector memory (`portfolio_memory` UI removed).
+CoinCast **does not** collect or use birth info for 六爻. Settings → **八字与命盘** opens a funnel to:
+
+- **Yuun** (`auspice-app`) — personal BaZi + Zi Wei + life timeline  
+- **Yuel** (`kindred-app`) — two-chart synastry  
+
+Birth data SSOT remains `GET/PUT /api/portfolio/birth-info`, edited only in apps that need a chart.
 
 ---
 
 ## Technical dependencies
 
-- `@zhop/astro-core` — four pillars (`getFourPillars`)
-- `@zhop/portfolio-client` — preview/linked, birth info, readings
+- `@zhop/portfolio-client` — preview/linked, readings
 - `@zhop/satellite-runtime` — HMAC, purchases, bootstrap
 - `hexastral-api` — `portfolio` target `coincast`
 - `svc-astro` — `/yiching/cast`

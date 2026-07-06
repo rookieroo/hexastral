@@ -25,7 +25,7 @@ const designCoins = join(here, '..', '..', '..', 'docs', 'design', 'coins')
 mkdirSync(designCoins, { recursive: true })
 writeFileSync(
   join(designCoins, 'coincast-mark-three.svg'),
-  buildMarkSvg({ size: 1024, frac: 0.66, ground: true, mono: false }),
+  buildMarkSvg({ size: 1024, frac: 0.66, ground: true, mono: false })
 )
 writeFileSync(join(designCoins, 'wu-zhu.svg'), buildSingleCoinSvg({ size: 512, ground: true }))
 console.log('Wrote docs/design/coins/coincast-mark-three.svg + wu-zhu.svg')

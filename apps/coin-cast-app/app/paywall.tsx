@@ -24,7 +24,9 @@ export default function CoinCastPaywallScreen() {
         >
           <Text style={{ color: colors.accent, fontSize: 24 }}>‹</Text>
         </Pressable>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{t('stackPaywall')}</Text>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>
+          {t('stackPaywall')}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
       <ScrollView

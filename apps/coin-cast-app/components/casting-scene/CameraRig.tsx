@@ -34,15 +34,15 @@ export function CameraRig({ phase }: { phase: CastCameraPhase }) {
       posDesired.copy(POS_TABLE)
     }
 
-    camera.position.lerp(posDesired, 0.062)
+    camera.position.lerp(posDesired, 0.034)
 
     const lookWant = phase === 'idle' ? LOOK_IDLE : phase === 'ritual' ? LOOK_RITUAL : LOOK_TABLE
-    lookSmoothed.lerp(lookWant, 0.088)
+    lookSmoothed.lerp(lookWant, 0.048)
     camera.lookAt(lookSmoothed)
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const wantFov = phase === 'idle' ? FOV_IDLE : phase === 'ritual' ? FOV_RITUAL : FOV_TABLE
-      camera.fov = THREE.MathUtils.lerp(camera.fov, wantFov, 0.072)
+      camera.fov = THREE.MathUtils.lerp(camera.fov, wantFov, 0.04)
       camera.updateProjectionMatrix()
     }
   })
