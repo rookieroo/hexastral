@@ -2,7 +2,7 @@ import { getTokens } from '@zhop/hexastral-tokens/palette'
 import type { PortfolioTarget } from '@zhop/portfolio-client'
 import { invalidatePortfolioSession } from '@zhop/satellite-runtime'
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native'
 
 import { SatelliteHistoryList } from './SatelliteHistoryList'
 import { SatellitePromoCard } from './SatellitePromoCard'
@@ -20,6 +20,11 @@ export interface SatelliteMePanelProps {
   onOpenSettings?: () => void
   onSignedOut?: () => void
   onInvite?: () => void
+  /**
+   * When false, hide the embedded history preview on Me; show a single History
+   * menu row that navigates to the app's history screen. Default true.
+   */
+  inlineHistory?: boolean
   labels?: {
     viewAllHistory?: string
     invitePartner?: string
@@ -29,6 +34,7 @@ export interface SatelliteMePanelProps {
     signOut?: string
     settings?: string
   }
+  /** When set, renders the flagship-app promo card at the bottom. */
   promo?: {
     title?: string
     body?: string
@@ -46,8 +52,29 @@ export interface SatelliteMePanelProps {
   signOutVisible?: boolean
 }
 
+function MenuLink({
+  label,
+  onPress,
+  colors,
+}: {
+  label: string
+  onPress: () => void
+  colors: ReturnType<typeof getTokens>
+}) {
+  return (
+    <Pressable
+      style={[styles.linkBtn, { borderColor: colors.separator }]}
+      onPress={onPress}
+      accessibilityRole='button'
+    >
+      <Text style={[styles.linkText, { color: colors.text }]}>{label}</Text>
+    </Pressable>
+  )
+}
+
 export function SatelliteMePanel(props: SatelliteMePanelProps) {
   const colors = getTokens(useColorScheme() === 'dark')
+  const inlineHistory = props.inlineHistory !== false
 
   const signOut = async () => {
     await invalidatePortfolioSession()
@@ -55,101 +82,104 @@ export function SatelliteMePanel(props: SatelliteMePanelProps) {
   }
 
   const showSignOut = props.signOutVisible !== false
+  const historyMenuLabel = props.labels?.viewAllHistory ?? props.historyTitle
+
+  const accountMenu = (
+    <>
+      {props.onOpenSettings ? (
+        <MenuLink
+          label={props.labels?.settings ?? 'Settings'}
+          onPress={props.onOpenSettings}
+          colors={colors}
+        />
+      ) : null}
+      {props.onInvite ? (
+        <MenuLink
+          label={props.labels?.invitePartner ?? 'Invite partner'}
+          onPress={props.onInvite}
+          colors={colors}
+        />
+      ) : null}
+      <MenuLink
+        label={props.labels?.upgradeToPro ?? 'Upgrade to Pro'}
+        onPress={props.onUpgrade}
+        colors={colors}
+      />
+      <MenuLink
+        label={props.labels?.restorePurchases ?? 'Restore purchases'}
+        onPress={props.onRestore}
+        colors={colors}
+      />
+      <MenuLink
+        label={props.labels?.privacyPolicy ?? 'Privacy policy'}
+        onPress={() => props.onOpenUrl(props.privacyUrl)}
+        colors={colors}
+      />
+      {showSignOut ? (
+        <MenuLink
+          label={props.labels?.signOut ?? 'Sign out'}
+          onPress={() => void signOut()}
+          colors={colors}
+        />
+      ) : null}
+    </>
+  )
+
+  const tailBlock = (
+    <>
+      {props.devtoolsSlot ? <View style={styles.devtoolsWrap}>{props.devtoolsSlot}</View> : null}
+      {props.promo ? (
+        <SatellitePromoCard
+          appStoreUrl={props.appStoreUrl}
+          title={props.promo.title}
+          body={props.promo.body}
+          ctaLabel={props.promo.ctaLabel}
+        />
+      ) : null}
+    </>
+  )
+
+  const authHeaderBlock = props.authHeader ? (
+    <View
+      style={[styles.authHeader, { borderColor: colors.separator, backgroundColor: colors.card }]}
+    >
+      {props.authHeader}
+    </View>
+  ) : null
+
+  const menuPanel = (
+    <View style={{ gap: 12 }}>
+      <MenuLink label={historyMenuLabel} onPress={props.onViewHistory} colors={colors} />
+      {accountMenu}
+      {tailBlock}
+    </View>
+  )
+
+  if (!inlineHistory) {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.menuScroll}
+        keyboardShouldPersistTaps='handled'
+        showsVerticalScrollIndicator={false}
+      >
+        {authHeaderBlock}
+        {menuPanel}
+      </ScrollView>
+    )
+  }
 
   const listHeader = (
     <View style={{ gap: 12 }}>
-      {props.authHeader ? (
-        <View
-          style={[
-            styles.authHeader,
-            { borderColor: colors.separator, backgroundColor: colors.card },
-          ]}
-        >
-          {props.authHeader}
-        </View>
-      ) : null}
+      {authHeaderBlock}
       <Text style={[styles.h1, { color: colors.text }]}>{props.historyTitle}</Text>
     </View>
   )
 
   const listFooter = (
     <View style={{ gap: 12 }}>
-      <Pressable
-        style={[styles.linkBtn, { borderColor: colors.separator }]}
-        onPress={props.onViewHistory}
-        accessibilityRole='button'
-      >
-        <Text style={[styles.linkText, { color: colors.text }]}>
-          {props.labels?.viewAllHistory ?? 'View all history'}
-        </Text>
-      </Pressable>
-      {props.onOpenSettings ? (
-        <Pressable
-          style={[styles.linkBtn, { borderColor: colors.separator }]}
-          onPress={props.onOpenSettings}
-          accessibilityRole='button'
-        >
-          <Text style={[styles.linkText, { color: colors.text }]}>
-            {props.labels?.settings ?? 'Settings'}
-          </Text>
-        </Pressable>
-      ) : null}
-      {props.onInvite ? (
-        <Pressable
-          style={[styles.linkBtn, { borderColor: colors.separator }]}
-          onPress={props.onInvite}
-          accessibilityRole='button'
-        >
-          <Text style={[styles.linkText, { color: colors.text }]}>
-            {props.labels?.invitePartner ?? 'Invite partner'}
-          </Text>
-        </Pressable>
-      ) : null}
-      <Pressable
-        style={[styles.linkBtn, { borderColor: colors.separator }]}
-        onPress={props.onUpgrade}
-        accessibilityRole='button'
-      >
-        <Text style={[styles.linkText, { color: colors.text }]}>
-          {props.labels?.upgradeToPro ?? 'Upgrade to Pro'}
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.linkBtn, { borderColor: colors.separator }]}
-        onPress={props.onRestore}
-        accessibilityRole='button'
-      >
-        <Text style={[styles.linkText, { color: colors.text }]}>
-          {props.labels?.restorePurchases ?? 'Restore purchases'}
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.linkBtn, { borderColor: colors.separator }]}
-        onPress={() => props.onOpenUrl(props.privacyUrl)}
-        accessibilityRole='button'
-      >
-        <Text style={[styles.linkText, { color: colors.text }]}>
-          {props.labels?.privacyPolicy ?? 'Privacy policy'}
-        </Text>
-      </Pressable>
-      {showSignOut ? (
-        <Pressable
-          style={[styles.linkBtn, { borderColor: colors.separator }]}
-          onPress={() => void signOut()}
-          accessibilityRole='button'
-        >
-          <Text style={[styles.linkText, { color: colors.text }]}>
-            {props.labels?.signOut ?? 'Sign out'}
-          </Text>
-        </Pressable>
-      ) : null}
-      {props.devtoolsSlot ? <View style={styles.devtoolsWrap}>{props.devtoolsSlot}</View> : null}
-      <SatellitePromoCard
-        appStoreUrl={props.appStoreUrl}
-        title={props.promo?.title}
-        body={props.promo?.body}
-        ctaLabel={props.promo?.ctaLabel}
-      />
+      <MenuLink label={historyMenuLabel} onPress={props.onViewHistory} colors={colors} />
+      {accountMenu}
+      {tailBlock}
     </View>
   )
 
@@ -164,11 +194,13 @@ export function SatelliteMePanel(props: SatelliteMePanelProps) {
 }
 
 const styles = StyleSheet.create({
-  authHeader: { borderWidth: 0.5, borderRadius: 0, padding: 14, gap: 10 },
+  menuScroll: { padding: 16, gap: 12, paddingBottom: 32 },
+  authHeader: { borderWidth: 0.5, borderRadius: 14, padding: 14, gap: 10 },
   devtoolsWrap: { gap: 8 },
   h1: { fontSize: 18, fontWeight: '600' },
   linkBtn: {
     borderWidth: 0.5,
+    borderRadius: 14,
     paddingVertical: 10,
     alignItems: 'center',
   },

@@ -51,13 +51,12 @@ export default function CoinCastResultScreen() {
       ? payload.interpretation
       : t('resultFallbackInterpretation')
 
-  const portfolioMemory = payload.portfolio_memory as
-    | { search_hits?: number; enabled?: boolean }
+  const personalizedMeta = payload.personalized_meta as
+    | { birth_used?: boolean; pillars_summary?: string }
     | undefined
-  const memoryHits =
-    typeof portfolioMemory?.search_hits === 'number' ? portfolioMemory.search_hits : 0
-  const memoryEnabled = Boolean(portfolioMemory?.enabled)
-  const showMemoryNote = memoryEnabled && memoryHits > 0
+  const birthUsed = Boolean(personalizedMeta?.birth_used)
+  const pillarsSummary =
+    typeof personalizedMeta?.pillars_summary === 'string' ? personalizedMeta.pillars_summary : null
 
   const title = t('resultHexagramTitle', {
     num: hexagram.number ?? '—',
@@ -84,9 +83,9 @@ export default function CoinCastResultScreen() {
         <SheetHandle />
         <View style={[styles.inner, { gap: spacing.md }]}>
           <SatelliteResultCard title={title} body={interpretation} />
-          {showMemoryNote ? (
+          {birthUsed && pillarsSummary ? (
             <Text style={[styles.meta, { color: colors.dim }]}>
-              {t('resultMemoryNote', { n: memoryHits })}
+              {t('resultPersonalizedNote', { pillars: pillarsSummary })}
             </Text>
           ) : null}
           <View style={{ alignSelf: 'flex-start' }}>

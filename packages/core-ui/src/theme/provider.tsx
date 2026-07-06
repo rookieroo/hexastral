@@ -21,6 +21,7 @@ import {
   getHighlightColors,
   getScrimColors,
   getStatusColors,
+  ink,
   lightTokens,
   type ModeTokens,
   SPACING,
@@ -161,6 +162,13 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
     accentBright = sat.accentBright
     accentGhost = sat.accentGhost
     surfaceTint = sat.surfaceTint
+    // CoinCast: zinc shell + mode-aware ink accents (gold dark / brown light).
+    if (brand === 'coincast') {
+      accent = isDark ? ink.gold : ink.brown
+      accentBright = accent
+      accentGhost = isDark ? ink.goldGhost : ink.brownGhost
+      surfaceTint = accentGhost
+    }
   }
 
   return {

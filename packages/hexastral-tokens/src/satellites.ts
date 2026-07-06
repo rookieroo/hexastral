@@ -11,7 +11,8 @@
  * a single context value.
  */
 
-import type { ModeTokens } from './palette'
+import type { ModeTokens } from '@zhop/hexastral-tokens/palette'
+import { ink } from '@zhop/hexastral-tokens/palette'
 
 // ── Compass / Fēng — shares the flagship Fēng palette ──────────────────────
 
@@ -24,31 +25,31 @@ export const compassPalette = {
   copperGoldGhost: 'rgba(176,141,91,0.08)',
 } as const
 
-// ── Coin Cast — amber + wood-grain (the ritual moment) ─────────────────────
+// ── Coin Cast — zinc structure + ink wash accents ─────────────────────────
 
-/** 铜钱琥珀 — bronze coin amber over wood. */
+/** Zinc base + ink gold/brown accents — UI shell stays zinc; accent follows mode. */
 export const coinCastPalette = {
-  amber: '#B8741F',
-  amberBright: '#D4892B',
-  amberMute: 'rgba(184,116,31,0.45)',
-  amberGhost: 'rgba(184,116,31,0.08)',
-  wood: '#3A2415',
-  woodGrain: 'rgba(58,36,21,0.06)',
-  parchment: '#F2E5C8', // light-mode wood-table surface
+  inkGold: ink.gold,
+  inkGoldBright: ink.gold,
+  inkGoldMute: ink.goldDim,
+  inkGoldGhost: ink.goldGhost,
+  inkBrown: ink.brown,
+  inkWash: ink.goldGhost,
+  stone: '#18181B',
 } as const
 
-/** Coin Cast 3D ritual scene — bronze materials, vessel, casting backdrop (R3F). */
+/** Coin Cast 3D ritual scene — bronze coins on ink-stone altar (R3F). */
 export const coinCastSceneColors = {
-  coinYang: '#c6ab86',
-  coinYin: '#52402e',
-  coinEdge: '#8f7658',
-  vesselRim: '#2c2824',
-  vesselBowl: '#1f1c19',
-  castingBackdropDark: '#2a231c',
-  castingBackdropLight: '#2e261d',
+  coinYang: '#c9b08a',
+  coinYin: '#3d3024',
+  coinEdge: '#7a6348',
+  vesselRim: '#2a2826',
+  vesselBowl: '#1c1b1a',
+  castingBackdropDark: '#141416',
+  castingBackdropLight: '#1a191c',
   hemisphereKey: '#d8cfc4',
-  yaoPanelOverlayDark: 'rgba(20,18,14,0.92)',
-  yaoPanelOverlayLight: 'rgba(252,249,244,0.94)',
+  yaoPanelOverlayDark: 'rgba(9,9,11,0.92)',
+  yaoPanelOverlayLight: 'rgba(24,24,27,0.94)',
 } as const
 
 // ── Face Oracle — jade + ink-wash (camera-first physiognomy) ───────────────
@@ -195,11 +196,11 @@ export function getSatelliteAccent(key: SatelliteKey, accentVariant?: string): S
       }
     case 'coincast':
       return {
-        accent: coinCastPalette.amber,
-        accentBright: coinCastPalette.amberBright,
-        accentMute: coinCastPalette.amberMute,
-        accentGhost: coinCastPalette.amberGhost,
-        surfaceTint: coinCastPalette.woodGrain,
+        accent: coinCastPalette.inkGold,
+        accentBright: coinCastPalette.inkGoldBright,
+        accentMute: coinCastPalette.inkGoldMute,
+        accentGhost: coinCastPalette.inkGoldGhost,
+        surfaceTint: coinCastPalette.inkWash,
       }
     case 'faceoracle':
       return {

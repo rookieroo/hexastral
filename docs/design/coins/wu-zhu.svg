@@ -1,0 +1,25 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="inkGold" x1="0.25" y1="0" x2="0.75" y2="1">
+    <stop offset="0" stop-color="#D4B896"/>
+    <stop offset="1" stop-color="#8B6F4E"/>
+  </linearGradient>
+  <radialGradient id="shine" cx="0.38" cy="0.32" r="0.55">
+    <stop offset="0" stop-color="rgba(255,255,255,0.14)"/>
+    <stop offset="1" stop-color="rgba(0,0,0,0)"/>
+  </radialGradient>
+</defs>
+<rect width="512" height="512" fill="#09090B"/>
+<circle cx="256" cy="256" r="235.52" fill="url(#inkGold)" stroke="#5C4835" stroke-width="7.68"/>
+<circle cx="256" cy="256" r="235.52" fill="url(#shine)"/>
+<circle cx="256" cy="256" r="193.1264" fill="none" stroke="#5C4835" stroke-width="4.10" opacity="0.45"/>
+
+    <g fill="none" stroke="#5C4835" stroke-width="6.14" stroke-linecap="round" opacity="0.55">
+      <path d="M 126.46399999999997 109.9776 H 385.53600000000006"/>
+      <path d="M 109.9776 166.5024 H 402.0224"/>
+      <path d="M 142.9504 223.0272 H 369.0496"/>
+      <path d="M 173.56799999999998 378.47040000000004 Q 256 425.57439999999997 338.432 378.47040000000004"/>
+    </g>
+<rect x="199.68" y="199.68" width="112.64" height="112.64" rx="10.24" fill="#09090B"/>
+<rect x="199.68" y="199.68" width="112.64" height="112.64" rx="10.24" fill="none" stroke="#5C4835" stroke-width="7.68"/>
+</svg>

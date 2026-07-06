@@ -7,6 +7,7 @@ const KEY_FIRST_ACK = 'coincast_first_ritual_ack_v1'
 const KEY_LAST_DONE_AT = 'coincast_last_reading_done_at'
 const KEY_LAST_Q = 'coincast_last_reading_question_norm'
 const KEY_MOTION = 'coincast_motion_shake_enabled'
+const KEY_HAPTICS = 'coincast_cast_haptics_enabled'
 const KEY_RECENT_QUESTIONS = 'coincast_recent_questions_v1'
 
 const RECENT_QUESTIONS_MAX = 5
@@ -116,6 +117,25 @@ export async function setMotionShakeEnabled(enabled: boolean): Promise<void> {
   }
 }
 
+export async function getCastHapticsEnabled(): Promise<boolean> {
+  try {
+    const v = await AsyncStorage.getItem(KEY_HAPTICS)
+    if (v === 'false') return false
+    return true
+  } catch (err) {
+    console.warn('[coincast-ritual] read haptics failed', err)
+    return true
+  }
+}
+
+export async function setCastHapticsEnabled(enabled: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEY_HAPTICS, enabled ? 'true' : 'false')
+  } catch (err) {
+    console.warn('[coincast-ritual] write haptics failed', err)
+  }
+}
+
 export async function getLastReadingMeta(): Promise<{ at: number; questionNorm: string } | null> {
   try {
     const atRaw = await AsyncStorage.getItem(KEY_LAST_DONE_AT)
@@ -155,6 +175,7 @@ export async function wipeCoinCastRitualPrefsForDev(): Promise<void> {
       KEY_LAST_DONE_AT,
       KEY_LAST_Q,
       KEY_MOTION,
+      KEY_HAPTICS,
       KEY_RECENT_QUESTIONS,
     ])
   } catch (err) {

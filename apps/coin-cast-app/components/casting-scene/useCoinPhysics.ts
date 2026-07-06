@@ -15,8 +15,8 @@ import {
   CUP_ABOVE_ALTAR_GAP,
   CUP_DECK_THICKNESS,
   GRAVITY_Y,
-  VESSEL_FLOOR_Y,
-  VESSEL_SPAWN_XZ,
+  IDLE_COIN_TABLE_XZ,
+  IDLE_COIN_TABLE_Y,
 } from './constants'
 
 /**
@@ -93,8 +93,10 @@ export function createCoinRigidBody(ix: number): CANNON.Body {
     sleepSpeedLimit: 0.1,
     sleepTimeLimit: 0.3,
   })
-  const [sx, sz] = VESSEL_SPAWN_XZ[ix] ?? [0, 0]
-  body.position.set(sx, VESSEL_FLOOR_Y + ix * (COIN_THICKNESS + 0.003), sz)
+  const [sx, sz] = IDLE_COIN_TABLE_XZ[ix] ?? [0, 0]
+  body.position.set(sx, IDLE_COIN_TABLE_Y, sz)
+  const yaw = (ix - 1) * 0.22
+  body.quaternion.setFromEuler(0, yaw, 0)
   return body
 }
 

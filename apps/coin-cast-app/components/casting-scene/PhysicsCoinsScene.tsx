@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 import { coinsFromSeed, mulberry32 } from '@/lib/casting-entropy'
+import { createCoinSkinMaterials, DEFAULT_COIN_SKIN_ID, type CoinSkinId } from '@/lib/coin-skins'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
 
 import {
@@ -30,14 +31,16 @@ import {
   SETTLE_FRAMES_NEEDED,
   SETTLE_LINEAR_EPS,
   SETTLE_ROW_CENTER_SPACING,
+  IDLE_COIN_TABLE_XZ,
+  IDLE_COIN_TABLE_Y,
   VESSEL_FLOOR_Y,
   VESSEL_SPAWN_XZ,
   WORLD_DT,
 } from './constants'
 import { createArenaWallBodies, createCupDeckBody, useCoinPhysics } from './useCoinPhysics'
-import { createProceduralAltarWoodTextures } from './proceduralAltarWood'
+import { createProceduralAltarInkStoneTextures } from './proceduralAltarInkStone'
 
-const WOOD_REPEAT = 2.8
+const STONE_REPEAT = 3.6
 
 /** Scratch — avoid allocating Vec3 inside hot `useFrame` cup loop. */
 const CUP_SCRATCH_IMP = new CANNON.Vec3()
@@ -193,6 +196,7 @@ function applyHandsOpenRelease(
 export interface PhysicsCoinsSceneProps {
   tossRevision: number
   impulseSeed: number
+  coinSkinId?: CoinSkinId
   /** Same as scene.background — table + lighting ground tint (no second “slab” color). */
   sceneBackdrop: string
   /** Committed line, or `wa_ying` to void whole hexagram per classical Liu Yao (rim / upright). */
@@ -210,48 +214,31 @@ export interface PhysicsCoinsSceneProps {
   vesselVisible: boolean
 }
 
-function createFallbackCoinMaterials(): THREE.MeshStandardMaterial[] {
-  return [
-    new THREE.MeshStandardMaterial({
-      color: coinCastSceneColors.coinEdge,
-      roughness: 0.52,
-      metalness: 0.14,
-    }),
-    new THREE.MeshStandardMaterial({
-      color: coinCastSceneColors.coinYang,
-      roughness: 0.48,
-      metalness: 0.11,
-    }),
-    new THREE.MeshStandardMaterial({
-      color: coinCastSceneColors.coinYin,
-      roughness: 0.76,
-      metalness: 0.07,
-    }),
-  ]
-}
-
-/**
- * Procedural altar wood + solid yang/yin coin materials (no image assets).
- */
-function useCastingTextures(): {
+function useCastingTextures(coinSkinId: CoinSkinId): {
   floorMaterial: THREE.MeshStandardMaterial | null
   coinMaterials: THREE.MeshStandardMaterial[]
 } {
   const [floorMaterial, setFloorMaterial] = useState<THREE.MeshStandardMaterial | null>(null)
-  const coinMaterials = useRef(createFallbackCoinMaterials()).current
+  const [coinMaterials, setCoinMaterials] = useState<THREE.MeshStandardMaterial[]>(() =>
+    createCoinSkinMaterials(coinSkinId)
+  )
 
   useEffect(() => {
-    const { albedo, normal } = createProceduralAltarWoodTextures()
-    albedo.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
-    normal.repeat.set(WOOD_REPEAT, WOOD_REPEAT)
+    setCoinMaterials(createCoinSkinMaterials(coinSkinId))
+  }, [coinSkinId])
+
+  useEffect(() => {
+    const { albedo, normal } = createProceduralAltarInkStoneTextures()
+    albedo.repeat.set(STONE_REPEAT, STONE_REPEAT)
+    normal.repeat.set(STONE_REPEAT, STONE_REPEAT)
 
     const floor = new THREE.MeshStandardMaterial({
       map: albedo,
       normalMap: normal,
-      normalScale: new THREE.Vector2(0.38, 0.38),
+      normalScale: new THREE.Vector2(0.22, 0.22),
       color: 0xffffff,
-      roughness: 0.88,
-      metalness: 0.02,
+      roughness: 0.94,
+      metalness: 0,
     })
 
     setFloorMaterial(floor)
@@ -269,8 +256,9 @@ function useCastingTextures(): {
 const VESSEL_RETREAT_DURATION_SEC = 0.42
 
 export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
+  const coinSkinId = props.coinSkinId ?? DEFAULT_COIN_SKIN_ID
   const { world, coinBodies: bodies } = useCoinPhysics()
-  const { floorMaterial, coinMaterials } = useCastingTextures()
+  const { floorMaterial, coinMaterials } = useCastingTextures(coinSkinId)
 
   const vesselMeshRef = useRef<THREE.Mesh | null>(null)
   const prevVesselVisible = useRef(props.vesselVisible)
@@ -364,9 +352,10 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       body.wakeUp()
       body.velocity.setZero()
       body.angularVelocity.setZero()
-      const [bx, bz] = VESSEL_SPAWN_XZ[i] ?? [0, 0]
-      body.position.set(bx, VESSEL_FLOOR_Y + i * (COIN_THICKNESS + 0.003), bz)
-      body.quaternion.set(0, 0, 0, 1)
+      const [bx, bz] = IDLE_COIN_TABLE_XZ[i] ?? [0, 0]
+      body.position.set(bx, IDLE_COIN_TABLE_Y, bz)
+      const yaw = (i - 1) * 0.22
+      body.quaternion.setFromEuler(0, yaw, 0)
     })
   }, [props.tossRevision, bodies, world])
 
@@ -599,13 +588,14 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
 
   return (
     <>
-      <ambientLight intensity={0.72} />
+      <ambientLight intensity={0.38} />
       <hemisphereLight
-        args={[coinCastSceneColors.hemisphereKey, backdrop, 0.48]}
+        args={[coinCastSceneColors.hemisphereKey, backdrop, 0.62]}
         position={[0, 8, 0]}
       />
-      <directionalLight position={[3, 8, 5]} intensity={1.05} />
-      <directionalLight position={[-3, 4, -3]} intensity={0.4} />
+      <directionalLight position={[2.2, 9.5, 4.2]} intensity={1.28} color='#fff6ea' />
+      <directionalLight position={[-2.8, 4.5, -2.6]} intensity={0.32} color='#c8d0dc' />
+      <pointLight position={[0, 2.2, 1.4]} intensity={0.22} color='#e8d4b0' distance={6} decay={2} />
 
       {floorMaterial ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={floorMaterial}>

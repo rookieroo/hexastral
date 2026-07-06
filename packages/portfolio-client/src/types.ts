@@ -93,6 +93,11 @@ export interface PortfolioBirthInfo {
   birthLatitude?: string
   birthLongitude?: string
   birthTimezoneId?: string
+  birthClockMinutes?: number
+  birthSolarCalibrate?: boolean
+  birthCalendarType?: 'solar' | 'lunar'
+  birthLunarInput?: string
+  birthLunarIsLeap?: boolean
 }
 
 export interface PortfolioBirthInfoResponse {

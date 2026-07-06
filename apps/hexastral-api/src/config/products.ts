@@ -143,6 +143,16 @@ export const PRODUCTS: readonly ProductSpec[] = [
     consumable: { kind: 'cast', credits: 3 },
   },
   {
+    productId: 'coincast_cast_pack_1',
+    kind: 'consumable',
+    consumable: { kind: 'coincast_cast', credits: 1 },
+  },
+  {
+    productId: 'coincast_cast_pack_5',
+    kind: 'consumable',
+    consumable: { kind: 'coincast_cast', credits: 5 },
+  },
+  {
     productId: 'coincast_cast_pack_10',
     kind: 'consumable',
     consumable: { kind: 'coincast_cast', credits: 10 },

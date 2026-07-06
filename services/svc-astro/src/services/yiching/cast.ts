@@ -247,7 +247,7 @@ function buildInterpretationPrompt(
   const memorySection =
     memoryContext.trim().length > 0
       ? `
-## 过往语境（可选）
+## 命盘语境（可选）
 ${memoryContext.trim()}
 - 以上仅作语气与脉络参考；不得改写本卦卦名、卦序、爻位与变爻事实。
 `

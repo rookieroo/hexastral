@@ -2,64 +2,67 @@
 
 **Directory:** `apps/coin-cast-app` · **Bundle:** `com.hexastral.coincast` · **Display name:** CoinCast
 
-Growth satellite — standalone I Ching oracle. Currently **Expo 54 scaffold only**; this doc is the launch surface until implementation catches up.
-
-Architecture source (historical): [archive ADR-0017](../../archive/decisions/0017-v1.5-wave-face-coin-dream.md) §Coincast.
+Growth satellite — standalone I Ching oracle with 3D coin casting, portfolio-linked history, and Pro chart-assisted interpretation.
 
 ---
 
 ## Positioning (App Store)
 
-> The most rigorous 易经 study companion — real coin physics simulation **and** the 40-stalk classical method, with cited 王弼 / 朱熹 commentary on every line, journaled across time.
+> Rigorous 易经 companion — real coin physics, classical line rules (6/7/8/9), and cited commentary. Study tool + journal framing, not generic fortune spam.
 
-**Anti-spam frame:** I-Ching **study tool + hexagram journal** — not generic fortune-telling. Academic 占筮 vs 哲学 framing; 周易 / 系辞 / 说卦 separation.
+**Visual:** Zinc structural UI + ink-wash accents; ink-stone altar + inscription coin caps (no yao bars on caps).
 
-**Pass-odds target:** 80–85% (highest among oracle-class apps per ADR-0017 scorecard).
+**Brand mark:** `docs/design/coins/coincast-mark-three.svg` (三枚方孔钱) · `wu-zhu.svg` (单枚参考). Regenerate app icons: `node apps/coin-cast-app/scripts/gen-brand-assets.mjs` (needs `rsvg-convert`).
 
 ---
 
-## MVP scope
+## MVP scope (current)
 
-| Layer | MVP | Post-MVP |
+| Layer | Shipped | Notes |
 |---|---|---|
-| Casting | Coin physics OR 40-stalk simulation + question/context | Curriculum mode, comparison mode |
-| Output | 64-hexagram visualization + 变爻 + classical citations (4 locales) | AI 易经 tutor (Pro) |
-| UX | Single consultation result + share | Hexagram Journal (Pro), 64-hexagram study path |
-| Monetization | Free unlimited divinations | Pro: journal + AI tutor |
-| Platform | iOS (Expo 54) | widget-kit-ios, watch-kit-ios (reuse from portfolio) |
+| Casting | 3-coin physics + shake / button | WebGL scene lazy-loaded |
+| Output | Hexagram + AI interpretation via `svc-astro` `/yiching/cast` | `yaoValues` from client entropy |
+| Personalization | Birth info → four pillars context (Pro) | Replaces vector memory for CoinCast |
+| Monetization | **Consumable-first:** 1 / 5 / 10 cast packs | `coincast_pro_*` + `universe_pro` for chart + skins |
+| Quota | Guest 3/day · linked 3/month + credits | `evaluateCoincastQuota` |
+| Platform | iOS (Expo 54) | Settings via top-right + left-swipe (Fēng model) |
+
+### Post-MVP
+
+- 40-stalk method, hexagram journal, 64-gua study path, widget/watch
+
+---
+
+## Monetization
+
+| SKU | Type | Purpose |
+|---|---|---|
+| `coincast_cast_pack_1` | consumable | +1 cast credit |
+| `coincast_cast_pack_5` | consumable | +5 cast credits |
+| `coincast_cast_pack_10` | consumable | +10 cast credits |
+| `coincast_pro_monthly` / `_annual` | subscription | Chart-assisted readings + coin skins |
+| `universe_pro_*` | subscription | All app Pros + shared birth info |
+
+Paywall surfaces **packs first**, subscriptions secondary.
+
+---
+
+## Personalization (birth + Pro)
+
+1. User saves birth info via the **single-page HexAstral standard form** (Fēng / Yuun / Yuel pattern) at `/(birth-info)` → `GET/PUT /api/portfolio/birth-info`.
+2. On cast, API checks `coincast_pro` or `universe_pro` + birth on file.
+3. `buildCoincastBirthContext` injects a short four-pillars block into `memoryContext` — **does not alter cast randomness or hexagram facts**.
+4. CoinCast no longer indexes vector memory (`portfolio_memory` UI removed).
 
 ---
 
 ## Technical dependencies
 
-- `@zhop/astro-core` — hexagram / line logic (via svc-astro or client-side where deterministic)
-- `@zhop/satellite-runtime` — portfolio bootstrap, HMAC, push, flags
-- `@zhop/hexastral-client` — signed API to `hexastral-api`
-- `hexastral-api` — `/api/divination/*` routes (wire when MVP casting ships)
-
-Follow root [.cursorrules](../../../.cursorrules) §3 for mobile satellite patterns.
-
----
-
-## TODO (implementation)
-
-- [ ] Wire casting UI to API (replace scaffold home)
-- [ ] Implement coin-physics + 40-stalk flows per classical verification rules
-- [ ] 64-hexagram result screen with 王弼 / 朱熹 citations (4 locales)
-- [ ] RC products + entitlements (free unlimited / Pro journal)
-- [ ] `aso-metadata.json` + [screenshot-direction.md](../../publish/screenshot-direction.md) deck
-- [ ] EAS production profile + ASC record (after Yuun/Yuel/Feng telemetry validates 4.3(b))
-- [ ] Maestro smoke flow under `apps/coin-cast-app/.maestro/` (create when UI exists)
-
----
-
-## Launch gate
-
-Start ASC submission when:
-
-1. At least one of Yuun / Yuel / Feng is **live** in App Store
-2. No 4.3(b) rejection pattern on the V1 apps for category saturation
-3. CoinCast MVP checklist above is complete + `bun typecheck` clean
+- `@zhop/astro-core` — four pillars (`getFourPillars`)
+- `@zhop/portfolio-client` — preview/linked, birth info, readings
+- `@zhop/satellite-runtime` — HMAC, purchases, bootstrap
+- `hexastral-api` — `portfolio` target `coincast`
+- `svc-astro` — `/yiching/cast`
 
 ---
 
@@ -67,7 +70,7 @@ Start ASC submission when:
 
 ```bash
 cd apps/coin-cast-app
-bun dev                    # Metro
-npx expo install <pkg>     # native modules
+bun dev
+bun typecheck
 eas build --profile production --platform ios
 ```

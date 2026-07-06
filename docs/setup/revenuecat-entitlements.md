@@ -83,7 +83,7 @@ which grant `kindred_pro` + `auspice_pro` + `fate_pro` + `universe_pro`.
 
 **Other products already in the catalog** (legacy / other apps — unrelated to the Yuel +
 Yuun launch; leave as-is): `coincast_pro_monthly`/`_annual`, the consumables
-(`hexastral_chat_5`, `hexastral_cast_3`, `coincast_cast_pack_10`, `faceoracle_reading`,
+(`hexastral_chat_5`, `hexastral_cast_3`, `coincast_cast_pack_{1,5,10}`, `faceoracle_reading`,
 `dream_pack_10`, `numerology_pack_10`), and the single-purchase SKUs
 (`hexastral_cast_single`, `hexastral_fate_reading`, `hexastral_feng_single`).
 

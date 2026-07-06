@@ -4,7 +4,7 @@ import { useAppTheme } from '@/lib/theme'
 
 /**
  * CoinCast mark — three overlapping 圆形方孔 coins (金钱卦: three coins, one cast),
- * matching the app icon. Two coins behind, one in front; each a filled amber disc
+ * matching the app icon. Two coins behind, one in front; each a filled disc
  * with a square hole punched to the background. Pure-View (no SVG dep).
  */
 const COIN = 30
@@ -32,7 +32,6 @@ function Coin({
 
 export function CoinCastSealLogo() {
   const { colors } = useAppTheme()
-  // Back coins sit slightly dimmer so the front one reads as nearest.
   const back = `${colors.accent}cc`
   const rim = `${colors.bg}55`
   return (

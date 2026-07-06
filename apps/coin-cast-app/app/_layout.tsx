@@ -2,7 +2,7 @@
  * Coin Cast root layout.
  *
  * Phase F: wrapped in <CoreUIProvider brand="coincast" mode={...}> per ADR-0004
- * §1 — amber + wood-grain palette locked into core-ui satellites.ts.
+ * §1 — zinc structure + ink wash accents via core-ui satellites.ts.
  *
  * Architecture note: the existing `useAppTheme()` hook is now a back-compat
  * shim consuming `useTheme()` from core-ui. Because the shim requires the
@@ -82,26 +82,8 @@ function RootLayoutInner() {
               : {}),
           }}
         />
-        <Stack.Screen
-          name='history'
-          options={{
-            presentation: 'formSheet',
-            sheetGrabberVisible: true,
-            ...(Platform.OS === 'ios'
-              ? { sheetAllowedDetents: [0.5, 0.9], sheetInitialDetentIndex: 0 }
-              : {}),
-          }}
-        />
-        <Stack.Screen
-          name='paywall'
-          options={{
-            presentation: 'formSheet',
-            sheetGrabberVisible: true,
-            ...(Platform.OS === 'ios'
-              ? { sheetAllowedDetents: [0.38, 0.72], sheetInitialDetentIndex: 0 }
-              : {}),
-          }}
-        />
+        <Stack.Screen name='paywall' />
+        <Stack.Screen name='(birth-info)' options={{ headerShown: false }} />
         <Stack.Screen
           name='result'
           options={{
@@ -109,16 +91,6 @@ function RootLayoutInner() {
             sheetGrabberVisible: true,
             ...(Platform.OS === 'ios'
               ? { sheetAllowedDetents: [0.45, 0.85], sheetInitialDetentIndex: 0 }
-              : {}),
-          }}
-        />
-        <Stack.Screen
-          name='settings'
-          options={{
-            presentation: 'formSheet',
-            sheetGrabberVisible: true,
-            ...(Platform.OS === 'ios'
-              ? { sheetAllowedDetents: [0.65, 0.95], sheetInitialDetentIndex: 1 }
               : {}),
           }}
         />

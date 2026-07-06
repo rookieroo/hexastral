@@ -2,7 +2,7 @@
  * Coin Cast theme — Phase F back-compat shim.
  *
  * The local `useAppTheme()` now consumes `useTheme()` from `@zhop/core-ui`
- * (brand="coincast" — amber + wood-grain per ADR-0004 §1). Existing call
+ * (brand="coincast" — zinc + ink wash per ADR-0004 §1). Existing call
  * sites continue receiving `{ isDark, colors: ModeTokens }` so the migration
  * is non-breaking. New code should import directly from `@zhop/core-ui`.
  */

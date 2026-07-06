@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 
-const TEX_SIZE = 1024
+const TEX_SIZE = 512
+
+let cachedWoodTextures: ProceduralAltarWoodTextures | null = null
 
 /** Warm altar browns — aligned with `coinCastSceneColors.castingBackdrop*`. */
 const WOOD_DARK = { r: 38, g: 31, b: 24 }
@@ -82,9 +84,10 @@ export type ProceduralAltarWoodTextures = {
 
 /**
  * Original tileable altar wood — no external image assets.
- * 1024² POT, seamless at edges, low contrast for repeat at ~2.8×.
+ * 512² POT, seamless at edges; cached after first build.
  */
 export function createProceduralAltarWoodTextures(): ProceduralAltarWoodTextures {
+  if (cachedWoodTextures) return cachedWoodTextures
   const size = TEX_SIZE
   const heights = buildHeightField(size)
   const albedoData = new Uint8Array(size * size * 4)
@@ -142,5 +145,6 @@ export function createProceduralAltarWoodTextures(): ProceduralAltarWoodTextures
   normal.generateMipmaps = true
   normal.needsUpdate = true
 
-  return { albedo, normal }
+  cachedWoodTextures = { albedo, normal }
+  return cachedWoodTextures
 }

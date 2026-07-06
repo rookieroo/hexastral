@@ -95,7 +95,7 @@ export default function CastStubScreen() {
         if (err.guestDailyLimit) {
           Alert.alert(t('alertQuotaTitle'), msg, [
             { text: t('alertContinue'), style: 'cancel' },
-            { text: t('alertQuotaSignIn'), onPress: () => router.push('/(tabs)/me') },
+            { text: t('alertQuotaSignIn'), onPress: () => router.push('/(tabs)/profile') },
             { text: t('alertQuotaUpgrade'), onPress: () => router.push('/paywall') },
           ])
         } else {

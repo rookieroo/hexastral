@@ -16,6 +16,12 @@ import {
   EPISODIC_FREE_READINGS_PER_MONTH,
   resolveEpisodicAccess,
 } from '../lib/access/episodic'
+import {
+  buildCoincastBirthContext,
+  coincastBirthPillarsSummary,
+  hasCoincastBirthInfo,
+  userHasCoincastPro,
+} from '../lib/coincast-birth-context'
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../lib/biometric-consent'
@@ -24,7 +30,6 @@ import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { rebuildUserCharts } from '../lib/chart-skeleton'
 import { castMeihua } from '../lib/meihua'
 import {
-  buildCoincastMemoryDocument,
   buildDreamMemoryDocument,
   buildNumerologyMemoryDocument,
   deletePortfolioReadingMemory,
@@ -447,19 +452,32 @@ async function runTargetPipeline(
       const entropy = parsed.entropy ?? `${Date.now()}_${Math.random()}`
       const promptTemplate = buildCoincastPrompt({ question: parsed.question, locale })
       const db = c.get('db')
-      const memoryOn = await selectPortfolioMemoryEnabled(db, userId)
-      let memoryContext = ''
-      let memoryHitCount = 0
-      if (memoryOn && userId) {
-        const mem = await searchPortfolioReadingMemory(c.env, {
-          userId,
-          targetApp: 'coincast',
-          query: parsed.question,
-          requestId,
-          locale,
-        })
-        memoryContext = mem.context
-        memoryHitCount = mem.hitCount
+      let birthContext = ''
+      let birthUsed = false
+      let pillarsSummary: string | undefined
+      if (userId) {
+        const hasPro = await userHasCoincastPro(db, userId)
+        if (hasPro) {
+          const birthRow = await db
+            .select({
+              birthSolarDate: users.birthSolarDate,
+              birthTimeIndex: users.birthTimeIndex,
+              birthGender: users.birthGender,
+              birthClockMinutes: users.birthClockMinutes,
+              birthSolarCalibrate: users.birthSolarCalibrate,
+              birthLongitude: users.birthLongitude,
+              birthTimezoneId: users.birthTimezoneId,
+              birthCity: users.birthCity,
+            })
+            .from(users)
+            .where(eq(users.id, userId))
+            .get()
+          if (birthRow && hasCoincastBirthInfo(birthRow)) {
+            birthContext = buildCoincastBirthContext(birthRow)
+            birthUsed = birthContext.length > 0
+            pillarsSummary = coincastBirthPillarsSummary(birthRow)
+          }
+        }
       }
       try {
         const astro = await callAstro<{
@@ -478,7 +496,7 @@ async function runTargetPipeline(
           method: 'liuyao',
           isPro: false,
           yaoValues: parsed.yaoValues,
-          memoryContext: memoryContext.length > 0 ? memoryContext : undefined,
+          memoryContext: birthContext.length > 0 ? birthContext : undefined,
         })
         if (astro.refused === true) {
           if (requestId) {
@@ -486,7 +504,7 @@ async function runTargetPipeline(
               JSON.stringify({
                 event: 'portfolio_coincast_refused',
                 requestId,
-                memory_hit_count: memoryHitCount,
+                birth_used: birthUsed,
               })
             )
           }
@@ -503,8 +521,7 @@ async function runTargetPipeline(
             JSON.stringify({
               event: 'portfolio_coincast_completed',
               requestId,
-              memory_hit_count: memoryHitCount,
-              memory_enabled: memoryOn,
+              birth_used: birthUsed,
             })
           )
         }
@@ -513,7 +530,10 @@ async function runTargetPipeline(
           output: {
             ...astro,
             promptTemplate,
-            portfolio_memory: { search_hits: memoryHitCount, enabled: memoryOn },
+            personalized_meta: {
+              birth_used: birthUsed,
+              pillars_summary: pillarsSummary,
+            },
           },
         }
       } catch (err) {
@@ -534,7 +554,10 @@ async function runTargetPipeline(
             summary: 'Ground first, then act.',
             fortune: 'neutral',
             promptTemplate,
-            portfolio_memory: { search_hits: memoryHitCount, enabled: memoryOn },
+            personalized_meta: {
+              birth_used: birthUsed,
+              pillars_summary: pillarsSummary,
+            },
           },
         }
       }
@@ -1034,28 +1057,11 @@ portfolioRoutes.post('/linked/:target', async (c) => {
 
   if (
     memoryEnabledRow?.portfolioMemoryEnabled &&
-    (targetParsed.data === 'coincast' ||
-      targetParsed.data === 'dreamoracle' ||
-      targetParsed.data === 'numerology')
+    (targetParsed.data === 'dreamoracle' || targetParsed.data === 'numerology')
   ) {
     let bodyMarkdown: string | null = null
-    let memTarget: 'coincast' | 'dreamoracle' | 'numerology' = 'coincast'
-    if (targetParsed.data === 'coincast') {
-      const pin = coincastInputSchema.safeParse(parsed.data.input)
-      const out = pipeline.output as Record<string, unknown>
-      const hex = out.hexagram as { number?: number; name?: string } | undefined
-      if (pin.success) {
-        memTarget = 'coincast'
-        bodyMarkdown = buildCoincastMemoryDocument({
-          readingId,
-          question: pin.data.question,
-          summary: String(out.summary ?? ''),
-          interpretation: String(out.interpretation ?? ''),
-          hexName: typeof hex?.name === 'string' ? hex.name : '',
-          hexNumber: typeof hex?.number === 'number' ? hex.number : 0,
-        })
-      }
-    } else if (targetParsed.data === 'dreamoracle') {
+    let memTarget: 'dreamoracle' | 'numerology' = 'dreamoracle'
+    if (targetParsed.data === 'dreamoracle') {
       const pin = dreamInputSchema.safeParse(parsed.data.input)
       const out = pipeline.output as Record<string, unknown>
       if (pin.success) {

@@ -1,4 +1,4 @@
-import { useTheme } from '@zhop/core-ui'
+import { useTheme, useHaptic } from '@zhop/core-ui'
 import { coinCastSceneColors } from '@zhop/hexastral-tokens/satellites'
 import {
   PortfolioBannedError,
@@ -8,7 +8,7 @@ import {
 import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Pencil, X } from 'lucide-react-native'
+import { Pencil, Settings2, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -31,9 +31,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { runOnJS } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CoinCastSealLogo } from '@/components/CoinCastSealLogo'
-import { CastingScene } from '@/components/casting-scene/CastingScene'
+import { LazyCastingScene, preloadCastingScene } from '@/components/casting-scene/LazyCastingScene'
 import {
   CONTAINER_SHAKE_DURATION_MS,
   PHYSICS_COMMIT_FALLBACK_MS,
@@ -51,6 +53,7 @@ import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
 import {
   checkDuplicateQuestion,
   cooldownRemainingMs,
+  getCastHapticsEnabled,
   getFirstRitualAcknowledged,
   getLastReadingMeta,
   getMotionShakeEnabled,
@@ -58,6 +61,8 @@ import {
   recordReadingCompleted,
   rememberRecentQuestion,
 } from '@/lib/coincast-ritual'
+import { DEFAULT_COIN_SKIN_ID, getCoinSkinId, type CoinSkinId } from '@/lib/coin-skins'
+import { yaoNumberForOverlayRow } from '@/lib/yao-display'
 import { canUseExpoGl } from '@/lib/gl-capabilities'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
 
@@ -116,6 +121,22 @@ function CoinFaceMiniGlyph({ value, faceColor }: { value: 2 | 3; faceColor: stri
     <View style={styles.coinFaceYinWrap}>
       <View style={[styles.coinFaceYinHalf, { backgroundColor: faceColor }]} />
       <View style={[styles.coinFaceYinHalf, { backgroundColor: faceColor }]} />
+    </View>
+  )
+}
+
+function HexOverlayHeader({
+  secondaryColor,
+  t,
+}: {
+  secondaryColor: string
+  t: (key: SatelliteLocaleKey, vars?: Record<string, string | number>) => string
+}) {
+  return (
+    <View style={styles.hexHeaderRow} accessible={false}>
+      <Text style={[styles.hexHeaderLabel, { color: secondaryColor }]}>{t('homeYaoPosition')}</Text>
+      <View style={styles.hexHeaderSpacer} />
+      <Text style={[styles.hexHeaderLabel, { color: secondaryColor }]}>{t('homeYaoThrow')}</Text>
     </View>
   )
 }
@@ -179,6 +200,8 @@ function AnimatedYaoLine({
 
 export default function CoinCastHomeScreen() {
   const router = useRouter()
+  const haptic = useHaptic()
+  const insets = useSafeAreaInsets()
   const { locale, uiLocale, t } = useSatelliteI18n()
   const { colors, isDark } = useTheme()
   const [question, setQuestion] = useState('')
@@ -189,6 +212,8 @@ export default function CoinCastHomeScreen() {
   const [yaoResults, setYaoResults] = useState<YaoResult[]>([])
   const [roundEntropyHashes, setRoundEntropyHashes] = useState<string[]>([])
   const [motionEnabled, setMotionEnabled] = useState(true)
+  const hapticsEnabledRef = useRef(true)
+  const [coinSkinId, setCoinSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
   const [firstAck, setFirstAck] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -277,8 +302,16 @@ export default function CoinCastHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void getFirstRitualAcknowledged().then(setFirstAck)
+      void getCastHapticsEnabled().then((v) => {
+        hapticsEnabledRef.current = v
+      })
+      void getCoinSkinId().then(setCoinSkinId)
     }, [])
   )
+
+  useEffect(() => {
+    if (glEnabled) preloadCastingScene()
+  }, [glEnabled])
 
   const completed = yaoResults.length
   const canShakeBase =
@@ -288,7 +321,9 @@ export default function CoinCastHomeScreen() {
   const commitLine = useCallback((result: YaoResult, hash: string) => {
     setYaoResults((prev) => [...prev, result])
     setRoundEntropyHashes((prev) => [...prev, hash])
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    if (hapticsEnabledRef.current) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    }
     setError(null)
   }, [])
 
@@ -307,7 +342,9 @@ export default function CoinCastHomeScreen() {
         setError(null)
         setActiveToss(null)
         setTossRevision(0)
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        if (hapticsEnabledRef.current) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        }
         Alert.alert(t('waYingTitle'), t('waYingMessage'), [{ text: t('waYingAck') }])
         return
       }
@@ -318,6 +355,7 @@ export default function CoinCastHomeScreen() {
   )
 
   const impactHaptic = useCallback(() => {
+    if (!hapticsEnabledRef.current) return
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [])
 
@@ -567,7 +605,7 @@ export default function CoinCastHomeScreen() {
         if (err.guestDailyLimit) {
           Alert.alert(t('alertQuotaTitle'), msg, [
             { text: t('alertContinue'), style: 'cancel' },
-            { text: t('alertQuotaSignIn'), onPress: () => router.push('/(tabs)/me') },
+            { text: t('alertQuotaSignIn'), onPress: () => router.push('/(tabs)/profile') },
             { text: t('alertQuotaUpgrade'), onPress: () => router.push('/paywall') },
           ])
         } else {
@@ -598,7 +636,7 @@ export default function CoinCastHomeScreen() {
     const rev = [...yaoResults].reverse()
     return rev.map((line, idx) => ({
       line,
-      yaoNumber: 6 - idx,
+      yaoNumber: yaoNumberForOverlayRow(yaoResults.length, idx),
       key: `${idx}_${line.total}_${line.coins.join('')}`,
     }))
   }, [yaoResults])
@@ -632,17 +670,35 @@ export default function CoinCastHomeScreen() {
     void tryShake()
   }
 
-  return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bg }]}
-      edges={['top', 'left', 'right', 'bottom']}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={styles.inner}>
-          <View style={styles.logoWrap}>
-            <CoinCastSealLogo />
-          </View>
+  const openSettings = useCallback(() => {
+    void haptic('light')
+    router.push('/(tabs)/profile')
+  }, [haptic, router])
 
+  const swipeToSettings = Gesture.Pan()
+    .activeOffsetX([-18, 18])
+    .failOffsetY([-16, 16])
+    .onEnd((e) => {
+      if (e.translationX < -55 || e.velocityX < -650) runOnJS(openSettings)()
+    })
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.bg, paddingTop: insets.top + 8 }]}>
+      <View style={styles.topBar}>
+        <CoinCastSealLogo />
+        <Pressable
+          onPress={openSettings}
+          accessibilityRole='button'
+          accessibilityLabel={t('stackSettings')}
+          hitSlop={12}
+        >
+          <Settings2 size={22} color={colors.accent} strokeWidth={1.6} />
+        </Pressable>
+      </View>
+
+      <GestureDetector gesture={swipeToSettings}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.inner}>
           <Pressable
             onPress={openQuestionSheet}
             disabled={completed > 0}
@@ -678,9 +734,10 @@ export default function CoinCastHomeScreen() {
             ]}
           >
             {glEnabled ? (
-              <CastingScene
+              <LazyCastingScene
                 tossRevision={tossRevision}
                 impulseSeed={activeToss?.seed ?? 0}
+                coinSkinId={coinSkinId}
                 sceneBg={castingBackdrop}
                 arenaWallsActive={tossAnimating}
                 cameraPhase={castCameraPhase}
@@ -721,6 +778,7 @@ export default function CoinCastHomeScreen() {
                 ]}
                 accessibilityHint={t('homeYaoCoinBarLegend')}
               >
+                <HexOverlayHeader secondaryColor={colors.secondary} t={t} />
                 {lineRows.map((row) => (
                   <AnimatedYaoLine
                     key={row.key}
@@ -761,7 +819,7 @@ export default function CoinCastHomeScreen() {
               accessibilityRole='button'
               disabled={primaryDisabled}
             >
-              <Text style={[styles.actionText, { color: primaryDisabled ? colors.dim : '#fff' }]}>
+              <Text style={[styles.actionText, { color: primaryDisabled ? colors.dim : colors.tintFg }]}>
                 {primaryLabel}
               </Text>
             </Pressable>
@@ -774,7 +832,8 @@ export default function CoinCastHomeScreen() {
             </Text>
           ) : null}
         </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </GestureDetector>
       {breathingOverlayVisible ? (
         <View
           style={[styles.breathOverlayRoot, { backgroundColor: `${colors.bg}e6` }]}
@@ -830,7 +889,7 @@ export default function CoinCastHomeScreen() {
             <Text
               style={[
                 styles.actionText,
-                { color: draftQuestion.trim().length < 2 ? colors.dim : '#fff' },
+                { color: draftQuestion.trim().length < 2 ? colors.dim : colors.tintFg },
               ]}
             >
               {t('questionSheetCta')}
@@ -838,12 +897,18 @@ export default function CoinCastHomeScreen() {
           </Pressable>
         </View>
       </SatelliteBottomSheet>
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
+  container: { flex: 1, paddingHorizontal: 20 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   breathOverlayRoot: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
@@ -864,8 +929,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 2,
   },
-  inner: { flex: 1, gap: 10, minHeight: 0 },
-  logoWrap: { alignItems: 'center', paddingVertical: 2 },
+  inner: { flex: 1, gap: 10, minHeight: 0, paddingBottom: 12 },
   questionChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -890,11 +954,20 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 2,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    gap: 10,
-    maxHeight: 220,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 6,
+    maxHeight: 240,
   },
+  hexHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingBottom: 2,
+  },
+  hexHeaderLabel: { fontSize: 9, letterSpacing: 0.6, width: 16, textAlign: 'center' },
+  hexHeaderSpacer: { width: 162 },
   glFallback: {
     flex: 1,
     minHeight: 180,

@@ -5,6 +5,7 @@ import { Suspense, useLayoutEffect, useMemo } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { View } from 'react-native'
 import * as THREE from 'three'
+import type { CoinSkinId } from '@/lib/coin-skins'
 import type { PhysicsSettlePayload } from '@/lib/casting-types'
 
 import type { CastCameraPhase } from './CameraRig'
@@ -16,7 +17,7 @@ function SceneBackground({ color }: { color: string }) {
   useLayoutEffect(() => {
     const c = new THREE.Color(color)
     scene.background = c
-    scene.fog = new THREE.Fog(color, 5.4, 15)
+    scene.fog = new THREE.Fog(color, 4.1, 11.5)
     return () => {
       scene.background = null
       scene.fog = null
@@ -29,6 +30,7 @@ export interface CastingSceneProps {
   style?: StyleProp<ViewStyle>
   tossRevision: number
   impulseSeed: number
+  coinSkinId?: CoinSkinId
   /** One warm tone for clear color + table + fog — avoids a “two slabs” seam. */
   sceneBg: string
   /** While true, cup walls + vessel overlay are shown (sync with active toss). */
@@ -59,6 +61,7 @@ export function CastingScene(props: CastingSceneProps) {
           <PhysicsCoinsScene
             tossRevision={props.tossRevision}
             impulseSeed={props.impulseSeed}
+            coinSkinId={props.coinSkinId}
             sceneBackdrop={props.sceneBg}
             onPhysicsSettled={props.onPhysicsSettled}
             onImpact={props.onImpact}

@@ -96,6 +96,15 @@ export const VESSEL_SPAWN_XZ: ReadonlyArray<readonly [number, number]> = [
   [0, -0.056],
 ]
 
+/** Homepage idle — three coins resting flat on the altar (not stacked in the invisible cup). */
+export const IDLE_COIN_TABLE_XZ: ReadonlyArray<readonly [number, number]> = [
+  [-0.11, 0.04],
+  [0.11, 0.04],
+  [0, -0.075],
+]
+
+export const IDLE_COIN_TABLE_Y = COIN_THICKNESS / 2 + 0.001
+
 export const VESSEL_RADIUS = 0.62
 
 export const COIN_RADIAL_SEGMENTS = 32
