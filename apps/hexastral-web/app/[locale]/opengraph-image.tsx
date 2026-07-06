@@ -26,6 +26,15 @@ const BRANDS = {
     tag: 'The Chinese almanac, every day.',
     kicker: 'DAILY ALMANAC · GANZHI · LUNAR CALENDAR',
   },
+  yaul: {
+    bg: '#09090B',
+    fg: '#F5F0E8',
+    dim: 'rgba(245,240,232,0.6)',
+    accent: '#C4A882',
+    name: 'Yaul',
+    tag: 'Three coins. Six lines. One question.',
+    kicker: 'I CHING · LIU YAO · HEXAGRAM STUDY',
+  },
   hexastral: {
     bg: '#050510',
     fg: '#f5f0e8',
@@ -43,7 +52,9 @@ export default async function OpengraphImage() {
     ? BRANDS.yuel
     : host.startsWith('yuun.')
       ? BRANDS.yuun
-      : BRANDS.hexastral
+      : host.startsWith('yaul.')
+        ? BRANDS.yaul
+        : BRANDS.hexastral
 
   return new ImageResponse(
     <div

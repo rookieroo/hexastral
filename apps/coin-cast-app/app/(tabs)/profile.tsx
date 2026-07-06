@@ -48,7 +48,7 @@ import {
   setCastHapticsEnabled,
   setMotionShakeEnabled,
 } from '@/lib/coincast-ritual'
-import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP, yaulPrivacyUrl, yaulTermsUrl } from '@/lib/growth-config'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
 
 type Session = 'loading' | 'out' | 'in'
@@ -328,7 +328,11 @@ export default function CoinCastProfileScreen() {
           {navRow(t('restorePurchases'), () => router.push('/paywall'))}
           {navRow(
             t('mePrivacy'),
-            () => void Linking.openURL('https://www.hexastral.com/privacy/coincast')
+            () => void Linking.openURL(yaulPrivacyUrl(uiLocale))
+          )}
+          {navRow(
+            t('meTerms'),
+            () => void Linking.openURL(yaulTermsUrl(uiLocale))
           )}
           {navRow(creditsLabel, () => router.push('/credits'), true)}
         </View>

@@ -38,7 +38,7 @@ export function CoinCastSealLogo() {
     <View
       style={styles.wrap}
       accessibilityRole='image'
-      accessibilityLabel='CoinCast'
+      accessibilityLabel='Yaul'
       collapsable={false}
     >
       <Coin fill={back} hole={colors.bg} rim={rim} style={{ top: 0, left: 0 }} />

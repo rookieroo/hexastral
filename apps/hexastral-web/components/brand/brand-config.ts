@@ -1,4 +1,4 @@
-/** Shared config for the per-brand homes (yuel/yuun.hexastral.com). */
+/** Shared config for the per-brand homes (yuel / yuun / yaul.hexastral.com). */
 
 export type BrandLocale = 'en' | 'zh' | 'tw' | 'ja'
 
@@ -32,6 +32,11 @@ export const BRAND_STORE = {
   yuun: {
     ios: 'https://apps.apple.com/app/idREPLACE_YUUN',
     android: 'https://play.google.com/store/apps/details?id=app.hexastral.yuun',
+    labels: CTA_LABELS,
+  },
+  yaul: {
+    ios: 'https://apps.apple.com/app/idREPLACE_COINCAST',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.coincast',
     labels: CTA_LABELS,
   },
 } as const

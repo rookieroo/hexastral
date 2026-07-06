@@ -13,8 +13,15 @@ import { Alert, DevSettings, Pressable, StyleSheet, Text, View } from 'react-nat
 
 import { COIN_CAST_ONBOARDING_STORAGE_KEY } from '@/lib/coincast-constants'
 import { wipeCoinCastRitualPrefsForDev } from '@/lib/coincast-ritual'
-import { useSatelliteI18n } from '@/lib/i18n'
+import {
+  getCoincastDevLocale,
+  setCoincastDevLocale,
+  type UiLocale,
+  useSatelliteI18n,
+} from '@/lib/i18n'
 import { useAppTheme } from '@/lib/theme'
+
+const DEV_LOCALE_ORDER: (UiLocale | null)[] = [null, 'en', 'zh', 'zh-Hant', 'ja', 'ko']
 
 /** Shown from Me tab in dev builds only (`__DEV__`). */
 export function MeDevTools() {
@@ -22,6 +29,7 @@ export function MeDevTools() {
   const { t } = useSatelliteI18n()
   const router = useRouter()
   const [devPro, setDevPro] = useState<DevEntitlementOverride>(getDevEntitlementOverride())
+  const [devLocale, setDevLocale] = useState<UiLocale | null>(getCoincastDevLocale())
 
   if (!__DEV__) return null
 
@@ -32,6 +40,14 @@ export function MeDevTools() {
     setDevPro(next)
   }
   const devProLabel = devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'
+
+  const cycleDevLocale = () => {
+    const next = DEV_LOCALE_ORDER[(DEV_LOCALE_ORDER.indexOf(devLocale) + 1) % DEV_LOCALE_ORDER.length] ?? null
+    setCoincastDevLocale(next)
+    setDevLocale(next)
+    DevSettings.reload()
+  }
+  const devLocaleLabel = devLocale ?? 'auto (device)'
 
   const resetOnboarding = async () => {
     try {
@@ -73,6 +89,14 @@ export function MeDevTools() {
       >
         <Text style={[styles.rowText, { color: colors.text }]}>Force entitlement</Text>
         <Text style={[styles.rowValue, { color: colors.accent }]}>{devProLabel}</Text>
+      </Pressable>
+      <Pressable
+        style={[styles.rowSplit, { borderColor: colors.separator }]}
+        onPress={cycleDevLocale}
+        accessibilityRole='button'
+      >
+        <Text style={[styles.rowText, { color: colors.text }]}>UI locale</Text>
+        <Text style={[styles.rowValue, { color: colors.accent }]}>{devLocaleLabel}</Text>
       </Pressable>
       <Pressable
         style={[styles.rowSplit, { borderColor: colors.separator }]}

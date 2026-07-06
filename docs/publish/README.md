@@ -27,6 +27,19 @@ Last updated: 2026-06-25.
 | Version / build | 0.1.0 / EAS auto-increment | 0.1.0 / EAS auto-increment |
 | **IAP model (MVP)** | Subscription (`kindred_pro`) **+ one-time** (合盘 unlock `hexastral_compatibility`) | **Subscription only** (`auspice_pro`) |
 
+**Yaul** (coin-cast, pre-launch — same worker pattern as Yuel/Yuun):
+
+| | **Yaul** |
+|---|---|
+| Directory | `apps/coin-cast-app` |
+| Display name (store + device) | Yaul |
+| Bundle ID (permanent) | `com.hexastral.coincast` |
+| Internal codename | coincast |
+| Primary category | Reference (2nd: Education) |
+| Brand domain (live) | `yaul.hexastral.com` |
+| Privacy / Terms | `yaul.hexastral.com/<seg>/privacy/coincast` · `yaul.hexastral.com/<seg>/terms` |
+| Associated Domains | `applinks:yaul.hexastral.com` + apex `hexastral.com` (deep links) |
+
 > **Naming policy (ADR-0024 + decided 2026-06):** Yuel/Yuun are the *brand /
 > display* layer only. The internal codenames (`kindred`, `auspice`) and the
 > RevenueCat entitlement/product IDs stay as-is — the brand is not yet legally

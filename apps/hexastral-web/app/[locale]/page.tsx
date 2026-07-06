@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { HexastralHome } from '@/components/brand/HexastralHome'
+import { YaulHome } from '@/components/brand/YaulHome'
 import { YuelHome } from '@/components/brand/YuelHome'
 import { YuunHome } from '@/components/brand/YuunHome'
 
@@ -10,16 +11,17 @@ interface PageProps {
   searchParams?: Promise<{ brand?: string }>
 }
 
-type Brand = 'yuel' | 'yuun' | 'hexastral'
+type Brand = 'yuel' | 'yuun' | 'yaul' | 'hexastral'
 
-/** Resolve the brand from the request host — one worker serves three homes. A
+/** Resolve the brand from the request host — one worker serves four homes. A
  *  `?brand=` query override makes local preview / QA trivial (no host spoofing). */
 async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<Brand> {
   const o = (searchParams ? await searchParams : undefined)?.brand
-  if (o === 'yuel' || o === 'yuun' || o === 'hexastral') return o
+  if (o === 'yuel' || o === 'yuun' || o === 'yaul' || o === 'hexastral') return o
   const host = (await headers()).get('host') ?? ''
   if (host.startsWith('yuel.')) return 'yuel'
   if (host.startsWith('yuun.')) return 'yuun'
+  if (host.startsWith('yaul.')) return 'yaul'
   return 'hexastral'
 }
 
@@ -64,6 +66,21 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       alternates: { canonical: '/' },
     }
   }
+  if (brand === 'yaul') {
+    return {
+      metadataBase,
+      title: { absolute: 'Yaul — I Ching Liu Yao study journal' },
+      description:
+        'Three-coin casting with 3D physics, classical Liu Yao (六爻) line rules, and cited AI commentary. Educational, not predictive. From UseONE, LLC.',
+      icons: { icon: '/brand/yaul.png' },
+      openGraph: {
+        title: 'Yaul · 爻',
+        description: 'Three coins. Six lines. One question.',
+        siteName: 'Yaul',
+      },
+      alternates: { canonical: '/' },
+    }
+  }
   const t = await getTranslations({ locale, namespace: 'meta' })
   return {
     metadataBase,
@@ -78,5 +95,6 @@ export default async function LandingPage({ searchParams }: PageProps) {
   const locale = await getLocale()
   if (brand === 'yuel') return <YuelHome locale={locale} />
   if (brand === 'yuun') return <YuunHome locale={locale} />
+  if (brand === 'yaul') return <YaulHome locale={locale} />
   return <HexastralHome locale={locale} origin={await requestOrigin()} />
 }

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CoinCast",
+    "name": "Yaul",
     "slug": "coin-cast",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -25,7 +25,8 @@
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:hexastral.com",
-        "applinks:www.hexastral.com"
+        "applinks:www.hexastral.com",
+        "applinks:yaul.hexastral.com"
       ],
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [

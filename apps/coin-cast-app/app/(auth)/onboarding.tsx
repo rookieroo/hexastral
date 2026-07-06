@@ -17,7 +17,7 @@ export default function CoinCastOnboardingScreen() {
       edges={['top', 'left', 'right', 'bottom']}
     >
       <SatelliteOnboarding
-        appTitle='CoinCast'
+        appTitle='Yaul'
         appSubtitle={t('onboardSubtitle')}
         storagePrefix={PORTFOLIO_STORAGE_PREFIX}
         targetApp={PORTFOLIO_TARGET_APP}

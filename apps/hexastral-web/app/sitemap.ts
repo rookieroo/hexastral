@@ -48,14 +48,15 @@ function brandSitemap(base: string, privacyPath: string): MetadataRoute.Sitemap 
   return entries
 }
 
-/** Host-aware: yuel/yuun subdomains get a focused brand sitemap; hexastral.com
- *  gets the full content sitemap. One worker, three sitemaps by request host. */
+/** Host-aware: yuel/yuun/yaul subdomains get a focused brand sitemap; hexastral.com
+ *  gets the full content sitemap. One worker, four sitemaps by request host. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const h = await headers()
   const host = h.get('host') ?? 'hexastral.com'
   const base = `${h.get('x-forwarded-proto') ?? 'https'}://${host}`
   if (host.startsWith('yuel.')) return brandSitemap(base, '/privacy/kindred')
   if (host.startsWith('yuun.')) return brandSitemap(base, '/privacy/auspice')
+  if (host.startsWith('yaul.')) return brandSitemap(base, '/privacy/coincast')
 
   const blogSlugs = getAllBlogSlugs()
   const entries: MetadataRoute.Sitemap = []

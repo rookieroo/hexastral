@@ -4,6 +4,31 @@ import { useEffect, useState } from 'react'
 
 const LOCALE_STORAGE_KEY = 'satellite_locale'
 
+export type UiLocale = 'en' | 'zh' | 'zh-Hant' | 'ja' | 'ko'
+
+export const SUPPORTED_UI_LOCALES: readonly UiLocale[] = ['en', 'zh', 'zh-Hant', 'ja', 'ko']
+
+// DEV-only locale override (Settings · DEV) — preview any shipped locale without changing
+// device language. Resets on reload; production always follows device / saved pref.
+let devLocaleOverride: UiLocale | null = null
+
+export function getCoincastDevLocale(): UiLocale | null {
+  return __DEV__ ? devLocaleOverride : null
+}
+
+export function setCoincastDevLocale(next: UiLocale | null): void {
+  if (__DEV__) devLocaleOverride = next
+}
+
+/** Resolve UI locale: DEV override → saved pref → device. */
+export function resolveUiLocale(saved?: string | null): UiLocale {
+  const override = getCoincastDevLocale()
+  if (override) return override
+  if (saved) return normalizeLocale(saved)
+  const fallback = getLocales()[0]?.languageTag ?? 'en'
+  return normalizeLocale(fallback)
+}
+
 /** All UI strings for coin-cast-app (en + zh + zh-Hant + ja + ko). */
 const EN = {
   homeShake: 'Shake',
@@ -51,14 +76,14 @@ const EN = {
     'Permanently removes your account and reading history. Cannot be undone.',
   settingsDeleteAccountTitle: 'Delete account?',
   settingsDeleteAccountBody:
-    'This permanently deletes your HexAstral account and CoinCast reading history from our servers. This cannot be undone.',
+    'This permanently deletes your HexAstral account and Yaul reading history from our servers. This cannot be undone.',
   settingsDeleteAccountContinue: 'Delete',
   settingsDeleteAccountFailed: 'Could not delete account. Please try again.',
   settingsDeleteAccountCancel: 'Cancel',
   sceneLoading: 'Loading scene…',
   settingsMemoryLabel: 'Personalized reading memory',
   settingsMemoryHint:
-    'When on, short summaries of your past CoinCast readings may be retrieved to enrich new readings. Stored on HexAstral servers; not sold. You can turn this off anytime.',
+    'When on, short summaries of your past Yaul readings may be retrieved to enrich new readings. Stored on HexAstral servers; not sold. You can turn this off anytime.',
   settingsMemoryOn: 'On',
   settingsMemoryOff: 'Off',
   settingsMemoryGuestHint: 'Sign in with Apple to enable memory across devices.',
@@ -82,8 +107,8 @@ const EN = {
   alertRefusedTitle: 'Reading not offered',
   alertRefusedTradition: 'The I Ching asks that we approach with a sincere heart.',
   alertRefusedWarn:
-    'Repeated insincere or trivial questions may result in a brief pause from CoinCast.',
-  alertBannedTitle: 'CoinCast paused',
+    'Repeated insincere or trivial questions may result in a brief pause from Yaul.',
+  alertBannedTitle: 'Yaul paused',
   alertBannedMsg: 'This pause lifts after {time}. Please return with a sincere question.',
   alertFirstTitle: 'Please read first',
   alertFirstMsg: 'Open the short guide once before your first cast.',
@@ -102,6 +127,7 @@ const EN = {
   meUpgrade: 'Upgrade to Pro',
   restorePurchases: 'Restore purchases',
   mePrivacy: 'Privacy policy',
+  meTerms: 'Terms of service',
   meSignOut: 'Sign out',
   meSignInSectionTitle: 'Sign in',
   meSignInHint: 'Use Apple to sync reading history across your devices.',
@@ -118,7 +144,7 @@ const EN = {
   stackResult: 'Result',
   stackDetail: 'Interpretation',
   stackCast: 'Cast',
-  stackPaywall: 'CoinCast Pro',
+  stackPaywall: 'Yaul Pro',
   stackSettings: 'Settings',
   navBack: 'Back',
   profileSignOutConfirm:
@@ -171,7 +197,7 @@ const EN = {
   waYingAck: 'Understood',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
-    'Toss three coins, build six lines. CoinCast brings the ancient I Ching ritual to your hands — ask a question, cast a hexagram, and receive AI-powered guidance.',
+    'Toss three coins, build six lines. Yaul brings the ancient I Ching ritual to your hands — ask a question, cast a hexagram, and receive AI-powered guidance.',
   onboardGetStarted: 'Get Started',
   onboardContinue: 'Continue',
   onboardBack: 'Back',
@@ -218,14 +244,14 @@ const ZH: Record<keyof typeof EN, string> = {
   settingsDeleteAccount: '删除账号与数据',
   settingsDeleteAccountHint: '永久删除账号与解读历史，无法恢复。',
   settingsDeleteAccountTitle: '删除账号？',
-  settingsDeleteAccountBody: '将永久删除您的 HexAstral 账号及 CoinCast 解读历史。此操作无法撤销。',
+  settingsDeleteAccountBody: '将永久删除您的 HexAstral 账号及 Yaul 解读历史。此操作无法撤销。',
   settingsDeleteAccountContinue: '删除',
   settingsDeleteAccountFailed: '删除失败，请稍后重试。',
   settingsDeleteAccountCancel: '取消',
   sceneLoading: '场景加载中…',
   settingsMemoryLabel: '个性化解读记忆',
   settingsMemoryHint:
-    '开启后，可能会检索你过往 CoinCast 记录的短摘要，用于丰富新一次解读。数据存于 HexAstral 服务器，不出售；可随时关闭。',
+    '开启后，可能会检索你过往 Yaul 记录的短摘要，用于丰富新一次解读。数据存于 HexAstral 服务器，不出售；可随时关闭。',
   settingsMemoryOn: '开启',
   settingsMemoryOff: '关闭',
   settingsMemoryGuestHint: '使用 Apple 登录后可在多设备间开启记忆。',
@@ -246,8 +272,8 @@ const ZH: Record<keyof typeof EN, string> = {
   alertDuplicateCancel: '取消',
   alertRefusedTitle: '本次不予解读',
   alertRefusedTradition: '易经传统希望我们带着诚意前来。',
-  alertRefusedWarn: '若多次以轻佻或无关问题反复占问，系统可能会短暂暂停 CoinCast。',
-  alertBannedTitle: 'CoinCast 已暂停',
+  alertRefusedWarn: '若多次以轻佻或无关问题反复占问，系统可能会短暂暂停 Yaul。',
+  alertBannedTitle: 'Yaul 已暂停',
   alertBannedMsg: '暂停将在 {time} 后解除。请稍后再来，并以诚意发问。',
   alertFirstTitle: '请先阅读',
   alertFirstMsg: '首次占问前，请先打开简短说明。',
@@ -265,6 +291,7 @@ const ZH: Record<keyof typeof EN, string> = {
   meUpgrade: '升级专业版',
   restorePurchases: '恢复购买',
   mePrivacy: '隐私政策',
+  meTerms: '使用条款',
   meSignOut: '退出登录',
   meSignInSectionTitle: '登录',
   meSignInHint: '使用 Apple 登录可在设备间同步解读历史。',
@@ -280,7 +307,7 @@ const ZH: Record<keyof typeof EN, string> = {
   stackResult: '结果',
   stackDetail: '详解',
   stackCast: '起卦',
-  stackPaywall: 'CoinCast Pro',
+  stackPaywall: 'Yaul Pro',
   stackSettings: '设置',
   navBack: '返回',
   profileSignOutConfirm: '在此设备上退出登录？账号与历史记录仍保留在服务器，除非您删除账号。',
@@ -330,7 +357,7 @@ const ZH: Record<keyof typeof EN, string> = {
   waYingAck: '知道了',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
-    '三枚铜钱，六爻成卦。CoinCast 将千年易经占卜带到指尖 — 心中问一事，掷钱起一卦，AI 为你解读天机。',
+    '三枚铜钱，六爻成卦。Yaul 将千年易经占卜带到指尖 — 心中问一事，掷钱起一卦，AI 为你解读天机。',
   onboardGetStarted: '开始',
   onboardContinue: '继续',
   onboardBack: '返回',
@@ -377,14 +404,14 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   settingsDeleteAccount: '刪除帳號與資料',
   settingsDeleteAccountHint: '永久刪除帳號與解讀歷史，無法恢復。',
   settingsDeleteAccountTitle: '刪除帳號？',
-  settingsDeleteAccountBody: '將永久刪除您的 HexAstral 帳號及 CoinCast 解讀歷史。此操作無法撤銷。',
+  settingsDeleteAccountBody: '將永久刪除您的 HexAstral 帳號及 Yaul 解讀歷史。此操作無法撤銷。',
   settingsDeleteAccountContinue: '刪除',
   settingsDeleteAccountFailed: '刪除失敗，請稍後重試。',
   settingsDeleteAccountCancel: '取消',
   sceneLoading: '場景載入中…',
   settingsMemoryLabel: '個人化解讀記憶',
   settingsMemoryHint:
-    '開啟後，可能會檢索你過往 CoinCast 紀錄的短摘要，用於豐富新一次解讀。資料存於 HexAstral 伺服器，不出售；可隨時關閉。',
+    '開啟後，可能會檢索你過往 Yaul 紀錄的短摘要，用於豐富新一次解讀。資料存於 HexAstral 伺服器，不出售；可隨時關閉。',
   settingsMemoryOn: '開啟',
   settingsMemoryOff: '關閉',
   settingsMemoryGuestHint: '使用 Apple 登入後可在多裝置間開啟記憶。',
@@ -405,8 +432,8 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   alertDuplicateCancel: '取消',
   alertRefusedTitle: '本次不予解讀',
   alertRefusedTradition: '易經傳統希望我們帶著誠意前來。',
-  alertRefusedWarn: '若多次以輕佻或無關問題反覆占問，系統可能會短暫暫停 CoinCast。',
-  alertBannedTitle: 'CoinCast 已暫停',
+  alertRefusedWarn: '若多次以輕佻或無關問題反覆占問，系統可能會短暫暫停 Yaul。',
+  alertBannedTitle: 'Yaul 已暫停',
   alertBannedMsg: '暫停將在 {time} 後解除。請稍後再來，並以誠意發問。',
   alertFirstTitle: '請先閱讀',
   alertFirstMsg: '首次占問前，請先打開簡短說明。',
@@ -424,6 +451,7 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   meUpgrade: '升級專業版',
   restorePurchases: '恢復購買',
   mePrivacy: '隱私政策',
+  meTerms: '使用條款',
   meSignOut: '登出',
   meSignInSectionTitle: '登入',
   meSignInHint: '使用 Apple 登入可在裝置間同步解讀歷史。',
@@ -439,7 +467,7 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   stackResult: '結果',
   stackDetail: '詳解',
   stackCast: '起卦',
-  stackPaywall: 'CoinCast Pro',
+  stackPaywall: 'Yaul Pro',
   stackSettings: '設定',
   navBack: '返回',
   profileSignOutConfirm: '在此裝置上登出？帳號與歷史記錄仍保留在伺服器，除非您刪除帳號。',
@@ -489,7 +517,7 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   waYingAck: '知道了',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
-    '三枚銅錢，六爻成卦。CoinCast 將千年易經占卜帶到指尖 — 心中問一事，擲錢起一卦，AI 為你解讀天機。',
+    '三枚銅錢，六爻成卦。Yaul 將千年易經占卜帶到指尖 — 心中問一事，擲錢起一卦，AI 為你解讀天機。',
   onboardGetStarted: '開始',
   onboardContinue: '繼續',
   onboardBack: '返回',
@@ -537,14 +565,14 @@ const JA: Record<keyof typeof EN, string> = {
   settingsDeleteAccountHint: 'アカウントと占い履歴を完全に削除します。元に戻せません。',
   settingsDeleteAccountTitle: 'アカウントを削除しますか？',
   settingsDeleteAccountBody:
-    'HexAstral アカウントと CoinCast の占い履歴がサーバーから完全に削除されます。取り消せません。',
+    'HexAstral アカウントと Yaul の占い履歴がサーバーから完全に削除されます。取り消せません。',
   settingsDeleteAccountContinue: '削除',
   settingsDeleteAccountFailed: '削除できませんでした。もう一度お試しください。',
   settingsDeleteAccountCancel: 'キャンセル',
   sceneLoading: 'シーンを読み込み中…',
   settingsMemoryLabel: 'パーソナライズされた占いメモリー',
   settingsMemoryHint:
-    'オンにすると、過去の CoinCast の短い要約を参照して新しい読みを豊かにする場合があります。データは HexAstral サーバーに保存され、販売されません。いつでもオフにできます。',
+    'オンにすると、過去の Yaul の短い要約を参照して新しい読みを豊かにする場合があります。データは HexAstral サーバーに保存され、販売されません。いつでもオフにできます。',
   settingsMemoryOn: 'オン',
   settingsMemoryOff: 'オフ',
   settingsMemoryGuestHint: 'Apple でサインインするとデバイス間で有効にできます。',
@@ -567,8 +595,8 @@ const JA: Record<keyof typeof EN, string> = {
   alertDuplicateCancel: 'キャンセル',
   alertRefusedTitle: '今回は解釈しません',
   alertRefusedTradition: '易は誠実な心で臨むことを求めます。',
-  alertRefusedWarn: '軽い・無意味な問いを繰り返すと、CoinCast が一時停止されることがあります。',
-  alertBannedTitle: 'CoinCast を一時停止中',
+  alertRefusedWarn: '軽い・無意味な問いを繰り返すと、Yaul が一時停止されることがあります。',
+  alertBannedTitle: 'Yaul を一時停止中',
   alertBannedMsg: '{time} までお待ちください。誠実な問いとともに、また来てください。',
   alertFirstTitle: '先にお読みください',
   alertFirstMsg: '初めて占う前に、短い案内を開いてください。',
@@ -587,6 +615,7 @@ const JA: Record<keyof typeof EN, string> = {
   meUpgrade: 'Pro にアップグレード',
   restorePurchases: '購入を復元',
   mePrivacy: 'プライバシーポリシー',
+  meTerms: '利用規約',
   meSignOut: 'サインアウト',
   meSignInSectionTitle: 'サインイン',
   meSignInHint: 'Apple でサインインすると、解釈履歴を端末間で同期できます。',
@@ -603,7 +632,7 @@ const JA: Record<keyof typeof EN, string> = {
   stackResult: '結果',
   stackDetail: '詳細',
   stackCast: '占い',
-  stackPaywall: 'CoinCast Pro',
+  stackPaywall: 'Yaul Pro',
   stackSettings: '設定',
   navBack: '戻る',
   profileSignOutConfirm:
@@ -654,7 +683,7 @@ const JA: Record<keyof typeof EN, string> = {
   waYingAck: '了解しました',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
-    '三枚の硬貨で六爻を立てる。CoinCast は千年の易経占いをあなたの手に — 問いを持ち、卦を起こし、AIが導きを授けます。',
+    '三枚の硬貨で六爻を立てる。Yaul は千年の易経占いをあなたの手に — 問いを持ち、卦を起こし、AIが導きを授けます。',
   onboardGetStarted: '始める',
   onboardContinue: '続ける',
   onboardBack: '戻る',
@@ -705,14 +734,14 @@ const KO: Record<keyof typeof EN, string> = {
   settingsDeleteAccountHint: '계정과 해석 기록을 영구 삭제합니다. 되돌릴 수 없습니다.',
   settingsDeleteAccountTitle: '계정을 삭제할까요?',
   settingsDeleteAccountBody:
-    'HexAstral 계정과 CoinCast 해석 기록이 서버에서 영구 삭제됩니다. 취소할 수 없습니다.',
+    'HexAstral 계정과 Yaul 해석 기록이 서버에서 영구 삭제됩니다. 취소할 수 없습니다.',
   settingsDeleteAccountContinue: '삭제',
   settingsDeleteAccountFailed: '삭제하지 못했습니다. 다시 시도해 주세요.',
   settingsDeleteAccountCancel: '취소',
   sceneLoading: '장면 불러오는 중…',
   settingsMemoryLabel: '개인화 해석 메모리',
   settingsMemoryHint:
-    '켜면 과거 CoinCast 기록의 짧은 요약을 불러와 새 해석을 풍부하게 할 수 있습니다. 데이터는 HexAstral 서버에 저장되며 판매되지 않습니다. 언제든지 끌 수 있습니다.',
+    '켜면 과거 Yaul 기록의 짧은 요약을 불러와 새 해석을 풍부하게 할 수 있습니다. 데이터는 HexAstral 서버에 저장되며 판매되지 않습니다. 언제든지 끌 수 있습니다.',
   settingsMemoryOn: '켜짐',
   settingsMemoryOff: '꺼짐',
   settingsMemoryGuestHint: 'Apple로 로그인하면 여러 기기에서 메모리를 사용할 수 있습니다.',
@@ -735,8 +764,8 @@ const KO: Record<keyof typeof EN, string> = {
   alertDuplicateCancel: '취소',
   alertRefusedTitle: '이번에는 해석하지 않습니다',
   alertRefusedTradition: '역경은 정성스러운 마음으로 다가올 것을 청합니다.',
-  alertRefusedWarn: '가볍거나 무관한 질문을 반복하면 CoinCast가 잠시 중단될 수 있습니다.',
-  alertBannedTitle: 'CoinCast 일시 중단',
+  alertRefusedWarn: '가볍거나 무관한 질문을 반복하면 Yaul가 잠시 중단될 수 있습니다.',
+  alertBannedTitle: 'Yaul 일시 중단',
   alertBannedMsg: '이 중단은 {time} 후에 해제됩니다. 정성스러운 질문과 함께 다시 찾아주세요.',
   alertFirstTitle: '먼저 읽어 주세요',
   alertFirstMsg: '첫 점을 보기 전에 짧은 안내를 한 번 열어 주세요.',
@@ -755,6 +784,7 @@ const KO: Record<keyof typeof EN, string> = {
   meUpgrade: 'Pro로 업그레이드',
   restorePurchases: '구매 복원',
   mePrivacy: '개인정보 처리방침',
+  meTerms: '이용약관',
   meSignOut: '로그아웃',
   meSignInSectionTitle: '로그인',
   meSignInHint: 'Apple로 로그인하면 기기 간 해석 기록을 동기화할 수 있습니다.',
@@ -771,7 +801,7 @@ const KO: Record<keyof typeof EN, string> = {
   stackResult: '결과',
   stackDetail: '해석',
   stackCast: '점치기',
-  stackPaywall: 'CoinCast Pro',
+  stackPaywall: 'Yaul Pro',
   stackSettings: '설정',
   navBack: '뒤로',
   profileSignOutConfirm:
@@ -824,7 +854,7 @@ const KO: Record<keyof typeof EN, string> = {
   waYingAck: '알겠습니다',
   onboardKicker: 'HEXASTRAL SATELLITE',
   onboardSubtitle:
-    '동전 셋을 던져 여섯 효로 괘를 세웁니다. CoinCast는 천 년의 역경 점을 당신의 손끝으로 가져옵니다 — 한 가지를 묻고, 괘를 세우고, AI의 안내를 받으세요.',
+    '동전 셋을 던져 여섯 효로 괘를 세웁니다. Yaul는 천 년의 역경 점을 당신의 손끝으로 가져옵니다 — 한 가지를 묻고, 괘를 세우고, AI의 안내를 받으세요.',
   onboardGetStarted: '시작하기',
   onboardContinue: '계속',
   onboardBack: '뒤로',
@@ -838,26 +868,25 @@ const DICT: Record<string, Record<keyof typeof EN, string>> = {
   ko: KO,
 }
 
-function normalizeLocale(input: string): keyof typeof DICT | 'en' {
-  if (input in DICT) return input as keyof typeof DICT
+function normalizeLocale(input: string): UiLocale {
+  if (input in DICT) return input as UiLocale
   if (input === 'zh-CN' || input.startsWith('zh-CN')) return 'zh'
   if (input.startsWith('zh-Hant') || input === 'zh-TW' || input === 'zh-HK') return 'zh-Hant'
   if (input.startsWith('zh')) return 'zh'
   const base = input.split('-')[0] ?? 'en'
-  if (base in DICT) return base as keyof typeof DICT
+  if (base in DICT) return base as UiLocale
   return 'en'
 }
 
 export type SatelliteLocaleKey = keyof typeof EN
 
 export function useSatelliteI18n() {
-  const [locale, setLocale] = useState<keyof typeof DICT>('en')
+  const [locale, setLocale] = useState<UiLocale>('en')
 
   useEffect(() => {
     ;(async () => {
       const saved = await AsyncStorage.getItem(LOCALE_STORAGE_KEY)
-      const fallback = getLocales()[0]?.languageTag ?? 'en'
-      setLocale(normalizeLocale(saved ?? fallback))
+      setLocale(resolveUiLocale(saved))
     })()
   }, [])
 
