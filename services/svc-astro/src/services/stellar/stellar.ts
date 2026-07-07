@@ -223,7 +223,7 @@ function buildInterpretationPrompt(
     return `主星: ${majors || '无主星（空宫）'}${minors ? `; 辅星: ${minors}` : ''}`
   }
 
-  return `你是一位精通紫微斗数的 AI 命理师。请根据以下命盘信息，生成一份专业且通俗易懂的命理分析。
+  return `你是一位精通紫微斗数的东方智慧顾问。请根据以下命盘信息，生成一份专业且通俗易懂的文化解读。
 
 ## 基本信息
 - 四柱: ${meta.chineseDate}

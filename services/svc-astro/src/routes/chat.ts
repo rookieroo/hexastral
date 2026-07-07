@@ -69,7 +69,7 @@ const TONE_DIRECTIVE: Record<ChatTone, string | null> = {
   balanced: null,
   warm: '语气温暖、体贴、给予鼓励，像一位真心关心你的朋友。/ Reply in a warm, caring, encouraging tone, like a friend who genuinely cares.',
   direct:
-    '语气直率坦诚、不绕弯子，直陈要点、机会与风险。/ Reply directly and candidly — state the point, the opportunity, and the risk plainly.',
+    '语气直率坦诚、不绕弯子，直陈要点与可留意的面向，但以文化参照 framing，不作预测或打包票。/ Reply directly and candidly — state the point and what to watch for, as cultural reflection not prediction.',
 }
 
 /** Map the primary reading type to the most fitting interpreter persona. */
@@ -145,7 +145,11 @@ export function buildChatSystemPrompt(input: {
     LOCALE_OUTPUT_MAP[locale] ?? LOCALE_OUTPUT_MAP['zh-CN'] ?? '请用简体中文回答。'
   const domain = DOMAIN_BY_READING[context.primary.type] ?? 'fate'
 
-  const segments: string[] = [getSystemRole(domain), '', buildEnhancedGuardrails()]
+  const segments: string[] = [
+    getSystemRole(domain),
+    '',
+    buildEnhancedGuardrails('观照自身，不作预测', locale),
+  ]
 
   // ── L2 · USER PROFILE ──
   const u = context.user
@@ -193,6 +197,7 @@ export function buildChatSystemPrompt(input: {
     '- 跨阅读推断须注明来源层，例如「结合您的命盘日主…」「上次面相…」。',
     '- 生辰缺失时，不要从姓名或其他线索臆测出生信息。',
     '- 言简意赅、有理有据；命理术语需附带通俗解释。',
+    '- 这是娱乐与文化参照，不是预测或专业建议；不替用户做决定。',
     localeInstruction
   )
 

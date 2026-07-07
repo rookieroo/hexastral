@@ -307,6 +307,78 @@ export async function fetchReadingById(
   return (await res.json()) as PortfolioReadingResponse
 }
 
+export class PortfolioUpgradeRequiredError extends Error {
+  readonly status = 402 as const
+  readonly upsell: string
+  constructor(message = 'Upgrade requires purchase', upsell = 'coincast_cast_pack_1') {
+    super(message)
+    this.name = 'PortfolioUpgradeRequiredError'
+    this.upsell = upsell
+    Object.setPrototypeOf(this, new.target.prototype)
+  }
+}
+
+export class PortfolioAlreadyUpgradedError extends Error {
+  readonly status = 409 as const
+  constructor(message = 'Reading already upgraded to AI') {
+    super(message)
+    this.name = 'PortfolioAlreadyUpgradedError'
+    Object.setPrototypeOf(this, new.target.prototype)
+  }
+}
+
+/** In-place classical → AI upgrade for an existing CoinCast reading (same readingId, same hexagram). */
+export async function upgradeCoincastReadingToAi(
+  readingId: string,
+  baseOverride?: string
+): Promise<{ readingId: string; output: Record<string, unknown> }> {
+  await repairPortfolioCredentialMismatch()
+  const userId = await getPortfolioUserId()
+  if (!userId) throw new Error('Upgrade requires authenticated user.')
+
+  const path = `/api/portfolio/linked/coincast/${readingId}/upgrade-ai`
+  const { url } = buildPath(path, baseOverride)
+  const signed = await signRequest({
+    body: '',
+    userId,
+    method: 'POST',
+    path,
+  })
+  if (!signed) {
+    await invalidatePortfolioSession()
+    throw new PortfolioSessionExpiredError()
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${userId}`,
+      ...signed,
+    },
+  })
+  if (res.status === 401) {
+    await invalidatePortfolioSession()
+    throw new PortfolioSessionExpiredError()
+  }
+  if (res.status === 402) {
+    let upsell = 'coincast_cast_pack_1'
+    try {
+      const j: unknown = await res.json()
+      if (j && typeof j === 'object' && typeof (j as { upsell?: unknown }).upsell === 'string') {
+        upsell = (j as { upsell: string }).upsell
+      }
+    } catch {
+      /* use default upsell */
+    }
+    throw new PortfolioUpgradeRequiredError('Upgrade requires AI cast credit or Pro', upsell)
+  }
+  if (res.status === 409) {
+    throw new PortfolioAlreadyUpgradedError()
+  }
+  if (!res.ok) throw new Error(`CoinCast upgrade failed: ${res.status}`)
+  return (await res.json()) as { readingId: string; output: Record<string, unknown> }
+}
+
 export async function saveBirthInfo(
   input: PortfolioBirthInfo,
   baseOverride?: string

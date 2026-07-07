@@ -1,26 +1,20 @@
 /**
- * Report chat — Pro AI follow-up over a feng-shui report.
- *
- * Thin wrapper over core-ui `<ReadingChatScreen>`: provides Fēng's HMAC API
- * adapter (lib/chat), branded header, and i18n strings. Pushed from
- * (report)/[siteId] with `reportId` = the fengReports id, which the server's
- * `'feng'` reading-context query expects.
- *
- * Fēng has no paywall screen yet, so a non-Pro 402 surfaces a Pro notice rather
- * than routing to a purchase flow. The server gate is the source of truth.
+ * Report chat — bundled with a purchased feng report (unlimited follow-ups).
  */
 
 import { ReadingChatScreen, type ReadingChatStrings, useTheme } from '@zhop/core-ui'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo } from 'react'
-import { Alert, Pressable, Text, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
 import { fetchChatHistory, reportChatMessage, sendChatMessage } from '@/lib/chat'
 import { resolveLocale, useStrings } from '@/lib/i18n'
+import { fetchFengReportChatAccess } from '@/lib/purchase'
 
 export default function ReportChatScreen() {
-  const { reportId, title, quote } = useLocalSearchParams<{
+  const { reportId, siteId, title, quote } = useLocalSearchParams<{
     reportId: string
+    siteId?: string
     title?: string
     quote?: string
   }>()
@@ -28,6 +22,22 @@ export default function ReportChatScreen() {
   const { userId } = useAuth()
   const t = useStrings(resolveLocale())
   const { colors } = useTheme()
+  const [chatUnlocked, setChatUnlocked] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!userId || !reportId) return
+    let alive = true
+    fetchFengReportChatAccess(userId, reportId)
+      .then((access) => {
+        if (alive) setChatUnlocked(access.chatUnlocked)
+      })
+      .catch(() => {
+        if (alive) setChatUnlocked(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [userId, reportId])
 
   const copy = useMemo<ReadingChatStrings>(
     () => ({
@@ -76,6 +86,64 @@ export default function ReportChatScreen() {
     </View>
   )
 
+  const headerWithDisclaimer = (
+    <>
+      {header}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          borderBottomWidth: 0.5,
+          borderBottomColor: colors.separator,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
+          {t.chat_legal_disclaimer}
+        </Text>
+      </View>
+    </>
+  )
+
+  if (chatUnlocked === null) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}>
+        {header}
+        <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />
+      </View>
+    )
+  }
+
+  if (!chatUnlocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {header}
+        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 16 }}>
+          <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, textAlign: 'center' }}>
+            {t.chat_pro_required}
+          </Text>
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: '/paywall',
+                params: { intent: 'chat', siteId: siteId ?? '' },
+              })
+            }
+            style={{
+              backgroundColor: colors.accent,
+              paddingVertical: 14,
+              alignItems: 'center',
+              borderWidth: 0.5,
+              borderColor: colors.separator,
+            }}
+          >
+            <Text style={{ color: colors.bg, fontWeight: '700' }}>{t.paywall_cta}</Text>
+          </Pressable>
+        </View>
+      </View>
+    )
+  }
+
   return (
     <ReadingChatScreen
       readingType='feng'
@@ -83,9 +151,11 @@ export default function ReportChatScreen() {
       fetchHistory={() => fetchChatHistory(userId, 'feng', reportId)}
       sendMessage={(msg, requestId) => sendChatMessage(userId, 'feng', reportId, msg, requestId)}
       onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
-      onPaywallRequest={() => Alert.alert(t.chat_pro_required)}
+      onPaywallRequest={() =>
+        router.push({ pathname: '/paywall', params: { intent: 'chat', siteId: siteId ?? '' } })
+      }
       copy={copy}
-      header={header}
+      header={headerWithDisclaimer}
       initialDraft={quote || undefined}
     />
   )

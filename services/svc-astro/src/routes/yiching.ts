@@ -14,6 +14,10 @@ export const yichingRoutes = new Hono<AppEnv>()
 /** POST /cast — 起卦 + AI解读 */
 yichingRoutes.post('/cast', async (c) => {
   const input = await c.req.json()
+  const interpretationMode =
+    input.interpretationMode === 'classical' || input.interpretationMode === 'ai'
+      ? input.interpretationMode
+      : 'ai'
 
   const reading = await performDivination(
     c.env,
@@ -29,7 +33,10 @@ yichingRoutes.post('/cast', async (c) => {
           ? input.memoryContext.trim()
           : undefined,
     },
-    input.isPro ?? false
+    {
+      isPro: input.isPro ?? false,
+      mode: interpretationMode,
+    }
   )
 
   return c.json(reading)

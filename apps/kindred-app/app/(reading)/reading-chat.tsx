@@ -106,6 +106,25 @@ export default function ReadingChatRoute() {
     </View>
   )
 
+  const headerWithDisclaimer = (
+    <>
+      {header}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          borderBottomWidth: 0.5,
+          borderBottomColor: '#00000014',
+          backgroundColor: kindredDark.bg,
+        }}
+      >
+        <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11, lineHeight: 16 }]}>
+          {t('chat.legalDisclaimer')}
+        </Text>
+      </View>
+    </>
+  )
+
   return (
     <ReadingChatScreen
       readingType='report'
@@ -116,7 +135,7 @@ export default function ReadingChatRoute() {
         router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
       }
       copy={copy}
-      header={header}
+      header={headerWithDisclaimer}
       initialDraft={initialDraft}
     />
   )

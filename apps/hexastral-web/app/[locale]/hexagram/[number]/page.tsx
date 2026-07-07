@@ -1,8 +1,18 @@
-import { HEXAGRAM_DETAILS } from '@zhop/hexastral-tokens/constants/hexagram'
+import {
+  getHexagramDetail,
+  resolveHexagramLocale,
+} from '@zhop/hexastral-tokens/constants/hexagram'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
+import { localeToBcp47, type Locale } from '@/i18n/routing'
 import { JsonLd } from '@/lib/json-ld'
+
+function hexagramLocaleFromWeb(locale: string) {
+  if (locale === 'tw') return resolveHexagramLocale('zh-TW')
+  if (locale === 'zh') return resolveHexagramLocale('zh-CN')
+  return resolveHexagramLocale(locale)
+}
 
 interface Props {
   params: Promise<{ locale: string; number: string }>
@@ -16,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, number } = await params
   const n = Number(number)
   if (n < 1 || n > 64) return { title: 'Hexagram · HexAstral' }
-  const h = HEXAGRAM_DETAILS.find((item) => item.number === n)
+  const h = getHexagramDetail(n, hexagramLocaleFromWeb(locale))
   if (!h) return { title: 'Hexagram · HexAstral' }
   const title = `Hexagram ${h.number}: ${h.name} (${h.pinyin}) — I Ching reference`
   return {
@@ -36,9 +46,9 @@ export default async function HexagramDetailPage({ params }: Props) {
   const n = Number(number)
   if (Number.isNaN(n) || n < 1 || n > 64) notFound()
 
-  const h = HEXAGRAM_DETAILS.find((item) => item.number === n)
+  const h = getHexagramDetail(n, hexagramLocaleFromWeb(locale))
   if (!h) notFound()
-  void locale
+  const bcp47 = localeToBcp47[locale as Locale] ?? 'en-US'
 
   return (
     <article style={{ lineHeight: 1.7 }}>
@@ -49,7 +59,7 @@ export default async function HexagramDetailPage({ params }: Props) {
           headline: `${h.symbol} Hexagram ${h.number} (${h.name})`,
           dateModified: new Date().toISOString(),
           abstract: h.judgmentExplain,
-          inLanguage: 'en-US',
+          inLanguage: bcp47,
           author: {
             '@type': 'Organization',
             name: 'HexAstral',

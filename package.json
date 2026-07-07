@@ -30,6 +30,8 @@
     "sync-eas-env": "bun scripts/sync-eas-env.mjs",
     "sync-secrets:all": "bun scripts/sync-secrets.js --app=all --env=production",
     "sync-secrets:dry-run": "bun scripts/sync-secrets.js --app=all --env=production --dry-run",
+    "hexagram:sync": "bun scripts/sync-hexagram-corpus.mjs",
+    "hexagram:i18n": "bun scripts/generate-hexagram-i18n.mjs && bun scripts/sync-hexagram-corpus.mjs",
     "deploy:preflight": "node scripts/deploy-preflight.cjs",
     "deploy:preflight:api-only": "node scripts/deploy-preflight.cjs --skip-ios",
     "deploy:api": "cd apps/hexastral-api && bun db:generate && bun deploy",

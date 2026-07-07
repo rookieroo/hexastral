@@ -139,8 +139,8 @@ export const FENG_TERMS: readonly FengTerm[] = [
     term: '五黄',
     aliases: ['廉贞', '正关煞'],
     category: 'xuankong',
-    zh: '九星中最凶的煞星,主灾祸、重病、意外。所到之宫最忌动土、装修,宜静、宜金泄。',
-    en: 'The most malefic of the nine stars — disaster, grave illness, accidents. Its palace must not be disturbed (no construction); keep it still, drain it with metal.',
+    zh: '九星中最凶的煞星,主灾祸、重病、意外。古典理论认为所到之宫宜静、宜金泄（研习参考，非施工指引）。',
+    en: 'In classical theory (study only — not construction guidance): the most malefic of the nine stars — disaster, grave illness, accidents. Traditionally its palace is kept still and drained with metal.',
   },
   {
     id: 'erhei',
@@ -605,8 +605,8 @@ export const FENG_TERMS: readonly FengTerm[] = [
     term: '二黑病符',
     aliases: ['二二同宫', '病符组合'],
     category: 'gameju',
-    zh: '二黑病符星双叠(2-2)的凶组合,病符加重,主久病、慢性病、妇疾。所到之宫宜静养,忌动土,宜金泄土气。',
-    en: 'The 2 sickness-star doubled (2-2) — an intensified "sickness-tally" combination bringing prolonged, chronic or gynecological illness. Keep the palace restful, avoid construction, drain the earth with metal.',
+    zh: '二黑病符星双叠(2-2)的凶组合,病符加重,主久病、慢性病、妇疾。古典语境下宜静养、金泄土气（研习参考，非施工指引）。',
+    en: 'In classical theory (study only — not construction guidance): the 2 sickness-star doubled (2-2) — prolonged or chronic illness in traditional readings. Keep the palace restful; drain earth with metal.',
   },
 
   // ── 形理整合 ──────────────────────────────────────────────
@@ -629,7 +629,7 @@ export const FENG_TERMS: readonly FengTerm[] = [
     term: '零正',
     aliases: ['零神', '正神'],
     category: 'xingli',
-    zh: '当元失运之方为零神(宜见水),得运之方为正神(宜见山)。正神方见水、零神方见山则零正颠倒,吉凶反转。',
+    zh: '当元失运之方为零神(宜见水),得运之方为正神(宜见山)。正神方见水、零神方见山则零正颠倒,传统上认为需留意布局。',
     en: 'The out-of-power direction is the "zero spirit" (wants water); the in-power direction is the "true spirit" (wants mountain). Reverse them — water where there should be mountain — and fortune inverts.',
   },
   {
@@ -637,7 +637,7 @@ export const FENG_TERMS: readonly FengTerm[] = [
     term: '化煞',
     aliases: ['救应', '化解'],
     category: 'xingli',
-    zh: '以五行生泄、形势调整、器物布置来化解凶星、凶格的方法,如以金泄五黄土气、以水通关等。',
+    zh: '以五行生泄、形势调整、器物布置来缓和凶星、凶格的传统做法,如以金泄五黄土气、以水通关等——仅供参考,非改运保证。',
     en: 'Mitigation: defusing malefic stars and patterns through five-element draining, landform adjustment and placed objects — e.g. metal to drain the Five Yellow’s earth, water to bridge a clash.',
   },
   {
@@ -658,8 +658,8 @@ export const FENG_TERMS: readonly FengTerm[] = [
     id: 'dongxiong',
     term: '动凶',
     category: 'xingli',
-    zh: '形理合参的凶断之一:凶星所在之宫又逢开门、动土、见水、见路等"动"象引发,主实际应凶(病、灾、是非)。宜静宜化,忌再引动。',
-    en: 'A form-and-principle negative verdict: a malefic-star palace that is further stirred by a door, construction, water or road — so the ill actually manifests (illness, mishap, disputes). Keep it still and drain it; never activate it further.',
+    zh: '形理合参的凶断之一:凶星所在之宫又逢开门、动土、见水、见路等"动"象,传统认为易应凶象（研习参考，非施工或健康指引）。',
+    en: 'In classical theory (study only — not construction or health guidance): a malefic-star palace further stirred by doors, movement, water or roads — traditionally read as intensified negative symbolism. Keep still in study readings; not actionable advice.',
   },
 ] as const
 

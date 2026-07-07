@@ -35,6 +35,7 @@
     "@zhop/astro-i18n": "workspace:*",
     "@zhop/growth-funnel": "workspace:*",
     "@zhop/logger": "workspace:*",
+    "@zhop/portfolio-voice": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "hono": "^4.12.8",
     "jose": "^6.2.3",

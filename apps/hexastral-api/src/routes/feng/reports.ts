@@ -22,6 +22,7 @@ import { fengReports } from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
 import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
+import { checkFengChatAccess, isFengDevProBypass } from '../../lib/feng-chat-access'
 
 const tileSchema = z.enum(['close', 'mid', 'wide'])
 
@@ -35,7 +36,21 @@ function toBase64(bytes: ArrayBuffer): string {
   return btoa(result)
 }
 
-export const fengReportRoutes = new Hono<AppEnv>().get('/:reportId/maps/:tile', async (c) => {
+export const fengReportRoutes = new Hono<AppEnv>()
+  .get('/:reportId/chat-access', async (c) => {
+    const userId = requireUserId(c)
+    const reportId = c.req.param('reportId')
+    const db = c.get('db')
+    const env = c.env as { ALLOW_DEV_PRO?: string; DEV_PRO_USER_IDS?: string }
+    const devPro = isFengDevProBypass(env, userId, c.req.header('x-feng-dev-pro'))
+    const access = await checkFengChatAccess(db, userId, reportId, { devPro })
+    return jsonOk(c, {
+      chatUnlocked: access.granted,
+      analyzeComplete: access.analyzeComplete,
+      code: access.granted ? null : access.code,
+    })
+  })
+  .get('/:reportId/maps/:tile', async (c) => {
   const userId = requireUserId(c)
   const reportId = c.req.param('reportId')
   const tileParam = c.req.param('tile')
@@ -97,4 +112,4 @@ export const fengReportRoutes = new Hono<AppEnv>().get('/:reportId/maps/:tile', 
     base64: toBase64(bytes),
     contentType: res.headers.get('content-type') ?? 'image/png',
   })
-})
+  })

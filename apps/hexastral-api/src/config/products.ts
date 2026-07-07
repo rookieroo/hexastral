@@ -192,7 +192,7 @@ export const PRODUCTS: readonly ProductSpec[] = [
     singleSku: 'compatibility',
   },
   // ADR-0012: Fēng one-shot site analysis. The 'feng_analysis' SKU is already
-  // wired in access-check.ts (SKU_IAP_META → hexastral_feng_single, $4.99) and the
+  // wired in access-check.ts (SKU_IAP_META → hexastral_feng_single, $9.99 base) and the
   // single_purchases sku_id enum — this registers the product so the webhook accepts it.
   {
     productId: 'hexastral_feng_single',

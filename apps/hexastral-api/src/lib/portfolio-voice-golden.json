@@ -1,8 +1,12 @@
 {
   "passagesShouldHaveNoForbiddenHits": [
-    "在你自身的小天地里，这团火更像心阳在夜间的一次舒展。试着把光收拢成心口一盏温烛，三天内只做一件让自己安心的小事。"
+    "在你自身的小天地里，这团火更像心阳在夜间的一次舒展。试着把光收拢成心口一盏温烛，三天内只做一件让自己安心的小事。",
+    "This month reads as a rhythm to consolidate — a cultural reference, not a forecast. Consider one small boundary you can set this week.",
+    "两人接下来几周的相处节奏偏稳，适合深聊的窗口在月中前后 —— 供观照，不作预测。",
+    "可参考双方相合、气较顺的月份——时机参照，不是定论。"
   ],
   "passagesExpectedToFailAudit": [
-    "这是绝症征兆，你三天内必死，铁口直断不必怀疑。"
+    "这是绝症征兆，你三天内必死，铁口直断不必怀疑。",
+    "本月运势不佳，一定发财，桃花必来，命中注定。"
   ]
 }

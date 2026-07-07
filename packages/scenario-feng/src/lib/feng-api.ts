@@ -51,6 +51,8 @@ export interface FloorplanInput {
   /** True-north bearing of the plans' top edge (north-align step). */
   orientDeg: number
   images: FloorplanImageInput[]
+  /** Normalized 中宫 center (0–1) from the floor-plan align step. */
+  centerNorm?: { x: number; y: number }
 }
 
 export interface CreateSiteInput {

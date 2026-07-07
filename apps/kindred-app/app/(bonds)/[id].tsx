@@ -2,7 +2,7 @@
  * Bond detail / synastry report.
  *
  * Loads /api/bonds/:id via useSynastryReport, then renders:
- *   - Header: 2 names + relationship + compatibility score
+ *   - Header: 2 names + relationship + shared essence (not a numeric score)
  *   - If report has chapters: ChapterPager (horizontal swipe across 6 chapters)
  *   - Else: fall back to single-page summary card with goldenLine if present
  *
@@ -35,7 +35,6 @@ import {
   type BondStatus,
   ChapterPager,
   ChapterUnlockWall,
-  CompatibilityScore,
   ShareableChapterCard,
   useShareBond,
   useSynastryReport,
@@ -53,6 +52,7 @@ import {
   InkCenterpiece,
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { EssenceTag } from '@/components/EssenceTag'
 import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
@@ -965,9 +965,17 @@ export default function BondDetailScreen({
           </View>
         ) : null}
 
-        {detail.score != null && (
-          <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl }}>
-            <CompatibilityScore score={detail.score} label={detail.grade ?? undefined} />
+        {(aElement || bElement) && (
+          <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl, gap: kindredSpacing.xs }}>
+            <EssenceTag aElement={aElement} bElement={bElement} locale={locale} />
+            <Text
+              style={[
+                kindredType.caption,
+                { color: kindredDark.textMuted, textAlign: 'center', maxWidth: 280 },
+              ]}
+            >
+              {t('bond.essenceNotScore')}
+            </Text>
           </View>
         )}
 

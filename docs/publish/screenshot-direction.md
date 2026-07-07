@@ -10,6 +10,7 @@ in <1s).
 
 - Positioning doctrine + the six conceptual-uniqueness axes: [decisions/0015-product-doctrine-v2.md](decisions/0015-product-doctrine-v2.md)
 - Per-app keyword/description copy: each `apps/<app>/aso-metadata.json`
+- Pre-submission QA checklist: [app-review-qa-checklist.md](./app-review-qa-checklist.md)
 - Yuun launch state: [apps/yuun/launch.md](../apps/yuun/launch.md)
 
 ---

@@ -24,6 +24,9 @@ import { callWithFallback } from '../lib/ai-router'
 import { buildRichFacts } from '../lib/build-rich-facts'
 import { extractJson } from '../lib/extract-json'
 import { buildLanguageBlock, buildLanguageReminder } from '../lib/i18n-prompt'
+import { auditGeneratedOutput } from '../lib/output-audit'
+import { buildEnhancedGuardrails } from '../lib/prompts/guardrails'
+import { getSystemRole } from '../lib/prompts/system-role'
 import { buildChapterFacts, CHAPTER_PROMPT_BUILDERS } from '../prompts/chapters'
 import {
   ch4TimelineOutputSchema,
@@ -246,7 +249,7 @@ reportChapterRoutes.post('/chapter', async (c) => {
 /**
  * 流年深读 — POST /report/monthly
  *
- * The Pro LLM enrichment of the deterministic 本月运势 card. The caller (hexastral-api)
+ * The Pro LLM enrichment of the deterministic monthly rhythm card. The caller (hexastral-api)
  * supplies the month's deterministic atoms (干支 · 五行 · 已算好的 headline/body) plus the
  * user's birth so we can rebuild the full chart facts. We expand that grounded taste into
  * a short multi-theme monthly read — consistent with the free card, just deeper.
@@ -301,11 +304,16 @@ reportChapterRoutes.post('/monthly', async (c) => {
     richFacts: richFacts ?? undefined,
   }
 
-  const systemPrompt = `你是一位深谙子平与紫微的命理顾问，正在为客户写「本月运势」的深读。
-你拿到的是本月流月与其命盘的确定性判断（干支、五行、十神关系、喜忌、以及一段已写好的简版结论）。
-你的任务是把这段简版结论展开成一篇简短但有洞见的本月深读：保持与简版一致的基调，不要推翻它，而是补充机理、落到具体生活场景、并给出可执行的建议。
-只谈本月，不要泛泛而谈一生；语气克制、具体、不夸大吉凶。
-${buildLanguageBlock(input.locale, 'fate')}`
+  const systemPrompt = [
+    getSystemRole('fate'),
+    '',
+    '你正在为客户写「本月参考」的深读（reflection / monthly rhythm — 不是运势预测）。',
+    '你拿到的是本月流月与其命盘的确定性判断（干支、五行、十神关系、喜忌、以及一段已写好的简版结论）。',
+    '你的任务是把这段简版结论展开成一篇简短但有洞见的本月深读：保持与简版一致的基调，不要推翻它，而是补充机理、落到具体生活场景、并给出可执行的建议。',
+    '只谈本月，不要泛泛而谈一生；语气克制、具体、不渲染大吉大凶；这是文化参照，不是命运定论。',
+    buildEnhancedGuardrails('观照自身，不作预测', input.locale),
+    buildLanguageBlock(input.locale, 'fate'),
+  ].join('\n')
 
   const factsBlock = buildChapterFacts(ctx)
   const monthBlock = `【本月流月】${month.label} · ${month.ganZhi}（${month.element}）
@@ -318,8 +326,10 @@ ${buildLanguageBlock(input.locale, 'fate')}`
 
   let parsed: z.infer<typeof monthlyDepthOutputSchema> | null = null
   let lastIssue = ''
+  let lastIssueDetail = ''
   for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-    const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
+    const auditSuffix = attempt > 0 && lastIssue === 'forbidden' ? `\n\n${lastIssueDetail}` : ''
+    const raw = await callWithFallback(c.env, systemPrompt, userPrompt + auditSuffix, {
       isPro: input.isPro,
       // Monthly depth is light + time-bound — Flash tier keeps it inside its timeout.
       preferFlash: true,
@@ -350,6 +360,13 @@ ${buildLanguageBlock(input.locale, 'fate')}`
     if (!result.success) {
       lastIssue = 'shape'
       console.error('[report-monthly] schema validation failed', result.error.issues)
+      continue
+    }
+    const audit = auditGeneratedOutput(JSON.stringify(result.data))
+    if (audit.hits.length > 0) {
+      lastIssue = 'forbidden'
+      lastIssueDetail = audit.rewriteSuffix ?? ''
+      console.warn('[report-monthly] forbidden phrases', audit.hits)
       continue
     }
     parsed = result.data

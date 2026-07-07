@@ -33,13 +33,13 @@ const privacyTw = privacyTwRaw as LegalDoc
 
 export function getPrivacySections(locale: Locale): readonly LegalSection[] {
   if (locale === 'ja') return privacyJa.sections
-  if (locale === 'tw') return privacyTw.sections
+  if (locale === 'zh' || locale === 'tw') return privacyTw.sections
   return privacyEn.sections
 }
 
 export function getPrivacyLastUpdated(locale: Locale): string {
   if (locale === 'ja') return privacyJa.lastUpdated
-  if (locale === 'tw') return privacyTw.lastUpdated
+  if (locale === 'zh' || locale === 'tw') return privacyTw.lastUpdated
   return privacyEn.lastUpdated
 }
 
@@ -51,5 +51,5 @@ export const PRIVACY_LAST_UPDATED: Record<Locale, string> = {
   en: privacyEn.lastUpdated,
   ja: privacyJa.lastUpdated,
   tw: privacyTw.lastUpdated,
-  zh: privacyEn.lastUpdated,
+  zh: privacyTw.lastUpdated,
 }

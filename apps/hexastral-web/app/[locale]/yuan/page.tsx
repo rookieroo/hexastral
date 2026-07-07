@@ -33,10 +33,10 @@ export async function generateMetadata({ params }: KindredLandingPageProps): Pro
   }
   const title = titles[locale] ?? titles.en
   const descriptions: Record<string, string> & { en: string } = {
-    en: 'Discover the invisible threads between two people. Ba Zi + Zi Wei synastry, by HexAstral.',
-    zh: '两人之间，有看不见的丝线。八字 + 紫微合盘，HexAstral 出品。',
-    tw: '兩人之間，有看不見的絲線。八字 + 紫微合盤，HexAstral 出品。',
-    ja: '二人の間には、見えない糸がある。四柱推命+紫微斗数による相性鑑定。',
+    en: 'Explore interaction patterns between two Ba Zi charts — educational relationship typology, not predictive matchmaking.',
+    zh: '探索两人八字命盘的互动模式——关系类型研习，非命运配对。',
+    tw: '探索兩人八字命盤的互動模式——關係類型研習，非命運配對。',
+    ja: '二人の四柱命盤の相互作用パターンを学ぶ — 関係タイポロジーの学習、運命マッチングではありません。',
   }
   return {
     title,
@@ -143,7 +143,7 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
         >
           {get(
             'body',
-            'Yuel 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以一探究竟。基于八字与紫微的合盘传统，结合 AI 解读，揭示你们之间真实的共鸣与张力。'
+            'Yuel 不限定关系。情侣、家人、朋友、合伙人——只要是两人之间的能量交织，都可以从八字合盘框架作文化探索。基于古典命理传统与 AI 叙述，呈现互动模式与张力 — 描述性解读，非预测，非心理咨询或专业建议。'
           )}
         </p>
 
@@ -177,6 +177,24 @@ export default async function KindredLandingPage({ params }: KindredLandingPageP
             {get('cta_app', 'Get Yuel on iOS')}
           </a>
         </div>
+
+        <p
+          style={{
+            marginTop: 48,
+            fontSize: 12,
+            lineHeight: 1.6,
+            color: 'rgba(60,36,21,0.55)',
+            textAlign: 'center',
+          }}
+        >
+          {locale === 'ja'
+            ? '娯楽・文化探索・個人的省察のみ。カウンセリング、治療、専門助言の代替ではありません。'
+            : locale === 'tw'
+              ? '僅供娛樂、文化探索與個人省思——非心理諮詢、關係治療或專業建議。'
+              : locale === 'zh'
+                ? '仅供娱乐、文化探索与个人省思——非心理咨询、关系治疗或专业建议。'
+                : 'For entertainment, cultural exploration, and personal reflection only — not counseling, therapy, or professional advice.'}
+        </p>
 
         {/* Brand tail */}
         <p

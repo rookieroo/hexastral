@@ -37,7 +37,7 @@
       {
         "title": "Element Compatibility",
         "desc": "Dual chart synthesis through the Five Elements (五行) framework — surfaces connection, attraction, and sources of friction between two people.",
-        "tag": "Compatibility Score"
+        "tag": "Relationship overlay"
       }
     ],
     "convTitle": "Why Are You Here?",
@@ -74,7 +74,7 @@
     "modePersonalTitle": "Know Myself",
     "modePersonalDesc": "Explore your personality, chart structure & life decade cycles through the BaZi framework",
     "modePairingTitle": "Know Our Connection",
-    "modePairingDesc": "Partner / lover compatibility — deep Five Elements analysis",
+    "modePairingDesc": "Partner / lover bond reading — Five Elements cultural overlay (not a score)",
     "modePairingBadge": "Most Popular ★",
     "noSignupNote": "No signup · Data used only for calculation · Completely free",
     "selfStep1Label": "Step 1 — Your Info",
@@ -99,12 +99,13 @@
     "personalPaywallUnlock": "🔒 Download to Unlock Full Reading",
     "personalCTAHeadline": "{name}'s complete chart is ready",
     "personalCTASub": "Download HexAstral — AI deep reading · Decade cycle timeline · Configuration analysis",
-    "pairingScoreUnit": "{a} × {b}   Compatibility",
+    "pairingScoreUnit": "{a} × {b}   Elemental overlay",
+    "pairingDisclaimer": "For entertainment and cultural exploration only — not relationship counseling or professional advice.",
     "pairingInsightsTitle": "Chart Insights",
     "pairingFullReportLabel": "Deep Compatibility Report",
     "pairingPaywallUnlock": "🔒 Download to Unlock Full Report",
     "pairingCTAHeadline": "Unlock the Full Compatibility Report",
-    "pairingCTASub": "Download HexAstral — AI deep analysis · Friction point breakdown · Best compatibility modes",
+    "pairingCTASub": "Download HexAstral — AI cultural read · friction themes · bond study modes",
     "partnerLabel": "{selfName}'s partner",
     "bNameQuestion": "To start, what should I call you? Your chart begins with your name.",
     "bNamePlaceholder": "Your name",
@@ -132,7 +133,7 @@
       "Integrating Twelve Palaces configuration...",
       "Decade cycle calibration complete...",
       "Configurations mapped...",
-      "Your chart is about to be revealed..."
+      "Your chart is ready to view..."
     ]
   },
   "form": {
@@ -167,7 +168,7 @@
   },
   "pair": {
     "inviteText": "invites you to compare your charts",
-    "scoreLabel": "Compatibility Score",
+    "scoreLabel": "Elemental overlay",
     "dayMasterOfLabel": "{name}'s Day Master",
     "unlockFull": "Download to Unlock Full Report",
     "orWeb": "Or take the reading in your browser",

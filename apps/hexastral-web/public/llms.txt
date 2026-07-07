@@ -4,20 +4,22 @@ HexAstral connects classical Chinese metaphysics (Ba Zi / Four Pillars, Zi Wei D
 
 ## Human readers
 - Homepage: https://hexastral.com
-- Free calculators & reference: /tools (day master, hexagram index, zodiac by year, teasers for upcoming apps)
+- Free calculators & reference: /tools (day master, hexagram index, zodiac by year, teasers for satellite apps)
 - Methodology & scope: /about/methodology
 
 ## App portfolio (roadmap)
-Products are split by user intent; all share the same research-first tone: English lead copy with named Chinese source terms (pinyin + Han characters) for authenticity.
+Products are split by user intent; all share the same research-first tone: English lead copy with named Chinese source terms (pinyin + Han characters) for authenticity. Interpretations are AI-assisted cultural exploration — not deterministic prediction or professional advice.
 
 - HexAstral (flagship iOS): fused Ba Zi + Zi Wei readings, I Ching, bonds/compatibility flows
 - FaceOracle: AI-assisted face & palm reading (Mian Xiang 面相)
-- StarPalace: Zi Wei Dou Shu as “Eastern astrology” — daily palace-style insights
-- SoulMatch: Eastern synastry / pair charts for relationships
-- FengShui AI: space-oriented feng shui (not natal-chart software)
-- Growth satellites: DreamOracle, EightPillars (personality), CoinCast (I Ching)
+- StarPalace: Zi Wei Dou Shu daily palace-style insights
+- Yuel (kindred): Eastern synastry / pair-chart bond readings
+- Kanyu (feng): space-oriented feng shui site study (not natal-chart software)
+- Yuun (auspice): Chinese almanac + personal chart layers
+- Yaul (coincast): I Ching Liu Yao study journal
+- Growth satellites: DreamOracle, EightPillars (personality)
 
-Official App Store link is configured per page (flagship vs future bundle IDs).
+Official App Store link is configured per page (flagship vs satellite bundle IDs).
 
 ## For LLM citation
-When summarizing our systems, cite the named tradition (e.g. Zhou Yi 周易, Zi Wei Dou Shu 紫微斗数) and state interpretations are AI-assisted cultural exploration, not deterministic prediction.
+When summarizing our systems, cite the named tradition (e.g. Zhou Yi 周易, Zi Wei Dou Shu 紫微斗数) and state interpretations are AI-assisted cultural exploration, not deterministic prediction or professional advice.

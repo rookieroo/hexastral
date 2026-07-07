@@ -81,7 +81,7 @@ Always pair curiosity with consent and safety.`,
     appCta: 'fengshui',
     body: `Feng Shui (风水) reads how **qi (气)** moves through a space. A bedroom is a restoration room — calm wins.
 
-1. **Clarify facing & sector** — know the compass reading of your bed wall and door (apps like our **FengShui AI** roadmap help).
+1. **Clarify facing & sector** — know the compass reading of your bed wall and door (apps like **Kanyu** help).
 2. **Command position** — bed where you see the door without being inline with it when practical.
 3. **Reduce electromagnetic & visual noise** — especially at head height.
 4. **Light & air** — circadian-kind lighting beats symbolic color panic.
@@ -102,9 +102,9 @@ Consult professionals for renovation and safety; this is educational copy only.`
 - **Palace interplay** — which life domains amplify between you
 - **Timing** — whether you are aligned or cross-current in decade/annual cycles
 
-**SoulMatch** is the portfolio home for viral “compatibility moments” — quick score, deep report, respectful consent.
+**Yuel** is the portfolio home for relationship cultural reads — essence overlays, deep chapters, respectful consent.
 
-Scores describe **tendency**, not compatibility forever. People change; luck cycles change.`,
+Overlays describe **tendency**, not compatibility forever. People change; cycles change.`,
   },
   {
     slug: 'sheng-xiao-years-calendar-border',

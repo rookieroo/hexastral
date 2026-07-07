@@ -48,9 +48,14 @@ const floorplanImageSchema = z.object({
   orientDeg: facingDeg.optional(),
   label: z.string().max(40).optional(),
 })
+const centerNormSchema = z.object({
+  x: z.number().gte(0).lte(1),
+  y: z.number().gte(0).lte(1),
+})
 const floorplanSchema = z.object({
   orientDeg: facingDeg,
   images: z.array(floorplanImageSchema).min(1).max(6),
+  centerNorm: centerNormSchema.optional(),
 })
 
 const createSiteSchema = z.object({

@@ -76,57 +76,23 @@ function FourPillarsDisplay({
   )
 }
 
-function ScoreRing({ score }: { score: number }) {
-  const radius = 54
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (score / 100) * circumference
-  const color = score >= 80 ? '#c4a862' : score >= 60 ? '#7b5ea7' : 'rgba(196,168,98,0.5)'
-
+function GradeBadge({ grade, gradeLabel }: { grade: string; gradeLabel?: string }) {
   return (
-    <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto' }}>
-      <svg width='140' height='140' style={{ transform: 'rotate(-90deg)' }}>
-        <circle
-          cx='70'
-          cy='70'
-          r={radius}
-          fill='none'
-          stroke='rgba(255,255,255,0.06)'
-          strokeWidth='6'
-        />
-        <circle
-          cx='70'
-          cy='70'
-          r={radius}
-          fill='none'
-          stroke={color}
-          strokeWidth='6'
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap='round'
-          style={{ transition: 'stroke-dashoffset 1s ease' }}
-        />
-      </svg>
+    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
       <div
         style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          fontSize: '2rem',
+          fontWeight: 300,
+          color: 'var(--color-gold)',
+          lineHeight: 1.2,
+          letterSpacing: '0.08em',
         }}
       >
-        <span
-          style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-gold)', lineHeight: 1 }}
-        >
-          {score}
-        </span>
-        <span
-          style={{ fontSize: '0.7rem', color: 'var(--color-ivory-muted)', letterSpacing: '0.05em' }}
-        >
-          / 100
-        </span>
+        {gradeLabel ?? grade}
       </div>
+      <p style={{ margin: '0.75rem 0 0', fontSize: '0.78rem', color: 'var(--color-ivory-muted)' }}>
+        Relationship overlay · cultural reference only
+      </p>
     </div>
   )
 }
@@ -402,9 +368,9 @@ function PairingResult({
   const a = nameA || t('selfDefault')
   const b = nameB || t('partnerDefault')
   const gradeColor =
-    result.score >= 80
+    result.grade.includes('优') || result.grade.toLowerCase().includes('excellent')
       ? 'var(--color-gold)'
-      : result.score >= 60
+      : result.grade.includes('良') || result.grade.toLowerCase().includes('good')
         ? 'var(--color-purple)'
         : 'var(--color-ivory-dim)'
 
@@ -430,7 +396,7 @@ function PairingResult({
         >
           {t('pairingScoreUnit', { a, b })}
         </p>
-        <ScoreRing score={result.score} />
+        <GradeBadge grade={result.grade} />
         <p
           style={{
             marginTop: '0.75rem',
@@ -440,6 +406,9 @@ function PairingResult({
           }}
         >
           {result.grade}
+        </p>
+        <p style={{ fontSize: '0.72rem', color: 'var(--color-ivory-muted)', marginTop: '0.5rem' }}>
+          {t('pairingDisclaimer')}
         </p>
       </div>
 

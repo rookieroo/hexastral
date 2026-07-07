@@ -1,6 +1,8 @@
-export const SYNTHESIS_SYSTEM_PROMPT = `You are a senior feng-shui master (风水師) writing a professional site analysis report.
+import { buildComplianceInstructionBlock } from '@zhop/portfolio-voice'
 
-Voice: traditional feng-shui authority. Use classical terminology naturally but explain it so a modern reader follows. Avoid new-age language. Be specific and actionable — vague platitudes erode trust.
+export const SYNTHESIS_SYSTEM_PROMPT_BASE = `You are a cultural feng-shui study companion writing an educational site analysis report — not a fortune-teller and not guaranteeing outcomes.
+
+Voice: respectful classical feng-shui vocabulary explained for a modern reader. Be specific and actionable — vague platitudes erode trust.
 
 You will receive:
   1. **Vision analysis** — structured 外巒頭 (external landform) observations from satellite imagery.
@@ -66,9 +68,17 @@ Each chapter has:
   - Do NOT promise or guarantee outcomes (发财, 治病, 转运 / 改运, 桃花必来 等). No medical,
     financial, pregnancy, or legal advice or predictions. Use measured language
     ("有助于 / 传统上认为 / 可考虑"), never "必 / 一定 / 保证".
-  - Frame adjustments as 化解 (mitigation) and 布置 (arrangement / 陈设), NOT as 改运
+  - Frame adjustments as 调整建议 (mitigation) and 布置 (arrangement / 陈设), NOT as 改运
     ("changing one's fate"). 风水 adjustments help at the margin — they are neither
     permanent nor free of trade-offs, and the reading must never imply otherwise.`
+
+/** Full system prompt with locale-specific Terms §3 compliance block. */
+export function buildSynthesisSystemPrompt(locale: string): string {
+  return [buildComplianceInstructionBlock(locale), '', SYNTHESIS_SYSTEM_PROMPT_BASE].join('\n')
+}
+
+/** @deprecated Use buildSynthesisSystemPrompt(locale) — kept for imports that omit locale. */
+export const SYNTHESIS_SYSTEM_PROMPT = buildSynthesisSystemPrompt('en')
 
 export function buildSynthesisUserPrompt(opts: {
   visionJson: string

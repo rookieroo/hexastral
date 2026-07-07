@@ -82,20 +82,20 @@ const STAGE_LABELS: Record<Locale, Record<AnalyzeStage, string>> = {
     compute: 'Casting the chart',
     synthesis: 'Writing the reading',
   },
-  zh: { maps: '勘察地图', vision: '审形辨势', compute: '排盘演算', synthesis: '撰写报告' },
-  'zh-Hant': { maps: '勘察地圖', vision: '審形辨勢', compute: '排盤演算', synthesis: '撰寫報告' },
+  zh: { maps: '加载地图', vision: '标注形势', compute: '排盘演算', synthesis: '撰写报告' },
+  'zh-Hant': { maps: '載入地圖', vision: '標註形勢', compute: '排盤演算', synthesis: '撰寫報告' },
   ja: {
-    maps: '地図の測量',
-    vision: '地形を読む',
+    maps: '地図を読み込み',
+    vision: '地形を注釈',
     compute: '盤を立てる',
-    synthesis: '読み解きを記す',
+    synthesis: 'レポートを作成',
   },
 }
 const ANALYZE_CAPTION: Record<Locale, string> = {
-  en: 'Surveying…',
-  zh: '正在勘舆…',
-  'zh-Hant': '正在勘輿…',
-  ja: '勘輿しています…',
+  en: 'Generating report…',
+  zh: '正在生成报告…',
+  'zh-Hant': '正在生成報告…',
+  ja: 'レポートを生成中…',
 }
 
 export default function ReportScreen() {
@@ -174,7 +174,7 @@ export default function ReportScreen() {
       if (!reportId) return
       router.push({
         pathname: '/(report)/chat',
-        params: { reportId, title: site?.name ?? '', quote },
+        params: { reportId, siteId, title: site?.name ?? '', quote },
       })
     },
     [router, reportId, site?.name]
@@ -285,6 +285,7 @@ export default function ReportScreen() {
     // guard here too so a stale in-memory shell can't become a permanent fake loader.
     middle = (
       <ReportShellView
+        width={width}
         compute={compute}
         reportId={reportId}
         annotatedTiles={annotatedTiles}
@@ -368,7 +369,10 @@ export default function ReportScreen() {
             siteName={site.name}
             streetAttribution={compute?.streetAttribution ?? null}
             onChat={() =>
-              router.push({ pathname: '/(report)/chat', params: { reportId, title: site.name } })
+              router.push({
+                pathname: '/(report)/chat',
+                params: { reportId, siteId, title: site.name },
+              })
             }
             t={t}
           />
@@ -412,9 +416,10 @@ export default function ReportScreen() {
 
 // ── report shell (two-phase load) ──────────────────────────
 // The computed report — 排盘 / 坐向 / satellite tiles / 八宅 — rendered as soon
-// as the pipeline persists the shell, while the written chapters synthesize. The
-// deterministic value is on screen in seconds; the loader footer shows progress.
+// as the pipeline persists the shell, while the written chapters synthesize.
+// Horizontal pager: page 0 = deterministic preview only; swipe left for the loader.
 function ReportShellView({
+  width,
   compute,
   reportId,
   annotatedTiles,
@@ -424,6 +429,7 @@ function ReportShellView({
   caption,
   t,
 }: {
+  width: number
   compute: FengComputeJson
   reportId: string
   annotatedTiles: ('close' | 'mid' | 'wide')[]
@@ -433,50 +439,71 @@ function ReportShellView({
   caption: string
   t: Strings
 }) {
+  const [shellPage, setShellPage] = useState(0)
+  const onShellMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setShellPage(Math.round(e.nativeEvent.contentOffset.x / width))
+    },
+    [width]
+  )
+
   return (
-    <ScrollView
-      contentContainerStyle={{
-        paddingHorizontal: spacing.xl,
-        paddingTop: insets.top + spacing.xxl + spacing.xl,
-        paddingBottom: insets.bottom + spacing.xxl,
-      }}
-    >
-      <Text style={{ color: C.accent, fontSize: 12, letterSpacing: 3 }}>
-        {t.report_shell_tag.toUpperCase()}
-      </Text>
-
-      {reportId && annotatedTiles.length > 0 ? (
-        <View style={{ marginTop: spacing.md, marginHorizontal: -spacing.xl }}>
-          <AnnotatedMapSwiper
-            reportId={reportId}
-            tiles={annotatedTiles}
-            orient={orient}
-            horizontalPadding={spacing.xl}
-            strings={{
-              report_map_close: t.report_map_close,
-              report_map_mid: t.report_map_mid,
-              report_map_wide: t.report_map_wide,
-              report_map_loading: t.report_map_loading,
-              report_map_failed: t.report_map_failed,
-            }}
-          />
-        </View>
-      ) : null}
-
-      {renderFlyingStars(compute, t)}
-      {compute.baZhai ? renderBaZhai(compute, t) : null}
-
-      <View
-        style={{
-          marginTop: spacing.xxl,
-          paddingTop: spacing.xl,
-          borderTopWidth: 0.5,
-          borderTopColor: C.separator,
-        }}
+    <>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onShellMomentumEnd}
       >
-        <FengAnalyzing steps={steps} label={caption} />
-      </View>
-    </ScrollView>
+        <ScrollView
+          style={{ width }}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.xl,
+            paddingTop: insets.top + spacing.xxl + spacing.xl,
+            paddingBottom: insets.bottom + spacing.xxl,
+          }}
+        >
+          <Text style={{ color: C.accent, fontSize: 12, letterSpacing: 3 }}>
+            {t.report_shell_tag.toUpperCase()}
+          </Text>
+
+          {reportId && annotatedTiles.length > 0 ? (
+            <View style={{ marginTop: spacing.md, marginHorizontal: -spacing.xl }}>
+              <AnnotatedMapSwiper
+                reportId={reportId}
+                tiles={annotatedTiles}
+                orient={orient}
+                horizontalPadding={spacing.xl}
+                strings={{
+                  report_map_close: t.report_map_close,
+                  report_map_mid: t.report_map_mid,
+                  report_map_wide: t.report_map_wide,
+                  report_map_loading: t.report_map_loading,
+                  report_map_failed: t.report_map_failed,
+                }}
+              />
+            </View>
+          ) : null}
+
+          {renderFlyingStars(compute, t)}
+          {compute.baZhai ? renderBaZhai(compute, t) : null}
+        </ScrollView>
+
+        <View
+          style={{
+            width,
+            flex: 1,
+            justifyContent: 'center',
+            paddingHorizontal: spacing.xl,
+            paddingTop: insets.top + spacing.xxl,
+            paddingBottom: insets.bottom + spacing.xxl,
+          }}
+        >
+          <FengAnalyzing steps={steps} label={caption} />
+        </View>
+      </ScrollView>
+      <PageDots count={2} active={shellPage} bottom={insets.bottom + spacing.sm} />
+    </>
   )
 }
 
@@ -781,6 +808,9 @@ function ClosingPageView({
       </Text>
       <Text style={{ color: C.secondary, fontSize: 11, textAlign: 'center' }}>
         {t.report_confidence_note}
+      </Text>
+      <Text style={{ color: C.secondary, fontSize: 10, textAlign: 'center', lineHeight: 15 }}>
+        {t.report_legal_disclaimer}
       </Text>
       {streetAttribution ? (
         <Text style={{ color: C.secondary, opacity: 0.6, fontSize: 10, textAlign: 'center' }}>

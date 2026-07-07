@@ -10,7 +10,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: 'Compatibility score · SoulMatch funnel',
+    title: 'Bond reading · Yuel funnel',
     alternates: {
       canonical:
         locale === 'en'
@@ -23,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LpCompatibilityPage() {
   return (
     <>
-      <h1 style={{ fontWeight: 400 }}>We scored 92% cosmic chemistry — wanna test ours?</h1>
+      <h1 style={{ fontWeight: 400 }}>Two charts, one bond — explore the shape of your connection</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
-        Influencer-safe CTA referencing Eastern synastry (合盘). Full Bond flows already live inside
-        HexAstral.
+        Influencer-safe CTA for Eastern synastry (合盘). Full bond readings live in Yuel — cultural
+        exploration and reflection, not a compatibility score or prediction.
       </p>
       <Link
         href='/tools/compatibility'
@@ -35,9 +35,9 @@ export default async function LpCompatibilityPage() {
         Run the Turnstile preview tool →
       </Link>
       <DownloadCTA
-        headline='SoulMatch — pair charts as a habit'
-        appStoreUrl={resolveAppStoreUrl('soulmatch')}
-        targetApp='soulmatch'
+        headline='Yuel — pair charts as a habit'
+        appStoreUrl={resolveAppStoreUrl('hexastral')}
+        targetApp='hexastral'
       />
       <DownloadCTA headline='Or stay on HexAstral flagship' compact targetApp='hexastral' />
     </>

@@ -40,10 +40,12 @@ Growth satellite — standalone I Ching oracle with 3D coin casting and portfoli
 | Layer | Shipped | Notes |
 |---|---|---|
 | Casting | 3-coin physics + shake / button | WebGL scene lazy-loaded |
-| Output | Hexagram + AI interpretation via `svc-astro` `/yiching/cast` | `yaoValues` from client entropy |
+| Output | **Classical tier** (free quota): hexagram + I Ching corpus + na-jia, no LLM · **AI tier** (cast pack / Pro): personalized LLM commentary via `svc-astro` `/yiching/cast` | `yaoValues` from client entropy |
 | Personalization | None for divination — birth charts live in **Yuun** / **Yuel** | CoinCast is one-question-one-cast; no birth info in the cast pipeline |
 | Monetization | **Consumable-first:** 1 / 5 / 10 cast packs | `coincast_pro_*` for skins + quota; `universe_pro` cross-app |
 | Quota | Guest 3/day · linked 3/month + credits | `evaluateCoincastQuota` |
+| Upgrade | Classical reading → AI in-place (`POST .../upgrade-ai`) | 1 credit or Pro; same hexagram |
+| Memory | Opt-in portfolio memory (Settings) | AI casts only; index + recall |
 | Platform | iOS (Expo 54) | Settings via top-right + left-swipe (Fēng model) |
 
 ### Post-MVP
@@ -56,13 +58,13 @@ Growth satellite — standalone I Ching oracle with 3D coin casting and portfoli
 
 | SKU | Type | Purpose |
 |---|---|---|
-| `coincast_cast_pack_1` | consumable | +1 cast credit |
-| `coincast_cast_pack_5` | consumable | +5 cast credits |
-| `coincast_cast_pack_10` | consumable | +10 cast credits |
-| `coincast_pro_monthly` / `_annual` | subscription | Extra cast quota + coin skins (no birth-chart interpretation) |
+| `coincast_cast_pack_1` | consumable | +1 AI commentary cast credit |
+| `coincast_cast_pack_5` | consumable | +5 AI commentary cast credits |
+| `coincast_cast_pack_10` | consumable | +10 AI commentary cast credits |
+| `coincast_pro_monthly` / `_annual` | subscription | Unlimited casts + AI on each cast + coin skins |
 | `universe_pro_*` | subscription | All app Pros + shared birth info |
 
-Paywall surfaces **packs first**, subscriptions secondary.
+Paywall surfaces **packs first**, subscriptions secondary. ASC **Display Names** should read **Yaul AI Deep Read ×N** (Product IDs stay `coincast_cast_pack_*`).
 
 ---
 

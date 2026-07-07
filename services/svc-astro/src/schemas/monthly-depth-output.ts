@@ -2,7 +2,7 @@ import { z } from 'zod/v4'
 
 /**
  * 流年深读 (monthly depth) output — the Pro LLM enrichment of the deterministic
- * 本月运势 card. The free card already gives the month's tone + 十神 framing; this
+ * Pro LLM enrichment of the deterministic monthly reference card. The free card already gives the month's tone + 十神 framing; this
  * deepens it into a short multi-theme read grounded in the chart's 流月 vs 命盘.
  * Kept deliberately compact (one screen) — it's a monthly hook, not a full chapter.
  */

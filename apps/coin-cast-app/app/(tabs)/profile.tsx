@@ -48,7 +48,13 @@ import {
   setCastHapticsEnabled,
   setMotionShakeEnabled,
 } from '@/lib/coincast-ritual'
-import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP, yaulPrivacyUrl, yaulTermsUrl } from '@/lib/growth-config'
+import { fetchMemoryPreference, setPortfolioMemory } from '@/lib/memory-preference'
+import {
+  PORTFOLIO_STORAGE_PREFIX,
+  PORTFOLIO_TARGET_APP,
+  yaulPrivacyUrl,
+  yaulTermsUrl,
+} from '@/lib/growth-config'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
 
 type Session = 'loading' | 'out' | 'in'
@@ -71,6 +77,9 @@ export default function CoinCastProfileScreen() {
   const [haptics, setHaptics] = useState(true)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
+  const [memoryEnabled, setMemoryEnabled] = useState(false)
+  const [memorySaving, setMemorySaving] = useState(false)
+  const [memoryLoaded, setMemoryLoaded] = useState(false)
 
   const cardStyle = {
     backgroundColor: colors.card,
@@ -115,6 +124,18 @@ export default function CoinCastProfileScreen() {
         setHaptics(hapticsOn)
         setSkinId(skin)
         setPrefsLoaded(true)
+        const userId = await getPortfolioUserId()
+        if (userId) {
+          try {
+            const mem = await fetchMemoryPreference()
+            setMemoryEnabled(mem.enabled)
+          } catch (err) {
+            console.warn('[coincast-profile] memory pref load failed', err)
+          }
+        } else {
+          setMemoryEnabled(false)
+        }
+        setMemoryLoaded(true)
       })()
     }, [refreshSession])
   )
@@ -368,8 +389,35 @@ export default function CoinCastProfileScreen() {
               setHaptics(next)
               void setCastHapticsEnabled(next)
             },
-            { disabled: !prefsLoaded, last: true }
+            { disabled: !prefsLoaded }
           )}
+          {session === 'in'
+            ? toggleRow(
+                t('settingsMemoryLabel'),
+                t('settingsMemoryHint'),
+                memoryEnabled,
+                (next) => {
+                  setMemorySaving(true)
+                  void (async () => {
+                    try {
+                      await setPortfolioMemory(next)
+                      setMemoryEnabled(next)
+                    } catch (err) {
+                      console.warn('[coincast-profile] memory pref save failed', err)
+                    } finally {
+                      setMemorySaving(false)
+                    }
+                  })()
+                },
+                { disabled: !memoryLoaded, saving: memorySaving, last: true }
+              )
+            : toggleRow(
+                t('settingsMemoryLabel'),
+                t('settingsMemoryGuestHint'),
+                false,
+                () => {},
+                { disabled: true, last: true }
+              )}
         </View>
 
         {/* Coin skins */}

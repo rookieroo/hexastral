@@ -9,17 +9,19 @@
 import { useCreateSite } from '@zhop/scenario-feng'
 import { type Href, useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
-import { getDevPro } from '@/lib/dev-flags'
+import { hasFengAnalyzeAccess } from '@/lib/purchase'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { clearDraft, isDraftReady, loadDraft, type SiteDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
 
 export default function ReviewScreen() {
   const router = useRouter()
+  const { userId } = useAuth()
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
   const insets = useSafeAreaInsets()
@@ -60,15 +62,14 @@ export default function ReviewScreen() {
       setSubmitError('Draft is incomplete — go back and finish each step.')
       return
     }
-    // Gate BEFORE the expensive analysis (Gemini vision + LLM + Mapbox). Without
-    // entitlement we never kick off the costly job — the paywall is one upfront
-    // prompt per report, not a late server error. DEV-Pro bypasses on-device;
-    // the real IAP purchase wires into this branch (W5 / RevenueCat).
-    const entitled = await getDevPro()
+    if (!userId) return
+
+    const entitled = await hasFengAnalyzeAccess(userId)
     if (!entitled) {
-      Alert.alert(t.report_unlock_title, t.new_site_review_iap_note)
+      router.push({ pathname: '/paywall', params: { intent: 'analyze' } } as Href)
       return
     }
+
     setHasSubmitted(true)
     setSubmitError(null)
     setCreating(true)
@@ -93,6 +94,7 @@ export default function ReviewScreen() {
           ? {
               orientDeg: draft.floorplanOrientDeg ?? 0,
               images: fpImages.map((im) => ({ key: im.key, label: im.label })),
+              centerNorm: draft.floorplanCenterNorm,
             }
           : undefined,
       })
@@ -106,7 +108,14 @@ export default function ReviewScreen() {
       } as Href)
     } catch (err) {
       setHasSubmitted(false)
-      setSubmitError(err instanceof Error ? err.message : String(err))
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('403') || msg.includes('paywall')) {
+        setSubmitError(t.new_site_review_error_paywall)
+      } else if (msg.includes('network') || msg.includes('fetch')) {
+        setSubmitError(t.new_site_review_error_network)
+      } else {
+        setSubmitError(msg)
+      }
       setCreating(false)
     }
   }
@@ -139,6 +148,8 @@ export default function ReviewScreen() {
             ? t.new_site_floorplan_count_villa.replace('{n}', String(draft.floorplanImages.length))
             : t.new_site_floorplan_count_one,
       })
+    } else {
+      labels.push({ label: t.new_site_review_floorplan, value: t.new_site_review_no_floorplan })
     }
   }
 
@@ -165,7 +176,9 @@ export default function ReviewScreen() {
       <View
         style={{
           backgroundColor: colors.surface,
-          borderRadius: 12,
+          borderWidth: 0.5,
+          borderColor: colors.border,
+          borderRadius: 0,
           padding: spacing.lg,
           gap: spacing.md,
         }}
@@ -186,11 +199,11 @@ export default function ReviewScreen() {
         <View
           style={{
             backgroundColor: colors.surface,
-            borderRadius: 12,
+            borderWidth: 0.5,
+            borderColor: colors.border,
+            borderRadius: 0,
             padding: spacing.lg,
             gap: spacing.sm,
-            borderLeftWidth: 2,
-            borderLeftColor: birthInfo ? colors.accent : colors.border,
           }}
         >
           <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
@@ -210,11 +223,14 @@ export default function ReviewScreen() {
       ) : null}
 
       {inProgress ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <ActivityIndicator color={colors.accent} />
-          <Text style={{ color: colors.textMute }}>
-            {t.new_site_review_processing.replace('{stage}', 'maps')}
-          </Text>
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={{ color: colors.textMute }}>
+              {t.new_site_review_processing.replace('{stage}', 'maps')}
+            </Text>
+          </View>
+          <Text style={{ color: colors.textMute, fontSize: 12 }}>{t.new_site_review_analyze_eta}</Text>
         </View>
       ) : null}
 
@@ -246,7 +262,7 @@ export default function ReviewScreen() {
         style={{
           backgroundColor: inProgress ? colors.surfaceMute : colors.accent,
           paddingVertical: spacing.lg,
-          borderRadius: 12,
+          borderRadius: 0,
           alignItems: 'center',
         }}
       >

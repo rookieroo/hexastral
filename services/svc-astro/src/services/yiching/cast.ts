@@ -11,12 +11,23 @@ import type { YaoValue } from '@zhop/astro-core'
 import { assembleHexagram, formatHexagramForPrompt, getFourPillars } from '@zhop/astro-core'
 import type { Hexagram } from '../../data/hexagrams'
 import { getHexagramByLines } from '../../data/hexagrams'
+import { applyHexagramLocale } from '../../data/hexagram-i18n'
 import { type AiRouterEnv, callWithFallback } from '../../lib/ai-router'
 import { extractJson } from '../../lib/extract-json'
 import { buildLanguageBlock } from '../../lib/i18n-prompt'
 import { buildEnhancedGuardrails } from '../../lib/prompts/guardrails'
 import { getSystemRole } from '../../lib/prompts/system-role'
-import type { DivinationReading, HexagramResult } from '../../types'
+import type {
+  ClassicalReadingDetail,
+  DivinationReading,
+  HexagramResult,
+  InterpretationMode,
+} from '../../types'
+
+export interface DivinationOpts {
+  isPro?: boolean
+  mode?: InterpretationMode
+}
 
 export interface DivinationInput {
   /** 用户的问题 */
@@ -256,7 +267,7 @@ ${memoryContext.trim()}
   return `你是一位温厚的山居友伴，融通《周易》与道家「人身小天地」视角：卦象是当下心念与能量结构的显影，不是铁口宿命。
 - 用现代人听得懂的话，真诚、具体、可行动。
 - 结构自然融合三层：「引」卦辞/象辞或俗谚作轻引子；「转」落到问者自身小宇宙（情志、起居、呼吸、微行动）；「合」以变易智慧收束为 72 小时内可观察的一步。
-- 禁止恐吓式断言、医疗诊断与用药建议；三不占仍须先审。
+- 禁止恐吓式断言、医疗诊断与用药建议。
 ${memorySection}
 ## 用户的问题
 「${question}」
@@ -279,21 +290,10 @@ ${naJiaContext}
 ## 参考解析
 ${hexagram.judgmentExplain}
 
-## 三不占审查（必须先于解读执行）
-在输出任何解读文字之前，先判断用户的问题是否违反三不占原则（宁严勿滥，边界不清时判为不违反）：
-- **不疑不占**：没有真正的疑惑或纯属事实/娱乐（如天气、笑话、测试 AI、无意义闲聊）。
-- **不诚不占**：明显戏谑、挑衅、或并非真心求问。
-- **不义不占**：赌博求赢、伤害/算计他人、违法犯罪、或明显不道德目的。
-
-若违反任一条：在 JSON 中设置 \`"refused": true\`，\`"refusal_reason"\` 用一句话说明原因（不超过 40 字，与用户语言一致），其余解读字段可为空字符串。
-若不违反：设置 \`"refused": false\`，并正常填写解读字段。
-
 ## 输出要求
 请你用 JSON 格式返回（不要 markdown 代码块包裹）：
 {
-  "refused": false,
-  "refusal_reason": "",
-  "interpretation": "200-400字的深度解读，结合卦辞、象辞和变爻，直接针对用户的具体问题（refused 为 true 时可省略）",
+  "interpretation": "200-400字的深度解读，结合卦辞、象辞和变爻，直接针对用户的具体问题",
   "advice": "3-5条具体可执行的建议，用 1. 2. 3. 格式",
   "summary": "一句话总结（15字以内，朗朗上口）",
   "fortune": "从 great-fortune / fortune / neutral / caution / misfortune 中选一个"
@@ -399,13 +399,55 @@ export async function generateInterpretation(
 }
 
 /**
+ * Deterministic classical reading — corpus + changing lines, no LLM.
+ */
+export function generateClassicalReading(
+  hexagram: Hexagram,
+  changingLines: number[],
+  naJiaContext = '',
+  language = 'zh-CN'
+): {
+  interpretation: string
+  advice: string
+  summary: string
+  fortune: DivinationReading['fortune']
+  classical: ClassicalReadingDetail
+} {
+  const localized = applyHexagramLocale(hexagram, language)
+  const changingLineTexts = changingLines.map((i) => hexagram.lines[i] ?? '').filter(Boolean)
+
+  let interpretation = localized.judgmentExplain
+  if (changingLineTexts.length > 0) {
+    interpretation = `${interpretation}\n\n${changingLineTexts.join('\n')}`
+  }
+
+  const classical: ClassicalReadingDetail = {
+    judgment: hexagram.judgment,
+    image: hexagram.image,
+    lines: hexagram.lines,
+    changingLineTexts,
+    ...(naJiaContext.trim().length > 0 ? { naJiaContext: naJiaContext.trim() } : {}),
+  }
+
+  return {
+    interpretation,
+    advice: '',
+    summary: localized.keywords.join('·'),
+    fortune: hexagram.fortune,
+    classical,
+  }
+}
+
+/**
  * 完整占卜流程
  */
 export async function performDivination(
   env: AiRouterEnv,
   input: DivinationInput,
-  isPro = false
+  opts: DivinationOpts = {}
 ): Promise<DivinationReading> {
+  const isPro = opts.isPro ?? false
+  const mode: InterpretationMode = opts.mode ?? 'ai'
   const isMeihua = input.method === 'meihua'
 
   // ── 梅花易数：从熵字符串解析预计算的体用卦 ────────────────────
@@ -484,11 +526,32 @@ export async function performDivination(
     }
   }
 
-  // 6. AI 生成解读
+  // 6. Generate reading (classical or AI)
+  const language = input.language ?? 'zh-CN'
+  const localizedHexagram = applyHexagramLocale(hexagram, language)
+
+  if (mode === 'classical') {
+    const classicalResult = generateClassicalReading(
+      hexagram,
+      changingLines,
+      naJiaContext,
+      language
+    )
+    return {
+      interpretationMode: 'classical',
+      classical: classicalResult.classical,
+      hexagram: hexagramResult,
+      interpretation: classicalResult.interpretation,
+      advice: classicalResult.advice,
+      summary: classicalResult.summary,
+      fortune: classicalResult.fortune,
+    }
+  }
+
   const aiResult = await generateInterpretation(
     env,
     input.question,
-    hexagram,
+    localizedHexagram,
     changingLines,
     isPro,
     input.language,
@@ -502,6 +565,7 @@ export async function performDivination(
     return {
       refused: true,
       refusal_reason: aiResult.refusal_reason ?? '',
+      interpretationMode: 'ai',
       hexagram: hexagramResult,
       interpretation: '',
       advice: '',
@@ -511,6 +575,7 @@ export async function performDivination(
   }
 
   return {
+    interpretationMode: 'ai',
     hexagram: hexagramResult,
     interpretation: aiResult.interpretation,
     advice: aiResult.advice,

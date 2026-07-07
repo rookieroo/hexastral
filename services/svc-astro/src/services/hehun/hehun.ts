@@ -28,6 +28,7 @@ import { calculateAge } from '../../lib/age'
 import { type AiRouterEnv, callWithFallback } from '../../lib/ai-router'
 import { extractJson } from '../../lib/extract-json'
 import { buildLanguageBlock, buildLanguageReminder } from '../../lib/i18n-prompt'
+import { auditGeneratedOutput } from '../../lib/output-audit'
 import { buildEnhancedGuardrails } from '../../lib/prompts/guardrails'
 import { getSystemRole } from '../../lib/prompts/system-role'
 import {
@@ -352,7 +353,7 @@ function buildZiweiBlock(input: HeHunInput): string {
 }
 
 function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
-  return `你是一位精通命盘配对的 AI 命理师。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。
+  return `你是一位专注于关系能量分析的人际动力顾问。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。
 
 ## 语体要求（重要）
 用典雅、克制的命理书面语（"日主""相生相济""刑冲合会""刚柔相济"等）。**严禁现代口语与网络话术**（如"咬合""适配""CP""能量场""磁场""上头""相爱相杀"等）与商业/工程比喻。可有记忆点、可分享，但须根植命理意象；中文尤忌轻佻。
@@ -368,7 +369,7 @@ ${buildPairFacts(result, input)}
   "dayBranch": "日支亲密解读（80字，内心世界/私密关系角度）",
   "highlights": "亮点总结（50字，最大优势）",
   "warnings": "注意事项（50字，需要经营的方面）",
-  "advice": "开运建议（100字，具体化解和增进感情的方法）",
+  "advice": "相处建议（100字，具体可执行的增进感情的方法）",
   "summary": "一句话总结（15字以内）",
   "archetypeName": "A memorable, shareable relationship label in the user's language, rooted in 命理 imagery — e.g. '宿命之牵', 'The Karmic Anchor', '刚柔相济'. MUST be 2-8 words. For CJK use classical 命理 register, NOT internet slang.",
   "archetypeTagline": "One resonant line about this pairing in the user's language — under 20 words. Insightful and warm, NOT snark; for CJK keep the 命理 书面语 register.",
@@ -395,7 +396,7 @@ export async function generateHeHunInterpretation(
   const systemPrompt = [
     getSystemRole('hehun'),
     '',
-    buildEnhancedGuardrails('相遇即是缘'),
+    buildEnhancedGuardrails('相遇即是缘', language),
     '',
     '## 合婚解读原则',
     '- 低分配对不说"不合适"，而说"需要更多理解和包容"、"互相磨合是成长的礼物"',
@@ -405,18 +406,25 @@ export async function generateHeHunInterpretation(
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
 
-  const text = await callWithFallback(env, systemPrompt, prompt + buildLanguageReminder(language), {
-    // standard (Qwen3 → GLM) not flagship: the flagship tier-1 is KIMI, which was
-    // timing out and blowing the 55s budget for the SYNCHRONOUS accept (respond)
-    // → 504 / "Network request failed" on mobile. Dropping the slow model keeps the
-    // whole synastry generation fast + reliable; Qwen3 is strong for this. (The real
-    // fix is to make report generation async; this removes the immediate failure.)
-    tier: 'standard',
-    isPro,
-    maxTokens: isPro ? 3000 : 2048,
-    metricLabel: 'hehun-pair',
-    locale: language,
-  })
+  let text = ''
+  let rewriteSuffix = ''
+  for (let attempt = 0; attempt < 2; attempt++) {
+    text = await callWithFallback(
+      env,
+      systemPrompt,
+      prompt + buildLanguageReminder(language) + rewriteSuffix,
+      {
+        tier: 'standard',
+        isPro,
+        maxTokens: isPro ? 3000 : 2048,
+        metricLabel: attempt > 0 ? 'hehun-pair:forbidden-retry' : 'hehun-pair',
+        locale: language,
+      }
+    )
+    const audit = auditGeneratedOutput(text)
+    if (audit.hits.length === 0) break
+    rewriteSuffix = audit.rewriteSuffix ?? ''
+  }
 
   try {
     const jsonStr = extractJson(text)
@@ -543,7 +551,7 @@ const SYNASTRY_CHAPTER_SPECS: ReadonlyArray<{
   },
   {
     kind: 'monthly_outlook',
-    label: '本月运势',
+    label: '本月相处参考',
     focus: '未来约30天两人相处的节奏：适合深聊/共同推进的窗口，与需要彼此留白的时段',
   },
   {
@@ -603,7 +611,7 @@ function buildSynastryChapterPrompt(
       ? `（季节参考：${ym}；正文用"接下来这几周/这个月"等相对表述，不要写死具体公历年月——报告会被缓存，写死会随时间失效）`
       : ''
 
-  return `你是一位精通命盘配对的 AI 命理师，正在为以下两人撰写「六章深度合盘」中的一章：**${spec.label}**。
+  return `你是一位专注于关系能量分析的人际动力顾问，正在为以下两人撰写「六章深度合盘」中的一章：**${spec.label}**。
 
 ${buildPairFacts(result, input, ziweiBlock)}
 
@@ -612,7 +620,7 @@ ${spec.focus}${monthlyNote}
 
 ## 全报告通关用神（已据双方日主推定，六章共用，务必一致）
 本段关系的通关/喜用之神为【${yongshen}】：${yongshenNote}。
-本章的 remedy（解法）**必须围绕用神【${yongshen}】展开**，给出据此可执行的化解/增进之道，落到能动的一面。
+本章的 remedy（相处调整）**必须围绕用神【${yongshen}】展开**，给出据此可执行的调整/增进之道，落到能动的一面。
 **用神【${yongshen}】是「解法」，并非双方日主本来的关系。** 凡 title／goldenLine 提到五行关系，必须落在双方日主真实的两个五行及其生/克/比和上（如日主为木与土，则言「木土」之相克），用神之五行只可作为「通关／解法」点出且须明示其为解法——切勿把用神当作双方日主的相生来写（例如不可因用神为火便写「木火相生」），以免与正文相克/相生的判断自相矛盾。
 
 ## 写作要求（这一章要"值钱"：详尽、精准、可执行）
@@ -620,7 +628,7 @@ ${spec.focus}${monthlyNote}
 1. evidence（命盘依据，90–150字）：这一维度上双方命盘到底发生了什么——点名具体的干支/十神/刑冲合/神煞，把机理讲清楚；若八字与紫微（上方第二套系统）指向一致，明确点出「两套系统不约而同」以增强可信度。
 2. dynamic（关系动态，90–150字）：上述命理如何落到两人**真实相处**的样子，具体可感。
 3. reef（暗礁·风险，70–130字）：本章最该警惕的**一个**具体风险/危机——如何被触发、会演变成什么。点到痛处，但不下"天命定论"。
-4. remedy（解法，90–150字）：围绕**用神**给出具体、可执行的化解/增进之道，落到能动的一面（命定其界、运在人为）。
+4. remedy（相处调整，90–150字）：围绕**用神**给出具体、可执行的调整/增进之道，落到能动的一面（观照节奏、自我努力）。
 
 另需：
 - severity：reef 的严重度，必须是 low | mid | high 之一（英文小写）。
@@ -651,18 +659,54 @@ function buildAhaHookPrompt(
   input: HeHunInput,
   ziweiBlock: string
 ): string {
-  return `你是一位精通命盘配对的 AI 命理师。基于以下两人命盘的**真实互动**，提炼一句最抓人的破冰断言。
+  return `你是一位专注于关系能量分析的人际动力顾问。基于以下两人命盘的**真实互动**，提炼一句≤30字的破冰断言，供娱乐与文化探索之用 — 不作预测、不作关系定论。
 
 ${buildPairFacts(result, input, ziweiBlock)}
 
 ## 要求
-- 基于两人命盘的真实互动，点出一个具体、出人意料但准确的关系真相，制造"怎么会被说中"的瞬间。
-- ≤30字，留有悬念引导用户解锁全文，**不含天命定论语气**；典雅克制的命理书面语，严禁网络话术。
+- 基于两人命盘的真实互动，点出一个具体、可共鸣但留有余地的关系观察，引导用户解锁全文。
+- ≤30字，**不含天命定论、吉凶断语或「说中你」式算命话术**；典雅克制的命理书面语，严禁网络话术。
 
 ## 输出（严格 JSON）
 { "ahaHook": "≤30字的破冰断言" }
 
 只输出纯 JSON，不要任何其他内容。`
+}
+
+/** Fetch aha hook with forbidden-phrase audit + one retry (non-fatal — returns '' on failure). */
+async function fetchAhaHookWithAudit(
+  env: AiRouterEnv,
+  systemPrompt: string,
+  result: HeHunFullResult,
+  input: HeHunInput,
+  ziweiBlock: string,
+  langReminder: string,
+  language: string
+): Promise<string> {
+  let rewriteSuffix = ''
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const text = await callWithFallback(
+        env,
+        systemPrompt,
+        buildAhaHookPrompt(result, input, ziweiBlock) + langReminder + rewriteSuffix,
+        {
+          tier: 'standard',
+          maxTokens: 256,
+          metricLabel: attempt > 0 ? 'hehun-aha:forbidden-retry' : 'hehun-aha',
+          locale: language,
+        }
+      )
+      const hook = parseAhaHook(text)
+      if (!hook) return ''
+      const audit = auditGeneratedOutput(hook)
+      if (audit.hits.length === 0) return hook
+      rewriteSuffix = audit.rewriteSuffix ?? ''
+    } catch {
+      return ''
+    }
+  }
+  return ''
 }
 
 /**
@@ -761,7 +805,7 @@ export async function generateSynastryChapters(
   const systemPrompt = [
     getSystemRole('hehun'),
     '',
-    buildEnhancedGuardrails('相遇即是缘'),
+    buildEnhancedGuardrails('相遇即是缘', language),
     '',
     '## 合盘正文原则',
     '- 每章必须落到双方命盘的具体特征上，给出可感、可执行的洞察',
@@ -801,6 +845,13 @@ export async function generateSynastryChapters(
       metricLabel: `hehun-chapter-${spec.kind}`,
       locale: language,
     }
+    const parseChapter = (raw: string) =>
+      fixRoleSwap(
+        parseSynastryChapterResponse(raw, spec, yong.element),
+        result.personA,
+        result.personB
+      )
+
     let text = await callWithFallback(env, systemPrompt, userPrompt, opts)
     if (driftedToChinese(text)) {
       const retry = await callWithFallback(
@@ -811,27 +862,40 @@ export async function generateSynastryChapters(
       ).catch(() => '')
       if (retry && !driftedToChinese(retry)) text = retry
     }
-    // The model occasionally crosses 甲方/乙方 in a symmetric chapter (complement is the
-    // usual trigger) → the device would render a flipped 你/对方. Detect + relabel.
-    return fixRoleSwap(
-      parseSynastryChapterResponse(text, spec, yong.element),
-      result.personA,
-      result.personB
-    )
+
+    let chapter = parseChapter(text)
+    const audit = auditGeneratedOutput(JSON.stringify(chapter))
+    if (audit.hits.length > 0 && audit.rewriteSuffix) {
+      const retryText = await callWithFallback(
+        env,
+        systemPrompt,
+        userPrompt + audit.rewriteSuffix,
+        { ...opts, metricLabel: `${opts.metricLabel}:forbidden-retry` }
+      ).catch(() => '')
+      if (retryText) {
+        const retryChapter = parseChapter(retryText)
+        if (auditGeneratedOutput(JSON.stringify(retryChapter)).hits.length === 0) {
+          chapter = retryChapter
+        }
+      }
+    }
+
+    return chapter
   }
 
   // Kick off the aha-hook call in parallel; it never rejects (defaults to '').
   // Only on the shell-bearing pass (first_impression) — a background top-up of the
   // remaining chapters must not regenerate (and overwrite) the already-stored hook.
   const ahaPromise: Promise<string> = includeAha
-    ? callWithFallback(
+    ? fetchAhaHookWithAudit(
         env,
         systemPrompt,
-        buildAhaHookPrompt(result, input, ziweiBlock) + langReminder,
-        { tier: 'standard', maxTokens: 256, metricLabel: 'hehun-aha', locale: language }
+        result,
+        input,
+        ziweiBlock,
+        langReminder,
+        language
       )
-        .then(parseAhaHook)
-        .catch(() => '')
     : Promise.resolve('')
 
   const settled = await Promise.allSettled(specs.map(chapterCall))
@@ -893,7 +957,7 @@ function buildPushSnippetsPrompt(
   input: HeHunInput,
   ziweiBlock: string
 ): string {
-  return `你是一位精通命盘配对的 AI 命理师。基于以下两人命盘的**真实互动**，预先撰写三条"关系日活推送"语料 —— 未来某天两人当日能量呈现对应状态时，App 会作为推送发出，唤起用户打开看这段关系。
+  return `你是一位专注于关系能量分析的人际动力顾问。基于以下两人命盘的**真实互动**，预先撰写三条"关系日活推送"语料 —— 未来某天两人当日能量呈现对应状态时，App 会作为推送发出，唤起用户打开看这段关系。
 
 ${buildPairFacts(result, input, ziweiBlock)}
 
@@ -923,17 +987,30 @@ export async function generateRelationshipPushSnippets(
   const systemPrompt = [
     getSystemRole('hehun'),
     '',
-    buildEnhancedGuardrails('相遇即是缘'),
+    buildEnhancedGuardrails('相遇即是缘', language),
     '',
     buildLanguageBlock(language, 'hehun'),
   ].join('\n')
-  const text = await callWithFallback(
-    env,
-    systemPrompt,
-    buildPushSnippetsPrompt(result, input, ziweiBlock) + buildLanguageReminder(language),
-    { tier: 'standard', maxTokens: 512, metricLabel: 'hehun-push-snippets', locale: language }
-  )
-  return parsePushSnippets(text)
+  const langReminder = buildLanguageReminder(language)
+  let rewriteSuffix = ''
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const text = await callWithFallback(
+      env,
+      systemPrompt,
+      buildPushSnippetsPrompt(result, input, ziweiBlock) + langReminder + rewriteSuffix,
+      {
+        tier: 'standard',
+        maxTokens: 512,
+        metricLabel: attempt > 0 ? 'hehun-push-snippets:forbidden-retry' : 'hehun-push-snippets',
+        locale: language,
+      }
+    )
+    const snippets = parsePushSnippets(text)
+    const audit = auditGeneratedOutput(JSON.stringify(snippets))
+    if (audit.hits.length === 0) return snippets
+    rewriteSuffix = audit.rewriteSuffix ?? ''
+  }
+  return []
 }
 
 /** Parse the push-snippets JSON; returns [] on any failure (non-fatal). */
@@ -1115,7 +1192,7 @@ function buildAnnualForecastPrompt(input: AnnualForecastInput): string {
   const score = (input.compatibilityData as Record<string, unknown>).score ?? '未知'
   const grade = (input.compatibilityData as Record<string, unknown>).grade ?? '未知'
 
-  return `你是一位精通八字合婚与流年运势的 AI 命理师。请根据以下双方八字和合盘基础，解读 ${input.queryYear} 年的双人年度运势。
+  return `你是一位专注于关系能量分析的人际动力顾问。请根据以下双方八字和合盘基础，解读 ${input.queryYear} 年的双人年度节律参照（不是运势预测）。
 
 ## 甲方（${nameA}）
 - 四柱：${summaryA.pillarsLabel}
@@ -1130,25 +1207,25 @@ function buildAnnualForecastPrompt(input: AnnualForecastInput): string {
 - 性别：${input.personBGender}
 
 ## 合盘基础
-- 合缘总分：${score}分（${grade}评级）
+- 关系能量参照：${score}（${grade}）
 
 ## 分析重点
 聚焦 ${input.queryYear} 年太岁对甲乙双方日柱的影响，评估：
-1. 该年流年天干地支与双方四柱的吉凶互动
-2. 该年双人感情/合作运势的整体走向
-3. 年内吉月凶月分布（上半年/下半年趋势）
-4. 双方对这一年的最优策略
+1. 该年流年天干地支与双方四柱的互动参照
+2. 该年双人感情/合作节奏的整体走向
+3. 年内节奏分布（上半年/下半年趋势）
+4. 双方对这一年的可留意的面向
 
 ## 输出要求（JSON 格式）
 {
-  "yearOverview": "${input.queryYear}年总体双人运势（150字，评估太岁对双方的整体影响）",
-  "springFall": "上半年（春夏）运势走势（80字）",
-  "summerWinter": "下半年（秋冬）运势走势（80字）",
-  "keyMonths": "重要月份提示（60字，点名2-3个特别吉或凶的月份及原因）",
-  "joint": "双方协同建议（80字，如何共同把握${input.queryYear}年的机遇）",
+  "yearOverview": "${input.queryYear}年总体双人节律（150字，评估太岁对双方的整体影响）",
+  "springFall": "上半年（春夏）节奏走势（80字）",
+  "summerWinter": "下半年（秋冬）节奏走势（80字）",
+  "keyMonths": "重要月份提示（60字，点名2-3个值得留意的月份及原因）",
+  "joint": "双方协同建议（80字，如何共同把握${input.queryYear}年的窗口）",
   "opportunities": "年度机遇亮点（60字）",
   "challenges": "年度挑战提示（60字）",
-  "advice": "化险为夷策略（80字，具体行动建议）",
+  "advice": "应对策略（80字，具体行动建议）",
   "summary": "一句话年度总结（15字以内）"
 }
 
@@ -1164,10 +1241,11 @@ export async function generateAnnualForecast(
 ): Promise<AnnualForecastInterpretation> {
   const prompt = buildAnnualForecastPrompt(input)
 
+  const language = input.language ?? 'zh-CN'
   const systemPrompt = [
     getSystemRole('hehun'),
     '',
-    buildEnhancedGuardrails('顺势而为，共渡流年'),
+    buildEnhancedGuardrails('顺势而为，共渡流年', language),
     '',
     buildLanguageBlock(input.language ?? 'zh-CN', 'hehun'),
   ].join('\n')

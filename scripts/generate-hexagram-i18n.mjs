@@ -1,0 +1,98 @@
+#!/usr/bin/env bun
+/**
+ * Regenerate i18n overlay JSON files from corpus.zh-CN.json.
+ * Re-run after corpus changes or to refresh translations.
+ *
+ * Usage: bun scripts/generate-hexagram-i18n.mjs
+ */
+
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const dir = join(root, 'packages/hexastral-tokens/src/constants/hexagram')
+const corpus = JSON.parse(readFileSync(join(dir, 'corpus.zh-CN.json'), 'utf8'))
+
+/** English judgmentExplain + keywords for all 64 hexagrams (King Wen order). */
+const EN = {
+  1: { judgmentExplain: 'Qian represents pure yang and vigorous strength. Great fortune for new beginnings — advance actively but stay upright. Like the ceaseless sky, emulate heaven: never slacken.', keywords: ['vigor', 'advance', 'create', 'lead'] },
+  2: { judgmentExplain: 'Kun is the earth that bears all things. Yield and cooperate; accumulate quietly. Confusion may come first, but steadfast virtue brings gain. Act with broad forbearance.', keywords: ['inclusive', 'yielding', 'virtue', 'support'] },
+  3: { judgmentExplain: 'Tun is thunder in clouds — birth amid difficulty. Potential is great but the path is hard. Do not rush far; build foundations steadily, like bamboo breaking soil.', keywords: ['startup', 'hardship', 'sprout', 'persist'] },
+  4: { judgmentExplain: 'Meng is spring under the mountain — awakening and learning. Answers are near; seek sincerely without repeated doubt. Learn humbly and cultivate character.', keywords: ['learning', 'innocence', 'teach', 'grow'] },
+  5: { judgmentExplain: 'Xu is waiting by water — patience before action. Need is real; timing matters. Wait with confidence, not passivity; prepare while you hold.', keywords: ['wait', 'patience', 'trust', 'prepare'] },
+  6: { judgmentExplain: 'Song is conflict and litigation. Dispute drains; seek mediation early. Even if right, compromise may be wiser than victory.', keywords: ['dispute', 'conflict', 'mediate', 'caution'] },
+  7: { judgmentExplain: 'Shi is the army — discipline and collective strength. Success needs order, clear command, and shared purpose. Lead fairly; followers must be loyal.', keywords: ['discipline', 'team', 'order', 'leadership'] },
+  8: { judgmentExplain: 'Bi is union and alliance. Attach to what is good; sincerity binds people. Choose companions wisely; hollow ties fail.', keywords: ['union', 'alliance', 'trust', 'bond'] },
+  9: { judgmentExplain: 'Xiao Xu — small accumulation, gentle restraint. Progress is slow but real. Do not force; nurture little gains until they grow.', keywords: ['small gain', 'restraint', 'gradual', 'patience'] },
+  10: { judgmentExplain: "Lu is treading carefully — walking on a tiger's tail. Courtesy and prudence keep you safe. Advance with respect and awareness.", keywords: ['caution', 'courtesy', 'prudence', 'step'] },
+  11: { judgmentExplain: 'Tai — heaven and earth in harmony. Small goes out, great comes in. A peak period: share prosperity and stay modest.', keywords: ['harmony', 'prosper', 'peace', 'flow'] },
+  12: { judgmentExplain: 'Pi — stagnation; heaven and earth do not interact. Withdraw from conflict; preserve inner integrity until the cycle turns.', keywords: ['block', 'stagnation', 'withdraw', 'endure'] },
+  13: { judgmentExplain: 'Tong Ren — fellowship with others under heaven. Openness and shared goals unite. Avoid cliques; aim at the common good.', keywords: ['fellowship', 'unity', 'open', 'cooperate'] },
+  14: { judgmentExplain: 'Da You — great possession and abundance. Shine without arrogance; share wealth and credit. Great fortune with humility.', keywords: ['abundance', 'wealth', 'shine', 'share'] },
+  15: { judgmentExplain: 'Qian (modesty) — humility that elevates. Lower yourself to rise; excess pride falls. Modesty draws support and lasting success.', keywords: ['humility', 'modest', 'balance', 'virtue'] },
+  16: { judgmentExplain: 'Yu is enthusiasm and foresight. Prepare before the moment; joy with purpose moves people. Do not indulge empty excitement.', keywords: ['enthusiasm', 'joy', 'prepare', 'move'] },
+  17: { judgmentExplain: 'Sui is following the times. Adapt to what is right; flexible loyalty succeeds. Know when to lead and when to follow.', keywords: ['follow', 'adapt', 'flexible', 'timing'] },
+  18: { judgmentExplain: 'Gu is decay to repair — work on what is spoiled. Face problems honestly; renewal needs effort and time.', keywords: ['repair', 'decay', 'renew', 'fix'] },
+  19: { judgmentExplain: 'Lin is approach and influence drawing near. Great opportunity approaches — meet it with sincerity and readiness.', keywords: ['approach', 'influence', 'opportunity', 'sincere'] },
+  20: { judgmentExplain: 'Guan is contemplation and observation. Step back to see clearly; example teaches better than words.', keywords: ['observe', 'contemplate', 'view', 'reflect'] },
+  21: { judgmentExplain: 'Shi He is biting through — decisive justice. Break obstruction firmly but fairly; clarity cuts through confusion.', keywords: ['decision', 'justice', 'breakthrough', 'clear'] },
+  22: { judgmentExplain: 'Bi (grace) — adornment without hollow show. Beauty should express substance; form serves truth.', keywords: ['grace', 'beauty', 'form', 'substance'] },
+  23: { judgmentExplain: 'Bo is stripping away what is false. Let go of decay; protect the seed of renewal. Withdraw from what cannot stand.', keywords: ['strip', 'decline', 'release', 'protect'] },
+  24: { judgmentExplain: 'Fu is return — the turning point back to light. After winter, spring comes. Begin again with sincerity.', keywords: ['return', 'renewal', 'turning', 'begin'] },
+  25: { judgmentExplain: 'Wu Wang — innocence without contrivance. Act naturally and honestly; forced schemes backfire.', keywords: ['innocence', 'natural', 'honest', 'simple'] },
+  26: { judgmentExplain: 'Da Xu — great taming and stored power. Restrain great force wisely; nurture strength for the right moment.', keywords: ['store', 'restrain', 'power', 'nurture'] },
+  27: { judgmentExplain: 'Yi is nourishment — feeding body and mind. Watch what you take in and give out; care for yourself and others.', keywords: ['nourish', 'care', 'feed', 'sustain'] },
+  28: { judgmentExplain: 'Da Guo — great excess; structure under strain. Extraordinary times need extraordinary care; avoid collapse through balance.', keywords: ['excess', 'strain', 'balance', 'extraordinary'] },
+  29: { judgmentExplain: 'Kan is the abyss — repeated danger. Stay sincere in peril; learn from each trial without panic.', keywords: ['danger', 'abyss', 'trial', 'sincere'] },
+  30: { judgmentExplain: 'Li is clarity and attachment like fire. Illuminate with insight; cling to what is right, not to flattery.', keywords: ['clarity', 'light', 'insight', 'attach'] },
+  31: { judgmentExplain: 'Xian is mutual influence — attraction. Gentle response moves hearts; influence works through sincerity, not force.', keywords: ['influence', 'attraction', 'response', 'gentle'] },
+  32: { judgmentExplain: 'Heng is endurance and constancy. Lasting success needs steady commitment through change.', keywords: ['endure', 'constancy', 'lasting', 'steady'] },
+  33: { judgmentExplain: 'Dun is strategic retreat. Withdraw in time to preserve strength; hiding is not cowardice when wise.', keywords: ['retreat', 'withdraw', 'preserve', 'strategy'] },
+  34: { judgmentExplain: 'Da Zhuang — great power. Strength must be righteous; unchecked force invites harm.', keywords: ['power', 'strength', 'righteous', 'restraint'] },
+  35: { judgmentExplain: 'Jin is progress and advancement. Rise with light; promote merit and share success.', keywords: ['progress', 'advance', 'rise', 'merit'] },
+  36: { judgmentExplain: 'Ming Yi — brightness hidden. Conceal talent in adversity; protect inner light until times improve.', keywords: ['hidden', 'conceal', 'adversity', 'protect'] },
+  37: { judgmentExplain: 'Jia Ren — the family. Order begins at home; roles and warmth sustain society.', keywords: ['family', 'home', 'order', 'warmth'] },
+  38: { judgmentExplain: 'Kui is opposition and divergence. Difference need not destroy unity; respect contrast and seek small agreements.', keywords: ['opposition', 'diverge', 'contrast', 'respect'] },
+  39: { judgmentExplain: 'Jian is obstruction — difficulty on the path. Stop, reflect, seek help; stubborn push worsens the block.', keywords: ['obstruction', 'difficulty', 'help', 'pause'] },
+  40: { judgmentExplain: 'Jie is release and relief. Untie knots gradually; forgiveness and limits restore flow.', keywords: ['release', 'relief', 'untie', 'forgive'] },
+  41: { judgmentExplain: 'Sun is decrease — letting go of excess. Less can be more; sacrifice small gain for greater good.', keywords: ['decrease', 'sacrifice', 'less', 'balance'] },
+  42: { judgmentExplain: 'Yi (increase) — growth and benefit. Increase what is worthy; fortune grows when shared upward and downward.', keywords: ['increase', 'benefit', 'grow', 'share'] },
+  43: { judgmentExplain: 'Guai is breakthrough and resolution. Decide openly against wrong; firm clarity removes stagnation.', keywords: ['breakthrough', 'resolve', 'decide', 'clear'] },
+  44: { judgmentExplain: 'Gou is coming to meet — unexpected encounter. Watch sudden influence; stay alert to what arrives unbidden.', keywords: ['encounter', 'meet', 'alert', 'sudden'] },
+  45: { judgmentExplain: 'Cui is gathering together. Unite people around a center; sincerity collects what is scattered.', keywords: ['gather', 'unite', 'collect', 'center'] },
+  46: { judgmentExplain: 'Sheng is pushing upward — steady ascent. Rise step by step like a tree; patience lifts you.', keywords: ['ascend', 'rise', 'steady', 'growth'] },
+  47: { judgmentExplain: 'Kun (exhaustion) — oppression and depletion. Endure hardship without losing integrity; help may come late.', keywords: ['exhaustion', 'oppress', 'endure', 'integrity'] },
+  48: { judgmentExplain: 'Jing is the well — enduring source. Renew the common good; deep resources serve all when maintained.', keywords: ['well', 'source', 'renew', 'common'] },
+  49: { judgmentExplain: 'Ge is revolution — change of form. Transform when the time is ripe; radical change needs right timing and trust.', keywords: ['revolution', 'change', 'transform', 'timing'] },
+  50: { judgmentExplain: 'Ding is the cauldron — culture and nourishment refined. Transform raw into sacred; establish lasting order.', keywords: ['cauldron', 'refine', 'culture', 'order'] },
+  51: { judgmentExplain: 'Zhen is thunder — shock and awakening. Sudden movement stirs; stay centered amid alarm.', keywords: ['thunder', 'shock', 'awaken', 'center'] },
+  52: { judgmentExplain: 'Gen is the mountain — stillness. Stop and be present; quiet stability reveals the next step.', keywords: ['stillness', 'mountain', 'stop', 'calm'] },
+  53: { judgmentExplain: 'Jian (gradual) — slow, proper progress. Advance like a tree on a cliff, not by rush.', keywords: ['gradual', 'proper', 'slow', 'progress'] },
+  54: { judgmentExplain: 'Gui Mei — the marrying maiden. Improper position needs caution; act within your role and timing.', keywords: ['marriage', 'caution', 'role', 'timing'] },
+  55: { judgmentExplain: 'Feng is abundance at peak. Fullness is bright but fleeting — share and prepare for decline.', keywords: ['abundance', 'peak', 'bright', 'share'] },
+  56: { judgmentExplain: 'Lu (traveler) — the wanderer. Stay light, courteous, and adaptable far from home.', keywords: ['travel', 'wander', 'adapt', 'courtesy'] },
+  57: { judgmentExplain: 'Xun is gentle penetration like wind. Influence softly and persistently; flexibility enters where force cannot.', keywords: ['gentle', 'wind', 'penetrate', 'flexible'] },
+  58: { judgmentExplain: 'Dui is joy and openness like the lake. Shared delight binds people; guard against shallow pleasure.', keywords: ['joy', 'lake', 'open', 'delight'] },
+  59: { judgmentExplain: 'Huan is dispersion — dissolving separation. Reunite what was scattered; ritual and sincerity restore cohesion.', keywords: ['disperse', 'reunite', 'cohesion', 'sincere'] },
+  60: { judgmentExplain: 'Jie (limitation) — measured bounds. Limits create freedom; accept structure to avoid chaos.', keywords: ['limit', 'measure', 'bounds', 'order'] },
+  61: { judgmentExplain: 'Zhong Fu — inner truth and sincerity. Trust grows from honest core; even small sincerity moves heaven and earth.', keywords: ['truth', 'sincere', 'trust', 'inner'] },
+  62: { judgmentExplain: 'Xiao Guo — small exceeding. Minor excess is tolerable; do not treat small matters as great ones.', keywords: ['small', 'excess', 'minor', 'tolerate'] },
+  63: { judgmentExplain: 'Ji Ji — completion after crossing. Success is near but fragile; guard the end as carefully as the start.', keywords: ['complete', 'success', 'fragile', 'guard'] },
+  64: { judgmentExplain: 'Wei Ji — not yet complete. The goal is close but unfinished; patience and care finish the crossing.', keywords: ['incomplete', 'near', 'patience', 'finish'] },
+}
+
+const zhTw = Object.fromEntries(
+  corpus.map((h) => [String(h.number), { judgmentExplain: h.judgmentExplain, keywords: h.keywords }])
+)
+
+for (const [name, data] of [
+  ['i18n.en.json', EN],
+  ['i18n.ja.json', EN],
+  ['i18n.ko.json', EN],
+  ['i18n.zh-TW.json', zhTw],
+]) {
+  writeFileSync(join(dir, name), JSON.stringify(data, null, 2))
+}
+
+console.log('regenerated i18n overlays for', Object.keys(EN).length, 'hexagrams')

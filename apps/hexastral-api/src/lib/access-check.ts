@@ -23,6 +23,7 @@ import {
   consumeDivinationCredit,
 } from '../services/quota'
 import { userHasAnySubscription } from './access/entitlement-access'
+import { FENG_BASE_PRICE_USD } from './feng-pricing'
 
 export type SingleSkuId = 'cast' | 'fate_reading' | 'compatibility' | 'feng_analysis'
 
@@ -49,7 +50,10 @@ const SKU_IAP_META: Record<SingleSkuId, { productId: string; price: string }> = 
   cast: { productId: 'hexastral_cast_single', price: '$1.99' },
   fate_reading: { productId: 'hexastral_fate_reading', price: '$9.99' },
   compatibility: { productId: 'hexastral_compatibility', price: '$6.99' },
-  feng_analysis: { productId: 'hexastral_feng_single', price: '$4.99' },
+  feng_analysis: {
+    productId: 'hexastral_feng_single',
+    price: `$${FENG_BASE_PRICE_USD.toFixed(2)}`,
+  },
 }
 
 /**

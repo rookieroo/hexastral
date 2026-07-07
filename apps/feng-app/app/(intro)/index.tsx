@@ -37,13 +37,13 @@ interface IntroCopy {
 }
 
 const INTRO_COPY: Record<Locale, IntroCopy> = {
-  zh: { lines: ['天地之间，自有其气。', '观山理水，安顿此身。'], continue: '轻触开始' },
-  'zh-Hant': { lines: ['天地之間，自有其氣。', '觀山理水，安頓此身。'], continue: '輕觸開始' },
+  zh: { lines: ['读一处宅地，', '用古典场所理论作参考。'], continue: '轻触开始' },
+  'zh-Hant': { lines: ['讀一處宅地，', '用古典場所理論作參考。'], continue: '輕觸開始' },
   ja: {
-    lines: ['天地には、気の流れがある。', '地を読み、住まいを調える。'],
+    lines: ['場所を読む、', '古典の場所理論で学ぶ。'],
     continue: 'タップして始める',
   },
-  en: { lines: ['The land has a shape.', 'Let it settle you.'], continue: 'tap to begin' },
+  en: { lines: ['Read a place', 'through classical site theory.'], continue: 'tap to begin' },
 }
 
 export default function IntroScreen() {

@@ -40,7 +40,7 @@ function persistUtmParams(req: NextRequest, res: NextResponse) {
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ─── Brand default locale: Yuel / Yuun / Yaul open in 简体中文 ─────────────
+  // ─── Brand default locale: Yuel / Yuun / Yaul / Kanyu open in 简体中文 ─────
   // `localePrefix: 'as-needed'` resolves the bare URL to the global default locale
   // (en). The Chinese-first brand hosts (yuel.* / yuun.* / yaul.*) should open in Chinese, so
   // redirect their root to /zh. It must be a redirect, not a rewrite: the page reads
@@ -49,7 +49,12 @@ export default function middleware(request: NextRequest) {
   // en default; /zh is non-looping (it no longer matches `=== '/'`).
   if (pathname === '/') {
     const host = request.headers.get('host') ?? ''
-    if (host.startsWith('yuel.') || host.startsWith('yuun.') || host.startsWith('yaul.')) {
+    if (
+      host.startsWith('yuel.') ||
+      host.startsWith('yuun.') ||
+      host.startsWith('yaul.') ||
+      host.startsWith('kanyu.')
+    ) {
       const url = request.nextUrl.clone()
       url.pathname = '/zh'
       return NextResponse.redirect(url)

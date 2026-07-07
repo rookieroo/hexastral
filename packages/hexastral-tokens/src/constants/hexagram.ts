@@ -1,4 +1,5 @@
 export type { Fortune } from './fortune'
-export { HEXAGRAM_DETAILS } from './hexagram-details'
+export { HEXAGRAM_DETAILS, getHexagramDetail, getLocalizedHexagramFields, resolveHexagramLocale } from './hexagram-i18n'
+export type { HexagramLocale } from './hexagram-i18n'
 export { HEXAGRAM_LIST } from './hexagram-list'
 export type { HexagramData, HexagramListItem } from './hexagram-types'

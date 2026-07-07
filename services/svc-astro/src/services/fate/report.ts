@@ -58,13 +58,13 @@ function buildFateReportSystemPrompt(language: string): string {
     '- 两盘矛盾时，以紫微为主，八字为辅，相互印证',
     '- 有面相数据时，用面相印证命盘，修正流年细节精准度',
     '- 解读有实质内容，避免车轱辘话，给出具体可操作的建议',
-    '- 吉凶并论，不刻意报喜不报忧，帮助用户趋吉避凶',
+    '- 吉凶并论，不刻意报喜不报忧，帮助用户观照节奏、留意的面向',
     '',
     '**禁止**:',
     '- 给出具体日期的预测（只能说“年中”、“下半年”等模糊时段）',
     '- 输出任何 markdown 格式',
     '',
-    buildEnhancedGuardrails(),
+    buildEnhancedGuardrails('观照自身，不作预测', language),
     buildLanguageBlock(language, 'fate'),
   ].join('\n')
 }

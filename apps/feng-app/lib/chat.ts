@@ -12,6 +12,7 @@
 
 import type { ReadingChatHistory, ReadingChatSendResult } from '@zhop/core-ui'
 import { config } from './config'
+import { isDevProSync } from './dev-flags'
 import { signRequest } from './hmac'
 
 const TARGET_APP = 'feng'
@@ -29,6 +30,7 @@ async function authedHeaders(
   }
   const sig = await signRequest({ body, userId, method, path })
   if (sig) Object.assign(headers, sig)
+  if (isDevProSync()) headers['x-feng-dev-pro'] = '1'
   return headers
 }
 
@@ -71,12 +73,15 @@ export async function sendChatMessage(
     body,
   })
   if (!res.ok) {
-    // Error envelope is `{ ok: false, error: { code, message } }`; `message`
-    // carries the business code ('pro_required' / 'no_chat_credits').
     const json = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string }
+      error?: string | { code?: string; message?: string }
     } | null
-    throw new Error(json?.error?.message ?? json?.error?.code ?? `send_failed:${res.status}`)
+    const errField = json?.error
+    const msg =
+      typeof errField === 'string'
+        ? errField
+        : (errField?.message ?? errField?.code ?? `send_failed:${res.status}`)
+    throw new Error(msg)
   }
   return (await res.json()) as ReadingChatSendResult
 }

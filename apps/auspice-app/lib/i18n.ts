@@ -96,6 +96,8 @@ export interface Strings {
   proAnnual: string
   /** Restore-purchases row label. */
   proRestore: string
+  /** Short legal disclaimer for paywall, deep-read, and AI surfaces. */
+  legalDisclaimerShort: string
   /** Login-at-subscribe gate (sign in before purchase). */
   signInToSubscribe: string
   signInBenefit: string
@@ -507,7 +509,7 @@ const zhHans: Strings = {
   solarTerm: '节气',
   auspiciousHours: '时辰',
   ratingLabel: '评级',
-  eventSearch: '选择日子',
+  eventSearch: '选时参考',
   pickEvent: '选择事项',
   from: '起',
   to: '止',
@@ -534,22 +536,24 @@ const zhHans: Strings = {
   personalClashLabel: '今日冲你',
   unlockMore: '解锁更多',
   proTitle: 'Yuun Pro',
-  proSubtitle: '今日吉凶 · 完整人生时间线 ·「假如」推演 · 专项择日',
+  proSubtitle: '个性化日历层 · 完整人生时间线 ·「假如」反思 · 专项日期参考',
   proBenefits: [
-    '每日吉凶 · 为你的命盘而定',
-    '完整人生时间线 · 大运 / 流年 / 流月 +「假如」推演',
+    '对你而言 · 基于命盘的每日个性化层（文化参考）',
+    '完整人生时间线 · 大运 / 流年 / 流月 +「假如」反思推演',
     '对你而言 · 每条宜忌逐条解读（用神 · 吉色 · 吉时）',
-    '自定义择日范围 + 个人黄历日历订阅',
+    '自定义日期范围 + 个人黄历日历订阅',
   ],
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
   proRestore: '恢复购买',
+  legalDisclaimerShort:
+    '基于传统历法与命理文化，仅供娱乐、文化探索与个人省思，不构成医疗、法律、财务或人生决策建议。',
   signInToSubscribe: '订阅前请先登录',
   signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Yuel」等其他应用时延续。',
   signInWithGoogle: '使用 Google 登录',
   signInError: '登录失败，请重试。',
-  specializedActive: '专项择日 已启用',
-  specializedUpsell: 'Pro · 解锁专项择日',
+  specializedActive: '专项时日参考 已启用',
+  specializedUpsell: 'Pro · 解锁专项时日参考',
   eventRangeSection: '时间范围',
   eventRangeFreeNote: '未来 30 天 · 取最佳 3 天',
   eventRangeUpsell: 'Pro · 自定义日期范围',
@@ -605,9 +609,9 @@ const zhHans: Strings = {
   timelineRemindToggle: '人生节点提醒',
   timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
   timelineAdvice: {
-    吉: '气运相生，宜主动进取、顺势把握时机。',
-    平: '运势平稳，按部就班、稳中求进即可。',
-    凶: '气运受克，宜守不宜攻；注意休息、少熬夜，别硬撑。',
+    吉: '此月能量偏顺，可考虑主动推进（文化参考，非建议）。',
+    平: '此月能量平稳，宜按部就班、稳中求进（文化参考）。',
+    凶: '此月能量偏逆，宜多休息、少硬撑（文化参考，非建议）。',
   },
   timelinePeriodElement: {
     favorable: '{el}行正是你的用神，此运整体有助力。',
@@ -818,7 +822,7 @@ const zhHans: Strings = {
     poolRemaining: '本月还剩 {remaining} 次回复',
     suggest1: '我的优势在哪里？',
     suggest2: '我要注意些什么？',
-    suggest3: '我今年运势如何？',
+    suggest3: '今年流年的文化参考是什么？',
   },
   kindredComposeCta: '在 Yuel 看完整合盘 →',
   kindredShareConsent: {
@@ -843,7 +847,7 @@ const zhHans: Strings = {
   },
   appleCalendarSection: '系统日历',
   personalCalendarRow: '对你而言 · 专属日历',
-  personalCalendarHint: '把每天的吉 / 平 / 凶同步到系统日历（Pro）',
+  personalCalendarHint: '把每天的宜忌参考同步到系统日历（Pro）',
   personalCalendarFailed: '暂时无法打开专属日历，请稍后重试。',
   appleCalendarSubscribeRow: '在 Apple 日历订阅黄历',
   appleCalendarSubscribeHint:
@@ -881,21 +885,23 @@ const zhHant: Strings = {
   personalClashLabel: '今日沖你',
   unlockMore: '解鎖更多',
   proTitle: 'Yuun Pro',
-  proSubtitle: '今日吉凶 · 完整人生時間線 ·「假如」推演 · 專項擇日',
+  proSubtitle: '個人化日曆層 · 完整人生時間線 ·「假如」反思 · 專項日期參考',
   proBenefits: [
-    '每日吉凶 · 為你的命盤而定',
-    '完整人生時間線 · 大運 / 流年 / 流月 +「假如」推演',
+    '對你而言 · 基於命盤的每日個人化層（文化參考）',
+    '完整人生時間線 · 大運 / 流年 / 流月 +「假如」反思推演',
     '對你而言 · 每條宜忌逐條解讀（用神 · 吉色 · 吉時）',
-    '自訂擇日範圍 + 個人黃曆日曆訂閱',
+    '自訂日期範圍 + 個人黃曆日曆訂閱',
   ],
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
   proRestore: '恢復購買',
+  legalDisclaimerShort:
+    '基於傳統曆法與命理文化，僅供娛樂、文化探索與個人省思，不構成醫療、法律、財務或人生決策建議。',
   signInToSubscribe: '訂閱前請先登入',
   signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Yuel」等其他應用時延續。',
   signInWithGoogle: '使用 Google 登入',
   signInError: '登入失敗，請重試。',
-  specializedActive: '專項擇日 已啟用',
+  specializedActive: '專項時日參考 已啟用',
   specializedUpsell: 'Pro · 解鎖專項擇日',
   eventRangeSection: '時間範圍',
   eventRangeFreeNote: '未來 30 天 · 取最佳 3 天',
@@ -952,9 +958,9 @@ const zhHant: Strings = {
   timelineRemindToggle: '人生節點提醒',
   timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
   timelineAdvice: {
-    吉: '氣運相生，宜主動進取、順勢把握時機。',
-    平: '運勢平穩，按部就班、穩中求進即可。',
-    凶: '氣運受剋，宜守不宜攻；注意休息、少熬夜，別硬撐。',
+    吉: '今月能量偏順，可考慮主動推進（文化參考，非建議）。',
+    平: '今月能量平穩，宜按部就班、穩中求進（文化參考）。',
+    凶: '今月能量偏逆，宜多休息、少硬撐（文化參考，非建議）。',
   },
   timelinePeriodElement: {
     favorable: '{el}行正是你的用神，此運整體有助力。',
@@ -1151,7 +1157,7 @@ const zhHant: Strings = {
     poolRemaining: '本月還剩 {remaining} 次回覆',
     suggest1: '我的優勢在哪裡？',
     suggest2: '我要注意些什麼？',
-    suggest3: '我今年運勢如何？',
+    suggest3: '今年流年的文化參考是什麼？',
   },
   kindredComposeCta: '在 Yuel 看完整合盤 →',
   kindredShareConsent: {
@@ -1176,7 +1182,7 @@ const zhHant: Strings = {
   },
   appleCalendarSection: '系統日曆',
   personalCalendarRow: '對你而言 · 專屬日曆',
-  personalCalendarHint: '把每天的吉 / 平 / 凶同步到系統日曆（Pro）',
+  personalCalendarHint: '把每天的宜忌參考同步到系統日曆（Pro）',
   personalCalendarFailed: '暫時無法打開專屬日曆，請稍後重試。',
   appleCalendarSubscribeRow: '在 Apple 日曆訂閱黃曆',
   appleCalendarSubscribeHint:
@@ -1238,22 +1244,24 @@ const ja: Strings = {
   personalClashLabel: '本日と冲',
   unlockMore: 'もっと見る',
   proTitle: 'Yuun Pro',
-  proSubtitle: '今日の吉凶 · 人生タイムライン全期間 ·「もしも」· 専用の吉日選び',
+  proSubtitle: '個人化カレンダー · 人生タイムライン全期間 ·「もしも」省思 · 日付参考',
   proBenefits: [
-    '毎日の吉凶 · あなたの命盤に合わせて',
-    '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」',
+    'あなた向け · 命盤に基づく毎日の個人化レイヤー（文化参考）',
+    '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」省思',
     'あなたへ · 宜忌を一項目ずつ（用神 · 吉色 · 吉時）',
-    '日選びの期間指定 + 個人の暦カレンダー購読',
+    '日付範囲のカスタム + 個人の暦カレンダー購読',
   ],
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
   proRestore: '購入を復元',
+  legalDisclaimerShort:
+    '伝統暦法・命理文化に基づく娯楽・文化探索・個人的省思用。医療・法律・財務・人生判断の助言ではありません。',
   signInToSubscribe: 'ご登録の前にサインイン',
   signInBenefit:
     'サインインすると購読は全デバイスで復元でき、「縁」など他のアプリにも引き継げます。',
   signInWithGoogle: 'Google でサインイン',
   signInError: 'サインインに失敗しました。もう一度お試しください。',
-  specializedActive: '専門日選び 適用中',
+  specializedActive: '専門日時参考 適用中',
   specializedUpsell: 'Pro · 専門日選びを解錠',
   eventRangeSection: '期間',
   eventRangeFreeNote: '今後 30 日 · ベスト 3 日',
@@ -1310,9 +1318,9 @@ const ja: Strings = {
   timelineRemindToggle: '人生の節目リマインド',
   timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
   timelineAdvice: {
-    吉: '運気が味方します。積極的に動き、好機を掴みましょう。',
-    平: '運気は穏やか。着実に、無理なく進めましょう。',
-    凶: '運気は抑えぎみ。守りを固め、休息を大切に、無理は禁物。',
+    吉: '今月のエネルギーは追い風寄り。積極的に動く参考になり得ます（助言ではありません）。',
+    平: '今月は穏やか。着実に進める文化上の参考です。',
+    凶: '今月は抑え気味。休息を大切に（文化参考、助言ではありません）。',
   },
   timelinePeriodElement: {
     favorable: '{el}はあなたの用神、この運は全体に追い風。',
@@ -1511,7 +1519,7 @@ const ja: Strings = {
     poolRemaining: '今月の返信があと {remaining} 回',
     suggest1: '私の強みは？',
     suggest2: '気をつけることは？',
-    suggest3: '今年の運勢は？',
+    suggest3: '今年の流年を文化参考として読むには？',
   },
   kindredComposeCta: 'Yuel で本格相性鑑定 →',
   kindredShareConsent: {
@@ -1536,7 +1544,7 @@ const ja: Strings = {
   },
   appleCalendarSection: 'システムカレンダー',
   personalCalendarRow: 'あなたへ · 専用カレンダー',
-  personalCalendarHint: '毎日の吉凶をシステムカレンダーに同期（Pro）',
+  personalCalendarHint: '毎日の宜忌参考をシステムカレンダーに同期（Pro）',
   personalCalendarFailed: '専用カレンダーを開けませんでした。しばらくして再試行してください。',
   appleCalendarSubscribeRow: 'Apple カレンダーに暦を購読',
   appleCalendarSubscribeHint:
@@ -1586,22 +1594,24 @@ const en: Strings = {
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
   proTitle: 'Yuun Pro',
-  proSubtitle: "Today's fortune · full life timeline · what-if paths · custom date-picking",
+  proSubtitle: 'Personal calendar layer · full life timeline · what-if reflection · date reference',
   proBenefits: [
-    "Today's fortune, tailored to your chart",
-    'Your whole life in 10-year cycles — decade, year, month + what-if paths',
+    'For you · daily personal layer from your chart (cultural reference)',
+    'Your whole life in 10-year cycles — decade, year, month + what-if reflection',
     'For-you — every Suitable / Avoid explained (favorable element · color · hour)',
     'Custom date-picker range + personal almanac calendar subscription',
   ],
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
   proRestore: 'Restore purchase',
+  legalDisclaimerShort:
+    'Based on traditional almanac and chart culture — for entertainment, cultural exploration, and personal reflection only. Not medical, legal, financial, or life advice.',
   signInToSubscribe: 'Sign in to subscribe',
   signInBenefit:
     'Signing in lets your subscription restore on every device and carry into other apps like Yuel.',
   signInWithGoogle: 'Sign in with Google',
   signInError: 'Sign-in failed. Please try again.',
-  specializedActive: 'Specialized scoring on',
+  specializedActive: 'Specialized timing reference on',
   specializedUpsell: 'Pro · unlock specialized scoring',
   eventRangeSection: 'Date range',
   eventRangeFreeNote: 'Next 30 days · top 3',
@@ -1659,9 +1669,9 @@ const en: Strings = {
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
   timelineAdvice: {
-    吉: 'The energy supports you — take initiative and seize the moment.',
-    平: 'Steady energy — keep a measured pace and build gradually.',
-    凶: 'The energy runs counter — hold steady, rest well, and avoid overexerting.',
+    吉: 'This month reads supportive — a cultural reference for initiative, not advice.',
+    平: 'Steady energy this month — a cultural reference for a measured pace.',
+    凶: 'This month reads counter — rest and avoid overexerting (cultural reference, not advice).',
   },
   timelinePeriodElement: {
     favorable: '{el} is your favorable element — this period lends support.',
@@ -1874,7 +1884,7 @@ const en: Strings = {
     poolRemaining: '{remaining} replies left this month',
     suggest1: 'What are my strengths?',
     suggest2: 'What should I watch out for?',
-    suggest3: 'How is my year ahead?',
+    suggest3: 'How does this year read on my chart (cultural reference)?',
   },
   kindredComposeCta: 'Open full reading in Yuel →',
   kindredShareConsent: {
@@ -1900,7 +1910,7 @@ const en: Strings = {
   },
   appleCalendarSection: 'System calendar',
   personalCalendarRow: 'For-you calendar',
-  personalCalendarHint: 'Sync your daily verdict to the system Calendar (Pro)',
+  personalCalendarHint: 'Sync daily almanac reference to the system Calendar (Pro)',
   personalCalendarFailed: "Couldn't open your personal calendar — please try again.",
   appleCalendarSubscribeRow: 'Subscribe in Apple Calendar',
   appleCalendarSubscribeHint:

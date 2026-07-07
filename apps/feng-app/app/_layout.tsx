@@ -28,9 +28,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthGate } from '@/components/AuthGate'
 import { FengMark } from '@/components/FengMark'
-import { AuthProvider } from '@/lib/auth'
+import { AuthProvider, useAuth } from '@/lib/auth'
 import { FengClientGate } from '@/lib/client'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
+import { initializeFengIap, loginFengIap } from '@/lib/iap'
 import { resolveLocale } from '@/lib/i18n'
 import { FENG_PALETTE } from '@/lib/theme'
 
@@ -49,6 +50,17 @@ function BootSplash() {
       <ActivityIndicator color={FENG_PALETTE.copperGold} />
     </View>
   )
+}
+
+function IapBootstrap() {
+  const { userId } = useAuth()
+  useEffect(() => {
+    initializeFengIap()
+  }, [])
+  useEffect(() => {
+    if (userId) void loginFengIap(userId)
+  }, [userId])
+  return null
 }
 
 export default function RootLayout() {
@@ -73,6 +85,7 @@ export default function RootLayout() {
         <CoreUIProvider brand='feng' mode={mode}>
           <AuthProvider>
             <AuthGate>
+              <IapBootstrap />
               <FengClientGate fallback={<BootSplash />}>
                 <Stack
                   screenOptions={{
@@ -87,6 +100,7 @@ export default function RootLayout() {
                   <Stack.Screen name='(report)' />
                   <Stack.Screen name='(birth-info)' />
                   <Stack.Screen name='(glossary)' />
+                  <Stack.Screen name='paywall' options={{ presentation: 'modal' }} />
                 </Stack>
               </FengClientGate>
             </AuthGate>

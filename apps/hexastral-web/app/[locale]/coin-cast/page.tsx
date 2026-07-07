@@ -22,14 +22,14 @@ const COPY: Record<string, YaulLandingCopy> & { en: YaulLandingCopy } = {
   en: {
     title: 'Yaul',
     subtitle: 'Three coins. Six lines. One question.',
-    body: 'Yaul is an I Ching Liu Yao (六爻) study journal. Tap or shake to cast in 3D — the lines build, a hexagram forms, and AI commentary meets the question you started with. Free to try in browser; the iOS app adds shake-to-cast and a private history.',
+    body: 'Yaul is an I Ching Liu Yao (六爻) study journal. Tap or shake to cast in 3D — the lines build, a hexagram forms, and AI commentary meets the question you started with. For cultural study and reflection only — not fortune-telling or professional advice. Free to try in browser; the iOS app adds shake-to-cast and a private history.',
     tryCta: 'Try a cast in browser',
     appCta: 'Get Yaul on iOS',
   },
   zh: {
     title: 'Yaul',
     subtitle: '三枚铜钱，六爻一问。',
-    body: 'Yaul 是易经六爻研习工具。点击或摇动手机起卦——爻位积成一卦，AI 释读回应你最初的问题。浏览器即可免费体验；iOS 版新增摇杆起卦与私人卦象史。',
+    body: 'Yaul 是易经六爻研习工具。点击或摇动手机起卦——爻位积成一卦，AI 释读回应你最初的问题。仅供文化研习与个人省思，非算命或专业建议。浏览器即可免费体验；iOS 版新增摇杆起卦与私人卦象史。',
     tryCta: '在浏览器中起卦',
     appCta: 'iOS 下载 Yaul',
   },

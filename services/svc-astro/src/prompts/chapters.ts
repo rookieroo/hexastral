@@ -85,7 +85,7 @@ ${COMMON_RULES}`
 // ============================================================================
 
 export function ch2DimensionsStatic(ctx: ChapterPromptContext, langLabel: string): string {
-  return `你是一位精通八字 × 紫微的命理顾问，正在撰写**第二章 · 人生维度（静态部分）**。
+  return `你是一位精通八字 × 紫微合参的东方智慧顾问，正在撰写**第二章 · 人生维度（静态部分）**。
 基于命格本身（与时空无关）描绘事业、财富、关系、健康四个维度的**先天框架**。
 用 ${langLabel} 输出。
 
@@ -102,7 +102,7 @@ ${COMMON_RULES}`
 // ============================================================================
 
 export function ch2DimensionsDynamic(ctx: ChapterPromptContext, langLabel: string): string {
-  return `你是一位精通八字 × 紫微的命理顾问，正在撰写**第二章 · 人生维度（动态部分）**。
+  return `你是一位精通八字 × 紫微的东方智慧顾问，正在撰写**第二章 · 人生维度（动态部分）**。
 基于用户当前的大运 + 流年，告诉用户**未来 3-12 个月**在事业/财富/关系/健康上将经历的具体张力。
 用 ${langLabel} 输出。
 
@@ -136,7 +136,7 @@ ${COMMON_RULES}`
 // ============================================================================
 
 export function ch4Timeline(ctx: ChapterPromptContext, langLabel: string): string {
-  return `你是一位精通八字大运 × 紫微流年的命理顾问，正在撰写**第四章 · 命运时间轴**。
+  return `你是一位精通八字大运 × 紫微流年的东方智慧顾问，正在撰写**第四章 · 命运时间轴**。
 为用户描绘当前大运 + 当前流年的关键节点，给出**可识别的时间锚点**。
 用 ${langLabel} 输出。
 
@@ -153,7 +153,7 @@ ${COMMON_RULES}`
 // ============================================================================
 
 export function ch5Hidden(ctx: ChapterPromptContext, langLabel: string): string {
-  return `你是一位精通八字神煞 × 紫微化忌的资深命理顾问，正在撰写**第五章 · 隐藏面**。
+  return `你是一位精通八字神煞 × 紫微化忌的资深东方智慧顾问，正在撰写**第五章 · 隐藏面**。
 揭示用户命盘中**易被忽略的张力点**：化忌、神煞、刑冲合害、调候缺失、用神不到位等。
 用 ${langLabel} 输出。
 

@@ -35,6 +35,15 @@ const BRANDS = {
     tag: 'Three coins. Six lines. One question.',
     kicker: 'I CHING · LIU YAO · HEXAGRAM STUDY',
   },
+  kanyu: {
+    bg: '#0B1219',
+    fg: '#F5F0E8',
+    dim: 'rgba(245,240,232,0.6)',
+    accent: '#A2937E',
+    name: 'Kanyu',
+    tag: 'Classical site analysis for built environments.',
+    kicker: 'FENG SHUI · KANYU · COMPASS · SITE READ',
+  },
   hexastral: {
     bg: '#050510',
     fg: '#f5f0e8',
@@ -54,7 +63,9 @@ export default async function OpengraphImage() {
       ? BRANDS.yuun
       : host.startsWith('yaul.')
         ? BRANDS.yaul
-        : BRANDS.hexastral
+        : host.startsWith('kanyu.')
+          ? BRANDS.kanyu
+          : BRANDS.hexastral
 
   return new ImageResponse(
     <div

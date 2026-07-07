@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { HexastralHome } from '@/components/brand/HexastralHome'
+import { KanyuHome } from '@/components/brand/KanyuHome'
 import { YaulHome } from '@/components/brand/YaulHome'
 import { YuelHome } from '@/components/brand/YuelHome'
 import { YuunHome } from '@/components/brand/YuunHome'
@@ -11,17 +12,18 @@ interface PageProps {
   searchParams?: Promise<{ brand?: string }>
 }
 
-type Brand = 'yuel' | 'yuun' | 'yaul' | 'hexastral'
+type Brand = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'hexastral'
 
-/** Resolve the brand from the request host — one worker serves four homes. A
+/** Resolve the brand from the request host — one worker serves five homes. A
  *  `?brand=` query override makes local preview / QA trivial (no host spoofing). */
 async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<Brand> {
   const o = (searchParams ? await searchParams : undefined)?.brand
-  if (o === 'yuel' || o === 'yuun' || o === 'yaul' || o === 'hexastral') return o
+  if (o === 'yuel' || o === 'yuun' || o === 'yaul' || o === 'kanyu' || o === 'hexastral') return o
   const host = (await headers()).get('host') ?? ''
   if (host.startsWith('yuel.')) return 'yuel'
   if (host.startsWith('yuun.')) return 'yuun'
   if (host.startsWith('yaul.')) return 'yaul'
+  if (host.startsWith('kanyu.')) return 'kanyu'
   return 'hexastral'
 }
 
@@ -81,6 +83,20 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       alternates: { canonical: '/' },
     }
   }
+  if (brand === 'kanyu') {
+    return {
+      metadataBase,
+      title: { absolute: 'Kanyu — classical feng-shui site analysis' },
+      description:
+        'Pin a site, calibrate compass bearing, optionally upload a floor plan, and receive a structured 堪舆 report with cited AI commentary. Educational, not predictive. From UseONE, LLC.',
+      openGraph: {
+        title: 'Kanyu · 堪舆',
+        description: 'Read built environments through classical site theory.',
+        siteName: 'Kanyu',
+      },
+      alternates: { canonical: '/' },
+    }
+  }
   const t = await getTranslations({ locale, namespace: 'meta' })
   return {
     metadataBase,
@@ -96,5 +112,6 @@ export default async function LandingPage({ searchParams }: PageProps) {
   if (brand === 'yuel') return <YuelHome locale={locale} />
   if (brand === 'yuun') return <YuunHome locale={locale} />
   if (brand === 'yaul') return <YaulHome locale={locale} />
+  if (brand === 'kanyu') return <KanyuHome locale={locale} />
   return <HexastralHome locale={locale} origin={await requestOrigin()} />
 }

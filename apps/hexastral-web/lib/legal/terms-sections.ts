@@ -28,13 +28,14 @@ const termsTw = termsTwRaw as LegalDoc
 
 export function getTermsSections(locale: Locale): readonly LegalSection[] {
   if (locale === 'ja') return termsJa.sections
-  if (locale === 'tw') return termsTw.sections
+  // zh (简体) shares the zh-Hant legal text until a dedicated terms.zh.json lands.
+  if (locale === 'zh' || locale === 'tw') return termsTw.sections
   return termsEn.sections
 }
 
 export function getTermsLastUpdated(locale: Locale): string {
   if (locale === 'ja') return termsJa.lastUpdated
-  if (locale === 'tw') return termsTw.lastUpdated
+  if (locale === 'zh' || locale === 'tw') return termsTw.lastUpdated
   return termsEn.lastUpdated
 }
 
@@ -46,5 +47,5 @@ export const TERMS_LAST_UPDATED: Record<Locale, string> = {
   en: termsEn.lastUpdated,
   ja: termsJa.lastUpdated,
   tw: termsTw.lastUpdated,
-  zh: termsEn.lastUpdated,
+  zh: termsTw.lastUpdated,
 }

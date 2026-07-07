@@ -68,7 +68,7 @@ function getEnCopy() {
       },
       {
         h2: 'Bottom line',
-        p: 'Open the Compass tool, get a bearing, and look up what mountain you are facing. For a serious reading — flying-star chart, lucky directions per your birth, year-by-year transit advice — open the Fēng app with that bearing pre-filled. Or just learn the directions of your home for free.',
+        p: 'Open the Compass tool, get a bearing, and look up what mountain you are facing. For a structured site study report — flying-star chart, personal trigram notes, annual star context — open the Kanyu app with that bearing pre-filled. For entertainment and cultural study only; not professional feng-shui advice.',
       },
     ],
     nextCta: 'Open the compass',
@@ -93,7 +93,7 @@ function getZhCopy(): ReturnType<typeof getEnCopy> {
       },
       {
         h2: 'Compass 如何处理',
-        p: 'iOS 端利用 GPS 定位查询 WMM-2025 磁场模型，直接返回真北朝向。Compass 同时显示磁北、真北与当前磁偏角值。Android 版（V1.1）内置 WMM 表，离线可用。Web 端 (V1) 只显示磁北——做定向够用，但风水审查需要原生 App 才有的真北精度。',
+        p: 'iOS 端利用 GPS 定位查询 WMM-2025 磁场模型，直接返回真北朝向。Compass 同时显示磁北、真北与当前磁偏角值。Android 版（V1.1）内置 WMM 表，离线可用。Web 端 (V1) 只显示磁北——做定向够用；完整站点研习报告需 Kanyu App 的真北精度（文化研习，非专业风水服务）。',
       },
       {
         h2: '二十四山——每个名字的含义',
@@ -101,7 +101,7 @@ function getZhCopy(): ReturnType<typeof getEnCopy> {
       },
       {
         h2: '结语',
-        p: '打开 Compass，记下当前朝向，看看自己面向哪一座山。若要做完整解读——玄空飞星、个人吉位、流年方位建议——把这个朝向带入 Fēng App，或先了解一下家中各方位也是免费的。',
+        p: '打开 Compass，记下当前朝向，看看自己面向哪一座山。若要做结构化站点研习报告——玄空飞星、个人命卦参考、流年星语境——把这个朝向带入 Kanyu App（仅供娱乐与文化研习，非专业风水建议）。先了解家中各方位也是免费的。',
       },
     ],
     nextCta: '打开罗盘',

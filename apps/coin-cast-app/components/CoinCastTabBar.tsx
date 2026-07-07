@@ -19,10 +19,10 @@ type TabIcon = ComponentType<{ color?: string; size?: number; strokeWidth?: numb
 
 const ICONS: Record<string, TabIcon> = { index: Coins, me: UserRound }
 const ORACLE_LABEL: Record<string, string> = {
-  en: 'Oracle',
-  zh: '摇卦',
-  'zh-Hant': '搖卦',
-  ja: '卦',
+  en: 'Reading',
+  zh: '释读',
+  'zh-Hant': '釋讀',
+  ja: '読解',
 }
 
 export interface CoinCastTabBarProps {

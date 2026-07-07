@@ -49,6 +49,9 @@ export default function CoinCastPaywallScreen() {
             },
           }}
         />
+        <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16, textAlign: 'center' }}>
+          {t('paywallLegalDisclaimer')}
+        </Text>
       </ScrollView>
     </View>
   )

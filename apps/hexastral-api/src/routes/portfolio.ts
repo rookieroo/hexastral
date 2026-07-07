@@ -24,6 +24,7 @@ import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { rebuildUserCharts } from '../lib/chart-skeleton'
 import { castMeihua } from '../lib/meihua'
 import {
+  buildCoincastMemoryDocument,
   buildDreamMemoryDocument,
   buildNumerologyMemoryDocument,
   deletePortfolioReadingMemory,
@@ -45,6 +46,11 @@ import {
   getCreditBalance,
   refundCredit,
 } from '../services/credits'
+import {
+  checkDivinationGuard,
+  type GuardReason,
+  recordDivinationSuccess,
+} from '../services/shared/divination-guard'
 
 const portfolioTargetSchema = z.enum([
   'faceoracle',
@@ -221,6 +227,77 @@ const COINCAST_VIOLATION_WARN_THRESHOLD = 3
 /** Consecutive refusals that trigger a temporary CoinCast pause. */
 const COINCAST_VIOLATION_BAN_THRESHOLD = 5
 const COINCAST_BAN_DURATION_MS = 24 * 60 * 60 * 1000
+
+type CoincastInterpretationMode = 'classical' | 'ai'
+
+async function resolveCoincastInterpretationMode(
+  db: ContextVariables['db'],
+  opts: { userId: string; consumeCredit: boolean }
+): Promise<{ mode: CoincastInterpretationMode; isPro: boolean }> {
+  const nowIso = new Date().toISOString()
+  const user = await db
+    .select({ proUntil: users.coincastProExpiresAt })
+    .from(users)
+    .where(eq(users.id, opts.userId))
+    .get()
+
+  const isPro = Boolean(user?.proUntil && user.proUntil > nowIso)
+  if (isPro || opts.consumeCredit) {
+    return { mode: 'ai', isPro }
+  }
+  return { mode: 'classical', isPro: false }
+}
+
+async function evaluateCoincastUpgradeAccess(
+  db: ContextVariables['db'],
+  userId: string
+): Promise<{ granted: boolean; consumeCredit: boolean; isPro: boolean }> {
+  const nowIso = new Date().toISOString()
+  const user = await db
+    .select({
+      credits: users.coincastCreditsRemaining,
+      proUntil: users.coincastProExpiresAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+
+  if (!user) throw new HTTPException(404, { message: 'User not found' })
+
+  const isPro = Boolean(user.proUntil && user.proUntil > nowIso)
+  if (isPro) return { granted: true, consumeCredit: false, isPro: true }
+  if (user.credits > 0) return { granted: true, consumeCredit: true, isPro: false }
+
+  return { granted: false, consumeCredit: false, isPro: false }
+}
+
+function parsePortfolioResultJson(raw: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {
+    /* fall through */
+  }
+  return {}
+}
+
+function guardRefusalReason(reason: GuardReason): string {
+  const messages: Partial<Record<GuardReason, string>> = {
+    sensitive: 'This question touches topics that traditional divination does not address.',
+    other_destiny: "Please ask about your own path, not someone else's fate chart.",
+    too_short: 'Please phrase a sincere question in at least a few words.',
+    insincere: 'Please ask with sincere intent, not as a test or joke.',
+    duplicate_exact: 'You already asked this question recently. One matter, one cast.',
+    duplicate_semantic:
+      'This seems very similar to a recent question. Clarify or wait before asking again.',
+    daily_limit: "You have reached today's divination limit. Rest and return tomorrow.",
+  }
+  return (
+    messages[reason] ?? 'This question is not suited to divination under traditional principles.'
+  )
+}
 
 async function applyCoincastRefusalPenalty(
   db: ContextVariables['db'],
@@ -438,83 +515,96 @@ async function runTargetPipeline(
   locale: string,
   userId?: string,
   requestId?: string,
-  opts?: { faceVlmAuthorized?: boolean }
+  opts?: {
+    faceVlmAuthorized?: boolean
+    coincastMode?: CoincastInterpretationMode
+    coincastIsPro?: boolean
+  }
 ): Promise<{ readingType: string; output: Record<string, unknown> }> {
   switch (target) {
     case 'coincast': {
       const parsed = coincastInputSchema.parse(input)
       const entropy = parsed.entropy ?? `${Date.now()}_${Math.random()}`
       const promptTemplate = buildCoincastPrompt({ question: parsed.question, locale })
-      try {
-        const astro = await callAstro<{
-          refused?: boolean
-          refusal_reason?: string
-          hexagram: { number: number; name: string; changingLines: number[] }
-          interpretation: string
-          advice: string
-          summary: string
-          fortune: string
-        }>(c.env.SVC_ASTRO, '/yiching/cast', {
-          question: parsed.question,
-          entropy,
-          userId: userId ?? `preview_${target}`,
-          language: locale,
-          method: 'liuyao',
-          isPro: false,
-          yaoValues: parsed.yaoValues,
+      const interpretationMode = opts?.coincastMode ?? 'classical'
+      const coincastIsPro = opts?.coincastIsPro ?? false
+      const db = c.get('db')
+      const memoryOn =
+        interpretationMode === 'ai' && userId
+          ? await selectPortfolioMemoryEnabled(db, userId)
+          : false
+      let memoryContext = ''
+      let memoryHitCount = 0
+      if (memoryOn && userId) {
+        const mem = await searchPortfolioReadingMemory(c.env, {
+          userId,
+          targetApp: 'coincast',
+          query: parsed.question,
+          requestId,
+          locale,
         })
-        if (astro.refused === true) {
-          if (requestId) {
-            console.log(
-              JSON.stringify({
-                event: 'portfolio_coincast_refused',
-                requestId,
-              })
-            )
-          }
-          return {
-            readingType: 'coincast_refused',
-            output: {
-              refusal_reason: typeof astro.refusal_reason === 'string' ? astro.refusal_reason : '',
-              promptTemplate,
-            },
-          }
-        }
+        memoryContext = mem.context
+        memoryHitCount = mem.hitCount
+      }
+      const astro = await callAstro<{
+        refused?: boolean
+        refusal_reason?: string
+        interpretationMode?: CoincastInterpretationMode
+        classical?: Record<string, unknown>
+        hexagram: { number: number; name: string; changingLines: number[] }
+        interpretation: string
+        advice: string
+        summary: string
+        fortune: string
+      }>(c.env.SVC_ASTRO, '/yiching/cast', {
+        question: parsed.question,
+        entropy,
+        userId: userId ?? `preview_${target}`,
+        language: locale,
+        method: 'liuyao',
+        isPro: coincastIsPro,
+        interpretationMode,
+        yaoValues: parsed.yaoValues,
+        memoryContext: memoryContext.length > 0 ? memoryContext : undefined,
+      })
+      if (astro.refused === true) {
         if (requestId) {
           console.log(
             JSON.stringify({
-              event: 'portfolio_coincast_completed',
+              event: 'portfolio_coincast_refused',
               requestId,
             })
           )
         }
         return {
-          readingType: 'coincast',
+          readingType: 'coincast_refused',
           output: {
-            ...astro,
+            refusal_reason: typeof astro.refusal_reason === 'string' ? astro.refusal_reason : '',
             promptTemplate,
           },
         }
-      } catch (err) {
-        console.warn('[portfolio/coincast] fallback to deterministic mock', err)
-        const h = stableHash(`${parsed.question}:${entropy}`)
-        const changingLines = [1, 2, 3, 4, 5, 6].filter((idx) => (h + idx) % 3 === 0)
-        return {
-          readingType: 'coincast',
-          output: {
-            hexagram: {
-              number: (h % 64) + 1,
-              name: `Hexagram ${(h % 64) + 1}`,
-              changingLines,
-            },
-            interpretation:
-              'Current pressure is real; progress comes from steady, low-drama adjustments.',
-            advice: 'Keep one promise to yourself before asking for external signs.',
-            summary: 'Ground first, then act.',
-            fortune: 'neutral',
-            promptTemplate,
-          },
-        }
+      }
+      if (requestId) {
+        console.log(
+          JSON.stringify({
+            event: 'portfolio_coincast_completed',
+            requestId,
+            interpretation_mode: astro.interpretationMode ?? interpretationMode,
+            memory_hit_count: memoryHitCount,
+            memory_enabled: memoryOn,
+          })
+        )
+      }
+      return {
+        readingType: 'coincast',
+        output: {
+          ...astro,
+          interpretationMode: astro.interpretationMode ?? interpretationMode,
+          promptTemplate,
+          ...(interpretationMode === 'ai'
+            ? { portfolio_memory: { search_hits: memoryHitCount, enabled: memoryOn } }
+            : {}),
+        },
       }
     }
     case 'dreamoracle': {
@@ -681,8 +771,10 @@ async function runTargetPipeline(
       const dtA = parseSolarDate(parsed.personA.solarDate, parsed.personA.timeIndex)
       const dtB = parseSolarDate(parsed.personB.solarDate, parsed.personB.timeIndex)
       const result = calculateHeHun(getFourPillars(dtA), getFourPillars(dtB))
-      const score = typeof result.score === 'number' ? result.score : 0
-      const promptTemplate = buildSoulMatchPrompt({ score, locale })
+      const promptTemplate = buildSoulMatchPrompt({
+        gradeLabel: typeof result.grade === 'string' ? result.grade : undefined,
+        locale,
+      })
       const ai = await callPortfolioAI(c, promptTemplate, {
         summary: '',
         dimensions: [],
@@ -799,8 +891,27 @@ portfolioRoutes.post('/preview/:target', async (c) => {
   if (!success) throw new HTTPException(429, { message: 'Rate limited' })
 
   const db = c.get('db')
+  let coincastPreviewOpts: { coincastMode: CoincastInterpretationMode; coincastIsPro: boolean } | undefined
   if (targetParsed.data === 'coincast') {
     await evaluateCoincastQuota(db, { userId: null, anonymousId: anonId ?? null })
+
+    const question =
+      typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
+    const guardUserId = anonId ? `anon:${anonId}` : `ip:${ip}`
+    const guard = await checkDivinationGuard(question, guardUserId, {
+      GUARD_KV: c.env.GUARD_KV,
+      AI: c.env.AI,
+    }, { skipSemantic: true })
+    if (!guard.allowed) {
+      return c.json({
+        mode: 'refused',
+        target: targetParsed.data,
+        reason: guardRefusalReason(guard.reason),
+        violationCount: 0,
+        showViolationWarning: false,
+      })
+    }
+    coincastPreviewOpts = { coincastMode: 'classical', coincastIsPro: false }
   }
 
   const locale = parsed.data.locale ?? 'en'
@@ -811,7 +922,8 @@ portfolioRoutes.post('/preview/:target', async (c) => {
     parsed.data.input,
     locale,
     undefined,
-    requestId
+    requestId,
+    coincastPreviewOpts
   )
   if (pipeline.readingType === 'coincast_refused') {
     const reason =
@@ -835,6 +947,20 @@ portfolioRoutes.post('/preview/:target', async (c) => {
     ddlToken: parsed.data.ddlToken,
     locale,
   })
+
+  if (targetParsed.data === 'coincast') {
+    const question =
+      typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
+    if (question.length > 0) {
+      const guardUserId = anonId ? `anon:${anonId}` : `ip:${ip}`
+      c.executionCtx.waitUntil(
+        recordDivinationSuccess(question, guardUserId, {
+          GUARD_KV: c.env.GUARD_KV,
+          AI: c.env.AI,
+        })
+      )
+    }
+  }
 
   return c.json({
     mode: 'preview',
@@ -917,9 +1043,36 @@ portfolioRoutes.post('/linked/:target', async (c) => {
   }
 
   let coincastConsumeCredit = false
+  let coincastMode: CoincastInterpretationMode = 'classical'
+  let coincastIsPro = false
   if (targetParsed.data === 'coincast') {
     const q = await evaluateCoincastQuota(db, { userId, anonymousId: null })
     coincastConsumeCredit = q.consumeCredit
+    const resolved = await resolveCoincastInterpretationMode(db, {
+      userId,
+      consumeCredit: coincastConsumeCredit,
+    })
+    coincastMode = resolved.mode
+    coincastIsPro = resolved.isPro
+
+    const question =
+      typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
+    const guard = await checkDivinationGuard(question, userId, {
+      GUARD_KV: c.env.GUARD_KV,
+      AI: c.env.AI,
+    }, { skipSemantic: coincastMode === 'classical' })
+    if (!guard.allowed) {
+      const penalty = await applyCoincastRefusalPenalty(db, userId)
+      return c.json({
+        mode: 'refused',
+        target: targetParsed.data,
+        userId,
+        reason: guardRefusalReason(guard.reason),
+        violationCount: penalty.violationCount,
+        showViolationWarning: penalty.showViolationWarning,
+        bannedUntil: penalty.bannedUntil,
+      })
+    }
   }
 
   // Low-band episodic apps (dream / numerology): EPISODIC_FREE_READINGS_PER_MONTH
@@ -968,7 +1121,12 @@ portfolioRoutes.post('/linked/:target', async (c) => {
     locale,
     userId,
     requestId,
-    { faceVlmAuthorized }
+    {
+      faceVlmAuthorized,
+      ...(targetParsed.data === 'coincast'
+        ? { coincastMode, coincastIsPro }
+        : {}),
+    }
   )
 
   // Face refund-on-failure (ADR-0013 P3): the `face` credit was consumed up front; if the
@@ -1012,11 +1170,30 @@ portfolioRoutes.post('/linked/:target', async (c) => {
 
   if (
     memoryEnabledRow?.portfolioMemoryEnabled &&
-    (targetParsed.data === 'dreamoracle' || targetParsed.data === 'numerology')
+    (targetParsed.data === 'dreamoracle' ||
+      targetParsed.data === 'numerology' ||
+      targetParsed.data === 'coincast')
   ) {
     let bodyMarkdown: string | null = null
-    let memTarget: 'dreamoracle' | 'numerology' = 'dreamoracle'
-    if (targetParsed.data === 'dreamoracle') {
+    let memTarget: 'dreamoracle' | 'numerology' | 'coincast' = 'dreamoracle'
+    if (targetParsed.data === 'coincast') {
+      const out = pipeline.output as Record<string, unknown>
+      if (out.interpretationMode === 'ai') {
+        const pin = coincastInputSchema.safeParse(parsed.data.input)
+        const hex = (out.hexagram ?? {}) as { number?: number; name?: string }
+        if (pin.success && typeof hex.number === 'number') {
+          memTarget = 'coincast'
+          bodyMarkdown = buildCoincastMemoryDocument({
+            readingId,
+            question: pin.data.question,
+            summary: String(out.summary ?? ''),
+            interpretation: String(out.interpretation ?? ''),
+            hexName: typeof hex.name === 'string' ? hex.name : '',
+            hexNumber: hex.number,
+          })
+        }
+      }
+    } else if (targetParsed.data === 'dreamoracle') {
       const pin = dreamInputSchema.safeParse(parsed.data.input)
       const out = pipeline.output as Record<string, unknown>
       if (pin.success) {
@@ -1071,6 +1248,17 @@ portfolioRoutes.post('/linked/:target', async (c) => {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(users.id, userId))
+
+    const question =
+      typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
+    if (question.length > 0) {
+      c.executionCtx.waitUntil(
+        recordDivinationSuccess(question, userId, {
+          GUARD_KV: c.env.GUARD_KV,
+          AI: c.env.AI,
+        })
+      )
+    }
   }
 
   if (targetParsed.data === 'coincast' && coincastConsumeCredit) {
@@ -1095,6 +1283,164 @@ portfolioRoutes.post('/linked/:target', async (c) => {
     readingId,
     output: pipeline.output,
     suggestedFlagship: suggestFlagship(targetParsed.data, parsed.data.questionType),
+  })
+})
+
+portfolioRoutes.post('/linked/coincast/:readingId/upgrade-ai', async (c) => {
+  const userId = requireUserId(c)
+  const readingId = c.req.param('readingId')
+  const db = c.get('db')
+  const requestId = c.get('requestId')
+
+  const row = await db
+    .select({
+      inputJson: portfolioReadings.inputJson,
+      resultJson: portfolioReadings.resultJson,
+      locale: portfolioReadings.locale,
+    })
+    .from(portfolioReadings)
+    .where(
+      and(
+        eq(portfolioReadings.id, readingId),
+        eq(portfolioReadings.userId, userId),
+        eq(portfolioReadings.targetApp, 'coincast')
+      )
+    )
+    .get()
+
+  if (!row) throw new HTTPException(404, { message: 'Reading not found' })
+
+  const previous = parsePortfolioResultJson(row.resultJson)
+  if (previous.interpretationMode === 'ai') {
+    throw new HTTPException(409, { message: 'already_upgraded' })
+  }
+
+  const access = await evaluateCoincastUpgradeAccess(db, userId)
+  if (!access.granted) {
+    return c.json(
+      {
+        error: 'purchase_required',
+        upsell: 'coincast_cast_pack_1',
+      },
+      402
+    )
+  }
+
+  let inputParsed: z.infer<typeof coincastInputSchema>
+  try {
+    const rawInput: unknown = JSON.parse(row.inputJson)
+    inputParsed = coincastInputSchema.parse(rawInput)
+  } catch {
+    throw new HTTPException(422, { message: 'Invalid stored cast input' })
+  }
+
+  const locale = row.locale ?? 'en'
+  const memoryOn = await selectPortfolioMemoryEnabled(db, userId)
+  let memoryContext = ''
+  let memoryHitCount = 0
+  if (memoryOn) {
+    const mem = await searchPortfolioReadingMemory(c.env, {
+      userId,
+      targetApp: 'coincast',
+      query: inputParsed.question,
+      requestId,
+      locale,
+    })
+    memoryContext = mem.context
+    memoryHitCount = mem.hitCount
+  }
+
+  const entropy = inputParsed.entropy ?? `${Date.now()}_${Math.random()}`
+  const astro = await callAstro<{
+    refused?: boolean
+    refusal_reason?: string
+    interpretationMode?: CoincastInterpretationMode
+    classical?: Record<string, unknown>
+    hexagram: { number: number; name: string; changingLines: number[] }
+    interpretation: string
+    advice: string
+    summary: string
+    fortune: string
+  }>(c.env.SVC_ASTRO, '/yiching/cast', {
+    question: inputParsed.question,
+    entropy,
+    userId,
+    language: locale,
+    method: 'liuyao',
+    isPro: access.isPro,
+    interpretationMode: 'ai',
+    yaoValues: inputParsed.yaoValues,
+    memoryContext: memoryContext.length > 0 ? memoryContext : undefined,
+  })
+
+  if (astro.refused === true) {
+    console.error(
+      JSON.stringify({
+        event: 'portfolio_coincast_upgrade_refused',
+        requestId,
+        readingId,
+        reason: astro.refusal_reason ?? '',
+      })
+    )
+    throw new HTTPException(500, { message: 'Upgrade interpretation failed' })
+  }
+
+  const merged: Record<string, unknown> = {
+    ...previous,
+    ...astro,
+    interpretationMode: 'ai',
+    classical: previous.classical ?? astro.classical,
+    aiUpgradedAt: new Date().toISOString(),
+    portfolio_memory: { search_hits: memoryHitCount, enabled: memoryOn },
+  }
+
+  if (access.consumeCredit) {
+    const debit = await db
+      .update(users)
+      .set({
+        coincastCreditsRemaining: sql`coincast_credits_remaining - 1`,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(and(eq(users.id, userId), sql`coincast_credits_remaining > 0`))
+      .returning({ id: users.id })
+      .get()
+    if (!debit) {
+      throw new HTTPException(402, { message: 'purchase_required' })
+    }
+  }
+
+  await db
+    .update(portfolioReadings)
+    .set({ resultJson: JSON.stringify(merged) })
+    .where(eq(portfolioReadings.id, readingId))
+
+  if (memoryOn) {
+    const hex = (astro.hexagram ?? {}) as { number?: number; name?: string }
+    if (typeof hex.number === 'number') {
+      const bodyMarkdown = buildCoincastMemoryDocument({
+        readingId,
+        question: inputParsed.question,
+        summary: String(astro.summary ?? ''),
+        interpretation: String(astro.interpretation ?? ''),
+        hexName: typeof hex.name === 'string' ? hex.name : '',
+        hexNumber: hex.number,
+      })
+      const ctx = c as { executionCtx?: ExecutionContext }
+      ctx.executionCtx?.waitUntil(
+        indexPortfolioReadingMemory(c.env, {
+          userId,
+          readingId,
+          targetApp: 'coincast',
+          locale,
+          bodyMarkdown,
+        })
+      )
+    }
+  }
+
+  return c.json({
+    readingId,
+    output: merged,
   })
 })
 

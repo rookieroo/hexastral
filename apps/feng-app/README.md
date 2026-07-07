@@ -32,12 +32,15 @@ First launch
   → (tabs)/index renders empty state with "+ Add site" CTA
 
 Add site
-  → (new-site)/address    : Mapbox-backed search + drop pin
-  → (new-site)/facing     : satellite tile + drag-arrow FacingCalibrator
+  → (new-site)/address    : geocode + name
+  → (new-site)/facing     : satellite tile + compass facing
   → (new-site)/building   : build-year ladder, move-in year, floor
-  → (new-site)/review     : confirm → POST /api/feng/sites + analyze
-                           → poll /api/feng/jobs/:id
-                           → on done, route to (report)/[siteId]
+  → (new-site)/floorplan  : optional floor plan + north align + 中宫 pin
+  → (new-site)/birth      : optional birth info (6th chapter)
+  → (new-site)/review     : confirm → paywall (`hexastral_feng_single`) if needed
+                           → POST /api/feng/sites + analyze
+                           → (report)/[siteId] (poll job)
+                           → chat: unlimited follow-ups bundled with purchase
 ```
 
 ## Manual setup pending
@@ -46,6 +49,6 @@ Add site
 cd apps/feng-app
 eas init                                     # paste projectId into app.json + eas.json
 # Apple Developer → register com.hexastral.feng
-# RevenueCat → hexastral_feng_site / pro_monthly / pro_annual / annual_refresh
+# RevenueCat → hexastral_feng_single (one-shot report + bundled chat)
 # Designer → assets/{icon,splash}.png (see assets/README.md)
 ```

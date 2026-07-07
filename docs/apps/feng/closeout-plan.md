@@ -141,10 +141,9 @@ Direction (locked): kindred 水墨 aesthetic + bespoke 罗盘 loader.
 - ✅ **De-subscription copy** (4 locales): IAP note = "one-time purchase";
   chat_pro_required → "unlock this report to ask follow-ups"; chat_pro_unlimited
   → "unlimited follow-ups" (no "Pro membership" framing).
-- ⬜ **Chat access model decision** (real): feng has no sub, but chat is currently
-  server-gated `pro_required` → no one can chat. Pick: (a) chat free-taste +
-  bundled with the report purchase, or (b) drop chat from feng V1. Backend
-  (`resolveChatTier` for feng) + upsell target need aligning.
+- ✅ **Chat access model** (2026-07): **bundled with report purchase** — no free
+  taste. Server: `checkFengChatAccess` + `POST /api/chat` for `readingType=feng`;
+  client: `app/paywall.tsx` + `lib/iap.ts` (`hexastral_feng_single`).
 - [YOU] Pricing $ + RevenueCat single-purchase product (`hexastral_feng_single`).
 - ⬜ [ME] Peer-promote (cycle↔feng↔yuan, ADR-0019) in Me→Discover — deferred:
   needs sister-app URL schemes + App Store fallback links.

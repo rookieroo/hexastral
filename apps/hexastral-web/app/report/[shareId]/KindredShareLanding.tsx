@@ -31,7 +31,7 @@ const CATEGORY_WORD: Record<string, string> = {
 }
 
 /** The six 合盘 chapters — the first two read as a taste, the rest sit locked. */
-const PAIR_CHAPTERS = ['第一印象', '沟通方式', '冲突源头', '互补之处', '本月运势', '长期建议']
+const PAIR_CHAPTERS = ['第一印象', '沟通方式', '冲突源头', '互补之处', '本月相处参考', '长期建议']
 
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim() ? v : null
@@ -130,6 +130,10 @@ export function KindredShareLanding({
           }}
         >
           {isPair ? '缘' : '命'} Yuel · hexastral.com
+          <p style={{ marginTop: '0.75rem', letterSpacing: '0.05em', lineHeight: 1.6 }}>
+            For entertainment, cultural exploration, and personal reflection only — not relationship
+            counseling or professional advice.
+          </p>
         </div>
       </div>
     </main>

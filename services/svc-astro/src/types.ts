@@ -89,10 +89,22 @@ export interface HexagramResult {
   changingLines: number[]
 }
 
+export type InterpretationMode = 'classical' | 'ai'
+
+export interface ClassicalReadingDetail {
+  judgment: string
+  image: string
+  lines: string[]
+  changingLineTexts: string[]
+  naJiaContext?: string
+}
+
 export interface DivinationReading {
   /** When true, LLM refused under 三不占 — no interpretation should be shown as a reading. */
   refused?: boolean
   refusal_reason?: string
+  interpretationMode: InterpretationMode
+  classical?: ClassicalReadingDetail
   hexagram: HexagramResult
   interpretation: string
   advice: string

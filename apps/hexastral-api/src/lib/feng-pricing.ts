@@ -30,8 +30,17 @@ export interface FengPriceQuote {
   displayPrice: string
 }
 
-const BASE_PRICE_USD = 4.99 // matches SKU_IAP_META.feng_analysis (apartment / 1 plan)
-const EXTRA_IMAGE_USD = 2.0 // fair marginal: +1 Gemini vision pass + storage per plan
+/** Yuel 合盘 (`hexastral_compatibility`) — floor; Kanyu must not price below this. */
+export const YUEL_COMPATIBILITY_PRICE_USD = 6.99
+
+/** Single-floor apartment report (1 户型图). Above Yuel; reflects vision + 5–6 chapters + bundled chat. */
+export const FENG_BASE_PRICE_USD = 9.99
+
+/** Marginal cost per additional floor-plan image (villa / multi-floor). */
+export const FENG_EXTRA_IMAGE_USD = 3.0
+
+const BASE_PRICE_USD = FENG_BASE_PRICE_USD
+const EXTRA_IMAGE_USD = FENG_EXTRA_IMAGE_USD
 const VILLA_THRESHOLD = 2 // ≥ 2 plans ⇒ villa / multi-floor tier
 export const MAX_FLOORPLAN_IMAGES = 6
 
@@ -40,8 +49,8 @@ export const MAX_FLOORPLAN_IMAGES = 6
  * end-to-end: App Store Connect + RevenueCat product, the `SingleSkuId` union
  * (access-check.ts), `SKU_IAP_META`, `VALID_SKU_IDS` (purchase.ts), the
  * single_purchases schema enum, and an image-count-aware analyze gate. Until
- * ALL of that ships, quoting a villa price the paywall can't collect ($14.99
- * shown, $4.99 charged — or an unknown-SKU purchase rejection) is worse than not
+ * ALL of that ships, quoting a villa price the paywall can't collect ($24.99
+ * shown, $9.99 charged — or an unknown-SKU purchase rejection) is worse than not
  * offering it. So while this is false we quote the single tier for every count:
  * displayed == charged. Flip to true only after the checklist above is done.
  */

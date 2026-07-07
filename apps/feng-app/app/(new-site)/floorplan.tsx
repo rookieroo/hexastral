@@ -17,8 +17,16 @@ import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { Plus, RotateCcw, X } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LuopanDial } from '@/components/LuopanDial'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
@@ -47,6 +55,44 @@ function normDeg(deg: number): number {
   return ((deg % 360) + 360) % 360
 }
 
+function clamp01(n: number): number {
+  return Math.min(0.95, Math.max(0.05, n))
+}
+
+function JiugongOverlay({ visible }: { visible: boolean }) {
+  if (!visible) return null
+  return (
+    <View pointerEvents='none' style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+      {[1 / 3, 2 / 3].map((frac) => (
+        <View
+          key={`v-${frac}`}
+          style={{
+            position: 'absolute',
+            left: `${frac * 100}%`,
+            top: 0,
+            bottom: 0,
+            width: 1,
+            backgroundColor: 'rgba(212,212,216,0.35)',
+          }}
+        />
+      ))}
+      {[1 / 3, 2 / 3].map((frac) => (
+        <View
+          key={`h-${frac}`}
+          style={{
+            position: 'absolute',
+            top: `${frac * 100}%`,
+            left: 0,
+            right: 0,
+            height: 1,
+            backgroundColor: 'rgba(212,212,216,0.35)',
+          }}
+        />
+      ))}
+    </View>
+  )
+}
+
 export default function FloorplanScreen() {
   const router = useRouter()
   const { colors } = useFengTheme()
@@ -57,6 +103,10 @@ export default function FloorplanScreen() {
 
   const [items, setItems] = useState<FloorplanItem[]>([])
   const [orientDeg, setOrientDeg] = useState(0)
+  const [centerNorm, setCenterNorm] = useState({ x: 0.5, y: 0.5 })
+  const [showGrid, setShowGrid] = useState(true)
+  const [previewSize, setPreviewSize] = useState({ w: 260, h: 260 })
+  const dragStart = useRef(centerNorm)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,8 +117,31 @@ export default function FloorplanScreen() {
         setItems(d.floorplanImages.map((im) => ({ key: im.key })))
       }
       if (typeof d.floorplanOrientDeg === 'number') setOrientDeg(normDeg(d.floorplanOrientDeg))
+      if (d.floorplanCenterNorm) setCenterNorm(d.floorplanCenterNorm)
     })()
   }, [])
+
+  const cover = items[0]
+  const hasPreview = Boolean(cover?.previewUri)
+
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => hasPreview,
+        onMoveShouldSetPanResponder: () => hasPreview,
+        onPanResponderGrant: () => {
+          dragStart.current = centerNorm
+        },
+        onPanResponderMove: (_, gesture) => {
+          const { w, h } = previewSize
+          setCenterNorm({
+            x: clamp01(dragStart.current.x + gesture.dx / w),
+            y: clamp01(dragStart.current.y + gesture.dy / h),
+          })
+        },
+      }),
+    [hasPreview, centerNorm, previewSize]
+  )
 
   const pick = async () => {
     if (busy || items.length >= MAX_IMAGES) return
@@ -119,12 +192,12 @@ export default function FloorplanScreen() {
     await patchDraft({
       floorplanImages: withFloorplan ? items.map((im) => ({ key: im.key })) : [],
       floorplanOrientDeg: withFloorplan ? orientDeg : undefined,
+      floorplanCenterNorm: withFloorplan && hasPreview ? centerNorm : undefined,
     })
     router.push('/(new-site)/birth')
   }
 
   const hasImages = items.length > 0
-  const cover = items[0]
 
   return (
     <ScrollView
@@ -150,10 +223,15 @@ export default function FloorplanScreen() {
       {cover?.previewUri ? (
         <View style={{ alignItems: 'center', gap: spacing.md }}>
           <View
+            {...pan.panHandlers}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout
+              setPreviewSize({ w: width, h: height })
+            }}
             style={{
               width: 260,
               height: 260,
-              borderRadius: 4,
+              borderRadius: 0,
               overflow: 'hidden',
               backgroundColor: colors.surface,
               borderWidth: 0.5,
@@ -181,7 +259,40 @@ export default function FloorplanScreen() {
             >
               <LuopanDial size={230} tone='dark' detail='standard' />
             </View>
+            <View
+              pointerEvents='none'
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                transform: [{ rotate: `${-orientDeg}deg` }],
+              }}
+            >
+              <JiugongOverlay visible={showGrid} />
+            </View>
+            <View
+              pointerEvents='none'
+              style={{
+                position: 'absolute',
+                left: centerNorm.x * previewSize.w - 10,
+                top: centerNorm.y * previewSize.h - 10,
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                borderWidth: 2,
+                borderColor: colors.accent,
+                backgroundColor: 'rgba(9,9,11,0.55)',
+              }}
+            />
           </View>
+
+          <Pressable onPress={() => setShowGrid((v) => !v)} hitSlop={8}>
+            <Text style={{ color: colors.textMute, fontSize: 12 }}>
+              {showGrid ? t.new_site_floorplan_grid_hide : t.new_site_floorplan_grid_show}
+            </Text>
+          </Pressable>
 
           {/* North bearing control */}
           <View style={{ alignItems: 'center', gap: spacing.xs }}>

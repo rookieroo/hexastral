@@ -39,4 +39,9 @@ export const BRAND_STORE = {
     android: 'https://play.google.com/store/apps/details?id=com.hexastral.coincast',
     labels: CTA_LABELS,
   },
+  kanyu: {
+    ios: 'https://apps.apple.com/app/idREPLACE_FENG',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.feng',
+    labels: CTA_LABELS,
+  },
 } as const

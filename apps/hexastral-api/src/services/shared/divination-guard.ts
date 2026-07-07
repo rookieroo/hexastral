@@ -67,7 +67,7 @@ export async function checkDivinationGuard(
   question: string,
   userId: string,
   env: { GUARD_KV: KVNamespace; AI: Ai },
-  opts?: { userLocalHour?: number }
+  opts?: { userLocalHour?: number; skipSemantic?: boolean }
 ): Promise<GuardResult> {
   const cleanQ = question.trim()
 
@@ -99,18 +99,20 @@ export async function checkDivinationGuard(
   }
 
   // 6. 语义去重 (Embedding cosine > 0.92, 6h window)
-  const recentKey = `guard:recent:${userId}`
-  const recentRaw = await env.GUARD_KV.get<Array<{ v: number[]; ts: number }>>(recentKey, 'json')
-  if (recentRaw?.length) {
-    const currentVec = await embedText(env.AI, cleanQ)
-    const sixHoursAgo = Date.now() - 6 * 3_600_000
-    for (const { v, ts } of recentRaw) {
-      if (ts < sixHoursAgo) continue
-      if (cosineSimilarity(currentVec, v) > 0.92) {
-        return {
-          allowed: false,
-          reason: 'duplicate_semantic',
-          guardKey: GUARD_KEY_MAP.duplicate_semantic,
+  if (!opts?.skipSemantic) {
+    const recentKey = `guard:recent:${userId}`
+    const recentRaw = await env.GUARD_KV.get<Array<{ v: number[]; ts: number }>>(recentKey, 'json')
+    if (recentRaw?.length) {
+      const currentVec = await embedText(env.AI, cleanQ)
+      const sixHoursAgo = Date.now() - 6 * 3_600_000
+      for (const { v, ts } of recentRaw) {
+        if (ts < sixHoursAgo) continue
+        if (cosineSimilarity(currentVec, v) > 0.92) {
+          return {
+            allowed: false,
+            reason: 'duplicate_semantic',
+            guardKey: GUARD_KEY_MAP.duplicate_semantic,
+          }
         }
       }
     }

@@ -290,6 +290,7 @@
         "@zhop/astro-i18n": "workspace:*",
         "@zhop/growth-funnel": "workspace:*",
         "@zhop/logger": "workspace:*",
+        "@zhop/portfolio-voice": "workspace:*",
         "drizzle-orm": "^0.44.5",
         "hono": "^4.12.8",
         "jose": "^6.2.3",
@@ -798,6 +799,14 @@
         "react-native": ">=0.81.0",
       },
     },
+    "packages/portfolio-voice": {
+      "name": "@zhop/portfolio-voice",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@zhop/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/satellite-runtime": {
       "name": "@zhop/satellite-runtime",
       "version": "0.1.0",
@@ -1108,6 +1117,7 @@
       "dependencies": {
         "@zhop/ai-vision": "workspace:*",
         "@zhop/astro-core": "workspace:*",
+        "@zhop/portfolio-voice": "workspace:*",
         "hono": "^4.12.8",
         "iztro": "2.5.7",
         "openai": "^6.27.0",
@@ -1129,6 +1139,7 @@
         "@zhop/ai-vision": "workspace:*",
         "@zhop/astro-core": "workspace:*",
         "@zhop/logger": "workspace:*",
+        "@zhop/portfolio-voice": "workspace:*",
         "hono": "^4.12.8",
         "zod": "^4.3.6",
       },
@@ -2831,6 +2842,8 @@
     "@zhop/portfolio-client": ["@zhop/portfolio-client@workspace:packages/portfolio-client"],
 
     "@zhop/portfolio-posters": ["@zhop/portfolio-posters@workspace:packages/portfolio-posters"],
+
+    "@zhop/portfolio-voice": ["@zhop/portfolio-voice@workspace:packages/portfolio-voice"],
 
     "@zhop/satellite-runtime": ["@zhop/satellite-runtime@workspace:packages/satellite-runtime"],
 

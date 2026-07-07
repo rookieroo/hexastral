@@ -14,11 +14,12 @@ import { callWithFallback, withZodRetry } from '@zhop/ai-vision'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
+import { auditGeneratedOutput } from '../lib/output-audit'
 import { logger } from '../lib/logger'
 import {
+  buildSynthesisSystemPrompt,
   buildSynthesisUserPrompt,
   SYNTHESIS_RESPONSE_SCHEMA,
-  SYNTHESIS_SYSTEM_PROMPT,
 } from '../prompts/synthesis'
 
 const VisionInputSchema = z.object({
@@ -116,7 +117,10 @@ synthesizeRouter.post('/', async (c) => {
     dataQuality: dataQuality || undefined,
   })
 
+  const systemPrompt = buildSynthesisSystemPrompt(userProfile.locale)
+
   let usedFallback = false
+  let forbiddenRetrySuffix = ''
   const validated = await withZodRetry({
     label: 'synthesize',
     schema: SynthesisResultSchema,
@@ -125,9 +129,9 @@ synthesizeRouter.post('/', async (c) => {
     // the wall-clock and blow the abort → a hard failure instead of a clean fallback.
     // Malformed JSON → fallback here, and the caller (runAnalyzeJob) marks the job
     // failed so the user can retry a fresh run.
-    maxRetries: 0,
+    maxRetries: 1,
     call: async () => {
-      const text = await callWithFallback(c.env, SYNTHESIS_SYSTEM_PROMPT, userPrompt, {
+      const text = await callWithFallback(c.env, systemPrompt, userPrompt + forbiddenRetrySuffix, {
         tier: 'flagship',
         responseSchema: SYNTHESIS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
         // 6 chapters × ~300-char bodies + reasoning headroom — 8k truncated the
@@ -145,7 +149,14 @@ synthesizeRouter.post('/', async (c) => {
         totalBudgetMs: 130_000,
         perModelTimeoutMs: 70_000,
       })
-      return JSON.parse(text)
+      const parsedJson = JSON.parse(text) as unknown
+      const audit = auditGeneratedOutput(JSON.stringify(parsedJson))
+      if (audit.hits.length > 0) {
+        forbiddenRetrySuffix = audit.rewriteSuffix ?? ''
+        logger.warn('synthesize.forbidden_phrases', { hits: audit.hits })
+        throw new Error('forbidden phrases in synthesis output')
+      }
+      return parsedJson
     },
     degraded: () => {
       usedFallback = true

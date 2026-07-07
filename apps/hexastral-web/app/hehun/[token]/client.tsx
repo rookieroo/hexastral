@@ -120,7 +120,7 @@ export function HehunCollectionClient({
   if (result) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Score card */}
+        {/* Grade reference card */}
         <div
           style={{
             padding: '2rem',
@@ -132,17 +132,18 @@ export function HehunCollectionClient({
         >
           <div
             style={{
-              fontSize: '3rem',
+              fontSize: '2rem',
               fontWeight: 300,
               color: 'var(--color-gold)',
-              lineHeight: 1,
+              lineHeight: 1.2,
               marginBottom: '0.5rem',
+              letterSpacing: '0.06em',
             }}
           >
-            {result.score}
+            {result.gradeLabel}
           </div>
           <p style={{ margin: '0 0 1rem', fontSize: '0.82rem', color: 'var(--color-ivory-muted)' }}>
-            Compatibility Score · {result.gradeLabel}
+            Relationship overlay · {result.grade}
           </p>
 
           {/* Dimension bars */}
@@ -245,6 +246,19 @@ export function HehunCollectionClient({
             </span>
           </div>
         </div>
+
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.72rem',
+            color: 'var(--color-ivory-muted)',
+            lineHeight: 1.6,
+            textAlign: 'center',
+          }}
+        >
+          For entertainment, cultural exploration, and personal reflection only — not relationship
+          counseling or professional advice.
+        </p>
 
         {/* CTA */}
         <DDLRedirectButton

@@ -51,7 +51,7 @@ export default async function ToolsIndexPage() {
     {
       href: '/tools/compatibility',
       title: 'Compatibility teaser (合盘)',
-      desc: 'Elemental preview for two birthdays (Turnstile‑protected). Full synastry lives in SoulMatch / HexAstral.',
+      desc: 'Elemental preview for two birthdays (Turnstile‑protected). Full synastry lives in Yuel / HexAstral.',
     },
     {
       href: '/tools/dream',

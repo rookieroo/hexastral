@@ -5,7 +5,7 @@ import { type BrandLocale, pickLocale } from './brand-config'
 /**
  * HexAstral suite home — served on hexastral.com. NOT a bare app hub: a short
  * cognition + marketing narrative about the craft (Four Pillars / ZiWei / Five
- * Elements), with Yuel, Yuun, and Yaul as the three ways in. Cosmic void + gold + the
+ * Elements), with Yuel, Yuun, Yaul, and Kanyu as the four ways in. Cosmic void + gold + the
  * real lunar-phase planet logo. Anti-spam compliant (no trigger words). i18n
  * inline. JSON-LD (Organization + WebSite + the three apps) for rich results.
  */
@@ -24,6 +24,7 @@ interface Strings {
   yuel: string
   yuun: string
   yaul: string
+  kanyu: string
   foot: string
 }
 
@@ -38,10 +39,11 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: 'ZiWei — the twelve-palace system' },
       { glyph: '五行 · 大運', line: 'Five Elements, read through decade cycles' },
     ],
-    doors: 'Three ways in',
+    doors: 'Four ways in',
     yuel: 'Your reading, and the people you’re bound to — synastry (合盘) and your 命書.',
     yuun: 'The Chinese almanac, every day — 宜忌, the lunar calendar, your decade timeline.',
     yaul: 'I Ching Liu Yao (六爻) — three-coin casting, hexagram journal, classical AI read.',
+    kanyu: 'Classical feng-shui (堪舆) — pin a site, compass bearing, optional floor plan, structured site report.',
     foot: 'Educational, not predictive',
   },
   zh: {
@@ -54,10 +56,11 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宫的星曜系统' },
       { glyph: '五行 · 大運', line: '五行，循大运而读' },
     ],
-    doors: '三个入口',
+    doors: '四个入口',
     yuel: '你的命书，和你命中相系的人——合盘与个人命书。',
     yuun: '中华黄历，每日宜忌——农历、流年大运时间轴。',
     yaul: '易经六爻研习——三维摇卦、卦象日记与古典释读。',
+    kanyu: '古典堪舆风水——定位居所、罗盘坐向、可选户型图与结构化报告。',
     foot: '重在认知，而非预测',
   },
   tw: {
@@ -70,10 +73,11 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宮的星曜系統' },
       { glyph: '五行 · 大運', line: '五行，循大運而讀' },
     ],
-    doors: '三個入口',
+    doors: '四個入口',
     yuel: '你的命書，和你命中相繫的人——合盤與個人命書。',
     yuun: '中華黃曆，每日宜忌——農曆、流年大運時間軸。',
     yaul: '易經六爻研習——三維搖卦、卦象日記與古典釋讀。',
+    kanyu: '古典堪輿風水——定位居所、羅盤坐向、可選戶型圖與結構化報告。',
     foot: '重在認知，而非預測',
   },
   ja: {
@@ -86,10 +90,11 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宮の星のシステム' },
       { glyph: '五行 · 大運', line: '五行を、大運を通して読む' },
     ],
-    doors: '三つの入口',
+    doors: '四つの入口',
     yuel: 'あなたの命書と、結ばれた人々——相性（合盤）と個人鑑定。',
     yuun: '中華暦、毎日の吉凶——旧暦と大運のタイムライン。',
     yaul: '易経六爻の学び——三枚銭の起卦、卦の記録、古典 AI 解説。',
+    kanyu: '古典風水（堪輿）——場所を指定、羅盤の向き、任意の間取り、構造化レポート。',
     foot: '予測ではなく、理解のために',
   },
 }
@@ -142,6 +147,15 @@ function jsonLd(origin: string) {
         url: 'https://yaul.hexastral.com',
         description:
           'An I Ching Liu Yao (六爻) study journal with 3D coin casting. Educational, not predictive.',
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: 'Kanyu',
+        applicationCategory: 'ReferenceApplication',
+        operatingSystem: 'iOS, Android',
+        url: 'https://kanyu.hexastral.com',
+        description:
+          'Classical feng-shui (堪舆) site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
       },
     ],
   }
@@ -387,6 +401,49 @@ export function HexastralHome({ locale, origin }: { locale: string; origin: stri
               }}
             >
               yaul.hexastral.com →
+            </div>
+          </a>
+          <a
+            href='https://kanyu.hexastral.com'
+            style={{
+              flex: '1 1 240px',
+              textDecoration: 'none',
+              border: '0.5px solid rgba(162,147,126,0.45)',
+              borderRadius: 14,
+              padding: 20,
+              background: '#0b1219',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  border: '0.5px solid rgba(162,147,126,0.5)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 14,
+                  color: '#A2937E',
+                }}
+              >
+                堪
+              </span>
+              <span style={{ fontSize: 16, letterSpacing: 1, color: V.ivory }}>Kanyu · 堪舆</span>
+            </span>
+            <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.65, color: V.dim }}>
+              {t.kanyu}
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 11,
+                fontFamily: 'var(--font-mono, monospace)',
+                color: '#A2937E',
+              }}
+            >
+              kanyu.hexastral.com →
             </div>
           </a>
         </div>

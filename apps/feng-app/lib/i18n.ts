@@ -105,6 +105,7 @@ export type Strings = {
   report_data_quality_footer: string
   /** Confidence note: 理气 deterministic vs 形势 AI/DEM-inferred. */
   report_confidence_note: string
+  report_legal_disclaimer: string
   report_map_close: string
   report_map_mid: string
   report_map_wide: string
@@ -163,8 +164,30 @@ export type Strings = {
   new_site_floorplan_skip: string
   new_site_floorplan_count_one: string
   new_site_floorplan_count_villa: string
+  new_site_floorplan_grid_show: string
+  new_site_floorplan_grid_hide: string
   new_site_review_floorplan: string
   report_unlock_title: string
+
+  // Paywall
+  paywall_title: string
+  paywall_subtitle_analyze: string
+  paywall_subtitle_chat: string
+  paywall_plan_single: string
+  paywall_cta: string
+  paywall_success: string
+  paywall_restore: string
+  paywall_failed: string
+  paywall_unavailable: string
+  paywall_bullet_report: string
+  paywall_bullet_chat: string
+  paywall_bullet_once: string
+  paywall_legal_disclaimer: string
+  chat_legal_disclaimer: string
+  new_site_review_no_floorplan: string
+  new_site_review_analyze_eta: string
+  new_site_review_error_paywall: string
+  new_site_review_error_network: string
 
   // Sign-in
   sign_in_hint: string
@@ -247,9 +270,9 @@ export type Strings = {
 
 const EN: Strings = {
   appName: 'Fēng',
-  empty_title: 'No dwelling surveyed yet',
-  empty_subtitle: 'Add a home or office, and read its 风水 from the lay of the land.',
-  empty_cta: 'Survey a home',
+  empty_title: 'No sites yet',
+  empty_subtitle: 'Add a home or office to explore classical site theory from satellite and layout inputs.',
+  empty_cta: 'Add a site',
   new_site_address_title: 'Pick your address',
   new_site_address_subtitle: 'Type an address or use your current location.',
   new_site_address_placeholder: 'Street, city, country',
@@ -305,12 +328,14 @@ const EN: Strings = {
   report_loading: 'Loading report…',
   report_failed: 'Analysis failed: {message}',
   report_pending: 'Analysis pending — tap a site to generate a report.',
-  report_shell_tag: 'At a glance · reading generating',
+  report_shell_tag: 'Report overview · generating',
   report_chapter_pager_hint: 'Swipe to read each chapter.',
   report_data_quality_footer:
     'Some inputs were estimated. You can re-run with better data anytime.',
   report_confidence_note:
-    'Flying-stars & eight-mansions are computed exactly. Landform (砂/水/形煞) is AI- and elevation-inferred — treat it as guidance, not measurement.',
+    'Flying-star and Eight-Mansion chapters are calculated from your inputs; landform notes are AI-inferred and for reference only.',
+  report_legal_disclaimer:
+    'For entertainment, cultural exploration, and personal reflection only — not professional feng-shui, architectural, or construction advice. Do not rely on this report for purchase, renovation, or safety decisions.',
   report_map_close: 'Close-up',
   report_map_mid: 'Surrounding',
   report_map_wide: 'Wide',
@@ -319,7 +344,7 @@ const EN: Strings = {
   report_compound_facing_note:
     'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
   report_formli_heading: 'FORM × STARS (山水合参)',
-  report_placement_heading: 'PLACEMENT (床灶门)',
+  report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
   reading_copy: 'Copy',
   reading_chat: 'Ask AI',
   reading_highlight: 'Highlight',
@@ -335,13 +360,13 @@ const EN: Strings = {
   chapter_personal_fit: 'Trigram',
   chapter_flying_stars: 'Stars',
   chapter_annual_directions: 'Annual',
-  chapter_remediation: 'Remedy',
+  chapter_remediation: 'Mitigation (study)',
   chapter_auspicious_objects: 'Placement',
   flying_stars_explainer:
-    'Each cell is one of the home’s nine directions. Top-left is the Mountain star (people, health, relationships); top-right is the Facing star (wealth). The faint large number is the Period star, and the bottom row shows the trigram and this year’s annual star. Bright numbers are thriving, dim ones are weak, and red marks a sector to treat with care.',
+    'Each cell is one of the home’s nine directions. Top-left is the Mountain star (classical reading: people, health, relationships); top-right is the Facing star (classical reading: resources). The faint large number is the Period star; the bottom row shows the trigram and this year’s annual star. Bright numbers read as thriving, dim as weak, and red marks a sector to note in study — not a mandate to “remedy” or change your home.',
   nav_back: 'Back',
   new_site_review_ai_disclaimer:
-    'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built.',
+    'We render annotated satellite tiles and run AI vision over them to identify 形煞 / 砂 / 水. Imagery is processed once and not stored after the report is built. For entertainment, cultural exploration, and personal reflection only — not professional feng-shui, architectural, or construction advice. Verify facing, build year, and floor-plan inputs yourself.',
   new_site_review_iap_note: 'One report per site, unlocked with a one-time purchase.',
   new_site_review_birth_title: 'Personal Trigram Chapter',
   new_site_review_birth_add: 'Add birth info',
@@ -369,8 +394,30 @@ const EN: Strings = {
   new_site_floorplan_skip: 'Skip (exterior-only report)',
   new_site_floorplan_count_one: '1 image · apartment',
   new_site_floorplan_count_villa: '{n} images · villa / multi-floor',
+  new_site_floorplan_grid_show: 'Show nine-palace grid',
+  new_site_floorplan_grid_hide: 'Hide nine-palace grid',
   new_site_review_floorplan: 'Floor plan',
   report_unlock_title: 'Unlock this report',
+  paywall_title: 'Full site report',
+  paywall_subtitle_analyze:
+    'One purchase unlocks a structured site report for this address — satellite context, flying stars, and AI-written chapters (study tool).',
+  paywall_subtitle_chat:
+    'Purchase includes unlimited AI follow-up questions about this report.',
+  paywall_plan_single: 'Site analysis',
+  paywall_cta: 'Purchase report',
+  paywall_success: 'Unlocked — generating your report…',
+  paywall_restore: 'Restore purchases',
+  paywall_failed: 'Purchase failed. Please try again.',
+  paywall_unavailable: 'Purchases unavailable in this build.',
+  paywall_bullet_report: 'Annotated satellite tiles + deterministic 玄空 / 八宅 compute',
+  paywall_bullet_chat: 'Unlimited AI chat about this report',
+  paywall_bullet_once: 'One-time purchase per report — no subscription',
+  paywall_legal_disclaimer:
+    'For entertainment and cultural exploration only — not a substitute for on-site inspection or licensed professionals. Report + chat may be inaccurate. See kanyu.hexastral.com/terms and kanyu.hexastral.com/privacy/feng.',
+  new_site_review_no_floorplan: 'No floor plan — exterior / facing only',
+  new_site_review_analyze_eta: 'Analysis usually takes 1–3 minutes.',
+  new_site_review_error_paywall: 'A one-time purchase or Pro subscription is required.',
+  new_site_review_error_network: 'Network error — check your connection and retry.',
   sign_in_hint: 'Sign in to save sites and readings across devices.',
   sign_in_google: 'Continue with Google',
   sign_in_guest: 'Continue as guest',
@@ -426,14 +473,16 @@ const EN: Strings = {
   chat_pool_remaining: '{remaining} replies left this month',
   chat_pro_required: 'Unlock this report to ask follow-up questions.',
   chat_cta: 'Ask about this report',
-  chat_suggest_1: 'How do I improve my wealth corner?',
-  chat_suggest_2: 'What should I fix first?',
-  chat_suggest_3: 'Which direction suits me best?',
+  chat_suggest_1: 'What does this report say about my wealth sector?',
+  chat_suggest_2: 'Which chapter should I read first?',
+  chat_suggest_3: 'Explain the flying-star plate in plain language',
   chat_report: 'Report',
   chat_report_confirm_title: 'Report this response?',
   chat_report_confirm_body:
     'Flag this AI response as objectionable. We review reports and take action.',
   chat_report_done: 'Thanks — your report was sent.',
+  chat_legal_disclaimer:
+    'AI replies are reference-only, may hallucinate or contradict the report, and are not professional advice. Do not rely on chat for construction, purchase, or safety decisions.',
   privacy_section: 'Privacy',
   cross_app_memory_label: 'Cross-app memory',
   cross_app_memory_hint:
@@ -442,9 +491,9 @@ const EN: Strings = {
 
 const ZH_HANS: Strings = {
   appName: '風',
-  empty_title: '尚未勘宅',
-  empty_subtitle: '添一处住宅或办公室，从山水形势里读出它的风水。',
-  empty_cta: '勘察新宅',
+  empty_title: '尚无站点',
+  empty_subtitle: '添加住宅或办公室，从卫星与户型输入探索古典场所理论。',
+  empty_cta: '添加站点',
   new_site_address_title: '选择地址',
   new_site_address_subtitle: '输入地址或使用当前定位。',
   new_site_address_placeholder: '街道、城市、国家',
@@ -499,10 +548,13 @@ const ZH_HANS: Strings = {
   report_loading: '正在加载报告…',
   report_failed: '分析失败：{message}',
   report_pending: '尚未生成 — 点击站点开始分析。',
-  report_shell_tag: '堪舆速览 · 解读生成中',
+  report_shell_tag: '报告概览 · 解读生成中',
   report_chapter_pager_hint: '左右滑动逐章阅读。',
   report_data_quality_footer: '部分输入是估算值，可随时用更准的数据重新分析。',
-  report_confidence_note: '玄空飞星与八宅为精确演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
+  report_confidence_note:
+    '玄空飞星与八宅依你输入的坐向与年份演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
+  report_legal_disclaimer:
+    '仅供娱乐、文化探索与个人省思——非专业风水、建筑或施工建议。请勿依此报告作出购房、装修或安全决策。',
   report_map_close: '近景',
   report_map_mid: '周边',
   report_map_wide: '全景',
@@ -510,7 +562,7 @@ const ZH_HANS: Strings = {
   report_map_failed: '地图加载失败',
   report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
   report_formli_heading: '形理合参（山水×飞星）',
-  report_placement_heading: '吉位布局',
+  report_placement_heading: '古典布局参考',
   reading_copy: '复制',
   reading_chat: '问AI',
   reading_highlight: '划重点',
@@ -526,13 +578,13 @@ const ZH_HANS: Strings = {
   chapter_personal_fit: '命卦',
   chapter_flying_stars: '飞星',
   chapter_annual_directions: '流年',
-  chapter_remediation: '化解',
+  chapter_remediation: '化解概念（研习）',
   chapter_auspicious_objects: '布置',
   flying_stars_explainer:
-    '盘面九格对应住宅的九个方位。每格左上是山星（管人丁、健康、关系），右上是向星（管财运）；淡色大字是运星，底部是卦名与今年的流年星。字偏亮为旺、生（较吉），偏暗为退、死（较弱），偏红的是煞位，宜留意化解。',
+    '盘面九格对应住宅的九个方位。每格左上是山星（古典读法：人丁、健康、关系），右上是向星（古典读法：资源）；淡色大字是运星，底部是卦名与今年的流年星。字偏亮为旺、生，偏暗为退、死，偏红的是煞位——供研习参考，非「管财运」或「必须化解」的指令。',
   nav_back: '返回',
   new_site_review_ai_disclaimer:
-    '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。',
+    '我们会渲染带标注的卫星图，并对其运行 AI 视觉模型来识别形煞 / 砂 / 水。图像仅一次性处理，生成报告后不会保留。仅供娱乐、文化探索与个人省思——非专业风水、建筑或施工建议。请自行核实坐向、建成年份与户型图输入。',
   new_site_review_iap_note: '每个地点一份报告，单次购买永久解锁。',
   new_site_review_birth_title: '个人命卦章节',
   new_site_review_birth_add: '添加生辰',
@@ -558,8 +610,28 @@ const ZH_HANS: Strings = {
   new_site_floorplan_skip: '跳过（仅生成室外报告）',
   new_site_floorplan_count_one: '1 张 · 公寓',
   new_site_floorplan_count_villa: '{n} 张 · 别墅／多层',
+  new_site_floorplan_grid_show: '显示九宫格',
+  new_site_floorplan_grid_hide: '隐藏九宫格',
   new_site_review_floorplan: '户型图',
   report_unlock_title: '解锁这份报告',
+  paywall_title: '完整堪舆报告',
+  paywall_subtitle_analyze: '一次购买解锁该址的结构化站点报告——卫星语境、飞星排盘与 AI 章节（学习工具）。',
+  paywall_subtitle_chat: '购买后可无限追问本报告的 AI 解读。',
+  paywall_plan_single: '站点分析',
+  paywall_cta: '购买报告',
+  paywall_success: '已解锁——正在生成报告…',
+  paywall_restore: '恢复购买',
+  paywall_failed: '购买失败，请重试。',
+  paywall_unavailable: '当前版本无法购买。',
+  paywall_bullet_report: '标注卫星图 + 确定性玄空 / 八宅演算',
+  paywall_bullet_chat: '本报告无限 AI 追问',
+  paywall_bullet_once: '按次购买，无需订阅',
+  paywall_legal_disclaimer:
+    '仅供娱乐与文化探索，不能替代现场勘验或持证专业人士。报告与对话可能不准确。详见 kanyu.hexastral.com/terms 与 kanyu.hexastral.com/privacy/feng。',
+  new_site_review_no_floorplan: '无户型图——仅外局 / 朝向',
+  new_site_review_analyze_eta: '分析通常需要 1–3 分钟。',
+  new_site_review_error_paywall: '需要一次性购买或 Pro 订阅。',
+  new_site_review_error_network: '网络错误——请检查连接后重试。',
   sign_in_hint: '登录后可跨设备保存站点与报告。',
   sign_in_google: '使用 Google 继续',
   sign_in_guest: '以访客身份继续',
@@ -613,13 +685,15 @@ const ZH_HANS: Strings = {
   chat_pool_remaining: '本月还剩 {remaining} 次回复',
   chat_pro_required: '解锁本报告后即可追问。',
   chat_cta: '聊聊这份报告',
-  chat_suggest_1: '财位怎么催旺？',
-  chat_suggest_2: '我该先化解什么？',
-  chat_suggest_3: '哪个方位最适合我？',
+  chat_suggest_1: '报告里说的财位指什么？',
+  chat_suggest_2: '我该先看哪一章？',
+  chat_suggest_3: '用白话解释一下飞星盘',
   chat_report: '举报',
   chat_report_confirm_title: '举报这条回复？',
   chat_report_confirm_body: '将这条 AI 回复标记为不当内容。我们会审核并处理。',
   chat_report_done: '已收到你的举报，谢谢。',
+  chat_legal_disclaimer:
+    'AI 回复仅供参考，可能幻觉或与报告矛盾，非专业建议。请勿依据对话作出施工、购房或安全决策。',
   privacy_section: '隐私',
   cross_app_memory_label: '跨应用记忆',
   cross_app_memory_hint: '允许对话参考你在所有 HexAstral 应用中的解读。仅限同一账户，绝不外泄。',
@@ -628,9 +702,9 @@ const ZH_HANS: Strings = {
 const ZH_HANT: Strings = {
   ...ZH_HANS,
   appName: '風',
-  empty_title: '尚未勘宅',
-  empty_subtitle: '添一處住家或辦公室，從山水形勢裡讀出它的風水。',
-  empty_cta: '勘察新宅',
+  empty_title: '尚無站點',
+  empty_subtitle: '新增住家或辦公室，從衛星與戶型輸入探索古典場所理論。',
+  empty_cta: '新增站點',
   new_site_address_title: '選擇地址',
   new_site_address_subtitle: '輸入地址或使用目前位置。',
   new_site_address_geocode_error: '無法解析此地址的座標，請使用「目前位置」或修改地址。',
@@ -678,10 +752,13 @@ const ZH_HANT: Strings = {
   report_loading: '正在載入報告…',
   report_failed: '分析失敗：{message}',
   report_pending: '尚未生成 — 點選地點開始分析。',
-  report_shell_tag: '堪輿速覽 · 解讀生成中',
+  report_shell_tag: '報告概覽 · 解讀生成中',
   report_chapter_pager_hint: '左右滑動逐章閱讀。',
   report_data_quality_footer: '部分輸入為估算，可隨時用更準的資料重新分析。',
-  report_confidence_note: '玄空飛星與八宅為精確演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
+  report_confidence_note:
+    '玄空飛星與八宅依你輸入的坐向與年份演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
+  report_legal_disclaimer:
+    '僅供娛樂、文化探索與個人省思——非專業風水、建築或施工建議。請勿依此報告作出購屋、裝修或安全決策。',
   report_map_close: '近景',
   report_map_mid: '周邊',
   report_map_wide: '全景',
@@ -689,7 +766,7 @@ const ZH_HANT: Strings = {
   report_map_failed: '地圖載入失敗',
   report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
   report_formli_heading: '形理合參（山水×飛星）',
-  report_placement_heading: '吉位佈局',
+  report_placement_heading: '古典佈局參考',
   reading_copy: '複製',
   reading_chat: '問AI',
   reading_highlight: '劃重點',
@@ -705,9 +782,9 @@ const ZH_HANT: Strings = {
   chapter_flying_stars: '飛星',
   chapter_auspicious_objects: '佈置',
   flying_stars_explainer:
-    '盤面九格對應住宅的九個方位。每格左上為山星（管人丁、健康、關係），右上為向星（管財運）；淡色大字是運星，底部為卦名與今年的流年星。字偏亮為旺、生（較吉），偏暗為退、死（較弱），偏紅者為煞位，宜留意化解。',
+    '盤面九格對應住宅的九個方位。每格左上為山星（古典讀法：人丁、健康、關係），右上為向星（古典讀法：資源）；淡色大字是運星，底部為卦名與今年的流年星。字偏亮為旺、生，偏暗為退、死，偏紅者為煞位——供研習參考，非「管財運」或「必須化解」的指令。',
   new_site_review_ai_disclaimer:
-    '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。',
+    '我們會渲染帶標註的衛星圖，並對其運行 AI 視覺模型來識別形煞 / 砂 / 水。圖像僅一次性處理，生成報告後不會保留。僅供娛樂、文化探索與個人省思——非專業風水、建築或施工建議。請自行核實坐向、建成年份與戶型圖輸入。',
   new_site_review_iap_note: '每個地點一份報告，單次購買永久解鎖。',
   new_site_review_birth_title: '個人命卦章節',
   new_site_review_birth_add: '新增生辰',
@@ -733,8 +810,28 @@ const ZH_HANT: Strings = {
   new_site_floorplan_skip: '略過（僅生成室外報告）',
   new_site_floorplan_count_one: '1 張 · 公寓',
   new_site_floorplan_count_villa: '{n} 張 · 別墅／多層',
+  new_site_floorplan_grid_show: '顯示九宮格',
+  new_site_floorplan_grid_hide: '隱藏九宮格',
   new_site_review_floorplan: '戶型圖',
   report_unlock_title: '解鎖這份報告',
+  paywall_title: '完整堪輿報告',
+  paywall_subtitle_analyze: '一次購買解鎖該址的結構化站點報告——衛星語境、飛星排盤與 AI 章節（學習工具）。',
+  paywall_subtitle_chat: '購買後可無限追問本報告的 AI 解讀。',
+  paywall_plan_single: '站點分析',
+  paywall_cta: '購買報告',
+  paywall_success: '已解鎖——正在生成報告…',
+  paywall_restore: '恢復購買',
+  paywall_failed: '購買失敗，請重試。',
+  paywall_unavailable: '目前版本無法購買。',
+  paywall_bullet_report: '標註衛星圖 + 確定性玄空 / 八宅演算',
+  paywall_bullet_chat: '本報告無限 AI 追問',
+  paywall_bullet_once: '按次購買，無需訂閱',
+  paywall_legal_disclaimer:
+    '僅供娛樂與文化探索，不能替代現場勘驗或持證專業人士。報告與對話可能不準確。詳見 kanyu.hexastral.com/terms 與 kanyu.hexastral.com/privacy/feng。',
+  new_site_review_no_floorplan: '無戶型圖——僅外局 / 朝向',
+  new_site_review_analyze_eta: '分析通常需要 1–3 分鐘。',
+  new_site_review_error_paywall: '需要一次性購買或 Pro 訂閱。',
+  new_site_review_error_network: '網路錯誤——請檢查連線後重試。',
   sign_in_hint: '登入後可跨裝置保存地點與報告。',
   sign_in_google: '使用 Google 繼續',
   sign_in_guest: '以訪客身份繼續',
@@ -788,13 +885,15 @@ const ZH_HANT: Strings = {
   chat_pool_remaining: '本月還剩 {remaining} 次回覆',
   chat_pro_required: '解鎖本報告後即可追問。',
   chat_cta: '聊聊這份報告',
-  chat_suggest_1: '財位怎麼催旺？',
-  chat_suggest_2: '我該先化解什麼？',
-  chat_suggest_3: '哪個方位最適合我？',
+  chat_suggest_1: '報告裡說的財位指什麼？',
+  chat_suggest_2: '我該先看哪一章？',
+  chat_suggest_3: '用白話解釋一下飛星盤',
   chat_report: '檢舉',
   chat_report_confirm_title: '檢舉這則回覆？',
   chat_report_confirm_body: '將這則 AI 回覆標記為不當內容。我們會審核並處理。',
   chat_report_done: '已收到你的檢舉，謝謝。',
+  chat_legal_disclaimer:
+    'AI 回覆僅供參考，可能幻覺或與報告矛盾，非專業建議。請勿依據對話作出施工、購屋或安全決策。',
   privacy_section: '隱私',
   cross_app_memory_label: '跨應用記憶',
   cross_app_memory_hint: '允許對話參考你在所有 HexAstral 應用中的解讀。僅限同一帳號，絕不外洩。',
@@ -803,9 +902,9 @@ const ZH_HANT: Strings = {
 const JA: Strings = {
   ...EN,
   appName: '風',
-  empty_title: 'まだ住まいを観ていません',
-  empty_subtitle: '自宅やオフィスを加えると、地形から風水を読み解きます。',
-  empty_cta: '住まいを観る',
+  empty_title: 'まだサイトがありません',
+  empty_subtitle: '自宅やオフィスを追加し、衛星と間取り入力から古典場所理論を学べます。',
+  empty_cta: 'サイトを追加',
   new_site_address_title: '住所を選ぶ',
   new_site_address_subtitle: '住所を入力するか、現在地を使います。',
   new_site_address_geocode_error:
@@ -864,7 +963,9 @@ const JA: Strings = {
   report_chapter_pager_hint: '左右にスワイプして章を読みます。',
   report_data_quality_footer: '一部の入力は推定値です。より正確なデータでいつでも再分析できます。',
   report_confidence_note:
-    '玄空飛星と八宅は厳密に算出。巒頭（砂水形煞）は AI と標高からの推定で、参考としてご覧ください。',
+    '玄空飛星と八宅は入力した向き・築年から算出。巒頭（砂水形煞）は AI と標高からの推定で、参考のみ。',
+  report_legal_disclaimer:
+    '娯楽・文化探索・個人的省察のみを目的とします。専門的な風水・建築・施工助言ではありません。購入・改修・安全の判断に依拠しないでください。',
   report_map_close: '近景',
   report_map_mid: '周辺',
   report_map_wide: '全景',
@@ -872,7 +973,7 @@ const JA: Strings = {
   report_map_failed: '地図を読み込めません',
   report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
   report_formli_heading: '形理合参（山水×飛星）',
-  report_placement_heading: '配置',
+  report_placement_heading: '古典配置メモ',
   reading_copy: 'コピー',
   reading_chat: 'AIに聞く',
   reading_highlight: 'ハイライト',
@@ -888,13 +989,13 @@ const JA: Strings = {
   chapter_personal_fit: '命卦',
   chapter_flying_stars: '飛星',
   chapter_annual_directions: '流年',
-  chapter_remediation: '化解',
+  chapter_remediation: '化解概念（学習）',
   chapter_auspicious_objects: '設え',
   flying_stars_explainer:
-    '九つのマスは住まいの九方位に対応します。各マスの左上が山星（人・健康・縁）、右上が向星（財）、薄い大きな数字が運星、下段は卦名と今年の流年星です。数字が明るいほど旺気、暗いほど衰え、赤は注意が必要な方位です。',
+    '九つのマスは住まいの九方位に対応します。各マスの左上が山星（古典的読み：人・健康・縁）、右上が向星（古典的読み：資源）、薄い大きな数字が運星、下段は卦名と今年の流年星です。数字が明るいほど旺気、暗いほど衰え、赤は研習上の注意方位 —— 「開運」や「必ず化解」の指示ではありません。',
   nav_back: '戻る',
   new_site_review_ai_disclaimer:
-    '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。',
+    '注釈付き衛星画像を生成し、AI ビジョンモデルで形煞 / 砂 / 水を識別します。画像は一度だけ処理され、レポート生成後は保存されません。娯楽・文化探索・個人的省察のみを目的とし、専門的な風水・建築・施工助言ではありません。坐向・建築年・間取り入力はご自身で確認してください。',
   new_site_review_iap_note: '1 地点につき 1 レポート。単発購入で解放されます。',
   new_site_review_birth_title: '個人命卦の章',
   new_site_review_birth_add: '生年月日を追加',
@@ -922,8 +1023,29 @@ const JA: Strings = {
   new_site_floorplan_skip: 'スキップ（屋外のみのレポート）',
   new_site_floorplan_count_one: '1枚 · マンション',
   new_site_floorplan_count_villa: '{n}枚 · 戸建て／複数階',
+  new_site_floorplan_grid_show: '九宮グリッドを表示',
+  new_site_floorplan_grid_hide: '九宮グリッドを非表示',
   new_site_review_floorplan: '間取り図',
   report_unlock_title: 'このレポートを解錠',
+  paywall_title: 'フルサイトレポート',
+  paywall_subtitle_analyze:
+    '1回の購入でこの物件の構造化サイトレポート（衛星・飛星・AI 章）が開放されます（学習ツール）。',
+  paywall_subtitle_chat: '購入後、このレポートについて AI に無制限で質問できます。',
+  paywall_plan_single: 'サイト分析',
+  paywall_cta: 'レポートを購入',
+  paywall_success: '解錠しました——レポートを生成中…',
+  paywall_restore: '購入を復元',
+  paywall_failed: '購入に失敗しました。もう一度お試しください。',
+  paywall_unavailable: 'このビルドでは購入できません。',
+  paywall_bullet_report: '注釈付き衛星タイル + 決定論的玄空 / 八宅演算',
+  paywall_bullet_chat: 'このレポートへの AI 質問は無制限',
+  paywall_bullet_once: 'サブスク不要の買い切り',
+  paywall_legal_disclaimer:
+    '娯楽・文化探索のみ。現地調査や有資格専門家の代替ではありません。レポートとチャットは不正確な場合があります。kanyu.hexastral.com/terms と kanyu.hexastral.com/privacy/feng を参照。',
+  new_site_review_no_floorplan: '間取りなし——外局 / 向きのみ',
+  new_site_review_analyze_eta: '分析には通常 1〜3 分かかります。',
+  new_site_review_error_paywall: '買い切り購入または Pro サブスクが必要です。',
+  new_site_review_error_network: 'ネットワークエラー——接続を確認して再試行してください。',
   sign_in_hint: 'ログインすると、端末をまたいで場所とレポートを保存できます。',
   sign_in_google: 'Google で続ける',
   sign_in_guest: 'ゲストとして続ける',
@@ -978,13 +1100,15 @@ const JA: Strings = {
   chat_pool_remaining: '今月の返信があと {remaining} 回',
   chat_pro_required: 'このレポートを解放すると追加で質問できます。',
   chat_cta: 'このレポートについて聞く',
-  chat_suggest_1: '財方位を強めるには？',
-  chat_suggest_2: 'まず何を直すべき？',
-  chat_suggest_3: '私に最も合う方位は？',
+  chat_suggest_1: 'レポートの財位とは何を指しますか？',
+  chat_suggest_2: '最初に読む章はどれですか？',
+  chat_suggest_3: '飛星盤をわかりやすく説明して',
   chat_report: '報告',
   chat_report_confirm_title: 'この返信を報告しますか？',
   chat_report_confirm_body: 'この AI の返信を不適切として報告します。確認のうえ対応します。',
   chat_report_done: '報告を受け付けました。ありがとうございます。',
+  chat_legal_disclaimer:
+    'AI 返答は参考のみ。幻覚やレポートとの矛盾があり得ます。専門助言ではありません。施工・購入・安全に関する判断に依拠しないでください。',
   privacy_section: 'プライバシー',
   cross_app_memory_label: 'アプリ間メモリ',
   cross_app_memory_hint:

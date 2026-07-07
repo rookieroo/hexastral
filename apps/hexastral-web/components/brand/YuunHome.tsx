@@ -50,7 +50,7 @@ const STR: Record<
     bad: '忌',
     goodItems: ['祭祀', '出行', '会友'],
     badItems: ['动土', '安葬', '开市'],
-    headline: '中华黄历，每日宜忌与运势。',
+    headline: '中华黄历，每日宜忌与节律参照。',
     features: ['每日宜忌', '干支', '流年', '假如'],
   },
   tw: {

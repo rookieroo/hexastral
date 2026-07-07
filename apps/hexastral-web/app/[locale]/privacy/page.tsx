@@ -28,10 +28,10 @@ const META_TITLE: Record<Locale, string> = {
 }
 
 const META_DESCRIPTION: Record<Locale, string> = {
-  en: 'How UseONE, LLC collects, uses, and protects your personal information across the HexAstral universe of apps, including Yuel, Yuun, and Yaul.',
-  ja: 'UseONE, LLC が HexAstral ユニバースのアプリ（Yuel、Yuun、Yaul を含む）において、お客様の個人情報をどのように取得・利用・保護するかについて。',
-  zh: 'UseONE, LLC 在 HexAstral 应用宇宙（包括 Yuel、Yuun 与 Yaul）中如何收集、使用并保护您的个人信息。',
-  tw: 'UseONE, LLC 在 HexAstral 應用宇宙（包括 Yuel、Yuun 與 Yaul）中如何蒐集、使用並保護您的個人資訊。',
+  en: 'How UseONE, LLC collects, uses, and protects your personal information across the HexAstral universe of apps, including Yuel, Yuun, Yaul, and Kanyu.',
+  ja: 'UseONE, LLC が HexAstral ユニバースのアプリ（Yuel、Yuun、Yaul、Kanyu を含む）において、お客様の個人情報をどのように取得・利用・保護するかについて。',
+  zh: 'UseONE, LLC 在 HexAstral 应用宇宙（包括 Yuel、Yuun、Yaul 与 Kanyu）中如何收集、使用并保护您的个人信息。',
+  tw: 'UseONE, LLC 在 HexAstral 應用宇宙（包括 Yuel、Yuun、Yaul 與 Kanyu）中如何蒐集、使用並保護您的個人資訊。',
 }
 
 export async function generateMetadata({ params }: PrivacyPageProps): Promise<Metadata> {

@@ -36,6 +36,8 @@ export interface SiteDraft {
   floorplanImages?: DraftFloorplanImage[]
   /** True-north bearing of the plans' top edge (north-align step). */
   floorplanOrientDeg?: number
+  /** Normalized 中宫 pin (0–1) on the cover floor plan. */
+  floorplanCenterNorm?: { x: number; y: number }
 }
 
 export async function loadDraft(): Promise<SiteDraft> {

@@ -110,7 +110,7 @@ Original detail retained below for reference.
 - **Where**: `apps/hexastral-api/src/routes/feng/sites.ts:285-313`. `/analyze`
   calls `checkReadingAccess(db, userId, 'feng_analysis')` then enqueues. No
   `consume` call anywhere in the feng routes or `feng-analyze.ts`.
-- **Problem**: a `single_purchase` (`hexastral_feng_single`, $4.99) entitlement
+- **Problem**: a `single_purchase` (`hexastral_feng_single`, $9.99 base) entitlement
   is verified but not decremented → a user who bought one analysis can analyze
   unlimited sites. Revenue leak.
 - **First confirm the intended model** (don't assume): check how `kindred` /

@@ -49,8 +49,8 @@ const EN: LandingCopy = {
     },
   ],
   cta: 'Get Yuun on iOS',
-  ctaNote: 'Free to start. The almanac is yours; the personal readings unlock with your chart.',
-  footer: 'Yuun — daily 干支 · 农历 · 节气 · 宜忌',
+  ctaNote: 'Free to start. The almanac is yours; personal readings unlock with your chart — for cultural exploration and reflection, not prediction or advice.',
+  footer: 'Yuun — daily 干支 · 农历 · 节气 · 宜忌 · for entertainment & cultural study',
 }
 
 export const COPY: Record<AuspiceLocale, LandingCopy> = {
@@ -76,8 +76,8 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
       },
     ],
     cta: 'iOS 下载 Yuun',
-    ctaNote: '免费起步。黄历本就属于你；个人化解读，随你的命盘解锁。',
-    footer: 'Yuun · 每日干支 · 农历 · 节气 · 宜忌',
+    ctaNote: '免费起步。黄历本就属于你；个人化解读随命盘解锁——仅供文化探索与个人省思，非预测或建议。',
+    footer: 'Yuun · 每日干支 · 农历 · 节气 · 宜忌 · 娱乐与文化研习',
   },
   'zh-Hant': {
     eyebrow: 'YUUN 黃曆',
@@ -100,8 +100,8 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
       },
     ],
     cta: 'iOS 下載 Yuun',
-    ctaNote: '免費起步。黃曆本就屬於你；個人化解讀，隨你的命盤解鎖。',
-    footer: 'Yuun · 每日干支 · 農曆 · 節氣 · 宜忌',
+    ctaNote: '免費起步。黃曆本就屬於你；個人化解讀隨命盤解鎖——僅供文化探索與個人省思，非預測或建議。',
+    footer: 'Yuun · 每日干支 · 農曆 · 節氣 · 宜忌 · 娛樂與文化研習',
   },
   ja: {
     eyebrow: 'YUUN 黄暦',
@@ -125,8 +125,8 @@ export const COPY: Record<AuspiceLocale, LandingCopy> = {
     ],
     cta: 'iOS で Yuun を入手',
     ctaNote:
-      '無料ではじめられます。暦はあなたのもの。個人向けの解説は、あなたの命盤で解放されます。',
-    footer: 'Yuun · 干支 · 旧暦 · 二十四節気 · 宜忌',
+      '無料ではじめられます。暦はあなたのもの。個人向けの解説は命盤で解放——娯楽・文化探索・省思用であり、予測や助言ではありません。',
+    footer: 'Yuun · 干支 · 旧暦 · 二十四節気 · 宜忌 · 娯楽と文化研習',
   },
 }
 

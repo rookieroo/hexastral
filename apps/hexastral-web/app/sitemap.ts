@@ -57,6 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (host.startsWith('yuel.')) return brandSitemap(base, '/privacy/kindred')
   if (host.startsWith('yuun.')) return brandSitemap(base, '/privacy/auspice')
   if (host.startsWith('yaul.')) return brandSitemap(base, '/privacy/coincast')
+  if (host.startsWith('kanyu.')) return brandSitemap(base, '/privacy/feng')
 
   const blogSlugs = getAllBlogSlugs()
   const entries: MetadataRoute.Sitemap = []

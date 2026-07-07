@@ -24,6 +24,7 @@ import { requireUserId } from '../lib/auth'
 import { moderationRefusal, screenChatText } from '../lib/chat-moderation'
 import { resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
 import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
+import { checkFengChatAccess, isFengDevProBypass } from '../lib/feng-chat-access'
 import { getActiveEntitlements } from '../services/entitlements'
 import { consumeProAllowance } from '../services/pro-allowance'
 import {
@@ -123,7 +124,32 @@ chatRoutes.post('/', async (c) => {
     readingType: input.readingType,
     targetApp,
   })
-  const chatTier = access.tier
+
+  // Fēng: chat is bundled with a purchased / subscribed report — no free taste.
+  let fengChatGranted = false
+  if (input.readingType === 'feng') {
+    const env = c.env as { ALLOW_DEV_PRO?: string; DEV_PRO_USER_IDS?: string }
+    const devPro = isFengDevProBypass(env, userId, c.req.header('x-feng-dev-pro'))
+    const fengAccess = await checkFengChatAccess(db, userId, input.readingId, { devPro })
+    if (!fengAccess.granted) {
+      const code =
+        fengAccess.code === 'FENG_ANALYZE_PENDING'
+          ? 'FENG_ANALYZE_PENDING'
+          : 'FENG_CHAT_REQUIRES_PURCHASE'
+      return c.json(
+        {
+          error: code,
+          tier: 'free',
+          capability: access.capability,
+          upsell: access.upsellProductId,
+        },
+        402
+      )
+    }
+    fengChatGranted = true
+  }
+
+  const chatTier = fengChatGranted ? 'pro' : access.tier
   const isPaid = chatTier !== 'free'
 
   const freeCap = FREE_TASTE_MESSAGES_PER_READING

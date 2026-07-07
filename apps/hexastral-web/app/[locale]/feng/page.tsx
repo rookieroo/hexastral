@@ -28,16 +28,16 @@ const APP_STORE_URL = 'https://apps.apple.com/app/feng/id000000000'
 export async function generateMetadata({ params }: FengLandingPageProps): Promise<Metadata> {
   const { locale } = await params
   const titles: Record<string, string> & { en: string } = {
-    en: 'Fēng: Feng-Shui Site Reading',
-    zh: '風 · 风水现场解读',
-    tw: '風 · 風水現場解讀',
-    ja: '風水：場の読み取り',
+    en: 'Kanyu: Classical Site Study',
+    zh: 'Kanyu · 古典场所研习',
+    tw: 'Kanyu · 古典場所研習',
+    ja: 'Kanyu：古典場所の学習',
   }
   const descriptions: Record<string, string> & { en: string } = {
-    en: 'Audit a home or office from its satellite view. External landforms, 八宅 fit, 玄空飞星 — by HexAstral.',
-    zh: '从卫星图开始审视一处宅地：外巒頭、八宅、玄空飞星，HexAstral 出品。',
-    tw: '從衛星圖開始審視一處宅地：外巒頭、八宅、玄空飛星，HexAstral 出品。',
-    ja: '衛星画像から自宅やオフィスを鑑定：外巒頭、八宅、玄空飛星。HexAstralによる風水アプリ。',
+    en: 'Explore a home or office through classical Chinese site theory and satellite context — educational, not professional feng-shui service.',
+    zh: '从卫星与古典场所理论探索一处宅地——文化研习工具，非专业风水服务。',
+    tw: '從衛星與古典場所理論探索一處宅地——文化研習工具，非專業風水服務。',
+    ja: '衛星と古典場所理論で住まいを学ぶ — 文化研習ツール、専門風水サービスではありません。',
   }
   const title = titles[locale] ?? titles.en
   return {
@@ -80,36 +80,36 @@ export default async function FengLandingPage({ params }: FengLandingPageProps) 
     body: string
   }
   const heroEn: HeroCopy = {
-    title: 'Read a place,',
-    subtitle: 'before you settle into it',
-    body: 'Fēng analyzes a home or workplace from its satellite view + your birth chart. Two complementary lenses — 外巒頭 (the land outside) and 八宅 / 玄空飞星 (the chart inside) — produce a six-chapter site reading you can save, share, and refresh every solar year.',
+    title: 'Explore a place,',
+    subtitle: 'through classical site theory',
+    body: 'Kanyu generates a structured digital site report from your pin, facing, and optional floor plan — external landform notes, Eight-Mansions fit, and flying-star compute. For entertainment, cultural exploration, and personal reflection only — not on-site inspection or licensed professional advice.',
   }
   const heroDefaults: Record<string, HeroCopy> = {
     en: heroEn,
     zh: {
-      title: '在你住下来之前',
-      subtitle: '先读懂一处宅地',
-      body: '風 从卫星图 + 你的生辰盘审视一处宅地。两个互补的镜头 — 外巒頭（外部地势）与八宅 / 玄空飞星（内部命理）— 产出一份六章节的现场解读，可保存、分享、每年立春自动刷新。',
+      title: '探索一处宅地',
+      subtitle: '用古典场所理论作参考',
+      body: 'Kanyu 根据地图坐标、坐向与可选户型图生成数字化站点报告 — 外峦头标注、八宅匹配、玄空飞星演算。仅供娱乐、文化探索与个人省思，非现场勘验或持证专业建议。',
     },
     tw: {
-      title: '在你住下之前',
-      subtitle: '先讀懂一處宅地',
-      body: '風 從衛星圖 + 你的生辰盤審視一處宅地。兩個互補的鏡頭 — 外巒頭（外部地勢）與八宅 / 玄空飛星（內部命理）— 產出一份六章節的現場解讀，可保存、分享、每年立春自動刷新。',
+      title: '探索一處宅地',
+      subtitle: '用古典場所理論作參考',
+      body: 'Kanyu 依地圖座標、坐向與可選戶型圖生成數位化站點報告 — 外巒頭標註、八宅匹配、玄空飛星演算。僅供娛樂、文化探索與個人省思，非現場勘驗或持證專業建議。',
     },
     ja: {
-      title: '住む前に、',
-      subtitle: 'その場を読む',
-      body: '風水アプリ Fēng は衛星画像とあなたの命盤から、自宅や職場を鑑定します。外巒頭（外部の地勢）と八宅 / 玄空飛星（内部の命理）— 二つの視点で六章の鑑定書を生成。保存・共有でき、毎年立春に自動更新されます。',
+      title: '場所を学ぶ、',
+      subtitle: '古典の場所理論で',
+      body: 'Kanyu は座標・向き・任意の間取りから構造化デジタルレポートを生成 — 巒頭注釈、八宅、玄空飛星。娯楽・文化探索・個人的省察のみ。現地調査や有資格専門家の代替ではありません。',
     },
   }
 
   const fallback: HeroCopy = heroDefaults[locale] ?? heroEn
 
   const ctas = {
-    en: { begin: 'Start a site reading  →', store: 'Get Fēng on iOS' },
-    zh: { begin: '开始一份现场解读  →', store: 'iOS 下载' },
-    tw: { begin: '開始一份現場解讀  →', store: 'iOS 下載' },
-    ja: { begin: '鑑定を始める  →', store: 'iOSで入手' },
+    en: { begin: 'Start a site report  →', store: 'Get Kanyu on iOS' },
+    zh: { begin: '开始一份站点报告  →', store: 'iOS 下载 Kanyu' },
+    tw: { begin: '開始一份站點報告  →', store: 'iOS 下載 Kanyu' },
+    ja: { begin: 'サイトレポートを始める  →', store: 'iOSで Kanyu を入手' },
   }
   const ctaCopy = ctas[locale as keyof typeof ctas] ?? ctas.en
 
@@ -293,7 +293,23 @@ export default async function FengLandingPage({ params }: FengLandingPageProps) 
 
         <p
           style={{
-            marginTop: 96,
+            marginTop: 48,
+            fontSize: 12,
+            lineHeight: 1.6,
+            color: 'rgba(230,226,214,0.5)',
+            textAlign: 'center',
+          }}
+        >
+          {locale === 'zh' || locale === 'tw'
+            ? '仅供娱乐与文化研习，不能替代现场勘验、持证风水师、建筑师或施工决策。'
+            : locale === 'ja'
+              ? '娯楽・文化研習のみ。現地調査、有資格専門家、建築・施工判断の代替ではありません。'
+              : 'For entertainment and cultural study only — not a substitute for on-site inspection, licensed practitioners, architects, or construction decisions.'}
+        </p>
+
+        <p
+          style={{
+            marginTop: 48,
             fontSize: 11,
             color: 'rgba(230,226,214,0.35)',
             letterSpacing: 4,

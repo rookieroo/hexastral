@@ -86,7 +86,7 @@ export function ExplainSheet({
   onUpgrade?: () => void
 }) {
   const { colors, spacing } = useTheme()
-  const { locale } = useStrings()
+  const { locale, t } = useStrings()
   const { width } = useWindowDimensions()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
   const L = LABELS[locale]
@@ -181,6 +181,10 @@ export function ExplainSheet({
             </ShareableCard>
           </View>
         ) : null}
+
+        <Text style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}>
+          {t.legalDisclaimerShort}
+        </Text>
       </View>
     </SatelliteBottomSheet>
   )

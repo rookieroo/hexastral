@@ -357,7 +357,7 @@ ${parts.join('\n')}
     shenShaSection = `\n${formatShenShaForPrompt(chart.shenSha)}\n`
   }
 
-  return `你是一位精通子平八字的 AI 命理师。请根据以下八字信息，生成一份专业且通俗易懂的命理分析。
+  return `你是一位精通子平八字的东方智慧顾问。请根据以下八字信息，生成一份专业且通俗易懂的文化解读。
 
 ## 八字四柱
 ${pillarsStr}

@@ -37,7 +37,7 @@ const CHAPTER_TITLES: Record<SynastryChapter['kind'], string> = {
   communication: '沟通方式',
   conflict: '冲突源头',
   complement: '互补之处',
-  monthly_outlook: '本月运势',
+  monthly_outlook: '本月相处参考',
   long_term_advice: '长期建议',
 }
 

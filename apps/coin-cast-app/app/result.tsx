@@ -26,6 +26,7 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { tryUpgradeCoincastReading } from '@/lib/coincast-upgrade'
 import { useSatelliteI18n } from '@/lib/i18n'
 import { SheetHandle } from '@/lib/SheetHandle'
 import { useAppTheme } from '@/lib/theme'
@@ -44,8 +45,13 @@ export default function CoinCastResultScreen() {
   const { spacing } = useTheme()
   const { t, uiLocale } = useSatelliteI18n()
   const params = useLocalSearchParams<{ readingId?: string; payload?: string }>()
-  const payload = parsePayload(params.payload)
+  const [payload, setPayload] = useState<Record<string, unknown>>(() =>
+    parsePayload(params.payload)
+  )
+  const [upgradeLoading, setUpgradeLoading] = useState(false)
   const hexagram = (payload.hexagram ?? {}) as { number?: number; name?: string }
+  const interpretationMode = payload.interpretationMode === 'classical' ? 'classical' : 'ai'
+  const isClassical = interpretationMode === 'classical'
   const interpretation =
     typeof payload.interpretation === 'string'
       ? payload.interpretation
@@ -66,6 +72,34 @@ export default function CoinCastResultScreen() {
     signal: questionType,
   })
 
+  const handleUpgradeAi = () => {
+    const readingId = params.readingId?.trim()
+    if (!readingId) {
+      router.push('/paywall')
+      return
+    }
+    setUpgradeLoading(true)
+    void (async () => {
+      const outcome = await tryUpgradeCoincastReading(readingId)
+      setUpgradeLoading(false)
+      if (outcome.ok) {
+        setPayload(outcome.output)
+        router.push({
+          pathname: '/detail',
+          params: {
+            readingId,
+            payload: encodeURIComponent(JSON.stringify(outcome.output)),
+          },
+        })
+        return
+      }
+      if (outcome.reason === 'paywall') {
+        router.push('/paywall')
+        return
+      }
+    })()
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.bg }]}
@@ -75,8 +109,11 @@ export default function CoinCastResultScreen() {
       <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
         <SheetHandle />
         <View style={[styles.inner, { gap: spacing.md }]}>
+          {isClassical ? (
+            <Text style={[styles.badge, { color: colors.accent }]}>{t('resultClassicalBadge')}</Text>
+          ) : null}
           <SatelliteResultCard title={title} body={interpretation} />
-          <View style={{ alignSelf: 'flex-start' }}>
+          <View style={{ alignSelf: 'flex-start', gap: spacing.sm }}>
             <Button
               variant='secondary'
               onPress={() =>
@@ -88,10 +125,20 @@ export default function CoinCastResultScreen() {
             >
               {t('resultOpenDetail')} →
             </Button>
+            {isClassical ? (
+              <Button
+                variant='secondary'
+                disabled={upgradeLoading}
+                onPress={handleUpgradeAi}
+              >
+                {upgradeLoading ? t('upgradeAiLoading') : t('upgradeAiCta')}
+              </Button>
+            ) : null}
           </View>
           <Text style={[styles.meta, { color: colors.dim }]}>
             {t('resultReadingId', { id: params.readingId ?? '—' })}
           </Text>
+          <Text style={[styles.legal, { color: colors.dim }]}>{t('resultLegalDisclaimer')}</Text>
         </View>
 
         <SatelliteQuestionTypePicker
@@ -115,4 +162,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1 },
   meta: { fontSize: 12 },
+  legal: { fontSize: 11, lineHeight: 16 },
+  badge: { fontSize: 12, fontWeight: '600', letterSpacing: 1 },
 })

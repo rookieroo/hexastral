@@ -28,6 +28,13 @@ const CTA: Record<Lc, { read: string; loading: string; failed: string }> = {
   ja: { read: '今月を深読み', loading: '深読み中…', failed: 'タップで再試行' },
 }
 
+const DISCLAIMER: Record<Lc, string> = {
+  en: 'Cultural reference for reflection — not a forecast or advice.',
+  zh: '文化参考，供个人省思 —— 非运势预测或建议。',
+  'zh-Hant': '文化參考，供個人省思 —— 非運勢預測或建議。',
+  ja: '文化上の参考と省思用 —— 運勢予測や助言ではありません。',
+}
+
 export function MonthlyDepthCard({
   isPro,
   locale,
@@ -176,6 +183,9 @@ export function MonthlyDepthCard({
           </Text>
         </Pressable>
       )}
+      <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16, marginTop: 4 }}>
+        {DISCLAIMER[lc]}
+      </Text>
     </View>
   )
 }

@@ -50,7 +50,7 @@ export default async function MethodologyPage() {
         name: 'Which apps consume the backend?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'HexAstral flagship plus portfolio satellites — FaceOracle, StarPalace, SoulMatch, FengShui AI, DreamOracle, EightPillars, CoinCast — all share astro-core computations and DDL-aware growth plumbing.',
+          text: 'HexAstral flagship plus portfolio satellites — FaceOracle, StarPalace, Yuel, Kanyu, DreamOracle, EightPillars, CoinCast — all share astro-core computations and DDL-aware growth plumbing.',
         },
       },
       {

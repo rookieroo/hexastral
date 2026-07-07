@@ -24,6 +24,7 @@ import { PaywallView } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
+import { Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { SignInSheet } from '@/components/SignInSheet'
 import { YuelMark } from '@/components/YuelMark'
@@ -102,11 +103,8 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
-      {/* Unlock does NOT gate on sign-in — anonymous users go straight to the
-          purchase options (直接拉起 IAP). RevenueCat is already logged in as the
-          anonymous userId (loginYuanIap at boot), so the buy attaches to it; we
-          nudge sign-in AFTER a successful purchase to make it Apple-recoverable. */}
-      <PaywallView
+      <View style={{ flex: 1 }}>
+        <PaywallView
         productIds={YUAN_PRODUCT_IDS}
         prices={{
           monthly: offerings?.monthlyPriceString ?? null,
@@ -129,7 +127,20 @@ export default function PaywallScreen() {
           return result
         }}
         onRestore={restoreKindredPurchases}
-      />
+        />
+        <Text
+          style={{
+            color: kindredDark.textMuted,
+            fontSize: 11,
+            lineHeight: 16,
+            paddingHorizontal: 20,
+            paddingBottom: 12,
+            textAlign: 'center',
+          }}
+        >
+          {t(locale, 'paywall.legalDisclaimer')}
+        </Text>
+      </View>
 
       <SignInSheet visible={signInOpen} onClose={() => setSignInOpen(false)} />
     </SafeAreaView>

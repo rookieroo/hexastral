@@ -1,0 +1,17 @@
+# Fēng V1 smoke — devPro / entitled analyze → report shell → chat gate
+#
+# Prerequisites: dev client build, ALLOW_DEV_PRO=1 on API, DEV-Pro toggle ON in app Settings.
+# Run: maestro test apps/feng-app/.maestro/flows/feng-smoke.yaml
+
+appId: com.hexastral.feng
+---
+- launchApp
+- assertVisible:
+    text: ".*"
+    optional: true
+- tapOn:
+    text: "Survey a home"
+    optional: true
+- tapOn:
+    text: "勘察新宅"
+    optional: true

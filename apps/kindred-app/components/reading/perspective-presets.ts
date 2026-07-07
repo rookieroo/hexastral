@@ -24,12 +24,12 @@ export interface PerspectivePreset {
 export const PERSPECTIVE_PRESETS: readonly PerspectivePreset[] = [
   {
     id: 'classical',
-    label: { zh: '古法直断', 'zh-Hant': '古法直斷', ja: '古法・断', en: 'Classical Verdict' },
+    label: { zh: '古法直断', 'zh-Hant': '古法直斷', ja: '古法・断', en: 'Classical voice' },
     desc: {
       zh: '碑拓式、简练、断语直接',
       'zh-Hant': '碑拓式、簡練、斷語直接',
       ja: '碑拓のように簡潔・断定的',
-      en: 'Terse, classical, direct verdicts',
+      en: 'Terse, classical register — cultural reading, not a verdict',
     },
     seedZh: '古法碑拓口吻：简练、断语直接、不铺陈',
     seedEn: 'Classical terse verdicts, no elaboration',
@@ -48,12 +48,12 @@ export const PERSPECTIVE_PRESETS: readonly PerspectivePreset[] = [
   },
   {
     id: 'psychology',
-    label: { zh: '现代心理', 'zh-Hant': '現代心理', ja: '現代心理', en: 'Modern Psychology' },
+    label: { zh: '现代心理', 'zh-Hant': '現代心理', ja: '現代心理', en: 'Self-understanding' },
     desc: {
       zh: '用自我认知语言重述命理',
       'zh-Hant': '用自我認知語言重述命理',
       ja: '自己理解の言葉で命理を語り直す',
-      en: 'Reframes the chart in self-understanding terms',
+      en: 'Reframes the chart in self-understanding terms — not clinical psychology',
     },
     seedZh: '现代心理视角：用自我认知/心理语言重述命理',
     seedEn: 'Modern psychology framing of the chart',

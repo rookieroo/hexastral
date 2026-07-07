@@ -148,6 +148,10 @@ export function AuspicePaywallSheet({
             }}
           />
         )}
+
+        <Text style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}>
+          {t.legalDisclaimerShort}
+        </Text>
       </View>
     </SatelliteBottomSheet>
   )

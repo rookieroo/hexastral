@@ -46,15 +46,18 @@ export function FaceReadSharePoster(props: DomainPosterProps) {
   )
 }
 
-export function SoulMatchSharePoster(props: DomainPosterProps) {
+export function YuelSharePoster(props: DomainPosterProps) {
   return (
-    <BaseSharePoster title='SoulMatch' subtitle={props.headline} shareUrl={props.shareUrl}>
+    <BaseSharePoster title='Yuel' subtitle={props.headline} shareUrl={props.shareUrl}>
       <Text style={{ color: '#A1A1AA', fontSize: 13, lineHeight: 20 }}>
         [asset-slot] dual_orbit_thread.png
       </Text>
     </BaseSharePoster>
   )
 }
+
+/** @deprecated Use YuelSharePoster */
+export const SoulMatchSharePoster = YuelSharePoster
 
 export function StarPalaceSharePoster(props: DomainPosterProps) {
   return (

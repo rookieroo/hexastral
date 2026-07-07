@@ -65,10 +65,14 @@ export function CompatibilityTeaser() {
           >
             ELEMENTAL PREVIEW · 合盘
           </p>
-          <p style={{ fontSize: '2.75rem', fontWeight: 300, margin: 0 }}>{result.score}%</p>
-          <p style={{ color: 'var(--color-ivory-dim)', marginBottom: 0 }}>
-            Day masters {result.personA.dayMaster} · {result.personB.dayMaster} —{' '}
-            <em>{result.grade}</em>
+          <p style={{ fontSize: '1.35rem', fontWeight: 400, margin: '0 0 0.5rem', letterSpacing: '0.04em' }}>
+            {result.grade}
+          </p>
+          <p style={{ color: 'var(--color-ivory-dim)', marginBottom: 0, fontSize: '0.9rem' }}>
+            Day masters {result.personA.dayMaster} · {result.personB.dayMaster}
+          </p>
+          <p style={{ color: 'var(--color-ivory-dim)', marginTop: '0.75rem', fontSize: '0.75rem', lineHeight: 1.5 }}>
+            Cultural reference for reflection — not a compatibility score, verdict, or prediction.
           </p>
         </div>
         <ul
@@ -84,15 +88,15 @@ export function CompatibilityTeaser() {
           ))}
         </ul>
         <DownloadCTA
-          headline='Full synastry in SoulMatch (roadmap)'
-          sub='Dimensional Bond readings, gifting, resonance invites — meanwhile HexAstral ships deep pair reports today.'
-          appStoreUrl={resolveAppStoreUrl('soulmatch')}
-          targetApp='soulmatch'
+          headline='Full bond reading in Yuel'
+          sub='Dimensional synastry chapters, gifting, resonance invites — cultural study, not fortune-telling.'
+          appStoreUrl={resolveAppStoreUrl('hexastral')}
+          targetApp='hexastral'
           compact
         />
         <DownloadCTA
           headline='Or unlock everything inside HexAstral flagship'
-          sub='Zi Wei + Ba Zi dual chart bond flows already live.'
+          sub='Zi Wei + Ba Zi dual-chart bond flows already live.'
           compact
           targetApp='hexastral'
         />
@@ -155,7 +159,7 @@ export function CompatibilityTeaser() {
             value={b}
             onChange={setB}
             onSubmit={runPreview}
-            submitLabel={pending ? 'Consulting oracle…' : 'Reveal compatibility teaser'}
+            submitLabel={pending ? 'Computing preview…' : 'Preview elemental overlay'}
             showName={false}
             loading={pending}
           />

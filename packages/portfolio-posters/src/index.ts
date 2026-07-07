@@ -7,4 +7,5 @@ export {
   FaceReadSharePoster,
   SoulMatchSharePoster,
   StarPalaceSharePoster,
+  YuelSharePoster,
 } from './share/domainPosters'

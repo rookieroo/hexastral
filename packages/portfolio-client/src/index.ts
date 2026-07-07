@@ -6,14 +6,17 @@ export {
   fetchReadings,
   getBirthInfo,
   handlePortfolioError,
+  PortfolioAlreadyUpgradedError,
   PortfolioBannedError,
   PortfolioQuotaExceededError,
   PortfolioSessionExpiredError,
+  PortfolioUpgradeRequiredError,
   runAuto,
   runLinked,
   runPreview,
   saveBirthInfo,
   setPortfolioMemoryPreference,
+  upgradeCoincastReadingToAi,
 } from './portfolio-api'
 export type { FlagshipKey, QuestionType } from './routing'
 export {

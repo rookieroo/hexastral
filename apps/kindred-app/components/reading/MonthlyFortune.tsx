@@ -28,35 +28,39 @@ const P = kindredPaper
 
 /** Copy for the Pro 流年深读 affordance + its section labels. */
 const DEPTH_UI_EN = {
-  cta: 'Read deeper',
-  loading: 'Reading this month…',
-  failed: 'Couldn’t load the deep read — tap to retry',
-  advice: 'DO',
+  cta: 'Expand this month',
+  loading: 'Expanding this month…',
+  failed: 'Couldn’t load the expanded read — tap to retry',
+  advice: 'NOTE',
   watch: 'WATCH',
+  disclaimer: 'Cultural reference for reflection — not a forecast or advice.',
 }
 
 const DEPTH_UI: Record<string, typeof DEPTH_UI_EN> = {
   en: DEPTH_UI_EN,
   zh: {
-    cta: '深读本月',
-    loading: '正在深读本月…',
-    failed: '深读加载失败，点按重试',
-    advice: '宜',
-    watch: '忌',
+    cta: '展开本月',
+    loading: '正在展开本月…',
+    failed: '展开加载失败，点按重试',
+    advice: '参考',
+    watch: '留意',
+    disclaimer: '文化参考，供个人省思 —— 非运势预测或建议。',
   },
   'zh-Hant': {
-    cta: '深讀本月',
-    loading: '正在深讀本月…',
-    failed: '深讀載入失敗，點按重試',
-    advice: '宜',
-    watch: '忌',
+    cta: '展開本月',
+    loading: '正在展開本月…',
+    failed: '展開載入失敗，點按重試',
+    advice: '參考',
+    watch: '留意',
+    disclaimer: '文化參考，供個人省思 —— 非運勢預測或建議。',
   },
   ja: {
-    cta: '今月を深読み',
-    loading: '今月を深読み中…',
-    failed: '深読みの取得に失敗しました。タップで再試行',
-    advice: '吉',
-    watch: '注意',
+    cta: '今月を展開',
+    loading: '今月を展開中…',
+    failed: '展開の取得に失敗しました。タップで再試行',
+    advice: '参考',
+    watch: '留意',
+    disclaimer: '文化上の参考と省思用 —— 運勢予測や助言ではありません。',
   },
 }
 
@@ -181,6 +185,7 @@ export function MonthlyFortune({
           <Text style={S.depthCtaText}>{du.cta}</Text>
         </Pressable>
       )}
+      <Text style={S.disclaimer}>{du.disclaimer}</Text>
     </View>
   )
 }
@@ -216,4 +221,5 @@ const S = StyleSheet.create({
   depthTag: { color: P.cinnabar, fontSize: 12, letterSpacing: 1, fontWeight: '600' },
   depthTagWatch: { color: P.muted },
   depthAdviceText: { flex: 1, color: P.inkSoft, fontSize: 14, lineHeight: 22 },
+  disclaimer: { color: P.muted, fontSize: 11, lineHeight: 16, marginTop: 14 },
 })

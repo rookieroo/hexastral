@@ -32,13 +32,14 @@ One product can grant multiple entitlements — e.g. `universe_pro_*` grants
 
 ## 1. Entitlements
 
-The catalog defines four entitlement keys
+The catalog defines five entitlement keys
 ([`EntitlementKey` in products.ts](../../apps/hexastral-api/src/config/products.ts)):
 
 | Key | Unlocks | Sold at MVP? |
 |---|---|---|
 | `kindred_pro` | Yuel Pro: relationship timeline, deep synastry, BaZi-pair LLM, unlimited AI chat, full personal 命书 | **Yes** |
 | `auspice_pro` | Yuun Pro: BaZi life timeline & what-if, personal BaZi/ZiWei deep-read, family unlimited, 农历 birthday push, full 黄历, widgets ×3, Apple Watch, cross-device sync | **Yes** |
+| `coincast_pro` | Yaul Pro: unlimited casts + AI on each cast + coin skins | **Yes** (Yaul launch) |
 | `fate_pro` | Pro experience inside the `fate` funnel app (all chapters + daily LLM) | **No** — universe-only, no standalone product (fate is a funnel app) |
 | `universe_pro` | Cross-app bundle: implies all per-app Pros + every satellite's Pro | **No** — deferred to Phase 2 (§7) |
 
@@ -66,12 +67,24 @@ Create these in App Store Connect, then register the same IDs in RevenueCat:
 | `kindred_pro_annual` | Yuel | Annual | `kindred_pro` | $47.99/yr (founder-agreed) |
 | `auspice_pro_monthly` | Yuun | Monthly | `auspice_pro` | $4.99/mo (per aso-metadata; confirm) |
 | `auspice_pro_annual` | Yuun | Annual | `auspice_pro` | $39.99/yr (per aso-metadata; confirm) |
+| `coincast_pro_monthly` | Yaul | Monthly | `coincast_pro` | Confirm in ASC |
+| `coincast_pro_annual` | Yaul | Annual | `coincast_pro` | Confirm in ASC |
+
+**Yaul consumable AI cast packs** (Display Name in ASC should read **Yaul AI Deep Read ×N**; Product IDs unchanged):
+
+| Product ID | App | Type | Grants | Notes |
+|---|---|---|---|---|
+| `coincast_cast_pack_1` | Yaul | Consumable | +1 `coincast_cast` credit | One AI commentary cast or in-place classical→AI upgrade |
+| `coincast_cast_pack_5` | Yaul | Consumable | +5 credits | |
+| `coincast_cast_pack_10` | Yaul | Consumable | +10 credits | |
 
 Plus Yuel's **one-time 合盘 unlock** (not a subscription):
 
 | Product ID | App | Type | Grants | Price |
 |---|---|---|---|---|
 | `hexastral_compatibility` | Yuel | Consumable (server-applied, per-bond) | — (the API marks the specific bond unlocked) | $6.99 |
+| `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (1 floor plan) |
+| `hexastral_feng_villa` | Kanyu | Consumable (multi-floor; **not live until `VILLA_SKU_PROVISIONED`**) | — | $9.99 + $3/extra plan (max 6) |
 
 > The `hexastral_compatibility` product is a `single_purchase` (singleSku
 > `compatibility`) in products.ts; the webhook's `NON_RENEWING_PURCHASE` path applies
@@ -82,8 +95,8 @@ Plus Yuel's **one-time 合盘 unlock** (not a subscription):
 which grant `kindred_pro` + `auspice_pro` + `fate_pro` + `universe_pro`.
 
 **Other products already in the catalog** (legacy / other apps — unrelated to the Yuel +
-Yuun launch; leave as-is): `coincast_pro_monthly`/`_annual`, the consumables
-(`hexastral_chat_5`, `hexastral_cast_3`, `coincast_cast_pack_{1,5,10}`, `faceoracle_reading`,
+Yuun launch; leave as-is): the consumables
+(`hexastral_chat_5`, `hexastral_cast_3`, `faceoracle_reading`,
 `dream_pack_10`, `numerology_pack_10`), and the single-purchase SKUs
 (`hexastral_cast_single`, `hexastral_fate_reading`, `hexastral_feng_single`).
 
