@@ -19,7 +19,14 @@ import { requireUserId } from '../lib/auth'
 
 export const purchaseRoutes = new Hono<AppEnv>()
 
-const VALID_SKU_IDS = ['cast', 'fate_reading', 'compatibility', 'feng_analysis'] as const
+const VALID_SKU_IDS = [
+  'cast',
+  'fate_reading',
+  'compatibility',
+  'feng_analysis',
+  'feng_analysis_villa_s',
+  'feng_analysis_villa_l',
+] as const
 type SingleSkuId = (typeof VALID_SKU_IDS)[number]
 
 /**

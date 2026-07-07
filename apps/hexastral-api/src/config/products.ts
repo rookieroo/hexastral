@@ -53,7 +53,13 @@ export interface ConsumableProduct {
 export interface SinglePurchaseProduct {
   productId: string
   kind: 'single_purchase'
-  singleSku: 'cast' | 'fate_reading' | 'compatibility' | 'feng_analysis'
+  singleSku:
+    | 'cast'
+    | 'fate_reading'
+    | 'compatibility'
+    | 'feng_analysis'
+    | 'feng_analysis_villa_s'
+    | 'feng_analysis_villa_l'
 }
 
 export type ProductSpec = SubscriptionProduct | ConsumableProduct | SinglePurchaseProduct
@@ -198,6 +204,19 @@ export const PRODUCTS: readonly ProductSpec[] = [
     productId: 'hexastral_feng_single',
     kind: 'single_purchase',
     singleSku: 'feng_analysis',
+  },
+  // Discrete villa tiers (multi-floor 户型图). Registered so the webhook accepts
+  // them; enforcement flips on with feng-pricing.ts `VILLA_SKU_PROVISIONED = true`
+  // once ASC + RevenueCat products exist. villa_s = 2–3 floors, villa_l = 4–6.
+  {
+    productId: 'hexastral_feng_villa_s',
+    kind: 'single_purchase',
+    singleSku: 'feng_analysis_villa_s',
+  },
+  {
+    productId: 'hexastral_feng_villa_l',
+    kind: 'single_purchase',
+    singleSku: 'feng_analysis_villa_l',
   },
 ] as const
 

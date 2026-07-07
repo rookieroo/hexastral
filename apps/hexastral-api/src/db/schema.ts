@@ -545,7 +545,15 @@ export const singlePurchases = sqliteTable(
       .references(() => users.id),
     /** SKU 标识符 — 与 iOS sku-catalog.ts 中的 SkuId 对应 (year_ahead 已合并入 fate_reading，保留用于历史数据兼容) */
     skuId: text('sku_id', {
-      enum: ['cast', 'fate_reading', 'year_ahead', 'compatibility', 'feng_analysis'],
+      enum: [
+        'cast',
+        'fate_reading',
+        'year_ahead',
+        'compatibility',
+        'feng_analysis',
+        'feng_analysis_villa_s',
+        'feng_analysis_villa_l',
+      ],
     }).notNull(),
     /** RevenueCat S2S event.id — 用于幂等去重（UNIQUE） */
     rcEventId: text('rc_event_id').unique().notNull(),

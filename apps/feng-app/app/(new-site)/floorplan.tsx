@@ -11,6 +11,7 @@
  * Skippable: without a floor plan the report is exterior-only (no room-level 化解).
  */
 
+import { MAX_FLOORPLAN_IMAGES } from '@zhop/astro-core'
 import { Button, useHaptic } from '@zhop/core-ui'
 import { useUploadFloorplan } from '@zhop/scenario-feng'
 import * as ImagePicker from 'expo-image-picker'
@@ -34,7 +35,7 @@ import { resolveLocale, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
 
-const MAX_IMAGES = 6
+const MAX_IMAGES = MAX_FLOORPLAN_IMAGES
 
 interface FloorplanItem {
   key: string
@@ -401,6 +402,12 @@ export default function FloorplanScreen() {
           {items.length > 1
             ? t.new_site_floorplan_count_villa.replace('{n}', String(items.length))
             : t.new_site_floorplan_count_one}
+        </Text>
+      ) : null}
+
+      {items.length >= MAX_IMAGES ? (
+        <Text style={{ color: colors.textMute, fontSize: 12 }}>
+          {t.new_site_floorplan_max.replace('{n}', String(MAX_IMAGES))}
         </Text>
       ) : null}
 

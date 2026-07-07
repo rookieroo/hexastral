@@ -33,7 +33,11 @@ import { requireUserId } from '../../lib/auth'
 import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
 import { deleteFloorplans } from '../../lib/feng-client'
 import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
-import { MAX_FLOORPLAN_IMAGES, quoteFengAnalysis } from '../../lib/feng-pricing'
+import {
+  fengSkuForImageCount,
+  MAX_FLOORPLAN_IMAGES,
+  quoteFengAnalysis,
+} from '../../lib/feng-pricing'
 
 const facingDeg = z.number().gte(0).lt(360)
 
@@ -54,7 +58,7 @@ const centerNormSchema = z.object({
 })
 const floorplanSchema = z.object({
   orientDeg: facingDeg,
-  images: z.array(floorplanImageSchema).min(1).max(6),
+  images: z.array(floorplanImageSchema).min(1).max(MAX_FLOORPLAN_IMAGES),
   centerNorm: centerNormSchema.optional(),
 })
 
@@ -84,6 +88,16 @@ function parseFloorplan(json: string | null): unknown {
   } catch {
     return null
   }
+}
+
+/** Number of uploaded floor-plan images on a site (drives the price tier). 0 when none. */
+function floorplanImageCount(json: string | null): number {
+  const parsed = parseFloorplan(json)
+  if (parsed && typeof parsed === 'object' && 'images' in parsed) {
+    const images = (parsed as { images?: unknown }).images
+    if (Array.isArray(images)) return images.length
+  }
+  return 0
 }
 
 function serializeSite(row: typeof fengSites.$inferSelect) {
@@ -373,7 +387,11 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     let accessVia = 'dev_pro'
     let purchaseId: string | undefined
     if (!isDevPro) {
-      const access = await checkReadingAccess(db, userId, 'feng_analysis')
+      // Resolve the price tier from the uploaded floor-plan count so a non-subscriber
+      // must hold the SKU for THAT tier (a standard purchase can't unlock a villa).
+      // While villa SKUs are unprovisioned this always resolves to `feng_analysis`.
+      const tierSku = fengSkuForImageCount(floorplanImageCount(site.floorplanJson))
+      const access = await checkReadingAccess(db, userId, tierSku)
       if (!access.granted) {
         return jsonErr(
           c,

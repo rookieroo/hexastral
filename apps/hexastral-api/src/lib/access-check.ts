@@ -23,9 +23,15 @@ import {
   consumeDivinationCredit,
 } from '../services/quota'
 import { userHasAnySubscription } from './access/entitlement-access'
-import { FENG_BASE_PRICE_USD } from './feng-pricing'
+import { FENG_TIERS } from './feng-pricing'
 
-export type SingleSkuId = 'cast' | 'fate_reading' | 'compatibility' | 'feng_analysis'
+export type SingleSkuId =
+  | 'cast'
+  | 'fate_reading'
+  | 'compatibility'
+  | 'feng_analysis'
+  | 'feng_analysis_villa_s'
+  | 'feng_analysis_villa_l'
 
 export type AccessGranted =
   | { granted: true; via: 'pro_quota' }
@@ -45,15 +51,22 @@ export type AccessDenied = {
 
 export type AccessResult = AccessGranted | AccessDenied
 
+/** Feng tier SKU → { productId, price } derived from the pricing table (SSOT). */
+const FENG_SKU_META = Object.fromEntries(
+  FENG_TIERS.map((t) => [
+    t.singleSku,
+    { productId: t.productId, price: `$${t.priceUsd.toFixed(2)}` },
+  ])
+) as Record<(typeof FENG_TIERS)[number]['singleSku'], { productId: string; price: string }>
+
 /** Map SKU → RevenueCat product ID and fallback USD price */
 const SKU_IAP_META: Record<SingleSkuId, { productId: string; price: string }> = {
   cast: { productId: 'hexastral_cast_single', price: '$1.99' },
   fate_reading: { productId: 'hexastral_fate_reading', price: '$9.99' },
   compatibility: { productId: 'hexastral_compatibility', price: '$6.99' },
-  feng_analysis: {
-    productId: 'hexastral_feng_single',
-    price: `$${FENG_BASE_PRICE_USD.toFixed(2)}`,
-  },
+  feng_analysis: FENG_SKU_META.feng_analysis,
+  feng_analysis_villa_s: FENG_SKU_META.feng_analysis_villa_s,
+  feng_analysis_villa_l: FENG_SKU_META.feng_analysis_villa_l,
 }
 
 /**

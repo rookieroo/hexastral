@@ -166,6 +166,8 @@ export type Strings = {
   new_site_floorplan_skip: string
   new_site_floorplan_count_one: string
   new_site_floorplan_count_villa: string
+  /** Shown when the {n}-image upload cap is reached ({n} = MAX_FLOORPLAN_IMAGES). */
+  new_site_floorplan_max: string
   new_site_floorplan_grid_show: string
   new_site_floorplan_grid_hide: string
   new_site_review_floorplan: string
@@ -398,6 +400,7 @@ const EN: Strings = {
   new_site_floorplan_skip: 'Skip (exterior-only report)',
   new_site_floorplan_count_one: '1 image · apartment',
   new_site_floorplan_count_villa: '{n} images · villa / multi-floor',
+  new_site_floorplan_max: 'Maximum {n} floor plans reached.',
   new_site_floorplan_grid_show: 'Show nine-palace grid',
   new_site_floorplan_grid_hide: 'Hide nine-palace grid',
   new_site_review_floorplan: 'Floor plan',
@@ -616,6 +619,7 @@ const ZH_HANS: Strings = {
   new_site_floorplan_skip: '跳过（仅生成室外报告）',
   new_site_floorplan_count_one: '1 张 · 公寓',
   new_site_floorplan_count_villa: '{n} 张 · 别墅／多层',
+  new_site_floorplan_max: '最多上传 {n} 张户型图。',
   new_site_floorplan_grid_show: '显示九宫格',
   new_site_floorplan_grid_hide: '隐藏九宫格',
   new_site_review_floorplan: '户型图',
@@ -821,6 +825,7 @@ const ZH_HANT: Strings = {
   new_site_floorplan_skip: '略過（僅生成室外報告）',
   new_site_floorplan_count_one: '1 張 · 公寓',
   new_site_floorplan_count_villa: '{n} 張 · 別墅／多層',
+  new_site_floorplan_max: '最多上傳 {n} 張戶型圖。',
   new_site_floorplan_grid_show: '顯示九宮格',
   new_site_floorplan_grid_hide: '隱藏九宮格',
   new_site_review_floorplan: '戶型圖',
@@ -1036,6 +1041,7 @@ const JA: Strings = {
   new_site_floorplan_skip: 'スキップ（屋外のみのレポート）',
   new_site_floorplan_count_one: '1枚 · マンション',
   new_site_floorplan_count_villa: '{n}枚 · 戸建て／複数階',
+  new_site_floorplan_max: '間取り図は最大{n}枚までです。',
   new_site_floorplan_grid_show: '九宮グリッドを表示',
   new_site_floorplan_grid_hide: '九宮グリッドを非表示',
   new_site_review_floorplan: '間取り図',

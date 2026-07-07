@@ -152,11 +152,11 @@ export async function uploadFloorplan(
 
 export interface FengPriceQuote {
   imageCount: number
-  tier: 'standard' | 'villa'
-  baseUnits: number
-  extraUnits: number
-  totalUnits: number
+  tier: 'standard' | 'villa_s' | 'villa_l'
   productId: string
+  /** Single-purchase SKU for this tier (matches server access-check). */
+  singleSku: 'feng_analysis' | 'feng_analysis_villa_s' | 'feng_analysis_villa_l'
+  priceUsd: number
   displayPrice: string
 }
 

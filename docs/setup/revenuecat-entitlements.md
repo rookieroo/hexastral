@@ -84,7 +84,18 @@ Plus Yuel's **one-time 合盘 unlock** (not a subscription):
 |---|---|---|---|---|
 | `hexastral_compatibility` | Yuel | Consumable (server-applied, per-bond) | — (the API marks the specific bond unlocked) | $6.99 |
 | `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (1 floor plan) |
-| `hexastral_feng_villa` | Kanyu | Consumable (multi-floor; **not live until `VILLA_SKU_PROVISIONED`**) | — | $9.99 + $3/extra plan (max 6) |
+| `hexastral_feng_villa_s` | Kanyu | Consumable (2–3 floor plans; **not live until `VILLA_SKU_PROVISIONED`**) | — | $15.99 |
+| `hexastral_feng_villa_l` | Kanyu | Consumable (4–6 floor plans; **not live until `VILLA_SKU_PROVISIONED`**) | — | $24.99 |
+
+> **Kanyu villa tiers (discrete price ladder).** Apple IAP can only charge a fixed
+> pre-registered SKU, so the multi-floor price is a discrete ladder (not a computed
+> `base + n×extra`). The SSOT is `apps/hexastral-api/src/lib/feng-pricing.ts`
+> (`FENG_TIERS`). To go live, flip `VILLA_SKU_PROVISIONED = true` AFTER: (1) create
+> `hexastral_feng_villa_s` ($15.99) + `hexastral_feng_villa_l` ($24.99) in App Store
+> Connect + RevenueCat as consumables, (2) confirm they're registered in
+> `products.ts`, `access-check.ts` `SKU_IAP_META`, `purchase.ts` `VALID_SKU_IDS`, and
+> the `single_purchases.sku_id` enum (already wired), and (3) surface the tier-aware
+> price on the review screen + paywall (client, uses `POST /api/feng/sites/price`).
 
 > The `hexastral_compatibility` product is a `single_purchase` (singleSku
 > `compatibility`) in products.ts; the webhook's `NON_RENEWING_PURCHASE` path applies
