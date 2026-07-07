@@ -1,8 +1,8 @@
 /**
- * Post-generation hard-forbidden audit with optional retry hint.
+ * Post-generation audit for Kanyu synthesis — portfolio hard + feng talisman/outcome list.
  */
 import {
-  auditHardForbiddenHits,
+  auditFengSynthesisHits,
   buildForbiddenRewriteSuffix,
   type PortfolioVoiceForbiddenHit,
 } from '@zhop/portfolio-voice'
@@ -13,11 +13,11 @@ export type OutputAuditResult = {
 }
 
 export function auditGeneratedOutput(text: string): OutputAuditResult {
-  const hits = auditHardForbiddenHits(text)
+  const hits = auditFengSynthesisHits(text)
   return {
     hits,
     rewriteSuffix: hits.length > 0 ? buildForbiddenRewriteSuffix(hits) : null,
   }
 }
 
-export { auditHardForbiddenHits, buildForbiddenRewriteSuffix }
+export { auditFengSynthesisHits, buildForbiddenRewriteSuffix }

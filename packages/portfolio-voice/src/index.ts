@@ -36,6 +36,44 @@ export const PORTFOLIO_VOICE_SOFT_FORBIDDEN_SUBSTRINGS = [
   'will definitely',
 ] as const
 
+/**
+ * Kanyu (svc-feng) synthesis — hard retry tier on top of portfolio hard list.
+ * Talisman / outcome-promise phrasing that slips past generic guardrails.
+ */
+export const FENG_SYNTHESIS_FORBIDDEN_SUBSTRINGS = [
+  '金蟾',
+  '文昌塔',
+  '铜葫芦',
+  '銅葫蘆',
+  '貔貅',
+  '麒麟',
+  '招财猫',
+  '招財貓',
+  '八卦镜',
+  '八卦鏡',
+  '凸镜',
+  '凹镜',
+  '开光',
+  '開光',
+  '提升运势',
+  '提升運勢',
+  '增强财气',
+  '增強財氣',
+  '贵人运',
+  '貴人運',
+  '改运',
+  '改運',
+  '转运',
+  '轉運',
+  'wealth toad',
+  'lucky cat',
+] as const
+
+const FENG_SYNTHESIS_AUDIT_PATTERNS: readonly string[] = [
+  ...PORTFOLIO_VOICE_FORBIDDEN_SUBSTRINGS,
+  ...FENG_SYNTHESIS_FORBIDDEN_SUBSTRINGS,
+]
+
 export type PortfolioVoiceForbiddenHit = {
   pattern: string
   index: number
@@ -60,6 +98,11 @@ export function auditHardForbiddenHits(text: string): PortfolioVoiceForbiddenHit
 
 export function auditSoftForbiddenHits(text: string): PortfolioVoiceForbiddenHit[] {
   return auditInterpretationAgainstForbiddenList(text, PORTFOLIO_VOICE_SOFT_FORBIDDEN_SUBSTRINGS)
+}
+
+/** svc-feng report synthesis — portfolio hard + feng talisman/outcome patterns. */
+export function auditFengSynthesisHits(text: string): PortfolioVoiceForbiddenHit[] {
+  return auditInterpretationAgainstForbiddenList(text, FENG_SYNTHESIS_AUDIT_PATTERNS)
 }
 
 /** Build a retry suffix when hard forbidden phrases appear in model output. */

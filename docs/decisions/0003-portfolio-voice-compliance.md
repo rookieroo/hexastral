@@ -24,6 +24,7 @@ Apple App Review 4.3(b) samples **actual report body content**, not only ASO. He
 | Tier | Examples | Production action |
 |------|----------|-------------------|
 | Hard | 注定、铁口直断、一定发财、guaranteed | Retry once, then stub |
+| Feng synthesis (hard) | 金蟾、文昌塔、铜葫芦、提升运势、增强财气、贵人运 | Retry once (svc-feng), then fallback stub |
 | Soft | 运势、预测、吉凶、择日 | Log only (phase 2 tighten) |
 
 ## Review demo paths

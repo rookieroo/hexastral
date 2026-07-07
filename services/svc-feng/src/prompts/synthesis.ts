@@ -26,9 +26,9 @@ Each chapter has:
 
 3. **flying_stars** (玄空当运): OPEN with the chart identity from compute "summary": "本宅坐{sit}向{face}，{buildYuanYun}运{chartMethod}盘" (note 兼向/替卦 when isCompoundFacing). Then address PRESENT-DAY 旺衰 explicitly: the chart was built in {buildYuanYun}运 but is read now in {currentYuanYun}运 — a chart that was 旺 in its build-运 can enter 退/死 once that 运 passes. State whether its 旺气 still holds, and cite the year ranges (buildYuanYunYears / currentYuanYunYears) to name the旺→退 window and the next favourable period. THEN discuss the mountain-star and water-star distribution across the 9 palaces. Highlight the 旺 (prosperous), 退 (declining), and 死 (dead) positions. The compute results include a "patterns" array (旺山旺向 / 上山下水 / 双星会向 / 双星会坐 / 合十 / 三般卦 / 反伏吟). These are computed deterministically and are AUTHORITATIVE — name and interpret EVERY pattern present, use each pattern's note as the basis, and never re-derive or contradict them. If "patterns" is empty, say the chart is a 平局 (no special disposition) rather than inventing one. The compute also includes a "combinations" array covering ALL NINE palaces — each with the raw {mountainStar, facingStar} pair, its {domain} (财/丁/病/桃花/是非 …), a phase (旺/衰) already adjusted by the current 元运, and a classical {name} + {reading} when the corpus has one. For each consequential palace, CITE THE ACTUAL PAIR (e.g. "巽宫山7向9") and use the provided reading; where name/reading is null, reason from the 五行生克 of the two stars yourself. Route 煞-domain palaces into 化解 / 改运. Do not invent readings that contradict the data.
 
-4. **annual_directions** (流年方位): This year's 紫白 annual star overlay (compute.flyingStars.annualChart) PLUS this month's 月紫白 (compute "monthlyStars": { lunarMonth, chart }). Call out where 流年 and 流月 凶星 stack (e.g. 年五黄 + 月五黄/二黑 同宫 = avoid 动土 this month) vs auspicious windows. Practical: "use the study in the 震 palace this year; this month (lunarMonth N) avoid the 坤 sector" — not just "震 has 一白."
+4. **annual_directions** (流年方位): This year's 紫白 annual star overlay (compute.flyingStars.annualChart) PLUS this month's 月紫白 (compute "monthlyStars": { lunarMonth, chart }). Call out where 流年 and 流月 凶星 stack vs quieter windows — frame as **cultural rhythm reference**, not life or business decisions. Say "传统上该月该宫宜静不宜大动" rather than "avoid important decisions" or "must not break ground". Never instruct construction, renovation, or major purchases. Practical: "震宫今年一白当令，书房可多用；本月(lunarMonth N)坤宫叠煞，传统上宜减少该方位大变动" — not just "震 has 一白."
 
-5. **remediation** (化解建议): Concrete fixes for each 形煞 identified in vision. Material + placement + reasoning. If no 形煞 were found, focus on strengthening weak sectors.
+5. **remediation** (化解建议 / 调整参考): Concrete ORDINARY fixes for each 形煞 — furniture shift, declutter, screens, plants, lighting, curtains, plain metal/ceramic decor. If no 形煞 were found, focus on strengthening weak sectors with ordinary adjustments. NEVER recommend talismans (铜葫芦, 八卦镜, 符咒, 开光物) or outcome promises (提升运势, 增强财气). Frame as 传统调整参考, 仅供参考.
 
 **形理整合 (compute "formLi") — use it across chapters 1, 3, 5, 6.** It is the AUTHORITATIVE join of 玄空理气 × 峦头形势 (山管人丁、水管财), computed deterministically:
   - "formLi.palaces" — per-palace findings, each a verdict (旺丁/旺财/损丁/破财/动凶/化煞) + reason. Lead chapter 3's per-sector analysis from these; route 化煞/动凶 items into chapter 5 and 增益/布置 items into chapter 6.
@@ -42,7 +42,7 @@ Each chapter has:
   - Chapter 6 (布置建议): tie furnishing suggestions to specific rooms and their palace stars.
   When "roomFindings" is empty/omitted, NO floor plan was uploaded — do NOT invent rooms; keep indoor advice directional/general, and chapter 5 may note that uploading a 户型图 would unlock room-specific 化解. NEVER fabricate a room that is not in roomFindings.
 
-6. **auspicious_objects** (布置建议): Ordinary furnishings + placements to harmonize each palace — plants, ceramics, metal/wood decor, screens, lighting, water features, color. Be specific: material, color, palace, and why, tied to the flying-star / 八宅 analysis. Keep it practical and aesthetic; do NOT recommend ritual/superstitious objects (see Compliance rule) or promise outcomes.
+6. **auspicious_objects** (陈设参考): Ordinary furnishings + placements to harmonize each palace — plants, bookshelves, ceramics, metal/wood decor, screens, lighting, curtains, plain water features, color. Be specific: material, color, palace, and why, tied to the flying-star / 八宅 analysis. **Examples of OK items:** 绿植, 书架, 台灯, 窗帘, 圆形陶瓷摆件, 金属相框, 木质屏风. **NEVER name:** 金蟾, 文昌塔, 貔貅, 麒麟, 招财猫, 铜葫芦, 八卦镜, 开光物. Do NOT promise 财气/运势/贵人运 outcomes — use "传统上认为有助于…" / "可考虑…" only.
 
 ## Rules
 
@@ -64,7 +64,7 @@ Each chapter has:
     placement, declutter, color, material, lighting, plants, screens, mirrors as
     plain decor, water features. Frame as 传统风水建议, 仅供参考.
   - Do NOT recommend superstitious talismans or ritual objects (八卦镜/凸镜凹镜,
-    符咒, 招财猫, 貔貅/麒麟 等灵物, 罗盘镇宅, 开光物品). Do NOT instruct any ritual.
+    符咒, 招财猫, 金蟾, 文昌塔, 铜葫芦, 貔貅/麒麟 等灵物, 罗盘镇宅, 开光物品). Do NOT instruct any ritual.
   - Do NOT promise or guarantee outcomes (发财, 治病, 转运 / 改运, 桃花必来 等). No medical,
     financial, pregnancy, or legal advice or predictions. Use measured language
     ("有助于 / 传统上认为 / 可考虑"), never "必 / 一定 / 保证".

@@ -187,7 +187,7 @@ const FALLBACK_TITLES_ZH: Record<string, string> = {
   flying_stars: '玄空当运',
   annual_directions: '流年方位',
   remediation: '化解建议',
-  auspicious_objects: '布置摆件',
+  auspicious_objects: '陈设参考',
 }
 
 const FALLBACK_TITLES_JA: Record<string, string> = {
@@ -196,7 +196,7 @@ const FALLBACK_TITLES_JA: Record<string, string> = {
   flying_stars: '玄空飛星',
   annual_directions: '流年方位',
   remediation: '化解のアドバイス',
-  auspicious_objects: '開運アイテム',
+  auspicious_objects: '設え参考',
 }
 
 const FALLBACK_TITLES_EN: Record<string, string> = {
@@ -205,7 +205,7 @@ const FALLBACK_TITLES_EN: Record<string, string> = {
   flying_stars: 'Flying Stars Analysis',
   annual_directions: 'Annual Directions',
   remediation: 'Remediation Advice',
-  auspicious_objects: 'Auspicious Objects',
+  auspicious_objects: 'Placement (study)',
 }
 
 function buildFallbackChapters(locale: 'en' | 'zh' | 'zh-Hant' | 'ja') {

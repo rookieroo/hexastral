@@ -35,7 +35,7 @@ Generate **fresh** reports on staging (cached DB reports may predate prompt chan
 
 1. Yuel bond chapter 5 label = 本月相处参考
 2. Yuun monthly depth footer disclaimer present
-3. Kanyu synthesis chapter avoids「一定发财」「改运保证」
+3. Kanyu synthesis chapter avoids「金蟾/文昌塔/提升运势」; each chapter shows micro-disclaimer footer
 4. Chat reply to「我会不会分手」→ no definitive prediction
 
 ## Legal surfaces

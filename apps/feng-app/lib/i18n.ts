@@ -106,6 +106,8 @@ export type Strings = {
   /** Confidence note: 理气 deterministic vs 形势 AI/DEM-inferred. */
   report_confidence_note: string
   report_legal_disclaimer: string
+  /** One-line disclaimer at the bottom of each report chapter page. */
+  report_chapter_micro_disclaimer: string
   report_map_close: string
   report_map_mid: string
   report_map_wide: string
@@ -336,6 +338,8 @@ const EN: Strings = {
     'Flying-star and Eight-Mansion chapters are calculated from your inputs; landform notes are AI-inferred and for reference only.',
   report_legal_disclaimer:
     'For entertainment, cultural exploration, and personal reflection only — not professional feng-shui, architectural, or construction advice. Do not rely on this report for purchase, renovation, or safety decisions.',
+  report_chapter_micro_disclaimer:
+    'For entertainment and cultural study only — not construction, medical, financial, or life-decision advice.',
   report_map_close: 'Close-up',
   report_map_mid: 'Surrounding',
   report_map_wide: 'Wide',
@@ -361,7 +365,7 @@ const EN: Strings = {
   chapter_flying_stars: 'Stars',
   chapter_annual_directions: 'Annual',
   chapter_remediation: 'Mitigation (study)',
-  chapter_auspicious_objects: 'Placement',
+  chapter_auspicious_objects: 'Placement (study)',
   flying_stars_explainer:
     'Each cell is one of the home’s nine directions. Top-left is the Mountain star (classical reading: people, health, relationships); top-right is the Facing star (classical reading: resources). The faint large number is the Period star; the bottom row shows the trigram and this year’s annual star. Bright numbers read as thriving, dim as weak, and red marks a sector to note in study — not a mandate to “remedy” or change your home.',
   nav_back: 'Back',
@@ -555,6 +559,8 @@ const ZH_HANS: Strings = {
     '玄空飞星与八宅依你输入的坐向与年份演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
   report_legal_disclaimer:
     '仅供娱乐、文化探索与个人省思——非专业风水、建筑或施工建议。请勿依此报告作出购房、装修或安全决策。',
+  report_chapter_micro_disclaimer:
+    '仅供娱乐与文化研习，不构成施工、医疗、财务或人生决策建议。',
   report_map_close: '近景',
   report_map_mid: '周边',
   report_map_wide: '全景',
@@ -579,7 +585,7 @@ const ZH_HANS: Strings = {
   chapter_flying_stars: '飞星',
   chapter_annual_directions: '流年',
   chapter_remediation: '化解概念（研习）',
-  chapter_auspicious_objects: '布置',
+  chapter_auspicious_objects: '陈设参考（研习）',
   flying_stars_explainer:
     '盘面九格对应住宅的九个方位。每格左上是山星（古典读法：人丁、健康、关系），右上是向星（古典读法：资源）；淡色大字是运星，底部是卦名与今年的流年星。字偏亮为旺、生，偏暗为退、死，偏红的是煞位——供研习参考，非「管财运」或「必须化解」的指令。',
   nav_back: '返回',
@@ -759,6 +765,8 @@ const ZH_HANT: Strings = {
     '玄空飛星與八宅依你輸入的坐向與年份演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
   report_legal_disclaimer:
     '僅供娛樂、文化探索與個人省思——非專業風水、建築或施工建議。請勿依此報告作出購屋、裝修或安全決策。',
+  report_chapter_micro_disclaimer:
+    '僅供娛樂與文化研習，不構成施工、醫療、財務或人生決策建議。',
   report_map_close: '近景',
   report_map_mid: '周邊',
   report_map_wide: '全景',
@@ -779,8 +787,11 @@ const ZH_HANT: Strings = {
   placement_stove: '灶',
   placement_desk: '書桌',
   chapter_external_landform: '外巒頭',
+  chapter_personal_fit: '命卦',
   chapter_flying_stars: '飛星',
-  chapter_auspicious_objects: '佈置',
+  chapter_annual_directions: '流年',
+  chapter_remediation: '化解概念（研習）',
+  chapter_auspicious_objects: '陳設參考（研習）',
   flying_stars_explainer:
     '盤面九格對應住宅的九個方位。每格左上為山星（古典讀法：人丁、健康、關係），右上為向星（古典讀法：資源）；淡色大字是運星，底部為卦名與今年的流年星。字偏亮為旺、生，偏暗為退、死，偏紅者為煞位——供研習參考，非「管財運」或「必須化解」的指令。',
   new_site_review_ai_disclaimer:
@@ -966,6 +977,8 @@ const JA: Strings = {
     '玄空飛星と八宅は入力した向き・築年から算出。巒頭（砂水形煞）は AI と標高からの推定で、参考のみ。',
   report_legal_disclaimer:
     '娯楽・文化探索・個人的省察のみを目的とします。専門的な風水・建築・施工助言ではありません。購入・改修・安全の判断に依拠しないでください。',
+  report_chapter_micro_disclaimer:
+    '娯楽・文化研習のみ。施工・医療・財務・人生の意思決定助言ではありません。',
   report_map_close: '近景',
   report_map_mid: '周辺',
   report_map_wide: '全景',
@@ -990,7 +1003,7 @@ const JA: Strings = {
   chapter_flying_stars: '飛星',
   chapter_annual_directions: '流年',
   chapter_remediation: '化解概念（学習）',
-  chapter_auspicious_objects: '設え',
+  chapter_auspicious_objects: '設え参考（学習）',
   flying_stars_explainer:
     '九つのマスは住まいの九方位に対応します。各マスの左上が山星（古典的読み：人・健康・縁）、右上が向星（古典的読み：資源）、薄い大きな数字が運星、下段は卦名と今年の流年星です。数字が明るいほど旺気、暗いほど衰え、赤は研習上の注意方位 —— 「開運」や「必ず化解」の指示ではありません。',
   nav_back: '戻る',

@@ -625,6 +625,18 @@ function ChapterPageView({
           />
         </View>
       ) : null}
+
+      <Text
+        style={{
+          color: C.secondary,
+          fontSize: 10,
+          lineHeight: 15,
+          marginTop: spacing.lg,
+          textAlign: 'center',
+        }}
+      >
+        {t.report_chapter_micro_disclaimer}
+      </Text>
     </ScrollView>
   )
 }
