@@ -1,0 +1,1 @@
+ALTER TABLE `feng_sites` ADD `residence_type` text DEFAULT 'apartment' NOT NULL;

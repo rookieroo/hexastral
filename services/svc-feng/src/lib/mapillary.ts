@@ -58,12 +58,40 @@ export interface FetchStreetImagesInput {
   signal?: AbortSignal
 }
 
+function bboxForPoint(lat: number, lng: number, bboxDeg: number): string {
+  const dLat = bboxDeg
+  const dLng = dLat / Math.max(0.2, Math.cos((lat * Math.PI) / 180))
+  return `${lng - dLng},${lat - dLat},${lng + dLng},${lat + dLat}`
+}
+
+/**
+ * Fast coverage probe — one Mapillary bbox hit. Skips thumb fetch + Gemini when
+ * the area has no street photos (common in CN rural / new compounds).
+ */
+export async function probeStreetCoverage(input: {
+  lat: number
+  lng: number
+  token: string
+  bboxDeg?: number
+  signal?: AbortSignal
+}): Promise<boolean> {
+  if (!input.token) return false
+  const bbox = bboxForPoint(input.lat, input.lng, input.bboxDeg ?? 0.0015)
+  const url = new URL(GRAPH)
+  url.searchParams.set('access_token', input.token)
+  url.searchParams.set('fields', 'id')
+  url.searchParams.set('bbox', bbox)
+  url.searchParams.set('limit', '1')
+  const res = await fetch(url.toString(), { signal: input.signal })
+  if (!res.ok) return false
+  const data = (await res.json()) as { data?: unknown[] }
+  return (data.data?.length ?? 0) > 0
+}
+
 /** Fetch up to `maxImages` direction-diverse street photos near the site. */
 export async function fetchStreetImages(input: FetchStreetImagesInput): Promise<StreetImage[]> {
   if (!input.token) return []
-  const dLat = input.bboxDeg ?? 0.0015
-  const dLng = dLat / Math.max(0.2, Math.cos((input.lat * Math.PI) / 180))
-  const bbox = `${input.lng - dLng},${input.lat - dLat},${input.lng + dLng},${input.lat + dLat}`
+  const bbox = bboxForPoint(input.lat, input.lng, input.bboxDeg ?? 0.0015)
 
   const url = new URL(GRAPH)
   url.searchParams.set('access_token', input.token)
@@ -74,7 +102,7 @@ export async function fetchStreetImages(input: FetchStreetImagesInput): Promise<
   const res = await fetch(url.toString(), { signal: input.signal })
   if (!res.ok) throw new Error(`mapillary images ${res.status}`)
   const data = (await res.json()) as { data?: MapillaryImageMeta[] }
-  const picked = diversifyByOctant(data.data ?? [], input.maxImages ?? 4)
+  const picked = diversifyByOctant(data.data ?? [], input.maxImages ?? 2)
 
   const images = await Promise.all(
     picked.map(async (m): Promise<StreetImage | null> => {

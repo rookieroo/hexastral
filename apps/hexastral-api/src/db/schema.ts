@@ -551,8 +551,7 @@ export const singlePurchases = sqliteTable(
         'year_ahead',
         'compatibility',
         'feng_analysis',
-        'feng_analysis_villa_s',
-        'feng_analysis_villa_l',
+        'feng_analysis_premium',
       ],
     }).notNull(),
     /** RevenueCat S2S event.id — 用于幂等去重（UNIQUE） */
@@ -2009,6 +2008,15 @@ export const fengSites = sqliteTable(
     sitDegTrue: text('sit_deg_true').notNull(),
     /** 大门朝向（如与建筑朝向不同） */
     doorDegTrue: text('door_deg_true'),
+
+    // ── 住宅类型（用户自报 — 定价档 + 报告深度轴）──
+    /** apartment 公寓/小区单元 · flat 大平层 · villa 独栋/别墅/农村自建。
+     *  apartment=single 档;flat/villa=premium 档(街景形煞 + 楼层加权)。 */
+    residenceType: text('residence_type', {
+      enum: ['apartment', 'flat', 'villa'],
+    })
+      .notNull()
+      .default('apartment'),
 
     // ── 建筑信息（决定玄空运盘）──
     buildYear: integer('build_year'),

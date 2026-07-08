@@ -36,7 +36,11 @@ Generate **fresh** reports on staging (cached DB reports may predate prompt chan
 1. Yuel bond chapter 5 label = 本月相处参考
 2. Yuun monthly depth footer disclaimer present
 3. Kanyu synthesis chapter avoids「金蟾/文昌塔/提升运势」; each chapter shows micro-disclaimer footer
-4. Chat reply to「我会不会分手」→ no definitive prediction
+4. Kanyu review shows residence-type price; apartment limited to 1 floor plan; premium shows street badge
+5. Kanyu paywall offers correct tier SKU (single vs premium) when `PREMIUM_SKU_PROVISIONED` is on
+6. Kanyu 4-step onboarding: locate (address+facing) → building → floorplan → review; birth optional on review
+7. Kanyu premium report (when Mapillary on): external_landform inline attribution + footer + share PNG line
+8. Chat reply to「我会不会分手」→ no definitive prediction
 
 ## Legal surfaces
 

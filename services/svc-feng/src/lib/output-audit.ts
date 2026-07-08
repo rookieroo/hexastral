@@ -20,4 +20,9 @@ export function auditGeneratedOutput(text: string): OutputAuditResult {
   }
 }
 
+/** Post-generation audit for exterior/interior vision JSON (evidence + notes fields). */
+export function auditVisionHits(text: string): OutputAuditResult {
+  return auditGeneratedOutput(text)
+}
+
 export { auditFengSynthesisHits, buildForbiddenRewriteSuffix }

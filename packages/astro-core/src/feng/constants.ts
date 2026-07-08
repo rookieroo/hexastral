@@ -8,8 +8,24 @@
  */
 
 /**
- * Maximum floor-plan images per site (1 = apartment, up to 6 = large villa /
- * multi-floor). Enforced client-side (picker limit + add-tile hide), server-side
- * (Zod `.max()`), and mirrored by the top pricing tier (`villa_l` covers 4–6).
+ * Absolute upload cap for a site's floor plans (large 大平层 / multi-floor villa).
+ * Enforced client-side (picker limit + add-tile hide) and server-side (Zod `.max()`).
+ * Pricing is keyed by residence type, not image count; this is a pure technical cap.
  */
 export const MAX_FLOORPLAN_IMAGES = 6
+
+/**
+ * Apartment / compound-unit floor-plan cap. A single unit has one layout, so the
+ * base tier is limited to one plan (and skips the street 形煞 pass entirely).
+ */
+export const APARTMENT_MAX_FLOORPLAN_IMAGES = 1
+
+/**
+ * Per-residence upload cap. apartment → 1 (single layout, base tier);
+ * flat / villa → MAX (multi-floor / large premium report).
+ */
+export function maxFloorplanImagesFor(
+  residenceType: 'apartment' | 'flat' | 'villa'
+): number {
+  return residenceType === 'apartment' ? APARTMENT_MAX_FLOORPLAN_IMAGES : MAX_FLOORPLAN_IMAGES
+}

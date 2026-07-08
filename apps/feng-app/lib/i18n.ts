@@ -63,7 +63,18 @@ export type Strings = {
   new_site_facing_tile_error: string
   new_site_facing_tile_retry: string
   new_site_facing_next: string
+  /** Shown when satellite-set facing differs from live compass by >12°. */
+  new_site_facing_compass_warn: string
+  /** Review hint when facing is near a 24-mountain boundary (兼向 → 替卦). */
+  new_site_review_compound_facing: string
 
+  new_site_residence_label: string
+  new_site_residence_apartment: string
+  new_site_residence_flat: string
+  new_site_residence_villa: string
+  /** Note under the residence-type picker — flat/villa unlock the deeper premium report. */
+  new_site_residence_premium_note: string
+  new_site_review_residence: string
   new_site_building_title: string
   new_site_building_year_label: string
   new_site_building_moveIn_label: string
@@ -73,6 +84,10 @@ export type Strings = {
   new_site_building_accuracy_moveIn: string
   new_site_building_accuracy_unknown: string
   new_site_building_floor_label: string
+  /** Hint under the floor field — required for 大平层 so street 形煞 can be floor-weighted. */
+  new_site_building_floor_flat_hint: string
+  /** Blocking error when 大平层 has no floor number. */
+  new_site_building_floor_required: string
   new_site_building_next: string
 
   new_site_review_title: string
@@ -82,6 +97,10 @@ export type Strings = {
   new_site_review_buildYear: string
   new_site_review_confirm: string
   new_site_review_processing: string
+  /** Price row on review — {price} = localized display price from /price. */
+  new_site_review_price: string
+  /** Badge when premium tier includes street-level 形煞. */
+  new_site_review_street_badge: string
 
   // Tabs
   tab_sites: string
@@ -109,6 +128,8 @@ export type Strings = {
   report_legal_disclaimer: string
   /** One-line disclaimer at the bottom of each report chapter page. */
   report_chapter_micro_disclaimer: string
+  /** Inline source line when street-level 形煞 contributed to external_landform. */
+  report_street_source: string
   report_map_close: string
   report_map_mid: string
   report_map_wide: string
@@ -203,6 +224,7 @@ export type Strings = {
   paywall_subtitle_analyze: string
   paywall_subtitle_chat: string
   paywall_plan_single: string
+  paywall_plan_premium: string
   paywall_cta: string
   paywall_success: string
   paywall_restore: string
@@ -211,6 +233,8 @@ export type Strings = {
   paywall_bullet_report: string
   paywall_bullet_chat: string
   paywall_bullet_once: string
+  paywall_bullet_multifloor: string
+  paywall_bullet_street: string
   paywall_legal_disclaimer: string
   chat_legal_disclaimer: string
   new_site_review_no_floorplan: string
@@ -331,6 +355,17 @@ const EN: Strings = {
   new_site_facing_tile_error: 'Map unavailable — use Record with your phone aimed at the door.',
   new_site_facing_tile_retry: 'Retry map',
   new_site_facing_next: 'Next',
+  new_site_facing_compass_warn:
+    'Satellite facing ({sat}°) differs from phone compass ({compass}°) by {delta}° — double-check outdoors if unsure.',
+  new_site_review_compound_facing:
+    'Facing is near a mountain boundary (兼向) — the report uses 替卦 flying-star charts.',
+  new_site_residence_label: 'Residence type',
+  new_site_residence_apartment: 'Apartment / unit in a compound',
+  new_site_residence_flat: 'Full-floor flat',
+  new_site_residence_villa: 'Detached house / villa',
+  new_site_residence_premium_note:
+    'Full-floor flats and detached homes get a deeper report — multiple floor plans plus street-level form analysis.',
+  new_site_review_residence: 'Residence',
   new_site_building_title: 'About your building',
   new_site_building_year_label: 'Year built',
   new_site_building_moveIn_label: 'Move-in year',
@@ -340,6 +375,9 @@ const EN: Strings = {
   new_site_building_accuracy_moveIn: 'Move-in year only',
   new_site_building_accuracy_unknown: 'Skip',
   new_site_building_floor_label: 'Floor (optional)',
+  new_site_building_floor_flat_hint:
+    'Required for a full-floor flat — the street-level form analysis is weighted by your floor height.',
+  new_site_building_floor_required: 'Enter the floor for a full-floor flat.',
   new_site_building_next: 'Continue',
   new_site_review_title: 'Review',
   new_site_review_address: 'Address',
@@ -348,6 +386,8 @@ const EN: Strings = {
   new_site_review_buildYear: 'Build year',
   new_site_review_confirm: 'Generate report',
   new_site_review_processing: 'Analyzing… {stage}',
+  new_site_review_price: 'Report price',
+  new_site_review_street_badge: 'Includes street-level form analysis',
   tab_sites: 'Sites',
   tab_compass: 'Compass',
   tab_readings: 'Readings',
@@ -368,6 +408,7 @@ const EN: Strings = {
     'For entertainment, cultural exploration, and personal reflection only — not professional feng-shui, architectural, or construction advice. Do not rely on this report for purchase, renovation, or safety decisions.',
   report_chapter_micro_disclaimer:
     'For entertainment and cultural study only — not construction, medical, financial, or life-decision advice.',
+  report_street_source: 'Street-level form notes use Mapillary imagery (CC BY-SA).',
   report_map_close: 'Close-up',
   report_map_mid: 'Surrounding',
   report_map_wide: 'Wide',
@@ -459,6 +500,7 @@ const EN: Strings = {
   paywall_subtitle_chat:
     'Purchase includes unlimited AI follow-up questions about this report.',
   paywall_plan_single: 'Site analysis',
+  paywall_plan_premium: 'Premium site analysis',
   paywall_cta: 'Purchase report',
   paywall_success: 'Unlocked — generating your report…',
   paywall_restore: 'Restore purchases',
@@ -467,6 +509,8 @@ const EN: Strings = {
   paywall_bullet_report: 'Annotated satellite tiles + deterministic 玄空 / 八宅 compute',
   paywall_bullet_chat: 'Unlimited AI chat about this report',
   paywall_bullet_once: 'One-time purchase per report — no subscription',
+  paywall_bullet_multifloor: 'Up to 6 floor plans — multi-room interior analysis',
+  paywall_bullet_street: 'Street-level 形煞 pass (Mapillary) with floor-weighting for flats',
   paywall_legal_disclaimer:
     'For entertainment and cultural exploration only — not a substitute for on-site inspection or licensed professionals. Report + chat may be inaccurate. See kanyu.hexastral.com/terms and kanyu.hexastral.com/privacy/feng.',
   new_site_review_no_floorplan: 'No floor plan — exterior / facing only',
@@ -577,6 +621,15 @@ const ZH_HANS: Strings = {
   new_site_facing_tile_error: '地图不可用 — 请对准楼门后点「记录」。',
   new_site_facing_tile_retry: '重试地图',
   new_site_facing_next: '下一步',
+  new_site_facing_compass_warn:
+    '卫星朝向（{sat}°）与手机罗盘（{compass}°）相差 {delta}°——若不确定请在户外复核。',
+  new_site_review_compound_facing: '朝向接近山向边界（兼向）——报告将使用替卦飞星排盘。',
+  new_site_residence_label: '住宅类型',
+  new_site_residence_apartment: '公寓 / 小区里的一栋楼',
+  new_site_residence_flat: '大平层',
+  new_site_residence_villa: '独栋 / 别墅 / 农村自建',
+  new_site_residence_premium_note: '大平层与独栋别墅可上传多张户型图，并加入街景级外峦形煞分析，报告更全面深入。',
+  new_site_review_residence: '住宅类型',
   new_site_building_title: '建筑信息',
   new_site_building_year_label: '建成年份',
   new_site_building_moveIn_label: '入住年份',
@@ -586,6 +639,8 @@ const ZH_HANS: Strings = {
   new_site_building_accuracy_moveIn: '只知道入住年份',
   new_site_building_accuracy_unknown: '跳过',
   new_site_building_floor_label: '楼层(可选)',
+  new_site_building_floor_flat_hint: '大平层必填 —— 街景级外峦形煞会按你所在楼层高度加权，避免高层被地面煞高估。',
+  new_site_building_floor_required: '大平层请填写所在楼层。',
   new_site_building_next: '继续',
   new_site_review_title: '确认',
   new_site_review_address: '地址',
@@ -594,6 +649,8 @@ const ZH_HANS: Strings = {
   new_site_review_buildYear: '建成年份',
   new_site_review_confirm: '生成报告',
   new_site_review_processing: '分析中… {stage}',
+  new_site_review_price: '报告价格',
+  new_site_review_street_badge: '含街景级外峦形煞分析',
   tab_sites: '站点',
   tab_compass: '罗盘',
   tab_readings: '历史',
@@ -613,6 +670,7 @@ const ZH_HANS: Strings = {
     '仅供娱乐、文化探索与个人省思——非专业风水、建筑或施工建议。请勿依此报告作出购房、装修或安全决策。',
   report_chapter_micro_disclaimer:
     '仅供娱乐与文化研习，不构成施工、医疗、财务或人生决策建议。',
+  report_street_source: '街景级形煞参考 Mapillary 影像（CC BY-SA）。',
   report_map_close: '近景',
   report_map_mid: '周边',
   report_map_wide: '全景',
@@ -699,6 +757,7 @@ const ZH_HANS: Strings = {
   paywall_subtitle_analyze: '一次购买解锁该址的结构化站点报告——卫星语境、飞星排盘与 AI 章节（学习工具）。',
   paywall_subtitle_chat: '购买后可无限追问本报告的 AI 解读。',
   paywall_plan_single: '站点分析',
+  paywall_plan_premium: '深度站点分析',
   paywall_cta: '购买报告',
   paywall_success: '已解锁——正在生成报告…',
   paywall_restore: '恢复购买',
@@ -707,6 +766,8 @@ const ZH_HANS: Strings = {
   paywall_bullet_report: '标注卫星图 + 确定性玄空 / 八宅演算',
   paywall_bullet_chat: '本报告无限 AI 追问',
   paywall_bullet_once: '按次购买，无需订阅',
+  paywall_bullet_multifloor: '最多 6 张户型图 —— 多房间室内分析',
+  paywall_bullet_street: '街景级形煞（Mapillary）+ 大平层按楼层加权',
   paywall_legal_disclaimer:
     '仅供娱乐与文化探索，不能替代现场勘验或持证专业人士。报告与对话可能不准确。详见 kanyu.hexastral.com/terms 与 kanyu.hexastral.com/privacy/feng。',
   new_site_review_no_floorplan: '无户型图——仅外局 / 朝向',
@@ -808,6 +869,15 @@ const ZH_HANT: Strings = {
   new_site_facing_tile_retry: '重試地圖',
   new_site_facing_tile_loading: '載入地圖…',
   new_site_facing_next: '下一步',
+  new_site_facing_compass_warn:
+    '衛星朝向（{sat}°）與手機羅盤（{compass}°）相差 {delta}°——若不確定請在戶外複核。',
+  new_site_review_compound_facing: '朝向接近山向邊界（兼向）——報告將使用替卦飛星排盤。',
+  new_site_residence_label: '住宅類型',
+  new_site_residence_apartment: '公寓 / 社區裡的一棟樓',
+  new_site_residence_flat: '大平層',
+  new_site_residence_villa: '獨棟 / 別墅 / 鄉村自建',
+  new_site_residence_premium_note: '大平層與獨棟別墅可上傳多張戶型圖，並加入街景級外巒形煞分析，報告更全面深入。',
+  new_site_review_residence: '住宅類型',
   new_site_building_title: '建築資訊',
   new_site_building_year_label: '建成年份',
   new_site_building_year_accuracy: '準確度',
@@ -816,6 +886,8 @@ const ZH_HANT: Strings = {
   new_site_building_accuracy_moveIn: '只知道入住年份',
   new_site_building_accuracy_unknown: '略過',
   new_site_building_floor_label: '樓層(選填)',
+  new_site_building_floor_flat_hint: '大平層必填 —— 街景級外巒形煞會按你所在樓層高度加權，避免高層被地面煞高估。',
+  new_site_building_floor_required: '大平層請填寫所在樓層。',
   new_site_building_next: '繼續',
   new_site_review_title: '確認',
   new_site_review_address: '地址',
@@ -824,6 +896,8 @@ const ZH_HANT: Strings = {
   new_site_review_buildYear: '建成年份',
   new_site_review_confirm: '生成報告',
   new_site_review_processing: '分析中… {stage}',
+  new_site_review_price: '報告價格',
+  new_site_review_street_badge: '含街景級外巒形煞分析',
   tab_sites: '地點',
   tab_compass: '羅盤',
   tab_readings: '歷史',
@@ -843,6 +917,7 @@ const ZH_HANT: Strings = {
     '僅供娛樂、文化探索與個人省思——非專業風水、建築或施工建議。請勿依此報告作出購屋、裝修或安全決策。',
   report_chapter_micro_disclaimer:
     '僅供娛樂與文化研習，不構成施工、醫療、財務或人生決策建議。',
+  report_street_source: '街景級形煞參考 Mapillary 影像（CC BY-SA）。',
   report_map_close: '近景',
   report_map_mid: '周邊',
   report_map_wide: '全景',
@@ -928,6 +1003,7 @@ const ZH_HANT: Strings = {
   paywall_subtitle_analyze: '一次購買解鎖該址的結構化站點報告——衛星語境、飛星排盤與 AI 章節（學習工具）。',
   paywall_subtitle_chat: '購買後可無限追問本報告的 AI 解讀。',
   paywall_plan_single: '站點分析',
+  paywall_plan_premium: '深度站點分析',
   paywall_cta: '購買報告',
   paywall_success: '已解鎖——正在生成報告…',
   paywall_restore: '恢復購買',
@@ -936,6 +1012,8 @@ const ZH_HANT: Strings = {
   paywall_bullet_report: '標註衛星圖 + 確定性玄空 / 八宅演算',
   paywall_bullet_chat: '本報告無限 AI 追問',
   paywall_bullet_once: '按次購買，無需訂閱',
+  paywall_bullet_multifloor: '最多 6 張戶型圖 —— 多房間室內分析',
+  paywall_bullet_street: '街景級形煞（Mapillary）+ 大平層按樓層加權',
   paywall_legal_disclaimer:
     '僅供娛樂與文化探索，不能替代現場勘驗或持證專業人士。報告與對話可能不準確。詳見 kanyu.hexastral.com/terms 與 kanyu.hexastral.com/privacy/feng。',
   new_site_review_no_floorplan: '無戶型圖——僅外局 / 朝向',
@@ -1043,6 +1121,17 @@ const JA: Strings = {
   new_site_facing_tile_error: '地図を取得できません — 向けて「記録」を使ってください。',
   new_site_facing_tile_retry: '地図を再試行',
   new_site_facing_next: '次へ',
+  new_site_facing_compass_warn:
+    '衛星の向き（{sat}°）とコンパス（{compass}°）が {delta}° ずれています。不明な場合は屋外で確認してください。',
+  new_site_review_compound_facing:
+    '向きが二十四山の境界付近（兼向）です。レポートは替卦の飛星盤を使用します。',
+  new_site_residence_label: '住まいのタイプ',
+  new_site_residence_apartment: 'マンション / 集合住宅の一棟',
+  new_site_residence_flat: 'フルフロア住戸',
+  new_site_residence_villa: '戸建て / 別荘',
+  new_site_residence_premium_note:
+    'フルフロア住戸と戸建ては、複数の間取り図に加え、路上レベルの外部形煞分析を含むより詳しいレポートになります。',
+  new_site_review_residence: '住まい',
   new_site_building_title: '建物について',
   new_site_building_year_label: '築年',
   new_site_building_year_accuracy: '確度',
@@ -1052,6 +1141,9 @@ const JA: Strings = {
   new_site_building_accuracy_unknown: 'スキップ',
   new_site_building_moveIn_label: '入居年',
   new_site_building_floor_label: '階(任意)',
+  new_site_building_floor_flat_hint:
+    'フルフロア住戸は必須です。路上レベルの形煞分析を階数に応じて調整します。',
+  new_site_building_floor_required: 'フルフロア住戸は階数を入力してください。',
   new_site_building_next: '続ける',
   new_site_review_title: '確認',
   new_site_review_address: '住所',
@@ -1060,6 +1152,8 @@ const JA: Strings = {
   new_site_review_buildYear: '築年',
   new_site_review_confirm: 'レポートを生成',
   new_site_review_processing: '分析中… {stage}',
+  new_site_review_price: 'レポート価格',
+  new_site_review_street_badge: '路上レベルの形煞分析を含む',
   tab_sites: '場所',
   tab_compass: 'コンパス',
   tab_readings: '履歴',
@@ -1079,6 +1173,7 @@ const JA: Strings = {
     '娯楽・文化探索・個人的省察のみを目的とします。専門的な風水・建築・施工助言ではありません。購入・改修・安全の判断に依拠しないでください。',
   report_chapter_micro_disclaimer:
     '娯楽・文化研習のみ。施工・医療・財務・人生の意思決定助言ではありません。',
+  report_street_source: '路上レベルの形煞は Mapillary 画像を参照（CC BY-SA）。',
   report_map_close: '近景',
   report_map_mid: '周辺',
   report_map_wide: '全景',
@@ -1168,6 +1263,7 @@ const JA: Strings = {
     '1回の購入でこの物件の構造化サイトレポート（衛星・飛星・AI 章）が開放されます（学習ツール）。',
   paywall_subtitle_chat: '購入後、このレポートについて AI に無制限で質問できます。',
   paywall_plan_single: 'サイト分析',
+  paywall_plan_premium: 'プレミアムサイト分析',
   paywall_cta: 'レポートを購入',
   paywall_success: '解錠しました——レポートを生成中…',
   paywall_restore: '購入を復元',
@@ -1176,6 +1272,8 @@ const JA: Strings = {
   paywall_bullet_report: '注釈付き衛星タイル + 決定論的玄空 / 八宅演算',
   paywall_bullet_chat: 'このレポートへの AI 質問は無制限',
   paywall_bullet_once: 'サブスク不要の買い切り',
+  paywall_bullet_multifloor: '最大6枚の間取り図 —— 複数部屋の室内分析',
+  paywall_bullet_street: '路上レベル形煞（Mapillary）+ フルフロアは階数で加重',
   paywall_legal_disclaimer:
     '娯楽・文化探索のみ。現地調査や有資格専門家の代替ではありません。レポートとチャットは不正確な場合があります。kanyu.hexastral.com/terms と kanyu.hexastral.com/privacy/feng を参照。',
   new_site_review_no_floorplan: '間取りなし——外局 / 向きのみ',

@@ -6,14 +6,26 @@
  * capturing image's compass angle so the caller can bin it into a 八卦宫.
  *
  * Body: { lat, lng, locale }  →  { degraded, imageCount, attribution, findings }.
+ *
+ * Cost controls (WP3b):
+ *   - Coverage preflight (limit=1 bbox probe) before thumb fetch + Gemini
+ *   - Content-addressed R2 cache keyed by ~50m grid + prompt version
+ *   - maxImages default 2 (down from 4)
  */
 
-import { callGeminiVisionStructured, withZodRetry } from '@zhop/ai-vision'
+import {
+  cacheKey,
+  callGeminiVisionStructured,
+  readCache,
+  withZodRetry,
+  writeCache,
+} from '@zhop/ai-vision'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { logger } from '../lib/logger'
-import { fetchStreetImages, MAPILLARY_ATTRIBUTION } from '../lib/mapillary'
+import { fetchStreetImages, MAPILLARY_ATTRIBUTION, probeStreetCoverage } from '../lib/mapillary'
+import { STREET_SHA_VERSION, streetGridKey } from '../lib/street-cache'
 
 export const streetRouter = new Hono<{ Bindings: Env }>()
 
@@ -64,6 +76,21 @@ const STREET_RESPONSE_SCHEMA = {
   required: ['findings'],
 }
 
+const STREET_TTL_SECONDS = 30 * 24 * 60 * 60
+const STREET_NO_COVERAGE_TTL_SECONDS = 7 * 24 * 60 * 60
+
+interface StreetShaResponse {
+  degraded: boolean
+  imageCount: number
+  attribution: string
+  findings: Array<{
+    compassAngle: number
+    type: string
+    severity: number
+    evidence: string
+  }>
+}
+
 streetRouter.post('/sha', async (c) => {
   const json = await c.req.json().catch(() => null)
   const parsed = InputSchema.safeParse(json)
@@ -80,25 +107,75 @@ streetRouter.post('/sha', async (c) => {
     })
   }
 
+  const { gridLat, gridLng } = streetGridKey(lat, lng)
+  const cachePayload = { gridLat, gridLng, locale, version: STREET_SHA_VERSION }
+  const sKey = await cacheKey('feng-street', cachePayload)
+  const cached = await readCache(c.env.ANNOTATED_CACHE, sKey)
+  if (cached) {
+    const hit = JSON.parse(new TextDecoder().decode(cached.bytes)) as StreetShaResponse
+    logger.info('street.sha.cache', { hit: true, key: sKey, durationMs: Date.now() - started })
+    return c.json(hit)
+  }
+
+  const signal = AbortSignal.timeout(8000)
+
+  let hasCoverage = false
+  try {
+    hasCoverage = await probeStreetCoverage({
+      lat,
+      lng,
+      token: c.env.MAPILLARY_TOKEN,
+      signal,
+    })
+  } catch (err) {
+    logger.warn('street.probe.error', { error: err instanceof Error ? err.message : String(err) })
+  }
+
+  if (!hasCoverage) {
+    const empty: StreetShaResponse = {
+      degraded: true,
+      imageCount: 0,
+      attribution: MAPILLARY_ATTRIBUTION,
+      findings: [],
+    }
+    await writeCache(
+      c.env.ANNOTATED_CACHE,
+      sKey,
+      new TextEncoder().encode(JSON.stringify(empty)).buffer as ArrayBuffer,
+      'application/json',
+      STREET_NO_COVERAGE_TTL_SECONDS
+    )
+    return c.json(empty)
+  }
+
   let images: Awaited<ReturnType<typeof fetchStreetImages>> = []
   try {
     images = await fetchStreetImages({
       lat,
       lng,
       token: c.env.MAPILLARY_TOKEN,
-      signal: AbortSignal.timeout(8000),
+      signal,
+      maxImages: 2,
     })
   } catch (err) {
     logger.warn('street.fetch.error', { error: err instanceof Error ? err.message : String(err) })
   }
 
   if (images.length === 0) {
-    return c.json({
+    const empty: StreetShaResponse = {
       degraded: true,
       imageCount: 0,
       attribution: MAPILLARY_ATTRIBUTION,
       findings: [],
-    })
+    }
+    await writeCache(
+      c.env.ANNOTATED_CACHE,
+      sKey,
+      new TextEncoder().encode(JSON.stringify(empty)).buffer as ArrayBuffer,
+      'application/json',
+      STREET_NO_COVERAGE_TTL_SECONDS
+    )
+    return c.json(empty)
   }
 
   const userPrompt = `You are given ${images.length} street photo(s) near the site (image index 0..${images.length - 1}). Output locale: ${locale}. List 形煞 per the rules.`
@@ -118,7 +195,6 @@ streetRouter.post('/sha', async (c) => {
     degraded: () => ({ findings: [] }),
   })
 
-  // Bin each finding by its capturing image's compass angle (→ 宫 by the caller).
   const findings = validated.findings
     .filter((f) => f.imageIndex >= 0 && f.imageIndex < images.length)
     .map((f) => ({
@@ -128,16 +204,27 @@ streetRouter.post('/sha', async (c) => {
       evidence: f.evidence,
     }))
 
-  logger.info('street.sha.done', {
-    durationMs: Date.now() - started,
-    imageCount: images.length,
-    findingCount: findings.length,
-  })
-
-  return c.json({
+  const response: StreetShaResponse = {
     degraded: false,
     imageCount: images.length,
     attribution: MAPILLARY_ATTRIBUTION,
     findings,
+  }
+
+  await writeCache(
+    c.env.ANNOTATED_CACHE,
+    sKey,
+    new TextEncoder().encode(JSON.stringify(response)).buffer as ArrayBuffer,
+    'application/json',
+    STREET_TTL_SECONDS
+  )
+
+  logger.info('street.sha.done', {
+    durationMs: Date.now() - started,
+    imageCount: images.length,
+    findingCount: findings.length,
+    cached: false,
   })
+
+  return c.json(response)
 })

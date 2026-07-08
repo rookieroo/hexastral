@@ -36,6 +36,7 @@ export { metersPerPixel, pixelOffsetToLatLng } from './lib/map-pixel-offset'
 export type {
   CreateSiteInput,
   FengPriceQuote,
+  FengResidenceType,
   FloorplanImageInput,
   FloorplanInput,
   LogBearingInput,

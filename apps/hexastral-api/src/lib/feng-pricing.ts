@@ -1,105 +1,119 @@
 /**
- * Fēng analysis pricing — discrete per-image price tiers (户型图).
+ * Fēng analysis pricing — discrete tiers keyed by USER-DECLARED residence type.
  *
- * Decision (user, 2026-07): price by IMAGE/FLOOR count, not self-declared 面积
- * (面积 can't be verified from an upload; image count is objective AND tracks the
- * real marginal cost — each floor plan = one extra Gemini vision pass + storage).
+ * Decision (user, 2026-07): price by residence TYPE, not floor-plan image count.
+ * The type is a single legible tap on onboarding and drives BOTH the price and the
+ * report depth (street-level 形煞). Image count stays a technical cap only (≤ MAX).
  *
  * Apple IAP cannot charge an arbitrary computed amount — every purchase maps to a
- * fixed, pre-registered SKU/price tier. So pricing is DISCRETE: image count →
- * one of a few fixed tiers, each with its own RevenueCat product.
+ * fixed, pre-registered SKU/price. So pricing is DISCRETE, two billing tiers:
  *
- *   standard (1 floor plan)     → hexastral_feng_single      $9.99  (apartment)
- *   villa_s  (2–3 floor plans)  → hexastral_feng_villa_s     $15.99 (small multi-floor)
- *   villa_l  (4–6 floor plans)  → hexastral_feng_villa_l     $24.99 (large villa)
+ *   apartment (公寓/小区单元)      → single  → hexastral_feng_single   $9.99   no street view
+ *   flat      (大平层)             → premium → hexastral_feng_premium  $19.99  + street 形煞
+ *   villa     (独栋/别墅/农村自建) → premium → hexastral_feng_premium  $19.99  + street 形煞
  *
- * Each tier has a matching single-purchase SKU so the analyze gate can require the
- * SKU the user actually paid for (a standard purchase can't unlock a 6-floor villa).
+ * Rationale for street view only on premium: a compound apartment's street 形煞 is a
+ * low-value, shared-coordinate, floor-height-biased signal (often no Mapillary
+ * coverage in CN). Detached/large-flat buyers are high-ARPU and warrant the deeper,
+ * multi-image, street-augmented report. Product laddering ≈ engineering reality.
  *
- * ENFORCEMENT of the villa tiers needs the RevenueCat products + App Store Connect
- * SKUs provisioned end-to-end (see `VILLA_SKU_PROVISIONED`). Until that ships, every
- * count resolves to the standard tier so DISPLAYED price always equals CHARGED price.
+ * ENFORCEMENT of premium needs `hexastral_feng_premium` live end-to-end (see
+ * `PREMIUM_SKU_PROVISIONED`). Until then every type resolves to `single` so the
+ * DISPLAYED price always equals the CHARGED price.
  */
 
 import { MAX_FLOORPLAN_IMAGES } from '@zhop/astro-core'
 
-export type FengTier = 'standard' | 'villa_s' | 'villa_l'
+/** User-declared residence type — the pricing + report-depth axis. */
+export type FengResidenceType = 'apartment' | 'flat' | 'villa'
+
+/** Billing tier (Apple IAP SKU granularity). flat + villa collapse to `premium`. */
+export type FengBillingTier = 'single' | 'premium'
 
 /** Single-purchase SKU ids (mirror db single_purchases enum + access-check). */
-export type FengSingleSku =
-  | 'feng_analysis'
-  | 'feng_analysis_villa_s'
-  | 'feng_analysis_villa_l'
+export type FengSingleSku = 'feng_analysis' | 'feng_analysis_premium'
 
 interface FengTierSpec {
-  tier: FengTier
-  /** Inclusive image-count range this tier covers. Ranges are contiguous over [1, MAX]. */
-  minImages: number
-  maxImages: number
+  billingTier: FengBillingTier
   priceUsd: number
   /** RevenueCat product for the whole analysis at this tier. */
   productId: string
   /** Access-check / single_purchases SKU id for this tier. */
   singleSku: FengSingleSku
+  /** Whether the street-level 形煞 (Mapillary) pass runs for this residence class. */
+  streetView: boolean
 }
 
 /** Yuel 合盘 (`hexastral_compatibility`) — floor; Kanyu must not price below this. */
 export const YUEL_COMPATIBILITY_PRICE_USD = 6.99
 
-/** Single-floor apartment report (1 户型图). Above Yuel; reflects vision + 5–6 chapters + bundled chat. */
+/** Apartment/compound-unit report (base). Above Yuel; vision + 5–6 chapters + chat. */
 export const FENG_BASE_PRICE_USD = 9.99
 
-/** Upload/pricing cap — re-exported from the shared SSOT (@zhop/astro-core) so importers of this module are unaffected. */
+/** Premium (大平层 / 独栋别墅) — ~4× base; multi-image + street 形煞 + floor weighting.
+ *  Bold-but-credible for a pure-AI report; kept below consultant-tier to limit
+ *  refund/App-Review risk (raise only if a tangible deliverable — PDF / human
+ *  spot-review — is bundled). Inert until PREMIUM_SKU_PROVISIONED. */
+export const FENG_PREMIUM_PRICE_USD = 39.99
+
+/** Upload cap — re-exported from the shared SSOT (@zhop/astro-core) so importers here are unaffected. */
 export { MAX_FLOORPLAN_IMAGES }
 
-/**
- * Discrete tier table. Ranges must stay contiguous and cover [1, MAX_FLOORPLAN_IMAGES].
- * The first entry is the always-available standard tier (its SKU ships today).
- */
-const STANDARD_TIER: FengTierSpec = {
-  tier: 'standard',
-  minImages: 1,
-  maxImages: 1,
+const SINGLE_TIER: FengTierSpec = {
+  billingTier: 'single',
   priceUsd: FENG_BASE_PRICE_USD,
   productId: 'hexastral_feng_single',
   singleSku: 'feng_analysis',
+  streetView: false,
 }
 
-export const FENG_TIERS: readonly FengTierSpec[] = [
-  STANDARD_TIER,
-  {
-    tier: 'villa_s',
-    minImages: 2,
-    maxImages: 3,
-    priceUsd: 15.99,
-    productId: 'hexastral_feng_villa_s',
-    singleSku: 'feng_analysis_villa_s',
-  },
-  {
-    tier: 'villa_l',
-    minImages: 4,
-    maxImages: MAX_FLOORPLAN_IMAGES,
-    priceUsd: 24.99,
-    productId: 'hexastral_feng_villa_l',
-    singleSku: 'feng_analysis_villa_l',
-  },
-] as const
+const PREMIUM_TIER: FengTierSpec = {
+  billingTier: 'premium',
+  priceUsd: FENG_PREMIUM_PRICE_USD,
+  productId: 'hexastral_feng_premium',
+  singleSku: 'feng_analysis_premium',
+  streetView: true,
+}
+
+/** All billable tiers — access-check derives SKU_IAP_META from this (SSOT). */
+export const FENG_TIERS: readonly FengTierSpec[] = [SINGLE_TIER, PREMIUM_TIER] as const
+
+/** apartment = single; flat/villa = premium. */
+const TIER_BY_RESIDENCE: Record<FengResidenceType, FengTierSpec> = {
+  apartment: SINGLE_TIER,
+  flat: PREMIUM_TIER,
+  villa: PREMIUM_TIER,
+}
+
+export const DEFAULT_RESIDENCE_TYPE: FengResidenceType = 'apartment'
 
 /**
- * The villa tiers are DISPLAY- and CHARGE-safe only when
- * `hexastral_feng_villa_s` / `_villa_l` are live end-to-end: App Store Connect +
- * RevenueCat products, the `FengSingleSku` union, `SKU_IAP_META`, `VALID_SKU_IDS`
- * (purchase.ts), the single_purchases sku_id enum, and the image-count-aware
- * analyze gate. Until ALL of that ships, quoting a villa price the paywall can't
- * collect ($24.99 shown, $9.99 charged — or an unknown-SKU purchase rejection) is
- * worse than not offering it. So while this is false every count resolves to the
- * standard tier: displayed == charged. Flip to true only after the checklist above.
+ * Premium is DISPLAY/CHARGE-safe only when `hexastral_feng_premium` is live E2E:
+ * App Store Connect + RevenueCat product, the `FengSingleSku` union, `SKU_IAP_META`,
+ * `VALID_SKU_IDS` (purchase.ts), the single_purchases sku_id enum, and the
+ * residence-aware analyze gate. Until ALL of that ships, quoting premium the paywall
+ * can't collect ($19.99 shown, $9.99 charged, or an unknown-SKU rejection) is worse
+ * than not offering it — so every type resolves to `single`: displayed == charged.
+ * Flip to true only after the checklist above (mirror MAPILLARY_TOKEN provisioning).
  */
-export const VILLA_SKU_PROVISIONED = false
+export const PREMIUM_SKU_PROVISIONED = false
+
+/** Coerce arbitrary input into a valid residence type (defaults to apartment). */
+export function normalizeResidenceType(value: unknown): FengResidenceType {
+  return value === 'flat' || value === 'villa' || value === 'apartment'
+    ? value
+    : DEFAULT_RESIDENCE_TYPE
+}
+
+/** Resolve the billable tier for a residence type, honoring the provision flag. */
+function resolveTierSpec(residenceType: FengResidenceType): FengTierSpec {
+  if (!PREMIUM_SKU_PROVISIONED) return SINGLE_TIER
+  return TIER_BY_RESIDENCE[residenceType] ?? SINGLE_TIER
+}
 
 export interface FengPriceQuote {
-  imageCount: number
-  tier: FengTier
+  residenceType: FengResidenceType
+  billingTier: FengBillingTier
   /** RevenueCat product for the whole analysis at this tier (integration point). */
   productId: string
   /** Access-check / single_purchases SKU id — the gate requires the tier the user paid for. */
@@ -107,35 +121,34 @@ export interface FengPriceQuote {
   priceUsd: number
   /** Fallback display price — client should prefer RevenueCat's localized price. */
   displayPrice: string
+  /** Whether this tier's report includes the street-level 形煞 pass. */
+  streetView: boolean
 }
 
-/** Clamp an arbitrary count into the billable [1, MAX] range. */
-export function normalizeImageCount(imageCount: number): number {
-  if (!Number.isFinite(imageCount)) return 1
-  return Math.max(1, Math.min(MAX_FLOORPLAN_IMAGES, Math.floor(imageCount)))
-}
-
-/** Resolve the tier spec for a (normalized) image count, honoring the provision flag. */
-function resolveTierSpec(imageCount: number): FengTierSpec {
-  if (!VILLA_SKU_PROVISIONED) return STANDARD_TIER
-  const n = normalizeImageCount(imageCount)
-  return FENG_TIERS.find((t) => n >= t.minImages && n <= t.maxImages) ?? STANDARD_TIER
-}
-
-export function quoteFengAnalysis(imageCount: number): FengPriceQuote {
-  const n = normalizeImageCount(imageCount)
-  const spec = resolveTierSpec(n)
+export function quoteFengAnalysis(residenceType: FengResidenceType): FengPriceQuote {
+  const spec = resolveTierSpec(residenceType)
   return {
-    imageCount: n,
-    tier: spec.tier,
+    residenceType,
+    billingTier: spec.billingTier,
     productId: spec.productId,
     singleSku: spec.singleSku,
     priceUsd: spec.priceUsd,
     displayPrice: `$${spec.priceUsd.toFixed(2)}`,
+    streetView: spec.streetView,
   }
 }
 
-/** The single-purchase SKU the analyze gate must require for a given image count. */
-export function fengSkuForImageCount(imageCount: number): FengSingleSku {
-  return resolveTierSpec(imageCount).singleSku
+/** The single-purchase SKU the analyze gate must require for a residence type. */
+export function fengSkuForResidence(residenceType: FengResidenceType): FengSingleSku {
+  return resolveTierSpec(residenceType).singleSku
+}
+
+/**
+ * Whether the street-level 形煞 (Mapillary) pass should run for a residence type.
+ * This is a REPORT-QUALITY decision (flat/villa only), independent of billing
+ * provisioning — actual execution is further gated by MAPILLARY_TOKEN presence in
+ * svc-feng. Premium SKU + MAPILLARY_TOKEN are expected to go live together.
+ */
+export function fengStreetViewEnabled(residenceType: FengResidenceType): boolean {
+  return TIER_BY_RESIDENCE[residenceType]?.streetView ?? false
 }

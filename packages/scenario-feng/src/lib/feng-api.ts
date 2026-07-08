@@ -55,9 +55,14 @@ export interface FloorplanInput {
   centerNorm?: { x: number; y: number }
 }
 
+/** User-declared residence type — pricing tier + report-depth axis. */
+export type FengResidenceType = 'apartment' | 'flat' | 'villa'
+
 export interface CreateSiteInput {
   name: string
   label?: string
+  /** apartment 公寓/小区单元 · flat 大平层 · villa 独栋/别墅. Defaults apartment server-side. */
+  residenceType?: FengResidenceType
   lat: number
   lng: number
   formattedAddress: string
@@ -151,23 +156,25 @@ export async function uploadFloorplan(
 // ── Price estimate (fair per-image tiering) ─────────────────────────────────
 
 export interface FengPriceQuote {
-  imageCount: number
-  tier: 'standard' | 'villa_s' | 'villa_l'
+  residenceType: FengResidenceType
+  billingTier: 'single' | 'premium'
   productId: string
   /** Single-purchase SKU for this tier (matches server access-check). */
-  singleSku: 'feng_analysis' | 'feng_analysis_villa_s' | 'feng_analysis_villa_l'
+  singleSku: 'feng_analysis' | 'feng_analysis_premium'
   priceUsd: number
   displayPrice: string
+  /** Whether this tier's report includes the street-level 形煞 pass. */
+  streetView: boolean
 }
 
 export async function fengPriceEstimate(
   client: HexastralClient,
-  images: number
+  residenceType: FengResidenceType
 ): Promise<FengPriceQuote> {
   const sites = rpc(client).api.feng.sites as {
-    price: { $post: (opts: { json: { images: number } }) => Promise<Response> }
+    price: { $post: (opts: { json: { residenceType: FengResidenceType } }) => Promise<Response> }
   }
-  const res = await sites.price.$post({ json: { images } })
+  const res = await sites.price.$post({ json: { residenceType } })
   const data = await unwrap<{ quote: FengPriceQuote }>(res)
   return data.quote
 }

@@ -12,6 +12,8 @@ export interface ShareFengChapterButtonProps {
   chapterKind: string
   chapterTitle: string
   contentJson: string
+  /** Mapillary CC BY-SA line — appended to share PNG footer on external_landform. */
+  streetAttribution?: string | null
 }
 
 const TAG_BY_KIND: Record<string, keyof Strings> = {
@@ -27,6 +29,7 @@ export function ShareFengChapterButton({
   chapterKind,
   chapterTitle,
   contentJson,
+  streetAttribution,
 }: ShareFengChapterButtonProps) {
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
@@ -43,6 +46,12 @@ export function ShareFengChapterButton({
   } catch {
     // contentJson malformed — card just omits the golden line
   }
+
+  const footerBase = `${t.share_brand_footer}\n${t.share_disclaimer}`
+  const footer =
+    chapterKind === 'external_landform' && streetAttribution
+      ? `${footerBase}\n${streetAttribution}`
+      : footerBase
 
   const handlePress = async () => {
     if (busy) return
@@ -67,7 +76,7 @@ export function ShareFengChapterButton({
         tag={tag}
         title={chapterTitle}
         goldenLine={goldenLine}
-        footer={`${t.share_brand_footer}\n${t.share_disclaimer}`}
+        footer={footer}
       />
       <Pressable
         accessibilityRole='button'

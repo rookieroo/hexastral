@@ -40,7 +40,7 @@ Plan: [compliance-remediation-plan.md](./compliance-remediation-plan.md).
 |-----|--------|---------|
 | `unknown` 建运 | ✅ | Skip `computeFlyingStars`; drop `flying_stars` chapter |
 | `centerNorm` 立极 | ✅ | User pin → interior Gemini prompt v2 (AUTHORITATIVE 中宫) |
-| 楼体中心 pin | ✅ | Draggable dot on facing satellite; `geocodeLat/Lng` anchor + offset |
+| 楼体中心 pin | ✅ | Draggable dot on satellite; `geocodeLat/Lng` anchor + offset |
 
 Key paths:
 
@@ -48,30 +48,48 @@ Key paths:
 - `apps/hexastral-api/src/lib/feng-interior-compute.ts` — `parseSiteFloorplan.centerNorm`
 - `services/svc-feng/src/prompts/interior.ts` — prompt v2
 - `packages/scenario-feng/src/lib/map-pixel-offset.ts` — geo offset helper
-- `apps/feng-app/app/(new-site)/facing.tsx` — building pin UX
+- `apps/feng-app/components/NewSiteFacingStep.tsx` — building pin + orient UX
 
 **Deploy**: `hexastral-api`, `svc-feng` (interior cache invalidated by prompt v2), `feng-app`.
+
+### 4. Premium tier (residence-type pricing + street gate)
+
+| Area | Path / notes |
+|------|----------------|
+| Pricing SSOT | `apps/hexastral-api/src/lib/feng-pricing.ts` — apartment $9.99 / flat·villa $39.99 |
+| Schema | `feng_sites.residence_type` + migration `0020_outgoing_dracula.sql` |
+| Street gate | `feng-analyze.ts` — Mapillary only for flat/villa; floor attenuation for 大平层 |
+| Image cap | `maxFloorplanImagesFor()` — apartment=1, flat/villa=6 |
+| Client IAP | `feng-pricing-client.ts`, tier-aware paywall + review `/price` |
+| Provision flag | `PREMIUM_SKU_PROVISIONED = false` until ASC + RC `hexastral_feng_premium` |
+
+**Deploy**: `hexastral-api` (incl. D1 migration), `feng-app` EAS rebuild.
+
+### 5. WP3 / WP3b / P1 (2026-07-08)
+
+| WP | Status | Summary |
+|----|--------|---------|
+| WP3b Street cache | ✅ | `/street/sha` coverage preflight + R2 grid cache; maxImages 2 |
+| WP3 Attribution | ✅ | Footer + external_landform inline + share PNG; Gemini privacy note in §6 |
+| P1 Vision audit | ✅ | `auditVisionHits` + forbidden retry on exterior/interior vision |
+| P1 Facing hints | ✅ | Compass vs satellite warn; review 兼向/替卦 hint |
+| Onboarding 6→4 | ✅ | address+orient merged; birth → review card only |
 
 ---
 
 ## Practitioner-duty audit (2026-07-08)
-
-Full analysis in agent session; summary of **remaining gaps** after P0:
 
 | Priority | Gap | Status |
 |----------|-----|--------|
 | P0 | `unknown` 建运 vs 玄空 | ✅ fixed |
 | P0 | `centerNorm` ignored | ✅ fixed |
 | P0 | 地址点 ≠ 楼体中心 | ✅ fixed (pin) |
-| P1 | 卫星 vs 罗盘偏差警告、兼向提示 | ⏳ |
-| P1 | Mapillary 街景 + 归因 UI | ⏳ see below |
-| P1 | Vision JSON 后验审计 | ⏳ |
-| P2 | `floor` 字段未参与计算 | ⏳ RESERVED |
+| P1 | 卫星 vs 罗盘偏差警告、兼向提示 | ✅ |
+| P1 | Mapillary 街景 + 归因 UI | ✅ (token still gated) |
+| P1 | Vision JSON 后验审计 | ✅ |
+| P2 | `floor` 字段未参与计算 | ✅ street 形煞 attenuation for 大平层 |
 | P2 | 宅卦 vs 命卦双轨 room verdict | ⏳ |
 | P2 | Review 数据质量门禁 | ⏳ |
-
-**Strengths** (unchanged): 沈氏玄空 + 八宅 + formLi in astro-core; synthesis
-compliance; digest + chat audit.
 
 ---
 
@@ -81,9 +99,10 @@ compliance; digest + chat audit.
 
 ### What it does
 
-- `services/svc-feng` → Mapillary Graph API (bbox search) → up to 4× `thumb_1024`
+- `services/svc-feng` → Mapillary Graph API (bbox probe + up to 2× `thumb_1024`)
 - One Gemini Vision call → structured 形煞 JSON (no user-facing photos)
 - Merged into `vision.形煞` → formLi + synthesis
+- **Premium only** (flat/villa); apartment skips the pass entirely
 
 **Default**: OFF without token (fail-open degraded).
 
@@ -91,31 +110,19 @@ compliance; digest + chat audit.
 
 | Risk | Level | Mitigation |
 |------|-------|------------|
-| CC BY-SA attribution | Medium | Footer `streetAttribution` when findings used; **WP3**: inline + share |
-| SA “derivative work” on text labels | Low–Medium | Do not display/redistribute thumbnails; confirm with Mapillary support |
-| ToS §11 (materially supplement) | Low | Analysis-only, not a Mapillary clone |
-| Privacy (Gemini processes street imgs) | Low–Medium | Disclose in App Privacy |
+| CC BY-SA attribution | Medium | Footer + chapter inline + share PNG when imagery used |
+| SA “derivative work” on text labels | Low–Medium | Do not display/redistribute thumbnails |
+| Privacy (Gemini processes street imgs) | Low–Medium | Disclose in App Privacy (§6 deploy-acceptance) |
 
-**Recommendation**: Register free [Mapillary Developer](https://www.mapillary.com/dashboard/developers) app; complete WP3 attribution; email `support@mapillary.com` with use-case before prod token. **Defer token** if primary market is CN (weak coverage).
-
-### Cost (marginal per paid report @ $9.99)
+### Cost (marginal per premium report @ $39.99)
 
 | Component | Direct $ | Notes |
 |-----------|----------|-------|
 | Mapillary API | ~$0 | Rate limits only at V1 volume |
-| Gemini street pass | ~$0.01–0.02 | +15–35% vs vision-only; 4×1024 thumbs, 1 call |
-| **Gap** | — | `/street/sha` has **no cache** (unlike exterior/interior vision) |
+| Gemini street pass | ~$0.01 | Cached on ~50m grid; preflight skips empty bbox |
+| **Cache** | ✅ | R2 `feng-street` prefix in ANNOTATED_CACHE |
 
-**Pricing**: Do not surcharge for street view; keep tiering by 户型图 count
-([feng-pricing.ts](../../apps/hexastral-api/src/lib/feng-pricing.ts)). Street is
-a differentiation lever, not a COGS threat at current scale.
-
-### Cost controls (before enabling token)
-
-1. Content-addressed cache on `/street/sha` (lat/lng grid + prompt version)
-2. Coverage preflight (`limit=1` bbox probe; skip Gemini when no images)
-3. Optional: `gemini-3.1-flash` for street pass; reduce `maxImages` 4→2
-4. Urban-only gate via existing Mapbox prefetch signals
+**Pricing**: Tiered by **user-declared residence type** ([feng-pricing.ts](../../apps/hexastral-api/src/lib/feng-pricing.ts)). Street is bundled into premium, not a separate SKU.
 
 ---
 
@@ -123,12 +130,13 @@ a differentiation lever, not a COGS threat at current scale.
 
 | ID | Package | Depends on |
 |----|---------|------------|
-| WP3 | Mapillary attribution UI (footer always when API used; chapter inline; share PNG) | — |
-| WP3b | `/street/sha` cache + coverage preflight | — |
-| P1 | Facing: compass vs satellite warn; 兼向/替卦 hint on review | — |
-| P1 | Vision JSON post-audit (`auditVisionHits`) | — |
-| Human | Staging fresh-report spot-check per [deploy-acceptance.md](./deploy-acceptance.md) §5 | deploy |
+| Human | ASC + RC: `hexastral_feng_premium` ($39.99); flip `PREMIUM_SKU_PROVISIONED` | products live |
+| Human | D1 migration `0020` on prod | deploy approval |
+| Human | `MAPILLARY_TOKEN` + legal sign-off §6 | WP3 UI ✅ |
+| Human | Staging spot-check: apartment / flat / villa each 1 report | deploy |
 | Human | 风水师 sample-output sign-off §8 | sample harness |
+| P2 | 宅卦 vs 命卦双轨 room verdict | — |
+| P2 | Review 数据质量门禁 | — |
 
 ---
 
@@ -136,9 +144,11 @@ a differentiation lever, not a COGS threat at current scale.
 
 ```bash
 bun typecheck
+cd apps/hexastral-api && bun test src/lib/feng-pricing.test.ts
 cd packages/scenario-feng && bun test src/lib/report-digest.test.ts src/lib/map-pixel-offset.test.ts
 cd apps/hexastral-api && bun test src/lib/feng-chat-*.test.ts src/lib/portfolio-voice.golden.test.ts
 cd packages/astro-core && bun test  # feng suites
+cd services/svc-feng && bun run typecheck
 ```
 
 ---

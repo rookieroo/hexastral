@@ -1,9 +1,9 @@
 /**
- * Fēng IAP — RevenueCat wrapper for the one-shot site report SKU.
+ * Fēng IAP — RevenueCat wrapper for site report SKUs (single + premium).
  *
- * Product id matches the server catalog (`hexastral_feng_single` → sku
- * `feng_analysis`). After `purchaseProduct` resolves, poll
- * `GET /api/purchase/available/feng_analysis` until the webhook lands.
+ * Product ids match the server catalog (`hexastral_feng_single` / `_premium` → sku
+ * `feng_analysis` / `feng_analysis_premium`). After `purchaseProduct` resolves, poll
+ * `GET /api/purchase/available/:skuId` until the webhook lands.
  *
  * `react-native-purchases` is unavailable in Expo Go; entry points no-op
  * silently and the paywall surfaces an unavailable state.
@@ -70,22 +70,27 @@ export async function logoutFengIap(): Promise<void> {
 
 export type FengPurchaseResult = 'success' | 'cancelled' | 'failed' | 'unavailable'
 
-export async function getFengSinglePrice(): Promise<string | null> {
+export async function getFengPrice(productId: string): Promise<string | null> {
   const p = loadPurchases()
   if (!p || !initialized) return null
   try {
-    const products = await p.getProducts([FENG_SINGLE_PRODUCT_ID])
+    const products = await p.getProducts([productId])
     return products[0]?.priceString ?? null
   } catch {
     return null
   }
 }
 
-export async function purchaseFengSingle(): Promise<FengPurchaseResult> {
+/** @deprecated Use getFengPrice(FENG_SINGLE_PRODUCT_ID) */
+export async function getFengSinglePrice(): Promise<string | null> {
+  return getFengPrice(FENG_SINGLE_PRODUCT_ID)
+}
+
+export async function purchaseFeng(productId: string): Promise<FengPurchaseResult> {
   const p = loadPurchases()
   if (!p || !initialized) return 'unavailable'
   try {
-    await p.purchaseProduct(FENG_SINGLE_PRODUCT_ID)
+    await p.purchaseProduct(productId)
     return 'success'
   } catch (err) {
     const code = (err as { code?: string; userCancelled?: boolean }).code
@@ -94,6 +99,11 @@ export async function purchaseFengSingle(): Promise<FengPurchaseResult> {
     }
     return 'failed'
   }
+}
+
+/** @deprecated Use purchaseFeng(productId) */
+export async function purchaseFengSingle(): Promise<FengPurchaseResult> {
+  return purchaseFeng(FENG_SINGLE_PRODUCT_ID)
 }
 
 export async function restoreFengPurchases(): Promise<boolean> {

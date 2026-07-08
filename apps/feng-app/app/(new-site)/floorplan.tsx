@@ -11,7 +11,7 @@
  * Skippable: without a floor plan the report is exterior-only (no room-level 化解).
  */
 
-import { MAX_FLOORPLAN_IMAGES } from '@zhop/astro-core'
+import { maxFloorplanImagesFor } from '@zhop/astro-core'
 import { Button, useHaptic } from '@zhop/core-ui'
 import { useUploadFloorplan } from '@zhop/scenario-feng'
 import * as ImagePicker from 'expo-image-picker'
@@ -34,8 +34,6 @@ import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
-
-const MAX_IMAGES = MAX_FLOORPLAN_IMAGES
 
 interface FloorplanItem {
   key: string
@@ -103,6 +101,7 @@ export default function FloorplanScreen() {
   const upload = useUploadFloorplan()
 
   const [items, setItems] = useState<FloorplanItem[]>([])
+  const [maxImages, setMaxImages] = useState(1)
   const [orientDeg, setOrientDeg] = useState(0)
   const [centerNorm, setCenterNorm] = useState({ x: 0.5, y: 0.5 })
   const [showGrid, setShowGrid] = useState(true)
@@ -114,6 +113,7 @@ export default function FloorplanScreen() {
   useEffect(() => {
     void (async () => {
       const d = await loadDraft()
+      setMaxImages(maxFloorplanImagesFor(d.residenceType ?? 'apartment'))
       if (Array.isArray(d.floorplanImages) && d.floorplanImages.length > 0) {
         setItems(d.floorplanImages.map((im) => ({ key: im.key })))
       }
@@ -145,14 +145,14 @@ export default function FloorplanScreen() {
   )
 
   const pick = async () => {
-    if (busy || items.length >= MAX_IMAGES) return
+    if (busy || items.length >= maxImages) return
     setError(null)
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!perm.granted) {
       setError(t.new_site_floorplan_permission)
       return
     }
-    const remaining = MAX_IMAGES - items.length
+    const remaining = maxImages - items.length
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
@@ -171,7 +171,7 @@ export default function FloorplanScreen() {
         uploaded.push({ key, previewUri: asset.uri })
       }
       if (uploaded.length > 0) void haptic('success')
-      setItems((prev) => [...prev, ...uploaded].slice(0, MAX_IMAGES))
+      setItems((prev) => [...prev, ...uploaded].slice(0, maxImages))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -195,7 +195,7 @@ export default function FloorplanScreen() {
       floorplanOrientDeg: withFloorplan ? orientDeg : undefined,
       floorplanCenterNorm: withFloorplan && hasPreview ? centerNorm : undefined,
     })
-    router.push('/(new-site)/birth')
+    router.push('/(new-site)/review')
   }
 
   const hasImages = items.length > 0
@@ -212,7 +212,7 @@ export default function FloorplanScreen() {
       }}
     >
       <StatusBar style='light' />
-      <ProgressIndicator step={4} total={6} />
+      <ProgressIndicator step={3} total={4} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_floorplan_title}
       </Text>
@@ -371,7 +371,7 @@ export default function FloorplanScreen() {
             </Pressable>
           </View>
         ))}
-        {items.length < MAX_IMAGES ? (
+        {items.length < maxImages ? (
           <Pressable
             onPress={pick}
             disabled={busy}
@@ -405,9 +405,9 @@ export default function FloorplanScreen() {
         </Text>
       ) : null}
 
-      {items.length >= MAX_IMAGES ? (
+      {items.length >= maxImages && maxImages > 1 ? (
         <Text style={{ color: colors.textMute, fontSize: 12 }}>
-          {t.new_site_floorplan_max.replace('{n}', String(MAX_IMAGES))}
+          {t.new_site_floorplan_max.replace('{n}', String(maxImages))}
         </Text>
       ) : null}
 

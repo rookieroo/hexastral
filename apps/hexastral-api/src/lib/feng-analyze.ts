@@ -59,11 +59,33 @@ import {
   visionInterior,
 } from './feng-client'
 import { deriveRoomFindings, parseSiteFloorplan, type RoomFinding } from './feng-interior-compute'
+import {
+  type FengResidenceType,
+  fengStreetViewEnabled,
+  normalizeResidenceType,
+} from './feng-pricing'
 import { fengLogger } from './logger'
 import { searchPortfolioReadingMemory } from './portfolio-memory'
 
 type Site = typeof fengSites.$inferSelect
 type Job = typeof fengJobsTable.$inferSelect
+
+/**
+ * Ground-level street 形煞 (壁刀 / 天斩 / 路冲) over-hits high floors — a 30F 大平层 is
+ * not cut by a wall edge captured at street level. Attenuate severity by floor for
+ * `flat`; `villa` is a low-rise whole dwelling and keeps full weight. Returns the
+ * (possibly reduced) severity; callers drop findings that fall below relevance.
+ */
+function attenuateStreetSeverity(
+  severity: number,
+  residenceType: FengResidenceType,
+  floor: number | null
+): number {
+  if (residenceType !== 'flat' || floor == null || !Number.isFinite(floor)) return severity
+  const f = Math.max(1, Math.floor(floor))
+  const factor = f <= 3 ? 1 : f <= 6 ? 0.7 : f <= 12 ? 0.5 : 0.3
+  return severity * factor
+}
 
 // size 640 (not 600) so the facing-calibrator preview (zoom 17 / size 640) and
 // the `mid` analyze tile hash to the SAME maps cache key — one Mapbox fetch
@@ -445,13 +467,29 @@ export async function runAnalyzeJob(
     // 小峦头街景形煞 (Mapillary, off unless MAPILLARY_TOKEN). Merge into vision.形煞
     // (binned by the capturing image's compass angle → 宫) so it flows to both
     // formByPalace and synthesis. Fail-open.
+    //
+    // Gated to premium residence types (大平层 / 独栋别墅): a compound apartment's
+    // street 形煞 is a low-value, shared-coordinate, floor-height-biased signal, and
+    // the pass is an uncached Gemini call — reserve it for the high-ARPU deep report.
+    const residenceType = normalizeResidenceType(site.residenceType)
+    const streetViewEnabled = fengStreetViewEnabled(residenceType)
     let streetAttribution: string | null = null
     try {
-      const street = await streetSha(env.SVC_FENG, { lat, lng, locale })
-      if (!street.degraded && street.findings.length > 0) {
+      const street = streetViewEnabled
+        ? await streetSha(env.SVC_FENG, { lat, lng, locale })
+        : { degraded: true as const, findings: [] as [], attribution: '', imageCount: 0 }
+      // CC BY-SA: attribution required whenever Mapillary imagery was fetched (even if
+      // the VLM found no 形煞). Persist so footer / chapter / share can surface it.
+      if (streetViewEnabled && street.imageCount > 0 && street.attribution) {
         streetAttribution = street.attribution
+      }
+      if (!street.degraded && street.findings.length > 0) {
         for (const f of street.findings) {
-          const sev = Math.min(5, Math.max(1, Math.round(f.severity))) as 1 | 2 | 3 | 4 | 5
+          // Height-weight ground-level 形煞 for 大平层 (see attenuateStreetSeverity);
+          // drop findings that become negligible at this floor.
+          const attenuated = attenuateStreetSeverity(f.severity, residenceType, site.floor)
+          if (attenuated < 0.75) continue
+          const sev = Math.min(5, Math.max(1, Math.round(attenuated))) as 1 | 2 | 3 | 4 | 5
           vision.形煞.push({
             type: f.type,
             direction: palaceAtDegree(f.compassAngle),

@@ -5,7 +5,7 @@ from "code-complete + typecheck/test green" to "live + validated". CI does NOT
 deploy (house rule) — these run locally via `wrangler` / EAS.
 
 Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3) and [pro-grade-plan.md](./pro-grade-plan.md)
-(四维 D1-D4). Last updated 2026-06-30.
+(四维 D1-D4). Last updated **2026-07-08**.
 
 ---
 
@@ -22,8 +22,8 @@ Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3) and [pro-grade-plan.md](./
 - [ ] R2 buckets exist: `wrangler r2 bucket create feng-maps` /
       `feng-annotated` (svc-feng dir).
 - [ ] Queue exists: `bunx wrangler queues create feng-analyze` (hexastral-api).
-- [ ] D1 migrations applied (account-deletion adds no migration; FK-safe
-      anonymize). Confirm `feng_sites / feng_reports / feng_jobs` tables present.
+- [ ] D1 migrations applied. Confirm `feng_sites / feng_reports / feng_jobs` tables present.
+      Apply `0020_outgoing_dracula.sql` (`residence_type` column) before premium tier goes live.
 
 ## 2. Secrets (svc-feng) — `cd services/svc-feng`
 
@@ -35,6 +35,8 @@ Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3) and [pro-grade-plan.md](./
       legal + attribution gate in §6. Unset = street 形煞 off (safe).
 
 ## 3. Deploy
+
+**Order** (premium tier): `svc-feng` → `hexastral-api` (incl. D1 `0020`) → `feng-app` EAS.
 
 - [ ] `cd services/svc-feng && bun deploy` — ships `/prefetch`, `/terrain/profile`
       (DEM), `/street/sha` (Mapillary), `/maps`, `/annotate`, `/vision`,
@@ -55,13 +57,20 @@ secure-store) → **Expo Go won't work; a dev build is required**.
 - [ ] EAS prod: `eas build --profile production --platform ios` (needs `eas init`
       projectId in app.json/eas.json; Apple `com.hexastral.feng`; RevenueCat
       products — see `docs/publish/README.md`).
+- [ ] **Premium SKU (human)**: App Store Connect + RevenueCat create
+      `hexastral_feng_premium` ($39.99 consumable); link to `feng_analysis_premium`
+      entitlement; then flip `PREMIUM_SKU_PROVISIONED = true` in
+      `apps/hexastral-api/src/lib/feng-pricing.ts` AND
+      `apps/feng-app/lib/feng-pricing-client.ts`; redeploy API + ship new EAS build.
 
 ## 5. Smoke tests (after deploy — generate a NEW report; old reports lack the new fields)
 
 Pick a real address **near terrain** (hills/coast) so DEM/砂 fires.
 
-- [ ] Add site → address → facing (drag on satellite) → building → review →
-      Generate. Job completes (poll reaches `done`).
+- [ ] Add site → **locate** (address + facing, 4-step flow) → building (pick residence type) →
+      floorplan → review → Generate. Job completes (poll reaches `done`).
+- [ ] **Premium tier**: flat/villa review shows ~$39.99 quote + street badge; apartment $9.99 + 1 floor plan max.
+- [ ] **兼向**: review warns when facing near 24-mountain boundary; flying stars use 替卦.
 - [ ] Report renders: 6 chapters, FlyingStarsGrid, 格局 chips, BaZhaiWheel.
 - [ ] **D1**: 飞星 chapter shows 格局 (旺山旺向/双星会向…) + per-宫 form-li lines.
 - [ ] **D1.4 月紫白**: annual_directions chapter text references this month's
@@ -73,16 +82,18 @@ Pick a real address **near terrain** (hills/coast) so DEM/砂 fires.
 - [ ] **Mapbox attribution** visible under report map swiper + facing tile.
 - [ ] **Account deletion**: Profile → Delete account → confirm → signed out;
       re-login creates a fresh account; birth info / sites gone.
-- [ ] **Single purchase**: non-Pro buys one analysis → succeeds → second site
-      analyze is paywalled (purchase consumed only on success).
+- [ ] **Single purchase**: non-Pro buys one analysis at the correct tier SKU
+      (`feng_analysis` apartment / `feng_analysis_premium` flat·villa when provisioned) →
+      succeeds → second site at higher tier is paywalled if under-tier purchase.
 - [ ] **locale**: an `en` user gets an English report (not zh).
 
 ## 6. Mapillary street 形煞 — LEGAL GATE (before setting MAPILLARY_TOKEN)
 
 - [ ] Legal sign-off that deriving 形煞 findings from Mapillary imagery complies
       with CC-BY-SA (share-alike + attribution).
-- [ ] UI shows the attribution string (`compute.streetAttribution`, already wired
-      under the report footer) wherever street-derived findings surface.
+- [ ] UI shows the attribution string (`compute.streetAttribution`: footer,
+      external_landform chapter inline, share PNG) wherever Mapillary imagery was used.
+- [ ] App Privacy declares **third-party imagery sent to Gemini** for street 形煞 (premium).
 - [ ] Only then: `wrangler secret put MAPILLARY_TOKEN` + redeploy svc-feng.
 - [ ] Smoke: urban site → street 形煞 appears as `near` 形煞 in 化解 chapter +
       formLi 化煞 verdict; attribution line shows.

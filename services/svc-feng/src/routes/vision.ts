@@ -21,6 +21,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { logger } from '../lib/logger'
+import { auditVisionHits } from '../lib/output-audit'
 import {
   buildInteriorUserPrompt,
   INTERIOR_RESPONSE_SCHEMA,
@@ -152,7 +153,7 @@ visionRouter.post('/analyze', async (c) => {
     }))
   )
 
-  const userPrompt = buildVisionUserPrompt({
+  const userPromptBase = buildVisionUserPrompt({
     facingDegTrue,
     sitDegTrue,
     doorDegTrue,
@@ -162,13 +163,14 @@ visionRouter.post('/analyze', async (c) => {
     terrainSummary,
   })
 
-  const validated = await withZodRetry({
+  let rewriteSuffix = ''
+  let validated = await withZodRetry({
     label: 'vision',
     schema: VisionResultSchema,
     call: () =>
       callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
         systemPrompt: VISION_SYSTEM_PROMPT,
-        userPrompt,
+        userPrompt: userPromptBase + rewriteSuffix,
         images,
         responseSchema: VISION_RESPONSE_SCHEMA,
         maxOutputTokens: 4096,
@@ -182,6 +184,26 @@ visionRouter.post('/analyze', async (c) => {
       notes: 'Vision analysis failed after retries; report generated from compute data only.',
     }),
   })
+
+  const visionAudit = auditVisionHits(JSON.stringify(validated))
+  if (visionAudit.hits.length > 0) {
+    rewriteSuffix = visionAudit.rewriteSuffix ?? ''
+    logger.warn('vision.analyze.forbidden_phrases', { hits: visionAudit.hits })
+    validated = await withZodRetry({
+      label: 'vision-forbidden-retry',
+      schema: VisionResultSchema,
+      call: () =>
+        callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
+          systemPrompt: VISION_SYSTEM_PROMPT,
+          userPrompt: userPromptBase + rewriteSuffix,
+          images,
+          responseSchema: VISION_RESPONSE_SCHEMA,
+          maxOutputTokens: 4096,
+          temperature: 0.2,
+        }),
+      degraded: () => validated,
+    })
+  }
 
   const degraded = validated.notes?.includes('failed after retries')
   const result: VisionAnalysisResult = {
@@ -307,19 +329,20 @@ visionRouter.post('/interior', async (c) => {
             return { floor: { key, ...result }, degraded: false }
           }
           const base64 = await fetchR2AsBase64(c.env.FLOORPLAN_CACHE, key)
-          const validated = await withZodRetry({
+          const interiorPromptBase = buildInteriorUserPrompt({
+            northUpBearing,
+            locale,
+            floorLabel,
+            centerNorm: i === 0 ? centerNorm : undefined,
+          })
+          let interiorRewrite = ''
+          let validated = await withZodRetry({
             label: 'interior',
             schema: InteriorResultSchema,
             call: () =>
               callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
                 systemPrompt: INTERIOR_SYSTEM_PROMPT,
-                userPrompt: buildInteriorUserPrompt({
-                  northUpBearing,
-                  locale,
-                  floorLabel,
-                  // 立极 pin applies to the cover / first floor only.
-                  centerNorm: i === 0 ? centerNorm : undefined,
-                }),
+                userPrompt: interiorPromptBase + interiorRewrite,
                 images: [{ base64, mimeType: mimeForKey(key) }],
                 responseSchema: INTERIOR_RESPONSE_SCHEMA,
                 maxOutputTokens: 4096,
@@ -332,6 +355,25 @@ visionRouter.post('/interior', async (c) => {
               notes: 'Interior analysis failed after retries; report uses exterior + compute only.',
             }),
           })
+          const interiorAudit = auditVisionHits(JSON.stringify(validated))
+          if (interiorAudit.hits.length > 0) {
+            interiorRewrite = interiorAudit.rewriteSuffix ?? ''
+            logger.warn('vision.interior.forbidden_phrases', { hits: interiorAudit.hits, key })
+            validated = await withZodRetry({
+              label: 'interior-forbidden-retry',
+              schema: InteriorResultSchema,
+              call: () =>
+                callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
+                  systemPrompt: INTERIOR_SYSTEM_PROMPT,
+                  userPrompt: interiorPromptBase + interiorRewrite,
+                  images: [{ base64, mimeType: mimeForKey(key) }],
+                  responseSchema: INTERIOR_RESPONSE_SCHEMA,
+                  maxOutputTokens: 4096,
+                  temperature: 0.2,
+                }),
+              degraded: () => validated,
+            })
+          }
           const degraded = validated.notes?.includes('failed after retries') ?? false
           await writeCache(
             c.env.ANNOTATED_CACHE,

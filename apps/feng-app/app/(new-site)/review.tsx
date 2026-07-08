@@ -6,7 +6,8 @@
  * server message inline + lets the user retry.
  */
 
-import { useCreateSite } from '@zhop/scenario-feng'
+import { fengPriceEstimate, useCreateSite, useFengClient, type FengPriceQuote } from '@zhop/scenario-feng'
+import { isCompoundFacing } from '@zhop/astro-core'
 import { type Href, useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
@@ -14,6 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
+import {
+  normalizeResidenceType,
+  streetViewEnabledForResidence,
+} from '@/lib/feng-pricing-client'
 import { hasFengAnalyzeAccess } from '@/lib/purchase'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { clearDraft, isDraftReady, loadDraft, type SiteDraft } from '@/lib/siteDraft'
@@ -26,8 +31,10 @@ export default function ReviewScreen() {
   const t = useStrings(resolveLocale())
   const insets = useSafeAreaInsets()
   const createSite = useCreateSite()
+  const { client } = useFengClient()
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
+  const [priceQuote, setPriceQuote] = useState<FengPriceQuote | null>(null)
   const [creating, setCreating] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
@@ -37,6 +44,14 @@ export default function ReviewScreen() {
   useEffect(() => {
     void (async () => setDraft(await loadDraft()))()
   }, [])
+
+  useEffect(() => {
+    if (!client || !draft) return
+    const residenceType = normalizeResidenceType(draft.residenceType)
+    void fengPriceEstimate(client, residenceType)
+      .then(setPriceQuote)
+      .catch(() => setPriceQuote(null))
+  }, [client, draft?.residenceType, draft])
 
   // Re-check birth info each time the screen regains focus, so returning from
   // the (birth-info) form reflects immediately (birth info unlocks 命卦 ch2).
@@ -64,9 +79,13 @@ export default function ReviewScreen() {
     }
     if (!userId) return
 
-    const entitled = await hasFengAnalyzeAccess(userId)
+    const residenceType = normalizeResidenceType(draft.residenceType)
+    const entitled = await hasFengAnalyzeAccess(userId, residenceType)
     if (!entitled) {
-      router.push({ pathname: '/paywall', params: { intent: 'analyze' } } as Href)
+      router.push({
+        pathname: '/paywall',
+        params: { intent: 'analyze', residenceType },
+      } as Href)
       return
     }
 
@@ -79,6 +98,7 @@ export default function ReviewScreen() {
       const site = await createSite({
         name: draft.name ?? t.new_site_default_name,
         label: draft.label,
+        residenceType: draft.residenceType,
         lat: draft.lat,
         lng: draft.lng,
         formattedAddress: draft.formattedAddress,
@@ -120,9 +140,21 @@ export default function ReviewScreen() {
     }
   }
 
+  const residenceValue = (r: SiteDraft['residenceType']): string => {
+    switch (r) {
+      case 'flat':
+        return t.new_site_residence_flat
+      case 'villa':
+        return t.new_site_residence_villa
+      default:
+        return t.new_site_residence_apartment
+    }
+  }
+
   const labels: Array<{ label: string; value: string }> = []
   if (draft) {
     labels.push({ label: t.new_site_review_address, value: draft.formattedAddress ?? '—' })
+    labels.push({ label: t.new_site_review_residence, value: residenceValue(draft.residenceType) })
     if (typeof draft.facingDegTrue === 'number') {
       labels.push({
         label: t.new_site_review_building_facing,
@@ -168,7 +200,7 @@ export default function ReviewScreen() {
         flexGrow: 1,
       }}
     >
-      <ProgressIndicator step={6} total={6} />
+      <ProgressIndicator step={4} total={4} />
       <Text style={{ fontSize: 26, fontWeight: '700', color: colors.text }}>
         {t.new_site_review_title}
       </Text>
@@ -192,6 +224,37 @@ export default function ReviewScreen() {
           </View>
         ))}
       </View>
+
+      {priceQuote ? (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 0.5,
+            borderColor: colors.border,
+            borderRadius: 0,
+            padding: spacing.lg,
+            gap: spacing.xs,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: colors.textMute, fontSize: 14 }}>{t.new_site_review_price}</Text>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>
+              {priceQuote.displayPrice}
+            </Text>
+          </View>
+          {streetViewEnabledForResidence(normalizeResidenceType(draft?.residenceType)) ? (
+            <Text style={{ color: colors.textMute, fontSize: 12, lineHeight: 18 }}>
+              {t.new_site_review_street_badge}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {typeof draft?.facingDegTrue === 'number' && isCompoundFacing(draft.facingDegTrue) ? (
+        <Text style={{ color: colors.warning, fontSize: 12, lineHeight: 18 }}>
+          {t.new_site_review_compound_facing}
+        </Text>
+      ) : null}
 
       {/* 命卦 chapter (ch2) — birth info is optional; with it the report is 6
           chapters, without it 5. Surfaced here so the choice is explicit. */}

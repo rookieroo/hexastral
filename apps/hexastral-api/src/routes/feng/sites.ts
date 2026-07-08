@@ -21,6 +21,7 @@
  *     to absorb this shape change with a 1-line adapter.
  */
 
+import { maxFloorplanImagesFor } from '@zhop/astro-core'
 import { and, desc, eq, isNull, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
@@ -34,8 +35,9 @@ import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
 import { deleteFloorplans } from '../../lib/feng-client'
 import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
 import {
-  fengSkuForImageCount,
+  fengSkuForResidence,
   MAX_FLOORPLAN_IMAGES,
+  normalizeResidenceType,
   quoteFengAnalysis,
 } from '../../lib/feng-pricing'
 
@@ -60,9 +62,10 @@ const floorplanSchema = z.object({
   centerNorm: centerNormSchema.optional(),
 })
 
-const createSiteSchema = z.object({
+const createSiteObject = z.object({
   name: z.string().min(1).max(40),
   label: z.string().max(80).optional(),
+  residenceType: z.enum(['apartment', 'flat', 'villa']).default('apartment'),
   lat: z.number().gte(-85).lte(85),
   lng: z.number().gte(-180).lte(180),
   formattedAddress: z.string().min(1).max(240),
@@ -77,7 +80,26 @@ const createSiteSchema = z.object({
   floorplan: floorplanSchema.optional(),
 })
 
-const updateSiteSchema = createSiteSchema.partial()
+// apartment (base tier) = one layout only; flat/villa may upload up to MAX. Enforced
+// server-side so a client can't upload a villa's worth of plans on a $9.99 apartment.
+function enforceResidenceImageCap(
+  data: { residenceType?: 'apartment' | 'flat' | 'villa'; floorplan?: { images: unknown[] } },
+  ctx: z.RefinementCtx
+): void {
+  if (!data.residenceType || !data.floorplan) return
+  const cap = maxFloorplanImagesFor(data.residenceType)
+  if (data.floorplan.images.length > cap) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `residenceType '${data.residenceType}' allows at most ${cap} floor plan(s)`,
+      path: ['floorplan', 'images'],
+    })
+  }
+}
+
+const createSiteSchema = createSiteObject.superRefine(enforceResidenceImageCap)
+
+const updateSiteSchema = createSiteObject.partial().superRefine(enforceResidenceImageCap)
 
 function parseFloorplan(json: string | null): unknown {
   if (!json) return null
@@ -88,22 +110,13 @@ function parseFloorplan(json: string | null): unknown {
   }
 }
 
-/** Number of uploaded floor-plan images on a site (drives the price tier). 0 when none. */
-function floorplanImageCount(json: string | null): number {
-  const parsed = parseFloorplan(json)
-  if (parsed && typeof parsed === 'object' && 'images' in parsed) {
-    const images = (parsed as { images?: unknown }).images
-    if (Array.isArray(images)) return images.length
-  }
-  return 0
-}
-
 function serializeSite(row: typeof fengSites.$inferSelect) {
   return {
     id: row.id,
     userId: row.userId,
     name: row.name,
     label: row.label,
+    residenceType: row.residenceType,
     lat: Number(row.lat),
     lng: Number(row.lng),
     formattedAddress: row.formattedAddress,
@@ -161,6 +174,7 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       userId,
       name: input.name,
       label: input.label ?? null,
+      residenceType: input.residenceType,
       lat: String(input.lat),
       lng: String(input.lng),
       formattedAddress: input.formattedAddress,
@@ -186,18 +200,18 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     return jsonOk(c, { site: serializeSite(row) }, 201)
   })
   // ── Price estimate ──────────────────────────────────────────────────
-  // Fair tiering by floor-plan image count (base + per-extra-image). Called
-  // from the review screen BEFORE the site exists so the paywall shows the
-  // right 客单价 (apartment vs villa/multi-floor).
+  // Tiering by USER-DECLARED residence type (apartment=single · flat/villa=premium).
+  // Called from the review/type screen BEFORE the site exists so the paywall shows
+  // the right 客单价 and whether the report includes street 形煞.
   .post('/price', async (c) => {
     requireUserId(c)
     const body = await c.req.json().catch(() => ({}))
-    const parsed = z.object({ images: z.int().gte(0).lte(20).optional() }).safeParse(body)
-    const images = parsed.success ? (parsed.data.images ?? 1) : 1
-    const quote = quoteFengAnalysis(images)
-    // Signal when the requested count was clamped into the billable [1, MAX]
-    // range, so the client can warn instead of silently under/over-quoting.
-    return jsonOk(c, { quote, capped: images > MAX_FLOORPLAN_IMAGES })
+    const parsed = z
+      .object({ residenceType: z.enum(['apartment', 'flat', 'villa']).optional() })
+      .safeParse(body)
+    const residenceType = normalizeResidenceType(parsed.success ? parsed.data.residenceType : undefined)
+    const quote = quoteFengAnalysis(residenceType)
+    return jsonOk(c, { quote })
   })
   // ── Read one + latest report ────────────────────────────────────────
   .get('/:id', async (c) => {
@@ -283,6 +297,7 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     }
     if (input.name !== undefined) patch.name = input.name
     if (input.label !== undefined) patch.label = input.label
+    if (input.residenceType !== undefined) patch.residenceType = input.residenceType
     if (input.formattedAddress !== undefined) patch.formattedAddress = input.formattedAddress
     if (input.lat !== undefined) patch.lat = String(input.lat)
     if (input.lng !== undefined) patch.lng = String(input.lng)
@@ -385,10 +400,10 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     let accessVia = 'dev_pro'
     let purchaseId: string | undefined
     if (!isDevPro) {
-      // Resolve the price tier from the uploaded floor-plan count so a non-subscriber
-      // must hold the SKU for THAT tier (a standard purchase can't unlock a villa).
-      // While villa SKUs are unprovisioned this always resolves to `feng_analysis`.
-      const tierSku = fengSkuForImageCount(floorplanImageCount(site.floorplanJson))
+      // Resolve the price tier from the declared residence type so a non-subscriber
+      // must hold the SKU for THAT tier (a single purchase can't unlock premium).
+      // While the premium SKU is unprovisioned this always resolves to `feng_analysis`.
+      const tierSku = fengSkuForResidence(normalizeResidenceType(site.residenceType))
       const access = await checkReadingAccess(db, userId, tierSku)
       if (!access.granted) {
         return jsonErr(

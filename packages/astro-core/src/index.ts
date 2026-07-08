@@ -206,7 +206,11 @@ export type {
 } from './feng/form-li'
 export { correlateFormAndStars, emptyFormByPalace } from './feng/form-li'
 // 风水 — 产品级常量 (upload cap, shared client + server)
-export { MAX_FLOORPLAN_IMAGES } from './feng/constants'
+export {
+  APARTMENT_MAX_FLOORPLAN_IMAGES,
+  MAX_FLOORPLAN_IMAGES,
+  maxFloorplanImagesFor,
+} from './feng/constants'
 // 风水 — 二十四山 (24 Mountains)
 export type {
   BaguaPalace,

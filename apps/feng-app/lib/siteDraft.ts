@@ -9,6 +9,7 @@
  * Draft is cleared on (new-site)/review success or when the user discards.
  */
 
+import type { FengResidenceType } from '@zhop/scenario-feng'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const KEY = 'feng_site_draft'
@@ -21,6 +22,8 @@ export interface DraftFloorplanImage {
 export interface SiteDraft {
   name?: string
   label?: string
+  /** 住宅类型 — apartment 公寓/小区 · flat 大平层 · villa 独栋/别墅. Drives pricing tier + street 形煞. */
+  residenceType?: FengResidenceType
   lat?: number
   lng?: number
   /** Original geocode point before building-center pin adjustment. */

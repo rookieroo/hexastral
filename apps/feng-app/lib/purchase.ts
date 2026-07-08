@@ -2,8 +2,10 @@
  * Server-side purchase / entitlement checks for Fēng analyze gating.
  */
 
+import type { FengResidenceType } from '@zhop/scenario-feng'
 import { config } from './config'
 import { isDevProSync } from './dev-flags'
+import { type FengSingleSku, singleSkuForResidence } from './feng-pricing-client'
 import { signRequest } from './hmac'
 
 const TARGET_APP = 'feng'
@@ -34,8 +36,11 @@ interface EntitlementsResponse {
   data?: { entitlements?: Array<{ key: string }> }
 }
 
-export async function fetchFengPurchaseAvailable(userId: string): Promise<boolean> {
-  const path = '/api/purchase/available/feng_analysis'
+export async function fetchFengPurchaseAvailable(
+  userId: string,
+  skuId: FengSingleSku = 'feng_analysis'
+): Promise<boolean> {
+  const path = `/api/purchase/available/${skuId}`
   const res = await fetch(`${config.apiUrl}${path}`, {
     headers: await authedHeaders(userId, 'GET', path, ''),
   })
@@ -56,10 +61,14 @@ export async function fetchHasAnySubscription(userId: string): Promise<boolean> 
 }
 
 /** True when analyze can proceed without opening the paywall (server may still 403). */
-export async function hasFengAnalyzeAccess(userId: string): Promise<boolean> {
+export async function hasFengAnalyzeAccess(
+  userId: string,
+  residenceType: FengResidenceType = 'apartment'
+): Promise<boolean> {
   if (isDevProSync()) return true
+  const skuId = singleSkuForResidence(residenceType)
   const [purchase, subscribed] = await Promise.all([
-    fetchFengPurchaseAvailable(userId),
+    fetchFengPurchaseAvailable(userId, skuId),
     fetchHasAnySubscription(userId),
   ])
   return purchase || subscribed
@@ -68,10 +77,14 @@ export async function hasFengAnalyzeAccess(userId: string): Promise<boolean> {
 const WEBHOOK_POLL_MS = 500
 const WEBHOOK_POLL_ATTEMPTS = 24
 
-/** Poll until RevenueCat webhook records the single purchase row. */
-export async function waitForFengPurchaseAvailable(userId: string): Promise<boolean> {
+/** Poll until RevenueCat webhook records the single purchase row for the tier SKU. */
+export async function waitForFengPurchaseAvailable(
+  userId: string,
+  residenceType: FengResidenceType = 'apartment'
+): Promise<boolean> {
+  const skuId = singleSkuForResidence(residenceType)
   for (let i = 0; i < WEBHOOK_POLL_ATTEMPTS; i++) {
-    if (await fetchFengPurchaseAvailable(userId)) return true
+    if (await fetchFengPurchaseAvailable(userId, skuId)) return true
     await new Promise((r) => setTimeout(r, WEBHOOK_POLL_MS))
   }
   return false

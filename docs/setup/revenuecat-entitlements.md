@@ -83,19 +83,22 @@ Plus Yuel's **one-time 合盘 unlock** (not a subscription):
 | Product ID | App | Type | Grants | Price |
 |---|---|---|---|---|
 | `hexastral_compatibility` | Yuel | Consumable (server-applied, per-bond) | — (the API marks the specific bond unlocked) | $6.99 |
-| `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (1 floor plan) |
-| `hexastral_feng_villa_s` | Kanyu | Consumable (2–3 floor plans; **not live until `VILLA_SKU_PROVISIONED`**) | — | $15.99 |
-| `hexastral_feng_villa_l` | Kanyu | Consumable (4–6 floor plans; **not live until `VILLA_SKU_PROVISIONED`**) | — | $24.99 |
+| `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (apartment / compound unit) |
+| `hexastral_feng_premium` | Kanyu | Consumable (大平层 / 独栋别墅; **not live until `PREMIUM_SKU_PROVISIONED`**) | — | $39.99 |
 
-> **Kanyu villa tiers (discrete price ladder).** Apple IAP can only charge a fixed
-> pre-registered SKU, so the multi-floor price is a discrete ladder (not a computed
-> `base + n×extra`). The SSOT is `apps/hexastral-api/src/lib/feng-pricing.ts`
-> (`FENG_TIERS`). To go live, flip `VILLA_SKU_PROVISIONED = true` AFTER: (1) create
-> `hexastral_feng_villa_s` ($15.99) + `hexastral_feng_villa_l` ($24.99) in App Store
-> Connect + RevenueCat as consumables, (2) confirm they're registered in
-> `products.ts`, `access-check.ts` `SKU_IAP_META`, `purchase.ts` `VALID_SKU_IDS`, and
-> the `single_purchases.sku_id` enum (already wired), and (3) surface the tier-aware
-> price on the review screen + paywall (client, uses `POST /api/feng/sites/price`).
+> **Kanyu premium tier (residence-type price ladder).** Apple IAP can only charge a
+> fixed pre-registered SKU, so pricing is a discrete two-tier ladder keyed by the
+> user-declared **residence type** (not floor-plan image count): apartment/compound
+> unit → `single` ($9.99); 大平层 / 独栋别墅 → `premium` ($39.99, ~4×, adds multi-image
+> + street-level 形煞 + floor weighting). The SSOT is `apps/hexastral-api/src/lib/feng-pricing.ts`
+> (`FENG_TIERS` + `TIER_BY_RESIDENCE`). To go live, flip `PREMIUM_SKU_PROVISIONED =
+> true` AFTER: (1) create `hexastral_feng_premium` ($39.99) in App Store Connect +
+> RevenueCat as a consumable, (2) confirm it's registered in `products.ts`,
+> `access-check.ts` `SKU_IAP_META`, `purchase.ts` `VALID_SKU_IDS`, and the
+> `single_purchases.sku_id` enum (already wired), and (3) surface the tier-aware price
+> on the review screen + paywall (client, uses `POST /api/feng/sites/price` with
+> `{ residenceType }`). Provision `MAPILLARY_TOKEN` (svc-feng) alongside so premium's
+> street 形煞 pass actually runs.
 
 > The `hexastral_compatibility` product is a `single_purchase` (singleSku
 > `compatibility`) in products.ts; the webhook's `NON_RENEWING_PURCHASE` path applies

@@ -30,8 +30,7 @@ export type SingleSkuId =
   | 'fate_reading'
   | 'compatibility'
   | 'feng_analysis'
-  | 'feng_analysis_villa_s'
-  | 'feng_analysis_villa_l'
+  | 'feng_analysis_premium'
 
 export type AccessGranted =
   | { granted: true; via: 'pro_quota' }
@@ -65,8 +64,7 @@ const SKU_IAP_META: Record<SingleSkuId, { productId: string; price: string }> = 
   fate_reading: { productId: 'hexastral_fate_reading', price: '$9.99' },
   compatibility: { productId: 'hexastral_compatibility', price: '$6.99' },
   feng_analysis: FENG_SKU_META.feng_analysis,
-  feng_analysis_villa_s: FENG_SKU_META.feng_analysis_villa_s,
-  feng_analysis_villa_l: FENG_SKU_META.feng_analysis_villa_l,
+  feng_analysis_premium: FENG_SKU_META.feng_analysis_premium,
 }
 
 /**

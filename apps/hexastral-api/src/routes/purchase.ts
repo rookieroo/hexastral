@@ -24,8 +24,7 @@ const VALID_SKU_IDS = [
   'fate_reading',
   'compatibility',
   'feng_analysis',
-  'feng_analysis_villa_s',
-  'feng_analysis_villa_l',
+  'feng_analysis_premium',
 ] as const
 type SingleSkuId = (typeof VALID_SKU_IDS)[number]
 

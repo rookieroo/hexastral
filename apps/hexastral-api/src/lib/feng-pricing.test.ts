@@ -1,55 +1,60 @@
 import { describe, expect, test } from 'bun:test'
 import {
   FENG_BASE_PRICE_USD,
-  FENG_TIERS,
-  fengSkuForImageCount,
-  MAX_FLOORPLAN_IMAGES,
-  normalizeImageCount,
+  FENG_PREMIUM_PRICE_USD,
+  fengSkuForResidence,
+  fengStreetViewEnabled,
+  normalizeResidenceType,
+  PREMIUM_SKU_PROVISIONED,
   quoteFengAnalysis,
-  VILLA_SKU_PROVISIONED,
   YUEL_COMPATIBILITY_PRICE_USD,
 } from './feng-pricing'
 
-describe('quoteFengAnalysis', () => {
+describe('quoteFengAnalysis (residence-type tiers)', () => {
   test('base price is above Yuel compatibility floor', () => {
     expect(FENG_BASE_PRICE_USD).toBeGreaterThan(YUEL_COMPATIBILITY_PRICE_USD)
   })
 
-  test('single floor quotes standard tier at $9.99', () => {
-    const q = quoteFengAnalysis(1)
-    expect(q.tier).toBe('standard')
+  test('premium is roughly double the base', () => {
+    expect(FENG_PREMIUM_PRICE_USD).toBeGreaterThan(FENG_BASE_PRICE_USD * 1.8)
+  })
+
+  test('apartment quotes the single tier at $9.99, no street view', () => {
+    const q = quoteFengAnalysis('apartment')
+    expect(q.billingTier).toBe('single')
     expect(q.productId).toBe('hexastral_feng_single')
     expect(q.singleSku).toBe('feng_analysis')
     expect(q.displayPrice).toBe('$9.99')
+    expect(q.streetView).toBe(false)
   })
 
-  test('multi-floor still quotes standard SKU until villa is provisioned', () => {
-    expect(VILLA_SKU_PROVISIONED).toBe(false)
-    for (const n of [2, 3, 4, 6]) {
-      const q = quoteFengAnalysis(n)
+  test('flat/villa still quote the single SKU until premium is provisioned', () => {
+    expect(PREMIUM_SKU_PROVISIONED).toBe(false)
+    for (const t of ['flat', 'villa'] as const) {
+      const q = quoteFengAnalysis(t)
       expect(q.productId).toBe('hexastral_feng_single')
       expect(q.singleSku).toBe('feng_analysis')
       expect(q.displayPrice).toBe('$9.99')
     }
   })
 
-  test('image count is clamped into the billable [1, MAX] range', () => {
-    expect(normalizeImageCount(0)).toBe(1)
-    expect(normalizeImageCount(99)).toBe(MAX_FLOORPLAN_IMAGES)
-    expect(normalizeImageCount(Number.NaN)).toBe(1)
+  test('street view is enabled for premium residence types (flat/villa), not apartment', () => {
+    expect(fengStreetViewEnabled('apartment')).toBe(false)
+    expect(fengStreetViewEnabled('flat')).toBe(true)
+    expect(fengStreetViewEnabled('villa')).toBe(true)
   })
 
-  test('fengSkuForImageCount matches the quoted SKU', () => {
-    for (const n of [1, 2, 3, 4, 6]) {
-      expect(fengSkuForImageCount(n)).toBe(quoteFengAnalysis(n).singleSku)
+  test('fengSkuForResidence matches the quoted SKU', () => {
+    for (const t of ['apartment', 'flat', 'villa'] as const) {
+      expect(fengSkuForResidence(t)).toBe(quoteFengAnalysis(t).singleSku)
     }
   })
 
-  test('tier table is contiguous and covers [1, MAX]', () => {
-    expect(FENG_TIERS[0].minImages).toBe(1)
-    expect(FENG_TIERS[FENG_TIERS.length - 1].maxImages).toBe(MAX_FLOORPLAN_IMAGES)
-    for (let i = 1; i < FENG_TIERS.length; i++) {
-      expect(FENG_TIERS[i].minImages).toBe(FENG_TIERS[i - 1].maxImages + 1)
-    }
+  test('normalizeResidenceType coerces junk to apartment', () => {
+    expect(normalizeResidenceType('villa')).toBe('villa')
+    expect(normalizeResidenceType('flat')).toBe('flat')
+    expect(normalizeResidenceType('mansion')).toBe('apartment')
+    expect(normalizeResidenceType(undefined)).toBe('apartment')
+    expect(normalizeResidenceType(42)).toBe('apartment')
   })
 })

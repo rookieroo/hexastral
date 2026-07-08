@@ -381,6 +381,7 @@ export default function ReportScreen() {
               highlights={highlights}
               onPickQuote={onPickQuote}
               onTapTerm={onTapTerm}
+              streetAttribution={compute?.streetAttribution ?? null}
               t={t}
             />
           ))}
@@ -611,6 +612,7 @@ interface ChapterPageProps {
   highlights: string[]
   onPickQuote: (s: string) => void
   onTapTerm: (id: string) => void
+  streetAttribution: string | null
   t: Strings
 }
 
@@ -628,6 +630,7 @@ function ChapterPageView({
   highlights,
   onPickQuote,
   onTapTerm,
+  streetAttribution,
   t,
 }: ChapterPageProps) {
   return (
@@ -699,12 +702,29 @@ function ChapterPageView({
       {compute && chapter.kind === 'flying_stars' ? renderFlyingStars(compute, t) : null}
       {compute?.baZhai && chapter.kind === 'personal_fit' ? renderBaZhai(compute, t) : null}
 
+      {chapter.kind === 'external_landform' && streetAttribution ? (
+        <Text
+          style={{
+            color: C.secondary,
+            fontSize: 10,
+            lineHeight: 15,
+            marginTop: spacing.md,
+            fontStyle: 'italic',
+          }}
+        >
+          {t.report_street_source} {streetAttribution}
+        </Text>
+      ) : null}
+
       {reportId ? (
         <View style={{ marginTop: spacing.lg }}>
           <ShareFengChapterButton
             reportId={reportId}
             chapterKind={chapter.kind}
             chapterTitle={chapter.title}
+            streetAttribution={
+              chapter.kind === 'external_landform' ? streetAttribution : null
+            }
             contentJson={JSON.stringify({
               kind: chapter.kind,
               title: chapter.title,
