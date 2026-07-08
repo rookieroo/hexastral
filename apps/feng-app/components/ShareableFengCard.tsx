@@ -92,7 +92,12 @@ export const ShareableFengCard = forwardRef<View, ShareableFengCardProps>(
 
       <View style={{ height: 1, backgroundColor: FENG_PAPER.hair, marginTop: spacing.lg }} />
       <Text
-        style={{ color: FENG_PAPER.muted, fontSize: 11, letterSpacing: 1, marginTop: spacing.md }}
+        style={{
+          color: FENG_PAPER.muted,
+          fontSize: 10,
+          lineHeight: 14,
+          marginTop: spacing.md,
+        }}
       >
         {footer}
       </Text>

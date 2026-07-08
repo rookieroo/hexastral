@@ -5,8 +5,16 @@
     "两人接下来几周的相处节奏偏稳，适合深聊的窗口在月中前后 —— 供观照，不作预测。",
     "可参考双方相合、气较顺的月份——时机参照，不是定论。"
   ],
+  "fengPassagesShouldHaveNoForbiddenHits": [
+    "巽宫山7向9，当运向星见水，传统上认为有助于空间节奏；可考虑绿植与书架，仅供参考。",
+    "The facing palace reads prosperous water in the classical chart — ordinary curtains and decluttering may help; cultural study only."
+  ],
   "passagesExpectedToFailAudit": [
     "这是绝症征兆，你三天内必死，铁口直断不必怀疑。",
     "本月运势不佳，一定发财，桃花必来，命中注定。"
+  ],
+  "fengPassagesExpectedToFailAudit": [
+    "建议在门口摆放金蟾，增强财气，提升运势。",
+    "Place a 文昌塔 on the desk to 改运 and attract 贵人运."
   ]
 }

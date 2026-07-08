@@ -80,7 +80,7 @@ const DOMAIN_BY_READING: Record<string, PromptDomain> = {
   pair: 'hehun',
   physiognomy: 'physiognomy',
   report: 'fate',
-  feng: 'fate', // no dedicated feng persona; 'fate' is the multi-system advisor
+  feng: 'feng',
 }
 
 chatRoutes.post('/', async (c) => {

@@ -140,6 +140,9 @@ export type Strings = {
   digest_headline_ping: string
   digest_focus_line: string
   digest_not_score: string
+  /** Footer on shared chapter PNG cards. */
+  share_brand_footer: string
+  share_disclaimer: string
   reading_copy: string
   reading_chat: string
   reading_highlight: string
@@ -384,7 +387,7 @@ const EN: Strings = {
   digest_exterior_sha: '{count} form clashes',
   digest_confidence_medium: 'Stars · medium confidence',
   digest_confidence_low: 'Stars · low confidence',
-  digest_headline_pattern_rescued: '{pattern} is rescued by the surrounding landform — a strong disposition when form and stars align.',
+  digest_headline_pattern_rescued: '{pattern} is rescued by the surrounding landform — a classical form–star alignment reference.',
   digest_headline_pattern_unrescued: '{pattern} is not rescued by the landform — prioritize the remediation chapter.',
   digest_headline_focus: '{palace} palace reads {verdict} — start adjustments there.',
   digest_headline_exterior_sha: '{count} exterior form clashes need attention before interior tuning.',
@@ -392,6 +395,8 @@ const EN: Strings = {
   digest_headline_ping: 'No special flying-star disposition — read sector by sector from the form–star verdicts.',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: 'Verdict chips from deterministic charts and landform — not a fortune score or percentile.',
+  share_brand_footer: '風 · Kanyu',
+  share_disclaimer: 'For entertainment and cultural study only — not professional advice.',
   reading_copy: 'Copy',
   reading_chat: 'Ask AI',
   reading_highlight: 'Highlight',
@@ -625,7 +630,7 @@ const ZH_HANS: Strings = {
   digest_exterior_sha: '形煞 {count} 处',
   digest_confidence_medium: '飞星 · 中置信',
   digest_confidence_low: '飞星 · 低置信',
-  digest_headline_pattern_rescued: '格局「{pattern}」得形势救应，形理同参时为真旺。',
+  digest_headline_pattern_rescued: '格局「{pattern}」得形势救应，传统上视为形理同参的参考。',
   digest_headline_pattern_unrescued: '格局「{pattern}」形势无救，宜优先阅读化解章。',
   digest_headline_focus: '{palace}宫读「{verdict}」，宜从此处着手调整。',
   digest_headline_exterior_sha: '外局 {count} 处形煞待化，先理外局再调内局。',
@@ -633,6 +638,8 @@ const ZH_HANS: Strings = {
   digest_headline_ping: '飞星无特殊格局，请按各宫形理断语逐区阅读。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '以上标签来自排盘与形势的确定性断语，不是运势打分或百分制指数。',
+  share_brand_footer: '風 · Kanyu',
+  share_disclaimer: '仅供娱乐与文化研习，非专业建议。',
   reading_copy: '复制',
   reading_chat: '问AI',
   reading_highlight: '划重点',
@@ -852,7 +859,7 @@ const ZH_HANT: Strings = {
   digest_exterior_sha: '形煞 {count} 處',
   digest_confidence_medium: '飛星 · 中置信',
   digest_confidence_low: '飛星 · 低置信',
-  digest_headline_pattern_rescued: '格局「{pattern}」得形勢救應，形理同參時為真旺。',
+  digest_headline_pattern_rescued: '格局「{pattern}」得形勢救應，傳統上視為形理同參的參考。',
   digest_headline_pattern_unrescued: '格局「{pattern}」形勢無救，宜優先閱讀化解章。',
   digest_headline_focus: '{palace}宮讀「{verdict}」，宜從此處著手調整。',
   digest_headline_exterior_sha: '外局 {count} 處形煞待化，先理外局再調內局。',
@@ -860,6 +867,8 @@ const ZH_HANT: Strings = {
   digest_headline_ping: '飛星無特殊格局，請按各宮形理斷語逐區閱讀。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '以上標籤來自排盤與形勢的確定性斷語，不是運勢打分或百分制指數。',
+  share_brand_footer: '風 · Kanyu',
+  share_disclaimer: '僅供娛樂與文化研習，非專業建議。',
   reading_copy: '複製',
   reading_chat: '問AI',
   reading_highlight: '劃重點',
@@ -1085,7 +1094,7 @@ const JA: Strings = {
   digest_exterior_sha: '形煞 {count} 件',
   digest_confidence_medium: '飛星 · 中信頼',
   digest_confidence_low: '飛星 · 低信頼',
-  digest_headline_pattern_rescued: '格局「{pattern}」は地形で救われており、形理が揃えば真の旺。',
+  digest_headline_pattern_rescued: '格局「{pattern}」は地形で救われており、形理同参の文化的参照と読めます。',
   digest_headline_pattern_unrescued: '格局「{pattern}」は地形で救われず、化解章を優先してください。',
   digest_headline_focus: '{palace}宮は「{verdict}」— ここから調整を。',
   digest_headline_exterior_sha: '外局に形煞 {count} 件 — 内局より先に外局を。',
@@ -1093,6 +1102,8 @@ const JA: Strings = {
   digest_headline_ping: '特殊格局なし — 各宮の形理断語を順に読んでください。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '表示は排盤と地形の確定的な断語であり、運勢スコアや百分率ではありません。',
+  share_brand_footer: '風 · Kanyu',
+  share_disclaimer: '娯楽・文化学習用であり、専門的助言ではありません。',
   reading_copy: 'コピー',
   reading_chat: 'AIに聞く',
   reading_highlight: 'ハイライト',

@@ -24,4 +24,19 @@ describe('svc-astro prompt compliance snapshots', () => {
     expect(block).toContain('entertainment')
     expect(block).toContain('NOT prediction')
   })
+
+  it('feng chat uses the feng persona, not the generic fate advisor', () => {
+    const prompt = buildChatSystemPrompt({
+      locale: 'zh',
+      context: {
+        user: { name: 'Test', locale: 'zh', birthInfo: null, plan: 'free' },
+        primary: { type: 'feng', text: 'Sample feng report excerpt.' },
+        related: [],
+        memory: { context: '', hitCount: 0 },
+      },
+    })
+    expect(prompt).toContain('堪舆')
+    expect(prompt).toContain('灵物')
+    expect(prompt).not.toContain('面相气场三个独立维度')
+  })
 })

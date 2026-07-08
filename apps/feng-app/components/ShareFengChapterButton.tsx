@@ -67,7 +67,7 @@ export function ShareFengChapterButton({
         tag={tag}
         title={chapterTitle}
         goldenLine={goldenLine}
-        footer='風 · Fēng Shui'
+        footer={`${t.share_brand_footer}\n${t.share_disclaimer}`}
       />
       <Pressable
         accessibilityRole='button'

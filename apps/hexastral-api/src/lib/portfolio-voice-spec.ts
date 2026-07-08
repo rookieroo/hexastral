@@ -2,6 +2,7 @@
  * Re-export from @zhop/portfolio-voice for backward compatibility within hexastral-api.
  */
 export {
+  auditFengSynthesisHits,
   auditHardForbiddenHits,
   auditInterpretationAgainstForbiddenList,
   auditSoftForbiddenHits,

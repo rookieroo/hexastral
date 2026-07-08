@@ -27,6 +27,7 @@ import {
   users,
 } from '../db/schema'
 import type { AppDb, CloudflareBindings } from '../infra-types'
+import { buildFengChatPrimaryText } from './feng-chat-context'
 import { type PortfolioMemoryTargetApp, searchPortfolioReadingMemory } from './portfolio-memory'
 
 export type ReadingType =
@@ -145,15 +146,17 @@ export async function getPrimaryReadingText(
       return row.contentJson
     }
     case 'feng': {
-      // fengReports.chapters is a JSON string of FengChapter[] (the 6-chapter
-      // synthesis). Passed raw as context, mirroring the 'report' case.
       const row = await db
-        .select({ chapters: fengReports.chapters })
+        .select({
+          chapters: fengReports.chapters,
+          computeJson: fengReports.computeJson,
+          dataQuality: fengReports.dataQuality,
+        })
         .from(fengReports)
         .where(and(eq(fengReports.id, readingId), eq(fengReports.userId, userId)))
         .get()
       if (!row) throw new HTTPException(404, { message: 'Reading not found' })
-      return row.chapters
+      return buildFengChatPrimaryText(row.chapters, row.computeJson, row.dataQuality)
     }
     case 'cycle': {
       // Auspice "readings" aren't persisted — the readingId IS the date (YYYY-MM-DD),

@@ -129,15 +129,18 @@ function collectFocus(compute: FengComputeJson): DigestFocusItem[] {
   return deduped
 }
 
-function countExteriorSha(compute: FengComputeJson): number {
+function countExteriorSha(compute: FengComputeJson, visionShaCount?: number): number {
+  if (typeof visionShaCount === 'number' && visionShaCount >= 0) {
+    return visionShaCount
+  }
   const palaces = compute.formLi?.palaces ?? []
-  let count = 0
+  const hitPalaces = new Set<string>()
   for (const pl of palaces) {
-    for (const f of pl.findings) {
-      if (f.verdict === '化煞' || f.verdict === '动凶') count += 1
+    if (pl.findings.some((f) => f.verdict === '化煞' || f.verdict === '动凶')) {
+      hitPalaces.add(pl.palace)
     }
   }
-  return count
+  return hitPalaces.size
 }
 
 function pickHeadline(
@@ -175,13 +178,14 @@ function pickHeadline(
  */
 export function deriveReportDigest(
   compute: FengComputeJson | null | undefined,
-  confidence: ReportDigest['confidence'] = 'high'
+  confidence: ReportDigest['confidence'] = 'high',
+  options?: { visionShaCount?: number }
 ): ReportDigest | null {
   if (!compute?.flyingStars) return null
 
   const fs = compute.flyingStars
   const pattern = pickPrimaryPattern(compute)
-  const shaCount = countExteriorSha(compute)
+  const shaCount = countExteriorSha(compute, options?.visionShaCount)
   const exterior: ReportDigest['exterior'] = {
     shaCount,
     tier: shaCount >= 3 ? 'sha_heavy' : shaCount >= 1 ? 'sha_light' : 'clean',

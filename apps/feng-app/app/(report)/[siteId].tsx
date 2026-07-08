@@ -485,6 +485,12 @@ function DigestCoverView({
       <Text style={{ color: C.secondary, fontSize: 11, lineHeight: 17, textAlign: 'center' }}>
         {t.report_confidence_note}
       </Text>
+      <Text style={{ color: C.secondary, fontSize: 10, lineHeight: 15, textAlign: 'center' }}>
+        {t.report_chapter_micro_disclaimer}
+      </Text>
+      <Text style={{ color: C.secondary, fontSize: 10, lineHeight: 15, textAlign: 'center' }}>
+        {t.report_legal_disclaimer}
+      </Text>
     </ScrollView>
   )
 }

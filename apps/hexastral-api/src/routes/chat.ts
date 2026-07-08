@@ -24,6 +24,7 @@ import { requireUserId } from '../lib/auth'
 import { moderationRefusal, screenChatText } from '../lib/chat-moderation'
 import { resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
 import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
+import { auditFengChatReply, fengChatComplianceRefusal } from '../lib/feng-chat-compliance'
 import { checkFengChatAccess, isFengDevProBypass } from '../lib/feng-chat-access'
 import { getActiveEntitlements } from '../services/entitlements'
 import { consumeProAllowance } from '../services/pro-allowance'
@@ -302,6 +303,32 @@ chatRoutes.post('/', async (c) => {
       }).catch(() => {})
     )
     astroResp = { reply: moderationRefusal(user.locale) }
+  }
+
+  // Kanyu feng-forbidden tier (金蟾/文昌塔/提升运势…) — synthesis already audits;
+  // chat must match so App Review samples on follow-ups do not slip talismans.
+  if (input.readingType === 'feng') {
+    const fengAudit = auditFengChatReply(astroResp.reply)
+    if (fengAudit.blocked) {
+      console.warn('[chat] feng forbidden phrases in reply', {
+        userId,
+        hits: fengAudit.hits,
+        targetApp,
+      })
+      c.executionCtx.waitUntil(
+        alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+          title: 'Feng chat reply blocked by portfolio voice audit',
+          message: 'A feng chat reply contained forbidden talisman/outcome phrasing.',
+          level: 'warning',
+          context: {
+            userId,
+            patterns: fengAudit.hits.map((h) => h.pattern).join(','),
+            targetApp,
+          },
+        }).catch(() => {})
+      )
+      astroResp = { reply: fengChatComplianceRefusal(user.locale) }
+    }
   }
 
   const userMsgId = nanoid()
