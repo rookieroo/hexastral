@@ -17,8 +17,13 @@ compute layer (玄空飞星 + 八宅) will overlay onto the 九宫 (nine palaces
 ## Orientation — how to read direction from the plan
 
 The user has told us the true-north bearing of the TOP edge of the image
-("northUpBearing"). To place any room:
-  1. Find the home's approximate center (中宫).
+("northUpBearing"). When "centerNorm" is provided (normalized 0–1 coords on the
+image, top-left = 0,0), it is the AUTHORITATIVE 立极 (中宫) — use that exact point;
+do NOT guess a different center. When centerNorm is absent, estimate the home's
+approximate center yourself.
+
+To place any room:
+  1. Start from the 中宫 point (centerNorm when given, else your estimate).
   2. Measure the room's on-screen angle clockwise from the top edge.
   3. compass bearing = (northUpBearing + that on-screen angle) mod 360.
   4. Map the bearing to a 八卦 palace with this table (each spans ±22.5°):
@@ -60,10 +65,17 @@ export function buildInteriorUserPrompt(opts: {
   northUpBearing: number
   locale: string
   floorLabel?: string
+  /** User-placed 立极 on the cover plan (0–1). When set, authoritative. */
+  centerNorm?: { x: number; y: number }
 }): string {
   const lines = [
     `northUpBearing: ${Math.round(opts.northUpBearing)}° (the top edge of this floor plan points to this true-north bearing).`,
   ]
+  if (opts.centerNorm) {
+    lines.push(
+      `centerNorm: x=${opts.centerNorm.x.toFixed(3)}, y=${opts.centerNorm.y.toFixed(3)} (AUTHORITATIVE 中宫 / 立极 — measure all room bearings from this point; do not relocate).`
+    )
+  }
   if (opts.floorLabel) {
     lines.push(`This image is: ${opts.floorLabel}.`)
   }

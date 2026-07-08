@@ -49,6 +49,7 @@ const ComputeInputSchema = z.object({
   // OPENS with this — without it here, Zod's default object behavior would
   // silently STRIP the field and the model loses its 坐山向 opening + 旺→退 window.
   summary: z.unknown().optional(),
+  annualChart: z.unknown().optional(),
 })
 
 const SynthesizeRequestSchema = z.object({

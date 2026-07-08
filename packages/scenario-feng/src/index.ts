@@ -32,6 +32,7 @@ export {
 } from './context'
 export * from './hooks'
 export { normalizeFengDeg, nudgeFengDeg, pointToFengDeg } from './lib/facing-deg'
+export { metersPerPixel, pixelOffsetToLatLng } from './lib/map-pixel-offset'
 export type {
   CreateSiteInput,
   FengPriceQuote,

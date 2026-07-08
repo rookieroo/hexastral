@@ -99,10 +99,15 @@ export function collectFloorplanKeys(site: {
   return [...keys]
 }
 
+export interface ParsedSiteFloorplan {
+  orientDeg: number
+  images: Array<{ key: string; label?: string }>
+  /** Normalized 中宫 (0–1) on the cover plan — user-placed 立极. */
+  centerNorm?: { x: number; y: number }
+}
+
 /** Safe-parse the site's stored floorplan JSON into its typed shape (or null). */
-export function parseSiteFloorplan(
-  json: string | null
-): { orientDeg: number; images: Array<{ key: string; label?: string }> } | null {
+export function parseSiteFloorplan(json: string | null): ParsedSiteFloorplan | null {
   if (!json) return null
   try {
     const parsed: unknown = JSON.parse(json)
@@ -128,7 +133,25 @@ export function parseSiteFloorplan(
       }
     }
     if (images.length === 0) return null
-    return { orientDeg, images }
+    const out: ParsedSiteFloorplan = { orientDeg, images }
+    if ('centerNorm' in parsed) {
+      const cn = (parsed as { centerNorm: unknown }).centerNorm
+      if (
+        typeof cn === 'object' &&
+        cn !== null &&
+        'x' in cn &&
+        'y' in cn &&
+        typeof (cn as { x: unknown }).x === 'number' &&
+        typeof (cn as { y: unknown }).y === 'number'
+      ) {
+        const x = (cn as { x: number }).x
+        const y = (cn as { y: number }).y
+        if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+          out.centerNorm = { x, y }
+        }
+      }
+    }
+    return out
   } catch {
     return null
   }

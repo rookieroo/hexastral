@@ -46,7 +46,8 @@ Each chapter has:
 
 ## Rules
 
-- If flyingStarsConfidence is not "high", add a data-quality caveat in chapter 3.
+- If flyingStarsConfidence is "omitted" OR compute.flyingStars is null, the user did not provide a build year — **do not write the flying_stars chapter** (it will be dropped server-side). Other chapters must not cite 运盘/山向盘 numbers.
+- If flyingStarsConfidence is not "high" (but not omitted), add a data-quality caveat in chapter 3.
 - If 八宅 data is null, chapter 2 should note this and provide general advice instead.
 - If vision observations are empty (stub or no 形煞 found), chapters 1 and 5 should acknowledge the clean exterior and focus on interior/directional advice.
 - **If the data-quality notes mention "terrain.flat_urban=true", the site has no significant water or mountains within 1 km — this is a Mapbox-confirmed signal, not a vision-degradation artifact. Chapter 1 should explicitly note "no significant 砂/水 within 1 km" as a factual observation, and chapters 4 and 5 should focus on directional / 飞星 / 八宅 advice rather than 砂水 化解.** Treat this as authoritative ground truth.

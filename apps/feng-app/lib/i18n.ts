@@ -50,6 +50,7 @@ export type Strings = {
   new_site_facing_title: string
   new_site_facing_subtitle: string
   new_site_facing_map_legend: string
+  new_site_facing_building_pin: string
   new_site_facing_edit_building: string
   new_site_facing_edit_unit_door: string
   new_site_facing_capture_hint: string
@@ -317,6 +318,7 @@ const EN: Strings = {
     'Map is true north (N on the ring). Drag the highlighted arrow, or use Record while aiming your phone.',
   new_site_facing_map_legend:
     'Gold = building door · Blue = unit door · White = phone (outdoors only; may drift indoors) · N on ring = true north',
+  new_site_facing_building_pin: 'Drag the white dot onto your building — geocoded pins are often off by one building.',
   new_site_facing_edit_building: 'Edit building door',
   new_site_facing_edit_unit_door: 'Edit unit door',
   new_site_facing_capture_hint: 'Stand outdoors, hold the phone flat, point at the door, then tap:',
@@ -562,6 +564,7 @@ const ZH_HANS: Strings = {
     '地图真北朝上（环上 N）。拖动当前选中的箭头，或在户外对准后点「记录」。',
   new_site_facing_map_legend:
     '金 = 楼门 · 蓝 = 户门 · 白 = 手机朝向（户外较准，室内会偏）· 环上 N = 真北',
+  new_site_facing_building_pin: '拖动白点对准本楼中心——地址定位常偏差一整栋楼。',
   new_site_facing_edit_building: '调楼门',
   new_site_facing_edit_unit_door: '调户门',
   new_site_facing_capture_hint: '户外平举手机对准门后点：',
@@ -793,6 +796,7 @@ const ZH_HANT: Strings = {
   new_site_facing_subtitle:
     '地圖真北朝上（環上 N）。拖曳目前選中的箭頭，或在戶外對準後點「記錄」。',
   new_site_facing_map_legend: '金 = 樓門 · 藍 = 戶門 · 白 = 手機朝向（戶外較準）· 環上 N = 真北',
+  new_site_facing_building_pin: '拖動白點對準本樓中心——地址定位常偏差一整棟樓。',
   new_site_facing_edit_building: '調樓門',
   new_site_facing_edit_unit_door: '調戶門',
   new_site_facing_capture_hint: '戶外平舉手機對準門後點：',
@@ -1026,6 +1030,7 @@ const JA: Strings = {
     '地図は真北（リングの N）。選択中の矢印をドラッグするか、屋外で向けて「記録」を押します。',
   new_site_facing_map_legend:
     '金 = 建物入口 · 青 = 住戸玄関 · 白 = スマホの向き（屋外推奨）· N = 真北',
+  new_site_facing_building_pin: '白い点を建物の中心に合わせてください。住所の座標は1棟ずれることがあります。',
   new_site_facing_edit_building: '建物入口',
   new_site_facing_edit_unit_door: '住戸玄関',
   new_site_facing_capture_hint: '屋外で水平に持ち、向けてから：',

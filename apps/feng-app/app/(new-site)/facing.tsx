@@ -5,7 +5,7 @@
  */
 
 import { useHaptic } from '@zhop/core-ui'
-import { FacingCalibrator, nudgeFengDeg, useSatelliteTile } from '@zhop/scenario-feng'
+import { FacingCalibrator, nudgeFengDeg, pixelOffsetToLatLng, useSatelliteTile } from '@zhop/scenario-feng'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
@@ -25,6 +25,20 @@ interface HeadingSnapshot {
 
 const INIT: HeadingSnapshot = { trueDeg: null, magDeg: null, declination: null }
 
+/** Must match useSatelliteTile options below — map pixel space for pin offset. */
+const SAT_TILE_ZOOM = 17
+const SAT_TILE_SIZE = 640
+
+function effectiveSiteCoords(
+  geocodeLat: number,
+  geocodeLng: number,
+  norm: { x: number; y: number }
+): { lat: number; lng: number } {
+  const dx = (norm.x - 0.5) * SAT_TILE_SIZE
+  const dy = (norm.y - 0.5) * SAT_TILE_SIZE
+  return pixelOffsetToLatLng(geocodeLat, geocodeLng, SAT_TILE_ZOOM, dx, dy)
+}
+
 function diffDeg(a: number, b: number): number {
   let d = a - b
   while (d > 180) d -= 360
@@ -41,6 +55,9 @@ export default function FacingScreen() {
 
   const [draftLat, setDraftLat] = useState<number | null>(null)
   const [draftLng, setDraftLng] = useState<number | null>(null)
+  const [geocodeLat, setGeocodeLat] = useState<number | null>(null)
+  const [geocodeLng, setGeocodeLng] = useState<number | null>(null)
+  const [buildingCenterNorm, setBuildingCenterNorm] = useState({ x: 0.5, y: 0.5 })
   const [facingDeg, setFacingDeg] = useState<number>(180)
   const [doorDeg, setDoorDeg] = useState<number | undefined>(undefined)
   const [doorDifferent, setDoorDifferent] = useState(false)
@@ -49,7 +66,7 @@ export default function FacingScreen() {
   const [heading, setHeading] = useState<HeadingSnapshot>(INIT)
   const haptic = useHaptic()
 
-  const satellite = useSatelliteTile(draftLat, draftLng, { zoom: 17, size: 640 })
+  const satellite = useSatelliteTile(draftLat, draftLng, { zoom: SAT_TILE_ZOOM, size: SAT_TILE_SIZE })
   const hasSatellite = Boolean(satellite.uri)
 
   useEffect(() => {
@@ -57,6 +74,11 @@ export default function FacingScreen() {
       const d = await loadDraft()
       if (typeof d.lat === 'number') setDraftLat(d.lat)
       if (typeof d.lng === 'number') setDraftLng(d.lng)
+      if (typeof d.geocodeLat === 'number') setGeocodeLat(d.geocodeLat)
+      else if (typeof d.lat === 'number') setGeocodeLat(d.lat)
+      if (typeof d.geocodeLng === 'number') setGeocodeLng(d.geocodeLng)
+      else if (typeof d.lng === 'number') setGeocodeLng(d.lng)
+      if (d.buildingCenterNorm) setBuildingCenterNorm(d.buildingCenterNorm)
       if (typeof d.facingDegTrue === 'number') setFacingDeg(d.facingDegTrue)
       if (typeof d.magneticDeclination === 'number') setDecl(d.magneticDeclination)
       if (typeof d.doorDegTrue === 'number') {
@@ -148,6 +170,18 @@ export default function FacingScreen() {
       void patchDraft({ facingDegTrue: next, magneticDeclination: decl })
     }
   }
+
+  const onBuildingCenterChange = useCallback(
+    (norm: { x: number; y: number }) => {
+      setBuildingCenterNorm(norm)
+      if (geocodeLat == null || geocodeLng == null) return
+      const { lat, lng } = effectiveSiteCoords(geocodeLat, geocodeLng, norm)
+      setDraftLat(lat)
+      setDraftLng(lng)
+      void patchDraft({ lat, lng, buildingCenterNorm: norm })
+    },
+    [geocodeLat, geocodeLng]
+  )
 
   const next = async () => {
     const patch: Parameters<typeof patchDraft>[0] = {
@@ -253,6 +287,8 @@ export default function FacingScreen() {
               ringRotation={hasSatellite ? 0 : (heading.magDeg ?? 0)}
               doorDeg={doorDifferent ? (doorDeg ?? facingDeg) : undefined}
               onDoorChange={doorDifferent ? onDoorChange : undefined}
+              buildingCenterNorm={buildingCenterNorm}
+              onBuildingCenterChange={hasSatellite ? onBuildingCenterChange : undefined}
             />
           )}
         </View>
@@ -267,6 +303,16 @@ export default function FacingScreen() {
               }}
             >
               {strings.new_site_facing_map_legend}
+            </Text>
+            <Text
+              style={{
+                marginTop: spacing.xs,
+                fontSize: 12,
+                color: colors.textMute,
+                textAlign: 'center',
+              }}
+            >
+              {strings.new_site_facing_building_pin}
             </Text>
             <Text
               style={{

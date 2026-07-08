@@ -41,14 +41,12 @@ import {
 
 const facingDeg = z.number().gte(0).lt(360)
 
-// 户型图 / 室内堪舆. `orientDeg` = the true-north bearing of the plans' top edge
-// (from the north-align step). 1 image = apartment · N = villa/multi-floor.
+  // 户型图 / 室内堪舆. `orientDeg` = the true-north bearing of the plans' top edge
+  // (from the north-align step). `centerNorm` = user-placed 立极 on the cover plan.
+  // 1 image = apartment · N = villa/multi-floor.
 const floorplanImageSchema = z.object({
   key: z.string().min(1).max(96),
-  // RESERVED, currently ignored: the interior pipeline (parseSiteFloorplan +
-  // vision) orients ALL floors by the single top-level `orientDeg` below — floors
-  // of one building share a north. Do not rely on per-image orientation until the
-  // vision prompt + compute actually thread a per-floor bearing.
+  // RESERVED, currently ignored: per-image orientDeg — all floors share top-level orientDeg.
   orientDeg: facingDeg.optional(),
   label: z.string().max(40).optional(),
 })

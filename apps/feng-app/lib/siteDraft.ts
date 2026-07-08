@@ -23,6 +23,11 @@ export interface SiteDraft {
   label?: string
   lat?: number
   lng?: number
+  /** Original geocode point before building-center pin adjustment. */
+  geocodeLat?: number
+  geocodeLng?: number
+  /** Normalized building center on the satellite preview (0–1). */
+  buildingCenterNorm?: { x: number; y: number }
   formattedAddress?: string
   facingDegTrue?: number
   magneticDeclination?: number

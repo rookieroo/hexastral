@@ -21,6 +21,7 @@
 
 import type { BaguaPalace, Gender } from '@zhop/astro-core'
 import {
+  annualChart,
   computeBaZhai,
   computeFlyingStars,
   correlateFormAndStars,
@@ -30,8 +31,11 @@ import {
   emptyFormByPalace,
   getMonthByJie,
   monthlyChart,
+  mountainAtDegree,
   NINE_CHART_KEYS,
   palaceAtDegree,
+  sitMountainForFacing,
+  yuanYunForYear,
 } from '@zhop/astro-core'
 import { and, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
@@ -154,7 +158,9 @@ function deriveDataQuality(site: Site, terrain?: TerrainSignals) {
       flyingStarsConfidence = 'omitted'
   }
   const notes: string[] = []
-  if (!hasExactBuildYear) {
+  if (site.buildYearAccuracy === 'unknown') {
+    notes.push('flying_stars_omitted=true (build_year_accuracy=unknown)')
+  } else if (!hasExactBuildYear) {
     notes.push(`build_year_accuracy=${site.buildYearAccuracy}`)
   }
   if (terrain && !terrain.degraded) {
@@ -199,6 +205,25 @@ function directionToPalace(dir: string): BaguaPalace | null {
     if (p) return p
   }
   return null
+}
+
+function derivePalaceCombinations(flyingStars: ReturnType<typeof computeFlyingStars>) {
+  return NINE_CHART_KEYS.map((k) => {
+    const d = describePalaceCombination(
+      flyingStars.mountainChart[k],
+      flyingStars.facingChart[k],
+      flyingStars.currentYuanYun.yuanYun
+    )
+    return {
+      palace: k,
+      mountainStar: d.mountainStar,
+      facingStar: d.facingStar,
+      phase: d.phase,
+      name: d.name ?? null,
+      domain: d.combination?.domain ?? null,
+      reading: d.reading || null,
+    }
+  })
 }
 
 export async function runAnalyzeJob(
@@ -344,13 +369,38 @@ export async function runAnalyzeJob(
     await setStage(db, jobId, 'compute', 70)
     const today = new Date()
     const fengYear = today.getUTCFullYear()
-    const effectiveBuildYear = site.buildYear ?? site.moveInYear ?? fengYear
+    const includeFlyingStars = site.buildYearAccuracy !== 'unknown'
 
-    const flyingStars = computeFlyingStars({
-      buildYear: effectiveBuildYear,
-      facingDegTrue,
-      asOf: today,
-    })
+    const sitPalace = palaceAtDegree(sitDegTrue)
+    const doorPalace =
+      site.doorDegTrue == null ? sitPalace : palaceAtDegree(Number(site.doorDegTrue))
+    const sitMountain = sitMountainForFacing(facingDegTrue)
+    const faceMountain = mountainAtDegree(facingDegTrue)
+    const presentYuan = yuanYunForYear(dateToFlyingYear(today))
+
+    let flyingStars: ReturnType<typeof computeFlyingStars> | null = null
+    let patterns: ReturnType<typeof detectPatterns> = []
+    let combinations: ReturnType<typeof derivePalaceCombinations> = []
+
+    if (includeFlyingStars) {
+      const effectiveBuildYear = site.buildYear ?? site.moveInYear ?? fengYear
+      flyingStars = computeFlyingStars({
+        buildYear: effectiveBuildYear,
+        facingDegTrue,
+        asOf: today,
+      })
+
+      patterns = detectPatterns({
+        yuanYun: flyingStars.buildYuanYun.yuanYun,
+        sitPalace: flyingStars.sitMountain.palace,
+        facePalace: flyingStars.faceMountain.palace,
+        periodChart: flyingStars.periodChart,
+        mountainChart: flyingStars.mountainChart,
+        facingChart: flyingStars.facingChart,
+      })
+
+      combinations = derivePalaceCombinations(flyingStars)
+    }
 
     // 月紫白 (流月) — 立春-aligned 年支 + 节-aligned 月支 → this month's 9-palace stars.
     const flyingYear = dateToFlyingYear(today)
@@ -366,10 +416,6 @@ export async function runAnalyzeJob(
       chart: monthlyChart(yearBranchIndex, lunarMonth),
     }
 
-    const sitPalace = palaceAtDegree(sitDegTrue)
-    const doorPalace =
-      site.doorDegTrue == null ? sitPalace : palaceAtDegree(Number(site.doorDegTrue))
-
     const baZhaiResult = profile
       ? computeBaZhai({
           birthDate: new Date(`${profile.birthDate}T00:00:00Z`),
@@ -381,37 +427,6 @@ export async function runAnalyzeJob(
 
     const auspiciousPalaces = baZhaiResult ? baZhaiResult.lucky.map((d) => d.palace) : []
     const inauspiciousPalaces = baZhaiResult ? baZhaiResult.unlucky.map((d) => d.palace) : []
-
-    // 玄空格局 (deterministic) — fed to synthesis as authoritative + persisted.
-    const patterns = detectPatterns({
-      yuanYun: flyingStars.buildYuanYun.yuanYun,
-      sitPalace: flyingStars.sitMountain.palace,
-      facePalace: flyingStars.faceMountain.palace,
-      periodChart: flyingStars.periodChart,
-      mountainChart: flyingStars.mountainChart,
-      facingChart: flyingStars.facingChart,
-    })
-
-    // 山向二星组合断事 — the full per-palace 山+向 pair for ALL nine palaces,
-    // phase-adjusted by the CURRENT 元运 (present-day 旺衰). We keep the raw star
-    // pair + domain + reading (not just named combos) so synthesis can reason on
-    // 五行生克 even where the corpus has no classical name.
-    const combinations = NINE_CHART_KEYS.map((k) => {
-      const d = describePalaceCombination(
-        flyingStars.mountainChart[k],
-        flyingStars.facingChart[k],
-        flyingStars.currentYuanYun.yuanYun
-      )
-      return {
-        palace: k,
-        mountainStar: d.mountainStar,
-        facingStar: d.facingStar,
-        phase: d.phase,
-        name: d.name ?? null,
-        domain: d.combination?.domain ?? null,
-        reading: d.reading || null,
-      }
-    })
 
     // 大峦头 DEM — per-8宫 elevation 砂 (a top-down VLM can't read height). Only
     // when the prefetch flagged elevation; fail-open. Merged into formByPalace below.
@@ -478,15 +493,24 @@ export async function runAnalyzeJob(
       const p = directionToPalace(x.direction)
       if (p) formByPalace[p].hasSha = true
     }
-    const formLi = correlateFormAndStars({
-      yuanYun: flyingStars.currentYuanYun.yuanYun,
-      mountainChart: flyingStars.mountainChart,
-      facingChart: flyingStars.facingChart,
-      formByPalace,
-      sitPalace: flyingStars.sitMountain.palace,
-      facePalace: flyingStars.faceMountain.palace,
-      patterns,
-    })
+
+    const emptyFormLi = {
+      palaces: [],
+      zhengLing: { findings: [] as Array<{ palace: BaguaPalace; auspicious: boolean; reason: string }> },
+      patternRescue: [] as Array<{ pattern: string; favourable: boolean; note: string }>,
+    }
+    const formLi =
+      flyingStars != null
+        ? correlateFormAndStars({
+            yuanYun: flyingStars.currentYuanYun.yuanYun,
+            mountainChart: flyingStars.mountainChart,
+            facingChart: flyingStars.facingChart,
+            formByPalace,
+            sitPalace: flyingStars.sitMountain.palace,
+            facePalace: flyingStars.faceMountain.palace,
+            patterns,
+          })
+        : emptyFormLi
 
     // ── Stage 1b: interior (户型图 / 室内堪舆) ──
     // When the site has an uploaded floor plan, read each image with Gemini
@@ -506,6 +530,7 @@ export async function runAnalyzeJob(
           northUpBearing: floorplan.orientDeg,
           locale,
           floorLabels: floorplan.images.map((im) => im.label ?? ''),
+          centerNorm: floorplan.centerNorm,
         })
         roomFindings = deriveRoomFindings(interior, {
           combinations,
@@ -557,7 +582,7 @@ export async function runAnalyzeJob(
       siteId: site.id,
       userId: site.userId,
       fengYear,
-      currentYuan: flyingStars.currentYuanYun.yuanYun,
+      currentYuan: (flyingStars?.currentYuanYun ?? presentYuan).yuanYun,
       visionJson: JSON.stringify(vision),
       computeJson,
       chapters: '[]', // filled by the UPDATE after synthesis (Phase 2)
@@ -592,20 +617,33 @@ export async function runAnalyzeJob(
       compute: {
         // Explicit identity so the model opens with 坐山向 + 卦运 and can reason
         // about present-day 旺衰 (a chart built in one 元运, read in another).
-        summary: {
-          sit: flyingStars.sitMountain.name,
-          face: flyingStars.faceMountain.name,
-          buildYuanYun: flyingStars.buildYuanYun.yuanYun,
-          buildYuanYunYears: [flyingStars.buildYuanYun.startYear, flyingStars.buildYuanYun.endYear],
-          currentYuanYun: flyingStars.currentYuanYun.yuanYun,
-          currentYuanYunYears: [
-            flyingStars.currentYuanYun.startYear,
-            flyingStars.currentYuanYun.endYear,
-          ],
-          chartMethod: flyingStars.chartMethod,
-          isCompoundFacing: flyingStars.isCompoundFacing,
-        },
-        flyingStars,
+        summary:
+          flyingStars != null
+            ? {
+              sit: flyingStars.sitMountain.name,
+              face: flyingStars.faceMountain.name,
+              buildYuanYun: flyingStars.buildYuanYun.yuanYun,
+              buildYuanYunYears: [
+                flyingStars.buildYuanYun.startYear,
+                flyingStars.buildYuanYun.endYear,
+              ],
+              currentYuanYun: flyingStars.currentYuanYun.yuanYun,
+              currentYuanYunYears: [
+                flyingStars.currentYuanYun.startYear,
+                flyingStars.currentYuanYun.endYear,
+              ],
+              chartMethod: flyingStars.chartMethod,
+              isCompoundFacing: flyingStars.isCompoundFacing,
+            }
+            : {
+              sit: sitMountain.name,
+              face: faceMountain.name,
+              flyingStarsOmitted: true,
+              currentYuanYun: presentYuan.yuanYun,
+              currentYuanYunYears: [presentYuan.startYear, presentYuan.endYear],
+            },
+        flyingStars: flyingStars ?? null,
+        annualChart: flyingStars?.annualChart ?? annualChart(dateToFlyingYear(today)),
         baZhai: baZhaiResult ?? null,
         auspiciousPalaces,
         inauspiciousPalaces,
@@ -650,9 +688,15 @@ export async function runAnalyzeJob(
     // is a clean 5 chapters rather than padding personal_fit with generic filler.
     // Birth info unlocks it (6 chapters). The client renders whatever chapters
     // land, so this alone drives the 5-vs-6 page count.
-    const chapters = baZhaiResult
-      ? synth.chapters
-      : synth.chapters.filter((ch) => ch.kind !== 'personal_fit')
+    const chapters = (() => {
+      let list = baZhaiResult
+        ? synth.chapters
+        : synth.chapters.filter((ch) => ch.kind !== 'personal_fit')
+      if (!includeFlyingStars) {
+        list = list.filter((ch) => ch.kind !== 'flying_stars')
+      }
+      return list
+    })()
 
     // ── Phase 2: fill the shell with the written chapters + flip job done ──
     await db

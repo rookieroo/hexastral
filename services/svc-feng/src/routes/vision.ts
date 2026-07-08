@@ -225,6 +225,8 @@ const InteriorRequestSchema = z.object({
   locale: z.enum(['en', 'zh', 'zh-Hant', 'ja']).default('en'),
   /** Optional per-image label, e.g. "1F" / "2F" / "阁楼". */
   floorLabels: z.array(z.string()).optional(),
+  /** User-placed 立极 on the cover plan (normalized 0–1). */
+  centerNorm: z.object({ x: z.number().gte(0).lte(1), y: z.number().gte(0).lte(1) }).optional(),
 })
 
 const InteriorResultSchema = z.object({
@@ -261,7 +263,7 @@ export interface InteriorAnalysisResult {
 }
 
 const INTERIOR_MODEL_VERSION = 'gemini-3.1-pro-vision-interior-v1'
-const INTERIOR_PROMPT_VERSION = 'v1'
+const INTERIOR_PROMPT_VERSION = 'v2'
 
 function mimeForKey(key: string): 'image/png' | 'image/jpeg' | 'image/webp' {
   if (key.endsWith('.jpg') || key.endsWith('.jpeg')) return 'image/jpeg'
@@ -275,7 +277,7 @@ visionRouter.post('/interior', async (c) => {
   if (!parsed.success) {
     throw new HTTPException(400, { message: parsed.error.message })
   }
-  const { floorplanKeys, northUpBearing, locale, floorLabels } = parsed.data
+  const { floorplanKeys, northUpBearing, locale, floorLabels, centerNorm } = parsed.data
   const started = Date.now()
   logger.info('vision.interior.start', { locale, imageCount: floorplanKeys.length })
 
@@ -292,6 +294,7 @@ visionRouter.post('/interior', async (c) => {
           key,
           northUpBearing,
           locale,
+          centerNorm: centerNorm ?? null,
           promptVersion: INTERIOR_PROMPT_VERSION,
           modelVersion: INTERIOR_MODEL_VERSION,
         })
@@ -310,7 +313,13 @@ visionRouter.post('/interior', async (c) => {
             call: () =>
               callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
                 systemPrompt: INTERIOR_SYSTEM_PROMPT,
-                userPrompt: buildInteriorUserPrompt({ northUpBearing, locale, floorLabel }),
+                userPrompt: buildInteriorUserPrompt({
+                  northUpBearing,
+                  locale,
+                  floorLabel,
+                  // 立极 pin applies to the cover / first floor only.
+                  centerNorm: i === 0 ? centerNorm : undefined,
+                }),
                 images: [{ base64, mimeType: mimeForKey(key) }],
                 responseSchema: INTERIOR_RESPONSE_SCHEMA,
                 maxOutputTokens: 4096,

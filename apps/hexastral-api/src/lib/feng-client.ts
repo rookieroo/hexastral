@@ -301,6 +301,8 @@ export interface InteriorVisionInput {
   northUpBearing: number
   locale: 'en' | 'zh' | 'zh-Hant' | 'ja'
   floorLabels?: string[]
+  /** User-placed 立极 on the cover plan (normalized 0–1). */
+  centerNorm?: { x: number; y: number }
 }
 
 export interface InteriorFloorResult {
@@ -338,6 +340,7 @@ export interface SynthesizeInput {
     formLi?: unknown
     macroTerrain?: unknown
     monthlyStars?: unknown
+    annualChart?: unknown
     /** Room-level interior join (户型图). Empty/omitted = exterior-only report. */
     roomFindings?: unknown[]
     interiorSha?: unknown[]

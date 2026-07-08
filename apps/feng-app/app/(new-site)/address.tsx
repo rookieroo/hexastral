@@ -57,6 +57,9 @@ export default function AddressScreen() {
       await patchDraft({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
+        geocodeLat: pos.coords.latitude,
+        geocodeLng: pos.coords.longitude,
+        buildingCenterNorm: { x: 0.5, y: 0.5 },
         formattedAddress: formatted,
       })
     } finally {
@@ -89,6 +92,9 @@ export default function AddressScreen() {
         formattedAddress: address.trim(),
         lat,
         lng,
+        geocodeLat: lat,
+        geocodeLng: lng,
+        buildingCenterNorm: { x: 0.5, y: 0.5 },
       })
       router.push('/(new-site)/facing')
     } catch {

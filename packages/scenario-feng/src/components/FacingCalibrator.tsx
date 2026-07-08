@@ -44,6 +44,10 @@ export interface FacingCalibratorProps {
   /** Which arrow drag adjusts when unit-door mode is on. */
   editTarget?: 'face' | 'door'
   ringRotation?: number
+  /** Normalized building-center pin (0–1). Default: image center. */
+  buildingCenterNorm?: { x: number; y: number }
+  /** Fired when the user drags the building-center pin. */
+  onBuildingCenterChange?: (norm: { x: number; y: number }) => void
 }
 
 const SIT_COLOR = '#B4726E'
@@ -66,8 +70,28 @@ export const FacingCalibrator = memo(function FacingCalibrator({
   liveHeadingDeg = null,
   editTarget = 'face',
   ringRotation = 0,
+  buildingCenterNorm,
+  onBuildingCenterChange,
 }: FacingCalibratorProps) {
   const center = size / 2
+
+  const pinNormX = useSharedValue(buildingCenterNorm?.x ?? 0.5)
+  const pinNormY = useSharedValue(buildingCenterNorm?.y ?? 0.5)
+
+  useEffect(() => {
+    if (buildingCenterNorm) {
+      pinNormX.value = buildingCenterNorm.x
+      pinNormY.value = buildingCenterNorm.y
+    }
+  }, [buildingCenterNorm, pinNormX, pinNormY])
+
+  const emitBuildingCenter = useCallback(
+    (x: number, y: number) => {
+      onBuildingCenterChange?.({ x, y })
+      lightImpact()
+    },
+    [onBuildingCenterChange]
+  )
 
   const facingDeg = useSharedValue(normalizeFengDeg(initialFacingDeg))
   const doorDegSv = useSharedValue(normalizeFengDeg(doorDeg ?? initialFacingDeg))
@@ -159,6 +183,29 @@ export const FacingCalibrator = memo(function FacingCalibrator({
 
     return Gesture.Simultaneous(pan, tap)
   }, [center, doorDegSv, dragTarget, emitDoor, emitFacing, facingDeg, forcedTarget, doorMode])
+
+  const pinGesture = useMemo(() => {
+    if (!onBuildingCenterChange) return null
+    const clampNorm = (n: number): number => {
+      'worklet'
+      return Math.min(0.95, Math.max(0.05, n))
+    }
+    return Gesture.Pan()
+      .onChange((e) => {
+        'worklet'
+        pinNormX.value = clampNorm(pinNormX.value + e.changeX / size)
+        pinNormY.value = clampNorm(pinNormY.value + e.changeY / size)
+      })
+      .onEnd(() => {
+        'worklet'
+        runOnJS(emitBuildingCenter)(pinNormX.value, pinNormY.value)
+      })
+  }, [emitBuildingCenter, onBuildingCenterChange, pinNormX, pinNormY, size])
+
+  const pinStyle = useAnimatedStyle(() => ({
+    left: pinNormX.value * size - 9,
+    top: pinNormY.value * size - 9,
+  }))
 
   const arrowStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${facingDeg.value}deg` }],
@@ -405,20 +452,41 @@ export const FacingCalibrator = memo(function FacingCalibrator({
             </Animated.View>
           </>
         ) : null}
-        <View
-          pointerEvents='none'
-          style={{
-            position: 'absolute',
-            top: center - 7,
-            left: center - 7,
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            backgroundColor: '#ffffff',
-            borderWidth: 2,
-            borderColor: 'rgba(0,0,0,0.4)',
-          }}
-        />
+        {pinGesture ? (
+          <GestureDetector gesture={pinGesture}>
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  width: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  backgroundColor: '#ffffff',
+                  borderWidth: 2,
+                  borderColor: 'rgba(0,0,0,0.55)',
+                  zIndex: 10,
+                },
+                pinStyle,
+              ]}
+            />
+          </GestureDetector>
+        ) : (
+          <Animated.View
+            pointerEvents='none'
+            style={[
+              {
+                position: 'absolute',
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: '#ffffff',
+                borderWidth: 2,
+                borderColor: 'rgba(0,0,0,0.4)',
+              },
+              pinStyle,
+            ]}
+          />
+        )}
       </View>
     </GestureDetector>
   )
