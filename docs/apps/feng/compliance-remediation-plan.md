@@ -2,7 +2,7 @@
 
 **Source**: Deep audit 2026-07-08 (deterministic layer, synthesis, UI, chat, ASO).  
 **Goal**: Close App Store 4.3(b) gaps without changing the「文化研习 / 场所分析」positioning.  
-**Branch**: `cursor/feng-report-digest-6a27` (digest + remediation).
+**Branch**: merged to `main` (2026-07-08).
 
 ---
 

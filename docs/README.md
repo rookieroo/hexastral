@@ -64,6 +64,7 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [apps/feng/deploy-acceptance.md](./apps/feng/deploy-acceptance.md) | Deploy + acceptance gates |
 | [apps/feng/acceptance-standard.md](./apps/feng/acceptance-standard.md) | Quality rubric |
 | [apps/feng/pro-grade-plan.md](./apps/feng/pro-grade-plan.md) | Pro-tier depth |
+| [apps/feng/optimization-progress.md](./apps/feng/optimization-progress.md) | Shipped fixes + Mapillary diligence + backlog |
 | [apps/feng/report-v2-plan.md](./apps/feng/report-v2-plan.md) | Report v2 structure |
 
 ### CoinCast (`apps/coin-cast-app`)
