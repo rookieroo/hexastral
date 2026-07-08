@@ -16,7 +16,9 @@ import {
   BaZhaiWheel,
   type FengChapter,
   type FengComputeJson,
+  deriveReportDigest,
   FlyingStarsGrid,
+  type ReportDigest,
   useAnalyzeJob,
   useFengSite,
 } from '@zhop/scenario-feng'
@@ -37,6 +39,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnotatedMapSwiper, type MapOrient } from '@/components/AnnotatedMapSwiper'
 import { FengAnalyzing, type FengAnalyzingStep } from '@/components/FengAnalyzing'
 import { FengButton } from '@/components/FengButton'
+import { FengDigestCard } from '@/components/FengDigestCard'
 import { FengInkImage } from '@/components/FengInkImage'
 import { FengProse } from '@/components/FengProse'
 import { FengSelectionBar } from '@/components/FengSelectionBar'
@@ -131,6 +134,14 @@ export default function ReportScreen() {
   const reportId = latestReport?.id ?? ''
   const annotatedTiles = latestReport?.annotatedTiles ?? analyze.job?.report?.annotatedTiles ?? []
   const compute = latestReport?.compute ?? analyze.job?.report?.compute ?? null
+  const flyingStarsConfidence =
+    latestReport?.dataQuality?.flyingStarsConfidence ??
+    analyze.job?.report?.dataQuality?.flyingStarsConfidence ??
+    'high'
+  const reportDigest = useMemo(
+    () => deriveReportDigest(compute, flyingStarsConfidence),
+    [compute, flyingStarsConfidence]
+  )
   // 坐/向/门 bearings for the client-drawn map overlay (server ships raw tiles).
   const orient: MapOrient | null = site
     ? {
@@ -293,6 +304,7 @@ export default function ReportScreen() {
         insets={insets}
         steps={analyzeSteps}
         caption={ANALYZE_CAPTION[locale]}
+        digest={reportDigest}
         t={t}
       />
     )
@@ -334,7 +346,8 @@ export default function ReportScreen() {
       </ScrollView>
     )
   } else {
-    const pageCount = chapters.length + 1
+    const hasDigest = reportDigest != null
+    const pageCount = chapters.length + (hasDigest ? 2 : 1)
     middle = (
       <>
         <ScrollView
@@ -343,6 +356,15 @@ export default function ReportScreen() {
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={onMomentumEnd}
         >
+          {reportDigest ? (
+            <DigestCoverView
+              width={width}
+              insets={insets}
+              siteName={site.name}
+              digest={reportDigest}
+              t={t}
+            />
+          ) : null}
           {chapters.map((chapter, idx) => (
             <ChapterPageView
               key={chapter.kind}
@@ -414,6 +436,59 @@ export default function ReportScreen() {
   )
 }
 
+// ── digest cover (page 0 — qualitative summary, no percentile score) ──
+function DigestCoverView({
+  width,
+  insets,
+  siteName,
+  digest,
+  t,
+}: {
+  width: number
+  insets: { top: number; bottom: number }
+  siteName: string
+  digest: ReportDigest
+  t: Strings
+}) {
+  return (
+    <ScrollView
+      style={{ width }}
+      contentContainerStyle={{
+        paddingHorizontal: spacing.xl,
+        paddingTop: insets.top + spacing.xxl + spacing.xl,
+        paddingBottom: insets.bottom + spacing.xxl + spacing.lg,
+        gap: spacing.lg,
+      }}
+    >
+      <Animated.View entering={FadeInDown.duration(280)}>
+        <Text style={{ color: C.accent, fontSize: 12, letterSpacing: 3 }}>
+          {t.report_digest_tag.toUpperCase()}
+        </Text>
+        <Text
+          style={{
+            color: C.text,
+            fontSize: 26,
+            fontWeight: '700',
+            marginTop: spacing.sm,
+            marginBottom: spacing.xs,
+          }}
+        >
+          {siteName}
+        </Text>
+        <Text style={{ color: C.secondary, fontSize: 13, marginBottom: spacing.lg }}>
+          {t.report_chapter_pager_hint}
+        </Text>
+      </Animated.View>
+
+      <FengDigestCard digest={digest} t={t} />
+
+      <Text style={{ color: C.secondary, fontSize: 11, lineHeight: 17, textAlign: 'center' }}>
+        {t.report_confidence_note}
+      </Text>
+    </ScrollView>
+  )
+}
+
 // ── report shell (two-phase load) ──────────────────────────
 // The computed report — 排盘 / 坐向 / satellite tiles / 八宅 — rendered as soon
 // as the pipeline persists the shell, while the written chapters synthesize.
@@ -427,6 +502,7 @@ function ReportShellView({
   insets,
   steps,
   caption,
+  digest,
   t,
 }: {
   width: number
@@ -437,6 +513,7 @@ function ReportShellView({
   insets: { top: number; bottom: number }
   steps: FengAnalyzingStep[]
   caption: string
+  digest: ReportDigest | null
   t: Strings
 }) {
   const [shellPage, setShellPage] = useState(0)
@@ -466,6 +543,12 @@ function ReportShellView({
           <Text style={{ color: C.accent, fontSize: 12, letterSpacing: 3 }}>
             {t.report_shell_tag.toUpperCase()}
           </Text>
+
+          {digest ? (
+            <View style={{ marginTop: spacing.lg }}>
+              <FengDigestCard digest={digest} t={t} />
+            </View>
+          ) : null}
 
           {reportId && annotatedTiles.length > 0 ? (
             <View style={{ marginTop: spacing.md, marginHorizontal: -spacing.xl }}>

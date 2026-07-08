@@ -119,6 +119,27 @@ export type Strings = {
   report_formli_heading: string
   /** 床灶门书桌吉位 block. */
   report_placement_heading: string
+  /** Report digest cover — qualitative summary (no percentile score). */
+  report_digest_tag: string
+  digest_chart_line: string
+  digest_pattern_ping: string
+  digest_pattern_rescued: string
+  digest_pattern_unrescued: string
+  digest_concord_matched: string
+  digest_concord_mismatched: string
+  digest_exterior_clean: string
+  digest_exterior_sha_light: string
+  digest_exterior_sha: string
+  digest_confidence_medium: string
+  digest_confidence_low: string
+  digest_headline_pattern_rescued: string
+  digest_headline_pattern_unrescued: string
+  digest_headline_focus: string
+  digest_headline_exterior_sha: string
+  digest_headline_concord_mismatch: string
+  digest_headline_ping: string
+  digest_focus_line: string
+  digest_not_score: string
   reading_copy: string
   reading_chat: string
   reading_highlight: string
@@ -351,6 +372,26 @@ const EN: Strings = {
     'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
   report_formli_heading: 'FORM × STARS (山水合参)',
   report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
+  report_digest_tag: 'Overview',
+  digest_chart_line: 'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
+  digest_pattern_ping: 'Balanced chart',
+  digest_pattern_rescued: '{pattern} · rescued',
+  digest_pattern_unrescued: '{pattern} · needs remedy',
+  digest_concord_matched: 'House–person fit',
+  digest_concord_mismatched: 'House–person clash',
+  digest_exterior_clean: 'Clean exterior',
+  digest_exterior_sha_light: '{count} form clash(es)',
+  digest_exterior_sha: '{count} form clashes',
+  digest_confidence_medium: 'Stars · medium confidence',
+  digest_confidence_low: 'Stars · low confidence',
+  digest_headline_pattern_rescued: '{pattern} is rescued by the surrounding landform — a strong disposition when form and stars align.',
+  digest_headline_pattern_unrescued: '{pattern} is not rescued by the landform — prioritize the remediation chapter.',
+  digest_headline_focus: '{palace} palace reads {verdict} — start adjustments there.',
+  digest_headline_exterior_sha: '{count} exterior form clashes need attention before interior tuning.',
+  digest_headline_concord_mismatch: 'House and personal gua disagree — bed, door, and stove placement matter more here.',
+  digest_headline_ping: 'No special flying-star disposition — read sector by sector from the form–star verdicts.',
+  digest_focus_line: '{palace} · {verdict}',
+  digest_not_score: 'Verdict chips from deterministic charts and landform — not a fortune score or percentile.',
   reading_copy: 'Copy',
   reading_chat: 'Ask AI',
   reading_highlight: 'Highlight',
@@ -572,6 +613,26 @@ const ZH_HANS: Strings = {
   report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
   report_formli_heading: '形理合参（山水×飞星）',
   report_placement_heading: '古典布局参考',
+  report_digest_tag: '概览',
+  digest_chart_line: '坐{sit}向{face} · {buildYuan}运{method}盘 · 现{currentYuan}运读盘',
+  digest_pattern_ping: '平局',
+  digest_pattern_rescued: '{pattern} · 有救',
+  digest_pattern_unrescued: '{pattern} · 待补',
+  digest_concord_matched: '宅命相配',
+  digest_concord_mismatched: '宅命不配',
+  digest_exterior_clean: '外局尚清',
+  digest_exterior_sha_light: '形煞 {count} 处',
+  digest_exterior_sha: '形煞 {count} 处',
+  digest_confidence_medium: '飞星 · 中置信',
+  digest_confidence_low: '飞星 · 低置信',
+  digest_headline_pattern_rescued: '格局「{pattern}」得形势救应，形理同参时为真旺。',
+  digest_headline_pattern_unrescued: '格局「{pattern}」形势无救，宜优先阅读化解章。',
+  digest_headline_focus: '{palace}宫读「{verdict}」，宜从此处着手调整。',
+  digest_headline_exterior_sha: '外局 {count} 处形煞待化，先理外局再调内局。',
+  digest_headline_concord_mismatch: '宅命不配，床、门、灶的吉位选择尤为关键。',
+  digest_headline_ping: '飞星无特殊格局，请按各宫形理断语逐区阅读。',
+  digest_focus_line: '{palace} · {verdict}',
+  digest_not_score: '以上标签来自排盘与形势的确定性断语，不是运势打分或百分制指数。',
   reading_copy: '复制',
   reading_chat: '问AI',
   reading_highlight: '划重点',
@@ -779,6 +840,26 @@ const ZH_HANT: Strings = {
   report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
   report_formli_heading: '形理合參（山水×飛星）',
   report_placement_heading: '古典佈局參考',
+  report_digest_tag: '概覽',
+  digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運讀盤',
+  digest_pattern_ping: '平局',
+  digest_pattern_rescued: '{pattern} · 有救',
+  digest_pattern_unrescued: '{pattern} · 待補',
+  digest_concord_matched: '宅命相配',
+  digest_concord_mismatched: '宅命不配',
+  digest_exterior_clean: '外局尚清',
+  digest_exterior_sha_light: '形煞 {count} 處',
+  digest_exterior_sha: '形煞 {count} 處',
+  digest_confidence_medium: '飛星 · 中置信',
+  digest_confidence_low: '飛星 · 低置信',
+  digest_headline_pattern_rescued: '格局「{pattern}」得形勢救應，形理同參時為真旺。',
+  digest_headline_pattern_unrescued: '格局「{pattern}」形勢無救，宜優先閱讀化解章。',
+  digest_headline_focus: '{palace}宮讀「{verdict}」，宜從此處著手調整。',
+  digest_headline_exterior_sha: '外局 {count} 處形煞待化，先理外局再調內局。',
+  digest_headline_concord_mismatch: '宅命不配，床、門、灶的吉位選擇尤為關鍵。',
+  digest_headline_ping: '飛星無特殊格局，請按各宮形理斷語逐區閱讀。',
+  digest_focus_line: '{palace} · {verdict}',
+  digest_not_score: '以上標籤來自排盤與形勢的確定性斷語，不是運勢打分或百分制指數。',
   reading_copy: '複製',
   reading_chat: '問AI',
   reading_highlight: '劃重點',
@@ -992,6 +1073,26 @@ const JA: Strings = {
   report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
   report_formli_heading: '形理合参（山水×飛星）',
   report_placement_heading: '古典配置メモ',
+  report_digest_tag: '概観',
+  digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運で読む',
+  digest_pattern_ping: '平局',
+  digest_pattern_rescued: '{pattern} · 救済あり',
+  digest_pattern_unrescued: '{pattern} · 要調整',
+  digest_concord_matched: '宅命相配',
+  digest_concord_mismatched: '宅命不配',
+  digest_exterior_clean: '外局クリア',
+  digest_exterior_sha_light: '形煞 {count} 件',
+  digest_exterior_sha: '形煞 {count} 件',
+  digest_confidence_medium: '飛星 · 中信頼',
+  digest_confidence_low: '飛星 · 低信頼',
+  digest_headline_pattern_rescued: '格局「{pattern}」は地形で救われており、形理が揃えば真の旺。',
+  digest_headline_pattern_unrescued: '格局「{pattern}」は地形で救われず、化解章を優先してください。',
+  digest_headline_focus: '{palace}宮は「{verdict}」— ここから調整を。',
+  digest_headline_exterior_sha: '外局に形煞 {count} 件 — 内局より先に外局を。',
+  digest_headline_concord_mismatch: '宅命不配 — 床・門・灶の吉方位が特に重要。',
+  digest_headline_ping: '特殊格局なし — 各宮の形理断語を順に読んでください。',
+  digest_focus_line: '{palace} · {verdict}',
+  digest_not_score: '表示は排盤と地形の確定的な断語であり、運勢スコアや百分率ではありません。',
   reading_copy: 'コピー',
   reading_chat: 'AIに聞く',
   reading_highlight: 'ハイライト',

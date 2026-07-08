@@ -41,4 +41,14 @@ export type {
   PatchSiteInput,
 } from './lib/feng-api'
 export { fengPriceEstimate, uploadFloorplan } from './lib/feng-api'
+export {
+  deriveReportDigest,
+  patternQualityTone,
+  type DigestFocusItem,
+  type DigestHeadline,
+  type DigestPattern,
+  type DigestTone,
+  type FormLiVerdict,
+  type ReportDigest,
+} from './lib/report-digest'
 export * from './types'
