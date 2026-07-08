@@ -29,7 +29,7 @@
 
 ---
 
-### WP1 — Chat persona + compute context (P1) ✅
+### WP1 — Chat persona + compute context (P1) ✅ shipped
 
 | Item | Owner | Acceptance |
 |------|-------|------------|
@@ -41,7 +41,7 @@
 
 ---
 
-### WP1b — Digest cover compliance (P1) ✅
+### WP1b — Digest cover compliance (P1) ✅ shipped
 
 | Item | Owner | Acceptance |
 |------|-------|------------|
@@ -50,7 +50,7 @@
 
 ---
 
-### WP2 — Share + golden + digest hardening (P2) ✅
+### WP2 — Share + golden + digest hardening (P2) ✅ shipped
 
 | Item | Owner | Acceptance |
 |------|-------|------------|
