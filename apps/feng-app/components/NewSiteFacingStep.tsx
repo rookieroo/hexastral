@@ -61,6 +61,8 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const [editTarget, setEditTarget] = useState<'face' | 'door'>('face')
   const [decl, setDecl] = useState<number>(0)
   const [heading, setHeading] = useState<HeadingSnapshot>(INIT)
+  const [facingConfirmed, setFacingConfirmed] = useState(false)
+  const [facingError, setFacingError] = useState<string | null>(null)
 
   const satellite = useSatelliteTile(draftLat, draftLng, { zoom: SAT_TILE_ZOOM, size: SAT_TILE_SIZE })
   const hasSatellite = Boolean(satellite.uri)
@@ -81,6 +83,7 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
         setDoorDifferent(true)
         setDoorDeg(d.doorDegTrue)
       }
+      if (d.facingConfirmed) setFacingConfirmed(true)
     })()
   }, [])
 
@@ -114,7 +117,9 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const onFacingChange = useCallback(
     (deg: number) => {
       setFacingDeg(deg)
-      void patchDraft({ facingDegTrue: deg, magneticDeclination: decl })
+      setFacingConfirmed(true)
+      setFacingError(null)
+      void patchDraft({ facingDegTrue: deg, magneticDeclination: decl, facingConfirmed: true })
     },
     [decl]
   )
@@ -147,9 +152,12 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
       void patchDraft({ doorDegTrue: deg })
     } else {
       setFacingDeg(deg)
+      setFacingConfirmed(true)
+      setFacingError(null)
       void patchDraft({
         facingDegTrue: deg,
         magneticDeclination: heading.declination ?? decl,
+        facingConfirmed: true,
       })
     }
   }
@@ -163,7 +171,9 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
     } else {
       const next = nudgeFengDeg(facingDeg, delta)
       setFacingDeg(next)
-      void patchDraft({ facingDegTrue: next, magneticDeclination: decl })
+      setFacingConfirmed(true)
+      setFacingError(null)
+      void patchDraft({ facingDegTrue: next, magneticDeclination: decl, facingConfirmed: true })
     }
   }
 
@@ -180,9 +190,15 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   )
 
   const finish = async () => {
+    const d = await loadDraft()
+    if (!d.facingConfirmed && !facingConfirmed) {
+      setFacingError(strings.new_site_facing_confirm_required)
+      return
+    }
     const patch: Parameters<typeof patchDraft>[0] = {
       facingDegTrue: facingDeg,
       magneticDeclination: decl,
+      facingConfirmed: true,
     }
     if (doorDifferent && typeof doorDeg === 'number') {
       patch.doorDegTrue = doorDeg
@@ -381,6 +397,10 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
           trackColor={{ false: colors.surfaceMute, true: colors.accent }}
         />
       </View>
+
+      {facingError ? (
+        <Text style={{ color: colors.warning, fontSize: 13, lineHeight: 20 }}>{facingError}</Text>
+      ) : null}
 
       <Pressable
         onPress={() => void finish()}

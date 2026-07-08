@@ -167,6 +167,12 @@ export function FengDigestCard({ digest, t, compact }: FengDigestCardProps) {
         {confidenceNote ? (
           <DigestChip label={confidenceNote} tone='caution' />
         ) : null}
+        {typeof digest.inputScore === 'number' && digest.inputScore < 90 ? (
+          <DigestChip
+            label={t.digest_input_completeness.replace('{score}', String(digest.inputScore))}
+            tone={digest.inputScore >= 70 ? 'neutral' : 'caution'}
+          />
+        ) : null}
       </View>
 
       {!compact ? (

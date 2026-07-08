@@ -1,0 +1,1 @@
+ALTER TABLE `feng_sites` ADD `input_meta` text;

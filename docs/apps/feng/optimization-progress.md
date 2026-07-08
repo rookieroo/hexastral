@@ -88,8 +88,36 @@ Key paths:
 | P1 | Mapillary 街景 + 归因 UI | ✅ (token still gated) |
 | P1 | Vision JSON 后验审计 | ✅ |
 | P2 | `floor` 字段未参与计算 | ✅ street 形煞 attenuation for 大平层 |
-| P2 | 宅卦 vs 命卦双轨 room verdict | ⏳ |
-| P2 | Review 数据质量门禁 | ⏳ |
+| P2 | 宅卦 vs 命卦双轨 room verdict | ✅ `room-ba-zhai` + synthesis |
+| P2 | Review 数据质量门禁 | ✅ client blockers + review checklist |
+| P2 | 缺角入 synthesis | ✅ `interiorQueJiao` in compute + prompt |
+| P2 | 户型恢复 + orientConfirmed | ✅ GET floorplan + draft guards |
+| P2 | 录入 inputScore + step guards | ✅ `deriveDataQuality` + `useNewSiteGuard` |
+| P2 | Vision geometry audit + confidence | ✅ `auditVisionGeometry` + split VLM passes |
+| P2 | Prefetch road bearing + 路冲校验 | ✅ Tilequery roads 150m |
+| P2 | Golden harness (10 sites) | ✅ `feng-golden-sites.ts` + integration test |
+| P2 | Chat room 白名单 | ✅ `feng-chat-context` appendix |
+
+### 6. Input quality & practitioner-duty hardening (2026-07-08)
+
+| Phase | Status | Summary |
+|-------|--------|---------|
+| 1.1–1.2 | ✅ | `facingConfirmed` / `floorplanOrientConfirmed` client block + API `z.literal(true)` |
+| 1.3–1.4 | ✅ | POST `/sites` floorplan key ownership; address re-geocode; pin offset >2km → 400 |
+| 2.1–2.2 | ✅ | `feng_sites.input_meta` migration `0021`; `deriveDataQuality` pin/orient/facing notes |
+| 2.3–2.4 | ✅ | `synthesis-compute-audit` + `mustSoften` payload; synthesis temp 0.45 |
+| 3.1–3.2 | ✅ | Apartment floor warn; `inferResidenceHeuristic` dataQuality note |
+| 3.3–3.5 | ✅ | Interior VLM gate; vision low-confidence short TTL; golden/docs |
+
+Key paths:
+
+- `apps/hexastral-api/src/routes/feng/sites.ts` — create schema + `input_meta`
+- `apps/hexastral-api/src/lib/feng-floorplan-access.ts` — `assertUserOwnsFloorplanKeys`
+- `apps/hexastral-api/src/lib/feng-analyze.ts` — interior gate + `mustSoften`
+- `services/svc-feng/src/lib/synthesis-compute-audit.ts` — post-synthesis whitelist
+- `apps/feng-app/lib/draft-quality.ts` — facing/orient blocks + apartment floor warn
+
+**Deploy**: `hexastral-api` (incl. D1 migration `0021`), `svc-feng`, `feng-app` EAS.
 
 ---
 
@@ -135,7 +163,7 @@ Key paths:
 | Human | `MAPILLARY_TOKEN` + legal sign-off §6 | WP3 UI ✅ |
 | Human | Staging spot-check: apartment / flat / villa each 1 report | deploy |
 | Human | 风水师 sample-output sign-off §8 | sample harness |
-| P2 | 宅卦 vs 命卦双轨 room verdict | — |
+| P2 | 宅卦 vs 命卦双轨 room verdict | ✅ shipped |
 | P2 | Review 数据质量门禁 | — |
 
 ---

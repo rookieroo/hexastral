@@ -29,9 +29,69 @@ import {
 } from '../prompts/interior'
 import {
   buildVisionUserPrompt,
-  VISION_RESPONSE_SCHEMA,
-  VISION_SYSTEM_PROMPT,
+  VISION_FORM_RESPONSE_SCHEMA,
+  VISION_FORM_SYSTEM_PROMPT,
+  VISION_SHA_RESPONSE_SCHEMA,
+  VISION_SHA_SYSTEM_PROMPT,
 } from '../prompts/vision'
+
+const ConfidenceSchema = z.enum(['high', 'low']).optional().default('high')
+
+const VisionShaItemSchema = z.object({
+  type: z.string(),
+  direction: z.string(),
+  distance: z.enum(['near', 'mid', 'far']),
+  severity: z.number().int().min(1).max(5),
+  evidence: z.string(),
+  confidence: ConfidenceSchema,
+})
+
+const VisionSandItemSchema = z.object({
+  type: z.string(),
+  direction: z.string(),
+  distance: z.enum(['near', 'mid', 'far']),
+  strength: z.enum(['strong', 'medium', 'weak']),
+  confidence: ConfidenceSchema,
+})
+
+const VisionWaterItemSchema = z.object({
+  type: z.string(),
+  direction: z.string(),
+  distance: z.enum(['near', 'mid', 'far']),
+  flow: z.enum(['in', 'out', 'still']),
+  confidence: ConfidenceSchema,
+})
+
+const VisionCourtItemSchema = z.object({
+  type: z.string(),
+  direction: z.string(),
+  distance: z.enum(['near', 'mid', 'far']),
+  confidence: ConfidenceSchema,
+})
+
+const VisionShaResultSchema = z.object({
+  形煞: z.array(VisionShaItemSchema),
+  notes: z.string().optional(),
+})
+
+const VisionFormResultSchema = z.object({
+  砂: z.array(VisionSandItemSchema),
+  水: z.array(VisionWaterItemSchema),
+  朝案: z.array(VisionCourtItemSchema),
+  notes: z.string().optional(),
+})
+
+const VisionResultSchema = z.object({
+  形煞: z.array(VisionShaItemSchema),
+  砂: z.array(VisionSandItemSchema),
+  水: z.array(VisionWaterItemSchema),
+  朝案: z.array(VisionCourtItemSchema),
+  notes: z.string().optional(),
+})
+
+export interface VisionAnalysisResult extends z.infer<typeof VisionResultSchema> {
+  modelVersion: string
+}
 
 const VisionRequestSchema = z.object({
   annotatedKeys: z.array(z.string().min(1)).min(1).max(3),
@@ -43,50 +103,12 @@ const VisionRequestSchema = z.object({
   terrainSummary: z.string().optional(),
 })
 
-const VisionResultSchema = z.object({
-  形煞: z.array(
-    z.object({
-      type: z.string(),
-      direction: z.string(),
-      distance: z.enum(['near', 'mid', 'far']),
-      severity: z.number().int().min(1).max(5),
-      evidence: z.string(),
-    })
-  ),
-  砂: z.array(
-    z.object({
-      type: z.string(),
-      direction: z.string(),
-      distance: z.enum(['near', 'mid', 'far']),
-      strength: z.enum(['strong', 'medium', 'weak']),
-    })
-  ),
-  水: z.array(
-    z.object({
-      type: z.string(),
-      direction: z.string(),
-      distance: z.enum(['near', 'mid', 'far']),
-      flow: z.enum(['in', 'out', 'still']),
-    })
-  ),
-  朝案: z.array(
-    z.object({
-      type: z.string(),
-      direction: z.string(),
-      distance: z.enum(['near', 'mid', 'far']),
-    })
-  ),
-  notes: z.string().optional(),
-})
-
-export interface VisionAnalysisResult extends z.infer<typeof VisionResultSchema> {
-  modelVersion: string
-}
-
-const MODEL_VERSION = 'gemini-3.1-pro-vision-v1'
-// Bump when the vision prompt or response schema changes — folded into the cache
-// key so a prompt edit busts stale results instead of serving pre-change output.
-const PROMPT_VERSION = 'v1'
+const MODEL_VERSION = 'gemini-3.1-pro-vision-v2'
+const VISION_SHA_VERSION = 'v2-sha'
+const VISION_FORM_VERSION = 'v2-form'
+const PROMPT_VERSION = 'v2-split'
+const VISION_AUDIT_VERSION = 'v1'
+const SHA_FLASH_MODEL = 'gemini-2.5-flash'
 // Successful vision is bound to the (immutable) annotated-tile hashes, so it can
 // live long; a prompt/model bump is what should invalidate it, not time.
 const VISION_TTL_SECONDS = 180 * 24 * 60 * 60 // 180 days
@@ -94,6 +116,7 @@ const VISION_TTL_SECONDS = 180 * 24 * 60 * 60 // 180 days
 // of retries doesn't re-hammer Gemini, while a transient failure still recovers
 // on the next analyze after it expires.
 const DEGRADED_TTL_SECONDS = 5 * 60 // 5 minutes
+const LOW_CONFIDENCE_TTL_SECONDS = DEGRADED_TTL_SECONDS
 
 export const visionRouter = new Hono<{ Bindings: Env }>()
 
@@ -138,6 +161,9 @@ visionRouter.post('/analyze', async (c) => {
     expectedFeatures,
     terrainSummary,
     promptVersion: PROMPT_VERSION,
+    auditVersion: VISION_AUDIT_VERSION,
+    visionShaVersion: VISION_SHA_VERSION,
+    visionFormVersion: VISION_FORM_VERSION,
     modelVersion: MODEL_VERSION,
   })
   const cachedVision = await readCache(c.env.ANNOTATED_CACHE, vKey)
@@ -163,49 +189,93 @@ visionRouter.post('/analyze', async (c) => {
     terrainSummary,
   })
 
-  let rewriteSuffix = ''
-  let validated = await withZodRetry({
-    label: 'vision',
-    schema: VisionResultSchema,
+  const closeImages = images.slice(0, 1)
+  const formImages = images.length > 1 ? images.slice(1) : images
+
+  const shaValidated = await withZodRetry({
+    label: 'vision-sha',
+    schema: VisionShaResultSchema,
     call: () =>
       callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
-        systemPrompt: VISION_SYSTEM_PROMPT,
-        userPrompt: userPromptBase + rewriteSuffix,
-        images,
-        responseSchema: VISION_RESPONSE_SCHEMA,
-        maxOutputTokens: 4096,
+        systemPrompt: VISION_SHA_SYSTEM_PROMPT,
+        userPrompt: `${userPromptBase}\n\nAnalyze ONLY 形煞 in the close image.`,
+        images: closeImages,
+        responseSchema: VISION_SHA_RESPONSE_SCHEMA,
+        maxOutputTokens: 2048,
         temperature: 0.2,
+        model: SHA_FLASH_MODEL,
       }),
-    degraded: () => ({
-      形煞: [],
-      砂: [],
-      水: [],
-      朝案: [],
-      notes: 'Vision analysis failed after retries; report generated from compute data only.',
-    }),
+    degraded: () => ({ 形煞: [], notes: 'Sha pass failed; empty 形煞.' }),
   })
 
+  const runFormPass =
+    shaValidated.形煞.length > 0 ||
+    (expectedFeatures?.some((f) => f === '砂' || f === '水') ?? images.length > 1)
+
+  let formValidated: z.infer<typeof VisionFormResultSchema> = {
+    砂: [],
+    水: [],
+    朝案: [],
+    notes: undefined,
+  }
+
+  if (runFormPass) {
+    formValidated = await withZodRetry({
+      label: 'vision-form',
+      schema: VisionFormResultSchema,
+      call: () =>
+        callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
+          systemPrompt: VISION_FORM_SYSTEM_PROMPT,
+          userPrompt: `${userPromptBase}\n\nAnalyze 砂/水/朝案 only (no 形煞).`,
+          images: formImages,
+          responseSchema: VISION_FORM_RESPONSE_SCHEMA,
+          maxOutputTokens: 3072,
+          temperature: 0.2,
+        }),
+      degraded: () => ({
+        砂: [],
+        水: [],
+        朝案: [],
+        notes: 'Form pass failed; empty 砂/水/朝案.',
+      }),
+    })
+  }
+
+  let validated: z.infer<typeof VisionResultSchema> = {
+    形煞: shaValidated.形煞,
+    砂: formValidated.砂,
+    水: formValidated.水,
+    朝案: formValidated.朝案,
+    notes: [shaValidated.notes, formValidated.notes].filter(Boolean).join(' | ') || undefined,
+  }
+
+  let rewriteSuffix = ''
   const visionAudit = auditVisionHits(JSON.stringify(validated))
   if (visionAudit.hits.length > 0) {
     rewriteSuffix = visionAudit.rewriteSuffix ?? ''
     logger.warn('vision.analyze.forbidden_phrases', { hits: visionAudit.hits })
-    validated = await withZodRetry({
-      label: 'vision-forbidden-retry',
-      schema: VisionResultSchema,
+    const retrySha = await withZodRetry({
+      label: 'vision-sha-forbidden-retry',
+      schema: VisionShaResultSchema,
       call: () =>
         callGeminiVisionStructured<unknown>(c.env.GEMINI_API_KEY, {
-          systemPrompt: VISION_SYSTEM_PROMPT,
-          userPrompt: userPromptBase + rewriteSuffix,
-          images,
-          responseSchema: VISION_RESPONSE_SCHEMA,
-          maxOutputTokens: 4096,
+          systemPrompt: VISION_SHA_SYSTEM_PROMPT,
+          userPrompt: `${userPromptBase}${rewriteSuffix}\n\nAnalyze ONLY 形煞.`,
+          images: closeImages,
+          responseSchema: VISION_SHA_RESPONSE_SCHEMA,
+          maxOutputTokens: 2048,
           temperature: 0.2,
+          model: SHA_FLASH_MODEL,
         }),
-      degraded: () => validated,
+      degraded: () => shaValidated,
     })
+    validated = { ...validated, 形煞: retrySha.形煞, notes: retrySha.notes ?? validated.notes }
   }
 
   const degraded = validated.notes?.includes('failed after retries')
+  const allShaLowConfidence =
+    validated.形煞.length > 0 && validated.形煞.every((s) => s.confidence === 'low')
+  const shortTtl = degraded || allShaLowConfidence
   const result: VisionAnalysisResult = {
     ...validated,
     modelVersion: degraded ? `${MODEL_VERSION}-degraded` : MODEL_VERSION,
@@ -218,12 +288,13 @@ visionRouter.post('/analyze', async (c) => {
     vKey,
     new TextEncoder().encode(JSON.stringify(result)).buffer as ArrayBuffer,
     'application/json',
-    degraded ? DEGRADED_TTL_SECONDS : VISION_TTL_SECONDS
+    shortTtl ? LOW_CONFIDENCE_TTL_SECONDS : VISION_TTL_SECONDS
   )
   logger.info('vision.analyze.done', {
     locale,
     durationMs: Date.now() - started,
     degraded,
+    shortTtl,
     cached: false,
     modelVersion: result.modelVersion,
     shapeShaCount: validated.形煞.length,

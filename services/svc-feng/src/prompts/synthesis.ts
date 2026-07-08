@@ -36,10 +36,10 @@ Each chapter has:
   - "formLi.patternRescue" — whether each 格局 (上山下水/旺山旺向 等) is rescued by the actual 形势. State 真旺 vs 待补/无救 plainly.
   Use the provided reasons; do not contradict or re-derive. When "formLi.palaces" is empty, the exterior is clean — say so.
 
-**室内 (户型图 interior) — compute "roomFindings" + "interiorSha" — use across chapters 2, 5, 6 when present.** When the user uploaded a floor plan, "roomFindings" lists each identified room with: roomType (大门/主卧/厨房/灶位/卫生间/客厅/书房 …), the "palace" it sits in, its 八宅 "baZhai" verdict (lucky/unlucky/neutral) for that palace, the palace's 飞星 phase/name/reading, any interior "sha" in that palace, and an optional "floorLabel" (villas/multi-floor). "interiorSha" lists interior 形煞 (穿堂煞/开门见灶/门冲/厕居中/缺角 …) with palace + severity.
+**室内 (户型图 interior) — compute "roomFindings" + "interiorSha" + "interiorQueJiao" — use across chapters 2, 5, 6 when present.** When the user uploaded a floor plan, "roomFindings" lists each identified room with: roomType (大门/主卧/厨房/灶位/卫生间/客厅/书房 …), the "palace" it sits in, **dual 八宅 tracks** "mingBaZhai" (命卦) and "zhaiBaZhai" (宅卦游年) with optional "mingKind"/"zhaiKind" (生气/天医…), "governing" (命|宅|一致), "conflict" (true when 命≠宅 verdict for that palace), "priority":"high" for 大门/主卧/灶位/厨房, the palace's 飞星 phase/name/reading, any interior "sha", and optional "floorLabel". Legacy "baZhai" equals "mingBaZhai". When "governing" is 命 and "conflict" is true, follow 宅命合参 advice — prioritize 命卦吉方 for 门床灶. "interiorSha" lists interior 形煞 (穿堂煞/开门见灶/门冲/厕居中 …) with palace + severity. "interiorQueJiao" lists missing-corner (缺角) findings per palace — treat each as a first-class indoor concern in chapters 5 and 6.
   - Chapter 2 (personal_fit): after the 宅命 verdict, evaluate the ACTUAL rooms — e.g. "主卧落{palace}宫，为您命卦的{吉/凶}方，床头宜…". Prioritise 大门 / 主卧 / 灶位 placement against the person's 吉凶方.
-  - Chapter 5 (remediation): fold each interior 形煞 into the fixes, naming the room + palace + one concrete ORDINARY adjustment (屏风/绿植/门帘/家具移位). 
-  - Chapter 6 (布置建议): tie furnishing suggestions to specific rooms and their palace stars.
+  - Chapter 5 (remediation): fold each interior 形煞 AND each 缺角 into the fixes, naming the room/palace + one concrete ORDINARY adjustment (屏风/绿植/门帘/家具移位). 
+  - Chapter 6 (布置建议): tie furnishing suggestions to specific rooms and their palace stars; mention 缺角 palaces with layout compensation (light, mirrors as plain decor, furniture anchoring) — never talismans.
   When "roomFindings" is empty/omitted, NO floor plan was uploaded — do NOT invent rooms; keep indoor advice directional/general, and chapter 5 may note that uploading a 户型图 would unlock room-specific 化解. NEVER fabricate a room that is not in roomFindings.
 
 6. **auspicious_objects** (陈设参考): Ordinary furnishings + placements to harmonize each palace — plants, bookshelves, ceramics, metal/wood decor, screens, lighting, curtains, plain water features, color. Be specific: material, color, palace, and why, tied to the flying-star / 八宅 analysis. **Examples of OK items:** 绿植, 书架, 台灯, 窗帘, 圆形陶瓷摆件, 金属相框, 木质屏风. **NEVER name:** 金蟾, 文昌塔, 貔貅, 麒麟, 招财猫, 铜葫芦, 八卦镜, 开光物. Do NOT promise 财气/运势/贵人运 outcomes — use "传统上认为有助于…" / "可考虑…" only.
@@ -52,6 +52,7 @@ Each chapter has:
 - If vision observations are empty (stub or no 形煞 found), chapters 1 and 5 should acknowledge the clean exterior and focus on interior/directional advice.
 - **If the data-quality notes mention "terrain.flat_urban=true", the site has no significant water or mountains within 1 km — this is a Mapbox-confirmed signal, not a vision-degradation artifact. Chapter 1 should explicitly note "no significant 砂/水 within 1 km" as a factual observation, and chapters 4 and 5 should focus on directional / 飞星 / 八宅 advice rather than 砂水 化解.** Treat this as authoritative ground truth.
 - Confidence discipline: 理气 (玄空飞星 / 八宅 / 格局 / 形理 verdicts) is computed deterministically — state it with authority. 峦头/形势 (砂/水/形煞 from vision + DEM) is inferred — phrase it as "likely / appears / from the imagery", not as measured fact, and never let an inferred form override a deterministic verdict.
+- When a vision JSON field includes geometrySupport of weak, none, or inferred-only, soften wording to 「影像上似…」「从卫星图推断…」— never state as on-site confirmed fact.
 - Never invent observations not present in the input data.
 - Anti-generic (enforced): every chapter body must reference at least two specific 宫 by name together with their star numbers or 八宅 verdicts. Never give advice that would apply to any house. Do NOT use bare abstractions (和谐 / 平衡 / 能量 / 气场好 / 提升运势) unless a specific 星 / 宫 / 格局 is attached to them. If you cannot ground a sentence in the compute data, cut it.
 - Match the locale EXACTLY — this is critical:
@@ -87,6 +88,7 @@ export function buildSynthesisUserPrompt(opts: {
   userProfile: { birthDate: string; gender: string; locale: string }
   memoryContext?: string
   dataQuality?: { flyingStarsConfidence: string; notes: string[] }
+  mustSoften?: Array<{ type: string; direction: string; geometrySupport: string }>
 }): string {
   const sections: string[] = []
 
@@ -112,6 +114,12 @@ export function buildSynthesisUserPrompt(opts: {
     if (opts.dataQuality.notes.length > 0) {
       sections.push(`Notes: ${opts.dataQuality.notes.join('; ')}`)
     }
+  }
+
+  if (opts.mustSoften?.length) {
+    sections.push('')
+    sections.push('## Geometry support — MUST soften wording for these vision findings')
+    sections.push(JSON.stringify(opts.mustSoften, null, 2))
   }
 
   if (opts.memoryContext) {

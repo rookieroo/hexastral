@@ -34,6 +34,8 @@ import { requireUserId } from '../../lib/auth'
 import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
 import { deleteFloorplans } from '../../lib/feng-client'
 import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
+import { haversineM, orientFacingDeltaDeg, pinOffsetCoords } from '../../lib/feng-coords'
+import { assertUserOwnsFloorplanKeys } from '../../lib/feng-floorplan-access'
 import {
   fengSkuForResidence,
   MAX_FLOORPLAN_IMAGES,
@@ -78,6 +80,13 @@ const createSiteObject = z.object({
   floor: z.int().gte(-10).lte(200).optional(),
   floorplanKey: z.string().min(1).max(96).optional(),
   floorplan: floorplanSchema.optional(),
+  /** User explicitly adjusted facing ring or captured compass — required. */
+  facingConfirmed: z.literal(true),
+  /** Required when floorplan is present. */
+  floorplanOrientConfirmed: z.boolean().optional(),
+  geocodeLat: z.number().gte(-85).lte(85).optional(),
+  geocodeLng: z.number().gte(-180).lte(180).optional(),
+  buildingCenterNorm: centerNormSchema.optional(),
 })
 
 // apartment (base tier) = one layout only; flat/villa may upload up to MAX. Enforced
@@ -97,9 +106,137 @@ function enforceResidenceImageCap(
   }
 }
 
-const createSiteSchema = createSiteObject.superRefine(enforceResidenceImageCap)
+function enforceSiteInputQuality(
+  data: {
+    residenceType?: 'apartment' | 'flat' | 'villa'
+    buildYearAccuracy?: 'exact' | 'decade' | 'moveIn' | 'unknown'
+    buildYear?: number
+    moveInYear?: number
+    floor?: number
+    facingDegTrue?: number
+    facingConfirmed?: true
+    floorplan?: z.infer<typeof floorplanSchema>
+    floorplanOrientConfirmed?: boolean
+    geocodeLat?: number
+    geocodeLng?: number
+    buildingCenterNorm?: { x: number; y: number }
+    lat?: number
+    lng?: number
+  },
+  ctx: z.RefinementCtx,
+  mode: 'create' | 'patch' = 'create'
+): void {
+  if (data.residenceType === 'flat' && data.floor === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'floor is required for residenceType flat',
+      path: ['floor'],
+    })
+  }
+  if (
+    (data.buildYearAccuracy === 'exact' || data.buildYearAccuracy === 'decade') &&
+    data.buildYear === undefined
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'buildYear is required when buildYearAccuracy is exact or decade',
+      path: ['buildYear'],
+    })
+  }
+  if (data.buildYearAccuracy === 'moveIn' && data.moveInYear === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'moveInYear is required when buildYearAccuracy is moveIn',
+      path: ['moveInYear'],
+    })
+  }
+  if (mode === 'create' && data.facingConfirmed !== true) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'facingConfirmed must be true',
+      path: ['facingConfirmed'],
+    })
+  }
+  if (data.floorplan) {
+    if (data.floorplanOrientConfirmed !== true) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'floorplanOrientConfirmed must be true when floorplan is provided',
+        path: ['floorplanOrientConfirmed'],
+      })
+    }
+    if (typeof data.facingDegTrue === 'number') {
+      const delta = orientFacingDeltaDeg(data.floorplan.orientDeg, data.facingDegTrue)
+      if (delta > 30) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'floor plan north differs from site facing by more than 30 degrees',
+          path: ['floorplan', 'orientDeg'],
+        })
+      }
+    }
+  }
+  if (
+    data.geocodeLat != null &&
+    data.geocodeLng != null &&
+    data.buildingCenterNorm &&
+    typeof data.lat === 'number' &&
+    typeof data.lng === 'number'
+  ) {
+    const expected = pinOffsetCoords(data.geocodeLat, data.geocodeLng, data.buildingCenterNorm)
+    const pinOffsetM = haversineM(data.lat, data.lng, expected.lat, expected.lng)
+    if (pinOffsetM > 2000) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'building pin offset exceeds 2000m from geocode anchor',
+        path: ['buildingCenterNorm'],
+      })
+    }
+  }
+}
 
-const updateSiteSchema = createSiteObject.partial().superRefine(enforceResidenceImageCap)
+function refineCreateSite(data: z.infer<typeof createSiteObject>, ctx: z.RefinementCtx): void {
+  enforceResidenceImageCap(data, ctx)
+  enforceSiteInputQuality(data, ctx, 'create')
+}
+
+const createSiteSchema = createSiteObject.superRefine(refineCreateSite)
+
+const patchSiteObject = createSiteObject.omit({ facingConfirmed: true }).partial()
+
+const updateSiteSchema = patchSiteObject.superRefine((data, ctx) => {
+  enforceResidenceImageCap(data, ctx)
+  enforceSiteInputQuality(data, ctx, 'patch')
+})
+
+function buildInputMeta(input: z.infer<typeof createSiteObject>): string {
+  const meta: Record<string, unknown> = { facingConfirmed: true }
+  if (input.floorplan) {
+    meta.floorplanOrientConfirmed = input.floorplanOrientConfirmed === true
+    meta.orientFacingDeltaDeg = orientFacingDeltaDeg(input.floorplan.orientDeg, input.facingDegTrue)
+  }
+  if (
+    input.geocodeLat != null &&
+    input.geocodeLng != null &&
+    input.buildingCenterNorm
+  ) {
+    meta.geocodeLat = input.geocodeLat
+    meta.geocodeLng = input.geocodeLng
+    meta.buildingCenterNorm = input.buildingCenterNorm
+    const expected = pinOffsetCoords(input.geocodeLat, input.geocodeLng, input.buildingCenterNorm)
+    meta.pinOffsetM = haversineM(input.lat, input.lng, expected.lat, expected.lng)
+  }
+  return JSON.stringify(meta)
+}
+
+function parseInputMeta(json: string | null): unknown {
+  if (!json) return null
+  try {
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
 
 function parseFloorplan(json: string | null): unknown {
   if (!json) return null
@@ -131,6 +268,7 @@ function serializeSite(row: typeof fengSites.$inferSelect) {
     floor: row.floor,
     floorplanKey: row.floorplanKey,
     floorplan: parseFloorplan(row.floorplanJson),
+    inputMeta: parseInputMeta(row.inputMeta),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -162,13 +300,23 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     }
     const input = parsed.data
 
+    const db = c.get('db')
+    if (input.floorplan?.images?.length) {
+      const keys = input.floorplan.images.map((im) => im.key)
+      const owned = await assertUserOwnsFloorplanKeys(c.env, db, userId, keys)
+      if (!owned.ok) {
+        return jsonErr(c, 403, ApiErrorCode.forbidden, 'floorplan key not owned by user', {
+          key: owned.key,
+        })
+      }
+    }
+
     const id = nanoid()
     const now = new Date().toISOString()
     const sitDegTrue = (input.facingDegTrue + 180) % 360
     const facingDegMagnetic =
       (((input.facingDegTrue - input.magneticDeclination) % 360) + 360) % 360
 
-    const db = c.get('db')
     await db.insert(fengSites).values({
       id,
       userId,
@@ -189,6 +337,7 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       floor: input.floor ?? null,
       floorplanKey: input.floorplanKey ?? null,
       floorplanJson: input.floorplan ? JSON.stringify(input.floorplan) : null,
+      inputMeta: buildInputMeta(input),
       createdAt: now,
       updatedAt: now,
     })

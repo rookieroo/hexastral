@@ -93,6 +93,8 @@ export interface TerrainSignals {
   recommendedTiles: AdaptiveTile[]
   expectedFeatures: ('砂' | '水' | '朝案')[]
   summary: string
+  nearestRoadBearingDeg: number | null
+  roadFeatureCount: number
   degraded: boolean
 }
 
@@ -190,6 +192,24 @@ export async function putFloorplan(
   return res.json() as Promise<{ key: string }>
 }
 
+export async function getFloorplanImage(
+  svc: FetcherLike,
+  key: string
+): Promise<{ bytes: ArrayBuffer; contentType: string }> {
+  const res = await svc.fetch(
+    new Request(`https://svc-feng.internal/maps/image/floorplan/${encodeURIComponent(key)}`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(TIMEOUTS.maps),
+    })
+  )
+  if (!res.ok) {
+    const err = await res.text().catch(() => 'unknown')
+    throw new Error(`svc-feng floorplan image failed (${res.status}): ${err}`)
+  }
+  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+  return { bytes: await res.arrayBuffer(), contentType }
+}
+
 /**
  * Purge floor-plan images from svc-feng's owned FLOORPLAN_CACHE (account / site
  * deletion). The bucket has no lifecycle GC, so this is the only way these PII
@@ -263,23 +283,32 @@ export interface VisionAnalyzeResult {
     distance: 'near' | 'mid' | 'far'
     severity: 1 | 2 | 3 | 4 | 5
     evidence: string
+    confidence?: 'high' | 'low'
+    geometrySupport?: 'strong' | 'weak' | 'none' | 'inferred-only'
+    adjustedSeverity?: number
   }>
   砂: Array<{
     type: string
     direction: string
     distance: 'near' | 'mid' | 'far'
     strength: 'strong' | 'medium' | 'weak'
+    confidence?: 'high' | 'low'
+    geometrySupport?: 'strong' | 'weak' | 'none' | 'inferred-only'
   }>
   水: Array<{
     type: string
     direction: string
     distance: 'near' | 'mid' | 'far'
     flow: 'in' | 'out' | 'still'
+    confidence?: 'high' | 'low'
+    geometrySupport?: 'strong' | 'weak' | 'none' | 'inferred-only'
   }>
   朝案: Array<{
     type: string
     direction: string
     distance: 'near' | 'mid' | 'far'
+    confidence?: 'high' | 'low'
+    geometrySupport?: 'strong' | 'weak' | 'none' | 'inferred-only'
   }>
   notes?: string
   modelVersion: string
@@ -344,6 +373,8 @@ export interface SynthesizeInput {
     /** Room-level interior join (户型图). Empty/omitted = exterior-only report. */
     roomFindings?: unknown[]
     interiorSha?: unknown[]
+    /** Missing-corner findings from interior vision (缺角). */
+    interiorQueJiao?: unknown[]
   }
   userProfile: {
     birthDate: string
@@ -355,7 +386,13 @@ export interface SynthesizeInput {
     hasExactBuildYear: boolean
     flyingStarsConfidence: 'high' | 'medium' | 'low' | 'omitted'
     notes: string[]
+    inputScore?: number
   }
+  mustSoften?: Array<{
+    type: string
+    direction: string
+    geometrySupport: 'weak' | 'none' | 'inferred-only'
+  }>
 }
 
 export interface SynthesizedChapter {

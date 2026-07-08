@@ -22,6 +22,7 @@
 import type { BaguaPalace, Gender } from '@zhop/astro-core'
 import {
   annualChart,
+  auditVisionGeometry,
   computeBaZhai,
   computeFlyingStars,
   correlateFormAndStars,
@@ -48,6 +49,7 @@ import {
   type ElevationProfile,
   elevationProfile,
   type InteriorVisionResult,
+  getFloorplanImage,
   type OverlayArrow,
   prefetchTerrain,
   renderMap,
@@ -59,16 +61,59 @@ import {
   visionInterior,
 } from './feng-client'
 import { deriveRoomFindings, parseSiteFloorplan, type RoomFinding } from './feng-interior-compute'
+import { orientFacingDeltaDeg } from './feng-coords'
+import { assessFloorplanImageQuality } from './floorplan-image-heuristic'
 import {
   type FengResidenceType,
   fengStreetViewEnabled,
   normalizeResidenceType,
 } from './feng-pricing'
+import { inferResidenceHeuristic } from './feng-residence-heuristic'
 import { fengLogger } from './logger'
 import { searchPortfolioReadingMemory } from './portfolio-memory'
 
 type Site = typeof fengSites.$inferSelect
 type Job = typeof fengJobsTable.$inferSelect
+
+interface SiteInputMeta {
+  facingConfirmed?: boolean
+  floorplanOrientConfirmed?: boolean
+  pinOffsetM?: number
+  orientFacingDeltaDeg?: number
+  residenceHeuristic?: ReturnType<typeof inferResidenceHeuristic>
+}
+
+function parseSiteInputMeta(site: Site): SiteInputMeta | null {
+  if (!site.inputMeta) return null
+  try {
+    return JSON.parse(site.inputMeta) as SiteInputMeta
+  } catch {
+    return null
+  }
+}
+
+type GeometrySupport = 'weak' | 'none' | 'inferred-only'
+
+function collectMustSoften(vision: VisionAnalyzeResult): Array<{
+  type: string
+  direction: string
+  geometrySupport: GeometrySupport
+}> {
+  const out: Array<{ type: string; direction: string; geometrySupport: GeometrySupport }> = []
+  const push = (items: Array<{ type: string; direction: string; geometrySupport?: string }>) => {
+    for (const item of items) {
+      const gs = item.geometrySupport
+      if (gs === 'weak' || gs === 'none' || gs === 'inferred-only') {
+        out.push({ type: item.type, direction: item.direction, geometrySupport: gs })
+      }
+    }
+  }
+  push(vision.形煞)
+  push(vision.砂)
+  push(vision.水)
+  push(vision.朝案)
+  return out
+}
 
 /**
  * Ground-level street 形煞 (壁刀 / 天斩 / 路冲) over-hits high floors — a 30F 大平层 is
@@ -163,7 +208,16 @@ async function loadUserContext(db: AppDb, userId: string): Promise<UserContext> 
   return { locale, profile: { birthDate: solar, gender } }
 }
 
-function deriveDataQuality(site: Site, terrain?: TerrainSignals) {
+/** Exported for golden regression on input_meta scoring. */
+export function deriveDataQuality(
+  site: Site,
+  terrain?: TerrainSignals,
+  opts?: {
+    hasBirthProfile?: boolean
+    residenceHeuristic?: ReturnType<typeof inferResidenceHeuristic>
+    extraNotes?: string[]
+  }
+) {
   const hasExactBuildYear = site.buildYearAccuracy === 'exact'
   let flyingStarsConfidence: 'high' | 'medium' | 'low' | 'omitted'
   switch (site.buildYearAccuracy) {
@@ -179,19 +233,95 @@ function deriveDataQuality(site: Site, terrain?: TerrainSignals) {
     default:
       flyingStarsConfidence = 'omitted'
   }
-  const notes: string[] = []
+  const notes: string[] = [...(opts?.extraNotes ?? [])]
+  let inputScore = 30
+  const inputMeta = parseSiteInputMeta(site)
+  const residence = normalizeResidenceType(site.residenceType)
+
+  if (inputMeta?.facingConfirmed !== true) {
+    inputScore -= 25
+    notes.push('facing_confirmed=false (legacy or missing input_meta)')
+  }
+  if (typeof inputMeta?.pinOffsetM === 'number' && inputMeta.pinOffsetM > 200) {
+    inputScore -= 8
+    notes.push(`pin_offset_m=${Math.round(inputMeta.pinOffsetM)}`)
+  }
+  if (typeof inputMeta?.orientFacingDeltaDeg === 'number' && inputMeta.orientFacingDeltaDeg > 15) {
+    notes.push(`orient_facing_delta_deg=${Math.round(inputMeta.orientFacingDeltaDeg)}`)
+  }
+
   if (site.buildYearAccuracy === 'unknown') {
     notes.push('flying_stars_omitted=true (build_year_accuracy=unknown)')
+    notes.push('build_year=unknown')
   } else if (!hasExactBuildYear) {
     notes.push(`build_year_accuracy=${site.buildYearAccuracy}`)
+    if (site.buildYearAccuracy === 'decade') {
+      inputScore += 18
+      notes.push('build_year=decade')
+    } else if (site.buildYearAccuracy === 'moveIn') {
+      inputScore += 12
+      notes.push('build_year=move_in')
+    }
+  } else {
+    inputScore += 25
+    notes.push('build_year=exact')
   }
+
+  if (site.floorplanKey) {
+    inputScore += 20
+    notes.push('floorplan=true')
+    if (site.floorplanJson) {
+      try {
+        const fp = JSON.parse(site.floorplanJson) as { orientDeg?: number; centerNorm?: unknown }
+        if (typeof fp.orientDeg === 'number') notes.push('floorplan_orient=true')
+        if (fp.centerNorm) notes.push('floorplan_center=true')
+      } catch {
+        notes.push('floorplan_json_parse_failed=true')
+      }
+    }
+  } else {
+    notes.push('floorplan=false')
+  }
+
+  if (opts?.hasBirthProfile) {
+    inputScore += 15
+    notes.push('birth_profile=true')
+  } else {
+    notes.push('birth_profile=false')
+  }
+
+  if (residence === 'flat' && site.floor != null) {
+    inputScore += 5
+    notes.push('flat_floor=true')
+  }
+  if (residence === 'apartment' && site.floor == null) {
+    inputScore -= 5
+    notes.push('apartment_floor_missing=true (street form less relevant above ground)')
+  }
+
   if (terrain && !terrain.degraded) {
     notes.push(`terrain=${terrain.summary}`)
     if (!terrain.hasWater && !terrain.hasMountain) {
       notes.push('terrain.flat_urban=true (砂/水 chapters scoped to direction-only)')
     }
   }
-  return { hasExactBuildYear, flyingStarsConfidence, notes }
+  if (residence === 'flat' && site.floor == null) {
+    notes.push('flat_floor_missing=true (street 形煞 attenuation skipped)')
+  }
+
+  if (opts?.residenceHeuristic?.mismatch) {
+    notes.push(`residence_heuristic_mismatch=true (${opts.residenceHeuristic.reason ?? 'unknown'})`)
+    if (opts.residenceHeuristic.suggestedResidence) {
+      notes.push(`residence_heuristic_suggested=${opts.residenceHeuristic.suggestedResidence}`)
+    }
+  }
+
+  return {
+    hasExactBuildYear,
+    flyingStarsConfidence,
+    notes,
+    inputScore: Math.min(100, Math.max(0, inputScore)),
+  }
 }
 
 function arrowsFor(site: Site): OverlayArrow[] {
@@ -286,6 +416,8 @@ export async function runAnalyzeJob(
         recommendedTiles: ['close', 'mid', 'wide'],
         expectedFeatures: ['砂', '水', '朝案'],
         summary: 'prefetch error; running full pipeline',
+        nearestRoadBearingDeg: null,
+        roadFeatureCount: 0,
         degraded: true,
       }
       fengLogger.warn('job.prefetch.error', {
@@ -371,7 +503,7 @@ export async function runAnalyzeJob(
     await setStage(db, jobId, 'vision', 55)
     const visionStarted = Date.now()
     const { locale, profile } = await loadUserContext(db, site.userId)
-    const vision: VisionAnalyzeResult = await visionAnalyze(env.SVC_FENG, {
+    let vision: VisionAnalyzeResult = await visionAnalyze(env.SVC_FENG, {
       annotatedKeys,
       facingDegTrue,
       sitDegTrue,
@@ -464,6 +596,21 @@ export async function runAnalyzeJob(
       }
     }
 
+    const flatUrban = !terrain.hasWater && !terrain.hasMountain && !terrain.degraded
+    const audited = auditVisionGeometry(
+      vision,
+      {
+        hasWater: terrain.hasWater,
+        hasMountain: terrain.hasMountain,
+        flatUrban,
+        nearestRoadBearingDeg: terrain.nearestRoadBearingDeg,
+        closeTileRendered: annotatedKeys.length >= 1,
+      },
+      elevation && !elevation.degraded ? elevation.byPalace : undefined
+    )
+    vision = { ...vision, ...audited } as VisionAnalyzeResult
+    const mustSoften = collectMustSoften(vision)
+
     // 小峦头街景形煞 (Mapillary, off unless MAPILLARY_TOKEN). Merge into vision.形煞
     // (binned by the capturing image's compass angle → 宫) so it flows to both
     // formByPalace and synthesis. Fail-open.
@@ -529,7 +676,8 @@ export async function runAnalyzeJob(
     }
     for (const x of vision.形煞) {
       const p = directionToPalace(x.direction)
-      if (p) formByPalace[p].hasSha = true
+      const sev = x.adjustedSeverity ?? x.severity
+      if (p && sev >= 2) formByPalace[p].hasSha = true
     }
 
     const emptyFormLi = {
@@ -559,8 +707,40 @@ export async function runAnalyzeJob(
     // are part of computeJson.
     let interior: InteriorVisionResult | null = null
     let roomFindings: RoomFinding[] = []
+    let interiorQueJiao: Array<{ palace: string; note?: string; floorLabel?: string }> = []
+    const interiorExtraNotes: string[] = []
     const floorplan = parseSiteFloorplan(site.floorplanJson)
+    const siteInputMeta = parseSiteInputMeta(site)
     if (floorplan && floorplan.images.length > 0) {
+      const orientDelta =
+        siteInputMeta?.orientFacingDeltaDeg ??
+        orientFacingDeltaDeg(floorplan.orientDeg, Number(site.facingDegTrue))
+      let skipInterior: string | null = null
+      if (siteInputMeta?.floorplanOrientConfirmed !== true) {
+        skipInterior = 'floorplan_orient_unconfirmed'
+      } else if (orientDelta > 30) {
+        skipInterior = 'orient_facing_mismatch'
+      } else {
+        const coverKey = floorplan.images[0]?.key
+        if (coverKey) {
+          try {
+            const { bytes } = await getFloorplanImage(env.SVC_FENG, coverKey)
+            if (assessFloorplanImageQuality(new Uint8Array(bytes)) === 'low') {
+              skipInterior = 'floorplan_quality_low'
+            }
+          } catch (err) {
+            fengLogger.warn('job.floorplan_heuristic.error', {
+              jobId,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          }
+        }
+      }
+
+      if (skipInterior) {
+        interiorExtraNotes.push(`${skipInterior}=true`)
+        fengLogger.info('job.interior.skipped', { jobId, reason: skipInterior })
+      } else {
       const interiorStarted = Date.now()
       try {
         interior = await visionInterior(env.SVC_FENG, {
@@ -572,9 +752,19 @@ export async function runAnalyzeJob(
         })
         roomFindings = deriveRoomFindings(interior, {
           combinations,
-          auspiciousPalaces,
-          inauspiciousPalaces,
+          sitPalace,
+          mingLucky: baZhaiResult?.lucky ?? [],
+          mingUnlucky: baZhaiResult?.unlucky ?? [],
+          ...(baZhaiResult?.concord ? { concord: baZhaiResult.concord } : {}),
           floorLabels: floorplan.images.map((im) => im.label),
+        })
+        interiorQueJiao = interior.floors.flatMap((floor, i) => {
+          const floorLabel = floorplan.images[i]?.label
+          return floor.缺角.map((q) => ({
+            palace: q.palace,
+            ...(q.note ? { note: q.note } : {}),
+            ...(floorLabel ? { floorLabel } : {}),
+          }))
         })
         fengLogger.info('job.stage.done', {
           jobId,
@@ -592,6 +782,7 @@ export async function runAnalyzeJob(
           error: err instanceof Error ? err.message : String(err),
         })
       }
+      }
     }
 
     // ── Persist SHELL report (two-phase load) ──
@@ -600,7 +791,15 @@ export async function runAnalyzeJob(
     // slow LLM synthesis, so the client renders the computed report in seconds
     // and streams the chapters in when they land (instead of a 60–90s blank wait).
     const reportId = nanoid()
-    const dataQuality = deriveDataQuality(site, terrain)
+    const residenceHeuristic = inferResidenceHeuristic(
+      terrain,
+      normalizeResidenceType(site.residenceType)
+    )
+    const dataQuality = deriveDataQuality(site, terrain, {
+      hasBirthProfile: profile != null,
+      residenceHeuristic,
+      extraNotes: interiorExtraNotes,
+    })
     const computeJson = JSON.stringify({
       flyingStars,
       baZhai: baZhaiResult,
@@ -614,6 +813,8 @@ export async function runAnalyzeJob(
       monthlyStars,
       interior: interior ? { floors: interior.floors, modelVersion: interior.modelVersion } : null,
       roomFindings,
+      interiorSha: interior ? interior.floors.flatMap((f) => f.形煞) : [],
+      interiorQueJiao,
     })
     await db.insert(fengReports).values({
       id: reportId,
@@ -697,6 +898,7 @@ export async function runAnalyzeJob(
         // Room-level interior join (户型图) — empty when no floor plan uploaded.
         roomFindings,
         interiorSha: interior ? interior.floors.flatMap((f) => f.形煞) : [],
+        interiorQueJiao,
       },
       userProfile: {
         birthDate: profile?.birthDate ?? '',
@@ -705,6 +907,7 @@ export async function runAnalyzeJob(
       },
       memoryContext: memoryContext || undefined,
       dataQuality,
+      mustSoften: mustSoften.length > 0 ? mustSoften : undefined,
     })
     fengLogger.info('job.stage.done', {
       jobId,

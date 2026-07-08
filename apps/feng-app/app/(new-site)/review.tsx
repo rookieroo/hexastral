@@ -1,5 +1,5 @@
 /**
- * (new-site)/review — step 6 of 6.
+ * (new-site)/review — step 4 of 4.
  *
  * Confirm summary → POST /api/feng/sites → enqueue analyze → poll job.
  * On stage='done' navigates into (report)/[siteId]. On 'failed' shows the
@@ -9,12 +9,18 @@
 import { fengPriceEstimate, useCreateSite, useFengClient, type FengPriceQuote } from '@zhop/scenario-feng'
 import { isCompoundFacing } from '@zhop/astro-core'
 import { type Href, useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { useNewSiteGuard } from '@/hooks/useNewSiteGuard'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
+import {
+  assessDraftQuality,
+  hasDraftBlockers,
+  type DraftQualityIssueId,
+} from '@/lib/draft-quality'
 import {
   normalizeResidenceType,
   streetViewEnabledForResidence,
@@ -26,6 +32,7 @@ import { spacing, useFengTheme } from '@/lib/theme'
 
 export default function ReviewScreen() {
   const router = useRouter()
+  const guardReady = useNewSiteGuard('review')
   const { userId } = useAuth()
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
@@ -74,7 +81,7 @@ export default function ReviewScreen() {
   const confirm = async () => {
     if (hasSubmitted || creating) return
     if (!draft || !isDraftReady(draft)) {
-      setSubmitError('Draft is incomplete — go back and finish each step.')
+      setSubmitError(t.new_site_quality_incomplete)
       return
     }
     if (!userId) return
@@ -109,7 +116,12 @@ export default function ReviewScreen() {
         buildYearAccuracy: draft.buildYearAccuracy,
         moveInYear: draft.moveInYear,
         floor: draft.floor,
+        facingConfirmed: true,
+        geocodeLat: draft.geocodeLat,
+        geocodeLng: draft.geocodeLng,
+        buildingCenterNorm: draft.buildingCenterNorm,
         floorplanKey: cover ? cover.key : undefined,
+        floorplanOrientConfirmed: cover ? draft.floorplanOrientConfirmed === true : undefined,
         floorplan: cover
           ? {
               orientDeg: draft.floorplanOrientDeg ?? 0,
@@ -151,8 +163,41 @@ export default function ReviewScreen() {
     }
   }
 
+  const qualityIssues = useMemo(
+    () => (draft ? assessDraftQuality(draft) : []),
+    [draft]
+  )
+  const qualityMessage = (id: DraftQualityIssueId): string => {
+    switch (id) {
+      case 'incomplete':
+        return t.new_site_quality_incomplete
+      case 'flat_floor':
+        return t.new_site_quality_flat_floor
+      case 'build_year':
+        return t.new_site_quality_build_year
+      case 'move_in_year':
+        return t.new_site_quality_move_in_year
+      case 'unknown_build':
+        return t.new_site_quality_unknown_build
+      case 'no_floorplan':
+        return t.new_site_quality_no_floorplan
+      case 'facing_unconfirmed':
+        return t.new_site_quality_facing_unconfirmed
+      case 'floorplan_orient_unconfirmed':
+        return t.new_site_quality_floorplan_orient_unconfirmed
+      case 'orient_facing_mismatch':
+        return t.new_site_quality_orient_facing_mismatch
+      case 'apartment_floor_missing':
+        return t.new_site_quality_apartment_floor_missing
+    }
+  }
+
   const labels: Array<{ label: string; value: string }> = []
   if (draft) {
+    labels.push({
+      label: t.new_site_review_site_name,
+      value: draft.name?.trim() ? draft.name : t.new_site_default_name,
+    })
     labels.push({ label: t.new_site_review_address, value: draft.formattedAddress ?? '—' })
     labels.push({ label: t.new_site_review_residence, value: residenceValue(draft.residenceType) })
     if (typeof draft.facingDegTrue === 'number') {
@@ -172,6 +217,9 @@ export default function ReviewScreen() {
     } else if (draft.buildYearAccuracy && draft.buildYearAccuracy !== 'unknown') {
       labels.push({ label: t.new_site_review_buildYear, value: draft.buildYearAccuracy })
     }
+    if (typeof draft.floor === 'number') {
+      labels.push({ label: t.new_site_review_floor, value: String(draft.floor) })
+    }
     if (draft.floorplanImages && draft.floorplanImages.length > 0) {
       labels.push({
         label: t.new_site_review_floorplan,
@@ -186,8 +234,11 @@ export default function ReviewScreen() {
   }
 
   const inProgress = creating
-  const confirmDisabled = inProgress || !draft || !isDraftReady(draft) || hasSubmitted
+  const blocked = !draft || hasDraftBlockers(qualityIssues)
+  const confirmDisabled = inProgress || blocked || hasSubmitted
   const errMessage = submitError
+
+  if (!guardReady) return null
 
   return (
     <ScrollView
@@ -224,6 +275,36 @@ export default function ReviewScreen() {
           </View>
         ))}
       </View>
+
+      {qualityIssues.length > 0 ? (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 0.5,
+            borderColor: colors.border,
+            borderRadius: 0,
+            padding: spacing.lg,
+            gap: spacing.sm,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+            {t.new_site_review_quality_title}
+          </Text>
+          {qualityIssues.map((issue) => (
+            <Text
+              key={issue.id}
+              style={{
+                color: issue.severity === 'block' ? colors.warning : colors.textMute,
+                fontSize: 12.5,
+                lineHeight: 18,
+              }}
+            >
+              {issue.severity === 'block' ? '• ' : '– '}
+              {qualityMessage(issue.id)}
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       {priceQuote ? (
         <View

@@ -48,6 +48,7 @@ export type Strings = {
   new_site_address_use_location: string
 
   new_site_facing_title: string
+  new_site_facing_confirm_required: string
   new_site_facing_subtitle: string
   new_site_facing_map_legend: string
   new_site_facing_building_pin: string
@@ -83,24 +84,46 @@ export type Strings = {
   new_site_building_accuracy_decade: string
   new_site_building_accuracy_moveIn: string
   new_site_building_accuracy_unknown: string
+  new_site_building_accuracy_required: string
+  new_site_building_unknown_confirm_title: string
+  new_site_building_unknown_confirm_body: string
+  new_site_building_unknown_confirm_cta: string
   new_site_building_floor_label: string
   /** Hint under the floor field — required for 大平层 so street 形煞 can be floor-weighted. */
   new_site_building_floor_flat_hint: string
   /** Blocking error when 大平层 has no floor number. */
   new_site_building_floor_required: string
+  /** Blocking error when exact/decade accuracy selected without a year. */
+  new_site_building_year_required: string
+  /** Blocking error when move-in accuracy selected without a year. */
+  new_site_building_move_in_required: string
   new_site_building_next: string
 
   new_site_review_title: string
+  new_site_review_site_name: string
   new_site_review_address: string
   new_site_review_building_facing: string
   new_site_review_unit_door: string
   new_site_review_buildYear: string
+  new_site_review_floor: string
   new_site_review_confirm: string
   new_site_review_processing: string
   /** Price row on review — {price} = localized display price from /price. */
   new_site_review_price: string
   /** Badge when premium tier includes street-level 形煞. */
   new_site_review_street_badge: string
+  /** Data-quality checklist on review before generate. */
+  new_site_review_quality_title: string
+  new_site_quality_incomplete: string
+  new_site_quality_flat_floor: string
+  new_site_quality_build_year: string
+  new_site_quality_move_in_year: string
+  new_site_quality_unknown_build: string
+  new_site_quality_no_floorplan: string
+  new_site_quality_facing_unconfirmed: string
+  new_site_quality_floorplan_orient_unconfirmed: string
+  new_site_quality_orient_facing_mismatch: string
+  new_site_quality_apartment_floor_missing: string
 
   // Tabs
   tab_sites: string
@@ -162,6 +185,7 @@ export type Strings = {
   digest_headline_ping: string
   digest_focus_line: string
   digest_not_score: string
+  digest_input_completeness: string
   /** Footer on shared chapter PNG cards. */
   share_brand_footer: string
   share_disclaimer: string
@@ -216,6 +240,7 @@ export type Strings = {
   new_site_floorplan_max: string
   new_site_floorplan_grid_show: string
   new_site_floorplan_grid_hide: string
+  new_site_floorplan_preview_error: string
   new_site_review_floorplan: string
   report_unlock_title: string
 
@@ -355,6 +380,8 @@ const EN: Strings = {
   new_site_facing_tile_error: 'Map unavailable — use Record with your phone aimed at the door.',
   new_site_facing_tile_retry: 'Retry map',
   new_site_facing_next: 'Next',
+  new_site_facing_confirm_required:
+    'Adjust the facing ring or record with the compass before continuing.',
   new_site_facing_compass_warn:
     'Satellite facing ({sat}°) differs from phone compass ({compass}°) by {delta}° — double-check outdoors if unsure.',
   new_site_review_compound_facing:
@@ -374,20 +401,46 @@ const EN: Strings = {
   new_site_building_accuracy_decade: 'Decade',
   new_site_building_accuracy_moveIn: 'Move-in year only',
   new_site_building_accuracy_unknown: 'Skip',
+  new_site_building_accuracy_required: 'Choose how you know the build year before continuing.',
+  new_site_building_unknown_confirm_title: 'Skip build year?',
+  new_site_building_unknown_confirm_body:
+    'Without a build year the Flying Stars chapter will be omitted. You can still get 八宅 and annual directions.',
+  new_site_building_unknown_confirm_cta: 'Skip anyway',
   new_site_building_floor_label: 'Floor (optional)',
   new_site_building_floor_flat_hint:
     'Required for a full-floor flat — the street-level form analysis is weighted by your floor height.',
   new_site_building_floor_required: 'Enter the floor for a full-floor flat.',
+  new_site_building_year_required: 'Enter the build year or decade.',
+  new_site_building_move_in_required: 'Enter your move-in year.',
   new_site_building_next: 'Continue',
   new_site_review_title: 'Review',
+  new_site_review_site_name: 'Site name',
   new_site_review_address: 'Address',
   new_site_review_building_facing: 'Building entrance',
   new_site_review_unit_door: 'Unit door',
   new_site_review_buildYear: 'Build year',
+  new_site_review_floor: 'Floor',
   new_site_review_confirm: 'Generate report',
   new_site_review_processing: 'Analyzing… {stage}',
   new_site_review_price: 'Report price',
   new_site_review_street_badge: 'Includes street-level form analysis',
+  new_site_review_quality_title: 'Before you generate',
+  new_site_quality_incomplete: 'Some required fields are missing — go back and finish each step.',
+  new_site_quality_flat_floor: 'Full-floor flat requires a floor number (building step).',
+  new_site_quality_build_year: 'You chose an exact/decade build year but did not enter the year.',
+  new_site_quality_move_in_year: 'You chose move-in year but did not enter the year.',
+  new_site_quality_unknown_build:
+    'Build year skipped — the Flying Stars chapter will be omitted. Consider adding the year on the building step.',
+  new_site_quality_no_floorplan:
+    'No floor plan — room-level and missing-corner analysis will be limited to directional advice.',
+  new_site_quality_facing_unconfirmed:
+    'Facing was not adjusted from the default — capture with the compass or nudge the ring on the locate step.',
+  new_site_quality_floorplan_orient_unconfirmed:
+    'Floor plan north / center not confirmed — dial north or drag the center pin on the floor plan step.',
+  new_site_quality_orient_facing_mismatch:
+    'Floor plan north differs from site facing by more than 30° — double-check alignment.',
+  new_site_quality_apartment_floor_missing:
+    'No floor entered — ground-level road form (路冲) is less relevant on upper floors; add your floor on the building step if you know it.',
   tab_sites: 'Sites',
   tab_compass: 'Compass',
   tab_readings: 'Readings',
@@ -438,6 +491,7 @@ const EN: Strings = {
   digest_headline_ping: 'No special flying-star disposition — read sector by sector from the form–star verdicts.',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: 'Verdict chips from deterministic charts and landform — not a fortune score or percentile.',
+  digest_input_completeness: 'Input completeness {score}%',
   share_brand_footer: '風 · Kanyu',
   share_disclaimer: 'For entertainment and cultural study only — not professional advice.',
   reading_copy: 'Copy',
@@ -492,6 +546,7 @@ const EN: Strings = {
   new_site_floorplan_max: 'Maximum {n} floor plans reached.',
   new_site_floorplan_grid_show: 'Show nine-palace grid',
   new_site_floorplan_grid_hide: 'Hide nine-palace grid',
+  new_site_floorplan_preview_error: 'Could not load saved floor plan preview. Try re-uploading.',
   new_site_review_floorplan: 'Floor plan',
   report_unlock_title: 'Unlock this report',
   paywall_title: 'Full site report',
@@ -621,6 +676,7 @@ const ZH_HANS: Strings = {
   new_site_facing_tile_error: '地图不可用 — 请对准楼门后点「记录」。',
   new_site_facing_tile_retry: '重试地图',
   new_site_facing_next: '下一步',
+  new_site_facing_confirm_required: '请先微调朝向环或用罗盘记录朝向，再进入下一步。',
   new_site_facing_compass_warn:
     '卫星朝向（{sat}°）与手机罗盘（{compass}°）相差 {delta}°——若不确定请在户外复核。',
   new_site_review_compound_facing: '朝向接近山向边界（兼向）——报告将使用替卦飞星排盘。',
@@ -638,19 +694,42 @@ const ZH_HANS: Strings = {
   new_site_building_accuracy_decade: '只记得是哪个十年',
   new_site_building_accuracy_moveIn: '只知道入住年份',
   new_site_building_accuracy_unknown: '跳过',
+  new_site_building_accuracy_required: '请先选择建运信息来源再继续。',
+  new_site_building_unknown_confirm_title: '跳过建运？',
+  new_site_building_unknown_confirm_body:
+    '没有建运年份时，玄空飞星章将省略；八宅与流年方位仍可生成。',
+  new_site_building_unknown_confirm_cta: '仍要跳过',
   new_site_building_floor_label: '楼层(可选)',
   new_site_building_floor_flat_hint: '大平层必填 —— 街景级外峦形煞会按你所在楼层高度加权，避免高层被地面煞高估。',
   new_site_building_floor_required: '大平层请填写所在楼层。',
+  new_site_building_year_required: '请填写建成年份或年代。',
+  new_site_building_move_in_required: '请填写入住年份。',
   new_site_building_next: '继续',
   new_site_review_title: '确认',
+  new_site_review_site_name: '站点名称',
   new_site_review_address: '地址',
   new_site_review_building_facing: '楼门朝向',
   new_site_review_unit_door: '户门朝向',
   new_site_review_buildYear: '建成年份',
+  new_site_review_floor: '楼层',
   new_site_review_confirm: '生成报告',
   new_site_review_processing: '分析中… {stage}',
   new_site_review_price: '报告价格',
   new_site_review_street_badge: '含街景级外峦形煞分析',
+  new_site_review_quality_title: '生成前请确认',
+  new_site_quality_incomplete: '仍有必填项未完成，请返回各步骤补全。',
+  new_site_quality_flat_floor: '大平层必须填写楼层（建筑信息步骤）。',
+  new_site_quality_build_year: '已选择准确/年代建运，但未填写年份。',
+  new_site_quality_move_in_year: '已选择入住年份，但未填写具体年份。',
+  new_site_quality_unknown_build: '已跳过建运 —— 玄空飞星章将省略。建议在建筑信息步骤补全年份。',
+  new_site_quality_no_floorplan: '未上传户型图 —— 室内房间与缺角分析将限于方位级建议。',
+  new_site_quality_facing_unconfirmed: '朝向仍为默认值 —— 请在定位步骤用罗盘采集或微调朝向环。',
+  new_site_quality_floorplan_orient_unconfirmed:
+    '户型图北向/中宫未确认 —— 请在户型步骤拨动正北或拖动中宫标记。',
+  new_site_quality_orient_facing_mismatch:
+    '户型图北向与宅向相差超过 30° —— 请核对北向对齐是否正确。',
+  new_site_quality_apartment_floor_missing:
+    '未填写楼层 —— 高层公寓地面路冲参考价值有限；若已知楼层，可在建筑信息步骤补充。',
   tab_sites: '站点',
   tab_compass: '罗盘',
   tab_readings: '历史',
@@ -699,6 +778,7 @@ const ZH_HANS: Strings = {
   digest_headline_ping: '飞星无特殊格局，请按各宫形理断语逐区阅读。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '以上标签来自排盘与形势的确定性断语，不是运势打分或百分制指数。',
+  digest_input_completeness: '数据完整度 {score}%',
   share_brand_footer: '風 · Kanyu',
   share_disclaimer: '仅供娱乐与文化研习，非专业建议。',
   reading_copy: '复制',
@@ -751,6 +831,7 @@ const ZH_HANS: Strings = {
   new_site_floorplan_max: '最多上传 {n} 张户型图。',
   new_site_floorplan_grid_show: '显示九宫格',
   new_site_floorplan_grid_hide: '隐藏九宫格',
+  new_site_floorplan_preview_error: '无法加载已保存的户型图预览，请尝试重新上传。',
   new_site_review_floorplan: '户型图',
   report_unlock_title: '解锁这份报告',
   paywall_title: '完整堪舆报告',
@@ -869,6 +950,7 @@ const ZH_HANT: Strings = {
   new_site_facing_tile_retry: '重試地圖',
   new_site_facing_tile_loading: '載入地圖…',
   new_site_facing_next: '下一步',
+  new_site_facing_confirm_required: '請先微調朝向環或用羅盤記錄朝向，再進入下一步。',
   new_site_facing_compass_warn:
     '衛星朝向（{sat}°）與手機羅盤（{compass}°）相差 {delta}°——若不確定請在戶外複核。',
   new_site_review_compound_facing: '朝向接近山向邊界（兼向）——報告將使用替卦飛星排盤。',
@@ -885,19 +967,42 @@ const ZH_HANT: Strings = {
   new_site_building_accuracy_decade: '只記得是哪個十年',
   new_site_building_accuracy_moveIn: '只知道入住年份',
   new_site_building_accuracy_unknown: '略過',
+  new_site_building_accuracy_required: '請先選擇建運資訊來源再繼續。',
+  new_site_building_unknown_confirm_title: '略過建運？',
+  new_site_building_unknown_confirm_body:
+    '沒有建運年份時，玄空飛星章將省略；八宅與流年方位仍可生成。',
+  new_site_building_unknown_confirm_cta: '仍要略過',
   new_site_building_floor_label: '樓層(選填)',
   new_site_building_floor_flat_hint: '大平層必填 —— 街景級外巒形煞會按你所在樓層高度加權，避免高層被地面煞高估。',
   new_site_building_floor_required: '大平層請填寫所在樓層。',
+  new_site_building_year_required: '請填寫建成年份或年代。',
+  new_site_building_move_in_required: '請填寫入住年份。',
   new_site_building_next: '繼續',
   new_site_review_title: '確認',
+  new_site_review_site_name: '站點名稱',
   new_site_review_address: '地址',
   new_site_review_building_facing: '樓門朝向',
   new_site_review_unit_door: '戶門朝向',
   new_site_review_buildYear: '建成年份',
+  new_site_review_floor: '樓層',
   new_site_review_confirm: '生成報告',
   new_site_review_processing: '分析中… {stage}',
   new_site_review_price: '報告價格',
   new_site_review_street_badge: '含街景級外巒形煞分析',
+  new_site_review_quality_title: '生成前請確認',
+  new_site_quality_incomplete: '仍有必填項未完成，請返回各步驟補全。',
+  new_site_quality_flat_floor: '大平層必須填寫樓層（建築資訊步驟）。',
+  new_site_quality_build_year: '已選擇準確/年代建運，但未填寫年份。',
+  new_site_quality_move_in_year: '已選擇入住年份，但未填寫具體年份。',
+  new_site_quality_unknown_build: '已略過建運 —— 玄空飛星章將省略。建議在建築資訊步驟補全年份。',
+  new_site_quality_no_floorplan: '未上傳戶型圖 —— 室內房間與缺角分析將限於方位級建議。',
+  new_site_quality_facing_unconfirmed: '朝向仍為預設值 —— 請在定位步驟用羅盤採集或微調朝向環。',
+  new_site_quality_floorplan_orient_unconfirmed:
+    '戶型圖北向/中宮未確認 —— 請在戶型步驟撥動正北或拖動中宮標記。',
+  new_site_quality_orient_facing_mismatch:
+    '戶型圖北向與宅向相差超過 30° —— 請核對北向對齊是否正確。',
+  new_site_quality_apartment_floor_missing:
+    '未填寫樓層 —— 高層公寓地面路衝參考價值有限；若已知樓層，可在建築資訊步驟補充。',
   tab_sites: '地點',
   tab_compass: '羅盤',
   tab_readings: '歷史',
@@ -946,6 +1051,7 @@ const ZH_HANT: Strings = {
   digest_headline_ping: '飛星無特殊格局，請按各宮形理斷語逐區閱讀。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '以上標籤來自排盤與形勢的確定性斷語，不是運勢打分或百分制指數。',
+  digest_input_completeness: '資料完整度 {score}%',
   share_brand_footer: '風 · Kanyu',
   share_disclaimer: '僅供娛樂與文化研習，非專業建議。',
   reading_copy: '複製',
@@ -997,6 +1103,7 @@ const ZH_HANT: Strings = {
   new_site_floorplan_max: '最多上傳 {n} 張戶型圖。',
   new_site_floorplan_grid_show: '顯示九宮格',
   new_site_floorplan_grid_hide: '隱藏九宮格',
+  new_site_floorplan_preview_error: '無法載入已儲存的戶型圖預覽，請嘗試重新上傳。',
   new_site_review_floorplan: '戶型圖',
   report_unlock_title: '解鎖這份報告',
   paywall_title: '完整堪輿報告',
@@ -1121,6 +1228,8 @@ const JA: Strings = {
   new_site_facing_tile_error: '地図を取得できません — 向けて「記録」を使ってください。',
   new_site_facing_tile_retry: '地図を再試行',
   new_site_facing_next: '次へ',
+  new_site_facing_confirm_required:
+    '次へ進む前に、向きリングを調整するかコンパスで記録してください。',
   new_site_facing_compass_warn:
     '衛星の向き（{sat}°）とコンパス（{compass}°）が {delta}° ずれています。不明な場合は屋外で確認してください。',
   new_site_review_compound_facing:
@@ -1139,21 +1248,47 @@ const JA: Strings = {
   new_site_building_accuracy_decade: '年代まで',
   new_site_building_accuracy_moveIn: '入居年のみ',
   new_site_building_accuracy_unknown: 'スキップ',
+  new_site_building_accuracy_required: '続行する前に築年の情報源を選んでください。',
+  new_site_building_unknown_confirm_title: '築年をスキップしますか？',
+  new_site_building_unknown_confirm_body:
+    '築年がない場合、玄空飛星の章は省略されます。八宅と流年方位は引き続き生成されます。',
+  new_site_building_unknown_confirm_cta: 'スキップする',
   new_site_building_moveIn_label: '入居年',
   new_site_building_floor_label: '階(任意)',
   new_site_building_floor_flat_hint:
     'フルフロア住戸は必須です。路上レベルの形煞分析を階数に応じて調整します。',
   new_site_building_floor_required: 'フルフロア住戸は階数を入力してください。',
+  new_site_building_year_required: '築年または年代を入力してください。',
+  new_site_building_move_in_required: '入居年を入力してください。',
   new_site_building_next: '続ける',
   new_site_review_title: '確認',
+  new_site_review_site_name: 'サイト名',
   new_site_review_address: '住所',
   new_site_review_building_facing: '建物入口',
   new_site_review_unit_door: '住戸玄関',
   new_site_review_buildYear: '築年',
+  new_site_review_floor: '階',
   new_site_review_confirm: 'レポートを生成',
   new_site_review_processing: '分析中… {stage}',
   new_site_review_price: 'レポート価格',
-  new_site_review_street_badge: '路上レベルの形煞分析を含む',
+  new_site_review_street_badge: '路上レベルの外部形煞分析を含む',
+  new_site_review_quality_title: '生成前の確認',
+  new_site_quality_incomplete: '必須項目が未入力です。各ステップに戻って完了してください。',
+  new_site_quality_flat_floor: 'フルフロア住戸は階数が必須です（建物情報ステップ）。',
+  new_site_quality_build_year: '正確な築年/年代を選びましたが、年が未入力です。',
+  new_site_quality_move_in_year: '入居年を選びましたが、年が未入力です。',
+  new_site_quality_unknown_build:
+    '築年をスキップしました —— 玄空飛星の章は省略されます。建物情報で年を追加することをおすすめします。',
+  new_site_quality_no_floorplan:
+    '間取り図なし —— 室内の部屋・欠角分析は方位ベースのアドバイスに限られます。',
+  new_site_quality_facing_unconfirmed:
+    '向きが初期値のままです —— 位置ステップでコンパス記録またはリング調整を行ってください。',
+  new_site_quality_floorplan_orient_unconfirmed:
+    '間取り図の北向き/中宮が未確認です —— 間取りステップで北を合わせるか中宮ピンをドラッグしてください。',
+  new_site_quality_orient_facing_mismatch:
+    '間取り図の北向きと宅向きが30°以上ずれています —— 北向きの合わせ方を再確認してください。',
+  new_site_quality_apartment_floor_missing:
+    '階数未入力 —— 高層マンションでは地上の路衝の参考価値は限られます。分かれば建物情報で階数を追加してください。',
   tab_sites: '場所',
   tab_compass: 'コンパス',
   tab_readings: '履歴',
@@ -1202,6 +1337,7 @@ const JA: Strings = {
   digest_headline_ping: '特殊格局なし — 各宮の形理断語を順に読んでください。',
   digest_focus_line: '{palace} · {verdict}',
   digest_not_score: '表示は排盤と地形の確定的な断語であり、運勢スコアや百分率ではありません。',
+  digest_input_completeness: '入力完整度 {score}%',
   share_brand_footer: '風 · Kanyu',
   share_disclaimer: '娯楽・文化学習用であり、専門的助言ではありません。',
   reading_copy: 'コピー',
@@ -1256,6 +1392,8 @@ const JA: Strings = {
   new_site_floorplan_max: '間取り図は最大{n}枚までです。',
   new_site_floorplan_grid_show: '九宮グリッドを表示',
   new_site_floorplan_grid_hide: '九宮グリッドを非表示',
+  new_site_floorplan_preview_error:
+    '保存済みの間取り図プレビューを読み込めませんでした。再アップロードをお試しください。',
   new_site_review_floorplan: '間取り図',
   report_unlock_title: 'このレポートを解錠',
   paywall_title: 'フルサイトレポート',

@@ -67,6 +67,8 @@ export interface ReportDigest {
   focus: DigestFocusItem[]
   headline: DigestHeadline
   confidence: 'high' | 'medium' | 'low' | 'omitted'
+  /** 0–100 input completeness from server dataQuality.inputScore. */
+  inputScore?: number
 }
 
 function verdictTone(verdict: FormLiVerdict): DigestTone {
@@ -179,7 +181,7 @@ function pickHeadline(
 export function deriveReportDigest(
   compute: FengComputeJson | null | undefined,
   confidence: ReportDigest['confidence'] = 'high',
-  options?: { visionShaCount?: number }
+  options?: { visionShaCount?: number; inputScore?: number }
 ): ReportDigest | null {
   if (!compute?.flyingStars) return null
 
@@ -214,6 +216,7 @@ export function deriveReportDigest(
     focus,
     headline,
     confidence,
+    inputScore: options?.inputScore,
   }
 }
 

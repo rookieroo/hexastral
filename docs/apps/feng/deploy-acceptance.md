@@ -24,6 +24,7 @@ Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3) and [pro-grade-plan.md](./
 - [ ] Queue exists: `bunx wrangler queues create feng-analyze` (hexastral-api).
 - [ ] D1 migrations applied. Confirm `feng_sites / feng_reports / feng_jobs` tables present.
       Apply `0020_outgoing_dracula.sql` (`residence_type` column) before premium tier goes live.
+- [ ] Apply `0021_soft_metal_master.sql` (`input_meta` column) before input-quality gates go live.
 
 ## 2. Secrets (svc-feng) — `cd services/svc-feng`
 
@@ -115,7 +116,14 @@ Engines are golden-tested for *internal correctness*, but "professional-grade"
 needs a human expert to validate *output quality*.
 
 - [ ] Generate N (≥10) sample reports across varied 坐向 / 元运 / terrain
-      (a local script feeding fixed coords would help — not yet written).
+      — harness: `apps/hexastral-api/src/lib/feng-golden-sites.ts` +
+      `bun test src/lib/feng-golden.integration.test.ts` (deterministic compute);
+      staging spot-check still required for full vision/synthesis.
+- [ ] **录入铁闸 (staging)**: three floor-plan fixtures — (a) facing not confirmed →
+      review blocked; (b) floor plan uploaded but north not dialed → blocked;
+      (c) north vs facing >30° → blocked; direct POST without `facingConfirmed: true` → 400.
+- [ ] **录入铁闸**: edit address without re-geocode → confirm step forces new coords;
+      absurd pin offset (>2km) → API 400.
 - [ ] A paid 风水师 reviews: 飞星盘 + 格局 + 八宅 placement + 形理断语 for
       correctness and tone.
 - [ ] Sign-off recorded before marketing uses the word "专业 / professional".

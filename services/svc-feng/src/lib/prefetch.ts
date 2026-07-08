@@ -40,6 +40,10 @@ export interface TerrainSignals {
   expectedFeatures: ('砂' | '水' | '朝案')[]
   /** Human-readable summary for logs / dataQuality footer. */
   summary: string
+  /** Bearing (true north °) from site to nearest road segment within 150m. */
+  nearestRoadBearingDeg: number | null
+  /** Road feature count within 150m (motorway/road/street). */
+  roadFeatureCount: number
   /** True if Mapbox call failed; orchestrator should render all 3 tiles. */
   degraded: boolean
 }
@@ -53,6 +57,8 @@ const FAIL_OPEN: TerrainSignals = {
   recommendedTiles: ['close', 'mid', 'wide'],
   expectedFeatures: ['砂', '水', '朝案'],
   summary: 'prefetch unavailable; running full pipeline',
+  nearestRoadBearingDeg: null,
+  roadFeatureCount: 0,
   degraded: true,
 }
 
@@ -110,6 +116,76 @@ function maxMinElevation(features: TilequeryFeature[]): {
   return { min, max, count }
 }
 
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180
+}
+
+function bearingDeg(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const φ1 = toRad(lat1)
+  const φ2 = toRad(lat2)
+  const Δλ = toRad(lng2 - lng1)
+  const y = Math.sin(Δλ) * Math.cos(φ2)
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ)
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
+}
+
+function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6_371_000
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+function extractLineCoords(geometry: unknown): Array<[number, number]> {
+  if (!geometry || typeof geometry !== 'object') return []
+  const g = geometry as { type?: string; coordinates?: unknown }
+  if (g.type === 'LineString' && Array.isArray(g.coordinates)) {
+    return g.coordinates.filter(
+      (c): c is [number, number] =>
+        Array.isArray(c) && c.length >= 2 && typeof c[0] === 'number' && typeof c[1] === 'number'
+    )
+  }
+  if (g.type === 'MultiLineString' && Array.isArray(g.coordinates)) {
+    const out: Array<[number, number]> = []
+    for (const line of g.coordinates) {
+      if (!Array.isArray(line)) continue
+      for (const c of line) {
+        if (Array.isArray(c) && c.length >= 2 && typeof c[0] === 'number' && typeof c[1] === 'number') {
+          out.push([c[0], c[1]])
+        }
+      }
+    }
+    return out
+  }
+  return []
+}
+
+function nearestRoadBearingDeg(
+  lat: number,
+  lng: number,
+  features: TilequeryFeature[]
+): { bearing: number | null; count: number } {
+  let bestDist = Number.POSITIVE_INFINITY
+  let bestBearing: number | null = null
+  let count = 0
+  for (const f of features) {
+    const coords = extractLineCoords(f.geometry)
+    if (coords.length === 0) continue
+    count++
+    for (const [cLng, cLat] of coords) {
+      const d = haversineM(lat, lng, cLat, cLng)
+      if (d < bestDist) {
+        bestDist = d
+        bestBearing = bearingDeg(lat, lng, cLat, cLng)
+      }
+    }
+  }
+  return { bearing: bestBearing, count }
+}
+
 export interface PrefetchInput {
   lat: number
   lng: number
@@ -128,7 +204,7 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
   const controller = AbortSignal.timeout(timeoutMs)
 
   try {
-    const [waterFeatures, contourFeatures] = await Promise.all([
+    const [waterFeatures, contourFeatures, roadFeatures] = await Promise.all([
       queryTileset(
         STREETS_TILESET,
         input.lat,
@@ -147,6 +223,15 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
         input.mapboxToken,
         controller
       ),
+      queryTileset(
+        STREETS_TILESET,
+        input.lat,
+        input.lng,
+        150,
+        ['road', 'motorway', 'street'],
+        input.mapboxToken,
+        controller
+      ),
     ])
 
     const hasWater = waterFeatures.length > 0
@@ -162,11 +247,16 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
     if (hasMountain) expectedFeatures.push('砂', '朝案')
     if (hasWater) expectedFeatures.push('水')
 
+    const road = nearestRoadBearingDeg(input.lat, input.lng, roadFeatures)
+
     const summary = [
       hasWater ? `water:${waterFeatures.length} within 500m` : 'no water within 500m',
       hasMountain
         ? `elevation:${elevationRangeM.toFixed(0)}m range within 1km`
         : `flat (range ${elevationRangeM.toFixed(0)}m)`,
+      road.count > 0
+        ? `roads:${road.count} within 150m bearing ${road.bearing == null ? 'n/a' : Math.round(road.bearing)}°`
+        : 'no roads within 150m',
     ].join('; ')
 
     return {
@@ -178,6 +268,8 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
       recommendedTiles,
       expectedFeatures,
       summary,
+      nearestRoadBearingDeg: road.bearing,
+      roadFeatureCount: road.count,
       degraded: false,
     }
   } catch {

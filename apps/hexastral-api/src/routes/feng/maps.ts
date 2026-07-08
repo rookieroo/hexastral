@@ -12,7 +12,8 @@ import { z } from 'zod/v4'
 import type { AppEnv } from '../../infra-types'
 import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
-import { putFloorplan, renderMap } from '../../lib/feng-client'
+import { getFloorplanImage, putFloorplan, renderMap } from '../../lib/feng-client'
+import { grantFloorplanKey, userCanReadFloorplanKey } from '../../lib/feng-floorplan-access'
 
 const FLOORPLAN_MAX_BYTES = 8 * 1024 * 1024
 const floorplanSchema = z.object({
@@ -92,9 +93,7 @@ export const fengMapRoutes = new Hono<AppEnv>().get('/preview', async (c) => {
     return jsonErr(c, 502, ApiErrorCode.internal_error, message)
   }
 }).post('/floorplan', async (c) => {
-  // HMAC already verified by `/api/feng/maps/*`; bind identity so anonymous
-  // callers can't upload against the shared store.
-  requireUserId(c)
+  const userId = requireUserId(c)
 
   const json = await c.req.json().catch(() => null)
   const parsed = floorplanSchema.safeParse(json)
@@ -117,10 +116,35 @@ export const fengMapRoutes = new Hono<AppEnv>().get('/preview', async (c) => {
 
   try {
     const { key } = await putFloorplan(c.env.SVC_FENG, bytes, parsed.data.contentType)
+    await grantFloorplanKey(c.env.GUARD_KV, userId, key)
     return jsonOk(c, { key })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[feng.maps.floorplan] upload failed', { message })
+    return jsonErr(c, 502, ApiErrorCode.internal_error, message)
+  }
+}).get('/floorplan/:key', async (c) => {
+  const userId = requireUserId(c)
+  const key = c.req.param('key')
+  if (!key || key.length < 4 || key.length > 96) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid floorplan key')
+  }
+
+  const db = c.get('db')
+  const allowed = await userCanReadFloorplanKey(c.env, db, userId, key)
+  if (!allowed) {
+    return jsonErr(c, 403, ApiErrorCode.forbidden, 'floorplan key not owned by user')
+  }
+
+  try {
+    const { bytes, contentType } = await getFloorplanImage(c.env.SVC_FENG, key)
+    return jsonOk(c, {
+      base64: toBase64(bytes),
+      contentType,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[feng.maps.floorplan.get] failed', { key, message })
     return jsonErr(c, 502, ApiErrorCode.internal_error, message)
   }
 })

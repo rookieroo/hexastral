@@ -34,6 +34,8 @@ export interface SiteDraft {
   formattedAddress?: string
   facingDegTrue?: number
   magneticDeclination?: number
+  /** Set when the user captures compass, nudges, or drags the facing ring (not a silent default). */
+  facingConfirmed?: boolean
   doorDegTrue?: number
   buildYear?: number
   buildYearAccuracy?: 'exact' | 'decade' | 'moveIn' | 'unknown'
@@ -42,10 +44,14 @@ export interface SiteDraft {
   // ── 户型图 / 室内堪舆 (optional step) ──
   /** Uploaded floor-plan R2 keys (1 = apartment · N = villa/multi-floor). */
   floorplanImages?: DraftFloorplanImage[]
+  /** Address text that produced the current geocodeLat/Lng (for re-geocode on edit). */
+  lastGeocodedAddress?: string
   /** True-north bearing of the plans' top edge (north-align step). */
   floorplanOrientDeg?: number
   /** Normalized 中宫 pin (0–1) on the cover floor plan. */
   floorplanCenterNorm?: { x: number; y: number }
+  /** Set when the user dials north bearing or drags the 中宫 pin on the floor plan. */
+  floorplanOrientConfirmed?: boolean
 }
 
 export async function loadDraft(): Promise<SiteDraft> {
@@ -72,27 +78,4 @@ export async function clearDraft(): Promise<void> {
   await AsyncStorage.removeItem(KEY)
 }
 
-/** Validate that the draft has the minimum fields to create a site. */
-export function isDraftReady(
-  d: SiteDraft
-): d is Required<
-  Pick<
-    SiteDraft,
-    | 'lat'
-    | 'lng'
-    | 'formattedAddress'
-    | 'facingDegTrue'
-    | 'magneticDeclination'
-    | 'buildYearAccuracy'
-  >
-> &
-  SiteDraft {
-  return (
-    typeof d.lat === 'number' &&
-    typeof d.lng === 'number' &&
-    typeof d.formattedAddress === 'string' &&
-    typeof d.facingDegTrue === 'number' &&
-    typeof d.magneticDeclination === 'number' &&
-    !!d.buildYearAccuracy
-  )
-}
+export { isDraftReady } from '@/lib/draft-quality'

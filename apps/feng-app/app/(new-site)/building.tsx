@@ -12,9 +12,10 @@
 import { Button, useHaptic } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { useNewSiteGuard } from '@/hooks/useNewSiteGuard'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft, type SiteDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
@@ -29,17 +30,21 @@ const RESIDENCE_OPTIONS: ReadonlyArray<ResidenceType> = ['apartment', 'flat', 'v
 
 export default function BuildingScreen() {
   const router = useRouter()
+  const guardReady = useNewSiteGuard('building')
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
   const haptic = useHaptic()
   const insets = useSafeAreaInsets()
 
   const [residence, setResidence] = useState<ResidenceType>('apartment')
-  const [accuracy, setAccuracy] = useState<Accuracy>('unknown')
+  const [accuracy, setAccuracy] = useState<Accuracy | null>(null)
   const [buildYear, setBuildYear] = useState('')
   const [moveInYear, setMoveInYear] = useState('')
   const [floor, setFloor] = useState('')
   const [floorError, setFloorError] = useState<string | null>(null)
+  const [buildYearError, setBuildYearError] = useState<string | null>(null)
+  const [moveInYearError, setMoveInYearError] = useState<string | null>(null)
+  const [accuracyError, setAccuracyError] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -76,32 +81,67 @@ export default function BuildingScreen() {
     }
   }
 
+  const selectAccuracy = (opt: Accuracy) => {
+    void haptic('selection')
+    if (opt === 'unknown') {
+      Alert.alert(t.new_site_building_unknown_confirm_title, t.new_site_building_unknown_confirm_body, [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.new_site_building_unknown_confirm_cta,
+          onPress: () => {
+            setAccuracy('unknown')
+            setAccuracyError(null)
+          },
+        },
+      ])
+      return
+    }
+    setAccuracy(opt)
+    setAccuracyError(null)
+  }
+
   const next = async () => {
+    if (!accuracy) {
+      setAccuracyError(t.new_site_building_accuracy_required)
+      return
+    }
     const parsedFloor = Number.parseInt(floor, 10)
-    // 大平层 needs a floor so street 形煞 can be height-weighted (a high floor is
-    // over-hit by ground-level 壁刀/天斩 otherwise). Villa/apartment: floor optional.
+    const parsedBuildYear = Number.parseInt(buildYear, 10)
+    const parsedMoveInYear = Number.parseInt(moveInYear, 10)
+
+    setFloorError(null)
+    setBuildYearError(null)
+    setMoveInYearError(null)
+
     if (residence === 'flat' && !Number.isFinite(parsedFloor)) {
       setFloorError(t.new_site_building_floor_required)
       return
     }
-    setFloorError(null)
+    if ((accuracy === 'exact' || accuracy === 'decade') && !Number.isFinite(parsedBuildYear)) {
+      setBuildYearError(t.new_site_building_year_required)
+      return
+    }
+    if (accuracy === 'moveIn' && !Number.isFinite(parsedMoveInYear)) {
+      setMoveInYearError(t.new_site_building_move_in_required)
+      return
+    }
+
     const patch: Partial<SiteDraft> = { residenceType: residence, buildYearAccuracy: accuracy }
     if (accuracy === 'exact' || accuracy === 'decade') {
-      const y = Number.parseInt(buildYear, 10)
-      if (Number.isFinite(y)) patch.buildYear = y
+      patch.buildYear = parsedBuildYear
     }
     if (accuracy === 'moveIn') {
-      const y = Number.parseInt(moveInYear, 10)
-      if (Number.isFinite(y)) patch.moveInYear = y
+      patch.moveInYear = parsedMoveInYear
     }
-    const f = Number.parseInt(floor, 10)
-    if (Number.isFinite(f)) patch.floor = f
+    if (Number.isFinite(parsedFloor)) patch.floor = parsedFloor
     await patchDraft(patch)
     router.push('/(new-site)/floorplan')
   }
 
   const showBuildYearInput = accuracy === 'exact' || accuracy === 'decade'
   const showMoveInYearInput = accuracy === 'moveIn'
+
+  if (!guardReady) return null
 
   return (
     <ScrollView
@@ -184,10 +224,7 @@ export default function BuildingScreen() {
             return (
               <Pressable
                 key={opt}
-                onPress={() => {
-                  void haptic('selection')
-                  setAccuracy(opt)
-                }}
+                onPress={() => selectAccuracy(opt)}
                 accessibilityRole='button'
                 accessibilityState={{ selected }}
                 accessibilityLabel={accuracyLabel(opt)}
@@ -207,6 +244,9 @@ export default function BuildingScreen() {
             )
           })}
         </View>
+        {accuracyError ? (
+          <Text style={{ color: colors.warning, fontSize: 13 }}>{accuracyError}</Text>
+        ) : null}
       </View>
 
       {showBuildYearInput ? (
@@ -223,14 +263,17 @@ export default function BuildingScreen() {
           </Text>
           <TextInput
             value={buildYear}
-            onChangeText={setBuildYear}
+            onChangeText={(v) => {
+              setBuildYear(v)
+              if (buildYearError) setBuildYearError(null)
+            }}
             placeholder={accuracy === 'decade' ? '1990' : 'e.g. 1998'}
             placeholderTextColor={colors.textMute}
             keyboardType='number-pad'
             style={{
               backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: buildYearError ? colors.warning : colors.border,
               borderRadius: 12,
               paddingHorizontal: spacing.lg,
               paddingVertical: spacing.md,
@@ -238,6 +281,9 @@ export default function BuildingScreen() {
               fontSize: 16,
             }}
           />
+          {buildYearError ? (
+            <Text style={{ color: colors.warning, fontSize: 13 }}>{buildYearError}</Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -255,14 +301,17 @@ export default function BuildingScreen() {
           </Text>
           <TextInput
             value={moveInYear}
-            onChangeText={setMoveInYear}
+            onChangeText={(v) => {
+              setMoveInYear(v)
+              if (moveInYearError) setMoveInYearError(null)
+            }}
             placeholder='2020'
             placeholderTextColor={colors.textMute}
             keyboardType='number-pad'
             style={{
               backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: moveInYearError ? colors.warning : colors.border,
               borderRadius: 12,
               paddingHorizontal: spacing.lg,
               paddingVertical: spacing.md,
@@ -270,6 +319,9 @@ export default function BuildingScreen() {
               fontSize: 16,
             }}
           />
+          {moveInYearError ? (
+            <Text style={{ color: colors.warning, fontSize: 13 }}>{moveInYearError}</Text>
+          ) : null}
         </View>
       ) : null}
 

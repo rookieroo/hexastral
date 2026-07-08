@@ -14,6 +14,8 @@ interface ParsedCompute {
   patterns?: string[]
   concord?: string
   formLiLines?: string[]
+  /** Room types from interior join — chat must not invent names outside this list. */
+  roomTypes?: string[]
 }
 
 function safeParseJson(raw: string): unknown {
@@ -81,6 +83,18 @@ function parseCompute(computeJson: string): ParsedCompute | null {
     if (lines.length > 0) out.formLiLines = lines
   }
 
+  const roomFindings = root.roomFindings
+  if (Array.isArray(roomFindings)) {
+    const types = new Set<string>()
+    for (const rf of roomFindings) {
+      const row = asRecord(rf)
+      if (typeof row?.roomType === 'string' && row.roomType.length > 0) {
+        types.add(row.roomType)
+      }
+    }
+    if (types.size > 0) out.roomTypes = [...types]
+  }
+
   return out
 }
 
@@ -102,10 +116,18 @@ function formatAppendix(compute: ParsedCompute, dataQualityJson: string): string
 
   if (compute.concord) lines.push(`宅命: ${compute.concord}`)
   if (compute.formLiLines) lines.push(`形理: ${compute.formLiLines.join('；')}`)
+  if (compute.roomTypes && compute.roomTypes.length > 0) {
+    lines.push(
+      `室内房间白名单 (chat 仅可引用以下房间，禁止编造未列房间名): ${compute.roomTypes.join('、')}`
+    )
+  }
 
   const dq = asRecord(safeParseJson(dataQualityJson))
   if (typeof dq?.flyingStarsConfidence === 'string' && dq.flyingStarsConfidence !== 'high') {
     lines.push(`飞星置信: ${dq.flyingStarsConfidence}`)
+  }
+  if (typeof dq?.inputScore === 'number') {
+    lines.push(`录入完整度: ${dq.inputScore}/100`)
   }
 
   lines.push('峦头形势为 AI/影像推断；以上理气与形理断语以本摘要为准。')

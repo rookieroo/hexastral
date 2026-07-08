@@ -15,6 +15,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { auditGeneratedOutput } from '../lib/output-audit'
+import { auditSynthesisAgainstCompute } from '../lib/synthesis-compute-audit'
 import { logger } from '../lib/logger'
 import {
   buildSynthesisSystemPrompt,
@@ -63,9 +64,20 @@ const SynthesizeRequestSchema = z.object({
   memoryContext: z.string().max(8_000).optional(),
   dataQuality: z
     .object({
+      hasExactBuildYear: z.boolean().optional(),
       flyingStarsConfidence: z.string(),
       notes: z.array(z.string()),
+      inputScore: z.number().int().min(0).max(100).optional(),
     })
+    .optional(),
+  mustSoften: z
+    .array(
+      z.object({
+        type: z.string(),
+        direction: z.string(),
+        geometrySupport: z.enum(['weak', 'none', 'inferred-only']),
+      })
+    )
     .optional(),
 })
 
@@ -102,7 +114,7 @@ synthesizeRouter.post('/', async (c) => {
     throw new HTTPException(400, { message: parsed.error.message })
   }
 
-  const { vision, compute, userProfile, memoryContext, dataQuality } = parsed.data
+  const { vision, compute, userProfile, memoryContext, dataQuality, mustSoften } = parsed.data
   const started = Date.now()
   logger.info('synthesize.start', {
     locale: userProfile.locale,
@@ -116,12 +128,15 @@ synthesizeRouter.post('/', async (c) => {
     userProfile,
     memoryContext: memoryContext || undefined,
     dataQuality: dataQuality || undefined,
+    mustSoften: mustSoften?.length ? mustSoften : undefined,
   })
 
   const systemPrompt = buildSynthesisSystemPrompt(userProfile.locale)
 
   let usedFallback = false
   let forbiddenRetrySuffix = ''
+  let computeAuditSuffix = ''
+  let useLowTemperature = false
   const validated = await withZodRetry({
     label: 'synthesize',
     schema: SynthesisResultSchema,
@@ -132,13 +147,17 @@ synthesizeRouter.post('/', async (c) => {
     // failed so the user can retry a fresh run.
     maxRetries: 1,
     call: async () => {
-      const text = await callWithFallback(c.env, systemPrompt, userPrompt + forbiddenRetrySuffix, {
+      const text = await callWithFallback(
+        c.env,
+        systemPrompt,
+        userPrompt + forbiddenRetrySuffix + computeAuditSuffix,
+        {
         tier: 'flagship',
         responseSchema: SYNTHESIS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
         // 6 chapters × ~300-char bodies + reasoning headroom — 8k truncated the
         // longer pro-grade bodies into fallback stubs.
         maxTokens: 16384,
-        temperature: 0.7,
+        temperature: useLowTemperature ? 0.35 : 0.45,
         metricLabel: 'feng-synthesis',
         locale: userProfile.locale,
         // This is a heavy, quality-critical, NON-interactive (queue consumer)
@@ -151,11 +170,22 @@ synthesizeRouter.post('/', async (c) => {
         perModelTimeoutMs: 70_000,
       })
       const parsedJson = JSON.parse(text) as unknown
+      const chapterParsed = SynthesisResultSchema.safeParse(parsedJson)
+      if (!chapterParsed.success) {
+        throw new Error(chapterParsed.error.message)
+      }
       const audit = auditGeneratedOutput(JSON.stringify(parsedJson))
       if (audit.hits.length > 0) {
         forbiddenRetrySuffix = audit.rewriteSuffix ?? ''
         logger.warn('synthesize.forbidden_phrases', { hits: audit.hits })
         throw new Error('forbidden phrases in synthesis output')
+      }
+      const computeAudit = auditSynthesisAgainstCompute(chapterParsed.data.chapters, compute)
+      if (!computeAudit.ok) {
+        computeAuditSuffix = computeAudit.rewriteSuffix
+        useLowTemperature = true
+        logger.warn('synthesize.compute_audit', { violations: computeAudit.violations })
+        throw new Error('compute audit failed in synthesis output')
       }
       return parsedJson
     },

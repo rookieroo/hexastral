@@ -76,6 +76,11 @@ export interface CreateSiteInput {
   /** 户型图 (interior 堪舆) — cover key + full set. Omit for exterior-only. */
   floorplanKey?: string
   floorplan?: FloorplanInput
+  facingConfirmed: true
+  floorplanOrientConfirmed?: boolean
+  geocodeLat?: number
+  geocodeLng?: number
+  buildingCenterNorm?: { x: number; y: number }
 }
 
 export interface PatchSiteInput extends Partial<CreateSiteInput> {}
@@ -130,6 +135,9 @@ export function fengMaps(client: HexastralClient) {
       $post: (opts: {
         json: { image: string; contentType: 'image/png' | 'image/jpeg' | 'image/webp' }
       }) => Promise<Response>
+      ':key': {
+        $get: (opts: { param: { key: string } }) => Promise<Response>
+      }
     }
   }
 }
@@ -151,6 +159,20 @@ export async function uploadFloorplan(
 ): Promise<FloorplanUploadResponse> {
   const res = await fengMaps(client).floorplan.$post({ json: { image, contentType } })
   return unwrap<FloorplanUploadResponse>(res)
+}
+
+export interface FloorplanPreviewResponse {
+  base64: string
+  contentType: string
+}
+
+/** Fetch a previously uploaded floorplan image for north-align / 中宫 resume. */
+export async function fetchFloorplanPreview(
+  client: HexastralClient,
+  key: string
+): Promise<FloorplanPreviewResponse> {
+  const res = await fengMaps(client).floorplan[':key'].$get({ param: { key } })
+  return unwrap<FloorplanPreviewResponse>(res)
 }
 
 // ── Price estimate (fair per-image tiering) ─────────────────────────────────

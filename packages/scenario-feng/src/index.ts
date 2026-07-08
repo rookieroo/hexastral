@@ -42,7 +42,7 @@ export type {
   LogBearingInput,
   PatchSiteInput,
 } from './lib/feng-api'
-export { fengPriceEstimate, uploadFloorplan } from './lib/feng-api'
+export { fengPriceEstimate, fetchFloorplanPreview, uploadFloorplan } from './lib/feng-api'
 export {
   deriveReportDigest,
   patternQualityTone,

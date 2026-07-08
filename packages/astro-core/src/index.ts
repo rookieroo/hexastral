@@ -149,6 +149,29 @@ export {
   unluckyDirections,
   zhaiMingConcord,
 } from './feng/ba-zhai'
+export type {
+  BaZhaiVerdict,
+  RoomBaZhaiDualTrack,
+  RoomBaZhaiGoverning,
+} from './feng/room-ba-zhai'
+export {
+  isHighPriorityRoom,
+  resolveRoomBaZhaiDualTrack,
+} from './feng/room-ba-zhai'
+export type {
+  GeometrySupport,
+  PalaceElevation,
+  RawVisionFindings,
+  VisionCourtFinding,
+  VisionGeometryContext,
+  VisionSandFinding,
+  VisionShaFinding,
+  VisionWaterFinding,
+} from './feng/vision-geometry-audit'
+export {
+  auditVisionGeometry,
+  shaCountsForFormLi,
+} from './feng/vision-geometry-audit'
 // 风水 — 玄空飞星 (Flying Stars)
 export type {
   FlyingStarsInput,

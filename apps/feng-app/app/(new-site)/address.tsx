@@ -74,6 +74,7 @@ export default function AddressScreen() {
         geocodeLng: pos.coords.longitude,
         buildingCenterNorm: { x: 0.5, y: 0.5 },
         formattedAddress: formatted,
+        lastGeocodedAddress: formatted,
       })
     } finally {
       setBusy(false)
@@ -86,11 +87,20 @@ export default function AddressScreen() {
     setBusy(true)
     try {
       const existing = await loadDraft()
+      const trimmed = address.trim()
       let lat = existing.lat
       let lng = existing.lng
+      let geocodeLat = existing.geocodeLat
+      let geocodeLng = existing.geocodeLng
 
-      if (typeof lat !== 'number' || typeof lng !== 'number') {
-        const results = await Location.geocodeAsync(address.trim())
+      const addressChanged = trimmed !== (existing.lastGeocodedAddress ?? '').trim()
+      const needsGeocode =
+        typeof lat !== 'number' ||
+        typeof lng !== 'number' ||
+        addressChanged
+
+      if (needsGeocode) {
+        const results = await Location.geocodeAsync(trimmed)
         const first = results[0]
         if (!first) {
           setGeocodeError(t(locale, 'new_site_address_geocode_error'))
@@ -98,16 +108,19 @@ export default function AddressScreen() {
         }
         lat = first.latitude
         lng = first.longitude
+        geocodeLat = first.latitude
+        geocodeLng = first.longitude
       }
 
       await patchDraft({
         name: name.trim() || strings.new_site_default_name,
-        formattedAddress: address.trim(),
+        formattedAddress: trimmed,
         lat,
         lng,
-        geocodeLat: lat,
-        geocodeLng: lng,
-        buildingCenterNorm: { x: 0.5, y: 0.5 },
+        geocodeLat: geocodeLat ?? lat,
+        geocodeLng: geocodeLng ?? lng,
+        buildingCenterNorm: existing.buildingCenterNorm ?? { x: 0.5, y: 0.5 },
+        lastGeocodedAddress: trimmed,
       })
       setPhase('orient')
     } catch {

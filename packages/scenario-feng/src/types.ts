@@ -133,6 +133,8 @@ export interface FengComputeJson {
   macroTerrain?: { laiLong: string | null } | null
   /** Mapillary CC-BY-SA attribution when street imagery contributed 形煞. */
   streetAttribution?: string | null
+  /** Missing-corner findings from interior vision (缺角). */
+  interiorQueJiao?: Array<{ palace: string; note?: string; floorLabel?: string }>
 }
 
 export interface FengPalaceCombination {
@@ -185,6 +187,7 @@ export interface FengReport {
     hasExactBuildYear: boolean
     flyingStarsConfidence: 'high' | 'medium' | 'low' | 'omitted'
     notes: string[]
+    inputScore: number
   }
 
   vision: ShaObservationSet

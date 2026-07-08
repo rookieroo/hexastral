@@ -138,9 +138,11 @@ export default function ReportScreen() {
     latestReport?.dataQuality?.flyingStarsConfidence ??
     analyze.job?.report?.dataQuality?.flyingStarsConfidence ??
     'high'
+  const inputScore =
+    latestReport?.dataQuality?.inputScore ?? analyze.job?.report?.dataQuality?.inputScore
   const reportDigest = useMemo(
-    () => deriveReportDigest(compute, flyingStarsConfidence),
-    [compute, flyingStarsConfidence]
+    () => deriveReportDigest(compute, flyingStarsConfidence, { inputScore }),
+    [compute, flyingStarsConfidence, inputScore]
   )
   // 坐/向/门 bearings for the client-drawn map overlay (server ships raw tiles).
   const orient: MapOrient | null = site

@@ -2045,6 +2045,9 @@ export const fengSites = sqliteTable(
      */
     floorplanJson: text('floorplan_json'),
 
+    /** JSON audit trail for user-confirmed inputs (facing, orient, geocode pin). */
+    inputMeta: text('input_meta'),
+
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),

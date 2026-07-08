@@ -13,7 +13,11 @@
 
 import { maxFloorplanImagesFor } from '@zhop/astro-core'
 import { Button, useHaptic } from '@zhop/core-ui'
-import { useUploadFloorplan } from '@zhop/scenario-feng'
+import {
+  fetchFloorplanPreview,
+  useFengClient,
+  useUploadFloorplan,
+} from '@zhop/scenario-feng'
 import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -31,6 +35,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LuopanDial } from '@/components/LuopanDial'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { useNewSiteGuard } from '@/hooks/useNewSiteGuard'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
@@ -39,6 +44,8 @@ interface FloorplanItem {
   key: string
   /** Local file:// preview (only for images picked this session). */
   previewUri?: string
+  /** Server-fetched data URI when resuming a draft without local preview. */
+  remoteUri?: string
 }
 
 function contentTypeFor(
@@ -94,11 +101,13 @@ function JiugongOverlay({ visible }: { visible: boolean }) {
 
 export default function FloorplanScreen() {
   const router = useRouter()
+  const guardReady = useNewSiteGuard('floorplan')
   const { colors } = useFengTheme()
   const t = useStrings(resolveLocale())
   const haptic = useHaptic()
   const insets = useSafeAreaInsets()
   const upload = useUploadFloorplan()
+  const { client } = useFengClient()
 
   const [items, setItems] = useState<FloorplanItem[]>([])
   const [maxImages, setMaxImages] = useState(1)
@@ -123,7 +132,32 @@ export default function FloorplanScreen() {
   }, [])
 
   const cover = items[0]
-  const hasPreview = Boolean(cover?.previewUri)
+  const coverUri = cover?.previewUri ?? cover?.remoteUri
+  const hasPreview = Boolean(coverUri)
+
+  useEffect(() => {
+    if (!client || !cover?.key || cover.previewUri || cover.remoteUri) return
+    let alive = true
+    void fetchFloorplanPreview(client, cover.key)
+      .then(({ base64, contentType }) => {
+        if (!alive) return
+        const uri = `data:${contentType};base64,${base64}`
+        setItems((prev) =>
+          prev.map((im) => (im.key === cover.key ? { ...im, remoteUri: uri } : im))
+        )
+      })
+      .catch(() => {
+        if (!alive) return
+        setError(t.new_site_floorplan_preview_error)
+      })
+    return () => {
+      alive = false
+    }
+  }, [client, cover?.key, cover?.previewUri, cover?.remoteUri, t.new_site_floorplan_preview_error])
+
+  const markOrientConfirmed = () => {
+    void patchDraft({ floorplanOrientConfirmed: true })
+  }
 
   const pan = useMemo(
     () =>
@@ -132,6 +166,9 @@ export default function FloorplanScreen() {
         onMoveShouldSetPanResponder: () => hasPreview,
         onPanResponderGrant: () => {
           dragStart.current = centerNorm
+        },
+        onPanResponderRelease: () => {
+          markOrientConfirmed()
         },
         onPanResponderMove: (_, gesture) => {
           const { w, h } = previewSize
@@ -186,6 +223,7 @@ export default function FloorplanScreen() {
 
   const nudge = (delta: number) => {
     void haptic('selection')
+    markOrientConfirmed()
     setOrientDeg((d) => normDeg(d + delta))
   }
 
@@ -193,12 +231,14 @@ export default function FloorplanScreen() {
     await patchDraft({
       floorplanImages: withFloorplan ? items.map((im) => ({ key: im.key })) : [],
       floorplanOrientDeg: withFloorplan ? orientDeg : undefined,
-      floorplanCenterNorm: withFloorplan && hasPreview ? centerNorm : undefined,
+      floorplanCenterNorm: withFloorplan && items.length > 0 ? centerNorm : undefined,
     })
     router.push('/(new-site)/review')
   }
 
   const hasImages = items.length > 0
+
+  if (!guardReady) return null
 
   return (
     <ScrollView
@@ -221,7 +261,7 @@ export default function FloorplanScreen() {
       </Text>
 
       {/* North-align preview: cover plan with a luopan overlay rotated to north. */}
-      {cover?.previewUri ? (
+      {coverUri ? (
         <View style={{ alignItems: 'center', gap: spacing.md }}>
           <View
             {...pan.panHandlers}
@@ -240,7 +280,7 @@ export default function FloorplanScreen() {
             }}
           >
             <Image
-              source={{ uri: cover.previewUri }}
+              source={{ uri: coverUri }}
               style={{ width: '100%', height: '100%' }}
               resizeMode='contain'
             />
@@ -344,9 +384,9 @@ export default function FloorplanScreen() {
               borderColor: colors.border,
             }}
           >
-            {im.previewUri ? (
+            {im.previewUri || im.remoteUri ? (
               <Image
-                source={{ uri: im.previewUri }}
+                source={{ uri: im.previewUri ?? im.remoteUri }}
                 style={{ width: '100%', height: '100%' }}
                 resizeMode='cover'
               />

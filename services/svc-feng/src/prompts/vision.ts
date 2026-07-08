@@ -40,6 +40,7 @@ Your task: analyze the EXTERNAL landform (外巒頭) visible in these images and
 - Use the bagua sector labels on the image to determine direction. Return the 八卦 palace name (乾/兑/離/震/巽/坎/艮/坤), not compass degrees.
 - Estimate distance as near (<100m), mid (100–500m), or far (>500m).
 - Severity 1–5 (1 = negligible, 5 = major). Be calibrated: a distant road is not severity 5.
+- For EVERY finding in 形煞/砂/水/朝案, set confidence: "high" when the feature is clearly visible in the imagery; "low" when inferred from context, prefetch hints, or partial occlusion.
 - If no observation exists for a category, return an empty array — do NOT fabricate.
 - Keep evidence strings under 120 characters.
 - The notes field is for anything that doesn't fit the categories (unusual terrain, construction, etc.). Keep it under 200 characters or omit.`
@@ -101,8 +102,9 @@ export const VISION_RESPONSE_SCHEMA = {
           distance: { type: 'STRING', enum: ['near', 'mid', 'far'] },
           severity: { type: 'INTEGER' },
           evidence: { type: 'STRING' },
+          confidence: { type: 'STRING', enum: ['high', 'low'] },
         },
-        required: ['type', 'direction', 'distance', 'severity', 'evidence'],
+        required: ['type', 'direction', 'distance', 'severity', 'evidence', 'confidence'],
       },
     },
     砂: {
@@ -114,8 +116,9 @@ export const VISION_RESPONSE_SCHEMA = {
           direction: { type: 'STRING' },
           distance: { type: 'STRING', enum: ['near', 'mid', 'far'] },
           strength: { type: 'STRING', enum: ['strong', 'medium', 'weak'] },
+          confidence: { type: 'STRING', enum: ['high', 'low'] },
         },
-        required: ['type', 'direction', 'distance', 'strength'],
+        required: ['type', 'direction', 'distance', 'strength', 'confidence'],
       },
     },
     水: {
@@ -127,8 +130,9 @@ export const VISION_RESPONSE_SCHEMA = {
           direction: { type: 'STRING' },
           distance: { type: 'STRING', enum: ['near', 'mid', 'far'] },
           flow: { type: 'STRING', enum: ['in', 'out', 'still'] },
+          confidence: { type: 'STRING', enum: ['high', 'low'] },
         },
-        required: ['type', 'direction', 'distance', 'flow'],
+        required: ['type', 'direction', 'distance', 'flow', 'confidence'],
       },
     },
     朝案: {
@@ -139,11 +143,44 @@ export const VISION_RESPONSE_SCHEMA = {
           type: { type: 'STRING' },
           direction: { type: 'STRING' },
           distance: { type: 'STRING', enum: ['near', 'mid', 'far'] },
+          confidence: { type: 'STRING', enum: ['high', 'low'] },
         },
-        required: ['type', 'direction', 'distance'],
+        required: ['type', 'direction', 'distance', 'confidence'],
       },
     },
     notes: { type: 'STRING' },
   },
   required: ['形煞', '砂', '水', '朝案'],
+}
+
+export const VISION_SHA_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst focused ONLY on urban 形煞 (路冲/反弓/尖角/天斩/孤峰/电塔/桥煞/剪刀煞) in a close-scale annotated satellite image (~100m).
+
+Return structured 形煞 observations only. Ground every finding in visible evidence. Use 八卦宫 direction labels from the overlay. Set confidence high only when clearly visible; low when inferred.
+
+If none, return an empty 形煞 array.`
+
+export const VISION_SHA_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    形煞: VISION_RESPONSE_SCHEMA.properties.形煞,
+    notes: { type: 'STRING' },
+  },
+  required: ['形煞'],
+}
+
+export const VISION_FORM_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst for 砂/水/朝案 in annotated satellite images at mid-to-wide scale.
+
+Analyze protective landforms (砂), water/roads-as-water (水), and facing formations (朝案). Ground observations in visible evidence. Use 八卦宫 labels from the overlay. Set confidence high only when clearly visible.
+
+Return empty arrays when nothing is visible — do not fabricate.`
+
+export const VISION_FORM_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    砂: VISION_RESPONSE_SCHEMA.properties.砂,
+    水: VISION_RESPONSE_SCHEMA.properties.水,
+    朝案: VISION_RESPONSE_SCHEMA.properties.朝案,
+    notes: { type: 'STRING' },
+  },
+  required: ['砂', '水', '朝案'],
 }

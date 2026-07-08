@@ -4,21 +4,36 @@
  * The interior vision returns rooms localized into 八卦九宫 (given the stated
  * north). This joins each room with the already-computed per-palace data:
  *   - 玄空飞星 山向 combination (phase / name / reading) for that palace
- *   - 八宅 auspicious / inauspicious verdict for that palace
+ *   - 八宅 命卦 + 宅卦双轨 verdict for that palace
  *   - any interior 形煞 the vision flagged in that palace
  *
  * It does NOT re-derive stars — it only correlates, so the LLM synthesis can
  * write room-specific advice ("主卧在坤宫、二黑临…") instead of generic palace talk.
  */
 
+import {
+  houseDirections,
+  isHighPriorityRoom,
+  resolveRoomBaZhaiDualTrack,
+  type BaguaPalace,
+  type DirectionVerdict,
+  type ZhaiMingConcord,
+} from '@zhop/astro-core'
 import type { InteriorVisionResult } from './feng-client'
 
 export interface RoomFinding {
   floorLabel?: string
   roomType: string
   palace: string
-  /** 八宅 verdict for the room's palace. */
+  /** @deprecated Use mingBaZhai — kept for backward compatibility (= mingBaZhai). */
   baZhai: 'lucky' | 'unlucky' | 'neutral'
+  mingBaZhai: 'lucky' | 'unlucky' | 'neutral'
+  zhaiBaZhai: 'lucky' | 'unlucky' | 'neutral'
+  mingKind: string | null
+  zhaiKind: string | null
+  governing: '命' | '宅' | '一致'
+  conflict: boolean
+  priority?: 'high'
   starPhase: string | null
   starName: string | null
   starReading: string | null
@@ -37,19 +52,19 @@ export function deriveRoomFindings(
   interior: InteriorVisionResult,
   ctx: {
     combinations: Combination[]
-    auspiciousPalaces: string[]
-    inauspiciousPalaces: string[]
+    sitPalace: BaguaPalace
+    mingLucky: DirectionVerdict[]
+    mingUnlucky: DirectionVerdict[]
+    concord?: ZhaiMingConcord
     floorLabels?: (string | undefined)[]
   }
 ): RoomFinding[] {
   const comboByPalace = new Map(ctx.combinations.map((c) => [c.palace, c]))
-  const auspicious = new Set(ctx.auspiciousPalaces)
-  const inauspicious = new Set(ctx.inauspiciousPalaces)
+  const house = houseDirections(ctx.sitPalace)
 
   const findings: RoomFinding[] = []
   for (const [i, floor] of interior.floors.entries()) {
     const floorLabel = ctx.floorLabels?.[i]
-    // Group this floor's interior 形煞 by palace for O(1) attach.
     const shaByPalace = new Map<
       string,
       Array<{ type: string; severity: number; evidence: string }>
@@ -61,17 +76,45 @@ export function deriveRoomFindings(
     }
 
     for (const room of floor.rooms) {
+      const palace = room.palace as BaguaPalace
       const combo = comboByPalace.get(room.palace)
-      const baZhai: RoomFinding['baZhai'] = auspicious.has(room.palace)
-        ? 'lucky'
-        : inauspicious.has(room.palace)
-          ? 'unlucky'
-          : 'neutral'
+      const dual = ctx.concord
+        ? resolveRoomBaZhaiDualTrack(
+            palace,
+            { lucky: ctx.mingLucky, unlucky: ctx.mingUnlucky },
+            house,
+            ctx.concord
+          )
+        : (() => {
+            const zhaiSide = house.lucky.some((d) => d.palace === palace)
+              ? { verdict: 'lucky' as const, kind: house.lucky.find((d) => d.palace === palace)?.kind ?? null }
+              : house.unlucky.some((d) => d.palace === palace)
+                ? {
+                    verdict: 'unlucky' as const,
+                    kind: house.unlucky.find((d) => d.palace === palace)?.kind ?? null,
+                  }
+                : { verdict: 'neutral' as const, kind: null }
+            return {
+              mingBaZhai: 'neutral' as const,
+              zhaiBaZhai: zhaiSide.verdict,
+              mingKind: null,
+              zhaiKind: zhaiSide.kind,
+              governing: '宅' as const,
+              conflict: false,
+            }
+          })()
       findings.push({
         ...(floorLabel ? { floorLabel } : {}),
         roomType: room.type,
         palace: room.palace,
-        baZhai,
+        baZhai: dual.mingBaZhai,
+        mingBaZhai: dual.mingBaZhai,
+        zhaiBaZhai: dual.zhaiBaZhai,
+        mingKind: dual.mingKind,
+        zhaiKind: dual.zhaiKind,
+        governing: dual.governing,
+        conflict: dual.conflict,
+        ...(isHighPriorityRoom(room.type) ? { priority: 'high' as const } : {}),
         starPhase: combo?.phase ?? null,
         starName: combo?.name ?? null,
         starReading: combo?.reading ?? null,
