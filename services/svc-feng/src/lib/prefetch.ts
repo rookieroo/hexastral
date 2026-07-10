@@ -18,6 +18,10 @@
  *   - `wide`  (2 km, zoom 14)  — only if elevation range > 10 m (mountains)
  */
 
+import { computeFormAzimuths, type FormAzimuthFeature } from './form-azimuth'
+
+export type { FormAzimuthFeature } from './form-azimuth'
+
 const STREETS_TILESET = 'mapbox.mapbox-streets-v8'
 const TERRAIN_TILESET = 'mapbox.mapbox-terrain-v2'
 
@@ -44,6 +48,8 @@ export interface TerrainSignals {
   nearestRoadBearingDeg: number | null
   /** Road feature count within 150m (motorway/road/street). */
   roadFeatureCount: number
+  /** Computed water/road bearings from Tilequery (authoritative for 归宫). */
+  formAzimuths: FormAzimuthFeature[]
   /** True if Mapbox call failed; orchestrator should render all 3 tiles. */
   degraded: boolean
 }
@@ -59,6 +65,7 @@ const FAIL_OPEN: TerrainSignals = {
   summary: 'prefetch unavailable; running full pipeline',
   nearestRoadBearingDeg: null,
   roadFeatureCount: 0,
+  formAzimuths: [],
   degraded: true,
 }
 
@@ -248,6 +255,7 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
     if (hasWater) expectedFeatures.push('水')
 
     const road = nearestRoadBearingDeg(input.lat, input.lng, roadFeatures)
+    const formAzimuths = computeFormAzimuths(input.lat, input.lng, waterFeatures, roadFeatures)
 
     const summary = [
       hasWater ? `water:${waterFeatures.length} within 500m` : 'no water within 500m',
@@ -270,6 +278,7 @@ export async function prefetchTerrainSignals(input: PrefetchInput): Promise<Terr
       summary,
       nearestRoadBearingDeg: road.bearing,
       roadFeatureCount: road.count,
+      formAzimuths,
       degraded: false,
     }
   } catch {

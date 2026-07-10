@@ -4,7 +4,20 @@ Living record of feng report quality, input pipeline, compliance, and Mapillary
 diligence. **Code on `main` is source of truth**; this doc is the navigation
 index for agents and humans.
 
-Last updated: **2026-07-08**.
+Last updated: **2026-07-10**.
+
+---
+
+## V1 scope lock (2026-07-10)
+
+| Area | V1 | Deferred |
+|------|-----|----------|
+| **Indoor** | Optional floor-plan image upload (`visionInterior` on plan); skip → exterior-only report | RoomPlan / LiDAR / indoor room photos / `NSCamera` |
+| **Onboarding** | 4-step flow frozen — no new steps, blocks, or confirms | Multi-sample compass, satellite door labels, draw-outline floor plan |
+| **Trust** |沈氏 algorithms + [acceptance-standard.md](./acceptance-standard.md) + golden harness + synthesis audit | External 风水师 sign-off |
+| **Quality UX** | Confidence on report closing / digest only | inputScore warnings on review (pre-pay anxiety) |
+
+Code paths: [floorplan.tsx](../../apps/feng-app/app/(new-site)/floorplan.tsx) (album pick, skippable), [feng-analyze.ts](../../apps/hexastral-api/src/lib/feng-analyze.ts) (interior gate).
 
 ---
 
@@ -95,7 +108,7 @@ Key paths:
 | P2 | 录入 inputScore + step guards | ✅ `deriveDataQuality` + `useNewSiteGuard` |
 | P2 | Vision geometry audit + confidence | ✅ `auditVisionGeometry` + split VLM passes |
 | P2 | Prefetch road bearing + 路冲校验 | ✅ Tilequery roads 150m |
-| P2 | Golden harness (10 sites) | ✅ `feng-golden-sites.ts` + integration test |
+| P2 | Golden harness (12 sites) | ✅ `feng-golden-sites.ts` + integration test |
 | P2 | Chat room 白名单 | ✅ `feng-chat-context` appendix |
 
 ### 6. Input quality & practitioner-duty hardening (2026-07-08)
@@ -154,17 +167,34 @@ Key paths:
 
 ---
 
+### 7. V1 scope lock delivery (2026-07-10)
+
+| Phase | Status | Summary |
+|-------|--------|---------|
+| Docs + ASO | ✅ | V1 scope lock; no 风水师 gate; ASO = compass + optional floor plan |
+| D3 azimuth | ✅ | `form-azimuth.ts` Tilequery water/road → palace; vision prompt authoritative |
+| Report UI | ✅ | Flying-star `combinations` chips; closing `dataQuality` + `laiLong` |
+| Golden | ✅ | 12 sites; 兼向/替卦, unknown build, no floorplan, 二五交加 phase |
+| Ops | ✅ | `job.cost` stage timings; analyze job dedup; `draft-quality.test.ts` |
+
+Key paths:
+
+- `services/svc-feng/src/lib/form-azimuth.ts` — prefetch azimuth SSOT
+- `apps/feng-app/lib/data-quality-copy.ts` — human-readable closing notes
+- `apps/hexastral-api/src/routes/feng/sites.ts` — running-job dedup (`deduped: true`)
+- `apps/hexastral-api/src/lib/feng-analyze.ts` — `job.cost` structured log
+
+Human deploy: [human-deploy-checklist.md](./human-deploy-checklist.md).
+
+---
+
 ## Next work packages
 
 | ID | Package | Depends on |
 |----|---------|------------|
-| Human | ASC + RC: `hexastral_feng_premium` ($39.99); flip `PREMIUM_SKU_PROVISIONED` | products live |
-| Human | D1 migration `0020` on prod | deploy approval |
-| Human | `MAPILLARY_TOKEN` + legal sign-off §6 | WP3 UI ✅ |
-| Human | Staging spot-check: apartment / flat / villa each 1 report | deploy |
-| Human | 风水师 sample-output sign-off §8 | sample harness |
-| P2 | 宅卦 vs 命卦双轨 room verdict | ✅ shipped |
-| P2 | Review 数据质量门禁 | — |
+| Human | [human-deploy-checklist.md](./human-deploy-checklist.md) — IAP, D1, Mapillary, staging smoke | deploy approval |
+| Defer | RoomPlan / LiDAR / indoor photos / draw-outline floor plan | V1.5+ |
+| Defer | AnnotatedMapSwiper tap-to-chapter; ReadingPrimer overlay | nice-to-have |
 
 ---
 
@@ -172,11 +202,12 @@ Key paths:
 
 ```bash
 bun typecheck
-cd apps/hexastral-api && bun test src/lib/feng-pricing.test.ts
+cd apps/hexastral-api && bun test src/lib/feng-pricing.test.ts src/lib/feng-golden.integration.test.ts
 cd packages/scenario-feng && bun test src/lib/report-digest.test.ts src/lib/map-pixel-offset.test.ts
 cd apps/hexastral-api && bun test src/lib/feng-chat-*.test.ts src/lib/portfolio-voice.golden.test.ts
 cd packages/astro-core && bun test  # feng suites
-cd services/svc-feng && bun run typecheck
+cd services/svc-feng && bun test && bun run typecheck
+cd apps/feng-app && bun test lib/draft-quality.test.ts
 ```
 
 ---
@@ -190,3 +221,4 @@ cd services/svc-feng && bun run typecheck
 | [deploy-acceptance.md](./deploy-acceptance.md) | §6 Mapillary legal gate |
 | [pro-grade-plan.md](./pro-grade-plan.md) | D1–D4 depth |
 | [acceptance-standard.md](./acceptance-standard.md) | Deterministic rubric |
+| [human-deploy-checklist.md](./human-deploy-checklist.md) | IAP / D1 / Mapillary / staging smoke |

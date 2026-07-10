@@ -22,7 +22,7 @@
  */
 
 import { maxFloorplanImagesFor } from '@zhop/astro-core'
-import { and, desc, eq, isNull, ne } from 'drizzle-orm'
+import { and, desc, eq, isNull, ne, notInArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod/v4'
@@ -571,6 +571,30 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       // Carry the single-purchase id so the queue consumer can consume it on
       // success. Subscribers (pro_quota) pass nothing — their analyses are free.
       purchaseId = access.via === 'single_purchase' ? access.purchaseId : undefined
+    }
+
+    const runningJob = await db
+      .select()
+      .from(fengJobs)
+      .where(
+        and(eq(fengJobs.siteId, id), notInArray(fengJobs.stage, ['done', 'failed']))
+      )
+      .orderBy(desc(fengJobs.startedAt))
+      .limit(1)
+      .get()
+    if (runningJob) {
+      return jsonOk(
+        c,
+        {
+          jobId: runningJob.id,
+          siteId: id,
+          stage: runningJob.stage,
+          progress: runningJob.progress,
+          accessVia,
+          deduped: true,
+        },
+        202
+      )
     }
 
     const jobId = nanoid()

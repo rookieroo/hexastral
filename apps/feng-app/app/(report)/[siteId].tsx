@@ -48,6 +48,7 @@ import { LuopanLoader } from '@/components/LuopanLoader'
 import { SealNumeral } from '@/components/SealNumeral'
 import { ShareFengChapterButton } from '@/components/ShareFengChapterButton'
 import { type FengTerm, getFengTerm } from '@/lib/feng-terms'
+import { formatLaiLongLine, humanizeDataQualityNotes } from '@/lib/data-quality-copy'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { type Locale, resolveLocale, type Strings, useStrings } from '@/lib/i18n'
 import { FENG_PAPER, spacing } from '@/lib/theme'
@@ -140,6 +141,17 @@ export default function ReportScreen() {
     'high'
   const inputScore =
     latestReport?.dataQuality?.inputScore ?? analyze.job?.report?.dataQuality?.inputScore
+  const dataQualityNotes =
+    latestReport?.dataQuality?.notes ?? analyze.job?.report?.dataQuality?.notes ?? []
+  const closingNotes = useMemo(
+    () => humanizeDataQualityNotes(dataQualityNotes, t),
+    [dataQualityNotes, t]
+  )
+  const laiLongLine = useMemo(() => {
+    const palace = compute?.macroTerrain?.laiLong
+    if (!palace) return null
+    return formatLaiLongLine(palace, t)
+  }, [compute?.macroTerrain?.laiLong, t])
   const reportDigest = useMemo(
     () => deriveReportDigest(compute, flyingStarsConfidence, { inputScore }),
     [compute, flyingStarsConfidence, inputScore]
@@ -393,6 +405,8 @@ export default function ReportScreen() {
             reportId={reportId}
             siteName={site.name}
             streetAttribution={compute?.streetAttribution ?? null}
+            qualityNotes={closingNotes}
+            laiLongLine={laiLongLine}
             onChat={() =>
               router.push({
                 pathname: '/(report)/chat',
@@ -800,6 +814,36 @@ function renderFlyingStars(compute: FengComputeJson, t: Strings) {
           {t.report_compound_facing_note}
         </Text>
       ) : null}
+      {compute.combinations && compute.combinations.some((c) => c.name || c.reading) ? (
+        <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+          <Text style={{ color: C.secondary, fontSize: 11, letterSpacing: 1 }}>
+            {t.report_combinations_heading}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {compute.combinations
+              .filter((c) => c.name || c.reading)
+              .map((c) => {
+                const tone = c.phase === '旺' ? C.accent : C.danger
+                const label = [c.palace, c.name, c.reading].filter(Boolean).join(' · ')
+                return (
+                  <View
+                    key={`${c.palace}-${c.mountainStar}-${c.facingStar}`}
+                    style={{
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: 4,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: tone,
+                      maxWidth: '100%',
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: tone }}>{label}</Text>
+                  </View>
+                )
+              })}
+          </View>
+        </View>
+      ) : null}
       {compute.formLi && compute.formLi.palaces.length > 0 ? (
         <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
           <Text style={{ color: C.secondary, fontSize: 11, letterSpacing: 1 }}>
@@ -901,6 +945,8 @@ function ClosingPageView({
   insets,
   reportId,
   streetAttribution,
+  qualityNotes,
+  laiLongLine,
   onChat,
   t,
 }: {
@@ -909,6 +955,8 @@ function ClosingPageView({
   reportId: string
   siteName: string
   streetAttribution: string | null
+  qualityNotes: string[]
+  laiLongLine: string | null
   onChat: () => void
   t: Strings
 }) {
@@ -929,6 +977,23 @@ function ClosingPageView({
       <Text style={{ color: C.secondary, fontSize: 12, fontStyle: 'italic', textAlign: 'center' }}>
         {t.report_data_quality_footer}
       </Text>
+      {laiLongLine ? (
+        <Text style={{ color: C.secondary, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+          {laiLongLine}
+        </Text>
+      ) : null}
+      {qualityNotes.length > 0 ? (
+        <View style={{ gap: spacing.xs, paddingHorizontal: spacing.md }}>
+          {qualityNotes.map((line) => (
+            <Text
+              key={line}
+              style={{ color: C.secondary, fontSize: 11, textAlign: 'center', lineHeight: 16 }}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       <Text style={{ color: C.secondary, fontSize: 11, textAlign: 'center' }}>
         {t.report_confidence_note}
       </Text>

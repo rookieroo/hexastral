@@ -38,6 +38,7 @@ Your task: analyze the EXTERNAL landform (外巒頭) visible in these images and
 
 - Ground EVERY observation in what you can actually see in the images. Cite the specific visual evidence (e.g., "a highway curves away from the building in the 巽 sector at ≈200m").
 - Use the bagua sector labels on the image to determine direction. Return the 八卦 palace name (乾/兑/離/震/巽/坎/艮/坤), not compass degrees.
+- When **Computed azimuths (tilequery)** are provided in the user prompt, treat those palace assignments as **authoritative** for water/road features. Do not contradict them; use VLM only for type, visibility, flow, and evidence text.
 - Estimate distance as near (<100m), mid (100–500m), or far (>500m).
 - Severity 1–5 (1 = negligible, 5 = major). Be calibrated: a distant road is not severity 5.
 - For EVERY finding in 形煞/砂/水/朝案, set confidence: "high" when the feature is clearly visible in the imagery; "low" when inferred from context, prefetch hints, or partial occlusion.
@@ -53,6 +54,7 @@ export function buildVisionUserPrompt(opts: {
   imageCount: 1 | 2 | 3
   expectedFeatures?: ReadonlyArray<'砂' | '水' | '朝案'>
   terrainSummary?: string
+  formAzimuthLines?: string[]
 }): string {
   const lines = [
     `Site orientation: facing (向) ${Math.round(opts.facingDegTrue)}° true north, sitting (坐) ${Math.round(opts.sitDegTrue)}° true north.`,
@@ -72,6 +74,14 @@ export function buildVisionUserPrompt(opts: {
 
   if (opts.terrainSummary) {
     lines.push('', `Prefetch signal (from Mapbox vector tiles): ${opts.terrainSummary}`)
+  }
+
+  if (opts.formAzimuthLines && opts.formAzimuthLines.length > 0) {
+    lines.push(
+      '',
+      'Computed azimuths (tilequery) — AUTHORITATIVE palace for water/road; do not override:',
+      ...opts.formAzimuthLines.map((l) => `  - ${l}`)
+    )
   }
 
   if (opts.expectedFeatures && opts.expectedFeatures.length < 3) {

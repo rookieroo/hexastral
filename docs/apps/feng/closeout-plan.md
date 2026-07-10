@@ -18,7 +18,8 @@ Feng is "finished" when ALL are true:
 1. **Deployed & device-verified** — svc-feng + hexastral-api live; a real device
    produces a correct end-to-end report (the §5 smoke list in deploy-acceptance).
 2. **Store-submittable** — every App Store review gate passes (W4).
-3. **Professionally validated** — a 风水师 has signed off a sample-report batch (W1).
+3. **Engine-validated** — golden harness + acceptance-standard green; staging
+   full-pipeline smoke (W1; no external 风水师 sign-off).
 4. **Monetizing** — Pro + single-purchase verified end-to-end; RevenueCat
    products live; price set (W5).
 5. **Premium-enough report UX** — meets the flagship design bar (W3 gate).
@@ -163,9 +164,8 @@ Direction (locked): kindred 水墨 aesthetic + bespoke 罗盘 loader.
 Deploy svc-feng + api; dev build; run the §5 smoke list. Fix only real defects
 found (not new features). **Gate: a correct report renders end-to-end on device.**
 
-**P1 — Validation + honesty** · W1 harness + W2 confidence/degraded + (opt) 2 格局.
-**Gate: 风水师 sign-off.** (This is the longest-lead, human-dependent item —
-start the harness now so the expert can begin during P2.)
+**P1 — Validation + honesty** · W1 harness + W2 confidence/degraded + D3 azimuth.
+**Gate: golden tests green + staging smoke** (no external expert).
 
 **P2 — Experience + compliance** · W3 (design decision → build) + W4 (AI-chat
 moderation, privacy). **Gate: design bar met + all review gates pass.**
@@ -174,8 +174,8 @@ moderation, privacy). **Gate: design bar met + all review gates pass.**
 **Gate: ASC submission.**
 
 Run order rationale: P0 first (you can't validate or polish what isn't deployed);
-W1 harness in parallel from P0 (expert is the critical path); design decision
-(W3) gates the biggest build, so make it early in P2.
+W1 golden harness in parallel from P0; design decision (W3) gates the biggest
+build, so make it early in P2.
 
 ---
 

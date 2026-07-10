@@ -17,9 +17,10 @@ Companion to [fix-plan.md](./fix-plan.md) (Waves 1-3). Code is source of truth.
 
 The honest risk ranking: D1/D2 are bounded engineering. **D3 is the real cost**
 (new data sources, geospatial compute, coverage gaps). **D4 is the highest
-leverage** — it's what turns "AI 描述" into "师傅断语". A domain-expert review
-gate (one paid 风水师 validating sample outputs) is a hard prerequisite for the
-word "专业" — budget for it.
+leverage** — it's what turns "AI 描述" into structured form-li verdicts.
+**Trust gate (locked 2026-06-30):** in-house沈氏 algorithms + golden tests +
+[acceptance-standard.md](./acceptance-standard.md) — **not** an external 风水师
+sign-off.
 
 ---
 
@@ -243,8 +244,9 @@ form-li conclusion, not a description.
 ## Cross-cutting: 立极 / 户型映射 (gates D2.2 + makes D1/D4 room-actionable)
 
 To place stars/吉凶 in **actual rooms** you need an oriented floor outline.
-- V1 path (no LiDAR): upload floor-plan image OR draw outline → manual
+- V1 path (no LiDAR): **upload floor-plan image from album** (skippable) → manual
   rotate-to-true-north (cross-check vs satellite-drag facing) → manual 中宫 pin.
+  **Draw outline** — V1.1 (not shipped; do not add for MVP).
 - 分宫 engine (deterministic, **lock the school + label it**): 九宫法 (3×3) as
   default; 八卦24山扇形 as option. Handle 缺角/L-form 中宫 + 缺角 detection
   (contested — pick a rule, cite it, test it).
@@ -255,7 +257,7 @@ To place stars/吉凶 in **actual rooms** you need an oriented floor outline.
 
 ## Build order (dependency-correct) & rough effort
 
-Solo-dev focused estimate (excludes domain-expert review + device QA):
+Solo-dev focused estimate (excludes device QA):
 
 1. **D1.2 格局 + D1.1 组合 + D1.3 旺衰** — ~1.5 wk. Pure compute, golden-tested.
    Foundation for D4.
@@ -268,16 +270,13 @@ Solo-dev focused estimate (excludes domain-expert review + device QA):
 6. **D4 form-li engine** — ~1 wk. Joins D1+D3; the multiplier.
 7. **D1.4 月紫白 + D2.2 床灶门 placement** — ~0.5 wk.
 8. **Synthesis prompt rebuild** to narrate from structured verdicts — ~0.5 wk.
-9. **Domain-expert validation pass** (paid 风水师 reviews N sample reports) —
-   external, **gating for the "专业" claim**.
 
-≈ **8-9 focused weeks** + expert review. This is a real V1 scope expansion vs
+≈ **8-9 focused weeks**. This is a real V1 scope expansion vs
 ADR-0019's W2 slot — flag the schedule impact to the launch plan.
 
 ## New dependencies / keys
 - Mapbox Terrain-RGB (have Mapbox token; new tile usage + R2 cache).
-- Google Street View Static API key (or Mapillary token) — new spend.
-- Domain-expert reviewer (human, paid) — the real gate on "professional".
+- Mapillary token (street 形煞; optional, attribution wired).
 
 ## Definition of done (per dimension)
 - D1: 格局/组合/旺衰/月星 golden-tested; report names 格局 + per-palace 双星断语.
@@ -286,4 +285,4 @@ ADR-0019's W2 slot — flag the schedule impact to the launch plan.
   coverage gaps surfaced.
 - D4: structured `formLiVerdicts` drive the narrative; form-li conclusions, not
   descriptions.
-- Gate: 风水师 sign-off on a sample-report batch.
+- Gate: golden harness + acceptance-standard red-flags (see closeout W1).

@@ -82,7 +82,19 @@ async function postForBytes(
 
 // ── Prefetch (Stage 0) ──────────────────────────────────────────
 
+export type Palace8 = '坎' | '艮' | '震' | '巽' | '离' | '坤' | '兑' | '乾'
+
 export type AdaptiveTile = 'close' | 'mid' | 'wide'
+
+export type FormAzimuthKind = 'water' | 'waterway' | 'road'
+
+export interface FormAzimuthFeature {
+  kind: FormAzimuthKind
+  palace: Palace8
+  bearingDeg: number
+  distanceM: number
+  source: 'tilequery'
+}
 
 export interface TerrainSignals {
   hasWater: boolean
@@ -95,6 +107,7 @@ export interface TerrainSignals {
   summary: string
   nearestRoadBearingDeg: number | null
   roadFeatureCount: number
+  formAzimuths: FormAzimuthFeature[]
   degraded: boolean
 }
 
@@ -111,8 +124,6 @@ export async function prefetchTerrain(
 }
 
 // ── Elevation profile (大峦头 DEM 砂) ────────────────────────────
-
-export type Palace8 = '坎' | '艮' | '震' | '巽' | '离' | '坤' | '兑' | '乾'
 
 export interface ElevationProfile {
   centerEle: number | null
@@ -274,6 +285,8 @@ export interface VisionAnalyzeInput {
   expectedFeatures?: ('砂' | '水' | '朝案')[]
   /** Human-readable prefetch summary for the prompt + dataQuality footer. */
   terrainSummary?: string
+  /** Tilequery-computed water/road bearings (authoritative for direction). */
+  formAzimuths?: FormAzimuthFeature[]
 }
 
 export interface VisionAnalyzeResult {

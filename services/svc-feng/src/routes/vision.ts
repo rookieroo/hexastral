@@ -21,6 +21,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { logger } from '../lib/logger'
+import { formatFormAzimuthsForPrompt } from '../lib/form-azimuth'
 import { auditVisionHits } from '../lib/output-audit'
 import {
   buildInteriorUserPrompt,
@@ -101,6 +102,17 @@ const VisionRequestSchema = z.object({
   locale: z.enum(['en', 'zh', 'zh-Hant', 'ja']).default('en'),
   expectedFeatures: z.array(z.enum(['砂', '水', '朝案'])).optional(),
   terrainSummary: z.string().optional(),
+  formAzimuths: z
+    .array(
+      z.object({
+        kind: z.enum(['water', 'waterway', 'road']),
+        palace: z.enum(['坎', '艮', '震', '巽', '离', '坤', '兑', '乾']),
+        bearingDeg: z.number(),
+        distanceM: z.number(),
+        source: z.literal('tilequery'),
+      })
+    )
+    .optional(),
 })
 
 const MODEL_VERSION = 'gemini-3.1-pro-vision-v2'
@@ -135,6 +147,7 @@ visionRouter.post('/analyze', async (c) => {
     locale,
     expectedFeatures,
     terrainSummary,
+    formAzimuths,
   } = parsed.data
   const started = Date.now()
   const imageCount = annotatedKeys.length as 1 | 2 | 3
@@ -160,6 +173,7 @@ visionRouter.post('/analyze', async (c) => {
     locale,
     expectedFeatures,
     terrainSummary,
+    formAzimuths,
     promptVersion: PROMPT_VERSION,
     auditVersion: VISION_AUDIT_VERSION,
     visionShaVersion: VISION_SHA_VERSION,
@@ -187,6 +201,9 @@ visionRouter.post('/analyze', async (c) => {
     imageCount,
     expectedFeatures,
     terrainSummary,
+    formAzimuthLines: formAzimuths?.length
+      ? formatFormAzimuthsForPrompt(formAzimuths)
+      : undefined,
   })
 
   const closeImages = images.slice(0, 1)

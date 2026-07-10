@@ -392,6 +392,7 @@ export async function runAnalyzeJob(
   // orphaned shell (chapters='[]') would otherwise render as a permanent fake
   // loading state on every reopen (no chapters, no running job, no retry).
   let shellReportId: string | null = null
+  const stageMs: Record<string, number> = {}
   try {
     const facingDegTrue = Number(site.facingDegTrue)
     const sitDegTrue = Number(site.sitDegTrue)
@@ -418,6 +419,7 @@ export async function runAnalyzeJob(
         summary: 'prefetch error; running full pipeline',
         nearestRoadBearingDeg: null,
         roadFeatureCount: 0,
+        formAzimuths: [],
         degraded: true,
       }
       fengLogger.warn('job.prefetch.error', {
@@ -434,6 +436,7 @@ export async function runAnalyzeJob(
       recommendedTiles: terrain.recommendedTiles,
       degraded: terrain.degraded,
     })
+    stageMs.prefetch = Date.now() - prefetchStarted
 
     // Only render the tile scales the prefetch flagged as worthwhile.
     const tilesToRender = MAP_TILES.filter((t) => terrain.recommendedTiles.includes(t.key))
@@ -463,6 +466,7 @@ export async function runAnalyzeJob(
       durationMs: Date.now() - mapsStarted,
       renderedTiles: tilesToRender.map((t) => t.key),
     })
+    stageMs.maps = Date.now() - mapsStarted
 
     // ── Stage: annotate ──
     await setStage(db, jobId, 'vision', 40)
@@ -494,6 +498,7 @@ export async function runAnalyzeJob(
       durationMs: Date.now() - annotateStarted,
       annotatedCount: annotatedKeys.length,
     })
+    stageMs.annotate = Date.now() - annotateStarted
 
     if (annotatedKeys.length === 0) {
       throw new Error('annotate stage produced zero keys')
@@ -511,6 +516,7 @@ export async function runAnalyzeJob(
       locale,
       expectedFeatures: terrain.expectedFeatures,
       terrainSummary: terrain.summary,
+      formAzimuths: terrain.formAzimuths?.length ? terrain.formAzimuths : undefined,
     })
     fengLogger.info('job.stage.done', {
       jobId,
@@ -518,6 +524,7 @@ export async function runAnalyzeJob(
       durationMs: Date.now() - visionStarted,
       modelVersion: vision.modelVersion,
     })
+    stageMs.vision = Date.now() - visionStarted
 
     // ── Stage: compute (in-process, deterministic) ──
     await setStage(db, jobId, 'compute', 70)
@@ -621,6 +628,7 @@ export async function runAnalyzeJob(
     const residenceType = normalizeResidenceType(site.residenceType)
     const streetViewEnabled = fengStreetViewEnabled(residenceType)
     let streetAttribution: string | null = null
+    const streetStarted = Date.now()
     try {
       const street = streetViewEnabled
         ? await streetSha(env.SVC_FENG, { lat, lng, locale })
@@ -652,8 +660,9 @@ export async function runAnalyzeJob(
         error: err instanceof Error ? err.message : String(err),
       })
     }
+    stageMs.street = Date.now() - streetStarted
 
-    // 形理整合 — bin vision 砂/水/形煞 into palaces (vision uses 八卦宫名 directly),
+    // 形理整合 — bin vision 砂/水/形煞 into palaces
     // overlay DEM 砂 by elevation, then correlate with the flying-star charts
     // (山管人丁、水管财). Uses the CURRENT 元运 for 旺衰, like the combination phase.
     const formByPalace = emptyFormByPalace()
@@ -673,6 +682,12 @@ export async function runAnalyzeJob(
     for (const w of vision.水) {
       const p = directionToPalace(w.direction)
       if (p) formByPalace[p].hasWater = true
+    }
+    for (const az of terrain.formAzimuths ?? []) {
+      if (az.kind === 'water' || az.kind === 'waterway' || az.kind === 'road') {
+        const p = az.palace as BaguaPalace
+        if (p in formByPalace) formByPalace[p].hasWater = true
+      }
     }
     for (const x of vision.形煞) {
       const p = directionToPalace(x.direction)
@@ -774,6 +789,7 @@ export async function runAnalyzeJob(
           rooms: roomFindings.length,
           modelVersion: interior.modelVersion,
         })
+        stageMs.interior = Date.now() - interiorStarted
       } catch (err) {
         interior = null
         roomFindings = []
@@ -915,6 +931,7 @@ export async function runAnalyzeJob(
       durationMs: Date.now() - synthesisStarted,
       modelVersion: synth.modelVersion,
     })
+    stageMs.synthesis = Date.now() - synthesisStarted
 
     // A degraded synthesis (all LLM tiers failed → generic stub chapters) is NOT a
     // sellable report. Fail the job so (a) the single-purchase entitlement is NOT
@@ -975,6 +992,20 @@ export async function runAnalyzeJob(
         consumed: consumed.length > 0,
       })
     }
+
+    fengLogger.info('job.cost', {
+      jobId,
+      siteId: site.id,
+      reportId,
+      durationMs: Date.now() - jobStarted,
+      stagesMs: stageMs,
+      tilesRendered: tilesToRender.length,
+      annotatedTiles: annotatedKeys.length,
+      formAzimuths: terrain.formAzimuths?.length ?? 0,
+      residenceType,
+      streetViewEnabled,
+      inputScore: dataQuality.inputScore,
+    })
 
     fengLogger.info('job.done', {
       jobId,

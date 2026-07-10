@@ -162,6 +162,19 @@ export type Strings = {
   report_compound_facing_note: string
   /** Heading above the per-palace 形理 (form-li) verdict list. */
   report_formli_heading: string
+  /** Heading above per-palace 双星组合 chips. */
+  report_combinations_heading: string
+  /** Closing page: DEM 来龙 when present. */
+  report_lai_long: string
+  dq_no_floorplan: string
+  dq_build_year_unknown: string
+  dq_no_birth_profile: string
+  dq_pin_offset: string
+  dq_orient_facing_delta: string
+  dq_apartment_floor_missing: string
+  dq_flat_floor_missing: string
+  dq_flat_urban: string
+  dq_residence_mismatch: string
   /** 床灶门书桌吉位 block. */
   report_placement_heading: string
   /** Report digest cover — qualitative summary (no percentile score). */
@@ -470,6 +483,17 @@ const EN: Strings = {
   report_compound_facing_note:
     'Compound facing (兼向) — shown using the replacement-star (替卦) chart.',
   report_formli_heading: 'FORM × STARS (山水合参)',
+  report_combinations_heading: 'PALACE COMBINATIONS (双星断事)',
+  report_lai_long: 'Macro terrain · incoming dragon (来龙) toward {palace}',
+  dq_no_floorplan: 'No floor plan uploaded — interior room notes were not generated.',
+  dq_build_year_unknown: 'Build year unknown — flying-stars chapter omitted.',
+  dq_no_birth_profile: 'No birth profile — personal gua chapter uses house gua only.',
+  dq_pin_offset: 'Building pin was adjusted far from the geocoded address.',
+  dq_orient_facing_delta: 'Floor-plan north differs from building facing — verify orientation.',
+  dq_apartment_floor_missing: 'Floor not entered — street-level form is less specific for high-rises.',
+  dq_flat_floor_missing: 'Floor not entered — street form attenuation skipped.',
+  dq_flat_urban: 'Flat urban site — landform read relies on direction + satellite only.',
+  dq_residence_mismatch: 'Declared residence type may not match the site — review if pricing tier fits.',
   report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
   report_digest_tag: 'Overview',
   digest_chart_line: 'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
@@ -757,6 +781,17 @@ const ZH_HANS: Strings = {
   report_map_failed: '地图加载失败',
   report_compound_facing_note: '兼向 — 已按替卦盘排盘。',
   report_formli_heading: '形理合参（山水×飞星）',
+  report_combinations_heading: '逐宫双星组合',
+  report_lai_long: '大峦头 · 来龙方位 {palace}',
+  dq_no_floorplan: '未上传户型图 — 未生成室内房间级研习标注。',
+  dq_build_year_unknown: '建运未知 — 玄空飞星章已省略。',
+  dq_no_birth_profile: '未录入生辰 — 命卦章仅含宅卦参考。',
+  dq_pin_offset: '楼体定位点与地址坐标偏差较大。',
+  dq_orient_facing_delta: '户型北向与大楼坐向差异较大 — 请核对朝向。',
+  dq_apartment_floor_missing: '未填楼层 — 高层街景形煞参考价值降低。',
+  dq_flat_floor_missing: '未填楼层 — 街景形煞楼层衰减未启用。',
+  dq_flat_urban: '平坦城区 — 峦头主要依据方位与卫星推断。',
+  dq_residence_mismatch: '申报的住宅类型可能与现场不符 — 请核对付费档位。',
   report_placement_heading: '古典布局参考',
   report_digest_tag: '概览',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}运{method}盘 · 现{currentYuan}运读盘',
@@ -1030,6 +1065,17 @@ const ZH_HANT: Strings = {
   report_map_failed: '地圖載入失敗',
   report_compound_facing_note: '兼向 — 已按替卦盤排盤。',
   report_formli_heading: '形理合參（山水×飛星）',
+  report_combinations_heading: '逐宮雙星組合',
+  report_lai_long: '大巒頭 · 來龍方位 {palace}',
+  dq_no_floorplan: '未上傳戶型圖 — 未生成室內房間級研習標註。',
+  dq_build_year_unknown: '建運未知 — 玄空飛星章已省略。',
+  dq_no_birth_profile: '未錄入生辰 — 命卦章僅含宅卦參考。',
+  dq_pin_offset: '樓體定位點與地址座標偏差較大。',
+  dq_orient_facing_delta: '戶型北向與大樓坐向差異較大 — 請核對朝向。',
+  dq_apartment_floor_missing: '未填樓層 — 高層街景形煞參考價值降低。',
+  dq_flat_floor_missing: '未填樓層 — 街景形煞樓層衰減未啟用。',
+  dq_flat_urban: '平坦城區 — 巒頭主要依據方位與衛星推斷。',
+  dq_residence_mismatch: '申報的住宅類型可能與現場不符 — 請核對付費檔位。',
   report_placement_heading: '古典佈局參考',
   report_digest_tag: '概覽',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運讀盤',
@@ -1316,6 +1362,17 @@ const JA: Strings = {
   report_map_failed: '地図を読み込めません',
   report_compound_facing_note: '兼向 — 替卦盤で表示しています。',
   report_formli_heading: '形理合参（山水×飛星）',
+  report_combinations_heading: '各宮双星组合',
+  report_lai_long: '大峦头 · 来龙方位 {palace}',
+  dq_no_floorplan: '間取り図未アップロード — 室内の部屋レベル注釈は生成されませんでした。',
+  dq_build_year_unknown: '建运不明 — 玄空飛星章は省略されました。',
+  dq_no_birth_profile: '生年月日未入力 — 命卦章は宅卦のみです。',
+  dq_pin_offset: '建物ピンが住所座標から大きくずれています。',
+  dq_orient_facing_delta: '間取りの北向きと建物の向きに差があります — 方位をご確認ください。',
+  dq_apartment_floor_missing: '階数未入力 — 高層では街景形煞の参考度が下がります。',
+  dq_flat_floor_missing: '階数未入力 — 街景形煞の階数減衰は適用されません。',
+  dq_flat_urban: '平坦な市街地 — 巒頭は方位と衛星推定が中心です。',
+  dq_residence_mismatch: '申告した住宅タイプが現場と合わない可能性 — 料金区分をご確認ください。',
   report_placement_heading: '古典配置メモ',
   report_digest_tag: '概観',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運で読む',

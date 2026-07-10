@@ -110,27 +110,25 @@ Pick a real address **near terrain** (hills/coast) so DEM/砂 fires.
 - [ ] Permission strings present (NSLocation/NSMotion/NSPhotoLibrary) ✅;
       add NSCamera when AR/RoomPlan (V1.5) lands.
 
-## 8. 专业度 acceptance — 风水师 sign-off (hard gate for the "专业" claim)
+## 8. Deterministic acceptance — golden harness + staging smoke
 
-Engines are golden-tested for *internal correctness*, but "professional-grade"
-needs a human expert to validate *output quality*.
+**No external 风水师 gate** (locked in [closeout-plan.md](./closeout-plan.md) W1).
+Correctness rests on沈氏 algorithms + [acceptance-standard.md](./acceptance-standard.md)
+red-flags + CI golden tests; staging validates full vision/synthesis on device.
 
-- [ ] Generate N (≥10) sample reports across varied 坐向 / 元运 / terrain
-      — harness: `apps/hexastral-api/src/lib/feng-golden-sites.ts` +
-      `bun test src/lib/feng-golden.integration.test.ts` (deterministic compute);
-      staging spot-check still required for full vision/synthesis.
+- [ ] `cd apps/hexastral-api && bun test src/lib/feng-golden.integration.test.ts` green
+      (fixtures in `feng-golden-sites.ts`: 兼向/替卦, unknown build year, no floorplan, 煞组合 phase rules).
+- [ ] `cd packages/astro-core && bun test` green (feng suites).
+- [ ] Optional: `cd packages/astro-core && bun feng:samples` → spot-check MD against acceptance-standard.
 - [ ] **录入铁闸 (staging)**: three floor-plan fixtures — (a) facing not confirmed →
       review blocked; (b) floor plan uploaded but north not dialed → blocked;
       (c) north vs facing >30° → blocked; direct POST without `facingConfirmed: true` → 400.
 - [ ] **录入铁闸**: edit address without re-geocode → confirm step forces new coords;
       absurd pin offset (>2km) → API 400.
-- [ ] A paid 风水师 reviews: 飞星盘 + 格局 + 八宅 placement + 形理断语 for
-      correctness and tone.
-- [ ] Sign-off recorded before marketing uses the word "专业 / professional".
+- [ ] Staging: apartment / flat / villa each one full report (vision + synthesis).
 
 ## What is NOT done (tracked in feng-pro-grade-plan.md)
 
-- 七星打劫 / 城门诀 (D1 advanced 格局).
-- 水系按宫归 from coords (水 still VLM-only); azimuth-from-coords for VLM features.
 - RoomPlan / 户型立极 (interior star placement) — V1.5.
-- AI-chat moderation; report UI for macroTerrain 来龙 / 月紫白 grid.
+- Draw-outline floor plan capture — V1.1 (not implemented; V1 = album upload only).
+- Indoor room photography / `NSCamera` — out of V1 scope.
