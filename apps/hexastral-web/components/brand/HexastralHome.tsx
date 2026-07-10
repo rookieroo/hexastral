@@ -22,6 +22,7 @@ interface Strings {
   eyebrow: string
   headline: string
   goldLine: string
+  navTag: string
   sub: string
   system: SystemItem[]
   comingSoon: string
@@ -32,32 +33,36 @@ interface Strings {
   yaul: string
   kanyu: string
   foot: string
+  appLabel: Record<AppId, string>
 }
 
 const STR: Record<BrandLocale, Strings> = {
   en: {
     eyebrow: 'Classical Chinese cosmology',
     headline: 'Your chart has structure worth reading.',
-    goldLine: '八字 · 紫微 · 五行',
+    goldLine: 'BaZi · ZiWei · Five Elements',
+    navTag: '',
     sub: 'A millennium-old tradition of charting a life — Four Pillars and ZiWei palaces, read with AI. Educational, not predictive.',
     system: [
-      { glyph: '命盤', line: 'Four Pillars — the chart of your birth moment' },
-      { glyph: '紫微', line: 'ZiWei — the twelve-palace system' },
-      { glyph: '五行 · 大運', line: 'Five Elements, read through decade cycles' },
+      { glyph: 'BaZi', line: 'Four Pillars — the chart of your birth moment' },
+      { glyph: 'ZiWei', line: 'Twelve-palace star system' },
+      { glyph: 'Cycles', line: 'Five Elements, read through decade cycles' },
     ],
     comingSoon: 'Coming soon',
     privacy: 'Privacy',
     terms: 'Terms',
-    yuel: 'Your reading, and the people you’re bound to — synastry (合盘) and your 命書.',
-    yuun: 'The Chinese almanac, every day — 宜忌, the lunar calendar, your decade timeline.',
-    yaul: 'I Ching Liu Yao (六爻) — three-coin casting, hexagram journal, classical AI read.',
-    kanyu: 'Classical feng-shui (堪舆) — pin a site, compass bearing, optional floor plan, structured site report.',
+    yuel: 'Your reading, and the people you’re bound to — synastry and personal chart.',
+    yuun: 'The Chinese almanac, every day — auspicious days, lunar calendar, decade timeline.',
+    yaul: 'I Ching Liu Yao — three-coin casting, hexagram journal, classical AI read.',
+    kanyu: 'Classical feng-shui site analysis — pin a site, compass bearing, optional floor plan, structured report.',
     foot: 'Educational, not predictive',
+    appLabel: { yuel: 'Yuel', yuun: 'Yuun', yaul: 'Yaul', kanyu: 'Kanyu' },
   },
   zh: {
     eyebrow: '中华命理传统',
     headline: '一张命盘，自有其结构。',
     goldLine: '八字 · 紫微 · 五行',
+    navTag: '八字 · 紫微',
     sub: '传承千年的一套看待人生的方法——四柱八字与紫微诸宫，以 AI 辅以解读。重在认知，而非预测。',
     system: [
       { glyph: '命盤', line: '四柱——你出生时刻的命盘' },
@@ -72,11 +77,13 @@ const STR: Record<BrandLocale, Strings> = {
     yaul: '易经六爻研习——三维摇卦、卦象日记与古典释读。',
     kanyu: '古典堪舆风水——定位居所、罗盘坐向、可选户型图与结构化报告。',
     foot: '重在认知，而非预测',
+    appLabel: { yuel: 'Yuel · 缘', yuun: 'Yuun · 运', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪舆' },
   },
   tw: {
     eyebrow: '中華命理傳統',
     headline: '一張命盤，自有其結構。',
     goldLine: '八字 · 紫微 · 五行',
+    navTag: '八字 · 紫微',
     sub: '傳承千年的一套看待人生的方法——四柱八字與紫微諸宮，以 AI 輔以解讀。重在認知，而非預測。',
     system: [
       { glyph: '命盤', line: '四柱——你出生時刻的命盤' },
@@ -91,11 +98,13 @@ const STR: Record<BrandLocale, Strings> = {
     yaul: '易經六爻研習——三維搖卦、卦象日記與古典釋讀。',
     kanyu: '古典堪輿風水——定位居所、羅盤坐向、可選戶型圖與結構化報告。',
     foot: '重在認知，而非預測',
+    appLabel: { yuel: 'Yuel · 緣', yuun: 'Yuun · 運', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪輿' },
   },
   ja: {
     eyebrow: '中国伝統の命理',
     headline: '命盤には、読むに値する構造がある。',
     goldLine: '八字 · 紫微 · 五行',
+    navTag: '八字 · 紫微',
     sub: '千年を超える命盤の伝統——四柱と紫微の十二宮を、AI とともに読む。予測ではなく、理解のために。',
     system: [
       { glyph: '命盤', line: '四柱——あなたの出生の命盤' },
@@ -110,6 +119,7 @@ const STR: Record<BrandLocale, Strings> = {
     yaul: '易経六爻の学び——三枚銭の起卦、卦の記録、古典 AI 解説。',
     kanyu: '古典風水（堪輿）——場所を指定、羅盤の向き、任意の間取り、構造化レポート。',
     foot: '予測ではなく、理解のために',
+    appLabel: { yuel: 'Yuel · 缘', yuun: 'Yuun · 运', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪舆' },
   },
 }
 
@@ -153,13 +163,6 @@ const APP_STYLE: Record<
   },
 }
 
-const APP_LABEL: Record<AppId, string> = {
-  yuel: 'Yuel · 缘',
-  yuun: 'Yuun · 运',
-  yaul: 'Yaul · 爻',
-  kanyu: 'Kanyu · 堪舆',
-}
-
 type AppCopyKey = 'yuel' | 'yuun' | 'yaul' | 'kanyu'
 
 const APP_COPY_KEY: Record<AppId, AppCopyKey> = {
@@ -170,10 +173,10 @@ const APP_COPY_KEY: Record<AppId, AppCopyKey> = {
 }
 
 const JSON_LD_DESCRIPTION: Record<AppId, string> = {
-  yuel: 'A personal 命書 (BaZi · ZiWei) and two-chart synastry. Educational, not predictive.',
-  yuun: 'A daily Chinese almanac (黄历) grounded in classical cosmology. Educational, not predictive.',
-  yaul: 'An I Ching Liu Yao (六爻) study journal with 3D coin casting. Educational, not predictive.',
-  kanyu: 'Classical feng-shui (堪舆) site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
+  yuel: 'A personal BaZi and ZiWei chart with two-chart synastry. Educational, not predictive.',
+  yuun: 'A daily Chinese almanac grounded in classical cosmology. Educational, not predictive.',
+  yaul: 'An I Ching Liu Yao study journal with 3D coin casting. Educational, not predictive.',
+  kanyu: 'Classical feng-shui site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
 }
 
 function jsonLd(origin: string) {
@@ -261,7 +264,7 @@ function AppCard({
       <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <AppIcon id={id} />
         <span style={{ fontSize: large ? 16 : 14, letterSpacing: 1, color: V.ivory }}>
-          {APP_LABEL[id]}
+          {t.appLabel[id]}
         </span>
         {coming ? (
           <span
@@ -333,7 +336,9 @@ export function HexastralHome({ locale, origin }: { locale: string; origin: stri
           <HexastralPlanetLogo size={26} phase={0.6} />
           <span style={{ fontSize: 15, letterSpacing: 1, color: V.gold }}>HexAstral</span>
         </span>
-        <span style={{ fontSize: 11, letterSpacing: 2, color: V.dim }}>八字 · 紫微</span>
+        {t.navTag ? (
+          <span style={{ fontSize: 11, letterSpacing: 2, color: V.dim }}>{t.navTag}</span>
+        ) : null}
       </nav>
 
       <section

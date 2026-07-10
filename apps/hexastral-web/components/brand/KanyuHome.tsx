@@ -69,6 +69,7 @@ export function KanyuHome({ locale }: { locale: string }) {
   return (
     <main
       style={{
+        position: 'relative',
         minHeight: '100dvh',
         background: C.bg,
         color: C.ink,

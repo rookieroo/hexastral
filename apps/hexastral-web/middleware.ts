@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
+import { resolveBrandRootRedirect } from './lib/brand-host'
 import { routing } from './i18n/routing'
 
 const intlMiddleware = createMiddleware(routing)
@@ -40,23 +41,19 @@ function persistUtmParams(req: NextRequest, res: NextResponse) {
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ─── Brand default locale: Yuel / Yuun / Yaul / Kanyu open in 简体中文 ─────
-  // `localePrefix: 'as-needed'` resolves the bare URL to the global default locale
-  // (en). The Chinese-first brand hosts (yuel.* / yuun.* / yaul.*) should open in Chinese, so
-  // redirect their root to /zh. It must be a redirect, not a rewrite: the page reads
-  // its locale via next-intl's `getLocale()`, which only resolves to zh when the
-  // request actually flows through the intl pipeline as /zh. hexastral.com keeps its
-  // en default; /zh is non-looping (it no longer matches `=== '/'`).
+  // ─── Brand default locale: Yuel / Yuun / Yaul / Kanyu ───────────────────────
+  // Chinese-first on first bare `/` visit only. Repeat `/` visits serve English
+  // (`localePrefix: as-needed`) so `/zh` → EN switcher is not blocked by cookie.
   if (pathname === '/') {
     const host = request.headers.get('host') ?? ''
-    if (
-      host.startsWith('yuel.') ||
-      host.startsWith('yuun.') ||
-      host.startsWith('yaul.') ||
-      host.startsWith('kanyu.')
-    ) {
+    const redirectPath = resolveBrandRootRedirect({
+      host,
+      localeCookie: request.cookies.get('NEXT_LOCALE')?.value ?? null,
+      acceptLanguage: request.headers.get('accept-language'),
+    })
+    if (redirectPath) {
       const url = request.nextUrl.clone()
-      url.pathname = '/zh'
+      url.pathname = redirectPath
       return NextResponse.redirect(url)
     }
   }

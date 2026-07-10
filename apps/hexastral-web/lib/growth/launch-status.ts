@@ -69,8 +69,8 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     id: 'yaul',
     displayName: 'Yaul',
     role: 'funnel',
-    visibility: 'hidden',
-    showOnHomepage: false,
+    visibility: 'teaser',
+    showOnHomepage: true,
     brandHostIndexable: false,
     brandHost: 'https://yaul.hexastral.com',
     storeTarget: 'coincast',
@@ -115,6 +115,15 @@ export function isPathIndexable(path: string): boolean {
   return true
 }
 
+/** Display order on hexastral.com (live row, then coming-soon row). */
+export const HOMEPAGE_APP_ORDER: AppId[] = ['yuun', 'yuel', 'yaul', 'kanyu']
+
+function sortByHomepageOrder(apps: AppLaunchConfig[]): AppLaunchConfig[] {
+  return [...apps].sort(
+    (a, b) => HOMEPAGE_APP_ORDER.indexOf(a.id) - HOMEPAGE_APP_ORDER.indexOf(b.id)
+  )
+}
+
 export function getVisibleApps(): AppLaunchConfig[] {
   return Object.values(APP_LAUNCH).filter((a) => a.visibility !== 'hidden')
 }
@@ -123,7 +132,7 @@ export function getHomepageApps(): {
   flagship: AppLaunchConfig[]
   funnel: AppLaunchConfig[]
 } {
-  const visible = APP_LAUNCH_CONFIG_ON_HOMEPAGE()
+  const visible = sortByHomepageOrder(APP_LAUNCH_CONFIG_ON_HOMEPAGE())
   return {
     flagship: visible.filter((a) => a.role === 'flagship'),
     funnel: visible.filter((a) => a.role === 'funnel'),
@@ -135,7 +144,7 @@ export function getHomepageAppsByAvailability(): {
   live: AppLaunchConfig[]
   comingSoon: AppLaunchConfig[]
 } {
-  const visible = APP_LAUNCH_CONFIG_ON_HOMEPAGE()
+  const visible = sortByHomepageOrder(APP_LAUNCH_CONFIG_ON_HOMEPAGE())
   return {
     live: visible.filter((a) => a.visibility === 'live'),
     comingSoon: visible.filter((a) => a.visibility === 'teaser'),
