@@ -1,4 +1,5 @@
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { APP_LAUNCH } from '@/lib/growth/launch-status'
 
 /** Shared config for the per-brand homes (yuel / yuun / yaul / kanyu.hexastral.com). */
 
@@ -45,3 +46,20 @@ export const BRAND_STORE = {
     labels: CTA_LABELS,
   },
 } as const
+
+export type BrandId = keyof typeof BRAND_STORE
+
+/** Per-app privacy appendix paths — synced with `APP_LAUNCH[].privacyPath`. */
+export const BRAND_LEGAL_PATHS: Record<BrandId, { privacy: string; terms: string }> = {
+  yuel: { privacy: APP_LAUNCH.yuel.privacyPath, terms: '/terms' },
+  yuun: { privacy: APP_LAUNCH.yuun.privacyPath, terms: '/terms' },
+  yaul: { privacy: APP_LAUNCH.yaul.privacyPath, terms: '/terms' },
+  kanyu: { privacy: APP_LAUNCH.kanyu.privacyPath, terms: '/terms' },
+}
+
+/** Locale-prefixed path for brand subdomain legal links (`localePrefix: as-needed`). */
+export function localePath(locale: string, path: string): string {
+  const l = pickLocale(locale)
+  if (l === 'en') return path
+  return `/${l}${path}`
+}

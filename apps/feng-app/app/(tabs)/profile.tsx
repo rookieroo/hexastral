@@ -13,11 +13,12 @@ import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { ChevronRight } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { deleteAccount } from '@/lib/account'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
+import { privacyUrl, termsUrl } from '@/lib/config'
 import { getDevPro, setDevPro } from '@/lib/dev-flags'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { resetFengIntro } from '@/lib/onboarding'
@@ -43,6 +44,7 @@ export default function SettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const t = useStrings(resolveLocale())
+  const locale = resolveLocale()
   const haptic = useHaptic()
   const { user, userId, signOut } = useAuth()
 
@@ -188,7 +190,13 @@ export default function SettingsScreen() {
           {navRow(t.profile_birth_section, birthValue, () => router.push('/(birth-info)'))}
           {navRow(t.tab_compass, null, () => router.push('/(tabs)/compass'))}
           {navRow(t.tab_readings, null, () => router.push('/(tabs)/readings'))}
-          {navRow(t.tool_glossary, null, () => router.push('/(glossary)'), true)}
+          {navRow(t.tool_glossary, null, () => router.push('/(glossary)'))}
+          {navRow(t.privacy_section, null, () => {
+            void Linking.openURL(privacyUrl(locale)).catch(() => {})
+          })}
+          {navRow(t.terms_section, null, () => {
+            void Linking.openURL(termsUrl(locale)).catch(() => {})
+          }, true)}
         </View>
 
         {/* DEV */}

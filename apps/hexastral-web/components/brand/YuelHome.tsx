@@ -1,5 +1,6 @@
 import { StarBackground } from '@/components/StarBackground'
 import { AppCTA } from './AppCTA'
+import { BrandLegalFooter } from './BrandLegalFooter'
 import { BRAND_STORE, type BrandLocale, pickLocale } from './brand-config'
 
 /**
@@ -222,20 +223,15 @@ export function YuelHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      <footer
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          textAlign: 'center',
-          padding: '22px',
-          borderTop: `0.5px solid ${C.hair}`,
-          fontSize: 11,
-          letterSpacing: 1,
-          color: C.inkMuted,
-        }}
-      >
-        {t.foot} · yuel.hexastral.com
-      </footer>
+      <BrandLegalFooter
+        brand='yuel'
+        locale={locale}
+        foot={t.foot}
+        linkColor={C.gold}
+        mutedColor={C.inkMuted}
+        borderColor={C.hair}
+        hostLabel='yuel.hexastral.com'
+      />
     </main>
   )
 }

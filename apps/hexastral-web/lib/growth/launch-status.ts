@@ -130,6 +130,18 @@ export function getHomepageApps(): {
   }
 }
 
+/** Homepage layout: shipped (live) vs not yet shipped (teaser). */
+export function getHomepageAppsByAvailability(): {
+  live: AppLaunchConfig[]
+  comingSoon: AppLaunchConfig[]
+} {
+  const visible = APP_LAUNCH_CONFIG_ON_HOMEPAGE()
+  return {
+    live: visible.filter((a) => a.visibility === 'live'),
+    comingSoon: visible.filter((a) => a.visibility === 'teaser'),
+  }
+}
+
 function APP_LAUNCH_CONFIG_ON_HOMEPAGE(): AppLaunchConfig[] {
   return Object.values(APP_LAUNCH).filter((a) => a.showOnHomepage && a.visibility !== 'hidden')
 }

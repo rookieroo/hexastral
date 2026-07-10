@@ -1,4 +1,5 @@
 import { AppCTA } from './AppCTA'
+import { BrandLegalFooter } from './BrandLegalFooter'
 import { BRAND_STORE, type BrandLocale, pickLocale } from './brand-config'
 
 /**
@@ -31,6 +32,7 @@ const STR: Record<
     badItems: string[]
     headline: string
     features: string[]
+    foot: string
   }
 > = {
   en: {
@@ -42,6 +44,7 @@ const STR: Record<
     badItems: ['Construction', 'Moving', 'Big purchases'],
     headline: 'The Chinese almanac, every day.',
     features: ['Daily 宜忌', 'GanZhi', 'Annual cycle', 'What-if'],
+    foot: 'Educational, not predictive',
   },
   zh: {
     today: '今日',
@@ -52,6 +55,7 @@ const STR: Record<
     badItems: ['动土', '安葬', '开市'],
     headline: '中华黄历，每日宜忌与节律参照。',
     features: ['每日宜忌', '干支', '流年', '假如'],
+    foot: '重在认知，而非预测',
   },
   tw: {
     today: '今日',
@@ -62,6 +66,7 @@ const STR: Record<
     badItems: ['動土', '安葬', '開市'],
     headline: '中華黃曆，每日宜忌與運勢。',
     features: ['每日宜忌', '干支', '流年', '假如'],
+    foot: '重在認知，而非預測',
   },
   ja: {
     today: '今日',
@@ -72,6 +77,7 @@ const STR: Record<
     badItems: ['工事', '引越', '開業'],
     headline: '中華暦、毎日の吉凶。',
     features: ['毎日の宜忌', '干支', '流年', 'もしも'],
+    foot: '予測ではなく、理解のために',
   },
 }
 
@@ -233,18 +239,15 @@ export function YuunHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      <footer
-        style={{
-          textAlign: 'center',
-          padding: '22px',
-          borderTop: `0.5px solid ${C.sep}`,
-          fontSize: 11,
-          letterSpacing: 1,
-          color: C.dim,
-        }}
-      >
-        yuun.hexastral.com
-      </footer>
+      <BrandLegalFooter
+        brand='yuun'
+        locale={locale}
+        foot={t.foot}
+        linkColor={C.accent}
+        mutedColor={C.dim}
+        borderColor={C.sep}
+        hostLabel='yuun.hexastral.com'
+      />
     </main>
   )
 }

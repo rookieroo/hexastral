@@ -1,4 +1,5 @@
 import { AppCTA } from './AppCTA'
+import { BrandLegalFooter } from './BrandLegalFooter'
 import { BRAND_STORE, type BrandLocale, pickLocale } from './brand-config'
 
 /**
@@ -235,32 +236,15 @@ export function YaulHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      <footer
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          textAlign: 'center',
-          padding: '22px',
-          borderTop: `0.5px solid ${C.hair}`,
-          fontSize: 11,
-          letterSpacing: 1,
-          color: C.inkMuted,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 10 }}>
-          <a
-            href={localePath(locale, '/privacy/coincast')}
-            style={{ color: C.gold, textDecoration: 'none' }}
-          >
-            {t.privacy}
-          </a>
-          <span aria-hidden>·</span>
-          <a href={localePath(locale, '/terms')} style={{ color: C.gold, textDecoration: 'none' }}>
-            {t.terms}
-          </a>
-        </div>
-        {t.foot} · yaul.hexastral.com
-      </footer>
+      <BrandLegalFooter
+        brand='yaul'
+        locale={locale}
+        foot={t.foot}
+        linkColor={C.gold}
+        mutedColor={C.inkMuted}
+        borderColor={C.hair}
+        hostLabel='yaul.hexastral.com'
+      />
     </main>
   )
 }

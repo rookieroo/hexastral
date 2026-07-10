@@ -1,15 +1,16 @@
 import { HexastralPlanetLogo } from '@/components/HexastralPlanetLogo'
 import { StarBackground } from '@/components/StarBackground'
+import { Link } from '@/i18n/navigation'
 import {
   APP_LAUNCH,
   appIsComingSoon,
-  getHomepageApps,
+  getHomepageAppsByAvailability,
   type AppId,
 } from '@/lib/growth/launch-status'
 import { type BrandLocale, pickLocale } from './brand-config'
 
 /**
- * HexAstral suite home — dual flagship (Yuel + Kanyu) and funnel entry (Yuun + Yaul).
+ * HexAstral suite home — apps grouped by availability (live vs coming soon).
  * Visibility driven by lib/growth/launch-status.ts per launch wave.
  */
 
@@ -23,9 +24,9 @@ interface Strings {
   goldLine: string
   sub: string
   system: SystemItem[]
-  flagshipTitle: string
-  funnelTitle: string
   comingSoon: string
+  privacy: string
+  terms: string
   yuel: string
   yuun: string
   yaul: string
@@ -44,9 +45,9 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: 'ZiWei — the twelve-palace system' },
       { glyph: '五行 · 大運', line: 'Five Elements, read through decade cycles' },
     ],
-    flagshipTitle: 'Flagship apps',
-    funnelTitle: 'Start here',
     comingSoon: 'Coming soon',
+    privacy: 'Privacy',
+    terms: 'Terms',
     yuel: 'Your reading, and the people you’re bound to — synastry (合盘) and your 命書.',
     yuun: 'The Chinese almanac, every day — 宜忌, the lunar calendar, your decade timeline.',
     yaul: 'I Ching Liu Yao (六爻) — three-coin casting, hexagram journal, classical AI read.',
@@ -63,9 +64,9 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宫的星曜系统' },
       { glyph: '五行 · 大運', line: '五行，循大运而读' },
     ],
-    flagshipTitle: '旗舰应用',
-    funnelTitle: '从这里开始',
     comingSoon: '即将推出',
+    privacy: '隐私政策',
+    terms: '使用条款',
     yuel: '你的命书，和你命中相系的人——合盘与个人命书。',
     yuun: '中华黄历，每日宜忌——农历、流年大运时间轴。',
     yaul: '易经六爻研习——三维摇卦、卦象日记与古典释读。',
@@ -82,9 +83,9 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宮的星曜系統' },
       { glyph: '五行 · 大運', line: '五行，循大運而讀' },
     ],
-    flagshipTitle: '旗艦應用',
-    funnelTitle: '從這裡開始',
     comingSoon: '即將推出',
+    privacy: '隱私政策',
+    terms: '使用條款',
     yuel: '你的命書，和你命中相繫的人——合盤與個人命書。',
     yuun: '中華黃曆，每日宜忌——農曆、流年大運時間軸。',
     yaul: '易經六爻研習——三維搖卦、卦象日記與古典釋讀。',
@@ -101,9 +102,9 @@ const STR: Record<BrandLocale, Strings> = {
       { glyph: '紫微', line: '紫微——十二宮の星のシステム' },
       { glyph: '五行 · 大運', line: '五行を、大運を通して読む' },
     ],
-    flagshipTitle: 'フラッグシップ',
-    funnelTitle: 'はじめに',
     comingSoon: '近日公開',
+    privacy: 'プライバシー',
+    terms: '利用規約',
     yuel: 'あなたの命書と、結ばれた人々——相性（合盤）と個人鑑定。',
     yuun: '中華暦、毎日の吉凶——旧暦と大運のタイムライン。',
     yaul: '易経六爻の学び——三枚銭の起卦、卦の記録、古典 AI 解説。',
@@ -304,7 +305,8 @@ function AppCard({
 
 export function HexastralHome({ locale, origin }: { locale: string; origin: string }) {
   const t = STR[pickLocale(locale)]
-  const { flagship, funnel } = getHomepageApps()
+  const { live, comingSoon } = getHomepageAppsByAvailability()
+  const linkStyle = { color: 'rgba(196,168,98,0.85)', textDecoration: 'none' as const }
 
   return (
     <main
@@ -423,48 +425,20 @@ export function HexastralHome({ locale, origin }: { locale: string; origin: stri
           padding: '0 24px 12px',
         }}
       >
-        {flagship.length > 0 ? (
-          <>
-            <div
-              style={{
-                textAlign: 'center',
-                fontSize: 11,
-                letterSpacing: 3,
-                color: 'rgba(245,240,232,0.4)',
-                textTransform: 'uppercase',
-                marginBottom: 18,
-              }}
-            >
-              {t.flagshipTitle}
-            </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
-              {flagship.map((app) => (
-                <AppCard key={app.id} id={app.id} t={t} large />
-              ))}
-            </div>
-          </>
+        {live.length > 0 ? (
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: comingSoon.length ? 24 : 0 }}>
+            {live.map((app) => (
+              <AppCard key={app.id} id={app.id} t={t} large />
+            ))}
+          </div>
         ) : null}
 
-        {funnel.length > 0 ? (
-          <>
-            <div
-              style={{
-                textAlign: 'center',
-                fontSize: 11,
-                letterSpacing: 3,
-                color: 'rgba(245,240,232,0.4)',
-                textTransform: 'uppercase',
-                marginBottom: 18,
-              }}
-            >
-              {t.funnelTitle}
-            </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {funnel.map((app) => (
-                <AppCard key={app.id} id={app.id} t={t} large={false} />
-              ))}
-            </div>
-          </>
+        {comingSoon.length > 0 ? (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {comingSoon.map((app) => (
+              <AppCard key={app.id} id={app.id} t={t} large={false} />
+            ))}
+          </div>
         ) : null}
       </section>
 
@@ -481,7 +455,15 @@ export function HexastralHome({ locale, origin }: { locale: string; origin: stri
           color: 'rgba(245,240,232,0.34)',
         }}
       >
-        {t.foot} · Privacy · Terms
+        {t.foot}
+        {' · '}
+        <Link href='/privacy' style={linkStyle}>
+          {t.privacy}
+        </Link>
+        {' · '}
+        <Link href='/terms' style={linkStyle}>
+          {t.terms}
+        </Link>
       </footer>
     </main>
   )

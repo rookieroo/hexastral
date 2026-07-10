@@ -1657,6 +1657,7 @@ export function relativeSentLabel(locale: Locale, iso: string): string {
 export function privacyPolicyUrl(locale: Locale): string {
   const segment =
     locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
+  if (segment === 'en') return 'https://yuel.hexastral.com/privacy/kindred'
   return `https://yuel.hexastral.com/${segment}/privacy/kindred`
 }
 

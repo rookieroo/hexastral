@@ -559,7 +559,7 @@ export const fengSiteRoutes = new Hono<AppEnv>()
           c,
           403,
           ApiErrorCode.paywall_required,
-          `A feng-shui report requires Pro or a one-time purchase (${access.price}).`,
+          `A feng-shui report requires a one-time purchase (${access.price}).`,
           {
             iapProductId: access.iapProductId,
             price: access.price,

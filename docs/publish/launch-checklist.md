@@ -27,7 +27,7 @@ Per-app specifics: see [apps/yuun/launch.md](../apps/yuun/launch.md) and [apps/y
 
 ### RevenueCat
 - [ ] Products imported from App Store Connect for both apps
-- [ ] Entitlements: `auspice_pro` (Auspice), Kindred's entitlement, `universe_pro` (cross-app override) — see `setup/revenuecat-entitlements.md`
+- [ ] Entitlements (MVP only): `auspice_pro` (Yuun), `kindred_pro` (Yuel) — **do NOT create** `universe_pro` at MVP; see `setup/revenuecat-entitlements.md` §7
 - [ ] Webhook → `/api/webhook/revenuecat` confirmed firing
 - [ ] Secret REST API key set as `REVENUECAT_API_KEY` on the Worker
 

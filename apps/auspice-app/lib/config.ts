@@ -15,19 +15,24 @@ export const APP_STORE_URL = 'https://apps.apple.com/app/idREPLACE_WITH_ASC_APP_
 // otherwise resolve a bare path to English. Mirrors Yuel's `privacyPolicyUrl` (lib/i18n.ts).
 const LEGAL_BASE = 'https://yuun.hexastral.com'
 
-/** App Locale → hexastral-web `[locale]` URL segment. */
 function legalSegment(locale: Locale): string {
   return locale === 'zh-Hant' ? 'tw' : locale === 'zh-Hans' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
 }
 
+function brandLegalPath(locale: Locale, path: string): string {
+  const seg = legalSegment(locale)
+  if (seg === 'en') return path
+  return `/${seg}${path}`
+}
+
 /** Yuun per-app privacy appendix (the `auspice` appendix) on the brand subdomain. */
 export function privacyUrl(locale: Locale): string {
-  return `${LEGAL_BASE}/${legalSegment(locale)}/privacy/auspice`
+  return `${LEGAL_BASE}${brandLegalPath(locale, '/privacy/auspice')}`
 }
 
 /** Shared suite Terms document on the brand subdomain. */
 export function termsUrl(locale: Locale): string {
-  return `${LEGAL_BASE}/${legalSegment(locale)}/terms`
+  return `${LEGAL_BASE}${brandLegalPath(locale, '/terms')}`
 }
 
 /**

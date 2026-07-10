@@ -9,8 +9,8 @@
  * fixed, pre-registered SKU/price. So pricing is DISCRETE, two billing tiers:
  *
  *   apartment (公寓/小区单元)      → single  → hexastral_feng_single   $9.99   no street view
- *   flat      (大平层)             → premium → hexastral_feng_premium  $19.99  + street 形煞
- *   villa     (独栋/别墅/农村自建) → premium → hexastral_feng_premium  $19.99  + street 形煞
+ *   flat      (大平层)             → premium → hexastral_feng_premium  $39.99  + street 形煞
+ *   villa     (独栋/别墅/农村自建) → premium → hexastral_feng_premium  $39.99  + street 形煞
  *
  * Rationale for street view only on premium: a compound apartment's street 形煞 is a
  * low-value, shared-coordinate, floor-height-biased signal (often no Mapillary

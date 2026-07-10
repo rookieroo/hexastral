@@ -38,6 +38,7 @@ function legalUrl(path: '/privacy' | '/terms', locale: string): string {
   const known = ['en', 'zh', 'tw', 'ja']
   const seg = known.includes(locale) ? locale : 'en'
   const suffix = path === '/privacy' ? '/privacy/kindred' : path
+  if (seg === 'en') return `${LEGAL_BASE}${suffix}`
   return `${LEGAL_BASE}/${seg}${suffix}`
 }
 

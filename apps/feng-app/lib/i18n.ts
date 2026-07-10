@@ -355,6 +355,7 @@ export type Strings = {
 
   // Privacy (cross-app memory)
   privacy_section: string
+  terms_section: string
   cross_app_memory_label: string
   cross_app_memory_hint: string
 }
@@ -662,6 +663,7 @@ const EN: Strings = {
   chat_legal_disclaimer:
     'AI replies are reference-only, may hallucinate or contradict the report, and are not professional advice. Do not rely on chat for construction, purchase, or safety decisions.',
   privacy_section: 'Privacy',
+  terms_section: 'Terms of Service',
   cross_app_memory_label: 'Cross-app memory',
   cross_app_memory_hint:
     'Let chat reference your readings across all HexAstral apps. Same account only — never shared with anyone else.',
@@ -953,6 +955,7 @@ const ZH_HANS: Strings = {
   chat_legal_disclaimer:
     'AI 回复仅供参考，可能幻觉或与报告矛盾，非专业建议。请勿依据对话作出施工、购房或安全决策。',
   privacy_section: '隐私',
+  terms_section: '服务条款',
   cross_app_memory_label: '跨应用记忆',
   cross_app_memory_hint: '允许对话参考你在所有 HexAstral 应用中的解读。仅限同一账户，绝不外泄。',
 }
@@ -1236,6 +1239,7 @@ const ZH_HANT: Strings = {
   chat_legal_disclaimer:
     'AI 回覆僅供參考，可能幻覺或與報告矛盾，非專業建議。請勿依據對話作出施工、購屋或安全決策。',
   privacy_section: '隱私',
+  terms_section: '服務條款',
   cross_app_memory_label: '跨應用記憶',
   cross_app_memory_hint: '允許對話參考你在所有 HexAstral 應用中的解讀。僅限同一帳號，絕不外洩。',
 }
@@ -1539,6 +1543,7 @@ const JA: Strings = {
   chat_legal_disclaimer:
     'AI 返答は参考のみ。幻覚やレポートとの矛盾があり得ます。専門助言ではありません。施工・購入・安全に関する判断に依拠しないでください。',
   privacy_section: 'プライバシー',
+  terms_section: '利用規約',
   cross_app_memory_label: 'アプリ間メモリ',
   cross_app_memory_hint:
     'すべての HexAstral アプリの鑑定結果をチャットが参照できるようにします。同一アカウントのみ — 他者と共有されません。',

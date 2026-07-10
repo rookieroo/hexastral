@@ -32,6 +32,8 @@ export type SingleSkuId =
   | 'feng_analysis'
   | 'feng_analysis_premium'
 
+const FENG_SINGLE_SKUS = new Set<SingleSkuId>(['feng_analysis', 'feng_analysis_premium'])
+
 export type AccessGranted =
   | { granted: true; via: 'pro_quota' }
   | { granted: true; via: 'first_time' }
@@ -70,8 +72,9 @@ const SKU_IAP_META: Record<SingleSkuId, { productId: string; price: string }> = 
 /**
  * Check whether a user can access a reading SKU.
  *
- * Subscribers with any active entitlement get unlimited access (no metering).
- * Non-subscribers fall through to free monthly quota → credit packs → single purchase.
+ * Subscribers with any active entitlement get unlimited access for metered SKUs
+ * (cast, fate_reading, compatibility). Kanyu feng SKUs are one-time purchase only
+ * at MVP — no subscription bypass (ADR-0013; universe_pro deferred Phase 2).
  */
 export async function checkReadingAccess(
   db: AppDb,
@@ -82,7 +85,7 @@ export async function checkReadingAccess(
   const { allowBondInviteCredit = false, readingId } = opts
   const { productId, price } = SKU_IAP_META[skuId]
 
-  if (await userHasAnySubscription(db, userId)) {
+  if (!FENG_SINGLE_SKUS.has(skuId) && (await userHasAnySubscription(db, userId))) {
     return { granted: true, via: 'pro_quota' }
   }
 

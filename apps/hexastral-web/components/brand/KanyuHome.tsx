@@ -1,4 +1,5 @@
 import { AppCTA } from './AppCTA'
+import { BrandLegalFooter } from './BrandLegalFooter'
 import { BRAND_STORE, type BrandLocale, pickLocale } from './brand-config'
 
 /**
@@ -59,12 +60,6 @@ const STR: Record<
     terms: '利用規約',
     foot: '予測ではなく、学習のために',
   },
-}
-
-function localePath(locale: string, path: string): string {
-  const l = pickLocale(locale)
-  if (l === 'en') return path
-  return `/${l}${path}`
 }
 
 export function KanyuHome({ locale }: { locale: string }) {
@@ -160,30 +155,15 @@ export function KanyuHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      <footer
-        style={{
-          textAlign: 'center',
-          padding: '22px',
-          borderTop: `0.5px solid ${C.hair}`,
-          fontSize: 11,
-          letterSpacing: 1,
-          color: C.inkMuted,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 10 }}>
-          <a
-            href={localePath(locale, '/privacy/feng')}
-            style={{ color: C.bronze, textDecoration: 'none' }}
-          >
-            {t.privacy}
-          </a>
-          <span aria-hidden>·</span>
-          <a href={localePath(locale, '/terms')} style={{ color: C.bronze, textDecoration: 'none' }}>
-            {t.terms}
-          </a>
-        </div>
-        {t.foot} · kanyu.hexastral.com
-      </footer>
+      <BrandLegalFooter
+        brand='kanyu'
+        locale={locale}
+        foot={t.foot}
+        linkColor={C.bronze}
+        mutedColor={C.inkMuted}
+        borderColor={C.hair}
+        hostLabel='kanyu.hexastral.com'
+      />
     </main>
   )
 }

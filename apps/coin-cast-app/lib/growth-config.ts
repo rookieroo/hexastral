@@ -39,12 +39,14 @@ export function coincastLandingUrl(uiLocale = 'en'): string {
 /** Yaul per-app privacy page (the `coincast` appendix) on the brand subdomain. */
 export function yaulPrivacyUrl(uiLocale = 'en'): string {
   const seg = webLocaleFor(uiLocale)
+  if (seg === 'en') return `${YAUL_BRAND_ORIGIN}/privacy/coincast`
   return `${YAUL_BRAND_ORIGIN}/${seg}/privacy/coincast`
 }
 
 /** Shared suite terms on the Yaul brand subdomain. */
 export function yaulTermsUrl(uiLocale = 'en'): string {
   const seg = webLocaleFor(uiLocale)
+  if (seg === 'en') return `${YAUL_BRAND_ORIGIN}/terms`
   return `${YAUL_BRAND_ORIGIN}/${seg}/terms`
 }
 
