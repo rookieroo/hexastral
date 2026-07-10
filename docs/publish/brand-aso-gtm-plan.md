@@ -292,6 +292,26 @@ psychic-marketplace apps.
   are already deployed — a privacy link is the lowest-stakes consumer touchpoint.
   Fix the stale `/privacy/cycle` path (auspice config.ts) NOW either way.
 
+## 6b. Web disclosure (hexastral.com)
+
+**Narrative** (user-facing, not ASC submission order):
+
+- **Flagship:** Yuel (命书 / 合盘) + Kanyu (堪舆) — depth and Pro monetization.
+- **Funnel:** Yuun (黄历) + Yaul (六爻) — daily entry, upsell to flagship.
+
+**Implementation:** `apps/hexastral-web/lib/growth/launch-status.ts` drives homepage tiers, sitemap inclusion, and `robots` on hidden SKUs (Dream/Face/StarPalace/EightPillars/omnibus HexAstral). Bump per wave:
+
+| Wave | Config change |
+|------|----------------|
+| W1 Yuun | `yuun.visibility = live` |
+| W2 Yuel | `yuel.visibility = live` |
+| W3 Kanyu | `kanyu.visibility = live`, sync `public/brand/kanyu.png` |
+| W4 Yaul | `yaul.visibility = live`, show on homepage funnel row |
+
+Marketing footers: Privacy · Terms only (no prominent LLC). JSON-LD `legalName` and Privacy/Terms body keep **UseONE, LLC**.
+
+CTA routing: day-master / compatibility → Yuel (`soulmatch`); sheng-xiao / hexagram index → Yuun (`auspice`) until Yaul ships; feng-shui slugs → Kanyu.
+
 ## 7. Standing risks
 
 1. **Yuun is counsel/registrar-unverified** — if it dies, fall back per ADR-0024

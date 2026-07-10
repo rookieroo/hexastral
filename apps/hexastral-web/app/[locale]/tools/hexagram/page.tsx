@@ -1,7 +1,10 @@
 import { HEXAGRAM_LIST } from '@zhop/hexastral-tokens/constants/hexagram'
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { canonicalUrl } from '@/lib/growth/page-metadata'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -9,28 +12,24 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'tools.hexagram' })
   return {
-    title: '64 I Ching hexagrams index — Zhou Yi reference',
-    description:
-      'Browse the King Wen sequence with Chinese names (卦名). Tap through for judgments and images sourced from HexAstral knowledge base.',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
     alternates: {
-      canonical:
-        locale === 'en'
-          ? 'https://hexastral.com/tools/hexagram'
-          : `https://hexastral.com/${locale}/tools/hexagram`,
+      canonical: canonicalUrl(locale, '/tools/hexagram'),
     },
   }
 }
 
-export default function HexagramIndexPage() {
+export default async function HexagramIndexPage() {
+  const t = await getTranslations('tools.hexagram')
+
   return (
     <>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginTop: 0 }}>
-        I Ching · 周易 hexagram index
-      </h1>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginTop: 0 }}>{t('heading')}</h1>
       <p style={{ color: 'var(--color-ivory-dim)', marginBottom: '1.25rem', lineHeight: 1.65 }}>
-        Each entry links to commentary suited for SERP snippets. Shake‑to‑oracle UX ships in
-        HexAstral / forthcoming CoinCast.
+        {t('intro')}
       </p>
       <div
         style={{
@@ -68,8 +67,10 @@ export default function HexagramIndexPage() {
       </div>
       <div style={{ marginTop: '2rem' }}>
         <DownloadCTA
-          headline='Shake the hexagram in app'
-          sub='Coins, lines, AI judgment — Liu Yao 六爻 in HexAstral.'
+          headline={t('ctaHeadline')}
+          sub={t('ctaSub')}
+          appStoreUrl={resolveAppStoreUrl('auspice')}
+          targetApp='auspice'
         />
       </div>
     </>

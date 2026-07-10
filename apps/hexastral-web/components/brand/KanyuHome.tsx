@@ -182,7 +182,7 @@ export function KanyuHome({ locale }: { locale: string }) {
             {t.terms}
           </a>
         </div>
-        {t.foot} · kanyu.hexastral.com · UseONE, LLC
+        {t.foot} · kanyu.hexastral.com
       </footer>
     </main>
   )

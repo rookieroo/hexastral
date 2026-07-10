@@ -2,7 +2,7 @@
   "_comment": "ZH-Hant messages · anti-spam compliant per docs/anti-spam-positioning.md. Traditional-char mirror of zh.json. ZERO trigger words (占星 / 命運 / 運勢 / 玄學 / 算命 / 星辰知道 / 星宮命理 / 命運格局).",
   "meta": {
     "title": "HexAstral — BaZi · ZiWei · AI",
-    "description": "60 秒生成你的八字四柱與紫微斗數命盤，配 AI 性格分析。基於古典中華宇宙觀與現代 AI 的工具型學習應用。"
+    "description": "Yuel 與 Yuun — 以 AI 輔助的八字與中華黃曆學習工具。重在認知，而非預測。"
   },
   "nav": {
     "tools": "免費工具",
@@ -13,7 +13,7 @@
     "heroBadge": "八字 · 紫微 · AI",
     "heroLine1": "你的命盤，",
     "heroLine2": "古典學解",
-    "heroSub": "60 秒生成你的八字命盤\n以 1500 年中華命學傳統為根基的 AI 性格分析",
+    "heroSub": "60 秒生成你的八字命盤\n以千年中華命學傳統為根基的 AI 性格分析",
     "heroCTA": "免費測算起盤 →",
     "heroNote": "無需註冊 · 60 秒出盤 · 首次贈 3 次 AI 對話",
     "featuresSectionLabel": "Core Features",
@@ -239,5 +239,85 @@
     "backToTools": "全部工具",
     "backToBlog": "全部文章",
     "openAppStore": "前往 App Store 下載"
+  },
+  "tools": {
+    "index": {
+      "metaTitle": "免費工具 — HexAstral",
+      "metaDescription": "八字日主速覽、周易六十四卦索引、生肖年份與合盤預覽——鏈向 Yuel 與 Yuun。",
+      "dayMaster": {
+        "title": "日主計算器（八字 lite）",
+        "desc": "近似四柱與日主天干——快速教育向預覽。"
+      },
+      "hexagram": {
+        "title": "六十四卦索引（易經）",
+        "desc": "文王序卦名與卦辭片段，可點進單卦詳情。"
+      },
+      "shengXiao": {
+        "title": "生肖年份查詢",
+        "desc": "公曆年份對應生肖——注意農曆新年邊界。"
+      },
+      "compatibility": {
+        "title": "合盤預覽",
+        "desc": "雙人出生日五行疊合預覽。完整合盤在 Yuel。"
+      }
+    },
+    "dayMaster": {
+      "metaTitle": "日主計算器（八字 lite）— HexAstral",
+      "metaDescription": "近似四柱與日主，教育向預覽。完整命盤見 Yuel。",
+      "heading": "日主預覽 · 八字",
+      "intro": "日元為日柱天干，是八字命盤的主軸——可比作西方星座體系中的「太陽星座」，但紮根於五行。",
+      "solarDateLabel": "公曆日期",
+      "hourLabel": "時辰（24 小時制，本地近似）",
+      "approxPillars": "近似四柱（僅供學習）",
+      "dayMasterLabel": "日元",
+      "archetypeLink": "閱讀日主意象 →",
+      "disclaimer": "採用簡化的干支邊界（公曆近似）。Yuel 在正式解讀中應用節氣、真太陽時與農曆換算。",
+      "ctaHeadline": "完整四柱與紫微，盡在 Yuel",
+      "ctaSub": "出生城市、真太陽時校正與融合 AI 解讀——Yuel 旗艦應用。"
+    },
+    "hexagram": {
+      "metaTitle": "周易六十四卦索引",
+      "metaDescription": "文王序卦名與卦辭。資料來自 HexAstral 知識庫。",
+      "heading": "易經 · 周易卦序索引",
+      "intro": "每一卦鏈向適合研習的卦辭片段。三錢六爻搖卦將隨 Yaul 上線；今日可先探索 Yuun 黃曆。",
+      "ctaHeadline": "在 Yuun 研習曆法語境",
+      "ctaSub": "每日黃曆與古典語境——Yaul 開發期間的入門路徑。"
+    },
+    "compatibility": {
+      "metaTitle": "合盤預覽 — HexAstral",
+      "metaDescription": "雙人出生日五行疊合預覽（Turnstile 保護）。完整合盤見 Yuel。",
+      "heading": "合盤預覽 · 合盤",
+      "intro": "輸入兩人出生日期，獲得輕量五行疊合——文化向參照，非評分或斷語。",
+      "previewLabel": "五行預覽 · 合盤",
+      "dayMasters": "日主",
+      "disclaimer": "文化向參照——非合盤評分、斷語或預測。",
+      "ctaHeadline": "完整合盤解讀，盡在 Yuel",
+      "ctaSub": "多維合盤章節、贈禮與共鳴邀請——文化研習，而非算命。",
+      "personA": "甲",
+      "personB": "乙",
+      "continueB": "繼續填寫乙 →",
+      "editA": "← 修改甲",
+      "compute": "預覽五行疊合",
+      "computing": "計算中…",
+      "turnstileWait": "請等待安全校驗完成後再試。",
+      "error": "無法計算預覽，請檢查網路或稍後重試。",
+      "startOver": "重新開始",
+      "turnstileHint": "甲 — 填寫乙時將進行安全校驗"
+    },
+    "shengXiao": {
+      "metaTitle": "生肖年份查詢",
+      "metaDescription": "公曆年份對應生肖，含農曆新年說明。",
+      "heading": "生肖年份 · 生肖",
+      "intro": "將公曆年份映射為生肖。農曆新年前出生者可能屬上一年生肖。",
+      "yearLabel": "公曆年份",
+      "resultPrefix": "年份",
+      "lunarNote": "若生於一月或二月初，請對照農曆新年——生肖可能屬於上一年。",
+      "ctaHeadline": "每日黃曆，盡在 Yuun",
+      "ctaSub": "黃曆、個人層與大運時間軸——深入命學的引流入口。",
+      "introPage": "十二生肖錨定春節民俗。嚴肅命盤仍靠八字與紫微——單看生肖粒度較粗。",
+      "animalLabel": "近似年肖 · 生肖",
+      "readLink": "閱讀生肖說明 →",
+      "disclaimerExtended": "採用簡單公曆映射。農曆新年前後出生者請用含立春/農曆的軟體核對（Yuel 正式排盤會處理）。"
+    }
   }
 }

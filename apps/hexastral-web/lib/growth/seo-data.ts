@@ -1,3 +1,5 @@
+import { HIDDEN_PATH_PREFIXES, isPathIndexable } from './launch-status'
+
 /** Static SEO slugs shared by sitemap + generateStaticParams */
 
 export const DAY_MASTER_SLUGS = [
@@ -53,6 +55,7 @@ export const FENG_SHUI_SLUGS = ['bedroom', 'office', 'front-door'] as const
 
 export type FengShuiSlug = (typeof FENG_SHUI_SLUGS)[number]
 
+/** All tool routes (including hidden teasers — filter with getIndexableToolPaths). */
 export const TOOL_PATHS = [
   '/tools',
   '/tools/day-master',
@@ -73,3 +76,14 @@ export const LP_PATHS = [
   '/lp/personality',
   '/lp/dream',
 ] as const
+
+export function getIndexableToolPaths(): readonly string[] {
+  return TOOL_PATHS.filter((p) => isPathIndexable(p))
+}
+
+export function getIndexableLpPaths(): readonly string[] {
+  return LP_PATHS.filter((p) => isPathIndexable(p))
+}
+
+/** Paths that must never appear in sitemap (re-export for metadata helpers). */
+export { HIDDEN_PATH_PREFIXES }

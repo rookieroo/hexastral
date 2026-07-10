@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useCallback, useState, useTransition } from 'react'
 import { type CompatibilityPreviewResult, computeCompatibilityPreview } from '@/app/actions/chart'
 import { type BirthInfo, BirthInfoForm } from '@/components/BirthInfoForm'
@@ -16,6 +17,7 @@ const EMPTY: BirthInfo = {
 }
 
 export function CompatibilityTeaser() {
+  const t = useTranslations('tools.compatibility')
   const [step, setStep] = useState<'a' | 'b'>('a')
   const [a, setA] = useState<BirthInfo>(EMPTY)
   const [b, setB] = useState<BirthInfo>({ ...EMPTY, gender: 'female' })
@@ -27,7 +29,7 @@ export function CompatibilityTeaser() {
 
   const runPreview = useCallback(() => {
     if (!turnstileToken) {
-      setError('Please wait for the security check to finish, then try again.')
+      setError(t('turnstileWait'))
       return
     }
     setError(null)
@@ -36,12 +38,12 @@ export function CompatibilityTeaser() {
         const res = await computeCompatibilityPreview(a, b, turnstileToken)
         setResult(res)
       } catch {
-        setError('Could not compute preview. Check network or try again later.')
+        setError(t('error'))
         setTsKey((k) => k + 1)
         setTurnstileToken(null)
       }
     })
-  }, [a, b, turnstileToken])
+  }, [a, b, turnstileToken, t])
 
   if (result) {
     return (
@@ -63,16 +65,16 @@ export function CompatibilityTeaser() {
               letterSpacing: '0.12em',
             }}
           >
-            ELEMENTAL PREVIEW · 合盘
+            {t('previewLabel')}
           </p>
           <p style={{ fontSize: '1.35rem', fontWeight: 400, margin: '0 0 0.5rem', letterSpacing: '0.04em' }}>
             {result.grade}
           </p>
           <p style={{ color: 'var(--color-ivory-dim)', marginBottom: 0, fontSize: '0.9rem' }}>
-            Day masters {result.personA.dayMaster} · {result.personB.dayMaster}
+            {t('dayMasters')} {result.personA.dayMaster} · {result.personB.dayMaster}
           </p>
           <p style={{ color: 'var(--color-ivory-dim)', marginTop: '0.75rem', fontSize: '0.75rem', lineHeight: 1.5 }}>
-            Cultural reference for reflection — not a compatibility score, verdict, or prediction.
+            {t('disclaimer')}
           </p>
         </div>
         <ul
@@ -88,17 +90,11 @@ export function CompatibilityTeaser() {
           ))}
         </ul>
         <DownloadCTA
-          headline='Full bond reading in Yuel'
-          sub='Dimensional synastry chapters, gifting, resonance invites — cultural study, not fortune-telling.'
-          appStoreUrl={resolveAppStoreUrl('hexastral')}
-          targetApp='hexastral'
+          headline={t('ctaHeadline')}
+          sub={t('ctaSub')}
+          appStoreUrl={resolveAppStoreUrl('soulmatch')}
+          targetApp='soulmatch'
           compact
-        />
-        <DownloadCTA
-          headline='Or unlock everything inside HexAstral flagship'
-          sub='Zi Wei + Ba Zi dual-chart bond flows already live.'
-          compact
-          targetApp='hexastral'
         />
         <button
           type='button'
@@ -120,7 +116,7 @@ export function CompatibilityTeaser() {
             fontFamily: 'inherit',
           }}
         >
-          Start over
+          {t('startOver')}
         </button>
       </div>
     )
@@ -130,11 +126,11 @@ export function CompatibilityTeaser() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'center' }}>
       {step === 'a' ? (
         <BirthInfoForm
-          label='Person A — Turnstile runs when you reach Person B'
+          label={t('turnstileHint')}
           value={a}
           onChange={setA}
           onSubmit={() => setStep('b')}
-          submitLabel='Continue to Person B →'
+          submitLabel={t('continueB')}
           showName={false}
         />
       ) : (
@@ -152,14 +148,14 @@ export function CompatibilityTeaser() {
               fontFamily: 'inherit',
             }}
           >
-            ← Edit Person A
+            {t('editA')}
           </button>
           <BirthInfoForm
-            label='Person B'
+            label={t('personB')}
             value={b}
             onChange={setB}
             onSubmit={runPreview}
-            submitLabel={pending ? 'Computing preview…' : 'Preview elemental overlay'}
+            submitLabel={pending ? t('computing') : t('compute')}
             showName={false}
             loading={pending}
           />

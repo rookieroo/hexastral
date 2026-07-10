@@ -1,4 +1,4 @@
-/** Which App Store URL to use for growth CTAs. Fallback: flagship HexAstral. */
+/** Which App Store URL to use for growth CTAs. Default fallback: Yuel (soulmatch). */
 export type GrowthAppStoreTarget =
   | 'hexastral'
   | 'faceoracle'
@@ -10,8 +10,10 @@ export type GrowthAppStoreTarget =
   | 'coincast'
   | 'auspice'
 
-const HEX =
-  process.env.NEXT_PUBLIC_APP_STORE_URL ?? 'https://apps.apple.com/app/hexastral/id6739739495'
+/** Yuel / kindred — primary flagship when per-target env is unset. */
+const YUEL_FALLBACK =
+  process.env.NEXT_PUBLIC_APP_STORE_URL_SOULMATCH?.trim() ||
+  'https://apps.apple.com/app/kindred/id6745054798'
 
 const byTarget: Record<GrowthAppStoreTarget, string | undefined> = {
   hexastral: process.env.NEXT_PUBLIC_APP_STORE_URL,
@@ -26,5 +28,8 @@ const byTarget: Record<GrowthAppStoreTarget, string | undefined> = {
 }
 
 export function resolveAppStoreUrl(target: GrowthAppStoreTarget): string {
-  return byTarget[target]?.trim() || HEX
+  const url = byTarget[target]?.trim()
+  if (url) return url
+  if (target === 'hexastral') return YUEL_FALLBACK
+  return YUEL_FALLBACK
 }

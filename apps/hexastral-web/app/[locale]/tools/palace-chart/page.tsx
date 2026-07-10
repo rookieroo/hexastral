@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { NOINDEX_ROBOTS, canonicalUrl } from '@/lib/growth/page-metadata'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
@@ -13,12 +14,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: 'Twelve Star Palaces preview — Zi Wei Dou Shu 紫微斗数',
     description:
-      'Learn the palace grid before plotting a live chart inside StarPalace or HexAstral. Each palace names a slice of embodied life.',
+      'Learn the palace grid before plotting a live chart inside Yuel. Each palace names a slice of embodied life.',
+    robots: NOINDEX_ROBOTS,
     alternates: {
-      canonical:
-        locale === 'en'
-          ? 'https://hexastral.com/tools/palace-chart'
-          : `https://hexastral.com/${locale}/tools/palace-chart`,
+      canonical: canonicalUrl(locale, '/tools/palace-chart'),
     },
   }
 }
@@ -67,9 +66,9 @@ export default async function PalaceChartIntroPage({
         targetApp='starpalace'
       />
       <DownloadCTA
-        headline='Charts already plotting in HexAstral flagship'
+        headline='Full Zi Wei charts in Yuel'
         compact
-        targetApp='hexastral'
+        targetApp='soulmatch'
       />
     </>
   )

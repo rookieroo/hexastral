@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { NOINDEX_ROBOTS, canonicalUrl } from '@/lib/growth/page-metadata'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
@@ -11,11 +12,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
     title: 'Eastern personality type landing · EightPillars',
+    robots: NOINDEX_ROBOTS,
     alternates: {
-      canonical:
-        locale === 'en'
-          ? 'https://hexastral.com/lp/personality'
-          : `https://hexastral.com/${locale}/lp/personality`,
+      canonical: canonicalUrl(locale, '/lp/personality'),
     },
   }
 }
@@ -39,7 +38,7 @@ export default async function LpPersonalityPage() {
         appStoreUrl={resolveAppStoreUrl('eightpillars')}
         targetApp='eightpillars'
       />
-      <DownloadCTA headline='Depth today: HexAstral flagship' compact targetApp='hexastral' />
+      <DownloadCTA headline='Depth today: Yuel' compact targetApp='soulmatch' />
     </>
   )
 }

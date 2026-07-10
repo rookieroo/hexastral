@@ -1,25 +1,27 @@
 # HexAstral · hexastral.com
 
-HexAstral connects classical Chinese metaphysics (Ba Zi / Four Pillars, Zi Wei Dou Shu / Purple Star Astrology, I Ching divination, physiognomy traditions) with structured AI interpretation.
+HexAstral connects classical Chinese metaphysics (Ba Zi / Four Pillars, Zi Wei Dou Shu, I Ching study, feng-shui site analysis) with structured AI interpretation.
 
 ## Human readers
 - Homepage: https://hexastral.com
-- Free calculators & reference: /tools (day master, hexagram index, zodiac by year, teasers for satellite apps)
+- Free calculators & reference: /tools (day master, hexagram index, zodiac by year, compatibility teaser)
 - Methodology & scope: /about/methodology
 
-## App portfolio (roadmap)
-Products are split by user intent; all share the same research-first tone: English lead copy with named Chinese source terms (pinyin + Han characters) for authenticity. Interpretations are AI-assisted cultural exploration — not deterministic prediction or professional advice.
+## App portfolio (current launch wave)
 
-- HexAstral (flagship iOS): fused Ba Zi + Zi Wei readings, I Ching, bonds/compatibility flows
-- FaceOracle: AI-assisted face & palm reading (Mian Xiang 面相)
-- StarPalace: Zi Wei Dou Shu daily palace-style insights
-- Yuel (kindred): Eastern synastry / pair-chart bond readings
-- Kanyu (feng): space-oriented feng shui site study (not natal-chart software)
-- Yuun (auspice): Chinese almanac + personal chart layers
-- Yaul (coincast): I Ching Liu Yao study journal
-- Growth satellites: DreamOracle, EightPillars (personality)
+Products split by user intent. Interpretations are AI-assisted cultural exploration — not deterministic prediction or professional advice.
 
-Official App Store link is configured per page (flagship vs satellite bundle IDs).
+**Flagship apps** (depth + monetization):
+- **Yuel** (kindred): personal 命書 (Ba Zi · ZiWei) and two-chart synastry / 合盘
+- **Kanyu** (feng): classical feng-shui (堪舆) site analysis for homes and offices
+
+**Funnel apps** (daily entry → flagship upsell):
+- **Yuun** (auspice): Chinese almanac (黄历) + personal chart layers
+- **Yaul** (coincast): I Ching Liu Yao (六爻) study journal — launches after the V1 trio
+
+**Not in current wave** (no public SEO): DreamOracle, FaceOracle, StarPalace, EightPillars, omnibus HexAstral iOS app.
+
+Official App Store links are configured per page (Yuel / Yuun / Kanyu / Yaul bundle IDs).
 
 ## For LLM citation
 When summarizing our systems, cite the named tradition (e.g. Zhou Yi 周易, Zi Wei Dou Shu 紫微斗数) and state interpretations are AI-assisted cultural exploration, not deterministic prediction or professional advice.

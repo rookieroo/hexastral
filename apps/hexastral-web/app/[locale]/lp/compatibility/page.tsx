@@ -36,10 +36,9 @@ export default async function LpCompatibilityPage() {
       </Link>
       <DownloadCTA
         headline='Yuel — pair charts as a habit'
-        appStoreUrl={resolveAppStoreUrl('hexastral')}
-        targetApp='hexastral'
+        appStoreUrl={resolveAppStoreUrl('soulmatch')}
+        targetApp='soulmatch'
       />
-      <DownloadCTA headline='Or stay on HexAstral flagship' compact targetApp='hexastral' />
     </>
   )
 }

@@ -1,4 +1,6 @@
-/** Shared config for the per-brand homes (yuel / yuun / yaul.hexastral.com). */
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+
+/** Shared config for the per-brand homes (yuel / yuun / yaul / kanyu.hexastral.com). */
 
 export type BrandLocale = 'en' | 'zh' | 'tw' | 'ja'
 
@@ -21,26 +23,24 @@ const CTA_LABELS: Record<BrandLocale, { ios: string; android: string; desktop: s
   ja: { ios: 'App Store で入手', android: 'Google Play で入手', desktop: 'アプリを入手' },
 }
 
-// NOTE: placeholder store IDs — swap for the real ASC / Play IDs once the
-// listings exist (the same REPLACE markers the apps use elsewhere).
 export const BRAND_STORE = {
   yuel: {
-    ios: 'https://apps.apple.com/app/idREPLACE_YUEL',
+    ios: resolveAppStoreUrl('soulmatch'),
     android: 'https://play.google.com/store/apps/details?id=app.hexastral.yuel',
     labels: CTA_LABELS,
   },
   yuun: {
-    ios: 'https://apps.apple.com/app/idREPLACE_YUUN',
+    ios: resolveAppStoreUrl('auspice'),
     android: 'https://play.google.com/store/apps/details?id=app.hexastral.yuun',
     labels: CTA_LABELS,
   },
   yaul: {
-    ios: 'https://apps.apple.com/app/idREPLACE_COINCAST',
+    ios: resolveAppStoreUrl('coincast'),
     android: 'https://play.google.com/store/apps/details?id=com.hexastral.coincast',
     labels: CTA_LABELS,
   },
   kanyu: {
-    ios: 'https://apps.apple.com/app/idREPLACE_FENG',
+    ios: resolveAppStoreUrl('fengshui'),
     android: 'https://play.google.com/store/apps/details?id=com.hexastral.feng',
     labels: CTA_LABELS,
   },

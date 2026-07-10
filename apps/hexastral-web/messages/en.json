@@ -2,7 +2,7 @@
   "_comment": "EN messages · anti-spam compliant per docs/anti-spam-positioning.md. Mirror this to zh/tw/ja with same key set. ZERO trigger words (astrology / horoscope / zodiac / fortune / destiny / cosmic blueprint / star palace / mystical / divination / fate) outside of explicit-negation context. Lead vocabulary: BaZi, Four Pillars, ZiWei, Twelve Palaces, decade cycle, classical Chinese cosmology, AI personality framework, educational, chart, configuration.",
   "meta": {
     "title": "HexAstral — BaZi · ZiWei · AI",
-    "description": "Generate your BaZi (Four Pillars) and ZiWei chart with AI-augmented personality insights in 60 seconds. Grounded in classical Chinese cosmology. Educational, not predictive."
+    "description": "Yuel and Yuun — educational BaZi and Chinese almanac tools with AI-assisted classical chart reading. Not predictive."
   },
   "nav": {
     "tools": "Tools",
@@ -13,7 +13,7 @@
     "heroBadge": "BaZi · ZiWei · AI",
     "heroLine1": "Your Chart,",
     "heroLine2": "Classically Read",
-    "heroSub": "Generate your BaZi chart in 60 seconds. AI-augmented insights grounded in 1500 years of classical Chinese cosmology.",
+    "heroSub": "Generate your BaZi chart in 60 seconds. AI-augmented insights grounded in over a millennium of classical Chinese cosmology.",
     "heroCTA": "Start Free Reading →",
     "heroNote": "No signup · 60-second chart · 3 chat credits on first reading",
     "featuresSectionLabel": "Core Features",
@@ -239,5 +239,85 @@
     "backToTools": "All tools",
     "backToBlog": "All posts",
     "openAppStore": "Download on the App Store"
+  },
+  "tools": {
+    "index": {
+      "metaTitle": "Free tools — HexAstral",
+      "metaDescription": "Ba Zi Day Master preview, I Ching hexagram index, Chinese zodiac year, and compatibility teaser — with links to Yuel and Yuun.",
+      "dayMaster": {
+        "title": "Day Master calculator (Ba Zi 八字 lite)",
+        "desc": "Approximate four pillars and see your Day Master stem — quick educational preview."
+      },
+      "hexagram": {
+        "title": "64 hexagram index (I Ching 易经)",
+        "desc": "King Wen sequence with classical judgment snippets and deep links per hexagram."
+      },
+      "shengXiao": {
+        "title": "Chinese animal year lookup (生肖)",
+        "desc": "Map a Gregorian year to the sheng xiao animal — mind the lunar new year boundary."
+      },
+      "compatibility": {
+        "title": "Compatibility teaser (合盘)",
+        "desc": "Elemental preview for two birthdays. Full synastry lives in Yuel."
+      }
+    },
+    "dayMaster": {
+      "metaTitle": "Day Master calculator (Ba Zi 八字 lite) — HexAstral",
+      "metaDescription": "Approximate Four Pillars and Day Master stem for educational preview. Full chart in Yuel.",
+      "heading": "Day Master preview · 八字",
+      "intro": "Your Day Master (日元) is the stem of the day pillar — the backbone of a Ba Zi chart, comparable to a sun-sign anchor in Western typing systems, but grounded in Five Elements.",
+      "solarDateLabel": "Solar date",
+      "hourLabel": "Hour (24h clock, local rough preview)",
+      "approxPillars": "Approximate pillars (education only)",
+      "dayMasterLabel": "Day Master (日元)",
+      "archetypeLink": "Read archetype notes →",
+      "disclaimer": "Uses simplified Gan Zhi boundaries (Gregorian approximation). Yuel applies solar terms, optional true solar time, and lunar conversion for production readings.",
+      "ctaHeadline": "Full Four Pillars + Zi Wei in Yuel",
+      "ctaSub": "Birth city, true solar correction, and fused AI reading — the Yuel flagship app."
+    },
+    "hexagram": {
+      "metaTitle": "64 I Ching hexagrams index — Zhou Yi reference",
+      "metaDescription": "Browse the King Wen sequence with Chinese names. Commentary from the HexAstral knowledge base.",
+      "heading": "I Ching · 周易 hexagram index",
+      "intro": "Each entry links to commentary suited for study. Three-coin Liu Yao casting ships in Yaul when it launches; explore the almanac in Yuun today.",
+      "ctaHeadline": "Study Liu Yao in Yuun",
+      "ctaSub": "Daily almanac and classical context — your entry point while Yaul is in development."
+    },
+    "compatibility": {
+      "metaTitle": "Compatibility teaser (合盘) — HexAstral",
+      "metaDescription": "Turnstile-protected elemental preview for two birthdays. Full synastry in Yuel.",
+      "heading": "Compatibility teaser · 合盘",
+      "intro": "Enter two birth dates for a lightweight elemental overlay — cultural reference for reflection, not a score or verdict.",
+      "previewLabel": "ELEMENTAL PREVIEW · 合盘",
+      "dayMasters": "Day masters",
+      "disclaimer": "Cultural reference for reflection — not a compatibility score, verdict, or prediction.",
+      "ctaHeadline": "Full bond reading in Yuel",
+      "ctaSub": "Dimensional synastry chapters, gifting, and resonance invites — cultural study, not fortune-telling.",
+      "personA": "Person A",
+      "personB": "Person B",
+      "continueB": "Continue to Person B →",
+      "editA": "← Edit Person A",
+      "compute": "Preview elemental overlay",
+      "computing": "Computing preview…",
+      "turnstileWait": "Please wait for the security check to finish, then try again.",
+      "error": "Could not compute preview. Check network or try again later.",
+      "startOver": "Start over",
+      "turnstileHint": "Person A — Turnstile runs when you reach Person B"
+    },
+    "shengXiao": {
+      "metaTitle": "Chinese zodiac year lookup (生肖)",
+      "metaDescription": "Gregorian year to sheng xiao animal with lunar new year caveat.",
+      "heading": "Sheng xiao year · 生肖",
+      "intro": "Map a Gregorian year to its animal sign. Births before lunar new year belong to the prior zodiac year.",
+      "yearLabel": "Gregorian year",
+      "resultPrefix": "Animal for",
+      "lunarNote": "If you were born in January or early February, verify against lunar new year — the animal may be the prior year.",
+      "ctaHeadline": "Daily almanac in Yuun",
+      "ctaSub": "黄历, personal layers, and decade timeline — your funnel into deeper chart work.",
+      "introPage": "Twelve animals anchor Chinese New Year folklore. Serious chart work still uses Ba Zi (八字) and Zi Wei (紫微斗数) — sheng xiao alone is coarse granularity.",
+      "animalLabel": "Approximate yearly animal · 生肖",
+      "readLink": "Read constellation notes →",
+      "disclaimerExtended": "This uses a simple Gregorian mapping. Readers born near Chinese New Year should verify with lunar/Li Chun aware software (Yuel charts do this in production)."
+    }
   }
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { NOINDEX_ROBOTS, canonicalUrl } from '@/lib/growth/page-metadata'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
@@ -11,11 +12,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
     title: 'Dream interpreter · DreamOracle search ads',
+    robots: NOINDEX_ROBOTS,
     alternates: {
-      canonical:
-        locale === 'en'
-          ? 'https://hexastral.com/lp/dream'
-          : `https://hexastral.com/${locale}/lp/dream`,
+      canonical: canonicalUrl(locale, '/lp/dream'),
     },
   }
 }
@@ -41,9 +40,9 @@ export default async function LpDreamPage() {
         targetApp='dreamoracle'
       />
       <DownloadCTA
-        headline='Active oracle today: HexAstral I Ching'
-        appStoreUrl={resolveAppStoreUrl('hexastral')}
-        targetApp='hexastral'
+        headline='Active oracle today: Yuun almanac'
+        appStoreUrl={resolveAppStoreUrl('auspice')}
+        targetApp='auspice'
       />
     </>
   )

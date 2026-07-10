@@ -38,7 +38,7 @@ Similarity: both are **typing systems** that compress complexity into a handle y
 
 Difference: Ba Zi ties the model to a **calendar clock** (year, month, day, hour pillars) and studies flow through **Decade Pillars (大运 / 流年)** over time.
 
-Our **EightPillars** satellite leans into the MBTI parallel for discovery, then hands serious depth to the flagship **HexAstral** app.`,
+Our **EightPillars** satellite leans into the MBTI parallel for discovery, then hands serious depth to **Yuel** (flagship).`,
   },
   {
     slug: 'i-ching-beginners-cast-hexagram',
@@ -53,7 +53,7 @@ Our **EightPillars** satellite leans into the MBTI parallel for discovery, then 
 
 Treat the result as a structured mirror for your question — not an external authority.
 
-**CoinCast** (coming to the portfolio) focuses on this practice on iPhone; **HexAstral** already ships a full hexagram-study flow today.`,
+**Yaul** (coincast) focuses on Liu Yao study on iPhone when it ships; use **Yuun** for daily almanac context today.`,
   },
   {
     slug: 'chinese-face-reading-physiognomy',

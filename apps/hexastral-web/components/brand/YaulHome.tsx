@@ -259,7 +259,7 @@ export function YaulHome({ locale }: { locale: string }) {
             {t.terms}
           </a>
         </div>
-        {t.foot} · yaul.hexastral.com · UseONE, LLC
+        {t.foot} · yaul.hexastral.com
       </footer>
     </main>
   )

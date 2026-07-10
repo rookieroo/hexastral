@@ -130,8 +130,8 @@ export default async function HexagramDetailPage({ params }: Props) {
           lineHeight: 1.6,
         }}
       >
-        Canonical Chinese text surfaced for citation. Literary English polish ships inside HexAstral
-        / CoinCast interpretive UX. Provided for scholarship and mindfulness — never for guaranteed
+        Canonical Chinese text surfaced for citation. Literary English polish ships in Yaul
+        interpretive UX when it launches. Provided for scholarship and mindfulness — never for guaranteed
         outcomes.
       </p>
       <footer style={{ marginTop: '1.75rem', fontSize: '0.9rem' }}>

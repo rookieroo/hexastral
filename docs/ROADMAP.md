@@ -55,6 +55,27 @@ Builds can run in parallel; ASC **submission** order follows the list above.
 
 ---
 
+## Web disclosure (`hexastral-web`)
+
+**Marketing narrative** (distinct from ASC submission order):
+
+| Tier | Apps | Role |
+|------|------|------|
+| **Flagship** | Yuel, Kanyu (Feng) | Depth, Pro reports, primary monetization |
+| **Funnel** | Yuun, Yaul (CoinCast) | Daily entry → upsell to flagship |
+
+**Technical submission order** remains Yuun → Yuel → Feng → CoinCast (unchanged above).
+
+Single source for visibility, sitemap, and homepage cards: `apps/hexastral-web/lib/growth/launch-status.ts`. Bump `visibility` per wave (W1 Yuun live → W2 Yuel → W3 Kanyu + `kanyu.png` → W4 Yaul).
+
+**Not indexed on hexastral.com:** DreamOracle, FaceOracle, StarPalace, EightPillars, omnibus HexAstral iOS app, `/onboarding` flagship funnel.
+
+**Compliance:** Privacy/Terms pages retain **UseONE, LLC**; marketing footers link Privacy · Terms only.
+
+Detail: [publish/brand-aso-gtm-plan.md](./publish/brand-aso-gtm-plan.md) § Web disclosure.
+
+---
+
 ## Outstanding work (index)
 
 | Stream | Doc |

@@ -243,7 +243,7 @@ export function YuunHome({ locale }: { locale: string }) {
           color: C.dim,
         }}
       >
-        yuun.hexastral.com · UseONE, LLC
+        yuun.hexastral.com
       </footer>
     </main>
   )

@@ -234,7 +234,7 @@ export function YuelHome({ locale }: { locale: string }) {
           color: C.inkMuted,
         }}
       >
-        {t.foot} · yuel.hexastral.com · UseONE, LLC
+        {t.foot} · yuel.hexastral.com
       </footer>
     </main>
   )

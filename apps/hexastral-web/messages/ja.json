@@ -2,7 +2,7 @@
   "_comment": "JA messages · anti-spam compliant per docs/anti-spam-positioning.md. ZERO trigger words (占い / 占星術 / 運命 / 運勢 / 神秘的 / 霊的 / 開運 / オカルト / スピリチュアル / 星々はあなたを知っている / 運命の羅針盤). Lead vocabulary: BaZi, 四柱推命, 命盤, 紫微斗数, 十二宮, 大運, 中華命学, 古典中華宇宙観, AI 性格分析. NOTE: 四柱推命 is the standard Japanese academic term — keep. 縁 keep where it represents yuan-app brand concept; replace 'fate-bond' uses with 命盤/結び.",
   "meta": {
     "title": "HexAstral — BaZi · ZiWei · AI",
-    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。1500年の中華命学伝統に基づく学習ツール。"
+    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。千年を超える中華命学の学習ツール。"
   },
   "nav": {
     "tools": "無料ツール",
@@ -13,7 +13,7 @@
     "heroBadge": "BaZi · ZiWei · AI",
     "heroLine1": "あなたの命盤、",
     "heroLine2": "古典的に読み解く",
-    "heroSub": "60秒で四柱推命の命盤を生成\n1500年の中華命学伝統に基づく AI 性格分析",
+    "heroSub": "60秒で四柱推命の命盤を生成\n千年を超える中華命学伝統に基づく AI 性格分析",
     "heroCTA": "無料で鑑定を始める →",
     "heroNote": "会員登録不要 · 60秒で鑑定 · 初回 3 回 AI 対話付き",
     "featuresSectionLabel": "Core Features",
@@ -209,7 +209,7 @@
   },
   "Metadata": {
     "title": "HexAstral — BaZi & 紫微命盤鑑定",
-    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。1500年の中華命学伝統に基づく学習ツール。"
+    "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。千年を超える中華命学の学習ツール。"
   },
   "publicProfile": {
     "plainIntroHeading": "HexAstral 鑑定",
@@ -239,5 +239,85 @@
     "backToTools": "ツール一覧",
     "backToBlog": "記事一覧",
     "openAppStore": "App Store で入手"
+  },
+  "tools": {
+    "index": {
+      "metaTitle": "無料ツール — HexAstral",
+      "metaDescription": "八字日主プレビュー、易経六十四卦索引、生肖年と相性ティーザー — Yuel と Yuun へ。",
+      "dayMaster": {
+        "title": "日主計算（八字 lite）",
+        "desc": "近似四柱と日主天干 — 学習向けクイックプレビュー。"
+      },
+      "hexagram": {
+        "title": "六十四卦索引（易経）",
+        "desc": "文王序の卦名と卦辞スニペット、各卦へのディープリンク。"
+      },
+      "shengXiao": {
+        "title": "生肖年検索",
+        "desc": "西暦年から生肖を検索 — 旧正月境界に注意。"
+      },
+      "compatibility": {
+        "title": "相性ティーザー（合盤）",
+        "desc": "二人の生年月日の五行プレビュー。本格合盤は Yuel。"
+      }
+    },
+    "dayMaster": {
+      "metaTitle": "日主計算（八字 lite）— HexAstral",
+      "metaDescription": "近似四柱と日主。学習向けプレビュー。本格命盤は Yuel。",
+      "heading": "日主プレビュー · 八字",
+      "intro": "日元は日柱の天干 — 八字命盤の背骨。西洋のサインに相当するが、五行に根ざす。",
+      "solarDateLabel": "西暦日付",
+      "hourLabel": "時刻（24時間、ローカル近似）",
+      "approxPillars": "近似四柱（学習のみ）",
+      "dayMasterLabel": "日元",
+      "archetypeLink": "日主アーキタイプ →",
+      "disclaimer": "簡略化した干支境界（グレゴリオ近似）。Yuel は節気・真太陽時・旧暦換算を本番鑑定に適用。",
+      "ctaHeadline": "本格四柱と紫微は Yuel で",
+      "ctaSub": "出生地、真太陽時補正、融合 AI 鑑定 — Yuel フラッグシップ。"
+    },
+    "hexagram": {
+      "metaTitle": "易経六十四卦索引 — 周易リファレンス",
+      "metaDescription": "文王序の卦名と卦辞。HexAstral 知識ベースより。",
+      "heading": "易経 · 周易卦序索引",
+      "intro": "各卦は学習向けコメントへリンク。三枚銭六爻は Yaul 公開時に。今日は Yuun 暦から。",
+      "ctaHeadline": "Yuun で暦の文脈を学ぶ",
+      "ctaSub": "毎日の暦と古典文脈 — Yaul 開発中の入り口。"
+    },
+    "compatibility": {
+      "metaTitle": "相性ティーザー（合盤）— HexAstral",
+      "metaDescription": "二人の生年月日五行プレビュー（Turnstile）。本格合盤は Yuel。",
+      "heading": "相性ティーザー · 合盤",
+      "intro": "二人の生年月日で軽量五行オーバーレイ — 文化的参照、スコアや断定ではない。",
+      "previewLabel": "五行プレビュー · 合盤",
+      "dayMasters": "日主",
+      "disclaimer": "文化的参照 — 相性スコア・断定・予測ではない。",
+      "ctaHeadline": "本格縁鑑定は Yuel で",
+      "ctaSub": "多次元合盤、ギフト、共鳴招待 — 文化研習、占いではない。",
+      "personA": "甲",
+      "personB": "乙",
+      "continueB": "乙の入力へ →",
+      "editA": "← 甲を編集",
+      "compute": "五行プレビュー",
+      "computing": "計算中…",
+      "turnstileWait": "セキュリティチェック完了後にお試しください。",
+      "error": "プレビューできませんでした。ネットワークを確認してください。",
+      "startOver": "最初から",
+      "turnstileHint": "甲 — 乙入力時に Turnstile を実行"
+    },
+    "shengXiao": {
+      "metaTitle": "生肖年検索",
+      "metaDescription": "西暦年から生肖。旧正月の注意書き付き。",
+      "heading": "生肖年 · 生肖",
+      "intro": "西暦年を生肖にマッピング。旧正月前の出生は前年の生肖の場合あり。",
+      "yearLabel": "西暦年",
+      "resultPrefix": "年",
+      "lunarNote": "1月〜2月初生まれは旧正月を確認 — 前年の生肖のことがある。",
+      "ctaHeadline": "毎日の暦は Yuun で",
+      "ctaSub": "黄暦、個人レイヤー、大運タイムライン — 深い命学への入り口。",
+      "introPage": "十二支は春節の民俗に根ざす。本格命盤は八字と紫微が担う — 生肖だけでは粒度が粗い。",
+      "animalLabel": "近似年肖 · 生肖",
+      "readLink": "生肖ノート →",
+      "disclaimerExtended": "簡略西暦マッピング。旧正月前後の出生は旧暦/立春対応ソフトで確認（Yuel 本番排盤で処理）。"
+    }
   }
 }

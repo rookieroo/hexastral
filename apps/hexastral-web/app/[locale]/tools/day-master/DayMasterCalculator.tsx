@@ -1,9 +1,11 @@
 'use client'
 
 import { getFourPillars, HEAVENLY_STEMS } from '@zhop/astro-core'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 import type { DayMasterSlug } from '@/lib/growth/seo-data'
 
@@ -26,6 +28,7 @@ function stemToSlug(stem: string): DayMasterSlug {
 }
 
 export function DayMasterCalculator() {
+  const t = useTranslations('tools.dayMaster')
   const [date, setDate] = useState('1990-01-15')
   const [hour, setHour] = useState(12)
 
@@ -41,7 +44,9 @@ export function DayMasterCalculator() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-        <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>Solar date</label>
+        <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>
+          {t('solarDateLabel')}
+        </label>
         <input
           type='date'
           value={date}
@@ -56,7 +61,7 @@ export function DayMasterCalculator() {
           }}
         />
         <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>
-          Hour (24h clock, local rough preview)
+          {t('hourLabel')}
         </label>
         <select
           value={hour}
@@ -88,7 +93,7 @@ export function DayMasterCalculator() {
           }}
         >
           <p style={{ fontSize: '0.8rem', color: 'var(--color-gold)', marginTop: 0 }}>
-            Approximate pillars (education only)
+            {t('approxPillars')}
           </p>
           <div
             style={{
@@ -111,24 +116,25 @@ export function DayMasterCalculator() {
             ))}
           </div>
           <p style={{ marginBottom: 0, fontSize: '1rem', lineHeight: 1.65 }}>
-            <strong>Day Master (日元)</strong>: {pillars.day.stem}
+            <strong>{t('dayMasterLabel')}</strong>: {pillars.day.stem}
             {' · '}
             <Link href={`/day-master/${slug}`} style={{ color: 'var(--color-gold)' }}>
-              Read archetype notes →
+              {t('archetypeLink')}
             </Link>
           </p>
           <p
             style={{ fontSize: '0.78rem', color: 'var(--color-ivory-muted)', marginTop: '0.75rem' }}
           >
-            Uses simplified Gan Zhi boundaries (Gregorian approximation). HexAstral iOS applies
-            solar terms, optional true solar time, and Luna conversion for prod readings.
+            {t('disclaimer')}
           </p>
         </div>
       ) : null}
 
       <DownloadCTA
-        headline='Full Four Pillars + Zi Wei in one tap'
-        sub='Birth city, true solar correction, fused AI reading — flagship HexAstral app.'
+        headline={t('ctaHeadline')}
+        sub={t('ctaSub')}
+        appStoreUrl={resolveAppStoreUrl('soulmatch')}
+        targetApp='soulmatch'
       />
     </div>
   )

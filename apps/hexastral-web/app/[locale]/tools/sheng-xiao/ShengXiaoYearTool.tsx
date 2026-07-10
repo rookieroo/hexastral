@@ -1,6 +1,7 @@
 'use client'
 
 import { yearZodiac } from '@zhop/astro-core'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { Link } from '@/i18n/navigation'
 
@@ -22,6 +23,7 @@ const HAN_TO_SLUG: Record<string, ZodiacSlug> = {
 }
 
 export function ShengXiaoYearTool() {
+  const t = useTranslations('tools.shengXiao')
   const [year, setYear] = useState(1990)
 
   const animalHan = useMemo(() => yearZodiac(year), [year])
@@ -29,9 +31,7 @@ export function ShengXiaoYearTool() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>
-        Gregorian birth year
-      </label>
+      <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>{t('yearLabel')}</label>
       <input
         type='number'
         min={1900}
@@ -51,7 +51,7 @@ export function ShengXiaoYearTool() {
 
       <div style={{ padding: '1rem', border: '1px solid var(--color-border)', borderRadius: 12 }}>
         <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', color: 'var(--color-gold)' }}>
-          Approximate yearly animal · 生肖
+          {t('animalLabel')}
         </p>
         <p style={{ fontSize: '2rem', margin: 0, letterSpacing: '0.1em' }}>{animalHan}</p>
         {slug ? (
@@ -59,15 +59,13 @@ export function ShengXiaoYearTool() {
             href={`/sheng-xiao/${slug}`}
             style={{ color: 'var(--color-gold)', fontSize: '0.9rem' }}
           >
-            Read constellation notes →
+            {t('readLink')}
           </Link>
         ) : null}
       </div>
 
       <p style={{ fontSize: '0.78rem', color: 'var(--color-ivory-muted)', lineHeight: 1.65 }}>
-        This uses a simple Gregorian mapping for the animal rotation. Readers born near Chinese New
-        Year should verify with Lunar/Li Chun aware software (HexAstral iOS charts do this
-        professionally).
+        {t('disclaimerExtended')}
       </p>
     </div>
   )

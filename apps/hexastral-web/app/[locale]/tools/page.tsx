@@ -1,20 +1,34 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
+import { canonicalUrl } from '@/lib/growth/page-metadata'
 
 interface PageProps {
   params: Promise<{ locale: string }>
 }
 
+const INDEX_TOOL_KEYS = [
+  'dayMaster',
+  'hexagram',
+  'shengXiao',
+  'compatibility',
+] as const
+
+const INDEX_TOOL_HREFS: Record<(typeof INDEX_TOOL_KEYS)[number], string> = {
+  dayMaster: '/tools/day-master',
+  hexagram: '/tools/hexagram',
+  shengXiao: '/tools/sheng-xiao',
+  compatibility: '/tools/compatibility',
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'tools.index' })
   return {
-    title: 'Free tools — HexAstral',
-    description:
-      'Ba Zi Day Master preview, I Ching hexagram index, Chinese zodiac year, compatibility teaser, and links to our iOS apps.',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
     alternates: {
-      canonical:
-        locale === 'en' ? 'https://hexastral.com/tools' : `https://hexastral.com/${locale}/tools`,
+      canonical: canonicalUrl(locale, '/tools'),
     },
   }
 }
@@ -31,44 +45,7 @@ const cardStyle: React.CSSProperties = {
 
 export default async function ToolsIndexPage() {
   const t = await getTranslations('growth')
-
-  const items: { href: string; title: string; desc: string }[] = [
-    {
-      href: '/tools/day-master',
-      title: 'Day Master calculator (Ba Zi 八字 lite)',
-      desc: 'Approximate four pillars and see your Day Master stem on-device — quick educational preview.',
-    },
-    {
-      href: '/tools/hexagram',
-      title: '64 hexagram index (I Ching 易经)',
-      desc: 'King Wen sequence with classical judgment snippets and deep links per hexagram.',
-    },
-    {
-      href: '/tools/sheng-xiao',
-      title: 'Chinese animal year lookup (生肖)',
-      desc: 'Map a Gregorian year to the sheng xiao animal — mind the lunar new year boundary.',
-    },
-    {
-      href: '/tools/compatibility',
-      title: 'Compatibility teaser (合盘)',
-      desc: 'Elemental preview for two birthdays (Turnstile‑protected). Full synastry lives in Yuel / HexAstral.',
-    },
-    {
-      href: '/tools/dream',
-      title: 'Dream interpretation (coming)',
-      desc: 'Teaser landing for DreamOracle — describe a dream, continue in app for full Zhou Gong style reading.',
-    },
-    {
-      href: '/tools/face-reading',
-      title: 'AI face reading teaser',
-      desc: 'Privacy‑first physiognomy roadmap — upload flows ship in FaceOracle; web explains the method.',
-    },
-    {
-      href: '/tools/palace-chart',
-      title: 'Zi Wei palace primer',
-      desc: 'Understand the twelve palaces before opening StarPalace or HexAstral for a live chart.',
-    },
-  ]
+  const ti = await getTranslations('tools.index')
 
   return (
     <>
@@ -89,8 +66,8 @@ export default async function ToolsIndexPage() {
         {t('toolsIndexSubtitle')}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {items.map((it) => (
-          <Link key={it.href} href={it.href} style={cardStyle}>
+        {INDEX_TOOL_KEYS.map((key) => (
+          <Link key={key} href={INDEX_TOOL_HREFS[key]} style={cardStyle}>
             <span
               style={{
                 fontSize: '1.05rem',
@@ -99,12 +76,12 @@ export default async function ToolsIndexPage() {
                 marginBottom: '0.35rem',
               }}
             >
-              {it.title}
+              {ti(`${key}.title`)}
             </span>
             <span
               style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)', lineHeight: 1.55 }}
             >
-              {it.desc}
+              {ti(`${key}.desc`)}
             </span>
           </Link>
         ))}

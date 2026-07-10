@@ -6,9 +6,9 @@ import {
   CONTENT_BASE_PATHS,
   DAY_MASTER_SLUGS,
   FENG_SHUI_SLUGS,
-  LP_PATHS,
+  getIndexableLpPaths,
+  getIndexableToolPaths,
   PALACE_SLUGS,
-  TOOL_PATHS,
   ZODIAC_SLUGS,
 } from '@/lib/growth/seo-data'
 
@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     })
 
-    for (const p of TOOL_PATHS) {
+    for (const p of getIndexableToolPaths()) {
       entries.push({
         url: absoluteUrl(base, locale, p),
         lastModified: new Date(),
@@ -94,7 +94,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.65,
       })
     }
-    for (const p of LP_PATHS) {
+    for (const p of getIndexableLpPaths()) {
       entries.push({
         url: absoluteUrl(base, locale, p),
         lastModified: new Date(),

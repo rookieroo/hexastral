@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { DayMasterCalculator } from '@/app/[locale]/tools/day-master/DayMasterCalculator'
+import { canonicalUrl } from '@/lib/growth/page-metadata'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -7,31 +9,22 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'tools.dayMaster' })
   return {
-    title: 'Day Master calculator (Ba Zi 八字 lite) — HexAstral tools',
-    description:
-      'See your approximate Day Master heavenly stem plus four pillar preview — educational snapshot before opening HexAstral on iOS.',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
     alternates: {
-      canonical:
-        locale === 'en'
-          ? 'https://hexastral.com/tools/day-master'
-          : `https://hexastral.com/${locale}/tools/day-master`,
+      canonical: canonicalUrl(locale, '/tools/day-master'),
     },
   }
 }
 
-export default function DayMasterToolPage() {
+export default async function DayMasterToolPage() {
+  const t = await getTranslations('tools.dayMaster')
   return (
     <>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginTop: 0 }}>
-        Day Master preview{' '}
-        <span style={{ color: 'var(--color-ivory-dim)', fontSize: '1rem' }}>八字</span>
-      </h1>
-      <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.65 }}>
-        The <strong>Day Master</strong> is the Heavenly Stem sitting on your day pillar (
-        <em> Ri Kindred / 日元 </em>). It anchors Element psychology in Ba Zi — like a sun sign
-        backbone, tuned for Five Elements rather than planets.
-      </p>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginTop: 0 }}>{t('heading')}</h1>
+      <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.65 }}>{t('intro')}</p>
       <DayMasterCalculator />
     </>
   )
