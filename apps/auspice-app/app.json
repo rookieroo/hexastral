@@ -76,7 +76,7 @@
       "REVENUECAT_IOS_API_KEY": "REPLACE_WITH_REVENUECAT_IOS_API_KEY",
       "REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_API_KEY",
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "269d6ab5-6462-4f8e-ad6d-69a526dcb91e"
       }
     },
     "owner": "useone-tech",

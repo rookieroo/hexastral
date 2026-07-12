@@ -174,11 +174,26 @@ app — do NOT drop it (it covers the relationship/social-services field a pure
 software class does not). Keep the ID in "social networking / compatibility
 analysis" register, not "astrology consultancy."*
 
-### 4b. YUUN — classes 9 / 42 (45 optional → likely skip)
+### 4b. YUUN — class 9 only (42 deferred)
 
 | Class | Goods / services (draft) |
 |---|---|
 | **9** | Downloadable mobile application software featuring a Chinese lunisolar calendar and almanac, solar-term and festival reference information, family birthday reminders, and a personal life-timeline based on Chinese metaphysics (BaZi / Four Pillars). |
+| **42** *(deferred)* | *Optional later filing — see [trademark-filing-prep.md](./trademark-filing-prep.md).* |
+
+### 4c. KANYU — classes 9 / 42
+
+| Class | Goods / services (draft) |
+|---|---|
+| **9** | Downloadable mobile application software for analyzing residential and commercial sites using Chinese feng shui principles (Flying Star, Eight Mansions); downloadable software featuring computer-generated site-layout and orientation analysis from user-supplied floor plans and photographs. |
+| **42** | Providing online non-downloadable software for site-layout and feng shui orientation analysis; software as a service (SAAS) featuring software for building-site evaluation and spatial-harmony reference information. |
+
+*Knockout for KANYU not yet run in-house — counsel must clear KANYU / KAN YU / CANYU in cl 9/42 before filing.*
+
+### 4d. YUUN — retired cl-42/45 table (archive)
+
+| Class | Goods / services (draft) |
+|---|---|
 | **42** | Providing online non-downloadable software featuring a Chinese calendar and almanac and a personal life-timeline; software as a service (SAAS) featuring software for calendar, almanac, and personal-timeline information. |
 | **45** *(optional)* | *Skip unless counsel advises: the only fitting cl-45 ID here is "providing astrological/horoscope information," which collides with the anti-spam positioning and adds 4.3-adjacent exposure for little gain. Cover the offering in 9/42.* |
 
@@ -209,19 +224,46 @@ analysis" register, not "astrology consultancy."*
    ADR-0024; the floor is self-serve knockout + single-class US ITU filings — never
    skip clearance.
 
+### 5.1 Founder revision (2026-07-11) — US-first, defer ASEAN TM + ASO
+
+**Thesis:** Many high-grossing lifestyle apps ship **US-primary** (sometimes
+US-only in GTM). Southeast Asian users with US Apple IDs — or diaspora comfortable
+with English UI — still discover and subscribe on the **US storefront listing**.
+Early revenue and brand enforcement therefore concentrate on **US ITU + US/JP App
+Store**, not on duplicating filings or localized ASO across SG/MY/TH.
+
+| Decision | Marks | Action |
+|---|---|---|
+| **Batch 1 — do not delay** | **Yuel, Yuun, Kanyu** | US §1(b) ITU in one counsel round: **YUEL 9/42/45**; **YUUN 9 only**; **KANYU 9/42** — prep pack: [trademark-filing-prep.md](./trademark-filing-prep.md) |
+| **Batch 2 — defer** | **Yaul** | W4 pre-launch; knockout + ITU when brand fixed |
+| **Defer ASEAN Madrid** | SG / MY / TH | Skip Madrid designations until US apps show traction **or** local paid UA starts; US registration does **not** protect those jurisdictions, but early SEA revenue mostly flows through **broad ASC territory availability + en-US metadata fallback** (see [brand-aso-gtm-plan.md](./brand-aso-gtm-plan.md) §2 operational rule) |
+| **JP exception** | Yuel (+ Yuun if JP ASA/ASO) | Direct JP national filing **when JP marketing starts**, not at Madrid window end — first-to-file risk is real once the JP store listing is public |
+
+**ASC vs trademark (do not conflate):**
+
+- **Pricing & Availability:** keep territories **broad** (US, JP, SG, MY, HK, TW, TH…) so SEA users *can* buy without a "SEA launch event."
+- **Metadata / GTM:** **no rush** for en-GB / ms / th ASO or SG/MY/TH storefront campaigns — 4 in-app locales (en, zh-Hans, zh-Hant, ja) suffice for MVP.
+- **US trademark** solves early problems: priority date, US enforcement, Madrid anchor, UDRP for `.app` / bad-faith domains — **not** a substitute for JP filing before JP push.
+
+**Kanyu draft IDs (hand to counsel, same anti-spam register as Yuun):**
+
+| Class | Goods / services (draft) |
+|---|---|
+| **9** | Downloadable mobile application software for analyzing residential and commercial sites using Chinese feng shui principles (Flying Star, Eight Mansions); downloadable software featuring computer-generated site-layout and orientation analysis from user-supplied floor plans and photographs. |
+| **42** | Providing online non-downloadable software for site-layout and feng shui orientation analysis; software as a service (SAAS) featuring software for building-site evaluation and spatial-harmony reference information. |
+
 ## 6. Pre-filing checklist for counsel (the gaps automated research could NOT close)
 
-- [ ] **Live USPTO `tmsearch` phonetic/sound-alike search** — YUEL and YUUN plus
-      YUN / YUNE / YOON / YUUM / UNE, filtered to **classes 9 and 42** (and 45 for
-      Yuel). *This is the one material refusal risk for both marks.*
+- [ ] **Live USPTO `tmsearch` phonetic/sound-alike search** — YUEL, YUUN, **KANYU** plus
+      YUN / YUNE / YOON / YUUM / UNE / KAN YU / CANYU, filtered to **class 9** (Yuun),
+      **9/42/45** (Yuel), **9/42** (Kanyu).
 - [ ] Pull each near-cluster mark and assess 2(d): the **US cl-9 "YUEL-" Amazon
       cluster** (YUELEE/YUELAN/YUELUQU/YUELYPUO/KIEYYUEL) for Yuel; any phonetic
       YUN/YUNE software mark for Yuun.
 - [ ] **Confirm no live exact mark in JPO, IPOS (SG), MyIPO (MY), TH-DIP** via WIPO
       Global Brand DB + TMview + **local agents** for the three ASEAN markets
       (aggregator coverage lags there — web absence is weaker evidence).
-- [ ] Confirm **yuel.app and yuun.app are held in UseONE, LLC's name** at the
-      registrar (verify registrant, not just availability).
+- [ ] Confirm **yuel.app, yuun.app, kanyu.app** (if registered) are held in UseONE, LLC's name
 - [ ] Document the **goods-class distance** for the off-class senior users
       (Granblue ユエル; yuun.studio jewelry) in case an opposition is threatened.
 - [ ] Decide **Yuel class 45 ID wording** and **whether Yuun files cl 45 at all**.

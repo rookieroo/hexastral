@@ -1,5 +1,9 @@
 # Publish Checklist — Yuel & Yuun (App Store)
 
+> **可执行上架 Runbook**：[yuun-yuel-launch-runbook.md](./yuun-yuel-launch-runbook.md)  
+> **App Store Connect 逐步操作**：[asc-yuun-yuel-guide.md](./asc-yuun-yuel-guide.md)  
+> **US 商标申报材料**：[trademark-filing-prep.md](./trademark-filing-prep.md)
+>
 > Every task here is **human / console work** that cannot be done from the repo:
 > App Store Connect, RevenueCat dashboard, Apple Developer portal, real secrets,
 > screenshots, and the production deploy. The code side is ready (see
@@ -174,7 +178,7 @@ Order (local wrangler — CI does NOT deploy):
 ## 6. eas.json secrets (both apps — currently `REPLACE_WITH_*` placeholders)
 
 For `apps/kindred-app/eas.json` **and** `apps/auspice-app/eas.json`:
-- [ ] `EXPO_PUBLIC_EAS_PROJECT_ID` (run `eas init` per app)
+- [x] `EXPO_PUBLIC_EAS_PROJECT_ID` — both apps linked (`auspice` `269d6ab5-…`, `kindred` `95b2e753-…`)
 - [ ] `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (`appl_*`; `test_*` for sandbox builds)
 - [ ] `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (`goog_*`, only if shipping Android)
 - [ ] `submit.production.ios.ascAppId` (from §2; `appleTeamId` is already `L9Z47DW56X`)

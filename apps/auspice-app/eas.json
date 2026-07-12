@@ -16,7 +16,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
         "EXPO_PUBLIC_ENV": "development",
-        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "269d6ab5-6462-4f8e-ad6d-69a526dcb91e",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "REPLACE_WITH_REVENUECAT_IOS_KEY",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_KEY",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
@@ -37,7 +37,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
         "EXPO_PUBLIC_ENV": "preview",
-        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "269d6ab5-6462-4f8e-ad6d-69a526dcb91e",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "REPLACE_WITH_REVENUECAT_IOS_KEY",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_KEY",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
@@ -54,7 +54,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.hexastral.com",
-        "EXPO_PUBLIC_EAS_PROJECT_ID": "REPLACE_WITH_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "269d6ab5-6462-4f8e-ad6d-69a526dcb91e",
         "EXPO_PUBLIC_ENV": "production",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "443209724807-74241r1rvca3nb4io9o6184ddrkhtf7m.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "443209724807-nt26socuql9j5jmsrd1ve9h8ap7i3ubp.apps.googleusercontent.com"
