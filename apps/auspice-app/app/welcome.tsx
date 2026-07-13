@@ -38,26 +38,26 @@ interface WelcomeCopy {
 
 const COPY: Record<Locale, WelcomeCopy> = {
   'zh-Hans': {
-    intro: '一份为日常而生的中华日历——每日宜忌、二十四节气，与家人的农历生日，到点提醒。',
+    intro: '一份中华黄历——每日宜忌、节气与农历，家人的农历生日到点提醒；可选录入生辰，解锁「对你而言」个人层。',
     cta: '进入今天',
-    birthHint: '随时在「我」中录入生辰，解锁「对你而言」',
+    birthHint: '随时在「设置」中录入生辰，解锁「对你而言」',
   },
   'zh-Hant': {
-    intro: '一份為日常而生的中華日曆——每日宜忌、二十四節氣，與家人的農曆生日，到點提醒。',
+    intro: '一份中華黃曆——每日宜忌、節氣與農曆，家人的農曆生日到點提醒；可選錄入生辰，解鎖「對你而言」個人層。',
     cta: '進入今天',
-    birthHint: '隨時在「我」中錄入生辰，解鎖「對你而言」',
+    birthHint: '隨時在「設定」中錄入生辰，解鎖「對你而言」',
   },
   ja: {
     intro:
-      '暮らしのための中華暦。毎日の暦注、二十四節気、そして家族の旧暦の誕生日を、その日にそっとお知らせ。',
+      '中華の黄暦——毎日の宜忌、節気と旧暦、家族の旧暦誕生日の通知。生年月日を登録すると「あなたへ」の個人層が開きます。',
     cta: '今日をひらく',
     birthHint: 'いつでも「設定」で生年月日を登録し「あなたへ」を解放',
   },
   en: {
     intro:
-      'A Chinese calendar made for everyday life — the daily almanac, the 24 solar terms, and your family’s lunar birthdays, reminded right on the day.',
+      'A Chinese almanac for everyday life — daily yi/ji, solar terms, and lunar dates, with family birthday reminders. Add your birth in Settings to unlock the personal For You layer.',
     cta: 'Open today',
-    birthHint: 'Add your birth anytime in Me to unlock “For You”',
+    birthHint: 'Add your birth anytime in Settings to unlock “For You”',
   },
 }
 

@@ -56,18 +56,19 @@ First **3** are what 90% of viewers see in the carousel — front-load the value
 
 ## 1. Auspice — Chinese Calendar (HERO deck, 7 shots)
 
-Background tint: warm paper / ink (calendar-utility register, not mystical).
-Positioning: a **calendar utility**, not fortune-telling. The Ba Zi timeline +
-personal chart deep-read are real value but stay **mid-deck (S5–S6)** so the
-carousel's first impression is "Chinese calendar," protecting the 4.3(b) posture.
+Background tint: warm paper / ink (almanac register, not mystical).
+Positioning: an honest **Chinese almanac (黄历)** with daily yi/ji — disclosed,
+not hidden behind a generic calendar frame. The Ba Zi timeline + personal chart
+deep-read stay **mid-deck (S5–S6)** so the carousel's first impression is
+"today's almanac + For you," protecting the 4.3(b) posture.
 S6 is the signed-in personal 命书 (八字 + 紫微 chaptered reading) — included so the
 deck **discloses the primary Pro feature (Guideline 2.3.1)** without ever leading
 with it. Same honest register as S5: "a study, not a prediction."
 
 | # | Screen | Visual notes |
 | --- | --- | --- |
-| S1 | Today tab hero | 干支 / 农历 / 节气 + 宜忌 chips. **`ja` variant must show the 六曜 badge** (the JP-only day annotation). |
-| S2 | Month grid | One grid showing 阳历 + 农历 + 节气 + 节日 simultaneously; a festival day highlighted. |
+| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Header shows Calendar + Settings icons. |
+| S2 | **Calendar secondary** (`/calendar`) | Full month grid: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; "Open in Today" CTA visible. |
 | S3 | 24 solar-terms timeline (节庆 tab) | Horizontal year timeline, one 节气 expanded into food/poetry/wellness depth. |
 | S4 | Family events | Member list with an upcoming 农历 birthday + reminder toggle. The diaspora hook. |
 | S5 | Ba Zi life timeline (Pro) | The 大运/流年 git-graph with one what-if branch. Caption MUST carry "reflection, not prediction." |
@@ -78,9 +79,9 @@ with it. Same honest register as S5: "a study, not a prediction."
 
 | # | en-US | zh-Hans | zh-Hant | ja |
 | --- | --- | --- | --- | --- |
-| S1 | Today, in the Chinese calendar | 今天，用中华日历看 | 今天，用中華日曆看 | 今日を、中華暦で |
-| S1 sub | 干支 · lunar date · solar term · 宜忌 | 干支 · 农历 · 节气 · 宜忌 | 干支 · 農曆 · 節氣 · 宜忌 | 干支・旧暦・節気・六曜 |
-| S2 | Solar, lunar & 节气 — one grid | 阳历、农历、节气，一屏看全 | 陽曆、農曆、節氣，一屏看全 | 太陽暦・旧暦・節気をひと目で |
+| S1 | Today's almanac | 今日黄历 · 宜忌 | 今日黃曆 · 宜忌 | 今日の黄暦 · 宜忌 |
+| S1 sub | Yi/ji + your personal layer | 宜忌 · 对你而言 | 宜忌 · 對你而言 | 宜忌 · あなたへ |
+| S2 | Browse any month | 月历 · 纵览全年 | 月曆 · 縱覽全年 | カレンダー · 月を見渡す |
 | S3 | The 24 solar terms, in depth | 二十四节气，深读全年 | 二十四節氣，深讀全年 | 二十四節気を、深く読む |
 | S4 | Never miss a lunar birthday | 再不错过家人的农历生日 | 再不錯過家人的農曆生日 | 家族の旧暦の誕生日を逃さない |
 | S5 | Your life as a Ba Zi timeline | 把人生看成一条八字时间轴 | 把人生看成一條八字時間軸 | 人生を、八字のタイムラインで |

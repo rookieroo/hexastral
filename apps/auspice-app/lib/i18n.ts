@@ -164,8 +164,31 @@ export interface Strings {
   contentComingSoon: string
   /** Pro upsell row beneath a Free-truncated section body on the detail page. */
   unlockFullSection: string
-  /** Animated swipe-left hint at the bottom of Today (paired with a left-pointing arrow). */
+  /** Animated swipe-left hint at the bottom of Today — opens Calendar. */
+  swipeCalendarHint: string
+  /** Animated swipe-right hint at the bottom of Today — opens Settings. */
   swipeMeHint: string
+  /** Today DayView zone label — classical almanac (宜忌). */
+  almanacSection: string
+  /** Today DayView zone label — collapsed culture explore. */
+  exploreSection: string
+  /** Expand/collapse the explore zone on Today. */
+  exploreExpand: string
+  exploreCollapse: string
+  /** Calendar secondary page CTA — open selected day on Today home. */
+  openInToday: string
+  /** Settings section — library / explore drill-ins. */
+  settingsLibrary: string
+  /** Settings section — push notification toggles. */
+  settingsNotifications: string
+  /** Settings section — calendar feeds + remote timezone. */
+  settingsCalendars: string
+  /** Settings section — privacy, terms, disclaimer. */
+  settingsLegal: string
+  /** Library row — life timeline (大运流年). */
+  libraryTimeline: string
+  /** Library row — what-if reflection. */
+  libraryMakeIf: string
   // ── Educational glossary (ADR-0020, Sprint 3 scaffold) ────────────────────
   /** Top-level glossary section title. Also the entry-row label in Me. */
   glossaryTitle: string
@@ -583,7 +606,19 @@ const zhHans: Strings = {
   familyEventsComingSoon: 'Sprint 4 上线',
   contentComingSoon: '内容编辑中',
   unlockFullSection: '解锁完整章节',
+  swipeCalendarHint: '月历',
   swipeMeHint: '设置',
+  almanacSection: '黄历',
+  exploreSection: '探索',
+  exploreExpand: '展开',
+  exploreCollapse: '收起',
+  openInToday: '在 Today 查看',
+  settingsLibrary: '探索',
+  settingsNotifications: '通知',
+  settingsCalendars: '日历与同步',
+  settingsLegal: '法律与说明',
+  libraryTimeline: '人生时间轴',
+  libraryMakeIf: '假如',
   glossaryTitle: '科普',
   glossaryShichen: '十二时辰',
   glossaryGanzhi: '天干地支',
@@ -932,7 +967,19 @@ const zhHant: Strings = {
   familyEventsComingSoon: 'Sprint 4 上線',
   contentComingSoon: '內容編輯中',
   unlockFullSection: '解鎖完整章節',
+  swipeCalendarHint: '月曆',
   swipeMeHint: '設定',
+  almanacSection: '黃曆',
+  exploreSection: '探索',
+  exploreExpand: '展開',
+  exploreCollapse: '收起',
+  openInToday: '在 Today 查看',
+  settingsLibrary: '探索',
+  settingsNotifications: '通知',
+  settingsCalendars: '日曆與同步',
+  settingsLegal: '法律與說明',
+  libraryTimeline: '人生時間軸',
+  libraryMakeIf: '假如',
   glossaryTitle: '科普',
   glossaryShichen: '十二時辰',
   glossaryGanzhi: '天干地支',
@@ -1292,7 +1339,19 @@ const ja: Strings = {
   familyEventsComingSoon: 'Sprint 4 で予定',
   contentComingSoon: 'コンテンツ準備中',
   unlockFullSection: '全文を解錠',
+  swipeCalendarHint: 'カレンダー',
   swipeMeHint: '設定',
+  almanacSection: '黄暦',
+  exploreSection: '探索',
+  exploreExpand: '開く',
+  exploreCollapse: '閉じる',
+  openInToday: 'Today で見る',
+  settingsLibrary: '探索',
+  settingsNotifications: '通知',
+  settingsCalendars: 'カレンダーと同期',
+  settingsLegal: '法務と説明',
+  libraryTimeline: '人生タイムライン',
+  libraryMakeIf: 'もしも',
   glossaryTitle: '読み物',
   glossaryShichen: '十二時辰',
   glossaryGanzhi: '十干十二支',
@@ -1642,7 +1701,19 @@ const en: Strings = {
   familyEventsComingSoon: 'Coming in Sprint 4',
   contentComingSoon: 'Content coming soon',
   unlockFullSection: 'Unlock full section',
+  swipeCalendarHint: 'Calendar',
   swipeMeHint: 'Settings',
+  almanacSection: 'Almanac',
+  exploreSection: 'Explore',
+  exploreExpand: 'Show',
+  exploreCollapse: 'Hide',
+  openInToday: 'Open in Today',
+  settingsLibrary: 'Library',
+  settingsNotifications: 'Notifications',
+  settingsCalendars: 'Calendars & sync',
+  settingsLegal: 'Legal',
+  libraryTimeline: 'Life timeline',
+  libraryMakeIf: 'What if',
   glossaryTitle: 'Glossary',
   glossaryShichen: 'Twelve hours',
   glossaryGanzhi: 'Stems & branches',
@@ -1824,7 +1895,7 @@ const en: Strings = {
     readingTitle: 'Your Reading',
     readingHint: 'Your full personal reading — BaZi + Zi Wei',
     lucky: {
-      color: 'Color',
+      color: 'Favorable element',
       direction: 'Direction',
       time: 'Hours',
       shichenSuffix: '',

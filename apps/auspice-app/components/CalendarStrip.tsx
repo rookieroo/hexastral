@@ -31,6 +31,12 @@ import {
 } from 'react-native'
 
 import { MoonLoader } from '@/components/MoonLoader'
+import {
+  defaultCalendarDisplayMode,
+  lunarCellLabel,
+  lunarHeaderLabel,
+  showRatingCellShading,
+} from '@/lib/calendar-display'
 import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -161,11 +167,9 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
           <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
             {visibleMonth.year} · {pad(visibleMonth.month)}
           </Text>
-          {visibleLunarHeader && locale !== 'en' ? (
-            // Drop the redundant leading "{lunarYear}年 " (the 阳历 year already shows
-            // above) — one row, just the 农历 month, e.g. "五月".
+          {visibleLunarHeader ? (
             <Text style={{ color: colors.secondary, fontSize: 13 }}>
-              {visibleLunarHeader.replace(/^\d+年\s*/, '')}
+              {lunarHeaderLabel(visibleLunarHeader, locale)}
             </Text>
           ) : null}
         </View>
@@ -388,37 +392,25 @@ function DayCell({
   colors: DayCellColors
   locale: Locale
 }) {
-  // Cell shading: en highlights ONLY public holidays (the 黄历 吉凶 rating is 命理
-  // a non-CJK audience can't read — same founder call as the sub-label). zh / tw /
-  // ja keep the 吉凶 shading.
+  const ratingShading = showRatingCellShading(locale)
   let bg = 'transparent'
   if (data) {
     if (data.publicHoliday) bg = colors.accentGhost
-    else if (locale !== 'en' && data.overallRating >= 4) bg = colors.accentGhost
-    else if (locale !== 'en' && data.overallRating <= 2) bg = 'rgba(155,34,38,0.06)'
+    else if (ratingShading && data.overallRating >= 4) bg = colors.accentGhost
+    else if (ratingShading && data.overallRating <= 2) bg = 'rgba(155,34,38,0.06)'
   }
   if (isSelected) bg = colors.accent
 
-  // The dim sub-label: en sees ONLY public holidays — 节气 / 农历 day names are
-  // 历法/命理 a non-CJK audience can't read (founder call: prefer holidays over
-  // terms users won't understand). zh / tw / ja keep the full almanac chain.
   const hasHoliday = data?.publicHoliday !== null && data?.publicHoliday !== undefined
-  // en holiday names ("Dragon Boat Festival") never fit a 9px cell — they
-  // truncated to "Dragon B…", which reads as broken. Mark the day with a small
-  // dot instead; the full localized name shows in the day-detail chip on tap
-  // (CultureAccentChip). CJK/ja labels are 2–3 glyphs and fit, so keep the text.
-  const showHolidayDot = locale === 'en'
-  const lowerText = showHolidayDot
-    ? ''
-    : (data?.publicHoliday ?? data?.solarTermName ?? data?.lunarDayName ?? '')
+  const showHolidayDot = locale === 'en' && hasHoliday
+  const mode = defaultCalendarDisplayMode(locale)
+  const lunarLabel = data ? lunarCellLabel(data, locale, mode) : ''
+  const lowerText = showHolidayDot ? '' : lunarLabel
   const strong =
-    locale === 'en'
-      ? hasHoliday
-      : hasHoliday
-        ? true
-        : data?.solarTermName !== null && data?.solarTermName !== undefined
-          ? true
-          : data?.isLunarFirst === true || data?.isLunarFifteenth === true
+    hasHoliday ||
+    (data?.solarTermName !== null && data?.solarTermName !== undefined) ||
+    data?.isLunarFirst === true ||
+    data?.isLunarFifteenth === true
 
   const numColor = isSelected ? '#fff' : isToday ? colors.accent : colors.text
   const lowerColor = isSelected ? '#fff' : strong ? colors.accent : colors.dim
@@ -445,16 +437,14 @@ function DayCell({
         {dayNum}
       </Text>
       {showHolidayDot ? (
-        hasHoliday ? (
-          <View
-            style={{
-              width: 4,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: isSelected ? '#fff' : colors.accent,
-            }}
-          />
-        ) : null
+        <View
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: isSelected ? '#fff' : colors.accent,
+          }}
+        />
       ) : lowerText ? (
         <Text
           style={{ color: lowerColor, fontSize: 9, fontWeight: strong ? '600' : '400' }}

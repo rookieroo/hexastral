@@ -1,25 +1,23 @@
 /**
- * Shared day renderer — hero + 宜忌 + 12 时辰 + 节气 window. Used by the Today tab
- * (with live-时辰 highlight) and the day-detail screen.
+ * Shared day renderer — three Today zones: Almanac · Personal · Explore.
  *
- * Monetization (2026-06 flip): 宜忌 is table-stakes for any 黄历, so it renders
- * in full for everyone. The Pro wall sits on the differentiated value instead —
- * the 对你而言 personalization: free users see the 吉/凶/平 verdict, Pro unlocks
- * the per-reason reading. Other Pro gates (大运流年, specialized 择日) stack onto
- * the same paywall sheet.
+ * Monetization: 宜忌 is table-stakes; Pro wall sits on 对你而言 per-reason detail.
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useRouter } from 'expo-router'
+import { type Href, useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { CultureSnippetCard } from '@/components/CultureSnippetCard'
+import { dayIdentityLunarLabel } from '@/lib/calendar-display'
 import { localizeSolarTermName } from '@/lib/culture'
-import type { RokuyoStrings } from '@/lib/i18n'
+import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
+import type { Locale, RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
@@ -40,13 +38,8 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-// 六曜 tone by Rokuyo.index (0=大安 … 5=仏滅). Restrained 3-tier coloring — 大安 /
-// 友引 lean auspicious (accent), 仏滅 / 赤口 muted (dim), the split days neutral.
-// A standard カレンダー convention, kept subtle so it reads as annotation, not a
-// personal fortune claim.
 const ROKUYO_TONE = ['good', 'bad', 'mixed', 'good', 'mixed', 'bad'] as const
 
-/** 六曜 strip — JP-only day annotation; rendered above 宜忌 in the ja DayView. */
 function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoStrings }) {
   const { colors, spacing } = useTheme()
   const tone = ROKUYO_TONE[rokuyo.index] ?? 'mixed'
@@ -82,76 +75,34 @@ function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoS
   )
 }
 
-/** Daily hook (语料钩子) — the non-CJK DAU one-liner the push leads with, echoed at
- *  the top of the day-view so opening the notification lands on the same sentence.
- *  en slice; CJK locales keep the 干支日 + 宜忌 lead. */
-function DailyHookHero({ hook }: { hook: { title: string; lens: string } }) {
-  const { colors } = useTheme()
-  // No left rule (read as dated/clip-art) — the headline carries itself as an
-  // editorial lead: a large, tight title with a quiet lens line beneath it.
-  return (
-    <View style={{ gap: 8 }}>
-      <Text
-        style={{
-          color: colors.text,
-          fontSize: 23,
-          fontWeight: '700',
-          lineHeight: 30,
-          letterSpacing: -0.3,
-        }}
-      >
-        {hook.title}
-      </Text>
-      <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 21 }}>{hook.lens}</Text>
-    </View>
-  )
-}
-
 export function DayView({
   payload,
-  afterYiji,
+  pushHook,
+  onPersonalSectionLayout,
+  festivalChip,
 }: {
   payload: AuspiceDayPayload
-  /** Slot rendered directly under 宜忌 (the 重点) — the timeline + make-if CTAs. */
-  afterYiji?: ReactNode
+  /** Daily hook from push payload — rendered atop PersonalCard, not a separate hero. */
+  pushHook?: { title: string; lens: string } | null
+  /** Reports Y offset of the personal zone for scroll-to on notification tap. */
+  onPersonalSectionLayout?: (y: number) => void
+  /** Optional festival / solar-term chip rendered in the almanac zone. */
+  festivalChip?: ReactNode
 }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
   const { width: screenWidth } = useWindowDimensions()
   const { date, day } = payload
-  // 干支日 · 农历 · 年干支 now lives ABOVE the calendar (see app/(tabs)/index.tsx,
-  // DayIdentityHeader) per 2026-06 layout feedback — the calendar's bottom half
-  // leads with 宜忌, the 重点 of a 黄历. DayView itself starts at 宜忌.
   const [explainField, setExplainField] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
-  // Image share: capture a 宜忌 card to a PNG on-device (instant — the old URL
-  // share made iOS block on a cold-Worker OG fetch). The /s/day URL rides along
-  // as the caption for the install funnel.
-  // Pre-warm the capture so tapping share is instant (no 320ms paint+capture
-  // wait). Re-warms when the day changes. The 宜忌 card is light (no Skia), so
-  // keeping it mounted off-screen is cheap.
+  const [exploreOpen, setExploreOpen] = useState(true)
   const { shotRef, capturing, share: shareImage } = useImageShare({ prewarm: true, warmKey: date })
-  const lunar = day.lunarDate
-    ? locale === 'en'
-      ? `Lunar ${day.lunarDate.month}/${day.lunarDate.day}`
-      : `${day.lunarDate.monthName}${day.lunarDate.dayName}`
-    : undefined
-  // Pro gating (Sprint 2 chunk 8). `universe_pro` mirrors into `auspice_pro`
-  // server-side per ADR-0015 §"Universe Bundle", and `useEntitlements` mirrors
-  // that locally too, so checking `auspice_pro` alone covers both purchase paths.
+  const lunar = day.lunarDate ? dayIdentityLunarLabel(day.lunarDate, locale as Locale) : undefined
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
+  const hookShown = pushHook != null
 
-  // The en home leads with the daily-hook hero (its lens line states today's read).
-  // When it's shown, fold PersonalCard's duplicate one-line summary so the screen
-  // doesn't say the same thing twice; the verdict word + 吉色/吉方/吉时 still carry the
-  // card. CJK home has no hook hero, so the summary stays there.
-  const hookShown = locale === 'en' && payload.dailyHook != null
-
-  // 用神 → 吉色/吉方/吉时 — loaded once from local birth info (the /day payload
-  // never carries it; these increments are app-only). 用神 is per-user, so it
-  // outlives a single day; the 吉时 then derives from THIS day's hour pillars.
   const [favEl, setFavEl] = useState<ReturnType<typeof favorableElementOf>>(null)
   useEffect(() => {
     let alive = true
@@ -167,41 +118,49 @@ export function DayView({
     [favEl, day.hours, payload.personalization]
   )
 
+  const cultureId = resolveCultureTargetId(day)
+  const snippet = cultureSnippetForHome(day, locale)
+  const onCultureDay = cultureId !== null
+  const upcomingTagline =
+    snippet && !onCultureDay
+      ? t.cultureUpcomingTerm.replace('{name}', snippet.title)
+      : undefined
+
   return (
     <View style={{ gap: spacing.xl }}>
-      {/* Daily hook (en slice) — the line the push leads with, echoed here so opening
-          the notification lands on the same sentence. CJK locales keep 干支日 + 宜忌. */}
-      {hookShown && payload.dailyHook ? <DailyHookHero hook={payload.dailyHook} /> : null}
+      {/* ── Zone 1: Almanac ── */}
+      <View style={{ gap: spacing.md }}>
+        <SectionLabel>{t.almanacSection}</SectionLabel>
+        {festivalChip}
 
-      {/* 六曜 (JP only) —旧暦-derived calendar annotation Japanese users expect on
-          any カレンダー. Sits above 宜忌 to group the day-quality read together. */}
-      {locale === 'ja' && day.rokuyo && t.rokuyo ? (
-        <RokuyoStrip rokuyo={day.rokuyo} strings={t.rokuyo} />
-      ) : null}
+        {locale === 'ja' && day.rokuyo && t.rokuyo ? (
+          <RokuyoStrip rokuyo={day.rokuyo} strings={t.rokuyo} />
+        ) : null}
 
-      {/* 宜忌 — table-stakes for a 黄历, so it leads the day detail right under the
-          calendar (the 重点), above 对你而言. The day identity (干支日 · 农历 · 年)
-          moved above the calendar. (2026-06 IA feedback.) */}
-      <View>
-        {/* Share the day's 宜忌 as an IMAGE (captured on-device → instant; the
-            old URL share made iOS wait on a cold-Worker OG fetch). */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-          <Pressable
-            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
-            hitSlop={12}
-            accessibilityRole='button'
-            accessibilityLabel='Share'
-            style={{ padding: 4 }}
-          >
-            {/* `Share2` (share-network glyph); make-if uses `GitBranch`, so the
-                two no longer collide. */}
-            <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
-          </Pressable>
+        <View>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <Pressable
+              onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
+              hitSlop={12}
+              accessibilityRole='button'
+              accessibilityLabel='Share'
+              style={{ padding: 4 }}
+            >
+              <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
+            </Pressable>
+          </View>
+          <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
         </View>
-        <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
+
+        <View>
+          <SectionLabel>{t.solarTerm}</SectionLabel>
+          <Text style={{ color: colors.text, fontSize: 14 }}>
+            {localizeSolarTermName(day.solarTerm.prev.name, locale)} ({day.solarTerm.prev.date}) →{' '}
+            {localizeSolarTermName(day.solarTerm.next.name, locale)} ({day.solarTerm.next.date})
+          </Text>
+        </View>
       </View>
 
-      {/* Off-screen capture target for the 宜忌 image share (Skia-free). */}
       {capturing ? (
         <View style={{ position: 'absolute', left: -10000, top: 0 }} pointerEvents='none'>
           <ShareableCard
@@ -216,79 +175,105 @@ export function DayView({
         </View>
       ) : null}
 
-      {/* Timeline + make-if CTAs — directly below 宜忌 (the most-tapped zone) per
-          layout feedback, above 对你而言. */}
-      {afterYiji}
+      {/* ── Zone 2: Personal (push anchor) ── */}
+      <View
+        onLayout={(e) => {
+          onPersonalSectionLayout?.(e.nativeEvent.layout.y)
+        }}
+      >
+        <SectionLabel>{t.personal.forYou}</SectionLabel>
+        {payload.personalization ? (
+          <PersonalCard
+            data={payload.personalization}
+            lucky={lucky}
+            locked={!isPro}
+            pushHook={pushHook}
+            hideSummaryLine={hookShown}
+            onUnlock={() => setPaywallOpen(true)}
+            onDeepRead={() => setExplainField(t.personal.fit[payload.personalization!.fit])}
+          />
+        ) : (
+          <Pressable
+            onPress={() => router.push('/me')}
+            accessibilityRole='button'
+            accessibilityLabel={t.personalEmptyCta}
+            style={({ pressed }) => ({
+              borderRadius: 16,
+              borderWidth: 0.5,
+              borderColor: colors.separator,
+              backgroundColor: colors.card,
+              padding: spacing.lg,
+              gap: spacing.sm,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            {pushHook ? (
+              <View style={{ gap: 4, marginBottom: spacing.xs }}>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+                  {pushHook.title}
+                </Text>
+                <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
+                  {pushHook.lens}
+                </Text>
+              </View>
+            ) : null}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                {t.personal.forYou}
+              </Text>
+              <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+            </View>
+            <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
+              {t.personalEmptyBody}
+            </Text>
+            <Text
+              style={{
+                color: colors.accent,
+                fontSize: 13,
+                fontWeight: '600',
+                letterSpacing: 1,
+                marginTop: 2,
+              }}
+            >
+              {t.personalEmptyCta}
+            </Text>
+          </Pressable>
+        )}
+      </View>
 
-      {/* Honest For-you (Sprint 3.5 / ADR-0020), now the primary Pro wall:
-            - birth set → PersonalCard: 吉/凶/平 verdict free, per-reason locked
-            - no birth → placeholder inviting user to /me to set birth
-          The card NEVER appears as a mocked / static badge — its presence
-          carries information about the user's setup. */}
-      {payload.personalization ? (
-        <PersonalCard
-          data={payload.personalization}
-          lucky={lucky}
-          locked={!isPro}
-          // En home already states today's read in the hook hero above 宜忌 — fold the
-          // duplicate one-line verdict summary here (keep the verdict word + 色/方/时).
-          hideSummaryLine={hookShown}
-          onUnlock={() => setPaywallOpen(true)}
-          // Pro: open the deep LLM reading of today's 对你而言 (ExplainSheet carries
-          // dayMaster, so it's personalized). The verdict is the explain subject.
-          onDeepRead={() => setExplainField(t.personal.fit[payload.personalization!.fit])}
-        />
-      ) : (
-        <Pressable
-          onPress={() => router.push('/me')}
-          accessibilityRole='button'
-          accessibilityLabel={t.personalEmptyCta}
-          style={({ pressed }) => ({
-            borderRadius: 16,
-            borderWidth: 0.5,
-            borderColor: colors.separator,
-            backgroundColor: colors.card,
-            padding: spacing.lg,
-            gap: spacing.sm,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <View
+      {/* ── Zone 3: Explore (expanded by default) ── */}
+      {snippet ? (
+        <View>
+          <Pressable
+            onPress={() => setExploreOpen((v) => !v)}
+            accessibilityRole='button'
+            accessibilityLabel={exploreOpen ? t.exploreCollapse : t.exploreExpand}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
+              marginBottom: exploreOpen ? spacing.sm : 0,
             }}
           >
-            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-              {t.personal.forYou}
-            </Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </View>
-          <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
-            {t.personalEmptyBody}
-          </Text>
-          <Text
-            style={{
-              color: colors.accent,
-              fontSize: 13,
-              fontWeight: '600',
-              letterSpacing: 1,
-              marginTop: 2,
-            }}
-          >
-            {t.personalEmptyCta}
-          </Text>
-        </Pressable>
-      )}
-
-      <View>
-        <SectionLabel>{t.solarTerm}</SectionLabel>
-        <Text style={{ color: colors.text, fontSize: 14 }}>
-          {localizeSolarTermName(day.solarTerm.prev.name, locale)} ({day.solarTerm.prev.date}) →{' '}
-          {localizeSolarTermName(day.solarTerm.next.name, locale)} ({day.solarTerm.next.date})
-        </Text>
-      </View>
+            <SectionLabel>{t.exploreSection}</SectionLabel>
+            <ChevronDownIcon
+              size={16}
+              color={colors.dim}
+              strokeWidth={1.4}
+              style={{ transform: [{ rotate: exploreOpen ? '180deg' : '0deg' }] }}
+            />
+          </Pressable>
+          {exploreOpen ? (
+            <CultureSnippetCard snippet={snippet} upcomingTagline={upcomingTagline} />
+          ) : null}
+        </View>
+      ) : null}
 
       <ExplainSheet
         date={date}
@@ -306,12 +291,8 @@ export function DayView({
   )
 }
 
-/** Chip height (paddingVertical 6·2 + ~15px line + border) — the 宜/忌 label box
- *  matches it so the label centers on the first chip row. */
 const CHIP_HEIGHT = 32
 
-/** 宜 / 忌 chip rows for the shareable image card — fixed ivory palette, verbs
- *  localized. Mirrors the web `/s/day` OG card. */
 function ShareYiJi({
   goodFor,
   avoid,
@@ -325,8 +306,6 @@ function ShareYiJi({
 }) {
   const Row = ({ label, items, color }: { label: string; items: string[]; color: string }) => (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-      {/* Label box matches one chip's height + centers, so 宜/忌 sits on the
-          baseline of the first chip row instead of floating above it. */}
       <View style={{ minWidth: 24, minHeight: CHIP_HEIGHT, justifyContent: 'center' }}>
         <Text style={{ color, fontSize: 17, fontWeight: '700' }}>{label}</Text>
       </View>
@@ -355,9 +334,6 @@ function ShareYiJi({
   )
   return (
     <View style={{ gap: 14 }}>
-      {/* 宜/忌 headings use the modern 五行 hues — emerald-600 (木, growth) for
-          GOOD FOR, red-600 (火, caution) for AVOID. Coherent with the rest of
-          the modernized palette. */}
       <Row label={t.suitable} items={goodFor} color='#16A34A' />
       <Row label={t.avoid} items={avoid} color='#DC2626' />
     </View>

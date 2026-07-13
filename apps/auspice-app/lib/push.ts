@@ -302,45 +302,28 @@ function dailyContent(
   locale: Locale,
   t: ReturnType<typeof getStrings>,
   payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
-  isPro: boolean
+  _isPro: boolean
 ): { title: string; body: string } {
   const d = payload.day
-  // en (daily-hook slice): lead with the personalized corpus hook, NOT the opaque
-  // "Water Pig day" 干支 gloss. Body = the natural-language lens. Mirrors the server
-  // push (renderAuspicePush) so the local fallback shows the identical line.
-  if (locale === 'en' && payload.dailyHook) {
-    return {
-      title: payload.dailyHook.title,
-      body: withPushDisclaimer(locale, payload.dailyHook.lens),
-    }
-  }
-  // Localize the 宜忌 verbs (were leaking raw CJK under en/ja) + locale separators.
   const sep = locale === 'en' ? ', ' : '、'
   const colon = locale === 'en' ? ': ' : '：'
   const loc = (v: string) => localizeYijiVerb(v, locale)
-  const yi = d.goodFor.slice(0, 2).map(loc).join(sep) || '—'
-  const ji = d.avoid.slice(0, 2).map(loc).join(sep) || '—'
-  // The TITLE shouldn't waste itself on the date — the notification already
-  // timestamps itself (founder, 2026-06). Lead with the day label + (Pro) the
-  // personal verdict (the auspice_pro hook); fold a 节气/节日, when today is one, in.
-  // `special` is LOCALIZED (raw CJK 清明/中秋 was leaking into en/ja titles).
+  const yi = d.goodFor.slice(0, 1).map(loc).join(sep) || '—'
+  const ji = d.avoid.slice(0, 1).map(loc).join(sep) || '—'
   const special = d.festivalToday
     ? localizeFestival(d.festivalToday.id, locale, d.festivalToday.name)
     : d.solarTermToday
       ? localizeSolarTermName(d.solarTermToday.name, locale)
       : null
-  // CJK: "庚申日"; en: readable "Metal Monkey day" (bare 干支 is opaque to en readers).
   const dayId = ganzhiDayLabel(d.ganZhi, d.element, locale)
-  // Pro: the title carries the personal verdict, so a 节气 rides in the body.
-  // Free: no verdict, so a 节气 rides in the title (the body stays just 宜忌).
-  const pers = isPro ? payload.personalization : null
-  const title = pers
-    ? `${dayId} · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]}`
-    : special
-      ? `${dayId} · ${special}`
-      : dayId
+  const title = special ? `${dayId} · ${special}` : dayId
   let body = `${t.suitable} ${yi} · ${t.avoid} ${ji}`
-  if (pers && special) body += ` · ${special}`
+  // For-you line when birth is set (verdict + one-line summary). Pro still gates
+  // deeper personalization elsewhere; push mirrors the free takeaway on the card.
+  const pers = payload.personalization
+  if (pers) {
+    body += ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.personal.summary[pers.fit]}`
+  }
   return { title, body: withPushDisclaimer(locale, body) }
 }
 
@@ -374,7 +357,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
       // switch) REPLACES the day's notification instead of stacking a duplicate.
       await Notifications.scheduleNotificationAsync({
         identifier: `${DAILY_ID_PREFIX}${dateStr}`,
-        content: { ...content, data: { day: dateStr } },
+        content: { ...content, data: { day: dateStr, focus: 'personal' } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -440,7 +423,7 @@ export async function fireTestDailyPush(
   // Stable `…dev` id → re-firing REPLACES the prior test instead of stacking.
   await Notifications.scheduleNotificationAsync({
     identifier: `${DAILY_ID_PREFIX}dev`,
-    content: { ...content, data: { day: dateStr, dev: '1' } },
+    content: { ...content, data: { day: dateStr, focus: 'personal', dev: '1' } },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 2,
@@ -524,13 +507,14 @@ export async function purgeStaleNotificationsOnce(): Promise<void> {
  * Returns an unsubscribe fn; also fires for the launch notification (cold start).
  */
 export function addAuspiceNotificationTapListener(
-  onOpen: (target: { day: string | null; route: string | null }) => void
+  onOpen: (target: { day: string | null; route: string | null; focus: string | null }) => void
 ): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data ?? {}
     onOpen({
       day: typeof data.day === 'string' ? data.day : null,
       route: typeof data.route === 'string' ? data.route : null,
+      focus: typeof data.focus === 'string' ? data.focus : null,
     })
   })
   return () => sub.remove()

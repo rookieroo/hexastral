@@ -123,10 +123,14 @@ function RootLayoutInner() {
 
   // Notification tap → deep-link Today to the notification's date.
   useEffect(() => {
-    return addAuspiceNotificationTapListener(({ day, route }) => {
+    return addAuspiceNotificationTapListener(({ day, route, focus }) => {
       if (route) router.push(route as Href)
-      else if (day) router.push({ pathname: '/', params: { day } })
-      else router.push('/')
+      else if (day)
+        router.push({
+          pathname: '/(tabs)',
+          params: focus ? { day, focus } : { day },
+        })
+      else router.push('/(tabs)')
     })
   }, [router])
 
@@ -152,6 +156,7 @@ function RootLayoutInner() {
         <Stack.Screen name='remote-tz' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='timeline' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='makeif' options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name='calendar' options={{ animation: 'slide_from_left' }} />
       </Stack>
     </>
   )

@@ -29,23 +29,16 @@ export function PersonalCard({
   onUnlock,
   onDeepRead,
   hideSummaryLine = false,
+  pushHook,
 }: {
   data: AuspicePersonalization
-  /** 用神 → 吉色/吉方/吉时 — the actionable personal daily increment. Shown for
-   *  everyone (the glanceable daily hook); the per-reason "why" stays the Pro gate.
-   *  Undefined when birth info is missing (then the row is simply omitted). */
   lucky?: LuckyGuide | null
-  /** Free tier: show the verdict + one-line read, gate the per-reason detail. */
   locked?: boolean
   onUnlock?: () => void
-  /** Pro tier: open the LLM deep reading of the day's 对你而言 (the per-reason
-   *  text alone was a dead end — paid users had nowhere deeper to go). */
   onDeepRead?: () => void
-  /** Fold the free one-line takeaway (`summary[fit]`) when another surface on the
-   *  same screen already states today's read — specifically the en daily-hook hero
-   *  above 宜忌, whose lens line says the same thing. The verdict WORD + 吉色/吉方/吉时
-   *  stay (additive, not duplicated). Default false (CJK home has no hook hero). */
   hideSummaryLine?: boolean
+  /** Push landing hook — one line atop the card (from payload.dailyHook). */
+  pushHook?: { title: string; lens: string } | null
 }) {
   const { colors, spacing } = useTheme()
   const { t } = useStrings()
@@ -78,6 +71,12 @@ export function PersonalCard({
         gap: spacing.sm,
       }}
     >
+      {pushHook ? (
+        <View style={{ gap: 4, marginBottom: spacing.xs }}>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{pushHook.title}</Text>
+          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{pushHook.lens}</Text>
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Text style={{ color: colors.secondary, fontSize: 13, letterSpacing: 1, flex: 1 }}>
           {t.personal.forYou}

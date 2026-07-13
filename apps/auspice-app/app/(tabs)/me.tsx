@@ -44,15 +44,20 @@ import {
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
+import { LegalSection } from '@/components/settings/LegalSection'
+import { LibrarySection } from '@/components/settings/LibrarySection'
+import {
+  NotificationsSection,
+  type NotificationToggleItem,
+} from '@/components/settings/NotificationsSection'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
-import { privacyUrl, termsUrl } from '@/lib/config'
 import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -68,7 +73,7 @@ import {
   isTimelineRemindersEnabled,
   setEveningPushEnabled,
 } from '@/lib/push'
-import { type PushTypeMeta, pushTypeById } from '@/lib/pushRegistry'
+import { pushTypeById } from '@/lib/pushRegistry'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
 
 const LOCALES: { key: Locale; label: string }[] = [
@@ -136,56 +141,6 @@ function SectionLabel({ children }: { children: string }) {
     <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
       {children}
     </Text>
-  )
-}
-
-/** One push-notification toggle row — label (+ optional PRO badge / hint) + Switch.
- *  Replaces three near-identical Switch blocks; driven by the `pushToggles` config
- *  which takes its order + PRO flag from lib/pushRegistry (single source of truth). */
-function PushToggleRow({
-  label,
-  hint,
-  value,
-  onToggle,
-  showPro,
-}: {
-  label: string
-  hint?: string
-  value: boolean
-  onToggle: (next: boolean) => void | Promise<void>
-  /** Show the PRO badge — this push type is a Pro perk the user hasn't unlocked. */
-  showPro: boolean
-}) {
-  const { colors, spacing } = useTheme()
-  return (
-    <View>
-      <SectionLabel>{label}</SectionLabel>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: colors.card,
-          borderRadius: 14,
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        <View style={{ flex: 1, gap: 4 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
-            {showPro ? (
-              <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
-            ) : null}
-          </View>
-          {hint ? (
-            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>{hint}</Text>
-          ) : null}
-        </View>
-        <Toggle value={value} onValueChange={onToggle} accent={colors.accent} />
-      </View>
-    </View>
   )
 }
 
@@ -451,15 +406,8 @@ export default function MeScreen() {
   // source of truth), so the three rows render from one config + PushToggleRow
   // instead of three near-identical Switch blocks (the settings tree had grown
   // 层级很深). 生日提醒 isn't here — it's managed per-亲友 on /people.
-  const pushToggles: Array<{
-    id: Extract<PushTypeMeta['id'], 'daily' | 'evening' | 'timeline'>
-    label: string
-    hint?: string
-    value: boolean
-    onToggle: (next: boolean) => void | Promise<void>
-  }> = [
-    { id: 'daily', label: t.dailyPush, value: pushOn, onToggle: togglePush },
-    // 8pm "tomorrow heads-up" — a sub-row of the daily push, so only when it's on.
+  const pushToggles: NotificationToggleItem[] = [
+    { id: 'daily', label: t.dailyPush, value: pushOn, onToggle: togglePush, showPro: false },
     ...(pushOn
       ? [
           {
@@ -468,6 +416,7 @@ export default function MeScreen() {
             hint: t.eveningPushHint,
             value: eveningOn,
             onToggle: toggleEvening,
+            showPro: false,
           },
         ]
       : []),
@@ -477,6 +426,7 @@ export default function MeScreen() {
       hint: t.timelineRemindHint,
       value: timelineRemindOn,
       onToggle: toggleTimelineRemind,
+      showPro: pushTypeById('timeline')?.tier === 'pro' && !isPro,
     },
   ]
 
@@ -488,8 +438,8 @@ export default function MeScreen() {
         keyboardShouldPersistTaps='handled'
         automaticallyAdjustKeyboardInsets
       >
-        {/* No back button + no h1 title — minimalist drill-in. iOS edge-swipe-
-            back + Android system-back handle nav. */}
+        {/* Screen title */}
+        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>{t.settings}</Text>
 
         {/* ── Birth info (single-page form) ── */}
         <View>
@@ -738,108 +688,34 @@ export default function MeScreen() {
           )}
         </View>
 
-        {/* ── 你的命书 — the full personal 合参 deep read (八字 + 紫微). Sits right
-            under the birth form since it's powered by exactly that data; routes to
-            the shared scenario-yuan report engine (the Yuun side of the Yuel/Yuun
-            split). ── */}
-        <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-          <Pressable
-            onPress={() => router.push('/reading' as Href)}
-            accessibilityRole='button'
-            accessibilityLabel={t.personal.readingTitle}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              gap: spacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ color: colors.text, fontSize: 15 }}>{t.personal.readingTitle}</Text>
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                {t.personal.readingHint}
-              </Text>
-            </View>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
-        </View>
+        <LibrarySection />
 
-        {/* ── 亲友生日 + 表盘与桌面组件 drill-ins ── */}
-        <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-          <Pressable
-            onPress={() => router.push('/people' as Href)}
-            accessibilityRole='button'
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              borderBottomWidth: 0.5,
-              borderBottomColor: colors.separator,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t.people.title}</Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
-          {/* Watch & Widgets entry — hidden until production quality is assured:
-              the native widget still renders the chosen 月相 as a flat circle
-              (Skia can't run in WidgetKit; needs pre-rendered skin×phase PNGs,
-              track B / ADR-0023) and no watchOS target ships yet. The /display
-              screen + WatchSettings are kept; restore this row when track B lands.
-          <Pressable
-            onPress={() => router.push('/display' as Href)}
-            accessibilityRole='button'
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t.watchWidgets}</Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
-          */}
-        </View>
+        <NotificationsSection rows={pushToggles} />
 
-        {/* ── 外地时区 (drill-in → /remote-tz) ── */}
-        <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-          <Pressable
-            onPress={() => router.push('/remote-tz' as Href)}
-            accessibilityRole='button'
-            accessibilityLabel={t.remoteTzSection}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t.remoteTzSection}</Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
+        {/* ── Calendars & sync ── */}
+        <View>
+          <SectionLabel>{t.settingsCalendars}</SectionLabel>
+          <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
+            <Pressable
+              onPress={() => router.push('/remote-tz' as Href)}
+              accessibilityRole='button'
+              accessibilityLabel={t.remoteTzSection}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.md,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ color: colors.text, fontSize: 15 }}>{t.remoteTzSection}</Text>
+              <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+            </Pressable>
+          </View>
         </View>
-
-        {/* ── 推送提醒 — registry-driven (daily · 人生节点 Pro · 节假日) ── */}
-        {pushToggles.map((row) => (
-          <PushToggleRow
-            key={row.id}
-            label={row.label}
-            hint={row.hint}
-            value={row.value}
-            onToggle={row.onToggle}
-            showPro={pushTypeById(row.id)?.tier === 'pro' && !isPro}
-          />
-        ))}
 
         {/* ── Apple Calendar subscribe — opens webcal:// in system Calendar ── */}
         <View>
@@ -961,39 +837,7 @@ export default function MeScreen() {
           ) : null}
         </View>
 
-        {/* ── Privacy / Terms (row-style) ── */}
-        <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
-          <Pressable
-            onPress={() => Linking.openURL(privacyUrl(locale)).catch(() => {})}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              borderBottomWidth: 0.5,
-              borderBottomColor: colors.separator,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t.privacy}</Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
-          <Pressable
-            onPress={() => Linking.openURL(termsUrl(locale)).catch(() => {})}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }}>{t.terms}</Text>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
-        </View>
+        <LegalSection />
 
         {/* ── Language (DEV-only) — kept at the very bottom so it never crowds
             the real settings above it. ── */}

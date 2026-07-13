@@ -90,7 +90,7 @@ const INTROS: Record<CultureCategoryKey, LocalizedText> = {
     'zh-Hant':
       '紫微斗數以紫微星為帝星，將百餘顆星曜排布於十二宮，結合四化與流年，推演性格、際遇與運勢走勢，與八字並列為華人社會常見的命理體系。',
     ja: '紫微斗数は紫微星を中心に百余の星を十二宮へ配し、四化と流年で性格・運勢を読む。四柱推命と並ぶ命理体系である。',
-    en: 'Zǐwēi Dǒushù places 100+ stars across twelve palaces, led by the emperor star Zǐwěi — charting temperament and fortune alongside Bazi in Chinese divination.',
+    en: 'Zǐwēi Dǒushù places 100+ stars across twelve palaces, led by the emperor star Zǐwěi — charting temperament and life phases alongside Bazi in the classical chart tradition.',
   },
 }
 
