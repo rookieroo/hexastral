@@ -36,7 +36,10 @@
     "deploy:preflight:api-only": "node scripts/deploy-preflight.cjs --skip-ios",
     "deploy:api": "cd apps/hexastral-api && bun db:generate && bun deploy",
     "dev:services": "turbo dev --filter='./services/*'",
-    "deploy:services": "turbo deploy --filter='./services/*'"
+    "deploy:services": "turbo deploy --filter='./services/*'",
+    "aso:charcount": "node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json",
+    "aso:parity": "node scripts/aso-code-parity.mjs apps/auspice-app/aso-metadata.json",
+    "assert-release-config": "node scripts/assert-release-config.mjs"
   },
   "devDependencies": {
     "@babel/runtime": "^8.0.0-beta.2",

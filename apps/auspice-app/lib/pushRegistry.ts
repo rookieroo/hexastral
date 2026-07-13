@@ -1,17 +1,12 @@
 /**
  * Auspice push registry — the SINGLE source of truth for every notification type.
  *
- * Auspice notifications are 100% LOCAL (expo-notifications, see lib/push.ts): the
- * app fetches server-COMPUTED, deterministic data and schedules a rolling window of
- * local notifications, rescheduled on each app open. There is no server cron and no
- * LLM in any push body — the personalized LLM reading stays in-app (the DAU hook).
+ * Delivery is hybrid: server push via svc-notify cron (primary when registered) with
+ * local expo-notifications as fallback (see lib/push.ts). Daily bodies use
+ * deterministic almanac compute; personalized LLM reading stays in-app.
  *
- * This registry exists because the system had grown several independent layers
- * (daily / birthday / holiday / timeline), each with its own enable flag + Settings
- * row — "层级很深". Driving the Settings list and the gating from ONE typed table
- * keeps them consistent and makes each type's DATA SOURCE + CADENCE + STORAGE
- * explicit, which matters because some data (流月 / 大运) cannot be precomputed for
- * years — it must be fetched just-in-time for a bounded rolling window.
+ * Settings UI drives enable flags from this typed catalog. The `holiday` type
+ * (CN 调休 heads-up) is deprecated — no Settings toggle; kept for migration only.
  */
 
 /** Who can receive a given push type. */
@@ -83,8 +78,10 @@ export const PUSH_TYPES: readonly PushTypeMeta[] = [
     id: 'holiday',
     tier: 'free',
     dataSource: 'static',
-    cadence: 'Deterministic CN holiday/调休 calendar (lib/cn-holidays.ts).',
-    storage: 'A rolling 100-day window of evening-before heads-ups.',
+    cadence:
+      'DEPRECATED (2026-06): CN holiday/调休 evening heads-up — Settings toggle removed. ' +
+      'Scheduler may still purge legacy IDs; do not claim in ASO.',
+    storage: 'Legacy local window only.',
     slots: ['eve-before'],
   },
   {

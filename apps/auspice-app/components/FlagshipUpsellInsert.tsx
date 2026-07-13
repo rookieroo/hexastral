@@ -25,12 +25,12 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
   yuan: {
     'zh-Hans': {
       title: '为这桩喜事合个八字？',
-      body: 'Kindred Kindred · 双人合婚与关系分析',
+      body: 'Kindred · 双人合婚与关系分析',
       cta: '打开 Kindred',
     },
     'zh-Hant': {
       title: '為這樁喜事合個八字？',
-      body: 'Kindred Kindred · 雙人合婚與關係分析',
+      body: 'Kindred · 雙人合婚與關係分析',
       cta: '開啟 Kindred',
     },
     ja: {

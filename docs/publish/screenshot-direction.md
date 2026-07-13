@@ -26,7 +26,7 @@ in <1s).
 | 6.1" | iPhone 15/16 | 1179 × 2556 | optional |
 | 13" iPad | iPad Pro | 2064 × 2752 | only if the app ships an iPad build |
 
-Up to 10 screenshots per locale; we use **6** (Auspice) / **4–5** (satellites).
+Up to 10 screenshots per locale; we use **6** (Yuun / Auspice) / **4–5** (satellites).
 First **3** are what 90% of viewers see in the carousel — front-load the value.
 
 **Frame + overlay style** (matches [decisions/0018-hexastral-design-language.md](decisions/0018-hexastral-design-language.md)):
@@ -54,7 +54,7 @@ First **3** are what 90% of viewers see in the carousel — front-load the value
 
 ---
 
-## 1. Auspice — Chinese Calendar (HERO deck, 7 shots)
+## 1. Auspice — Chinese Calendar (HERO deck, 6 shots)
 
 Background tint: warm paper / ink (almanac register, not mystical).
 Positioning: an honest **Chinese almanac (黄历)** with daily yi/ji — disclosed,
@@ -67,13 +67,14 @@ with it. Same honest register as S5: "a study, not a prediction."
 
 | # | Screen | Visual notes |
 | --- | --- | --- |
-| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Header shows Calendar + Settings icons. |
-| S2 | **Calendar secondary** (`/calendar`) | Full month grid: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; "Open in Today" CTA visible. |
-| S3 | 24 solar-terms timeline (节庆 tab) | Horizontal year timeline, one 节气 expanded into food/poetry/wellness depth. |
+| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Title-only header; **bottom text hints** for Calendar (left) and Settings (right) — no header icons. |
+| S2 | **Calendar secondary** (`/calendar`) | Full month grid: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; Today pill / left-swipe back visible. |
+| S3 | 24 solar terms (Settings → Library → `/glossary`) | Glossary or festival detail — one 节气 expanded into food/poetry/wellness depth. |
 | S4 | Family events | Member list with an upcoming 农历 birthday + reminder toggle. The diaspora hook. |
 | S5 | Ba Zi life timeline (Pro) | The 大运/流年 git-graph with one what-if branch. Caption MUST carry "reflection, not prediction." |
 | S6 | Personal chart deep-read (Pro) | The 宣纸 "命书" report — identity line + chaptered reading (who you are / current period / …), one 八字+紫微 chart visible. Cultural/reflective register; NO mystic motifs. Caption MUST carry "a study, not a prediction." |
-| S7 | Widget + Watch | Home-screen widget × (small/medium/lock) and the Watch complication on a wrist. |
+
+**Post-v1 (not in default review deck):** Widget + Watch — see [widget-watch-scope.md](../apps/yuun/widget-watch-scope.md). Use Custom Product Pages if needed before native ship.
 
 **Captions**
 
@@ -88,7 +89,6 @@ with it. Same honest register as S5: "a study, not a prediction."
 | S5 sub | A reflection — not a prediction | 供观照，不作预测 | 供觀照，不作預測 | 予測ではなく、内省のために |
 | S6 | Your chart, read in depth | 你的命盘，深读一层 | 你的命盤，深讀一層 | 命式を、深く読む |
 | S6 sub | Ba Zi & Zi Wei — a study, not a prediction | 八字 · 紫微——研读，不作预测 | 八字 · 紫微——研讀，不作預測 | 四柱推命・紫微斗数 —— 予測ではなく内省 |
-| S7 | On your home screen & wrist | 主屏与手腕，随时一瞥 | 主屏與手腕，隨時一瞥 | ホーム画面と、手首に |
 
 ---
 

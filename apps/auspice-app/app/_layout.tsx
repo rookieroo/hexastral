@@ -147,7 +147,7 @@ function RootLayoutInner() {
         <Stack.Screen name='index' />
         <Stack.Screen name='welcome' options={{ animation: 'fade' }} />
         <Stack.Screen name='(tabs)' />
-        <Stack.Screen name='display' options={{ animation: 'slide_from_right' }} />
+        {/* /display (Widget & Watch) hidden until native targets ship — see widget-watch-scope.md */}
         <Stack.Screen name='event' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='festival/[id]' options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name='glossary' options={{ animation: 'slide_from_right' }} />

@@ -4,7 +4,7 @@ Navigation SSOT for the Today-first home pivot. Code truth: `apps/auspice-app/`.
 
 ## Positioning
 
-**Yuun is a Chinese almanac (中华黄历).** Daily yi/ji (宜忌), solar terms, lunar dates, and an optional personal layer (For you) from your birth chart. We disclose 黄历 honestly — yi/ji is not hidden behind a generic "calendar utility" frame.
+**Yuun is a Chinese almanac (中华黄历).** Daily yi/ji (宜忌), solar terms, lunisolar dates, and an optional personal layer (For you) from your birth chart. We disclose 黄历 honestly — yi/ji is not hidden behind a generic "calendar utility" frame.
 
 Compliance register: cultural reference and personal reflection only; not prediction or professional advice. See Terms §3 and in-app `legalDisclaimerShort`.
 
@@ -15,15 +15,16 @@ Compliance register: cultural reference and personal reflection only; not predic
 | **Today** | `/(tabs)/` | Week strip + yi/ji + For you (push anchor) |
 | **Calendar** | `/calendar` | Full month grid (secondary) |
 | **Settings** | `/(tabs)/me` | Profile, Library, Notifications, Calendars, Legal |
+| Swipe right on Today | → Calendar | `slide_from_left` animation |
 | Swipe left on Today | → Settings | ADR-0018 `SWIPE_TO_ME` preserved |
 
-No bottom tab bar. Today header: title only. **Swipe right → Calendar**; **swipe left → Settings**. Bottom hints (text only): Calendar on the left, Settings on the right — matching where each screen enters from.
+No bottom tab bar. Today header: title only. Bottom hints (text only): **Calendar on the left, Settings on the right** — matching where each screen enters from.
 
 ## Today zones
 
 1. **Almanac** — yi/ji, share, solar term, festival chip
 2. **Personal** — For you card (or birth CTA); push lands here via `?focus=personal`
-3. **Explore** — collapsed by default; today's culture snippet only
+3. **Explore** — **expanded by default**; today's culture snippet
 
 ## Settings groups
 
@@ -35,7 +36,7 @@ No bottom tab bar. Today header: title only. **Swipe right → Calendar**; **swi
 
 ## Lunar display
 
-UI locale ≠ lunar visibility. All locales see lunar dates; en uses compact labels (`L5`) and no rating cell shading. See `lib/calendar-display.ts`.
+UI locale ≠ lunar visibility. All locales see lunisolar day names (初一, … or localized). Solar terms localized per locale (`lib/calendar-display.ts`). en skips rating cell shading only.
 
 ## Push
 
@@ -43,13 +44,8 @@ Morning daily: title (干支/festival) + yi/ji summary + optional For you line. 
 
 ## Device smoke (pre-submit)
 
-1. Today: default today → yi/ji → For you; week strip switches dates
-2. Calendar secondary: pick a distant day → preview → Open in Today
-3. Settings: Library six entries reachable; push toggles still work
-4. en locale: month grid shows compact lunar (`L5`); no rating cell shading
-5. Push tap → scrolls to For you; hook appears once on PersonalCard
-6. Deep links `?day=` / Kindred compose / notification route do not regress
+See [pre-submit-smoke.md](./pre-submit-smoke.md).
 
 ## ASC / screenshots
 
-S1 = Today yi/ji + For you. S2 = Calendar month grid. See [screenshot-direction.md](../../publish/screenshot-direction.md) §1.
+S1 = Today yi/ji + For you + swipe hints. S2 = Calendar month grid. 6-shot deck — no Widget/Watch. See [screenshot-direction.md](../../publish/screenshot-direction.md) §1.
