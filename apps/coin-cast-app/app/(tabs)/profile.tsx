@@ -35,12 +35,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MeDevTools } from '@/components/MeDevTools'
 import { COIN_FACE_SOURCES } from '@/lib/coin-skin-assets'
 import {
-  COIN_SKIN_IDS,
+  COIN_DYNASTY_IDS,
   COIN_SKIN_PRESETS,
   DEFAULT_COIN_SKIN_ID,
   type CoinSkinId,
+  type CoinSkinStyle,
+  coinSkinIdFor,
+  dynastyFromSkinId,
   getCoinSkinId,
   setCoinSkinId,
+  styleFromSkinId,
 } from '@/lib/coin-skins'
 import {
   getCastHapticsEnabled,
@@ -77,6 +81,7 @@ export default function CoinCastProfileScreen() {
   const [haptics, setHaptics] = useState(true)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
+  const skinStyle: CoinSkinStyle = styleFromSkinId(skinId)
   const [memoryEnabled, setMemoryEnabled] = useState(false)
   const [memorySaving, setMemorySaving] = useState(false)
   const [memoryLoaded, setMemoryLoaded] = useState(false)
@@ -420,7 +425,7 @@ export default function CoinCastProfileScreen() {
               )}
         </View>
 
-        {/* Coin skins */}
+        {/* Coin skins — ink / rubbing / seal */}
         <View style={[cardStyle, { paddingBottom: spacing.sm }]}>
           <Text
             style={{
@@ -433,16 +438,72 @@ export default function CoinCastProfileScreen() {
           >
             {t('settingsCoinSkinLabel').toUpperCase()}
           </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 8,
+              marginBottom: spacing.sm,
+            }}
+          >
+            {(
+              [
+                { style: 'ink' as const, labelKey: 'settingsCoinSkinStyleInk' as const },
+                { style: 'rubbing' as const, labelKey: 'settingsCoinSkinStyleRubbing' as const },
+                { style: 'seal' as const, labelKey: 'settingsCoinSkinStyleSeal' as const },
+              ] as const
+            ).map(({ style, labelKey }) => {
+              const active = skinStyle === style
+              return (
+                <Pressable
+                  key={style}
+                  onPress={() => {
+                    if (skinStyle === style) return
+                    void haptic('light')
+                    const next = coinSkinIdFor(dynastyFromSkinId(skinId), style)
+                    setSkinId(next)
+                    void setCoinSkinId(next)
+                  }}
+                  accessibilityRole='button'
+                  accessibilityState={{ selected: active }}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 8,
+                    borderWidth: 0.5,
+                    borderColor: active ? colors.accent : colors.separator,
+                    backgroundColor: active ? colors.bg : 'transparent',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: active ? colors.accent : colors.secondary,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {t(labelKey)}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
           <Text
             style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm }}
           >
-            {t('settingsCoinSkinHint')}
+            {t(
+              skinStyle === 'ink'
+                ? 'settingsCoinSkinHintInk'
+                : skinStyle === 'rubbing'
+                  ? 'settingsCoinSkinHintRubbing'
+                  : 'settingsCoinSkinHintSeal'
+            )}
           </Text>
-          {COIN_SKIN_IDS.map((id, index) => {
+          {COIN_DYNASTY_IDS.map((dynastyId, index) => {
+            const id = coinSkinIdFor(dynastyId, skinStyle)
             const preset = COIN_SKIN_PRESETS[id]
             const label = t(preset.labelKey as SatelliteLocaleKey)
             const selected = skinId === id
-            const last = index === COIN_SKIN_IDS.length - 1
+            const last = index === COIN_DYNASTY_IDS.length - 1
             return (
               <Pressable
                 key={id}
@@ -462,17 +523,26 @@ export default function CoinCastProfileScreen() {
                   borderBottomColor: colors.separator,
                 }}
               >
-                <Image
-                  source={COIN_FACE_SOURCES[id]}
+                <View
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
                     borderWidth: 0.5,
                     borderColor: colors.separator,
+                    backgroundColor: colors.bg,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                  accessibilityIgnoresInvertColors
-                />
+                >
+                  <Image
+                    source={COIN_FACE_SOURCES[id]}
+                    style={{ width: 36, height: 36 }}
+                    resizeMode='contain'
+                    accessibilityIgnoresInvertColors
+                  />
+                </View>
                 <Text style={{ flex: 1, color: colors.text, fontSize: 15 }}>{label}</Text>
                 {selected ? <Check size={18} color={colors.accent} strokeWidth={2} /> : null}
               </Pressable>

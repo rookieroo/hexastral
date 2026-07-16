@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>秦半两 · v10h 纸本 + 印章</title>
+<style>
+:root { --bg:#0c0b0a; --fg:#e8e0d0; --muted:#8a8070; --accent:#c4a060; }
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:"LXGW WenKai","Songti SC","Noto Serif SC",serif; color:var(--fg);
+  background:radial-gradient(90% 70% at 50% -10%,#2a2620 0%,#181612 45%,var(--bg) 100%);
+  padding:32px 16px 72px;
+}
+header { max-width:44em; margin:0 auto 18px; text-align:center; }
+h1 { margin:0 0 10px; letter-spacing:.36em; color:var(--accent); font-size:clamp(22px,4vw,30px); font-weight:600; }
+.lede { margin:0; color:var(--muted); font-size:14px; line-height:1.85; text-align:left; }
+.ref { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; max-width:720px; margin:16px auto; }
+.ref figure { margin:0; text-align:center; }
+.ref img { width:min(180px,40vw); height:auto; filter:drop-shadow(0 12px 28px rgba(0,0,0,.5)); }
+.ref figcaption { margin-top:8px; font-size:12px; letter-spacing:.16em; color:var(--accent); }
+.tabs { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:20px 0; }
+.tabs button {
+  appearance:none; border:1px solid #3a342c; background:transparent; color:var(--muted);
+  font:inherit; letter-spacing:.2em; font-size:13px; padding:10px 16px; cursor:pointer;
+}
+.tabs button[aria-selected="true"] { color:var(--accent); border-color:var(--accent); }
+.stage { display:grid; place-items:center; }
+.panel { display:none; text-align:center; }
+.panel.active { display:block; }
+.panel img.coin { width:min(440px,90vw); height:auto; filter:drop-shadow(0 20px 44px rgba(0,0,0,.55)); }
+.note { max-width:38em; margin:14px auto 0; color:#9a9080; font-size:13px; line-height:1.75; }
+.grid3 { display:none; gap:16px; justify-content:center; flex-wrap:wrap; max-width:900px; margin:24px auto 0; }
+.grid3.show { display:flex; }
+.card { flex:1 1 200px; max-width:240px; text-align:center; }
+.card h3 { margin:0 0 8px; letter-spacing:.2em; color:var(--accent); font-size:13px; }
+.card img { width:100%; }
+details { max-width:920px; margin:36px auto 0; border:1px solid #2e2a24; background:rgba(0,0,0,.28); padding:14px 16px; }
+details summary { cursor:pointer; letter-spacing:.16em; color:var(--accent); }
+.masks { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); margin-top:12px; }
+.masks figure { margin:0; }
+.masks img { width:100%; border:1px solid #222; display:block; background:#111; }
+.masks figcaption { font-size:11px; color:#8a8070; margin-top:6px; }
+footer { margin-top:36px; text-align:center; color:#5a5248; font-size:12px; letter-spacing:.1em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>秦半两</h1>
+  <p class="lede">v10h · 纹路即底：纸本直接铺<strong>碑拓墨海</strong>裁切，印章直接铺<strong>印泥膏面</strong>；不再在纯色上叠随机噪点。实图坑洼仅 3–4% 轻压印。</p>
+</header>
+
+<div class="ref">
+  <figure><img src="textures/study/coins-v10/banliang-photo.png" alt="" /><figcaption>实图</figcaption></figure>
+  <figure><img src="textures/study/coins-v10/mask-glyph.png" alt="" /><figcaption>篆文掩膜</figcaption></figure>
+</div>
+
+<div class="tabs" role="tablist">
+  <button type="button" data-tab="paper" aria-selected="true">纸本</button>
+  <button type="button" data-tab="seal" aria-selected="false">印章</button>
+  <button type="button" data-tab="all" aria-selected="false">并排</button>
+</div>
+
+<div class="stage" id="stage">
+  <div class="panel active" id="panel-paper">
+    <img class="coin" src="textures/study/coins-v10/banliang-paper.png" alt="" />
+    <p class="note">九成宫拓片墨海裁切为底（纸纤维 + 墨渍走向）；硬白字口。</p>
+  </div>
+  <div class="panel" id="panel-seal">
+    <img class="coin" src="textures/study/coins-v10/banliang-seal.png" alt="" />
+    <p class="note">瓷盒朱红膏面为底（厚薄不匀）；硬切字口。</p>
+  </div>
+</div>
+
+<div class="grid3" id="grid-all">
+  <div class="card"><h3>实图</h3><img src="textures/study/coins-v10/banliang-photo.png" alt="" /></div>
+  <div class="card"><h3>纸本</h3><img src="textures/study/coins-v10/banliang-paper.png" alt="" /></div>
+  <div class="card"><h3>印章</h3><img src="textures/study/coins-v10/banliang-seal.png" alt="" /></div>
+</div>
+
+<details open>
+  <summary>结构掩膜</summary>
+  <div class="masks">
+    <figure><img src="textures/study/coins-v10/mask-glyph.png" alt="" /><figcaption>篆文（含两左框）</figcaption></figure>
+  </div>
+</details>
+<footer>v10h · 纸本 + 印章</footer>
+<script>
+const panels = { paper: document.getElementById('panel-paper'), seal: document.getElementById('panel-seal') };
+const stage = document.getElementById('stage'); const grid = document.getElementById('grid-all');
+document.querySelectorAll('.tabs button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+    if (tab === 'all') { stage.style.display='none'; grid.classList.add('show'); }
+    else { stage.style.display=''; grid.classList.remove('show'); Object.entries(panels).forEach(([k,el]) => el.classList.toggle('active', k===tab)); }
+  });
+});
+</script>
+</body>
+</html>

@@ -29,7 +29,7 @@ Growth satellite — standalone I Ching oracle with 3D coin casting and portfoli
 
 > Rigorous 易经 companion — real coin physics, classical line rules (6/7/8/9), and cited commentary. Study tool + journal framing, not generic fortune spam.
 
-**Visual:** Zinc structural UI + ink-wash accents; ink-stone altar + inscription coin caps (no yao bars on caps).
+**Visual:** Zinc structural UI; ink-stone altar; photo-textured 五帝钱 caps from `source.png` (no yao bars on caps).
 
 **Brand mark:** `docs/design/coins/coincast-mark-three.svg` (三枚方孔钱) · `wu-zhu.svg` (单枚参考). Regenerate app icons: `node apps/coin-cast-app/scripts/gen-brand-assets.mjs` (needs `rsvg-convert`).
 

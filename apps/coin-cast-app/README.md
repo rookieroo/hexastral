@@ -12,4 +12,8 @@ cd apps/coin-cast-app && bun dev
 
 **Brand icons:** `node scripts/gen-brand-assets.mjs` (writes `docs/design/coins/*.svg` + `assets/*.png`; needs `rsvg-convert`).
 
-**五帝钱皮肤:** `node scripts/gen-wudi-coin-faces.mjs` — 水墨印章矢量临摹（`scripts/wudi-coins.mjs`，布局参考 `assets/coins/source.png`；需 `rsvg-convert`，通宝钱文最好装 `LXGW WenKai`）。每枚生成 `faces/<id>.png`（正面/字面）与 `faces/<id>-back.png`（背面/幕面·光背星月）。摇卦时字面朝上为阴(2)、幕面朝上为阳(3)：正面挂底盖(−Y)、背面挂顶盖(+Y)，见 `lib/coin-skins.ts`。
+**五帝钱皮肤（三主题）:**
+- 生成：`python3 scripts/design-wudi-themes.py` → `faces/<id>-{ink,rubbing,seal}.png` (+ `-back`, `-bump`)
+- 汉五铢设计稿实验：`python3 scripts/design-wuzhu-themes.py` → `assets/coins/experiments/wuzhu-design/`
+
+设置里切换「水墨 / 碑拓 / 印章」。默认 `han-wuzhu-ink`。摇卦时字面朝上为阴(2)、幕面朝上为阳(3)，见 `lib/coin-skins.ts`。
