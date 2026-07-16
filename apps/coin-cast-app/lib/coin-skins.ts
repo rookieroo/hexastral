@@ -135,11 +135,16 @@ export function applyContainTextureMapping(
   texture.needsUpdate = true
 }
 
+/**
+ * Cap faces use PNG alpha on `map` for the disc + square hole.
+ * Do NOT set `alphaMap` from a color texture — Three.js samples the green
+ * channel of alphaMap, and sRGB decoding on bronze greens makes the coin
+ * nearly invisible on the dark casting stage.
+ */
 function buildMaterialsFromMaps(
   obverseMap: THREE.Texture,
   reverseMap: THREE.Texture,
-  bumpMap: THREE.Texture,
-  alphaMap: THREE.Texture
+  bumpMap: THREE.Texture
 ): THREE.MeshStandardMaterial[] {
   const preset = LOGO_COIN_SURFACE
   const { edgeMap } = createCoinEdgeTextures({
@@ -161,9 +166,9 @@ function buildMaterialsFromMaps(
       map: reverseMap,
       bumpMap,
       bumpScale: preset.bumpScale * 0.55,
-      alphaMap,
       transparent: true,
-      alphaTest: 0.06,
+      alphaTest: 0.45,
+      depthWrite: true,
       roughness: preset.yangRoughness,
       metalness: preset.yangMetalness,
     }),
@@ -172,9 +177,9 @@ function buildMaterialsFromMaps(
       map: obverseMap,
       bumpMap,
       bumpScale: preset.bumpScale,
-      alphaMap,
       transparent: true,
-      alphaTest: 0.06,
+      alphaTest: 0.45,
+      depthWrite: true,
       roughness: preset.yinRoughness,
       metalness: preset.yinMetalness,
     }),
@@ -185,7 +190,6 @@ async function loadLogoTextures(): Promise<{
   obverse: THREE.Texture
   reverse: THREE.Texture
   bump: THREE.Texture
-  alpha: THREE.Texture
 }> {
   const { loadAsync } = await import('expo-three')
   const [obverse, reverse, bump] = await Promise.all([
@@ -196,9 +200,7 @@ async function loadLogoTextures(): Promise<{
   configureCapTexture(obverse)
   configureCapTexture(reverse)
   configureBumpTexture(bump)
-  const alpha = obverse.clone()
-  configureCapTexture(alpha)
-  return { obverse, reverse, bump, alpha }
+  return { obverse, reverse, bump }
 }
 
 /** Load cap materials for logo default or a user-uploaded face (contain fit, no crop). */
@@ -227,12 +229,7 @@ export async function loadCoinSkinMaterials(
       reverseMap = custom
     }
 
-    const materials = buildMaterialsFromMaps(
-      obverseMap,
-      reverseMap,
-      logo.bump,
-      logo.alpha
-    )
+    const materials = buildMaterialsFromMaps(obverseMap, reverseMap, logo.bump)
     materialCache.set(key, materials)
     return materials
   })()
@@ -240,16 +237,17 @@ export async function loadCoinSkinMaterials(
   loadCache.set(key, promise)
   try {
     return await promise
+  } catch (err) {
+    console.warn('[coin-skins] load failed, falling back to solid bronze', err)
+    const fallback = createSolidBronzeMaterials()
+    materialCache.set(key, fallback)
+    return fallback
   } finally {
     loadCache.delete(key)
   }
 }
 
-/** @deprecated Use `loadCoinSkinMaterials`. */
-export function createCoinSkinMaterials(): THREE.MeshStandardMaterial[] {
-  const cached = materialCache.get('logo')
-  if (cached) return cached
-  void loadCoinSkinMaterials(DEFAULT_COIN_SKIN)
+function createSolidBronzeMaterials(): THREE.MeshStandardMaterial[] {
   const preset = LOGO_COIN_SURFACE
   const { edgeMap } = createCoinEdgeTextures({
     id: 'logo',
@@ -275,6 +273,14 @@ export function createCoinSkinMaterials(): THREE.MeshStandardMaterial[] {
       metalness: preset.yinMetalness,
     }),
   ]
+}
+
+/** @deprecated Use `loadCoinSkinMaterials`. */
+export function createCoinSkinMaterials(): THREE.MeshStandardMaterial[] {
+  const cached = materialCache.get('logo')
+  if (cached) return cached
+  void loadCoinSkinMaterials(DEFAULT_COIN_SKIN)
+  return createSolidBronzeMaterials()
 }
 
 /** Clear GPU material cache after skin change. */

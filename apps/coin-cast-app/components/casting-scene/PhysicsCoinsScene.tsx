@@ -232,9 +232,13 @@ function useCastingTextures(coinSkinConfig: CoinSkinConfig): {
 
   useEffect(() => {
     let cancelled = false
-    void loadCoinSkinMaterials(coinSkinConfig).then((materials) => {
-      if (!cancelled) setCoinMaterials(materials)
-    })
+    void loadCoinSkinMaterials(coinSkinConfig)
+      .then((materials) => {
+        if (!cancelled) setCoinMaterials(materials)
+      })
+      .catch((err: unknown) => {
+        console.warn('[PhysicsCoinsScene] coin skin load failed', err)
+      })
     return () => {
       cancelled = true
     }

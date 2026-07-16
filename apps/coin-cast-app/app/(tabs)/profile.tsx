@@ -505,6 +505,9 @@ export default function CoinCastProfileScreen() {
                   invalidateCoinSkinMaterialCache()
                   setSkinConfig(next)
                   await setCoinSkinConfig(next)
+                } catch (err) {
+                  console.warn('[profile] coin skin upload failed', err)
+                  Alert.alert(t('settingsCoinSkinUploadFailedTitle'), t('settingsCoinSkinUploadFailedBody'))
                 } finally {
                   setSkinUploading(false)
                 }
