@@ -33,19 +33,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MeDevTools } from '@/components/MeDevTools'
-import { COIN_FACE_SOURCES } from '@/lib/coin-skin-assets'
+import { LOGO_COIN_FACE } from '@/lib/coin-skin-assets'
 import {
-  COIN_DYNASTY_IDS,
-  COIN_SKIN_PRESETS,
-  DEFAULT_COIN_SKIN_ID,
-  type CoinSkinId,
-  type CoinSkinStyle,
-  coinSkinIdFor,
-  dynastyFromSkinId,
-  getCoinSkinId,
-  setCoinSkinId,
-  styleFromSkinId,
+  DEFAULT_COIN_SKIN,
+  type CoinSkinConfig,
+  getCoinSkinConfig,
+  invalidateCoinSkinMaterialCache,
+  setCoinSkinConfig,
 } from '@/lib/coin-skins'
+import {
+  deleteCustomCoinFaceUri,
+  pickCustomCoinFaceUri,
+} from '@/lib/coin-skin-upload'
 import {
   getCastHapticsEnabled,
   getMotionShakeEnabled,
@@ -59,7 +58,7 @@ import {
   yaulPrivacyUrl,
   yaulTermsUrl,
 } from '@/lib/growth-config'
-import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
+import { useSatelliteI18n } from '@/lib/i18n'
 
 type Session = 'loading' | 'out' | 'in'
 
@@ -80,8 +79,8 @@ export default function CoinCastProfileScreen() {
   const [motion, setMotion] = useState(true)
   const [haptics, setHaptics] = useState(true)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
-  const [skinId, setSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
-  const skinStyle: CoinSkinStyle = styleFromSkinId(skinId)
+  const [skinConfig, setSkinConfig] = useState<CoinSkinConfig>(DEFAULT_COIN_SKIN)
+  const [skinUploading, setSkinUploading] = useState(false)
   const [memoryEnabled, setMemoryEnabled] = useState(false)
   const [memorySaving, setMemorySaving] = useState(false)
   const [memoryLoaded, setMemoryLoaded] = useState(false)
@@ -123,11 +122,11 @@ export default function CoinCastProfileScreen() {
         const [motionOn, hapticsOn, skin] = await Promise.all([
           getMotionShakeEnabled(),
           getCastHapticsEnabled(),
-          getCoinSkinId(),
+          getCoinSkinConfig(),
         ])
         setMotion(motionOn)
         setHaptics(hapticsOn)
-        setSkinId(skin)
+        setSkinConfig(skin)
         setPrefsLoaded(true)
         const userId = await getPortfolioUserId()
         if (userId) {
@@ -425,7 +424,7 @@ export default function CoinCastProfileScreen() {
               )}
         </View>
 
-        {/* Coin skins — ink / rubbing / seal */}
+        {/* Coin skins — paper / seal */}
         <View style={[cardStyle, { paddingBottom: spacing.sm }]}>
           <Text
             style={{
@@ -438,116 +437,123 @@ export default function CoinCastProfileScreen() {
           >
             {t('settingsCoinSkinLabel').toUpperCase()}
           </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 8,
-              marginBottom: spacing.sm,
-            }}
-          >
-            {(
-              [
-                { style: 'ink' as const, labelKey: 'settingsCoinSkinStyleInk' as const },
-                { style: 'rubbing' as const, labelKey: 'settingsCoinSkinStyleRubbing' as const },
-                { style: 'seal' as const, labelKey: 'settingsCoinSkinStyleSeal' as const },
-              ] as const
-            ).map(({ style, labelKey }) => {
-              const active = skinStyle === style
-              return (
-                <Pressable
-                  key={style}
-                  onPress={() => {
-                    if (skinStyle === style) return
-                    void haptic('light')
-                    const next = coinSkinIdFor(dynastyFromSkinId(skinId), style)
-                    setSkinId(next)
-                    void setCoinSkinId(next)
-                  }}
-                  accessibilityRole='button'
-                  accessibilityState={{ selected: active }}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 8,
-                    borderWidth: 0.5,
-                    borderColor: active ? colors.accent : colors.separator,
-                    backgroundColor: active ? colors.bg : 'transparent',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: active ? colors.accent : colors.secondary,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {t(labelKey)}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
           <Text
             style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm }}
           >
-            {t(
-              skinStyle === 'ink'
-                ? 'settingsCoinSkinHintInk'
-                : skinStyle === 'rubbing'
-                  ? 'settingsCoinSkinHintRubbing'
-                  : 'settingsCoinSkinHintSeal'
-            )}
+            {t('settingsCoinSkinHint')}
           </Text>
-          {COIN_DYNASTY_IDS.map((dynastyId, index) => {
-            const id = coinSkinIdFor(dynastyId, skinStyle)
-            const preset = COIN_SKIN_PRESETS[id]
-            const label = t(preset.labelKey as SatelliteLocaleKey)
-            const selected = skinId === id
-            const last = index === COIN_DYNASTY_IDS.length - 1
-            return (
-              <Pressable
-                key={id}
-                onPress={() => {
-                  void haptic('light')
-                  setSkinId(id)
-                  void setCoinSkinId(id)
-                }}
-                accessibilityRole='button'
-                accessibilityState={{ selected }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: spacing.md,
-                  borderBottomWidth: last ? 0 : 0.5,
-                  borderBottomColor: colors.separator,
-                }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    borderWidth: 0.5,
-                    borderColor: colors.separator,
-                    backgroundColor: colors.bg,
-                    overflow: 'hidden',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Image
-                    source={COIN_FACE_SOURCES[id]}
-                    style={{ width: 36, height: 36 }}
-                    resizeMode='contain'
-                    accessibilityIgnoresInvertColors
-                  />
-                </View>
-                <Text style={{ flex: 1, color: colors.text, fontSize: 15 }}>{label}</Text>
-                {selected ? <Check size={18} color={colors.accent} strokeWidth={2} /> : null}
-              </Pressable>
-            )
-          })}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: spacing.md,
+              borderBottomWidth: 0.5,
+              borderBottomColor: colors.separator,
+            }}
+          >
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                borderWidth: 0.5,
+                borderColor: colors.separator,
+                backgroundColor: colors.bg,
+                overflow: 'hidden',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Image
+                source={
+                  skinConfig.mode === 'custom' && skinConfig.customObverseUri
+                    ? { uri: skinConfig.customObverseUri }
+                    : LOGO_COIN_FACE
+                }
+                style={{ width: 44, height: 44 }}
+                resizeMode='contain'
+                accessibilityIgnoresInvertColors
+              />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 15 }}>
+                {skinConfig.mode === 'custom'
+                  ? t('settingsCoinSkinCustomActive')
+                  : t('settingsCoinSkinDefault')}
+              </Text>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 16 }}>
+                {t('settingsCoinSkinUploadHint')}
+              </Text>
+            </View>
+            {skinConfig.mode === 'logo' ? (
+              <Check size={18} color={colors.accent} strokeWidth={2} />
+            ) : null}
+          </View>
+          <Pressable
+            onPress={() => {
+              void haptic('light')
+              void (async () => {
+                setSkinUploading(true)
+                try {
+                  const uri = await pickCustomCoinFaceUri()
+                  if (!uri) return
+                  if (skinConfig.customObverseUri) {
+                    await deleteCustomCoinFaceUri(skinConfig.customObverseUri)
+                  }
+                  const next: CoinSkinConfig = { mode: 'custom', customObverseUri: uri }
+                  invalidateCoinSkinMaterialCache()
+                  setSkinConfig(next)
+                  await setCoinSkinConfig(next)
+                } finally {
+                  setSkinUploading(false)
+                }
+              })()
+            }}
+            disabled={skinUploading}
+            accessibilityRole='button'
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: spacing.md,
+              borderBottomWidth: 0.5,
+              borderBottomColor: colors.separator,
+              opacity: skinUploading ? 0.5 : 1,
+            }}
+          >
+            <Text style={{ flex: 1, color: colors.text, fontSize: 15 }}>
+              {skinUploading ? t('settingsCoinSkinUploading') : t('settingsCoinSkinUpload')}
+            </Text>
+            {skinUploading ? (
+              <ActivityIndicator size='small' color={colors.accent} />
+            ) : (
+              <ChevronRight size={18} color={colors.dim} strokeWidth={2} />
+            )}
+          </Pressable>
+          {skinConfig.mode === 'custom' ? (
+            <Pressable
+              onPress={() => {
+                void haptic('light')
+                void (async () => {
+                  await deleteCustomCoinFaceUri(skinConfig.customObverseUri)
+                  invalidateCoinSkinMaterialCache()
+                  setSkinConfig(DEFAULT_COIN_SKIN)
+                  await setCoinSkinConfig(DEFAULT_COIN_SKIN)
+                })()
+              }}
+              accessibilityRole='button'
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: spacing.md,
+              }}
+            >
+              <Text style={{ flex: 1, color: colors.accent, fontSize: 15 }}>
+                {t('settingsCoinSkinReset')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {__DEV__ ? (

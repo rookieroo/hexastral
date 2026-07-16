@@ -50,7 +50,11 @@ import {
   seedUInt32FromHashHex,
 } from '@/lib/casting-entropy'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
-import { type CoinSkinId, DEFAULT_COIN_SKIN_ID, getCoinSkinId } from '@/lib/coin-skins'
+import {
+  type CoinSkinConfig,
+  DEFAULT_COIN_SKIN,
+  getCoinSkinConfig,
+} from '@/lib/coin-skins'
 import {
   checkDuplicateQuestion,
   cooldownRemainingMs,
@@ -213,7 +217,7 @@ export default function CoinCastHomeScreen() {
   const [roundEntropyHashes, setRoundEntropyHashes] = useState<string[]>([])
   const [motionEnabled, setMotionEnabled] = useState(true)
   const hapticsEnabledRef = useRef(true)
-  const [coinSkinId, setCoinSkinId] = useState<CoinSkinId>(DEFAULT_COIN_SKIN_ID)
+  const [coinSkinConfig, setCoinSkinConfig] = useState<CoinSkinConfig>(DEFAULT_COIN_SKIN)
   const [firstAck, setFirstAck] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -305,7 +309,7 @@ export default function CoinCastHomeScreen() {
       void getCastHapticsEnabled().then((v) => {
         hapticsEnabledRef.current = v
       })
-      void getCoinSkinId().then(setCoinSkinId)
+      void getCoinSkinConfig().then(setCoinSkinConfig)
     }, [])
   )
 
@@ -737,7 +741,7 @@ export default function CoinCastHomeScreen() {
                 <LazyCastingScene
                   tossRevision={tossRevision}
                   impulseSeed={activeToss?.seed ?? 0}
-                  coinSkinId={coinSkinId}
+                  coinSkinConfig={coinSkinConfig}
                   sceneBg={castingBackdrop}
                   arenaWallsActive={tossAnimating}
                   cameraPhase={castCameraPhase}

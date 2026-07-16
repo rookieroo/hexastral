@@ -8,7 +8,11 @@ import * as THREE from 'three'
 
 import { coinsFromSeed, mulberry32 } from '@/lib/casting-entropy'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
-import { type CoinSkinId, DEFAULT_COIN_SKIN_ID, loadCoinSkinMaterials } from '@/lib/coin-skins'
+import {
+  type CoinSkinConfig,
+  DEFAULT_COIN_SKIN,
+  loadCoinSkinMaterials,
+} from '@/lib/coin-skins'
 
 import {
   COIN_RADIAL_SEGMENTS,
@@ -195,7 +199,7 @@ function applyHandsOpenRelease(
 export interface PhysicsCoinsSceneProps {
   tossRevision: number
   impulseSeed: number
-  coinSkinId?: CoinSkinId
+  coinSkinConfig?: CoinSkinConfig
   /** Same as scene.background — table + lighting ground tint (no second “slab” color). */
   sceneBackdrop: string
   /** Committed line, or `wa_ying` to void whole hexagram per classical Liu Yao (rim / upright). */
@@ -213,22 +217,28 @@ export interface PhysicsCoinsSceneProps {
   vesselVisible: boolean
 }
 
-function useCastingTextures(coinSkinId: CoinSkinId): {
+function coinSkinCacheKey(config: CoinSkinConfig): string {
+  if (config.mode === 'logo') return 'logo'
+  return `custom:${config.customObverseUri ?? ''}`
+}
+
+function useCastingTextures(coinSkinConfig: CoinSkinConfig): {
   floorMaterial: THREE.MeshStandardMaterial | null
   coinMaterials: THREE.MeshStandardMaterial[] | null
 } {
   const [floorMaterial, setFloorMaterial] = useState<THREE.MeshStandardMaterial | null>(null)
   const [coinMaterials, setCoinMaterials] = useState<THREE.MeshStandardMaterial[] | null>(null)
+  const skinKey = coinSkinCacheKey(coinSkinConfig)
 
   useEffect(() => {
     let cancelled = false
-    void loadCoinSkinMaterials(coinSkinId).then((materials) => {
+    void loadCoinSkinMaterials(coinSkinConfig).then((materials) => {
       if (!cancelled) setCoinMaterials(materials)
     })
     return () => {
       cancelled = true
     }
-  }, [coinSkinId])
+  }, [skinKey, coinSkinConfig])
 
   useEffect(() => {
     const { albedo, normal } = createProceduralAltarInkStoneTextures()
@@ -259,9 +269,9 @@ function useCastingTextures(coinSkinId: CoinSkinId): {
 const VESSEL_RETREAT_DURATION_SEC = 0.42
 
 export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
-  const coinSkinId = props.coinSkinId ?? DEFAULT_COIN_SKIN_ID
+  const coinSkinConfig = props.coinSkinConfig ?? DEFAULT_COIN_SKIN
   const { world, coinBodies: bodies } = useCoinPhysics()
-  const { floorMaterial, coinMaterials } = useCastingTextures(coinSkinId)
+  const { floorMaterial, coinMaterials } = useCastingTextures(coinSkinConfig)
 
   const vesselMeshRef = useRef<THREE.Mesh | null>(null)
   const prevVesselVisible = useRef(props.vesselVisible)

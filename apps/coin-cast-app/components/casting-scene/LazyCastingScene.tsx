@@ -34,6 +34,6 @@ export function LazyCastingScene(props: CastingSceneProps) {
 export function preloadCastingScene(): void {
   void import('./CastingScene')
   void import('@/lib/coin-skins').then((m) => {
-    void m.loadCoinSkinMaterials(m.DEFAULT_COIN_SKIN_ID)
+    void m.loadCoinSkinMaterials(m.DEFAULT_COIN_SKIN)
   })
 }

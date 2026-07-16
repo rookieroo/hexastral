@@ -6,7 +6,7 @@ import type { StyleProp, ViewStyle } from 'react-native'
 import { View } from 'react-native'
 import * as THREE from 'three'
 import type { PhysicsSettlePayload } from '@/lib/casting-types'
-import type { CoinSkinId } from '@/lib/coin-skins'
+import type { CoinSkinConfig } from '@/lib/coin-skins'
 
 import type { CastCameraPhase } from './CameraRig'
 import { CameraRig } from './CameraRig'
@@ -30,7 +30,7 @@ export interface CastingSceneProps {
   style?: StyleProp<ViewStyle>
   tossRevision: number
   impulseSeed: number
-  coinSkinId?: CoinSkinId
+  coinSkinConfig?: CoinSkinConfig
   /** One warm tone for clear color + table + fog — avoids a “two slabs” seam. */
   sceneBg: string
   /** While true, cup walls + vessel overlay are shown (sync with active toss). */
@@ -61,7 +61,7 @@ export function CastingScene(props: CastingSceneProps) {
           <PhysicsCoinsScene
             tossRevision={props.tossRevision}
             impulseSeed={props.impulseSeed}
-            coinSkinId={props.coinSkinId}
+            coinSkinConfig={props.coinSkinConfig}
             sceneBackdrop={props.sceneBg}
             onPhysicsSettled={props.onPhysicsSettled}
             onImpact={props.onImpact}

@@ -55,6 +55,46 @@ export function buildMarkSvg({ size, frac, ground, mono }) {
 }
 
 /**
+ * Plain logo coin — circle + square hole only (matches app icon geometry).
+ * @param {{ size?: number; side?: 'obverse'|'reverse' }} [opts]
+ */
+export function buildPlainLogoCoinSvg({ size = 512, side = 'obverse' } = {}) {
+  const { faceHi, faceLo, rim, ground: dark } = COIN_COLORS
+  const s = size
+  const cx = s / 2
+  const r = s * 0.46
+  const hs = s * 0.22
+  const h0 = cx - hs / 2
+  const strokeW = (s * 0.015).toFixed(2)
+  const inner = r * 0.82
+  const star =
+    side === 'reverse'
+      ? `<g opacity="0.55">
+  <circle cx="${cx}" cy="${(s * 0.28).toFixed(1)}" r="${(s * 0.024).toFixed(1)}" fill="${rim}"/>
+  <path d="M ${(cx - s * 0.032).toFixed(1)} ${(s * 0.72).toFixed(1)} A ${(s * 0.032).toFixed(1)} ${(s * 0.032).toFixed(1)} 0 1 0 ${(cx + s * 0.032).toFixed(1)} ${(s * 0.72).toFixed(1)}" fill="none" stroke="${rim}" stroke-width="${Math.max(3, s * 0.012)}" stroke-linecap="round"/>
+</g>`
+      : ''
+  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="inkGold" x1="0.25" y1="0" x2="0.75" y2="1">
+    <stop offset="0" stop-color="${faceHi}"/>
+    <stop offset="1" stop-color="${faceLo}"/>
+  </linearGradient>
+  <radialGradient id="shine" cx="0.38" cy="0.32" r="0.55">
+    <stop offset="0" stop-color="rgba(255,255,255,0.14)"/>
+    <stop offset="1" stop-color="rgba(0,0,0,0)"/>
+  </radialGradient>
+</defs>
+<circle cx="${cx}" cy="${cx}" r="${r}" fill="url(#inkGold)" stroke="${rim}" stroke-width="${strokeW}"/>
+<circle cx="${cx}" cy="${cx}" r="${r}" fill="url(#shine)"/>
+<circle cx="${cx}" cy="${cx}" r="${inner}" fill="none" stroke="${rim}" stroke-width="${(s * 0.008).toFixed(2)}" opacity="0.45"/>
+${star}
+<rect x="${h0}" y="${h0}" width="${hs}" height="${hs}" rx="${(s * 0.02).toFixed(2)}" fill="${dark}"/>
+<rect x="${h0}" y="${h0}" width="${hs}" height="${hs}" rx="${(s * 0.02).toFixed(2)}" fill="none" stroke="${rim}" stroke-width="${strokeW}"/>
+</svg>`
+}
+
+/**
  * Single 方孔钱 reference (五铢 simplified strokes) for docs / exports.
  * @param {{ size?: number; ground?: boolean }} [opts]
  */

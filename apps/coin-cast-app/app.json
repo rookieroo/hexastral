@@ -84,7 +84,13 @@
     "plugins": [
       "expo-router",
       "expo-dev-client",
-      "./plugins/withIosPodDeploymentTarget.cjs"
+      "./plugins/withIosPodDeploymentTarget.cjs",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a coin face image for casting."
+        }
+      ]
     ]
   }
 }

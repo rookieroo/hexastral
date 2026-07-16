@@ -3,216 +3,105 @@ import * as THREE from 'three'
 
 import { createCoinEdgeTextures } from '@/components/casting-scene/coinCapTextures'
 import {
-  COIN_BACK_SOURCES,
-  COIN_BUMP_SOURCES,
-  COIN_FACE_SOURCES,
+  LOGO_COIN_BACK,
+  LOGO_COIN_BUMP,
+  LOGO_COIN_FACE,
 } from '@/lib/coin-skin-assets'
+import { getImagePixelSize } from '@/lib/coin-skin-upload'
 
-const STORAGE_KEY = 'coincast_coin_skin_v2'
+const STORAGE_KEY = 'coincast_coin_skin_v3'
 
-/** Dynasty keys shared across ink / rubbing / seal themes. */
-export const COIN_DYNASTY_IDS = [
-  'qin-banliang',
-  'han-wuzhu',
-  'tang-kaiyuan',
-  'song-songyuan',
-  'ming-yongle',
-] as const
+export type CoinSkinMode = 'logo' | 'custom'
 
-export type CoinDynastyId = (typeof COIN_DYNASTY_IDS)[number]
-
-export type CoinSkinStyle = 'ink' | 'rubbing' | 'seal'
-
-export const COIN_SKIN_STYLES: readonly CoinSkinStyle[] = ['ink', 'rubbing', 'seal']
-
-/** 五帝钱 × 三主题 — 15 procedural skins. */
-export const COIN_SKIN_IDS = COIN_DYNASTY_IDS.flatMap((dynastyId) =>
-  COIN_SKIN_STYLES.map((style) => `${dynastyId}-${style}` as const)
-)
-
-export type CoinSkinId = (typeof COIN_SKIN_IDS)[number]
-
-export interface CoinSkinPreset {
-  id: CoinSkinId
-  dynastyId: CoinDynastyId
-  style: CoinSkinStyle
-  labelKey:
-    | 'skinQinBanliang'
-    | 'skinHanWuzhu'
-    | 'skinTangKaiyuan'
-    | 'skinSongSongyuan'
-    | 'skinMingYongle'
-  edge: string
-  yang: string
-  yin: string
-  edgeRoughness: number
-  yangRoughness: number
-  yinRoughness: number
-  edgeMetalness: number
-  yangMetalness: number
-  yinMetalness: number
-  /** bumpMap scale — higher = stronger cast relief under scene lights. */
-  bumpScale: number
+export interface CoinSkinConfig {
+  mode: CoinSkinMode
+  /** Persistent file URI (documentDirectory) when mode === 'custom'. */
+  customObverseUri?: string
 }
 
-const DYNASTY_LABELS: Record<
-  CoinDynastyId,
-  CoinSkinPreset['labelKey']
-> = {
-  'qin-banliang': 'skinQinBanliang',
-  'han-wuzhu': 'skinHanWuzhu',
-  'tang-kaiyuan': 'skinTangKaiyuan',
-  'song-songyuan': 'skinSongSongyuan',
-  'ming-yongle': 'skinMingYongle',
-}
+export const DEFAULT_COIN_SKIN: CoinSkinConfig = { mode: 'logo' }
 
-/** Matte paper — bone rim, low metal. */
-const INK_SURFACE = {
-  edge: '#4a4036',
-  yang: '#e0d6c4',
-  yin: '#2a241c',
-  edgeRoughness: 0.88,
-  yangRoughness: 0.92,
-  yinRoughness: 0.94,
-  edgeMetalness: 0.04,
-  yangMetalness: 0.02,
-  yinMetalness: 0.02,
+/** Logo-aligned bronze surface — matches app mark palette. */
+export const LOGO_COIN_SURFACE = {
+  edge: '#5a4d3e',
+  yang: '#c2b18e',
+  yin: '#3b3226',
+  edgeRoughness: 0.66,
+  yangRoughness: 0.74,
+  yinRoughness: 0.78,
+  edgeMetalness: 0.24,
+  yangMetalness: 0.19,
+  yinMetalness: 0.16,
   bumpScale: 0.07,
 } as const
 
-/** Darker matte rubbing paper — heavier ink ground. */
-const RUBBING_SURFACE = {
-  edge: '#2a2824',
-  yang: '#d8d0c0',
-  yin: '#1a1814',
-  edgeRoughness: 0.94,
-  yangRoughness: 0.96,
-  yinRoughness: 0.97,
-  edgeMetalness: 0.02,
-  yangMetalness: 0.01,
-  yinMetalness: 0.01,
-  bumpScale: 0.075,
-} as const
-
-/** Cinnabar seal — low metal warm edge. */
-const SEAL_SURFACE = {
-  edge: '#6a3028',
-  yang: '#c8a098',
-  yin: '#3a1814',
-  edgeRoughness: 0.75,
-  yangRoughness: 0.82,
-  yinRoughness: 0.86,
-  edgeMetalness: 0.12,
-  yangMetalness: 0.08,
-  yinMetalness: 0.06,
-  bumpScale: 0.065,
-} as const
-
-const STYLE_SURFACES: Record<
-  CoinSkinStyle,
-  Omit<CoinSkinPreset, 'id' | 'dynastyId' | 'style' | 'labelKey'>
-> = {
-  ink: INK_SURFACE,
-  rubbing: RUBBING_SURFACE,
-  seal: SEAL_SURFACE,
+function cacheKey(config: CoinSkinConfig): string {
+  if (config.mode === 'logo') return 'logo'
+  return `custom:${config.customObverseUri ?? ''}`
 }
 
-function buildPresets(): Record<CoinSkinId, CoinSkinPreset> {
-  const out = {} as Record<CoinSkinId, CoinSkinPreset>
-  for (const dynastyId of COIN_DYNASTY_IDS) {
-    for (const style of COIN_SKIN_STYLES) {
-      const id = `${dynastyId}-${style}` as CoinSkinId
-      out[id] = {
-        id,
-        dynastyId,
-        style,
-        labelKey: DYNASTY_LABELS[dynastyId],
-        ...STYLE_SURFACES[style],
+function parseStoredConfig(raw: string | null): CoinSkinConfig | null {
+  if (!raw) return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'mode' in parsed &&
+      (parsed.mode === 'logo' || parsed.mode === 'custom')
+    ) {
+      const cfg = parsed as CoinSkinConfig
+      if (cfg.mode === 'custom' && typeof cfg.customObverseUri === 'string') {
+        return cfg
       }
+      if (cfg.mode === 'logo') return { mode: 'logo' }
     }
+  } catch {
+    // fall through — legacy string ids
   }
-  return out
-}
-
-export const COIN_SKIN_PRESETS: Record<CoinSkinId, CoinSkinPreset> = buildPresets()
-
-export const DEFAULT_COIN_SKIN_ID: CoinSkinId = 'han-wuzhu-ink'
-
-export function coinSkinIdFor(dynastyId: CoinDynastyId, style: CoinSkinStyle): CoinSkinId {
-  return `${dynastyId}-${style}` as CoinSkinId
-}
-
-export function dynastyFromSkinId(id: CoinSkinId): CoinDynastyId {
-  return COIN_SKIN_PRESETS[id].dynastyId
-}
-
-export function styleFromSkinId(id: CoinSkinId): CoinSkinStyle {
-  return COIN_SKIN_PRESETS[id].style
-}
-
-const LEGACY_SKIN_MAP: Record<string, CoinSkinId> = {
-  'qing-tong': 'qin-banliang-ink',
-  kangxi: 'tang-kaiyuan-ink',
-  'tang-yin': 'tang-kaiyuan-ink',
-  'warring-states': 'qin-banliang-ink',
-  'imperial-lacquer': 'ming-yongle-ink',
-  taiji: 'qin-banliang-ink',
-  mu: 'han-wuzhu-ink',
-  huo: 'ming-yongle-ink',
-  jin: 'tang-kaiyuan-ink',
-  shui: 'han-wuzhu-ink',
-  tu: 'song-songyuan-ink',
-  // Legacy photo ids (no theme suffix) → ink
-  'qin-banliang': 'qin-banliang-ink',
-  'han-wuzhu': 'han-wuzhu-ink',
-  'tang-kaiyuan': 'tang-kaiyuan-ink',
-  'song-songyuan': 'song-songyuan-ink',
-  'ming-yongle': 'ming-yongle-ink',
-}
-
-function isCoinSkinId(value: string): value is CoinSkinId {
-  return (COIN_SKIN_IDS as readonly string[]).includes(value)
-}
-
-function normalizeStoredSkinId(raw: string): CoinSkinId | null {
-  if (isCoinSkinId(raw)) return raw
-  const mapped = LEGACY_SKIN_MAP[raw]
-  if (mapped) return mapped
   return null
 }
 
-export async function getCoinSkinId(): Promise<CoinSkinId> {
+/** Any legacy skin id or v2 preset → logo default. */
+function migrateLegacySkinId(raw: string): CoinSkinConfig {
+  void raw
+  return DEFAULT_COIN_SKIN
+}
+
+export async function getCoinSkinConfig(): Promise<CoinSkinConfig> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const normalized = normalizeStoredSkinId(raw)
-      if (normalized) {
-        if (normalized !== raw) await AsyncStorage.setItem(STORAGE_KEY, normalized)
-        return normalized
-      }
+    const parsed = parseStoredConfig(raw)
+    if (parsed) return parsed
+
+    const legacyV2 = await AsyncStorage.getItem('coincast_coin_skin_v2')
+    if (legacyV2) {
+      const migrated = migrateLegacySkinId(legacyV2)
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
     }
-    const legacy = await AsyncStorage.getItem('coincast_coin_skin_v1')
-    if (legacy) {
-      const mapped = LEGACY_SKIN_MAP[legacy] ?? DEFAULT_COIN_SKIN_ID
-      await AsyncStorage.setItem(STORAGE_KEY, mapped)
-      return mapped
+    const legacyV1 = await AsyncStorage.getItem('coincast_coin_skin_v1')
+    if (legacyV1) {
+      const migrated = migrateLegacySkinId(legacyV1)
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
     }
   } catch (err) {
     console.warn('[coin-skins] read failed', err)
   }
-  return DEFAULT_COIN_SKIN_ID
+  return DEFAULT_COIN_SKIN
 }
 
-export async function setCoinSkinId(id: CoinSkinId): Promise<void> {
+export async function setCoinSkinConfig(config: CoinSkinConfig): Promise<void> {
   try {
-    await AsyncStorage.setItem(STORAGE_KEY, id)
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config))
   } catch (err) {
     console.warn('[coin-skins] write failed', err)
   }
 }
 
-const materialCache = new Map<CoinSkinId, THREE.MeshStandardMaterial[]>()
-const loadCache = new Map<CoinSkinId, Promise<THREE.MeshStandardMaterial[]>>()
+const materialCache = new Map<string, THREE.MeshStandardMaterial[]>()
+const loadCache = new Map<string, Promise<THREE.MeshStandardMaterial[]>>()
 
 function configureCapTexture(tex: THREE.Texture): void {
   tex.colorSpace = THREE.SRGBColorSpace
@@ -230,104 +119,144 @@ function configureBumpTexture(tex: THREE.Texture): void {
   tex.needsUpdate = true
 }
 
-/**
- * Cylinder material slots: [side, top cap (+Y), bottom cap (−Y)].
- * 摇卦 convention — top cap up ⇒ face 3 (背/幕面 = 阳); bottom cap up ⇒ face 2 (字面 = 阴).
- * So the reverse (幕) rides the top cap and the obverse (字) the bottom cap.
- */
+/** Scale texture to fit cap UV without cropping (letterbox via repeat/offset). */
+export function applyContainTextureMapping(
+  texture: THREE.Texture,
+  imageWidth: number,
+  imageHeight: number
+): void {
+  const maxDim = Math.max(imageWidth, imageHeight)
+  const rw = imageWidth / maxDim
+  const rh = imageHeight / maxDim
+  texture.wrapS = THREE.ClampToEdgeWrapping
+  texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.repeat.set(rw, rh)
+  texture.offset.set((1 - rw) / 2, (1 - rh) / 2)
+  texture.needsUpdate = true
+}
+
 function buildMaterialsFromMaps(
-  skinId: CoinSkinId,
   obverseMap: THREE.Texture,
   reverseMap: THREE.Texture,
-  bumpMap: THREE.Texture
+  bumpMap: THREE.Texture,
+  alphaMap: THREE.Texture
 ): THREE.MeshStandardMaterial[] {
-  const preset = COIN_SKIN_PRESETS[skinId]
+  const preset = LOGO_COIN_SURFACE
   const { edgeMap } = createCoinEdgeTextures({
-    id: preset.id,
+    id: 'logo',
     edge: preset.edge,
     yang: preset.yang,
     yin: preset.yin,
   })
 
-  const materials = [
+  return [
     new THREE.MeshStandardMaterial({
       color: preset.edge,
       map: edgeMap,
       roughness: preset.edgeRoughness,
       metalness: preset.edgeMetalness,
     }),
-    // top cap (+Y) → face 3 → 背/幕面 (阳)
     new THREE.MeshStandardMaterial({
       color: 0xffffff,
       map: reverseMap,
       bumpMap,
       bumpScale: preset.bumpScale * 0.55,
+      alphaMap,
       transparent: true,
       alphaTest: 0.06,
       roughness: preset.yangRoughness,
       metalness: preset.yangMetalness,
     }),
-    // bottom cap (−Y) → face 2 → 字面 (阴)
     new THREE.MeshStandardMaterial({
       color: 0xffffff,
       map: obverseMap,
       bumpMap,
       bumpScale: preset.bumpScale,
+      alphaMap,
       transparent: true,
       alphaTest: 0.06,
       roughness: preset.yinRoughness,
       metalness: preset.yinMetalness,
     }),
   ]
-
-  materialCache.set(skinId, materials)
-  return materials
 }
 
-/** Load both cap faces (字面 + 幕面) and build coin materials (async — requires expo-three). */
+async function loadLogoTextures(): Promise<{
+  obverse: THREE.Texture
+  reverse: THREE.Texture
+  bump: THREE.Texture
+  alpha: THREE.Texture
+}> {
+  const { loadAsync } = await import('expo-three')
+  const [obverse, reverse, bump] = await Promise.all([
+    loadAsync(LOGO_COIN_FACE),
+    loadAsync(LOGO_COIN_BACK),
+    loadAsync(LOGO_COIN_BUMP),
+  ])
+  configureCapTexture(obverse)
+  configureCapTexture(reverse)
+  configureBumpTexture(bump)
+  const alpha = obverse.clone()
+  configureCapTexture(alpha)
+  return { obverse, reverse, bump, alpha }
+}
+
+/** Load cap materials for logo default or a user-uploaded face (contain fit, no crop). */
 export async function loadCoinSkinMaterials(
-  skinId: CoinSkinId
+  config: CoinSkinConfig = DEFAULT_COIN_SKIN
 ): Promise<THREE.MeshStandardMaterial[]> {
-  const cached = materialCache.get(skinId)
+  const key = cacheKey(config)
+  const cached = materialCache.get(key)
   if (cached) return cached
 
-  const inflight = loadCache.get(skinId)
+  const inflight = loadCache.get(key)
   if (inflight) return inflight
 
   const promise = (async () => {
-    const { loadAsync } = await import('expo-three')
-    const [obverseMap, reverseMap, bumpMap] = await Promise.all([
-      loadAsync(COIN_FACE_SOURCES[skinId]),
-      loadAsync(COIN_BACK_SOURCES[skinId]),
-      loadAsync(COIN_BUMP_SOURCES[skinId]),
-    ])
-    configureCapTexture(obverseMap)
-    configureCapTexture(reverseMap)
-    configureBumpTexture(bumpMap)
-    return buildMaterialsFromMaps(skinId, obverseMap, reverseMap, bumpMap)
+    const logo = await loadLogoTextures()
+    let obverseMap = logo.obverse
+    let reverseMap = logo.reverse
+
+    if (config.mode === 'custom' && config.customObverseUri) {
+      const { loadAsync } = await import('expo-three')
+      const custom = await loadAsync(config.customObverseUri)
+      configureCapTexture(custom)
+      const { width, height } = await getImagePixelSize(config.customObverseUri)
+      applyContainTextureMapping(custom, width, height)
+      obverseMap = custom
+      reverseMap = custom
+    }
+
+    const materials = buildMaterialsFromMaps(
+      obverseMap,
+      reverseMap,
+      logo.bump,
+      logo.alpha
+    )
+    materialCache.set(key, materials)
+    return materials
   })()
 
-  loadCache.set(skinId, promise)
+  loadCache.set(key, promise)
   try {
     return await promise
   } finally {
-    loadCache.delete(skinId)
+    loadCache.delete(key)
   }
 }
 
-/** @deprecated Sync path removed — use `loadCoinSkinMaterials`. Kept for typecheck callers during transition. */
-export function createCoinSkinMaterials(skinId: CoinSkinId): THREE.MeshStandardMaterial[] {
-  const cached = materialCache.get(skinId)
+/** @deprecated Use `loadCoinSkinMaterials`. */
+export function createCoinSkinMaterials(): THREE.MeshStandardMaterial[] {
+  const cached = materialCache.get('logo')
   if (cached) return cached
-  void loadCoinSkinMaterials(skinId)
-  const preset = COIN_SKIN_PRESETS[skinId]
-  const capColors = {
-    id: preset.id,
+  void loadCoinSkinMaterials(DEFAULT_COIN_SKIN)
+  const preset = LOGO_COIN_SURFACE
+  const { edgeMap } = createCoinEdgeTextures({
+    id: 'logo',
     edge: preset.edge,
     yang: preset.yang,
     yin: preset.yin,
-  }
-  const { edgeMap } = createCoinEdgeTextures(capColors)
+  })
   return [
     new THREE.MeshStandardMaterial({
       color: preset.edge,
@@ -346,4 +275,10 @@ export function createCoinSkinMaterials(skinId: CoinSkinId): THREE.MeshStandardM
       metalness: preset.yinMetalness,
     }),
   ]
+}
+
+/** Clear GPU material cache after skin change. */
+export function invalidateCoinSkinMaterialCache(): void {
+  materialCache.clear()
+  loadCache.clear()
 }
