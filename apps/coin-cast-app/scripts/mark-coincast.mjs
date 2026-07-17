@@ -55,11 +55,11 @@ export function buildMarkSvg({ size, frac, ground, mono }) {
 }
 
 /**
- * Plain logo coin — circle + square hole only (matches app icon geometry).
+ * Minimal warm-gold token — tonal square obverse, clean reverse.
+ * There is no dark puncture: the centre is a shallow brand inset, not a hole.
  * @param {{ size?: number; side?: 'obverse'|'reverse' }} [opts]
  */
 export function buildPlainLogoCoinSvg({ size = 512, side = 'obverse' } = {}) {
-  const { faceHi, faceLo, rim, ground: dark } = COIN_COLORS
   const s = size
   const cx = s / 2
   const r = s * 0.46
@@ -67,12 +67,14 @@ export function buildPlainLogoCoinSvg({ size = 512, side = 'obverse' } = {}) {
   const h0 = cx - hs / 2
   const strokeW = (s * 0.015).toFixed(2)
   const inner = r * 0.82
-  const star =
-    side === 'reverse'
-      ? `<g opacity="0.55">
-  <circle cx="${cx}" cy="${(s * 0.28).toFixed(1)}" r="${(s * 0.024).toFixed(1)}" fill="${rim}"/>
-  <path d="M ${(cx - s * 0.032).toFixed(1)} ${(s * 0.72).toFixed(1)} A ${(s * 0.032).toFixed(1)} ${(s * 0.032).toFixed(1)} 0 1 0 ${(cx + s * 0.032).toFixed(1)} ${(s * 0.72).toFixed(1)}" fill="none" stroke="${rim}" stroke-width="${Math.max(3, s * 0.012)}" stroke-linecap="round"/>
-</g>`
+  const faceHi = '#E2C796'
+  const faceLo = '#B58A52'
+  const rim = '#8F693D'
+  const inset = '#C49A61'
+  const emblem =
+    side === 'obverse'
+      ? `<rect x="${h0}" y="${h0}" width="${hs}" height="${hs}" rx="${(s * 0.028).toFixed(2)}" fill="${inset}" stroke="${rim}" stroke-width="${(s * 0.012).toFixed(2)}"/>
+<path d="M ${(h0 + hs * 0.2).toFixed(1)} ${(h0 + hs * 0.3).toFixed(1)} H ${(h0 + hs * 0.8).toFixed(1)}" stroke="${faceHi}" stroke-width="${(s * 0.008).toFixed(2)}" stroke-linecap="round" opacity="0.52"/>`
       : ''
   return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
 <defs>
@@ -88,9 +90,7 @@ export function buildPlainLogoCoinSvg({ size = 512, side = 'obverse' } = {}) {
 <circle cx="${cx}" cy="${cx}" r="${r}" fill="url(#inkGold)" stroke="${rim}" stroke-width="${strokeW}"/>
 <circle cx="${cx}" cy="${cx}" r="${r}" fill="url(#shine)"/>
 <circle cx="${cx}" cy="${cx}" r="${inner}" fill="none" stroke="${rim}" stroke-width="${(s * 0.008).toFixed(2)}" opacity="0.45"/>
-${star}
-<rect x="${h0}" y="${h0}" width="${hs}" height="${hs}" rx="${(s * 0.02).toFixed(2)}" fill="${dark}"/>
-<rect x="${h0}" y="${h0}" width="${hs}" height="${hs}" rx="${(s * 0.02).toFixed(2)}" fill="none" stroke="${rim}" stroke-width="${strokeW}"/>
+${emblem}
 </svg>`
 }
 

@@ -7,6 +7,7 @@ import { View } from 'react-native'
 import * as THREE from 'three'
 import type { PhysicsSettlePayload } from '@/lib/casting-types'
 import type { CoinSkinConfig } from '@/lib/coin-skins'
+import type { MotionFrame } from '@/lib/motion-cast'
 
 import type { CastCameraPhase } from './CameraRig'
 import { CameraRig } from './CameraRig'
@@ -29,7 +30,6 @@ function SceneBackground({ color }: { color: string }) {
 export interface CastingSceneProps {
   style?: StyleProp<ViewStyle>
   tossRevision: number
-  impulseSeed: number
   coinSkinConfig?: CoinSkinConfig
   /** One warm tone for clear color + table + fog — avoids a “two slabs” seam. */
   sceneBg: string
@@ -39,7 +39,7 @@ export interface CastingSceneProps {
   cameraPhase: CastCameraPhase
   onPhysicsSettled: (payload: PhysicsSettlePayload) => void
   onImpact?: () => void
-  shakeDriveRef?: MutableRefObject<{ x: number; y: number; z: number; mag: number }>
+  motionFrameQueueRef: MutableRefObject<MotionFrame[]>
 }
 
 export function CastingScene(props: CastingSceneProps) {
@@ -60,12 +60,11 @@ export function CastingScene(props: CastingSceneProps) {
           <CameraRig phase={props.cameraPhase} />
           <PhysicsCoinsScene
             tossRevision={props.tossRevision}
-            impulseSeed={props.impulseSeed}
             coinSkinConfig={props.coinSkinConfig}
             sceneBackdrop={props.sceneBg}
             onPhysicsSettled={props.onPhysicsSettled}
             onImpact={props.onImpact}
-            shakeDriveRef={props.shakeDriveRef}
+            motionFrameQueueRef={props.motionFrameQueueRef}
             arenaWallsActive={props.arenaWallsActive}
             vesselVisible={props.cameraPhase === 'ritual' && props.arenaWallsActive}
           />

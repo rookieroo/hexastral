@@ -2,11 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as THREE from 'three'
 
 import { createCoinEdgeTextures } from '@/components/casting-scene/coinCapTextures'
-import {
-  LOGO_COIN_BACK,
-  LOGO_COIN_BUMP,
-  LOGO_COIN_FACE,
-} from '@/lib/coin-skin-assets'
+import { LOGO_COIN_BACK, LOGO_COIN_BUMP, LOGO_COIN_FACE } from '@/lib/coin-skin-assets'
 import { getImagePixelSize } from '@/lib/coin-skin-upload'
 
 const STORAGE_KEY = 'coincast_coin_skin_v3'
@@ -21,18 +17,18 @@ export interface CoinSkinConfig {
 
 export const DEFAULT_COIN_SKIN: CoinSkinConfig = { mode: 'logo' }
 
-/** Logo-aligned bronze surface — matches app mark palette. */
+/** Single warm-gold material family — no black cap or cylinder tones. */
 export const LOGO_COIN_SURFACE = {
-  edge: '#5a4d3e',
-  yang: '#c2b18e',
-  yin: '#3b3226',
-  edgeRoughness: 0.66,
-  yangRoughness: 0.74,
-  yinRoughness: 0.78,
-  edgeMetalness: 0.24,
-  yangMetalness: 0.19,
-  yinMetalness: 0.16,
-  bumpScale: 0.07,
+  edge: '#A77D48',
+  yang: '#D7B77F',
+  yin: '#C6985C',
+  edgeRoughness: 0.58,
+  yangRoughness: 0.64,
+  yinRoughness: 0.68,
+  edgeMetalness: 0.28,
+  yangMetalness: 0.24,
+  yinMetalness: 0.22,
+  bumpScale: 0.045,
 } as const
 
 function cacheKey(config: CoinSkinConfig): string {
@@ -50,14 +46,17 @@ function parseStoredConfig(raw: string | null): CoinSkinConfig | null {
       'mode' in parsed &&
       (parsed.mode === 'logo' || parsed.mode === 'custom')
     ) {
-      const cfg = parsed as CoinSkinConfig
-      if (cfg.mode === 'custom' && typeof cfg.customObverseUri === 'string') {
-        return cfg
+      if (
+        parsed.mode === 'custom' &&
+        'customObverseUri' in parsed &&
+        typeof parsed.customObverseUri === 'string'
+      ) {
+        return { mode: 'custom', customObverseUri: parsed.customObverseUri }
       }
-      if (cfg.mode === 'logo') return { mode: 'logo' }
+      if (parsed.mode === 'logo') return { mode: 'logo' }
     }
-  } catch {
-    // fall through — legacy string ids
+  } catch (err) {
+    console.warn('[coin-skins] stored config is not JSON; trying legacy migration', err)
   }
   return null
 }
@@ -97,6 +96,7 @@ export async function setCoinSkinConfig(config: CoinSkinConfig): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config))
   } catch (err) {
     console.warn('[coin-skins] write failed', err)
+    throw err
   }
 }
 
@@ -136,7 +136,7 @@ export function applyContainTextureMapping(
 }
 
 /**
- * Cap faces use PNG alpha on `map` for the disc + square hole.
+ * Cap faces use PNG alpha only outside the round disc.
  * Do NOT set `alphaMap` from a color texture — Three.js samples the green
  * channel of alphaMap, and sRGB decoding on bronze greens makes the coin
  * nearly invisible on the dark casting stage.
@@ -156,7 +156,9 @@ function buildMaterialsFromMaps(
 
   return [
     new THREE.MeshStandardMaterial({
-      color: preset.edge,
+      // edgeMap already contains the final gold; tinting it again squares the
+      // color channels and makes the cylinder look brown/black.
+      color: 0xffffff,
       map: edgeMap,
       roughness: preset.edgeRoughness,
       metalness: preset.edgeMetalness,
@@ -164,8 +166,6 @@ function buildMaterialsFromMaps(
     new THREE.MeshStandardMaterial({
       color: 0xffffff,
       map: reverseMap,
-      bumpMap,
-      bumpScale: preset.bumpScale * 0.55,
       transparent: true,
       alphaTest: 0.45,
       depthWrite: true,
@@ -220,13 +220,17 @@ export async function loadCoinSkinMaterials(
     let reverseMap = logo.reverse
 
     if (config.mode === 'custom' && config.customObverseUri) {
-      const { loadAsync } = await import('expo-three')
-      const custom = await loadAsync(config.customObverseUri)
-      configureCapTexture(custom)
-      const { width, height } = await getImagePixelSize(config.customObverseUri)
-      applyContainTextureMapping(custom, width, height)
-      obverseMap = custom
-      reverseMap = custom
+      try {
+        const { loadAsync } = await import('expo-three')
+        const custom = await loadAsync(config.customObverseUri)
+        configureCapTexture(custom)
+        const { width, height } = await getImagePixelSize(config.customObverseUri)
+        applyContainTextureMapping(custom, width, height)
+        obverseMap = custom
+        reverseMap = custom
+      } catch (err) {
+        console.warn('[coin-skins] custom image load failed; using logo skin', err)
+      }
     }
 
     const materials = buildMaterialsFromMaps(obverseMap, reverseMap, logo.bump)
@@ -238,7 +242,7 @@ export async function loadCoinSkinMaterials(
   try {
     return await promise
   } catch (err) {
-    console.warn('[coin-skins] load failed, falling back to solid bronze', err)
+    console.warn('[coin-skins] logo texture load failed, falling back to solid bronze', err)
     const fallback = createSolidBronzeMaterials()
     materialCache.set(key, fallback)
     return fallback
@@ -257,7 +261,7 @@ function createSolidBronzeMaterials(): THREE.MeshStandardMaterial[] {
   })
   return [
     new THREE.MeshStandardMaterial({
-      color: preset.edge,
+      color: 0xffffff,
       map: edgeMap,
       roughness: preset.edgeRoughness,
       metalness: preset.edgeMetalness,

@@ -6,13 +6,9 @@ import type { MutableRefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
-import { coinsFromSeed, mulberry32 } from '@/lib/casting-entropy'
 import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
-import {
-  type CoinSkinConfig,
-  DEFAULT_COIN_SKIN,
-  loadCoinSkinMaterials,
-} from '@/lib/coin-skins'
+import { type CoinSkinConfig, DEFAULT_COIN_SKIN, loadCoinSkinMaterials } from '@/lib/coin-skins'
+import type { MotionFrame } from '@/lib/motion-cast'
 
 import {
   COIN_RADIAL_SEGMENTS,
@@ -21,11 +17,8 @@ import {
   CONTAINER_SHAKE_DURATION_MS,
   CUP_ABOVE_ALTAR_GAP,
   CUP_CEILING_CLAMP_Y,
-  CUP_HORIZONTAL_EMPHASIS,
   CUP_LINEAR_SPEED_CAP,
-  CUP_SYNTH_SHAKE_GAIN,
-  CUP_TUMBLE_GAIN,
-  CUP_VERTICAL_MIX,
+  GRAVITY_Y,
   HANDS_OPEN_DROP_CENTER_Y,
   HANDS_OPEN_RELEASE_ANGULAR_SCALE,
   HANDS_OPEN_XZ_SPREAD,
@@ -41,15 +34,14 @@ import {
   VESSEL_SPAWN_XZ,
   WORLD_DT,
 } from './constants'
+import { drainMotionFramesThrough, motionFrameToPhysicsDrive } from './motionPhysics'
 import { createProceduralAltarInkStoneTextures } from './proceduralAltarInkStone'
 import { createArenaWallBodies, createCupDeckBody, useCoinPhysics } from './useCoinPhysics'
 
 const STONE_REPEAT = 3.6
 
-/** Scratch — avoid allocating Vec3 inside hot `useFrame` cup loop. */
-const CUP_SCRATCH_IMP = new CANNON.Vec3()
-const CUP_SCRATCH_PT = new CANNON.Vec3()
-const CUP_SCRATCH_TAU = new CANNON.Vec3()
+/** Scratch — avoid allocating vectors inside the fixed-step motion loop. */
+const MOTION_IMPULSE = new CANNON.Vec3()
 
 function removeBodiesFromWorld(world: CANNON.World, bodies: CANNON.Body[]): void {
   for (const b of bodies) {
@@ -87,11 +79,7 @@ function settleCoinOnTableRow(body: CANNON.Body, targetFace: 2 | 3, coinIndex: n
   body.position.set(x, halfT, 0)
 }
 
-function finalizeCoinsOnTable(
-  bodies: CANNON.Body[],
-  result: YaoResult,
-  _impulseSeed: number
-): void {
+function finalizeCoinsOnTable(bodies: CANNON.Body[], result: YaoResult): void {
   for (let i = 0; i < 3; i++) {
     settleCoinOnTableRow(bodies[i]!, result.coins[i]!, i)
   }
@@ -117,13 +105,11 @@ const CAP_AMBIGUOUS_ABS_Y = 0.3
 
 /**
  * Read which cap faces +world Y (table up / camera top). Yang cap is local +Y.
- * Near-rim orientations use `fallback` (same seed as toss impulses — not a second RNG).
+ * Ambiguous rim orientations are rejected before this is called.
  */
-function readCoinFaceFromBody(body: CANNON.Body, fallback: 2 | 3): 2 | 3 {
+function readCoinFaceFromBody(body: CANNON.Body): 2 | 3 {
   body.quaternion.vmult(LOCAL_THICK, WORLD_THICK)
-  const c = WORLD_THICK.y
-  if (Math.abs(c) < CAP_AMBIGUOUS_ABS_Y) return fallback
-  return c > 0 ? 3 : 2
+  return WORLD_THICK.y > 0 ? 3 : 2
 }
 
 /** True when cylinder axis is nearly horizontal ⇒ coin on rim / upright; cannot take yin–yang from mesh without “外应” rule. */
@@ -132,36 +118,32 @@ function bodyCapAmbiguous(body: CANNON.Body): boolean {
   return Math.abs(WORLD_THICK.y) < CAP_AMBIGUOUS_ABS_Y
 }
 
-function buildTossResultFromBodies(bodies: CANNON.Body[], impulseSeed: number): YaoResult {
-  const fb = coinsFromSeed(impulseSeed >>> 0)
+function buildTossResultFromBodies(bodies: CANNON.Body[]): YaoResult {
   const faces: [2 | 3, 2 | 3, 2 | 3] = [
-    readCoinFaceFromBody(bodies[0], fb.coins[0]),
-    readCoinFaceFromBody(bodies[1], fb.coins[1]),
-    readCoinFaceFromBody(bodies[2], fb.coins[2]),
+    readCoinFaceFromBody(bodies[0]),
+    readCoinFaceFromBody(bodies[1]),
+    readCoinFaceFromBody(bodies[2]),
   ]
-  const total = (faces[0] + faces[1] + faces[2]) as YaoResult['total']
+  const sum = faces[0] + faces[1] + faces[2]
+  if (sum !== 6 && sum !== 7 && sum !== 8 && sum !== 9) {
+    throw new Error(`Invalid physical coin total: ${sum}`)
+  }
+  const total: YaoResult['total'] = sum
   return { coins: faces, total }
 }
 
-/** Stack coins inside the invisible cup at floor height — no pop-from-table impulse. */
-function spawnCoinsInVessel(
-  bodies: CANNON.Body[],
-  impulseSeed: number,
-  tossRevision: number
-): void {
-  const rnd = mulberry32((impulseSeed ^ (tossRevision * 0xa5a51)) >>> 0)
+/** Canonical non-random initial state; only measured motion differentiates a cast. */
+function spawnCoinsInVessel(bodies: CANNON.Body[]): void {
   for (let i = 0; i < 3; i++) {
     const b = bodies[i]
     b.wakeUp()
     const [sx, sz] = VESSEL_SPAWN_XZ[i] ?? [0, 0]
-    const jx = (rnd() - 0.5) * 0.026
-    const jz = (rnd() - 0.5) * 0.026
     const y = VESSEL_FLOOR_Y + i * (COIN_THICKNESS + 0.003)
-    b.position.set(sx + jx, y, sz + jz)
+    b.position.set(sx, y, sz)
     b.velocity.setZero()
-    b.angularVelocity.set((rnd() - 0.5) * 3.2, (rnd() - 0.5) * 3.2, (rnd() - 0.5) * 3.2)
+    b.angularVelocity.setZero()
     const q = new CANNON.Quaternion()
-    q.setFromEuler((rnd() - 0.5) * 0.75, (rnd() - 0.5) * 1.05, (rnd() - 0.5) * 0.75)
+    q.setFromEuler((i - 1) * 0.08, i * 0.13, (1 - i) * 0.06)
     b.quaternion.copy(q)
   }
 }
@@ -170,25 +152,20 @@ function spawnCoinsInVessel(
  * Remove cup walls/deck, then place coins at “open hands” height with near-zero velocity — gravity-only drop.
  * Keeps quaternion from the shake so entropy stays in orientation; xz stays near end-of-shake cluster.
  */
-function applyHandsOpenRelease(
-  bodies: CANNON.Body[],
-  impulseSeed: number,
-  tossRevision: number
-): void {
-  const rnd = mulberry32((impulseSeed ^ (tossRevision * 0x51ece)) >>> 0)
+function applyHandsOpenRelease(bodies: CANNON.Body[]): void {
   const limit = HANDS_OPEN_XZ_SPREAD * 0.94
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i]
     b.wakeUp()
-    let x = b.position.x + (rnd() - 0.5) * 0.026
-    let z = b.position.z + (rnd() - 0.5) * 0.026
+    let x = b.position.x
+    let z = b.position.z
     const r = Math.sqrt(x * x + z * z)
     if (r > limit && r > 1e-8) {
       const s = limit / r
       x *= s
       z *= s
     }
-    b.position.set(x, HANDS_OPEN_DROP_CENTER_Y + (rnd() - 0.5) * 0.014, z)
+    b.position.set(x, HANDS_OPEN_DROP_CENTER_Y, z)
     b.velocity.setZero()
     b.angularVelocity.x *= HANDS_OPEN_RELEASE_ANGULAR_SCALE
     b.angularVelocity.y *= HANDS_OPEN_RELEASE_ANGULAR_SCALE
@@ -196,17 +173,45 @@ function applyHandsOpenRelease(
   }
 }
 
+function applyMeasuredMotion(
+  world: CANNON.World,
+  bodies: CANNON.Body[],
+  frame: MotionFrame,
+  dtSeconds: number
+): void {
+  const drive = motionFrameToPhysicsDrive(frame, dtSeconds)
+  if (drive.inertialAcceleration) {
+    for (const body of bodies) {
+      body.wakeUp()
+      MOTION_IMPULSE.set(
+        drive.inertialAcceleration.x * body.mass * dtSeconds,
+        drive.inertialAcceleration.y * body.mass * dtSeconds,
+        drive.inertialAcceleration.z * body.mass * dtSeconds
+      )
+      body.applyImpulse(MOTION_IMPULSE, body.position)
+    }
+  }
+
+  if (drive.gravity) world.gravity.set(drive.gravity.x, drive.gravity.y, drive.gravity.z)
+
+  if (!drive.angularVelocityDelta) return
+  for (const body of bodies) {
+    body.angularVelocity.x += drive.angularVelocityDelta.x
+    body.angularVelocity.y += drive.angularVelocityDelta.y
+    body.angularVelocity.z += drive.angularVelocityDelta.z
+  }
+}
+
 export interface PhysicsCoinsSceneProps {
   tossRevision: number
-  impulseSeed: number
   coinSkinConfig?: CoinSkinConfig
   /** Same as scene.background — table + lighting ground tint (no second “slab” color). */
   sceneBackdrop: string
   /** Committed line, or `wa_ying` to void whole hexagram per classical Liu Yao (rim / upright). */
   onPhysicsSettled: (payload: PhysicsSettlePayload) => void
   onImpact?: () => void
-  /** Accelerometer drive while tossing — parent updates each sample; small impulses follow the hand. */
-  shakeDriveRef?: MutableRefObject<{ x: number; y: number; z: number; mag: number }>
+  /** Per-cast DeviceMotion frames, consumed exactly once by fixed physics ticks. */
+  motionFrameQueueRef: MutableRefObject<MotionFrame[]>
   /** Invisible arena walls exist only while this is true (active toss / shake). */
   arenaWallsActive: boolean
   /**
@@ -291,9 +296,11 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
   const prevVy = useRef([0, 0, 0])
   const impactCooldown = useRef(0)
   const rimHangFrames = useRef(0)
+  const physicsAccumulator = useRef(0)
+  const simulationTimeMs = useRef(0)
+  const lastMotionTimeMs = useRef(0)
   /** `container_shake` = closed cup; `released` = walls/deck removed, coins falling from open-hand height. */
   const tossSubPhaseRef = useRef<'idle' | 'container_shake' | 'released'>('idle')
-  const containerShakeEndMsRef = useRef(0)
 
   const removeCupDeck = () => {
     const d = cupDeckBodyRef.current
@@ -312,25 +319,17 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
     arenaWallsRef.current = []
   }
 
-  /** Parent ended the toss (timeout / background) while Cannon is still active — snap flat without re-committing. */
+  /** Parent interruption cancels physics; it must never silently commit a line. */
   useEffect(() => {
     if (props.arenaWallsActive) return
     rimHangFrames.current = 0
     clearArenaWalls()
     if (phaseRef.current !== 'active') return
-    const result = buildTossResultFromBodies(bodies, props.impulseSeed)
-    finalizeCoinsOnTable(bodies, result, props.impulseSeed)
     phaseRef.current = 'idle'
-    settleCount.current = 0
-    const ambiguous = bodies.some((b) => bodyCapAmbiguous(b))
-    const released = tossSubPhaseRef.current === 'released'
     tossSubPhaseRef.current = 'idle'
-    if (released && ambiguous) {
-      props.onPhysicsSettled({ kind: 'wa_ying' })
-    } else {
-      props.onPhysicsSettled({ kind: 'line', result })
-    }
-  }, [props.arenaWallsActive, props.impulseSeed, world, bodies])
+    settleCount.current = 0
+    world.gravity.set(0, GRAVITY_Y, 0)
+  }, [props.arenaWallsActive, world, bodies])
 
   useEffect(() => {
     if (props.tossRevision <= 0 || props.tossRevision === lastRevision.current) return
@@ -338,6 +337,9 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
     phaseRef.current = 'active'
     settleCount.current = 0
     rimHangFrames.current = 0
+    physicsAccumulator.current = 0
+    simulationTimeMs.current = 0
+    lastMotionTimeMs.current = 0
 
     clearArenaWalls()
     const walls = createArenaWallBodies()
@@ -352,11 +354,10 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
     cupDeckBodyRef.current = deck
 
     tossSubPhaseRef.current = 'container_shake'
-    containerShakeEndMsRef.current = performance.now() + CONTAINER_SHAKE_DURATION_MS
-    spawnCoinsInVessel(bodies, props.impulseSeed, props.tossRevision)
-  }, [props.tossRevision, props.impulseSeed, bodies])
+    spawnCoinsInVessel(bodies)
+  }, [props.tossRevision, bodies])
 
-  /** Abort / reset: revision 0 — clear arena and park coins above the table. */
+  /** Abort / reset: revision 0 — park a non-overlapping row and sleep it deterministically. */
   useEffect(() => {
     if (props.tossRevision !== 0) return
     lastRevision.current = 0
@@ -365,6 +366,11 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
     phaseRef.current = 'idle'
     settleCount.current = 0
     rimHangFrames.current = 0
+    physicsAccumulator.current = 0
+    simulationTimeMs.current = 0
+    lastMotionTimeMs.current = 0
+    props.motionFrameQueueRef.current = []
+    world.gravity.set(0, GRAVITY_Y, 0)
     bodies.forEach((body, i) => {
       body.wakeUp()
       body.velocity.setZero()
@@ -379,6 +385,7 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       const q = new CANNON.Quaternion()
       qFlip.mult(qYaw, q)
       body.quaternion.copy(q)
+      body.sleep()
     })
   }, [props.tossRevision, bodies, world])
 
@@ -397,118 +404,49 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
   }, [props.vesselVisible])
 
   useFrame((_, delta) => {
-    world.fixedStep(WORLD_DT, delta)
+    physicsAccumulator.current = Math.min(physicsAccumulator.current + Math.min(delta, 0.1), 0.25)
+    let physicsSteps = 0
+    while (physicsAccumulator.current >= WORLD_DT && physicsSteps < 12) {
+      physicsAccumulator.current -= WORLD_DT
+      physicsSteps += 1
 
-    const frameT = performance.now()
+      if (phaseRef.current === 'active') {
+        simulationTimeMs.current += WORLD_DT * 1_000
 
-    if (phaseRef.current === 'active' && bodies.length === 3) {
-      if (
-        tossSubPhaseRef.current === 'container_shake' &&
-        frameT >= containerShakeEndMsRef.current
-      ) {
-        clearArenaWalls()
-        applyHandsOpenRelease(bodies, props.impulseSeed, props.tossRevision)
-        tossSubPhaseRef.current = 'released'
-      }
-
-      if (tossSubPhaseRef.current === 'container_shake') {
-        const t = frameT / 1000
-        const phase = (props.impulseSeed % 1000) * 0.001 + props.tossRevision * 0.17
-
-        // Slow cradle on the table plane (龟壳定点水平回旋 — container centre ~ fixed on altar).
-        const ω0 = Math.PI * 2 * 2.65
-        const slowX = Math.cos(t * ω0 + phase)
-        const slowZ = Math.sin(t * ω0 * 1.04 + phase * 1.21)
-
-        // Mid churn — coins shear and stack inside walls.
-        const m1 = Math.sin(t * 12.55 + phase * 3.1)
-        const m2 = Math.cos(t * 10.18 + props.tossRevision * 0.41)
-
-        // High-frequency chatter (指尖/甲壳内的细碎碰撞).
-        const h1 = Math.sin(t * 26.5)
-        const h2 = Math.cos(t * 21.3)
-
-        const ax = slowX * 0.52 + m1 * 0.74 + h1 * 0.44
-        const az = slowZ * 0.52 + m2 * 0.74 + h2 * 0.44
-        const ay = Math.sin(t * ω0 * 2.08 + phase) * 0.13 + h2 * 0.055
-
-        const pulse = 0.52 + 0.48 * Math.abs(Math.sin(t * 3.45))
-        const frameScale = Math.min(delta * 90, 2.85)
-        const gain = CUP_SYNTH_SHAKE_GAIN * pulse * frameScale
-        const hx = CUP_HORIZONTAL_EMPHASIS
-        const vy = CUP_VERTICAL_MIX
-        const tauScale = gain * CUP_TUMBLE_GAIN
-
-        for (let i = 0; i < bodies.length; i++) {
-          const b = bodies[i]
-          b.wakeUp()
-          const split = 0.08 * Math.sin(t * 15.3 + i * 1.37 + phase)
-          const dip = 0.08 * Math.cos(t * 14.1 + i * 1.09)
-          CUP_SCRATCH_IMP.set((ax + split) * gain * hx, ay * gain * vy, (az + dip) * gain * hx)
-          CUP_SCRATCH_PT.set(
-            b.position.x + 0.028 * m2 + 0.015 * (i - 1),
-            b.position.y - COIN_RADIUS * 0.35,
-            b.position.z - 0.028 * m1 - 0.015 * (i - 1)
-          )
-          b.applyImpulse(CUP_SCRATCH_IMP, CUP_SCRATCH_PT)
-
-          CUP_SCRATCH_TAU.set(
-            (m1 + h1 * 0.35) * tauScale,
-            (h2 - h1) * tauScale * 0.42,
-            (m2 - h2 * 0.35) * tauScale
-          )
-          b.applyTorque(CUP_SCRATCH_TAU)
-        }
-
-        const cap2 = CUP_LINEAR_SPEED_CAP * CUP_LINEAR_SPEED_CAP
-        for (const b of bodies) {
-          const v = b.velocity
-          const sp2 = v.lengthSquared()
-          if (sp2 > cap2) {
-            v.scale(CUP_LINEAR_SPEED_CAP / Math.sqrt(sp2), v)
+        if (tossSubPhaseRef.current === 'container_shake') {
+          const queue = props.motionFrameQueueRef.current
+          const readyFrames = drainMotionFramesThrough(queue, simulationTimeMs.current)
+          for (const frame of readyFrames) {
+            const motionDt = Math.max(
+              0.001,
+              Math.min(0.1, (frame.t - lastMotionTimeMs.current) / 1_000)
+            )
+            lastMotionTimeMs.current = frame.t
+            applyMeasuredMotion(world, bodies, frame, motionDt)
           }
-          if (b.position.y > CUP_CEILING_CLAMP_Y) {
-            b.position.y = CUP_CEILING_CLAMP_Y
-            if (v.y > 0) v.y *= -0.18
+
+          const speedCapSquared = CUP_LINEAR_SPEED_CAP * CUP_LINEAR_SPEED_CAP
+          for (const body of bodies) {
+            const speedSquared = body.velocity.lengthSquared()
+            if (speedSquared > speedCapSquared) {
+              body.velocity.scale(CUP_LINEAR_SPEED_CAP / Math.sqrt(speedSquared), body.velocity)
+            }
+            if (body.position.y > CUP_CEILING_CLAMP_Y) {
+              body.position.y = CUP_CEILING_CLAMP_Y
+              if (body.velocity.y > 0) body.velocity.y *= -0.18
+            }
+          }
+
+          if (simulationTimeMs.current >= CONTAINER_SHAKE_DURATION_MS) {
+            clearArenaWalls()
+            world.gravity.set(0, GRAVITY_Y, 0)
+            applyHandsOpenRelease(bodies)
+            tossSubPhaseRef.current = 'released'
           }
         }
       }
-    }
 
-    if (
-      phaseRef.current === 'active' &&
-      tossSubPhaseRef.current === 'released' &&
-      bodies.length === 3
-    ) {
-      const linearCalm = bodies.every((b) => b.velocity.lengthSquared() < RIM_STUCK_LINEAR_SQ)
-      const anyRimLow = bodies.some((b) => bodyOnRim(b) && b.position.y < COIN_RADIUS + 0.055)
-      if (linearCalm && anyRimLow) {
-        rimHangFrames.current += 1
-      } else {
-        rimHangFrames.current = 0
-      }
-
-      if (rimHangFrames.current >= RIM_FORCE_SNAP_FRAMES) {
-        const result = buildTossResultFromBodies(bodies, props.impulseSeed)
-        clearArenaWalls()
-        finalizeCoinsOnTable(bodies, result, props.impulseSeed)
-        phaseRef.current = 'idle'
-        tossSubPhaseRef.current = 'idle'
-        settleCount.current = 0
-        rimHangFrames.current = 0
-        /** Classical rule: rim / upright hang voids the whole hexagram (not a seed fallback line). */
-        props.onPhysicsSettled({ kind: 'wa_ying' })
-      }
-    }
-
-    const drive = props.shakeDriveRef?.current
-    if (phaseRef.current === 'active' && drive && drive.mag > 1.05) {
-      const cupBoost = tossSubPhaseRef.current === 'container_shake' ? 1.26 : 1
-      const s = Math.min(0.021, 0.0064 * (drive.mag - 1.05)) * cupBoost * Math.min(delta * 90, 2.2)
-      for (const b of bodies) {
-        b.wakeUp()
-        b.applyImpulse(new CANNON.Vec3(drive.x * s, drive.y * s * 0.22, drive.z * s), b.position)
-      }
+      world.step(WORLD_DT)
     }
 
     const now = performance.now()
@@ -546,19 +484,33 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       return
     }
 
+    const linearCalm = bodies.every((body) => body.velocity.lengthSquared() < RIM_STUCK_LINEAR_SQ)
+    const anyRimLow = bodies.some(
+      (body) => bodyOnRim(body) && body.position.y < COIN_RADIUS + 0.055
+    )
+    rimHangFrames.current = linearCalm && anyRimLow ? rimHangFrames.current + physicsSteps : 0
+
+    if (rimHangFrames.current >= RIM_FORCE_SNAP_FRAMES) {
+      clearArenaWalls()
+      phaseRef.current = 'idle'
+      tossSubPhaseRef.current = 'idle'
+      settleCount.current = 0
+      rimHangFrames.current = 0
+      props.onPhysicsSettled({ kind: 'wa_ying' })
+      return
+    }
+
     const allSlow = bodies.every(
       (b) =>
         b.velocity.lengthSquared() < SETTLE_LINEAR_EPS * SETTLE_LINEAR_EPS &&
         b.angularVelocity.lengthSquared() < SETTLE_ANGULAR_EPS * SETTLE_ANGULAR_EPS
     )
-    settleCount.current = allSlow ? settleCount.current + 1 : 0
+    settleCount.current = allSlow ? settleCount.current + physicsSteps : 0
 
     if (settleCount.current >= SETTLE_FRAMES_NEEDED) {
       clearArenaWalls()
 
       if (bodies.some((b) => bodyCapAmbiguous(b))) {
-        const result = buildTossResultFromBodies(bodies, props.impulseSeed)
-        finalizeCoinsOnTable(bodies, result, props.impulseSeed)
         phaseRef.current = 'idle'
         tossSubPhaseRef.current = 'idle'
         settleCount.current = 0
@@ -567,8 +519,8 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
         return
       }
 
-      const result = buildTossResultFromBodies(bodies, props.impulseSeed)
-      finalizeCoinsOnTable(bodies, result, props.impulseSeed)
+      const result = buildTossResultFromBodies(bodies)
+      finalizeCoinsOnTable(bodies, result)
       phaseRef.current = 'idle'
       tossSubPhaseRef.current = 'idle'
       settleCount.current = 0

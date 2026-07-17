@@ -40,21 +40,10 @@ import {
   PHYSICS_COMMIT_FALLBACK_MS,
 } from '@/components/casting-scene/constants'
 import { LazyCastingScene, preloadCastingScene } from '@/components/casting-scene/LazyCastingScene'
-import { useSensorEntropy } from '@/components/casting-scene/useSensorEntropy'
+import { useMotionCast } from '@/components/casting-scene/useMotionCast'
 import { runPortfolioPreview } from '@/lib/api'
-import {
-  coinsFromSeed,
-  coinsFromSeedSyncFallback,
-  fingerprintSamples,
-  hashEntropyMaterial,
-  seedUInt32FromHashHex,
-} from '@/lib/casting-entropy'
-import type { PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
-import {
-  type CoinSkinConfig,
-  DEFAULT_COIN_SKIN,
-  getCoinSkinConfig,
-} from '@/lib/coin-skins'
+import type { CastLineRecord, PhysicsSettlePayload, YaoResult } from '@/lib/casting-types'
+import { type CoinSkinConfig, DEFAULT_COIN_SKIN, getCoinSkinConfig } from '@/lib/coin-skins'
 import {
   checkDuplicateQuestion,
   cooldownRemainingMs,
@@ -68,6 +57,12 @@ import {
 } from '@/lib/coincast-ritual'
 import { canUseExpoGl } from '@/lib/gl-capabilities'
 import { type SatelliteLocaleKey, useSatelliteI18n } from '@/lib/i18n'
+import {
+  aggregateCastDigests,
+  buildCastEntropyMetadata,
+  createDigitalAssistResult,
+  type MotionSession,
+} from '@/lib/motion-cast'
 import { yaoNumberForOverlayRow } from '@/lib/yao-display'
 
 interface AccelerometerSample {
@@ -84,9 +79,6 @@ interface AccelerometerModule {
   setUpdateInterval: (ms: number) => void
   addListener: (listener: (sample: AccelerometerSample) => void) => AccelerometerSub
 }
-
-/** Dev-only: skip first-cast ack, cooldown, and min question length to exercise WebGL physics. */
-type ResolveTossOpts = { devBypassGuards?: boolean }
 
 function formatCoincastBanRemaining(iso: string | null, uiLocale: string): string {
   if (!iso) return '—'
@@ -214,7 +206,7 @@ export default function CoinCastHomeScreen() {
   const [questionSheetOpen, setQuestionSheetOpen] = useState(false)
   const [draftQuestion, setDraftQuestion] = useState('')
   const [yaoResults, setYaoResults] = useState<YaoResult[]>([])
-  const [roundEntropyHashes, setRoundEntropyHashes] = useState<string[]>([])
+  const [castLineRecords, setCastLineRecords] = useState<CastLineRecord[]>([])
   const [motionEnabled, setMotionEnabled] = useState(true)
   const hapticsEnabledRef = useRef(true)
   const [coinSkinConfig, setCoinSkinConfig] = useState<CoinSkinConfig>(DEFAULT_COIN_SKIN)
@@ -235,7 +227,6 @@ export default function CoinCastHomeScreen() {
     return !allow
   }, [])
   const [tossAnimating, setTossAnimating] = useState(false)
-  const [activeToss, setActiveToss] = useState<{ seed: number } | null>(null)
   const [tossRevision, setTossRevision] = useState(0)
   const [castCameraPhase, setCastCameraPhase] = useState<'idle' | 'ritual' | 'table'>('idle')
 
@@ -255,11 +246,17 @@ export default function CoinCastHomeScreen() {
   const breathingShownRef = useRef(false)
   const overlayPulse = useSharedValue(1)
   const overlayRingStyle = useAnimatedStyle(() => ({ transform: [{ scale: overlayPulse.value }] }))
-  const pendingCommitRef = useRef<{ hash: string; seed: number } | null>(null)
-  const shakeDriveRef = useRef({ x: 0, y: 0, z: 0, mag: 0 })
-  /** Dev physics toss: keep synthetic accel for whole flight (and skip real accelerometer overwriting ref). */
-  const devPhysicsAutoShakeRef = useRef(false)
-  const { pushSample, snapshot, clear: clearAccel } = useSensorEntropy()
+  const pendingSessionRef = useRef<Promise<MotionSession> | null>(null)
+  const motionFinishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tossStartingRef = useRef(false)
+  const retryMotionRef = useRef<() => void>(() => undefined)
+  const {
+    status: motionStatus,
+    frameQueueRef,
+    startCapture,
+    finishCapture,
+    cancelCapture,
+  } = useMotionCast()
 
   const live = useRef({
     question,
@@ -322,40 +319,88 @@ export default function CoinCastHomeScreen() {
     question.trim().length >= 2 && completed < 6 && !loading && !(glEnabled && tossAnimating)
   const canCommit = question.trim().length >= 2 && completed === 6 && !loading
 
-  const commitLine = useCallback((result: YaoResult, hash: string) => {
-    setYaoResults((prev) => [...prev, result])
-    setRoundEntropyHashes((prev) => [...prev, hash])
+  const commitLine = useCallback((record: CastLineRecord) => {
+    setYaoResults((prev) => [...prev, record.result])
+    setCastLineRecords((prev) => [...prev, record])
     if (hapticsEnabledRef.current) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     }
     setError(null)
   }, [])
 
+  const confirmDigitalAssist = useCallback(() => {
+    Alert.alert(t('digitalAssistTitle'), t('digitalAssistMessage'), [
+      { text: t('alertContinue'), style: 'cancel' },
+      {
+        text: t('digitalAssistConfirm'),
+        onPress: () => {
+          void (async () => {
+            try {
+              const record = await createDigitalAssistResult()
+              commitLine(record)
+            } catch (err) {
+              console.warn('[coincast] digital assist failed', err)
+              setError(t('homeError'))
+            }
+          })()
+        },
+      },
+    ])
+  }, [commitLine, t])
+
+  const showMotionFallback = useCallback(
+    (message: string) => {
+      Alert.alert(t('motionUnavailableTitle'), message, [
+        { text: t('motionRetry'), onPress: () => retryMotionRef.current() },
+        { text: t('digitalAssistAction'), onPress: confirmDigitalAssist },
+      ])
+    },
+    [confirmDigitalAssist, t]
+  )
+
   const handlePhysicsSettled = useCallback(
     (payload: PhysicsSettlePayload) => {
-      const pending = pendingCommitRef.current
+      const pending = pendingSessionRef.current
       if (!pending) return
-      pendingCommitRef.current = null
-      setTossAnimating(false)
-      if (__DEV__) devPhysicsAutoShakeRef.current = false
+      pendingSessionRef.current = null
 
-      if (payload.kind === 'wa_ying') {
-        clearAccel()
-        setYaoResults([])
-        setRoundEntropyHashes([])
-        setError(null)
-        setActiveToss(null)
-        setTossRevision(0)
-        if (hapticsEnabledRef.current) {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      void (async () => {
+        try {
+          const session = await pending
+          setTossAnimating(false)
+
+          if (payload.kind === 'wa_ying') {
+            setYaoResults([])
+            setCastLineRecords([])
+            setError(null)
+            setTossRevision(0)
+            if (hapticsEnabledRef.current) {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+            }
+            Alert.alert(t('waYingTitle'), t('waYingMessage'), [{ text: t('waYingAck') }])
+            return
+          }
+
+          if (!session.quality.sufficient) {
+            setTossRevision(0)
+            showMotionFallback(t('motionInsufficientMessage'))
+            return
+          }
+
+          commitLine({
+            result: payload.result,
+            source: 'motion',
+            digest: session.digest,
+          })
+        } catch (err) {
+          console.warn('[coincast] motion session finalization failed', err)
+          setTossAnimating(false)
+          setTossRevision(0)
+          showMotionFallback(t('motionInterruptedMessage'))
         }
-        Alert.alert(t('waYingTitle'), t('waYingMessage'), [{ text: t('waYingAck') }])
-        return
-      }
-
-      commitLine(payload.result, pending.hash)
+      })()
     },
-    [clearAccel, commitLine, t]
+    [commitLine, showMotionFallback, t]
   )
 
   const impactHaptic = useCallback(() => {
@@ -363,110 +408,109 @@ export default function CoinCastHomeScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [])
 
-  const runEntropyCommit = useCallback(
-    async (q: string, lineCount: number) => {
-      const snap = snapshot()
-      const fp = fingerprintSamples(snap, lineCount, normalizeQuestion(q))
-      let hashHex: string
-      let seed: number
-      try {
-        hashHex = await hashEntropyMaterial(fp)
-        seed = seedUInt32FromHashHex(hashHex)
-      } catch (err) {
-        console.warn('[coincast] entropy hash failed', err)
-        seed = seedUInt32FromHashHex('coincast_fallback')
-        hashHex = 'fallback'
-      }
+  const beginMotionToss = useCallback(async () => {
+    if (tossStartingRef.current) return
+    tossStartingRef.current = true
+    if (!glEnabled) {
+      showMotionFallback(t('motionUnavailableMessage'))
+      tossStartingRef.current = false
+      return
+    }
 
-      if (glEnabled) {
-        pendingCommitRef.current = { hash: hashHex, seed }
-        setActiveToss({ seed })
-        setTossRevision((r) => r + 1)
-        setTossAnimating(true)
-        return
-      }
+    const started = await startCapture()
+    if (!started.ok) {
+      const message =
+        started.reason === 'permission_denied'
+          ? t('motionPermissionMessage')
+          : t('motionUnavailableMessage')
+      showMotionFallback(message)
+      tossStartingRef.current = false
+      return
+    }
 
-      const result =
-        hashHex === 'fallback' ? coinsFromSeedSyncFallback(snap, lineCount) : coinsFromSeed(seed)
-      commitLine(result, hashHex)
-    },
-    [commitLine, glEnabled, snapshot]
-  )
+    pendingSessionRef.current = new Promise<MotionSession>((resolve, reject) => {
+      motionFinishTimeoutRef.current = setTimeout(() => {
+        motionFinishTimeoutRef.current = null
+        void finishCapture().then(resolve, reject)
+      }, CONTAINER_SHAKE_DURATION_MS)
+    })
+    setTossRevision((revision) => revision + 1)
+    setTossAnimating(true)
+    tossStartingRef.current = false
+  }, [finishCapture, glEnabled, showMotionFallback, startCapture, t])
 
-  const resolveToss = useCallback(
-    async (opts?: ResolveTossOpts) => {
-      const bypass = __DEV__ && opts?.devBypassGuards === true
-      const {
-        question: qRaw,
-        loading: ld,
-        firstAck: ack,
-        yaoResults: lines,
-        tossAnimating: tossing,
-      } = live.current
-      if (ld || lines.length >= 6 || tossing) return
+  const resolveToss = useCallback(async () => {
+    const {
+      question: qRaw,
+      loading: ld,
+      firstAck: ack,
+      yaoResults: lines,
+      tossAnimating: tossing,
+    } = live.current
+    if (ld || lines.length >= 6 || tossing) return
 
-      const q = bypass && qRaw.trim().length < 2 ? '__dev_physics__' : qRaw
-      if (!bypass && qRaw.trim().length < 2) return
+    if (qRaw.trim().length < 2) return
 
-      if (!bypass && !ack) {
-        Alert.alert(t('alertFirstTitle'), t('alertFirstMsg'), [
-          { text: t('alertContinue'), style: 'cancel' },
-          { text: t('alertFirstOpen'), onPress: () => router.push('/before-cast') },
-        ])
-        return
-      }
+    if (!ack) {
+      Alert.alert(t('alertFirstTitle'), t('alertFirstMsg'), [
+        { text: t('alertContinue'), style: 'cancel' },
+        { text: t('alertFirstOpen'), onPress: () => router.push('/before-cast') },
+      ])
+      return
+    }
 
-      if (!bypass && lines.length === 0) {
-        const meta = await getLastReadingMeta()
-        if (meta) {
-          const rem = cooldownRemainingMs(meta.at)
-          if (rem > 0) {
-            const mins = Math.max(1, Math.ceil(rem / 60_000))
-            Alert.alert(t('alertCooldownTitle'), t('alertCooldownMsg', { m: mins }))
-            return
-          }
-        }
-      }
-
-      const afterDuplicateAndBreathing = async () => {
-        if (!bypass && lines.length === 0 && !breathingShownRef.current) {
-          breathingShownRef.current = true
-          setBreathingOverlayVisible(true)
-          await new Promise<void>((r) => setTimeout(r, 2500))
-          setBreathingOverlayVisible(false)
-        }
-        await runEntropyCommit(q, lines.length)
-      }
-
-      if (!bypass && lines.length === 0) {
-        const isDup = await checkDuplicateQuestion(normalizeQuestion(qRaw.trim()))
-        if (isDup) {
-          await new Promise<void>((resolve) => {
-            Alert.alert(t('alertDuplicateTitle'), t('alertDuplicateMsg'), [
-              { text: t('alertDuplicateCancel'), style: 'cancel', onPress: () => resolve() },
-              {
-                text: t('alertDuplicateContinue'),
-                onPress: () => {
-                  void (async () => {
-                    await afterDuplicateAndBreathing()
-                    resolve()
-                  })()
-                },
-              },
-            ])
-          })
+    if (lines.length === 0) {
+      const meta = await getLastReadingMeta()
+      if (meta) {
+        const rem = cooldownRemainingMs(meta.at)
+        if (rem > 0) {
+          const mins = Math.max(1, Math.ceil(rem / 60_000))
+          Alert.alert(t('alertCooldownTitle'), t('alertCooldownMsg', { m: mins }))
           return
         }
       }
+    }
 
-      await afterDuplicateAndBreathing()
-    },
-    [router, runEntropyCommit, t]
-  )
+    const afterDuplicateAndBreathing = async () => {
+      if (lines.length === 0 && !breathingShownRef.current) {
+        breathingShownRef.current = true
+        setBreathingOverlayVisible(true)
+        await new Promise<void>((r) => setTimeout(r, 2500))
+        setBreathingOverlayVisible(false)
+      }
+      await beginMotionToss()
+    }
+
+    if (lines.length === 0) {
+      const isDup = await checkDuplicateQuestion(normalizeQuestion(qRaw.trim()))
+      if (isDup) {
+        await new Promise<void>((resolve) => {
+          Alert.alert(t('alertDuplicateTitle'), t('alertDuplicateMsg'), [
+            { text: t('alertDuplicateCancel'), style: 'cancel', onPress: () => resolve() },
+            {
+              text: t('alertDuplicateContinue'),
+              onPress: () => {
+                void (async () => {
+                  await afterDuplicateAndBreathing()
+                  resolve()
+                })()
+              },
+            },
+          ])
+        })
+        return
+      }
+    }
+
+    await afterDuplicateAndBreathing()
+  }, [beginMotionToss, router, t])
 
   const tryShake = useCallback(async () => {
     await resolveToss()
   }, [resolveToss])
+  retryMotionRef.current = () => {
+    void resolveToss()
+  }
 
   // Open the question sheet (only before any line is cast — the question is
   // locked once the hexagram starts building).
@@ -498,19 +542,21 @@ export default function CoinCastHomeScreen() {
         text: t('alertAbortConfirm'),
         style: 'destructive',
         onPress: () => {
-          if (__DEV__) devPhysicsAutoShakeRef.current = false
           setYaoResults([])
-          setRoundEntropyHashes([])
+          setCastLineRecords([])
           setError(null)
-          pendingCommitRef.current = null
+          pendingSessionRef.current = null
+          if (motionFinishTimeoutRef.current) {
+            clearTimeout(motionFinishTimeoutRef.current)
+            motionFinishTimeoutRef.current = null
+          }
+          cancelCapture()
           setTossAnimating(false)
-          setActiveToss(null)
           setTossRevision(0)
-          clearAccel()
         },
       },
     ])
-  }, [clearAccel, t])
+  }, [cancelCapture, t])
 
   useEffect(() => {
     if (blockIosDevAccelShake) return
@@ -519,7 +565,6 @@ export default function CoinCastHomeScreen() {
     if (!accelerometer) return
     accelerometer.setUpdateInterval(120)
     const sub = accelerometer.addListener(({ x, y, z }) => {
-      pushSample(x, y, z)
       const {
         question: q,
         yaoResults: lines,
@@ -528,15 +573,6 @@ export default function CoinCastHomeScreen() {
         motionEnabled: mot,
         tossAnimating: tossing,
       } = live.current
-
-      if (glEnabled && tossing) {
-        if (__DEV__ && devPhysicsAutoShakeRef.current) {
-          return
-        }
-        const magnitude = Math.sqrt(x * x + y * y + z * z)
-        shakeDriveRef.current = { x, y, z, mag: magnitude }
-        return
-      }
 
       if (!mot || ld || !ack || tossing) return
       if (q.trim().length < 2 || lines.length >= 6) return
@@ -550,33 +586,44 @@ export default function CoinCastHomeScreen() {
     return () => {
       sub.remove()
     }
-  }, [blockIosDevAccelShake, glEnabled, motionEnabled, firstAck, loading, pushSample, resolveToss])
+  }, [blockIosDevAccelShake, motionEnabled, firstAck, loading, resolveToss])
 
-  /** If WebGL physics never reports settle (device GL quirks), still commit the pending line. */
   useEffect(() => {
-    if (!glEnabled || !tossAnimating) return
-    const id = setTimeout(() => {
-      const pending = pendingCommitRef.current
-      if (!pending) return
-      pendingCommitRef.current = null
-      const fallback = coinsFromSeed(pending.seed)
-      commitLine(fallback, pending.hash)
+    if (!tossAnimating) return
+    if (motionStatus !== 'interrupted' && motionStatus !== 'error') return
+    pendingSessionRef.current = null
+    if (motionFinishTimeoutRef.current) {
+      clearTimeout(motionFinishTimeoutRef.current)
+      motionFinishTimeoutRef.current = null
+    }
+    setTossAnimating(false)
+    setTossRevision(0)
+    showMotionFallback(t('motionInterruptedMessage'))
+  }, [motionStatus, showMotionFallback, t, tossAnimating])
+
+  useEffect(() => {
+    if (!tossAnimating) return
+    const timeout = setTimeout(() => {
+      if (!pendingSessionRef.current) return
+      pendingSessionRef.current = null
+      cancelCapture()
       setTossAnimating(false)
-      if (__DEV__) devPhysicsAutoShakeRef.current = false
+      setTossRevision(0)
+      showMotionFallback(t('motionPhysicsTimeoutMessage'))
     }, PHYSICS_COMMIT_FALLBACK_MS)
-    return () => clearTimeout(id)
-  }, [glEnabled, tossAnimating, commitLine])
+    return () => clearTimeout(timeout)
+  }, [cancelCapture, showMotionFallback, t, tossAnimating])
 
   const castNow = async () => {
     if (!canCommit) return
     try {
       setLoading(true)
       setError(null)
-      const entropyMaterial = roundEntropyHashes.join(':')
+      const entropyDigest = await aggregateCastDigests(castLineRecords)
       const preview = await runPortfolioPreview(
         {
           question: question.trim(),
-          entropy: `coincast_${Date.now()}_${entropyMaterial}`,
+          entropy: buildCastEntropyMetadata(castLineRecords, entropyDigest),
           yaoValues: yaoResults.map((item) => item.total),
         },
         locale
@@ -594,7 +641,7 @@ export default function CoinCastHomeScreen() {
       await recordReadingCompleted(norm)
       setQuestion('')
       setYaoResults([])
-      setRoundEntropyHashes([])
+      setCastLineRecords([])
       setError(null)
       router.push({
         pathname: '/result',
@@ -740,14 +787,13 @@ export default function CoinCastHomeScreen() {
               {glEnabled ? (
                 <LazyCastingScene
                   tossRevision={tossRevision}
-                  impulseSeed={activeToss?.seed ?? 0}
                   coinSkinConfig={coinSkinConfig}
                   sceneBg={castingBackdrop}
                   arenaWallsActive={tossAnimating}
                   cameraPhase={castCameraPhase}
                   onPhysicsSettled={handlePhysicsSettled}
                   onImpact={impactHaptic}
-                  shakeDriveRef={shakeDriveRef}
+                  motionFrameQueueRef={frameQueueRef}
                   style={{ width: '100%', flex: 1, minHeight: 0 }}
                 />
               ) : (

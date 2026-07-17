@@ -51,8 +51,6 @@ const EN = {
     '3D preview needs a WebGL dev build. Tosses still work; lines show after each throw.',
   homeDevShakeHint:
     'Dev builds: use the Shake button (system may reserve device shake for the dev menu).',
-  homeDevPhysicsButton: 'Dev · physics toss',
-  homeDevPhysicsJiggleHint: 'Hold for stronger synthetic shake.',
   settingsTitle: 'Settings',
   settingsMotionLabel: 'Shake to cast',
   settingsMotionHint: 'When on, a firm shake counts as one toss of the three coins.',
@@ -62,14 +60,23 @@ const EN = {
   settingsHapticsLabel: 'Vibration feedback',
   settingsHapticsHint: 'Haptic pulses when coins land and when each line completes.',
   settingsCoinSkinLabel: 'Coin appearance',
-  settingsCoinSkinHint: 'Default is the Yaul logo coin — round with a square hole, matching the app icon.',
+  settingsCoinSkinHint:
+    'Default is the Yaul logo coin — round with a square hole, matching the app icon.',
   settingsCoinSkinDefault: 'Logo default',
   settingsCoinSkinCustomActive: 'Custom coin face',
   settingsCoinSkinUpload: 'Upload coin face',
   settingsCoinSkinUploadHint: 'Your image is scaled to fit without cropping.',
   settingsCoinSkinUploading: 'Uploading…',
   settingsCoinSkinUploadFailedTitle: 'Upload failed',
-  settingsCoinSkinUploadFailedBody: 'Could not save the coin face. Check photo access and try a JPEG or PNG.',
+  settingsCoinSkinUploadFailedBody:
+    'Could not save the coin face. Check photo access and try a JPEG or PNG.',
+  settingsCoinSkinPermissionBody: 'Photo access is required to choose a custom coin face.',
+  settingsCoinSkinNativeBody:
+    'This build does not include the photo or image-processing module. Install a newly rebuilt app and retry.',
+  settingsCoinSkinFormatBody:
+    'This image could not be decoded. Choose a valid JPEG, PNG, or HEIC image.',
+  settingsCoinSkinStorageBody: 'The normalized coin image could not be saved to device storage.',
+  settingsOpenSystemSettings: 'Open Settings',
   settingsCoinSkinReset: 'Use logo default',
   settingsAccountSection: 'Account',
   settingsAccountAppleKind: 'Apple account',
@@ -210,6 +217,23 @@ const EN = {
     'You have used today’s three guest classical casts (UTC). Sign in with Apple to continue with your linked quota, or buy AI cast packs.',
   alertQuotaSignIn: 'Sign in',
   alertQuotaUpgrade: 'View plans',
+  motionUnavailableTitle: 'Sensing unavailable',
+  motionUnavailableMessage:
+    'This device cannot run motion-driven coin physics. Retry sensing or explicitly use a digital assisted cast.',
+  motionPermissionMessage:
+    'Motion access was not granted. Enable Motion & Fitness access in Settings, then retry.',
+  motionInsufficientMessage:
+    'This motion session was incomplete or too gentle to form a motion-caused line. Shake through the full sensing interval and retry.',
+  motionInterruptedMessage:
+    'Sensing was interrupted before this line was complete. Keep Yaul active and retry.',
+  motionPhysicsTimeoutMessage:
+    'The physical coins did not reach a readable resting state. Retry sensing or use a digital assisted cast.',
+  motionRetry: 'Retry sensing',
+  digitalAssistAction: 'Digital assisted cast',
+  digitalAssistTitle: 'Use digital assisted cast?',
+  digitalAssistMessage:
+    'This line will use secure digital randomness, not your movement. Its source will be recorded as digital assistance.',
+  digitalAssistConfirm: 'Use digital assistance',
   waYingTitle: 'Outer sign — this hexagram is void',
   waYingMessage:
     'A coin settled on its edge: too rare to read as yin or yang. Classical Liu Yao treats this as an outer sign — the whole hexagram is void (including lines you already cast). Settle your mind, then cast all six lines again from the first. It often hints the matter is unsettled, finely balanced, or not yet ready for a fixed verdict.',
@@ -240,8 +264,6 @@ const ZH: Record<keyof typeof EN, string> = {
   coinFaceA11yYang: '阳面',
   homeGlFallback: '3D 预览需含 WebGL 的构建；摇卦与爻线照常。',
   homeDevShakeHint: '开发版请用下方「摇卦」；系统可能占用体感摇一摇。',
-  homeDevPhysicsButton: '开发 · 物理摇卦',
-  homeDevPhysicsJiggleHint: '长按可增强合成摇晃。',
   settingsTitle: '设置',
   settingsMotionLabel: '摇一摇起爻',
   settingsMotionHint: '开启后，用力摇晃手机可代替一次三钱落地。',
@@ -259,6 +281,11 @@ const ZH: Record<keyof typeof EN, string> = {
   settingsCoinSkinUploading: '上传中…',
   settingsCoinSkinUploadFailedTitle: '上传失败',
   settingsCoinSkinUploadFailedBody: '无法保存钱面图片。请确认相册权限，并尽量使用 JPEG 或 PNG。',
+  settingsCoinSkinPermissionBody: '需要相册权限才能选择自定义钱面。',
+  settingsCoinSkinNativeBody: '当前安装包缺少相册或图片处理原生模块。请安装重新构建的应用后再试。',
+  settingsCoinSkinFormatBody: '无法解析这张图片。请选择有效的 JPEG、PNG 或 HEIC 图片。',
+  settingsCoinSkinStorageBody: '规范化后的钱面图片无法保存到设备存储。',
+  settingsOpenSystemSettings: '打开系统设置',
   settingsCoinSkinReset: '恢复 Logo 默认',
   settingsAccountSection: '账号',
   settingsAccountAppleKind: 'Apple 账号',
@@ -387,6 +414,18 @@ const ZH: Record<keyof typeof EN, string> = {
     '今日（UTC）三次免登录经典起卦已用完。请使用 Apple 登录以继续使用账号额度，或购买 AI 释读包。',
   alertQuotaSignIn: '去登录',
   alertQuotaUpgrade: '查看方案',
+  motionUnavailableTitle: '感应不可用',
+  motionUnavailableMessage: '当前设备无法运行运动驱动的铜钱物理。可重试感应，或明确选择数字代摇。',
+  motionPermissionMessage: '尚未获得运动传感器权限。请在系统设置中开启“运动与健身”权限后重试。',
+  motionInsufficientMessage:
+    '本次运动序列不完整或动作过轻，无法形成运动因果的一爻。请在完整感应时段内持续摇动后重试。',
+  motionInterruptedMessage: '本爻感应尚未完成便被中断。请保持 Yaul 在前台并重试。',
+  motionPhysicsTimeoutMessage: '铜钱未在时限内形成可判读的稳定落面。请重试感应，或选择数字代摇。',
+  motionRetry: '重试感应',
+  digitalAssistAction: '数字代摇',
+  digitalAssistTitle: '使用数字代摇？',
+  digitalAssistMessage: '这一爻将使用安全数字随机，而不是你的运动；来源会明确记录为“数字代摇”。',
+  digitalAssistConfirm: '确认数字代摇',
   waYingTitle: '外应 · 本卦不作数',
   waYingMessage:
     '有铜钱立于桌缘、难以定阴阳。按传统六爻，整卦作废（含已摇出的爻），请静心后从第一爻重新摇齐六爻。此象多示所问悬而未决、变数未落，不必强判吉凶。',
@@ -417,8 +456,6 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   coinFaceA11yYang: '陽面',
   homeGlFallback: '3D 預覽需含 WebGL 的建置；搖卦與爻線照常。',
   homeDevShakeHint: '開發版請用下方「搖卦」；系統可能占用體感搖一搖。',
-  homeDevPhysicsButton: '開發 · 物理搖卦',
-  homeDevPhysicsJiggleHint: '長按可增強合成搖晃。',
   settingsTitle: '設定',
   settingsMotionLabel: '搖一搖起爻',
   settingsMotionHint: '開啟後，用力搖晃手機可代替一次三錢落地。',
@@ -436,6 +473,11 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
   settingsCoinSkinUploading: '上傳中…',
   settingsCoinSkinUploadFailedTitle: '上傳失敗',
   settingsCoinSkinUploadFailedBody: '無法儲存錢面圖片。請確認相簿權限，並盡量使用 JPEG 或 PNG。',
+  settingsCoinSkinPermissionBody: '需要相簿權限才能選擇自訂錢面。',
+  settingsCoinSkinNativeBody: '目前安裝包缺少相簿或圖片處理原生模組。請安裝重新建置的 App 後再試。',
+  settingsCoinSkinFormatBody: '無法解析這張圖片。請選擇有效的 JPEG、PNG 或 HEIC 圖片。',
+  settingsCoinSkinStorageBody: '規範化後的錢面圖片無法儲存到裝置空間。',
+  settingsOpenSystemSettings: '開啟系統設定',
   settingsCoinSkinReset: '恢復 Logo 預設',
   settingsAccountSection: '帳號',
   settingsAccountAppleKind: 'Apple 帳號',
@@ -564,6 +606,18 @@ const ZH_HANT: Record<keyof typeof EN, string> = {
     '今日（UTC）三次免登入經典起卦已用完。請使用 Apple 登入以繼續使用帳號額度，或購買 AI 釋讀包。',
   alertQuotaSignIn: '前往登入',
   alertQuotaUpgrade: '查看方案',
+  motionUnavailableTitle: '感應不可用',
+  motionUnavailableMessage: '目前裝置無法執行運動驅動的銅錢物理。可重試感應，或明確選擇數字代搖。',
+  motionPermissionMessage: '尚未取得運動感測器權限。請在系統設定中開啟「運動與健身」權限後重試。',
+  motionInsufficientMessage:
+    '本次運動序列不完整或動作過輕，無法形成運動因果的一爻。請在完整感應時段內持續搖動後重試。',
+  motionInterruptedMessage: '本爻感應尚未完成便被中斷。請保持 Yaul 在前景並重試。',
+  motionPhysicsTimeoutMessage: '銅錢未在時限內形成可判讀的穩定落面。請重試感應，或選擇數字代搖。',
+  motionRetry: '重試感應',
+  digitalAssistAction: '數字代搖',
+  digitalAssistTitle: '使用數字代搖？',
+  digitalAssistMessage: '這一爻將使用安全數字隨機，而不是你的運動；來源會明確記錄為「數字代搖」。',
+  digitalAssistConfirm: '確認數字代搖',
   waYingTitle: '外應 · 本卦不作數',
   waYingMessage:
     '有銅錢立於桌緣、難以定陰陽。依傳統六爻，整卦作廢（含已搖出之爻），請靜心後從第一爻重新搖齊六爻。此象多示所問懸而未決、變數未落，不必強判吉凶。',
@@ -594,8 +648,6 @@ const JA: Record<keyof typeof EN, string> = {
   coinFaceA11yYang: '陽の面',
   homeGlFallback: '3D は WebGL 付きビルドが必要。振りと爻の表示はそのまま使えます。',
   homeDevShakeHint: '開発ビルドは下の「振る」を使ってください。',
-  homeDevPhysicsButton: '開発 · 物理トス',
-  homeDevPhysicsJiggleHint: '長押しで強めの合成揺れ。',
   settingsTitle: '設定',
   settingsMotionLabel: '振って爻を出す',
   settingsMotionHint: 'オンにすると、強く振るたびに三銭が一度分落ちたのと同じになります。',
@@ -614,6 +666,13 @@ const JA: Record<keyof typeof EN, string> = {
   settingsCoinSkinUploadFailedTitle: 'アップロード失敗',
   settingsCoinSkinUploadFailedBody:
     '銭面画像を保存できませんでした。写真へのアクセスを確認し、JPEG / PNG をお試しください。',
+  settingsCoinSkinPermissionBody: 'カスタム銭面を選ぶには写真へのアクセスが必要です。',
+  settingsCoinSkinNativeBody:
+    'このビルドには写真または画像処理のネイティブモジュールが含まれていません。再ビルドしたアプリをインストールしてください。',
+  settingsCoinSkinFormatBody:
+    'この画像を読み込めませんでした。有効な JPEG、PNG、または HEIC を選んでください。',
+  settingsCoinSkinStorageBody: '正規化した銭面画像を端末ストレージに保存できませんでした。',
+  settingsOpenSystemSettings: '設定を開く',
   settingsCoinSkinReset: 'ロゴ既定に戻す',
   settingsAccountSection: 'アカウント',
   settingsAccountAppleKind: 'Apple アカウント',
@@ -751,6 +810,23 @@ const JA: Record<keyof typeof EN, string> = {
     '本日（UTC）のゲスト向け無料古典起卦3回を使い切りました。Appleでサインインするか、AI 占いパックをご購入ください。',
   alertQuotaSignIn: 'サインイン',
   alertQuotaUpgrade: 'プランを見る',
+  motionUnavailableTitle: '感応を利用できません',
+  motionUnavailableMessage:
+    'この端末では動きで駆動する硬貨物理を実行できません。感応を再試行するか、デジタル代行を明示的に選んでください。',
+  motionPermissionMessage:
+    'モーションへのアクセスが許可されていません。設定で「モーションとフィットネス」を有効にして再試行してください。',
+  motionInsufficientMessage:
+    '動きの記録が不完全、または弱すぎて運動由来の爻を作れませんでした。感応中は最後まで振って再試行してください。',
+  motionInterruptedMessage:
+    'この爻の感応が完了前に中断されました。Yaul を前面に保って再試行してください。',
+  motionPhysicsTimeoutMessage:
+    '硬貨が判読可能な静止状態に達しませんでした。感応を再試行するか、デジタル代行を選んでください。',
+  motionRetry: '感応を再試行',
+  digitalAssistAction: 'デジタル代行',
+  digitalAssistTitle: 'デジタル代行を使いますか？',
+  digitalAssistMessage:
+    'この爻はあなたの動きではなく、安全なデジタル乱数を使います。出所はデジタル代行として記録されます。',
+  digitalAssistConfirm: 'デジタル代行を使う',
   waYingTitle: '外応 — この卦は無効',
   waYingMessage:
     '硬貨が縁に立ち、陰陽を定められませんでした。伝統的六爻では卦全体が無効（すでに出た爻も含む）とし、心を整えて初爻から六爻を取り直します。問いが宙吊り・未決であることのサインとされることが多いです。',
@@ -784,8 +860,6 @@ const KO: Record<keyof typeof EN, string> = {
     '3D 미리보기에는 WebGL 개발 빌드가 필요합니다. 던지기는 정상 작동하며, 효는 던질 때마다 표시됩니다.',
   homeDevShakeHint:
     '개발 빌드: 아래 「흔들기」 버튼을 사용하세요(시스템이 흔들기를 개발 메뉴로 예약할 수 있습니다).',
-  homeDevPhysicsButton: '개발 · 물리 던지기',
-  homeDevPhysicsJiggleHint: '길게 누르면 더 강한 합성 흔들림.',
   settingsTitle: '설정',
   settingsMotionLabel: '흔들어 점치기',
   settingsMotionHint: '켜면 세게 흔드는 동작이 세 동전을 한 번 던진 것으로 간주됩니다.',
@@ -804,6 +878,13 @@ const KO: Record<keyof typeof EN, string> = {
   settingsCoinSkinUploadFailedTitle: '업로드 실패',
   settingsCoinSkinUploadFailedBody:
     '동전 면 이미지를 저장할 수 없습니다. 사진 접근 권한을 확인하고 JPEG/PNG를 사용해 보세요.',
+  settingsCoinSkinPermissionBody: '사용자 동전 면을 선택하려면 사진 접근 권한이 필요합니다.',
+  settingsCoinSkinNativeBody:
+    '이 빌드에는 사진 또는 이미지 처리 네이티브 모듈이 없습니다. 새로 빌드한 앱을 설치한 뒤 다시 시도하세요.',
+  settingsCoinSkinFormatBody:
+    '이 이미지를 해석할 수 없습니다. 올바른 JPEG, PNG 또는 HEIC 이미지를 선택하세요.',
+  settingsCoinSkinStorageBody: '정규화된 동전 이미지를 기기 저장소에 저장할 수 없습니다.',
+  settingsOpenSystemSettings: '설정 열기',
   settingsCoinSkinReset: '로고 기본으로 복원',
   settingsAccountSection: '계정',
   settingsAccountAppleKind: 'Apple 계정',
@@ -918,8 +999,7 @@ const KO: Record<keyof typeof EN, string> = {
   paywallPlanAnnual: '연간 Pro',
   paywallLegalDisclaimer:
     '고전 육효·주역 문화 기반 — 오락, 문화 학습, 개인적 성찰용입니다. 의료·법률·재정·인생 결정 조언이 아닙니다.',
-  resultLegalDisclaimer:
-    '이 괘 해석은 문화 탐구와 성찰용이며, 예측이나 전문 조언이 아닙니다.',
+  resultLegalDisclaimer: '이 괘 해석은 문화 탐구와 성찰용이며, 예측이나 전문 조언이 아닙니다.',
   detailLegalDisclaimer:
     '고전 문헌과 AI 해석은 학습·성찰용이며, 점술이나 의사결정 조언이 아닙니다.',
   devtoolsTitle: '개발자 도구',
@@ -942,6 +1022,23 @@ const KO: Record<keyof typeof EN, string> = {
     '오늘(UTC) 비로그인 고전 점 3회를 모두 사용했습니다. Apple로 로그인하거나 AI 점 패키지를 구매하세요.',
   alertQuotaSignIn: '로그인',
   alertQuotaUpgrade: '요금제 보기',
+  motionUnavailableTitle: '감응을 사용할 수 없음',
+  motionUnavailableMessage:
+    '이 기기에서는 움직임으로 구동되는 동전 물리를 실행할 수 없습니다. 감응을 다시 시도하거나 디지털 대행을 명시적으로 선택하세요.',
+  motionPermissionMessage:
+    '동작 센서 권한이 허용되지 않았습니다. 설정에서 동작 및 피트니스 접근을 켠 뒤 다시 시도하세요.',
+  motionInsufficientMessage:
+    '동작 기록이 불완전하거나 너무 약해 움직임에 의한 효를 만들 수 없습니다. 감응 시간 동안 끝까지 흔든 뒤 다시 시도하세요.',
+  motionInterruptedMessage:
+    '이 효의 감응이 완료되기 전에 중단되었습니다. Yaul을 전면에 유지하고 다시 시도하세요.',
+  motionPhysicsTimeoutMessage:
+    '동전이 판독 가능한 안정 상태에 도달하지 못했습니다. 감응을 다시 시도하거나 디지털 대행을 선택하세요.',
+  motionRetry: '감응 다시 시도',
+  digitalAssistAction: '디지털 대행',
+  digitalAssistTitle: '디지털 대행을 사용할까요?',
+  digitalAssistMessage:
+    '이 효는 사용자의 움직임이 아닌 안전한 디지털 난수를 사용하며, 출처가 디지털 대행으로 기록됩니다.',
+  digitalAssistConfirm: '디지털 대행 사용',
   waYingTitle: '외응 · 이 괘는 무효',
   waYingMessage:
     '동전이 모서리에 서서 음양을 정할 수 없습니다. 전통 육효에서는 괘 전체가 무효(이미 나온 효 포함)가 되니, 마음을 가다듬고 첫 효부터 여섯 효를 다시 만드세요. 흔히 일이 미결이거나 변수가 정해지지 않았음을 암시하며, 길흉을 억지로 단정할 필요는 없습니다.',

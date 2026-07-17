@@ -5,7 +5,7 @@
  *   node apps/coin-cast-app/scripts/gen-logo-coin-face.mjs
  */
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -57,7 +57,7 @@ rsvgConvert(revSvg, revPng)
 const prefix = join(faces, 'logo')
 const r = spawnSync(
   'python3',
-  [punchPy, '--obverse', obPng, '--reverse', revPng, '--out-prefix', prefix],
+  [punchPy, '--obverse', obPng, '--reverse', revPng, '--out-prefix', prefix, '--hole-frac', '0'],
   { stdio: 'inherit', cwd: root }
 )
 process.exit(r.status ?? 1)

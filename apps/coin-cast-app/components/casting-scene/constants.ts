@@ -41,21 +41,17 @@ export const HANDS_OPEN_XZ_SPREAD = 0.056
 /** After shake, scale angular velocity before free fall — lower ⇒ flatter landing, fewer rim stands. */
 export const HANDS_OPEN_RELEASE_ANGULAR_SCALE = 0.26
 
-/** Base linear shake in cup (~龟壳捧于桌面定点水平回旋 + 细颤). `useFrame` multiplies by dt-scale & pulse. */
-export const CUP_SYNTH_SHAKE_GAIN = 0.032
-
 /** Max |v| in cup — lively but capped before roof / gap escape. */
 export const CUP_LINEAR_SPEED_CAP = 2.55
 
 /** Highest coin centre Y during shake — soft clamp under physics roof (raised tray). */
 export const CUP_CEILING_CLAMP_Y = 1.92
 
-/** Extra tumble in cup — reduced vs dice-tube so 合手摇卦 stays mostly planar churn. */
-export const CUP_TUMBLE_GAIN = 2.05
+/** Device linear acceleration → non-inertial coin impulse gain. */
+export const MOTION_LINEAR_GAIN = 1.05
 
-/** Synthetic shake: horizontal emphasis vs vertical (合手、碗口平置). */
-export const CUP_HORIZONTAL_EMPHASIS = 1.12
-export const CUP_VERTICAL_MIX = 0.26
+/** Device angular velocity → coin angular velocity gain. */
+export const MOTION_ANGULAR_GAIN = 0.82
 
 /** WebGL watchdog — must cover shake + spill + settle. */
 export const PHYSICS_COMMIT_FALLBACK_MS = CONTAINER_SHAKE_DURATION_MS + 13_000
@@ -96,11 +92,11 @@ export const VESSEL_SPAWN_XZ: ReadonlyArray<readonly [number, number]> = [
   [0, -0.056],
 ]
 
-/** Homepage idle — three coins resting flat on the altar (not stacked in the invisible cup). */
+/** Homepage idle — non-overlapping row; sharing space wakes sleeping bodies and causes jitter. */
 export const IDLE_COIN_TABLE_XZ: ReadonlyArray<readonly [number, number]> = [
-  [-0.11, 0.04],
-  [0.11, 0.04],
-  [0, -0.075],
+  [-SETTLE_ROW_CENTER_SPACING, 0],
+  [0, 0],
+  [SETTLE_ROW_CENTER_SPACING, 0],
 ]
 
 export const IDLE_COIN_TABLE_Y = COIN_THICKNESS / 2 + 0.001

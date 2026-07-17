@@ -5,5 +5,13 @@ export interface YaoResult {
   total: YaoTotal
 }
 
+export type CastSource = 'motion' | 'digital_assist'
+
+export interface CastLineRecord {
+  result: YaoResult
+  source: CastSource
+  digest: string
+}
+
 /** Physics settled: normal line, or traditional 「外应」— void whole hexagram and restart from line 1. */
 export type PhysicsSettlePayload = { kind: 'line'; result: YaoResult } | { kind: 'wa_ying' }

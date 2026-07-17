@@ -22,6 +22,8 @@ def soft_circle(size: int, radius: float, feather: float) -> Image.Image:
 
 def punch_square(alpha: Image.Image, side: float) -> Image.Image:
     a = alpha.copy()
+    if side <= 0:
+        return a
     draw = ImageDraw.Draw(a)
     c = alpha.size[0] / 2
     half = side / 2

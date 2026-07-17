@@ -88,7 +88,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose a coin face image for casting."
+          "photosPermission": "Choose a coin face image for casting.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Yaul uses your real motion to drive the virtual coins during sensing casts."
         }
       ]
     ]

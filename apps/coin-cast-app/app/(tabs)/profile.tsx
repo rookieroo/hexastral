@@ -22,6 +22,7 @@ import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  type AlertButton,
   Image,
   Linking,
   Platform,
@@ -35,23 +36,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MeDevTools } from '@/components/MeDevTools'
 import { LOGO_COIN_FACE } from '@/lib/coin-skin-assets'
 import {
-  DEFAULT_COIN_SKIN,
+  CoinSkinUploadError,
+  deleteCustomCoinFaceUri,
+  pickCustomCoinFaceUri,
+} from '@/lib/coin-skin-upload'
+import {
   type CoinSkinConfig,
+  DEFAULT_COIN_SKIN,
   getCoinSkinConfig,
   invalidateCoinSkinMaterialCache,
   setCoinSkinConfig,
 } from '@/lib/coin-skins'
-import {
-  deleteCustomCoinFaceUri,
-  pickCustomCoinFaceUri,
-} from '@/lib/coin-skin-upload'
 import {
   getCastHapticsEnabled,
   getMotionShakeEnabled,
   setCastHapticsEnabled,
   setMotionShakeEnabled,
 } from '@/lib/coincast-ritual'
-import { fetchMemoryPreference, setPortfolioMemory } from '@/lib/memory-preference'
 import {
   PORTFOLIO_STORAGE_PREFIX,
   PORTFOLIO_TARGET_APP,
@@ -59,6 +60,7 @@ import {
   yaulTermsUrl,
 } from '@/lib/growth-config'
 import { useSatelliteI18n } from '@/lib/i18n'
+import { fetchMemoryPreference, setPortfolioMemory } from '@/lib/memory-preference'
 
 type Session = 'loading' | 'out' | 'in'
 
@@ -351,14 +353,8 @@ export default function CoinCastProfileScreen() {
           {navRow(t('meHistoryTitle'), () => router.push('/(tabs)/history'))}
           {navRow(t('meUpgrade'), () => router.push('/paywall'))}
           {navRow(t('restorePurchases'), () => router.push('/paywall'))}
-          {navRow(
-            t('mePrivacy'),
-            () => void Linking.openURL(yaulPrivacyUrl(uiLocale))
-          )}
-          {navRow(
-            t('meTerms'),
-            () => void Linking.openURL(yaulTermsUrl(uiLocale))
-          )}
+          {navRow(t('mePrivacy'), () => void Linking.openURL(yaulPrivacyUrl(uiLocale)))}
+          {navRow(t('meTerms'), () => void Linking.openURL(yaulTermsUrl(uiLocale)))}
           {navRow(creditsLabel, () => router.push('/credits'), true)}
         </View>
 
@@ -415,13 +411,10 @@ export default function CoinCastProfileScreen() {
                 },
                 { disabled: !memoryLoaded, saving: memorySaving, last: true }
               )
-            : toggleRow(
-                t('settingsMemoryLabel'),
-                t('settingsMemoryGuestHint'),
-                false,
-                () => {},
-                { disabled: true, last: true }
-              )}
+            : toggleRow(t('settingsMemoryLabel'), t('settingsMemoryGuestHint'), false, () => {}, {
+                disabled: true,
+                last: true,
+              })}
         </View>
 
         {/* Coin skins — paper / seal */}
@@ -495,19 +488,51 @@ export default function CoinCastProfileScreen() {
               void haptic('light')
               void (async () => {
                 setSkinUploading(true)
+                let uncommittedUri: string | undefined
                 try {
-                  const uri = await pickCustomCoinFaceUri()
-                  if (!uri) return
-                  if (skinConfig.customObverseUri) {
-                    await deleteCustomCoinFaceUri(skinConfig.customObverseUri)
+                  const picked = await pickCustomCoinFaceUri()
+                  if (picked.status === 'cancelled') return
+                  uncommittedUri = picked.uri
+                  const previousUri = skinConfig.customObverseUri
+                  const next: CoinSkinConfig = {
+                    mode: 'custom',
+                    customObverseUri: picked.uri,
                   }
-                  const next: CoinSkinConfig = { mode: 'custom', customObverseUri: uri }
+                  await setCoinSkinConfig(next)
+                  uncommittedUri = undefined
                   invalidateCoinSkinMaterialCache()
                   setSkinConfig(next)
-                  await setCoinSkinConfig(next)
+                  await deleteCustomCoinFaceUri(previousUri)
                 } catch (err) {
                   console.warn('[profile] coin skin upload failed', err)
-                  Alert.alert(t('settingsCoinSkinUploadFailedTitle'), t('settingsCoinSkinUploadFailedBody'))
+                  await deleteCustomCoinFaceUri(uncommittedUri)
+                  if (err instanceof CoinSkinUploadError) {
+                    const messageKey =
+                      err.code === 'permission_denied'
+                        ? 'settingsCoinSkinPermissionBody'
+                        : err.code === 'native_module_unavailable'
+                          ? 'settingsCoinSkinNativeBody'
+                          : err.code === 'unsupported_image'
+                            ? 'settingsCoinSkinFormatBody'
+                            : 'settingsCoinSkinStorageBody'
+                    const buttons: AlertButton[] = err.canOpenSettings
+                      ? [
+                          { text: t('alertContinue'), style: 'cancel' },
+                          {
+                            text: t('settingsOpenSystemSettings'),
+                            onPress: () => {
+                              void Linking.openSettings()
+                            },
+                          },
+                        ]
+                      : [{ text: t('devtoolsOk') }]
+                    Alert.alert(t('settingsCoinSkinUploadFailedTitle'), t(messageKey), buttons)
+                  } else {
+                    Alert.alert(
+                      t('settingsCoinSkinUploadFailedTitle'),
+                      t('settingsCoinSkinUploadFailedBody')
+                    )
+                  }
                 } finally {
                   setSkinUploading(false)
                 }

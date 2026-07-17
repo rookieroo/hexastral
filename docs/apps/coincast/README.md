@@ -41,14 +41,29 @@ Growth satellite — standalone I Ching oracle with 3D coin casting and portfoli
 
 | Layer | Shipped | Notes |
 |---|---|---|
-| Casting | 3-coin physics + shake / button | WebGL scene lazy-loaded |
-| Output | **Classical tier** (free quota): hexagram + I Ching corpus + na-jia, no LLM · **AI tier** (cast pack / Pro): personalized LLM commentary via `svc-astro` `/yiching/cast` | `yaoValues` from client entropy |
+| Casting | Per-line DeviceMotion → fixed-step 3-coin physics | Final rigid-body faces are authoritative; no silent random fallback |
+| Output | **Classical tier** (free quota): hexagram + I Ching corpus + na-jia, no LLM · **AI tier** (cast pack / Pro): personalized LLM commentary via `svc-astro` `/yiching/cast` | `yaoValues` from six motion-caused or explicitly assisted lines |
 | Personalization | None for divination — birth charts live in **Yuun** / **Yuel** | CoinCast is one-question-one-cast; no birth info in the cast pipeline |
 | Monetization | **Consumable-first:** 1 / 5 / 10 cast packs | `coincast_pro_*` for skins + quota; `universe_pro` cross-app |
 | Quota | Guest 3/day · linked 3/month + credits | `evaluateCoincastQuota` |
 | Upgrade | Classical reading → AI in-place (`POST .../upgrade-ai`) | 1 credit or Pro; same hexagram |
 | Memory | Opt-in portfolio memory (Settings) | AI casts only; index + recall |
 | Platform | iOS (Expo 54) | Settings via top-right + left-swipe (Fēng model) |
+
+### Casting provenance and privacy
+
+Each line has one source:
+
+- **感应摇卦 / motion:** Yaul captures DeviceMotion only during that line, preserving real sampling intervals, acceleration, gravity direction, angular velocity, and device/person differences. A fixed-step Cannon world consumes the frames, and the three settled cap orientations produce 6/7/8/9.
+- **数字代摇 / digital assistance:** an explicit, confirmed fallback using secure random bytes when motion sensing or physical settling cannot complete. It is never presented as a motion-caused line.
+
+Raw motion frames remain local and are discarded after the line. Yaul retains a SHA-256 motion digest for each line, then submits one aggregate 64-character digest with the six `yaoValues`.
+
+Motion that is too short, interrupted, missing samples, or lacks basic directional change is rejected as incomplete rather than normalized into an artificial “fair” shake. Different users and devices are intentionally allowed to cause different trajectories.
+
+### Custom coin upload
+
+The picker handles denied/limited access, cancellation, stale native builds, unsupported images, and storage failures separately. Images are decoded through Expo ImageManipulator, scaled to a 2048 px maximum without cropping, converted to JPEG, validated, and atomically persisted before the previous file is deleted. Rebuild the iOS dev client after native module or permission changes; a Metro JS refresh does not update `Info.plist` or Pods.
 
 ### Post-MVP
 

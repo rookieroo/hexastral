@@ -391,7 +391,7 @@ export function createCoinEdgeTextures(colors: YaoCapColors): { edgeMap: THREE.D
   const data = new Uint8Array(w * h * 4)
 
   const edgeColor = hexToRgb(colors.edge)
-  const darkGroove = mixRgb(edgeColor, { r: 0, g: 0, b: 0 }, 0.35)
+  const darkGroove = mixRgb(edgeColor, { r: 112, g: 82, b: 46 }, 0.35)
   const lightRidge = mixRgb(edgeColor, { r: 255, g: 255, b: 255 }, 0.12)
 
   for (let y = 0; y < h; y++) {
