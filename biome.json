@@ -115,7 +115,7 @@
         "apps/kindred-app/**",
         "apps/coin-cast-app/**",
         "apps/dream-oracle-app/**",
-        "apps/face-oracle-app/**",
+        "apps/xingqi-app/**",
         "apps/numerology-app/**",
         "services/**"
       ],

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { Link } from '@/i18n/navigation'
 import {
@@ -21,10 +21,11 @@ export function generateStaticParams(): { locale: Locale; appKey: string }[] {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { appKey } = await params
-  if (!isSatellitePrivacyKey(appKey)) {
+  const key = appKey === 'faceoracle' ? 'xingqi' : appKey
+  if (!isSatellitePrivacyKey(key)) {
     return { title: 'Privacy appendix' }
   }
-  const appendix = SATELLITE_PRIVACY_APPENDICES[appKey]
+  const appendix = SATELLITE_PRIVACY_APPENDICES[key]
   return {
     title: `${appendix.displayName} · Privacy appendix · HexAstral`,
     description: appendix.summary,
@@ -33,7 +34,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SatellitePrivacyAppendixPage({ params }: Props) {
-  const { appKey } = await params
+  const { locale, appKey } = await params
+  // Legacy opaque id → Xingqi brand path
+  if (appKey === 'faceoracle') {
+    redirect(`/${locale}/privacy/xingqi`)
+  }
   if (!isSatellitePrivacyKey(appKey)) {
     notFound()
   }
@@ -61,15 +66,38 @@ export default async function SatellitePrivacyAppendixPage({ params }: Props) {
         ← Umbrella Privacy Policy
       </Link>
 
-      <p style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--color-gold)', marginBottom: '0.75rem' }}>
+      <p
+        style={{
+          fontSize: '0.72rem',
+          letterSpacing: '0.18em',
+          color: 'var(--color-gold)',
+          marginBottom: '0.75rem',
+        }}
+      >
         SATELLITE APP APPENDIX
       </p>
-      <h1 style={{ fontSize: '1.6rem', fontWeight: 300, marginBottom: '0.75rem' }}>{appendix.displayName}</h1>
-      <p style={{ fontSize: '0.92rem', color: 'var(--color-ivory-dim)', lineHeight: 1.75, marginBottom: '2rem' }}>
+      <h1 style={{ fontSize: '1.6rem', fontWeight: 300, marginBottom: '0.75rem' }}>
+        {appendix.displayName}
+      </h1>
+      <p
+        style={{
+          fontSize: '0.92rem',
+          color: 'var(--color-ivory-dim)',
+          lineHeight: 1.75,
+          marginBottom: '2rem',
+        }}
+      >
         {appendix.summary}
       </p>
 
-      <h2 style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--color-gold)', marginBottom: '0.75rem' }}>
+      <h2
+        style={{
+          fontSize: '1.05rem',
+          fontWeight: 500,
+          color: 'var(--color-gold)',
+          marginBottom: '0.75rem',
+        }}
+      >
         App-specific data flows
       </h2>
       <ul style={{ paddingLeft: '1.1rem', margin: 0 }}>
@@ -88,8 +116,17 @@ export default async function SatellitePrivacyAppendixPage({ params }: Props) {
         ))}
       </ul>
 
-      <div style={{ borderTop: '1px solid var(--color-border-subtle)', marginTop: '2.5rem', paddingTop: '1.5rem' }}>
-        <Link href='/privacy' style={{ fontSize: '0.82rem', color: 'var(--color-gold)', textDecoration: 'none' }}>
+      <div
+        style={{
+          borderTop: '1px solid var(--color-border-subtle)',
+          marginTop: '2.5rem',
+          paddingTop: '1.5rem',
+        }}
+      >
+        <Link
+          href='/privacy'
+          style={{ fontSize: '0.82rem', color: 'var(--color-gold)', textDecoration: 'none' }}
+        >
           Full HexAstral Privacy Policy →
         </Link>
       </div>

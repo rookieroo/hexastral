@@ -1,17 +1,23 @@
 /**
  * Per-app privacy appendices under the UseONE, LLC umbrella policy.
  *
- * Scope (2026-07): Yuel, Yuun, Yaul, and Kanyu (feng). The HexAstral universe is
- * ONE sign-in identity, and these appendices describe the data flows that carry
- * across that shared account. Apps still in development are intentionally NOT
- * listed: we don't pre-announce unreleased surfaces, and an appendix only goes
- * live when its app does.
+ * Scope (2026-07): Yuel, Yuun, Yaul, Kanyu (feng), and Xingqi. The HexAstral
+ * universe is ONE sign-in identity, and these appendices describe the data flows
+ * that carry across that shared account. Apps still in development are
+ * intentionally NOT listed: we don't pre-announce unreleased surfaces, and an
+ * appendix only goes live when its app does.
  *
  * Each appendix is a thin, app-specific supplement; the umbrella policy
  * (privacy.{locale}.json) governs everything common.
  */
 
-export const SATELLITE_PRIVACY_KEYS = ['kindred', 'auspice', 'coincast', 'feng'] as const
+export const SATELLITE_PRIVACY_KEYS = [
+  'kindred',
+  'auspice',
+  'coincast',
+  'feng',
+  'xingqi',
+] as const
 
 export type SatellitePrivacyKey = (typeof SATELLITE_PRIVACY_KEYS)[number]
 
@@ -90,6 +96,24 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Reports, sites, job status, and chat threads live in `feng_reports`, `feng_sites`, `feng_jobs`, and chat conversation tables under your user id. RevenueCat validates `hexastral_feng_single` and `hexastral_feng_premium` one-time purchases — we never see your payment card.',
       'Anonymous funnel telemetry may record onboarding steps under `target_app=feng`. No ads, no IDFA, no cross-app advertising trackers.',
       'Account deletion removes your feng sites, reports, and related chat history within 30 days alongside other HexAstral account data.',
+    ],
+  },
+  xingqi: {
+    displayName: 'Xingqi',
+    summary:
+      'Face and palm physiognomy (形气) readings in the HexAstral universe. You capture left palm, right palm, and a clear face photo, then supply birth details so structured features can be contrasted with a BaZi summary. Sign in with Apple is required before biometric processing and purchases. Readings are for entertainment and cultural exploration only — not medical diagnosis, fate claims, or professional advice. Server product ids remain faceoracle_*; the consumer brand is Xingqi.',
+    bullets: [
+      'Not professional advice. Xingqi outputs are for entertainment, cultural study, and personal reflection. We do not provide medical, dermatological, psychological, legal, or fortune-telling advice, and we do not guarantee life outcomes.',
+      'Biometric processing consent: before any face or palm image is sent for feature extraction, you must accept an in-app biometric disclosure (BIPA / GDPR Art.9 style). We record a timestamp and disclosure version on your account. You may withdraw consent anytime in Settings; processing is blocked until you opt in again at the current disclosure version.',
+      'Photos you choose (camera or library): left palm, right palm, and face. Images are uploaded over TLS for a single request, used only to extract structured feature vectors via authorized vision models under DPAs, then discarded — source images are not retained in object storage or in reading JSON after the request completes. We do not sell biometric data or use it for advertising.',
+      'What we keep after a reading: structured physiognomy feature records (not raw pixels), the narrative / structured reading JSON (without imageBase64), birth profile fields you entered (solar date, 时辰 index, gender, optional city), and an optional forward event table used for Pro reminders.',
+      'Birth details: required for a complete reading so physiognomy can be contrasted with natal context. They are stored with your shared HexAstral account birth profile and may be reused across universe apps you choose to open while signed in.',
+      'Identity: portfolio Apple sign-in links a recoverable user id (and email when Apple provides it) so purchases and history restore on a new device. HMAC-signed device secrets protect API calls.',
+      'Monetization (opaque ids): consumable `faceoracle_reading` for a one-shot complete reading; subscriptions `faceoracle_pro_monthly` / `faceoracle_pro_annual` grant `faceoracle_pro` (Timeline / photo-slot quota). Payments are validated via RevenueCat — we never see your card number.',
+      'Pro reminders: if you enable reminders, we may schedule local and/or push notifications for monthly re-capture nudges and “宜留意” windows derived from your active event table. Push tokens are registered only when you opt in. Copy uses exploratory framing, not deterministic fate (see umbrella policy / portfolio voice rules).',
+      'Anonymous funnel telemetry may record onboarding steps under `target_app=faceoracle`. No ads, no IDFA, no cross-app advertising trackers.',
+      'Universal links on hexastral.com (`/lp/face/*`, `/lp/palm/*`) may open Xingqi when installed (bundle `com.hexastral.xingqi`).',
+      'Account deletion (in-app request or privacy@hexastral.com) removes your Xingqi features, readings, and related account data within 30 days alongside other HexAstral universe data. Withdrawing biometric consent stops new processing but does not by itself delete historical structured features or readings — use account deletion for full erasure.',
     ],
   },
 }

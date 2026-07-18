@@ -23,7 +23,7 @@ HexAstral (master / LLC publisher)
 │   └── Fēng  / 風       — feng-shui (Q3+, deferred)
 └── Satellites — independent Western names, shared backend
     ├── Coin Cast        — I-Ching coin divination
-    ├── Face Oracle      — face reading
+    ├── Xingqi           — physiognomy (palm + face)
     └── Dream Oracle     — dream interpretation
 ```
 
@@ -41,7 +41,7 @@ apps/
   numerology-app/       Satellite — numerology readings
   coin-cast-app/        Satellite — I-Ching divination
   dream-oracle-app/     Satellite — dream interpretation
-  face-oracle-app/      Satellite — face reading
+  xingqi-app/           Satellite — Xingqi physiognomy (palm + face)
   (hexastral-app/       — flagship 命緣卦道, planned but not yet implemented)
 services/
   svc-astro/            Core metaphysics compute + AI interpretation
@@ -61,7 +61,7 @@ packages/
   email/                React Email templates + SES/Resend
   logger/               Workers JSON logger
   scenario-dream/       Dream input UI (shared with dream-oracle-app; reserved for flagship)
-  scenario-palmface/    Face/palm capture (shared with face-oracle-app; reserved for flagship)
+  scenario-palmface/    Face/palm capture (shared with xingqi-app; reserved for flagship)
   scenario-yuan/        Yuán bonds UI + hooks (yuan-app + hexastral-web)
   scenario-feng/        Fēng sites UI + hooks (feng-app)
   ai-vision/            Gemini vision + R2 cache (svc-feng + svc-astro)
@@ -88,7 +88,7 @@ docs/
 
 ```text
 fate-app, yuan-app, cycle-app, feng-app, numerology-app,
-coin-cast-app, dream-oracle-app, face-oracle-app
+coin-cast-app, dream-oracle-app, xingqi-app
   → https://api.hexastral.com (hexastral-api)
 
 hexastral-web → https://api.hexastral.com (hexastral-api)
@@ -161,7 +161,7 @@ cd apps/hexastral-web && bun deploy
 # Mobile satellites (cloud build via EAS)
 cd apps/fate-app && eas build --profile production --platform ios
 cd apps/yuan-app && eas build --profile production --platform ios
-# (same pattern for cycle / feng / numerology / coin-cast / dream-oracle / face-oracle)
+# (same pattern for cycle / feng / numerology / coin-cast / dream-oracle / xingqi)
 ```
 
 ## Documentation Index

@@ -34,7 +34,7 @@ export function GET(): NextResponse {
       relation: ['delegate_permission/common.handle_all_urls'],
       target: {
         namespace: 'android_app',
-        package_name: 'com.hexastral.faceoracle',
+        package_name: 'com.hexastral.xingqi',
         sha256_cert_fingerprints: ['REPLACE_WITH_PLAY_SHA256_FINGERPRINT'],
       },
     },

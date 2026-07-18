@@ -49,6 +49,7 @@ import { userHasCapability } from '../lib/access/entitlement-access'
 import { requireUserId } from '../lib/auth'
 import {
   BIOMETRIC_CONSENT_VERSION,
+  hasBiometricConsent,
   recordBiometricConsent,
   revokeBiometricConsent,
 } from '../lib/biometric-consent'
@@ -1364,6 +1365,17 @@ export const userRoutes = new Hono<AppEnv>()
   })
 
   // ── Biometric (face/palm) processing consent — BIPA / GDPR Art.9 ───────────────
+
+  /**
+   * GET /api/user/:userId/biometric-consent
+   * Whether the user has an active opt-in at the current disclosure version.
+   */
+  .get('/:userId/biometric-consent', async (c) => {
+    const userId = requireUserId(c)
+    if (userId !== c.req.param('userId')) throw new HTTPException(403, { message: 'Forbidden' })
+    const consented = await hasBiometricConsent(c.get('db'), userId)
+    return c.json({ data: { consented, version: BIOMETRIC_CONSENT_VERSION } })
+  })
 
   /**
    * POST /api/user/:userId/biometric-consent

@@ -39,7 +39,8 @@ const portfolioAuthBodySchema = z.object({
 
 /** Maps growth funnel / portfolio target keys → iOS bundle identifier (aud claim). */
 const TARGET_TO_BUNDLE_ID: Record<string, string> = {
-  faceoracle: 'com.hexastral.faceoracle',
+  // Client brand Xingqi (ADR-0028); opaque target_app stays `faceoracle`.
+  faceoracle: 'com.hexastral.xingqi',
   starpalace: 'com.hexastral.starpalace',
   soulmatch: 'com.hexastral.soulmatch',
   fengshui: 'com.hexastral.fengshui',

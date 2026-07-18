@@ -1,9 +1,9 @@
 # Satellite → Flagship Funnel Wiring Pattern
 
 > Reference for adding the G.1 question-type picker + flagship upsell card to a
-> satellite app. The face-oracle wiring at
-> [apps/face-oracle-app/app/result.tsx](../../apps/face-oracle-app/app/result.tsx)
-> is the canonical example.
+> satellite app. The Xingqi wiring at
+> [apps/xingqi-app/app/result.tsx](../../apps/xingqi-app/app/result.tsx)
+> is the canonical physiognomy example.
 
 ---
 
@@ -28,14 +28,14 @@ Both components live in `@zhop/satellite-ui`. The routing function lives in
 | **On capture page** (pre-reading) | Use when the reading itself benefits from intent context (e.g. dream-oracle could tune interpretation toward relationship if specified). |
 | **As a bottom sheet from CTA** | Use when you want to keep the result page minimal and only ask if the user shows interest in upgrading. |
 
-`face-oracle` uses the result-page pattern.
+`xingqi` uses the result-page pattern.
 
 ---
 
 ## 2. Add the constants per-app
 
-Define 3 maps in your app — typically in `lib/funnel-config.ts` (face-oracle's
-reference inlines them in [`app/result.tsx`](../../apps/face-oracle-app/app/result.tsx)
+Define 3 maps in your app — typically in `lib/funnel-config.ts` (Xingqi's
+reference inlines them in [`app/result.tsx`](../../apps/xingqi-app/app/result.tsx)
 for clarity, but a real production app should extract them):
 
 **You probably don't need to define these per-satellite anymore.** The shared

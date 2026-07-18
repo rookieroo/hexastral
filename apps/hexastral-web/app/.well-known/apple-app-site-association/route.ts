@@ -43,9 +43,9 @@ export function GET(): NextResponse {
             '/*/lp/compatibility/*',
           ],
         },
-        // Face / palm AI reading
+        // Xingqi — face / palm AI reading (API target still faceoracle)
         {
-          appID: `${TEAM_ID}.com.hexastral.faceoracle`,
+          appID: `${TEAM_ID}.com.hexastral.xingqi`,
           paths: ['/lp/face/*', '/*/lp/face/*', '/lp/palm/*', '/*/lp/palm/*'],
         },
         // Dream interpretation

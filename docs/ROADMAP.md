@@ -19,7 +19,7 @@ Internal codenames (`auspice`, `kindred`) and RevenueCat product IDs stay unchan
 
 **Not in this wave:** face-oracle, dream-oracle, numerology, ming-pan (donor code ports into Yuel per [archive ADR-0022](./archive/decisions/0022-mingpan-disposition-donor-not-launch.md)), legacy `hexastral-app`.
 
-**Face Oracle (post-wave):** independent satellite — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/face-oracle/product.md](./apps/face-oracle/product.md).
+**Xingqi (post-wave):** independent satellite (`apps/xingqi-app`) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
 
 ---
 

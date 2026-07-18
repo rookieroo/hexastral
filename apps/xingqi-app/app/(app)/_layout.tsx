@@ -1,0 +1,24 @@
+/**
+ * App surface — Stack, NO bottom tabs (Kanyu / Yuel model).
+ * Home + settings as stack pushes; funnel lives on root stack.
+ */
+
+import { darkTokens } from '@zhop/hexastral-tokens/palette'
+import { Stack } from 'expo-router'
+
+export default function AppLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+        contentStyle: { backgroundColor: darkTokens.bg },
+      }}
+    >
+      <Stack.Screen name='index' />
+      <Stack.Screen name='settings' />
+    </Stack>
+  )
+}

@@ -13,6 +13,6 @@ Flagships (hexastral-app, yuan-app, feng-app) should use `core-ui` only. Do not 
 
 ## Consumers
 
-`coin-cast-app`, `face-oracle-app`, `dream-oracle-app`, `numerology-app`.
+`coin-cast-app`, `xingqi-app`, `dream-oracle-app`, `numerology-app`.
 
 See [ADR-0005](../../docs/decisions/0005-package-boundaries.md).
