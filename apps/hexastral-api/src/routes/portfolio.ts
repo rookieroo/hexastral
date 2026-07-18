@@ -7,7 +7,13 @@ import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import { z } from 'zod/v4'
 import type { CreditType } from '../config/products'
-import { chapterUnlockInvitations, portfolioReadings, users } from '../db/schema'
+import {
+  chapterUnlockInvitations,
+  physiognomyEvents,
+  portfolioReadings,
+  userPhysiognomyFeatures,
+  users,
+} from '../db/schema'
 import type { CloudflareBindings, ContextVariables } from '../infra-types'
 import { upsellProductFor } from '../lib/access/capabilities'
 import { userHasCapability } from '../lib/access/entitlement-access'
@@ -19,6 +25,10 @@ import {
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../lib/biometric-consent'
+import { hasActiveEntitlement } from '../services/entitlements'
+import {
+  checkAndConsumeFaceoraclePhotoSlots,
+} from '../services/quota'
 import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quota'
 import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { rebuildUserCharts } from '../lib/chart-skeleton'
@@ -182,10 +192,31 @@ const baziInputSchema = z.object({
   gender: z.enum(['男', '女']).optional().default('女'),
 })
 
+/** ADR-0028: three feature sources + birth required for paid reading. */
 const faceInputSchema = z.object({
+  /** Legacy single-image path (teaser / migrate). Prefer feature IDs. */
   imageUrl: z.string().min(1).optional(),
   imageBase64: z.string().min(32).optional(),
   mode: z.enum(['face', 'palm']).optional().default('face'),
+  faceFeatureId: z.string().min(1).optional(),
+  palmLeftFeatureId: z.string().min(1).optional(),
+  palmRightFeatureId: z.string().min(1).optional(),
+  /** Inline base64 for each part when feature IDs not yet created (ephemeral). */
+  faceImageBase64: z.string().min(32).optional(),
+  palmLeftImageBase64: z.string().min(32).optional(),
+  palmRightImageBase64: z.string().min(32).optional(),
+  solarDate: z
+    .string()
+    .regex(/^\d{4}-\d{1,2}-\d{1,2}$/)
+    .optional(),
+  timeIndex: z.int().min(0).max(12).optional(),
+  gender: z.enum(['男', '女']).optional(),
+  city: z.string().max(80).optional(),
+  horizonMonths: z.union([z.literal(3), z.literal(6)]).optional().default(3),
+  outputKind: z.enum(['oneshot', 'period_brief', 'deep']).optional().default('oneshot'),
+  updateKind: z.enum(['full', 'partial']).optional().default('full'),
+  partialParts: z.array(z.enum(['face', 'palm_l', 'palm_r'])).optional(),
+  previousFeaturesJson: z.string().max(50_000).optional(),
 })
 
 const starPalaceInputSchema = z.object({
@@ -706,61 +737,154 @@ async function runTargetPipeline(
     }
     case 'faceoracle': {
       const parsed = faceInputSchema.parse(input)
-      const hasInlineImage = typeof parsed.imageBase64 === 'string' && parsed.imageBase64.length > 0
-
-      // Cost gate: the real Gemini Vision extraction runs ONLY when the /linked path
-      // authorized it (after spending a `face` credit — universe allowance or a
-      // purchased pack). Anonymous /preview callers get the cheap canned-feature
-      // teaser — no VLM spend. Face is per-use only — no faceoracle_pro sub (§8).
       const entitled = opts?.faceVlmAuthorized === true
+      const db = c.get('db')
 
-      let features: Record<string, string> = {
+      const teaserFace: Record<string, string> = {
+        overallAssessment: 'Balanced facial structure — preview only.',
         forehead: 'Strategic and long-horizon.',
         eyes: 'Sensitive to social atmosphere.',
         nose: 'Material instincts are stable.',
         mouth: 'Direct communication style.',
         chin: 'Late-stage persistence is strong.',
       }
+      const teaserPalm: Record<string, string> = {
+        overallAssessment: 'Palm lines preview — unlock for real extract.',
+        lifeLine: 'Steady arc.',
+        headLine: 'Clear path.',
+        heartLine: 'Even curve.',
+      }
+
+      let faceFeatures = teaserFace
+      let palmLeftFeatures = teaserPalm
+      let palmRightFeatures = { ...teaserPalm }
       let visionMode: 'real' | 'teaser' = 'teaser'
 
-      if (entitled && hasInlineImage && parsed.mode === 'face') {
-        try {
-          const extracted = await callAstro<{ features: Record<string, string> }>(
-            c.env.SVC_ASTRO,
-            '/physiognomy/extract-features',
-            { imageBase64: parsed.imageBase64, mimeType: 'image/jpeg' }
+      const loadFeature = async (id: string | undefined) => {
+        if (!id || !userId) return null
+        const row = await db
+          .select({ featuresJson: userPhysiognomyFeatures.featuresJson })
+          .from(userPhysiognomyFeatures)
+          .where(
+            and(eq(userPhysiognomyFeatures.id, id), eq(userPhysiognomyFeatures.userId, userId))
           )
-          if (extracted?.features && Object.keys(extracted.features).length > 0) {
-            features = extracted.features
-            visionMode = 'real'
-          }
+          .get()
+        if (!row) return null
+        try {
+          return JSON.parse(row.featuresJson) as Record<string, string>
         } catch {
-          // VLM extraction failed — degrade to teaser features rather than erroring.
+          return null
         }
       }
 
+      const extractPart = async (
+        path: '/physiognomy/extract-features' | '/physiognomy/extract-palm-features',
+        b64: string | undefined
+      ) => {
+        if (!b64) return null
+        try {
+          const extracted = await callAstro<{ features: Record<string, string> }>(
+            c.env.SVC_ASTRO,
+            path,
+            { imageBase64: b64, mimeType: 'image/jpeg' }
+          )
+          return extracted?.features ?? null
+        } catch {
+          return null
+        }
+      }
+
+      if (entitled) {
+        const fromIds = await Promise.all([
+          loadFeature(parsed.faceFeatureId),
+          loadFeature(parsed.palmLeftFeatureId),
+          loadFeature(parsed.palmRightFeatureId),
+        ])
+        const fromVlm = await Promise.all([
+          fromIds[0]
+            ? fromIds[0]
+            : extractPart(
+                '/physiognomy/extract-features',
+                parsed.faceImageBase64 ??
+                  (parsed.mode === 'face' ? parsed.imageBase64 : undefined)
+              ),
+          fromIds[1]
+            ? fromIds[1]
+            : extractPart('/physiognomy/extract-palm-features', parsed.palmLeftImageBase64),
+          fromIds[2]
+            ? fromIds[2]
+            : extractPart('/physiognomy/extract-palm-features', parsed.palmRightImageBase64),
+        ])
+
+        if (fromVlm[0] && fromVlm[1] && fromVlm[2]) {
+          faceFeatures = fromVlm[0]
+          palmLeftFeatures = fromVlm[1]
+          palmRightFeatures = fromVlm[2]
+          visionMode = 'real'
+        }
+      }
+
+      const natalSummary =
+        parsed.solarDate != null && parsed.timeIndex != null
+          ? (() => {
+              try {
+                const dt = parseSolarDate(parsed.solarDate, parsed.timeIndex)
+                const pillars = getFourPillars(dt)
+                return `solar=${parsed.solarDate}; timeIndex=${parsed.timeIndex}; gender=${parsed.gender ?? '女'}; pillars=${JSON.stringify(pillars)}; city=${parsed.city ?? ''}`
+              } catch {
+                return `solar=${parsed.solarDate}; timeIndex=${parsed.timeIndex}; gender=${parsed.gender ?? '女'}`
+              }
+            })()
+          : 'birth_missing'
+
       const promptTemplate = buildFaceOraclePrompt({
-        features: JSON.stringify(features),
+        faceFeatures: JSON.stringify(faceFeatures),
+        palmLeftFeatures: JSON.stringify(palmLeftFeatures),
+        palmRightFeatures: JSON.stringify(palmRightFeatures),
+        natalSummary,
         locale,
+        horizonMonths: parsed.horizonMonths ?? 3,
+        outputKind: parsed.outputKind ?? 'oneshot',
+        previousFeaturesJson: parsed.previousFeaturesJson,
+        partialUpdate: parsed.partialParts,
       })
       const ai = await callPortfolioAI(c, promptTemplate, {
-        forehead: '',
-        eyes: '',
-        nose: '',
-        mouth: '',
-        chin: '',
-        overallFortune: '',
+        overview: '',
+        faceSection: '',
+        palmLeftSection: '',
+        palmRightSection: '',
+        natalContrast: '',
+        periodDiff: null,
         advice: '',
+        events: [],
       } as Record<string, unknown>)
+
+      // Never persist raw images (ADR-0028 privacy).
       return {
         readingType: 'faceoracle',
         output: {
-          mode: parsed.mode,
-          imageUrl: parsed.imageUrl ?? null,
-          imageBase64: hasInlineImage ? parsed.imageBase64 : null,
-          features,
+          mode: 'face_palm',
+          faceFeatureId: parsed.faceFeatureId ?? null,
+          palmLeftFeatureId: parsed.palmLeftFeatureId ?? null,
+          palmRightFeatureId: parsed.palmRightFeatureId ?? null,
+          features: {
+            face: faceFeatures,
+            palmLeft: palmLeftFeatures,
+            palmRight: palmRightFeatures,
+          },
+          birth: {
+            solarDate: parsed.solarDate ?? null,
+            timeIndex: parsed.timeIndex ?? null,
+            gender: parsed.gender ?? null,
+            city: parsed.city ?? null,
+          },
+          horizonMonths: parsed.horizonMonths ?? 3,
+          outputKind: parsed.outputKind ?? 'oneshot',
+          updateKind: parsed.updateKind ?? 'full',
+          partialParts: parsed.partialParts ?? null,
           visionMode,
           aiInterpretation: ai.parsed,
+          events: Array.isArray(ai.parsed.events) ? ai.parsed.events : [],
           rawAiText: ai.rawText,
           promptTemplate,
         },
@@ -997,31 +1121,67 @@ portfolioRoutes.post('/linked/:target', async (c) => {
   const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
   if (!user) throw new HTTPException(404, { message: 'User not found' })
 
-  // FaceOracle is per-use (ADR-0013 §2 / plan §8): the real-VLM report costs one
-  // `face` credit (universe monthly allowance first, then a purchased reading). There
-  // is NO faceoracle_pro subscription. /preview = teaser (no VLM spend).
+  // FaceOracle (ADR-0028): biometric consent + birth + three sources; pay via
+  // faceoracle_pro (photo slots) OR one `face` credit (faceoracle_reading / universe).
   let faceVlmAuthorized = false
-  // The `face` credit is consumed up front (below); remember its source so we can refund
-  // it if the real VLM ends up degrading to a teaser (refund-on-failure, after pipeline).
   let faceCreditSource: CreditSource | null = null
   if (targetParsed.data === 'faceoracle') {
-    // BIPA / GDPR Art.9: face images are biometric data. Require an explicit, current
-    // opt-in BEFORE any processing (teaser or full) — fail closed if not consented.
     if (!(await hasBiometricConsent(db, userId))) {
       return c.json(
         { error: 'biometric_consent_required', consentVersion: BIOMETRIC_CONSENT_VERSION },
         403
       )
     }
-    const access = await resolveEpisodicAccess(db, userId, 'face')
-    if (!access.granted) {
-      return c.json(
-        { error: 'purchase_required', capability: 'face', upsell: access.upsellProductId },
-        402
-      )
+    const faceIn = faceInputSchema.safeParse(parsed.data.input)
+    if (!faceIn.success) {
+      throw new HTTPException(422, { message: 'Invalid faceoracle payload' })
     }
-    faceVlmAuthorized = true
-    faceCreditSource = access.via
+    const fi = faceIn.data
+    if (fi.solarDate == null || fi.timeIndex == null || fi.gender == null) {
+      return c.json({ error: 'birth_required' }, 422)
+    }
+    const hasThree =
+      (Boolean(fi.faceFeatureId) || Boolean(fi.faceImageBase64) || Boolean(fi.imageBase64)) &&
+      (Boolean(fi.palmLeftFeatureId) || Boolean(fi.palmLeftImageBase64)) &&
+      (Boolean(fi.palmRightFeatureId) || Boolean(fi.palmRightImageBase64))
+    if (!hasThree) {
+      return c.json({ error: 'three_photos_required' }, 422)
+    }
+
+    const isFacePro =
+      (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
+      (await hasActiveEntitlement(db, userId, 'universe_pro'))
+    if (isFacePro) {
+      const slots =
+        fi.updateKind === 'partial' ? Math.max(1, fi.partialParts?.length ?? 1) : 3
+      const slot = await checkAndConsumeFaceoraclePhotoSlots(db, userId, slots)
+      if (!slot.granted) {
+        return c.json(
+          {
+            error: 'photo_slot_exhausted',
+            used: slot.used,
+            limit: slot.limit,
+            upsell: 'faceoracle_reading',
+          },
+          402
+        )
+      }
+      faceVlmAuthorized = true
+    } else {
+      const access = await resolveEpisodicAccess(db, userId, 'face')
+      if (!access.granted) {
+        return c.json(
+          {
+            error: 'purchase_required',
+            capability: 'face',
+            upsell: access.upsellProductId,
+          },
+          402
+        )
+      }
+      faceVlmAuthorized = true
+      faceCreditSource = access.via
+    }
   }
 
   if (targetParsed.data === 'coincast') {
@@ -1152,15 +1312,61 @@ portfolioRoutes.post('/linked/:target', async (c) => {
   }
 
   const readingId = nanoid()
+  // Strip any accidental image payloads from stored input (ADR-0028).
+  const storedInput =
+    targetParsed.data === 'faceoracle'
+      ? (() => {
+          const raw = { ...parsed.data.input } as Record<string, unknown>
+          for (const k of [
+            'imageBase64',
+            'faceImageBase64',
+            'palmLeftImageBase64',
+            'palmRightImageBase64',
+          ]) {
+            delete raw[k]
+          }
+          return raw
+        })()
+      : parsed.data.input
+
   await db.insert(portfolioReadings).values({
     id: readingId,
     userId,
     targetApp: targetParsed.data,
     readingType: pipeline.readingType,
-    inputJson: JSON.stringify(parsed.data.input),
+    inputJson: JSON.stringify(storedInput),
     resultJson: JSON.stringify(pipeline.output),
     locale,
   })
+
+  if (targetParsed.data === 'faceoracle' && (pipeline.output as { visionMode?: string }).visionMode === 'real') {
+    const events = (pipeline.output as { events?: unknown }).events
+    const horizon =
+      typeof (pipeline.output as { horizonMonths?: number }).horizonMonths === 'number'
+        ? (pipeline.output as { horizonMonths: number }).horizonMonths
+        : 3
+    const now = new Date().toISOString()
+    await db
+      .insert(physiognomyEvents)
+      .values({
+        id: nanoid(),
+        userId,
+        readingId,
+        horizonMonths: horizon,
+        eventsJson: JSON.stringify(Array.isArray(events) ? events : []),
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: physiognomyEvents.userId,
+        set: {
+          readingId,
+          horizonMonths: horizon,
+          eventsJson: JSON.stringify(Array.isArray(events) ? events : []),
+          updatedAt: now,
+        },
+      })
+  }
 
   const memoryEnabledRow = await db
     .select({ portfolioMemoryEnabled: users.portfolioMemoryEnabled })

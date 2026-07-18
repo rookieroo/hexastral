@@ -79,7 +79,6 @@
     "plugins": [
       "expo-router",
       "expo-dev-client",
-      "expo-notifications",
       "@react-native-community/datetimepicker",
       [
         "@react-native-google-signin/google-signin",

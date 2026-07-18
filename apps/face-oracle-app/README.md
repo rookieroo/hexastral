@@ -1,17 +1,29 @@
-# Face Oracle (satellite)
+# Face Oracle (`face-oracle-app`)
 
-Minimal Expo 54 + Router app for the FaceOracle growth SKU. NativeWind and shop features are intentionally omitted so Metro stays light.
+Independent satellite for face + dual-palm physiognomy with birth contrast.
 
-Install once from the monorepo root (`bun install`), then:
+**Product:** [docs/apps/face-oracle/product.md](../../docs/apps/face-oracle/product.md) · **ADR:** [docs/decisions/0028-face-oracle-dual-track.md](../../docs/decisions/0028-face-oracle-dual-track.md)
+
+## Funnel
+
+1. Biometric consent  
+2. Three photos: left palm → right palm → face  
+3. Birth Form  
+4. Paywall: `faceoracle_reading` (≥ $9.99) **or** `faceoracle_pro_*`  
+5. Reading → result / Timeline; Pro schedules local event + recapture reminders  
+
+## Commands
 
 ```bash
-cd apps/face-oracle-app && bun dev
+cd apps/face-oracle-app
+bunx expo start
+# native modules:
+npx expo install expo-notifications
 ```
 
-iOS Simulator:
+## SKUs
 
-```bash
-bun ios
-```
-
-Add `expo-env.d.ts` locally if TypeScript asks for Expo types (`npx expo start` generates it).
+| Product | Role |
+|---|---|
+| `faceoracle_reading` | One-shot consumable |
+| `faceoracle_pro_monthly` / `_annual` | Timeline + 6 photo slots / UTC month |

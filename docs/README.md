@@ -73,6 +73,13 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 |---|---|
 | [apps/coincast/README.md](./apps/coincast/README.md) | MVP scope, positioning, TODO |
 
+### Face Oracle (`apps/face-oracle-app`) — post-wave
+
+| Doc | Purpose |
+|---|---|
+| [apps/face-oracle/product.md](./apps/face-oracle/product.md) | Three-photo + birth funnel, dual IAP |
+| [decisions/0028-face-oracle-dual-track.md](./decisions/0028-face-oracle-dual-track.md) | ADR — dual track + events + privacy |
+
 ---
 
 ## Shared
@@ -102,5 +109,6 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [0025](./decisions/0025-kindred-relationship-push.md) | Yuel relationship push |
 | [0026](./decisions/0026-timeline-makeif-altitude-split.md) | Yuun make-if altitude |
 | [0027](./decisions/0027-bond-credit-and-locale-economy.md) | Yuel bond credits |
+| [0028](./decisions/0028-face-oracle-dual-track.md) | Face Oracle dual-track + three-source funnel |
 
 Superseded ADRs: [archive/decisions/](./archive/decisions/)

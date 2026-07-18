@@ -15,7 +15,13 @@ export default function FaceOracleMeScreen() {
         emptyText='No face readings yet.'
         privacyUrl='https://www.hexastral.com/en/privacy/faceoracle'
         appStoreUrl='https://www.hexastral.com'
-        onOpenUrl={(url) => void Linking.openURL(url)}
+        onOpenUrl={(url) => {
+          if (url.includes('privacy')) {
+            router.push('/privacy')
+            return
+          }
+          void Linking.openURL(url)
+        }}
         onViewHistory={() => router.push('/history')}
         onUpgrade={() => router.push('/paywall')}
         onRestore={() => router.push('/paywall')}

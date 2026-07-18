@@ -1,33 +1,12 @@
 /**
- * Face Oracle result screen.
- *
- * Two-tier flow (K.3):
- *   - Teaser: the free /preview reading (cheap canned features, no Gemini Vision).
- *   - Full report: gated behind Apple sign-in + the `faceoracle_pro` entitlement.
- *     "Reveal full reading" calls the authed /linked path (`runFaceFull`), which
- *     runs the real Gemini Vision extraction server-side. A 402 (not entitled)
- *     routes to the paywall; a missing portfolio session routes to sign-in.
- *
- * Below the reading: `<SatelliteQuestionTypePicker>` + `<SatelliteFlagshipUpsellCard>`
- * funnel the user toward a flagship (per ADR-0004).
+ * One-shot / period result — sections + forward event table (ADR-0028).
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
-import { type QuestionType, routePortfolioToFlagship } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import {
-  buildFlagshipDeepLink,
-  defaultFlagshipUpsellLabels,
-  defaultQuestionTypeLabels,
-  flagshipAppStoreUrl,
-  SatelliteFlagshipUpsellCard,
-  SatelliteQuestionTypePicker,
-  SatelliteResultCard,
-} from '@zhop/satellite-ui'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
-import { runFaceFull } from '@/lib/api'
+import { ScrollView, Text, View } from 'react-native'
+
 import { useSatelliteI18n } from '@/lib/i18n'
 
 function parsePayload(payload?: string | string[]): Record<string, unknown> {
@@ -39,149 +18,109 @@ function parsePayload(payload?: string | string[]): Record<string, unknown> {
   }
 }
 
-function asString(v?: string | string[]): string | undefined {
-  return typeof v === 'string' ? v : undefined
-}
-
-function stringEntries(value: unknown): [string, string][] {
-  if (!value || typeof value !== 'object') return []
-  return Object.entries(value as Record<string, unknown>).filter(
-    (e): e is [string, string] => typeof e[1] === 'string' && e[1].length > 0
-  )
-}
-
-function copyFor(locale: string) {
-  const zh = locale.startsWith('zh')
-  const ja = locale.startsWith('ja')
-  return {
-    teaserTitle: zh ? '面相速览 · 预览' : ja ? '人相プレビュー' : 'Quick Look · preview',
-    fullTitle: zh ? '完整面相解读' : ja ? '完全な人相鑑定' : 'Full Face Reading',
-    teaserNote: zh
-      ? '这是基于通用特征的免费预览。解锁后将分析你的真实照片，生成完整解读。'
-      : ja
-        ? 'これは一般的な特徴に基づく無料プレビューです。解除すると写真を解析した完全な鑑定が得られます。'
-        : 'A free preview from generic features. Unlock to analyze your actual photo for the full reading.',
-    unlock: zh ? '解锁完整解读 · Pro' : ja ? '完全な鑑定を解除 · Pro' : 'Unlock full reading · Pro',
-    reveal: zh ? '生成完整解读' : ja ? '完全な鑑定を表示' : 'Reveal full reading',
-    analyzing: zh ? '分析中…' : ja ? '分析中…' : 'Analyzing…',
-  }
+function asString(v: unknown): string {
+  return typeof v === 'string' ? v : ''
 }
 
 export default function FaceResultScreen() {
   const { colors, spacing } = useTheme()
   const { locale } = useSatelliteI18n()
-  const params = useLocalSearchParams<{
-    readingId?: string
-    payload?: string
-    imageUri?: string
-  }>()
-  const imageUri = asString(params.imageUri)
-  const copy = copyFor(locale)
-
+  const zh = locale.startsWith('zh')
+  const params = useLocalSearchParams<{ readingId?: string; payload?: string }>()
+  const output = parsePayload(params.payload)
+  const ai = (output.aiInterpretation ?? {}) as Record<string, unknown>
+  const events = Array.isArray(output.events)
+    ? (output.events as Array<Record<string, unknown>>)
+    : Array.isArray(ai.events)
+      ? (ai.events as Array<Record<string, unknown>>)
+      : []
   const entitlements = useEntitlements()
-  // Face is per-use (no faceoracle_pro sub — plan §8). universe_pro carries the monthly
-  // face allowance → full reading; pack-credit buyers are authorized server-side and get
-  // the full output from the /linked call (P4 client flip: drive `entitled` off the
-  // server response rather than a client entitlement for the pack path).
-  const entitled = hasEntitlement(entitlements, 'universe_pro')
+  const isPro =
+    hasEntitlement(entitlements, 'faceoracle_pro') ||
+    hasEntitlement(entitlements, 'universe_pro')
 
-  const [fullOutput, setFullOutput] = useState<Record<string, unknown> | null>(null)
-  const [loadingFull, setLoadingFull] = useState(false)
-
-  const teaserOutput = parsePayload(params.payload)
-  const output = fullOutput ?? teaserOutput
-  const isFull = fullOutput != null
-  const features = (output.features ?? {}) as Record<string, string>
-  const interpretation = stringEntries(output.aiInterpretation)
-
-  const [questionType, setQuestionType] = useState<QuestionType | null>(null)
-  const suggestedFlagship = routePortfolioToFlagship('faceoracle', questionType)
-  const upsellLabels = defaultFlagshipUpsellLabels(locale)
-  const pickerLabels = defaultQuestionTypeLabels(locale)
-  const deepLink = buildFlagshipDeepLink({
-    flagship: suggestedFlagship,
-    fromSlug: 'face-oracle',
-    signal: questionType,
-  })
-
-  const onReveal = async () => {
-    if (loadingFull) return
-    setLoadingFull(true)
-    try {
-      const res = await runFaceFull(imageUri, locale)
-      if (res.mode === 'refused') {
-        router.push('/paywall')
-        return
-      }
-      setFullOutput(res.output as Record<string, unknown>)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      // No portfolio session yet → sign in; otherwise treat as not-entitled → paywall.
-      router.push(msg === 'signin_required' ? '/(tabs)/me' : '/paywall')
-    } finally {
-      setLoadingFull(false)
-    }
-  }
+  const sections = [
+    { title: zh ? '总格局' : 'Overview', body: asString(ai.overview) },
+    { title: zh ? '面部' : 'Face', body: asString(ai.faceSection) },
+    { title: zh ? '左掌' : 'Left palm', body: asString(ai.palmLeftSection) },
+    { title: zh ? '右掌' : 'Right palm', body: asString(ai.palmRightSection) },
+    { title: zh ? '形气 × 八字' : 'Form × BaZi', body: asString(ai.natalContrast) },
+    { title: zh ? '本期对照' : 'Period note', body: asString(ai.periodDiff) },
+    { title: zh ? '建议' : 'Advice', body: asString(ai.advice) },
+  ].filter((s) => s.body.length > 0)
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ flexGrow: 1, padding: spacing.xl, gap: spacing.lg }}
+      contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
     >
-      <Stack.Screen options={{ title: isFull ? copy.fullTitle : copy.teaserTitle }} />
+      <Stack.Screen
+        options={{ title: zh ? '解读结果' : 'Reading', headerShown: true }}
+      />
+      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
+        {zh ? '完整形气解读' : 'Full form reading'}
+      </Text>
+      <Text style={{ color: colors.secondary, fontSize: 12 }}>
+        {zh
+          ? '文化研习参考 · 非命运断语'
+          : 'Cultural study framing · not deterministic fate'}
+      </Text>
 
-      <View style={{ gap: spacing.sm }}>
-        <SatelliteResultCard
-          title={isFull ? copy.fullTitle : copy.teaserTitle}
-          body={isFull ? '' : copy.teaserNote}
-        />
+      {sections.map((s) => (
+        <View
+          key={s.title}
+          style={{
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+            borderRadius: 0,
+            padding: spacing.md,
+            gap: 6,
+          }}
+        >
+          <Text style={{ color: colors.text, fontWeight: '600' }}>{s.title}</Text>
+          <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>{s.body}</Text>
+        </View>
+      ))}
 
-        {features
-          ? Object.entries(features).map(([k, v]) => (
-              <Text key={k} style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
-                {k}: {v}
-              </Text>
-            ))
-          : null}
-
-        {interpretation.map(([k, v]) => (
-          <Text key={`ai-${k}`} style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
-            {v}
-          </Text>
-        ))}
-
-        {!isFull ? (
-          <View style={{ alignSelf: 'stretch', marginTop: spacing.sm }}>
-            {entitled ? (
-              <Button variant='primary' onPress={onReveal} disabled={loadingFull}>
-                {loadingFull ? copy.analyzing : copy.reveal}
-              </Button>
-            ) : (
-              <Button variant='primary' onPress={() => router.push('/paywall')}>
-                {copy.unlock}
-              </Button>
-            )}
-            {loadingFull ? (
-              <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
-                <ActivityIndicator color={colors.accent} />
-              </View>
-            ) : null}
+      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}>
+        {zh ? '前瞻时间窗' : 'Forward windows'}
+      </Text>
+      {events.length === 0 ? (
+        <Text style={{ color: colors.secondary }}>
+          {zh ? '本次未返回结构化事件' : 'No structured events in this response'}
+        </Text>
+      ) : (
+        events.map((ev, idx) => (
+          <View
+            key={`${String(ev.startMonth)}-${idx}`}
+            style={{
+              borderWidth: 0.5,
+              borderColor: colors.separator,
+              padding: spacing.md,
+              gap: 4,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: '500' }}>
+              {String(ev.startMonth ?? '')}
+              {ev.endMonth ? ` → ${String(ev.endMonth)}` : ''}
+            </Text>
+            <Text style={{ color: colors.text }}>{String(ev.theme ?? '')}</Text>
+            <Text style={{ color: colors.secondary, lineHeight: 20 }}>
+              {String(ev.note ?? '')}
+            </Text>
           </View>
-        ) : null}
-      </View>
+        ))
+      )}
 
-      <SatelliteQuestionTypePicker
-        value={questionType}
-        onChange={setQuestionType}
-        labels={pickerLabels}
-      />
-
-      <SatelliteFlagshipUpsellCard
-        suggestedFlagship={suggestedFlagship}
-        labelsByFlagship={upsellLabels}
-        deepLink={deepLink}
-        appStoreUrl={flagshipAppStoreUrl(suggestedFlagship)}
-      />
+      {!isPro ? (
+        <Button variant='primary' onPress={() => router.push('/paywall')}>
+          {zh ? '订阅 Pro · Timeline 与提醒' : 'Subscribe Pro · Timeline & reminders'}
+        </Button>
+      ) : (
+        <Button variant='ghost' onPress={() => router.replace('/(tabs)')}>
+          {zh ? '回到 Timeline' : 'Back to Timeline'}
+        </Button>
+      )}
     </ScrollView>
   )
 }

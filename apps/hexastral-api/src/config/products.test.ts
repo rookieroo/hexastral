@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH,
   getProduct,
   isConsumableProduct,
+  isSubscriptionProduct,
   ledgerCreditTypeForConsumable,
   UNIVERSE_MONTHLY_ALLOWANCE,
 } from './products'
@@ -19,6 +21,16 @@ describe('episodic consumable catalog (ADR-0013 P2.2)', () => {
       expect(p.consumable.kind).toBe(kind)
       expect(p.consumable.credits).toBe(credits)
     }
+  })
+
+  it('registers FaceOracle Pro subscription (ADR-0028)', () => {
+    for (const productId of ['faceoracle_pro_monthly', 'faceoracle_pro_annual'] as const) {
+      const p = getProduct(productId)
+      expect(p).toBeDefined()
+      if (!p || !isSubscriptionProduct(p)) throw new Error(`${productId} is not a subscription`)
+      expect(p.grantsEntitlements).toContain('faceoracle_pro')
+    }
+    expect(FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH).toBe(6)
   })
 
   it('routes only the new packs to the ledger; legacy kinds stay column-backed', () => {

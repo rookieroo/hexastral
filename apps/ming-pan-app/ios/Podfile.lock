@@ -238,7 +238,7 @@ PODS:
   - ExpoHead (6.0.23):
     - ExpoModulesCore
     - RNScreens
-  - ExpoImagePicker (17.0.10):
+  - ExpoImagePicker (17.0.11):
     - ExpoModulesCore
   - ExpoKeepAwake (15.0.8):
     - ExpoModulesCore
@@ -2452,7 +2452,7 @@ DEPENDENCIES:
   - "ExpoFont (from `../../../node_modules/.bun/expo-font@14.0.11+e4fd16ac8ffee978/node_modules/expo-font/ios`)"
   - "ExpoHaptics (from `../../../node_modules/.bun/expo-haptics@15.0.8+da394b4df4511c20/node_modules/expo-haptics/ios`)"
   - "ExpoHead (from `../../../node_modules/.bun/expo-router@6.0.23+e1553b39c881b8c4/node_modules/expo-router/ios`)"
-  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@17.0.10+da394b4df4511c20/node_modules/expo-image-picker/ios`)"
+  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@17.0.11+da394b4df4511c20/node_modules/expo-image-picker/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.bun/expo-keep-awake@15.0.8+1b9f08083c0c1237/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinking (from `../../../node_modules/.bun/expo-linking@8.0.12+da394b4df4511c20/node_modules/expo-linking/ios`)"
   - "ExpoLocalization (from `../../../node_modules/.bun/expo-localization@17.0.8+da394b4df4511c20/node_modules/expo-localization/ios`)"
@@ -2598,7 +2598,7 @@ EXTERNAL SOURCES:
   ExpoHead:
     :path: "../../../node_modules/.bun/expo-router@6.0.23+e1553b39c881b8c4/node_modules/expo-router/ios"
   ExpoImagePicker:
-    :path: "../../../node_modules/.bun/expo-image-picker@17.0.10+da394b4df4511c20/node_modules/expo-image-picker/ios"
+    :path: "../../../node_modules/.bun/expo-image-picker@17.0.11+da394b4df4511c20/node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.bun/expo-keep-awake@15.0.8+1b9f08083c0c1237/node_modules/expo-keep-awake/ios"
   ExpoLinking:
@@ -2797,7 +2797,7 @@ SPEC CHECKSUMS:
   ExpoFont: f543ce20a228dd702813668b1a07b46f51878d47
   ExpoHaptics: d3a6375d8dcc3a1083d003bc2298ff654fafb536
   ExpoHead: 7e19b2272edf492262acf8afb391a295198a6b23
-  ExpoImagePicker: 1af3e4e31512d2f34c95c2a3018a3edc40aee748
+  ExpoImagePicker: ade85e148f735fc7e6f27dfe3eef28eb3887e90a
   ExpoKeepAwake: 55f75eca6499bb9e4231ebad6f3e9cb8f99c0296
   ExpoLinking: 2ef632ad5013e3f1568fae9408d56ab9af5efc55
   ExpoLocalization: d9168d5300a5b03e5e78b986124d11fb6ec3ebbd

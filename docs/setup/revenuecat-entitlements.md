@@ -111,7 +111,9 @@ which grant `kindred_pro` + `auspice_pro` + `fate_pro` + `universe_pro`.
 **Other products already in the catalog** (legacy / other apps — unrelated to the Yuel +
 Yuun launch; leave as-is): the consumables
 (`hexastral_chat_5`, `hexastral_cast_3`, `faceoracle_reading`,
-`dream_pack_10`, `numerology_pack_10`), and the single-purchase SKUs
+`dream_pack_10`, `numerology_pack_10`), FaceOracle Pro
+(`faceoracle_pro_monthly` / `faceoracle_pro_annual` → entitlement `faceoracle_pro`,
+ADR-0028; ASC one-shot floor USD 9.99), and the single-purchase SKUs
 (`hexastral_cast_single`, `hexastral_fate_reading`, `hexastral_feng_single`).
 
 Founder-agreed pricing is the binding number where given; Yuun monthly/annual mirror the

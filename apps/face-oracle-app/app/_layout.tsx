@@ -45,10 +45,13 @@ export default function RootLayout() {
             headerTitleStyle: { fontWeight: '500' },
           }}
         >
+          <Stack.Screen name='consent' options={{ presentation: 'modal' }} />
           <Stack.Screen name='capture' options={{ presentation: 'modal' }} />
+          <Stack.Screen name='birth' options={{ presentation: 'modal' }} />
           <Stack.Screen name='detail' options={{ presentation: 'modal' }} />
           <Stack.Screen name='history' options={{ presentation: 'modal' }} />
           <Stack.Screen name='paywall' options={{ presentation: 'modal' }} />
+          <Stack.Screen name='privacy' options={{ presentation: 'modal' }} />
           <Stack.Screen name='result' options={{ presentation: 'modal' }} />
         </Stack>
       </CoreUIProvider>

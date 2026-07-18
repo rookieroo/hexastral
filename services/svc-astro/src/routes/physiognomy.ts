@@ -4,7 +4,11 @@
 
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { extractFaceFeatures, generatePhysiognomyReading } from '../services/physiognomy'
+import {
+  extractFaceFeatures,
+  extractPalmFeatures,
+  generatePhysiognomyReading,
+} from '../services/physiognomy'
 import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
@@ -43,6 +47,29 @@ physiognomyRoutes.post('/extract-features', async (c) => {
   }
 
   const features = await extractFaceFeatures(
+    c.env.GEMINI_API_KEY,
+    input.imageBase64,
+    input.mimeType ?? 'image/jpeg'
+  )
+
+  return c.json({ features })
+})
+
+/**
+ * POST /extract-palm-features
+ * Structured palm extract — mirrors /extract-features; image is ephemeral (ADR-0028).
+ */
+physiognomyRoutes.post('/extract-palm-features', async (c) => {
+  const input = await c.req.json<{
+    imageBase64: string
+    mimeType?: string
+  }>()
+
+  if (!input.imageBase64) {
+    throw new HTTPException(400, { message: 'imageBase64 is required' })
+  }
+
+  const features = await extractPalmFeatures(
     c.env.GEMINI_API_KEY,
     input.imageBase64,
     input.mimeType ?? 'image/jpeg'

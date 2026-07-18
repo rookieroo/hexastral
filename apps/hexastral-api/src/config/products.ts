@@ -11,11 +11,12 @@ export type EntitlementKey =
   | 'fate_pro'
   | 'universe_pro'
   | 'coincast_pro'
+  | 'faceoracle_pro'
 // NOTE: fate is a funnel app — no standalone fate_pro subscription. The
 // `fate_pro` entitlement is universe_pro-only (Universe-Pro users get the Pro
 // experience inside fate, e.g. all chapters unlocked + daily LLM insights).
-// NOTE: feng/face are per-use only (ADR-0013 §2 / plan §8) — no standalone sub
-// entitlement. Unlimited chat/readings on those come via universe_pro.
+// NOTE: feng remains per-use (ADR-0013). FaceOracle regained a standalone Pro
+// sub in ADR-0028 (Timeline + photo-slot quota); one-shot stays `faceoracle_reading`.
 export type FlagshipKey = 'kindred' | 'feng' | 'hexastral'
 export type SubscriptionPlan = 'monthly' | 'annual'
 
@@ -64,6 +65,7 @@ export const ALL_ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
   'fate_pro',
   'universe_pro',
   'coincast_pro',
+  'faceoracle_pro',
 ] as const
 
 export const PRODUCTS: readonly ProductSpec[] = [
@@ -102,13 +104,27 @@ export const PRODUCTS: readonly ProductSpec[] = [
     productId: 'universe_pro_monthly',
     kind: 'subscription',
     plan: 'monthly',
-    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro', 'coincast_pro'],
+    grantsEntitlements: [
+      'kindred_pro',
+      'auspice_pro',
+      'fate_pro',
+      'universe_pro',
+      'coincast_pro',
+      'faceoracle_pro',
+    ],
   },
   {
     productId: 'universe_pro_annual',
     kind: 'subscription',
     plan: 'annual',
-    grantsEntitlements: ['kindred_pro', 'auspice_pro', 'fate_pro', 'universe_pro', 'coincast_pro'],
+    grantsEntitlements: [
+      'kindred_pro',
+      'auspice_pro',
+      'fate_pro',
+      'universe_pro',
+      'coincast_pro',
+      'faceoracle_pro',
+    ],
   },
 
   // ── CoinCast Pro subscription ──────────────────────────────────────────
@@ -129,6 +145,20 @@ export const PRODUCTS: readonly ProductSpec[] = [
     kind: 'subscription',
     plan: 'annual',
     grantsEntitlements: ['coincast_pro'],
+  },
+
+  // ── FaceOracle Pro (ADR-0028) — Timeline + photo-slot quota ─────────────
+  {
+    productId: 'faceoracle_pro_monthly',
+    kind: 'subscription',
+    plan: 'monthly',
+    grantsEntitlements: ['faceoracle_pro'],
+  },
+  {
+    productId: 'faceoracle_pro_annual',
+    kind: 'subscription',
+    plan: 'annual',
+    grantsEntitlements: ['faceoracle_pro'],
   },
 
   // ── Consumables ────────────────────────────────────────────────────────
@@ -157,8 +187,7 @@ export const PRODUCTS: readonly ProductSpec[] = [
     kind: 'consumable',
     consumable: { kind: 'coincast_cast', credits: 10 },
   },
-  // ADR-0012/0013: ledger-backed episodic packs. Face flips sub→consumable
-  // (per-reading); dream/numerology are low-band packs.
+  // ADR-0028: one-shot FaceOracle reading — ASC price floor USD 9.99 (COGS: 3× VLM + LLM).
   {
     productId: 'faceoracle_reading',
     kind: 'consumable',
@@ -270,3 +299,6 @@ export const ENTITLEMENT_MONTHLY_ALLOWANCE: Partial<
 > = {
   universe_pro: UNIVERSE_MONTHLY_ALLOWANCE,
 }
+
+/** FaceOracle Pro photo slots per UTC calendar month (full=3, partial=1). */
+export const FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH = 6

@@ -89,8 +89,11 @@ export const users = sqliteTable(
     // ── 面相/手相（可选，作为占卜命理入参）──
     /** 最新一次面相特征提取记录 ID（关联 user_physiognomy_features） */
     activePhysiognomyId: text('active_physiognomy_id'),
-    /** 最新一次手相特征提取记录 ID（关联 user_physiognomy_features, type='palm'） */
+    /** Legacy single palm pointer (prefer left/right columns below). */
     activePalmFeatureId: text('active_palm_feature_id'),
+    /** Left / right palm feature IDs (ADR-0028 three-source baseline). */
+    activePalmLeftFeatureId: text('active_palm_left_feature_id'),
+    activePalmRightFeatureId: text('active_palm_right_feature_id'),
 
     // ── 订阅 & Credits ──
     // Subscription access is canonical in `user_entitlements` (ADR-0013). The
@@ -623,8 +626,8 @@ export const userPhysiognomyFeatures = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
-    /** 特征类型: face=面相, palm=手相 */
-    type: text('type', { enum: ['face', 'palm'] })
+    /** 特征类型: face | palm (legacy) | palm_l | palm_r (ADR-0028) */
+    type: text('type', { enum: ['face', 'palm', 'palm_l', 'palm_r'] })
       .notNull()
       .default('face'),
     /** VLM 提取的结构化面相/手相特征 (JSON) */
@@ -1021,7 +1024,7 @@ export const userBonds = sqliteTable(
 /**
  * Pre-generated relationship push 语料, harvested from the LLM moments that already
  * run for a Thread (合盘报告 / timeline / what-if). A cheap deterministic cron later
- * sends the right line on a matching day — NO per-day LLM (ADR-0025).
+ * sends the right line on a matching day — NO per-day LLM (ADR-0028).
  *
  *   - kind='conditional' → fires when the day's calculateDailySynastry().status
  *     equals `triggerKind` (e.g. 'resonance' on a high-契合 day).
@@ -1766,6 +1769,8 @@ export const freeMonthlyQuotas = sqliteTable(
     divinationUsed: integer('divination_used').default(0).notNull(),
     /** 当月面相/手相上传次数 */
     physiognomyUploads: integer('physiognomy_uploads').default(0).notNull(),
+    /** FaceOracle Pro photo slots used this UTC month (ADR-0028; cap 6). */
+    faceoraclePhotoSlots: integer('faceoracle_photo_slots').default(0).notNull(),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
@@ -1776,6 +1781,34 @@ export const freeMonthlyQuotas = sqliteTable(
   (t) => [
     unique('fmq_user_month_uniq').on(t.userId, t.month),
     index('fmq_user_month_idx').on(t.userId, t.month),
+  ]
+)
+
+/**
+ * Active forward event table for FaceOracle readings (ADR-0028).
+ * Each successful reading replaces events for that user (notification source).
+ */
+export const physiognomyEvents = sqliteTable(
+  'physiognomy_events',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    readingId: text('reading_id'),
+    horizonMonths: integer('horizon_months').notNull().default(3),
+    /** Structured events JSON array */
+    eventsJson: text('events_json').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique('physio_events_user_uniq').on(t.userId),
+    index('physio_events_user_idx').on(t.userId),
   ]
 )
 

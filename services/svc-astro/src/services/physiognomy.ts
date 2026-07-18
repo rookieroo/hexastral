@@ -116,6 +116,71 @@ export async function extractFaceFeatures(
   })
 }
 
+/** Structured palm features — stored without the source image (ADR-0028). */
+export interface PalmFeatures {
+  handShape: string
+  lifeLine: string
+  headLine: string
+  heartLine: string
+  fateLine: string
+  mounts: string
+  fingerRatio: string
+  specialMarks: string
+  overallAssessment: string
+}
+
+const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家，同时具备计算机视觉分析能力。
+请仔细观察图片中的手掌与掌纹，从手相学角度提取结构化特征。
+
+重要说明：
+- 按照要求的 JSON Schema 精确输出，不得增删字段
+- 每个字段给出简短的中文描述（5-20字）
+- 如某部位在图片中不清晰，标注值为 "unclear"
+- 绝对不要包含对用户外貌的主观美丑评价
+- 不要做命运断语，只描述可见特征`
+
+const PALM_FEATURES_SCHEMA = {
+  type: 'object',
+  properties: {
+    handShape: { type: 'string' },
+    lifeLine: { type: 'string' },
+    headLine: { type: 'string' },
+    heartLine: { type: 'string' },
+    fateLine: { type: 'string' },
+    mounts: { type: 'string' },
+    fingerRatio: { type: 'string' },
+    specialMarks: { type: 'string' },
+    overallAssessment: { type: 'string' },
+  },
+  required: [
+    'handShape',
+    'lifeLine',
+    'headLine',
+    'heartLine',
+    'fateLine',
+    'mounts',
+    'fingerRatio',
+    'specialMarks',
+    'overallAssessment',
+  ],
+}
+
+export async function extractPalmFeatures(
+  apiKey: string,
+  imageBase64: string,
+  mimeType = 'image/jpeg'
+): Promise<PalmFeatures> {
+  return callGeminiVisionStructured<PalmFeatures>(apiKey, {
+    systemPrompt: PALM_FEATURES_SYSTEM_PROMPT,
+    userPrompt: '请按要求提取手相特征，只输出 JSON，不要任何额外文字。',
+    images: [{ base64: imageBase64, mimeType }],
+    responseSchema: PALM_FEATURES_SCHEMA,
+    maxOutputTokens: 2048,
+    temperature: 0.2,
+    thinkingLevel: 'MEDIUM',
+  })
+}
+
 /** VLM 描述结果 */
 export interface VLMDescription {
   type: PhysiognomyType

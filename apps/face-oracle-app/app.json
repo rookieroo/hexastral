@@ -16,14 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hexastral.faceoracle",
-      "usesAppleSignIn": true,
-      "associatedDomains": [
-        "applinks:hexastral.com",
-        "applinks:www.hexastral.com"
-      ],
       "infoPlist": {
-        "NSCameraUsageDescription": "FaceRead uses the camera to capture face or palm photos for readings.",
-        "NSPhotoLibraryUsageDescription": "FaceRead accesses your photo library when you choose an existing face or palm photo."
+        "NSCameraUsageDescription": "FaceRead uses the camera to capture left palm, right palm, and face photos for readings.",
+        "NSPhotoLibraryUsageDescription": "FaceRead accesses your photo library when you choose existing palm or face photos.",
+        "UIBackgroundModes": ["remote-notification"]
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -52,7 +48,24 @@
             ]
           }
         ],
-        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhotosorVideos",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUserContent",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          }
+        ],
         "NSPrivacyTracking": false
       },
       "appleTeamId": "L9Z47DW56X"
@@ -87,7 +100,14 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "FaceRead uses the camera to capture face or palm photos for readings."
+          "cameraPermission": "FaceRead uses the camera to capture left palm, right palm, and face photos for readings."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#09090B"
         }
       ]
     ]

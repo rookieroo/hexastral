@@ -14,8 +14,11 @@
 
 import { and, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
+import { FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH } from '../config/products'
 import { bondInviteCredits, freeMonthlyQuotas, users } from '../db/schema'
 import type { AppDb } from '../infra-types'
+
+// FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH imported for ADR-0028 meter
 
 // ── Free 用户月度配额上限 ──────────────────────────────────────────────────────────
 
@@ -219,4 +222,68 @@ export async function checkAndConsumePhysiognomyUpload(
 
   const changed = (result as unknown as { meta: { changes: number } }).meta.changes
   return { granted: changed > 0 }
+}
+
+/**
+ * FaceOracle Pro photo-slot meter (ADR-0028).
+ * Full refresh = 3 slots; each partial part = 1 slot. Cap = FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH.
+ */
+export async function checkAndConsumeFaceoraclePhotoSlots(
+  db: AppDb,
+  userId: string,
+  slots: number
+): Promise<{ granted: boolean; used: number; limit: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH
+  if (slots < 1) return { granted: false, used: 0, limit }
+
+  await db
+    .insert(freeMonthlyQuotas)
+    .values({
+      id: nanoid(),
+      userId,
+      month,
+      divinationUsed: 0,
+      physiognomyUploads: 0,
+      faceoraclePhotoSlots: 0,
+    })
+    .onConflictDoNothing()
+
+  const result = await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoraclePhotoSlots: sql`${freeMonthlyQuotas.faceoraclePhotoSlots} + ${slots}`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(freeMonthlyQuotas.userId, userId),
+        eq(freeMonthlyQuotas.month, month),
+        sql`${freeMonthlyQuotas.faceoraclePhotoSlots} + ${slots} <= ${limit}`
+      )
+    )
+
+  const changed = (result as unknown as { meta: { changes: number } }).meta.changes
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoraclePhotoSlots })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+
+  return { granted: changed > 0, used: row?.used ?? 0, limit }
+}
+
+export async function getFaceoraclePhotoSlotUsage(
+  db: AppDb,
+  userId: string
+): Promise<{ used: number; limit: number; remaining: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoraclePhotoSlots })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+  const used = row?.used ?? 0
+  return { used, limit, remaining: Math.max(0, limit - used) }
 }
