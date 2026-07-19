@@ -129,7 +129,7 @@ export async function extractFaceFeatures(
     responseSchema: FACE_FEATURES_SCHEMA,
     maxOutputTokens: 2048,
     temperature: 0.2,
-    thinkingLevel: 'MEDIUM',
+    thinkingLevel: 'MINIMAL',
   })
 }
 
@@ -204,7 +204,7 @@ export async function extractPalmFeatures(
     responseSchema: PALM_FEATURES_SCHEMA,
     maxOutputTokens: 2048,
     temperature: 0.2,
-    thinkingLevel: 'MEDIUM',
+    thinkingLevel: 'MINIMAL',
   })
 }
 

@@ -258,6 +258,23 @@ function mapJobError(msg: string, locale: string): string {
       '特徵提取需要 Pro（Settings → Force entitlement → PRO，需已登入）',
       'Feature extract needs Pro (Settings → Force entitlement → PRO while signed in)'
     )
+  } else if (msg.includes('request_timeout') || msg.includes('extract_timeout')) {
+    error = zhCopy(
+      locale,
+      '特征提取超时。请检查网络后重试；必要时重拍更清晰的照片。',
+      '特徵提取超時。請檢查網絡後重試；必要時重拍更清晰的照片。',
+      'Feature extract timed out. Check network and retry; retake clearer photos if needed.'
+    )
+  } else if (
+    msg.includes('extract_image_encode_failed') ||
+    msg.includes('photo_encode_failed')
+  ) {
+    error = zhCopy(
+      locale,
+      '无法处理该照片。请用相机重新拍摄。',
+      '無法處理該照片。請用相機重新拍攝。',
+      'Could not process this photo. Retake with the camera.'
+    )
   } else if (
     msg.includes('extract_photo_quality_low') ||
     msg.includes('photo_quality_low')

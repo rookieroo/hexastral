@@ -7,47 +7,63 @@ import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 import type { CapturePart, ReadingDraft } from './reading-draft'
 import { patchReadingDraft } from './reading-draft'
 
+/** Per-photo VLM extract. Fail fast enough for UX; sequential chain ×3 still OK. */
+const EXTRACT_FETCH_TIMEOUT_MS = 75_000
+
+/**
+ * Always emit JPEG base64 ≤1280w. Raw HEIC labeled as image/jpeg hangs Gemini;
+ * full-res parallel uploads stall the client at "extracting 5%".
+ */
 async function readBase64(uri: string): Promise<string> {
-  // Downscale before VLM — full-res HEIC/JPEG often times out or 413s.
-  // Probe native module first so a missing binary does not log a hard ERROR.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { NativeModules } = require('react-native') as {
-      NativeModules?: { ExpoImageManipulator?: unknown }
-    }
-    if (!NativeModules?.ExpoImageManipulator) {
-      return FileSystem.readAsStringAsync(uri, { encoding: 'base64' })
-    }
     const ImageManipulator = await import('expo-image-manipulator')
     const resized = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1280 } }], {
-      compress: 0.72,
+      compress: 0.7,
       format: ImageManipulator.SaveFormat.JPEG,
       base64: true,
     })
-    if (resized.base64) return resized.base64
+    if (resized.base64 && resized.base64.length > 0) return resized.base64
     return FileSystem.readAsStringAsync(resized.uri, { encoding: 'base64' })
-  } catch {
-    return FileSystem.readAsStringAsync(uri, { encoding: 'base64' })
+  } catch (err) {
+    console.warn('[xingqi.extract] jpeg_resize_failed', err)
+    throw new Error('extract_image_encode_failed')
   }
 }
 
-async function signedJson(method: 'GET' | 'POST', path: string, body?: unknown): Promise<Response> {
+async function signedJson(
+  method: 'GET' | 'POST',
+  path: string,
+  body?: unknown,
+  opts?: { timeoutMs?: number }
+): Promise<Response> {
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('signin_required')
   const requestBody = body !== undefined ? JSON.stringify(body) : ''
   const signed = await signRequest({ body: requestBody, userId, method, path })
   if (!signed) throw new Error('signin_required')
-  return fetch(`${resolvePortfolioApiUrl()}${path}`, {
-    method,
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      Authorization: `Bearer ${userId}`,
-      // DEV builds: ask API to skip FaceOracle monthly meters when ALLOW_DEV_PRO=1.
-      ...(__DEV__ ? { 'x-xingqi-dev-quota': '1' } : {}),
-      ...signed,
-    },
-    ...(body !== undefined ? { body: requestBody } : {}),
-  })
+  const timeoutMs = opts?.timeoutMs
+  try {
+    return await fetch(`${resolvePortfolioApiUrl()}${path}`, {
+      method,
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        Authorization: `Bearer ${userId}`,
+        // DEV builds: ask API to skip FaceOracle monthly meters when ALLOW_DEV_PRO=1.
+        ...(__DEV__ ? { 'x-xingqi-dev-quota': '1' } : {}),
+        ...signed,
+      },
+      ...(body !== undefined ? { body: requestBody } : {}),
+      ...(timeoutMs != null ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
+    })
+  } catch (err) {
+    const name = err instanceof Error ? err.name : ''
+    const msg = err instanceof Error ? err.message : String(err)
+    if (name === 'TimeoutError' || name === 'AbortError' || /aborted|timed?\s*out/i.test(msg)) {
+      // Never embed ms — Alert surfaces this string if mapping misses.
+      throw new Error('request_timeout')
+    }
+    throw err
+  }
 }
 
 /** True if server (or local cache) says biometric disclosure was accepted. */
@@ -117,13 +133,19 @@ export async function extractFeature(
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('signin_required')
   const imageBase64 = await readBase64(imageUri)
-  const res = await signedJson('POST', '/api/physiognomy/face-features/from-base64', {
-    userId,
-    imageBase64,
-    mimeType: 'image/jpeg',
-    privacyConsentVersion: 'v1',
-    type,
-  })
+  console.info('[xingqi.extract] start', { type, b64Chars: imageBase64.length })
+  const res = await signedJson(
+    'POST',
+    '/api/physiognomy/face-features/from-base64',
+    {
+      userId,
+      imageBase64,
+      mimeType: 'image/jpeg',
+      privacyConsentVersion: 'v1',
+      type,
+    },
+    { timeoutMs: EXTRACT_FETCH_TIMEOUT_MS }
+  )
   if (res.status === 403) {
     const j = (await res.json().catch(() => ({}))) as {
       error?: string | { message?: string }
@@ -246,43 +268,63 @@ function buildJobBody(
   }
 }
 
-/** Ensure feature IDs exist (extract remaining photos) before paid reading. */
-export async function ensureFeaturesExtracted(draft: ReadingDraft): Promise<ReadingDraft> {
+/**
+ * Ensure feature IDs exist before enqueue.
+ * Sequential (not parallel): three concurrent VLM uploads starved the UI at 5%
+ * and overloaded Gemini / cellular uplink.
+ */
+export async function ensureFeaturesExtracted(
+  draft: ReadingDraft,
+  opts?: { onProgress?: (progress: number) => void }
+): Promise<ReadingDraft> {
   const next = { ...draft }
-  const tasks: Array<Promise<void>> = []
+  const steps: Array<{
+    part: CapturePart
+    uri: string
+    apply: (featureId: string) => void
+  }> = []
 
   if (!next.palmLeftFeatureId && next.palmLeftUri) {
-    const uri = next.palmLeftUri
-    tasks.push(
-      (async () => {
-        const r = await extractFeature('palm_l', uri)
-        next.palmLeftFeatureId = r.featureId
-        patchReadingDraft({ palmLeftFeatureId: r.featureId })
-      })()
-    )
+    steps.push({
+      part: 'palm_l',
+      uri: next.palmLeftUri,
+      apply: (featureId) => {
+        next.palmLeftFeatureId = featureId
+        patchReadingDraft({ palmLeftFeatureId: featureId })
+      },
+    })
   }
   if (!next.palmRightFeatureId && next.palmRightUri) {
-    const uri = next.palmRightUri
-    tasks.push(
-      (async () => {
-        const r = await extractFeature('palm_r', uri)
-        next.palmRightFeatureId = r.featureId
-        patchReadingDraft({ palmRightFeatureId: r.featureId })
-      })()
-    )
+    steps.push({
+      part: 'palm_r',
+      uri: next.palmRightUri,
+      apply: (featureId) => {
+        next.palmRightFeatureId = featureId
+        patchReadingDraft({ palmRightFeatureId: featureId })
+      },
+    })
   }
   if (!next.faceFeatureId && next.faceUri) {
-    const uri = next.faceUri
-    tasks.push(
-      (async () => {
-        const r = await extractFeature('face', uri)
-        next.faceFeatureId = r.featureId
-        patchReadingDraft({ faceFeatureId: r.featureId })
-      })()
-    )
+    steps.push({
+      part: 'face',
+      uri: next.faceUri,
+      apply: (featureId) => {
+        next.faceFeatureId = featureId
+        patchReadingDraft({ faceFeatureId: featureId })
+      },
+    })
   }
 
-  if (tasks.length > 0) await Promise.all(tasks)
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i]
+    if (!step) continue
+    // 5 → 32 across pending extracts (runFaceReading then bumps to 35).
+    const pct = 5 + Math.round(((i + 0.5) / Math.max(steps.length, 1)) * 27)
+    opts?.onProgress?.(pct)
+    const r = await extractFeature(step.part, step.uri)
+    step.apply(r.featureId)
+    opts?.onProgress?.(5 + Math.round(((i + 1) / Math.max(steps.length, 1)) * 30))
+  }
   return next
 }
 
@@ -417,7 +459,9 @@ export async function runFaceReading(
   if (!userId) throw new Error('signin_required')
 
   opts?.onProgress?.({ phase: 'extracting', progress: 5 })
-  const withFeatures = await ensureFeaturesExtracted(draft)
+  const withFeatures = await ensureFeaturesExtracted(draft, {
+    onProgress: (progress) => opts?.onProgress?.({ phase: 'extracting', progress }),
+  })
   opts?.onProgress?.({ phase: 'extracting', progress: 35 })
 
   const enqueued = await enqueueFaceReadingJob(

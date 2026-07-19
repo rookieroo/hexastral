@@ -1,7 +1,7 @@
 import { Button, useTheme } from '@zhop/core-ui'
 import * as ImagePicker from 'expo-image-picker'
-import { router, useLocalSearchParams } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -20,9 +20,9 @@ function stepCopy(locale: string, part: CapturePart) {
   const s = (hans: string, hant: string, en: string) =>
     isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const quality = s(
-    '请尽量选择高清、完整、光线均匀的照片；模糊或裁切会导致特征不清、报告变浅。',
-    '請盡量選擇高清、完整、光線均勻的照片；模糊或裁切會導致特徵不清、報告變淺。',
-    'Use a sharp, complete, evenly lit photo. Blurry or cropped shots yield weak features and a thin reading.'
+    '请尽量拍摄高清、完整、光线均匀的照片；模糊或裁切会导致特征不清、报告变浅。',
+    '請盡量拍攝高清、完整、光線均勻的照片；模糊或裁切會導致特徵不清、報告變淺。',
+    'Shoot a sharp, complete, evenly lit photo. Blurry or cropped shots yield weak features and a thin reading.'
   )
   if (part === 'palm_l') {
     return {
@@ -63,33 +63,20 @@ type CaptureStepScreenProps = {
   nextHref: '/capture/right' | '/capture/face' | null
 }
 
-async function ensurePermission(
-  fromCamera: boolean,
-  locale: string
-): Promise<'ok' | 'denied'> {
+async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> {
   const s = (hans: string, hant: string, en: string) =>
     isCjkZh(locale) ? pickZh(locale, hans, hant) : en
-  const current = fromCamera
-    ? await ImagePicker.getCameraPermissionsAsync()
-    : await ImagePicker.getMediaLibraryPermissionsAsync()
+  const current = await ImagePicker.getCameraPermissionsAsync()
   if (current.granted) return 'ok'
-  const req = fromCamera
-    ? await ImagePicker.requestCameraPermissionsAsync()
-    : await ImagePicker.requestMediaLibraryPermissionsAsync()
+  const req = await ImagePicker.requestCameraPermissionsAsync()
   if (req.granted) return 'ok'
   Alert.alert(
     s('需要权限', '需要權限', 'Permission needed'),
-    fromCamera
-      ? s(
-          '请在系统设置中允许相机，以便拍摄掌纹/面部。',
-          '請在系統設定中允許相機，以便拍攝掌紋／面部。',
-          'Allow Camera in Settings to capture palm or face.'
-        )
-      : s(
-          '请在系统设置中允许相册访问，以便选择照片。',
-          '請在系統設定中允許相簿存取，以便選擇照片。',
-          'Allow Photos in Settings to choose an image.'
-        ),
+    s(
+      '请在系统设置中允许相机，以便拍摄掌纹/面部。',
+      '請在系統設定中允許相機，以便拍攝掌紋／面部。',
+      'Allow Camera in Settings to capture palm or face.'
+    ),
     [
       { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
       {
@@ -110,16 +97,27 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   const copy = stepCopy(locale, part)
   const params = useLocalSearchParams<{ mode?: string }>()
   const slotMode = params.mode === 'slot'
-  const [uri, setUri] = useState<string | undefined>()
+  /** On-disk path without query (draft / extract). */
+  const [fileUri, setFileUri] = useState<string | undefined>()
+  /** Cache-bust so RN Image reloads after overwrite at the same path. */
+  const [previewBust, setPreviewBust] = useState(0)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    void hydrateReadingDraft().then((d) => {
-      if (part === 'palm_l') setUri(d.palmLeftUri)
-      else if (part === 'palm_r') setUri(d.palmRightUri)
-      else setUri(d.faceUri)
-    })
-  }, [part])
+  const previewUri = fileUri
+    ? `${fileUri.split('?')[0] ?? fileUri}?t=${previewBust || Date.now()}`
+    : undefined
+
+  // Slot reopen / replace at same path — bust RN Image cache.
+  useFocusEffect(
+    useCallback(() => {
+      void hydrateReadingDraft().then((d) => {
+        const next =
+          part === 'palm_l' ? d.palmLeftUri : part === 'palm_r' ? d.palmRightUri : d.faceUri
+        setFileUri(next?.split('?')[0] ?? next)
+        setPreviewBust(Date.now())
+      })
+    }, [part])
+  )
 
   const applyUri = useCallback(
     async (sourceUri: string) => {
@@ -128,22 +126,31 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
       setBusy(true)
       try {
         const durable = await persistPeriodPhoto(part, sourceUri)
-        setUri(durable)
+        const clean = durable.split('?')[0] ?? durable
+        setFileUri(clean)
+        setPreviewBust(Date.now())
         if (part === 'palm_l') {
-          patchReadingDraft({ palmLeftUri: durable, palmLeftFeatureId: undefined })
+          patchReadingDraft({ palmLeftUri: clean, palmLeftFeatureId: undefined })
         } else if (part === 'palm_r') {
-          patchReadingDraft({ palmRightUri: durable, palmRightFeatureId: undefined })
+          patchReadingDraft({ palmRightUri: clean, palmRightFeatureId: undefined })
         } else {
-          patchReadingDraft({ faceUri: durable, faceFeatureId: undefined })
+          patchReadingDraft({ faceUri: clean, faceFeatureId: undefined })
         }
-      } catch {
+      } catch (err) {
+        const code = err instanceof Error ? err.message : ''
         Alert.alert(
           label('保存失败', '儲存失敗', 'Save failed'),
-          label(
-            '无法写入本机照片。请重试或检查存储空间。',
-            '無法寫入本機照片。請重試或檢查儲存空間。',
-            'Could not save the photo on device. Try again.'
-          )
+          code === 'photo_encode_failed'
+            ? label(
+                '无法将照片转为可用格式。请重新拍摄。',
+                '無法將照片轉為可用格式。請重新拍攝。',
+                'Could not convert the photo. Please retake.'
+              )
+            : label(
+                '无法写入本机照片。请重试或检查存储空间。',
+                '無法寫入本機照片。請重試或檢查儲存空間。',
+                'Could not save the photo on device. Try again.'
+              )
         )
       } finally {
         setBusy(false)
@@ -152,52 +159,47 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
     [part, locale]
   )
 
-  const pick = async (fromCamera: boolean) => {
+  /** Camera only — album HEIC often bypasses JPEG conversion and breaks VLM. */
+  const shoot = async () => {
     if (busy) return
-    const perm = await ensurePermission(fromCamera, locale)
+    const perm = await ensureCameraPermission(locale)
     if (perm !== 'ok') return
 
-    const runPick = async () => {
-      const result = fromCamera
-        ? await ImagePicker.launchCameraAsync({
-            quality: 0.85,
-            allowsEditing: true,
-            exif: false,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            quality: 0.85,
-            allowsEditing: true,
-            exif: false,
-          })
+    const runCamera = async () => {
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.85,
+        allowsEditing: true,
+        exif: false,
+      })
       if (result.canceled || !result.assets[0]?.uri) return
       await applyUri(result.assets[0].uri)
     }
 
-    if (uri) {
+    if (fileUri) {
       Alert.alert(
-        s('替换照片', '替換照片', 'Replace photo'),
+        s('重新拍摄', '重新拍攝', 'Retake photo'),
         s(
-          '替换后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。',
-          '替換後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。',
+          '重拍后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。',
+          '重拍後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。',
           'The previous on-device photo will be deleted. Source images are never kept on our servers.'
         ),
         [
           { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
           {
-            text: s('替换', '替換', 'Replace'),
+            text: s('重拍', '重拍', 'Retake'),
             style: 'destructive',
-            onPress: () => void runPick(),
+            onPress: () => void runCamera(),
           },
         ]
       )
       return
     }
 
-    await runPick()
+    await runCamera()
   }
 
   const onPrimary = () => {
-    if (!uri) return
+    if (!fileUri) return
     if (slotMode) {
       router.back()
       return
@@ -211,8 +213,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   }
 
   const emptyHint = s(
-    '尚未选择 · 拍照后仅保存在本机',
-    '尚未選擇 · 拍照後僅保存在本機',
+    '尚未拍摄 · 仅保存在本机',
+    '尚未拍攝 · 僅保存在本機',
     'No photo yet · kept on this device only'
   )
 
@@ -242,8 +244,13 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
           backgroundColor: colors.bg,
         }}
       >
-        {uri ? (
-          <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode='cover' />
+        {previewUri ? (
+          <Image
+            key={previewUri}
+            source={{ uri: previewUri }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode='cover'
+          />
         ) : (
           <Text style={{ color: colors.secondary, textAlign: 'center', lineHeight: 20 }}>
             {emptyHint}
@@ -259,40 +266,23 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         )}
       </Text>
 
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Pressable
-          onPress={() => void pick(true)}
-          disabled={busy}
-          style={{
-            flex: 1,
-            borderWidth: 0.5,
-            borderColor: colors.separator,
-            padding: 14,
-            alignItems: 'center',
-            opacity: busy ? 0.5 : 1,
-          }}
-        >
-          <Text style={{ color: colors.text }}>{s('拍照', '拍照', 'Camera')}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void pick(false)}
-          disabled={busy}
-          style={{
-            flex: 1,
-            borderWidth: 0.5,
-            borderColor: colors.separator,
-            padding: 14,
-            alignItems: 'center',
-            opacity: busy ? 0.5 : 1,
-          }}
-        >
-          <Text style={{ color: colors.text }}>
-            {uri ? s('替换', '替換', 'Replace') : s('相册', '相簿', 'Library')}
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={() => void shoot()}
+        disabled={busy}
+        style={{
+          borderWidth: 0.5,
+          borderColor: colors.separator,
+          padding: 14,
+          alignItems: 'center',
+          opacity: busy ? 0.5 : 1,
+        }}
+      >
+        <Text style={{ color: colors.text }}>
+          {fileUri ? s('重新拍摄', '重新拍攝', 'Retake') : s('拍照', '拍照', 'Camera')}
+        </Text>
+      </Pressable>
 
-      <Button variant='primary' onPress={onPrimary} disabled={!uri || busy}>
+      <Button variant='primary' onPress={onPrimary} disabled={!fileUri || busy}>
         {slotMode
           ? s('完成', '完成', 'Done')
           : nextHref

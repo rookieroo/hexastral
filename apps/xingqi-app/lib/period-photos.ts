@@ -25,15 +25,6 @@ function destPath(part: CapturePart, ext: string): string | null {
   return `${dir}${part}.${ext}`
 }
 
-function extFromUri(uri: string): string {
-  const clean = uri.split('?')[0] ?? uri
-  const m = /\.([a-zA-Z0-9]+)$/.exec(clean)
-  const raw = (m?.[1] ?? 'jpg').toLowerCase()
-  if (raw === 'jpeg' || raw === 'jpg') return 'jpg'
-  if (raw === 'png' || raw === 'webp' || raw === 'heic' || raw === 'heif') return raw
-  return 'jpg'
-}
-
 async function ensureDir(): Promise<string> {
   const dir = periodDir()
   if (!dir) throw new Error('storage_unavailable')
@@ -60,25 +51,42 @@ async function deletePartFiles(part: CapturePart): Promise<void> {
 }
 
 /**
- * Copy a picker/camera URI into the period sandbox and return the durable file URI.
+ * Copy a picker/camera URI into the period sandbox as JPEG and return the durable file URI.
  * Overwrites any previous file for this part.
+ *
+ * Never store HEIC/HEIF as `.jpg` — Gemini/VLM only accepts JPEG/PNG bytes. If we cannot
+ * decode via ImageManipulator, fail loud so the capture UI can retry (camera).
  */
 export async function persistPeriodPhoto(part: CapturePart, sourceUri: string): Promise<string> {
   await ensureDir()
-  const ext = extFromUri(sourceUri)
-  const dest = destPath(part, ext)
+  const dest = destPath(part, 'jpg')
   if (!dest) throw new Error('storage_unavailable')
 
   await deletePartFiles(part)
 
-  // Atomic-ish: copy to staging then move
   const staging = `${dest}.staging`
   try {
     await FileSystem.deleteAsync(staging, { idempotent: true })
   } catch {
     // ignore
   }
-  await FileSystem.copyAsync({ from: sourceUri, to: staging })
+
+  try {
+    const ImageManipulator = await import('expo-image-manipulator')
+    const resized = await ImageManipulator.manipulateAsync(
+      sourceUri,
+      [{ resize: { width: 1600 } }],
+      {
+        compress: 0.82,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    )
+    await FileSystem.copyAsync({ from: resized.uri, to: staging })
+  } catch (err) {
+    console.warn('[xingqi.period] jpeg_persist_failed', err)
+    throw new Error('photo_encode_failed')
+  }
+
   await FileSystem.moveAsync({ from: staging, to: dest })
   return dest
 }
