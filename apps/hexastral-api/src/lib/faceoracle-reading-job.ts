@@ -36,7 +36,7 @@ import {
   faceoracleDensityGaps,
   type FaceOracleChapterKind,
 } from './prompts/faceoracle'
-import { faceoracleBodyLooksWrongLocale } from './prompts/faceoracle-locale'
+import { faceoracleBodyLooksWrongLocale, faceoracleFieldsLookWrongLocale } from './prompts/faceoracle-locale'
 
 const CHAPTER_KINDS: FaceOracleChapterKind[] = [
   'overview',
@@ -631,17 +631,30 @@ export async function runFaceoracleReadingJob(
     return
   }
 
-  // Locale drift guard (en/ja): one retry with stronger language lead if CJK-heavy.
+  // Locale drift guard (en/ja): whole-body ratio OR any single field (esp. goldenLine).
   const proseSample = normalized.chapters
     .map((c) => `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}`)
     .join('\n')
-  if (faceoracleBodyLooksWrongLocale(job.locale, proseSample)) {
+  const fieldSamples = normalized.chapters.flatMap((c) => [
+    c.goldenLine,
+    c.evidence,
+    c.dynamic,
+    c.reef ?? '',
+    c.remedy ?? '',
+    c.counterpoint ?? '',
+    ...c.citations.map((x) => `${x.locus} ${x.note}`),
+  ])
+  if (
+    faceoracleBodyLooksWrongLocale(job.locale, proseSample) ||
+    faceoracleFieldsLookWrongLocale(job.locale, fieldSamples)
+  ) {
     console.warn('[faceoracle-job] locale drift — retrying', { jobId, locale: job.locale })
     const retryPrompt = [
       promptTemplate,
       '',
       'CRITICAL RETRY: Previous draft violated the output language. Rewrite the ENTIRE JSON',
-      'so every user-facing string is in the required language. No Chinese sentences.',
+      'so every user-facing string — including EVERY goldenLine and citations[].locus/note —',
+      'is in the required language. No Chinese sentences. No bare-Chinese goldenLine.',
     ].join('\n')
     const langRetry = await callReadingAi(env, retryPrompt, job.locale)
     if (langRetry.parsed) {

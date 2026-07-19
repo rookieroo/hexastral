@@ -9,7 +9,12 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 **i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).  
 `zh-Hant` is a **separate copy track** (shell, alerts, chapter chrome, term glosses, push) — never substitute Simplified for Traditional. Reading body LLM already forces Traditional via `faceoracle-locale.ts`.
 
-**Positioning:** Oneshot = sealed six-chapter brief (citations · three axes · computed DaYun/LiuNian) — thicker than chatty photo-reading. Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture) — not unlimited look-at-photo. VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
+**Positioning:** Xingqi is **folk 算命 practice in app form** — face + palms **corroborated with** BaZi (日主·大运·流年), the same combined toolkit a traditional reader uses. Not a photo-chat toy; not a Yuel-style personal 命书 (BaZi-forward chapters); not a Yuun-style personal 黄历 (calendar-forward). Oneshot = sealed six-chapter brief where **形与命互证** (citations · three axes · computed DaYun/LiuNian). Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture). VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
+
+**Anti-drift (product):**
+- Do **not** let natal chapters read like Yuel personality essays with photos as garnish.
+- Do **not** let period/advice read like Yuun day-almanac without face/palm loci.
+- Every strong claim should show **both** a form locus (面/掌) **and** a chart cue (日主/大运/流年) when the chapter allows — or explicitly note where they agree / tension.
 
 ## Funnel
 
@@ -36,7 +41,8 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 
 ## Report architecture
 
-- **Voice:** 警示 / 预告 — “形上可见…，气机上宜留意…” (ADR-0003; no hard fate).
+- **Method:** 面相 + 掌相 + 八字 **互证** (folk 算命 stack). Form shows what is visible; chart supplies timing windows; neither path alone carries the brief.
+- **Voice:** 警示 / 预告 — “形上可见…，命盘上…，气机上宜留意…” (ADR-0003; no hard fate / 铁口).
 - **Three axes every reading:** career / love / health — tagged on `events[].axis`, covered in advice.
 - **Density:** face/palms citations; natal 大运/流年 injected from `@zhop/astro-core`; soft post-check retry.
 - **Close UX:** top-right X on result (no bottom Done).

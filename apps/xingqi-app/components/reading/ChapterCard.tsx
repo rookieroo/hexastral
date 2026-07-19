@@ -40,6 +40,25 @@ function citationOkForLocale(locale: string, locus: string, note: string): boole
   return cjk / letters < 0.45
 }
 
+/** First display sentence for goldenLine — drop CJK-leaked lines on EN/JA chrome. */
+function displayGoldenLine(locale: string, golden: string, evidence: string): string {
+  const g = golden.trim()
+  if (!g) return ''
+  if (isCjkZh(locale)) return g
+  const cjk = g.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
+  const letters = g.replace(/\s/g, '').length
+  const leaked = letters > 0 && cjk / letters > 0.4
+  if (!leaked) return g
+  // Prefer first evidence sentence if it looks like the output language.
+  const first = evidence.split(/(?<=[.!?。！？])\s+/)[0]?.trim() ?? ''
+  if (first.length > 12) {
+    const ec = first.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
+    const el = first.replace(/\s/g, '').length
+    if (el > 0 && ec / el < 0.4) return first
+  }
+  return ''
+}
+
 export function ChapterCard({
   chapter,
   index,
@@ -93,7 +112,8 @@ export function ChapterCard({
     citationOkForLocale(locale, c.locus, c.note)
   )
 
-  const canShare = Boolean(onShare && chapter.goldenLine.trim().length > 0)
+  const goldenDisplay = displayGoldenLine(locale, chapter.goldenLine, chapter.evidence)
+  const canShare = Boolean(onShare && goldenDisplay.length > 0)
 
   return (
     <ScrollView
@@ -130,7 +150,7 @@ export function ChapterCard({
 
       {centerpiece}
 
-      {chapter.goldenLine ? (
+      {goldenDisplay ? (
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
           <View
             style={{
@@ -142,7 +162,7 @@ export function ChapterCard({
             }}
           />
           <TermAwareText
-            text={chapter.goldenLine}
+            text={goldenDisplay}
             locale={locale}
             colors={termColors}
             onPickQuote={onPickQuote}

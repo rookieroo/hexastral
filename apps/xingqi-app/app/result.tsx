@@ -106,7 +106,18 @@ export default function FaceResultScreen() {
   const { shotRef, capturing, share: shareImage } = useImageShare()
 
   const curChapter = chapters[chapterIndex]
-  const shareLead = curChapter?.goldenLine.trim() ?? ''
+  const rawLead = curChapter?.goldenLine.trim() ?? ''
+  const shareLead = (() => {
+    if (!rawLead) return ''
+    if (isCjkZh(locale)) return rawLead
+    const cjk = rawLead.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
+    const letters = rawLead.replace(/\s/g, '').length
+    if (letters > 0 && cjk / letters > 0.4) {
+      const first = curChapter?.evidence.split(/(?<=[.!?。！？])\s+/)[0]?.trim() ?? ''
+      return first.length > 12 ? first : ''
+    }
+    return rawLead
+  })()
   const shareIdentity = xingqiShareIdentity(natalFacts)
 
   const handleShare = () => {

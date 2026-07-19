@@ -125,6 +125,16 @@ export function faceoracleCjkRatio(text: string): number {
   return cjk / letters
 }
 
+/** True if a short field is mostly CJK (catches a Chinese goldenLine inside an English body). */
+export function faceoracleFieldLooksCjk(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 8) return false
+  const cjk = t.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
+  const letters = t.replace(/\s/g, '').length
+  if (letters === 0) return false
+  return cjk / letters > 0.4
+}
+
 export function faceoracleBodyLooksWrongLocale(
   locale: string,
   sampleText: string
@@ -133,4 +143,17 @@ export function faceoracleBodyLooksWrongLocale(
   if (isCjkOutput) return false
   // Stricter than before: citation dumps of bare Chinese used to hide under 0.35.
   return faceoracleCjkRatio(sampleText) > 0.18
+}
+
+/**
+ * Per-field guard — a single Chinese goldenLine inside otherwise-English chapters
+ * used to pass the whole-body ratio check.
+ */
+export function faceoracleFieldsLookWrongLocale(
+  locale: string,
+  fields: readonly string[]
+): boolean {
+  const { isCjkOutput } = resolveFaceoracleOutputLang(locale)
+  if (isCjkOutput) return false
+  return fields.some((f) => faceoracleFieldLooksCjk(f))
 }
