@@ -64,10 +64,13 @@ const SCHOOL_LOCK = [
 
 const VOICE = [
   '## Voice (locked)',
-  'Write as warning + foreshadowing, not verdicts — and not soft filler.',
-  'Pattern: “形上可见 X…，命盘上 Y…，气机上宜留意 Z（window）.”',
-  'Resonance = specific classical loci + dated chart windows — NOT “you will / 必将”.',
-  'Hard seasons: frame as rhythm / 内修参考, but STILL name the locus and the window.',
+  'Write as warning + foreshadowing + practical counsel — not soft filler, not iron fate.',
+  'Pattern: “形上可见 X…，命盘上 Y（年/月）…，气机上宜留意 Z；可做的一步：….”',
+  'Paid brief standard: every advice/reef/remedy should answer WHAT to watch, WHEN (dated), and WHAT to do/avoid/seize.',
+  'Examples of GOOD specificity: “丙午年中段宜维护合伙人信任，少推新摊子”; “感情线见张力时，宜在流月…先谈边界再谈承诺”; “气色偏紧的月份把节奏放慢一周”.',
+  'Examples of BAD vagueness: “保持平衡”; “多沟通”; “注意情绪”; “稳健前行” with no locus and no date.',
+  'Resonance = classical loci + dated chart windows + one actionable step — NOT “you will / 必将”.',
+  'Hard seasons: frame as rhythm / 内修参考, but STILL name the locus, the window, and a practical move.',
   'Never replace concrete observation with empty positivity (“stay balanced”, “keep healthy”, “grounded presence”, “cautious momentum”, “steady path”).',
   'Each evidence/dynamic paragraph must cite at least one named locus or dated window; reject vague mood essays.',
   'Ban (modality): you will / 必将 / 一定 / 必然 / 注定 / 铁口 / guaranteed / destiny is fixed / predict as fact.',
@@ -82,15 +85,33 @@ const HEALTH_BOUNDARY = [
   'Never promise cure or guaranteed wellness outcomes.',
 ].join('\n')
 
+const LOVE_FAMILY_BOUNDARY = [
+  '## Love / marriage / family — ban census, ALLOW concrete foreshadowing',
+  'Ban (铁口户籍断语 only): “你已结婚/未婚”, “你有N个孩子”, “你母亲/配偶性格是…”, naming living relatives’ concrete biography,',
+  '  “will marry / divorce / have a son this year” as guaranteed fate.',
+  'ALLOW and REQUIRE (this is the paid value — not vague mood essays):',
+  '- 预警 + 务实建议: if 夫妻宫/感情线/父母宫/兄弟宫 show friction, say what to watch and what to DO',
+  '  (沟通节奏、边界、少争一时、何时宜谈事 / when to repair vs when to pause).',
+  '- 爱人/亲密关系矛盾: practical repair moves tied to a dated window (流年/流月/大运段).',
+  '- 家人关系气机: if parental/sibling palaces or lines suggest strain, give one concrete pacing tip — still 宜留意, not a personality dossier.',
+  '- 同事/合伙人: name windows to maintain rapport vs windows to avoid over-pushing vs windows to take initiative',
+  '  (官禄/事业线 × 流年官杀财) — specific month/year from NatalSummary when possible.',
+  'Shape: “形上可见 X；命盘上 Y 年/月；宜留意 Z；可做的一步：…” — concrete, dated, actionable.',
+].join('\n')
+
 const THREE_AXES = [
-  '## Three life axes (required every reading)',
-  'Audience priority: career (事业), love (爱情), health (生命健康).',
-  'Cover ALL THREE at least once across period.events + advice (and overview/reef when natural).',
-  'Each axis needs 现状 (what form AND natal show now) + 宜留意建议 (what to watch / do).',
-  'Classical hooks (examples, not checklist dump):',
-  '- career: 官禄宫, 事业线, 印堂/山根, 流年官杀财',
-  '- love: 夫妻宫, 感情线, 婚姻线, 男女宫',
-  '- health: 疾厄宫, 生命线, 气色骨肉, 健康线 (non-medical framing only)',
+  '## Three life axes (EQUAL weight — career must NOT dominate)',
+  'Axes: career (事业/同事合伙人) · love (爱情/婚姻/亲密关系) · health (生命/气色节奏).',
+  'HARD: across the full JSON, love and health must get as much concrete attention as career.',
+  'HARD: ban a reading that only loops 事业线/官禄 while ignoring 感情线/婚姻线/夫妻宫 and 生命线/气色/疾厄宫.',
+  'HARD: ban empty overview advice (“保持平衡/多沟通”) without a locus AND a dated window AND one actionable step.',
+  'Cover ALL THREE in: period.events (one event per axis minimum) AND advice (one 宜留意 action per axis).',
+  'Also weave love + health into overview/palms/face where loci exist.',
+  'Each axis needs: 现状 (form+chart) + 时间窗 (大运/流年/月) + 务实一步 (what to do / avoid / seize).',
+  'Classical hooks:',
+  '- career: 官禄宫, 事业线, 印堂/山根, 流年官杀财 — include 同事/合伙人关系维护 vs 冒进 vs 抓机遇 windows',
+  '- love: 夫妻宫, 男女宫, 感情线, 婚姻线, 金星丘; 父母宫/兄弟宫 as family-relation qi + repair tips (not family census)',
+  '- health: 疾厄宫, 生命线, 气色骨肉, 健康线 (non-medical: pace/rest only)',
 ].join('\n')
 
 const VOCAB = [
@@ -107,21 +128,24 @@ const VOCAB = [
 ].join(' ')
 
 const CHAPTER_RULES = [
-  'Chapter focus (形命互证 — do not isolate one path):',
-  '- overview: 形气总象 + loudest axis; one sentence of form↔chart agreement or tension.',
-  '- face: 三停五岳十二宫五官 — face-primary; ≥3 citations; optional one 与日主/流年互证 line, not a BaZi dump.',
-  '- palms: lines + mounts; left/right compare; ≥3 citations; optional one chart-corroboration line.',
-  '- natal: 日主用神通关五行 × form — ≥2 explicit form↔pillar links; use NatalSummary 大运/流年; NOT a standalone 命书 chapter.',
-  '- period: current 大运/本流年 (or next) MUST be named; windows + events (≥3); each event ties axis to form cue OR chart cue (prefer both).',
-  '- advice: ≥1 concrete 宜留意 action per axis; each action should reference form locus and/or dated chart window — not generic pep talk.',
-  '- evidence ≠ dynamic: evidence = what form/chart shows; dynamic = how qi/timing moves — never copy-paste the same paragraph.',
+  'Chapter focus (形命互证 — do not isolate one path; do not career-only):',
+  '- overview: 形气总象; name which axes are loud (must not be career-only); one form↔chart agreement/tension line.',
+  '- face: 三停五岳十二宫 — include at least one love-relevant (夫妻宫/男女宫) OR health-relevant (疾厄宫/气色) citation when features support it; ≥3 citations.',
+  '- palms: MUST cite 生命线 AND (感情线 or 婚姻线) AND may cite 事业线 — do not make 事业线 the only story; ≥3 citations; optional chart-corroboration line.',
+  '- natal: 日主用神通关 × form — ≥2 form↔pillar links; touch love OR health axis once (not only官杀财).',
+  '- period: name current 大运/本流年; events ≥3 with axes career+love+health each once; period prose must mention love and health windows, not only career.',
+  '- advice: ≥1 concrete 宜留意 action per axis (career/colleagues-partners, love/intimacy, health/pace);',
+  '  each action MUST include (1) form or chart cue (2) dated window when possible (3) do/avoid/seize step — not “多沟通/保持平衡”.',
+  '- period events: each theme+note should be usable as a calendar tip (maintain / avoid冒进 / 抓机遇 / repair bond), not a mood label.',
+  '- evidence ≠ dynamic: never copy-paste the same paragraph.',
 ].join('\n')
 
 const DEPTH_CONTRACT = [
   '## Depth contract (folk master brief — not a slogan list)',
   '- Write as a careful 算命 master would: form observation ↔ chart cue → qi motion → what to watch → reflective key.',
-  '- Cite specific keys from FaceFeatures / Palm*Features / NatalSummary (e.g. 天庭, 印堂, 生命线, 金星丘, 日主, 当前大运).',
+  '- Cite specific keys from FaceFeatures / Palm*Features / NatalSummary (e.g. 天庭, 印堂, 生命线, 感情线, 婚姻线, 夫妻宫, 金星丘, 日主, 当前大运).',
   '- Ban empty filler as entire fields: “keep balanced”, “stay healthy”, “气色较好” alone, “气机流动平稳” alone.',
+  '- Ban career-monoculture: if 事业/career/工作 appears heavily, love (感情/婚姻/夫妻) and health (生命/气色/疾厄) must appear with equal concreteness in the same reading.',
   '- Per chapter field lengths:',
   '  - goldenLine: exactly 1 sentence, quotable, specific to THIS face/palms/natal pairing.',
   '  - evidence: 2–4 sentences (form and/or chart basis).',
@@ -157,6 +181,7 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
     SCHOOL_LOCK,
     VOICE,
     HEALTH_BOUNDARY,
+    LOVE_FAMILY_BOUNDARY,
     THREE_AXES,
     `OutputKind: ${params.outputKind}`,
     outputKindHint(params.outputKind),
@@ -222,8 +247,10 @@ export function faceoracleDensityGaps(
   parsed: Record<string, unknown>,
   chapters: Array<{
     kind: FaceOracleChapterKind
+    goldenLine?: string
     evidence: string
     dynamic: string
+    reef?: string | null
     remedy?: string | null
     citations?: Array<{ locus: string; note: string }>
   }>
@@ -231,10 +258,12 @@ export function faceoracleDensityGaps(
   const gaps: string[] = []
   const byKind = new Map(chapters.map((c) => [c.kind, c]))
 
-  const face = byKind.get('face')
+  const period = byKind.get('period')
   const palms = byKind.get('palms')
   const natal = byKind.get('natal')
   const advice = byKind.get('advice')
+  const overview = byKind.get('overview')
+  const face = byKind.get('face')
 
   const citeCount = (c: { citations?: Array<{ locus: string; note: string }> } | undefined) =>
     c?.citations?.filter((x) => x.locus.trim().length > 0).length ?? 0
@@ -256,20 +285,62 @@ export function faceoracleDensityGaps(
     if (!axes.has(a)) gaps.push(`events.missing_axis:${a}`)
   }
 
-  const adviceText = `${advice?.evidence ?? ''} ${advice?.dynamic ?? ''} ${advice?.remedy ?? ''}`
-  const adviceBlob = adviceText.toLowerCase()
+  const blobOf = (c: { evidence?: string; dynamic?: string; remedy?: string | null; reef?: string | null; goldenLine?: string } | undefined) =>
+    `${c?.goldenLine ?? ''} ${c?.evidence ?? ''} ${c?.dynamic ?? ''} ${c?.reef ?? ''} ${c?.remedy ?? ''}`
+
+  const adviceText = blobOf(advice)
+  const periodText = blobOf(period)
+  const palmsText = blobOf(palms)
+  const overviewText = blobOf(overview)
+  const corpus = `${overviewText}\n${periodText}\n${adviceText}\n${palmsText}`
+
   const hasCareer =
-    /career|事业|官禄|工作|职场|work|job/.test(adviceBlob) ||
-    /事業|職場/.test(adviceText)
+    /career|事业|官禄|工作|职场|work|job|事業|職場/.test(corpus)
   const hasLove =
-    /love|爱情|感情|夫妻|婚姻|relationship|partner/.test(adviceBlob) ||
-    /愛情|關係/.test(adviceText)
+    /love|爱情|感情|夫妻|婚姻|relationship|partner|愛情|婚姻線|感情線|男女宫|夫妻宫/.test(
+      corpus
+    )
   const hasHealth =
-    /health|健康|疾厄|气色|養生|wellness|body/.test(adviceBlob) ||
-    /氣色|養生/.test(adviceText)
-  if (!hasCareer) gaps.push('advice.missing_axis:career')
-  if (!hasLove) gaps.push('advice.missing_axis:love')
-  if (!hasHealth) gaps.push('advice.missing_axis:health')
+    /health|健康|疾厄|气色|養生|wellness|生命线|生命線|气色|氣色/.test(corpus)
+
+  if (!hasCareer) gaps.push('corpus.missing_axis:career')
+  if (!hasLove) gaps.push('corpus.missing_axis:love')
+  if (!hasHealth) gaps.push('corpus.missing_axis:health')
+
+  // Career monoculture: 事业 hits dwarf love+health across period+advice+palms.
+  const careerHits = (corpus.match(/事业|官禄|工作|职场|career|work|job|事業|職場|事业线|事業線/gi) ?? [])
+    .length
+  const loveHits = (corpus.match(/爱情|感情|夫妻|婚姻|love|partner|愛情|男女宫|夫妻宫|感情线|婚姻线/gi) ?? [])
+    .length
+  const healthHits = (corpus.match(/健康|疾厄|气色|生命线|health|wellness|氣色|生命線|健康线/gi) ?? [])
+    .length
+  if (careerHits >= 6 && loveHits + healthHits < 3) {
+    gaps.push('corpus.career_monoculture')
+  }
+
+  const palmsCiteBlob = (palms?.citations ?? []).map((x) => `${x.locus}${x.note}`).join(' ')
+  if (
+    palmsCiteBlob.length > 0 &&
+    !/生命线|生命線|life\s*line/i.test(palmsCiteBlob)
+  ) {
+    gaps.push('palms.missing_life_line_cite')
+  }
+  if (
+    palmsCiteBlob.length > 0 &&
+    !/感情线|感情線|婚姻线|婚姻線|金星丘|heart\s*line|marriage/i.test(palmsCiteBlob)
+  ) {
+    gaps.push('palms.missing_love_cite')
+  }
+
+  if (!/爱情|感情|夫妻|婚姻|love|partner|愛情/.test(adviceText)) {
+    gaps.push('advice.missing_axis:love')
+  }
+  if (!/健康|疾厄|气色|養生|health|wellness|生命|氣色/.test(adviceText)) {
+    gaps.push('advice.missing_axis:health')
+  }
+  if (!/事业|官禄|工作|职场|career|work|job|事業/.test(adviceText)) {
+    gaps.push('advice.missing_axis:career')
+  }
 
   return gaps
 }

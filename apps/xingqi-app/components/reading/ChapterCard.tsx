@@ -206,9 +206,9 @@ export function ChapterCard({
           />
           {layer.key === 'evidence' && visibleCitations.length > 0 ? (
             <View style={{ gap: 8, marginTop: 6 }}>
-              {visibleCitations.map((c) => (
+              {visibleCitations.map((c, ci) => (
                 <Text
-                  key={`${c.locus}-${c.note.slice(0, 24)}`}
+                  key={`${ci}-${c.locus}-${c.note.slice(0, 24)}`}
                   style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
                 >
                   <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>

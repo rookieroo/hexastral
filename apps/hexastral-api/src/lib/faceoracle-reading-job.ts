@@ -678,8 +678,9 @@ export async function runFaceoracleReadingJob(
       '',
       'DENSITY RETRY: Previous draft failed floors:',
       densityGaps.join(', '),
-      'Rewrite the ENTIRE JSON. Require face≥3 citations, palms≥3, natal≥2,',
-      'events≥3 covering axis career+love+health, and advice actions for all three axes.',
+      'Rewrite the ENTIRE JSON. Require face≥3 citations, palms≥3 (incl. 生命线 + 感情/婚姻线), natal≥2,',
+      'events≥3 covering axis career+love+health, advice actions for all three axes,',
+      'and NO career-monoculture (love + health must be as concrete as career).',
       'Keep 警示/预告 voice. Output ONLY valid JSON.',
     ].join('\n')
     const densRetry = await callReadingAi(env, densityPrompt, job.locale)

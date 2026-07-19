@@ -11,10 +11,15 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 
 **Positioning:** Xingqi is **folk 算命 practice in app form** — face + palms **corroborated with** BaZi (日主·大运·流年), the same combined toolkit a traditional reader uses. Not a photo-chat toy; not a Yuel-style personal 命书 (BaZi-forward chapters); not a Yuun-style personal 黄历 (calendar-forward). Oneshot = sealed six-chapter brief where **形与命互证** (citations · three axes · computed DaYun/LiuNian). Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture). VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
 
+**Life axes (equal weight):** career/colleagues · love/intimacy · health/pace.  
+Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).  
+**Require** dated 预警 + 务实一步: 关系修复、合伙人/同事维护、何时少冒进、何时抓机遇 — this is the $9.9 value, not vague “保持平衡”.
+
 **Anti-drift (product):**
 - Do **not** let natal chapters read like Yuel personality essays with photos as garnish.
 - Do **not** let period/advice read like Yuun day-almanac without face/palm loci.
 - Every strong claim should show **both** a form locus (面/掌) **and** a chart cue (日主/大运/流年) when the chapter allows — or explicitly note where they agree / tension.
+- Do **not** let 事业线 alone carry palms/period/advice while 感情/生命/气色 vanish.
 
 ## Funnel
 
