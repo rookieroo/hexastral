@@ -22,6 +22,7 @@ import {
   fengReports,
   pairReadings,
   physiognomyReadings,
+  portfolioReadings,
   reportChapters,
   userCharts,
   users,
@@ -117,6 +118,33 @@ export async function getPrimaryReadingText(
       return row.interpretation
     }
     case 'physiognomy': {
+      // Xingqi (faceoracle) stores readings in portfolio_readings; legacy table kept as fallback.
+      const portfolio = await db
+        .select({ resultJson: portfolioReadings.resultJson })
+        .from(portfolioReadings)
+        .where(
+          and(
+            eq(portfolioReadings.id, readingId),
+            eq(portfolioReadings.userId, userId),
+            eq(portfolioReadings.targetApp, 'faceoracle')
+          )
+        )
+        .get()
+      if (portfolio?.resultJson) {
+        try {
+          const parsed: unknown = JSON.parse(portfolio.resultJson)
+          if (parsed && typeof parsed === 'object') {
+            const o = parsed as Record<string, unknown>
+            const ai = o.aiInterpretation
+            if (typeof ai === 'string' && ai.trim()) return ai
+            if (ai && typeof ai === 'object') return JSON.stringify(ai)
+            if (Array.isArray(o.chapters)) return JSON.stringify({ chapters: o.chapters, events: o.events })
+            return portfolio.resultJson
+          }
+        } catch {
+          return portfolio.resultJson
+        }
+      }
       const row = await db
         .select({ interpretation: physiognomyReadings.interpretation })
         .from(physiognomyReadings)

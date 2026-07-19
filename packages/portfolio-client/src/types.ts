@@ -51,6 +51,8 @@ export interface PortfolioReadingItem {
   readingType: string
   inputJson: string
   resultJson: string
+  /** Generation locale frozen at enqueue (chrome may differ). */
+  locale?: string
   createdAt: string
 }
 

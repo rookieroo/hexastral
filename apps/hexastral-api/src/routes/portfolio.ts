@@ -786,7 +786,8 @@ async function runTargetPipeline(
           const extracted = await callAstro<{ features: Record<string, string> }>(
             c.env.SVC_ASTRO,
             path,
-            { imageBase64: b64, mimeType: 'image/jpeg' }
+            { imageBase64: b64, mimeType: 'image/jpeg' },
+            120_000
           )
           return extracted?.features ?? null
         } catch {
@@ -1666,6 +1667,7 @@ portfolioRoutes.get('/readings/:target/:readingId', async (c) => {
       readingType: portfolioReadings.readingType,
       inputJson: portfolioReadings.inputJson,
       resultJson: portfolioReadings.resultJson,
+      locale: portfolioReadings.locale,
       createdAt: portfolioReadings.createdAt,
     })
     .from(portfolioReadings)
@@ -2121,6 +2123,7 @@ portfolioRoutes.get('/readings/:target', async (c) => {
       readingType: portfolioReadings.readingType,
       inputJson: portfolioReadings.inputJson,
       resultJson: portfolioReadings.resultJson,
+      locale: portfolioReadings.locale,
       createdAt: portfolioReadings.createdAt,
     })
     .from(portfolioReadings)

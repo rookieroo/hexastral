@@ -16,6 +16,8 @@ import { HTTPException } from 'hono/http-exception'
 import type { CloudflareBindings, ContextVariables } from './infra-types'
 import type { FengAnalyzeQueueMessage } from './lib/feng-analyze-queue'
 import { processFengAnalyzeQueueBatch } from './lib/feng-analyze-queue'
+import type { FaceoracleReadingQueueMessage } from './lib/faceoracle-reading-queue'
+import { processFaceoracleReadingQueueBatch } from './lib/faceoracle-reading-queue'
 import { pruneStaleFengJobs, runAnnualFengRefresh } from './lib/feng-annual-cron'
 import { runReconcileSweep } from './lib/reconcile-sweep'
 import { setAdminNotifyFetcher } from './lib/service-clients'
@@ -55,6 +57,9 @@ import {
   pairAnnualForecastRoutes,
   pairPreviewRoutes,
   pairRoutes,
+  physiognomyPushRoutes,
+  physiognomyJobsRoutes,
+  physiognomyCycleRoutes,
   portfolioAuthRoutes,
   portfolioRoutes,
   purchaseRoutes,
@@ -317,6 +322,23 @@ app.route('/api/pair-preview', pairPreviewRoutes)
 
 // 面相特征提取（R2 + Gemini Vision，隐私优先架构）
 app.route('/api/physiognomy/face-features', faceFeaturesRoutes)
+
+// FaceOracle / Xingqi Pro push — HMAC for register; internal key for cron targets
+app.use('/api/physiognomy/push/*', async (c, next) => {
+  const p = c.req.path
+  if (p.endsWith('/targets') || p.endsWith('/unregister-stale')) return next()
+  return hmacVerify(c, next)
+})
+app.route('/api/physiognomy/push', physiognomyPushRoutes)
+
+// FaceOracle / Xingqi async reading jobs (HMAC)
+app.use('/api/physiognomy/jobs', hmacVerify)
+app.use('/api/physiognomy/jobs/*', hmacVerify)
+app.route('/api/physiognomy/jobs', physiognomyJobsRoutes)
+
+app.use('/api/physiognomy/cycle', hmacVerify)
+app.use('/api/physiognomy/cycle/*', hmacVerify)
+app.route('/api/physiognomy/cycle', physiognomyCycleRoutes)
 
 // (Removed in deep refactor: /api/fate-report — replaced by versioned /api/report/chapter/* surface.)
 
@@ -665,10 +687,17 @@ export default {
   fetch: app.fetch,
 
   async queue(
-    batch: MessageBatch<FengAnalyzeQueueMessage>,
+    batch: MessageBatch<FengAnalyzeQueueMessage | FaceoracleReadingQueueMessage>,
     env: CloudflareBindings
   ): Promise<void> {
-    await processFengAnalyzeQueueBatch(batch, env)
+    if (batch.queue === 'faceoracle-reading') {
+      await processFaceoracleReadingQueueBatch(
+        batch as MessageBatch<FaceoracleReadingQueueMessage>,
+        env
+      )
+      return
+    }
+    await processFengAnalyzeQueueBatch(batch as MessageBatch<FengAnalyzeQueueMessage>, env)
   },
 
   /** Daily cron (04:00 UTC):

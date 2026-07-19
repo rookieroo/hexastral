@@ -162,6 +162,41 @@
       "when": 1784338192589,
       "tag": "0022_modern_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1784423162715,
+      "tag": "0023_romantic_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1784425588925,
+      "tag": "0024_bent_wilson_fisk",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1784431039390,
+      "tag": "0025_tough_mongu",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1784438420778,
+      "tag": "0026_brainy_dracula",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1784440854388,
+      "tag": "0027_whole_vivisector",
+      "breakpoints": true
     }
   ]
 }

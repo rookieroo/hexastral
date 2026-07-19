@@ -1,0 +1,1 @@
+ALTER TABLE `free_monthly_quotas` ADD `faceoracle_report_regens` integer DEFAULT 0 NOT NULL;

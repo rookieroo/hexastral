@@ -1,11 +1,11 @@
 import {
   type BirthDateFieldValue,
+  Button,
   birthDateFieldLabelsForLocale,
   birthInputToSolar,
-  Button,
   useTheme,
 } from '@zhop/core-ui'
-import { saveAndCacheBirthInfo } from '@zhop/satellite-runtime'
+import { hasEntitlement, saveAndCacheBirthInfo, useEntitlements } from '@zhop/satellite-runtime'
 import { router, Stack } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
@@ -22,6 +22,8 @@ import {
   hydrateReadingDraft,
   patchReadingDraft,
 } from '@/lib/reading-draft'
+import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
+import { getReadingJobState, showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 
 function localeToLang(loc: Locale): string {
   if (loc === 'en') return 'en-US'
@@ -38,6 +40,9 @@ export default function BirthScreen() {
   const lang = localeToLang(locale)
   const dateLabels = useMemo(() => birthDateFieldLabelsForLocale(lang), [lang])
   const scrollRef = useRef<ScrollView | null>(null)
+  const entitlements = useEntitlements()
+  const isPro =
+    hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
 
   const [date, setDate] = useState<BirthDateFieldValue>({
     input: '',
@@ -58,10 +63,6 @@ export default function BirthScreen() {
 
   useEffect(() => {
     void hydrateReadingDraft().then((d) => {
-      if (!draftHasThreePhotos(d)) {
-        router.replace('/capture')
-        return
-      }
       if (d.solarDate) {
         setDate({
           input: d.solarDate,
@@ -84,6 +85,35 @@ export default function BirthScreen() {
   }
 
   const searchCity = (query: string) => searchCityApi(query, lang)
+
+  const startProReadingAndGoHome = () => {
+    if (getReadingJobState().status === 'running') {
+      router.replace('/(app)' as never)
+      return
+    }
+    void (async () => {
+      const draft = getReadingDraft()
+      if (
+        await alertIfPhotosUnchanged({
+          draft,
+          locale,
+          onUpdatePhotos: () => router.replace('/capture' as never),
+        })
+      ) {
+        return
+      }
+      startReadingJob({
+        locale,
+        outputKind: 'period_brief',
+        isPro: true,
+        draft,
+        onQueued: () => {
+          void showReadingStartedHandoff({ locale })
+        },
+      })
+      router.replace('/(app)' as never)
+    })()
+  }
 
   const onContinue = async () => {
     if (busy) return
@@ -114,10 +144,23 @@ export default function BirthScreen() {
           birthTimezoneId: timezone ?? undefined,
         })
       } catch {
-        // local draft enough for paywall
+        // local draft enough for paywall / reading
       }
       if (!draftReadyForPaywall(getReadingDraft())) {
+        if (!draftHasThreePhotos(getReadingDraft())) {
+          setError(
+            zh
+              ? '请先在首页完成左掌、右掌与面部照片'
+              : 'Add left palm, right palm, and face photos first'
+          )
+          return
+        }
         setError(zh ? '资料不完整' : 'Incomplete draft')
+        return
+      }
+      // Pro: skip unlock sheet — start reading and return home.
+      if (isPro) {
+        startProReadingAndGoHome()
         return
       }
       router.push('/(commerce)/paywall')
@@ -180,7 +223,7 @@ export default function BirthScreen() {
       {error ? <Text style={{ color: colors.accent }}>{error}</Text> : null}
       <View>
         <Button variant='primary' onPress={() => void onContinue()} disabled={busy}>
-          {zh ? '继续到解锁' : 'Continue to unlock'}
+          {isPro ? (zh ? '开始解读' : 'Start reading') : zh ? '继续到解锁' : 'Continue to unlock'}
         </Button>
       </View>
     </ScrollView>

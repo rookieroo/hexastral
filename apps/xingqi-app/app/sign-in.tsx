@@ -15,7 +15,6 @@ import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   Text,
@@ -23,6 +22,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loginFaceIap } from '@/lib/iap'
@@ -218,7 +218,9 @@ export default function SignInScreen() {
             onPress={() => void onApple()}
           />
           {busy === 'apple' ? (
-            <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.sm }} />
+            <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
+              <XingqiLoader size={36} label={zh ? '登录中' : 'Signing in'} />
+            </View>
           ) : null}
         </View>
       ) : (
@@ -241,7 +243,7 @@ export default function SignInScreen() {
           }}
         >
           {busy === 'google' ? (
-            <ActivityIndicator color={colors.accent} />
+            <XingqiLoader size={36} label={zh ? '登录中' : 'Signing in'} />
           ) : (
             <Text style={{ color: colors.text, fontWeight: '600' }}>
               {zh ? '通过 Google 登录' : 'Continue with Google'}

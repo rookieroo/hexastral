@@ -13,6 +13,20 @@ import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
 
+function requireGeminiKey(env: Env): string {
+  const key = env.GEMINI_API_KEY?.trim()
+  if (!key) {
+    throw new HTTPException(503, { message: 'gemini_api_key_missing' })
+  }
+  return key
+}
+
+function normalizeIncomingBase64(raw: string): string {
+  const trimmed = raw.trim()
+  const dataUrl = /^data:[^;]+;base64,(.+)$/i.exec(trimmed)
+  return (dataUrl?.[1] ?? trimmed).replace(/\s+/g, '')
+}
+
 export const physiognomyRoutes = new Hono<AppEnv>()
 
 /** POST /analyze — VLM描述 + 玄学解读 */
@@ -46,13 +60,21 @@ physiognomyRoutes.post('/extract-features', async (c) => {
     throw new HTTPException(400, { message: 'imageBase64 is required' })
   }
 
-  const features = await extractFaceFeatures(
-    c.env.GEMINI_API_KEY,
-    input.imageBase64,
-    input.mimeType ?? 'image/jpeg'
-  )
+  const apiKey = requireGeminiKey(c.env)
+  const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
-  return c.json({ features })
+  try {
+    const features = await extractFaceFeatures(
+      apiKey,
+      imageBase64,
+      input.mimeType ?? 'image/jpeg'
+    )
+    return c.json({ features })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[physiognomy/extract-features]', message.slice(0, 500))
+    throw new HTTPException(502, { message: `extract_features_failed:${message.slice(0, 200)}` })
+  }
 })
 
 /**
@@ -69,11 +91,19 @@ physiognomyRoutes.post('/extract-palm-features', async (c) => {
     throw new HTTPException(400, { message: 'imageBase64 is required' })
   }
 
-  const features = await extractPalmFeatures(
-    c.env.GEMINI_API_KEY,
-    input.imageBase64,
-    input.mimeType ?? 'image/jpeg'
-  )
+  const apiKey = requireGeminiKey(c.env)
+  const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
-  return c.json({ features })
+  try {
+    const features = await extractPalmFeatures(
+      apiKey,
+      imageBase64,
+      input.mimeType ?? 'image/jpeg'
+    )
+    return c.json({ features })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[physiognomy/extract-palm-features]', message.slice(0, 500))
+    throw new HTTPException(502, { message: `extract_palm_failed:${message.slice(0, 200)}` })
+  }
 })

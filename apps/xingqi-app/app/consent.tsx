@@ -1,9 +1,10 @@
 import { Button, useTheme } from '@zhop/core-ui'
 import { router, Stack } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { XingqiLoader } from '@/components/XingqiLoader'
 import { fetchBiometricConsent, recordBiometricConsent } from '@/lib/api'
 import { resolveLocale } from '@/lib/i18n'
 
@@ -67,7 +68,7 @@ export default function BiometricConsentScreen() {
         }}
       >
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator color={colors.accent} />
+        <XingqiLoader label={zh ? '加载中' : 'Loading'} />
       </View>
     )
   }

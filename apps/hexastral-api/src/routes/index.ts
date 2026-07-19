@@ -48,6 +48,12 @@ export { pairRoutes } from './pair/pair'
 export { pairPreviewRoutes } from './pair/preview'
 // Physiognomy VLM feature extraction (R2 + Gemini Vision)
 export { faceFeaturesRoutes } from './physiognomy/face-features'
+// FaceOracle / Xingqi Pro push register + cron targets
+export { physiognomyPushRoutes } from './physiognomy/push'
+// FaceOracle / Xingqi async reading jobs
+export { physiognomyJobsRoutes } from './physiognomy/jobs'
+// Xingqi Life axis / What-if facades (shared cycle compute; not /api/auspice)
+export { physiognomyCycleRoutes } from './physiognomy/cycle'
 export { portfolioRoutes } from './portfolio'
 export { portfolioAuthRoutes } from './portfolio-auth'
 // Quota — Pro 月度配额

@@ -14,7 +14,7 @@
 
 import { and, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH } from '../config/products'
+import { FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH, FACEORACLE_PRO_REPORT_REGENS_PER_MONTH } from '../config/products'
 import { bondInviteCredits, freeMonthlyQuotas, users } from '../db/schema'
 import type { AppDb } from '../infra-types'
 
@@ -246,6 +246,7 @@ export async function checkAndConsumeFaceoraclePhotoSlots(
       divinationUsed: 0,
       physiognomyUploads: 0,
       faceoraclePhotoSlots: 0,
+      faceoracleReportRegens: 0,
     })
     .onConflictDoNothing()
 
@@ -286,4 +287,110 @@ export async function getFaceoraclePhotoSlotUsage(
     .get()
   const used = row?.used ?? 0
   return { used, limit, remaining: Math.max(0, limit - used) }
+}
+
+/** Reverse photo slots consumed at job enqueue (floor at 0). */
+export async function refundFaceoraclePhotoSlots(
+  db: AppDb,
+  userId: string,
+  slots: number
+): Promise<void> {
+  if (slots < 1) return
+  const month = currentMonth()
+  await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoraclePhotoSlots: sql`max(0, ${freeMonthlyQuotas.faceoraclePhotoSlots} - ${slots})`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+}
+
+/**
+ * FaceOracle Pro report-regen meter — same photos / feature triple, new locale or body.
+ * Cap = FACEORACLE_PRO_REPORT_REGENS_PER_MONTH.
+ */
+export async function checkAndConsumeFaceoracleReportRegen(
+  db: AppDb,
+  userId: string
+): Promise<{ granted: boolean; used: number; limit: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_REPORT_REGENS_PER_MONTH
+
+  await db
+    .insert(freeMonthlyQuotas)
+    .values({
+      id: nanoid(),
+      userId,
+      month,
+      divinationUsed: 0,
+      physiognomyUploads: 0,
+      faceoraclePhotoSlots: 0,
+      faceoracleReportRegens: 0,
+    })
+    .onConflictDoNothing()
+
+  const result = await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoracleReportRegens: sql`${freeMonthlyQuotas.faceoracleReportRegens} + 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(freeMonthlyQuotas.userId, userId),
+        eq(freeMonthlyQuotas.month, month),
+        sql`${freeMonthlyQuotas.faceoracleReportRegens} + 1 <= ${limit}`
+      )
+    )
+
+  const changed = (result as unknown as { meta: { changes: number } }).meta.changes
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoracleReportRegens })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+
+  return { granted: changed > 0, used: row?.used ?? 0, limit }
+}
+
+export async function getFaceoracleReportRegenUsage(
+  db: AppDb,
+  userId: string
+): Promise<{ used: number; limit: number; remaining: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_REPORT_REGENS_PER_MONTH
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoracleReportRegens })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+  const used = row?.used ?? 0
+  return { used, limit, remaining: Math.max(0, limit - used) }
+}
+
+export async function refundFaceoracleReportRegen(db: AppDb, userId: string): Promise<void> {
+  const month = currentMonth()
+  await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoracleReportRegens: sql`max(0, ${freeMonthlyQuotas.faceoracleReportRegens} - 1)`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+}
+
+/** Combined Pro meters for Xingqi home quota chrome. */
+export async function getFaceoracleQuotaBundle(
+  db: AppDb,
+  userId: string
+): Promise<{
+  photos: { used: number; limit: number; remaining: number }
+  reports: { used: number; limit: number; remaining: number }
+}> {
+  const [photos, reports] = await Promise.all([
+    getFaceoraclePhotoSlotUsage(db, userId),
+    getFaceoracleReportRegenUsage(db, userId),
+  ])
+  return { photos, reports }
 }

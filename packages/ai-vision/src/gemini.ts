@@ -19,6 +19,14 @@ export type GeminiThinkingLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'MINIMAL'
 
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview'
 
+/** Strip data-URL prefix / whitespace so Gemini receives raw base64 bytes. */
+export function normalizeImageBase64(raw: string): string {
+  const trimmed = raw.trim()
+  const dataUrl = /^data:[^;]+;base64,(.+)$/i.exec(trimmed)
+  const body = dataUrl?.[1] ?? trimmed
+  return body.replace(/\s+/g, '')
+}
+
 function resolveThinkingLevel(level: GeminiThinkingLevel | undefined): ThinkingLevel {
   switch (level) {
     case 'HIGH':
@@ -75,7 +83,7 @@ export async function callGeminiVision(
             { text: opts.userPrompt },
             {
               inlineData: {
-                data: opts.imageBase64,
+                data: normalizeImageBase64(opts.imageBase64),
                 mimeType: opts.mimeType ?? 'image/jpeg',
               },
             },
@@ -118,7 +126,12 @@ export async function callGeminiVisionStructured<T>(
         { text: opts.userPrompt },
       ]
       for (const img of opts.images) {
-        parts.push({ inlineData: { data: img.base64, mimeType: img.mimeType ?? 'image/png' } })
+        parts.push({
+          inlineData: {
+            data: normalizeImageBase64(img.base64),
+            mimeType: img.mimeType ?? 'image/jpeg',
+          },
+        })
       }
       const response = await ai.models.generateContent({
         model,
@@ -132,8 +145,21 @@ export async function callGeminiVisionStructured<T>(
         },
         contents: [{ role: 'user', parts }],
       })
-      const text = response.text ?? '{}'
-      return JSON.parse(text) as T
+      const text = (response.text ?? '').trim()
+      if (!text) {
+        throw new Error('gemini_empty_response')
+      }
+      try {
+        return JSON.parse(text) as T
+      } catch {
+        // Model sometimes wraps JSON despite responseMimeType.
+        const start = text.indexOf('{')
+        const end = text.lastIndexOf('}')
+        if (start >= 0 && end > start) {
+          return JSON.parse(text.slice(start, end + 1)) as T
+        }
+        throw new Error(`gemini_invalid_json:${text.slice(0, 120)}`)
+      }
     }
   )
 }

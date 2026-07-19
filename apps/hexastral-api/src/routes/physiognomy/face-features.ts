@@ -2,15 +2,15 @@
  * 面相/手相特征提取路由 — 隐私优先架构 (ADR-0028)
  *
  * 职责边界:
- *   hexastral-api (本文件):  D1 存储 / 用户状态更新
+ *   hexastral-api (本文件):  D1 存储 / 用户状态更新 / VLM content-hash 缓存
  *   svc-astro:               Gemini Vision 结构化特征提取
  *
  * 流程:
- *   iOS 直传 base64 → hexastral-api → svc-astro VLM → D1 存储特征 JSON
+ *   iOS 直传 base64 → hash lookup → (miss) svc-astro VLM → D1 存储特征 JSON
  *   原图仅存于请求内存，提取完成后自动回收，不经 R2
  */
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
@@ -20,10 +20,17 @@ import type { AppEnv } from '../../infra-types'
 import { userHasAnySubscription } from '../../lib/access/entitlement-access'
 import { requireUserId } from '../../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../../lib/biometric-consent'
+import {
+  computeFaceoracleVlmContentHash,
+  decodeImageBase64,
+  FACEORACLE_VLM_MODEL,
+  FACEORACLE_VLM_SCHEMA_VERSION,
+  type FaceoracleFeatureType,
+} from '../../lib/faceoracle-vlm-cache'
 import { astroClient } from '../../lib/service-clients'
 import {
   checkAndConsumePhysiognomyUpload,
-  getFaceoraclePhotoSlotUsage,
+  getFaceoracleQuotaBundle,
 } from '../../services/quota'
 
 const featureTypeSchema = z.enum(['face', 'palm', 'palm_l', 'palm_r'])
@@ -40,11 +47,68 @@ function extractionPathFor(type: z.infer<typeof featureTypeSchema>): string {
   return type === 'face' ? '/physiognomy/extract-features' : '/physiognomy/extract-palm-features'
 }
 
+type Db = AppEnv['Variables']['db']
+
+async function setActiveFeaturePointer(
+  db: Db,
+  userId: string,
+  type: FaceoracleFeatureType,
+  featureId: string
+): Promise<void> {
+  const now = new Date().toISOString()
+  if (type === 'face') {
+    await db
+      .update(users)
+      .set({ activePhysiognomyId: featureId, updatedAt: now })
+      .where(eq(users.id, userId))
+  } else if (type === 'palm_l' || type === 'palm') {
+    await db
+      .update(users)
+      .set({
+        activePalmLeftFeatureId: featureId,
+        activePalmFeatureId: featureId,
+        updatedAt: now,
+      })
+      .where(eq(users.id, userId))
+  } else if (type === 'palm_r') {
+    await db
+      .update(users)
+      .set({ activePalmRightFeatureId: featureId, updatedAt: now })
+      .where(eq(users.id, userId))
+  }
+}
+
+async function lookupCachedFeature(
+  db: Db,
+  opts: {
+    userId: string
+    type: FaceoracleFeatureType
+    contentHash: string
+  }
+) {
+  return db
+    .select({
+      id: userPhysiognomyFeatures.id,
+      featuresJson: userPhysiognomyFeatures.featuresJson,
+    })
+    .from(userPhysiognomyFeatures)
+    .where(
+      and(
+        eq(userPhysiognomyFeatures.userId, opts.userId),
+        eq(userPhysiognomyFeatures.type, opts.type),
+        eq(userPhysiognomyFeatures.contentHash, opts.contentHash),
+        eq(userPhysiognomyFeatures.extractionModel, FACEORACLE_VLM_MODEL),
+        eq(userPhysiognomyFeatures.schemaVersion, FACEORACLE_VLM_SCHEMA_VERSION)
+      )
+    )
+    .get()
+}
+
 export const faceFeaturesRoutes = new Hono<AppEnv>()
 
   /**
    * POST /face-features/from-base64
-   * Mobile 直传 base64 → svc-astro VLM 提取（不经 R2）
+   * Mobile 直传 base64 → content-hash cache → (miss) svc-astro VLM
    */
   .post('/from-base64', async (c) => {
     const body = await c.req.json()
@@ -66,6 +130,52 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       .get()
     if (!user) throw new HTTPException(404, { message: 'User not found' })
 
+    let imageBytes: Uint8Array
+    try {
+      imageBytes = decodeImageBase64(input.imageBase64)
+    } catch {
+      throw new HTTPException(400, { message: 'invalid_image_base64' })
+    }
+    if (imageBytes.byteLength === 0) {
+      throw new HTTPException(400, { message: 'empty_image' })
+    }
+
+    const contentHash = await computeFaceoracleVlmContentHash({
+      imageBytes,
+      type: input.type,
+    })
+
+    const cached = await lookupCachedFeature(db, {
+      userId: input.userId,
+      type: input.type,
+      contentHash,
+    })
+    if (cached) {
+      let features: Record<string, string> = {}
+      try {
+        const parsed: unknown = JSON.parse(cached.featuresJson)
+        if (parsed && typeof parsed === 'object') {
+          features = parsed as Record<string, string>
+        }
+      } catch {
+        features = {}
+      }
+      await setActiveFeaturePointer(db, input.userId, input.type, cached.id)
+      console.info('[faceoracle.vlm] cache_hit', {
+        userId: input.userId,
+        type: input.type,
+        featureId: cached.id,
+      })
+      return c.json({
+        featureId: cached.id,
+        type: input.type,
+        imageDeleted: true,
+        features,
+        cached: true,
+      })
+    }
+
+    // Miss — meter free upload only when we will call VLM.
     const isPro = await userHasAnySubscription(db, input.userId)
     if (!isPro) {
       const { granted } = await checkAndConsumePhysiognomyUpload(db, input.userId)
@@ -76,57 +186,78 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
 
     let data: { features: Record<string, string> }
     try {
-      data = await astroClient.post<{ features: Record<string, string> }>(
+      data = await astroClient.postVision<{ features: Record<string, string> }>(
         c.env.SVC_ASTRO,
         extractionPathFor(input.type),
         { imageBase64: input.imageBase64, mimeType: input.mimeType }
       )
-    } catch {
-      throw new HTTPException(502, { message: 'VLM extraction failed' })
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      const msg = err instanceof Error ? err.message : 'VLM extraction failed'
+      throw new HTTPException(502, { message: msg })
     }
     const features = data.features
 
     const featureId = nanoid()
-    await db.insert(userPhysiognomyFeatures).values({
-      id: featureId,
+    const now = new Date().toISOString()
+    try {
+      await db.insert(userPhysiognomyFeatures).values({
+        id: featureId,
+        userId: input.userId,
+        type: input.type,
+        featuresJson: JSON.stringify(features),
+        vlmNarrative: features.overallAssessment ?? null,
+        extractionModel: FACEORACLE_VLM_MODEL,
+        contentHash,
+        schemaVersion: FACEORACLE_VLM_SCHEMA_VERSION,
+        imageDeleted: true,
+        privacyConsentVersion: input.privacyConsentVersion,
+        createdAt: now,
+        updatedAt: now,
+      })
+    } catch (err) {
+      // Race: another request inserted the same content hash — reuse that row.
+      console.warn('[faceoracle.vlm] insert_race', err)
+      const raced = await lookupCachedFeature(db, {
+        userId: input.userId,
+        type: input.type,
+        contentHash,
+      })
+      if (raced) {
+        let racedFeatures: Record<string, string> = features
+        try {
+          const parsed: unknown = JSON.parse(raced.featuresJson)
+          if (parsed && typeof parsed === 'object') {
+            racedFeatures = parsed as Record<string, string>
+          }
+        } catch {
+          // keep VLM features
+        }
+        await setActiveFeaturePointer(db, input.userId, input.type, raced.id)
+        return c.json({
+          featureId: raced.id,
+          type: input.type,
+          imageDeleted: true,
+          features: racedFeatures,
+          cached: true,
+        })
+      }
+      throw err
+    }
+
+    await setActiveFeaturePointer(db, input.userId, input.type, featureId)
+    console.info('[faceoracle.vlm] cache_miss', {
       userId: input.userId,
       type: input.type,
-      featuresJson: JSON.stringify(features),
-      vlmNarrative: features.overallAssessment ?? null,
-      extractionModel: 'gemini-3.1-pro-preview',
-      imageDeleted: true,
-      privacyConsentVersion: input.privacyConsentVersion,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      featureId,
     })
-
-    const now = new Date().toISOString()
-    if (input.type === 'face') {
-      await db
-        .update(users)
-        .set({ activePhysiognomyId: featureId, updatedAt: now })
-        .where(eq(users.id, input.userId))
-    } else if (input.type === 'palm_l' || input.type === 'palm') {
-      await db
-        .update(users)
-        .set({
-          activePalmLeftFeatureId: featureId,
-          activePalmFeatureId: featureId,
-          updatedAt: now,
-        })
-        .where(eq(users.id, input.userId))
-    } else if (input.type === 'palm_r') {
-      await db
-        .update(users)
-        .set({ activePalmRightFeatureId: featureId, updatedAt: now })
-        .where(eq(users.id, input.userId))
-    }
 
     return c.json({
       featureId,
       type: input.type,
       imageDeleted: true,
       features,
+      cached: false,
     })
   })
 
@@ -238,9 +369,16 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
     })
   })
 
-  /** GET /face-features/quota — Pro photo-slot usage this UTC month */
+  /** GET /face-features/quota — Pro photo + report-regen usage this UTC month */
   .get('/quota', async (c) => {
     const userId = requireUserId(c)
-    const usage = await getFaceoraclePhotoSlotUsage(c.get('db'), userId)
-    return c.json(usage)
+    const bundle = await getFaceoracleQuotaBundle(c.get('db'), userId)
+    return c.json({
+      // Backward-compatible flat photo fields
+      used: bundle.photos.used,
+      limit: bundle.photos.limit,
+      remaining: bundle.photos.remaining,
+      photos: bundle.photos,
+      reports: bundle.reports,
+    })
   })

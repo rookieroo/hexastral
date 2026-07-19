@@ -302,3 +302,6 @@ export const ENTITLEMENT_MONTHLY_ALLOWANCE: Partial<
 
 /** FaceOracle Pro photo slots per UTC calendar month (full=3, partial=1). */
 export const FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH = 6
+
+/** FaceOracle Pro report regenerations per UTC month (same feature triple, new locale/body). */
+export const FACEORACLE_PRO_REPORT_REGENS_PER_MONTH = 3

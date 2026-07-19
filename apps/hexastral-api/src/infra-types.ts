@@ -38,6 +38,10 @@ export interface CloudflareBindings {
   SVC_FENG: Fetcher
   /** Queue — async Fēng analyze pipeline (avoids waitUntil ~30s cap) */
   FENG_ANALYZE_QUEUE?: Queue<import('./lib/feng-analyze-queue').FengAnalyzeQueueMessage>
+  /** Queue — async FaceOracle / Xingqi reading interpretation (ADR-0028) */
+  FACEORACLE_READING_QUEUE?: Queue<
+    import('./lib/faceoracle-reading-queue').FaceoracleReadingQueueMessage
+  >
   /** R2 桶 — 用户持久化媒体（头像、手相照片、风水平面图） */
   MEDIA_BUCKET: R2Bucket
   ENVIRONMENT: string

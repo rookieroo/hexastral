@@ -16,16 +16,14 @@ export default function FacePrivacyAppendixScreen() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: spacing.xl, gap: spacing.md }}
     >
-      <Stack.Screen
-        options={{ title: zh ? '隐私说明' : 'Privacy appendix', headerShown: true }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>
         {zh ? 'Xingqi 数据处理' : 'Xingqi data handling'}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
         {zh
-          ? '我们处理左掌、右掌与面部照片，仅用于提取结构化特征。原图在服务器请求结束后不落库。'
-          : 'We process left palm, right palm, and face photos only to extract structured features. Source images are not stored after the request completes.'}
+          ? '左掌、右掌与面部原图仅保存在本机，供查看与替换；上传仅用于提取结构化特征，服务器处理完不保留原图。'
+          : 'Palm and face originals stay on this device for view/replace. Uploads are only for feature extraction; servers discard source images after processing.'}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
         {zh

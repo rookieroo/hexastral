@@ -457,6 +457,8 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
   // Kindred relationship nudge (ADR-0025): deterministic daily synastry over each
   // user's Threads picks a pre-harvested queue snippet. Evening slot, no LLM.
   await runKindredPush(env, 19)
+  // FaceOracle / Xingqi Pro: monthly re-capture + event-window “宜留意” (09:00 local).
+  await runFaceoraclePush(env, 9)
 }
 
 /** Two-digit pad. */
@@ -705,6 +707,70 @@ async function runKindredPush(env: Env, targetHour: number): Promise<void> {
   }
 
   logger.info('kindred push complete', { sent, invalidTokens: invalidTokens.length })
+}
+
+/**
+ * FaceOracle / Xingqi Pro push (ADR-0028): morning slot at `targetHour` local.
+ * hexastral-api renders recapture + event-window copy; this cron only dispatches.
+ */
+async function runFaceoraclePush(env: Env, targetHour: number): Promise<void> {
+  const now = new Date()
+  const zones = TIMEZONE_POOL.filter((tz) => tzLocalHour(tz, now) === targetHour)
+  if (zones.length === 0) return
+  logger.info('faceoracle push check', { targetHour, zones: zones.length })
+
+  const invalidTokens: string[] = []
+  let sent = 0
+
+  for (const tz of zones) {
+    const date = tzLocalDate(tz, now)
+    let cursor: string | null = '0'
+    while (cursor !== null) {
+      const url = new URL('https://internal/api/physiognomy/push/targets')
+      url.searchParams.set('slot', 'morning')
+      url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('date', date)
+      url.searchParams.set('limit', '200')
+      url.searchParams.set('cursor', cursor)
+      const res = await env.SVC_API.fetch(url, { headers: { 'X-Internal-Key': env.INTERNAL_KEY } })
+      if (!res.ok) {
+        logger.error('faceoracle push-targets failed', { tz, status: String(res.status) })
+        break
+      }
+      const json = await res.json<{
+        data: {
+          messages: Array<{
+            userId: string
+            token: string
+            title: string
+            body: string
+            data: Record<string, string>
+          }>
+          nextCursor: string | null
+        }
+      }>()
+      const msgs = json.data.messages
+      if (msgs.length > 0) {
+        const { invalidTokens: bad } = await sendExpoMessages(
+          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        )
+        invalidTokens.push(...bad)
+        sent += msgs.length - bad.length
+      }
+      cursor = json.data.nextCursor
+    }
+  }
+
+  if (invalidTokens.length > 0) {
+    await env.SVC_API.fetch('https://internal/api/physiognomy/push/unregister-stale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ tokens: invalidTokens.slice(0, 100) }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
+
+  logger.info('faceoracle push complete', { sent, invalidTokens: invalidTokens.length })
 }
 
 /**

@@ -10,7 +10,7 @@ export default function FaceHistoryScreen() {
   const zh = locale.startsWith('zh')
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: zh ? '历史' : 'History', headerShown: true }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <SatelliteHistoryList
         target={PORTFOLIO_TARGET_APP}
         emptyText={zh ? '尚无解读' : 'No face readings yet.'}

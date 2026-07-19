@@ -21,11 +21,20 @@
       {
         "binding": "FENG_ANALYZE_QUEUE",
         "queue": "feng-analyze"
+      },
+      {
+        "binding": "FACEORACLE_READING_QUEUE",
+        "queue": "faceoracle-reading"
       }
     ],
     "consumers": [
       {
         "queue": "feng-analyze",
+        "max_batch_size": 1,
+        "max_retries": 2
+      },
+      {
+        "queue": "faceoracle-reading",
         "max_batch_size": 1,
         "max_retries": 2
       }

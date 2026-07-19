@@ -636,6 +636,14 @@ export const userPhysiognomyFeatures = sqliteTable(
     vlmNarrative: text('vlm_narrative'),
     /** 提取时使用的模型（gemini-2.5-pro-preview 等） */
     extractionModel: text('extraction_model').notNull(),
+    /**
+     * SHA-256 hex of raw image bytes + type + model + schemaVersion.
+     * Null on legacy rows; new extracts always set. Enables VLM cache hits
+     * without retaining source images (ADR-0028).
+     */
+    contentHash: text('content_hash'),
+    /** Feature JSON / prompt contract version — bump to invalidate VLM cache. */
+    schemaVersion: text('schema_version').notNull().default('xingqi-vlm-v1'),
     /** R2 原图已删除 */
     imageDeleted: integer('image_deleted', { mode: 'boolean' }).default(false).notNull(),
     /** 用户告知并同意的隐私描述版本 */
@@ -650,6 +658,13 @@ export const userPhysiognomyFeatures = sqliteTable(
   (t) => [
     index('upf_user_created_idx').on(t.userId, t.createdAt),
     index('upf_user_model_idx').on(t.userId, t.extractionModel),
+    unique('upf_user_type_hash_model_schema_uniq').on(
+      t.userId,
+      t.type,
+      t.contentHash,
+      t.extractionModel,
+      t.schemaVersion
+    ),
   ]
 )
 
@@ -1771,6 +1786,8 @@ export const freeMonthlyQuotas = sqliteTable(
     physiognomyUploads: integer('physiognomy_uploads').default(0).notNull(),
     /** FaceOracle Pro photo slots used this UTC month (ADR-0028; cap 6). */
     faceoraclePhotoSlots: integer('faceoracle_photo_slots').default(0).notNull(),
+    /** FaceOracle Pro report regenerations used this UTC month (same photos, new locale/body; cap 3). */
+    faceoracleReportRegens: integer('faceoracle_report_regens').default(0).notNull(),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
@@ -1809,6 +1826,88 @@ export const physiognomyEvents = sqliteTable(
   (t) => [
     unique('physio_events_user_uniq').on(t.userId),
     index('physio_events_user_idx').on(t.userId),
+  ]
+)
+
+/**
+ * FaceOracle / Xingqi Pro push subscriptions (ADR-0028).
+ * Account-scoped (userId PK). Cron at ~09:00 local sends monthly re-capture
+ * and event-window “宜留意” messages — never fate claims.
+ */
+export const faceoraclePushSubs = sqliteTable(
+  'faceoracle_push_subs',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Expo push token (ExponentPushToken[...]). */
+    token: text('token').notNull(),
+    platform: text('platform').notNull().default('ios'),
+    timezoneId: text('timezone_id').notNull(),
+    locale: text('locale').notNull().default('zh'),
+    recaptureOn: integer('recapture_on', { mode: 'boolean' }).notNull().default(true),
+    eventsOn: integer('events_on', { mode: 'boolean' }).notNull().default(true),
+    /** Client-reported Pro gate (also re-checked against entitlements when available). */
+    isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
+    /** ISO timestamp of last successful reading — drives ~25-day recapture due. */
+    lastReadingAt: text('last_reading_at'),
+    lastActiveAt: text('last_active_at').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index('faceoracle_push_subs_tz_idx').on(t.timezoneId)]
+)
+
+/**
+ * Async FaceOracle / Xingqi reading jobs (interpretation queue).
+ * Client extracts feature IDs first; consumer runs LLM + persists reading.
+ */
+export const faceoracleJobs = sqliteTable(
+  'faceoracle_jobs',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    stage: text('stage', {
+      enum: ['queued', 'interpreting', 'done', 'failed'],
+    })
+      .notNull()
+      .default('queued'),
+    progress: integer('progress').notNull().default(0),
+    locale: text('locale').notNull().default('zh'),
+    outputKind: text('output_kind').notNull().default('oneshot'),
+    horizonMonths: integer('horizon_months').notNull().default(3),
+    faceFeatureId: text('face_feature_id').notNull(),
+    palmLeftFeatureId: text('palm_left_feature_id').notNull(),
+    palmRightFeatureId: text('palm_right_feature_id').notNull(),
+    solarDate: text('solar_date').notNull(),
+    timeIndex: integer('time_index').notNull(),
+    gender: text('gender').notNull(),
+    city: text('city'),
+    readingId: text('reading_id'),
+    errorMessage: text('error_message'),
+    notifyOnComplete: integer('notify_on_complete', { mode: 'boolean' }).notNull().default(true),
+    /** 'pro_slots' | 'face_credit' — already consumed at enqueue */
+    accessVia: text('access_via'),
+    /** Episodic credit ledger source when accessVia = face_credit */
+    creditSource: text('credit_source'),
+    /** Pro photo slots consumed at enqueue (usually 3) */
+    slotsCharged: integer('slots_charged').notNull().default(0),
+    /** True after credit/slots were reversed on failure */
+    refunded: integer('refunded', { mode: 'boolean' }).notNull().default(false),
+    startedAt: text('started_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    finishedAt: text('finished_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index('fo_jobs_user_stage_idx').on(t.userId, t.stage),
+    index('fo_jobs_user_created_idx').on(t.userId, t.createdAt),
   ]
 )
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import {
   FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH,
+  FACEORACLE_PRO_REPORT_REGENS_PER_MONTH,
   getProduct,
   isConsumableProduct,
   isSubscriptionProduct,
@@ -31,6 +32,7 @@ describe('episodic consumable catalog (ADR-0013 P2.2)', () => {
       expect(p.grantsEntitlements).toContain('faceoracle_pro')
     }
     expect(FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH).toBe(6)
+    expect(FACEORACLE_PRO_REPORT_REGENS_PER_MONTH).toBe(3)
   })
 
   it('routes only the new packs to the ledger; legacy kinds stay column-backed', () => {

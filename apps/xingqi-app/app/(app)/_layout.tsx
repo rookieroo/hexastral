@@ -19,6 +19,7 @@ export default function AppLayout() {
     >
       <Stack.Screen name='index' />
       <Stack.Screen name='settings' />
+      <Stack.Screen name='usage' />
     </Stack>
   )
 }

@@ -4,6 +4,8 @@
 
 /** Default timeout for svc-astro calls (55 seconds — Pro tier runs up to 4 LLM fallbacks serially) */
 const ASTRO_TIMEOUT_MS = 55_000
+/** Gemini Vision face/palm extract — large base64 + thinking can exceed 55s. */
+const ASTRO_VISION_TIMEOUT_MS = 120_000
 
 type FetcherLike = { fetch(input: RequestInfo, init?: RequestInit): Promise<Response> }
 
@@ -12,18 +14,20 @@ type FetcherLike = { fetch(input: RequestInfo, init?: RequestInit): Promise<Resp
  * @param svcAstro - Service Binding Fetcher
  * @param path - 请求路径 (如 /stellar/chart)
  * @param body - 请求体 JSON
+ * @param timeoutMs - optional override (use vision timeout for physiognomy extract)
  */
 export async function callAstro<T = unknown>(
   svcAstro: FetcherLike,
   path: string,
-  body: unknown
+  body: unknown,
+  timeoutMs: number = ASTRO_TIMEOUT_MS
 ): Promise<T> {
   const res = await svcAstro.fetch(
     new Request(`https://svc-astro.internal${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(ASTRO_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     })
   )
 
@@ -33,6 +37,15 @@ export async function callAstro<T = unknown>(
   }
 
   return res.json() as Promise<T>
+}
+
+/** Face/palm VLM extract helper. */
+export function callAstroVision<T = unknown>(
+  svcAstro: FetcherLike,
+  path: string,
+  body: unknown
+): Promise<T> {
+  return callAstro<T>(svcAstro, path, body, ASTRO_VISION_TIMEOUT_MS)
 }
 
 /**

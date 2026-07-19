@@ -26,7 +26,13 @@ export function setAdminNotifyFetcher(svc: Fetcher): void {
 }
 
 const TIMEOUTS = {
+  /** Chart / text LLM calls */
   astro: 30_000,
+  /**
+   * Gemini Vision structured extract (face/palm). Photos + thinkingLevel can
+   * exceed 30s; hexastral-api allows cpu_ms 300000 so this is safe.
+   */
+  astroVision: 120_000,
   geocode: 10_000,
   notify: 10_000,
   mailer: 15_000,
@@ -129,6 +135,10 @@ async function serviceGet<T>(
 export const astroClient = {
   post<T = unknown>(svc: Fetcher, path: string, body: unknown): Promise<T> {
     return servicePost<T>(svc, 'svc-astro', path, body, TIMEOUTS.astro)
+  },
+  /** Face/palm VLM extract — longer timeout than chart calls. */
+  postVision<T = unknown>(svc: Fetcher, path: string, body: unknown): Promise<T> {
+    return servicePost<T>(svc, 'svc-astro', path, body, TIMEOUTS.astroVision)
   },
   get<T = unknown>(svc: Fetcher, path: string): Promise<T> {
     return serviceGet<T>(svc, 'svc-astro', path, TIMEOUTS.astro)

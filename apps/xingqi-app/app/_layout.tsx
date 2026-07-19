@@ -20,6 +20,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { initializeFaceIap, loginFaceIap } from '@/lib/iap'
+import { useXingqiNotificationDeepLink } from '@/lib/notification-deeplink'
 
 function SatelliteGrowthMount() {
   usePortfolioSatelliteBootstrap({
@@ -41,6 +42,11 @@ function IapMount(): null {
   return null
 }
 
+function NotificationDeepLinkMount(): null {
+  useXingqiNotificationDeepLink()
+  return null
+}
+
 export default function RootLayout() {
   useFonts({
     LibreBaskerville: require('../assets/fonts/LibreBaskerville-Regular.ttf'),
@@ -55,6 +61,7 @@ export default function RootLayout() {
         <CoreUIProvider brand='faceoracle' mode='dark'>
           <SatelliteGrowthMount />
           <IapMount />
+          <NotificationDeepLinkMount />
           <StatusBar style='light' />
           <Stack
             screenOptions={{
@@ -72,9 +79,44 @@ export default function RootLayout() {
             <Stack.Screen name='consent' />
             <Stack.Screen name='capture' />
             <Stack.Screen name='birth' options={{ headerShown: false }} />
-            <Stack.Screen name='result' />
-            <Stack.Screen name='privacy' />
-            <Stack.Screen name='history' />
+            <Stack.Screen
+              name='result'
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: false,
+              }}
+            />
+            <Stack.Screen name='privacy' options={{ headerShown: false }} />
+            <Stack.Screen name='history' options={{ headerShown: false }} />
+            <Stack.Screen
+              name='glossary'
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+                // Edge-only: same as iOS system / Kindred glossary — full-screen
+                // back-swipe was too sensitive on long vertical scrolls.
+                fullScreenGestureEnabled: false,
+              }}
+            />
+            <Stack.Screen
+              name='terms'
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: false,
+              }}
+            />
+            <Stack.Screen
+              name='reading-chat'
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: false,
+              }}
+            />
+            <Stack.Screen name='timeline' options={{ headerShown: false }} />
+            <Stack.Screen name='makeif' options={{ headerShown: false }} />
             <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
           </Stack>
         </CoreUIProvider>

@@ -22,35 +22,52 @@ export type PhysiognomyType = 'face' | 'palm'
 // ── 面相特征提取 (隐私优先，结构化 JSON) ────────────────────────────────────
 
 /**
- * 面相特征 Schema — 面相学十五维度
- * VLM 提取后存入 D1，等效于命格盘的数值化预处理
+ * 面相特征 Schema — Xingqi canonical face stack (三停·五岳·局部宫位线索)
+ * VLM 提取后存入 D1；字段中文语义如下，供后续 LLM 合参。
+ * 天庭/印堂≈命宫·官禄一带；准头≈财帛；地阁≈收束；颧骨≈五岳西东岳。
  */
 export interface FaceFeatures {
-  tianTing: string // 天庭（额头上部）
-  yinTang: string // 印堂（两眉间）
-  shanGen: string // 山根（鼻梁根部）
-  foreheadWidth: string // 额头宽度格局
-  eyebrowType: string // 眉型特征
-  eyeType: string // 眼型神采
-  noseShape: string // 鼻型（鼻梁+鼻头）
-  cheekBones: string // 颧骨高低突度
-  nasolabialFolds: string // 法令纹深浅走势
-  mouthType: string // 嘴型唇色
-  chin: string // 地阁（下巴）
-  earLobes: string // 耳垂形态
-  complexion: string // 气色肤色整体
-  boneStructure: string // 整体骨骼格局
-  overallAssessment: string // 面相整体格局简评（3句内）
+  /** 天庭 — 额头上部 / 上停 */
+  tianTing: string
+  /** 印堂 — 两眉间 / 命宫一带 */
+  yinTang: string
+  /** 山根 — 鼻梁根 */
+  shanGen: string
+  /** 额头宽度 — 上停横向格局 */
+  foreheadWidth: string
+  /** 眉型 */
+  eyebrowType: string
+  /** 眼型神采 */
+  eyeType: string
+  /** 鼻型（年寿+准头；鼻为中岳） */
+  noseShape: string
+  /** 颧骨 — 五岳 */
+  cheekBones: string
+  /** 法令纹 */
+  nasolabialFolds: string
+  /** 嘴型 */
+  mouthType: string
+  /** 地阁 — 下巴 */
+  chin: string
+  /** 耳垂 */
+  earLobes: string
+  /** 气色 */
+  complexion: string
+  /** 骨相 */
+  boneStructure: string
+  /** 面相整体简评（3句内） */
+  overallAssessment: string
 }
 
-const FACE_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统面相学的专家，同时具备计算机视觉分析能力。
-请仔细观察图片中的面部特征，从面相学角度提取结构化特征。
+const FACE_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统面相学的专家（框架：三停·五岳·十二宫线索·五官·气色骨肉），同时具备计算机视觉分析能力。
+请仔细观察图片中的面部特征，按下列字段提取结构化描述。
 
 重要说明：
 - 按照要求的 JSON Schema 精确输出，不得增删字段
-- 每个字段给出简短的中文描述（5-15字）
+- 每个字段给出简短的中文描述（5-15字），尽量使用：天庭、印堂、山根、年寿、准头、地阁、颧骨、法令纹、气色、骨相等术语
 - 如某部位在图片中不清晰，标注值为 "unclear"
-- 绝对不要包含对用户外貌的主观美丑评价`
+- 绝对不要包含对用户外貌的主观美丑评价
+- 不要做命运断语，只描述可见形气特征`
 
 const FACE_FEATURES_SCHEMA = {
   type: 'object',
@@ -116,25 +133,35 @@ export async function extractFaceFeatures(
   })
 }
 
-/** Structured palm features — stored without the source image (ADR-0028). */
+/** Structured palm features — Xingqi canonical palm stack (主纹 + 丘位 mounts). */
 export interface PalmFeatures {
+  /** 掌形（可含地/火/风/水型等可见外形） */
   handShape: string
+  /** 生命线 */
   lifeLine: string
+  /** 智慧线 / 头脑线 */
   headLine: string
+  /** 感情线 / 心脏线 */
   heartLine: string
+  /** 事业线 / 命运线 */
   fateLine: string
+  /** 丘位：金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘等 */
   mounts: string
+  /** 指节比例 */
   fingerRatio: string
+  /** 特殊纹记 */
   specialMarks: string
+  /** 掌相整体简评 */
   overallAssessment: string
 }
 
-const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家，同时具备计算机视觉分析能力。
-请仔细观察图片中的手掌与掌纹，从手相学角度提取结构化特征。
+const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家（框架：主纹 + 丘位），同时具备计算机视觉分析能力。
+请仔细观察图片中的手掌与掌纹，按下列字段提取结构化描述。
 
 重要说明：
 - 按照要求的 JSON Schema 精确输出，不得增删字段
-- 每个字段给出简短的中文描述（5-20字）
+- 每个字段给出简短的中文描述（5-20字），尽量使用：生命线、智慧线、感情线、事业线、金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘、指节等术语
+- mounts 字段请点名可见丘位（如「金星丘丰、月丘平」），不要空泛形容词堆砌
 - 如某部位在图片中不清晰，标注值为 "unclear"
 - 绝对不要包含对用户外貌的主观美丑评价
 - 不要做命运断语，只描述可见特征`

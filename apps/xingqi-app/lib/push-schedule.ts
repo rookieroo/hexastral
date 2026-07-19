@@ -3,12 +3,16 @@
  * - monthly re-capture reminder
  * - event-window notes from the active event table
  *
- * Uses expo-notifications when installed; no-ops otherwise.
+ * Server cron (svc-notify) is primary; local is fallback when register fails.
+ * Respects lib/push-preference.ts.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+import { getXingqiPushPrefs } from './push-preference'
+
 const SCHEDULED_KEY = 'xingqi_push_scheduled_v1'
+const SERVER_ACTIVE_KEY = 'xingqi_server_push_active_v1'
 
 interface ExpoNotificationsLike {
   requestPermissionsAsync: () => Promise<{ status: string }>
@@ -39,6 +43,8 @@ export interface ScheduleFacePushInput {
     theme?: string
     note?: string
   }>
+  /** When true, skip local schedule (server owns delivery). */
+  preferServer?: boolean
 }
 
 function copy(locale: string) {
@@ -52,9 +58,53 @@ function copy(locale: string) {
   }
 }
 
-/** Schedule local reminders after a successful Pro reading. */
+export async function isXingqiPushEnabled(): Promise<boolean> {
+  const prefs = await getXingqiPushPrefs()
+  return prefs.remindersOn
+}
+
+export async function setXingqiServerPushActive(active: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SERVER_ACTIVE_KEY, active ? '1' : '0')
+  } catch {
+    // best-effort
+  }
+}
+
+export async function isXingqiServerPushActive(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(SERVER_ACTIVE_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Cancel all local scheduled notifications. */
+export async function cancelXingqiPush(): Promise<void> {
+  const Notifications = loadNotifications()
+  if (!Notifications) return
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync()
+    await AsyncStorage.removeItem(SCHEDULED_KEY)
+  } catch {
+    // best-effort
+  }
+}
+
+/** Schedule local reminders after a successful Pro reading (or Settings sync). */
 export async function scheduleXingqiPush(input: ScheduleFacePushInput): Promise<void> {
   if (!input.isPro) return
+  const prefs = await getXingqiPushPrefs()
+  if (!prefs.remindersOn) {
+    await cancelXingqiPush()
+    return
+  }
+  if (input.preferServer || (await isXingqiServerPushActive())) {
+    // Server primary — keep local empty so we don't double-fire.
+    await cancelXingqiPush()
+    return
+  }
+
   const Notifications = loadNotifications()
   if (!Notifications) return
 
@@ -67,27 +117,34 @@ export async function scheduleXingqiPush(input: ScheduleFacePushInput): Promise<
   await Notifications.cancelAllScheduledNotificationsAsync()
   const c = copy(input.locale)
 
-  // ~25 days from now — monthly re-capture nudge
-  const recaptureAt = new Date(Date.now() + 25 * 24 * 60 * 60 * 1000)
-  await Notifications.scheduleNotificationAsync({
-    content: { title: c.recaptureTitle, body: c.recaptureBody, data: { kind: 'recapture' } },
-    trigger: { type: 'date', date: recaptureAt },
-  })
-
-  for (const ev of input.events.slice(0, 8)) {
-    if (!ev.startMonth || !/^\d{4}-\d{2}$/.test(ev.startMonth)) continue
-    const [y, m] = ev.startMonth.split('-').map((n) => Number(n))
-    if (!y || !m) continue
-    const when = new Date(Date.UTC(y, m - 1, 1, 10, 0, 0))
-    if (when.getTime() <= Date.now()) continue
+  if (prefs.recaptureOn) {
+    const recaptureAt = new Date(Date.now() + 25 * 24 * 60 * 60 * 1000)
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: c.eventTitle,
-        body: `${ev.theme ?? ''}${ev.note ? ` — ${ev.note}` : ''}`.trim(),
-        data: { kind: 'event', startMonth: ev.startMonth },
+        title: c.recaptureTitle,
+        body: c.recaptureBody,
+        data: { kind: 'recapture' },
       },
-      trigger: { type: 'date', date: when },
+      trigger: { type: 'date', date: recaptureAt },
     })
+  }
+
+  if (prefs.eventsOn) {
+    for (const ev of input.events.slice(0, 8)) {
+      if (!ev.startMonth || !/^\d{4}-\d{2}$/.test(ev.startMonth)) continue
+      const [y, m] = ev.startMonth.split('-').map((n) => Number(n))
+      if (!y || !m) continue
+      const when = new Date(y, m - 1, 1, 10, 0, 0)
+      if (when.getTime() <= Date.now()) continue
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: c.eventTitle,
+          body: `${ev.theme ?? ''}${ev.note ? ` — ${ev.note}` : ''}`.trim(),
+          data: { kind: 'event', startMonth: ev.startMonth },
+        },
+        trigger: { type: 'date', date: when },
+      })
+    }
   }
 
   await AsyncStorage.setItem(SCHEDULED_KEY, new Date().toISOString())
