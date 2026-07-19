@@ -41,4 +41,14 @@ export {
   type LlmRouterEnv,
   type RoutingTier,
   stripThinking,
+  type WorkersAiBinding,
 } from './router'
+
+export {
+  callVisionStructuredWithFallback,
+  type VisionRouterEnv,
+  type VisionStructuredOptions,
+  type VisionStructuredResult,
+  VLM_CASCADE_ID,
+  VLM_MODELS,
+} from './vision-router'

@@ -93,12 +93,47 @@ function chaptersForInk(relation: InkRelation, locale: string): string {
     .join(' · ')
 }
 
+function SectionLabel({
+  children,
+  colors,
+  cjk,
+  top,
+}: {
+  children: string
+  colors: { dim: string }
+  cjk: boolean
+  top?: number
+}) {
+  return (
+    <Text
+      style={{
+        fontFamily: 'IBMPlexMono',
+        color: colors.dim,
+        fontSize: 11,
+        letterSpacing: cjk ? 0.8 : 1.4,
+        textTransform: 'uppercase',
+        marginTop: top ?? 0,
+        marginBottom: 10,
+      }}
+    >
+      {children}
+    </Text>
+  )
+}
+
 export default function XingqiGlossaryScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const cjk = isCjkZh(locale)
+  const s = (hans: string, hant: string, en: string) => (cjk ? pickZh(locale, hans, hant) : en)
+
+  const titleSize = cjk ? 26 : 28
+  const introSize = cjk ? 14 : 15
+  const chapterTitleSize = cjk ? 17 : 16
+  const metaSize = cjk ? 12 : 11
+  const bodySize = cjk ? 14 : 13
+  const bodyLine = cjk ? 22 : 19
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -111,77 +146,123 @@ export default function XingqiGlossaryScreen() {
       />
       <ScrollView
         contentContainerStyle={{
-          padding: spacing.xl,
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.lg,
           paddingBottom: insets.bottom + spacing.xl,
-          gap: spacing.lg,
         }}
         directionalLockEnabled
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
+        <Text
+          style={{
+            fontFamily: 'CrimsonPro',
+            color: colors.text,
+            fontSize: titleSize,
+            fontWeight: '600',
+            marginBottom: spacing.sm,
+          }}
+        >
           {s('符号说明', '符號說明', 'Symbol glossary')}
         </Text>
-        <Text style={{ color: colors.secondary, lineHeight: 22 }}>
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: introSize,
+            lineHeight: cjk ? 22 : 22,
+            marginBottom: spacing.xl,
+          }}
+        >
           {s(
-            '报告里有两套视觉语言：① 象形印（甲骨/金文，标章节）；② 墨象四态（聚/对/照/流，中间大图）。印很小，贴在一角。从左边缘右滑返回；中间纵向滚动不会误触返回。',
-            '報告裡有兩套視覺語言：① 象形印（甲骨／金文，標章節）；② 墨象四態（聚／對／照／流，中間大圖）。印很小，貼在一角。從左邊緣右滑返回；中間縱向滾動不會誤觸返回。',
-            'Two visual languages: (1) pictograph seals mark the chapter; (2) ink modes are the large plate. Swipe back from the left edge; scrolling in the middle won’t dismiss.'
+            '报告里有两套视觉语言：① 象形印（甲骨/金文，标章节）；② 墨象四态（聚/对/照/流，中间大图）。印很小，贴在一角。从左边缘右滑返回。',
+            '報告裡有兩套視覺語言：① 象形印（甲骨／金文，標章節）；② 墨象四態（聚／對／照／流，中間大圖）。印很小，貼在一角。從左邊緣右滑返回。',
+            'Two visual languages: (1) pictograph seals mark the chapter; (2) ink modes are the large plate. Swipe back from the left edge.'
           )}
         </Text>
 
+        <SectionLabel colors={colors} cjk={cjk}>
+          {s('① 章节 · 印 · 墨 · 用语', '① 章節 · 印 · 墨 · 用語', '1 · Chapter · seal · ink · vocab')}
+        </SectionLabel>
         <Text
           style={{
-            fontFamily: 'IBMPlexMono',
-            color: colors.dim,
-            fontSize: 11,
-            letterSpacing: 1.4,
-            textTransform: 'uppercase',
+            color: colors.secondary,
+            fontSize: bodySize,
+            lineHeight: bodyLine,
+            marginBottom: spacing.lg,
           }}
         >
-          {s('① 章节 · 印 · 墨 · 用语', '① 章節 · 印 · 墨 · 用語', '1 · Chapter · seal · ink · vocab')}
-        </Text>
-        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
           {s(
             'V1 锁定一派：面=三停·五岳·十二宫·五官；掌=主纹+丘位；命=日主用神通关。每章对应一印、一墨态、一套宜用语。',
             'V1 鎖定一派：面＝三停·五岳·十二宮·五官；掌＝主紋＋丘位；命＝日主用神通關。每章對應一印、一墨態、一套宜用語。',
             'V1 lock: face = three courts / five peaks / twelve palaces; palm = lines + mounts; natal = day master / yongshen. Each chapter maps to one seal, one ink mode, and preferred vocab.'
           )}
         </Text>
-        {XINGQI_CHAPTER_CANON.map((c) => {
-          const ink = INK_LABEL[c.ink]
-          return (
-            <View key={c.kind} style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
-              <AncientSeal glyph={c.glyph} size={40} tile={colors.text} ink={colors.bg} />
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ color: colors.text, fontSize: 16 }}>
-                  {chapterTitle(c.kind, locale)}
-                  <Text style={{ fontFamily: 'IBMPlexMono', fontSize: 11, color: colors.dim }}>
-                    {'  '}
+
+        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.xl }}>
+          {XINGQI_CHAPTER_CANON.map((c) => {
+            const ink = INK_LABEL[c.ink]
+            return (
+              <View
+                key={c.kind}
+                style={{
+                  flexDirection: 'row',
+                  gap: 14,
+                  alignItems: 'flex-start',
+                  paddingVertical: spacing.md,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: colors.separator,
+                }}
+              >
+                <AncientSeal glyph={c.glyph} size={40} tile={colors.text} ink={colors.bg} />
+                <View style={{ flex: 1, gap: spacing.xs }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: chapterTitleSize,
+                      fontWeight: '600',
+                      lineHeight: chapterTitleSize + 4,
+                    }}
+                  >
+                    {chapterTitle(c.kind, locale)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: metaSize,
+                      color: colors.dim,
+                      lineHeight: metaSize + 4,
+                    }}
+                  >
                     {s(c.sealBlurbZh, SEAL_BLURB_HANT[c.kind] ?? c.sealBlurbZh, c.sealBlurbEn)}
                     {' · '}
                     {s(ink.zh, ink.zhHant, ink.en)}
                   </Text>
-                </Text>
-                <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
-                  {s(c.vocabZh, VOCAB_HANT[c.kind] ?? c.vocabZh, c.vocabEn)}
-                </Text>
+                  <Text
+                    style={{
+                      color: colors.secondary,
+                      fontSize: bodySize,
+                      lineHeight: bodyLine,
+                      marginTop: 2,
+                    }}
+                  >
+                    {s(c.vocabZh, VOCAB_HANT[c.kind] ?? c.vocabZh, c.vocabEn)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          )
-        })}
+            )
+          })}
+        </View>
 
+        <SectionLabel colors={colors} cjk={cjk} top={spacing.sm}>
+          {s('② 墨象四态', '② 墨象四態', '2 · Ink modes')}
+        </SectionLabel>
         <Text
           style={{
-            fontFamily: 'IBMPlexMono',
-            color: colors.dim,
-            fontSize: 11,
-            letterSpacing: 1.4,
-            textTransform: 'uppercase',
-            marginTop: spacing.md,
+            color: colors.secondary,
+            fontSize: bodySize,
+            lineHeight: bodyLine,
+            marginBottom: spacing.lg,
           }}
         >
-          {s('② 墨象四态', '② 墨象四態', '2 · Ink modes')}
-        </Text>
-        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
           {s(
             '中间满幅宣纸上的墨象（无嵌套椭圆框）。聚/对/照/流是笔触构图。',
             '中間滿幅宣紙上的墨象（無嵌套橢圓框）。聚／對／照／流是筆觸構圖。',
@@ -190,18 +271,38 @@ export default function XingqiGlossaryScreen() {
         </Text>
 
         {INK_MODES.map((m) => (
-          <View key={m.relation} style={{ gap: 10 }}>
-            <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 22 }}>
+          <View key={m.relation} style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
+            <Text
+              style={{
+                fontFamily: 'CrimsonPro',
+                color: colors.text,
+                fontSize: cjk ? 24 : 22,
+                fontWeight: '600',
+                lineHeight: cjk ? 32 : 28,
+              }}
+            >
               {s(m.titleZh, m.titleZhHant, m.titleEn)}
-              <Text style={{ fontFamily: 'IBMPlexMono', fontSize: 12, color: colors.dim }}>
-                {'  '}
-                {chaptersForInk(m.relation, locale)}
-              </Text>
             </Text>
-            <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 21 }}>
+            <Text
+              style={{
+                fontFamily: 'IBMPlexMono',
+                fontSize: metaSize,
+                color: colors.dim,
+                lineHeight: metaSize + 4,
+              }}
+            >
+              {chaptersForInk(m.relation, locale)}
+            </Text>
+            <Text
+              style={{
+                color: colors.secondary,
+                fontSize: cjk ? 15 : 14,
+                lineHeight: cjk ? 24 : 21,
+              }}
+            >
               {s(m.bodyZh, m.bodyZhHant, m.bodyEn)}
             </Text>
-            <View style={{ alignSelf: 'stretch' }}>
+            <View style={{ alignSelf: 'stretch', marginTop: spacing.xs }}>
               <InkModePlate
                 relation={m.relation}
                 seed={m.relation.length * 97}

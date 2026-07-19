@@ -56,7 +56,7 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 | Path | Tier / model |
 |---|---|
 | Reading text | CF Workers AI **flagship** via `@zhop/ai-vision` (`callWithFallback`: Kimi → Qwen3 → GLM; non-zh leads Llama) |
-| VLM extract | Gemini `gemini-3.1-pro-preview` |
+| VLM extract | CF **Kimi K2.6** vision primary → Gemini Flash → Llama 3.2 vision (`vlm-cascade-v1`) |
 | Yuun explain / Yuel chapters | Same router, usually **`standard`** (parallel call shape) |
 
 Xingqi keeps flagship for the single monolithic 6-chapter JSON; prompt engineering aligns with svc-astro Route B / guardrails.

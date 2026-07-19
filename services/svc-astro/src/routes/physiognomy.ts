@@ -13,14 +13,6 @@ import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
 
-function requireGeminiKey(env: Env): string {
-  const key = env.GEMINI_API_KEY?.trim()
-  if (!key) {
-    throw new HTTPException(503, { message: 'gemini_api_key_missing' })
-  }
-  return key
-}
-
 function normalizeIncomingBase64(raw: string): string {
   const trimmed = raw.trim()
   const dataUrl = /^data:[^;]+;base64,(.+)$/i.exec(trimmed)
@@ -47,8 +39,8 @@ physiognomyRoutes.post('/analyze', async (c) => {
  * 面相特征结构化提取 — 隐私优先架构
  *
  * 输入: base64 图片
- * 输出: 结构化面相特征 JSON（不含原图）
- * 模型: Gemini 3.1 Pro Vision（无 VLM 备用）
+ * 输出: { features, model }（不含原图）
+ * Cascade: CF Kimi K2.6 → Gemini Flash → Llama 3.2 vision
  */
 physiognomyRoutes.post('/extract-features', async (c) => {
   const input = await c.req.json<{
@@ -60,16 +52,15 @@ physiognomyRoutes.post('/extract-features', async (c) => {
     throw new HTTPException(400, { message: 'imageBase64 is required' })
   }
 
-  const apiKey = requireGeminiKey(c.env)
   const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
   try {
-    const features = await extractFaceFeatures(
-      apiKey,
+    const { features, model } = await extractFaceFeatures(
+      c.env,
       imageBase64,
       input.mimeType ?? 'image/jpeg'
     )
-    return c.json({ features })
+    return c.json({ features, model })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[physiognomy/extract-features]', message.slice(0, 500))
@@ -91,16 +82,15 @@ physiognomyRoutes.post('/extract-palm-features', async (c) => {
     throw new HTTPException(400, { message: 'imageBase64 is required' })
   }
 
-  const apiKey = requireGeminiKey(c.env)
   const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
   try {
-    const features = await extractPalmFeatures(
-      apiKey,
+    const { features, model } = await extractPalmFeatures(
+      c.env,
       imageBase64,
       input.mimeType ?? 'image/jpeg'
     )
-    return c.json({ features })
+    return c.json({ features, model })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[physiognomy/extract-palm-features]', message.slice(0, 500))

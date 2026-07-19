@@ -7,12 +7,11 @@ import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 import type { CapturePart, ReadingDraft } from './reading-draft'
 import { patchReadingDraft } from './reading-draft'
 
-/** Per-photo VLM extract. Fail fast enough for UX; sequential chain ×3 still OK. */
-const EXTRACT_FETCH_TIMEOUT_MS = 75_000
+/** Per-photo VLM extract. Flash path should finish well under this; RN needs a hard abort. */
+const EXTRACT_FETCH_TIMEOUT_MS = 100_000
 
 /**
- * Always emit JPEG base64 ≤1280w. Raw HEIC labeled as image/jpeg hangs Gemini;
- * full-res parallel uploads stall the client at "extracting 5%".
+ * Always emit JPEG base64 ≤1280w. Raw HEIC labeled as image/jpeg hangs Gemini.
  */
 async function readBase64(uri: string): Promise<string> {
   try {
@@ -42,6 +41,14 @@ async function signedJson(
   const signed = await signRequest({ body: requestBody, userId, method, path })
   if (!signed) throw new Error('signin_required')
   const timeoutMs = opts?.timeoutMs
+  // RN-safe abort via AbortController + setTimeout (AbortSignal.timeout is spotty on Hermes).
+  const ctrl = timeoutMs != null ? new AbortController() : null
+  const timer =
+    ctrl && timeoutMs != null
+      ? setTimeout(() => {
+          ctrl.abort()
+        }, timeoutMs)
+      : null
   try {
     return await fetch(`${resolvePortfolioApiUrl()}${path}`, {
       method,
@@ -53,7 +60,7 @@ async function signedJson(
         ...signed,
       },
       ...(body !== undefined ? { body: requestBody } : {}),
-      ...(timeoutMs != null ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
+      ...(ctrl ? { signal: ctrl.signal } : {}),
     })
   } catch (err) {
     const name = err instanceof Error ? err.name : ''
@@ -63,6 +70,8 @@ async function signedJson(
       throw new Error('request_timeout')
     }
     throw err
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }
 

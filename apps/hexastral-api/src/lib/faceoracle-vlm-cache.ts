@@ -2,10 +2,15 @@
  * FaceOracle / Xingqi VLM extract cache — content-addressed feature rows.
  * Stores hash of image bytes only (never the image). Bump SCHEMA_VERSION
  * when the feature JSON contract or extraction prompt changes.
+ *
+ * Hash uses the cascade id (not the concrete winning model) so Gemini / Kimi /
+ * Llama wins for the same pixels share one cache row. The row still records
+ * `extractionModel` = which tier actually produced the JSON.
  */
 
-export const FACEORACLE_VLM_MODEL = 'gemini-3.1-pro-preview'
-export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v1'
+/** Cascade contract id mixed into content-hash (see @zhop/ai-vision VLM_CASCADE_ID). */
+export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v1'
+export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v3'
 
 export type FaceoracleFeatureType = 'face' | 'palm' | 'palm_l' | 'palm_r'
 
@@ -30,8 +35,8 @@ export function decodeImageBase64(imageBase64: string): Uint8Array {
 }
 
 /**
- * contentKey material: SHA-256(rawBytes || type || model || schemaVersion)
- * Digests raw image bytes, then mixes type/model/schema into a second digest
+ * contentKey material: SHA-256(rawBytes || type || cascadeId || schemaVersion)
+ * Digests raw image bytes, then mixes type/cascade/schema into a second digest
  * so the same pixels with a different extract contract never collide.
  */
 export async function computeFaceoracleVlmContentHash(opts: {

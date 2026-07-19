@@ -115,6 +115,7 @@ async function lookupCachedFeature(
     .select({
       id: userPhysiognomyFeatures.id,
       featuresJson: userPhysiognomyFeatures.featuresJson,
+      extractionModel: userPhysiognomyFeatures.extractionModel,
     })
     .from(userPhysiognomyFeatures)
     .where(
@@ -122,7 +123,6 @@ async function lookupCachedFeature(
         eq(userPhysiognomyFeatures.userId, opts.userId),
         eq(userPhysiognomyFeatures.type, opts.type),
         eq(userPhysiognomyFeatures.contentHash, opts.contentHash),
-        eq(userPhysiognomyFeatures.extractionModel, FACEORACLE_VLM_MODEL),
         eq(userPhysiognomyFeatures.schemaVersion, FACEORACLE_VLM_SCHEMA_VERSION)
       )
     )
@@ -191,6 +191,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
           imageDeleted: true,
           features,
           cached: true,
+          model: cached.extractionModel,
         })
       }
       // Stale thin / mismatched cache — drop so a retake can re-extract.
@@ -215,9 +216,9 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       }
     }
 
-    let data: { features: Record<string, string> }
+    let data: { features: Record<string, string>; model?: string }
     try {
-      data = await astroClient.postVision<{ features: Record<string, string> }>(
+      data = await astroClient.postVision<{ features: Record<string, string>; model?: string }>(
         c.env.SVC_ASTRO,
         extractionPathFor(input.type),
         { imageBase64: input.imageBase64, mimeType: input.mimeType }
@@ -228,6 +229,8 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       throw new HTTPException(502, { message: msg })
     }
     const features = data.features
+    const winningModel =
+      typeof data.model === 'string' && data.model.length > 0 ? data.model : FACEORACLE_VLM_MODEL
     assertFeatureQuality(input.type, features)
 
     const featureId = nanoid()
@@ -239,7 +242,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
         type: input.type,
         featuresJson: JSON.stringify(features),
         vlmNarrative: features.overallAssessment ?? null,
-        extractionModel: FACEORACLE_VLM_MODEL,
+        extractionModel: winningModel,
         contentHash,
         schemaVersion: FACEORACLE_VLM_SCHEMA_VERSION,
         imageDeleted: true,
@@ -273,6 +276,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
           imageDeleted: true,
           features: racedFeatures,
           cached: true,
+          model: raced.extractionModel,
         })
       }
       throw err
@@ -283,6 +287,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       userId: input.userId,
       type: input.type,
       featureId,
+      model: winningModel,
     })
 
     return c.json({
@@ -291,6 +296,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       imageDeleted: true,
       features,
       cached: false,
+      model: winningModel,
     })
   })
 

@@ -9,12 +9,13 @@
  * 输出: 面相/手相解读
  */
 
-import { callGeminiVision, callGeminiVisionStructured } from '@zhop/ai-vision'
+import { callGeminiVision, callVisionStructuredWithFallback } from '@zhop/ai-vision'
 import { buildAgeLanguageBlock } from '../lib/age'
 import { type AiRouterEnv, callWithFallback } from '../lib/ai-router'
 import { extractJson } from '../lib/extract-json'
 import { buildLanguageBlock } from '../lib/i18n-prompt'
 import { buildEnhancedGuardrails } from '../lib/prompts/guardrails'
+import type { Env } from '../types'
 
 /** 相术类型 */
 export type PhysiognomyType = 'face' | 'palm'
@@ -108,29 +109,28 @@ const FACE_FEATURES_SCHEMA = {
 }
 
 /**
- * 面相特征结构化提取
- *
- * 使用 Gemini 3.1 Pro Vision + responseSchema 约束输出，
- * 返回结构化的面相特征 JSON，供后续合参报告复用。
- * 不存原图，只存特征向量。
- *
- * ⚠️ DeepSeek 无 VLM 能力，此步骤无文本备用。
- *    若 Gemini Vision 故障，向上抛出错误，hexastral-api 层处理。
+ * 面相特征结构化提取 — Kimi CF vision 首选，Gemini / Llama 兜底。
+ * 不存原图，只存特征向量（ADR-0028）。
  */
 export async function extractFaceFeatures(
-  apiKey: string,
+  env: Env,
   imageBase64: string,
   mimeType = 'image/jpeg'
-): Promise<FaceFeatures> {
-  return callGeminiVisionStructured<FaceFeatures>(apiKey, {
-    systemPrompt: FACE_FEATURES_SYSTEM_PROMPT,
-    userPrompt: '请按要求提取面相特征，只输出 JSON，不要任何额外文字。',
-    images: [{ base64: imageBase64, mimeType }],
-    responseSchema: FACE_FEATURES_SCHEMA,
-    maxOutputTokens: 2048,
-    temperature: 0.2,
-    thinkingLevel: 'MINIMAL',
-  })
+): Promise<{ features: FaceFeatures; model: string }> {
+  const result = await callVisionStructuredWithFallback<FaceFeatures>(
+    { AI: env.AI, GEMINI_API_KEY: env.GEMINI_API_KEY },
+    {
+      systemPrompt: FACE_FEATURES_SYSTEM_PROMPT,
+      userPrompt: '请按要求提取面相特征，只输出 JSON，不要任何额外文字。',
+      images: [{ base64: imageBase64, mimeType }],
+      responseSchema: FACE_FEATURES_SCHEMA as Record<string, unknown>,
+      temperature: 0.2,
+      maxOutputTokens: 1024,
+      geminiThinkingLevel: 'MINIMAL',
+      metricLabel: 'physiognomy_face_extract',
+    }
+  )
+  return { features: result.data, model: result.model }
 }
 
 /** Structured palm features — Xingqi canonical palm stack (主纹 + 丘位 mounts). */
@@ -193,19 +193,24 @@ const PALM_FEATURES_SCHEMA = {
 }
 
 export async function extractPalmFeatures(
-  apiKey: string,
+  env: Env,
   imageBase64: string,
   mimeType = 'image/jpeg'
-): Promise<PalmFeatures> {
-  return callGeminiVisionStructured<PalmFeatures>(apiKey, {
-    systemPrompt: PALM_FEATURES_SYSTEM_PROMPT,
-    userPrompt: '请按要求提取手相特征，只输出 JSON，不要任何额外文字。',
-    images: [{ base64: imageBase64, mimeType }],
-    responseSchema: PALM_FEATURES_SCHEMA,
-    maxOutputTokens: 2048,
-    temperature: 0.2,
-    thinkingLevel: 'MINIMAL',
-  })
+): Promise<{ features: PalmFeatures; model: string }> {
+  const result = await callVisionStructuredWithFallback<PalmFeatures>(
+    { AI: env.AI, GEMINI_API_KEY: env.GEMINI_API_KEY },
+    {
+      systemPrompt: PALM_FEATURES_SYSTEM_PROMPT,
+      userPrompt: '请按要求提取手相特征，只输出 JSON，不要任何额外文字。',
+      images: [{ base64: imageBase64, mimeType }],
+      responseSchema: PALM_FEATURES_SCHEMA as Record<string, unknown>,
+      temperature: 0.2,
+      maxOutputTokens: 1024,
+      geminiThinkingLevel: 'MINIMAL',
+      metricLabel: 'physiognomy_palm_extract',
+    }
+  )
+  return { features: result.data, model: result.model }
 }
 
 /** VLM 描述结果 */
