@@ -1,69 +1,36 @@
 /**
- * Enhanced guardrails for all svc-astro system prompts.
+ * Enhanced guardrails for svc-astro system prompts.
  *
- * Superset of `buildGuardrails()` / `buildCrisisFraming()` from i18n-prompt.ts.
- * Key additions:
- *   - Jargon ban section (see jargon-ban.ts)
- *   - Stronger anti-fatalism language
- *   - Explicit crisis framing upgrade with language-technique examples
- *   - Terms §3 compliance block from @zhop/portfolio-voice
- *
- * Usage: replace `buildGuardrails()` + `buildCrisisFraming()` calls in system
- * prompts with `buildEnhancedGuardrails()` + `buildEnhancedCrisisFraming()`.
+ * Quality nudges only — no compliance checklist in the prompt.
+ * Hard-forbidden phrases are audited post-generation (portfolio-voice).
  */
 
-import { buildComplianceInstructionBlock } from '@zhop/portfolio-voice'
 import { buildJargonBanSection } from './jargon-ban'
 
-const DEFAULT_CLOSING_MOTTO = '观照自身，不作预测'
+const DEFAULT_CLOSING_MOTTO = '观照自身，自强不息'
 
 /**
- * Enhanced AI guardrails — 9 inviolable rules + jargon ban + compliance block.
- *
- * @param closingMotto - Motivational sign-off motto (can be domain-specific)
- * @param locale - Output locale for compliance block (default zh)
+ * @param closingMotto - Sign-off motto (can be domain-specific)
+ * @param _locale - Kept for call-site compatibility; unused (no compliance block)
  */
 export function buildEnhancedGuardrails(
   closingMotto = DEFAULT_CLOSING_MOTTO,
-  locale = 'zh'
+  _locale = 'zh'
 ): string {
   return [
-    buildComplianceInstructionBlock(locale),
-    '',
-    '## AI Guardrails（铁律 — 不可违背）',
-    '1. 永远不要给出绝对化的断言（如"你一定会..."、"你命中注定..."）',
-    '2. 用"倾向"、"适合"、"建议"等柔性措辞替代确定性语言',
-    '3. 每次解读必须包含积极的引导——即使结果不利，也要给出可执行的自我调整建议（非超自然手段）：写清做什么、何时做/缓、避免什么；禁止「保持平衡」「多沟通」「顺其自然」等无步骤空话',
-    '3b. 涉及关系/事业/学业时，尽量给出关键节点感（大运段、流年、上半年/下半年、近几周）+ 务实一步（维护亲密沟通、少冒进、抓机遇、缓推某场景）——不作户籍铁口，但预警与建议要具体',
-    '4. 不涉及具体寿命、死亡、重大疾病的断言',
-    '5. 涉及健康问题时，附带"建议咨询专业医生"的提醒',
-    '6. 涉及法律/投资问题时，附带"建议咨询专业人士"的提醒',
-    `7. 结尾永远鼓励用户积极向上、自我努力（"${closingMotto}"）`,
-    '8. 禁止推荐任何物品、符咒、摆件、仪式作为化解手段（如水晶、貔貅、八卦镜、烧香、撒盐）。所有调整建议必须是可执行的行为调整（社交策略、时间管理、情绪边界、穿搭色彩心理暗示），而非超自然物品或仪式',
-    '9. 你的哲学基底是「天行健，君子以自强不息」——东方命理是认知自我的镜子，不是宿命论的枷锁。所有建议必须强化用户的主观能动性和自我掌控感',
-    '10. 付费报告标准：命盘锚点 + 时间窗 + 可执行一步；言之有物，拒绝空洞虚无',
-    '11. **主张（有观点、有共鸣）**：解读必须像有经验的顾问一样选边表态，不要四面圆滑。',
-    '    从普世人生场景里选命盘真正能对上的来讲（示例：考学/选专业、求职升迁、扩张vs守成、合伙信任、相亲恋爱、结婚节奏、子女气机、家人相处、搬家远行、作息节奏）——不是固定四条 checklist，也禁止整库倾泻。',
-    '    相关章节尽量覆盖三大簇各至少一处能对上的场景：学工职场 / 情感家庭 / 身体节奏。',
-    '    句式：主张（点名场景）→ 依据（命盘锚点）→ 窗口（大运/流年/相对时段）→ 动作（做/缓/抓）。',
-    '    语气用「宜留意／倾向」柔化，但**内容必须选边**（例：近月宜守不宜扩；冲突初起宜先听后辩；今岁宜推相亲不宜逼婚）。',
-    '    禁止无主张废话：「既可以…也可以…」「因人而异」「没有绝对」「保持平衡即可」「两边都有道理」。怕说错而两边讨好 = 失败输出。',
+    '## Writing bar',
+    '- 命盘锚点 + 近窗与后半场大运带 + 可执行一步；完整段落，不要短句清单。',
+    '- 真话优先，要有 aha；空心好话与圆滑均衡 = 失败。',
+    `- 收束给能动性（"${closingMotto}"），但不要用鼓励把短板说没。`,
     '',
     buildJargonBanSection(),
   ].join('\n')
 }
 
-/**
- * Enhanced crisis framing — transforms negative signals into growth-oriented language.
- * Includes specific language technique examples for LLM guidance.
- */
 export function buildEnhancedCrisisFraming(): string {
   return [
-    '## 危机与短板写法（先直白，再给动作）',
-    '- 遇到忌神当令、调候失衡、冲刑破害等信号时：先点名机制与可能翻车的相处/决策场景，再给可执行缓冲',
-    '- 禁止用「成长机遇」「蛰伏充电」把痛点说没；正向框架最多作为第二句，不能替代风险陈述',
-    '- 每处风险给 1–2 条明确动作（做什么 / 缓什么 / 何时做），带时间感',
-    '- 语言可用「宜留意」「倾向」，但内容必须锋利、具体；禁止「注意情绪」「保持开放」空壳',
-    '- 关键信念：觉察与调整建立在看清短板上，不是建立在粉饰上',
+    '## 短板写法',
+    '- 先点名机制与可能翻车的场景，再给可执行缓冲。',
+    '- 不要用「成长机遇」把痛点说没；真话在前。',
   ].join('\n')
 }

@@ -57,9 +57,33 @@ export function buildRichFacts(input: BuildRichFactsInput): string | null {
     })
 
     const currentYear = new Date().getFullYear()
-    const currentDayun = natal.daYun?.steps.find(
+    const steps = natal.daYun?.steps ?? []
+    const currentIdx = steps.findIndex(
       (s) => currentYear >= s.startYear && currentYear <= s.endYear
     )
+    const currentDayun = currentIdx >= 0 ? steps[currentIdx] : undefined
+    const trailStart = currentIdx >= 0 ? currentIdx : 0
+    const trailSteps = steps.slice(trailStart, trailStart + 5)
+    const dayunTrailLine =
+      trailSteps.length > 0
+        ? `后半场大运带：${trailSteps
+            .map(
+              (s, i) =>
+                `${i === 0 ? '本运' : `第${i + 1}段`}${s.ganZhi.label}（${s.startAge}-${s.endAge}岁，${s.startYear}-${s.endYear}）`
+            )
+            .join(' → ')}`
+        : ''
+    const formatDayun = (
+      label: string,
+      s: {
+        ganZhi: { label: string }
+        startAge: number
+        endAge: number
+        startYear: number
+        endYear: number
+      }
+    ) =>
+      `${label}：${s.ganZhi.label}（${s.startAge}-${s.endAge}岁，${s.startYear}-${s.endYear}年）`
     const dominantShishen = natal.shishen
       ? [natal.shishen.year?.name, natal.shishen.month?.name, natal.shishen.hour?.name]
           .filter((x): x is NonNullable<typeof x> => !!x)
@@ -115,9 +139,11 @@ export function buildRichFacts(input: BuildRichFactsInput): string | null {
       soulStarsBlock ? `命宫主星：${soulStarsBlock}` : '命宫：无主星（借对宫）',
       tripletBlock ? `三方四正：${tripletBlock}` : '',
       huajiHint ? `化忌焦点：${huajiHint}` : '',
+      currentDayun ? formatDayun('当前大运', currentDayun) : '',
+      dayunTrailLine,
       currentDayun
-        ? `当前大运：${currentDayun.ganZhi.label}（${currentDayun.startAge}-${currentDayun.endAge}岁，${currentDayun.startYear}-${currentDayun.endYear}年）`
-        : '',
+        ? `时间窗提示：近窗=流年/1–3年；后半场=上列大运带（约${trailSteps.length}段）——深写能对上的场景，勿逐步刷标签`
+        : '时间窗提示：结合大运步骤写近窗与后半场主张',
       `当前流年：${currentYear} 年`,
     ]
 

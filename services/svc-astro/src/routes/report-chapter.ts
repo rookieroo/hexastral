@@ -199,9 +199,8 @@ reportChapterRoutes.post('/chapter', async (c) => {
     const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
       isPro: input.isPro,
       preferFlash: timeBoundSlugs.has(input.slug),
-      // Trimmed from 2400 → fits a flagship generation inside its per-model timeout
-      // (router PER_MODEL_TIMEOUT_MS) so a slow Kimi falls back instead of 504-ing.
-      maxTokens: 2000,
+      // Enough headroom for 3–5 developed sections (150–260字 each) without truncating AHA prose.
+      maxTokens: 3200,
       // Nudge the re-roll a touch lower so it's steadier on the shape.
       temperature: attempt === 0 ? 0.85 : 0.6,
       thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',

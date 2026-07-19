@@ -14,7 +14,6 @@ import { getFourPillars } from '@zhop/astro-core/ganzhi'
 import {
   auditHardForbiddenHits,
   auditSoftForbiddenHits,
-  buildComplianceInstructionBlock,
   buildForbiddenRewriteSuffix,
 } from '@zhop/portfolio-voice'
 import { and, eq } from 'drizzle-orm'
@@ -295,7 +294,6 @@ async function callReadingAi(
   const systemPrompt = [
     'You are a careful East-Asian physiognomy + BaZi cultural interpreter.',
     'Reply with ONE JSON object only. No markdown fences. No prose outside JSON.',
-    buildComplianceInstructionBlock(locale),
   ].join('\n')
 
   try {
@@ -545,11 +543,34 @@ export async function runFaceoracleReadingJob(
     const nowYear = new Date().getUTCFullYear()
     const dayun = calculateDaYun(dt, gender)
     const currentStep = getDaYunAtYear(dayun, nowYear)
+    const currentIdx = currentStep
+      ? dayun.steps.findIndex((s) => s.index === currentStep.index)
+      : -1
+    const trailStart = currentIdx >= 0 ? currentIdx : 0
+    const trailSteps = dayun.steps.slice(trailStart, trailStart + 5)
+    const dayunTrail = trailSteps
+      .map(
+        (s, i) =>
+          `${i === 0 ? 'cur' : `+${i}`}:${s.ganZhi.label}@${s.startAge}-${s.endAge}y/${s.startYear}-${s.endYear}`
+      )
+      .join('|')
     const liunian = getLiuNian(nowYear)
     const nextLiunian = getLiuNian(nowYear + 1)
+    const formatStep = (
+      prefix: string,
+      s: {
+        ganZhi: { label: string }
+        startAge: number
+        endAge: number
+        startYear: number
+        endYear: number
+      }
+    ) =>
+      `${prefix}=${s.ganZhi.label} ages=${s.startAge}-${s.endAge} years=${s.startYear}-${s.endYear}`
     const dayunLine = currentStep
-      ? `currentDaYun=${currentStep.ganZhi.label} ages=${currentStep.startAge}-${currentStep.endAge} years=${currentStep.startYear}-${currentStep.endYear}`
+      ? formatStep('currentDaYun', currentStep)
       : `dayunStartAge=${dayun.startAge.rounded}`
+    const remainYears = currentStep ? Math.max(0, currentStep.endYear - nowYear) : null
     natalSummary = [
       `solar=${job.solarDate}`,
       `timeIndex=${job.timeIndex}`,
@@ -558,9 +579,14 @@ export async function runFaceoracleReadingJob(
       `pillars=${JSON.stringify(pillars)}`,
       `dayunDirection=${dayun.direction}`,
       dayunLine,
+      dayunTrail ? `dayunTrail=${dayunTrail}` : '',
+      remainYears !== null ? `currentDaYunRemainYears≈${remainYears}` : '',
+      `lifeHorizonHint=near window (liuNian/1-3y) + 后半场大运带 via dayunTrail; deepen 2-4 scenes across segments`,
       `liuNian=${nowYear}:${liunian.label}`,
       `nextLiuNian=${nowYear + 1}:${nextLiunian.label}`,
-    ].join('; ')
+    ]
+      .filter(Boolean)
+      .join('; ')
     natalFacts = {
       solarDate: job.solarDate,
       gender: job.gender,
@@ -570,6 +596,7 @@ export async function runFaceoracleReadingJob(
       dayunYears: currentStep
         ? `${currentStep.startYear}-${currentStep.endYear}`
         : '',
+      dayunTrail,
       liuNian: `${nowYear} ${liunian.label}`,
       nextLiuNian: `${nowYear + 1} ${nextLiunian.label}`,
     }
@@ -676,14 +703,11 @@ export async function runFaceoracleReadingJob(
     const densityPrompt = [
       promptTemplate,
       '',
-      'DENSITY RETRY: Previous draft failed floors:',
+      'DENSITY RETRY: Previous draft was too thin or missing structure:',
       densityGaps.join(', '),
-      'Rewrite the ENTIRE JSON. Require face≥3 citations, palms≥3 (incl. 生命线 + 感情/婚姻线), natal≥2,',
-      'events≥3 covering axis career+love+health, advice actions for all three axes,',
-      'and NO career-monoculture (love + health must be as concrete as career).',
-      'Require matched life scenes in period+advice: ≥1 from 学工职场, ≥1 from 情感家庭, ≥1 from 身体节奏.',
-      'Pick scenes that THIS chart+form hits (考学/相亲/结婚节奏/工作/扩张…); ban checklist dump and hedge endings.',
-      'Keep 警示/预告 voice. Output ONLY valid JSON.',
+      'Rewrite the ENTIRE JSON with fuller chapter essays per Six chapters craft (overview/face/palms/natal/period/advice volumes).',
+      'Use dayunTrail for 后半场大运带 + near window; deepen 2–4 scenes; keep events≥3 and face/palms citations.',
+      'Do not spray checklist keywords. Output ONLY valid JSON.',
     ].join('\n')
     const densRetry = await callReadingAi(env, densityPrompt, job.locale)
     if (densRetry.parsed) {
