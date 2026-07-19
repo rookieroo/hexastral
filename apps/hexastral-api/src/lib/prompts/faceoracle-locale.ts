@@ -60,6 +60,10 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
         ? '使用繁體中文（台灣/港澳用字），不要輸出簡體字。'
         : '使用简体中文，不要夹杂英文整句。',
       '术语可用原词；正文必须是完整句子，禁止只有标签或口号。',
+      '语气：警示与预告——「形上可见…，气机上宜留意…（窗口）」。不作命运断语。',
+      '负面窗口用「节奏 / 内修参考」包装，但仍须点名具体位点与日期；禁止空泛鸡汤替代 citations。',
+      '健康轴：非医疗诊断；可谈气色与起居节奏；必要时一句宜咨询专业医师。',
+      '事业 / 爱情 / 健康三轴必须在 events 与 advice 中各至少出现一次。',
       '只输出纯 JSON。',
     ].join('\n')
   }
@@ -85,8 +89,12 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
     '',
     '### Tone',
     code === 'ja'
-      ? '落ち着いた観察調。断定運勢を避け、「留意」「気の流れ」で語る。'
-      : 'Calm observational study tone. Prefer “worth noting” / qi-flow framing; never guaranteed fate.',
+      ? '警告・予告の観察調。「形に見える…、気の流れでは留意…」。断定運勢を避ける。具体的な宮位・線・日付は残す。空虚な励ましで代替しない。'
+      : 'Warning + foreshadowing study tone. Pattern: “form shows…; qi-flow worth noting… (window).” Never guaranteed fate. Keep named loci and dated windows — do not replace them with empty pep talk.',
+    code === 'ja'
+      ? '健康軸は医療診断ではない。气色・生活リズムのみ。必要なら専門医への相談を一行。'
+      : 'Health axis is non-medical: complexion and pacing only; optionally one line to consult a clinician.',
+    'Glossary: after first “romanization (汉字) — gloss”, reuse the romanization or English gloss — do not repeat messy bilingual half-terms.',
     '',
     'Output pure JSON only.',
   ].join('\n')

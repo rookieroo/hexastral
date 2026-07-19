@@ -10,11 +10,12 @@ import { ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
 import { getXingqiGlossaryGroups } from '@/lib/xingqi-terms'
 
 function toTermLocale(locale: string): TermLocale {
-  if (locale === 'zh-Hant' || locale === 'zh-TW' || locale === 'zh-HK') return 'zh-Hant'
-  if (locale.startsWith('zh')) return 'zh'
+  if (isZhHant(locale)) return 'zh-Hant'
+  if (isCjkZh(locale)) return 'zh'
   if (locale.startsWith('ja')) return 'ja'
   return 'en'
 }
@@ -23,7 +24,8 @@ export default function XingqiTermsScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const groups = useMemo(() => getXingqiGlossaryGroups(toTermLocale(locale)), [locale])
 
   return (
@@ -45,12 +47,14 @@ export default function XingqiTermsScreen() {
         directionalLockEnabled
       >
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
-          {zh ? '术语表' : 'Terms'}
+          {s('术语表', '術語表', 'Terms')}
         </Text>
         <Text style={{ color: colors.secondary, lineHeight: 22 }}>
-          {zh
-            ? '只收录形气报告里常见、且模型被引导使用的词：形气相术、五行气机、命盘对照、时间窗口。正文虚线可点按同一释义。'
-            : 'Only terms the reading is steered to use: physiognomy, wuxing, natal contrast, time windows. Dotted prose opens the same glosses.'}
+          {s(
+            '只收录形气报告里常见、且模型被引导使用的词：形气相术、五行气机、命盘对照、时间窗口。正文虚线可点按同一释义。',
+            '只收錄形氣報告裡常見、且模型被引導使用的詞：形氣相術、五行氣機、命盤對照、時間窗口。正文虛線可點按同一釋義。',
+            'Only terms the reading is steered to use: physiognomy, wuxing, natal contrast, time windows. Dotted prose opens the same glosses.'
+          )}
         </Text>
         {groups.map((g) => (
           <View key={g.id} style={{ gap: spacing.sm }}>
@@ -63,7 +67,7 @@ export default function XingqiTermsScreen() {
                 textTransform: 'uppercase',
               }}
             >
-              {zh ? g.labelZh : g.labelEn}
+              {isCjkZh(locale) ? g.labelZh : g.labelEn}
             </Text>
             {g.terms.map((t) => (
               <View key={t.id} style={{ gap: 4, marginBottom: spacing.sm }}>

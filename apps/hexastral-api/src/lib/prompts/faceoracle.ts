@@ -5,10 +5,13 @@
  *   Face  三停·五岳·十二宫·五官·气色骨肉
  *   Palm  主纹 + 丘位 (mounts)
  *   Natal 日主·用神·通关·五行·大运流年流月
- * Tone: 宜留意 / 气机 — study framing, not fate.
+ * Tone: 警示 / 预告 — “形上可见…，气机上宜留意…” — study framing, not fate.
+ * Compliance: ADR-0003 via @zhop/portfolio-voice (modality only — keep specificity).
  *
  * Locale: Route B via faceoracle-locale (Yuun/Yuel parity).
  */
+
+import { buildComplianceInstructionBlock } from '@zhop/portfolio-voice'
 
 import { buildFaceoracleLanguageBlock } from './faceoracle-locale'
 
@@ -21,6 +24,8 @@ export type FaceOracleChapterKind =
   | 'natal'
   | 'period'
   | 'advice'
+
+export type FaceOracleLifeAxis = 'career' | 'love' | 'health'
 
 export interface FaceOraclePromptParams {
   faceFeatures: string
@@ -39,8 +44,38 @@ const SCHOOL_LOCK = [
   'Face = 三停 / 五岳 / 十二宫 / 五官 / 气色骨肉.',
   'Palm = major lines (生命线/智慧线/感情线/事业线…) + mounts/丘位 (金星丘…).',
   'Natal = 日主 / 用神 / 通关 / 五行相生相克比和 / 大运流年流月.',
-  'Framing = 宜留意 / 气机 — cultural study, never deterministic fate.',
+  'Framing = 警示 / 预告 / 宜留意 / 气机 — cultural study, never deterministic fate.',
 ].join(' ')
+
+const VOICE = [
+  '## Voice (locked)',
+  'Write as warning + foreshadowing, not verdicts.',
+  'Pattern: “形上可见 X…，气机上宜留意 Y（window）.”',
+  'Resonance = specific classical loci + dated windows — NOT “you will / 必将”.',
+  'Hard seasons: frame as rhythm / 内修参考, but STILL name the locus and the window.',
+  'Never replace concrete observation with empty positivity (“stay balanced”, “keep healthy”).',
+  'Ban (modality): you will / 必将 / 一定 / 必然 / 注定 / 铁口 / guaranteed / destiny is fixed / predict as fact.',
+  'Ban (superstition remedies): 符咒 / 开光 / 改运仪式 / talismans / ritual objects.',
+].join('\n')
+
+const HEALTH_BOUNDARY = [
+  '## Health axis boundary (required — App Store / Terms §3)',
+  'Health = complexion rhythm, sleep/pace, 气色骨肉 — cultural study only.',
+  'Ban: disease names, diagnosis, prescriptions, lifespan, death timing, “you have X illness”.',
+  'If form suggests strain, say 宜留意 pace / rest; optionally one line: 宜咨询专业医师 / consult a clinician.',
+  'Never promise cure or guaranteed wellness outcomes.',
+].join('\n')
+
+const THREE_AXES = [
+  '## Three life axes (required every reading)',
+  'Audience priority: career (事业), love (爱情), health (生命健康).',
+  'Cover ALL THREE at least once across period.events + advice (and overview/reef when natural).',
+  'Each axis needs 现状 (what form/natal shows now) + 宜留意建议 (what to watch / do).',
+  'Classical hooks (examples, not checklist dump):',
+  '- career: 官禄宫, 事业线, 印堂/山根, 流年官杀财',
+  '- love: 夫妻宫, 感情线, 婚姻线, 男女宫',
+  '- health: 疾厄宫, 生命线, 气色骨肉, 健康线 (non-medical framing only)',
+].join('\n')
 
 const VOCAB = [
   'Allowed glossary tokens (prefer these; plain language OK around them):',
@@ -57,12 +92,12 @@ const VOCAB = [
 
 const CHAPTER_RULES = [
   'Chapter focus (keep vocab on-chapter; do not dump BaZi into face/palms chapters):',
-  '- overview: 形气总象 — complexion / bone-flesh / overall qi; set the tone for later chapters.',
-  '- face: 三停五岳十二宫五官 — facial structure only; no deep BaZi.',
-  '- palms: lines + mounts; compare left/right; no deep BaZi.',
-  '- natal: 日主用神通关五行 — contrast form features with pillars.',
-  '- period: 流年流月大运 windows worth noting + events array.',
-  '- advice: 宜留意 actions / observation; no new fate claims.',
+  '- overview: 形气总象 — which of the three axes is loudest now; set tone.',
+  '- face: 三停五岳十二宫五官 — facial structure only; ≥3 citations loci.',
+  '- palms: lines + mounts; compare left/right; ≥3 citations; no deep BaZi.',
+  '- natal: 日主用神通关五行 — ≥2 form↔pillar links; use NatalSummary 大运/流年 facts.',
+  '- period: 流年流月大运 windows + events (≥3); all three axes represented.',
+  '- advice: ≥1 concrete 宜留意 action per axis (career, love, health).',
 ].join('\n')
 
 const DEPTH_CONTRACT = [
@@ -77,7 +112,9 @@ const DEPTH_CONTRACT = [
   '  - reef: 1–2 sentences (worth noting), or null only if truly nothing.',
   '  - remedy: 1–2 sentences (reflective practice), or null only if reef is null.',
   '  - counterpoint: 1 short cultural disclaimer sentence.',
-  '- events: at least 2 and at most 6 dated windows; each theme+note must be distinct and grounded.',
+  '  - citations: array of { locus, note } — required for face (≥3) and palms (≥3); natal ≥2; others optional.',
+  '- events: at least 3 and at most 6 dated windows; each must set axis = career|love|health;',
+  '  cover all three axes at least once; theme+note distinct and grounded.',
   '- period chapter must discuss the horizonMonths window with more than one concrete cue.',
 ].join('\n')
 
@@ -96,7 +133,11 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
   const lines = [
     'Role: East-Asian physiognomy + BaZi cultural interpreter (Xingqi / Form reading).',
     'Hard rules: no guaranteed outcomes; no deterministic fate; use “宜留意 / worth noting”.',
+    buildComplianceInstructionBlock(params.locale),
     SCHOOL_LOCK,
+    VOICE,
+    HEALTH_BOUNDARY,
+    THREE_AXES,
     `OutputKind: ${params.outputKind}`,
     outputKindHint(params.outputKind),
     `HorizonMonths: ${params.horizonMonths}`,
@@ -112,7 +153,8 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
     '      "dynamic": string,',
     '      "reef": string | null,',
     '      "remedy": string | null,',
-    '      "counterpoint": string | null',
+    '      "counterpoint": string | null,',
+    '      "citations": Array<{ "locus": string, "note": string }>',
     '    }',
     '  ],',
     '  "overview": string,',
@@ -127,6 +169,7 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
     '    "endMonth": "YYYY-MM" | null,',
     '    "theme": string,',
     '    "note": string,',
+    '    "axis": "career" | "love" | "health",',
     '    "sources": Array<"face"|"palm_l"|"palm_r"|"bazi">',
     '  }>',
     '}',
@@ -152,4 +195,61 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
   }
 
   return lines.join('\n')
+}
+
+/** Soft density floors — used for one retry, not hard fail. */
+export function faceoracleDensityGaps(
+  parsed: Record<string, unknown>,
+  chapters: Array<{
+    kind: FaceOracleChapterKind
+    evidence: string
+    dynamic: string
+    remedy?: string | null
+    citations?: Array<{ locus: string; note: string }>
+  }>
+): string[] {
+  const gaps: string[] = []
+  const byKind = new Map(chapters.map((c) => [c.kind, c]))
+
+  const face = byKind.get('face')
+  const palms = byKind.get('palms')
+  const natal = byKind.get('natal')
+  const advice = byKind.get('advice')
+
+  const citeCount = (c: { citations?: Array<{ locus: string; note: string }> } | undefined) =>
+    c?.citations?.filter((x) => x.locus.trim().length > 0).length ?? 0
+
+  if (citeCount(face) < 3) gaps.push('face.citations<3')
+  if (citeCount(palms) < 3) gaps.push('palms.citations<3')
+  if (citeCount(natal) < 2) gaps.push('natal.citations<2')
+
+  const events = Array.isArray(parsed.events) ? parsed.events : []
+  if (events.length < 3) gaps.push('events<3')
+
+  const axes = new Set<string>()
+  for (const ev of events) {
+    if (!ev || typeof ev !== 'object') continue
+    const axis = (ev as Record<string, unknown>).axis
+    if (axis === 'career' || axis === 'love' || axis === 'health') axes.add(axis)
+  }
+  for (const a of ['career', 'love', 'health'] as const) {
+    if (!axes.has(a)) gaps.push(`events.missing_axis:${a}`)
+  }
+
+  const adviceText = `${advice?.evidence ?? ''} ${advice?.dynamic ?? ''} ${advice?.remedy ?? ''}`
+  const adviceBlob = adviceText.toLowerCase()
+  const hasCareer =
+    /career|事业|官禄|工作|职场|work|job/.test(adviceBlob) ||
+    /事業|職場/.test(adviceText)
+  const hasLove =
+    /love|爱情|感情|夫妻|婚姻|relationship|partner/.test(adviceBlob) ||
+    /愛情|關係/.test(adviceText)
+  const hasHealth =
+    /health|健康|疾厄|气色|養生|wellness|body/.test(adviceBlob) ||
+    /氣色|養生/.test(adviceText)
+  if (!hasCareer) gaps.push('advice.missing_axis:career')
+  if (!hasLove) gaps.push('advice.missing_axis:love')
+  if (!hasHealth) gaps.push('advice.missing_axis:health')
+
+  return gaps
 }

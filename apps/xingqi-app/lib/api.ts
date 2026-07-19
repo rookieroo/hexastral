@@ -145,6 +145,27 @@ export async function extractFeature(
     }
     throw new Error(`extract_forbidden:${res.status}`)
   }
+  if (res.status === 422) {
+    const j = (await res.json().catch(() => ({}))) as {
+      error?: string | { message?: string }
+      message?: string
+    }
+    const detail =
+      typeof j.error === 'string'
+        ? j.error
+        : typeof j.error === 'object' && j.error?.message
+          ? j.error.message
+          : typeof j.message === 'string'
+            ? j.message
+            : ''
+    if (detail.includes('modality_mismatch')) {
+      throw new Error(`extract_modality_mismatch:${detail}`)
+    }
+    if (detail.includes('photo_quality_low')) {
+      throw new Error(`extract_photo_quality_low:${detail}`)
+    }
+    throw new Error(detail ? `extract_failed:422:${detail}` : 'extract_failed:422')
+  }
   if (!res.ok) {
     const j = (await res.json().catch(() => ({}))) as {
       error?: string | { message?: string }
@@ -216,7 +237,7 @@ function buildJobBody(
     gender: draft.gender,
     city: draft.city,
     locale,
-    outputKind: draft.outputKind ?? 'oneshot',
+    outputKind: draft.outputKind ?? 'period_brief',
     horizonMonths: draft.horizonMonths ?? 3,
     updateKind: draft.updateKind ?? 'full',
     partialParts: draft.partialParts,

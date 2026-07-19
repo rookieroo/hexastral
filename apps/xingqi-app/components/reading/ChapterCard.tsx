@@ -8,18 +8,30 @@ import { Dimensions, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CHAPTER_GLYPH } from '@/lib/ancient-glyphs'
-import { CHAPTER_TITLE, type XingqiChapter } from '@/lib/report-chapters'
+import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
+import { isCjkZh, isZhHant } from '@/lib/locale-zh'
 
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
+import { NatalFactsStrip, type NatalFacts } from './NatalFactsStrip'
 import { TermAwareText } from './TermAwareText'
 
 const LAYER_LABEL = {
-  evidence: { zh: '形气依据', en: 'The Form' },
-  dynamic: { zh: '气机动态', en: 'The Dynamic' },
-  reef: { zh: '宜留意', en: 'Worth noting' },
-  remedy: { zh: '对照解法', en: 'The Key' },
+  evidence: { zh: '形气依据', zhHant: '形氣依據', en: 'The Form' },
+  dynamic: { zh: '气机动态', zhHant: '氣機動態', en: 'The Dynamic' },
+  reef: { zh: '宜留意', zhHant: '宜留意', en: 'Worth noting' },
+  remedy: { zh: '对照解法', zhHant: '對照解法', en: 'The Key' },
 } as const
+
+function layerLabel(
+  key: keyof typeof LAYER_LABEL,
+  locale: string
+): string {
+  const row = LAYER_LABEL[key]
+  if (isZhHant(locale)) return row.zhHant
+  if (isCjkZh(locale)) return row.zh
+  return row.en
+}
 
 export function ChapterCard({
   chapter,
@@ -30,6 +42,7 @@ export function ChapterCard({
   colors,
   onPickQuote,
   highlightedQuotes,
+  natalFacts,
 }: {
   chapter: XingqiChapter
   index: number
@@ -46,11 +59,11 @@ export function ChapterCard({
   }
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
+  natalFacts?: NatalFacts | null
 }) {
   const insets = useSafeAreaInsets()
   const width = Dimensions.get('window').width
-  const zh = locale.startsWith('zh')
-  const title = zh ? CHAPTER_TITLE[chapter.kind].zh : CHAPTER_TITLE[chapter.kind].en
+  const title = chapterTitle(chapter.kind, locale)
   const termColors = {
     bg: colors.bg,
     ink: colors.text,
@@ -70,7 +83,7 @@ export function ChapterCard({
       contentContainerStyle={{
         paddingHorizontal: 28,
         paddingTop: insets.top + 16,
-        paddingBottom: insets.bottom + 56,
+        paddingBottom: insets.bottom + 88,
         gap: 22,
       }}
       showsVerticalScrollIndicator={false}
@@ -154,7 +167,7 @@ export function ChapterCard({
                 textTransform: 'uppercase',
               }}
             >
-              {zh ? LAYER_LABEL[layer.key].zh : LAYER_LABEL[layer.key].en}
+              {layerLabel(layer.key, locale)}
             </Text>
             <TermAwareText
               text={layer.body}
@@ -164,9 +177,29 @@ export function ChapterCard({
               highlightedQuotes={highlightedQuotes}
               style={{ color: colors.text, fontSize: 16, lineHeight: 26 }}
             />
+            {layer.key === 'evidence' && chapter.citations.length > 0 ? (
+              <View style={{ gap: 6, marginTop: 4 }}>
+                {chapter.citations.map((c) => (
+                  <Text
+                    key={`${c.locus}-${c.note.slice(0, 24)}`}
+                    style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
+                  >
+                    <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
+                      {c.locus}
+                    </Text>
+                    {'  '}
+                    {c.note}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
       ))}
+
+      {chapter.kind === 'natal' && natalFacts ? (
+        <NatalFactsStrip facts={natalFacts} locale={locale} colors={colors} />
+      ) : null}
 
       {chapter.counterpoint ? (
         <TermAwareText

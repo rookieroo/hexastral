@@ -21,6 +21,7 @@ import { fetchBiometricConsent } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { archiveSectionLabel, formReadingListTitle, readingLocaleBadge } from '@/lib/living-copy'
 import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { captureHrefForPart, periodPhotoMap } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
@@ -76,7 +77,8 @@ export default function XingqiHomeScreen() {
   const insets = useSafeAreaInsets()
   const { colors, spacing } = useTheme()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -144,13 +146,13 @@ export default function XingqiHomeScreen() {
         return
       }
       const isUnchanged =
-        err.includes('照片特征未变化') || err.toLowerCase().includes('photos unchanged')
-      Alert.alert(zh ? '解读未完成' : 'Reading incomplete', err, [
-        { text: zh ? '好' : 'OK' },
+        err.includes('照片特征未变化') || err.includes('照片特徵未變化') || err.toLowerCase().includes('photos unchanged')
+      Alert.alert(s('解读未完成', '解讀未完成', 'Reading incomplete'), err, [
+        { text: s('好', '好', 'OK') },
         ...(isUnchanged
           ? [
               {
-                text: zh ? '去更新照片' : 'Update photos',
+                text: s('去更新照片', '去更新照片', 'Update photos'),
                 onPress: () => router.push('/capture' as never),
               },
             ]
@@ -158,7 +160,7 @@ export default function XingqiHomeScreen() {
       ])
       void reload()
     }
-  }, [job, reload, router, zh])
+  }, [job, reload, router, locale])
 
   useFocusEffect(
     useCallback(() => {
@@ -179,8 +181,8 @@ export default function XingqiHomeScreen() {
   const startReading = useCallback(async () => {
     if (job.status === 'running') {
       Alert.alert(
-        zh ? '解读进行中' : 'Reading in progress',
-        zh ? '请等待当前解读完成，或点推送打开结果。' : 'Wait for the current reading, or open it from the push.'
+        s('解读进行中', '解讀進行中', 'Reading in progress'),
+        s('请等待当前解读完成，或点推送打开结果。', '請等待目前解讀完成，或點推送打開結果。', 'Wait for the current reading, or open it from the push.')
       )
       return
     }
@@ -223,8 +225,8 @@ export default function XingqiHomeScreen() {
         })
         if (!started) {
           Alert.alert(
-            zh ? '解读进行中' : 'Reading in progress',
-            zh ? '请等待当前解读完成。' : 'Wait for the current reading to finish.'
+            s('解读进行中', '解讀進行中', 'Reading in progress'),
+            s('请等待当前解读完成。', '請等待目前解讀完成。', 'Wait for the current reading to finish.')
           )
         }
         return
@@ -232,7 +234,7 @@ export default function XingqiHomeScreen() {
     }
 
     router.push('/capture')
-  }, [isPro, items.length, job.status, locale, router, zh])
+  }, [isPro, items.length, job.status, locale, router])
 
   const openSlot = useCallback(
     async (part: CapturePart) => {
@@ -284,20 +286,12 @@ export default function XingqiHomeScreen() {
 
   const ctaLabel =
     job.status === 'running'
-      ? zh
-        ? '解读进行中…'
-        : 'Reading in progress…'
+      ? s('解读进行中…', '解讀進行中…', 'Reading in progress…')
       : !hasReading
-        ? zh
-          ? '开始解读'
-          : 'Start reading'
+        ? s('开始解读', '開始解讀', 'Start reading')
         : isPro
-          ? zh
-            ? '更新本期'
-            : 'Refresh period'
-          : zh
-            ? '再读一次'
-            : 'New reading'
+          ? s('更新本期', '更新本期', 'Refresh period')
+          : s('再读一次', '再讀一次', 'New reading')
 
   return (
     <GestureDetector gesture={swipeToSettings}>
@@ -319,7 +313,7 @@ export default function XingqiHomeScreen() {
             onPress={openSettings}
             hitSlop={12}
             accessibilityRole='button'
-            accessibilityLabel={zh ? '设置' : 'Settings'}
+            accessibilityLabel={s('设置', '設定', 'Settings')}
           >
             <Settings2 size={22} color={colors.text} strokeWidth={1.5} />
           </Pressable>
@@ -334,7 +328,7 @@ export default function XingqiHomeScreen() {
         >
           <View style={{ flexDirection: 'row' }}>
             <StepIcon
-              label={zh ? '左掌' : 'L'}
+              label={s('左掌', '左掌', 'L')}
               active={Boolean(slotReady.palm_l)}
               colors={colors}
               onPress={() => void openSlot('palm_l')}
@@ -344,7 +338,7 @@ export default function XingqiHomeScreen() {
               </View>
             </StepIcon>
             <StepIcon
-              label={zh ? '右掌' : 'R'}
+              label={s('右掌', '右掌', 'R')}
               active={Boolean(slotReady.palm_r)}
               colors={colors}
               onPress={() => void openSlot('palm_r')}
@@ -352,7 +346,7 @@ export default function XingqiHomeScreen() {
               <Hand size={22} color={colors.text} strokeWidth={1.75} />
             </StepIcon>
             <StepIcon
-              label={zh ? '面' : 'Face'}
+              label={s('面', '面', 'Face')}
               active={Boolean(slotReady.face)}
               colors={colors}
               onPress={() => void openSlot('face')}
@@ -360,7 +354,7 @@ export default function XingqiHomeScreen() {
               <ScanFace size={22} color={colors.text} strokeWidth={1.75} />
             </StepIcon>
             <StepIcon
-              label={zh ? '生辰' : 'Birth'}
+              label={s('生辰', '生辰', 'Birth')}
               active={hasBirth}
               colors={colors}
               onPress={() => void openBirth()}
@@ -391,13 +385,11 @@ export default function XingqiHomeScreen() {
           </Text>
           {items.length > 0 ? (
             <Text style={{ color: colors.dim, fontSize: 11, marginBottom: 4, lineHeight: 16 }}>
-              {zh
-                ? '点开查看；左滑删除。'
+              {isCjkZh(locale)
+                ? pickZh(locale, '点开查看；左滑删除。', '點開查看；左滑刪除。')
                 : locale === 'ja'
                   ? 'タップで開く。左スワイプで削除。'
-                  : locale === 'zh-Hant'
-                    ? '點開查看；左滑刪除。'
-                    : 'Tap to open. Swipe left to delete.'}
+                  : 'Tap to open. Swipe left to delete.'}
             </Text>
           ) : null}
 
@@ -427,7 +419,7 @@ export default function XingqiHomeScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    {zh ? '形气解读' : 'Form reading'}
+                    {s('形气解读', '形氣解讀', 'Form reading')}
                   </Text>
                   <Text
                     style={{
@@ -438,14 +430,14 @@ export default function XingqiHomeScreen() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    {zh ? '进行中' : 'In progress'}
+                    {s('进行中', '進行中', 'In progress')}
                     {job.progress > 0 ? ` · ${job.progress}%` : ''}
                   </Text>
                 </View>
-                <XingqiLoader label={zh ? '解读中' : 'Reading'} size={28} />
+                <XingqiLoader label={s('解读中', '解讀中', 'Reading')} size={28} />
               </View>
               <View style={{ gap: 6, marginTop: 4 }}>
-                {readingJobSteps(job.phase, zh).map((step) => (
+                {readingJobSteps(job.phase, locale).map((step) => (
                   <View
                     key={step.key}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
@@ -472,16 +464,18 @@ export default function XingqiHomeScreen() {
                 ))}
               </View>
               <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginTop: 4 }}>
-                {zh
-                  ? '可离开应用。完成后可点推送或回此列表打开。'
-                  : 'You can leave. Open via push or this row when ready.'}
+                {s(
+                  '可离开应用。完成后可点推送或回此列表打开。',
+                  '可離開應用。完成後可點推送或回此列表打開。',
+                  'You can leave. Open via push or this row when ready.'
+                )}
               </Text>
             </View>
           ) : null}
 
           {loading ? (
             <View style={{ paddingVertical: spacing.xl * 2, alignItems: 'center' }}>
-              <XingqiLoader label={zh ? '加载中' : 'Loading'} />
+              <XingqiLoader label={s('加载中', '載入中', 'Loading')} />
             </View>
           ) : null}
 
@@ -496,7 +490,7 @@ export default function XingqiHomeScreen() {
               }}
             >
               <Text style={{ color: colors.dim, fontSize: 13 }}>
-                {zh ? '尚无解读' : 'No readings yet'}
+                {s('尚无解读', '尚無解讀', 'No readings yet')}
               </Text>
             </View>
           ) : null}
@@ -505,17 +499,19 @@ export default function XingqiHomeScreen() {
             const title = formReadingListTitle(locale)
             const localeBadge = readingLocaleBadge(item.locale)
             const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-            const meta = [zh ? '形气' : 'Form', dateLabel, localeBadge].filter(Boolean).join(' · ')
+            const meta = [s('形气', '形氣', 'Form'), dateLabel, localeBadge].filter(Boolean).join(' · ')
             const confirmDelete = () => {
               Alert.alert(
-                zh ? '删除解读？' : 'Delete reading?',
-                zh
-                  ? '将从账号中永久删除此条形气解读，无法恢复。'
-                  : 'Permanently removes this form reading from your account.',
+                s('删除解读？', '刪除解讀？', 'Delete reading?'),
+                s(
+                  '将从账号中永久删除此条形气解读，无法恢复。',
+                  '將從帳號中永久刪除此條形氣解讀，無法恢復。',
+                  'Permanently removes this form reading from your account.'
+                ),
                 [
-                  { text: zh ? '取消' : 'Cancel', style: 'cancel' },
+                  { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
                   {
-                    text: zh ? '删除' : 'Delete',
+                    text: s('删除', '刪除', 'Delete'),
                     style: 'destructive',
                     onPress: () => {
                       void (async () => {
@@ -524,7 +520,7 @@ export default function XingqiHomeScreen() {
                           await clearLastReadingPhotoSnapshot()
                           await reload()
                         } catch {
-                          Alert.alert(zh ? '删除失败' : 'Delete failed')
+                          Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
                         }
                       })()
                     },
@@ -553,7 +549,7 @@ export default function XingqiHomeScreen() {
                 }}
                 spacing={spacing}
                 showTopBorder={index === 0 && job.status !== 'running'}
-                deleteLabel={zh ? '删除' : 'Delete'}
+                deleteLabel={s('删除', '刪除', 'Delete')}
               />
             )
           })}

@@ -27,6 +27,7 @@ import { XingqiMark } from '@/components/XingqiMark'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loginFaceIap } from '@/lib/iap'
 import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 
 interface GoogleSigninModule {
   GoogleSignin: {
@@ -57,7 +58,8 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const [appleAvailable, setAppleAvailable] = useState(false)
   const [googlePhase, setGooglePhase] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const googleModuleRef = useRef<GoogleSigninModule | null>(null)
@@ -136,13 +138,17 @@ export default function SignInScreen() {
       if (__DEV__) console.error('[Xingqi] Apple sign-in failed', err)
       const msg = err instanceof Error ? err.message : ''
       setError(
-        zh
-          ? msg.includes('portfolio auth')
-            ? '服务器登录失败，请检查网络后重试'
-            : 'Apple 登录失败。请确认本机已登录 Apple ID，且 App ID 已开通 Sign in with Apple。'
-          : msg.includes('portfolio auth')
-            ? 'Server auth failed. Check network and try again.'
-            : 'Apple sign-in failed. Confirm Sign in with Apple is enabled for this App ID.'
+        msg.includes('portfolio auth')
+          ? s(
+              '服务器登录失败，请检查网络后重试',
+              '伺服器登入失敗，請檢查網路後重試',
+              'Server auth failed. Check network and try again.'
+            )
+          : s(
+              'Apple 登录失败。请确认本机已登录 Apple ID，且 App ID 已开通 Sign in with Apple。',
+              'Apple 登入失敗。請確認本機已登入 Apple ID，且 App ID 已開通 Sign in with Apple。',
+              'Apple sign-in failed. Confirm Sign in with Apple is enabled for this App ID.'
+            )
       )
     } finally {
       setBusy(null)
@@ -170,7 +176,7 @@ export default function SignInScreen() {
       else router.replace('/(app)')
     } catch (err) {
       if (__DEV__) console.error('[Xingqi] Google sign-in failed', err)
-      setError(zh ? 'Google 登录失败' : 'Google sign-in failed')
+      setError(s('Google 登录失败', 'Google 登入失敗', 'Google sign-in failed'))
     } finally {
       setBusy(null)
     }
@@ -203,9 +209,11 @@ export default function SignInScreen() {
           marginBottom: spacing.lg,
         }}
       >
-        {zh
-          ? '登录以保存形气解读，并在多设备同步 Timeline。'
-          : 'Sign in to save readings and sync Timeline across devices.'}
+        {s(
+          '登录以保存形气解读，并在多设备同步 Timeline。',
+          '登入以保存形氣解讀，並在多裝置同步 Timeline。',
+          'Sign in to save readings and sync Timeline across devices.'
+        )}
       </Text>
 
       {appleAvailable ? (
@@ -219,15 +227,17 @@ export default function SignInScreen() {
           />
           {busy === 'apple' ? (
             <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
-              <XingqiLoader size={36} label={zh ? '登录中' : 'Signing in'} />
+              <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in')} />
             </View>
           ) : null}
         </View>
       ) : (
         <Text style={{ color: colors.dim, textAlign: 'center', fontSize: 13 }}>
-          {zh
-            ? '当前环境不支持 Apple 登录（需真机 Development Build）。'
-            : 'Apple Sign-In needs a device development build.'}
+          {s(
+            '当前环境不支持 Apple 登录（需真机 Development Build）。',
+            '目前環境不支援 Apple 登入（需真機 Development Build）。',
+            'Apple Sign-In needs a device development build.'
+          )}
         </Text>
       )}
 
@@ -243,10 +253,10 @@ export default function SignInScreen() {
           }}
         >
           {busy === 'google' ? (
-            <XingqiLoader size={36} label={zh ? '登录中' : 'Signing in'} />
+            <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in')} />
           ) : (
             <Text style={{ color: colors.text, fontWeight: '600' }}>
-              {zh ? '通过 Google 登录' : 'Continue with Google'}
+              {s('通过 Google 登录', '透過 Google 登入', 'Continue with Google')}
             </Text>
           )}
         </Pressable>
@@ -260,7 +270,7 @@ export default function SignInScreen() {
 
       <Pressable onPress={() => router.back()} style={{ paddingVertical: spacing.md }}>
         <Text style={{ color: colors.secondary, textAlign: 'center' }}>
-          {zh ? '稍后再说' : 'Not now'}
+          {s('稍后再说', '稍後再說', 'Not now')}
         </Text>
       </Pressable>
     </View>

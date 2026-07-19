@@ -14,6 +14,7 @@ import {
 import type { XingqiChapter } from '@/lib/report-chapters'
 
 import { ChapterCard } from './ChapterCard'
+import type { NatalFacts } from './NatalFactsStrip'
 
 export function ChapterPager({
   chapters,
@@ -24,6 +25,7 @@ export function ChapterPager({
   renderCenterpiece,
   onPickQuote,
   highlightedQuotes,
+  natalFacts,
 }: {
   chapters: XingqiChapter[]
   currentIndex: number
@@ -40,6 +42,7 @@ export function ChapterPager({
   renderCenterpiece?: (chapter: XingqiChapter, index: number) => ReactNode
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
+  natalFacts?: NatalFacts | null
 }) {
   const screenWidth = Dimensions.get('window').width
 
@@ -76,6 +79,7 @@ export function ChapterPager({
               colors={colors}
               onPickQuote={onPickQuote}
               highlightedQuotes={highlightedQuotes}
+              natalFacts={natalFacts}
             />
           </View>
         ))}

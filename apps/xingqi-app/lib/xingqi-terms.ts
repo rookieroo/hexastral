@@ -12,6 +12,7 @@ import {
 } from '@zhop/astro-i18n'
 
 import { XINGQI_TERM_ALIASES } from '@/lib/xingqi-canon'
+import { isZhHant } from '@/lib/locale-zh'
 
 export const XINGQI_ASTRO_TERMS = [
   '相生',
@@ -50,8 +51,162 @@ export type XingqiLocalTerm = {
   zh: string
   pinyin: string
   category: XingqiLocalCategory
-  short: { zh: string; en: string }
-  long: { zh: string; en: string }
+  short: { zh: string; zhHant: string; en: string }
+  long: { zh: string; zhHant: string; en: string }
+}
+
+/** Curated Hans→Hant for Xingqi form glosses (domain map, not a general converter). */
+const HANT_CHARS: Record<string, string> = {
+  与: '與',
+  机: '機',
+  对: '對',
+  读: '讀',
+  气: '氣',
+  运: '運',
+  历: '歷',
+  际: '際',
+  头: '頭',
+  来: '來',
+  观: '觀',
+  据: '據',
+  虑: '慮',
+  张: '張',
+  为: '為',
+  时: '時',
+  岁: '歲',
+  态: '態',
+  关: '關',
+  连: '連',
+  应: '應',
+  开: '開',
+  丰: '豐',
+  满: '滿',
+  质: '質',
+  经: '經',
+  统: '統',
+  称: '稱',
+  区: '區',
+  边: '邊',
+  协: '協',
+  业: '業',
+  灵: '靈',
+  显: '顯',
+  绕: '繞',
+  纹: '紋',
+  脑: '腦',
+  达: '達',
+  从: '從',
+  属: '屬',
+  紧: '緊',
+  养: '養',
+  迁: '遷',
+  顿: '頓',
+  汇: '匯',
+  处: '處',
+  钝: '鈍',
+  并: '並',
+  浅: '淺',
+  长: '長',
+  侧: '側',
+  线: '線',
+  竖: '豎',
+  痕: '痕',
+  迹: '跡',
+  浓: '濃',
+  系: '係',
+  类: '類',
+  稳: '穩',
+  实: '實',
+  热: '熱',
+  动: '動',
+  过: '過',
+  横: '橫',
+  纵: '縱',
+  径: '徑',
+  缘: '緣',
+  点: '點',
+  获: '獲',
+  责: '責',
+  沟: '溝',
+  变: '變',
+  节: '節',
+  体: '體',
+  习: '習',
+  参: '參',
+  断: '斷',
+  语: '語',
+  谓: '謂',
+  标: '標',
+  准: '準',
+  辞: '辭',
+  预: '預',
+  结: '結',
+  润: '潤',
+  泽: '澤',
+  肤: '膚',
+  状: '狀',
+  评: '評',
+  价: '價',
+  构: '構',
+  资: '資',
+  辈: '輩',
+  亲: '親',
+  传: '傳',
+  鱼: '魚',
+  调: '調',
+  两: '兩',
+  间: '間',
+  额: '額',
+  颧: '顴',
+  颊: '頰',
+  睑: '瞼',
+  岳: '嶽',
+  颏: '頦',
+  颌: '頜',
+  宫: '宮',
+  卧: '臥',
+  风: '風',
+  阳: '陽',
+  阴: '陰',
+  术: '術',
+  识: '識',
+  认: '認',
+  觉: '覺',
+  见: '見',
+  听: '聽',
+  问: '問',
+  门: '門',
+  们: '們',
+  个: '個',
+  这: '這',
+  还: '還',
+  说: '說',
+  会: '會',
+  样: '樣',
+  种: '種',
+  无: '無',
+  义: '義',
+  书: '書',
+  发: '發',
+  总: '總',
+}
+
+function toZhHant(hans: string): string {
+  let out = ''
+  for (const ch of hans) {
+    out += HANT_CHARS[ch] ?? ch
+  }
+  // Hairline 发际 → 髮際 (not 發際)
+  return out.replaceAll('發際', '髮際')
+}
+
+function glossLang(
+  locale: TermLocale,
+  short: XingqiLocalTerm['short']
+): 'zh' | 'zhHant' | 'en' {
+  if (isZhHant(locale)) return 'zhHant'
+  if (locale.startsWith('zh')) return 'zh'
+  return 'en'
 }
 
 function t(
@@ -69,8 +224,8 @@ function t(
     zh,
     pinyin,
     category,
-    short: { zh: shortZh, en: shortEn },
-    long: { zh: longZh, en: longEn },
+    short: { zh: shortZh, zhHant: toZhHant(shortZh), en: shortEn },
+    long: { zh: longZh, zhHant: toZhHant(longZh), en: longEn },
   }
 }
 
@@ -205,7 +360,7 @@ export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm 
   const canonical = canonicalizeTermZh(zh)
   const local = LOCAL_BY_ZH.get(canonical)
   if (local) {
-    const lang = locale.startsWith('zh') ? 'zh' : 'en'
+    const lang = glossLang(locale, local.short)
     return {
       id: local.id,
       zh: local.zh,
@@ -227,15 +382,25 @@ export type XingqiGlossaryGroup = {
 }
 
 function toResolved(locale: TermLocale, list: readonly XingqiLocalTerm[]): ResolvedTerm[] {
-  const langZh = locale.startsWith('zh')
-  return list.map((x) => ({
-    id: x.id,
-    zh: x.zh,
-    pinyin: x.pinyin,
-    category: 'relation' as TermCategory,
-    short: langZh ? x.short.zh : x.short.en,
-    long: langZh ? x.long.zh : x.long.en,
-  }))
+  return list.map((x) => {
+    const lang = glossLang(locale, x.short)
+    return {
+      id: x.id,
+      zh: x.zh,
+      pinyin: x.pinyin,
+      category: 'relation' as TermCategory,
+      short: x.short[lang],
+      long: x.long[lang],
+    }
+  })
+}
+
+function glossaryLabel(
+  locale: TermLocale,
+  hans: string,
+  hant: string
+): string {
+  return isZhHant(locale) ? hant : hans
 }
 
 export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup[] {
@@ -249,31 +414,31 @@ export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup
   return [
     {
       id: 'meta',
-      labelZh: '形气总说',
+      labelZh: glossaryLabel(locale, '形气总说', '形氣總說'),
       labelEn: 'Form framing',
       terms: toResolved(locale, meta),
     },
     {
       id: 'face',
-      labelZh: '面相 · 十二宫',
+      labelZh: glossaryLabel(locale, '面相 · 十二宫', '面相 · 十二宮'),
       labelEn: 'Face · palaces',
       terms: toResolved(locale, face),
     },
     {
       id: 'palm',
-      labelZh: '手相 · 丘位',
+      labelZh: glossaryLabel(locale, '手相 · 丘位', '手相 · 丘位'),
       labelEn: 'Palm · mounts',
       terms: toResolved(locale, palm),
     },
     {
       id: 'wuxing',
-      labelZh: '五行 · 气机',
+      labelZh: glossaryLabel(locale, '五行 · 气机', '五行 · 氣機'),
       labelEn: 'Wuxing',
       terms: pick(['金', '木', '水', '火', '土', '相生', '相克', '比和']),
     },
     {
       id: 'natal',
-      labelZh: '命盘对照',
+      labelZh: glossaryLabel(locale, '命盘对照', '命盤對照'),
       labelEn: 'Natal contrast',
       terms: pick([
         '日主',
@@ -296,7 +461,7 @@ export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup
     },
     {
       id: 'cycle',
-      labelZh: '时间窗口',
+      labelZh: glossaryLabel(locale, '时间窗口', '時間窗口'),
       labelEn: 'Time windows',
       terms: pick(['大运', '流年', '流月']),
     },

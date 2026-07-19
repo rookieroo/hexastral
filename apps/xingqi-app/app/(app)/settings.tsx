@@ -29,6 +29,7 @@ import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { devSetServerPro } from '@/lib/dev-tools'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
 import { cancelXingqiPush, scheduleXingqiPush } from '@/lib/push-schedule'
@@ -40,7 +41,8 @@ export default function SettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -65,12 +67,12 @@ export default function SettingsScreen() {
 
   const softGatePro = () => {
     Alert.alert(
-      zh ? '需要 Pro' : 'Pro required',
-      zh ? '订阅后可开启提醒。' : 'Subscribe to enable reminders.',
+      s('需要 Pro', '需要 Pro', 'Pro required'),
+      s('订阅后可开启提醒。', '訂閱後可開啟提醒。', 'Subscribe to enable reminders.'),
       [
-        { text: zh ? '取消' : 'Cancel', style: 'cancel' },
+        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
         {
-          text: zh ? '查看' : 'View',
+          text: s('查看', '查看', 'View'),
           onPress: () => router.push('/(commerce)/paywall' as never),
         },
       ]
@@ -112,7 +114,10 @@ export default function SettingsScreen() {
     if (next === 'pro') {
       void devSetServerPro(true).then((ok) => {
         if (!ok) {
-          Alert.alert('DEV Pro', zh ? '服务端授权失败（需已登录）。' : 'Server grant failed.')
+          Alert.alert(
+            'DEV Pro',
+            s('服务端授权失败（需已登录）。', '服務端授權失敗（需已登入）。', 'Server grant failed.')
+          )
         }
       })
     } else if (next === 'free') {
@@ -130,21 +135,24 @@ export default function SettingsScreen() {
         }}
       >
         <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-          {zh ? '设置' : 'Settings'}
+          {s('设置', '設定', 'Settings')}
         </Text>
 
         {!userId ? (
           <SettingsSection>
             <SettingsCard>
-              <SettingsRow label={zh ? '登录' : 'Sign in'} onPress={() => router.push('/sign-in')} />
+              <SettingsRow
+                label={s('登录', '登入', 'Sign in')}
+                onPress={() => router.push('/sign-in')}
+              />
             </SettingsCard>
           </SettingsSection>
         ) : null}
 
-        <SettingsSection title={zh ? '提醒' : 'REMINDERS'}>
+        <SettingsSection title={s('提醒', '提醒', 'REMINDERS')}>
           <SettingsCard>
             <SettingsToggleRow
-              label={zh ? '提醒' : 'Reminders'}
+              label={s('提醒', '提醒', 'Reminders')}
               value={prefs.remindersOn && isPro}
               onValueChange={(v) => void applyReminders(v)}
               badge={isPro ? undefined : 'PRO'}
@@ -152,43 +160,39 @@ export default function SettingsScreen() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={zh ? '参考' : 'LIBRARY'}>
+        <SettingsSection title={s('参考', '參考', 'LIBRARY')}>
           <SettingsCard>
             <SettingsRow
-              label={zh ? '符号说明' : 'Glossary'}
+              label={s('符号说明', '符號說明', 'Glossary')}
               onPress={() => router.push('/glossary' as never)}
               divider
             />
             <SettingsRow
-              label={zh ? '术语表' : 'Terms'}
+              label={s('术语表', '術語表', 'Terms')}
               onPress={() => router.push('/terms' as never)}
             />
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={zh ? '购买' : 'PURCHASES'}>
+        <SettingsSection title={s('购买', '購買', 'PURCHASES')}>
           <SettingsCard>
             <SettingsRow
               label={
                 restoreBusy
-                  ? zh
-                    ? '恢复中…'
-                    : 'Restoring…'
-                  : zh
-                    ? '恢复购买'
-                    : 'Restore purchases'
+                  ? s('恢复中…', '恢復中…', 'Restoring…')
+                  : s('恢复购买', '恢復購買', 'Restore purchases')
               }
               onPress={() => {
                 if (restoreBusy) return
                 setRestoreBusy(true)
                 void restorePurchases()
                   .then(() => {
-                    Alert.alert(zh ? '已恢复' : 'Restored', undefined, [
-                      { text: zh ? '好' : 'OK' },
+                    Alert.alert(s('已恢复', '已恢復', 'Restored'), undefined, [
+                      { text: s('好', '好', 'OK') },
                     ])
                   })
                   .catch(() => {
-                    Alert.alert(zh ? '恢复失败' : 'Restore failed')
+                    Alert.alert(s('恢复失败', '恢復失敗', 'Restore failed'))
                   })
                   .finally(() => setRestoreBusy(false))
               }}
@@ -196,44 +200,48 @@ export default function SettingsScreen() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={zh ? '法律' : 'LEGAL'}>
+        <SettingsSection title={s('法律', '法律', 'LEGAL')}>
           <SettingsCard>
             <SettingsRow
-              label={zh ? '隐私' : 'Privacy'}
+              label={s('隐私', '隱私', 'Privacy')}
               onPress={() => void Linking.openURL(privacyPolicyUrl(locale))}
               divider
             />
             <SettingsRow
-              label={zh ? '服务条款' : 'Terms of service'}
+              label={s('服务条款', '服務條款', 'Terms of service')}
               onPress={() => void Linking.openURL('https://www.hexastral.com/en/terms')}
             />
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={zh ? '账户' : 'ACCOUNT'}>
+        <SettingsSection title={s('账户', '帳戶', 'ACCOUNT')}>
           <SettingsCard>
             <SettingsRow
-              label={zh ? '用量与周期' : 'Usage & cadence'}
-              hint={
-                zh
-                  ? '最近解读、25 天更新建议、本月额度'
-                  : 'Last reading, 25-day refresh, monthly quotas'
-              }
+              label={s('用量与周期', '用量與週期', 'Usage & cadence')}
+              hint={s(
+                '最近解读、25 天更新建议、本月额度',
+                '最近解讀、25 天更新建議、本月額度',
+                'Last reading, 25-day refresh, monthly quotas'
+              )}
               onPress={() => router.push('/(app)/usage' as never)}
               divider={Boolean(userId)}
             />
             {userId ? (
               <>
                 <SettingsRow
-                  label={zh ? '撤回生物特征同意' : 'Withdraw consent'}
+                  label={s('撤回生物特征同意', '撤回生物特徵同意', 'Withdraw consent')}
                   onPress={() => {
                     Alert.alert(
-                      zh ? '撤回同意' : 'Withdraw consent',
-                      zh ? '撤回后需重新同意才能解读。' : 'You must consent again before reading.',
+                      s('撤回同意', '撤回同意', 'Withdraw consent'),
+                      s(
+                        '撤回后需重新同意才能解读。',
+                        '撤回後需重新同意才能解讀。',
+                        'You must consent again before reading.'
+                      ),
                       [
-                        { text: zh ? '取消' : 'Cancel', style: 'cancel' },
+                        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
                         {
-                          text: zh ? '撤回' : 'Withdraw',
+                          text: s('撤回', '撤回', 'Withdraw'),
                           style: 'destructive',
                           onPress: () => {
                             void (async () => {
@@ -241,7 +249,7 @@ export default function SettingsScreen() {
                                 await revokeBiometricConsent()
                                 await clearReadingDraft({ wipePhotos: true })
                               } catch {
-                                Alert.alert(zh ? '失败' : 'Failed')
+                                Alert.alert(s('失败', '失敗', 'Failed'))
                               }
                             })()
                           },
@@ -252,13 +260,13 @@ export default function SettingsScreen() {
                   divider
                 />
                 <SettingsRow
-                  label={zh ? '退出登录' : 'Sign out'}
+                  label={s('退出登录', '退出登入', 'Sign out')}
                   danger
                   onPress={() => {
-                    Alert.alert(zh ? '退出登录' : 'Sign out', undefined, [
-                      { text: zh ? '取消' : 'Cancel', style: 'cancel' },
+                    Alert.alert(s('退出登录', '退出登入', 'Sign out'), undefined, [
+                      { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
                       {
-                        text: zh ? '退出' : 'Sign out',
+                        text: s('退出', '退出', 'Sign out'),
                         style: 'destructive',
                         onPress: () => {
                           void (async () => {

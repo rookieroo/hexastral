@@ -10,6 +10,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { getXingqiPushPrefs } from './push-preference'
+import { isCjkZh, pickZh } from './locale-zh'
 
 const SCHEDULED_KEY = 'xingqi_push_scheduled_v1'
 const SERVER_ACTIVE_KEY = 'xingqi_server_push_active_v1'
@@ -48,13 +49,16 @@ export interface ScheduleFacePushInput {
 }
 
 function copy(locale: string) {
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   return {
-    recaptureTitle: zh ? '可以更新本期形气了' : 'Time to refresh your reading',
-    recaptureBody: zh
-      ? '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。'
-      : 'A new monthly window is open. Refresh all three photos, or update one part.',
-    eventTitle: zh ? '宜留意的时间窗' : 'A window worth noting',
+    recaptureTitle: s('可以更新本期形气了', '可以更新本期形氣了', 'Time to refresh your reading'),
+    recaptureBody: s(
+      '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。',
+      '新的一個月視窗已開啟。可整組複拍，或只更新面部／左掌／右掌。',
+      'A new monthly window is open. Refresh all three photos, or update one part.'
+    ),
+    eventTitle: s('宜留意的时间窗', '宜留意的時間窗', 'A window worth noting'),
   }
 }
 

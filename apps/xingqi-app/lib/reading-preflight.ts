@@ -4,6 +4,7 @@
 
 import { Alert } from 'react-native'
 
+import { isCjkZh, pickZh } from './locale-zh'
 import type { ReadingDraft } from './reading-draft'
 import {
   loadLastReadingPhotoSnapshot,
@@ -34,18 +35,22 @@ export async function alertIfPhotosUnchanged(opts: {
   locale: string
   onUpdatePhotos: () => void
 }): Promise<boolean> {
-  const zh = opts.locale.startsWith('zh')
+  const { locale } = opts
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const unchanged = await localPhotosUnchangedSinceLastReading(opts.draft)
   if (!unchanged) return false
   Alert.alert(
-    zh ? '照片未更新' : 'Photos unchanged',
-    zh
-      ? '本期本机照片与上次解读相同（按文件时间与大小比对）。请先替换左掌 / 右掌 / 面部至少一张，再发起新解读。'
-      : 'On-device photos match your last reading (file time + size). Replace at least one of left palm, right palm, or face before starting again.',
+    s('照片未更新', '照片未更新', 'Photos unchanged'),
+    s(
+      '本期本机照片与上次解读相同（按文件时间与大小比对）。请先替换左掌 / 右掌 / 面部至少一张，再发起新解读。',
+      '本期本機照片與上次解讀相同（按檔案時間與大小比對）。請先替換左掌 / 右掌 / 面部至少一張，再發起新解讀。',
+      'On-device photos match your last reading (file time + size). Replace at least one of left palm, right palm, or face before starting again.'
+    ),
     [
-      { text: zh ? '好' : 'OK', style: 'cancel' },
+      { text: s('好', '好', 'OK'), style: 'cancel' },
       {
-        text: zh ? '去更新照片' : 'Update photos',
+        text: s('去更新照片', '去更新照片', 'Update photos'),
         onPress: opts.onUpdatePhotos,
       },
     ]

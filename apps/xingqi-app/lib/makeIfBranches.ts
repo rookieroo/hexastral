@@ -16,6 +16,8 @@
  * "假如你..." prose (hybrid LLM, cached) is Phase 3.
  */
 
+import { isZhHant } from './locale-zh'
+
 export type MakeIfFit = '吉' | '平' | '凶'
 
 export interface MakeIfDot {
@@ -251,7 +253,7 @@ export interface MakeIfCopy {
 }
 
 export function makeIfCopyForLocale(locale: string): MakeIfCopy {
-  if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK') {
+  if (isZhHant(locale)) {
     return {
       teaserTitle: '假如 · 人生的另外幾種可能',
       teaserBody: '每一個重要抉擇，都通向另一種人生。錄入生辰，看你自己的人生線從哪裡分岔。',
@@ -431,8 +433,7 @@ const PRESET_EVENT_CHIPS: Record<string, readonly string[]> = {
 }
 
 function presetChipsForLocale(locale: string): readonly string[] {
-  if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK')
-    return PRESET_EVENT_CHIPS['zh-Hant'] ?? EN_PRESET_CHIPS
+  if (isZhHant(locale)) return PRESET_EVENT_CHIPS['zh-Hant'] ?? EN_PRESET_CHIPS
   if (locale.startsWith('zh')) return PRESET_EVENT_CHIPS['zh-Hans'] ?? EN_PRESET_CHIPS
   if (locale.startsWith('ja')) return PRESET_EVENT_CHIPS.ja ?? EN_PRESET_CHIPS
   return EN_PRESET_CHIPS
@@ -474,7 +475,7 @@ export function deriveMakeIfSummary(narrative: string): string {
 }
 
 export function makeIfInteractiveCopyForLocale(locale: string): MakeIfInteractiveCopy {
-  if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK') {
+  if (isZhHant(locale)) {
     return {
       screenTitle: '假如人生',
       tapHint: '點主線上任一節點，假設一個選擇，推演另一種人生。',

@@ -4,7 +4,19 @@
  */
 
 import { callWithFallback } from '@zhop/ai-vision'
+import {
+  calculateDaYun,
+  getDaYunAtYear,
+  getLiuNian,
+  type Gender,
+} from '@zhop/astro-core/dayun'
 import { getFourPillars } from '@zhop/astro-core/ganzhi'
+import {
+  auditHardForbiddenHits,
+  auditSoftForbiddenHits,
+  buildComplianceInstructionBlock,
+  buildForbiddenRewriteSuffix,
+} from '@zhop/portfolio-voice'
 import { and, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
@@ -21,6 +33,7 @@ import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../serv
 import { sendExpoPushMessages } from './expo-push'
 import {
   buildFaceOraclePrompt,
+  faceoracleDensityGaps,
   type FaceOracleChapterKind,
 } from './prompts/faceoracle'
 import { faceoracleBodyLooksWrongLocale } from './prompts/faceoracle-locale'
@@ -36,6 +49,8 @@ const CHAPTER_KINDS: FaceOracleChapterKind[] = [
 
 type JobRow = typeof faceoracleJobs.$inferSelect
 
+type ChapterCitation = { locus: string; note: string }
+
 type ChapterPayload = {
   kind: FaceOracleChapterKind
   goldenLine: string
@@ -44,6 +59,20 @@ type ChapterPayload = {
   reef: string | null
   remedy: string | null
   counterpoint: string | null
+  citations: ChapterCitation[]
+}
+
+function parseCitations(raw: unknown): ChapterCitation[] {
+  if (!Array.isArray(raw)) return []
+  const out: ChapterCitation[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const locus = asNonEmptyString(o.locus)
+    const note = asNonEmptyString(o.note)
+    if (locus && note) out.push({ locus, note })
+  }
+  return out
 }
 
 function timeIndexToHour(timeIndex: number): number {
@@ -117,7 +146,14 @@ function chapterFromFlat(
 ): ChapterPayload | null {
   if (!body || body.trim().length < 12) return null
   const zh = locale.startsWith('zh')
+  const hant =
+    locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK'
   const first = body.trim().split(/[。.!?\n]/)[0]?.trim() ?? body.trim().slice(0, 48)
+  const counterpoint = !zh
+    ? 'Cultural study framing — not deterministic fate.'
+    : hant
+      ? '文化研習參考，不作命運斷語。'
+      : '文化研习参考，不作命运断语。'
   return {
     kind,
     goldenLine: first.slice(0, 80),
@@ -125,9 +161,8 @@ function chapterFromFlat(
     dynamic: '',
     reef: null,
     remedy: null,
-    counterpoint: zh
-      ? '文化研习参考，不作命运断语。'
-      : 'Cultural study framing — not deterministic fate.',
+    counterpoint,
+    citations: [],
   }
 }
 
@@ -149,6 +184,7 @@ function parseChapter(raw: unknown): ChapterPayload | null {
     reef: asNonEmptyString(o.reef),
     remedy: asNonEmptyString(o.remedy),
     counterpoint: asNonEmptyString(o.counterpoint),
+    citations: parseCitations(o.citations),
   }
 }
 
@@ -255,32 +291,63 @@ async function callReadingAi(
   env: CloudflareBindings,
   prompt: string,
   locale: string
-): Promise<{ parsed: Record<string, unknown> | null; rawText: string }> {
+): Promise<{ parsed: Record<string, unknown> | null; rawText: string; error?: string }> {
   const systemPrompt = [
     'You are a careful East-Asian physiognomy + BaZi cultural interpreter.',
     'Reply with ONE JSON object only. No markdown fences. No prose outside JSON.',
-  ].join(' ')
+    buildComplianceInstructionBlock(locale),
+  ].join('\n')
 
   try {
+    // Cap at 4096 — several CF Workers AI models reject higher max_tokens and
+    // the whole flagship cascade then fails as ai_failed.
     const rawText = (
       await callWithFallback(env, systemPrompt, prompt, {
         tier: 'flagship',
         locale,
-        maxTokens: 4500,
+        maxTokens: 4096,
         temperature: 0.35,
         jsonMode: true,
         metricLabel: 'faceoracle_reading',
-        // Queue consumer — allow full flagship cascade under Workers queue budget.
         totalBudgetMs: 90_000,
         perModelTimeoutMs: 45_000,
       })
     ).trim()
     const parsed = safeJsonParse<Record<string, unknown>>(rawText)
+    if (!parsed) {
+      return {
+        parsed: null,
+        rawText,
+        error: `json_parse_failed:${rawText.slice(0, 120)}`,
+      }
+    }
     return { parsed, rawText }
   } catch (err) {
-    console.warn('[faceoracle-job/ai] flagship failed', err)
-    return { parsed: null, rawText: '' }
+    const message = err instanceof Error ? err.message : String(err)
+    console.warn('[faceoracle-job/ai] flagship failed', message)
+    return { parsed: null, rawText: '', error: message.slice(0, 400) }
   }
+}
+
+function proseFromNormalized(normalized: {
+  chapters: ChapterPayload[]
+  flat: Record<string, unknown>
+}): string {
+  const chapterText = normalized.chapters
+    .map(
+      (c) =>
+        `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}\n${c.counterpoint ?? ''}\n${c.citations.map((x) => `${x.locus} ${x.note}`).join('\n')}`
+    )
+    .join('\n')
+  const events = Array.isArray(normalized.flat.events) ? normalized.flat.events : []
+  const eventText = events
+    .map((ev) => {
+      if (!ev || typeof ev !== 'object') return ''
+      const e = ev as Record<string, unknown>
+      return `${asNonEmptyString(e.theme) ?? ''} ${asNonEmptyString(e.note) ?? ''}`
+    })
+    .join('\n')
+  return `${chapterText}\n${eventText}`
 }
 
 async function setJobStage(
@@ -339,21 +406,36 @@ async function notifyReadingReady(
   if (!sub?.token) return
 
   const locale = sub.locale || opts.locale
-  const zh = locale.startsWith('zh')
+  const hant =
+    locale.startsWith('zh-Hant') ||
+    locale === 'zh-TW' ||
+    locale === 'zh-HK' ||
+    locale.toLowerCase().startsWith('zh-hant') ||
+    locale.toLowerCase().startsWith('zh-tw') ||
+    locale.toLowerCase().startsWith('zh-hk')
+  const hans = !hant && locale.startsWith('zh')
   const title = opts.ok
-    ? zh
-      ? '形气解读已完成'
-      : 'Your reading is ready'
-    : zh
-      ? '解读未能完成'
-      : 'Reading did not finish'
+    ? hant
+      ? '形氣解讀已完成'
+      : hans
+        ? '形气解读已完成'
+        : 'Your reading is ready'
+    : hant
+      ? '解讀未能完成'
+      : hans
+        ? '解读未能完成'
+        : 'Reading did not finish'
   const body = opts.ok
-    ? zh
-      ? '点按查看本期形气。'
-      : 'Tap to open your reading.'
-    : zh
-      ? '请打开应用重试或查看详情。'
-      : 'Open the app to see details or retry.'
+    ? hant
+      ? '點按查看本期形氣。'
+      : hans
+        ? '点按查看本期形气。'
+        : 'Tap to open your reading.'
+    : hant
+      ? '請打開應用重試或查看詳情。'
+      : hans
+        ? '请打开应用重试或查看详情。'
+        : 'Open the app to see details or retry.'
 
   const { invalidTokens } = await sendExpoPushMessages([
     {
@@ -451,12 +533,48 @@ export async function runFaceoracleReadingJob(
   }
 
   let natalSummary = `solar=${job.solarDate}; timeIndex=${job.timeIndex}; gender=${job.gender}`
+  let natalFacts: Record<string, string> | null = null
   try {
     const dt = parseSolarDate(job.solarDate, job.timeIndex)
     const pillars = getFourPillars(dt)
-    natalSummary = `solar=${job.solarDate}; timeIndex=${job.timeIndex}; gender=${job.gender}; pillars=${JSON.stringify(pillars)}; city=${job.city ?? ''}`
-  } catch {
-    // keep simple natalSummary
+    const gender: Gender = job.gender === '女' ? '女' : '男'
+    const nowYear = new Date().getUTCFullYear()
+    const dayun = calculateDaYun(dt, gender)
+    const currentStep = getDaYunAtYear(dayun, nowYear)
+    const liunian = getLiuNian(nowYear)
+    const nextLiunian = getLiuNian(nowYear + 1)
+    const dayunLine = currentStep
+      ? `currentDaYun=${currentStep.ganZhi.label} ages=${currentStep.startAge}-${currentStep.endAge} years=${currentStep.startYear}-${currentStep.endYear}`
+      : `dayunStartAge=${dayun.startAge.rounded}`
+    natalSummary = [
+      `solar=${job.solarDate}`,
+      `timeIndex=${job.timeIndex}`,
+      `gender=${job.gender}`,
+      `city=${job.city ?? ''}`,
+      `pillars=${JSON.stringify(pillars)}`,
+      `dayunDirection=${dayun.direction}`,
+      dayunLine,
+      `liuNian=${nowYear}:${liunian.label}`,
+      `nextLiuNian=${nowYear + 1}:${nextLiunian.label}`,
+    ].join('; ')
+    natalFacts = {
+      solarDate: job.solarDate,
+      gender: job.gender,
+      dayMaster: pillars.day.stem,
+      dayPillar: pillars.day.label,
+      dayun: currentStep?.ganZhi.label ?? '',
+      dayunYears: currentStep
+        ? `${currentStep.startYear}-${currentStep.endYear}`
+        : '',
+      liuNian: `${nowYear} ${liunian.label}`,
+      nextLiuNian: `${nowYear + 1} ${nextLiunian.label}`,
+    }
+    console.info('[faceoracle-job] natalFacts', { jobId, natalFacts })
+  } catch (err) {
+    console.warn('[faceoracle-job] natal inject failed', {
+      jobId,
+      error: err instanceof Error ? err.message : String(err),
+    })
   }
 
   const outputKind =
@@ -477,12 +595,33 @@ export async function runFaceoracleReadingJob(
 
   await setJobStage(db, jobId, 'interpreting', 50)
 
+  let normalized: ReturnType<typeof normalizeFaceoracleInterpretation> = null
   const ai = await callReadingAi(env, promptTemplate, job.locale)
-  if (!ai.parsed) {
-    await failJob(db, job, 'ai_failed', true)
-    return
+  if (ai.parsed) {
+    normalized = normalizeFaceoracleInterpretation(ai.parsed, job.locale)
+  } else {
+    console.warn('[faceoracle-job] primary AI miss — compact retry', {
+      jobId,
+      error: ai.error,
+    })
+    const compactPrompt = [
+      promptTemplate,
+      '',
+      'COMPACT RETRY: Keep every chapter field, but tighten prose slightly so the',
+      'full JSON fits. Output ONLY valid JSON.',
+    ].join('\n')
+    const retry = await callReadingAi(env, compactPrompt, job.locale)
+    if (!retry.parsed) {
+      await failJob(
+        db,
+        job,
+        `ai_failed:${(retry.error ?? ai.error ?? 'unknown').slice(0, 200)}`,
+        true
+      )
+      return
+    }
+    normalized = normalizeFaceoracleInterpretation(retry.parsed, job.locale)
   }
-  let normalized = normalizeFaceoracleInterpretation(ai.parsed, job.locale)
   if (!normalized || !interpretationHasBody(normalized)) {
     await failJob(db, job, 'ai_empty', true)
     return
@@ -500,12 +639,86 @@ export async function runFaceoracleReadingJob(
       'CRITICAL RETRY: Previous draft violated the output language. Rewrite the ENTIRE JSON',
       'so every user-facing string is in the required language. No Chinese sentences.',
     ].join('\n')
-    const retry = await callReadingAi(env, retryPrompt, job.locale)
-    if (retry.parsed) {
-      const again = normalizeFaceoracleInterpretation(retry.parsed, job.locale)
+    const langRetry = await callReadingAi(env, retryPrompt, job.locale)
+    if (langRetry.parsed) {
+      const again = normalizeFaceoracleInterpretation(langRetry.parsed, job.locale)
       if (again && interpretationHasBody(again)) {
         normalized = again
       }
+    }
+  }
+
+  // Density floors (citations + three axes): one soft retry, then accept best draft.
+  const densitySource = {
+    chapters: normalized.chapters,
+    events: normalized.flat.events,
+  }
+  let densityGaps = faceoracleDensityGaps(densitySource, normalized.chapters)
+  if (densityGaps.length > 0) {
+    console.warn('[faceoracle-job] density gaps — retrying', { jobId, gaps: densityGaps })
+    const densityPrompt = [
+      promptTemplate,
+      '',
+      'DENSITY RETRY: Previous draft failed floors:',
+      densityGaps.join(', '),
+      'Rewrite the ENTIRE JSON. Require face≥3 citations, palms≥3, natal≥2,',
+      'events≥3 covering axis career+love+health, and advice actions for all three axes.',
+      'Keep 警示/预告 voice. Output ONLY valid JSON.',
+    ].join('\n')
+    const densRetry = await callReadingAi(env, densityPrompt, job.locale)
+    if (densRetry.parsed) {
+      const densAgain = normalizeFaceoracleInterpretation(densRetry.parsed, job.locale)
+      if (densAgain && interpretationHasBody(densAgain)) {
+        const againGaps = faceoracleDensityGaps(
+          { chapters: densAgain.chapters, events: densAgain.flat.events },
+          densAgain.chapters
+        )
+        if (againGaps.length <= densityGaps.length) {
+          normalized = densAgain
+          densityGaps = againGaps
+        }
+      }
+    }
+    if (densityGaps.length > 0) {
+      console.warn('[faceoracle-job] density still soft-short', { jobId, gaps: densityGaps })
+    }
+  }
+
+  // ADR-0003: hard forbidden substring audit — one rewrite, then accept (no stub fail).
+  const auditText = proseFromNormalized(normalized)
+  const softHits = auditSoftForbiddenHits(auditText)
+  if (softHits.length > 0) {
+    console.warn('[faceoracle-job] soft forbidden hits', {
+      jobId,
+      patterns: softHits.map((h) => h.pattern),
+    })
+  }
+  let hardHits = auditHardForbiddenHits(auditText)
+  if (hardHits.length > 0) {
+    console.warn('[faceoracle-job] hard forbidden — rewriting', {
+      jobId,
+      patterns: hardHits.map((h) => h.pattern),
+    })
+    const forbidPrompt = [
+      promptTemplate,
+      '',
+      buildForbiddenRewriteSuffix(hardHits),
+      'Keep classical loci, citations, dated windows, and three-axis coverage.',
+      'Do not replace specificity with empty positivity. Output ONLY valid JSON.',
+    ].join('\n')
+    const forbidRetry = await callReadingAi(env, forbidPrompt, job.locale)
+    if (forbidRetry.parsed) {
+      const forbidAgain = normalizeFaceoracleInterpretation(forbidRetry.parsed, job.locale)
+      if (forbidAgain && interpretationHasBody(forbidAgain)) {
+        normalized = forbidAgain
+        hardHits = auditHardForbiddenHits(proseFromNormalized(normalized))
+      }
+    }
+    if (hardHits.length > 0) {
+      console.warn('[faceoracle-job] hard forbidden still present after rewrite', {
+        jobId,
+        patterns: hardHits.map((h) => h.pattern),
+      })
     }
   }
 
@@ -525,6 +738,7 @@ export async function runFaceoracleReadingJob(
       gender: job.gender,
       city: job.city ?? null,
     },
+    natalFacts,
     horizonMonths,
     outputKind,
     updateKind: 'full',

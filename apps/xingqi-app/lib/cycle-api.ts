@@ -5,6 +5,7 @@
 import { getPortfolioUserId, resolvePortfolioApiUrl, signRequest } from '@zhop/satellite-runtime'
 
 import type { TimelinePayload } from './cycle-types'
+import { isZhHant } from './locale-zh'
 
 async function signedJson(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<Response> {
   const userId = await getPortfolioUserId()
@@ -25,7 +26,7 @@ async function signedJson(method: 'GET' | 'POST' | 'DELETE', path: string, body?
 }
 
 function mapLocale(locale: string): 'zh-Hans' | 'zh-Hant' | 'ja' | 'en' {
-  if (locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK') return 'zh-Hant'
+  if (isZhHant(locale)) return 'zh-Hant'
   if (locale.startsWith('zh')) return 'zh-Hans'
   if (locale.startsWith('ja')) return 'ja'
   return 'en'

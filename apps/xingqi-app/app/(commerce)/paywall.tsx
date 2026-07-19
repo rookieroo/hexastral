@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { ONESHOT_PRICE_FLOOR_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { purchaseProduct, restorePurchases } from '@/lib/iap'
 import { draftReadyForPaywall, getReadingDraft } from '@/lib/reading-draft'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
@@ -30,7 +31,8 @@ export default function XingqiPaywallScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -129,7 +131,7 @@ export default function XingqiPaywallScreen() {
     }
     const draft = getReadingDraft()
     if (!draftReadyForPaywall(draft)) {
-      setError(zh ? '请先完成三张照片与生辰' : 'Complete three photos and birth info first')
+      setError(s('请先完成三张照片与生辰', '請先完成三張照片與生辰', 'Complete three photos and birth info first'))
       router.replace('/capture')
       return
     }
@@ -171,13 +173,13 @@ export default function XingqiPaywallScreen() {
     try {
       const ok = await purchaseProduct(REVENUECAT_PRODUCT_IDS.reading)
       if (!ok) {
-        setError(zh ? '购买未完成' : 'Purchase not completed')
+        setError(s('购买未完成', '購買未完成', 'Purchase not completed'))
         setPhase('choose')
         return
       }
       beginHandoff('oneshot')
     } catch {
-      setError(zh ? '购买未完成' : 'Purchase not completed')
+      setError(s('购买未完成', '購買未完成', 'Purchase not completed'))
       setPhase('choose')
     }
   }
@@ -193,7 +195,7 @@ export default function XingqiPaywallScreen() {
       const ok = await enableReadingCompletionPush(locale)
       setNotifyOn(ok)
       if (!ok) {
-        setError(zh ? '未获得通知权限' : 'Notification permission not granted')
+        setError(s('未获得通知权限', '未獲得通知權限', 'Notification permission not granted'))
       }
     } finally {
       setNotifyBusy(false)
@@ -221,15 +223,13 @@ export default function XingqiPaywallScreen() {
         {phase === 'handoff' ? (
           <>
             <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
-              <XingqiLoader label={zh ? '解读中' : 'Reading'} />
+              <XingqiLoader label={s('解读中', '解讀中', 'Reading')} />
             </View>
             <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-              {zh ? '形气解读已开始' : 'Your reading has started'}
+              {s('形气解读已开始', '形氣解讀已開始', 'Your reading has started')}
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>
-              {zh
-                ? '完整流程通常需要几分钟（特征提取与解读）。请耐心等待，可先回到首页；完成后列表会更新。'
-                : 'This usually takes a few minutes (feature extract + reading). Please wait — you can return home; the list will update when ready.'}
+              {s('完整流程通常需要几分钟（特征提取与解读）。请耐心等待，可先回到首页；完成后列表会更新。', '完整流程通常需要幾分鐘（特徵提取與解讀）。請耐心等待，可先回到首頁；完成後列表會更新。', 'This usually takes a few minutes (feature extract + reading). Please wait — you can return home; the list will update when ready.')}
             </Text>
 
             <View
@@ -246,12 +246,10 @@ export default function XingqiPaywallScreen() {
             >
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={{ color: colors.text, fontSize: 15 }}>
-                  {zh ? '完成后通知我' : 'Notify me when ready'}
+                  {s('完成后通知我', '完成後通知我', 'Notify me when ready')}
                 </Text>
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                  {zh
-                    ? '开启系统推送权限，解读完成后提醒'
-                    : 'Enable push so we can alert you when done'}
+                  {s('开启系统推送权限，解读完成后提醒', '開啟系統推送權限，解讀完成後提醒', 'Enable push so we can alert you when done')}
                 </Text>
               </View>
               <Toggle
@@ -263,18 +261,20 @@ export default function XingqiPaywallScreen() {
             </View>
 
             <Button variant='primary' onPress={goHome}>
-              {zh ? '完成' : 'Done'}
+              {s('完成', '完成', 'Done')}
             </Button>
           </>
         ) : (
           <>
             <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-              {zh ? '选择解锁方式' : 'Choose how to unlock'}
+              {s('选择解锁方式', '選擇解鎖方式', 'Choose how to unlock')}
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
-              {zh
-                ? `单次完整解读起价 $${ONESHOT_PRICE_FLOOR_USD}。订阅可更新 Timeline。解读通常需要几分钟。`
-                : `One complete reading from $${ONESHOT_PRICE_FLOOR_USD}. Subscribe for Timeline. Readings usually take a few minutes.`}
+              {s(
+                `单次：密封六章简报——三轴（事业·爱情·健康）· 位点依据 · 大运流年对照 · 本期窗口。不是聊天式看图说话。Pro：档案 · 周期重拍 · 人生时间线 · 假如 · 报告内追问。起价 $${ONESHOT_PRICE_FLOOR_USD}。`,
+                `單次：密封六章簡報——三軸（事業·愛情·健康）· 位點依據 · 大運流年對照 · 本期窗口。不是聊天式看圖說話。Pro：檔案 · 週期重拍 · 人生時間線 · 假如 · 報告內追問。起價 $${ONESHOT_PRICE_FLOOR_USD}。`,
+                `One-shot: a sealed six-chapter brief — career · love · health, locus citations, computed DaYun/LiuNian contrast, period windows. Not chatty photo-reading. Pro: archive, period recapture, Life axis, What-if, in-report chat. From $${ONESHOT_PRICE_FLOOR_USD}.`
+              )}
             </Text>
 
             {isPro ? (
@@ -288,7 +288,7 @@ export default function XingqiPaywallScreen() {
                 }}
                 disabled={phase === 'purchasing'}
               >
-                {zh ? '用 Pro 额度发起' : 'Start with Pro'}
+                {s('用 Pro 额度发起', '用 Pro 額度發起', 'Start with Pro')}
               </Button>
             ) : (
               <>
@@ -297,9 +297,11 @@ export default function XingqiPaywallScreen() {
                   onPress={() => void buyOneshot()}
                   disabled={phase === 'purchasing'}
                 >
-                  {zh
-                    ? `单次解读 · $${ONESHOT_PRICE_FLOOR_USD}+`
-                    : `One-shot · $${ONESHOT_PRICE_FLOOR_USD}+`}
+                  {s(
+                    `单次简报 · $${ONESHOT_PRICE_FLOOR_USD}+`,
+                    `單次簡報 · $${ONESHOT_PRICE_FLOOR_USD}+`,
+                    `Sealed brief · $${ONESHOT_PRICE_FLOOR_USD}+`
+                  )}
                 </Button>
                 <SatellitePaywall
                   productIds={{
@@ -309,10 +311,18 @@ export default function XingqiPaywallScreen() {
                   copy={{
                     title: 'Xingqi Pro',
                     planLabels: {
-                      monthly: zh ? '月度 · Timeline' : 'Monthly · Timeline',
-                      annual: zh ? '年度 · Timeline' : 'Annual · Timeline',
+                      monthly: s(
+                        '月度 · 档案与气机层',
+                        '月度 · 檔案與氣機層',
+                        'Monthly · Archive + qi layer'
+                      ),
+                      annual: s(
+                        '年度 · 档案与气机层',
+                        '年度 · 檔案與氣機層',
+                        'Annual · Archive + qi layer'
+                      ),
                     },
-                    restorePrimary: zh ? '恢复购买' : 'Restore',
+                    restorePrimary: s('恢复购买', '恢復購買', 'Restore'),
                   }}
                   onRestore={() => void restorePurchases()}
                   onSelect={async (productId) => {
@@ -321,13 +331,13 @@ export default function XingqiPaywallScreen() {
                     try {
                       const ok = await purchaseProduct(productId)
                       if (!ok) {
-                        setError(zh ? '订阅未完成' : 'Subscription not completed')
+                        setError(s('订阅未完成', '訂閱未完成', 'Subscription not completed'))
                         setPhase('choose')
                         return
                       }
                       beginHandoff('period_brief')
                     } catch {
-                      setError(zh ? '订阅未完成' : 'Subscription not completed')
+                      setError(s('订阅未完成', '訂閱未完成', 'Subscription not completed'))
                       setPhase('choose')
                     }
                   }}
@@ -337,7 +347,7 @@ export default function XingqiPaywallScreen() {
 
             {phase === 'purchasing' ? (
               <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-                <XingqiLoader label={zh ? '处理购买' : 'Processing'} />
+                <XingqiLoader label={s('处理购买', '處理購買', 'Processing')} />
               </View>
             ) : null}
           </>

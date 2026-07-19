@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import type { OnboardingDraft } from '@/lib/onboardingDraft'
 import {
   draftHasThreePhotos,
@@ -36,7 +37,8 @@ export default function BirthScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const zh = locale.startsWith('zh')
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const lang = localeToLang(locale)
   const dateLabels = useMemo(() => birthDateFieldLabelsForLocale(lang), [lang])
   const scrollRef = useRef<ScrollView | null>(null)
@@ -121,7 +123,7 @@ export default function BirthScreen() {
       date.solarDate ?? birthInputToSolar(date.input, date.calendar, date.isLeap ?? false) ?? ''
     const solarDate = solarRaw.trim()
     if (!solarDate || timeIndex == null || !gender) {
-      setError(zh ? '请完整填写日期、时辰与性别' : 'Date, hour, and gender are required')
+      setError(s('请完整填写日期、时辰与性别', '請完整填寫日期、時辰與性別', 'Date, hour, and gender are required'))
       return
     }
     setBusy(true)
@@ -149,13 +151,15 @@ export default function BirthScreen() {
       if (!draftReadyForPaywall(getReadingDraft())) {
         if (!draftHasThreePhotos(getReadingDraft())) {
           setError(
-            zh
-              ? '请先在首页完成左掌、右掌与面部照片'
-              : 'Add left palm, right palm, and face photos first'
+            s(
+              '请先在首页完成左掌、右掌与面部照片',
+              '請先在首頁完成左掌、右掌與面部照片',
+              'Add left palm, right palm, and face photos first'
+            )
           )
           return
         }
-        setError(zh ? '资料不完整' : 'Incomplete draft')
+        setError(s('资料不完整', '資料不完整', 'Incomplete draft'))
         return
       }
       // Pro: skip unlock sheet — start reading and return home.
@@ -189,12 +193,14 @@ export default function BirthScreen() {
         }}
       />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-        {zh ? '录入生辰' : 'Your birth details'}
+        {s('录入生辰', '錄入生辰', 'Your birth details')}
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
-        {zh
-          ? '完整解读需要三张照片与生辰。生辰用于形气与八字对照。'
-          : 'A complete reading needs three photos plus birth info for physiognomy × BaZi contrast.'}
+        {s(
+          '完整解读需要三张照片与生辰。生辰用于形气与八字对照。',
+          '完整解讀需要三張照片與生辰。生辰用於形氣與八字對照。',
+          'A complete reading needs three photos plus birth info for physiognomy × BaZi contrast.'
+        )}
       </Text>
       <BirthForm
         locale={locale}
@@ -223,7 +229,9 @@ export default function BirthScreen() {
       {error ? <Text style={{ color: colors.accent }}>{error}</Text> : null}
       <View>
         <Button variant='primary' onPress={() => void onContinue()} disabled={busy}>
-          {isPro ? (zh ? '开始解读' : 'Start reading') : zh ? '继续到解锁' : 'Continue to unlock'}
+          {isPro
+            ? s('开始解读', '開始解讀', 'Start reading')
+            : s('继续到解锁', '繼續到解鎖', 'Continue to unlock')}
         </Button>
       </View>
     </ScrollView>

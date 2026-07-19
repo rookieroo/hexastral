@@ -16,6 +16,7 @@ import {
   pollFaceReadingJob,
   runFaceReading,
 } from './api'
+import { isCjkZh, pickZh } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
 import { isXingqiPushEnabled, scheduleXingqiPush } from './push-schedule'
 import {
@@ -26,6 +27,10 @@ import {
 } from './reading-draft'
 import { saveLastReadingPhotoSnapshot } from './reading-photo-stamp'
 import { registerXingqiServerPush } from './server-push'
+
+function zhCopy(locale: string, hans: string, hant: string, en: string): string {
+  return isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+}
 
 const PENDING_KEY = 'xingqi_reading_job_pending_v1'
 const JOB_ID_KEY = 'xingqi_reading_job_id_v1'
@@ -138,7 +143,7 @@ export async function showReadingStartedHandoff(opts: {
   locale: string
   onDismiss?: () => void
 }): Promise<void> {
-  const zh = opts.locale.startsWith('zh')
+  const loc = opts.locale
   const prefs = await getXingqiPushPrefs()
   const perm = await getPushPermissionStatus()
 
@@ -147,25 +152,31 @@ export async function showReadingStartedHandoff(opts: {
       await setXingqiPushPrefs({ remindersOn: true })
     }
     Alert.alert(
-      zh ? '解读已开始' : 'Reading started',
-      zh
-        ? '可离开应用。特征提取后会在云端继续解读，完成后通知你。'
-        : 'You can leave the app. After extract, interpretation continues in the cloud — we will notify you when ready.',
-      [{ text: zh ? '好' : 'OK', onPress: opts.onDismiss }]
+      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+      zhCopy(
+        loc,
+        '可离开应用。特征提取后会在云端继续解读，完成后通知你。',
+        '可離開應用。特徵提取後會在雲端繼續解讀，完成後通知你。',
+        'You can leave the app. After extract, interpretation continues in the cloud — we will notify you when ready.'
+      ),
+      [{ text: zhCopy(loc, '好', '好', 'OK'), onPress: opts.onDismiss }]
     )
     return
   }
 
   if (perm === 'denied') {
     Alert.alert(
-      zh ? '解读已开始' : 'Reading started',
-      zh
-        ? '可离开应用。如需完成后通知，请在系统设置中开启通知。'
-        : 'You can leave the app. To get a completion alert, enable Notifications in Settings.',
+      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+      zhCopy(
+        loc,
+        '可离开应用。如需完成后通知，请在系统设置中开启通知。',
+        '可離開應用。如需完成後通知，請在系統設定中開啟通知。',
+        'You can leave the app. To get a completion alert, enable Notifications in Settings.'
+      ),
       [
-        { text: zh ? '好' : 'OK', style: 'cancel', onPress: opts.onDismiss },
+        { text: zhCopy(loc, '好', '好', 'OK'), style: 'cancel', onPress: opts.onDismiss },
         {
-          text: zh ? '打开设置' : 'Open Settings',
+          text: zhCopy(loc, '打开设置', '打開設定', 'Open Settings'),
           onPress: () => {
             void Linking.openSettings()
             opts.onDismiss?.()
@@ -177,14 +188,21 @@ export async function showReadingStartedHandoff(opts: {
   }
 
   Alert.alert(
-    zh ? '解读已开始' : 'Reading started',
-    zh
-      ? '可离开应用。需要完成后通知吗？'
-      : 'You can leave the app. Want a notification when it finishes?',
+    zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+    zhCopy(
+      loc,
+      '可离开应用。需要完成后通知吗？',
+      '可離開應用。需要完成後通知嗎？',
+      'You can leave the app. Want a notification when it finishes?'
+    ),
     [
-      { text: zh ? '不用了' : 'Not now', style: 'cancel', onPress: opts.onDismiss },
       {
-        text: zh ? '开启通知' : 'Notify me',
+        text: zhCopy(loc, '不用了', '不用了', 'Not now'),
+        style: 'cancel',
+        onPress: opts.onDismiss,
+      },
+      {
+        text: zhCopy(loc, '开启通知', '開啟通知', 'Notify me'),
         onPress: () => {
           void enableReadingCompletionPush(opts.locale).finally(() => {
             opts.onDismiss?.()
@@ -195,44 +213,92 @@ export async function showReadingStartedHandoff(opts: {
   )
 }
 
-function mapJobError(msg: string, zh: boolean): string {
-  let error = zh ? '解读失败，请稍后重试' : 'Reading failed. Try again.'
+function mapJobError(msg: string, locale: string): string {
+  let error = zhCopy(locale, '解读失败，请稍后重试', '解讀失敗，請稍後重試', 'Reading failed. Try again.')
   if (msg === 'signin_required') error = 'signin_required'
   else if (msg === 'biometric_consent_required') error = 'biometric_consent_required'
   else if (msg === 'features_unchanged') {
-    error = zh
-      ? '照片特征未变化。请先更新左掌 / 右掌 / 面部至少一张照片，再发起新解读。'
-      : 'Photos unchanged. Update at least one of left palm, right palm, or face before a new reading.'
+    error = zhCopy(
+      locale,
+      '照片特征未变化。请先更新左掌 / 右掌 / 面部至少一张照片，再发起新解读。',
+      '照片特徵未變化。請先更新左掌 / 右掌 / 面部至少一張照片，再發起新解讀。',
+      'Photos unchanged. Update at least one of left palm, right palm, or face before a new reading.'
+    )
   } else if (msg === 'features_incomplete' || msg === 'birth_incomplete') {
-    error = zh
-      ? '请先完成三张照片与出生信息，再发起解读。'
-      : 'Complete three photos and birth info before starting a reading.'
+    error = zhCopy(
+      locale,
+      '请先完成三张照片与出生信息，再发起解读。',
+      '請先完成三張照片與出生資訊，再發起解讀。',
+      'Complete three photos and birth info before starting a reading.'
+    )
   } else if (
     msg === 'purchase_required' ||
     msg.toLowerCase().includes('purchase_required') ||
     msg.toLowerCase().includes('quota')
   ) {
-    error = zh
-      ? '需要有效订阅或单次购买（DEV Pro 仅客户端无效，请在设置里再点一次 Force entitlement → PRO）'
-      : 'Purchase or Pro required (DEV client Pro is not enough — cycle Force entitlement → PRO in Settings)'
+    error = zhCopy(
+      locale,
+      '需要有效订阅或单次购买（DEV Pro 仅客户端无效，请在设置里再点一次 Force entitlement → PRO）',
+      '需要有效訂閱或單次購買（DEV Pro 僅客戶端無效，請在設定裡再點一次 Force entitlement → PRO）',
+      'Purchase or Pro required (DEV client Pro is not enough — cycle Force entitlement → PRO in Settings)'
+    )
   } else if (msg.includes('photo_slot_exhausted')) {
-    error = zh ? '本月照片额度已用尽' : 'Monthly photo slots exhausted'
+    error = zhCopy(locale, '本月照片额度已用尽', '本月照片額度已用盡', 'Monthly photo slots exhausted')
   } else if (msg.includes('report_regen_exhausted')) {
-    error = zh ? '本月报告重生成额度已用尽' : 'Monthly report regenerations exhausted'
+    error = zhCopy(
+      locale,
+      '本月报告重生成额度已用尽',
+      '本月報告重新生成額度已用盡',
+      'Monthly report regenerations exhausted'
+    )
   } else if (msg === 'extract_not_pro' || msg.includes('extract_not_pro')) {
-    error = zh
-      ? '特征提取需要 Pro（Settings → Force entitlement → PRO，需已登录）'
-      : 'Feature extract needs Pro (Settings → Force entitlement → PRO while signed in)'
+    error = zhCopy(
+      locale,
+      '特征提取需要 Pro（Settings → Force entitlement → PRO，需已登录）',
+      '特徵提取需要 Pro（Settings → Force entitlement → PRO，需已登入）',
+      'Feature extract needs Pro (Settings → Force entitlement → PRO while signed in)'
+    )
+  } else if (
+    msg.includes('extract_photo_quality_low') ||
+    msg.includes('photo_quality_low')
+  ) {
+    error = zhCopy(
+      locale,
+      '照片不够清晰完整。请重拍：正脸五官清晰，或掌纹全掌入镜、光线均匀。',
+      '照片不夠清晰完整。請重拍：正臉五官清晰，或掌紋全掌入鏡、光線均勻。',
+      'Photo too unclear. Retake: sharp full face, or full palm with even light.'
+    )
+  } else if (
+    msg.includes('extract_modality_mismatch') ||
+    msg.includes('modality_mismatch')
+  ) {
+    error = zhCopy(
+      locale,
+      '这张图不像当前步骤要求的部位（左掌 / 右掌 / 面部）。请按步骤重拍。',
+      '這張圖不像目前步驟要求的部位（左掌 / 右掌 / 面部）。請按步驟重拍。',
+      'This image does not match the expected part (left palm / right palm / face). Retake for this step.'
+    )
   } else if (msg.includes('extract_failed:502') || msg.includes('VLM')) {
-    error = zh
-      ? '图像特征服务暂不可用，请稍后重试'
-      : 'Vision extract service unavailable — try again shortly'
+    error = zhCopy(
+      locale,
+      '图像特征服务暂不可用，请稍后重试',
+      '圖像特徵服務暫不可用，請稍後重試',
+      'Vision extract service unavailable — try again shortly'
+    )
   } else if (msg.includes('extract_failed') || msg.includes('extract_forbidden')) {
-    error = zh ? `特征提取失败（${msg}）` : `Feature extract failed (${msg})`
+    error = zhCopy(
+      locale,
+      `特征提取失败（${msg}）`,
+      `特徵提取失敗（${msg}）`,
+      `Feature extract failed (${msg})`
+    )
   } else if (msg === 'job_poll_timeout') {
-    error = zh
-      ? '解读仍在云端处理中，完成后会通知你'
-      : 'Still processing in the cloud — we will notify you when ready'
+    error = zhCopy(
+      locale,
+      '解读仍在云端处理中，完成后会通知你',
+      '解讀仍在雲端處理中，完成後會通知你',
+      'Still processing in the cloud — we will notify you when ready'
+    )
   } else if (msg.length > 0 && msg.length < 200) {
     error = msg
   }
@@ -352,7 +418,7 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
       setState({
         status: 'error',
         phase: 'failed',
-        error: mapJobError('job_bad_result', locale.startsWith('zh')),
+        error: mapJobError('job_bad_result', locale),
       })
       await setPendingFlag(false)
       return
@@ -371,7 +437,7 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
     setState({
       status: 'error',
       phase: 'failed',
-      error: mapJobError(snap.errorMessage || 'job_failed', locale.startsWith('zh')),
+      error: mapJobError(snap.errorMessage || 'job_failed', locale),
     })
     await setPendingFlag(false)
     return
@@ -395,7 +461,7 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
     setState({
       status: 'error',
       phase: 'failed',
-      error: mapJobError(done.errorMessage || 'job_failed', locale.startsWith('zh')),
+      error: mapJobError(done.errorMessage || 'job_failed', locale),
     })
     await setPendingFlag(false)
     return
@@ -404,7 +470,7 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
     setState({
       status: 'error',
       phase: 'failed',
-      error: mapJobError('job_missing_result', locale.startsWith('zh')),
+      error: mapJobError('job_missing_result', locale),
     })
     await setPendingFlag(false)
     return
@@ -416,7 +482,7 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
     setState({
       status: 'error',
       phase: 'failed',
-      error: mapJobError('job_bad_result', locale.startsWith('zh')),
+      error: mapJobError('job_bad_result', locale),
     })
     await setPendingFlag(false)
     return
@@ -453,7 +519,6 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
   if (state.status === 'running' || inFlight) return false
 
   const locale = input.locale
-  const zh = locale.startsWith('zh')
   patchReadingDraft({ outputKind: input.outputKind, updateKind: 'full' })
   const draft = input.draft ?? getReadingDraft()
 
@@ -537,7 +602,7 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
       setState({
         status: 'error',
         phase: 'failed',
-        error: mapJobError(msg, zh),
+        error: mapJobError(msg, locale),
       })
       await setPendingFlag(false)
     } finally {
@@ -575,7 +640,7 @@ export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolea
       setState({
         status: 'error',
         phase: 'failed',
-        error: mapJobError(msg, locale.startsWith('zh')),
+        error: mapJobError(msg, locale),
       })
       await setPendingFlag(false)
     } finally {
@@ -623,17 +688,15 @@ export function consumeReadingJobError(): string | null {
 /** Step labels for the in-list staged loader. */
 export function readingJobSteps(
   phase: ReadingJobPhase,
-  zh: boolean
+  locale: string
 ): Array<{ key: string; label: string; done: boolean; active: boolean }> {
   const order = ['extracting', 'queued', 'interpreting', 'done'] as const
-  const labels: Record<(typeof order)[number], string> = zh
-    ? { extracting: '提取特征', queued: '云端排队', interpreting: '生成解读', done: '完成' }
-    : {
-        extracting: 'Extract features',
-        queued: 'Queued in cloud',
-        interpreting: 'Writing reading',
-        done: 'Done',
-      }
+  const labels: Record<(typeof order)[number], string> = {
+    extracting: zhCopy(locale, '提取特征', '提取特徵', 'Extract features'),
+    queued: zhCopy(locale, '云端排队', '雲端排隊', 'Queued in cloud'),
+    interpreting: zhCopy(locale, '生成解读', '生成解讀', 'Writing reading'),
+    done: zhCopy(locale, '完成', '完成', 'Done'),
+  }
   const activeKey: (typeof order)[number] =
     phase === 'failed'
       ? 'interpreting'

@@ -1,6 +1,4 @@
-/**
- * Map reading payload → Xingqi report chapters (Yuel-aligned).
- */
+import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
 
 export type XingqiChapterKind =
   | 'overview'
@@ -10,6 +8,11 @@ export type XingqiChapterKind =
   | 'period'
   | 'advice'
 
+export type XingqiChapterCitation = {
+  locus: string
+  note: string
+}
+
 export type XingqiChapter = {
   kind: XingqiChapterKind
   goldenLine: string
@@ -18,6 +21,7 @@ export type XingqiChapter = {
   reef: string | null
   remedy: string | null
   counterpoint: string | null
+  citations: XingqiChapterCitation[]
 }
 
 const ORDER: XingqiChapterKind[] = [
@@ -31,19 +35,49 @@ const ORDER: XingqiChapterKind[] = [
 
 export const CHAPTER_TITLE: Record<
   XingqiChapterKind,
-  { zh: string; en: string }
+  { zh: string; zhHant: string; en: string }
 > = {
-  overview: { zh: '总格局', en: 'Overview' },
-  face: { zh: '面部', en: 'Face' },
-  palms: { zh: '双手', en: 'Palms' },
-  natal: { zh: '形气 × 八字', en: 'Form × BaZi' },
-  period: { zh: '本期窗口', en: 'Period' },
-  advice: { zh: '建议', en: 'Advice' },
+  overview: { zh: '总格局', zhHant: '總格局', en: 'Overview' },
+  face: { zh: '面部', zhHant: '面部', en: 'Face' },
+  palms: { zh: '双手', zhHant: '雙手', en: 'Palms' },
+  natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi' },
+  period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period' },
+  advice: { zh: '建议', zhHant: '建議', en: 'Advice' },
 }
 
+export function chapterTitle(kind: XingqiChapterKind, locale: string): string {
+  const row = CHAPTER_TITLE[kind]
+  if (isZhHant(locale)) return row.zhHant
+  if (isCjkZh(locale)) return row.zh
+  return row.en
+}
 
 function asStr(v: unknown): string {
   return typeof v === 'string' ? v.trim() : ''
+}
+
+function parseCitations(raw: unknown): XingqiChapterCitation[] {
+  if (!Array.isArray(raw)) return []
+  const out: XingqiChapterCitation[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const locus = asStr(o.locus)
+    const note = asStr(o.note)
+    if (locus && note) out.push({ locus, note })
+  }
+  return out
+}
+
+function studyDisclaimer(locale: string): string {
+  if (!isCjkZh(locale)) {
+    return 'Cultural study framing — not deterministic fate.'
+  }
+  return pickZh(
+    locale,
+    '文化研习参考，不作命运断语。',
+    '文化研習參考，不作命運斷語。'
+  )
 }
 
 function chapterFromBody(
@@ -52,7 +86,6 @@ function chapterFromBody(
   locale: string
 ): XingqiChapter | null {
   if (body.length < 8) return null
-  const zh = locale.startsWith('zh')
   const first = body.split(/[。.!?\n]/)[0]?.trim() || body.slice(0, 48)
   return {
     kind,
@@ -61,9 +94,8 @@ function chapterFromBody(
     dynamic: '',
     reef: null,
     remedy: null,
-    counterpoint: zh
-      ? '文化研习参考，不作命运断语。'
-      : 'Cultural study framing — not deterministic fate.',
+    counterpoint: studyDisclaimer(locale),
+    citations: [],
   }
 }
 
@@ -83,6 +115,7 @@ function parseChapter(raw: unknown): XingqiChapter | null {
     reef: asStr(o.reef) || null,
     remedy: asStr(o.remedy) || null,
     counterpoint: asStr(o.counterpoint) || null,
+    citations: parseCitations(o.citations),
   }
 }
 
@@ -134,7 +167,8 @@ export function adaptReadingChapters(
       const theme = asStr(e.theme)
       const note = asStr(e.note)
       const start = asStr(e.startMonth)
-      return [start, theme, note].filter(Boolean).join(' · ')
+      const axis = asStr(e.axis)
+      return [start, axis, theme, note].filter(Boolean).join(' · ')
     })
     .filter(Boolean)
     .join('\n')

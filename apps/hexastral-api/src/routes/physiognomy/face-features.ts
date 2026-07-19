@@ -27,6 +27,7 @@ import {
   FACEORACLE_VLM_SCHEMA_VERSION,
   type FaceoracleFeatureType,
 } from '../../lib/faceoracle-vlm-cache'
+import { assessFaceoracleFeatureQuality } from '../../lib/faceoracle-feature-quality'
 import { astroClient } from '../../lib/service-clients'
 import {
   checkAndConsumePhysiognomyUpload,
@@ -43,9 +44,33 @@ const fromBase64Schema = z.object({
   type: featureTypeSchema.default('face'),
 })
 
+function parseFeaturesJson(raw: string): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      return parsed as Record<string, string>
+    }
+  } catch {
+    // ignore
+  }
+  return {}
+}
+
+function assertFeatureQuality(
+  type: FaceoracleFeatureType,
+  features: Record<string, string>
+): void {
+  const q = assessFaceoracleFeatureQuality(type, features)
+  if (q.ok) return
+  throw new HTTPException(422, {
+    message: `${q.code}:${q.detail}`,
+  })
+}
+
 function extractionPathFor(type: z.infer<typeof featureTypeSchema>): string {
   return type === 'face' ? '/physiognomy/extract-features' : '/physiognomy/extract-palm-features'
 }
+
 
 type Db = AppEnv['Variables']['db']
 
@@ -151,28 +176,34 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       contentHash,
     })
     if (cached) {
-      let features: Record<string, string> = {}
-      try {
-        const parsed: unknown = JSON.parse(cached.featuresJson)
-        if (parsed && typeof parsed === 'object') {
-          features = parsed as Record<string, string>
-        }
-      } catch {
-        features = {}
+      const features = parseFeaturesJson(cached.featuresJson)
+      const q = assessFaceoracleFeatureQuality(input.type, features)
+      if (q.ok) {
+        await setActiveFeaturePointer(db, input.userId, input.type, cached.id)
+        console.info('[faceoracle.vlm] cache_hit', {
+          userId: input.userId,
+          type: input.type,
+          featureId: cached.id,
+        })
+        return c.json({
+          featureId: cached.id,
+          type: input.type,
+          imageDeleted: true,
+          features,
+          cached: true,
+        })
       }
-      await setActiveFeaturePointer(db, input.userId, input.type, cached.id)
-      console.info('[faceoracle.vlm] cache_hit', {
+      // Stale thin / mismatched cache — drop so a retake can re-extract.
+      console.warn('[faceoracle.vlm] cache_quality_reject', {
         userId: input.userId,
         type: input.type,
         featureId: cached.id,
+        code: q.code,
+        detail: q.detail,
       })
-      return c.json({
-        featureId: cached.id,
-        type: input.type,
-        imageDeleted: true,
-        features,
-        cached: true,
-      })
+      await db
+        .delete(userPhysiognomyFeatures)
+        .where(eq(userPhysiognomyFeatures.id, cached.id))
     }
 
     // Miss — meter free upload only when we will call VLM.
@@ -197,6 +228,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       throw new HTTPException(502, { message: msg })
     }
     const features = data.features
+    assertFeatureQuality(input.type, features)
 
     const featureId = nanoid()
     const now = new Date().toISOString()
@@ -233,6 +265,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
         } catch {
           // keep VLM features
         }
+        assertFeatureQuality(input.type, racedFeatures)
         await setActiveFeaturePointer(db, input.userId, input.type, raced.id)
         return c.json({
           featureId: raced.id,

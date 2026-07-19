@@ -6,7 +6,10 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 **Display brand:** Xingqi · `com.hexastral.xingqi` · scheme `xingqi`.  
 **API / RC opaque ids:** portfolio target `faceoracle`, SKUs `faceoracle_*` (unchanged server catalog).
 
-**i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).
+**i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).  
+`zh-Hant` is a **separate copy track** (shell, alerts, chapter chrome, term glosses, push) — never substitute Simplified for Traditional. Reading body LLM already forces Traditional via `faceoracle-locale.ts`.
+
+**Positioning:** Oneshot = sealed six-chapter brief (citations · three axes · computed DaYun/LiuNian) — thicker than chatty photo-reading. Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture) — not unlimited look-at-photo. VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
 
 ## Funnel
 
@@ -21,14 +24,23 @@ Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028]
 | | One-shot | Pro (`faceoracle_pro`) |
 |---|---|---|
 | SKU | `faceoracle_reading` | `faceoracle_pro_*` |
-| Result | Full chaptered report once | Same + 划词 chat (free-taste then Pro) |
-| History / 档案 | — | Reading snapshots + period briefs |
+| Result | Dense 6-chapter report (career · love · health) once | Same + period refresh |
+| Living layer | **No** Timeline / What-if / Chat / Living FAB | Yes |
+| History / 档案 | Current reading only | Snapshots + period briefs |
 | Quota | 1 credit / purchase | **Photos:** 6 slots / UTC month (3 per new photo reading). **Report regen:** 3 / UTC month (same photos, new locale/body; `regen: true`) |
 | Events | Written once | Refreshed each reading; drives push + period / 形气窗口 strip |
 | Life axis | — | Yuun-parity git-graph (`/timeline`) via `/api/physiognomy/cycle/*` |
 | What-if | — | Yuun-parity forks (`/makeif`) via same facade |
 
 **Do not** call Yuun `/api/auspice/*` from Xingqi. Shared cycle compute only behind faceoracle-owned routes + `faceoracle_pro` server gate.
+
+## Report architecture
+
+- **Voice:** 警示 / 预告 — “形上可见…，气机上宜留意…” (ADR-0003; no hard fate).
+- **Three axes every reading:** career / love / health — tagged on `events[].axis`, covered in advice.
+- **Density:** face/palms citations; natal 大运/流年 injected from `@zhop/astro-core`; soft post-check retry.
+- **Close UX:** top-right X on result (no bottom Done).
+- **Capture:** HD full face + full palms; blurry/cropped → weak VLM → thin report.
 
 ## Locale policy
 
@@ -57,7 +69,8 @@ Xingqi keeps flagship for the single monolithic 6-chapter JSON; prompt engineeri
 
 ## Copy rules
 
-Cultural study framing — no deterministic fate language (see ADR-0003).
+Cultural study framing — no deterministic fate language (see ADR-0003).  
+Reading LLM injects `@zhop/portfolio-voice` compliance + health non-medical boundary; hard-forbidden audit rewrites once. Resonance stays via classical loci + dated windows — not ironclad verdicts.
 
 ## Cache layers
 

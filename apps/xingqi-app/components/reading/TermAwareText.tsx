@@ -8,12 +8,13 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Text, type TextStyle } from 'react-native'
 
 import { resolveXingqiTerm, segmentXingqiTerms } from '@/lib/xingqi-terms'
+import { isCjkZh, isZhHant } from '@/lib/locale-zh'
 
 import { TermBubble } from './TermBubble'
 
 function toTermLocale(locale: string): TermLocale {
-  if (locale === 'zh-Hant' || locale === 'zh-TW' || locale === 'zh-HK') return 'zh-Hant'
-  if (locale.startsWith('zh')) return 'zh'
+  if (isZhHant(locale)) return 'zh-Hant'
+  if (isCjkZh(locale)) return 'zh'
   if (locale.startsWith('ja')) return 'ja'
   return 'en'
 }
@@ -86,7 +87,7 @@ export function TermAwareText({
   highlightedQuotes?: readonly string[]
 }) {
   const [term, setTerm] = useState<ResolvedTerm | null>(null)
-  const cjk = locale.startsWith('zh') || locale.startsWith('ja')
+  const cjk = isCjkZh(locale) || locale.startsWith('ja')
   const sentences = useMemo(
     () => (onPickQuote ? splitSentences(text) : [text]),
     [text, onPickQuote]

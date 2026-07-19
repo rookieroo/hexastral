@@ -3,6 +3,7 @@
  */
 
 import type { Locale } from './i18n'
+import { isZhHant } from './locale-zh'
 
 export function livingLayerLabels(locale: Locale): {
   timeline: string
@@ -195,7 +196,7 @@ export function formReadingListTitle(locale: Locale): string {
 /** Short badge for frozen generation locale on a reading. */
 export function readingLocaleBadge(readingLocale: string | null | undefined): string | null {
   if (!readingLocale) return null
-  if (readingLocale.startsWith('zh-Hant') || readingLocale === 'zh-TW') return '繁'
+  if (isZhHant(readingLocale)) return '繁'
   if (readingLocale.startsWith('zh')) return '简'
   if (readingLocale.startsWith('ja')) return 'JA'
   if (readingLocale.startsWith('en')) return 'EN'

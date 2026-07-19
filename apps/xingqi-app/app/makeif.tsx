@@ -30,6 +30,7 @@ import {
   type TimelinePayload,
 } from '@/lib/cycle-api'
 import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import {
   buildInteractiveModel,
   buildUserBranch,
@@ -245,7 +246,11 @@ export default function XingqiMakeIfScreen() {
       >
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={{ color: colors.accent }}>
-            {locale.startsWith('zh') ? '返回' : locale === 'ja' ? '戻る' : 'Back'}
+            {isCjkZh(locale)
+              ? pickZh(locale, '返回', '返回')
+              : locale === 'ja'
+                ? '戻る'
+                : 'Back'}
           </Text>
         </Pressable>
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
@@ -254,7 +259,9 @@ export default function XingqiMakeIfScreen() {
         <Text style={{ color: colors.secondary, lineHeight: 22 }}>{copy.tapHint}</Text>
 
         {loading ? (
-          <Text style={{ color: colors.dim }}>{locale.startsWith('zh') ? '加载中…' : 'Loading…'}</Text>
+          <Text style={{ color: colors.dim }}>
+            {isCjkZh(locale) ? pickZh(locale, '加载中…', '載入中…') : 'Loading…'}
+          </Text>
         ) : error === 'pro_required' ? (
           <>
             <Text style={{ color: colors.secondary }}>{copy.unlockBody}</Text>
@@ -264,7 +271,7 @@ export default function XingqiMakeIfScreen() {
           </>
         ) : error === 'birth' ? (
           <Button variant='secondary' onPress={() => router.push('/birth' as never)}>
-            {locale.startsWith('zh') ? '编辑出生信息' : 'Edit birth'}
+            {isCjkZh(locale) ? pickZh(locale, '编辑出生信息', '編輯出生資訊') : 'Edit birth'}
           </Button>
         ) : payload && model ? (
           <>
@@ -279,7 +286,13 @@ export default function XingqiMakeIfScreen() {
                 setForkAge(age)
                 setSheetOpen(true)
               }}
-              nowLabel={locale.startsWith('zh') ? '今' : locale === 'ja' ? '今' : 'Now'}
+              nowLabel={
+                isCjkZh(locale)
+                  ? pickZh(locale, '今', '今')
+                  : locale === 'ja'
+                    ? '今'
+                    : 'Now'
+              }
               lang={locale}
               focusAge={currentAge}
             />
