@@ -9,7 +9,8 @@
  *       standard —— explain / signal / preview / Free-taste chat（短输出 + 轻推理，控成本）
  *
  * 模型选型（中文优先，CF Workers AI catalog）:
- *   - Kimi K2.6 (1T MoE) —— C-Eval 92.5 / CMMLU 90.9，已公布的最强中文，复杂任务主力。
+ *   - Kimi K2.6 (1T MoE) —— C-Eval 92.5 / CMMLU 90.9，复杂任务主力（JSON 关 thinking）。
+ *   - Kimi K3 (`moonshotai/kimi-k3`) —— CF 已上；always-on reasoning，暂不进 flagship chain。
  *   - Qwen3 30B A3B (MoE) —— 性价比最高的中文 hosted 模型，通用主力 + 简单任务 Tier 1。
  *   - GLM-4.7-Flash (智谱) —— 中文原生、131k context、超低价，最终兜底。
  *
@@ -24,8 +25,15 @@
 // ==================== Models ====================
 
 export const LLM_MODELS = {
-  /** 复杂任务主力 — C-Eval 92.5, 262k ctx, func call + guided_json */
+  /**
+   * 复杂任务主力 — C-Eval 92.5, 262k ctx, func call + guided_json.
+   * Keep K2.6 (not K3) for structured oneshot JSON: K3 is always-on reasoning
+   * (`moonshotai/kimi-k3`) and burns the cascade budget on reasoning_tokens.
+   * Switch only after measuring wall-clock with reasoning_effort: 'low'.
+   */
   KIMI: '@cf/moonshotai/kimi-k2.6',
+  /** Available via env.AI.run — not on the flagship chain yet (see KIMI note). */
+  KIMI_K3: 'moonshotai/kimi-k3',
   /** 通用主力 + 简单任务 Tier 1 — 中文性价比最高, 32k ctx */
   QWEN3: '@cf/qwen/qwen3-30b-a3b-fp8',
   /** 最终兜底 — 智谱, 中文原生, 131k ctx, 超低价 */
@@ -289,6 +297,31 @@ function modelSlotMs(
   return Math.min(perModelCap, Math.floor(remaining / Math.max(1, modelsLeft)))
 }
 
+/**
+ * Model-specific knobs so structured/JSON generations don't burn the cascade
+ * budget on reasoning. K2.x: `chat_template_kwargs.thinking`. K3: `reasoning_effort`
+ * (always-on; we can only dial it down).
+ */
+function reasoningControls(
+  model: string,
+  options?: FallbackCallOptions
+): Record<string, unknown> {
+  const suppress =
+    Boolean(options?.jsonMode) ||
+    Boolean(options?.responseSchema) ||
+    Boolean(options?.noThink)
+  if (!suppress) return {}
+
+  if (model.includes('kimi-k3')) {
+    return { reasoning_effort: 'low' }
+  }
+  // Kimi K2.5 / K2.6 / K2.7 — thinking off for dense JSON (readings, schema dumps).
+  if (model.includes('moonshotai/kimi') || model.includes('/kimi-k2')) {
+    return { chat_template_kwargs: { thinking: false } }
+  }
+  return {}
+}
+
 async function callCfAi(
   ai: WorkersAiBinding,
   model: string,
@@ -313,6 +346,7 @@ async function callCfAi(
       ],
       max_tokens: options?.maxTokens ?? 4096,
       temperature: options?.temperature ?? 0.7,
+      ...reasoningControls(model, options),
     }),
     timeoutMs,
     model
@@ -357,6 +391,7 @@ async function callCfAiChat(
       messages: [{ role: 'system', content: systemPrompt }, ...cfMessages],
       max_tokens: options?.maxTokens ?? 2048,
       temperature: options?.temperature ?? 0.7,
+      ...reasoningControls(model, options),
     }),
     timeoutMs,
     model

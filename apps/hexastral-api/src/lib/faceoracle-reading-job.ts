@@ -308,9 +308,13 @@ async function callReadingAi(
         maxTokens: 4096,
         temperature: 0.35,
         jsonMode: true,
+        // Qwen soft-switch + Kimi chat_template_kwargs.thinking:false (router).
+        noThink: true,
         metricLabel: 'faceoracle_reading',
-        totalBudgetMs: 90_000,
-        perModelTimeoutMs: 45_000,
+        // 6-chapter dense JSON — keep under queue wall-clock; equal-split cascade
+        // needs ~40s/model headroom so Kimi can finish before GLM is starved.
+        totalBudgetMs: 120_000,
+        perModelTimeoutMs: 55_000,
       })
     ).trim()
     const parsed = safeJsonParse<Record<string, unknown>>(rawText)
