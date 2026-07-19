@@ -681,6 +681,8 @@ export async function runFaceoracleReadingJob(
       'Rewrite the ENTIRE JSON. Require face≥3 citations, palms≥3 (incl. 生命线 + 感情/婚姻线), natal≥2,',
       'events≥3 covering axis career+love+health, advice actions for all three axes,',
       'and NO career-monoculture (love + health must be as concrete as career).',
+      'Require matched life scenes in period+advice: ≥1 from 学工职场, ≥1 from 情感家庭, ≥1 from 身体节奏.',
+      'Pick scenes that THIS chart+form hits (考学/相亲/结婚节奏/工作/扩张…); ban checklist dump and hedge endings.',
       'Keep 警示/预告 voice. Output ONLY valid JSON.',
     ].join('\n')
     const densRetry = await callReadingAi(env, densityPrompt, job.locale)

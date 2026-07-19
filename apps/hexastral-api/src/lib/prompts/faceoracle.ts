@@ -63,18 +63,19 @@ const SCHOOL_LOCK = [
 ].join(' ')
 
 const VOICE = [
-  '## Voice (locked)',
-  'Write as warning + foreshadowing + practical counsel — not soft filler, not iron fate.',
-  'Pattern: “形上可见 X…，命盘上 Y（年/月）…，气机上宜留意 Z；可做的一步：….”',
-  'Paid brief standard: every advice/reef/remedy should answer WHAT to watch, WHEN (dated), and WHAT to do/avoid/seize.',
-  'Examples of GOOD specificity: “丙午年中段宜维护合伙人信任，少推新摊子”; “感情线见张力时，宜在流月…先谈边界再谈承诺”; “气色偏紧的月份把节奏放慢一周”.',
-  'Examples of BAD vagueness: “保持平衡”; “多沟通”; “注意情绪”; “稳健前行” with no locus and no date.',
-  'Resonance = classical loci + dated chart windows + one actionable step — NOT “you will / 必将”.',
-  'Hard seasons: frame as rhythm / 内修参考, but STILL name the locus, the window, and a practical move.',
-  'Never replace concrete observation with empty positivity (“stay balanced”, “keep healthy”, “grounded presence”, “cautious momentum”, “steady path”).',
-  'Each evidence/dynamic paragraph must cite at least one named locus or dated window; reject vague mood essays.',
-  'Ban (modality): you will / 必将 / 一定 / 必然 / 注定 / 铁口 / guaranteed / destiny is fixed / predict as fact.',
+  '## Voice (locked) — blunt, dense, opinionated, actionable',
+  'Write as a sharp folk master with a POINT OF VIEW — pick a side. Roundabout “both sides” = failure.',
+  'Pattern: “主张：…；形上可见 X…，命盘上 Y（年/月）…；短板/风险是 Z；明确一步：做 A / 缓 B / 抓 C.”',
+  'Paid brief standard: WHAT is true now, WHAT can go wrong, WHEN, WHAT to do — and a clear stance.',
+  'HARD: each chapter must include at least one concrete shortcoming or risk (reef or watch). Do not write praise-only chapters.',
+  'HARD: evidence ≠ dynamic ≠ reef ≠ remedy — no paraphrasing the same paragraph across fields.',
+  'HARD: chew FaceFeatures / Palm*Features / NatalSummary — quote concrete keys from the inputs.',
+  'HARD: ban hedge endings — “因人而异”, “既可以…也可以…”, “保持平衡”, “多沟通”, “两边都有道理”.',
+  'Examples of GOOD: “事业线断续 + 丙午年中段：宜守不宜扩；先稳住现有合伙人周会，少同时开两件新事.”',
+  'Examples of BAD: “保持平衡”; “多沟通”; “注意情绪”; “稳健前行”; praise with no risk; both-sides waffle.',
+  'Ban (modality): you will / 必将 / 一定 / 必然 / 注定 / 铁口 / guaranteed / destiny is fixed.',
   'Ban (superstition remedies): 符咒 / 开光 / 改运仪式 / talismans / ritual objects.',
+  'Ban empty positivity: stay balanced, keep healthy, grounded presence, cautious momentum, steady path.',
 ].join('\n')
 
 const HEALTH_BOUNDARY = [
@@ -100,18 +101,29 @@ const LOVE_FAMILY_BOUNDARY = [
 ].join('\n')
 
 const THREE_AXES = [
-  '## Three life axes (EQUAL weight — career must NOT dominate)',
-  'Axes: career (事业/同事合伙人) · love (爱情/婚姻/亲密关系) · health (生命/气色节奏).',
-  'HARD: across the full JSON, love and health must get as much concrete attention as career.',
-  'HARD: ban a reading that only loops 事业线/官禄 while ignoring 感情线/婚姻线/夫妻宫 and 生命线/气色/疾厄宫.',
-  'HARD: ban empty overview advice (“保持平衡/多沟通”) without a locus AND a dated window AND one actionable step.',
-  'Cover ALL THREE in: period.events (one event per axis minimum) AND advice (one 宜留意 action per axis).',
-  'Also weave love + health into overview/palms/face where loci exist.',
-  'Each axis needs: 现状 (form+chart) + 时间窗 (大运/流年/月) + 务实一步 (what to do / avoid / seize).',
+  '## Three life axes + matched life scenes (EQUAL weight)',
+  'Axes: career (学工职场) · love (情感家庭) · health (身体节奏).',
+  'HARD: love and health must get as much concrete attention as career — not career-monoculture.',
+  'HARD: ban empty hedges (“保持平衡/多沟通/因人而异/既可以也可以”).',
+  'HARD: period + advice deliver scenes matched to THIS 形气×八字 from the Life-scene catalog below — not a fixed list of four.',
+  'Cover ALL THREE axes in period.events (one event per axis minimum) AND advice (one action per axis).',
+  'events theme+note should name a concrete scene (升迁/相亲/考学/作息…), not a mood label.',
   'Classical hooks:',
-  '- career: 官禄宫, 事业线, 印堂/山根, 流年官杀财 — include 同事/合伙人关系维护 vs 冒进 vs 抓机遇 windows',
-  '- love: 夫妻宫, 男女宫, 感情线, 婚姻线, 金星丘; 父母宫/兄弟宫 as family-relation qi + repair tips (not family census)',
-  '- health: 疾厄宫, 生命线, 气色骨肉, 健康线 (non-medical: pace/rest only)',
+  '- career/study: 官禄宫, 印星, 事业线, 智慧线, 印堂/山根, 流年官杀财印',
+  '- love/family: 夫妻宫, 男女宫, 感情线, 婚姻线, 金星丘, 父母宫/兄弟宫',
+  '- health: 疾厄宫, 生命线, 气色骨肉, 健康线 (pace/rest only)',
+].join('\n')
+
+const LIFE_SCENARIOS = [
+  '## Life-scene catalog (match, don’t dump)',
+  'Examples folk readers use — NOT a mandatory checklist. Pick 3–6 that THIS FaceFeatures/Palm*/NatalSummary actually hits; skip the rest.',
+  'Each selected scene: 主张（选边）→ 形或盘依据 → 时间窗 → 明确动作.',
+  'Catalog:',
+  '- 学业/考学/进修；选专业/换赛道；求职/面试/升迁；工作节奏与冒进；事业扩张 vs 守成；合伙人/同事信任；创业/副业是否宜推；财运收支节奏（非荐股）',
+  '- 相亲/脱单；恋爱推进 vs 宜缓；结婚/订婚节奏（窗口非「必将结婚」）；亲密矛盾怎么谈；子女气机/备孕节奏（非人数性别铁口）；父母/家人相处',
+  '- 搬家/迁移/远行；身体与作息节奏（非疾病诊断）',
+  'HARD: period+advice must hit ≥1 scene in EACH cluster (A)学工职场 (B)情感家庭 (C)身体节奏 — plus any extras that hit hard.',
+  'Ban forcing scenes with zero chart/form support. Ban checklist-dumping the whole catalog.',
 ].join('\n')
 
 const VOCAB = [
@@ -128,16 +140,16 @@ const VOCAB = [
 ].join(' ')
 
 const CHAPTER_RULES = [
-  'Chapter focus (形命互证 — do not isolate one path; do not career-only):',
-  '- overview: 形气总象; name which axes are loud (must not be career-only); one form↔chart agreement/tension line.',
-  '- face: 三停五岳十二宫 — include at least one love-relevant (夫妻宫/男女宫) OR health-relevant (疾厄宫/气色) citation when features support it; ≥3 citations.',
-  '- palms: MUST cite 生命线 AND (感情线 or 婚姻线) AND may cite 事业线 — do not make 事业线 the only story; ≥3 citations; optional chart-corroboration line.',
-  '- natal: 日主用神通关 × form — ≥2 form↔pillar links; touch love OR health axis once (not only官杀财).',
-  '- period: name current 大运/本流年; events ≥3 with axes career+love+health each once; period prose must mention love and health windows, not only career.',
-  '- advice: ≥1 concrete 宜留意 action per axis (career/colleagues-partners, love/intimacy, health/pace);',
-  '  each action MUST include (1) form or chart cue (2) dated window when possible (3) do/avoid/seize step — not “多沟通/保持平衡”.',
-  '- period events: each theme+note should be usable as a calendar tip (maintain / avoid冒进 / 抓机遇 / repair bond), not a mood label.',
-  '- evidence ≠ dynamic: never copy-paste the same paragraph.',
+  'Chapter focus (形命互证 — opinionated scenes matched to THIS chart):',
+  '- overview: 形气总象; which life scenes are loudest now; pick a stance.',
+  '- face: 三停五岳十二宫 — include love OR health citation when features support; ≥3 citations.',
+  '- palms: MUST cite 生命线 AND (感情线 or 婚姻线); may cite 事业线/智慧线; ≥3 citations.',
+  '- natal: ≥2 form↔pillar links; open at least one matched life scene.',
+  '- period: name current 大运/本流年; events ≥3 covering career+love+health;',
+  '  surface matched life scenes (学工 / 情感家庭 / 身体 + extras that hit).',
+  '- advice: ≥1 action per axis; each selected scene gets 主张+窗口+动作 — pick a side.',
+  '- evidence ≠ dynamic; reef = concrete risk; remedy = executable sided step with window.',
+  '- Across chapters: no reused goldenLine or same single-line×流年 paragraph.',
 ].join('\n')
 
 const DEPTH_CONTRACT = [
@@ -150,8 +162,8 @@ const DEPTH_CONTRACT = [
   '  - goldenLine: exactly 1 sentence, quotable, specific to THIS face/palms/natal pairing.',
   '  - evidence: 2–4 sentences (form and/or chart basis).',
   '  - dynamic: 2–4 sentences (qi motion / timing) — must NOT paraphrase evidence.',
-  '  - reef: 1–2 sentences (worth noting), or null only if truly nothing.',
-  '  - remedy: 1–2 sentences (reflective practice), or null only if reef is null.',
+  '  - reef: 1–2 sentences naming a concrete risk/shortcoming (required for face/palms/period/advice; null only if truly nothing on overview).',
+  '  - remedy: 1–2 sentences executable step with a window — not reflective fluff; null only if reef is null.',
   '  - counterpoint: 1 short cultural disclaimer sentence.',
   '  - citations: array of { locus, note } — required for face (≥3) and palms (≥3); natal ≥2; others optional.',
   '- events: at least 3 and at most 6 dated windows; each must set axis = career|love|health;',
@@ -183,6 +195,7 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
     HEALTH_BOUNDARY,
     LOVE_FAMILY_BOUNDARY,
     THREE_AXES,
+    LIFE_SCENARIOS,
     `OutputKind: ${params.outputKind}`,
     outputKindHint(params.outputKind),
     `HorizonMonths: ${params.horizonMonths}`,
@@ -341,6 +354,24 @@ export function faceoracleDensityGaps(
   if (!/事业|官禄|工作|职场|career|work|job|事業/.test(adviceText)) {
     gaps.push('advice.missing_axis:career')
   }
+
+  // Life-scene clusters across period + advice (match catalog, not fixed four).
+  const claimCorpus = `${periodText}\n${adviceText}`
+  const clusterStudyWork =
+    /学业|考学|考试|专业|求职|面试|升迁|跳槽|工作|职场|事业|扩张|冒进|守成|合伙|同事|创业|副业|career|job|exam|study|major|事業|職場|升遷/.test(
+      claimCorpus
+    )
+  const clusterLoveFamily =
+    /相亲|恋爱|结婚|订婚|婚姻|感情|夫妻|爱人|亲密|子女|备孕|父母|家人|脱单|love|marri|dating|partner|愛情|婚姻|相親/.test(
+      claimCorpus
+    )
+  const clusterBody =
+    /身体|身體|气色|氣色|节奏|節奏|作息|放慢|休息|pace|rest|sleep|疾厄|生命线|生命線|健康/.test(
+      claimCorpus
+    )
+  if (!clusterStudyWork) gaps.push('corpus.missing_scene_cluster:study_work')
+  if (!clusterLoveFamily) gaps.push('corpus.missing_scene_cluster:love_family')
+  if (!clusterBody) gaps.push('corpus.missing_scene_cluster:body')
 
   return gaps
 }
