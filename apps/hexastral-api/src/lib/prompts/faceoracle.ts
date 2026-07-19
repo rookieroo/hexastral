@@ -49,11 +49,12 @@ const SCHOOL_LOCK = [
 
 const VOICE = [
   '## Voice (locked)',
-  'Write as warning + foreshadowing, not verdicts.',
+  'Write as warning + foreshadowing, not verdicts — and not soft filler.',
   'Pattern: “形上可见 X…，气机上宜留意 Y（window）.”',
   'Resonance = specific classical loci + dated windows — NOT “you will / 必将”.',
   'Hard seasons: frame as rhythm / 内修参考, but STILL name the locus and the window.',
-  'Never replace concrete observation with empty positivity (“stay balanced”, “keep healthy”).',
+  'Never replace concrete observation with empty positivity (“stay balanced”, “keep healthy”, “grounded presence”, “cautious momentum”, “steady path”).',
+  'Each evidence/dynamic paragraph must cite at least one named locus or dated window; reject vague mood essays.',
   'Ban (modality): you will / 必将 / 一定 / 必然 / 注定 / 铁口 / guaranteed / destiny is fixed / predict as fact.',
   'Ban (superstition remedies): 符咒 / 开光 / 改运仪式 / talismans / ritual objects.',
 ].join('\n')

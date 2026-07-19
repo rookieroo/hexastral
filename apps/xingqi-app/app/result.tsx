@@ -19,9 +19,11 @@ import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { natalFactsFromOutput } from '@/components/reading/NatalFactsStrip'
 import { ReadingPrimer, useReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { SelectionActionBar } from '@/components/reading/SelectionActionBar'
+import { ShareableXingqiCard } from '@/components/reading/ShareableXingqiCard'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
+import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels } from '@/lib/living-copy'
 import { resolveLocale } from '@/lib/i18n'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
@@ -29,9 +31,16 @@ import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import {
   adaptReadingChapters,
+  chapterTitle,
   inkSeedFromOutput,
   readingHasReportBody,
 } from '@/lib/report-chapters'
+import {
+  XINGQI_BRAND_URL,
+  XINGQI_INSTALL_URL,
+  xingqiShareCaption,
+  xingqiShareIdentity,
+} from '@/lib/xingqiShare'
 
 export default function FaceResultScreen() {
   const { colors, spacing } = useTheme()
@@ -94,6 +103,16 @@ export default function FaceResultScreen() {
   const hasBody = chapters.length > 0 && readingHasReportBody(output)
   const inkSeed = useMemo(() => inkSeedFromOutput(output), [output])
   const { show: showPrimer, dismiss: dismissPrimer } = useReadingPrimer(hasBody && !loading)
+  const { shotRef, capturing, share: shareImage } = useImageShare()
+
+  const curChapter = chapters[chapterIndex]
+  const shareLead = curChapter?.goldenLine.trim() ?? ''
+  const shareIdentity = xingqiShareIdentity(natalFacts)
+
+  const handleShare = () => {
+    if (!curChapter || shareLead.length === 0) return
+    shareImage(xingqiShareCaption(locale, shareLead))
+  }
 
   const goHome = () => router.replace('/(app)' as never)
   const chatId = readingId ?? 'draft'
@@ -241,6 +260,7 @@ export default function FaceResultScreen() {
         onPickQuote={setPickedQuote}
         highlightedQuotes={highlights}
         natalFacts={natalFacts}
+        onShare={handleShare}
         renderCenterpiece={(ch) => (
           <InkCenterpiece
             chapter={ch}
@@ -250,6 +270,27 @@ export default function FaceResultScreen() {
           />
         )}
       />
+      {/* Off-screen capture target — mount only while sharing (Yuel pattern). */}
+      {capturing && curChapter && shareLead.length > 0 ? (
+        <View
+          ref={shotRef}
+          collapsable={false}
+          style={{ position: 'absolute', top: -20000, left: 0 }}
+        >
+          <ShareableXingqiCard
+            leadLine={shareLead}
+            chapterLabel={chapterTitle(curChapter.kind, locale)}
+            chapterKind={curChapter.kind}
+            chapterNumber={chapterIndex + 1}
+            identityLine={shareIdentity}
+            width={1080}
+            height={1920}
+            locale={locale}
+            brandUrl={XINGQI_BRAND_URL}
+            installUrl={XINGQI_INSTALL_URL}
+          />
+        </View>
+      ) : null}
       <Pressable
         onPress={goHome}
         hitSlop={12}

@@ -1,15 +1,15 @@
 /**
  * One Xingqi report chapter — Yuel editorial layout (whitespace layers, no rules).
- * Numerals: 积画 AncientNumeral (locale-independent). Footer: brand + chapter index only.
+ * Numerals: 积画 AncientNumeral. Share = off-screen card capture (host onShare).
  */
 
 import type { ReactNode } from 'react'
-import { Dimensions, ScrollView, Text, View } from 'react-native'
+import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CHAPTER_GLYPH } from '@/lib/ancient-glyphs'
 import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
-import { isCjkZh, isZhHant } from '@/lib/locale-zh'
+import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
 
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
@@ -23,14 +23,21 @@ const LAYER_LABEL = {
   remedy: { zh: '对照解法', zhHant: '對照解法', en: 'The Key' },
 } as const
 
-function layerLabel(
-  key: keyof typeof LAYER_LABEL,
-  locale: string
-): string {
+function layerLabel(key: keyof typeof LAYER_LABEL, locale: string): string {
   const row = LAYER_LABEL[key]
   if (isZhHant(locale)) return row.zhHant
   if (isCjkZh(locale)) return row.zh
   return row.en
+}
+
+/** Hide citation rows that are mostly CJK when the reading locale is non-zh (legacy rows). */
+function citationOkForLocale(locale: string, locus: string, note: string): boolean {
+  if (isCjkZh(locale)) return true
+  const sample = `${locus}${note}`
+  const cjk = sample.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
+  const letters = sample.replace(/\s/g, '').length
+  if (letters === 0) return false
+  return cjk / letters < 0.45
 }
 
 export function ChapterCard({
@@ -43,6 +50,7 @@ export function ChapterCard({
   onPickQuote,
   highlightedQuotes,
   natalFacts,
+  onShare,
 }: {
   chapter: XingqiChapter
   index: number
@@ -60,10 +68,14 @@ export function ChapterCard({
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
   natalFacts?: NatalFacts | null
+  /** Host captures 9:16 share card — only when goldenLine is present. */
+  onShare?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const width = Dimensions.get('window').width
   const title = chapterTitle(chapter.kind, locale)
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
   const termColors = {
     bg: colors.bg,
     ink: colors.text,
@@ -76,6 +88,12 @@ export function ChapterCard({
   if (chapter.dynamic) layers.push({ key: 'dynamic', body: chapter.dynamic })
   if (chapter.reef) layers.push({ key: 'reef', body: chapter.reef })
   if (chapter.remedy) layers.push({ key: 'remedy', body: chapter.remedy })
+
+  const visibleCitations = chapter.citations.filter((c) =>
+    citationOkForLocale(locale, c.locus, c.note)
+  )
+
+  const canShare = Boolean(onShare && chapter.goldenLine.trim().length > 0)
 
   return (
     <ScrollView
@@ -96,7 +114,7 @@ export function ChapterCard({
           ink={colors.bg}
           strokeWidth={7}
         />
-        <View style={{ flex: 1, gap: 4 }}>
+        <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
               fontFamily: 'CrimsonPro',
@@ -107,17 +125,6 @@ export function ChapterCard({
           >
             {title}
           </Text>
-          <Text
-            style={{
-              fontFamily: 'IBMPlexMono',
-              color: colors.dim,
-              fontSize: 11,
-              letterSpacing: 1.6,
-              textTransform: 'uppercase',
-            }}
-          >
-            Xingqi · Form
-          </Text>
         </View>
       </View>
 
@@ -127,73 +134,72 @@ export function ChapterCard({
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
           <View
             style={{
-              width: 8,
-              height: 8,
-              marginTop: 10,
-              borderRadius: 4,
+              width: 6,
+              height: 6,
+              borderRadius: 3,
               backgroundColor: colors.accent,
+              marginTop: 10,
             }}
           />
-          <View style={{ flex: 1 }}>
-            <TermAwareText
-              text={chapter.goldenLine}
-              locale={locale}
-              colors={termColors}
-              onPickQuote={onPickQuote}
-              highlightedQuotes={highlightedQuotes}
-              style={{
-                fontFamily: 'CrimsonPro-Italic',
-                color: colors.text,
-                fontSize: 20,
-                lineHeight: 30,
-              }}
-            />
-          </View>
+          <TermAwareText
+            text={chapter.goldenLine}
+            locale={locale}
+            colors={termColors}
+            onPickQuote={onPickQuote}
+            highlightedQuotes={highlightedQuotes}
+            style={{
+              flex: 1,
+              fontFamily: 'CrimsonPro-Italic',
+              color: colors.text,
+              fontSize: 18,
+              lineHeight: 28,
+            }}
+          />
         </View>
       ) : null}
 
-      {layers.map((layer, i) => (
-        <View key={layer.key} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-          <View style={{ width: 26, marginTop: 2, alignItems: 'center' }}>
-            <AncientNumeral n={i + 1} size={22} color={colors.dim} strokeWidth={3} />
+      {layers.map((layer) => (
+        <View key={layer.key} style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 18, height: 0.5, backgroundColor: colors.accent }} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <Text
+                style={{
+                  fontFamily: 'IBMPlexMono',
+                  color: colors.accent,
+                  fontSize: 11,
+                  letterSpacing: 1.8,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {layerLabel(layer.key, locale)}
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1, gap: 8 }}>
-            <Text
-              style={{
-                fontFamily: 'IBMPlexMono',
-                color: colors.accent,
-                fontSize: 11,
-                letterSpacing: 1.8,
-                textTransform: 'uppercase',
-              }}
-            >
-              {layerLabel(layer.key, locale)}
-            </Text>
-            <TermAwareText
-              text={layer.body}
-              locale={locale}
-              colors={termColors}
-              onPickQuote={onPickQuote}
-              highlightedQuotes={highlightedQuotes}
-              style={{ color: colors.text, fontSize: 16, lineHeight: 26 }}
-            />
-            {layer.key === 'evidence' && chapter.citations.length > 0 ? (
-              <View style={{ gap: 6, marginTop: 4 }}>
-                {chapter.citations.map((c) => (
-                  <Text
-                    key={`${c.locus}-${c.note.slice(0, 24)}`}
-                    style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
-                  >
-                    <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
-                      {c.locus}
-                    </Text>
-                    {'  '}
-                    {c.note}
+          <TermAwareText
+            text={layer.body}
+            locale={locale}
+            colors={termColors}
+            onPickQuote={onPickQuote}
+            highlightedQuotes={highlightedQuotes}
+            style={{ color: colors.text, fontSize: 16, lineHeight: 26 }}
+          />
+          {layer.key === 'evidence' && visibleCitations.length > 0 ? (
+            <View style={{ gap: 8, marginTop: 6 }}>
+              {visibleCitations.map((c) => (
+                <Text
+                  key={`${c.locus}-${c.note.slice(0, 24)}`}
+                  style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
+                >
+                  <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
+                    {c.locus}
                   </Text>
-                ))}
-              </View>
-            ) : null}
-          </View>
+                  {'  '}
+                  {c.note}
+                </Text>
+              ))}
+            </View>
+          ) : null}
         </View>
       ))}
 
@@ -226,17 +232,23 @@ export function ChapterCard({
           alignItems: 'center',
         }}
       >
-        <Text
-          style={{
-            fontFamily: 'IBMPlexMono',
-            color: colors.dim,
-            fontSize: 11,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-          }}
-        >
-          Xingqi · Form
-        </Text>
+        {canShare ? (
+          <Pressable onPress={onShare} hitSlop={10} accessibilityRole='button'>
+            <Text
+              style={{
+                fontFamily: 'IBMPlexMono',
+                color: colors.dim,
+                fontSize: 11,
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+              }}
+            >
+              {s('分享 · Xingqi', '分享 · Xingqi', 'Share · Xingqi')}
+            </Text>
+          </Pressable>
+        ) : (
+          <View />
+        )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <AncientNumeral n={index + 1} size={13} color={colors.dim} strokeWidth={3.4} />
           <Text style={{ color: colors.dim, fontSize: 11 }}>/</Text>

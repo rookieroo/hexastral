@@ -29,6 +29,14 @@ const FACEORACLE_TERM_HINTS_EN = [
   '三停 → sāntíng (三停) — three facial zones',
   '五岳 → wǔyuè (五岳) — five facial “mountains”',
   '十二宫 → shí’èrgōng (十二宫) — twelve facial palaces',
+  '天庭 → tiāntíng (天庭) — forehead / upper zone',
+  '印堂 → yìntáng (印堂) — glabella',
+  '山根 → shāngēn (山根) — nasal root',
+  '骨相 → gǔxiàng (骨相) — bone structure',
+  '气色 → qìsè (气色) — complexion / vitality hue',
+  '生命线 → shēngmìng xiàn (生命线) — life line',
+  '事业线 → shìyè xiàn (事业线) — career / fate line',
+  '金星丘 → jīnxīng qiū (金星丘) — Venus mount',
   '日主 → rìzhǔ (日主) — day master',
   '用神 → yòngshén (用神) — useful god / balancing element',
   '大运 → dàyùn (大运) — decade luck',
@@ -75,22 +83,28 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
     `## Cross-lingual output — ${name} (${code})`,
     'Internal reasoning may use Chinese metaphysics vocabulary (your strongest reasoning corpus).',
     `ALL user-facing JSON string values (goldenLine, evidence, dynamic, reef, remedy, counterpoint,`,
-    `overview, faceSection, palm*Section, natalContrast, periodDiff, advice, events.theme, events.note)`,
+    `overview, faceSection, palm*Section, natalContrast, periodDiff, advice, events.theme, events.note,`,
+    `AND every citations[].locus + citations[].note)`,
     `MUST be written in ${name}. JSON keys stay English.`,
     '',
     '### Hard negatives',
     `- Do NOT write Simplified or Traditional Chinese sentences when locale is ${code}.`,
-    '- Do NOT leave any chapter field in Chinese. Glossary tokens may appear once as',
-    '  “romanization (汉字) — short gloss”, then surrounding prose stays in the target language.',
+    '- Do NOT leave any chapter field OR citation locus/note as bare Chinese.',
+    '- For loci (天庭/印堂/生命线…): Route B once as “romanization (汉字) — short gloss”, then reuse romanization/English gloss.',
     '- Do NOT produce one-word generic advice (“stay balanced”, “keep healthy”) as a whole field.',
     '',
     '### Glossary presentation (Route B)',
     termHints,
     '',
-    '### Tone',
+    '### Tone (paid brief — not free chatty photo reading)',
     code === 'ja'
       ? '警告・予告の観察調。「形に見える…、気の流れでは留意…」。断定運勢を避ける。具体的な宮位・線・日付は残す。空虚な励ましで代替しない。'
-      : 'Warning + foreshadowing study tone. Pattern: “form shows…; qi-flow worth noting… (window).” Never guaranteed fate. Keep named loci and dated windows — do not replace them with empty pep talk.',
+      : [
+          'Sharp cultural brief, not soft lifestyle copy. Every paragraph must name at least one locus or dated window.',
+          'Prefer concrete pressure: which palace/line/mount, what it shows now, what window to watch — over “balanced / steady / grounded” filler.',
+          'Allow friction: “worth noting friction at…”, “qi-flow stalls if…”, “career axis: … through month M”. Soft pep talk without loci fails the brief.',
+          'Pattern: “form shows X at [locus]; qi-flow worth noting Y (window).” Never guaranteed fate.',
+        ].join(' '),
     code === 'ja'
       ? '健康軸は医療診断ではない。气色・生活リズムのみ。必要なら専門医への相談を一行。'
       : 'Health axis is non-medical: complexion and pacing only; optionally one line to consult a clinician.',
@@ -117,5 +131,6 @@ export function faceoracleBodyLooksWrongLocale(
 ): boolean {
   const { isCjkOutput } = resolveFaceoracleOutputLang(locale)
   if (isCjkOutput) return false
-  return faceoracleCjkRatio(sampleText) > 0.35
+  // Stricter than before: citation dumps of bare Chinese used to hide under 0.35.
+  return faceoracleCjkRatio(sampleText) > 0.18
 }

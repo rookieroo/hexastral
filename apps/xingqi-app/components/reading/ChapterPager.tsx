@@ -26,6 +26,7 @@ export function ChapterPager({
   onPickQuote,
   highlightedQuotes,
   natalFacts,
+  onShare,
 }: {
   chapters: XingqiChapter[]
   currentIndex: number
@@ -43,6 +44,7 @@ export function ChapterPager({
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
   natalFacts?: NatalFacts | null
+  onShare?: () => void
 }) {
   const screenWidth = Dimensions.get('window').width
 
@@ -80,6 +82,7 @@ export function ChapterPager({
               onPickQuote={onPickQuote}
               highlightedQuotes={highlightedQuotes}
               natalFacts={natalFacts}
+              onShare={onShare}
             />
           </View>
         ))}

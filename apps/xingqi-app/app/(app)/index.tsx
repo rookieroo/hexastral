@@ -333,9 +333,8 @@ export default function XingqiHomeScreen() {
               colors={colors}
               onPress={() => void openSlot('palm_l')}
             >
-              <View style={{ transform: [{ scaleX: -1 }] }}>
-                <Hand size={22} color={colors.text} strokeWidth={1.75} />
-              </View>
+              {/* Lucide Hand reads as right-hand back; palm-facing capture flips R. */}
+              <Hand size={22} color={colors.text} strokeWidth={1.75} />
             </StepIcon>
             <StepIcon
               label={s('右掌', '右掌', 'R')}
@@ -343,7 +342,9 @@ export default function XingqiHomeScreen() {
               colors={colors}
               onPress={() => void openSlot('palm_r')}
             >
-              <Hand size={22} color={colors.text} strokeWidth={1.75} />
+              <View style={{ transform: [{ scaleX: -1 }] }}>
+                <Hand size={22} color={colors.text} strokeWidth={1.75} />
+              </View>
             </StepIcon>
             <StepIcon
               label={s('面', '面', 'Face')}

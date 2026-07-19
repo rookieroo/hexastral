@@ -8,7 +8,6 @@ import { View } from 'react-native'
 import Svg, { Defs, Ellipse, G, Line, RadialGradient, Rect, Stop } from 'react-native-svg'
 
 import {
-  CHAPTER_GLYPH,
   detectWuxing,
   type InkRelation,
   relationForChapter,
@@ -19,9 +18,10 @@ import type { XingqiChapter, XingqiChapterKind } from '@/lib/report-chapters'
 import { AncientSeal } from './AncientSeal'
 
 const W = 560
-const H = 320
+/** Shorter plate — less empty real-estate vs paid brief body. */
+const H = 220
 const CX = 280
-const CY = 160
+const CY = 110
 
 /** Warm 宣纸 */
 const PAPER = '#EDE6D8'
@@ -256,7 +256,8 @@ export function InkCenterpiece({
       : [chapter.goldenLine, chapter.evidence, chapter.dynamic, extraProse].join('\n')
   const element = wuxing ?? detectWuxing(prose)
   const height = Math.round((width / W) * H)
-  const sealSize = Math.max(26, Math.round(width * 0.11))
+  /** Only the 五行 seal — chapter glyph already sits in the title row. */
+  const sealSize = Math.max(22, Math.round(width * 0.09))
 
   return (
     <View
@@ -276,37 +277,24 @@ export function InkCenterpiece({
         height={height}
       />
 
-      {!washOnly ? (
+      {!washOnly && element ? (
         <View
           style={{
             position: 'absolute',
-            right: 8,
-            bottom: 8,
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: 5,
+            right: 10,
+            bottom: 10,
             opacity: 0.92,
           }}
           pointerEvents='none'
         >
           <AncientSeal
-            glyph={CHAPTER_GLYPH[kind]}
+            glyph={element}
             size={sealSize}
-            tile={INK}
+            tile='#8B3A2F'
             ink={PAPER}
             strokeWidth={7}
             inset={0.78}
           />
-          {element ? (
-            <AncientSeal
-              glyph={element}
-              size={Math.round(sealSize * 0.7)}
-              tile='#8B3A2F'
-              ink={PAPER}
-              strokeWidth={7}
-              inset={0.78}
-            />
-          ) : null}
         </View>
       ) : null}
     </View>
