@@ -569,6 +569,89 @@ const SYNASTRY_CHAPTER_SPECS: ReadonlyArray<{
 const VALID_CHAPTER_KINDS = new Set<string>(SYNASTRY_CHAPTER_SPECS.map((s) => s.kind))
 const VALID_SEVERITY = new Set<string>(['low', 'mid', 'high'])
 
+// ── Synastry chapter quality gaps (faceoracle parity) ──────────────────────
+
+/** 圆滑收束 / 正确的废话 — reads as advice, says nothing specific to THIS pair. */
+const SYNASTRY_CRUTCH = [
+  '双方都要多理解',
+  '双方都需要',
+  '互相理解',
+  '相互理解',
+  '多沟通',
+  '多点包容',
+  '相互包容',
+  '互相包容',
+  '保持耐心',
+  '顺其自然',
+  '因人而异',
+  '用心经营',
+  '珍惜缘分',
+  '保持平常心',
+  '需要磨合',
+  '需要经营',
+]
+
+function shNorm(s: string): string {
+  return s.replace(/\s+/g, '').trim()
+}
+
+function shNearEcho(a: string, b: string): boolean {
+  if (!a || !b) return false
+  if (a === b) return true
+  const shorter = a.length <= b.length ? a : b
+  const longer = a.length <= b.length ? b : a
+  if (shorter.length < 18) return false
+  return longer.startsWith(shorter) && shorter.length / longer.length >= 0.72
+}
+
+/** Total normalized prose length of a chapter — the retry non-regression guard. */
+export function synastryChapterProseLength(ch: SynastryChapterOutput): number {
+  return [ch.goldenLine, ch.evidence, ch.dynamic, ch.reef, ch.remedy, ch.counterpoint]
+    .map((s) => shNorm(s ?? '').length)
+    .reduce((a, b) => a + b, 0)
+}
+
+/** Gaps a "deepen" retry should target (vs a "restructure" one). */
+export function isThinSynastryGap(gap: string): boolean {
+  return gap.endsWith('.thin') || gap === 'remedy.no_yongshen'
+}
+
+/**
+ * Per-chapter structural gaps over the four-layer shape. No hard char floors on
+ * the whole chapter — these catch thin fields, an evidence≈dynamic echo, a reef
+ * that isn't a stance, a remedy not anchored on 用神, and crutch phrases.
+ */
+export function synastryChapterGaps(ch: SynastryChapterOutput, yongshen: WuXing): string[] {
+  const gaps: string[] = []
+  const gl = shNorm(ch.goldenLine ?? '')
+  const ev = shNorm(ch.evidence ?? '')
+  const dy = shNorm(ch.dynamic ?? '')
+  const reef = shNorm(ch.reef ?? '')
+  const remedy = shNorm(ch.remedy ?? '')
+
+  if (gl.length < 8) gaps.push('goldenLine.thin')
+  if (ev.length < 40) gaps.push('evidence.thin')
+  if (dy.length < 40) gaps.push('dynamic.thin')
+  if (reef.length < 24) gaps.push('reef.thin')
+  if (remedy.length < 24) gaps.push('remedy.thin')
+
+  if (ev.length >= 30 && dy.length >= 30 && (ev === dy || shNearEcho(ev, dy))) {
+    gaps.push('evidence.echo_dynamic')
+  }
+  // remedy must anchor on the 用神 element (as the 解法) — or at least be long +
+  // specific. A short remedy that never names 用神 is the generic "多包容" bug.
+  if (remedy.length > 0 && !remedy.includes(yongshen) && remedy.length < 44) {
+    gaps.push('remedy.no_yongshen')
+  }
+
+  const all = [ch.goldenLine, ch.evidence, ch.dynamic, ch.reef, ch.remedy, ch.counterpoint]
+    .filter(Boolean)
+    .join('\n')
+  if (SYNASTRY_CRUTCH.some((p) => all.includes(p))) gaps.push('crutch')
+
+  return gaps
+}
+
 /**
  * The relationship's single 通关/喜用 element, derived from the two day masters.
  *   克 → the bridging element (controller 生 X, X 生 controlled): 火克金 → 土.
@@ -629,13 +712,22 @@ ${spec.focus}${monthlyNote}
 **用神【${yongshen}】是「解法」，并非双方日主本来的关系。** 凡 title／goldenLine 提到五行关系，必须落在双方日主真实的两个五行及其生/克/比和上（如日主为木与土，则言「木土」之相克），用神之五行只可作为「通关／解法」点出且须明示其为解法——切勿把用神当作双方日主的相生来写（例如不可因用神为火便写「木火相生」），以免与正文相克/相生的判断自相矛盾。
 
 ## 写作要求
-分四层，直接引用命盘事实；写完整论述（四层合计宜 ≥500 字），不要短句敷衍：
-1. evidence：命盘机理（干支/刑冲/神煞/宫星）
-2. dynamic：可感相处画面（勿与 evidence 换皮）
-3. reef：可点名风险主张（选边）
-4. remedy：围绕用神【${yongshen}】的选边动作（做什么 / 何时 / 避免什么）
+分四层，直接引用命盘事实；写完整论述（四层合计宜 ≥500 字），不要短句敷衍。
+每一层都要走一遍推理链（缺环即空话）：命盘锚点(双方干支/刑冲合/神煞/宫星) → 机理(为什么，扣两方日主生克/格局张力) → 一个具体相处判断或场景。深度靠推演，不靠拉长。
+1. evidence：命盘机理（干支/刑冲/神煞/宫星）——先所见、再为什么。
+2. dynamic：由机理推到一个可感的相处画面/场景（勿与 evidence 换皮，勿只换措辞）。
+3. reef：可点名风险主张（选边，点出"最容易被什么点燃、升级成什么"）——不是"需要磨合"这类中性套话。
+4. remedy：围绕用神【${yongshen}】的选边动作（做什么 / 何时 / 避免什么），明示这是"解法"。
 另需 severity(low|mid|high)、goldenLine、title；counterpoint 可选。
 甲方/乙方称呼；章间勿复读；无户籍铁口；直白有主张。
+
+## 深度校准（仅示范推理密度，切勿照抄干支/措辞/场景）
+一层写透长这样：
+"evidence：甲方日主庚金坐酉、金气过旺，乙方日主乙木自坐卯木——机理上金旺克木，庚金的'认死理'会直接压到乙木的'要被商量'，故一遇分歧甲方越说越硬、乙方越缩越远。"
+注意：锚点(庚金/乙木/金克木) → 机理(为什么会硬碰缩) → 一个具体场景。用这两人真实的日主与格局写他们自己的链，别抄这条。
+
+## 禁令（正确的废话）
+「双方都要多理解」「互相包容」「多沟通」「保持耐心」「顺其自然」「因人而异」「需要磨合/经营」之类放之四海皆准的套话一律删除——除非绑定具体命盘元素、相处场景与可执行动作。宁可少写，也不要填空话。
 
 ## 输出要求（严格 JSON，仅此一章）
 {
@@ -832,16 +924,21 @@ export async function generateSynastryChapters(
   // One flagship call per chapter (+ a tiny aha-hook call), fired in parallel.
   // Per-chapter generation lets each chapter be deeper and cited, and lets a
   // single failed chapter drop out instead of nuking the whole report.
-  const chapterCall = async (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number]) => {
-    const userPrompt =
+  const chapterCall = async (spec: (typeof SYNASTRY_CHAPTER_SPECS)[number], extra = '') => {
+    const basePrompt =
       buildSynastryChapterPrompt(spec, result, input, ym, yong.element, yong.note, ziweiBlock) +
-      langReminder
+      langReminder +
+      (extra ? `\n${extra}` : '')
     const opts = {
       // standard (Qwen3 → GLM): see the hehun-pair note — flagship's KIMI tier-1 was
       // the slow model 504-ing the synchronous accept. 6 of these run in parallel, so
       // the model count matters doubly (fewer concurrent CF-AI calls = less contention).
       tier: 'standard' as const,
-      maxTokens: 3200,
+      maxTokens: 4096,
+      // Steadier than the 0.7 default — the structural loop wants consistency, and
+      // the depth comes from the inference-chain prompt, not raw sampling heat.
+      temperature: 0.55,
+      jsonMode: true,
       metricLabel: `hehun-chapter-${spec.kind}`,
       locale: language,
     }
@@ -852,12 +949,12 @@ export async function generateSynastryChapters(
         result.personB
       )
 
-    let text = await callWithFallback(env, systemPrompt, userPrompt, opts)
+    let text = await callWithFallback(env, systemPrompt, basePrompt, opts)
     if (driftedToChinese(text)) {
       const retry = await callWithFallback(
         env,
         systemPrompt,
-        `${userPrompt}\n\n(Your previous attempt was in the wrong language. Re-output this chapter with every text field in the target language ONLY.)`,
+        `${basePrompt}\n\n(Your previous attempt was in the wrong language. Re-output this chapter with every text field in the target language ONLY.)`,
         opts
       ).catch(() => '')
       if (retry && !driftedToChinese(retry)) text = retry
@@ -869,13 +966,81 @@ export async function generateSynastryChapters(
       const retryText = await callWithFallback(
         env,
         systemPrompt,
-        userPrompt + audit.rewriteSuffix,
-        { ...opts, metricLabel: `${opts.metricLabel}:forbidden-retry` }
+        basePrompt + audit.rewriteSuffix,
+        {
+          ...opts,
+          metricLabel: `${opts.metricLabel}:forbidden-retry`,
+        }
       ).catch(() => '')
       if (retryText) {
         const retryChapter = parseChapter(retryText)
         if (auditGeneratedOutput(JSON.stringify(retryChapter)).hits.length === 0) {
           chapter = retryChapter
+        }
+      }
+    }
+
+    // Structure retry — accepted only on strictly-fewer gaps + no prose regression.
+    let gaps = synastryChapterGaps(chapter, yong.element)
+    if (gaps.length > 0) {
+      const structNudge = [
+        '【结构重写】上一稿未通过以下结构检查（不是字数问题）：',
+        gaps.join('、'),
+        '逐条修好，不得缩短任何一层：evidence 与 dynamic 各给不同角度（勿换皮）；reef 要点名风险选边（非"需要磨合"）；remedy 必须围绕用神展开、给可执行动作；删除所有正确的废话套话。只输出合法 JSON。',
+      ].join('\n')
+      const retryText = await callWithFallback(env, systemPrompt, `${basePrompt}\n${structNudge}`, {
+        ...opts,
+        metricLabel: `${opts.metricLabel}:struct`,
+      }).catch(() => '')
+      if (retryText) {
+        try {
+          const retryChapter = parseChapter(retryText)
+          const retryGaps = synastryChapterGaps(retryChapter, yong.element)
+          const curLen = synastryChapterProseLength(chapter)
+          const retryLen = synastryChapterProseLength(retryChapter)
+          if (
+            retryGaps.length < gaps.length &&
+            retryLen + 12 >= curLen &&
+            auditGeneratedOutput(JSON.stringify(retryChapter)).hits.length === 0
+          ) {
+            chapter = retryChapter
+            gaps = retryGaps
+          }
+        } catch {
+          // keep the current chapter — a bad retry never regresses the accepted draft.
+        }
+      }
+    }
+
+    // Deepen retry — thin fields remain → expand with mechanism + one scene.
+    const thinGaps = gaps.filter(isThinSynastryGap)
+    if (thinGaps.length > 0) {
+      const deepenNudge = [
+        '【加深重写】保持相同结构与结论，不要缩短。',
+        `以下部分仍单薄：${thinGaps.join('、')}。`,
+        '对每处沿「命盘锚点→机理(为什么，扣双方日主/格局)→一个具体相处场景」写成完整段落；remedy 须扣用神。靠推演加深，勿注水、勿复读。只输出合法 JSON。',
+      ].join('\n')
+      const deepText = await callWithFallback(env, systemPrompt, `${basePrompt}\n${deepenNudge}`, {
+        ...opts,
+        metricLabel: `${opts.metricLabel}:deepen`,
+      }).catch(() => '')
+      if (deepText) {
+        try {
+          const deepChapter = parseChapter(deepText)
+          const deepGaps = synastryChapterGaps(deepChapter, yong.element)
+          const deepThin = deepGaps.filter(isThinSynastryGap)
+          const curLen = synastryChapterProseLength(chapter)
+          const deepLen = synastryChapterProseLength(deepChapter)
+          if (
+            deepThin.length < thinGaps.length &&
+            deepLen >= curLen &&
+            deepGaps.length <= gaps.length &&
+            auditGeneratedOutput(JSON.stringify(deepChapter)).hits.length === 0
+          ) {
+            chapter = deepChapter
+          }
+        } catch {
+          // keep the current chapter.
         }
       }
     }
@@ -887,18 +1052,10 @@ export async function generateSynastryChapters(
   // Only on the shell-bearing pass (first_impression) — a background top-up of the
   // remaining chapters must not regenerate (and overwrite) the already-stored hook.
   const ahaPromise: Promise<string> = includeAha
-    ? fetchAhaHookWithAudit(
-        env,
-        systemPrompt,
-        result,
-        input,
-        ziweiBlock,
-        langReminder,
-        language
-      )
+    ? fetchAhaHookWithAudit(env, systemPrompt, result, input, ziweiBlock, langReminder, language)
     : Promise.resolve('')
 
-  const settled = await Promise.allSettled(specs.map(chapterCall))
+  const settled = await Promise.allSettled(specs.map((spec) => chapterCall(spec)))
 
   const byKind = new Map<string, SynastryChapterOutput>()
   for (const s of settled) {
@@ -916,10 +1073,39 @@ export async function generateSynastryChapters(
         .map((m) => m.kind)
         .join(', ')}`
     )
-    const retried = await Promise.allSettled(missing.map(chapterCall))
+    const retried = await Promise.allSettled(missing.map((spec) => chapterCall(spec)))
     for (const s of retried) {
       if (s.status === 'fulfilled') byKind.set(s.value.kind, s.value)
       else console.error('[svc-astro/hehun] chapter retry failed:', s.reason)
+    }
+  }
+
+  // Cross-chapter echo: 本月相处参考 (monthly_outlook) vs 长期建议 (long_term_advice)
+  // must not restate each other — the batch lets us check it (unlike per-call gaps).
+  // If they echo, regenerate long_term_advice once telling it to build the ~10-year
+  // arc, not the near month; accept only when the echo clears without regressing.
+  const monthlyCh = byKind.get('monthly_outlook')
+  const longTermCh = byKind.get('long_term_advice')
+  if (monthlyCh && longTermCh) {
+    const echo =
+      shNearEcho(shNorm(monthlyCh.body), shNorm(longTermCh.body)) ||
+      shNearEcho(shNorm(monthlyCh.dynamic ?? ''), shNorm(longTermCh.dynamic ?? '')) ||
+      shNearEcho(shNorm(monthlyCh.reef ?? ''), shNorm(longTermCh.reef ?? ''))
+    if (echo) {
+      const ltSpec = SYNASTRY_CHAPTER_SPECS.find((s) => s.kind === 'long_term_advice')
+      if (ltSpec) {
+        console.warn('[svc-astro/hehun] monthly≈long_term echo — regenerating long_term_advice')
+        const nudge =
+          '【去重】本章（长期建议）不得复述"本月相处参考"章的近月内容：请落到约十年级/多阶段的承诺与经营节奏，点名哪段宜推进、哪段宜守边界，与近30天的短期动作明确区分。'
+        const regen = await chapterCall(ltSpec, nudge).catch(() => null)
+        if (
+          regen &&
+          !shNearEcho(shNorm(monthlyCh.body), shNorm(regen.body)) &&
+          synastryChapterProseLength(regen) + 12 >= synastryChapterProseLength(longTermCh)
+        ) {
+          byKind.set('long_term_advice', regen)
+        }
+      }
     }
   }
 

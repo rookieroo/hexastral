@@ -18,6 +18,21 @@ type AppEnv = { Bindings: Env }
 
 export const cycleRoutes = new Hono<AppEnv>()
 
+/**
+ * Weave the caller's 形气×八字 report digest (from hexastral-api) into a prompt
+ * so what-if / node narratives build on the ACTUAL reading — its loci, 用神,
+ * 大运带 and 事件轴 — instead of re-deriving generic 五行. Returns a labelled
+ * block (or '' when no context is supplied).
+ */
+function reportContextBlock(readingContext: string | undefined): string {
+  const trimmed = (readingContext ?? '').trim()
+  if (!trimmed) return ''
+  return `\n\n【此人形气×八字报告要点】（须与之呼应，不要另起炉灶重讲通用五行）\n${trimmed}`
+}
+
+const REPORT_WEAVE_RULE =
+  '- 若提供了「报告要点」，务必顺着它的关键位/暗礁/大运带/事件轴来写，点名其中的具体结论并延展，而非泛泛复述五行常识。'
+
 const inputSchema = z.object({
   date: z.string().min(1),
   /** The 宜忌/冲 field to explain, e.g. "宜 动土" / "忌 出行" / "冲鸡". */
@@ -218,6 +233,7 @@ const narrateSchema = z.object({
   currentAge: z.number().int().min(0).max(120).optional(),
   locale: z.string().default('en'),
   isPro: z.boolean().optional().default(false),
+  readingContext: z.string().max(4000).optional(),
   branches: z
     .array(
       z.object({
@@ -268,11 +284,12 @@ cycleRoutes.post('/makeif-narrate', async (c) => {
   · 现在/未来：写这条选择可能带来的人生走向，各给一句「做这个决定要注意的事项」与「潜在风险」，并在结尾落到能动的一面——命定其界、运在人为：持续用功与对的抉择，能让你在尽力可及之境内把落点步步抬升（天行健，自强不息）；不要写成「终将回到既定命运／殊途同归」。
 - 依据该大运的五行/十神能量来写，讲成「趋势·参考」，不是命运定论，也不是对未来的断言或保证。
 - 禁止使用：命中注定、必然、一定、注定、宿命、must、definitely、certainly。
+${REPORT_WEAVE_RULE}
 - 严格只输出一个 JSON 对象：键为分支 id，值为 {"o": 正文, "s": 概要}。不要标题、不要 Markdown、不要代码块。
 - 注意：JSON 的「键」保持分支 id 原样不变，仅 o / s 的文字使用下述语言。
 ${langDirective(input.locale)}`
 
-  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段正文与一句概要，按 JSON 返回：{"分支id": {"o": "叙事", "s": "概要"}, ...}\n\n${langDirective(input.locale)}`
+  const userPrompt = `【用户八字】\n${ctx}${reportContextBlock(input.readingContext)}\n\n【分支】\n${branchLines}\n\n为每条分支各写一段正文与一句概要，按 JSON 返回：{"分支id": {"o": "叙事", "s": "概要"}, ...}\n\n${langDirective(input.locale)}`
 
   const ids = input.branches.map((b) => b.id)
   // +120 headroom per branch for the extra 概要 line on top of the narrative.
@@ -306,6 +323,7 @@ const nodeNarrateSchema = z.object({
   currentAge: z.number().int().min(0).max(120).optional(),
   locale: z.string().default('en'),
   isPro: z.boolean().optional().default(false),
+  readingContext: z.string().max(4000).optional(),
   branch: z.object({
     id: z.string().max(64),
     label: z.string().max(40),
@@ -369,10 +387,11 @@ cycleRoutes.post('/makeif-node-narrate', async (c) => {
 - 引用真实大运干支与流年判断对比时，要克制：以「趋势·参考」收尾，不下断言。
 - 依【方向】调整收尾：受克→给「通关／化泄／扶抑」的具体解法，化作自强的着力点；得助→点出顺处但只作参考；比和→平实描述。能动在人——天行健，自强不息。
 - 禁止使用：命中注定、必然、一定、注定、宿命、殊途同归、must、definitely、certainly。
+${REPORT_WEAVE_RULE}
 - 只输出一行纯文本叙事，不要 JSON、标题、列表或代码块。
 ${langDirective(input.locale)}`
 
-  const userPrompt = `【用户八字】\n${ctx}\n\n【分支】${input.branch.label}（${when}），${branchPillar}，${merge}\n\n【聚焦节点】约 ${input.focusAge} 岁，${focusPillar}\n${realFit}\n${altFit}\n${dirHint}\n\n请以一段简短叙事描述「在这条假如分支中，${input.focusAge} 岁的你」的状态。\n${langDirective(input.locale)}`
+  const userPrompt = `【用户八字】\n${ctx}${reportContextBlock(input.readingContext)}\n\n【分支】${input.branch.label}（${when}），${branchPillar}，${merge}\n\n【聚焦节点】约 ${input.focusAge} 岁，${focusPillar}\n${realFit}\n${altFit}\n${dirHint}\n\n请以一段简短叙事描述「在这条假如分支中，${input.focusAge} 岁的你」的状态。\n${langDirective(input.locale)}`
 
   const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,

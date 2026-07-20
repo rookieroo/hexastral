@@ -38,14 +38,33 @@ const CORE = [
   'Palm sides (see NatalSummary palmConvention): 男 left(palm_l)=先天/本命底色, right(palm_r)=后天/作为; 女 right(palm_r)=先天, left(palm_l)=后天. Read BOTH hands and state whether 先天 and 后天 pull the same way (同向) or against each other (对拉).',
   'Time split: natal = whole-life timeline + FUTURE main chapter (walk past印证 → 当令 → future 大运带 to 后半场, using dayunFull/dayunFuture; name 干支/年龄/年份). period = near window only (本流年 + 当前大运余年). Never collapse the two.',
   'Deepen 2–4 life scenes the chart/form actually hits; skip the rest. Do not spray every decade step as bare labels.',
-  'Field roles (NO ECHO): goldenLine = 一句总断 only (≤36字, never paste into evidence). evidence = what is seen (形). dynamic = what it means now (势) — new sentences, different angle, never restate goldenLine. reef = risk/timing — not a rewrite of evidence/dynamic. remedy = doable step (not an echo either).',
+  'Inference chain (每章至少走一遍，缺环即空话): 形/纹/柱(所见) → 机理(为什么，扣住日主/用神/旺衰/大运，讲清这个形如何映射命理动力) → 一个具体判断/场景并点名窗口(年龄/年份/干支). 补环，不要靠拉长凑数.',
+  'Field roles (NO ECHO): goldenLine = 一句总断 only (≤36字, never paste into evidence). evidence = 形(所见) + 机理(为什么，扣日主/用神/旺衰/大运). dynamic = 由机理推到 ONE 个具体人生场景(择偶/合伙/择业/子女/健康节奏)，写成 if-then 且点名窗口(年龄/年份/干支) — 不是重述 evidence, 不是口号. reef = 该章独有的风险/时机. remedy = 一个可做的动作.',
   'Ban: copying the same sentence across goldenLine/evidence/dynamic/reef/remedy. Ban: repeating 命主…需注意… with only 2 words changed.',
+  'Crutch phrases BANNED (正确的废话): 「需注意情绪与健康」「保持平常心」「顺其自然」「多与人沟通」「凡事三思」「量力而行」之类泛化套话——除非绑定具体 locus/轴/窗口并给出可执行动作，否则删掉。宁可 reef/remedy 留 null，也不要填放之四海皆准的空话.',
   'Data ownership (STOP cross-chapter copy): the 本流年 sentence lives in period.reef ONLY — other chapters may name the year in passing but must NOT paste period.reef. Whole-life 大运带 risk → natal.reef. 形/气色 risk → face.reef. 先天/后天掌张力 → palms.reef. Action steps → advice.remedy.',
   'Prefer null over repeat: if a chapter has no risk/action UNIQUE to itself, set reef/remedy to null — never reuse another chapter sentence. No shared 流年 block across reefs; no single 冥想/呼吸/多喝水 remedy reused across chapters (name a different locus / axis / year if the action is similar).',
   'Citations advance the chapter: each citations[].note is a ≤40字 micro-judgment pushing THIS chapter angle (判断/时机/同向对拉) — never paste an evidence sentence or a dictionary teaching line.',
   'Honesty over flattery: cite BOTH supportive AND cautionary loci that the inputs actually show (印堂杂气/山根弱/法令深/感情线断浅/事业线断续/气色偏黄…). Do NOT cherry-pick only auspicious loci to spare worry; name tension plainly (警示, not 恐吓/铁口).',
   'Plainspoken: after each classical term, say what it means for work / intimacy / body rhythm in plain language.',
-  'Depth over length: write a real master brief per chapter — enough loci, scenes, and named windows that nothing is padded or repeated. If you have nothing new to add, add a new angle, do not restate.',
+  'Depth = more inference, not more words: every chapter must land the 形→机理→点名场景 chain. If you have nothing new, add a NEW angle or a NEW dated scene — never restate or pad.',
+].join('\n')
+
+/**
+ * Depth calibration (few-shot). Fictional loci/pillars — style only, so the
+ * model matches reasoning density (形→机理→点名场景), never the content.
+ */
+const GOLD_EXAMPLE = [
+  '## Depth calibration (STYLE ONLY — do NOT copy these loci/years/wording; match the reasoning density)',
+  'A fully-developed natal chapter looks like:',
+  '{"kind":"natal",',
+  ' "goldenLine":"庚金坐酉，早年靠硬本事立身，戊寅运后才真正当家",',
+  ' "evidence":"日主庚金生于酉月得令，地支两酉一申、金气过旺而火弱；鼻梁高直(noseShape)、颧起(cheekBones)正应这股\'认死理、靠自己\'的刚劲。机理：金旺无火炼，早年利技术执行、不利过早坐决策位。",',
+  ' "dynamic":"由此推一个具体窗口：33岁起戊寅大运(2028–2037)寅中丙火暖局、引动财官——若在35–37岁(乙巳、丙午流年火透)之间接管一摊事或自立门户，比32岁前勉强上位更稳；若此窗口仍只做执行，40岁后再转会更费力。",',
+  ' "reef":"未来大运带：48岁入庚辰运金再旺，易因过刚与人对拉、肺/大肠偏燥——那十年宜守成不宜再扩摊子。",',
+  ' "remedy":null,',
+  ' "citations":[{"locus":"鼻梁","featureKey":"noseShape","part":"face","note":"高直=自我要求高，配金旺宜择业专精而非广撒"}]}',
+  "Notice: each field carries 形/柱 → 机理(为什么) → 一个点名窗口的判断. Write THIS person's chain with THEIR loci and THEIR dayunFull/流年 — not this example.",
 ].join('\n')
 
 const SCHOOL = [
@@ -61,8 +80,8 @@ const CHAPTER_SPEC = [
   'face — 三停五岳十二宫; form evidence primary; explain meaning in dynamic; ≥5 citations across DISTINCT featureKeys with classical locus names (天庭/印堂… never locus:"face"), mixing SUPPORT and CAUTION loci; reef = 形/气色 risk only; touch love OR health once.',
   'palms — 先天掌 vs 后天掌 contrast is the spine (per palmConvention); cover BOTH hands (cite palm_l AND palm_r); MUST cite 生命线(lifeLine) AND 感情线(heartLine)/婚姻线; ≥4 citations with correct part; reef = 先天/后天掌张力 only; one form↔chart corroboration.',
   'natal — FUTURE MAIN + whole life: use dayunFull/dayunFuture to walk 已行印证 → 当令 → 未来各步主题 (each step one line, named 干支/年龄/年份) + deepen ≥3 future life scenes; ≥2 form↔pillar 互证; reef = 未来大运带 risk only. Must NOT duplicate period near-window.',
-  'period — NEAR WINDOW only: 本流年 + 当前大运余年; OWNS the 本流年 reef sentence (no other chapter may paste it); events mostly actionable near windows (keeps push contract); do NOT re-narrate the natal whole-life ladder.',
-  'advice — ACTIONS only: near doables + prep/close for the coming 大运; remedy is the main stage — ≥1 action per career/love/health; other chapters must not copy these; no period/natal re-narration.',
+  'period — NEAR WINDOW preview ("会发生什么"): 本流年 + 当前大运余年，逐条给 "某年(某月)×某轴" 的可对照预告，每条带一句日主×流年互动的机理; OWNS the 本流年 reef sentence (no other chapter may paste it); events mostly actionable near windows (keeps push contract); do NOT re-narrate the natal whole-life ladder, do NOT paste advice action steps.',
+  'advice — ACTIONS only ("你该做什么"): per-axis 可执行清单，career/love/health 各 ≥1 条，每条 = 触发条件(何时/何情境) + 具体动作 + 为何(扣机理); remedy is the main stage. MUST differ from period (period 预告事件，advice 给动作); other chapters must not copy these; no period/natal re-narration.',
 ].join('\n')
 
 function outputKindHint(kind: FaceOracleOutputKind): string {
@@ -82,6 +101,7 @@ export function buildFaceOraclePrompt(params: FaceOraclePromptParams): string {
     CORE,
     SCHOOL,
     CHAPTER_SPEC,
+    GOLD_EXAMPLE,
     `OutputKind: ${params.outputKind}`,
     outputKindHint(params.outputKind),
     `HorizonMonths: ${params.horizonMonths} (period near window; natal carries the whole-life + future 大运带 from dayunFull/dayunFuture).`,
@@ -269,6 +289,24 @@ export function faceoracleDensityGaps(
     }
   }
 
+  // period (会发生什么) must not collapse into advice (你该做什么) — the exact ch5≈ch6 bug.
+  const advice = byKind.get('advice')
+  if (period && advice) {
+    if (
+      nearEcho(norm(period.evidence), norm(advice.evidence)) ||
+      nearEcho(norm(period.dynamic), norm(advice.dynamic)) ||
+      nearEcho(norm(period.reef ?? ''), norm(advice.reef ?? '')) ||
+      nearEcho(norm(period.remedy ?? ''), norm(advice.remedy ?? ''))
+    ) {
+      gaps.push('period.dup_advice')
+    }
+  }
+  // advice must carry real per-axis actions (remedy is its main stage), not a thin restatement.
+  if (advice) {
+    const actionBody = norm(`${advice.remedy ?? ''} ${advice.dynamic}`)
+    if (actionBody.length < 40) gaps.push('advice.not_actionable')
+  }
+
   // Cross-chapter reef/remedy must not repeat across chapters (screenshot bug:
   // same 流年 reef + same 冥想 remedy pasted into every chapter). Exact-normalized
   // match always trips; nearEcho only when both are long enough (avoid false hits).
@@ -355,6 +393,10 @@ export function faceoracleDensityGaps(
     if (dyn.length > 0 && (dyn.length < 12 || DYNAMIC_LABEL_STUBS.has(dyn))) {
       gaps.push(`field.dynamic_label_only:${ch.kind}`)
     }
+    // Anti-thin (deepen trigger): a developed field carries the 形→机理→场景 chain;
+    // the model demonstrably defaults to ~20-char one-liners. Insurance, retry-only.
+    if (ev.length > 0 && ev.length < 40) gaps.push(`field.thin_evidence:${ch.kind}`)
+    if (dyn.length >= 12 && dyn.length < 40) gaps.push(`field.thin_dynamic:${ch.kind}`)
     if (gl.length > 40) {
       const prev = goldenSeen.get(gl)
       if (prev && prev !== ch.kind) gaps.push('chapters.golden_dup')

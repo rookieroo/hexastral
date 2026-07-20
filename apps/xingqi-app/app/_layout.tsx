@@ -117,6 +117,14 @@ export default function RootLayout() {
             />
             <Stack.Screen name='timeline' options={{ headerShown: false }} />
             <Stack.Screen name='makeif' options={{ headerShown: false }} />
+            <Stack.Screen
+              name='locus'
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: false,
+              }}
+            />
             <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
           </Stack>
         </CoreUIProvider>

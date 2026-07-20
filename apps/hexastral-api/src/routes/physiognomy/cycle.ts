@@ -11,6 +11,7 @@ import { z } from 'zod/v4'
 import {
   lifeTimelineCache,
   makeifForks,
+  portfolioReadings,
   TIMELINE_CACHE_VERSION,
   timelineReadings,
 } from '../../db/schema'
@@ -63,6 +64,116 @@ async function requireFaceoraclePro(
     (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
     (await hasActiveEntitlement(db, userId, 'universe_pro'))
   if (!ok) throw new HTTPException(402, { message: 'pro_required' })
+}
+
+// ── Reading-grounded context (ADR-0028) ─────────────────────────
+// Load the user's latest/opened faceoracle reading and distill a compact
+// digest so what-if / timeline narratives build on the ACTUAL report
+// (loci, 用神, 大运带, events) instead of re-deriving generic 五行.
+
+function digestStr(v: unknown, max = 0): string {
+  if (typeof v !== 'string') return ''
+  const t = v.replace(/\s+/g, ' ').trim()
+  return max > 0 ? t.slice(0, max) : t
+}
+
+function digestFaceoracleReading(output: Record<string, unknown>): string | undefined {
+  const lines: string[] = []
+
+  const nf = (output.natalFacts && typeof output.natalFacts === 'object'
+    ? (output.natalFacts as Record<string, unknown>)
+    : {}) as Record<string, unknown>
+  const nfParts = [
+    digestStr(nf.dayMaster) && `日主${digestStr(nf.dayMaster)}`,
+    digestStr(nf.dayPillar) && `日柱${digestStr(nf.dayPillar)}`,
+    digestStr(nf.dayun) &&
+      `当前大运${digestStr(nf.dayun)}${digestStr(nf.dayunYears) ? `(${digestStr(nf.dayunYears)})` : ''}`,
+    digestStr(nf.dayunFuture, 160) && `未来大运带:${digestStr(nf.dayunFuture, 160)}`,
+    digestStr(nf.liuNian) && `流年${digestStr(nf.liuNian)}`,
+  ].filter(Boolean)
+  if (nfParts.length) lines.push(`【八字】${nfParts.join('; ')}`)
+
+  const chapters = Array.isArray(output.chapters) ? output.chapters : []
+  const wantKinds = new Set(['overview', 'natal', 'period', 'advice'])
+  const kindLabel: Record<string, string> = {
+    overview: '总论',
+    natal: '本命·未来大运',
+    period: '近窗预告',
+    advice: '行动建议',
+  }
+  const loci: string[] = []
+  const cautions: string[] = []
+  for (const ch of chapters) {
+    if (!ch || typeof ch !== 'object') continue
+    const c = ch as Record<string, unknown>
+    const kind = digestStr(c.kind)
+    if (wantKinds.has(kind)) {
+      const gl = digestStr(c.goldenLine, 70)
+      if (gl) lines.push(`${kindLabel[kind] ?? kind}:${gl}`)
+      const reef = digestStr(c.reef, 60)
+      if (reef && cautions.length < 3) cautions.push(reef)
+    }
+    const cites = Array.isArray(c.citations) ? c.citations : []
+    for (const cite of cites) {
+      if (loci.length >= 8) break
+      if (!cite || typeof cite !== 'object') continue
+      const cc = cite as Record<string, unknown>
+      const locus = digestStr(cc.locus, 12)
+      const note = digestStr(cc.note, 36)
+      if (locus && note && !loci.some((l) => l.startsWith(`${locus}:`))) {
+        loci.push(`${locus}:${note}`)
+      }
+    }
+  }
+  if (loci.length) lines.push(`【关键位】${loci.join(' / ')}`)
+  if (cautions.length) lines.push(`【暗礁】${cautions.join(' / ')}`)
+
+  const events = Array.isArray(output.events) ? output.events : []
+  const evLines: string[] = []
+  for (const ev of events) {
+    if (evLines.length >= 6) break
+    if (!ev || typeof ev !== 'object') continue
+    const e = ev as Record<string, unknown>
+    const axis = digestStr(e.axis)
+    const sm = digestStr(e.startMonth)
+    const em = digestStr(e.endMonth)
+    const win = sm ? (em ? `${sm}~${em}` : sm) : ''
+    const note = digestStr(e.note, 44) || digestStr(e.theme, 44)
+    if (note) evLines.push(`${axis}${win ? `(${win})` : ''}:${note}`)
+  }
+  if (evLines.length) lines.push(`【事件轴】${evLines.join(' / ')}`)
+
+  const digest = lines.join('\n').slice(0, 2000)
+  return digest.length > 0 ? digest : undefined
+}
+
+async function loadFaceoracleReadingContext(
+  db: AppEnv['Variables']['db'],
+  userId: string,
+  readingId: string | undefined
+): Promise<string | undefined> {
+  if (!readingId) return undefined
+  const row = await db
+    .select({ resultJson: portfolioReadings.resultJson })
+    .from(portfolioReadings)
+    .where(
+      and(
+        eq(portfolioReadings.id, readingId),
+        eq(portfolioReadings.userId, userId),
+        eq(portfolioReadings.targetApp, 'faceoracle')
+      )
+    )
+    .limit(1)
+    .get()
+    .catch(() => null)
+  if (!row?.resultJson) return undefined
+  try {
+    const parsed: unknown = JSON.parse(row.resultJson)
+    if (!parsed || typeof parsed !== 'object') return undefined
+    return digestFaceoracleReading(parsed as Record<string, unknown>)
+  } catch {
+    return undefined
+  }
 }
 
 function hashIp(ip: string): string {
@@ -184,6 +295,7 @@ const explainBody = z.object({
   year: z.number().int().min(1900).max(2200),
   month: z.number().int().min(0).max(12).optional(),
   dayunIndex: z.number().int().min(0).max(20).optional(),
+  readingId: z.string().min(1).max(64).optional(),
 })
 
 physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
@@ -242,7 +354,8 @@ physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
   }
 
   const owner = faceoracleOwner(userId)
-  const readingId = `${nodeTypeZh}:${body.year}:${body.month ?? 0}:${locale}:${TIMELINE_CACHE_VERSION}`
+  const groundTag = body.readingId ? `:r${body.readingId.slice(0, 12)}` : ''
+  const cacheId = `${nodeTypeZh}:${body.year}:${body.month ?? 0}:${locale}:${TIMELINE_CACHE_VERSION}${groundTag}`
 
   const hit = await db
     .select()
@@ -250,7 +363,7 @@ physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
     .where(
       and(
         eq(timelineReadings.owner, owner),
-        eq(timelineReadings.id, readingId),
+        eq(timelineReadings.id, cacheId),
         eq(timelineReadings.birthDate, body.birthDate),
         eq(timelineReadings.birthHour, body.birthHour),
         eq(timelineReadings.gender, body.gender)
@@ -269,6 +382,8 @@ physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
     return jsonOk(c, { reading: null, source: 'template', upsell: guard.upsellAfterExhaust })
   }
 
+  const readingContext = await loadFaceoracleReadingContext(db, userId, body.readingId)
+
   try {
     const resp = await astroClient.post<{ explanation: string }>(
       c.env.SVC_ASTRO,
@@ -283,6 +398,7 @@ physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
         reasons,
         locale,
         isPro: true,
+        readingContext,
       }
     )
     const reading = (resp.explanation ?? '').trim()
@@ -297,7 +413,7 @@ physiognomyCycleRoutes.post('/timeline/explain', async (c) => {
         .insert(timelineReadings)
         .values({
           owner,
-          id: readingId,
+          id: cacheId,
           birthDate: body.birthDate,
           birthHour: body.birthHour,
           gender: body.gender,
@@ -330,6 +446,7 @@ const makeifSchema = z.object({
   birthHour: z.number().int().min(-1).max(23).default(-1),
   gender: z.enum(['M', 'F']),
   locale: z.string().max(16).default('en'),
+  readingId: z.string().min(1).max(64).optional(),
   branches: z
     .array(
       z.object({
@@ -359,7 +476,8 @@ physiognomyCycleRoutes.post('/makeif', async (c) => {
   const shapeSig = body.branches
     .map((b) => `${b.id}:${b.label}:${b.divergeAtAge}:${b.mergeAtAge}:${b.isPast}:${b.realPillar}`)
     .join(',')
-  const cacheKey = `faceoracle:makeif:v1:${body.birthDate}:${body.birthHour}:${body.gender}:${locale}:${hashIp(shapeSig)}`
+  const groundTag = body.readingId ? `:r${body.readingId.slice(0, 12)}` : ''
+  const cacheKey = `faceoracle:makeif:v1:${body.birthDate}:${body.birthHour}:${body.gender}:${locale}${groundTag}:${hashIp(shapeSig)}`
   const cached = await c.env.GUARD_KV.get(cacheKey)
   if (cached) {
     try {
@@ -391,6 +509,7 @@ physiognomyCycleRoutes.post('/makeif', async (c) => {
   }
 
   const currentAge = new Date().getUTCFullYear() - y!
+  const readingContext = await loadFaceoracleReadingContext(db, userId, body.readingId)
 
   try {
     const resp = await astroClient.post<{
@@ -404,6 +523,7 @@ physiognomyCycleRoutes.post('/makeif', async (c) => {
       currentAge,
       locale,
       branches: body.branches,
+      readingContext,
     })
     const narratives = resp.narratives ?? {}
     const summaries = resp.summaries ?? {}
@@ -429,6 +549,7 @@ const makeifNodeSchema = z.object({
   birthHour: z.number().int().min(-1).max(23).default(-1),
   gender: z.enum(['M', 'F']),
   locale: z.string().max(16).default('en'),
+  readingId: z.string().min(1).max(64).optional(),
   branch: z.object({
     id: z.string().max(64),
     label: z.string().max(40),
@@ -462,6 +583,8 @@ physiognomyCycleRoutes.post('/makeif/node', async (c) => {
     return jsonOk(c, { narrative: '', source: 'template', upsell: guard.upsellAfterExhaust })
   }
 
+  const readingContext = await loadFaceoracleReadingContext(db, userId, body.readingId)
+
   try {
     const resp = await astroClient.post<{ narrative: string }>(
       c.env.SVC_ASTRO,
@@ -475,6 +598,7 @@ physiognomyCycleRoutes.post('/makeif/node', async (c) => {
         focusRealPillar: body.focusRealPillar,
         focusRealFit: body.focusRealFit,
         focusAltFit: body.focusAltFit,
+        readingContext,
       }
     )
     const narrative = (resp.narrative ?? '').trim()

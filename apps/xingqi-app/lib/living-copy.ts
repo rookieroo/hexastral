@@ -179,6 +179,60 @@ export function makeIfDiffCopy(locale: Locale): {
   }
 }
 
+/** Three-axis chip labels for the home verdict card. */
+export function axisLabels(locale: Locale): { career: string; love: string; health: string } {
+  switch (locale) {
+    case 'zh':
+      return { career: '事业', love: '爱情', health: '健康' }
+    case 'zh-Hant':
+      return { career: '事業', love: '愛情', health: '健康' }
+    case 'ja':
+      return { career: '仕事', love: '恋愛', health: '健康' }
+    default:
+      return { career: 'Career', love: 'Love', health: 'Health' }
+  }
+}
+
+/** Fullscreen locus viewer chrome — actions layered on top of the shared explorer copy. */
+export function locusViewerCopy(locale: Locale): {
+  openChapter: string
+  recapture: string
+} {
+  switch (locale) {
+    case 'zh':
+      return { openChapter: '打开报告本章', recapture: '重拍此张' }
+    case 'zh-Hant':
+      return { openChapter: '打開報告本章', recapture: '重拍此張' }
+    case 'ja':
+      return { openChapter: '該当章を開く', recapture: '撮り直す' }
+    default:
+      return { openChapter: 'Open report chapter', recapture: 'Retake' }
+  }
+}
+
+/** Part labels for the photo strip (左掌/右掌/面). */
+export function partLabels(locale: Locale): { palmL: string; palmR: string; face: string } {
+  if (locale === 'en') return { palmL: 'L palm', palmR: 'R palm', face: 'Face' }
+  return { palmL: '左掌', palmR: '右掌', face: '面' }
+}
+
+/** Home secondary row + strip section labels. */
+export function homeInputsCopy(locale: Locale): {
+  formLabel: string
+  birth: string
+} {
+  switch (locale) {
+    case 'zh':
+      return { formLabel: '形气对照', birth: '生辰' }
+    case 'zh-Hant':
+      return { formLabel: '形氣對照', birth: '生辰' }
+    case 'ja':
+      return { formLabel: '形気対照', birth: '生辰' }
+    default:
+      return { formLabel: 'Form map', birth: 'Birth' }
+  }
+}
+
 /** History row title — chrome i18n, never raw LLM overview. */
 export function formReadingListTitle(locale: Locale): string {
   switch (locale) {

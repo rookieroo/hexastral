@@ -6,8 +6,9 @@
 
 import { Button, useTheme } from '@zhop/core-ui'
 import { verdictColors } from '@zhop/hexastral-tokens/palette'
+import { fetchReadings } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { Stack, useFocusEffect, useRouter } from 'expo-router'
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -17,6 +18,7 @@ import { TimelineYearGraph } from '@/components/timeline/TimelineYearGraph'
 import { fetchFaceEvents } from '@/lib/api'
 import { fetchCycleTimeline, type TimelinePayload } from '@/lib/cycle-api'
 import type { DrilldownYear, LiuyueCell } from '@/lib/cycle-types'
+import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { forwardLiuyue } from '@/lib/liuyue'
 import { chartFavorableElement, resolveNodeDetail } from '@/lib/timeline-detail'
@@ -57,7 +59,8 @@ const COPY = {
     title: 'Life axis',
     subtitle: 'DaYun → year → month. Form windows below.',
     loading: 'Loading…',
-    freeNote: 'Free shows your current decade; tap a ghost chip or unlock below for the full axis and months.',
+    freeNote:
+      'Free shows your current decade; tap a ghost chip or unlock below for the full axis and months.',
     goPro: 'Go Pro · unlock life axis',
     editBirth: 'Edit birth',
     needBirth: 'Add birth info first',
@@ -91,13 +94,14 @@ export default function XingqiTimelineScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const params = useLocalSearchParams<{ readingId?: string }>()
+  const paramReadingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const { width } = useWindowDimensions()
   const locale = resolveLocale()
   const t = COPY[locale]
   const entitlements = useEntitlements()
   const isPro =
-    hasEntitlement(entitlements, 'faceoracle_pro') ||
-    hasEntitlement(entitlements, 'universe_pro')
+    hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
 
   const [payload, setPayload] = useState<TimelinePayload | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +112,7 @@ export default function XingqiTimelineScreen() {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [events, setEvents] = useState<FaceEvent[]>([])
   const [explain, setExplain] = useState<string | null>(null)
+  const [groundReadingId, setGroundReadingId] = useState<string | undefined>(paramReadingId)
 
   const openPaywall = useCallback(() => {
     router.push('/(commerce)/paywall' as never)
@@ -153,6 +158,14 @@ export default function XingqiTimelineScreen() {
           } else if (!cancelled) {
             setEvents([])
           }
+          if (!paramReadingId) {
+            try {
+              const hist = await fetchReadings(PORTFOLIO_TARGET_APP)
+              if (!cancelled) setGroundReadingId(hist.readings?.[0]?.id)
+            } catch {
+              if (!cancelled) setGroundReadingId(undefined)
+            }
+          }
         } catch (e) {
           if (!cancelled) {
             setError(e instanceof Error ? e.message : 'load_failed')
@@ -165,7 +178,7 @@ export default function XingqiTimelineScreen() {
       return () => {
         cancelled = true
       }
-    }, [isPro, locale])
+    }, [isPro, locale, paramReadingId])
   )
 
   const favEl = useMemo(() => (payload ? chartFavorableElement(payload) : null), [payload])
@@ -184,9 +197,7 @@ export default function XingqiTimelineScreen() {
   }, [dayun])
 
   const selectedYear =
-    selectedYearIndex != null && years[selectedYearIndex]
-      ? years[selectedYearIndex]!.year
-      : null
+    selectedYearIndex != null && years[selectedYearIndex] ? years[selectedYearIndex]!.year : null
 
   const liuyue: LiuyueCell[] | null = useMemo(() => {
     if (!isPro || selectedYear == null) return null
@@ -225,6 +236,7 @@ export default function XingqiTimelineScreen() {
             locale,
             nodeType: 'liunian',
             year,
+            readingId: groundReadingId,
           })
           if (!cancelled) setExplain(res.reading)
         } catch {
@@ -234,7 +246,7 @@ export default function XingqiTimelineScreen() {
       return () => {
         cancelled = true
       }
-    }, [isPro, locale, payload, selectedId])
+    }, [isPro, locale, payload, selectedId, groundReadingId])
   )
 
   const graphColors = {
@@ -256,7 +268,9 @@ export default function XingqiTimelineScreen() {
           gap: spacing.md,
         }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={{ color: colors.accent, fontSize: 15 }}>{t.back}</Text>
           </Pressable>
@@ -274,7 +288,9 @@ export default function XingqiTimelineScreen() {
             </Pressable>
           ) : null}
         </View>
-        <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>{t.title}</Text>
+        <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
+          {t.title}
+        </Text>
         <Text style={{ color: colors.secondary, lineHeight: 22 }}>{t.subtitle}</Text>
 
         {loading ? (

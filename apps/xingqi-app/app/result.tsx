@@ -402,8 +402,20 @@ export default function FaceResultScreen() {
             disc: colors.bg,
             discFg: colors.text,
           }}
-          onTimeline={() => router.push('/timeline' as never)}
-          onWhatIf={() => router.push('/makeif' as never)}
+          onTimeline={() =>
+            router.push(
+              (readingId
+                ? `/timeline?readingId=${encodeURIComponent(readingId)}`
+                : '/timeline') as never
+            )
+          }
+          onWhatIf={() =>
+            router.push(
+              (readingId
+                ? `/makeif?readingId=${encodeURIComponent(readingId)}`
+                : '/makeif') as never
+            )
+          }
           onChat={() => openChat(null)}
           onRegenerate={confirmRegenerate}
         />

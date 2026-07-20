@@ -366,7 +366,8 @@ async function callReadingAi(
         tier: 'flagship',
         locale,
         maxTokens: 8192,
-        temperature: 0.35,
+        // 0.55 (was 0.35): less generic, more specific prose; jsonMode keeps it parseable.
+        temperature: 0.55,
         jsonMode: true,
         // Qwen soft-switch + Kimi chat_template_kwargs.thinking:false (router).
         noThink: true,
@@ -795,7 +796,17 @@ export async function runFaceoracleReadingJob(
     }
   }
 
-  // Density floors (citations + three axes): one soft retry, then accept best draft.
+  // Retry acceptance: never swap a richer draft for a thinner one. A retry is
+  // accepted only when it STRICTLY reduces gaps AND does not shrink the prose
+  // (the D1 evidence showed retries regressing into terser, more generic text).
+  const proseLen = (n: { chapters: ChapterPayload[]; flat: Record<string, unknown> }): number =>
+    proseFromNormalized(n).replace(/\s+/g, '').length
+  const isThinGap = (g: string): boolean =>
+    g.startsWith('field.thin_') ||
+    g === 'advice.not_actionable' ||
+    g.startsWith('field.dynamic_label_only')
+
+  // Density floors (structure): one structure retry, accepted only on strict gain.
   const densitySource = {
     chapters: normalized.chapters,
     events: normalized.flat.events,
@@ -808,8 +819,9 @@ export async function runFaceoracleReadingJob(
       '',
       'STRUCTURE RETRY: Previous draft failed these structural checks (NOT word count):',
       densityGaps.join(', '),
-      'Fix each: goldenLine/evidence/dynamic/reef/remedy must EACH add a new angle (no echoing the same sentence);',
+      'Fix each WITHOUT shortening any chapter: goldenLine/evidence/dynamic/reef/remedy must EACH add a new angle (no echoing the same sentence);',
       'reef/remedy must be unique per chapter or null — the 本流年 sentence belongs to period.reef ONLY, never pasted elsewhere; no single 冥想/呼吸 remedy reused across chapters;',
+      'period (会发生什么) and advice (你该做什么) must NOT restate each other;',
       'citation notes must advance the chapter, not paste an evidence sentence; cite BOTH supportive and cautionary loci actually present in the inputs (do not cherry-pick only auspicious ones);',
       'face needs ≥5 DISTINCT loci; palms must cover BOTH 先天掌 and 后天掌 (see palmConvention) and cite lifeLine AND heartLine with classical loci;',
       'natal must narrate the FUTURE dayun band (use dayunFuture: named 干支/年龄/年份), distinct from period;',
@@ -824,14 +836,71 @@ export async function runFaceoracleReadingJob(
           { chapters: densAgain.chapters, events: densAgain.flat.events },
           densAgain.chapters
         )
-        if (againGaps.length <= densityGaps.length) {
+        const curLen = proseLen(normalized)
+        const againLen = proseLen(densAgain)
+        // Strictly fewer gaps AND no meaningful length regression.
+        if (againGaps.length < densityGaps.length && againLen + 12 >= curLen) {
           normalized = densAgain
           densityGaps = againGaps
+        } else {
+          console.warn('[faceoracle-job] density retry rejected (no strict gain / regressed)', {
+            jobId,
+            curLen,
+            againLen,
+            curGaps: densityGaps.length,
+            againGaps: againGaps.length,
+          })
         }
       }
     }
     if (densityGaps.length > 0) {
       console.warn('[faceoracle-job] density still soft-short', { jobId, gaps: densityGaps })
+    }
+  }
+
+  // Deepen retry: thin one-liner fields remain → ask for mechanism + one dated
+  // scene while KEEPING structure/conclusions. Accept only when thin fields drop,
+  // the draft grows, and no new structural gaps appear.
+  const thinGaps = densityGaps.filter(isThinGap)
+  if (thinGaps.length > 0) {
+    console.warn('[faceoracle-job] thin fields — deepen retry', { jobId, thin: thinGaps })
+    const deepenPrompt = [
+      promptTemplate,
+      '',
+      'DEEPEN RETRY: keep the SAME structure, chapters, loci and conclusions — do NOT restructure or shorten anything.',
+      `These fields are thin one-liners: ${thinGaps.join(', ')}.`,
+      'For EACH, expand along the 形→机理(为什么，扣住日主/用神/大运)→一个点名窗口(年龄/年份/干支)的具体场景 chain until it reads like a real master paragraph.',
+      'advice must give per-axis actionable steps (触发条件 + 具体动作 + 为何), distinct from period.',
+      'Add depth by inference and one dated scene — never by padding, repeating, or generic 空话. Output ONLY valid JSON.',
+    ].join('\n')
+    const deepRetry = await callReadingAi(env, deepenPrompt, job.locale)
+    if (deepRetry.parsed) {
+      const deepAgain = normalizeFaceoracleInterpretation(deepRetry.parsed, job.locale)
+      if (deepAgain && interpretationHasBody(deepAgain)) {
+        const deepGaps = faceoracleDensityGaps(
+          { chapters: deepAgain.chapters, events: deepAgain.flat.events },
+          deepAgain.chapters
+        )
+        const deepThin = deepGaps.filter(isThinGap)
+        const curLen = proseLen(normalized)
+        const deepLen = proseLen(deepAgain)
+        if (
+          deepThin.length < thinGaps.length &&
+          deepLen >= curLen &&
+          deepGaps.length <= densityGaps.length
+        ) {
+          normalized = deepAgain
+          densityGaps = deepGaps
+        } else {
+          console.warn('[faceoracle-job] deepen retry rejected', {
+            jobId,
+            curLen,
+            deepLen,
+            thinBefore: thinGaps.length,
+            thinAfter: deepThin.length,
+          })
+        }
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 /**
- * Home — icon-led period strip (tap → slot view/replace); timeline;
- * sticky bottom CTA for thumb reach.
+ * Home — report-first. Hero = latest reading's verdict (tap → full report);
+ * a photo strip opens the fullscreen locus viewer; a compact row updates 生辰.
+ * Archive list lives in Settings. Sticky bottom CTA for thumb reach.
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
@@ -11,24 +12,30 @@ import {
 } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { CalendarDays, Hand, ScanFace, Settings2 } from 'lucide-react-native'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { CalendarDays, Settings2 } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FeaturedReadingCard } from '@/components/FeaturedReadingCard'
-import { HomeLocusExplorer, locusExplorerCopy } from '@/components/HomeLocusExplorer'
+import { HomeVerdictCard } from '@/components/HomeVerdictCard'
+import { PhotoStrip } from '@/components/PhotoStrip'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { fetchBiometricConsent } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
+import {
+  formReadingListTitle,
+  homeArchiveCopy,
+  homeInputsCopy,
+  partLabels,
+  readingLocaleBadge,
+} from '@/lib/living-copy'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
-import { locusExplorerFromResultJson } from '@/lib/locus-data'
-import { captureHrefForPart, periodPhotoMap } from '@/lib/period-photos'
+import { captureHrefForPart } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
   acknowledgeReadingJob,
@@ -45,37 +52,7 @@ import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
 import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import { readingHasReportBody } from '@/lib/report-chapters'
-
-function StepIcon({
-  label,
-  active,
-  colors,
-  onPress,
-  children,
-}: {
-  label: string
-  active: boolean
-  colors: { text: string; dim: string; secondary: string }
-  onPress: () => void
-  children: ReactNode
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole='button'
-      accessibilityLabel={label}
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        gap: 6,
-        paddingVertical: 10,
-      }}
-    >
-      {children}
-      <Text style={{ color: active ? colors.secondary : colors.dim, fontSize: 10 }}>{label}</Text>
-    </Pressable>
-  )
-}
+import { verdictFromReading } from '@/lib/verdict'
 
 export default function XingqiHomeScreen() {
   const router = useRouter()
@@ -89,24 +66,17 @@ export default function XingqiHomeScreen() {
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
   const [items, setItems] = useState<PortfolioReadingItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [slotReady, setSlotReady] = useState<Partial<Record<CapturePart, boolean>>>({})
   const [hasBirth, setHasBirth] = useState(false)
   const [job, setJob] = useState<ReadingJobState>(() => getReadingJobState())
 
   const reload = useCallback(async () => {
     setLoading(true)
     try {
-      const [hist, photos, draft] = await Promise.all([
+      const [hist, draft] = await Promise.all([
         fetchReadings(PORTFOLIO_TARGET_APP),
-        periodPhotoMap(),
         hydrateReadingDraft(),
       ])
       setItems(hist.readings ?? [])
-      setSlotReady({
-        palm_l: Boolean(photos.palm_l),
-        palm_r: Boolean(photos.palm_r),
-        face: Boolean(photos.face),
-      })
       setHasBirth(Boolean(draft.solarDate && draft.timeIndex != null && draft.gender))
     } catch {
       setItems([])
@@ -183,6 +153,20 @@ export default function XingqiHomeScreen() {
     router.push('/(app)/settings')
   }, [router])
 
+  const requireConsent = useCallback(async (): Promise<boolean> => {
+    try {
+      const consented = await fetchBiometricConsent()
+      if (!consented) {
+        router.push('/consent')
+        return false
+      }
+      return true
+    } catch {
+      router.push('/consent')
+      return false
+    }
+  }, [router])
+
   const startReading = useCallback(async () => {
     if (job.status === 'running') {
       Alert.alert(
@@ -195,24 +179,12 @@ export default function XingqiHomeScreen() {
       )
       return
     }
-    try {
-      const consented = await fetchBiometricConsent()
-      if (!consented) {
-        router.push('/consent')
-        return
-      }
-    } catch {
-      router.push('/consent')
-      return
-    }
+    if (!(await requireConsent())) return
 
     // Pro with a ready draft: skip unlock sheet — start in background.
-    // Handoff only after the job is queued (not before extract/enqueue can fail).
     if (isPro) {
       const draft = await hydrateReadingDraft()
       if (draftReadyForPaywall(draft)) {
-        // Client stamp only when archive still has a reading. Never re-seed stamp
-        // here — that re-blocked right after delete (empty list + kept featureIds).
         if (
           items.length > 0 &&
           (await alertIfPhotosUnchanged({
@@ -247,40 +219,12 @@ export default function XingqiHomeScreen() {
     }
 
     router.push('/capture')
-  }, [isPro, items.length, job.status, locale, router])
-
-  const openSlot = useCallback(
-    async (part: CapturePart) => {
-      try {
-        const consented = await fetchBiometricConsent()
-        if (!consented) {
-          router.push('/consent')
-          return
-        }
-      } catch {
-        router.push('/consent')
-        return
-      }
-      const href = captureHrefForPart(part)
-      router.push({ pathname: href, params: { mode: 'slot' } })
-    },
-    [router]
-  )
+  }, [isPro, items.length, job.status, locale, requireConsent, router])
 
   const openBirth = useCallback(async () => {
-    try {
-      const consented = await fetchBiometricConsent()
-      if (!consented) {
-        router.push('/consent')
-        return
-      }
-    } catch {
-      router.push('/consent')
-      return
-    }
-    // Birth screen redirects to capture if three photos missing.
+    if (!(await requireConsent())) return
     router.push('/birth')
-  }, [router])
+  }, [requireConsent, router])
 
   const swipeToSettings = useMemo(
     () =>
@@ -297,12 +241,13 @@ export default function XingqiHomeScreen() {
 
   const hasReading = items.length > 0
   const copy = homeArchiveCopy(locale)
+  const inputsCopy = homeInputsCopy(locale)
+  const stripLabels = partLabels(locale)
   const featured = items[0]
-  const locusData = useMemo(
-    () => (featured ? locusExplorerFromResultJson(featured) : null),
-    [featured]
+  const verdict = useMemo(
+    () => (featured ? verdictFromReading(featured, locale) : null),
+    [featured, locale]
   )
-  const explorerCopy = useMemo(() => locusExplorerCopy(locale), [locale])
 
   const confirmDelete = useCallback(
     (item: PortfolioReadingItem) => {
@@ -346,26 +291,24 @@ export default function XingqiHomeScreen() {
     [locale]
   )
 
-  const openFeatured = useCallback(
-    (chapter?: 'face' | 'palms') => {
-      if (!featured) return
-      // Guard: Pressable onPress passes an event object, not a chapter.
-      const chapterParam = chapter === 'face' || chapter === 'palms' ? chapter : undefined
-      router.push({
-        pathname: '/result',
-        params: { readingId: featured.id, ...(chapterParam ? { chapter: chapterParam } : {}) },
-      } as never)
-    },
-    [featured, router]
-  )
+  const openFeatured = useCallback(() => {
+    if (!featured) return
+    router.push({ pathname: '/result', params: { readingId: featured.id } } as never)
+  }, [featured, router])
 
-  const openCapturePart = useCallback(
-    (part: 'face' | 'palm_l' | 'palm_r') => {
-      const href =
-        part === 'palm_r' ? '/capture/right' : part === 'face' ? '/capture/face' : '/capture'
-      router.push({ pathname: href, params: { mode: 'slot' } } as never)
+  const onPressPart = useCallback(
+    (part: CapturePart, hasPhoto: boolean) => {
+      if (!featured) return
+      if (hasPhoto) {
+        router.push({ pathname: '/locus', params: { readingId: featured.id, part } } as never)
+        return
+      }
+      void (async () => {
+        if (!(await requireConsent())) return
+        router.push({ pathname: captureHrefForPart(part), params: { mode: 'slot' } } as never)
+      })()
     },
-    [router]
+    [featured, requireConsent, router]
   )
 
   const ctaLabel =
@@ -401,52 +344,6 @@ export default function XingqiHomeScreen() {
           >
             <Settings2 size={22} color={colors.text} strokeWidth={1.5} />
           </Pressable>
-        </View>
-
-        <View
-          style={{
-            marginHorizontal: spacing.xl,
-            marginBottom: spacing.md,
-            paddingHorizontal: spacing.sm,
-          }}
-        >
-          <View style={{ flexDirection: 'row' }}>
-            <StepIcon
-              label={s('左掌', '左掌', 'L')}
-              active={Boolean(slotReady.palm_l)}
-              colors={colors}
-              onPress={() => void openSlot('palm_l')}
-            >
-              {/* Lucide Hand reads as right-hand back; palm-facing capture flips R. */}
-              <Hand size={22} color={colors.text} strokeWidth={1.75} />
-            </StepIcon>
-            <StepIcon
-              label={s('右掌', '右掌', 'R')}
-              active={Boolean(slotReady.palm_r)}
-              colors={colors}
-              onPress={() => void openSlot('palm_r')}
-            >
-              <View style={{ transform: [{ scaleX: -1 }] }}>
-                <Hand size={22} color={colors.text} strokeWidth={1.75} />
-              </View>
-            </StepIcon>
-            <StepIcon
-              label={s('面', '面', 'Face')}
-              active={Boolean(slotReady.face)}
-              colors={colors}
-              onPress={() => void openSlot('face')}
-            >
-              <ScanFace size={22} color={colors.text} strokeWidth={1.75} />
-            </StepIcon>
-            <StepIcon
-              label={s('生辰', '生辰', 'Birth')}
-              active={hasBirth}
-              colors={colors}
-              onPress={() => void openBirth()}
-            >
-              <CalendarDays size={22} color={colors.text} strokeWidth={1.75} />
-            </StepIcon>
-          </View>
         </View>
 
         <ScrollView
@@ -561,12 +458,16 @@ export default function XingqiHomeScreen() {
             </View>
           ) : null}
 
-          {!loading && featured && locusData ? (
-            <HomeLocusExplorer
-              data={locusData}
-              locale={locale}
-              copy={explorerCopy}
+          {!loading && featured && verdict ? (
+            <HomeVerdictCard
+              latestLabel={copy.latestLabel}
+              goldenLine={verdict.goldenLine}
               meta={readingMeta(featured)}
+              axes={verdict.axes}
+              openHint={copy.openHint}
+              onPress={openFeatured}
+              onDelete={() => confirmDelete(featured)}
+              deleteLabel={s('删除', '刪除', 'Delete')}
               colors={{
                 text: colors.text,
                 dim: colors.dim,
@@ -576,62 +477,70 @@ export default function XingqiHomeScreen() {
                 bg: colors.bg,
               }}
               spacing={spacing}
-              onOpenReport={openFeatured}
-              onCapturePart={openCapturePart}
             />
           ) : null}
 
-          {!loading && featured && !locusData ? (
-            <View style={{ gap: spacing.md }}>
-              <Text
-                style={{
-                  color: colors.dim,
-                  fontSize: 12,
-                  letterSpacing: 0.8,
-                }}
-              >
-                {copy.latestLabel}
-              </Text>
-              <FeaturedReadingCard
-                title={formReadingListTitle(locale)}
-                meta={readingMeta(featured)}
-                hint={copy.openHint}
-                onPress={openFeatured}
-                onDelete={() => confirmDelete(featured)}
-                colors={{
-                  text: colors.text,
-                  dim: colors.dim,
-                  accent: colors.accent,
-                  secondary: colors.secondary,
-                  separator: colors.separator,
-                  bg: colors.bg,
-                }}
-                spacing={spacing}
-                deleteLabel={s('删除', '刪除', 'Delete')}
-              />
-            </View>
+          {!loading && featured && !verdict ? (
+            <FeaturedReadingCard
+              title={formReadingListTitle(locale)}
+              meta={readingMeta(featured)}
+              hint={copy.openHint}
+              onPress={openFeatured}
+              onDelete={() => confirmDelete(featured)}
+              colors={{
+                text: colors.text,
+                dim: colors.dim,
+                accent: colors.accent,
+                secondary: colors.secondary,
+                separator: colors.separator,
+                bg: colors.bg,
+              }}
+              spacing={spacing}
+              deleteLabel={s('删除', '刪除', 'Delete')}
+            />
           ) : null}
 
-          {!loading && items.length > 1 ? (
+          {!loading && featured ? (
+            <PhotoStrip
+              readingId={featured.id}
+              sectionLabel={inputsCopy.formLabel}
+              labels={stripLabels}
+              colors={{
+                text: colors.text,
+                dim: colors.dim,
+                accent: colors.accent,
+                secondary: colors.secondary,
+                separator: colors.separator,
+                bg: colors.bg,
+              }}
+              spacing={spacing}
+              onPressPart={onPressPart}
+            />
+          ) : null}
+
+          {!loading && featured ? (
             <Pressable
-              onPress={() => router.push('/(app)/archive' as never)}
+              onPress={() => void openBirth()}
               accessibilityRole='button'
               style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
                 paddingVertical: spacing.md,
                 borderTopWidth: 0.5,
                 borderTopColor: colors.separator,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: 'IBMPlexMono',
-                  color: colors.secondary,
-                  fontSize: 12,
-                  letterSpacing: 0.8,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {copy.viewAll(items.length)}
+              <CalendarDays
+                size={18}
+                color={hasBirth ? colors.secondary : colors.dim}
+                strokeWidth={1.6}
+              />
+              <Text style={{ color: colors.secondary, fontSize: 14, flex: 1 }}>
+                {inputsCopy.birth}
+              </Text>
+              <Text style={{ color: colors.dim, fontSize: 12 }}>
+                {hasBirth ? s('已填', '已填', 'Set') : s('去填写', '去填寫', 'Add')}
               </Text>
             </Pressable>
           ) : null}

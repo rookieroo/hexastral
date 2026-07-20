@@ -7,7 +7,11 @@ import { getPortfolioUserId, resolvePortfolioApiUrl, signRequest } from '@zhop/s
 import type { TimelinePayload } from './cycle-types'
 import { isZhHant } from './locale-zh'
 
-async function signedJson(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<Response> {
+async function signedJson(
+  method: 'GET' | 'POST' | 'DELETE',
+  path: string,
+  body?: unknown
+): Promise<Response> {
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('signin_required')
   const requestBody = body !== undefined ? JSON.stringify(body) : ''
@@ -62,6 +66,7 @@ export async function fetchCycleTimelineExplain(args: {
   year: number
   month?: number
   dayunIndex?: number
+  readingId?: string
 }): Promise<{ reading: string | null; source: string }> {
   const path = '/api/physiognomy/cycle/timeline/explain'
   const res = await signedJson('POST', path, { ...args, locale: mapLocale(args.locale) })
@@ -83,6 +88,7 @@ export async function fetchMakeIfNarratives(args: {
   gender: 'M' | 'F'
   locale: string
   branches: MakeIfBranchInput[]
+  readingId?: string
 }): Promise<{
   narratives: Record<string, string>
   summaries?: Record<string, string>
@@ -103,6 +109,7 @@ export async function fetchMakeIfNodeNarrative(args: {
   focusRealPillar?: string
   focusRealFit?: '吉' | '平' | '凶'
   focusAltFit?: '吉' | '平' | '凶'
+  readingId?: string
 }): Promise<{ narrative: string; source: string }> {
   const path = '/api/physiognomy/cycle/makeif/node'
   const res = await signedJson('POST', path, { ...args, locale: mapLocale(args.locale) })

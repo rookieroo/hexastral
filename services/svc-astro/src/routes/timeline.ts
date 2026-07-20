@@ -45,6 +45,8 @@ const inputSchema = z.object({
   element: z.string().max(2).optional(),
   fit: z.string().max(2).optional(),
   reasons: z.array(z.string().max(40)).max(12).optional(),
+  /** Xingqi caller: compact 形气×八字 report digest to ground the node reading. */
+  readingContext: z.string().max(4000).optional(),
   locale: z.string().default('en'),
   isPro: z.boolean().optional().default(false),
 })
@@ -128,9 +130,16 @@ timelineRoutes.post('/explain', async (c) => {
 - 这是反思与参考，不是预测、不是命运定论，也不替命主做决定；讲成「趋势 / 参考」。
 - 不渲染恐惧：不得预言具体的坏事（生病、伤亡、破财、事故、分手、官司输赢等），也不用「灾、祸、厄运、危险、劫数」这类字眼；凡挑战一律转述为「可留意、可应对的倾向」。
 - 禁止使用：命中注定、必然、一定、注定、宿命、预测、must、definitely、certainly、predict。
-- 只输出解释正文，不要标题、不要 JSON。`
+${
+  (input.readingContext ?? '').trim()
+    ? '- 已提供该命主的「形气×八字报告要点」：顺着它的关键位/暗礁/大运带/事件轴来讲，点名其中的具体结论并延展，与报告呼应，而非泛泛复述五行常识。\n'
+    : ''
+}- 只输出解释正文，不要标题、不要 JSON。`
 
-  const userPrompt = `【时间节点事实】\n${facts}\n\n请解释这个「${input.nodeType}」节点对命主的意义（反思视角，非预测）。`
+  const reportBlock = (input.readingContext ?? '').trim()
+    ? `\n\n【此人形气×八字报告要点】（须呼应，勿另起炉灶）\n${(input.readingContext ?? '').trim()}`
+    : ''
+  const userPrompt = `【时间节点事实】\n${facts}${reportBlock}\n\n请解释这个「${input.nodeType}」节点对命主的意义（反思视角，非预测）。`
 
   const explanation = await callWithFallback(c.env, systemPrompt, userPrompt, {
     isPro: input.isPro,

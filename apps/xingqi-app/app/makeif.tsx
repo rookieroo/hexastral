@@ -4,9 +4,10 @@
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
-import { SatelliteBottomSheet } from '@zhop/satellite-ui'
+import { fetchReadings } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { Stack, useFocusEffect, useRouter } from 'expo-router'
+import { SatelliteBottomSheet } from '@zhop/satellite-ui'
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import {
   Pressable,
@@ -29,14 +30,15 @@ import {
   saveMakeifFork,
   type TimelinePayload,
 } from '@/lib/cycle-api'
+import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import {
   buildInteractiveModel,
   buildUserBranch,
   deriveMakeIfSummary,
-  makeIfInteractiveCopyForLocale,
   type MakeIfBranch,
+  makeIfInteractiveCopyForLocale,
   relocalizeEventLabel,
 } from '@/lib/makeIfBranches'
 import { loadXingqiBirth } from '@/lib/xingqi-birth'
@@ -47,13 +49,14 @@ export default function XingqiMakeIfScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const params = useLocalSearchParams<{ readingId?: string }>()
+  const paramReadingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const { width } = useWindowDimensions()
   const locale = resolveLocale()
   const copy = makeIfInteractiveCopyForLocale(locale)
   const entitlements = useEntitlements()
   const isPro =
-    hasEntitlement(entitlements, 'faceoracle_pro') ||
-    hasEntitlement(entitlements, 'universe_pro')
+    hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
 
   const [payload, setPayload] = useState<TimelinePayload | null>(null)
   const [branches, setBranches] = useState<MakeIfBranch[]>([])
@@ -64,8 +67,12 @@ export default function XingqiMakeIfScreen() {
   const [forkAge, setForkAge] = useState<number | null>(null)
   const [customEvent, setCustomEvent] = useState('')
   const [busy, setBusy] = useState(false)
+  const [groundReadingId, setGroundReadingId] = useState<string | undefined>(paramReadingId)
 
-  const birthRef = useMemo(() => ({ current: null as Awaited<ReturnType<typeof loadXingqiBirth>> }), [])
+  const birthRef = useMemo(
+    () => ({ current: null as Awaited<ReturnType<typeof loadXingqiBirth>> }),
+    []
+  )
 
   useFocusEffect(
     useCallback(() => {
@@ -117,6 +124,14 @@ export default function XingqiMakeIfScreen() {
           })
           setBranches(hydrated)
           setSelectedId(hydrated[0]?.id ?? null)
+          if (!paramReadingId) {
+            try {
+              const hist = await fetchReadings(PORTFOLIO_TARGET_APP)
+              if (!cancelled) setGroundReadingId(hist.readings?.[0]?.id)
+            } catch {
+              if (!cancelled) setGroundReadingId(undefined)
+            }
+          }
         } catch (e) {
           if (!cancelled) setError(e instanceof Error ? e.message : 'load_failed')
         } finally {
@@ -126,7 +141,7 @@ export default function XingqiMakeIfScreen() {
       return () => {
         cancelled = true
       }
-    }, [birthRef, isPro, locale])
+    }, [birthRef, isPro, locale, paramReadingId])
   )
 
   const currentAge = useMemo(() => {
@@ -172,6 +187,7 @@ export default function XingqiMakeIfScreen() {
         birthHour: birth.hour,
         gender: birth.gender,
         locale,
+        readingId: groundReadingId,
         branches: [
           {
             id: branch.id,
@@ -246,11 +262,7 @@ export default function XingqiMakeIfScreen() {
       >
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={{ color: colors.accent }}>
-            {isCjkZh(locale)
-              ? pickZh(locale, '返回', '返回')
-              : locale === 'ja'
-                ? '戻る'
-                : 'Back'}
+            {isCjkZh(locale) ? pickZh(locale, '返回', '返回') : locale === 'ja' ? '戻る' : 'Back'}
           </Text>
         </Pressable>
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
@@ -287,11 +299,7 @@ export default function XingqiMakeIfScreen() {
                 setSheetOpen(true)
               }}
               nowLabel={
-                isCjkZh(locale)
-                  ? pickZh(locale, '今', '今')
-                  : locale === 'ja'
-                    ? '今'
-                    : 'Now'
+                isCjkZh(locale) ? pickZh(locale, '今', '今') : locale === 'ja' ? '今' : 'Now'
               }
               lang={locale}
               focusAge={currentAge}
@@ -327,6 +335,7 @@ export default function XingqiMakeIfScreen() {
                     locale={locale}
                     colors={graphColors}
                     spacing={{ sm: spacing.sm, md: spacing.md }}
+                    readingId={groundReadingId}
                   />
                 ) : null}
               </View>
@@ -342,7 +351,9 @@ export default function XingqiMakeIfScreen() {
       <SatelliteBottomSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
         <View style={{ padding: spacing.lg, gap: spacing.md }}>
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}>
-            {forkAge != null ? copy.forkTitle(forkAge, currentAge != null && forkAge < currentAge) : copy.screenTitle}
+            {forkAge != null
+              ? copy.forkTitle(forkAge, currentAge != null && forkAge < currentAge)
+              : copy.screenTitle}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {copy.eventChips.map((chip) => (

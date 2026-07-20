@@ -3,6 +3,7 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
+import { fetchReadings } from '@zhop/portfolio-client'
 import {
   clearPortfolioUserId,
   type DevEntitlementOverride,
@@ -27,13 +28,14 @@ import {
 import { revokeBiometricConsent } from '@/lib/api'
 import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { devSetServerPro } from '@/lib/dev-tools'
+import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
+import { restorePurchases } from '@/lib/iap'
 import {
   getIcloudPhotoSyncEnabled,
   setIcloudPhotoSyncEnabled,
   syncReadingPhotosToICloudIfEnabled,
 } from '@/lib/icloud-sync-preference'
-import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
-import { restorePurchases } from '@/lib/iap'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
@@ -62,12 +64,16 @@ export default function SettingsScreen() {
   )
   const [restoreBusy, setRestoreBusy] = useState(false)
   const [icloudSync, setIcloudSync] = useState(false)
+  const [readingCount, setReadingCount] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
       void getPortfolioUserId().then(setUserId)
       void getXingqiPushPrefs().then(setPrefs)
       void getIcloudPhotoSyncEnabled().then(setIcloudSync)
+      void fetchReadings(PORTFOLIO_TARGET_APP)
+        .then((hist) => setReadingCount(hist.readings?.length ?? 0))
+        .catch(() => setReadingCount(0))
       if (__DEV__) setDevPro(getDevEntitlementOverride())
     }, [])
   )
@@ -123,7 +129,11 @@ export default function SettingsScreen() {
         if (!ok) {
           Alert.alert(
             'DEV Pro',
-            s('服务端授权失败（需已登录）。', '服務端授權失敗（需已登入）。', 'Server grant failed.')
+            s(
+              '服务端授权失败（需已登录）。',
+              '服務端授權失敗（需已登入）。',
+              'Server grant failed.'
+            )
           )
         }
       })
@@ -163,6 +173,16 @@ export default function SettingsScreen() {
               value={prefs.remindersOn && isPro}
               onValueChange={(v) => void applyReminders(v)}
               badge={isPro ? undefined : 'PRO'}
+            />
+          </SettingsCard>
+        </SettingsSection>
+
+        <SettingsSection title={s('档案', '檔案', 'HISTORY')}>
+          <SettingsCard>
+            <SettingsRow
+              label={s('历史档案', '歷史檔案', 'History')}
+              trailing={readingCount > 0 ? String(readingCount) : undefined}
+              onPress={() => router.push('/(app)/archive' as never)}
             />
           </SettingsCard>
         </SettingsSection>

@@ -21,11 +21,13 @@ export function MakeIfDiffPanel({
   locale,
   colors,
   spacing,
+  readingId,
 }: {
   branch: MakeIfBranch
   payload: TimelinePayload
   birth: { date: string; hour: number; gender: 'M' | 'F' }
   locale: Locale
+  readingId?: string
   colors: {
     text: string
     secondary: string
@@ -155,6 +157,7 @@ export function MakeIfDiffPanel({
       focusRealPillar: meta.realPillar,
       focusRealFit: meta.realFit,
       focusAltFit: meta.altFit,
+      readingId,
     })
       .then((res) => {
         if (res.narrative) {

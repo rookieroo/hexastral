@@ -31,7 +31,7 @@ describe('buildFaceOraclePrompt (ADR-0028 craft)', () => {
     const prompt = buildFaceOraclePrompt(base)
     expect(prompt).toContain('Six chapters')
     expect(prompt).toContain('FUTURE MAIN')
-    expect(prompt).toContain('NEAR WINDOW only')
+    expect(prompt).toContain('NEAR WINDOW preview')
     expect(prompt).toContain('overview ≠ face')
     expect(prompt).toContain('Field roles (NO ECHO)')
     expect(prompt).toContain('Ban: copying the same sentence')
@@ -66,6 +66,16 @@ describe('buildFaceOraclePrompt (ADR-0028 craft)', () => {
     // Breadth + life/heart lines are stated in the citation contract.
     expect(prompt).toContain('≥5 DISTINCT featureKeys')
     expect(prompt).toContain('lifeLine AND heartLine')
+  })
+
+  it('carries the inference-chain mandate, crutch-phrase ban, and depth few-shot', () => {
+    const prompt = buildFaceOraclePrompt(base)
+    expect(prompt).toContain('Inference chain')
+    expect(prompt).toContain('Crutch phrases BANNED')
+    expect(prompt).toContain('Depth calibration')
+    // period (会发生什么) vs advice (你该做什么) split is spelled out.
+    expect(prompt).toContain('会发生什么')
+    expect(prompt).toContain('你该做什么')
   })
 })
 
@@ -278,6 +288,37 @@ describe('faceoracleDensityGaps', () => {
     ])
     expect(gaps).toContain('cite.face_breadth')
     expect(gaps).toContain('palms.missing_life_or_heart_line')
+  })
+
+  it('flags period collapsing into advice (the ch5≈ch6 bug)', () => {
+    const shared = '近半年宜先稳后进不宜冒进以免情绪牵动判断这段话足够长用于回声检测'
+    const gaps = faceoracleDensityGaps({ events: [] }, [
+      { kind: 'period', evidence: 'a', dynamic: shared, reef: null, remedy: null, citations: [] },
+      { kind: 'advice', evidence: 'b', dynamic: shared, reef: null, remedy: null, citations: [] },
+    ])
+    expect(gaps).toContain('period.dup_advice')
+  })
+
+  it('flags advice that carries no actionable per-axis steps', () => {
+    const gaps = faceoracleDensityGaps({ events: [] }, [
+      { kind: 'advice', evidence: 'x', dynamic: 'y', reef: null, remedy: null, citations: [] },
+    ])
+    expect(gaps).toContain('advice.not_actionable')
+  })
+
+  it('flags thin one-liner evidence/dynamic fields (deepen trigger)', () => {
+    const gaps = faceoracleDensityGaps({ events: [] }, [
+      {
+        kind: 'face',
+        evidence: '短评',
+        dynamic: '这里稍微长一点但仍不足四十字的动态描述',
+        reef: null,
+        remedy: null,
+        citations: [],
+      },
+    ])
+    expect(gaps).toContain('field.thin_evidence:face')
+    expect(gaps).toContain('field.thin_dynamic:face')
   })
 
   it('does NOT emit any caution word gap (caution is log-only, never a retry gate)', () => {

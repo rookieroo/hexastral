@@ -27,6 +27,11 @@ import { buildLanguageBlock, buildLanguageReminder } from '../lib/i18n-prompt'
 import { auditGeneratedOutput } from '../lib/output-audit'
 import { buildEnhancedGuardrails } from '../lib/prompts/guardrails'
 import { getSystemRole } from '../lib/prompts/system-role'
+import {
+  isThinReportGap,
+  reportChapterGaps,
+  reportChapterProseLength,
+} from '../lib/report-chapter-gaps'
 import { buildChapterFacts, CHAPTER_PROMPT_BUILDERS } from '../prompts/chapters'
 import {
   ch4TimelineOutputSchema,
@@ -172,7 +177,7 @@ reportChapterRoutes.post('/chapter', async (c) => {
   // model output ONLY in the target language and render 命理 terms as「term (pinyin,
   // gloss)」; the terse reminder at the END of the user prompt stops a parallel
   // chapter call drifting back to Chinese.
-  const systemPrompt = `${builder(ctx, langLabel)}\n${buildLanguageBlock(input.locale, 'fate')}`
+  const systemPrompt = `${builder(ctx, langLabel)}\n${buildEnhancedGuardrails('观照自身，选边直言，但不作命运断言', input.locale)}\n${buildLanguageBlock(input.locale, 'fate')}`
   const factsBlock = buildChapterFacts(ctx)
   const perspectiveClause = input.perspectiveSeed
     ? `\n\n【视角种子】${input.perspectiveSeed} — 请以略微不同的切入点重写本章，保留事实与结论的一致性，但调整叙事重心。`
@@ -188,58 +193,138 @@ reportChapterRoutes.post('/chapter', async (c) => {
 
   const timeBoundSlugs = new Set(['ch4_timeline', 'ch5_hidden', 'ch6_action'])
 
-  // Generate + validate with ONE retry. A model can return valid JSON of the
-  // WRONG shape (e.g. ch4 yields a single yearlyRhythm item, ch1 zero sections) —
-  // that passes callWithFallback (no model error) but fails the schema, and a hard
-  // 500 there left the report's first chapters un-generated. A single re-roll
-  // self-heals the transient under-production before we give up.
-  let parsed: z.infer<typeof outputSchema> | null = null
-  let lastIssue = ''
-  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-    const raw = await callWithFallback(c.env, systemPrompt, userPrompt, {
+  type Parsed = z.infer<typeof outputSchema>
+  const asRecord = (p: Parsed): Record<string, unknown> => p as unknown as Record<string, unknown>
+
+  // One generation attempt: call → extract → parse → schema-validate. Returns
+  // null on any failure (caller decides whether to re-roll). `temperature` lets
+  // the retry steady the shape; `extraUser` carries the structure/deepen nudge.
+  const genOnce = async (
+    label: string,
+    temperature: number,
+    extraUser: string
+  ): Promise<Parsed | null> => {
+    const raw = await callWithFallback(c.env, systemPrompt, userPrompt + extraUser, {
       isPro: input.isPro,
       preferFlash: timeBoundSlugs.has(input.slug),
-      // Enough headroom for 3–5 developed sections (150–260字 each) without truncating AHA prose.
-      maxTokens: 3200,
-      // Nudge the re-roll a touch lower so it's steadier on the shape.
-      temperature: attempt === 0 ? 0.85 : 0.6,
+      // Headroom for 4–5 developed sections + the extended ch4/ch6 fields.
+      maxTokens: 4096,
+      temperature,
       thinkingLevel: input.isPro ? 'MEDIUM' : 'MINIMAL',
-      metricLabel: `report-chapter:${input.slug}${attempt > 0 ? ':retry' : ''}`,
+      metricLabel: `report-chapter:${input.slug}${label}`,
       locale: input.locale,
       jsonMode: true,
       responseSchema: toJsonSchema(outputSchema),
     })
-
     const jsonStr = extractJson(raw)
     if (!jsonStr) {
-      lastIssue = 'extract'
-      console.error('[report-chapter] failed to extract JSON', input.slug, raw.slice(0, 500))
-      continue
+      console.error('[report-chapter] failed to extract JSON', input.slug, raw.slice(0, 400))
+      return null
     }
     let parsedRaw: unknown
     try {
       parsedRaw = JSON.parse(jsonStr)
     } catch (err) {
-      lastIssue = 'parse'
-      console.error('[report-chapter] JSON.parse failed', input.slug, err, jsonStr.slice(0, 500))
-      continue
+      console.error('[report-chapter] JSON.parse failed', input.slug, err, jsonStr.slice(0, 400))
+      return null
     }
     const result = outputSchema.safeParse(parsedRaw)
     if (!result.success) {
-      lastIssue = 'shape'
-      console.error(
-        `[report-chapter] schema validation failed (attempt ${attempt + 1})`,
-        input.slug,
-        result.error.issues,
-        jsonStr.slice(0, 500)
-      )
-      continue
+      console.error('[report-chapter] schema validation failed', input.slug, result.error.issues)
+      return null
     }
-    parsed = result.data
+    return result.data
   }
 
+  // Base draft: one shape-heal re-roll (steadier temp) if the first is invalid.
+  let parsed: Parsed | null = await genOnce('', 0.7, '')
+  if (!parsed) parsed = await genOnce(':retry', 0.55, '')
   if (!parsed) {
-    throw new HTTPException(500, { message: `Invalid chapter response (${lastIssue})` })
+    throw new HTTPException(500, { message: 'Invalid chapter response' })
+  }
+
+  const chapterGaps = () => reportChapterGaps(input.slug, asRecord(parsed as Parsed))
+
+  // Structure retry: accepted only when it STRICTLY reduces gaps AND does not
+  // shrink the prose (mirrors faceoracle — never trade a richer draft for a
+  // terser one). Names the failed checks so the model repairs them in place.
+  let gaps = chapterGaps()
+  if (gaps.length > 0) {
+    console.warn('[report-chapter] structure gaps — retrying', { slug: input.slug, gaps })
+    const structNudge = [
+      '',
+      '【结构重写】上一稿未通过以下结构检查（不是字数问题）：',
+      gaps.join('、'),
+      '逐条修好，且不得缩短任何 section：summary 要有 aha；每个 section 走完「命盘锚点→机理→点名窗口」链，不得只写标题的同义复述；watchOuts 给足 ≥2 条（短板+何时+一步）；第四章只讲"会怎样"、第六章只给"做什么"，互不复述；删除所有正确的废话套话。只输出合法 JSON。',
+    ].join('\n')
+    const retry = await genOnce(':struct', 0.6, structNudge)
+    if (retry) {
+      const retryGaps = reportChapterGaps(input.slug, asRecord(retry))
+      const curLen = reportChapterProseLength(asRecord(parsed))
+      const retryLen = reportChapterProseLength(asRecord(retry))
+      if (retryGaps.length < gaps.length && retryLen + 12 >= curLen) {
+        parsed = retry
+        gaps = retryGaps
+      } else {
+        console.warn('[report-chapter] structure retry rejected (no strict gain / regressed)', {
+          slug: input.slug,
+          curLen,
+          retryLen,
+          curGaps: gaps.length,
+          retryGaps: retryGaps.length,
+        })
+      }
+    }
+  }
+
+  // Deepen retry: thin one-liner fields remain → expand with mechanism + one
+  // dated scene while KEEPING structure. Accept only when thin gaps drop, the
+  // draft grows, and no new gaps appear.
+  const thinGaps = gaps.filter(isThinReportGap)
+  if (thinGaps.length > 0) {
+    console.warn('[report-chapter] thin fields — deepen retry', { slug: input.slug, thinGaps })
+    const deepenNudge = [
+      '',
+      '【加深重写】保持相同结构、章节与结论，不要重构或缩短任何内容。',
+      `以下部分仍是单薄的一句话：${thinGaps.join('、')}。`,
+      '对每一处，沿「命盘锚点→机理(为什么，扣日主/喜忌/大运)→一个点名窗口(年龄/年份/干支)的具体场景」把它写成真正的大师段落；靠推演与一个有日期的场景加深，绝不靠注水、复读或空话。只输出合法 JSON。',
+    ].join('\n')
+    const deep = await genOnce(':deepen', 0.6, deepenNudge)
+    if (deep) {
+      const deepGaps = reportChapterGaps(input.slug, asRecord(deep))
+      const deepThin = deepGaps.filter(isThinReportGap)
+      const curLen = reportChapterProseLength(asRecord(parsed))
+      const deepLen = reportChapterProseLength(asRecord(deep))
+      if (
+        deepThin.length < thinGaps.length &&
+        deepLen >= curLen &&
+        deepGaps.length <= gaps.length
+      ) {
+        parsed = deep
+        gaps = deepGaps
+      } else {
+        console.warn('[report-chapter] deepen retry rejected', {
+          slug: input.slug,
+          curLen,
+          deepLen,
+          thinBefore: thinGaps.length,
+          thinAfter: deepThin.length,
+        })
+      }
+    }
+  }
+
+  // Hard/soft forbidden audit — one rewrite, then accept (never hard-fail here).
+  const audit = auditGeneratedOutput(JSON.stringify(parsed))
+  if (audit.hits.length > 0 && audit.rewriteSuffix) {
+    console.warn('[report-chapter] forbidden phrases — rewrite', {
+      slug: input.slug,
+      hits: audit.hits,
+    })
+    const fixed = await genOnce(':forbidden', 0.55, `\n\n${audit.rewriteSuffix}`)
+    if (fixed && auditGeneratedOutput(JSON.stringify(fixed)).hits.length === 0) {
+      parsed = fixed
+    }
   }
 
   return c.json(parsed)
