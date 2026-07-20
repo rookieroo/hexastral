@@ -70,7 +70,7 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
       '术语可用原词；正文必须是完整句子，禁止只有标签或口号。',
       '语气：警示与预告——「形上可见…，气机上宜留意…（窗口）」。不作命运断语。',
       '负面窗口用「节奏 / 内修参考」包装，但仍须点名具体位点与日期；禁止空泛鸡汤替代 citations。',
-      '健康轴：非医疗诊断；可谈气色与起居节奏；必要时一句宜咨询专业医师。',
+      '健康轴：用形气与古典中医意象做警示对照（气色/节奏），不作诊治。',
       '事业 / 爱情 / 健康三轴必须在 events 与 advice 中各至少出现一次。',
       '只输出纯 JSON。',
     ].join('\n')
@@ -106,8 +106,8 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
           'Pattern: “form shows X at [locus]; qi-flow worth noting Y (window).” Never guaranteed fate.',
         ].join(' '),
     code === 'ja'
-      ? '健康軸は医療診断ではない。气色・生活リズムのみ。必要なら専門医への相談を一行。'
-      : 'Health axis is non-medical: complexion and pacing only; optionally one line to consult a clinician.',
+      ? '健康軸：形気と古典中医の意象で警告的対照（气色・リズム）。診治ではない。'
+      : 'Health axis: form-qi plus classical TCM imagery as cautionary contrast (complexion / pacing) — not diagnosis or treatment.',
     'Glossary: after first “romanization (汉字) — gloss”, reuse the romanization or English gloss — do not repeat messy bilingual half-terms.',
     '',
     'Output pure JSON only.',

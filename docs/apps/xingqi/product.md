@@ -48,8 +48,16 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 
 - **Method:** 面相 + 掌相 + 八字 **互证** (folk 算命 stack). Form shows what is visible; chart supplies timing windows; neither path alone carries the brief.
 - **Voice:** 警示 / 预告 — “形上可见…，命盘上…，气机上宜留意…” (ADR-0003; no hard fate / 铁口).
+- **Palm sides (掌别):** 男 左掌=先天/本命底色 · 右掌=后天/作为；女 右掌=先天 · 左掌=后天. Both hands read; palms chapter states whether 先天 and 后天 pull 同向 or 对拉. Injected as `palmConvention` in `natalSummary` (deterministic from gender).
+- **Time horizon (六章不变):** `natal` = **全人生 timeline + 未来主章** (past印证 → 当令 → future 大运带至后半场, from the full 8-step `dayunFull`/`dayunFuture`); `period` = **近窗 only** (本流年 + 当前大运余年) and owns `events[]` for push. The two must not duplicate.
 - **Three axes every reading:** career / love / health — tagged on `events[].axis`, covered in advice.
-- **Density:** face/palms citations; natal 大运/流年 injected from `@zhop/astro-core`; soft post-check retry.
+- **Health + TCM lexicon:** 中医是词典与隐喻层，不是诊断引擎. Health may borrow classical imagery (气色 ↔ 脏腑/气血之**象**) for 警示 and pacing — cultural对照 / self-observation, not diagnosis, not prescription, not a substitute for clinicians.
+- **Forbidden health UI:** organ dashboards, health scores, “you have X disease”, medication / herbal dosing, acupoint treatment plans.
+- **Field data ownership (anti cross-chapter copy):** the 本流年 sentence lives in `period.reef` only; 全人生 大运带 risk → `natal.reef`; 形/气色 risk → `face.reef`; 先天/后天掌张力 → `palms.reef`; action steps → `advice.remedy`. **Prefer null over repeat** — a chapter with no risk/action unique to itself sets `reef`/`remedy` to null rather than pasting another chapter's line.
+- **Density = structural, not word count:** no char/`字数` floors. Soft post-check retry enforces field non-echo (goldenLine/evidence/dynamic/reef/remedy each a new angle, incl. `dynamic_eq_golden`), cross-chapter distinctness (`overview_dup_face`/`golden_dup`/`natal.dup_period`/`chapters.reef_dup`/`chapters.remedy_dup`/`chapters.reef_liunian_spray`), citation breadth + honesty (`face.citations<4`/`cite.face_breadth` ≥5 distinct loci mixing support+caution/`palms.missing_innate_or_acquired`/`palms.missing_life_or_heart_line`/`cite.note_echo_body`), a future-facing natal (`natal.future_thin`), and event fuel (`events<5`/`events.near<2`/`events.axis<3`). Cherry-picking only auspicious loci is a **log-only** observation (`caution_word_absent:*`), never a retry gate — forcing caution words would push the model to fabricate negatives.
+- **Client display safety net:** `adaptReadingChapters` nulls out `reef`/`remedy`/`counterpoint` that merely repeat an earlier chapter (keeps first), so legacy readings stop repeating without a re-run.
+- **描点 → 章节打通:** a locus `citations[].note` is the locus reading; tapping a form-map star deep-links to the owning chapter (`face` locus → 面部章, palm locus → 双手章 via `result.tsx` `chapter` param). Cited loci (a note exists) breathe brighter with a solid core; teaching-only loci stay faint and the sheet points to the report instead of inventing a reading.
+- **Landmarks:** coordinates come from a Moondream 3.1 `point` pass (12 face / 7 palm loci) with the feature-VLM landmarks as fallback; **low/empty coord counts warn but never hard-reject** a clear photo (feature-text quality still gates via `photo_quality_low`). Star markers on the form map render only from these coords.
 - **Close UX:** top-right X on result (no bottom Done).
 - **Capture:** HD full face + full palms; blurry/cropped → weak VLM → thin report.
 
@@ -67,7 +75,8 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 | Path | Tier / model |
 |---|---|
 | Reading text | CF Workers AI **flagship** via `@zhop/ai-vision` (`callWithFallback`: Kimi → Qwen3 → GLM; non-zh leads Llama) |
-| VLM extract | CF **Kimi K2.6** vision primary → Gemini Flash → Llama 3.2 vision (`vlm-cascade-v1`) |
+| VLM extract (features) | CF **Kimi K2.6** vision primary → Gemini Flash → Llama 3.2 vision (`vlm-cascade-v1`) |
+| VLM extract (coords) | CF **Moondream 3.1** `point` per locus (12 face / 7 palm); feature-VLM landmarks as fallback (`xingqi-vlm-v6`) |
 | Yuun explain / Yuel chapters | Same router, usually **`standard`** (parallel call shape) |
 
 Xingqi keeps flagship for the single monolithic 6-chapter JSON; prompt engineering aligns with svc-astro Route B / guardrails.
@@ -81,7 +90,7 @@ Xingqi keeps flagship for the single monolithic 6-chapter JSON; prompt engineeri
 ## Copy rules
 
 Cultural study framing — no deterministic fate language (see ADR-0003).  
-Reading LLM injects `@zhop/portfolio-voice` compliance + health non-medical boundary; hard-forbidden audit rewrites once. Resonance stays via classical loci + dated windows — not ironclad verdicts.
+Reading LLM injects `@zhop/portfolio-voice` compliance + a **one-line** health direction (TCM as imagery lexicon); hard-forbidden audit rewrites once. Resonance stays via classical loci + dated windows — not ironclad verdicts or medical claims.
 
 ## Cache layers
 

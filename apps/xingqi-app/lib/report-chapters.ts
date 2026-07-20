@@ -1,16 +1,13 @@
 import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { isNearEcho } from '@/lib/text-echo'
 
-export type XingqiChapterKind =
-  | 'overview'
-  | 'face'
-  | 'palms'
-  | 'natal'
-  | 'period'
-  | 'advice'
+export type XingqiChapterKind = 'overview' | 'face' | 'palms' | 'natal' | 'period' | 'advice'
 
 export type XingqiChapterCitation = {
   locus: string
   note: string
+  featureKey?: string
+  part?: 'face' | 'palm_l' | 'palm_r'
 }
 
 export type XingqiChapter = {
@@ -24,26 +21,17 @@ export type XingqiChapter = {
   citations: XingqiChapterCitation[]
 }
 
-const ORDER: XingqiChapterKind[] = [
-  'overview',
-  'face',
-  'palms',
-  'natal',
-  'period',
-  'advice',
-]
+const ORDER: XingqiChapterKind[] = ['overview', 'face', 'palms', 'natal', 'period', 'advice']
 
-export const CHAPTER_TITLE: Record<
-  XingqiChapterKind,
-  { zh: string; zhHant: string; en: string }
-> = {
-  overview: { zh: '总格局', zhHant: '總格局', en: 'Overview' },
-  face: { zh: '面部', zhHant: '面部', en: 'Face' },
-  palms: { zh: '双手', zhHant: '雙手', en: 'Palms' },
-  natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi' },
-  period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period' },
-  advice: { zh: '建议', zhHant: '建議', en: 'Advice' },
-}
+export const CHAPTER_TITLE: Record<XingqiChapterKind, { zh: string; zhHant: string; en: string }> =
+  {
+    overview: { zh: '总格局', zhHant: '總格局', en: 'Overview' },
+    face: { zh: '面部', zhHant: '面部', en: 'Face' },
+    palms: { zh: '双手', zhHant: '雙手', en: 'Palms' },
+    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi' },
+    period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period' },
+    advice: { zh: '建议', zhHant: '建議', en: 'Advice' },
+  }
 
 export function chapterTitle(kind: XingqiChapterKind, locale: string): string {
   const row = CHAPTER_TITLE[kind]
@@ -64,7 +52,11 @@ function parseCitations(raw: unknown): XingqiChapterCitation[] {
     const o = item as Record<string, unknown>
     const locus = asStr(o.locus)
     const note = asStr(o.note)
-    if (locus && note) out.push({ locus, note })
+    const featureKey = asStr(o.featureKey) || undefined
+    const partRaw = asStr(o.part)
+    const part =
+      partRaw === 'face' || partRaw === 'palm_l' || partRaw === 'palm_r' ? partRaw : undefined
+    if (locus && note) out.push({ locus, note, featureKey, part })
   }
   return out
 }
@@ -73,11 +65,7 @@ function studyDisclaimer(locale: string): string {
   if (!isCjkZh(locale)) {
     return 'Cultural study framing — not deterministic fate.'
   }
-  return pickZh(
-    locale,
-    '文化研习参考，不作命运断语。',
-    '文化研習參考，不作命運斷語。'
-  )
+  return pickZh(locale, '文化研习参考，不作命运断语。', '文化研習參考，不作命運斷語。')
 }
 
 function chapterFromBody(
@@ -200,7 +188,34 @@ export function adaptReadingChapters(
     if (ch) byKind.set('advice', ch)
   }
 
-  return ORDER.map((k) => byKind.get(k)).filter((c): c is XingqiChapter => Boolean(c))
+  const ordered = ORDER.map((k) => byKind.get(k)).filter((c): c is XingqiChapter => Boolean(c))
+  return dedupCrossChapter(ordered)
+}
+
+/**
+ * Display-side safety net: null out reef/remedy/counterpoint that merely repeat an
+ * earlier chapter (keeps first occurrence). Fixes legacy resultJson that pasted the
+ * same 流年 reef / 冥想 remedy / disclaimer into every chapter — no re-run needed.
+ */
+function dedupCrossChapter(chapters: XingqiChapter[]): XingqiChapter[] {
+  const seenReef: string[] = []
+  const seenRemedy: string[] = []
+  const seenCounter: string[] = []
+  for (const ch of chapters) {
+    if (ch.reef) {
+      if (seenReef.some((p) => isNearEcho(ch.reef as string, p))) ch.reef = null
+      else seenReef.push(ch.reef)
+    }
+    if (ch.remedy) {
+      if (seenRemedy.some((p) => isNearEcho(ch.remedy as string, p))) ch.remedy = null
+      else seenRemedy.push(ch.remedy)
+    }
+    if (ch.counterpoint) {
+      if (seenCounter.some((p) => isNearEcho(ch.counterpoint as string, p))) ch.counterpoint = null
+      else seenCounter.push(ch.counterpoint)
+    }
+  }
+  return chapters
 }
 
 /** Stable numeric seed from reading id / feature ids. */

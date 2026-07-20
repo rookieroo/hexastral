@@ -9,7 +9,12 @@
  * 输出: 面相/手相解读
  */
 
-import { callGeminiVision, callVisionStructuredWithFallback } from '@zhop/ai-vision'
+import {
+  callGeminiVision,
+  callVisionStructuredWithFallback,
+  extractLandmarksViaMoondream,
+  type LandmarkPoint,
+} from '@zhop/ai-vision'
 import { buildAgeLanguageBlock } from '../lib/age'
 import { type AiRouterEnv, callWithFallback } from '../lib/ai-router'
 import { extractJson } from '../lib/extract-json'
@@ -60,53 +65,157 @@ export interface FaceFeatures {
   overallAssessment: string
 }
 
+const LANDMARK_POINT_SCHEMA = {
+  type: 'object',
+  properties: {
+    x: { type: 'number' },
+    y: { type: 'number' },
+  },
+  required: ['x', 'y'],
+}
+
+const FACE_LANDMARK_KEYS = [
+  'tianTing',
+  'yinTang',
+  'shanGen',
+  'foreheadWidth',
+  'eyebrowType',
+  'eyeType',
+  'noseShape',
+  'cheekBones',
+  'nasolabialFolds',
+  'mouthType',
+  'chin',
+  'earLobes',
+] as const
+
+const PALM_LANDMARK_KEYS = [
+  'handShape',
+  'lifeLine',
+  'headLine',
+  'heartLine',
+  'fateLine',
+  'mounts',
+  'specialMarks',
+] as const
+
+function landmarkProperties(keys: readonly string[]): Record<string, unknown> {
+  const props: Record<string, unknown> = {}
+  for (const k of keys) {
+    props[k] = LANDMARK_POINT_SCHEMA
+  }
+  return props
+}
+
+/**
+ * English anatomical phrases fed to Moondream `point` per locus key. Kept in
+ * English because Moondream's grounding is English-first; keys map back to the
+ * Chinese canon downstream.
+ */
+const FACE_POINT_PHRASES: Record<(typeof FACE_LANDMARK_KEYS)[number], string> = {
+  tianTing: 'the center of the upper forehead',
+  yinTang: 'the point between the eyebrows (glabella)',
+  shanGen: 'the root of the nose between the eyes',
+  foreheadWidth: 'the side edge of the forehead near the temple',
+  eyebrowType: 'the eyebrow',
+  eyeType: 'the eye',
+  noseShape: 'the tip of the nose',
+  cheekBones: 'the cheekbone',
+  nasolabialFolds: 'the smile line beside the nose and mouth',
+  mouthType: 'the mouth',
+  chin: 'the chin',
+  earLobes: 'the earlobe',
+}
+
+const PALM_POINT_PHRASES: Record<(typeof PALM_LANDMARK_KEYS)[number], string> = {
+  handShape: 'the center of the palm',
+  lifeLine: 'the life line curving around the base of the thumb',
+  headLine: 'the head line crossing the middle of the palm',
+  heartLine: 'the heart line below the fingers',
+  fateLine: 'the fate line running vertically up the palm',
+  mounts: 'the mount of Venus at the base of the thumb',
+  specialMarks: 'a distinct cross or star mark on the palm',
+}
+
+/** Merge Moondream points over VLM-emitted landmarks (Moondream wins per key). */
+function mergeLandmarks<K extends string>(
+  vlmLandmarks: Partial<Record<K, LandmarkPoint>>,
+  moondream: Record<string, LandmarkPoint>
+): Partial<Record<K, LandmarkPoint>> {
+  const out: Partial<Record<K, LandmarkPoint>> = { ...vlmLandmarks }
+  for (const [key, pt] of Object.entries(moondream)) {
+    out[key as K] = pt
+  }
+  return out
+}
+
 const FACE_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统面相学的专家（框架：三停·五岳·十二宫线索·五官·气色骨肉），同时具备计算机视觉分析能力。
 请仔细观察图片中的面部特征，按下列字段提取结构化描述。
 
 重要说明：
 - 按照要求的 JSON Schema 精确输出，不得增删字段
-- 每个字段给出简短的中文描述（5-15字），尽量使用：天庭、印堂、山根、年寿、准头、地阁、颧骨、法令纹、气色、骨相等术语
-- 如某部位在图片中不清晰，标注值为 "unclear"
+- features 下每个字段给出简短的中文描述（5-15字），尽量使用：天庭、印堂、山根、年寿、准头、地阁、颧骨、法令纹、气色、骨相等术语
+- landmarks 下为各部位在图片中的归一化坐标 (x,y)，范围 0.0–1.0，原点在图片左上角
+- 刘海/眼镜遮挡时：仍按解剖位置估计坐标（发际下天庭中点、印堂两眉间、山根鼻梁根等），不要把点标在刘海外缘或省略
+- 优先给出 tianTing / yinTang / shanGen / eyeType / noseShape / mouthType / chin 的 landmarks；仅完全不可见时才省略
+- complexion / boneStructure / overallAssessment 不需要 landmarks
+- 如某部位在图片中不清晰，features 标注值为 "unclear"，landmarks 可省略该 key
 - 绝对不要包含对用户外貌的主观美丑评价
 - 不要做命运断语，只描述可见形气特征`
 
 const FACE_FEATURES_SCHEMA = {
   type: 'object',
   properties: {
-    tianTing: { type: 'string' },
-    yinTang: { type: 'string' },
-    shanGen: { type: 'string' },
-    foreheadWidth: { type: 'string' },
-    eyebrowType: { type: 'string' },
-    eyeType: { type: 'string' },
-    noseShape: { type: 'string' },
-    cheekBones: { type: 'string' },
-    nasolabialFolds: { type: 'string' },
-    mouthType: { type: 'string' },
-    chin: { type: 'string' },
-    earLobes: { type: 'string' },
-    complexion: { type: 'string' },
-    boneStructure: { type: 'string' },
-    overallAssessment: { type: 'string' },
+    features: {
+      type: 'object',
+      properties: {
+        tianTing: { type: 'string' },
+        yinTang: { type: 'string' },
+        shanGen: { type: 'string' },
+        foreheadWidth: { type: 'string' },
+        eyebrowType: { type: 'string' },
+        eyeType: { type: 'string' },
+        noseShape: { type: 'string' },
+        cheekBones: { type: 'string' },
+        nasolabialFolds: { type: 'string' },
+        mouthType: { type: 'string' },
+        chin: { type: 'string' },
+        earLobes: { type: 'string' },
+        complexion: { type: 'string' },
+        boneStructure: { type: 'string' },
+        overallAssessment: { type: 'string' },
+      },
+      required: [
+        'tianTing',
+        'yinTang',
+        'shanGen',
+        'foreheadWidth',
+        'eyebrowType',
+        'eyeType',
+        'noseShape',
+        'cheekBones',
+        'nasolabialFolds',
+        'mouthType',
+        'chin',
+        'earLobes',
+        'complexion',
+        'boneStructure',
+        'overallAssessment',
+      ],
+    },
+    landmarks: {
+      type: 'object',
+      properties: landmarkProperties(FACE_LANDMARK_KEYS),
+    },
   },
-  required: [
-    'tianTing',
-    'yinTang',
-    'shanGen',
-    'foreheadWidth',
-    'eyebrowType',
-    'eyeType',
-    'noseShape',
-    'cheekBones',
-    'nasolabialFolds',
-    'mouthType',
-    'chin',
-    'earLobes',
-    'complexion',
-    'boneStructure',
-    'overallAssessment',
-  ],
+  required: ['features', 'landmarks'],
 }
+
+export type FaceLandmarks = Partial<
+  Record<(typeof FACE_LANDMARK_KEYS)[number], { x: number; y: number }>
+>
+
+type FaceExtractPayload = { features: FaceFeatures; landmarks: FaceLandmarks }
 
 /**
  * 面相特征结构化提取 — Kimi CF vision 首选，Gemini / Llama 兜底。
@@ -116,21 +225,30 @@ export async function extractFaceFeatures(
   env: Env,
   imageBase64: string,
   mimeType = 'image/jpeg'
-): Promise<{ features: FaceFeatures; model: string }> {
-  const result = await callVisionStructuredWithFallback<FaceFeatures>(
+): Promise<{ features: FaceFeatures; landmarks: FaceLandmarks; model: string }> {
+  const result = await callVisionStructuredWithFallback<FaceExtractPayload>(
     { AI: env.AI, GEMINI_API_KEY: env.GEMINI_API_KEY },
     {
       systemPrompt: FACE_FEATURES_SYSTEM_PROMPT,
-      userPrompt: '请按要求提取面相特征，只输出 JSON，不要任何额外文字。',
+      userPrompt: '请按要求提取面相特征与 landmarks，只输出 JSON，不要任何额外文字。',
       images: [{ base64: imageBase64, mimeType }],
       responseSchema: FACE_FEATURES_SCHEMA as Record<string, unknown>,
       temperature: 0.2,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 1536,
       geminiThinkingLevel: 'MINIMAL',
       metricLabel: 'physiognomy_face_extract',
     }
   )
-  return { features: result.data, model: result.model }
+  const moondream = await extractLandmarksViaMoondream(
+    env.AI,
+    { base64: imageBase64, mimeType },
+    FACE_POINT_PHRASES
+  )
+  return {
+    features: result.data.features,
+    landmarks: mergeLandmarks(result.data.landmarks ?? {}, moondream),
+    model: result.model,
+  }
 }
 
 /** Structured palm features — Xingqi canonical palm stack (主纹 + 丘位 mounts). */
@@ -160,57 +278,85 @@ const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的�
 
 重要说明：
 - 按照要求的 JSON Schema 精确输出，不得增删字段
-- 每个字段给出简短的中文描述（5-20字），尽量使用：生命线、智慧线、感情线、事业线、金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘、指节等术语
+- features 下每个字段给出简短的中文描述（5-20字），尽量使用：生命线、智慧线、感情线、事业线、金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘、指节等术语
+- landmarks 下为主纹中点/丘位中心的归一化坐标 (x,y)，范围 0.0–1.0，原点在左上角；线纹取弧线中点，丘位取主丘中心
+- 掌面清晰时，必须尽量给出 lifeLine / headLine / heartLine / fateLine / mounts 的 landmarks（至少 3 条主纹）；不要只标一个点
+- fingerRatio / overallAssessment 不需要 landmarks
 - mounts 字段请点名可见丘位（如「金星丘丰、月丘平」），不要空泛形容词堆砌
-- 如某部位在图片中不清晰，标注值为 "unclear"
+- 如某部位在图片中不清晰，features 标注值为 "unclear"，landmarks 可省略该 key
 - 绝对不要包含对用户外貌的主观美丑评价
 - 不要做命运断语，只描述可见特征`
 
 const PALM_FEATURES_SCHEMA = {
   type: 'object',
   properties: {
-    handShape: { type: 'string' },
-    lifeLine: { type: 'string' },
-    headLine: { type: 'string' },
-    heartLine: { type: 'string' },
-    fateLine: { type: 'string' },
-    mounts: { type: 'string' },
-    fingerRatio: { type: 'string' },
-    specialMarks: { type: 'string' },
-    overallAssessment: { type: 'string' },
+    features: {
+      type: 'object',
+      properties: {
+        handShape: { type: 'string' },
+        lifeLine: { type: 'string' },
+        headLine: { type: 'string' },
+        heartLine: { type: 'string' },
+        fateLine: { type: 'string' },
+        mounts: { type: 'string' },
+        fingerRatio: { type: 'string' },
+        specialMarks: { type: 'string' },
+        overallAssessment: { type: 'string' },
+      },
+      required: [
+        'handShape',
+        'lifeLine',
+        'headLine',
+        'heartLine',
+        'fateLine',
+        'mounts',
+        'fingerRatio',
+        'specialMarks',
+        'overallAssessment',
+      ],
+    },
+    landmarks: {
+      type: 'object',
+      properties: landmarkProperties(PALM_LANDMARK_KEYS),
+    },
   },
-  required: [
-    'handShape',
-    'lifeLine',
-    'headLine',
-    'heartLine',
-    'fateLine',
-    'mounts',
-    'fingerRatio',
-    'specialMarks',
-    'overallAssessment',
-  ],
+  required: ['features', 'landmarks'],
 }
+
+export type PalmLandmarks = Partial<
+  Record<(typeof PALM_LANDMARK_KEYS)[number], { x: number; y: number }>
+>
+
+type PalmExtractPayload = { features: PalmFeatures; landmarks: PalmLandmarks }
 
 export async function extractPalmFeatures(
   env: Env,
   imageBase64: string,
   mimeType = 'image/jpeg'
-): Promise<{ features: PalmFeatures; model: string }> {
-  const result = await callVisionStructuredWithFallback<PalmFeatures>(
+): Promise<{ features: PalmFeatures; landmarks: PalmLandmarks; model: string }> {
+  const result = await callVisionStructuredWithFallback<PalmExtractPayload>(
     { AI: env.AI, GEMINI_API_KEY: env.GEMINI_API_KEY },
     {
       systemPrompt: PALM_FEATURES_SYSTEM_PROMPT,
-      userPrompt: '请按要求提取手相特征，只输出 JSON，不要任何额外文字。',
+      userPrompt: '请按要求提取手相特征与 landmarks，只输出 JSON，不要任何额外文字。',
       images: [{ base64: imageBase64, mimeType }],
       responseSchema: PALM_FEATURES_SCHEMA as Record<string, unknown>,
       temperature: 0.2,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 1536,
       geminiThinkingLevel: 'MINIMAL',
       metricLabel: 'physiognomy_palm_extract',
     }
   )
-  return { features: result.data, model: result.model }
+  const moondream = await extractLandmarksViaMoondream(
+    env.AI,
+    { base64: imageBase64, mimeType },
+    PALM_POINT_PHRASES
+  )
+  return {
+    features: result.data.features,
+    landmarks: mergeLandmarks(result.data.landmarks ?? {}, moondream),
+    model: result.model,
+  }
 }
 
 /** VLM 描述结果 */

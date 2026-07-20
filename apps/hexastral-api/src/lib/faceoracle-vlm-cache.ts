@@ -10,7 +10,8 @@
 
 /** Cascade contract id mixed into content-hash (see @zhop/ai-vision VLM_CASCADE_ID). */
 export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v1'
-export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v3'
+// v6: adds Moondream 3.1 `point` coordinate pass (12 face / 7 palm loci).
+export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v6'
 
 export type FaceoracleFeatureType = 'face' | 'palm' | 'palm_l' | 'palm_r'
 
@@ -47,11 +48,13 @@ export async function computeFaceoracleVlmContentHash(opts: {
 }): Promise<string> {
   const model = opts.model ?? FACEORACLE_VLM_MODEL
   const schemaVersion = opts.schemaVersion ?? FACEORACLE_VLM_SCHEMA_VERSION
-  const imageDigest = await crypto.subtle.digest('SHA-256', opts.imageBytes)
+  // Copy into a fresh ArrayBuffer-backed view: some workspace tsconfigs pin
+  // BufferSource to ArrayBuffer and reject the wider Uint8Array<ArrayBufferLike>.
+  const bytesForDigest = new Uint8Array(opts.imageBytes.byteLength)
+  bytesForDigest.set(opts.imageBytes)
+  const imageDigest = await crypto.subtle.digest('SHA-256', bytesForDigest)
   const imageHex = hexFromBuffer(imageDigest)
-  const keyMaterial = new TextEncoder().encode(
-    `${imageHex}|${opts.type}|${model}|${schemaVersion}`
-  )
+  const keyMaterial = new TextEncoder().encode(`${imageHex}|${opts.type}|${model}|${schemaVersion}`)
   const keyDigest = await crypto.subtle.digest('SHA-256', keyMaterial)
   return hexFromBuffer(keyDigest)
 }

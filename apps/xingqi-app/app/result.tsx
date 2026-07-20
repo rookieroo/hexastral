@@ -9,7 +9,7 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as Clipboard from 'expo-clipboard'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { X } from 'lucide-react-native'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Dimensions, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -23,9 +23,9 @@ import { ShareableXingqiCard } from '@/components/reading/ShareableXingqiCard'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
+import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels } from '@/lib/living-copy'
-import { resolveLocale } from '@/lib/i18n'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
@@ -48,9 +48,10 @@ export default function FaceResultScreen() {
   const locale = resolveLocale()
   const s = (hans: string, hant: string, en: string) =>
     isCjkZh(locale) ? pickZh(locale, hans, hant) : en
-  const params = useLocalSearchParams<{ readingId?: string; payload?: string }>()
+  const params = useLocalSearchParams<{ readingId?: string; payload?: string; chapter?: string }>()
   const readingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const paramPayload = typeof params.payload === 'string' ? params.payload : undefined
+  const initialChapter = typeof params.chapter === 'string' ? params.chapter : undefined
 
   const [output, setOutput] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
@@ -99,6 +100,16 @@ export default function FaceResultScreen() {
   }, [paramPayload, readingId, locale])
 
   const chapters = useMemo(() => adaptReadingChapters(output, locale), [output, locale])
+
+  // Deep-link from a locus tap: jump to the chapter that owns that part (once).
+  const appliedInitialChapter = useRef(false)
+  useEffect(() => {
+    if (appliedInitialChapter.current) return
+    if (!initialChapter || chapters.length === 0) return
+    const idx = chapters.findIndex((c) => c.kind === initialChapter)
+    if (idx >= 0) setChapterIndex(idx)
+    appliedInitialChapter.current = true
+  }, [initialChapter, chapters])
   const natalFacts = useMemo(() => natalFactsFromOutput(output), [output])
   const hasBody = chapters.length > 0 && readingHasReportBody(output)
   const inkSeed = useMemo(() => inkSeedFromOutput(output), [output])
@@ -136,7 +147,11 @@ export default function FaceResultScreen() {
     }
     Alert.alert(
       s('重新生成报告？', '重新生成報告？', 'Regenerate report?'),
-      s('使用当前系统语言重写正文，消耗 1 次本月报告重生成额度（不消耗照片额度）。', '使用目前系統語言重寫正文，消耗 1 次本月報告重新生成額度（不消耗照片額度）。', 'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).'),
+      s(
+        '使用当前系统语言重写正文，消耗 1 次本月报告重生成额度（不消耗照片额度）。',
+        '使用目前系統語言重寫正文，消耗 1 次本月報告重新生成額度（不消耗照片額度）。',
+        'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).'
+      ),
       [
         { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
         {
@@ -147,9 +162,7 @@ export default function FaceResultScreen() {
               const faceFeatureId =
                 typeof output.faceFeatureId === 'string' ? output.faceFeatureId : undefined
               const palmLeftFeatureId =
-                typeof output.palmLeftFeatureId === 'string'
-                  ? output.palmLeftFeatureId
-                  : undefined
+                typeof output.palmLeftFeatureId === 'string' ? output.palmLeftFeatureId : undefined
               const palmRightFeatureId =
                 typeof output.palmRightFeatureId === 'string'
                   ? output.palmRightFeatureId
@@ -161,8 +174,7 @@ export default function FaceResultScreen() {
                   palmRightFeatureId,
                   solarDate: typeof birth.solarDate === 'string' ? birth.solarDate : undefined,
                   timeIndex: typeof birth.timeIndex === 'number' ? birth.timeIndex : undefined,
-                  gender:
-                    birth.gender === '男' || birth.gender === '女' ? birth.gender : undefined,
+                  gender: birth.gender === '男' || birth.gender === '女' ? birth.gender : undefined,
                   city: typeof birth.city === 'string' ? birth.city : undefined,
                   outputKind: 'period_brief',
                 })
@@ -182,7 +194,11 @@ export default function FaceResultScreen() {
               if (!started) {
                 Alert.alert(
                   s('解读进行中', '解讀進行中', 'Reading in progress'),
-                  s('请等待当前解读完成。', '請等待目前解讀完成。', 'Wait for the current reading to finish.')
+                  s(
+                    '请等待当前解读完成。',
+                    '請等待目前解讀完成。',
+                    'Wait for the current reading to finish.'
+                  )
                 )
               }
             })()
@@ -250,7 +266,11 @@ export default function FaceResultScreen() {
         </Text>
         <Text style={{ color: colors.secondary, fontSize: 16, lineHeight: 24 }}>
           {loadError ??
-            (s('这篇解读正文尚未生成完整。请回首页更新照片后重新发起。', '這篇解讀正文尚未生成完整。請回首頁更新照片後重新發起。', 'This reading has no full body yet. Update photos on home and start again.'))}
+            s(
+              '这篇解读正文尚未生成完整。请回首页更新照片后重新发起。',
+              '這篇解讀正文尚未生成完整。請回首頁更新照片後重新發起。',
+              'This reading has no full body yet. Update photos on home and start again.'
+            )}
         </Text>
         <Button variant='primary' onPress={goHome}>
           {s('完成', '完成', 'Done')}

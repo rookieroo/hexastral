@@ -27,6 +27,7 @@ import {
   FACEORACLE_VLM_SCHEMA_VERSION,
   type FaceoracleFeatureType,
 } from '../../lib/faceoracle-vlm-cache'
+import { parseLandmarksJson } from '../../lib/faceoracle-landmarks'
 import { assessFaceoracleFeatureQuality } from '../../lib/faceoracle-feature-quality'
 import { astroClient } from '../../lib/service-clients'
 import {
@@ -43,6 +44,15 @@ const fromBase64Schema = z.object({
   privacyConsentVersion: z.string().default('v1'),
   type: featureTypeSchema.default('face'),
 })
+
+function parseLandmarksFromColumn(raw: string | null | undefined): ReturnType<typeof parseLandmarksJson> {
+  if (!raw) return {}
+  try {
+    return parseLandmarksJson(JSON.parse(raw) as unknown)
+  } catch {
+    return {}
+  }
+}
 
 function parseFeaturesJson(raw: string): Record<string, string> {
   try {
@@ -115,6 +125,7 @@ async function lookupCachedFeature(
     .select({
       id: userPhysiognomyFeatures.id,
       featuresJson: userPhysiognomyFeatures.featuresJson,
+      landmarksJson: userPhysiognomyFeatures.landmarksJson,
       extractionModel: userPhysiognomyFeatures.extractionModel,
     })
     .from(userPhysiognomyFeatures)
@@ -190,6 +201,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
           type: input.type,
           imageDeleted: true,
           features,
+          landmarks: parseLandmarksFromColumn(cached.landmarksJson),
           cached: true,
           model: cached.extractionModel,
         })
@@ -216,9 +228,17 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       }
     }
 
-    let data: { features: Record<string, string>; model?: string }
+    let data: {
+      features: Record<string, string>
+      landmarks?: Record<string, { x: number; y: number }>
+      model?: string
+    }
     try {
-      data = await astroClient.postVision<{ features: Record<string, string>; model?: string }>(
+      data = await astroClient.postVision<{
+        features: Record<string, string>
+        landmarks?: Record<string, { x: number; y: number }>
+        model?: string
+      }>(
         c.env.SVC_ASTRO,
         extractionPathFor(input.type),
         { imageBase64: input.imageBase64, mimeType: input.mimeType }
@@ -229,11 +249,20 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       throw new HTTPException(502, { message: msg })
     }
     const features = data.features
+    const landmarks = parseLandmarksJson(data.landmarks ?? {})
     const winningModel =
       typeof data.model === 'string' && data.model.length > 0 ? data.model : FACEORACLE_VLM_MODEL
     assertFeatureQuality(input.type, features)
 
     const featureId = nanoid()
+    if (Object.keys(landmarks).length === 0) {
+      console.warn('[faceoracle.vlm] landmarks_empty', {
+        userId: input.userId,
+        type: input.type,
+        featureId,
+        model: winningModel,
+      })
+    }
     const now = new Date().toISOString()
     try {
       await db.insert(userPhysiognomyFeatures).values({
@@ -241,6 +270,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
         userId: input.userId,
         type: input.type,
         featuresJson: JSON.stringify(features),
+        landmarksJson: JSON.stringify(landmarks),
         vlmNarrative: features.overallAssessment ?? null,
         extractionModel: winningModel,
         contentHash,
@@ -275,6 +305,9 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
           type: input.type,
           imageDeleted: true,
           features: racedFeatures,
+          landmarks: parseLandmarksJson(
+            raced.landmarksJson ? JSON.parse(raced.landmarksJson) : null
+          ),
           cached: true,
           model: raced.extractionModel,
         })
@@ -295,6 +328,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
       type: input.type,
       imageDeleted: true,
       features,
+      landmarks,
       cached: false,
       model: winningModel,
     })

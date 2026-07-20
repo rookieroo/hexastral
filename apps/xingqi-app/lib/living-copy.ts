@@ -78,28 +78,28 @@ export function primerCopy(locale: Locale): {
     case 'zh':
       return {
         title: '如何阅读本期形气',
-        body: '左右滑动切换六章。点虚线术语看释义（含拼音）。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「档案」是往期形气；人生时间线是大运主轴。',
+        body: '左右滑动切换六章。点虚线术语看释义（含拼音）。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「本期」是最近一次形气；「档案」收纳往期。人生时间线是大运主轴。',
         glossary: '查看符号说明',
         begin: '开始阅读',
       }
     case 'zh-Hant':
       return {
         title: '如何閱讀本期形氣',
-        body: '左右滑動切換六章。點虛線術語看釋義（含拼音）。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「檔案」是往期形氣；人生時間線是大運主軸。',
+        body: '左右滑動切換六章。點虛線術語看釋義（含拼音）。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「本期」是最近一次形氣；「檔案」收納往期。人生時間線是大運主軸。',
         glossary: '查看符號說明',
         begin: '開始閱讀',
       }
     case 'ja':
       return {
         title: '読み方',
-        body: '左右スワイプで六章を切替。点線の用語をタップして注釈（拼音付き）。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「アーカイブ」は過去の形気、人生タイムラインは大運の軸です。',
+        body: '左右スワイプで六章を切替。点線の用語をタップして注釈（拼音付き）。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
         glossary: '記号の説明',
         begin: '読む',
       }
     default:
       return {
         title: 'How to read this',
-        body: 'Swipe six chapters. Tap dotted terms for glosses (with pinyin). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “History” is past form readings; Life axis is the DaYun trunk.',
+        body: 'Swipe six chapters. Tap dotted terms for glosses (with pinyin). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form reading; History holds older ones. Life axis is the DaYun trunk.',
         glossary: 'Symbol glossary',
         begin: 'Begin',
       }
@@ -201,4 +201,73 @@ export function readingLocaleBadge(readingLocale: string | null | undefined): st
   if (readingLocale.startsWith('ja')) return 'JA'
   if (readingLocale.startsWith('en')) return 'EN'
   return readingLocale.slice(0, 2).toUpperCase()
+}
+
+/** Home archive chrome — featured card + short preview. */
+export function homeArchiveCopy(locale: Locale): {
+  latestLabel: string
+  openHint: string
+  recentLabel: string
+  viewAll: (count: number) => string
+  archiveTitle: string
+  swipeHint: string
+  pulseLabel: string
+  statusLabel: string
+  attentionLabel: string
+  actionLabel: string
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        latestLabel: '本期',
+        openHint: '点开完整报告 · 左滑删除',
+        recentLabel: '更早',
+        viewAll: (count) => `全部档案 · ${count}`,
+        archiveTitle: '档案',
+        swipeHint: '点开查看；左滑删除。',
+        pulseLabel: '形气状态',
+        statusLabel: '当下',
+        attentionLabel: '宜留意',
+        actionLabel: '可对照',
+      }
+    case 'zh-Hant':
+      return {
+        latestLabel: '本期',
+        openHint: '點開完整報告 · 左滑刪除',
+        recentLabel: '更早',
+        viewAll: (count) => `全部檔案 · ${count}`,
+        archiveTitle: '檔案',
+        swipeHint: '點開查看；左滑刪除。',
+        pulseLabel: '形氣狀態',
+        statusLabel: '當下',
+        attentionLabel: '宜留意',
+        actionLabel: '可對照',
+      }
+    case 'ja':
+      return {
+        latestLabel: '今回',
+        openHint: 'レポートを開く · 左スワイプで削除',
+        recentLabel: '以前',
+        viewAll: (count) => `すべて · ${count}`,
+        archiveTitle: 'アーカイブ',
+        swipeHint: 'タップで開く。左スワイプで削除。',
+        pulseLabel: '形気の状態',
+        statusLabel: 'いま',
+        attentionLabel: '留意',
+        actionLabel: '対照',
+      }
+    default:
+      return {
+        latestLabel: 'Latest',
+        openHint: 'Open full report · swipe left to delete',
+        recentLabel: 'Earlier',
+        viewAll: (count) => `All history · ${count}`,
+        archiveTitle: 'History',
+        swipeHint: 'Tap to open. Swipe left to delete.',
+        pulseLabel: 'Form pulse',
+        statusLabel: 'Now',
+        attentionLabel: 'Watch',
+        actionLabel: 'Key',
+      }
+  }
 }

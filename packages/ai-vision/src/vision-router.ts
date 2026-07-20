@@ -7,8 +7,8 @@
 
 import {
   callGeminiVisionStructured,
-  normalizeImageBase64,
   type GeminiThinkingLevel,
+  normalizeImageBase64,
   type VisionImage,
 } from './gemini'
 import { stripThinking, type WorkersAiBinding } from './router'
@@ -17,6 +17,8 @@ export const VLM_MODELS = {
   KIMI: '@cf/moonshotai/kimi-k2.6',
   GEMINI_FLASH: 'gemini-3-flash-preview',
   LLAMA_VISION: '@cf/meta/llama-3.2-11b-vision-instruct',
+  /** Purpose-built pointing/detection VLM — used for landmark coordinates only. */
+  MOONDREAM: '@cf/moondream/moondream3.1-9B-A2B',
 } as const
 
 /** Cascade label mixed into content-hash (not the concrete winning model). */
@@ -249,4 +251,85 @@ export async function callVisionStructuredWithFallback<T extends object>(
   }
 
   throw new Error(`[vlm-router] All vision tiers failed. ${errors.join(' | ')}`)
+}
+
+// ==================== Moondream landmark pointing ====================
+
+const MOONDREAM_TIMEOUT_MS = 9_000
+
+export type LandmarkPoint = { x: number; y: number }
+
+function normalizeMoondreamPoint(raw: unknown): LandmarkPoint | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  // Moondream returns normalized {x,y} in 0..1; some builds wrap as [x,y].
+  let x: number | undefined
+  let y: number | undefined
+  if (typeof o.x === 'number' && typeof o.y === 'number') {
+    x = o.x
+    y = o.y
+  } else if (Array.isArray(raw) && typeof raw[0] === 'number' && typeof raw[1] === 'number') {
+    x = raw[0]
+    y = raw[1]
+  }
+  if (x === undefined || y === undefined || !Number.isFinite(x) || !Number.isFinite(y)) return null
+  return { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) }
+}
+
+/**
+ * Moondream 3.1 `point` — return the first matching coordinate for a phrase.
+ * Returns null on any failure so the caller can fall back to VLM-emitted coords.
+ */
+export async function callMoondreamPoint(
+  ai: WorkersAiBinding,
+  image: VisionImage,
+  prompt: string
+): Promise<LandmarkPoint | null> {
+  try {
+    const inputs = {
+      image: toDataUri(image),
+      task: 'point',
+      prompt,
+      max_objects: 1,
+    }
+    const result = await withTimeout(
+      ai.run(VLM_MODELS.MOONDREAM, inputs),
+      MOONDREAM_TIMEOUT_MS,
+      VLM_MODELS.MOONDREAM
+    )
+    const r = result as { points?: unknown } | null
+    const points = r?.points
+    if (!Array.isArray(points) || points.length === 0) return null
+    return normalizeMoondreamPoint(points[0])
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[vlm-router] moondream point failed:', `${prompt} :: ${msg.slice(0, 160)}`)
+    return null
+  }
+}
+
+/**
+ * Point every locus phrase with bounded concurrency. Missing keys are simply
+ * omitted (caller merges with any VLM-emitted landmarks).
+ */
+export async function extractLandmarksViaMoondream(
+  ai: WorkersAiBinding,
+  image: VisionImage,
+  phraseByKey: Record<string, string>,
+  concurrency = 4
+): Promise<Record<string, LandmarkPoint>> {
+  const keys = Object.keys(phraseByKey)
+  const out: Record<string, LandmarkPoint> = {}
+  let cursor = 0
+  const worker = async (): Promise<void> => {
+    while (cursor < keys.length) {
+      const key = keys[cursor++]
+      if (!key) continue
+      const pt = await callMoondreamPoint(ai, image, phraseByKey[key] ?? key)
+      if (pt) out[key] = pt
+    }
+  }
+  const lanes = Array.from({ length: Math.min(concurrency, keys.length) }, () => worker())
+  await Promise.all(lanes)
+  return out
 }

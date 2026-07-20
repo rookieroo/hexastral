@@ -632,6 +632,8 @@ export const userPhysiognomyFeatures = sqliteTable(
       .default('face'),
     /** VLM 提取的结构化面相/手相特征 (JSON) */
     featuresJson: text('features_json').notNull(),
+    /** Normalized landmark coords (JSON) — xingqi-vlm-v6+ (Moondream point pass) */
+    landmarksJson: text('landmarks_json'),
     /** 原始 VLM 描述（文字段落，供前端展示/调试用） */
     vlmNarrative: text('vlm_narrative'),
     /** 提取时使用的模型（gemini-2.5-pro-preview 等） */

@@ -7,13 +7,14 @@ import type { ReactNode } from 'react'
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { CHAPTER_GLYPH } from '@/lib/ancient-glyphs'
-import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
+import { CHAPTER_GLYPH, locusTitleForLocale } from '@/lib/ancient-glyphs'
 import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
+import { isNearEcho } from '@/lib/text-echo'
 
 import { AncientNumeral } from './AncientNumeral'
 import { AncientSeal } from './AncientSeal'
-import { NatalFactsStrip, type NatalFacts } from './NatalFactsStrip'
+import { type NatalFacts, NatalFactsStrip } from './NatalFactsStrip'
 import { TermAwareText } from './TermAwareText'
 
 const LAYER_LABEL = {
@@ -44,6 +45,8 @@ function citationOkForLocale(locale: string, locus: string, note: string): boole
 function displayGoldenLine(locale: string, golden: string, evidence: string): string {
   const g = golden.trim()
   if (!g) return ''
+  // Hide headline when it merely restates evidence (common LLM failure).
+  if (isNearEcho(g, evidence)) return ''
   if (isCjkZh(locale)) return g
   const cjk = g.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
   const letters = g.replace(/\s/g, '').length
@@ -104,9 +107,24 @@ export function ChapterCard({
 
   const layers: Array<{ key: keyof typeof LAYER_LABEL; body: string }> = []
   if (chapter.evidence) layers.push({ key: 'evidence', body: chapter.evidence })
-  if (chapter.dynamic) layers.push({ key: 'dynamic', body: chapter.dynamic })
-  if (chapter.reef) layers.push({ key: 'reef', body: chapter.reef })
-  if (chapter.remedy) layers.push({ key: 'remedy', body: chapter.remedy })
+  if (chapter.dynamic && !isNearEcho(chapter.dynamic, chapter.evidence)) {
+    layers.push({ key: 'dynamic', body: chapter.dynamic })
+  }
+  if (
+    chapter.reef &&
+    !isNearEcho(chapter.reef, chapter.evidence) &&
+    !isNearEcho(chapter.reef, chapter.dynamic)
+  ) {
+    layers.push({ key: 'reef', body: chapter.reef })
+  }
+  if (
+    chapter.remedy &&
+    !isNearEcho(chapter.remedy, chapter.evidence) &&
+    !isNearEcho(chapter.remedy, chapter.dynamic) &&
+    !isNearEcho(chapter.remedy, chapter.reef ?? '')
+  ) {
+    layers.push({ key: 'remedy', body: chapter.remedy })
+  }
 
   const visibleCitations = chapter.citations.filter((c) =>
     citationOkForLocale(locale, c.locus, c.note)
@@ -169,6 +187,7 @@ export function ChapterCard({
             highlightedQuotes={highlightedQuotes}
             style={{
               flex: 1,
+              flexShrink: 1,
               fontFamily: 'CrimsonPro-Italic',
               color: colors.text,
               fontSize: 18,
@@ -202,22 +221,28 @@ export function ChapterCard({
             colors={termColors}
             onPickQuote={onPickQuote}
             highlightedQuotes={highlightedQuotes}
-            style={{ color: colors.text, fontSize: 16, lineHeight: 26 }}
+            style={{ flexShrink: 1, color: colors.text, fontSize: 16, lineHeight: 26 }}
           />
           {layer.key === 'evidence' && visibleCitations.length > 0 ? (
             <View style={{ gap: 8, marginTop: 6 }}>
-              {visibleCitations.map((c, ci) => (
-                <Text
-                  key={`${ci}-${c.locus}-${c.note.slice(0, 24)}`}
-                  style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
-                >
-                  <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
-                    {c.locus}
+              {visibleCitations.map((c, ci) => {
+                const locusLabel =
+                  c.locus === 'face' || c.locus === 'palm_l' || c.locus === 'palm_r'
+                    ? locusTitleForLocale(c.featureKey ?? c.locus, locale)
+                    : c.locus
+                return (
+                  <Text
+                    key={`${ci}-${c.locus}-${c.note.slice(0, 24)}`}
+                    style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
+                  >
+                    <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
+                      {locusLabel}
+                    </Text>
+                    {'  '}
+                    {c.note}
                   </Text>
-                  {'  '}
-                  {c.note}
-                </Text>
-              ))}
+                )
+              })}
             </View>
           ) : null}
         </View>

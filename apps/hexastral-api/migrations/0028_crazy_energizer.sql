@@ -1,0 +1,1 @@
+ALTER TABLE `user_physiognomy_features` ADD `landmarks_json` text;

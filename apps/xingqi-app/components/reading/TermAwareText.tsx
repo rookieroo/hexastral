@@ -5,7 +5,7 @@
 
 import type { Locale as TermLocale, ResolvedTerm } from '@zhop/astro-i18n'
 import { useMemo, useState, type ReactNode } from 'react'
-import { Text, type TextStyle } from 'react-native'
+import { Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
 
 import { resolveXingqiTerm, segmentXingqiTerms } from '@/lib/xingqi-terms'
 import { isCjkZh, isZhHant } from '@/lib/locale-zh'
@@ -33,14 +33,14 @@ function TermSegments({
 }: {
   text: string
   locale: string
-  style?: TextStyle
+  style?: StyleProp<TextStyle>
   colors: { accent: string }
   onActivate: (term: ResolvedTerm) => void
 }): ReactNode {
   const termLocale = toTermLocale(locale)
   const segments = useMemo(() => segmentXingqiTerms(text), [text])
   return (
-    <Text style={style}>
+    <Text style={[{ flexShrink: 1 }, style]}>
       {segments.map((seg, i) => {
         if (!seg.termZh) {
           return (
@@ -80,7 +80,7 @@ export function TermAwareText({
 }: {
   text: string
   locale: string
-  style?: TextStyle
+  style?: StyleProp<TextStyle>
   colors: { bg: string; ink: string; muted: string; accent: string }
   /** When set, prose is split into long-pressable sentences (Yuel 划词). */
   onPickQuote?: (quote: string) => void
@@ -93,20 +93,25 @@ export function TermAwareText({
     [text, onPickQuote]
   )
 
+  const wrapStyle: ViewStyle = { flexShrink: 1, alignSelf: 'stretch' }
+  const textWrap: TextStyle = { flexShrink: 1 }
+
   return (
     <>
-      {onPickQuote
-        ? sentences.map((sentence, i) => (
+      {onPickQuote ? (
+        <View style={wrapStyle}>
+          {sentences.map((sentence, i) => (
             <Text
               // biome-ignore lint/suspicious/noArrayIndexKey: sentence order stable for chapter body
               key={`s-${i}`}
               onLongPress={() => onPickQuote(sentence.trim())}
-              style={
+              style={[
+                textWrap,
                 highlightedQuotes?.includes(sentence.trim()) ||
                 highlightedQuotes?.includes(sentence)
                   ? { backgroundColor: `${colors.accent}2E` }
-                  : undefined
-              }
+                  : undefined,
+              ]}
             >
               <TermSegments
                 text={sentence}
@@ -116,16 +121,17 @@ export function TermAwareText({
                 onActivate={setTerm}
               />
             </Text>
-          ))
-        : (
-            <TermSegments
-              text={text}
-              locale={locale}
-              style={style}
-              colors={colors}
-              onActivate={setTerm}
-            />
-          )}
+          ))}
+        </View>
+      ) : (
+        <TermSegments
+          text={text}
+          locale={locale}
+          style={[textWrap, style]}
+          colors={colors}
+          onActivate={setTerm}
+        />
+      )}
       <TermBubble term={term} onClose={() => setTerm(null)} cjk={cjk} colors={colors} />
     </>
   )

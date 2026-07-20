@@ -55,12 +55,12 @@ physiognomyRoutes.post('/extract-features', async (c) => {
   const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
   try {
-    const { features, model } = await extractFaceFeatures(
+    const { features, landmarks, model } = await extractFaceFeatures(
       c.env,
       imageBase64,
       input.mimeType ?? 'image/jpeg'
     )
-    return c.json({ features, model })
+    return c.json({ features, landmarks, model })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[physiognomy/extract-features]', message.slice(0, 500))
@@ -85,12 +85,12 @@ physiognomyRoutes.post('/extract-palm-features', async (c) => {
   const imageBase64 = normalizeIncomingBase64(input.imageBase64)
 
   try {
-    const { features, model } = await extractPalmFeatures(
+    const { features, landmarks, model } = await extractPalmFeatures(
       c.env,
       imageBase64,
       input.mimeType ?? 'image/jpeg'
     )
-    return c.json({ features, model })
+    return c.json({ features, landmarks, model })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[physiognomy/extract-palm-features]', message.slice(0, 500))

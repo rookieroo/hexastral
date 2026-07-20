@@ -45,7 +45,10 @@ export {
 } from './router'
 
 export {
+  callMoondreamPoint,
   callVisionStructuredWithFallback,
+  extractLandmarksViaMoondream,
+  type LandmarkPoint,
   type VisionRouterEnv,
   type VisionStructuredOptions,
   type VisionStructuredResult,

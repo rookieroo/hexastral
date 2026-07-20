@@ -27,6 +27,11 @@ import {
 import { revokeBiometricConsent } from '@/lib/api'
 import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { devSetServerPro } from '@/lib/dev-tools'
+import {
+  getIcloudPhotoSyncEnabled,
+  setIcloudPhotoSyncEnabled,
+  syncReadingPhotosToICloudIfEnabled,
+} from '@/lib/icloud-sync-preference'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
@@ -56,11 +61,13 @@ export default function SettingsScreen() {
     __DEV__ ? getDevEntitlementOverride() : null
   )
   const [restoreBusy, setRestoreBusy] = useState(false)
+  const [icloudSync, setIcloudSync] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
       void getPortfolioUserId().then(setUserId)
       void getXingqiPushPrefs().then(setPrefs)
+      void getIcloudPhotoSyncEnabled().then(setIcloudSync)
       if (__DEV__) setDevPro(getDevEntitlementOverride())
     }, [])
   )
@@ -195,6 +202,37 @@ export default function SettingsScreen() {
                     Alert.alert(s('恢复失败', '恢復失敗', 'Restore failed'))
                   })
                   .finally(() => setRestoreBusy(false))
+              }}
+            />
+          </SettingsCard>
+        </SettingsSection>
+
+        <SettingsSection title={s('同步', '同步', 'SYNC')}>
+          <Text
+            style={{
+              color: colors.dim,
+              fontSize: 12,
+              lineHeight: 17,
+              marginBottom: 4,
+              paddingHorizontal: 4,
+            }}
+          >
+            {s(
+              '同一 Apple ID 设备间同步形气照片（仅存于 iCloud，不经 HexAstral 服务器）',
+              '同一 Apple ID 裝置間同步形氣照片（僅存於 iCloud，不經 HexAstral 伺服器）',
+              'Sync reading photos on the same Apple ID (iCloud only, not HexAstral servers)'
+            )}
+          </Text>
+          <SettingsCard>
+            <SettingsToggleRow
+              label={s('iCloud 照片同步', 'iCloud 照片同步', 'iCloud photo sync')}
+              value={icloudSync}
+              onValueChange={(next) => {
+                void (async () => {
+                  setIcloudSync(next)
+                  await setIcloudPhotoSyncEnabled(next)
+                  if (next) await syncReadingPhotosToICloudIfEnabled()
+                })()
               }}
             />
           </SettingsCard>

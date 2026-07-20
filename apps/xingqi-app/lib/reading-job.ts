@@ -25,6 +25,8 @@ import {
   patchReadingDraft,
   type ReadingDraft,
 } from './reading-draft'
+import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
+import { snapshotReadingPhotos } from './reading-photos'
 import { saveLastReadingPhotoSnapshot } from './reading-photo-stamp'
 import { registerXingqiServerPush } from './server-push'
 
@@ -397,6 +399,12 @@ async function finishSuccess(opts: {
     },
     readingId: opts.readingId,
   })
+  try {
+    await snapshotReadingPhotos(opts.readingId)
+    await syncReadingPhotosToICloudIfEnabled()
+  } catch (err) {
+    console.warn('[xingqi.reading-job] snapshot_photos_failed', err)
+  }
   const payload = encodeURIComponent(JSON.stringify(opts.output))
   setState({
     status: 'done',
@@ -633,15 +641,16 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
 /**
  * Restore in-progress cloud job after cold start / focus.
  * Prefers server /active, then local jobId.
+ * Allows re-attach when status is still `running` but poll timed out (`inFlight` null).
  */
 export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolean {
-  if (state.status === 'running' || inFlight) return false
+  if (inFlight) return false
 
   inFlight = (async () => {
     try {
       const active = await fetchActiveFaceReadingJob()
       const storedId = await loadStoredJobId()
-      const jobId = active?.jobId ?? storedId
+      const jobId = active?.jobId ?? storedId ?? state.jobId
       if (!jobId) {
         if (await wasReadingJobPending()) await setPendingFlag(false)
         return

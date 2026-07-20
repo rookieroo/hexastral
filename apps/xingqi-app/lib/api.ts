@@ -415,7 +415,7 @@ export async function fetchActiveFaceReadingJob(): Promise<FaceoracleJobPoll | n
 }
 
 const POLL_INTERVAL_MS = 1500
-const POLL_MAX_MS = 10 * 60 * 1000
+const POLL_MAX_MS = 20 * 60 * 1000
 
 export async function pollFaceReadingJob(
   jobId: string,

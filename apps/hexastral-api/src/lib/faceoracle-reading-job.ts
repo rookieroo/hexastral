@@ -4,12 +4,7 @@
  */
 
 import { callWithFallback } from '@zhop/ai-vision'
-import {
-  calculateDaYun,
-  getDaYunAtYear,
-  getLiuNian,
-  type Gender,
-} from '@zhop/astro-core/dayun'
+import { calculateDaYun, type Gender, getDaYunAtYear, getLiuNian } from '@zhop/astro-core/dayun'
 import { getFourPillars } from '@zhop/astro-core/ganzhi'
 import {
   auditHardForbiddenHits,
@@ -31,11 +26,22 @@ import { refundCredit } from '../services/credits'
 import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../services/quota'
 import { sendExpoPushMessages } from './expo-push'
 import {
+  buildLocusIndex,
+  type LocusCitation,
+  type LocusPart,
+  parseLandmarksJson,
+  type ReadingLandmarks,
+} from './faceoracle-landmarks'
+import {
   buildFaceOraclePrompt,
-  faceoracleDensityGaps,
   type FaceOracleChapterKind,
+  faceoracleCautionObservations,
+  faceoracleDensityGaps,
 } from './prompts/faceoracle'
-import { faceoracleBodyLooksWrongLocale, faceoracleFieldsLookWrongLocale } from './prompts/faceoracle-locale'
+import {
+  faceoracleBodyLooksWrongLocale,
+  faceoracleFieldsLookWrongLocale,
+} from './prompts/faceoracle-locale'
 
 const CHAPTER_KINDS: FaceOracleChapterKind[] = [
   'overview',
@@ -48,7 +54,7 @@ const CHAPTER_KINDS: FaceOracleChapterKind[] = [
 
 type JobRow = typeof faceoracleJobs.$inferSelect
 
-type ChapterCitation = { locus: string; note: string }
+type ChapterCitation = LocusCitation
 
 type ChapterPayload = {
   kind: FaceOracleChapterKind
@@ -61,7 +67,24 @@ type ChapterPayload = {
   citations: ChapterCitation[]
 }
 
-function parseCitations(raw: unknown): ChapterCitation[] {
+const LOCUS_PARTS = new Set<LocusPart>(['face', 'palm_l', 'palm_r'])
+
+function inferPartFromChapter(kind: FaceOracleChapterKind, featureKey: string): LocusPart {
+  if (kind === 'face') return 'face'
+  const palmKeys = new Set([
+    'handShape',
+    'lifeLine',
+    'headLine',
+    'heartLine',
+    'fateLine',
+    'mounts',
+    'specialMarks',
+  ])
+  if (palmKeys.has(featureKey)) return 'palm_l'
+  return 'face'
+}
+
+function parseCitations(raw: unknown, chapterKind: FaceOracleChapterKind): ChapterCitation[] {
   if (!Array.isArray(raw)) return []
   const out: ChapterCitation[] = []
   for (const item of raw) {
@@ -69,7 +92,25 @@ function parseCitations(raw: unknown): ChapterCitation[] {
     const o = item as Record<string, unknown>
     const locus = asNonEmptyString(o.locus)
     const note = asNonEmptyString(o.note)
-    if (locus && note) out.push({ locus, note })
+    const featureKey = asNonEmptyString(o.featureKey)
+    const partRaw = asNonEmptyString(o.part)
+    if (!locus || !note) continue
+    const part =
+      partRaw && LOCUS_PARTS.has(partRaw as LocusPart)
+        ? (partRaw as LocusPart)
+        : featureKey
+          ? inferPartFromChapter(chapterKind, featureKey)
+          : chapterKind === 'face'
+            ? 'face'
+            : chapterKind === 'palms'
+              ? 'palm_l'
+              : 'face'
+    out.push({
+      locus,
+      note,
+      featureKey: featureKey ?? locus,
+      part,
+    })
   }
   return out
 }
@@ -125,6 +166,24 @@ async function loadFeatureJson(
   }
 }
 
+async function loadLandmarksJson(
+  db: AppDb,
+  userId: string,
+  id: string
+): Promise<Partial<Record<string, { x: number; y: number }>>> {
+  const row = await db
+    .select({ landmarksJson: userPhysiognomyFeatures.landmarksJson })
+    .from(userPhysiognomyFeatures)
+    .where(and(eq(userPhysiognomyFeatures.id, id), eq(userPhysiognomyFeatures.userId, userId)))
+    .get()
+  if (!row?.landmarksJson) return {}
+  try {
+    return parseLandmarksJson(JSON.parse(row.landmarksJson) as unknown)
+  } catch {
+    return {}
+  }
+}
+
 function compactFeatures(features: Record<string, string>): string {
   return Object.entries(features)
     .filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
@@ -145,9 +204,12 @@ function chapterFromFlat(
 ): ChapterPayload | null {
   if (!body || body.trim().length < 12) return null
   const zh = locale.startsWith('zh')
-  const hant =
-    locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK'
-  const first = body.trim().split(/[。.!?\n]/)[0]?.trim() ?? body.trim().slice(0, 48)
+  const hant = locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK'
+  const first =
+    body
+      .trim()
+      .split(/[。.!?\n]/)[0]
+      ?.trim() ?? body.trim().slice(0, 48)
   const counterpoint = !zh
     ? 'Cultural study framing — not deterministic fate.'
     : hant
@@ -183,7 +245,7 @@ function parseChapter(raw: unknown): ChapterPayload | null {
     reef: asNonEmptyString(o.reef),
     remedy: asNonEmptyString(o.remedy),
     counterpoint: asNonEmptyString(o.counterpoint),
-    citations: parseCitations(o.citations),
+    citations: parseCitations(o.citations, kind as FaceOracleChapterKind),
   }
 }
 
@@ -237,8 +299,8 @@ export function normalizeFaceoracleInterpretation(
     if (ch) byKind.set('advice', ch)
   }
 
-  const chapters = CHAPTER_KINDS.map((k) => byKind.get(k)).filter(
-    (c): c is ChapterPayload => Boolean(c)
+  const chapters = CHAPTER_KINDS.map((k) => byKind.get(k)).filter((c): c is ChapterPayload =>
+    Boolean(c)
   )
   // Require core body: overview + at least one of face/palms/natal/advice
   const hasCore =
@@ -275,14 +337,13 @@ function interpretationHasBody(normalized: {
   flat: Record<string, unknown>
 }): boolean {
   if (normalized.chapters.length >= 2) {
-    const text = normalized.chapters
-      .map((c) => `${c.goldenLine}${c.evidence}${c.dynamic}`)
-      .join('')
+    const text = normalized.chapters.map((c) => `${c.goldenLine}${c.evidence}${c.dynamic}`).join('')
     return text.trim().length > 40
   }
   const keys = ['overview', 'faceSection', 'advice'] as const
   return keys.some(
-    (k) => typeof normalized.flat[k] === 'string' && (normalized.flat[k] as string).trim().length > 12
+    (k) =>
+      typeof normalized.flat[k] === 'string' && (normalized.flat[k] as string).trim().length > 12
   )
 }
 
@@ -297,22 +358,23 @@ async function callReadingAi(
   ].join('\n')
 
   try {
-    // Cap at 4096 — several CF Workers AI models reject higher max_tokens and
-    // the whole flagship cascade then fails as ai_failed.
+    // Full-life six-chapter JSON needs headroom. svc-feng runs the same flagship
+    // cascade at 16384/130s/70s, so 8192 is safely within limits (4096 was a
+    // stale conservative cap that truncated the natal full-life ladder).
     const rawText = (
       await callWithFallback(env, systemPrompt, prompt, {
         tier: 'flagship',
         locale,
-        maxTokens: 4096,
+        maxTokens: 8192,
         temperature: 0.35,
         jsonMode: true,
         // Qwen soft-switch + Kimi chat_template_kwargs.thinking:false (router).
         noThink: true,
         metricLabel: 'faceoracle_reading',
-        // 6-chapter dense JSON — keep under queue wall-clock; equal-split cascade
-        // needs ~40s/model headroom so Kimi can finish before GLM is starved.
-        totalBudgetMs: 120_000,
-        perModelTimeoutMs: 55_000,
+        // Six full-life chapters — keep under queue wall-clock (STALE_JOB_MS=15min);
+        // equal-split cascade needs ~65-70s/model so the flagship finishes first.
+        totalBudgetMs: 130_000,
+        perModelTimeoutMs: 70_000,
       })
     ).trim()
     const parsed = safeJsonParse<Record<string, unknown>>(rawText)
@@ -524,17 +586,48 @@ export async function runFaceoracleReadingJob(
 
   await setJobStage(db, jobId, 'interpreting', 20)
 
-  const [face, palmL, palmR] = await Promise.all([
+  const [face, palmL, palmR, faceLm, palmLm, palmRm] = await Promise.all([
     loadFeatureJson(db, job.userId, job.faceFeatureId),
     loadFeatureJson(db, job.userId, job.palmLeftFeatureId),
     loadFeatureJson(db, job.userId, job.palmRightFeatureId),
+    loadLandmarksJson(db, job.userId, job.faceFeatureId),
+    loadLandmarksJson(db, job.userId, job.palmLeftFeatureId),
+    loadLandmarksJson(db, job.userId, job.palmRightFeatureId),
   ])
   if (!face || !palmL || !palmR) {
     await failJob(db, job, 'features_missing', true)
     return
   }
 
-  let natalSummary = `solar=${job.solarDate}; timeIndex=${job.timeIndex}; gender=${job.gender}`
+  const landmarkCounts = {
+    face: Object.keys(faceLm).length,
+    palmLeft: Object.keys(palmLm).length,
+    palmRight: Object.keys(palmRm).length,
+  }
+  if (landmarkCounts.face + landmarkCounts.palmLeft + landmarkCounts.palmRight === 0) {
+    console.warn('[faceoracle-job] landmarks_empty', { jobId, landmarkCounts })
+  }
+
+  // Palm convention (gender-based innate/acquired) — deterministic from gender,
+  // so compute outside the pillars try/catch to guarantee injection.
+  const palmInnate = job.gender === '女' ? 'palm_r' : 'palm_l'
+  const palmAcquired = job.gender === '女' ? 'palm_l' : 'palm_r'
+  const palmConventionText =
+    job.gender === '女'
+      ? '女: right(palm_r)=先天/本命底色 · left(palm_l)=后天/作为近运'
+      : '男: left(palm_l)=先天/本命底色 · right(palm_r)=后天/作为近运'
+  const palmLines = [
+    `palmConvention=${palmConventionText}`,
+    `palmInnate=${palmInnate}`,
+    `palmAcquired=${palmAcquired}`,
+  ]
+
+  let natalSummary = [
+    `solar=${job.solarDate}`,
+    `timeIndex=${job.timeIndex}`,
+    `gender=${job.gender}`,
+    ...palmLines,
+  ].join('; ')
   let natalFacts: Record<string, string> | null = null
   try {
     const dt = parseSolarDate(job.solarDate, job.timeIndex)
@@ -546,42 +639,52 @@ export async function runFaceoracleReadingJob(
     const currentIdx = currentStep
       ? dayun.steps.findIndex((s) => s.index === currentStep.index)
       : -1
+    const stepEnc = (s: {
+      ganZhi: { label: string }
+      startAge: number
+      endAge: number
+      startYear: number
+      endYear: number
+    }) => `${s.ganZhi.label}@${s.startAge}-${s.endAge}y/${s.startYear}-${s.endYear}`
+
+    // Full life ladder (all 8 steps, birth→~startAge+80) so natal can narrate
+    // the whole timeline; segmented past / current / future for the model.
+    const dayunFull = dayun.steps.map((s, i) => `${i + 1}:${stepEnc(s)}`).join(' | ')
+    const pastSteps = currentIdx > 0 ? dayun.steps.slice(0, currentIdx) : []
+    const futureSteps = currentIdx >= 0 ? dayun.steps.slice(currentIdx + 1) : dayun.steps
+    const dayunPast = pastSteps.map(stepEnc).join(' | ')
+    const dayunCurrent = currentStep ? stepEnc(currentStep) : ''
+    const dayunFuture = futureSteps.map(stepEnc).join(' | ')
+
+    // Near-window trail (current + next up to 4) kept for the period chapter.
     const trailStart = currentIdx >= 0 ? currentIdx : 0
     const trailSteps = dayun.steps.slice(trailStart, trailStart + 5)
     const dayunTrail = trailSteps
-      .map(
-        (s, i) =>
-          `${i === 0 ? 'cur' : `+${i}`}:${s.ganZhi.label}@${s.startAge}-${s.endAge}y/${s.startYear}-${s.endYear}`
-      )
+      .map((s, i) => `${i === 0 ? 'cur' : `+${i}`}:${stepEnc(s)}`)
       .join('|')
+
     const liunian = getLiuNian(nowYear)
     const nextLiunian = getLiuNian(nowYear + 1)
-    const formatStep = (
-      prefix: string,
-      s: {
-        ganZhi: { label: string }
-        startAge: number
-        endAge: number
-        startYear: number
-        endYear: number
-      }
-    ) =>
-      `${prefix}=${s.ganZhi.label} ages=${s.startAge}-${s.endAge} years=${s.startYear}-${s.endYear}`
     const dayunLine = currentStep
-      ? formatStep('currentDaYun', currentStep)
+      ? `currentDaYun=${currentStep.ganZhi.label} ages=${currentStep.startAge}-${currentStep.endAge} years=${currentStep.startYear}-${currentStep.endYear}`
       : `dayunStartAge=${dayun.startAge.rounded}`
     const remainYears = currentStep ? Math.max(0, currentStep.endYear - nowYear) : null
     natalSummary = [
       `solar=${job.solarDate}`,
       `timeIndex=${job.timeIndex}`,
       `gender=${job.gender}`,
+      ...palmLines,
       `city=${job.city ?? ''}`,
       `pillars=${JSON.stringify(pillars)}`,
       `dayunDirection=${dayun.direction}`,
       dayunLine,
+      `dayunFull=${dayunFull}`,
+      dayunPast ? `dayunPast=${dayunPast}` : '',
+      dayunCurrent ? `dayunCurrent=${dayunCurrent}` : '',
+      dayunFuture ? `dayunFuture=${dayunFuture}` : '',
       dayunTrail ? `dayunTrail=${dayunTrail}` : '',
       remainYears !== null ? `currentDaYunRemainYears≈${remainYears}` : '',
-      `lifeHorizonHint=near window (liuNian/1-3y) + 后半场大运带 via dayunTrail; deepen 2-4 scenes across segments`,
+      'lifeHorizonHint=natal=全人生 timeline + 未来主章 (past印证→current当令→future大运带至后半场, use dayunFull/dayunFuture); period=近窗 only (liuNian + current大运余年); deepen 2-4 scenes',
       `liuNian=${nowYear}:${liunian.label}`,
       `nextLiuNian=${nowYear + 1}:${nextLiunian.label}`,
     ]
@@ -593,10 +696,10 @@ export async function runFaceoracleReadingJob(
       dayMaster: pillars.day.stem,
       dayPillar: pillars.day.label,
       dayun: currentStep?.ganZhi.label ?? '',
-      dayunYears: currentStep
-        ? `${currentStep.startYear}-${currentStep.endYear}`
-        : '',
+      dayunYears: currentStep ? `${currentStep.startYear}-${currentStep.endYear}` : '',
       dayunTrail,
+      dayunFull,
+      dayunFuture,
       liuNian: `${nowYear} ${liunian.label}`,
       nextLiuNian: `${nowYear + 1} ${nextLiunian.label}`,
     }
@@ -703,11 +806,15 @@ export async function runFaceoracleReadingJob(
     const densityPrompt = [
       promptTemplate,
       '',
-      'DENSITY RETRY: Previous draft was too thin or missing structure:',
+      'STRUCTURE RETRY: Previous draft failed these structural checks (NOT word count):',
       densityGaps.join(', '),
-      'Rewrite the ENTIRE JSON with fuller chapter essays per Six chapters craft (overview/face/palms/natal/period/advice volumes).',
-      'Use dayunTrail for 后半场大运带 + near window; deepen 2–4 scenes; keep events≥3 and face/palms citations.',
-      'Do not spray checklist keywords. Output ONLY valid JSON.',
+      'Fix each: goldenLine/evidence/dynamic/reef/remedy must EACH add a new angle (no echoing the same sentence);',
+      'reef/remedy must be unique per chapter or null — the 本流年 sentence belongs to period.reef ONLY, never pasted elsewhere; no single 冥想/呼吸 remedy reused across chapters;',
+      'citation notes must advance the chapter, not paste an evidence sentence; cite BOTH supportive and cautionary loci actually present in the inputs (do not cherry-pick only auspicious ones);',
+      'face needs ≥5 DISTINCT loci; palms must cover BOTH 先天掌 and 后天掌 (see palmConvention) and cite lifeLine AND heartLine with classical loci;',
+      'natal must narrate the FUTURE dayun band (use dayunFuture: named 干支/年龄/年份), distinct from period;',
+      'period stays near-window only; give ≥5 events including ≥2 near-window plus career/love/health coverage.',
+      'Do not pad with filler or spray checklist keywords. Output ONLY valid JSON.',
     ].join('\n')
     const densRetry = await callReadingAi(env, densityPrompt, job.locale)
     if (densRetry.parsed) {
@@ -726,6 +833,13 @@ export async function runFaceoracleReadingJob(
     if (densityGaps.length > 0) {
       console.warn('[faceoracle-job] density still soft-short', { jobId, gaps: densityGaps })
     }
+  }
+
+  // Log-only: cherry-picking signal (face/palms notes name no tension). Never a
+  // retry gate — forcing caution words would push the model to fabricate negatives.
+  const cautionObs = faceoracleCautionObservations(normalized.chapters)
+  if (cautionObs.length > 0) {
+    console.info('[faceoracle-job] caution-word absent (observe only)', { jobId, obs: cautionObs })
   }
 
   // ADR-0003: hard forbidden substring audit — one rewrite, then accept (no stub fail).
@@ -770,12 +884,22 @@ export async function runFaceoracleReadingJob(
   const events = Array.isArray(interpretation.events) ? interpretation.events : []
 
   const readingId = nanoid()
+  const landmarks: ReadingLandmarks = {
+    face: faceLm,
+    palmLeft: palmLm,
+    palmRight: palmRm,
+  }
+  const locusIndex = buildLocusIndex(
+    normalized.chapters.map((ch) => ({ kind: ch.kind, citations: ch.citations }))
+  )
   const output: Record<string, unknown> = {
     mode: 'face_palm',
     faceFeatureId: job.faceFeatureId,
     palmLeftFeatureId: job.palmLeftFeatureId,
     palmRightFeatureId: job.palmRightFeatureId,
     features: { face, palmLeft: palmL, palmRight: palmR },
+    landmarks,
+    locusIndex,
     birth: {
       solarDate: job.solarDate,
       timeIndex: job.timeIndex,

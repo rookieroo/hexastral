@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AncientSeal } from '@/components/reading/AncientSeal'
 import { InkModePlate } from '@/components/reading/InkCenterpiece'
-import { type InkRelation } from '@/lib/ancient-glyphs'
+import { type InkRelation, XINGQI_LOCUS_CANON } from '@/lib/ancient-glyphs'
 import { resolveLocale } from '@/lib/i18n'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { chapterTitle } from '@/lib/report-chapters'
@@ -173,9 +173,9 @@ export default function XingqiGlossaryScreen() {
           }}
         >
           {s(
-            '报告里有两套视觉语言：① 象形印（甲骨/金文，标章节）；② 墨象四态（聚/对/照/流，中间大图）。印很小，贴在一角。从左边缘右滑返回。',
-            '報告裡有兩套視覺語言：① 象形印（甲骨／金文，標章節）；② 墨象四態（聚／對／照／流，中間大圖）。印很小，貼在一角。從左邊緣右滑返回。',
-            'Two visual languages: (1) pictograph seals mark the chapter; (2) ink modes are the large plate. Swipe back from the left edge.'
+            '报告里有三套视觉语言：① 章节象形印；② 关键点位印（首页星光点开后的 sheet）；③ 墨象四态（聚/对/照/流）。健康轴可借中医脏腑气血之「象」作警示对照——词典层，不是看病。从左边缘右滑返回。',
+            '報告裡有三套視覺語言：① 章節象形印；② 關鍵點位印（首頁星光點開後的 sheet）；③ 墨象四態（聚／對／照／流）。健康軸可借中醫臟腑氣血之「象」作警示對照——詞典層，不是看病。從左邊緣右滑返回。',
+            'Three visual languages: (1) chapter seals; (2) locus seals in the home star sheet; (3) ink modes. Health may borrow classical TCM imagery as cautionary lexicon — not a clinic visit. Swipe back from the left edge.'
           )}
         </Text>
 
@@ -252,8 +252,143 @@ export default function XingqiGlossaryScreen() {
           })}
         </View>
 
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: bodySize,
+            lineHeight: bodyLine,
+            marginBottom: spacing.xl,
+          }}
+        >
+          {s(
+            '健康用语：气色、气机、宜留意、脏腑之象——中医作词典，解释形上可见的节奏；首页星光与报告 health 轴是警示，不是看病。',
+            '健康用語：氣色、氣機、宜留意、臟腑之象——中醫作詞典，解釋形上可見的節奏；首頁星光與報告 health 軸是警示，不是看病。',
+            'Health lexicon: complexion, qi motion, “worth noting”, organ imagery — TCM as dictionary for form cues; stars and the health axis are caution, not a clinic.'
+          )}
+        </Text>
+
         <SectionLabel colors={colors} cjk={cjk} top={spacing.sm}>
-          {s('② 墨象四态', '② 墨象四態', '2 · Ink modes')}
+          {s('② 关键点位 · 形气印', '② 關鍵點位 · 形氣印', '2 · Locus seals')}
+        </SectionLabel>
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: bodySize,
+            lineHeight: bodyLine,
+            marginBottom: spacing.lg,
+          }}
+        >
+          {s(
+            '首页星光落在可定位的关键点（面 12 · 掌 7）。点开后 sheet 用下方印标该位；照片上仍是统一星点，不叠十九枚小印。',
+            '首頁星光落在可定位的關鍵點（面 12 · 掌 7）。點開後 sheet 用下方印標該位；照片上仍是統一星點，不疊十九枚小印。',
+            'Home stars land on spatial loci (12 face · 7 palm). The sheet uses these seals; the photo keeps a single sparkle style.'
+          )}
+        </Text>
+
+        <Text
+          style={{
+            fontFamily: 'IBMPlexMono',
+            color: colors.dim,
+            fontSize: metaSize,
+            letterSpacing: cjk ? 0.8 : 1.2,
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
+        >
+          {s('面', '面', 'Face')}
+        </Text>
+        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.lg }}>
+          {XINGQI_LOCUS_CANON.filter((l) => l.group === 'face').map((l) => (
+            <View
+              key={l.featureKey}
+              style={{
+                flexDirection: 'row',
+                gap: 14,
+                alignItems: 'flex-start',
+                paddingVertical: spacing.md,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
+              }}
+            >
+              <AncientSeal glyph={l.glyph} size={40} tile={colors.text} ink={colors.bg} />
+              <View style={{ flex: 1, gap: spacing.xs }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: chapterTitleSize,
+                    fontWeight: '600',
+                    lineHeight: chapterTitleSize + 4,
+                  }}
+                >
+                  {s(l.titleZh, l.titleZhHant, l.titleEn)}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.secondary,
+                    fontSize: bodySize,
+                    lineHeight: bodyLine,
+                  }}
+                >
+                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn)}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <Text
+          style={{
+            fontFamily: 'IBMPlexMono',
+            color: colors.dim,
+            fontSize: metaSize,
+            letterSpacing: cjk ? 0.8 : 1.2,
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
+        >
+          {s('掌', '掌', 'Palm')}
+        </Text>
+        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.xl }}>
+          {XINGQI_LOCUS_CANON.filter((l) => l.group === 'palm').map((l) => (
+            <View
+              key={l.featureKey}
+              style={{
+                flexDirection: 'row',
+                gap: 14,
+                alignItems: 'flex-start',
+                paddingVertical: spacing.md,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
+              }}
+            >
+              <AncientSeal glyph={l.glyph} size={40} tile={colors.text} ink={colors.bg} />
+              <View style={{ flex: 1, gap: spacing.xs }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: chapterTitleSize,
+                    fontWeight: '600',
+                    lineHeight: chapterTitleSize + 4,
+                  }}
+                >
+                  {s(l.titleZh, l.titleZhHant, l.titleEn)}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.secondary,
+                    fontSize: bodySize,
+                    lineHeight: bodyLine,
+                  }}
+                >
+                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn)}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <SectionLabel colors={colors} cjk={cjk} top={spacing.sm}>
+          {s('③ 墨象四态', '③ 墨象四態', '3 · Ink modes')}
         </SectionLabel>
         <Text
           style={{

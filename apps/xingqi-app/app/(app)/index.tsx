@@ -4,7 +4,11 @@
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
-import { deletePortfolioReading, fetchReadings, type PortfolioReadingItem } from '@zhop/portfolio-client'
+import {
+  deletePortfolioReading,
+  fetchReadings,
+  type PortfolioReadingItem,
+} from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { CalendarDays, Hand, ScanFace, Settings2 } from 'lucide-react-native'
@@ -14,20 +18,18 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { HistoryReadingRow } from '@/components/HistoryReadingRow'
+import { FeaturedReadingCard } from '@/components/FeaturedReadingCard'
+import { HomeLocusExplorer, locusExplorerCopy } from '@/components/HomeLocusExplorer'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { fetchBiometricConsent } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
-import { archiveSectionLabel, formReadingListTitle, readingLocaleBadge } from '@/lib/living-copy'
 import { resolveLocale } from '@/lib/i18n'
+import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { locusExplorerFromResultJson } from '@/lib/locus-data'
 import { captureHrefForPart, periodPhotoMap } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
-import {
-  alertIfPhotosUnchanged,
-} from '@/lib/reading-preflight'
-import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
 import {
   acknowledgeReadingJob,
   consumeReadingJobError,
@@ -39,6 +41,9 @@ import {
   startReadingJob,
   subscribeReadingJob,
 } from '@/lib/reading-job'
+import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
+import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
+import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import { readingHasReportBody } from '@/lib/report-chapters'
 
 function StepIcon({
@@ -146,7 +151,9 @@ export default function XingqiHomeScreen() {
         return
       }
       const isUnchanged =
-        err.includes('照片特征未变化') || err.includes('照片特徵未變化') || err.toLowerCase().includes('photos unchanged')
+        err.includes('照片特征未变化') ||
+        err.includes('照片特徵未變化') ||
+        err.toLowerCase().includes('photos unchanged')
       Alert.alert(s('解读未完成', '解讀未完成', 'Reading incomplete'), err, [
         { text: s('好', '好', 'OK') },
         ...(isUnchanged
@@ -166,10 +173,8 @@ export default function XingqiHomeScreen() {
     useCallback(() => {
       void (async () => {
         await reload()
-        // Always reconcile with server active job (true quit-safe resume).
-        if (getReadingJobState().status !== 'running') {
-          resumeReadingJobIfNeeded(locale, isPro)
-        }
+        // Reconcile with server; resume even if UI still shows running after poll timeout.
+        resumeReadingJobIfNeeded(locale, isPro)
       })()
     }, [reload, locale, isPro])
   )
@@ -182,7 +187,11 @@ export default function XingqiHomeScreen() {
     if (job.status === 'running') {
       Alert.alert(
         s('解读进行中', '解讀進行中', 'Reading in progress'),
-        s('请等待当前解读完成，或点推送打开结果。', '請等待目前解讀完成，或點推送打開結果。', 'Wait for the current reading, or open it from the push.')
+        s(
+          '请等待当前解读完成，或点推送打开结果。',
+          '請等待目前解讀完成，或點推送打開結果。',
+          'Wait for the current reading, or open it from the push.'
+        )
       )
       return
     }
@@ -226,7 +235,11 @@ export default function XingqiHomeScreen() {
         if (!started) {
           Alert.alert(
             s('解读进行中', '解讀進行中', 'Reading in progress'),
-            s('请等待当前解读完成。', '請等待目前解讀完成。', 'Wait for the current reading to finish.')
+            s(
+              '请等待当前解读完成。',
+              '請等待目前解讀完成。',
+              'Wait for the current reading to finish.'
+            )
           )
         }
         return
@@ -283,6 +296,77 @@ export default function XingqiHomeScreen() {
   )
 
   const hasReading = items.length > 0
+  const copy = homeArchiveCopy(locale)
+  const featured = items[0]
+  const locusData = useMemo(
+    () => (featured ? locusExplorerFromResultJson(featured) : null),
+    [featured]
+  )
+  const explorerCopy = useMemo(() => locusExplorerCopy(locale), [locale])
+
+  const confirmDelete = useCallback(
+    (item: PortfolioReadingItem) => {
+      Alert.alert(
+        s('删除解读？', '刪除解讀？', 'Delete reading?'),
+        s(
+          '将从账号中永久删除此条形气解读，无法恢复。',
+          '將從帳號中永久刪除此條形氣解讀，無法恢復。',
+          'Permanently removes this form reading from your account.'
+        ),
+        [
+          { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+          {
+            text: s('删除', '刪除', 'Delete'),
+            style: 'destructive',
+            onPress: () => {
+              void (async () => {
+                try {
+                  await deletePortfolioReading(PORTFOLIO_TARGET_APP, item.id)
+                  await deleteReadingPhotoFolder(item.id)
+                  await clearLastReadingPhotoSnapshot()
+                  await reload()
+                } catch {
+                  Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
+                }
+              })()
+            },
+          },
+        ]
+      )
+    },
+    [locale, reload]
+  )
+
+  const readingMeta = useCallback(
+    (item: PortfolioReadingItem) => {
+      const localeBadge = readingLocaleBadge(item.locale)
+      const dateLabel = item.createdAt?.slice(0, 10) ?? ''
+      return [s('形气', '形氣', 'Form'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+    },
+    [locale]
+  )
+
+  const openFeatured = useCallback(
+    (chapter?: 'face' | 'palms') => {
+      if (!featured) return
+      // Guard: Pressable onPress passes an event object, not a chapter.
+      const chapterParam = chapter === 'face' || chapter === 'palms' ? chapter : undefined
+      router.push({
+        pathname: '/result',
+        params: { readingId: featured.id, ...(chapterParam ? { chapter: chapterParam } : {}) },
+      } as never)
+    },
+    [featured, router]
+  )
+
+  const openCapturePart = useCallback(
+    (part: 'face' | 'palm_l' | 'palm_r') => {
+      const href =
+        part === 'palm_r' ? '/capture/right' : part === 'face' ? '/capture/face' : '/capture'
+      router.push({ pathname: href, params: { mode: 'slot' } } as never)
+    },
+    [router]
+  )
 
   const ctaLabel =
     job.status === 'running'
@@ -367,33 +451,14 @@ export default function XingqiHomeScreen() {
 
         <ScrollView
           style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingHorizontal: spacing.xl,
             paddingBottom: spacing.lg,
-            gap: spacing.sm,
+            gap: spacing.lg,
             flexGrow: 1,
           }}
         >
-          <Text
-            style={{
-              color: colors.dim,
-              fontSize: 12,
-              letterSpacing: 0.8,
-              marginBottom: 4,
-            }}
-          >
-            {archiveSectionLabel(locale, isPro)}
-          </Text>
-          {items.length > 0 ? (
-            <Text style={{ color: colors.dim, fontSize: 11, marginBottom: 4, lineHeight: 16 }}>
-              {isCjkZh(locale)
-                ? pickZh(locale, '点开查看；左滑删除。', '點開查看；左滑刪除。')
-                : locale === 'ja'
-                  ? 'タップで開く。左スワイプで削除。'
-                  : 'Tap to open. Swipe left to delete.'}
-            </Text>
-          ) : null}
-
           {job.status === 'running' ? (
             <View
               style={{
@@ -496,64 +561,80 @@ export default function XingqiHomeScreen() {
             </View>
           ) : null}
 
-          {items.map((item, index) => {
-            const title = formReadingListTitle(locale)
-            const localeBadge = readingLocaleBadge(item.locale)
-            const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-            const meta = [s('形气', '形氣', 'Form'), dateLabel, localeBadge].filter(Boolean).join(' · ')
-            const confirmDelete = () => {
-              Alert.alert(
-                s('删除解读？', '刪除解讀？', 'Delete reading?'),
-                s(
-                  '将从账号中永久删除此条形气解读，无法恢复。',
-                  '將從帳號中永久刪除此條形氣解讀，無法恢復。',
-                  'Permanently removes this form reading from your account.'
-                ),
-                [
-                  { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
-                  {
-                    text: s('删除', '刪除', 'Delete'),
-                    style: 'destructive',
-                    onPress: () => {
-                      void (async () => {
-                        try {
-                          await deletePortfolioReading(PORTFOLIO_TARGET_APP, item.id)
-                          await clearLastReadingPhotoSnapshot()
-                          await reload()
-                        } catch {
-                          Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
-                        }
-                      })()
-                    },
-                  },
-                ]
-              )
-            }
-            return (
-              <HistoryReadingRow
-                key={item.id}
-                title={title}
-                meta={meta}
-                onPress={() =>
-                  router.push({
-                    pathname: '/result',
-                    params: { readingId: item.id },
-                  } as never)
-                }
-                onDelete={confirmDelete}
+          {!loading && featured && locusData ? (
+            <HomeLocusExplorer
+              data={locusData}
+              locale={locale}
+              copy={explorerCopy}
+              meta={readingMeta(featured)}
+              colors={{
+                text: colors.text,
+                dim: colors.dim,
+                accent: colors.accent,
+                secondary: colors.secondary,
+                separator: colors.separator,
+                bg: colors.bg,
+              }}
+              spacing={spacing}
+              onOpenReport={openFeatured}
+              onCapturePart={openCapturePart}
+            />
+          ) : null}
+
+          {!loading && featured && !locusData ? (
+            <View style={{ gap: spacing.md }}>
+              <Text
+                style={{
+                  color: colors.dim,
+                  fontSize: 12,
+                  letterSpacing: 0.8,
+                }}
+              >
+                {copy.latestLabel}
+              </Text>
+              <FeaturedReadingCard
+                title={formReadingListTitle(locale)}
+                meta={readingMeta(featured)}
+                hint={copy.openHint}
+                onPress={openFeatured}
+                onDelete={() => confirmDelete(featured)}
                 colors={{
                   text: colors.text,
                   dim: colors.dim,
                   accent: colors.accent,
+                  secondary: colors.secondary,
                   separator: colors.separator,
                   bg: colors.bg,
                 }}
                 spacing={spacing}
-                showTopBorder={index === 0 && job.status !== 'running'}
                 deleteLabel={s('删除', '刪除', 'Delete')}
               />
-            )
-          })}
+            </View>
+          ) : null}
+
+          {!loading && items.length > 1 ? (
+            <Pressable
+              onPress={() => router.push('/(app)/archive' as never)}
+              accessibilityRole='button'
+              style={{
+                paddingVertical: spacing.md,
+                borderTopWidth: 0.5,
+                borderTopColor: colors.separator,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'IBMPlexMono',
+                  color: colors.secondary,
+                  fontSize: 12,
+                  letterSpacing: 0.8,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {copy.viewAll(items.length)}
+              </Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
 
         <View

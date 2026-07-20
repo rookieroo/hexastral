@@ -89,10 +89,7 @@ export default function SignInScreen() {
     }
     void (async () => {
       try {
-        const mod = (await import(
-          // @ts-expect-error optional peer — may be absent
-          '@react-native-google-signin/google-signin'
-        )) as GoogleSigninModule
+        const mod = (await import('@react-native-google-signin/google-signin')) as GoogleSigninModule
         mod.GoogleSignin.configure({
           iosClientId: iosClientId || undefined,
           webClientId: webClientId || undefined,
