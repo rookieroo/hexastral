@@ -1,15 +1,17 @@
 /**
  * Cold-open — mark + wordmark only; tap anywhere.
- * No stacked taglines — keep the first frame quiet.
+ * Mark flies toward the home-header corner, then we replace onto (app)
+ * with no stack animation (root + nested index both use animation: none).
  */
 
 import { useTheme } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { useMemo, useRef } from 'react'
-import { Pressable, Text } from 'react-native'
+import { Pressable, Text, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
   FadeIn,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -27,26 +29,58 @@ const HINT = {
   ja: 'タップ',
 } as const
 
+const INTRO_MARK = 96
+const HOME_MARK = 28
+const FLY_MS = 480
+
 export default function IntroScreen() {
   const router = useRouter()
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
+  const { width, height } = useWindowDimensions()
   const locale = resolveLocale()
   const hint = useMemo(() => HINT[locale] ?? HINT.en, [locale])
   const advanced = useRef(false)
-  const fade = useSharedValue(1)
-  const sceneStyle = useAnimatedStyle(() => ({ opacity: fade.value }))
 
-  const go = () => router.replace('/(app)')
+  const markScale = useSharedValue(1)
+  const markTx = useSharedValue(0)
+  const markTy = useSharedValue(0)
+  const chromeOpacity = useSharedValue(1)
+
+  const markStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: markTx.value },
+      { translateY: markTy.value },
+      { scale: markScale.value },
+    ],
+  }))
+  const chromeStyle = useAnimatedStyle(() => ({ opacity: chromeOpacity.value }))
+
+  const landOnHome = () => {
+    router.replace('/(app)' as never)
+  }
 
   const advance = () => {
     if (advanced.current) return
     advanced.current = true
     void markOnboardingComplete()
-    fade.value = withTiming(0, { duration: 320, easing: Easing.inOut(Easing.quad) })
-    setTimeout(() => {
-      go()
-    }, 160)
+
+    const homeX = spacing.xl + HOME_MARK / 2
+    const homeY = insets.top + spacing.md + HOME_MARK / 2
+    const introX = width / 2
+    const introY = height / 2 - 12
+    const easing = Easing.out(Easing.cubic)
+
+    markTx.value = withTiming(homeX - introX, { duration: FLY_MS, easing })
+    markTy.value = withTiming(homeY - introY, { duration: FLY_MS, easing })
+    chromeOpacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.quad) })
+    markScale.value = withTiming(
+      HOME_MARK / INTRO_MARK,
+      { duration: FLY_MS, easing },
+      (finished) => {
+        if (finished) runOnJS(landOnHome)()
+      }
+    )
   }
 
   return (
@@ -57,23 +91,20 @@ export default function IntroScreen() {
       accessibilityLabel={hint}
     >
       <Animated.View
-        style={[
-          {
-            flex: 1,
-            backgroundColor: colors.bg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom + spacing.xl,
-            gap: spacing.md,
-          },
-          sceneStyle,
-        ]}
+        style={{
+          flex: 1,
+          backgroundColor: colors.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom + spacing.xl,
+          gap: spacing.md,
+        }}
       >
-        <Animated.View entering={FadeIn.duration(900)}>
-          <XingqiMark size={96} color={colors.accent} />
+        <Animated.View style={markStyle}>
+          <XingqiMark size={INTRO_MARK} color={colors.accent} />
         </Animated.View>
-        <Animated.View entering={FadeIn.delay(200).duration(700)}>
+        <Animated.View entering={FadeIn.delay(200).duration(700)} style={chromeStyle}>
           <Text
             style={{
               color: colors.text,
@@ -88,10 +119,13 @@ export default function IntroScreen() {
 
         <Animated.View
           entering={FadeIn.delay(600).duration(800)}
-          style={{
-            position: 'absolute',
-            bottom: insets.bottom + spacing.xl * 2,
-          }}
+          style={[
+            chromeStyle,
+            {
+              position: 'absolute',
+              bottom: insets.bottom + spacing.xl * 2,
+            },
+          ]}
         >
           <Text
             style={{

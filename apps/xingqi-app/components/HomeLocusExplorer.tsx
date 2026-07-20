@@ -171,7 +171,7 @@ export function HomeLocusExplorer({
   }))
 
   return (
-    <View style={{ gap: spacing.md }}>
+    <View style={{ gap: spacing.md, position: 'relative' }}>
       <View
         style={{
           flexDirection: 'row',
@@ -290,20 +290,28 @@ export function HomeLocusExplorer({
         {stars.length > 0 ? copy.tapHint : copy.noStars}
       </Text>
 
-      <LocusSheet
-        visible={sheetOpen}
-        star={selected}
-        openReportLabel={copy.openReport}
-        teachingLabel={copy.teaching}
-        readingLabel={copy.reading}
-        noReadingHint={copy.noReading}
-        colors={colors}
-        onClose={() => setSheetOpen(false)}
-        onOpenReport={() => {
-          setSheetOpen(false)
-          onOpenReport(part === 'face' ? 'face' : 'palms')
-        }}
-      />
+      {sheetOpen ? (
+        <View style={{ marginHorizontal: -spacing.md }}>
+          <LocusSheet
+            visible
+            star={selected}
+            openReportLabel={copy.openReport}
+            teachingLabel={copy.teaching}
+            readingLabel={copy.reading}
+            noReadingHint={copy.noReading}
+            colors={colors}
+            onClose={() => {
+              setSheetOpen(false)
+              setSelected(null)
+            }}
+            onOpenReport={() => {
+              setSheetOpen(false)
+              setSelected(null)
+              onOpenReport(part === 'face' ? 'face' : 'palms')
+            }}
+          />
+        </View>
+      ) : null}
     </View>
   )
 }

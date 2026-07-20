@@ -2,8 +2,8 @@
  * Client-side locus / landmark types and resultJson parsing for Locus Hero.
  */
 
-import { locusBlurbForLocale, locusTitleForLocale } from '@/lib/ancient-glyphs'
 import type { PortfolioReadingItem } from '@zhop/portfolio-client'
+import { locusBlurbForLocale, locusTitleForLocale } from '@/lib/ancient-glyphs'
 
 export type LandmarkPoint = { x: number; y: number }
 
@@ -108,9 +108,27 @@ function buildIndexFromChapters(output: Record<string, unknown>): LocusIndex {
   return index
 }
 
-export function locusExplorerFromResultJson(
-  item: PortfolioReadingItem
-): LocusExplorerData | null {
+function mergeLocusIndex(primary: LocusIndex, fallback: LocusIndex): LocusIndex {
+  const mergePart = (a: LocusCitation[], b: LocusCitation[]): LocusCitation[] => {
+    const byKey = new Map<string, LocusCitation>()
+    for (const c of [...a, ...b]) {
+      const key = c.featureKey || c.locus
+      const prev = byKey.get(key)
+      if (!prev || (c.note.length > prev.note.length && c.note.trim().length > 0)) {
+        byKey.set(key, c)
+      }
+    }
+    // Also index by locus name so alias matching can find them.
+    return Array.from(byKey.values())
+  }
+  return {
+    face: mergePart(primary.face, fallback.face),
+    palm_l: mergePart(primary.palm_l, fallback.palm_l),
+    palm_r: mergePart(primary.palm_r, fallback.palm_r),
+  }
+}
+
+export function locusExplorerFromResultJson(item: PortfolioReadingItem): LocusExplorerData | null {
   if (!item.resultJson?.trim()) return null
   let output: Record<string, unknown>
   try {
@@ -136,10 +154,13 @@ export function locusExplorerFromResultJson(
     }
   }
 
+  // Prefer stored index, but always union with chapter citations — regenerate
+  // can ship a thin locusIndex while chapters still carry the full cite list.
+  const fromChapters = buildIndexFromChapters(output)
   const locusIndex =
     output.locusIndex != null
-      ? parseLocusIndex(output.locusIndex)
-      : buildIndexFromChapters(output)
+      ? mergeLocusIndex(parseLocusIndex(output.locusIndex), fromChapters)
+      : fromChapters
 
   const landmarkCount =
     Object.keys(landmarks.face).length +
@@ -180,9 +201,61 @@ export type LocusStar = {
   fromReading: boolean
 }
 
+function normalizeLocusKey(s: string): string {
+  return s.replace(/\s+/g, '').toLowerCase()
+}
+
+/**
+ * Resolve a citation for a landmark key. LLM sometimes emits classical locus
+ * names as featureKey (口唇) or typos (mouth) — match by key, alias, and title.
+ */
+function findCitationForFeature(
+  cites: LocusCitation[],
+  featureKey: string,
+  locale: string
+): LocusCitation | undefined {
+  const byExact = cites.find((c) => c.featureKey === featureKey)
+  if (byExact) return byExact
+
+  const aliases: Record<string, string[]> = {
+    mouthType: ['mouth', 'lips', '口', '口唇', '嘴唇'],
+    eyeType: ['eye', 'eyes', '目', '眼'],
+    noseShape: ['nose', '鼻', '鼻梁'],
+    yinTang: ['印堂'],
+    shanGen: ['山根'],
+    tianTing: ['天庭'],
+    cheekBones: ['颧', '颧骨', '顴骨'],
+    nasolabialFolds: ['法令', '法令纹', '法令紋'],
+    chin: ['地阁', '地閣', '下巴'],
+    earLobes: ['耳垂', '耳'],
+    lifeLine: ['生命线', '生命線'],
+    heartLine: ['感情线', '感情線', '婚姻线', '婚姻線'],
+    headLine: ['智慧线', '智慧線', '头脑线', '頭腦線'],
+    fateLine: ['事业线', '事業線', '命运线', '命運線'],
+  }
+  const aliasList = aliases[featureKey] ?? []
+  for (const a of aliasList) {
+    const hit = cites.find(
+      (c) =>
+        normalizeLocusKey(c.featureKey) === normalizeLocusKey(a) ||
+        normalizeLocusKey(c.locus) === normalizeLocusKey(a) ||
+        c.locus.includes(a)
+    )
+    if (hit) return hit
+  }
+
+  const title = locusTitleForLocale(featureKey, locale)
+  const titleN = normalizeLocusKey(title)
+  return cites.find((c) => {
+    const ln = normalizeLocusKey(c.locus)
+    const kn = normalizeLocusKey(c.featureKey)
+    return ln === titleN || kn === titleN || ln.includes(titleN) || titleN.includes(ln)
+  })
+}
+
 /**
  * Stars = all landmarks with coords for this part.
- * Citation notes overlay when the report cited that featureKey.
+ * Citation notes overlay when the report cited that featureKey (or alias/title).
  */
 export function starsForPart(data: LocusExplorerData, part: LocusPart): LocusStar[] {
   const cites =
@@ -191,10 +264,6 @@ export function starsForPart(data: LocusExplorerData, part: LocusPart): LocusSta
       : part === 'palm_l'
         ? data.locusIndex.palm_l
         : data.locusIndex.palm_r
-  const citeByKey = new Map<string, LocusCitation>()
-  for (const cite of cites) {
-    if (!citeByKey.has(cite.featureKey)) citeByKey.set(cite.featureKey, cite)
-  }
 
   const locale = data.locale ?? 'zh-CN'
   const lm = landmarksForPart(data.landmarks, part)
@@ -202,7 +271,7 @@ export function starsForPart(data: LocusExplorerData, part: LocusPart): LocusSta
 
   for (const [featureKey, pt] of Object.entries(lm)) {
     if (!pt) continue
-    const cite = citeByKey.get(featureKey)
+    const cite = findCitationForFeature(cites, featureKey, locale)
     const title =
       cite && cite.locus !== 'face' && cite.locus !== 'palm_l' && cite.locus !== 'palm_r'
         ? cite.locus

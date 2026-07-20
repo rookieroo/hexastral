@@ -16,6 +16,7 @@ import {
   pollFaceReadingJob,
   runFaceReading,
 } from './api'
+import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
 import { isCjkZh, pickZh } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
 import { isXingqiPushEnabled, scheduleXingqiPush } from './push-schedule'
@@ -25,9 +26,8 @@ import {
   patchReadingDraft,
   type ReadingDraft,
 } from './reading-draft'
-import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
-import { snapshotReadingPhotos } from './reading-photos'
 import { saveLastReadingPhotoSnapshot } from './reading-photo-stamp'
+import { snapshotReadingPhotos } from './reading-photos'
 import { registerXingqiServerPush } from './server-push'
 
 function zhCopy(locale: string, hans: string, hant: string, en: string): string {
@@ -216,7 +216,12 @@ export async function showReadingStartedHandoff(opts: {
 }
 
 function mapJobError(msg: string, locale: string): string {
-  let error = zhCopy(locale, '解读失败，请稍后重试', '解讀失敗，請稍後重試', 'Reading failed. Try again.')
+  let error = zhCopy(
+    locale,
+    '解读失败，请稍后重试',
+    '解讀失敗，請稍後重試',
+    'Reading failed. Try again.'
+  )
   if (msg === 'signin_required') error = 'signin_required'
   else if (msg === 'biometric_consent_required') error = 'biometric_consent_required'
   else if (msg === 'features_unchanged') {
@@ -245,7 +250,12 @@ function mapJobError(msg: string, locale: string): string {
       'Purchase or Pro required (DEV client Pro is not enough — cycle Force entitlement → PRO in Settings)'
     )
   } else if (msg.includes('photo_slot_exhausted')) {
-    error = zhCopy(locale, '本月照片额度已用尽', '本月照片額度已用盡', 'Monthly photo slots exhausted')
+    error = zhCopy(
+      locale,
+      '本月照片额度已用尽',
+      '本月照片額度已用盡',
+      'Monthly photo slots exhausted'
+    )
   } else if (msg.includes('report_regen_exhausted')) {
     error = zhCopy(
       locale,
@@ -267,30 +277,21 @@ function mapJobError(msg: string, locale: string): string {
       '特徵提取超時。請檢查網絡後重試；必要時重拍更清晰的照片。',
       'Feature extract timed out. Check network and retry; retake clearer photos if needed.'
     )
-  } else if (
-    msg.includes('extract_image_encode_failed') ||
-    msg.includes('photo_encode_failed')
-  ) {
+  } else if (msg.includes('extract_image_encode_failed') || msg.includes('photo_encode_failed')) {
     error = zhCopy(
       locale,
       '无法处理该照片。请用相机重新拍摄。',
       '無法處理該照片。請用相機重新拍攝。',
       'Could not process this photo. Retake with the camera.'
     )
-  } else if (
-    msg.includes('extract_photo_quality_low') ||
-    msg.includes('photo_quality_low')
-  ) {
+  } else if (msg.includes('extract_photo_quality_low') || msg.includes('photo_quality_low')) {
     error = zhCopy(
       locale,
       '照片不够清晰完整。请重拍：正脸五官清晰，或掌纹全掌入镜、光线均匀。',
       '照片不夠清晰完整。請重拍：正臉五官清晰，或掌紋全掌入鏡、光線均勻。',
       'Photo too unclear. Retake: sharp full face, or full palm with even light.'
     )
-  } else if (
-    msg.includes('extract_modality_mismatch') ||
-    msg.includes('modality_mismatch')
-  ) {
+  } else if (msg.includes('extract_modality_mismatch') || msg.includes('modality_mismatch')) {
     error = zhCopy(
       locale,
       '这张图不像当前步骤要求的部位（左掌 / 右掌 / 面部）。请按步骤重拍。',
@@ -690,6 +691,36 @@ export function acknowledgeReadingJob(): void {
     error: null,
     progress: 0,
   })
+}
+
+/**
+ * Atomically claim a completed job for navigation (home / paywall / deeplink).
+ * Only the first caller wins — prevents stacking /result three times when
+ * home + paywall + push notification all react to the same `done` state.
+ */
+export function consumeReadingJobDone(): {
+  readingId: string
+  resultPayload: string
+} | null {
+  if (state.status !== 'done' || !state.readingId || !state.resultPayload) return null
+  const readingId = state.readingId
+  const resultPayload = state.resultPayload
+  acknowledgeReadingJob()
+  markReadingOpened(readingId)
+  return { readingId, resultPayload }
+}
+
+/** Short-lived guard so a late push tap doesn't re-open the same report. */
+let lastOpenedReadingId: string | null = null
+let lastOpenedAt = 0
+
+export function markReadingOpened(readingId: string): void {
+  lastOpenedReadingId = readingId
+  lastOpenedAt = Date.now()
+}
+
+export function wasReadingOpenedRecently(readingId: string, withinMs = 45_000): boolean {
+  return lastOpenedReadingId === readingId && Date.now() - lastOpenedAt < withinMs
 }
 
 /**

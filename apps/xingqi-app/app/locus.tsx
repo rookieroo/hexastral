@@ -327,7 +327,9 @@ export default function LocusViewerScreen() {
           paddingHorizontal: spacing.xl,
           paddingBottom: insets.bottom + spacing.md,
           paddingTop: spacing.sm,
+          opacity: sheetOpen ? 0 : 1,
         }}
+        pointerEvents={sheetOpen ? 'none' : 'auto'}
       >
         <Pressable
           onPress={recapture}
@@ -369,20 +371,37 @@ export default function LocusViewerScreen() {
         </Pressable>
       </View>
 
-      <LocusSheet
-        visible={sheetOpen}
-        star={selected}
-        openReportLabel={copy.openReport}
-        teachingLabel={copy.teaching}
-        readingLabel={copy.reading}
-        noReadingHint={copy.noReading}
-        colors={colors}
-        onClose={() => setSheetOpen(false)}
-        onOpenReport={() => {
-          setSheetOpen(false)
-          openChapter()
+      {/* Always mounted while open — star swaps must not remount the shell. */}
+      <View
+        pointerEvents={sheetOpen ? 'auto' : 'none'}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 30,
+          opacity: sheetOpen ? 1 : 0,
         }}
-      />
+      >
+        <LocusSheet
+          visible={sheetOpen}
+          star={selected}
+          openReportLabel={copy.openReport}
+          teachingLabel={copy.teaching}
+          readingLabel={copy.reading}
+          noReadingHint={copy.noReading}
+          colors={colors}
+          onClose={() => {
+            setSheetOpen(false)
+            setSelected(null)
+          }}
+          onOpenReport={() => {
+            setSheetOpen(false)
+            setSelected(null)
+            openChapter()
+          }}
+        />
+      </View>
     </View>
   )
 }

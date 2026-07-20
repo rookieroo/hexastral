@@ -73,8 +73,9 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name='index' />
-            <Stack.Screen name='(onboarding)' />
-            <Stack.Screen name='(app)' />
+            <Stack.Screen name='(onboarding)' options={{ animation: 'fade' }} />
+            {/* none: intro fly-in already lands the mark; avoid a second stack entrance */}
+            <Stack.Screen name='(app)' options={{ animation: 'none' }} />
             <Stack.Screen name='sign-in' />
             <Stack.Screen name='consent' />
             <Stack.Screen name='capture' />

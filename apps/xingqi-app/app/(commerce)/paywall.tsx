@@ -9,12 +9,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { ONESHOT_PRICE_FLOOR_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { purchaseProduct, restorePurchases } from '@/lib/iap'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { getXingqiPushPrefs, setXingqiPushPrefs } from '@/lib/push-preference'
 import { draftReadyForPaywall, getReadingDraft } from '@/lib/reading-draft'
-import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import {
-  acknowledgeReadingJob,
+  consumeReadingJobDone,
   consumeReadingJobError,
   enableReadingCompletionPush,
   getReadingJobState,
@@ -22,8 +22,8 @@ import {
   startReadingJob,
   subscribeReadingJob,
 } from '@/lib/reading-job'
+import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import { readingHasReportBody } from '@/lib/report-chapters'
-import { getXingqiPushPrefs, setXingqiPushPrefs } from '@/lib/push-preference'
 
 type Phase = 'choose' | 'handoff' | 'purchasing'
 
@@ -44,24 +44,23 @@ export default function XingqiPaywallScreen() {
   useEffect(() => {
     return subscribeReadingJob((job) => {
       if (job.status === 'done' && job.readingId && job.resultPayload) {
-        const id = job.readingId
-        const payload = job.resultPayload
+        const claimed = consumeReadingJobDone()
+        if (!claimed) return
         let hasBody = false
         try {
           hasBody = readingHasReportBody(
-            JSON.parse(decodeURIComponent(payload)) as Record<string, unknown>
+            JSON.parse(decodeURIComponent(claimed.resultPayload)) as Record<string, unknown>
           )
         } catch {
           hasBody = false
         }
-        acknowledgeReadingJob()
         if (!hasBody) {
           router.replace('/(app)' as never)
           return
         }
         router.replace({
           pathname: '/result',
-          params: { readingId: id },
+          params: { readingId: claimed.readingId },
         } as never)
         return
       }
@@ -131,7 +130,13 @@ export default function XingqiPaywallScreen() {
     }
     const draft = getReadingDraft()
     if (!draftReadyForPaywall(draft)) {
-      setError(s('请先完成三张照片与生辰', '請先完成三張照片與生辰', 'Complete three photos and birth info first'))
+      setError(
+        s(
+          '请先完成三张照片与生辰',
+          '請先完成三張照片與生辰',
+          'Complete three photos and birth info first'
+        )
+      )
       router.replace('/capture')
       return
     }
@@ -229,7 +234,11 @@ export default function XingqiPaywallScreen() {
               {s('形气解读已开始', '形氣解讀已開始', 'Your reading has started')}
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>
-              {s('完整流程通常需要几分钟（特征提取与解读）。请耐心等待，可先回到首页；完成后列表会更新。', '完整流程通常需要幾分鐘（特徵提取與解讀）。請耐心等待，可先回到首頁；完成後列表會更新。', 'This usually takes a few minutes (feature extract + reading). Please wait — you can return home; the list will update when ready.')}
+              {s(
+                '完整流程通常需要几分钟（特征提取与解读）。请耐心等待，可先回到首页；完成后列表会更新。',
+                '完整流程通常需要幾分鐘（特徵提取與解讀）。請耐心等待，可先回到首頁；完成後列表會更新。',
+                'This usually takes a few minutes (feature extract + reading). Please wait — you can return home; the list will update when ready.'
+              )}
             </Text>
 
             <View
@@ -249,7 +258,11 @@ export default function XingqiPaywallScreen() {
                   {s('完成后通知我', '完成後通知我', 'Notify me when ready')}
                 </Text>
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                  {s('开启系统推送权限，解读完成后提醒', '開啟系統推送權限，解讀完成後提醒', 'Enable push so we can alert you when done')}
+                  {s(
+                    '开启系统推送权限，解读完成后提醒',
+                    '開啟系統推送權限，解讀完成後提醒',
+                    'Enable push so we can alert you when done'
+                  )}
                 </Text>
               </View>
               <Toggle

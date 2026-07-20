@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router'
 import { useEffect } from 'react'
 
 import { PORTFOLIO_TARGET_APP } from './growth-config'
+import { markReadingOpened, wasReadingOpenedRecently } from './reading-job'
 
 type Kind = 'recapture' | 'event' | 'reading_ready' | 'reading_failed' | string
 
@@ -62,12 +63,15 @@ export function useXingqiNotificationDeepLink(): void {
           router.push('/(app)' as never)
           return
         }
+        // Home/paywall already opened this report from job completion — ignore the tap.
+        if (wasReadingOpenedRecently(readingId)) return
         void (async () => {
           try {
             const detail = await fetchReadingById(PORTFOLIO_TARGET_APP, readingId)
             const resultJson = detail.reading?.resultJson
+            markReadingOpened(readingId)
             if (resultJson) {
-              router.push({
+              router.replace({
                 pathname: '/result',
                 params: {
                   readingId,
@@ -79,7 +83,8 @@ export function useXingqiNotificationDeepLink(): void {
           } catch {
             // fall through to readingId-only navigation
           }
-          router.push({
+          markReadingOpened(readingId)
+          router.replace({
             pathname: '/result',
             params: { readingId },
           } as never)

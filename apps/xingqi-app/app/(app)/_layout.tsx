@@ -17,7 +17,8 @@ export default function AppLayout() {
         contentStyle: { backgroundColor: darkTokens.bg },
       }}
     >
-      <Stack.Screen name='index' />
+      {/* none: first mount after intro must not slide in again */}
+      <Stack.Screen name='index' options={{ animation: 'none' }} />
       <Stack.Screen name='archive' />
       <Stack.Screen name='settings' />
       <Stack.Screen name='usage' />

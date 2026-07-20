@@ -38,7 +38,7 @@ import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { captureHrefForPart } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
-  acknowledgeReadingJob,
+  consumeReadingJobDone,
   consumeReadingJobError,
   getReadingJobState,
   type ReadingJobState,
@@ -89,8 +89,10 @@ export default function XingqiHomeScreen() {
 
   useEffect(() => {
     if (job.status === 'done' && job.readingId && job.resultPayload) {
-      const id = job.readingId
-      const payload = job.resultPayload
+      const claimed = consumeReadingJobDone()
+      if (!claimed) return
+      const id = claimed.readingId
+      const payload = claimed.resultPayload
       // Skip auto-open if body is empty — stay on list so user sees the row.
       let hasBody = false
       try {
@@ -99,10 +101,10 @@ export default function XingqiHomeScreen() {
       } catch {
         hasBody = false
       }
-      acknowledgeReadingJob()
       void reload().then(() => {
         if (!hasBody) return
-        router.push({
+        // replace — never stack another /result on home/paywall/deeplink races
+        router.replace({
           pathname: '/result',
           params: { readingId: id },
         } as never)
