@@ -325,7 +325,7 @@ export default function XingqiPaywallScreen() {
                     annual: REVENUECAT_PRODUCT_IDS.annual,
                   }}
                   copy={{
-                    title: 'Xingqi Pro',
+                    title: 'Syel Pro',
                     planLabels: {
                       monthly: s(
                         '月度 · 档案与气机层',

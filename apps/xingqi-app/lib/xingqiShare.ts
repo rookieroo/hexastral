@@ -1,12 +1,12 @@
 /**
- * Xingqi share funnel — brand + install URL for chapter share cards.
- * (Display brand Xingqi; API target stays faceoracle — ADR-0028.)
+ * Syel share funnel — brand + install URL for chapter share cards.
+ * (Display brand Syel; API target stays faceoracle — ADR-0028.)
  */
 
 /** Footer text under the card — human-readable brand path (no scheme). */
 export const XINGQI_BRAND_URL = 'hexastral.com/lp/face'
 
-/** Full URL baked into QR + caption — Universal Link /lp/face → Xingqi. */
+/** Full URL baked into QR + caption — Universal Link /lp/face → Syel. */
 export const XINGQI_INSTALL_URL = 'https://hexastral.com/lp/face'
 
 /**

@@ -14,19 +14,14 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import {
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from 'react-native'
+import { Platform, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
-import { loginFaceIap } from '@/lib/iap'
 import { resolveLocale } from '@/lib/i18n'
+import { loginFaceIap } from '@/lib/iap'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 
 interface GoogleSigninModule {
@@ -89,7 +84,9 @@ export default function SignInScreen() {
     }
     void (async () => {
       try {
-        const mod = (await import('@react-native-google-signin/google-signin')) as GoogleSigninModule
+        const mod = (await import(
+          '@react-native-google-signin/google-signin'
+        )) as GoogleSigninModule
         mod.GoogleSignin.configure({
           iosClientId: iosClientId || undefined,
           webClientId: webClientId || undefined,
@@ -195,7 +192,7 @@ export default function SignInScreen() {
         <XingqiMark size={72} color={colors.accent} />
       </View>
       <Text style={{ color: colors.text, fontSize: 28, fontWeight: '600', textAlign: 'center' }}>
-        Xingqi
+        Syel
       </Text>
       <Text
         style={{

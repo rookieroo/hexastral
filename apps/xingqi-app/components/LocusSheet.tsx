@@ -1,11 +1,10 @@
 /**
- * Locus detail sheet — in-tree bottom panel (NOT Modal).
- * Stable shell: star swaps only rewrite text nodes (no remount / FadeIn).
+ * Locus detail body — rendered inside @gorhom/bottom-sheet.
+ * Stable content: star swaps only rewrite text (no remount animation).
  */
 
 import { useEffect, useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AncientSeal } from '@/components/reading/AncientSeal'
 import { locusGlyphKey } from '@/lib/ancient-glyphs'
@@ -22,8 +21,7 @@ function nearDup(a: string, b: string): boolean {
   return longer.includes(shorter) && shorter.length / longer.length >= 0.8
 }
 
-export function LocusSheet({
-  visible,
+export function LocusSheetContent({
   star,
   openReportLabel,
   teachingLabel,
@@ -32,8 +30,8 @@ export function LocusSheet({
   colors,
   onClose,
   onOpenReport,
+  visible: _visible = true,
 }: {
-  visible: boolean
   star: LocusStar | null
   openReportLabel: string
   teachingLabel: string
@@ -49,16 +47,16 @@ export function LocusSheet({
   }
   onClose: () => void
   onOpenReport: () => void
+  /** @deprecated Parent controls mount; kept for call-site compat */
+  visible?: boolean
 }) {
-  const insets = useSafeAreaInsets()
-  // Keep last star so a brief null never collapses the panel mid-swap.
   const held = useRef<LocusStar | null>(null)
   useEffect(() => {
     if (star) held.current = star
   }, [star])
 
   const display = star ?? held.current
-  if (!visible || !display) return null
+  if (!display) return null
 
   const glyph = locusGlyphKey(display.featureKey)
   const blurb = display.blurb.trim()
@@ -68,29 +66,7 @@ export function LocusSheet({
   const showNote = hasNote && !(hasBlurb && nearDup(note, blurb))
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.bg,
-        borderTopWidth: 0.5,
-        borderTopColor: colors.separator,
-        paddingTop: 14,
-        paddingHorizontal: 24,
-        paddingBottom: insets.bottom + 16,
-        gap: 12,
-        // Absorb short↔long copy swaps so the panel doesn't jump/flash.
-        minHeight: 220 + insets.bottom,
-      }}
-    >
-      <View
-        style={{
-          alignSelf: 'center',
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: colors.separator,
-        }}
-      />
-
+    <View style={{ paddingHorizontal: 24, paddingTop: 4, paddingBottom: 28, gap: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <AncientSeal glyph={glyph} size={48} tile={colors.separator} ink={colors.accent} outline />
         <View style={{ flex: 1, gap: 4 }}>
@@ -191,3 +167,6 @@ export function LocusSheet({
     </View>
   )
 }
+
+/** @deprecated Prefer LocusSheetContent inside BottomSheet */
+export const LocusSheet = LocusSheetContent

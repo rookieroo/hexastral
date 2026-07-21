@@ -4,17 +4,16 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
+import { resolveLocale } from '@/lib/i18n'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
+  type CapturePart,
   draftHasThreePhotos,
   getReadingDraft,
   hydrateReadingDraft,
   patchReadingDraft,
-  type CapturePart,
 } from '@/lib/reading-draft'
-import { persistPeriodPhoto } from '@/lib/period-photos'
-import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
 
 function stepCopy(locale: string, part: CapturePart) {
   const s = (hans: string, hant: string, en: string) =>
@@ -88,6 +87,31 @@ async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> 
   return 'denied'
 }
 
+async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'> {
+  const s = (hans: string, hant: string, en: string) =>
+    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const current = await ImagePicker.getMediaLibraryPermissionsAsync()
+  if (current.granted || current.accessPrivileges === 'limited') return 'ok'
+  const req = await ImagePicker.requestMediaLibraryPermissionsAsync()
+  if (req.granted || req.accessPrivileges === 'limited') return 'ok'
+  Alert.alert(
+    s('需要权限', '需要權限', 'Permission needed'),
+    s(
+      '请在系统设置中允许访问照片，以便从相册选择掌纹/面部。',
+      '請在系統設定中允許存取照片，以便從相簿選擇掌紋／面部。',
+      'Allow Photos in Settings to choose a palm or face image.'
+    ),
+    [
+      { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+      {
+        text: s('打开设置', '打開設定', 'Open Settings'),
+        onPress: () => void Linking.openSettings(),
+      },
+    ]
+  )
+  return 'denied'
+}
+
 export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
@@ -142,9 +166,9 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
           label('保存失败', '儲存失敗', 'Save failed'),
           code === 'photo_encode_failed'
             ? label(
-                '无法将照片转为可用格式。请重新拍摄。',
-                '無法將照片轉為可用格式。請重新拍攝。',
-                'Could not convert the photo. Please retake.'
+                '无法将照片转为 JPEG。请换一张或改用相机拍摄（HEIC 等格式需系统能解码）。',
+                '無法將照片轉為 JPEG。請換一張或改用相機拍攝（HEIC 等格式需系統能解碼）。',
+                'Could not convert to JPEG. Pick another photo or use the camera.'
               )
             : label(
                 '无法写入本机照片。请重试或检查存储空间。',
@@ -159,7 +183,29 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
     [part, locale]
   )
 
-  /** Camera only — album HEIC often bypasses JPEG conversion and breaks VLM. */
+  const confirmReplace = (onConfirm: () => void) => {
+    if (!fileUri) {
+      onConfirm()
+      return
+    }
+    Alert.alert(
+      s('替换照片', '替換照片', 'Replace photo'),
+      s(
+        '替换后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。所选相册图会先转为 JPEG 再保存。',
+        '替換後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。所選相簿圖會先轉為 JPEG 再保存。',
+        'The previous on-device photo will be deleted. Album picks are converted to JPEG before save. Source images are never kept on our servers.'
+      ),
+      [
+        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+        {
+          text: s('替换', '替換', 'Replace'),
+          style: 'destructive',
+          onPress: onConfirm,
+        },
+      ]
+    )
+  }
+
   const shoot = async () => {
     if (busy) return
     const perm = await ensureCameraPermission(locale)
@@ -172,30 +218,33 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         exif: false,
       })
       if (result.canceled || !result.assets[0]?.uri) return
+      // Camera URI still goes through persistPeriodPhoto → JPEG.
       await applyUri(result.assets[0].uri)
     }
 
-    if (fileUri) {
-      Alert.alert(
-        s('重新拍摄', '重新拍攝', 'Retake photo'),
-        s(
-          '重拍后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。',
-          '重拍後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。',
-          'The previous on-device photo will be deleted. Source images are never kept on our servers.'
-        ),
-        [
-          { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
-          {
-            text: s('重拍', '重拍', 'Retake'),
-            style: 'destructive',
-            onPress: () => void runCamera(),
-          },
-        ]
-      )
-      return
+    confirmReplace(() => void runCamera())
+  }
+
+  const pickFromLibrary = async () => {
+    if (busy) return
+    const perm = await ensureLibraryPermission(locale)
+    if (perm !== 'ok') return
+
+    const runPicker = async () => {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        allowsEditing: true,
+        exif: false,
+        // Prefer a decodeable asset; we still force JPEG in persistPeriodPhoto.
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      })
+      if (result.canceled || !result.assets[0]?.uri) return
+      await applyUri(result.assets[0].uri)
     }
 
-    await runCamera()
+    confirmReplace(() => void runPicker())
   }
 
   const onPrimary = () => {
@@ -213,9 +262,9 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   }
 
   const emptyHint = s(
-    '尚未拍摄 · 仅保存在本机',
-    '尚未拍攝 · 僅保存在本機',
-    'No photo yet · kept on this device only'
+    '尚未添加 · 拍照或从相册选择 · 仅保存在本机',
+    '尚未新增 · 拍照或從相簿選擇 · 僅保存在本機',
+    'No photo yet · camera or library · on this device only'
   )
 
   return (
@@ -266,21 +315,42 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         )}
       </Text>
 
-      <Pressable
-        onPress={() => void shoot()}
-        disabled={busy}
-        style={{
-          borderWidth: 0.5,
-          borderColor: colors.separator,
-          padding: 14,
-          alignItems: 'center',
-          opacity: busy ? 0.5 : 1,
-        }}
-      >
-        <Text style={{ color: colors.text }}>
-          {fileUri ? s('重新拍摄', '重新拍攝', 'Retake') : s('拍照', '拍照', 'Camera')}
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Pressable
+          onPress={() => void shoot()}
+          disabled={busy}
+          style={{
+            flex: 1,
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+            padding: 14,
+            alignItems: 'center',
+            opacity: busy ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ color: colors.text }}>
+            {fileUri ? s('重新拍摄', '重新拍攝', 'Retake') : s('拍照', '拍照', 'Camera')}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => void pickFromLibrary()}
+          disabled={busy}
+          style={{
+            flex: 1,
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+            padding: 14,
+            alignItems: 'center',
+            opacity: busy ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ color: colors.text }}>
+            {fileUri
+              ? s('从相册替换', '從相簿替換', 'Replace from library')
+              : s('相册', '相簿', 'Library')}
+          </Text>
+        </Pressable>
+      </View>
 
       <Button variant='primary' onPress={onPrimary} disabled={!fileUri || busy}>
         {slotMode

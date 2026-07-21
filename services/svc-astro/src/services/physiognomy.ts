@@ -276,19 +276,28 @@ const PALM_LANDMARK_KEYS = [
  * camera, fingers toward top of image.
  */
 const PALM_POINT_PHRASES: Record<(typeof PALM_LANDMARK_KEYS)[number], string> = {
-  handShape: 'the center of the open palm surface (not the table background)',
-  lifeLine: 'the life line palm crease curving around the thumb base on the palm',
-  headLine: 'the head line palm crease across the middle of the palm (not a finger)',
-  heartLine: 'the heart line palm crease just below the base of the fingers on the palm',
-  fateLine: 'the fate line palm crease running vertically through the center of the palm',
-  mountJupiter: 'the fleshy mount at the base of the index finger on the palm side',
-  mountSaturn: 'the fleshy mount at the base of the middle finger on the palm side',
-  mountApollo: 'the fleshy mount at the base of the ring finger on the palm side',
-  mountMercury: 'the fleshy mount at the base of the little finger on the palm side',
-  mountVenus: 'the thenar eminence at the base of the thumb on the palm',
-  mountMoon: 'the hypothenar eminence along the outer lower edge of the palm',
-  mountMars: 'the plain of Mars in the center of the palm between thumb and little finger',
-  specialMarks: 'an unusual palm crease mark or island on the palm surface',
+  handShape:
+    'center of the palm pad only (below the fingers, above the wrist) — not fingertips, not table',
+  lifeLine:
+    'midpoint of the life-line crease curving around the thumb base ON THE PALM — not on the thumb tip',
+  headLine:
+    'midpoint of the head-line crease across the middle of the palm surface — not a finger joint',
+  heartLine:
+    'midpoint of the heart-line crease on the palm just BELOW the finger knuckles (MCP) — never on a fingertip',
+  fateLine:
+    'midpoint of the vertical fate-line crease in the center of the palm pad — not toward the fingers',
+  mountJupiter:
+    'fleshy mount pad at the BASE of the index finger ON THE PALM below the knuckle — not the fingertip',
+  mountSaturn:
+    'fleshy mount pad at the BASE of the middle finger ON THE PALM below the knuckle — not the fingertip',
+  mountApollo:
+    'fleshy mount pad at the BASE of the ring finger ON THE PALM below the knuckle — not the fingertip',
+  mountMercury:
+    'fleshy mount pad at the BASE of the little finger ON THE PALM below the knuckle — not the fingertip',
+  mountVenus: 'thenar eminence (thumb pad) on the palm near the thumb base — not the thumb tip',
+  mountMoon: 'hypothenar eminence along the outer lower palm edge — not a finger',
+  mountMars: 'plain of Mars in the center of the palm between thumb and little finger',
+  specialMarks: 'an unusual crease island or cross ON THE PALM SURFACE — not on a fingernail',
 }
 
 const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家（框架：主纹 + 丘位 + 纹记），同时具备计算机视觉分析能力。
@@ -386,21 +395,17 @@ function sanitizePalmLandmarks(
     y: Math.min(1, Math.max(0, p.y)),
   })
 
-  const plausible = (
-    key: (typeof PALM_LANDMARK_KEYS)[number],
-    pt: LandmarkPoint
-  ): boolean => {
+  const plausible = (key: (typeof PALM_LANDMARK_KEYS)[number], pt: LandmarkPoint): boolean => {
     if (pt.x < 0.03 || pt.x > 0.97 || pt.y < 0.03 || pt.y > 0.97) return false
-    if (key.startsWith('mount') && pt.y < 0.14) return false
+    // Finger band — mounts/lines must sit on the palm pad, not fingertips.
+    if (key.startsWith('mount') && pt.y < 0.18) return false
     if (
-      (key === 'lifeLine' ||
-        key === 'headLine' ||
-        key === 'fateLine' ||
-        key === 'heartLine') &&
-      pt.y < 0.07
+      (key === 'lifeLine' || key === 'headLine' || key === 'fateLine' || key === 'heartLine') &&
+      pt.y < 0.16
     ) {
       return false
     }
+    if (key === 'handShape' && pt.y < 0.35) return false
     const cluster = Object.values(lm).filter((p): p is LandmarkPoint => Boolean(p))
     if (cluster.length >= 4) {
       const xs = cluster.map((p) => p.x).sort((a, b) => a - b)
@@ -408,6 +413,8 @@ function sanitizePalmLandmarks(
       const medX = xs[Math.floor(xs.length / 2)] ?? 0.5
       const medY = ys[Math.floor(ys.length / 2)] ?? 0.5
       if (Math.abs(pt.x - medX) > 0.3 || Math.abs(pt.y - medY) > 0.34) return false
+      const q1 = ys[Math.max(0, Math.floor(ys.length * 0.25))] ?? medY
+      if (pt.y < q1 - 0.12 && key !== 'mountJupiter' && key !== 'mountSaturn') return false
     }
     return true
   }

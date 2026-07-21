@@ -317,7 +317,7 @@ export default function XingqiMakeIfScreen() {
                   <Pressable
                     onPress={() => {
                       void Share.share({
-                        message: `${selected.label}\n${selected.summary || selected.outcome}\n— Xingqi What-If`,
+                        message: `${selected.label}\n${selected.summary || selected.outcome}\n— Syel What-If`,
                       })
                     }}
                   >

@@ -279,7 +279,7 @@ export default function XingqiTimelineScreen() {
               onPress={() => {
                 const day = payload.pillars.day
                 void Share.share({
-                  message: `${t.title} · ${day.stem}${day.branch} · Xingqi`,
+                  message: `${t.title} · ${day.stem}${day.branch} · Syel`,
                 })
               }}
               hitSlop={12}

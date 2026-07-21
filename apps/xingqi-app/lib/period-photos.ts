@@ -54,8 +54,8 @@ async function deletePartFiles(part: CapturePart): Promise<void> {
  * Copy a picker/camera URI into the period sandbox as JPEG and return the durable file URI.
  * Overwrites any previous file for this part.
  *
- * Never store HEIC/HEIF as `.jpg` — Gemini/VLM only accepts JPEG/PNG bytes. If we cannot
- * decode via ImageManipulator, fail loud so the capture UI can retry (camera).
+ * Always re-encode via ImageManipulator → JPEG (never store HEIC/PH asset bytes as-is).
+ * Gemini/VLM only accepts JPEG/PNG. If decode fails, throw photo_encode_failed.
  */
 export async function persistPeriodPhoto(part: CapturePart, sourceUri: string): Promise<string> {
   await ensureDir()
@@ -132,7 +132,9 @@ export async function periodPhotoMap(): Promise<Partial<Record<CapturePart, stri
   return out
 }
 
-export function captureHrefForPart(part: CapturePart): '/capture' | '/capture/right' | '/capture/face' {
+export function captureHrefForPart(
+  part: CapturePart
+): '/capture' | '/capture/right' | '/capture/face' {
   if (part === 'palm_r') return '/capture/right'
   if (part === 'face') return '/capture/face'
   return '/capture'

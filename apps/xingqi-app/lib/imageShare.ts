@@ -43,7 +43,7 @@ async function shareCapturedUri(uri: string, caption?: string): Promise<void> {
     // Android RN Share is unreliable for file URIs; expo-sharing handles the
     // content:// grant. Caption support is spotty there, so the baked-in brand
     // (+ QR) carries the funnel.
-    await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Xingqi' })
+    await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Syel' })
     return
   }
   await Share.share({ url: uri, message: caption })

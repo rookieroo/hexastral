@@ -9,10 +9,7 @@
 
 import type { PortfolioReadingItem } from '@zhop/portfolio-client'
 import { locusBlurbForLocale, locusTitleForLocale } from '@/lib/ancient-glyphs'
-import {
-  PALM_ALWAYS_KEYS,
-  resolvePalmPoints,
-} from '@/lib/palm-layout'
+import { PALM_ALWAYS_KEYS, resolvePalmPoints } from '@/lib/palm-layout'
 
 export type LandmarkPoint = { x: number; y: number }
 
@@ -217,7 +214,9 @@ export function locusExplorerFromResultJson(item: PortfolioReadingItem): LocusEx
   const fromLoci = buildIndexFromLoci(output.loci)
   const fromChapters = buildIndexFromChapters(output)
   const fromStored =
-    output.locusIndex != null ? parseLocusIndex(output.locusIndex) : { face: [], palm_l: [], palm_r: [] }
+    output.locusIndex != null
+      ? parseLocusIndex(output.locusIndex)
+      : { face: [], palm_l: [], palm_r: [] }
 
   // Prefer first-class loci[] → stored locusIndex → chapter citations.
   let locusIndex = fromLoci
@@ -350,7 +349,7 @@ function palmStars(
   const cites = part === 'palm_l' ? data.locusIndex.palm_l : data.locusIndex.palm_r
   const keys = [...PALM_ALWAYS_KEYS]
   const lm = landmarksForPart(data.landmarks, part)
-  const points = resolvePalmPoints(part, keys, lm)
+  const { points } = resolvePalmPoints(part, keys, lm)
 
   return keys.map((key) => {
     const cite = findCitationForFeature(cites, key, locale)
@@ -367,6 +366,18 @@ function palmStars(
       fromReading: note.length > 0,
     }
   })
+}
+
+/** __DEV__ overlay: photo vs fallback (canon/interp). */
+export function palmPointDebugSources(
+  data: LocusExplorerData,
+  part: 'palm_l' | 'palm_r'
+): Record<string, 'photo' | 'canon'> {
+  const lm = landmarksForPart(data.landmarks, part)
+  const { sources } = resolvePalmPoints(part, PALM_ALWAYS_KEYS, lm)
+  return Object.fromEntries(
+    Object.entries(sources).map(([k, v]) => [k, v === 'photo' ? 'photo' : 'canon'])
+  )
 }
 
 /**

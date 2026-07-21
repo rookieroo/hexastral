@@ -172,13 +172,15 @@ export function isPlausiblePalmLandmark(
 ): boolean {
   if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return false
   if (pt.x < 0.03 || pt.x > 0.97 || pt.y < 0.03 || pt.y > 0.97) return false
-  if (key.startsWith('mount') && pt.y < 0.14) return false
+  // Finger band — mounts/lines should sit on the palm pad, not fingertips.
+  if (key.startsWith('mount') && pt.y < 0.18) return false
   if (
     (key === 'lifeLine' || key === 'headLine' || key === 'fateLine' || key === 'heartLine') &&
-    pt.y < 0.07
+    pt.y < 0.16
   ) {
     return false
   }
+  if (key === 'handShape' && pt.y < 0.35) return false
 
   const cluster = Object.values(peers).filter((p): p is Point => {
     if (!p) return false
@@ -190,30 +192,78 @@ export function isPlausiblePalmLandmark(
     const medX = xs[Math.floor(xs.length / 2)] ?? 0.5
     const medY = ys[Math.floor(ys.length / 2)] ?? 0.5
     if (Math.abs(pt.x - medX) > 0.3 || Math.abs(pt.y - medY) > 0.34) return false
+    // Reject points well above the peer palm cloud (classic fingertip miss).
+    const q1 = ys[Math.max(0, Math.floor(ys.length * 0.25))] ?? medY
+    if (pt.y < q1 - 0.12 && key !== 'mountJupiter' && key !== 'mountSaturn') return false
   }
   return true
 }
 
+export type PalmPointResolve = {
+  points: Record<PalmCanonKey, Point>
+  sources: Record<PalmCanonKey, 'photo' | 'canon' | 'interp'>
+}
+
 /**
- * Resolve palm star positions: photo landmarks win per key; missing keys use
- * canonical anatomical slots (legacy / partial extract fallback).
+ * Resolve palm star positions: photo landmarks win per key; missing keys
+ * interpolate relative to the detected mount centroid when coverage is thin,
+ * otherwise fall back to canonical anatomical slots.
  */
 export function resolvePalmPoints(
   part: 'palm_l' | 'palm_r',
   keys: readonly PalmCanonKey[],
   detected?: Partial<Record<string, Point>>
-): Record<PalmCanonKey, Point> {
+): PalmPointResolve {
   const canon = PALM_CANONICAL[part]
-  const out = {} as Record<PalmCanonKey, Point>
+  const points = {} as Record<PalmCanonKey, Point>
+  const sources = {} as Record<PalmCanonKey, 'photo' | 'canon' | 'interp'>
+  const photo: Partial<Record<PalmCanonKey, Point>> = {}
+
   for (const key of keys) {
     const d = detected?.[key]
     if (d && isPlausiblePalmLandmark(key, d, detected ?? {})) {
-      out[key] = clampPoint(d)
+      photo[key] = clampPoint(d)
+    }
+  }
+
+  const photoCount = Object.keys(photo).length
+  const useInterp = photoCount >= 3 && photoCount < keys.length
+
+  let photoCx = 0.5
+  let photoCy = 0.5
+  let canonCx = 0.5
+  let canonCy = 0.5
+  if (useInterp) {
+    const pxs = Object.values(photo).map((p) => p.x)
+    const pys = Object.values(photo).map((p) => p.y)
+    photoCx = pxs.reduce((a, b) => a + b, 0) / pxs.length
+    photoCy = pys.reduce((a, b) => a + b, 0) / pys.length
+    const cks = Object.keys(photo) as PalmCanonKey[]
+    const cxs = cks.map((k) => canon[k].x)
+    const cys = cks.map((k) => canon[k].y)
+    canonCx = cxs.reduce((a, b) => a + b, 0) / cxs.length
+    canonCy = cys.reduce((a, b) => a + b, 0) / cys.length
+  }
+
+  for (const key of keys) {
+    const hit = photo[key]
+    if (hit) {
+      points[key] = hit
+      sources[key] = 'photo'
       continue
     }
-    out[key] = { x: canon[key].x, y: canon[key].y }
+    if (useInterp) {
+      const dx = canon[key].x - canonCx
+      const dy = canon[key].y - canonCy
+      points[key] = clampPoint({ x: photoCx + dx, y: photoCy + dy })
+      sources[key] = 'interp'
+      continue
+    }
+    points[key] = { x: canon[key].x, y: canon[key].y }
+    sources[key] = 'canon'
   }
-  return out
+
+  return { points, sources }
 }
 
 // ── 流年 age-scale geometry (schematic; not a trace of the photographed line) ─

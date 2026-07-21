@@ -113,7 +113,7 @@ export default function IntroScreen() {
               letterSpacing: 4,
             }}
           >
-            Xingqi
+            Syel
           </Text>
         </Animated.View>
 

@@ -1,15 +1,15 @@
-# Xingqi — product spine
+# Syel — product spine
 
 Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028](../../decisions/0028-face-oracle-dual-track.md).
 
 **Shell:** Yuel-quality chrome (Sign-In / BirthForm / Settings / report density), assembled greenfield — not a dirty kindred rsync.  
-**Display brand:** Xingqi · `com.hexastral.xingqi` · scheme `xingqi`.  
+**Display brand:** Syel (SEE-el) · `com.hexastral.xingqi` · scheme `xingqi`. Method layer may still say 形气 / 相.  
 **API / RC opaque ids:** portfolio target `faceoracle`, SKUs `faceoracle_*` (unchanged server catalog).
 
 **i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).  
 `zh-Hant` is a **separate copy track** (shell, alerts, chapter chrome, term glosses, push) — never substitute Simplified for Traditional. Reading body LLM already forces Traditional via `faceoracle-locale.ts`.
 
-**Positioning:** Xingqi is **folk 算命 practice in app form** — face + palms **corroborated with** BaZi (日主·大运·流年), the same combined toolkit a traditional reader uses. Not a photo-chat toy; not a Yuel-style personal 命书 (BaZi-forward chapters); not a Yuun-style personal 黄历 (calendar-forward). Oneshot = sealed five-chapter brief where **形与命互证** (loci[] · three axes · computed DaYun/LiuNian). Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture). VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
+**Positioning:** Syel is **folk 算命 practice in app form** — face + palms **corroborated with** BaZi (日主·大运·流年), the same combined toolkit a traditional reader uses. Not a photo-chat toy; not a Yuel-style personal 命书 (BaZi-forward chapters); not a Yuun-style personal 黄历 (calendar-forward). Oneshot = sealed five-chapter brief where **形与命互证** (loci[] · three axes · computed DaYun/LiuNian). Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture). VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
 
 **Life axes (equal weight):** career/colleagues · love/intimacy · health/pace.  
 Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).  
@@ -42,7 +42,7 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 | Life axis | — | Yuun-parity git-graph (`/timeline`) via `/api/physiognomy/cycle/*` |
 | What-if | — | Yuun-parity forks (`/makeif`) via same facade |
 
-**Do not** call Yuun `/api/auspice/*` from Xingqi. Shared cycle compute only behind faceoracle-owned routes + `faceoracle_pro` server gate.
+**Do not** call Yuun `/api/auspice/*` from Syel. Shared cycle compute only behind faceoracle-owned routes + `faceoracle_pro` server gate.
 
 ## Report architecture
 
@@ -56,10 +56,10 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 - **Health + TCM lexicon:** 中医是词典与隐喻层，不是诊断引擎. Health may borrow classical imagery (气色 ↔ 脏腑/气血之**象**) for 警示 and pacing — cultural对照 / self-observation, not diagnosis, not prescription, not a substitute for clinicians.
 - **Forbidden health UI:** organ dashboards, health scores, “you have X disease”, medication / herbal dosing, acupoint treatment plans.
 - **Field data ownership (anti cross-chapter copy):** the 本流年 sentence lives in `horizon.reef` only; 全人生 大运带 risk → `natal.reef`; 形/气色 risk → `face.reef`; 先天/后天掌张力 → `palms.reef`; action steps → `horizon.remedy`. **Prefer null over repeat**.
-- **Two-pass reading (queue job):** Pass 1 = curated **12–16** deep `loci[]` only; Pass 2 = five chapters + soft events weaving FixedLoci. Density gaps are **log-only** (no structure-retry checklist). Soft observations unchanged.
+- **Reading job (Pass 0 → 1 → 2):** **Pass 0** (code) ranks clear VLM keys into **`SuggestedLoci` top ~20** (unclear excluded; mount tension / island-or-cross text / dayun↔mount / palm-side weights). **Pass 1** writes **16–20** deep `loci[]` from that shortlist (hard floors: face≥5, each palm≥5, CAUTION≥2 + one retry; prefer omit over fabricate). **Pass 2** = five chapters + soft events weaving FixedLoci. Soft observations for secondary gaps remain log-only.
 - **Client display safety net:** `adaptReadingChapters` nulls out `reef`/`remedy`/`counterpoint` that merely repeat an earlier chapter (keeps first).
 - **描点 → 章节打通 (loci-first):** `loci[]` = `{featureKey, part, locus, reading}` SSOT. Sheet note = `loci[].reading`. **Never** paste raw VLM feature text.
-- **Landmarks:** **face + palm** coords from Moondream 3.1 `point` (+ VLM midpoint fallback; clustered palm midpoints dropped). Client prefers `landmarksJson`; canonical `palm-layout.ts` only fills missing keys / legacy empty rows (`FACEORACLE_VLM_SCHEMA_VERSION=xingqi-vlm-v9`).
+- **Landmarks:** **face + palm** coords from Moondream 3.1 `point` (+ VLM midpoint fallback; clustered / fingertip palm points dropped). Client prefers `landmarksJson`; missing keys interpolate relative to detected mounts when coverage is thin — avoid absolute canonical mix that misaligns with the photo (`FACEORACLE_VLM_SCHEMA_VERSION=xingqi-vlm-v9`).
 - **Close UX:** top-right X on result (no bottom Done).
 - **Capture:** HD full face + full palms; blurry/cropped → weak VLM → thin report.
 
@@ -82,7 +82,7 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 | VLM extract (coords) | Face + palm: CF **Moondream 3.1** `point` (+ feature-VLM midpoint fallback; palm cluster drop) |
 | Yuun explain / Yuel chapters | Same router, usually **`standard`** (parallel call shape) |
 
-Xingqi uses separate Pass 1/2 budgets so curated loci are not starved by five-chapter JSON.
+Syel uses separate Pass 1/2 budgets so curated loci are not starved by five-chapter JSON.
 
 ## Naming
 

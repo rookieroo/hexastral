@@ -35,6 +35,8 @@ export interface FaceOraclePromptParams {
   outputKind: FaceOracleOutputKind
   previousFeaturesJson?: string
   partialUpdate?: Array<'face' | 'palm_l' | 'palm_r'>
+  /** Pass 0 shortlist block (already formatted). */
+  suggestedLociBlock?: string
 }
 
 const LOCI_CRAFT = [
@@ -82,18 +84,23 @@ function sharedInputBlocks(params: FaceOraclePromptParams): string[] {
 /** Pass 1: curated deep loci only. */
 export function buildFaceOracleLociPrompt(params: FaceOraclePromptParams): string {
   return [
-    'Role: Folk East-Asian 算命 interpreter — loci micro-judgments only (Xingqi Pass 1).',
+    'Role: Folk East-Asian 算命 interpreter — loci micro-judgments only (Syel Pass 1).',
     LOCI_CRAFT,
     `OutputKind: ${params.outputKind}`,
     `HorizonMonths: ${params.horizonMonths} (context for windows; do not emit chapters).`,
     ...sharedInputBlocks(params),
     '',
+    params.suggestedLociBlock?.trim() ? params.suggestedLociBlock.trim() : '',
+    params.suggestedLociBlock?.trim() ? '' : '',
     'Return STRICT JSON:',
     '{ "loci": Array<{ "featureKey": string, "part": "face"|"palm_l"|"palm_r", "locus": string, "reading": string }> }',
     'Output ONLY loci — no chapters, no events, no flat keys.',
-    'FULL coverage is NOT required — curate 16–20 deep readings. Prefer omit over fabricate.',
+    'FULL coverage is NOT required — curate 16–20 deep readings (face≥5, each palm≥5). Prefer omit over fabricate.',
+    'Include ≥2 CAUTION-toned readings (tension / risk / 留意). Cite SuggestedLoci reason tags when present.',
     'NEVER paste raw VLM feature text as reading.',
-  ].join('\n')
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n')
 }
 
 /** Pass 2: chapters + events from fixed loci. */
@@ -102,7 +109,7 @@ export function buildFaceOracleChaptersPrompt(
   lociJson: string
 ): string {
   const lines = [
-    'Role: Folk East-Asian 算命 interpreter — report chapters from fixed loci (Xingqi Pass 2).',
+    'Role: Folk East-Asian 算命 interpreter — report chapters from fixed loci (Syel Pass 2).',
     CHAPTERS_CRAFT,
     CHAPTER_SPEC,
     `OutputKind: ${params.outputKind}`,
@@ -199,7 +206,9 @@ function parseLociFromParsed(parsed: Record<string, unknown>): LocusLike[] {
 }
 
 function locusReading(l: LocusLike): string {
-  return (typeof l.reading === 'string' ? l.reading : typeof l.note === 'string' ? l.note : '').trim()
+  return (
+    typeof l.reading === 'string' ? l.reading : typeof l.note === 'string' ? l.note : ''
+  ).trim()
 }
 
 function locusFeatureKey(l: LocusLike): string {
@@ -246,7 +255,9 @@ export function faceoracleDensityGaps(
   if (events.length > 0 && axes.size < 2) gaps.push('events.axis<2')
 
   // ── Loci: curated depth path — only flag empty/part-enum, not coverage floors ─
-  const faceLoci = loci.filter((l) => locusPart(l) === 'face' && locusFeatureKey(l) && locusReading(l))
+  const faceLoci = loci.filter(
+    (l) => locusPart(l) === 'face' && locusFeatureKey(l) && locusReading(l)
+  )
   const palmLoci = loci.filter(
     (l) =>
       (locusPart(l) === 'palm_l' || locusPart(l) === 'palm_r') &&
@@ -263,7 +274,9 @@ export function faceoracleDensityGaps(
     }
   } else {
     const citeCount = (
-      c: { citations?: Array<{ locus: string; featureKey?: string; part?: string; note: string }> } | undefined
+      c:
+        | { citations?: Array<{ locus: string; featureKey?: string; part?: string; note: string }> }
+        | undefined
     ) => c?.citations?.filter((x) => x.locus.trim().length > 0 && x.featureKey?.trim()).length ?? 0
     const faceCh = byKind.get('face')
     const palmsCh = byKind.get('palms')
@@ -476,9 +489,7 @@ export function faceoracleSoftObservations(
   }
 
   const faceKeysFromLoci = new Set(
-    loci
-      .filter((l) => locusPart(l) === 'face' && locusFeatureKey(l))
-      .map((l) => locusFeatureKey(l))
+    loci.filter((l) => locusPart(l) === 'face' && locusFeatureKey(l)).map((l) => locusFeatureKey(l))
   )
   const palmKeysFromLoci = new Set(
     loci
@@ -616,7 +627,9 @@ export function faceoracleCautionObservations(
           : (p: string) => p === 'palm_l' || p === 'palm_r'
       notes = loci
         .filter((l) => partFilter(typeof l.part === 'string' ? l.part : ''))
-        .map((l) => (typeof l.reading === 'string' ? l.reading : typeof l.note === 'string' ? l.note : ''))
+        .map((l) =>
+          typeof l.reading === 'string' ? l.reading : typeof l.note === 'string' ? l.note : ''
+        )
         .join('')
     } else {
       const ch = chapters.find((c) => c.kind === kind)

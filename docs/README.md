@@ -73,7 +73,7 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 |---|---|
 | [apps/coincast/README.md](./apps/coincast/README.md) | MVP scope, positioning, TODO |
 
-### Xingqi (`apps/xingqi-app`) — post-wave
+### Syel (`apps/xingqi-app`) — post-wave
 
 | Doc | Purpose |
 |---|---|
@@ -109,6 +109,6 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [0025](./decisions/0025-kindred-relationship-push.md) | Yuel relationship push |
 | [0026](./decisions/0026-timeline-makeif-altitude-split.md) | Yuun make-if altitude |
 | [0027](./decisions/0027-bond-credit-and-locale-economy.md) | Yuel bond credits |
-| [0028](./decisions/0028-face-oracle-dual-track.md) | Xingqi dual-track + three-source funnel (API `faceoracle`) |
+| [0028](./decisions/0028-face-oracle-dual-track.md) | Syel dual-track + three-source funnel (display Syel; API `faceoracle`) |
 
 Superseded ADRs: [archive/decisions/](./archive/decisions/)

@@ -81,8 +81,8 @@ export function t(locale: Locale, key: TranslationKey): string {
 export function privacyPolicyUrl(locale: Locale): string {
   const segment =
     locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
-  if (segment === 'en') return 'https://www.hexastral.com/en/privacy/xingqi'
-  return `https://www.hexastral.com/${segment}/privacy/xingqi`
+  if (segment === 'en') return 'https://www.hexastral.com/en/privacy/syel'
+  return `https://www.hexastral.com/${segment}/privacy/syel`
 }
 
 export function useI18n() {

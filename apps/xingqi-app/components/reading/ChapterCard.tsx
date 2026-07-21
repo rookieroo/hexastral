@@ -288,7 +288,7 @@ export function ChapterCard({
                 textTransform: 'uppercase',
               }}
             >
-              {s('分享 · Xingqi', '分享 · Xingqi', 'Share · Xingqi')}
+              {s('分享 · Syel', '分享 · Syel', 'Share · Syel')}
             </Text>
           </Pressable>
         ) : (

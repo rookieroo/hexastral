@@ -354,7 +354,7 @@ export default function XingqiHomeScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <XingqiMark size={28} color={colors.accent} />
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>Xingqi</Text>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>Syel</Text>
           </View>
           <Pressable
             onPress={openSettings}

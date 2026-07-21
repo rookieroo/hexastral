@@ -1,26 +1,36 @@
 /**
- * /locus — fullscreen form-map viewer. Big square stage + pinch/pan zoom +
- * tappable light spots (LocusStarLayer/LocusSheet). Part chips switch 左掌/右掌/面.
- * Replaces the cramped in-card tab explorer so zoom is comfortable.
+ * /locus — fullscreen form-map viewer. Pinch/pan zoom + tappable light spots.
+ * Detail uses @gorhom/bottom-sheet (snap + drag dismiss).
  */
 
+import BottomSheet, {
+  type BottomSheetBackdropProps,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet'
 import { useTheme } from '@zhop/core-ui'
 import { fetchReadingById } from '@zhop/portfolio-client'
 import * as Haptics from 'expo-haptics'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { X } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Image, Pressable, Text, useWindowDimensions, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { locusExplorerCopy } from '@/components/HomeLocusExplorer'
-import { LocusSheet } from '@/components/LocusSheet'
+import { LocusSheetContent } from '@/components/LocusSheet'
 import { LocusStarLayer } from '@/components/LocusStarLayer'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
+import { usePhotoImageSize } from '@/lib/image-stage-layout'
 import { locusViewerCopy } from '@/lib/living-copy'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import {
@@ -28,17 +38,35 @@ import {
   type LocusPart,
   type LocusStar,
   locusExplorerFromResultJson,
+  palmPointDebugSources,
   starsForPart,
 } from '@/lib/locus-data'
 import { captureHrefForPart } from '@/lib/period-photos'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
-import { usePhotoImageSize } from '@/lib/image-stage-layout'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 4
 
 function isLocusPart(v: string | undefined): v is LocusPart {
   return v === 'palm_l' || v === 'palm_r' || v === 'face'
+}
+
+/**
+ * Dim only — never capture hits. Stock BottomSheetBackdrop flips
+ * pointerEvents to `auto` once the sheet opens, which blocks star swaps
+ * even with enableTouchThrough.
+ */
+function LocusPassThroughBackdrop({ animatedIndex, style }: BottomSheetBackdropProps) {
+  const { colors } = useTheme()
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(animatedIndex.value, [-1, 0], [0, 1], Extrapolation.CLAMP),
+  }))
+  return (
+    <Animated.View
+      pointerEvents='none'
+      style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, style, animatedStyle]}
+    />
+  )
 }
 
 export default function LocusViewerScreen() {
@@ -63,7 +91,10 @@ export default function LocusViewerScreen() {
   const [selected, setSelected] = useState<LocusStar | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const stageSide = useMemo(() => Math.min(width, Math.max(240, height * 0.62)), [width, height])
+  const sheetRef = useRef<BottomSheet>(null)
+  const snapPoints = useMemo(() => ['32%', '52%', '74%'], [])
+
+  const stageSide = useMemo(() => Math.min(width, Math.max(240, height * 0.58)), [width, height])
 
   const scale = useSharedValue(1)
   const savedScale = useSharedValue(1)
@@ -118,9 +149,21 @@ export default function LocusViewerScreen() {
     resetZoom()
     setSheetOpen(false)
     setSelected(null)
+    sheetRef.current?.close()
   }, [part, resetZoom])
 
+  // Do not re-snap on every render while open — star swaps only update `selected`.
+  useEffect(() => {
+    if (!sheetOpen) {
+      sheetRef.current?.close()
+    }
+  }, [sheetOpen])
+
   const stars = useMemo(() => (data ? starsForPart(data, part) : []), [data, part])
+  const debugSources = useMemo(() => {
+    if (!__DEV__ || !data || (part !== 'palm_l' && part !== 'palm_r')) return null
+    return palmPointDebugSources(data, part)
+  }, [data, part])
 
   const selectPart = useCallback(
     async (next: LocusPart) => {
@@ -131,10 +174,23 @@ export default function LocusViewerScreen() {
     [part]
   )
 
+  const sheetOpenRef = useRef(false)
+  sheetOpenRef.current = sheetOpen
+
   const openStar = useCallback(async (star: LocusStar) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelected(star)
-    setSheetOpen(true)
+    // Keep sheet open on star swap — only snap open if closed.
+    if (!sheetOpenRef.current) {
+      setSheetOpen(true)
+      sheetRef.current?.snapToIndex(0)
+    }
+  }, [])
+
+  const closeSheet = useCallback(() => {
+    setSheetOpen(false)
+    setSelected(null)
+    sheetRef.current?.close()
   }, [])
 
   const pinch = Gesture.Pinch()
@@ -285,6 +341,7 @@ export default function LocusViewerScreen() {
                     imageSize={photoSize}
                     accent={colors.accent}
                     selectedKey={sheetOpen ? selected?.featureKey : null}
+                    debugSources={debugSources}
                     onSelect={(star) => void openStar(star)}
                   />
                 ) : null}
@@ -375,37 +432,35 @@ export default function LocusViewerScreen() {
         </Pressable>
       </View>
 
-      {/* Always mounted while open — star swaps must not remount the shell. */}
-      <View
-        pointerEvents={sheetOpen ? 'auto' : 'none'}
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 30,
-          opacity: sheetOpen ? 1 : 0,
-        }}
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        enableDynamicSizing={false}
+        onClose={closeSheet}
+        backdropComponent={LocusPassThroughBackdrop}
+        backgroundStyle={{ backgroundColor: colors.bg }}
+        handleIndicatorStyle={{ backgroundColor: colors.separator, width: 36 }}
+        style={{ zIndex: 40 }}
+        containerStyle={{ pointerEvents: 'box-none' }}
       >
-        <LocusSheet
-          visible={sheetOpen}
-          star={selected}
-          openReportLabel={copy.openReport}
-          teachingLabel={copy.teaching}
-          readingLabel={copy.reading}
-          noReadingHint={copy.noReading}
-          colors={colors}
-          onClose={() => {
-            setSheetOpen(false)
-            setSelected(null)
-          }}
-          onOpenReport={() => {
-            setSheetOpen(false)
-            setSelected(null)
-            openChapter()
-          }}
-        />
-      </View>
+        <BottomSheetScrollView>
+          <LocusSheetContent
+            star={selected}
+            openReportLabel={copy.openReport}
+            teachingLabel={copy.teaching}
+            readingLabel={copy.reading}
+            noReadingHint={copy.noReading}
+            colors={colors}
+            onClose={closeSheet}
+            onOpenReport={() => {
+              closeSheet()
+              openChapter()
+            }}
+          />
+        </BottomSheetScrollView>
+      </BottomSheet>
     </View>
   )
 }

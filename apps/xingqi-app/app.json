@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Xingqi",
+    "name": "Syel",
     "slug": "xingqi",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -19,8 +19,8 @@
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Xingqi uses the camera to capture left palm, right palm, and face photos for readings.",
-        "NSPhotoLibraryUsageDescription": "Xingqi accesses your photo library when you choose existing palm or face photos.",
+        "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
+        "NSPhotoLibraryUsageDescription": "Syel accesses your photo library when you choose existing palm or face photos.",
         "UIBackgroundModes": ["remote-notification"],
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -84,7 +84,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Xingqi uses the camera to capture left palm, right palm, and face photos for readings."
+          "cameraPermission": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
+          "photosPermission": "Syel accesses your photo library when you choose existing palm or face photos."
         }
       ]
     ]

@@ -1,7 +1,7 @@
 /**
  * Per-app privacy appendices under the UseONE, LLC umbrella policy.
  *
- * Scope (2026-07): Yuel, Yuun, Yaul, Kanyu (feng), and Xingqi. The HexAstral
+ * Scope (2026-07): Yuel, Yuun, Yaul, Kanyu (feng), and Syel. The HexAstral
  * universe is ONE sign-in identity, and these appendices describe the data flows
  * that carry across that shared account. Apps still in development are
  * intentionally NOT listed: we don't pre-announce unreleased surfaces, and an
@@ -16,7 +16,7 @@ export const SATELLITE_PRIVACY_KEYS = [
   'auspice',
   'coincast',
   'feng',
-  'xingqi',
+  'syel',
 ] as const
 
 export type SatellitePrivacyKey = (typeof SATELLITE_PRIVACY_KEYS)[number]
@@ -98,12 +98,12 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Account deletion removes your feng sites, reports, and related chat history within 30 days alongside other HexAstral account data.',
     ],
   },
-  xingqi: {
-    displayName: 'Xingqi',
+  syel: {
+    displayName: 'Syel',
     summary:
-      'Face and palm physiognomy (形气) readings in the HexAstral universe. You capture left palm, right palm, and a clear face photo, then supply birth details so structured features can be contrasted with a BaZi summary. Sign in with Apple is required before biometric processing and purchases. Readings are for entertainment and cultural exploration only — not medical diagnosis, fate claims, or professional advice. Server product ids remain faceoracle_*; the consumer brand is Xingqi.',
+      'Face and palm physiognomy (形气 / 相) readings in the HexAstral universe. You capture left palm, right palm, and a clear face photo, then supply birth details so structured features can be contrasted with a BaZi summary. Sign in with Apple is required before biometric processing and purchases. Readings are for entertainment and cultural exploration only — not medical diagnosis, fate claims, or professional advice. Server product ids remain faceoracle_*; the consumer brand is Syel.',
     bullets: [
-      'Not professional advice. Xingqi outputs are for entertainment, cultural study, and personal reflection. We do not provide medical, dermatological, psychological, legal, or fortune-telling advice, and we do not guarantee life outcomes.',
+      'Not professional advice. Syel outputs are for entertainment, cultural study, and personal reflection. We do not provide medical, dermatological, psychological, legal, or fortune-telling advice, and we do not guarantee life outcomes.',
       'Biometric processing consent: before any face or palm image is sent for feature extraction, you must accept an in-app biometric disclosure (BIPA / GDPR Art.9 style). We record a timestamp and disclosure version on your account. You may withdraw consent anytime in Settings; processing is blocked until you opt in again at the current disclosure version.',
       'Photos you choose (camera or library): left palm, right palm, and face. Images are uploaded over TLS for a single request, used only to extract structured feature vectors via authorized vision models under DPAs, then discarded — source images are not retained in object storage or in reading JSON after the request completes. We do not sell biometric data or use it for advertising.',
       'On-device period workspace: the app may keep the current three photos only in the device app sandbox so you can view or replace a slot before the next reading. Replacing a slot deletes the previous local file. These files are not synced to our servers as a photo archive. Signing out or withdrawing biometric consent clears the local workspace.',
@@ -113,8 +113,8 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Monetization (opaque ids): consumable `faceoracle_reading` for a one-shot complete reading; subscriptions `faceoracle_pro_monthly` / `faceoracle_pro_annual` grant `faceoracle_pro` (Timeline / photo-slot quota). Payments are validated via RevenueCat — we never see your card number.',
       'Pro reminders: if you enable reminders, we may schedule local and/or push notifications for monthly re-capture nudges and “宜留意” windows derived from your active event table. Push tokens are registered only when you opt in. Copy uses exploratory framing, not deterministic fate (see umbrella policy / portfolio voice rules).',
       'Anonymous funnel telemetry may record onboarding steps under `target_app=faceoracle`. No ads, no IDFA, no cross-app advertising trackers.',
-      'Universal links on hexastral.com (`/lp/face/*`, `/lp/palm/*`) may open Xingqi when installed (bundle `com.hexastral.xingqi`).',
-      'Account deletion (in-app request or privacy@hexastral.com) removes your Xingqi features, readings, and related account data within 30 days alongside other HexAstral universe data. Withdrawing biometric consent stops new processing but does not by itself delete historical structured features or readings — use account deletion for full erasure.',
+      'Universal links on hexastral.com (`/lp/face/*`, `/lp/palm/*`) may open Syel when installed (bundle `com.hexastral.xingqi`).',
+      'Account deletion (in-app request or privacy@hexastral.com) removes your Syel features, readings, and related account data within 30 days alongside other HexAstral universe data. Withdrawing biometric consent stops new processing but does not by itself delete historical structured features or readings — use account deletion for full erasure.',
     ],
   },
 }

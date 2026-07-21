@@ -19,7 +19,7 @@ export function XingqiMark({ size = 64, color = '#3F7B5C' }: XingqiMarkProps) {
       height={size}
       viewBox='0 0 64 64'
       accessibilityRole='image'
-      accessibilityLabel='Xingqi'
+      accessibilityLabel='Syel'
     >
       {/* qi arc threading the three beads (rises, then settles) */}
       <Path

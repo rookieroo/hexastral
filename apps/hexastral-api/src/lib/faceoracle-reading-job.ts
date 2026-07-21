@@ -34,6 +34,11 @@ import {
   type ReadingLandmarks,
 } from './faceoracle-landmarks'
 import {
+  assessLociCoverage,
+  buildSuggestedLoci,
+  formatSuggestedLociBlock,
+} from './faceoracle-suggested-loci'
+import {
   buildFaceOracleChaptersPrompt,
   buildFaceOracleLociPrompt,
   type FaceOracleChapterKind,
@@ -46,13 +51,7 @@ import {
   faceoracleFieldsLookWrongLocale,
 } from './prompts/faceoracle-locale'
 
-const CHAPTER_KINDS: FaceOracleChapterKind[] = [
-  'overview',
-  'face',
-  'palms',
-  'natal',
-  'horizon',
-]
+const CHAPTER_KINDS: FaceOracleChapterKind[] = ['overview', 'face', 'palms', 'natal', 'horizon']
 
 /** Legacy kinds still accepted when remapping old model output / stored drafts. */
 const LEGACY_CHAPTER_KINDS = new Set(['period', 'advice'])
@@ -112,8 +111,7 @@ function parseLoci(raw: unknown): LocusPayload[] {
     const o = item as Record<string, unknown>
     const featureKey = asNonEmptyString(o.featureKey)
     const locus = asNonEmptyString(o.locus)
-    const reading =
-      asNonEmptyString(o.reading) ?? asNonEmptyString(o.note)
+    const reading = asNonEmptyString(o.reading) ?? asNonEmptyString(o.note)
     const partRaw = asNonEmptyString(o.part)
     if (!featureKey || !locus || !reading) continue
     const part: LocusPart =
@@ -467,9 +465,7 @@ function proseFromNormalized(normalized: {
         `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}\n${c.counterpoint ?? ''}\n${c.citations.map((x) => `${x.locus} ${x.note}`).join('\n')}`
     )
     .join('\n')
-  const lociText = (normalized.loci ?? [])
-    .map((l) => `${l.locus} ${l.reading}`)
-    .join('\n')
+  const lociText = (normalized.loci ?? []).map((l) => `${l.locus} ${l.reading}`).join('\n')
   const events = Array.isArray(normalized.flat.events) ? normalized.flat.events : []
   const eventText = events
     .map((ev) => {
@@ -805,6 +801,20 @@ export async function runFaceoracleReadingJob(
       : 'oneshot'
   const horizonMonths = job.horizonMonths === 6 ? 6 : 3
 
+  const suggested = buildSuggestedLoci({
+    face,
+    palmLeft: palmL,
+    palmRight: palmR,
+    natalSummary,
+    topN: 20,
+  })
+  const suggestedLociBlock = formatSuggestedLociBlock(suggested)
+  console.info('[faceoracle-job] suggestedLoci', {
+    jobId,
+    count: suggested.length,
+    sample: suggested.slice(0, 8).map((s) => `${s.part}/${s.featureKey}:${s.reason}`),
+  })
+
   const promptParams = {
     faceFeatures: compactFeatures(face),
     palmLeftFeatures: compactFeatures(palmL),
@@ -813,6 +823,7 @@ export async function runFaceoracleReadingJob(
     locale: job.locale,
     horizonMonths,
     outputKind,
+    suggestedLociBlock,
   } as const
 
   // ── Pass 1: curated loci only ───────────────────────────────────────────
@@ -834,7 +845,7 @@ export async function runFaceoracleReadingJob(
       await setJobStage(db, jobId, 'interpreting', 55)
       const retry = await callReadingAi(
         env,
-        `${lociPrompt}\n\nCOMPACT RETRY: Output ONLY {"loci":[...]} with 16–20 deep readings.`,
+        `${lociPrompt}\n\nCOMPACT RETRY: Output ONLY {"loci":[...]} with 16–20 deep readings (face≥5, each palm≥5, ≥2 CAUTION).`,
         job.locale,
         { maxTokens: 4096, metricLabel: 'faceoracle_loci_retry' }
       )
@@ -848,6 +859,45 @@ export async function runFaceoracleReadingJob(
           true
         )
         return
+      }
+    }
+  }
+
+  // Hard coverage floors — one more retry if thin
+  {
+    const parsedLoci = parseLoci(lociParsed.loci)
+    const cov = assessLociCoverage(parsedLoci)
+    if (!cov.ok) {
+      console.warn('[faceoracle-job] loci coverage short — coverage retry', {
+        jobId,
+        detail: cov.detail,
+      })
+      await setJobStage(db, jobId, 'interpreting', 58)
+      const covRetry = await callReadingAi(
+        env,
+        `${lociPrompt}\n\nCOVERAGE RETRY: Prior attempt was ${cov.detail}. Must return face≥5, palm_l≥5, palm_r≥5, ≥2 CAUTION-toned readings. Prefer SuggestedLoci. Output ONLY {"loci":[...]}.`,
+        job.locale,
+        { maxTokens: 4096, metricLabel: 'faceoracle_loci_coverage_retry' }
+      )
+      if (
+        covRetry.parsed &&
+        Array.isArray(covRetry.parsed.loci) &&
+        covRetry.parsed.loci.length > 0
+      ) {
+        const next = parseLoci(covRetry.parsed.loci)
+        const nextCov = assessLociCoverage(next)
+        if (nextCov.ok || next.length >= parsedLoci.length) {
+          lociParsed = covRetry.parsed
+          console.info('[faceoracle-job] loci coverage retry accepted', {
+            jobId,
+            detail: nextCov.detail,
+          })
+        } else {
+          console.warn('[faceoracle-job] loci coverage retry still thin — keeping first', {
+            jobId,
+            detail: nextCov.detail,
+          })
+        }
       }
     }
   }

@@ -1,10 +1,10 @@
 /**
  * Breathing light-spot markers on normalized photo coordinates.
- * Active (selected) star: larger ring + brighter core so it is unmistakable.
+ * Pulse loop never restarts on select — selection uses a separate progress SV.
  */
 
 import { useEffect } from 'react'
-import { Pressable, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -12,9 +12,8 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-
+import { type ImageSize, mapNormToContainStage } from '@/lib/image-stage-layout'
 import type { LocusStar } from '@/lib/locus-data'
-import { mapNormToContainStage, type ImageSize } from '@/lib/image-stage-layout'
 
 function BreathSpot({
   star,
@@ -23,6 +22,7 @@ function BreathSpot({
   imageSize,
   accent,
   selected,
+  debugSource,
   onPress,
 }: {
   star: LocusStar
@@ -31,27 +31,33 @@ function BreathSpot({
   imageSize: ImageSize | null
   accent: string
   selected: boolean
+  /** __DEV__ only: photo vs canon provenance */
+  debugSource?: 'photo' | 'canon' | null
   onPress: () => void
 }) {
   const pulse = useSharedValue(0.45)
+  const selectedProgress = useSharedValue(selected ? 1 : 0)
   const cited = star.fromReading
 
+  // Start breath once; do not depend on `selected` (avoids flash on swap).
   useEffect(() => {
     pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: selected ? 700 : 1100 }),
-        withTiming(selected ? 0.55 : 0.4, { duration: selected ? 700 : 1100 })
-      ),
+      withSequence(withTiming(1, { duration: 1600 }), withTiming(0.42, { duration: 1600 })),
       -1,
       false
     )
-  }, [pulse, selected])
+  }, [pulse])
+
+  useEffect(() => {
+    selectedProgress.value = withTiming(selected ? 1 : 0, { duration: 220 })
+  }, [selected, selectedProgress])
 
   const glow = useAnimatedStyle(() => {
-    const base = selected ? 0.42 : cited ? 0.24 : 0.14
-    const amp = selected ? 0.42 : cited ? 0.36 : 0.24
-    const scaleBase = selected ? 1.15 : 0.9
-    const scaleAmp = selected ? 0.55 : cited ? 0.6 : 0.42
+    const sel = selectedProgress.value
+    const base = 0.12 + (cited ? 0.1 : 0) + sel * 0.28
+    const amp = 0.1 + (cited ? 0.08 : 0) + sel * 0.12
+    const scaleBase = 0.92 + sel * 0.22
+    const scaleAmp = 0.18 + sel * 0.12
     return {
       opacity: base + pulse.value * amp,
       transform: [{ scale: scaleBase + pulse.value * scaleAmp }],
@@ -59,20 +65,21 @@ function BreathSpot({
   })
 
   const core = useAnimatedStyle(() => {
-    const base = selected ? 0.95 : cited ? 0.7 : 0.42
-    const amp = selected ? 0.05 : cited ? 0.3 : 0.28
+    const sel = selectedProgress.value
+    const base = (cited ? 0.55 : 0.38) + sel * 0.35
+    const amp = 0.12 * (1 - sel * 0.7)
     return {
       opacity: base + pulse.value * amp,
-      transform: [{ scale: selected ? 1 : 0.85 + pulse.value * 0.2 }],
+      transform: [{ scale: 0.9 + pulse.value * 0.12 * (1 - sel) + sel * 0.08 }],
     }
   })
 
   const ring = useAnimatedStyle(() => ({
-    opacity: selected ? 0.85 + pulse.value * 0.15 : 0,
-    transform: [{ scale: selected ? 0.95 + pulse.value * 0.12 : 0.8 }],
+    opacity: selectedProgress.value * (0.75 + pulse.value * 0.15),
+    transform: [{ scale: 0.88 + selectedProgress.value * 0.14 + pulse.value * 0.04 }],
   }))
 
-  const coreSize = selected ? 14 : cited ? 11 : 7
+  const coreSize = selected ? 14 : cited ? 10 : 7
   const hit = selected ? 40 : 32
   const pos =
     imageSize != null
@@ -99,7 +106,6 @@ function BreathSpot({
       }}
       hitSlop={10}
     >
-      {/* Selection ring — only when active */}
       <Animated.View
         pointerEvents='none'
         style={[
@@ -119,9 +125,9 @@ function BreathSpot({
         style={[
           {
             position: 'absolute',
-            width: selected ? 34 : 28,
-            height: selected ? 34 : 28,
-            borderRadius: selected ? 17 : 14,
+            width: selected ? 32 : 26,
+            height: selected ? 32 : 26,
+            borderRadius: selected ? 16 : 13,
             backgroundColor: accent,
           },
           glow,
@@ -138,6 +144,18 @@ function BreathSpot({
           core,
         ]}
       />
+      {__DEV__ && debugSource ? (
+        <Text
+          style={{
+            position: 'absolute',
+            top: -10,
+            fontSize: 7,
+            color: debugSource === 'photo' ? accent : '#888',
+          }}
+        >
+          {debugSource === 'photo' ? 'P' : 'C'}
+        </Text>
+      ) : null}
     </Pressable>
   )
 }
@@ -149,16 +167,17 @@ export function LocusStarLayer({
   imageSize,
   accent,
   selectedKey,
+  debugSources,
   onSelect,
 }: {
   stars: LocusStar[]
   stageW: number
   stageH: number
-  /** When set, stars map through contain letterbox (matches resizeMode="contain"). */
   imageSize?: ImageSize | null
   accent: string
-  /** featureKey of the star whose sheet is open — visual highlight. */
   selectedKey?: string | null
+  /** __DEV__: featureKey → photo|canon */
+  debugSources?: Record<string, 'photo' | 'canon'> | null
   onSelect: (star: LocusStar) => void
 }) {
   if (stageW <= 0 || stageH <= 0) return null
@@ -173,6 +192,7 @@ export function LocusStarLayer({
           imageSize={imageSize ?? null}
           accent={accent}
           selected={selectedKey === star.featureKey}
+          debugSource={debugSources?.[star.featureKey] ?? null}
           onPress={() => onSelect(star)}
         />
       ))}

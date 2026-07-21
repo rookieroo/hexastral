@@ -14,14 +14,15 @@ interface Props {
 }
 
 export function generateStaticParams(): { locale: Locale; appKey: string }[] {
-  return locales.flatMap((locale) =>
-    SATELLITE_PRIVACY_KEYS.map((appKey) => ({ locale, appKey }))
-  )
+  // Include legacy brand/opaque keys so redirects stay statically reachable.
+  const keys = [...SATELLITE_PRIVACY_KEYS, 'xingqi', 'faceoracle'] as const
+  return locales.flatMap((locale) => keys.map((appKey) => ({ locale, appKey })))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { appKey } = await params
-  const key = appKey === 'faceoracle' ? 'xingqi' : appKey
+  const key =
+    appKey === 'faceoracle' || appKey === 'xingqi' ? 'syel' : appKey
   if (!isSatellitePrivacyKey(key)) {
     return { title: 'Privacy appendix' }
   }
@@ -35,9 +36,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SatellitePrivacyAppendixPage({ params }: Props) {
   const { locale, appKey } = await params
-  // Legacy opaque id → Xingqi brand path
-  if (appKey === 'faceoracle') {
-    redirect(`/${locale}/privacy/xingqi`)
+  // Legacy paths → Syel brand path
+  if (appKey === 'faceoracle' || appKey === 'xingqi') {
+    redirect(`/${locale}/privacy/syel`)
   }
   if (!isSatellitePrivacyKey(appKey)) {
     notFound()

@@ -20,7 +20,7 @@ export default function FacePrivacyAppendixScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
       <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>
-        {s('Xingqi 数据处理', 'Xingqi 資料處理', 'Xingqi data handling')}
+        {s('Syel 数据处理', 'Syel 資料處理', 'Syel data handling')}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
         {s(
