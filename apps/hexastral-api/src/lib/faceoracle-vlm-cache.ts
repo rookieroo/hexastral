@@ -10,8 +10,10 @@
 
 /** Cascade contract id mixed into content-hash (see @zhop/ai-vision VLM_CASCADE_ID). */
 export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v1'
-// v6: adds Moondream 3.1 `point` coordinate pass (12 face / 7 palm loci).
-export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v6'
+// v6: Moondream face point. v7: palm mounts/marks prose. v8: palm landmarks
+// dropped (client canonical). v9: palm per-mount + Moondream. v10: palm phrase
+// tighten + outlier sanitize + contain-aligned client plotting.
+export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v10'
 
 export type FaceoracleFeatureType = 'face' | 'palm' | 'palm_l' | 'palm_r'
 

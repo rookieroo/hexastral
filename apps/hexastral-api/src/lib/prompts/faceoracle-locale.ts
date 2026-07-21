@@ -16,6 +16,9 @@ export function resolveFaceoracleOutputLang(locale: string): {
     return { code: 'zh-CN', name: '简体中文', isCjkOutput: true }
   }
   if (locale.startsWith('ja')) {
+    // Japanese is CJK-script but NOT Chinese — drift detection must be
+    // kana/latin-aware (see faceoracleBodyLooksWrongLocale), not the
+    // Chinese-ratio guard used for English.
     return { code: 'ja', name: '日本語', isCjkOutput: false }
   }
   return { code: 'en', name: 'English', isCjkOutput: false }
@@ -50,6 +53,14 @@ const FACEORACLE_TERM_HINTS_JA = [
   '三停 → 三停 — 顔の上中下三区分',
   '五岳 → 五岳 — 顔の五つの「山」',
   '十二宫 → 十二宮 — 顔の十二宮位',
+  '天庭 → 天庭（てんてい）— 額の上部',
+  '印堂 → 印堂（いんどう）— 眉間',
+  '山根 → 山根（さんこん）— 鼻梁の根元',
+  '骨相 → 骨相（こっそう）— 骨格の形',
+  '气色 → 气色（きしょく）— 顔色・気色',
+  '生命线 → 生命線（せいめいせん）— 生命線',
+  '事业线 → 事業線（じぎょうせん）— 運命・事業線',
+  '金星丘 → 金星丘（きんせいきゅう）— 金星丘（親指付け根）',
   '日主 → 日主 — 日柱の干',
   '用神 → 用神 — バランスを取る要素',
   '大运 → 大運 — 十年運',
@@ -82,9 +93,9 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
     '',
     `## Cross-lingual output — ${name} (${code})`,
     'Internal reasoning may use Chinese metaphysics vocabulary (your strongest reasoning corpus).',
-    `ALL user-facing JSON string values (goldenLine, evidence, dynamic, reef, remedy, counterpoint,`,
-    `overview, faceSection, palm*Section, natalContrast, periodDiff, advice, events.theme, events.note,`,
-    `AND every citations[].locus + citations[].note)`,
+    'ALL user-facing JSON string values (goldenLine, evidence, dynamic, reef, remedy, counterpoint,',
+    'overview, faceSection, palm*Section, natalContrast, periodDiff, advice, events.theme, events.note,',
+    'AND every citations[].locus + citations[].note)',
     `MUST be written in ${name}. JSON keys stay English.`,
     '',
     '### Hard negatives',
@@ -115,7 +126,8 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
 }
 
 /**
- * Rough CJK ratio of chapter/event prose — used to reject drifted English/Japanese jobs.
+ * Rough CJK ratio of chapter/event prose — used to reject drifted English jobs.
+ * Includes Han + kana (so Japanese also scores high — do NOT use alone for ja).
  */
 export function faceoracleCjkRatio(text: string): number {
   if (!text) return 0
@@ -123,6 +135,24 @@ export function faceoracleCjkRatio(text: string): number {
   const letters = text.replace(/\s/g, '').length
   if (letters < 24) return 0
   return cjk / letters
+}
+
+/** Hiragana + katakana share of non-whitespace chars (Japanese signal). */
+export function faceoracleKanaRatio(text: string): number {
+  if (!text) return 0
+  const kana = text.match(/[\u3040-\u30ff]/g)?.join('').length ?? 0
+  const letters = text.replace(/\s/g, '').length
+  if (letters < 24) return 0
+  return kana / letters
+}
+
+/** Latin letters share of non-whitespace chars (English leakage signal). */
+export function faceoracleLatinRatio(text: string): number {
+  if (!text) return 0
+  const latin = text.match(/[A-Za-z]/g)?.join('').length ?? 0
+  const letters = text.replace(/\s/g, '').length
+  if (letters < 24) return 0
+  return latin / letters
 }
 
 /** True if a short field is mostly CJK (catches a Chinese goldenLine inside an English body). */
@@ -135,25 +165,51 @@ export function faceoracleFieldLooksCjk(text: string): boolean {
   return cjk / letters > 0.4
 }
 
-export function faceoracleBodyLooksWrongLocale(
-  locale: string,
-  sampleText: string
-): boolean {
-  const { isCjkOutput } = resolveFaceoracleOutputLang(locale)
+/** True if a short field is mostly Latin (English leakage inside a Japanese body). */
+export function faceoracleFieldLooksLatin(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 12) return false
+  const latin = t.match(/[A-Za-z]/g)?.join('').length ?? 0
+  const letters = t.replace(/\s/g, '').length
+  if (letters === 0) return false
+  return latin / letters > 0.55
+}
+
+/**
+ * Whole-body locale drift. Language-split:
+ * - zh: never (CJK output expected)
+ * - en: CJK ratio too high → Chinese leakage
+ * - ja: Latin-heavy (English) OR Han-heavy without kana (Chinese) — never flag
+ *   normal kana+kanji Japanese prose (the old CJK-ratio guard false-positive).
+ */
+export function faceoracleBodyLooksWrongLocale(locale: string, sampleText: string): boolean {
+  const { code, isCjkOutput } = resolveFaceoracleOutputLang(locale)
   if (isCjkOutput) return false
-  // Stricter than before: citation dumps of bare Chinese used to hide under 0.35.
+  if (code === 'ja') {
+    const latin = faceoracleLatinRatio(sampleText)
+    const cjk = faceoracleCjkRatio(sampleText)
+    const kana = faceoracleKanaRatio(sampleText)
+    if (latin > 0.5) return true
+    if (cjk > 0.3 && kana < 0.05) return true
+    return false
+  }
+  // en (and any other non-CJK fallback)
   return faceoracleCjkRatio(sampleText) > 0.18
 }
 
 /**
  * Per-field guard — a single Chinese goldenLine inside otherwise-English chapters
- * used to pass the whole-body ratio check.
+ * used to pass the whole-body ratio check. For ja, only flag Latin-dominant
+ * fields (English leakage) so legitimate kanji locus names do not trip.
  */
 export function faceoracleFieldsLookWrongLocale(
   locale: string,
   fields: readonly string[]
 ): boolean {
-  const { isCjkOutput } = resolveFaceoracleOutputLang(locale)
+  const { code, isCjkOutput } = resolveFaceoracleOutputLang(locale)
   if (isCjkOutput) return false
+  if (code === 'ja') {
+    return fields.some((f) => faceoracleFieldLooksLatin(f))
+  }
   return fields.some((f) => faceoracleFieldLooksCjk(f))
 }

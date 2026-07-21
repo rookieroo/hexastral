@@ -6,13 +6,14 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getPushPermissionStatus, requestPushPermission } from '@zhop/satellite-runtime'
-import { Alert, Linking } from 'react-native'
+import { Alert, AppState, Linking, type AppStateStatus } from 'react-native'
 
 import {
   type FaceoracleJobPoll,
   type FaceReadingProgress,
   fetchActiveFaceReadingJob,
   getFaceReadingJob,
+  isTransientNetworkError,
   pollFaceReadingJob,
   runFaceReading,
 } from './api'
@@ -319,10 +320,39 @@ function mapJobError(msg: string, locale: string): string {
       '解讀仍在雲端處理中，完成後會通知你',
       'Still processing in the cloud — we will notify you when ready'
     )
+  } else if (
+    msg === 'network_error' ||
+    msg === 'request_timeout' ||
+    isTransientNetworkError(msg)
+  ) {
+    error = zhCopy(
+      locale,
+      '网络中断。若已开始解读，云端会继续处理，完成后会通知你。',
+      '網絡中斷。若已開始解讀，雲端會繼續處理，完成後會通知你。',
+      'Network interrupted. If the reading already started, it continues in the cloud — we will notify you when ready.'
+    )
   } else if (msg.length > 0 && msg.length < 200) {
     error = msg
   }
   return error
+}
+
+/** After enqueue, client poll failures must not fail the job — queue owns it. */
+function isQuitSafeAfterEnqueue(msg: string, jobId: string | null): boolean {
+  if (!jobId) return false
+  if (msg === 'job_poll_timeout' || msg === 'job_poll_aborted') return true
+  if (msg === 'network_error' || msg === 'request_timeout') return true
+  return isTransientNetworkError(msg)
+}
+
+function keepQueuedAfterDisconnect(notifyQueued?: () => void): void {
+  notifyQueued?.()
+  setState({
+    status: 'running',
+    phase: state.phase === 'extracting' ? 'queued' : state.phase === 'idle' ? 'queued' : state.phase,
+    error: null,
+    progress: Math.max(state.progress, 50),
+  })
 }
 
 function applyProgress(p: FaceReadingProgress): void {
@@ -330,17 +360,18 @@ function applyProgress(p: FaceReadingProgress): void {
     setState({
       status: 'running',
       phase: 'extracting',
-      progress: p.progress,
+      progress: Math.max(p.progress, 5),
     })
     return
   }
   const job = p.job
   void setPendingFlag(true, job.jobId)
+  const floor = p.phase === 'queued' ? 10 : p.phase === 'interpreting' ? 20 : 0
   setState({
     status: 'running',
     phase: p.phase === 'failed' ? 'failed' : p.phase,
     jobId: p.job.jobId,
-    progress: p.job.progress,
+    progress: Math.max(state.progress, job.progress, floor),
   })
 }
 
@@ -435,7 +466,21 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
     progress: Math.max(state.progress, 40),
   })
 
-  const snap = await getFaceReadingJob(jobId)
+  const snap = await getFaceReadingJob(jobId).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg === 'network_error' || isTransientNetworkError(msg) || msg === 'request_timeout') {
+      // Still queued on server — fall through to poll loop.
+      return {
+        jobId,
+        stage: 'queued' as const,
+        progress: Math.max(state.progress, 40),
+        readingId: null,
+        errorMessage: null,
+        resultPayload: null,
+      }
+    }
+    throw err
+  })
   if (snap.stage === 'done' && snap.readingId && snap.resultPayload) {
     let output: Record<string, unknown>
     try {
@@ -614,15 +659,9 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       console.warn('[xingqi-reading-job]', msg || err)
-      if (msg === 'job_poll_timeout' && state.jobId) {
-        // Quit-safe: keep list row; push / resume will finish it.
-        notifyQueued()
-        setState({
-          status: 'running',
-          phase: state.phase === 'extracting' ? 'queued' : state.phase,
-          error: null,
-          progress: Math.max(state.progress, 50),
-        })
+      if (isQuitSafeAfterEnqueue(msg, state.jobId)) {
+        // Quit-safe: cloud queue owns the LLM stage; push / resume will finish it.
+        keepQueuedAfterDisconnect(notifyQueued)
         return
       }
       setState({
@@ -660,8 +699,10 @@ export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolea
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       console.warn('[xingqi-reading-job/resume]', msg || err)
-      if (msg === 'job_poll_timeout') {
-        setState({ status: 'running', error: null })
+      const jobId = state.jobId ?? (await loadStoredJobId())
+      if (isQuitSafeAfterEnqueue(msg, jobId)) {
+        if (jobId) await setPendingFlag(true, jobId)
+        keepQueuedAfterDisconnect()
         return
       }
       setState({
@@ -676,6 +717,35 @@ export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolea
   })()
 
   return true
+}
+
+let appStateSub: { remove: () => void } | null = null
+let lifecycleLocale = 'zh'
+let lifecycleIsPro = false
+
+/**
+ * Resume poll when returning from background. Safe to call multiple times
+ * (home + paywall); only one AppState subscription is kept.
+ */
+export function bindReadingJobLifecycle(locale: string, isPro: boolean): () => void {
+  lifecycleLocale = locale
+  lifecycleIsPro = isPro
+  if (!appStateSub) {
+    appStateSub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next !== 'active') return
+      // Cold focus already covered by useFocusEffect; this catches background→foreground
+      // without a navigation focus change (common after home-button exit).
+      void (async () => {
+        const pending = await wasReadingJobPending()
+        if (!pending && state.status !== 'running') return
+        resumeReadingJobIfNeeded(lifecycleLocale, lifecycleIsPro)
+      })()
+    })
+  }
+  return () => {
+    // Keep the global listener; unbind only clears nothing — callers may remount.
+    // Explicit teardown when last screen unmounts is optional; module lifetime is fine.
+  }
 }
 
 /** Acknowledge done/error so home can return to idle. */

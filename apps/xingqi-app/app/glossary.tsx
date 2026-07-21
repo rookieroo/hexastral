@@ -63,9 +63,9 @@ const INK_MODES: Array<{
 ]
 
 const SEAL_BLURB_HANT: Record<string, string> = {
-  overview: '象 — 形氣總象',
+  overview: '象 — 觀象（見系）',
   face: '面 — 目頰象形',
-  palms: '又 — 手掌象形',
+  palms: '又 — 甲骨側掌三指',
   natal: '命 — 稟命對照',
   period: '月 — 時間窗',
   advice: '永 — 長流之宜',

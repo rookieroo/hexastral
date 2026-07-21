@@ -16,7 +16,7 @@ Run after deploying `hexastral-api` (prompt density, compliance, VLM gates, `nat
 
 ## Oneshot brief thickness (zh)
 
-- [ ] Six chapters present
+- [ ] Five chapters present (overview / face / palms / natal / horizon)
 - [ ] Face/palms show citations under 形气依据 when model returns them
 - [ ] Natal chapter shows **本命气机** strip: day pillar / DaYun / LiuNian
 - [ ] Period/advice cover career · love · health (events.axis and/or advice text)

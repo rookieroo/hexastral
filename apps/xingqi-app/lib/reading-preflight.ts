@@ -35,6 +35,10 @@ export async function alertIfPhotosUnchanged(opts: {
   locale: string
   onUpdatePhotos: () => void
 }): Promise<boolean> {
+  // DEV: allow re-running extract+read on the same local photos (quota bypassed
+  // via x-xingqi-dev-quota). Production still requires a real photo change.
+  if (__DEV__) return false
+
   const { locale } = opts
   const s = (hans: string, hant: string, en: string) =>
     isCjkZh(locale) ? pickZh(locale, hans, hant) : en

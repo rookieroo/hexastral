@@ -90,6 +90,20 @@ physiognomyJobsRoutes.get('/active', async (c) => {
     .orderBy(desc(faceoracleJobs.createdAt))
     .get()
   if (!job) return jsonOk(c, { job: null })
+
+  // Same stuck-queue recovery as GET /:id.
+  if (job.stage === 'queued') {
+    const started = Date.parse(job.startedAt || job.createdAt)
+    if (Number.isFinite(started) && Date.now() - started > 90_000) {
+      try {
+        await enqueueFaceoracleReadingJob(c.env, job.id)
+        console.info('[faceoracle.job] re-enqueued stuck queued (active)', { jobId: job.id })
+      } catch (err) {
+        console.error('[faceoracle.job] re-enqueue failed', job.id, err)
+      }
+    }
+  }
+
   return jsonOk(c, { job: jobToClient(job) })
 })
 
@@ -130,6 +144,19 @@ physiognomyJobsRoutes.post('/', async (c) => {
   if (existing) {
     if (sameFaceoracleFeatures(incoming, existing)) {
       console.info('[faceoracle.job] deduped', { userId, jobId: existing.id })
+      if (existing.stage === 'queued') {
+        const started = Date.parse(existing.startedAt || existing.createdAt)
+        if (Number.isFinite(started) && Date.now() - started > 90_000) {
+          try {
+            await enqueueFaceoracleReadingJob(c.env, existing.id)
+            console.info('[faceoracle.job] re-enqueued stuck queued (dedupe)', {
+              jobId: existing.id,
+            })
+          } catch (err) {
+            console.error('[faceoracle.job] re-enqueue failed', existing.id, err)
+          }
+        }
+      }
       return jsonOk(c, { ...jobToClient(existing), deduped: true }, 202)
     }
     // New photos while another job is in flight — cancel + refund the old one.
@@ -157,7 +184,11 @@ physiognomyJobsRoutes.post('/', async (c) => {
     const feats = parseReadingFeatureIds(row.inputJson)
     return feats != null && sameFaceoracleFeatures(incoming, feats)
   })
-  if (conflicting && !body.regen) {
+  // DEV (ALLOW_DEV_PRO + x-xingqi-dev-quota): allow same-photo re-read as regen
+  // without requiring the client to set regen=true (home CTA otherwise 409s).
+  const envAllow = (c.env as { ALLOW_DEV_PRO?: string }).ALLOW_DEV_PRO
+  const devQuotaBypass = envAllow === '1' && c.req.header('x-xingqi-dev-quota') === '1'
+  if (conflicting && !body.regen && !devQuotaBypass) {
     return c.json(featuresUnchangedPayload(conflicting.id), 409)
   }
 
@@ -165,14 +196,10 @@ physiognomyJobsRoutes.post('/', async (c) => {
     (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
     (await hasActiveEntitlement(db, userId, 'universe_pro'))
 
-  // DEV client (__DEV__) sends x-xingqi-dev-quota when ALLOW_DEV_PRO=1 — skip monthly meters.
-  const envAllow = (c.env as { ALLOW_DEV_PRO?: string }).ALLOW_DEV_PRO
-  const devQuotaBypass = envAllow === '1' && c.req.header('x-xingqi-dev-quota') === '1'
-
   let accessVia: string | null = null
   let creditSource: string | null = null
   let slotsCharged = 0
-  const isReportRegen = Boolean(body.regen && conflicting)
+  const isReportRegen = Boolean((body.regen || devQuotaBypass) && conflicting)
 
   if (isReportRegen) {
     if (!isFacePro) {
@@ -243,7 +270,7 @@ physiognomyJobsRoutes.post('/', async (c) => {
     id: jobId,
     userId,
     stage: 'queued',
-    progress: 0,
+    progress: 10,
     locale: body.locale,
     outputKind: body.outputKind,
     horizonMonths: body.horizonMonths,
@@ -294,9 +321,22 @@ physiognomyJobsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id')
   const db = c.get('db')
 
-  const job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, id)).get()
+  let job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, id)).get()
   if (!job || job.userId !== userId) {
     throw new HTTPException(404, { message: 'Job not found' })
+  }
+
+  // Queue message can be dropped / delayed — re-send if still queued after 90s.
+  if (job.stage === 'queued') {
+    const started = Date.parse(job.startedAt || job.createdAt)
+    if (Number.isFinite(started) && Date.now() - started > 90_000) {
+      try {
+        await enqueueFaceoracleReadingJob(c.env, job.id)
+        console.info('[faceoracle.job] re-enqueued stuck queued', { jobId: job.id })
+      } catch (err) {
+        console.error('[faceoracle.job] re-enqueue failed', job.id, err)
+      }
+    }
   }
 
   let resultPayload: string | null = null

@@ -26,6 +26,8 @@ const PALM_CORE_KEYS = [
   'heartLine',
   'fateLine',
   'mounts',
+  'mountJupiter',
+  'mountVenus',
 ] as const
 
 /** Keys that strongly indicate the wrong modality. */
@@ -44,6 +46,8 @@ const PALM_ONLY_MARKERS = [
   'heartLine',
   'fateLine',
   'mounts',
+  'mountJupiter',
+  'mountVenus',
   'handShape',
   'fingerRatio',
 ] as const

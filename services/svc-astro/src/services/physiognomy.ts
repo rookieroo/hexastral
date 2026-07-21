@@ -1,31 +1,17 @@
 /**
- * 面相/手相 Physiognomy Service
+ * 面相/手相 Physiognomy Service — structured VLM feature extraction (ADR-0028).
  *
- * 两阶段 Gemini Pipeline:
- * 1. Gemini Vision 看图写结构化描述
- * 2. Gemini Pro/Flash 结合玄学做解读
- *
- * 输入: base64 照片 + 可选的星宫命盘
- * 输出: 面相/手相解读
+ * Face: Kimi/Gemini/Llama feature text + Moondream `point` coordinates.
+ * Palm: per-line/mount feature text + VLM midpoints, Moondream `point` wins
+ * (same pointing path as face). Clustered midpoints are dropped before merge.
  */
 
 import {
-  callGeminiVision,
   callVisionStructuredWithFallback,
   extractLandmarksViaMoondream,
   type LandmarkPoint,
 } from '@zhop/ai-vision'
-import { buildAgeLanguageBlock } from '../lib/age'
-import { type AiRouterEnv, callWithFallback } from '../lib/ai-router'
-import { extractJson } from '../lib/extract-json'
-import { buildLanguageBlock } from '../lib/i18n-prompt'
-import { buildEnhancedGuardrails } from '../lib/prompts/guardrails'
 import type { Env } from '../types'
-
-/** 相术类型 */
-export type PhysiognomyType = 'face' | 'palm'
-
-// ── 面相特征提取 (隐私优先，结构化 JSON) ────────────────────────────────────
 
 /**
  * 面相特征 Schema — Xingqi canonical face stack (三停·五岳·局部宫位线索)
@@ -89,16 +75,6 @@ const FACE_LANDMARK_KEYS = [
   'earLobes',
 ] as const
 
-const PALM_LANDMARK_KEYS = [
-  'handShape',
-  'lifeLine',
-  'headLine',
-  'heartLine',
-  'fateLine',
-  'mounts',
-  'specialMarks',
-] as const
-
 function landmarkProperties(keys: readonly string[]): Record<string, unknown> {
   const props: Record<string, unknown> = {}
   for (const k of keys) {
@@ -125,16 +101,6 @@ const FACE_POINT_PHRASES: Record<(typeof FACE_LANDMARK_KEYS)[number], string> = 
   mouthType: 'the mouth',
   chin: 'the chin',
   earLobes: 'the earlobe',
-}
-
-const PALM_POINT_PHRASES: Record<(typeof PALM_LANDMARK_KEYS)[number], string> = {
-  handShape: 'the center of the palm',
-  lifeLine: 'the life line curving around the base of the thumb',
-  headLine: 'the head line crossing the middle of the palm',
-  heartLine: 'the heart line below the fingers',
-  fateLine: 'the fate line running vertically up the palm',
-  mounts: 'the mount of Venus at the base of the thumb',
-  specialMarks: 'a distinct cross or star mark on the palm',
 }
 
 /** Merge Moondream points over VLM-emitted landmarks (Moondream wins per key). */
@@ -251,7 +217,7 @@ export async function extractFaceFeatures(
   }
 }
 
-/** Structured palm features — Xingqi canonical palm stack (主纹 + 丘位 mounts). */
+/** Structured palm features — Xingqi canonical palm stack (主纹 + 分项丘位). */
 export interface PalmFeatures {
   /** 掌形（可含地/火/风/水型等可见外形） */
   handShape: string
@@ -263,7 +229,23 @@ export interface PalmFeatures {
   heartLine: string
   /** 事业线 / 命运线 */
   fateLine: string
-  /** 丘位：金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘等 */
+  /** 木星丘（食指根） */
+  mountJupiter: string
+  /** 土星丘（中指根） */
+  mountSaturn: string
+  /** 太阳丘（无名指根） */
+  mountApollo: string
+  /** 水星丘（小指根） */
+  mountMercury: string
+  /** 金星丘（大鱼际） */
+  mountVenus: string
+  /** 月丘（小鱼际） */
+  mountMoon: string
+  /** 火星丘（掌心/虎口一带） */
+  mountMars: string
+  /**
+   * Legacy summary blob (合成自七丘) — reading prompts / quality gates still read it.
+   */
   mounts: string
   /** 指节比例 */
   fingerRatio: string
@@ -273,19 +255,54 @@ export interface PalmFeatures {
   overallAssessment: string
 }
 
-const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家（框架：主纹 + 丘位），同时具备计算机视觉分析能力。
+const PALM_LANDMARK_KEYS = [
+  'handShape',
+  'lifeLine',
+  'headLine',
+  'heartLine',
+  'fateLine',
+  'mountJupiter',
+  'mountSaturn',
+  'mountApollo',
+  'mountMercury',
+  'mountVenus',
+  'mountMoon',
+  'mountMars',
+  'specialMarks',
+] as const
+
+/**
+ * English anatomical phrases for Moondream palm pointing. Assume palm facing
+ * camera, fingers toward top of image.
+ */
+const PALM_POINT_PHRASES: Record<(typeof PALM_LANDMARK_KEYS)[number], string> = {
+  handShape: 'the center of the open palm surface (not the table background)',
+  lifeLine: 'the life line palm crease curving around the thumb base on the palm',
+  headLine: 'the head line palm crease across the middle of the palm (not a finger)',
+  heartLine: 'the heart line palm crease just below the base of the fingers on the palm',
+  fateLine: 'the fate line palm crease running vertically through the center of the palm',
+  mountJupiter: 'the fleshy mount at the base of the index finger on the palm side',
+  mountSaturn: 'the fleshy mount at the base of the middle finger on the palm side',
+  mountApollo: 'the fleshy mount at the base of the ring finger on the palm side',
+  mountMercury: 'the fleshy mount at the base of the little finger on the palm side',
+  mountVenus: 'the thenar eminence at the base of the thumb on the palm',
+  mountMoon: 'the hypothenar eminence along the outer lower edge of the palm',
+  mountMars: 'the plain of Mars in the center of the palm between thumb and little finger',
+  specialMarks: 'an unusual palm crease mark or island on the palm surface',
+}
+
+const PALM_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统手相学的专家（框架：主纹 + 丘位 + 纹记），同时具备计算机视觉分析能力。
 请仔细观察图片中的手掌与掌纹，按下列字段提取结构化描述。
 
 重要说明：
 - 按照要求的 JSON Schema 精确输出，不得增删字段
-- features 下每个字段给出简短的中文描述（5-20字），尽量使用：生命线、智慧线、感情线、事业线、金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘、指节等术语
-- landmarks 下为主纹中点/丘位中心的归一化坐标 (x,y)，范围 0.0–1.0，原点在左上角；线纹取弧线中点，丘位取主丘中心
-- 掌面清晰时，必须尽量给出 lifeLine / headLine / heartLine / fateLine / mounts 的 landmarks（至少 3 条主纹）；不要只标一个点
+- features 下每个字段给出简短的中文描述（5–20字），使用：生命线、智慧线、感情线、事业线、金星丘、木星丘、土星丘、太阳丘、水星丘、月丘、火星丘、指节、岛纹、十字等术语
+- 七丘必须分字段写丰/平/塌（mountJupiter…mountMars），不要合成到一个 mounts 字段（schema 无 mounts）
+- landmarks 为各线/丘在图片中的归一化坐标 (x,y)，范围 0.0–1.0，原点在图片左上角；线取中段可见点，丘取肉垫中心——禁止把所有点标在掌心同一处
 - fingerRatio / overallAssessment 不需要 landmarks
-- mounts 字段请点名可见丘位（如「金星丘丰、月丘平」），不要空泛形容词堆砌
-- 如某部位在图片中不清晰，features 标注值为 "unclear"，landmarks 可省略该 key
-- 绝对不要包含对用户外貌的主观美丑评价
-- 不要做命运断语，只描述可见特征`
+- specialMarks（10–40字）：「类型+所在线或丘」；无则「无显著纹记」
+- 如某部位不清晰，features 标 "unclear"，landmarks 可省略该 key
+- 不要主观美丑评价，不要命运断语，只描述可见特征`
 
 const PALM_FEATURES_SCHEMA = {
   type: 'object',
@@ -298,7 +315,13 @@ const PALM_FEATURES_SCHEMA = {
         headLine: { type: 'string' },
         heartLine: { type: 'string' },
         fateLine: { type: 'string' },
-        mounts: { type: 'string' },
+        mountJupiter: { type: 'string' },
+        mountSaturn: { type: 'string' },
+        mountApollo: { type: 'string' },
+        mountMercury: { type: 'string' },
+        mountVenus: { type: 'string' },
+        mountMoon: { type: 'string' },
+        mountMars: { type: 'string' },
         fingerRatio: { type: 'string' },
         specialMarks: { type: 'string' },
         overallAssessment: { type: 'string' },
@@ -309,7 +332,13 @@ const PALM_FEATURES_SCHEMA = {
         'headLine',
         'heartLine',
         'fateLine',
-        'mounts',
+        'mountJupiter',
+        'mountSaturn',
+        'mountApollo',
+        'mountMercury',
+        'mountVenus',
+        'mountMoon',
+        'mountMars',
         'fingerRatio',
         'specialMarks',
         'overallAssessment',
@@ -327,7 +356,86 @@ export type PalmLandmarks = Partial<
   Record<(typeof PALM_LANDMARK_KEYS)[number], { x: number; y: number }>
 >
 
-type PalmExtractPayload = { features: PalmFeatures; landmarks: PalmLandmarks }
+type PalmVlmFeatures = Omit<PalmFeatures, 'mounts'>
+
+type PalmExtractPayload = { features: PalmVlmFeatures; landmarks?: PalmLandmarks }
+
+/** Drop VLM midpoints that all pile in the palm center (classic failure mode). */
+function landmarksLookClustered(lm: Partial<Record<string, LandmarkPoint>>): boolean {
+  const pts = Object.values(lm).filter((p): p is LandmarkPoint => Boolean(p))
+  if (pts.length < 4) return false
+  let minX = 1
+  let maxX = 0
+  let minY = 1
+  let maxY = 0
+  for (const p of pts) {
+    minX = Math.min(minX, p.x)
+    maxX = Math.max(maxX, p.x)
+    minY = Math.min(minY, p.y)
+    maxY = Math.max(maxY, p.y)
+  }
+  return maxX - minX < 0.22 && maxY - minY < 0.18
+}
+
+/** Drop Moondream/VLM outliers (table edges, fingertips) before persisting. */
+function sanitizePalmLandmarks(
+  lm: Partial<Record<(typeof PALM_LANDMARK_KEYS)[number], LandmarkPoint>>
+): PalmLandmarks {
+  const clamp = (p: LandmarkPoint): LandmarkPoint => ({
+    x: Math.min(1, Math.max(0, p.x)),
+    y: Math.min(1, Math.max(0, p.y)),
+  })
+
+  const plausible = (
+    key: (typeof PALM_LANDMARK_KEYS)[number],
+    pt: LandmarkPoint
+  ): boolean => {
+    if (pt.x < 0.03 || pt.x > 0.97 || pt.y < 0.03 || pt.y > 0.97) return false
+    if (key.startsWith('mount') && pt.y < 0.14) return false
+    if (
+      (key === 'lifeLine' ||
+        key === 'headLine' ||
+        key === 'fateLine' ||
+        key === 'heartLine') &&
+      pt.y < 0.07
+    ) {
+      return false
+    }
+    const cluster = Object.values(lm).filter((p): p is LandmarkPoint => Boolean(p))
+    if (cluster.length >= 4) {
+      const xs = cluster.map((p) => p.x).sort((a, b) => a - b)
+      const ys = cluster.map((p) => p.y).sort((a, b) => a - b)
+      const medX = xs[Math.floor(xs.length / 2)] ?? 0.5
+      const medY = ys[Math.floor(ys.length / 2)] ?? 0.5
+      if (Math.abs(pt.x - medX) > 0.3 || Math.abs(pt.y - medY) > 0.34) return false
+    }
+    return true
+  }
+
+  const out: PalmLandmarks = {}
+  for (const key of PALM_LANDMARK_KEYS) {
+    const raw = lm[key]
+    if (!raw) continue
+    const pt = clamp(raw)
+    if (plausible(key, pt)) out[key] = pt
+  }
+  return out
+}
+
+function synthesizeMountsBlob(f: PalmVlmFeatures): string {
+  const parts = [
+    ['木星丘', f.mountJupiter],
+    ['土星丘', f.mountSaturn],
+    ['太阳丘', f.mountApollo],
+    ['水星丘', f.mountMercury],
+    ['金星丘', f.mountVenus],
+    ['月丘', f.mountMoon],
+    ['火星丘', f.mountMars],
+  ] as const
+  return parts
+    .map(([label, v]) => `${label}${typeof v === 'string' && v.trim() ? v.trim() : 'unclear'}`)
+    .join('，')
+}
 
 export async function extractPalmFeatures(
   env: Env,
@@ -342,227 +450,44 @@ export async function extractPalmFeatures(
       images: [{ base64: imageBase64, mimeType }],
       responseSchema: PALM_FEATURES_SCHEMA as Record<string, unknown>,
       temperature: 0.2,
-      maxOutputTokens: 1536,
+      maxOutputTokens: 2048,
       geminiThinkingLevel: 'MINIMAL',
       metricLabel: 'physiognomy_palm_extract',
     }
   )
-  const moondream = await extractLandmarksViaMoondream(
+
+  let vlmLm = result.data.landmarks ?? {}
+  if (landmarksLookClustered(vlmLm)) {
+    console.warn('[physiognomy] palm VLM landmarks clustered — dropping before Moondream merge')
+    vlmLm = {}
+  }
+
+  let moondream = await extractLandmarksViaMoondream(
     env.AI,
     { base64: imageBase64, mimeType },
     PALM_POINT_PHRASES
   )
-  return {
-    features: result.data.features,
-    landmarks: mergeLandmarks(result.data.landmarks ?? {}, moondream),
-    model: result.model,
-  }
-}
-
-/** VLM 描述结果 */
-export interface VLMDescription {
-  type: PhysiognomyType
-  description: string
-  rawTokens?: number
-}
-
-/** 面相/手相解读结果 */
-export interface PhysiognomyReading {
-  type: PhysiognomyType
-  vlmDescription: string
-  interpretation: PhysiognomyInterpretation
-}
-
-export interface PhysiognomyInterpretation {
-  overview: string
-  personality: string
-  career: string
-  relationship: string
-  wealth: string
-  health: string
-  specialNotes: string
-}
-
-/**
- * System prompt for face description
- */
-const FACE_SYSTEM_PROMPT = `你是一位专业的面部特征描述师。请从以下维度精确描述照片中人物的面部特征：
-1. 三庭比例（上庭/中庭/下庭的相对长度）
-2. 五眼比例（面部宽度与眼睛间距的关系）
-3. 额头形状（高低、宽窄、饱满度、是否有纹路）
-4. 眉型（浓淡、长短、弧度、眉间距）
-5. 眼型（大小、形状、眼距、眼尾走向）
-6. 鼻型（鼻梁高低、鼻头形状、鼻翼宽度）
-7. 唇型（厚薄、上下唇比例、唇色）
-8. 耳型（大小、耳垂、位置高低）
-9. 面型（国字脸/瓜子脸/圆脸/长脸等）
-10. 面部气色（肤色、光泽度、面部各区域色泽差异）
-
-请只描述客观视觉特征，不要做任何命理解读。输出格式为纯文本段落。`
-
-/**
- * System prompt for palm description
- */
-const PALM_SYSTEM_PROMPT = `你是一位专业的手掌纹路描述师。请从以下维度精确描述照片中的掌纹特征：
-1. 生命线（起点、弧度、长度、深浅、是否有分支/断裂）
-2. 智慧线（起点、走向、长度、深浅、是否与生命线连接）
-3. 感情线（起点、弧度、终点位置、深浅、是否有分支）
-4. 命运线（有无、起点、走向、深浅）
-5. 手掌形状（方形/长形/扇形）
-6. 手指比例（各指长短比例、指节形状）
-7. 掌丘（各掌丘的饱满程度）
-8. 其他纹路（太阳线、婚姻线、健康线等）
-
-请只描述客观视觉特征，不要做任何命理解读。输出格式为纯文本段落。`
-
-/**
- * 阶段1: Gemini Vision 看图写描述
- *
- * 使用 Gemini 2.5 Flash Vision 分析照片并输出结构化特征描述
- */
-export async function describePhysiognomy(
-  apiKey: string,
-  photoBase64: string,
-  type: PhysiognomyType
-): Promise<VLMDescription> {
-  const systemPrompt = type === 'face' ? FACE_SYSTEM_PROMPT : PALM_SYSTEM_PROMPT
-  const userPrompt = type === 'face' ? '请描述这张面部照片的特征' : '请描述这张手掌照片的掌纹特征'
-
-  try {
-    const description = await callGeminiVision(apiKey, {
-      systemPrompt,
-      userPrompt,
-      imageBase64: photoBase64,
-      model: 'gemini-3-flash-preview',
-      maxOutputTokens: 1024,
-      temperature: 1.0,
-      thinkingLevel: 'LOW',
-    })
-    return { type, description }
-  } catch (error) {
-    throw new Error(`面相图片分析失败: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
-
-/**
- * 阶段2: Gemini 玄学解读
- *
- * 输入: VLM 描述 + 可选的星宫命盘
- * 输出: 完整命理解读
- */
-export async function interpretPhysiognomy(
-  env: AiRouterEnv,
-  vlmDescription: string,
-  type: PhysiognomyType,
-  stellarChartInfo?: string,
-  isPro?: boolean,
-  language = 'zh-CN',
-  solarBirthDate?: string
-): Promise<PhysiognomyInterpretation> {
-  const typeLabel = type === 'face' ? '面相' : '手相'
-
-  const systemPrompt = [
-    `你是一位精通${typeLabel}学的相术师，传承华夏千年相学智慧。`,
-    '',
-    '**互动风格**：',
-    `- 用"我从你的${typeLabel}中看到..."、"你的...显示..."开头`,
-    '- 融合玄学意境与现代表达，避免机械列举',
-    '- 建议具体可行，结合实际生活场景',
-    '',
-    buildEnhancedGuardrails('相由心生，运由己造'),
-    '',
-    `**输出格式要求**（严格按此JSON结构输出）：
-{
-  "overview": "整体评价 2-3 句话",
-  "personality": "性格分析 2-3 句话",
-  "career": "事业运势 2-3 句话",
-  "relationship": "感情婚姻 2-3 句话",
-  "wealth": "财运分析 2-3 句话",
-  "health": "健康提示 2-3 句话",
-  "specialNotes": "特别注意事项或开运建议 2-3 句话"
-}`,
-    solarBirthDate
-      ? buildAgeLanguageBlock(solarBirthDate, language)
-      : buildLanguageBlock(language, 'physiognomy'),
-  ].join('\n')
-
-  const userContent = stellarChartInfo
-    ? `以下是${typeLabel}特征的详细描述：\n${vlmDescription}\n\n以下是此人的紫微命盘信息：\n${stellarChartInfo}\n\n请结合${typeLabel}学知识和紫微命盘，给出综合解读。`
-    : `以下是${typeLabel}特征的详细描述：\n${vlmDescription}\n\n请根据${typeLabel}学知识给出解读。`
-
-  const text = await callWithFallback(env, systemPrompt, userContent, {
-    isPro,
-    maxTokens: 2048,
-    thinkingLevel: isPro ? 'HIGH' : 'MEDIUM',
-    metricLabel: 'physiognomy',
-    locale: language,
-  })
-
-  // 解析 JSON 输出
-  try {
-    const jsonStr = extractJson(text)
-    if (jsonStr) {
-      const parsed = JSON.parse(jsonStr)
-      return {
-        overview: parsed.overview ?? '',
-        personality: parsed.personality ?? '',
-        career: parsed.career ?? '',
-        relationship: parsed.relationship ?? '',
-        wealth: parsed.wealth ?? '',
-        health: parsed.health ?? '',
-        specialNotes: parsed.specialNotes ?? '',
-      }
+  if (landmarksLookClustered(moondream)) {
+    console.warn('[physiognomy] palm Moondream landmarks clustered — retry once')
+    moondream = await extractLandmarksViaMoondream(
+      env.AI,
+      { base64: imageBase64, mimeType },
+      PALM_POINT_PHRASES
+    )
+    if (landmarksLookClustered(moondream)) {
+      console.warn('[physiognomy] palm Moondream still clustered — keeping points anyway')
     }
-  } catch {
-    // JSON 解析失败，回退到纯文本
   }
 
-  // 回退: 将整段文本放入 overview
-  return {
-    overview: text,
-    personality: '',
-    career: '',
-    relationship: '',
-    wealth: '',
-    health: '',
-    specialNotes: '',
+  const raw = result.data.features
+  const features: PalmFeatures = {
+    ...raw,
+    mounts: synthesizeMountsBlob(raw),
   }
-}
-
-/**
- * 完整的面相/手相读取流程
- *
- * 1. Gemini Vision 描述
- * 2. Gemini 解读
- */
-export async function generatePhysiognomyReading(
-  env: AiRouterEnv,
-  photoBase64: string,
-  type: PhysiognomyType,
-  options?: {
-    stellarChartInfo?: string
-    isPro?: boolean
-    language?: string
-    solarBirthDate?: string
-  }
-): Promise<PhysiognomyReading> {
-  // 阶段1: Gemini Vision 描述
-  const vlm = await describePhysiognomy(env.GEMINI_API_KEY, photoBase64, type)
-
-  // 阶段2: 文本解读（fallback 容灾启动）
-  const interpretation = await interpretPhysiognomy(
-    env,
-    vlm.description,
-    type,
-    options?.stellarChartInfo,
-    options?.isPro,
-    options?.language,
-    options?.solarBirthDate
-  )
 
   return {
-    type,
-    vlmDescription: vlm.description,
-    interpretation,
+    features,
+    landmarks: sanitizePalmLandmarks(mergeLandmarks(vlmLm, moondream)),
+    model: result.model,
   }
 }

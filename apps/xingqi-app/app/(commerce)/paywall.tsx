@@ -14,6 +14,7 @@ import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from '@/lib/push-preference'
 import { draftReadyForPaywall, getReadingDraft } from '@/lib/reading-draft'
 import {
+  bindReadingJobLifecycle,
   consumeReadingJobDone,
   consumeReadingJobError,
   enableReadingCompletionPush,
@@ -80,6 +81,8 @@ export default function XingqiPaywallScreen() {
       }
     })
   }, [])
+
+  useEffect(() => bindReadingJobLifecycle(locale, isPro), [locale, isPro])
 
   // If user re-opens paywall while a job is already running, show handoff.
   // Pro who somehow lands here: auto-start and skip the unlock chooser.

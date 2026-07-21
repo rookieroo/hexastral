@@ -15,6 +15,7 @@ import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import type { LocusExplorerData, LocusPart, LocusStar } from '@/lib/locus-data'
 import { starsForPart } from '@/lib/locus-data'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import { usePhotoImageSize } from '@/lib/image-stage-layout'
 
 const STAGE_MAX = 280
 const MIN_SCALE = 1
@@ -70,6 +71,7 @@ export function HomeLocusExplorer({
 
   const [part, setPart] = useState<LocusPart>('face')
   const [photoUri, setPhotoUri] = useState<string | undefined>()
+  const photoSize = usePhotoImageSize(photoUri)
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 })
   const [selected, setSelected] = useState<LocusStar | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -256,14 +258,16 @@ export function HomeLocusExplorer({
               <Image
                 source={{ uri: photoUri }}
                 style={{ width: '100%', height: '100%' }}
-                resizeMode='cover'
+                resizeMode='contain'
               />
-              {stars.length > 0 ? (
+              {stars.length > 0 && photoSize ? (
                 <LocusStarLayer
                   stars={stars}
                   stageW={stageSize.w}
                   stageH={stageSize.h}
+                  imageSize={photoSize}
                   accent={colors.accent}
+                  selectedKey={sheetOpen ? selected?.featureKey : null}
                   onSelect={(s) => void openStar(s)}
                 />
               ) : null}

@@ -69,10 +69,27 @@ async function signedJson(
       // Never embed ms — Alert surfaces this string if mapping misses.
       throw new Error('request_timeout')
     }
+    // Normalize RN fetch failures (background suspend, airplane, DNS) for callers.
+    if (isTransientNetworkError(msg)) {
+      throw new Error('network_error')
+    }
     throw err
   } finally {
     if (timer) clearTimeout(timer)
   }
+}
+
+/** RN / Hermes fetch failures when the app is backgrounded or briefly offline. */
+export function isTransientNetworkError(msg: string): boolean {
+  const m = msg.trim().toLowerCase()
+  if (!m) return false
+  if (m === 'network_error' || m === 'network error' || m === 'network request failed') return true
+  if (m.includes('network request failed')) return true
+  if (m.includes('failed to fetch')) return true
+  if (m.includes('the internet connection appears to be offline')) return true
+  if (m.includes('network connection was lost')) return true
+  if (m.includes('nsurlerrordomain') || m.includes('NSURLError'.toLowerCase())) return true
+  return false
 }
 
 /** True if server (or local cache) says biometric disclosure was accepted. */
@@ -416,17 +433,36 @@ export async function fetchActiveFaceReadingJob(): Promise<FaceoracleJobPoll | n
 
 const POLL_INTERVAL_MS = 1500
 const POLL_MAX_MS = 20 * 60 * 1000
+/** Consecutive poll network blips before giving up as job_poll_timeout (quit-safe). */
+const POLL_NETWORK_GRACE = 8
 
 export async function pollFaceReadingJob(
   jobId: string,
   opts?: { signal?: AbortSignal; onProgress?: (p: FaceoracleJobPoll) => void }
 ): Promise<FaceoracleJobPoll> {
   const started = Date.now()
+  let networkStreak = 0
   for (;;) {
     if (opts?.signal?.aborted) throw new Error('job_poll_aborted')
-    const snap = await getFaceReadingJob(jobId)
-    opts?.onProgress?.(snap)
-    if (snap.stage === 'done' || snap.stage === 'failed') return snap
+    try {
+      const snap = await getFaceReadingJob(jobId)
+      networkStreak = 0
+      opts?.onProgress?.(snap)
+      if (snap.stage === 'done' || snap.stage === 'failed') return snap
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      // App background / brief offline: keep waiting — cloud queue owns the job.
+      if (msg === 'network_error' || isTransientNetworkError(msg) || msg === 'request_timeout') {
+        networkStreak += 1
+        console.warn('[xingqi.job] poll_transient', { jobId, networkStreak, msg })
+        if (networkStreak >= POLL_NETWORK_GRACE && Date.now() - started > 30_000) {
+          // Enough evidence the client cannot stay online — hand off quit-safe.
+          throw new Error('job_poll_timeout')
+        }
+      } else {
+        throw err
+      }
+    }
     if (Date.now() - started > POLL_MAX_MS) throw new Error('job_poll_timeout')
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(resolve, POLL_INTERVAL_MS)

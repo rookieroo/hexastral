@@ -1,7 +1,7 @@
 /**
- * Home photo strip — 3 square thumbnails (左掌/右掌/面). Tap opens the
- * fullscreen locus viewer (or capture, when a slot is empty). Replaces the
- * cramped in-card tab+pinch explorer.
+ * Home photo strip — face hero + two palm tiles. Tap opens the fullscreen
+ * locus viewer (or capture, when a slot is empty). Sized to carry visual weight
+ * so the home does not leave a dead middle void under a short verdict.
  */
 
 import { Plus } from 'lucide-react-native'
@@ -10,8 +10,6 @@ import { Image, Pressable, Text, View } from 'react-native'
 
 import type { CapturePart } from '@/lib/reading-draft'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
-
-type Segment = { part: CapturePart; label: string }
 
 export function PhotoStrip({
   readingId,
@@ -53,11 +51,47 @@ export function PhotoStrip({
     }
   }, [readingId])
 
-  const segments: Segment[] = [
-    { part: 'palm_l', label: labels.palmL },
-    { part: 'palm_r', label: labels.palmR },
-    { part: 'face', label: labels.face },
-  ]
+  const tile = (part: CapturePart, label: string, opts: { flex?: number; aspectRatio: number }) => {
+    const uri = uris[part]
+    return (
+      <Pressable
+        key={part}
+        onPress={() => onPressPart(part, Boolean(uri))}
+        accessibilityRole='button'
+        accessibilityLabel={label}
+        style={{ flex: opts.flex, gap: 6 }}
+      >
+        <View
+          style={{
+            width: '100%',
+            aspectRatio: opts.aspectRatio,
+            backgroundColor: colors.bg,
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {uri ? (
+            <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode='cover' />
+          ) : (
+            <Plus size={22} color={colors.dim} strokeWidth={1.5} />
+          )}
+        </View>
+        <Text
+          style={{
+            color: colors.dim,
+            fontSize: 11,
+            letterSpacing: 0.4,
+            textAlign: 'center',
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    )
+  }
 
   return (
     <View style={{ gap: spacing.sm }}>
@@ -72,52 +106,11 @@ export function PhotoStrip({
       >
         {sectionLabel}
       </Text>
+      {/* Face carries the row; palms sit underneath — fills home without a middle void. */}
+      {tile('face', labels.face, { aspectRatio: 1.35 })}
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        {segments.map((seg) => {
-          const uri = uris[seg.part]
-          return (
-            <Pressable
-              key={seg.part}
-              onPress={() => onPressPart(seg.part, Boolean(uri))}
-              accessibilityRole='button'
-              accessibilityLabel={seg.label}
-              style={{ flex: 1, gap: 6 }}
-            >
-              <View
-                style={{
-                  width: '100%',
-                  aspectRatio: 1,
-                  backgroundColor: colors.bg,
-                  borderWidth: 0.5,
-                  borderColor: colors.separator,
-                  overflow: 'hidden',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {uri ? (
-                  <Image
-                    source={{ uri }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode='cover'
-                  />
-                ) : (
-                  <Plus size={20} color={colors.dim} strokeWidth={1.5} />
-                )}
-              </View>
-              <Text
-                style={{
-                  color: colors.dim,
-                  fontSize: 11,
-                  letterSpacing: 0.4,
-                  textAlign: 'center',
-                }}
-              >
-                {seg.label}
-              </Text>
-            </Pressable>
-          )
-        })}
+        {tile('palm_l', labels.palmL, { flex: 1, aspectRatio: 1 })}
+        {tile('palm_r', labels.palmR, { flex: 1, aspectRatio: 1 })}
       </View>
     </View>
   )

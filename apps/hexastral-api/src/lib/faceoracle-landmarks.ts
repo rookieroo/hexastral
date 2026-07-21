@@ -1,7 +1,7 @@
 /**
- * Normalized landmark coordinates for Xingqi VLM v6+ (top-left origin, 0..1).
- * Coordinates come from the Moondream `point` pass, with VLM-emitted landmarks
- * as fallback.
+ * Normalized landmark coordinates for Xingqi (top-left origin, 0..1).
+ * Face + palm: Moondream `point` (+ VLM fallback). Palm may be empty on
+ * legacy rows — client falls back to canonical layout.
  */
 
 export type LandmarkPoint = { x: number; y: number }
@@ -26,8 +26,16 @@ export type PalmLandmarkKey =
   | 'headLine'
   | 'heartLine'
   | 'fateLine'
-  | 'mounts'
+  | 'mountJupiter'
+  | 'mountSaturn'
+  | 'mountApollo'
+  | 'mountMercury'
+  | 'mountVenus'
+  | 'mountMoon'
+  | 'mountMars'
   | 'specialMarks'
+  /** @deprecated legacy single-blob mount midpoint */
+  | 'mounts'
 
 export type LocusPart = 'face' | 'palm_l' | 'palm_r'
 
@@ -84,6 +92,25 @@ export function buildLocusIndex(
       else if (cite.part === 'palm_l') index.palm_l.push(cite)
       else if (cite.part === 'palm_r') index.palm_r.push(cite)
     }
+  }
+  return index
+}
+
+/** Build locusIndex from first-class loci[] (preferred over chapter citations). */
+export function buildLocusIndexFromLoci(
+  loci: Array<{ featureKey: string; part: LocusPart; locus: string; reading: string }>
+): LocusIndex {
+  const index: LocusIndex = { face: [], palm_l: [], palm_r: [] }
+  for (const l of loci) {
+    const cite: LocusCitation = {
+      featureKey: l.featureKey,
+      part: l.part,
+      locus: l.locus,
+      note: l.reading,
+    }
+    if (l.part === 'face') index.face.push(cite)
+    else if (l.part === 'palm_l') index.palm_l.push(cite)
+    else if (l.part === 'palm_r') index.palm_r.push(cite)
   }
   return index
 }

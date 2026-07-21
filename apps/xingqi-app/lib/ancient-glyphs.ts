@@ -15,9 +15,9 @@ export type AncientGlyph = {
 
 /**
  * Chapter seals (pictographs):
- *   象 — image/form (overview): kneeling figure looking at a mark of appearance
+ *   象 — overview as 观象 (见系: eye + kneeling figure), NOT elephant 象
  *   面 — face: eye (目) over cheek bowl
- *   又 — hand/palm: five-finger palm pictograph (又/手 lineage)
+ *   又 — hand/palm: attested 甲骨又 = side-hand with THREE fingers
  *   命 — natal charge: person under a heaven-mark (口/令 → 命)
  *   月 — period moon
  *   永 — lasting flow / counsel
@@ -25,49 +25,49 @@ export type AncientGlyph = {
  */
 export const XINGQI_GLYPHS = {
   象: {
-    // Form / image — a standing torso with an outward “appearance” arc (not 简体象).
+    // Overview / 观象 — 见系：跪姿人 + 巨目（观其形），非甲骨「象=大象」。
     box: [100, 130],
     strokes: [
-      'M50,22 C48,40 47,58 48,78 C49,96 46,110 42,118', // spine
-      'M50,38 C36,42 28,54 30,68', // left shoulder→arm
-      'M50,38 C64,42 72,54 70,68', // right
-      'M32,72 C42,86 58,86 68,72', // belly arc = “form”
-      'M38,108 C46,102 54,102 62,108', // stance
+      'M34,28 C44,18 56,18 66,28 C56,38 44,38 34,28 Z',
+      'M48,42 C47,58 45,74 42,92 C40,102 46,110 56,108',
+      'M46,70 C56,78 64,90 68,102',
+      'M36,108 C44,104 52,104 60,108',
     ],
-    dots: [[50, 18, 4]], // head
+    dots: [[50, 28, 4]],
   },
   面: {
     // Face — 甲骨 目 over a soft cheek bowl (面).
     box: [100, 130],
     strokes: [
-      'M28,40 C40,28 60,28 72,40 C60,52 40,52 28,40 Z', // 目 outline
-      'M34,78 C40,96 60,96 66,78 C60,88 40,88 34,78 Z', // cheek / 面 lower
-      'M42,62 L58,62', // brow bridge
+      'M28,40 C40,28 60,28 72,40 C60,52 40,52 28,40 Z',
+      'M34,78 C40,96 60,96 66,78 C60,88 40,88 34,78 Z',
+      'M42,62 L58,62',
     ],
-    dots: [[50, 40, 4.2]], // pupil
+    dots: [[50, 40, 4.2]],
   },
   又: {
-    // Palm / hand — five-stroke 又: palm + fingers (象形手).
+    // Attested 甲骨「又」: side-view hand, THREE fingers from wrist
+    // (not a modern five-finger frontal palm).
     box: [100, 130],
     strokes: [
-      'M52,28 C48,48 46,68 48,92 C49,104 46,114 42,120', // arm
-      'M52,36 C40,34 30,42 28,54', // thumb
-      'M52,40 C62,32 74,34 78,46', // index
-      'M52,48 C64,46 76,52 80,64', // middle
-      'M52,58 C62,60 72,68 74,80', // ring
-      'M48,68 C56,74 62,84 62,96', // little
+      'M36,112 C40,90 46,66 54,48',
+      'M54,48 C50,40 52,34 56,30',
+      'M56,30 C68,22 80,18 90,16',
+      'M58,40 C72,36 84,38 94,44',
+      'M56,50 C68,54 80,64 88,74',
     ],
   },
   命: {
-    // Natal — person under a “charge” mark (令→命 feel): lid + kneeling figure.
+    // Natal — 令/命感: heaven lid + decree bar + kneeling figure.
     box: [100, 130],
     strokes: [
-      'M30,36 C42,24 58,24 70,36', // heaven lid
-      'M36,40 L64,40', // bar of decree
-      'M50,48 C49,66 47,84 44,100 C42,108 48,114 56,112', // kneeling back
-      'M48,72 C58,80 66,90 70,100', // forward knee
+      'M28,34 C42,22 58,22 72,34',
+      'M34,40 L66,40',
+      'M42,48 C40,56 38,62 40,68',
+      'M38,68 L62,68',
+      'M50,72 C49,86 47,98 44,110 C42,116 48,120 56,118',
+      'M48,88 C58,94 66,102 70,110',
     ],
-    dots: [[50, 28, 3.5]],
   },
   月: {
     box: [100, 130],
@@ -77,14 +77,15 @@ export const XINGQI_GLYPHS = {
     strokes: ['M49,56 L57,60'],
   },
   永: {
-    // Flowing water — counsel / lasting (永).
+    // 永 — lasting water course (泳之本字).
     box: [100, 130],
     strokes: [
-      'M50,24 C44,42 57,57 49,73 C42,88 52,102 49,116',
-      'M49,50 C40,56 33,66 29,80',
-      'M49,80 C59,85 67,95 71,109',
+      'M50,20 C44,40 56,56 50,74 C44,92 54,108 50,118',
+      'M50,44 C38,50 30,62 26,76',
+      'M50,68 C62,74 70,86 74,100',
+      'M42,28 L58,28',
     ],
-    dots: [[50, 16, 4.2]],
+    dots: [[50, 14, 3.8]],
   },
   金: {
     box: [100, 130],
@@ -157,6 +158,7 @@ export const XINGQI_GLYPHS = {
     strokes: ['M28,52 C38,44 48,44 58,52', 'M42,52 C52,44 62,44 72,52'],
   },
   loc_eyeType: {
+    // 目 — almond eye + pupil.
     box: [100, 130],
     strokes: ['M30,58 C42,48 58,48 70,58 C58,68 42,68 30,58 Z'],
     dots: [[50, 58, 4]],
@@ -174,8 +176,9 @@ export const XINGQI_GLYPHS = {
     strokes: ['M38,72 C42,88 48,92 50,92', 'M62,72 C58,88 52,92 50,92'],
   },
   loc_mouthType: {
+    // 口 — square mouth pictograph (not a modern smile curve).
     box: [100, 130],
-    strokes: ['M36,78 C44,88 56,88 64,78'],
+    strokes: ['M34,52 L66,52 L66,88 L34,88 Z'],
   },
   loc_chin: {
     box: [100, 130],
@@ -186,11 +189,14 @@ export const XINGQI_GLYPHS = {
     strokes: ['M68,48 C78,56 78,76 68,84', 'M32,48 C22,56 22,76 32,84'],
   },
   loc_handShape: {
+    // Same lineage as chapter 又 — three-finger side hand.
     box: [100, 130],
     strokes: [
-      'M52,28 C48,48 46,68 48,92',
-      'M52,36 C40,34 28,42 28,54',
-      'M52,40 C62,32 74,34 78,46',
+      'M36,112 C40,90 46,66 54,48',
+      'M54,48 C50,40 52,34 56,30',
+      'M56,30 C68,22 80,18 90,16',
+      'M58,40 C72,36 84,38 94,44',
+      'M56,50 C68,54 80,64 88,74',
     ],
   },
   loc_lifeLine: {
@@ -224,32 +230,30 @@ export type XingqiGlyphKey = keyof typeof XINGQI_GLYPHS
 
 /** Chapter → pictographic seal (not modern 简体 labels). */
 export const CHAPTER_GLYPH: Record<
-  'overview' | 'face' | 'palms' | 'natal' | 'period' | 'advice',
+  'overview' | 'face' | 'palms' | 'natal' | 'horizon' | 'period' | 'advice',
   XingqiGlyphKey
 > = {
   overview: '象',
   face: '面',
   palms: '又',
   natal: '命',
+  horizon: '月',
   period: '月',
   advice: '永',
 }
 
-export const CHAPTER_GLYPH_BLURB: Record<
-  XingqiGlyphKey,
-  { zh: string; en: string }
-> = {
+export const CHAPTER_GLYPH_BLURB: Record<XingqiGlyphKey, { zh: string; en: string }> = {
   象: {
-    zh: '象 — 形气之象：人立而现外形，总览一章的“看见什么形”。',
-    en: 'Form-image: a standing figure’s outline — what the reading “sees” overall.',
+    zh: '象 — 观象：巨目下跪姿人形，总览“看见什么形”（见系，非大象）。',
+    en: 'Observing form: eye over a kneeling figure — what the reading sees (not the elephant 象).',
   },
   面: {
     zh: '面 — 目在上、颊在下：面部一章的象形，不是简体“面”字贴图。',
     en: 'Face: eye over cheek bowl — a face pictograph, not a modern character sticker.',
   },
   又: {
-    zh: '又 — 手掌伸出五指：双手一章，取甲骨“手/又”系象形。',
-    en: 'Palm: outstretched hand with fingers — oracle-bone hand lineage.',
+    zh: '又 — 甲骨侧掌三指：双手一章，取「又」本形（非现代五指正面掌）。',
+    en: 'Palm: oracle-bone side-hand with three fingers (又), not a modern frontal hand.',
   },
   命: {
     zh: '命 — 人跪承令：形气对照八字时的“禀命”意象。',
@@ -277,10 +281,10 @@ export const CHAPTER_GLYPH_BLURB: Record<
   loc_noseShape: { zh: '鼻 — 中岳', en: 'Nose' },
   loc_cheekBones: { zh: '颧 — 五岳', en: 'Cheekbones' },
   loc_nasolabialFolds: { zh: '法令 — 口角纹', en: 'Nasolabial' },
-  loc_mouthType: { zh: '口 — 表达', en: 'Mouth' },
+  loc_mouthType: { zh: '口 — 方口象形', en: 'Mouth (square 口)' },
   loc_chin: { zh: '地阁 — 收束', en: 'Chin' },
   loc_earLobes: { zh: '耳垂', en: 'Ear lobes' },
-  loc_handShape: { zh: '掌形', en: 'Palm shape' },
+  loc_handShape: { zh: '掌形 — 又系侧掌', en: 'Palm shape (又 hand)' },
   loc_lifeLine: { zh: '生命线', en: 'Life line' },
   loc_headLine: { zh: '智慧线', en: 'Head line' },
   loc_heartLine: { zh: '感情线', en: 'Heart line' },
@@ -309,12 +313,19 @@ export const LOCUS_GLYPH: Record<string, XingqiGlyphKey> = {
   heartLine: 'loc_heartLine',
   fateLine: 'loc_fateLine',
   mounts: 'loc_mounts',
+  mountJupiter: 'loc_mounts',
+  mountSaturn: 'loc_mounts',
+  mountApollo: 'loc_mounts',
+  mountMercury: 'loc_mounts',
+  mountVenus: 'loc_mounts',
+  mountMoon: 'loc_mounts',
+  mountMars: 'loc_mounts',
   specialMarks: 'loc_specialMarks',
 }
 
 export type LocusCanonGroup = 'face' | 'palm'
 
-/** Symbols glossary + sheet — 19 star-capable loci (spatial keys only). */
+/** Symbols glossary + sheet — face 12 + palm 13 (spatial keys). */
 export type LocusCanon = {
   featureKey: string
   glyph: XingqiGlyphKey
@@ -516,15 +527,81 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     blurbEn: 'Direction axis when present.',
   },
   {
-    featureKey: 'mounts',
+    featureKey: 'mountJupiter',
     glyph: 'loc_mounts',
     group: 'palm',
-    titleZh: '丘位',
-    titleZhHant: '丘位',
-    titleEn: 'Mounts',
-    blurbZh: '主导丘中心（可点名多丘）',
-    blurbZhHant: '主導丘中心（可點名多丘）',
-    blurbEn: 'Dominant mount center.',
+    titleZh: '木星丘',
+    titleZhHant: '木星丘',
+    titleEn: 'Mount of Jupiter',
+    blurbZh: '食指根：志向、权威感的隆起',
+    blurbZhHant: '食指根：志向、權威感的隆起',
+    blurbEn: 'Under index — ambition and authority.',
+  },
+  {
+    featureKey: 'mountSaturn',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '土星丘',
+    titleZhHant: '土星丘',
+    titleEn: 'Mount of Saturn',
+    blurbZh: '中指根：责任、沉稳与制约',
+    blurbZhHant: '中指根：責任、沉穩與制約',
+    blurbEn: 'Under middle — duty and restraint.',
+  },
+  {
+    featureKey: 'mountApollo',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '太阳丘',
+    titleZhHant: '太陽丘',
+    titleEn: 'Mount of Apollo',
+    blurbZh: '无名指根：才情、名声与表达欲',
+    blurbZhHant: '無名指根：才情、名聲與表達欲',
+    blurbEn: 'Under ring — talent and visibility.',
+  },
+  {
+    featureKey: 'mountMercury',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '水星丘',
+    titleZhHant: '水星丘',
+    titleEn: 'Mount of Mercury',
+    blurbZh: '小指根：沟通、机敏与交易感',
+    blurbZhHant: '小指根：溝通、機敏與交易感',
+    blurbEn: 'Under pinky — speech and commerce.',
+  },
+  {
+    featureKey: 'mountVenus',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '金星丘',
+    titleZhHant: '金星丘',
+    titleEn: 'Mount of Venus',
+    blurbZh: '拇指根大鱼际：活力、情欲与生命力',
+    blurbZhHant: '拇指根大魚際：活力、情欲與生命力',
+    blurbEn: 'Thenar — vitality and affection.',
+  },
+  {
+    featureKey: 'mountMoon',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '月丘',
+    titleZhHant: '月丘',
+    titleEn: 'Mount of the Moon',
+    blurbZh: '小鱼际：想象、漂泊与潜意识',
+    blurbZhHant: '小魚際：想像、漂泊與潛意識',
+    blurbEn: 'Hypothenar — imagination and travel lean.',
+  },
+  {
+    featureKey: 'mountMars',
+    glyph: 'loc_mounts',
+    group: 'palm',
+    titleZh: '火星丘',
+    titleZhHant: '火星丘',
+    titleEn: 'Mount of Mars',
+    blurbZh: '掌中偏虎口侧：勇气、冲突与行动力',
+    blurbZhHant: '掌中偏虎口側：勇氣、衝突與行動力',
+    blurbEn: 'Mid-palm near thenar — courage and drive.',
   },
   {
     featureKey: 'specialMarks',
@@ -567,11 +644,11 @@ export function locusBlurbForLocale(featureKey: string, locale: string): string 
 export type InkRelation = 'gather' | 'pair' | 'contrast' | 'flow'
 
 export function relationForChapter(
-  kind: 'overview' | 'face' | 'palms' | 'natal' | 'period' | 'advice'
+  kind: 'overview' | 'face' | 'palms' | 'natal' | 'horizon' | 'period' | 'advice'
 ): InkRelation {
   if (kind === 'palms') return 'pair'
   if (kind === 'natal') return 'contrast'
-  if (kind === 'period' || kind === 'advice') return 'flow'
+  if (kind === 'horizon' || kind === 'period' || kind === 'advice') return 'flow'
   return 'gather'
 }
 

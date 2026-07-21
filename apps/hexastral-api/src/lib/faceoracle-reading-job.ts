@@ -27,16 +27,19 @@ import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../serv
 import { sendExpoPushMessages } from './expo-push'
 import {
   buildLocusIndex,
+  buildLocusIndexFromLoci,
   type LocusCitation,
   type LocusPart,
   parseLandmarksJson,
   type ReadingLandmarks,
 } from './faceoracle-landmarks'
 import {
-  buildFaceOraclePrompt,
+  buildFaceOracleChaptersPrompt,
+  buildFaceOracleLociPrompt,
   type FaceOracleChapterKind,
   faceoracleCautionObservations,
   faceoracleDensityGaps,
+  faceoracleSoftObservations,
 } from './prompts/faceoracle'
 import {
   faceoracleBodyLooksWrongLocale,
@@ -48,9 +51,11 @@ const CHAPTER_KINDS: FaceOracleChapterKind[] = [
   'face',
   'palms',
   'natal',
-  'period',
-  'advice',
+  'horizon',
 ]
+
+/** Legacy kinds still accepted when remapping old model output / stored drafts. */
+const LEGACY_CHAPTER_KINDS = new Set(['period', 'advice'])
 
 type JobRow = typeof faceoracleJobs.$inferSelect
 
@@ -78,10 +83,49 @@ function inferPartFromChapter(kind: FaceOracleChapterKind, featureKey: string): 
     'heartLine',
     'fateLine',
     'mounts',
+    'mountJupiter',
+    'mountSaturn',
+    'mountApollo',
+    'mountMercury',
+    'mountVenus',
+    'mountMoon',
+    'mountMars',
     'specialMarks',
   ])
-  if (palmKeys.has(featureKey)) return 'palm_l'
+  if (palmKeys.has(featureKey) || kind === 'palms') return 'palm_l'
   return 'face'
+}
+
+type LocusPayload = {
+  featureKey: string
+  part: LocusPart
+  locus: string
+  reading: string
+}
+
+function parseLoci(raw: unknown): LocusPayload[] {
+  if (!Array.isArray(raw)) return []
+  const out: LocusPayload[] = []
+  const seen = new Set<string>()
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const featureKey = asNonEmptyString(o.featureKey)
+    const locus = asNonEmptyString(o.locus)
+    const reading =
+      asNonEmptyString(o.reading) ?? asNonEmptyString(o.note)
+    const partRaw = asNonEmptyString(o.part)
+    if (!featureKey || !locus || !reading) continue
+    const part: LocusPart =
+      partRaw && LOCUS_PARTS.has(partRaw as LocusPart)
+        ? (partRaw as LocusPart)
+        : inferPartFromChapter('face', featureKey)
+    const dedupeKey = `${part}:${featureKey}`
+    if (seen.has(dedupeKey)) continue
+    seen.add(dedupeKey)
+    out.push({ featureKey, part, locus, reading })
+  }
+  return out
 }
 
 function parseCitations(raw: unknown, chapterKind: FaceOracleChapterKind): ChapterCitation[] {
@@ -205,16 +249,19 @@ function chapterFromFlat(
   if (!body || body.trim().length < 12) return null
   const zh = locale.startsWith('zh')
   const hant = locale.startsWith('zh-Hant') || locale === 'zh-TW' || locale === 'zh-HK'
+  const ja = locale.startsWith('ja')
   const first =
     body
       .trim()
       .split(/[。.!?\n]/)[0]
       ?.trim() ?? body.trim().slice(0, 48)
-  const counterpoint = !zh
-    ? 'Cultural study framing — not deterministic fate.'
-    : hant
+  const counterpoint = zh
+    ? hant
       ? '文化研習參考，不作命運斷語。'
       : '文化研习参考，不作命运断语。'
+    : ja
+      ? '文化的な考察であり、運命の断定ではありません。'
+      : 'Cultural study framing — not deterministic fate.'
   return {
     kind,
     goldenLine: first.slice(0, 80),
@@ -230,9 +277,14 @@ function chapterFromFlat(
 function parseChapter(raw: unknown): ChapterPayload | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
-  const kind = o.kind
-  if (typeof kind !== 'string' || !CHAPTER_KINDS.includes(kind as FaceOracleChapterKind)) {
-    return null
+  const kindRaw = o.kind
+  if (typeof kindRaw !== 'string') return null
+  let kind: string = kindRaw
+  // Legacy period/advice → horizon (merged near-window + actions).
+  if (kind === 'period' || kind === 'advice') kind = 'horizon'
+  if (!CHAPTER_KINDS.includes(kind as FaceOracleChapterKind)) {
+    if (!LEGACY_CHAPTER_KINDS.has(kind)) return null
+    kind = 'horizon'
   }
   const goldenLine = asNonEmptyString(o.goldenLine)
   const evidence = asNonEmptyString(o.evidence)
@@ -249,19 +301,35 @@ function parseChapter(raw: unknown): ChapterPayload | null {
   }
 }
 
-/** Normalize AI JSON → chapters[] + flat mirrors. */
+/** Normalize AI JSON → chapters[] + flat mirrors + loci[]. */
 export function normalizeFaceoracleInterpretation(
   parsed: Record<string, unknown>,
   locale: string
 ): {
   chapters: ChapterPayload[]
   flat: Record<string, unknown>
+  loci: LocusPayload[]
 } | null {
   const byKind = new Map<FaceOracleChapterKind, ChapterPayload>()
   if (Array.isArray(parsed.chapters)) {
     for (const item of parsed.chapters) {
       const ch = parseChapter(item)
-      if (ch) byKind.set(ch.kind, ch)
+      if (!ch) continue
+      // Prefer first horizon; if both period+advice remapped, keep the richer body.
+      const prev = byKind.get(ch.kind)
+      if (!prev) {
+        byKind.set(ch.kind, ch)
+      } else if (ch.kind === 'horizon') {
+        const prevLen = `${prev.evidence}${prev.dynamic}${prev.remedy ?? ''}`.length
+        const nextLen = `${ch.evidence}${ch.dynamic}${ch.remedy ?? ''}`.length
+        if (nextLen > prevLen) byKind.set(ch.kind, ch)
+        else {
+          // Merge remedy/reef from the thinner sibling when missing.
+          if (!prev.remedy && ch.remedy) prev.remedy = ch.remedy
+          if (!prev.reef && ch.reef) prev.reef = ch.reef
+          if (!prev.dynamic && ch.dynamic) prev.dynamic = ch.dynamic
+        }
+      }
     }
   }
 
@@ -290,30 +358,28 @@ export function normalizeFaceoracleInterpretation(
     const ch = chapterFromFlat('natal', flatNatal, locale)
     if (ch) byKind.set('natal', ch)
   }
-  if (!byKind.has('period')) {
-    const ch = chapterFromFlat('period', flatPeriod, locale)
-    if (ch) byKind.set('period', ch)
-  }
-  if (!byKind.has('advice')) {
-    const ch = chapterFromFlat('advice', flatAdvice, locale)
-    if (ch) byKind.set('advice', ch)
+  if (!byKind.has('horizon')) {
+    const body = [flatPeriod, flatAdvice].filter(Boolean).join('\n\n')
+    const ch = chapterFromFlat('horizon', body || null, locale)
+    if (ch) byKind.set('horizon', ch)
   }
 
   const chapters = CHAPTER_KINDS.map((k) => byKind.get(k)).filter((c): c is ChapterPayload =>
     Boolean(c)
   )
-  // Require core body: overview + at least one of face/palms/natal/advice
+  // Require core body: overview + at least one of face/palms/natal/horizon
   const hasCore =
     byKind.has('overview') &&
-    (byKind.has('face') || byKind.has('palms') || byKind.has('natal') || byKind.has('advice'))
+    (byKind.has('face') || byKind.has('palms') || byKind.has('natal') || byKind.has('horizon'))
   if (!hasCore || chapters.length < 2) return null
 
   const overview = byKind.get('overview')
   const face = byKind.get('face')
   const palms = byKind.get('palms')
   const natal = byKind.get('natal')
-  const period = byKind.get('period')
-  const advice = byKind.get('advice')
+  const horizon = byKind.get('horizon')
+
+  const loci = parseLoci(parsed.loci)
 
   const flat: Record<string, unknown> = {
     overview: flatOverview ?? overview?.evidence ?? overview?.goldenLine ?? '',
@@ -321,20 +387,22 @@ export function normalizeFaceoracleInterpretation(
     palmLeftSection: flatLeft ?? '',
     palmRightSection: flatRight ?? '',
     natalContrast: flatNatal ?? natal?.evidence ?? '',
-    periodDiff: flatPeriod ?? period?.evidence ?? null,
-    advice: flatAdvice ?? advice?.evidence ?? '',
+    periodDiff: flatPeriod ?? horizon?.evidence ?? null,
+    advice: flatAdvice ?? horizon?.remedy ?? horizon?.dynamic ?? '',
     chapters,
+    loci,
     events: Array.isArray(parsed.events) ? parsed.events : [],
   }
   if (palms && !flatLeft && !flatRight) {
     flat.palmLeftSection = palms.evidence
   }
-  return { chapters, flat }
+  return { chapters, flat, loci }
 }
 
 function interpretationHasBody(normalized: {
   chapters: ChapterPayload[]
   flat: Record<string, unknown>
+  loci?: LocusPayload[]
 }): boolean {
   if (normalized.chapters.length >= 2) {
     const text = normalized.chapters.map((c) => `${c.goldenLine}${c.evidence}${c.dynamic}`).join('')
@@ -350,7 +418,8 @@ function interpretationHasBody(normalized: {
 async function callReadingAi(
   env: CloudflareBindings,
   prompt: string,
-  locale: string
+  locale: string,
+  opts?: { maxTokens?: number; metricLabel?: string }
 ): Promise<{ parsed: Record<string, unknown> | null; rawText: string; error?: string }> {
   const systemPrompt = [
     'You are a careful East-Asian physiognomy + BaZi cultural interpreter.',
@@ -358,23 +427,16 @@ async function callReadingAi(
   ].join('\n')
 
   try {
-    // Full-life six-chapter JSON needs headroom. svc-feng runs the same flagship
-    // cascade at 16384/130s/70s, so 8192 is safely within limits (4096 was a
-    // stale conservative cap that truncated the natal full-life ladder).
     const rawText = (
       await callWithFallback(env, systemPrompt, prompt, {
         tier: 'flagship',
         locale,
-        maxTokens: 8192,
-        // 0.55 (was 0.35): less generic, more specific prose; jsonMode keeps it parseable.
+        maxTokens: opts?.maxTokens ?? 8192,
         temperature: 0.55,
         jsonMode: true,
-        // Qwen soft-switch + Kimi chat_template_kwargs.thinking:false (router).
         noThink: true,
-        metricLabel: 'faceoracle_reading',
-        // Six full-life chapters — keep under queue wall-clock (STALE_JOB_MS=15min);
-        // equal-split cascade needs ~65-70s/model so the flagship finishes first.
-        totalBudgetMs: 130_000,
+        metricLabel: opts?.metricLabel ?? 'faceoracle_reading',
+        totalBudgetMs: 210_000,
         perModelTimeoutMs: 70_000,
       })
     ).trim()
@@ -397,12 +459,16 @@ async function callReadingAi(
 function proseFromNormalized(normalized: {
   chapters: ChapterPayload[]
   flat: Record<string, unknown>
+  loci?: LocusPayload[]
 }): string {
   const chapterText = normalized.chapters
     .map(
       (c) =>
         `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}\n${c.counterpoint ?? ''}\n${c.citations.map((x) => `${x.locus} ${x.note}`).join('\n')}`
     )
+    .join('\n')
+  const lociText = (normalized.loci ?? [])
+    .map((l) => `${l.locus} ${l.reading}`)
     .join('\n')
   const events = Array.isArray(normalized.flat.events) ? normalized.flat.events : []
   const eventText = events
@@ -412,7 +478,7 @@ function proseFromNormalized(normalized: {
       return `${asNonEmptyString(e.theme) ?? ''} ${asNonEmptyString(e.note) ?? ''}`
     })
     .join('\n')
-  return `${chapterText}\n${eventText}`
+  return `${chapterText}\n${lociText}\n${eventText}`
 }
 
 async function setJobStage(
@@ -546,6 +612,8 @@ async function failJob(
 }
 
 const STALE_JOB_MS = 15 * 60 * 1000
+/** LLM can hang at progress=50 for a long time — fail sooner so the user can retry. */
+const STALE_INTERPRETING_LOW_PROGRESS_MS = 14 * 60 * 1000
 
 /** Mark stuck queued/interpreting jobs failed + refund. */
 export async function sweepStaleFaceoracleJobs(db: AppDb, userId: string): Promise<number> {
@@ -558,8 +626,14 @@ export async function sweepStaleFaceoracleJobs(db: AppDb, userId: string): Promi
   for (const job of rows) {
     if (job.stage !== 'queued' && job.stage !== 'interpreting') continue
     const started = Date.parse(job.startedAt || job.createdAt)
-    if (!Number.isFinite(started) || now - started < STALE_JOB_MS) continue
-    await failJob(db, job, 'stale_timeout', true)
+    if (!Number.isFinite(started)) continue
+    const age = now - started
+    const lowProgressHang =
+      job.stage === 'interpreting' &&
+      job.progress <= 50 &&
+      age >= STALE_INTERPRETING_LOW_PROGRESS_MS
+    if (!lowProgressHang && age < STALE_JOB_MS) continue
+    await failJob(db, job, lowProgressHang ? 'stale_interpreting_timeout' : 'stale_timeout', true)
     n += 1
   }
   return n
@@ -600,6 +674,8 @@ export async function runFaceoracleReadingJob(
     return
   }
 
+  await setJobStage(db, jobId, 'interpreting', 35)
+
   const landmarkCounts = {
     face: Object.keys(faceLm).length,
     palmLeft: Object.keys(palmLm).length,
@@ -617,11 +693,22 @@ export async function runFaceoracleReadingJob(
     job.gender === '女'
       ? '女: right(palm_r)=先天/本命底色 · left(palm_l)=后天/作为近运'
       : '男: left(palm_l)=先天/本命底色 · right(palm_r)=后天/作为近运'
+  // Current age anchors the acquired-hand window read (see faceoracle CORE
+  // "Age anchor"). Year granularity is enough for dayun/流年 windowing.
+  const birthYearMatch = /^(\d{4})/.exec(job.solarDate)
+  const currentAge = birthYearMatch ? new Date().getUTCFullYear() - Number(birthYearMatch[1]) : null
   const palmLines = [
     `palmConvention=${palmConventionText}`,
     `palmInnate=${palmInnate}`,
     `palmAcquired=${palmAcquired}`,
-  ]
+    currentAge !== null ? `currentAge≈${currentAge}` : '',
+    currentAge !== null
+      ? `palmAgeHint=后天掌(${palmAcquired})读作命主${currentAge}岁的当下窗口(×当前大运)；先天掌(${palmInnate})读底色；两掌同向/对拉定此窗口顺逆`
+      : '',
+    currentAge !== null
+      ? `palmLiunianHint=生命线弧(食指下≈幼→绕拇指球向腕≈老)、事业线(腕→中指为少至晚)；命主今${currentAge}岁落在主纹当前段——已走段作过去印证、当前段作窗口判断、下一段作下一窗口建议(扣大运干支/年龄)`
+      : '',
+  ].filter(Boolean)
 
   let natalSummary = [
     `solar=${job.solarDate}`,
@@ -685,7 +772,7 @@ export async function runFaceoracleReadingJob(
       dayunFuture ? `dayunFuture=${dayunFuture}` : '',
       dayunTrail ? `dayunTrail=${dayunTrail}` : '',
       remainYears !== null ? `currentDaYunRemainYears≈${remainYears}` : '',
-      'lifeHorizonHint=natal=全人生 timeline + 未来主章 (past印证→current当令→future大运带至后半场, use dayunFull/dayunFuture); period=近窗 only (liuNian + current大运余年); deepen 2-4 scenes',
+      'lifeHorizonHint=natal=全人生 timeline + 未来主章 (past印证→current当令→future大运带至后半场, use dayunFull/dayunFuture); horizon=近窗+行动 (liuNian + current大运余年 woven with per-axis actions); deepen 2-4 scenes',
       `liuNian=${nowYear}:${liunian.label}`,
       `nextLiuNian=${nowYear + 1}:${nextLiunian.label}`,
     ]
@@ -718,7 +805,7 @@ export async function runFaceoracleReadingJob(
       : 'oneshot'
   const horizonMonths = job.horizonMonths === 6 ? 6 : 3
 
-  const promptTemplate = buildFaceOraclePrompt({
+  const promptParams = {
     faceFeatures: compactFeatures(face),
     palmLeftFeatures: compactFeatures(palmL),
     palmRightFeatures: compactFeatures(palmR),
@@ -726,43 +813,93 @@ export async function runFaceoracleReadingJob(
     locale: job.locale,
     horizonMonths,
     outputKind,
-  })
+  } as const
 
+  // ── Pass 1: curated loci only ───────────────────────────────────────────
   await setJobStage(db, jobId, 'interpreting', 50)
-
-  let normalized: ReturnType<typeof normalizeFaceoracleInterpretation> = null
-  const ai = await callReadingAi(env, promptTemplate, job.locale)
-  if (ai.parsed) {
-    normalized = normalizeFaceoracleInterpretation(ai.parsed, job.locale)
-  } else {
-    console.warn('[faceoracle-job] primary AI miss — compact retry', {
-      jobId,
-      error: ai.error,
+  const lociPrompt = buildFaceOracleLociPrompt(promptParams)
+  let lociParsed: Record<string, unknown> | null = null
+  {
+    const ai = await callReadingAi(env, lociPrompt, job.locale, {
+      maxTokens: 4096,
+      metricLabel: 'faceoracle_loci',
     })
-    const compactPrompt = [
-      promptTemplate,
-      '',
-      'COMPACT RETRY: Keep every chapter field, but tighten prose slightly so the',
-      'full JSON fits. Output ONLY valid JSON.',
-    ].join('\n')
-    const retry = await callReadingAi(env, compactPrompt, job.locale)
-    if (!retry.parsed) {
-      await failJob(
-        db,
-        job,
-        `ai_failed:${(retry.error ?? ai.error ?? 'unknown').slice(0, 200)}`,
-        true
+    if (ai.parsed && Array.isArray(ai.parsed.loci) && ai.parsed.loci.length > 0) {
+      lociParsed = ai.parsed
+    } else {
+      console.warn('[faceoracle-job] loci pass miss — compact retry', {
+        jobId,
+        error: ai.error,
+      })
+      await setJobStage(db, jobId, 'interpreting', 55)
+      const retry = await callReadingAi(
+        env,
+        `${lociPrompt}\n\nCOMPACT RETRY: Output ONLY {"loci":[...]} with 16–20 deep readings.`,
+        job.locale,
+        { maxTokens: 4096, metricLabel: 'faceoracle_loci_retry' }
       )
-      return
+      if (retry.parsed && Array.isArray(retry.parsed.loci) && retry.parsed.loci.length > 0) {
+        lociParsed = retry.parsed
+      } else {
+        await failJob(
+          db,
+          job,
+          `ai_failed:loci:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
+          true
+        )
+        return
+      }
     }
-    normalized = normalizeFaceoracleInterpretation(retry.parsed, job.locale)
+  }
+
+  const lociJson = JSON.stringify(lociParsed.loci).slice(0, 24_000)
+
+  // ── Pass 2: chapters + events from fixed loci ──────────────────────────
+  await setJobStage(db, jobId, 'interpreting', 70)
+  const chaptersPrompt = buildFaceOracleChaptersPrompt(promptParams, lociJson)
+  let normalized: ReturnType<typeof normalizeFaceoracleInterpretation> = null
+  {
+    const ai = await callReadingAi(env, chaptersPrompt, job.locale, {
+      maxTokens: 8192,
+      metricLabel: 'faceoracle_chapters',
+    })
+    const merged = ai.parsed ? { ...ai.parsed, loci: lociParsed.loci } : null
+    if (merged) {
+      normalized = normalizeFaceoracleInterpretation(merged, job.locale)
+    }
+    if (!normalized || !interpretationHasBody(normalized)) {
+      console.warn('[faceoracle-job] chapters pass miss — compact retry', {
+        jobId,
+        error: ai.error,
+      })
+      await setJobStage(db, jobId, 'interpreting', 80)
+      const retry = await callReadingAi(
+        env,
+        `${chaptersPrompt}\n\nCOMPACT RETRY: Keep all 5 chapters; tighten prose. Output ONLY valid JSON.`,
+        job.locale,
+        { maxTokens: 8192, metricLabel: 'faceoracle_chapters_retry' }
+      )
+      const mergedRetry = retry.parsed ? { ...retry.parsed, loci: lociParsed.loci } : null
+      if (!mergedRetry) {
+        await failJob(
+          db,
+          job,
+          `ai_failed:chapters:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
+          true
+        )
+        return
+      }
+      normalized = normalizeFaceoracleInterpretation(mergedRetry, job.locale)
+    }
   }
   if (!normalized || !interpretationHasBody(normalized)) {
     await failJob(db, job, 'ai_empty', true)
     return
   }
 
-  // Locale drift guard (en/ja): whole-body ratio OR any single field (esp. goldenLine).
+  await setJobStage(db, jobId, 'interpreting', 88)
+
+  // Locale drift guard (en/ja) on chapter prose only.
   const proseSample = normalized.chapters
     .map((c) => `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}`)
     .join('\n')
@@ -779,139 +916,52 @@ export async function runFaceoracleReadingJob(
     faceoracleBodyLooksWrongLocale(job.locale, proseSample) ||
     faceoracleFieldsLookWrongLocale(job.locale, fieldSamples)
   ) {
-    console.warn('[faceoracle-job] locale drift — retrying', { jobId, locale: job.locale })
+    console.warn('[faceoracle-job] locale drift — retrying chapters', { jobId, locale: job.locale })
     const retryPrompt = [
-      promptTemplate,
+      chaptersPrompt,
       '',
-      'CRITICAL RETRY: Previous draft violated the output language. Rewrite the ENTIRE JSON',
-      'so every user-facing string — including EVERY goldenLine and citations[].locus/note —',
-      'is in the required language. No Chinese sentences. No bare-Chinese goldenLine.',
+      'CRITICAL RETRY: Previous draft violated the output language. Rewrite chapters/events',
+      'in the required language. Keep FixedLoci as-is (do not translate featureKey).',
+      'Output ONLY valid JSON.',
     ].join('\n')
-    const langRetry = await callReadingAi(env, retryPrompt, job.locale)
+    const langRetry = await callReadingAi(env, retryPrompt, job.locale, {
+      maxTokens: 8192,
+      metricLabel: 'faceoracle_chapters_locale',
+    })
     if (langRetry.parsed) {
-      const again = normalizeFaceoracleInterpretation(langRetry.parsed, job.locale)
+      const again = normalizeFaceoracleInterpretation(
+        { ...langRetry.parsed, loci: lociParsed.loci },
+        job.locale
+      )
       if (again && interpretationHasBody(again)) {
         normalized = again
       }
     }
   }
 
-  // Retry acceptance: never swap a richer draft for a thinner one. A retry is
-  // accepted only when it STRICTLY reduces gaps AND does not shrink the prose
-  // (the D1 evidence showed retries regressing into terser, more generic text).
-  const proseLen = (n: { chapters: ChapterPayload[]; flat: Record<string, unknown> }): number =>
-    proseFromNormalized(n).replace(/\s+/g, '').length
-  const isThinGap = (g: string): boolean =>
-    g.startsWith('field.thin_') ||
-    g === 'advice.not_actionable' ||
-    g.startsWith('field.dynamic_label_only')
-
-  // Density floors (structure): one structure retry, accepted only on strict gain.
-  const densitySource = {
-    chapters: normalized.chapters,
-    events: normalized.flat.events,
-  }
-  let densityGaps = faceoracleDensityGaps(densitySource, normalized.chapters)
+  // Density: log-only (no structure retry checklist — depth comes from Pass 1).
+  const densityGaps = faceoracleDensityGaps(
+    { chapters: normalized.chapters, events: normalized.flat.events, loci: normalized.loci },
+    normalized.chapters
+  )
   if (densityGaps.length > 0) {
-    console.warn('[faceoracle-job] density gaps — retrying', { jobId, gaps: densityGaps })
-    const densityPrompt = [
-      promptTemplate,
-      '',
-      'STRUCTURE RETRY: Previous draft failed these structural checks (NOT word count):',
-      densityGaps.join(', '),
-      'Fix each WITHOUT shortening any chapter: goldenLine/evidence/dynamic/reef/remedy must EACH add a new angle (no echoing the same sentence);',
-      'reef/remedy must be unique per chapter or null — the 本流年 sentence belongs to period.reef ONLY, never pasted elsewhere; no single 冥想/呼吸 remedy reused across chapters;',
-      'period (会发生什么) and advice (你该做什么) must NOT restate each other;',
-      'citation notes must advance the chapter, not paste an evidence sentence; cite BOTH supportive and cautionary loci actually present in the inputs (do not cherry-pick only auspicious ones);',
-      'face needs ≥5 DISTINCT loci; palms must cover BOTH 先天掌 and 后天掌 (see palmConvention) and cite lifeLine AND heartLine with classical loci;',
-      'natal must narrate the FUTURE dayun band (use dayunFuture: named 干支/年龄/年份), distinct from period;',
-      'period stays near-window only; give ≥5 events including ≥2 near-window plus career/love/health coverage.',
-      'Do not pad with filler or spray checklist keywords. Output ONLY valid JSON.',
-    ].join('\n')
-    const densRetry = await callReadingAi(env, densityPrompt, job.locale)
-    if (densRetry.parsed) {
-      const densAgain = normalizeFaceoracleInterpretation(densRetry.parsed, job.locale)
-      if (densAgain && interpretationHasBody(densAgain)) {
-        const againGaps = faceoracleDensityGaps(
-          { chapters: densAgain.chapters, events: densAgain.flat.events },
-          densAgain.chapters
-        )
-        const curLen = proseLen(normalized)
-        const againLen = proseLen(densAgain)
-        // Strictly fewer gaps AND no meaningful length regression.
-        if (againGaps.length < densityGaps.length && againLen + 12 >= curLen) {
-          normalized = densAgain
-          densityGaps = againGaps
-        } else {
-          console.warn('[faceoracle-job] density retry rejected (no strict gain / regressed)', {
-            jobId,
-            curLen,
-            againLen,
-            curGaps: densityGaps.length,
-            againGaps: againGaps.length,
-          })
-        }
-      }
-    }
-    if (densityGaps.length > 0) {
-      console.warn('[faceoracle-job] density still soft-short', { jobId, gaps: densityGaps })
-    }
+    console.warn('[faceoracle-job] density soft-short (no retry)', { jobId, gaps: densityGaps })
   }
 
-  // Deepen retry: thin one-liner fields remain → ask for mechanism + one dated
-  // scene while KEEPING structure/conclusions. Accept only when thin fields drop,
-  // the draft grows, and no new structural gaps appear.
-  const thinGaps = densityGaps.filter(isThinGap)
-  if (thinGaps.length > 0) {
-    console.warn('[faceoracle-job] thin fields — deepen retry', { jobId, thin: thinGaps })
-    const deepenPrompt = [
-      promptTemplate,
-      '',
-      'DEEPEN RETRY: keep the SAME structure, chapters, loci and conclusions — do NOT restructure or shorten anything.',
-      `These fields are thin one-liners: ${thinGaps.join(', ')}.`,
-      'For EACH, expand along the 形→机理(为什么，扣住日主/用神/大运)→一个点名窗口(年龄/年份/干支)的具体场景 chain until it reads like a real master paragraph.',
-      'advice must give per-axis actionable steps (触发条件 + 具体动作 + 为何), distinct from period.',
-      'Add depth by inference and one dated scene — never by padding, repeating, or generic 空话. Output ONLY valid JSON.',
-    ].join('\n')
-    const deepRetry = await callReadingAi(env, deepenPrompt, job.locale)
-    if (deepRetry.parsed) {
-      const deepAgain = normalizeFaceoracleInterpretation(deepRetry.parsed, job.locale)
-      if (deepAgain && interpretationHasBody(deepAgain)) {
-        const deepGaps = faceoracleDensityGaps(
-          { chapters: deepAgain.chapters, events: deepAgain.flat.events },
-          deepAgain.chapters
-        )
-        const deepThin = deepGaps.filter(isThinGap)
-        const curLen = proseLen(normalized)
-        const deepLen = proseLen(deepAgain)
-        if (
-          deepThin.length < thinGaps.length &&
-          deepLen >= curLen &&
-          deepGaps.length <= densityGaps.length
-        ) {
-          normalized = deepAgain
-          densityGaps = deepGaps
-        } else {
-          console.warn('[faceoracle-job] deepen retry rejected', {
-            jobId,
-            curLen,
-            deepLen,
-            thinBefore: thinGaps.length,
-            thinAfter: deepThin.length,
-          })
-        }
-      }
-    }
+  const softObs = faceoracleSoftObservations(
+    { events: normalized.flat.events, loci: normalized.loci },
+    normalized.chapters
+  )
+  if (softObs.length > 0) {
+    console.info('[faceoracle-job] soft observations (observe only)', { jobId, obs: softObs })
   }
 
-  // Log-only: cherry-picking signal (face/palms notes name no tension). Never a
-  // retry gate — forcing caution words would push the model to fabricate negatives.
-  const cautionObs = faceoracleCautionObservations(normalized.chapters)
+  const cautionObs = faceoracleCautionObservations(normalized.chapters, normalized.loci)
   if (cautionObs.length > 0) {
     console.info('[faceoracle-job] caution-word absent (observe only)', { jobId, obs: cautionObs })
   }
 
-  // ADR-0003: hard forbidden substring audit — one rewrite, then accept (no stub fail).
+  // ADR-0003: hard forbidden substring audit — one rewrite on chapters, keep loci.
   const auditText = proseFromNormalized(normalized)
   const softHits = auditSoftForbiddenHits(auditText)
   if (softHits.length > 0) {
@@ -922,20 +972,25 @@ export async function runFaceoracleReadingJob(
   }
   let hardHits = auditHardForbiddenHits(auditText)
   if (hardHits.length > 0) {
-    console.warn('[faceoracle-job] hard forbidden — rewriting', {
+    console.warn('[faceoracle-job] hard forbidden — rewriting chapters', {
       jobId,
       patterns: hardHits.map((h) => h.pattern),
     })
     const forbidPrompt = [
-      promptTemplate,
+      chaptersPrompt,
       '',
       buildForbiddenRewriteSuffix(hardHits),
-      'Keep classical loci, citations, dated windows, and three-axis coverage.',
-      'Do not replace specificity with empty positivity. Output ONLY valid JSON.',
+      'Keep FixedLoci unchanged. Output ONLY valid JSON.',
     ].join('\n')
-    const forbidRetry = await callReadingAi(env, forbidPrompt, job.locale)
+    const forbidRetry = await callReadingAi(env, forbidPrompt, job.locale, {
+      maxTokens: 8192,
+      metricLabel: 'faceoracle_chapters_forbid',
+    })
     if (forbidRetry.parsed) {
-      const forbidAgain = normalizeFaceoracleInterpretation(forbidRetry.parsed, job.locale)
+      const forbidAgain = normalizeFaceoracleInterpretation(
+        { ...forbidRetry.parsed, loci: lociParsed.loci },
+        job.locale
+      )
       if (forbidAgain && interpretationHasBody(forbidAgain)) {
         normalized = forbidAgain
         hardHits = auditHardForbiddenHits(proseFromNormalized(normalized))
@@ -958,9 +1013,12 @@ export async function runFaceoracleReadingJob(
     palmLeft: palmLm,
     palmRight: palmRm,
   }
-  const locusIndex = buildLocusIndex(
-    normalized.chapters.map((ch) => ({ kind: ch.kind, citations: ch.citations }))
-  )
+  const locusIndex =
+    normalized.loci.length > 0
+      ? buildLocusIndexFromLoci(normalized.loci)
+      : buildLocusIndex(
+          normalized.chapters.map((ch) => ({ kind: ch.kind, citations: ch.citations }))
+        )
   const output: Record<string, unknown> = {
     mode: 'face_palm',
     faceFeatureId: job.faceFeatureId,
@@ -968,6 +1026,7 @@ export async function runFaceoracleReadingJob(
     palmRightFeatureId: job.palmRightFeatureId,
     features: { face, palmLeft: palmL, palmRight: palmR },
     landmarks,
+    loci: normalized.loci,
     locusIndex,
     birth: {
       solarDate: job.solarDate,
@@ -984,8 +1043,8 @@ export async function runFaceoracleReadingJob(
     aiInterpretation: interpretation,
     chapters: normalized.chapters,
     events,
-    rawAiText: ai.rawText,
-    promptTemplate,
+    rawAiText: '',
+    promptPasses: ['loci', 'chapters'],
   }
 
   const storedInput = {

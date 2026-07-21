@@ -1,6 +1,7 @@
 /**
  * Home — report-first. Hero = latest reading's verdict (tap → full report);
- * a photo strip opens the fullscreen locus viewer; a compact row updates 生辰.
+ * a photo strip opens the fullscreen locus viewer.
+ * Birth nudge only when incomplete; edit entry lives in Settings.
  * Archive list lives in Settings. Sticky bottom CTA for thumb reach.
  */
 
@@ -13,7 +14,7 @@ import {
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { CalendarDays, Settings2 } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
@@ -38,6 +39,7 @@ import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import { captureHrefForPart } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
+  bindReadingJobLifecycle,
   consumeReadingJobDone,
   consumeReadingJobError,
   getReadingJobState,
@@ -68,9 +70,15 @@ export default function XingqiHomeScreen() {
   const [loading, setLoading] = useState(true)
   const [hasBirth, setHasBirth] = useState(false)
   const [job, setJob] = useState<ReadingJobState>(() => getReadingJobState())
+  const hasLoadedRef = useRef(false)
+  const lastFetchAtRef = useRef(0)
 
-  const reload = useCallback(async () => {
-    setLoading(true)
+  /**
+   * full = cold start (show loader). soft = keep current UI, refresh in background.
+   * Returning from /result /settings /locus must not flash a full-screen reload.
+   */
+  const reload = useCallback(async (mode: 'full' | 'soft' = 'full') => {
+    if (mode === 'full') setLoading(true)
     try {
       const [hist, draft] = await Promise.all([
         fetchReadings(PORTFOLIO_TARGET_APP),
@@ -78,14 +86,18 @@ export default function XingqiHomeScreen() {
       ])
       setItems(hist.readings ?? [])
       setHasBirth(Boolean(draft.solarDate && draft.timeIndex != null && draft.gender))
+      hasLoadedRef.current = true
+      lastFetchAtRef.current = Date.now()
     } catch {
-      setItems([])
+      if (mode === 'full') setItems([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => subscribeReadingJob(setJob), [])
+
+  useEffect(() => bindReadingJobLifecycle(locale, isPro), [locale, isPro])
 
   useEffect(() => {
     if (job.status === 'done' && job.readingId && job.resultPayload) {
@@ -101,7 +113,7 @@ export default function XingqiHomeScreen() {
       } catch {
         hasBody = false
       }
-      void reload().then(() => {
+      void reload('soft').then(() => {
         if (!hasBody) return
         // replace — never stack another /result on home/paywall/deeplink races
         router.replace({
@@ -137,15 +149,21 @@ export default function XingqiHomeScreen() {
             ]
           : []),
       ])
-      void reload()
+      void reload('soft')
     }
   }, [job, reload, router, locale])
 
   useFocusEffect(
     useCallback(() => {
       void (async () => {
-        await reload()
-        // Reconcile with server; resume even if UI still shows running after poll timeout.
+        const now = Date.now()
+        // Back-nav spam (result → home → settings → home): skip network if fresh.
+        const FRESH_MS = 12_000
+        if (hasLoadedRef.current && now - lastFetchAtRef.current < FRESH_MS) {
+          resumeReadingJobIfNeeded(locale, isPro)
+          return
+        }
+        await reload(hasLoadedRef.current ? 'soft' : 'full')
         resumeReadingJobIfNeeded(locale, isPro)
       })()
     }, [reload, locale, isPro])
@@ -271,7 +289,7 @@ export default function XingqiHomeScreen() {
                   await deletePortfolioReading(PORTFOLIO_TARGET_APP, item.id)
                   await deleteReadingPhotoFolder(item.id)
                   await clearLastReadingPhotoSnapshot()
-                  await reload()
+                  await reload('soft')
                 } catch {
                   Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
                 }
@@ -355,7 +373,9 @@ export default function XingqiHomeScreen() {
             paddingHorizontal: spacing.xl,
             paddingBottom: spacing.lg,
             gap: spacing.lg,
-            flexGrow: 1,
+            // Only grow when empty so the "no readings" state can center —
+            // with a featured reading, pack content top→down (no middle void).
+            ...(items.length === 0 && !loading ? { flexGrow: 1 } : null),
           }}
         >
           {job.status === 'running' ? (
@@ -396,7 +416,7 @@ export default function XingqiHomeScreen() {
                     }}
                   >
                     {s('进行中', '進行中', 'In progress')}
-                    {job.progress > 0 ? ` · ${job.progress}%` : ''}
+                    {` · ${Math.max(job.progress, job.phase === 'extracting' ? 5 : job.phase === 'queued' ? 10 : 20)}%`}
                   </Text>
                 </View>
                 <XingqiLoader label={s('解读中', '解讀中', 'Reading')} size={28} />
@@ -520,7 +540,8 @@ export default function XingqiHomeScreen() {
             />
           ) : null}
 
-          {!loading && featured ? (
+          {/* Incomplete birth only — once set, edit lives in Settings. */}
+          {!loading && !hasBirth ? (
             <Pressable
               onPress={() => void openBirth()}
               accessibilityRole='button'
@@ -533,16 +554,12 @@ export default function XingqiHomeScreen() {
                 borderTopColor: colors.separator,
               }}
             >
-              <CalendarDays
-                size={18}
-                color={hasBirth ? colors.secondary : colors.dim}
-                strokeWidth={1.6}
-              />
+              <CalendarDays size={18} color={colors.dim} strokeWidth={1.6} />
               <Text style={{ color: colors.secondary, fontSize: 14, flex: 1 }}>
                 {inputsCopy.birth}
               </Text>
               <Text style={{ color: colors.dim, fontSize: 12 }}>
-                {hasBirth ? s('已填', '已填', 'Set') : s('去填写', '去填寫', 'Add')}
+                {s('去填写', '去填寫', 'Add')}
               </Text>
             </Pressable>
           ) : null}

@@ -1,14 +1,11 @@
 /**
- * 面相/手相 HTTP 端点
+ * 面相/手相 HTTP 端点 — structured VLM feature extraction only (ADR-0028).
+ * Reading interpretation lives in hexastral-api faceoracle queue consumer.
  */
 
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import {
-  extractFaceFeatures,
-  extractPalmFeatures,
-  generatePhysiognomyReading,
-} from '../services/physiognomy'
+import { extractFaceFeatures, extractPalmFeatures } from '../services/physiognomy'
 import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
@@ -21,25 +18,12 @@ function normalizeIncomingBase64(raw: string): string {
 
 export const physiognomyRoutes = new Hono<AppEnv>()
 
-/** POST /analyze — VLM描述 + 玄学解读 */
-physiognomyRoutes.post('/analyze', async (c) => {
-  const input = await c.req.json()
-
-  const reading = await generatePhysiognomyReading(c.env, input.photoBase64, input.type, {
-    stellarChartInfo: input.stellarChartInfo,
-    isPro: input.isPro ?? false,
-    language: input.language,
-  })
-
-  return c.json(reading)
-})
-
 /**
  * POST /extract-features
  * 面相特征结构化提取 — 隐私优先架构
  *
  * 输入: base64 图片
- * 输出: { features, model }（不含原图）
+ * 输出: { features, landmarks, model }（不含原图）
  * Cascade: CF Kimi K2.6 → Gemini Flash → Llama 3.2 vision
  */
 physiognomyRoutes.post('/extract-features', async (c) => {
@@ -70,7 +54,8 @@ physiognomyRoutes.post('/extract-features', async (c) => {
 
 /**
  * POST /extract-palm-features
- * Structured palm extract — mirrors /extract-features; image is ephemeral (ADR-0028).
+ * Structured palm extract — feature text only; landmarks always {}.
+ * Client plots palm stars from a handedness-mirrored canonical anatomical layout.
  */
 physiognomyRoutes.post('/extract-palm-features', async (c) => {
   const input = await c.req.json<{

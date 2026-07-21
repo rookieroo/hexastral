@@ -1,7 +1,15 @@
 import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
 import { isNearEcho } from '@/lib/text-echo'
 
-export type XingqiChapterKind = 'overview' | 'face' | 'palms' | 'natal' | 'period' | 'advice'
+/** New readings use horizon; period/advice kept for legacy resultJson. */
+export type XingqiChapterKind =
+  | 'overview'
+  | 'face'
+  | 'palms'
+  | 'natal'
+  | 'horizon'
+  | 'period'
+  | 'advice'
 
 export type XingqiChapterCitation = {
   locus: string
@@ -21,7 +29,15 @@ export type XingqiChapter = {
   citations: XingqiChapterCitation[]
 }
 
-const ORDER: XingqiChapterKind[] = ['overview', 'face', 'palms', 'natal', 'period', 'advice']
+const ORDER: XingqiChapterKind[] = [
+  'overview',
+  'face',
+  'palms',
+  'natal',
+  'horizon',
+  'period',
+  'advice',
+]
 
 export const CHAPTER_TITLE: Record<XingqiChapterKind, { zh: string; zhHant: string; en: string }> =
   {
@@ -29,6 +45,7 @@ export const CHAPTER_TITLE: Record<XingqiChapterKind, { zh: string; zhHant: stri
     face: { zh: '面部', zhHant: '面部', en: 'Face' },
     palms: { zh: '双手', zhHant: '雙手', en: 'Palms' },
     natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi' },
+    horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next' },
     period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period' },
     advice: { zh: '建议', zhHant: '建議', en: 'Advice' },
   }
@@ -51,12 +68,42 @@ function parseCitations(raw: unknown): XingqiChapterCitation[] {
     if (!item || typeof item !== 'object') continue
     const o = item as Record<string, unknown>
     const locus = asStr(o.locus)
-    const note = asStr(o.note)
+    const note = asStr(o.note) || asStr(o.reading)
     const featureKey = asStr(o.featureKey) || undefined
     const partRaw = asStr(o.part)
     const part =
       partRaw === 'face' || partRaw === 'palm_l' || partRaw === 'palm_r' ? partRaw : undefined
     if (locus && note) out.push({ locus, note, featureKey, part })
+  }
+  return out
+}
+
+/** Distribute top-level loci[] into face/palms chapter citation chips. */
+function citationsFromLoci(
+  loci: unknown,
+  partFilter: (part: string) => boolean
+): XingqiChapterCitation[] {
+  if (!Array.isArray(loci)) return []
+  const out: XingqiChapterCitation[] = []
+  const seen = new Set<string>()
+  for (const item of loci) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const part = asStr(o.part)
+    if (!partFilter(part)) continue
+    const locus = asStr(o.locus)
+    const note = asStr(o.reading) || asStr(o.note)
+    const featureKey = asStr(o.featureKey) || undefined
+    if (!locus || !note) continue
+    const key = featureKey || locus
+    if (seen.has(`${part}:${key}`)) continue
+    seen.add(`${part}:${key}`)
+    out.push({
+      locus,
+      note,
+      featureKey,
+      part: part === 'face' || part === 'palm_l' || part === 'palm_r' ? part : undefined,
+    })
   }
   return out
 }
@@ -90,8 +137,10 @@ function chapterFromBody(
 function parseChapter(raw: unknown): XingqiChapter | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
-  const kind = o.kind
-  if (typeof kind !== 'string' || !ORDER.includes(kind as XingqiChapterKind)) return null
+  let kind = o.kind
+  if (typeof kind !== 'string') return null
+  // Remap unexpected legacy duplicates only when kind is already in ORDER.
+  if (!ORDER.includes(kind as XingqiChapterKind)) return null
   const goldenLine = asStr(o.goldenLine)
   const evidence = asStr(o.evidence)
   if (!goldenLine && !evidence) return null
@@ -116,7 +165,7 @@ export function readingHasReportBody(output: Record<string, unknown>): boolean {
   )
 }
 
-/** Build 1–6 chapters from new `chapters[]` or legacy flat aiInterpretation. */
+/** Build 1–5(+legacy) chapters from new `chapters[]` or legacy flat aiInterpretation. */
 export function adaptReadingChapters(
   output: Record<string, unknown>,
   locale: string
@@ -178,14 +227,45 @@ export function adaptReadingChapters(
     const ch = chapterFromBody('natal', natal, locale)
     if (ch) byKind.set('natal', ch)
   }
-  if (!byKind.has('period')) {
+  if (!byKind.has('horizon')) {
+    // Prefer merged horizon from flat period+advice when no explicit horizon chapter.
+    if (!byKind.has('period') && !byKind.has('advice')) {
+      const body = [period, advice, eventsNote].filter(Boolean).join('\n\n')
+      const ch = chapterFromBody('horizon', body, locale)
+      if (ch) byKind.set('horizon', ch)
+    }
+  }
+  if (!byKind.has('horizon') && !byKind.has('period')) {
     const body = [period, eventsNote].filter(Boolean).join('\n\n')
     const ch = chapterFromBody('period', body, locale)
     if (ch) byKind.set('period', ch)
   }
-  if (!byKind.has('advice')) {
+  if (!byKind.has('horizon') && !byKind.has('advice')) {
     const ch = chapterFromBody('advice', advice, locale)
     if (ch) byKind.set('advice', ch)
+  }
+
+  // Distribute first-class loci[] into face/palms chips (same data as the sheet).
+  const lociRaw = output.loci ?? ai.loci
+  const faceLoci = citationsFromLoci(lociRaw, (p) => p === 'face')
+  const palmLoci = citationsFromLoci(lociRaw, (p) => p === 'palm_l' || p === 'palm_r')
+  if (faceLoci.length > 0) {
+    const faceCh = byKind.get('face')
+    if (faceCh) {
+      faceCh.citations = faceCh.citations.length > 0 ? faceCh.citations : faceLoci
+    }
+  }
+  if (palmLoci.length > 0) {
+    const palmsCh = byKind.get('palms')
+    if (palmsCh) {
+      palmsCh.citations = palmsCh.citations.length > 0 ? palmsCh.citations : palmLoci
+    }
+  }
+
+  // If both horizon and legacy period/advice exist, prefer horizon and drop legacy.
+  if (byKind.has('horizon')) {
+    byKind.delete('period')
+    byKind.delete('advice')
   }
 
   const ordered = ORDER.map((k) => byKind.get(k)).filter((c): c is XingqiChapter => Boolean(c))

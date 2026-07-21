@@ -32,6 +32,7 @@ import {
 } from '@/lib/locus-data'
 import { captureHrefForPart } from '@/lib/period-photos'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import { usePhotoImageSize } from '@/lib/image-stage-layout'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 4
@@ -58,6 +59,7 @@ export default function LocusViewerScreen() {
   const [loading, setLoading] = useState(true)
   const [part, setPart] = useState<LocusPart>(initialPart)
   const [photoUri, setPhotoUri] = useState<string | undefined>()
+  const photoSize = usePhotoImageSize(photoUri)
   const [selected, setSelected] = useState<LocusStar | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -273,14 +275,16 @@ export default function LocusViewerScreen() {
                 <Image
                   source={{ uri: photoUri }}
                   style={{ width: '100%', height: '100%' }}
-                  resizeMode='cover'
+                  resizeMode='contain'
                 />
-                {stars.length > 0 ? (
+                {stars.length > 0 && photoSize ? (
                   <LocusStarLayer
                     stars={stars}
                     stageW={stageSide}
                     stageH={stageSide}
+                    imageSize={photoSize}
                     accent={colors.accent}
+                    selectedKey={sheetOpen ? selected?.featureKey : null}
                     onSelect={(star) => void openStar(star)}
                   />
                 ) : null}

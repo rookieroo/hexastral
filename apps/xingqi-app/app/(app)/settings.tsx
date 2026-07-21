@@ -177,8 +177,18 @@ export default function SettingsScreen() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={s('档案', '檔案', 'HISTORY')}>
+        <SettingsSection title={s('档案', '檔案', 'PROFILE')}>
           <SettingsCard>
+            <SettingsRow
+              label={s('生辰', '生辰', 'Birth')}
+              hint={s(
+                '用于形气与八字对照；改后需重新生成报告才生效',
+                '用於形氣與八字對照；改後需重新生成報告才生效',
+                'Powers form × BaZi contrast; regenerate a report after changes'
+              )}
+              onPress={() => router.push('/birth' as never)}
+              divider
+            />
             <SettingsRow
               label={s('历史档案', '歷史檔案', 'History')}
               trailing={readingCount > 0 ? String(readingCount) : undefined}

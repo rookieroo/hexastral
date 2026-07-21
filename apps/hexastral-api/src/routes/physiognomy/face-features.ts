@@ -20,6 +20,8 @@ import type { AppEnv } from '../../infra-types'
 import { userHasAnySubscription } from '../../lib/access/entitlement-access'
 import { requireUserId } from '../../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../../lib/biometric-consent'
+import { assessFaceoracleFeatureQuality } from '../../lib/faceoracle-feature-quality'
+import { parseLandmarksJson } from '../../lib/faceoracle-landmarks'
 import {
   computeFaceoracleVlmContentHash,
   decodeImageBase64,
@@ -27,13 +29,8 @@ import {
   FACEORACLE_VLM_SCHEMA_VERSION,
   type FaceoracleFeatureType,
 } from '../../lib/faceoracle-vlm-cache'
-import { parseLandmarksJson } from '../../lib/faceoracle-landmarks'
-import { assessFaceoracleFeatureQuality } from '../../lib/faceoracle-feature-quality'
 import { astroClient } from '../../lib/service-clients'
-import {
-  checkAndConsumePhysiognomyUpload,
-  getFaceoracleQuotaBundle,
-} from '../../services/quota'
+import { checkAndConsumePhysiognomyUpload, getFaceoracleQuotaBundle } from '../../services/quota'
 
 const featureTypeSchema = z.enum(['face', 'palm', 'palm_l', 'palm_r'])
 
@@ -45,7 +42,9 @@ const fromBase64Schema = z.object({
   type: featureTypeSchema.default('face'),
 })
 
-function parseLandmarksFromColumn(raw: string | null | undefined): ReturnType<typeof parseLandmarksJson> {
+function parseLandmarksFromColumn(
+  raw: string | null | undefined
+): ReturnType<typeof parseLandmarksJson> {
   if (!raw) return {}
   try {
     return parseLandmarksJson(JSON.parse(raw) as unknown)
@@ -66,10 +65,7 @@ function parseFeaturesJson(raw: string): Record<string, string> {
   return {}
 }
 
-function assertFeatureQuality(
-  type: FaceoracleFeatureType,
-  features: Record<string, string>
-): void {
+function assertFeatureQuality(type: FaceoracleFeatureType, features: Record<string, string>): void {
   const q = assessFaceoracleFeatureQuality(type, features)
   if (q.ok) return
   throw new HTTPException(422, {
@@ -80,7 +76,6 @@ function assertFeatureQuality(
 function extractionPathFor(type: z.infer<typeof featureTypeSchema>): string {
   return type === 'face' ? '/physiognomy/extract-features' : '/physiognomy/extract-palm-features'
 }
-
 
 type Db = AppEnv['Variables']['db']
 
@@ -214,9 +209,7 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
         code: q.code,
         detail: q.detail,
       })
-      await db
-        .delete(userPhysiognomyFeatures)
-        .where(eq(userPhysiognomyFeatures.id, cached.id))
+      await db.delete(userPhysiognomyFeatures).where(eq(userPhysiognomyFeatures.id, cached.id))
     }
 
     // Miss — meter free upload only when we will call VLM.
@@ -238,11 +231,10 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
         features: Record<string, string>
         landmarks?: Record<string, { x: number; y: number }>
         model?: string
-      }>(
-        c.env.SVC_ASTRO,
-        extractionPathFor(input.type),
-        { imageBase64: input.imageBase64, mimeType: input.mimeType }
-      )
+      }>(c.env.SVC_ASTRO, extractionPathFor(input.type), {
+        imageBase64: input.imageBase64,
+        mimeType: input.mimeType,
+      })
     } catch (err) {
       if (err instanceof HTTPException) throw err
       const msg = err instanceof Error ? err.message : 'VLM extraction failed'
@@ -255,7 +247,8 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
     assertFeatureQuality(input.type, features)
 
     const featureId = nanoid()
-    if (Object.keys(landmarks).length === 0) {
+    // Warn when a face extract returned no coords (palm may fall back to canonical client-side).
+    if (input.type === 'face' && Object.keys(landmarks).length === 0) {
       console.warn('[faceoracle.vlm] landmarks_empty', {
         userId: input.userId,
         type: input.type,
