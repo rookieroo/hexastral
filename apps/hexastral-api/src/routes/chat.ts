@@ -22,7 +22,10 @@ import { alertAdmin } from '../lib/admin-alert'
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { moderationRefusal, screenChatText } from '../lib/chat-moderation'
-import { resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
+import {
+  portfolioTargetBrandLabel,
+  resolvePortfolioTargetApp,
+} from '../lib/portfolio-target-app'
 import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
 import { auditFengChatReply, fengChatComplianceRefusal } from '../lib/feng-chat-compliance'
 import { checkFengChatAccess, isFengDevProBypass } from '../lib/feng-chat-access'
@@ -488,6 +491,7 @@ chatRoutes.post('/feedback', async (c) => {
 /**
  * POST /api/chat/report — flag an AI message as objectionable (App Store 1.2).
  * Verifies the message belongs to the caller, then dispatches to admin-notify.
+ * Telegram gets targetApp + messageId for triage; full body stays in D1.
  */
 const reportSchema = z.object({
   messageId: z.string().min(1),
@@ -496,13 +500,14 @@ const reportSchema = z.object({
 
 chatRoutes.post('/report', async (c) => {
   const userId = requireUserId(c)
-  const { messageId, reason } = reportSchema.parse(await c.req.json())
+  const { messageId } = reportSchema.parse(await c.req.json())
   const db = c.get('db')
+  const targetApp = resolvePortfolioTargetApp(c.req.header('x-target-app'))
+  const brand = portfolioTargetBrandLabel(targetApp)
 
   const row = await db
     .select({
       role: conversationMessages.role,
-      content: conversationMessages.content,
       ownerId: conversations.userId,
     })
     .from(conversationMessages)
@@ -516,15 +521,15 @@ chatRoutes.post('/report', async (c) => {
 
   c.executionCtx.waitUntil(
     alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
-      title: 'Chat message reported by user',
+      title: `[${brand}] Chat message reported`,
       message: 'A user reported an AI chat message as objectionable.',
       level: 'warning',
       context: {
+        targetApp,
+        brand,
         userId,
         messageId,
         role: row.role,
-        reason: reason ?? '',
-        excerpt: row.content.slice(0, 200),
       },
     }).catch(() => {})
   )

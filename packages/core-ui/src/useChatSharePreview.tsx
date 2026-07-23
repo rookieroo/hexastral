@@ -1,5 +1,6 @@
 /**
  * Shared chat-share preview modal — preview-first, then jpg capture.
+ * Preview fits the phone width; capture uses a fixed off-screen card for sharpness.
  */
 
 import type { ImageSourcePropType } from 'react-native'
@@ -20,6 +21,9 @@ import type { ReadingChatMessage } from './components/ReadingChatScreen'
 import { useTheme } from './theme'
 
 export const CHAT_SHARE_ENABLED = true
+
+/** Logical width for the exported jpg (view-shot target). */
+const CAPTURE_WIDTH = 780
 
 type Labels = {
   cancel: string
@@ -42,6 +46,7 @@ export function useChatSharePreview(opts: {
   const shotRef = useRef<View | null>(null)
   const { colors } = useTheme()
   const { width: winW } = useWindowDimensions()
+  const previewWidth = Math.max(280, Math.round(winW - 32))
 
   const openShare = useCallback((msgs: ReadingChatMessage[]) => {
     setShareLines(msgs)
@@ -56,7 +61,7 @@ export function useChatSharePreview(opts: {
       await captureAndShareVisibleCard({
         shotRef,
         caption: opts.caption(lead),
-        delayMs: 60,
+        delayMs: 80,
         dialogTitle: opts.brandName,
       })
     } catch {
@@ -65,6 +70,9 @@ export function useChatSharePreview(opts: {
       setSharingOut(false)
     }
   }, [opts, shareLines, sharingOut])
+
+  const cardLines =
+    shareLines?.map((m) => ({ role: m.role, content: m.content })) ?? []
 
   const modal =
     shareLines == null ? null : (
@@ -97,15 +105,31 @@ export function useChatSharePreview(opts: {
             contentContainerStyle={{ padding: 16, alignItems: 'center', paddingBottom: 120 }}
           >
             <ShareableChatCard
-              ref={shotRef}
-              lines={shareLines.map((m) => ({ role: m.role, content: m.content }))}
+              lines={cardLines}
               brandName={opts.brandName}
               brandUrl={opts.brandUrl}
               logoSource={opts.logoSource}
               userBubbleColor={opts.userBubbleColor}
-              width={Math.min(Math.round(Math.max(winW * 2.2, 720)), 900)}
+              width={previewWidth}
             />
           </ScrollView>
+
+          {/* Off-screen capture target — full logical width for sharp export */}
+          <View
+            collapsable={false}
+            pointerEvents='none'
+            style={{ position: 'absolute', left: -10000, top: 0, opacity: 0 }}
+          >
+            <ShareableChatCard
+              ref={shotRef}
+              lines={cardLines}
+              brandName={opts.brandName}
+              brandUrl={opts.brandUrl}
+              logoSource={opts.logoSource}
+              userBubbleColor={opts.userBubbleColor}
+              width={CAPTURE_WIDTH}
+            />
+          </View>
 
           <View
             style={{
