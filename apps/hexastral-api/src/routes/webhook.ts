@@ -81,11 +81,13 @@ export function classifySubscriptionEvent(eventType: string): SubscriptionEventA
 webhookRoutes.post('/revenuecat', async (c) => {
   const expectedSecret = c.env.REVENUECAT_WEBHOOK_SECRET
   if (!expectedSecret) {
-    alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
-      title: 'RevenueCat webhook secret missing',
-      message: 'REVENUECAT_WEBHOOK_SECRET is not configured — IAP processing is broken',
-      level: 'critical',
-    }).catch(() => {})
+    c.executionCtx.waitUntil(
+      alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+        title: 'RevenueCat webhook secret missing',
+        message: 'REVENUECAT_WEBHOOK_SECRET is not configured — IAP processing is broken',
+        level: 'critical',
+      })
+    )
     throw new HTTPException(500, { message: 'Webhook secret not configured' })
   }
 
@@ -112,12 +114,14 @@ webhookRoutes.post('/revenuecat', async (c) => {
   let diff = 0
   for (let i = 0; i < expectedArr.length; i++) diff |= (expectedArr[i] ?? 0) ^ (actualArr[i] ?? 0)
   if (diff !== 0) {
-    alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
-      title: 'RevenueCat webhook auth failed',
-      message: 'Authorization header mismatch — possible spoofed IAP webhook',
-      level: 'critical',
-      context: { remoteIp: c.req.header('CF-Connecting-IP') ?? 'unknown' },
-    }).catch(() => {})
+    c.executionCtx.waitUntil(
+      alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+        title: 'RevenueCat webhook auth failed',
+        message: 'Authorization header mismatch — possible spoofed IAP webhook',
+        level: 'critical',
+        context: { remoteIp: c.req.header('CF-Connecting-IP') ?? 'unknown' },
+      })
+    )
     throw new HTTPException(401, { message: 'Unauthorized' })
   }
 

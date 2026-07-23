@@ -3,8 +3,10 @@
  *
  * Rules:
  *   - Never throws; alert failure must not block user-facing flows
- *   - Hard timeout of 3s (admin alerts are best-effort)
+ *   - Soft timeout (Telegram can be slow from some edges)
  *   - Log locally if the alert itself fails
+ *   - Callers SHOULD wrap with `c.executionCtx.waitUntil(...)` so the
+ *     subrequest is not canceled when the parent response returns
  */
 
 type Fetcher = { fetch(input: RequestInfo, init?: RequestInit): Promise<Response> }
@@ -18,17 +20,22 @@ export interface AlertPayload {
   context?: Record<string, string>
 }
 
+/** Telegram + service binding can exceed a few seconds on cold/slow edges. */
+const ALERT_TIMEOUT_MS = 15_000
+
 /**
  * Send an admin alert to svc-admin-notify (Telegram).
  * Always fire-and-forget — never await if you don't want to block.
  *
  * @example
- * alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
- *   title: 'IAP webhook auth failed',
- *   message: 'RevenueCat webhook authorization header mismatch',
- *   level: 'critical',
- *   context: { eventType, productId },
- * }).catch(() => {})
+ * c.executionCtx.waitUntil(
+ *   alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
+ *     title: 'IAP webhook auth failed',
+ *     message: 'RevenueCat webhook authorization header mismatch',
+ *     level: 'critical',
+ *     context: { eventType, productId },
+ *   })
+ * )
  */
 export function alertAdmin(svc: Fetcher, payload: AlertPayload): Promise<void> {
   return svc
@@ -37,12 +44,13 @@ export function alertAdmin(svc: Fetcher, payload: AlertPayload): Promise<void> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3_000),
+        signal: AbortSignal.timeout(ALERT_TIMEOUT_MS),
       })
     )
-    .then((res) => {
+    .then(async (res) => {
       if (!res.ok) {
-        console.error('[admin-alert] non-OK response', res.status)
+        const body = await res.text().catch(() => '')
+        console.error('[admin-alert] non-OK response', res.status, body.slice(0, 300))
       }
     })
     .catch((err: unknown) => {

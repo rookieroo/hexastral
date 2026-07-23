@@ -138,16 +138,27 @@ async function sendTelegram(env: Env, text: string): Promise<void> {
     throw new HTTPException(503, { message: 'Telegram not configured' })
   }
 
-  const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: env.TELEGRAM_CHAT_ID,
-      text,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true,
-    }),
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 12_000)
+  let res: Response
+  try {
+    res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: env.TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+      signal: controller.signal,
+    })
+  } catch (err: unknown) {
+    console.error('[svc-admin-notify] Telegram fetch failed:', err)
+    throw new HTTPException(502, { message: 'Telegram unreachable' })
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const error = await res.text()
