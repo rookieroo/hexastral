@@ -8,11 +8,12 @@
  *   W2 Yuel live  → yuel.visibility = 'live'
  *   W3 Kanyu live → kanyu.visibility = 'live', kanyu.brandHostIndexable = true, sync kanyu.png
  *   W4 Yaul live  → yaul.visibility = 'live'
+ *   W5 Syel teaser → syel on homepage (post-wave); live when App Store ships
  */
 
 import type { GrowthAppStoreTarget } from './app-store-urls'
 
-export type AppId = 'yuel' | 'yuun' | 'yaul' | 'kanyu'
+export type AppId = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'syel'
 export type AppRole = 'flagship' | 'funnel'
 export type Visibility = 'live' | 'teaser' | 'hidden'
 
@@ -76,6 +77,17 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     storeTarget: 'coincast',
     privacyPath: '/privacy/coincast',
   },
+  syel: {
+    id: 'syel',
+    displayName: 'Syel',
+    role: 'flagship',
+    visibility: 'teaser',
+    showOnHomepage: true,
+    brandHostIndexable: false,
+    brandHost: 'https://syel.hexastral.com',
+    storeTarget: 'faceoracle',
+    privacyPath: '/privacy/syel',
+  },
 }
 
 export type HiddenSku =
@@ -115,8 +127,8 @@ export function isPathIndexable(path: string): boolean {
   return true
 }
 
-/** Display order on hexastral.com (live row, then coming-soon row). */
-export const HOMEPAGE_APP_ORDER: AppId[] = ['yuun', 'yuel', 'yaul', 'kanyu']
+/** Display order on hexastral.com — ASC / listing order (not flagship vs funnel). */
+export const HOMEPAGE_APP_ORDER: AppId[] = ['yuun', 'yuel', 'kanyu', 'yaul', 'syel']
 
 function sortByHomepageOrder(apps: AppLaunchConfig[]): AppLaunchConfig[] {
   return [...apps].sort(

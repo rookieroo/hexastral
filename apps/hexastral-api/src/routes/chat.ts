@@ -15,7 +15,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import { z } from 'zod/v4'
-import { conversationMessages, conversations, users } from '../db/schema'
+import { conversationMessages, conversations, portfolioReadings, users } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { FREE_TASTE_MESSAGES_PER_READING, resolveChatTier } from '../lib/access/capabilities'
 import { alertAdmin } from '../lib/admin-alert'
@@ -69,7 +69,25 @@ const sendMessageSchema = z.object({
   requestId: z.string().min(1),
   /** Optional reply-tone steer (client chat config); forwarded to svc-astro. */
   tone: z.enum(['warm', 'balanced', 'direct']).optional(),
+  /**
+   * Device / UI locale from the satellite app. Prefer over users.locale —
+   * many clients never sync profile locale (Syel UI can be zh while D1 is en).
+   */
+  locale: z.string().min(2).max(16).optional(),
 })
+
+/** Prefer request locale, then reading locale, then profile, then zh. */
+function resolveChatLocale(opts: {
+  requestLocale: string | undefined
+  readingLocale: string | null | undefined
+  userLocale: string | null | undefined
+}): string {
+  const pick = (raw: string | null | undefined): string | null => {
+    const t = raw?.trim()
+    return t && t.length >= 2 ? t : null
+  }
+  return pick(opts.requestLocale) ?? pick(opts.readingLocale) ?? pick(opts.userLocale) ?? 'zh'
+}
 
 /** POST /api/chat — 发送消息，获取 AI 回复 */
 chatRoutes.post('/', async (c) => {
@@ -93,6 +111,38 @@ chatRoutes.post('/', async (c) => {
     .get()
   if (!user) throw new HTTPException(404, { message: 'User not found' })
 
+  // Reading locale (portfolio) — Syel faceoracle rows store the job locale here.
+  let readingLocale: string | null = null
+  if (input.readingType === 'physiognomy' || input.readingType === 'report') {
+    const row = await db
+      .select({ locale: portfolioReadings.locale })
+      .from(portfolioReadings)
+      .where(and(eq(portfolioReadings.id, input.readingId), eq(portfolioReadings.userId, userId)))
+      .get()
+    readingLocale = row?.locale ?? null
+  }
+
+  const chatLocale = resolveChatLocale({
+    requestLocale: input.locale,
+    readingLocale,
+    userLocale: user.locale,
+  })
+
+  // Self-heal profile locale when the client sends a device locale that differs
+  // (kindred/Syel historically never sync users.locale on open).
+  if (input.locale && input.locale.trim() && input.locale.trim() !== (user.locale ?? '')) {
+    c.executionCtx.waitUntil(
+      db
+        .update(users)
+        .set({ locale: input.locale.trim() })
+        .where(eq(users.id, userId))
+        .then(() => undefined)
+        .catch((err) => {
+          console.warn('[chat] failed to sync users.locale', err)
+        })
+    )
+  }
+
   // Content moderation (App Store 1.2) — screen the user message BEFORE any LLM
   // call / billing / writes. Blocked input → a safe refusal, no side effects.
   const inputScreen = screenChatText(input.message)
@@ -107,7 +157,7 @@ chatRoutes.post('/', async (c) => {
     )
     return c.json({
       conversationId: '',
-      reply: moderationRefusal(user.locale),
+      reply: moderationRefusal(chatLocale),
       isPro: false,
       tier: 'free',
       billingMode: 'free',
@@ -279,10 +329,13 @@ chatRoutes.post('/', async (c) => {
   let astroResp: { reply: string }
   try {
     astroResp = await callAstro<{ reply: string }>(c.env.SVC_ASTRO, '/chat', {
-      context: trimmedBundle,
+      context: {
+        ...trimmedBundle,
+        user: { ...trimmedBundle.user, locale: chatLocale },
+      },
       messages: geminiMessages,
       isPro: isPaid,
-      locale: user.locale ?? 'zh-CN',
+      locale: chatLocale,
       tone: input.tone,
     })
   } catch (err) {
@@ -302,7 +355,7 @@ chatRoutes.post('/', async (c) => {
         context: { userId, category: outputScreen.category ?? '', targetApp },
       }).catch(() => {})
     )
-    astroResp = { reply: moderationRefusal(user.locale) }
+    astroResp = { reply: moderationRefusal(chatLocale) }
   }
 
   // Kanyu feng-forbidden tier (金蟾/文昌塔/提升运势…) — synthesis already audits;
@@ -327,7 +380,7 @@ chatRoutes.post('/', async (c) => {
           },
         }).catch(() => {})
       )
-      astroResp = { reply: fengChatComplianceRefusal(user.locale) }
+      astroResp = { reply: fengChatComplianceRefusal(chatLocale) }
     }
   }
 

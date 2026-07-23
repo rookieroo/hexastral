@@ -448,6 +448,7 @@ export default function LocusViewerScreen() {
         <BottomSheetScrollView>
           <LocusSheetContent
             star={selected}
+            locale={locale}
             openReportLabel={copy.openReport}
             teachingLabel={copy.teaching}
             readingLabel={copy.reading}

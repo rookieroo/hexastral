@@ -38,12 +38,14 @@ describe('buildFaceOraclePrompt (ADR-0028 craft)', () => {
   it('has five-chapter craft with natal=future / horizon=near+actions and palm sides', () => {
     const prompt = buildFaceOraclePrompt(base)
     expect(prompt).toContain('Five chapters')
-    expect(prompt).toContain('FUTURE MAIN')
+    expect(prompt).toContain('未来主章')
+    expect(prompt).not.toContain('FUTURE MAIN')
+    expect(prompt).not.toContain('palm tension')
     expect(prompt).toContain('近运与行动')
     expect(prompt).toContain('overview ≠ face')
     expect(prompt).toContain('Field roles')
     expect(prompt).toContain('One sentence, one owner')
-    expect(prompt).toContain('Palm sides')
+    expect(prompt).toContain('掌侧')
     expect(prompt).toContain('palmConvention')
     expect(prompt).toContain('"loci"')
     expect(prompt).not.toContain('App Store 4.3(b)')
@@ -508,9 +510,34 @@ describe('faceoracle locale drift (language-split)', () => {
     expect(faceoracleBodyLooksWrongLocale('en', zhSample)).toBe(true)
   })
 
-  it('never flags zh body as wrong locale', () => {
+  it('flags English leakage in zh body; clean zh passes', () => {
     expect(faceoracleBodyLooksWrongLocale('zh-CN', zhSample)).toBe(false)
     expect(faceoracleBodyLooksWrongLocale('zh-Hant', zhSample)).toBe(false)
+    expect(
+      faceoracleBodyLooksWrongLocale(
+        'zh-CN',
+        '掌纹形气张力偏紧，future 大运带宜留意节奏，palm tension 不宜妄动。'
+      )
+    ).toBe(true)
+  })
+
+  it('zh language block bans English craft tokens', () => {
+    const block = buildFaceoracleLanguageBlock('zh-CN')
+    expect(block).toContain('禁止')
+    expect(block).toContain('future')
+    expect(block).toContain('tension')
+    expect(block).toContain('palm')
+  })
+
+  it('en/ja language block keeps 汉字 terms and bans romanization-as-primary', () => {
+    const en = buildFaceoracleLanguageBlock('en')
+    expect(en).toContain('Yuel-aligned')
+    expect(en).toContain('NEVER romanize')
+    expect(en).toContain('天庭')
+    expect(en).not.toContain('romanization (汉字)')
+    const ja = buildFaceoracleLanguageBlock('ja')
+    expect(ja).toContain('漢字')
+    expect(ja).toContain('天庭')
   })
 
   it('ja field guard flags Latin leakage but not kanji locus names', () => {
@@ -527,15 +554,15 @@ describe('faceoracle locale drift (language-split)', () => {
     expect(faceoracleFieldsLookWrongLocale('en', ['Specialize before age 37.'])).toBe(false)
   })
 
-  it('ja language block includes full glossary parity with EN', () => {
+  it('ja language block includes writer glossary parity with EN', () => {
     const block = buildFaceoracleLanguageBlock('ja')
     expect(block).toContain('天庭')
     expect(block).toContain('印堂')
     expect(block).toContain('山根')
     expect(block).toContain('骨相')
     expect(block).toContain('气色')
-    expect(block).toContain('生命線')
-    expect(block).toContain('事業線')
+    expect(block).toContain('生命线')
+    expect(block).toContain('事业线')
     expect(block).toContain('金星丘')
   })
 })

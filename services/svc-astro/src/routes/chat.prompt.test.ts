@@ -39,4 +39,19 @@ describe('svc-astro prompt compliance snapshots', () => {
     expect(prompt).toContain('灵物')
     expect(prompt).not.toContain('面相气场三个独立维度')
   })
+
+  it('forbids JSON / markdown fences and locks simplified Chinese for zh', () => {
+    const prompt = buildChatSystemPrompt({
+      locale: 'zh',
+      context: {
+        user: { name: 'Test', locale: 'en', birthInfo: null, plan: 'free' },
+        primary: { type: 'physiognomy', text: 'Sample face reading.' },
+        related: [],
+        memory: { context: '', hitCount: 0 },
+      },
+    })
+    expect(prompt).toContain('禁止 Markdown 代码块')
+    expect(prompt).toContain('请用简体中文回答')
+    expect(prompt).not.toContain('Please reply in English')
+  })
 })

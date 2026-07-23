@@ -69,7 +69,11 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 - **Chrome** (chapter titles, layer labels, History list titles) follows **current** device locale.
 - **Switching locale never auto-regenerates** stored readings.
 - **Explicit regen** (Living FAB → “Regenerate in this language”) costs **1 report regen**, not photo slots; bypasses `features_unchanged`.
-- Prompt uses Route-B language blocks (`faceoracle-locale.ts`); `zh-Hant` → Traditional. Locale drift is language-split: **en** retries on CJK-heavy body/fields; **ja** retries only on Latin-heavy (English) or Han-without-kana (Chinese) leakage — never on normal kana+kanji Japanese (the old CJK-ratio guard false-positive every ja job into a ~70s rewrite).
+- Prompt uses Yuel-aligned language blocks (`faceoracle-locale.ts`):
+  - **zh:** meaning-first 白话 around classical terms; **no English craft tokens** (`future` / `tension` / `palm`…); Latin/denylist leak → locale retry.
+  - **en/ja:** keep load-bearing **汉字** terms (天庭、生命线、用神…); meaning in target-language prose; **no romanization-as-primary**; app tap-to-gloss (`TermAwareText` + Settings terms). Same north star as Yuel [term-glossary-plan](../yuel/term-glossary-plan.md).
+  - `zh-Hant` → Traditional. **ja** retries only on Latin-heavy or Han-without-kana leakage — never on normal kana+kanji Japanese.
+- **Glossary:** client `xingqi-terms` buckets by doctrine in use (face / palm / natal / TCM lexicon / windows). Locus sheet + chapter prose share the same gloss layer. Stars without Pass1 readings still plot (teaching blurb only) — curated depth, not full-key coverage.
 - **Extract path:** svc-astro `/physiognomy/extract-features` + `/extract-palm-features`. Palm returns per-mount feature text + Moondream/VLM `landmarks`. Reading interpretation is a **two-pass** faceoracle queue job (loci → chapters).
 - Report numerals are **Yuel 积画** SVG (locale-independent), not Unicode 一二三 / Arabic.
 

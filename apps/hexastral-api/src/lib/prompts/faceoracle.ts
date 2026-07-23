@@ -40,10 +40,10 @@ export interface FaceOraclePromptParams {
 }
 
 const LOCI_CRAFT = [
-  '## Pass 1 — loci only (NO chapters, NO events)',
+  '## Pass 1 — loci only（不要章节、不要 events）',
   'Folk 算命: 面相 + 掌相 + 八字互证. Quote concrete keys from the inputs.',
-  'Palm sides (NatalSummary palmConvention): 男 left=先天 / right=后天; 女 reverse. Prefer tension points on BOTH hands.',
-  'Curate 16–20 loci (face 5–7 + each palm 5–6 high-tension keys). Prefer omit over fabricate. Mix SUPPORT and CAUTION.',
+  '掌侧（NatalSummary palmConvention）: 男 left=先天 / right=后天; 女相反. 双手都优先写高张力位点.',
+  '策展 16–20 条 loci（面 5–7 + 每掌 5–6 高张力键）. Prefer omit over fabricate. 互证与留意并重.',
   'Each reading = 形→机理(日主/用神/旺衰/大运)→点名窗口(年龄/流年/干支), about 60–120 字. NEVER paste raw VLM text alone.',
   'featureKey must match VLM keys. locus = classical name (天庭/生命线/金星丘…), never bare part enum.',
   'Mount keys: mountJupiter, mountSaturn, mountApollo, mountMercury, mountVenus, mountMoon, mountMars (from mounts prose or per-mount fields).',
@@ -51,10 +51,10 @@ const LOCI_CRAFT = [
 ].join('\n')
 
 const CHAPTERS_CRAFT = [
-  '## Pass 2 — chapters + events (loci already fixed — DO NOT rewrite star readings)',
+  '## Pass 2 — chapters + events（loci 已固定 — 不要改写星点 reading）',
   'Weave the provided loci[] themes into five chapters. Do not invent conflicting judgments.',
   'Palm sides + age window from NatalSummary still apply for narrative.',
-  'Time split: natal = FUTURE MAIN + whole-life dayun; horizon = 近运与行动 (会发生什么 + 你该做什么).',
+  'Time split: natal = 未来主章 + whole-life dayun; horizon = 近运与行动 (会发生什么 + 你该做什么).',
   'ONE what-if 分叉 (若在…/若此…/若…则…) ONLY in natal.dynamic — never spray into other chapters.',
   'Field roles: goldenLine ≤36字; evidence=形+机理; dynamic=one scene; reef/remedy unique or null.',
   'overview = SHORT HOOK (≠ face dump). Prefer null reef/remedy over reused sentences.',
@@ -64,9 +64,9 @@ const CHAPTERS_CRAFT = [
 const CHAPTER_SPEC = [
   '## Five chapters',
   'overview — SHORT HOOK: 1 AHA + 先天/后天张力 + stage tone. reef/remedy null. NO what-if fork. overview ≠ face.',
-  'face — 三停五岳; weave face loci. reef = 形/气色 only.',
-  'palms — 先天 vs 后天 spine; both hands; 后天 as currentAge window. reef = palm tension only.',
-  'natal — FUTURE MAIN + ONE what-if in dynamic. reef = future 大运带 only.',
+  'face — 三停五岳; weave face loci. reef = 仅形/气色.',
+  'palms — 先天 vs 后天 spine; both hands; 后天 as currentAge window. reef = 仅掌纹形气张力.',
+  'natal — 未来主章 + ONE what-if in dynamic. reef = 仅未来大运带.',
   'horizon — 近运与行动: near-window ("会发生什么") + actions ("你该做什么"). Owns 本流年 reef + remedy.',
 ].join('\n')
 
@@ -96,7 +96,7 @@ export function buildFaceOracleLociPrompt(params: FaceOraclePromptParams): strin
     '{ "loci": Array<{ "featureKey": string, "part": "face"|"palm_l"|"palm_r", "locus": string, "reading": string }> }',
     'Output ONLY loci — no chapters, no events, no flat keys.',
     'FULL coverage is NOT required — curate 16–20 deep readings (face≥5, each palm≥5). Prefer omit over fabricate.',
-    'Include ≥2 CAUTION-toned readings (tension / risk / 留意). Cite SuggestedLoci reason tags when present.',
+    'Include ≥2 留意-toned readings (张力 / 风险 / 宜留意). Cite SuggestedLoci reason tags when present.',
     'NEVER paste raw VLM feature text as reading.',
   ]
     .filter((line) => line !== undefined)

@@ -32,6 +32,7 @@ interface Strings {
   yuun: string
   yaul: string
   kanyu: string
+  syel: string
   foot: string
   appLabel: Record<AppId, string>
 }
@@ -55,8 +56,9 @@ const STR: Record<BrandLocale, Strings> = {
     yuun: 'The Chinese almanac, every day — auspicious days, lunar calendar, decade timeline.',
     yaul: 'I Ching Liu Yao — three-coin casting, hexagram journal, classical AI read.',
     kanyu: 'Classical feng-shui site analysis — pin a site, compass bearing, optional floor plan, structured report.',
+    syel: 'Face, palms, and natal chart — form-qi loci and a five-chapter brief.',
     foot: 'Educational, not predictive',
-    appLabel: { yuel: 'Yuel', yuun: 'Yuun', yaul: 'Yaul', kanyu: 'Kanyu' },
+    appLabel: { yuel: 'Yuel', yuun: 'Yuun', yaul: 'Yaul', kanyu: 'Kanyu', syel: 'Syel' },
   },
   zh: {
     eyebrow: '中华命理传统',
@@ -76,8 +78,15 @@ const STR: Record<BrandLocale, Strings> = {
     yuun: '中华黄历，每日宜忌——农历、流年大运时间轴。',
     yaul: '易经六爻研习——三维摇卦、卦象日记与古典释读。',
     kanyu: '古典堪舆风水——定位居所、罗盘坐向、可选户型图与结构化报告。',
+    syel: '面、掌与命盘——形气位点与五章简报。',
     foot: '重在认知，而非预测',
-    appLabel: { yuel: 'Yuel · 缘', yuun: 'Yuun · 运', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪舆' },
+    appLabel: {
+      yuel: 'Yuel · 缘',
+      yuun: 'Yuun · 运',
+      yaul: 'Yaul · 爻',
+      kanyu: 'Kanyu · 堪舆',
+      syel: 'Syel · 形气',
+    },
   },
   tw: {
     eyebrow: '中華命理傳統',
@@ -97,8 +106,15 @@ const STR: Record<BrandLocale, Strings> = {
     yuun: '中華黃曆，每日宜忌——農曆、流年大運時間軸。',
     yaul: '易經六爻研習——三維搖卦、卦象日記與古典釋讀。',
     kanyu: '古典堪輿風水——定位居所、羅盤坐向、可選戶型圖與結構化報告。',
+    syel: '面、掌與命盤——形氣位點與五章簡報。',
     foot: '重在認知，而非預測',
-    appLabel: { yuel: 'Yuel · 緣', yuun: 'Yuun · 運', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪輿' },
+    appLabel: {
+      yuel: 'Yuel · 緣',
+      yuun: 'Yuun · 運',
+      yaul: 'Yaul · 爻',
+      kanyu: 'Kanyu · 堪輿',
+      syel: 'Syel · 形氣',
+    },
   },
   ja: {
     eyebrow: '中国伝統の命理',
@@ -118,8 +134,15 @@ const STR: Record<BrandLocale, Strings> = {
     yuun: '中華暦、毎日の吉凶——旧暦と大運のタイムライン。',
     yaul: '易経六爻の学び——三枚銭の起卦、卦の記録、古典 AI 解説。',
     kanyu: '古典風水（堪輿）——場所を指定、羅盤の向き、任意の間取り、構造化レポート。',
+    syel: '顔・掌・命盤——形気の位点と五章。',
     foot: '予測ではなく、理解のために',
-    appLabel: { yuel: 'Yuel · 缘', yuun: 'Yuun · 运', yaul: 'Yaul · 爻', kanyu: 'Kanyu · 堪舆' },
+    appLabel: {
+      yuel: 'Yuel · 缘',
+      yuun: 'Yuun · 运',
+      yaul: 'Yaul · 爻',
+      kanyu: 'Kanyu · 堪舆',
+      syel: 'Syel · 形气',
+    },
   },
 }
 
@@ -161,15 +184,22 @@ const APP_STYLE: Record<
     icon: '/brand/kanyu.png',
     glyph: '堪',
   },
+  syel: {
+    border: '0.5px solid rgba(107,143,113,0.45)',
+    bg: '#0a0f0c',
+    accent: '#6B8F71',
+    icon: '/brand/syel.png',
+  },
 }
 
-type AppCopyKey = 'yuel' | 'yuun' | 'yaul' | 'kanyu'
+type AppCopyKey = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'syel'
 
 const APP_COPY_KEY: Record<AppId, AppCopyKey> = {
   yuel: 'yuel',
   yuun: 'yuun',
   yaul: 'yaul',
   kanyu: 'kanyu',
+  syel: 'syel',
 }
 
 const JSON_LD_DESCRIPTION: Record<AppId, string> = {
@@ -177,6 +207,7 @@ const JSON_LD_DESCRIPTION: Record<AppId, string> = {
   yuun: 'A daily Chinese almanac grounded in classical cosmology. Educational, not predictive.',
   yaul: 'An I Ching Liu Yao study journal with 3D coin casting. Educational, not predictive.',
   kanyu: 'Classical feng-shui site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
+  syel: 'Face and palm form-qi reading with BaZi contrast. Educational, not predictive.',
 }
 
 function jsonLd(origin: string) {

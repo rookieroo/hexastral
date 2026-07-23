@@ -1,12 +1,14 @@
 /**
  * Locus detail body — rendered inside @gorhom/bottom-sheet.
  * Stable content: star swaps only rewrite text (no remount animation).
+ * Teaching blurb + reading use TermAwareText (same gloss layer as chapters).
  */
 
 import { useEffect, useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { AncientSeal } from '@/components/reading/AncientSeal'
+import { TermAwareText } from '@/components/reading/TermAwareText'
 import { locusGlyphKey } from '@/lib/ancient-glyphs'
 import type { LocusStar } from '@/lib/locus-data'
 
@@ -23,6 +25,7 @@ function nearDup(a: string, b: string): boolean {
 
 export function LocusSheetContent({
   star,
+  locale,
   openReportLabel,
   teachingLabel,
   readingLabel,
@@ -33,6 +36,8 @@ export function LocusSheetContent({
   visible: _visible = true,
 }: {
   star: LocusStar | null
+  /** Device / report locale for term glosses. */
+  locale: string
   openReportLabel: string
   teachingLabel: string
   readingLabel: string
@@ -64,6 +69,12 @@ export function LocusSheetContent({
   const hasBlurb = blurb.length > 0
   const hasNote = note.length > 0
   const showNote = hasNote && !(hasBlurb && nearDup(note, blurb))
+  const termColors = {
+    bg: colors.bg,
+    ink: colors.text,
+    muted: colors.dim,
+    accent: colors.accent,
+  }
 
   return (
     <View style={{ paddingHorizontal: 24, paddingTop: 4, paddingBottom: 28, gap: 12 }}>
@@ -110,7 +121,12 @@ export function LocusSheetContent({
           >
             {teachingLabel}
           </Text>
-          <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 21 }}>{blurb}</Text>
+          <TermAwareText
+            text={blurb}
+            locale={locale}
+            colors={termColors}
+            style={{ color: colors.secondary, fontSize: 14, lineHeight: 21 }}
+          />
         </View>
       ) : null}
 
@@ -127,7 +143,12 @@ export function LocusSheetContent({
           >
             {readingLabel}
           </Text>
-          <Text style={{ color: colors.text, fontSize: 15, lineHeight: 23 }}>{note}</Text>
+          <TermAwareText
+            text={note}
+            locale={locale}
+            colors={termColors}
+            style={{ color: colors.text, fontSize: 15, lineHeight: 23 }}
+          />
         </View>
       ) : hasBlurb ? (
         <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 20, fontStyle: 'italic' }}>

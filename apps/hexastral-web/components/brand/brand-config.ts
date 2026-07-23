@@ -1,7 +1,7 @@
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 import { APP_LAUNCH } from '@/lib/growth/launch-status'
 
-/** Shared config for the per-brand homes (yuel / yuun / yaul / kanyu.hexastral.com). */
+/** Shared config for the per-brand homes (yuel / yuun / yaul / kanyu / syel). */
 
 export type BrandLocale = 'en' | 'zh' | 'tw' | 'ja'
 
@@ -45,6 +45,11 @@ export const BRAND_STORE = {
     android: 'https://play.google.com/store/apps/details?id=com.hexastral.feng',
     labels: CTA_LABELS,
   },
+  syel: {
+    ios: resolveAppStoreUrl('faceoracle'),
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.xingqi',
+    labels: CTA_LABELS,
+  },
 } as const
 
 export type BrandId = keyof typeof BRAND_STORE
@@ -55,6 +60,7 @@ export const BRAND_LEGAL_PATHS: Record<BrandId, { privacy: string; terms: string
   yuun: { privacy: APP_LAUNCH.yuun.privacyPath, terms: '/terms' },
   yaul: { privacy: APP_LAUNCH.yaul.privacyPath, terms: '/terms' },
   kanyu: { privacy: APP_LAUNCH.kanyu.privacyPath, terms: '/terms' },
+  syel: { privacy: APP_LAUNCH.syel.privacyPath, terms: '/terms' },
 }
 
 /** Locale-prefixed path for brand subdomain legal links (`localePrefix: as-needed`). */

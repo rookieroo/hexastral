@@ -9,6 +9,7 @@ import { getFourPillars } from '@zhop/astro-core/ganzhi'
 import {
   auditHardForbiddenHits,
   auditSoftForbiddenHits,
+  buildComplianceInstructionBlock,
   buildForbiddenRewriteSuffix,
 } from '@zhop/portfolio-voice'
 import { and, eq } from 'drizzle-orm'
@@ -47,8 +48,10 @@ import {
   faceoracleSoftObservations,
 } from './prompts/faceoracle'
 import {
+  buildFaceoracleLanguageReminder,
   faceoracleBodyLooksWrongLocale,
   faceoracleFieldsLookWrongLocale,
+  faceoracleZhLooksEnglishLeaky,
 } from './prompts/faceoracle-locale'
 
 const CHAPTER_KINDS: FaceOracleChapterKind[] = ['overview', 'face', 'palms', 'natal', 'horizon']
@@ -422,11 +425,14 @@ async function callReadingAi(
   const systemPrompt = [
     'You are a careful East-Asian physiognomy + BaZi cultural interpreter.',
     'Reply with ONE JSON object only. No markdown fences. No prose outside JSON.',
+    buildComplianceInstructionBlock(locale),
   ].join('\n')
+
+  const userPrompt = `${prompt}${buildFaceoracleLanguageReminder(locale)}`
 
   try {
     const rawText = (
-      await callWithFallback(env, systemPrompt, prompt, {
+      await callWithFallback(env, systemPrompt, userPrompt, {
         tier: 'flagship',
         locale,
         maxTokens: opts?.maxTokens ?? 8192,
@@ -949,29 +955,37 @@ export async function runFaceoracleReadingJob(
 
   await setJobStage(db, jobId, 'interpreting', 88)
 
-  // Locale drift guard (en/ja) on chapter prose only.
-  const proseSample = normalized.chapters
-    .map((c) => `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}`)
-    .join('\n')
-  const fieldSamples = normalized.chapters.flatMap((c) => [
-    c.goldenLine,
-    c.evidence,
-    c.dynamic,
-    c.reef ?? '',
-    c.remedy ?? '',
-    c.counterpoint ?? '',
-    ...c.citations.map((x) => `${x.locus} ${x.note}`),
-  ])
+  // Locale drift guard (all locales, including zh English-leak) on chapter + loci prose.
+  const proseSample = [
+    ...normalized.chapters.map(
+      (c) => `${c.goldenLine}\n${c.evidence}\n${c.dynamic}\n${c.reef ?? ''}\n${c.remedy ?? ''}`
+    ),
+    ...normalized.loci.map((l) => `${l.locus}\n${l.reading}`),
+  ].join('\n')
+  const fieldSamples = [
+    ...normalized.chapters.flatMap((c) => [
+      c.goldenLine,
+      c.evidence,
+      c.dynamic,
+      c.reef ?? '',
+      c.remedy ?? '',
+      c.counterpoint ?? '',
+      ...c.citations.map((x) => `${x.locus} ${x.note}`),
+    ]),
+    ...normalized.loci.map((l) => l.reading),
+  ]
   if (
     faceoracleBodyLooksWrongLocale(job.locale, proseSample) ||
     faceoracleFieldsLookWrongLocale(job.locale, fieldSamples)
   ) {
     console.warn('[faceoracle-job] locale drift — retrying chapters', { jobId, locale: job.locale })
+    const zhLeak = faceoracleZhLooksEnglishLeaky(proseSample)
     const retryPrompt = [
       chaptersPrompt,
       '',
-      'CRITICAL RETRY: Previous draft violated the output language. Rewrite chapters/events',
-      'in the required language. Keep FixedLoci as-is (do not translate featureKey).',
+      zhLeak
+        ? 'CRITICAL RETRY: Previous draft mixed English into Chinese prose (e.g. future/tension/palm). Rewrite ALL user-facing strings in 中文; ban English words. Keep FixedLoci featureKey unchanged.'
+        : 'CRITICAL RETRY: Previous draft violated the output language. Rewrite chapters/events in the required language. Keep FixedLoci as-is (do not translate featureKey).',
       'Output ONLY valid JSON.',
     ].join('\n')
     const langRetry = await callReadingAi(env, retryPrompt, job.locale, {

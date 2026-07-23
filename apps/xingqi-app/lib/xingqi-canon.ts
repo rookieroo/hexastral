@@ -117,6 +117,8 @@ export const XINGQI_TERM_ALIASES: Record<string, string> = {
   三庭: '三停',
   子女宫: '男女宫',
   妻妾宫: '夫妻宫',
+  法令: '法令纹',
+  颧: '颧骨',
 }
 
 // Re-export glyph map consistency check helper for tests / primer

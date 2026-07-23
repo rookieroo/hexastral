@@ -10,6 +10,7 @@
 import type { PortfolioReadingItem } from '@zhop/portfolio-client'
 import { locusBlurbForLocale, locusTitleForLocale } from '@/lib/ancient-glyphs'
 import { PALM_ALWAYS_KEYS, resolvePalmPoints } from '@/lib/palm-layout'
+import { separateOverlappingPoints } from '@/lib/star-overlap'
 
 export type LandmarkPoint = { x: number; y: number }
 
@@ -389,7 +390,7 @@ export function starsForPart(data: LocusExplorerData, part: LocusPart): LocusSta
   const locale = data.locale ?? 'zh-CN'
 
   if (part === 'palm_l' || part === 'palm_r') {
-    return palmStars(data, part, locale)
+    return separateOverlappingPoints(palmStars(data, part, locale))
   }
 
   const cites = data.locusIndex.face
@@ -411,5 +412,5 @@ export function starsForPart(data: LocusExplorerData, part: LocusPart): LocusSta
     })
   }
 
-  return Array.from(byKey.values())
+  return separateOverlappingPoints(Array.from(byKey.values()))
 }

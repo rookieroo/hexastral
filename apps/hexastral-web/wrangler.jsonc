@@ -25,14 +25,15 @@
     }
   ],
   // Custom domains — one worker serves every brand host; the brand is resolved
-  // per request host (yuel.* = Yuel, yuun.* = Yuun, yaul.* = Yaul, kanyu.* = Kanyu).
+  // per request host (yuel / yuun / yaul / kanyu / syel).
   // Activated on `bun deploy`. The apex *.app domains stay parked until launch.
   "routes": [
     { "pattern": "hexastral.com", "custom_domain": true },
     { "pattern": "yuel.hexastral.com", "custom_domain": true },
     { "pattern": "yuun.hexastral.com", "custom_domain": true },
     { "pattern": "yaul.hexastral.com", "custom_domain": true },
-    { "pattern": "kanyu.hexastral.com", "custom_domain": true }
+    { "pattern": "kanyu.hexastral.com", "custom_domain": true },
+    { "pattern": "syel.hexastral.com", "custom_domain": true }
   ],
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://hexastral.com",

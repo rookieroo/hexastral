@@ -26,6 +26,7 @@ import { callChatWithFallback } from '../lib/ai-router'
 import type { ChatMessage } from '../lib/chat-message'
 import { buildEnhancedGuardrails } from '../lib/prompts/guardrails'
 import { getSystemRole, type PromptDomain } from '../lib/prompts/system-role'
+import { unwrapChatReply } from '../lib/unwrap-chat-reply'
 import type { Env } from '../types'
 
 type AppEnv = { Bindings: Env }
@@ -51,14 +52,39 @@ interface ReadingContextLike {
 const LOCALE_OUTPUT_MAP: Record<string, string> = {
   zh: '请用简体中文回答。',
   'zh-CN': '请用简体中文回答。',
+  'zh-Hans': '请用简体中文回答。',
   'zh-Hant': '請用繁體中文回答。',
+  'zh-TW': '請用繁體中文回答。',
+  'zh-HK': '請用繁體中文回答。',
   en: 'Please reply in English.',
+  'en-US': 'Please reply in English.',
   ko: '한국어로 답변해 주세요.',
   ja: '日本語で回答してください。',
+  'ja-JP': '日本語で回答してください。',
   de: 'Bitte auf Deutsch antworten.',
   es: 'Por favor responda en español.',
   vi: 'Vui lòng trả lời bằng tiếng Việt.',
   th: 'กรุณาตอบเป็นภาษาไทย',
+}
+
+/** Collapse BCP-47 variants onto LOCALE_OUTPUT_MAP keys. */
+function normalizeChatLocale(raw: string | undefined): string {
+  const l = (raw ?? 'zh').trim()
+  if (!l) return 'zh'
+  if (LOCALE_OUTPUT_MAP[l]) return l
+  const lower = l.toLowerCase()
+  if (lower.startsWith('zh-hant') || lower.startsWith('zh-tw') || lower.startsWith('zh-hk')) {
+    return 'zh-Hant'
+  }
+  if (lower.startsWith('zh')) return 'zh'
+  if (lower.startsWith('ja')) return 'ja'
+  if (lower.startsWith('ko')) return 'ko'
+  if (lower.startsWith('en')) return 'en'
+  if (lower.startsWith('de')) return 'de'
+  if (lower.startsWith('es')) return 'es'
+  if (lower.startsWith('vi')) return 'vi'
+  if (lower.startsWith('th')) return 'th'
+  return l.split('-')[0] || 'zh'
 }
 
 /** Optional reply-tone steer (client config). 'balanced'/undefined = default. */
@@ -94,7 +120,8 @@ chatRoutes.post('/', async (c) => {
     tone?: ChatTone
   }>()
 
-  const { context, readingContext, memoryContext, messages, isPro, locale = 'zh-CN', tone } = body
+  const { context, readingContext, memoryContext, messages, isPro, tone } = body
+  const locale = normalizeChatLocale(body.locale ?? context?.user.locale ?? 'zh')
 
   // Normalize the legacy flat form into the structured bundle.
   const ctx: ReadingContextLike | null =
@@ -114,8 +141,9 @@ chatRoutes.post('/', async (c) => {
 
   const systemPrompt = buildChatSystemPrompt({ context: ctx, locale, tone })
 
-  const reply = await callChatWithFallback(c.env, systemPrompt, messages, {
+  const rawReply = await callChatWithFallback(c.env, systemPrompt, messages, {
     isPro,
+    locale,
     // /no_think stops qwen3 (a reasoning model) from spending the whole budget on
     // a hidden <think> block and returning EMPTY. The slightly larger free budget
     // also gives the GLM fallback (which ignores /no_think) headroom to finish.
@@ -123,7 +151,7 @@ chatRoutes.post('/', async (c) => {
     noThink: true,
   })
 
-  return c.json({ reply })
+  return c.json({ reply: unwrapChatReply(rawReply) })
 })
 
 function pad2(n: number): string {
@@ -140,9 +168,9 @@ export function buildChatSystemPrompt(input: {
   tone?: ChatTone
 }): string {
   const { context } = input
-  const locale = input.locale ?? context.user.locale ?? 'zh-CN'
+  const locale = normalizeChatLocale(input.locale ?? context.user.locale ?? 'zh')
   const localeInstruction =
-    LOCALE_OUTPUT_MAP[locale] ?? LOCALE_OUTPUT_MAP['zh-CN'] ?? '请用简体中文回答。'
+    LOCALE_OUTPUT_MAP[locale] ?? LOCALE_OUTPUT_MAP.zh ?? '请用简体中文回答。'
   const domain = DOMAIN_BY_READING[context.primary.type] ?? 'fate'
 
   const segments: string[] = [
@@ -198,6 +226,8 @@ export function buildChatSystemPrompt(input: {
     '- 生辰缺失时，不要从姓名或其他线索臆测出生信息。',
     '- 言简意赅、有理有据；命理术语需附带通俗解释。',
     '- 这是娱乐与文化参照，不是预测或专业建议；不替用户做决定。',
+    '- 输出纯文本段落给聊天气泡：禁止 Markdown 代码块（含 ```json）、禁止整段 JSON、禁止 {"response":...} 之类信封。不要用字段名包装答案。',
+    `- 输出语言必须与用户界面一致：${localeInstruction}`,
     localeInstruction
   )
 

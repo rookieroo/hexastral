@@ -74,9 +74,9 @@ export default function XingqiTermsScreen() {
           }}
         >
           {s(
-            '只收录形气报告里常见、且模型被引导使用的词：形气相术、五行气机、命盘对照、时间窗口。正文虚线可点按同一释义。',
-            '只收錄形氣報告裡常見、且模型被引導使用的詞：形氣相術、五行氣機、命盤對照、時間窗口。正文虛線可點按同一釋義。',
-            'Only terms the reading is steered to use: physiognomy, wuxing, natal contrast, time windows. Dotted prose opens the same glosses.'
+            '按所用学说分桶收录：面相（三停五岳十二宫）、掌相（主纹丘位）、命盘对照、中医词典层（气血/敛浮阳等「象」）、时间窗口。正文与位点 sheet 虚线可点按同一释义。',
+            '按所用學說分桶收錄：面相（三停五岳十二宮）、掌相（主紋丘位）、命盤對照、中醫詞典層（氣血/斂浮陽等「象」）、時間窗口。正文與位點 sheet 虛線可點按同一釋義。',
+            'Grouped by doctrine in use: face, palm, natal, TCM-as-lexicon (qi–blood / floating yang…), time windows. Dotted prose and locus sheets open the same glosses.'
           )}
         </Text>
 

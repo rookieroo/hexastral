@@ -1,6 +1,6 @@
 import type { Locale } from '@/i18n/routing'
 
-const BRAND_HOST_PREFIXES = ['yuel.', 'yuun.', 'yaul.', 'kanyu.'] as const
+const BRAND_HOST_PREFIXES = ['yuel.', 'yuun.', 'yaul.', 'kanyu.', 'syel.'] as const
 
 export function isBrandHost(host: string): boolean {
   return BRAND_HOST_PREFIXES.some((prefix) => host.startsWith(prefix))
@@ -25,7 +25,7 @@ function isLocale(value: string): value is Locale {
 }
 
 /**
- * Brand subdomains (yuel / yuun / yaul / kanyu) default to 简体中文 on the
+ * Brand subdomains (yuel / yuun / yaul / kanyu / syel) default to 简体中文 on the
  * **first** bare `/` visit only. Repeat visits and explicit `/` URLs serve
  * English (`localePrefix: as-needed`) so the locale switcher can move from
  * `/zh` → `/` without a stale `NEXT_LOCALE=zh` cookie forcing another redirect.

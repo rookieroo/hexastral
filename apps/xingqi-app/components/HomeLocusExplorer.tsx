@@ -299,6 +299,7 @@ export function HomeLocusExplorer({
           <LocusSheet
             visible
             star={selected}
+            locale={data.locale ?? 'zh'}
             openReportLabel={copy.openReport}
             teachingLabel={copy.teaching}
             readingLabel={copy.reading}

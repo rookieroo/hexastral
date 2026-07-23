@@ -105,7 +105,7 @@ export default function XingqiReadingChatScreen() {
         readingType='physiognomy'
         readingId={readingId}
         fetchHistory={() => fetchChatHistory(readingId)}
-        sendMessage={(msg, requestId) => sendChatMessage(readingId, msg, requestId)}
+        sendMessage={(msg, requestId) => sendChatMessage(readingId, msg, requestId, locale)}
         onReportMessage={(messageId) => reportChatMessage(messageId)}
         onPaywallRequest={() => router.push('/(commerce)/paywall' as never)}
         copy={copy}

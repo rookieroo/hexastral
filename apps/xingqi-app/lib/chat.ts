@@ -53,7 +53,8 @@ export async function reportChatMessage(messageId: string): Promise<void> {
 export async function sendChatMessage(
   readingId: string,
   message: string,
-  requestId: string
+  requestId: string,
+  locale?: string
 ): Promise<ReadingChatSendResult> {
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('signin_required')
@@ -63,6 +64,7 @@ export async function sendChatMessage(
     readingId,
     message,
     requestId,
+    ...(locale ? { locale } : {}),
   })
   const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
     method: 'POST',

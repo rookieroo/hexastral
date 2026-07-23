@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { HexastralHome } from '@/components/brand/HexastralHome'
 import { KanyuHome } from '@/components/brand/KanyuHome'
+import { SyelHome } from '@/components/brand/SyelHome'
 import { YaulHome } from '@/components/brand/YaulHome'
 import { YuelHome } from '@/components/brand/YuelHome'
 import { YuunHome } from '@/components/brand/YuunHome'
@@ -12,18 +13,28 @@ interface PageProps {
   searchParams?: Promise<{ brand?: string }>
 }
 
-type Brand = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'hexastral'
+type Brand = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'syel' | 'hexastral'
 
-/** Resolve the brand from the request host — one worker serves five homes. A
+/** Resolve the brand from the request host — one worker serves brand homes. A
  *  `?brand=` query override makes local preview / QA trivial (no host spoofing). */
 async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<Brand> {
   const o = (searchParams ? await searchParams : undefined)?.brand
-  if (o === 'yuel' || o === 'yuun' || o === 'yaul' || o === 'kanyu' || o === 'hexastral') return o
+  if (
+    o === 'yuel' ||
+    o === 'yuun' ||
+    o === 'yaul' ||
+    o === 'kanyu' ||
+    o === 'syel' ||
+    o === 'hexastral'
+  ) {
+    return o
+  }
   const host = (await headers()).get('host') ?? ''
   if (host.startsWith('yuel.')) return 'yuel'
   if (host.startsWith('yuun.')) return 'yuun'
   if (host.startsWith('yaul.')) return 'yaul'
   if (host.startsWith('kanyu.')) return 'kanyu'
+  if (host.startsWith('syel.')) return 'syel'
   return 'hexastral'
 }
 
@@ -97,6 +108,22 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       alternates: { canonical: '/' },
     }
   }
+  if (brand === 'syel') {
+    return {
+      metadataBase,
+      title: { absolute: 'Syel — face, palms, and natal form-qi' },
+      description:
+        'Three photos (left palm, right palm, face) read against BaZi — curated loci and a five-chapter brief. Educational, not predictive. From UseONE, LLC.',
+      robots: { index: false, follow: false },
+      icons: { icon: '/brand/syel.png' },
+      openGraph: {
+        title: 'Syel · 形气',
+        description: 'Face, palms, and natal chart — one form-qi reading.',
+        siteName: 'Syel',
+      },
+      alternates: { canonical: '/' },
+    }
+  }
   const t = await getTranslations({ locale, namespace: 'meta' })
   return {
     metadataBase,
@@ -113,5 +140,6 @@ export default async function LandingPage({ searchParams }: PageProps) {
   if (brand === 'yuun') return <YuunHome locale={locale} />
   if (brand === 'yaul') return <YaulHome locale={locale} />
   if (brand === 'kanyu') return <KanyuHome locale={locale} />
+  if (brand === 'syel') return <SyelHome locale={locale} />
   return <HexastralHome locale={locale} origin={await requestOrigin()} />
 }

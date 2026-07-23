@@ -284,6 +284,76 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     'TCM as lexicon: organ/qi imagery for form-qi cues — not organ diagnosis.'
   ),
   t(
+    'xq_qixue',
+    '气血',
+    'qì xuè',
+    'meta',
+    '气与血的充养',
+    'Qi and blood',
+    '气血：中医词典层——谈润泽、循环与神采的「象」，不作验血或诊治。',
+    'Qi–blood imagery for tone and vitality — not lab medicine.'
+  ),
+  t(
+    'xq_lian',
+    '敛',
+    'liǎn',
+    'meta',
+    '收束内守',
+    'Gather inward',
+    '敛：把外散之势往里收——睡眠、少言、减刺激等节奏，不是压抑个性。',
+    'Gathering qi inward — pacing and rest, not suppressing character.'
+  ),
+  t(
+    'xq_fuyang',
+    '浮阳',
+    'fú yáng',
+    'meta',
+    '阳气上浮',
+    'Floating yang',
+    '浮阳：阳气偏于上浮（易热、浅眠、目赤等「象」）；宜留意下沉与收敛的节奏，非诊断。',
+    'Yang rising too high (heat, light sleep…) — cue to settle; not a diagnosis.'
+  ),
+  t(
+    'xq_lianfuyang',
+    '敛浮阳',
+    'liǎn fú yáng',
+    'meta',
+    '收上浮之阳',
+    'Settle floating yang',
+    '敛浮阳：用作息与节律把上浮之热往下安——常见于火旺窗口的养生意象，非医疗处方。',
+    'Settling floating yang via rhythm — cultural pacing, not a prescription.'
+  ),
+  t(
+    'xq_ganyang',
+    '肝阳',
+    'gān yáng',
+    'meta',
+    '肝系上亢之象',
+    'Liver-yang imagery',
+    '肝阳：中医词典——目突、急躁、上热等「象」；与肝木开窍于目并读，不作肝病诊断。',
+    'Liver-yang imagery (eyes, agitation) — lexicon, not hepatology.'
+  ),
+  t(
+    'xq_tanyu',
+    '痰瘀',
+    'tán yū',
+    'meta',
+    '痰与瘀的意象',
+    'Phlegm–stasis imagery',
+    '痰瘀：形气色斑、痣点等「阻滞」意象，解释可见痕迹，不作病理化验。',
+    'Phlegm–stasis as form metaphor for marks — not pathology labs.'
+  ),
+  t(
+    'xq_xingqiyiju',
+    '形气依据',
+    'xíng qì yī jù',
+    'meta',
+    '所见之形',
+    'Form evidence',
+    '形气依据：报告字段——先写照片上可见的形，再谈气机与窗口。',
+    'The Form field: what the photo shows before qi and windows.'
+  ),
+  t(
     'xq_guxiang',
     '骨相',
     'gǔ xiàng',
@@ -474,6 +544,16 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     'Parents palace',
     '父母宫：眉头与额际交接，根基与来源气机。',
     'Inner brow / hairline — roots cue.'
+  ),
+  t(
+    'xq_ekuan',
+    '额宽',
+    'é kuān',
+    'face',
+    '额头左右开度',
+    'Forehead width',
+    '额宽：发际下额头左右开度，常与思虑空间、官禄宫并读。',
+    'Forehead width — thought space, often with the career palace.'
   ),
   t(
     'xq_tianting',
@@ -911,8 +991,8 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
 
 export const XINGQI_VOCAB_PROMPT = [
   'Vocabulary (prefer these tokens when relevant so the client can gloss them):',
-  '形气, 气机, 宜留意, 气色, 骨相, 肉相,',
-  '面相, 三停, 五岳, 五官, 十二宫,',
+  '形气, 气机, 宜留意, 气色, 气血, 骨相, 肉相, 脏腑之象, 敛, 浮阳, 敛浮阳, 肝阳, 痰瘀, 形气依据,',
+  '面相, 三停, 五岳, 五官, 十二宫, 额宽,',
   '命宫, 财帛宫, 兄弟宫, 田宅宫, 男女宫, 奴仆宫, 夫妻宫, 疾厄宫, 迁移宫, 官禄宫, 福德宫, 父母宫,',
   '天庭, 印堂, 山根, 年寿, 准头, 人中, 地阁, 承浆, 颧骨,',
   '法令纹, 川字纹, 鱼尾纹, 卧蚕, 眉型, 眼型, 鼻型, 嘴型, 耳垂,',
