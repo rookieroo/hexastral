@@ -58,15 +58,37 @@ export async function reportChatMessage(userId: string, messageId: string): Prom
   if (!res.ok) throw new Error(`chat_report_failed:${res.status}`)
 }
 
+export async function rateChatMessage(
+  userId: string,
+  messageId: string,
+  feedback: 'up' | 'down' | null
+): Promise<void> {
+  const path = '/api/chat/feedback'
+  const body = JSON.stringify({ messageId, feedback })
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'POST',
+    headers: await authedHeaders(userId, 'POST', path, body),
+    body,
+  })
+  if (!res.ok) throw new Error(`chat_feedback_failed:${res.status}`)
+}
+
 export async function sendChatMessage(
   userId: string,
   readingType: string,
   readingId: string,
   message: string,
-  requestId: string
+  requestId: string,
+  locale?: string
 ): Promise<ReadingChatSendResult> {
   const path = '/api/chat'
-  const body = JSON.stringify({ readingType, readingId, message, requestId })
+  const body = JSON.stringify({
+    readingType,
+    readingId,
+    message,
+    requestId,
+    ...(locale ? { locale } : {}),
+  })
   const res = await fetch(`${config.apiUrl}${path}`, {
     method: 'POST',
     headers: await authedHeaders(userId, 'POST', path, body),

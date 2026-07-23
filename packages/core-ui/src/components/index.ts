@@ -38,6 +38,7 @@ export {
 } from './PaywallView'
 export { Pill, type PillProps, type PillVariant } from './Pill'
 export {
+  type ChatMessageFeedback,
   type ReadingChatBillingMode,
   type ReadingChatHistory,
   type ReadingChatMessage,
@@ -46,6 +47,11 @@ export {
   type ReadingChatSendResult,
   type ReadingChatStrings,
 } from './ReadingChatScreen'
+export {
+  type ChatShareLine,
+  ShareableChatCard,
+  type ShareableChatCardProps,
+} from './ShareableChatCard'
 export {
   type ShichenIndex,
   ShichenPicker,

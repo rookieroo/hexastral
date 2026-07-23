@@ -1,13 +1,13 @@
 /**
- * Syel share funnel — brand + install URL for chapter share cards.
+ * Syel share funnel — brand + install URL for chapter / chat share cards.
  * (Display brand Syel; API target stays faceoracle — ADR-0028.)
  */
 
-/** Footer text under the card — human-readable brand path (no scheme). */
-export const XINGQI_BRAND_URL = 'hexastral.com/lp/face'
+/** Footer text under the card — human-readable brand host (no scheme). */
+export const XINGQI_BRAND_URL = 'syel.hexastral.com'
 
-/** Full URL baked into QR + caption — Universal Link /lp/face → Syel. */
-export const XINGQI_INSTALL_URL = 'https://hexastral.com/lp/face'
+/** Full URL for caption / QR — Syel brand home. */
+export const XINGQI_INSTALL_URL = 'https://syel.hexastral.com/'
 
 /**
  * Caption alongside the image on iOS (Android often drops it — QR carries the funnel).

@@ -16,7 +16,11 @@
  * capability resolver gates this under kindred_pro. Identity = useAuth().userId.
  */
 
-import { ReadingChatScreen, type ReadingChatStrings } from '@zhop/core-ui'
+import {
+  ReadingChatScreen,
+  type ReadingChatStrings,
+  useChatSharePreview,
+} from '@zhop/core-ui'
 import { kindredDark, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
@@ -24,11 +28,20 @@ import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { useAuth } from '@/lib/auth'
-import { fetchChatHistory, sendChatMessage } from '@/lib/chat'
-import { useI18n } from '@/lib/i18n'
+import {
+  fetchChatHistory,
+  rateChatMessage,
+  reportChatMessage,
+  sendChatMessage,
+} from '@/lib/chat'
+import { resolveLocale, useI18n } from '@/lib/i18n'
+import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
 
 /** Quoted-draft cap — keeps a long paragraph from flooding the input. */
 const QUOTE_MAX_CHARS = 140
+
+/** Dark warm fill for share-card user bubbles (moonlight accent is too light). */
+const SHARE_USER_BUBBLE = '#4A433C'
 
 export default function ReadingChatRoute() {
   const { slug, quote, title } = useLocalSearchParams<{
@@ -39,6 +52,7 @@ export default function ReadingChatRoute() {
   const router = useRouter()
   const { userId } = useAuth()
   const { t } = useI18n()
+  const locale = resolveLocale()
 
   // Report-flavored copy: readingChat.* for the title/empty/suggestions, the
   // shared chat.* keys for the rest (placeholder, loading, error, credits).
@@ -58,9 +72,38 @@ export default function ReadingChatRoute() {
         t('readingChat.suggest2'),
         t('readingChat.suggest3'),
       ],
+      aiDisclaimer: t('chat.aiDisclaimer'),
+      copyAction: t('chat.copy'),
+      like: t('chat.like'),
+      dislike: t('chat.dislike'),
+      dislikeNotAccurate: t('chat.dislikeNotAccurate'),
+      dislikeReport: t('chat.dislikeReport'),
+      report: t('chat.report'),
+      reportConfirmTitle: t('chat.reportConfirmTitle'),
+      reportConfirmBody: t('chat.reportConfirmBody'),
+      reportDone: t('chat.reportDone'),
+      cancel: t('chat.cancel'),
+      share: t('chat.share'),
+      shareSelectHint: t('chat.shareSelectHint'),
+      generateShareImage: t('chat.generateShareImage'),
     }),
     [t]
   )
+
+  const { openShare, enableShare, shareModal } = useChatSharePreview({
+    brandName: 'Yuel',
+    brandUrl: KINDRED_BRAND_URL,
+    installUrl: KINDRED_INSTALL_URL,
+    logoSource: require('../../assets/icon.png'),
+    userBubbleColor: SHARE_USER_BUBBLE,
+    locale,
+    caption: (lead) => kindredShareCaption(locale, lead),
+    labels: {
+      cancel: copy.cancel ?? t('chat.cancel'),
+      generateShareImage: copy.generateShareImage ?? t('chat.generateShareImage'),
+      share: copy.share ?? t('chat.share'),
+    },
+  })
 
   // Quoted paragraph → pre-filled draft the user completes with their question.
   const initialDraft = useMemo(() => {
@@ -126,17 +169,26 @@ export default function ReadingChatRoute() {
   )
 
   return (
-    <ReadingChatScreen
-      readingType='report'
-      readingId={readingId}
-      fetchHistory={() => fetchChatHistory(userId, 'report', readingId)}
-      sendMessage={(msg, requestId) => sendChatMessage(userId, 'report', readingId, msg, requestId)}
-      onPaywallRequest={() =>
-        router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
-      }
-      copy={copy}
-      header={headerWithDisclaimer}
-      initialDraft={initialDraft}
-    />
+    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      <ReadingChatScreen
+        readingType='report'
+        readingId={readingId}
+        fetchHistory={() => fetchChatHistory(userId, 'report', readingId)}
+        sendMessage={(msg, requestId) =>
+          sendChatMessage(userId, 'report', readingId, msg, requestId, undefined, locale)
+        }
+        onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
+        onRateMessage={(messageId, feedback) => rateChatMessage(userId, messageId, feedback)}
+        enableShare={enableShare}
+        onShareMessages={openShare}
+        onPaywallRequest={() =>
+          router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
+        }
+        copy={copy}
+        header={headerWithDisclaimer}
+        initialDraft={initialDraft}
+      />
+      {shareModal}
+    </View>
   )
 }

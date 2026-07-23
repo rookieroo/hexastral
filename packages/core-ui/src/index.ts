@@ -19,6 +19,8 @@
  */
 
 export * from './components'
+export * from './chatShareCapture'
+export * from './useChatSharePreview'
 export * from './hooks'
 export * from './motion'
 export * from './theme'

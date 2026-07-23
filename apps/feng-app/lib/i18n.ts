@@ -352,6 +352,16 @@ export type Strings = {
   chat_report_confirm_title: string
   chat_report_confirm_body: string
   chat_report_done: string
+  chat_ai_disclaimer: string
+  chat_copy: string
+  chat_like: string
+  chat_dislike: string
+  chat_dislike_not_accurate: string
+  chat_dislike_report: string
+  chat_cancel: string
+  chat_share: string
+  chat_share_select_hint: string
+  chat_generate_share_image: string
 
   // Privacy (cross-app memory)
   privacy_section: string
@@ -662,6 +672,16 @@ const EN: Strings = {
   chat_report_done: 'Thanks — your report was sent.',
   chat_legal_disclaimer:
     'AI replies are reference-only, may hallucinate or contradict the report, and are not professional advice. Do not rely on chat for construction, purchase, or safety decisions.',
+  chat_ai_disclaimer: 'AI-generated for reference only — please use your judgment.',
+  chat_copy: 'Copy',
+  chat_like: 'Like',
+  chat_dislike: 'Dislike',
+  chat_dislike_not_accurate: 'Not accurate',
+  chat_dislike_report: 'Report objectionable content',
+  chat_cancel: 'Cancel',
+  chat_share: 'Share',
+  chat_share_select_hint: 'Select messages for the share image',
+  chat_generate_share_image: 'Generate image',
   privacy_section: 'Privacy',
   terms_section: 'Terms of Service',
   cross_app_memory_label: 'Cross-app memory',
@@ -954,6 +974,16 @@ const ZH_HANS: Strings = {
   chat_report_done: '已收到你的举报，谢谢。',
   chat_legal_disclaimer:
     'AI 回复仅供参考，可能幻觉或与报告矛盾，非专业建议。请勿依据对话作出施工、购房或安全决策。',
+  chat_ai_disclaimer: '本回答由 AI 生成，内容仅供参考，请仔细甄别。',
+  chat_copy: '复制',
+  chat_like: '有用',
+  chat_dislike: '没用',
+  chat_dislike_not_accurate: '内容不准',
+  chat_dislike_report: '举报不当内容',
+  chat_cancel: '取消',
+  chat_share: '分享',
+  chat_share_select_hint: '选择要放入分享图的消息',
+  chat_generate_share_image: '生成分享图',
   privacy_section: '隐私',
   terms_section: '服务条款',
   cross_app_memory_label: '跨应用记忆',
@@ -1238,6 +1268,16 @@ const ZH_HANT: Strings = {
   chat_report_done: '已收到你的檢舉，謝謝。',
   chat_legal_disclaimer:
     'AI 回覆僅供參考，可能幻覺或與報告矛盾，非專業建議。請勿依據對話作出施工、購屋或安全決策。',
+  chat_ai_disclaimer: '本回答由 AI 生成，內容僅供參考，請仔細甄別。',
+  chat_copy: '複製',
+  chat_like: '有用',
+  chat_dislike: '沒用',
+  chat_dislike_not_accurate: '內容不準',
+  chat_dislike_report: '檢舉不當內容',
+  chat_cancel: '取消',
+  chat_share: '分享',
+  chat_share_select_hint: '選擇要放入分享圖的訊息',
+  chat_generate_share_image: '生成分享圖',
   privacy_section: '隱私',
   terms_section: '服務條款',
   cross_app_memory_label: '跨應用記憶',
@@ -1542,6 +1582,16 @@ const JA: Strings = {
   chat_report_done: '報告を受け付けました。ありがとうございます。',
   chat_legal_disclaimer:
     'AI 返答は参考のみ。幻覚やレポートとの矛盾があり得ます。専門助言ではありません。施工・購入・安全に関する判断に依拠しないでください。',
+  chat_ai_disclaimer: '本回答は AI による生成です。参考情報としてご判断ください。',
+  chat_copy: 'コピー',
+  chat_like: '役立つ',
+  chat_dislike: '役立たない',
+  chat_dislike_not_accurate: '内容が不正確',
+  chat_dislike_report: '不適切な内容を報告',
+  chat_cancel: 'キャンセル',
+  chat_share: '共有',
+  chat_share_select_hint: '共有画像に入れるメッセージを選択',
+  chat_generate_share_image: '画像を生成',
   privacy_section: 'プライバシー',
   terms_section: '利用規約',
   cross_app_memory_label: 'アプリ間メモリ',

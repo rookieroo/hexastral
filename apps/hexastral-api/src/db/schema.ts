@@ -1675,6 +1675,11 @@ export const conversationMessages = sqliteTable(
     role: text('role', { enum: ['user', 'assistant'] }).notNull(),
     /** 消息内容 */
     content: text('content').notNull(),
+    /**
+     * User rating on an assistant turn: 'up' | 'down' | null.
+     * Cleared by sending null (tap same thumb again). User turns stay null.
+     */
+    feedback: text('feedback', { enum: ['up', 'down'] }),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),

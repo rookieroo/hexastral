@@ -8,20 +8,35 @@
  * which is what the server's `'pair'` reading-context query expects.
  */
 
-import { ReadingChatScreen, type ReadingChatStrings } from '@zhop/core-ui'
+import {
+  ReadingChatScreen,
+  type ReadingChatStrings,
+  useChatSharePreview,
+} from '@zhop/core-ui'
 import { kindredDark, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
 import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
-import { type ChatTone, clearChatHistory, fetchChatHistory, sendChatMessage } from '@/lib/chat'
-import { useI18n } from '@/lib/i18n'
+import {
+  type ChatTone,
+  clearChatHistory,
+  fetchChatHistory,
+  rateChatMessage,
+  reportChatMessage,
+  sendChatMessage,
+} from '@/lib/chat'
+import { resolveLocale, useI18n } from '@/lib/i18n'
+import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
 
 const TONES: ChatTone[] = ['warm', 'balanced', 'direct']
 
 /** Quoted-draft cap — keeps a long passage from flooding the input. */
 const QUOTE_MAX_CHARS = 140
+
+/** Dark warm fill for share-card user bubbles (moonlight accent is too light). */
+const SHARE_USER_BUBBLE = '#4A433C'
 
 export default function BondChatScreen() {
   const { id, title, quote } = useLocalSearchParams<{
@@ -32,6 +47,7 @@ export default function BondChatScreen() {
   const router = useRouter()
   const { userId } = useAuth()
   const { t } = useI18n()
+  const locale = resolveLocale()
   // Reply-tone steer (chat config). Default 'balanced' = the unchanged voice.
   const [tone, setTone] = useState<ChatTone>('balanced')
 
@@ -48,9 +64,38 @@ export default function BondChatScreen() {
       poolRemaining: t('chat.poolRemaining'),
       suggestions: [t('chat.suggest1'), t('chat.suggest2'), t('chat.suggest3')],
       newConversation: t('chat.newConversation'),
+      aiDisclaimer: t('chat.aiDisclaimer'),
+      copyAction: t('chat.copy'),
+      like: t('chat.like'),
+      dislike: t('chat.dislike'),
+      dislikeNotAccurate: t('chat.dislikeNotAccurate'),
+      dislikeReport: t('chat.dislikeReport'),
+      report: t('chat.report'),
+      reportConfirmTitle: t('chat.reportConfirmTitle'),
+      reportConfirmBody: t('chat.reportConfirmBody'),
+      reportDone: t('chat.reportDone'),
+      cancel: t('chat.cancel'),
+      share: t('chat.share'),
+      shareSelectHint: t('chat.shareSelectHint'),
+      generateShareImage: t('chat.generateShareImage'),
     }),
     [t]
   )
+
+  const { openShare, enableShare, shareModal } = useChatSharePreview({
+    brandName: 'Yuel',
+    brandUrl: KINDRED_BRAND_URL,
+    installUrl: KINDRED_INSTALL_URL,
+    logoSource: require('../../assets/icon.png'),
+    userBubbleColor: SHARE_USER_BUBBLE,
+    locale,
+    caption: (lead) => kindredShareCaption(locale, lead),
+    labels: {
+      cancel: copy.cancel ?? t('chat.cancel'),
+      generateShareImage: copy.generateShareImage ?? t('chat.generateShareImage'),
+      share: copy.share ?? t('chat.share'),
+    },
+  })
 
   // 划词 → chat: a long-pressed sentence pre-fills the input as a quoted draft
   // the user completes with their question (never auto-sent). Mirrors the solo
@@ -142,18 +187,27 @@ export default function BondChatScreen() {
   )
 
   return (
-    <ReadingChatScreen
-      readingType='pair'
-      readingId={id}
-      fetchHistory={() => fetchChatHistory(userId, 'pair', id)}
-      sendMessage={(msg, requestId) => sendChatMessage(userId, 'pair', id, msg, requestId, tone)}
-      onNewConversation={() => clearChatHistory(userId, 'pair', id)}
-      onPaywallRequest={() =>
-        router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
-      }
-      copy={copy}
-      header={headerWithDisclaimer}
-      initialDraft={initialDraft}
-    />
+    <View style={{ flex: 1, backgroundColor: kindredDark.bg }}>
+      <ReadingChatScreen
+        readingType='pair'
+        readingId={id}
+        fetchHistory={() => fetchChatHistory(userId, 'pair', id)}
+        sendMessage={(msg, requestId) =>
+          sendChatMessage(userId, 'pair', id, msg, requestId, tone, locale)
+        }
+        onNewConversation={() => clearChatHistory(userId, 'pair', id)}
+        onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
+        onRateMessage={(messageId, feedback) => rateChatMessage(userId, messageId, feedback)}
+        enableShare={enableShare}
+        onShareMessages={openShare}
+        onPaywallRequest={() =>
+          router.push({ pathname: '/(commerce)/paywall', params: { reason: 'chat' } })
+        }
+        copy={copy}
+        header={headerWithDisclaimer}
+        initialDraft={initialDraft}
+      />
+      {shareModal}
+    </View>
   )
 }

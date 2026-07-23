@@ -2,14 +2,23 @@
  * Report chat — bundled with a purchased feng report (unlimited follow-ups).
  */
 
-import { ReadingChatScreen, type ReadingChatStrings, useTheme } from '@zhop/core-ui'
+import {
+  ReadingChatScreen,
+  type ReadingChatStrings,
+  useChatSharePreview,
+  useTheme,
+} from '@zhop/core-ui'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { useAuth } from '@/lib/auth'
-import { fetchChatHistory, reportChatMessage, sendChatMessage } from '@/lib/chat'
+import { fetchChatHistory, rateChatMessage, reportChatMessage, sendChatMessage } from '@/lib/chat'
+import { FENG_BRAND_URL, FENG_INSTALL_URL, fengShareCaption } from '@/lib/fengShare'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { fetchFengReportChatAccess } from '@/lib/purchase'
+
+/** Zinc mid-tone — readable user bubble on paper share card. */
+const SHARE_USER_BUBBLE = '#3F3F46'
 
 export default function ReportChatScreen() {
   const { reportId, siteId, title, quote } = useLocalSearchParams<{
@@ -21,6 +30,7 @@ export default function ReportChatScreen() {
   const router = useRouter()
   const { userId } = useAuth()
   const t = useStrings(resolveLocale())
+  const locale = resolveLocale()
   const { colors } = useTheme()
   const [chatUnlocked, setChatUnlocked] = useState<boolean | null>(null)
 
@@ -55,9 +65,34 @@ export default function ReportChatScreen() {
       reportConfirmTitle: t.chat_report_confirm_title,
       reportConfirmBody: t.chat_report_confirm_body,
       reportDone: t.chat_report_done,
+      aiDisclaimer: t.chat_ai_disclaimer,
+      copyAction: t.chat_copy,
+      like: t.chat_like,
+      dislike: t.chat_dislike,
+      dislikeNotAccurate: t.chat_dislike_not_accurate,
+      dislikeReport: t.chat_dislike_report,
+      cancel: t.chat_cancel,
+      share: t.chat_share,
+      shareSelectHint: t.chat_share_select_hint,
+      generateShareImage: t.chat_generate_share_image,
     }),
     [t]
   )
+
+  const { openShare, enableShare, shareModal } = useChatSharePreview({
+    brandName: 'Kanyu',
+    brandUrl: FENG_BRAND_URL,
+    installUrl: FENG_INSTALL_URL,
+    logoSource: require('../../assets/icon.png'),
+    userBubbleColor: SHARE_USER_BUBBLE,
+    locale,
+    caption: (lead) => fengShareCaption(locale, lead),
+    labels: {
+      cancel: copy.cancel ?? t.chat_cancel,
+      generateShareImage: copy.generateShareImage ?? t.chat_generate_share_image,
+      share: copy.share ?? t.chat_share,
+    },
+  })
 
   if (!userId || !reportId) {
     return <View style={{ flex: 1, backgroundColor: colors.bg }} />
@@ -145,18 +180,26 @@ export default function ReportChatScreen() {
   }
 
   return (
-    <ReadingChatScreen
-      readingType='feng'
-      readingId={reportId}
-      fetchHistory={() => fetchChatHistory(userId, 'feng', reportId)}
-      sendMessage={(msg, requestId) => sendChatMessage(userId, 'feng', reportId, msg, requestId)}
-      onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
-      onPaywallRequest={() =>
-        router.push({ pathname: '/paywall', params: { intent: 'chat', siteId: siteId ?? '' } })
-      }
-      copy={copy}
-      header={headerWithDisclaimer}
-      initialDraft={quote || undefined}
-    />
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ReadingChatScreen
+        readingType='feng'
+        readingId={reportId}
+        fetchHistory={() => fetchChatHistory(userId, 'feng', reportId)}
+        sendMessage={(msg, requestId) =>
+          sendChatMessage(userId, 'feng', reportId, msg, requestId, locale)
+        }
+        onReportMessage={(messageId) => reportChatMessage(userId, messageId)}
+        onRateMessage={(messageId, feedback) => rateChatMessage(userId, messageId, feedback)}
+        enableShare={enableShare}
+        onShareMessages={openShare}
+        onPaywallRequest={() =>
+          router.push({ pathname: '/paywall', params: { intent: 'chat', siteId: siteId ?? '' } })
+        }
+        copy={copy}
+        header={headerWithDisclaimer}
+        initialDraft={quote || undefined}
+      />
+      {shareModal}
+    </View>
   )
 }

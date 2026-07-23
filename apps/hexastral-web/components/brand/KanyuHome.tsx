@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { AppCTA } from './AppCTA'
 import { BrandLegalFooter } from './BrandLegalFooter'
 import { BRAND_STORE, type BrandLocale, pickLocale } from './brand-config'
@@ -89,13 +90,25 @@ export function KanyuHome({ locale }: { locale: string }) {
           textAlign: 'center',
         }}
       >
+        <Image
+          src='/brand/kanyu.png'
+          alt='Kanyu'
+          width={72}
+          height={72}
+          priority
+          style={{
+            borderRadius: 16,
+            marginBottom: 18,
+            boxShadow: '0 0 0 0.5px rgba(245,240,232,0.12)',
+          }}
+        />
         <p
           style={{
-            fontSize: 11,
-            letterSpacing: 6,
+            fontSize: 13,
+            letterSpacing: 4,
             color: C.bronze,
-            marginBottom: 20,
-            textTransform: 'uppercase',
+            marginBottom: 18,
+            fontWeight: 600,
           }}
         >
           Kanyu · 堪舆

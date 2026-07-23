@@ -434,6 +434,7 @@ chatRoutes.post('/', async (c) => {
   return c.json({
     conversationId: conv.id,
     reply: astroResp.reply,
+    assistantMessageId: assistantMsgId,
     isPro: isPaid,
     tier: chatTier,
     billingMode: chatBillingMode,
@@ -443,6 +444,45 @@ chatRoutes.post('/', async (c) => {
       hitCount: bundle.memory.hitCount,
     },
   })
+})
+
+/**
+ * POST /api/chat/feedback — thumbs up/down on an assistant message (D1).
+ * `feedback: null` clears the rating. User-role messages are rejected.
+ */
+const feedbackSchema = z.object({
+  messageId: z.string().min(1),
+  feedback: z.enum(['up', 'down']).nullable(),
+})
+
+chatRoutes.post('/feedback', async (c) => {
+  const userId = requireUserId(c)
+  const { messageId, feedback } = feedbackSchema.parse(await c.req.json())
+  const db = c.get('db')
+
+  const row = await db
+    .select({
+      role: conversationMessages.role,
+      ownerId: conversations.userId,
+    })
+    .from(conversationMessages)
+    .innerJoin(conversations, eq(conversationMessages.conversationId, conversations.id))
+    .where(eq(conversationMessages.id, messageId))
+    .get()
+
+  if (!row || row.ownerId !== userId) {
+    throw new HTTPException(404, { message: 'message not found' })
+  }
+  if (row.role !== 'assistant') {
+    throw new HTTPException(400, { message: 'feedback_assistant_only' })
+  }
+
+  await db
+    .update(conversationMessages)
+    .set({ feedback })
+    .where(eq(conversationMessages.id, messageId))
+
+  return c.json({ ok: true, feedback })
 })
 
 /**
@@ -520,6 +560,7 @@ chatRoutes.get('/:type/:readingId', async (c) => {
       id: conversationMessages.id,
       role: conversationMessages.role,
       content: conversationMessages.content,
+      feedback: conversationMessages.feedback,
       createdAt: conversationMessages.createdAt,
     })
     .from(conversationMessages)

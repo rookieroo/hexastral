@@ -2,26 +2,17 @@
  * ReadingChatScreen — shared AI follow-up chat shell (Phase J · J.1.5).
  *
  * Lifted from `apps/hexastral-app/app/detail/chat/[readingType]/[id].tsx` so
- * every reading-producing satellite (feng, oracle, palmface/faceoracle,
- * numerology/meihua, synastry/yuan) can drop the same conversation surface
+ * every reading-producing satellite can drop the same conversation surface
  * over its own backend endpoint without re-implementing message list /
  * keyboard avoidance / billing UX.
  *
- * Behavior:
- *   1. On mount, call `fetchHistory()` once to hydrate the message list.
- *   2. User types → optimistic local append → call `sendMessage(text, requestId)`.
- *   3. Show typing indicator while pending; surface error / paywall via callbacks.
- *   4. Suggestions row (caller-provided strings) renders only when empty.
- *
- * Adapter pattern: caller owns API + auth + paywall; component is presentational
- * over the conversation. No expo-router / no HMAC / no React Query dep.
- *
- * Header is fully optional — caller passes `header` (e.g. a back button +
- * brand logo). When omitted, only the message list + input bar render.
+ * Assistant turns: body → AI disclaimer → action bar (copy / like / dislike /
+ * optional share). Long-press no longer opens report — dislike sheet does.
  */
 
-import { Send, SquarePen } from 'lucide-react-native'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import * as Haptics from 'expo-haptics'
+import { Check, Copy, Send, Share2, SquarePen, ThumbsDown, ThumbsUp } from 'lucide-react-native'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -38,15 +29,17 @@ import { useTheme } from '../theme/provider'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-// 'subscription' = unlimited within the app (abuse-capped server-side); the metered
-// 'pool'/'chat_credits' modes survive only on the legacy omnibus path (ADR-0013 §3).
 export type ReadingChatBillingMode = 'free' | 'subscription' | 'pool' | 'chat_credits'
+
+export type ChatMessageFeedback = 'up' | 'down' | null
 
 export interface ReadingChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  /** Persisted thumbs on assistant turns; null/undefined = none. */
+  feedback?: ChatMessageFeedback
 }
 
 export interface ReadingChatHistory {
@@ -57,90 +50,72 @@ export interface ReadingChatHistory {
 export interface ReadingChatSendResult {
   conversationId: string
   reply: string
+  /** Server id for the persisted assistant row — required for D1 feedback. */
+  assistantMessageId?: string
   isPro: boolean
   billingMode: ReadingChatBillingMode
-  /** null = unlimited (subscription / legacy pool) — not a per-reading free-taste count. */
   freeMessagesRemaining: number | null
 }
 
-/**
- * Localized strings. Placeholders `{remaining}` are replaced verbatim.
- */
 export interface ReadingChatStrings {
-  /** Header title (defaults if no header provided) */
   title: string
-  /** Bubble shown when message list is empty */
   emptyHint: string
-  /** Placeholder inside the input field */
   placeholder: string
-  /** Streaming indicator text */
   loading: string
-  /** Generic send failure (non-paywall) */
   errorGeneric: string
-  /** Header subtitle when user is Pro */
   proUnlimited: string
-  /** Header subtitle / chip when overflow billing kicks in (chat_credits mode) */
   buyCredits: string
-  /** "Free messages left: {remaining}" — must contain `{remaining}` */
   freeRemaining: string
-  /** "Pool credits left: {remaining}" — must contain `{remaining}` */
   poolRemaining: string
-  /** Optional quick-start prompt strings (already translated) */
   suggestions?: ReadonlyArray<string>
-  /** "New conversation" action label (shown only when `onNewConversation` is set). */
   newConversation?: string
-  /** Report-message affordance (shown only when `onReportMessage` is set). */
   report?: string
   reportConfirmTitle?: string
   reportConfirmBody?: string
   reportDone?: string
+  /** Under each assistant bubble (DeepSeek-style). */
+  aiDisclaimer?: string
+  copyAction?: string
+  copied?: string
+  like?: string
+  dislike?: string
+  share?: string
+  dislikeNotAccurate?: string
+  dislikeReport?: string
+  shareSelectHint?: string
+  generateShareImage?: string
+  cancel?: string
 }
 
 export interface ReadingChatScreenProps {
-  /** Reading discriminator + id; passed straight to your adapters. */
   readingType: string
   readingId: string
-
-  // ── Adapters ─────────────────────────────────────────────────────────────
-  /** Load existing conversation. Called once on mount. */
   fetchHistory: () => Promise<ReadingChatHistory>
-  /** Send a message and resolve with the AI reply + billing snapshot. */
   sendMessage: (message: string, requestId: string) => Promise<ReadingChatSendResult>
-
-  // ── Behavior ─────────────────────────────────────────────────────────────
-  /** Called when sendMessage throws `insufficient_credits` (or equivalent). */
   onPaywallRequest: () => void
-  /**
-   * Optional: intercept errors before generic Alert. Return `true` to indicate
-   * the caller fully handled the error (no further UI from this component).
-   */
   onError?: (err: unknown) => boolean
-
-  // ── Identity & surface ───────────────────────────────────────────────────
   copy: ReadingChatStrings
-  /** Optional custom header (back button + logo + title). Caller-owned. */
   header?: ReactNode
-  /** When true, hide free/pool counters + suggestions (anonymous mode). */
   disableBillingUI?: boolean
-  /** Provide a fresh request id per send (defaults to crypto.randomUUID). */
   newRequestId?: () => string
-  /**
-   * Pre-fill the input on first mount — e.g. a quoted passage the user
-   * selected in a reading ("ask about this paragraph"). The user can edit or
-   * clear it before sending; it is never auto-sent.
-   */
   initialDraft?: string
-  /**
-   * Optional "new conversation" adapter — clears the server-side thread. When
-   * provided, a small reset action renders once the thread has messages; on
-   * success the local list is emptied. Omit to keep the single-thread behavior.
-   */
   onNewConversation?: () => Promise<void> | void
-  /**
-   * Optional report adapter (App Store 1.2 objectionable-content mechanism).
-   * When provided, long-pressing an assistant message offers a "report" action.
-   */
+  /** App Store 1.2 — opened from dislike sheet, not long-press. */
   onReportMessage?: (messageId: string) => Promise<void> | void
+  /** Persist thumbs; `null` clears. Optimistic UI already applied. */
+  onRateMessage?: (
+    messageId: string,
+    feedback: 'up' | 'down' | null
+  ) => Promise<void> | void
+  /**
+   * When set, Share appears and selection mode can hand off messages for a
+   * preview-first share card (host owns capture speed gate).
+   */
+  onShareMessages?: (messages: ReadingChatMessage[]) => void
+  /** Default true when onShareMessages is set. */
+  enableShare?: boolean
+  /** Optional host clipboard (preferred). Falls back to expo-clipboard if present. */
+  onCopyMessage?: (content: string) => void | Promise<void>
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -159,7 +134,6 @@ function format(template: string, replacements: Record<string, string | number>)
   )
 }
 
-/** Render assistant content with `**bold**` segments inline. */
 function renderAssistantContent(content: string): ReactNode {
   return content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
     part.startsWith('**') && part.endsWith('**') ? (
@@ -170,6 +144,40 @@ function renderAssistantContent(content: string): ReactNode {
       part
     )
   )
+}
+
+type ClipboardModule = { setStringAsync: (text: string) => Promise<void> }
+let clipboardMod: ClipboardModule | null | undefined
+function getClipboard(): ClipboardModule | null {
+  if (clipboardMod !== undefined) return clipboardMod
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    clipboardMod = require('expo-clipboard') as ClipboardModule
+    return clipboardMod
+  } catch {
+    clipboardMod = null
+    return null
+  }
+}
+
+async function copyToClipboard(
+  text: string,
+  onCopyMessage?: (content: string) => void | Promise<void>
+): Promise<boolean> {
+  try {
+    if (onCopyMessage) {
+      await onCopyMessage(text)
+      return true
+    }
+    const clip = getClipboard()
+    if (clip) {
+      await clip.setStringAsync(text)
+      return true
+    }
+  } catch {
+    return false
+  }
+  return false
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -189,33 +197,18 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     initialDraft,
     onNewConversation,
     onReportMessage,
+    onRateMessage,
+    onShareMessages,
+    enableShare: enableShareProp,
+    onCopyMessage,
   } = props
+
+  const enableShare = enableShareProp ?? Boolean(onShareMessages)
+  const showActions = Boolean(onReportMessage || onRateMessage || enableShare)
 
   const { colors, isDark } = useTheme()
 
-  const handleReport = (messageId: string) => {
-    if (!onReportMessage) return
-    Alert.alert(
-      copy.reportConfirmTitle ?? 'Report message',
-      copy.reportConfirmBody ?? 'Report this response as objectionable?',
-      [
-        {
-          text: copy.report ?? 'Report',
-          style: 'destructive',
-          onPress: () => {
-            Promise.resolve(onReportMessage(messageId))
-              .then(() => {
-                if (copy.reportDone) Alert.alert(copy.reportDone)
-              })
-              .catch(() => {})
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    )
-  }
   const [isResetting, setIsResetting] = useState(false)
-
   const [history, setHistory] = useState<ReadingChatHistory>({
     conversationId: null,
     messages: [],
@@ -225,10 +218,12 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
   const [isSending, setIsSending] = useState(false)
   const [billingMode, setBillingMode] = useState<ReadingChatBillingMode | null>(null)
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [selecting, setSelecting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
 
   const flatListRef = useRef<FlatList>(null)
 
-  // ── Load history once per readingType+id ──────────────────────────────────
   useEffect(() => {
     let cancelled = false
     setIsLoadingHistory(true)
@@ -251,12 +246,120 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
 
   const messages = history.messages
 
-  // ── Send handler ──────────────────────────────────────────────────────────
+  const patchFeedback = useCallback((messageId: string, feedback: ChatMessageFeedback) => {
+    setHistory((prev) => ({
+      ...prev,
+      messages: prev.messages.map((m) => (m.id === messageId ? { ...m, feedback } : m)),
+    }))
+  }, [])
+
+  const handleReport = useCallback(
+    (messageId: string) => {
+      if (!onReportMessage) return
+      Alert.alert(
+        copy.reportConfirmTitle ?? 'Report message',
+        copy.reportConfirmBody ?? 'Report this response as objectionable?',
+        [
+          {
+            text: copy.report ?? 'Report',
+            style: 'destructive',
+            onPress: () => {
+              Promise.resolve(onReportMessage(messageId))
+                .then(() => {
+                  if (copy.reportDone) Alert.alert(copy.reportDone)
+                })
+                .catch(() => {})
+            },
+          },
+          { text: copy.cancel ?? 'Cancel', style: 'cancel' },
+        ]
+      )
+    },
+    [copy, onReportMessage]
+  )
+
+  const handleDislike = useCallback(
+    (messageId: string, current: ChatMessageFeedback | undefined) => {
+      const next: ChatMessageFeedback = current === 'down' ? null : 'down'
+      patchFeedback(messageId, next)
+      void Promise.resolve(onRateMessage?.(messageId, next)).catch(() => {
+        patchFeedback(messageId, current ?? null)
+      })
+      if (next === 'down' && onReportMessage) {
+        Alert.alert(copy.dislike ?? 'Not helpful', undefined, [
+          {
+            text: copy.dislikeNotAccurate ?? 'Not accurate',
+            style: 'default',
+          },
+          {
+            text: copy.dislikeReport ?? copy.report ?? 'Report',
+            style: 'destructive',
+            onPress: () => handleReport(messageId),
+          },
+          { text: copy.cancel ?? 'Cancel', style: 'cancel' },
+        ])
+      }
+    },
+    [copy, handleReport, onRateMessage, onReportMessage, patchFeedback]
+  )
+
+  const handleLike = useCallback(
+    (messageId: string, current: ChatMessageFeedback | undefined) => {
+      const next: ChatMessageFeedback = current === 'up' ? null : 'up'
+      patchFeedback(messageId, next)
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+      void Promise.resolve(onRateMessage?.(messageId, next)).catch(() => {
+        patchFeedback(messageId, current ?? null)
+      })
+    },
+    [onRateMessage, patchFeedback]
+  )
+
+  const handleCopy = useCallback(
+    async (messageId: string, content: string) => {
+      const ok = await copyToClipboard(content, onCopyMessage)
+      if (!ok) {
+        Alert.alert(copy.errorGeneric)
+        return
+      }
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+      setCopiedId(messageId)
+      setTimeout(() => setCopiedId((id) => (id === messageId ? null : id)), 1500)
+    },
+    [copy.errorGeneric, onCopyMessage]
+  )
+
+  const enterShareSelect = useCallback(
+    (seedId: string) => {
+      if (!enableShare || !onShareMessages) return
+      setSelecting(true)
+      setSelectedIds(new Set([seedId]))
+    },
+    [enableShare, onShareMessages]
+  )
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const confirmShare = useCallback(() => {
+    if (!onShareMessages) return
+    const ordered = messages.filter((m) => selectedIds.has(m.id))
+    if (ordered.length === 0) return
+    setSelecting(false)
+    setSelectedIds(new Set())
+    onShareMessages(ordered)
+  }, [messages, onShareMessages, selectedIds])
+
   const handleSend = async (textOverride?: string) => {
     const trimmed = (textOverride ?? input).trim()
-    if (!trimmed || isSending) return
+    if (!trimmed || isSending || selecting) return
 
-    // Optimistic local append
     const optimisticId = newRequestId()
     setHistory((prev) => ({
       ...prev,
@@ -278,16 +381,18 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
       const result = await sendMessage(trimmed, newRequestId())
       setBillingMode(result.billingMode)
       setFreeRemaining(result.freeMessagesRemaining)
+      const assistantId = result.assistantMessageId ?? newRequestId()
       setHistory((prev) => ({
         ...prev,
         conversationId: result.conversationId,
         messages: [
           ...prev.messages,
           {
-            id: newRequestId(),
+            id: assistantId,
             role: 'assistant',
             content: result.reply,
             createdAt: new Date().toISOString(),
+            feedback: null,
           },
         ],
       }))
@@ -318,6 +423,8 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
       setBillingMode(null)
       setFreeRemaining(null)
       setInput('')
+      setSelecting(false)
+      setSelectedIds(new Set())
     } catch {
       Alert.alert(copy.errorGeneric)
     } finally {
@@ -326,7 +433,7 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
   }
 
   const showOverflowWarning = !disableBillingUI && billingMode === 'chat_credits'
-  const showNewConversation = !!onNewConversation && messages.length > 0
+  const showNewConversation = !!onNewConversation && messages.length > 0 && !selecting
   const showCounter =
     !disableBillingUI &&
     (billingMode === 'free' || billingMode === 'pool') &&
@@ -335,9 +442,11 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
 
   const suggestions = copy.suggestions ?? []
   const showSuggestions =
-    !disableBillingUI && messages.length === 0 && !isSending && suggestions.length > 0
+    !disableBillingUI && messages.length === 0 && !isSending && suggestions.length > 0 && !selecting
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const iconMuted = colors.secondary
+  const iconActive = colors.accent
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -346,8 +455,6 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
     >
       {header ?? null}
 
-      {/* New conversation — clears the server thread + local list. Right-aligned
-          under the header; only shown once a thread exists. */}
       {showNewConversation ? (
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12 }}>
           <Pressable
@@ -372,7 +479,14 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
         </View>
       ) : null}
 
-      {/* Message list */}
+      {selecting ? (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+          <Text style={{ fontSize: 13, color: colors.secondary }}>
+            {copy.shareSelectHint ?? 'Select messages to include'}
+          </Text>
+        </View>
+      ) : null}
+
       {isLoadingHistory ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={colors.text} />
@@ -386,6 +500,7 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
             padding: 16,
             flexGrow: 1,
             justifyContent: messages.length === 0 ? 'center' : 'flex-end',
+            paddingBottom: selecting ? 88 : 16,
           }}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
@@ -406,45 +521,123 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
           }
           renderItem={({ item }) => {
             const isUser = item.role === 'user'
+            const selected = selectedIds.has(item.id)
             return (
               <View
                 style={{
                   flexDirection: 'row',
                   justifyContent: isUser ? 'flex-end' : 'flex-start',
                   marginBottom: 12,
+                  gap: 8,
+                  alignItems: 'flex-start',
                 }}
               >
-                <Pressable
-                  onLongPress={!isUser && onReportMessage ? () => handleReport(item.id) : undefined}
-                  accessibilityHint={
-                    !isUser && onReportMessage ? (copy.report ?? 'Report message') : undefined
-                  }
-                  style={{
-                    maxWidth: '80%',
-                    backgroundColor: isUser ? colors.accent : colors.card,
-                    borderBottomRightRadius: isUser ? 4 : 16,
-                    borderBottomLeftRadius: isUser ? 16 : 4,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                  }}
-                >
-                  <Text
+                {selecting ? (
+                  <Pressable
+                    onPress={() => toggleSelect(item.id)}
+                    accessibilityRole='checkbox'
+                    accessibilityState={{ checked: selected }}
                     style={{
-                      fontSize: 15,
-                      lineHeight: 22,
-                      color: isUser ? colors.bg : colors.text,
+                      width: 22,
+                      height: 22,
+                      marginTop: 10,
+                      borderWidth: 1,
+                      borderColor: selected ? colors.accent : colors.separator,
+                      backgroundColor: selected ? colors.accent : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    {isUser ? item.content : renderAssistantContent(item.content)}
-                  </Text>
-                </Pressable>
+                    {selected ? <Check size={14} color={colors.bg} strokeWidth={2.5} /> : null}
+                  </Pressable>
+                ) : null}
+                <View style={{ maxWidth: selecting ? '72%' : '88%', alignItems: isUser ? 'flex-end' : 'flex-start' }}>
+                  <View
+                    style={{
+                      backgroundColor: isUser ? colors.accent : colors.card,
+                      borderBottomRightRadius: isUser ? 4 : 16,
+                      borderBottomLeftRadius: isUser ? 16 : 4,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 22,
+                        color: isUser ? colors.bg : colors.text,
+                      }}
+                    >
+                      {isUser ? item.content : renderAssistantContent(item.content)}
+                    </Text>
+                  </View>
+
+                  {!isUser && !selecting && showActions ? (
+                    <View style={{ marginTop: 6, gap: 6, maxWidth: '100%' }}>
+                      {copy.aiDisclaimer ? (
+                        <Text style={{ fontSize: 11, lineHeight: 15, color: colors.secondary }}>
+                          {copy.aiDisclaimer}
+                        </Text>
+                      ) : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                        <Pressable
+                          onPress={() => void handleCopy(item.id, item.content)}
+                          hitSlop={8}
+                          accessibilityLabel={copy.copyAction ?? 'Copy'}
+                        >
+                          {copiedId === item.id ? (
+                            <Check size={18} color={iconActive} strokeWidth={1.8} />
+                          ) : (
+                            <Copy size={18} color={iconMuted} strokeWidth={1.8} />
+                          )}
+                        </Pressable>
+                        {onRateMessage ? (
+                          <>
+                            <Pressable
+                              onPress={() => handleLike(item.id, item.feedback)}
+                              hitSlop={8}
+                              accessibilityLabel={copy.like ?? 'Like'}
+                            >
+                              <ThumbsUp
+                                size={18}
+                                color={item.feedback === 'up' ? iconActive : iconMuted}
+                                strokeWidth={1.8}
+                                fill={item.feedback === 'up' ? iconActive : 'transparent'}
+                              />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => handleDislike(item.id, item.feedback)}
+                              hitSlop={8}
+                              accessibilityLabel={copy.dislike ?? 'Dislike'}
+                            >
+                              <ThumbsDown
+                                size={18}
+                                color={item.feedback === 'down' ? iconActive : iconMuted}
+                                strokeWidth={1.8}
+                                fill={item.feedback === 'down' ? iconActive : 'transparent'}
+                              />
+                            </Pressable>
+                          </>
+                        ) : null}
+                        {enableShare && onShareMessages ? (
+                          <Pressable
+                            onPress={() => enterShareSelect(item.id)}
+                            hitSlop={8}
+                            accessibilityLabel={copy.share ?? 'Share'}
+                          >
+                            <Share2 size={18} color={iconMuted} strokeWidth={1.8} />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
               </View>
             )
           }}
         />
       )}
 
-      {/* Overflow billing warning */}
       {showOverflowWarning && (
         <View
           style={{
@@ -463,7 +656,6 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
         </View>
       )}
 
-      {/* Free / pool remaining counter */}
       {showCounter && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
           <Text style={{ fontSize: 11, color: colors.secondary }}>
@@ -474,7 +666,6 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
         </View>
       )}
 
-      {/* Typing indicator */}
       {isSending && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <View
@@ -491,7 +682,6 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
         </View>
       )}
 
-      {/* Quick-start suggestions */}
       {showSuggestions && (
         <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator }}>
           <ScrollView
@@ -520,73 +710,124 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
         </View>
       )}
 
-      {/* Input bar */}
-      <View
-        style={{
-          paddingHorizontal: 12,
-          paddingTop: 8,
-          paddingBottom: 28,
-          backgroundColor: colors.bg,
-          borderTopWidth: showSuggestions ? 0 : 0.5,
-          borderTopColor: colors.separator,
-        }}
-      >
+      {selecting ? (
         <View
           style={{
             flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.card,
-            borderWidth: 0.5,
-            borderColor: input.trim() ? colors.text : colors.separator,
-            borderRadius: 24,
-            paddingLeft: 18,
-            paddingRight: 6,
-            paddingVertical: 6,
-            gap: 6,
+            gap: 10,
+            paddingHorizontal: 12,
+            paddingTop: 10,
+            paddingBottom: 28,
+            borderTopWidth: 0.5,
+            borderTopColor: colors.separator,
+            backgroundColor: colors.bg,
           }}
         >
-          <TextInput
-            style={{
-              flex: 1,
-              minHeight: 36,
-              maxHeight: 140,
-              paddingTop: 8,
-              paddingBottom: 8,
-              fontSize: 15,
-              lineHeight: 21,
-              color: colors.text,
-              textAlignVertical: 'center',
-            }}
-            placeholder={copy.placeholder}
-            placeholderTextColor={colors.secondary}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            returnKeyType='default'
-            blurOnSubmit={false}
-          />
           <Pressable
-            onPress={() => handleSend()}
-            disabled={!input.trim() || isSending}
+            onPress={() => {
+              setSelecting(false)
+              setSelectedIds(new Set())
+            }}
             style={({ pressed }) => ({
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: input.trim() && !isSending ? colors.accent : 'transparent',
+              flex: 1,
+              paddingVertical: 14,
               alignItems: 'center',
-              justifyContent: 'center',
+              borderWidth: 0.5,
+              borderColor: colors.separator,
               opacity: pressed ? 0.7 : 1,
-              alignSelf: 'flex-end',
             })}
           >
-            <Send
-              size={18}
-              strokeWidth={2}
-              color={input.trim() && !isSending ? colors.bg : colors.secondary}
-            />
+            <Text style={{ color: colors.text, fontWeight: '600' }}>{copy.cancel ?? 'Cancel'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={confirmShare}
+            disabled={selectedIds.size === 0}
+            style={({ pressed }) => ({
+              flex: 2,
+              paddingVertical: 14,
+              alignItems: 'center',
+              backgroundColor: selectedIds.size === 0 ? colors.card : colors.accent,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text
+              style={{
+                color: selectedIds.size === 0 ? colors.secondary : colors.bg,
+                fontWeight: '700',
+              }}
+            >
+              {copy.generateShareImage ?? 'Generate image'}
+            </Text>
           </Pressable>
         </View>
-      </View>
+      ) : (
+        <View
+          style={{
+            paddingHorizontal: 12,
+            paddingTop: 8,
+            paddingBottom: 28,
+            backgroundColor: colors.bg,
+            borderTopWidth: showSuggestions ? 0 : 0.5,
+            borderTopColor: colors.separator,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.card,
+              borderWidth: 0.5,
+              borderColor: input.trim() ? colors.text : colors.separator,
+              borderRadius: 24,
+              paddingLeft: 18,
+              paddingRight: 6,
+              paddingVertical: 6,
+              gap: 6,
+            }}
+          >
+            <TextInput
+              style={{
+                flex: 1,
+                minHeight: 36,
+                maxHeight: 140,
+                paddingTop: 8,
+                paddingBottom: 8,
+                fontSize: 15,
+                lineHeight: 21,
+                color: colors.text,
+                textAlignVertical: 'center',
+              }}
+              placeholder={copy.placeholder}
+              placeholderTextColor={colors.secondary}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              returnKeyType='default'
+              blurOnSubmit={false}
+            />
+            <Pressable
+              onPress={() => handleSend()}
+              disabled={!input.trim() || isSending}
+              style={({ pressed }) => ({
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: input.trim() && !isSending ? colors.accent : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.7 : 1,
+                alignSelf: 'flex-end',
+              })}
+            >
+              <Send
+                size={18}
+                strokeWidth={2}
+                color={input.trim() && !isSending ? colors.bg : colors.secondary}
+              />
+            </Pressable>
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   )
 }

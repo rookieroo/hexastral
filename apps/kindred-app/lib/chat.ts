@@ -61,7 +61,8 @@ export async function sendChatMessage(
   readingId: string,
   message: string,
   requestId: string,
-  tone?: ChatTone
+  tone?: ChatTone,
+  locale?: string
 ): Promise<ReadingChatSendResult> {
   const path = '/api/chat'
   const body = JSON.stringify({
@@ -70,6 +71,7 @@ export async function sendChatMessage(
     message,
     requestId,
     ...(tone && tone !== 'balanced' ? { tone } : {}),
+    ...(locale ? { locale } : {}),
   })
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
@@ -82,24 +84,44 @@ export async function sendChatMessage(
       signal: controller.signal,
     })
   } catch (err) {
-    // Aborted by our timeout (or a dropped connection) → a clear, retryable code
-    // instead of a hang. 'chat_timeout' is non-paywall, so the screen surfaces a
-    // plain error + lets the user send again.
     if (controller.signal.aborted) throw new Error('chat_timeout')
     throw err
   } finally {
     clearTimeout(timer)
   }
   if (!res.ok) {
-    // Error envelope is `{ ok: false, error: { code, message } }`; `message`
-    // carries the business code ('pro_required' / 'no_chat_credits') that
-    // ReadingChatScreen maps to the paywall.
     const json = (await res.json().catch(() => null)) as {
       error?: { code?: string; message?: string }
     } | null
     throw new Error(json?.error?.message ?? json?.error?.code ?? `send_failed:${res.status}`)
   }
   return (await res.json()) as ReadingChatSendResult
+}
+
+export async function reportChatMessage(userId: string, messageId: string): Promise<void> {
+  const path = '/api/chat/report'
+  const body = JSON.stringify({ messageId })
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'POST',
+    headers: await authedHeaders(userId, 'POST', path, body),
+    body,
+  })
+  if (!res.ok) throw new Error(`chat_report_failed:${res.status}`)
+}
+
+export async function rateChatMessage(
+  userId: string,
+  messageId: string,
+  feedback: 'up' | 'down' | null
+): Promise<void> {
+  const path = '/api/chat/feedback'
+  const body = JSON.stringify({ messageId, feedback })
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'POST',
+    headers: await authedHeaders(userId, 'POST', path, body),
+    body,
+  })
+  if (!res.ok) throw new Error(`chat_feedback_failed:${res.status}`)
 }
 
 /**
@@ -119,3 +141,4 @@ export async function clearChatHistory(
   })
   if (!res.ok) throw new Error(`chat_clear_failed:${res.status}`)
 }
+
