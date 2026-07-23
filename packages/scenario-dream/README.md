@@ -9,4 +9,6 @@ Shared **dream interpretation** flow: text input → portfolio preview API → n
 
 Flagship (`hexastral-app`) uses `lib/runDreamPortfolioPreview.ts` + `x-client-platform: ios` against `EXPO_PUBLIC_API_URL`.
 
-Satellite (`dream-oracle-app`) uses `@zhop/portfolio-client` `runAuto` inside the adapter.
+Satellite (`dream-oracle-app`, removed from launch wave) historically used
+`@zhop/portfolio-client` `runAuto` inside the adapter; keep this package for
+flagship / future reuse.

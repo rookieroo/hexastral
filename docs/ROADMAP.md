@@ -17,7 +17,9 @@ Architecture truth for agents: this file + [decisions/](./decisions/). Doc index
 
 Internal codenames (`auspice`, `kindred`) and RevenueCat product IDs stay unchanged per [ADR-0024](./decisions/0024-app-brand-naming.md).
 
-**Not in this wave:** face-oracle, dream-oracle, numerology, ming-pan (donor code ports into Yuel per [archive ADR-0022](./archive/decisions/0022-mingpan-disposition-donor-not-launch.md)), legacy `hexastral-app`.
+**Not in this wave (app dirs removed):** dream-oracle, numerology, ming-pan
+(donor code already ported into Yuel; API/web routes for numerology/dream may
+remain for future reuse). Legacy `hexastral-app` is also not a launch target.
 
 **Syel (post-wave):** independent satellite (`apps/xingqi-app`, display **Syel**) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
 

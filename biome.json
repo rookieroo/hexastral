@@ -114,9 +114,7 @@
         "apps/hexastral-app/**",
         "apps/kindred-app/**",
         "apps/coin-cast-app/**",
-        "apps/dream-oracle-app/**",
         "apps/xingqi-app/**",
-        "apps/numerology-app/**",
         "services/**"
       ],
       "linter": {

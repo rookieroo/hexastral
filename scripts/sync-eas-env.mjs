@@ -9,7 +9,6 @@ const TEST_RC_KEY = 'test_RbVidJpEkAdpCjYRzjqCyEDAYDx'
 
 const SATELLITE_APPS = [
   ['coin-cast-app', 'c07ecae2-d37c-4f8c-8dfa-3a3ceb6ef002', true],
-  ['dream-oracle-app', 'd27ecae3-d37c-4f8c-8dfa-3a3ceb6ef003', true],
   ['eight-pillars-app', 'e87ecae4-d37c-4f8c-8dfa-3a3ceb6ef004', true],
   ['face-oracle-app', 'f47ecae1-d37c-4f8c-8dfa-3a3ceb6ef001', true],
   ['feng-shui-app', 'fe7ecae5-d37c-4f8c-8dfa-3a3ceb6ef005', false],

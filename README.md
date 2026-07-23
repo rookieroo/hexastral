@@ -17,14 +17,13 @@ See [docs/decisions/0002-brand-matrix.md](docs/decisions/0002-brand-matrix.md).
 
 ```
 HexAstral (master / LLC publisher)
-├── Flagships — single CJK glyph + Latin transliteration
-│   ├── HexAstral        — 命緣卦道 four-tab life navigator
-│   ├── Yuán  / 緣       — relationship & compatibility (in development)
-│   └── Fēng  / 風       — feng-shui (Q3+, deferred)
-└── Satellites — independent Western names, shared backend
-    ├── Coin Cast        — I-Ching coin divination
-    ├── Xingqi           — physiognomy (palm + face)
-    └── Dream Oracle     — dream interpretation
+├── Launch wave — see docs/ROADMAP.md
+│   ├── Yuun / Yuun     — auspice-app (黄历)
+│   ├── Yuel / 緣       — kindred-app (合盘)
+│   ├── Kanyu / 風      — feng-app
+│   └── Yaul            — coin-cast-app (易经)
+└── Post-wave
+    └── Syel            — xingqi-app (palm + face)
 ```
 
 ## Repository Structure
@@ -34,15 +33,12 @@ apps/
   hexastral-api/        Cloudflare Worker API gateway (Hono + D1)
   hexastral-web/        Next.js on Cloudflare — unified web surface
   useone-tech/          Next.js on Cloudflare — LLC corporate site (privacy/terms)
-  fate-app/             Satellite — 八字 + 紫微 birth-chart
-  yuan-app/             Satellite — Yuán bonds (relationship)
-  cycle-app/            Satellite — lunar cycle tracking
-  feng-app/             Satellite — Fēng sites + 风水
-  numerology-app/       Satellite — numerology readings
-  coin-cast-app/        Satellite — I-Ching divination
-  dream-oracle-app/     Satellite — dream interpretation
-  xingqi-app/           Satellite — Xingqi physiognomy (palm + face)
-  (hexastral-app/       — flagship 命緣卦道, planned but not yet implemented)
+  auspice-app/          Yuun — daily 黄历
+  kindred-app/          Yuel — solo 八字紫微 → bonds / 合盘
+  feng-app/             Kanyu — 风水
+  coin-cast-app/        Yaul — I-Ching study + cast
+  xingqi-app/           Syel — physiognomy (palm + face)
+  (hexastral-app/       — retired omnibus; not a launch target)
 services/
   svc-astro/            Core metaphysics compute + AI interpretation
   svc-signal/           Daily almanac cron worker (00:00 UTC)
@@ -60,13 +56,13 @@ packages/
   growth-funnel/        Attribution event schema
   email/                React Email templates + SES/Resend
   logger/               Workers JSON logger
-  scenario-dream/       Dream input UI (shared with dream-oracle-app; reserved for flagship)
-  scenario-palmface/    Face/palm capture (shared with xingqi-app; reserved for flagship)
-  scenario-yuan/        Yuán bonds UI + hooks (yuan-app + hexastral-web)
+  scenario-dream/       Dream input UI (reserved / shared)
+  scenario-palmface/    Face/palm capture (shared with xingqi-app)
+  scenario-yuan/        Yuel / bonds UI + hooks
   scenario-feng/        Fēng sites UI + hooks (feng-app)
   ai-vision/            Gemini vision + R2 cache (svc-feng + svc-astro)
-  core-ui/              Shared RN primitives (Phase F)
-  portfolio-client/     Satellite app API client (shared by 4 satellites)
+  core-ui/              Shared RN primitives
+  portfolio-client/     Satellite app API client
   portfolio-posters/    Share poster templates
   satellite-ui/         Feature shell for satellite apps
   satellite-runtime/    Satellite bootstrap (DDL ingest, attribution, Apple linking)
@@ -87,8 +83,7 @@ docs/
 ## Dependency Graph (Service Bindings)
 
 ```text
-fate-app, yuan-app, cycle-app, feng-app, numerology-app,
-coin-cast-app, dream-oracle-app, xingqi-app
+auspice-app, kindred-app, feng-app, coin-cast-app, xingqi-app
   → https://api.hexastral.com (hexastral-api)
 
 hexastral-web → https://api.hexastral.com (hexastral-api)

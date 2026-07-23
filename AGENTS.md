@@ -21,10 +21,10 @@ Repo overview: [README.md](README.md).
 apps/  (backend)   hexastral-api
        (web)       hexastral-web · useone-tech (LLC corp site)
        (mobile)    auspice-app (Yuun) · kindred-app (Yuel) · feng-app · coin-cast-app
-                   + post-V1: numerology · dream-oracle · xingqi-app (Syel)
+                   · xingqi-app (Syel, post-V1)
 services/          svc-{astro,fortune,notify,geocode,mailer,admin-notify,signal,tail}
 packages/          astro-core · hexastral-client · satellite-runtime · scenario-* + others
-docs/              README.md · ROADMAP.md · apps/ · publish/ · setup/ · decisions/
+docs/              README.md · ROADMAP.md · apps/ · publish/ · setup · decisions/
 ```
 
 Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/README.md](docs/README.md)**
@@ -33,9 +33,9 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 
 | Class | Apps | Birth info |
 |---|---|---|
-| Natal / chart | kindred-app, numerology-app | Required |
+| Natal / chart | kindred-app | Required |
 | Optional natal | feng-app | Optional (some chapters degrade without it) |
-| Utility / oracle | auspice-app, coin-cast-app, dream-oracle-app | Not required |
+| Utility / oracle | auspice-app, coin-cast-app | Not required |
 | Face / palm oracle | xingqi-app (Syel) | Required (ADR-0028 — with L/R palm + face photos) |
 
 ## AI rules — where to look

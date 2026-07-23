@@ -4,11 +4,11 @@
  * `POST /api/numerology/compute` is the primary v1.0 endpoint — fully
  * deterministic Pythagorean numerology. No LLM call, no IAP gate (the value
  * comes from the AI-augmented narration in v1.5; v1.0 is a free hook into
- * the satellite App Store funnel).
+ * the App Store / web funnel).
  *
- * The route is shared between the `numerology-app` satellite and the
- * `hexastral-web` `/[locale]/numerology/calculate` web demo (no signin
- * required for the demo — `userId` is optional).
+ * Satellite `numerology-app` was removed from the launch wave; this route
+ * remains for `hexastral-web` `/[locale]/numerology/calculate` (no signin —
+ * `userId` is optional) and future reuse.
  */
 
 import { Hono } from 'hono'

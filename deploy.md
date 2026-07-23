@@ -67,7 +67,7 @@ eas build --profile production --platform ios
 eas submit --platform ios
 ```
 
-Same pattern for satellite apps (`coin-cast-app`, `dream-oracle-app`, `xingqi-app`).
+Same pattern for satellite apps (`coin-cast-app`, `xingqi-app`).
 
 ## Secrets and Config Checklist
 
