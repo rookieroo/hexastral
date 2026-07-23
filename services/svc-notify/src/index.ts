@@ -33,17 +33,34 @@ interface AlertPayload {
   context?: Record<string, string>
 }
 
-/** Fire-and-forget Telegram alert — never throws */
+/**
+ * Telegram alert via svc-admin-notify.
+ * Callers in cron/queue MUST `await` or `ctx.waitUntil(...)` — a bare
+ * fire-and-forget is cancelled when the scheduled invocation ends.
+ * Never throws (alert failure must not abort push dispatch).
+ */
 function alertAdmin(svc: Fetcher, payload: AlertPayload): Promise<void> {
   return svc
     .fetch('https://svc-admin-notify.internal/alert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ level: 'error', ...payload }),
-      signal: AbortSignal.timeout(3_000),
+      signal: AbortSignal.timeout(15_000),
     })
-    .then(() => undefined)
-    .catch(() => undefined)
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        logger.error('admin-alert non-OK', {
+          status: String(res.status),
+          body: body.slice(0, 200),
+        })
+      }
+    })
+    .catch((err: unknown) => {
+      logger.error('admin-alert failed', {
+        err: err instanceof Error ? err.message : String(err),
+      })
+    })
 }
 
 // ============ Types ============
@@ -827,12 +844,12 @@ async function purgeStaleTokens(env: Env): Promise<void> {
   }
 
   logger.info('stale-token purge complete', { totalPurged })
-  alertAdmin(env.SVC_ADMIN_NOTIFY, {
+  await alertAdmin(env.SVC_ADMIN_NOTIFY, {
     title: 'svc-notify: weekly stale-token purge complete',
     message: `Purged ${totalPurged} push tokens inactive > 90 days`,
     level: 'info',
     context: { totalPurged: String(totalPurged) },
-  }).catch(() => {})
+  })
 }
 
 /**
@@ -889,12 +906,12 @@ async function runHourlyFortunePush(
 
       if (!res.ok) {
         logger.error('push-targets fetch failed', { timezone: tz, status: String(res.status) })
-        alertAdmin(env.SVC_ADMIN_NOTIFY, {
+        await alertAdmin(env.SVC_ADMIN_NOTIFY, {
           title: 'svc-notify: push-targets fetch failed',
           message: `push-targets API returned ${res.status} for timezone ${tz}`,
           level: 'error',
           context: { timezone: tz, status: String(res.status) },
-        }).catch(() => {})
+        })
         break
       }
 
@@ -1098,12 +1115,12 @@ async function queue(batch: MessageBatch<DailyFortuneMessage>, env: Env): Promis
     } catch (err) {
       failed++
       logger.error('push failed', { userId, err: err instanceof Error ? err.message : String(err) })
-      alertAdmin(env.SVC_ADMIN_NOTIFY, {
+      await alertAdmin(env.SVC_ADMIN_NOTIFY, {
         title: 'svc-notify: Expo push delivery failed',
         message: `Push failed for user ${userId}: ${err instanceof Error ? err.message : String(err)}`,
         level: 'error',
         context: { userId },
-      }).catch(() => {})
+      })
       msg.retry()
     }
   })
