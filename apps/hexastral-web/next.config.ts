@@ -73,6 +73,47 @@ const nextConfig: NextConfig = {
         destination: '/:locale/feng',
         permanent: true,
       },
+      // Brand-aligned /lp canonicals (engineering slugs keep AASA dual-list + 301).
+      {
+        source: '/lp/yuan',
+        destination: '/lp/yuel',
+        permanent: true,
+      },
+      {
+        source: '/lp/yuan/:path*',
+        destination: '/lp/yuel/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:locale(zh|tw|ja)/lp/yuan',
+        destination: '/:locale/lp/yuel',
+        permanent: true,
+      },
+      {
+        source: '/:locale(zh|tw|ja)/lp/yuan/:path*',
+        destination: '/:locale/lp/yuel/:path*',
+        permanent: true,
+      },
+      {
+        source: '/lp/feng',
+        destination: '/lp/kanyu',
+        permanent: true,
+      },
+      {
+        source: '/lp/feng/:path*',
+        destination: '/lp/kanyu/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:locale(zh|tw|ja)/lp/feng',
+        destination: '/:locale/lp/kanyu',
+        permanent: true,
+      },
+      {
+        source: '/:locale(zh|tw|ja)/lp/feng/:path*',
+        destination: '/:locale/lp/kanyu/:path*',
+        permanent: true,
+      },
     ]
   },
 }

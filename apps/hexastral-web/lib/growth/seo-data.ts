@@ -75,6 +75,9 @@ export const LP_PATHS = [
   '/lp/compatibility',
   '/lp/personality',
   '/lp/dream',
+  '/lp/yuel',
+  '/lp/kanyu',
+  '/lp/yuun',
 ] as const
 
 export function getIndexableToolPaths(): readonly string[] {

@@ -35,6 +35,8 @@ export function GET(): NextResponse {
         {
           appID: `${TEAM_ID}.com.hexastral.yuel`,
           paths: [
+            '/lp/yuel/*',
+            '/*/lp/yuel/*',
             '/lp/yuan/*',
             '/*/lp/yuan/*',
             '/lp/synastry/*',
@@ -43,10 +45,10 @@ export function GET(): NextResponse {
             '/*/lp/compatibility/*',
           ],
         },
-        // Yuun — almanac (no dedicated /lp/* claim yet; brand host + future dual-list)
+        // Yuun — almanac
         {
           appID: `${TEAM_ID}.com.hexastral.yuun`,
-          paths: [],
+          paths: ['/lp/yuun/*', '/*/lp/yuun/*'],
         },
         // Syel — face / palm AI reading (API target still faceoracle)
         {
@@ -78,7 +80,14 @@ export function GET(): NextResponse {
         // Kanyu — feng-shui report
         {
           appID: `${TEAM_ID}.com.hexastral.kanyu`,
-          paths: ['/lp/feng/*', '/*/lp/feng/*', '/feng-shui/*', '/*/feng-shui/*'],
+          paths: [
+            '/lp/kanyu/*',
+            '/*/lp/kanyu/*',
+            '/lp/feng/*',
+            '/*/lp/feng/*',
+            '/feng-shui/*',
+            '/*/feng-shui/*',
+          ],
         },
       ],
     },

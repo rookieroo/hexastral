@@ -1,6 +1,7 @@
 # Publish Checklist — Yuel & Yuun (App Store)
 
 > **可执行上架 Runbook**：[yuun-yuel-launch-runbook.md](./yuun-yuel-launch-runbook.md)  
+> **Bundle 改名后 Portal（五 App）**：[post-bundle-rename-portal.md](./post-bundle-rename-portal.md)  
 > **App Store Connect 逐步操作**：[asc-yuun-yuel-guide.md](./asc-yuun-yuel-guide.md)  
 > **US 商标申报材料**：[trademark-filing-prep.md](./trademark-filing-prep.md)
 >
