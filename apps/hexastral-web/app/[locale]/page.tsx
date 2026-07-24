@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { AdPixels } from '@/components/ads/AdPixels'
 import { HexastralHome } from '@/components/brand/HexastralHome'
 import { KanyuHome } from '@/components/brand/KanyuHome'
 import { SyelHome } from '@/components/brand/SyelHome'
@@ -136,10 +137,29 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 export default async function LandingPage({ searchParams }: PageProps) {
   const brand = await resolveBrand(searchParams)
   const locale = await getLocale()
-  if (brand === 'yuel') return <YuelHome locale={locale} />
-  if (brand === 'yuun') return <YuunHome locale={locale} />
-  if (brand === 'yaul') return <YaulHome locale={locale} />
-  if (brand === 'kanyu') return <KanyuHome locale={locale} />
-  if (brand === 'syel') return <SyelHome locale={locale} />
-  return <HexastralHome locale={locale} origin={await requestOrigin()} />
+  const home =
+    brand === 'yuel' ? (
+      <YuelHome locale={locale} />
+    ) : brand === 'yuun' ? (
+      <YuunHome locale={locale} />
+    ) : brand === 'yaul' ? (
+      <YaulHome locale={locale} />
+    ) : brand === 'kanyu' ? (
+      <KanyuHome locale={locale} />
+    ) : brand === 'syel' ? (
+      <SyelHome locale={locale} />
+    ) : (
+      <HexastralHome locale={locale} origin={await requestOrigin()} />
+    )
+
+  // Brand subdomain homes are acquisition surfaces — load pixels when env configured.
+  if (brand !== 'hexastral') {
+    return (
+      <>
+        <AdPixels />
+        {home}
+      </>
+    )
+  }
+  return home
 }

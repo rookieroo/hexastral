@@ -138,6 +138,8 @@ export const PortfolioDdlClaimedEvent = GrowthFunnelEventBase.extend({
     landing_path: z.string().max(512).optional(),
     /** Key from DDL meta.payload if present */
     payload_source: z.string().max(64).optional(),
+    /** True when DDL meta carried ad click ids (fbclid/gclid/…) */
+    has_click_ids: z.boolean().optional(),
   }),
 })
 

@@ -193,6 +193,7 @@ export function YuelHome({ locale }: { locale: string }) {
             bg={C.cinnabar}
             color={C.ink}
             labels={store.labels[pickLocale(locale)]}
+            targetApp='soulmatch'
           />
         </div>
 

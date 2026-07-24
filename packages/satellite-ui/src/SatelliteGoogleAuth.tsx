@@ -162,6 +162,7 @@ async function pressGoogle(
     const payload = await exchangeGoogleCredentialForPortfolio({
       idToken,
       targetApp,
+      storagePrefix,
       apiBaseOverride: apiBase,
     })
     onAuthed?.(payload)

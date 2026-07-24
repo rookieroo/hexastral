@@ -1298,6 +1298,37 @@ export const notificationAttributions = sqliteTable(
   (t) => [index('na_user_idx').on(t.userId), index('na_notification_idx').on(t.notificationId)]
 )
 
+// ==================== Paid acquisition last-touch (DDL → login → IAP) ====================
+
+/**
+ * Last-touch web attribution from DDL claim / login upload.
+ * RC INITIAL_PURCHASE webhook joins by user_id to attach click_ids on CAPI Purchase.
+ * TTL ~30 days (matches growth cookies); overwrite on newer last-touch.
+ */
+export const userGrowthAttributions = sqliteTable(
+  'user_growth_attributions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    /** Install-scoped anon id before SSO — merged onto userId at login */
+    anonymousId: text('anonymous_id'),
+    targetApp: text('target_app'),
+    clickIdsJson: text('click_ids_json').notNull().default('{}'),
+    utmJson: text('utm_json').notNull().default('{}'),
+    landingPath: text('landing_path'),
+    claimedAtMs: integer('claimed_at_ms').notNull(),
+    expiresAt: text('expires_at').notNull(),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index('uga_user_idx').on(t.userId),
+    index('uga_anon_idx').on(t.anonymousId),
+    index('uga_expires_idx').on(t.expiresAt),
+  ]
+)
+
 // ==================== make-if 人生分支 (Auspice — user-created forks) ====================
 
 /**

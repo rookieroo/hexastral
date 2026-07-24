@@ -6,6 +6,7 @@ import { ddlClaimedKey, pendingDdlTokenKey } from './ddl-claim-key'
 import { storeLastResolvedDdlSession } from './ddl-session-cache'
 import { extractDdlTokenFromUrl } from './ddl-token'
 import { freshEventEnvelope } from './new-event-envelope'
+import { uploadAnonGrowthAttribution } from './upload-growth-attribution'
 
 type IngestFn = (apiBase: string, payload: GrowthFunnelEvent) => Promise<boolean>
 
@@ -60,6 +61,7 @@ export async function resolvePendingPortfolioDdl(opts: {
         has_meta_payload: !!(session.meta.payload && Object.keys(session.meta.payload).length > 0),
         landing_path: session.meta.landingPath,
         payload_source: payloadSource,
+        has_click_ids: !!(session.meta.clickIds && Object.keys(session.meta.clickIds).length > 0),
       },
     }
     const ingested = await opts.ingest(opts.apiBase, claimedEvent)
@@ -69,6 +71,13 @@ export async function resolvePendingPortfolioDdl(opts: {
     }
     await AsyncStorage.setItem(ddlClaimedKey(opts.storagePrefix), 'true')
     await AsyncStorage.removeItem(pendingDdlTokenKey(opts.storagePrefix))
+
+    // Persist click ids server-side (anon) so later SSO + IAP can join CAPI Purchase
+    void uploadAnonGrowthAttribution({
+      apiBase: opts.apiBase,
+      storagePrefix: opts.storagePrefix,
+      targetApp: opts.targetApp,
+    })
   } catch (err) {
     console.warn('[satellite-runtime] ddl resolution failed', err)
   }

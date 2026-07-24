@@ -42,6 +42,8 @@ export interface CloudflareBindings {
   FACEORACLE_READING_QUEUE?: Queue<
     import('./lib/faceoracle-reading-queue').FaceoracleReadingQueueMessage
   >
+  /** Queue — merchant ad conversion postbacks → svc-ad-convert consumer */
+  AD_CONVERT_QUEUE?: Queue<import('./lib/ad-convert-queue').AdConvertMessage>
   /** R2 桶 — 用户持久化媒体（头像、手相照片、风水平面图） */
   MEDIA_BUCKET: R2Bucket
   ENVIRONMENT: string

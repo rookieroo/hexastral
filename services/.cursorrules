@@ -41,6 +41,7 @@ Entry hub: [AGENTS.md](../AGENTS.md) · Architecture: [docs/ROADMAP.md](../docs/
 | `svc-notify` | 3105 | Push notifications (Expo/FCM) | `/send`, `/send-fortune` |
 | `svc-fortune` | 3106 | Daily fortune generation | `/generate`, queue handlers |
 | `svc-admin-notify` | 3109 | Admin alerts (Telegram) | `/notify` |
+| `svc-ad-convert` | — | Merchant ad CAPI postbacks (queue) | `/health` + queue |
 | `svc-tail` | 3110 | Tail log aggregation | `/tail` |
 | `svc-signal` | 3111 | Internal signal relay to API | `/signals/*` |
 

@@ -18,7 +18,10 @@ export {
 } from './cross-app-attribution'
 export { ddlClaimedKey, pendingDdlTokenKey } from './ddl-claim-key'
 export { persistPendingDdlToken, resolvePendingPortfolioDdl } from './ddl-resolution'
-export { readLastResolvedDdlMeta, storeLastResolvedDdlSession } from './ddl-session-cache'
+export {
+  uploadAnonGrowthAttribution,
+  uploadSignedGrowthAttribution,
+} from './upload-growth-attribution'
 export { extractDdlTokenFromUrl } from './ddl-token'
 export type {
   DevEntitlementOverride,

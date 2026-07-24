@@ -37,6 +37,8 @@ const ddlCreateSchema = z.object({
     .object({
       referrer: z.string().max(512).optional(),
       utm: z.record(z.string(), z.string()).optional(),
+      /** Ad click / browser match ids (fbclid, gclid, ttclid, rdt_cid, _fbp, _fbc) */
+      clickIds: z.record(z.string(), z.string()).optional(),
       landingPath: z.string().max(256).optional(),
       /** Portfolio satellite key for growth analytics */
       targetApp: z.string().max(64).optional(),

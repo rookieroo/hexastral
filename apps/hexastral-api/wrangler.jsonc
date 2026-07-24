@@ -25,6 +25,10 @@
       {
         "binding": "FACEORACLE_READING_QUEUE",
         "queue": "faceoracle-reading"
+      },
+      {
+        "binding": "AD_CONVERT_QUEUE",
+        "queue": "ad-convert"
       }
     ],
     "consumers": [
@@ -40,6 +44,7 @@
       }
     ]
   },
+  // Consumer for `ad-convert` lives on services/svc-ad-convert (not this Worker).
   // Cron — 每日 04:00 UTC: 事件归档 + 邀请过期退币
   "triggers": {
     "crons": ["0 4 * * *"]

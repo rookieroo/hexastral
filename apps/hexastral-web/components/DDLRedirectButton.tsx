@@ -3,10 +3,16 @@
 import {
   collectFingerprint,
   createDDLSession,
+  mergeClickIdsForDdl,
   mergeUtmForDdl,
   redirectToAppStore,
 } from '@zhop/ddl-client'
 import { type ReactNode, useState } from 'react'
+import {
+  enqueueAdConvertClient,
+  newAdEventId,
+  trackBrowserConversion,
+} from '@/lib/ads/track'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 const DEFAULT_APP_STORE_URL =
@@ -40,6 +46,8 @@ interface DDLRedirectButtonProps {
   playStoreUrl?: string
   /** Persisted with DDL session for growth analytics (portfolio app key). */
   targetApp?: string
+  /** Fire pixel + server Lead postback with shared event_id. Default true on LP acq. */
+  enableAdPostback?: boolean
   style?: React.CSSProperties
   className?: string
 }
@@ -50,6 +58,7 @@ export function DDLRedirectButton({
   appStoreUrl,
   playStoreUrl,
   targetApp,
+  enableAdPostback = true,
   style,
   className,
 }: DDLRedirectButtonProps) {
@@ -59,12 +68,24 @@ export function DDLRedirectButton({
     if (loading) return
     setLoading(true)
 
+    const eventId = newAdEventId()
+    if (enableAdPostback) {
+      trackBrowserConversion({ eventName: 'Lead', eventId })
+      void enqueueAdConvertClient({
+        eventName: 'Lead',
+        eventId,
+        targetApp,
+      })
+    }
+
     try {
       const fp = collectFingerprint()
+      const search = new URLSearchParams(window.location.search)
       const referrer = typeof document !== 'undefined' ? document.referrer : ''
       const { token } = await createDDLSession(API_BASE, fp, {
         landingPath: window.location.pathname,
-        utm: mergeUtmForDdl(new URLSearchParams(window.location.search)),
+        utm: mergeUtmForDdl(search),
+        clickIds: mergeClickIdsForDdl(search),
         referrer: referrer.length > 0 ? referrer : undefined,
         ...(targetApp?.trim() ? { targetApp: targetApp.trim() } : {}),
         payload,

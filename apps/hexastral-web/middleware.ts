@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { resolveBrandRootRedirect } from './lib/brand-host'
 import { routing } from './i18n/routing'
@@ -14,15 +14,39 @@ const UTM_KEYS = [
   'utm_id',
 ] as const
 
-function persistUtmParams(req: NextRequest, res: NextResponse) {
+const CLICK_ID_KEYS = ['fbclid', 'gclid', 'ttclid', 'rdt_cid', '_fbp', '_fbc'] as const
+
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30
+
+/** Mirror of lib/ads/surface.ts — kept inline so middleware has no app-import graph issues. */
+function trafficSurfaceForPath(pathname: string): string {
+  const path = pathname.replace(/^\/(zh|tw|ja)(?=\/)/, '') || '/'
+  if (path.startsWith('/privacy') || path.startsWith('/terms')) return 'legal'
+  if (path.startsWith('/resonate')) return 'resonate'
+  if (path.startsWith('/lp/hexagram')) return 'lp_reopen'
+  if (
+    /^\/lp\/(yuel|yuun|kanyu|compatibility|face|dream|personality|twelve-palaces)(\/|$)/.test(path)
+  ) {
+    return 'lp_acq'
+  }
+  if (path.startsWith('/lp/')) return 'lp_reopen'
+  return 'other'
+}
+
+function mergeJsonCookie(
+  req: NextRequest,
+  res: NextResponse,
+  cookieName: string,
+  keys: readonly string[]
+) {
   const incoming: Record<string, string> = {}
-  for (const k of UTM_KEYS) {
+  for (const k of keys) {
     const v = req.nextUrl.searchParams.get(k)
     if (v) incoming[k] = v
   }
   if (Object.keys(incoming).length === 0) return
   let merged: Record<string, string> = incoming
-  const prev = req.cookies.get('growth_utm')?.value
+  const prev = req.cookies.get(cookieName)?.value
   if (prev) {
     try {
       const parsed = JSON.parse(prev) as Record<string, string>
@@ -31,19 +55,37 @@ function persistUtmParams(req: NextRequest, res: NextResponse) {
       merged = incoming
     }
   }
-  res.cookies.set('growth_utm', JSON.stringify(merged), {
-    maxAge: 60 * 60 * 24 * 30,
+  res.cookies.set(cookieName, JSON.stringify(merged), {
+    maxAge: COOKIE_MAX_AGE,
     path: '/',
     sameSite: 'lax',
   })
 }
 
+function persistAttributionParams(req: NextRequest, res: NextResponse) {
+  mergeJsonCookie(req, res, 'growth_utm', UTM_KEYS)
+  mergeJsonCookie(req, res, 'growth_click_ids', CLICK_ID_KEYS)
+}
+
+/** Propagate surface to RSC via request headers; keep cookies on the response. */
+function finalize(req: NextRequest, res: NextResponse): NextResponse {
+  const surface = trafficSurfaceForPath(req.nextUrl.pathname)
+  res.headers.set('x-traffic-surface', surface)
+  persistAttributionParams(req, res)
+  return res
+}
+
+function withSurfaceRequest(request: NextRequest): NextRequest {
+  const headers = new Headers(request.headers)
+  headers.set('x-traffic-surface', trafficSurfaceForPath(request.nextUrl.pathname))
+  return new NextRequest(request.url, { headers })
+}
+
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const surfaced = withSurfaceRequest(request)
 
   // ─── Brand default locale: Yuel / Yuun / Yaul / Kanyu ───────────────────────
-  // Chinese-first on first bare `/` visit only. Repeat `/` visits serve English
-  // (`localePrefix: as-needed`) so `/zh` → EN switcher is not blocked by cookie.
   if (pathname === '/') {
     const host = request.headers.get('host') ?? ''
     const redirectPath = resolveBrandRootRedirect({
@@ -59,42 +101,36 @@ export default function middleware(request: NextRequest) {
   }
 
   // ─── A/B Test: Onboarding 变体分流 ────────────────────────────
-  // Cookie 'ab_onboarding' 持久化 30 天，同一用户始终看到同一变体。
-  // 流量 A → /[locale]/onboarding (现有短表单)
-  // 流量 B → /[locale]/onboarding-b (沉浸式问答，需新建页面)
   if (pathname.match(/^\/[a-z-]+\/onboarding\/?$/)) {
     let variant = request.cookies.get('ab_onboarding')?.value
     if (!variant) {
       variant = Math.random() < 0.5 ? 'A' : 'B'
     }
 
-    // 先跑 intl middleware 处理 locale
-    const response = intlMiddleware(request)
+    const response = intlMiddleware(surfaced)
     response.cookies.set('ab_onboarding', variant, {
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: COOKIE_MAX_AGE,
       path: '/',
       sameSite: 'lax',
     })
 
-    // 流量 B → rewrite 到 /onboarding-b（如果该页面存在的话）
     if (variant === 'B') {
       const url = request.nextUrl.clone()
       url.pathname = pathname.replace('/onboarding', '/onboarding-b')
-      const rewritten = NextResponse.rewrite(url)
+      const rewritten = NextResponse.rewrite(url, {
+        request: { headers: surfaced.headers },
+      })
       rewritten.cookies.set('ab_onboarding', variant, {
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: COOKIE_MAX_AGE,
         path: '/',
         sameSite: 'lax',
       })
-      persistUtmParams(request, rewritten)
-      return rewritten
+      return finalize(request, rewritten)
     }
 
-    persistUtmParams(request, response)
-    return response
+    return finalize(request, response)
   }
 
-  // Exclude non-localized routes from intl
   if (
     pathname.startsWith('/.well-known/') ||
     pathname.startsWith('/u/') ||
@@ -105,28 +141,19 @@ export default function middleware(request: NextRequest) {
     pathname.startsWith('/s/') ||
     pathname.startsWith('/auspice')
   ) {
-    const res = NextResponse.next()
-    // `/u/*` — App Router pages use `dynamic = 'force-dynamic'` + `fetch(..., no-store)`;
-    // API `by-username` returns `Cache-Control: no-store`. Still set here so HTML shells
-    // are not edge-cached if a rule misroutes.
-    //
-    // Ops checklist (prod): confirm Cloudflare does NOT cache `/u/*` (Bypass or Cache Level
-    // DYNAMIC / equivalent). Quick probe:
-    //   curl -sI "https://hexastral.com/u/<username>" | rg -i 'cache-control|cf-cache-status'
-    // Expect `Cache-Control: private, no-store` (or stronger) and ideally `cf-cache-status: DYNAMIC|BYPASS`.
+    const res = NextResponse.next({
+      request: { headers: surfaced.headers },
+    })
     if (pathname.startsWith('/u/')) {
       res.headers.set('Cache-Control', 'private, no-store, max-age=0')
     }
-    persistUtmParams(request, res)
-    return res
+    return finalize(request, res)
   }
 
-  const intlRes = intlMiddleware(request)
-  persistUtmParams(request, intlRes)
-  return intlRes
+  const intlRes = intlMiddleware(surfaced)
+  return finalize(request, intlRes)
 }
 
 export const config = {
-  // Match all paths except Next.js internals, static files, and API routes
   matcher: ['/((?!_next|api|.*\\..*).*)'],
 }

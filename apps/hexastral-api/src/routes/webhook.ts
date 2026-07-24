@@ -37,7 +37,9 @@ import {
 import { singlePurchases, users } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { alertAdmin } from '../lib/admin-alert'
+import { enqueueAdConvert } from '../lib/ad-convert-queue'
 import { emitGrowthEventServer } from '../lib/growth-emit'
+import { loadGrowthAttributionForUser } from './growth-attribution'
 import { clearAllowance, grantPurchasedCredits, setMonthlyAllowance } from '../services/credits'
 import {
   expireEntitlementNow,
@@ -158,6 +160,7 @@ webhookRoutes.post('/revenuecat', async (c) => {
       eventType,
       appUserId,
       productId,
+      eventId,
       expiresAt,
     })
   }
@@ -199,6 +202,17 @@ webhookRoutes.post('/revenuecat', async (c) => {
       level: 'info',
       context: { appUserId, productId, skuId: product.singleSku },
     }).catch(() => {})
+
+    // Merchant ad postback — INITIAL / NON_RENEWING only (this branch already filtered)
+    c.executionCtx.waitUntil(
+      enqueuePurchaseAdConvert(c, {
+        eventId,
+        appUserId,
+        eventName: 'Purchase',
+        targetApp: product.singleSku,
+      })
+    )
+
     return c.json({
       received: true,
       action: 'single_purchase_recorded',
@@ -248,6 +262,15 @@ webhookRoutes.post('/revenuecat', async (c) => {
       context: { appUserId, productId, kind, creditsAdded: String(credits) },
     }).catch(() => {})
 
+    c.executionCtx.waitUntil(
+      enqueuePurchaseAdConvert(c, {
+        eventId,
+        appUserId,
+        eventName: 'Purchase',
+        targetApp: kind,
+      })
+    )
+
     return c.json({
       received: true,
       action: 'credits_added',
@@ -269,11 +292,12 @@ interface SubscriptionEventArgs {
   eventType: string
   appUserId: string
   productId: string
+  eventId: string
   expiresAt: string | null
 }
 
 async function handleSubscriptionEvent(c: Context<AppEnv>, args: SubscriptionEventArgs) {
-  const { db, product, eventType, appUserId, productId, expiresAt } = args
+  const { db, product, eventType, appUserId, productId, eventId, expiresAt } = args
 
   const user = await db.select().from(users).where(eq(users.id, appUserId)).get()
   if (!user) {
@@ -368,6 +392,18 @@ async function handleSubscriptionEvent(c: Context<AppEnv>, args: SubscriptionEve
       c.get('requestId')
     )
 
+    // Merchant ad postback: INITIAL_PURCHASE only (not RENEWAL / PRODUCT_CHANGE)
+    if (eventType === 'INITIAL_PURCHASE') {
+      c.executionCtx.waitUntil(
+        enqueuePurchaseAdConvert(c, {
+          eventId,
+          appUserId,
+          eventName: 'Subscribe',
+          targetApp: product.grantsEntitlements[0]?.replace('_pro', '') ?? 'hexastral',
+        })
+      )
+    }
+
     return c.json({
       received: true,
       action: 'subscription_activated',
@@ -437,4 +473,34 @@ async function handleSubscriptionEvent(c: Context<AppEnv>, args: SubscriptionEve
   }
 
   return c.json({ received: true, action: 'subscription_event_skipped', eventType })
+}
+
+/** Join DDL last-touch click_ids onto purchase/subscribe CAPI postbacks. */
+async function enqueuePurchaseAdConvert(
+  c: Context<AppEnv>,
+  opts: {
+    eventId: string
+    appUserId: string
+    eventName: 'Purchase' | 'Subscribe'
+    targetApp: string
+  }
+): Promise<void> {
+  const attr = await loadGrowthAttributionForUser(c.get('db'), opts.appUserId).catch((err: unknown) => {
+    console.error('[webhook] loadGrowthAttributionForUser failed', err)
+    return null
+  })
+  await enqueueAdConvert(
+    c.env,
+    {
+      event_id: opts.eventId,
+      event_name: opts.eventName,
+      occurred_at_ms: Date.now(),
+      action_source: 'app',
+      user_id: opts.appUserId,
+      target_app: opts.targetApp,
+      click_ids: attr?.click_ids,
+      utm: attr?.utm,
+    },
+    'purchase'
+  )
 }

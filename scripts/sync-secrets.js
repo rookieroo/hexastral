@@ -69,6 +69,12 @@ const APP_CONFIGS = {
     type: "worker",
     description: "Admin alert notifications (Telegram)",
   },
+  "svc-ad-convert": {
+    name: "svc-ad-convert",
+    path: "services/svc-ad-convert",
+    type: "worker",
+    description: "Merchant ad conversion postbacks (Meta/Google/TikTok/Reddit)",
+  },
 
   "svc-tail": {
     name: "svc-tail",
@@ -106,6 +112,7 @@ const APP_GROUPS = {
     "svc-mailer",
     "svc-notify",
     "svc-admin-notify",
+    "svc-ad-convert",
     "svc-signal",
   ],
   // All workers including those with no secrets (will be skipped gracefully)
@@ -117,6 +124,7 @@ const APP_GROUPS = {
     "svc-mailer",
     "svc-notify",
     "svc-admin-notify",
+    "svc-ad-convert",
     "svc-tail",
     "svc-signal",
   ],

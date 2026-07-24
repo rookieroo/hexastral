@@ -209,6 +209,7 @@ export function YuunHome({ locale }: { locale: string }) {
             bg={C.ink}
             color={C.bg}
             labels={store.labels[pickLocale(locale)]}
+            targetApp='auspice'
           />
         </div>
 

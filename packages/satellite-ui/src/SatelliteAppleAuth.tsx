@@ -143,6 +143,7 @@ async function pressApple(
       identityToken: cred.identityToken,
       authorizationCode: cred.authorizationCode,
       targetApp,
+      storagePrefix,
       apiBaseOverride: apiBase,
     })
     onAuthed?.(payload)

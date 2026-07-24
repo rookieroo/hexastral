@@ -116,6 +116,7 @@ export default function SignInScreen() {
         identityToken: cred.identityToken,
         authorizationCode: cred.authorizationCode,
         targetApp: PORTFOLIO_TARGET_APP,
+        storagePrefix: PORTFOLIO_STORAGE_PREFIX,
       })
       await loginFaceIap(userId)
       void emitPortfolioAppleLinkedGrowth({
@@ -164,6 +165,7 @@ export default function SignInScreen() {
       const { userId } = await exchangeGoogleCredentialForPortfolio({
         idToken,
         targetApp: PORTFOLIO_TARGET_APP,
+        storagePrefix: PORTFOLIO_STORAGE_PREFIX,
       })
       await loginFaceIap(userId)
       if (router.canGoBack()) router.back()

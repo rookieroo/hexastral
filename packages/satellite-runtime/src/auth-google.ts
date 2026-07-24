@@ -6,6 +6,7 @@ import { storeDeviceSecret } from './hmac'
 import { getOrCreateAnonymousInstallId } from './install-id'
 import { freshEventEnvelope } from './new-event-envelope'
 import { setPortfolioUserId } from './session'
+import { uploadSignedGrowthAttribution } from './upload-growth-attribution'
 
 export type PortfolioGoogleAuthSurface = 'google_auth' | 'google_banner'
 
@@ -13,6 +14,7 @@ export type PortfolioGoogleAuthSurface = 'google_auth' | 'google_banner'
 export async function exchangeGoogleCredentialForPortfolio(opts: {
   idToken: string
   targetApp: string
+  storagePrefix?: string
   apiBaseOverride?: string
 }): Promise<{ userId: string; deviceSecret: string }> {
   const apiBase = opts.apiBaseOverride?.replace(/\/+$/, '') ?? resolvePortfolioApiUrl()
@@ -28,6 +30,14 @@ export async function exchangeGoogleCredentialForPortfolio(opts: {
   const payload = (await res.json()) as { userId: string; deviceSecret: string }
   await storeDeviceSecret(payload.deviceSecret)
   await setPortfolioUserId(payload.userId)
+  if (opts.storagePrefix) {
+    void uploadSignedGrowthAttribution({
+      apiBase,
+      storagePrefix: opts.storagePrefix,
+      targetApp: opts.targetApp,
+      emitLoginPostback: true,
+    })
+  }
   return { userId: payload.userId, deviceSecret: payload.deviceSecret }
 }
 

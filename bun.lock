@@ -984,6 +984,19 @@
         "@react-native-async-storage/async-storage",
       ],
     },
+    "services/svc-ad-convert": {
+      "name": "@zhop/svc-ad-convert",
+      "version": "0.0.1",
+      "dependencies": {
+        "hono": "^4.12.8",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@zhop/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
+        "wrangler": "^4.90.0",
+      },
+    },
     "services/svc-admin-notify": {
       "name": "@zhop/svc-admin-notify",
       "version": "0.0.1",
@@ -2733,6 +2746,8 @@
     "@zhop/scenario-kindred": ["@zhop/scenario-kindred@workspace:packages/scenario-kindred"],
 
     "@zhop/scenario-yuan": ["@zhop/scenario-yuan@workspace:packages/scenario-yuan"],
+
+    "@zhop/svc-ad-convert": ["@zhop/svc-ad-convert@workspace:services/svc-ad-convert"],
 
     "@zhop/svc-admin-notify": ["@zhop/svc-admin-notify@workspace:services/svc-admin-notify"],
 

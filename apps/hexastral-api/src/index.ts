@@ -43,6 +43,8 @@ import {
   fengSiteRoutes,
   flagsRoutes,
   geocodeRoutes,
+  growthAdConvertRoutes,
+  growthAttributionRoutes,
   growthFunnelEventRoutes,
   healthRoutes,
   hexagramRoutes,
@@ -93,6 +95,11 @@ const ALLOWED_ORIGINS = new Set([
   'https://hexastral.com',
   'https://www.hexastral.com',
   'https://app.hexastral.com',
+  'https://yuel.hexastral.com',
+  'https://yuun.hexastral.com',
+  'https://yaul.hexastral.com',
+  'https://kanyu.hexastral.com',
+  'https://syel.hexastral.com',
   'https://zhop.co',
   'https://www.zhop.co',
 ])
@@ -104,6 +111,13 @@ app.use(
       if (!origin) return '' // Reject requests with no Origin (non-browser)
       if (origin.startsWith('http://localhost')) return origin
       if (ALLOWED_ORIGINS.has(origin)) return origin
+      // Brand / preview subdomains under hexastral.com
+      try {
+        const host = new URL(origin).hostname
+        if (host === 'hexastral.com' || host.endsWith('.hexastral.com')) return origin
+      } catch {
+        return ''
+      }
       return ''
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -355,6 +369,21 @@ app.use('/api/growth/events', async (c, next) => {
   await next()
 })
 app.route('/api/growth/events', growthFunnelEventRoutes)
+app.route('/api/growth/ad-convert', growthAdConvertRoutes)
+// Anon DDL claim upload (no HMAC). Mount before the signed sibling.
+app.use('/api/growth/attribution/anon', async (c, next) => {
+  if (c.req.method !== 'POST') return next()
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const { success } = await c.env.RATE_LIMITER.limit({ key: `growth-attr-anon:${ip}` })
+  if (!success) return c.json({ error: 'Too many requests' }, 429)
+  await next()
+})
+app.use('/api/growth/attribution', async (c, next) => {
+  // Do not HMAC-gate the /anon sibling (Hono may treat this as a prefix).
+  if (c.req.path.includes('/attribution/anon')) return next()
+  return hmacVerify(c, next)
+})
+app.route('/api/growth/attribution', growthAttributionRoutes)
 
 // Discovery — anonymous satellite→flagship routing config; IP rate-limited
 app.use('/api/discovery/recommendations', async (c, next) => {

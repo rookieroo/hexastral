@@ -21,7 +21,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
 import { transferAuspicePeopleToBonds } from './bonds-transfer'
-import { PORTFOLIO_TARGET_APP } from './growth-config'
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 import { getPeople } from './people'
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
@@ -81,6 +81,7 @@ export async function signInWithApple(): Promise<string | null> {
     identityToken: credential.identityToken,
     authorizationCode: credential.authorizationCode,
     targetApp: PORTFOLIO_TARGET_APP,
+    storagePrefix: PORTFOLIO_STORAGE_PREFIX,
   })
 
   // Tie RevenueCat to the portfolio identity — the subscription now follows the
@@ -112,6 +113,7 @@ export async function signInWithGoogle(): Promise<string | null> {
     const { userId } = await exchangeGoogleCredentialForPortfolio({
       idToken,
       targetApp: PORTFOLIO_TARGET_APP,
+      storagePrefix: PORTFOLIO_STORAGE_PREFIX,
     })
     try {
       await Purchases.logIn(userId)

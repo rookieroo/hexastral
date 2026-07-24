@@ -30,6 +30,7 @@ const BrowserFingerprintSchema = z.object({
 const DDLSessionMetaSchema = z.object({
   referrer: z.string().optional(),
   utm: z.record(z.string(), z.string()).optional(),
+  clickIds: z.record(z.string(), z.string()).optional(),
   landingPath: z.string().optional(),
   targetApp: z.string().optional(),
   payload: z.record(z.string(), z.unknown()).optional(),

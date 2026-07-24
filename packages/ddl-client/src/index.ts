@@ -29,7 +29,14 @@ export { createDDLSession, matchDDLSession, resolveDDLSession } from './client'
 // Fingerprint
 export { collectFingerprint, fingerprintId } from './fingerprint'
 // Growth / attribution (browser)
-export { mergeUtmForDdl, readPersistedGrowthUtm } from './growth-utm'
+export {
+  CLICK_ID_KEYS,
+  mergeClickIdsForDdl,
+  mergeUtmForDdl,
+  readPersistedClickIds,
+  readPersistedGrowthUtm,
+} from './growth-utm'
+export type { ClickIdKey } from './growth-utm'
 
 // Redirect helpers
 export { clearCachedDDLToken, getCachedDDLToken, redirectToAppStore } from './redirect'

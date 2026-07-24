@@ -6,6 +6,7 @@ import { storeDeviceSecret } from './hmac'
 import { getOrCreateAnonymousInstallId } from './install-id'
 import { freshEventEnvelope } from './new-event-envelope'
 import { setPortfolioUserId } from './session'
+import { uploadSignedGrowthAttribution } from './upload-growth-attribution'
 
 export type PortfolioAppleAuthSurface = 'apple_auth' | 'apple_banner'
 
@@ -14,6 +15,8 @@ export async function exchangeAppleCredentialForPortfolio(opts: {
   identityToken: string
   authorizationCode?: string | null
   targetApp: string
+  /** AsyncStorage prefix used by bootstrap/DDL cache — required to re-key attribution */
+  storagePrefix?: string
   apiBaseOverride?: string
 }): Promise<{ userId: string; deviceSecret: string }> {
   const apiBase = opts.apiBaseOverride?.replace(/\/+$/, '') ?? resolvePortfolioApiUrl()
@@ -30,6 +33,14 @@ export async function exchangeAppleCredentialForPortfolio(opts: {
   const payload = (await res.json()) as { userId: string; deviceSecret: string }
   await storeDeviceSecret(payload.deviceSecret)
   await setPortfolioUserId(payload.userId)
+  if (opts.storagePrefix) {
+    void uploadSignedGrowthAttribution({
+      apiBase,
+      storagePrefix: opts.storagePrefix,
+      targetApp: opts.targetApp,
+      emitLoginPostback: true,
+    })
+  }
   return { userId: payload.userId, deviceSecret: payload.deviceSecret }
 }
 

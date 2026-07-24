@@ -1,0 +1,46 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svc-ad-convert",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+
+  // Internal worker — no public routes.
+  // hexastral-api produces to queue `ad-convert`; this worker consumes.
+  //
+  // Create once:
+  //   bunx wrangler queues create ad-convert
+  //   bunx wrangler queues create ad-convert-dlq
+
+  "services": [
+    { "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }
+  ],
+
+  "queues": {
+    "consumers": [
+      {
+        "queue": "ad-convert",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "ad-convert-dlq"
+      }
+    ]
+  },
+
+  // Same GUARD_KV id as hexastral-api — throttle ad_convert_alert:* keys
+  "kv_namespaces": [
+    {
+      "binding": "ALERT_KV",
+      "id": "2d7689c0d930413390e4d20235f959a0"
+    }
+  ]
+
+  // Secrets (sync-secrets / wrangler secret put):
+  // META_PIXEL_ID, META_ACCESS_TOKEN
+  // GOOGLE_MEASUREMENT_ID, GOOGLE_API_SECRET  (Measurement Protocol)
+  // TIKTOK_PIXEL_ID, TIKTOK_ACCESS_TOKEN
+  // REDDIT_PIXEL_ID, REDDIT_CONVERSIONS_TOKEN
+  // Optional: META_TEST_EVENT_CODE, TIKTOK_TEST_EVENT_CODE
+}

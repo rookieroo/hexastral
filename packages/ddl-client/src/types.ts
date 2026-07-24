@@ -26,6 +26,8 @@ export interface DDLSessionMeta {
   referrer?: string
   /** UTM parameters */
   utm?: Record<string, string>
+  /** Ad click / browser match ids (fbclid, gclid, ttclid, rdt_cid, _fbp, _fbc) */
+  clickIds?: Record<string, string>
   /** The page path the user was on when they clicked */
   landingPath?: string
   /** Portfolio app key for analytics routing (e.g. faceoracle, starpalace, hexastral) */

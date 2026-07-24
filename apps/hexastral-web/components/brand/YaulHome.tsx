@@ -195,6 +195,7 @@ export function YaulHome({ locale }: { locale: string }) {
             bg={C.brown}
             color={C.ink}
             labels={store.labels[pickLocale(locale)]}
+            targetApp='coincast'
           />
           <a
             href={tryHref(locale)}

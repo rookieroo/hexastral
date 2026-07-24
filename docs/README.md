@@ -26,6 +26,7 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 |---|---|
 | [setup/revenuecat-entitlements.md](./setup/revenuecat-entitlements.md) | RC products ↔ API entitlements |
 | [setup/satellite-funnel-wiring.md](./setup/satellite-funnel-wiring.md) | DDL, growth events, portfolio bootstrap |
+| [setup/web-url-surfaces.md](./setup/web-url-surfaces.md) | Brand vs `/lp` vs legal; UTM/click ids; merchant CAPI postback + admin alerts |
 | [setup/sentry-crash-reporting.md](./setup/sentry-crash-reporting.md) | Crash reporting across satellites |
 
 ---

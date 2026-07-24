@@ -28,6 +28,8 @@ export { flagsRoutes } from './flags'
 export { geocodeRoutes } from './geocode'
 // Glossary — 命盘术语长释义
 export { glossaryRoutes } from './glossary'
+export { growthAdConvertRoutes } from './growth-ad-convert'
+export { growthAttributionRoutes } from './growth-attribution'
 export { growthFunnelEventRoutes } from './growth-funnel-events'
 export { healthRoutes } from './health'
 export { internalAlmanacRoutes } from './internal-almanac'

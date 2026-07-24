@@ -141,6 +141,7 @@ export function KanyuHome({ locale }: { locale: string }) {
           bg={C.bronze}
           color={C.bg}
           labels={store.labels[pickLocale(locale)]}
+          targetApp='fengshui'
         />
         <div
           style={{
