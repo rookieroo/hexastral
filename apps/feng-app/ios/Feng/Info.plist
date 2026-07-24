@@ -9,7 +9,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Feng</string>
+    <string>Kanyu</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -63,15 +63,15 @@
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Fēng uses your location to fetch satellite imagery and compute magnetic declination.</string>
+    <string>Kanyu uses your location to fetch satellite imagery and compute magnetic declination.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Fēng uses your location to fetch satellite imagery and compute the magnetic declination needed for accurate 24-Mountain alignment.</string>
+    <string>Kanyu uses your location to fetch satellite imagery and compute the magnetic declination needed for accurate 24-Mountain alignment.</string>
     <key>NSMotionUsageDescription</key>
-    <string>Fēng reads your device's magnetometer to auto-detect your home's facing direction before you confirm it on the satellite image.</string>
+    <string>Kanyu reads your device's magnetometer to auto-detect your home's facing direction before you confirm it on the satellite image.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Fēng can save your annotated site report as an image to your photo library.</string>
+    <string>Kanyu can save your annotated site report as an image to your photo library.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

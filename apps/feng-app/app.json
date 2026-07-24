@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Feng",
+    "name": "Kanyu",
     "slug": "feng",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -24,6 +24,7 @@
         "applinks:www.hexastral.com"
       ],
       "infoPlist": {
+        "CFBundleDisplayName": "Kanyu",
         "CFBundleLocalizations": [
           "en",
           "zh-Hans",
@@ -32,9 +33,9 @@
         ],
         "CFBundleDevelopmentRegion": "en",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "Feng uses your location to fetch satellite imagery and compute the magnetic declination needed for accurate site-alignment analysis.",
-        "NSMotionUsageDescription": "Feng reads your device's magnetometer to auto-detect your home's facing direction before you confirm it on the satellite image.",
-        "NSPhotoLibraryUsageDescription": "Feng can save your annotated site report as an image to your photo library."
+        "NSLocationWhenInUseUsageDescription": "Kanyu uses your location to fetch satellite imagery and compute the magnetic declination needed for accurate site-alignment analysis.",
+        "NSMotionUsageDescription": "Kanyu reads your device's magnetometer to auto-detect your home's facing direction before you confirm it on the satellite image.",
+        "NSPhotoLibraryUsageDescription": "Kanyu can save your annotated site report as an image to your photo library."
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -95,7 +96,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Fēng uses your location to fetch satellite imagery and compute magnetic declination."
+          "locationAlwaysAndWhenInUsePermission": "Kanyu uses your location to fetch satellite imagery and compute magnetic declination."
         }
       ],
       "expo-router",

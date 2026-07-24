@@ -371,7 +371,7 @@ export type Strings = {
 }
 
 const EN: Strings = {
-  appName: 'Fēng',
+  appName: 'Kanyu',
   empty_title: 'No sites yet',
   empty_subtitle: 'Add a home or office to explore classical site theory from satellite and layout inputs.',
   empty_cta: 'Add a site',
@@ -690,7 +690,7 @@ const EN: Strings = {
 }
 
 const ZH_HANS: Strings = {
-  appName: '風',
+  appName: 'Kanyu',
   empty_title: '尚无站点',
   empty_subtitle: '添加住宅或办公室，从卫星与户型输入探索古典场所理论。',
   empty_cta: '添加站点',
@@ -992,7 +992,7 @@ const ZH_HANS: Strings = {
 
 const ZH_HANT: Strings = {
   ...ZH_HANS,
-  appName: '風',
+  appName: 'Kanyu',
   empty_title: '尚無站點',
   empty_subtitle: '新增住家或辦公室，從衛星與戶型輸入探索古典場所理論。',
   empty_cta: '新增站點',
@@ -1286,7 +1286,7 @@ const ZH_HANT: Strings = {
 
 const JA: Strings = {
   ...EN,
-  appName: '風',
+  appName: 'Kanyu',
   empty_title: 'まだサイトがありません',
   empty_subtitle: '自宅やオフィスを追加し、衛星と間取り入力から古典場所理論を学べます。',
   empty_cta: 'サイトを追加',

@@ -19,6 +19,7 @@
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
+        "CFBundleDisplayName": "Syel",
         "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
         "NSPhotoLibraryUsageDescription": "Syel accesses your photo library when you choose existing palm or face photos.",
         "UIBackgroundModes": ["remote-notification"],
