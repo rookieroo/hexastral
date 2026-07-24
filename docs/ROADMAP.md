@@ -10,12 +10,12 @@ Architecture truth for agents: this file + [decisions/](./decisions/). Doc index
 
 | Brand | Directory | Bundle ID | Role | Status doc |
 |---|---|---|---|---|
-| **Yuun** | `apps/auspice-app` | `com.hexastral.auspice` | Daily 黄历 · Pro personalization · gateway to Yuel | [apps/yuun/launch.md](./apps/yuun/launch.md) |
-| **Yuel** | `apps/kindred-app` | `com.hexastral.kindred` | Solo 八字紫微 → Bonds / 合盘 · receives Yuun 亲友 carry-over | [apps/yuel/launch.md](./apps/yuel/launch.md) · [status.md](./apps/yuel/status.md) |
-| **Feng** | `apps/feng-app` | `com.hexastral.feng` | 风水 readings · natural depth for Yuun 入宅/动土 intents | [apps/feng/fix-plan.md](./apps/feng/fix-plan.md) |
-| **CoinCast** | `apps/coin-cast-app` | `com.hexastral.coincast` | I Ching study + hexagram journal (scaffold → MVP) | [apps/coincast/README.md](./apps/coincast/README.md) |
+| **Yuun** | `apps/auspice-app` | `com.hexastral.yuun` | Daily 黄历 · Pro personalization · gateway to Yuel | [apps/yuun/launch.md](./apps/yuun/launch.md) |
+| **Yuel** | `apps/kindred-app` | `com.hexastral.yuel` | Solo 八字紫微 → Bonds / 合盘 · receives Yuun 亲友 carry-over | [apps/yuel/launch.md](./apps/yuel/launch.md) · [status.md](./apps/yuel/status.md) |
+| **Kanyu** | `apps/feng-app` | `com.hexastral.kanyu` | 风水 readings · natural depth for Yuun 入宅/动土 intents | [apps/feng/fix-plan.md](./apps/feng/fix-plan.md) |
+| **Yaul** | `apps/coin-cast-app` | `com.hexastral.yaul` | I Ching study + hexagram journal (scaffold → MVP) | [apps/coincast/README.md](./apps/coincast/README.md) |
 
-Internal codenames (`auspice`, `kindred`) and RevenueCat product IDs stay unchanged per [ADR-0024](./decisions/0024-app-brand-naming.md).
+Internal **directory / API** codenames (`auspice`, `kindred`, …) and RevenueCat product IDs stay unchanged per [ADR-0024](./decisions/0024-app-brand-naming.md). **Bundle ID + URL scheme** are brand-aligned (`com.hexastral.{yuel|yuun|kanyu|yaul|syel}`).
 
 **Not in this wave (app dirs removed):** dream-oracle, numerology, ming-pan
 (donor code already ported into Yuel; API/web routes for numerology/dream may

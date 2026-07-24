@@ -13,14 +13,14 @@
  * no local birth and simply don't offer this port.
  *
  * URL contract (mirrors composeLink.ts on the receiving side):
- *   auspice://compose?v=1&from=kindred
+ *   yuun://compose?v=1&from=kindred
  *     &other_name=<enc>&other_date=YYYY-MM-DD&other_time=N
  *     &other_gender=男|女&other_city=<enc>&rel=<enc>
  */
 
 import { Linking } from 'react-native'
 
-const AUSPICE_SCHEME = 'auspice://'
+const AUSPICE_SCHEME = 'yuun://'
 // App-Store fallback when Auspice isn't installed. Placeholder id until the
 // listing is live (same REPLACE_* convention as auspice/lib/config.ts).
 const AUSPICE_APP_STORE = 'https://apps.apple.com/app/idREPLACE_AUSPICE'
@@ -41,7 +41,7 @@ function append(p: URLSearchParams, key: string, value: string | number | null |
   if (str.length) p.set(key, str)
 }
 
-/** Build the `auspice://compose?...` deep link for a kindred → auspice hand-off. */
+/** Build the `yuun://compose?...` deep link for a kindred → auspice hand-off. */
 export function buildAuspiceComposeUrl(person: AuspicePersonHandoff): string {
   const p = new URLSearchParams()
   p.set('v', '1')
@@ -75,14 +75,14 @@ export async function openAuspiceCompose(person: AuspicePersonHandoff): Promise<
 }
 
 /* ── Personal reading hand-off (Yuel/Yuun split, Phase 3) ─────────────────────
- * Yuun owns the personal 命书 now. Yuel opens it via `auspice://reading`, carrying
+ * Yuun owns the personal 命书 now. Yuel opens it via `yuun://reading`, carrying
  * the user's OWN birth so Yuun renders the same chart without re-entry (it seeds
  * its 亲友-less personal store only when empty — Yuun stays authoritative once set).
  * Unlike compose, this DOESN'T fall back to the App Store: the caller (home) falls
  * back to Yuel's own in-app reading overlay when Yuun isn't installed, so a solo
  * user never hits an install wall on their own reading.
  *
- *   auspice://reading?v=1&from=kindred
+ *   yuun://reading?v=1&from=kindred
  *     &date=YYYY-MM-DD&time=N&gender=男|女&city=<enc>
  *     &lng=<num>&tz=<iana>&clock=<min>&calibrate=0|1
  */
@@ -97,7 +97,7 @@ export interface AuspiceReadingHandoff {
   calibrate?: boolean | null
 }
 
-/** Build the `auspice://reading?...` deep link, carrying the self birth (if known). */
+/** Build the `yuun://reading?...` deep link, carrying the self birth (if known). */
 export function buildAuspiceReadingUrl(self?: AuspiceReadingHandoff | null): string {
   const p = new URLSearchParams()
   p.set('v', '1')

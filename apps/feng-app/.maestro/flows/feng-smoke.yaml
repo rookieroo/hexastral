@@ -3,7 +3,7 @@
 # Prerequisites: dev client build, ALLOW_DEV_PRO=1 on API, DEV-Pro toggle ON in app Settings.
 # Run: maestro test apps/feng-app/.maestro/flows/feng-smoke.yaml
 
-appId: com.hexastral.feng
+appId: com.hexastral.kanyu
 ---
 - launchApp
 - assertVisible:

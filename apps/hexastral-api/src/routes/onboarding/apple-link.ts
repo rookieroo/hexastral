@@ -32,8 +32,11 @@ const jwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'))
 
 const VALID_AUDIENCES = new Set<string>([
   'com.hexastral.fate',
-  'com.hexastral.kindred',
-  'com.hexastral.feng',
+  'com.hexastral.yuel',
+  'com.hexastral.kanyu',
+  'com.hexastral.yuun',
+  'com.hexastral.syel',
+  'com.hexastral.yaul',
 ])
 
 const appleLinkSchema = z.object({

@@ -1,5 +1,5 @@
 /**
- * Captures `yuan://onboard?from=<satellite>&signal=<question>&ddl=<token>`
+ * Captures `yuel://onboard?from=<satellite>&signal=<question>&ddl=<token>`
  * deep links from satellite apps and persists them for onboarding personalization
  * + funnel analytics.
  *

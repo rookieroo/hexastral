@@ -602,7 +602,7 @@ const EN: Strings = {
   paywall_bullet_multifloor: 'Up to 6 floor plans — multi-room interior analysis',
   paywall_bullet_street: 'Street-level 形煞 pass (Mapillary) with floor-weighting for flats',
   paywall_legal_disclaimer:
-    'For entertainment and cultural exploration only — not a substitute for on-site inspection or licensed professionals. Report + chat may be inaccurate. See kanyu.hexastral.com/terms and kanyu.hexastral.com/privacy/feng.',
+    'For entertainment and cultural exploration only — not a substitute for on-site inspection or licensed professionals. Report + chat may be inaccurate. See kanyu.hexastral.com/terms and kanyu.hexastral.com/privacy/kanyu.',
   new_site_review_no_floorplan: 'No floor plan — exterior / facing only',
   new_site_review_analyze_eta: 'Analysis usually takes 1–3 minutes.',
   new_site_review_error_paywall: 'A one-time purchase or Pro subscription is required.',
@@ -907,7 +907,7 @@ const ZH_HANS: Strings = {
   paywall_bullet_multifloor: '最多 6 张户型图 —— 多房间室内分析',
   paywall_bullet_street: '街景级形煞（Mapillary）+ 大平层按楼层加权',
   paywall_legal_disclaimer:
-    '仅供娱乐与文化探索，不能替代现场勘验或持证专业人士。报告与对话可能不准确。详见 kanyu.hexastral.com/terms 与 kanyu.hexastral.com/privacy/feng。',
+    '仅供娱乐与文化探索，不能替代现场勘验或持证专业人士。报告与对话可能不准确。详见 kanyu.hexastral.com/terms 与 kanyu.hexastral.com/privacy/kanyu。',
   new_site_review_no_floorplan: '无户型图——仅外局 / 朝向',
   new_site_review_analyze_eta: '分析通常需要 1–3 分钟。',
   new_site_review_error_paywall: '需要一次性购买或 Pro 订阅。',
@@ -1201,7 +1201,7 @@ const ZH_HANT: Strings = {
   paywall_bullet_multifloor: '最多 6 張戶型圖 —— 多房間室內分析',
   paywall_bullet_street: '街景級形煞（Mapillary）+ 大平層按樓層加權',
   paywall_legal_disclaimer:
-    '僅供娛樂與文化探索，不能替代現場勘驗或持證專業人士。報告與對話可能不準確。詳見 kanyu.hexastral.com/terms 與 kanyu.hexastral.com/privacy/feng。',
+    '僅供娛樂與文化探索，不能替代現場勘驗或持證專業人士。報告與對話可能不準確。詳見 kanyu.hexastral.com/terms 與 kanyu.hexastral.com/privacy/kanyu。',
   new_site_review_no_floorplan: '無戶型圖——僅外局 / 朝向',
   new_site_review_analyze_eta: '分析通常需要 1–3 分鐘。',
   new_site_review_error_paywall: '需要一次性購買或 Pro 訂閱。',
@@ -1514,7 +1514,7 @@ const JA: Strings = {
   paywall_bullet_multifloor: '最大6枚の間取り図 —— 複数部屋の室内分析',
   paywall_bullet_street: '路上レベル形煞（Mapillary）+ フルフロアは階数で加重',
   paywall_legal_disclaimer:
-    '娯楽・文化探索のみ。現地調査や有資格専門家の代替ではありません。レポートとチャットは不正確な場合があります。kanyu.hexastral.com/terms と kanyu.hexastral.com/privacy/feng を参照。',
+    '娯楽・文化探索のみ。現地調査や有資格専門家の代替ではありません。レポートとチャットは不正確な場合があります。kanyu.hexastral.com/terms と kanyu.hexastral.com/privacy/kanyu を参照。',
   new_site_review_no_floorplan: '間取りなし——外局 / 向きのみ',
   new_site_review_analyze_eta: '分析には通常 1〜3 分かかります。',
   new_site_review_error_paywall: '買い切り購入または Pro サブスクが必要です。',

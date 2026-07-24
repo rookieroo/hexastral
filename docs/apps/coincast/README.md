@@ -1,6 +1,6 @@
 # CoinCast — MVP / launch doc
 
-**Directory:** `apps/coin-cast-app` · **Bundle:** `com.hexastral.coincast` · **Internal codename:** CoinCast
+**Directory:** `apps/coin-cast-app` · **Bundle:** `com.hexastral.yaul` · **Internal codename:** CoinCast
 
 **Consumer brand (proposed):** **Yaul** (爻 yáo) — coined Latin wordmark like Yuun/Yuel. App Store title carries 易经/六爻/I Ching; bare brand on home screen. See `aso-metadata.json` + § Brand below.
 
@@ -15,8 +15,8 @@ Growth satellite — standalone I Ching oracle with 3D coin casting and portfoli
 | **Consumer brand** | **Yaul** | Proposed; pending trademark knockout (same process as Yuel/Yuun). Pronunciation ≈「yahl」; anchor 爻 (hexagram line). |
 | **App Store title** | `Yaul · 易经六爻摇卦` / `Yaul: I Ching Liu Yao Cast` | 六爻 · 易经 · 摇卦 only in **indexed** title/subtitle/keywords — not in the bare wordmark. |
 | **Device display name** | `Yaul` | `app.json` `expo.name` = Yaul; brand home at `yaul.hexastral.com`. |
-| **Brand domain** | `yaul.hexastral.com` | Same worker as Yuel/Yuun; privacy at `/privacy/coincast`. |
-| **Bundle / RC / API** | `coincast` / `com.hexastral.coincast` | Unchanged — rename pass is optional post-launch. |
+| **Brand domain** | `yaul.hexastral.com` | Same worker as Yuel/Yuun; privacy at `/privacy/yaul`. |
+| **Bundle / RC / API** | Bundle `com.hexastral.yaul` · RC/API `coincast*` | Bundle brand-aligned; RC/API ids stay `coincast*`. |
 | **Retired** | CoinCast | Conflicts with [Coincast — Send Crypto](https://apps.apple.com/us/app/coincast-send-crypto/id1517543384); too descriptive for trademark. |
 
 **Alternates** if counsel blocks Yaul: Guun (卦), Zhaol (兆), Shiel (筮) — listed in `aso-metadata.json`.

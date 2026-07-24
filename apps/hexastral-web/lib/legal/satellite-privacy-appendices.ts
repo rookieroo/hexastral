@@ -12,10 +12,10 @@
  */
 
 export const SATELLITE_PRIVACY_KEYS = [
-  'kindred',
-  'auspice',
-  'coincast',
-  'feng',
+  'yuel',
+  'yuun',
+  'yaul',
+  'kanyu',
   'syel',
 ] as const
 
@@ -29,7 +29,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
   SatellitePrivacyKey,
   { displayName: string; summary: string; bullets: readonly string[] }
 > = {
-  kindred: {
+  yuel: {
     displayName: 'Yuel',
     summary:
       'Relationship synastry (合盘) in the HexAstral universe. Your own birth data drives a solo reading; adding another person creates a "bond" whose compatibility report combines both charts. One shared sign-in carries your bonds across the universe and survives a reinstall. For entertainment and cultural exploration only — not relationship counseling or professional advice.',
@@ -43,7 +43,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'For our referral program and to prevent abuse, we record whether an invitation you accept is your first connection (i.e. whether it onboarded a new member). This is used only for allowance/referral accounting; the specific free-reading and referral limits may change at any time (see Terms).',
     ],
   },
-  auspice: {
+  yuun: {
     displayName: 'Yuun',
     summary:
       'Daily Chinese almanac (黄历) in the HexAstral universe. Anonymous and account-free by default — the base almanac is deterministic. Signing in is optional and only needed to subscribe or to carry data to other universe apps such as Yuel.',
@@ -56,7 +56,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Anonymous funnel telemetry may record steps under target_app=auspice. No ads, no tracking.',
     ],
   },
-  coincast: {
+  yaul: {
     displayName: 'Yaul',
     summary:
       'I Ching Liu Yao (六爻) study journal in the HexAstral universe. Three-coin casting uses on-device physics; free-tier casts return deterministic classical output (hexagram, I Ching corpus, na-jia). Optional AI commentary requires cast-pack credits or Yaul Pro. No birth chart is required. Sign in with Apple (iOS) is optional and is required only to link readings to your account, restore purchases, and continue after guest limits.',
@@ -77,7 +77,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Account deletion (in-app or privacy@hexastral.com) removes your Yaul reading history within 30 days alongside other HexAstral account data. Guest readings keyed only by `anonymous_id` are not linked to your Apple account and are not recovered on sign-in.',
     ],
   },
-  feng: {
+  kanyu: {
     displayName: 'Kanyu',
     summary:
       'Classical feng-shui (堪舆) site analysis in the HexAstral universe. Pin a home or office, calibrate facing on satellite imagery, optionally upload floor plans for room-level reading, and receive a structured report with deterministic 玄空 / 八宅 compute plus AI synthesis. Optional birth profile improves the 八宅 chapter only. Sign in with Apple or Google is optional but required before any purchase. Kanyu is a cultural/educational digital tool — not on-site professional feng-shui, architecture, or surveying.',
@@ -113,7 +113,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Monetization (opaque ids): consumable `faceoracle_reading` for a one-shot complete reading; subscriptions `faceoracle_pro_monthly` / `faceoracle_pro_annual` grant `faceoracle_pro` (Timeline / photo-slot quota). Payments are validated via RevenueCat — we never see your card number.',
       'Pro reminders: if you enable reminders, we may schedule local and/or push notifications for monthly re-capture nudges and “宜留意” windows derived from your active event table. Push tokens are registered only when you opt in. Copy uses exploratory framing, not deterministic fate (see umbrella policy / portfolio voice rules).',
       'Anonymous funnel telemetry may record onboarding steps under `target_app=faceoracle`. No ads, no IDFA, no cross-app advertising trackers.',
-      'Universal links on hexastral.com (`/lp/face/*`, `/lp/palm/*`) may open Syel when installed (bundle `com.hexastral.xingqi`).',
+      'Universal links on hexastral.com (`/lp/face/*`, `/lp/palm/*`) may open Syel when installed (bundle `com.hexastral.syel`).',
       'Account deletion (in-app request or privacy@hexastral.com) removes your Syel features, readings, and related account data within 30 days alongside other HexAstral universe data. Withdrawing biometric consent stops new processing but does not by itself delete historical structured features or readings — use account deletion for full erasure.',
     ],
   },

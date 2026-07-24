@@ -36,7 +36,7 @@ export interface DiscoveryCardProps {
   icon?: ReactNode
   title: string
   subtitle?: string
-  /** Companion-app deep link, e.g. "yuan://onboard?from=hexastral". */
+  /** Companion-app deep link, e.g. "yuel://onboard?from=hexastral". */
   targetScheme: string
   /** App Store fallback URL when the companion isn't installed. Should
    *  already include `?via=hexastral` for funnel attribution. */

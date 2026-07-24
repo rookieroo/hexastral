@@ -3,7 +3,8 @@
 ## Status
 
 Accepted — 2026-07-18 · **Client renamed 2026-07-18:** product ships as **Xingqi** (`apps/xingqi-app`); API/RC ids remain `faceoracle`.  
-**Amended — 2026-07-21 (display brand):** Consumer display brand is **Syel** (SEE-el). Folder / bundle / scheme stay `xingqi` / `com.hexastral.xingqi`; opaque ids stay `faceoracle_*`. Privacy appendix key `syel` (legacy `/privacy/xingqi` + `/privacy/faceoracle` redirect).  
+**Amended — 2026-07-24 (bundle brand-align):** iOS/Android package + URL scheme renamed to `com.hexastral.syel` / `syel` (folder + opaque API/RC ids unchanged).
+**Amended — 2026-07-21 (display brand):** Consumer display brand is **Syel** (SEE-el). Folder stays `xingqi-app`; **bundle / scheme** are brand-aligned `com.hexastral.syel` / `syel`; opaque ids stay `faceoracle_*`. Privacy appendix key `syel` (legacy `/privacy/xingqi` + `/privacy/faceoracle` redirect).  
 **Amended — 2026-07-19:** Pro adds Life axis (WHEN) + What-if under `faceoracle_pro`; Snapshots renamed **History / 档案**. HTTP must not call Yuun `/api/auspice/*` — use faceoracle-owned `/api/physiognomy/cycle/*` facades over shared cycle compute.  
 **Amended — 2026-07-19 (cache):** VLM extract is content-addressed per user (`content_hash` on `user_physiognomy_features`); same image bytes + type + model + schemaVersion skip Gemini. Job layer keeps featureId-triple 409 / in-flight dedupe. No source-image retention.  
 **Amended — 2026-07-19 (locale + dual quota):** Reading body locale is frozen at generation; device locale switch updates chrome only. Pro meters split into photo slots (6/mo) and report regenerations (3/mo). Explicit `regen: true` bypasses `features_unchanged` and charges report regen. Prompt language uses Route-B blocks; reading LLM stays CF flagship.  
@@ -22,7 +23,7 @@ Matrix rule: satellites share **infra and packages**, not each other’s product
 
 ## Decision
 
-1. **Independent app** [`apps/xingqi-app`](../../apps/xingqi-app) — display brand **Syel**, bundle `com.hexastral.xingqi`, scheme `xingqi`. Shell chrome from Yuel patterns (Sign-In, BirthForm, Settings, report density) + ADR funnel — **no bonds / 合盘 / solo 命书 chapters**. Not embedded in Yuel/Yuun.
+1. **Independent app** [`apps/xingqi-app`](../../apps/xingqi-app) — display brand **Syel**, bundle `com.hexastral.syel`, scheme `syel`. Shell chrome from Yuel patterns (Sign-In, BirthForm, Settings, report density) + ADR funnel — **no bonds / 合盘 / solo 命书 chapters**. Not embedded in Yuel/Yuun.
 2. **Hard baseline before any paid reading:** left palm + right palm + clear face selfie + birth Form (solar date, 时辰 index, gender; city optional).
 3. **Dual IAP** (opaque server ids — product UI says Syel):
    - Consumable `faceoracle_reading` — floor **USD 9.99** — one sealed dense 6-chapter result (career/love/health axes + event table). No Timeline / What-if / Chat / Living FAB.

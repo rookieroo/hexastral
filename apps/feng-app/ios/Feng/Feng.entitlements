@@ -10,6 +10,7 @@
     <array>
       <string>applinks:hexastral.com</string>
       <string>applinks:www.hexastral.com</string>
+		<string>applinks:kanyu.hexastral.com</string>
     </array>
   </dict>
 </plist>

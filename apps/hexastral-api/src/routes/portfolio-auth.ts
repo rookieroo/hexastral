@@ -39,16 +39,16 @@ const portfolioAuthBodySchema = z.object({
 
 /** Maps growth funnel / portfolio target keys → iOS bundle identifier (aud claim). */
 const TARGET_TO_BUNDLE_ID: Record<string, string> = {
-  // Client brand Xingqi (ADR-0028); opaque target_app stays `faceoracle`.
-  faceoracle: 'com.hexastral.xingqi',
+  // Client brand Syel (ADR-0028); opaque target_app stays `faceoracle`.
+  faceoracle: 'com.hexastral.syel',
   starpalace: 'com.hexastral.starpalace',
   soulmatch: 'com.hexastral.soulmatch',
-  fengshui: 'com.hexastral.fengshui',
+  fengshui: 'com.hexastral.kanyu',
   dreamoracle: 'com.hexastral.dreamoracle',
   eightpillars: 'com.hexastral.eightpillars',
-  coincast: 'com.hexastral.coincast',
+  coincast: 'com.hexastral.yaul',
   fate: 'com.hexastral.fate',
-  auspice: 'com.hexastral.auspice',
+  auspice: 'com.hexastral.yuun',
 }
 
 function audienceForTarget(targetApp: string): string {

@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "feng",
+    "scheme": "kanyu",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,13 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hexastral.feng",
+      "bundleIdentifier": "com.hexastral.kanyu",
       "usesAppleSignIn": true,
       "appleTeamId": "L9Z47DW56X",
       "deploymentTarget": "15.1",
       "associatedDomains": [
         "applinks:hexastral.com",
-        "applinks:www.hexastral.com"
+        "applinks:www.hexastral.com",
+        "applinks:kanyu.hexastral.com"
       ],
       "infoPlist": {
         "CFBundleDisplayName": "Kanyu",
@@ -69,7 +70,7 @@
       }
     },
     "android": {
-      "package": "com.hexastral.feng",
+      "package": "com.hexastral.kanyu",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"

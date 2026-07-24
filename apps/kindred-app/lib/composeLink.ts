@@ -4,7 +4,7 @@
  * draft so the user doesn't re-type. Contract defined in
  * `apps/auspice-app/lib/kindred-handoff.ts` v1.
  *
- *   yuan://compose?v=1&from=cycle&mode=pair|fill
+ *   yuel://compose?v=1&from=cycle&mode=pair|fill
  *     &self_date=...&self_time=...&self_gender=...&self_city=...
  *     &self_lat=...&self_lng=...&self_tz=...
  *     &other_name=...&other_date=...&other_time=...&other_gender=...
@@ -48,7 +48,7 @@ function parseStr(raw: unknown): string | null {
 }
 
 /**
- * Parses a `yuan://compose?...` URL into a partial draft. Returns null if
+ * Parses a `yuel://compose?...` URL into a partial draft. Returns null if
  * the URL isn't a compose link or carries no usable fields.
  */
 export function parseComposeUrl(url: string): Partial<OnboardingDraft> | null {

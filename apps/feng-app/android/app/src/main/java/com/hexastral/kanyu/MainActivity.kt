@@ -1,4 +1,4 @@
-package com.hexastral.feng
+package com.hexastral.kanyu
 
 import android.os.Build
 import android.os.Bundle

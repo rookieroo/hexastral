@@ -3,14 +3,14 @@
  * (apps/auspice-app/app/reading.tsx). The Yuel/Yuun split, Phase 1: the full
  * personal report now lives self-contained in Yuel. The home self-star and the
  * Settings "your reading" row open this directly — the old 概要 interstitial
- * (summary.tsx) was dropped (2026-06). A kindred://reading hand-off deep-links
+ * (summary.tsx) was dropped (2026-06). A yuel://reading hand-off deep-links
  * straight here too.
  *
  * Same 宣纸 document (kindredPaper), same shared engine (@zhop/scenario-yuan
  * compute + cache), so the report reads identically to the Yuun original. Deltas
  * from the Yuun screen, all dependency swaps for the Yuel environment:
  *   - Birth: `useSelfBirth()` (lib/selfBirth) — Yuel's authoritative self birth,
- *     reactive instead of a manual async-load effect. A `kindred://reading?…`
+ *     reactive instead of a manual async-load effect. A `yuel://reading?…`
  *     hand-off seeds it via saveSelfBirth only when none is set yet.
  *   - Chapter engine: the kindred-bound reading-cache (lib/solo/reading-cache) —
  *     its own `kindred_reading_ch_` namespace + kindred's HMAC signer.
@@ -196,7 +196,7 @@ const PREMIUM_SLUGS = REPORT_CHAPTERS.filter((c) => !c.free).map((c) => c.slug)
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Build a SelfBirth from a `kindred://reading?...` hand-off. A peer app (or a
+ * Build a SelfBirth from a `yuel://reading?...` hand-off. A peer app (or a
  * legacy Yuun deep link) can pass the user's own birth so Yuel renders the same
  * chart without re-entry; we only seed Yuel's store when it's empty (Yuel stays
  * authoritative once set). Returns null when the hand-off carries no usable date.
@@ -494,7 +494,7 @@ export default function FullReadingScreen() {
     if (chartHash) void loadHighlights(chartHash).then(setHighlights)
   }, [chartHash])
 
-  // Robust back: this screen is also reached via the `kindred://reading` deep
+  // Robust back: this screen is also reached via the `yuel://reading` deep
   // link, where there's no history to pop — go to the reading home instead of a
   // no-op `back()` ("GO_BACK was not handled by any navigator").
   const goBack = () => {

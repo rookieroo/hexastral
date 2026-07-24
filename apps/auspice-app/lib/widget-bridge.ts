@@ -14,7 +14,7 @@ import { buildDailyCardModel, topVerbs } from '@/components/DailyCard'
 import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
-const APP_GROUP = 'group.com.hexastral.auspice'
+const APP_GROUP = 'group.com.hexastral.yuun'
 const DAYS_KEY = 'almanac_days'
 
 /** Compact day shape — must match `SharedDay` in targets/widget/index.swift. */

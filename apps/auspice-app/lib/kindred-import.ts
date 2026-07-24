@@ -1,12 +1,12 @@
 /**
  * Kindred → Auspice import — receive a person handed off from Kindred.
  *
- * The reverse of lib/kindred-handoff.ts. Kindred opens `auspice://compose?...`
+ * The reverse of lib/kindred-handoff.ts. Kindred opens `yuun://compose?...`
  * to push a bond's person into the 亲友 list (for birthday reminders + the 关系
  * read). Same universe identity, opposite direction; the contract mirrors
  * Kindred's own composeLink receiver (other_* fields + rel).
  *
- *   auspice://compose?v=1&from=kindred
+ *   yuun://compose?v=1&from=kindred
  *     &other_name=<enc>&other_date=YYYY-MM-DD&other_time=N
  *     &other_gender=男|女&other_city=<enc>&rel=<enc>
  *
@@ -33,7 +33,7 @@ function timeIndex(raw: unknown): number | null {
   return Number.isInteger(n) && n >= 0 && n <= 11 ? n : null
 }
 
-/** Parse an `auspice://compose?...` hand-off into an AddPersonInput, or null. */
+/** Parse an `yuun://compose?...` hand-off into an AddPersonInput, or null. */
 export function parseKindredComposeUrl(url: string): AddPersonInput | null {
   let parsed: Linking.ParsedURL
   try {

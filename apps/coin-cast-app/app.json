@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "coincast",
+    "scheme": "yaul",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -21,13 +21,16 @@
         "dark": "./assets/icon-dark.png",
         "tinted": "./assets/icon-tinted.png"
       },
-      "bundleIdentifier": "com.hexastral.coincast",
+      "bundleIdentifier": "com.hexastral.yaul",
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:hexastral.com",
         "applinks:www.hexastral.com",
         "applinks:yaul.hexastral.com"
       ],
+      "infoPlist": {
+        "CFBundleDisplayName": "Yaul"
+      },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
           {
@@ -61,7 +64,7 @@
       "appleTeamId": "L9Z47DW56X"
     },
     "android": {
-      "package": "com.hexastral.coincast",
+      "package": "com.hexastral.yaul",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"

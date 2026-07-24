@@ -3486,7 +3486,7 @@ const OPERATOR = {
   brand: 'HexAstral',
   legal: 'UseOne Tech LLC',
   postal: '30 N Gould St, Ste R, Sheridan, WY 82801, USA',
-  privacyUrl: 'https://yuel.hexastral.com/privacy/kindred',
+  privacyUrl: 'https://yuel.hexastral.com/privacy/yuel',
 } as const
 
 function escapeHtml(s: string): string {

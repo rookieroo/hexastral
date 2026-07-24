@@ -31,9 +31,9 @@ export function GET(): NextResponse {
             '/*/lp/horoscope/*',
           ],
         },
-        // Kindred — synastry / bonds
+        // Yuel — synastry / bonds
         {
-          appID: `${TEAM_ID}.com.hexastral.kindred`,
+          appID: `${TEAM_ID}.com.hexastral.yuel`,
           paths: [
             '/lp/yuan/*',
             '/*/lp/yuan/*',
@@ -43,9 +43,14 @@ export function GET(): NextResponse {
             '/*/lp/compatibility/*',
           ],
         },
-        // Xingqi — face / palm AI reading (API target still faceoracle)
+        // Yuun — almanac (no dedicated /lp/* claim yet; brand host + future dual-list)
         {
-          appID: `${TEAM_ID}.com.hexastral.xingqi`,
+          appID: `${TEAM_ID}.com.hexastral.yuun`,
+          paths: [],
+        },
+        // Syel — face / palm AI reading (API target still faceoracle)
+        {
+          appID: `${TEAM_ID}.com.hexastral.syel`,
           paths: ['/lp/face/*', '/*/lp/face/*', '/lp/palm/*', '/*/lp/palm/*'],
         },
         // Dream interpretation
@@ -53,9 +58,9 @@ export function GET(): NextResponse {
           appID: `${TEAM_ID}.com.hexastral.dreamoracle`,
           paths: ['/lp/dream/*', '/*/lp/dream/*'],
         },
-        // I-Ching / hexagram cast
+        // Yaul — I-Ching / hexagram cast
         {
-          appID: `${TEAM_ID}.com.hexastral.coincast`,
+          appID: `${TEAM_ID}.com.hexastral.yaul`,
           paths: [
             '/lp/yiching/*',
             '/*/lp/yiching/*',
@@ -70,9 +75,9 @@ export function GET(): NextResponse {
           appID: `${TEAM_ID}.com.hexastral.numerology`,
           paths: ['/lp/numerology/*', '/*/lp/numerology/*', '/lp/meihua/*', '/*/lp/meihua/*'],
         },
-        // Feng-shui report
+        // Kanyu — feng-shui report
         {
-          appID: `${TEAM_ID}.com.hexastral.feng`,
+          appID: `${TEAM_ID}.com.hexastral.kanyu`,
           paths: ['/lp/feng/*', '/*/lp/feng/*', '/feng-shui/*', '/*/feng-shui/*'],
         },
       ],

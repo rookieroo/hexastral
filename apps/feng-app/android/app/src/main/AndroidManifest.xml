@@ -26,8 +26,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="feng"/>
-        <data android:scheme="exp+feng"/>
+        <data android:scheme="kanyu"/>
+        <data android:scheme="exp+kanyu"/>
       </intent-filter>
     </activity>
   </application>

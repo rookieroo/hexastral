@@ -27,7 +27,7 @@ function brandLegalPath(locale: Locale, path: string): string {
 
 /** Yuun per-app privacy appendix (the `auspice` appendix) on the brand subdomain. */
 export function privacyUrl(locale: Locale): string {
-  return `${LEGAL_BASE}${brandLegalPath(locale, '/privacy/auspice')}`
+  return `${LEGAL_BASE}${brandLegalPath(locale, '/privacy/yuun')}`
 }
 
 /** Shared suite Terms document on the brand subdomain. */
@@ -40,8 +40,8 @@ export function termsUrl(locale: Locale): string {
  * office-opening / move-in → Fēng. App Store fallbacks for unverified installs.
  */
 export const FLAGSHIP_LINKS = {
-  yuan: { deepLink: 'yuan://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_YUAN' },
-  feng: { deepLink: 'feng://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_FENG' },
+  yuan: { deepLink: 'yuel://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_YUAN' },
+  feng: { deepLink: 'kanyu://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_FENG' },
 } as const
 
 /**

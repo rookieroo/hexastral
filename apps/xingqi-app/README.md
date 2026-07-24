@@ -3,7 +3,7 @@
 Independent HexAstral satellite. Shell chrome inspired by Yuel (Sign-In, BirthForm,
 Settings, Timeline density); product funnel is ADR-0028 three-source + dual IAP.
 
-**Client brand:** Xingqi · `com.hexastral.xingqi` · scheme `xingqi`  
+**Client brand:** Syel · `com.hexastral.syel` · scheme `syel`  
 **API / RC opaque ids:** still `faceoracle` portfolio target + `faceoracle_*` SKUs.
 
 See [ADR-0028](../../docs/decisions/0028-face-oracle-dual-track.md) and

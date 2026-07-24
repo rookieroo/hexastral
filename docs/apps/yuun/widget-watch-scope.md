@@ -28,7 +28,7 @@ Two options:
 
 1. **App Group shared container (recommended for v1).** The RN app already fetches
    `/api/auspice/day`; on refresh it writes the next N days (e.g. 7–30) of
-   `DailyCardModel`-shaped JSON into an App Group (`group.com.hexastral.auspice`)
+   `DailyCardModel`-shaped JSON into an App Group (`group.com.hexastral.yuun`)
    `UserDefaults`/file. The widget/watch read that container — **no Swift port of
    the engine, no network in the extension.** WidgetKit `TimelineProvider`
    produces one entry per day from the cached array. Personalization (对你而言)

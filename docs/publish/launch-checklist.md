@@ -9,7 +9,7 @@ Per-app specifics: see [apps/yuun/launch.md](../apps/yuun/launch.md) and [apps/y
 ## Pre-submission
 
 ### Developer portal (Apple)
-- [ ] App ID for each bundle id (`com.hexastral.cycle`, `com.hexastral.kindred`)
+- [ ] App ID for each bundle id (`com.hexastral.cycle`, `com.hexastral.yuel`)
 - [ ] Enable capabilities per app:
   - Auspice: **Sign in with Apple**, **App Groups** (`group.com.hexastral.cycle` — needed even though widget ships post-June, since the entitlement is already in the binary)
   - Kindred: **Sign in with Apple**

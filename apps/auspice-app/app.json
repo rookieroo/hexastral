@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "auspice",
+    "scheme": "yuun",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hexastral.auspice",
+      "bundleIdentifier": "com.hexastral.yuun",
       "usesAppleSignIn": true,
       "infoPlist": {
+        "CFBundleDisplayName": "Yuun",
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.security.application-groups": [
-          "group.com.hexastral.auspice"
+          "group.com.hexastral.yuun"
         ]
       },
       "associatedDomains": [
@@ -63,7 +64,7 @@
       "appleTeamId": "L9Z47DW56X"
     },
     "android": {
-      "package": "com.hexastral.auspice",
+      "package": "com.hexastral.yuun",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"

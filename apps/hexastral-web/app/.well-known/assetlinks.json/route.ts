@@ -10,7 +10,7 @@ export function GET(): NextResponse {
       relation: ['delegate_permission/common.handle_all_urls'],
       target: {
         namespace: 'android_app',
-        package_name: 'com.hexastral.coincast',
+        package_name: 'com.hexastral.yaul',
         sha256_cert_fingerprints: ['REPLACE_WITH_PLAY_SHA256_FINGERPRINT'],
       },
     },
@@ -34,7 +34,7 @@ export function GET(): NextResponse {
       relation: ['delegate_permission/common.handle_all_urls'],
       target: {
         namespace: 'android_app',
-        package_name: 'com.hexastral.xingqi',
+        package_name: 'com.hexastral.syel',
         sha256_cert_fingerprints: ['REPLACE_WITH_PLAY_SHA256_FINGERPRINT'],
       },
     },

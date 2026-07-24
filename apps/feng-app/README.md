@@ -48,7 +48,7 @@ Add site
 ```sh
 cd apps/feng-app
 eas init                                     # paste projectId into app.json + eas.json
-# Apple Developer → register com.hexastral.feng
+# Apple Developer → register com.hexastral.kanyu
 # RevenueCat → hexastral_feng_single (one-shot report + bundled chat)
 # Designer → assets/{icon,splash}.png (see assets/README.md)
 ```

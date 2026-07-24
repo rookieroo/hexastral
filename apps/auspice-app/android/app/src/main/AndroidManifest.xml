@@ -24,11 +24,9 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="cycle"/>
-        <data android:scheme="exp+cycle"/>
-        <data android:scheme="auspice"/>
-        <data android:scheme="exp+auspice"/>
-      </intent-filter>
+        <data android:scheme="yuun"/>
+        <data android:scheme="exp+yuun"/>
+        </intent-filter>
     </activity>
   </application>
 </manifest>

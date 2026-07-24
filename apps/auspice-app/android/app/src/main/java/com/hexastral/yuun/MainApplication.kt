@@ -1,4 +1,4 @@
-package com.hexastral.auspice
+package com.hexastral.yuun
 
 import android.app.Application
 import android.content.res.Configuration

@@ -21,7 +21,7 @@ import { type Locale, routing } from '@/i18n/routing'
  *   - All copy goes through next-intl messages so the page localises consistently.
  *   - "Invitation from Someone" copy is gated on `inviterHasName` from the server: an
  *     anonymous inviter drops the "From {someone}" line.
- *   - Deep link is `kindred:///accept/{token}` (expo-router resolves it to
+ *   - Deep link is `yuel:///accept/{token}` (expo-router resolves it to
  *     /accept/[token]).
  *
  * Web stays form-LESS by design — the birth form belongs inside the native app.
@@ -213,7 +213,7 @@ export default async function ResonatePage({ params, searchParams }: PageProps) 
 
   const expired = invite ? new Date(invite.expiresAt) < new Date() : false
   // expo-router resolves this path segment to /accept/[token] inside the app.
-  const deepLink = `kindred:///accept/${token}`
+  const deepLink = `yuel:///accept/${token}`
   const appStoreUrl = 'https://apps.apple.com/app/kindred/id6745054798'
 
   // Locale fallback for tw-locale dates (Hant uses zh-TW formatting).
@@ -312,7 +312,7 @@ export default async function ResonatePage({ params, searchParams }: PageProps) 
               </p>
             ) : null}
 
-            {/* Primary CTA — open in the app via the kindred:// scheme. */}
+            {/* Primary CTA — open in the app via the yuel:// scheme. */}
             <div style={{ marginBottom: 20 }}>
               <a
                 href={deepLink}

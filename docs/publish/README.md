@@ -19,11 +19,13 @@ Last updated: 2026-06-25.
 
 ## 0. App identity (the permanent facts)
 
+> **Frozen bundle IDs (2026-07):** `com.hexastral.{yuel,yuun,kanyu,yaul,syel}` — brand-aligned. Do not recreate under old engineering suffixes (`kindred`/`auspice`/`feng`/`coincast`/`xingqi`). Directory + RC product ids remain engineering names.
+
 | | **Yuel** | **Yuun** |
 |---|---|---|
 | Directory | `apps/kindred-app` | `apps/auspice-app` |
 | Display name (store + device) | Yuel | Yuun |
-| Bundle ID (permanent) | `com.hexastral.kindred` | `com.hexastral.auspice` |
+| Bundle ID (permanent) | `com.hexastral.yuel` | `com.hexastral.yuun` |
 | Internal codename (do NOT user-surface) | kindred | auspice |
 | Primary category | Lifestyle (2nd: Education) | Reference |
 | Brand domain (live) | `yuel.hexastral.com` | `yuun.hexastral.com` |
@@ -37,11 +39,11 @@ Last updated: 2026-06-25.
 |---|---|
 | Directory | `apps/coin-cast-app` |
 | Display name (store + device) | Yaul |
-| Bundle ID (permanent) | `com.hexastral.coincast` |
+| Bundle ID (permanent) | `com.hexastral.yaul` |
 | Internal codename | coincast |
 | Primary category | Reference (2nd: Education) |
 | Brand domain (live) | `yaul.hexastral.com` |
-| Privacy / Terms | `yaul.hexastral.com/<seg>/privacy/coincast` · `yaul.hexastral.com/<seg>/terms` |
+| Privacy / Terms | `yaul.hexastral.com/<seg>/privacy/yaul` · `yaul.hexastral.com/<seg>/terms` |
 | Associated Domains | `applinks:yaul.hexastral.com` + apex `hexastral.com` (deep links) |
 
 > **Naming policy (ADR-0024 + decided 2026-06):** Yuel/Yuun are the *brand /
@@ -55,8 +57,8 @@ Last updated: 2026-06-25.
 
 ## 1. Apple Developer portal (both apps)
 
-- [ ] Register App ID for `com.hexastral.kindred` (Yuel)
-- [ ] Register App ID for `com.hexastral.auspice` (Yuun)
+- [ ] Register App ID for `com.hexastral.yuel` (Yuel)
+- [ ] Register App ID for `com.hexastral.yuun` (Yuun)
 - [ ] Enable **Sign in with Apple** capability on **both** bundle IDs (apps set `usesAppleSignIn: true`)
 - [ ] Add Associated Domains for the applinks each app declares:
   - Yuel: `applinks:yuel.hexastral.com`
@@ -77,9 +79,9 @@ For **each** app (Yuel, then Yuun):
       (copy lives in each app's `aso-metadata.json`)
 - [ ] Content rating: 12+
 - [ ] **Privacy Policy URL** and **Terms URL** (the binding ASC fields — must resolve):
-  - Yuel privacy: `https://yuel.hexastral.com/<seg>/privacy/kindred` · terms: `https://yuel.hexastral.com/<seg>/terms`
+  - Yuel privacy: `https://yuel.hexastral.com/<seg>/privacy/yuel` · terms: `https://yuel.hexastral.com/<seg>/terms`
     (`<seg>` = `en` | `zh` | `tw` | `ja`)
-  - Yuun privacy: `https://yuun.hexastral.com/<seg>/privacy/auspice` · terms: `https://yuun.hexastral.com/<seg>/terms`
+  - Yuun privacy: `https://yuun.hexastral.com/<seg>/privacy/yuun` · terms: `https://yuun.hexastral.com/<seg>/terms`
     (`<seg>` = `en` | `zh` | `tw` | `ja`) — **RESOLVED 2026-06-25**: Yuun was switched to the
     locale-segmented form so it matches Yuel. `apps/auspice-app/lib/config.ts` now exports
     `privacyUrl(locale)` / `termsUrl(locale)` (were static locale-blind constants), the

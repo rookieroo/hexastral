@@ -4,8 +4,8 @@
  *
  * Schemes match each flagship's `app.config.cjs` / `app.json` `scheme` field:
  *   hexastral://onboard?from=<satellite>&signal=<questionType>&ddl=<token>
- *   yuan://onboard?from=...
- *   feng://onboard?from=...
+ *   yuel://onboard?from=...
+ *   kanyu://onboard?from=...
  *
  * App Store IDs below are placeholders — replace after the flagships are
  * submitted (see docs/setup/satellite-funnel-wiring.md §2).
@@ -17,9 +17,9 @@ import type { SatelliteQuestionTypePickerLabels } from './SatelliteQuestionTypeP
 
 const FLAGSHIP_SCHEME: Record<FlagshipKey, string> = {
   hexastral: 'hexastral',
-  kindred: 'kindred',
-  feng: 'feng',
-  auspice: 'auspice',
+  kindred: 'yuel',
+  feng: 'kanyu',
+  auspice: 'yuun',
 }
 
 const FLAGSHIP_APP_STORE_ID: Record<FlagshipKey, string> = {

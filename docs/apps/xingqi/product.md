@@ -3,7 +3,7 @@
 Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028](../../decisions/0028-face-oracle-dual-track.md).
 
 **Shell:** Yuel-quality chrome (Sign-In / BirthForm / Settings / report density), assembled greenfield — not a dirty kindred rsync.  
-**Display brand:** Syel (SEE-el) · `com.hexastral.xingqi` · scheme `xingqi`. Method layer may still say 形气 / 相.  
+**Display brand:** Syel (SEE-el) · `com.hexastral.syel` · scheme `syel`. Method layer may still say 形气 / 相.  
 **API / RC opaque ids:** portfolio target `faceoracle`, SKUs `faceoracle_*` (unchanged server catalog).
 
 **i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).  

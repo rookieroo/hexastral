@@ -103,7 +103,7 @@ function RootLayoutInner() {
     })()
   }, [locale])
 
-  // Kindred → Auspice import: a `auspice://compose?...` hand-off adds the
+  // Kindred → Auspice import: a `yuun://compose?...` hand-off adds the
   // person to 亲友 and lands on the list. Deduped by URL so the initial-URL +
   // event-listener pair don't double-add the same link.
   const lastComposeRef = useRef<string | null>(null)

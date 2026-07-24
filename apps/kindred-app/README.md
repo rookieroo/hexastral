@@ -52,7 +52,7 @@ apps/kindred-app/
 │   ├── client.tsx               KindredClientGate — wires HexastralClient → scenario-yuan
 │   ├── i18n.ts                  4 locales (en / zh / zh-Hant / ja)
 │   └── onboardingDraft.ts       In-memory + AsyncStorage onboarding draft
-├── app.json + app.config.cjs    Expo + bundle id com.hexastral.kindred
+├── app.json + app.config.cjs    Expo + bundle id com.hexastral.yuel
 ├── eas.json                     EAS build profiles (dev / preview / production)
 ├── package.json
 ├── babel.config.js
@@ -84,7 +84,7 @@ See `aso-metadata.json` for the full per-locale ASC strings. Brand display title
 | zh-Hant | Kindred · 八字合盤 |
 | ja-JP | 縁・四柱推命の相性 |
 
-- Bundle id: `com.hexastral.kindred`
+- Bundle id: `com.hexastral.yuel`
 - Apple Seller: UseONE, LLC
 - Subtitle (en): "BaZi compatibility · classical insight"
 - Category: Lifestyle (Education secondary). Distances from saturated horoscope cluster.
@@ -92,7 +92,7 @@ See `aso-metadata.json` for the full per-locale ASC strings. Brand display title
 ## Setup checklist before first release
 
 - [ ] Create EAS project: `eas init` → fill `EAS_PROJECT_ID` in `.env` + `app.json`
-- [ ] Register `com.hexastral.kindred` bundle id in Apple Developer + App Store Connect
+- [ ] Register `com.hexastral.yuel` bundle id in Apple Developer + App Store Connect
 - [ ] Create Kindred app in RevenueCat → fill `EXPO_PUBLIC_REVENUECAT_IOS_KEY`
 - [ ] Create RevenueCat products: `kindred_pro_monthly`, `kindred_pro_annual` (entitlement `kindred_pro`)
 - [ ] Add `applinks:hexastral.com` association in App Store Connect

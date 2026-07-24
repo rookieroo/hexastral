@@ -55,31 +55,31 @@
 
 路径：**Certificates, Identifiers & Profiles → Identifiers → +**
 
-### 2.1 Yuun — `com.hexastral.auspice`
+### 2.1 Yuun — `com.hexastral.yuun`
 
 | 字段 | 填写 |
 |---|---|
 | Type | App IDs → App |
 | Description | `Yuun (HexAstral almanac)` |
-| Bundle ID | **Explicit** → `com.hexastral.auspice` |
+| Bundle ID | **Explicit** → `com.hexastral.yuun` |
 
 **Capabilities（勾选并 Save）**：
 
 | Capability | 必须？ | 说明 |
 |---|---|---|
 | **Sign In with Apple** | ✅ | 订阅步骤登录；Configure 选 “Enable as a primary App ID” |
-| **App Groups** | ✅ | 新建 Group：`group.com.hexastral.auspice`，并勾选进此 App ID（Widget 预留） |
+| **App Groups** | ✅ | 新建 Group：`group.com.hexastral.yuun`，并勾选进此 App ID（Widget 预留） |
 | Associated Domains | ✅（在 Xcode/EAS 侧） | Portal 里无单独勾选项；域名在 `app.json` `associatedDomains` |
 | Push Notifications | 建议 ✅ | Yuun 有本地/远程推送；勾选后 EAS 可配 APNs |
 
 **不要勾**：iCloud（除非后续明确要 CloudKit）、HealthKit、Wallet 等未使用能力。
 
-### 2.2 Yuel — `com.hexastral.kindred`
+### 2.2 Yuel — `com.hexastral.yuel`
 
 | 字段 | 填写 |
 |---|---|
 | Description | `Yuel (HexAstral bonds / synastry)` |
-| Bundle ID | `com.hexastral.kindred` |
+| Bundle ID | `com.hexastral.yuel` |
 
 **Capabilities**：
 
@@ -108,7 +108,7 @@
 | **Platforms** | ☑ iOS | ☑ iOS |
 | **Name** | `Yuun` | `Yuel` |
 | **Primary language** | **English (U.S.)** | **English (U.S.)** |
-| **Bundle ID** | 下拉选 `com.hexastral.auspice` | `com.hexastral.kindred` |
+| **Bundle ID** | 下拉选 `com.hexastral.yuun` | `com.hexastral.yuel` |
 | **SKU** | `auspice-ios-2026`（内部用，用户不可见，创建后不可改） | `kindred-ios-2026` |
 | **User Access** | Full Access（或按团队习惯限制） | 同上 |
 
@@ -219,19 +219,19 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 | 语言 | Privacy Policy URL | Terms of Use URL |
 |---|---|---|
-| en-US | `https://yuun.hexastral.com/privacy/auspice` | `https://yuun.hexastral.com/terms` |
-| zh-Hans | `https://yuun.hexastral.com/zh/privacy/auspice` | `https://yuun.hexastral.com/zh/terms` |
-| zh-Hant | `https://yuun.hexastral.com/tw/privacy/auspice` | `https://yuun.hexastral.com/tw/terms` |
-| ja | `https://yuun.hexastral.com/ja/privacy/auspice` | `https://yuun.hexastral.com/ja/terms` |
+| en-US | `https://yuun.hexastral.com/privacy/yuun` | `https://yuun.hexastral.com/terms` |
+| zh-Hans | `https://yuun.hexastral.com/zh/privacy/yuun` | `https://yuun.hexastral.com/zh/terms` |
+| zh-Hant | `https://yuun.hexastral.com/tw/privacy/yuun` | `https://yuun.hexastral.com/tw/terms` |
+| ja | `https://yuun.hexastral.com/ja/privacy/yuun` | `https://yuun.hexastral.com/ja/terms` |
 
 **Yuel**
 
 | 语言 | Privacy Policy URL | Terms of Use URL |
 |---|---|---|
-| en-US | `https://yuel.hexastral.com/privacy/kindred` | `https://yuel.hexastral.com/terms` |
-| zh-Hans | `https://yuel.hexastral.com/zh/privacy/kindred` | `https://yuel.hexastral.com/zh/terms` |
-| zh-Hant | `https://yuel.hexastral.com/tw/privacy/kindred` | `https://yuel.hexastral.com/tw/terms` |
-| ja | `https://yuel.hexastral.com/ja/privacy/kindred` | `https://yuel.hexastral.com/ja/terms` |
+| en-US | `https://yuel.hexastral.com/privacy/yuel` | `https://yuel.hexastral.com/terms` |
+| zh-Hans | `https://yuel.hexastral.com/zh/privacy/yuel` | `https://yuel.hexastral.com/zh/terms` |
+| zh-Hant | `https://yuel.hexastral.com/tw/privacy/yuel` | `https://yuel.hexastral.com/tw/terms` |
+| ja | `https://yuel.hexastral.com/ja/privacy/yuel` | `https://yuel.hexastral.com/ja/terms` |
 
 > en 默认语言无 `/en` 前缀（`localePrefix: as-needed`）。
 
@@ -384,7 +384,7 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 Yuun is a Chinese almanac (干支 / 宜忌 / 节气) for cultural reference — not fortune-telling, not medical advice.
 Sign-in is only required at the subscription step (not for daily almanac).
 To test Pro: open any Pro feature → Sign in with Apple → purchase with Sandbox account (Restore works).
-No ads. No tracking. Privacy: yuun.hexastral.com/en/privacy/auspice
+No ads. No tracking. Privacy: yuun.hexastral.com/en/privacy/yuun
 ```
 
 **Notes 模板（Yuel）**：
@@ -394,7 +394,7 @@ Yuel is a Ba Zi (Four Pillars) two-chart relationship typology tool — cultural
 Sign-in is required to save bonds under the user identity.
 Invite flow: create bond → optional partner invite link.
 To test Pro: Sign in with Apple → Sandbox subscribe. One-time synastry unlock: hexastral_compatibility consumable.
-Privacy: yuel.hexastral.com/en/privacy/kindred
+Privacy: yuel.hexastral.com/en/privacy/yuel
 ```
 
 ### 10.5 提交前勾选
@@ -454,9 +454,9 @@ A: 可以。`app.json` `name`（主屏幕下显示 Yuun/Yuel）与 ASC 各语言
 
 ## 14. Checklist 速查
 
-### Yuun `com.hexastral.auspice`
+### Yuun `com.hexastral.yuun`
 
-- [ ] Developer：Sign in with Apple + App Group `group.com.hexastral.auspice`
+- [ ] Developer：Sign in with Apple + App Group `group.com.hexastral.yuun`
 - [ ] ASC：New App，Primary en-US，Reference 类目
 - [ ] IAP：`auspice_pro_monthly`, `auspice_pro_annual`
 - [ ] 隐私：Email + Purchases + User Content，无 Tracking
@@ -464,7 +464,7 @@ A: 可以。`app.json` `name`（主屏幕下显示 Yuun/Yuel）与 ASC 各语言
 - [ ] 截图 7×4 locale
 - [ ] `ascAppId` → `eas.json`
 
-### Yuel `com.hexastral.kindred`
+### Yuel `com.hexastral.yuel`
 
 - [ ] Developer：Sign in with Apple
 - [ ] ASC：New App，Primary en-US，Lifestyle 类目

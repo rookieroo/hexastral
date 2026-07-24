@@ -71,7 +71,7 @@ Run on a **production-profile** build before App Store submit. Each step maps to
 
 ## 7. Legal links
 
-1. Settings → **Legal** → Privacy → opens `yuun.hexastral.com/.../privacy/auspice` (200).
+1. Settings → **Legal** → Privacy → opens `yuun.hexastral.com/.../privacy/yuun` (200).
 2. Terms → opens `.../terms` (200).
 
 **ASO:** About section URLs.

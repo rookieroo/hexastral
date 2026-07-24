@@ -56,7 +56,7 @@ secure-store) → **Expo Go won't work; a dev build is required**.
 - [ ] `cd apps/feng-app && bun ios` (simulator dev build) or `bun ios:device`.
       App defaults to `https://api.hexastral.com` (deployed) — no config needed.
 - [ ] EAS prod: `eas build --profile production --platform ios` (needs `eas init`
-      projectId in app.json/eas.json; Apple `com.hexastral.feng`; RevenueCat
+      projectId in app.json/eas.json; Apple `com.hexastral.kanyu`; RevenueCat
       products — see `docs/publish/README.md`).
 - [ ] **Premium SKU (human)**: App Store Connect + RevenueCat create
       `hexastral_feng_premium` ($39.99 consumable); link to `feng_analysis_premium`

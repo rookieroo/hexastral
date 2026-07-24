@@ -30,7 +30,7 @@ function brandLegalPath(locale: Locale, path: string): string {
 
 /** Kanyu per-app privacy appendix (`feng`) on the brand subdomain. */
 export function privacyUrl(locale: Locale): string {
-  return `${LEGAL_BASE}${brandLegalPath(locale, '/privacy/feng')}`
+  return `${LEGAL_BASE}${brandLegalPath(locale, '/privacy/kanyu')}`
 }
 
 /** Shared suite Terms document on the brand subdomain. */

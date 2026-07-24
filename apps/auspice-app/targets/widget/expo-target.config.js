@@ -11,6 +11,6 @@ module.exports = {
   name: 'AuspiceWidget',
   deploymentTarget: '17.0',
   entitlements: {
-    'com.apple.security.application-groups': ['group.com.hexastral.auspice'],
+    'com.apple.security.application-groups': ['group.com.hexastral.yuun'],
   },
 }

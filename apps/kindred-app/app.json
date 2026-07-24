@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "kindred",
+    "scheme": "yuel",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hexastral.kindred",
+      "bundleIdentifier": "com.hexastral.yuel",
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "associatedDomains": [
@@ -24,6 +24,7 @@
         "applinks:yuel.hexastral.com"
       ],
       "infoPlist": {
+        "CFBundleDisplayName": "Yuel",
         "CFBundleLocalizations": [
           "en",
           "zh-Hans",
@@ -66,7 +67,7 @@
       "appleTeamId": "L9Z47DW56X"
     },
     "android": {
-      "package": "com.hexastral.kindred",
+      "package": "com.hexastral.yuel",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F5F0E8"

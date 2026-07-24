@@ -9,20 +9,41 @@ import {
 } from '@/lib/legal/satellite-privacy-appendices'
 import { locales, type Locale } from '@/i18n/routing'
 
+
+const LEGACY_PRIVACY_REDIRECTS: Record<string, string> = {
+  kindred: 'yuel',
+  auspice: 'yuun',
+  feng: 'kanyu',
+  coincast: 'yaul',
+  xingqi: 'syel',
+  faceoracle: 'syel',
+}
+
+function resolveCanonicalPrivacyKey(appKey: string): string {
+  return LEGACY_PRIVACY_REDIRECTS[appKey] ?? appKey
+}
+
 interface Props {
   params: Promise<{ locale: Locale; appKey: string }>
 }
 
 export function generateStaticParams(): { locale: Locale; appKey: string }[] {
   // Include legacy brand/opaque keys so redirects stay statically reachable.
-  const keys = [...SATELLITE_PRIVACY_KEYS, 'xingqi', 'faceoracle'] as const
+  const keys = [
+    ...SATELLITE_PRIVACY_KEYS,
+    'kindred',
+    'auspice',
+    'feng',
+    'coincast',
+    'xingqi',
+    'faceoracle',
+  ] as const
   return locales.flatMap((locale) => keys.map((appKey) => ({ locale, appKey })))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { appKey } = await params
-  const key =
-    appKey === 'faceoracle' || appKey === 'xingqi' ? 'syel' : appKey
+  const key = resolveCanonicalPrivacyKey(appKey)
   if (!isSatellitePrivacyKey(key)) {
     return { title: 'Privacy appendix' }
   }
@@ -36,9 +57,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SatellitePrivacyAppendixPage({ params }: Props) {
   const { locale, appKey } = await params
-  // Legacy paths → Syel brand path
-  if (appKey === 'faceoracle' || appKey === 'xingqi') {
-    redirect(`/${locale}/privacy/syel`)
+  const canonical = resolveCanonicalPrivacyKey(appKey)
+  if (canonical !== appKey) {
+    redirect(`/${locale}/privacy/${canonical}`)
   }
   if (!isSatellitePrivacyKey(appKey)) {
     notFound()

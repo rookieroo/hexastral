@@ -54,10 +54,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const h = await headers()
   const host = h.get('host') ?? 'hexastral.com'
   const base = `${h.get('x-forwarded-proto') ?? 'https'}://${host}`
-  if (host.startsWith('yuel.')) return brandSitemap(base, '/privacy/kindred')
-  if (host.startsWith('yuun.')) return brandSitemap(base, '/privacy/auspice')
-  if (host.startsWith('yaul.')) return brandSitemap(base, '/privacy/coincast')
-  if (host.startsWith('kanyu.')) return brandSitemap(base, '/privacy/feng')
+  if (host.startsWith('yuel.')) return brandSitemap(base, '/privacy/yuel')
+  if (host.startsWith('yuun.')) return brandSitemap(base, '/privacy/yuun')
+  if (host.startsWith('yaul.')) return brandSitemap(base, '/privacy/yaul')
+  if (host.startsWith('kanyu.')) return brandSitemap(base, '/privacy/kanyu')
   if (host.startsWith('syel.')) return brandSitemap(base, '/privacy/syel')
 
   const blogSlugs = getAllBlogSlugs()

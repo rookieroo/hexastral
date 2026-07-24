@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "xingqi",
+    "scheme": "syel",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,9 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hexastral.xingqi",
+      "bundleIdentifier": "com.hexastral.syel",
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:hexastral.com",
+        "applinks:www.hexastral.com",
+        "applinks:syel.hexastral.com"
+      ],
       "infoPlist": {
         "CFBundleDisplayName": "Syel",
         "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
@@ -59,7 +64,7 @@
       "appleTeamId": "L9Z47DW56X"
     },
     "android": {
-      "package": "com.hexastral.xingqi",
+      "package": "com.hexastral.syel",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"

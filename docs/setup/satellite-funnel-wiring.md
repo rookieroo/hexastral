@@ -49,8 +49,8 @@ Deep-link schemes (from each flagship's `app.json`):
 | Flagship | Scheme |
 |---|---|
 | HexAstral | `hexastral://onboard?from=<slug>&signal=<question>&ddl=<token>` |
-| Kindred | `yuan://onboard?...` |
-| Fēng | `feng://onboard?...` |
+| Kindred | `yuel://onboard?...` |
+| Fēng | `kanyu://onboard?...` |
 
 The `from=<slug>` query param is read by the flagship's
 `app/_layout.tsx` deep-link handler (via

@@ -1,4 +1,4 @@
-package com.hexastral.auspice
+package com.hexastral.yuun
 
 import android.os.Build
 import android.os.Bundle

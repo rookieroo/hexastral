@@ -9,7 +9,7 @@
  * Those `/lp/hexagram/*`, `/lp/yiching/*`, `/tools/hexagram/*` paths are the
  * coincast entries in the web Apple-App-Site-Association, so iOS hands a tapped
  * link to this app; we rewrite to the detail sheet, which loads the reading by
- * id for its signed-in owner. The plain `coincast://detail?readingId=…` scheme
+ * id for its signed-in owner. The plain `yaul://detail?readingId=…` scheme
  * form already resolves via the route tree, so it passes through untouched.
  * All other paths pass through unchanged.
  */

@@ -8,7 +8,7 @@
  *
  * URL contract (v1) — Kindred must parse the same shape on the receiving end:
  *
- *   yuan://compose?v=1&from=cycle&mode=pair
+ *   yuel://compose?v=1&from=cycle&mode=pair
  *     &self_date=YYYY-MM-DD&self_time=N&self_gender=男|女
  *     &self_city=<url-encoded>&self_lat=<f>&self_lng=<f>&self_tz=<IANA>
  *     &other_name=<url-encoded>&other_date=YYYY-MM-DD
@@ -31,11 +31,11 @@ import { FLAGSHIP_LINKS } from './config'
 import type { AuspicePerson } from './people'
 
 /** Kindred's URL scheme — fixed once at hand-off contract v1. */
-const YUAN_SCHEME = 'yuan://'
+const YUEL_SCHEME = 'yuel://'
 
 /** Kindred's repositioned consumer scheme (Yuel, 缘) + bundle. */
-const KINDRED_SCHEME = 'kindred://'
-// App-Store fallback when Yuel (Kindred, bundle com.hexastral.kindred) isn't
+const KINDRED_SCHEME = 'yuel://'
+// App-Store fallback when Yuel (Kindred, bundle com.hexastral.yuel) isn't
 // installed. Placeholder id until the listing is live — same REPLACE_*
 // convention as config.ts; fill once App Store Connect issues the app id.
 const KINDRED_APP_STORE = 'https://apps.apple.com/app/idREPLACE_KINDRED'
@@ -53,7 +53,7 @@ function append(params: URLSearchParams, key: string, value: string | number | n
   params.set(key, str)
 }
 
-/** Build the `yuan://compose?...` deep link for a cycle → yuán hand-off. */
+/** Build the `yuel://compose?...` deep link for a cycle → yuán hand-off. */
 export function buildKindredComposeUrl({ person, self, relationshipLabel }: BuildArgs): string {
   const p = new URLSearchParams()
   p.set('v', '1')
@@ -91,7 +91,7 @@ export function buildKindredComposeUrl({ person, self, relationshipLabel }: Buil
   append(p, 'rel', relationshipLabel)
 
   p.set('mode', hasSelf ? 'pair' : 'fill')
-  return `${YUAN_SCHEME}compose?${p.toString()}`
+  return `${YUEL_SCHEME}compose?${p.toString()}`
 }
 
 /**
@@ -140,19 +140,19 @@ export function confirmAndOpenKindred(args: BuildArgs, consent: KindredShareCons
 
 /* ── Personal reading hand-off (Yuel/Yuun split, Phase 2) ─────────────────────
  * Yuel owns the FULL personal 命书 now. Yuun shows only a concise local 概要 and
- * opens the full read via `kindred://reading`, carrying the user's OWN birth so
+ * opens the full read via `yuel://reading`, carrying the user's OWN birth so
  * Yuel renders the same chart without re-entry. The exact mirror of Yuel's
  * apps/kindred-app/lib/auspice-handoff.ts `openAuspiceReading` (opposite direction).
  *
  * When Yuel isn't installed we send the user to the App Store to get it (the 概要
  * already delivered standalone value, so the store hop is an upsell, not a wall).
  *
- *   kindred://reading?v=1&from=auspice
+ *   yuel://reading?v=1&from=auspice
  *     &date=YYYY-MM-DD&time=N&gender=男|女&city=<enc>
  *     &lng=<num>&tz=<iana>&clock=<min>&calibrate=0|1
  */
 
-/** Build the `kindred://reading?...` deep link, carrying the self birth (if known). */
+/** Build the `yuel://reading?...` deep link, carrying the self birth (if known). */
 export function buildKindredReadingUrl(self?: AuspiceBirthInfo | null): string {
   const p = new URLSearchParams()
   p.set('v', '1')

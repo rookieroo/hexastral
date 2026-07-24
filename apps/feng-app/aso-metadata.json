@@ -1,49 +1,86 @@
 {
   "_comment": "Feng (site/space analysis satellite) — App Store Connect ASO metadata. Tier-2 high-ASP (one-shot premium per site analysis) per ADR-0012 revision. Anti-spam compliant per docs/anti-spam-positioning.md. The 风水 / feng-shui category IS accepted on App Store under Lifestyle if presented as spatial analysis tool — what triggers 4.3(b) is the 'energy / qi / mystical lucky direction' register. This positioning leads with 'spatial analysis grounded in classical site theory' (≈ a culturally-rooted architectural-planning utility). Constraints: subtitle ≤30c, keywords ≤100c comma-separated, promotionalText ≤170c, description ≤4000c.",
-  "bundleId": "com.hexastral.feng",
+  "bundleId": "com.hexastral.kanyu",
   "appName": "Kanyu",
   "primaryCategory": "LIFESTYLE",
   "secondaryCategory": "REFERENCE",
   "contentRating": "4+",
   "_categoryRationale": "LIFESTYLE primary (home/space planning, broad consumer surface). REFERENCE secondary (classical site-theory educational angle, distancing from horoscope/fortune cluster). Was Lifestyle/Reference; keeping same but with anti-spam copy.",
   "_doNotUse": [
-    "fortune", "lucky direction", "mystical", "cosmic energy", "qi flow", "spiritual energy",
-    "horoscope", "astrology", "destiny",
-    "占星", "算命", "运势", "命运", "玄学", "灵气",
-    "占星術", "占い", "運勢", "運命", "開運", "霊的エネルギー"
+    "fortune",
+    "lucky direction",
+    "mystical",
+    "cosmic energy",
+    "qi flow",
+    "spiritual energy",
+    "horoscope",
+    "astrology",
+    "destiny",
+    "占星",
+    "算命",
+    "运势",
+    "命运",
+    "玄学",
+    "灵气",
+    "占星術",
+    "占い",
+    "運勢",
+    "運命",
+    "開運",
+    "霊的エネルギー"
   ],
   "locales": {
     "en-US": {
       "subtitle": "Site Analysis · Classical",
       "keywords": "feng shui,site analysis,home layout,space planning,bagua,compass,classical chinese,study",
       "promotionalText": "Analyze your home or office layout using classical Chinese site theory. For entertainment & cultural study only — not fortune-telling or professional feng-shui service.",
-      "description": "Feng is a Feng Shui (风水) site-analysis tool — a structured spatial framework grounded in classical Chinese site theory (堪舆 / kānyú) and modern AI. Not fortune-telling. Not 'lucky direction' superstition. A study tool for understanding how classical Chinese practitioners read built environments.\n\nWHAT IT IS\n\n• A site-analysis tool. Enter your address and building facing (on-device compass); optionally upload a floor-plan image for room-level notes. Receive a structured reading covering the Ba Gua (八卦) sector layout, the Five Elements (五行) interactions, and classical site-theory annotations.\n• A learning framework. Like 'reading a floor plan through a culturally specific lens' — surfaces what classical Chinese site practitioners look for: light direction, sight lines, threshold positions, water-feature placements.\n• An AI learning companion. Chat with an AI grounded in classical 堪舆 / 风水 scholarship to learn the reasoning behind each site annotation.\n\nWHAT IT IS NOT\n\n• Not Western astrology, not horoscope-adjacent\n• Not fortune-telling, not 'change one thing for luck' folk practice\n• Not generic interior-decoration tips\n\nWHAT YOU GET\n\n• Compass-based Ba Gua sector overlay on your layout\n• Per-sector interactions through Five Elements lens\n• Classical site-theory annotations: light direction, sight lines, threshold positions, water-feature placements\n• AI chat: ask why a sector reads the way it does, get classical context\n• Four languages: English, 日本語, 简体中文, 繁體中文\n• Saved analyses for revisit\n• On-device compass calibration; optional floor-plan images upload over TLS when you choose (EXIF/GPS stripped)\n\nEDUCATIONAL CONTEXT\n\nFeng Shui (风水, literally 'wind-water') is the Chinese tradition of analyzing built environments — homes, offices, gardens, and burial sites — through a framework of classical site theory. The tradition is documented from the Han dynasty (2nd c. BCE) onward; the influential 《青囊经》 (Qīngnáng jīng) and Tang-dynasty 《葬经》 (Zàngjīng) are core reference texts. The framework reads space the way classical Chinese practitioners did — sectoring through the Ba Gua, weighting through Five Elements interactions, considering classical concerns about light, sight lines, water, and orientation.\n\nThis app is a study and analysis tool for that framework. It does not promise luck. It explains what classical practitioners would observe and why, leaving the reader to decide what to do with the information.\n\nPRIVACY\n\nOptional floor-plan images you upload are sent to our servers for analysis; EXIF/GPS is stripped. Deleting a site removes raw images. See the privacy appendix for details.\n\nABOUT\n\nKanyu is published by UseONE, LLC. Privacy: kanyu.hexastral.com/privacy/feng. Terms: kanyu.hexastral.com/terms."
+      "description": "Feng is a Feng Shui (风水) site-analysis tool — a structured spatial framework grounded in classical Chinese site theory (堪舆 / kānyú) and modern AI. Not fortune-telling. Not 'lucky direction' superstition. A study tool for understanding how classical Chinese practitioners read built environments.\n\nWHAT IT IS\n\n• A site-analysis tool. Enter your address and building facing (on-device compass); optionally upload a floor-plan image for room-level notes. Receive a structured reading covering the Ba Gua (八卦) sector layout, the Five Elements (五行) interactions, and classical site-theory annotations.\n• A learning framework. Like 'reading a floor plan through a culturally specific lens' — surfaces what classical Chinese site practitioners look for: light direction, sight lines, threshold positions, water-feature placements.\n• An AI learning companion. Chat with an AI grounded in classical 堪舆 / 风水 scholarship to learn the reasoning behind each site annotation.\n\nWHAT IT IS NOT\n\n• Not Western astrology, not horoscope-adjacent\n• Not fortune-telling, not 'change one thing for luck' folk practice\n• Not generic interior-decoration tips\n\nWHAT YOU GET\n\n• Compass-based Ba Gua sector overlay on your layout\n• Per-sector interactions through Five Elements lens\n• Classical site-theory annotations: light direction, sight lines, threshold positions, water-feature placements\n• AI chat: ask why a sector reads the way it does, get classical context\n• Four languages: English, 日本語, 简体中文, 繁體中文\n• Saved analyses for revisit\n• On-device compass calibration; optional floor-plan images upload over TLS when you choose (EXIF/GPS stripped)\n\nEDUCATIONAL CONTEXT\n\nFeng Shui (风水, literally 'wind-water') is the Chinese tradition of analyzing built environments — homes, offices, gardens, and burial sites — through a framework of classical site theory. The tradition is documented from the Han dynasty (2nd c. BCE) onward; the influential 《青囊经》 (Qīngnáng jīng) and Tang-dynasty 《葬经》 (Zàngjīng) are core reference texts. The framework reads space the way classical Chinese practitioners did — sectoring through the Ba Gua, weighting through Five Elements interactions, considering classical concerns about light, sight lines, water, and orientation.\n\nThis app is a study and analysis tool for that framework. It does not promise luck. It explains what classical practitioners would observe and why, leaving the reader to decide what to do with the information.\n\nPRIVACY\n\nOptional floor-plan images you upload are sent to our servers for analysis; EXIF/GPS is stripped. Deleting a site removes raw images. See the privacy appendix for details.\n\nABOUT\n\nKanyu is published by UseONE, LLC. Privacy: kanyu.hexastral.com/privacy/kanyu. Terms: kanyu.hexastral.com/terms."
     },
     "zh-Hans": {
       "subtitle": "居所分析 · 古典堪舆",
       "keywords": "风水,堪舆,居所分析,空间布局,八卦,罗盘,古典中华,建筑分析,学习",
       "promotionalText": "用古典中华堪舆理论分析你的居所或办公室格局。仅供娱乐与文化研习——非算命，非「转运」迷信，非专业风水服务。",
-      "description": "Feng 是一款风水居所分析工具 —— 基于古典中华堪舆理论与现代 AI 的结构化空间分析框架。非算命，非「转运」民俗，是一套理解古典中华实践者如何读建成环境的学习工具。\n\n它是什么\n\n• 居所分析工具：输入地址与大楼坐向（端内罗盘）；可选上传户型图以获得房间级研习标注。获得包含八卦方位、五行互动、古典堪舆标注的结构化报告\n• 学习框架：类似「以特定文化视角读户型图」—— 揭示古典中华场所实践者关注的：采光方向、视线、门槛位置、水景布置\n• AI 学习伙伴：与基于古典堪舆/风水学术的 AI 对话，了解每项场所标注背后的推理\n\n它不是什么\n\n• 不是西方占星、不是 horoscope 邻近类\n• 不是算命，不是「换一物转运」式民俗\n• 不是通用室内装饰建议\n\n你能用它做什么\n\n• 罗盘定位的八卦方位叠加在你的户型图上\n• 各方位通过五行视角的互动分析\n• 古典堪舆标注：采光方向、视线、门槛、水景位置\n• AI 对话：询问某方位的推理，获取古典语境\n• 四种语言：中文（简繁）/ 日本語 / English\n• 已保存的分析可随时回看\n• 罗盘定位；可选户型图经 TLS 上传（剥离 EXIF/GPS）\n\n教育背景\n\n风水（字面「wind-water」）是中华传统中通过古典场所理论分析建成环境的方法 —— 居所、办公室、园林、葬地等。该传统自汉代（公元前 2 世纪）起就有文献记载；具影响力的《青囊经》（黄石公）与唐代《葬经》（郭璞）是核心参考典籍。该框架以古典中华实践者的方式读空间 —— 通过八卦分区、五行互动权衡、考虑光、视线、水、朝向等古典关切。\n\n本应用是该框架的学习与分析工具，不承诺运气。它解释古典实践者会观察什么以及为什么，由读者决定如何运用这些信息。\n\n隐私\n\n可选户型图会上传至服务器用于分析，EXIF/GPS 已剥离；删除居所时移除原图。详见隐私附录。\n\n关于\n\nKanyu 由 UseONE, LLC 出版。隐私政策：kanyu.hexastral.com/zh/privacy/feng。使用条款：kanyu.hexastral.com/zh/terms。"
+      "description": "Feng 是一款风水居所分析工具 —— 基于古典中华堪舆理论与现代 AI 的结构化空间分析框架。非算命，非「转运」民俗，是一套理解古典中华实践者如何读建成环境的学习工具。\n\n它是什么\n\n• 居所分析工具：输入地址与大楼坐向（端内罗盘）；可选上传户型图以获得房间级研习标注。获得包含八卦方位、五行互动、古典堪舆标注的结构化报告\n• 学习框架：类似「以特定文化视角读户型图」—— 揭示古典中华场所实践者关注的：采光方向、视线、门槛位置、水景布置\n• AI 学习伙伴：与基于古典堪舆/风水学术的 AI 对话，了解每项场所标注背后的推理\n\n它不是什么\n\n• 不是西方占星、不是 horoscope 邻近类\n• 不是算命，不是「换一物转运」式民俗\n• 不是通用室内装饰建议\n\n你能用它做什么\n\n• 罗盘定位的八卦方位叠加在你的户型图上\n• 各方位通过五行视角的互动分析\n• 古典堪舆标注：采光方向、视线、门槛、水景位置\n• AI 对话：询问某方位的推理，获取古典语境\n• 四种语言：中文（简繁）/ 日本語 / English\n• 已保存的分析可随时回看\n• 罗盘定位；可选户型图经 TLS 上传（剥离 EXIF/GPS）\n\n教育背景\n\n风水（字面「wind-water」）是中华传统中通过古典场所理论分析建成环境的方法 —— 居所、办公室、园林、葬地等。该传统自汉代（公元前 2 世纪）起就有文献记载；具影响力的《青囊经》（黄石公）与唐代《葬经》（郭璞）是核心参考典籍。该框架以古典中华实践者的方式读空间 —— 通过八卦分区、五行互动权衡、考虑光、视线、水、朝向等古典关切。\n\n本应用是该框架的学习与分析工具，不承诺运气。它解释古典实践者会观察什么以及为什么，由读者决定如何运用这些信息。\n\n隐私\n\n可选户型图会上传至服务器用于分析，EXIF/GPS 已剥离；删除居所时移除原图。详见隐私附录。\n\n关于\n\nKanyu 由 UseONE, LLC 出版。隐私政策：kanyu.hexastral.com/zh/privacy/kanyu。使用条款：kanyu.hexastral.com/zh/terms。"
     },
     "zh-Hant": {
       "subtitle": "居所分析 · 古典堪輿",
       "keywords": "風水,堪輿,居所分析,空間佈局,八卦,羅盤,古典中華,建築分析,學習",
       "promotionalText": "用古典中華堪輿理論分析你的居所或辦公室格局。僅供娛樂與文化研習——非算命，非「轉運」迷信，非專業風水服務。",
-      "description": "Feng 是一款風水居所分析工具 —— 基於古典中華堪輿理論與現代 AI 的結構化空間分析框架。非算命，非「轉運」民俗，是一套理解古典中華實踐者如何讀建成環境的學習工具。\n\n它是什麼\n\n• 居所分析工具：輸入地址與大樓坐向（端內羅盤）；可選上傳戶型圖以獲得房間級研習標註。獲得包含八卦方位、五行互動、古典堪輿標註的結構化報告\n• 學習框架：類似「以特定文化視角讀戶型圖」—— 揭示古典中華場所實踐者關注的：採光方向、視線、門檻位置、水景佈置\n• AI 學習夥伴：與基於古典堪輿/風水學術的 AI 對話，了解每項場所標註背後的推理\n\n它不是什麼\n\n• 不是西方占星、不是 horoscope 鄰近類\n• 不是算命，不是「換一物轉運」式民俗\n• 不是通用室內裝飾建議\n\n你能用它做什麼\n\n• 羅盤定位的八卦方位疊加在你的戶型圖上\n• 各方位通過五行視角的互動分析\n• 古典堪輿標註：採光方向、視線、門檻、水景位置\n• AI 對話：詢問某方位的推理，獲取古典語境\n• 四種語言：中文（簡繁）/ 日本語 / English\n• 已保存的分析可隨時回看\n• 羅盤定位；可選戶型圖經 TLS 上傳（剝離 EXIF/GPS）\n\n教育背景\n\n風水（字面「wind-water」）是中華傳統中通過古典場所理論分析建成環境的方法 —— 居所、辦公室、園林、葬地等。該傳統自漢代（公元前 2 世紀）起就有文獻記載；具影響力的《青囊經》（黃石公）與唐代《葬經》（郭璞）是核心參考典籍。該框架以古典中華實踐者的方式讀空間 —— 通過八卦分區、五行互動權衡、考慮光、視線、水、朝向等古典關切。\n\n本應用是該框架的學習與分析工具，不承諾運氣。它解釋古典實踐者會觀察什麼以及為什麼，由讀者決定如何運用這些資訊。\n\n隱私\n\n可選戶型圖會上傳至伺服器用於分析，EXIF/GPS 已剝離；刪除居所時移除原圖。詳見隱私附錄。\n\n關於\n\nKanyu 由 UseONE, LLC 出版。隱私政策：kanyu.hexastral.com/tw/privacy/feng。使用條款：kanyu.hexastral.com/tw/terms。"
+      "description": "Feng 是一款風水居所分析工具 —— 基於古典中華堪輿理論與現代 AI 的結構化空間分析框架。非算命，非「轉運」民俗，是一套理解古典中華實踐者如何讀建成環境的學習工具。\n\n它是什麼\n\n• 居所分析工具：輸入地址與大樓坐向（端內羅盤）；可選上傳戶型圖以獲得房間級研習標註。獲得包含八卦方位、五行互動、古典堪輿標註的結構化報告\n• 學習框架：類似「以特定文化視角讀戶型圖」—— 揭示古典中華場所實踐者關注的：採光方向、視線、門檻位置、水景佈置\n• AI 學習夥伴：與基於古典堪輿/風水學術的 AI 對話，了解每項場所標註背後的推理\n\n它不是什麼\n\n• 不是西方占星、不是 horoscope 鄰近類\n• 不是算命，不是「換一物轉運」式民俗\n• 不是通用室內裝飾建議\n\n你能用它做什麼\n\n• 羅盤定位的八卦方位疊加在你的戶型圖上\n• 各方位通過五行視角的互動分析\n• 古典堪輿標註：採光方向、視線、門檻、水景位置\n• AI 對話：詢問某方位的推理，獲取古典語境\n• 四種語言：中文（簡繁）/ 日本語 / English\n• 已保存的分析可隨時回看\n• 羅盤定位；可選戶型圖經 TLS 上傳（剝離 EXIF/GPS）\n\n教育背景\n\n風水（字面「wind-water」）是中華傳統中通過古典場所理論分析建成環境的方法 —— 居所、辦公室、園林、葬地等。該傳統自漢代（公元前 2 世紀）起就有文獻記載；具影響力的《青囊經》（黃石公）與唐代《葬經》（郭璞）是核心參考典籍。該框架以古典中華實踐者的方式讀空間 —— 通過八卦分區、五行互動權衡、考慮光、視線、水、朝向等古典關切。\n\n本應用是該框架的學習與分析工具，不承諾運氣。它解釋古典實踐者會觀察什麼以及為什麼，由讀者決定如何運用這些資訊。\n\n隱私\n\n可選戶型圖會上傳至伺服器用於分析，EXIF/GPS 已剝離；刪除居所時移除原圖。詳見隱私附錄。\n\n關於\n\nKanyu 由 UseONE, LLC 出版。隱私政策：kanyu.hexastral.com/tw/privacy/kanyu。使用條款：kanyu.hexastral.com/tw/terms。"
     },
     "ja": {
       "subtitle": "居所分析 · 古典堪輿",
       "keywords": "風水,堪輿,居所分析,空間設計,八卦,羅盤,古典中華,建築分析,学習,場所",
       "promotionalText": "古典中華の堪輿理論であなたの居所やオフィスの間取りを分析。羅盤定位、検証可能な計算、学習ツール —— 占いでも「開運」民俗でもありません。",
-      "description": "Feng は風水の居所分析ツール —— 古典中華の堪輿理論と現代 AI を組み合わせた構造化された空間分析フレームワークです。占いではなく、「開運」民俗でもなく、古典中華の実践者が建てられた環境をどう読んだかを理解する学習ツールです。\n\nこれは何か\n\n• 居所分析ツール：住所と建物の向きを入力（端末内羅盤）；任意で間取り図をアップロードして部屋レベルの注釈を取得。八卦方位、五行の相互作用、古典堪輿の注釈を含む構造化レポートが得られます\n• 学習フレームワーク：「特定の文化的視点で間取り図を読む」 —— 古典中華の場所実践者が注目するもの（採光方向、視線、敷居の位置、水景の配置）を示します\n• AI 学習コンパニオン：古典堪輿/風水学術に基づく AI と対話し、各場所注釈の背後にある推論を学べます\n\nこれは何ではないか\n\n• 西洋占星術ではありません、horoscope 隣接類ではありません\n• 占いではありません、「一つ換えれば開運」式民俗ではありません\n• 一般的なインテリア装飾ヒントではありません\n\n機能\n\n• 羅盤定位による八卦方位を間取り図にオーバーレイ\n• 各方位の五行視点による相互作用分析\n• 古典堪輿の注釈：採光方向、視線、敷居、水景の位置\n• AI チャット：特定方位の推論について質問、古典的文脈を得る\n• 4 言語：日本語 / 中国語（簡繁）/ English\n• 保存された分析をいつでも再確認\n• 端末内羅盤；任意の間取り図は TLS 経由でアップロード（EXIF/GPS 除去）\n\n学術的背景\n\n風水（字義「wind-water」）は中華伝統において古典場所理論を通じて建てられた環境を分析する方法 —— 居所、オフィス、庭園、墓地など。この伝統は漢代（紀元前 2 世紀）から文献に記載されており、影響力のある『青嚢経』（黄石公）と唐代の『葬経』（郭璞）が中核的な参考文献です。このフレームワークは古典中華の実践者と同じように空間を読みます —— 八卦の分区、五行の相互作用の重み、光・視線・水・方位といった古典的な関心事の考慮を通じて。\n\n本アプリはこのフレームワークの学習・分析ツールであり、運気を約束するものではありません。古典的な実践者が何を観察し、なぜそうするのかを説明し、その情報をどう活かすかは読者に委ねます。\n\nプライバシー\n\n任意の間取り図は分析のためサーバーに送信されます（EXIF/GPS は除去）。サイト削除時に原画像を削除。詳細はプライバシー付録を参照。\n\nアプリ情報\n\nKanyu は UseONE, LLC が発行。プライバシー：kanyu.hexastral.com/ja/privacy/feng。利用規約：kanyu.hexastral.com/ja/terms。"
+      "description": "Feng は風水の居所分析ツール —— 古典中華の堪輿理論と現代 AI を組み合わせた構造化された空間分析フレームワークです。占いではなく、「開運」民俗でもなく、古典中華の実践者が建てられた環境をどう読んだかを理解する学習ツールです。\n\nこれは何か\n\n• 居所分析ツール：住所と建物の向きを入力（端末内羅盤）；任意で間取り図をアップロードして部屋レベルの注釈を取得。八卦方位、五行の相互作用、古典堪輿の注釈を含む構造化レポートが得られます\n• 学習フレームワーク：「特定の文化的視点で間取り図を読む」 —— 古典中華の場所実践者が注目するもの（採光方向、視線、敷居の位置、水景の配置）を示します\n• AI 学習コンパニオン：古典堪輿/風水学術に基づく AI と対話し、各場所注釈の背後にある推論を学べます\n\nこれは何ではないか\n\n• 西洋占星術ではありません、horoscope 隣接類ではありません\n• 占いではありません、「一つ換えれば開運」式民俗ではありません\n• 一般的なインテリア装飾ヒントではありません\n\n機能\n\n• 羅盤定位による八卦方位を間取り図にオーバーレイ\n• 各方位の五行視点による相互作用分析\n• 古典堪輿の注釈：採光方向、視線、敷居、水景の位置\n• AI チャット：特定方位の推論について質問、古典的文脈を得る\n• 4 言語：日本語 / 中国語（簡繁）/ English\n• 保存された分析をいつでも再確認\n• 端末内羅盤；任意の間取り図は TLS 経由でアップロード（EXIF/GPS 除去）\n\n学術的背景\n\n風水（字義「wind-water」）は中華伝統において古典場所理論を通じて建てられた環境を分析する方法 —— 居所、オフィス、庭園、墓地など。この伝統は漢代（紀元前 2 世紀）から文献に記載されており、影響力のある『青嚢経』（黄石公）と唐代の『葬経』（郭璞）が中核的な参考文献です。このフレームワークは古典中華の実践者と同じように空間を読みます —— 八卦の分区、五行の相互作用の重み、光・視線・水・方位といった古典的な関心事の考慮を通じて。\n\n本アプリはこのフレームワークの学習・分析ツールであり、運気を約束するものではありません。古典的な実践者が何を観察し、なぜそうするのかを説明し、その情報をどう活かすかは読者に委ねます。\n\nプライバシー\n\n任意の間取り図は分析のためサーバーに送信されます（EXIF/GPS は除去）。サイト削除時に原画像を削除。詳細はプライバシー付録を参照。\n\nアプリ情報\n\nKanyu は UseONE, LLC が発行。プライバシー：kanyu.hexastral.com/ja/privacy/kanyu。利用規約：kanyu.hexastral.com/ja/terms。"
     }
   },
   "_charCounts": {
     "_note": "Manual verification. CJK chars count as 1.",
-    "en-US": { "subtitle": 22, "keywords": 98, "promotionalText": 144, "description": "~2100" },
-    "zh-Hans": { "subtitle": 13, "keywords": 49, "promotionalText": 56, "description": "~900" },
-    "zh-Hant": { "subtitle": 13, "keywords": 49, "promotionalText": 56, "description": "~900" },
-    "ja": { "subtitle": 13, "keywords": 50, "promotionalText": 67, "description": "~950" }
+    "en-US": {
+      "subtitle": 22,
+      "keywords": 98,
+      "promotionalText": 144,
+      "description": "~2100"
+    },
+    "zh-Hans": {
+      "subtitle": 13,
+      "keywords": 49,
+      "promotionalText": 56,
+      "description": "~900"
+    },
+    "zh-Hant": {
+      "subtitle": 13,
+      "keywords": 49,
+      "promotionalText": 56,
+      "description": "~900"
+    },
+    "ja": {
+      "subtitle": 13,
+      "keywords": 50,
+      "promotionalText": 67,
+      "description": "~950"
+    }
   },
   "_screenshotDirection": "See docs/publish/screenshot-direction.md. LEAD with: floor plan with Ba Gua sector overlay, compass calibration on satellite tile, AI chat showing classical-source citations (《青囊经》 etc.), Five Elements interaction diagram per sector. Visual register: 'spatial analysis tool' / 'culturally-rooted architectural-planning utility'. AVOID: incense, qi-flow arrows, lucky symbols, gold coins, dragons, indoor room photo montages."
 }

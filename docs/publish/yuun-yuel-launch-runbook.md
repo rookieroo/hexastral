@@ -20,7 +20,7 @@
 |---|---|---|
 | 目录 | `apps/auspice-app` | `apps/kindred-app` |
 | 商店显示名 | Yuun | Yuel |
-| Bundle ID | `com.hexastral.auspice` | `com.hexastral.kindred` |
+| Bundle ID | `com.hexastral.yuun` | `com.hexastral.yuel` |
 | 内部代号（勿对用户暴露） | auspice | kindred |
 | RC Entitlement | `auspice_pro` | `kindred_pro` |
 | 主类目 | Reference | Lifestyle |
@@ -99,8 +99,8 @@ bunx wrangler secret put GOOGLE_OAUTH_AUDIENCES
 
 | Bundle ID | Capabilities |
 |---|---|
-| `com.hexastral.auspice` | Sign in with Apple；**App Groups** → `group.com.hexastral.auspice`（`app.json` 已声明，Widget 后续也会用） |
-| `com.hexastral.kindred` | Sign in with Apple |
+| `com.hexastral.yuun` | Sign in with Apple；**App Groups** → `group.com.hexastral.yuun`（`app.json` 已声明，Widget 后续也会用） |
+| `com.hexastral.yuel` | Sign in with Apple |
 
 > 旧文档里的 `com.hexastral.cycle` / `group.com.hexastral.cycle` 已废弃，以 `app.json` 为准。
 
@@ -164,8 +164,8 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 | App | Privacy | Terms |
 |---|---|---|
-| Yuun | `https://yuun.hexastral.com/en/privacy/auspice`（zh→`/zh/...`，tw→`/tw/...`，ja→`/ja/...`） | `https://yuun.hexastral.com/en/terms` |
-| Yuel | `https://yuel.hexastral.com/en/privacy/kindred` | `https://yuel.hexastral.com/en/terms` |
+| Yuun | `https://yuun.hexastral.com/en/privacy/yuun`（zh→`/zh/...`，tw→`/tw/...`，ja→`/ja/...`） | `https://yuun.hexastral.com/en/terms` |
+| Yuel | `https://yuel.hexastral.com/en/privacy/yuel` | `https://yuel.hexastral.com/en/terms` |
 
 App 内 Settings 链接与 ASC 字段保持一致。
 
@@ -272,7 +272,7 @@ Sign-in 路径：**portfolio auth**（`POST /api/portfolio/auth/apple`，`target
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 可选 | SignInSheet 支持 Google，但 **kindred `package.json` 未声明 `@react-native-google-signin/google-signin`**；MVP 可 **仅 Apple** |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 可选 | 同上 |
 
-Sign-in 路径：`POST /api/onboarding/apple-link`（aud = `com.hexastral.kindred`）。
+Sign-in 路径：`POST /api/onboarding/apple-link`（aud = `com.hexastral.yuel`）。
 
 ---
 
@@ -313,8 +313,8 @@ cd apps/hexastral-web && bun deploy
 curl -sI https://api.hexastral.com/webhooks/revenuecat | head -5
 
 # 法律页 200
-curl -sI https://yuun.hexastral.com/en/privacy/auspice | head -3
-curl -sI https://yuel.hexastral.com/en/privacy/kindred | head -3
+curl -sI https://yuun.hexastral.com/en/privacy/yuun | head -3
+curl -sI https://yuel.hexastral.com/en/privacy/yuel | head -3
 ```
 
 ---

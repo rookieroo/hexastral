@@ -29,7 +29,7 @@ import { resetOnboarding } from '../index'
 
 // Privacy + Terms URLs — Apple App Store requires both reachable from inside a
 // signed-in surface. Served on the Yuel brand subdomain: privacy is the per-app
-// `kindred` appendix (/[locale]/privacy/kindred); terms stay the shared suite
+// `yuel` appendix (/[locale]/privacy/yuel); terms stay the shared suite
 // document (/[locale]/terms). The LLC entity is named within the document text.
 const LEGAL_BASE = 'https://yuel.hexastral.com'
 function legalUrl(path: '/privacy' | '/terms', locale: string): string {
@@ -37,7 +37,7 @@ function legalUrl(path: '/privacy' | '/terms', locale: string): string {
   // through to the English version when the user's locale isn't published.
   const known = ['en', 'zh', 'tw', 'ja']
   const seg = known.includes(locale) ? locale : 'en'
-  const suffix = path === '/privacy' ? '/privacy/kindred' : path
+  const suffix = path === '/privacy' ? '/privacy/yuel' : path
   if (seg === 'en') return `${LEGAL_BASE}${suffix}`
   return `${LEGAL_BASE}/${seg}${suffix}`
 }

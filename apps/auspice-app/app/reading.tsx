@@ -6,13 +6,13 @@
  * what the full book covers — and a CTA that hands off to Yuel for the rest.
  *
  * Everything here is pure client compute (no LLM, no network, no paywall), so it's
- * free and instant. The "深读你的命书 →" CTA opens `kindred://reading` (App Store if
+ * free and instant. The "深读你的命书 →" CTA opens `yuel://reading` (App Store if
  * Yuel isn't installed — the 概要 already delivered value, so the store hop is an
  * upsell, not a wall). Reached from the home action card and the Me tab.
  *
  * Birth: `getAuspiceBirthInfo()` (lib/birth) — async-loaded into state, with an
  * optional `gender` (so the screen guards a birth that hasn't filled in gender yet
- * and routes the user to Me). The `kindred://reading` deep-link seeding is retained
+ * and routes the user to Me). The `yuel://reading` deep-link seeding is retained
  * (harmless) so a Yuel hand-off that lands here still renders the same chart.
  */
 
@@ -75,7 +75,7 @@ const CHAPTER_LABEL_KEYS = [
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Build an AuspiceBirthInfo from a `kindred://reading?...` hand-off. Yuel passes
+ * Build an AuspiceBirthInfo from a `yuel://reading?...` hand-off. Yuel passes
  * the user's own birth so Yuun renders the same chart without re-entry; we only
  * seed Yuun's store when it's empty (Yuun stays authoritative once set). Returns
  * null when the hand-off carries no usable date.
@@ -210,7 +210,7 @@ export default function ReadingScreen() {
     }
   }, [chart, birth])
 
-  // Robust back: this screen is also reached via the `kindred://reading` deep link
+  // Robust back: this screen is also reached via the `yuel://reading` deep link
   // from Yuel, where there's no history to pop — go to the home instead of a
   // no-op `back()` ("GO_BACK was not handled by any navigator").
   const goBack = () => {

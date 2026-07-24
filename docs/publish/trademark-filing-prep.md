@@ -8,9 +8,9 @@
 >
 > | Mark | Classes | App | Bundle |
 > |---|---|---|---|
-> | **YUEL** | 9 + 42 + 45 | `kindred-app` | `com.hexastral.kindred` |
-> | **YUUN** | **9 only** | `auspice-app` | `com.hexastral.auspice` |
-> | **KANYU** | 9 + 42 | `feng-app` | `com.hexastral.feng` |
+> | **YUEL** | 9 + 42 + 45 | `kindred-app` | `com.hexastral.yuel` |
+> | **YUUN** | **9 only** | `auspice-app` | `com.hexastral.yuun` |
+> | **KANYU** | 9 + 42 | `feng-app` | `com.hexastral.kanyu` |
 >
 > **Not in this batch:** Yaul (`coin-cast-app`) — W4.
 >

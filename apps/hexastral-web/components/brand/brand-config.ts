@@ -27,27 +27,27 @@ const CTA_LABELS: Record<BrandLocale, { ios: string; android: string; desktop: s
 export const BRAND_STORE = {
   yuel: {
     ios: resolveAppStoreUrl('soulmatch'),
-    android: 'https://play.google.com/store/apps/details?id=app.hexastral.yuel',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.yuel',
     labels: CTA_LABELS,
   },
   yuun: {
     ios: resolveAppStoreUrl('auspice'),
-    android: 'https://play.google.com/store/apps/details?id=app.hexastral.yuun',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.yuun',
     labels: CTA_LABELS,
   },
   yaul: {
     ios: resolveAppStoreUrl('coincast'),
-    android: 'https://play.google.com/store/apps/details?id=com.hexastral.coincast',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.yaul',
     labels: CTA_LABELS,
   },
   kanyu: {
     ios: resolveAppStoreUrl('fengshui'),
-    android: 'https://play.google.com/store/apps/details?id=com.hexastral.feng',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.kanyu',
     labels: CTA_LABELS,
   },
   syel: {
     ios: resolveAppStoreUrl('faceoracle'),
-    android: 'https://play.google.com/store/apps/details?id=com.hexastral.xingqi',
+    android: 'https://play.google.com/store/apps/details?id=com.hexastral.syel',
     labels: CTA_LABELS,
   },
 } as const

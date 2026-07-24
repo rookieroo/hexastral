@@ -42,7 +42,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     brandHostIndexable: true,
     brandHost: 'https://yuel.hexastral.com',
     storeTarget: 'soulmatch',
-    privacyPath: '/privacy/kindred',
+    privacyPath: '/privacy/yuel',
   },
   kanyu: {
     id: 'kanyu',
@@ -53,7 +53,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     brandHostIndexable: false,
     brandHost: 'https://kanyu.hexastral.com',
     storeTarget: 'fengshui',
-    privacyPath: '/privacy/feng',
+    privacyPath: '/privacy/kanyu',
   },
   yuun: {
     id: 'yuun',
@@ -64,7 +64,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     brandHostIndexable: true,
     brandHost: 'https://yuun.hexastral.com',
     storeTarget: 'auspice',
-    privacyPath: '/privacy/auspice',
+    privacyPath: '/privacy/yuun',
   },
   yaul: {
     id: 'yaul',
@@ -75,7 +75,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     brandHostIndexable: false,
     brandHost: 'https://yaul.hexastral.com',
     storeTarget: 'coincast',
-    privacyPath: '/privacy/coincast',
+    privacyPath: '/privacy/yaul',
   },
   syel: {
     id: 'syel',

@@ -1,6 +1,6 @@
 # Yuun — launch checklist
 
-**Bundle:** `com.hexastral.auspice` · **Display name:** Yuun · **Directory:** `apps/auspice-app`
+**Bundle:** `com.hexastral.yuun` · **Display name:** Yuun · **Directory:** `apps/auspice-app`
 
 Yuun is a Chinese almanac (中华黄历) with Today-first navigation. Free tier = full yi/ji almanac; **Pro = 对你而言 personalization + personal 八字/紫微 命书 deep-read + personal calendar feed + specialized 择日 + timeline reminders**, gated behind sign-in.
 
