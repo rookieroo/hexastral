@@ -180,6 +180,10 @@ export type Strings = {
   /** Report digest cover — qualitative summary (no percentile score). */
   report_digest_tag: string
   digest_chart_line: string
+  /** Home hero seal — sit mountain. */
+  digest_sit_label: string
+  /** Home hero seal — facing mountain. */
+  digest_face_label: string
   digest_pattern_ping: string
   digest_pattern_rescued: string
   digest_pattern_unrescued: string
@@ -209,6 +213,18 @@ export type Strings = {
   term_ask: string
   tool_glossary: string
   glossary_intro: string
+  tool_imagery: string
+  imagery_intro: string
+  imagery_blurb_external_landform: string
+  imagery_blurb_personal_fit: string
+  imagery_blurb_flying_stars: string
+  imagery_blurb_annual_directions: string
+  imagery_blurb_remediation: string
+  imagery_blurb_auspicious_objects: string
+  settings_section_profile: string
+  settings_section_tools: string
+  settings_section_learn: string
+  settings_section_legal: string
   placement_door: string
   placement_bed: string
   placement_stove: string
@@ -290,6 +306,8 @@ export type Strings = {
   account_kind_google: string
   account_kind_guest: string
   account_kind_device: string
+  /** Nanoid session with linked Apple/Google (not guest_). */
+  account_kind_signed_in: string
 
   // Profile tab
   profile_birth_section: string
@@ -508,6 +526,8 @@ const EN: Strings = {
   report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
   report_digest_tag: 'Overview',
   digest_chart_line: 'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
+  digest_sit_label: 'SIT',
+  digest_face_label: 'FACE',
   digest_pattern_ping: 'Balanced chart',
   digest_pattern_rescued: '{pattern} · rescued',
   digest_pattern_unrescued: '{pattern} · needs remedy',
@@ -536,6 +556,25 @@ const EN: Strings = {
   term_ask: 'Ask AI about this term',
   tool_glossary: 'Glossary',
   glossary_intro: 'The 风水 terms used across your reports, grouped by school.',
+  tool_imagery: 'Chapter imagery',
+  imagery_intro:
+    'Each report chapter opens with a symbolic seal. These are study aids — not talismans — that mark the chapter’s classical focus.',
+  imagery_blurb_external_landform:
+    'Layered ridges over water stand for 峦头 — how landform and water relate around the site.',
+  imagery_blurb_personal_fit:
+    'The bagua ring marks 命卦 / house–person matching in the Eight Mansions chapter.',
+  imagery_blurb_flying_stars:
+    'The nine-palace grid evokes 玄空飞星 — the period chart read palace by palace.',
+  imagery_blurb_annual_directions:
+    'The compass dial marks 流年 — annual overlays on directions for the reading year.',
+  imagery_blurb_remediation:
+    'The gourd is a classical vessel motif for 化煞 study notes (concepts, not prescriptions).',
+  imagery_blurb_auspicious_objects:
+    'The round coin with a square hole evokes heaven–earth placement motifs in the study chapter.',
+  settings_section_profile: 'Profile',
+  settings_section_tools: 'Tools',
+  settings_section_learn: 'Learn',
+  settings_section_legal: 'Legal',
   placement_door: 'Main door',
   placement_bed: 'Bed (head)',
   placement_stove: 'Stove',
@@ -614,6 +653,7 @@ const EN: Strings = {
   account_kind_google: 'Google account',
   account_kind_guest: 'Guest',
   account_kind_device: 'Device',
+  account_kind_signed_in: 'Signed in',
   profile_birth_section: 'Birth info',
   profile_birth_required: 'Add your birth date and birth city to unlock the personal-fit chapter.',
   profile_birth_required_cta: 'Add birth info',
@@ -817,6 +857,8 @@ const ZH_HANS: Strings = {
   report_placement_heading: '古典布局参考',
   report_digest_tag: '概览',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}运{method}盘 · 现{currentYuan}运读盘',
+  digest_sit_label: '坐',
+  digest_face_label: '向',
   digest_pattern_ping: '平局',
   digest_pattern_rescued: '{pattern} · 有救',
   digest_pattern_unrescued: '{pattern} · 待补',
@@ -845,6 +887,19 @@ const ZH_HANS: Strings = {
   term_ask: '问问这个词',
   tool_glossary: '术语表',
   glossary_intro: '报告中用到的风水术语,按流派归类。',
+  tool_imagery: '意象图说明',
+  imagery_intro:
+    '报告每一章开头有一枚象征图记。它们是研习辅助，不是符咒，用来标示该章的古典主题。',
+  imagery_blurb_external_landform: '层峦与水线象征峦头——宅周山水形势如何相依。',
+  imagery_blurb_personal_fit: '八卦环象征命卦与八宅宅命匹配一章。',
+  imagery_blurb_flying_stars: '九宫格象征玄空飞星——按宫读当运盘。',
+  imagery_blurb_annual_directions: '罗盘刻度象征流年——当年方位叠层。',
+  imagery_blurb_remediation: '葫芦是化煞研习章的古典容器意象（概念参考，非处方）。',
+  imagery_blurb_auspicious_objects: '外圆内方古钱象征天地相应的陈设研习母题。',
+  settings_section_profile: '资料',
+  settings_section_tools: '工具',
+  settings_section_learn: '学习',
+  settings_section_legal: '法律',
   placement_door: '大门',
   placement_bed: '床头',
   placement_stove: '灶',
@@ -919,6 +974,7 @@ const ZH_HANS: Strings = {
   account_kind_google: 'Google 账号',
   account_kind_guest: '访客',
   account_kind_device: '本机',
+  account_kind_signed_in: '已登录',
   profile_birth_section: '生辰信息',
   profile_birth_required: '填写出生日期与出生地，解锁个人命卦匹配章节。',
   profile_birth_required_cta: '填写生辰',
@@ -1112,6 +1168,8 @@ const ZH_HANT: Strings = {
   report_placement_heading: '古典佈局參考',
   report_digest_tag: '概覽',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運讀盤',
+  digest_sit_label: '坐',
+  digest_face_label: '向',
   digest_pattern_ping: '平局',
   digest_pattern_rescued: '{pattern} · 有救',
   digest_pattern_unrescued: '{pattern} · 待補',
@@ -1140,6 +1198,19 @@ const ZH_HANT: Strings = {
   term_ask: '問問這個詞',
   tool_glossary: '術語表',
   glossary_intro: '報告中用到的風水術語,按流派歸類。',
+  tool_imagery: '意象圖說明',
+  imagery_intro:
+    '報告每一章開頭有一枚象徵圖記。它們是研習輔助，不是符咒，用來標示該章的古典主題。',
+  imagery_blurb_external_landform: '層巒與水線象徵巒頭——宅周山水形勢如何相依。',
+  imagery_blurb_personal_fit: '八卦環象徵命卦與八宅宅命匹配一章。',
+  imagery_blurb_flying_stars: '九宮格象徵玄空飛星——按宮讀當運盤。',
+  imagery_blurb_annual_directions: '羅盤刻度象徵流年——當年方位疊層。',
+  imagery_blurb_remediation: '葫蘆是化煞研習章的古典容器意象（概念參考，非處方）。',
+  imagery_blurb_auspicious_objects: '外圓內方古錢象徵天地相應的陳設研習母題。',
+  settings_section_profile: '資料',
+  settings_section_tools: '工具',
+  settings_section_learn: '學習',
+  settings_section_legal: '法律',
   placement_door: '大門',
   placement_bed: '床頭',
   placement_stove: '灶',
@@ -1213,6 +1284,7 @@ const ZH_HANT: Strings = {
   account_kind_google: 'Google 帳號',
   account_kind_guest: '訪客',
   account_kind_device: '本機',
+  account_kind_signed_in: '已登入',
   profile_birth_section: '生辰資訊',
   profile_birth_required: '填寫出生日期與出生地，解鎖個人命卦匹配章節。',
   profile_birth_required_cta: '填寫生辰',
@@ -1420,6 +1492,8 @@ const JA: Strings = {
   report_placement_heading: '古典配置メモ',
   report_digest_tag: '概観',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運で読む',
+  digest_sit_label: '坐',
+  digest_face_label: '向',
   digest_pattern_ping: '平局',
   digest_pattern_rescued: '{pattern} · 救済あり',
   digest_pattern_unrescued: '{pattern} · 要調整',
@@ -1448,6 +1522,19 @@ const JA: Strings = {
   term_ask: 'この語をAIに聞く',
   tool_glossary: '用語集',
   glossary_intro: 'レポートで使われる風水用語を流派別にまとめています。',
+  tool_imagery: '章のイメージ図',
+  imagery_intro:
+    '各章の冒頭にある象徴図は学習用の印章であり、護符ではありません。章の古典テーマを示すものです。',
+  imagery_blurb_external_landform: '重なる嶺と水線は巒頭——宅周の山水関係を示します。',
+  imagery_blurb_personal_fit: '八卦の環は命卦／八宅の宅命マッチ章を示します。',
+  imagery_blurb_flying_stars: '九宮は玄空飛星——宮ごとに当運盤を読む図です。',
+  imagery_blurb_annual_directions: '羅盤は流年——その年の方位オーバーレイを示します。',
+  imagery_blurb_remediation: '瓢箪は化煞学習章の古典モチーフ（概念参考であり処方ではありません）。',
+  imagery_blurb_auspicious_objects: '外円内方の古銭は天地相応の設え学習モチーフです。',
+  settings_section_profile: 'プロフィール',
+  settings_section_tools: 'ツール',
+  settings_section_learn: '学習',
+  settings_section_legal: '法務',
   placement_door: '玄関',
   placement_bed: 'ベッド(枕)',
   placement_stove: 'かまど',
@@ -1526,6 +1613,7 @@ const JA: Strings = {
   account_kind_google: 'Google アカウント',
   account_kind_guest: 'ゲスト',
   account_kind_device: '端末',
+  account_kind_signed_in: 'ログイン済み',
   profile_birth_section: '生年月日',
   profile_birth_required: '生年月日と出生地を入力すると、個人命卦の章が解放されます。',
   profile_birth_required_cta: '生年月日を入力',

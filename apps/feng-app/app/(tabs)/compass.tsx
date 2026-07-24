@@ -1,23 +1,20 @@
 /**
  * (tabs)/compass — feng-app's in-app magnetic compass.
  *
- * Re-uses the shared `BaguaCompassOverlay` for the 8-direction overlay.
- * Pure utility — no separate Compass satellite (the standalone Compass app
- * was killed during Phase K matrix simplification, see ADR-0003 Reverted).
+ * Clean instrument surface: no stack chrome / title. Leave via edge swipe
+ * or Settings navigation.
  */
 
 import * as Location from 'expo-location'
-import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, useWindowDimensions, View } from 'react-native'
+import { Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LuopanDial } from '@/components/LuopanDial'
 import { resolveLocale, useStrings } from '@/lib/i18n'
 import { FENG_PALETTE, spacing } from '@/lib/theme'
 
 export default function CompassTab() {
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
   const t = useStrings(resolveLocale())
@@ -71,39 +68,14 @@ export default function CompassTab() {
       <StatusBar style='light' />
       <View
         style={{
-          paddingTop: insets.top + spacing.sm,
-          paddingHorizontal: spacing.xl,
-          paddingBottom: spacing.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole='button'
-          accessibilityLabel={t.nav_back}
-          hitSlop={12}
-        >
-          <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 24 }}>‹</Text>
-        </Pressable>
-        <Text style={{ color: FENG_PALETTE.rice, fontSize: 18, fontWeight: '700' }}>
-          {t.tab_compass}
-        </Text>
-      </View>
-
-      <View
-        style={{
           flex: 1,
+          paddingTop: insets.top + spacing.lg,
           paddingHorizontal: spacing.xl,
           paddingBottom: insets.bottom + spacing.xl,
           alignItems: 'center',
           gap: spacing.lg,
         }}
       >
-        <Text style={{ color: FENG_PALETTE.rice, fontSize: 14, opacity: 0.6, letterSpacing: 2 }}>
-          {t.compass_heading_title.toUpperCase()}
-        </Text>
         <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 52, fontWeight: '300' }}>
           {Math.round(heading)}°
         </Text>

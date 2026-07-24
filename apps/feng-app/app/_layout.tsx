@@ -100,6 +100,7 @@ export default function RootLayout() {
                   <Stack.Screen name='(report)' />
                   <Stack.Screen name='(birth-info)' />
                   <Stack.Screen name='(glossary)' />
+                  <Stack.Screen name='(imagery)' />
                   <Stack.Screen name='paywall' options={{ presentation: 'modal' }} />
                 </Stack>
               </FengClientGate>

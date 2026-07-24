@@ -66,3 +66,16 @@ cd apps/hexastral-api && bun deploy
 - Device smoke (3 types) + golden harness green + docs/ASO match implementation
 - IAP live for both tiers
 - **No** external 风水师 sign-off gate
+
+---
+
+## Account recovery note (ops)
+
+Feng sites are keyed by `users.id`, not email. Legacy rows may use `id = apple_<sub>`
+with **null** `apple_user_id`; a later Sign in with Apple creates a new nanoid row
+with `apple_user_id` set — recovery does not find the legacy row, so sites stay orphaned.
+
+**Before reinstall / device wipe:** sign in (Apple/Google) on the install that owns the sites.
+
+**One-time merge (2026-07-24):** moved 3 sites + reports + jobs from
+`apple_000032.60aae757…0609` → `-5Jf4y71iMUbIJdZy4bK5` (chrisding03@gmail.com).

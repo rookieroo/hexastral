@@ -1,18 +1,15 @@
 /**
- * Settings — account, birth info, tools (罗盘 / 历史 / 术语表), DEV, account actions.
+ * Settings — modular sections: profile, tools, learn, legal, DEV, account actions.
  *
- * Yuel/Yuun model: a full-screen 墨 settings route reached from the home gear +
- * left-swipe. Grouped rows (no fixed-height cards with dead whitespace); the
- * destructive actions are centered small text with 删除账号 as the only red.
- * Cross-app memory is hidden for MVP. A __DEV__-only block exposes reset-intro +
- * a DEV-Pro bypass so analysis can be tested without IAP.
+ * Yuel/Yuun model: full-screen settings from home fingerprint / left-swipe.
+ * Destructive actions stay centered small text; 删除账号 is the only red.
  */
 
 import { useHaptic } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { ChevronRight } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { deleteAccount } from '@/lib/account'
@@ -32,12 +29,22 @@ const CARD = {
   paddingHorizontal: spacing.lg,
 } as const
 
-function accountKindLabel(userId: string | null, t: ReturnType<typeof useStrings>): string {
-  if (!userId) return '—'
-  if (userId.startsWith('apple_')) return t.account_kind_apple
-  if (userId.startsWith('google_')) return t.account_kind_google
-  if (userId.startsWith('guest_')) return t.account_kind_guest
-  return t.account_kind_device
+function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Text
+        style={{
+          color: FENG_PALETTE.riceMute,
+          fontSize: 11,
+          letterSpacing: 2,
+          paddingHorizontal: spacing.xs,
+        }}
+      >
+        {title.toUpperCase()}
+      </Text>
+      <View style={CARD}>{children}</View>
+    </View>
+  )
 }
 
 export default function SettingsScreen() {
@@ -122,7 +129,7 @@ export default function SettingsScreen() {
       {value ? (
         <Text
           numberOfLines={1}
-          style={{ color: FENG_PALETTE.riceMute, fontSize: 13, maxWidth: '60%' }}
+          style={{ color: FENG_PALETTE.riceMute, fontSize: 13, maxWidth: '55%' }}
         >
           {value}
         </Text>
@@ -164,53 +171,52 @@ export default function SettingsScreen() {
           gap: spacing.lg,
         }}
       >
-        {/* account */}
-        <View style={[CARD, { paddingVertical: spacing.lg, gap: spacing.xs }]}>
-          <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 12, letterSpacing: 1 }}>
-            {accountKindLabel(userId, t).toUpperCase()}
-          </Text>
-          {user?.name ? (
-            <Text style={{ color: FENG_PALETTE.rice, fontSize: 17, fontWeight: '600' }}>
-              {user.name}
-            </Text>
-          ) : null}
-          {user?.email ? (
-            <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 14 }}>{user.email}</Text>
-          ) : null}
-          <Text
-            style={{ color: FENG_PALETTE.riceMute, fontFamily: 'Menlo', fontSize: 11 }}
-            selectable
-          >
-            {userId ?? '—'}
-          </Text>
-        </View>
+        <SettingsSection title={t.settings_section_profile}>
+          {navRow(t.profile_birth_section, birthValue, () => router.push('/(birth-info)'), true)}
+        </SettingsSection>
 
-        {/* rows: birth + tools */}
-        <View style={CARD}>
-          {navRow(t.profile_birth_section, birthValue, () => router.push('/(birth-info)'))}
+        <SettingsSection title={t.settings_section_tools}>
           {navRow(t.tab_compass, null, () => router.push('/(tabs)/compass'))}
-          {navRow(t.tab_readings, null, () => router.push('/(tabs)/readings'))}
+          {navRow(t.tab_readings, null, () => router.push('/(tabs)/readings'), true)}
+        </SettingsSection>
+
+        <SettingsSection title={t.settings_section_learn}>
           {navRow(t.tool_glossary, null, () => router.push('/(glossary)'))}
+          {navRow(t.tool_imagery, null, () => router.push('/(imagery)'), true)}
+        </SettingsSection>
+
+        <SettingsSection title={t.settings_section_legal}>
           {navRow(t.privacy_section, null, () => {
             void Linking.openURL(privacyUrl(locale)).catch(() => {})
           })}
           {navRow(t.terms_section, null, () => {
             void Linking.openURL(termsUrl(locale)).catch(() => {})
           }, true)}
-        </View>
+        </SettingsSection>
 
-        {/* DEV */}
         {__DEV__ ? (
-          <View style={CARD}>
+          <SettingsSection title='DEV'>
+            {user?.name ? (
+              <Text style={{ color: FENG_PALETTE.rice, fontSize: 14, paddingTop: spacing.md }}>
+                {user.name}
+              </Text>
+            ) : null}
+            {user?.email ? (
+              <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 13 }} selectable>
+                {user.email}
+              </Text>
+            ) : null}
             <Text
               style={{
-                color: FENG_PALETTE.copperGold,
+                color: FENG_PALETTE.riceMute,
+                fontFamily: 'Menlo',
                 fontSize: 11,
-                letterSpacing: 2,
-                paddingTop: spacing.md,
+                paddingBottom: spacing.sm,
+                paddingTop: user?.email || user?.name ? 0 : spacing.md,
               }}
+              selectable
             >
-              DEV
+              {userId ?? '—'}
             </Text>
             <View
               style={{
@@ -243,11 +249,10 @@ export default function SettingsScreen() {
             >
               <Text style={{ color: FENG_PALETTE.rice, fontSize: 15 }}>Reset intro</Text>
             </Pressable>
-          </View>
+          </SettingsSection>
         ) : null}
 
-        {/* account actions — centered; 删除账号 is the only red */}
-        <View style={{ alignItems: 'center', gap: spacing.md, marginTop: spacing.lg }}>
+        <View style={{ alignItems: 'center', gap: spacing.md, marginTop: spacing.sm }}>
           <Pressable onPress={handleSignOut} accessibilityRole='button' hitSlop={8}>
             <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 14 }}>{t.profile_sign_out}</Text>
           </Pressable>

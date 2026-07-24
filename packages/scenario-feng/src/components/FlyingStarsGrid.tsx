@@ -95,6 +95,8 @@ export interface FlyingStarsGridProps {
   borderColor?: string
   /** Label color for palace names + caption. */
   labelColor?: string
+  /** Home hero: plate only — no caption/legend text. */
+  plateOnly?: boolean
 }
 
 function PalaceCell({
@@ -203,6 +205,7 @@ export const FlyingStarsGrid = memo(function FlyingStarsGrid({
   backgroundColor = 'transparent',
   borderColor = 'rgba(228,228,231,0.30)',
   labelColor = INK,
+  plateOnly = false,
 }: FlyingStarsGridProps) {
   const yuanYun = result.currentYuanYun.yuanYun
   const gridEnd = M + C * 3
@@ -268,21 +271,23 @@ export const FlyingStarsGrid = memo(function FlyingStarsGrid({
         </Svg>
       </View>
 
-      <Text style={[styles.caption, { color: labelColor }]}>
-        坐 {result.sitMountain.name}　向 {result.faceMountain.name}　·
-        {CN_NUM[result.buildYuanYun.yuanYun]}運 {result.chartMethod}
-        {result.isCompoundFacing ? ' · 兼向' : ''}
-      </Text>
+      {plateOnly ? null : (
+        <>
+          <Text style={[styles.caption, { color: labelColor }]}>
+            坐 {result.sitMountain.name}　向 {result.faceMountain.name}　·
+            {CN_NUM[result.buildYuanYun.yuanYun]}運 {result.chartMethod}
+            {result.isCompoundFacing ? ' · 兼向' : ''}
+          </Text>
 
-      {/* Legend describes the ACTUAL encoding: 山/向 are distinguished by POSITION
-          (top-left / top-right), fortune by numeral BRIGHTNESS, 流年 by the copper
-          corner, and the one reserved red marks the 五黄 煞 — NOT a per-role hue. */}
-      <View style={styles.legend}>
-        <LegendItem color={INK} label='山左·向右' />
-        <LegendItem color={INK} label='亮=旺 暗=衰' />
-        <LegendItem color={COPPER} label='流年' />
-        <LegendItem color={CINNABAR} label='五黄煞' />
-      </View>
+          {/* Legend: 山/向 by POSITION, fortune by BRIGHTNESS, 流年 copper, 五黄 red. */}
+          <View style={styles.legend}>
+            <LegendItem color={INK} label='山左·向右' />
+            <LegendItem color={INK} label='亮=旺 暗=衰' />
+            <LegendItem color={COPPER} label='流年' />
+            <LegendItem color={CINNABAR} label='五黄煞' />
+          </View>
+        </>
+      )}
     </View>
   )
 })

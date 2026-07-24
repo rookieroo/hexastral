@@ -7,9 +7,8 @@
  * fuller shape (precise clock + calibration + 农历 round-trip).
  *
  * Feng only needs year + gender for 命卦, but collecting the full 八字 set keeps
- * parity with the suite and powers the personal 八字 / 命卦 report chapter. Once a
- * birth is on record the form collapses to a one-line summary; tapping it (or
- * "Edit") re-expands for changes.
+ * parity with the suite and powers the personal 八字 / 命卦 report chapter.
+ * Settings opens this screen straight into the form (prefilled when saved).
  */
 
 import { resolveBirthHour } from '@zhop/astro-core'
@@ -33,7 +32,6 @@ import {
 } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { ChevronRight } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -113,10 +111,6 @@ export default function BirthInfoScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [birthSaved, setBirthSaved] = useState(false)
-  // Once a birth is on record the form collapses to a one-line summary; tapping
-  // it (or Edit) re-expands. First-time users (no record) see the full form.
-  const [hasSavedBirth, setHasSavedBirth] = useState(false)
-  const [editingBirth, setEditingBirth] = useState(false)
   // Precise time + birthplace are an opt-in disclosure, collapsed by default so
   // the everyday 时辰 path stays short. Auto-expanded when a precise clock is on
   // record.
@@ -148,7 +142,6 @@ export default function BirthInfoScreen() {
         const existing = await fetchBirthInfo()
         if (existing && !cancelled) {
           setBirth(existing)
-          setHasSavedBirth(true)
           setTimeIndex(
             typeof existing.birthTimeIndex === 'number' &&
               existing.birthTimeIndex >= 0 &&
@@ -181,16 +174,6 @@ export default function BirthInfoScreen() {
       cancelled = true
     }
   }, [])
-
-  const birthSummary = useMemo(() => {
-    const parts: string[] = [birth.birthSolarDate]
-    parts.push(timeIndex === null ? t.birth_time_unknown : shichenSummaryLabel(timeIndex, locale))
-    if (birth.gender === '男') parts.push(t.birth_gender_male)
-    else if (birth.gender === '女') parts.push(t.birth_gender_female)
-    const city = birth.birthCity?.trim()
-    if (city) parts.push(city)
-    return parts.join(' · ')
-  }, [birth, timeIndex, t, locale])
 
   // ── precise-time disclosure (真太阳时) ──────────────────────────────────────
   const cityValue: CityRecord | null = birth.birthCity
@@ -262,9 +245,6 @@ export default function BirthInfoScreen() {
       await saveBirthInfo(updated)
       setBirth(updated)
       setBirthSaved(true)
-      setHasSavedBirth(true)
-      // Collapse back to the summary once saved; tap it to edit again.
-      setEditingBirth(false)
       setTimeout(() => setBirthSaved(false), 2000)
     } catch {
       // Surface via the button state staying enabled; a retry re-attempts.
@@ -317,36 +297,14 @@ export default function BirthInfoScreen() {
           </Text>
         </View>
 
-        {hasSavedBirth && !editingBirth ? (
-          <Pressable
-            onPress={() => setEditingBirth(true)}
-            accessibilityRole='button'
-            accessibilityLabel={t.profile_birth_edit_cta}
-            style={({ pressed }) => ({
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: colors.text, fontSize: 15 }} numberOfLines={1}>
-              {birthSummary}
-            </Text>
-            <ChevronRight size={16} color={colors.secondary} strokeWidth={1.4} />
-          </Pressable>
-        ) : (
-          <View
-            style={{
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              padding: spacing.lg,
-              gap: spacing.lg,
-            }}
-          >
+        <View
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: 14,
+            padding: spacing.lg,
+            gap: spacing.lg,
+          }}
+        >
             {/* Birth date — the shared HexAstral standard (BirthDateField):
                 compact auto-formatted input that works identically for 公历 and
                 农历, plus a wheel affordance that summons the system cascading
@@ -551,8 +509,7 @@ export default function BirthInfoScreen() {
               </Text>
             </Pressable>
             <Text style={{ color: colors.secondary, fontSize: 12 }}>{t.birth_hint}</Text>
-          </View>
-        )}
+        </View>
 
         {/* Done — leaves the screen; the profile row reflects the saved summary. */}
         <Pressable
