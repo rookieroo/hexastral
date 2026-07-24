@@ -197,19 +197,26 @@ async function registerUser(
 }
 
 async function fetchUser(userId: string): Promise<FengUser> {
-  const res = await fetch(`${config.apiUrl}/api/user/${userId}`)
-  if (!res.ok) throw new Error('user_fetch_failed')
-  const json = (await res.json()) as { data: Record<string, unknown> }
-  const row = json.data
-  return {
-    id: userId,
-    email: typeof row.email === 'string' ? row.email : null,
-    name: typeof row.name === 'string' ? row.name : null,
-    birthSolarDate: typeof row.birthSolarDate === 'string' ? row.birthSolarDate : null,
-    birthTimeIndex: typeof row.birthTimeIndex === 'number' ? row.birthTimeIndex : null,
-    birthGender: row.birthGender === '男' || row.birthGender === '女' ? row.birthGender : null,
-    birthCity: typeof row.birthCity === 'string' ? row.birthCity : null,
+  // GET /api/user/:id requires HMAC (requireUserId) — same as Kindred fetchUserProfile.
+  const path = `/api/user/${userId}`
+  const sig = await signRequest({ method: 'GET', path, body: '', userId })
+  if (!sig) throw new Error('missing_device_secret')
+
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${userId}`,
+      ...sig,
+    },
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(
+      `user_fetch_failed:${res.status}${detail ? `:${detail.slice(0, 200)}` : ''}`
+    )
   }
+  const json = (await res.json()) as { data: Record<string, unknown> }
+  return userFromApiRow(json.data, userId)
 }
 
 export interface AuthState {

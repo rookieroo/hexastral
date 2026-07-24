@@ -4,6 +4,7 @@ Navigation hub for agents: **[AGENTS.md](AGENTS.md)**. Architecture SSOT: **`doc
 
 ## 1. MANDATORY ARCHITECTURE RULES
 - **Package Manager**: Always use `bun`. Never `npm/pnpm`.
+- **CLI runners**: Always use `bunx`, never `npx` (Expo, Wrangler, one-off binaries). Prefer `bun run <script>` when defined.
 - **Environment**: Cloudflare Workers (Hono) for API, Expo 54 for iOS, Next.js 15 for Web.
 - **Rules overrides**: Sub-folder `.cursorrules` in `apps/hexastral-api/` and `services/` only. All `apps/*-app` satellite apps and all `packages/*` follow this file — no per-app or per-package rules files.
 
@@ -42,7 +43,7 @@ All satellite apps (e.g. `auspice-app`, `kindred-app`, `feng-app`) share these r
 
 | Rule | Do | Don't |
 |---|---|---|
-| Native modules | `npx expo install <pkg>` from the app dir | `bun add expo-*` (SDK mismatch) |
+| Native modules | `bunx expo install <pkg>` from the app dir | `bun add expo-*` (SDK mismatch); never `npx` |
 | Network data | `useQuery` / `useMutation` in `hooks/` | `useState` + `useEffect` for API calls |
 | Images | `expo-image` + `cachePolicy="memory-disk"` | RN `Image` for network URLs |
 | API calls | `@zhop/hexastral-client` + HMAC signer | Raw `fetch` |
@@ -148,7 +149,7 @@ try { await operation() } catch (err) {
 
 | Tool | Command | Purpose |
 |------|---------|---------|
-| **iOS** | `npx expo install <pkg>` | Native module install (NOT `bun add`) — run from `apps/<name>-app/` |
+| **iOS** | `bunx expo install <pkg>` | Native module install (NOT `bun add` / NOT `npx`) — run from `apps/<name>-app/` |
 | **iOS** | `bunx expo start` | Metro bundler start |
 | **iOS** | `bunx expo run:ios` | Local simulator build |
 | **iOS** | `eas build --profile production --platform ios` | Cloud build for App Store |

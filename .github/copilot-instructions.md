@@ -42,7 +42,7 @@
 - `useState` + `useEffect` combos for async network data — use `useQuery`
 - `import { Image } from 'react-native'` for network URLs — use `expo-image`
 - Raw `c.env.SVC_*.fetch(new Request(...))` in route handlers — use `lib/service-clients.ts`
-- `bun add expo-*` in satellite apps — use `npx expo install` from the app directory
+- `bun add expo-*` in satellite apps — use `bunx expo install` from the app directory (never `npx`)
 
 ---
 
@@ -239,7 +239,7 @@ bun typecheck            # tsc --noEmit all workspaces
 # Mobile satellite (cd apps/<name>-app first)
 bunx expo start                                  # Metro bundler
 bunx expo run:ios                                # local iOS simulator
-npx expo install <pkg>                           # ALWAYS for native modules
+bunx expo install <pkg>                          # ALWAYS for native modules (never npx)
 eas build --profile production --platform ios    # cloud build
 
 # hexastral-api (cd apps/hexastral-api first)

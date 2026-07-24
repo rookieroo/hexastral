@@ -56,7 +56,9 @@ export function SignInScreen() {
       {showApple ? (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          // iPhone primary CTA: white on dark (matches Kindred). Official ASAuthorization
+          // control — not a hardcoded StyleSheet color.
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
           cornerRadius={0}
           style={{ width: '100%', height: 48, marginBottom: spacing.md }}
           onPress={() => {
@@ -82,7 +84,7 @@ export function SignInScreen() {
             borderWidth: 0.5,
             borderColor: colors.separator,
             alignItems: 'center',
-            marginBottom: spacing.md,
+            marginBottom: spacing.lg,
           }}
         >
           <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
@@ -91,13 +93,17 @@ export function SignInScreen() {
         </Pressable>
       ) : null}
 
+      {/* Guest is a tertiary text link, not a button. */}
       <Pressable
         onPress={() => {
           void signInAsGuest()
         }}
-        style={{ paddingVertical: spacing.md, alignItems: 'center' }}
+        hitSlop={12}
+        style={{ alignItems: 'center', paddingVertical: spacing.xs }}
       >
-        <Text style={{ color: colors.secondary, fontSize: 15 }}>{t.sign_in_guest}</Text>
+        <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 18 }}>
+          {t.sign_in_guest}
+        </Text>
       </Pressable>
     </View>
   )

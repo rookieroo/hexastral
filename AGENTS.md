@@ -64,6 +64,7 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 - **Pre-PMF** — aggressive refactor is OK when justified; verify "no real users" before assuming.
 - **CI is validation-only.** Deploys happen locally via `wrangler` / EAS. See [deploy.md](deploy.md).
 - **bun + biome + drizzle.** Don't introduce `npm` / `eslint` / `prisma`.
+- **`bunx`, never `npx`.** One-off CLIs (Expo, Wrangler, etc.) use `bunx`; prefer `bun run <script>` when defined.
 - **No emojis in code or commits** unless explicitly asked.
 - **HMAC v2 for mobile, Turnstile for web.** Don't add a third auth scheme.
 - **`react-native-reanimated` v4 + `expo-haptics`** for new mobile motion — not RN `Animated`.
