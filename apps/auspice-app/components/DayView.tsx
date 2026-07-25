@@ -251,19 +251,15 @@ export function DayView({
             onDeepRead={() => setExplainField(t.personal.fit[payload.personalization!.fit])}
           />
         ) : (
-          <Pressable
-            onPress={() => router.push('/me')}
-            accessibilityRole='button'
-            accessibilityLabel={t.personalEmptyCta}
-            style={({ pressed }) => ({
+          <View
+            style={{
               borderRadius: 16,
               borderWidth: 0.5,
               borderColor: colors.separator,
               backgroundColor: colors.card,
               padding: spacing.lg,
               gap: spacing.sm,
-              opacity: pressed ? 0.7 : 1,
-            })}
+            }}
           >
             {pushHook ? (
               <View style={{ gap: 4, marginBottom: spacing.xs }}>
@@ -290,18 +286,28 @@ export function DayView({
             <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
               {t.personalEmptyBody}
             </Text>
-            <Text
-              style={{
-                color: colors.accent,
-                fontSize: 13,
-                fontWeight: '600',
-                letterSpacing: 1,
-                marginTop: 2,
-              }}
+            {/* CTA only — wrapping the whole card in Pressable made left-swipe fire
+                both the home Settings pan and a touch-up push to /me. */}
+            <Pressable
+              onPress={() => router.push('/me')}
+              accessibilityRole='button'
+              accessibilityLabel={t.personalEmptyCta}
+              hitSlop={8}
+              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1, alignSelf: 'flex-start' })}
             >
-              {t.personalEmptyCta}
-            </Text>
-          </Pressable>
+              <Text
+                style={{
+                  color: colors.accent,
+                  fontSize: 13,
+                  fontWeight: '600',
+                  letterSpacing: 1,
+                  marginTop: 2,
+                }}
+              >
+                {t.personalEmptyCta}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
 

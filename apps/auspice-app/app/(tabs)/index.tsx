@@ -161,8 +161,16 @@ export default function HomeScreen() {
     }
   }, [selectedDay, locale])
 
+  const navLockRef = useRef(false)
   const goToMe = useCallback(() => {
+    // Pan onEnd can race a Pressable touch-up on the same finger (esp. For you
+    // empty-state card) — lock so Settings only mounts once per gesture.
+    if (navLockRef.current) return
+    navLockRef.current = true
     router.push('/me' as Href)
+    setTimeout(() => {
+      navLockRef.current = false
+    }, 700)
   }, [router])
 
   // Left-swipe → Settings. Wider activeOffsetX so ordinary taps aren't stolen by the pan
