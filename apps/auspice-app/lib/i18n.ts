@@ -233,6 +233,10 @@ export interface Strings {
   timelineRemindToggle: string
   /** Hint under the 人生节点提醒 toggle. */
   timelineRemindHint: string
+  /** Alert when enabling timeline reminders without a saved birth + gender. */
+  timelineRemindNeedBirth: string
+  /** Alert when notification permission is denied for timeline reminders. */
+  timelineRemindNeedPush: string
   /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
   timelineAdvice: Record<PersonalFit, string>
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
@@ -643,6 +647,8 @@ const zhHans: Strings = {
     '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
   timelineRemindToggle: '人生节点提醒',
   timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
+  timelineRemindNeedBirth: '请先填写完整生辰（含性别），才能开启人生节点提醒。',
+  timelineRemindNeedPush: '需要开启通知权限，才能接收人生节点提醒。',
   timelineAdvice: {
     吉: '此月能量偏顺，可考虑主动推进（文化参考，非建议）。',
     平: '此月能量平稳，宜按部就班、稳中求进（文化参考）。',
@@ -1004,6 +1010,8 @@ const zhHant: Strings = {
     '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
   timelineRemindToggle: '人生節點提醒',
   timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
+  timelineRemindNeedBirth: '請先填寫完整生辰（含性別），才能開啟人生節點提醒。',
+  timelineRemindNeedPush: '需要開啟通知權限，才能接收人生節點提醒。',
   timelineAdvice: {
     吉: '今月能量偏順，可考慮主動推進（文化參考，非建議）。',
     平: '今月能量平穩，宜按部就班、穩中求進（文化參考）。',
@@ -1376,6 +1384,8 @@ const ja: Strings = {
     '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間を解錠。',
   timelineRemindToggle: '人生の節目リマインド',
   timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
+  timelineRemindNeedBirth: '人生の節目リマインドには、生年月日と性別の登録が必要です。',
+  timelineRemindNeedPush: 'リマインドを受け取るには通知の許可が必要です。',
   timelineAdvice: {
     吉: '今月のエネルギーは追い風寄り。積極的に動く参考になり得ます（助言ではありません）。',
     平: '今月は穏やか。着実に進める文化上の参考です。',
@@ -1649,7 +1659,7 @@ const en: Strings = {
   discover: 'Discover',
   benming: 'Benming yr',
   nextSolarTerm: 'Next term',
-  lunarLabel: 'Lunar',
+  lunarLabel: 'Chinese calendar',
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
   proTitle: 'Yuun Pro',
@@ -1739,6 +1749,8 @@ const en: Strings = {
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
+  timelineRemindNeedBirth: 'Add your full birth details (including gender) to enable timeline reminders.',
+  timelineRemindNeedPush: 'Notification permission is required for timeline reminders.',
   timelineAdvice: {
     吉: 'This month reads supportive — a cultural reference for initiative, not advice.',
     平: 'Steady energy this month — a cultural reference for a measured pace.',
@@ -1829,8 +1841,8 @@ const en: Strings = {
   baziHourUnknown: 'Hour not set',
   birthDateLabel: 'Birth date',
   birthCalendarSolar: 'Solar',
-  birthCalendarLunar: 'Chinese (lunar)',
-  birthCalendarLunarHint: 'Enter the lunar month and day (leap months not distinguished).',
+  birthCalendarLunar: 'Chinese calendar',
+  birthCalendarLunarHint: 'Enter the Chinese-calendar month and day (leap months not distinguished).',
   birthShichenLabel: 'Birth hour',
   birthShichenUnknown: 'Unknown',
   birthGenderLabel: 'Gender',
@@ -1914,7 +1926,7 @@ const en: Strings = {
     yearOptional: 'Birth year (optional)',
     yearRequired: 'Birth year (required)',
     solar: 'Solar',
-    lunar: 'Lunar',
+    lunar: 'Chinese calendar',
     advance: 'Remind before',
     dayUnit: 'd',
     noAdvance: 'Off',

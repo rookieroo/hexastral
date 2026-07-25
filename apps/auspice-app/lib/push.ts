@@ -944,14 +944,17 @@ export async function enableTimelineReminders(opts: TimelineReminderOpts): Promi
     await AsyncStorage.setItem(TIMELINE_ENABLED_KEY, '1')
   } catch {}
   await scheduleTimelineReminders(opts)
+  // Server cron owns timeline nodes only while daily server-push is registered.
+  if (await isPushEnabled()) await syncServerPush(opts.locale).catch(() => {})
   return true
 }
 
-export async function disableTimelineReminders(): Promise<void> {
+export async function disableTimelineReminders(locale?: string): Promise<void> {
   try {
     await AsyncStorage.setItem(TIMELINE_ENABLED_KEY, '0')
   } catch {}
   await cancelTimeline()
+  if (locale && (await isPushEnabled())) await syncServerPush(locale).catch(() => {})
 }
 
 /** Re-sync on app open (no-op unless enabled + permitted + Pro). */

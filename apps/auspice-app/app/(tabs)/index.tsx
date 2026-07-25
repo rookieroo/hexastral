@@ -1,29 +1,25 @@
 /**
- * Home — Today-first IA: WeekStrip + yi/ji + For you (push anchor).
+ * Home — Today-first IA: week strip (tap to expand month) + yi/ji + For you.
  *
- * Full month grid lives on `/calendar` (swipe right). Settings via swipe left.
+ * Calendar: tap the chevron under the strip to expand/collapse (horizontal swipe
+ * on the strip is reserved for scrolling days / paging months — don't fight it).
+ * Rest of home: swipe left → Settings; swipe right is intentionally inert (no 负一屏).
+ * Header Settings sits outside the pan detector so taps always register.
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
-import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
+import { ChevronRightIcon, SettingsIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
-import { MoonLoader } from '@/components/MoonLoader'
-import { WeekStrip } from '@/components/WeekStrip'
 import {
   type AuspiceDayPayload,
   fetchAuspiceBootstrap,
@@ -32,12 +28,15 @@ import {
   primeFromBootstrap,
 } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
-import { dayIdentityLunarLabel, lunarCellLabel } from '@/lib/calendar-display'
+import { HOME_LOGO_SIZE, useBrandLogoMorph } from '@/lib/brand-logo-morph'
+import { dayIdentityLunarLabel, formatGregorianIdentity, lunarCellLabel } from '@/lib/calendar-display'
 import type { Locale } from '@/lib/i18n'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
 import { syncTodayWidget } from '@/lib/widget-bridge'
+
+const HOME_LOGO = require('../../assets/icon.png')
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -163,26 +162,13 @@ export default function HomeScreen() {
     }
   }, [selectedDay, locale])
 
-  const navLockRef = useRef(false)
-  const goToCalendar = useCallback(() => {
-    if (navLockRef.current) return
-    navLockRef.current = true
-    router.push('/calendar' as Href)
-    setTimeout(() => {
-      navLockRef.current = false
-    }, 600)
-  }, [router])
   const goToMe = useCallback(() => {
-    if (navLockRef.current) return
-    navLockRef.current = true
-    router.push('/me')
-    setTimeout(() => {
-      navLockRef.current = false
-    }, 600)
+    router.push('/me' as Href)
   }, [router])
 
-  const { activeOffsetX, failOffsetY, commitDx, maxDy, hintDelayMs } = SWIPE_TO_ME
-  const commitRightDx = -commitDx
+  // Content area only: left swipe → Settings. Right swipe inert (no 负一屏).
+  // Calendar expand/collapse is tap-driven inside CalendarExpandPanel.
+  const { activeOffsetX, failOffsetY, commitDx, maxDy } = SWIPE_TO_ME
   const homeSwipe = useMemo(
     () =>
       Gesture.Pan()
@@ -191,22 +177,38 @@ export default function HomeScreen() {
         .onEnd((e) => {
           if (Math.abs(e.translationY) >= maxDy) return
           if (e.translationX < commitDx) runOnJS(goToMe)()
-          else if (e.translationX > commitRightDx) runOnJS(goToCalendar)()
         }),
-    [goToCalendar, goToMe, activeOffsetX, failOffsetY, commitDx, commitRightDx, maxDy]
+    [activeOffsetX, failOffsetY, commitDx, maxDy, goToMe]
   )
 
-  const hintFade = useSharedValue(0)
-  useEffect(() => {
-    const HINT_EASE = Easing.bezier(0.4, 0, 0.2, 1)
-    const id = setTimeout(() => {
-      hintFade.value = withTiming(0.55, { duration: 700, easing: HINT_EASE })
-    }, hintDelayMs)
-    return () => clearTimeout(id)
-  }, [hintFade, hintDelayMs])
-  const hintFadeStyle = useAnimatedStyle(() => ({ opacity: hintFade.value }))
-
   const pushHook = dayData?.dailyHook ?? null
+  const { morphActive, landAtHome } = useBrandLogoMorph()
+  const homeLogoRef = useRef<View>(null)
+  const homeLogoReportedRef = useRef(false)
+
+  useEffect(() => {
+    if (!morphActive) {
+      homeLogoReportedRef.current = false
+      return
+    }
+    if (homeLogoReportedRef.current) return
+    const node = homeLogoRef.current
+    if (!node) return
+    // Defer one frame so SafeArea + header layout settle.
+    const id = requestAnimationFrame(() => {
+      node.measureInWindow((x, y, width, height) => {
+        if (width <= 0 || height <= 0) return
+        homeLogoReportedRef.current = true
+        landAtHome({
+          x,
+          y,
+          width: width || HOME_LOGO_SIZE,
+          height: height || HOME_LOGO_SIZE,
+        })
+      })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [morphActive, landAtHome])
 
   const festivalChip =
     dayData &&
@@ -229,21 +231,65 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Header outside the pan detector — RNGH Pan otherwise eats the Settings tap. */}
+      <View
+        style={{
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.sm,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View
+          ref={homeLogoRef}
+          collapsable={false}
+          onLayout={() => {
+            if (!morphActive || homeLogoReportedRef.current) return
+            const node = homeLogoRef.current
+            if (!node) return
+            node.measureInWindow((x, y, width, height) => {
+              if (width <= 0 || height <= 0) return
+              homeLogoReportedRef.current = true
+              landAtHome({
+                x,
+                y,
+                width: width || HOME_LOGO_SIZE,
+                height: height || HOME_LOGO_SIZE,
+              })
+            })
+          }}
+          style={{ opacity: morphActive ? 0 : 1 }}
+        >
+          <Image
+            source={HOME_LOGO}
+            style={{
+              width: HOME_LOGO_SIZE,
+              height: HOME_LOGO_SIZE,
+              borderRadius: 6,
+            }}
+            resizeMode='contain'
+            accessibilityIgnoresInvertColors
+            accessibilityLabel='Yuun'
+          />
+        </View>
+        <Pressable
+          onPress={goToMe}
+          hitSlop={14}
+          accessibilityRole='button'
+          accessibilityLabel={t.settings}
+          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: 4 })}
+        >
+          <SettingsIcon size={22} color={colors.text} strokeWidth={1.5} />
+        </Pressable>
+      </View>
+
       <GestureDetector gesture={homeSwipe}>
         <View style={{ flex: 1 }}>
-          <View
-            style={{
-              paddingHorizontal: spacing.xl,
-              paddingVertical: spacing.sm,
-            }}
-          >
-            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>{t.todayTab}</Text>
-          </View>
-
           <ScrollView
             ref={scrollRef}
             contentContainerStyle={{
-              paddingBottom: spacing['3xl'] + 48,
+              paddingBottom: spacing['3xl'],
               gap: spacing.lg,
             }}
             showsVerticalScrollIndicator={false}
@@ -259,12 +305,14 @@ export default function HomeScreen() {
               />
             ) : null}
 
-            <WeekStrip
+            <CalendarExpandPanel
               selectedDay={selectedDay}
               todayIso={todayIso}
               onSelectDay={setSelectedDay}
               locale={locale}
               dayLabels={weekLabels}
+              expandLabel={t.openMonth}
+              collapseLabel={t.exploreCollapse}
             />
 
             <View
@@ -273,11 +321,7 @@ export default function HomeScreen() {
                 dayViewOffsetRef.current = e.nativeEvent.layout.y
               }}
             >
-              {dayLoading && !dayData ? (
-                <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
-                  <MoonLoader />
-                </View>
-              ) : dayError ? (
+              {dayError ? (
                 <View style={{ gap: spacing.md, paddingVertical: spacing.xl }}>
                   <Text style={{ color: colors.secondary }}>
                     {t.loadFailed}: {dayError}
@@ -298,50 +342,6 @@ export default function HomeScreen() {
               ) : null}
             </View>
           </ScrollView>
-
-          {!dayData && !dayError ? (
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-              <MoonLoader fullScreen />
-            </View>
-          ) : null}
-
-          <Animated.View
-            pointerEvents='none'
-            style={[
-              {
-                position: 'absolute',
-                bottom: spacing.xl,
-                left: 0,
-                right: 0,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingHorizontal: spacing.xl,
-              },
-              hintFadeStyle,
-            ]}
-          >
-            <Text
-              style={{
-                color: colors.dim,
-                fontSize: 10.5,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-              }}
-            >
-              {t.swipeCalendarHint}
-            </Text>
-            <Text
-              style={{
-                color: colors.dim,
-                fontSize: 10.5,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-              }}
-            >
-              {t.swipeMeHint}
-            </Text>
-          </Animated.View>
         </View>
       </GestureDetector>
     </SafeAreaView>
@@ -401,16 +401,19 @@ function DayIdentityHeader({
   spacing: { xl: number; sm: number }
   locale: string
 }) {
+  const loc = locale as Locale
   const { day } = payload
   const ld = day.lunarDate
   const yg = day.yearGanZhi
-  const gYear = payload.date.slice(0, 4)
-  const dayGanzhiLabel = `${day.ganZhi}${locale.startsWith('zh') ? '日' : ''}`
-  const lunarPart = dayIdentityLunarLabel(ld, locale as Locale)
+  const isZh = loc === 'zh-Hans' || loc === 'zh-Hant'
+  const dayGanzhiLabel = `${day.ganZhi}${isZh || loc === 'ja' ? '日' : ''}`
+  const lunarPart = dayIdentityLunarLabel(ld, loc)
+  const gregorian = formatGregorianIdentity(payload.date, loc)
   const sub = [
+    gregorian,
     lunarPart,
-    yg && locale !== 'en' ? `${yg.stem}${yg.branch}年` : '',
-    locale === 'en' ? gYear : `${gYear}年`,
+    // Year pillar only for zh — stem/branch + 生肖 year reads as domain chrome.
+    isZh && yg ? `${yg.stem}${yg.branch}年` : '',
   ]
     .filter(Boolean)
     .join(' · ')

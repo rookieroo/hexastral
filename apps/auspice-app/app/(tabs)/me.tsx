@@ -83,6 +83,8 @@ const LOCALES: { key: Locale; label: string }[] = [
   { key: 'en', label: 'English' },
 ]
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 /**
  * 时辰 label for the collapsed birth summary. CJK shows 「未时」; Latin scripts
  * (North America) show the AM/PM clock range (e.g. "1 PM – 3 PM") — the branch
@@ -100,7 +102,7 @@ function shichenSummaryLabel(index: number, locale: string): string {
 /**
  * 农历生日的展示串 — for the collapsed birth summary when the user entered their
  * birthday as 农历. CJK shows the full 干支年 + 农历月日 (e.g. 「壬申年 正月初六」);
- * en falls back to a numeric "Lunar M/D" since the 农历 month/day glyphs are
+ * en falls back to a numeric Chinese-calendar M/D since the 农历 month/day glyphs are
  * opaque to a non-CJK reader. Derived from the canonical solar date — the
  * conversion round-trips correctly, so 闰月 birthdays render with the 闰 prefix.
  */
@@ -109,7 +111,11 @@ function lunarBirthLabel(solarDate: string, locale: string): string | null {
   if (!y || !mo || !d) return null
   try {
     const l = solarToLunar(y, mo, d)
-    if (locale === 'en') return `Lunar ${l.month}/${l.day}`
+    if (locale === 'en') {
+      return l.isLeap
+        ? `Chinese calendar (leap) ${l.month}/${l.day}`
+        : `Chinese calendar ${l.month}/${l.day}`
+    }
     return `${l.yearGanZhi}年 ${l.monthName}${l.dayName}`
   } catch {
     return null
@@ -328,19 +334,25 @@ export default function MeScreen() {
     })
   }
 
-  // Push toggle — onChange requests permission + schedules the deterministic
-  // daily window; revert the toggle if permission denied.
-  const togglePush = async (next: boolean) => {
-    if (next) {
-      const ok = await enableDailyPush({
-        locale,
-        birthDate: birthValid ? birth.solarDate : undefined,
-      })
-      setPushOn(ok)
-    } else {
-      await disableDailyPush(locale)
-      setPushOn(false)
-    }
+  // Push toggles — flip UI immediately; persist/schedule in the background and
+  // revert only on failure. Pro gates open the paywall sync (no await first).
+  const togglePush = (next: boolean) => {
+    setPushOn(next)
+    void (async () => {
+      if (next) {
+        const ok = await enableDailyPush({
+          locale,
+          birthDate: birthValid ? birth.solarDate : undefined,
+        })
+        if (!ok) setPushOn(false)
+      } else {
+        try {
+          await disableDailyPush(locale)
+        } catch {
+          setPushOn(true)
+        }
+      }
+    })()
   }
   useEffect(() => {
     isPushEnabled()
@@ -352,12 +364,12 @@ export default function MeScreen() {
   // the user can keep mornings but silence the evening. Only shown (in pushToggles)
   // when the master daily push is on.
   const [eveningOn, setEveningOn] = useState(true)
-  const toggleEvening = async (next: boolean) => {
-    await setEveningPushEnabled(next, {
+  const toggleEvening = (next: boolean) => {
+    setEveningOn(next)
+    void setEveningPushEnabled(next, {
       locale,
       birthDate: birthValid ? birth.solarDate : undefined,
-    })
-    setEveningOn(next)
+    }).catch(() => setEveningOn(!next))
   }
   useEffect(() => {
     isEveningPushEnabled()
@@ -373,28 +385,42 @@ export default function MeScreen() {
 
   // 人生节点提醒 (Pro) — month-start / 大运 transition nudges to /timeline. Needs a
   // saved birth (gender + date) to compute the timeline; gates on Pro first.
+  // Reads birth from storage (not the form draft) so a DEV Pro flip + toggle works
+  // even when the Me form hasn't been re-saved this session.
   const [timelineRemindOn, setTimelineRemindOn] = useState(false)
-  const toggleTimelineRemind = async (next: boolean) => {
+  const toggleTimelineRemind = (next: boolean) => {
     if (!next) {
-      await disableTimelineReminders()
       setTimelineRemindOn(false)
+      void disableTimelineReminders(locale).catch(() => setTimelineRemindOn(true))
       return
     }
     if (!isPro) {
       setCalPaywallOpen(true)
       return
     }
-    if (!birth.gender || !birth.solarDate) {
-      setEditingBirth(true)
-      return
-    }
-    const ok = await enableTimelineReminders({
-      locale,
-      birthDate: birth.solarDate,
-      birthHour: birth.timeIndex === null ? -1 : birth.timeIndex * 2,
-      gender: birth.gender === '男' ? 'M' : 'F',
-    })
-    setTimelineRemindOn(ok)
+    void (async () => {
+      const info = (await getAuspiceBirthInfo().catch(() => null)) ?? birth
+      if (!info.solarDate || !DATE_RE.test(info.solarDate) || !info.gender) {
+        setEditingBirth(true)
+        Alert.alert(t.timelineRemindToggle, t.timelineRemindNeedBirth)
+        return
+      }
+      setTimelineRemindOn(true)
+      try {
+        const ok = await enableTimelineReminders({
+          locale,
+          birthDate: info.solarDate,
+          birthHour: info.timeIndex === null || info.timeIndex === undefined ? -1 : info.timeIndex * 2,
+          gender: info.gender === '男' ? 'M' : 'F',
+        })
+        if (!ok) {
+          setTimelineRemindOn(false)
+          Alert.alert(t.timelineRemindToggle, t.timelineRemindNeedPush)
+        }
+      } catch {
+        setTimelineRemindOn(false)
+      }
+    })()
   }
   useEffect(() => {
     isTimelineRemindersEnabled()

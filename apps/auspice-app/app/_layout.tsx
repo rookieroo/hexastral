@@ -19,6 +19,7 @@ import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { BrandLogoMorphProvider } from '@/lib/brand-logo-morph'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
@@ -58,7 +59,9 @@ export default function RootLayout() {
             fixed ink identity — no user accent switcher. */}
         <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
           <LocaleProvider>
-            <RootLayoutInner />
+            <BrandLogoMorphProvider>
+              <RootLayoutInner />
+            </BrandLogoMorphProvider>
           </LocaleProvider>
         </CoreUIProvider>
       </SafeAreaProvider>
@@ -145,7 +148,7 @@ function RootLayoutInner() {
         }}
       >
         <Stack.Screen name='index' />
-        <Stack.Screen name='welcome' options={{ animation: 'fade' }} />
+        <Stack.Screen name='welcome' options={{ animation: 'none' }} />
         <Stack.Screen name='(tabs)' />
         {/* /display (Widget & Watch) hidden until native targets ship — see widget-watch-scope.md */}
         <Stack.Screen name='event' options={{ animation: 'slide_from_right' }} />

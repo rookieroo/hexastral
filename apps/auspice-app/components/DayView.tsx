@@ -130,7 +130,6 @@ export function DayView({
     <View style={{ gap: spacing.xl }}>
       {/* ── Zone 1: Almanac ── */}
       <View style={{ gap: spacing.md }}>
-        <SectionLabel>{t.almanacSection}</SectionLabel>
         {festivalChip}
 
         {locale === 'ja' && day.rokuyo && t.rokuyo ? (
