@@ -39,7 +39,7 @@ import { MakeIfGraph } from '@/components/MakeIfGraph'
 import { MakeIfYearGraph } from '@/components/MakeIfYearGraph'
 import { MakeIfZeshiCard } from '@/components/MakeIfZeshiCard'
 import { MoonLoader } from '@/components/MoonLoader'
-import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
+import { ShareableCard, sharePaletteFor } from '@/components/ShareableCard'
 import {
   deleteMakeifFork,
   fetchMakeIfNarratives,
@@ -272,6 +272,8 @@ function Sandbox({
   birth: { birthDate: string; birthHour: number; gender: 'M' | 'F' }
 }) {
   const { t } = useStrings()
+  const { isDark } = useTheme()
+  const sharePalette = sharePaletteFor(isDark)
   const ic = makeIfInteractiveCopyForLocale(locale)
   const currentAge = useMemo(() => payload.liunian.find((r) => r.isCurrent)?.age ?? null, [payload])
 
@@ -332,7 +334,7 @@ function Sandbox({
     prewarm: branches.length > 0,
     // Re-warm when a fork is added OR the featured/selected branch changes, so the
     // share always reflects the branch currently highlighted.
-    warmKey: `${branches.length}:${sel ?? ''}`,
+    warmKey: `${branches.length}:${sel ?? ''}:${isDark ? 'd' : 'l'}`,
   })
 
   useEffect(() => {
@@ -798,7 +800,7 @@ function Sandbox({
             <MakeIfYearGraph
               dayun={payload.dayun}
               branches={branches}
-              colors={SHARE_PALETTE}
+              colors={sharePalette}
               width={width - 48}
               dashed={false}
               animateIn={false}
@@ -823,12 +825,12 @@ function Sandbox({
                       backgroundColor: featured.color,
                     }}
                   />
-                  <Text style={{ color: SHARE_PALETTE.text, fontSize: 15, fontWeight: '700' }}>
+                  <Text style={{ color: sharePalette.text, fontSize: 15, fontWeight: '700' }}>
                     {featured.label}
                   </Text>
                 </View>
                 {/* 影响 — what this 假如 changes. */}
-                <Text style={{ color: SHARE_PALETTE.secondary, fontSize: 13.5, lineHeight: 21 }}>
+                <Text style={{ color: sharePalette.secondary, fontSize: 13.5, lineHeight: 21 }}>
                   {featured.summary || deriveMakeIfSummary(featured.outcome)}
                 </Text>
                 {/* 注意/时机 — only for a present/future 假如 (an actionable decision):
@@ -837,7 +839,7 @@ function Sandbox({
                 {!featured.isPast && timing ? (
                   <Text
                     style={{
-                      color: SHARE_PALETTE.dim,
+                      color: sharePalette.dim,
                       fontSize: 12,
                       lineHeight: 18,
                       marginTop: 2,
@@ -852,7 +854,7 @@ function Sandbox({
                 {featuredBackdrop || featuredCherrypick ? (
                   <Text
                     style={{
-                      color: SHARE_PALETTE.dim,
+                      color: sharePalette.dim,
                       fontSize: 12,
                       lineHeight: 18,
                       fontStyle: 'italic',

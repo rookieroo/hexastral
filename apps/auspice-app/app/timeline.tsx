@@ -40,7 +40,7 @@ import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
 import type { DrilldownYear } from '@/components/DrilldownGraph'
 import { MonthlyDepthCard } from '@/components/MonthlyDepthCard'
 import { MoonLoader } from '@/components/MoonLoader'
-import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
+import { ShareableCard, sharePaletteFor } from '@/components/ShareableCard'
 import { DOMAIN_COLORS, ReadingBubble } from '@/components/TimelineGraph'
 import { TimelineYearGraph } from '@/components/TimelineYearGraph'
 import {
@@ -269,12 +269,13 @@ type ScreenState =
   | { kind: 'data'; payload: TimelinePayload; birth: BirthCtx }
 
 export default function TimelineScreen() {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, isDark } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
   const { width: screenWidth } = useWindowDimensions()
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
+  const sharePalette = sharePaletteFor(isDark)
 
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
@@ -359,7 +360,10 @@ export default function TimelineScreen() {
     // bakes the CURRENT graph, so a static key shared the FIRST node's image (or
     // fell back to a slow on-tap capture). selectedId encodes the full node
     // (dayun-N / liunian-YYYY / liuyue-YYYY-M); the cleanup debounces rapid taps.
-    warmKey: state.kind === 'data' ? `${selectedDayunIndex}:${selectedId ?? 'root'}` : 'pending',
+    warmKey:
+      state.kind === 'data'
+        ? `${selectedDayunIndex}:${selectedId ?? 'root'}:${isDark ? 'd' : 'l'}`
+        : 'pending',
   })
 
   const load = useCallback(() => {
@@ -555,7 +559,7 @@ export default function TimelineScreen() {
                 >
                   <TimelineYearGraph
                     width={screenWidth - 48}
-                    colors={SHARE_PALETTE}
+                    colors={sharePalette}
                     dayunLabel={drill.dayunLabel}
                     liunian={drill.years}
                     selectedYearIndex={drill.selectedYearIndex}
@@ -572,7 +576,7 @@ export default function TimelineScreen() {
                       heading={shareDetail.heading}
                       body={shareDetail.body}
                       fit={shareDetail.fit}
-                      colors={SHARE_PALETTE}
+                      colors={sharePalette}
                     />
                   ) : null}
                 </ShareableCard>

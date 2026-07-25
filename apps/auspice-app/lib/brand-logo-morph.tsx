@@ -136,7 +136,10 @@ export function BrandLogoMorphProvider({ children }: { children: ReactNode }) {
   return (
     <MorphContext.Provider value={api}>
       {children}
-      <Animated.View pointerEvents='none' style={[styles.fly, overlayStyle]}>
+      <Animated.View
+        pointerEvents='none'
+        style={[styles.fly, overlayStyle, !morphActive && styles.flyIdle]}
+      >
         <Image source={LOGO} style={styles.img} resizeMode='contain' />
       </Animated.View>
     </MorphContext.Provider>
@@ -162,6 +165,12 @@ const styles = StyleSheet.create({
     left: 0,
     overflow: 'hidden',
     zIndex: 1000,
+  },
+  /** Collapsed hit box when idle so a zero-opacity fly layer never intercepts taps. */
+  flyIdle: {
+    width: 0,
+    height: 0,
+    opacity: 0,
   },
   img: { width: '100%', height: '100%' },
 })

@@ -1,6 +1,6 @@
 /**
- * ShareableCard — the branded ivory frame captured to a PNG for image shares
- * (see lib/imageShare). It mirrors the web `/s/*` OG cards so an in-app share
+ * ShareableCard — branded frame captured to a PNG for image shares
+ * (see lib/imageShare). Mirrors the web `/s/*` OG cards so an in-app share
  * and a forwarded-link preview look like the same product.
  *
  * Rendered OFF-SCREEN (translated far left) only while capturing, then
@@ -8,16 +8,27 @@
  * react-native-view-shot can snapshot it. Branding + hexastral.com are baked in
  * so an image that loses its caption still markets itself.
  *
- * Graphs drawn inside should be passed `SHARE_PALETTE` (not the live theme) so
- * they always read correctly on the fixed ivory background — the captured image
- * is brand-consistent regardless of the user's light/dark setting.
+ * Palette follows the app light/dark mode so a shared PNG matches what the user
+ * sees. Graphs drawn inside should use `sharePaletteFor(isDark)` (not the live
+ * interactive theme tokens) so they stay readable on this fixed share surface.
  */
 
+import { useTheme } from '@zhop/core-ui'
 import { forwardRef, type ReactNode } from 'react'
 import { Text, View } from 'react-native'
 
-/** Fixed light palette for any graph rendered into the card (matches the web OG cards). */
-export const SHARE_PALETTE = {
+export type SharePalette = {
+  text: string
+  secondary: string
+  dim: string
+  accent: string
+  accentGhost: string
+  separator: string
+  bg: string
+}
+
+/** Light (ivory) share surface — also the default export alias `SHARE_PALETTE`. */
+export const SHARE_PALETTE_LIGHT = {
   text: '#2B2118',
   secondary: '#6B5B49',
   dim: '#A8906F',
@@ -25,7 +36,25 @@ export const SHARE_PALETTE = {
   accentGhost: 'rgba(201,154,91,0.12)',
   separator: '#D8C7AC',
   bg: '#FBF7F0',
-} as const
+} as const satisfies SharePalette
+
+/** Dark share surface — ink paper, not pure black. */
+export const SHARE_PALETTE_DARK = {
+  text: '#F3EDE4',
+  secondary: '#C4B5A0',
+  dim: '#8F7F6C',
+  accent: '#C9A45B',
+  accentGhost: 'rgba(201,154,91,0.16)',
+  separator: '#3F362C',
+  bg: '#1C1814',
+} as const satisfies SharePalette
+
+/** @deprecated Prefer `sharePaletteFor(isDark)` — kept as light alias for call sites. */
+export const SHARE_PALETTE = SHARE_PALETTE_LIGHT
+
+export function sharePaletteFor(isDark: boolean): SharePalette {
+  return isDark ? SHARE_PALETTE_DARK : SHARE_PALETTE_LIGHT
+}
 
 /** Default footer line for the DAY (宜忌) card — left side; the landing URL sits
  *  right. Timeline / make-if pass their OWN `footer` so each share carries chrome
@@ -69,6 +98,8 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
   { width, title, subtitle, locale = 'en', eyebrow, footer, footerUrl, children },
   ref
 ) {
+  const { isDark } = useTheme()
+  const p = sharePaletteFor(isDark)
   const footerLine = footer ?? DAY_FOOTER[locale] ?? DAY_FOOTER.en
   const eyebrowLine = eyebrow ?? DAY_EYEBROW[locale] ?? DAY_EYEBROW.en
   const landing = footerUrl ?? 'yuun.hexastral.com'
@@ -78,20 +109,16 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
       collapsable={false}
       style={{
         width,
-        backgroundColor: SHARE_PALETTE.bg,
+        backgroundColor: p.bg,
         paddingHorizontal: 24,
         paddingVertical: 28,
         gap: 20,
       }}
     >
       <View style={{ gap: 6 }}>
-        <Text style={{ color: SHARE_PALETTE.accent, fontSize: 12, letterSpacing: 4 }}>
-          {eyebrowLine}
-        </Text>
-        <Text style={{ color: SHARE_PALETTE.text, fontSize: 24, fontWeight: '600' }}>{title}</Text>
-        {subtitle ? (
-          <Text style={{ color: SHARE_PALETTE.dim, fontSize: 13 }}>{subtitle}</Text>
-        ) : null}
+        <Text style={{ color: p.accent, fontSize: 12, letterSpacing: 4 }}>{eyebrowLine}</Text>
+        <Text style={{ color: p.text, fontSize: 24, fontWeight: '600' }}>{title}</Text>
+        {subtitle ? <Text style={{ color: p.dim, fontSize: 13 }}>{subtitle}</Text> : null}
       </View>
 
       {children}
@@ -102,21 +129,21 @@ export const ShareableCard = forwardRef<View, ShareableCardProps>(function Share
           justifyContent: 'space-between',
           alignItems: 'center',
           borderTopWidth: 0.5,
-          borderTopColor: SHARE_PALETTE.separator,
+          borderTopColor: p.separator,
           paddingTop: 14,
         }}
       >
         {/* footerLine shrinks/ellipsizes; the landing URL never yields its width
             so a long (e.g. translated) footer can't crowd or overlap the link. */}
         <Text
-          style={{ color: SHARE_PALETTE.dim, fontSize: 11, letterSpacing: 1, flexShrink: 1 }}
+          style={{ color: p.dim, fontSize: 11, letterSpacing: 1, flexShrink: 1 }}
           numberOfLines={1}
         >
           {footerLine}
         </Text>
         <Text
           style={{
-            color: SHARE_PALETTE.dim,
+            color: p.dim,
             fontSize: 11,
             letterSpacing: 1,
             flexShrink: 0,

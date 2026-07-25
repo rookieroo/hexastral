@@ -12,8 +12,8 @@ import { ChevronRightIcon, SettingsIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image, Pressable, ScrollView, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { Image, ScrollView, Text, View } from 'react-native'
+import { Gesture, GestureDetector, Pressable } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -29,8 +29,7 @@ import {
 } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { HOME_LOGO_SIZE, useBrandLogoMorph } from '@/lib/brand-logo-morph'
-import { dayIdentityLunarLabel, formatGregorianIdentity, lunarCellLabel } from '@/lib/calendar-display'
-import type { Locale } from '@/lib/i18n'
+import { lunarCellLabel } from '@/lib/calendar-display'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
@@ -166,19 +165,20 @@ export default function HomeScreen() {
     router.push('/me' as Href)
   }, [router])
 
-  // Content area only: left swipe → Settings. Right swipe inert (no 负一屏).
-  // Calendar expand/collapse is tap-driven inside CalendarExpandPanel.
-  const { activeOffsetX, failOffsetY, commitDx, maxDy } = SWIPE_TO_ME
+  // Left-swipe → Settings. Wider activeOffsetX so ordinary taps aren't stolen by the pan
+  // (RN Pressable + eager Pan is why Share / chevron needed multiple taps).
+  const { failOffsetY, commitDx, maxDy } = SWIPE_TO_ME
   const homeSwipe = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX(activeOffsetX)
+        .activeOffsetX([-48, 48])
         .failOffsetY(failOffsetY)
+        .maxPointers(1)
         .onEnd((e) => {
           if (Math.abs(e.translationY) >= maxDy) return
           if (e.translationX < commitDx) runOnJS(goToMe)()
         }),
-    [activeOffsetX, failOffsetY, commitDx, maxDy, goToMe]
+    [failOffsetY, commitDx, maxDy, goToMe]
   )
 
   const pushHook = dayData?.dailyHook ?? null
@@ -275,10 +275,16 @@ export default function HomeScreen() {
         </View>
         <Pressable
           onPress={goToMe}
-          hitSlop={14}
+          hitSlop={12}
           accessibilityRole='button'
           accessibilityLabel={t.settings}
-          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: 4 })}
+          style={({ pressed }) => ({
+            minWidth: 44,
+            minHeight: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.55 : 1,
+          })}
         >
           <SettingsIcon size={22} color={colors.text} strokeWidth={1.5} />
         </Pressable>
@@ -295,15 +301,6 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
           >
             <DualTzBanner />
-
-            {dayData ? (
-              <DayIdentityHeader
-                payload={dayData}
-                colors={colors}
-                spacing={spacing}
-                locale={locale}
-              />
-            ) : null}
 
             <CalendarExpandPanel
               selectedDay={selectedDay}
@@ -387,50 +384,5 @@ function CultureAccentChip({ label, onPress, colors, spacing }: CultureAccentChi
       </Text>
       <ChevronRightIcon size={14} color={colors.accent} strokeWidth={1.6} />
     </Pressable>
-  )
-}
-
-function DayIdentityHeader({
-  payload,
-  colors,
-  spacing,
-  locale,
-}: {
-  payload: AuspiceDayPayload
-  colors: { text: string; dim: string }
-  spacing: { xl: number; sm: number }
-  locale: string
-}) {
-  const loc = locale as Locale
-  const { day } = payload
-  const ld = day.lunarDate
-  const yg = day.yearGanZhi
-  const isZh = loc === 'zh-Hans' || loc === 'zh-Hant'
-  const dayGanzhiLabel = `${day.ganZhi}${isZh || loc === 'ja' ? '日' : ''}`
-  const lunarPart = dayIdentityLunarLabel(ld, loc)
-  const gregorian = formatGregorianIdentity(payload.date, loc)
-  const sub = [
-    gregorian,
-    lunarPart,
-    // Year pillar only for zh — stem/branch + 生肖 year reads as domain chrome.
-    isZh && yg ? `${yg.stem}${yg.branch}年` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  return (
-    <View
-      style={{
-        paddingHorizontal: spacing.xl,
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-      }}
-    >
-      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}>
-        {dayGanzhiLabel}
-      </Text>
-      {sub ? <Text style={{ color: colors.dim, fontSize: 13 }}>{sub}</Text> : null}
-    </View>
   )
 }

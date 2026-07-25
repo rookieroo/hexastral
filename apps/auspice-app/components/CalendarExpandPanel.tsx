@@ -10,7 +10,8 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronDownIcon } from '@zhop/hexastral-icons/action'
 import * as Haptics from 'expo-haptics'
 import { useCallback, useEffect, useState } from 'react'
-import { type LayoutChangeEvent, Pressable, useWindowDimensions, View } from 'react-native'
+import { type LayoutChangeEvent, useWindowDimensions, View } from 'react-native'
+import { Pressable } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   interpolate,
@@ -152,14 +153,16 @@ export function CalendarExpandPanel({
         accessibilityRole='button'
         accessibilityState={{ expanded }}
         accessibilityLabel={expanded ? collapseLabel : expandLabel}
-        hitSlop={8}
+        hitSlop={12}
         style={({ pressed }) => ({
           alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 44,
           paddingVertical: spacing.sm,
           opacity: pressed ? 0.55 : 1,
         })}
       >
-        <Animated.View style={chevronStyle}>
+        <Animated.View pointerEvents='none' style={chevronStyle}>
           <ChevronDownIcon size={18} color={colors.dim} strokeWidth={1.6} />
         </Animated.View>
       </Pressable>

@@ -16,7 +16,7 @@ import { SatelliteBottomSheet } from '@zhop/satellite-ui'
 import { useEffect, useState } from 'react'
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { MoonLoader } from '@/components/MoonLoader'
-import { SHARE_PALETTE, ShareableCard } from '@/components/ShareableCard'
+import { ShareableCard, sharePaletteFor } from '@/components/ShareableCard'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -85,7 +85,7 @@ export function ExplainSheet({
   /** Opens the paywall — shown to free users instead of the deep reading. */
   onUpgrade?: () => void
 }) {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, isDark } = useTheme()
   const { locale, t } = useStrings()
   const { width } = useWindowDimensions()
   const isPro = hasEntitlement(useEntitlements(), 'auspice_pro')
@@ -93,6 +93,7 @@ export function ExplainSheet({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [result, setResult] = useState<AuspiceExplainResult | null>(null)
+  const sharePalette = sharePaletteFor(isDark)
   // Image share (was a base64-token URL so long it dwarfed the reading). Pre-warm
   // once the reading lands so the Share tap hands off a ready PNG; the caption is
   // a SHORT /s/day link (install funnel), and the image itself carries the text.
@@ -102,7 +103,7 @@ export function ExplainSheet({
     share: shareImage,
   } = useImageShare({
     prewarm: isPro && !!result && field !== null,
-    warmKey: `${date}:${field ?? ''}`,
+    warmKey: `${date}:${field ?? ''}:${isDark ? 'd' : 'l'}`,
   })
 
   useEffect(() => {
@@ -175,7 +176,7 @@ export function ExplainSheet({
                 .filter(Boolean)
                 .join(' · ')}
             >
-              <Text style={{ color: SHARE_PALETTE.text, fontSize: 15, lineHeight: 25 }}>
+              <Text style={{ color: sharePalette.text, fontSize: 15, lineHeight: 25 }}>
                 {result.explanation}
               </Text>
             </ShareableCard>

@@ -10,11 +10,15 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, useWindowDimensions, View } from 'react-native'
+import { Text, useWindowDimensions, View } from 'react-native'
+import { Pressable } from 'react-native-gesture-handler'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
 import { CultureSnippetCard } from '@/components/CultureSnippetCard'
-import { dayIdentityLunarLabel } from '@/lib/calendar-display'
+import {
+  dayIdentityLunarLabel,
+  formatGregorianIdentity,
+} from '@/lib/calendar-display'
 import { localizeSolarTermName } from '@/lib/culture'
 import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
 import type { Locale, RokuyoStrings } from '@/lib/i18n'
@@ -26,15 +30,13 @@ import { localizeYijiVerb } from '@/lib/yiji-vocab'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
 import { PersonalCard } from './PersonalCard'
-import { SHARE_PALETTE, ShareableCard } from './ShareableCard'
+import { type SharePalette, ShareableCard, sharePaletteFor } from './ShareableCard'
 import { YiJiBlock } from './YiJiBlock'
 
 function SectionLabel({ children }: { children: string }) {
   const { colors } = useTheme()
   return (
-    <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
-      {children}
-    </Text>
+    <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{children}</Text>
   )
 }
 
@@ -46,7 +48,7 @@ function RokuyoStrip({ rokuyo, strings }: { rokuyo: RokuyoInfo; strings: RokuyoS
   const accent = tone === 'good' ? colors.accent : tone === 'bad' ? colors.dim : colors.secondary
   const meaning = strings.items[rokuyo.index] ?? ''
   return (
-    <View>
+    <View style={{ gap: spacing.sm }}>
       <SectionLabel>{strings.label}</SectionLabel>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <View
@@ -89,7 +91,7 @@ export function DayView({
   /** Optional festival / solar-term chip rendered in the almanac zone. */
   festivalChip?: ReactNode
 }) {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, isDark } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
   const { width: screenWidth } = useWindowDimensions()
@@ -97,11 +99,27 @@ export function DayView({
   const [explainField, setExplainField] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(true)
-  const { shotRef, capturing, share: shareImage } = useImageShare({ prewarm: true, warmKey: date })
+  const sharePalette = sharePaletteFor(isDark)
+  const { shotRef, capturing, share: shareImage } = useImageShare({
+    prewarm: true,
+    warmKey: `${date}-${isDark ? 'd' : 'l'}`,
+  })
   const lunar = day.lunarDate ? dayIdentityLunarLabel(day.lunarDate, locale as Locale) : undefined
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const hookShown = pushHook != null
+
+  const isZh = locale === 'zh-Hans' || locale === 'zh-Hant'
+  const dayGanzhiLabel = `${day.ganZhi}${isZh || locale === 'ja' ? '日' : ''}`
+  const gregorian = formatGregorianIdentity(date, locale as Locale)
+  const yg = day.yearGanZhi
+  const identitySub = [
+    gregorian,
+    lunar,
+    isZh && yg ? `${yg.stem}${yg.branch}年` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const [favEl, setFavEl] = useState<ReturnType<typeof favorableElementOf>>(null)
   useEffect(() => {
@@ -137,21 +155,55 @@ export function DayView({
         ) : null}
 
         <View>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'baseline',
+                gap: spacing.sm,
+              }}
+            >
+              <Text
+                style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}
+              >
+                {dayGanzhiLabel}
+              </Text>
+              {identitySub ? (
+                <Text style={{ color: colors.dim, fontSize: 13 }}>{identitySub}</Text>
+              ) : null}
+            </View>
             <Pressable
               onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
               hitSlop={12}
               accessibilityRole='button'
               accessibilityLabel='Share'
-              style={{ padding: 4 }}
+              style={({ pressed }) => ({
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.55 : 1,
+              })}
             >
-              <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
+              <View pointerEvents='none'>
+                <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
+              </View>
             </Pressable>
           </View>
           <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
         </View>
 
-        <View>
+        <View style={{ gap: spacing.sm }}>
           <SectionLabel>{t.solarTerm}</SectionLabel>
           <Text style={{ color: colors.text, fontSize: 14 }}>
             {localizeSolarTermName(day.solarTerm.prev.name, locale)} ({day.solarTerm.prev.date}) →{' '}
@@ -166,16 +218,23 @@ export function DayView({
             ref={shotRef}
             width={screenWidth}
             locale={locale}
-            title={`${day.ganZhi}${locale.startsWith('zh') || locale === 'ja' ? '日' : ''}`}
+            title={dayGanzhiLabel}
             subtitle={[date, lunar].filter(Boolean).join(' · ')}
           >
-            <ShareYiJi goodFor={day.goodFor} avoid={day.avoid} locale={locale} t={t} />
+            <ShareYiJi
+              goodFor={day.goodFor}
+              avoid={day.avoid}
+              locale={locale}
+              t={t}
+              palette={sharePalette}
+            />
           </ShareableCard>
         </View>
       ) : null}
 
       {/* ── Zone 2: Personal (push anchor) ── */}
       <View
+        style={{ gap: spacing.sm }}
         onLayout={(e) => {
           onPersonalSectionLayout?.(e.nativeEvent.layout.y)
         }}
@@ -252,21 +311,26 @@ export function DayView({
           <Pressable
             onPress={() => setExploreOpen((v) => !v)}
             accessibilityRole='button'
+            accessibilityState={{ expanded: exploreOpen }}
             accessibilityLabel={exploreOpen ? t.exploreCollapse : t.exploreExpand}
-            style={{
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
+              paddingVertical: 6,
               marginBottom: exploreOpen ? spacing.sm : 0,
-            }}
+              opacity: pressed ? 0.65 : 1,
+            })}
           >
             <SectionLabel>{t.exploreSection}</SectionLabel>
-            <ChevronDownIcon
-              size={16}
-              color={colors.dim}
-              strokeWidth={1.4}
+            {/* pointerEvents none — SVG chevrons can swallow the Pressable tap. */}
+            <View
+              pointerEvents='none'
               style={{ transform: [{ rotate: exploreOpen ? '180deg' : '0deg' }] }}
-            />
+            >
+              <ChevronDownIcon size={16} color={colors.dim} strokeWidth={1.4} />
+            </View>
           </Pressable>
           {exploreOpen ? (
             <CultureSnippetCard snippet={snippet} upcomingTagline={upcomingTagline} />
@@ -290,51 +354,78 @@ export function DayView({
   )
 }
 
-const CHIP_HEIGHT = 32
+const CHIP_HEIGHT = 28
 
 function ShareYiJi({
   goodFor,
   avoid,
   locale,
   t,
+  palette,
 }: {
   goodFor: string[]
   avoid: string[]
   locale: Parameters<typeof localizeYijiVerb>[1]
   t: ReturnType<typeof useStrings>['t']
+  palette: SharePalette
 }) {
-  const Row = ({ label, items, color }: { label: string; items: string[]; color: string }) => (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-      <View style={{ minWidth: 24, minHeight: CHIP_HEIGHT, justifyContent: 'center' }}>
-        <Text style={{ color, fontSize: 17, fontWeight: '700' }}>{label}</Text>
-      </View>
-      <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  const { colors, spacing, isDark } = useTheme()
+  // Match on-screen YiJiBlock: only the 宜/忌 headers are tinted; chips stay neutral.
+  const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(43,33,24,0.04)'
+
+  const Column = ({
+    label,
+    items,
+    accent,
+  }: {
+    label: string
+    items: string[]
+    accent: string
+  }) => (
+    <View style={{ flex: 1, gap: spacing.sm }}>
+      <Text
+        style={{
+          color: accent,
+          fontSize: 13,
+          fontWeight: '700',
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         {items.length === 0 ? (
-          <Text style={{ color: SHARE_PALETTE.dim, fontSize: 15 }}>—</Text>
+          <Text style={{ color: palette.dim, fontSize: 14 }}>—</Text>
         ) : (
-          items.slice(0, 6).map((v) => (
+          items.slice(0, 8).map((v) => (
             <View
               key={v}
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 9,
-                backgroundColor: `${color}14`,
-                borderWidth: 1,
-                borderColor: `${color}33`,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                minHeight: CHIP_HEIGHT,
+                borderRadius: 8,
+                backgroundColor: chipBg,
+                borderWidth: 0.5,
+                borderColor: palette.separator,
+                justifyContent: 'center',
               }}
             >
-              <Text style={{ color, fontSize: 15 }}>{localizeYijiVerb(v, locale)}</Text>
+              <Text style={{ color: palette.text, fontSize: 14 }}>
+                {localizeYijiVerb(v, locale)}
+              </Text>
             </View>
           ))
         )}
       </View>
     </View>
   )
+
   return (
-    <View style={{ gap: 14 }}>
-      <Row label={t.suitable} items={goodFor} color='#16A34A' />
-      <Row label={t.avoid} items={avoid} color='#DC2626' />
+    <View style={{ flexDirection: 'row', gap: spacing.lg }}>
+      <Column label={t.suitable} items={goodFor} accent={colors.success} />
+      <Column label={t.avoid} items={avoid} accent={colors.danger} />
     </View>
   )
 }
