@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { resolveBrandRootRedirect } from './lib/brand-host'
+import {
+  apexOriginFromRequest,
+  appIdForGatedPath,
+  appIsPublicSurface,
+  brandIdFromHost,
+  stripLocalePrefix,
+} from './lib/growth/launch-status'
 import { routing } from './i18n/routing'
 
 const intlMiddleware = createMiddleware(routing)
@@ -83,11 +90,33 @@ function withSurfaceRequest(request: NextRequest): NextRequest {
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const host = request.headers.get('host') ?? ''
   const surfaced = withSurfaceRequest(request)
+
+  // ─── Launch gate: hidden brand hosts → apex ────────────────────────────────
+  const brandId = brandIdFromHost(host)
+  if (brandId && !appIsPublicSurface(brandId)) {
+    const apex = apexOriginFromRequest({
+      host,
+      proto: request.headers.get('x-forwarded-proto'),
+    })
+    return NextResponse.redirect(new URL('/', apex))
+  }
+
+  // ─── Launch gate: hidden /lp/* and /privacy/{app} ──────────────────────────
+  const gatedApp = appIdForGatedPath(stripLocalePrefix(pathname))
+  if (gatedApp && !appIsPublicSurface(gatedApp)) {
+    const path = stripLocalePrefix(pathname)
+    const localeMatch = pathname.match(/^\/(zh|tw|ja)(?=\/|$)/)
+    const localePrefix = localeMatch?.[1] ? `/${localeMatch[1]}` : ''
+    const destPath = path.startsWith('/privacy') ? `${localePrefix}/privacy` : localePrefix || '/'
+    const url = request.nextUrl.clone()
+    url.pathname = destPath || '/'
+    return NextResponse.redirect(url)
+  }
 
   // ─── Brand default locale: Yuel / Yuun / Yaul / Kanyu ───────────────────────
   if (pathname === '/') {
-    const host = request.headers.get('host') ?? ''
     const redirectPath = resolveBrandRootRedirect({
       host,
       localeCookie: request.cookies.get('NEXT_LOCALE')?.value ?? null,

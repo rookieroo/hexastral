@@ -11,6 +11,7 @@ import {
   PALACE_SLUGS,
   ZODIAC_SLUGS,
 } from '@/lib/growth/seo-data'
+import { APP_LAUNCH, appIsPublicSurface, brandIdFromHost } from '@/lib/growth/launch-status'
 
 type Locale = (typeof locales)[number]
 
@@ -49,17 +50,17 @@ function brandSitemap(base: string, privacyPath: string): MetadataRoute.Sitemap 
 }
 
 /** Host-aware: yuel/yuun/yaul subdomains get a focused brand sitemap; hexastral.com
- *  gets the full content sitemap. One worker, four sitemaps by request host. */
+ *  gets the full content sitemap. One worker, four sitemaps by request host.
+ *  Hidden launch-wave brand hosts return an empty sitemap (middleware also redirects HTML). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const h = await headers()
   const host = h.get('host') ?? 'hexastral.com'
   const base = `${h.get('x-forwarded-proto') ?? 'https'}://${host}`
-  if (host.startsWith('yuel.')) return brandSitemap(base, '/privacy/yuel')
-  if (host.startsWith('yuun.')) return brandSitemap(base, '/privacy/yuun')
-  if (host.startsWith('yaul.')) return brandSitemap(base, '/privacy/yaul')
-  if (host.startsWith('kanyu.')) return brandSitemap(base, '/privacy/kanyu')
-  if (host.startsWith('syel.')) return brandSitemap(base, '/privacy/syel')
-
+  const brandId = brandIdFromHost(host)
+  if (brandId) {
+    if (!appIsPublicSurface(brandId)) return []
+    return brandSitemap(base, APP_LAUNCH[brandId].privacyPath)
+  }
   const blogSlugs = getAllBlogSlugs()
   const entries: MetadataRoute.Sitemap = []
 

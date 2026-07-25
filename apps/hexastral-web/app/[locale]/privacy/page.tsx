@@ -10,7 +10,9 @@ import {
 import {
   SATELLITE_PRIVACY_APPENDICES,
   SATELLITE_PRIVACY_KEYS,
+  type SatellitePrivacyKey,
 } from '@/lib/legal/satellite-privacy-appendices'
+import { getPublicPrivacyAppIds } from '@/lib/growth/launch-status'
 
 interface PrivacyPageProps {
   params: Promise<{ locale: string }>
@@ -120,16 +122,20 @@ export default async function PrivacyPage({ params }: PrivacyPageProps) {
           {ui.satelliteAppendicesHeading}
         </h2>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {SATELLITE_PRIVACY_KEYS.map((key) => (
-            <li key={key} style={{ marginBottom: '0.55rem' }}>
-              <Link
-                href={`/privacy/${key}`}
-                style={{ fontSize: '0.88rem', color: 'var(--color-gold)', textDecoration: 'none' }}
-              >
-                {SATELLITE_PRIVACY_APPENDICES[key].displayName} →
-              </Link>
-            </li>
-          ))}
+          {getPublicPrivacyAppIds()
+            .filter((key): key is SatellitePrivacyKey =>
+              (SATELLITE_PRIVACY_KEYS as readonly string[]).includes(key)
+            )
+            .map((key) => (
+              <li key={key} style={{ marginBottom: '0.55rem' }}>
+                <Link
+                  href={`/privacy/${key}`}
+                  style={{ fontSize: '0.88rem', color: 'var(--color-gold)', textDecoration: 'none' }}
+                >
+                  {SATELLITE_PRIVACY_APPENDICES[key].displayName} →
+                </Link>
+              </li>
+            ))}
         </ul>
       </section>
 

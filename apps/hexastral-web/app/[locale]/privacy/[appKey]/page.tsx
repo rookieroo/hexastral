@@ -7,6 +7,7 @@ import {
   SATELLITE_PRIVACY_APPENDICES,
   SATELLITE_PRIVACY_KEYS,
 } from '@/lib/legal/satellite-privacy-appendices'
+import { appIsPublicSurface, type AppId } from '@/lib/growth/launch-status'
 import { locales, type Locale } from '@/i18n/routing'
 
 
@@ -47,6 +48,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isSatellitePrivacyKey(key)) {
     return { title: 'Privacy appendix' }
   }
+  if (!appIsPublicSurface(key as AppId)) {
+    return { title: 'Privacy appendix', robots: { index: false } }
+  }
   const appendix = SATELLITE_PRIVACY_APPENDICES[key]
   return {
     title: `${appendix.displayName} · Privacy appendix · HexAstral`,
@@ -63,6 +67,9 @@ export default async function SatellitePrivacyAppendixPage({ params }: Props) {
   }
   if (!isSatellitePrivacyKey(appKey)) {
     notFound()
+  }
+  if (!appIsPublicSurface(appKey as AppId)) {
+    redirect(`/${locale}/privacy`)
   }
   const appendix = SATELLITE_PRIVACY_APPENDICES[appKey]
 

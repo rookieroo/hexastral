@@ -8,18 +8,21 @@ import { SyelHome } from '@/components/brand/SyelHome'
 import { YaulHome } from '@/components/brand/YaulHome'
 import { YuelHome } from '@/components/brand/YuelHome'
 import { YuunHome } from '@/components/brand/YuunHome'
+import { appIsPublicSurface, type AppId } from '@/lib/growth/launch-status'
 
 interface PageProps {
   params: Promise<{ locale: string }>
   searchParams?: Promise<{ brand?: string }>
 }
 
-type Brand = 'yuel' | 'yuun' | 'yaul' | 'kanyu' | 'syel' | 'hexastral'
+type Brand = AppId | 'hexastral'
 
 /** Resolve the brand from the request host — one worker serves brand homes. A
- *  `?brand=` query override makes local preview / QA trivial (no host spoofing). */
+ *  `?brand=` query override makes local preview / QA trivial (no host spoofing).
+ *  Hidden launch-wave apps fall back to the HexAstral umbrella home. */
 async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<Brand> {
   const o = (searchParams ? await searchParams : undefined)?.brand
+  let resolved: Brand = 'hexastral'
   if (
     o === 'yuel' ||
     o === 'yuun' ||
@@ -28,15 +31,19 @@ async function resolveBrand(searchParams?: PageProps['searchParams']): Promise<B
     o === 'syel' ||
     o === 'hexastral'
   ) {
-    return o
+    resolved = o
+  } else {
+    const host = (await headers()).get('host') ?? ''
+    if (host.startsWith('yuel.')) resolved = 'yuel'
+    else if (host.startsWith('yuun.')) resolved = 'yuun'
+    else if (host.startsWith('yaul.')) resolved = 'yaul'
+    else if (host.startsWith('kanyu.')) resolved = 'kanyu'
+    else if (host.startsWith('syel.')) resolved = 'syel'
   }
-  const host = (await headers()).get('host') ?? ''
-  if (host.startsWith('yuel.')) return 'yuel'
-  if (host.startsWith('yuun.')) return 'yuun'
-  if (host.startsWith('yaul.')) return 'yaul'
-  if (host.startsWith('kanyu.')) return 'kanyu'
-  if (host.startsWith('syel.')) return 'syel'
-  return 'hexastral'
+  if (resolved !== 'hexastral' && !appIsPublicSurface(resolved)) {
+    return 'hexastral'
+  }
+  return resolved
 }
 
 /** Request origin (proto + host) for metadataBase + JSON-LD URLs. */

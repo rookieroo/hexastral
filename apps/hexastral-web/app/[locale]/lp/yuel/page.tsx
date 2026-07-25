@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { appIsPublicSurface } from '@/lib/growth/launch-status'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -17,7 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function LpYuelPage() {
+export default async function LpYuelPage({ params }: Props) {
+  const { locale } = await params
+  if (!appIsPublicSurface('yuel')) {
+    redirect(locale === 'en' ? '/' : `/${locale}`)
+  }
   return (
     <>
       <h1 style={{ fontWeight: 400 }}>Two charts, one bond</h1>

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { appIsPublicSurface } from '@/lib/growth/launch-status'
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -19,7 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function LpKanyuPage() {
+export default async function LpKanyuPage({ params }: Props) {
+  const { locale } = await params
+  if (!appIsPublicSurface('kanyu')) {
+    redirect(locale === 'en' ? '/' : `/${locale}`)
+  }
   return (
     <>
       <h1 style={{ fontWeight: 400 }}>Read a space through classical 堪舆</h1>
