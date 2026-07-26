@@ -82,3 +82,52 @@ physiognomyRoutes.post('/extract-palm-features', async (c) => {
     throw new HTTPException(502, { message: `extract_palm_failed:${message.slice(0, 200)}` })
   }
 })
+
+/**
+ * POST /harvest-push — secondary LLM pass after a Pro reading (push-retention).
+ * Returns dated windows for faceoracle_push_queue. Never diagnoses disease.
+ */
+physiognomyRoutes.post('/harvest-push', async (c) => {
+  const input = await c.req.json<{
+    locale?: string
+    events?: Array<{ startMonth?: string; theme?: string; note?: string }>
+    chapterHints?: string
+  }>()
+  const locale = typeof input.locale === 'string' ? input.locale : 'zh'
+  const events = Array.isArray(input.events) ? input.events : []
+  const hints = typeof input.chapterHints === 'string' ? input.chapterHints.slice(0, 1400) : ''
+  try {
+    const { callWithFallback } = await import('../lib/ai-router')
+    const { extractJson } = await import('../lib/extract-json')
+    const { buildLanguageBlock, buildLanguageReminder } = await import('../lib/i18n-prompt')
+    const system = [
+      '你为形气（面相手相+八字）App 撰写锁屏推送语料：自我观察与节奏提醒，增加回访意愿。',
+      '硬合规：禁止病名、处方、器官诊断、恐吓口吻；不下天命定论。',
+      '少硬约束：不必凑满条数或卡死字数；贴合事件与章节线索，避免套话。',
+      buildLanguageBlock(locale, 'physiognomy'),
+    ].join('\n')
+    const user = `Events JSON: ${JSON.stringify(events).slice(0, 2000)}
+Hints: ${hints || '(none)'}
+
+在读完后不久到约两个月内，写出值得点开的短提醒窗口。可用 kind：
+- qi / observe → 日间 localHour 9
+- rest → 晚间 localHour 21（养气/节奏，不是复拍催促）
+
+输出 JSON：
+{ "windows": [ { "fireOn": "YYYY-MM-DD", "localHour": 9|21, "kind": "qi"|"rest"|"observe", "priority": 0-100, "title": "…", "body": "…" } ] }
+${buildLanguageReminder(locale)}`
+    const text = await callWithFallback(c.env, system, user, {
+      tier: 'standard',
+      maxTokens: 1000,
+      metricLabel: 'faceoracle-harvest-push',
+      locale,
+    })
+    const jsonStr = extractJson(text)
+    if (!jsonStr) return c.json({ windows: [] })
+    const parsed = JSON.parse(jsonStr) as { windows?: unknown }
+    return c.json({ windows: Array.isArray(parsed.windows) ? parsed.windows : [] })
+  } catch (err) {
+    console.error('[physiognomy/harvest-push]', err)
+    return c.json({ windows: [] })
+  }
+})

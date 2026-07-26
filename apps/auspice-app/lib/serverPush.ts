@@ -19,7 +19,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
+import { getPortfolioUserId, resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { saveBirthdayReminder } from './api'
@@ -73,6 +73,7 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
     }
     const deviceId = await getAuspiceDeviceId()
     const timezoneId = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    const portfolioUserId = await getPortfolioUserId().catch(() => null)
     const res = await fetch(`${resolvePortfolioApiUrl()}/api/auspice/push/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json' },
@@ -91,8 +92,16 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
         holidayOn: p.holidayOn ?? true,
         timelineRemindOn: p.timelineRemindOn ?? true,
         isPro: p.isPro,
+        ...(portfolioUserId ? { u: portfolioUserId } : {}),
       }),
     })
+    if (__DEV__) {
+      console.info('[auspice-push] register', {
+        ok: res.ok,
+        timezoneId,
+        // Server canonicalizes into TIMEZONE_POOL (e.g. Asia/Hong_Kong → Asia/Shanghai).
+      })
+    }
     await setServerPushActive(res.ok)
     return res.ok
   } catch {

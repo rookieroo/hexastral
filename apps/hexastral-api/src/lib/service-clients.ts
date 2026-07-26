@@ -43,14 +43,15 @@ async function servicePost<T>(
   host: string,
   path: string,
   body: unknown,
-  timeoutMs: number
+  timeoutMs: number,
+  extraHeaders?: Record<string, string>
 ): Promise<T> {
   let res: Response
   try {
     res = await svc.fetch(
       new Request(`https://${host}.internal${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...extraHeaders },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       })
@@ -90,12 +91,14 @@ async function serviceGet<T>(
   svc: Fetcher,
   host: string,
   path: string,
-  timeoutMs: number
+  timeoutMs: number,
+  extraHeaders?: Record<string, string>
 ): Promise<T> {
   let res: Response
   try {
     res = await svc.fetch(
       new Request(`https://${host}.internal${path}`, {
+        headers: { ...extraHeaders },
         signal: AbortSignal.timeout(timeoutMs),
       })
     )
@@ -159,11 +162,20 @@ export const geocodeClient = {
 // ── svc-notify ────────────────────────────────────────────────────────────
 
 export const notifyClient = {
-  post<T = unknown>(svc: Fetcher, path: string, body: unknown): Promise<T> {
-    return servicePost<T>(svc, 'svc-notify', path, body, TIMEOUTS.notify)
+  post<T = unknown>(
+    svc: Fetcher,
+    path: string,
+    body: unknown,
+    internalKey: string
+  ): Promise<T> {
+    return servicePost<T>(svc, 'svc-notify', path, body, TIMEOUTS.notify, {
+      'X-Internal-Key': internalKey,
+    })
   },
-  get<T = unknown>(svc: Fetcher, path: string): Promise<T> {
-    return serviceGet<T>(svc, 'svc-notify', path, TIMEOUTS.notify)
+  get<T = unknown>(svc: Fetcher, path: string, internalKey: string): Promise<T> {
+    return serviceGet<T>(svc, 'svc-notify', path, TIMEOUTS.notify, {
+      'X-Internal-Key': internalKey,
+    })
   },
 }
 

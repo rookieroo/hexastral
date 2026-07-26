@@ -28,6 +28,8 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [setup/satellite-funnel-wiring.md](./setup/satellite-funnel-wiring.md) | DDL, growth events, portfolio bootstrap |
 | [setup/web-url-surfaces.md](./setup/web-url-surfaces.md) | Brand vs `/lp` vs legal; UTM/click ids; merchant CAPI postback + admin alerts |
 | [setup/sentry-crash-reporting.md](./setup/sentry-crash-reporting.md) | Crash reporting across satellites |
+| [setup/api-cron-cache-eval.md](./setup/api-cron-cache-eval.md) | Read-only eval: API / cron / cache waste & fit (2026-07) |
+| [setup/push-retention-playbook.md](./setup/push-retention-playbook.md) | Yuun/Yuel/Syel push fuel, cron, compliance, smoke |
 
 ---
 

@@ -1134,6 +1134,8 @@ export interface RelationshipPushSnippet {
   trigger: 'resonance' | 'tension' | 'neutral'
   title: string
   body: string
+  /** Optional YYYY-MM-DD for dated fire (union queue). */
+  fireOn?: string
 }
 
 const VALID_PUSH_TRIGGER = new Set(['resonance', 'tension', 'neutral'])
@@ -1143,17 +1145,20 @@ function buildPushSnippetsPrompt(
   input: HeHunInput,
   ziweiBlock: string
 ): string {
-  return `你是一位专注于关系能量分析的人际动力顾问。基于以下两人命盘的**真实互动**，预先撰写三条"关系日活推送"语料 —— 未来某天两人当日能量呈现对应状态时，App 会作为推送发出，唤起用户打开看这段关系。
+  return `你是一位专注于关系能量分析的人际动力顾问。基于以下两人命盘的**真实互动**，预先撰写关系推送语料 —— App 在未来匹配日发出，让用户想点开这段关系。
 
 ${buildPairFacts(result, input, ziweiBlock)}
 
-## 要求
-- 为三种"当日能量状态"各写一条，trigger 取值固定为：resonance(高契合日)、tension(易摩擦日)、neutral(平稳日)。
-- 每条含 title(≤12字 钩子) 与 body(≤30字 一句话)，必须落到这两人命盘的具体互动上，典雅克制，不下天命定论，严禁网络话术。
-- 以「你」称呼接收推送的一方，对方称「对方」（客户端会替换为真实名字）。
+## 目标（少硬约束、重贴合）
+- 写出短提醒：具体到这两人的互动事实，避免套话；让人想打开 App 再看这段关系。
+- 可同时给两类语料：
+  1) **conditional**：trigger 为 resonance / tension / neutral（按当日共鸣/张力匹配时发）；三种能量态都尽量覆盖，但不必凑满八股。
+  2) **dated**：含 fireOn(YYYY-MM-DD)、title、body；落在读完后不久到一两个月内、**真有理由提醒**的日子（不必凑条数）。
+- title / body 保持锁屏可读的短句即可，不必卡死字数。
+- 以「你」称呼接收方，对方称「对方」。典雅克制，不下天命定论、不铁口。
 
 ## 输出（严格 JSON）
-{ "snippets": [ { "trigger": "resonance", "title": "…", "body": "…" }, { "trigger": "tension", "title": "…", "body": "…" }, { "trigger": "neutral", "title": "…", "body": "…" } ] }
+{ "snippets": [ { "trigger": "resonance", "title": "…", "body": "…" }, { "trigger": "tension", "title": "…", "body": "…" }, { "trigger": "neutral", "fireOn": "2026-08-01", "title": "…", "body": "…" } ] }
 
 只输出纯 JSON，不要任何其他内容。`
 }
@@ -1186,7 +1191,7 @@ export async function generateRelationshipPushSnippets(
       buildPushSnippetsPrompt(result, input, ziweiBlock) + langReminder + rewriteSuffix,
       {
         tier: 'standard',
-        maxTokens: 512,
+        maxTokens: 900,
         metricLabel: attempt > 0 ? 'hehun-push-snippets:forbidden-retry' : 'hehun-push-snippets',
         locale: language,
       }
@@ -1211,12 +1216,14 @@ export function parsePushSnippets(text: string): RelationshipPushSnippet[] {
       .map((s) => {
         const o = (s ?? {}) as Record<string, unknown>
         const trigger = str(o.trigger)
+        const fireOn = str(o.fireOn)
         return {
           trigger: (VALID_PUSH_TRIGGER.has(trigger)
             ? trigger
             : 'neutral') as RelationshipPushSnippet['trigger'],
           title: str(o.title),
           body: str(o.body),
+          ...(fireOn && /^\d{4}-\d{2}-\d{2}$/.test(fireOn) ? { fireOn } : {}),
         }
       })
       .filter((s) => s.title && s.body)

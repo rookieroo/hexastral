@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { dayGanZhi, getFourPillars } from '@zhop/astro-core'
-import { kindredPushRoutes, pickStrongestBond } from './kindred-push'
+import { kindredPushRoutes, pickStrongestBond, scoreKindredSnippet } from './kindred-push'
 
 // The handler reads only `c.env.INTERNAL_KEY` + `c.get('db')`. Run in isolation
 // (no dbMiddleware) so `db` is undefined → the empty-response branch, which lets
@@ -77,5 +77,37 @@ describe('pickStrongestBond', () => {
     expect(pickStrongestBond(self, bonds, gz, '2026-06-18')).toEqual(
       pickStrongestBond(self, bonds, gz, '2026-06-18')
     )
+  })
+})
+
+describe('scoreKindredSnippet', () => {
+  test('matching conditional outranks dated today', () => {
+    const strongest = { bondId: 'b1', status: 'tension' }
+    const dated = scoreKindredSnippet(
+      { kind: 'dated', fireOn: '2026-06-18', triggerKind: null, bondId: 'b1' },
+      '2026-06-18',
+      strongest
+    )
+    const cond = scoreKindredSnippet(
+      { kind: 'conditional', fireOn: null, triggerKind: 'tension', bondId: 'b1' },
+      '2026-06-18',
+      strongest
+    )
+    expect(cond).toBeGreaterThan(dated)
+  })
+})
+
+describe('synastry intensity ranking via pickStrongestBond', () => {
+  const self = getFourPillars({ year: 1990, month: 8, day: 15, hour: 12 })
+  const gz = dayGanZhi(2026, 6, 18)
+
+  test('returns a bond when multiple present', () => {
+    const bonds = [
+      { bondId: 'a', pillars: getFourPillars({ year: 1992, month: 3, day: 3, hour: 12 }) },
+      { bondId: 'b', pillars: getFourPillars({ year: 1988, month: 11, day: 20, hour: 12 }) },
+    ]
+    const out = pickStrongestBond(self, bonds, gz, '2026-06-18')
+    expect(out).not.toBeNull()
+    expect(['a', 'b']).toContain(out?.bondId)
   })
 })

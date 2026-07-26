@@ -14,7 +14,6 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
 import {
-  kindredPushQueue,
   pairReadings,
   userBonds,
   userPhysiognomyFeatures,
@@ -25,6 +24,7 @@ import { userHasCapability } from '../../lib/access/entitlement-access'
 import { callAstro } from '../../lib/astro-client'
 import { requireUserId } from '../../lib/auth'
 import { logEvent } from '../../lib/event-log'
+import { harvestKindredPushSnippets } from '../../lib/kindred-push-harvest'
 import { solarDateSchema } from '../../lib/validation'
 import { checkChartGuard, recordChartSuccess } from '../../services/shared/divination-guard'
 
@@ -216,33 +216,28 @@ export const pairRoutes = new Hono<AppEnv>()
       })
       .where(eq(users.id, input.userId))
 
-    // Harvest (ADR-0025): 落库 the LLM-authored relationship push 语料 onto the queue, so
-    // a cheap deterministic cron can later send the right line on a matching-energy day —
-    // no per-day LLM. Conditional triggers map to calculateDailySynastry().status; bondId
-    // is null here (raw compute precedes bond creation) — the cron resolves the Thread via
-    // sourceReadingId (userBonds.hehunReadingId).
+    // Harvest (ADR-0025): queue for cron; prefer bond linked to this reading when present.
     const harvested = pushSnippets ?? []
     c.executionCtx.waitUntil(
       Promise.all([
         recordChartSuccess('pair', { pair: guardKey }, input.userId, c.env.GUARD_KV),
         logEvent(db, input.userId, 'reading_pair', { readingId }),
-        harvested.length > 0
-          ? db.insert(kindredPushQueue).values(
-              harvested.slice(0, 6).map((s) => ({
-                id: crypto.randomUUID(),
-                userId: input.userId,
-                bondId: null,
-                sourceReadingId: readingId,
-                locale: input.language ?? 'zh-CN',
-                kind: 'conditional' as const,
-                triggerKind: s.trigger,
-                title: s.title,
-                body: s.body,
-                source: 'report' as const,
-                status: 'queued' as const,
-              }))
-            )
-          : Promise.resolve(),
+        (async () => {
+          if (harvested.length === 0) return
+          if (!(await userHasCapability(db, input.userId, 'kindred'))) return
+          const bond = await db
+            .select({ id: userBonds.id })
+            .from(userBonds)
+            .where(eq(userBonds.hehunReadingId, readingId))
+            .get()
+          await harvestKindredPushSnippets(db, {
+            userId: input.userId,
+            bondId: bond?.id ?? null,
+            sourceReadingId: readingId,
+            locale: input.language ?? 'zh-CN',
+            snippets: harvested,
+          })
+        })(),
       ])
     )
 

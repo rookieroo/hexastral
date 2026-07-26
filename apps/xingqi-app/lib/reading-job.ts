@@ -20,7 +20,7 @@ import {
 import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
 import { isCjkZh, pickZh } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
-import { isXingqiPushEnabled, scheduleXingqiPush } from './push-schedule'
+import { scheduleXingqiPush } from './push-schedule'
 import {
   clearReadingDraft,
   getReadingDraft,
@@ -388,7 +388,9 @@ async function finishSuccess(opts: {
     : []
 
   const proActive = opts.isPro || opts.outputKind === 'period_brief'
-  if (proActive && (await isXingqiPushEnabled())) {
+  if (proActive) {
+    // Pro reading → default reminders on so subscribers enter the push funnel.
+    await setXingqiPushPrefs({ remindersOn: true, recaptureOn: true, eventsOn: true })
     const lastReadingAt = new Date().toISOString()
     const serverOk = await registerXingqiServerPush({
       locale: opts.locale,

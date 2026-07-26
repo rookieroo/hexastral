@@ -1,15 +1,18 @@
 /**
- * /api/notify/* — 推送令牌管理 (D1) + SVC_NOTIFY 服务绑定代理
+ * /api/notify/* — 推送令牌管理 (D1)
  *
  * POST /register-device  — 注册/更新 Expo Push Token (D1 直写)
  * GET  /push-targets      — 按时区查询推送目标 (供 svc-notify cron)
- * ALL  /*                 — 其余请求透传到 svc-notify
+ *
+ * Intentionally NO catch-all proxy to svc-notify — public clients must never
+ * reach /expo-push/send. Event pushes use service binding + Internal-Key.
  */
 
 import { and, eq, inArray, lt, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
+import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import { notificationAttributions, pushTokens, users } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { requireUserId } from '../lib/auth'
@@ -32,6 +35,16 @@ notifyRoutes.post('/register-device', async (c) => {
 
   const db = c.get('db')
   const now = new Date().toISOString()
+  const timezoneId = canonicalizeTimezoneToPool(parsed.timezoneId)
+
+  const existing = await db
+    .select({ userId: pushTokens.userId })
+    .from(pushTokens)
+    .where(eq(pushTokens.token, parsed.token))
+    .get()
+  if (existing && existing.userId !== parsed.userId) {
+    throw new HTTPException(409, { message: 'push token already bound to another account' })
+  }
 
   // Upsert push token + update users.lastActiveAt in one batch (activity signal for svc-fortune)
   await db.batch([
@@ -41,15 +54,15 @@ notifyRoutes.post('/register-device', async (c) => {
         token: parsed.token,
         userId: parsed.userId,
         platform: parsed.platform,
-        timezoneId: parsed.timezoneId,
+        timezoneId,
         lastActiveAt: now,
         createdAt: now,
       })
       .onConflictDoUpdate({
         target: pushTokens.token,
         set: {
-          userId: parsed.userId,
-          timezoneId: parsed.timezoneId,
+          // Same user only (guarded above) — refresh tz / activity, never steal ownership.
+          timezoneId,
           lastActiveAt: now,
         },
       }),
@@ -195,24 +208,4 @@ notifyRoutes.post('/attribution', async (c) => {
   })
 
   return c.json({ ok: true })
-})
-
-// Forward all GET/POST requests dynamically
-notifyRoutes.all('/*', async (c) => {
-  const path = c.req.path.replace(/^\/api\/notify/, '') || '/'
-  const url = new URL(`https://svc-notify.internal${path}`)
-  url.search = new URL(c.req.url).search // retain query params
-
-  const reqInit: RequestInit = {
-    method: c.req.method,
-    headers: c.req.raw.headers,
-  }
-
-  if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
-    reqInit.body = c.req.raw.body
-  }
-
-  const res = await c.env.SVC_NOTIFY.fetch(url, reqInit)
-  const newRes = new Response(res.body, res)
-  return newRes
 })

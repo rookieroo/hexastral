@@ -67,6 +67,7 @@ import {
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
+import { hasActiveEntitlement } from '../services/entitlements'
 import {
   evaluateLlmGuard,
   type LlmGuardConfig,
@@ -782,6 +783,7 @@ auspiceTimelineRoutes.get('/push/targets', async (c) => {
       birthHour: auspicePushSubs.birthHour,
       gender: auspicePushSubs.gender,
       isPro: auspicePushSubs.isPro,
+      portfolioUserId: auspicePushSubs.portfolioUserId,
       timelineRemindOn: auspicePushSubs.timelineRemindOn,
     })
     .from(auspicePushSubs)
@@ -800,9 +802,21 @@ auspiceTimelineRoutes.get('/push/targets', async (c) => {
   }> = []
 
   for (const sub of page) {
-    // Pro + opted-in + full birth (大运 direction needs gender).
+    let livePro = false
+    if (sub.portfolioUserId) {
+      livePro =
+        (await hasActiveEntitlement(db, sub.portfolioUserId, 'auspice_pro')) ||
+        (await hasActiveEntitlement(db, sub.portfolioUserId, 'universe_pro'))
+      if (livePro !== sub.isPro) {
+        await db
+          .update(auspicePushSubs)
+          .set({ isPro: livePro })
+          .where(eq(auspicePushSubs.deviceId, sub.deviceId))
+      }
+    }
+    // Pro + opted-in + full birth (大运 direction needs gender). Live entitlement only.
     if (
-      !sub.isPro ||
+      !livePro ||
       !sub.timelineRemindOn ||
       !sub.birthDate ||
       sub.birthHour == null ||

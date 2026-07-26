@@ -504,19 +504,42 @@ export async function purgeStaleNotificationsOnce(): Promise<void> {
 /**
  * Subscribe to notification taps. The handler receives the notification's
  * deep-link target: `day` (YYYY-MM-DD → Today) and/or `route` (e.g. `/timeline`).
- * Returns an unsubscribe fn; also fires for the launch notification (cold start).
+ * Returns an unsubscribe fn. Also drains `getLastNotificationResponseAsync` so
+ * cold-start taps (app launched from a notification) reach the same handler.
  */
 export function addAuspiceNotificationTapListener(
-  onOpen: (target: { day: string | null; route: string | null; focus: string | null }) => void
+  onOpen: (target: {
+    day: string | null
+    route: string | null
+    focus: string | null
+    personId: string | null
+    nodeType: string | null
+    year: string | null
+    month: string | null
+  }) => void
 ): () => void {
-  const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+  let lastHandledId: string | null = null
+  const handle = (response: Notifications.NotificationResponse) => {
+    const id = response.notification.request.identifier
+    if (id && id === lastHandledId) return
+    if (id) lastHandledId = id
     const data = response.notification.request.content.data ?? {}
     onOpen({
       day: typeof data.day === 'string' ? data.day : null,
       route: typeof data.route === 'string' ? data.route : null,
       focus: typeof data.focus === 'string' ? data.focus : null,
+      personId: typeof data.personId === 'string' ? data.personId : null,
+      nodeType: typeof data.nodeType === 'string' ? data.nodeType : null,
+      year: typeof data.year === 'string' ? data.year : null,
+      month: typeof data.month === 'string' ? data.month : null,
     })
-  })
+  }
+  const sub = Notifications.addNotificationResponseReceivedListener(handle)
+  void Notifications.getLastNotificationResponseAsync()
+    .then((response) => {
+      if (response) handle(response)
+    })
+    .catch(() => {})
   return () => sub.remove()
 }
 
@@ -621,16 +644,20 @@ async function cancelBirthdays(): Promise<void> {
  * a day-of reminder (unless `remindOnDay === false`). 农历 birthdays convert via
  * astro-core. Stable per-person ids → idempotent. Only schedules when permission
  * is already granted (call on app open freely; the 亲友 screen prompts on add).
+ *
+ * When server push is active, local birthday schedules are skipped unless
+ * `forceLocal` is set (server save failed — keep a local fallback).
  */
 export async function scheduleBirthdayReminders(
   people: ReadonlyArray<AuspicePerson>,
-  locale: Locale
+  locale: Locale,
+  opts?: { forceLocal?: boolean }
 ): Promise<void> {
   await cancelBirthdays()
   // Server push (when registered) sends birthdays from the server table — don't
   // also schedule them locally or the user gets two. people.tsx keeps the server
-  // table in sync; local is the fallback for unregistered devices.
-  if (await isServerPushActive()) return
+  // table in sync; local is the fallback for unregistered devices (or forceLocal).
+  if (!opts?.forceLocal && (await isServerPushActive())) return
   const perm = await Notifications.getPermissionsAsync().catch(() => null)
   if (!perm || perm.status !== 'granted') return
 

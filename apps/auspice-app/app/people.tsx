@@ -141,8 +141,9 @@ export default function PeopleScreen() {
     // FREE_BIRTHDAY_LIMIT, so nudge the paywall when a free user crosses it (the
     // extra 亲友 is still saved for 合盘 etc., it just won't fire reminders).
     if (!isPro && next.length > FREE_BIRTHDAY_LIMIT) setPaywallOpen(true)
-    // Persist the birthday server-side (authoritative cap + a future remote
-    // birthday push); best-effort, non-blocking.
+    // Persist the birthday server-side (authoritative cap + remote push). If the
+    // save fails while server push is active, force a local schedule so the
+    // reminder is not silently dropped.
     const added = next[next.length - 1]
     if (added) {
       void getAuspiceDeviceId()
@@ -159,7 +160,12 @@ export default function PeopleScreen() {
             isPro,
           })
         )
-        .catch(() => {})
+        .then((res) => {
+          if (res && res.saved === false) {
+            return scheduleBirthdayReminders(next, locale, { forceLocal: true })
+          }
+        })
+        .catch(() => scheduleBirthdayReminders(next, locale, { forceLocal: true }))
     }
   }
 

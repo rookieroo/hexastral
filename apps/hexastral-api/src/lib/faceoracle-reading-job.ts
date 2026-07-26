@@ -24,8 +24,14 @@ import {
 import type { AppDb, CloudflareBindings } from '../infra-types'
 import type { CreditSource } from '../services/credits'
 import { refundCredit } from '../services/credits'
+import { hasActiveEntitlement } from '../services/entitlements'
 import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../services/quota'
 import { sendExpoPushMessages } from './expo-push'
+import {
+  llmHarvestFacePushWindows,
+  replaceFaceoraclePushFuel,
+  windowsFromEvents,
+} from './faceoracle-push-harvest'
 import {
   buildLocusIndex,
   buildLocusIndexFromLoci,
@@ -1182,6 +1188,34 @@ export async function runFaceoracleReadingJob(
       jobId,
       ok: true,
     })
+  }
+
+  // Pro: replace dated push fuel (events + optional LLM harvest). Oneshot skips.
+  const isProReading =
+    outputKind === 'period_brief' ||
+    outputKind === 'deep' ||
+    (await hasActiveEntitlement(db, job.userId, 'faceoracle_pro')) ||
+    (await hasActiveEntitlement(db, job.userId, 'universe_pro'))
+  if (isProReading && outputKind !== 'oneshot') {
+    try {
+      const fromEvents = windowsFromEvents(events, job.locale)
+      const fromLlm = await llmHarvestFacePushWindows(env, {
+        locale: job.locale,
+        events,
+        chapterHints: normalized.chapters
+          .slice(0, 3)
+          .map((ch) => `${ch.kind}:${(ch.reef ?? ch.remedy ?? '').slice(0, 80)}`)
+          .join(' | '),
+      })
+      await replaceFaceoraclePushFuel(db, {
+        userId: job.userId,
+        sourceReadingId: readingId,
+        locale: job.locale,
+        windows: [...fromLlm, ...fromEvents],
+      })
+    } catch (err) {
+      console.error('[faceoracle-job] push harvest failed', jobId, err)
+    }
   }
 }
 

@@ -26,15 +26,15 @@ const PUSH_STRINGS: Record<string, Record<string, string>> = {
     th: 'ผู้ติดต่อของคุณเข้าร่วมแล้ว!',
   },
   bond_matched_body: {
-    zh: '{name} 也加入了 HexAstral！',
-    'zh-Hant': '{name} 也加入了 HexAstral！',
-    en: '{name} joined HexAstral',
-    ja: '{name} が HexAstral に参加しました！',
-    ko: '{name} 님이 HexAstral에 가입했습니다',
-    de: '{name} ist HexAstral beigetreten',
-    es: '{name} se unió a HexAstral',
-    vi: '{name} đã tham gia HexAstral',
-    th: '{name} เข้าร่วม HexAstral แล้ว',
+    zh: '你的联系人已加入 HexAstral！',
+    'zh-Hant': '你的聯繫人已加入 HexAstral！',
+    en: 'Your contact joined HexAstral',
+    ja: '連絡先が HexAstral に参加しました！',
+    ko: '연락처가 HexAstral에 가입했습니다',
+    de: 'Dein Kontakt ist HexAstral beigetreten',
+    es: 'Tu contacto se unió a HexAstral',
+    vi: 'Liên hệ của bạn đã tham gia HexAstral!',
+    th: 'ผู้ติดต่อของคุณเข้าร่วม HexAstral แล้ว!',
   },
 
   // ── Bond lifecycle events ────────────────────────────────────────────────
@@ -167,7 +167,7 @@ export async function sendPushEvent(
   try {
     // 1. Look up recipient's locale from svc-notify
     const { locale } = await notifyClient
-      .get<{ locale: string }>(env.SVC_NOTIFY, `/expo-push/locale/${userId}`)
+      .get<{ locale: string }>(env.SVC_NOTIFY, `/expo-push/locale/${userId}`, env.INTERNAL_KEY)
       .catch(() => ({ locale: 'zh' }))
 
     // 2. Build localized strings
@@ -180,7 +180,7 @@ export async function sendPushEvent(
       title,
       body,
       data: { type: event, ...params },
-    })
+    }, env.INTERNAL_KEY)
   } catch (err) {
     console.error('[push] sendPushEvent failed:', err)
   }

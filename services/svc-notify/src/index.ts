@@ -17,6 +17,7 @@
  */
 
 import { createLogger } from '@zhop/logger'
+import { TIMEZONE_POOL } from '@zhop/timezone-pool'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 
@@ -100,6 +101,15 @@ interface DailyFortuneMessage {
 // ============ App ============
 
 const app = new Hono<{ Bindings: Env }>()
+
+/** Mutation + locale routes require Internal-Key (service binding callers only). */
+app.use('/expo-push/*', async (c, next) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
+  await next()
+})
 
 // ============ Health ============
 
@@ -455,15 +465,16 @@ function getEveningFallbackText(locale: string): { title: string; body: string }
  */
 async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
   // Weekly cron (Sunday 03:00 UTC) — purge stale push tokens
-  if (event.cron === '0 3 * * 0') {
+  if (event.cron === '0 3 * * SUN') {
     ctx.waitUntil(purgeStaleTokens(env))
     return
   }
 
   // Hourly cron — daily fortune push dispatch (morning + evening slots)
-  // Flagship hexastral-app (per-userId, daily_almanac via queue):
-  await runHourlyFortunePush(env, 'morning', 8)
-  await runHourlyFortunePush(env, 'evening', 20)
+  // Flagship hexastral-app fortune push DISABLED — shared push_tokens are used by
+  // Yuel; omnibus daily_almanac fan-out would mis-brand / waste sends (push-retention P2).
+  // await runHourlyFortunePush(env, 'morning', 8)
+  // await runHourlyFortunePush(env, 'evening', 20)
   // Auspice (per-device, server-rendered almanac, direct send) — the REAL push
   // that replaces local notifications' rolling-window unreliability:
   await runAuspicePush(env, 'morning', 8)
@@ -474,8 +485,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
   // Kindred relationship nudge (ADR-0025): deterministic daily synastry over each
   // user's Threads picks a pre-harvested queue snippet. Evening slot, no LLM.
   await runKindredPush(env, 19)
-  // FaceOracle / Xingqi Pro: monthly re-capture + event-window “宜留意” (09:00 local).
+  // FaceOracle / Xingqi Pro: morning qi/recapture (09) + evening rest windows (21).
   await runFaceoraclePush(env, 9)
+  await runFaceoraclePush(env, 21)
 }
 
 /** Two-digit pad. */
@@ -744,7 +756,8 @@ async function runFaceoraclePush(env: Env, targetHour: number): Promise<void> {
     let cursor: string | null = '0'
     while (cursor !== null) {
       const url = new URL('https://internal/api/physiognomy/push/targets')
-      url.searchParams.set('slot', 'morning')
+      url.searchParams.set('slot', targetHour === 21 ? 'evening' : 'morning')
+      url.searchParams.set('hour', String(targetHour))
       url.searchParams.set('timezoneId', tz)
       url.searchParams.set('date', date)
       url.searchParams.set('limit', '200')
@@ -844,9 +857,33 @@ async function purgeStaleTokens(env: Env): Promise<void> {
   }
 
   logger.info('stale-token purge complete', { totalPurged })
+
+  // Also purge inactive Auspice / Syel push subs (same 90-day window).
+  for (const path of [
+    'https://internal/api/auspice/push/purge-inactive?inactiveDays=90',
+    'https://internal/api/physiognomy/push/purge-inactive?inactiveDays=90',
+  ]) {
+    try {
+      const r = await env.SVC_API.fetch(path, {
+        method: 'POST',
+        headers: { 'X-Internal-Key': env.INTERNAL_KEY },
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (r.ok) {
+        const j = await r.json<{ data?: { deleted?: number } }>()
+        logger.info('satellite push purge', { path, deleted: String(j.data?.deleted ?? 0) })
+      }
+    } catch (err) {
+      logger.error('satellite push purge failed', {
+        path,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
   await alertAdmin(env.SVC_ADMIN_NOTIFY, {
     title: 'svc-notify: weekly stale-token purge complete',
-    message: `Purged ${totalPurged} push tokens inactive > 90 days`,
+    message: `Purged ${totalPurged} push tokens inactive > 90 days (+ satellite subs)`,
     level: 'info',
     context: { totalPurged: String(totalPurged) },
   })
@@ -951,45 +988,8 @@ async function runHourlyFortunePush(
 /**
  * Pool of IANA timezones covering all inhabited UTC offsets.
  * One representative per offset ensures we hit every user exactly once per day.
+ * Source of truth: `@zhop/timezone-pool` (register paths canonicalize into this set).
  */
-const TIMEZONE_POOL = [
-  'Pacific/Midway', // UTC-11
-  'Pacific/Honolulu', // UTC-10
-  'Pacific/Marquesas', // UTC-09:30
-  'America/Anchorage', // UTC-09
-  'America/Los_Angeles', // UTC-08
-  'America/Denver', // UTC-07
-  'America/Chicago', // UTC-06
-  'America/New_York', // UTC-05
-  'America/Halifax', // UTC-04
-  'America/St_Johns', // UTC-03:30
-  'America/Sao_Paulo', // UTC-03
-  'Atlantic/South_Georgia', // UTC-02
-  'Atlantic/Azores', // UTC-01
-  'Europe/London', // UTC+00
-  'Europe/Paris', // UTC+01
-  'Europe/Helsinki', // UTC+02
-  'Europe/Moscow', // UTC+03
-  'Asia/Tehran', // UTC+03:30
-  'Asia/Dubai', // UTC+04
-  'Asia/Kabul', // UTC+04:30
-  'Asia/Karachi', // UTC+05
-  'Asia/Kolkata', // UTC+05:30
-  'Asia/Kathmandu', // UTC+05:45
-  'Asia/Dhaka', // UTC+06
-  'Asia/Yangon', // UTC+06:30
-  'Asia/Bangkok', // UTC+07
-  'Asia/Shanghai', // UTC+08
-  'Australia/Eucla', // UTC+08:45
-  'Asia/Tokyo', // UTC+09
-  'Australia/Adelaide', // UTC+09:30
-  'Australia/Sydney', // UTC+10
-  'Pacific/Norfolk', // UTC+11
-  'Pacific/Auckland', // UTC+12
-  'Pacific/Chatham', // UTC+12:45
-  'Pacific/Apia', // UTC+13
-  'Pacific/Kiritimati', // UTC+14
-]
 
 // ============ Queue Consumer ============
 

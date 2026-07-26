@@ -6,14 +6,17 @@
  * POST /unregister-stale — X-Internal-Key
  */
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, lt } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { faceoraclePushSubs, physiognomyEvents } from '../../db/schema'
+import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
+import { faceoraclePushQueue, faceoraclePushSubs, physiognomyEvents } from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
 import { jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
+import { userIdsWithMonthEventCoverage } from '../../lib/faceoracle-push-harvest'
+import { hasActiveEntitlement } from '../../services/entitlements'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const EXPO_TOKEN_RE = /^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/
@@ -26,18 +29,34 @@ const pushRegisterSchema = z.object({
   locale: z.string().max(16).default('zh'),
   recaptureOn: z.boolean().default(true),
   eventsOn: z.boolean().default(true),
-  isPro: z.boolean().default(false),
+  /** Ignored — Pro is resolved server-side from entitlements. Kept for old clients. */
+  isPro: z.boolean().default(false).optional(),
   lastReadingAt: z.string().min(10).max(40).optional(),
 })
 
 function pushCopy(locale: string) {
-  const zh = locale.startsWith('zh')
+  const base = locale.toLowerCase()
+  const hant = base.includes('hant') || base === 'zh-tw' || base === 'zh-hk'
+  const hans = base.startsWith('zh') && !hant
+  if (hant) {
+    return {
+      recaptureTitle: '可以更新本期形氣了',
+      recaptureBody: '新的一個月視窗已開啟。可整組複拍，或只更新面部／左掌／右掌。',
+      eventTitle: '宜留意的時間窗',
+    }
+  }
+  if (hans) {
+    return {
+      recaptureTitle: '可以更新本期形气了',
+      recaptureBody: '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。',
+      eventTitle: '宜留意的时间窗',
+    }
+  }
   return {
-    recaptureTitle: zh ? '可以更新本期形气了' : 'Time to refresh your reading',
-    recaptureBody: zh
-      ? '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。'
-      : 'A new monthly window is open. Refresh all three photos, or update one part.',
-    eventTitle: zh ? '宜留意的时间窗' : 'A window worth noting',
+    recaptureTitle: 'Time to refresh your reading',
+    recaptureBody:
+      'A new monthly window is open. Refresh all three photos, or update one part.',
+    eventTitle: 'A window worth noting',
   }
 }
 
@@ -73,6 +92,10 @@ physiognomyPushRoutes.post('/register', async (c) => {
   }
   const now = new Date().toISOString()
   const db = c.get('db')
+  const timezoneId = canonicalizeTimezoneToPool(b.timezoneId)
+  const isPro =
+    (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
+    (await hasActiveEntitlement(db, userId, 'universe_pro'))
 
   const existing = await db
     .select({ lastReadingAt: faceoraclePushSubs.lastReadingAt })
@@ -96,11 +119,11 @@ physiognomyPushRoutes.post('/register', async (c) => {
       userId,
       token: b.token,
       platform: b.platform,
-      timezoneId: b.timezoneId,
+      timezoneId,
       locale: b.locale,
       recaptureOn: b.recaptureOn,
       eventsOn: b.eventsOn,
-      isPro: b.isPro,
+      isPro,
       lastReadingAt,
       lastActiveAt: now,
       createdAt: now,
@@ -110,11 +133,11 @@ physiognomyPushRoutes.post('/register', async (c) => {
       set: {
         token: b.token,
         platform: b.platform,
-        timezoneId: b.timezoneId,
+        timezoneId,
         locale: b.locale,
         recaptureOn: b.recaptureOn,
         eventsOn: b.eventsOn,
-        isPro: b.isPro,
+        isPro,
         lastReadingAt,
         lastActiveAt: now,
       },
@@ -130,8 +153,9 @@ physiognomyPushRoutes.delete('/register', async (c) => {
 })
 
 /**
- * Internal: morning slot (~09:00 local). Pro + opted-in prefs → recapture due
- * and/or event windows whose startMonth matches the local YYYY-MM.
+ * Internal: Pro push targets. Query params: timezoneId, date, optional hour (9|21).
+ * Prefers dated faceoracle_push_queue rows for that local hour; falls back to
+ * recapture / event rules. ≤1 message per user.
  */
 physiognomyPushRoutes.get('/targets', async (c) => {
   const key = c.req.header('X-Internal-Key')
@@ -142,6 +166,8 @@ physiognomyPushRoutes.get('/targets', async (c) => {
   if (!timezoneId || !date || !DATE_RE.test(date)) {
     throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
   }
+  const hourRaw = Number.parseInt(c.req.query('hour') ?? '9', 10)
+  const localHour = hourRaw === 21 ? 21 : 9
   const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
   const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
   const db = c.get('db')
@@ -170,6 +196,50 @@ physiognomyPushRoutes.get('/targets', async (c) => {
     for (const r of rows) eventsByUser.set(r.userId, r.eventsJson)
   }
 
+  const queuedByUser = new Map<string, Array<typeof faceoraclePushQueue.$inferSelect>>()
+  /** Users who already have queue fuel (queued or sent) covering this calendar month. */
+  const monthFuelCovered = new Set<string>()
+  if (userIds.length > 0) {
+    const qrows = await db
+      .select()
+      .from(faceoraclePushQueue)
+      .where(
+        and(
+          inArray(faceoraclePushQueue.userId, userIds),
+          eq(faceoraclePushQueue.status, 'queued'),
+          eq(faceoraclePushQueue.fireOn, date),
+          eq(faceoraclePushQueue.localHour, localHour)
+        )
+      )
+    for (const r of qrows) {
+      const list = queuedByUser.get(r.userId) ?? []
+      list.push(r)
+      queuedByUser.set(r.userId, list)
+    }
+
+    if (localHour === 9) {
+      // Only treat as "month event already covered" when queue has the month-start
+      // event window (1st) or explicit startMonth — not any rest/observe later in month.
+      const coverRows = await db
+        .select({
+          userId: faceoraclePushQueue.userId,
+          fireOn: faceoraclePushQueue.fireOn,
+          dataJson: faceoraclePushQueue.dataJson,
+          status: faceoraclePushQueue.status,
+        })
+        .from(faceoraclePushQueue)
+        .where(
+          and(
+            inArray(faceoraclePushQueue.userId, userIds),
+            inArray(faceoraclePushQueue.status, ['queued', 'sent'])
+          )
+        )
+      for (const id of userIdsWithMonthEventCoverage(coverRows, month)) {
+        monthFuelCovered.add(id)
+      }
+    }
+  }
+
   const messages: Array<{
     userId: string
     token: string
@@ -177,13 +247,59 @@ physiognomyPushRoutes.get('/targets', async (c) => {
     body: string
     data: Record<string, string>
   }> = []
+  const consumed: string[] = []
 
   for (const sub of page) {
-    const L = pushCopy(sub.locale)
+    const stillPro =
+      (await hasActiveEntitlement(db, sub.userId, 'faceoracle_pro')) ||
+      (await hasActiveEntitlement(db, sub.userId, 'universe_pro'))
+    if (!stillPro) {
+      if (sub.isPro) {
+        await db
+          .update(faceoraclePushSubs)
+          .set({ isPro: false })
+          .where(eq(faceoraclePushSubs.userId, sub.userId))
+      }
+      continue
+    }
 
-    if (sub.recaptureOn && sub.lastReadingAt) {
+    const L = pushCopy(sub.locale)
+    const fuel = queuedByUser.get(sub.userId) ?? []
+    if (fuel.length > 0) {
+      fuel.sort((a, b) => b.priority - a.priority)
+      const top = fuel[0]
+      if (top) {
+        let data: Record<string, string> = { kind: top.kind, targetApp: 'faceoracle' }
+        if (top.dataJson) {
+          try {
+            const parsed: unknown = JSON.parse(top.dataJson)
+            if (parsed && typeof parsed === 'object') {
+              for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+                if (typeof v === 'string') data[k] = v
+              }
+            }
+          } catch {
+            // keep defaults
+          }
+        }
+        messages.push({
+          userId: sub.userId,
+          token: sub.token,
+          title: top.title,
+          body: top.body,
+          data,
+        })
+        consumed.push(top.id)
+        continue
+      }
+    }
+
+    // Rule fallback only at morning hour (recapture / month-start events).
+    if (localHour !== 9) continue
+    let emitted = false
+
+    if (!emitted && sub.recaptureOn && sub.lastReadingAt) {
       const days = daysBetween(sub.lastReadingAt, date)
-      // Fire once on the due day (and tolerate cron lag of a few days).
       if (days >= RECAPTURE_DAYS && days < RECAPTURE_DAYS + 3) {
         messages.push({
           userId: sub.userId,
@@ -192,16 +308,16 @@ physiognomyPushRoutes.get('/targets', async (c) => {
           body: L.recaptureBody,
           data: { kind: 'recapture', targetApp: 'faceoracle' },
         })
+        emitted = true
       }
     }
 
-    if (sub.eventsOn) {
+    if (!emitted && sub.eventsOn && !monthFuelCovered.has(sub.userId)) {
       const raw = eventsByUser.get(sub.userId)
       if (raw) {
         const events = parseEventsJson(raw)
         for (const ev of events.slice(0, 8)) {
           if (ev.startMonth !== month) continue
-          // Fire on the 1st–3rd of the event month (local).
           const dayNum = Number(date.slice(8, 10))
           if (dayNum < 1 || dayNum > 3) continue
           const body = `${ev.theme ?? ''}${ev.note ? ` — ${ev.note}` : ''}`.trim()
@@ -217,10 +333,17 @@ physiognomyPushRoutes.get('/targets', async (c) => {
               targetApp: 'faceoracle',
             },
           })
-          break // one event nudge per day
+          break
         }
       }
     }
+  }
+
+  if (consumed.length > 0) {
+    await db
+      .update(faceoraclePushQueue)
+      .set({ status: 'sent', sentAt: new Date().toISOString() })
+      .where(inArray(faceoraclePushQueue.id, consumed))
   }
 
   return jsonOk(c, {
@@ -239,4 +362,25 @@ physiognomyPushRoutes.post('/unregister-stale', async (c) => {
   if (tokens.length === 0) return jsonOk(c, { deleted: 0 })
   await c.get('db').delete(faceoraclePushSubs).where(inArray(faceoraclePushSubs.token, tokens))
   return jsonOk(c, { deleted: tokens.length })
+})
+
+physiognomyPushRoutes.post('/purge-inactive', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const inactiveDays = Math.min(Number.parseInt(c.req.query('inactiveDays') ?? '90', 10) || 90, 365)
+  const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000).toISOString()
+  const db = c.get('db')
+  const stale = await db
+    .select({ userId: faceoraclePushSubs.userId })
+    .from(faceoraclePushSubs)
+    .where(lt(faceoraclePushSubs.lastActiveAt, cutoff))
+    .limit(500)
+  if (stale.length === 0) return jsonOk(c, { deleted: 0 })
+  const ids = stale.map((r) => r.userId)
+  await db.delete(faceoraclePushSubs).where(inArray(faceoraclePushSubs.userId, ids))
+  await db
+    .update(faceoraclePushQueue)
+    .set({ status: 'expired' })
+    .where(inArray(faceoraclePushQueue.userId, ids))
+  return jsonOk(c, { deleted: ids.length })
 })

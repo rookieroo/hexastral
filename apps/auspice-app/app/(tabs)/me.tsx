@@ -72,6 +72,7 @@ import {
   isPushEnabled,
   isTimelineRemindersEnabled,
   setEveningPushEnabled,
+  syncServerPush,
 } from '@/lib/push'
 import { pushTypeById } from '@/lib/pushRegistry'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
@@ -331,6 +332,10 @@ export default function MeScreen() {
       setEditingBirth(false)
       // Briefly show "Saved" feedback — clear after 2s so the button reads "Save" again.
       setTimeout(() => setBirthSaved(false), 2000)
+      // Refresh server push profile (birthDate / gender / hour) while daily push is on.
+      void isPushEnabled().then((on) => {
+        if (on) void syncServerPush(locale).catch(() => {})
+      })
     })
   }
 

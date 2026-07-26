@@ -39,15 +39,17 @@ import {
   type Stem as CorpusStem,
   computeDailyHook,
 } from '@zhop/astro-i18n'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, lt } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
 import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
-import type { AppEnv } from '../infra-types'
+import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { astroClient } from '../lib/service-clients'
+import { hasActiveEntitlement } from '../services/entitlements'
 import { parseRcActiveEntitlements } from '../services/revenuecat'
+import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import {
   evaluateLlmGuard,
   type LlmGuardConfig,
@@ -2129,16 +2131,30 @@ function solarMonthDay(date: string, calendar: 'solar' | 'lunar'): string | null
   return m ? (m[1] ?? null) : null
 }
 
-/** Live Pro gate for the cap: RevenueCat when configured + `u` present, else the
- *  client flag (fail-open in dev with no RC key — matches /calendar/sign). */
+/** Live Pro gate for birthday cap: requires portfolio `u` + entitlement/RC. No client flag. */
 async function birthdayProOk(
   env: CalendarEnv,
-  isProFlag: boolean,
+  db: AppDb | undefined,
+  _isProFlag: boolean,
   appUserId?: string
 ): Promise<boolean> {
-  if (env.REVENUECAT_API_KEY && appUserId)
-    return isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId)
-  return isProFlag
+  return resolveAuspicePushIsPro(db, env, false, appUserId)
+}
+
+/** Push-register Pro: D1 entitlements / RC when portfolio `u` is present. No `u` → false. */
+async function resolveAuspicePushIsPro(
+  db: AppDb | undefined,
+  env: CalendarEnv,
+  _isProFlag: boolean,
+  appUserId?: string
+): Promise<boolean> {
+  if (!appUserId) return false
+  if (db) {
+    if (await hasActiveEntitlement(db, appUserId, 'auspice_pro')) return true
+    if (await hasActiveEntitlement(db, appUserId, 'universe_pro')) return true
+  }
+  if (env.REVENUECAT_API_KEY) return isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId)
+  return false
 }
 
 const birthdaySchema = z.object({
@@ -2169,7 +2185,12 @@ auspiceRoutes.post('/birthdays', async (c) => {
 
   // Only NEW birthdays beyond the free cap need Pro; editing an existing one is free.
   if (isNew && existing.length >= BIRTHDAY_FREE_LIMIT) {
-    const pro = await birthdayProOk(c.env as unknown as CalendarEnv, body.isPro, body.u)
+    const pro = await birthdayProOk(
+      c.env as unknown as CalendarEnv,
+      c.get('db'),
+      body.isPro,
+      body.u
+    )
     if (!pro) {
       return jsonOk(c, { saved: false, limited: true, limit: BIRTHDAY_FREE_LIMIT })
     }
@@ -2411,12 +2432,12 @@ interface RelationshipText {
 }
 const EN_RELATIONSHIP_TEXT: RelationshipText = {
   title: 'In sync today',
-  body: 'You and {name} are in sync today — a good day to reach out or make plans.',
+  body: 'You and a close contact are in sync today — a good day to reach out or make plans.',
 }
 const RELATIONSHIP_TEXT: Record<string, RelationshipText> = {
-  'zh-Hans': { title: '今日同气', body: '今天你和{name}气场相合，宜相约、聚一聚。' },
-  'zh-Hant': { title: '今日同氣', body: '今天你和{name}氣場相合，宜相約、聚一聚。' },
-  ja: { title: '今日は好相性', body: '今日はあなたと{name}の相性が良い日。連絡や約束に好適。' },
+  'zh-Hans': { title: '今日同气', body: '今天你和一位亲友气场相合，宜相约、聚一聚。' },
+  'zh-Hant': { title: '今日同氣', body: '今天你和一位親友氣場相合，宜相約、聚一聚。' },
+  ja: { title: '今日は好相性', body: '今日は親しい人との相性が良い日。連絡や約束に好適。' },
   en: EN_RELATIONSHIP_TEXT,
 }
 function relationshipPushText(locale: string): RelationshipText {
@@ -2629,7 +2650,10 @@ const pushRegisterSchema = z.object({
   // 人生时间线 node push (流月/流年/大运) — Pro-gated, mirrors the in-app
   // timelineRemindToggle. Default on so the cron fires once the client syncs.
   timelineRemindOn: z.boolean().default(true),
+  /** Client Pro hint — ignored when `u` resolves via entitlements / RC. */
   isPro: z.boolean().default(false),
+  /** Portfolio / RC app user id for server-side Pro. */
+  u: z.string().max(128).optional(),
 })
 
 auspiceRoutes.post('/push/register', async (c) => {
@@ -2637,15 +2661,23 @@ auspiceRoutes.post('/push/register', async (c) => {
   if (!/^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/.test(b.token)) {
     throw new HTTPException(400, { message: 'invalid Expo push token' })
   }
+  const timezoneId = canonicalizeTimezoneToPool(b.timezoneId)
   const now = new Date().toISOString()
-  await c
-    .get('db')
+  const db = c.get('db')
+  const isPro = await resolveAuspicePushIsPro(
+    db,
+    c.env as unknown as CalendarEnv,
+    b.isPro,
+    b.u
+  )
+  const portfolioUserId = b.u?.trim() ? b.u.trim() : null
+  await db
     .insert(auspicePushSubs)
     .values({
       deviceId: b.deviceId,
       token: b.token,
       platform: b.platform,
-      timezoneId: b.timezoneId,
+      timezoneId,
       locale: b.locale,
       birthDate: b.birthDate ?? null,
       birthHour: b.birthHour ?? null,
@@ -2656,7 +2688,8 @@ auspiceRoutes.post('/push/register', async (c) => {
       holidayOn: b.holidayOn,
       relationshipOn: b.relationshipOn,
       timelineRemindOn: b.timelineRemindOn,
-      isPro: b.isPro,
+      isPro,
+      portfolioUserId,
       lastActiveAt: now,
       createdAt: now,
     })
@@ -2665,7 +2698,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       set: {
         token: b.token,
         platform: b.platform,
-        timezoneId: b.timezoneId,
+        timezoneId,
         locale: b.locale,
         birthDate: b.birthDate ?? null,
         birthHour: b.birthHour ?? null,
@@ -2676,7 +2709,8 @@ auspiceRoutes.post('/push/register', async (c) => {
         holidayOn: b.holidayOn,
         relationshipOn: b.relationshipOn,
         timelineRemindOn: b.timelineRemindOn,
-        isPro: b.isPro,
+        isPro,
+        portfolioUserId,
         lastActiveAt: now,
       },
     })
@@ -2715,6 +2749,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       locale: auspicePushSubs.locale,
       birthDate: auspicePushSubs.birthDate,
       isPro: auspicePushSubs.isPro,
+      portfolioUserId: auspicePushSubs.portfolioUserId,
       dailyMorning: auspicePushSubs.dailyMorning,
       dailyEvening: auspicePushSubs.dailyEvening,
       birthdayOn: auspicePushSubs.birthdayOn,
@@ -2765,16 +2800,30 @@ auspiceRoutes.get('/push/targets', async (c) => {
   }> = []
 
   for (const sub of page) {
+    let livePro = false
+    if (sub.portfolioUserId) {
+      livePro =
+        (await hasActiveEntitlement(db, sub.portfolioUserId, 'auspice_pro')) ||
+        (await hasActiveEntitlement(db, sub.portfolioUserId, 'universe_pro'))
+      if (livePro !== sub.isPro) {
+        await db
+          .update(auspicePushSubs)
+          .set({ isPro: livePro })
+          .where(eq(auspicePushSubs.deviceId, sub.deviceId))
+      }
+    }
+    const effective = { ...sub, isPro: livePro }
+
     // Daily morning reading / event-driven evening heads-up (null on a quiet evening).
-    if (slot === 'evening' ? sub.dailyEvening : sub.dailyMorning) {
-      const m = renderAuspicePush(slot, ymd, sub)
-      if (m) messages.push({ deviceId: sub.deviceId, token: sub.token, ...m })
+    if (slot === 'evening' ? effective.dailyEvening : effective.dailyMorning) {
+      const m = renderAuspicePush(slot, ymd, effective)
+      if (m) messages.push({ deviceId: effective.deviceId, token: effective.token, ...m })
     }
     // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders.
-    if (slot === 'morning' && sub.birthdayOn) {
-      const all = bdaysByOwner.get(`device:${sub.deviceId}`) ?? []
-      const reminders = sub.isPro ? all : all.slice(0, BIRTHDAY_FREE_LIMIT)
-      const bt = bdayText(sub.locale)
+    if (slot === 'morning' && effective.birthdayOn) {
+      const all = bdaysByOwner.get(`device:${effective.deviceId}`) ?? []
+      const reminders = effective.isPro ? all : all.slice(0, BIRTHDAY_FREE_LIMIT)
+      const bt = bdayText(effective.locale)
       for (const r of reminders) {
         const fire = birthdayFiresOn(
           {
@@ -2787,63 +2836,72 @@ auspiceRoutes.get('/push/targets', async (c) => {
           date
         )
         if (!fire) continue
+        const who =
+          (typeof r.relation === 'string' && r.relation.trim()) ||
+          (effective.locale.startsWith('zh')
+            ? effective.locale.includes('Hant')
+              ? '親友'
+              : '亲友'
+            : 'a friend')
         const body =
           fire.kind === 'day'
-            ? bt.day.replace('{name}', r.name)
+            ? bt.day.replace('{name}', who)
             : fire.kind === 'tomorrow'
-              ? bt.tomorrow.replace('{name}', r.name)
-              : bt.soon.replace('{n}', String(fire.n)).replace('{name}', r.name)
+              ? bt.tomorrow.replace('{name}', who)
+              : bt.soon.replace('{n}', String(fire.n)).replace('{name}', who)
         messages.push({
-          deviceId: sub.deviceId,
-          token: sub.token,
+          deviceId: effective.deviceId,
+          token: effective.token,
           title: bt.title,
           body,
-          data: { type: 'auspice_birthday' },
+          data: {
+            type: 'auspice_birthday',
+            route: '/people',
+            personId: r.id,
+            day: date,
+          },
         })
       }
     }
-    // 关系桥 nudge (morning) — "今日 你和 [亲友] 同气" when an 亲友's pair synastry
-    // with the owner reads `resonance` today. Resonance-gated (synergy > 85) so it
-    // fires rarely; at most one per device (the strongest match), and never for
-    // lunar-only 亲友 (the day-pillar synastry needs a solar date).
-    if (slot === 'morning' && sub.relationshipOn && sub.birthDate && dayGz) {
-      const friends = bdaysByOwner.get(`device:${sub.deviceId}`) ?? []
+    // 关系桥 nudge (morning) — resonance day; lock-screen copy uses abstract 亲友 (no real name).
+    if (slot === 'morning' && effective.relationshipOn && effective.birthDate && dayGz) {
+      const friends = bdaysByOwner.get(`device:${effective.deviceId}`) ?? []
       const ownerPillars = getFourPillars({
-        ...parseYmd(sub.birthDate),
+        ...parseYmd(effective.birthDate),
         hour: 12,
       })
-      let best: { name: string; synergy: number } | null = null
+      let best: { synergy: number } | null = null
       for (const f of friends) {
         if (f.calendar === 'lunar' || !DATE_RE.test(f.solarDate)) continue
         const fp = getFourPillars({ ...parseYmd(f.solarDate), hour: 12 })
         const syn = calculateDailySynastry(ownerPillars, fp, dayGz, date)
         if (syn.status === 'resonance' && (!best || syn.synergy > best.synergy)) {
-          best = { name: f.name, synergy: syn.synergy }
+          best = { synergy: syn.synergy }
         }
       }
       if (best) {
-        const rt = relationshipPushText(sub.locale)
+        const rt = relationshipPushText(effective.locale)
         messages.push({
-          deviceId: sub.deviceId,
-          token: sub.token,
+          deviceId: effective.deviceId,
+          token: effective.token,
           title: rt.title,
-          body: rt.body.replace('{name}', best.name),
+          body: rt.body,
           data: { type: 'auspice_relationship', route: '/people' },
         })
       }
     }
     // Holiday / 调休 heads-up (evening before).
-    if (slot === 'evening' && sub.holidayOn && holiday) {
-      const ht = holidayText(sub.locale)
+    if (slot === 'evening' && effective.holidayOn && holiday) {
+      const ht = holidayText(effective.locale)
       const body =
         holiday.kind === 'holiday'
           ? ht.holiday
               .replace('{name}', holiday.name)
-              .replace('{end}', holidayEndLabel(holiday.end || date, sub.locale))
+              .replace('{end}', holidayEndLabel(holiday.end || date, effective.locale))
           : ht.workday
       messages.push({
-        deviceId: sub.deviceId,
-        token: sub.token,
+        deviceId: effective.deviceId,
+        token: effective.token,
         title: ht.title,
         body,
         data: { type: 'auspice_holiday' },
@@ -2864,4 +2922,22 @@ auspiceRoutes.post('/push/unregister-stale', async (c) => {
   if (tokens.length === 0) return jsonOk(c, { deleted: 0 })
   await c.get('db').delete(auspicePushSubs).where(inArray(auspicePushSubs.token, tokens))
   return jsonOk(c, { deleted: tokens.length })
+})
+
+/** Weekly: drop auspice subs inactive > N days. */
+auspiceRoutes.post('/push/purge-inactive', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const inactiveDays = Math.min(Number.parseInt(c.req.query('inactiveDays') ?? '90', 10) || 90, 365)
+  const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000).toISOString()
+  const db = c.get('db')
+  const stale = await db
+    .select({ deviceId: auspicePushSubs.deviceId })
+    .from(auspicePushSubs)
+    .where(lt(auspicePushSubs.lastActiveAt, cutoff))
+    .limit(500)
+  if (stale.length === 0) return jsonOk(c, { deleted: 0 })
+  const ids = stale.map((r) => r.deviceId)
+  await db.delete(auspicePushSubs).where(inArray(auspicePushSubs.deviceId, ids))
+  return jsonOk(c, { deleted: ids.length })
 })

@@ -25,6 +25,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { kindredPushQueue, pushTokens, userBonds, users } from '../db/schema'
 import type { AppEnv } from '../infra-types'
+import { userHasCapability } from '../lib/access/entitlement-access'
 import { jsonOk } from '../lib/api-response'
 
 export const kindredPushRoutes = new Hono<AppEnv>()
@@ -45,17 +46,42 @@ function parseYmd(s: string): { year: number; month: number; day: number } | nul
   return { year, month, day }
 }
 
-/** Rank a synastry result so the strongest bond wins: resonance > tension >
- *  neutral, and within a tier the higher score. Drives one-nudge-per-user/day. */
+/** Rank by intensity — strong tension can beat mild resonance (not status-tier locks). */
 function synastryRank(s: { status: string; synergy: number; friction: number }): number {
-  if (s.status === 'resonance') return 3000 + s.synergy
-  if (s.status === 'tension') return 2000 + s.friction
-  return 1000 + s.synergy
+  if (s.status === 'resonance') return 1000 + Math.max(0, s.synergy) * 10
+  if (s.status === 'tension') return 1000 + Math.max(0, s.friction) * 10
+  return 500 + Math.max(0, s.synergy) * 5
 }
 
 export interface BondPillar {
   bondId: string
   pillars: FourPillars
+}
+
+/** Rank a queued snippet for same-day pick (higher wins).
+ * Matching conditional (today's energy) outranks calendar dated when both apply. */
+export function scoreKindredSnippet(
+  q: {
+    kind: string
+    fireOn: string | null
+    triggerKind: string | null
+    bondId: string | null
+  },
+  date: string,
+  strongest: { bondId: string; status: string } | null
+): number {
+  let score = 0
+  const matchingCond =
+    q.kind === 'conditional' && strongest && q.triggerKind === strongest.status
+  const datedToday = q.kind === 'dated' && q.fireOn === date
+  if (matchingCond) score += 700
+  else if (datedToday) score += 400
+  else return -1
+  if (q.triggerKind === 'tension') score += 80
+  else if (q.triggerKind === 'resonance') score += 40
+  if (strongest && q.bondId === strongest.bondId) score += 100
+  if (q.bondId) score += 20
+  return score
 }
 
 /**
@@ -127,6 +153,10 @@ kindredPushRoutes.get('/targets', async (c) => {
   for (const row of page) {
     if (seenUsers.has(row.userId)) continue // one nudge per user/day (multi-device)
     seenUsers.add(row.userId)
+
+    // Pro gate — free tokens must not receive relationship cron (shared push_tokens).
+    if (!(await userHasCapability(db, row.userId, 'kindred'))) continue
+
     const selfYmd = row.birthSolarDate ? parseYmd(row.birthSolarDate) : null
     if (!selfYmd) continue
 
@@ -155,14 +185,16 @@ kindredPushRoutes.get('/targets', async (c) => {
     const strongest =
       bondPillars.length > 0 ? pickStrongestBond(selfPillars, bondPillars, todayGz, date) : null
 
-    // Match a queued snippet: a dated one for today first, else a conditional one
-    // whose triggerKind equals today's strongest synastry status.
-    const dated = queued.find((q) => q.kind === 'dated' && q.fireOn === date)
-    const conditional = strongest
-      ? queued.find((q) => q.kind === 'conditional' && q.triggerKind === strongest.status)
-      : undefined
-    const pick = dated ?? conditional
-    if (!pick) continue
+    let pick: (typeof queued)[number] | undefined
+    let bestScore = -1
+    for (const q of queued) {
+      const s = scoreKindredSnippet(q, date, strongest)
+      if (s > bestScore) {
+        bestScore = s
+        pick = q
+      }
+    }
+    if (!pick || bestScore < 0) continue
 
     const bondId = pick.bondId ?? strongest?.bondId ?? null
     messages.push({

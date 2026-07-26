@@ -52,8 +52,14 @@ export function useXingqiNotificationDeepLink(): void {
       const kind = readKind(data)
       if (!kind) return
 
-      if (kind === 'event' || kind === 'timeline') {
+      if (kind === 'event' || kind === 'timeline' || kind === 'observe') {
         router.push('/timeline' as never)
+        return
+      }
+
+      if (kind === 'rest') {
+        // Evening pacing / rest reminder — home, not capture (recapture).
+        router.push('/(app)' as never)
         return
       }
 

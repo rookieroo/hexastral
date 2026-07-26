@@ -124,17 +124,33 @@ function RootLayoutInner() {
     return () => sub.remove()
   }, [router])
 
-  // Notification tap → deep-link Today to the notification's date.
+  // Notification tap → deep-link Today / timeline / people.
   useEffect(() => {
-    return addAuspiceNotificationTapListener(({ day, route, focus }) => {
-      if (route) router.push(route as Href)
-      else if (day)
-        router.push({
-          pathname: '/(tabs)',
-          params: focus ? { day, focus } : { day },
-        })
-      else router.push('/(tabs)')
-    })
+    return addAuspiceNotificationTapListener(
+      ({ day, route, focus, personId, nodeType, year, month }) => {
+        if (route === '/timeline' || route?.startsWith('/timeline')) {
+          router.push({
+            pathname: '/timeline',
+            params: {
+              ...(nodeType ? { nodeType } : {}),
+              ...(year ? { year } : {}),
+              ...(month ? { month } : {}),
+            },
+          } as Href)
+        } else if (route === '/people' || personId) {
+          router.push({
+            pathname: '/people',
+            params: personId ? { personId } : {},
+          } as Href)
+        } else if (route) router.push(route as Href)
+        else if (day)
+          router.push({
+            pathname: '/(tabs)',
+            params: focus ? { day, focus } : { day },
+          })
+        else router.push('/(tabs)')
+      }
+    )
   }, [router])
 
   return (

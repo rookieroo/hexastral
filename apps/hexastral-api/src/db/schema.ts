@@ -1499,6 +1499,8 @@ export const auspicePushSubs = sqliteTable(
     timelineRemindOn: integer('timeline_remind_on', { mode: 'boolean' }).notNull().default(true),
     /** Last-known auspice_pro — gates the 对你而言 verdict line in the push body. */
     isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
+    /** Portfolio / RC app user id — enables live entitlement re-check on cron targets. */
+    portfolioUserId: text('portfolio_user_id'),
     lastActiveAt: text('last_active_at').notNull(),
     createdAt: text('created_at')
       .notNull()
@@ -1895,6 +1897,46 @@ export const faceoraclePushSubs = sqliteTable(
       .$defaultFn(() => new Date().toISOString()),
   },
   (t) => [index('faceoracle_push_subs_tz_idx').on(t.timezoneId)]
+)
+
+/**
+ * Syel dated push fuel (push-retention playbook). Latest Pro reading replaces
+ * all queued rows for the user. Cron sends without LLM.
+ */
+export const faceoraclePushQueue = sqliteTable(
+  'faceoracle_push_queue',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    sourceReadingId: text('source_reading_id'),
+    locale: text('locale').notNull().default('zh'),
+    /** YYYY-MM-DD local fire date. */
+    fireOn: text('fire_on').notNull(),
+    /** Local hour 0–23 (09 daytime / 21 rest). */
+    localHour: integer('local_hour').notNull().default(9),
+    /** Higher wins when multiple fire same day (health/rest > qi > recapture). */
+    priority: integer('priority').notNull().default(0),
+    kind: text('kind', { enum: ['qi', 'rest', 'observe', 'recapture', 'other'] })
+      .notNull()
+      .default('other'),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    dataJson: text('data_json'),
+    expiresAt: text('expires_at'),
+    status: text('status', { enum: ['queued', 'sent', 'expired'] })
+      .notNull()
+      .default('queued'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    sentAt: text('sent_at'),
+  },
+  (t) => [
+    index('fpq_user_status_idx').on(t.userId, t.status),
+    index('fpq_fireon_idx').on(t.fireOn),
+  ]
 )
 
 /**

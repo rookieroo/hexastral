@@ -30,7 +30,7 @@ import { useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useFocusEffect, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { BookOpen, ChevronRight, Share2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
@@ -272,6 +272,11 @@ export default function TimelineScreen() {
   const { colors, spacing, isDark } = useTheme()
   const { t, locale } = useStrings()
   const router = useRouter()
+  const pushParams = useLocalSearchParams<{
+    nodeType?: string
+    year?: string
+    month?: string
+  }>()
   const { width: screenWidth } = useWindowDimensions()
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
@@ -280,6 +285,7 @@ export default function TimelineScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [pushDeepLinkApplied, setPushDeepLinkApplied] = useState(false)
   // Which 大运 the drill-down shows (the selector picks it; default = the 大运
   // you're living). Replaces the old expand/collapse-all model.
   const [selectedDayunIndex, setSelectedDayunIndex] = useState(0)
@@ -401,6 +407,26 @@ export default function TimelineScreen() {
       load()
     }, [load])
   )
+
+  // Push deep link: select the node from notification payload once data is ready.
+  useEffect(() => {
+    if (pushDeepLinkApplied || state.kind !== 'data') return
+    const nt = pushParams.nodeType
+    const y = Number(pushParams.year)
+    const m = Number(pushParams.month)
+    if (!nt || !Number.isFinite(y)) return
+    let id: string | null = null
+    if (nt === '大运') {
+      const dy = state.payload.dayun.find((d) => d.startYear === y)
+      if (dy) {
+        id = `dayun-${dy.index}`
+        setSelectedDayunIndex(state.payload.dayun.indexOf(dy))
+      }
+    } else if (nt === '流年') id = `liunian-${y}`
+    else if (nt === '流月' && Number.isFinite(m) && m > 0) id = `liuyue-${y}-${m}`
+    if (id) setSelectedId(id)
+    setPushDeepLinkApplied(true)
+  }, [state, pushParams, pushDeepLinkApplied])
 
   const canvasWidth = screenWidth - spacing.xl * 2
 

@@ -183,15 +183,39 @@ export async function syncLiuyueDigest(
 /**
  * Route to the notification's `data.route` when a timeline reminder is tapped.
  * Returns an unsubscribe fn (a no-op when the native module is absent).
+ * Also drains `getLastNotificationResponseAsync` so cold-start taps (app launched
+ * from a notification) reach the same handler — mirrors Yuun's push tap path.
+ *
+ * Only allow known in-app prefixes (open-redirect hardening).
  */
+const ALLOWED_ROUTE_PREFIXES = ['/(bonds)/', '/(tabs)/', '/(app)/', '/bonds/', '/timeline'] as const
+
+function isAllowedPushRoute(route: string): boolean {
+  const r = route.trim()
+  if (!r.startsWith('/')) return false
+  return ALLOWED_ROUTE_PREFIXES.some((p) => r === p || r.startsWith(p))
+}
+
 export function attachTimelineTapHandler(navigate: (route: string) => void): () => void {
   const N = notif()
   if (!N) return () => {}
   try {
-    const sub = N.addNotificationResponseReceivedListener((response) => {
+    let lastHandledId: string | null = null
+    const handle = (response: {
+      notification: { request: { identifier: string; content: { data?: unknown } } }
+    }) => {
+      const id = response.notification.request.identifier
+      if (id && id === lastHandledId) return
+      if (id) lastHandledId = id
       const data = response.notification.request.content.data as { route?: string } | undefined
-      if (data?.route) navigate(data.route)
-    })
+      if (data?.route && isAllowedPushRoute(data.route)) navigate(data.route)
+    }
+    const sub = N.addNotificationResponseReceivedListener(handle)
+    void N.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) handle(response)
+      })
+      .catch(() => {})
     return () => sub.remove()
   } catch {
     return () => {}

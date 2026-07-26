@@ -45,6 +45,8 @@ import {
   resolveResonanceZiwei,
 } from '../lib/bonds-timeline'
 import { logEvent } from '../lib/event-log'
+import { harvestKindredPushSnippets, expireKindredPushForBond } from '../lib/kindred-push-harvest'
+import { pushLocalesEqual } from '../lib/push-locale'
 import { sendPushEvent } from '../lib/push'
 import { buildBondMakeIf } from '../lib/relationship-makeif'
 import { explainRelationshipMakeIfWindow } from '../lib/relationship-makeif-explain'
@@ -508,13 +510,14 @@ bondRoutes.post('/solo', async (c) => {
     customRelationshipLabel: derivedCustomLabel,
   }
 
-  const { result, interpretation } = await callAstro<{
+  const { result, interpretation, pushSnippets } = await callAstro<{
     result: {
       compatibility: Record<string, unknown>
       personA: Record<string, unknown>
       personB: Record<string, unknown>
     }
     interpretation: Record<string, string>
+    pushSnippets?: Array<{ trigger: string; title: string; body: string; fireOn?: string }>
   }>(c.env.SVC_ASTRO, '/pair/compute', {
     ...hehunPayload,
     // Progressive report: generate ONLY the first chapter now (the report shell)
@@ -605,6 +608,24 @@ bondRoutes.post('/solo', async (c) => {
   c.executionCtx.waitUntil(
     topUpRestChapters(c.env, db, [readingId], hehunPayload).catch((err) => {
       console.error('[bonds] solo background chapter top-up failed:', err)
+    })
+  )
+
+  // ADR-0025: Pro users get relationship push fuel with bondId (cron send, no LLM).
+  c.executionCtx.waitUntil(
+    (async () => {
+      if (!(await userHasCapability(db, userId, 'kindred'))) return
+      const snippets = pushSnippets ?? []
+      if (snippets.length === 0) return
+      await harvestKindredPushSnippets(db, {
+        userId,
+        bondId,
+        sourceReadingId: readingId,
+        locale: input.language ?? 'zh-CN',
+        snippets,
+      })
+    })().catch((err) => {
+      console.error('[bonds] solo push harvest failed:', err)
     })
   )
 
@@ -1209,13 +1230,14 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     customRelationshipLabel: resonanceDerivedCustomLabel,
   }
 
-  const { result, interpretation } = await callAstro<{
+  const { result, interpretation, pushSnippets } = await callAstro<{
     result: {
       compatibility: Record<string, unknown>
       personA: Record<string, unknown>
       personB: Record<string, unknown>
     }
     interpretation: Record<string, string>
+    pushSnippets?: Array<{ trigger: string; title: string; body: string; fireOn?: string }>
   }>(c.env.SVC_ASTRO, '/pair/compute', {
     ...acceptHehunPayload,
     // Progressive report: only the first chapter now; the rest are topped up in the
@@ -1465,8 +1487,9 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
   // produces all six chapters, so the background top-up must NOT also touch A's row
   // (it would race + mix locales). When locales match, the relocalize is skipped and
   // A's row needs the same top-up as B's.
+  // Compare with collapsed locales (`zh` ≡ `zh-CN`) so we don't false-trigger relocalize.
   const inviterRelocalizing = Boolean(
-    inviterLang && inviterLang !== input.language && input.birthData
+    inviterLang && !pushLocalesEqual(inviterLang, input.language) && input.birthData
   )
 
   // Background: fill in the remaining five chapters. Always for B (the responder,
@@ -1482,6 +1505,42 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     })
   )
 
+  // Harvest push fuel per side when Pro — each side uses its own locale/snippets.
+  c.executionCtx.waitUntil(
+    (async () => {
+      const snippets = pushSnippets ?? []
+      if (snippets.length === 0) return
+      const responderLocale = input.language ?? 'zh-CN'
+      const inviterLocale = inviterLang ?? responderLocale
+      const sameLocale = pushLocalesEqual(inviterLocale, responderLocale)
+
+      if (await userHasCapability(db, respondUserId, 'kindred')) {
+        await harvestKindredPushSnippets(db, {
+          userId: respondUserId,
+          bondId: mirrorBondId,
+          sourceReadingId: readingIdForResponder,
+          locale: responderLocale,
+          snippets,
+        })
+      }
+
+      // Inviter: only reuse accepter snippets when languages match. Otherwise wait for
+      // A-side relocalize compute (below) which regenerates snippets in inviterLang.
+      // If languages differ and relocalize is impossible → inviter stays silent (no wrong-lang fuel).
+      if (sameLocale && (await userHasCapability(db, invitation.inviterUserId, 'kindred'))) {
+        await harvestKindredPushSnippets(db, {
+          userId: invitation.inviterUserId,
+          bondId: invitation.bondId,
+          sourceReadingId: readingIdForInviter,
+          locale: inviterLocale,
+          snippets,
+        })
+      }
+    })().catch((err) => {
+      console.error('[bonds] accept push harvest failed:', err)
+    })
+  )
+
   if (inviterRelocalizing && input.birthData) {
     const aBirth = input.birthData
     c.executionCtx.waitUntil(
@@ -1491,6 +1550,7 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
           const a = await callAstro<{
             result: { compatibility: Record<string, unknown> }
             interpretation: Record<string, string>
+            pushSnippets?: Array<{ trigger: string; title: string; body: string; fireOn?: string }>
           }>(c.env.SVC_ASTRO, '/pair/compute', {
             personA: {
               solarDate: inviter.birthSolarDate,
@@ -1537,6 +1597,20 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
               interpretation: JSON.stringify(aInterp),
             })
             .where(eq(pairReadings.id, readingIdForInviter))
+
+          const aSnippets = a.pushSnippets ?? []
+          if (
+            aSnippets.length > 0 &&
+            (await userHasCapability(db, invitation.inviterUserId, 'kindred'))
+          ) {
+            await harvestKindredPushSnippets(db, {
+              userId: invitation.inviterUserId,
+              bondId: invitation.bondId,
+              sourceReadingId: readingIdForInviter,
+              locale: inviterLang,
+              snippets: aSnippets,
+            })
+          }
         } catch {
           // best-effort — A keeps the B-language fallback stored synchronously above
         }
@@ -3363,6 +3437,10 @@ bondRoutes.delete('/:id', async (c) => {
       updatedAt: new Date().toISOString(),
     })
     .where(eq(userBonds.id, bondId))
+
+  await expireKindredPushForBond(db, bondId).catch((err) => {
+    console.error('[bonds] expire push queue on remove failed:', err)
+  })
 
   return jsonOk(c, { id: bondId, status: 'removed' })
 })

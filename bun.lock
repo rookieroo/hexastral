@@ -207,6 +207,7 @@
         "@zhop/growth-funnel": "workspace:*",
         "@zhop/logger": "workspace:*",
         "@zhop/portfolio-voice": "workspace:*",
+        "@zhop/timezone-pool": "workspace:*",
         "drizzle-orm": "^0.44.5",
         "hono": "^4.12.8",
         "jose": "^6.2.3",
@@ -895,6 +896,14 @@
         "react-native-reanimated": ">=4.0.0",
       },
     },
+    "packages/timezone-pool": {
+      "name": "@zhop/timezone-pool",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@zhop/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/ui": {
       "name": "@zhop/ui",
       "version": "1.0.4",
@@ -1078,6 +1087,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@zhop/logger": "workspace:*",
+        "@zhop/timezone-pool": "workspace:*",
         "hono": "^4.12.8",
       },
       "devDependencies": {
@@ -2764,6 +2774,8 @@
     "@zhop/svc-signal": ["@zhop/svc-signal@workspace:services/svc-signal"],
 
     "@zhop/svc-tail": ["@zhop/svc-tail@workspace:services/svc-tail"],
+
+    "@zhop/timezone-pool": ["@zhop/timezone-pool@workspace:packages/timezone-pool"],
 
     "@zhop/typescript-config": ["@zhop/typescript-config@workspace:tooling/typescript-config"],
 
