@@ -246,9 +246,9 @@ function mapJobError(msg: string, locale: string): string {
   ) {
     error = zhCopy(
       locale,
-      '需要有效订阅或单次购买（DEV Pro 仅客户端无效，请在设置里再点一次 Force entitlement → PRO）',
-      '需要有效訂閱或單次購買（DEV Pro 僅客戶端無效，請在設定裡再點一次 Force entitlement → PRO）',
-      'Purchase or Pro required (DEV client Pro is not enough — cycle Force entitlement → PRO in Settings)'
+      '需要有效订阅或单次购买后才能发起解读。',
+      '需要有效訂閱或單次購買後才能發起解讀。',
+      'A valid subscription or one-time purchase is required to start a reading.'
     )
   } else if (msg.includes('photo_slot_exhausted')) {
     error = zhCopy(
@@ -267,9 +267,9 @@ function mapJobError(msg: string, locale: string): string {
   } else if (msg === 'extract_not_pro' || msg.includes('extract_not_pro')) {
     error = zhCopy(
       locale,
-      '特征提取需要 Pro（Settings → Force entitlement → PRO，需已登录）',
-      '特徵提取需要 Pro（Settings → Force entitlement → PRO，需已登入）',
-      'Feature extract needs Pro (Settings → Force entitlement → PRO while signed in)'
+      '特征提取需要 Pro 订阅，请先登录并开通。',
+      '特徵提取需要 Pro 訂閱，請先登入並開通。',
+      'Feature extract requires Pro. Sign in and subscribe to continue.'
     )
   } else if (msg.includes('request_timeout') || msg.includes('extract_timeout')) {
     error = zhCopy(
