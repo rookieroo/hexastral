@@ -219,12 +219,19 @@ app.use('/api/onboarding/*', turnstile)
 //     to sign the request that creates it in the first place.
 //     Solution: /api/user/* applies HMAC except for POST /api/user[/].
 app.use('/api/contacts/*', hmacVerify)
-// /api/notify/* is HMAC — EXCEPT /push-targets, which is a service-to-service read
-// (the svc-notify daily cron) authenticated by X-Internal-Key in the route handler.
-// The cron carries no user HMAC signature, so without this exemption it 403'd every
-// night before its own X-Internal-Key check could run.
+// /api/notify/* is HMAC — EXCEPT service-to-service routes authenticated by
+// X-Internal-Key in the route handler (svc-notify cron / weekly purge). The cron
+// carries no user HMAC signature, so without this exemption it 403'd before its
+// own X-Internal-Key check could run.
 app.use('/api/notify/*', async (c, next) => {
-  if (c.req.path === '/api/notify/push-targets') return next()
+  const p = c.req.path
+  if (
+    p === '/api/notify/push-targets' ||
+    p === '/api/notify/stale-tokens' ||
+    p === '/api/notify/unregister-stale'
+  ) {
+    return next()
+  }
   return hmacVerify(c, next)
 })
 
@@ -337,10 +344,17 @@ app.route('/api/pair-preview', pairPreviewRoutes)
 // 面相特征提取（R2 + Gemini Vision，隐私优先架构）
 app.route('/api/physiognomy/face-features', faceFeaturesRoutes)
 
-// FaceOracle / Xingqi Pro push — HMAC for register; internal key for cron targets
+// FaceOracle / Xingqi Pro push — HMAC for register; internal key for cron
+// targets / unregister-stale / weekly purge-inactive
 app.use('/api/physiognomy/push/*', async (c, next) => {
   const p = c.req.path
-  if (p.endsWith('/targets') || p.endsWith('/unregister-stale')) return next()
+  if (
+    p.endsWith('/targets') ||
+    p.endsWith('/unregister-stale') ||
+    p.endsWith('/purge-inactive')
+  ) {
+    return next()
+  }
   return hmacVerify(c, next)
 })
 app.route('/api/physiognomy/push', physiognomyPushRoutes)

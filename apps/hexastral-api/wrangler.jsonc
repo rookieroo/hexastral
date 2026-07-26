@@ -173,8 +173,8 @@
     "TURNSTILE_SITE_KEY": "0x4AAAAAACzwgZxj-UShx-9l",
     // KV 缓存版本 — 编辑 D1 命格预设文案后递增此值（v1→v2）使旧缓存立即失效
     "ARCHETYPE_CACHE_VERSION": "v1",
-    // remove it when dev is done
-    "ALLOW_DEV_PRO": "1"
+    // Dev paywall bypass — must stay "0" in production App Store builds
+    "ALLOW_DEV_PRO": "0"
   },
   // Tail Worker — centralized log aggregation
   "tail_consumers": [
