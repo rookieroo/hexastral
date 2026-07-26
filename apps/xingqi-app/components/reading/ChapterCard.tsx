@@ -230,17 +230,17 @@ export function ChapterCard({
                   c.locus === 'face' || c.locus === 'palm_l' || c.locus === 'palm_r'
                     ? locusTitleForLocale(c.featureKey ?? c.locus, locale)
                     : c.locus
+                const citeText = `${locusLabel}  ${c.note}`.trim()
                 return (
-                  <Text
+                  <TermAwareText
                     key={`${ci}-${c.locus}-${c.note.slice(0, 24)}`}
+                    text={citeText}
+                    locale={locale}
+                    colors={termColors}
+                    onPickQuote={onPickQuote}
+                    highlightedQuotes={highlightedQuotes}
                     style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
-                  >
-                    <Text style={{ color: colors.dim, fontFamily: 'IBMPlexMono', fontSize: 11 }}>
-                      {locusLabel}
-                    </Text>
-                    {'  '}
-                    {c.note}
-                  </Text>
+                  />
                 )
               })}
             </View>

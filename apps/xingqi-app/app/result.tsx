@@ -26,7 +26,7 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels } from '@/lib/living-copy'
-import { pickUi } from '@/lib/locale-zh'
+import { isCjkZh, pickUi } from '@/lib/locale-zh'
 import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import {
