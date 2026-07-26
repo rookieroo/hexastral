@@ -129,12 +129,37 @@ export interface FengComputeJson {
   combinations?: FengPalaceCombination[]
   /** 形理整合 — 玄空理气 × 峦头形势 的山管人丁水管财断语 (D4). */
   formLi?: FormLiResult
-  /** 大峦头 DEM — 来龙方向 (八卦宫) from elevation sampling. */
-  macroTerrain?: { laiLong: string | null } | null
+  /** 大峦头 DEM — 来龙 / 水口 / 水系按宫 (Tilequery SSOT for water azimuth). */
+  macroTerrain?: {
+    laiLong: string | null
+    shuiKou?: string | null
+    waterByPalace?: Record<string, { bearingDeg: number; distanceM: number; kind: string }>
+    sandByPalace?: Record<string, { relativeM: number; isMountain: boolean }>
+    roadAsVirtualWater?: string[]
+    byPalace?: unknown
+  } | null
+  /** Client-only map overlay hints (never fed to Vision). */
+  overlayHints?: {
+    formSha: Array<{ palace: string; bearingDeg: number; label: string; severity?: string }>
+    water: Array<{ palace: string; bearingDeg: number; label: string }>
+    sand: Array<{ palace: string; label: string }>
+    shuiKou: { palace: string; label: string } | null
+  }
   /** Mapillary CC-BY-SA attribution when street imagery contributed 形煞. */
   streetAttribution?: string | null
   /** Missing-corner findings from interior vision (缺角). */
   interiorQueJiao?: Array<{ palace: string; note?: string; floorLabel?: string }>
+  /**
+   * Mid-pass 形理对照 notes (optional). Null/absent when mid-LLM fail-opened.
+   */
+  formLiNotes?: unknown | null
+  roomFindings?: Array<{
+    roomType?: string
+    palace?: string
+    readingPublic?: string | null
+    name?: string | null
+    phase?: string
+  }>
 }
 
 export interface FengPalaceCombination {
@@ -147,8 +172,10 @@ export interface FengPalaceCombination {
   name: string | null
   /** 五行/事象 domain(s) of the combination (财/丁/病/桃花 …), when named. */
   domain: string[] | null
-  /** Phase-appropriate reading, when the corpus has one (else null). */
+  /** Phase-appropriate classical reading (internal / corpus). Prefer readingPublic in UI. */
   reading: string | null
+  /** Consumer-safe reading — chips / synthesis / mid-LLM must use this. */
+  readingPublic?: string | null
 }
 
 // ── Report (Stage 3 output — synthesis) ─────────────────────────────────────
@@ -202,7 +229,14 @@ export interface FengReport {
 
 // ── Job polling ─────────────────────────────────────────────────────────────
 
-export type FengJobStage = 'maps' | 'vision' | 'compute' | 'synthesis' | 'done' | 'failed'
+export type FengJobStage =
+  | 'maps'
+  | 'vision'
+  | 'compute'
+  | 'form_li'
+  | 'synthesis'
+  | 'done'
+  | 'failed'
 
 export interface FengJob {
   id: string

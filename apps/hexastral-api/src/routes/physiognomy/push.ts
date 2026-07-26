@@ -6,7 +6,7 @@
  * POST /unregister-stale — X-Internal-Key
  */
 
-import { and, eq, inArray, lt } from 'drizzle-orm'
+import { and, eq, gte, inArray, lt, or, isNull } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
@@ -21,6 +21,23 @@ import { hasActiveEntitlement } from '../../services/entitlements'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const EXPO_TOKEN_RE = /^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/
 const RECAPTURE_DAYS = 25
+/** Same rest theme must not re-fire within this many days (Compliance). */
+const REST_THEME_COOLDOWN_DAYS = 3
+
+function restThemeKeyFromRow(title: string, dataJson: string | null): string {
+  if (dataJson) {
+    try {
+      const parsed: unknown = JSON.parse(dataJson)
+      if (parsed && typeof parsed === 'object') {
+        const tk = (parsed as Record<string, unknown>).themeKey
+        if (typeof tk === 'string' && tk.trim()) return tk.trim().toLowerCase()
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return title.trim().slice(0, 48).toLowerCase()
+}
 
 const pushRegisterSchema = z.object({
   token: z.string().min(1).max(256),
@@ -38,6 +55,7 @@ function pushCopy(locale: string) {
   const base = locale.toLowerCase()
   const hant = base.includes('hant') || base === 'zh-tw' || base === 'zh-hk'
   const hans = base.startsWith('zh') && !hant
+  const ja = base.startsWith('ja')
   if (hant) {
     return {
       recaptureTitle: '可以更新本期形氣了',
@@ -50,6 +68,14 @@ function pushCopy(locale: string) {
       recaptureTitle: '可以更新本期形气了',
       recaptureBody: '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。',
       eventTitle: '宜留意的时间窗',
+    }
+  }
+  if (ja) {
+    return {
+      recaptureTitle: '今期の形気を更新できます',
+      recaptureBody:
+        '新しい月の窓が開きました。三点まとめて撮り直すか、顔／左手／右手だけ更新できます。',
+      eventTitle: '意識したい時間窓',
     }
   }
   return {
@@ -199,7 +225,10 @@ physiognomyPushRoutes.get('/targets', async (c) => {
   const queuedByUser = new Map<string, Array<typeof faceoraclePushQueue.$inferSelect>>()
   /** Users who already have queue fuel (queued or sent) covering this calendar month. */
   const monthFuelCovered = new Set<string>()
+  /** userId → rest themeKeys sent within the cooldown window. */
+  const restCooldownByUser = new Map<string, Set<string>>()
   if (userIds.length > 0) {
+    const nowIso = new Date().toISOString()
     const qrows = await db
       .select()
       .from(faceoraclePushQueue)
@@ -208,13 +237,38 @@ physiognomyPushRoutes.get('/targets', async (c) => {
           inArray(faceoraclePushQueue.userId, userIds),
           eq(faceoraclePushQueue.status, 'queued'),
           eq(faceoraclePushQueue.fireOn, date),
-          eq(faceoraclePushQueue.localHour, localHour)
+          eq(faceoraclePushQueue.localHour, localHour),
+          or(isNull(faceoraclePushQueue.expiresAt), gte(faceoraclePushQueue.expiresAt, nowIso))
         )
       )
     for (const r of qrows) {
       const list = queuedByUser.get(r.userId) ?? []
       list.push(r)
       queuedByUser.set(r.userId, list)
+    }
+
+    const cooldownCutoff = new Date(
+      Date.now() - REST_THEME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+    ).toISOString()
+    const recentRest = await db
+      .select({
+        userId: faceoraclePushQueue.userId,
+        title: faceoraclePushQueue.title,
+        dataJson: faceoraclePushQueue.dataJson,
+      })
+      .from(faceoraclePushQueue)
+      .where(
+        and(
+          inArray(faceoraclePushQueue.userId, userIds),
+          eq(faceoraclePushQueue.status, 'sent'),
+          eq(faceoraclePushQueue.kind, 'rest'),
+          gte(faceoraclePushQueue.sentAt, cooldownCutoff)
+        )
+      )
+    for (const r of recentRest) {
+      const set = restCooldownByUser.get(r.userId) ?? new Set<string>()
+      set.add(restThemeKeyFromRow(r.title, r.dataJson))
+      restCooldownByUser.set(r.userId, set)
     }
 
     if (localHour === 9) {
@@ -267,7 +321,12 @@ physiognomyPushRoutes.get('/targets', async (c) => {
     const fuel = queuedByUser.get(sub.userId) ?? []
     if (fuel.length > 0) {
       fuel.sort((a, b) => b.priority - a.priority)
-      const top = fuel[0]
+      const cooled = restCooldownByUser.get(sub.userId) ?? new Set<string>()
+      const top = fuel.find((row) => {
+        if (row.kind !== 'rest') return true
+        const key = restThemeKeyFromRow(row.title, row.dataJson)
+        return !cooled.has(key)
+      })
       if (top) {
         let data: Record<string, string> = { kind: top.kind, targetApp: 'faceoracle' }
         if (top.dataJson) {

@@ -36,7 +36,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CoinCastSealLogo } from '@/components/CoinCastSealLogo'
 import {
-  CONTAINER_SHAKE_DURATION_MS,
+  MIN_CONTAINER_SHAKE_MS,
   PHYSICS_COMMIT_FALLBACK_MS,
 } from '@/components/casting-scene/constants'
 import { LazyCastingScene, preloadCastingScene } from '@/components/casting-scene/LazyCastingScene'
@@ -61,6 +61,8 @@ import {
   aggregateCastDigests,
   buildCastEntropyMetadata,
   createDigitalAssistResult,
+  DIGITAL_ASSIST_AFTER_FAILURES,
+  evaluateMotionQuality,
   type MotionSession,
 } from '@/lib/motion-cast'
 import { yaoNumberForOverlayRow } from '@/lib/yao-display'
@@ -228,6 +230,8 @@ export default function CoinCastHomeScreen() {
   }, [])
   const [tossAnimating, setTossAnimating] = useState(false)
   const [tossRevision, setTossRevision] = useState(0)
+  const [handsOpenRevision, setHandsOpenRevision] = useState(0)
+  const [neatCoinsRevision, setNeatCoinsRevision] = useState(0)
   const [castCameraPhase, setCastCameraPhase] = useState<'idle' | 'ritual' | 'table'>('idle')
 
   useEffect(() => {
@@ -236,10 +240,6 @@ export default function CoinCastHomeScreen() {
       return
     }
     setCastCameraPhase('ritual')
-    const id = setTimeout(() => {
-      setCastCameraPhase('table')
-    }, CONTAINER_SHAKE_DURATION_MS)
-    return () => clearTimeout(id)
   }, [tossAnimating, tossRevision])
 
   const [breathingOverlayVisible, setBreathingOverlayVisible] = useState(false)
@@ -247,7 +247,11 @@ export default function CoinCastHomeScreen() {
   const overlayPulse = useSharedValue(1)
   const overlayRingStyle = useAnimatedStyle(() => ({ transform: [{ scale: overlayPulse.value }] }))
   const pendingSessionRef = useRef<Promise<MotionSession> | null>(null)
-  const motionFinishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sessionResolveRef = useRef<((session: MotionSession) => void) | null>(null)
+  const sessionRejectRef = useRef<((reason?: unknown) => void) | null>(null)
+  const tossStartedAtRef = useRef(0)
+  const handsOpenedRef = useRef(false)
+  const softFailCountRef = useRef(0)
   const tossStartingRef = useRef(false)
   const retryMotionRef = useRef<() => void>(() => undefined)
   const {
@@ -255,6 +259,7 @@ export default function CoinCastHomeScreen() {
     frameQueueRef,
     startCapture,
     finishCapture,
+    peekCaptureFrames,
     cancelCapture,
   } = useMotionCast()
 
@@ -320,6 +325,7 @@ export default function CoinCastHomeScreen() {
   const canCommit = question.trim().length >= 2 && completed === 6 && !loading
 
   const commitLine = useCallback((record: CastLineRecord) => {
+    softFailCountRef.current = 0
     setYaoResults((prev) => [...prev, record.result])
     setCastLineRecords((prev) => [...prev, record])
     if (hapticsEnabledRef.current) {
@@ -348,6 +354,7 @@ export default function CoinCastHomeScreen() {
     ])
   }, [commitLine, t])
 
+  /** Hard sensing failure — assist may be offered immediately (device cannot sense). */
   const showMotionFallback = useCallback(
     (message: string) => {
       Alert.alert(t('motionUnavailableTitle'), message, [
@@ -358,16 +365,66 @@ export default function CoinCastHomeScreen() {
     [confirmDigitalAssist, t]
   )
 
+  /**
+   * Soft quality / settle failure — prefer re-shake; digital assist only after N failures.
+   */
+  const showSoftCastRetry = useCallback(
+    (message: string) => {
+      softFailCountRef.current += 1
+      const offerAssist = softFailCountRef.current >= DIGITAL_ASSIST_AFTER_FAILURES
+      const buttons: {
+        text: string
+        onPress?: () => void
+        style?: 'cancel' | 'destructive' | 'default'
+      }[] = [{ text: t('motionRetry'), onPress: () => retryMotionRef.current() }]
+      if (offerAssist) {
+        buttons.push({ text: t('digitalAssistAction'), onPress: confirmDigitalAssist })
+      }
+      Alert.alert(
+        t('motionRetryPreferredTitle'),
+        offerAssist ? message : `${message}\n\n${t('motionRetryPreferredHint')}`,
+        buttons
+      )
+    },
+    [confirmDigitalAssist, t]
+  )
+
+  const presentLineCommit = useCallback(
+    (record: CastLineRecord) => {
+      Alert.alert(t('lineSeenTitle'), t('lineSeenMessage'), [
+        {
+          text: t('lineSeenAsIs'),
+          onPress: () => {
+            commitLine(record)
+            setTossRevision(0)
+          },
+        },
+        {
+          text: t('lineSeenNeat'),
+          onPress: () => {
+            setNeatCoinsRevision((n) => n + 1)
+            commitLine(record)
+            setTossRevision(0)
+          },
+        },
+      ])
+    },
+    [commitLine, t]
+  )
+
   const handlePhysicsSettled = useCallback(
     (payload: PhysicsSettlePayload) => {
       const pending = pendingSessionRef.current
       if (!pending) return
       pendingSessionRef.current = null
+      sessionResolveRef.current = null
+      sessionRejectRef.current = null
 
       void (async () => {
         try {
           const session = await pending
           setTossAnimating(false)
+          handsOpenedRef.current = false
 
           if (payload.kind === 'wa_ying') {
             setYaoResults([])
@@ -383,11 +440,11 @@ export default function CoinCastHomeScreen() {
 
           if (!session.quality.sufficient) {
             setTossRevision(0)
-            showMotionFallback(t('motionInsufficientMessage'))
+            showSoftCastRetry(t('motionInsufficientMessage'))
             return
           }
 
-          commitLine({
+          presentLineCommit({
             result: payload.result,
             source: 'motion',
             digest: session.digest,
@@ -395,18 +452,50 @@ export default function CoinCastHomeScreen() {
         } catch (err) {
           console.warn('[coincast] motion session finalization failed', err)
           setTossAnimating(false)
+          handsOpenedRef.current = false
           setTossRevision(0)
-          showMotionFallback(t('motionInterruptedMessage'))
+          showSoftCastRetry(t('motionInterruptedMessage'))
         }
       })()
     },
-    [commitLine, showMotionFallback, t]
+    [presentLineCommit, showSoftCastRetry, t]
   )
 
   const impactHaptic = useCallback(() => {
     if (!hapticsEnabledRef.current) return
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [])
+
+  const requestHandsOpen = useCallback(() => {
+    if (!tossAnimating || handsOpenedRef.current) return
+
+    const elapsed = Date.now() - tossStartedAtRef.current
+    const peekQuality = evaluateMotionQuality(peekCaptureFrames())
+    if (elapsed < MIN_CONTAINER_SHAKE_MS || !peekQuality.sufficient) {
+      if (hapticsEnabledRef.current) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      }
+      setError(t('shakeHoldLonger'))
+      return
+    }
+
+    handsOpenedRef.current = true
+    setError(null)
+    setCastCameraPhase('table')
+    setHandsOpenRevision((n) => n + 1)
+
+    void (async () => {
+      try {
+        const session = await finishCapture()
+        sessionResolveRef.current?.(session)
+      } catch (err) {
+        sessionRejectRef.current?.(err)
+      } finally {
+        sessionResolveRef.current = null
+        sessionRejectRef.current = null
+      }
+    })()
+  }, [finishCapture, peekCaptureFrames, t, tossAnimating])
 
   const beginMotionToss = useCallback(async () => {
     if (tossStartingRef.current) return
@@ -428,16 +517,16 @@ export default function CoinCastHomeScreen() {
       return
     }
 
+    handsOpenedRef.current = false
+    tossStartedAtRef.current = Date.now()
     pendingSessionRef.current = new Promise<MotionSession>((resolve, reject) => {
-      motionFinishTimeoutRef.current = setTimeout(() => {
-        motionFinishTimeoutRef.current = null
-        void finishCapture().then(resolve, reject)
-      }, CONTAINER_SHAKE_DURATION_MS)
+      sessionResolveRef.current = resolve
+      sessionRejectRef.current = reject
     })
     setTossRevision((revision) => revision + 1)
     setTossAnimating(true)
     tossStartingRef.current = false
-  }, [finishCapture, glEnabled, showMotionFallback, startCapture, t])
+  }, [glEnabled, showMotionFallback, startCapture, t])
 
   const resolveToss = useCallback(async () => {
     const {
@@ -546,10 +635,9 @@ export default function CoinCastHomeScreen() {
           setCastLineRecords([])
           setError(null)
           pendingSessionRef.current = null
-          if (motionFinishTimeoutRef.current) {
-            clearTimeout(motionFinishTimeoutRef.current)
-            motionFinishTimeoutRef.current = null
-          }
+          sessionResolveRef.current = null
+          sessionRejectRef.current = null
+          handsOpenedRef.current = false
           cancelCapture()
           setTossAnimating(false)
           setTossRevision(0)
@@ -592,27 +680,61 @@ export default function CoinCastHomeScreen() {
     if (!tossAnimating) return
     if (motionStatus !== 'interrupted' && motionStatus !== 'error') return
     pendingSessionRef.current = null
-    if (motionFinishTimeoutRef.current) {
-      clearTimeout(motionFinishTimeoutRef.current)
-      motionFinishTimeoutRef.current = null
-    }
+    sessionResolveRef.current = null
+    sessionRejectRef.current = null
+    handsOpenedRef.current = false
     setTossAnimating(false)
     setTossRevision(0)
-    showMotionFallback(t('motionInterruptedMessage'))
-  }, [motionStatus, showMotionFallback, t, tossAnimating])
+    showSoftCastRetry(t('motionInterruptedMessage'))
+  }, [motionStatus, showSoftCastRetry, t, tossAnimating])
 
   useEffect(() => {
     if (!tossAnimating) return
     const timeout = setTimeout(() => {
       if (!pendingSessionRef.current) return
       pendingSessionRef.current = null
+      sessionResolveRef.current = null
+      sessionRejectRef.current = null
+      handsOpenedRef.current = false
       cancelCapture()
       setTossAnimating(false)
       setTossRevision(0)
-      showMotionFallback(t('motionPhysicsTimeoutMessage'))
+      showSoftCastRetry(t('motionPhysicsTimeoutMessage'))
     }, PHYSICS_COMMIT_FALLBACK_MS)
     return () => clearTimeout(timeout)
-  }, [cancelCapture, showMotionFallback, t, tossAnimating])
+  }, [cancelCapture, showSoftCastRetry, t, tossAnimating])
+
+  useEffect(() => {
+    if (!tossAnimating) return
+    const accelerometer = resolveAccelerometer()
+    if (!accelerometer) return
+    let calmMs = 0
+    let lastSampleAt = Date.now()
+    accelerometer.setUpdateInterval(80)
+    const sub = accelerometer.addListener(({ x, y, z }) => {
+      if (handsOpenedRef.current) return
+      const now = Date.now()
+      const dt = Math.max(0, now - lastSampleAt)
+      lastSampleAt = now
+      if (now - tossStartedAtRef.current < MIN_CONTAINER_SHAKE_MS) {
+        calmMs = 0
+        return
+      }
+      const magnitude = Math.sqrt(x * x + y * y + z * z)
+      if (magnitude < 1.35) {
+        calmMs += dt
+        if (calmMs >= 480) {
+          calmMs = 0
+          requestHandsOpen()
+        }
+      } else {
+        calmMs = 0
+      }
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [requestHandsOpen, tossAnimating])
 
   const castNow = async () => {
     if (!canCommit) return
@@ -699,17 +821,18 @@ export default function CoinCastHomeScreen() {
     ? coinCastSceneColors.castingBackdropDark
     : coinCastSceneColors.castingBackdropLight
 
-  // One adaptive primary button drives the whole flow: write the question (sheet)
-  // → 摇卦 each line → 成卦 to commit. The device-shake path stays live in parallel.
+  // Hold to shake → release to open palm. Commit / question sheet keep tap.
   const hasQuestion = question.trim().length >= 2
   const primaryIsCommit = completed === 6
   const primaryLabel = primaryIsCommit
     ? loading
       ? t('homeCastingButton')
       : t('homeCast')
-    : t('homeShake')
-  const primaryDisabled = primaryIsCommit ? !canCommit : hasQuestion ? !canShakeBase : loading
-  const onPrimary = () => {
+    : tossAnimating
+      ? t('homeReleaseOpen')
+      : t('homeHoldShake')
+  const primaryDisabled = primaryIsCommit ? !canCommit : hasQuestion ? !canShakeBase && !tossAnimating : loading
+  const onPrimaryPress = () => {
     if (primaryIsCommit) {
       void castNow()
       return
@@ -718,7 +841,17 @@ export default function CoinCastHomeScreen() {
       openQuestionSheet()
       return
     }
+    if (tossAnimating) {
+      requestHandsOpen()
+    }
+  }
+  const onPrimaryPressIn = () => {
+    if (primaryIsCommit || !hasQuestion || tossAnimating || primaryDisabled) return
     void tryShake()
+  }
+  const onPrimaryPressOut = () => {
+    if (primaryIsCommit || !hasQuestion) return
+    if (tossAnimating) requestHandsOpen()
   }
 
   const openSettings = useCallback(() => {
@@ -787,6 +920,8 @@ export default function CoinCastHomeScreen() {
               {glEnabled ? (
                 <LazyCastingScene
                   tossRevision={tossRevision}
+                  handsOpenRevision={handsOpenRevision}
+                  neatCoinsRevision={neatCoinsRevision}
                   coinSkinConfig={coinSkinConfig}
                   sceneBg={castingBackdrop}
                   arenaWallsActive={tossAnimating}
@@ -870,7 +1005,9 @@ export default function CoinCastHomeScreen() {
                   styles.primaryBtn,
                   { backgroundColor: primaryDisabled ? colors.accentGhost : colors.accent },
                 ]}
-                onPress={onPrimary}
+                onPress={onPrimaryPress}
+                onPressIn={onPrimaryPressIn}
+                onPressOut={onPrimaryPressOut}
                 accessibilityRole='button'
                 disabled={primaryDisabled}
               >

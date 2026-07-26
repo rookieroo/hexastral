@@ -39,6 +39,10 @@ export function humanizeDataQualityNotes(notes: string[], t: Strings): string[] 
       push(t.dq_apartment_floor_missing)
       continue
     }
+    if (note === 'street_sha_skipped_apartment=true') {
+      push(t.dq_street_sha_skipped_apartment)
+      continue
+    }
     if (note === 'flat_floor_missing=true (street 形煞 attenuation skipped)') {
       push(t.dq_flat_floor_missing)
       continue
@@ -51,6 +55,46 @@ export function humanizeDataQualityNotes(notes: string[], t: Strings): string[] 
       push(t.dq_residence_mismatch)
       continue
     }
+  }
+
+  return lines
+}
+
+/** Forced cover / chapter-head caveats — not optional LLM soft wording. */
+export function forcedCoverCaveats(opts: {
+  notes: string[]
+  flyingStarsConfidence?: string
+  residenceType?: string | null
+  t: Strings
+}): string[] {
+  const lines: string[] = []
+  const seen = new Set<string>()
+  const push = (line: string) => {
+    if (seen.has(line)) return
+    seen.add(line)
+    lines.push(line)
+  }
+
+  const apartmentStreetSkipped =
+    opts.residenceType === 'apartment' ||
+    opts.notes.some(
+      (n) =>
+        n === 'street_sha_skipped_apartment=true' ||
+        n === 'apartment_floor_missing=true (street form less relevant above ground)'
+    )
+  if (apartmentStreetSkipped) {
+    push(opts.t.dq_street_sha_skipped_apartment)
+  }
+
+  if (
+    opts.flyingStarsConfidence &&
+    opts.flyingStarsConfidence !== 'high' &&
+    opts.flyingStarsConfidence !== 'omitted'
+  ) {
+    push(opts.t.dq_flying_stars_confidence_caveat)
+  }
+  if (opts.flyingStarsConfidence === 'omitted') {
+    push(opts.t.dq_build_year_unknown)
   }
 
   return lines

@@ -10,7 +10,7 @@ import { XingqiLoader } from '@/components/XingqiLoader'
 import { ONESHOT_PRICE_FLOOR_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { purchaseProduct, restorePurchases } from '@/lib/iap'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from '@/lib/push-preference'
 import { draftReadyForPaywall, getReadingDraft } from '@/lib/reading-draft'
 import {
@@ -32,8 +32,8 @@ export default function XingqiPaywallScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -287,9 +287,10 @@ export default function XingqiPaywallScreen() {
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
               {s(
-                `单次：密封六章简报——三轴（事业·爱情·健康）· 位点依据 · 大运流年对照 · 本期窗口。不是聊天式看图说话。Pro：档案 · 周期重拍 · 人生时间线 · 假如 · 报告内追问。起价 $${ONESHOT_PRICE_FLOOR_USD}。`,
-                `單次：密封六章簡報——三軸（事業·愛情·健康）· 位點依據 · 大運流年對照 · 本期窗口。不是聊天式看圖說話。Pro：檔案 · 週期重拍 · 人生時間線 · 假如 · 報告內追問。起價 $${ONESHOT_PRICE_FLOOR_USD}。`,
-                `One-shot: a sealed six-chapter brief — career · love · health, locus citations, computed DaYun/LiuNian contrast, period windows. Not chatty photo-reading. Pro: archive, period recapture, Life axis, What-if, in-report chat. From $${ONESHOT_PRICE_FLOOR_USD}.`
+                `单次：密封五章简报——三轴（事业·爱情·健康）· 位点依据 · 大运流年对照 · 本期窗口。不是聊天式看图说话。Pro：档案 · 周期重拍 · 人生时间线 · 假如 · 报告内追问。起价 $${ONESHOT_PRICE_FLOOR_USD}。`,
+                `單次：密封五章簡報——三軸（事業·愛情·健康）· 位點依據 · 大運流年對照 · 本期窗口。不是聊天式看圖說話。Pro：檔案 · 週期重拍 · 人生時間線 · 假如 · 報告內追問。起價 $${ONESHOT_PRICE_FLOOR_USD}。`,
+                `One-shot: a sealed five-chapter brief — career · love · health, locus citations, computed DaYun/LiuNian contrast, period windows. Not chatty photo-reading. Pro: archive, period recapture, Life axis, What-if, in-report chat. From $${ONESHOT_PRICE_FLOOR_USD}.`,
+                `単発：密封の五章ブリーフ——事業・恋愛・健康、位点根拠、大運・流年対照、今期の窓。雑談的な写真読みではありません。Pro：アーカイブ・周期の再撮影・人生軸・もしも・報告内の質問。$${ONESHOT_PRICE_FLOOR_USD} から。`
               )}
             </Text>
 

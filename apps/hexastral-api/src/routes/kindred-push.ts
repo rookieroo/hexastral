@@ -196,7 +196,28 @@ kindredPushRoutes.get('/targets', async (c) => {
     }
     if (!pick || bestScore < 0) continue
 
-    const bondId = pick.bondId ?? strongest?.bondId ?? null
+    // Resolve null bondId via sourceReadingId → userBonds.hehunReadingId (playbook ⑫/㉙).
+    let bondId = pick.bondId ?? strongest?.bondId ?? null
+    if (!bondId && pick.sourceReadingId) {
+      const linked = await db
+        .select({ id: userBonds.id })
+        .from(userBonds)
+        .where(
+          and(
+            eq(userBonds.ownerId, row.userId),
+            eq(userBonds.hehunReadingId, pick.sourceReadingId),
+            eq(userBonds.status, 'active')
+          )
+        )
+        .get()
+      bondId = linked?.id ?? null
+      if (bondId) {
+        await db
+          .update(kindredPushQueue)
+          .set({ bondId })
+          .where(eq(kindredPushQueue.id, pick.id))
+      }
+    }
     messages.push({
       userId: row.userId,
       token: row.token,

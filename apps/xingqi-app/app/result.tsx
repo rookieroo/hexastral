@@ -26,7 +26,7 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels } from '@/lib/living-copy'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import {
@@ -46,8 +46,8 @@ export default function FaceResultScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const params = useLocalSearchParams<{ readingId?: string; payload?: string; chapter?: string }>()
   const readingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const paramPayload = typeof params.payload === 'string' ? params.payload : undefined
@@ -153,7 +153,7 @@ export default function FaceResultScreen() {
         'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).'
       ),
       [
-        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
         {
           text: s('生成', '生成', 'Regenerate'),
           onPress: () => {
@@ -193,7 +193,7 @@ export default function FaceResultScreen() {
               })
               if (!started) {
                 Alert.alert(
-                  s('解读进行中', '解讀進行中', 'Reading in progress'),
+                  s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
                   s(
                     '请等待当前解读完成。',
                     '請等待目前解讀完成。',

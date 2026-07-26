@@ -208,8 +208,10 @@ export type {
   StarCombination,
 } from './feng/flying-stars-combinations'
 export {
+  COMBINATION_MEDICAL_DENYLIST,
   describePalaceCombination,
   lookupCombination,
+  toReadingPublic,
 } from './feng/flying-stars-combinations'
 export type {
   DetectPatternsInput,

@@ -57,6 +57,9 @@ export const MOTION_MIN_SAMPLE_COUNT = 40
 export const MOTION_MIN_LINEAR_ENERGY = 4
 export const MOTION_MIN_DIRECTION_CHANGES = 3
 
+/** Soft quality / settle failures before offering digital assist confirm. */
+export const DIGITAL_ASSIST_AFTER_FAILURES = 3
+
 const MAX_LINEAR_ACCELERATION = 80
 const MAX_GRAVITY_ACCELERATION = 100
 const MAX_ROTATION_RATE = 1_440

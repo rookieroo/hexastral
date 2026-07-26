@@ -36,6 +36,16 @@ export interface SiteDraft {
   magneticDeclination?: number
   /** Set when the user captures compass, nudges, or drags the facing ring (not a silent default). */
   facingConfirmed?: boolean
+  /**
+   * Multi-sample compass stats from 立极 ritual (mean + maxΔ).
+   * Written into site input_meta on create.
+   */
+  facingSamples?: { samples: number[]; mean: number; maxDelta: number }
+  /**
+   * Absolute Δ° between satellite-set facing and live compass at finish.
+   * Persisted to input_meta (warn UI when >12°).
+   */
+  facingCompassDeltaDeg?: number
   doorDegTrue?: number
   buildYear?: number
   buildYearAccuracy?: 'exact' | 'decade' | 'moveIn' | 'unknown'

@@ -6,6 +6,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { LiuyaoDeskCard, parseLiuyaoDesk } from '@/components/LiuyaoDeskCard'
 import { coincastLandingUrl, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { tryUpgradeCoincastReading } from '@/lib/coincast-upgrade'
 import { useSatelliteI18n } from '@/lib/i18n'
@@ -66,7 +68,12 @@ export default function CoinCastDetailScreen() {
       ? payload.summary
       : t('detailFallbackSummary')
 
-  const hexagram = (payload.hexagram ?? {}) as { number?: number }
+  const hexagram = (payload.hexagram ?? {}) as {
+    number?: number
+    symbol?: string
+    derived?: { symbol?: string }
+  }
+  const desk = parseLiuyaoDesk(payload)
   const hexagramLocale = resolveHexagramLocale(uiLocale)
   const tokenClassical =
     typeof hexagram.number === 'number'
@@ -140,6 +147,17 @@ export default function CoinCastDetailScreen() {
             <Text style={[styles.summary, { color: colors.accent }]}>{summary}</Text>
           </View>
         ) : null}
+        {desk ? (
+          <LiuyaoDeskCard
+            desk={desk}
+            benSymbol={typeof hexagram.symbol === 'string' ? hexagram.symbol : classical?.symbol}
+            bianSymbol={
+              hexagram.derived && typeof hexagram.derived.symbol === 'string'
+                ? hexagram.derived.symbol
+                : undefined
+            }
+          />
+        ) : null}
         {classical ? (
           <View
             style={[styles.card, { borderColor: colors.separator, backgroundColor: colors.card }]}
@@ -171,7 +189,7 @@ export default function CoinCastDetailScreen() {
             <Text style={[styles.body, { color: colors.secondary }]}>
               {classical.keywords.join(' · ')}
             </Text>
-            {classical.naJiaContext ? (
+            {!desk && classical.naJiaContext ? (
               <>
                 <Text style={[styles.refLabel, { color: colors.accent }]}>{t('detailNaJiaTitle')}</Text>
                 <Text style={[styles.naJia, { color: colors.secondary }]}>

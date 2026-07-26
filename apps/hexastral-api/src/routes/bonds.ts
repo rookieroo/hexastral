@@ -45,7 +45,11 @@ import {
   resolveResonanceZiwei,
 } from '../lib/bonds-timeline'
 import { logEvent } from '../lib/event-log'
-import { harvestKindredPushSnippets, expireKindredPushForBond } from '../lib/kindred-push-harvest'
+import {
+  expireKindredPushForBond,
+  harvestKindredPushSnippets,
+  linkKindredPushToBond,
+} from '../lib/kindred-push-harvest'
 import { pushLocalesEqual } from '../lib/push-locale'
 import { sendPushEvent } from '../lib/push'
 import { buildBondMakeIf } from '../lib/relationship-makeif'
@@ -611,23 +615,30 @@ bondRoutes.post('/solo', async (c) => {
     })
   )
 
-  // ADR-0025: Pro users get relationship push fuel with bondId (cron send, no LLM).
-  c.executionCtx.waitUntil(
-    (async () => {
-      if (!(await userHasCapability(db, userId, 'kindred'))) return
-      const snippets = pushSnippets ?? []
-      if (snippets.length === 0) return
-      await harvestKindredPushSnippets(db, {
-        userId,
-        bondId,
-        sourceReadingId: readingId,
-        locale: input.language ?? 'zh-CN',
-        snippets,
-      })
-    })().catch((err) => {
-      console.error('[bonds] solo push harvest failed:', err)
-    })
-  )
+  // ADR-0025: await Pro harvest so fuel lands before the response returns.
+  // Chapter top-up stays in waitUntil (report shell already usable).
+  // Also bind any earlier /pair null-bond fuel for this readingId.
+  try {
+    await linkKindredPushToBond(db, { userId, bondId, sourceReadingId: readingId })
+  } catch (err) {
+    console.error('[bonds] solo push bond-link failed:', err)
+  }
+  if (await userHasCapability(db, userId, 'kindred')) {
+    const snippets = pushSnippets ?? []
+    if (snippets.length > 0) {
+      try {
+        await harvestKindredPushSnippets(db, {
+          userId,
+          bondId,
+          sourceReadingId: readingId,
+          locale: input.language ?? 'zh-CN',
+          snippets,
+        })
+      } catch (err) {
+        console.error('[bonds] solo push harvest failed:', err)
+      }
+    }
+  }
 
   c.executionCtx.waitUntil(
     logEvent(db, userId, 'bond_create', {
@@ -1505,41 +1516,55 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
     })
   )
 
-  // Harvest push fuel per side when Pro — each side uses its own locale/snippets.
-  c.executionCtx.waitUntil(
-    (async () => {
-      const snippets = pushSnippets ?? []
-      if (snippets.length === 0) return
-      const responderLocale = input.language ?? 'zh-CN'
-      const inviterLocale = inviterLang ?? responderLocale
-      const sameLocale = pushLocalesEqual(inviterLocale, responderLocale)
+  // Harvest push fuel per side when Pro — await so accept response implies fuel landed.
+  {
+    const snippets = pushSnippets ?? []
+    try {
+      await linkKindredPushToBond(db, {
+        userId: respondUserId,
+        bondId: mirrorBondId,
+        sourceReadingId: readingIdForResponder,
+      })
+      await linkKindredPushToBond(db, {
+        userId: invitation.inviterUserId,
+        bondId: invitation.bondId,
+        sourceReadingId: readingIdForInviter,
+      })
+    } catch (err) {
+      console.error('[bonds] accept push bond-link failed:', err)
+    }
+    if (snippets.length > 0) {
+      try {
+        const responderLocale = input.language ?? 'zh-CN'
+        const inviterLocale = inviterLang ?? responderLocale
+        const sameLocale = pushLocalesEqual(inviterLocale, responderLocale)
 
-      if (await userHasCapability(db, respondUserId, 'kindred')) {
-        await harvestKindredPushSnippets(db, {
-          userId: respondUserId,
-          bondId: mirrorBondId,
-          sourceReadingId: readingIdForResponder,
-          locale: responderLocale,
-          snippets,
-        })
-      }
+        if (await userHasCapability(db, respondUserId, 'kindred')) {
+          await harvestKindredPushSnippets(db, {
+            userId: respondUserId,
+            bondId: mirrorBondId,
+            sourceReadingId: readingIdForResponder,
+            locale: responderLocale,
+            snippets,
+          })
+        }
 
-      // Inviter: only reuse accepter snippets when languages match. Otherwise wait for
-      // A-side relocalize compute (below) which regenerates snippets in inviterLang.
-      // If languages differ and relocalize is impossible → inviter stays silent (no wrong-lang fuel).
-      if (sameLocale && (await userHasCapability(db, invitation.inviterUserId, 'kindred'))) {
-        await harvestKindredPushSnippets(db, {
-          userId: invitation.inviterUserId,
-          bondId: invitation.bondId,
-          sourceReadingId: readingIdForInviter,
-          locale: inviterLocale,
-          snippets,
-        })
+        // Inviter: only reuse accepter snippets when languages match. Otherwise wait for
+        // A-side relocalize compute (below) which regenerates snippets in inviterLang.
+        if (sameLocale && (await userHasCapability(db, invitation.inviterUserId, 'kindred'))) {
+          await harvestKindredPushSnippets(db, {
+            userId: invitation.inviterUserId,
+            bondId: invitation.bondId,
+            sourceReadingId: readingIdForInviter,
+            locale: inviterLocale,
+            snippets,
+          })
+        }
+      } catch (err) {
+        console.error('[bonds] accept push harvest failed:', err)
       }
-    })().catch((err) => {
-      console.error('[bonds] accept push harvest failed:', err)
-    })
-  )
+    }
+  }
 
   if (inviterRelocalizing && input.birthData) {
     const aBirth = input.birthData

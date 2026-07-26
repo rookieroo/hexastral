@@ -4,6 +4,8 @@
 
 Kindred is the relationships product — a user-centred multi-bond graph with 八字 合婚 + relationship-timeline reading. Its **acquisition moat is Auspice**: every Pro Auspice user has already sketched their 亲友, and those are carry-over into Kindred automatically.
 
+> **2026-07-26 code:** EAS slug `yuan`; push harvest await + bondId backfill + ordered caps; lifecycle push **Yuel** branding; home carry-over banner + settings copy for **19:00 relationship nudge**. Remaining blockers are ASC/RC/`appl_*` + device carry-over smoke — see [publish/README.md](../../publish/README.md).
+
 ---
 
 ## State (early June)
@@ -30,11 +32,12 @@ Kindred is the relationships product — a user-centred multi-bond graph with �
 - [ ] Pricing: Kindred's IAP unlocks the deep readings; verify universe_pro from Auspice also unlocks Kindred surfaces
 
 ### App Store Connect
-- [ ] App Store Connect record (display name: **Kindred** or Kindred for CJK locales, subtitle: 关系 / Relationships, category: Lifestyle)
+- [ ] App Store Connect record (display name: **Yuel**, subtitle: 关系 / Relationships, category: Lifestyle)
 - [ ] Apple Sign In capability on the bundle id
 - [ ] Privacy nutrition labels: collected = identity (Apple/Google email), Purchases, Contacts-derived (the 亲友 birthdays the user typed). No tracking.
-- [ ] ASO: name + subtitle + 4-locale keywords + description
+- [ ] ASO: name + subtitle + 4-locale keywords + description from `apps/kindred-app/aso-metadata.json`
 - [ ] Screenshots — covered in `launch-checklist.md`
+- [ ] Fill `eas.json` `ascAppId` + production RevenueCat `appl_*`
 
 ### Build + smoke
 - [ ] Standard `bun install` → `bun run prebuild` → `bun ios` flow
@@ -42,10 +45,12 @@ Kindred is the relationships product — a user-centred multi-bond graph with �
 - [ ] Independent flow (no Auspice install): create a solo bond manually in Kindred → reading runs
 
 ### Polish (known gaps, prioritized for June)
-- [ ] Verify the bond-language hardcoded `'zh-CN'` from Auspice's transfer doesn't break Kindred's non-zh-Hans rendering (Kindred fetches its own locale; the transferred bond is just data)
-- [ ] First-open empty state when there ARE bonds-from-portfolio waiting on first sign-in (a "we brought these over from your 亲友" affordance)
+- [ ] Verify the bond-language hardcoded `'zh-CN'` from Auspice's transfer doesn't break Kindred's non-zh-Hans rendering (Kindred fetches its own locale; the transferred bond is just data) — Auspice now passes `resolveLocale()`; still verify on device
+- [x] First-open affordance when bonds-from-portfolio land (carry-over banner + empty-sub copy) — shipped 2026-07
+- [x] Settings daily-push copy clarifies **relationship ~19:00**, not personal 命书 morning push
 
 ### Post-launch (NOT June)
 - Real-time Bond sync (write the other direction back to Auspice)
 - Cross-app deep links from Auspice → Kindred reading
 - Bonds graph extensions (more relation kinds, group readings)
+- NotoSerifSC subset + in-report glossary P4 (optional; not Submit-blocking)

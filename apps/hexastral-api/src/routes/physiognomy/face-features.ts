@@ -17,7 +17,6 @@ import { nanoid } from 'nanoid'
 import { z } from 'zod/v4'
 import { physiognomyEvents, userPhysiognomyFeatures, users } from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
-import { userHasAnySubscription } from '../../lib/access/entitlement-access'
 import { requireUserId } from '../../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../../lib/biometric-consent'
 import { assessFaceoracleFeatureQuality } from '../../lib/faceoracle-feature-quality'
@@ -30,6 +29,8 @@ import {
   type FaceoracleFeatureType,
 } from '../../lib/faceoracle-vlm-cache'
 import { astroClient } from '../../lib/service-clients'
+import { getCreditBalance } from '../../services/credits'
+import { hasActiveEntitlement } from '../../services/entitlements'
 import { checkAndConsumePhysiognomyUpload, getFaceoracleQuotaBundle } from '../../services/quota'
 
 const featureTypeSchema = z.enum(['face', 'palm', 'palm_l', 'palm_r'])
@@ -213,8 +214,13 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
     }
 
     // Miss — meter free upload only when we will call VLM.
-    const isPro = await userHasAnySubscription(db, input.userId)
-    if (!isPro) {
+    // Bypass: faceoracle_pro / universe_pro, or an unused face reading credit.
+    // Do NOT treat other portfolio subs (auspice/kindred/…) as Face Pro.
+    const isFacePro =
+      (await hasActiveEntitlement(db, input.userId, 'faceoracle_pro')) ||
+      (await hasActiveEntitlement(db, input.userId, 'universe_pro'))
+    const faceCredits = isFacePro ? 0 : await getCreditBalance(db, input.userId, 'face')
+    if (!isFacePro && faceCredits <= 0) {
       const { granted } = await checkAndConsumePhysiognomyUpload(db, input.userId)
       if (!granted) {
         throw new HTTPException(403, { message: 'not_pro' })

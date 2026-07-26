@@ -19,13 +19,14 @@ import {
   Image,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native'
-import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg'
+import Svg, { Circle, G, Line, Polygon, Text as SvgText } from 'react-native-svg'
 import { FENG_PALETTE, spacing } from '@/lib/theme'
 
 interface Strings {
@@ -34,6 +35,7 @@ interface Strings {
   report_map_wide: string
   report_map_loading: string
   report_map_failed: string
+  report_overlay_bagua_toggle?: string
 }
 
 /** Building 坐/向/门 bearings in true-north degrees, for the client overlay. */
@@ -43,22 +45,42 @@ export interface MapOrient {
   door: number | null
 }
 
+export interface MapOverlayHints {
+  formSha?: Array<{ palace: string; bearingDeg: number; label: string; severity?: string }>
+  water?: Array<{ palace: string; bearingDeg: number; label: string }>
+  sand?: Array<{ palace: string; label: string }>
+  shuiKou?: { palace: string; label: string } | null
+}
+
 interface Props {
   reportId: string
   tiles: FengAnnotatedTile[]
   strings: Strings
   /** 坐/向/门 arrows drawn over each tile (north-up satellite). */
   orient?: MapOrient | null
+  /** Client-only form/water/sand hints (never baked for Vision). */
+  overlayHints?: MapOverlayHints | null
+  /** Initial bagua-sector visibility; user can toggle when label is provided. */
+  showBaguaSectors?: boolean
   /** Horizontal padding from the screen edge; matches the report's spacing.xl. */
   horizontalPadding?: number
 }
 
-export function AnnotatedMapSwiper({ reportId, tiles, strings, orient, horizontalPadding }: Props) {
+export function AnnotatedMapSwiper({
+  reportId,
+  tiles,
+  strings,
+  orient,
+  overlayHints,
+  showBaguaSectors: showBaguaInitial = true,
+  horizontalPadding,
+}: Props) {
   const { width } = useWindowDimensions()
   const pad = horizontalPadding ?? spacing.xl
   const tileWidth = width - pad * 2
   const tileHeight = Math.round(tileWidth * 0.72)
   const [page, setPage] = useState(0)
+  const [showBaguaSectors, setShowBaguaSectors] = useState(showBaguaInitial)
 
   if (tiles.length === 0) return null
 
@@ -68,8 +90,28 @@ export function AnnotatedMapSwiper({ reportId, tiles, strings, orient, horizonta
     if (next !== page) setPage(next)
   }
 
+  const baguaLabel = strings.report_overlay_bagua_toggle
+
   return (
     <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+      {baguaLabel ? (
+        <View style={{ paddingHorizontal: pad, alignItems: 'flex-end' }}>
+          <Pressable
+            onPress={() => setShowBaguaSectors((v) => !v)}
+            accessibilityRole='button'
+            accessibilityState={{ selected: showBaguaSectors }}
+            style={{
+              borderWidth: 0.5,
+              borderColor: FENG_PALETTE.copperGoldMute,
+              paddingHorizontal: spacing.sm,
+              paddingVertical: 4,
+              opacity: showBaguaSectors ? 1 : 0.45,
+            }}
+          >
+            <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 11 }}>{baguaLabel}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <ScrollView
         horizontal
         pagingEnabled
@@ -99,6 +141,8 @@ export function AnnotatedMapSwiper({ reportId, tiles, strings, orient, horizonta
               height={tileHeight}
               strings={strings}
               orient={orient ?? null}
+              overlayHints={overlayHints ?? null}
+              showBaguaSectors={showBaguaSectors}
             />
           </View>
         ))}
@@ -142,6 +186,8 @@ function MapTile({
   height,
   strings,
   orient,
+  overlayHints,
+  showBaguaSectors,
 }: {
   reportId: string
   tile: FengAnnotatedTile
@@ -149,6 +195,8 @@ function MapTile({
   height: number
   strings: Strings
   orient: MapOrient | null
+  overlayHints: MapOverlayHints | null
+  showBaguaSectors: boolean
 }) {
   const { dataUri, isLoading, error } = useReportMap(reportId, tile)
   const { colors } = useTheme()
@@ -157,7 +205,15 @@ function MapTile({
     return (
       <View style={{ width, height }}>
         <Image source={{ uri: dataUri }} style={{ width, height }} resizeMode='cover' />
-        {orient ? <OrientationOverlay width={width} height={height} orient={orient} /> : null}
+        {orient ? (
+          <OrientationOverlay
+            width={width}
+            height={height}
+            orient={orient}
+            overlayHints={overlayHints}
+            showBaguaSectors={showBaguaSectors}
+          />
+        ) : null}
       </View>
     )
   }
@@ -252,14 +308,31 @@ function OrientArrow({
   )
 }
 
+const BAGUA_SECTORS = [
+  { name: '坎', deg: 0 },
+  { name: '艮', deg: 45 },
+  { name: '震', deg: 90 },
+  { name: '巽', deg: 135 },
+  { name: '离', deg: 180 },
+  { name: '坤', deg: 225 },
+  { name: '兑', deg: 270 },
+  { name: '乾', deg: 315 },
+] as const
+
+const MOUNTAIN_TICKS = Array.from({ length: 24 }, (_, i) => i * 15)
+
 function OrientationOverlay({
   width,
   height,
   orient,
+  overlayHints,
+  showBaguaSectors,
 }: {
   width: number
   height: number
   orient: MapOrient
+  overlayHints: MapOverlayHints | null
+  showBaguaSectors: boolean
 }) {
   const cx = width / 2
   const cy = height / 2
@@ -267,6 +340,7 @@ function OrientationOverlay({
   const ringR = base * 0.4
   const arrowLen = base * 0.3
   const north = polar(cx, cy, ringR, 0)
+  const hintR = base * 0.34
   return (
     <Svg
       pointerEvents='none'
@@ -275,7 +349,6 @@ function OrientationOverlay({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
     >
-      {/* faint compass ring + N marker (north-up) */}
       <Circle
         cx={cx}
         cy={cy}
@@ -284,6 +357,38 @@ function OrientationOverlay({
         strokeWidth={1}
         fill='none'
       />
+      {MOUNTAIN_TICKS.map((deg) => {
+        const outer = polar(cx, cy, ringR, deg)
+        const inner = polar(cx, cy, ringR - 6, deg)
+        return (
+          <Line
+            key={`mt-${deg}`}
+            x1={inner.x}
+            y1={inner.y}
+            x2={outer.x}
+            y2={outer.y}
+            stroke='rgba(255,255,255,0.28)'
+            strokeWidth={1}
+          />
+        )
+      })}
+      {showBaguaSectors
+        ? BAGUA_SECTORS.map((s) => {
+            const p = polar(cx, cy, ringR * 0.72, s.deg)
+            return (
+              <SvgText
+                key={s.name}
+                x={p.x}
+                y={p.y + 3}
+                fill='rgba(255,255,255,0.45)'
+                fontSize={9}
+                textAnchor='middle'
+              >
+                {s.name}
+              </SvgText>
+            )
+          })
+        : null}
       <Line
         x1={north.x}
         y1={north.y - 4}
@@ -332,7 +437,61 @@ function OrientationOverlay({
         />
       ) : null}
 
-      {/* building center */}
+      {(overlayHints?.formSha ?? []).slice(0, 6).map((h, i) => {
+        const p = polar(cx, cy, hintR, h.bearingDeg)
+        const fill =
+          h.severity === 'risk' ? '#F87171' : h.severity === 'watch' ? '#FBBF24' : '#E5E7EB'
+        return (
+          <G key={`sha-${h.palace}-${i}`}>
+            <Circle cx={p.x} cy={p.y} r={3.5} fill={fill} />
+            <SvgText x={p.x} y={p.y - 6} fill={fill} fontSize={8} textAnchor='middle'>
+              {h.label}
+            </SvgText>
+          </G>
+        )
+      })}
+      {(overlayHints?.water ?? []).slice(0, 4).map((h, i) => {
+        const p = polar(cx, cy, hintR * 0.88, h.bearingDeg)
+        return (
+          <G key={`w-${h.palace}-${i}`}>
+            <Circle cx={p.x} cy={p.y} r={3} fill='#60A5FA' />
+            <SvgText x={p.x} y={p.y - 6} fill='#93C5FD' fontSize={8} textAnchor='middle'>
+              {h.label}
+            </SvgText>
+          </G>
+        )
+      })}
+      {(overlayHints?.sand ?? []).slice(0, 4).map((h, i) => {
+        const bearing =
+          BAGUA_SECTORS.find((s) => s.name === h.palace || (h.palace === '離' && s.name === '离'))
+            ?.deg ?? 0
+        const p = polar(cx, cy, hintR * 0.78, bearing)
+        return (
+          <SvgText
+            key={`sand-${h.palace}-${i}`}
+            x={p.x}
+            y={p.y}
+            fill='rgba(252,211,77,0.9)'
+            fontSize={8}
+            textAnchor='middle'
+          >
+            {h.label}
+          </SvgText>
+        )
+      })}
+      {overlayHints?.shuiKou ? (
+        <SvgText
+          x={cx}
+          y={height - 10}
+          fill='rgba(147,197,253,0.95)'
+          fontSize={10}
+          fontWeight='600'
+          textAnchor='middle'
+        >
+          {overlayHints.shuiKou.label}·{overlayHints.shuiKou.palace}
+        </SvgText>
+      ) : null}
+
       <Circle
         cx={cx}
         cy={cy}

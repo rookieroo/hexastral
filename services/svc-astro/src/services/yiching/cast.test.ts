@@ -42,6 +42,23 @@ describe('generateClassicalReading', () => {
     expect(reading.classical.naJiaContext).toBe(naJia)
   })
 
+  test('includes structured desk on classical reading when provided', () => {
+    const lines = [1, 1, 1, 1, 1, 1]
+    const hexagram = getHexagramByLines(lines)
+    expect(hexagram).not.toBeNull()
+
+    const desk = {
+      benName: '乾为天',
+      benPalace: '乾',
+      shiLine: 6 as const,
+      yingLine: 3 as const,
+      lines: [],
+    }
+    const reading = generateClassicalReading(hexagram!, [], '', 'zh-CN', desk)
+    expect(reading.classical.desk?.benName).toBe('乾为天')
+    expect(reading.classical.desk?.shiLine).toBe(6)
+  })
+
   test('returns English judgmentExplain when language is en', () => {
     const lines = [1, 1, 1, 1, 1, 1]
     const hexagram = getHexagramByLines(lines)

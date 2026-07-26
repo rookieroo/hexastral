@@ -26,6 +26,7 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { LiuyaoDeskCard, parseLiuyaoDesk } from '@/components/LiuyaoDeskCard'
 import { tryUpgradeCoincastReading } from '@/lib/coincast-upgrade'
 import { useSatelliteI18n } from '@/lib/i18n'
 import { SheetHandle } from '@/lib/SheetHandle'
@@ -49,7 +50,14 @@ export default function CoinCastResultScreen() {
     parsePayload(params.payload)
   )
   const [upgradeLoading, setUpgradeLoading] = useState(false)
-  const hexagram = (payload.hexagram ?? {}) as { number?: number; name?: string }
+  const hexagram = (payload.hexagram ?? {}) as {
+    number?: number
+    name?: string
+    symbol?: string
+    derived?: { number?: number; name?: string; symbol?: string }
+    nuclearName?: string
+  }
+  const desk = parseLiuyaoDesk(payload)
   const interpretationMode = payload.interpretationMode === 'classical' ? 'classical' : 'ai'
   const isClassical = interpretationMode === 'classical'
   const interpretation =
@@ -61,6 +69,14 @@ export default function CoinCastResultScreen() {
     num: hexagram.number ?? '—',
     name: typeof hexagram.name === 'string' ? hexagram.name : '',
   }).trim()
+
+  const bianTitle =
+    hexagram.derived && typeof hexagram.derived.name === 'string'
+      ? t('resultHexagramTitle', {
+          num: hexagram.derived.number ?? '—',
+          name: hexagram.derived.name,
+        }).trim()
+      : null
 
   const [questionType, setQuestionType] = useState<QuestionType | null>(null)
   const suggestedFlagship = routePortfolioToFlagship('coincast', questionType)
@@ -112,7 +128,32 @@ export default function CoinCastResultScreen() {
           {isClassical ? (
             <Text style={[styles.badge, { color: colors.accent }]}>{t('resultClassicalBadge')}</Text>
           ) : null}
-          <SatelliteResultCard title={title} body={interpretation} />
+          {desk ? (
+            <LiuyaoDeskCard
+              desk={desk}
+              benSymbol={typeof hexagram.symbol === 'string' ? hexagram.symbol : undefined}
+              bianSymbol={
+                hexagram.derived && typeof hexagram.derived.symbol === 'string'
+                  ? hexagram.derived.symbol
+                  : undefined
+              }
+            />
+          ) : (
+            <View style={{ gap: spacing.sm }}>
+              <SatelliteResultCard title={`${t('deskBenLabel')} · ${title}`} body={interpretation} />
+              {bianTitle ? (
+                <SatelliteResultCard
+                  title={`${t('deskBianLabel')} · ${bianTitle}`}
+                  body={
+                    typeof hexagram.nuclearName === 'string'
+                      ? `${t('deskHuLabel')} · ${hexagram.nuclearName}`
+                      : t('deskNoBian')
+                  }
+                />
+              ) : null}
+            </View>
+          )}
+          {desk ? <SatelliteResultCard title={title} body={interpretation} /> : null}
           <View style={{ alignSelf: 'flex-start', gap: spacing.sm }}>
             <Button
               variant='secondary'

@@ -172,6 +172,7 @@ export async function migrateBirthdaysToServerOnce(
         name: p.name,
         solarDate: p.solarDate,
         calendar: p.calendar ?? 'solar',
+        lunarIsLeap: p.lunarIsLeap === true,
         relation: p.relation,
         advanceDays: p.advanceDays,
         remindOnDay: p.remindOnDay,

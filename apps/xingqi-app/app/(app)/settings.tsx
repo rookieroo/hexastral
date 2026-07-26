@@ -31,12 +31,7 @@ import { devSetServerPro } from '@/lib/dev-tools'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
-import {
-  getIcloudPhotoSyncEnabled,
-  setIcloudPhotoSyncEnabled,
-  syncReadingPhotosToICloudIfEnabled,
-} from '@/lib/icloud-sync-preference'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
 import { cancelXingqiPush, scheduleXingqiPush } from '@/lib/push-schedule'
@@ -48,8 +43,8 @@ export default function SettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -63,14 +58,12 @@ export default function SettingsScreen() {
     __DEV__ ? getDevEntitlementOverride() : null
   )
   const [restoreBusy, setRestoreBusy] = useState(false)
-  const [icloudSync, setIcloudSync] = useState(false)
   const [readingCount, setReadingCount] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
       void getPortfolioUserId().then(setUserId)
       void getXingqiPushPrefs().then(setPrefs)
-      void getIcloudPhotoSyncEnabled().then(setIcloudSync)
       void fetchReadings(PORTFOLIO_TARGET_APP)
         .then((hist) => setReadingCount(hist.readings?.length ?? 0))
         .catch(() => setReadingCount(0))
@@ -166,15 +159,31 @@ export default function SettingsScreen() {
           </SettingsSection>
         ) : null}
 
-        <SettingsSection title={s('提醒', '提醒', 'REMINDERS')}>
+        <SettingsSection title={s('提醒', '提醒', 'REMINDERS', 'リマインダー')}>
           <SettingsCard>
             <SettingsToggleRow
-              label={s('提醒', '提醒', 'Reminders')}
+              label={s('提醒', '提醒', 'Reminders', 'リマインダー')}
               value={prefs.remindersOn && isPro}
               onValueChange={(v) => void applyReminders(v)}
               badge={isPro ? undefined : 'PRO'}
             />
           </SettingsCard>
+          <Text
+            style={{
+              color: colors.dim,
+              fontSize: 12,
+              lineHeight: 17,
+              marginTop: 8,
+              paddingHorizontal: 4,
+            }}
+          >
+            {s(
+              '自我观察提示，非医疗建议。',
+              '自我觀察提示，非醫療建議。',
+              'For self-observation only — not medical advice.',
+              '自己観察のためのヒントであり、医療アドバイスではありません。'
+            )}
+          </Text>
         </SettingsSection>
 
         <SettingsSection title={s('档案', '檔案', 'PROFILE')}>
@@ -237,38 +246,9 @@ export default function SettingsScreen() {
           </SettingsCard>
         </SettingsSection>
 
-        <SettingsSection title={s('同步', '同步', 'SYNC')}>
-          <Text
-            style={{
-              color: colors.dim,
-              fontSize: 12,
-              lineHeight: 17,
-              marginBottom: 4,
-              paddingHorizontal: 4,
-            }}
-          >
-            {s(
-              '同一 Apple ID 设备间同步形气照片（仅存于 iCloud，不经 HexAstral 服务器）',
-              '同一 Apple ID 裝置間同步形氣照片（僅存於 iCloud，不經 HexAstral 伺服器）',
-              'Sync reading photos on the same Apple ID (iCloud only, not HexAstral servers)'
-            )}
-          </Text>
-          <SettingsCard>
-            <SettingsToggleRow
-              label={s('iCloud 照片同步', 'iCloud 照片同步', 'iCloud photo sync')}
-              value={icloudSync}
-              onValueChange={(next) => {
-                void (async () => {
-                  setIcloudSync(next)
-                  await setIcloudPhotoSyncEnabled(next)
-                  if (next) await syncReadingPhotosToICloudIfEnabled()
-                })()
-              }}
-            />
-          </SettingsCard>
-        </SettingsSection>
+        {/* iCloud photo sync is not implemented yet — hide the empty promise. */}
 
-        <SettingsSection title={s('法律', '法律', 'LEGAL')}>
+        <SettingsSection title={s('法律', '法律', 'LEGAL', '法的情報')}>
           <SettingsCard>
             <SettingsRow
               label={s('隐私', '隱私', 'Privacy')}

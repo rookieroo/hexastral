@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProgressIndicator } from '@/components/ProgressIndicator'
+import { CompoundFacingTeachCard } from '@/components/CompoundFacingTeachCard'
 import { useNewSiteGuard } from '@/hooks/useNewSiteGuard'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
@@ -117,6 +118,8 @@ export default function ReviewScreen() {
         moveInYear: draft.moveInYear,
         floor: draft.floor,
         facingConfirmed: true,
+        facingSamples: draft.facingSamples,
+        facingCompassDeltaDeg: draft.facingCompassDeltaDeg,
         geocodeLat: draft.geocodeLat,
         geocodeLng: draft.geocodeLng,
         buildingCenterNorm: draft.buildingCenterNorm,
@@ -332,9 +335,7 @@ export default function ReviewScreen() {
       ) : null}
 
       {typeof draft?.facingDegTrue === 'number' && isCompoundFacing(draft.facingDegTrue) ? (
-        <Text style={{ color: colors.warning, fontSize: 12, lineHeight: 18 }}>
-          {t.new_site_review_compound_facing}
-        </Text>
+        <CompoundFacingTeachCard facingDegTrue={draft.facingDegTrue} t={t} />
       ) : null}
 
       {/* 命卦 chapter (ch2) — birth info is optional; with it the report is 6

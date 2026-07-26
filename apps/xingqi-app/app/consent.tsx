@@ -7,14 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { fetchBiometricConsent, recordBiometricConsent } from '@/lib/api'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 export default function BiometricConsentScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const [checking, setChecking] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -93,9 +93,10 @@ export default function BiometricConsentScreen() {
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>
         {s(
-          '我们将在设备上选择左掌、右掌与面部高清照片，提取结构化特征，并结合你的生辰计算八字大运流年，生成密封的六章形气简报。原图在服务器处理完成后不会保存。',
-          '我們將在裝置上選擇左掌、右掌與面部高清照片，提取結構化特徵，並結合你的生辰計算八字大運流年，生成密封的六章形氣簡報。原圖在伺服器處理完成後不會保存。',
-          'You will capture sharp left palm, right palm, and face photos. We extract structured features, compute BaZi DaYun/LiuNian from your birth data, and produce a sealed six-chapter form brief. Source images are not kept after processing.'
+          '我们将在设备上选择左掌、右掌与面部高清照片，提取结构化特征，并结合你的生辰计算八字大运流年，生成密封的五章形气简报。原图在服务器处理完成后不会保存。',
+          '我們將在裝置上選擇左掌、右掌與面部高清照片，提取結構化特徵，並結合你的生辰計算八字大運流年，生成密封的五章形氣簡報。原圖在伺服器處理完成後不會保存。',
+          'You will capture sharp left palm, right palm, and face photos. We extract structured features, compute BaZi DaYun/LiuNian from your birth data, and produce a sealed five-chapter form brief. Source images are not kept after processing.',
+          '左手・右手・顔の鮮明な写真を撮り、構造化した特徴を抽出し、生年月日から八字の大運・流年を計算して、密封の五章形気ブリーフを作ります。処理後に原画像は保存しません。'
         )}
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
@@ -112,7 +113,7 @@ export default function BiometricConsentScreen() {
           : s('我已了解并同意', '我已瞭解並同意', 'I understand and agree')}
       </Button>
       <Button variant='ghost' onPress={() => router.back()}>
-        {s('取消', '取消', 'Cancel')}
+        {s('取消', '取消', 'Cancel', 'キャンセル')}
       </Button>
     </ScrollView>
   )

@@ -22,6 +22,7 @@ import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
 import { transferAuspicePeopleToBonds } from './bonds-transfer'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
+import { resolveLocale } from './i18n'
 import { getPeople } from './people'
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
@@ -136,8 +137,19 @@ async function transferBondsInBackground(): Promise<void> {
   try {
     const people = await getPeople()
     if (people.length === 0) return
-    await transferAuspicePeopleToBonds(people, 'zh-CN')
-  } catch {}
+    const locale = resolveLocale()
+    const language =
+      locale === 'zh' || locale === 'zh-Hant' || locale === 'ja' || locale === 'en'
+        ? locale === 'zh'
+          ? 'zh-CN'
+          : locale === 'zh-Hant'
+            ? 'zh-TW'
+            : locale
+        : 'en'
+    await transferAuspicePeopleToBonds(people, language)
+  } catch (err) {
+    console.warn('[auspice.account] bonds transfer failed', err)
+  }
 }
 
 /** Re-runs the transfer (e.g. after the user edits 亲友 to fill in missing data). */

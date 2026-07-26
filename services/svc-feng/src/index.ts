@@ -21,6 +21,7 @@ import { floorplanRouter } from './routes/floorplan'
 import { mapsRouter } from './routes/maps'
 import { prefetchRouter } from './routes/prefetch'
 import { streetRouter } from './routes/street'
+import { formLiRouter } from './routes/form-li'
 import { synthesizeRouter } from './routes/synthesize'
 import { terrainRouter } from './routes/terrain'
 import { visionRouter } from './routes/vision'
@@ -59,8 +60,15 @@ app.onError((err, c) => {
 app.get('/', (c) =>
   c.json({
     name: 'svc-feng',
-    version: '0.0.1',
-    routes: ['/prefetch', '/maps/render', '/annotate', '/vision/analyze', '/synthesize'],
+    version: '0.1.0',
+    routes: [
+      '/prefetch',
+      '/maps/render',
+      '/annotate',
+      '/vision/analyze',
+      '/form-li/interpret',
+      '/synthesize',
+    ],
   })
 )
 
@@ -87,6 +95,7 @@ app.route('/maps', mapsRouter)
 app.route('/annotate', annotateRouter)
 app.route('/floorplan', floorplanRouter)
 app.route('/vision', visionRouter)
+app.route('/form-li', formLiRouter)
 app.route('/synthesize', synthesizeRouter)
 
 export default app

@@ -14,13 +14,13 @@ import {
   COIN_RADIAL_SEGMENTS,
   COIN_RADIUS,
   COIN_THICKNESS,
-  CONTAINER_SHAKE_DURATION_MS,
   CUP_ABOVE_ALTAR_GAP,
   CUP_CEILING_CLAMP_Y,
   CUP_LINEAR_SPEED_CAP,
   GRAVITY_Y,
   HANDS_OPEN_DROP_CENTER_Y,
   HANDS_OPEN_RELEASE_ANGULAR_SCALE,
+  HANDS_OPEN_RELEASE_LINEAR_SCALE,
   HANDS_OPEN_XZ_SPREAD,
   IDLE_COIN_TABLE_XZ,
   IDLE_COIN_TABLE_Y,
@@ -83,6 +83,15 @@ function finalizeCoinsOnTable(bodies: CANNON.Body[], result: YaoResult): void {
   for (let i = 0; i < 3; i++) {
     settleCoinOnTableRow(bodies[i]!, result.coins[i]!, i)
   }
+  for (const b of bodies) {
+    b.velocity.setZero()
+    b.angularVelocity.setZero()
+    b.sleep()
+  }
+}
+
+/** Leave fallen poses — zero motion only; no row snap. */
+function sleepCoinsAsFallen(bodies: CANNON.Body[]): void {
   for (const b of bodies) {
     b.velocity.setZero()
     b.angularVelocity.setZero()
@@ -166,7 +175,9 @@ function applyHandsOpenRelease(bodies: CANNON.Body[]): void {
       z *= s
     }
     b.position.set(x, HANDS_OPEN_DROP_CENTER_Y, z)
-    b.velocity.setZero()
+    b.velocity.x *= HANDS_OPEN_RELEASE_LINEAR_SCALE
+    b.velocity.y *= HANDS_OPEN_RELEASE_LINEAR_SCALE
+    b.velocity.z *= HANDS_OPEN_RELEASE_LINEAR_SCALE
     b.angularVelocity.x *= HANDS_OPEN_RELEASE_ANGULAR_SCALE
     b.angularVelocity.y *= HANDS_OPEN_RELEASE_ANGULAR_SCALE
     b.angularVelocity.z *= HANDS_OPEN_RELEASE_ANGULAR_SCALE
@@ -204,6 +215,13 @@ function applyMeasuredMotion(
 
 export interface PhysicsCoinsSceneProps {
   tossRevision: number
+  /**
+   * Parent increments when the user releases / opens hands — triggers pour.
+   * (No fixed auto-pour timer.)
+   */
+  handsOpenRevision: number
+  /** Optional neat row after the user confirms they have read the fallen faces. */
+  neatCoinsRevision: number
   coinSkinConfig?: CoinSkinConfig
   /** Same as scene.background — table + lighting ground tint (no second “slab” color). */
   sceneBackdrop: string
@@ -301,6 +319,9 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
   const lastMotionTimeMs = useRef(0)
   /** `container_shake` = closed cup; `released` = walls/deck removed, coins falling from open-hand height. */
   const tossSubPhaseRef = useRef<'idle' | 'container_shake' | 'released'>('idle')
+  const lastHandsOpenRevision = useRef(0)
+  const lastNeatRevision = useRef(0)
+  const lastSettledResultRef = useRef<YaoResult | null>(null)
 
   const removeCupDeck = () => {
     const d = cupDeckBodyRef.current
@@ -354,8 +375,31 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
     cupDeckBodyRef.current = deck
 
     tossSubPhaseRef.current = 'container_shake'
+    lastSettledResultRef.current = null
     spawnCoinsInVessel(bodies)
   }, [props.tossRevision, bodies])
+
+  /** User-timed open palm — pour only when parent bumps `handsOpenRevision`. */
+  useEffect(() => {
+    if (props.handsOpenRevision <= 0) return
+    if (props.handsOpenRevision === lastHandsOpenRevision.current) return
+    if (tossSubPhaseRef.current !== 'container_shake' || phaseRef.current !== 'active') return
+    lastHandsOpenRevision.current = props.handsOpenRevision
+    clearArenaWalls()
+    world.gravity.set(0, GRAVITY_Y, 0)
+    applyHandsOpenRelease(bodies)
+    tossSubPhaseRef.current = 'released'
+  }, [props.handsOpenRevision, bodies, world])
+
+  /** Optional neat row after the reader confirms the fallen faces. */
+  useEffect(() => {
+    if (props.neatCoinsRevision <= 0) return
+    if (props.neatCoinsRevision === lastNeatRevision.current) return
+    const result = lastSettledResultRef.current
+    if (!result) return
+    lastNeatRevision.current = props.neatCoinsRevision
+    finalizeCoinsOnTable(bodies, result)
+  }, [props.neatCoinsRevision, bodies])
 
   /** Abort / reset: revision 0 — park a non-overlapping row and sleep it deterministically. */
   useEffect(() => {
@@ -436,13 +480,7 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
               if (body.velocity.y > 0) body.velocity.y *= -0.18
             }
           }
-
-          if (simulationTimeMs.current >= CONTAINER_SHAKE_DURATION_MS) {
-            clearArenaWalls()
-            world.gravity.set(0, GRAVITY_Y, 0)
-            applyHandsOpenRelease(bodies)
-            tossSubPhaseRef.current = 'released'
-          }
+          // Pour is user-timed via `handsOpenRevision` — no fixed auto-open clock.
         }
       }
 
@@ -520,7 +558,8 @@ export function PhysicsCoinsScene(props: PhysicsCoinsSceneProps) {
       }
 
       const result = buildTossResultFromBodies(bodies)
-      finalizeCoinsOnTable(bodies, result)
+      lastSettledResultRef.current = result
+      sleepCoinsAsFallen(bodies)
       phaseRef.current = 'idle'
       tossSubPhaseRef.current = 'idle'
       settleCount.current = 0

@@ -61,12 +61,14 @@ describe('hasCapability', () => {
     expect(hasCapability(ents('kindred_pro'), 'kindred')).toBe(true)
     expect(hasCapability(ents('auspice_pro'), 'auspice')).toBe(true)
     expect(hasCapability(ents('auspice_pro'), 'fate')).toBe(false)
+    expect(hasCapability(ents('faceoracle_pro'), 'face')).toBe(true)
+    expect(hasCapability(ents('faceoracle_pro'), 'kindred')).toBe(false)
   })
 
-  it('episodic apps are never unlocked by a subscription entitlement (credit-gated)', () => {
-    // No per-app sub grants feng/face/coincast/dream/numerology — only universe_pro does.
+  it('episodic apps without a per-app sub stay credit-gated (except face via faceoracle_pro)', () => {
     expect(hasCapability(ents('fate_pro', 'kindred_pro', 'auspice_pro'), 'feng')).toBe(false)
     expect(hasCapability(ents('fate_pro'), 'face')).toBe(false)
+    expect(hasCapability(ents('auspice_pro'), 'face')).toBe(false)
     expect(hasCapability([], 'coincast')).toBe(false)
   })
 })
@@ -93,6 +95,13 @@ describe('resolveChatTier', () => {
     expect(resolveChatTier({ entitlements: ents('auspice_pro'), readingType: 'cycle' }).tier).toBe(
       'pro'
     )
+    expect(
+      resolveChatTier({
+        entitlements: ents('faceoracle_pro'),
+        readingType: 'physiognomy',
+        targetApp: 'faceoracle',
+      }).tier
+    ).toBe('pro')
   })
 
   it('an unentitled user gets the free-taste tier with the right upsell product', () => {
@@ -104,6 +113,10 @@ describe('resolveChatTier', () => {
     const feng = resolveChatTier({ entitlements: [], readingType: 'feng' })
     expect(feng.tier).toBe('free')
     expect(feng.upsellProductId).toBe('hexastral_feng_single')
+
+    const face = resolveChatTier({ entitlements: [], readingType: 'physiognomy' })
+    expect(face.tier).toBe('free')
+    expect(face.upsellProductId).toBe('faceoracle_pro_monthly')
   })
 
   it('exposes a small per-reading free-taste cap', () => {

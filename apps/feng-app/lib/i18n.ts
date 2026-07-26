@@ -68,6 +68,28 @@ export type Strings = {
   new_site_facing_compass_warn: string
   /** Review hint when facing is near a 24-mountain boundary (兼向 → 替卦). */
   new_site_review_compound_facing: string
+  /** 立极 ritual step labels */
+  facing_ritual_step_north: string
+  facing_ritual_step_pin: string
+  facing_ritual_step_confirm: string
+  facing_ritual_identity: string
+  facing_ritual_sample_warn: string
+  facing_ritual_samples_hint: string
+  compound_teach_title: string
+  compound_teach_why: string
+  compound_teach_diff: string
+  compound_teach_expand: string
+  compound_teach_collapse: string
+  compound_teach_chart_ti: string
+  compound_teach_chart_xia: string
+  report_overlay_bagua_toggle: string
+  report_rooms_heading: string
+  report_room_confirm_hint: string
+  /** Join room palace with classical placement (八宅). */
+  report_room_join_door: string
+  report_room_join_bed: string
+  report_room_join_stove: string
+  floorplan_site_facing_line: string
 
   new_site_residence_label: string
   new_site_residence_apartment: string
@@ -172,9 +194,12 @@ export type Strings = {
   dq_pin_offset: string
   dq_orient_facing_delta: string
   dq_apartment_floor_missing: string
+  dq_street_sha_skipped_apartment: string
+  dq_flying_stars_confidence_caveat: string
   dq_flat_floor_missing: string
   dq_flat_urban: string
   dq_residence_mismatch: string
+  report_form_li_notes_heading: string
   /** 床灶门书桌吉位 block. */
   report_placement_heading: string
   /** Report digest cover — qualitative summary (no percentile score). */
@@ -428,6 +453,29 @@ const EN: Strings = {
     'Satellite facing ({sat}°) differs from phone compass ({compass}°) by {delta}° — double-check outdoors if unsure.',
   new_site_review_compound_facing:
     'Facing is near a mountain boundary (兼向) — the report uses 替卦 flying-star charts.',
+  facing_ritual_step_north: '1 · Align true north outdoors',
+  facing_ritual_step_pin: '2 · Pin the building center',
+  facing_ritual_step_confirm: '3 · Confirm facing mountain',
+  facing_ritual_identity: 'Sit {sit} · Face {face} · {method}',
+  facing_ritual_sample_warn:
+    'Compass samples vary by {delta}° — magnetic interference possible; re-sample outdoors if unsure.',
+  facing_ritual_samples_hint: 'Samples {n}/3 · spread {delta}°',
+  compound_teach_title: '兼向 · sit {sit} face {face} · {method}',
+  compound_teach_why:
+    'When facing sits within ±2.5° of a 24-mountain boundary, classical 玄空 uses 替卦 (replacement-star) charts instead of 下卦.',
+  compound_teach_diff:
+    '下卦 and 替卦 plates can differ sharply — the report states which method was used.',
+  compound_teach_expand: 'Why 替卦?',
+  compound_teach_collapse: 'Hide',
+  compound_teach_chart_ti: '替卦',
+  compound_teach_chart_xia: '下卦',
+  report_overlay_bagua_toggle: 'Bagua sectors',
+  report_rooms_heading: 'Rooms by palace',
+  report_room_confirm_hint: 'Confirm door / stove / master bedroom palace if known.',
+  report_room_join_door: 'Door in {palace} · classical preferred {fav}',
+  report_room_join_bed: 'Master bed in {palace} · classical preferred {fav}',
+  report_room_join_stove: 'Stove in {palace} · classical mouth toward {fav}',
+  floorplan_site_facing_line: 'Site facing {face} ({deg}°)',
   new_site_residence_label: 'Residence type',
   new_site_residence_apartment: 'Apartment / unit in a compound',
   new_site_residence_flat: 'Full-floor flat',
@@ -520,9 +568,14 @@ const EN: Strings = {
   dq_pin_offset: 'Building pin was adjusted far from the geocoded address.',
   dq_orient_facing_delta: 'Floor-plan north differs from building facing — verify orientation.',
   dq_apartment_floor_missing: 'Floor not entered — street-level form is less specific for high-rises.',
+  dq_street_sha_skipped_apartment:
+    'Street-level form sha was not evaluated for this apartment (satellite + chart only).',
+  dq_flying_stars_confidence_caveat:
+    'Build year is approximate — flying-stars period confidence is not high; treat 运盘 wording as provisional.',
   dq_flat_floor_missing: 'Floor not entered — street form attenuation skipped.',
   dq_flat_urban: 'Flat urban site — landform read relies on direction + satellite only.',
   dq_residence_mismatch: 'Declared residence type may not match the site — review if pricing tier fits.',
+  report_form_li_notes_heading: 'FORM–LI NOTES (形理对照)',
   report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
   report_digest_tag: 'Overview',
   digest_chart_line: 'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
@@ -766,6 +819,27 @@ const ZH_HANS: Strings = {
   new_site_facing_compass_warn:
     '卫星朝向（{sat}°）与手机罗盘（{compass}°）相差 {delta}°——若不确定请在户外复核。',
   new_site_review_compound_facing: '朝向接近山向边界（兼向）——报告将使用替卦飞星排盘。',
+  facing_ritual_step_north: '1 · 户外对准真北',
+  facing_ritual_step_pin: '2 · 钉定楼体中心',
+  facing_ritual_step_confirm: '3 · 确认向首山名',
+  facing_ritual_identity: '坐{sit}向{face} · {method}',
+  facing_ritual_sample_warn: '罗盘采样相差 {delta}° — 可能有磁干扰；不确定请户外重采。',
+  facing_ritual_samples_hint: '已采 {n}/3 · 离散 {delta}°',
+  compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
+  compound_teach_why:
+    '朝向落在二十四山边界 ±2.5° 内时，玄空传统改用替卦盘（替星诀）而非下卦盘。',
+  compound_teach_diff: '下卦与替卦盘面可能截然不同——报告会标明所用方法。',
+  compound_teach_expand: '为何替卦？',
+  compound_teach_collapse: '收起',
+  compound_teach_chart_ti: '替卦',
+  compound_teach_chart_xia: '下卦',
+  report_overlay_bagua_toggle: '八卦扇区',
+  report_rooms_heading: '分宫房间',
+  report_room_confirm_hint: '若已知，可确认大门 / 灶 / 主卧所在宫。',
+  report_room_join_door: '大门在{palace} · 古典宜{fav}',
+  report_room_join_bed: '主卧在{palace} · 古典宜{fav}',
+  report_room_join_stove: '灶在{palace} · 古典火口宜朝{fav}',
+  floorplan_site_facing_line: '大楼朝向 {face}（{deg}°）',
   new_site_residence_label: '住宅类型',
   new_site_residence_apartment: '公寓 / 小区里的一栋楼',
   new_site_residence_flat: '大平层',
@@ -851,9 +925,13 @@ const ZH_HANS: Strings = {
   dq_pin_offset: '楼体定位点与地址坐标偏差较大。',
   dq_orient_facing_delta: '户型北向与大楼坐向差异较大 — 请核对朝向。',
   dq_apartment_floor_missing: '未填楼层 — 高层街景形煞参考价值降低。',
+  dq_street_sha_skipped_apartment: '本公寓未评估街景形煞（仅卫星与盘面）——街景形煞未评估。',
+  dq_flying_stars_confidence_caveat:
+    '建年仅为估算 — 飞星运盘置信度非高；运盘表述请作暂定研习参考。',
   dq_flat_floor_missing: '未填楼层 — 街景形煞楼层衰减未启用。',
   dq_flat_urban: '平坦城区 — 峦头主要依据方位与卫星推断。',
   dq_residence_mismatch: '申报的住宅类型可能与现场不符 — 请核对付费档位。',
+  report_form_li_notes_heading: '形理对照笔记',
   report_placement_heading: '古典布局参考',
   report_digest_tag: '概览',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}运{method}盘 · 现{currentYuan}运读盘',
@@ -1078,6 +1156,27 @@ const ZH_HANT: Strings = {
   new_site_facing_compass_warn:
     '衛星朝向（{sat}°）與手機羅盤（{compass}°）相差 {delta}°——若不確定請在戶外複核。',
   new_site_review_compound_facing: '朝向接近山向邊界（兼向）——報告將使用替卦飛星排盤。',
+  facing_ritual_step_north: '1 · 戶外對準真北',
+  facing_ritual_step_pin: '2 · 釘定樓體中心',
+  facing_ritual_step_confirm: '3 · 確認向首山名',
+  facing_ritual_identity: '坐{sit}向{face} · {method}',
+  facing_ritual_sample_warn: '羅盤採樣相差 {delta}° — 可能有磁干擾；不確定請戶外重採。',
+  facing_ritual_samples_hint: '已採 {n}/3 · 離散 {delta}°',
+  compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
+  compound_teach_why:
+    '朝向落在二十四山邊界 ±2.5° 內時，玄空傳統改用替卦盤（替星訣）而非下卦盤。',
+  compound_teach_diff: '下卦與替卦盤面可能截然不同——報告會標明所用方法。',
+  compound_teach_expand: '為何替卦？',
+  compound_teach_collapse: '收起',
+  compound_teach_chart_ti: '替卦',
+  compound_teach_chart_xia: '下卦',
+  report_overlay_bagua_toggle: '八卦扇區',
+  report_rooms_heading: '分宮房間',
+  report_room_confirm_hint: '若已知，可確認大門 / 灶 / 主臥所在宮。',
+  report_room_join_door: '大門在{palace} · 古典宜{fav}',
+  report_room_join_bed: '主臥在{palace} · 古典宜{fav}',
+  report_room_join_stove: '灶在{palace} · 古典火口宜朝{fav}',
+  floorplan_site_facing_line: '大樓朝向 {face}（{deg}°）',
   new_site_residence_label: '住宅類型',
   new_site_residence_apartment: '公寓 / 社區裡的一棟樓',
   new_site_residence_flat: '大平層',
@@ -1162,9 +1261,13 @@ const ZH_HANT: Strings = {
   dq_pin_offset: '樓體定位點與地址座標偏差較大。',
   dq_orient_facing_delta: '戶型北向與大樓坐向差異較大 — 請核對朝向。',
   dq_apartment_floor_missing: '未填樓層 — 高層街景形煞參考價值降低。',
+  dq_street_sha_skipped_apartment: '本公寓未評估街景形煞（僅衛星與盤面）——街景形煞未評估。',
+  dq_flying_stars_confidence_caveat:
+    '建年僅為估算 — 飛星運盤置信度非高；運盤表述請作暫定研習參考。',
   dq_flat_floor_missing: '未填樓層 — 街景形煞樓層衰減未啟用。',
   dq_flat_urban: '平坦城區 — 巒頭主要依據方位與衛星推斷。',
   dq_residence_mismatch: '申報的住宅類型可能與現場不符 — 請核對付費檔位。',
+  report_form_li_notes_heading: '形理對照筆記',
   report_placement_heading: '古典佈局參考',
   report_digest_tag: '概覽',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運讀盤',
@@ -1396,6 +1499,28 @@ const JA: Strings = {
     '衛星の向き（{sat}°）とコンパス（{compass}°）が {delta}° ずれています。不明な場合は屋外で確認してください。',
   new_site_review_compound_facing:
     '向きが二十四山の境界付近（兼向）です。レポートは替卦の飛星盤を使用します。',
+  facing_ritual_step_north: '1 · 屋外で真北を合わせる',
+  facing_ritual_step_pin: '2 · 建物中心をピン留め',
+  facing_ritual_step_confirm: '3 · 向首の山名を確認',
+  facing_ritual_identity: '坐{sit}向{face} · {method}',
+  facing_ritual_sample_warn:
+    'コンパス標本の差 {delta}° — 磁気干渉の可能性。不明なら屋外で再採。',
+  facing_ritual_samples_hint: '標本 {n}/3 · ばらつき {delta}°',
+  compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
+  compound_teach_why:
+    '向きが二十四山の境界 ±2.5° 内にあると、玄空では下卦ではなく替卦盤を用います。',
+  compound_teach_diff: '下卦と替卦の盤面は大きく異なり得ます — レポートに方法を明示します。',
+  compound_teach_expand: 'なぜ替卦？',
+  compound_teach_collapse: '閉じる',
+  compound_teach_chart_ti: '替卦',
+  compound_teach_chart_xia: '下卦',
+  report_overlay_bagua_toggle: '八卦扇区',
+  report_rooms_heading: '宮ごとの部屋',
+  report_room_confirm_hint: '分かれば大門 / 竈 / 主寝室の宮を確認できます。',
+  report_room_join_door: '大門は{palace} · 古典では{fav}が好ましい',
+  report_room_join_bed: '主寝室は{palace} · 古典では{fav}が好ましい',
+  report_room_join_stove: '竈は{palace} · 古典では火口を{fav}へ',
+  floorplan_site_facing_line: '建物の向き {face}（{deg}°）',
   new_site_residence_label: '住まいのタイプ',
   new_site_residence_apartment: 'マンション / 集合住宅の一棟',
   new_site_residence_flat: 'フルフロア住戸',
@@ -1486,9 +1611,14 @@ const JA: Strings = {
   dq_pin_offset: '建物ピンが住所座標から大きくずれています。',
   dq_orient_facing_delta: '間取りの北向きと建物の向きに差があります — 方位をご確認ください。',
   dq_apartment_floor_missing: '階数未入力 — 高層では街景形煞の参考度が下がります。',
+  dq_street_sha_skipped_apartment:
+    'このマンションでは街景形煞を評価していません（衛星と盤面のみ）。',
+  dq_flying_stars_confidence_caveat:
+    '建築年は概算です — 飛星運盤の確信度は高くありません。暫定の学習用として読んでください。',
   dq_flat_floor_missing: '階数未入力 — 街景形煞の階数減衰は適用されません。',
   dq_flat_urban: '平坦な市街地 — 巒頭は方位と衛星推定が中心です。',
   dq_residence_mismatch: '申告した住宅タイプが現場と合わない可能性 — 料金区分をご確認ください。',
+  report_form_li_notes_heading: '形理対照メモ',
   report_placement_heading: '古典配置メモ',
   report_digest_tag: '概観',
   digest_chart_line: '坐{sit}向{face} · {buildYuan}運{method}盤 · 現{currentYuan}運で読む',

@@ -39,3 +39,24 @@ export function isCjkZh(locale: string): boolean {
 export function pickZh(locale: string, hans: string, hant: string): string {
   return isZhHant(locale) ? hant : hans
 }
+
+/**
+ * Product UI copy for Xingqi's four locales (zh / zh-Hant / en / ja).
+ * When `ja` is omitted, Japanese falls back to English.
+ */
+export function pickUi(
+  locale: string,
+  hans: string,
+  hant: string,
+  en: string,
+  ja?: string
+): string {
+  if (isZhHant(locale)) return hant
+  if (isZhHans(locale) || (locale.startsWith('zh') && !isZhHant(locale))) return hans
+  if (locale.startsWith('ja') && ja) return ja
+  return en
+}
+
+export function isJa(locale: string): boolean {
+  return locale.startsWith('ja')
+}

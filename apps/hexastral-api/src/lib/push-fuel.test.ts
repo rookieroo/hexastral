@@ -5,10 +5,12 @@ import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { faceoraclePushQueue, kindredPushQueue } from '../db/schema'
 import type { AppDb } from '../infra-types'
 import {
+  faceoracleRestThemeKey,
   replaceFaceoraclePushFuel,
   userIdsWithMonthEventCoverage,
+  windowsFromEvents,
 } from './faceoracle-push-harvest'
-import { expireKindredPushForBond, harvestKindredPushSnippets } from './kindred-push-harvest'
+import { expireKindredPushForBond, harvestKindredPushSnippets, linkKindredPushToBond } from './kindred-push-harvest'
 import { normalizePushLocale, pushLocalesEqual } from './push-locale'
 
 function makePushDb(): AppDb {
@@ -102,6 +104,18 @@ describe('userIdsWithMonthEventCoverage', () => {
   })
 })
 
+describe('faceoracleRestThemeKey / windowsFromEvents ja', () => {
+  test('rest theme key prefers explicit hint', () => {
+    expect(faceoracleRestThemeKey('Title', '  Fire rest  ')).toBe('fire rest')
+    expect(faceoracleRestThemeKey('  Quiet night  ')).toBe('quiet night')
+  })
+
+  test('windowsFromEvents uses Japanese title for ja locale', () => {
+    const w = windowsFromEvents([{ startMonth: '2026-08', theme: '休', note: '早寝' }], 'ja')
+    expect(w[0]?.title).toBe('意識したい時間窓')
+  })
+})
+
 describe('replaceFaceoraclePushFuel', () => {
   let db: AppDb
   beforeEach(() => {
@@ -181,6 +195,99 @@ describe('replaceFaceoraclePushFuel', () => {
       )
     expect(queued.length).toBe(1)
     expect(queued[0]?.title).toBe('新')
+  })
+})
+
+describe('harvestKindredPushSnippets caps', () => {
+  let db: AppDb
+  beforeEach(() => {
+    db = makePushDb()
+  })
+
+  test('expires oldest queued rows first when per-bond cap overflows', async () => {
+    const base = {
+      userId: 'u1',
+      bondId: 'bond-a',
+      sourceReadingId: 'r1',
+      locale: 'zh-CN',
+    }
+    for (let i = 0; i < 5; i++) {
+      await harvestKindredPushSnippets(db, {
+        ...base,
+        snippets: [{ trigger: 'neutral', title: `old-${i}`, body: `body-${i}` }],
+      })
+      // Force ascending created_at so order is deterministic in :memory: SQLite.
+      await db
+        .update(kindredPushQueue)
+        .set({ createdAt: `2026-01-0${i + 1}T00:00:00.000Z` })
+        .where(eq(kindredPushQueue.title, `old-${i}`))
+    }
+    await harvestKindredPushSnippets(db, {
+      ...base,
+      snippets: [{ trigger: 'resonance', title: 'new', body: 'fresh fuel' }],
+    })
+    const rows = await db
+      .select()
+      .from(kindredPushQueue)
+      .where(eq(kindredPushQueue.bondId, 'bond-a'))
+    const byTitle = Object.fromEntries(rows.map((r) => [r.title, r.status]))
+    expect(byTitle['old-0']).toBe('expired')
+    expect(byTitle['new']).toBe('queued')
+    expect(rows.filter((r) => r.status === 'queued').length).toBe(5)
+  })
+
+  test('null bondId still caps by sourceReadingId', async () => {
+    const base = {
+      userId: 'u1',
+      bondId: null as string | null,
+      sourceReadingId: 'r-pair',
+      locale: 'zh-CN',
+    }
+    for (let i = 0; i < 5; i++) {
+      await harvestKindredPushSnippets(db, {
+        ...base,
+        snippets: [{ trigger: 'neutral', title: `n-${i}`, body: `b-${i}` }],
+      })
+      await db
+        .update(kindredPushQueue)
+        .set({ createdAt: `2026-02-0${i + 1}T00:00:00.000Z` })
+        .where(eq(kindredPushQueue.title, `n-${i}`))
+    }
+    await harvestKindredPushSnippets(db, {
+      ...base,
+      snippets: [{ trigger: 'tension', title: 'n-new', body: 'extra' }],
+    })
+    const queued = await db
+      .select()
+      .from(kindredPushQueue)
+      .where(
+        and(eq(kindredPushQueue.sourceReadingId, 'r-pair'), eq(kindredPushQueue.status, 'queued'))
+      )
+    expect(queued.length).toBe(5)
+    expect(queued.some((r) => r.title === 'n-0')).toBe(false)
+    expect(queued.some((r) => r.title === 'n-new')).toBe(true)
+  })
+
+  test('linkKindredPushToBond backfills null bondId rows', async () => {
+    await harvestKindredPushSnippets(db, {
+      userId: 'u1',
+      bondId: null,
+      sourceReadingId: 'r-link',
+      locale: 'zh-CN',
+      snippets: [{ trigger: 'neutral', title: 'pending', body: 'await bond' }],
+    })
+    const n = await linkKindredPushToBond(db, {
+      userId: 'u1',
+      bondId: 'bond-z',
+      sourceReadingId: 'r-link',
+    })
+    expect(n).toBe(1)
+    const row = await db
+      .select()
+      .from(kindredPushQueue)
+      .where(eq(kindredPushQueue.title, 'pending'))
+      .get()
+    expect(row?.bondId).toBe('bond-z')
   })
 })
 

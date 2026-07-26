@@ -46,9 +46,13 @@ import { z } from 'zod/v4'
 import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
+import {
+  allowAuspiceDevGuardBypass,
+  isAuspiceProViaRc,
+  resolveAuspiceIsPro,
+} from '../lib/auspice-pro'
 import { astroClient } from '../lib/service-clients'
 import { hasActiveEntitlement } from '../services/entitlements'
-import { parseRcActiveEntitlements } from '../services/revenuecat'
 import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import {
   evaluateLlmGuard,
@@ -906,7 +910,11 @@ auspiceRoutes.get('/calendar.ics', (c) => {
 // which verifies the signature and renders the personalized feed. The token is
 // opaque (hides the birthDate) and tamper-proof (only server-issued URLs work).
 
-type CalendarEnv = { CYCLE_CALENDAR_SECRET?: string; REVENUECAT_API_KEY?: string }
+type CalendarEnv = {
+  CYCLE_CALENDAR_SECRET?: string
+  REVENUECAT_API_KEY?: string
+  ALLOW_DEV_PRO?: string
+}
 
 function bytesToB64url(bytes: Uint8Array): string {
   let bin = ''
@@ -954,21 +962,6 @@ async function verifyCalendarToken(secret: string, token: string): Promise<strin
   if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null
   const expected = await hmacB64url(secret, birthDate)
   return timingSafeEqual(token.slice(dot + 1), expected) ? birthDate : null
-}
-
-/** Live RevenueCat check — is auspice_pro (or universe_pro) active for this RC id? */
-async function isAuspiceProViaRc(apiKey: string, appUserId: string): Promise<boolean> {
-  try {
-    const res = await fetch(
-      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    )
-    if (!res.ok) return false
-    const active = parseRcActiveEntitlements(await res.json(), new Date().toISOString())
-    return active.some((e) => e.key === 'auspice_pro' || e.key === 'universe_pro')
-  } catch {
-    return false
-  }
 }
 
 // Mint a signed personal-feed URL. Server verifies Pro via RevenueCat when
@@ -1497,14 +1490,11 @@ const explainSchema = z.object({
   locale: z.string().max(16).default('en'),
   /** Anonymous install id (optional) — preferred quota subject over ipHash. */
   deviceId: z.string().max(128).optional(),
-  /** Client-reported Pro entitlement. The deep LLM reading is Pro-only
-   *  (订阅解锁); free callers get the deterministic template + an upsell. The
-   *  endpoint is anonymous so this is trusted-but-cheap: cost stays bounded by
-   *  the per-day KV cache regardless. */
+  /** Client UX hint only — authorization uses `u` + entitlements/RC. */
   isPro: z.boolean().default(false),
-  /** __DEV__ test builds — skip the guard so the full Pro reading is always
-   *  exercised on a test device (mirrors /makeif's `dev`). Trusted-but-cheap:
-   *  cost still bounded by the per-day KV cache. */
+  /** Portfolio / RC app-user-id for server Pro check. */
+  u: z.string().max(128).optional(),
+  /** __DEV__ may set true; only honored when ALLOW_DEV_PRO=1. */
   dev: z.boolean().default(false),
 })
 
@@ -1589,9 +1579,13 @@ auspiceRoutes.post('/explain', async (c) => {
   const cacheKeyOf = (field: string) =>
     `auspice:explain:${body.date}:${field}:${body.locale}:${bucket}`
 
-  // Pro-gate (订阅解锁): the deep LLM reading is Pro-only. Free callers always get
-  // the deterministic template + an upsell — they never trigger an LLM call.
-  if (!body.isPro) {
+  // Pro-gate (订阅解锁): server entitlement via portfolio `u` — not body.isPro.
+  const isPro = await resolveAuspiceIsPro(
+    c.get('db'),
+    c.env as unknown as CalendarEnv,
+    body.u
+  )
+  if (!isPro) {
     return jsonOk(c, {
       explanation: templateExplanation(almanac, body.field),
       source: 'template',
@@ -1617,10 +1611,9 @@ auspiceRoutes.post('/explain', async (c) => {
     })
   if (!subject) return template(false)
 
-  // __DEV__ test devices bypass the guard entirely (mirrors /makeif) so the full
-  // Pro reading is always exercised; prod still caps spoofed-isPro abuse.
+  const skipGuard = allowAuspiceDevGuardBypass(c.env as unknown as CalendarEnv, body.dev)
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
-  if (!body.dev) {
+  if (!skipGuard) {
     guard = await evaluateLlmGuard(c.env, { subject, config: CYCLE_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[cycle.explain.guard]', JSON.stringify(ev))
     if (guard.decision !== 'allow_llm') return template(guard.upsellAfterExhaust)
@@ -1654,7 +1647,7 @@ auspiceRoutes.post('/explain', async (c) => {
     const explanation = (single.explanation ?? '').trim()
     if (explanation) {
       await c.env.GUARD_KV.put(cacheKeyOf(body.field), explanation, { expirationTtl: 86_400 })
-      if (!body.dev && guard) {
+      if (!skipGuard && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
           config: CYCLE_GUARD_CONFIG,
@@ -1694,8 +1687,8 @@ const makeifSchema = z.object({
   gender: z.enum(['M', 'F']),
   locale: z.string().max(16).default('en'),
   isPro: z.boolean().default(false),
-  /** DEV builds (__DEV__) set this to bypass the per-subject daily limit while
-   *  testing. Production app builds always send false. */
+  u: z.string().max(128).optional(),
+  /** DEV builds may set this; only honored when ALLOW_DEV_PRO=1. */
   dev: z.boolean().default(false),
   branches: z
     .array(
@@ -1715,8 +1708,12 @@ const makeifSchema = z.object({
 auspiceRoutes.post('/makeif', async (c) => {
   const body = makeifSchema.parse(await c.req.json().catch(() => ({})))
 
-  // Pro-only — Free sees the deterministic structure + the explainer, no narrative.
-  if (!body.isPro) return jsonOk(c, { narratives: {}, summaries: {}, source: 'locked' })
+  const isPro = await resolveAuspiceIsPro(
+    c.get('db'),
+    c.env as unknown as CalendarEnv,
+    body.u
+  )
+  if (!isPro) return jsonOk(c, { narratives: {}, summaries: {}, source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
   const hour = body.birthHour < 0 ? 12 : body.birthHour
@@ -1750,11 +1747,9 @@ auspiceRoutes.post('/makeif', async (c) => {
 
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
-  // DEV builds bypass the per-subject daily limit so testing isn't capped after
-  // a handful of forks. Production app builds send dev=false, so real users
-  // still hit MAKEIF_GUARD_CONFIG.
+  const skipGuard = allowAuspiceDevGuardBypass(c.env as unknown as CalendarEnv, body.dev)
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
-  if (!body.dev) {
+  if (!skipGuard) {
     if (!subject) return jsonOk(c, { narratives: {}, summaries: {}, source: 'template' })
     guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[auspice.makeif.guard]', JSON.stringify(ev))
@@ -1790,7 +1785,7 @@ auspiceRoutes.post('/makeif', async (c) => {
       await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narratives, summaries }), {
         expirationTtl: 2_592_000,
       })
-      if (!body.dev && subject && guard) {
+      if (!skipGuard && subject && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
           config: MAKEIF_GUARD_CONFIG,
@@ -1827,6 +1822,7 @@ const auspiceMonthlySchema = z.object({
   body: z.string().min(1).max(1200),
   locale: z.string().max(16).default('en'),
   isPro: z.boolean().default(false),
+  u: z.string().max(128).optional(),
   dev: z.boolean().default(false),
   user: z
     .object({
@@ -1841,8 +1837,12 @@ const auspiceMonthlySchema = z.object({
 auspiceRoutes.post('/monthly', async (c) => {
   const body = auspiceMonthlySchema.parse(await c.req.json().catch(() => ({})))
 
-  // Pro-only (trusted client flag, mirrors /makeif). 402 → the client's paywall.
-  if (!body.isPro) return c.json({ error: 'pro_required' }, 402)
+  const isPro = await resolveAuspiceIsPro(
+    c.get('db'),
+    c.env as unknown as CalendarEnv,
+    body.u
+  )
+  if (!isPro) return c.json({ error: 'pro_required' }, 402)
 
   const cacheKey = `auspice:monthly:v1:${body.birthDate}:${body.timeIndex}:${body.gender}:${body.locale}:${body.monthKey}`
   const cached = await c.env.GUARD_KV.get(cacheKey)
@@ -1854,11 +1854,11 @@ auspiceRoutes.post('/monthly', async (c) => {
     }
   }
 
-  // LLM budget guard (anonymous/device-scoped, like /makeif) unless a DEV build.
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
+  const skipGuard = allowAuspiceDevGuardBypass(c.env as unknown as CalendarEnv, body.dev)
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
-  if (!body.dev) {
+  if (!skipGuard) {
     if (!subject) return c.json({ error: 'rate_limited' }, 429)
     guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[auspice.monthly.guard]', JSON.stringify(ev))
@@ -1894,7 +1894,7 @@ auspiceRoutes.post('/monthly', async (c) => {
     await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ depth, generatedAt }), {
       expirationTtl: 2_592_000,
     })
-    if (!body.dev && subject && guard) {
+    if (!skipGuard && subject && guard) {
       await recordLlmGuardGrant(c.env, {
         subject,
         config: MAKEIF_GUARD_CONFIG,
@@ -1920,6 +1920,7 @@ const makeifNodeSchema = z.object({
   gender: z.enum(['M', 'F']),
   locale: z.string().max(16).default('en'),
   isPro: z.boolean().default(false),
+  u: z.string().max(128).optional(),
   dev: z.boolean().default(false),
   branch: z.object({
     id: z.string().max(64),
@@ -1938,7 +1939,12 @@ const makeifNodeSchema = z.object({
 auspiceRoutes.post('/makeif/node', async (c) => {
   const body = makeifNodeSchema.parse(await c.req.json().catch(() => ({})))
 
-  if (!body.isPro) return jsonOk(c, { narrative: '', source: 'locked' })
+  const isPro = await resolveAuspiceIsPro(
+    c.get('db'),
+    c.env as unknown as CalendarEnv,
+    body.u
+  )
+  if (!isPro) return jsonOk(c, { narrative: '', source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
   const hour = body.birthHour < 0 ? 12 : body.birthHour
@@ -1971,8 +1977,9 @@ auspiceRoutes.post('/makeif/node', async (c) => {
 
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const subject = resolveLlmGuardSubject({ deviceId: undefined, ipHash: hashIp(ip) })
+  const skipGuard = allowAuspiceDevGuardBypass(c.env as unknown as CalendarEnv, body.dev)
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
-  if (!body.dev) {
+  if (!skipGuard) {
     if (!subject) return jsonOk(c, { narrative: '', source: 'template' })
     guard = await evaluateLlmGuard(c.env, { subject, config: MAKEIF_GUARD_CONFIG })
     for (const ev of guard.events) console.info('[auspice.makeif-node.guard]', JSON.stringify(ev))
@@ -2006,7 +2013,7 @@ auspiceRoutes.post('/makeif/node', async (c) => {
       await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narrative }), {
         expirationTtl: 2_592_000,
       })
-      if (!body.dev && subject && guard) {
+      if (!skipGuard && subject && guard) {
         await recordLlmGuardGrant(c.env, {
           subject,
           config: MAKEIF_GUARD_CONFIG,
@@ -2138,7 +2145,7 @@ async function birthdayProOk(
   _isProFlag: boolean,
   appUserId?: string
 ): Promise<boolean> {
-  return resolveAuspicePushIsPro(db, env, false, appUserId)
+  return resolveAuspiceIsPro(db, env, appUserId)
 }
 
 /** Push-register Pro: D1 entitlements / RC when portfolio `u` is present. No `u` → false. */
@@ -2148,13 +2155,7 @@ async function resolveAuspicePushIsPro(
   _isProFlag: boolean,
   appUserId?: string
 ): Promise<boolean> {
-  if (!appUserId) return false
-  if (db) {
-    if (await hasActiveEntitlement(db, appUserId, 'auspice_pro')) return true
-    if (await hasActiveEntitlement(db, appUserId, 'universe_pro')) return true
-  }
-  if (env.REVENUECAT_API_KEY) return isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId)
-  return false
+  return resolveAuspiceIsPro(db, env, appUserId)
 }
 
 const birthdaySchema = z.object({
@@ -2166,6 +2167,8 @@ const birthdaySchema = z.object({
   relation: z.string().max(40).optional(),
   advanceDays: z.number().int().min(0).max(60).default(1),
   remindOnDay: z.boolean().default(true),
+  /** When calendar='lunar', whether the month is the leap month. */
+  lunarIsLeap: z.boolean().default(false),
   /** Pro signal — client flag, hardened by a live RC check when `u` is sent. */
   isPro: z.boolean().default(false),
   /** RevenueCat app-user-id, for the authoritative Pro check. */
@@ -2208,6 +2211,7 @@ auspiceRoutes.post('/birthdays', async (c) => {
       advanceDays: body.advanceDays,
       remindOnDay: body.remindOnDay,
       monthDay: solarMonthDay(body.solarDate, body.calendar),
+      lunarIsLeap: body.calendar === 'lunar' && body.lunarIsLeap,
       createdAt: new Date().toISOString(),
     })
     .onConflictDoUpdate({
@@ -2220,6 +2224,7 @@ auspiceRoutes.post('/birthdays', async (c) => {
         advanceDays: body.advanceDays,
         remindOnDay: body.remindOnDay,
         monthDay: solarMonthDay(body.solarDate, body.calendar),
+        lunarIsLeap: body.calendar === 'lunar' && body.lunarIsLeap,
       },
     })
   return jsonOk(c, { saved: true })
@@ -2502,11 +2507,12 @@ interface BdayReminderRow {
   calendar: string
   advanceDays: number
   remindOnDay: boolean
+  lunarIsLeap?: boolean
 }
 
 /** Does this reminder fire on `todayStr` (the device's local date)? Mirrors the
  *  app's nextBirthdayFor: next occurrence >= today; day-of (remindOnDay) or the
- *  advance heads-up `advanceDays` before. 农历 resolved via astro-core. */
+ *  advance heads-up `advanceDays` before. 农历 resolved via astro-core (incl. leap). */
 function birthdayFiresOn(
   r: BdayReminderRow,
   todayStr: string
@@ -2518,10 +2524,11 @@ function birthdayFiresOn(
   const today = new Date(`${todayStr}T00:00:00Z`)
   const ty = today.getUTCFullYear()
   const candidates: Date[] = []
+  const isLeap = r.lunarIsLeap === true
   if (r.calendar === 'lunar') {
     for (const y of [ty, ty + 1]) {
       try {
-        const s = lunarToSolar(y, mo, dd, false)
+        const s = lunarToSolar(y, mo, dd, isLeap)
         candidates.push(new Date(Date.UTC(s.getFullYear(), s.getMonth(), s.getDate())))
       } catch {
         // leap-month / out-of-range — skip
@@ -2645,7 +2652,8 @@ const pushRegisterSchema = z.object({
   dailyMorning: z.boolean().default(true),
   dailyEvening: z.boolean().default(true),
   birthdayOn: z.boolean().default(true),
-  holidayOn: z.boolean().default(true),
+  /** Accepted for back-compat; server always stores false (v1 Settings removed holiday toggle). */
+  holidayOn: z.boolean().default(false),
   relationshipOn: z.boolean().default(true),
   // 人生时间线 node push (流月/流年/大运) — Pro-gated, mirrors the in-app
   // timelineRemindToggle. Default on so the cron fires once the client syncs.
@@ -2685,7 +2693,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       dailyMorning: b.dailyMorning,
       dailyEvening: b.dailyEvening,
       birthdayOn: b.birthdayOn,
-      holidayOn: b.holidayOn,
+      holidayOn: false,
       relationshipOn: b.relationshipOn,
       timelineRemindOn: b.timelineRemindOn,
       isPro,
@@ -2706,7 +2714,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         dailyMorning: b.dailyMorning,
         dailyEvening: b.dailyEvening,
         birthdayOn: b.birthdayOn,
-        holidayOn: b.holidayOn,
+        holidayOn: false,
         relationshipOn: b.relationshipOn,
         timelineRemindOn: b.timelineRemindOn,
         isPro,
@@ -2786,8 +2794,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       }
     }
   }
-  // Evening: the holiday heads-up is locale-keyed (not per-birth), so resolve once.
-  const holiday = slot === 'evening' ? holidayHeadsUpFor(date) : null
+  // Evening: holiday heads-up path is intentionally disabled for v1.
   // 关系桥 nudge needs today's day-pillar once (shared across all devices).
   const dayGz = slot === 'morning' ? dayGanZhi(ymd.year, ymd.month, ymd.day) : null
 
@@ -2798,6 +2805,10 @@ auspiceRoutes.get('/push/targets', async (c) => {
     body: string
     data: Record<string, string>
   }> = []
+
+  // Morning per-device budget: daily ≤1 + birthday ≤1 + relationship ≤1 (≤3 total).
+  const MORNING_BDAY_CAP = 1
+  const MORNING_REL_CAP = 1
 
   for (const sub of page) {
     let livePro = false
@@ -2812,19 +2823,21 @@ auspiceRoutes.get('/push/targets', async (c) => {
           .where(eq(auspicePushSubs.deviceId, sub.deviceId))
       }
     }
-    const effective = { ...sub, isPro: livePro }
+    const effective = { ...sub, isPro: livePro, holidayOn: false }
 
     // Daily morning reading / event-driven evening heads-up (null on a quiet evening).
     if (slot === 'evening' ? effective.dailyEvening : effective.dailyMorning) {
       const m = renderAuspicePush(slot, ymd, effective)
       if (m) messages.push({ deviceId: effective.deviceId, token: effective.token, ...m })
     }
-    // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders.
+    // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders; morning slot ≤1 msg.
     if (slot === 'morning' && effective.birthdayOn) {
       const all = bdaysByOwner.get(`device:${effective.deviceId}`) ?? []
       const reminders = effective.isPro ? all : all.slice(0, BIRTHDAY_FREE_LIMIT)
       const bt = bdayText(effective.locale)
+      let birthdaySent = 0
       for (const r of reminders) {
+        if (birthdaySent >= MORNING_BDAY_CAP) break
         const fire = birthdayFiresOn(
           {
             name: r.name,
@@ -2832,6 +2845,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
             calendar: r.calendar,
             advanceDays: r.advanceDays,
             remindOnDay: r.remindOnDay,
+            lunarIsLeap: r.lunarIsLeap,
           },
           date
         )
@@ -2861,52 +2875,65 @@ auspiceRoutes.get('/push/targets', async (c) => {
             day: date,
           },
         })
+        birthdaySent += 1
       }
     }
-    // 关系桥 nudge (morning) — resonance day; lock-screen copy uses abstract 亲友 (no real name).
+    // 关系桥 nudge (morning) — best friend by synergy (resonance or strong tension);
+    // lock-screen copy uses abstract 亲友 (no real name); deeplink carries personId.
     if (slot === 'morning' && effective.relationshipOn && effective.birthDate && dayGz) {
       const friends = bdaysByOwner.get(`device:${effective.deviceId}`) ?? []
       const ownerPillars = getFourPillars({
         ...parseYmd(effective.birthDate),
         hour: 12,
       })
-      let best: { synergy: number } | null = null
+      let best: { synergy: number; personId: string } | null = null
       for (const f of friends) {
-        if (f.calendar === 'lunar' || !DATE_RE.test(f.solarDate)) continue
-        const fp = getFourPillars({ ...parseYmd(f.solarDate), hour: 12 })
+        let solarForPillars = f.solarDate
+        if (f.calendar === 'lunar') {
+          if (!DATE_RE.test(f.solarDate)) continue
+          const lm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(f.solarDate)
+          if (!lm) continue
+          try {
+            const s = lunarToSolar(
+              Number(lm[1]),
+              Number(lm[2]),
+              Number(lm[3]),
+              f.lunarIsLeap === true
+            )
+            solarForPillars = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`
+          } catch {
+            continue
+          }
+        } else if (!DATE_RE.test(f.solarDate)) {
+          continue
+        }
+        const fp = getFourPillars({ ...parseYmd(solarForPillars), hour: 12 })
         const syn = calculateDailySynastry(ownerPillars, fp, dayGz, date)
-        if (syn.status === 'resonance' && (!best || syn.synergy > best.synergy)) {
-          best = { synergy: syn.synergy }
+        const eligible =
+          syn.status === 'resonance' ||
+          syn.status === 'tension' ||
+          (syn.status === 'neutral' && syn.synergy >= 70)
+        if (eligible && (!best || syn.synergy > best.synergy)) {
+          best = { synergy: syn.synergy, personId: f.id }
         }
       }
-      if (best) {
+      if (best && MORNING_REL_CAP > 0) {
         const rt = relationshipPushText(effective.locale)
         messages.push({
           deviceId: effective.deviceId,
           token: effective.token,
           title: rt.title,
           body: rt.body,
-          data: { type: 'auspice_relationship', route: '/people' },
+          data: {
+            type: 'auspice_relationship',
+            route: '/people',
+            personId: best.personId,
+          },
         })
       }
     }
-    // Holiday / 调休 heads-up (evening before).
-    if (slot === 'evening' && effective.holidayOn && holiday) {
-      const ht = holidayText(effective.locale)
-      const body =
-        holiday.kind === 'holiday'
-          ? ht.holiday
-              .replace('{name}', holiday.name)
-              .replace('{end}', holidayEndLabel(holiday.end || date, effective.locale))
-          : ht.workday
-      messages.push({
-        deviceId: effective.deviceId,
-        token: effective.token,
-        title: ht.title,
-        body,
-        data: { type: 'auspice_holiday' },
-      })
-    }
+    // Holiday / 调休 heads-up — intentionally off for v1 (client Settings removed the
+    // toggle; keep server path dead so stale holidayOn rows cannot fire).
   }
   return jsonOk(c, { messages, nextCursor: hasMore ? String(offset + limit) : null })
 })

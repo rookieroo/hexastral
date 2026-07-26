@@ -7,8 +7,13 @@
  * 4. Gemini AI 生成现代白话解读
  */
 
-import type { YaoValue } from '@zhop/astro-core'
-import { assembleHexagram, formatHexagramForPrompt, getFourPillars } from '@zhop/astro-core'
+import type { FullHexagram, YaoValue } from '@zhop/astro-core'
+import {
+  assembleHexagram,
+  calcDerivedHexagram,
+  formatHexagramForPrompt,
+  getFourPillars,
+} from '@zhop/astro-core'
 import type { Hexagram } from '../../data/hexagrams'
 import { getHexagramByLines } from '../../data/hexagrams'
 import { applyHexagramLocale } from '../../data/hexagram-i18n'
@@ -22,6 +27,7 @@ import type {
   DivinationReading,
   HexagramResult,
   InterpretationMode,
+  LiuyaoDesk,
 } from '../../types'
 
 export interface DivinationOpts {
@@ -139,6 +145,59 @@ export function castHexagram(lines: number[], changingLines: number[]): Hexagram
     judgment: hexagram.judgment,
     image: hexagram.image,
     changingLines,
+  }
+}
+
+/** Structured desk from assembleHexagram — for primary result UI. */
+export function buildLiuyaoDesk(fullHex: FullHexagram): LiuyaoDesk {
+  const lines: LiuyaoDesk['lines'] = []
+  for (let i = 5; i >= 0; i--) {
+    const l = fullHex.lines[i]!
+    lines.push({
+      index: l.index,
+      ganZhi: l.ganZhi,
+      liuQin: l.liuQin,
+      liuShen: l.liuShen,
+      wangXiu: l.wangXiu,
+      isChanging: l.isChanging,
+      isShiYao: l.isShiYao,
+      isYingYao: l.isYingYao,
+      isEmpty: l.isEmpty,
+    })
+  }
+  return {
+    benName: fullHex.name,
+    benPalace: fullHex.palace,
+    ...(fullHex.derivedHexagram
+      ? {
+          bianName: fullHex.derivedHexagram.name,
+          bianPalace: fullHex.derivedHexagram.palace,
+        }
+      : {}),
+    ...(fullHex.nuclearHexagram ? { huName: fullHex.nuclearHexagram.name } : {}),
+    shiLine: fullHex.shiLine,
+    yingLine: fullHex.yingLine,
+    lines,
+  }
+}
+
+function enrichHexagramWithDerived(
+  base: HexagramResult,
+  yaoValues: YaoValue[] | undefined
+): HexagramResult {
+  if (!yaoValues || base.changingLines.length === 0) return base
+  const derived = calcDerivedHexagram(yaoValues)
+  if (!derived) return base
+  const derivedHex = getHexagramByLines([...derived.lines])
+  if (!derivedHex) return base
+  return {
+    ...base,
+    derived: {
+      number: derivedHex.number,
+      name: derivedHex.name,
+      pinyin: derivedHex.pinyin,
+      symbol: derivedHex.symbol,
+    },
   }
 }
 
@@ -405,7 +464,8 @@ export function generateClassicalReading(
   hexagram: Hexagram,
   changingLines: number[],
   naJiaContext = '',
-  language = 'zh-CN'
+  language = 'zh-CN',
+  desk?: LiuyaoDesk
 ): {
   interpretation: string
   advice: string
@@ -427,6 +487,7 @@ export function generateClassicalReading(
     lines: hexagram.lines,
     changingLineTexts,
     ...(naJiaContext.trim().length > 0 ? { naJiaContext: naJiaContext.trim() } : {}),
+    ...(desk ? { desk } : {}),
   }
 
   return {
@@ -507,6 +568,7 @@ export async function performDivination(
 
   // 5. 六爻纳甲装卦（仅六爻模式）
   let naJiaContext = ''
+  let desk: LiuyaoDesk | undefined
   if (!isMeihua && yaoValues) {
     const now = new Date()
     const pillars = getFourPillars({
@@ -523,8 +585,14 @@ export async function performDivination(
     )
     if (fullHex) {
       naJiaContext = formatHexagramForPrompt(fullHex)
+      desk = buildLiuyaoDesk(fullHex)
+      if (fullHex.nuclearHexagram) {
+        hexagramResult.nuclearName = fullHex.nuclearHexagram.name
+      }
     }
   }
+
+  const enrichedHexagram = enrichHexagramWithDerived(hexagramResult, yaoValues)
 
   // 6. Generate reading (classical or AI)
   const language = input.language ?? 'zh-CN'
@@ -535,12 +603,14 @@ export async function performDivination(
       hexagram,
       changingLines,
       naJiaContext,
-      language
+      language,
+      desk
     )
     return {
       interpretationMode: 'classical',
       classical: classicalResult.classical,
-      hexagram: hexagramResult,
+      hexagram: enrichedHexagram,
+      ...(desk ? { desk } : {}),
       interpretation: classicalResult.interpretation,
       advice: classicalResult.advice,
       summary: classicalResult.summary,
@@ -566,7 +636,8 @@ export async function performDivination(
       refused: true,
       refusal_reason: aiResult.refusal_reason ?? '',
       interpretationMode: 'ai',
-      hexagram: hexagramResult,
+      hexagram: enrichedHexagram,
+      ...(desk ? { desk } : {}),
       interpretation: '',
       advice: '',
       summary: '',
@@ -576,7 +647,8 @@ export async function performDivination(
 
   return {
     interpretationMode: 'ai',
-    hexagram: hexagramResult,
+    hexagram: enrichedHexagram,
+    ...(desk ? { desk } : {}),
     interpretation: aiResult.interpretation,
     advice: aiResult.advice,
     summary: aiResult.summary,

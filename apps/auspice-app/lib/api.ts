@@ -7,7 +7,7 @@
  * Response envelope is the Phase-F shape `{ ok, data }`; we unwrap `data`.
  */
 
-import { resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
+import { getPortfolioUserId, resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 
 // ── Domain types (mirror the C.1 route output) ────────────────────────────
 
@@ -610,15 +610,20 @@ export interface AuspiceExplainResult {
  * (lazy, never pre-fetched). `dayMaster` (from the day's `personalization`) adds
  * the 对你而言 angle and improves the server cache hit rate.
  */
-export function fetchAuspiceExplain(params: {
+export async function fetchAuspiceExplain(params: {
   date: string
   field: string
   dayMaster?: string
   locale: string
-  /** Pro unlocks the LLM deep reading; free gets the deterministic template. */
+  /** Client UX hint; server authorizes via portfolio `u`. */
   isPro?: boolean
 }): Promise<AuspiceExplainResult> {
-  return postJson<AuspiceExplainResult>('/api/auspice/explain', { ...params, dev: __DEV__ })
+  const u = await getPortfolioUserId().catch(() => null)
+  return postJson<AuspiceExplainResult>('/api/auspice/explain', {
+    ...params,
+    u: u ?? undefined,
+    dev: __DEV__,
+  })
 }
 
 /**
@@ -635,7 +640,7 @@ export interface TimelineExplainResult {
   upsell?: boolean
 }
 
-export function fetchTimelineExplain(params: {
+export async function fetchTimelineExplain(params: {
   birthDate: string
   birthHour: number
   gender: 'M' | 'F'
@@ -645,12 +650,16 @@ export function fetchTimelineExplain(params: {
   month?: number
   locale: string
   deviceId: string
-  /** Pro unlocks the LLM read; free → reading:null (deterministic fallback). */
+  /** Client UX hint; server authorizes via portfolio `u` / userId. */
   isPro?: boolean
 }): Promise<TimelineExplainResult> {
+  const u = await getPortfolioUserId().catch(() => null)
   return postJson<TimelineExplainResult>('/api/auspice/timeline/explain', {
     ...params,
     month: params.month ?? 0,
+    u: u ?? undefined,
+    userId: u ?? undefined,
+    dev: __DEV__,
   })
 }
 
@@ -720,7 +729,7 @@ export interface AuspiceMakeIfResult {
  * SHAPE (id/label/diverge/merge) is computed client-side and sent so the story
  * matches the drawn graph; only Pro callers get prose (else `narratives: {}`).
  */
-export function fetchMakeIfNarratives(params: {
+export async function fetchMakeIfNarratives(params: {
   birthDate: string
   birthHour: number
   gender: 'M' | 'F'
@@ -737,8 +746,12 @@ export function fetchMakeIfNarratives(params: {
     realPillar?: string
   }[]
 }): Promise<AuspiceMakeIfResult> {
-  // DEV builds bypass the server's per-subject daily rate limit (prod sends false).
-  return postJson<AuspiceMakeIfResult>('/api/auspice/makeif', { ...params, dev: __DEV__ })
+  const u = await getPortfolioUserId().catch(() => null)
+  return postJson<AuspiceMakeIfResult>('/api/auspice/makeif', {
+    ...params,
+    u: u ?? undefined,
+    dev: __DEV__,
+  })
 }
 
 /** Phase-6 per-node response. `source: 'locked'` for non-Pro callers; `'template'`
@@ -754,7 +767,7 @@ export interface AuspiceMakeIfNodeResult {
  * "at this age in that life, you would be…" line for that single node. Pro
  * gates the prose (Free gets `source: 'locked'`); cached 30d on the server.
  */
-export function fetchMakeIfNodeNarrative(params: {
+export async function fetchMakeIfNodeNarrative(params: {
   birthDate: string
   birthHour: number
   gender: 'M' | 'F'
@@ -773,8 +786,10 @@ export function fetchMakeIfNodeNarrative(params: {
   focusRealFit?: '吉' | '平' | '凶'
   focusAltFit?: '吉' | '平' | '凶'
 }): Promise<AuspiceMakeIfNodeResult> {
+  const u = await getPortfolioUserId().catch(() => null)
   return postJson<AuspiceMakeIfNodeResult>('/api/auspice/makeif/node', {
     ...params,
+    u: u ?? undefined,
     dev: __DEV__,
   })
 }
@@ -850,6 +865,7 @@ export interface BirthdayReminderInput {
   name: string
   solarDate: string
   calendar?: 'solar' | 'lunar'
+  lunarIsLeap?: boolean
   relation?: string
   advanceDays?: number
   remindOnDay?: boolean

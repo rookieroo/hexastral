@@ -37,6 +37,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnotatedMapSwiper, type MapOrient } from '@/components/AnnotatedMapSwiper'
+import { CompoundFacingTeachCard } from '@/components/CompoundFacingTeachCard'
 import { FengAnalyzing, type FengAnalyzingStep } from '@/components/FengAnalyzing'
 import { FengButton } from '@/components/FengButton'
 import { FengDigestCard } from '@/components/FengDigestCard'
@@ -45,10 +46,15 @@ import { FengProse } from '@/components/FengProse'
 import { FengSelectionBar } from '@/components/FengSelectionBar'
 import { FengTermBubble } from '@/components/FengTermBubble'
 import { LuopanLoader } from '@/components/LuopanLoader'
+import { ReportRoomsGrid } from '@/components/ReportRoomsGrid'
 import { SealNumeral } from '@/components/SealNumeral'
 import { ShareFengChapterButton } from '@/components/ShareFengChapterButton'
 import { type FengTerm, getFengTerm } from '@/lib/feng-terms'
-import { formatLaiLongLine, humanizeDataQualityNotes } from '@/lib/data-quality-copy'
+import {
+  forcedCoverCaveats,
+  formatLaiLongLine,
+  humanizeDataQualityNotes,
+} from '@/lib/data-quality-copy'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { type Locale, resolveLocale, type Strings, useStrings } from '@/lib/i18n'
 import { FENG_PAPER, spacing } from '@/lib/theme'
@@ -77,21 +83,35 @@ const C = {
 }
 
 // Staged-loader copy (localized inline; report-screen-only chrome).
-const STAGE_ORDER = ['maps', 'vision', 'compute', 'synthesis'] as const
+const STAGE_ORDER = ['maps', 'vision', 'compute', 'form_li', 'synthesis'] as const
 type AnalyzeStage = (typeof STAGE_ORDER)[number]
 const STAGE_LABELS: Record<Locale, Record<AnalyzeStage, string>> = {
   en: {
     maps: 'Mapping the site',
     vision: 'Reading the land',
     compute: 'Casting the chart',
+    form_li: 'Linking form to chart',
     synthesis: 'Writing the reading',
   },
-  zh: { maps: '加载地图', vision: '标注形势', compute: '排盘演算', synthesis: '撰写报告' },
-  'zh-Hant': { maps: '載入地圖', vision: '標註形勢', compute: '排盤演算', synthesis: '撰寫報告' },
+  zh: {
+    maps: '加载地图',
+    vision: '标注形势',
+    compute: '排盘演算',
+    form_li: '形理对照',
+    synthesis: '撰写报告',
+  },
+  'zh-Hant': {
+    maps: '載入地圖',
+    vision: '標註形勢',
+    compute: '排盤演算',
+    form_li: '形理對照',
+    synthesis: '撰寫報告',
+  },
   ja: {
     maps: '地図を読み込み',
     vision: '地形を注釈',
     compute: '盤を立てる',
+    form_li: '形理対照',
     synthesis: 'レポートを作成',
   },
 }
@@ -146,6 +166,15 @@ export default function ReportScreen() {
   const closingNotes = useMemo(
     () => humanizeDataQualityNotes(dataQualityNotes, t),
     [dataQualityNotes, t]
+  )
+  const coverCaveats = useMemo(
+    () =>
+      forcedCoverCaveats({
+        notes: dataQualityNotes,
+        flyingStarsConfidence,
+        t,
+      }),
+    [dataQualityNotes, flyingStarsConfidence, t]
   )
   const laiLongLine = useMemo(() => {
     const palace = compute?.macroTerrain?.laiLong
@@ -319,6 +348,7 @@ export default function ReportScreen() {
         steps={analyzeSteps}
         caption={ANALYZE_CAPTION[locale]}
         digest={reportDigest}
+        coverCaveats={coverCaveats}
         t={t}
       />
     )
@@ -376,6 +406,7 @@ export default function ReportScreen() {
               insets={insets}
               siteName={site.name}
               digest={reportDigest}
+              coverCaveats={coverCaveats}
               t={t}
             />
           ) : null}
@@ -396,6 +427,11 @@ export default function ReportScreen() {
               onPickQuote={onPickQuote}
               onTapTerm={onTapTerm}
               streetAttribution={compute?.streetAttribution ?? null}
+              coverCaveats={
+                chapter.kind === 'flying_stars' || chapter.kind === 'external_landform'
+                  ? coverCaveats
+                  : []
+              }
               t={t}
             />
           ))}
@@ -459,12 +495,14 @@ function DigestCoverView({
   insets,
   siteName,
   digest,
+  coverCaveats,
   t,
 }: {
   width: number
   insets: { top: number; bottom: number }
   siteName: string
   digest: ReportDigest
+  coverCaveats: string[]
   t: Strings
 }) {
   return (
@@ -497,6 +535,26 @@ function DigestCoverView({
         </Text>
       </Animated.View>
 
+      {coverCaveats.length > 0 ? (
+        <View style={{ gap: spacing.xs }}>
+          {coverCaveats.map((line) => (
+            <Text
+              key={line}
+              style={{
+                color: C.danger,
+                fontSize: 12,
+                lineHeight: 18,
+                borderWidth: 0.5,
+                borderColor: C.separator,
+                padding: spacing.sm,
+              }}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
       <FengDigestCard digest={digest} t={t} />
 
       <Text style={{ color: C.secondary, fontSize: 11, lineHeight: 17, textAlign: 'center' }}>
@@ -526,6 +584,7 @@ function ReportShellView({
   steps,
   caption,
   digest,
+  coverCaveats,
   t,
 }: {
   width: number
@@ -537,6 +596,7 @@ function ReportShellView({
   steps: FengAnalyzingStep[]
   caption: string
   digest: ReportDigest | null
+  coverCaveats: string[]
   t: Strings
 }) {
   const [shellPage, setShellPage] = useState(0)
@@ -567,6 +627,16 @@ function ReportShellView({
             {t.report_shell_tag.toUpperCase()}
           </Text>
 
+          {coverCaveats.length > 0 ? (
+            <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+              {coverCaveats.map((line) => (
+                <Text key={line} style={{ color: C.danger, fontSize: 12, lineHeight: 18 }}>
+                  {line}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+
           {digest ? (
             <View style={{ marginTop: spacing.lg }}>
               <FengDigestCard digest={digest} t={t} />
@@ -579,6 +649,7 @@ function ReportShellView({
                 reportId={reportId}
                 tiles={annotatedTiles}
                 orient={orient}
+                overlayHints={compute.overlayHints ?? null}
                 horizontalPadding={spacing.xl}
                 strings={{
                   report_map_close: t.report_map_close,
@@ -586,12 +657,13 @@ function ReportShellView({
                   report_map_wide: t.report_map_wide,
                   report_map_loading: t.report_map_loading,
                   report_map_failed: t.report_map_failed,
+                  report_overlay_bagua_toggle: t.report_overlay_bagua_toggle,
                 }}
               />
             </View>
           ) : null}
 
-          {renderFlyingStars(compute, t)}
+          {renderFlyingStars(compute, t, orient?.facing)}
           {compute.baZhai ? renderBaZhai(compute, t) : null}
         </ScrollView>
 
@@ -629,6 +701,7 @@ interface ChapterPageProps {
   onPickQuote: (s: string) => void
   onTapTerm: (id: string) => void
   streetAttribution: string | null
+  coverCaveats: string[]
   t: Strings
 }
 
@@ -647,6 +720,7 @@ function ChapterPageView({
   onPickQuote,
   onTapTerm,
   streetAttribution,
+  coverCaveats,
   t,
 }: ChapterPageProps) {
   return (
@@ -666,6 +740,16 @@ function ChapterPageView({
             {tag.toUpperCase()}
           </Text>
         </View>
+
+        {coverCaveats.length > 0 ? (
+          <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+            {coverCaveats.map((line) => (
+              <Text key={line} style={{ color: C.danger, fontSize: 11, lineHeight: 16 }}>
+                {line}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
           <FengInkImage
@@ -703,6 +787,7 @@ function ChapterPageView({
             reportId={reportId}
             tiles={annotatedTiles}
             orient={orient}
+            overlayHints={compute?.overlayHints ?? null}
             horizontalPadding={spacing.xl}
             strings={{
               report_map_close: t.report_map_close,
@@ -710,13 +795,24 @@ function ChapterPageView({
               report_map_wide: t.report_map_wide,
               report_map_loading: t.report_map_loading,
               report_map_failed: t.report_map_failed,
+              report_overlay_bagua_toggle: t.report_overlay_bagua_toggle,
             }}
           />
         </View>
       ) : null}
 
-      {compute && chapter.kind === 'flying_stars' ? renderFlyingStars(compute, t) : null}
-      {compute?.baZhai && chapter.kind === 'personal_fit' ? renderBaZhai(compute, t) : null}
+      {compute && chapter.kind === 'flying_stars'
+        ? renderFlyingStars(compute, t, orient?.facing)
+        : null}
+      {compute && chapter.kind === 'external_landform'
+        ? renderFormLiNotes(compute.formLiNotes, t)
+        : null}
+      {compute?.baZhai && chapter.kind === 'personal_fit' ? (
+        <>
+          {renderBaZhai(compute, t)}
+          <ReportRoomsGrid compute={compute} reportId={reportId ?? ''} t={t} />
+        </>
+      ) : null}
 
       {chapter.kind === 'external_landform' && streetAttribution ? (
         <Text
@@ -767,7 +863,7 @@ function ChapterPageView({
 }
 
 // ── 玄空 visual block (preserved logic) ─────────────────────
-function renderFlyingStars(compute: FengComputeJson, t: Strings) {
+function renderFlyingStars(compute: FengComputeJson, t: Strings, facingDegTrue?: number) {
   return (
     <View style={{ marginTop: spacing.lg, gap: spacing.xs }}>
       <FlyingStarsGrid
@@ -810,21 +906,33 @@ function renderFlyingStars(compute: FengComputeJson, t: Strings) {
         </View>
       ) : null}
       {compute.flyingStars.isCompoundFacing ? (
-        <Text style={{ color: C.secondary, fontSize: 12, fontStyle: 'italic' }}>
-          {t.report_compound_facing_note}
-        </Text>
+        <View style={{ marginTop: spacing.sm }}>
+          <CompoundFacingTeachCard
+            facingDegTrue={
+              typeof facingDegTrue === 'number'
+                ? facingDegTrue
+                : compute.flyingStars.faceMountain.centerDeg
+            }
+            t={t}
+          />
+        </View>
       ) : null}
-      {compute.combinations && compute.combinations.some((c) => c.name || c.reading) ? (
+      {compute.combinations &&
+      compute.combinations.some((c) => c.name || c.readingPublic) ? (
         <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
           <Text style={{ color: C.secondary, fontSize: 11, letterSpacing: 1 }}>
             {t.report_combinations_heading}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
             {compute.combinations
-              .filter((c) => c.name || c.reading)
+              .filter((c) => c.name || c.readingPublic)
               .map((c) => {
                 const tone = c.phase === '旺' ? C.accent : C.danger
-                const label = [c.palace, c.name, c.reading].filter(Boolean).join(' · ')
+                const publicReading =
+                  typeof c.readingPublic === 'string' && c.readingPublic.length > 0
+                    ? c.readingPublic
+                    : null
+                const label = [c.palace, c.name, publicReading].filter(Boolean).join(' · ')
                 return (
                   <View
                     key={`${c.palace}-${c.mountainStar}-${c.facingStar}`}
@@ -894,6 +1002,37 @@ function renderFlyingStars(compute: FengComputeJson, t: Strings) {
           ))}
         </View>
       ) : null}
+      {renderFormLiNotes(compute.formLiNotes, t)}
+    </View>
+  )
+}
+
+function renderFormLiNotes(raw: unknown, t: Strings) {
+  if (!raw || typeof raw !== 'object') return null
+  const notes = raw as {
+    bullets?: Array<{ palace: string; seen: string; linkToChart: string; severity: string }>
+  }
+  if (!Array.isArray(notes.bullets) || notes.bullets.length === 0) return null
+  return (
+    <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+      <Text style={{ color: C.secondary, fontSize: 11, letterSpacing: 1 }}>
+        {t.report_form_li_notes_heading}
+      </Text>
+      {notes.bullets.map((b, i) => {
+        const tone =
+          b.severity === 'risk' ? C.danger : b.severity === 'watch' ? FENG_PAPER.cinnabar : C.secondary
+        return (
+          <View key={`${b.palace}-${i}`} style={{ gap: 2 }}>
+            <Text style={{ color: tone, fontSize: 12, fontWeight: '700' }}>{b.palace}</Text>
+            <Text style={{ color: C.text, fontSize: 12, lineHeight: 18 }}>{b.seen}</Text>
+            {b.linkToChart !== 'no_chart_link' ? (
+              <Text style={{ color: C.secondary, fontSize: 11, lineHeight: 16 }}>
+                {b.linkToChart}
+              </Text>
+            ) : null}
+          </View>
+        )
+      })}
     </View>
   )
 }

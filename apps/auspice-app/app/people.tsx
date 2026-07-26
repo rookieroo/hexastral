@@ -80,6 +80,7 @@ export default function PeopleScreen() {
   const [monthDay, setMonthDay] = useState(initialMd)
   const [birthYear, setBirthYear] = useState('')
   const [calendar, setCalendar] = useState<PersonCalendar>('solar')
+  const [lunarIsLeap, setLunarIsLeap] = useState(false)
   const [timeIndex, setTimeIndex] = useState<ShichenIndex | null>(null)
   const [gender, setGender] = useState<PersonGender | undefined>(undefined)
   const [birthCity, setBirthCity] = useState<CityRecord | null>(null)
@@ -116,6 +117,7 @@ export default function PeopleScreen() {
       name,
       solarDate,
       calendar,
+      lunarIsLeap: calendar === 'lunar' ? lunarIsLeap : false,
       timeIndex,
       gender,
       city: birthCity?.name,
@@ -130,6 +132,7 @@ export default function PeopleScreen() {
     setMonthDay('')
     setBirthYear('')
     setCalendar('solar')
+    setLunarIsLeap(false)
     setTimeIndex(null)
     setGender(undefined)
     setBirthCity(null)
@@ -154,6 +157,7 @@ export default function PeopleScreen() {
             name: added.name,
             solarDate: added.solarDate,
             calendar: added.calendar ?? 'solar',
+            lunarIsLeap: added.lunarIsLeap === true,
             relation: added.relation,
             advanceDays: added.advanceDays,
             remindOnDay: added.remindOnDay,
@@ -249,11 +253,32 @@ export default function PeopleScreen() {
               { key: 'lunar', label: t.birthCalendarLunar },
             ]}
             value={calendar}
-            onChange={(k) => setCalendar(k as PersonCalendar)}
+            onChange={(k) => {
+              const next = k as PersonCalendar
+              setCalendar(next)
+              if (next !== 'lunar') setLunarIsLeap(false)
+            }}
             colors={colors}
             spacing={spacing}
           />
 
+          {calendar === 'lunar' ? (
+            <Pressable
+              onPress={() => setLunarIsLeap((v) => !v)}
+              accessibilityRole='switch'
+              accessibilityState={{ checked: lunarIsLeap }}
+              accessibilityLabel={t.birthCalendarLeap}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                paddingVertical: spacing.sm,
+              }}
+            >
+              <Text style={{ flex: 1, color: colors.text, fontSize: 14 }}>{t.birthCalendarLeap}</Text>
+              <Toggle value={lunarIsLeap} onValueChange={setLunarIsLeap} accent={colors.accent} />
+            </Pressable>
+          ) : null}
           <View style={{ flexDirection: 'row', gap: spacing.lg }}>
             <View style={{ flex: 1, gap: spacing.sm }}>
               <Text style={microLabel}>{t.people.date}</Text>

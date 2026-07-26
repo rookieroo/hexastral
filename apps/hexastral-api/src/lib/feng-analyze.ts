@@ -6,9 +6,10 @@
  *
  *   stage 'maps'      → render 3 satellite tiles (close 100m / mid 500m / wide 2km)
  *   stage 'annotate'  → composite sit/face/door arrows + bagua overlay on each tile
- *   stage 'vision'    → Gemini Vision structured 外巒頭 JSON (Week 5 wires real model)
- *   stage 'compute'   → astro-core/feng deterministic 玄空 + 八宅 (in-process, sub-ms)
- *   stage 'synthesis' → Claude Opus 4.7 / Gemini Pro → 6 chapters
+ *   stage 'vision'    → Gemini Vision structured 外巒頭 JSON
+ *   stage 'compute'   → astro-core/feng deterministic 玄空 + 八宅 (in-process)
+ *   stage 'form_li'   → mid-pass LLM 形理对照 notes (fail-open)
+ *   stage 'synthesis' → lean chapter synthesis from compact briefing
  *   stage 'done'      → write feng_reports row + flip job stage
  *
  * On failure the worker records the error message and sets stage='failed';
@@ -44,6 +45,10 @@ import type { fengJobs as fengJobsTable, fengSites } from '../db/schema'
 import { fengJobs, fengReports, singlePurchases, users } from '../db/schema'
 import type { AppDb, CloudflareBindings } from '../infra-types'
 import {
+  buildMacroTerrainTyped,
+  buildOverlayHints,
+} from './feng-overlay-hints'
+import {
   type AdaptiveTile,
   annotateMap,
   type ElevationProfile,
@@ -55,6 +60,7 @@ import {
   renderMap,
   streetSha,
   synthesizeReport,
+  interpretFormLiNotes,
   type TerrainSignals,
   type VisionAnalyzeResult,
   visionAnalyze,
@@ -374,6 +380,7 @@ function derivePalaceCombinations(flyingStars: ReturnType<typeof computeFlyingSt
       name: d.name ?? null,
       domain: d.combination?.domain ?? null,
       reading: d.reading || null,
+      readingPublic: d.readingPublic || null,
     }
   })
 }
@@ -394,6 +401,11 @@ export async function runAnalyzeJob(
   let shellReportId: string | null = null
   const stageMs: Record<string, number> = {}
   try {
+    const inputMetaEarly = parseSiteInputMeta(site)
+    if (inputMetaEarly?.facingConfirmed !== true) {
+      throw new Error('facing_confirmed_required')
+    }
+
     const facingDegTrue = Number(site.facingDegTrue)
     const sitDegTrue = Number(site.sitDegTrue)
     const lat = Number(site.lat)
@@ -811,12 +823,32 @@ export async function runAnalyzeJob(
       terrain,
       normalizeResidenceType(site.residenceType)
     )
+    const macroTerrain = buildMacroTerrainTyped({
+      elevation,
+      formAzimuths: terrain.formAzimuths,
+    })
+    const overlayHints = buildOverlayHints({
+      vision,
+      formAzimuths: terrain.formAzimuths,
+      macro: macroTerrain,
+    })
     const dataQuality = deriveDataQuality(site, terrain, {
       hasBirthProfile: profile != null,
       residenceHeuristic,
-      extraNotes: interiorExtraNotes,
+      extraNotes: [
+        ...interiorExtraNotes,
+        ...(!streetViewEnabled && residenceType === 'apartment'
+          ? ['street_sha_skipped_apartment=true']
+          : []),
+        ...(macroTerrain.shuiKou == null && Object.keys(macroTerrain.waterByPalace).length > 0
+          ? ['shui_kou=unresolved (water present, no DEM intersect)']
+          : macroTerrain.shuiKou == null
+            ? ['shui_kou=omitted']
+            : []),
+      ],
     })
-    const computeJson = JSON.stringify({
+
+    const computePayload = {
       flyingStars,
       baZhai: baZhaiResult,
       auspiciousPalaces,
@@ -824,14 +856,16 @@ export async function runAnalyzeJob(
       patterns,
       combinations,
       formLi,
-      macroTerrain: elevation ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace } : null,
+      macroTerrain,
+      overlayHints,
       streetAttribution,
       monthlyStars,
       interior: interior ? { floors: interior.floors, modelVersion: interior.modelVersion } : null,
       roomFindings,
       interiorSha: interior ? interior.floors.flatMap((f) => f.形煞) : [],
       interiorQueJiao,
-    })
+    }
+    const computeJson = JSON.stringify(computePayload)
     await db.insert(fengReports).values({
       id: reportId,
       siteId: site.id,
@@ -848,6 +882,86 @@ export async function runAnalyzeJob(
     })
 
     shellReportId = reportId
+
+    // ── Stage: form_li mid-pass (fail-open) ──
+    await setStage(db, jobId, 'form_li', 78, { reportId })
+    const formLiStarted = Date.now()
+    let formLiNotes: unknown | null = null
+    let formLiModelVersion: string | undefined
+    try {
+      const mid = await interpretFormLiNotes(env.SVC_FENG, {
+        locale,
+        compute: computePayload as Record<string, unknown>,
+        compact: {
+          summary: computePayload.flyingStars
+            ? {
+                sit: flyingStars!.sitMountain.name,
+                face: flyingStars!.faceMountain.name,
+                chartMethod: flyingStars!.chartMethod,
+              }
+            : { sit: sitMountain.name, face: faceMountain.name, flyingStarsOmitted: true },
+          patterns,
+          combinationsPriority: combinations
+            .filter((c) => c.readingPublic || c.name)
+            .slice(0, 6)
+            .map((c) => ({
+              palace: c.palace,
+              mountainStar: c.mountainStar,
+              facingStar: c.facingStar,
+              phase: c.phase,
+              name: c.name,
+              readingPublic: c.readingPublic,
+              domain: c.domain,
+            })),
+          formLiTop: formLi
+            ? {
+                palaces: Array.isArray((formLi as { palaces?: unknown }).palaces)
+                  ? (formLi as { palaces: unknown[] }).palaces.slice(0, 6)
+                  : [],
+              }
+            : null,
+          visionSummary: {
+            形煞: vision.形煞.slice(0, 8),
+            砂: vision.砂.slice(0, 6),
+            水: vision.水.slice(0, 6),
+            朝案: vision.朝案.slice(0, 4),
+          },
+          dataQualityNotes: dataQuality.notes,
+        },
+      })
+      formLiNotes = mid.formLiNotes
+      formLiModelVersion = mid.modelVersion
+      if (mid.failOpen) {
+        fengLogger.warn('feng.mid_llm.fail_open', { jobId, modelVersion: mid.modelVersion })
+      }
+    } catch (err) {
+      formLiNotes = null
+      fengLogger.warn('feng.mid_llm.fail_open', {
+        jobId,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+    stageMs.form_li = Date.now() - formLiStarted
+    fengLogger.info('job.stage.done', {
+      jobId,
+      stage: 'form_li',
+      durationMs: stageMs.form_li,
+      hasNotes: formLiNotes != null,
+      modelVersion: formLiModelVersion,
+    })
+
+    // Persist mid notes onto shell compute (non-blocking for UI)
+    await db
+      .update(fengReports)
+      .set({
+        computeJson: JSON.stringify({ ...computePayload, formLiNotes }),
+        modelVersions: JSON.stringify({
+          vision: vision.modelVersion,
+          formLi: formLiModelVersion ?? null,
+        }),
+      })
+      .where(eq(fengReports.id, reportId))
+
     // ── Stage: synthesis ── (reportId now set → client shows the shell)
     await setStage(db, jobId, 'synthesis', 85, { reportId })
     const synthesisStarted = Date.now()
@@ -905,11 +1019,9 @@ export async function runAnalyzeJob(
         patterns,
         combinations,
         formLi,
-        // Pass the per-8宫 relative elevation (already computed), not just 来龙,
-        // so chapter 1 can describe the 砂 backdrop per sector authoritatively.
-        macroTerrain: elevation
-          ? { laiLong: elevation.laiLong, byPalace: elevation.byPalace }
-          : null,
+        // Typed macro + display overlay hints (client SVG; Vision never sees these).
+        macroTerrain,
+        overlayHints,
         monthlyStars,
         // Room-level interior join (户型图) — empty when no floor plan uploaded.
         roomFindings,
@@ -924,6 +1036,7 @@ export async function runAnalyzeJob(
       memoryContext: memoryContext || undefined,
       dataQuality,
       mustSoften: mustSoften.length > 0 ? mustSoften : undefined,
+      formLiNotes,
     })
     fengLogger.info('job.stage.done', {
       jobId,
@@ -963,6 +1076,7 @@ export async function runAnalyzeJob(
         chapters: JSON.stringify(chapters),
         modelVersions: JSON.stringify({
           vision: vision.modelVersion,
+          formLi: formLiModelVersion ?? null,
           synthesis: synth.modelVersion,
         }),
         generatedAt: new Date().toISOString(),

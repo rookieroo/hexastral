@@ -23,7 +23,7 @@ import {
 import { fetchPhotoQuota } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 function daysSince(iso: string | undefined): number | null {
   if (!iso) return null
@@ -69,8 +69,8 @@ export default function UsageScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')

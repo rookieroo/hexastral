@@ -18,7 +18,7 @@ import {
   runFaceReading,
 } from './api'
 import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
-import { isCjkZh, pickZh } from './locale-zh'
+import { pickUi } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
 import { scheduleXingqiPush } from './push-schedule'
 import {
@@ -31,8 +31,8 @@ import { saveLastReadingPhotoSnapshot } from './reading-photo-stamp'
 import { snapshotReadingPhotos } from './reading-photos'
 import { registerXingqiServerPush } from './server-push'
 
-function zhCopy(locale: string, hans: string, hant: string, en: string): string {
-  return isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+function zhCopy(locale: string, hans: string, hant: string, en: string, ja?: string): string {
+  return pickUi(locale, hans, hant, en, ja)
 }
 
 const PENDING_KEY = 'xingqi_reading_job_pending_v1'
@@ -155,7 +155,7 @@ export async function showReadingStartedHandoff(opts: {
       await setXingqiPushPrefs({ remindersOn: true })
     }
     Alert.alert(
-      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started', '解読を開始しました'),
       zhCopy(
         loc,
         '可离开应用。特征提取后会在云端继续解读，完成后通知你。',
@@ -169,7 +169,7 @@ export async function showReadingStartedHandoff(opts: {
 
   if (perm === 'denied') {
     Alert.alert(
-      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+      zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started', '解読を開始しました'),
       zhCopy(
         loc,
         '可离开应用。如需完成后通知，请在系统设置中开启通知。',
@@ -191,7 +191,7 @@ export async function showReadingStartedHandoff(opts: {
   }
 
   Alert.alert(
-    zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started'),
+    zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started', '解読を開始しました'),
     zhCopy(
       loc,
       '可离开应用。需要完成后通知吗？',
@@ -821,10 +821,10 @@ export function readingJobSteps(
 ): Array<{ key: string; label: string; done: boolean; active: boolean }> {
   const order = ['extracting', 'queued', 'interpreting', 'done'] as const
   const labels: Record<(typeof order)[number], string> = {
-    extracting: zhCopy(locale, '提取特征', '提取特徵', 'Extract features'),
-    queued: zhCopy(locale, '云端排队', '雲端排隊', 'Queued in cloud'),
-    interpreting: zhCopy(locale, '生成解读', '生成解讀', 'Writing reading'),
-    done: zhCopy(locale, '完成', '完成', 'Done'),
+    extracting: zhCopy(locale, '提取特征', '提取特徵', 'Extract features', '特徴を抽出'),
+    queued: zhCopy(locale, '云端排队', '雲端排隊', 'Queued in cloud', 'クラウド待ち'),
+    interpreting: zhCopy(locale, '生成解读', '生成解讀', 'Writing reading', '解読を生成'),
+    done: zhCopy(locale, '完成', '完成', 'Done', '完了'),
   }
   const activeKey: (typeof order)[number] =
     phase === 'failed'

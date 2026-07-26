@@ -81,6 +81,9 @@ export interface CreateSiteInput {
   geocodeLat?: number
   geocodeLng?: number
   buildingCenterNorm?: { x: number; y: number }
+  facingSamples?: { samples: number[]; mean: number; maxDelta: number }
+  /** |satellite facing − live compass| at confirm (°). */
+  facingCompassDeltaDeg?: number
 }
 
 export interface PatchSiteInput extends Partial<CreateSiteInput> {}

@@ -29,15 +29,19 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation. Free tier 
 ## Open work (pre-submit)
 
 ### Backend
-- [ ] `wrangler secret put CYCLE_CALENDAR_SECRET`
-- [ ] RevenueCat + `auspice_pro` entitlement live
-- [ ] `cd apps/hexastral-api && bun deploy`
+- [x] Production `ALLOW_DEV_PRO=0` + push HMAC exemptions (shared API)
+- [x] Server-side Pro for LLM explain / makeif / monthly / timeline explain
+- [ ] Confirm Worker secrets: `CYCLE_CALENDAR_SECRET`, `REVENUECAT_API_KEY`, webhook secret
+- [ ] RevenueCat + `auspice_pro` entitlement live in ASC/RC dashboards
+- [ ] Spot-check: `cd apps/hexastral-api && bun deploy` after any uncommitted Yuun API diffs
 
 ### App Store Connect
 - [ ] ASC record; **content rating 12+** (matches `aso-metadata.json`)
 - [ ] Paste ASO from `apps/auspice-app/aso-metadata.json` (4 locales)
 - [ ] Screenshots per [screenshot-direction.md](../../publish/screenshot-direction.md) §1 (6 shots, no S7 widget)
 - [ ] `node scripts/aso-charcount.mjs` + `node scripts/aso-code-parity.mjs` before paste
+- [ ] Fill `eas.json` `ascAppId` + production `EXPO_PUBLIC_REVENUECAT_IOS_KEY`
+- [ ] Device smoke: [pre-submit-smoke.md](./pre-submit-smoke.md)
 
 ### Build + smoke
 - [ ] EAS production: fill `ascAppId` + RevenueCat keys (see `scripts/assert-release-config.mjs`)

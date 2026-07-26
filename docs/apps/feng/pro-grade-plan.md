@@ -143,8 +143,10 @@ tied to the user's actual rooms (D-cross).
   (宫·verdict + reason, color by 吉凶) + 格局救应 notes (`report_formli_heading`,
   4 locales).
 - 全链路 typecheck + biome clean;astro-core 776/776.
-- Division of labor now: **砂/山 = DEM** (height, satellite can't see); **水/路/形煞
-  = VLM** (visible top-down). 
+- Division of labor now: **砂/山 = DEM** (height, satellite can't see); **路/形煞
+  = VLM** (visible top-down); **水系按宫 = Tilequery `formAzimuths` + DEM 水口启发式**
+  (`macroTerrain.shuiKou` / `waterByPalace` — Wave 2; VLM still describes water *shape*
+  such as 玉带/割脚, not palace bearing).
 - ✅ **D3.3 街景小峦头形煞** — `svc-feng/src/lib/mapillary.ts` + `POST /street/sha`:
   Mapillary 取站点附近街景(按罗盘角去重成 8 方向)→ Gemini Vision 检测 路冲/天斩/
   尖角冲射/电塔/烟囱/招牌煞 等(俯视卫星看不到)→ **每条按拍摄图的 compass_angle 归宫**
@@ -152,8 +154,8 @@ tied to the user's actual rooms (D-cross).
   .hasSha + synthesis)。**默认关闭**:无 `MAPILLARY_TOKEN` 即 degraded(可安全上线)。
   - ⚠️ Mapillary 影像 **CC-BY-SA**:`streetAttribution` 已持久化;启用 token 前必须
     在展示处加署名 + 法务确认衍生用途。UI 署名待补。
-- 待办 (D3 remainder): 水系按宫归 (currently VLM-only); azimuth-from-coords for VLM
-  satellite features; UI 街景署名展示.
+- 待办 (D3 remainder): azimuth-from-coords for remaining VLM satellite features;
+  UI 街景署名展示. (水系按宫已闭环 — 见 Wave 2 `feng-overlay-hints`.)
 
 ## D3 — 峦头/形势 → 10/10  (multi-scale, `svc-feng` + new geo step)
 

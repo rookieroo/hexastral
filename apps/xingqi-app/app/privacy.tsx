@@ -4,13 +4,13 @@ import { Stack } from 'expo-router'
 import { Pressable, ScrollView, Text } from 'react-native'
 
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 export default function FacePrivacyAppendixScreen() {
   const { colors, spacing } = useTheme()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const url = privacyPolicyUrl(locale)
 
   return (

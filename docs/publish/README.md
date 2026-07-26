@@ -7,14 +7,31 @@
 >
 > Every task here is **human / console work** that cannot be done from the repo:
 > App Store Connect, RevenueCat dashboard, Apple Developer portal, real secrets,
-> screenshots, and the production deploy. The code side is ready (see
-> [apps/yuel/status.md](../apps/yuel/status.md), [apps/yuun/launch.md](../apps/yuun/launch.md)).
+> screenshots, and the production deploy. **Code-side submit blockers for Yuun /
+> Yuel / Syel are largely closed** (see § Code readiness below); remaining work
+> is almost entirely console + secrets.
 >
 > Canonical IAP mapping: [apps/hexastral-api/src/config/products.ts](../../apps/hexastral-api/src/config/products.ts).
 > RevenueCat walkthrough: [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md).
 > Brand decision: [ADR-0024](../decisions/0024-app-brand-naming.md).
 
-Last updated: 2026-06-25.
+Last updated: 2026-07-26.
+
+---
+
+## Code readiness snapshot (2026-07-26)
+
+| Brand | Directory | Code for Submit | Still human |
+|---|---|---|---|
+| **Yuun** | `auspice-app` | ✅ Server Pro for LLM routes; `ALLOW_DEV_PRO=0`; leap birthday + morning push budget; transfer locale; holiday hard-off | RC `appl_*`, `ascAppId`, `CYCLE_CALENDAR_SECRET`, `REVENUECAT_API_KEY`, smoke → Submit |
+| **Yuel** | `kindred-app` | ✅ EAS slug `yuan`; push harvest await + bondId backfill + ordered caps; HexAstral→Yuel push copy; carry-over banner + 19:00 settings copy | RC `kindred_pro`, ASC, device carry-over smoke → Submit |
+| **Syel** | `xingqi-app` | ✅ `faceoracle_pro` chat/capability + VLM gate; production reading-job copy; ja push + rest-theme 3d; 五章文案; iCloud empty toggle removed | EAS `projectId` still `REPLACE_*`; RC/ASC; [regression-checklist.md](../apps/xingqi/regression-checklist.md) |
+| **Kanyu** | `feng-app` | ⚠️ Engine + queue OK; **LLM prose quality not submit-blocking for V1 wave order but not Review-grade yet** — see [feng/report-quality-plan.md](../apps/feng/report-quality-plan.md) | Vision/synthesis P0 + ASC/RC |
+| **Yaul** | `coin-cast-app` | ❌ **Not App Store ready** — casting/physics largely coded, but ASO claims 五帝钱 skins that are not shipped; privacy URL gated while `visibility: hidden`; production RC/ASC placeholders | Product sign-off + ASO fix + legal URL + ASC/RC — [coincast/README.md](../apps/coincast/README.md) § Readiness |
+
+**Ship / submit order (technical):** Yuun → Yuel → (Kanyu after prose P0) → Yaul last. Syel is post-wave but code-ready for parallel console prep.
+
+**API / D1:** `ALLOW_DEV_PRO: "0"` live; HMAC exemptions for notify stale-token + physiognomy `purge-inactive`; push migrations through **0034** (`lunar_is_leap` + faceoracle/auspice push). Prefer `bun db:migrate:prod` then `bun deploy` — do not assume “through 0018” from older docs.
 
 ---
 
@@ -28,6 +45,7 @@ Last updated: 2026-06-25.
 | Display name (store + device) | Yuel | Yuun |
 | Bundle ID (permanent) | `com.hexastral.yuel` | `com.hexastral.yuun` |
 | Internal codename (do NOT user-surface) | kindred | auspice |
+| EAS Expo slug | `yuan` (immutable; matches cloud project) | `auspice` |
 | Primary category | Lifestyle (2nd: Education) | Reference |
 | Brand domain (live) | `yuel.hexastral.com` | `yuun.hexastral.com` |
 | Apple Team ID | `L9Z47DW56X` | `L9Z47DW56X` |
@@ -46,6 +64,7 @@ Last updated: 2026-06-25.
 | Brand domain (live) | `yaul.hexastral.com` |
 | Privacy / Terms | `yaul.hexastral.com/<seg>/privacy/yaul` · `yaul.hexastral.com/<seg>/terms` |
 | Associated Domains | `applinks:yaul.hexastral.com` + apex `hexastral.com` (deep links) |
+| Submit blocker | ASO/legal/ASC/RC — **not** a greenfield empty app; see § Code readiness |
 
 > **Naming policy (ADR-0024 + decided 2026-06):** Yuel/Yuun are the *brand /
 > display* layer only. The internal codenames (`kindred`, `auspice`) and the
@@ -155,13 +174,11 @@ Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.
 
 ## 5. Backend deploy + DB migration
 
-> **About "migration 0012":** migrations are **sequential and cumulative** — you
-> cannot (and don't need to) apply `0012` alone. `bun db:migrate:prod` runs
-> `wrangler d1 migrations apply hexastral-db --remote`, which applies *every*
-> unapplied migration in order (currently up to `0018`). 0012 (`timeline_readings`,
-> the timeline deep-read) is just one of the pending set; running the command once
-> catches prod up through 0018. "0012 not migrated" simply means prod is behind —
-> the single command fixes it.
+> Migrations are **sequential and cumulative**. `bun db:migrate:prod` applies every
+> unapplied migration in order. As of 2026-07-26 the tip includes **0034**
+> (`lunar_is_leap` on birthday reminders, plus earlier push-queue / timezone work
+> 0031–0033). Older notes that said “through 0018” are obsolete — always migrate
+> to the current tip before relying on push / birthday / FaceOracle cron paths.
 
 Order (local wrangler — CI does NOT deploy):
 - [ ] Internal services first: `svc-astro`, `svc-notify`, `svc-signal`, `svc-geocode`,
@@ -169,19 +186,20 @@ Order (local wrangler — CI does NOT deploy):
 - [ ] API + migrations:
       ```bash
       cd apps/hexastral-api
-      bun db:migrate:prod      # applies all pending migrations (…→0018) to remote D1
+      bun db:migrate:prod      # applies all pending migrations (…→0034+) to remote D1
       bun deploy
       ```
-- [ ] Web (serves the privacy/terms + invite landings on all three domains):
+- [ ] Web (serves the privacy/terms + invite landings on all brand domains):
       `cd apps/hexastral-web && bun deploy`
 - [ ] Verify `https://api.hexastral.com/webhooks/revenuecat` is reachable
+- [ ] Spot-check Yuun/Yuel privacy URLs return **200** for `en`/`zh`/`tw`/`ja` segments
 
 ---
 
 ## 6. eas.json secrets (both apps — currently `REPLACE_WITH_*` placeholders)
 
 For `apps/kindred-app/eas.json` **and** `apps/auspice-app/eas.json`:
-- [x] `EXPO_PUBLIC_EAS_PROJECT_ID` — both apps linked (`auspice` `269d6ab5-…`, `kindred` `95b2e753-…`)
+- [x] `EXPO_PUBLIC_EAS_PROJECT_ID` — both apps linked (`auspice` `269d6ab5-…`, Yuel slug **`yuan`** project `95b2e753-…`)
 - [ ] `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (`appl_*`; `test_*` for sandbox builds)
 - [ ] `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (`goog_*`, only if shipping Android)
 - [ ] `submit.production.ios.ascAppId` (from §2; `appleTeamId` is already `L9Z47DW56X`)

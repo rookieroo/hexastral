@@ -1,11 +1,12 @@
 /**
  * Capability resolver — the single entitlement-driven gating engine (ADR-0013).
  *
- * A "capability" is one app's paid surface. Subscription apps (fate/yuan/cycle)
- * are unlocked by their entitlement (or universe_pro); episodic apps
- * (feng/face/coincast/dream/numerology) are credit/one-shot gated and have NO
+ * A "capability" is one app's paid surface. Subscription apps (fate/yuan/cycle/face)
+ * are unlocked by their entitlement (or universe_pro); remaining episodic apps
+ * (feng/coincast/dream/numerology) are credit/one-shot gated and have NO
  * per-app subscription entitlement — unlimited chat on those comes only via
- * universe_pro. All gating goes through here (entitlement-driven).
+ * universe_pro. Face (Syel) also has faceoracle_pro for unlimited chat + Pro surfaces.
+ * All gating goes through here (entitlement-driven).
  *
  * Pure (no DB) so it is exhaustively unit-testable; callers pass the active
  * entitlement key set (services/entitlements.getActiveEntitlements).
@@ -26,20 +27,23 @@ export type Capability =
 
 /**
  * Subscription apps → the entitlement that unlocks them (and their unlimited chat).
- * Episodic apps (feng/face/coincast/dream/numerology) are absent: per-use gated, with
- * unlimited chat available only through universe_pro (no per-app sub — ADR-0013 §2).
+ * Remaining episodic apps (feng/coincast/dream/numerology) are absent: per-use gated,
+ * with unlimited chat available only through universe_pro.
+ * Face (Syel) is dual: faceoracle_pro subscription OR face reading credits (ADR-0028).
  */
 const SUBSCRIPTION_ENTITLEMENT: Partial<Record<Capability, EntitlementKey>> = {
   fate: 'fate_pro',
   kindred: 'kindred_pro',
   auspice: 'auspice_pro',
+  face: 'faceoracle_pro',
 }
 
 /**
  * The product to offer when an unentitled user hits a paywall for a capability.
- * Subs + feng + coincast already exist in products.ts; face/dream/numerology
+ * Subs + feng + coincast already exist in products.ts; dream/numerology
  * packs are ADR-0012 targets created in P2 (the ID is informational for the
- * client until then).
+ * client until then). Face upsell prefers the Pro monthly SKU; oneshot remains
+ * available via jobs / episodic credit paths.
  */
 const CAPABILITY_UPSELL: Record<Capability, string> = {
   // fate is a funnel app with no standalone subscription — paywall offers
@@ -50,7 +54,7 @@ const CAPABILITY_UPSELL: Record<Capability, string> = {
   kindred: 'kindred_pro_monthly',
   auspice: 'auspice_pro_monthly',
   feng: 'hexastral_feng_single',
-  face: 'faceoracle_reading',
+  face: 'faceoracle_pro_monthly',
   coincast: 'coincast_cast_pack_10',
   dream: 'dream_pack_10',
   numerology: 'numerology_pack_10',

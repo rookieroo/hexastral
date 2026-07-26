@@ -156,9 +156,10 @@ export function sitMountainForFacing(facingDeg: number): Mountain {
 /**
  * 替卦 zone detector. A facing degree close to a mountain's edge (within
  * ±~2.5° of the boundary) falls into the "兼向" zone where 玄空 practitioners
- * traditionally use the 替卦 chart rather than 下卦. V1 only supports 下卦
- * but warns the user when 兼向 is detected so they know the chart is
- * approximate.
+ * traditionally use the 替卦 chart rather than 下卦.
+ *
+ * Engine: `computeFlyingStars` already switches to 替卦 charts when this is
+ * true (`chartMethod: '替卦'`). Clients should teach why, not re-compute.
  *
  * Returns `true` if degree is within `tolerance` of any mountain boundary.
  */

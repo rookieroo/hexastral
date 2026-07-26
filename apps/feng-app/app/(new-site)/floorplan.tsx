@@ -11,7 +11,7 @@
  * Skippable: without a floor plan the report is exterior-only (no room-level 化解).
  */
 
-import { maxFloorplanImagesFor } from '@zhop/astro-core'
+import { maxFloorplanImagesFor, mountainAtDegree } from '@zhop/astro-core'
 import { Button, useHaptic } from '@zhop/core-ui'
 import {
   fetchFloorplanPreview,
@@ -118,6 +118,7 @@ export default function FloorplanScreen() {
   const dragStart = useRef(centerNorm)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [siteFacingDeg, setSiteFacingDeg] = useState<number | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -128,6 +129,7 @@ export default function FloorplanScreen() {
       }
       if (typeof d.floorplanOrientDeg === 'number') setOrientDeg(normDeg(d.floorplanOrientDeg))
       if (d.floorplanCenterNorm) setCenterNorm(d.floorplanCenterNorm)
+      if (typeof d.facingDegTrue === 'number') setSiteFacingDeg(d.facingDegTrue)
     })()
   }, [])
 
@@ -259,6 +261,13 @@ export default function FloorplanScreen() {
       <Text style={{ color: colors.textMute, fontSize: 13, lineHeight: 20 }}>
         {t.new_site_floorplan_desc}
       </Text>
+      {siteFacingDeg != null ? (
+        <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+          {t.floorplan_site_facing_line
+            .replace('{face}', mountainAtDegree(siteFacingDeg).name)
+            .replace('{deg}', String(Math.round(siteFacingDeg)))}
+        </Text>
+      ) : null}
 
       {/* North-align preview: cover plan with a luopan overlay rotated to north. */}
       {coverUri ? (

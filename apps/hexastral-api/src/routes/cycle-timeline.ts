@@ -66,6 +66,7 @@ import {
 } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk } from '../lib/api-response'
+import { allowAuspiceDevGuardBypass, resolveAuspiceIsPro } from '../lib/auspice-pro'
 import { astroClient } from '../lib/service-clients'
 import { hasActiveEntitlement } from '../services/entitlements'
 import {
@@ -476,6 +477,8 @@ const EXPLAIN_GUARD = {
 const explainSchema = z.object({
   deviceId: z.string().max(128).optional(),
   userId: z.string().max(128).optional(),
+  /** Portfolio / RC app-user-id (alias of userId when signed in). */
+  u: z.string().max(128).optional(),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   birthHour: z.number().int().min(-1).max(23),
   gender: z.enum(['M', 'F']),
@@ -484,6 +487,10 @@ const explainSchema = z.object({
   /** 1-12 for 流月; 0 (default) for 流年/大运. */
   month: z.number().int().min(0).max(12).default(0),
   locale: z.string().max(16).default('en'),
+  /** Client UX hint only — Pro authorization uses `u`/`userId`. */
+  isPro: z.boolean().default(false),
+  /** __DEV__ may set true; only honored when ALLOW_DEV_PRO=1. */
+  dev: z.boolean().default(false),
 })
 
 /** Tiny non-crypto hash so raw IPs never land in guard keys (mirrors timeline.ts). */
@@ -590,7 +597,12 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
   )
   if (!facts) return jsonOk(c, { reading: null, source: 'none' })
 
-  const owner = body.userId ? `user:${body.userId}` : `device:${body.deviceId ?? 'anon'}`
+  const portfolioUserId = body.u ?? body.userId
+  const owner = body.userId
+    ? `user:${body.userId}`
+    : portfolioUserId
+      ? `user:${portfolioUserId}`
+      : `device:${body.deviceId ?? 'anon'}`
   // Include the cache version so a prompt/language fix invalidates stale readings
   // (e.g. en-keyed rows that the old prompt wrote in Chinese — see svc-astro/timeline).
   const id = `${body.nodeType}:${body.year}:${body.month}:${body.locale}:${TIMELINE_CACHE_VERSION}`
@@ -618,18 +630,37 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
     }
   }
 
+  // Pro-gate before any LLM — fail-closed without portfolio u / entitlements.
+  const isPro = await resolveAuspiceIsPro(
+    db,
+    c.env as { REVENUECAT_API_KEY?: string },
+    portfolioUserId
+  )
+  if (!isPro) {
+    return jsonOk(c, { reading: null, source: 'none', upsell: true })
+  }
+
   // 2. Guard (subject userId > deviceId > ipHash). No subject / exhausted → null
   //    reading; the client renders its own deterministic resolveNodeDetail.
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const subject = resolveLlmGuardSubject({
-    userId: body.userId,
+    userId: portfolioUserId,
     deviceId: body.deviceId,
     ipHash: hashIp(ip),
   })
   if (!subject) return jsonOk(c, { reading: null, source: 'template' })
-  const guard = await evaluateLlmGuard(c.env, { subject, config: EXPLAIN_GUARD })
 
-  if (guard.decision === 'allow_llm') {
+  const skipGuard = allowAuspiceDevGuardBypass(
+    c.env as { ALLOW_DEV_PRO?: string },
+    body.dev
+  )
+  let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
+  if (!skipGuard) {
+    guard = await evaluateLlmGuard(c.env, { subject, config: EXPLAIN_GUARD })
+  }
+
+  if (skipGuard || guard?.decision === 'allow_llm') {
+    const tier = guard?.tier ?? 'deep'
     try {
       const resp = await astroClient.post<{ explanation: string }>(
         c.env.SVC_ASTRO,
@@ -643,7 +674,7 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
           fit: facts.fit,
           reasons: facts.reasons,
           locale: body.locale,
-          isPro: guard.tier === 'deep',
+          isPro: tier === 'deep',
         }
       )
       const reading = (resp.explanation ?? '').trim()
@@ -664,7 +695,7 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
                 year: facts.year,
                 month: body.month,
                 reading,
-                tier: guard.tier === 'deep' ? 'deep' : 'standard',
+                tier: tier === 'deep' ? 'deep' : 'standard',
                 locale: body.locale,
                 createdAt: new Date().toISOString(),
               })
@@ -672,7 +703,7 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
                 target: [timelineReadings.owner, timelineReadings.id],
                 set: {
                   reading,
-                  tier: guard.tier === 'deep' ? 'deep' : 'standard',
+                  tier: tier === 'deep' ? 'deep' : 'standard',
                   birthDate: body.birthDate,
                   birthHour: body.birthHour,
                   gender: body.gender,
@@ -682,12 +713,14 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
             console.warn('[auspice.timeline.explain] 落库 write failed', err)
           }
         }
-        await recordLlmGuardGrant(c.env, {
-          subject,
-          config: EXPLAIN_GUARD,
-          consumesPeakPass: guard.consumesPeakPass,
-        })
-        return jsonOk(c, { reading, source: 'llm', tier: guard.tier })
+        if (!skipGuard && guard) {
+          await recordLlmGuardGrant(c.env, {
+            subject,
+            config: EXPLAIN_GUARD,
+            consumesPeakPass: guard.consumesPeakPass,
+          })
+        }
+        return jsonOk(c, { reading, source: 'llm', tier })
       }
     } catch (err) {
       console.error('[auspice.timeline.explain] svc-astro failed', err)
@@ -695,7 +728,11 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
     return jsonOk(c, { reading: null, source: 'template' })
   }
 
-  return jsonOk(c, { reading: null, source: 'template', upsell: guard.upsellAfterExhaust })
+  return jsonOk(c, {
+    reading: null,
+    source: 'template',
+    upsell: guard?.upsellAfterExhaust,
+  })
 })
 
 // ── GET /push/targets — 人生时间线 node push (P2, the headline Pro hook). ──────

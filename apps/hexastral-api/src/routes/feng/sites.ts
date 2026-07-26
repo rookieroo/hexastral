@@ -87,6 +87,15 @@ const createSiteObject = z.object({
   geocodeLat: z.number().gte(-85).lte(85).optional(),
   geocodeLng: z.number().gte(-180).lte(180).optional(),
   buildingCenterNorm: centerNormSchema.optional(),
+  facingSamples: z
+    .object({
+      samples: z.array(z.number()).min(1).max(8),
+      mean: z.number(),
+      maxDelta: z.number(),
+    })
+    .optional(),
+  /** |satellite facing − live compass| at confirm (°). */
+  facingCompassDeltaDeg: z.number().gte(0).lte(180).optional(),
 })
 
 // apartment (base tier) = one layout only; flat/villa may upload up to MAX. Enforced
@@ -225,6 +234,12 @@ function buildInputMeta(input: z.infer<typeof createSiteObject>): string {
     meta.buildingCenterNorm = input.buildingCenterNorm
     const expected = pinOffsetCoords(input.geocodeLat, input.geocodeLng, input.buildingCenterNorm)
     meta.pinOffsetM = haversineM(input.lat, input.lng, expected.lat, expected.lng)
+  }
+  if (input.facingSamples) {
+    meta.facingSamples = input.facingSamples
+  }
+  if (typeof input.facingCompassDeltaDeg === 'number') {
+    meta.facingCompassDeltaDeg = input.facingCompassDeltaDeg
   }
   return JSON.stringify(meta)
 }
@@ -524,6 +539,22 @@ export const fengSiteRoutes = new Hono<AppEnv>()
       .get()
     if (!site) {
       return jsonErr(c, 404, ApiErrorCode.not_found, 'Site not found')
+    }
+
+    let facingConfirmed = false
+    try {
+      const meta = site.inputMeta ? (JSON.parse(site.inputMeta) as { facingConfirmed?: boolean }) : null
+      facingConfirmed = meta?.facingConfirmed === true
+    } catch {
+      facingConfirmed = false
+    }
+    if (!facingConfirmed) {
+      return jsonErr(
+        c,
+        400,
+        ApiErrorCode.invalid_input,
+        'facingConfirmed must be true before analyze'
+      )
     }
 
     // DEV-Pro bypass: skip the paywall so analysis can be tested without IAP.

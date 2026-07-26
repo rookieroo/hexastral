@@ -188,11 +188,55 @@ Human deploy: [human-deploy-checklist.md](./human-deploy-checklist.md).
 
 ---
 
+### 8. Kanyu「别胡说」wave (2026-07-26)
+
+**Does not raise 沈氏 correctness** — [acceptance-standard.md](./acceptance-standard.md) and golden 沈氏 scripts are **unchanged** this wave. Scope = Vision honesty + mid-pass notes + lean briefing + public readings + forced caveats + facing gate.
+
+| Gate (§5.2) | Status | Where |
+|-------------|--------|-------|
+| Vision prompt 0 overlay lies | ✅ | `services/svc-feng/src/prompts/vision.test.ts` |
+| Briefing ≤12k, no raw chart dump | ✅ | `synthesis-briefing.test.ts` |
+| FormLiNotes Zod + audit (wrong 山向 fails) | ✅ | `form-li-notes-audit.test.ts` |
+| Mid fail-open (route/client) | ✅ | `POST /form-li/interpret` + `interpretFormLiNotes` catch |
+| Synth `maxTokens ≤ 8192`, no full JSON dump | ✅ | `routes/synthesize.ts` |
+| `readingPublic` denylist | ✅ | `flying-stars-extras.test.ts` + chips use public only |
+| `facingConfirmed` enqueue 4xx | ✅ | `routes/feng/sites.ts` analyze |
+| Forced cover caveats | ✅ | `forcedCoverCaveats` + digest/chapter UI |
+| acceptance-standard untouched | ✅ | explicit — no edits this wave |
+
+Key paths:
+
+- `services/svc-feng` — vision contract, `/form-li/interpret`, lean `/synthesize`
+- `apps/hexastral-api/src/lib/feng-analyze.ts` — stage `form_li` after compute
+- `packages/astro-core/.../flying-stars-combinations.ts` — `readingPublic`
+- `apps/feng-app` — cover caveats, form-li notes block, stage labels
+
+---
+
+### 9. Kanyu Wave 2 — 现场感 (2026-07-26)
+
+| Gate | Status | Where |
+|------|--------|-------|
+| 立极仪式 (3-phase in locate) + 3×heading samples | ✅ | `NewSiteFacingStep` + `facingSamples` → input_meta |
+| 兼向教学卡 | ✅ | `CompoundFacingTeachCard` (facing / review / report) |
+| overlayHints + typed macroTerrain (shuiKou / waterByPalace) | ✅ | `feng-overlay-hints.ts` + analyze shell |
+| Client map 二十四山 / bagua / hints | ✅ | `AnnotatedMapSwiper` |
+| Report 九宫 + roomFindings | ✅ | `ReportRoomsGrid` + optional palace confirm |
+| en/ja locale gate | ✅ | `svc-feng/src/lib/locale-gate.ts` |
+| Prose eval fixtures | ✅ | `feng-prose-eval.test.ts` |
+| Overlay eval (≥2 sites, palace↔bearing) | ✅ | `feng-overlay-eval.fixtures.test.ts` |
+| 兼向边界高亮 / compass Δ meta / bagua toggle | ✅ | FacingCalibrator + input_meta + AnnotatedMapSwiper |
+| acceptance-standard | ✅ untouched | — |
+
+---
+
 ## Next work packages
 
 | ID | Package | Depends on |
 |----|---------|------------|
 | Human | [human-deploy-checklist.md](./human-deploy-checklist.md) — IAP, D1, Mapillary, staging smoke | deploy approval |
+| Defer | Multi-split mid-LLM (only if fail_open / audit rate triggers) | ≥2 weeks post mid-pass |
+| Wave 2 | 罗盘立极仪式 + 地图/户型诚实叠层 + DEM 水口/水系按宫 + locale/eval | done 2026-07-26 |
 | Defer | RoomPlan / LiDAR / indoor photos / draw-outline floor plan | V1.5+ |
 | Defer | AnnotatedMapSwiper tap-to-chapter; ReadingPrimer overlay | nice-to-have |
 
@@ -208,6 +252,9 @@ cd apps/hexastral-api && bun test src/lib/feng-chat-*.test.ts src/lib/portfolio-
 cd packages/astro-core && bun test  # feng suites
 cd services/svc-feng && bun test && bun run typecheck
 cd apps/feng-app && bun test lib/draft-quality.test.ts
+# Kanyu honesty gates:
+cd services/svc-feng && bun test src/prompts/vision.test.ts src/lib/synthesis-briefing.test.ts src/lib/form-li-notes-audit.test.ts
+cd packages/astro-core && bun test src/__tests__/feng/flying-stars-extras.test.ts
 ```
 
 ---

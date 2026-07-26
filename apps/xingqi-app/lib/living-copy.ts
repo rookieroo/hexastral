@@ -78,28 +78,28 @@ export function primerCopy(locale: Locale): {
     case 'zh':
       return {
         title: '如何阅读本期形气',
-        body: '左右滑动切换六章。点虚线术语看释义（含拼音）。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「本期」是最近一次形气；「档案」收纳往期。人生时间线是大运主轴。',
+        body: '左右滑动切换五章。点虚线术语看释义（含拼音）。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「本期」是最近一次形气；「档案」收纳往期。人生时间线是大运主轴。',
         glossary: '查看符号说明',
         begin: '开始阅读',
       }
     case 'zh-Hant':
       return {
         title: '如何閱讀本期形氣',
-        body: '左右滑動切換六章。點虛線術語看釋義（含拼音）。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「本期」是最近一次形氣；「檔案」收納往期。人生時間線是大運主軸。',
+        body: '左右滑動切換五章。點虛線術語看釋義（含拼音）。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「本期」是最近一次形氣；「檔案」收納往期。人生時間線是大運主軸。',
         glossary: '查看符號說明',
         begin: '開始閱讀',
       }
     case 'ja':
       return {
         title: '読み方',
-        body: '左右スワイプで六章を切替。点線の用語をタップして注釈（拼音付き）。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
+        body: '左右スワイプで五章を切替。点線の用語をタップして注釈（拼音付き）。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
         glossary: '記号の説明',
         begin: '読む',
       }
     default:
       return {
         title: 'How to read this',
-        body: 'Swipe six chapters. Tap dotted terms for glosses (with pinyin). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form reading; History holds older ones. Life axis is the DaYun trunk.',
+        body: 'Swipe five chapters. Tap dotted terms for glosses (with pinyin). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form reading; History holds older ones. Life axis is the DaYun trunk.',
         glossary: 'Symbol glossary',
         begin: 'Begin',
       }

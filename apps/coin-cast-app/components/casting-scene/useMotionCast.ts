@@ -109,6 +109,9 @@ export function useMotionCast() {
     return createMotionSession(startedAtRef.current, frames)
   }, [stopSubscription])
 
+  /** Live frames without ending the session — used for release energy gates. */
+  const peekCaptureFrames = useCallback((): MotionFrame[] => framesRef.current, [])
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState !== 'active' && subscriptionRef.current) {
@@ -126,6 +129,7 @@ export function useMotionCast() {
     frameQueueRef,
     startCapture,
     finishCapture,
+    peekCaptureFrames,
     cancelCapture,
   }
 }

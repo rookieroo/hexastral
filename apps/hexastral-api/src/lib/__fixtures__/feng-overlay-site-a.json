@@ -1,0 +1,27 @@
+{
+  "id": "site-harbor-a",
+  "label": "Harbor embankment (water SE + road NE)",
+  "lat": 22.3193,
+  "lng": 114.1694,
+  "formAzimuths": [
+    { "kind": "water", "palace": "巽", "bearingDeg": 135, "distanceM": 120, "source": "tilequery" },
+    { "kind": "waterway", "palace": "离", "bearingDeg": 172, "distanceM": 280, "source": "tilequery" },
+    { "kind": "road", "palace": "艮", "bearingDeg": 48, "distanceM": 35, "source": "tilequery" }
+  ],
+  "elevation": {
+    "laiLong": "乾",
+    "byPalace": {
+      "乾": { "relativeM": 42, "isMountain": true },
+      "坎": { "relativeM": 8, "isMountain": false },
+      "艮": { "relativeM": 5, "isMountain": false },
+      "震": { "relativeM": -2, "isMountain": false },
+      "巽": { "relativeM": -12, "isMountain": false },
+      "离": { "relativeM": -18, "isMountain": false },
+      "坤": { "relativeM": 3, "isMountain": false },
+      "兑": { "relativeM": 10, "isMountain": false }
+    }
+  },
+  "vision": {
+    "形煞": [{ "type": "路冲", "direction": "艮", "severity": 3 }]
+  }
+}

@@ -6,32 +6,22 @@
  * each route in turn (maps → annotate → vision → synthesize), persisting
  * intermediate state in D1 (`feng_jobs` table).
  *
- * Timeouts:
- *   - Map render: 8s (Mapbox usually < 1s, cache hits < 50ms)
- *   - Annotate: 4s (resvg-wasm composition is CPU-bound, sub-second once warm)
- *   - Vision: 30s (Gemini structured output can sit at the upper end)
- *   - Synthesize: 60s (long-form 6 chapters)
- *
- * All routes return JSON except `/maps/render` and `/annotate` which return
- * raw image bytes (the worker writes them to R2 by key — the client only
- * needs the cache key to chain into the next stage).
+ * Timeouts (queue consumer — generous wall budget; LLM stages are I/O waits):
+ *   - Map render: 8s
+ *   - Annotate: 4s
+ *   - Vision: 60s (dual VLM on real satellite tiles)
+ *   - Form-li mid-pass: 28s (route wall ≤25s; client slightly above)
+ *   - Synthesize: 150s (lean briefing, maxTokens ≤8192)
  */
 
 type FetcherLike = { fetch(input: RequestInfo, init?: RequestInit): Promise<Response> }
 
-// These run inside the feng-analyze QUEUE CONSUMER, which has a generous
-// wall-clock budget (not the 30s HTTP limit) — the LLM/VLM calls are I/O waits,
-// not CPU. Sized so the two slow AI stages don't self-abort:
-//   • vision now sees REAL satellite imagery (raw-tile fix) — richer than the
-//     old near-blank overlays, so Gemini takes longer than the prior 30s.
-//   • synthesize emits 6 pro-grade chapters at maxTokens 16384 — the old 60s
-//     cap fired mid-generation (job.failed "operation was aborted due to
-//     timeout", ~63s total) once bodies grew.
 const TIMEOUTS = {
   prefetch: 5_000,
   maps: 8_000,
   annotate: 4_000,
   vision: 60_000,
+  formLi: 28_000,
   synthesize: 150_000,
 } as const
 
@@ -381,12 +371,11 @@ export interface SynthesizeInput {
     combinations?: unknown[]
     formLi?: unknown
     macroTerrain?: unknown
+    overlayHints?: unknown
     monthlyStars?: unknown
     annualChart?: unknown
-    /** Room-level interior join (户型图). Empty/omitted = exterior-only report. */
     roomFindings?: unknown[]
     interiorSha?: unknown[]
-    /** Missing-corner findings from interior vision (缺角). */
     interiorQueJiao?: unknown[]
   }
   userProfile: {
@@ -406,6 +395,8 @@ export interface SynthesizeInput {
     direction: string
     geometrySupport: 'weak' | 'none' | 'inferred-only'
   }>
+  /** Mid-pass notes; null when fail-opened. */
+  formLiNotes?: unknown | null
 }
 
 export interface SynthesizedChapter {
@@ -431,4 +422,27 @@ export async function synthesizeReport(
   input: SynthesizeInput
 ): Promise<SynthesizeResult> {
   return postJson(svc, '/synthesize', input, TIMEOUTS.synthesize)
+}
+
+export interface FormLiInterpretResult {
+  formLiNotes: unknown | null
+  failOpen: boolean
+  modelVersion: string
+}
+
+/** Mid-pass 形理对照 — fail-open on errors (caller must not fail the job). */
+export async function interpretFormLiNotes(
+  svc: FetcherLike,
+  input: {
+    compact: Record<string, unknown>
+    compute: Record<string, unknown>
+    locale: 'en' | 'zh' | 'zh-Hant' | 'ja'
+  }
+): Promise<FormLiInterpretResult> {
+  try {
+    return await postJson(svc, '/form-li/interpret', input, TIMEOUTS.formLi)
+  } catch (err) {
+    console.warn('[feng-client] form_li fail-open', err)
+    return { formLiNotes: null, failOpen: true, modelVersion: 'client-fail-open' }
+  }
 }

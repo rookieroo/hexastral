@@ -3,7 +3,7 @@ import { buildComplianceInstructionBlock } from '@zhop/portfolio-voice'
 import { buildChatSystemPrompt } from './chat'
 
 describe('svc-astro prompt compliance snapshots', () => {
-  it('chat system prompt includes compliance block and avoids fortune-teller framing', () => {
+  it('chat system prompt includes compliance framing and avoids fortune-teller framing', () => {
     const prompt = buildChatSystemPrompt({
       locale: 'zh',
       context: {
@@ -13,8 +13,8 @@ describe('svc-astro prompt compliance snapshots', () => {
         memory: { context: '', hitCount: 0 },
       },
     })
-    expect(prompt).toContain('合规与口吻')
     expect(prompt).toContain('不是预测')
+    expect(prompt).toContain('娱乐与文化参照')
     expect(prompt).not.toContain('AI 命理师')
     expect(prompt).not.toContain('本月运势')
   })
@@ -22,7 +22,7 @@ describe('svc-astro prompt compliance snapshots', () => {
   it('buildComplianceInstructionBlock covers en locale', () => {
     const block = buildComplianceInstructionBlock('en')
     expect(block).toContain('entertainment')
-    expect(block).toContain('NOT prediction')
+    expect(block).toContain('NOT guaranteed outcomes')
   })
 
   it('feng chat uses the feng persona, not the generic fate advisor', () => {

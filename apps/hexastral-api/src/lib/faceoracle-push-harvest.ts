@@ -54,7 +54,16 @@ export function windowsFromEvents(
   events: Array<{ startMonth?: string; theme?: string; note?: string }>,
   locale: string
 ): FacePushWindowIn[] {
-  const hant = locale.toLowerCase().includes('hant')
+  const base = locale.toLowerCase()
+  const hant = base.includes('hant') || base === 'zh-tw' || base === 'zh-hk'
+  const ja = base.startsWith('ja')
+  const title = hant
+    ? '宜留意的時間窗'
+    : locale.startsWith('zh')
+      ? '宜留意的时间窗'
+      : ja
+        ? '意識したい時間窓'
+        : 'A window worth noting'
   const out: FacePushWindowIn[] = []
   for (const ev of events.slice(0, 8)) {
     const sm = ev.startMonth
@@ -67,12 +76,18 @@ export function windowsFromEvents(
       localHour: 9,
       priority: 40,
       kind: 'qi',
-      title: hant ? '宜留意的時間窗' : locale.startsWith('zh') ? '宜留意的时间窗' : 'A window worth noting',
+      title,
       body,
       data: { kind: 'event', startMonth: sm, targetApp: 'faceoracle' },
     })
   }
   return out
+}
+
+/** Normalize a rest theme key for ≥3d cooldown (Compliance). */
+export function faceoracleRestThemeKey(title: string, themeHint?: string | null): string {
+  const raw = (themeHint?.trim() || title.trim()).slice(0, 48).toLowerCase()
+  return raw || 'rest'
 }
 
 /** Optional LLM harvest — empty on failure (non-fatal). */
@@ -148,6 +163,7 @@ export async function llmHarvestFacePushWindows(
                     ? 'recapture'
                     : 'timeline',
           targetApp: 'faceoracle',
+          ...(kind === 'rest' ? { themeKey: faceoracleRestThemeKey(title) } : {}),
         },
       })
       if (out.length >= 12) break

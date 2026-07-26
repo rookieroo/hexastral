@@ -87,9 +87,43 @@ export interface HexagramResult {
   judgment: string
   image: string
   changingLines: number[]
+  /** 变卦 summary when there are changing lines */
+  derived?: {
+    number: number
+    name: string
+    pinyin: string
+    symbol: string
+  }
+  /** 互卦 name when available */
+  nuclearName?: string
 }
 
 export type InterpretationMode = 'classical' | 'ai'
+
+/** Structured 装卦 desk — primary UI, not a prompt dump. */
+export interface LiuyaoDeskLine {
+  index: number
+  ganZhi: string
+  liuQin: string
+  liuShen: string
+  wangXiu: string
+  isChanging: boolean
+  isShiYao: boolean
+  isYingYao: boolean
+  isEmpty: boolean
+}
+
+export interface LiuyaoDesk {
+  benName: string
+  benPalace: string
+  bianName?: string
+  bianPalace?: string
+  huName?: string
+  shiLine: number
+  yingLine: number
+  /** Display order: 上爻 → 初爻 */
+  lines: LiuyaoDeskLine[]
+}
 
 export interface ClassicalReadingDetail {
   judgment: string
@@ -97,6 +131,7 @@ export interface ClassicalReadingDetail {
   lines: string[]
   changingLineTexts: string[]
   naJiaContext?: string
+  desk?: LiuyaoDesk
 }
 
 export interface DivinationReading {
@@ -106,6 +141,8 @@ export interface DivinationReading {
   interpretationMode: InterpretationMode
   classical?: ClassicalReadingDetail
   hexagram: HexagramResult
+  /** Structured 本/变/互 + 装卦表 for client desk UI */
+  desk?: LiuyaoDesk
   interpretation: string
   advice: string
   summary: string

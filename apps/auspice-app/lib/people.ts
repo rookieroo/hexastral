@@ -36,6 +36,8 @@ export interface AuspicePerson {
   advanceDays?: number
   /** Also remind on the day itself (default true). */
   remindOnDay?: boolean
+  /** When calendar==='lunar', whether the month is the leap month. */
+  lunarIsLeap?: boolean
 }
 
 function isPerson(v: unknown): v is AuspicePerson {
@@ -82,6 +84,7 @@ export interface AddPersonInput {
   timezone?: string | null
   advanceDays?: number
   remindOnDay?: boolean
+  lunarIsLeap?: boolean
 }
 
 export async function addPerson(input: AddPersonInput): Promise<AuspicePerson[]> {
@@ -97,6 +100,7 @@ export async function addPerson(input: AddPersonInput): Promise<AuspicePerson[]>
       solarDate: input.solarDate,
       relation: input.relation?.trim() || undefined,
       calendar: input.calendar ?? 'solar',
+      lunarIsLeap: input.calendar === 'lunar' && input.lunarIsLeap === true ? true : undefined,
       timeIndex: input.timeIndex ?? null,
       gender: input.gender,
       city: input.city,

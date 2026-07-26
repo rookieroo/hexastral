@@ -30,6 +30,8 @@ function SceneBackground({ color }: { color: string }) {
 export interface CastingSceneProps {
   style?: StyleProp<ViewStyle>
   tossRevision: number
+  handsOpenRevision: number
+  neatCoinsRevision: number
   coinSkinConfig?: CoinSkinConfig
   /** One warm tone for clear color + table + fog — avoids a “two slabs” seam. */
   sceneBg: string
@@ -60,6 +62,8 @@ export function CastingScene(props: CastingSceneProps) {
           <CameraRig phase={props.cameraPhase} />
           <PhysicsCoinsScene
             tossRevision={props.tossRevision}
+            handsOpenRevision={props.handsOpenRevision}
+            neatCoinsRevision={props.neatCoinsRevision}
             coinSkinConfig={props.coinSkinConfig}
             sceneBackdrop={props.sceneBg}
             onPhysicsSettled={props.onPhysicsSettled}

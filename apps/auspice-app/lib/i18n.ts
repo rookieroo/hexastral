@@ -364,6 +364,8 @@ export interface Strings {
    *  converted via @zhop/astro-core lunarToSolar before save. */
   birthCalendarSolar: string
   birthCalendarLunar: string
+  /** Leap-month toggle when Lunar calendar is selected (/people + birth form). */
+  birthCalendarLeap: string
   /** Shown beneath the date input when the user has Lunar selected, so the
    *  visual context for "what calendar am I typing in" doesn't depend on the
    *  segmented toggle alone. Used by both /me birth-info and /people. */
@@ -739,7 +741,8 @@ const zhHans: Strings = {
   birthDateLabel: '出生日期',
   birthCalendarSolar: '阳历',
   birthCalendarLunar: '农历',
-  birthCalendarLunarHint: '输入农历月日（闰月不区分）',
+  birthCalendarLeap: '闰月',
+  birthCalendarLunarHint: '输入农历月日；闰月请打开上方开关',
   birthShichenLabel: '出生时辰',
   birthShichenUnknown: '未知',
   birthGenderLabel: '性别',
@@ -1102,7 +1105,8 @@ const zhHant: Strings = {
   birthDateLabel: '出生日期',
   birthCalendarSolar: '陽曆',
   birthCalendarLunar: '農曆',
-  birthCalendarLunarHint: '輸入農曆月日（閏月不區分）',
+  birthCalendarLeap: '閏月',
+  birthCalendarLunarHint: '輸入農曆月日；閏月請打開上方開關',
   birthShichenLabel: '出生時辰',
   birthShichenUnknown: '未知',
   birthGenderLabel: '性別',
@@ -1476,7 +1480,8 @@ const ja: Strings = {
   birthDateLabel: '生年月日',
   birthCalendarSolar: '新暦',
   birthCalendarLunar: '旧暦',
-  birthCalendarLunarHint: '旧暦の月日を入力（閏月は区別なし）',
+  birthCalendarLeap: '閏月',
+  birthCalendarLunarHint: '旧暦の月日を入力。閏月の場合は上のスイッチをオンに',
   birthShichenLabel: '生まれた時辰',
   birthShichenUnknown: '不明',
   birthGenderLabel: '性別',
@@ -1842,7 +1847,8 @@ const en: Strings = {
   birthDateLabel: 'Birth date',
   birthCalendarSolar: 'Solar',
   birthCalendarLunar: 'Chinese calendar',
-  birthCalendarLunarHint: 'Enter the Chinese-calendar month and day (leap months not distinguished).',
+  birthCalendarLeap: 'Leap month',
+  birthCalendarLunarHint: 'Enter the Chinese-calendar month and day. Turn on Leap month when needed.',
   birthShichenLabel: 'Birth hour',
   birthShichenUnknown: 'Unknown',
   birthGenderLabel: 'Gender',

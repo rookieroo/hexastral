@@ -15,8 +15,14 @@ export const COIN_MASS = 0.08
 
 export const GRAVITY_Y = -12
 
-/** Time inside cup — deliberate 龟壳/合手摇卦 rhythm (short enough that post-pour settle still feels responsive). */
+/**
+ * @deprecated Auto-pour after a fixed cup duration is removed — user release opens the hands.
+ * Kept only so older references/docs still resolve; prefer `MIN_CONTAINER_SHAKE_MS`.
+ */
 export const CONTAINER_SHAKE_DURATION_MS = 6000
+
+/** Shortest closed-hand shake before release may open the palm (avoids tap-to-pour). */
+export const MIN_CONTAINER_SHAKE_MS = 1_800
 
 /**
  * Closed-shake prism: more segments + wider overlap strips so coins rarely slip through gaps
@@ -36,10 +42,16 @@ export const ARENA_CEILING_HALF_HEIGHT = 0.035
 export const HANDS_OPEN_DROP_CENTER_Y = 1.5
 
 /** Palm-sized cluster: clamp |xz| so three coins stay under one open-hand spread. */
-export const HANDS_OPEN_XZ_SPREAD = 0.056
+export const HANDS_OPEN_XZ_SPREAD = 0.078
 
-/** After shake, scale angular velocity before free fall — lower ⇒ flatter landing, fewer rim stands. */
-export const HANDS_OPEN_RELEASE_ANGULAR_SCALE = 0.26
+/**
+ * After shake, scale angular velocity before free fall.
+ * Higher ⇒ wilder landings / more 外应 — ritual fidelity over “sanitized” pours.
+ */
+export const HANDS_OPEN_RELEASE_ANGULAR_SCALE = 0.58
+
+/** Keep a fraction of in-cup linear velocity on release (0 = sterilize to a dead drop). */
+export const HANDS_OPEN_RELEASE_LINEAR_SCALE = 0.42
 
 /** Max |v| in cup — lively but capped before roof / gap escape. */
 export const CUP_LINEAR_SPEED_CAP = 2.55
@@ -53,8 +65,8 @@ export const MOTION_LINEAR_GAIN = 1.05
 /** Device angular velocity → coin angular velocity gain. */
 export const MOTION_ANGULAR_GAIN = 0.82
 
-/** WebGL watchdog — must cover shake + spill + settle. */
-export const PHYSICS_COMMIT_FALLBACK_MS = CONTAINER_SHAKE_DURATION_MS + 13_000
+/** WebGL watchdog — hold-to-shake + pour + settle (no fixed auto-pour clock). */
+export const PHYSICS_COMMIT_FALLBACK_MS = 45_000
 
 /** Velocity tolerance for “still enough” — looser ⇒ faster commit without endless micro-wobble. */
 export const SETTLE_LINEAR_EPS = 0.26

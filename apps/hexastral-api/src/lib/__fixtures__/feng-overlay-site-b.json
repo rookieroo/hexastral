@@ -1,0 +1,27 @@
+{
+  "id": "site-inland-b",
+  "label": "Inland ridge (laiLong NW, water west)",
+  "lat": 31.2304,
+  "lng": 121.4737,
+  "formAzimuths": [
+    { "kind": "water", "palace": "兑", "bearingDeg": 268, "distanceM": 90, "source": "tilequery" },
+    { "kind": "road", "palace": "震", "bearingDeg": 95, "distanceM": 40, "source": "tilequery" },
+    { "kind": "road", "palace": "坤", "bearingDeg": 220, "distanceM": 55, "source": "tilequery" }
+  ],
+  "elevation": {
+    "laiLong": "乾",
+    "byPalace": {
+      "乾": { "relativeM": 55, "isMountain": true },
+      "坎": { "relativeM": 20, "isMountain": true },
+      "艮": { "relativeM": 12, "isMountain": false },
+      "震": { "relativeM": -4, "isMountain": false },
+      "巽": { "relativeM": -8, "isMountain": false },
+      "离": { "relativeM": -6, "isMountain": false },
+      "坤": { "relativeM": -10, "isMountain": false },
+      "兑": { "relativeM": -22, "isMountain": false }
+    }
+  },
+  "vision": {
+    "形煞": [{ "type": "反弓", "direction": "震", "severity": 2 }]
+  }
+}

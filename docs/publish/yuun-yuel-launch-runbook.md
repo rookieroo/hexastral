@@ -1,13 +1,13 @@
 # Yuun + Yuel App Store 上架 Runbook
 
 > **用途**：把「还缺什么」一次性列清——环境变量、控制台手工配置、部署顺序、提审前验收。  
-> **代码侧**：功能已基本就绪；阻塞项几乎全是 **密钥 / ASC / RevenueCat / EAS** 未填实。  
-> **提审顺序**（ADR-0019）：先 **Yuun**（Reference，风险低）→ 过审当天再提 **Yuel**（Lifestyle）。
+> **代码侧（2026-07-26）**：Yuun / Yuel **提审相关代码债已基本关完**（服务端 Pro、push 可靠性、品牌文案、carry-over UX 等）。阻塞项几乎全是 **密钥 / ASC / RevenueCat / EAS** 未填实。  
+> **提审顺序**（ADR-0019）：先 **Yuun**（Reference，风险低）→ 过审当天再提 **Yuel**（Lifestyle）。Syel 可并行准备控制台，正式 Submit 仍建议在 Yuun+Yuel 之后。
 
-最后更新：2026-07-11。相关文档：
+最后更新：2026-07-26。相关文档：
 
-- [publish/README.md](./README.md) — 总览
-- [publish/asc-yuun-yuel-guide.md](./publish/asc-yuun-yuel-guide.md) — ASC 创建应用逐步指南
+- [publish/README.md](./README.md) — 总览 + 五 App code readiness
+- [asc-yuun-yuel-guide.md](./asc-yuun-yuel-guide.md) — ASC 创建应用逐步指南
 - [setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md) — IAP 产品 ID 权威表
 - [apps/yuun/launch.md](../apps/yuun/launch.md) · [apps/yuel/launch.md](../apps/yuel/launch.md) — 各 app 细节
 - IAP SSOT：`apps/hexastral-api/src/config/products.ts`
@@ -22,27 +22,42 @@
 | 商店显示名 | Yuun | Yuel |
 | Bundle ID | `com.hexastral.yuun` | `com.hexastral.yuel` |
 | 内部代号（勿对用户暴露） | auspice | kindred |
+| EAS Expo slug | `auspice` | **`yuan`**（与云端 project 绑定，勿改回 `kindred`） |
 | RC Entitlement | `auspice_pro` | `kindred_pro` |
 | 主类目 | Reference | Lifestyle |
 | 品牌站 | `yuun.hexastral.com` | `yuel.hexastral.com` |
 | Apple Team ID | `L9Z47DW56X` | `L9Z47DW56X` |
-| EAS `projectId` | `269d6ab5-6462-4f8e-ad6d-69a526dcb91e`（`@useone-tech/auspice`） | `95b2e753-aeba-421c-9c87-08557d4257fa`（已存在） |
+| EAS `projectId` | `269d6ab5-6462-4f8e-ad6d-69a526dcb91e`（`@useone-tech/auspice`） | `95b2e753-aeba-421c-9c87-08557d4257fa` |
 
 **MVP 不要创建**：`universe_pro` / `universe_pro_*` 产品及 offering（Phase 2 再上）。
 
 ---
 
-## 1. 当前缺口总览（仓库状态 2026-07-11）
+## 0.5 代码侧已完成（勿再当缺口）
+
+| 项 | 状态 |
+|---|---|
+| `ALLOW_DEV_PRO: "0"` + HMAC 豁免（notify stale / physiognomy purge） | ✅ commit `b0cde53` + 已 deploy |
+| Yuun LLM 路由服务端 Pro（explain / makeif / monthly / timeline explain）；客户端传 `u` | ✅ 落地（工作区可能仍有未 commit 增量，以 main + deploy 为准） |
+| 润月生日 `lunarIsLeap` + 晨间 push 预算 + relation `personId` nudge | ✅ |
+| Yuun→Yuel 转入 `resolveLocale()` | ✅ |
+| Yuel EAS slug `yuan` | ✅ commit `ab832e2` |
+| Yuel push：await harvest、bondId 回填、有序 cap、HexAstral→Yuel 文案、carry-over 横幅、19:00 设置文案 | ✅ 代码落地；API 已 deploy |
+| D1 push 相关迁移 0031–0034 | ✅ 已/应已 apply remote；新环境跑 `bun db:migrate:prod` |
+
+---
+
+## 1. 当前缺口总览（仓库状态 2026-07-26）
 
 ### 1.1 移动端 `eas.json` 仍为占位符
 
 | 变量 / 字段 | Yuun (`auspice-app`) | Yuel (`kindred-app`) |
 |---|---|---|
 | EAS `projectId` | ✅ `269d6ab5-6462-4f8e-ad6d-69a526dcb91e` | ✅ `95b2e753-aeba-421c-9c87-08557d4257fa` |
-| `EXPO_PUBLIC_REVENUECAT_IOS_KEY` | ❌ dev/preview 占位；**production profile 未配置 RC key** | ❌ dev/preview 占位；**production 未配置 RC key** |
+| `EXPO_PUBLIC_REVENUECAT_IOS_KEY` | ❌ production profile **未配置**真实 `appl_*` | ❌ 同左 |
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | ❌ 同上（仅 Android 上架时需要） | ❌ 同上 |
 | `submit.production.ios.ascAppId` | ❌ `REPLACE_WITH_ASC_APP_ID` | ❌ `REPLACE_WITH_ASC_APP_ID` |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | dev/preview 已写死 Google client；production 有 | Yuel **未配置** Google（见 §4.2） |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | production 有 / 需与 Worker `GOOGLE_OAUTH_AUDIENCES` 对齐 | Yuel **未配置** Google（见 §4.2） |
 
 > Production 构建若不带 `appl_*` RC key，Paywall 会静默降级（`REPLACE_*` 检测），**无法真实购买**。
 
@@ -90,6 +105,7 @@ bunx wrangler secret put GOOGLE_OAUTH_AUDIENCES
 - [ ] Sandbox 测试账号
 - [ ] 截图 × 4 locale × 每 app 5–7 张
 - [ ] `hexastral-web` 生产部署（法律页 URL 必须 200）
+- [ ] 确认 remote D1 已 apply 到 **0034**（`bun db:migrate:prod`）
 
 ---
 

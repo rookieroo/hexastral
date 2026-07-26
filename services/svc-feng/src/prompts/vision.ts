@@ -1,22 +1,64 @@
+/**
+ * Satellite Vision prompts — unannotated north-up imagery.
+ * Direction comes ONLY from user bearings / formAzimuths / palace→° table.
+ * Do NOT claim server-drawn arrows, 二十四山 rings, or bagua wedges on the image.
+ */
+
+import { PALACE_CENTERS, PALACE_TO_CARDINAL } from '@zhop/astro-core'
+
+/** Keywords / phrases that must NEVER appear as overlay claims in Vision prompts. */
+export const VISION_OVERLAY_LIE_KEYWORDS = [
+  'visual annotations',
+  'RED arrow',
+  'YELLOW arrow',
+  'BLUE arrow',
+  '二十四山',
+  '24-mountain',
+  'bagua sector wedges',
+  'from the overlay',
+  'labels on the image',
+  'annotated satellite',
+  'Each image has these visual annotations',
+] as const
+
+export function promptContainsOverlayLies(text: string): string | null {
+  const lower = text.toLowerCase()
+  for (const kw of VISION_OVERLAY_LIE_KEYWORDS) {
+    if (lower.includes(kw.toLowerCase())) return kw
+  }
+  // "annotated" alone, but allow "unannotated"
+  if (/\bannotated\b/i.test(text) && !/unannotated/i.test(text)) return 'annotated'
+  if (/\bannotated\b/i.test(text)) {
+    // has annotated somewhere — only fail if not solely as unannotated
+    const stripped = text.replace(/unannotated/gi, '')
+    if (/\bannotated\b/i.test(stripped)) return 'annotated'
+  }
+  return null
+}
+
+const PALACE_DEGREE_TABLE = (['坎', '艮', '震', '巽', '离', '坤', '兑', '乾'] as const)
+  .map((p) => {
+    const deg = PALACE_CENTERS[p]
+    const card = PALACE_TO_CARDINAL[p]
+    return `       ${p} = ${deg}° (±22.5°, ${card})`
+  })
+  .join('\n')
+
 export const VISION_SYSTEM_PROMPT = `You are an expert feng-shui (风水) landform analyst.
 
-You will receive ONE TO THREE annotated satellite images of a site at increasing scale:
+You will receive ONE TO THREE **raw, unannotated** north-up satellite images of a site at increasing scale:
   Image 1 — close (≈100m radius) — always present, for urban 形煞 detection (路冲/反弓/尖角)
   Image 2 — mid   (≈500m radius) — present when water or terrain features were prefetched
   Image 3 — wide  (≈2km radius)  — present only when mountains/elevation were prefetched
+
+There are **NO** arrows, compass rings, or bagua wedges drawn on these images.
+True north is the **top** of each image. Sit / face / door bearings and the palace→° table
+are provided ONLY in the user text prompt — treat those as authoritative for direction.
 
 When fewer than 3 images are sent, the orchestrator has determined via Mapbox vector
 tiles that the missing scales contain no feature-of-interest. **Trust that signal**:
 do NOT speculate about features at scales you cannot see. Return empty arrays for
 those categories rather than guessing.
-
-Each image has these visual annotations drawn by the server:
-  - A RED arrow from building center → 坐 (sit) direction, labeled "坐 N°"
-  - A YELLOW arrow → 向 (face) direction, labeled "向 N°"
-  - Optionally a BLUE arrow → 大门 (main door), labeled "门 N°"
-  - "N E S W" cardinal markers at the edges (true north)
-  - A semi-transparent 24-mountain (二十四山) ring around the building center
-  - 8 light-tinted bagua sector wedges labeled 乾 兑 離 震 巽 坎 艮 坤
 
 Your task: analyze the EXTERNAL landform (外巒頭) visible in these images and produce structured observations in four categories.
 
@@ -34,17 +76,37 @@ Your task: analyze the EXTERNAL landform (外巒頭) visible in these images and
 4. **朝案** — facing formations (what sits in front of the building at mid-to-far distance).
    Types: 案山, 朝山, 案水, or "other".
 
+## Direction (八卦宫)
+
+Map on-image bearings using the user prompt's palace→° table (each palace ±22.5° from center).
+Return the 八卦 palace name (乾/兑/離/震/巽/坎/艮/坤), never invent sit/face degrees.
+
+When **Computed azimuths (tilequery)** are provided in the user prompt, treat those palace
+assignments as **authoritative** for water/road features. Do not contradict them; use VLM
+only for type, visibility, flow, and evidence text.
+
 ## Rules
 
-- Ground EVERY observation in what you can actually see in the images. Cite the specific visual evidence (e.g., "a highway curves away from the building in the 巽 sector at ≈200m").
-- Use the bagua sector labels on the image to determine direction. Return the 八卦 palace name (乾/兑/離/震/巽/坎/艮/坤), not compass degrees.
-- When **Computed azimuths (tilequery)** are provided in the user prompt, treat those palace assignments as **authoritative** for water/road features. Do not contradict them; use VLM only for type, visibility, flow, and evidence text.
+- Ground EVERY observation in what you can actually see in the images. Cite visual evidence
+  (e.g., "a highway curves away from the building toward the 巽 sector at ≈200m").
 - Estimate distance as near (<100m), mid (100–500m), or far (>500m).
 - Severity 1–5 (1 = negligible, 5 = major). Be calibrated: a distant road is not severity 5.
-- For EVERY finding in 形煞/砂/水/朝案, set confidence: "high" when the feature is clearly visible in the imagery; "low" when inferred from context, prefetch hints, or partial occlusion.
+- For EVERY finding in 形煞/砂/水/朝案, set confidence: "high" when the feature is clearly visible; "low" when inferred from context, prefetch hints, or partial occlusion.
 - If no observation exists for a category, return an empty array — do NOT fabricate.
 - Keep evidence strings under 120 characters.
-- The notes field is for anything that doesn't fit the categories (unusual terrain, construction, etc.). Keep it under 200 characters or omit.`
+- The notes field is for anything that doesn't fit the categories. Keep it under 200 characters or omit.
+- Never claim the image has drawn sit/face arrows, a mountain-ring compass overlay, or bagua wedges.`
+
+export function buildPalaceDegreeTableLines(): string[] {
+  return [
+    'Palace → true-north bearing (AUTHORITATIVE; image is north-up, no overlay):',
+    ...(['坎', '艮', '震', '巽', '离', '坤', '兑', '乾'] as const).map((p) => {
+      const deg = PALACE_CENTERS[p]
+      const card = PALACE_TO_CARDINAL[p]
+      return `  ${p} = ${deg}° (±22.5°, ${card})`
+    }),
+  ]
+}
 
 export function buildVisionUserPrompt(opts: {
   facingDegTrue: number
@@ -57,11 +119,13 @@ export function buildVisionUserPrompt(opts: {
   formAzimuthLines?: string[]
 }): string {
   const lines = [
-    `Site orientation: facing (向) ${Math.round(opts.facingDegTrue)}° true north, sitting (坐) ${Math.round(opts.sitDegTrue)}° true north.`,
+    `Site orientation (text only — NOT drawn on the images): facing (向) ${Math.round(opts.facingDegTrue)}° true north, sitting (坐) ${Math.round(opts.sitDegTrue)}° true north.`,
   ]
   if (opts.doorDegTrue != null) {
     lines.push(`Main door (大门): ${Math.round(opts.doorDegTrue)}° true north.`)
   }
+
+  lines.push('', ...buildPalaceDegreeTableLines())
 
   const scaleLabel =
     opts.imageCount === 1
@@ -70,7 +134,10 @@ export function buildVisionUserPrompt(opts: {
         ? 'two images (close → mid, 100m → 500m)'
         : 'three images (close → mid → wide, 100m → 500m → 2km)'
 
-  lines.push('', `You will receive ${scaleLabel}. Analyze and return structured observations.`)
+  lines.push(
+    '',
+    `You will receive ${scaleLabel} of raw north-up satellite imagery (unannotated). Analyze and return structured observations.`
+  )
 
   if (opts.terrainSummary) {
     lines.push('', `Prefetch signal (from Mapbox vector tiles): ${opts.terrainSummary}`)
@@ -163,9 +230,11 @@ export const VISION_RESPONSE_SCHEMA = {
   required: ['形煞', '砂', '水', '朝案'],
 }
 
-export const VISION_SHA_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst focused ONLY on urban 形煞 (路冲/反弓/尖角/天斩/孤峰/电塔/桥煞/剪刀煞) in a close-scale annotated satellite image (~100m).
+export const VISION_SHA_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst focused ONLY on urban 形煞 (路冲/反弓/尖角/天斩/孤峰/电塔/桥煞/剪刀煞) in a close-scale **raw north-up** satellite image (~100m).
 
-Return structured 形煞 observations only. Ground every finding in visible evidence. Use 八卦宫 direction labels from the overlay. Set confidence high only when clearly visible; low when inferred.
+There is NO drawn overlay on the image. Use sit/face bearings and the palace→° table from the user prompt for direction.
+
+Return structured 形煞 observations only. Ground every finding in visible evidence. Set confidence high only when clearly visible; low when inferred.
 
 If none, return an empty 形煞 array.`
 
@@ -178,9 +247,11 @@ export const VISION_SHA_RESPONSE_SCHEMA = {
   required: ['形煞'],
 }
 
-export const VISION_FORM_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst for 砂/水/朝案 in annotated satellite images at mid-to-wide scale.
+export const VISION_FORM_SYSTEM_PROMPT = `You are an expert feng-shui landform analyst for 砂/水/朝案 in **raw north-up** satellite images at mid-to-wide scale.
 
-Analyze protective landforms (砂), water/roads-as-water (水), and facing formations (朝案). Ground observations in visible evidence. Use 八卦宫 labels from the overlay. Set confidence high only when clearly visible.
+There is NO drawn overlay on the images. Use sit/face bearings, computed azimuths, and the palace→° table from the user prompt for direction.
+
+Analyze protective landforms (砂), water/roads-as-water (水), and facing formations (朝案). Ground observations in visible evidence. Set confidence high only when clearly visible.
 
 Return empty arrays when nothing is visible — do not fabricate.`
 
@@ -194,3 +265,6 @@ export const VISION_FORM_RESPONSE_SCHEMA = {
   },
   required: ['砂', '水', '朝案'],
 }
+
+/** Silence unused const (keeps table string available for docs/tests). */
+void PALACE_DEGREE_TABLE

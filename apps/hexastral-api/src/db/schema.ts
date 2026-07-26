@@ -1442,6 +1442,8 @@ export const birthdayReminders = sqliteTable(
     remindOnDay: integer('remind_on_day', { mode: 'boolean' }).notNull().default(true),
     /** MM-DD for solar birthdays (cron index); null for lunar (resolved at runtime). */
     monthDay: text('month_day'),
+    /** When calendar='lunar', whether solarDate's month is the leap month. */
+    lunarIsLeap: integer('lunar_is_leap', { mode: 'boolean' }).notNull().default(false),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
@@ -2334,9 +2336,10 @@ export const fengReports = sqliteTable(
  *
  * 分析流程 (svc-feng 编排):
  *   stage 'maps' → fetch 3张卫星图 (close/mid/wide), 写入 R2
- *   stage 'vision' → Gemini 2.5 Pro Vision 结构化输出
- *   stage 'compute' → astro-core/feng (本机 0-ms)
- *   stage 'synthesis' → Claude Opus 4.7 / Gemini 2.5 Pro 文本 → 6 chapters
+ *   stage 'vision' → Gemini Vision 结构化输出
+ *   stage 'compute' → astro-core/feng (本机)
+ *   stage 'form_li' → mid-pass 形理对照 (fail-open)
+ *   stage 'synthesis' → lean final chapters
  *   stage 'done' → reportId 填入
  *   stage 'failed' → errorMessage 填入
  *
@@ -2355,7 +2358,7 @@ export const fengJobs = sqliteTable(
       .notNull()
       .references(() => users.id),
     stage: text('stage', {
-      enum: ['maps', 'vision', 'compute', 'synthesis', 'done', 'failed'],
+      enum: ['maps', 'vision', 'compute', 'form_li', 'synthesis', 'done', 'failed'],
     })
       .notNull()
       .default('maps'),

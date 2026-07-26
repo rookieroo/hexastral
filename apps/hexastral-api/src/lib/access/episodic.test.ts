@@ -61,7 +61,7 @@ describe('resolveEpisodicAccess', () => {
     expect(r).toEqual({
       granted: false,
       reason: 'purchase_required',
-      upsellProductId: 'faceoracle_reading',
+      upsellProductId: 'faceoracle_pro_monthly',
     })
   })
 

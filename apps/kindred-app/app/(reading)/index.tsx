@@ -62,6 +62,7 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
 import { bondQuality } from '@/lib/bondQuality'
+import { getCarryOverHintPending, markCarryOverHintSeen } from '@/lib/carry-over-hint'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { consumePendingOpenBond } from '@/lib/pending-open'
 import { useSelfBirth } from '@/lib/selfBirth'
@@ -94,7 +95,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: 'Threads',
     threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
-    emptySub: 'Invite someone close, and their star takes a place in your orbit.',
+    emptySub:
+      'Invite someone close — or sign in so people from Yuun can join your sky.',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },
@@ -105,7 +107,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '牵绊',
     threadsHint: '此刻，夜空里只有你一个人。',
     emptyCta: '邀请对方 →',
-    emptySub: '邀请一个在意的人，TA 的星会在你的夜空里亮起。',
+    emptySub: '邀请在意的人，或登录后让 Yuun 里的亲友亮起在夜空。',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
   },
@@ -116,7 +118,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '牽絆',
     threadsHint: '此刻，夜空裡只有你一個人。',
     emptyCta: '邀請對方 →',
-    emptySub: '邀請一個在意的人，TA 的星會在你的夜空裡亮起。',
+    emptySub: '邀請在意的人，或登入後讓 Yuun 裡的親友亮起在夜空。',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
   },
@@ -127,7 +129,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: '絆',
     threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
-    emptySub: '大切な人を招くと、その星があなたの夜空にともる。',
+    emptySub: '大切な人を招くか、サインインして Yuun の人を夜空へ。',
     noBirthTitle: 'あなた自身の命盤から',
     noBirthCta: '生年月日を入力 →',
   },
@@ -285,6 +287,23 @@ export default function ReadingHomeScreen() {
       }),
     [bonds]
   )
+
+  // One-shot Yuun→Yuel carry-over banner (portfolio bonds landed on first sign-in).
+  const [showCarryOver, setShowCarryOver] = useState(false)
+  useEffect(() => {
+    if (bondsLoading || threads.length === 0) return
+    let cancelled = false
+    void getCarryOverHintPending().then((pending) => {
+      if (!cancelled && pending) setShowCarryOver(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [bondsLoading, threads.length])
+  const dismissCarryOver = useCallback(() => {
+    setShowCarryOver(false)
+    void markCarryOverHintSeen()
+  }, [])
 
   // First-thread (and any new-thread) BIRTH — diff the visible thread ids against
   // what we've seen this session; a freshly-appeared id is a bond YOU just made, so
@@ -606,6 +625,45 @@ export default function ReadingHomeScreen() {
           lives in the bottom-center floating FAB, and the rows stand on their own
           under "Open your reading" + the sky. A quiet neutral hairline separates the
           doorway from the threads (the earlier cinnabar 红线 串联 was dropped — 2026-06). */}
+      {showCarryOver && threads.length > 0 ? (
+        <Pressable
+          onPress={dismissCarryOver}
+          accessibilityRole='button'
+          accessibilityLabel={t(locale, 'home.carryOver.dismiss')}
+          style={{
+            marginHorizontal: kindredSpacing.screenH,
+            marginBottom: kindredSpacing.md,
+            paddingVertical: kindredSpacing.sm,
+            paddingHorizontal: kindredSpacing.md,
+            borderWidth: 0.5,
+            borderRadius: 0,
+            borderColor: kindredDark.border,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
+              fontSize: 13,
+              lineHeight: 20,
+              color: kindredDark.textMuted,
+            }}
+          >
+            {t(locale, 'home.carryOver.banner')}
+          </Text>
+          <Text
+            style={{
+              marginTop: 6,
+              fontFamily: kindredFonts.mono,
+              fontSize: 11,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              color: kindredDark.accent,
+            }}
+          >
+            {t(locale, 'home.carryOver.dismiss')}
+          </Text>
+        </Pressable>
+      ) : null}
       {threads.length > 0 ? (
         <View
           style={{

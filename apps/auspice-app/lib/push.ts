@@ -603,17 +603,22 @@ const BDAY_TEXT: Record<Locale, { soon: string; tomorrow: string; day: string }>
  * and pick the first future one (leap-month birthdays fall back to the regular
  * month; astro-core's range is 1900-2100).
  */
-function nextBirthdayFor(p: { solarDate: string; calendar?: PersonCalendar }): Date | null {
+function nextBirthdayFor(p: {
+  solarDate: string
+  calendar?: PersonCalendar
+  lunarIsLeap?: boolean
+}): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.solarDate)
   if (!m) return null
   const now = new Date()
   const mo = Number(m[2])
   const dd = Number(m[3])
+  const isLeap = p.lunarIsLeap === true
 
   if (p.calendar === 'lunar') {
     for (const y of [now.getFullYear(), now.getFullYear() + 1]) {
       try {
-        const s = lunarToSolar(y, mo, dd, false)
+        const s = lunarToSolar(y, mo, dd, isLeap)
         const d = new Date(s.getFullYear(), s.getMonth(), s.getDate(), PUSH_HOUR, 0, 0, 0)
         if (d.getTime() > now.getTime()) return d
       } catch {}

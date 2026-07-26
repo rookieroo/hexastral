@@ -35,7 +35,7 @@ import {
   partLabels,
   readingLocaleBadge,
 } from '@/lib/living-copy'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { captureHrefForPart } from '@/lib/period-photos'
 import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
@@ -61,8 +61,8 @@ export default function XingqiHomeScreen() {
   const insets = useSafeAreaInsets()
   const { colors, spacing } = useTheme()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -139,7 +139,7 @@ export default function XingqiHomeScreen() {
         err.includes('照片特徵未變化') ||
         err.toLowerCase().includes('photos unchanged')
       Alert.alert(s('解读未完成', '解讀未完成', 'Reading incomplete'), err, [
-        { text: s('好', '好', 'OK') },
+        { text: s('好', '好', 'OK', 'OK') },
         ...(isUnchanged
           ? [
               {
@@ -190,7 +190,7 @@ export default function XingqiHomeScreen() {
   const startReading = useCallback(async () => {
     if (job.status === 'running') {
       Alert.alert(
-        s('解读进行中', '解讀進行中', 'Reading in progress'),
+        s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
         s(
           '请等待当前解读完成，或点推送打开结果。',
           '請等待目前解讀完成，或點推送打開結果。',
@@ -226,7 +226,7 @@ export default function XingqiHomeScreen() {
         })
         if (!started) {
           Alert.alert(
-            s('解读进行中', '解讀進行中', 'Reading in progress'),
+            s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
             s(
               '请等待当前解读完成。',
               '請等待目前解讀完成。',
@@ -279,7 +279,7 @@ export default function XingqiHomeScreen() {
           'Permanently removes this form reading from your account.'
         ),
         [
-          { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+          { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
           {
             text: s('删除', '刪除', 'Delete'),
             style: 'destructive',
@@ -306,7 +306,7 @@ export default function XingqiHomeScreen() {
     (item: PortfolioReadingItem) => {
       const localeBadge = readingLocaleBadge(item.locale)
       const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-      return [s('形气', '形氣', 'Form'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+      return [s('形气', '形氣', 'Form', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
     },
     [locale]
   )
@@ -333,12 +333,12 @@ export default function XingqiHomeScreen() {
 
   const ctaLabel =
     job.status === 'running'
-      ? s('解读进行中…', '解讀進行中…', 'Reading in progress…')
+      ? s('解读进行中…', '解讀進行中…', 'Reading in progress…', '解読中…')
       : !hasReading
-        ? s('开始解读', '開始解讀', 'Start reading')
+        ? s('开始解读', '開始解讀', 'Start reading', '解読を開始')
         : isPro
-          ? s('更新本期', '更新本期', 'Refresh period')
-          : s('再读一次', '再讀一次', 'New reading')
+          ? s('更新本期', '更新本期', 'Refresh period', '今期を更新')
+          : s('再读一次', '再讀一次', 'New reading', 'もう一度')
 
   return (
     <GestureDetector gesture={swipeToSettings}>
@@ -360,7 +360,7 @@ export default function XingqiHomeScreen() {
             onPress={openSettings}
             hitSlop={12}
             accessibilityRole='button'
-            accessibilityLabel={s('设置', '設定', 'Settings')}
+            accessibilityLabel={s('设置', '設定', 'Settings', '設定')}
           >
             <Settings2 size={22} color={colors.text} strokeWidth={1.5} />
           </Pressable>

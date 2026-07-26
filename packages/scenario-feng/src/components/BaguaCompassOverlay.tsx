@@ -30,6 +30,13 @@ export interface BaguaCompassOverlayProps {
   showMountains?: boolean
   /** Whether to render the N/E/S/W cardinal letters. */
   showCardinals?: boolean
+  /**
+   * Compass degrees (0=N, clockwise) for thicker radial ticks — used to mark
+   * 兼向 mountain boundaries (±2.5° of an edge).
+   */
+  highlightBoundaryDegs?: readonly number[]
+  /** Stroke for `highlightBoundaryDegs` (defaults to labelMajorColor). */
+  highlightBoundaryColor?: string
   ringColor?: string
   labelColor?: string
   labelMajorColor?: string
@@ -97,6 +104,8 @@ export const BaguaCompassOverlay = memo(function BaguaCompassOverlay({
   showWedges = true,
   showMountains = true,
   showCardinals = true,
+  highlightBoundaryDegs,
+  highlightBoundaryColor,
   ringColor = 'rgba(255,255,255,0.55)',
   labelColor = 'rgba(255,255,255,0.85)',
   labelMajorColor = '#D4D4D8',
@@ -107,6 +116,7 @@ export const BaguaCompassOverlay = memo(function BaguaCompassOverlay({
   const rOuter = size / 2 - 4
   const rRingInner = rOuter - 22
   const rWedgeInner = size * 0.18
+  const boundaryStroke = highlightBoundaryColor ?? labelMajorColor
 
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -166,6 +176,22 @@ export const BaguaCompassOverlay = memo(function BaguaCompassOverlay({
             })}
           </>
         ) : null}
+        {highlightBoundaryDegs?.map((deg) => {
+          const outer = polar(cx, cy, rOuter, deg)
+          const inner = polar(cx, cy, rWedgeInner, deg)
+          return (
+            <Line
+              key={`b-${deg}`}
+              x1={inner.x}
+              y1={inner.y}
+              x2={outer.x}
+              y2={outer.y}
+              stroke={boundaryStroke}
+              strokeWidth={2.2}
+              strokeOpacity={0.95}
+            />
+          )
+        })}
         {showCardinals
           ? CARDINALS.map(([label, deg]) => {
               const pos = polar(cx, cy, rOuter + 14, deg)

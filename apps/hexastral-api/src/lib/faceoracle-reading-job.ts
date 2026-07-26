@@ -553,28 +553,37 @@ async function notifyReadingReady(
     locale.toLowerCase().startsWith('zh-tw') ||
     locale.toLowerCase().startsWith('zh-hk')
   const hans = !hant && locale.startsWith('zh')
+  const ja = locale.startsWith('ja')
   const title = opts.ok
     ? hant
       ? '形氣解讀已完成'
       : hans
         ? '形气解读已完成'
-        : 'Your reading is ready'
+        : ja
+          ? '形気の解読が完了しました'
+          : 'Your reading is ready'
     : hant
       ? '解讀未能完成'
       : hans
         ? '解读未能完成'
-        : 'Reading did not finish'
+        : ja
+          ? '解読を完了できませんでした'
+          : 'Reading did not finish'
   const body = opts.ok
     ? hant
       ? '點按查看本期形氣。'
       : hans
         ? '点按查看本期形气。'
-        : 'Tap to open your reading.'
+        : ja
+          ? 'タップして今期の形気を見る。'
+          : 'Tap to open your reading.'
     : hant
       ? '請打開應用重試或查看詳情。'
       : hans
         ? '请打开应用重试或查看详情。'
-        : 'Open the app to see details or retry.'
+        : ja
+          ? 'アプリを開いて詳細を確認するか、再試行してください。'
+          : 'Open the app to see details or retry.'
 
   const { invalidTokens } = await sendExpoPushMessages([
     {
@@ -1180,17 +1189,8 @@ export async function runFaceoracleReadingJob(
       .where(eq(faceoraclePushSubs.userId, job.userId)),
   ])
 
-  if (job.notifyOnComplete) {
-    await notifyReadingReady(db, {
-      userId: job.userId,
-      locale: job.locale,
-      readingId,
-      jobId,
-      ok: true,
-    })
-  }
-
-  // Pro: replace dated push fuel (events + optional LLM harvest). Oneshot skips.
+  // Pro: replace dated push fuel BEFORE reading_ready so the first open already
+  // has retention windows (avoids notify→fuel race).
   const isProReading =
     outputKind === 'period_brief' ||
     outputKind === 'deep' ||
@@ -1216,6 +1216,16 @@ export async function runFaceoracleReadingJob(
     } catch (err) {
       console.error('[faceoracle-job] push harvest failed', jobId, err)
     }
+  }
+
+  if (job.notifyOnComplete) {
+    await notifyReadingReady(db, {
+      userId: job.userId,
+      locale: job.locale,
+      readingId,
+      jobId,
+      ok: true,
+    })
   }
 }
 

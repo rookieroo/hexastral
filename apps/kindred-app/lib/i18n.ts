@@ -330,8 +330,12 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       'Let chat reference your readings across all HexAstral apps. Same account only — never shared with anyone else.',
     'settings.notifications.section': 'Notifications',
-    'settings.dailyPush.label': 'Daily reading nudge',
-    'settings.dailyPush.hint': 'A short morning prompt to open today’s reading.',
+    'settings.dailyPush.label': 'Daily relationship nudge',
+    'settings.dailyPush.hint':
+      'Around 19:00, a short note on one of your bonds — not a personal almanac morning push.',
+    'home.carryOver.banner':
+      'We brought your people over from Yuun — tap a thread to deepen the reading.',
+    'home.carryOver.dismiss': 'Got it',
     'settings.legal.section': 'Legal',
     'settings.legal.privacy': 'Privacy policy',
     'settings.legal.terms': 'Terms of service',
@@ -735,8 +739,10 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       '允许对话参考你在所有 HexAstral 应用中的解读。仅限同一账户，绝不外泄。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '每日命书提醒',
-    'settings.dailyPush.hint': '清晨一句轻提示，提醒你打开今日的命书。',
+    'settings.dailyPush.label': '每日关系提醒',
+    'settings.dailyPush.hint': '约晚上 19:00，就某一段关系推一句短讯——不是个人命书晨报。',
+    'home.carryOver.banner': '已从 Yuun 带入你的亲友——点开牵绊即可加深合盘解读。',
+    'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
     'settings.legal.privacy': '隐私政策',
     'settings.legal.terms': '服务条款',
@@ -1130,8 +1136,10 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       '允許對話參考你在所有 HexAstral 應用中的解讀。僅限同一帳號，絕不外洩。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '每日命書提醒',
-    'settings.dailyPush.hint': '清晨一句輕提示，提醒你打開今日的命書。',
+    'settings.dailyPush.label': '每日關係提醒',
+    'settings.dailyPush.hint': '約晚上 19:00，就某一段關係推一句短訊——不是個人命書晨報。',
+    'home.carryOver.banner': '已從 Yuun 帶入你的親友——點開牽絆即可加深合盤解讀。',
+    'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
     'settings.legal.privacy': '隱私政策',
     'settings.legal.terms': '服務條款',
@@ -1528,8 +1536,12 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       'すべての HexAstral アプリの鑑定結果をチャットが参照できるようにします。同一アカウントのみ — 他者と共有されません。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '毎日の命書リマインダー',
-    'settings.dailyPush.hint': '朝に短い一言で、今日の命書を開くよう促します。',
+    'settings.dailyPush.label': '毎日の関係リマインダー',
+    'settings.dailyPush.hint':
+      '19時頃、いずれかの絆について短い一言——個人の命書の朝プッシュではありません。',
+    'home.carryOver.banner':
+      'Yuun の親しい人をこちらへ引き継ぎました——絆を開いて合盤を深められます。',
+    'home.carryOver.dismiss': '了解',
     'settings.legal.section': '法的事項',
     'settings.legal.privacy': 'プライバシーポリシー',
     'settings.legal.terms': '利用規約',

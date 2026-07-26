@@ -48,6 +48,13 @@ describe('describePalaceCombination (phase by 旺衰)', () => {
     expect(d.phase).toBe('旺')
     expect(d.reading).toContain('旺财')
   })
+  test('readingPublic strips medical classical denylist terms', () => {
+    const d = describePalaceCombination(2, 5, 8)
+    expect(d.readingPublic.length).toBeGreaterThan(0)
+    for (const term of ['重病', '孕妇', '性病', '大凶']) {
+      expect(d.readingPublic.includes(term)).toBe(false)
+    }
+  })
 })
 
 describe('月紫白 (三元月白诀)', () => {

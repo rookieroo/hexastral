@@ -15,6 +15,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated'
+import { isCompoundFacing, mountainAtDegree } from '@zhop/astro-core'
 import { normalizeFengDeg } from '../lib/facing-deg'
 import { BaguaCompassOverlay } from './BaguaCompassOverlay'
 
@@ -48,6 +49,11 @@ export interface FacingCalibratorProps {
   buildingCenterNorm?: { x: number; y: number }
   /** Fired when the user drags the building-center pin. */
   onBuildingCenterChange?: (norm: { x: number; y: number }) => void
+  /**
+   * Live facing (true °) for 兼向 boundary highlight on the ring.
+   * Prefer this over `initialFacingDeg` when the parent tracks edits.
+   */
+  facingDegTrue?: number
 }
 
 const SIT_COLOR = '#B4726E'
@@ -72,8 +78,16 @@ export const FacingCalibrator = memo(function FacingCalibrator({
   ringRotation = 0,
   buildingCenterNorm,
   onBuildingCenterChange,
+  facingDegTrue,
 }: FacingCalibratorProps) {
   const center = size / 2
+
+  const compoundBoundaryDegs = useMemo(() => {
+    const deg = facingDegTrue ?? initialFacingDeg
+    if (!isCompoundFacing(deg)) return undefined
+    const m = mountainAtDegree(deg)
+    return [m.startDeg, m.endDeg] as const
+  }, [facingDegTrue, initialFacingDeg])
 
   const pinNormX = useSharedValue(buildingCenterNorm?.x ?? 0.5)
   const pinNormY = useSharedValue(buildingCenterNorm?.y ?? 0.5)
@@ -292,6 +306,8 @@ export const FacingCalibrator = memo(function FacingCalibrator({
             showWedges={false}
             showMountains
             showCardinals
+            highlightBoundaryDegs={compoundBoundaryDegs}
+            highlightBoundaryColor='#FBBF24'
             ringColor='rgba(255,255,255,0.72)'
             labelColor='rgba(255,255,255,0.95)'
             labelMajorColor={arrowColor}

@@ -51,7 +51,8 @@ Goal: earn the word "专业". Decision: in-house standard, no external expert.
   override deterministic verdicts; phrase 峦头 as "likely/appears").
 - ✅ Degraded states already fail-open (flat→no DEM 砂, no birth→no 八宅,
   VLM/street off→degraded) + the note frames them.
-- ⬜ 水系按宫归 from coords + azimuth-from-coords for VLM features (D3 precision).
+- ✅ 水系按宫归 from Tilequery `formAzimuths` + DEM 水口启发式 (`macroTerrain.shuiKou` / Wave 2).
+- VLM still owns water *type* (玉带/割脚…); azimuth SSOT is Tilequery.
 
 ### Account deletion — extend purge — 🟡
 - ✅ Chat (conversations + cascading messages) now purged in `DELETE /api/user/:id`

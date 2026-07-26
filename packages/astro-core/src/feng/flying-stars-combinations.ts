@@ -201,9 +201,84 @@ export interface PalaceCombination {
   combination: StarCombination | null
   /** 旺 if 山/向 任一当令或生气, else 衰. Selects which reading applies. */
   phase: '旺' | '衰'
-  /** The phase-appropriate reading (or '' when no named combination). */
+  /** Classical phase-appropriate reading (internal / corpus). */
   reading: string
+  /**
+   * App Store / consumer-safe reading — strips medical classical imagery.
+   * Synthesis, mid-LLM, and UI chips MUST use this, not `reading`.
+   */
+  readingPublic: string
   name?: string
+}
+
+/** Substrings that must not appear in public-facing combination copy. */
+export const COMBINATION_MEDICAL_DENYLIST = [
+  '重病',
+  '孕妇',
+  '性病',
+  '中毒',
+  '血光',
+  '产厄',
+  '乳痈',
+  '孕灾',
+  '泌尿',
+  '肠胃',
+  '肝胆',
+  '足疾',
+  '风魔',
+  '疯疾',
+  '皮肤',
+  '目疾',
+  '血症',
+  '心目',
+  '关节',
+  '筋骨',
+  '骨痛',
+  '头痛',
+  '耳疾',
+  '小口',
+  '寡妇',
+  '损主',
+  '毒药',
+  '刀伤',
+  '盗劫',
+  '刑狱',
+  '回禄',
+  '足伤',
+  '痰火',
+  '愚钝',
+  '酒色',
+  '淫荡',
+] as const
+
+/**
+ * Map classical 应象 to a study-safe public line.
+ * Benign literary readings (科甲、文章…) pass through; medical/disaster classical is softened.
+ */
+export function toReadingPublic(
+  classical: string,
+  phase: '旺' | '衰',
+  domains: readonly CombinationDomain[]
+): string {
+  if (!classical || classical === '—') return ''
+  const hit = COMBINATION_MEDICAL_DENYLIST.some((d) => classical.includes(d))
+  if (!hit) return classical
+  if (phase === '旺') {
+    if (domains.includes('财') || domains.includes('丁')) {
+      return '传统上此组合当令时偏旺财丁象（文化研习，非预测）'
+    }
+    if (domains.includes('文') || domains.includes('官')) {
+      return '传统上此组合当令时偏文官吉利象（文化研习，非预测）'
+    }
+    return '传统上此组合当令时偏吉利象（文化研习，非预测）'
+  }
+  if (domains.includes('病') || domains.includes('灾')) {
+    return '传统上此宫双星组合偏煞象，研习上宜静不宜大动（非医疗/灾祸预测）'
+  }
+  if (domains.includes('是非') || domains.includes('盗')) {
+    return '传统上此宫双星组合偏口舌是非象，研习上宜静（非诉讼预测）'
+  }
+  return '传统上此宫双星组合偏煞象，研习上宜静不宜大动（文化研习）'
 }
 
 /**
@@ -230,12 +305,15 @@ export function describePalaceCombination(
   // Benefic combos: 当令 or 生气 → 旺. Malefic combos: only true 当令 → 旺.
   const prosperous = malefic ? hasDangling : hasDangling || hasSheng
   const phase: '旺' | '衰' = prosperous ? '旺' : '衰'
+  const reading = combination ? (phase === '旺' ? combination.prosperous : combination.declining) : ''
+  const domains = combination?.domain ?? []
   return {
     mountainStar,
     facingStar,
     combination,
     phase,
     name: combination?.name,
-    reading: combination ? (phase === '旺' ? combination.prosperous : combination.declining) : '',
+    reading,
+    readingPublic: toReadingPublic(reading, phase, domains),
   }
 }

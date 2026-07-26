@@ -9,7 +9,8 @@
  *     daily 黄历). Persisted (落库) UPSTREAM in hexastral-api so re-views + the
  *     cron push reuse one generation.
  * The deterministic node + summary are computed in `astro-core`; this is the ONLY
- * LLM layer on top. DRAFT — prompt wording + the reason→flag mapping want review.
+ * LLM layer on top. Prompt + reason→flag mapping aligned with portfolio-voice /
+ * App Store 4.3(b) (entertainment / cultural reflection — no guaranteed outcomes).
  *
  * Cost is guarded UPSTREAM by hexastral-api's K.4 LLM guard (rate / budget / tier);
  * this route just generates. `isPro` selects the model tier inside callWithFallback.

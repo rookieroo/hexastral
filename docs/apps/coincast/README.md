@@ -113,3 +113,22 @@ bun dev
 bun typecheck
 eas build --profile production --platform ios
 ```
+
+---
+
+## App Store readiness (2026-07-26)
+
+**Verdict: not ready to Submit.** Casting + logo/custom skins are largely implemented; store accuracy and console wiring are not.
+
+| Gate | Status | Notes |
+|---|---|---|
+| DeviceMotion → Cannon faces (no silent random) | ✅ code | Still needs founder product sign-off vs “真实物理方案” |
+| Logo + custom face upload | ✅ code | Matches this README |
+| ASO “五帝钱 five skins” claim | ❌ | `aso-metadata.json` still promises skins that are **not** in the binary — Guideline **2.3.1** risk |
+| Privacy `/privacy/yaul` live | ❌ | Appendix exists but `launch-status` keeps Yaul `hidden` → privacy route redirects away |
+| Production RC `appl_*` + ASC `ascAppId` | ❌ | `REPLACE_*` / missing production env |
+| Trademark “Yaul” | open | Counsel / alternate marks in `aso-metadata.json` |
+
+**Minimum before Submit (ordered):** (1) product sign-off on logo+custom MVP *or* ship 五帝钱 presets, (2) rewrite ASO to match Settings, (3) ungate privacy URL (`teaser`/`live` or exempt legal paths) and verify 200, (4) ASC + RC products, (5) EAS production keys, (6) device QA (6-line cast → classical → paywall → legal links), (7) screenshots + version bump.
+
+Do **not** treat ROADMAP “MVP shipped” framing as App Review green. Publish matrix: [docs/publish/README.md](../../publish/README.md) § Code readiness.

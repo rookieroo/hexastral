@@ -1,13 +1,25 @@
 /**
  * Shared facing / orient UI for the (new-site) locate step.
+ * Wave 2: 立极 ritual state machine inside this step (no 5th onboarding step).
  */
 
 import { useHaptic } from '@zhop/core-ui'
+import {
+  isCompoundFacing,
+  mountainAtDegree,
+  sitMountainForFacing,
+} from '@zhop/astro-core'
 import { FacingCalibrator, nudgeFengDeg, pixelOffsetToLatLng, useSatelliteTile } from '@zhop/scenario-feng'
 import * as Location from 'expo-location'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Switch, Text, View } from 'react-native'
 import { MAP_ATTRIBUTION } from '@/components/AnnotatedMapSwiper'
+import { CompoundFacingTeachCard } from '@/components/CompoundFacingTeachCard'
+import { LuopanDial } from '@/components/LuopanDial'
+import {
+  FACING_SAMPLE_WARN_DELTA_DEG,
+  summarizeFacingSamples,
+} from '@/lib/facing-samples'
 import { resolveLocale, t, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
@@ -22,6 +34,8 @@ const INIT: HeadingSnapshot = { trueDeg: null, magDeg: null, declination: null }
 
 const SAT_TILE_ZOOM = 17
 const SAT_TILE_SIZE = 640
+
+type RitualPhase = 'north' | 'pin' | 'confirm'
 
 function effectiveSiteCoords(
   geocodeLat: number,
@@ -63,6 +77,11 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const [heading, setHeading] = useState<HeadingSnapshot>(INIT)
   const [facingConfirmed, setFacingConfirmed] = useState(false)
   const [facingError, setFacingError] = useState<string | null>(null)
+  const [ritualPhase, setRitualPhase] = useState<RitualPhase>('north')
+  const [headingSamples, setHeadingSamples] = useState<number[]>([])
+  const [northDone, setNorthDone] = useState(false)
+  const [pinDone, setPinDone] = useState(false)
+  const [teachExpanded, setTeachExpanded] = useState(false)
 
   const satellite = useSatelliteTile(draftLat, draftLng, { zoom: SAT_TILE_ZOOM, size: SAT_TILE_SIZE })
   const hasSatellite = Boolean(satellite.uri)
@@ -76,14 +95,26 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
       else if (typeof d.lat === 'number') setGeocodeLat(d.lat)
       if (typeof d.geocodeLng === 'number') setGeocodeLng(d.geocodeLng)
       else if (typeof d.lng === 'number') setGeocodeLng(d.lng)
-      if (d.buildingCenterNorm) setBuildingCenterNorm(d.buildingCenterNorm)
+      if (d.buildingCenterNorm) {
+        setBuildingCenterNorm(d.buildingCenterNorm)
+        setPinDone(true)
+      }
       if (typeof d.facingDegTrue === 'number') setFacingDeg(d.facingDegTrue)
       if (typeof d.magneticDeclination === 'number') setDecl(d.magneticDeclination)
       if (typeof d.doorDegTrue === 'number') {
         setDoorDifferent(true)
         setDoorDeg(d.doorDegTrue)
       }
-      if (d.facingConfirmed) setFacingConfirmed(true)
+      if (d.facingConfirmed) {
+        setFacingConfirmed(true)
+        setNorthDone(true)
+        setPinDone(true)
+        setRitualPhase('confirm')
+      }
+      if (d.facingSamples?.samples?.length) {
+        setHeadingSamples(d.facingSamples.samples)
+        setNorthDone(true)
+      }
     })()
   }, [])
 
@@ -114,14 +145,32 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
     }
   }, [])
 
+  const sampleSummary = useMemo(() => summarizeFacingSamples(headingSamples), [headingSamples])
+  const faceMountain = mountainAtDegree(facingDeg)
+  const sitMountain = sitMountainForFacing(facingDeg)
+  const chartMethod = isCompoundFacing(facingDeg)
+    ? strings.compound_teach_chart_ti
+    : strings.compound_teach_chart_xia
+
+  const persistSamples = useCallback(
+    (samples: number[]) => {
+      const summary = summarizeFacingSamples(samples)
+      if (!summary) return
+      void patchDraft({ facingSamples: summary })
+    },
+    []
+  )
+
   const onFacingChange = useCallback(
     (deg: number) => {
+      if (ritualPhase === 'north') return
       setFacingDeg(deg)
       setFacingConfirmed(true)
       setFacingError(null)
+      setRitualPhase('confirm')
       void patchDraft({ facingDegTrue: deg, magneticDeclination: decl, facingConfirmed: true })
     },
-    [decl]
+    [decl, ritualPhase]
   )
 
   const onDoorChange = useCallback((deg: number) => {
@@ -143,7 +192,33 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
     }
   }
 
+  const captureHeadingSample = () => {
+    if (heading.trueDeg === null) return
+    void haptic('medium')
+    const deg = Math.round(heading.trueDeg)
+    const next = [...headingSamples, deg].slice(-3)
+    setHeadingSamples(next)
+    persistSamples(next)
+    if (next.length >= 3) {
+      const summary = summarizeFacingSamples(next)
+      if (summary) {
+        setFacingDeg(Math.round(summary.mean))
+        setNorthDone(true)
+        setRitualPhase(hasSatellite ? 'pin' : 'confirm')
+        void patchDraft({
+          facingDegTrue: Math.round(summary.mean),
+          magneticDeclination: heading.declination ?? decl,
+          facingSamples: summary,
+        })
+      }
+    }
+  }
+
   const captureHeading = (target: 'face' | 'door') => {
+    if (ritualPhase === 'north') {
+      captureHeadingSample()
+      return
+    }
     if (heading.trueDeg === null) return
     void haptic('medium')
     const deg = Math.round(heading.trueDeg)
@@ -154,6 +229,7 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
       setFacingDeg(deg)
       setFacingConfirmed(true)
       setFacingError(null)
+      setRitualPhase('confirm')
       void patchDraft({
         facingDegTrue: deg,
         magneticDeclination: heading.declination ?? decl,
@@ -163,6 +239,7 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   }
 
   const nudge = (delta: number) => {
+    if (ritualPhase === 'north') return
     void haptic('light')
     if (editTarget === 'door' && typeof doorDeg === 'number') {
       const next = nudgeFengDeg(doorDeg, delta)
@@ -173,6 +250,7 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
       setFacingDeg(next)
       setFacingConfirmed(true)
       setFacingError(null)
+      setRitualPhase('confirm')
       void patchDraft({ facingDegTrue: next, magneticDeclination: decl, facingConfirmed: true })
     }
   }
@@ -180,28 +258,49 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const onBuildingCenterChange = useCallback(
     (norm: { x: number; y: number }) => {
       setBuildingCenterNorm(norm)
+      setPinDone(true)
+      if (ritualPhase === 'pin') setRitualPhase('confirm')
       if (geocodeLat == null || geocodeLng == null) return
       const { lat, lng } = effectiveSiteCoords(geocodeLat, geocodeLng, norm)
       setDraftLat(lat)
       setDraftLng(lng)
       void patchDraft({ lat, lng, buildingCenterNorm: norm })
     },
-    [geocodeLat, geocodeLng]
+    [geocodeLat, geocodeLng, ritualPhase]
   )
 
   const finish = async () => {
+    if (!northDone && headingSamples.length < 3 && !facingConfirmed) {
+      setFacingError(strings.facing_ritual_step_north)
+      setRitualPhase('north')
+      return
+    }
+    if (hasSatellite && !pinDone && !facingConfirmed) {
+      setFacingError(strings.facing_ritual_step_pin)
+      setRitualPhase('pin')
+      return
+    }
     const d = await loadDraft()
     if (!d.facingConfirmed && !facingConfirmed) {
       setFacingError(strings.new_site_facing_confirm_required)
+      setRitualPhase('confirm')
       return
     }
+    const liveCompassDelta =
+      hasSatellite && heading.trueDeg !== null
+        ? Math.abs(diffDeg(facingDeg, heading.trueDeg))
+        : null
     const patch: Parameters<typeof patchDraft>[0] = {
       facingDegTrue: facingDeg,
       magneticDeclination: decl,
       facingConfirmed: true,
+      facingSamples: sampleSummary ?? undefined,
     }
     if (doorDifferent && typeof doorDeg === 'number') {
       patch.doorDegTrue = doorDeg
+    }
+    if (liveCompassDelta !== null) {
+      patch.facingCompassDeltaDeg = Math.round(liveCompassDelta * 10) / 10
     }
     await patchDraft(patch)
     onComplete()
@@ -214,6 +313,11 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
       ? Math.abs(diffDeg(facingDeg, heading.trueDeg))
       : null
   const showCompassWarn = compassDelta !== null && compassDelta > 12
+  const showSampleWarn =
+    sampleSummary != null && sampleSummary.maxDelta > FACING_SAMPLE_WARN_DELTA_DEG
+
+  const stepColor = (phase: RitualPhase) =>
+    ritualPhase === phase ? colors.accent : colors.textMute
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -224,179 +328,272 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
         {strings.new_site_facing_subtitle}
       </Text>
 
-      {doorDifferent ? (
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          {(['face', 'door'] as const).map((target) => {
-            const active = editTarget === target
-            const label =
-              target === 'face'
-                ? strings.new_site_facing_edit_building
-                : strings.new_site_facing_edit_unit_door
-            return (
-              <Pressable
-                key={target}
-                onPress={() => setEditTarget(target)}
-                accessibilityRole='button'
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={label}
-                style={{
-                  flex: 1,
-                  paddingVertical: spacing.sm,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: active ? colors.accent : colors.border,
-                  backgroundColor: active ? colors.surface : 'transparent',
-                  alignItems: 'center',
-                }}
-              >
+      <View style={{ gap: spacing.xs }}>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: stepColor('north') }}>
+          {strings.facing_ritual_step_north}
+          {northDone ? ' ✓' : ''}
+        </Text>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: stepColor('pin') }}>
+          {strings.facing_ritual_step_pin}
+          {pinDone || !hasSatellite ? ' ✓' : ''}
+        </Text>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: stepColor('confirm') }}>
+          {strings.facing_ritual_step_confirm}
+          {facingConfirmed ? ' ✓' : ''}
+        </Text>
+      </View>
+
+      {ritualPhase === 'north' ? (
+        <View style={{ alignItems: 'center', gap: spacing.sm }}>
+          <LuopanDial size={200} detail='standard' />
+          <Text style={{ fontSize: 12, color: colors.textMute, textAlign: 'center' }}>
+            {strings.new_site_facing_capture_hint}
+          </Text>
+          {sampleSummary ? (
+            <Text style={{ fontSize: 12, color: colors.textMute }}>
+              {strings.facing_ritual_samples_hint
+                .replace('{n}', String(headingSamples.length))
+                .replace('{delta}', String(Math.round(sampleSummary.maxDelta)))}
+            </Text>
+          ) : (
+            <Text style={{ fontSize: 12, color: colors.textMute }}>
+              {strings.facing_ritual_samples_hint
+                .replace('{n}', String(headingSamples.length))
+                .replace('{delta}', '0')}
+            </Text>
+          )}
+          {showSampleWarn && sampleSummary ? (
+            <Text style={{ fontSize: 13, color: colors.warning, lineHeight: 19 }}>
+              {strings.facing_ritual_sample_warn.replace(
+                '{delta}',
+                String(Math.round(sampleSummary.maxDelta))
+              )}
+            </Text>
+          ) : null}
+          <Pressable
+            onPress={captureHeadingSample}
+            disabled={!canCapture}
+            style={{
+              backgroundColor: canCapture ? colors.accent : colors.surfaceMute,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.xl,
+              borderRadius: 12,
+              alignItems: 'center',
+              alignSelf: 'stretch',
+            }}
+          >
+            <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
+              {strings.new_site_facing_capture_building} ({headingSamples.length}/3)
+            </Text>
+          </Pressable>
+          {!canCapture ? (
+            <Pressable
+              onPress={() => {
+                setNorthDone(true)
+                setRitualPhase(hasSatellite ? 'pin' : 'confirm')
+              }}
+            >
+              <Text style={{ color: colors.accent, fontSize: 13 }}>
+                {strings.facing_ritual_step_pin} →
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {ritualPhase !== 'north' ? (
+        <>
+          {doorDifferent ? (
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {(['face', 'door'] as const).map((target) => {
+                const active = editTarget === target
+                const label =
+                  target === 'face'
+                    ? strings.new_site_facing_edit_building
+                    : strings.new_site_facing_edit_unit_door
+                return (
+                  <Pressable
+                    key={target}
+                    onPress={() => setEditTarget(target)}
+                    accessibilityRole='button'
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={label}
+                    style={{
+                      flex: 1,
+                      paddingVertical: spacing.sm,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: active ? colors.accent : colors.border,
+                      backgroundColor: active ? colors.surface : 'transparent',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: active ? '700' : '500',
+                        color: active ? colors.accent : colors.textMute,
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : null}
+
+          <View style={{ alignItems: 'center' }}>
+            <View
+              style={{
+                width: 320,
+                height: 320,
+                borderRadius: 12,
+                overflow: 'hidden',
+                backgroundColor: colors.surfaceMute,
+              }}
+            >
+              {satellite.isLoading ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator color={colors.accent} />
+                  <Text style={{ marginTop: spacing.sm, fontSize: 12, color: colors.textMute }}>
+                    {strings.new_site_facing_tile_loading}
+                  </Text>
+                </View>
+              ) : (
+                <FacingCalibrator
+                  size={320}
+                  initialFacingDeg={facingDeg}
+                  facingDegTrue={facingDeg}
+                  onChange={onFacingChange}
+                  satelliteSource={satelliteSource}
+                  arrowColor={colors.arrowFace}
+                  showSitArrow={false}
+                  editTarget={editTarget}
+                  liveHeadingDeg={hasSatellite ? heading.trueDeg : null}
+                  ringRotation={hasSatellite ? 0 : (heading.magDeg ?? 0)}
+                  doorDeg={doorDifferent ? (doorDeg ?? facingDeg) : undefined}
+                  onDoorChange={doorDifferent ? onDoorChange : undefined}
+                  buildingCenterNorm={buildingCenterNorm}
+                  onBuildingCenterChange={hasSatellite ? onBuildingCenterChange : undefined}
+                />
+              )}
+            </View>
+            {hasSatellite ? (
+              <>
                 <Text
                   style={{
-                    fontSize: 14,
-                    fontWeight: active ? '700' : '500',
-                    color: active ? colors.accent : colors.textMute,
+                    marginTop: spacing.sm,
+                    fontSize: 13,
+                    color: colors.textMute,
+                    textAlign: 'center',
                   }}
                 >
-                  {label}
+                  {strings.new_site_facing_map_legend}
                 </Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      ) : null}
+                <Text
+                  style={{
+                    marginTop: spacing.xs,
+                    fontSize: 12,
+                    color: colors.textMute,
+                    textAlign: 'center',
+                  }}
+                >
+                  {strings.new_site_facing_building_pin}
+                </Text>
+                <Text
+                  style={{
+                    marginTop: spacing.xs,
+                    fontSize: 10,
+                    color: colors.textMute,
+                    opacity: 0.6,
+                    textAlign: 'center',
+                  }}
+                >
+                  {MAP_ATTRIBUTION}
+                </Text>
+              </>
+            ) : null}
+          </View>
 
-      <View style={{ alignItems: 'center' }}>
-        <View
-          style={{
-            width: 320,
-            height: 320,
-            borderRadius: 12,
-            overflow: 'hidden',
-            backgroundColor: colors.surfaceMute,
-          }}
-        >
-          {satellite.isLoading ? (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <ActivityIndicator color={colors.accent} />
-              <Text style={{ marginTop: spacing.sm, fontSize: 12, color: colors.textMute }}>
-                {strings.new_site_facing_tile_loading}
-              </Text>
-            </View>
-          ) : (
-            <FacingCalibrator
-              size={320}
-              initialFacingDeg={facingDeg}
-              onChange={onFacingChange}
-              satelliteSource={satelliteSource}
-              arrowColor={colors.arrowFace}
-              showSitArrow={false}
-              editTarget={editTarget}
-              liveHeadingDeg={hasSatellite ? heading.trueDeg : null}
-              ringRotation={hasSatellite ? 0 : (heading.magDeg ?? 0)}
-              doorDeg={doorDifferent ? (doorDeg ?? facingDeg) : undefined}
-              onDoorChange={doorDifferent ? onDoorChange : undefined}
-              buildingCenterNorm={buildingCenterNorm}
-              onBuildingCenterChange={hasSatellite ? onBuildingCenterChange : undefined}
-            />
-          )}
-        </View>
-        {hasSatellite ? (
-          <>
-            <Text
-              style={{
-                marginTop: spacing.sm,
-                fontSize: 13,
-                color: colors.textMute,
-                textAlign: 'center',
-              }}
-            >
-              {strings.new_site_facing_map_legend}
-            </Text>
-            <Text
-              style={{
-                marginTop: spacing.xs,
-                fontSize: 12,
-                color: colors.textMute,
-                textAlign: 'center',
-              }}
-            >
-              {strings.new_site_facing_building_pin}
-            </Text>
-            <Text
-              style={{
-                marginTop: spacing.xs,
-                fontSize: 10,
-                color: colors.textMute,
-                opacity: 0.6,
-                textAlign: 'center',
-              }}
-            >
-              {MAP_ATTRIBUTION}
-            </Text>
-          </>
-        ) : null}
-      </View>
-
-      {satellite.error && !satellite.isLoading ? (
-        <Pressable onPress={() => void satellite.refetch()}>
-          <Text style={{ fontSize: 13, color: colors.warning }}>
-            {strings.new_site_facing_tile_error}
-            {satellite.error.message ? ` (${satellite.error.message})` : ''} —{' '}
-            {strings.new_site_facing_tile_retry}
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
+            {strings.facing_ritual_identity
+              .replace('{sit}', sitMountain.name)
+              .replace('{face}', faceMountain.name)
+              .replace('{method}', chartMethod)}
           </Text>
-        </Pressable>
+
+          <CompoundFacingTeachCard
+            facingDegTrue={facingDeg}
+            t={strings}
+            compact
+            expanded={teachExpanded}
+            onToggle={() => setTeachExpanded((v) => !v)}
+          />
+
+          {satellite.error && !satellite.isLoading ? (
+            <Pressable onPress={() => void satellite.refetch()}>
+              <Text style={{ fontSize: 13, color: colors.warning }}>
+                {strings.new_site_facing_tile_error}
+                {satellite.error.message ? ` (${satellite.error.message})` : ''} —{' '}
+                {strings.new_site_facing_tile_retry}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {showCompassWarn && heading.trueDeg !== null ? (
+            <Text style={{ fontSize: 13, color: colors.warning, lineHeight: 19 }}>
+              {strings.new_site_facing_compass_warn
+                .replace('{sat}', String(Math.round(facingDeg)))
+                .replace('{compass}', String(Math.round(heading.trueDeg)))
+                .replace('{delta}', String(Math.round(compassDelta ?? 0)))}
+            </Text>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Text style={{ flex: 1, fontSize: 14, color: colors.textMute }}>
+              {t(locale, 'new_site_facing_value', { deg: Math.round(facingDeg) })}
+              {doorDifferent && typeof doorDeg === 'number'
+                ? ` · ${t(locale, 'new_site_facing_door_value', { deg: Math.round(doorDeg) })}`
+                : ''}
+            </Text>
+            <Pressable onPress={() => nudge(-1)} accessibilityRole='button' accessibilityLabel='−1°'>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>−1°</Text>
+            </Pressable>
+            <Pressable onPress={() => nudge(1)} accessibilityRole='button' accessibilityLabel='+1°'>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>+1°</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            onPress={() => captureHeading(editTarget === 'door' ? 'door' : 'face')}
+            disabled={!canCapture}
+            style={{
+              backgroundColor: canCapture ? colors.accent : colors.surfaceMute,
+              paddingVertical: spacing.md,
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
+              {editTarget === 'door' && doorDifferent
+                ? strings.new_site_facing_capture_unit_door
+                : strings.new_site_facing_capture_building}
+            </Text>
+          </Pressable>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Text style={{ flex: 1, fontSize: 14, color: colors.text }}>
+              {strings.new_site_facing_door_toggle}
+            </Text>
+            <Switch
+              value={doorDifferent}
+              onValueChange={toggleDoorDifferent}
+              trackColor={{ false: colors.surfaceMute, true: colors.accent }}
+            />
+          </View>
+        </>
       ) : null}
-
-      {showCompassWarn && heading.trueDeg !== null ? (
-        <Text style={{ fontSize: 13, color: colors.warning, lineHeight: 19 }}>
-          {strings.new_site_facing_compass_warn
-            .replace('{sat}', String(Math.round(facingDeg)))
-            .replace('{compass}', String(Math.round(heading.trueDeg)))
-            .replace('{delta}', String(Math.round(compassDelta ?? 0)))}
-        </Text>
-      ) : null}
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Text style={{ flex: 1, fontSize: 14, color: colors.textMute }}>
-          {t(locale, 'new_site_facing_value', { deg: Math.round(facingDeg) })}
-          {doorDifferent && typeof doorDeg === 'number'
-            ? ` · ${t(locale, 'new_site_facing_door_value', { deg: Math.round(doorDeg) })}`
-            : ''}
-        </Text>
-        <Pressable onPress={() => nudge(-1)} accessibilityRole='button' accessibilityLabel='−1°'>
-          <Text style={{ color: colors.text, fontWeight: '600' }}>−1°</Text>
-        </Pressable>
-        <Pressable onPress={() => nudge(1)} accessibilityRole='button' accessibilityLabel='+1°'>
-          <Text style={{ color: colors.text, fontWeight: '600' }}>+1°</Text>
-        </Pressable>
-      </View>
-
-      <Pressable
-        onPress={() => captureHeading(editTarget === 'door' ? 'door' : 'face')}
-        disabled={!canCapture}
-        style={{
-          backgroundColor: canCapture ? colors.accent : colors.surfaceMute,
-          paddingVertical: spacing.md,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
-          {editTarget === 'door' && doorDifferent
-            ? strings.new_site_facing_capture_unit_door
-            : strings.new_site_facing_capture_building}
-        </Text>
-      </Pressable>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <Text style={{ flex: 1, fontSize: 14, color: colors.text }}>
-          {strings.new_site_facing_door_toggle}
-        </Text>
-        <Switch
-          value={doorDifferent}
-          onValueChange={toggleDoorDifferent}
-          trackColor={{ false: colors.surfaceMute, true: colors.accent }}
-        />
-      </View>
 
       {facingError ? (
         <Text style={{ color: colors.warning, fontSize: 13, lineHeight: 20 }}>{facingError}</Text>

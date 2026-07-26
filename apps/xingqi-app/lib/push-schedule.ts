@@ -10,7 +10,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { getXingqiPushPrefs } from './push-preference'
-import { isCjkZh, pickZh } from './locale-zh'
+import { pickUi } from './locale-zh'
 
 const SCHEDULED_KEY = 'xingqi_push_scheduled_v1'
 const SERVER_ACTIVE_KEY = 'xingqi_server_push_active_v1'
@@ -49,16 +49,27 @@ export interface ScheduleFacePushInput {
 }
 
 function copy(locale: string) {
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja: string) =>
+    pickUi(locale, hans, hant, en, ja)
   return {
-    recaptureTitle: s('可以更新本期形气了', '可以更新本期形氣了', 'Time to refresh your reading'),
+    recaptureTitle: s(
+      '可以更新本期形气了',
+      '可以更新本期形氣了',
+      'Time to refresh your reading',
+      '今期の形気を更新できます'
+    ),
     recaptureBody: s(
       '新的一个月窗口已打开。可整组复拍，或只更新面部/左掌/右掌。',
       '新的一個月視窗已開啟。可整組複拍，或只更新面部／左掌／右掌。',
-      'A new monthly window is open. Refresh all three photos, or update one part.'
+      'A new monthly window is open. Refresh all three photos, or update one part.',
+      '新しい月の窓が開きました。三点まとめて撮り直すか、顔／左手／右手だけ更新できます。'
     ),
-    eventTitle: s('宜留意的时间窗', '宜留意的時間窗', 'A window worth noting'),
+    eventTitle: s(
+      '宜留意的时间窗',
+      '宜留意的時間窗',
+      'A window worth noting',
+      '意識したい時間窓'
+    ),
   }
 }
 

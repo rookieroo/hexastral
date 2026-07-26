@@ -1,22 +1,24 @@
 /**
  * POST /synthesize
  *
- * Stage 3 of the AI pipeline. Takes Stage 1 vision JSON + Stage 2 compute
- * JSON + user profile + portfolio-memory, returns 6 chapters for the
- * Fēng report.
- *
- * Text synthesis runs on the shared CF Workers AI router (`@zhop/ai-vision/router`,
- * flagship tier = Kimi K2.6 → Qwen3 → GLM) — the same high-quality LLM base the
- * rest of the 玄学 matrix uses. Gemini is reserved for the Stage-1 VLM only.
+ * Lean final chapters from compact briefing (+ optional formLiNotes).
+ * No full vision/compute JSON dump.
  */
 
 import { callWithFallback, withZodRetry } from '@zhop/ai-vision'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { auditGeneratedOutput } from '../lib/output-audit'
-import { auditSynthesisAgainstCompute } from '../lib/synthesis-compute-audit'
+import { auditSynthesisFactsHard } from '../lib/form-li-notes-audit'
+import { fengChaptersLocaleOk } from '../lib/locale-gate'
 import { logger } from '../lib/logger'
+import { auditGeneratedOutput } from '../lib/output-audit'
+import {
+  briefingContainsRawChartDump,
+  buildSynthesisBriefing,
+  serializeSynthesisBriefing,
+} from '../lib/synthesis-briefing'
+import { auditSynthesisAgainstCompute } from '../lib/synthesis-compute-audit'
 import {
   buildSynthesisSystemPrompt,
   buildSynthesisUserPrompt,
@@ -40,15 +42,11 @@ const ComputeInputSchema = z.object({
   combinations: z.array(z.unknown()).optional(),
   formLi: z.unknown().optional(),
   macroTerrain: z.unknown().optional(),
+  overlayHints: z.unknown().optional(),
   monthlyStars: z.unknown().optional(),
-  // Interior (户型图) room-level join + interior 形煞. MUST be declared here or
-  // Zod strips them before they reach the prompt (same trap as `summary` below).
-  // Empty/omitted = exterior-only report; present = room-specific indoor advice.
   roomFindings: z.array(z.unknown()).optional(),
   interiorSha: z.array(z.unknown()).optional(),
-  // Chart identity (坐山向 / 卦运 / 元运 year-ranges). The flying_stars prompt
-  // OPENS with this — without it here, Zod's default object behavior would
-  // silently STRIP the field and the model loses its 坐山向 opening + 旺→退 window.
+  interiorQueJiao: z.array(z.unknown()).optional(),
   summary: z.unknown().optional(),
   annualChart: z.unknown().optional(),
 })
@@ -79,6 +77,7 @@ const SynthesizeRequestSchema = z.object({
       })
     )
     .optional(),
+  formLiNotes: z.unknown().nullable().optional(),
 })
 
 const CHAPTER_KINDS = [
@@ -100,10 +99,12 @@ const SynthesisResultSchema = z.object({
         body: z.string().min(1),
       })
     )
-    .length(6),
+    .min(4)
+    .max(6),
 })
 
-const MODEL_VERSION = 'cf-kimi-synth-v1'
+const MODEL_VERSION = 'cf-kimi-synth-v2'
+const MAX_TOKENS = 8192
 
 export const synthesizeRouter = new Hono<{ Bindings: Env }>()
 
@@ -114,23 +115,41 @@ synthesizeRouter.post('/', async (c) => {
     throw new HTTPException(400, { message: parsed.error.message })
   }
 
-  const { vision, compute, userProfile, memoryContext, dataQuality, mustSoften } = parsed.data
+  const { vision, compute, userProfile, memoryContext, dataQuality, mustSoften, formLiNotes } =
+    parsed.data
   const started = Date.now()
   logger.info('synthesize.start', {
     locale: userProfile.locale,
     hasMemoryContext: !!memoryContext,
-    memoryChars: memoryContext?.length ?? 0,
+    hasFormLiNotes: formLiNotes != null,
   })
+
+  const omitFlying =
+    dataQuality?.flyingStarsConfidence === 'omitted' ||
+    (compute.summary &&
+      typeof compute.summary === 'object' &&
+      (compute.summary as { flyingStarsOmitted?: boolean }).flyingStarsOmitted === true)
+
+  const omitFlyingStars = Boolean(omitFlying)
+
+  const briefing = buildSynthesisBriefing({
+    vision,
+    compute,
+    dataQuality: dataQuality || undefined,
+    formLiNotes: formLiNotes ?? null,
+    mustSoften: mustSoften?.length ? mustSoften : undefined,
+    memoryContext: memoryContext || undefined,
+    userProfile,
+  })
+  const briefingJson = serializeSynthesisBriefing(briefing)
+  if (briefingContainsRawChartDump(briefingJson)) {
+    throw new HTTPException(500, { message: 'briefing leaked raw chart dump' })
+  }
 
   const userPrompt = buildSynthesisUserPrompt({
-    visionJson: JSON.stringify(vision, null, 2),
-    computeJson: JSON.stringify(compute, null, 2),
+    briefingJson,
     userProfile,
-    memoryContext: memoryContext || undefined,
-    dataQuality: dataQuality || undefined,
-    mustSoften: mustSoften?.length ? mustSoften : undefined,
   })
-
   const systemPrompt = buildSynthesisSystemPrompt(userProfile.locale)
 
   let usedFallback = false
@@ -140,11 +159,6 @@ synthesizeRouter.post('/', async (c) => {
   const validated = await withZodRetry({
     label: 'synthesize',
     schema: SynthesisResultSchema,
-    // Single attempt. The per-attempt budget (130s) already fits under feng-client's
-    // 150s synthesize AbortSignal; a 2nd attempt (default maxRetries:2) would double
-    // the wall-clock and blow the abort → a hard failure instead of a clean fallback.
-    // Malformed JSON → fallback here, and the caller (runAnalyzeJob) marks the job
-    // failed so the user can retry a fresh run.
     maxRetries: 1,
     call: async () => {
       const text = await callWithFallback(
@@ -152,65 +166,76 @@ synthesizeRouter.post('/', async (c) => {
         systemPrompt,
         userPrompt + forbiddenRetrySuffix + computeAuditSuffix,
         {
-        tier: 'flagship',
-        responseSchema: SYNTHESIS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-        // 6 chapters × ~300-char bodies + reasoning headroom — 8k truncated the
-        // longer pro-grade bodies into fallback stubs.
-        maxTokens: 16384,
-        temperature: useLowTemperature ? 0.35 : 0.45,
-        metricLabel: 'feng-synthesis',
-        locale: userProfile.locale,
-        // This is a heavy, quality-critical, NON-interactive (queue consumer)
-        // generation — 6 pro-grade chapters. The router's default 48s/24s budget
-        // starves it (≈16s/model → fail-clean), and the prior 60s outer timeout
-        // aborted it mid-generation (job.failed "operation was aborted due to
-        // timeout"). Give it a real budget (~43s/model) that still sits UNDER
-        // feng-client's synthesize AbortSignal (150s).
-        totalBudgetMs: 130_000,
-        perModelTimeoutMs: 70_000,
-      })
+          tier: 'flagship',
+          responseSchema: SYNTHESIS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
+          maxTokens: MAX_TOKENS,
+          temperature: useLowTemperature ? 0.35 : 0.45,
+          metricLabel: 'feng-synthesis',
+          locale: userProfile.locale,
+          totalBudgetMs: 130_000,
+          perModelTimeoutMs: 70_000,
+        }
+      )
       const parsedJson = JSON.parse(text) as unknown
       const chapterParsed = SynthesisResultSchema.safeParse(parsedJson)
       if (!chapterParsed.success) {
         throw new Error(chapterParsed.error.message)
       }
-      const audit = auditGeneratedOutput(JSON.stringify(parsedJson))
+      let chapters = chapterParsed.data.chapters
+      if (omitFlyingStars) {
+        chapters = chapters.filter((ch) => ch.kind !== 'flying_stars')
+      }
+      if (chapters.length < 4) {
+        throw new Error('too few chapters after flying_stars filter')
+      }
+      const audit = auditGeneratedOutput(JSON.stringify({ chapters }))
       if (audit.hits.length > 0) {
         forbiddenRetrySuffix = audit.rewriteSuffix ?? ''
         logger.warn('synthesize.forbidden_phrases', { hits: audit.hits })
         throw new Error('forbidden phrases in synthesis output')
       }
-      const computeAudit = auditSynthesisAgainstCompute(chapterParsed.data.chapters, compute)
+      const computeAudit = auditSynthesisAgainstCompute(chapters, compute)
       if (!computeAudit.ok) {
         computeAuditSuffix = computeAudit.rewriteSuffix
         useLowTemperature = true
         logger.warn('synthesize.compute_audit', { violations: computeAudit.violations })
         throw new Error('compute audit failed in synthesis output')
       }
-      return parsedJson
+      const hardAudit = auditSynthesisFactsHard(chapters, compute)
+      if (!hardAudit.ok) {
+        computeAuditSuffix = hardAudit.rewriteSuffix
+        useLowTemperature = true
+        logger.warn('synthesize.hard_audit', { violations: hardAudit.violations })
+        throw new Error('hard fact audit failed in synthesis output')
+      }
+      const localeAudit = fengChaptersLocaleOk(userProfile.locale, chapters)
+      if (!localeAudit.ok) {
+        computeAuditSuffix = localeAudit.rewriteSuffix
+        useLowTemperature = true
+        logger.warn('synthesize.locale_gate', { locale: userProfile.locale })
+        throw new Error('locale gate failed in synthesis output')
+      }
+      return { chapters }
     },
     degraded: () => {
       usedFallback = true
-      return { chapters: buildFallbackChapters(userProfile.locale) }
+      return { chapters: buildFallbackChapters(userProfile.locale, omitFlyingStars) }
     },
   })
 
-  // Locale-independent (was a zh-only substring match on '生成遇到困难' that stamped
-  // en/ja fallback stubs as real reports → the caller consumed the paid entitlement).
   const isFallback = usedFallback
   logger.info('synthesize.done', {
     locale: userProfile.locale,
     durationMs: Date.now() - started,
     fallback: isFallback,
     chapterCount: validated.chapters.length,
+    maxTokens: MAX_TOKENS,
   })
   return c.json({
     chapters: validated.chapters,
     modelVersion: isFallback ? `${MODEL_VERSION}-fallback` : MODEL_VERSION,
   })
 })
-
-// ── Locale-aware fallback chapters ──────────────────────────────────────────
 
 const FALLBACK_TITLES_ZH: Record<string, string> = {
   external_landform: '外巒頭概览',
@@ -239,11 +264,14 @@ const FALLBACK_TITLES_EN: Record<string, string> = {
   auspicious_objects: 'Placement (study)',
 }
 
-function buildFallbackChapters(locale: 'en' | 'zh' | 'zh-Hant' | 'ja') {
+function buildFallbackChapters(locale: 'en' | 'zh' | 'zh-Hant' | 'ja', omitFlying: boolean) {
   const isZh = locale.startsWith('zh')
   const isJa = locale === 'ja'
+  const kinds = omitFlying
+    ? CHAPTER_KINDS.filter((k) => k !== 'flying_stars')
+    : [...CHAPTER_KINDS]
 
-  return CHAPTER_KINDS.map((kind) => ({
+  return kinds.map((kind) => ({
     kind,
     title: isZh
       ? FALLBACK_TITLES_ZH[kind] || kind

@@ -216,30 +216,33 @@ export const pairRoutes = new Hono<AppEnv>()
       })
       .where(eq(users.id, input.userId))
 
-    // Harvest (ADR-0025): queue for cron; prefer bond linked to this reading when present.
+    // Harvest (ADR-0025): await Pro fuel so report OK always implies queue write.
+    // Bond may not exist yet for raw /pair — store sourceReadingId; cron resolves.
     const harvested = pushSnippets ?? []
     c.executionCtx.waitUntil(
       Promise.all([
         recordChartSuccess('pair', { pair: guardKey }, input.userId, c.env.GUARD_KV),
         logEvent(db, input.userId, 'reading_pair', { readingId }),
-        (async () => {
-          if (harvested.length === 0) return
-          if (!(await userHasCapability(db, input.userId, 'kindred'))) return
-          const bond = await db
-            .select({ id: userBonds.id })
-            .from(userBonds)
-            .where(eq(userBonds.hehunReadingId, readingId))
-            .get()
-          await harvestKindredPushSnippets(db, {
-            userId: input.userId,
-            bondId: bond?.id ?? null,
-            sourceReadingId: readingId,
-            locale: input.language ?? 'zh-CN',
-            snippets: harvested,
-          })
-        })(),
       ])
     )
+    if (harvested.length > 0 && (await userHasCapability(db, input.userId, 'kindred'))) {
+      const bond = await db
+        .select({ id: userBonds.id })
+        .from(userBonds)
+        .where(eq(userBonds.hehunReadingId, readingId))
+        .get()
+      try {
+        await harvestKindredPushSnippets(db, {
+          userId: input.userId,
+          bondId: bond?.id ?? null,
+          sourceReadingId: readingId,
+          locale: input.language ?? 'zh-CN',
+          snippets: harvested,
+        })
+      } catch (err) {
+        console.error('[pair] push harvest failed:', err)
+      }
+    }
 
     return c.json({
       id: readingId,

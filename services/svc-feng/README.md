@@ -1,58 +1,59 @@
 # @zhop/svc-feng
 
-Feng-shui analysis orchestration worker. Sits behind `hexastral-api` —
-not exposed to the public internet.
+Feng-shui analysis worker behind `hexastral-api` (service binding only — not public).
 
-## Routes
+## Pipeline stages (Kanyu “别胡说” wave)
 
-| Path | Purpose | V1 status |
-|---|---|---|
-| `GET  /health` | Bucket + secret presence probe | Real |
-| `POST /maps/render` | Fetch a Mapbox Static Image, cache to R2 | **Real** (needs `MAPBOX_TOKEN`) |
-| `POST /annotate` | Composite SVG overlays onto a cached map | Pass-through stub (resvg-wasm wires Week 3) |
-| `POST /vision/analyze` | Gemini 2.5 Pro Vision over 3 annotated PNGs | Stub (real call Week 5) |
-| `POST /synthesize` | Stage 3 — 6 chapters from vision + compute | Stub (real call Week 5) |
+```
+maps → annotate (raw passthrough) → vision (VLM) → compute (in API / astro-core)
+  → form_li (single mid-pass LLM, fail-open) → synthesize (lean briefing + hard audit)
+```
 
-Stage 2 (deterministic 玄空 / 八宅 compute) lives in
-`packages/astro-core/src/feng/` — no HTTP hop.
+| Path | Purpose |
+|---|---|
+| `GET  /health` | Bucket + secret presence |
+| `POST /maps/render` | Mapbox Static Image → R2 |
+| `POST /annotate` | Raw tile passthrough (client draws overlays) |
+| `POST /vision/analyze` | Dual-pass VLM (形煞 / 砂水) on **unannotated** north-up tiles |
+| `POST /street/sha` | Optional Mapillary street 形煞 (premium / non-apartment) |
+| `POST /form-li/interpret` | Mid-pass `FormLiNotes` (Zod + hard audit; returns `failOpen` on error) |
+| `POST /synthesize` | Lean final chapters from compact briefing (`maxTokens ≤ 8192`) |
+
+Deterministic 玄空 / 八宅 / 形理 compute lives in `packages/astro-core/src/feng/` (no HTTP hop).
+
+### Honesty contracts
+
+- Vision prompts must **not** claim arrows / 二十四山环 / bagua wedges on imagery.
+- Mid-pass is **exactly one** LLM call this wave; failures **fail-open** (`formLiNotes: null`) — job still synthesizes.
+- Final synth must **not** dump full vision/compute JSON; uses `buildSynthesisBriefing` (≤12k chars).
+- Public combination copy uses `readingPublic` only (medical classical denylist).
+
+This wave does **not** change 沈氏 golden acceptance ([docs/apps/feng/acceptance-standard.md](../../docs/apps/feng/acceptance-standard.md)).
 
 ## R2 buckets
 
-- `feng-maps` — raw Mapbox PNGs. 30-day TTL, key = SHA-1 of normalized request.
-- `feng-annotated` — overlay results. 7-day TTL (because 流年 rollover changes annotations annually).
-
-Create with:
-
-```bash
-wrangler r2 bucket create feng-maps
-wrangler r2 bucket create feng-annotated
-```
+- `feng-maps` — raw Mapbox PNGs (keyed by SHA-1 of canonical render params)
+- `feng-annotated` — annotated / street cache prefixes
 
 ## Secrets
 
 ```bash
-wrangler secret put MAPBOX_TOKEN     # static-images:read scope
-wrangler secret put GEMINI_API_KEY   # Vertex AI / AI Studio
+cd services/svc-feng
+bunx wrangler secret put MAPBOX_TOKEN
+bunx wrangler secret put GEMINI_API_KEY
+# optional: MAPILLARY_TOKEN for street 形煞
 ```
 
 ## Local dev
 
 ```bash
 cd services/svc-feng
-bun dev                # wrangler dev — uses LocalR2 + dummy secrets
+bun dev
+bun test
 ```
 
-## Caching contract
+## Caching
 
-- Every `/maps/render` request is keyed by SHA-1 of canonicalized
-  `{ lat, lng, zoom, width, height, mode, bearing, pitch }`. lat/lng are
-  rounded to 5 decimal places (~1m) before hashing.
-- Same coordinates from any user share the same cache entry — feng-shui
-  audits of identical addresses don't double-bill Mapbox.
+`/maps/render` keys are SHA-1 of canonicalized `{ lat, lng, zoom, width, height, mode, bearing, pitch }` (lat/lng rounded to 5 decimals).
 
-## Replacement seam
-
-The Mapbox-specific code is isolated to `src/lib/mapbox.ts`. Swapping
-providers (MapTiler, self-hosted OSM, etc.) is a contained change. See
-[docs/apps/feng/fix-plan.md §13](../../docs/apps/feng/fix-plan.md#13-locked-decisions-resolved-2026-05-15)
-for the V1 decision to use Mapbox single-provider.
+Mapbox-specific code is isolated in `src/lib/mapbox.ts`.
