@@ -1,10 +1,13 @@
 /**
  * 宣纸水墨板 — full-bleed paper, brush masses for 聚/对/照/流.
  * No nested oval-in-rectangle. Soft edge fade like ink on mounted xuan.
+ *
+ * Ink modes map to chapter roles (pair = palms L/R, contrast = form×BaZi, …).
+ * Corner seal is 日主五行 when known — not a chapter theme glyph.
  */
 
 import { useMemo } from 'react'
-import { View } from 'react-native'
+import { Text, View } from 'react-native'
 import Svg, { Defs, Ellipse, G, Line, RadialGradient, Rect, Stop } from 'react-native-svg'
 
 import {
@@ -13,6 +16,7 @@ import {
   relationForChapter,
   type WuxingChar,
 } from '@/lib/ancient-glyphs'
+import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import type { XingqiChapter, XingqiChapterKind } from '@/lib/report-chapters'
 
 import { AncientSeal } from './AncientSeal'
@@ -26,8 +30,20 @@ const CY = 110
 /** Warm 宣纸 */
 const PAPER = '#EDE6D8'
 const PAPER_FIBER = '#E4DCCB'
+/** 焦墨 */
 const INK = '#1C1914'
-const INK_PALE = '#F7F2E8'
+/**
+ * 淡墨 — must sit clearly below paper lightness (old #F7F2E8 was near-invisible).
+ * Still lighter than 焦墨 so pair/contrast reads as two washes, not twin blacks.
+ */
+const INK_PALE = '#7A7164'
+
+const INK_CAPTION: Record<InkRelation, { zh: string; zhHant: string; en: string }> = {
+  gather: { zh: '聚 · 合墨成核', zhHant: '聚 · 合墨成核', en: 'Gather · wet pools to one core' },
+  pair: { zh: '对 · 左右并读', zhHant: '對 · 左右並讀', en: 'Pair · left & right washes' },
+  contrast: { zh: '照 · 浓淡相照', zhHant: '照 · 濃淡相照', en: 'Contrast · dark vs pale' },
+  flow: { zh: '流 · 一笔顺势', zhHant: '流 · 一筆順勢', en: 'Flow · one stroke downhill' },
+}
 
 function mulberry32(seed: number) {
   let a = seed >>> 0
@@ -96,20 +112,20 @@ function buildWash(relation: InkRelation, seed: number): Dab[] {
     for (let i = 0; i < 16; i++) {
       dab(CX + gauss(rnd, 22), CY + gauss(rnd, 18), 22 + rnd() * 36, 14 + rnd() * 20, true, 0.22 + rnd() * 0.28)
     }
-    // pale bloom around core (宣纸吃墨)
+    // pale bloom around core (宣纸吃墨) — mid taupe, not near-white
     for (let i = 0; i < 10; i++) {
-      dab(CX + gauss(rnd, 50), CY + gauss(rnd, 40), 40 + rnd() * 50, 24 + rnd() * 30, false, 0.08 + rnd() * 0.1)
+      dab(CX + gauss(rnd, 50), CY + gauss(rnd, 40), 40 + rnd() * 50, 24 + rnd() * 30, false, 0.18 + rnd() * 0.14)
     }
   } else if (relation === 'pair') {
-    // 对 — twin 墨团 like two palms, soft mid breath
+    // 对 — twin 墨团 like two palms (焦墨 | 淡墨), soft mid breath
     for (let i = 0; i < 22; i++) {
-      dab(155 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, true, 0.14 + rnd() * 0.22)
+      dab(155 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, true, 0.18 + rnd() * 0.26)
     }
     for (let i = 0; i < 22; i++) {
-      dab(405 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, false, 0.14 + rnd() * 0.22)
+      dab(405 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, false, 0.28 + rnd() * 0.32)
     }
     for (let i = 0; i < 6; i++) {
-      dab(CX + gauss(rnd, 12), CY + gauss(rnd, 8), 8 + rnd() * 14, 5 + rnd() * 8, rnd() > 0.5, 0.06)
+      dab(CX + gauss(rnd, 12), CY + gauss(rnd, 8), 8 + rnd() * 14, 5 + rnd() * 8, rnd() > 0.5, 0.08)
     }
   } else if (relation === 'contrast') {
     // 照 — 浓淡对峙，中缝留白如飞白
@@ -119,7 +135,7 @@ function buildWash(relation: InkRelation, seed: number): Dab[] {
     }
     for (let i = 0; i < 26; i++) {
       const x = CX + 100 + rnd() * (W - CX - 160) + gauss(rnd, 8)
-      dab(Math.max(x, CX + 28), CY + gauss(rnd, 55), 14 + rnd() * 32, 11 + rnd() * 28, false, 0.18 + rnd() * 0.22)
+      dab(Math.max(x, CX + 28), CY + gauss(rnd, 55), 14 + rnd() * 32, 11 + rnd() * 28, false, 0.32 + rnd() * 0.28)
     }
   } else {
     // 流 — 一笔长皴 / 墨线顺势而下
@@ -240,13 +256,16 @@ export function InkCenterpiece({
   wuxing,
   extraProse = '',
   washOnly = false,
+  locale,
 }: {
   chapter: XingqiChapter | XingqiChapterKind
   seed: number
   width?: number
+  /** Day-master 五行 when known — overrides prose heuristics. */
   wuxing?: WuxingChar
   extraProse?: string
   washOnly?: boolean
+  locale?: string
 }) {
   const kind: XingqiChapterKind = typeof chapter === 'string' ? chapter : chapter.kind
   const relation = relationForChapter(kind)
@@ -254,48 +273,70 @@ export function InkCenterpiece({
     typeof chapter === 'string'
       ? extraProse
       : [chapter.goldenLine, chapter.evidence, chapter.dynamic, extraProse].join('\n')
+  // Prefer natal day-master; prose detect is last-resort (and ignores 金星丘 noise).
   const element = wuxing ?? detectWuxing(prose)
   const height = Math.round((width / W) * H)
   /** Only the 五行 seal — chapter glyph already sits in the title row. */
   const sealSize = Math.max(22, Math.round(width * 0.09))
+  const cap = INK_CAPTION[relation]
+  const caption =
+    locale == null
+      ? null
+      : isCjkZh(locale)
+        ? pickZh(locale, cap.zh, cap.zhHant)
+        : cap.en
 
   return (
-    <View
-      style={{
-        width,
-        height,
-        alignSelf: 'center',
-        overflow: 'hidden',
-        // No border — 宣纸满幅；与深色滚动底自然衔接靠墨缘淡出
-        backgroundColor: PAPER,
-      }}
-    >
-      <InkModePlate
-        relation={relation}
-        seed={seed + kind.length * 17}
-        width={width}
-        height={height}
-      />
+    <View style={{ width, alignSelf: 'center', gap: 8 }}>
+      <View
+        style={{
+          width,
+          height,
+          overflow: 'hidden',
+          // No border — 宣纸满幅；与深色滚动底自然衔接靠墨缘淡出
+          backgroundColor: PAPER,
+        }}
+      >
+        <InkModePlate
+          relation={relation}
+          seed={seed + kind.length * 17}
+          width={width}
+          height={height}
+        />
 
-      {!washOnly && element ? (
-        <View
+        {!washOnly && element ? (
+          <View
+            style={{
+              position: 'absolute',
+              right: 10,
+              bottom: 10,
+              opacity: 0.92,
+            }}
+            pointerEvents='none'
+          >
+            <AncientSeal
+              glyph={element}
+              size={sealSize}
+              tile='#8B3A2F'
+              ink={PAPER}
+              strokeWidth={7}
+              inset={0.78}
+            />
+          </View>
+        ) : null}
+      </View>
+      {caption ? (
+        <Text
           style={{
-            position: 'absolute',
-            right: 10,
-            bottom: 10,
-            opacity: 0.92,
+            fontFamily: 'IBMPlexMono',
+            fontSize: 11,
+            letterSpacing: 0.4,
+            color: '#8A8278',
+            textAlign: 'center',
           }}
-          pointerEvents='none'
         >
-          <AncientSeal
-            glyph={element}
-            size={sealSize}
-            tile='#8B3A2F'
-            ink={PAPER}
-            strokeWidth={7}
-            inset={0.78}
-          />
-        </View>
+          {caption}
+        </Text>
       ) : null}
     </View>
   )

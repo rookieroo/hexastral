@@ -17,6 +17,7 @@ import { ChapterPager } from '@/components/reading/ChapterPager'
 import { InkCenterpiece } from '@/components/reading/InkCenterpiece'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { natalFactsFromOutput } from '@/components/reading/NatalFactsStrip'
+import { wuxingFromDayMaster } from '@/lib/ancient-glyphs'
 import { ReadingPrimer, useReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { SelectionActionBar } from '@/components/reading/SelectionActionBar'
 import { ShareableXingqiCard } from '@/components/reading/ShareableXingqiCard'
@@ -297,7 +298,8 @@ export default function FaceResultScreen() {
             chapter={ch}
             seed={inkSeed + ch.kind.length}
             width={Dimensions.get('window').width - 56}
-            extraProse={JSON.stringify(output.aiInterpretation ?? {})}
+            wuxing={wuxingFromDayMaster(natalFacts?.dayMaster)}
+            locale={locale}
           />
         )}
       />

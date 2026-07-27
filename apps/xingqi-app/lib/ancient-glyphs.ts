@@ -655,18 +655,66 @@ export function relationForChapter(
 const WUXING = ['金', '木', '水', '火', '土'] as const
 export type WuxingChar = (typeof WUXING)[number]
 
+/** 天干 → 五行印字（日主 stem，如 `甲` → `木`）. */
+const STEM_TO_WUXING: Record<string, WuxingChar> = {
+  甲: '木',
+  乙: '木',
+  丙: '火',
+  丁: '火',
+  戊: '土',
+  己: '土',
+  庚: '金',
+  辛: '金',
+  壬: '水',
+  癸: '水',
+}
+
+/** Prefer computed day-master stem over prose heuristics. */
+export function wuxingFromDayMaster(dayMaster: string | undefined | null): WuxingChar | undefined {
+  if (!dayMaster) return undefined
+  const stem = [...dayMaster.trim()][0]
+  if (!stem) return undefined
+  return STEM_TO_WUXING[stem]
+}
+
+/**
+ * Palm mount names (金星丘 / 木星丘 / …) contain 五行 chars that are NOT the
+ * day master's element — strip them before scanning prose.
+ */
+const PALM_MOUNT_NOISE =
+  /[金木水火土]星丘|太阳丘|月丘|火星丘|金星|木星|土星|水星|火星丘?/g
+
+/** Explicit destiny phrases beat a bare 五行 glyph elsewhere in the brief. */
+const DESTINY_PHRASE: Array<{ re: RegExp; el: WuxingChar }> = [
+  { re: /木命|属木|日主属木|日主[甲乙]/, el: '木' },
+  { re: /火命|属火|日主属火|日主[丙丁]/, el: '火' },
+  { re: /土命|属土|日主属土|日主[戊己]/, el: '土' },
+  { re: /金命|属金|日主属金|日主[庚辛]/, el: '金' },
+  { re: /水命|属水|日主属水|日主[壬癸]/, el: '水' },
+]
+
 /** Pull a 五行 cue from chapter / natal prose when the model names one. */
 export function detectWuxing(...texts: string[]): WuxingChar | undefined {
-  const blob = texts.join('\n')
+  const raw = texts.join('\n')
+  for (const { re, el } of DESTINY_PHRASE) {
+    if (re.test(raw)) return el
+  }
+  const blob = raw.replace(PALM_MOUNT_NOISE, ' ')
   for (const el of WUXING) {
     if (blob.includes(el)) return el
   }
-  // English fallbacks in model output
+  // English fallbacks in model output (destiny-ish first)
   const lower = blob.toLowerCase()
-  if (/\bmetal\b|gold/.test(lower)) return '金'
+  if (/\bwood\s*(destiny|day|master|person)\b|\bday\s*master\b[^\n]{0,24}\bwood\b/.test(lower))
+    return '木'
+  if (/\bfire\s*(destiny|day|master|person)\b/.test(lower)) return '火'
+  if (/\bearth\s*(destiny|day|master|person)\b/.test(lower)) return '土'
+  if (/\bmetal\s*(destiny|day|master|person)\b/.test(lower)) return '金'
+  if (/\bwater\s*(destiny|day|master|person)\b/.test(lower)) return '水'
   if (/\bwood\b/.test(lower)) return '木'
   if (/\bwater\b/.test(lower)) return '水'
   if (/\bfire\b/.test(lower)) return '火'
   if (/\bearth\b/.test(lower)) return '土'
+  if (/\bmetal\b/.test(lower)) return '金'
   return undefined
 }
