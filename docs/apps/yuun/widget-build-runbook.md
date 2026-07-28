@@ -54,7 +54,10 @@ RN + native scaffold for Yuun home-screen / Lock Screen / Watch complications.
 - Gallery search: host app name **Yuun** (not “小组件”). On iOS 18+ also try long-press
   the Yuun icon → widget / edit options.
 - Native module: `NativeModules.RNSharedGroupPreferences`. If the name differs, adjust `packages/widget-kit-ios/src/useWidgetSync.ts`.
+- Gallery name/description follow App Group locale (fallback: device language): en → "Yuun Almanac" / English blurb; not hardcoded 黄历.
+- Lock Screen rectangular shows **both** 宜 and 忌 (short verbs); circular stays 月相 + 干支.
 - Shape parity: `YuunWidgetDay` (TS) ↔ `SharedDay` (Swift).
+- Plain App Group keys `yuun_widget_locale` / `yuun_widget_tip_label` back chrome if envelope decode drifts.
 - `prebuild --clean` regenerates targets from `targets/*` — do not treat hand-edited `ios/` as SSOT.
 - Moon phase in extension is SwiftUI geometry, not Skia.
 - Bundle id of the extension is `com.hexastral.yuun.widget` (not `….AuspiceWidget`).

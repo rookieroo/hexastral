@@ -19,7 +19,6 @@ import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { BrandLogoMorphProvider } from '@/lib/brand-logo-morph'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
@@ -59,9 +58,7 @@ export default function RootLayout() {
             fixed ink identity — no user accent switcher. */}
         <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
           <LocaleProvider>
-            <BrandLogoMorphProvider>
-              <RootLayoutInner />
-            </BrandLogoMorphProvider>
+            <RootLayoutInner />
           </LocaleProvider>
         </CoreUIProvider>
       </SafeAreaProvider>

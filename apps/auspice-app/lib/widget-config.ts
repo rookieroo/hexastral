@@ -65,12 +65,12 @@ export type WatchTemplate = 'modern' | 'lunar' | 'almanac' | 'ancient'
 
 export const DEFAULT_TEMPLATE: WatchTemplate = 'modern'
 
-/** Templates + their tier. `almanac`/`ancient` are the Pro (IAP) faces. */
-export const TEMPLATE_OPTIONS: ReadonlyArray<{ id: WatchTemplate; label: string; pro: boolean }> = [
-  { id: 'modern', label: '极简', pro: false },
-  { id: 'lunar', label: '月相', pro: false },
-  { id: 'almanac', label: '黄历', pro: true },
-  { id: 'ancient', label: '古风', pro: true },
+/** Templates + their tier. Labels come from i18n (`watchTemplate*`). */
+export const TEMPLATE_OPTIONS: ReadonlyArray<{ id: WatchTemplate; pro: boolean }> = [
+  { id: 'modern', pro: false },
+  { id: 'lunar', pro: false },
+  { id: 'almanac', pro: true },
+  { id: 'ancient', pro: true },
 ]
 
 const VALID_TEMPLATES = new Set<string>(TEMPLATE_OPTIONS.map((o) => o.id))

@@ -464,13 +464,24 @@ export interface Strings {
   widgetPreviewCaption: string
   /** Caption under the watch-face preview mockup (carries the coming-soon note). */
   watchPreviewCaption: string
+  widgetSizeSmall: string
+  widgetSizeMedium: string
+  widgetSizeLarge: string
   /** Picker label for the watch-face styles (a preview; watch app not shipped). */
   watchStyleLabel: string
+  watchTemplateModern: string
+  watchTemplateLunar: string
+  watchTemplateAlmanac: string
+  watchTemplateAncient: string
   /** Picker label for the 月相 palette (applies to the shipping widget). */
   moonSkinLabel: string
   /** __DEV__ moon-phase mock controls. */
   devMoonPhaseLabel: string
   devMoonPhaseLive: string
+  devMoonPhaseNew: string
+  devMoonPhaseFirst: string
+  devMoonPhaseFull: string
+  devMoonPhaseLast: string
   devMoonPhaseHint: string
   /** Small "coming soon" badge. */
   comingSoon: string
@@ -856,13 +867,24 @@ const zhHans: Strings = {
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
-    '桌面组件（小 / 中 / 大）与锁屏显示当日黄历；可选月相皮肤。Apple Watch 表盘并发症已有脚手架，完整联调见 docs/apps/yuun/watch-complication-scaffold。',
+    '主屏小组件按系统小 / 中 / 大尺寸显示当日黄历（干支、节气、宜忌保持汉字）。锁屏同理。Apple Watch 并发症仍为脚手架预览。',
   widgetPreviewCaption: '桌面组件',
   watchPreviewCaption: '表盘预览',
+  widgetSizeSmall: '小',
+  widgetSizeMedium: '中',
+  widgetSizeLarge: '大',
   watchStyleLabel: '表盘样式',
+  watchTemplateModern: '极简',
+  watchTemplateLunar: '月相',
+  watchTemplateAlmanac: '黄历',
+  watchTemplateAncient: '古风',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相预览',
   devMoonPhaseLive: '今日',
+  devMoonPhaseNew: '朔',
+  devMoonPhaseFirst: '上弦',
+  devMoonPhaseFull: '望',
+  devMoonPhaseLast: '下弦',
   devMoonPhaseHint: '仅开发构建。选中后同步首页 Logo 与桌面小组件（写入 App Group）。',
   comingSoon: '即将推出',
   widgetDayTipLabel: '日签',
@@ -1211,13 +1233,24 @@ const zhHant: Strings = {
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
-    '桌面元件（小 / 中 / 大）與鎖屏顯示當日黃曆；可選月相皮膚。Apple Watch 錶盤複雜功能已有腳手架，完整聯調見文件。',
+    '主屏小組件依系統小 / 中 / 大尺寸顯示當日黃曆（干支、節氣、宜忌保持漢字）。鎖屏同理。Apple Watch 複雜功能仍為腳手架預覽。',
   widgetPreviewCaption: '桌面元件',
   watchPreviewCaption: '錶盤預覽',
+  widgetSizeSmall: '小',
+  widgetSizeMedium: '中',
+  widgetSizeLarge: '大',
   watchStyleLabel: '錶盤樣式',
+  watchTemplateModern: '極簡',
+  watchTemplateLunar: '月相',
+  watchTemplateAlmanac: '黃曆',
+  watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相預覽',
   devMoonPhaseLive: '今日',
+  devMoonPhaseNew: '朔',
+  devMoonPhaseFirst: '上弦',
+  devMoonPhaseFull: '望',
+  devMoonPhaseLast: '下弦',
   devMoonPhaseHint: '僅開發構建。選中後同步首頁 Logo 與桌面小組件（寫入 App Group）。',
   comingSoon: '即將推出',
   widgetDayTipLabel: '日籤',
@@ -1593,13 +1626,24 @@ const ja: Strings = {
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
-    'ウィジェット（小 / 中 / 大）とロック画面に今日の黄暦。月相スキン選択可。Apple Watch コンプリケーションはスキャフォールド済み（docs 参照）。フル文字盤スキンはプレビューです。',
+    'ホーム画面ウィジェットはシステムの小 / 中 / 大サイズで今日の黄暦を表示（干支・節気・宜忌は漢字のまま）。ロック画面も同様。Apple Watch コンプリケーションはスキャフォールドのプレビューです。',
   widgetPreviewCaption: 'ウィジェット',
   watchPreviewCaption: '文字盤プレビュー',
+  widgetSizeSmall: '小',
+  widgetSizeMedium: '中',
+  widgetSizeLarge: '大',
   watchStyleLabel: '文字盤スタイル',
+  watchTemplateModern: 'ミニマル',
+  watchTemplateLunar: '月相',
+  watchTemplateAlmanac: '黄暦',
+  watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相プレビュー',
   devMoonPhaseLive: '今日',
+  devMoonPhaseNew: '朔',
+  devMoonPhaseFirst: '上弦',
+  devMoonPhaseFull: '望',
+  devMoonPhaseLast: '下弦',
   devMoonPhaseHint: '開発ビルドのみ。選択するとホームロゴとウィジェットに同期（App Group）。',
   comingSoon: '近日公開',
   widgetDayTipLabel: '今日の一言',
@@ -1978,16 +2022,27 @@ const en: Strings = {
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:
-    "Home Screen widgets (small / medium / large) and Lock Screen show today's almanac with optional moon skins. Apple Watch complications are scaffolded (see docs); full watch-face skins remain a preview.",
+    'Home Screen widgets use system Small / Medium / Large sizes for today’s almanac. Stem-branch, solar terms, and 宜忌 stay in Chinese characters on the face. Lock Screen likewise. Apple Watch complications remain a scaffolded preview.',
   widgetPreviewCaption: 'Widget',
   watchPreviewCaption: 'Watch preview',
+  widgetSizeSmall: 'Small',
+  widgetSizeMedium: 'Medium',
+  widgetSizeLarge: 'Large',
   watchStyleLabel: 'Watch styles',
+  watchTemplateModern: 'Minimal',
+  watchTemplateLunar: 'Moon',
+  watchTemplateAlmanac: 'Almanac',
+  watchTemplateAncient: 'Classical',
   moonSkinLabel: 'Moon skin',
   devMoonPhaseLabel: 'DEV · Moon phase',
   devMoonPhaseLive: 'Live',
+  devMoonPhaseNew: 'New',
+  devMoonPhaseFirst: 'First Q',
+  devMoonPhaseFull: 'Full',
+  devMoonPhaseLast: 'Last Q',
   devMoonPhaseHint: 'Dev only. Syncs home logo + home-screen widget via App Group.',
   comingSoon: 'Soon',
-  widgetDayTipLabel: 'Today',
+  widgetDayTipLabel: 'Tip',
   readingChat: {
     title: 'Ask about your chart',
     empty: 'Ask anything about your own chart.',

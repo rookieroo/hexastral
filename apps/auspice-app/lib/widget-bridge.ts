@@ -11,7 +11,7 @@ import {
   type YuunWidgetDay,
   writeWidgetPayload,
 } from '@zhop/widget-kit-ios'
-import { buildDailyCardModel, compactVerbs } from '@/components/DailyCard'
+import { buildDailyCardModel, compactChrome, compactVerbs } from '@/components/DailyCard'
 import {
   type AuspiceDay,
   type AuspicePersonalization,
@@ -50,33 +50,42 @@ function toWidgetDay(
   includeFit: boolean
 ): YuunWidgetDay {
   const m = buildDailyCardModel(date, day, includeFit ? (personalization ?? null) : null, t, locale)
+  const en = locale === 'en'
+  const chrome = compactChrome(locale)
+  // en compact: keep 干支 + 宜/忌 glyphs + localized verbs; drop dense almanac extras.
+  // yi/ji = medium+large (up to 2 lines); yiShort/jiShort = small (1 line).
   return {
     date,
     ganZhi: m.ganZhi,
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
     solarTerm: m.solarTermName,
-    yi: compactVerbs(m.goodForRaw, 4),
-    ji: compactVerbs(m.avoidRaw, 4),
-    yiShort: compactVerbs(m.goodForRaw, 2),
-    jiShort: compactVerbs(m.avoidRaw, 2),
+    yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale),
+    ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale),
+    yiShort: compactVerbs(m.goodForRaw, 2, locale),
+    jiShort: compactVerbs(m.avoidRaw, 2, locale),
     fit: includeFit ? m.fitLabel : null,
     fitSummary: includeFit ? m.fitSummary : null,
     dayTip: m.dayTip,
+    tipLabel: en ? null : chrome.tip,
     moonPhase: m.moonPhase,
-    officer: m.officer,
-    mansion: m.mansion,
-    clashShengxiao: m.clashShengxiao,
-    ganzhiYear: m.ganzhiYear,
+    officer: en ? undefined : m.officer,
+    mansion: en ? undefined : m.mansion,
+    clashShengxiao: en ? undefined : m.clashShengxiao,
+    // Year pillar stays on zh/ja; en medium already tight — omit 丙午年.
+    ganzhiYear: en ? null : m.ganzhiYear,
   }
 }
 
 /** Write the window into the App Group (envelope + legacy mirror). */
-export async function writeWidgetDays(days: YuunWidgetDay[]): Promise<void> {
+export async function writeWidgetDays(
+  days: YuunWidgetDay[],
+  locale: Locale = 'zh-Hans'
+): Promise<void> {
   const data: YuunWidgetData = { days }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
-  await writeWidgetPayload('yuun', 'zh-Hans', data, fresh.toISOString(), {
+  await writeWidgetPayload('yuun', localeToWidget(locale), data, fresh.toISOString(), {
     appGroupId: APP_GROUP,
     mirrorLegacyYuunDays: true,
   })
@@ -132,6 +141,6 @@ export async function syncTodayWidget(
 ): Promise<void> {
   // Seed today immediately so the widget updates before the rest of the window.
   const today = toWidgetDay(date, day, personalization, t, locale, includeFit)
-  await writeWidgetDays([today])
+  await writeWidgetDays([today], locale)
   void syncWidgetWindow(date, t, locale, includeFit)
 }

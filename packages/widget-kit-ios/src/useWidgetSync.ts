@@ -5,6 +5,9 @@
  * Bridge order:
  * 1. react-native-shared-group-preferences (JS wrapper — native is callback-based)
  * 2. AsyncStorage fallback (RN tests only — extension cannot read it)
+ *
+ * After write: flush App Group + WidgetCenter.reloadAllTimelines() so the
+ * home-screen widget does not keep a stale TimelineEntry until the next day.
  */
 
 import { useEffect, useRef } from 'react'
@@ -17,6 +20,8 @@ import {
   type WidgetLocale,
   type WidgetSyncPayload,
   YUUN_LEGACY_DAYS_KEY,
+  YUUN_WIDGET_LOCALE_KEY,
+  YUUN_WIDGET_TIP_LABEL_KEY,
 } from './types'
 
 type AsyncStorageLike = {
@@ -26,6 +31,11 @@ type AsyncStorageLike = {
 type SharedGroupApi = {
   setItem: (key: string, value: unknown, appGroup: string) => Promise<void>
   getItem: <T = unknown>(key: string, appGroup: string) => Promise<T>
+}
+
+type WidgetKitIosNative = {
+  reloadTimelines: () => void
+  flushAppGroup: (suiteName: string) => void
 }
 
 function loadAsyncStorage(): AsyncStorageLike | null {
@@ -58,6 +68,46 @@ function loadSharedGroup(): SharedGroupApi | null {
   }
 }
 
+function loadWidgetKitNative(): WidgetKitIosNative | null {
+  try {
+    // biome-ignore lint/style/noCommonJs: optional native module
+    const { requireNativeModule } = require('expo-modules-core') as {
+      requireNativeModule: <T>(name: string) => T
+    }
+    return requireNativeModule<WidgetKitIosNative>('WidgetKitIos')
+  } catch {
+    return null
+  }
+}
+
+function tipLabelFromPayload(serialized: string, locale: WidgetLocale): string {
+  // en: no tip chrome (body only) — clear any stale 日签 in App Group.
+  if (locale === 'en') return ''
+  try {
+    const parsed = JSON.parse(serialized) as WidgetSyncPayload<{
+      days?: Array<{ tipLabel?: string | null }>
+    }>
+    const fromDay = parsed.data?.days?.[0]?.tipLabel
+    if (typeof fromDay === 'string' && fromDay.length > 0) return fromDay
+  } catch {
+    // fall through
+  }
+  if (locale === 'ja') return '一言'
+  if (locale === 'zh-Hant') return '日籤'
+  return '日签'
+}
+
+function notifyWidgetExtension(group: string): void {
+  const native = loadWidgetKitNative()
+  if (!native) return
+  try {
+    native.flushAppGroup(group)
+    native.reloadTimelines()
+  } catch (err: unknown) {
+    console.warn('[widget-kit-ios] timeline reload failed:', err)
+  }
+}
+
 export type WriteWidgetOptions = {
   /** Override App Group (Yuun uses group.com.hexastral.yuun). */
   appGroupId?: string
@@ -70,6 +120,7 @@ export type WriteWidgetOptions = {
 
 async function persistPayload(
   appSlug: AppSlug,
+  locale: WidgetLocale,
   serialized: string,
   options?: WriteWidgetOptions
 ): Promise<void> {
@@ -77,17 +128,27 @@ async function persistPayload(
   const shared = loadSharedGroup()
   if (shared) {
     await shared.setItem(WIDGET_PAYLOAD_KEY, serialized, group)
+    if (appSlug === 'yuun') {
+      // Plain-string chrome — survives envelope decode issues / stale TimelineEntry.
+      await shared.setItem(YUUN_WIDGET_LOCALE_KEY, locale, group)
+      await shared.setItem(YUUN_WIDGET_TIP_LABEL_KEY, tipLabelFromPayload(serialized, locale), group)
+    }
     if (options?.mirrorLegacyYuunDays && appSlug === 'yuun') {
       try {
         const parsed = JSON.parse(serialized) as WidgetSyncPayload<{ days?: unknown }>
         const days = parsed.data?.days
         if (Array.isArray(days)) {
-          await shared.setItem(YUUN_LEGACY_DAYS_KEY, JSON.stringify({ days }), group)
+          await shared.setItem(
+            YUUN_LEGACY_DAYS_KEY,
+            JSON.stringify({ days, locale: parsed.locale }),
+            group
+          )
         }
       } catch {
         // ignore mirror failure
       }
     }
+    notifyWidgetExtension(group)
     return
   }
 
@@ -125,7 +186,7 @@ export function useWidgetSync<TData>(
     if (lastWriteRef.current === serialized) return
     lastWriteRef.current = serialized
 
-    void persistPayload(appSlug, serialized, options).catch((err: unknown) => {
+    void persistPayload(appSlug, locale, serialized, options).catch((err: unknown) => {
       console.warn('[widget-kit-ios] App Group write failed:', err)
     })
   }, [appSlug, locale, data, freshUntil, options])
@@ -150,5 +211,5 @@ export async function writeWidgetPayload<TData>(
     data,
     freshUntil,
   }
-  await persistPayload(appSlug, JSON.stringify(payload), options)
+  await persistPayload(appSlug, locale, JSON.stringify(payload), options)
 }

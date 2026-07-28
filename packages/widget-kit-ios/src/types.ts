@@ -45,6 +45,10 @@ export const WIDGET_PAYLOAD_KEY = 'hexastral_widget_payload_v1'
 /** Legacy Yuun key (pre-envelope). Prefer WIDGET_PAYLOAD_KEY going forward. */
 export const YUUN_LEGACY_DAYS_KEY = 'almanac_days'
 
+/** Plain-string chrome keys — readable even when envelope JSON decode drifts. */
+export const YUUN_WIDGET_LOCALE_KEY = 'yuun_widget_locale'
+export const YUUN_WIDGET_TIP_LABEL_KEY = 'yuun_widget_tip_label'
+
 // ── Per-app data shapes ───────────────────────────────────────────────────
 
 /** One day in the Yuun widget cache window (matches SharedDay in Swift). */
@@ -65,6 +69,8 @@ export interface YuunWidgetDay {
    * widgets are not hollow when `fit` is null.
    */
   dayTip?: string | null
+  /** Localized tip chrome (“Tip” / “日签”) — prefer over FaceChrome when set. */
+  tipLabel?: string | null
   moonPhase: number
   /** Large / lock extras — optional for small/medium. */
   officer?: string

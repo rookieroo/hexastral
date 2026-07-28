@@ -13,7 +13,7 @@ import { SWIPE_TO_ME } from '@zhop/satellite-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image, ScrollView, Text, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector, Pressable } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -31,7 +31,6 @@ import {
   primeFromBootstrap,
 } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
-import { HOME_LOGO_SIZE, useBrandLogoMorph } from '@/lib/brand-logo-morph'
 import { lunarCellLabel } from '@/lib/calendar-display'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
@@ -39,7 +38,7 @@ import { useStrings } from '@/lib/i18n-context'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { syncTodayWidget } from '@/lib/widget-bridge'
 
-const HOME_LOGO = require('../../assets/icon.png')
+const HOME_LOGO_SIZE = 28
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -124,6 +123,7 @@ export default function HomeScreen() {
     }, [loadDay])
   )
 
+  // Widgets follow the same locale as the app (system by default; Me override when set).
   useEffect(() => {
     if (dayData) {
       void syncTodayWidget(
@@ -206,33 +206,6 @@ export default function HomeScreen() {
   )
 
   const pushHook = dayData?.dailyHook ?? null
-  const { morphActive, landAtHome } = useBrandLogoMorph()
-  const homeLogoRef = useRef<View>(null)
-  const homeLogoReportedRef = useRef(false)
-
-  useEffect(() => {
-    if (!morphActive) {
-      homeLogoReportedRef.current = false
-      return
-    }
-    if (homeLogoReportedRef.current) return
-    const node = homeLogoRef.current
-    if (!node) return
-    // Defer one frame so SafeArea + header layout settle.
-    const id = requestAnimationFrame(() => {
-      node.measureInWindow((x, y, width, height) => {
-        if (width <= 0 || height <= 0) return
-        homeLogoReportedRef.current = true
-        landAtHome({
-          x,
-          y,
-          width: width || HOME_LOGO_SIZE,
-          height: height || HOME_LOGO_SIZE,
-        })
-      })
-    })
-    return () => cancelAnimationFrame(id)
-  }, [morphActive, landAtHome])
 
   const festivalChip =
     dayData &&
@@ -265,48 +238,15 @@ export default function HomeScreen() {
           justifyContent: 'space-between',
         }}
       >
-        <View
-          ref={homeLogoRef}
-          collapsable={false}
-          onLayout={() => {
-            if (!morphActive || homeLogoReportedRef.current) return
-            const node = homeLogoRef.current
-            if (!node) return
-            node.measureInWindow((x, y, width, height) => {
-              if (width <= 0 || height <= 0) return
-              homeLogoReportedRef.current = true
-              landAtHome({
-                x,
-                y,
-                width: width || HOME_LOGO_SIZE,
-                height: height || HOME_LOGO_SIZE,
-              })
-            })
-          }}
-          style={{ opacity: morphActive ? 0 : 1 }}
-        >
-          {/* After welcome→home morph lands, show live 月相 to echo the widget.
-              Morph still flies the PNG icon; swapping only the settled home mark. */}
-          {dayData?.day.lunarDate?.day != null && !morphActive ? (
-            <PhaseLogo
-              phase={
-                devMoonPhase ?? moonPhaseFromLunarDay(dayData.day.lunarDate.day)
-              }
-              size={HOME_LOGO_SIZE}
-            />
-          ) : (
-            <Image
-              source={HOME_LOGO}
-              style={{
-                width: HOME_LOGO_SIZE,
-                height: HOME_LOGO_SIZE,
-                borderRadius: 6,
-              }}
-              resizeMode='contain'
-              accessibilityIgnoresInvertColors
-              accessibilityLabel='Yuun'
-            />
-          )}
+        <View accessibilityLabel='Yuun'>
+          <PhaseLogo
+            phase={
+              dayData?.day.lunarDate?.day != null
+                ? (devMoonPhase ?? moonPhaseFromLunarDay(dayData.day.lunarDate.day))
+                : 0.35
+            }
+            size={HOME_LOGO_SIZE}
+          />
         </View>
         <Pressable
           onPress={goToMe}

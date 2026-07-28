@@ -21,7 +21,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import type { AuspiceDay, AuspicePersonalization, PersonalFit } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
-import type { Locale } from '@/lib/i18n'
+import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
@@ -135,13 +135,6 @@ const ANIMAL_EN: Record<string, string> = {
   亥: 'Pig',
 }
 
-const WEEKDAYS: Record<Locale, readonly string[]> = {
-  'zh-Hans': ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
-  'zh-Hant': ['週日', '週一', '週二', '週三', '週四', '週五', '週六'],
-  ja: ['日', '月', '火', '水', '木', '金', '土'],
-  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-}
-
 const SHICHEN_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 
 /** 古铜 ink accent for the ancient template. */
@@ -152,22 +145,39 @@ const MOON_CREAM = '#E7E0D0'
 export function formatWatchDate(isoDate: string, locale: Locale): string {
   const d = new Date(`${isoDate}T00:00:00`)
   if (Number.isNaN(d.getTime())) return isoDate
-  const wd = WEEKDAYS[locale]?.[d.getDay()] ?? ''
   const day = d.getDate()
   const month = d.getMonth() + 1
-  // Widget/watch: keep dates numeric — never "Chinese calendar" / long English months.
-  if (locale === 'en') return `${wd} ${month}/${day}`
-  if (locale === 'ja') return `${month}月${day}日（${wd}）`
-  return `${month}月${day}日 ${wd}`
+  // Faces: numeric only — no Sun/Tue / 周一 chrome on the dial (see terminology-locale).
+  if (locale === 'en') return `${month}/${day}`
+  if (locale === 'ja') return `${month}月${day}日`
+  return `${month}月${day}日`
 }
 
-/** Join 宜/忌 verbs for widget/watch — always source CJK (never long English glosses). */
-export function compactVerbs(raw: string[], n: number): string {
+/** Localize the top-`n` 宜/忌 verbs and join. Shared with WidgetCard. */
+export function topVerbs(raw: string[], locale: Locale, n: number): string {
   if (!raw.length) return '—'
-  return raw.slice(0, n).join('·')
+  // Spaces around · so en/ja wrap between verbs (not mid-word like "Schoo/l").
+  const sep = locale === 'zh-Hans' || locale === 'zh-Hant' ? '·' : ' · '
+  return raw
+    .slice(0, n)
+    .map((v) => localizeYijiVerb(v, locale))
+    .join(sep)
 }
 
-/** Chrome labels for widget + watch faces — short glyphs, no long English. */
+/** Compact surfaces: small = one line; medium/large = two lines of verbs. */
+export function verbBudget(locale: Locale, size: 'small' | 'medium' | 'large'): number {
+  if (size === 'small') return 2
+  if (size === 'large') return locale === 'en' ? 4 : 5
+  // medium
+  return locale === 'en' ? 4 : 4
+}
+
+/** Alias: compactVerbs(raw, n, locale) — arg order for widget call sites. */
+export function compactVerbs(raw: string[], n: number, locale: Locale): string {
+  return topVerbs(raw, locale, n)
+}
+
+/** Chrome labels for widget + watch faces — 宜忌 stay glyphs; other chrome follows locale. */
 export function compactChrome(locale: Locale): {
   yi: string
   ji: string
@@ -180,7 +190,9 @@ export function compactChrome(locale: Locale): {
   if (locale === 'zh-Hant') {
     return { yi: '宜', ji: '忌', forYou: '對你', tip: '日籤' }
   }
-  // en + zh-Hans: keep 宜忌 / 对你 — widgets have no room for "Good for" / "For you".
+  if (locale === 'en') {
+    return { yi: '宜', ji: '忌', forYou: 'For you', tip: 'Tip' }
+  }
   return { yi: '宜', ji: '忌', forYou: '对你', tip: '日签' }
 }
 
@@ -195,15 +207,6 @@ function currentShichen(hant: boolean): string {
   const h = new Date().getHours()
   const idx = h === 23 ? 0 : Math.floor((h + 1) / 2)
   return `${SHICHEN_BRANCHES[idx] ?? '子'}${hant ? '時' : '时'}`
-}
-
-/** Localize the top-`n` 宜/忌 verbs and join. Shared with WidgetCard. */
-export function topVerbs(raw: string[], locale: Locale, n: number): string {
-  if (!raw.length) return '—'
-  return raw
-    .slice(0, n)
-    .map((v) => localizeYijiVerb(v, locale))
-    .join('·')
 }
 
 export function moonPhaseFromLunarDay(day: number | undefined): number {
@@ -267,8 +270,8 @@ export function buildDailyCardModel(
       : '',
     lunarStrong: ld?.isFirst === true || ld?.isFifteenth === true,
     solarTermLabel: `${t.solarTerm} ${localizeSolarTermName(day.solarTerm.prev.name, locale)}`,
-    // Widget/watch use CJK 节气 name (大暑) — en glosses like "Dashu (Greater Heat)" overflow.
-    solarTermName: day.solarTerm.prev.name,
+    // Follow locale (en → Dashu); short enough for widgets.
+    solarTermName: localizeSolarTermName(day.solarTerm.prev.name, locale),
     goodForRaw: day.goodFor,
     avoidRaw: day.avoid,
     moonPhase: moonPhaseFromLunarDay(ld?.day),
@@ -279,8 +282,7 @@ export function buildDailyCardModel(
     fitLabel: fit,
     // Skip long English summaries on compact surfaces (en → tip bank instead).
     fitSummary: fit && !en ? t.personal.summary[fit] : null,
-    // en widgets: use zh-Hans tip bank (short CJK) — English tip sentences overflow.
-    dayTip: dailyWidgetTip(date, en ? 'zh-Hans' : locale),
+    dayTip: dailyWidgetTip(date, locale),
   }
 }
 
@@ -291,6 +293,7 @@ export function DailyCard({
   tier = 'full',
   template = 'modern',
   phaseOverride,
+  localeOverride,
 }: {
   date: string
   day: AuspiceDay
@@ -301,26 +304,30 @@ export function DailyCard({
   /** Watch face template (compact tier). `almanac` / `ancient` are the Pro faces. */
   template?: WatchTemplate
   phaseOverride?: number
+  /** Force face locale (e.g. system locale for watch/widget previews). */
+  localeOverride?: Locale
 }) {
-  const { t, locale } = useStrings()
+  const { t, locale: appLocale } = useStrings()
+  const locale = localeOverride ?? appLocale
+  const strings = localeOverride ? getStrings(localeOverride) : t
   const model = useMemo(
-    () => buildDailyCardModel(date, day, personalization, t, locale),
-    [date, day, personalization, t, locale]
+    () => buildDailyCardModel(date, day, personalization, strings, locale),
+    [date, day, personalization, strings, locale]
   )
   if (tier === 'glance') {
-    return <GlanceTier model={model} phaseOverride={phaseOverride} />
+    return <GlanceTier model={model} phaseOverride={phaseOverride} locale={locale} />
   }
   if (tier === 'compact') {
     if (template === 'ancient') {
-      return <AncientFace model={model} phaseOverride={phaseOverride} />
+      return <AncientFace model={model} phaseOverride={phaseOverride} locale={locale} />
     }
     if (template === 'almanac') {
-      return <AlmanacFace model={model} phaseOverride={phaseOverride} />
+      return <AlmanacFace model={model} phaseOverride={phaseOverride} locale={locale} />
     }
     if (template === 'lunar') {
-      return <LunarFace model={model} phaseOverride={phaseOverride} />
+      return <LunarFace model={model} phaseOverride={phaseOverride} locale={locale} />
     }
-    return <ModernFace model={model} phaseOverride={phaseOverride} />
+    return <ModernFace model={model} phaseOverride={phaseOverride} locale={locale} />
   }
   return <FullTier model={model} />
 }
@@ -338,7 +345,7 @@ function useReveal() {
   return { restStyle, revealStyle, toggle }
 }
 
-type FaceProps = { model: DailyCardModel; phaseOverride?: number }
+type FaceProps = { model: DailyCardModel; phaseOverride?: number; locale: Locale }
 
 function useFaceChrome() {
   const { mode } = useTheme()
@@ -379,8 +386,7 @@ function GlanceTier({ model, phaseOverride }: FaceProps) {
 
 // ── modern — time-first, any locale ─────────────────────────────────────────
 
-function ModernFace({ model, phaseOverride }: FaceProps) {
-  const { locale } = useStrings()
+function ModernFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
   const c = useFaceChrome()
   const L = compactChrome(locale)
@@ -433,8 +439,8 @@ function ModernFace({ model, phaseOverride }: FaceProps) {
         revealStyle={revealStyle}
         restText={restText || '—'}
         restColor={restColor}
-        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2)}`}
-        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2)}`}
+        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
+        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
         yiColor={c.text}
         jiColor={c.dim}
         marginTop={0}
@@ -445,8 +451,7 @@ function ModernFace({ model, phaseOverride }: FaceProps) {
 
 // ── lunar — moon-hero ───────────────────────────────────────────────────────
 
-function LunarFace({ model, phaseOverride }: FaceProps) {
-  const { locale } = useStrings()
+function LunarFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
   const c = useFaceChrome()
   const L = compactChrome(locale)
@@ -487,8 +492,8 @@ function LunarFace({ model, phaseOverride }: FaceProps) {
           revealStyle={revealStyle}
           restText={restText || '—'}
           restColor={restColor}
-          yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2)}`}
-          jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2)}`}
+          yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
+          jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
           yiColor={c.text}
           jiColor={c.dim}
           marginTop={0}
@@ -500,14 +505,14 @@ function LunarFace({ model, phaseOverride }: FaceProps) {
 
 // ── almanac — structured 黄历 ───────────────────────────────────────────────
 
-function AlmanacFace({ model, phaseOverride }: FaceProps) {
-  const { locale } = useStrings()
+function AlmanacFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
   const c = useFaceChrome()
   const L = compactChrome(locale)
   const restText = model.fitLabel ? `${L.forYou} · ${model.fitLabel}` : model.solarTermName
   const restColor = model.fitLabel ? fitColorOnDark(model.fit) : c.dim
   const hant = locale === 'zh-Hant'
+  const en = locale === 'en'
 
   return (
     <Pressable onPress={toggle} accessibilityRole='button' style={facePad(c.bg)}>
@@ -537,21 +542,27 @@ function AlmanacFace({ model, phaseOverride }: FaceProps) {
         <Text style={{ color: c.text, fontSize: 36, fontWeight: '200', letterSpacing: 1 }}>
           {currentClock()}
         </Text>
-        <Text style={{ color: c.dim, fontSize: 13, paddingBottom: 4 }}>
-          {currentShichen(hant)}
-        </Text>
+        {!en ? (
+          <Text style={{ color: c.dim, fontSize: 13, paddingBottom: 4 }}>
+            {currentShichen(hant)}
+          </Text>
+        ) : null}
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
         <Text style={{ color: c.text, fontSize: 20, fontWeight: '400', letterSpacing: 2 }}>
           {model.ganZhi}
         </Text>
-        <Text style={{ color: c.faint, fontSize: 12 }}>{`${model.officer}日`}</Text>
+        {!en ? <Text style={{ color: c.faint, fontSize: 12 }}>{`${model.officer}日`}</Text> : null}
       </View>
 
-      <Text style={{ color: c.faint, fontSize: 11, marginBottom: 10 }} numberOfLines={1}>
-        {`${model.mansion} · 冲${model.clashShengxiao}`}
-      </Text>
+      {!en ? (
+        <Text style={{ color: c.faint, fontSize: 11, marginBottom: 10 }} numberOfLines={1}>
+          {`${model.mansion} · 冲${model.clashShengxiao}`}
+        </Text>
+      ) : (
+        <View style={{ marginBottom: 10 }} />
+      )}
 
       <View style={{ height: 0.5, backgroundColor: c.rule, marginBottom: 10 }} />
 
@@ -560,8 +571,8 @@ function AlmanacFace({ model, phaseOverride }: FaceProps) {
         revealStyle={revealStyle}
         restText={restText || '—'}
         restColor={restColor}
-        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2)}`}
-        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2)}`}
+        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
+        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
         yiColor={c.text}
         jiColor={c.dim}
         marginTop={0}
@@ -575,6 +586,7 @@ function AlmanacFace({ model, phaseOverride }: FaceProps) {
 function AncientFace({ model, phaseOverride }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
   const c = useFaceChrome()
+  // Ancient face is always 繁體 ink — ignore override locale for copy glyphs.
 
   return (
     <Pressable
