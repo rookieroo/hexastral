@@ -474,6 +474,8 @@ export interface Strings {
   devMoonPhaseHint: string
   /** Small "coming soon" badge. */
   comingSoon: string
+  /** Large-widget free footer label (preset daily tip lexicon). */
+  widgetDayTipLabel: string
   /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
    *  chat) moved to Yuel in the Yuel/Yuun split; Yuun now shows only the free 概要.
    *  These strings are retained pending dictionary cleanup but are no longer wired. */
@@ -863,6 +865,7 @@ const zhHans: Strings = {
   devMoonPhaseLive: '今日',
   devMoonPhaseHint: '仅开发构建。选中后同步首页 Logo 与桌面小组件（写入 App Group）。',
   comingSoon: '即将推出',
+  widgetDayTipLabel: '日签',
   readingChat: {
     title: '聊聊你的命盘',
     empty: '关于你自己的命盘，问我任何问题。',
@@ -1217,6 +1220,7 @@ const zhHant: Strings = {
   devMoonPhaseLive: '今日',
   devMoonPhaseHint: '僅開發構建。選中後同步首頁 Logo 與桌面小組件（寫入 App Group）。',
   comingSoon: '即將推出',
+  widgetDayTipLabel: '日籤',
   readingChat: {
     title: '聊聊你的命盤',
     empty: '關於你自己的命盤，問我任何問題。',
@@ -1598,6 +1602,7 @@ const ja: Strings = {
   devMoonPhaseLive: '今日',
   devMoonPhaseHint: '開発ビルドのみ。選択するとホームロゴとウィジェットに同期（App Group）。',
   comingSoon: '近日公開',
+  widgetDayTipLabel: '今日の一言',
   readingChat: {
     title: 'あなたの命盤について',
     empty: 'あなた自身の命盤について何でも聞いてください。',
@@ -1681,7 +1686,7 @@ const en: Strings = {
   discover: 'Discover',
   benming: 'Benming yr',
   nextSolarTerm: 'Next term',
-  lunarLabel: 'Chinese calendar',
+  lunarLabel: '农历',
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
   proTitle: 'Yuun Pro',
@@ -1982,6 +1987,7 @@ const en: Strings = {
   devMoonPhaseLive: 'Live',
   devMoonPhaseHint: 'Dev only. Syncs home logo + home-screen widget via App Group.',
   comingSoon: 'Soon',
+  widgetDayTipLabel: 'Today',
   readingChat: {
     title: 'Ask about your chart',
     empty: 'Ask anything about your own chart.',

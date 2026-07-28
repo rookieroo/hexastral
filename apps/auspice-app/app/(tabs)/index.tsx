@@ -22,7 +22,7 @@ import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
 import { moonPhaseFromLunarDay } from '@/components/DailyCard'
-import { StaticMoon } from '@/components/StaticMoon'
+import { PhaseLogo } from '@/components/PhaseLogo'
 import {
   type AuspiceDayPayload,
   fetchAuspiceBootstrap,
@@ -38,7 +38,6 @@ import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { syncTodayWidget } from '@/lib/widget-bridge'
-import { defaultMoonSkinForMode } from '@/lib/widget-config'
 
 const HOME_LOGO = require('../../assets/icon.png')
 
@@ -289,12 +288,11 @@ export default function HomeScreen() {
           {/* After welcome→home morph lands, show live 月相 to echo the widget.
               Morph still flies the PNG icon; swapping only the settled home mark. */}
           {dayData?.day.lunarDate?.day != null && !morphActive ? (
-            <StaticMoon
+            <PhaseLogo
               phase={
                 devMoonPhase ?? moonPhaseFromLunarDay(dayData.day.lunarDate.day)
               }
               size={HOME_LOGO_SIZE}
-              skinId={defaultMoonSkinForMode(mode === 'light' ? 'light' : 'dark')}
             />
           ) : (
             <Image

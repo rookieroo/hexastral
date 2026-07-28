@@ -1,6 +1,7 @@
 /**
  * WatchSettings — widget/watch appearance + live previews.
  * Previews follow app light/dark (宣纸 / 星空). __DEV__ phase slider mocks 月相.
+ * Moon-face skin picker removed — chrome uses PhaseLogo (sphere), not water-ink skins.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -9,22 +10,16 @@ import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
+import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
 import {
   DEFAULT_TEMPLATE,
-  defaultMoonSkinForMode,
-  getMoonSkin,
   getWatchTemplate,
-  MOON_SKIN_OPTIONS,
-  type MoonSkinId,
-  setMoonSkin,
   setWatchTemplate,
   TEMPLATE_OPTIONS,
   type WatchTemplate,
 } from '@/lib/widget-config'
-import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { DailyCard } from './DailyCard'
-import { StaticMoon } from './StaticMoon'
 import { WidgetCard } from './WidgetCard'
 import { widgetSurfaceBg } from './WidgetSurface'
 
@@ -45,7 +40,6 @@ export function WatchSettings() {
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const [payload, setPayload] = useState<AuspiceDayPayload | null>(null)
   const [template, setTemplate] = useState<WatchTemplate>(DEFAULT_TEMPLATE)
-  const [skinId, setSkinId] = useState<MoonSkinId>(defaultMoonSkinForMode(surfaceMode))
   const { phase: phaseOverride, setPhase: setPhaseOverride } = useDevMoonPhase()
 
   useEffect(() => {
@@ -58,22 +52,14 @@ export function WatchSettings() {
     getWatchTemplate()
       .then(setTemplate)
       .catch(() => {})
-    getMoonSkin(surfaceMode)
-      .then(setSkinId)
-      .catch(() => {})
-  }, [surfaceMode])
+  }, [])
 
   const pickTemplate = (id: WatchTemplate) => {
     setTemplate(id)
     void setWatchTemplate(id)
   }
-  const pickSkin = (id: MoonSkinId) => {
-    setSkinId(id)
-    void setMoonSkin(id)
-  }
 
   const livePhase = phaseOverride ?? undefined
-
   const previewBg = widgetSurfaceBg(surfaceMode)
 
   return (
@@ -84,16 +70,16 @@ export function WatchSettings() {
             <View style={{ flexDirection: 'row', gap: spacing.md, paddingVertical: 4 }}>
               {(
                 [
-                  { size: 'small' as const, w: 100, h: 100 },
-                  { size: 'medium' as const, w: 200, h: 100 },
-                  { size: 'large' as const, w: 180, h: 190 },
+                  { size: 'small' as const, w: 155, h: 155 },
+                  { size: 'medium' as const, w: 329, h: 155 },
+                  { size: 'large' as const, w: 329, h: 345 },
                 ] as const
               ).map((box) => (
                 <View key={box.size} style={{ gap: 4, alignItems: 'center' }}>
                   <View
                     style={{
-                      width: box.w,
-                      height: box.h,
+                      width: box.w * 0.55,
+                      height: box.h * 0.55,
                       borderRadius: 22,
                       overflow: 'hidden',
                       backgroundColor: previewBg,
@@ -101,9 +87,8 @@ export function WatchSettings() {
                   >
                     <WidgetCard
                       size={box.size}
-                      width={box.w}
-                      height={box.h}
-                      moonSkinId={skinId}
+                      width={box.w * 0.55}
+                      height={box.h * 0.55}
                       phaseOverride={livePhase}
                       date={payload.date}
                       day={payload.day}
@@ -131,7 +116,6 @@ export function WatchSettings() {
               <DailyCard
                 tier='compact'
                 template={template}
-                moonSkinId={skinId}
                 phaseOverride={livePhase}
                 date={payload.date}
                 day={payload.day}
@@ -231,50 +215,6 @@ export function WatchSettings() {
               >
                 <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
                   {tpl.label}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      </View>
-
-      <View style={{ gap: spacing.sm }}>
-        <Label>{t.moonSkinLabel}</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {MOON_SKIN_OPTIONS.map((opt) => {
-            const sel = opt.id === skinId
-            const swatchBg =
-              opt.id === 'rice-paper'
-                ? widgetSurfaceBg('light')
-                : opt.id === 'starfield'
-                  ? widgetSurfaceBg('dark')
-                  : previewBg
-            return (
-              <Pressable
-                key={opt.id}
-                onPress={() => pickSkin(opt.id)}
-                accessibilityRole='button'
-                accessibilityState={{ selected: sel }}
-                style={{
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingHorizontal: spacing.sm,
-                  paddingVertical: spacing.sm,
-                  borderRadius: 12,
-                  borderWidth: sel ? 1 : 0.5,
-                  borderColor: sel ? colors.accent : colors.separator,
-                  backgroundColor: swatchBg,
-                }}
-              >
-                <View pointerEvents='none'>
-                  <StaticMoon
-                    phase={phaseOverride ?? 0.3}
-                    size={34}
-                    skinId={opt.id}
-                  />
-                </View>
-                <Text style={{ color: sel ? colors.accent : colors.dim, fontSize: 11 }}>
-                  {opt.name}
                 </Text>
               </Pressable>
             )

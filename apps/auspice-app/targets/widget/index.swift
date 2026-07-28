@@ -28,6 +28,8 @@ struct SharedDay: Codable {
   let yi: String
   let ji: String
   let fit: String?
+  let fitSummary: String?
+  let dayTip: String?
   let moonPhase: Double
   let officer: String?
   let mansion: String?
@@ -37,7 +39,7 @@ struct SharedDay: Codable {
   let jiShort: String?
 
   enum CodingKeys: String, CodingKey {
-    case date, ganZhi, elementColor, lunar, solarTerm, yi, ji, fit, moonPhase
+    case date, ganZhi, elementColor, lunar, solarTerm, yi, ji, fit, fitSummary, dayTip, moonPhase
     case officer, mansion, clashShengxiao, ganzhiYear, yiShort, jiShort
   }
 
@@ -45,7 +47,8 @@ struct SharedDay: Codable {
     date: String, ganZhi: String, elementColor: String, lunar: String, solarTerm: String,
     yi: String, ji: String, fit: String?, moonPhase: Double,
     officer: String? = nil, mansion: String? = nil, clashShengxiao: String? = nil,
-    ganzhiYear: String? = nil, yiShort: String? = nil, jiShort: String? = nil
+    ganzhiYear: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
+    fitSummary: String? = nil, dayTip: String? = nil
   ) {
     self.date = date
     self.ganZhi = ganZhi
@@ -55,6 +58,8 @@ struct SharedDay: Codable {
     self.yi = yi
     self.ji = ji
     self.fit = fit
+    self.fitSummary = fitSummary
+    self.dayTip = dayTip
     self.moonPhase = moonPhase
     self.officer = officer
     self.mansion = mansion
@@ -74,6 +79,8 @@ struct SharedDay: Codable {
     yi = try c.decode(String.self, forKey: .yi)
     ji = try c.decode(String.self, forKey: .ji)
     fit = try c.decodeIfPresent(String.self, forKey: .fit)
+    fitSummary = try c.decodeIfPresent(String.self, forKey: .fitSummary)
+    dayTip = try c.decodeIfPresent(String.self, forKey: .dayTip)
     moonPhase = try c.decodeIfPresent(Double.self, forKey: .moonPhase) ?? 0.5
     officer = try c.decodeIfPresent(String.self, forKey: .officer)
     mansion = try c.decodeIfPresent(String.self, forKey: .mansion)
@@ -132,12 +139,20 @@ private func color(_ hex: String) -> Color {
 /// DEV override from App Group, else the day's lunar phase.
 private func phaseOf(_ day: SharedDay) -> Double {
   guard let defaults = UserDefaults(suiteName: APP_GROUP) else { return day.moonPhase }
+  // Prefer string (RN writes String to avoid ExtensionStorage setInt truncation).
+  if let s = defaults.string(forKey: DEV_PHASE_KEY)?.trimmingCharacters(in: .whitespacesAndNewlines),
+     !s.isEmpty,
+     let v = Double(s),
+     v >= 0,
+     v <= 1 {
+    return v
+  }
   if let n = defaults.object(forKey: DEV_PHASE_KEY) as? NSNumber {
     let v = n.doubleValue
+    // Reject legacy setInt truncations only when we also have a usable day phase
+    // and the stored value looks like a bare int with no fractional intent —
+    // actually 0 and 1 are valid phases; always trust NSNumber in [0,1].
     if v >= 0 && v <= 1 { return v }
-  }
-  if let s = defaults.string(forKey: DEV_PHASE_KEY), !s.isEmpty, let v = Double(s), v >= 0, v <= 1 {
-    return v
   }
   return day.moonPhase
 }
@@ -342,10 +357,10 @@ private struct YuunPhaseLogo: View {
       var p = phase.truncatingRemainder(dividingBy: 1)
       if p < 0 { p += 1 }
       let isWaning = p > 0.5
-      let effectiveP = isWaning ? 1 - p : p
-      let cosPhase = cos(2 * Double.pi * effectiveP)
-      let effRx = R * abs(cosPhase)
-      let termPos = (R - effRx) / (2 * R)
+      // +1 at 朔 (new), -1 at 望 (full). Do NOT use abs(cos(fold)) — that
+      // made new and full share termPos=0 (both looked fully lit).
+      let cosPhase = cos(2 * Double.pi * p)
+      let termPos = (1 + cosPhase) / 2
 
       let tilt = tiltDeg * Double.pi / 180
       let sign: CGFloat = isWaning ? -1 : 1
@@ -583,13 +598,38 @@ struct AuspiceWidgetEntryView: View {
       Text("宜 \(d.yi)")
         .font(.system(size: 16))
         .foregroundColor(palette.text)
-        .lineLimit(3)
+        .lineLimit(2)
       Text("忌 \(d.ji)")
         .font(.system(size: 16))
         .foregroundColor(palette.secondary)
-        .lineLimit(3)
+        .lineLimit(2)
 
-      if let fit = d.fit {
+      Rectangle().fill(palette.separator).frame(height: 0.5)
+
+      if let fit = d.fit, let summary = d.fitSummary, !summary.isEmpty {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("对你而言 · \(fit)")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(palette.text)
+            .lineLimit(1)
+          Text(summary)
+            .font(.system(size: 14))
+            .foregroundColor(palette.secondary)
+            .lineLimit(3)
+        }
+      } else if let tip = d.dayTip, !tip.isEmpty {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("日签")
+            .font(.system(size: 11))
+            .tracking(1)
+            .foregroundColor(palette.tertiary)
+            .lineLimit(1)
+          Text(tip)
+            .font(.system(size: 14))
+            .foregroundColor(palette.text)
+            .lineLimit(3)
+        }
+      } else if let fit = d.fit {
         Text("对你而言 · \(fit)")
           .font(.system(size: 14, weight: .medium))
           .foregroundColor(palette.text)

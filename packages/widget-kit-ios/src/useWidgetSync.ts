@@ -3,12 +3,12 @@
  * App Group UserDefaults so the iOS WidgetExtension can read it.
  *
  * Bridge order:
- * 1. react-native-shared-group-preferences (RNSharedGroupPreferences)
+ * 1. react-native-shared-group-preferences (JS wrapper — native is callback-based)
  * 2. AsyncStorage fallback (RN tests only — extension cannot read it)
  */
 
 import { useEffect, useRef } from 'react'
-import { NativeModules, Platform } from 'react-native'
+import { Platform } from 'react-native'
 
 import {
   type AppSlug,
@@ -23,8 +23,9 @@ type AsyncStorageLike = {
   setItem: (key: string, value: string) => Promise<void>
 }
 
-interface SharedGroupNativeModule {
-  setItem: (key: string, value: string, appGroup: string) => Promise<void>
+type SharedGroupApi = {
+  setItem: (key: string, value: unknown, appGroup: string) => Promise<void>
+  getItem: <T = unknown>(key: string, appGroup: string) => Promise<T>
 }
 
 function loadAsyncStorage(): AsyncStorageLike | null {
@@ -42,10 +43,19 @@ function loadAsyncStorage(): AsyncStorageLike | null {
   }
 }
 
-function loadSharedGroup(): SharedGroupNativeModule | null {
-  const native = (NativeModules as { RNSharedGroupPreferences?: SharedGroupNativeModule })
-    .RNSharedGroupPreferences
-  return native ?? null
+function loadSharedGroup(): SharedGroupApi | null {
+  try {
+    // Must use the JS class — NativeModules methods are callback-style, not Promises.
+    // biome-ignore lint/style/noCommonJs: optional peer dynamic load
+    const mod = require('react-native-shared-group-preferences') as {
+      default?: SharedGroupApi
+    } & SharedGroupApi
+    const api = mod?.default ?? mod
+    if (api && typeof api.setItem === 'function') return api
+    return null
+  } catch {
+    return null
+  }
 }
 
 export type WriteWidgetOptions = {

@@ -56,8 +56,15 @@ export interface YuunWidgetDay {
   solarTerm: string
   yi: string
   ji: string
-  /** Pro 「对你而言」; null for Free. */
+  /** Pro 「对你而言」 verdict label; null when not synced. */
   fit: string | null
+  /** Pro one-line For you summary (personal.summary[fit]). */
+  fitSummary?: string | null
+  /**
+   * Free large-widget day tip (preset lexicon). Always filled so Free large
+   * widgets are not hollow when `fit` is null.
+   */
+  dayTip?: string | null
   moonPhase: number
   /** Large / lock extras — optional for small/medium. */
   officer?: string

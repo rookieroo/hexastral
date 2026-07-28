@@ -11,7 +11,7 @@ import {
   type YuunWidgetDay,
   writeWidgetPayload,
 } from '@zhop/widget-kit-ios'
-import { buildDailyCardModel, topVerbs } from '@/components/DailyCard'
+import { buildDailyCardModel, compactVerbs } from '@/components/DailyCard'
 import {
   type AuspiceDay,
   type AuspicePersonalization,
@@ -56,11 +56,13 @@ function toWidgetDay(
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
     solarTerm: m.solarTermName,
-    yi: topVerbs(m.goodForRaw, locale, 4),
-    ji: topVerbs(m.avoidRaw, locale, 4),
-    yiShort: topVerbs(m.goodForRaw, locale, 2),
-    jiShort: topVerbs(m.avoidRaw, locale, 2),
+    yi: compactVerbs(m.goodForRaw, 4),
+    ji: compactVerbs(m.avoidRaw, 4),
+    yiShort: compactVerbs(m.goodForRaw, 2),
+    jiShort: compactVerbs(m.avoidRaw, 2),
     fit: includeFit ? m.fitLabel : null,
+    fitSummary: includeFit ? m.fitSummary : null,
+    dayTip: m.dayTip,
     moonPhase: m.moonPhase,
     officer: m.officer,
     mansion: m.mansion,
