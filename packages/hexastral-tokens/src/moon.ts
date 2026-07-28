@@ -233,9 +233,35 @@ export const SKIN_INK_LIGHT: MoonFaceSkin = {
   surface: { kind: 'paper', opacity: 0.28 },
 }
 
+/**
+ * 星空 — Yuun dark-mode widget/watch default. Cool pewter lit face that reads
+ * on void-black; the starfield is a SURFACE behind the moon (WidgetSurface /
+ * Swift backdrop), not grain on the disc itself.
+ */
+export const SKIN_STARFIELD: MoonFaceSkin = {
+  id: 'starfield',
+  name: '星空',
+  faceCenter: { cx: 0.36, cy: 0.3 },
+  faceRadius: 0.68,
+  faceStops: [
+    { offset: 0, color: '#e8e6e1' },
+    { offset: 0.55, color: '#9a9aa3' },
+    { offset: 1, color: '#4a4a55' },
+  ],
+  surface: { kind: 'none' },
+  shadowStops: [
+    { offset: 0, color: '#050508' },
+    { offset: 0.5, color: '#0b0b0e' },
+    { offset: 0.78, color: '#12121a' },
+    { offset: 0.94, color: 'rgba(18,18,26,0.4)' },
+    { offset: 1, color: 'rgba(18,18,26,0)' },
+  ],
+}
+
 /** All built-in skins in display order (for pickers). */
 export const ALL_MOON_SKINS: MoonFaceSkin[] = [
   SKIN_RICE_PAPER,
+  SKIN_STARFIELD,
   SKIN_MOON_WHITE,
   SKIN_SILVER,
   SKIN_BRONZE,
@@ -248,9 +274,9 @@ export const DEFAULT_MOON_SKIN = SKIN_RICE_PAPER
 
 /** Convenience lookup map by id. */
 export const MOON_SKINS_BY_ID: Record<string, MoonFaceSkin> = Object.fromEntries(
-  // SKIN_INK is resolvable by id (Auspice's widget/watch default) but stays out of
-  // ALL_MOON_SKINS so it doesn't leak into other apps' skin pickers.
-  [...ALL_MOON_SKINS, SKIN_INK].map((s) => [s.id, s])
+  // SKIN_INK (+ light) resolvable by id for Auspice brand loaders; stay out of
+  // ALL_MOON_SKINS so other apps' pickers don't show brand variants.
+  [...ALL_MOON_SKINS, SKIN_INK, SKIN_INK_LIGHT].map((s) => [s.id, s])
 )
 
 /** HTML v15Shadow — used when a skin doesn't override shadowStops. */

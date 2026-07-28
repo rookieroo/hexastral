@@ -468,8 +468,13 @@ export interface Strings {
   watchStyleLabel: string
   /** Picker label for the 月相 palette (applies to the shipping widget). */
   moonSkinLabel: string
+  /** __DEV__ moon-phase mock controls. */
+  devMoonPhaseLabel: string
+  devMoonPhaseLive: string
+  devMoonPhaseHint: string
   /** Small "coming soon" badge. */
-  comingSoon: string /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
+  comingSoon: string
+  /** 划词 AI follow-up chat over the personal 命书. NOTE: the full 命书 (with this
    *  chat) moved to Yuel in the Yuel/Yuun split; Yuun now shows only the free 概要.
    *  These strings are retained pending dictionary cleanup but are no longer wired. */
   readingChat: {
@@ -568,6 +573,7 @@ const zhHans: Strings = {
   proSubtitle: '个性化日历层 · 完整人生时间线 ·「假如」反思 · 专项日期参考',
   proBenefits: [
     '对你而言 · 基于命盘的每日个性化层（文化参考）',
+    '桌面组件「对你而言」行 · 小/中/大尺寸与锁屏',
     '完整人生时间线 · 大运 / 流年 / 流月 +「假如」反思推演',
     '对你而言 · 每条宜忌逐条解读（用神 · 吉色 · 吉时）',
     '自定义日期范围 + 个人黄历日历订阅',
@@ -848,11 +854,14 @@ const zhHans: Strings = {
   },
   watchWidgets: '桌面组件与表盘',
   watchWidgetsNote:
-    '桌面组件显示当日黄历，可选月相皮肤，分小 / 中两种版式。表盘样式为手表版预览 —— 手表 App 即将推出。',
+    '桌面组件（小 / 中 / 大）与锁屏显示当日黄历；可选月相皮肤。Apple Watch 表盘并发症已有脚手架，完整联调见 docs/apps/yuun/watch-complication-scaffold。',
   widgetPreviewCaption: '桌面组件',
-  watchPreviewCaption: '表盘 · 即将推出',
+  watchPreviewCaption: '表盘预览',
   watchStyleLabel: '表盘样式',
   moonSkinLabel: '月相',
+  devMoonPhaseLabel: 'DEV · 月相预览',
+  devMoonPhaseLive: '今日',
+  devMoonPhaseHint: '仅开发构建。选中后同步首页 Logo 与桌面小组件（写入 App Group）。',
   comingSoon: '即将推出',
   readingChat: {
     title: '聊聊你的命盘',
@@ -932,6 +941,7 @@ const zhHant: Strings = {
   proSubtitle: '個人化日曆層 · 完整人生時間線 ·「假如」反思 · 專項日期參考',
   proBenefits: [
     '對你而言 · 基於命盤的每日個人化層（文化參考）',
+    '桌面元件「對你而言」行 · 小/中/大尺寸與鎖屏',
     '完整人生時間線 · 大運 / 流年 / 流月 +「假如」反思推演',
     '對你而言 · 每條宜忌逐條解讀（用神 · 吉色 · 吉時）',
     '自訂日期範圍 + 個人黃曆日曆訂閱',
@@ -1198,11 +1208,14 @@ const zhHant: Strings = {
   },
   watchWidgets: '桌面元件與錶盤',
   watchWidgetsNote:
-    '桌面元件顯示當日黃曆，可選月相皮膚，分小 / 中兩種版式。錶盤樣式為手錶版預覽 —— 手錶 App 即將推出。',
+    '桌面元件（小 / 中 / 大）與鎖屏顯示當日黃曆；可選月相皮膚。Apple Watch 錶盤複雜功能已有腳手架，完整聯調見文件。',
   widgetPreviewCaption: '桌面元件',
-  watchPreviewCaption: '錶盤 · 即將推出',
+  watchPreviewCaption: '錶盤預覽',
   watchStyleLabel: '錶盤樣式',
   moonSkinLabel: '月相',
+  devMoonPhaseLabel: 'DEV · 月相預覽',
+  devMoonPhaseLive: '今日',
+  devMoonPhaseHint: '僅開發構建。選中後同步首頁 Logo 與桌面小組件（寫入 App Group）。',
   comingSoon: '即將推出',
   readingChat: {
     title: '聊聊你的命盤',
@@ -1306,6 +1319,7 @@ const ja: Strings = {
   proSubtitle: '個人化カレンダー · 人生タイムライン全期間 ·「もしも」省思 · 日付参考',
   proBenefits: [
     'あなた向け · 命盤に基づく毎日の個人化レイヤー（文化参考）',
+    'ウィジェットの「あなたへ」行 · 小/中/大とロック画面',
     '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」省思',
     'あなたへ · 宜忌を一項目ずつ（用神 · 吉色 · 吉時）',
     '日付範囲のカスタム + 個人の暦カレンダー購読',
@@ -1575,11 +1589,14 @@ const ja: Strings = {
   },
   watchWidgets: 'ウィジェットと文字盤',
   watchWidgetsNote:
-    'ウィジェットは今日の暦を表示し、月相スキンを選べます（小 / 中の2サイズ）。文字盤スタイルは Watch 版のプレビュー —— Watch アプリは近日公開。',
+    'ウィジェット（小 / 中 / 大）とロック画面に今日の黄暦。月相スキン選択可。Apple Watch コンプリケーションはスキャフォールド済み（docs 参照）。フル文字盤スキンはプレビューです。',
   widgetPreviewCaption: 'ウィジェット',
-  watchPreviewCaption: '文字盤 · 近日公開',
+  watchPreviewCaption: '文字盤プレビュー',
   watchStyleLabel: '文字盤スタイル',
   moonSkinLabel: '月相',
+  devMoonPhaseLabel: 'DEV · 月相プレビュー',
+  devMoonPhaseLive: '今日',
+  devMoonPhaseHint: '開発ビルドのみ。選択するとホームロゴとウィジェットに同期（App Group）。',
   comingSoon: '近日公開',
   readingChat: {
     title: 'あなたの命盤について',
@@ -1671,6 +1688,7 @@ const en: Strings = {
   proSubtitle: 'Personal calendar layer · full life timeline · what-if reflection · date reference',
   proBenefits: [
     'For you · daily personal layer from your chart (cultural reference)',
+    'Home & Lock Screen widgets with For you line · small / medium / large',
     'Your whole life in 10-year cycles — decade, year, month + what-if reflection',
     'For-you — every Suitable / Avoid explained (favorable element · color · hour)',
     'Custom date-picker range + personal almanac calendar subscription',
@@ -1955,11 +1973,14 @@ const en: Strings = {
   },
   watchWidgets: 'Widgets & Watch',
   watchWidgetsNote:
-    "The widget shows today's almanac with your chosen moon skin, in small and medium sizes. The watch styles are a preview — the watch app is coming soon.",
+    "Home Screen widgets (small / medium / large) and Lock Screen show today's almanac with optional moon skins. Apple Watch complications are scaffolded (see docs); full watch-face skins remain a preview.",
   widgetPreviewCaption: 'Widget',
-  watchPreviewCaption: 'Watch · soon',
+  watchPreviewCaption: 'Watch preview',
   watchStyleLabel: 'Watch styles',
   moonSkinLabel: 'Moon skin',
+  devMoonPhaseLabel: 'DEV · Moon phase',
+  devMoonPhaseLive: 'Live',
+  devMoonPhaseHint: 'Dev only. Syncs home logo + home-screen widget via App Group.',
   comingSoon: 'Soon',
   readingChat: {
     title: 'Ask about your chart',

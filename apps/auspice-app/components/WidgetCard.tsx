@@ -1,12 +1,9 @@
 /**
- * WidgetCard — iOS home-screen widget layouts (small / medium / large), fed by
- * the same `buildDailyCardModel`. Unlike the watch face these show the DAY's 黄历
- * (NO live clock — home widgets refresh periodically, they are not clocks):
- * 公历/农历 date + 干支日 (五行 element colour) + 月相 + 宜忌, with more 黄历 detail at
- * larger sizes (值神/二十八宿/冲 + 对你而言). The RN reference spec for the native
- * WidgetKit target (each size gets its own layout — square / landscape / tall).
+ * WidgetCard — RN preview of home-screen widget layouts.
+ * Zinc type on 宣纸 (light) / 星空 (dark) surfaces — mirrors native WidgetKit.
  */
 
+import { useTheme } from '@zhop/core-ui'
 import { useMemo } from 'react'
 import { Text, View } from 'react-native'
 import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
@@ -14,23 +11,41 @@ import { useStrings } from '@/lib/i18n-context'
 import type { MoonSkinId } from '@/lib/widget-config'
 import { buildDailyCardModel, type DailyCardModel, formatWatchDate, topVerbs } from './DailyCard'
 import { StaticMoon } from './StaticMoon'
+import { WidgetSurface, type WidgetSurfaceMode } from './WidgetSurface'
 
 export type WidgetSize = 'small' | 'medium' | 'large'
 
-const BG = '#0E0D0C'
-const CREAM = 'rgba(231,224,208,0.92)'
-const DIM = 'rgba(231,224,208,0.5)'
-const FAINT = 'rgba(231,224,208,0.35)'
-const COPPER = 'rgba(196,168,130,0.85)'
-
-function fitColor(fit: DailyCardModel['fit']): string {
-  // Dark-bg widget — use the lighter (400-level) variants of the modern 吉/凶
-  // palette so they read on a near-black background; the lighter ones mirror
-  // the dark-mode tokens in hexastral-tokens/palette.ts.
-  return fit === '吉' ? '#4ADE80' : fit === '凶' ? '#F87171' : DIM
+type Chrome = {
+  text: string
+  secondary: string
+  tertiary: string
+  separator: string
 }
 
-type SubProps = { model: DailyCardModel; moonSkinId?: MoonSkinId }
+function chromeFor(mode: WidgetSurfaceMode): Chrome {
+  if (mode === 'light') {
+    return {
+      text: '#09090B',
+      secondary: '#71717A',
+      tertiary: '#A1A1AA',
+      separator: '#E4E4E7',
+    }
+  }
+  return {
+    text: '#FAFAFA',
+    secondary: '#A1A1AA',
+    tertiary: '#71717A',
+    separator: '#27272A',
+  }
+}
+
+type SubProps = {
+  model: DailyCardModel
+  moonSkinId?: MoonSkinId
+  phaseOverride?: number
+  chrome: Chrome
+  mode: WidgetSurfaceMode
+}
 
 export function WidgetCard({
   date,
@@ -38,112 +53,140 @@ export function WidgetCard({
   personalization,
   size,
   moonSkinId,
+  phaseOverride,
+  width,
+  height,
 }: {
   date: string
   day: AuspiceDay
   personalization?: AuspicePersonalization | null
   size: WidgetSize
   moonSkinId?: MoonSkinId
+  phaseOverride?: number
+  /** Required for textured surface sizing. */
+  width: number
+  height: number
 }) {
   const { t, locale } = useStrings()
+  const { mode } = useTheme()
+  const surfaceMode: WidgetSurfaceMode = mode === 'light' ? 'light' : 'dark'
+  const chrome = chromeFor(surfaceMode)
   const model = useMemo(
     () => buildDailyCardModel(date, day, personalization, t, locale),
     [date, day, personalization, t, locale]
   )
-  if (size === 'medium') return <MediumWidget model={model} moonSkinId={moonSkinId} />
-  if (size === 'large') return <LargeWidget model={model} moonSkinId={moonSkinId} />
-  return <SmallWidget model={model} moonSkinId={moonSkinId} />
+  const body =
+    size === 'medium' ? (
+      <MediumWidget
+        model={model}
+        moonSkinId={moonSkinId}
+        phaseOverride={phaseOverride}
+        chrome={chrome}
+        mode={surfaceMode}
+      />
+    ) : size === 'large' ? (
+      <LargeWidget
+        model={model}
+        moonSkinId={moonSkinId}
+        phaseOverride={phaseOverride}
+        chrome={chrome}
+        mode={surfaceMode}
+      />
+    ) : (
+      <SmallWidget
+        model={model}
+        moonSkinId={moonSkinId}
+        phaseOverride={phaseOverride}
+        chrome={chrome}
+        mode={surfaceMode}
+      />
+    )
+
+  return (
+    <WidgetSurface mode={surfaceMode} width={width} height={height}>
+      {body}
+    </WidgetSurface>
+  )
 }
 
-// ── small (≈158×158, square) — 月相 + 干支 + 农历 + 一宜一忌 ───────────────────
+function phaseOf(model: DailyCardModel, override?: number) {
+  return override ?? model.moonPhase
+}
 
-function SmallWidget({ model, moonSkinId }: SubProps) {
+function SmallWidget({ model, moonSkinId, phaseOverride, chrome }: SubProps) {
   const { t, locale } = useStrings()
   return (
-    <View style={{ flex: 1, backgroundColor: BG, padding: 14, justifyContent: 'space-between' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <StaticMoon phase={model.moonPhase} size={32} skinId={moonSkinId} />
-        <Text style={{ color: DIM, fontSize: 11, letterSpacing: 1 }} numberOfLines={1}>
-          {model.lunarMonthDay}
-        </Text>
+    <View style={{ flex: 1, padding: 14, justifyContent: 'space-between' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}
+      >
+        <StaticMoon phase={phaseOf(model, phaseOverride)} size={34} skinId={moonSkinId} />
+        <View style={{ flex: 1, alignItems: 'flex-end', gap: 2 }}>
+          <Text style={{ color: chrome.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
+            {model.lunarMonthDay || t.lunarLabel}
+          </Text>
+          {model.ganzhiYear ? (
+            <Text style={{ color: chrome.secondary, fontSize: 12 }} numberOfLines={1}>
+              {model.ganzhiYear}
+            </Text>
+          ) : null}
+        </View>
       </View>
-      <View>
+      <Text style={{ color: chrome.text, fontSize: 28, fontWeight: '300', letterSpacing: 2 }}>
+        {model.ganZhi}
+      </Text>
+      <View style={{ gap: 3 }}>
         <Text
-          style={{
-            color: model.dayElementColor,
-            fontSize: 30,
-            fontWeight: '300',
-            letterSpacing: 3,
-          }}
-        >
-          {model.ganZhi}
-        </Text>
-        <Text style={{ color: FAINT, fontSize: 11 }} numberOfLines={1}>
-          {formatWatchDate(model.date, locale)}
-        </Text>
-      </View>
-      <View>
-        {/* Shrink-to-fit rather than ellipsis-truncate — the English prefixes
-            ("Good for"/"Avoid") overflow the narrow small widget where the CJK
-            宜/忌 do not. */}
-        <Text
-          style={{ color: CREAM, fontSize: 11 }}
-          numberOfLines={1}
+          style={{ color: chrome.text, fontSize: 13 }}
+          numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={0.8}
         >
-          {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 1)}`}
+          {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 4)}`}
         </Text>
         <Text
-          style={{ color: DIM, fontSize: 11 }}
-          numberOfLines={1}
+          style={{ color: chrome.secondary, fontSize: 13 }}
+          numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={0.8}
         >
-          {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 1)}`}
+          {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 4)}`}
         </Text>
       </View>
     </View>
   )
 }
 
-// ── medium (≈338×158, landscape) — moon block | 宜忌 + meta ───────────────────
-
-function MediumWidget({ model, moonSkinId }: SubProps) {
+function MediumWidget({ model, moonSkinId, phaseOverride, chrome }: SubProps) {
   const { t, locale } = useStrings()
   return (
-    <View style={{ flex: 1, backgroundColor: BG, padding: 16, flexDirection: 'row', gap: 16 }}>
-      <View style={{ width: 116, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <StaticMoon phase={model.moonPhase} size={48} skinId={moonSkinId} />
-        <Text
-          style={{
-            color: model.dayElementColor,
-            fontSize: 22,
-            fontWeight: '400',
-            letterSpacing: 2,
-          }}
-        >
-          {model.ganZhi}
-        </Text>
-        <Text style={{ color: DIM, fontSize: 11 }} numberOfLines={1}>
-          {model.lunarMonthDay}
+    <View style={{ flex: 1, padding: 16, flexDirection: 'row', gap: 14 }}>
+      <View style={{ width: 112, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <StaticMoon phase={phaseOf(model, phaseOverride)} size={52} skinId={moonSkinId} />
+        <Text style={{ color: chrome.text, fontSize: 20, fontWeight: '300' }}>{model.ganZhi}</Text>
+        <Text style={{ color: chrome.secondary, fontSize: 12, textAlign: 'center' }} numberOfLines={2}>
+          {`${model.lunarMonthDay}${model.ganzhiYear ? ` · ${model.ganzhiYear}` : ''}`}
         </Text>
       </View>
-      <View style={{ flex: 1, justifyContent: 'center', gap: 5 }}>
-        <Text style={{ color: COPPER, fontSize: 11, letterSpacing: 1 }} numberOfLines={1}>
-          {`${formatWatchDate(model.date, locale)} · ${model.solarTermName}`}
+      <View style={{ flex: 1, justifyContent: 'center', gap: 6 }}>
+        {model.solarTermName ? (
+          <Text style={{ color: chrome.tertiary, fontSize: 12 }} numberOfLines={1}>
+            {model.solarTermName}
+          </Text>
+        ) : null}
+        <Text style={{ color: chrome.text, fontSize: 15 }} numberOfLines={3}>
+          {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 4)}`}
         </Text>
-        <Text style={{ color: CREAM, fontSize: 13 }} numberOfLines={1}>
-          {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 3)}`}
-        </Text>
-        <Text style={{ color: DIM, fontSize: 13 }} numberOfLines={1}>
-          {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 3)}`}
+        <Text style={{ color: chrome.secondary, fontSize: 15 }} numberOfLines={3}>
+          {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 4)}`}
         </Text>
         {model.fitLabel ? (
-          <Text
-            style={{ color: fitColor(model.fit), fontSize: 12, fontWeight: '600' }}
-            numberOfLines={1}
-          >
+          <Text style={{ color: chrome.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {`${t.personal.forYou} · ${model.fitLabel}`}
           </Text>
         ) : null}
@@ -152,56 +195,46 @@ function MediumWidget({ model, moonSkinId }: SubProps) {
   )
 }
 
-// ── large (≈338×354, tall) — full 黄历 page ──────────────────────────────────
-
-function LargeWidget({ model, moonSkinId }: SubProps) {
+function LargeWidget({ model, moonSkinId, phaseOverride, chrome }: SubProps) {
   const { t, locale } = useStrings()
   return (
-    <View style={{ flex: 1, backgroundColor: BG, padding: 20, gap: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ gap: 2 }}>
-          <Text style={{ color: CREAM, fontSize: 15 }}>{formatWatchDate(model.date, locale)}</Text>
-          <Text style={{ color: COPPER, fontSize: 12, letterSpacing: 1 }}>
+    <View style={{ flex: 1, padding: 18, gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <View style={{ gap: 4 }}>
+          <Text style={{ color: chrome.text, fontSize: 15, fontWeight: '500' }}>
             {`${model.lunarMonthDay}${model.ganzhiYear ? ` · ${model.ganzhiYear}` : ''}`}
           </Text>
+          {model.solarTermName ? (
+            <Text style={{ color: chrome.secondary, fontSize: 13 }}>{model.solarTermName}</Text>
+          ) : null}
+          <Text style={{ color: chrome.tertiary, fontSize: 12 }}>
+            {formatWatchDate(model.date, locale)}
+          </Text>
         </View>
-        <StaticMoon phase={model.moonPhase} size={56} skinId={moonSkinId} />
+        <StaticMoon phase={phaseOf(model, phaseOverride)} size={58} skinId={moonSkinId} />
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
-        <Text
-          style={{
-            color: model.dayElementColor,
-            fontSize: 38,
-            fontWeight: '300',
-            letterSpacing: 3,
-          }}
-        >
-          {model.ganZhi}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+        <Text style={{ color: chrome.text, fontSize: 34, fontWeight: '300' }}>{model.ganZhi}</Text>
+        <Text style={{ color: chrome.secondary, fontSize: 14, paddingBottom: 5 }}>
+          {`${model.officer}日`}
         </Text>
-        <Text style={{ color: CREAM, fontSize: 14, paddingBottom: 6 }}>{`${model.officer}日`}</Text>
-        <Text style={{ color: DIM, fontSize: 13, paddingBottom: 6 }}>{model.solarTermName}</Text>
       </View>
-      <Text style={{ color: COPPER, fontSize: 12, letterSpacing: 0.5 }} numberOfLines={1}>
+      <Text style={{ color: chrome.secondary, fontSize: 13 }} numberOfLines={1}>
         {`${model.mansion} · 冲${model.clashShengxiao}`}
       </Text>
 
-      <View style={{ height: 0.5, backgroundColor: 'rgba(196,168,130,0.2)' }} />
+      <View style={{ height: 0.5, backgroundColor: chrome.separator }} />
 
-      <Text style={{ color: CREAM, fontSize: 14, lineHeight: 22 }} numberOfLines={2}>
-        <Text style={{ color: '#7FB069', fontWeight: '700' }}>{`${t.suitable} `}</Text>
-        {topVerbs(model.goodForRaw, locale, 4)}
+      <Text style={{ color: chrome.text, fontSize: 16, lineHeight: 24 }} numberOfLines={3}>
+        {`${t.suitable} ${topVerbs(model.goodForRaw, locale, 4)}`}
       </Text>
-      <Text style={{ color: DIM, fontSize: 14, lineHeight: 22 }} numberOfLines={2}>
-        <Text style={{ color: '#D98880', fontWeight: '700' }}>{`${t.avoid} `}</Text>
-        {topVerbs(model.avoidRaw, locale, 4)}
+      <Text style={{ color: chrome.secondary, fontSize: 16, lineHeight: 24 }} numberOfLines={3}>
+        {`${t.avoid} ${topVerbs(model.avoidRaw, locale, 4)}`}
       </Text>
 
       {model.fitLabel ? (
-        <Text
-          style={{ color: fitColor(model.fit), fontSize: 13, fontWeight: '600' }}
-          numberOfLines={1}
-        >
+        <Text style={{ color: chrome.text, fontSize: 14, fontWeight: '500' }} numberOfLines={1}>
           {`${t.personal.forYou} · ${model.fitLabel}`}
         </Text>
       ) : null}

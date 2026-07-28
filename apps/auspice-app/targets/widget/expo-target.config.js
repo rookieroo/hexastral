@@ -9,6 +9,8 @@
 module.exports = {
   type: 'widget',
   name: 'AuspiceWidget',
+  /** Gallery / long-press lists this under the host app; keep display name Yuun. */
+  displayName: 'Yuun',
   deploymentTarget: '17.0',
   entitlements: {
     'com.apple.security.application-groups': ['group.com.hexastral.yuun'],

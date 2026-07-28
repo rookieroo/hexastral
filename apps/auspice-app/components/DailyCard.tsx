@@ -190,7 +190,7 @@ export function topVerbs(raw: string[], locale: Locale, n: number): string {
     .join('·')
 }
 
-function moonPhaseFromLunarDay(day: number | undefined): number {
+export function moonPhaseFromLunarDay(day: number | undefined): number {
   if (!day || day < 1) return 0
   return Math.max(0, Math.min(0.999, (day - 1) / 29.53))
 }
@@ -314,23 +314,36 @@ function useReveal() {
 
 type FaceProps = { model: DailyCardModel; moonSkinId?: MoonSkinId; phaseOverride?: number }
 
-const FACE_BASE = {
-  flex: 1,
-  backgroundColor: '#000',
-  paddingHorizontal: 18,
-  paddingVertical: 14,
-  justifyContent: 'center',
-} as const
+function useFaceChrome() {
+  const { mode } = useTheme()
+  const light = mode === 'light'
+  return {
+    bg: light ? '#F5F0E8' : '#0B0B0C',
+    text: light ? '#09090B' : '#FAFAFA',
+    dim: light ? '#71717A' : '#A1A1AA',
+    faint: light ? '#A1A1AA' : '#71717A',
+    separator: light ? '#E4E4E7' : '#27272A',
+  }
+}
+
+function faceBase(bg: string) {
+  return {
+    flex: 1 as const,
+    backgroundColor: bg,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    justifyContent: 'center' as const,
+  }
+}
 
 // ── glance — complication ───────────────────────────────────────────────────
 
 function GlanceTier({ model, moonSkinId, phaseOverride }: FaceProps) {
+  const c = useFaceChrome()
   return (
-    <View style={{ ...FACE_BASE, alignItems: 'center', gap: 4 }}>
+    <View style={{ ...faceBase(c.bg), alignItems: 'center', gap: 4 }}>
       <StaticMoon phase={phaseOverride ?? model.moonPhase} size={42} skinId={moonSkinId} />
-      <Text
-        style={{ color: model.dayElementColor, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}
-      >
+      <Text style={{ color: c.text, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}>
         {model.ganZhi}
       </Text>
     </View>
@@ -342,11 +355,12 @@ function GlanceTier({ model, moonSkinId, phaseOverride }: FaceProps) {
 function ModernFace({ model, moonSkinId, phaseOverride }: FaceProps) {
   const { t, locale } = useStrings()
   const { restStyle, revealStyle, toggle } = useReveal()
+  const c = useFaceChrome()
   const restText = model.fitLabel ? `${t.personal.forYou} ${model.fitLabel}` : model.solarTermName
-  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : 'rgba(255,255,255,0.4)'
+  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : c.dim
 
   return (
-    <Pressable onPress={toggle} accessibilityRole='button' style={FACE_BASE}>
+    <Pressable onPress={toggle} accessibilityRole='button' style={faceBase(c.bg)}>
       <View
         style={{
           flexDirection: 'row',
@@ -356,21 +370,14 @@ function ModernFace({ model, moonSkinId, phaseOverride }: FaceProps) {
         }}
       >
         <StaticMoon phase={phaseOverride ?? model.moonPhase} size={30} skinId={moonSkinId} />
-        <Text
-          style={{
-            color: model.dayElementColor,
-            fontSize: 15,
-            fontWeight: '500',
-            letterSpacing: 1,
-          }}
-        >
+        <Text style={{ color: c.text, fontSize: 15, fontWeight: '500', letterSpacing: 1 }}>
           {model.ganZhi}
         </Text>
       </View>
-      <Text style={{ color: '#fff', fontSize: 42, fontWeight: '200', letterSpacing: 1 }}>
+      <Text style={{ color: c.text, fontSize: 42, fontWeight: '200', letterSpacing: 1 }}>
         {currentClock()}
       </Text>
-      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} numberOfLines={1}>
+      <Text style={{ color: c.dim, fontSize: 13 }} numberOfLines={1}>
         {formatWatchDate(model.date, locale)}
       </Text>
       <RevealSlot
@@ -380,6 +387,8 @@ function ModernFace({ model, moonSkinId, phaseOverride }: FaceProps) {
         restColor={restColor}
         yiLine={`${t.suitable} ${topVerbs(model.goodForRaw, locale, 1)}`}
         jiLine={`${t.avoid} ${topVerbs(model.avoidRaw, locale, 1)}`}
+        yiColor={c.text}
+        jiColor={c.dim}
       />
     </Pressable>
   )
@@ -390,8 +399,9 @@ function ModernFace({ model, moonSkinId, phaseOverride }: FaceProps) {
 function LunarFace({ model, moonSkinId, phaseOverride }: FaceProps) {
   const { t, locale } = useStrings()
   const { restStyle, revealStyle, toggle } = useReveal()
+  const c = useFaceChrome()
   const restText = model.fitLabel ? `${t.personal.forYou} ${model.fitLabel}` : model.solarTermName
-  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : 'rgba(255,255,255,0.4)'
+  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : c.dim
 
   // Moon-hero, vertical: the moon sits on top, the time gets the FULL width below
   // it (the earlier side-by-side layout clipped the time — see 2026-06 feedback).
@@ -399,20 +409,16 @@ function LunarFace({ model, moonSkinId, phaseOverride }: FaceProps) {
     <Pressable
       onPress={toggle}
       accessibilityRole='button'
-      style={{ ...FACE_BASE, alignItems: 'center' }}
+      style={{ ...faceBase(c.bg), alignItems: 'center' }}
     >
       <StaticMoon phase={phaseOverride ?? model.moonPhase} size={52} skinId={moonSkinId} />
-      <Text
-        style={{ color: '#fff', fontSize: 40, fontWeight: '200', letterSpacing: 1, marginTop: 4 }}
-      >
+      <Text style={{ color: c.text, fontSize: 40, fontWeight: '200', letterSpacing: 1, marginTop: 4 }}>
         {currentClock()}
       </Text>
-      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }} numberOfLines={1}>
+      <Text style={{ color: c.dim, fontSize: 12 }} numberOfLines={1}>
         {formatWatchDate(model.date, locale)}
       </Text>
-      <Text
-        style={{ color: model.dayElementColor, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}
-      >
+      <Text style={{ color: c.text, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}>
         {model.ganZhi}
       </Text>
       <View style={{ alignSelf: 'stretch' }}>
@@ -423,6 +429,8 @@ function LunarFace({ model, moonSkinId, phaseOverride }: FaceProps) {
           restColor={restColor}
           yiLine={`${t.suitable} ${topVerbs(model.goodForRaw, locale, 1)}`}
           jiLine={`${t.avoid} ${topVerbs(model.avoidRaw, locale, 1)}`}
+          yiColor={c.text}
+          jiColor={c.dim}
         />
       </View>
     </Pressable>
@@ -434,12 +442,13 @@ function LunarFace({ model, moonSkinId, phaseOverride }: FaceProps) {
 function AlmanacFace({ model, moonSkinId, phaseOverride }: FaceProps) {
   const { t, locale } = useStrings()
   const { restStyle, revealStyle, toggle } = useReveal()
+  const c = useFaceChrome()
   const restText = model.fitLabel ? `${t.personal.forYou} ${model.fitLabel}` : model.solarTermName
-  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : 'rgba(255,255,255,0.4)'
+  const restColor = model.fitLabel ? fitColorOnDark(model.fit) : c.dim
   const hant = locale === 'zh-Hant'
 
   return (
-    <Pressable onPress={toggle} accessibilityRole='button' style={FACE_BASE}>
+    <Pressable onPress={toggle} accessibilityRole='button' style={faceBase(c.bg)}>
       <View
         style={{
           flexDirection: 'row',
@@ -450,34 +459,26 @@ function AlmanacFace({ model, moonSkinId, phaseOverride }: FaceProps) {
       >
         <StaticMoon phase={phaseOverride ?? model.moonPhase} size={28} skinId={moonSkinId} />
         {model.lunarLabel ? (
-          <Text
-            style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, letterSpacing: 1 }}
-            numberOfLines={1}
-          >
+          <Text style={{ color: c.dim, fontSize: 12, letterSpacing: 1 }} numberOfLines={1}>
             {model.lunarLabel}
           </Text>
         ) : null}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-        <Text style={{ color: '#fff', fontSize: 38, fontWeight: '200', letterSpacing: 1 }}>
+        <Text style={{ color: c.text, fontSize: 38, fontWeight: '200', letterSpacing: 1 }}>
           {currentClock()}
         </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 15, paddingBottom: 5 }}>
+        <Text style={{ color: c.dim, fontSize: 15, paddingBottom: 5 }}>
           {currentShichen(hant)}
         </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} numberOfLines={1}>
+        <Text style={{ color: c.dim, fontSize: 13 }} numberOfLines={1}>
           {formatWatchDate(model.date, locale)}
         </Text>
-        <Text style={{ color: model.dayElementColor, fontSize: 14, fontWeight: '600' }}>
-          {model.ganZhi}
-        </Text>
+        <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{model.ganZhi}</Text>
       </View>
-      <Text
-        style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, letterSpacing: 0.5, marginTop: 3 }}
-        numberOfLines={1}
-      >
+      <Text style={{ color: c.faint, fontSize: 11, letterSpacing: 0.5, marginTop: 3 }} numberOfLines={1}>
         {`${model.officer} · ${model.mansion} · 冲${model.clashShengxiao}`}
       </Text>
       <RevealSlot
@@ -487,6 +488,8 @@ function AlmanacFace({ model, moonSkinId, phaseOverride }: FaceProps) {
         restColor={restColor}
         yiLine={`${t.suitable} ${topVerbs(model.goodForRaw, locale, 2)}`}
         jiLine={`${t.avoid} ${topVerbs(model.avoidRaw, locale, 2)}`}
+        yiColor={c.text}
+        jiColor={c.dim}
         marginTop={2}
       />
     </Pressable>
@@ -497,6 +500,7 @@ function AlmanacFace({ model, moonSkinId, phaseOverride }: FaceProps) {
 
 function AncientFace({ model, moonSkinId, phaseOverride }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
+  const c = useFaceChrome()
 
   return (
     <Pressable
@@ -508,7 +512,7 @@ function AncientFace({ model, moonSkinId, phaseOverride }: FaceProps) {
       // copper text alone carry the 古风 aesthetic.
       style={{
         flex: 1,
-        backgroundColor: '#0A0908',
+        backgroundColor: c.bg,
         paddingHorizontal: 16,
         paddingVertical: 14,
         justifyContent: 'center',
@@ -575,6 +579,8 @@ function RevealSlot({
   restColor,
   yiLine,
   jiLine,
+  yiColor = 'rgba(255,255,255,0.85)',
+  jiColor = 'rgba(255,255,255,0.55)',
   marginTop = 6,
 }: {
   restStyle: { opacity: number }
@@ -583,6 +589,8 @@ function RevealSlot({
   restColor: string
   yiLine: string
   jiLine: string
+  yiColor?: string
+  jiColor?: string
   marginTop?: number
 }) {
   return (
@@ -595,10 +603,10 @@ function RevealSlot({
       <Animated.View
         style={[StyleSheet.absoluteFill, revealStyle, { justifyContent: 'center', gap: 1 }]}
       >
-        <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12 }} numberOfLines={1}>
+        <Text style={{ color: yiColor, fontSize: 12 }} numberOfLines={1}>
           {yiLine}
         </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }} numberOfLines={1}>
+        <Text style={{ color: jiColor, fontSize: 12 }} numberOfLines={1}>
           {jiLine}
         </Text>
       </Animated.View>

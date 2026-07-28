@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "Auspice.app"
-               BlueprintName = "Auspice"
-               ReferencedContainer = "container:Auspice.xcodeproj">
+               BuildableName = "Yuun.app"
+               BlueprintName = "Yuun"
+               ReferencedContainer = "container:Yuun.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "AuspiceTests.xctest"
-               BlueprintName = "AuspiceTests"
-               ReferencedContainer = "container:Auspice.xcodeproj">
+               BuildableName = "YuunTests.xctest"
+               BlueprintName = "YuunTests"
+               ReferencedContainer = "container:Yuun.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "Auspice.app"
-            BlueprintName = "Auspice"
-            ReferencedContainer = "container:Auspice.xcodeproj">
+            BuildableName = "Yuun.app"
+            BlueprintName = "Yuun"
+            ReferencedContainer = "container:Yuun.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "Auspice.app"
-            BlueprintName = "Auspice"
-            ReferencedContainer = "container:Auspice.xcodeproj">
+            BuildableName = "Yuun.app"
+            BlueprintName = "Yuun"
+            ReferencedContainer = "container:Yuun.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

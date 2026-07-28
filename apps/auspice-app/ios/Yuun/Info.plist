@@ -42,7 +42,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+yuun</string>
+          <string>exp+auspice</string>
         </array>
       </dict>
     </array>

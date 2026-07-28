@@ -12,59 +12,71 @@
 export interface WidgetSyncPayload<TData = Record<string, unknown>> {
   /** ISO timestamp when this payload was written (RN side). */
   updatedAt: string
-  /** App slug (e.g. 'cycle', 'feng', 'kindred', 'mingpan'). Identifies which widget reads this. */
+  /** App slug — identifies which widget reads this. */
   appSlug: AppSlug
   /** Locale of the strings inside `data` (4 supported). */
   locale: WidgetLocale
-  /** App-specific payload. See per-app type docs in /docs/widget-data-contracts.md (TBD). */
+  /** App-specific payload. */
   data: TData
-  /** Optional ISO timestamp until which this payload is considered fresh.
-   *  Swift TimelineProvider uses this to schedule next refresh. */
+  /** Optional ISO timestamp until which this payload is considered fresh. */
   freshUntil?: string
 }
 
-export type AppSlug = 'cycle' | 'feng' | 'yuan' | 'mingpan'
+/** Satellite apps that ship home-screen widgets. `yuun` replaces obsolete `cycle`. */
+export type AppSlug = 'yuun' | 'feng' | 'kindred' | 'yuan' | 'mingpan'
 
 export type WidgetLocale = 'en' | 'zh-Hans' | 'zh-Hant' | 'ja'
 
 /**
- * App Group identifier convention.
- * Format: `group.com.hexastral.shared.{appSlug}`
- * Each app's WidgetExtension target reads from this group.
+ * Default App Group identifier convention.
+ * Yuun overrides via plugin `appGroupId` → `group.com.hexastral.yuun`.
  */
 export function appGroupForSlug(slug: AppSlug): string {
+  if (slug === 'yuun') return 'group.com.hexastral.yuun'
   return `group.com.hexastral.shared.${slug}`
 }
 
 /**
- * UserDefaults key inside the App Group where the payload is stored.
- * Single key per app — last write wins.
+ * UserDefaults key inside the App Group where the envelope payload is stored.
+ * Legacy Yuun key `almanac_days` is still readable by Swift during migration.
  */
 export const WIDGET_PAYLOAD_KEY = 'hexastral_widget_payload_v1'
 
-// ── Per-app data shapes (extend as widgets ship) ─────────────────────────
+/** Legacy Yuun key (pre-envelope). Prefer WIDGET_PAYLOAD_KEY going forward. */
+export const YUUN_LEGACY_DAYS_KEY = 'almanac_days'
 
-/** Auspice widget data (Sprint 5 spec).
- *  Small: ganZhi, lunarDate, nextSolarTermDays, nextSolarTermName
- *  Medium: + todayYi (top 1), moonPhaseEmoji (Pro)
- *  Lock-Screen: + nextFamilyEventLabel, nextFamilyEventDays
- */
-export interface AuspiceWidgetData {
+// ── Per-app data shapes ───────────────────────────────────────────────────
+
+/** One day in the Yuun widget cache window (matches SharedDay in Swift). */
+export interface YuunWidgetDay {
+  date: string
   ganZhi: string
-  lunarDate: string
-  nextSolarTermName: string
-  nextSolarTermDays: number
-  todayYi?: string
-  moonPhaseEmoji?: string
-  nextFamilyEventLabel?: string
-  nextFamilyEventDays?: number
+  elementColor: string
+  lunar: string
+  solarTerm: string
+  yi: string
+  ji: string
+  /** Pro 「对你而言」; null for Free. */
+  fit: string | null
+  moonPhase: number
+  /** Large / lock extras — optional for small/medium. */
+  officer?: string
+  mansion?: string
+  clashShengxiao?: string
+  ganzhiYear?: string | null
+  yiShort?: string
+  jiShort?: string
 }
 
-/** Feng widget data (Sprint F.5 spec).
- *  Small: monthlyFlyingStarsCenter, keyAvoidRoom
- *  Medium: + 3x3 stars mini grid summary, topThreeRoomFit
- *  Lock-Screen: nextJieqiCheck (room maintenance reminder)
- */
+/** Yuun widget payload — N-day window written by the RN app. */
+export interface YuunWidgetData {
+  days: YuunWidgetDay[]
+}
+
+/** @deprecated Use YuunWidgetData. Kept as alias for older imports. */
+export type AuspiceWidgetData = YuunWidgetData
+
+/** Feng widget data. */
 export interface FengWidgetData {
   monthlyCenter: number
   keyAvoidRoom: string
@@ -74,11 +86,7 @@ export interface FengWidgetData {
   nextJieqiDays: number
 }
 
-/** Kindred widget data (Sprint Y.4 spec).
- *  Small: todayPairFit, dailyInsightOneLine
- *  Medium: + nextAnniversaryCountdown
- *  Lock-Screen: + relationshipTrendArrow
- */
+/** Kindred widget data. */
 export interface KindredWidgetData {
   todayPairFitStars: number
   dailyInsightOneLine: string
@@ -86,5 +94,3 @@ export interface KindredWidgetData {
   nextAnniversaryLabel?: string
   trendArrow?: 'up' | 'flat' | 'down'
 }
-
-/** MingPan widget data — none. MingPan is a pure tool, no widget. */

@@ -6,7 +6,8 @@
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./plugin": "./plugin/withWidgetExtension.ts"
+    "./plugin": "./app.plugin.js",
+    "./app.plugin.js": "./app.plugin.js"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

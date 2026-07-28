@@ -10,6 +10,7 @@
 import { Button, useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon, SettingsIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
+import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Image, ScrollView, Text, View } from 'react-native'
@@ -20,6 +21,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
+import { moonPhaseFromLunarDay } from '@/components/DailyCard'
+import { StaticMoon } from '@/components/StaticMoon'
 import {
   type AuspiceDayPayload,
   fetchAuspiceBootstrap,
@@ -33,7 +36,9 @@ import { lunarCellLabel } from '@/lib/calendar-display'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
+import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { syncTodayWidget } from '@/lib/widget-bridge'
+import { defaultMoonSkinForMode } from '@/lib/widget-config'
 
 const HOME_LOGO = require('../../assets/icon.png')
 
@@ -58,8 +63,11 @@ function addDaysIso(iso: string, delta: number): string {
 }
 
 export default function HomeScreen() {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, mode } = useTheme()
+  const { phase: devMoonPhase } = useDevMoonPhase()
   const { t, locale } = useStrings()
+  const entitlements = useEntitlements()
+  const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const router = useRouter()
   const params = useLocalSearchParams<{ day?: string; focus?: string }>()
 
@@ -118,8 +126,17 @@ export default function HomeScreen() {
   )
 
   useEffect(() => {
-    if (dayData) void syncTodayWidget(dayData.date, dayData.day, dayData.personalization, t, locale)
-  }, [dayData, t, locale])
+    if (dayData) {
+      void syncTodayWidget(
+        dayData.date,
+        dayData.day,
+        dayData.personalization,
+        t,
+        locale,
+        isPro
+      )
+    }
+  }, [dayData, t, locale, isPro])
 
   useEffect(() => {
     if (focusPersonal && dayData && !dayLoading) {
@@ -269,17 +286,29 @@ export default function HomeScreen() {
           }}
           style={{ opacity: morphActive ? 0 : 1 }}
         >
-          <Image
-            source={HOME_LOGO}
-            style={{
-              width: HOME_LOGO_SIZE,
-              height: HOME_LOGO_SIZE,
-              borderRadius: 6,
-            }}
-            resizeMode='contain'
-            accessibilityIgnoresInvertColors
-            accessibilityLabel='Yuun'
-          />
+          {/* After welcome→home morph lands, show live 月相 to echo the widget.
+              Morph still flies the PNG icon; swapping only the settled home mark. */}
+          {dayData?.day.lunarDate?.day != null && !morphActive ? (
+            <StaticMoon
+              phase={
+                devMoonPhase ?? moonPhaseFromLunarDay(dayData.day.lunarDate.day)
+              }
+              size={HOME_LOGO_SIZE}
+              skinId={defaultMoonSkinForMode(mode === 'light' ? 'light' : 'dark')}
+            />
+          ) : (
+            <Image
+              source={HOME_LOGO}
+              style={{
+                width: HOME_LOGO_SIZE,
+                height: HOME_LOGO_SIZE,
+                borderRadius: 6,
+              }}
+              resizeMode='contain'
+              accessibilityIgnoresInvertColors
+              accessibilityLabel='Yuun'
+            />
+          )}
         </View>
         <Pressable
           onPress={goToMe}

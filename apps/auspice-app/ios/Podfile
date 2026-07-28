@@ -20,7 +20,7 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
-target 'Auspice' do
+target 'Yuun' do
   use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
@@ -65,6 +65,7 @@ target 'Auspice' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
+    # @zhop/yuun: align pod deployment targets
     # Xcode 16+ rejects pod / resource-bundle targets still pinned below iOS 15.
     ios_deployment_target = podfile_properties['ios.deploymentTarget'] || '15.1'
     installer.pods_project.targets.each do |target|
@@ -79,5 +80,19 @@ target 'Auspice' do
         end
       end
     end
+  end
+end
+
+
+# apple-targets-extension-loader -- Dynamic loading of target configurations
+Dir.glob(File.join(__dir__, '..', 'targets', '**', 'pods.rb')).each do |target_file|
+  target_name = File.basename(File.dirname(target_file))
+  target target_name do
+    # Create a new binding with access to necessary methods and variables
+    target_binding = binding
+    target_binding.local_variable_set(:podfile_properties, podfile_properties)
+
+    # Evaluate the target file content in the new binding
+    eval(File.read(target_file), target_binding, target_file)
   end
 end

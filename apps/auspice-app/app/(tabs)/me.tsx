@@ -721,6 +721,28 @@ export default function MeScreen() {
 
         <LibrarySection />
 
+        <View>
+          <SectionLabel>{t.watchWidgets}</SectionLabel>
+          <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
+            <Pressable
+              onPress={() => router.push('/display' as Href)}
+              accessibilityRole='button'
+              accessibilityLabel={t.watchWidgets}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.md,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ color: colors.text, fontSize: 15 }}>{t.watchWidgets}</Text>
+              <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+            </Pressable>
+          </View>
+        </View>
+
         <NotificationsSection rows={pushToggles} />
 
         {/* ── Calendars & sync ── */}

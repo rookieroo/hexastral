@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hexastral.yuun",
+      "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDisplayName": "Yuun",
@@ -88,6 +89,19 @@
       "expo-router",
       "expo-dev-client",
       "expo-notifications",
+      "@bacons/apple-targets",
+      "./plugins/withGoogleModularHeaders.js",
+      "./plugins/withIosPodDeploymentTarget.cjs",
+      "./plugins/withWidgetDisableDebugDylib.cjs",
+      [
+        "@zhop/widget-kit-ios/app.plugin.js",
+        {
+          "widgetName": "AuspiceWidget",
+          "appSlug": "yuun",
+          "appGroupId": "group.com.hexastral.yuun",
+          "watchComplication": true
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {

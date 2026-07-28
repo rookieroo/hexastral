@@ -1,24 +1,18 @@
 /**
- * WatchSettings — appearance config for the home-screen widget (月相 skin) plus a
- * preview of the watch-face styles.
- *
- * Honest framing (2026-06): only the home-screen WIDGET ships today (small +
- * medium), and it varies by 月相 skin. The four "表盘样式" templates drive the
- * watch-face PREVIEW only — there is no watchOS target yet — so they're labelled
- * 即将推出 (coming soon) and not sold on the paywall. When the watch app lands,
- * these templates become its faces with no migration. All copy is localized.
+ * WatchSettings — widget/watch appearance + live previews.
+ * Previews follow app light/dark (宣纸 / 星空). __DEV__ phase slider mocks 月相.
  */
 
 import { useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useStrings } from '@/lib/i18n-context'
 import {
-  DEFAULT_MOON_SKIN_ID,
   DEFAULT_TEMPLATE,
+  defaultMoonSkinForMode,
   getMoonSkin,
   getWatchTemplate,
   MOON_SKIN_OPTIONS,
@@ -28,9 +22,11 @@ import {
   TEMPLATE_OPTIONS,
   type WatchTemplate,
 } from '@/lib/widget-config'
+import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { DailyCard } from './DailyCard'
 import { StaticMoon } from './StaticMoon'
 import { WidgetCard } from './WidgetCard'
+import { widgetSurfaceBg } from './WidgetSurface'
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -42,15 +38,15 @@ function Label({ children }: { children: string }) {
 }
 
 export function WatchSettings() {
-  const { colors, spacing } = useTheme()
+  const { colors, spacing, mode } = useTheme()
+  const surfaceMode = mode === 'light' ? 'light' : 'dark'
   const { t } = useStrings()
-  // Watch/widget previews mirror native render contracts: 对你而言 is Pro-only.
-  // Free users see the same face/widget without the personalization line.
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const [payload, setPayload] = useState<AuspiceDayPayload | null>(null)
   const [template, setTemplate] = useState<WatchTemplate>(DEFAULT_TEMPLATE)
-  const [skinId, setSkinId] = useState<MoonSkinId>(DEFAULT_MOON_SKIN_ID)
+  const [skinId, setSkinId] = useState<MoonSkinId>(defaultMoonSkinForMode(surfaceMode))
+  const { phase: phaseOverride, setPhase: setPhaseOverride } = useDevMoonPhase()
 
   useEffect(() => {
     const d = new Date()
@@ -62,10 +58,10 @@ export function WatchSettings() {
     getWatchTemplate()
       .then(setTemplate)
       .catch(() => {})
-    getMoonSkin()
+    getMoonSkin(surfaceMode)
       .then(setSkinId)
       .catch(() => {})
-  }, [])
+  }, [surfaceMode])
 
   const pickTemplate = (id: WatchTemplate) => {
     setTemplate(id)
@@ -76,57 +72,67 @@ export function WatchSettings() {
     void setMoonSkin(id)
   }
 
+  const livePhase = phaseOverride ?? undefined
+
+  const previewBg = widgetSurfaceBg(surfaceMode)
+
   return (
     <View style={{ gap: spacing.lg }}>
-      {/* Live preview — watch face + home-screen small widget. */}
       {payload ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: spacing.lg,
-            alignItems: 'center',
-            alignSelf: 'center',
-          }}
-        >
-          {/* Widget preview FIRST — it's what actually ships today. */}
-          <View style={{ gap: 4, alignItems: 'center' }}>
-            <View
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 22,
-                overflow: 'hidden',
-                backgroundColor: '#000',
-              }}
-            >
-              <WidgetCard
-                size='small'
-                moonSkinId={skinId}
-                date={payload.date}
-                day={payload.day}
-                personalization={isPro ? payload.personalization : null}
-              />
+        <View style={{ gap: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: spacing.md, paddingVertical: 4 }}>
+              {(
+                [
+                  { size: 'small' as const, w: 100, h: 100 },
+                  { size: 'medium' as const, w: 200, h: 100 },
+                  { size: 'large' as const, w: 180, h: 190 },
+                ] as const
+              ).map((box) => (
+                <View key={box.size} style={{ gap: 4, alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: box.w,
+                      height: box.h,
+                      borderRadius: 22,
+                      overflow: 'hidden',
+                      backgroundColor: previewBg,
+                    }}
+                  >
+                    <WidgetCard
+                      size={box.size}
+                      width={box.w}
+                      height={box.h}
+                      moonSkinId={skinId}
+                      phaseOverride={livePhase}
+                      date={payload.date}
+                      day={payload.day}
+                      personalization={isPro ? payload.personalization : null}
+                    />
+                  </View>
+                  <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>
+                    {box.size}
+                  </Text>
+                </View>
+              ))}
             </View>
-            <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>
-              {t.widgetPreviewCaption}
-            </Text>
-          </View>
-          {/* Watch preview — a look-ahead; no watchOS target ships yet. */}
-          <View style={{ gap: 4, alignItems: 'center' }}>
+          </ScrollView>
+          <View style={{ gap: 4, alignItems: 'center', alignSelf: 'center' }}>
             <View
               style={{
                 width: 168,
                 height: 200,
                 borderRadius: 42,
                 overflow: 'hidden',
-                backgroundColor: '#000',
-                opacity: 0.85,
+                backgroundColor: previewBg,
+                opacity: 0.95,
               }}
             >
               <DailyCard
                 tier='compact'
                 template={template}
                 moonSkinId={skinId}
+                phaseOverride={livePhase}
                 date={payload.date}
                 day={payload.day}
                 personalization={isPro ? payload.personalization : null}
@@ -141,8 +147,49 @@ export function WatchSettings() {
 
       <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>{t.watchWidgetsNote}</Text>
 
-      {/* Watch-face styles — a preview only (no watchOS target yet), so the
-          section carries a 即将推出 badge and isn't sold on the paywall. */}
+      {__DEV__ ? (
+        <View style={{ gap: spacing.sm }}>
+          <Label>{t.devMoonPhaseLabel}</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {(
+              [
+                { label: t.devMoonPhaseLive, value: null as number | null },
+                { label: '朔', value: 0 },
+                { label: '上弦', value: 0.25 },
+                { label: '望', value: 0.5 },
+                { label: '下弦', value: 0.75 },
+              ] as const
+            ).map((opt) => {
+              const sel =
+                opt.value === null ? phaseOverride === null : phaseOverride === opt.value
+              return (
+                <Pressable
+                  key={opt.label}
+                  onPress={() => setPhaseOverride(opt.value)}
+                  accessibilityRole='button'
+                  accessibilityState={{ selected: sel }}
+                  style={{
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    borderWidth: sel ? 1 : 0.5,
+                    borderColor: sel ? colors.accent : colors.separator,
+                    backgroundColor: sel ? colors.accentGhost : 'transparent',
+                  }}
+                >
+                  <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
+            {t.devMoonPhaseHint}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={{ gap: spacing.sm }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Label>{t.watchStyleLabel}</Label>
@@ -185,21 +232,23 @@ export function WatchSettings() {
                 <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
                   {tpl.label}
                 </Text>
-                {/* No per-template PRO badge: the whole section is 即将推出, so
-                    these aren't sellable yet. The TEMPLATE_OPTIONS.pro data stays
-                    for when the watch app ships and they become a paid tier. */}
               </Pressable>
             )
           })}
         </View>
       </View>
 
-      {/* Moon skin — applies to the shipping home-screen widget. */}
       <View style={{ gap: spacing.sm }}>
         <Label>{t.moonSkinLabel}</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {MOON_SKIN_OPTIONS.map((opt) => {
             const sel = opt.id === skinId
+            const swatchBg =
+              opt.id === 'rice-paper'
+                ? widgetSurfaceBg('light')
+                : opt.id === 'starfield'
+                  ? widgetSurfaceBg('dark')
+                  : previewBg
             return (
               <Pressable
                 key={opt.id}
@@ -214,15 +263,15 @@ export function WatchSettings() {
                   borderRadius: 12,
                   borderWidth: sel ? 1 : 0.5,
                   borderColor: sel ? colors.accent : colors.separator,
-                  backgroundColor: '#000',
+                  backgroundColor: swatchBg,
                 }}
               >
-                {/* Skia's native Canvas swallows touches, so the parent
-                    Pressable never sees taps on the moon itself — only on
-                    the text label. pointerEvents='none' on this wrapper
-                    lets taps pass through to the Pressable. */}
                 <View pointerEvents='none'>
-                  <StaticMoon phase={0.3} size={34} skinId={opt.id} />
+                  <StaticMoon
+                    phase={phaseOverride ?? 0.3}
+                    size={34}
+                    skinId={opt.id}
+                  />
                 </View>
                 <Text style={{ color: sel ? colors.accent : colors.dim, fontSize: 11 }}>
                   {opt.name}

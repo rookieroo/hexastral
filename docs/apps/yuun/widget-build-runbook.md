@@ -1,70 +1,71 @@
-# Auspice WidgetKit — build runbook (activate the scaffold)
+# Auspice WidgetKit — build runbook
 
-The RN-side scaffold is in the repo and tsc-green / non-breaking:
-- `targets/widget/index.swift` — the SwiftUI WidgetKit widget (small + medium).
-- `targets/widget/expo-target.config.js` — target config for `@bacons/apple-targets`.
-- `lib/widget-bridge.ts` — writes the day into the App Group (no-ops until linked).
-- `app/(tabs)/index.tsx` — calls `syncTodayWidget(...)` whenever the day loads.
-- `app.json` → `ios.entitlements` declares the `group.com.hexastral.yuun` App Group.
+RN + native scaffold for Yuun home-screen / Lock Screen / Watch complications.
 
-Until the steps below run, `lib/widget-bridge.ts` is a no-op (it talks to
-`NativeModules.RNSharedGroupPreferences`, which is absent). The app builds + runs
-exactly as before. **These steps require Xcode + a native rebuild — do them on the
-dev machine; CI does not build native.**
+## Architecture
 
-## Steps
+- **RN write**: [`lib/widget-bridge.ts`](../../apps/auspice-app/lib/widget-bridge.ts) → `@zhop/widget-kit-ios` `writeWidgetPayload` → App Group `group.com.hexastral.yuun`
+- **Keys**: `hexastral_widget_payload_v1` (envelope) + legacy mirror `almanac_days`
+- **iOS Widget**: [`targets/widget/`](../../apps/auspice-app/targets/widget/) — small / medium / large + accessory circular / rectangular; `AlmanacEngine.swift` fills public fields on cache miss
+- **Watch**: [`targets/watch/`](../../apps/auspice-app/targets/watch/) — complications reading the same group
+- **Xcode targets**: `@bacons/apple-targets` on prebuild
+- **Entitlements helper**: `@zhop/widget-kit-ios/plugin`
 
-1. **Install the native deps** (don't pin versions here — let bun resolve):
+## One-time setup
+
+1. Deps (already in package.json after install):
    ```bash
    cd apps/auspice-app
-   bun add @bacons/apple-targets react-native-shared-group-preferences
+   bun add @bacons/apple-targets react-native-shared-group-preferences '@zhop/widget-kit-ios@workspace:*'
    ```
-   - `@bacons/apple-targets` — config plugin that adds the Widget Extension target.
-   - `react-native-shared-group-preferences` — registers the native module the
-     bridge writes through (`NativeModules.RNSharedGroupPreferences`).
 
-2. **Enable the config plugin** — add to `app.json` → `expo.plugins`:
-   ```json
-   "plugins": ["expo-router", "expo-dev-client", "expo-notifications", "@bacons/apple-targets"]
-   ```
-   (Left OUT of the repo on purpose: adding it before step 1 breaks `expo start`,
-   since the plugin module isn't resolvable yet.)
+2. Plugins in `app.json`: `@bacons/apple-targets` + `@zhop/widget-kit-ios/plugin` (appSlug `yuun`, group `group.com.hexastral.yuun`).
 
-3. **Apple Developer portal** — enable the **App Groups** capability and create
-   `group.com.hexastral.yuun` for BOTH bundle ids. The portal App Group id must
-   match the entitlements EXACTLY (app.json `ios.entitlements` +
-   `targets/widget/expo-target.config.js` both declare `group.com.hexastral.yuun`)
-   — a mismatch makes the shared container inaccessible and breaks code signing:
-   - `com.hexastral.yuun` (main app)
-   - `com.hexastral.yuun.AuspiceWidget` (the widget — created by the plugin)
+3. **Apple Developer portal** — App Groups capability on BOTH:
+   - `com.hexastral.yuun`
+   - `com.hexastral.yuun.widget` (and Watch target if generated)
+   - Group id must be exactly `group.com.hexastral.yuun`
 
-4. **Prebuild** (regenerates `ios/` with the widget target + entitlements):
+4. Prebuild + run:
    ```bash
-   npx expo prebuild -p ios --clean
+   cd apps/auspice-app
+   bunx expo prebuild -p ios --clean
+   bun run ios
    ```
 
-5. **Build + run** the app (`bun ios` / Xcode). Then:
-   - Long-press the home screen → add the **Auspice 黄历** widget (small / medium).
-   - Open the app once (writes today's 黄历 to the App Group) → the widget fills in.
+5. Long-press home screen → add **Yuun 黄历** (small / medium / large). Lock Screen → add circular / rectangular. Open the app once so Today syncs a 7-day window.
 
-## Verify / gotchas
-- **Native module name:** the bridge reads `NativeModules.RNSharedGroupPreferences`.
-  If `react-native-shared-group-preferences` registers under a different name,
-  adjust the const in `lib/widget-bridge.ts`. (Alternatively, write a tiny local
-  Expo module that does `UserDefaults(suiteName:).set(_, forKey:)` — no external dep.)
-- **Shape parity:** `WidgetDay` (TS) must match `SharedDay` (Swift). Keep them in sync.
-- **Encoding:** the bridge stores a JSON **string** under `almanac_days`; the Swift
-  reads `defaults.string(forKey:)`. If the native module stores objects instead of
-  strings, decode accordingly.
-- **月相** in the widget is a simple SwiftUI dot, not the app's Skia shader (Skia
-  isn't available in extensions). Swap for a per-phase asset or a SwiftUI Canvas
-  draw when polishing.
+## Acceptance checklist
 
-## Follow-ups (per [widget-watch-scope.md](./widget-watch-scope.md))
-- Write an **N-day window** (batch fetch), not just today, so the WidgetKit timeline
-  spans several days between app opens.
-- Mirror the **auspice_pro entitlement** into the App Group so the widget can show the
-  Pro 对你而言 line / Pro faces and downgrade gracefully for free users.
-- **watchOS complications** — a second `@bacons/apple-targets` target reading the
-  same App Group.
-- `systemLarge` + lock-screen `accessory*` families.
+- [ ] Widget appears in the gallery as **Yuun 黄历**
+- [ ] After opening App once: 干支 / 宜忌 visible on small + medium
+- [ ] Kill app: cached day still shows
+- [ ] Large shows officer / mansion when payload includes them
+- [ ] Lock Screen accessories show 干支
+- [ ] `__DEV__` / Settings → 桌面组件与表盘: RN `WidgetCard` small/medium/large match field content
+- [ ] Pro: medium/large/lock show「对你而言」; Free: `fit` null
+- [ ] Cold start with empty App Group: AlmanacEngine still shows a public 干支 day (no fit)
+
+## Gotchas
+
+- **Xcode 16+ Debug gallery blank**: Widget targets must set `ENABLE_DEBUG_DYLIB=NO`
+  (plugin `plugins/withWidgetDisableDebugDylib.cjs`). Otherwise the extension ships
+  as `*.debug.dylib` and never appears in 添加小组件 search. Release/EAS builds are fine.
+- Gallery search: host app name **Yuun** (not “小组件”). On iOS 18+ also try long-press
+  the Yuun icon → widget / edit options.
+- Native module: `NativeModules.RNSharedGroupPreferences`. If the name differs, adjust `packages/widget-kit-ios/src/useWidgetSync.ts`.
+- Shape parity: `YuunWidgetDay` (TS) ↔ `SharedDay` (Swift).
+- `prebuild --clean` regenerates targets from `targets/*` — do not treat hand-edited `ios/` as SSOT.
+- Moon phase in extension is SwiftUI geometry, not Skia.
+- Bundle id of the extension is `com.hexastral.yuun.widget` (not `….AuspiceWidget`).
+  App Group must be on both App IDs in the Developer portal.
+
+## Watch (P3)
+
+Scaffold Swift lives at [`docs/apps/yuun/watch-complication-scaffold/`](./watch-complication-scaffold/)
+(not under `targets/` — apple-targets would otherwise attach a broken iOS-flavoured
+Watch target). To activate: copy into `targets/watch/` with a correct watchOS
+`expo-target.config.js`, then `bunx expo prebuild -p ios --clean`.
+
+Until then, Lock Screen accessories on the iPhone widget cover the glance use case.
+
