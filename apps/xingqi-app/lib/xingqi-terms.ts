@@ -212,7 +212,7 @@ function glossLang(
   if (locale.startsWith('zh')) return 'zh'
   if (locale.startsWith('ja')) {
     if (short.ja) return 'ja'
-    return 'zh'
+    return 'en'
   }
   return 'en'
 }
@@ -221,7 +221,7 @@ function glossText(
   bundle: XingqiLocalTerm['short'] | XingqiLocalTerm['long'],
   lang: ReturnType<typeof glossLang>
 ): string {
-  if (lang === 'ja') return bundle.ja ?? bundle.zh
+  if (lang === 'ja') return bundle.ja ?? bundle.en
   return bundle[lang]
 }
 
@@ -281,7 +281,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '气的动静',
     'Qi in motion',
     '气机：形气中「动」的一面——起伏与宜留意的窗口；健康轴亦借此谈节奏，不作诊治。',
-    'Qi motion: rhythm and windows worth noting; on health, pacing — not treatment.'
+    'Qi motion: rhythm and windows worth noting; on health, pacing — not treatment.',
+    {
+      short: '気の動き',
+      long: '気機（きき）：形気における「動」の側面——起伏と留意すべき時期。健康軸でもリズムを語るが、診断ではない。',
+    }
   ),
   t(
     'xq_yiliuyi',
@@ -291,7 +295,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '值得观察',
     'Worth noting',
     '宜留意：标准措辞，提示观察窗口而非预言或诊断。',
-    'Worth noting: observation — not prediction or diagnosis.'
+    'Worth noting: observation — not prediction or diagnosis.',
+    {
+      short: '留意すべき点',
+      long: '宜留意（ぎりゅうい）：観察の窓を示す定番表現。予言や診断ではない。',
+    }
   ),
   t(
     'xq_qise',
@@ -301,7 +309,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '润泽与神采',
     'Complexion',
     '气色：肤色、润泽与神采；可与古典中医脏腑气血之「象」对照，作警示而非诊治。',
-    'Complexion and spirit — may echo classical TCM imagery; caution, not diagnosis.'
+    'Complexion and spirit — may echo classical TCM imagery; caution, not diagnosis.',
+    {
+      short: '潤いと光彩',
+      long: '气色（きしょく）：肌の色調・潤い・神采。古典中医の臓腑気血の「象」と対照しても、診断ではない。',
+    }
   ),
   t(
     'xq_zangfuxiang',
@@ -311,7 +323,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '意象对照',
     'Organ imagery',
     '脏腑之象：中医作词典层——用脏腑气血之「象」解释形气色机，不是诊断五脏六腑。',
-    'TCM as lexicon: organ/qi imagery for form-qi cues — not organ diagnosis.'
+    'TCM as lexicon: organ/qi imagery for form-qi cues — not organ diagnosis.',
+    {
+      short: '臓腑の意象',
+      long: '脏腑之象（ぞうふのしょう）：中医を辞書層として用い、形・色・気機を説明する。臓器の診断ではない。',
+    }
   ),
   t(
     'xq_qixue',
@@ -321,7 +337,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '气与血的充养',
     'Qi and blood',
     '气血：中医词典层——谈润泽、循环与神采的「象」，不作验血或诊治。',
-    'Qi–blood imagery for tone and vitality — not lab medicine.'
+    'Qi–blood imagery for tone and vitality — not lab medicine.',
+    {
+      short: '気と血の充養',
+      long: '气血（きけつ）：潤い・循環・神采を語る「象」。検査や診断ではない。',
+    }
   ),
   t(
     'xq_lian',
@@ -331,7 +351,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '收束内守',
     'Gather inward',
     '敛：把外散之势往里收——睡眠、少言、减刺激等节奏，不是压抑个性。',
-    'Gathering qi inward — pacing and rest, not suppressing character.'
+    'Gathering qi inward — pacing and rest, not suppressing character.',
+    {
+      short: '内に収める',
+      long: '敛（れん）：外に散る勢いを内へ——睡眠・少言・刺激を減らすリズム。個性を抑えることではない。',
+    }
   ),
   t(
     'xq_fuyang',
@@ -341,7 +365,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '阳气上浮',
     'Floating yang',
     '浮阳：阳气偏于上浮（易热、浅眠、目赤等「象」）；宜留意下沉与收敛的节奏，非诊断。',
-    'Yang rising too high (heat, light sleep…) — cue to settle; not a diagnosis.'
+    'Yang rising too high (heat, light sleep…) — cue to settle; not a diagnosis.',
+    {
+      short: '陽気の上昇',
+      long: '浮阳（ふよう）：陽気が上に偏る「象」（熱感・浅い眠り・目の充血など）。沈めるリズムの手がかりであり、診断ではない。',
+    }
   ),
   t(
     'xq_lianfuyang',
@@ -351,7 +379,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '收上浮之阳',
     'Settle floating yang',
     '敛浮阳：用作息与节律把上浮之热往下安——常见于火旺窗口的养生意象，非医疗处方。',
-    'Settling floating yang via rhythm — cultural pacing, not a prescription.'
+    'Settling floating yang via rhythm — cultural pacing, not a prescription.',
+    {
+      short: '浮陽を収める',
+      long: '敛浮阳（れんふよう）：作息とリズムで上昇した熱を下へ——火旺の養生意象であり、処方ではない。',
+    }
   ),
   t(
     'xq_ganyang',
@@ -361,7 +393,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '肝系上亢之象',
     'Liver-yang imagery',
     '肝阳：中医词典——目突、急躁、上热等「象」；与肝木开窍于目并读，不作肝病诊断。',
-    'Liver-yang imagery (eyes, agitation) — lexicon, not hepatology.'
+    'Liver-yang imagery (eyes, agitation) — lexicon, not hepatology.',
+    {
+      short: '肝系の上亢',
+      long: '肝阳（かんよう）：目の突出・焦燥・上熱などの「象」。肝木が目に開く伝統と並読するが、肝病の診断ではない。',
+    }
   ),
   t(
     'xq_tanyu',
@@ -371,7 +407,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '痰与瘀的意象',
     'Phlegm–stasis imagery',
     '痰瘀：形气色斑、痣点等「阻滞」意象，解释可见痕迹，不作病理化验。',
-    'Phlegm–stasis as form metaphor for marks — not pathology labs.'
+    'Phlegm–stasis as form metaphor for marks — not pathology labs.',
+    {
+      short: '痰と瘀の意象',
+      long: '痰瘀（たんう）：形・色・痣などの「滞り」の意象。可視の痕跡を説明するもので、病理検査ではない。',
+    }
   ),
   t(
     'xq_xingqiyiju',
@@ -381,7 +421,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '所见之形',
     'Form evidence',
     '形气依据：报告字段——先写照片上可见的形，再谈气机与窗口。',
-    'The Form field: what the photo shows before qi and windows.'
+    'The Form field: what the photo shows before qi and windows.',
+    {
+      short: '見える形',
+      long: '形气依据（けいきのいきょ）：報告欄——写真で見える形を先に記し、気機と窓を述べる。',
+    }
   ),
   t(
     'xq_guxiang',
@@ -391,7 +435,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '骨骼格局',
     'Bone structure',
     '骨相：骨骼起伏格局，不作美丑评价。',
-    'Skeletal pattern — not a beauty judgment.'
+    'Skeletal pattern — not a beauty judgment.',
+    {
+      short: '骨格の格局',
+      long: '骨相（こっそう）：骨の起伏の格局。美醜の評価ではない。',
+    }
   ),
   t(
     'xq_rouxiang',
@@ -401,7 +449,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '肌肉丰瘠',
     'Flesh tone',
     '肉相：肌肉丰满或清瘦的形质对照。',
-    'Flesh fullness or spareness as form quality.'
+    'Flesh fullness or spareness as form quality.',
+    {
+      short: '筋肉の豊瘠',
+      long: '肉相（にくそう）：筋肉の豊満さ・痩せ方の形質対照。',
+    }
   ),
 
   // ── 面相（三停·五岳·十二宫·五官）──
@@ -427,7 +479,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '面分上中下',
     'Three courts',
     '三停：发际至眉、眉至鼻底、鼻底至颏的三段比例（亦作三庭）。',
-    'Upper / middle / lower face proportions.'
+    'Upper / middle / lower face proportions.',
+    {
+      short: '顔の三段',
+      long: '三停（さんてい）：髪際〜眉、眉〜鼻底、鼻底〜顎の三段比例（三庭とも）。',
+    }
   ),
   t(
     'xq_wuyue',
@@ -437,7 +493,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '额鼻颧颊颏',
     'Five peaks',
     '五岳：额、鼻、两颧与颏，读面部高低起伏。',
-    'Forehead, nose, cheekbones, chin as “peaks”.'
+    'Forehead, nose, cheekbones, chin as “peaks”.',
+    {
+      short: '額・鼻・顴・頬・顎',
+      long: '五岳（ごがく）：額・鼻・両顴・顎——顔の高低起伏を読む。',
+    }
   ),
   t(
     'xq_wuguan',
@@ -447,7 +507,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眉眼鼻口耳',
     'Five features',
     '五官：眉、眼、鼻、口、耳的形神对照。',
-    'Brows, eyes, nose, mouth, ears.'
+    'Brows, eyes, nose, mouth, ears.',
+    {
+      short: '眉・眼・鼻・口・耳',
+      long: '五官（ごかん）：眉・眼・鼻・口・耳の形と神の対照。',
+    }
   ),
   t(
     'xq_shiergong',
@@ -457,7 +521,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '面部分区',
     'Twelve palaces',
     '十二宫：命、财帛、兄弟等面部分区，作结构线索。',
-    'Facial zones (life, wealth, siblings…) as structural cues.'
+    'Facial zones (life, wealth, siblings…) as structural cues.',
+    {
+      short: '顔の分区',
+      long: '十二宫（じゅうにきゅう）：命・財帛・兄弟など顔の分区。構造の手がかり。',
+    }
   ),
   t(
     'xq_minggong',
@@ -467,7 +535,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '印堂一带',
     'Life palace',
     '命宫：印堂附近，常与整体神采对照。',
-    'Around Yin Tang — overall spirit.'
+    'Around Yin Tang — overall spirit.',
+    {
+      short: '印堂付近',
+      long: '命宫（めいきゅう）：印堂付近。全体の神采と対照されることが多い。',
+    }
   ),
   t(
     'xq_caibogong',
@@ -477,7 +549,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻准一带',
     'Wealth palace',
     '财帛宫：鼻准与周围，常与资源感对照。',
-    'Nose tip area — resources cue.'
+    'Nose tip area — resources cue.',
+    {
+      short: '鼻先付近',
+      long: '财帛宫（ざいはくきゅう）：鼻先と周辺。資源感の手がかり。',
+    }
   ),
   t(
     'xq_xiongdigong',
@@ -487,7 +563,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眉尾一带',
     'Siblings palace',
     '兄弟宫：眉尾外侧一带，常与同辈协作气机对照。',
-    'Outer brow — peer / sibling cues.'
+    'Outer brow — peer / sibling cues.',
+    {
+      short: '眉尾付近',
+      long: '兄弟宫（きょうていきゅう）：眉尾外側。同輩・協力の気機。',
+    }
   ),
   t(
     'xq_tianzhaigong',
@@ -497,7 +577,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眼下一带',
     'Property palace',
     '田宅宫：下睑与卧蚕一带，常与安顿感对照。',
-    'Under-eye — settling / foundation cues.'
+    'Under-eye — settling / foundation cues.',
+    {
+      short: '目下付近',
+      long: '田宅宫（でんたくきゅう）：下瞼・臥蚕付近。安住感の手がかり。',
+    }
   ),
   t(
     'xq_nannvgong',
@@ -507,7 +591,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眼下承泣',
     'Children palace',
     '男女宫：眼下承泣一带（亦称子女宫），亲缘气机线索。',
-    'Under-eye — kinship cues (also 子女宫).'
+    'Under-eye — kinship cues (also 子女宫).',
+    {
+      short: '眼下承泣',
+      long: '男女宫（だんじょきゅう）：眼下承泣付近（子女宫とも）。親縁の気機。',
+    }
   ),
   t(
     'xq_nupugong',
@@ -517,7 +605,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '颧下颊区',
     'Servants palace',
     '奴仆宫：颧下颊区，传统上读协力与从属气机。',
-    'Cheek below bone — support network cues.'
+    'Cheek below bone — support network cues.',
+    {
+      short: '顴下の頬',
+      long: '奴仆宫（ぬぼくきゅう）：顴骨下の頬。協力・従属の気機。',
+    }
   ),
   t(
     'xq_fuqigong',
@@ -527,7 +619,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眼尾一带',
     'Spouse palace',
     '夫妻宫：眼尾鱼尾一带（亦称妻妾宫），关系气机线索。',
-    'Outer eye — bond cues (also 妻妾宫).'
+    'Outer eye — bond cues (also 妻妾宫).',
+    {
+      short: '眼尾付近',
+      long: '夫妻宫（ふさいきゅう）：眼尾・魚尾付近（妻妾宫とも）。関係の気機。',
+    }
   ),
   t(
     'xq_jieegong',
@@ -537,7 +633,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '山根一带',
     'Health palace',
     '疾厄宫：山根一带，形气紧张与调养窗口线索。',
-    'Nose root — tension / recovery cues.'
+    'Nose root — tension / recovery cues.',
+    {
+      short: '山根付近',
+      long: '疾厄宫（しつやくきゅう）：山根付近。形気の緊張・養生の窓。',
+    }
   ),
   t(
     'xq_qianyigong',
@@ -547,7 +647,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '额角一带',
     'Travel palace',
     '迁移宫：额角两侧，常与动向、迁流气机对照。',
-    'Temple / brow corner — mobility cues.'
+    'Temple / brow corner — mobility cues.',
+    {
+      short: '額角付近',
+      long: '迁移宫（せんいきゅう）：額角両側。動向・移動の気機。',
+    }
   ),
   t(
     'xq_guanlugong',
@@ -557,7 +661,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '额中一带',
     'Career palace',
     '官禄宫：额中区域，常与事业气机对照。',
-    'Mid-forehead — career qi cue.'
+    'Mid-forehead — career qi cue.',
+    {
+      short: '額中央付近',
+      long: '官禄宫（かんろくきゅう）：額中央。事業の気機。',
+    }
   ),
   t(
     'xq_fudegong',
@@ -567,7 +675,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '天庭一带',
     'Fortune palace',
     '福德宫：天庭上部，常与心境安顿对照。',
-    'Upper forehead — ease / spirit cue.'
+    'Upper forehead — ease / spirit cue.',
+    {
+      short: '天庭付近',
+      long: '福德宫（ふくとくきゅう）：額上部。心の安住。',
+    }
   ),
   t(
     'xq_fumugong',
@@ -577,7 +689,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眉头额际',
     'Parents palace',
     '父母宫：眉头与额际交接，根基与来源气机。',
-    'Inner brow / hairline — roots cue.'
+    'Inner brow / hairline — roots cue.',
+    {
+      short: '眉头・額際',
+      long: '父母宫（ふぼきゅう）：眉头と額際。根基・出自の気機。',
+    }
   ),
   t(
     'xq_ekuan',
@@ -587,7 +703,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '额头左右开度',
     'Forehead width',
     '额宽：发际下额头左右开度，常与思虑空间、官禄宫并读。',
-    'Forehead width — thought space, often with the career palace.'
+    'Forehead width — thought space, often with the career palace.',
+    {
+      short: '額の左右幅',
+      long: '额宽（がくかん）：髪際下の額の左右幅。思慮の余地・官禄宫と並読。',
+    }
   ),
   t(
     'xq_tianting',
@@ -597,7 +717,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '额头上部',
     'Upper forehead',
     '天庭：额头上部，常与早年气机、思虑空间相关。',
-    'Upper forehead — early-life qi / thought space.'
+    'Upper forehead — early-life qi / thought space.',
+    {
+      short: '額上部',
+      long: '天庭（てんてい）：額上部。初年の気機・思慮の余地。',
+    }
   ),
   t(
     'xq_yintang',
@@ -607,7 +731,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '两眉之间',
     'Between brows',
     '印堂：两眉之间，神采与近期气机交汇处。',
-    'Between the brows — spirit and near-term qi.'
+    'Between the brows — spirit and near-term qi.',
+    {
+      short: '両眉の間',
+      long: '印堂（いんどう）：両眉の間。神采と近期の気機の交点。',
+    }
   ),
   t(
     'xq_shangen',
@@ -617,7 +745,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻梁根部',
     'Nose root',
     '山根：鼻梁根，连接印堂与鼻梁的过渡。',
-    'Nasion — transition from brow to bridge.'
+    'Nasion — transition from brow to bridge.',
+    {
+      short: '鼻梁根部',
+      long: '山根（さんこん）：鼻梁根。印堂と鼻梁の移行部。',
+    }
   ),
   t(
     'xq_nianshou',
@@ -627,7 +759,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻梁中段',
     'Nose bridge',
     '年寿：鼻梁中段，传统上与中年气机对照。',
-    'Mid-bridge — midlife qi cue.'
+    'Mid-bridge — midlife qi cue.',
+    {
+      short: '鼻梁中段',
+      long: '年寿（ねんじゅ）：鼻梁中段。中年の気機。',
+    }
   ),
   t(
     'xq_zhuntou',
@@ -637,7 +773,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻头',
     'Nose tip',
     '准头：鼻头圆方尖钝，常与财帛宫并读。',
-    'Nose tip — often read with the wealth palace.'
+    'Nose tip — often read with the wealth palace.',
+    {
+      short: '鼻先',
+      long: '准头（じゅんとう）：鼻先の円方尖鈍。財帛宫と並読。',
+    }
   ),
   t(
     'xq_renzhong',
@@ -647,7 +787,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻下沟',
     'Philtrum',
     '人中：鼻下人中沟深浅长短，作承接线索。',
-    'Philtrum depth and length.'
+    'Philtrum depth and length.',
+    {
+      short: '人中溝',
+      long: '人中（じんちゅう）：鼻下の人中溝の深浅・長さ。',
+    }
   ),
   t(
     'xq_dige',
@@ -657,7 +801,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '下巴',
     'Chin',
     '地阁：下巴与下颌，常与收束、晚期气机对照。',
-    'Chin and jaw — closure / later qi.'
+    'Chin and jaw — closure / later qi.',
+    {
+      short: '顎・下顎',
+      long: '地阁（ちかく）：顎・下顎。収束・晩期の気機。',
+    }
   ),
   t(
     'xq_chengjiang',
@@ -667,7 +815,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '颏下凹',
     'Under-chin',
     '承浆：颏下浅凹，地阁的一部分。',
-    'Slight hollow under the chin.'
+    'Slight hollow under the chin.',
+    {
+      short: '顎下の凹み',
+      long: '承浆（しょうしょう）：顎下の浅い凹み。地阁の一部。',
+    }
   ),
   t(
     'xq_quan',
@@ -677,7 +829,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '面中高骨',
     'Cheekbones',
     '颧骨：面中两侧高骨突度，五岳之一。',
-    'Cheekbone prominence.'
+    'Cheekbone prominence.',
+    {
+      short: '頬骨',
+      long: '颧骨（けんこつ）：顔中の両側高骨。五岳の一つ。',
+    }
   ),
   t(
     'xq_faling',
@@ -687,7 +843,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻翼旁纹',
     'Nasolabial folds',
     '法令纹：鼻翼两侧纹路，只作形气线索。',
-    'Nasolabial folds as form cues only.'
+    'Nasolabial folds as form cues only.',
+    {
+      short: '鼻翼旁の紋',
+      long: '法令纹（ほうれいせん）：鼻翼両側の紋。形気の手がかりのみ。',
+    }
   ),
   t(
     'xq_chuanzi',
@@ -697,7 +857,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眉间竖纹',
     'Glabellar lines',
     '川字纹：印堂竖纹，常与思虑张力对照。',
-    'Vertical glabellar lines — thought tension.'
+    'Vertical glabellar lines — thought tension.',
+    {
+      short: '眉間の縦紋',
+      long: '川字纹（せんじもん）：印堂の縦紋。思慮の張り。',
+    }
   ),
   t(
     'xq_yuwei',
@@ -707,7 +871,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眼角纹',
     'Crow’s feet',
     '鱼尾纹：眼角纹路，偏气色与岁月痕迹。',
-    'Outer-eye lines — tone and time.'
+    'Outer-eye lines — tone and time.',
+    {
+      short: '眼角の紋',
+      long: '鱼尾纹（ぎょめいせん）：眼角の紋。气色・歳月の痕。',
+    }
   ),
   t(
     'xq_wocan',
@@ -717,7 +885,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '下睑微隆',
     'Under-eye swell',
     '卧蚕：下睑微隆，传统上与情感气机并读。',
-    'Slight under-eye swell.'
+    'Slight under-eye swell.',
+    {
+      short: '下瞼の微隆起',
+      long: '卧蚕（がさん）：下瞼の微隆起。感情の気機と並読。',
+    }
   ),
   t(
     'xq_meixing',
@@ -727,7 +899,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眉毛形态',
     'Brow shape',
     '眉型：浓淡曲直与眼的配合。',
-    'Brow density and curve with the eyes.'
+    'Brow density and curve with the eyes.',
+    {
+      short: '眉の形',
+      long: '眉型（まゆがた）：濃淡・曲直と眼との配合。',
+    }
   ),
   t(
     'xq_yanxing',
@@ -737,7 +913,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '眼睛神采',
     'Eye form',
     '眼型：眼形、眼神与开合感。',
-    'Eye shape and spirit.'
+    'Eye shape and spirit.',
+    {
+      short: '眼の形・神采',
+      long: '眼型（がんがた）：眼形・眼神・開閉感。',
+    }
   ),
   t(
     'xq_bixing',
@@ -747,7 +927,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '鼻梁鼻头',
     'Nose form',
     '鼻型：山根、年寿、准头的整体。',
-    'Root, bridge, and tip as one.'
+    'Root, bridge, and tip as one.',
+    {
+      short: '鼻梁・鼻先',
+      long: '鼻型（びがた）：山根・年寿・准頭の全体。',
+    }
   ),
   t(
     'xq_zuixing',
@@ -757,7 +941,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '唇口形态',
     'Mouth form',
     '嘴型：唇厚薄、口角与人中关系。',
-    'Lips and mouth corners with the philtrum.'
+    'Lips and mouth corners with the philtrum.',
+    {
+      short: '唇・口の形',
+      long: '嘴型（くちがた）：唇の厚薄・口角と人中の関係。',
+    }
   ),
   t(
     'xq_erchui',
@@ -767,7 +955,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '耳垂形态',
     'Earlobes',
     '耳垂：厚薄依附，五官之一的收束。',
-    'Earlobe fullness and attachment.'
+    'Earlobe fullness and attachment.',
+    {
+      short: '耳垂',
+      long: '耳垂（じすい）：厚薄・付き方。五官の一つの収束。',
+    }
   ),
 
   // ── 手相（主纹 + 丘位）──
@@ -793,7 +985,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '掌的外形',
     'Palm shape',
     '掌形：地、火、风、水等掌型分类线索。',
-    'Earth / fire / air / water palm types.'
+    'Earth / fire / air / water palm types.',
+    {
+      short: '掌の外形',
+      long: '掌形（しょうけい）：地・火・風・水などの掌型分類。',
+    }
   ),
   t(
     'xq_dixingzhang',
@@ -803,7 +999,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '方厚稳掌',
     'Earth palm',
     '地型掌：方厚稳实，常与根基感对照。',
-    'Square, solid palm — grounding.'
+    'Square, solid palm — grounding.',
+    {
+      short: '方厚で安定',
+      long: '地型掌（ちがたしょう）：方く厚く安定。根基感。',
+    }
   ),
   t(
     'xq_huoxingzhang',
@@ -813,7 +1013,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '长掌热情',
     'Fire palm',
     '火型掌：掌长指长，气机偏动。',
-    'Long palm and fingers — more kinetic qi.'
+    'Long palm and fingers — more kinetic qi.',
+    {
+      short: '長掌で情熱',
+      long: '火型掌（かがたしょう）：掌長指長。気機が動きやすい。',
+    }
   ),
   t(
     'xq_fengxingzhang',
@@ -823,7 +1027,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '方掌长指',
     'Air palm',
     '风型掌：掌方指长，常与思虑灵敏对照。',
-    'Square palm, long fingers — agile thought.'
+    'Square palm, long fingers — agile thought.',
+    {
+      short: '方掌・長指',
+      long: '风型掌（ふうがたしょう）：掌方・指長。思慮の敏捷さ。',
+    }
   ),
   t(
     'xq_shuixingzhang',
@@ -833,7 +1041,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '柔长掌',
     'Water palm',
     '水型掌：掌柔指长，情感与感受性偏显。',
-    'Soft long palm — feeling tone.'
+    'Soft long palm — feeling tone.',
+    {
+      short: '柔らかく長い掌',
+      long: '水型掌（すいがたしょう）：掌柔・指長。感情・感受性。',
+    }
   ),
   t(
     'xq_shengmingxian',
@@ -843,7 +1055,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '绕拇主纹',
     'Life line',
     '生命线：环绕拇指丘的主纹，与体力节律对照。',
-    'Arc around the thenar — vitality rhythm.'
+    'Arc around the thenar — vitality rhythm.',
+    {
+      short: '親指丘を回る主線',
+      long: '生命线（せいめいせん）：親指丘を回る主線。体力のリズム。',
+    }
   ),
   t(
     'xq_zhihuixian',
@@ -853,7 +1069,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '头脑线',
     'Head line',
     '智慧线：横过掌心，常与思虑方式对照（亦称头脑线）。',
-    'Across the palm — thinking style.'
+    'Across the palm — thinking style.',
+    {
+      short: '頭脳線',
+      long: '智慧线（ちえせん）：掌を横切る線。思考の仕方（頭脳線とも）。',
+    }
   ),
   t(
     'xq_ganqingxian',
@@ -863,7 +1083,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '心脏线',
     'Heart line',
     '感情线：近指根横纹，情感表达与人际张力（亦称心脏线）。',
-    'Near fingers — affect and relational tension.'
+    'Near fingers — affect and relational tension.',
+    {
+      short: '感情線',
+      long: '感情线（かんじょうせん）：指根付近の横線。感情表出・対人（心臓線とも）。',
+    }
   ),
   t(
     'xq_shiyexian',
@@ -887,7 +1111,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '小指侧短纹',
     'Marriage lines',
     '婚姻线：小指侧缘短横纹，关系节点线索。',
-    'Short lines on the ulnar edge — bond cues.'
+    'Short lines on the ulnar edge — bond cues.',
+    {
+      short: '小指側の短線',
+      long: '婚姻线（こんいんせん）：小指側縁の短い横線。関係の節目。',
+    }
   ),
   t(
     'xq_jiankangxian',
@@ -897,7 +1125,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '肝线',
     'Health line',
     '健康线：自水星丘斜向生命线的细纹。',
-    'Fine line from Mercury mount toward life line.'
+    'Fine line from Mercury mount toward life line.',
+    {
+      short: '健康線',
+      long: '健康线（けんこうせん）：水星丘から生命線へ斜める細線。',
+    }
   ),
   t(
     'xq_taiyangxian',
@@ -907,7 +1139,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '成功线',
     'Sun line',
     '太阳线：太阳丘下纵纹，常与外显、收获感对照。',
-    'Under Apollo mount — visibility / fruition.'
+    'Under Apollo mount — visibility / fruition.',
+    {
+      short: '成功線',
+      long: '太阳线（たいようせん）：太陽丘下の縦線。外顕・収穫感。',
+    }
   ),
   t(
     'xq_qiwei',
@@ -917,7 +1153,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '掌上肉丘',
     'Mounts',
     '丘位：掌上各肉丘（金星丘、木星丘等）的统称。',
-    'Palm mounts as a family of cues.'
+    'Palm mounts as a family of cues.',
+    {
+      short: '掌の肉丘',
+      long: '丘位（きゅうい）：金星丘・木星丘など掌上の肉丘の総称。',
+    }
   ),
   t(
     'xq_jinxingqiu',
@@ -927,7 +1167,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '拇指根丘',
     'Venus mount',
     '金星丘：拇指根丰丘，活力与情感根基。',
-    'Thenar mount — vitality and warmth.'
+    'Thenar mount — vitality and warmth.',
+    {
+      short: '親指根の丘',
+      long: '金星丘（きんせいきゅう）：親指根の豊丘。活力・感情の基。',
+    }
   ),
   t(
     'xq_muxingqiu',
@@ -937,7 +1181,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '食指根丘',
     'Jupiter mount',
     '木星丘：食指根，志向与展开感。',
-    'Under index — aspiration.'
+    'Under index — aspiration.',
+    {
+      short: '人差し指根の丘',
+      long: '木星丘（もくせいきゅう）：人差し指根。志向・展開感。',
+    }
   ),
   t(
     'xq_tuxingqiu',
@@ -947,7 +1195,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '中指根丘',
     'Saturn mount',
     '土星丘：中指根，责任与沉稳感。',
-    'Under middle finger — weight and duty.'
+    'Under middle finger — weight and duty.',
+    {
+      short: '中指根の丘',
+      long: '土星丘（どせいきゅう）：中指根。責任・沈穏。',
+    }
   ),
   t(
     'xq_taiyangqiu',
@@ -957,7 +1209,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '无名指根丘',
     'Apollo mount',
     '太阳丘：无名指根，外显与才情线索。',
-    'Under ring finger — expression.'
+    'Under ring finger — expression.',
+    {
+      short: '薬指根の丘',
+      long: '太阳丘（たいようきゅう）：薬指根。外顕・才情。',
+    }
   ),
   t(
     'xq_shuixingqiu',
@@ -967,7 +1223,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '小指根丘',
     'Mercury mount',
     '水星丘：小指根，沟通与机变。',
-    'Under little finger — communication.'
+    'Under little finger — communication.',
+    {
+      short: '小指根の丘',
+      long: '水星丘（すいせいきゅう）：小指根。コミュニケーション・機転。',
+    }
   ),
   t(
     'xq_yueqiu',
@@ -977,7 +1237,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '掌外侧丘',
     'Luna mount',
     '月丘：掌外侧近腕，想象与感受性。',
-    'Ulnar heel — imagination and feeling.'
+    'Ulnar heel — imagination and feeling.',
+    {
+      short: '掌外側の丘',
+      long: '月丘（げっきゅう）：掌外側・手首付近。想像・感受性。',
+    }
   ),
   t(
     'xq_huoxingqiu',
@@ -987,7 +1251,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '虎口附近',
     'Mars mounts',
     '火星丘：虎口上下，行动与张力。',
-    'Near the thumb gap — drive and tension.'
+    'Near the thumb gap — drive and tension.',
+    {
+      short: '虎口付近',
+      long: '火星丘（かせいきゅう）：虎口上下。行動・張り。',
+    }
   ),
   t(
     'xq_zhijie',
@@ -997,7 +1265,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '手指分节',
     'Phalanges',
     '指节：各指三节比例，作细节形质线索。',
-    'Finger segment proportions.'
+    'Finger segment proportions.',
+    {
+      short: '指の関節',
+      long: '指节（しせつ）：各指の三节の比例。形質の細部。',
+    }
   ),
   t(
     'xq_xiantianzhang',
@@ -1007,7 +1279,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '本命底色手',
     'Innate palm',
     '先天掌：男看左掌、女看右掌，读本命禀赋与底色。',
-    'Innate palm: men read the left hand, women the right — inborn disposition.'
+    'Innate palm: men read the left hand, women the right — inborn disposition.',
+    {
+      short: '本命の掌',
+      long: '先天掌（せんてんしょう）：男は左掌・女は右掌。本命の禀赋・底色。',
+    }
   ),
   t(
     'xq_houtianzhang',
@@ -1017,7 +1293,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '后天作为手',
     'Acquired palm',
     '后天掌：男看右掌、女看左掌，读后天作为与近运改写。',
-    'Acquired palm: men read the right hand, women the left — later effort and recent luck.'
+    'Acquired palm: men read the right hand, women the left — later effort and recent luck.',
+    {
+      short: '後天の掌',
+      long: '后天掌（こうてんしょう）：男は右掌・女は左掌。後天の努力・近運の書き換え。',
+    }
   ),
   t(
     'xq_zuoyouduizhao',
@@ -1027,7 +1307,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '双手并读',
     'Both-hand contrast',
     '左右对照：先天掌与后天掌并读，看底色与作为是同向还是对拉。',
-    'Both-hand contrast: read innate vs acquired together — aligned or pulling apart.'
+    'Both-hand contrast: read innate vs acquired together — aligned or pulling apart.',
+    {
+      short: '両手を並読',
+      long: '左右对照（さゆうたいしょう）：先天掌と后天掌を並読。底色と作為が同方向か引き合うか。',
+    }
   ),
 ]
 

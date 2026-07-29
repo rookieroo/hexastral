@@ -57,7 +57,7 @@ const COPY = {
   },
   en: {
     title: 'Life axis',
-    subtitle: 'DaYun → year → month. Form windows below.',
+    subtitle: 'DaYun → year → month. Form-qi windows below.',
     loading: 'Loading…',
     freeNote:
       'Free shows your current decade; tap a ghost chip or unlock below for the full axis and months.',
@@ -66,8 +66,8 @@ const COPY = {
     needBirth: 'Add birth info first',
     back: 'Back',
     now: 'Now',
-    events: 'Form windows',
-    noEvents: 'No form event table yet.',
+    events: 'Form-qi windows',
+    noEvents: 'No form-qi event table yet.',
     share: 'Share',
     liuyueUpsell: 'Unlock monthly weave',
   },

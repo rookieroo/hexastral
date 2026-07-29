@@ -369,7 +369,7 @@ export function locusExplorerCopy(locale: string): {
     }
   }
   return {
-    sectionLabel: 'Form map',
+    sectionLabel: 'Form-qi map',
     tapHint: 'Tap a light spot · pinch to zoom',
     noPhoto: 'No photo for this slot · tap to capture',
     noStars: 'No landmark coords on this view · re-capture to extract',

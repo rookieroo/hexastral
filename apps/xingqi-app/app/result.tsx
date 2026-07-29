@@ -88,9 +88,9 @@ export default function FaceResultScreen() {
           setLoadError(null)
           return
         }
-        setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading'))
+        setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading', '解読を読み込めませんでした'))
       } catch {
-        if (!cancelled) setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading'))
+        if (!cancelled) setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading', '解読を読み込めませんでした'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -143,16 +143,17 @@ export default function FaceResultScreen() {
       return
     }
     Alert.alert(
-      s('重新生成报告？', '重新生成報告？', 'Regenerate report?'),
+      s('重新生成报告？', '重新生成報告？', 'Regenerate report?', 'レポートを再生成しますか？'),
       s(
         '使用当前系统语言重写正文，消耗 1 次本月报告重生成额度（不消耗照片额度）。',
         '使用目前系統語言重寫正文，消耗 1 次本月報告重新生成額度（不消耗照片額度）。',
-        'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).'
+        'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).',
+        '現在の言語で本文を書き直します。月次の再生成枠を1回消費します（写真枠は消費しません）。'
       ),
       [
         { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
         {
-          text: s('生成', '生成', 'Regenerate'),
+          text: s('生成', '生成', 'Regenerate', '再生成'),
           onPress: () => {
             void (async () => {
               const birth = (output.birth ?? {}) as Record<string, unknown>
@@ -194,7 +195,8 @@ export default function FaceResultScreen() {
                   s(
                     '请等待当前解读完成。',
                     '請等待目前解讀完成。',
-                    'Wait for the current reading to finish.'
+                    'Wait for the current reading to finish.',
+                    '現在の解読が終わるまでお待ちください。'
                   )
                 )
               }
@@ -241,7 +243,7 @@ export default function FaceResultScreen() {
         }}
       >
         <Stack.Screen options={{ headerShown: false }} />
-        <XingqiLoader label={s('加载中', '載入中', 'Loading')} />
+        <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
       </View>
     )
   }
@@ -259,18 +261,19 @@ export default function FaceResultScreen() {
       >
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
-          {s('本期形气', '本期形氣', 'This period')}
+          {s('本期形气', '本期形氣', 'This period', '本期の形気')}
         </Text>
         <Text style={{ color: colors.secondary, fontSize: 16, lineHeight: 24 }}>
           {loadError ??
             s(
               '这篇解读正文尚未生成完整。请回首页更新照片后重新发起。',
               '這篇解讀正文尚未生成完整。請回首頁更新照片後重新發起。',
-              'This reading has no full body yet. Update photos on home and start again.'
+              'This reading has no full body yet. Update photos on home and start again.',
+              'この解読の本文が未完成です。ホームで写真を更新して、再度開始してください。'
             )}
         </Text>
         <Button variant='primary' onPress={goHome}>
-          {s('完成', '完成', 'Done')}
+          {s('完成', '完成', 'Done', '完了')}
         </Button>
       </View>
     )
@@ -324,7 +327,7 @@ export default function FaceResultScreen() {
         onPress={goHome}
         hitSlop={12}
         accessibilityRole='button'
-        accessibilityLabel={s('关闭', '關閉', 'Close')}
+        accessibilityLabel={s('关闭', '關閉', 'Close', '閉じる')}
         style={{
           position: 'absolute',
           top: insets.top + 10,
@@ -341,9 +344,9 @@ export default function FaceResultScreen() {
       <SelectionActionBar
         quote={pickedQuote}
         labels={{
-          copy: s('复制', '複製', 'Copy'),
-          chat: s('追问', '追問', 'Chat'),
-          highlight: s('高亮', '高亮', 'Highlight'),
+          copy: s('复制', '複製', 'Copy', 'コピー'),
+          chat: s('追问', '追問', 'Chat', '質問'),
+          highlight: s('高亮', '高亮', 'Highlight', 'ハイライト'),
         }}
         highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
         colors={{
@@ -431,7 +434,8 @@ export default function FaceResultScreen() {
             {s(
               '解锁档案与气机层 · Pro',
               '解鎖檔案與氣機層 · Pro',
-              'Unlock archive & qi layer · Pro'
+              'Unlock archive & qi layer · Pro',
+              'アーカイブと気機層を解放 · Pro'
             )}
           </Button>
         </View>

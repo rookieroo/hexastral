@@ -46,7 +46,7 @@ export const CHAPTER_TITLE: Record<
     overview: { zh: '总格局', zhHant: '總格局', en: 'Overview', ja: '総合' },
     face: { zh: '面部', zhHant: '面部', en: 'The Form · Face', ja: '顔' },
     palms: { zh: '双手', zhHant: '雙手', en: 'The Form · Palms', ja: '両手' },
-    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi', ja: '形気 × 八字' },
+    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form-qi × BaZi', ja: '形気 × 八字' },
     horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next', ja: '近運と行動' },
     period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period', ja: '本期' },
     advice: { zh: '建议', zhHant: '建議', en: 'Advice', ja: '留意' },

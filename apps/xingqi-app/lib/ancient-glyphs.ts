@@ -333,9 +333,11 @@ export type LocusCanon = {
   titleZh: string
   titleZhHant: string
   titleEn: string
+  titleJa: string
   blurbZh: string
   blurbZhHant: string
   blurbEn: string
+  blurbJa: string
 }
 
 export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
@@ -346,9 +348,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '天庭',
     titleZhHant: '天庭',
     titleEn: 'Forehead (heaven court)',
+    titleJa: '天庭（上停）',
     blurbZh: '额上停：气势、早年格局的可见轮廓',
     blurbZhHant: '額上停：氣勢、早年格局的可見輪廓',
     blurbEn: 'Upper court — early-life frame and presence.',
+    blurbJa: '額上の停：気勢、初年の格局の輪郭',
   },
   {
     featureKey: 'yinTang',
@@ -357,9 +361,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '印堂',
     titleZhHant: '印堂',
     titleEn: 'Glabella',
+    titleJa: '印堂',
     blurbZh: '两眉间：神采聚散、运势敏感带',
     blurbZhHant: '兩眉間：神采聚散、運勢敏感帶',
     blurbEn: 'Between the brows — spirit gather / scatter.',
+    blurbJa: '眉間：神采の聚散、運勢の敏感帯',
   },
   {
     featureKey: 'shanGen',
@@ -368,9 +374,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '山根',
     titleZhHant: '山根',
     titleEn: 'Nose-root',
+    titleJa: '山根',
     blurbZh: '鼻梁根：上下停衔接，气机是否贯通',
     blurbZhHant: '鼻梁根：上下停銜接，氣機是否貫通',
     blurbEn: 'Bridge root — upper/middle court join.',
+    blurbJa: '鼻根：上下停の接続、気機の貫通',
   },
   {
     featureKey: 'foreheadWidth',
@@ -379,9 +387,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '额宽',
     titleZhHant: '額寬',
     titleEn: 'Forehead span',
+    titleJa: '額幅',
     blurbZh: '上停横向：开阔或收束的格局感',
     blurbZhHant: '上停橫向：開闊或收束的格局感',
     blurbEn: 'Lateral upper court — open or gathered frame.',
+    blurbJa: '上停の横：開闊か収束かの格局感',
   },
   {
     featureKey: 'eyebrowType',
@@ -390,9 +400,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '眉',
     titleZhHant: '眉',
     titleEn: 'Brows',
+    titleJa: '眉',
     blurbZh: '情志与决断的外显',
     blurbZhHant: '情志與決斷的外顯',
     blurbEn: 'Affect and decisiveness made visible.',
+    blurbJa: '情志と決断の外見',
   },
   {
     featureKey: 'eyeType',
@@ -401,9 +413,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '目',
     titleZhHant: '目',
     titleEn: 'Eyes',
+    titleJa: '目',
     blurbZh: '神采、察人与自我呈现',
     blurbZhHant: '神采、察人與自我呈現',
     blurbEn: 'Spirit, reading others, self-presentation.',
+    blurbJa: '神采、他者を見る眼、自己呈示',
   },
   {
     featureKey: 'noseShape',
@@ -412,9 +426,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '鼻',
     titleZhHant: '鼻',
     titleEn: 'Nose',
+    titleJa: '鼻',
     blurbZh: '中岳：财气与中年承托的可见形',
     blurbZhHant: '中岳：財氣與中年承托的可見形',
     blurbEn: 'Central peak — midlife support and means.',
+    blurbJa: '中岳：財気と中年の承托',
   },
   {
     featureKey: 'cheekBones',
@@ -423,9 +439,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '颧骨',
     titleZhHant: '顴骨',
     titleEn: 'Cheekbones',
+    titleJa: '頬骨',
     blurbZh: '五岳东西：支撑感、外拓或内敛',
     blurbZhHant: '五岳東西：支撐感、外拓或內斂',
     blurbEn: 'East–west peaks — outward push or hold.',
+    blurbJa: '五岳東西：支撐感、外拓か内斂か',
   },
   {
     featureKey: 'nasolabialFolds',
@@ -434,9 +452,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '法令',
     titleZhHant: '法令',
     titleEn: 'Nasolabial',
+    titleJa: '法令紋',
     blurbZh: '口角纹：行动与取舍的痕迹感',
     blurbZhHant: '口角紋：行動與取捨的痕跡感',
     blurbEn: 'Folds by the mouth — action and choice marks.',
+    blurbJa: '口角の紋：行動と取舍の痕',
   },
   {
     featureKey: 'mouthType',
@@ -445,9 +465,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '口唇',
     titleZhHant: '口唇',
     titleEn: 'Mouth',
+    titleJa: '口唇',
     blurbZh: '表达、食禄与人际出口',
     blurbZhHant: '表達、食祿與人際出口',
     blurbEn: 'Expression, intake, social outlet.',
+    blurbJa: '表現、食禄、対人の出口',
   },
   {
     featureKey: 'chin',
@@ -456,9 +478,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '地阁',
     titleZhHant: '地閣',
     titleEn: 'Chin',
+    titleJa: '地閣',
     blurbZh: '下巴：收束、晚运承托的可见形',
     blurbZhHant: '下巴：收束、晚運承托的可見形',
     blurbEn: 'Lower court — late-life settle and support.',
+    blurbJa: '顎：収束、晩運の承托',
   },
   {
     featureKey: 'earLobes',
@@ -467,9 +491,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '耳垂',
     titleZhHant: '耳垂',
     titleEn: 'Ear lobes',
+    titleJa: '耳垂',
     blurbZh: '福厚感、旁宫辅助线索',
     blurbZhHant: '福厚感、旁宮輔助線索',
     blurbEn: 'Fullness cue — side-palace support.',
+    blurbJa: '福厚感、旁宮の補助手がかり',
   },
   {
     featureKey: 'handShape',
@@ -478,9 +504,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '掌形',
     titleZhHant: '掌形',
     titleEn: 'Palm shape',
+    titleJa: '掌形',
     blurbZh: '地/火/风/水等外形倾向',
     blurbZhHant: '地／火／風／水等外形傾向',
     blurbEn: 'Earth / fire / air / water form lean.',
+    blurbJa: '地／火／風／水の外形傾向',
   },
   {
     featureKey: 'lifeLine',
@@ -489,9 +517,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '生命线',
     titleZhHant: '生命線',
     titleEn: 'Life line',
+    titleJa: '生命線',
     blurbZh: '活力与节奏（弧线中点）',
     blurbZhHant: '活力與節奏（弧線中點）',
     blurbEn: 'Vitality and tempo (arc midpoint).',
+    blurbJa: '活力とリズム（弧の中点）',
   },
   {
     featureKey: 'headLine',
@@ -500,9 +530,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '智慧线',
     titleZhHant: '智慧線',
     titleEn: 'Head line',
+    titleJa: '知能線',
     blurbZh: '思虑与决断方式',
     blurbZhHant: '思慮與決斷方式',
     blurbEn: 'How thought and decision run.',
+    blurbJa: '思慮と決断の在り方',
   },
   {
     featureKey: 'heartLine',
@@ -511,9 +543,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '感情线',
     titleZhHant: '感情線',
     titleEn: 'Heart line',
+    titleJa: '感情線',
     blurbZh: '亲密与情感出口',
     blurbZhHant: '親密與情感出口',
     blurbEn: 'Intimacy and emotional outlet.',
+    blurbJa: '親密さと感情の出口',
   },
   {
     featureKey: 'fateLine',
@@ -522,9 +556,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '事业线',
     titleZhHant: '事業線',
     titleEn: 'Career line',
+    titleJa: '運命線',
     blurbZh: '方向感与事业轴线（有则标）',
     blurbZhHant: '方向感與事業軸線（有則標）',
     blurbEn: 'Career / path axis when present.',
+    blurbJa: '方向感と事業の軸（あれば）',
   },
   {
     featureKey: 'mountJupiter',
@@ -533,9 +569,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '木星丘',
     titleZhHant: '木星丘',
     titleEn: 'Mount of Jupiter',
+    titleJa: '木星丘',
     blurbZh: '食指根：志向、权威感的隆起',
     blurbZhHant: '食指根：志向、權威感的隆起',
     blurbEn: 'Under index — ambition and authority.',
+    blurbJa: '人差し指根：志向と権威感',
   },
   {
     featureKey: 'mountSaturn',
@@ -544,9 +582,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '土星丘',
     titleZhHant: '土星丘',
     titleEn: 'Mount of Saturn',
+    titleJa: '土星丘',
     blurbZh: '中指根：责任、沉稳与制约',
     blurbZhHant: '中指根：責任、沉穩與制約',
     blurbEn: 'Under middle — duty and restraint.',
+    blurbJa: '中指根：責任、沈穏と制約',
   },
   {
     featureKey: 'mountApollo',
@@ -555,9 +595,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '太阳丘',
     titleZhHant: '太陽丘',
     titleEn: 'Mount of Apollo',
+    titleJa: '太陽丘',
     blurbZh: '无名指根：才情、名声与表达欲',
     blurbZhHant: '無名指根：才情、名聲與表達欲',
     blurbEn: 'Under ring — talent and visibility.',
+    blurbJa: '薬指根：才情、名声と表現欲',
   },
   {
     featureKey: 'mountMercury',
@@ -566,9 +608,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '水星丘',
     titleZhHant: '水星丘',
     titleEn: 'Mount of Mercury',
+    titleJa: '水星丘',
     blurbZh: '小指根：沟通、机敏与交易感',
     blurbZhHant: '小指根：溝通、機敏與交易感',
     blurbEn: 'Under pinky — speech and commerce.',
+    blurbJa: '小指根：コミュニケーション、機敏さと取引感',
   },
   {
     featureKey: 'mountVenus',
@@ -577,9 +621,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '金星丘',
     titleZhHant: '金星丘',
     titleEn: 'Mount of Venus',
+    titleJa: '金星丘',
     blurbZh: '拇指根大鱼际：活力、情欲与生命力',
     blurbZhHant: '拇指根大魚際：活力、情欲與生命力',
     blurbEn: 'Thenar — vitality and affection.',
+    blurbJa: '母指球側：活力、情欲と生命力',
   },
   {
     featureKey: 'mountMoon',
@@ -588,9 +634,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '月丘',
     titleZhHant: '月丘',
     titleEn: 'Mount of the Moon',
+    titleJa: '月丘',
     blurbZh: '小鱼际：想象、漂泊与潜意识',
     blurbZhHant: '小魚際：想像、漂泊與潛意識',
     blurbEn: 'Hypothenar — imagination and travel lean.',
+    blurbJa: '小指球側：想像、漂泊と潜在意識',
   },
   {
     featureKey: 'mountMars',
@@ -599,9 +647,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '火星丘',
     titleZhHant: '火星丘',
     titleEn: 'Mount of Mars',
+    titleJa: '火星丘',
     blurbZh: '掌中偏虎口侧：勇气、冲突与行动力',
     blurbZhHant: '掌中偏虎口側：勇氣、衝突與行動力',
     blurbEn: 'Mid-palm near thenar — courage and drive.',
+    blurbJa: '掌中・虎口付近：勇気、衝突と行動力',
   },
   {
     featureKey: 'specialMarks',
@@ -610,9 +660,11 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     titleZh: '特殊纹记',
     titleZhHant: '特殊紋記',
     titleEn: 'Special marks',
+    titleJa: '特殊紋記',
     blurbZh: '岛纹/十字等显著记',
     blurbZhHant: '島紋／十字等顯著記',
     blurbEn: 'Islands, crosses, notable marks.',
+    blurbJa: '島紋／十字など顕著な記',
   },
 ] as const
 
@@ -629,7 +681,7 @@ export function locusTitleForLocale(featureKey: string, locale: string): string 
   if (!c) return featureKey
   if (isZhHant(locale)) return c.titleZhHant
   if (locale.startsWith('zh')) return c.titleZh
-  if (isJa(locale)) return c.titleZh
+  if (isJa(locale)) return c.titleJa
   return c.titleEn
 }
 
@@ -638,7 +690,7 @@ export function locusBlurbForLocale(featureKey: string, locale: string): string 
   if (!c) return ''
   if (isZhHant(locale)) return c.blurbZhHant
   if (locale.startsWith('zh')) return c.blurbZh
-  if (isJa(locale)) return c.blurbZhHant
+  if (isJa(locale)) return c.blurbJa
   return c.blurbEn
 }
 

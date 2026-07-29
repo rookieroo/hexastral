@@ -138,12 +138,15 @@ export default function XingqiHomeScreen() {
         err.includes('照片特征未变化') ||
         err.includes('照片特徵未變化') ||
         err.toLowerCase().includes('photos unchanged')
-      Alert.alert(s('解读未完成', '解讀未完成', 'Reading incomplete'), err, [
+      Alert.alert(
+        s('解读未完成', '解讀未完成', 'Reading incomplete', '解読が完了しませんでした'),
+        err,
+        [
         { text: s('好', '好', 'OK', 'OK') },
         ...(isUnchanged
           ? [
               {
-                text: s('去更新照片', '去更新照片', 'Update photos'),
+                text: s('去更新照片', '去更新照片', 'Update photos', '写真を更新'),
                 onPress: () => router.push('/capture' as never),
               },
             ]
@@ -194,7 +197,8 @@ export default function XingqiHomeScreen() {
         s(
           '请等待当前解读完成，或点推送打开结果。',
           '請等待目前解讀完成，或點推送打開結果。',
-          'Wait for the current reading, or open it from the push.'
+          'Wait for the current reading, or open it from the push.',
+          '現在の解読が終わるまでお待ちください。プッシュ通知から開くこともできます。'
         )
       )
       return
@@ -230,7 +234,8 @@ export default function XingqiHomeScreen() {
             s(
               '请等待当前解读完成。',
               '請等待目前解讀完成。',
-              'Wait for the current reading to finish.'
+              'Wait for the current reading to finish.',
+              '現在の解読が終わるまでお待ちください。'
             )
           )
         }
@@ -272,16 +277,17 @@ export default function XingqiHomeScreen() {
   const confirmDelete = useCallback(
     (item: PortfolioReadingItem) => {
       Alert.alert(
-        s('删除解读？', '刪除解讀？', 'Delete reading?'),
+        s('删除解读？', '刪除解讀？', 'Delete reading?', 'リーディングを削除しますか？'),
         s(
           '将从账号中永久删除此条形气解读，无法恢复。',
           '將從帳號中永久刪除此條形氣解讀，無法恢復。',
-          'Permanently removes this form reading from your account.'
+          'Permanently removes this form-qi reading from your account.',
+          'この形気リーディングをアカウントから完全に削除します。元に戻せません。'
         ),
         [
           { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
           {
-            text: s('删除', '刪除', 'Delete'),
+            text: s('删除', '刪除', 'Delete', '削除'),
             style: 'destructive',
             onPress: () => {
               void (async () => {
@@ -291,7 +297,9 @@ export default function XingqiHomeScreen() {
                   await clearLastReadingPhotoSnapshot()
                   await reload('soft')
                 } catch {
-                  Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
+                  Alert.alert(
+                    s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました')
+                  )
                 }
               })()
             },
@@ -306,7 +314,7 @@ export default function XingqiHomeScreen() {
     (item: PortfolioReadingItem) => {
       const localeBadge = readingLocaleBadge(item.locale)
       const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-      return [s('形气', '形氣', 'Form', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+      return [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
     },
     [locale]
   )
@@ -404,7 +412,7 @@ export default function XingqiHomeScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    {s('形气解读', '形氣解讀', 'Form reading')}
+                    {s('形气解读', '形氣解讀', 'Form-qi reading', '形気リーディング')}
                   </Text>
                   <Text
                     style={{
@@ -415,11 +423,14 @@ export default function XingqiHomeScreen() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    {s('进行中', '進行中', 'In progress')}
+                    {s('进行中', '進行中', 'In progress', '進行中')}
                     {` · ${Math.max(job.progress, job.phase === 'extracting' ? 5 : job.phase === 'queued' ? 10 : 20)}%`}
                   </Text>
                 </View>
-                <XingqiLoader label={s('解读中', '解讀中', 'Reading')} size={28} />
+                <XingqiLoader
+                  label={s('解读中', '解讀中', 'Reading', '解読中')}
+                  size={28}
+                />
               </View>
               <View style={{ gap: 6, marginTop: 4 }}>
                 {readingJobSteps(job.phase, locale).map((step) => (
@@ -452,7 +463,8 @@ export default function XingqiHomeScreen() {
                 {s(
                   '可离开应用。完成后可点推送或回此列表打开。',
                   '可離開應用。完成後可點推送或回此列表打開。',
-                  'You can leave. Open via push or this row when ready.'
+                  'You can leave. Open via push or this row when ready.',
+                  'アプリを閉じても大丈夫です。完了したらプッシュ通知、またはこの一覧から開けます。'
                 )}
               </Text>
             </View>
@@ -460,7 +472,7 @@ export default function XingqiHomeScreen() {
 
           {loading ? (
             <View style={{ paddingVertical: spacing.xl * 2, alignItems: 'center' }}>
-              <XingqiLoader label={s('加载中', '載入中', 'Loading')} />
+              <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
             </View>
           ) : null}
 
@@ -475,7 +487,12 @@ export default function XingqiHomeScreen() {
               }}
             >
               <Text style={{ color: colors.dim, fontSize: 13 }}>
-                {s('尚无解读', '尚無解讀', 'No readings yet')}
+                {s(
+                  '尚无解读',
+                  '尚無解讀',
+                  'No readings yet',
+                  '形気リーディングはまだありません'
+                )}
               </Text>
             </View>
           ) : null}
@@ -489,7 +506,7 @@ export default function XingqiHomeScreen() {
               openHint={copy.openHint}
               onPress={openFeatured}
               onDelete={() => confirmDelete(featured)}
-              deleteLabel={s('删除', '刪除', 'Delete')}
+              deleteLabel={s('删除', '刪除', 'Delete', '削除')}
               colors={{
                 text: colors.text,
                 dim: colors.dim,
@@ -518,7 +535,7 @@ export default function XingqiHomeScreen() {
                 bg: colors.bg,
               }}
               spacing={spacing}
-              deleteLabel={s('删除', '刪除', 'Delete')}
+              deleteLabel={s('删除', '刪除', 'Delete', '削除')}
             />
           ) : null}
 
@@ -559,7 +576,7 @@ export default function XingqiHomeScreen() {
                 {inputsCopy.birth}
               </Text>
               <Text style={{ color: colors.dim, fontSize: 12 }}>
-                {s('去填写', '去填寫', 'Add')}
+                {s('去填写', '去填寫', 'Add', '入力する')}
               </Text>
             </Pressable>
           ) : null}

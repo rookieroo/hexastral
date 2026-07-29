@@ -50,17 +50,17 @@ export default function ArchiveScreen() {
 
   const confirmDelete = (item: PortfolioReadingItem) => {
     Alert.alert(
-      s('删除解读？', '刪除解讀？', 'Delete reading?'),
+      s('删除解读？', '刪除解讀？', 'Delete reading?', 'リーディングを削除しますか？'),
       s(
         '将从账号中永久删除此条形气解读，无法恢复。',
         '將從帳號中永久刪除此條形氣解讀，無法恢復。',
         'Permanently removes this form-qi reading from your account.',
-        'この形気リーディングをアカウントから完全に削除します。'
+        'この形気リーディングをアカウントから完全に削除します。元に戻せません。'
       ),
       [
-        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
         {
-          text: s('删除', '刪除', 'Delete'),
+          text: s('删除', '刪除', 'Delete', '削除'),
           style: 'destructive',
           onPress: () => {
             void (async () => {
@@ -70,7 +70,9 @@ export default function ArchiveScreen() {
                 await clearLastReadingPhotoSnapshot()
                 await reload()
               } catch {
-                Alert.alert(s('删除失败', '刪除失敗', 'Delete failed'))
+                Alert.alert(
+                  s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました')
+                )
               }
             })()
           },
@@ -94,7 +96,7 @@ export default function ArchiveScreen() {
           onPress={() => router.back()}
           hitSlop={12}
           accessibilityRole='button'
-          accessibilityLabel={s('返回', '返回', 'Back')}
+          accessibilityLabel={s('返回', '返回', 'Back', '戻る')}
         >
           <ChevronLeft size={24} color={colors.text} strokeWidth={1.5} />
         </Pressable>
@@ -120,7 +122,7 @@ export default function ArchiveScreen() {
 
         {loading ? (
           <View style={{ paddingVertical: spacing.xl * 2, alignItems: 'center' }}>
-            <XingqiLoader label={s('加载中', '載入中', 'Loading')} />
+            <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
           </View>
         ) : null}
 
@@ -135,7 +137,12 @@ export default function ArchiveScreen() {
             }}
           >
             <Text style={{ color: colors.dim, fontSize: 13 }}>
-              {s('尚无解读', '尚無解讀', 'No readings yet')}
+              {s(
+                '尚无解读',
+                '尚無解讀',
+                'No readings yet',
+                '形気リーディングはまだありません'
+              )}
             </Text>
           </View>
         ) : null}
@@ -166,7 +173,7 @@ export default function ArchiveScreen() {
               }}
               spacing={spacing}
               showTopBorder={index === 0}
-              deleteLabel={s('删除', '刪除', 'Delete')}
+              deleteLabel={s('删除', '刪除', 'Delete', '削除')}
             />
           )
         })}

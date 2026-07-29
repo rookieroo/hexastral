@@ -20,13 +20,14 @@ export default function FacePrivacyAppendixScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
       <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>
-        {s('Syel 数据处理', 'Syel 資料處理', 'Syel data handling')}
+        {s('Syel 数据处理', 'Syel 資料處理', 'Syel data handling', 'Syel データ処理')}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
         {s(
           '左掌、右掌与面部原图仅保存在本机，供查看与替换；上传仅用于提取结构化特征，服务器处理完不保留原图。',
           '左掌、右掌與面部原圖僅保存在本機，供查看與替換；上傳僅用於提取結構化特徵，伺服器處理完不保留原圖。',
-          'Palm and face originals stay on this device for view/replace. Uploads are only for feature extraction; servers discard source images after processing.'
+          'Palm and face originals stay on this device for view/replace. Uploads are only for feature extraction; servers discard source images after processing.',
+          '左掌・右掌・顔の原画像はこの端末にのみ保存され、閲覧・差し替えに使います。アップロードは構造化特徴の抽出のみ。サーバーは処理後に原画像を保持しません。'
         )}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
@@ -41,12 +42,13 @@ export default function FacePrivacyAppendixScreen() {
         {s(
           '每次解读会更新前瞻事件表；Pro 订阅可用其驱动本地/推送提醒（宜留意的时间窗、月度复拍）。',
           '每次解讀會更新前瞻事件表；Pro 訂閱可用其驅動本地／推送提醒（宜留意的時間窗、月度複拍）。',
-          'Each reading refreshes a forward event table. Pro may use it for local/push reminders (windows worth noting, monthly re-capture).'
+          'Each reading refreshes a forward event table. Pro may use it for local/push reminders (windows worth noting, monthly re-capture).',
+          '各解読で前瞻イベント表が更新されます。Pro ではローカル／プッシュリマインダー（留意すべき時間窗、月次の再撮影）に利用できます。'
         )}
       </Text>
       <Pressable onPress={() => void Linking.openURL(url)}>
         <Text style={{ color: colors.accent, lineHeight: 22 }}>
-          {s('完整隐私附录（网页）→', '完整隱私附錄（網頁）→', 'Full privacy appendix (web) →')}
+          {s('完整隐私附录（网页）→', '完整隱私附錄（網頁）→', 'Full privacy appendix (web) →', '完全なプライバシー付録（Web）→')}
         </Text>
       </Pressable>
     </ScrollView>

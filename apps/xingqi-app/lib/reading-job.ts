@@ -160,9 +160,10 @@ export async function showReadingStartedHandoff(opts: {
         loc,
         '可离开应用。特征提取后会在云端继续解读，完成后通知你。',
         '可離開應用。特徵提取後會在雲端繼續解讀，完成後通知你。',
-        'You can leave the app. After extract, interpretation continues in the cloud — we will notify you when ready.'
+        'You can leave the app. After extract, interpretation continues in the cloud — we will notify you when ready.',
+        'アプリを閉じても大丈夫です。特徴抽出のあと、解読はクラウドで続きます。完了したらお知らせします。'
       ),
-      [{ text: zhCopy(loc, '好', '好', 'OK'), onPress: opts.onDismiss }]
+      [{ text: zhCopy(loc, '好', '好', 'OK', 'OK'), onPress: opts.onDismiss }]
     )
     return
   }
@@ -174,12 +175,13 @@ export async function showReadingStartedHandoff(opts: {
         loc,
         '可离开应用。如需完成后通知，请在系统设置中开启通知。',
         '可離開應用。如需完成後通知，請在系統設定中開啟通知。',
-        'You can leave the app. To get a completion alert, enable Notifications in Settings.'
+        'You can leave the app. To get a completion alert, enable Notifications in Settings.',
+        'アプリを閉じても大丈夫です。完了通知を受け取るには、設定で通知を許可してください。'
       ),
       [
-        { text: zhCopy(loc, '好', '好', 'OK'), style: 'cancel', onPress: opts.onDismiss },
+        { text: zhCopy(loc, '好', '好', 'OK', 'OK'), style: 'cancel', onPress: opts.onDismiss },
         {
-          text: zhCopy(loc, '打开设置', '打開設定', 'Open Settings'),
+          text: zhCopy(loc, '打开设置', '打開設定', 'Open Settings', '設定を開く'),
           onPress: () => {
             void Linking.openSettings()
             opts.onDismiss?.()
@@ -196,16 +198,17 @@ export async function showReadingStartedHandoff(opts: {
       loc,
       '可离开应用。需要完成后通知吗？',
       '可離開應用。需要完成後通知嗎？',
-      'You can leave the app. Want a notification when it finishes?'
+      'You can leave the app. Want a notification when it finishes?',
+      'アプリを閉じても大丈夫です。完了したら通知しますか？'
     ),
     [
       {
-        text: zhCopy(loc, '不用了', '不用了', 'Not now'),
+        text: zhCopy(loc, '不用了', '不用了', 'Not now', '後で'),
         style: 'cancel',
         onPress: opts.onDismiss,
       },
       {
-        text: zhCopy(loc, '开启通知', '開啟通知', 'Notify me'),
+        text: zhCopy(loc, '开启通知', '開啟通知', 'Notify me', '完了したら通知'),
         onPress: () => {
           void enableReadingCompletionPush(opts.locale).finally(() => {
             opts.onDismiss?.()
@@ -221,7 +224,8 @@ function mapJobError(msg: string, locale: string): string {
     locale,
     '解读失败，请稍后重试',
     '解讀失敗，請稍後重試',
-    'Reading failed. Try again.'
+    'Reading failed. Try again.',
+    '解読に失敗しました。後でもう一度お試しください。'
   )
   if (msg === 'signin_required') error = 'signin_required'
   else if (msg === 'biometric_consent_required') error = 'biometric_consent_required'
@@ -230,14 +234,16 @@ function mapJobError(msg: string, locale: string): string {
       locale,
       '照片特征未变化。请先更新左掌 / 右掌 / 面部至少一张照片，再发起新解读。',
       '照片特徵未變化。請先更新左掌 / 右掌 / 面部至少一張照片，再發起新解讀。',
-      'Photos unchanged. Update at least one of left palm, right palm, or face before a new reading.'
+      'Photos unchanged. Update at least one of left palm, right palm, or face before a new reading.',
+      '写真の特徴に変化がありません。左手・右手・顔のいずれかを更新してから、新しい解読を開始してください。'
     )
   } else if (msg === 'features_incomplete' || msg === 'birth_incomplete') {
     error = zhCopy(
       locale,
       '请先完成三张照片与出生信息，再发起解读。',
       '請先完成三張照片與出生資訊，再發起解讀。',
-      'Complete three photos and birth info before starting a reading.'
+      'Complete three photos and birth info before starting a reading.',
+      '三枚の写真と出生情報を入力してから、解読を開始してください。'
     )
   } else if (
     msg === 'purchase_required' ||
@@ -248,77 +254,88 @@ function mapJobError(msg: string, locale: string): string {
       locale,
       '需要有效订阅或单次购买后才能发起解读。',
       '需要有效訂閱或單次購買後才能發起解讀。',
-      'A valid subscription or one-time purchase is required to start a reading.'
+      'A valid subscription or one-time purchase is required to start a reading.',
+      '有効なサブスクリプションまたは単発購入が必要です。'
     )
   } else if (msg.includes('photo_slot_exhausted')) {
     error = zhCopy(
       locale,
       '本月照片额度已用尽',
       '本月照片額度已用盡',
-      'Monthly photo slots exhausted'
+      'Monthly photo slots exhausted',
+      '今月の写真枠を使い切りました'
     )
   } else if (msg.includes('report_regen_exhausted')) {
     error = zhCopy(
       locale,
       '本月报告重生成额度已用尽',
       '本月報告重新生成額度已用盡',
-      'Monthly report regenerations exhausted'
+      'Monthly report regenerations exhausted',
+      '今月の再生成枠を使い切りました'
     )
   } else if (msg === 'extract_not_pro' || msg.includes('extract_not_pro')) {
     error = zhCopy(
       locale,
       '特征提取需要 Pro 订阅，请先登录并开通。',
       '特徵提取需要 Pro 訂閱，請先登入並開通。',
-      'Feature extract requires Pro. Sign in and subscribe to continue.'
+      'Feature extract requires Pro. Sign in and subscribe to continue.',
+      '特徴抽出には Pro が必要です。ログインしてご利用ください。'
     )
   } else if (msg.includes('request_timeout') || msg.includes('extract_timeout')) {
     error = zhCopy(
       locale,
       '特征提取超时。请检查网络后重试；必要时重拍更清晰的照片。',
       '特徵提取超時。請檢查網絡後重試；必要時重拍更清晰的照片。',
-      'Feature extract timed out. Check network and retry; retake clearer photos if needed.'
+      'Feature extract timed out. Check network and retry; retake clearer photos if needed.',
+      '特徴抽出がタイムアウトしました。ネットワークを確認して再試行するか、より鮮明な写真を撮り直してください。'
     )
   } else if (msg.includes('extract_image_encode_failed') || msg.includes('photo_encode_failed')) {
     error = zhCopy(
       locale,
       '无法处理该照片。请用相机重新拍摄。',
       '無法處理該照片。請用相機重新拍攝。',
-      'Could not process this photo. Retake with the camera.'
+      'Could not process this photo. Retake with the camera.',
+      'この写真を処理できません。カメラで撮り直してください。'
     )
   } else if (msg.includes('extract_photo_quality_low') || msg.includes('photo_quality_low')) {
     error = zhCopy(
       locale,
       '照片不够清晰完整。请重拍：正脸五官清晰，或掌纹全掌入镜、光线均匀。',
       '照片不夠清晰完整。請重拍：正臉五官清晰，或掌紋全掌入鏡、光線均勻。',
-      'Photo too unclear. Retake: sharp full face, or full palm with even light.'
+      'Photo too unclear. Retake: sharp full face, or full palm with even light.',
+      '写真が不鮮明です。正面の顔全体、または掌全体が均等な光で写るよう撮り直してください。'
     )
   } else if (msg.includes('extract_modality_mismatch') || msg.includes('modality_mismatch')) {
     error = zhCopy(
       locale,
       '这张图不像当前步骤要求的部位（左掌 / 右掌 / 面部）。请按步骤重拍。',
       '這張圖不像目前步驟要求的部位（左掌 / 右掌 / 面部）。請按步驟重拍。',
-      'This image does not match the expected part (left palm / right palm / face). Retake for this step.'
+      'This image does not match the expected part (left palm / right palm / face). Retake for this step.',
+      'この画像は手順の部位（左手・右手・顔）と一致しません。該当ステップで撮り直してください。'
     )
   } else if (msg.includes('extract_failed:502') || msg.includes('VLM')) {
     error = zhCopy(
       locale,
       '图像特征服务暂不可用，请稍后重试',
       '圖像特徵服務暫不可用，請稍後重試',
-      'Vision extract service unavailable — try again shortly'
+      'Vision extract service unavailable — try again shortly',
+      '画像特徴サービスが一時利用できません。しばらくして再試行してください。'
     )
   } else if (msg.includes('extract_failed') || msg.includes('extract_forbidden')) {
     error = zhCopy(
       locale,
       `特征提取失败（${msg}）`,
       `特徵提取失敗（${msg}）`,
-      `Feature extract failed (${msg})`
+      `Feature extract failed (${msg})`,
+      `特徴抽出に失敗しました（${msg}）`
     )
   } else if (msg === 'job_poll_timeout') {
     error = zhCopy(
       locale,
       '解读仍在云端处理中，完成后会通知你',
       '解讀仍在雲端處理中，完成後會通知你',
-      'Still processing in the cloud — we will notify you when ready'
+      'Still processing in the cloud — we will notify you when ready',
+      'クラウドで処理中です。完了したらお知らせします'
     )
   } else if (
     msg === 'network_error' ||
@@ -329,7 +346,8 @@ function mapJobError(msg: string, locale: string): string {
       locale,
       '网络中断。若已开始解读，云端会继续处理，完成后会通知你。',
       '網絡中斷。若已開始解讀，雲端會繼續處理，完成後會通知你。',
-      'Network interrupted. If the reading already started, it continues in the cloud — we will notify you when ready.'
+      'Network interrupted. If the reading already started, it continues in the cloud — we will notify you when ready.',
+      'ネットワークが中断しました。解読が開始済みならクラウドで続行し、完了時に通知します。'
     )
   } else if (msg.length > 0 && msg.length < 200) {
     error = msg

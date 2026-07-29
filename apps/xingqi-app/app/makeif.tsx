@@ -71,6 +71,14 @@ export default function XingqiMakeIfScreen() {
   const [busy, setBusy] = useState(false)
   const [groundReadingId, setGroundReadingId] = useState<string | undefined>(paramReadingId)
 
+  const shareFooter = pickUi(
+    locale,
+    '— Syel 假如',
+    '— Syel 假如',
+    '— Syel What-If',
+    '— Syel もしも'
+  )
+
   const birthRef = useMemo(
     () => ({ current: null as Awaited<ReturnType<typeof loadXingqiBirth>> }),
     []
@@ -317,7 +325,7 @@ export default function XingqiMakeIfScreen() {
                   <Pressable
                     onPress={() => {
                       void Share.share({
-                        message: `${selected.label}\n${selected.summary || selected.outcome}\n— Syel What-If`,
+                        message: `${selected.label}\n${selected.summary || selected.outcome}\n${shareFooter}`,
                       })
                     }}
                   >

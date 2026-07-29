@@ -123,7 +123,14 @@ export default function BirthScreen() {
       date.solarDate ?? birthInputToSolar(date.input, date.calendar, date.isLeap ?? false) ?? ''
     const solarDate = solarRaw.trim()
     if (!solarDate || timeIndex == null || !gender) {
-      setError(s('请完整填写日期、时辰与性别', '請完整填寫日期、時辰與性別', 'Date, hour, and gender are required'))
+      setError(
+        s(
+          '请完整填写日期、时辰与性别',
+          '請完整填寫日期、時辰與性別',
+          'Date, hour, and gender are required',
+          '日付・時刻・性別をすべて入力してください'
+        )
+      )
       return
     }
     setBusy(true)
@@ -154,12 +161,15 @@ export default function BirthScreen() {
             s(
               '请先在首页完成左掌、右掌与面部照片',
               '請先在首頁完成左掌、右掌與面部照片',
-              'Add left palm, right palm, and face photos first'
+              'Add left palm, right palm, and face photos first',
+              'ホームで左手・右手・顔の写真を先に撮影してください'
             )
           )
           return
         }
-        setError(s('资料不完整', '資料不完整', 'Incomplete draft'))
+        setError(
+          s('资料不完整', '資料不完整', 'Incomplete draft', '入力内容が不完全です')
+        )
         return
       }
       // Pro: skip unlock sheet — start reading and return home.
@@ -193,7 +203,7 @@ export default function BirthScreen() {
         }}
       />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-        {s('录入生辰', '錄入生辰', 'Your birth details')}
+        {s('录入生辰', '錄入生辰', 'Your birth details', '生辰情報を入力')}
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
         {s(
@@ -231,8 +241,8 @@ export default function BirthScreen() {
       <View>
         <Button variant='primary' onPress={() => void onContinue()} disabled={busy}>
           {isPro
-            ? s('开始解读', '開始解讀', 'Start reading')
-            : s('继续到解锁', '繼續到解鎖', 'Continue to unlock')}
+            ? s('开始解读', '開始解讀', 'Start reading', '解読を開始')
+            : s('继续到解锁', '繼續到解鎖', 'Continue to unlock', '購入手続きへ')}
         </Button>
       </View>
     </ScrollView>

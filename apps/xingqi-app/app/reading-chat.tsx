@@ -55,23 +55,40 @@ export default function XingqiReadingChatScreen() {
 
   const copy = useMemo<ReadingChatStrings>(
     () => ({
-      title: s('追问本期形气', '追問本期形氣', 'Ask about this reading'),
+      title: s(
+        '追问本期形气',
+        '追問本期形氣',
+        'Ask about this reading',
+        '今回の形気について質問'
+      ),
       emptyHint: s(
         '就划词或章节提问。回答是文化研读，非命运判决。',
         '就劃詞或章節提問。回答是文化研讀，非命運判決。',
-        'Ask about a quote or chapter. Cultural study — not fate.'
+        'Ask about a quote or chapter. Cultural study — not fate.',
+        '引用や章について質問できます。回答は文化研究であり、運命の判決ではありません。'
       ),
-      placeholder: s('输入问题…', '輸入問題…', 'Ask…'),
-      loading: s('思考中…', '思考中…', 'Thinking…'),
-      errorGeneric: s('发送失败，请重试', '發送失敗，請重試', 'Could not send — try again'),
-      proUnlimited: s('Pro 追问', 'Pro 追問', 'Pro chat'),
-      buyCredits: s('升级 Pro', '升級 Pro', 'Go Pro'),
+      placeholder: s('输入问题…', '輸入問題…', 'Ask…', '質問を入力…'),
+      loading: s('思考中…', '思考中…', 'Thinking…', '考え中…'),
+      errorGeneric: s(
+        '发送失败，请重试',
+        '發送失敗，請重試',
+        'Could not send — try again',
+        '送信に失敗しました。もう一度お試しください'
+      ),
+      proUnlimited: s('Pro 追问', 'Pro 追問', 'Pro chat', 'Pro 質問'),
+      buyCredits: s('升级 Pro', '升級 Pro', 'Go Pro', 'Pro にアップグレード'),
       freeRemaining: s(
         '还剩 {remaining} 次免费追问',
         '還剩 {remaining} 次免費追問',
-        '{remaining} free left'
+        '{remaining} free left',
+        '無料質問 残り {remaining} 回'
       ),
-      poolRemaining: s('积分余额 {remaining}', '積分餘額 {remaining}', 'Pool {remaining}'),
+      poolRemaining: s(
+        '积分余额 {remaining}',
+        '積分餘額 {remaining}',
+        'Pool {remaining}',
+        '残高 {remaining}'
+      ),
       suggestions: isCjkZh(locale)
         ? isZhHant(locale)
           ? ['這句話的形氣依據是什麼？', '本期宜留意什麼窗口？', '和八字對照怎麼讀？']
@@ -87,33 +104,56 @@ export default function XingqiReadingChatScreen() {
               'What windows are worth noting?',
               'How does this contrast with BaZi?',
             ],
-      report: s('举报', '舉報', 'Report'),
-      reportConfirmTitle: s('举报此回复？', '舉報此回覆？', 'Report this reply?'),
+      report: s('举报', '舉報', 'Report', '報告'),
+      reportConfirmTitle: s(
+        '举报此回复？',
+        '舉報此回覆？',
+        'Report this reply?',
+        'この返信を報告しますか？'
+      ),
       reportConfirmBody: s(
         '我们会审核不当内容。',
         '我們會審核不當內容。',
-        'We will review objectionable content.'
+        'We will review objectionable content.',
+        '不適切な内容を確認します。'
       ),
-      reportDone: s('已提交', '已提交', 'Submitted'),
+      reportDone: s('已提交', '已提交', 'Submitted', '送信しました'),
       aiDisclaimer: s(
         '本回答由 AI 生成，内容仅供参考，请仔细甄别。',
         '本回答由 AI 生成，內容僅供參考，請仔細甄別。',
-        'AI-generated for reference only — please use your judgment.'
+        'AI-generated for reference only — please use your judgment.',
+        'AI が生成した回答です。参考情報としてご利用ください。'
       ),
-      copyAction: s('复制', '複製', 'Copy'),
-      copied: s('已复制', '已複製', 'Copied'),
-      like: s('有用', '有用', 'Like'),
-      dislike: s('没用', '沒用', 'Dislike'),
-      share: s('分享', '分享', 'Share'),
-      dislikeNotAccurate: s('内容不准', '內容不準', 'Not accurate'),
-      dislikeReport: s('举报不当内容', '舉報不當內容', 'Report objectionable content'),
+      copyAction: s('复制', '複製', 'Copy', 'コピー'),
+      copied: s('已复制', '已複製', 'Copied', 'コピーしました'),
+      like: s('有用', '有用', 'Like', '役に立った'),
+      dislike: s('没用', '沒用', 'Dislike', '役に立たなかった'),
+      share: s('分享', '分享', 'Share', '共有'),
+      dislikeNotAccurate: s(
+        '内容不准',
+        '內容不準',
+        'Not accurate',
+        '内容が不正確'
+      ),
+      dislikeReport: s(
+        '举报不当内容',
+        '舉報不當內容',
+        'Report objectionable content',
+        '不適切な内容を報告'
+      ),
       shareSelectHint: s(
         '选择要放入分享图的消息',
         '選擇要放入分享圖的訊息',
-        'Select messages for the share image'
+        'Select messages for the share image',
+        '共有画像に含めるメッセージを選択'
       ),
-      generateShareImage: s('生成分享图', '生成分享圖', 'Generate image'),
-      cancel: s('取消', '取消', 'Cancel'),
+      generateShareImage: s(
+        '生成分享图',
+        '生成分享圖',
+        'Generate image',
+        '共有画像を作成'
+      ),
+      cancel: s('取消', '取消', 'Cancel', 'キャンセル'),
     }),
     [locale]
   )

@@ -137,12 +137,14 @@ export default function SignInScreen() {
           ? s(
               '服务器登录失败，请检查网络后重试',
               '伺服器登入失敗，請檢查網路後重試',
-              'Server auth failed. Check network and try again.'
+              'Server auth failed. Check network and try again.',
+              'サーバーへのログインに失敗しました。ネットワークを確認して再試行してください。'
             )
           : s(
               'Apple 登录失败。请确认本机已登录 Apple ID，且 App ID 已开通 Sign in with Apple。',
               'Apple 登入失敗。請確認本機已登入 Apple ID，且 App ID 已開通 Sign in with Apple。',
-              'Apple sign-in failed. Confirm Sign in with Apple is enabled for this App ID.'
+              'Apple sign-in failed. Confirm Sign in with Apple is enabled for this App ID.',
+              'Apple ログインに失敗しました。Apple ID にサインイン済みで、この App ID で Sign in with Apple が有効か確認してください。'
             )
       )
     } finally {
@@ -172,7 +174,9 @@ export default function SignInScreen() {
       else router.replace('/(app)')
     } catch (err) {
       if (__DEV__) console.error('[Xingqi] Google sign-in failed', err)
-      setError(s('Google 登录失败', 'Google 登入失敗', 'Google sign-in failed'))
+      setError(
+        s('Google 登录失败', 'Google 登入失敗', 'Google sign-in failed', 'Google ログインに失敗しました')
+      )
     } finally {
       setBusy(null)
     }
@@ -224,7 +228,7 @@ export default function SignInScreen() {
           />
           {busy === 'apple' ? (
             <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
-              <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in')} />
+              <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in', 'ログイン中')} />
             </View>
           ) : null}
         </View>
@@ -233,7 +237,8 @@ export default function SignInScreen() {
           {s(
             '当前环境不支持 Apple 登录（需真机 Development Build）。',
             '目前環境不支援 Apple 登入（需真機 Development Build）。',
-            'Apple Sign-In needs a device development build.'
+            'Apple Sign-In needs a device development build.',
+            'この環境では Apple ログインに対応していません（実機の Development Build が必要です）。'
           )}
         </Text>
       )}
@@ -250,10 +255,15 @@ export default function SignInScreen() {
           }}
         >
           {busy === 'google' ? (
-            <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in')} />
+            <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in', 'ログイン中')} />
           ) : (
             <Text style={{ color: colors.text, fontWeight: '600' }}>
-              {s('通过 Google 登录', '透過 Google 登入', 'Continue with Google')}
+              {s(
+                '通过 Google 登录',
+                '透過 Google 登入',
+                'Continue with Google',
+                'Google で続ける'
+              )}
             </Text>
           )}
         </Pressable>
@@ -267,7 +277,7 @@ export default function SignInScreen() {
 
       <Pressable onPress={() => router.back()} style={{ paddingVertical: spacing.md }}>
         <Text style={{ color: colors.secondary, textAlign: 'center' }}>
-          {s('稍后再说', '稍後再說', 'Not now')}
+          {s('稍后再说', '稍後再說', 'Not now', '後で')}
         </Text>
       </Pressable>
     </View>

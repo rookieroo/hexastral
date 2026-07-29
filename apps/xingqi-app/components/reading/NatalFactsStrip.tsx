@@ -47,25 +47,25 @@ export function NatalFactsStrip({
   const rows: Array<{ k: string; v: string }> = []
   if (facts.dayPillar) {
     rows.push({
-      k: label('日柱', '日柱', 'Day pillar'),
+      k: label('日柱', '日柱', 'Day pillar', '日柱'),
       v: facts.dayPillar,
     })
   }
   if (facts.dayun) {
     rows.push({
-      k: label('当前大运', '目前大運', 'Current DaYun'),
+      k: label('当前大运', '目前大運', 'Current DaYun', '現在の大運'),
       v: facts.dayunYears ? `${facts.dayun} · ${facts.dayunYears}` : facts.dayun,
     })
   }
   if (facts.liuNian) {
     rows.push({
-      k: label('流年', '流年', 'LiuNian'),
+      k: label('流年', '流年', 'LiuNian', '流年'),
       v: facts.liuNian,
     })
   }
   if (facts.nextLiuNian) {
     rows.push({
-      k: label('次年', '次年', 'Next year'),
+      k: label('次年', '次年', 'Next year', '翌年'),
       v: facts.nextLiuNian,
     })
   }

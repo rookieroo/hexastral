@@ -20,45 +20,55 @@ const INK_MODES: Array<{
   titleZh: string
   titleZhHant: string
   titleEn: string
+  titleJa: string
   bodyZh: string
   bodyZhHant: string
   bodyEn: string
+  bodyJa: string
 }> = [
   {
     relation: 'gather',
     titleZh: '聚',
     titleZhHant: '聚',
     titleEn: 'Gather',
+    titleJa: '聚',
     bodyZh: '两团湿墨向中心洇开，焦墨叠成核——如一笔合墨。',
     bodyZhHant: '兩團濕墨向中心洇開，焦墨疊成核——如一筆合墨。',
     bodyEn: 'Two wet pools bleed into a dark core — ink gathering as one stroke family.',
+    bodyJa: '二つの湿墨が中心へにじみ、焦墨が核になる——一筆で合墨したような構図。',
   },
   {
     relation: 'pair',
     titleZh: '对',
     titleZhHant: '對',
     titleEn: 'Pair',
+    titleJa: '対',
     bodyZh: '左右两摊墨，中间留一口气——双手并读的对章。',
     bodyZhHant: '左右兩攤墨，中間留一口氣——雙手並讀的對章。',
     bodyEn: 'Two equal washes with a breath of blank between — paired palms.',
+    bodyJa: '左右対称の墨、中央に一息の余白——両手を並読する対章。',
   },
   {
     relation: 'contrast',
     titleZh: '照',
     titleZhHant: '照',
     titleEn: 'Contrast',
+    titleJa: '照',
     bodyZh: '浓淡对峙，中缝飞白——形气与八字隔纸相照。',
     bodyZhHant: '濃淡對峙，中縫飛白——形氣與八字隔紙相照。',
     bodyEn: 'Dark against pale across a flying-white seam — form facing BaZi.',
+    bodyJa: '濃淡が向き合い、中縫に飛白——形気と八字が紙を隔てて照らし合う。',
   },
   {
     relation: 'flow',
     titleZh: '流',
     titleZhHant: '流',
     titleEn: 'Flow',
+    titleJa: '流',
     bodyZh: '长皴顺势斜下，墨点随笔走——时间窗口的走势。',
     bodyZhHant: '長皴順勢斜下，墨點隨筆走——時間窗口的走勢。',
     bodyEn: 'Long diagonal cun strokes — period motion on the paper.',
+    bodyJa: '長い皴が斜めに流れ、墨点が筆に従う——時間窗の走势。',
   },
 ]
 
@@ -71,6 +81,15 @@ const SEAL_BLURB_HANT: Record<string, string> = {
   advice: '永 — 長流之宜',
 }
 
+const SEAL_BLURB_JA: Record<string, string> = {
+  overview: '象 — 観象（見系）',
+  face: '面 — 目頬象形',
+  palms: '又 — 甲骨側掌三指',
+  natal: '命 — 稟命対照',
+  period: '月 — 時間窗',
+  advice: '永 — 長流の宜',
+}
+
 const VOCAB_HANT: Record<string, string> = {
   overview: '形氣、氣色、骨相、肉相、氣機',
   face: '三停、五岳、十二宮、五官、天庭、印堂、山根、年壽、準頭、人中、地閣',
@@ -80,11 +99,20 @@ const VOCAB_HANT: Record<string, string> = {
   advice: '宜留意、氣機、收束、觀察窗口',
 }
 
-const INK_LABEL: Record<InkRelation, { zh: string; zhHant: string; en: string }> = {
-  gather: { zh: '聚', zhHant: '聚', en: 'gather' },
-  pair: { zh: '对', zhHant: '對', en: 'pair' },
-  contrast: { zh: '照', zhHant: '照', en: 'contrast' },
-  flow: { zh: '流', zhHant: '流', en: 'flow' },
+const VOCAB_JA: Record<string, string> = {
+  overview: '形気、気色、骨相、肉相、気機',
+  face: '三停、五岳、十二宮、五官、天庭、印堂、山根、年寿、準頭、人中、地閣',
+  palms: '掌形、生命線、知能線、感情線、運命線、丘位（金星丘…）、左右対照',
+  natal: '日主、用神、通関、相生、相克、比和、五行',
+  period: '流年、流月、大運、宜留意、気機窗口',
+  advice: '宜留意、気機、収束、観察窗口',
+}
+
+const INK_LABEL: Record<InkRelation, { zh: string; zhHant: string; en: string; ja: string }> = {
+  gather: { zh: '聚', zhHant: '聚', en: 'gather', ja: '聚' },
+  pair: { zh: '对', zhHant: '對', en: 'pair', ja: '対' },
+  contrast: { zh: '照', zhHant: '照', en: 'contrast', ja: '照' },
+  flow: { zh: '流', zhHant: '流', en: 'flow', ja: '流' },
 }
 
 function chaptersForInk(relation: InkRelation, locale: string): string {
@@ -182,7 +210,7 @@ export default function XingqiGlossaryScreen() {
         </Text>
 
         <SectionLabel colors={colors} cjk={cjk}>
-          {s('① 章节 · 印 · 墨 · 用语', '① 章節 · 印 · 墨 · 用語', '1 · Chapter · seal · ink · vocab')}
+          {s('① 章节 · 印 · 墨 · 用语', '① 章節 · 印 · 墨 · 用語', '1 · Chapter · seal · ink · vocab', '① 章 · 印 · 墨 · 用語')}
         </SectionLabel>
         <Text
           style={{
@@ -195,7 +223,8 @@ export default function XingqiGlossaryScreen() {
           {s(
             'V1 锁定一派：面=三停·五岳·十二宫·五官；掌=主纹+丘位；命=日主用神通关。每章对应一印、一墨态、一套宜用语。',
             'V1 鎖定一派：面＝三停·五岳·十二宮·五官；掌＝主紋＋丘位；命＝日主用神通關。每章對應一印、一墨態、一套宜用語。',
-            'V1 lock: face = three courts / five peaks / twelve palaces; palm = lines + mounts; natal = day master / yongshen. Each chapter maps to one seal, one ink mode, and preferred vocab.'
+            'V1 lock: face = three courts / five peaks / twelve palaces; palm = lines + mounts; natal = day master / yongshen. Each chapter maps to one seal, one ink mode, and preferred vocab.',
+            'V1 固定：顔＝三停・五岳・十二宮・五官；掌＝主線＋丘位；命＝日主・用神・通関。各章に一印・一墨態・推奨語彙。'
           )}
         </Text>
 
@@ -234,9 +263,9 @@ export default function XingqiGlossaryScreen() {
                       lineHeight: metaSize + 4,
                     }}
                   >
-                    {s(c.sealBlurbZh, SEAL_BLURB_HANT[c.kind] ?? c.sealBlurbZh, c.sealBlurbEn)}
+                    {s(c.sealBlurbZh, SEAL_BLURB_HANT[c.kind] ?? c.sealBlurbZh, c.sealBlurbEn, SEAL_BLURB_JA[c.kind])}
                     {' · '}
-                    {s(ink.zh, ink.zhHant, ink.en)}
+                    {s(ink.zh, ink.zhHant, ink.en, ink.ja)}
                   </Text>
                   <Text
                     style={{
@@ -246,7 +275,7 @@ export default function XingqiGlossaryScreen() {
                       marginTop: 2,
                     }}
                   >
-                    {s(c.vocabZh, VOCAB_HANT[c.kind] ?? c.vocabZh, c.vocabEn)}
+                    {s(c.vocabZh, VOCAB_HANT[c.kind] ?? c.vocabZh, c.vocabEn, VOCAB_JA[c.kind])}
                   </Text>
                 </View>
               </View>
@@ -265,12 +294,13 @@ export default function XingqiGlossaryScreen() {
           {s(
             '健康用语：气色、气机、宜留意、脏腑之象——中医作词典，解释形上可见的节奏；首页星光与报告 health 轴是警示，不是看病。',
             '健康用語：氣色、氣機、宜留意、臟腑之象——中醫作詞典，解釋形上可見的節奏；首頁星光與報告 health 軸是警示，不是看病。',
-            'Health lexicon: complexion, qi motion, “worth noting”, organ imagery — TCM as dictionary for form cues; stars and the health axis are caution, not a clinic.'
+            'Health lexicon: complexion, qi motion, “worth noting”, organ imagery — TCM as dictionary for form cues; stars and the health axis are caution, not a clinic.',
+            '健康語彙：気色、気機、宜留意、臓腑の象——中医を辞書として形に見えるリズムを説明。ホームの星と health 軸は注意喚起であり、診断ではありません。'
           )}
         </Text>
 
         <SectionLabel colors={colors} cjk={cjk} top={spacing.sm}>
-          {s('② 关键点位 · 形气印', '② 關鍵點位 · 形氣印', '2 · Locus seals')}
+          {s('② 关键点位 · 形气印', '② 關鍵點位 · 形氣印', '2 · Locus seals', '② 部位印 · 形気印')}
         </SectionLabel>
         <Text
           style={{
@@ -283,7 +313,8 @@ export default function XingqiGlossaryScreen() {
           {s(
             '首页星光落在可定位的关键点（面 12 · 掌 7）。点开后 sheet 用下方印标该位；照片上仍是统一星点，不叠十九枚小印。',
             '首頁星光落在可定位的關鍵點（面 12 · 掌 7）。點開後 sheet 用下方印標該位；照片上仍是統一星點，不疊十九枚小印。',
-            'Home stars land on spatial loci (12 face · 7 palm). The sheet uses these seals; the photo keeps a single sparkle style.'
+            'Home stars land on spatial loci (12 face · 7 palm). The sheet uses these seals; the photo keeps a single sparkle style.',
+            'ホームの星は部位（顔12・掌7）に落ちます。シートでは下の印で示し、写真上は統一の星点のままです。'
           )}
         </Text>
 
@@ -297,7 +328,7 @@ export default function XingqiGlossaryScreen() {
             marginBottom: 8,
           }}
         >
-          {s('面', '面', 'Face')}
+          {s('面', '面', 'Face', '顔')}
         </Text>
         <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.lg }}>
           {XINGQI_LOCUS_CANON.filter((l) => l.group === 'face').map((l) => (
@@ -322,7 +353,7 @@ export default function XingqiGlossaryScreen() {
                     lineHeight: chapterTitleSize + 4,
                   }}
                 >
-                  {s(l.titleZh, l.titleZhHant, l.titleEn)}
+                  {s(l.titleZh, l.titleZhHant, l.titleEn, l.titleJa)}
                 </Text>
                 <Text
                   style={{
@@ -331,7 +362,7 @@ export default function XingqiGlossaryScreen() {
                     lineHeight: bodyLine,
                   }}
                 >
-                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn)}
+                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn, l.blurbJa)}
                 </Text>
               </View>
             </View>
@@ -348,7 +379,7 @@ export default function XingqiGlossaryScreen() {
             marginBottom: 8,
           }}
         >
-          {s('掌', '掌', 'Palm')}
+          {s('掌', '掌', 'Palm', '掌')}
         </Text>
         <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.xl }}>
           {XINGQI_LOCUS_CANON.filter((l) => l.group === 'palm').map((l) => (
@@ -373,7 +404,7 @@ export default function XingqiGlossaryScreen() {
                     lineHeight: chapterTitleSize + 4,
                   }}
                 >
-                  {s(l.titleZh, l.titleZhHant, l.titleEn)}
+                  {s(l.titleZh, l.titleZhHant, l.titleEn, l.titleJa)}
                 </Text>
                 <Text
                   style={{
@@ -382,7 +413,7 @@ export default function XingqiGlossaryScreen() {
                     lineHeight: bodyLine,
                   }}
                 >
-                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn)}
+                  {s(l.blurbZh, l.blurbZhHant, l.blurbEn, l.blurbJa)}
                 </Text>
               </View>
             </View>
@@ -390,7 +421,7 @@ export default function XingqiGlossaryScreen() {
         </View>
 
         <SectionLabel colors={colors} cjk={cjk} top={spacing.sm}>
-          {s('③ 墨象四态', '③ 墨象四態', '3 · Ink modes')}
+          {s('③ 墨象四态', '③ 墨象四態', '3 · Ink modes', '③ 墨象四態')}
         </SectionLabel>
         <Text
           style={{
@@ -403,7 +434,8 @@ export default function XingqiGlossaryScreen() {
           {s(
             '中间满幅宣纸上的墨象（无嵌套椭圆框）。聚/对/照/流是笔触构图。',
             '中間滿幅宣紙上的墨象（無嵌套橢圓框）。聚／對／照／流是筆觸構圖。',
-            'Full-bleed xuan paper (no nested oval). Gather / pair / contrast / flow are brush compositions.'
+            'Full-bleed xuan paper (no nested oval). Gather / pair / contrast / flow are brush compositions.',
+            '中央いっぱいの宣紙（楕円枠なし）。聚／対／照／流は筆触の構図です。'
           )}
         </Text>
 
@@ -418,7 +450,7 @@ export default function XingqiGlossaryScreen() {
                 lineHeight: cjk ? 32 : 28,
               }}
             >
-              {s(m.titleZh, m.titleZhHant, m.titleEn)}
+              {s(m.titleZh, m.titleZhHant, m.titleEn, m.titleJa)}
             </Text>
             <Text
               style={{
@@ -437,7 +469,7 @@ export default function XingqiGlossaryScreen() {
                 lineHeight: cjk ? 24 : 21,
               }}
             >
-              {s(m.bodyZh, m.bodyZhHant, m.bodyEn)}
+              {s(m.bodyZh, m.bodyZhHant, m.bodyEn, m.bodyJa)}
             </Text>
             <View style={{ alignSelf: 'stretch', marginTop: spacing.xs }}>
               <InkModePlate

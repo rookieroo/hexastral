@@ -74,7 +74,7 @@ async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> 
   const req = await ImagePicker.requestCameraPermissionsAsync()
   if (req.granted) return 'ok'
   Alert.alert(
-    s('需要权限', '需要權限', 'Permission needed'),
+    s('需要权限', '需要權限', 'Permission needed', '権限が必要です'),
     s(
       '请在系统设置中允许相机，以便拍摄掌纹/面部。',
       '請在系統設定中允許相機，以便拍攝掌紋／面部。',
@@ -82,9 +82,9 @@ async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> 
       '設定でカメラを許可して、掌または顔を撮影してください。'
     ),
     [
-      { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+      { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
       {
-        text: s('打开设置', '打開設定', 'Open Settings'),
+        text: s('打开设置', '打開設定', 'Open Settings', '設定を開く'),
         onPress: () => void Linking.openSettings(),
       },
     ]
@@ -100,7 +100,7 @@ async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'>
   const req = await ImagePicker.requestMediaLibraryPermissionsAsync()
   if (req.granted || req.accessPrivileges === 'limited') return 'ok'
   Alert.alert(
-    s('需要权限', '需要權限', 'Permission needed'),
+    s('需要权限', '需要權限', 'Permission needed', '権限が必要です'),
     s(
       '请在系统设置中允许访问照片，以便从相册选择掌纹/面部。',
       '請在系統設定中允許存取照片，以便從相簿選擇掌紋／面部。',
@@ -108,9 +108,9 @@ async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'>
       '設定で写真へのアクセスを許可して、掌または顔の画像を選んでください。'
     ),
     [
-      { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+      { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
       {
-        text: s('打开设置', '打開設定', 'Open Settings'),
+        text: s('打开设置', '打開設定', 'Open Settings', '設定を開く'),
         onPress: () => void Linking.openSettings(),
       },
     ]
@@ -169,7 +169,7 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
       } catch (err) {
         const code = err instanceof Error ? err.message : ''
         Alert.alert(
-          label('保存失败', '儲存失敗', 'Save failed'),
+          label('保存失败', '儲存失敗', 'Save failed', '保存に失敗'),
           code === 'photo_encode_failed'
             ? label(
                 '无法将照片转为 JPEG。请换一张或改用相机拍摄（HEIC 等格式需系统能解码）。',
@@ -197,7 +197,7 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
       return
     }
     Alert.alert(
-      s('替换照片', '替換照片', 'Replace photo'),
+      s('替换照片', '替換照片', 'Replace photo', '写真を差し替え'),
       s(
         '替换后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。所选相册图会先转为 JPEG 再保存。',
         '替換後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。所選相簿圖會先轉為 JPEG 再保存。',
@@ -205,9 +205,9 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         '端末の前の写真は削除されます。アルバムから選んだ画像は保存前に JPEG に変換されます。原画像はサーバーに保存されません。'
       ),
       [
-        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
+        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
         {
-          text: s('替换', '替換', 'Replace'),
+          text: s('替换', '替換', 'Replace', '差し替え'),
           style: 'destructive',
           onPress: onConfirm,
         },
@@ -340,7 +340,9 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
           }}
         >
           <Text style={{ color: colors.text }}>
-            {fileUri ? s('重新拍摄', '重新拍攝', 'Retake') : s('拍照', '拍照', 'Camera')}
+            {fileUri
+              ? s('重新拍摄', '重新拍攝', 'Retake', '撮り直す')
+              : s('拍照', '拍照', 'Camera', 'カメラ')}
           </Text>
         </Pressable>
         <Pressable
@@ -357,17 +359,17 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         >
           <Text style={{ color: colors.text }}>
             {fileUri
-              ? s('从相册替换', '從相簿替換', 'Replace from library')
-              : s('相册', '相簿', 'Library')}
+              ? s('从相册替换', '從相簿替換', 'Replace from library', 'アルバムから差し替え')
+              : s('相册', '相簿', 'Library', 'アルバム')}
           </Text>
         </Pressable>
       </View>
 
       <Button variant='primary' onPress={onPrimary} disabled={!fileUri || busy}>
         {slotMode
-          ? s('完成', '完成', 'Done')
+          ? s('完成', '完成', 'Done', '完了')
           : nextHref
-            ? s('下一步', '下一步', 'Next')
+            ? s('下一步', '下一步', 'Next', '次へ')
             : s('继续填写生辰', '繼續填寫生辰', 'Continue to birth info', '生辰情報へ')}
       </Button>
     </View>

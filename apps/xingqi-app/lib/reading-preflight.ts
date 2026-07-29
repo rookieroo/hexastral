@@ -45,7 +45,7 @@ export async function alertIfPhotosUnchanged(opts: {
   const unchanged = await localPhotosUnchangedSinceLastReading(opts.draft)
   if (!unchanged) return false
   Alert.alert(
-    s('照片未更新', '照片未更新', 'Photos unchanged'),
+    s('照片未更新', '照片未更新', 'Photos unchanged', '写真は更新されていません'),
     s(
       '本期本机照片与上次解读相同（按文件时间与大小比对）。请先替换左掌 / 右掌 / 面部至少一张，再发起新解读。',
       '本期本機照片與上次解讀相同（按檔案時間與大小比對）。請先替換左掌 / 右掌 / 面部至少一張，再發起新解讀。',
@@ -53,9 +53,9 @@ export async function alertIfPhotosUnchanged(opts: {
       '端末の写真が前回のリーディングと同じです（ファイル時刻とサイズで比較）。左手・右手・顔のいずれかを更新してから再度お試しください。'
     ),
     [
-      { text: s('好', '好', 'OK'), style: 'cancel' },
+      { text: s('好', '好', 'OK', 'OK'), style: 'cancel' },
       {
-        text: s('去更新照片', '去更新照片', 'Update photos'),
+        text: s('去更新照片', '去更新照片', 'Update photos', '写真を更新'),
         onPress: opts.onUpdatePhotos,
       },
     ]

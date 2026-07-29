@@ -64,7 +64,7 @@ export const XINGQI_CHAPTER_CANON: readonly ChapterCanon[] = [
     glyph: '命',
     ink: 'contrast',
     titleZh: '形气 × 八字',
-    titleEn: 'Form × BaZi',
+    titleEn: 'Form-qi × BaZi',
     sealBlurbZh: '命 — 禀命对照',
     sealBlurbEn: 'Natal charge',
     vocabZh: '日主、用神、通关、相生、相克、比和、五行',
