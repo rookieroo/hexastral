@@ -27,7 +27,7 @@ import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels } from '@/lib/living-copy'
-import { isCjkZh, pickUi } from '@/lib/locale-zh'
+import { isCjkZh, isJa, okForReadingLocale, pickUi } from '@/lib/locale-zh'
 import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import {
@@ -121,14 +121,10 @@ export default function FaceResultScreen() {
   const rawLead = curChapter?.goldenLine.trim() ?? ''
   const shareLead = (() => {
     if (!rawLead) return ''
-    if (isCjkZh(locale)) return rawLead
-    const cjk = rawLead.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
-    const letters = rawLead.replace(/\s/g, '').length
-    if (letters > 0 && cjk / letters > 0.4) {
-      const first = curChapter?.evidence.split(/(?<=[.!?。！？])\s+/)[0]?.trim() ?? ''
-      return first.length > 12 ? first : ''
-    }
-    return rawLead
+    if (isCjkZh(locale) || isJa(locale)) return rawLead
+    if (okForReadingLocale(locale, rawLead, 0.4)) return rawLead
+    const first = curChapter?.evidence.split(/(?<=[.!?。！？])\s+/)[0]?.trim() ?? ''
+    return first.length > 12 && okForReadingLocale(locale, first, 0.4) ? first : ''
   })()
   const shareIdentity = xingqiShareIdentity(natalFacts)
 

@@ -32,7 +32,7 @@ import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { usePhotoImageSize } from '@/lib/image-stage-layout'
 import { locusViewerCopy } from '@/lib/living-copy'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import {
   type LocusExplorerData,
   type LocusPart,
@@ -74,8 +74,8 @@ export default function LocusViewerScreen() {
   const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const copy = useMemo(() => locusExplorerCopy(locale), [locale])
   const viewerCopy = useMemo(() => locusViewerCopy(locale), [locale])
 

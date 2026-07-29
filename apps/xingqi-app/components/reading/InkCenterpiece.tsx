@@ -16,7 +16,7 @@ import {
   relationForChapter,
   type WuxingChar,
 } from '@/lib/ancient-glyphs'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import type { XingqiChapter, XingqiChapterKind } from '@/lib/report-chapters'
 
 import { AncientSeal } from './AncientSeal'
@@ -38,11 +38,31 @@ const INK = '#1C1914'
  */
 const INK_PALE = '#7A7164'
 
-const INK_CAPTION: Record<InkRelation, { zh: string; zhHant: string; en: string }> = {
-  gather: { zh: '聚 · 合墨成核', zhHant: '聚 · 合墨成核', en: 'Gather · wet pools to one core' },
-  pair: { zh: '对 · 左右并读', zhHant: '對 · 左右並讀', en: 'Pair · left & right washes' },
-  contrast: { zh: '照 · 浓淡相照', zhHant: '照 · 濃淡相照', en: 'Contrast · dark vs pale' },
-  flow: { zh: '流 · 一笔顺势', zhHant: '流 · 一筆順勢', en: 'Flow · one stroke downhill' },
+const INK_CAPTION: Record<InkRelation, { zh: string; zhHant: string; en: string; ja: string }> = {
+  gather: {
+    zh: '聚 · 合墨成核',
+    zhHant: '聚 · 合墨成核',
+    en: 'Gather · wet pools to one core',
+    ja: '聚 · 墨が一核に',
+  },
+  pair: {
+    zh: '对 · 左右并读',
+    zhHant: '對 · 左右並讀',
+    en: 'Pair · left & right washes',
+    ja: '対 · 左右を並読',
+  },
+  contrast: {
+    zh: '照 · 浓淡相照',
+    zhHant: '照 · 濃淡相照',
+    en: 'Contrast · dark vs pale',
+    ja: '照 · 濃淡の対照',
+  },
+  flow: {
+    zh: '流 · 一笔顺势',
+    zhHant: '流 · 一筆順勢',
+    en: 'Flow · one stroke downhill',
+    ja: '流 · 一筆の勢い',
+  },
 }
 
 function mulberry32(seed: number) {
@@ -282,9 +302,7 @@ export function InkCenterpiece({
   const caption =
     locale == null
       ? null
-      : isCjkZh(locale)
-        ? pickZh(locale, cap.zh, cap.zhHant)
-        : cap.en
+      : pickUi(locale, cap.zh, cap.zhHant, cap.en, cap.ja)
 
   return (
     <View style={{ width, alignSelf: 'center', gap: 8 }}>

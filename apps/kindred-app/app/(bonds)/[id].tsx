@@ -114,7 +114,7 @@ function relocalizeLabel(reportLocale: Locale, device: Locale): string {
   const src = LANGUAGE_NAME[device][reportLocale]
   if (device === 'zh-Hant') return `本報告為${src} · 用你的語言重讀（消耗 1 次換視角）`
   if (device.startsWith('zh')) return `本报告为${src} · 用你的语言重读（消耗 1 次换视角）`
-  if (device.startsWith('ja')) return `本鑑定は${src}です · あなたの言語で読み直す（視点1回）`
+  if (device.startsWith('ja')) return `本読みは${src}です · あなたの言語で読み直す（視点1回）`
   return `This report is in ${src} · Re-read in your language (uses 1 re-read)`
 }
 
@@ -419,9 +419,9 @@ export default function BondDetailScreen({
     }
     setShareUrl({ install, brand })
     const lead = reportLocale.startsWith('zh')
-      ? '一段关系的命书 · Yuel'
+      ? '一段关系的合盘解读 · Yuel'
       : reportLocale.startsWith('ja')
-        ? 'ふたりの命書 · Yuel'
+        ? 'ふたりの関係読み · Yuel'
         : 'A reading of us · Yuel'
     void shareImage(kindredShareCaption(reportLocale, lead))
   }
@@ -506,9 +506,9 @@ export default function BondDetailScreen({
         {overlayCloseRow}
         <ErrorState
           variant='fullscreen'
-          title={error?.message ?? 'Bond not found'}
+          title={error?.message ?? t('common.notFound')}
           customAction={
-            <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
+            <PrimaryButton label={t('common.retry')} onPress={() => void refetch()} block={false} />
           }
         />
       </SafeAreaView>

@@ -92,14 +92,14 @@ export function primerCopy(locale: Locale): {
     case 'ja':
       return {
         title: '読み方',
-        body: '左右スワイプで五章を切替。点線の用語をタップして注釈（拼音付き）。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
+        body: '左右スワイプで五章を切替。点線の用語をタップしてかな付きの解説を見る。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
         glossary: '記号の説明',
         begin: '読む',
       }
     default:
       return {
         title: 'How to read this',
-        body: 'Swipe five chapters. Tap dotted terms for glosses (with pinyin). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form reading; History holds older ones. Life axis is the DaYun trunk.',
+        body: 'Swipe five chapters. Tap dotted terms for glosses (face form 面相 / palm form 掌相 terms with pinyin where shown). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form-qi reading; History holds older ones. Life axis is the DaYun trunk.',
         glossary: 'Symbol glossary',
         begin: 'Begin',
       }
@@ -151,7 +151,7 @@ export function makeIfDiffCopy(locale: Locale): {
     case 'ja':
       return {
         header: '現実 vs もしも',
-        tapHint: '行をタップしてその節点の叙述を開く。',
+        tapHint: '行をタップしてその節点の読み解きを開く。',
         help: '扶',
         harm: '克',
         even: '平',
@@ -159,7 +159,7 @@ export function makeIfDiffCopy(locale: Locale): {
         altCol: 'もしも',
         forkRow: '{age} 歳で分岐',
         mergeRow: '{age} 歳で合流',
-        loading: '推演中…',
+        loading: '読み解き中…',
         failed: '失敗 · 再試行',
       }
     default:
@@ -210,10 +210,18 @@ export function locusViewerCopy(locale: Locale): {
   }
 }
 
-/** Part labels for the photo strip (左掌/右掌/面). */
+/** Part labels for the photo strip (左手/右手/顔). */
 export function partLabels(locale: Locale): { palmL: string; palmR: string; face: string } {
-  if (locale === 'en') return { palmL: 'L palm', palmR: 'R palm', face: 'Face' }
-  return { palmL: '左掌', palmR: '右掌', face: '面' }
+  switch (locale) {
+    case 'zh':
+      return { palmL: '左掌', palmR: '右掌', face: '面' }
+    case 'zh-Hant':
+      return { palmL: '左掌', palmR: '右掌', face: '面' }
+    case 'ja':
+      return { palmL: '左手', palmR: '右手', face: '顔' }
+    default:
+      return { palmL: 'L palm', palmR: 'R palm', face: 'Face' }
+  }
 }
 
 /** Home secondary row + strip section labels. */
@@ -229,7 +237,7 @@ export function homeInputsCopy(locale: Locale): {
     case 'ja':
       return { formLabel: '形気対照', birth: '生辰' }
     default:
-      return { formLabel: 'Form map', birth: 'Birth' }
+      return { formLabel: 'Form-qi map', birth: 'Birth' }
   }
 }
 
@@ -243,7 +251,7 @@ export function formReadingListTitle(locale: Locale): string {
     case 'ja':
       return '形気リーディング'
     default:
-      return 'Form reading'
+      return 'Form-qi reading'
   }
 }
 
@@ -318,7 +326,7 @@ export function homeArchiveCopy(locale: Locale): {
         viewAll: (count) => `All history · ${count}`,
         archiveTitle: 'History',
         swipeHint: 'Tap to open. Swipe left to delete.',
-        pulseLabel: 'Form pulse',
+        pulseLabel: 'Form-qi state',
         statusLabel: 'Now',
         attentionLabel: 'Watch',
         actionLabel: 'Key',

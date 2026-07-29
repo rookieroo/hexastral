@@ -248,7 +248,7 @@ export default function SettingsScreen() {
 
         {/* iCloud photo sync is not implemented yet — hide the empty promise. */}
 
-        <SettingsSection title={s('法律', '法律', 'LEGAL', '法的情報')}>
+        <SettingsSection title={s('法律', '法律', 'LEGAL', '規約')}>
           <SettingsCard>
             <SettingsRow
               label={s('隐私', '隱私', 'Privacy')}
@@ -277,19 +277,33 @@ export default function SettingsScreen() {
             {userId ? (
               <>
                 <SettingsRow
-                  label={s('撤回生物特征同意', '撤回生物特徵同意', 'Withdraw consent')}
+                  label={s(
+                    '撤回照片与特征处理同意',
+                    '撤回照片與特徵處理同意',
+                    'Withdraw photo & feature consent',
+                    '写真と特徴処理の同意を撤回'
+                  )}
                   onPress={() => {
                     Alert.alert(
-                      s('撤回同意', '撤回同意', 'Withdraw consent'),
                       s(
-                        '撤回后需重新同意才能解读。',
-                        '撤回後需重新同意才能解讀。',
-                        'You must consent again before reading.'
+                        '撤回同意',
+                        '撤回同意',
+                        'Withdraw consent',
+                        '同意を撤回'
+                      ),
+                      s(
+                        '撤回后需重新同意才能继续形气解读；本机照片草稿也会清除。',
+                        '撤回後需重新同意才能繼續形氣解讀；本機照片草稿也會清除。',
+                        'You must consent again before a form-qi reading. On-device photo drafts are cleared.',
+                        '撤回後は形気リーディングの前に再度同意が必要です。端末内の写真下書きも削除されます。'
                       ),
                       [
-                        { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
                         {
-                          text: s('撤回', '撤回', 'Withdraw'),
+                          text: s('取消', '取消', 'Cancel', 'キャンセル'),
+                          style: 'cancel',
+                        },
+                        {
+                          text: s('撤回', '撤回', 'Withdraw', '撤回する'),
                           style: 'destructive',
                           onPress: () => {
                             void (async () => {
@@ -297,7 +311,9 @@ export default function SettingsScreen() {
                                 await revokeBiometricConsent()
                                 await clearReadingDraft({ wipePhotos: true })
                               } catch {
-                                Alert.alert(s('失败', '失敗', 'Failed'))
+                                Alert.alert(
+                                  s('失败', '失敗', 'Failed', '失敗しました')
+                                )
                               }
                             })()
                           },

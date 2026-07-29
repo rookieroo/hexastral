@@ -25,8 +25,8 @@
       ],
       "infoPlist": {
         "CFBundleDisplayName": "Syel",
-        "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
-        "NSPhotoLibraryUsageDescription": "Syel accesses your photo library when you choose existing palm or face photos.",
+        "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for structured form-qi cultural study — not medical diagnosis.",
+        "NSPhotoLibraryUsageDescription": "Syel accesses your photo library when you choose existing palm or face photos for form-qi cultural study.",
         "UIBackgroundModes": ["remote-notification"],
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -90,8 +90,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Syel uses the camera to capture left palm, right palm, and face photos for readings.",
-          "photosPermission": "Syel accesses your photo library when you choose existing palm or face photos."
+          "cameraPermission": "Syel uses the camera to capture left palm, right palm, and face photos for structured form-qi cultural study — not medical diagnosis.",
+          "photosPermission": "Syel accesses your photo library when you choose existing palm or face photos for form-qi cultural study."
         }
       ]
     ]

@@ -32,7 +32,7 @@ import {
 } from '@/lib/cycle-api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import {
   buildInteractiveModel,
   buildUserBranch,
@@ -53,6 +53,8 @@ export default function XingqiMakeIfScreen() {
   const paramReadingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const { width } = useWindowDimensions()
   const locale = resolveLocale()
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const copy = makeIfInteractiveCopyForLocale(locale)
   const entitlements = useEntitlements()
   const isPro =
@@ -262,7 +264,7 @@ export default function XingqiMakeIfScreen() {
       >
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={{ color: colors.accent }}>
-            {isCjkZh(locale) ? pickZh(locale, '返回', '返回') : locale === 'ja' ? '戻る' : 'Back'}
+            {s('返回', '返回', 'Back', '戻る')}
           </Text>
         </Pressable>
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
@@ -272,7 +274,7 @@ export default function XingqiMakeIfScreen() {
 
         {loading ? (
           <Text style={{ color: colors.dim }}>
-            {isCjkZh(locale) ? pickZh(locale, '加载中…', '載入中…') : 'Loading…'}
+            {s('加载中…', '載入中…', 'Loading…', '読み込み中…')}
           </Text>
         ) : error === 'pro_required' ? (
           <>
@@ -283,7 +285,7 @@ export default function XingqiMakeIfScreen() {
           </>
         ) : error === 'birth' ? (
           <Button variant='secondary' onPress={() => router.push('/birth' as never)}>
-            {isCjkZh(locale) ? pickZh(locale, '编辑出生信息', '編輯出生資訊') : 'Edit birth'}
+            {s('编辑出生信息', '編輯出生資訊', 'Edit birth', '出生情報を編集')}
           </Button>
         ) : payload && model ? (
           <>
@@ -298,9 +300,7 @@ export default function XingqiMakeIfScreen() {
                 setForkAge(age)
                 setSheetOpen(true)
               }}
-              nowLabel={
-                isCjkZh(locale) ? pickZh(locale, '今', '今') : locale === 'ja' ? '今' : 'Now'
-              }
+              nowLabel={s('今', '今', 'Now', '今')}
               lang={locale}
               focusAge={currentAge}
             />

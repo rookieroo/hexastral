@@ -11,7 +11,7 @@
 import { Text, View, type ViewProps } from 'react-native'
 
 import { CHAPTER_GLYPH } from '@/lib/ancient-glyphs'
-import { isCjkZh } from '@/lib/locale-zh'
+import { isCjkZh, isJa } from '@/lib/locale-zh'
 import type { XingqiChapterKind } from '@/lib/report-chapters'
 import { XINGQI_BRAND_URL, XINGQI_INSTALL_URL } from '@/lib/xingqiShare'
 
@@ -56,7 +56,7 @@ export function ShareableXingqiCard({
 }: ShareableXingqiCardProps) {
   const scale = width / 1080
   const s = (n: number) => Math.round(n * scale)
-  const cjk = isCjkZh(locale ?? '')
+  const cjk = isCjkZh(locale ?? '') || isJa(locale ?? '')
   const titleFont = 'CrimsonPro'
   const quoteFont = cjk ? 'CrimsonPro' : 'CrimsonPro-Italic'
   const labelFont = 'IBMPlexMono'

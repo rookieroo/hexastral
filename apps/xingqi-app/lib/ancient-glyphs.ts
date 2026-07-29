@@ -3,7 +3,7 @@
  * Pictographic seals for report chapters (NOT simplified 汉字 as text).
  */
 
-import { isZhHant } from '@/lib/locale-zh'
+import { isJa, isZhHant } from '@/lib/locale-zh'
 
 export type AncientGlyph = {
   box: [number, number]
@@ -288,7 +288,7 @@ export const CHAPTER_GLYPH_BLURB: Record<XingqiGlyphKey, { zh: string; en: strin
   loc_lifeLine: { zh: '生命线', en: 'Life line' },
   loc_headLine: { zh: '智慧线', en: 'Head line' },
   loc_heartLine: { zh: '感情线', en: 'Heart line' },
-  loc_fateLine: { zh: '事业线', en: 'Fate line' },
+  loc_fateLine: { zh: '事业线', en: 'Career line' },
   loc_mounts: { zh: '丘位', en: 'Mounts' },
   loc_specialMarks: { zh: '纹记', en: 'Special marks' },
 }
@@ -521,10 +521,10 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
     group: 'palm',
     titleZh: '事业线',
     titleZhHant: '事業線',
-    titleEn: 'Fate line',
+    titleEn: 'Career line',
     blurbZh: '方向感与事业轴线（有则标）',
     blurbZhHant: '方向感與事業軸線（有則標）',
-    blurbEn: 'Direction axis when present.',
+    blurbEn: 'Career / path axis when present.',
   },
   {
     featureKey: 'mountJupiter',
@@ -629,6 +629,7 @@ export function locusTitleForLocale(featureKey: string, locale: string): string 
   if (!c) return featureKey
   if (isZhHant(locale)) return c.titleZhHant
   if (locale.startsWith('zh')) return c.titleZh
+  if (isJa(locale)) return c.titleZh
   return c.titleEn
 }
 
@@ -637,6 +638,7 @@ export function locusBlurbForLocale(featureKey: string, locale: string): string 
   if (!c) return ''
   if (isZhHant(locale)) return c.blurbZhHant
   if (locale.startsWith('zh')) return c.blurbZh
+  if (isJa(locale)) return c.blurbZhHant
   return c.blurbEn
 }
 

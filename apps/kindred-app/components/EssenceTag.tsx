@@ -34,6 +34,12 @@ const COPY_CJK: Record<Relation, EssenceCopy> = {
   overcome: { label: '相克', remedy: '通关', tone: 'soft' },
 }
 
+const COPY_JA: Record<Relation, EssenceCopy> = {
+  generate: { label: '相生（支え合う）', remedy: null, tone: 'warm' },
+  peer: { label: '比和（似た気質）', remedy: null, tone: 'neutral' },
+  overcome: { label: '相剋', remedy: '調整のヒント', tone: 'soft' },
+}
+
 const COPY_EN: Record<Relation, EssenceCopy> = {
   generate: { label: 'Generative', remedy: null, tone: 'warm' },
   peer: { label: 'Resonant', remedy: null, tone: 'neutral' },
@@ -72,10 +78,12 @@ export interface EssenceTagProps {
 export function EssenceTag({ aElement, bElement, locale, onPaper, compact }: EssenceTagProps) {
   if (!hasValidElements(aElement ?? undefined, bElement ?? undefined)) return null
   const lc = locale ?? resolveLocale()
+  const isJa = lc === 'ja' || lc.startsWith('ja')
   const cjk = isCjkLocale(lc)
   const relation = elementRelation(aElement ?? undefined, bElement ?? undefined)
-  const copy = (cjk ? COPY_CJK : COPY_EN)[relation]
-  const serif = cjk ? kindredFonts.cjk : kindredFonts.serif
+  const copy = (isJa ? COPY_JA : cjk ? COPY_CJK : COPY_EN)[relation]
+  const useCjkType = isJa || cjk
+  const serif = useCjkType ? kindredFonts.cjk : kindredFonts.serif
   const tone = onPaper ? TONE_COLOR_PAPER : TONE_COLOR_DARK
   const remedyColor = onPaper ? kindredPaper.muted : kindredDark.textMuted
 
@@ -84,8 +92,8 @@ export function EssenceTag({ aElement, bElement, locale, onPaper, compact }: Ess
       <Text
         style={{
           fontFamily: serif,
-          fontSize: cjk ? 17 : 15,
-          letterSpacing: cjk ? 2 : 0.3,
+          fontSize: useCjkType ? 17 : 15,
+          letterSpacing: useCjkType ? 2 : 0.3,
           color: tone[copy.tone],
         }}
       >
@@ -96,7 +104,7 @@ export function EssenceTag({ aElement, bElement, locale, onPaper, compact }: Ess
           style={{
             fontFamily: kindredFonts.mono,
             fontSize: 9.5,
-            letterSpacing: cjk ? 1.5 : 0.5,
+            letterSpacing: useCjkType ? 1.5 : 0.5,
             marginTop: 2,
             color: remedyColor,
           }}

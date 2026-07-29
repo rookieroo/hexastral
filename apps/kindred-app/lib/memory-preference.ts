@@ -2,7 +2,7 @@
  * Memory-preference API — HMAC-signed GET/PUT over /api/portfolio/memory-preference.
  *
  * `crossAppEnabled` is the cross-app recall opt-in (Chat plan CC.4): when on, Pro
- * chat may reference the user's readings across all HexAstral apps. Separate from
+ * chat may reference the user's readings across Yuel and Yuun (UseONE apps). Separate from
  * the same-app `enabled` flag, so cross-app is never silently broadened.
  */
 

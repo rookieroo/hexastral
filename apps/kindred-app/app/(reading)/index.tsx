@@ -61,7 +61,6 @@ import { SkyHero } from '@/components/home/SkyHero'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
-import { bondQuality } from '@/lib/bondQuality'
 import { getCarryOverHintPending, markCarryOverHintSeen } from '@/lib/carry-over-hint'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { consumePendingOpenBond } from '@/lib/pending-open'
@@ -101,8 +100,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: 'Enter your birth info →',
   },
   zh: {
-    cardKicker: '你的命书',
-    open: '打开命书 →',
+    cardKicker: '你的个人解读',
+    open: '打开个人解读 →',
     month: '本月',
     threads: '牵绊',
     threadsHint: '此刻，夜空里只有你一个人。',
@@ -112,8 +111,8 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: '填写生辰 →',
   },
   'zh-Hant': {
-    cardKicker: '你的命書',
-    open: '打開命書 →',
+    cardKicker: '你的個人解讀',
+    open: '打開個人解讀 →',
     month: '本月',
     threads: '牽絆',
     threadsHint: '此刻，夜空裡只有你一個人。',
@@ -123,14 +122,14 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     noBirthCta: '填寫生辰 →',
   },
   ja: {
-    cardKicker: 'あなたの命書',
-    open: '命書を開く →',
+    cardKicker: 'あなたの個人レポート',
+    open: '個人レポートを開く →',
     month: '今月',
     threads: '絆',
     threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
     emptySub: '大切な人を招くか、サインインして Yuun の人を夜空へ。',
-    noBirthTitle: 'あなた自身の命盤から',
+    noBirthTitle: 'あなた自身の命式から',
     noBirthCta: '生年月日を入力 →',
   },
 }
@@ -350,14 +349,11 @@ export default function ReadingHomeScreen() {
       // (and frees its quota slot), so it gets cancel-an-invite copy, not the 解缘
       // "removes your synastry" wording a generated bond gets.
       const pending = bond.status === 'pending_invite'
-      // For a generated bond the product has a stance, grounded in their own chart
-      // (see lib/bondQuality): a 相生 bond is a real loss to cut; a 相克 one is often
-      // the healthier cut. Pure compute — no LLM, no latency on the confirm. The
-      // button is NOT styled destructive — 解缘 isn't always a tragedy.
+      // Neutral irreversible copy only — no high/low grade language to sway delete.
       const title = t(locale, pending ? 'bondList.cancelInviteTitle' : 'bondList.deleteTitle')
       const body = pending
         ? t(locale, 'bondList.cancelInviteBody')
-        : t(locale, `bondList.deleteBody.${bondQuality(bond)}`)
+        : t(locale, 'bondList.deleteBody.plain')
       Alert.alert(title, body, [
         { text: t(locale, 'bondList.cancel'), style: 'cancel' },
         {

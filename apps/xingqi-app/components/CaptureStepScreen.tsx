@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react'
 import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
   type CapturePart,
@@ -16,43 +16,47 @@ import {
 } from '@/lib/reading-draft'
 
 function stepCopy(locale: string, part: CapturePart) {
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const quality = s(
     '请尽量拍摄高清、完整、光线均匀的照片；模糊或裁切会导致特征不清、报告变浅。',
     '請盡量拍攝高清、完整、光線均勻的照片；模糊或裁切會導致特徵不清、報告變淺。',
-    'Shoot a sharp, complete, evenly lit photo. Blurry or cropped shots yield weak features and a thin reading.'
+    'Shoot a sharp, complete, evenly lit photo. Blurry or cropped shots yield weak features and a thin reading.',
+    '鮮明で全体が写り、光が均一な写真を。ぼやけやトリミングは特徴が弱く、リーディングが薄くなります。'
   )
   if (part === 'palm_l') {
     return {
-      title: s('左掌', '左掌', 'Left palm'),
+      title: s('左掌', '左掌', 'Left palm', '左手'),
       hint: s(
         `指尖到腕完整入镜，主纹清晰。${quality}`,
         `指尖到腕完整入鏡，主紋清晰。${quality}`,
-        `Fingertips to wrist in frame; major lines visible. ${quality}`
+        `Fingertips to wrist in frame; major lines visible. ${quality}`,
+        `指先から手首まで入る。主線が見えること。${quality}`
       ),
-      stepLabel: s('步骤 1 / 3', '步驟 1 / 3', 'Step 1 / 3'),
+      stepLabel: s('步骤 1 / 3', '步驟 1 / 3', 'Step 1 / 3', 'ステップ 1 / 3'),
     }
   }
   if (part === 'palm_r') {
     return {
-      title: s('右掌', '右掌', 'Right palm'),
+      title: s('右掌', '右掌', 'Right palm', '右手'),
       hint: s(
         `指尖到腕完整入镜，主纹清晰。${quality}`,
         `指尖到腕完整入鏡，主紋清晰。${quality}`,
-        `Fingertips to wrist in frame; major lines visible. ${quality}`
+        `Fingertips to wrist in frame; major lines visible. ${quality}`,
+        `指先から手首まで入る。主線が見えること。${quality}`
       ),
-      stepLabel: s('步骤 2 / 3', '步驟 2 / 3', 'Step 2 / 3'),
+      stepLabel: s('步骤 2 / 3', '步驟 2 / 3', 'Step 2 / 3', 'ステップ 2 / 3'),
     }
   }
   return {
-    title: s('面部自拍', '面部自拍', 'Face selfie'),
+    title: s('面部自拍', '面部自拍', 'Face selfie', '顔写真'),
     hint: s(
       `正对镜头，五官清晰充满画面。${quality}`,
       `正對鏡頭，五官清晰充滿畫面。${quality}`,
-      `Head-on, face clear and fills the frame. ${quality}`
+      `Head-on, face clear and fills the frame. ${quality}`,
+      `正面から。顔全体がはっきり写ること。${quality}`
     ),
-    stepLabel: s('步骤 3 / 3', '步驟 3 / 3', 'Step 3 / 3'),
+    stepLabel: s('步骤 3 / 3', '步驟 3 / 3', 'Step 3 / 3', 'ステップ 3 / 3'),
   }
 }
 
@@ -63,8 +67,8 @@ type CaptureStepScreenProps = {
 }
 
 async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> {
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const current = await ImagePicker.getCameraPermissionsAsync()
   if (current.granted) return 'ok'
   const req = await ImagePicker.requestCameraPermissionsAsync()
@@ -74,7 +78,8 @@ async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> 
     s(
       '请在系统设置中允许相机，以便拍摄掌纹/面部。',
       '請在系統設定中允許相機，以便拍攝掌紋／面部。',
-      'Allow Camera in Settings to capture palm or face.'
+      'Allow Camera in Settings to capture palm or face.',
+      '設定でカメラを許可して、掌または顔を撮影してください。'
     ),
     [
       { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
@@ -88,8 +93,8 @@ async function ensureCameraPermission(locale: string): Promise<'ok' | 'denied'> 
 }
 
 async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'> {
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const current = await ImagePicker.getMediaLibraryPermissionsAsync()
   if (current.granted || current.accessPrivileges === 'limited') return 'ok'
   const req = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -99,7 +104,8 @@ async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'>
     s(
       '请在系统设置中允许访问照片，以便从相册选择掌纹/面部。',
       '請在系統設定中允許存取照片，以便從相簿選擇掌紋／面部。',
-      'Allow Photos in Settings to choose a palm or face image.'
+      'Allow Photos in Settings to choose a palm or face image.',
+      '設定で写真へのアクセスを許可して、掌または顔の画像を選んでください。'
     ),
     [
       { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
@@ -116,8 +122,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const copy = stepCopy(locale, part)
   const params = useLocalSearchParams<{ mode?: string }>()
   const slotMode = params.mode === 'slot'
@@ -145,8 +151,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
 
   const applyUri = useCallback(
     async (sourceUri: string) => {
-      const label = (hans: string, hant: string, en: string) =>
-        isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+      const label = (hans: string, hant: string, en: string, ja?: string) =>
+        pickUi(locale, hans, hant, en, ja)
       setBusy(true)
       try {
         const durable = await persistPeriodPhoto(part, sourceUri)
@@ -168,12 +174,14 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
             ? label(
                 '无法将照片转为 JPEG。请换一张或改用相机拍摄（HEIC 等格式需系统能解码）。',
                 '無法將照片轉為 JPEG。請換一張或改用相機拍攝（HEIC 等格式需系統能解碼）。',
-                'Could not convert to JPEG. Pick another photo or use the camera.'
+                'Could not convert to JPEG. Pick another photo or use the camera.',
+                'JPEG に変換できませんでした。別の写真を選ぶか、カメラで撮影してください。'
               )
             : label(
                 '无法写入本机照片。请重试或检查存储空间。',
                 '無法寫入本機照片。請重試或檢查儲存空間。',
-                'Could not save the photo on device. Try again.'
+                'Could not save the photo on device. Try again.',
+                '端末に保存できませんでした。もう一度お試しください。'
               )
         )
       } finally {
@@ -193,7 +201,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
       s(
         '替换后本机旧图将删除。原图不会上传到服务器，云端从不保存原图。所选相册图会先转为 JPEG 再保存。',
         '替換後本機舊圖將刪除。原圖不會上傳到伺服器，雲端從不保存原圖。所選相簿圖會先轉為 JPEG 再保存。',
-        'The previous on-device photo will be deleted. Album picks are converted to JPEG before save. Source images are never kept on our servers.'
+        'The previous on-device photo will be deleted. Album picks are converted to JPEG before save. Source images are never kept on our servers.',
+        '端末の前の写真は削除されます。アルバムから選んだ画像は保存前に JPEG に変換されます。原画像はサーバーに保存されません。'
       ),
       [
         { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
@@ -264,7 +273,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
   const emptyHint = s(
     '尚未添加 · 拍照或从相册选择 · 仅保存在本机',
     '尚未新增 · 拍照或從相簿選擇 · 僅保存在本機',
-    'No photo yet · camera or library · on this device only'
+    'No photo yet · camera or library · on this device only',
+    'まだ写真がありません · カメラまたはアルバム · この端末のみ'
   )
 
   return (
@@ -279,7 +289,7 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
       }}
     >
       <Text style={{ color: colors.secondary, fontSize: 13 }}>
-        {slotMode ? s('本期槽位', '本期槽位', 'Period slot') : copy.stepLabel}
+        {slotMode ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット') : copy.stepLabel}
       </Text>
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>{copy.title}</Text>
       <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>{copy.hint}</Text>
@@ -311,7 +321,8 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
         {s(
           '原图仅存本机，用于特征分析时上传；服务器处理完不保留原图。',
           '原圖僅存本機，用於特徵分析時上傳；伺服器處理完不保留原圖。',
-          'Photos stay on device; uploaded only for feature extraction, then discarded server-side.'
+          'Photos stay on device; uploaded only for feature extraction, then discarded server-side.',
+          '写真は端末に保存。特徴抽出のためだけにアップロードし、サーバー側では破棄します。'
         )}
       </Text>
 
@@ -357,7 +368,7 @@ export function CaptureStepScreen({ part, nextHref }: CaptureStepScreenProps) {
           ? s('完成', '完成', 'Done')
           : nextHref
             ? s('下一步', '下一步', 'Next')
-            : s('继续填写生辰', '繼續填寫生辰', 'Continue to birth info')}
+            : s('继续填写生辰', '繼續填寫生辰', 'Continue to birth info', '生辰情報へ')}
       </Button>
     </View>
   )

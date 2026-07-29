@@ -8,7 +8,7 @@ import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CHAPTER_GLYPH, locusTitleForLocale } from '@/lib/ancient-glyphs'
-import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { isCjkZh, isJa, isZhHant, okForReadingLocale, pickUi, pickZh } from '@/lib/locale-zh'
 import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
 import { isNearEcho } from '@/lib/text-echo'
 
@@ -18,47 +18,53 @@ import { type NatalFacts, NatalFactsStrip } from './NatalFactsStrip'
 import { TermAwareText } from './TermAwareText'
 
 const LAYER_LABEL = {
-  evidence: { zh: '形气依据', zhHant: '形氣依據', en: 'The Form' },
-  dynamic: { zh: '气机动态', zhHant: '氣機動態', en: 'The Dynamic' },
-  reef: { zh: '宜留意', zhHant: '宜留意', en: 'Worth noting' },
-  remedy: { zh: '对照解法', zhHant: '對照解法', en: 'The Key' },
+  evidence: {
+    zh: '形气依据',
+    zhHant: '形氣依據',
+    en: 'The Form',
+    ja: '形気の根拠',
+  },
+  dynamic: {
+    zh: '气机动态',
+    zhHant: '氣機動態',
+    en: 'The Dynamic',
+    ja: '気の動き',
+  },
+  reef: {
+    zh: '宜留意',
+    zhHant: '宜留意',
+    en: 'Worth noting',
+    ja: '留意点',
+  },
+  remedy: {
+    zh: '对照解法',
+    zhHant: '對照解法',
+    en: 'The Key',
+    ja: '対照のヒント',
+  },
 } as const
 
 function layerLabel(key: keyof typeof LAYER_LABEL, locale: string): string {
   const row = LAYER_LABEL[key]
-  if (isZhHant(locale)) return row.zhHant
-  if (isCjkZh(locale)) return row.zh
-  return row.en
+  return pickUi(locale, row.zh, row.zhHant, row.en, row.ja)
 }
 
-/** Hide citation rows that are mostly CJK when the reading locale is non-zh (legacy rows). */
+/** Hide citation rows that are mostly Chinese Han when the reading locale is EN (legacy rows). */
 function citationOkForLocale(locale: string, locus: string, note: string): boolean {
-  if (isCjkZh(locale)) return true
-  const sample = `${locus}${note}`
-  const cjk = sample.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
-  const letters = sample.replace(/\s/g, '').length
-  if (letters === 0) return false
-  return cjk / letters < 0.45
+  return okForReadingLocale(locale, `${locus}${note}`, 0.45)
 }
 
-/** First display sentence for goldenLine — drop CJK-leaked lines on EN/JA chrome. */
+/** First display sentence for goldenLine — drop Chinese-leaked lines on EN chrome only. */
 function displayGoldenLine(locale: string, golden: string, evidence: string): string {
   const g = golden.trim()
   if (!g) return ''
   // Hide headline when it merely restates evidence (common LLM failure).
   if (isNearEcho(g, evidence)) return ''
-  if (isCjkZh(locale)) return g
-  const cjk = g.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
-  const letters = g.replace(/\s/g, '').length
-  const leaked = letters > 0 && cjk / letters > 0.4
-  if (!leaked) return g
-  // Prefer first evidence sentence if it looks like the output language.
+  if (isCjkZh(locale) || isJa(locale)) return g
+  if (okForReadingLocale(locale, g, 0.4)) return g
+  // Prefer first evidence sentence if it looks like English.
   const first = evidence.split(/(?<=[.!?。！？])\s+/)[0]?.trim() ?? ''
-  if (first.length > 12) {
-    const ec = first.match(/[\u3040-\u30ff\u3400-\u9fff]/g)?.join('').length ?? 0
-    const el = first.replace(/\s/g, '').length
-    if (el > 0 && ec / el < 0.4) return first
-  }
+  if (first.length > 12 && okForReadingLocale(locale, first, 0.4)) return first
   return ''
 }
 
@@ -96,8 +102,8 @@ export function ChapterCard({
   const insets = useSafeAreaInsets()
   const width = Dimensions.get('window').width
   const title = chapterTitle(chapter.kind, locale)
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const termColors = {
     bg: colors.bg,
     ink: colors.text,
@@ -288,7 +294,7 @@ export function ChapterCard({
                 textTransform: 'uppercase',
               }}
             >
-              {s('分享 · Syel', '分享 · Syel', 'Share · Syel')}
+              {s('分享 · Syel', '分享 · Syel', 'Share · Syel', '共有 · Syel')}
             </Text>
           </Pressable>
         ) : (

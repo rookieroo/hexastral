@@ -27,7 +27,7 @@ import {
   sendChatMessage,
 } from '@/lib/chat'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { isCjkZh, isJa, isZhHant, pickUi } from '@/lib/locale-zh'
 import { XINGQI_BRAND_URL, XINGQI_INSTALL_URL, xingqiShareCaption } from '@/lib/xingqiShare'
 
 export default function XingqiReadingChatScreen() {
@@ -36,8 +36,8 @@ export default function XingqiReadingChatScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const [userId, setUserId] = useState<string | null>(null)
   const entitlements = useEntitlements()
   const isPro =
@@ -76,11 +76,17 @@ export default function XingqiReadingChatScreen() {
         ? isZhHant(locale)
           ? ['這句話的形氣依據是什麼？', '本期宜留意什麼窗口？', '和八字對照怎麼讀？']
           : ['这句话的形气依据是什么？', '本期宜留意什么窗口？', '和八字对照怎么读？']
-        : [
-            'What is the form basis?',
-            'What windows are worth noting?',
-            'How does this contrast with BaZi?',
-          ],
+        : isJa(locale)
+          ? [
+              'この文の形気の根拠は？',
+              '今回留意すべき窓は？',
+              '八字との対照はどう読む？',
+            ]
+          : [
+              'What is the form basis?',
+              'What windows are worth noting?',
+              'How does this contrast with BaZi?',
+            ],
       report: s('举报', '舉報', 'Report'),
       reportConfirmTitle: s('举报此回复？', '舉報此回覆？', 'Report this reply?'),
       reportConfirmBody: s(

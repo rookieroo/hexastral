@@ -50,8 +50,8 @@ export type XingqiLocalTerm = {
   zh: string
   pinyin: string
   category: XingqiLocalCategory
-  short: { zh: string; zhHant: string; en: string }
-  long: { zh: string; zhHant: string; en: string }
+  short: { zh: string; zhHant: string; en: string; ja?: string }
+  long: { zh: string; zhHant: string; en: string; ja?: string }
 }
 
 /** Curated Hans→Hant for Xingqi form glosses (domain map, not a general converter). */
@@ -204,10 +204,25 @@ function toZhHant(hans: string): string {
   return out.replaceAll('發際', '髮際')
 }
 
-function glossLang(locale: TermLocale, short: XingqiLocalTerm['short']): 'zh' | 'zhHant' | 'en' {
+function glossLang(
+  locale: TermLocale,
+  short: XingqiLocalTerm['short']
+): 'zh' | 'zhHant' | 'en' | 'ja' {
   if (isZhHant(locale)) return 'zhHant'
   if (locale.startsWith('zh')) return 'zh'
+  if (locale.startsWith('ja')) {
+    if (short.ja) return 'ja'
+    return 'zh'
+  }
   return 'en'
+}
+
+function glossText(
+  bundle: XingqiLocalTerm['short'] | XingqiLocalTerm['long'],
+  lang: ReturnType<typeof glossLang>
+): string {
+  if (lang === 'ja') return bundle.ja ?? bundle.zh
+  return bundle[lang]
 }
 
 function t(
@@ -218,15 +233,26 @@ function t(
   shortZh: string,
   shortEn: string,
   longZh: string,
-  longEn: string
+  longEn: string,
+  ja?: { short: string; long: string }
 ): XingqiLocalTerm {
   return {
     id,
     zh,
     pinyin,
     category,
-    short: { zh: shortZh, zhHant: toZhHant(shortZh), en: shortEn },
-    long: { zh: longZh, zhHant: toZhHant(longZh), en: longEn },
+    short: {
+      zh: shortZh,
+      zhHant: toZhHant(shortZh),
+      en: shortEn,
+      ja: ja?.short,
+    },
+    long: {
+      zh: longZh,
+      zhHant: toZhHant(longZh),
+      en: longEn,
+      ja: ja?.long,
+    },
   }
 }
 
@@ -241,7 +267,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '外形与气机',
     'Form and qi',
     '形气：面掌外形与内在气机对照，本期阅读主轴，非命运判决。',
-    'Form-qi: physiognomy against motion — study framing, not fate.'
+    'Form-qi: visible form against qi motion — study framing, not fate.',
+    {
+      short: '形と気',
+      long: '形気（けいき）：面・掌の外形と内なる気の動きを対照する。文化学習の枠組みであり、運命の判決ではない。',
+    }
   ),
   t(
     'xq_qiji',
@@ -381,9 +411,13 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     'miàn xiàng',
     'face',
     '面部格局',
-    'Face reading',
+    'Face form',
     '面相：三停五岳、十二宫与五官线索的统称。',
-    'Facial physiognomy: courts, peaks, and features.'
+    'Face form (面相): three courts, five peaks, twelve palaces, and feature cues.',
+    {
+      short: '顔の形',
+      long: '面相（めんそう）：三停・五岳・十二宮・五官など、顔の構造を読む伝統的枠組み。',
+    }
   ),
   t(
     'xq_santing',
@@ -743,9 +777,13 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     'zhǎng xiàng',
     'palm',
     '手掌形纹',
-    'Palmistry',
+    'Palm form',
     '掌相：掌形、丘、主纹与气色的统称。',
-    'Palm shape, mounts, lines, and tone.'
+    'Palm form (掌相): shape, palm mounts, major lines, and tone.',
+    {
+      short: '掌の形',
+      long: '掌相（しょうそう）：掌形・丘位・主線・气色など、掌を読む伝統的枠組み。',
+    }
   ),
   t(
     'xq_zhangxing',
@@ -832,10 +870,14 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     '事业线',
     'shì yè xiàn',
     'palm',
-    '命运线',
-    'Fate line',
+    '事业线',
+    'Career line',
     '事业线：自腕向中指的纵纹，常与路径感对照（亦称命运线）。',
-    'Vertical from wrist — path / vocation cue.'
+    'Career / path line: vertical from wrist toward the middle finger — vocation cue (事业线).',
+    {
+      short: '事業線',
+      long: '事業線（しぎょうせん）：手首から中指へ向かう縦線。進路・仕事の軸の手がかり（別称：運命線）。',
+    }
   ),
   t(
     'xq_hunyinxian',
@@ -1054,8 +1096,8 @@ export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm 
       zh: local.zh,
       pinyin: local.pinyin,
       category: 'relation' as TermCategory,
-      short: local.short[lang],
-      long: local.long[lang],
+      short: glossText(local.short, lang),
+      long: glossText(local.long, lang),
     }
   }
   if (!(XINGQI_ASTRO_TERMS as readonly string[]).includes(canonical)) return null
@@ -1066,6 +1108,7 @@ export type XingqiGlossaryGroup = {
   id: string
   labelZh: string
   labelEn: string
+  labelJa: string
   terms: ResolvedTerm[]
 }
 
@@ -1077,8 +1120,8 @@ function toResolved(locale: TermLocale, list: readonly XingqiLocalTerm[]): Resol
       zh: x.zh,
       pinyin: x.pinyin,
       category: 'relation' as TermCategory,
-      short: x.short[lang],
-      long: x.long[lang],
+      short: glossText(x.short, lang),
+      long: glossText(x.long, lang),
     }
   })
 }
@@ -1100,30 +1143,35 @@ export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup
       id: 'meta',
       labelZh: glossaryLabel(locale, '形气总说', '形氣總說'),
       labelEn: 'Form framing',
+      labelJa: '形気の枠組み',
       terms: toResolved(locale, meta),
     },
     {
       id: 'face',
       labelZh: glossaryLabel(locale, '面相 · 十二宫', '面相 · 十二宮'),
-      labelEn: 'Face · palaces',
+      labelEn: 'Face form · palaces',
+      labelJa: '面相 · 十二宮',
       terms: toResolved(locale, face),
     },
     {
       id: 'palm',
       labelZh: glossaryLabel(locale, '手相 · 丘位', '手相 · 丘位'),
-      labelEn: 'Palm · mounts',
+      labelEn: 'Palm form · mounts',
+      labelJa: '掌相 · 丘位',
       terms: toResolved(locale, palm),
     },
     {
       id: 'wuxing',
       labelZh: glossaryLabel(locale, '五行 · 气机', '五行 · 氣機'),
       labelEn: 'Wuxing',
+      labelJa: '五行 · 気',
       terms: pick(['金', '木', '水', '火', '土', '相生', '相克', '比和']),
     },
     {
       id: 'natal',
       labelZh: glossaryLabel(locale, '命盘对照', '命盤對照'),
-      labelEn: 'Natal contrast',
+      labelEn: 'BaZi cross-reference',
+      labelJa: '命式対照',
       terms: pick([
         '日主',
         '用神',
@@ -1147,6 +1195,7 @@ export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup
       id: 'cycle',
       labelZh: glossaryLabel(locale, '时间窗口', '時間窗口'),
       labelEn: 'Time windows',
+      labelJa: '時間の窓',
       terms: pick(['大运', '流年', '流月']),
     },
   ]

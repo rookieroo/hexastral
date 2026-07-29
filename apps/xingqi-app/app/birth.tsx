@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import type { OnboardingDraft } from '@/lib/onboardingDraft'
 import {
   draftHasThreePhotos,
@@ -37,8 +37,8 @@ export default function BirthScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const lang = localeToLang(locale)
   const dateLabels = useMemo(() => birthDateFieldLabelsForLocale(lang), [lang])
   const scrollRef = useRef<ScrollView | null>(null)
@@ -199,7 +199,8 @@ export default function BirthScreen() {
         {s(
           '完整解读需要三张照片与生辰。生辰用于形气与八字对照。',
           '完整解讀需要三張照片與生辰。生辰用於形氣與八字對照。',
-          'A complete reading needs three photos plus birth info for physiognomy × BaZi contrast.'
+          'A complete form-qi reading needs three photos plus birth info for face/palm form × BaZi cross-reference.',
+          '完全な形気リーディングには三枚の写真と生辰情報（顔・掌の形 × 八字対照）が必要です。'
         )}
       </Text>
       <BirthForm

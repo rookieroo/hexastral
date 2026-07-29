@@ -143,7 +143,11 @@ export default function MakeIfScreen() {
           title={t(locale, 'makeif.error')}
           message={error.message}
           customAction={
-            <PrimaryButton label='Retry →' onPress={() => id && void run(id)} block={false} />
+            <PrimaryButton
+              label={t(locale, 'common.retry')}
+              onPress={() => id && void run(id)}
+              block={false}
+            />
           }
         />
       ) : data ? (

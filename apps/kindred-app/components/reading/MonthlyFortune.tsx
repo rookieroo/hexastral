@@ -44,7 +44,7 @@ const DEPTH_UI: Record<string, typeof DEPTH_UI_EN> = {
     failed: '展开加载失败，点按重试',
     advice: '参考',
     watch: '留意',
-    disclaimer: '文化参考，供个人省思 —— 非运势预测或建议。',
+    disclaimer: '文化参考，供个人反思 —— 非运势预测或建议。',
   },
   'zh-Hant': {
     cta: '展開本月',
@@ -52,7 +52,7 @@ const DEPTH_UI: Record<string, typeof DEPTH_UI_EN> = {
     failed: '展開載入失敗，點按重試',
     advice: '參考',
     watch: '留意',
-    disclaimer: '文化參考，供個人省思 —— 非運勢預測或建議。',
+    disclaimer: '文化參考，供個人反思 —— 非運勢預測或建議。',
   },
   ja: {
     cta: '今月を展開',
@@ -60,7 +60,7 @@ const DEPTH_UI: Record<string, typeof DEPTH_UI_EN> = {
     failed: '展開の取得に失敗しました。タップで再試行',
     advice: '参考',
     watch: '留意',
-    disclaimer: '文化上の参考と省思用 —— 運勢予測や助言ではありません。',
+    disclaimer: '文化上の参考と振り返り用 —— 運勢の断定や助言ではありません。',
   },
 }
 

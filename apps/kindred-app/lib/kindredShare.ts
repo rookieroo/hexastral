@@ -27,9 +27,9 @@ export const KINDRED_INSTALL_URL = 'https://yuel.hexastral.com'
  */
 export function kindredShareCaption(locale: string, lead: string): string {
   const cta = locale.startsWith('zh')
-    ? '· 看看你的'
+    ? 'Yuel 上也可以看看你的合盘。'
     : locale.startsWith('ja')
-      ? '· あなたも'
-      : '· see yours'
-  return `${lead} ${cta}\n${KINDRED_INSTALL_URL}`
+      ? 'Yuel であなたの相性読みも。'
+      : 'See your reading on Yuel.'
+  return `${lead}\n${cta}\n${KINDRED_INSTALL_URL}`
 }

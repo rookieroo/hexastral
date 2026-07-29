@@ -28,7 +28,7 @@ export const PERSPECTIVE_PRESETS: readonly PerspectivePreset[] = [
     desc: {
       zh: '碑拓式、简练、断语直接',
       'zh-Hant': '碑拓式、簡練、斷語直接',
-      ja: '碑拓のように簡潔・断定的',
+      ja: '簡潔で古典的な口調',
       en: 'Terse, classical register — cultural reading, not a verdict',
     },
     seedZh: '古法碑拓口吻：简练、断语直接、不铺陈',
@@ -152,7 +152,7 @@ export const REROLL_UI: Record<
   ja: {
     button: '視点を変える',
     title: '別の視点で読み直す',
-    subtitle: '同じ命盤を、別の声でもう一度',
+    subtitle: '同じ命式を、別の声でもう一度',
     rerolling: '新しい視点で読み直し中…',
     exhausted: '今月の視点替えは上限に達しました（来月リセット）',
     failed: '読み直しに失敗しました。後でお試しください',

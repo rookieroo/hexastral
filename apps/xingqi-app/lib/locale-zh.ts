@@ -60,3 +60,21 @@ export function pickUi(
 export function isJa(locale: string): boolean {
   return locale.startsWith('ja')
 }
+
+/**
+ * CJK "leak" gate for EN chrome only.
+ * Japanese report prose legitimately uses kanji + kana — never treat JA as a leak.
+ * When checking EN, count Han ideographs only (not kana), so leftover JA rows still fail.
+ */
+export function cjkLeakRatio(sample: string): number {
+  const letters = sample.replace(/\s/g, '').length
+  if (letters === 0) return 1
+  const han = sample.match(/[\u3400-\u9fff]/g)?.join('').length ?? 0
+  return han / letters
+}
+
+/** True when EN locale should hide a string that is mostly Chinese Han. JA always ok. */
+export function okForReadingLocale(locale: string, sample: string, maxHanRatio = 0.45): boolean {
+  if (isCjkZh(locale) || isJa(locale)) return true
+  return cjkLeakRatio(sample) < maxHanRatio
+}

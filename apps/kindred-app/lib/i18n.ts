@@ -1,15 +1,15 @@
 /**
- * Kindred app i18n — minimal locale registry for 4 markets.
+ * Yuel (kindred-app) i18n — minimal locale registry for 4 markets.
  *
  * App Store display titles (anti-spam compliant per docs/anti-spam-positioning.md;
  * supersedes ADR-0001 which used "Eastern Astrology" register — that triggered
  * 4.3(b) on the hexastral-app rejection):
- *   - en-US:   "Kindred: BaZi Couples Chart"
- *   - zh-Hans: "Kindred · 八字合盘"
- *   - zh-Hant: "Kindred · 八字合盤"
+ *   - en-US:   "Yuel: BaZi Couples Chart"
+ *   - zh-Hans: "Yuel · 八字合盘"
+ *   - zh-Hant: "Yuel · 八字合盤"
  *   - ja-JP:   "縁・四柱推命の相性"
  *
- * Keys are flat (no namespacing) — Kindred is a focused product with a small
+ * Keys are flat (no namespacing) — Yuel is a focused product with a small
  * string surface. If string count exceeds ~200, promote to `@zhop/ui-i18n`.
  */
 
@@ -69,6 +69,17 @@ export function localeFromTag(tag?: string | null): Locale | null {
 
 type Translations = Record<Locale, Record<string, string>>
 
+/**
+ * Terminology SSOT (consumer-facing copy):
+ * - Brand: Yuel only (never Kindred / HexAstral in UI chrome).
+ * - Synastry = Five Elements relationship reference, not a score or rank.
+ * - EN: BaZi (Four Pillars); lunar calendar; true solar time; monthly cycle for 流月;
+ *   teaching first-mention may use supporting cycle (相生 / xiāngshēng).
+ * - JA: 四柱推命 / 命式 / 五行 / 日主; avoid 命盤/合盤/通关/推演/省思/星盤/命書
+ *   as Chinese loan calques where Japanese has better words.
+ * - ZH: 合盘 OK; unify TA capitalization (prefer TA for person pronoun);
+ *   full-width Chinese punctuation.
+ */
 export const translations: Translations = {
   en: {
     'welcome.line1': 'Between two people',
@@ -92,7 +103,8 @@ export const translations: Translations = {
     'pairInput.name.other': 'Their name',
     'pairInput.calendar.solar': 'Solar',
     'pairInput.calendar.lunar': 'Chinese (lunar)',
-    'pairInput.calendar.lunarHint': 'Enter the 农历 date — we convert it for the chart.',
+    'pairInput.calendar.lunarHint':
+      'Enter the lunar calendar date — we convert it for the chart.',
     'pairInput.cityPlaceholder': 'Birth city (optional)',
     'pairInput.cta.next': 'Next: them  →',
     'pairInput.alt.heading': "Can't fill their details now?",
@@ -100,9 +112,9 @@ export const translations: Translations = {
     'pairInput.alt.invite': 'Invite them to fill it in',
     'pairInput.alt.skip': 'Skip — show me mine first',
     'pairInput.timeHint':
-      'Required — your hour pillar depends on it. Each two-hour window is named for a zodiac animal (the animal of the hour, not your birth-year sign).',
+      'Required — your hour pillar depends on the two-hour window of your birth.',
     'pairInput.cityHint':
-      'Optional — your birth city sharpens the hour pillar via 真太阳时 correction.',
+      'Optional — your birth city sharpens the hour pillar via true solar time correction.',
     'pairInput.cityOptional': 'Optional',
     'pairInput.cityClear': 'Clear',
     'pairInput.selfReady': 'Your chart is ready',
@@ -176,6 +188,9 @@ export const translations: Translations = {
     'common.next': 'Next →',
     'common.skip': 'Skip',
     'common.back': '←',
+    'common.retry': 'Retry →',
+    'common.notFound': 'Bond not found',
+    'common.close': 'Close',
     'common.relationship.romantic': 'Partner',
     'common.relationship.friend': 'Friend',
     'common.relationship.family': 'Family',
@@ -217,14 +232,14 @@ export const translations: Translations = {
     'makeif.cta': 'If we…',
     'makeif.title': 'What if',
     'makeif.subtitle':
-      'The best windows ahead to move this bond forward — a timing read, not a verdict.',
+      'Smoother reference months ahead for this bond — a timing read, not a verdict.',
     'makeif.fromQuote': 'Prompted by this line',
     'makeif.loading': 'Reading the months ahead…',
     'makeif.error': "Couldn't run the make-if",
     'makeif.yongshen.label': 'Your bridging element',
     'makeif.windows.label': 'Month by month',
     'makeif.years.label': 'The decade ahead',
-    'makeif.best': 'Best window',
+    'makeif.best': 'Smoother window',
     'makeif.movePrompt': 'Considering a step?',
     'makeif.move.commit': 'Propose',
     'makeif.move.cohabit': 'Move in',
@@ -238,17 +253,17 @@ export const translations: Translations = {
       'The test of distance — months where each of you reads steady are reference points for pacing, not predictions.',
     'makeif.guide.child':
       'Welcoming new life — months with a strong bridging-element read are cultural timing references only.',
-    'makeif.upsell.title': 'See your best timing',
+    'makeif.upsell.title': 'See timing references',
     'makeif.upsell.body':
-      'Unlock Pro to rank the months ahead by your bridging element and find the strongest window to take a step together.',
+      'Unlock Pro to sort the months ahead by your bridging element and find calmer reference windows — not a ranking of your relationship.',
     'makeif.upsell.cta': 'Unlock Pro →',
     'timeline.upsell.title': 'See the full timeline',
     'timeline.upsell.body':
-      'Part of Yuel Pro — a cultural map of relationship chapters over the next 15 years, a 12-month 流月 reference window, and optional node reminders.',
+      'Part of Yuel Pro — a cultural map of relationship chapters over the next 15 years, a 12-month monthly-cycle reference window, and optional node reminders.',
     'timeline.upsell.cta': 'Unlock Pro →',
     'timeline.locked.title': 'With Yuel Pro',
     'timeline.locked.years': '15 years of turning points, across every bond',
-    'timeline.locked.liuyue': 'The 12-month 流月 climate ahead',
+    'timeline.locked.liuyue': 'The 12-month monthly-cycle climate ahead',
     'timeline.locked.push': 'A gentle reminder before each node',
     'timeline.back': 'Back',
     'bond.essenceNotScore': 'An essence shape from the Five Elements — not a compatibility score or verdict.',
@@ -259,11 +274,11 @@ export const translations: Translations = {
     'bondList.cancelInviteBody': "They haven't joined yet — this withdraws the invitation.",
     'bondList.deleteBody': "This removes your synastry with them. It can't be undone.",
     'bondList.deleteBody.good':
-      "These two charts read generative — the kind that actually feed each other, and the report graded it high. That's not common. Cut the thread and it's gone; you don't get to run the same two people twice. Worth being sure it's actually over, not just a bad week.",
+      'This removes your synastry with them, for good — no undo, no second reading. Only if you mean it.',
     'bondList.deleteBody.peer':
-      'You two read as resonant — same wavelength, which cuts both ways: quick to click, quick to butt heads. Letting it go is reasonable; so is keeping it. Either way there is no undo, so decide on purpose.',
+      'This removes your synastry with them, for good — no undo, no second reading. Only if you mean it.',
     'bondList.deleteBody.hard':
-      "The reading leans tempering — more friction than flow, and you've probably felt it. Holding a knot that won't loosen usually costs more than the cut does. If it has genuinely run its course, letting go isn't giving up — it's just honest.",
+      'This removes your synastry with them, for good — no undo, no second reading. Only if you mean it.',
     'bondList.deleteBody.plain':
       'This removes your synastry with them, for good — no undo, no second reading. Only if you mean it.',
     'bondList.cancel': 'Cancel',
@@ -279,7 +294,7 @@ export const translations: Translations = {
     'bond.recomputeFailed': 'Recompute failed. Please try again.',
     'bond.matching': 'Aligning your charts…',
     'bond.stage.align': 'Aligning the stems & branches…',
-    'bond.stage.bazi': 'Casting both BaZi charts…',
+    'bond.stage.bazi': 'Casting both BaZi (Four Pillars) charts…',
     'bond.stage.synastry': 'Reading the synastry between you…',
     'bond.stage.report': 'Writing your relationship report…',
     'bond.toAuspice': 'Add to Yuun almanac  →',
@@ -328,7 +343,7 @@ export const translations: Translations = {
     'settings.privacy.section': 'Privacy',
     'settings.crossAppMemory.label': 'Cross-app memory',
     'settings.crossAppMemory.hint':
-      'Let chat reference your readings across all HexAstral apps. Same account only — never shared with anyone else.',
+      'Let chat reference your readings across Yuel and Yuun (UseONE apps). Same account only — never shared with anyone else.',
     'settings.notifications.section': 'Notifications',
     'settings.dailyPush.label': 'Daily relationship nudge',
     'settings.dailyPush.hint':
@@ -343,7 +358,7 @@ export const translations: Translations = {
     'settings.glossary.row': 'Symbol glossary',
     'settings.glossary.hint': 'What the seals, marks and elements in a report mean.',
     'settings.terms.row': 'Term glossary',
-    'settings.terms.hint': 'Plain-language meanings of the astrology terms a reading can use.',
+    'settings.terms.hint': 'Plain-language meanings of the BaZi / typology terms a reading can use.',
     'terms.title': 'Term Glossary',
     'terms.intro':
       'A reading may name a few classical concepts. Here is what each one means, in plain language. You never need this to follow your report — it is here if you are curious.',
@@ -490,7 +505,7 @@ export const translations: Translations = {
     'reading.highlight': 'Highlight',
     'chat.suggest1': 'How can we communicate better?',
     'chat.suggest2': 'What should I watch out for?',
-    'chat.suggest3': 'Where are we most compatible?',
+    'chat.suggest3': 'Where do we complement each other?',
   },
 
   zh: {
@@ -549,15 +564,15 @@ export const translations: Translations = {
     'place.title': '在哪里出生',
     'place.subtitle': '',
 
-    'mode.title': '现在轮到 ta',
+    'mode.title': '现在轮到 TA',
 
     'invite.subtitle': '你们是什么关系？',
-    'invite.hint': '邀请由你亲自发出，用任意 app 发给 ta 都行，我们不会接触 ta 的联系方式',
-    'invite.heading': '邀请 ta',
-    'invite.name.placeholder': 'ta 的称呼（可选）',
+    'invite.hint': '邀请由你亲自发出，用任意 app 发给 TA 都行，我们不会接触 TA 的联系方式',
+    'invite.heading': '邀请 TA',
+    'invite.name.placeholder': 'TA 的称呼（可选）',
     'invite.share': '分享邀请  →',
 
-    'fill.title': '告诉我关于 ta',
+    'fill.title': '告诉我关于 TA',
     'fill.name': '姓名',
     'fill.date': '生日（YYYY-MM-DD）',
     'fill.place': '出生地',
@@ -572,15 +587,15 @@ export const translations: Translations = {
     'reveal.line1': '你们的相遇',
     'reveal.line2': '有一种值得细读的模式',
     'reveal.cta': '阅读你们的故事  →',
-    'reveal.generating': '正在合上星盘…',
+    'reveal.generating': '正在合上命盘…',
     'reveal.error': '生成失败。',
     'reveal.retry': '再试一次',
     'reveal.paywall': '升级 Pro 解锁此报告',
     'reveal.back': '修改资料',
 
     'waiting.title': '邀请已发出',
-    'waiting.subtitle': '等 ta 接力',
-    'waiting.hint': 'ta 填一份生辰，我们就会合上你们的星盘',
+    'waiting.subtitle': '等 TA 接力',
+    'waiting.hint': 'TA 填一份生辰，我们就会合上你们的命盘',
     'waiting.sentAtPrefix': '已发送 · ',
     'waiting.justNow': '刚刚',
     'waiting.minutesAgo': '分钟前',
@@ -595,6 +610,9 @@ export const translations: Translations = {
     'common.next': '下一步 →',
     'common.skip': '跳过',
     'common.back': '←',
+    'common.retry': '重试 →',
+    'common.notFound': '未找到牵绊',
+    'common.close': '关闭',
     'common.relationship.romantic': '恋人',
     'common.relationship.friend': '朋友',
     'common.relationship.family': '家人',
@@ -609,7 +627,7 @@ export const translations: Translations = {
     'bondList.empty.title': '还没有牵绊',
     'bondList.empty.cta': '开始一段  →',
     'bondList.error.title': '无法加载牵绊列表',
-    'bondList.pendingSection': '等 ta 接力',
+    'bondList.pendingSection': '等 TA 接力',
     'bondList.pendingTag': '邀请已发出',
     'bondList.noActiveYet': '还没有已合的牵绊——对方接受后会出现在这里。',
     'bondList.title': '牵绊',
@@ -619,7 +637,7 @@ export const translations: Translations = {
     'timeline.subtitle': '你与每段关系即将到来的转折点',
     'timeline.seeFurther': '看更远 →',
     'timeline.empty.title': '还没有节点',
-    'timeline.empty.body': '添加一位填好生辰的亲友,看看你们共有的关系转折。',
+    'timeline.empty.body': '添加一位填好生辰的亲友，看看你们共有的关系转折。',
     'timeline.empty.cta': '添加牵绊 →',
     'timeline.error.title': '时间轴加载失败',
     'timeline.section.upcoming': '即将到来',
@@ -633,14 +651,14 @@ export const translations: Translations = {
     'timeline.liuyue.locked': '免费版仅显示本月。解锁 Pro 查看完整 12 个月。',
     'makeif.cta': '假如我们',
     'makeif.title': '假如',
-    'makeif.subtitle': '未来最适合推进这段关系的几个窗口——这是时机参考，不是定论。',
+    'makeif.subtitle': '未来较顺的参考月份——时机参照，不是定论。',
     'makeif.fromQuote': '由这句而起',
-    'makeif.loading': '正在推演未来这些月份…',
-    'makeif.error': '推演失败',
-    'makeif.yongshen.label': '你们的通关用神',
-    'makeif.windows.label': '逐月推演',
+    'makeif.loading': '正在对照未来这些月份…',
+    'makeif.error': '对照失败',
+    'makeif.yongshen.label': '你们的调和用神',
+    'makeif.windows.label': '逐月参照',
     'makeif.years.label': '未来十年',
-    'makeif.best': '最佳窗口',
+    'makeif.best': '较顺窗口',
     'makeif.movePrompt': '你在考虑哪一步？',
     'makeif.move.commit': '求婚',
     'makeif.move.cohabit': '同居',
@@ -648,10 +666,11 @@ export const translations: Translations = {
     'makeif.move.child': '要孩子',
     'makeif.guide.commit': '情感确立之时，可参考双方相合、气较顺的月份——时机参照，不是定论。',
     'makeif.guide.cohabit': '共同生活之始，可参考相合且用神得力的月份——节奏参考，不作保证。',
-    'makeif.guide.distance': '聚少离多的考验，可参考各自气较稳的月份——供省思，不是预测。',
+    'makeif.guide.distance': '聚少离多的考验，可参考各自气较稳的月份——供反思，不是预测。',
     'makeif.guide.child': '孕育新生，可参考用神得力、双方相合的月份——文化参照，不作结果保证。',
-    'makeif.upsell.title': '看你们的最佳时机',
-    'makeif.upsell.body': '解锁 Pro，按你们的用神为未来各月排序，找到最适合一起迈出一步的窗口。',
+    'makeif.upsell.title': '查看时机参照',
+    'makeif.upsell.body':
+      '解锁 Pro，按你们的调和用神对照未来各月，找到较顺的参考窗口——不是关系排序。',
     'makeif.upsell.cta': '解锁 Pro →',
     'timeline.upsell.title': '查看完整时间轴',
     'timeline.upsell.body':
@@ -669,15 +688,15 @@ export const translations: Translations = {
     'bondList.cancelInvite': '撤回',
     'bondList.cancelInviteTitle': '撤回这个邀请？',
     'bondList.cancelInviteBody': '对方还没加入，这会撤回邀请。',
-    'bondList.deleteBody': '会移除你与 ta 的合盘记录，且无法恢复。',
+    'bondList.deleteBody': '会移除你与 TA 的合盘记录，且无法恢复。',
     'bondList.deleteBody.good':
-      '你们这段是相生——真正彼此滋养的那种，解读章节也不低。这种缘分不算多。解了就没了，同样两个人不会再有第二次合盘。值得先确认是真到头了，而不是刚好撞上一阵心烦。',
+      '这会永久移除你与 TA 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
     'bondList.deleteBody.peer':
-      '你们是比和——同一个频率，好处坏处都在这：容易一拍即合，也容易针尖对麦芒。解，合理；留，也合理。横竖不可逆，想清楚再动手。',
+      '这会永久移除你与 TA 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
     'bondList.deleteBody.hard':
-      '你们这段以相克为底——摩擦多过顺遂，你大概早有体感。当断不断，反受其乱：硬撑一个解不开的结，通常比剪断它更耗人。如果是真走到头了，放手不算认输，只是诚实。',
+      '这会永久移除你与 TA 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
     'bondList.deleteBody.plain':
-      '这会永久移除你与 ta 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
+      '这会永久移除你与 TA 的合盘记录——没有撤销，也不会有第二次。想清楚再解。',
     'bondList.cancel': '取消',
     'bond.statusActive': '资料完整',
     'bond.statusPending': '待对方填写',
@@ -691,7 +710,7 @@ export const translations: Translations = {
     'bond.recomputeFailed': '重算失败，请重试。',
     'bond.matching': '合盘中…',
     'bond.stage.align': '正在对齐天干地支…',
-    'bond.stage.bazi': '正在推演双方八字…',
+    'bond.stage.bazi': '正在排双方八字…',
     'bond.stage.synastry': '正在进行合盘分析…',
     'bond.stage.report': '正在编写关系报告…',
     'bond.toAuspice': '加入 Yuun 黄历提醒  →',
@@ -737,10 +756,10 @@ export const translations: Translations = {
     'settings.privacy.section': '隐私',
     'settings.crossAppMemory.label': '跨应用记忆',
     'settings.crossAppMemory.hint':
-      '允许对话参考你在所有 HexAstral 应用中的解读。仅限同一账户，绝不外泄。',
+      '允许对话参考你在 Yuel / Yuun（UseONE 应用）中的解读。仅限同一账户，绝不外泄。',
     'settings.notifications.section': '通知',
     'settings.dailyPush.label': '每日关系提醒',
-    'settings.dailyPush.hint': '约晚上 19:00，就某一段关系推一句短讯——不是个人命书晨报。',
+    'settings.dailyPush.hint': '约晚上 19:00，就某一段关系推一句短讯——不是个人解读晨报。',
     'home.carryOver.banner': '已从 Yuun 带入你的亲友——点开牵绊即可加深合盘解读。',
     'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
@@ -795,7 +814,7 @@ export const translations: Translations = {
     'glossary.gesture.copy': '复制——将这句拷到剪贴板',
     'glossary.gesture.chat': '追问——就此段发问（Pro）',
     'glossary.gesture.highlight': '标记——让它留痕于页上',
-    'glossary.gesture.makeif': '推演——由此展开一个向前的抉择',
+    'glossary.gesture.makeif': '假如——由此展开一个向前的抉择',
     'primer.title': '如何阅读这份报告',
     'primer.rolesTitle': '甲与乙',
     'primer.roles': '甲是发出邀请的一方，乙是接受的一方。报告写给你们两人。',
@@ -820,10 +839,10 @@ export const translations: Translations = {
       '订阅会绑定到账户上，换设备不会丢失。Apple 只给我们一个稳定的 ID 和（可选的）邮箱。',
     'paywall.signInCta': '使用 Apple 继续',
     'paywall.title': '开通 Yuel Pro',
-    'paywall.subtitle': '完整命书 · 每月流月解读 · 随时追问',
+    'paywall.subtitle': '完整个人解读 · 每月流月解读 · 随时追问',
     'paywall.subtitleChat': '本篇的免费消息已用完。',
-    'paywall.subtitleChapters': '解锁完整命书 · 全六章',
-    'paywall.bullet.unlimited': '完整个人命书 · 六章深读',
+    'paywall.subtitleChapters': '解锁完整个人解读 · 全六章',
+    'paywall.bullet.unlimited': '完整个人解读 · 六章深读',
     'paywall.bullet.deep': 'AI 追问 · 每月流月解读',
     'unlock.heading': '还有 {n} 章未解锁',
     'unlock.invite': '把 Yuel 分享给朋友',
@@ -845,7 +864,7 @@ export const translations: Translations = {
     'paywall.failed': '购买失败，请重试',
     'paywall.success': '欢迎加入 Yuel Pro',
     'paywall.legalDisclaimer':
-      '仅供娱乐、文化探索与个人省思——非心理咨询、关系治疗或专业建议。详见 yuel.hexastral.com/terms。',
+      '仅供娱乐、文化探索与个人反思——非心理咨询、关系治疗或专业建议。详见 yuel.hexastral.com/terms。',
     'paywall.close': '关闭',
 
     'chat.title': '聊聊你们的合盘',
@@ -868,7 +887,7 @@ export const translations: Translations = {
     'chat.poolRemaining': '本月还剩 {remaining} 次回复',
     'chat.cta': '聊聊这段缘分 →',
     'chat.legalDisclaimer':
-      '仅供娱乐、文化探索与个人省思 —— 非情感咨询、心理治疗或专业建议。',
+      '仅供娱乐、文化探索与个人反思 —— 非情感咨询、心理治疗或专业建议。',
     'chat.aiDisclaimer': '本回答由 AI 生成，内容仅供参考，请仔细甄别。',
     'chat.copy': '复制',
     'chat.like': '有用',
@@ -887,7 +906,7 @@ export const translations: Translations = {
     'reading.highlight': '高亮',
     'chat.suggest1': '我们怎样沟通更好？',
     'chat.suggest2': '我需要注意什么？',
-    'chat.suggest3': '我们最契合的地方是？',
+    'chat.suggest3': '我们相互成全的地方是？',
   },
 
   'zh-Hant': {
@@ -946,15 +965,15 @@ export const translations: Translations = {
     'place.title': '在哪裡出生',
     'place.subtitle': '',
 
-    'mode.title': '現在輪到 ta',
+    'mode.title': '現在輪到 TA',
 
     'invite.subtitle': '你們是什麼關係？',
-    'invite.hint': '邀請由你親自發出，用任意 app 發給 ta 都行，我們不會接觸 ta 的聯絡方式',
-    'invite.heading': '邀請 ta',
-    'invite.name.placeholder': 'ta 的稱呼（可選）',
+    'invite.hint': '邀請由你親自發出，用任意 app 發給 TA 都行，我們不會接觸 TA 的聯絡方式',
+    'invite.heading': '邀請 TA',
+    'invite.name.placeholder': 'TA 的稱呼（可選）',
     'invite.share': '分享邀請  →',
 
-    'fill.title': '告訴我關於 ta',
+    'fill.title': '告訴我關於 TA',
     'fill.name': '姓名',
     'fill.date': '生日（YYYY-MM-DD）',
     'fill.place': '出生地',
@@ -969,15 +988,15 @@ export const translations: Translations = {
     'reveal.line1': '你們的相遇',
     'reveal.line2': '有一種值得細讀的模式',
     'reveal.cta': '閱讀你們的故事  →',
-    'reveal.generating': '正在合上星盤…',
+    'reveal.generating': '正在合上命盤…',
     'reveal.error': '生成失敗。',
     'reveal.retry': '再試一次',
     'reveal.paywall': '升級 Pro 解鎖此報告',
     'reveal.back': '修改資料',
 
     'waiting.title': '邀請已發出',
-    'waiting.subtitle': '等 ta 接力',
-    'waiting.hint': 'ta 填一份生辰，我們就會合上你們的星盤',
+    'waiting.subtitle': '等 TA 接力',
+    'waiting.hint': 'TA 填一份生辰，我們就會合上你們的命盤',
     'waiting.sentAtPrefix': '已發送 · ',
     'waiting.justNow': '剛剛',
     'waiting.minutesAgo': '分鐘前',
@@ -992,6 +1011,9 @@ export const translations: Translations = {
     'common.next': '下一步 →',
     'common.skip': '跳過',
     'common.back': '←',
+    'common.retry': '重試 →',
+    'common.notFound': '找不到牽絆',
+    'common.close': '關閉',
     'common.relationship.romantic': '戀人',
     'common.relationship.friend': '朋友',
     'common.relationship.family': '家人',
@@ -1006,7 +1028,7 @@ export const translations: Translations = {
     'bondList.empty.title': '還沒有牽絆',
     'bondList.empty.cta': '開始一段  →',
     'bondList.error.title': '無法載入牽絆列表',
-    'bondList.pendingSection': '等 ta 接力',
+    'bondList.pendingSection': '等 TA 接力',
     'bondList.pendingTag': '邀請已發出',
     'bondList.noActiveYet': '還沒有已合的牽絆——對方接受後會出現在這裡。',
     'bondList.title': '牽絆',
@@ -1016,7 +1038,7 @@ export const translations: Translations = {
     'timeline.subtitle': '你與每段關係即將到來的轉折點',
     'timeline.seeFurther': '看更遠 →',
     'timeline.empty.title': '還沒有節點',
-    'timeline.empty.body': '添加一位填好生辰的親友,看看你們共有的關係轉折。',
+    'timeline.empty.body': '添加一位填好生辰的親友，看看你們共有的關係轉折。',
     'timeline.empty.cta': '添加牽絆 →',
     'timeline.error.title': '時間軸載入失敗',
     'timeline.section.upcoming': '即將到來',
@@ -1030,14 +1052,14 @@ export const translations: Translations = {
     'timeline.liuyue.locked': '免費版僅顯示本月。解鎖 Pro 查看完整 12 個月。',
     'makeif.cta': '假如我們',
     'makeif.title': '假如',
-    'makeif.subtitle': '未來最適合推進這段關係的幾個窗口——這是時機參考，不是定論。',
+    'makeif.subtitle': '未來較順的參考月份——時機參照，不是定論。',
     'makeif.fromQuote': '由這句而起',
-    'makeif.loading': '正在推演未來這些月份…',
-    'makeif.error': '推演失敗',
-    'makeif.yongshen.label': '你們的通關用神',
-    'makeif.windows.label': '逐月推演',
+    'makeif.loading': '正在對照未來這些月份…',
+    'makeif.error': '對照失敗',
+    'makeif.yongshen.label': '你們的調和用神',
+    'makeif.windows.label': '逐月參照',
     'makeif.years.label': '未來十年',
-    'makeif.best': '最佳窗口',
+    'makeif.best': '較順窗口',
     'makeif.movePrompt': '你在考慮哪一步？',
     'makeif.move.commit': '求婚',
     'makeif.move.cohabit': '同居',
@@ -1045,10 +1067,11 @@ export const translations: Translations = {
     'makeif.move.child': '要孩子',
     'makeif.guide.commit': '情感確立之時，可參考雙方相合、氣較順的月份——時機參照，不是定論。',
     'makeif.guide.cohabit': '共同生活之始，可參考相合且用神得力的月份——節奏參考，不作保證。',
-    'makeif.guide.distance': '聚少離多的考驗，可參考各自氣較穩的月份——供省思，不是預測。',
+    'makeif.guide.distance': '聚少離多的考驗，可參考各自氣較穩的月份——供反思，不是預測。',
     'makeif.guide.child': '孕育新生，可參考用神得力、雙方相合的月份——文化參照，不作結果保證。',
-    'makeif.upsell.title': '看你們的最佳時機',
-    'makeif.upsell.body': '解鎖 Pro，按你們的用神為未來各月排序，找到最適合一起邁出一步的窗口。',
+    'makeif.upsell.title': '查看時機參照',
+    'makeif.upsell.body':
+      '解鎖 Pro，按你們的調和用神對照未來各月，找到較順的參考窗口——不是關係排序。',
     'makeif.upsell.cta': '解鎖 Pro →',
     'timeline.upsell.title': '查看完整時間軸',
     'timeline.upsell.body':
@@ -1066,15 +1089,15 @@ export const translations: Translations = {
     'bondList.cancelInvite': '撤回',
     'bondList.cancelInviteTitle': '撤回這個邀請？',
     'bondList.cancelInviteBody': '對方還沒加入，這會撤回邀請。',
-    'bondList.deleteBody': '會移除你與 ta 的合盤記錄，且無法復原。',
+    'bondList.deleteBody': '會移除你與 TA 的合盤記錄，且無法復原。',
     'bondList.deleteBody.good':
-      '你們這段是相生——真正彼此滋養的那種，解讀章節也不低。這種緣分不算多。解了就沒了，同樣兩個人不會再有第二次合盤。值得先確認是真到頭了，而不是剛好撞上一陣心煩。',
+      '這會永久移除你與 TA 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
     'bondList.deleteBody.peer':
-      '你們是比和——同一個頻率，好處壞處都在這：容易一拍即合，也容易針尖對麥芒。解，合理；留，也合理。橫豎不可逆，想清楚再動手。',
+      '這會永久移除你與 TA 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
     'bondList.deleteBody.hard':
-      '你們這段以相克為底——摩擦多過順遂，你大概早有體感。當斷不斷，反受其亂：硬撐一個解不開的結，通常比剪斷它更耗人。如果是真走到頭了，放手不算認輸，只是誠實。',
+      '這會永久移除你與 TA 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
     'bondList.deleteBody.plain':
-      '這會永久移除你與 ta 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
+      '這會永久移除你與 TA 的合盤記錄——沒有撤銷，也不會有第二次。想清楚再解。',
     'bondList.cancel': '取消',
     'bond.statusActive': '資料完整',
     'bond.statusPending': '待對方填寫',
@@ -1088,7 +1111,7 @@ export const translations: Translations = {
     'bond.recomputeFailed': '重算失敗，請重試。',
     'bond.matching': '合盤中…',
     'bond.stage.align': '正在對齊天干地支…',
-    'bond.stage.bazi': '正在推演雙方八字…',
+    'bond.stage.bazi': '正在排雙方八字…',
     'bond.stage.synastry': '正在進行合盤分析…',
     'bond.stage.report': '正在編寫關係報告…',
     'bond.toAuspice': '加入 Yuun 黃曆提醒  →',
@@ -1134,10 +1157,10 @@ export const translations: Translations = {
     'settings.privacy.section': '隱私',
     'settings.crossAppMemory.label': '跨應用記憶',
     'settings.crossAppMemory.hint':
-      '允許對話參考你在所有 HexAstral 應用中的解讀。僅限同一帳號，絕不外洩。',
+      '允許對話參考你在 Yuel / Yuun（UseONE 應用）中的解讀。僅限同一帳號，絕不外洩。',
     'settings.notifications.section': '通知',
     'settings.dailyPush.label': '每日關係提醒',
-    'settings.dailyPush.hint': '約晚上 19:00，就某一段關係推一句短訊——不是個人命書晨報。',
+    'settings.dailyPush.hint': '約晚上 19:00，就某一段關係推一句短訊——不是個人解讀晨報。',
     'home.carryOver.banner': '已從 Yuun 帶入你的親友——點開牽絆即可加深合盤解讀。',
     'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
@@ -1192,7 +1215,7 @@ export const translations: Translations = {
     'glossary.gesture.copy': '複製——將這句拷到剪貼簿',
     'glossary.gesture.chat': '追問——就此段發問（Pro）',
     'glossary.gesture.highlight': '標記——讓它留痕於頁上',
-    'glossary.gesture.makeif': '推演——由此展開一個向前的抉擇',
+    'glossary.gesture.makeif': '假如——由此展開一個向前的抉擇',
     'primer.title': '如何閱讀這份報告',
     'primer.rolesTitle': '甲與乙',
     'primer.roles': '甲是發出邀請的一方，乙是接受的一方。報告寫給你們兩人。',
@@ -1217,10 +1240,10 @@ export const translations: Translations = {
       '訂閱會綁定到帳號上，換裝置不會遺失。Apple 只給我們穩定 ID 和（可選的）信箱。',
     'paywall.signInCta': '使用 Apple 繼續',
     'paywall.title': '開通 Yuel Pro',
-    'paywall.subtitle': '完整命書 · 每月流月解讀 · 隨時追問',
+    'paywall.subtitle': '完整個人解讀 · 每月流月解讀 · 隨時追問',
     'paywall.subtitleChat': '本篇的免費訊息已用完。',
-    'paywall.subtitleChapters': '解鎖完整命書 · 全六章',
-    'paywall.bullet.unlimited': '完整個人命書 · 六章深讀',
+    'paywall.subtitleChapters': '解鎖完整個人解讀 · 全六章',
+    'paywall.bullet.unlimited': '完整個人解讀 · 六章深讀',
     'paywall.bullet.deep': 'AI 追問 · 每月流月解讀',
     'unlock.heading': '還有 {n} 章未解鎖',
     'unlock.invite': '把 Yuel 分享給朋友',
@@ -1242,7 +1265,7 @@ export const translations: Translations = {
     'paywall.failed': '購買失敗，請重試',
     'paywall.success': '歡迎加入 Yuel Pro',
     'paywall.legalDisclaimer':
-      '僅供娛樂、文化探索與個人省思——非心理諮詢、關係治療或專業建議。詳見 yuel.hexastral.com/terms。',
+      '僅供娛樂、文化探索與個人反思——非心理諮詢、關係治療或專業建議。詳見 yuel.hexastral.com/terms。',
     'paywall.close': '關閉',
 
     'chat.title': '聊聊你們的合盤',
@@ -1265,7 +1288,7 @@ export const translations: Translations = {
     'chat.poolRemaining': '本月還剩 {remaining} 次回覆',
     'chat.cta': '聊聊這段緣分 →',
     'chat.legalDisclaimer':
-      '僅供娛樂、文化探索與個人省思 —— 非情感諮詢、心理治療或專業建議。',
+      '僅供娛樂、文化探索與個人反思 —— 非情感諮詢、心理治療或專業建議。',
     'chat.aiDisclaimer': '本回答由 AI 生成，內容僅供參考，請仔細甄別。',
     'chat.copy': '複製',
     'chat.like': '有用',
@@ -1284,7 +1307,7 @@ export const translations: Translations = {
     'reading.highlight': '標記',
     'chat.suggest1': '我們怎樣溝通更好？',
     'chat.suggest2': '我需要注意什麼？',
-    'chat.suggest3': '我們最契合的地方是？',
+    'chat.suggest3': '我們相互成全的地方是？',
   },
 
   ja: {
@@ -1309,7 +1332,8 @@ export const translations: Translations = {
     'pairInput.name.other': 'お相手の名前',
     'pairInput.calendar.solar': '新暦',
     'pairInput.calendar.lunar': '旧暦',
-    'pairInput.calendar.lunarHint': '旧暦の日付を入力すると、鑑定用に新暦へ変換します。',
+    'pairInput.calendar.lunarHint':
+      '旧暦の日付を入力すると、命式用に新暦へ変換します。',
     'pairInput.cityPlaceholder': '出生地（任意）',
     'pairInput.cta.next': '次：お相手  →',
     'pairInput.alt.heading': '今は相手の情報を入力できない？',
@@ -1320,11 +1344,11 @@ export const translations: Translations = {
     'pairInput.cityHint': '任意 — 出生地で真太陽時補正がかかり、時柱の精度が上がります。',
     'pairInput.cityOptional': '任意',
     'pairInput.cityClear': 'クリア',
-    'pairInput.selfReady': 'あなたの命盤が整いました',
+    'pairInput.selfReady': 'あなたの命式が整いました',
     'pairInput.recommended': 'おすすめ',
     'pairInput.back': '戻る',
 
-    'mode.subtitle': '相性鑑定はふたり必要 — 相手をどう招くか選択。',
+    'mode.subtitle': '相性の読みはふたり必要 — 相手をどう招くか選択。',
     'mode.know.hint': '次のステップで相手の生年月日を入力します。',
     'mode.invite.hint': '招待文を用意します。好きな方法で送れば、あとは相手にバトンタッチ。',
     'mode.skip.hint': 'まずあなたの結果を表示。お相手は後でも追加可能。',
@@ -1366,7 +1390,7 @@ export const translations: Translations = {
     'reveal.line1': '二人の出会いには',
     'reveal.line2': '読み解く価値のあるパターンがある',
     'reveal.cta': '物語を読む  →',
-    'reveal.generating': '星盤を合わせています…',
+    'reveal.generating': '命式を合わせています…',
     'reveal.error': '生成に失敗しました。',
     'reveal.retry': 'もう一度',
     'reveal.paywall': 'Proにアップグレードして開く',
@@ -1374,7 +1398,7 @@ export const translations: Translations = {
 
     'waiting.title': '招待を送信しました',
     'waiting.subtitle': '相手の返信を待っています',
-    'waiting.hint': '相手が生まれた情報を入力すると、二人の星盤を合わせます',
+    'waiting.hint': '相手が生まれた情報を入力すると、二人の命式を合わせます',
     'waiting.sentAtPrefix': '送信済み · ',
     'waiting.justNow': 'たった今',
     'waiting.minutesAgo': '分前',
@@ -1389,11 +1413,14 @@ export const translations: Translations = {
     'common.next': '次へ →',
     'common.skip': 'スキップ',
     'common.back': '←',
+    'common.retry': '再試行 →',
+    'common.notFound': '縁が見つかりません',
+    'common.close': '閉じる',
     'common.relationship.romantic': '恋人',
     'common.relationship.friend': '友人',
     'common.relationship.family': '家族',
     'common.relationship.parent': '親',
-    'common.relationship.child': '子女',
+    'common.relationship.child': '子ども',
     'common.relationship.sibling': '兄弟姉妹',
     'common.relationship.boss': '上司',
     'common.relationship.partner': 'パートナー',
@@ -1407,7 +1434,7 @@ export const translations: Translations = {
     'bondList.pendingTag': '招待送信済み',
     'bondList.noActiveYet': 'まだ結ばれた縁はありません — 相手が承諾するとここに表示されます。',
     'bondList.title': '縁',
-    'bondList.subtitle': 'あなたの命盤に織り込まれた人々',
+    'bondList.subtitle': 'あなたの命式に織り込まれた人々',
 
     'timeline.title': 'タイムライン',
     'timeline.subtitle': 'それぞれの関係に訪れる転機',
@@ -1427,14 +1454,15 @@ export const translations: Translations = {
     'timeline.liuyue.locked': '無料版は今月のみ。Proで12か月をすべて表示。',
     'makeif.cta': 'もし私たち',
     'makeif.title': 'もしも',
-    'makeif.subtitle': 'この関係を前に進めるのに最適な今後の窓——断定ではなく時機の参考です。',
+    'makeif.subtitle':
+      'この関係を進めるうえで、気の通りが読みやすい参照月——断定ではなく時機の参考です。',
     'makeif.fromQuote': 'この一節から',
-    'makeif.loading': '今後の月を推し量っています…',
-    'makeif.error': '推演に失敗しました',
-    'makeif.yongshen.label': '二人の通関用神',
-    'makeif.windows.label': '月ごとの推演',
+    'makeif.loading': '今後の月を読み解いています…',
+    'makeif.error': '参照に失敗しました',
+    'makeif.yongshen.label': 'ふたりの調和のヒント（用神）',
+    'makeif.windows.label': '月ごとの参照',
     'makeif.years.label': '今後十年',
-    'makeif.best': '最適な窓',
+    'makeif.best': '通りやすい窓',
     'makeif.movePrompt': 'どの一歩を？',
     'makeif.move.commit': 'プロポーズ',
     'makeif.move.cohabit': '同棲',
@@ -1444,9 +1472,9 @@ export const translations: Translations = {
     'makeif.guide.cohabit': '共に暮らす始まり——相合し用神が力を読める月はリズム参照です。',
     'makeif.guide.distance': '距離の試練——各自の気が安定して読める月を参考に（予測ではありません）。',
     'makeif.guide.child': '新たな命を迎える——用神と相合が読みやすい月は文化上の参照です。',
-    'makeif.upsell.title': '二人の最適な時機を見る',
+    'makeif.upsell.title': '時機の参照を見る',
     'makeif.upsell.body':
-      'Proで、用神に沿って今後の各月を並べ、一歩を踏み出すのに最も合う窓を見つけましょう。',
+      'Proで、調和のヒントに沿って今後の月を並べ、通りやすい参照窓を探せます——関係の順位づけではありません。',
     'makeif.upsell.cta': 'Proを解放 →',
     'timeline.upsell.title': 'タイムライン全体を見る',
     'timeline.upsell.body':
@@ -1467,11 +1495,11 @@ export const translations: Translations = {
     'bondList.cancelInviteBody': '相手はまだ参加していません。招待を取り消します。',
     'bondList.deleteBody': '相手との相性記録が削除されます。元に戻せません。',
     'bondList.deleteBody.good':
-      'この二人は相生——互いを養い合う間柄で、報告の評価も高い。そう多くはない縁です。解けば消える。同じ二人の合盤は二度と出ません。本当に終わったのか、ただ虫の居所が悪いだけか、確かめてからでも遅くない。',
+      '相手との相性記録を完全に削除します——取り消しも、二度目もありません。本気のときだけ。',
     'bondList.deleteBody.peer':
-      '二人は比和——同じ波長ゆえ、合うのも早ければ衝突も早い。解くのも妥当、残すのも妥当。どちらにせよ取り消せないので、意志を持って決めて。',
+      '相手との相性記録を完全に削除します——取り消しも、二度目もありません。本気のときだけ。',
     'bondList.deleteBody.hard':
-      'この縁は相克が下地——順風より摩擦が多く、薄々感じているはず。解けない結びを抱え続ける方が、断つより消耗することが多い。本当に役目を終えたのなら、手放すのは負けではなく、ただ正直なだけ。',
+      '相手との相性記録を完全に削除します——取り消しも、二度目もありません。本気のときだけ。',
     'bondList.deleteBody.plain':
       '相手との相性記録を完全に削除します——取り消しも、二度目もありません。本気のときだけ。',
     'bondList.cancel': 'キャンセル',
@@ -1499,12 +1527,13 @@ export const translations: Translations = {
     'invite.accept.birthHeading': 'あなたの生年月日',
     'invite.accept.birthHint': 'あなたの命式を出すために使います（生年月日・時刻・場所）。',
     'invite.accept.usingSavedBirth': '保存済みの出生情報を使います。再入力は不要です。',
-    'invite.accept.consent.anon': '相性鑑定のために生年月日を共有することに同意します。',
+    'invite.accept.consent.anon':
+      '相性の読みのために生年月日を共有することに同意します。',
     'invite.accept.open': '縁レポートを開く  →',
     'invite.accept.later': '後で',
     'invite.accept.consent.lead': '',
     'invite.accept.consent.trail':
-      'さんと出生情報を共有し、相性鑑定のために使用することに同意します。',
+      'さんと出生情報を共有し、相性の読みのために使用することに同意します。',
     'invite.accept.consent.privacyPolicy': 'プライバシーポリシー',
     'invite.accept.relationship.other': 'ご縁で結ばれた二人',
 
@@ -1534,13 +1563,13 @@ export const translations: Translations = {
     'settings.privacy.section': 'プライバシー',
     'settings.crossAppMemory.label': 'アプリ間メモリ',
     'settings.crossAppMemory.hint':
-      'すべての HexAstral アプリの鑑定結果をチャットが参照できるようにします。同一アカウントのみ — 他者と共有されません。',
+      'Yuel / Yuun（UseONE アプリ）の読みをチャットが参照できるようにします。同一アカウントのみ — 他者と共有されません。',
     'settings.notifications.section': '通知',
     'settings.dailyPush.label': '毎日の関係リマインダー',
     'settings.dailyPush.hint':
-      '19時頃、いずれかの絆について短い一言——個人の命書の朝プッシュではありません。',
+      '19時頃、いずれかの絆について短い一言——個人レポートの朝プッシュではありません。',
     'home.carryOver.banner':
-      'Yuun の親しい人をこちらへ引き継ぎました——絆を開いて合盤を深められます。',
+      'Yuun の親しい人をこちらへ引き継ぎました——絆を開いて相性読みを深められます。',
     'home.carryOver.dismiss': '了解',
     'settings.legal.section': '法的事項',
     'settings.legal.privacy': 'プライバシーポリシー',
@@ -1564,7 +1593,7 @@ export const translations: Translations = {
     'glossary.seals.complement': '合——互いを補い合う所',
     'glossary.seals.monthly_outlook': '今月——近い先の天気',
     'glossary.seals.long_term_advice': '長い道——残るもの',
-    'glossary.wuxing.section': '通関用神',
+    'glossary.wuxing.section': '調和のヒント（用神）',
     'glossary.wuxing.caption': '朱文の印が、この関係を最も和らげる五行を指します——それに沿って。',
     'glossary.wuxing.metal': '金——明晰・節度・決断',
     'glossary.wuxing.wood': '木——成長・計画・忍耐',
@@ -1582,7 +1611,7 @@ export const translations: Translations = {
     'glossary.sealstyle.bei.label': '碑拓——白抜きなし',
     'glossary.sealstyle.bei.desc': '塗りつぶしの拓本印が各章を名づけます。',
     'glossary.sealstyle.zhu.label': '朱文——輪郭',
-    'glossary.sealstyle.zhu.desc': '朱文の輪郭印が通関用神を指します。',
+    'glossary.sealstyle.zhu.desc': '朱文の輪郭印が調和のヒント（用神）を指します。',
     'glossary.essence.section': '意象（墨のすがた）',
     'glossary.essence.caption':
       '各章は二つの気を点数ではなく墨で描きます。その配置こそが関係そのものです。',
@@ -1596,7 +1625,7 @@ export const translations: Translations = {
     'glossary.gesture.copy': 'コピー——その一節をクリップボードへ',
     'glossary.gesture.chat': '質問——その節について尋ねる（Pro）',
     'glossary.gesture.highlight': 'マーク——ページ上に印を残す',
-    'glossary.gesture.makeif': '推演——そこから前向きの選択を探る',
+    'glossary.gesture.makeif': 'もしも——そこから前向きの選択を探る',
     'primer.title': 'この報告の読み方',
     'primer.rolesTitle': '甲と乙',
     'primer.roles': '甲は招待を送った側、乙は受けた側。報告は二人に向けて書かれています。',
@@ -1623,20 +1652,20 @@ export const translations: Translations = {
       '購入をアカウントに紐づけ、端末が変わっても失われません。Apple が渡すのは安定したIDと（任意で）メールのみです。',
     'paywall.signInCta': 'Appleで続行',
     'paywall.title': 'Yuel Pro に登録',
-    'paywall.subtitle': '完全な命書 · 毎月の流月読み · いつでも追問',
+    'paywall.subtitle': '完全な個人レポート · 毎月の流月読み · いつでも追加の質問',
     'paywall.subtitleChat': 'この解読の無料メッセージを使い切りました。',
-    'paywall.subtitleChapters': '完全な命書を解放 · 全6章',
-    'paywall.bullet.unlimited': '完全な個人命書 · 全6章',
-    'paywall.bullet.deep': 'AI 追問 + 毎月の流月読み',
+    'paywall.subtitleChapters': '完全な個人レポートを解放 · 全6章',
+    'paywall.bullet.unlimited': '完全な個人レポート · 全6章',
+    'paywall.bullet.deep': 'AI 追加の質問 + 毎月の流月読み',
     'unlock.heading': 'あと {n} 章ロック中',
     'unlock.invite': 'Yuel を友達にシェア',
-    'unlock.inviteHint': 'シェアした友達が自分の鑑定を始めると、この章もあなたに開きます',
+    'unlock.inviteHint': 'シェアした友達が自分の読みを始めると、この章もあなたに開きます',
     'unlock.purchase': 'この診断を解放 · {price}',
     'unlock.subscribe': '購読 — すべての縁を解放',
     'unlock.processing': '処理中…',
     'unlock.pending': '購入を処理中です。少し後にもう一度お試しください',
     'unlock.failed': '解放できませんでした。もう一度お試しください',
-    'unlock.inviteShareLead': '{name}、私たちの相性診断ができました。一緒に見て：',
+    'unlock.inviteShareLead': '{name}、私たちの相性読みができました。一緒に見て：',
     'paywall.bullet.support': '関係タイミングの参考 · 節目通知 · 高品質エクスポート',
     'paywall.monthly': '月額',
     'paywall.annual': '年額',
@@ -1648,7 +1677,7 @@ export const translations: Translations = {
     'paywall.failed': '購入に失敗しました',
     'paywall.success': 'Yuel Proへようこそ',
     'paywall.legalDisclaimer':
-      '娯楽・文化探索・個人的省察のみを目的とします。カウンセリングや専門助言の代替ではありません。yuel.hexastral.com/terms を参照。',
+      '娯楽・文化探索・個人的な振り返りのみを目的とします。カウンセリングや専門助言の代替ではありません。yuel.hexastral.com/terms を参照。',
     'paywall.close': '閉じる',
 
     'chat.title': '二人の相性について聞く',
@@ -1657,8 +1686,8 @@ export const translations: Translations = {
     'chat.tone.balanced': '中立',
     'chat.tone.direct': '率直',
     'chat.empty': '二人のことを何でも聞いてください。',
-    'readingChat.title': 'あなたの命盤について',
-    'readingChat.empty': 'あなた自身の命盤について何でも聞いてください。',
+    'readingChat.title': 'あなたの命式について',
+    'readingChat.empty': 'あなた自身の命式について何でも聞いてください。',
     'readingChat.suggest1': '私の強みは？',
     'readingChat.suggest2': '気をつけることは？',
     'readingChat.suggest3': '今年注目したいテーマは？',
@@ -1671,7 +1700,7 @@ export const translations: Translations = {
     'chat.poolRemaining': '今月の返信があと {remaining} 回',
     'chat.cta': 'この縁について聞く →',
     'chat.legalDisclaimer':
-      '娯楽・文化探索・個人的省思用です —— カウンセリング、心理療法、専門的助言ではありません。',
+      '娯楽・文化探索・個人的な振り返り用です —— カウンセリング、心理療法、専門的助言ではありません。',
     'chat.aiDisclaimer': '本回答は AI による生成です。参考情報としてご判断ください。',
     'chat.copy': 'コピー',
     'chat.like': '役立つ',
@@ -1690,7 +1719,7 @@ export const translations: Translations = {
     'reading.highlight': 'ハイライト',
     'chat.suggest1': 'どうすればもっと良く話せますか？',
     'chat.suggest2': '気をつけることは？',
-    'chat.suggest3': '私たちが最も合うところは？',
+    'chat.suggest3': 'どこで補い合えますか？',
   },
 }
 

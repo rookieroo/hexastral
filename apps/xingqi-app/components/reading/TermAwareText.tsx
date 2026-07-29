@@ -105,7 +105,6 @@ export function TermAwareText({
               // biome-ignore lint/suspicious/noArrayIndexKey: sentence order stable for chapter body
               key={`s-${i}`}
               onLongPress={() => onPickQuote(sentence.trim())}
-              delayLongPress={320}
               suppressHighlighting
               style={[
                 textWrap,

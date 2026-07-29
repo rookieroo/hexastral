@@ -22,7 +22,7 @@ import { XingqiMark } from '@/components/XingqiMark'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { loginFaceIap } from '@/lib/iap'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 interface GoogleSigninModule {
   GoogleSignin: {
@@ -53,8 +53,8 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const [appleAvailable, setAppleAvailable] = useState(false)
   const [googlePhase, setGooglePhase] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const googleModuleRef = useRef<GoogleSigninModule | null>(null)
@@ -208,7 +208,8 @@ export default function SignInScreen() {
         {s(
           '登录以保存形气解读，并在多设备同步 Timeline。',
           '登入以保存形氣解讀，並在多裝置同步 Timeline。',
-          'Sign in to save readings and sync Timeline across devices.'
+          'Sign in to save form-qi readings and sync Timeline across devices.',
+          'ログインして形気リーディングを保存し、Timeline を端末間で同期します。'
         )}
       </Text>
 

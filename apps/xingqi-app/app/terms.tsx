@@ -10,7 +10,7 @@ import { ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { isCjkZh, isJa, isZhHant, pickUi } from '@/lib/locale-zh'
 import { getXingqiGlossaryGroups } from '@/lib/xingqi-terms'
 
 function toTermLocale(locale: string): TermLocale {
@@ -25,16 +25,17 @@ export default function XingqiTermsScreen() {
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
   const cjk = isCjkZh(locale)
-  const s = (hans: string, hant: string, en: string) => (cjk ? pickZh(locale, hans, hant) : en)
+  const ja = isJa(locale)
+  const s = (hans: string, hant: string, en: string, jaStr?: string) =>
+    pickUi(locale, hans, hant, en, jaStr)
   const groups = useMemo(() => getXingqiGlossaryGroups(toTermLocale(locale)), [locale])
 
-  // CJK needs stronger title/body contrast + looser leading than Latin.
-  const titleSize = cjk ? 26 : 28
-  const introSize = cjk ? 14 : 15
-  const termTitleSize = cjk ? 18 : 17
-  const glossSize = cjk ? 15 : 14
-  const glossLine = cjk ? 24 : 20
-  const shortSize = cjk ? 12 : 13
+  const titleSize = cjk || ja ? 26 : 28
+  const introSize = cjk || ja ? 14 : 15
+  const termTitleSize = cjk || ja ? 18 : 17
+  const glossSize = cjk || ja ? 15 : 14
+  const glossLine = cjk || ja ? 24 : 20
+  const shortSize = cjk || ja ? 12 : 13
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -63,20 +64,21 @@ export default function XingqiTermsScreen() {
             marginBottom: spacing.sm,
           }}
         >
-          {s('术语表', '術語表', 'Terms')}
+          {s('术语表', '術語表', 'Terms', '用語集')}
         </Text>
         <Text
           style={{
             color: colors.secondary,
             fontSize: introSize,
-            lineHeight: cjk ? 22 : 22,
+            lineHeight: cjk || ja ? 22 : 22,
             marginBottom: spacing.xl,
           }}
         >
           {s(
             '按所用学说分桶收录：面相（三停五岳十二宫）、掌相（主纹丘位）、命盘对照、中医词典层（气血/敛浮阳等「象」）、时间窗口。正文与位点 sheet 虚线可点按同一释义。',
             '按所用學說分桶收錄：面相（三停五岳十二宮）、掌相（主紋丘位）、命盤對照、中醫詞典層（氣血/斂浮陽等「象」）、時間窗口。正文與位點 sheet 虛線可點按同一釋義。',
-            'Grouped by doctrine in use: face, palm, natal, TCM-as-lexicon (qi–blood / floating yang…), time windows. Dotted prose and locus sheets open the same glosses.'
+            'Grouped by doctrine in use: face form (面相), palm form (掌相), BaZi cross-reference, TCM-as-lexicon (qi–blood / floating yang…), time windows. Dotted prose and locus sheets open the same glosses.',
+            '使用する学説ごとに分類：面相（三停・五岳・十二宮）、掌相（主線・丘位）、命式対照、中医辞書層（気血／斂浮陽などの「象」）、時間の窓。本文と部位シートの点線は同じ解説を開きます。'
           )}
         </Text>
 
@@ -98,7 +100,7 @@ export default function XingqiTermsScreen() {
                 marginBottom: spacing.md,
               }}
             >
-              {cjk ? g.labelZh : g.labelEn}
+              {cjk ? g.labelZh : ja ? g.labelJa : g.labelEn}
             </Text>
 
             <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator }}>
@@ -123,7 +125,7 @@ export default function XingqiTermsScreen() {
                     >
                       {t.zh}
                     </Text>
-                    {t.pinyin ? (
+                    {t.pinyin && !ja ? (
                       <Text
                         style={{
                           fontFamily: 'IBMPlexMono',

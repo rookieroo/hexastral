@@ -161,7 +161,11 @@ export default function TimelineScreen() {
           title={t(locale, 'timeline.error.title')}
           message={error.message}
           customAction={
-            <PrimaryButton label='Retry →' onPress={() => void refetch()} block={false} />
+            <PrimaryButton
+              label={t(locale, 'common.retry')}
+              onPress={() => void refetch()}
+              block={false}
+            />
           }
         />
       </SafeAreaView>

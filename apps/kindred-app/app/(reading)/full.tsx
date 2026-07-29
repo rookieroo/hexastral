@@ -665,9 +665,9 @@ export default function FullReadingScreen() {
   const handleShare = () => {
     if (!canShareSelf) return
     const lead = locale.startsWith('zh')
-      ? '我的命书 · Yuel'
+      ? '我的个人解读 · Yuel'
       : locale.startsWith('ja')
-        ? '私の命書 · Yuel'
+        ? '私の個人レポート · Yuel'
         : 'My reading · Yuel'
     void shareImage(kindredShareCaption(locale, lead))
   }

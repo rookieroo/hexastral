@@ -1,4 +1,4 @@
-import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { isNearEcho } from '@/lib/text-echo'
 
 /** New readings use horizon; period/advice kept for legacy resultJson. */
@@ -39,22 +39,22 @@ const ORDER: XingqiChapterKind[] = [
   'advice',
 ]
 
-export const CHAPTER_TITLE: Record<XingqiChapterKind, { zh: string; zhHant: string; en: string }> =
-  {
-    overview: { zh: '总格局', zhHant: '總格局', en: 'Overview' },
-    face: { zh: '面部', zhHant: '面部', en: 'Face' },
-    palms: { zh: '双手', zhHant: '雙手', en: 'Palms' },
-    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi' },
-    horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next' },
-    period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period' },
-    advice: { zh: '建议', zhHant: '建議', en: 'Advice' },
+export const CHAPTER_TITLE: Record<
+  XingqiChapterKind,
+  { zh: string; zhHant: string; en: string; ja: string }
+> = {
+    overview: { zh: '总格局', zhHant: '總格局', en: 'Overview', ja: '総合' },
+    face: { zh: '面部', zhHant: '面部', en: 'The Form · Face', ja: '顔' },
+    palms: { zh: '双手', zhHant: '雙手', en: 'The Form · Palms', ja: '両手' },
+    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form × BaZi', ja: '形気 × 八字' },
+    horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next', ja: '近運と行動' },
+    period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period', ja: '本期' },
+    advice: { zh: '建议', zhHant: '建議', en: 'Advice', ja: '留意' },
   }
 
 export function chapterTitle(kind: XingqiChapterKind, locale: string): string {
   const row = CHAPTER_TITLE[kind]
-  if (isZhHant(locale)) return row.zhHant
-  if (isCjkZh(locale)) return row.zh
-  return row.en
+  return pickUi(locale, row.zh, row.zhHant, row.en, row.ja)
 }
 
 function asStr(v: unknown): string {
@@ -109,10 +109,13 @@ function citationsFromLoci(
 }
 
 function studyDisclaimer(locale: string): string {
-  if (!isCjkZh(locale)) {
-    return 'Cultural study framing — not deterministic fate.'
-  }
-  return pickZh(locale, '文化研习参考，不作命运断语。', '文化研習參考，不作命運斷語。')
+  return pickUi(
+    locale,
+    '文化研习参考，不作命运断语。',
+    '文化研習參考，不作命運斷語。',
+    'Cultural study framing — not deterministic fate.',
+    '文化学習の参照であり、運命の断定ではありません。'
+  )
 }
 
 function chapterFromBody(

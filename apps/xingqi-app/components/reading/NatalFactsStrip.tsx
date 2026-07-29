@@ -4,7 +4,7 @@
 
 import { Text, View } from 'react-native'
 
-import { isCjkZh, isZhHant, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 export type NatalFacts = {
   dayPillar?: string
@@ -41,8 +41,8 @@ export function NatalFactsStrip({
   locale: string
   colors: { text: string; secondary: string; dim: string; accent: string; separator: string }
 }) {
-  const label = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const label = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
 
   const rows: Array<{ k: string; v: string }> = []
   if (facts.dayPillar) {
@@ -71,11 +71,13 @@ export function NatalFactsStrip({
   }
   if (rows.length === 0) return null
 
-  const title = isZhHant(locale)
-    ? '本命氣機（算入報告）'
-    : isCjkZh(locale)
-      ? '本命气机（算入报告）'
-      : 'Natal qi (computed into this reading)'
+  const title = pickUi(
+    locale,
+    '本命气机（算入报告）',
+    '本命氣機（算入報告）',
+    'Natal qi (computed into this reading)',
+    '本命の気（このリーディングに算入）'
+  )
 
   return (
     <View

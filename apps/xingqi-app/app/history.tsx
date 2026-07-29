@@ -4,13 +4,17 @@ import { View } from 'react-native'
 
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 
 export default function FaceHistoryScreen() {
   const locale = resolveLocale()
-  const emptyText = isCjkZh(locale)
-    ? pickZh(locale, '尚无解读', '尚無解讀')
-    : 'No face readings yet.'
+  const emptyText = pickUi(
+    locale,
+    '尚无形气解读',
+    '尚無形氣解讀',
+    'No form-qi readings yet.',
+    '形気リーディングはまだありません。'
+  )
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />

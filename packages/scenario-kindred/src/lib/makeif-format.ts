@@ -102,7 +102,7 @@ export function formatWindowReasons(
         ? `流月の${el}が用神に当たり、気が最も通ります`
         : locale === 'zh-Hant'
           ? `流月${el}當令，正合用神，氣最順`
-          : `${el} is in season — your bridging element, so energy flows best`
+          : `${el} is in season — your bridging element, so the month reads especially steady`
     )
   } else if (w.feedsYongshen) {
     out.push(
@@ -163,32 +163,32 @@ export function formatVerdict(result: RelMakeIfResponse, locale: KindredLocale):
   if (locale === 'zh-Hant') {
     const head =
       best.score > 0
-        ? `這段關係的用神是【${ys}】。未來這些窗口裡，${bestM}（${best.ganZhi}）最合用神，氣最順，宜在此前後推進重要的一步。`
-        : `這段關係的用神是【${ys}】。未來沒有特別旺的時機，宜穩不宜急，把節奏放在日常經營上。`
+        ? `這段關係的用神是【${ys}】。未來這些窗口裡，${bestM}（${best.ganZhi}）較合用神，氣較順，可作為推進重要一步的時機參照（非保證）。`
+        : `這段關係的用神是【${ys}】。未來沒有特別突出的時機，宜穩不宜急，把節奏放在日常經營上。`
     const tail = hasWorst
-      ? `而${worstM}（${worst.ganZhi}）流月冲日支，宜避其鋒、少做重大決定。`
+      ? `而${worstM}（${worst.ganZhi}）流月冲日支，更需溝通、少做倉促決定。`
       : ''
-    return `${head}${tail}（此為趨勢參考，非定論；真正的決定仍在你們手中。）`
+    return `${head}${tail}（此為文化時機參照，非定論；真正的決定仍在你們手中。）`
   }
   if (locale === 'ja') {
     const head =
       best.score > 0
-        ? `この関係の用神は【${ys}】。今後の窓では、${bestM}（${best.ganZhi}）が最も用神に合い、気が通ります。大事な一歩はこの前後に。`
-        : `この関係の用神は【${ys}】。特に旺じる時機はなく、急がず日々の積み重ねを。`
+        ? `この関係の用神は【${ys}】。今後の窓では、${bestM}（${best.ganZhi}）が用神に沿い、気の通りが読みやすい参照月です。保証ではありません。`
+        : `この関係の用神は【${ys}】。特に目立つ時機はなく、急がず日々の積み重ねを。`
     const tail = hasWorst
-      ? `一方、${worstM}（${worst.ganZhi}）は流月が日支と冲。大きな決断は控えめに。`
+      ? `一方、${worstM}（${worst.ganZhi}）は流月が日支と冲。コミュニケーションの余白を多めに。`
       : ''
-    return `${head}${tail}（これは傾向の参考であり、断定ではありません。決めるのはお二人です。）`
+    return `${head}${tail}（文化的な時機の参照であり、断定ではありません。決めるのはお二人です。）`
   }
   // en
   const head =
     best.score > 0
-      ? `Your bridging element is ${ys}. Of the months ahead, ${bestM} (${best.ganZhi}) aligns best with it — lean into an important step around then.`
-      : `Your bridging element is ${ys}. No month stands out as especially strong, so favor steadiness over haste and invest in the everyday.`
+      ? `Your bridging element is ${ys}. Of the months ahead, ${bestM} (${best.ganZhi}) aligns most smoothly with it — a calmer reference window for reflection, not a guarantee.`
+      : `Your bridging element is ${ys}. No month stands out as especially steady, so favor everyday rhythm over haste.`
   const tail = hasWorst
-    ? ` ${worstM} (${worst.ganZhi}), by contrast, clashes a day branch — best to avoid big decisions then.`
+    ? ` ${worstM} (${worst.ganZhi}), by contrast, clashes a day branch — a month that may need more communication.`
     : ''
-  return `${head}${tail} (A directional read, not a verdict — the choice is yours.)`
+  return `${head}${tail} (A cultural timing reference, not a verdict — the choice is yours.)`
 }
 
 // ── Long-horizon (10y) tier formatters — the yearly analogue of the above ──────
@@ -216,7 +216,7 @@ export function formatYearReasons(
         ? `流年の${el}が用神に当たり、この年は気が最も通ります`
         : locale === 'zh-Hant'
           ? `流年${el}當令，正合用神，這一年氣最順`
-          : `${el} is in season this year — your bridging element, so energy flows best`
+          : `${el} is in season this year — your bridging element, so the year reads especially steady`
     )
   } else if (y.feedsYongshen) {
     out.push(
@@ -276,30 +276,30 @@ export function formatLongtermVerdict(result: RelMakeIfResponse, locale: Kindred
   if (locale === 'zh-Hant') {
     const head =
       best.score > 0
-        ? `這段關係的用神是【${ys}】。未來十年裡，${best.year}年（${best.ganZhi}）最合用神，氣最順，宜把重大的一步放在這一年前後。`
-        : `這段關係的用神是【${ys}】。未來十年沒有特別旺的年份，宜穩扎穩打。`
+        ? `這段關係的用神是【${ys}】。未來十年裡，${best.year}年（${best.ganZhi}）較合用神，氣較順，可作為重大一步的時機參照（非保證）。`
+        : `這段關係的用神是【${ys}】。未來十年沒有特別突出的年份，宜穩扎穩打。`
     const tail = hasWorst
-      ? `而${worst.year}年（${worst.ganZhi}）流年冲日支，宜避其鋒、緩做重大決定。`
+      ? `而${worst.year}年（${worst.ganZhi}）流年冲日支，更需溝通、緩做倉促決定。`
       : ''
-    return `${head}${tail}（此為趨勢參考，非定論；真正的決定仍在你們手中。）`
+    return `${head}${tail}（此為文化時機參照，非定論；真正的決定仍在你們手中。）`
   }
   if (locale === 'ja') {
     const head =
       best.score > 0
-        ? `この関係の用神は【${ys}】。今後十年では、${best.year}年（${best.ganZhi}）が最も用神に合います。大きな一歩はこの年の前後に。`
-        : `この関係の用神は【${ys}】。特に旺じる年はなく、着実に。`
+        ? `この関係の用神は【${ys}】。今後十年では、${best.year}年（${best.ganZhi}）が用神に沿い、気の通りが読みやすい参照年です。保証ではありません。`
+        : `この関係の用神は【${ys}】。特に目立つ年はなく、着実に。`
     const tail = hasWorst
-      ? `一方、${worst.year}年（${worst.ganZhi}）は流年が日支と冲。大きな決断は控えめに。`
+      ? `一方、${worst.year}年（${worst.ganZhi}）は流年が日支と冲。コミュニケーションの余白を多めに。`
       : ''
-    return `${head}${tail}（傾向の参考であり、決めるのはお二人です。）`
+    return `${head}${tail}（文化的な時機の参照であり、決めるのはお二人です。）`
   }
   // en
   const head =
     best.score > 0
-      ? `Your bridging element is ${ys}. Over the next decade, ${best.year} (${best.ganZhi}) aligns best with it — a strong year to take a major step.`
-      : `Your bridging element is ${ys}. No single year stands out over the next decade, so favor steadiness over haste.`
+      ? `Your bridging element is ${ys}. Over the next decade, ${best.year} (${best.ganZhi}) aligns most smoothly with it — a calmer reference year for reflection, not a guarantee.`
+      : `Your bridging element is ${ys}. No single year stands out over the next decade, so favor everyday rhythm over haste.`
   const tail = hasWorst
-    ? ` ${worst.year} (${worst.ganZhi}), by contrast, clashes a day branch — best to avoid big moves then.`
+    ? ` ${worst.year} (${worst.ganZhi}), by contrast, clashes a day branch — a year that may need more communication.`
     : ''
-  return `${head}${tail} (A directional read, not a verdict — the choice is yours.)`
+  return `${head}${tail} (A cultural timing reference, not a verdict — the choice is yours.)`
 }

@@ -33,7 +33,8 @@ export default function FacePrivacyAppendixScreen() {
         {s(
           '生辰信息用于形气与八字对照，保存在你的账户出生资料中。',
           '生辰資訊用於形氣與八字對照，保存在你的帳戶出生資料中。',
-          'Birth details power physiognomy × BaZi contrast and are stored with your account birth profile.'
+          'Birth details power form-qi × BaZi cross-reference and are stored with your account birth profile.',
+          '生辰情報は形気と八字の対照に使われ、アカウントの出生プロフィールに保存されます。'
         )}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>

@@ -15,7 +15,7 @@ import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { pickUi } from '@/lib/locale-zh'
 import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
 import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
 
@@ -24,8 +24,8 @@ export default function ArchiveScreen() {
   const insets = useSafeAreaInsets()
   const { colors, spacing } = useTheme()
   const locale = resolveLocale()
-  const s = (hans: string, hant: string, en: string) =>
-    isCjkZh(locale) ? pickZh(locale, hans, hant) : en
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
   const copy = homeArchiveCopy(locale)
   const [items, setItems] = useState<PortfolioReadingItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,7 +54,8 @@ export default function ArchiveScreen() {
       s(
         '将从账号中永久删除此条形气解读，无法恢复。',
         '將從帳號中永久刪除此條形氣解讀，無法恢復。',
-        'Permanently removes this form reading from your account.'
+        'Permanently removes this form-qi reading from your account.',
+        'この形気リーディングをアカウントから完全に削除します。'
       ),
       [
         { text: s('取消', '取消', 'Cancel'), style: 'cancel' },
@@ -143,7 +144,7 @@ export default function ArchiveScreen() {
           const title = formReadingListTitle(locale)
           const localeBadge = readingLocaleBadge(item.locale)
           const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-          const meta = [s('形气', '形氣', 'Form'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+          const meta = [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
           return (
             <HistoryReadingRow
               key={item.id}

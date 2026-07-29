@@ -11,7 +11,7 @@ import { AncientSeal } from '@/components/reading/AncientSeal'
 import { InkModePlate } from '@/components/reading/InkCenterpiece'
 import { type InkRelation, XINGQI_LOCUS_CANON } from '@/lib/ancient-glyphs'
 import { resolveLocale } from '@/lib/i18n'
-import { isCjkZh, pickZh } from '@/lib/locale-zh'
+import { isCjkZh, isJa, pickUi } from '@/lib/locale-zh'
 import { chapterTitle } from '@/lib/report-chapters'
 import { XINGQI_CHAPTER_CANON } from '@/lib/xingqi-canon'
 
@@ -125,8 +125,9 @@ export default function XingqiGlossaryScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
-  const cjk = isCjkZh(locale)
-  const s = (hans: string, hant: string, en: string) => (cjk ? pickZh(locale, hans, hant) : en)
+  const cjk = isCjkZh(locale) || isJa(locale)
+  const s = (hans: string, hant: string, en: string, ja?: string) =>
+    pickUi(locale, hans, hant, en, ja)
 
   const titleSize = cjk ? 26 : 28
   const introSize = cjk ? 14 : 15
@@ -162,7 +163,7 @@ export default function XingqiGlossaryScreen() {
             marginBottom: spacing.sm,
           }}
         >
-          {s('符号说明', '符號說明', 'Symbol glossary')}
+          {s('符号说明', '符號說明', 'Symbol glossary', '記号の説明')}
         </Text>
         <Text
           style={{
@@ -175,7 +176,8 @@ export default function XingqiGlossaryScreen() {
           {s(
             '报告里有三套视觉语言：① 章节象形印；② 关键点位印（首页星光点开后的 sheet）；③ 墨象四态（聚/对/照/流）。健康轴可借中医脏腑气血之「象」作警示对照——词典层，不是看病。从左边缘右滑返回。',
             '報告裡有三套視覺語言：① 章節象形印；② 關鍵點位印（首頁星光點開後的 sheet）；③ 墨象四態（聚／對／照／流）。健康軸可借中醫臟腑氣血之「象」作警示對照——詞典層，不是看病。從左邊緣右滑返回。',
-            'Three visual languages: (1) chapter seals; (2) locus seals in the home star sheet; (3) ink modes. Health may borrow classical TCM imagery as cautionary lexicon — not a clinic visit. Swipe back from the left edge.'
+            'Three visual languages: (1) chapter seals; (2) locus seals in the home star sheet; (3) ink modes. Health may borrow classical TCM imagery as cautionary lexicon — not a clinic visit. Swipe back from the left edge.',
+            'レポートには三つの視覚言語：① 章の象形印；② 部位印（ホームの星タップ後のシート）；③ 墨象四態（聚／対／照／流）。健康軸は中医の臓腑気血の「象」を辞書として参照——診断ではありません。左端から右スワイプで戻る。'
           )}
         </Text>
 

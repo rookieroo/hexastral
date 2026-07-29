@@ -53,7 +53,14 @@ export default function BiometricConsentScreen() {
         router.push('/sign-in')
         return
       }
-      setError(s('同意记录失败，请重试', '同意記錄失敗，請重試', 'Could not record consent. Try again.'))
+      setError(
+        s(
+          '同意记录失败，请重试',
+          '同意記錄失敗，請重試',
+          'Could not record consent. Try again.',
+          '同意を記録できませんでした。もう一度お試しください。'
+        )
+      )
     } finally {
       setBusy(false)
     }
@@ -70,7 +77,9 @@ export default function BiometricConsentScreen() {
         }}
       >
         <Stack.Screen options={{ headerShown: false }} />
-        <XingqiLoader label={s('加载中', '載入中', 'Loading')} />
+        <XingqiLoader
+          label={s('加载中', '載入中', 'Loading', '読み込み中')}
+        />
       </View>
     )
   }
@@ -89,7 +98,7 @@ export default function BiometricConsentScreen() {
         options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }}
       />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-        {s('开始前请先阅读', '開始前請先閱讀', 'Before we begin')}
+        {s('开始前请先阅读', '開始前請先閱讀', 'Before we begin', '始める前に')}
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>
         {s(
@@ -101,16 +110,22 @@ export default function BiometricConsentScreen() {
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
         {s(
-          '这是文化研习简报（位点依据 · 三轴窗口 · 气机对照），不是聊天式看图说话，也不构成命运断语或专业建议。你可随时在设置中撤回同意。',
-          '這是文化研習簡報（位點依據 · 三軸窗口 · 氣機對照），不是聊天式看圖說話，也不構成命運斷語或專業建議。你可隨時在設定中撤回同意。',
-          'A cultural-study brief (locus citations · three-axis windows · qi contrast) — not chatty photo-reading, fate claims, or professional advice. Withdraw consent anytime in Settings.'
+          '这是文化研习简报（位点依据 · 三轴窗口 · 气机对照），不是聊天式看图说话，也不构成命运断语或专业建议。你可随时在设置中撤回同意；撤回后照片草稿与同意记录会被清除，需重新同意才能继续。',
+          '這是文化研習簡報（位點依據 · 三軸窗口 · 氣機對照），不是聊天式看圖說話，也不構成命運斷語或專業建議。你可隨時在設定中撤回同意；撤回後照片草稿與同意記錄會被清除，需重新同意才能繼續。',
+          'A cultural-study brief (locus citations · three-axis windows · qi contrast) — not chatty photo-reading, fate claims, or professional advice. Withdraw consent anytime in Settings; that clears photo drafts and consent, and you must agree again to continue.',
+          '文化学習用のブリーフ（部位の根拠 · 三軸の窓 · 気の対照）です。雑談的な写真読みでも、運命の断定でも、専門的助言でもありません。設定からいつでも同意を撤回できます。撤回すると写真下書きと同意記録が消え、続けるには再度同意が必要です。'
         )}
       </Text>
       {error ? <Text style={{ color: colors.accent }}>{error}</Text> : null}
       <Button variant='primary' onPress={() => void onAgree()} disabled={busy}>
         {busy
-          ? s('处理中…', '處理中…', 'Working…')
-          : s('我已了解并同意', '我已瞭解並同意', 'I understand and agree')}
+          ? s('处理中…', '處理中…', 'Working…', '処理中…')
+          : s(
+              '我已了解并同意',
+              '我已瞭解並同意',
+              'I understand and agree',
+              '理解して同意します'
+            )}
       </Button>
       <Button variant='ghost' onPress={() => router.back()}>
         {s('取消', '取消', 'Cancel', 'キャンセル')}
