@@ -29,7 +29,7 @@
  * - UI: CJK only — no romaji / ruby on cards
  * - Glossary only: 訓読み (きのとうし) under the selected combo; 音読み needs a
  *   per-combo table (乙丑 = いっちゅう ≠ おつ+ちゅう) — deferred, not concatenated
- */
+ *
  * ## Other
  * - 节气 en: pinyin proper names (Dashu) — noun-like, OK without CJK
  * - 吉/平/凶 fit glyphs stay CJK on dial; prose may gloss
