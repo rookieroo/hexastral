@@ -11,7 +11,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: 'AI physiognomy primer — FaceOracle roadmap',
+    title: 'AI physiognomy primer — Syel',
     description:
       'Classical face reading (Mian Xiang 面相) with strict privacy posture. Structured AI assists feature notes — selfies stay ephemeral.',
     robots: NOINDEX_ROBOTS,
@@ -28,7 +28,7 @@ export default function FaceReadingTeaserPage() {
         Physiognomy teaser · 面相
       </h1>
       <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.65 }}>
-        <strong>FaceOracle</strong> will pair camera intake with Gemini-class vision routers for
+        <strong>Syel</strong> will pair camera intake with large-language / vision models for
         anatomical structuring, then layer interpretive prose that cites textual traditions instead
         of spooky guessing.
       </p>
@@ -38,15 +38,15 @@ export default function FaceReadingTeaserPage() {
         <li>Share cards that watermark “AI-assisted cultural exploration”</li>
       </ul>
       <p style={{ fontSize: '0.85rem', color: 'var(--color-ivory-muted)' }}>
-        TikTok creatives: route paid traffic via{' '}
+        Coming soon — follow{' '}
         <Link href='/lp/face' style={{ color: 'var(--color-gold)' }}>
           /lp/face
         </Link>{' '}
-        once creatives are approved.
+        for updates.
       </p>
       <DownloadCTA
-        headline='Be first on FaceOracle'
-        sub='App Store IDs arrive with the SKU.'
+        headline='Join the Syel waitlist'
+        sub='App Store listing arrives when Syel ships.'
         appStoreUrl={resolveAppStoreUrl('faceoracle')}
         targetApp='faceoracle'
       />

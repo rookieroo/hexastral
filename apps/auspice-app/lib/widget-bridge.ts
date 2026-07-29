@@ -60,10 +60,12 @@ function toWidgetDay(
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
     solarTerm: m.solarTermName,
+    // Short = Watch + small widget (≤2 verbs). Follow app locale — en gets
+    // localized verbs (Wedding·…), not forced CJK.
     yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale),
     ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale),
-    yiShort: compactVerbs(m.goodForRaw, 2, locale),
-    jiShort: compactVerbs(m.avoidRaw, 2, locale),
+    yiShort: compactVerbs(m.goodForRaw, en ? 1 : 2, locale),
+    jiShort: compactVerbs(m.avoidRaw, en ? 1 : 2, locale),
     fit: includeFit ? m.fitLabel : null,
     fitSummary: includeFit ? m.fitSummary : null,
     dayTip: m.dayTip,
@@ -93,7 +95,8 @@ export async function writeWidgetDays(
 
 /**
  * Sync a 7-day window starting at `anchorDate` (usually today).
- * `includeFit` should be true only when the user has auspice_pro.
+ * `includeFit` should be true when birth personalization is available
+ * (free 「对你而言」 summary). Per-reason deep unlock stays Pro in-app.
  */
 export async function syncWidgetWindow(
   anchorDate: string,

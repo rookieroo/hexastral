@@ -119,8 +119,22 @@ async function writeAppGroupPhase(phase: number | null): Promise<void> {
   try {
     ExtensionStorage.reloadWidget()
     ExtensionStorage.reloadWidget('AuspiceWidget')
+    ExtensionStorage.reloadWidget('YuunWatch')
   } catch (err) {
     console.warn('[dev-moon-phase] reloadWidget failed', err)
+  }
+
+  try {
+    // biome-ignore lint/style/noCommonJs: optional native module
+    const { requireNativeModule } = require('expo-modules-core') as {
+      requireNativeModule: <T>(name: string) => T
+    }
+    const native = requireNativeModule<{ syncWatchAppGroup?: (suite: string) => void }>(
+      'WidgetKitIos'
+    )
+    native.syncWatchAppGroup?.(APP_GROUP)
+  } catch {
+    // Watch sync optional in DEV
   }
 }
 

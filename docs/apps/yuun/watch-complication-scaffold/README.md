@@ -1,13 +1,21 @@
-# Watch complication scaffold (not wired into prebuild)
+# Watch complication scaffold (superseded)
 
-Swift sources for Yuun Apple Watch complications. Kept **outside**
-`apps/auspice-app/targets/` so `@bacons/apple-targets` does not attach a
-misconfigured iOS-flavoured Watch target (see widget-build-runbook).
+**Live sources are now under** [`apps/auspice-app/targets/`](../../../apps/auspice-app/targets/):
 
-## Activate later
+| Folder | bacons type | Role |
+|---|---|---|
+| `targets/watch/` | `watch` | Minimal companion Watch App (required host; must sort before watch-widget) |
+| `targets/watch-widget/` | `watch-widget` | WidgetKit complications (circular / rectangular / corner / inline) |
 
-1. Copy this folder to `apps/auspice-app/targets/watch/`
-2. Ensure `expo-target.config.js` uses a watchOS-capable type / deployment target
-   validated against current `@bacons/apple-targets` docs
-3. `bunx expo prebuild -p ios --clean`
-4. Build the Watch scheme on a watchOS simulator / paired device
+This folder is kept only as historical reference. Prefer editing the live targets.
+
+## Activate / rebuild
+
+```bash
+cd apps/auspice-app
+bunx expo prebuild -p ios --clean
+# Xcode: build YuunWatchApp (or run iPhone scheme — embeds Watch content)
+# Pair Watch / watchOS Simulator → Edit Face → add Yuun complication
+```
+
+See [widget-build-runbook.md](./widget-build-runbook.md) § Watch.

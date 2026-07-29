@@ -90,11 +90,11 @@ export default async function DayMasterReferencePage({ params }: Props) {
         <Link href='/tools/day-master' style={{ color: 'var(--color-gold)' }}>
           lite calculator
         </Link>{' '}
-        then graduate to the flagship app for true solar time + Zi Wei overlays.
+        then open Yuel for true solar time and Zi Wei overlays.
       </p>
       <DownloadCTA
-        headline='HexAstral dual-chart engine'
-        sub='Ba Zi × Zi Wei × Bonds — already live on iOS.'
+        headline='Continue in Yuel'
+        sub='Ba Zi × Zi Wei × bonds — already live on iOS.'
         compact
       />
     </article>

@@ -6,7 +6,7 @@
   },
   "nav": {
     "tools": "無料ツール",
-    "freeReading": "無料鑑定",
+    "freeReading": "無料プレビュー",
     "download": "アプリを入手"
   },
   "landing": {
@@ -14,13 +14,13 @@
     "heroLine1": "あなたの命盤、",
     "heroLine2": "古典的に読み解く",
     "heroSub": "60秒で四柱推命の命盤を生成\n千年を超える中華命学伝統に基づく AI 性格分析",
-    "heroCTA": "無料で鑑定を始める →",
-    "heroNote": "会員登録不要 · 60秒で鑑定 · 初回 3 回 AI 対話付き",
-    "featuresSectionLabel": "Core Features",
+    "heroCTA": "無料で命盤を見る →",
+    "heroNote": "会員登録不要 · 60秒で命盤 · 初回 3 回 AI 対話付き",
+    "featuresSectionLabel": "主な機能",
     "featuresSectionTitle": "命盤を読む四つのレンズ",
     "features": [
       {
-        "title": "四柱推命 · 命式鑑定",
+        "title": "四柱推命 · 命式プレビュー",
         "desc": "年月日時の四柱を精密に算出。日主の五行強弱・十神配置・調候用神を解析します。",
         "tag": "四柱推命"
       },
@@ -35,14 +35,14 @@
         "tag": "大運タイムライン"
       },
       {
-        "title": "合盤 · 相性指数",
-        "desc": "二人の命式を深く合参。相性スコアを数値化し、引き合いと摩擦の根源を明かします。",
-        "tag": "合盤配對"
+        "title": "合盤 · 五行の参照",
+        "desc": "二人の命式を五行で重ね、引き合いと摩擦のテーマを見る——文化的参照であり、スコアではありません。",
+        "tag": "合盤参照"
       }
     ],
     "convTitle": "あなたがここに来た理由——",
     "convBody": "自分自身を知りたいから？ある関係をもっとよく理解したいから？人生で特別に辛かった時期を理解したいから？\nどんな理由でも、あなたの命盤には読み解ける構造があります。",
-    "convCTA": "鑑定を始める",
+    "convCTA": "命盤を見る",
     "testimonialsSectionLabel": "ユーザーの声",
     "testimonials": [
       {
@@ -62,20 +62,20 @@
       }
     ],
     "ctaHeadline": "無料で命式を取得する",
-    "ctaSub": "HexAstral をダウンロード — AI 深層解読・大運タイムライン・神煞分析を最初の鑑定から解放",
+    "ctaSub": "Yuel をダウンロード — AI 深層解読・大運タイムライン・神煞分析を最初の命盤から",
     "footerPrivacy": "プライバシーポリシー",
     "footerTerms": "利用規約",
-    "footerStart": "鑑定を始める"
+    "footerStart": "命盤を見る"
   },
   "onboarding": {
     "motivationPrompt": "あなたがここに来た理由——",
-    "motivationTitle1": "鑑定モードを",
+    "motivationTitle1": "モードを",
     "motivationTitle2": "選んでください",
     "modePersonalTitle": "自分自身を知りたい",
     "modePersonalDesc": "四柱推命フレームで性格・命盤構造・人生の大運を探求する",
     "modePairingTitle": "二人の関係を調べたい",
-    "modePairingDesc": "恋人・パートナーとの四柱合参で、五行レベルの相性を深く解析",
-    "modePairingBadge": "人気 No.1 ★",
+    "modePairingDesc": "恋人・パートナーとの合盤 — 五行の文化的参照（スコアではない）",
+    "modePairingBadge": "二人の命盤",
     "noSignupNote": "会員登録不要 · 計算のみに使用 · 完全無料",
     "selfStep1Label": "ステップ 1 — あなたの情報",
     "selfBirthLabel": "あなたの生年月日時",
@@ -84,7 +84,7 @@
     "partnerStep2Label": "ステップ 2 — 相手の情報",
     "partnerStep2Title": "二つの命盤を比較し、",
     "partnerStep2Accent": "二人の関係構造を読む",
-    "submitPersonal": "鑑定を開始する",
+    "submitPersonal": "命盤を見る",
     "submitNext": "次へ →",
     "submitPairing": "相性を見る",
     "back": "← 戻る",
@@ -95,19 +95,19 @@
     "personalChartLabel": "{name}の命式",
     "dayMasterLabel": "日主",
     "starsSpeakPrefix": "✦ {name} への洞察",
-    "fullReadingLabel": "完全 AI 鑑定レポート",
+    "fullReadingLabel": "完全 AI レポート",
     "personalPaywallUnlock": "🔒 ダウンロードして全文を解放",
     "personalCTAHeadline": "{name}の完全命式が完成しました",
-    "personalCTASub": "HexAstral をダウンロード — AI 深層解読 · 大運タイムライン · 神煞落盤",
+    "personalCTASub": "Yuel をダウンロード — AI 深層解読 · 大運タイムライン · 神煞落盤",
     "pairingScoreUnit": "{a} × {b}　五行参照",
     "pairingDisclaimer": "娯楽・文化探索のみ。恋愛カウンセリングや専門助言ではありません。",
     "pairingInsightsTitle": "命盤インサイト",
     "pairingFullReportLabel": "詳細合参レポート",
     "pairingPaywallUnlock": "🔒 ダウンロードして完全レポートを解放",
     "pairingCTAHeadline": "完全合参レポートを解放する",
-    "pairingCTASub": "HexAstral をダウンロード — AI 深層合参 · 摩擦ポイント分析 · 最適な関係モード",
+    "pairingCTASub": "Yuel をダウンロード — 文化的合盤 · 摩擦テーマ · 学びのモード",
     "partnerLabel": "{selfName}のパートナー",
-    "bNameQuestion": "鑑定を始める前に、お名前を教えてください。",
+    "bNameQuestion": "命盤を見る前に、お名前を教えてください。",
     "bNamePlaceholder": "あなたの名前",
     "bDateQuestion": "{name}さん、いつ生まれましたか？命盤はその瞬間から始まります。",
     "bTimeQuestion": "生まれた時刻はわかりますか？時柱が正確だと命盤の精度が上がります。",
@@ -168,10 +168,10 @@
   },
   "pair": {
     "inviteText": "があなたとの命盤を比較するよう招待しています",
-    "scoreLabel": "相性指数",
+    "scoreLabel": "五行の参照",
     "dayMasterOfLabel": "{name}の日主",
     "unlockFull": "ダウンロードして完全レポートを解放",
-    "orWeb": "またはブラウザで直接鑑定する",
+    "orWeb": "またはブラウザで直接プレビューする",
     "expiredTitle": "リンクが無効です",
     "expiredDesc": "この共有リンクは期限切れか無効です。相手に新しいリンクを生成してもらってください。"
   },
@@ -190,31 +190,31 @@
     "notFound": "招待が見つからないか無効です。"
   },
   "common": {
-    "download": "HexAstral を無料でダウンロード",
+    "download": "Yuel を無料でダウンロード",
     "downloadButton": "App Store で無料ダウンロード",
     "downloadNote": "無料で始めよう · 会員登録不要 · 初回 3 回 AI 対話付き",
-    "appStoreAlt": "Download on the App Store"
+    "appStoreAlt": "App Store でダウンロード"
   },
   "invite": {
     "meta_title": "招待が届いています · HexAstral",
-    "meta_description": "友達からの招待で HexAstral を始めましょう。招待リンクからダウンロードで特別リワードをゲット。",
+    "meta_description": "友達からの招待で Yuel を始めましょう。招待リンクからダウンロードすると初回 AI 対話が追加されます。",
     "headline": "友達があなたの席を\n用意しました",
-    "subline": "友達から招待が届いています。招待リンクから HexAstral をダウンロードすると、特別なリワードが解除されます。",
+    "subline": "友達から招待が届いています。招待リンクから Yuel をダウンロードすると、初回チャートで追加の AI 対話が付きます。",
     "ref_label": "招待コード",
-    "benefit_1": "初回鑑定完了で AI 対話の追加回数を獲得 — 深層鑑定を解放",
+    "benefit_1": "初回命盤完了で AI 対話の追加回数を獲得 — アプリ内で深層解読",
     "benefit_2": "会員登録不要 · 60秒で命式完成",
-    "benefit_3": "四柱推命 · 紫微 · 合盤配對 — 全機能開放",
-    "cta": "無料ダウンロードして招待特典を受け取る",
+    "benefit_3": "四柱 · 紫微 · 合盤ツール — 無料で開始、Pro で深掘り",
+    "cta": "Yuel を無料ダウンロードして招待特典を受け取る",
     "note": "招待リンクから初めてダウンロードする新規ユーザーのみ対象"
   },
   "Metadata": {
-    "title": "HexAstral — BaZi & 紫微命盤鑑定",
+    "title": "HexAstral — BaZi & 紫微命盤",
     "description": "60秒で四柱推命と紫微斗数の命盤を生成し、AI による性格分析を提供。千年を超える中華命学の学習ツール。"
   },
   "publicProfile": {
-    "plainIntroHeading": "HexAstral 鑑定",
+    "plainIntroHeading": "HexAstral 命盤",
     "joinedSince": "{year}年から HexAstral を利用中",
-    "readingsCount": "鑑定 {n} 回",
+    "readingsCount": "命盤 {n} 回",
     "baziHeading": "八字 · 四柱",
     "pillarYear": "年",
     "pillarMonth": "月",
@@ -271,9 +271,9 @@
       "approxPillars": "近似四柱（学習のみ）",
       "dayMasterLabel": "日元",
       "archetypeLink": "日主アーキタイプ →",
-      "disclaimer": "簡略化した干支境界（グレゴリオ近似）。Yuel は節気・真太陽時・旧暦換算を本番鑑定に適用。",
+      "disclaimer": "簡略化した干支境界（グレゴリオ近似）。Yuel は節気・真太陽時・旧暦換算を本番の命盤に適用。",
       "ctaHeadline": "本格四柱と紫微は Yuel で",
-      "ctaSub": "出生地、真太陽時補正、融合 AI 鑑定 — Yuel フラッグシップ。"
+      "ctaSub": "出生地、真太陽時補正、融合 AI 解釈 — Yuel で本格的に。"
     },
     "hexagram": {
       "metaTitle": "易経六十四卦索引 — 周易リファレンス",
@@ -281,7 +281,7 @@
       "heading": "易経 · 周易卦序索引",
       "intro": "各卦は学習向けコメントへリンク。三枚銭六爻は Yaul 公開時に。今日は Yuun 暦から。",
       "ctaHeadline": "Yuun で暦の文脈を学ぶ",
-      "ctaSub": "毎日の暦と古典文脈 — Yaul 開発中の入り口。"
+      "ctaSub": "毎日の暦と古典文脈は Yuun で。六爻の起卦は Yaul 公開後に。"
     },
     "compatibility": {
       "metaTitle": "相性ティーザー（合盤）— HexAstral",
@@ -291,7 +291,7 @@
       "previewLabel": "五行プレビュー · 合盤",
       "dayMasters": "日主",
       "disclaimer": "文化的参照 — 相性スコア・断定・予測ではない。",
-      "ctaHeadline": "本格縁鑑定は Yuel で",
+      "ctaHeadline": "本格合盤は Yuel で",
       "ctaSub": "多次元合盤、ギフト、共鳴招待 — 文化研習、占いではない。",
       "personA": "甲",
       "personB": "乙",
@@ -313,7 +313,7 @@
       "resultPrefix": "年",
       "lunarNote": "1月〜2月初生まれは旧正月を確認 — 前年の生肖のことがある。",
       "ctaHeadline": "毎日の暦は Yuun で",
-      "ctaSub": "黄暦、個人レイヤー、大運タイムライン — 深い命学への入り口。",
+      "ctaSub": "公開の黄暦は無料（ホーム / ロック / Watch）。生年月日を入れると「あなたへ」が表示されます。",
       "introPage": "十二支は春節の民俗に根ざす。本格命盤は八字と紫微が担う — 生肖だけでは粒度が粗い。",
       "animalLabel": "近似年肖 · 生肖",
       "readLink": "生肖ノート →",

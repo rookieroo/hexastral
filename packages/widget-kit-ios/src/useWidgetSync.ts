@@ -36,6 +36,8 @@ type SharedGroupApi = {
 type WidgetKitIosNative = {
   reloadTimelines: () => void
   flushAppGroup: (suiteName: string) => void
+  /** Mirror App Group keys to paired Apple Watch (WatchConnectivity). */
+  syncWatchAppGroup?: (suiteName: string) => void
 }
 
 function loadAsyncStorage(): AsyncStorageLike | null {
@@ -99,10 +101,19 @@ function tipLabelFromPayload(serialized: string, locale: WidgetLocale): string {
 
 function notifyWidgetExtension(group: string): void {
   const native = loadWidgetKitNative()
-  if (!native) return
+  if (!native) {
+    console.warn('[widget-kit-ios] WidgetKitIos native module missing — Watch sync unavailable')
+    return
+  }
   try {
     native.flushAppGroup(group)
     native.reloadTimelines()
+    if (typeof native.syncWatchAppGroup === 'function') {
+      native.syncWatchAppGroup(group)
+      console.log('[widget-kit-ios] syncWatchAppGroup →', group)
+    } else {
+      console.warn('[widget-kit-ios] syncWatchAppGroup missing — rebuild native app')
+    }
   } catch (err: unknown) {
     console.warn('[widget-kit-ios] timeline reload failed:', err)
   }

@@ -62,7 +62,7 @@
       }
     ],
     "ctaHeadline": "Get Your Free Chart",
-    "ctaSub": "Download HexAstral — unlock AI deep reading, decade cycle timelines & configuration analysis on your first chart",
+    "ctaSub": "Get Yuel on iOS — AI deep reading, decade timelines, and chart notes on your first chart",
     "footerPrivacy": "Privacy Policy",
     "footerTerms": "Terms of Service",
     "footerStart": "Start Reading"
@@ -75,7 +75,7 @@
     "modePersonalDesc": "Explore your personality, chart structure & life decade cycles through the BaZi framework",
     "modePairingTitle": "Know Our Connection",
     "modePairingDesc": "Partner / lover bond reading — Five Elements cultural overlay (not a score)",
-    "modePairingBadge": "Most Popular ★",
+    "modePairingBadge": "Two charts",
     "noSignupNote": "No signup · Data used only for calculation · Completely free",
     "selfStep1Label": "Step 1 — Your Info",
     "selfBirthLabel": "Your Birth Details",
@@ -98,14 +98,14 @@
     "fullReadingLabel": "Full AI Reading",
     "personalPaywallUnlock": "🔒 Download to Unlock Full Reading",
     "personalCTAHeadline": "{name}'s complete chart is ready",
-    "personalCTASub": "Download HexAstral — AI deep reading · Decade cycle timeline · Configuration analysis",
+    "personalCTASub": "Get Yuel on iOS — AI deep reading · decade timeline · configuration notes",
     "pairingScoreUnit": "{a} × {b}   Elemental overlay",
     "pairingDisclaimer": "For entertainment and cultural exploration only — not relationship counseling or professional advice.",
     "pairingInsightsTitle": "Chart Insights",
     "pairingFullReportLabel": "Deep Compatibility Report",
     "pairingPaywallUnlock": "🔒 Download to Unlock Full Report",
     "pairingCTAHeadline": "Unlock the Full Compatibility Report",
-    "pairingCTASub": "Download HexAstral — AI cultural read · friction themes · bond study modes",
+    "pairingCTASub": "Get Yuel on iOS — cultural bond read · friction themes · study modes",
     "partnerLabel": "{selfName}'s partner",
     "bNameQuestion": "To start, what should I call you? Your chart begins with your name.",
     "bNamePlaceholder": "Your name",
@@ -190,21 +190,21 @@
     "notFound": "Invitation not found or no longer valid."
   },
   "common": {
-    "download": "Download HexAstral Free",
+    "download": "Download Yuel Free",
     "downloadButton": "Download Free on App Store",
     "downloadNote": "Free to start · No signup required · 3 chat credits on first reading",
     "appStoreAlt": "Download on the App Store"
   },
   "invite": {
     "meta_title": "You've Been Invited · HexAstral",
-    "meta_description": "Your friend invited you to explore your BaZi chart. Download via their link and unlock exclusive rewards.",
+    "meta_description": "Your friend invited you to explore your BaZi chart. Download Yuel via their link for bonus chat credits on your first chart.",
     "headline": "Your Friend\nSaved You a Seat",
-    "subline": "Your friend invited you to explore your BaZi chart. Download HexAstral via their invite link to unlock exclusive rewards.",
+    "subline": "Your friend invited you to explore your BaZi chart. Download Yuel via their invite link for bonus chat credits on your first chart.",
     "ref_label": "Invite Code",
-    "benefit_1": "Bonus chat credits on your first chart — unlock AI deep readings",
+    "benefit_1": "Bonus chat credits on your first chart — deeper AI readings in the app",
     "benefit_2": "No signup required · Full chart in 60 seconds",
-    "benefit_3": "BaZi · ZiWei · Compatibility — all modules unlocked",
-    "cta": "Download Free & Claim Invite Reward",
+    "benefit_3": "BaZi · ZiWei · bond tools — free to start, Pro for depth",
+    "cta": "Download Yuel Free & Claim Invite Reward",
     "note": "Offer applies to new users downloading via an invite link only"
   },
   "Metadata": {
@@ -273,15 +273,15 @@
       "archetypeLink": "Read archetype notes →",
       "disclaimer": "Uses simplified Gan Zhi boundaries (Gregorian approximation). Yuel applies solar terms, optional true solar time, and lunar conversion for production readings.",
       "ctaHeadline": "Full Four Pillars + Zi Wei in Yuel",
-      "ctaSub": "Birth city, true solar correction, and fused AI reading — the Yuel flagship app."
+      "ctaSub": "Birth city, true solar correction, and fused AI reading — in Yuel."
     },
     "hexagram": {
       "metaTitle": "64 I Ching hexagrams index — Zhou Yi reference",
       "metaDescription": "Browse the King Wen sequence with Chinese names. Commentary from the HexAstral knowledge base.",
       "heading": "I Ching · 周易 hexagram index",
       "intro": "Each entry links to commentary suited for study. Three-coin Liu Yao casting ships in Yaul when it launches; explore the almanac in Yuun today.",
-      "ctaHeadline": "Study Liu Yao in Yuun",
-      "ctaSub": "Daily almanac and classical context — your entry point while Yaul is in development."
+      "ctaHeadline": "Daily almanac context in Yuun",
+      "ctaSub": "Daily almanac and classical context in Yuun; Liu Yao casting comes with Yaul."
     },
     "compatibility": {
       "metaTitle": "Compatibility teaser (合盘) — HexAstral",
@@ -313,7 +313,7 @@
       "resultPrefix": "Animal for",
       "lunarNote": "If you were born in January or early February, verify against lunar new year — the animal may be the prior year.",
       "ctaHeadline": "Daily almanac in Yuun",
-      "ctaSub": "黄历, personal layers, and decade timeline — your funnel into deeper chart work.",
+      "ctaSub": "Free public 黄历 on Home, Lock Screen, and Watch. Add your birth info to see For you.",
       "introPage": "Twelve animals anchor Chinese New Year folklore. Serious chart work still uses Ba Zi (八字) and Zi Wei (紫微斗数) — sheng xiao alone is coarse granularity.",
       "animalLabel": "Approximate yearly animal · 生肖",
       "readLink": "Read constellation notes →",

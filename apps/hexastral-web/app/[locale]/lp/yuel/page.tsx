@@ -29,7 +29,7 @@ export default async function LpYuelPage({ params }: Props) {
       <h1 style={{ fontWeight: 400 }}>Two charts, one bond</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
         Yuel compares Ba Zi charts for cultural exploration and reflection — not a score or
-        prediction. Legacy acquisition links under /lp/yuan redirect here.
+        prediction. Former /yuan links now point here.
       </p>
       <DownloadCTA
         headline='Yuel — pair charts as a habit'

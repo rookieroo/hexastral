@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: 'Methodology & integrity — HexAstral',
     description:
-      'How we blend classical Chinese metaphysics books with Gemini-class models, privacy controls, and multi-app rollout.',
+      'How we blend classical Chinese metaphysics sources with large language models, privacy controls, and focused apps.',
     alternates: {
       canonical:
         locale === 'en'
@@ -47,10 +47,10 @@ export default async function MethodologyPage() {
       },
       {
         '@type': 'Question',
-        name: 'Which apps consume the backend?',
+        name: 'Which apps share this backend?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Flagship apps Yuel (charts + synastry) and Kanyu (feng-shui site analysis) plus funnel apps Yuun (almanac) and Yaul (I Ching study) share astro-core computations and unified account plumbing. DreamOracle, FaceOracle, StarPalace, and EightPillars are not in the current launch wave.',
+          text: 'Yuel (charts and synastry) and Kanyu (feng-shui site study) are our chart and space apps. Yuun (daily almanac) and Yaul (I Ching Liu Yao) are everyday reference tools. They share core computations and one account. Other titles may launch later.',
         },
       },
       {
@@ -58,7 +58,7 @@ export default async function MethodologyPage() {
         name: 'What about privacy for face or space photos?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Each vertical ships its own Privacy Policy appendix. Engineers prioritize ephemeral inference, structured JSON extraction, and user-controlled deletes where Cloudflare stacks allow.',
+          text: 'Each app has its own Privacy Policy appendix. We prioritize ephemeral inference where possible, structured extraction, and user-controlled deletes.',
         },
       },
     ],
@@ -70,23 +70,26 @@ export default async function MethodologyPage() {
         <JsonLd json={faq} />
         <h1 style={{ fontWeight: 400 }}>HexAstral Methodology · 研究方法</h1>
         <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.75 }}>
-          We treat classical texts ( Zhou Yi · 周易, Zi Wei tomes, Ba Zi anthologies ) as annotated
-          priors — Gemini-class models narrate within guardrails referencing those priors
+          We treat classical texts (Zhou Yi · 周易, Zi Wei tomes, Ba Zi anthologies) as annotated
+          sources — large language models narrate within guardrails that reference those sources
           explicitly.
         </p>
         <h2 style={{ fontSize: '1.1rem', color: 'var(--color-gold)', fontWeight: 500 }}>
           Three promises
         </h2>
         <ol style={{ paddingLeft: '1.25rem', lineHeight: 1.7, color: 'var(--color-ivory)' }}>
-          <li>Name the lineage — metaphysics nerds deserve receipts.</li>
+          <li>Name the lineage — classical terms deserve clear citations.</li>
           <li>
-            Show the seams — differentiate deterministic chart math vs. interpretive narration.
+            Show the seams — separate deterministic chart math from interpretive narration.
           </li>
-          <li>Ship narrow apps — Feng Shui and Face Reading deserve separate SKU trust.</li>
+          <li>
+            Keep apps focused — feng-shui and face reading belong in their own products, not one
+            omnibus.
+          </li>
         </ol>
         <p style={{ fontSize: '0.8rem', color: 'var(--color-ivory-muted)', marginTop: '2rem' }}>
-          Operational note: pairing growth UTMs persists for 30 days via <code>growth_utm</code>{' '}
-          middleware cookies to align paid social + DDL sessions.
+          If you arrive from an ad, we may remember campaign parameters for about 30 days to measure
+          installs fairly. Details are in the Privacy Policy.
         </p>
       </article>
     </GrowthShell>

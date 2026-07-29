@@ -9,25 +9,46 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		7B1F4A9BA0994241A64569D6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D32092681A4A4BD2A225F99D /* PrivacyInfo.xcprivacy */; };
-		A008B50ACFBFC6CA36C440B7 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE068C5B0E2D971E328D385D /* ExpoModulesProvider.swift */; };
+		5FF058A08350959522947DF3 /* libPods-Yuun.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F3661700B09F254B7EA049D6 /* libPods-Yuun.a */; };
+		749E48FEBC8B1DE77D7BFF98 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A803138FEBC4424F019AC94 /* ExpoModulesProvider.swift */; };
+		8920E9DBBF945141A31C80A2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1F9BC7BA4F284C9D9155091E /* PrivacyInfo.xcprivacy */; };
+		A428F4E287B7442A8FED48B1 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1F9BC7BA4F284C9D9155091E /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		E8DA23CEFC8D6E7F8EF84808 /* libPods-Yuun.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EE0100E8FF79ED51FB59C61 /* libPods-Yuun.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		XX12B55A1EDABF083C3B51XX /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX470101BAEB8E0BBC8B0DXX /* WidgetKit.framework */; };
 		XX1A6800511A685AB346D2XX /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XXA12889081EB894481655XX /* AppIntents.framework */; };
+		XX378C5AFCA51B0EA4F6B5XX /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX4DFF38D47332D6BF0183XX /* SwiftUI.framework */; };
 		XX3C562DEF346B45594832XX /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XXCAF23C3FC41F82140FA1XX /* ActivityKit.framework */; };
 		XX67F9DF245EDB36520D89XX /* AuspiceWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = XX43B891292DDDEEE68755XX /* AuspiceWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		XX6A44985675A04437B8C4XX /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX4DFF38D47332D6BF0183XX /* SwiftUI.framework */; };
+		XX8E4863C19534EC7D4226XX /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX8ACBDF17A27E5D829A2CXX /* WatchConnectivity.framework */; };
+		XX9000C852C382AD8209C5XX /* YuunWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = XXDC602A315786CE453ECBXX /* YuunWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		XX9B75B891A5D95836E5A4XX /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX470101BAEB8E0BBC8B0DXX /* WidgetKit.framework */; };
+		XXAF4A0CEDDFFCF6D53251XX /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = XX470101BAEB8E0BBC8B0DXX /* WidgetKit.framework */; };
+		XXB1E9D27B5723958A849CXX /* YuunWatch.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = XX58C2578D791B659A64D9XX /* YuunWatch.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		XXFB70029202FD68FB1D81XX /* PBXContainerItemProxy */ = {
+		XX176006F20EA34AB4DD45XX /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = XXF0CD6096914D44EAB9A3XX;
+			remoteGlobalIDString = XXF407C5B27D1453039EDEXX;
 			remoteInfo = AuspiceWidget;
+		};
+		XXDC29DFA299718E4223F9XX /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = XX16BA89470096787304EEXX;
+			remoteInfo = YuunWatchApp;
+		};
+		XXECCDAB9D1A2503601BE3XX /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = XXC0EB6E690187D335F7F6XX;
+			remoteInfo = YuunWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -43,51 +64,116 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		XX81D5C67C94C2E1F9007EXX /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				XX9000C852C382AD8209C5XX /* YuunWatchApp.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XXDC26E7C3BF4FEBD9ABDDXX /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				XXB1E9D27B5723958A849CXX /* YuunWatch.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0A803138FEBC4424F019AC94 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Yuun/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Yuun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; fileEncoding = 4; includeInIndex = 0; path = Yuun.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Yuun/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = Info.plist; path = Yuun/Info.plist; sourceTree = "<group>"; };
-		73815B5AFBF2A6BD818CB321 /* Pods-Yuun.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Yuun.release.xcconfig"; path = "Target Support Files/Pods-Yuun/Pods-Yuun.release.xcconfig"; sourceTree = "<group>"; };
-		8EE0100E8FF79ED51FB59C61 /* libPods-Yuun.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Yuun.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F9BC7BA4F284C9D9155091E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = PrivacyInfo.xcprivacy; path = Yuun/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Yuun/SplashScreen.storyboard; sourceTree = "<group>"; };
-		AACC52957235469542DCAD44 /* Pods-Yuun.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Yuun.debug.xcconfig"; path = "Target Support Files/Pods-Yuun/Pods-Yuun.debug.xcconfig"; sourceTree = "<group>"; };
+		B2FDA92B267EE6C6D5B59426 /* Pods-Yuun.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Yuun.release.xcconfig"; path = "Target Support Files/Pods-Yuun/Pods-Yuun.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CE068C5B0E2D971E328D385D /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Yuun/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		D32092681A4A4BD2A225F99D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = PrivacyInfo.xcprivacy; path = Yuun/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		D356C12E3EED0FDFE4E04EC8 /* Pods-Yuun.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Yuun.debug.xcconfig"; path = "Target Support Files/Pods-Yuun/Pods-Yuun.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Yuun/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Yuun-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "Yuun-Bridging-Header.h"; path = "Yuun/Yuun-Bridging-Header.h"; sourceTree = "<group>"; };
+		F3661700B09F254B7EA049D6 /* libPods-Yuun.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Yuun.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		XX43B891292DDDEEE68755XX /* AuspiceWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 4; includeInIndex = 0; path = AuspiceWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		XX470101BAEB8E0BBC8B0DXX /* WidgetKit.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		XX4DFF38D47332D6BF0183XX /* SwiftUI.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		XX58C2578D791B659A64D9XX /* YuunWatch.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 4; includeInIndex = 0; path = YuunWatch.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		XX8ACBDF17A27E5D829A2CXX /* WatchConnectivity.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		XXA12889081EB894481655XX /* AppIntents.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		XXCAF23C3FC41F82140FA1XX /* ActivityKit.framework */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = undefined; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
+		XXDC602A315786CE453ECBXX /* YuunWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; fileEncoding = 4; includeInIndex = 0; path = YuunWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		XXC1F5E568B417577A0408XX /* Exceptions for "widget" folder in "AuspiceWidget" target */ = {
+		XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 				"expo-target.config.js",
 			);
-			target = XXF0CD6096914D44EAB9A3XX /* AuspiceWidget */;
+			target = XXF407C5B27D1453039EDEXX /* AuspiceWidget */;
+		};
+		XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				"expo-target.config.js",
+			);
+			target = XX16BA89470096787304EEXX /* YuunWatchApp */;
+		};
+		XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				"expo-target.config.js",
+			);
+			target = XXC0EB6E690187D335F7F6XX /* YuunWatch */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		XX46425BFBF3C88CED1FAFXX /* widget */ = {
+		XX3FDEBEB27F32C5D81C91XX /* watch-widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				XXC1F5E568B417577A0408XX /* Exceptions for "widget" folder in "AuspiceWidget" target */,
+				XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "watch-widget";
+			sourceTree = "<group>";
+		};
+		XX9C622A3923308018BB78XX /* widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */,
 			);
 			explicitFileTypes = {
 			};
 			explicitFolders = (
 			);
 			path = widget;
+			sourceTree = "<group>";
+		};
+		XXBC072C3E310FD773C31FXX /* watch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = watch;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -97,7 +183,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E8DA23CEFC8D6E7F8EF84808 /* libPods-Yuun.a in Frameworks */,
+				5FF058A08350959522947DF3 /* libPods-Yuun.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,10 +191,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				XX8E4863C19534EC7D4226XX /* WatchConnectivity.framework in Frameworks */,
 				XX12B55A1EDABF083C3B51XX /* WidgetKit.framework in Frameworks */,
-				XX6A44985675A04437B8C4XX /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XXA94A5604E6B418CE81CFXX /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				XX9B75B891A5D95836E5A4XX /* WidgetKit.framework in Frameworks */,
+				XX378C5AFCA51B0EA4F6B5XX /* SwiftUI.framework in Frameworks */,
 				XX3C562DEF346B45594832XX /* ActivityKit.framework in Frameworks */,
 				XX1A6800511A685AB346D2XX /* AppIntents.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XXBA6CDF0021ABEEEDFCFBXX /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				XXAF4A0CEDDFFCF6D53251XX /* WidgetKit.framework in Frameworks */,
+				XX6A44985675A04437B8C4XX /* SwiftUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,46 +228,39 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				D32092681A4A4BD2A225F99D /* PrivacyInfo.xcprivacy */,
+				1F9BC7BA4F284C9D9155091E /* PrivacyInfo.xcprivacy */,
 			);
 			name = Yuun;
-			sourceTree = "<group>";
-		};
-		205CF94ADB585CB6E12942FA /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				AACC52957235469542DCAD44 /* Pods-Yuun.debug.xcconfig */,
-				73815B5AFBF2A6BD818CB321 /* Pods-Yuun.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
+				XX8ACBDF17A27E5D829A2CXX /* WatchConnectivity.framework */,
 				XX470101BAEB8E0BBC8B0DXX /* WidgetKit.framework */,
 				XX4DFF38D47332D6BF0183XX /* SwiftUI.framework */,
 				XXCAF23C3FC41F82140FA1XX /* ActivityKit.framework */,
 				XXA12889081EB894481655XX /* AppIntents.framework */,
-				8EE0100E8FF79ED51FB59C61 /* libPods-Yuun.a */,
+				F3661700B09F254B7EA049D6 /* libPods-Yuun.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		5EC8C717E544ECA9FE224B37 /* Yuun */ = {
+		640948B16AE2F41292700E0F /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				CE068C5B0E2D971E328D385D /* ExpoModulesProvider.swift */,
+				D356C12E3EED0FDFE4E04EC8 /* Pods-Yuun.debug.xcconfig */,
+				B2FDA92B267EE6C6D5B59426 /* Pods-Yuun.release.xcconfig */,
 			);
-			name = Yuun;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
-		804E09FC3D100B7D735934A0 /* ExpoModulesProviders */ = {
+		667BA1455204CFA02AC80673 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				5EC8C717E544ECA9FE224B37 /* Yuun */,
+				EE91686CDE8F682F2F70E03D /* Yuun */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -183,8 +280,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				205CF94ADB585CB6E12942FA /* Pods */,
-				804E09FC3D100B7D735934A0 /* ExpoModulesProviders */,
+				640948B16AE2F41292700E0F /* Pods */,
+				667BA1455204CFA02AC80673 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -195,6 +292,8 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* Yuun.app */,
+				XXDC602A315786CE453ECBXX /* YuunWatchApp.app */,
+				XX58C2578D791B659A64D9XX /* YuunWatch.appex */,
 				XX43B891292DDDEEE68755XX /* AuspiceWidget.appex */,
 			);
 			name = Products;
@@ -209,10 +308,20 @@
 			path = Yuun/Supporting;
 			sourceTree = "<group>";
 		};
+		EE91686CDE8F682F2F70E03D /* Yuun */ = {
+			isa = PBXGroup;
+			children = (
+				0A803138FEBC4424F019AC94 /* ExpoModulesProvider.swift */,
+			);
+			name = Yuun;
+			sourceTree = "<group>";
+		};
 		XX3E41C1850246162C0061XX /* expo:targets */ = {
 			isa = PBXGroup;
 			children = (
-				XX46425BFBF3C88CED1FAFXX /* widget */,
+				XXBC072C3E310FD773C31FXX /* watch */,
+				XX3FDEBEB27F32C5D81C91XX /* watch-widget */,
+				XX9C622A3923308018BB78XX /* widget */,
 			);
 			name = "expo:targets";
 			path = ../targets;
@@ -226,39 +335,83 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Yuun" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				AE6AC0DF0412AE1A7CB5253A /* [Expo] Configure project */,
+				9602EDDDBE7EB4B8D250CA83 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
+				XX81D5C67C94C2E1F9007EXX /* Embed Watch Content */,
 				XX72A8CFBF0FBA13A79902XX /* Embed Foundation Extensions */,
-				A1F3677CF61BB5376BB0B696 /* [CP] Embed Pods Frameworks */,
+				0E92BEE4FECC7BAB0A262D6B /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				XXE8883473B051F6141E5EXX /* PBXTargetDependency */,
+				XX19C373C219D18C5A8832XX /* PBXTargetDependency */,
+				XXB11B59CB718E9621B18FXX /* PBXTargetDependency */,
 			);
 			name = Yuun;
 			productName = Yuun;
 			productReference = 13B07F961A680F5B00A75B9A /* Yuun.app */;
 			productType = "com.apple.product-type.application";
 		};
-		XXF0CD6096914D44EAB9A3XX /* AuspiceWidget */ = {
+		XX16BA89470096787304EEXX /* YuunWatchApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = XX40E8BADFAA76A9CDB5EDXX /* Build configuration list for PBXNativeTarget "AuspiceWidget" */;
+			buildConfigurationList = XX4581ABB42F300DC375AFXX /* Build configuration list for PBXNativeTarget "YuunWatchApp" */;
 			buildPhases = (
 				XX074B8811C1CF8E8A3D74XX /* Frameworks */,
 				XXE45443DC38DCFE1DB622XX /* Sources */,
 				XXFA5A8CCDD805DF7AEF9CXX /* Resources */,
+				XXDC26E7C3BF4FEBD9ABDDXX /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				XX20380759B6F35582749DXX /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				XXBC072C3E310FD773C31FXX /* watch */,
+			);
+			name = YuunWatchApp;
+			productName = YuunWatchApp;
+			productReference = XXDC602A315786CE453ECBXX /* YuunWatchApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		XXC0EB6E690187D335F7F6XX /* YuunWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = XXBBC121C5328A1705E9E0XX /* Build configuration list for PBXNativeTarget "YuunWatch" */;
+			buildPhases = (
+				XXBA6CDF0021ABEEEDFCFBXX /* Frameworks */,
+				XXDC105B0E28F884B8E02DXX /* Sources */,
+				XXC55EF014B50CBDECCD15XX /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				XX46425BFBF3C88CED1FAFXX /* widget */,
+				XX3FDEBEB27F32C5D81C91XX /* watch-widget */,
+			);
+			name = YuunWatch;
+			productName = YuunWatch;
+			productReference = XX58C2578D791B659A64D9XX /* YuunWatch.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		XXF407C5B27D1453039EDEXX /* AuspiceWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = XX42BBC47476630A6AB6FCXX /* Build configuration list for PBXNativeTarget "AuspiceWidget" */;
+			buildPhases = (
+				XXA94A5604E6B418CE81CFXX /* Frameworks */,
+				XXE5EC32CD2D09C6C886C7XX /* Sources */,
+				XX00779A11A1B70B580100XX /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				XX9C622A3923308018BB78XX /* widget */,
 			);
 			name = AuspiceWidget;
 			productName = AuspiceWidget;
@@ -276,7 +429,17 @@
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
 					};
-					XXF0CD6096914D44EAB9A3XX = {
+					XX16BA89470096787304EEXX = {
+						CreatedOnToolsVersion = 14.3;
+						DevelopmentTeam = L9Z47DW56X;
+						ProvisioningStyle = Automatic;
+					};
+					XXC0EB6E690187D335F7F6XX = {
+						CreatedOnToolsVersion = 14.3;
+						DevelopmentTeam = L9Z47DW56X;
+						ProvisioningStyle = Automatic;
+					};
+					XXF407C5B27D1453039EDEXX = {
 						CreatedOnToolsVersion = 14.3;
 						DevelopmentTeam = L9Z47DW56X;
 						ProvisioningStyle = Automatic;
@@ -297,7 +460,9 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* Yuun */,
-				XXF0CD6096914D44EAB9A3XX /* AuspiceWidget */,
+				XX16BA89470096787304EEXX /* YuunWatchApp */,
+				XXC0EB6E690187D335F7F6XX /* YuunWatch */,
+				XXF407C5B27D1453039EDEXX /* AuspiceWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -310,7 +475,21 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				7B1F4A9BA0994241A64569D6 /* PrivacyInfo.xcprivacy in Resources */,
+				A428F4E287B7442A8FED48B1 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XX00779A11A1B70B580100XX /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XXC55EF014B50CBDECCD15XX /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,6 +497,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8920E9DBBF945141A31C80A2 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,6 +545,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		0E92BEE4FECC7BAB0A262D6B /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -425,29 +625,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A1F3677CF61BB5376BB0B696 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		AE6AC0DF0412AE1A7CB5253A /* [Expo] Configure project */ = {
+		9602EDDDBE7EB4B8D250CA83 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -479,7 +657,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				A008B50ACFBFC6CA36C440B7 /* ExpoModulesProvider.swift in Sources */,
+				749E48FEBC8B1DE77D7BFF98 /* ExpoModulesProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		XXDC105B0E28F884B8E02DXX /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -490,21 +675,39 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		XXE5EC32CD2D09C6C886C7XX /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		XXE8883473B051F6141E5EXX /* PBXTargetDependency */ = {
+		XX19C373C219D18C5A8832XX /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = XXF0CD6096914D44EAB9A3XX /* AuspiceWidget */;
-			targetProxy = XXFB70029202FD68FB1D81XX /* PBXContainerItemProxy */;
+			target = XX16BA89470096787304EEXX /* YuunWatchApp */;
+			targetProxy = XXDC29DFA299718E4223F9XX /* PBXContainerItemProxy */;
+		};
+		XX20380759B6F35582749DXX /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = XXC0EB6E690187D335F7F6XX /* YuunWatch */;
+			targetProxy = XXECCDAB9D1A2503601BE3XX /* PBXContainerItemProxy */;
+		};
+		XXB11B59CB718E9621B18FXX /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = XXF407C5B27D1453039EDEXX /* AuspiceWidget */;
+			targetProxy = XX176006F20EA34AB4DD45XX /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = AACC52957235469542DCAD44 /* Pods-Yuun.debug.xcconfig */;
+			baseConfigurationReference = D356C12E3EED0FDFE4E04EC8 /* Pods-Yuun.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Yuun/Yuun.entitlements;
@@ -540,8 +743,9 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 73815B5AFBF2A6BD818CB321 /* Pods-Yuun.release.xcconfig */;
+			baseConfigurationReference = B2FDA92B267EE6C6D5B59426 /* Pods-Yuun.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Yuun/Yuun.entitlements;
@@ -687,7 +891,7 @@
 			};
 			name = Release;
 		};
-		XXA4DE84244F9051B2BD3BXX /* Release */ = {
+		XX35CB022FAC99C329200BXX /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
@@ -703,7 +907,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = L9Z47DW56X;
-				ENABLE_DEBUG_DYLIB = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ../targets/widget/Info.plist;
@@ -730,7 +933,49 @@
 			};
 			name = Release;
 		};
-		XXBFC71C41E6134690E6F9XX /* Debug */ = {
+		XX6C0222BFB32D075A4C9DXX /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = .targets/YuunWatch/generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = L9Z47DW56X;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "../targets/watch-widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Yuun;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hexastral.yuun.watch.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		XX772DC644D87BC48DF0B0XX /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NONNULL = YES;
@@ -745,7 +990,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = L9Z47DW56X;
-				ENABLE_DEBUG_DYLIB = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ../targets/widget/Info.plist;
@@ -773,6 +1017,138 @@
 			};
 			name = Debug;
 		};
+		XXB735141CA39B721EDA68XX /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = .targets/YuunWatchApp/generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = L9Z47DW56X;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ../targets/watch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Yuun;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.hexastral.yuun;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hexastral.yuun.watch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		XXD602D5C80697709E4096XX /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = .targets/YuunWatchApp/generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = L9Z47DW56X;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ../targets/watch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Yuun;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.hexastral.yuun;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hexastral.yuun.watch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		XXE694088B0B97F98E88EFXX /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = .targets/YuunWatch/generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = L9Z47DW56X;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "../targets/watch-widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Yuun;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hexastral.yuun.watch.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -794,11 +1170,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		XX40E8BADFAA76A9CDB5EDXX /* Build configuration list for PBXNativeTarget "AuspiceWidget" */ = {
+		XX42BBC47476630A6AB6FCXX /* Build configuration list for PBXNativeTarget "AuspiceWidget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				XXBFC71C41E6134690E6F9XX /* Debug */,
-				XXA4DE84244F9051B2BD3BXX /* Release */,
+				XX772DC644D87BC48DF0B0XX /* Debug */,
+				XX35CB022FAC99C329200BXX /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		XX4581ABB42F300DC375AFXX /* Build configuration list for PBXNativeTarget "YuunWatchApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				XXD602D5C80697709E4096XX /* Debug */,
+				XXB735141CA39B721EDA68XX /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		XXBBC121C5328A1705E9E0XX /* Build configuration list for PBXNativeTarget "YuunWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				XX6C0222BFB32D075A4C9DXX /* Debug */,
+				XXE694088B0B97F98E88EFXX /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

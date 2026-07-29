@@ -39,6 +39,7 @@ target 'Yuun' do
     ]
   end
 
+  
   # Google Sign-In → AppCheckCore (Swift) imports Obj-C pods that lack module maps
   # when CocoaPods links statically (default for RN/Expo).
   pod 'GoogleUtilities', :modular_headers => true
@@ -66,7 +67,6 @@ target 'Yuun' do
     )
 
     # @zhop/yuun: align pod deployment targets
-    # Xcode 16+ rejects pod / resource-bundle targets still pinned below iOS 15.
     ios_deployment_target = podfile_properties['ios.deploymentTarget'] || '15.1'
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|

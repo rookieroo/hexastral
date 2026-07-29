@@ -33,7 +33,9 @@ const withWidgetExtension: ConfigPlugin<WidgetKitIosPluginProps> = (config, prop
   // biome-ignore lint/suspicious/noConsole: build-time log is intentional
   console.log(
     `[widget-kit-ios] ${props.appSlug} → ${props.widgetName} group=${props.appGroupId}` +
-      (props.watchComplication ? ' (watchComplication planned)' : '')
+      (props.watchComplication
+        ? ' (watchComplication: YuunWatch via targets/watch-widget)'
+        : '')
   )
 
   return withEntitlementsPlist(config, (cfg) => {

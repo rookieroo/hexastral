@@ -31,7 +31,7 @@ export default async function LpKanyuPage({ params }: Props) {
       <h1 style={{ fontWeight: 400 }}>Read a space through classical 堪舆</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
         Kanyu turns a pin and facing into a structured feng-shui study report — cultural and
-        educational, not on-site professional advice. Legacy /lp/feng links redirect here.
+        educational, not on-site professional advice. Former /feng links now point here.
       </p>
       <DownloadCTA
         headline='Kanyu — map your space'

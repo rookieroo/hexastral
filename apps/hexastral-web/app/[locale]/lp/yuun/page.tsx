@@ -26,13 +26,13 @@ export default async function LpYuunPage({ params }: Props) {
   }
   return (
     <>
-      <h1 style={{ fontWeight: 400 }}>Today&apos;s 黄历, for everyday planning</h1>
+      <h1 style={{ fontWeight: 400 }}>Today&apos;s 黄历 — free for everyone</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
-        Yuun is a Chinese almanac for yi/ji, solar terms, and an optional personal layer from your
-        chart — cultural reference, not prediction.
+        Public 宜忌 on Home, Lock Screen, and Apple Watch. Add birth info for a free For you summary.
+        Pro deepens reasons, timeline, and calendar — cultural reference, not prediction.
       </p>
       <DownloadCTA
-        headline='Yuun — plan the day with the almanac'
+        headline='Yuun — free public almanac; For you when you add birth'
         appStoreUrl={resolveAppStoreUrl('auspice')}
         targetApp='auspice'
       />

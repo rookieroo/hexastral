@@ -56,7 +56,10 @@ export interface DailyCardModel {
   lunarMonthDay: string
   lunarStrong: boolean
   solarTermLabel: string
-  /** Bare 节气 name, e.g. "立秋". */
+  /**
+   * 节气 name only when today IS the term day (`solarTermToday`); otherwise "".
+   * Widgets/watch must not show the previous term for the whole ~15-day window.
+   */
   solarTermName: string
   /** Raw 宜 verbs (CJK source) — faces localize per their own locale. */
   goodForRaw: string[]
@@ -269,9 +272,13 @@ export function buildDailyCardModel(
         : `${ld.monthName}${ld.dayName}`
       : '',
     lunarStrong: ld?.isFirst === true || ld?.isFifteenth === true,
-    solarTermLabel: `${t.solarTerm} ${localizeSolarTermName(day.solarTerm.prev.name, locale)}`,
-    // Follow locale (en → Dashu); short enough for widgets.
-    solarTermName: localizeSolarTermName(day.solarTerm.prev.name, locale),
+    // Home hero may still cite prev→next; widget/watch only show the term ON its day.
+    solarTermLabel: day.solarTermToday
+      ? `${t.solarTerm} ${localizeSolarTermName(day.solarTermToday.name, locale)}`
+      : `${t.solarTerm} ${localizeSolarTermName(day.solarTerm.prev.name, locale)}`,
+    // 节气 = Sun-longitude instant (点). Never show prev-term as if "today is 大暑"
+    // for the whole ~15-day window — only `solarTermToday` (API flag for that gregorian day).
+    solarTermName: day.solarTermToday?.name ?? '',
     goodForRaw: day.goodFor,
     avoidRaw: day.avoid,
     moonPhase: moonPhaseFromLunarDay(ld?.day),

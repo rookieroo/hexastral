@@ -7,7 +7,7 @@ RN + native scaffold for Yuun home-screen / Lock Screen / Watch complications.
 - **RN write**: [`lib/widget-bridge.ts`](../../apps/auspice-app/lib/widget-bridge.ts) → `@zhop/widget-kit-ios` `writeWidgetPayload` → App Group `group.com.hexastral.yuun`
 - **Keys**: `hexastral_widget_payload_v1` (envelope) + legacy mirror `almanac_days`
 - **iOS Widget**: [`targets/widget/`](../../apps/auspice-app/targets/widget/) — small / medium / large + accessory circular / rectangular; `AlmanacEngine.swift` fills public fields on cache miss
-- **Watch**: [`targets/watch/`](../../apps/auspice-app/targets/watch/) — complications reading the same group
+- **Watch**: [`targets/watch/`](../../apps/auspice-app/targets/watch/) (companion app) + [`targets/watch-widget/`](../../apps/auspice-app/targets/watch-widget/) (complications); same App Group. Folder order matters: `watch` before `watch-widget`.
 - **Xcode targets**: `@bacons/apple-targets` on prebuild
 - **Entitlements helper**: `@zhop/widget-kit-ios/plugin`
 
@@ -21,9 +21,11 @@ RN + native scaffold for Yuun home-screen / Lock Screen / Watch complications.
 
 2. Plugins in `app.json`: `@bacons/apple-targets` + `@zhop/widget-kit-ios/plugin` (appSlug `yuun`, group `group.com.hexastral.yuun`).
 
-3. **Apple Developer portal** — App Groups capability on BOTH:
+3. **Apple Developer portal** — App Groups capability on:
    - `com.hexastral.yuun`
-   - `com.hexastral.yuun.widget` (and Watch target if generated)
+   - `com.hexastral.yuun.widget`
+   - `com.hexastral.yuun.watch`
+- `com.hexastral.yuun.watch.widget`
    - Group id must be exactly `group.com.hexastral.yuun`
 
 4. Prebuild + run:
@@ -63,12 +65,54 @@ RN + native scaffold for Yuun home-screen / Lock Screen / Watch complications.
 - Bundle id of the extension is `com.hexastral.yuun.widget` (not `….AuspiceWidget`).
   App Group must be on both App IDs in the Developer portal.
 
-## Watch (P3)
+## Watch
 
-Scaffold Swift lives at [`docs/apps/yuun/watch-complication-scaffold/`](./watch-complication-scaffold/)
-(not under `targets/` — apple-targets would otherwise attach a broken iOS-flavoured
-Watch target). To activate: copy into `targets/watch/` with a correct watchOS
-`expo-target.config.js`, then `bunx expo prebuild -p ios --clean`.
+Requires **both** Apple targets (bacons):
 
-Until then, Lock Screen accessories on the iPhone widget cover the glance use case.
+| Path | Type | Bundle | Kind / product |
+|---|---|---|---|
+| [`targets/watch/`](../../apps/auspice-app/targets/watch/) | `watch` | `com.hexastral.yuun.watch` | Companion stub (hosts extension) |
+| [`targets/watch-widget/`](../../apps/auspice-app/targets/watch-widget/) | `watch-widget` | `com.hexastral.yuun.watch.widget` | Complications · kind `YuunWatch` |
+
+Same App Group as iPhone widget. Open Yuun on iPhone once so the envelope is written; Watch reads it (no Metro on watchOS).
+
+```bash
+cd apps/auspice-app
+bunx expo prebuild -p ios --clean
+# Build/run iPhone scheme (embeds Watch Content) or select YuunWatchApp in Xcode
+# watchOS Simulator or paired Watch → Edit Face → Complications → Yuun
+```
+
+**Apple Developer portal** — App Groups on:
+
+- `com.hexastral.yuun`
+- `com.hexastral.yuun.widget`
+- `com.hexastral.yuun.watch`
+- `com.hexastral.yuun.watch.widget`
+
+First device build after adding Watch targets: use `bun run ios:device` (shim passes
+`-allowProvisioningUpdates` so Xcode can create App IDs + profiles). Expo’s stock
+`expo run:ios --device` skips that flag when `DEVELOPMENT_TEAM` is already in the
+pbxproj, which is why you see “No profiles for …watch…”.
+
+**Watch data path:** iPhone App Group does **not** sync to Watch. After each
+widget write, `@zhop/widget-kit-ios` pushes keys via **WatchConnectivity**;
+`YuunWatchApp` writes the Watch-local App Group and reloads complications.
+Open Yuun home on iPhone once (with Watch nearby) after installing.
+
+Alternatively open `ios/Yuun.xcworkspace` → YuunWatchApp / YuunWatch →
+Signing & Capabilities → enable Automatic for team `L9Z47DW56X` once.
+
+Historical scaffold (do not prebuild from here): [`watch-complication-scaffold/`](./watch-complication-scaffold/).
+
+### Acceptance (Watch)
+
+- [ ] `YuunWatchApp` + `YuunWatch` appear in Xcode after prebuild
+- [ ] Complication gallery lists **Yuun**
+- [ ] After opening iPhone Yuun: circular shows 月相 + 干支; rectangular shows 干支 + 宜/对你
+- [ ] `solarTerm` only on 节气当日 (empty otherwise)
+- [ ] DEV moon phase slider reloads `YuunWatch` too
+- [ ] Bundle IDs: host `….yuun.watch`, extension `….yuun.watch.widget` (prefix rule)
+
+Until Watch is signed + installed, Lock Screen accessories on the iPhone widget cover the glance use case.
 

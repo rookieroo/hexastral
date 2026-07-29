@@ -1,25 +1,17 @@
 /**
- * WatchSettings — widget/watch appearance + live previews.
- * Previews use true iOS widget points, then CSS-scale into the row (no reflow overflow).
- * Preview locale matches the app locale (same as widget sync).
+ * WatchSettings — home-widget sizes + Watch complication hot-zone previews.
+ * No fake full watch-face mock: third parties only fill system face slots.
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
-import {
-  DEFAULT_TEMPLATE,
-  getWatchTemplate,
-  setWatchTemplate,
-  TEMPLATE_OPTIONS,
-  type WatchTemplate,
-} from '@/lib/widget-config'
-import { DailyCard } from './DailyCard'
+import { buildDailyCardModel, compactVerbs } from './DailyCard'
+import { PhaseLogo } from './PhaseLogo'
 import { WidgetCard, type WidgetSize } from './WidgetCard'
 import { widgetSurfaceBg } from './WidgetSurface'
 
@@ -45,14 +37,12 @@ function ScaledWidgetPreview({
   size,
   label,
   payload,
-  isPro,
   livePhase,
   previewBg,
 }: {
   size: WidgetSize
   label: string
   payload: AuspiceDayPayload
-  isPro: boolean
   livePhase: number | undefined
   previewBg: string
 }) {
@@ -86,7 +76,7 @@ function ScaledWidgetPreview({
             phaseOverride={livePhase}
             date={payload.date}
             day={payload.day}
-            personalization={isPro ? payload.personalization : null}
+            personalization={payload.personalization}
           />
         </View>
       </View>
@@ -95,15 +85,161 @@ function ScaledWidgetPreview({
   )
 }
 
+function SlotCaption({ children }: { children: string }) {
+  const { colors } = useTheme()
+  return <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>{children}</Text>
+}
+
+/** Circular accessory — moon + 干支. */
+function CircularSlotPreview({
+  ganZhi,
+  phase,
+  border,
+  text,
+}: {
+  ganZhi: string
+  phase: number
+  border: string
+  text: string
+}) {
+  return (
+    <View
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        borderWidth: 0.5,
+        borderColor: border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+      }}
+    >
+      <PhaseLogo phase={phase} size={14} />
+      <Text style={{ color: text, fontSize: 11, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+        {ganZhi}
+      </Text>
+    </View>
+  )
+}
+
+/** Rectangular accessory — two lines. */
+function RectangularSlotPreview({
+  ganZhi,
+  solarTerm,
+  yiLine,
+  phase,
+  border,
+  text,
+  dim,
+}: {
+  ganZhi: string
+  solarTerm: string
+  yiLine: string
+  phase: number
+  border: string
+  text: string
+  dim: string
+}) {
+  return (
+    <View
+      style={{
+        width: 148,
+        height: 48,
+        borderWidth: 0.5,
+        borderColor: border,
+        borderRadius: 0,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+      }}
+    >
+      <PhaseLogo phase={phase} size={22} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+          <Text style={{ color: text, fontSize: 13, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+            {ganZhi}
+          </Text>
+          {solarTerm ? (
+            <Text style={{ color: dim, fontSize: 10 }} numberOfLines={1}>
+              {solarTerm}
+            </Text>
+          ) : null}
+        </View>
+        <Text style={{ color: dim, fontSize: 11 }} numberOfLines={1}>
+          {yiLine}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+/** Inline accessory — single 宜 line. */
+function InlineSlotPreview({
+  yiLine,
+  border,
+  text,
+}: {
+  yiLine: string
+  border: string
+  text: string
+}) {
+  return (
+    <View
+      style={{
+        minWidth: 148,
+        maxWidth: 200,
+        height: 28,
+        borderWidth: 0.5,
+        borderColor: border,
+        borderRadius: 0,
+        paddingHorizontal: 8,
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: text, fontSize: 12 }} numberOfLines={1}>
+        {yiLine}
+      </Text>
+    </View>
+  )
+}
+
+/** Corner accessory — 干支 stamp. */
+function CornerSlotPreview({
+  ganZhi,
+  border,
+  text,
+}: {
+  ganZhi: string
+  border: string
+  text: string
+}) {
+  return (
+    <View
+      style={{
+        width: 44,
+        height: 28,
+        borderWidth: 0.5,
+        borderColor: border,
+        borderRadius: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: text, fontSize: 12, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+        {ganZhi}
+      </Text>
+    </View>
+  )
+}
+
 export function WatchSettings() {
   const { colors, spacing, mode } = useTheme()
-  const { width: winW } = useWindowDimensions()
   const surfaceMode = mode === 'light' ? 'light' : 'dark'
-  const { t } = useStrings()
-  const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'auspice_pro')
+  const { t, locale } = useStrings()
   const [payload, setPayload] = useState<AuspiceDayPayload | null>(null)
-  const [template, setTemplate] = useState<WatchTemplate>(DEFAULT_TEMPLATE)
   const { phase: phaseOverride, setPhase: setPhaseOverride } = useDevMoonPhase()
 
   useEffect(() => {
@@ -113,30 +249,32 @@ export function WatchSettings() {
       .then((b) => fetchAuspiceDay(iso, b))
       .then(setPayload)
       .catch(() => {})
-    getWatchTemplate()
-      .then(setTemplate)
-      .catch(() => {})
   }, [])
-
-  const pickTemplate = (id: WatchTemplate) => {
-    setTemplate(id)
-    void setWatchTemplate(id)
-  }
 
   const livePhase = phaseOverride ?? undefined
   const previewBg = widgetSurfaceBg(surfaceMode)
   const sizeLabel = (s: WidgetSize) =>
     s === 'small' ? t.widgetSizeSmall : s === 'medium' ? t.widgetSizeMedium : t.widgetSizeLarge
 
-  const templateLabel = (id: WatchTemplate): string => {
-    if (id === 'modern') return t.watchTemplateModern
-    if (id === 'lunar') return t.watchTemplateLunar
-    if (id === 'almanac') return t.watchTemplateAlmanac
-    return t.watchTemplateAncient
-  }
+  const model = useMemo(() => {
+    if (!payload) return null
+    return buildDailyCardModel(
+      payload.date,
+      payload.day,
+      payload.personalization ?? null,
+      t,
+      locale
+    )
+  }, [payload, t, locale])
 
-  const watchPreviewW = Math.min(176, Math.round(winW * 0.42))
-  const watchPreviewH = Math.round(watchPreviewW * (200 / 168))
+  const ganZhi = model?.ganZhi ?? '—'
+  const solarTerm = model?.solarTermName ?? ''
+  // Match Watch: locale verbs; en keeps 1 short verb for tiny slots.
+  const yiShort = model
+    ? compactVerbs(model.goodForRaw, locale === 'en' ? 1 : 2, locale)
+    : '—'
+  const yiLine = `宜 ${yiShort}`
+  const phase = livePhase ?? model?.moonPhase ?? 0.5
 
   return (
     <View style={{ gap: spacing.lg }}>
@@ -150,45 +288,53 @@ export function WatchSettings() {
                   size={size}
                   label={sizeLabel(size)}
                   payload={payload}
-                  isPro={isPro}
                   livePhase={livePhase}
                   previewBg={previewBg}
                 />
               ))}
             </View>
           </ScrollView>
-          <View style={{ gap: 4, alignItems: 'center', alignSelf: 'center' }}>
+
+          <View style={{ gap: spacing.sm }}>
+            <Label>{t.watchPreviewCaption}</Label>
             <View
               style={{
-                width: watchPreviewW,
-                height: watchPreviewH,
-                borderRadius: Math.round(watchPreviewW * 0.25),
-                overflow: 'hidden',
-                backgroundColor: previewBg,
-                opacity: 0.95,
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing.md,
+                alignItems: 'flex-end',
               }}
             >
-              <View
-                style={{
-                  width: 168,
-                  height: 200,
-                  transform: [{ scale: watchPreviewW / 168 }],
-                  transformOrigin: 'top left',
-                }}
-              >
-                <DailyCard
-                  tier='compact'
-                  template={template}
-                  phaseOverride={livePhase}
-                  date={payload.date}
-                  day={payload.day}
-                  personalization={isPro ? payload.personalization : null}
+              <View style={{ gap: 6, alignItems: 'center' }}>
+                <CircularSlotPreview
+                  ganZhi={ganZhi}
+                  phase={phase}
+                  border={colors.separator}
+                  text={colors.text}
                 />
+                <SlotCaption>{t.watchSlotCircular}</SlotCaption>
+              </View>
+              <View style={{ gap: 6, alignItems: 'center' }}>
+                <RectangularSlotPreview
+                  ganZhi={ganZhi}
+                  solarTerm={solarTerm}
+                  yiLine={yiLine}
+                  phase={phase}
+                  border={colors.separator}
+                  text={colors.text}
+                  dim={colors.dim}
+                />
+                <SlotCaption>{t.watchSlotRectangular}</SlotCaption>
+              </View>
+              <View style={{ gap: 6, alignItems: 'center' }}>
+                <InlineSlotPreview yiLine={yiLine} border={colors.separator} text={colors.text} />
+                <SlotCaption>{t.watchSlotInline}</SlotCaption>
+              </View>
+              <View style={{ gap: 6, alignItems: 'center' }}>
+                <CornerSlotPreview ganZhi={ganZhi} border={colors.separator} text={colors.text} />
+                <SlotCaption>{t.watchSlotCorner}</SlotCaption>
               </View>
             </View>
-            <Text style={{ color: colors.dim, fontSize: 10, letterSpacing: 1 }}>
-              {t.watchPreviewCaption}
-            </Text>
           </View>
         </View>
       ) : null}
@@ -237,54 +383,6 @@ export function WatchSettings() {
           </Text>
         </View>
       ) : null}
-
-      <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Label>{t.watchStyleLabel}</Label>
-          <View
-            style={{
-              paddingHorizontal: 6,
-              paddingVertical: 1,
-              borderRadius: 6,
-              backgroundColor: colors.separator,
-            }}
-          >
-            <Text
-              style={{ color: colors.secondary, fontSize: 9, letterSpacing: 1, fontWeight: '600' }}
-            >
-              {t.comingSoon}
-            </Text>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {TEMPLATE_OPTIONS.map((tpl) => {
-            const sel = tpl.id === template
-            return (
-              <Pressable
-                key={tpl.id}
-                onPress={() => pickTemplate(tpl.id)}
-                accessibilityRole='button'
-                accessibilityState={{ selected: sel }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 6,
-                  borderRadius: 14,
-                  borderWidth: sel ? 1 : 0.5,
-                  borderColor: sel ? colors.accent : colors.separator,
-                  backgroundColor: sel ? colors.accentGhost : 'transparent',
-                }}
-              >
-                <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
-                  {templateLabel(tpl.id)}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      </View>
     </View>
   )
 }

@@ -11,7 +11,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: 'Dream interpreter · DreamOracle search ads',
+    title: 'Dream notes · coming soon',
     robots: NOINDEX_ROBOTS,
     alternates: {
       canonical: canonicalUrl(locale, '/lp/dream'),
@@ -24,23 +24,22 @@ export default async function LpDreamPage() {
     <>
       <h1 style={{ fontWeight: 400 }}>What did the ocean mean?</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
-        Google Search intents (“dream interpretation”, “water dream meaning”) ladder into
-        DreamOracle. Until launch, keep capturing UTMs via{' '}
-        <code style={{ fontSize: '0.82rem' }}>/api/ddl</code> + Growth cookies.
+        A dedicated dream journal app is coming soon. Until then, try our free dream notes tool, or
+        explore Yuun&apos;s daily almanac.
       </p>
       <Link
         href='/tools/dream'
         style={{ color: 'var(--color-gold)', display: 'block', marginBottom: '1.25rem' }}
       >
-        Editorial bridge → /tools/dream
+        Free dream notes →
       </Link>
       <DownloadCTA
-        headline='Wishlist DreamOracle'
+        headline='Wishlist when available'
         appStoreUrl={resolveAppStoreUrl('dreamoracle')}
         targetApp='dreamoracle'
       />
       <DownloadCTA
-        headline='Active oracle today: Yuun almanac'
+        headline='Today: Yuun almanac'
         appStoreUrl={resolveAppStoreUrl('auspice')}
         targetApp='auspice'
       />

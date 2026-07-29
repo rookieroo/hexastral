@@ -1,5 +1,5 @@
 /**
- * /display — 表盘与桌面组件 (Watch & Widgets).
+ * /display — 桌面组件与 Watch 热区预览 (Home widgets + Watch complications).
  * Page + previews follow light/dark (宣纸 / 星空).
  */
 

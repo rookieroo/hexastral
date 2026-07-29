@@ -42,8 +42,8 @@ const STR: Record<
     bad: 'AVOID',
     goodItems: ['Travel', 'Agreements', 'Gatherings'],
     badItems: ['Construction', 'Moving', 'Big purchases'],
-    headline: 'The Chinese almanac, every day.',
-    features: ['Daily auspices', 'GanZhi', 'Annual cycle', 'What-if'],
+    headline: 'The Chinese almanac, every day — free on Home, Lock Screen, and Apple Watch.',
+    features: ['Free 黄历', 'Home · Lock · Watch', 'For you with birth', 'Pro: deeper notes'],
     foot: 'Educational, not predictive',
   },
   zh: {
@@ -53,8 +53,8 @@ const STR: Record<
     bad: '忌',
     goodItems: ['祭祀', '出行', '会友'],
     badItems: ['动土', '安葬', '开市'],
-    headline: '中华黄历，每日宜忌与节律参照。',
-    features: ['每日宜忌', '干支', '流年', '假如'],
+    headline: '中华黄历，每日宜忌免费——主屏、锁屏与 Apple Watch 显示同款公开黄历。',
+    features: ['免费黄历', '主屏·锁屏·Watch', '生辰·对你而言', 'Pro：宜忌详解'],
     foot: '重在认知，而非预测',
   },
   tw: {
@@ -64,8 +64,8 @@ const STR: Record<
     bad: '忌',
     goodItems: ['祭祀', '出行', '會友'],
     badItems: ['動土', '安葬', '開市'],
-    headline: '中華黃曆，每日宜忌與運勢。',
-    features: ['每日宜忌', '干支', '流年', '假如'],
+    headline: '中華黃曆，每日宜忌免費——主屏、鎖屏與 Apple Watch 顯示同款公開黃曆。',
+    features: ['免費黃曆', '主屏·鎖屏·Watch', '生辰·對你而言', 'Pro：宜忌詳解'],
     foot: '重在認知，而非預測',
   },
   ja: {
@@ -75,8 +75,8 @@ const STR: Record<
     bad: '凶',
     goodItems: ['旅行', '契約', '会合'],
     badItems: ['工事', '引越', '開業'],
-    headline: '中華暦、毎日の吉凶。',
-    features: ['毎日の宜忌', '干支', '流年', 'もしも'],
+    headline: '中華暦の公開黄暦は無料——ホーム・ロック画面・Apple Watch に同じ暦を表示。',
+    features: ['無料の黄暦', 'ホーム·ロック·Watch', '生年月·あなたへ', 'Pro：宜忌の詳解'],
     foot: '予測ではなく、理解のために',
   },
 }

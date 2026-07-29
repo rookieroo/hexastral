@@ -11,9 +11,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: 'Face reading · TikTok-ready landing · HexAstral',
+    title: 'Face & palm reading · Syel',
     description:
-      'AI-assisted Mian Xiang (面相). Upload teaser ships in FaceOracle — capture DDL + App Store funnel here.',
+      'AI-assisted face and palm study (面相 · 掌相) for cultural exploration. Syel is coming soon.',
     robots: NOINDEX_ROBOTS,
     alternates: {
       canonical: canonicalUrl(locale, '/lp/face'),
@@ -24,31 +24,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LpFacePage() {
   return (
     <>
-      <p
-        style={{
-          color: 'var(--color-gold)',
-          letterSpacing: '0.2em',
-          marginBottom: '0.35rem',
-          fontSize: '0.75rem',
-        }}
-      >
-        AD LANDING · FACE ORACLE
-      </p>
       <h1 style={{ fontWeight: 400 }}>Upload once. Understand the poetry of your angles.</h1>
       <p style={{ color: 'var(--color-ivory-dim)', lineHeight: 1.7 }}>
-        Portrait flows + Gemini-class vision scaffolding turn classical facial zones into structured
-        notes — entertainment-grade, ethics-forward.
+        Syel turns a clear face photo and palm images into structured notes grounded in classical
+        physiognomy — entertainment and cultural study, not medical or fate claims.
       </p>
       <DownloadCTA
-        headline='Pre-order FaceOracle on the App Store'
-        sub='Fingerprinted DDL retains UTMs captured in middleware cookies.'
+        headline='Syel — coming soon on the App Store'
+        sub='Join when the listing opens.'
         appStoreUrl={resolveAppStoreUrl('faceoracle')}
         targetApp='faceoracle'
       />
       <p style={{ fontSize: '0.82rem', color: 'var(--color-ivory-muted)' }}>
         Method primer:{' '}
         <Link href='/tools/face-reading' style={{ color: 'var(--color-gold)' }}>
-          /tools/face-reading
+          Face reading overview
         </Link>
       </p>
     </>

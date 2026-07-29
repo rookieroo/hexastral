@@ -458,16 +458,21 @@ export interface Strings {
     compatYearRequired: string
   }
   watchWidgets: string
-  /** Honest section blurb: what ships today (widget + 月相) vs the watch preview. */
+  /** Honest blurb: free public 黄历 on Home / Lock / Watch; birth unlocks For you. */
   watchWidgetsNote: string
   /** Caption under the home-widget preview mockup. */
   widgetPreviewCaption: string
-  /** Caption under the watch-face preview mockup (carries the coming-soon note). */
+  /** Section label above Watch complication hot-zone previews. */
   watchPreviewCaption: string
+  /** Labels for supported Watch complication families. */
+  watchSlotCircular: string
+  watchSlotRectangular: string
+  watchSlotInline: string
+  watchSlotCorner: string
   widgetSizeSmall: string
   widgetSizeMedium: string
   widgetSizeLarge: string
-  /** Picker label for the watch-face styles (a preview; watch app not shipped). */
+  /** @deprecated Kept for DailyCard templates; no longer shown on display settings. */
   watchStyleLabel: string
   watchTemplateModern: string
   watchTemplateLunar: string
@@ -583,13 +588,12 @@ const zhHans: Strings = {
   personalClashLabel: '今日冲你',
   unlockMore: '解锁更多',
   proTitle: 'Yuun Pro',
-  proSubtitle: '个性化日历层 · 完整人生时间线 ·「假如」反思 · 专项日期参考',
+  proSubtitle: '公开黄历免费 · 生辰解锁「对你而言」 · Pro 深化解读与人生尺',
   proBenefits: [
-    '对你而言 · 基于命盘的每日个性化层（文化参考）',
-    '桌面组件「对你而言」行 · 小/中/大尺寸与锁屏',
-    '完整人生时间线 · 大运 / 流年 / 流月 +「假如」反思推演',
     '对你而言 · 每条宜忌逐条解读（用神 · 吉色 · 吉时）',
+    '完整人生时间线 · 大运 / 流年 / 流月 +「假如」反思推演',
     '自定义日期范围 + 个人黄历日历订阅',
+    '命书深读 · 个人八字 / 紫微参考',
   ],
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
@@ -865,11 +869,15 @@ const zhHans: Strings = {
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Yuel App 中查看。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
   },
-  watchWidgets: '桌面组件与表盘',
+  watchWidgets: '桌面 · 锁屏 · Watch',
   watchWidgetsNote:
-    '主屏小组件按系统小 / 中 / 大尺寸显示当日黄历（干支、节气、宜忌保持汉字）。锁屏同理。Apple Watch 并发症仍为脚手架预览。',
-  widgetPreviewCaption: '桌面组件',
-  watchPreviewCaption: '表盘预览',
+    '公开黄历免费：主屏小 / 中 / 大、锁屏组件、Apple Watch 热区（圆形 / 矩形 / 底边一行 / 表角）都显示当日干支与宜忌（人人相同）。录入生辰后，「对你而言」会出现在 App 与组件上。Watch 只能填系统表盘热区，无法自定义整张表盘；宜忌优先放矩形两行槽。',
+  widgetPreviewCaption: '主屏小组件',
+  watchPreviewCaption: 'Watch 热区（系统表盘）',
+  watchSlotCircular: '圆形',
+  watchSlotRectangular: '矩形',
+  watchSlotInline: '底边一行',
+  watchSlotCorner: '表角',
   widgetSizeSmall: '小',
   widgetSizeMedium: '中',
   widgetSizeLarge: '大',
@@ -963,13 +971,12 @@ const zhHant: Strings = {
   personalClashLabel: '今日沖你',
   unlockMore: '解鎖更多',
   proTitle: 'Yuun Pro',
-  proSubtitle: '個人化日曆層 · 完整人生時間線 ·「假如」反思 · 專項日期參考',
+  proSubtitle: '公開黃曆免費 · 生辰解鎖「對你而言」 · Pro 深化解讀與人生尺',
   proBenefits: [
-    '對你而言 · 基於命盤的每日個人化層（文化參考）',
-    '桌面元件「對你而言」行 · 小/中/大尺寸與鎖屏',
-    '完整人生時間線 · 大運 / 流年 / 流月 +「假如」反思推演',
     '對你而言 · 每條宜忌逐條解讀（用神 · 吉色 · 吉時）',
+    '完整人生時間線 · 大運 / 流年 / 流月 +「假如」反思推演',
     '自訂日期範圍 + 個人黃曆日曆訂閱',
+    '命書深讀 · 個人八字 / 紫微參考',
   ],
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
@@ -1231,11 +1238,15 @@ const zhHant: Strings = {
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Yuel App 中查看。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
   },
-  watchWidgets: '桌面元件與錶盤',
+  watchWidgets: '桌面 · 鎖屏 · Watch',
   watchWidgetsNote:
-    '主屏小組件依系統小 / 中 / 大尺寸顯示當日黃曆（干支、節氣、宜忌保持漢字）。鎖屏同理。Apple Watch 複雜功能仍為腳手架預覽。',
-  widgetPreviewCaption: '桌面元件',
-  watchPreviewCaption: '錶盤預覽',
+    '公開黃曆免費：主屏小 / 中 / 大、鎖屏元件、Apple Watch 熱區（圓形 / 矩形 / 底邊一行 / 錶角）都顯示當日干支與宜忌（人人相同）。錄入生辰後，「對你而言」會出現在 App 與元件上。Watch 只能填系統錶盤熱區，無法自訂整張錶盤；宜忌優先放矩形兩行槽。',
+  widgetPreviewCaption: '主屏小組件',
+  watchPreviewCaption: 'Watch 熱區（系統錶盤）',
+  watchSlotCircular: '圓形',
+  watchSlotRectangular: '矩形',
+  watchSlotInline: '底邊一行',
+  watchSlotCorner: '錶角',
   widgetSizeSmall: '小',
   widgetSizeMedium: '中',
   widgetSizeLarge: '大',
@@ -1353,13 +1364,12 @@ const ja: Strings = {
   personalClashLabel: '本日と冲',
   unlockMore: 'もっと見る',
   proTitle: 'Yuun Pro',
-  proSubtitle: '個人化カレンダー · 人生タイムライン全期間 ·「もしも」省思 · 日付参考',
+  proSubtitle: '公開の黄暦は無料 · 生年月日で「あなたへ」 · Pro で深掘りと人生尺',
   proBenefits: [
-    'あなた向け · 命盤に基づく毎日の個人化レイヤー（文化参考）',
-    'ウィジェットの「あなたへ」行 · 小/中/大とロック画面',
-    '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」省思',
     'あなたへ · 宜忌を一項目ずつ（用神 · 吉色 · 吉時）',
+    '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」省思',
     '日付範囲のカスタム + 個人の暦カレンダー購読',
+    '命書の深読み · 八字 / 紫微の個人参考',
   ],
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
@@ -1624,11 +1634,15 @@ const ja: Strings = {
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
   },
-  watchWidgets: 'ウィジェットと文字盤',
+  watchWidgets: 'ホーム · ロック · Watch',
   watchWidgetsNote:
-    'ホーム画面ウィジェットはシステムの小 / 中 / 大サイズで今日の黄暦を表示（干支・節気・宜忌は漢字のまま）。ロック画面も同様。Apple Watch コンプリケーションはスキャフォールドのプレビューです。',
-  widgetPreviewCaption: 'ウィジェット',
-  watchPreviewCaption: '文字盤プレビュー',
+    '公開の黄暦は無料：ホームの小/中/大、ロック画面ウィジェット、Apple Watch スロット（円形/矩形/1行/コーナー）に当日の干支と宜忌（誰でも同じ）。生年月日を入れると「あなたへ」がアプリとウィジェットに出ます。Watch はシステム文字盤のスロットのみ。宜忌は矩形の2行向き。',
+  widgetPreviewCaption: 'ホーム画面',
+  watchPreviewCaption: 'Watch スロット（システム文字盤）',
+  watchSlotCircular: '円形',
+  watchSlotRectangular: '矩形',
+  watchSlotInline: '1行',
+  watchSlotCorner: 'コーナー',
   widgetSizeSmall: '小',
   widgetSizeMedium: '中',
   widgetSizeLarge: '大',
@@ -1734,13 +1748,12 @@ const en: Strings = {
   personalClashLabel: 'Clashes today',
   unlockMore: 'Unlock more',
   proTitle: 'Yuun Pro',
-  proSubtitle: 'Personal calendar layer · full life timeline · what-if reflection · date reference',
+  proSubtitle: 'Public almanac free · birth unlocks For you · Pro deepens the read',
   proBenefits: [
-    'For you · daily personal layer from your chart (cultural reference)',
-    'Home & Lock Screen widgets with For you line · small / medium / large',
+    'For you — every Suitable / Avoid explained (favorable element · color · hour)',
     'Your whole life in 10-year cycles — decade, year, month + what-if reflection',
-    'For-you — every Suitable / Avoid explained (favorable element · color · hour)',
     'Custom date-picker range + personal almanac calendar subscription',
+    'Chart deep-read — personal Ba Zi / Zi Wei reference',
   ],
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
@@ -2020,11 +2033,15 @@ const en: Strings = {
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
   },
-  watchWidgets: 'Widgets & Watch',
+  watchWidgets: 'Home · Lock · Watch',
   watchWidgetsNote:
-    'Home Screen widgets use system Small / Medium / Large sizes for today’s almanac. Stem-branch, solar terms, and 宜忌 stay in Chinese characters on the face. Lock Screen likewise. Apple Watch complications remain a scaffolded preview.',
-  widgetPreviewCaption: 'Widget',
-  watchPreviewCaption: 'Watch preview',
+    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch slots (circular / rectangular / inline / corner) show today’s stem-branch and 宜忌 — the same for everyone. Add your birth info to unlock For you on the app and widgets. Watch only fills system-face slots; prefer the rectangular slot for 宜忌.',
+  widgetPreviewCaption: 'Home Screen',
+  watchPreviewCaption: 'Watch slots (system faces)',
+  watchSlotCircular: 'Circular',
+  watchSlotRectangular: 'Rectangular',
+  watchSlotInline: 'Inline',
+  watchSlotCorner: 'Corner',
   widgetSizeSmall: 'Small',
   widgetSizeMedium: 'Medium',
   widgetSizeLarge: 'Large',

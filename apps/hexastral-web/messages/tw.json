@@ -16,8 +16,8 @@
     "heroSub": "60 秒生成你的八字命盤\n以千年中華命學傳統為根基的 AI 性格分析",
     "heroCTA": "免費測算起盤 →",
     "heroNote": "無需註冊 · 60 秒出盤 · 首次贈 3 次 AI 對話",
-    "featuresSectionLabel": "Core Features",
-    "featuresSectionTitle": "命盤四維，AI 全息解讀",
+    "featuresSectionLabel": "核心功能",
+    "featuresSectionTitle": "四個角度看你的命盤",
     "features": [
       {
         "title": "八字 · 四柱排盤",
@@ -35,9 +35,9 @@
         "tag": "大運時間軸"
       },
       {
-        "title": "合盤 · 配對指數",
-        "desc": "雙人命盤深度合參，量化配對分數，揭示關係中的吸引與摩擦之源。",
-        "tag": "合盤配對"
+        "title": "合盤 · 五行參照",
+        "desc": "雙人命盤五行疊合，看吸引與摩擦主題——文化向，非評分。",
+        "tag": "合盤參照"
       }
     ],
     "convTitle": "你來這裡，是為了——",
@@ -62,7 +62,7 @@
       }
     ],
     "ctaHeadline": "免費獲取你的命盤",
-    "ctaSub": "下載 HexAstral，首次完成排盤贈送 3 次 AI 對話，解鎖深度解讀",
+    "ctaSub": "下載 Yuel，首次完成排盤贈送 3 次 AI 對話，可繼續深度解讀",
     "footerPrivacy": "隱私政策",
     "footerTerms": "用戶協議",
     "footerStart": "開始測算"
@@ -74,8 +74,8 @@
     "modePersonalTitle": "了解我自己",
     "modePersonalDesc": "透過八字框架探索個人性格、命盤結構與人生大運",
     "modePairingTitle": "了解我們的關係",
-    "modePairingDesc": "伴侶 / 戀人配對 — 五行深度合參",
-    "modePairingBadge": "最受歡迎 ★",
+    "modePairingDesc": "伴侶 / 戀人合盤 — 五行文化參照（非評分）",
+    "modePairingBadge": "雙人合盤",
     "noSignupNote": "無需註冊 · 資料僅用於計算 · 完全免費",
     "selfStep1Label": "第一步 — 你的資訊",
     "selfBirthLabel": "你的出生資訊",
@@ -98,14 +98,14 @@
     "fullReadingLabel": "完整 AI 解讀",
     "personalPaywallUnlock": "🔒 下載解鎖完整解讀",
     "personalCTAHeadline": "{name}的完整命盤已就緒",
-    "personalCTASub": "下載 HexAstral，獲取 AI 深度解讀 · 大運時間軸 · 神煞落盤",
+    "personalCTASub": "下載 Yuel，獲取 AI 深度解讀 · 大運時間軸 · 神煞落盤",
     "pairingScoreUnit": "{a} × {b}　五行參照",
     "pairingDisclaimer": "僅供娛樂與文化探索，不作關係諮詢或專業建議。",
     "pairingInsightsTitle": "命盤洞察",
     "pairingFullReportLabel": "深度合參報告",
     "pairingPaywallUnlock": "🔒 下載解鎖完整合參報告",
     "pairingCTAHeadline": "解鎖完整合參報告",
-    "pairingCTASub": "下載 HexAstral，獲取 AI 深度合參 · 關係摩擦點解析 · 最佳相處模式",
+    "pairingCTASub": "下載 Yuel，獲取文化合盤解讀 · 關係摩擦主題 · 相處參照",
     "partnerLabel": "{selfName} 的另一半",
     "bNameQuestion": "排盤之前，我需要知道你的名字。你叫什麼？",
     "bNamePlaceholder": "你的名字",
@@ -138,7 +138,7 @@
   },
   "form": {
     "nameLabel": "姓名（可選）",
-    "namePlaceholder": "隨便填，只是方便區分",
+    "namePlaceholder": "選填，便於稱呼你",
     "cityLabel": "出生城市 *",
     "cityPlaceholder": "如 台北·香港·北京·紐約",
     "solarTimeNote": "將根據城市經度自動修正真太陽時",
@@ -168,7 +168,7 @@
   },
   "pair": {
     "inviteText": "邀你比較你們的命盤",
-    "scoreLabel": "合盤指數",
+    "scoreLabel": "五行參照",
     "dayMasterOfLabel": "{name} 日主",
     "unlockFull": "下載解鎖完整報告",
     "orWeb": "或在瀏覽器直接測算",
@@ -190,21 +190,21 @@
     "notFound": "邀請不存在或已失效。"
   },
   "common": {
-    "download": "免費下載 HexAstral",
+    "download": "免費下載 Yuel",
     "downloadButton": "App Store 免費下載",
     "downloadNote": "免費開始 · 無需註冊 · 首次贈送 3 次 AI 對話",
-    "appStoreAlt": "Download on the App Store"
+    "appStoreAlt": "在 App Store 下載"
   },
   "invite": {
     "meta_title": "你收到邀請了 · HexAstral",
-    "meta_description": "你的朋友邀你一起探索八字命盤，透過邀請連結下載，首次額外贈送 AI 對話",
+    "meta_description": "你的朋友邀你一起探索八字命盤；透過邀請連結下載 Yuel，首次額外贈送 AI 對話",
     "headline": "你的朋友\n為你留了一席之地",
-    "subline": "你的朋友邀你一起探索八字命盤。透過邀請連結下載 HexAstral，即可解鎖專屬福利。",
+    "subline": "你的朋友邀你一起探索八字命盤。透過邀請連結下載 Yuel，首次可獲額外 AI 對話次數。",
     "ref_label": "邀請碼",
-    "benefit_1": "首次完成排盤額外贈送 AI 對話次數，解鎖深度解讀",
+    "benefit_1": "首次完成排盤額外贈送 AI 對話次數，可繼續深度解讀",
     "benefit_2": "無需註冊，60 秒完成命盤起盤",
-    "benefit_3": "八字 · 紫微 · 合盤配對全模組開放",
-    "cta": "免費下載，領取邀請獎勵",
+    "benefit_3": "八字 · 紫微 · 合盤工具 — 免費開始，Pro 解鎖深度",
+    "cta": "免費下載 Yuel，領取邀請獎勵",
     "note": "僅限透過邀請連結首次下載的新用戶"
   },
   "Metadata": {
@@ -273,15 +273,15 @@
       "archetypeLink": "閱讀日主意象 →",
       "disclaimer": "採用簡化的干支邊界（公曆近似）。Yuel 在正式解讀中應用節氣、真太陽時與農曆換算。",
       "ctaHeadline": "完整四柱與紫微，盡在 Yuel",
-      "ctaSub": "出生城市、真太陽時校正與融合 AI 解讀——Yuel 旗艦應用。"
+      "ctaSub": "出生城市、真太陽時校正與融合 AI 解讀——在 Yuel 中完整查看。"
     },
     "hexagram": {
       "metaTitle": "周易六十四卦索引",
       "metaDescription": "文王序卦名與卦辭。資料來自 HexAstral 知識庫。",
       "heading": "易經 · 周易卦序索引",
       "intro": "每一卦鏈向適合研習的卦辭片段。三錢六爻搖卦將隨 Yaul 上線；今日可先探索 Yuun 黃曆。",
-      "ctaHeadline": "在 Yuun 研習曆法語境",
-      "ctaSub": "每日黃曆與古典語境——Yaul 開發期間的入門路徑。"
+      "ctaHeadline": "在 Yuun 查看每日黃曆",
+      "ctaSub": "每日黃曆與古典語境——可先在 Yuun 查看；六爻搖卦將隨 Yaul 上線。"
     },
     "compatibility": {
       "metaTitle": "合盤預覽 — HexAstral",
@@ -313,7 +313,7 @@
       "resultPrefix": "年份",
       "lunarNote": "若生於一月或二月初，請對照農曆新年——生肖可能屬於上一年。",
       "ctaHeadline": "每日黃曆，盡在 Yuun",
-      "ctaSub": "黃曆、個人層與大運時間軸——深入命學的引流入口。",
+      "ctaSub": "公開黃曆免費（主屏 / 鎖屏 / Watch）；錄入生辰即可看到「對你而言」。",
       "introPage": "十二生肖錨定春節民俗。嚴肅命盤仍靠八字與紫微——單看生肖粒度較粗。",
       "animalLabel": "近似年肖 · 生肖",
       "readLink": "閱讀生肖說明 →",

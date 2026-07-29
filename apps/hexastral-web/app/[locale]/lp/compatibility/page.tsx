@@ -10,7 +10,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: 'Bond reading · Yuel funnel',
+    title: 'Bond reading · Yuel',
     alternates: {
       canonical:
         locale === 'en'
@@ -25,14 +25,14 @@ export default async function LpCompatibilityPage() {
     <>
       <h1 style={{ fontWeight: 400 }}>Two charts, one bond — explore the shape of your connection</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
-        Influencer-safe CTA for Eastern synastry (合盘). Full bond readings live in Yuel — cultural
-        exploration and reflection, not a compatibility score or prediction.
+        A cultural bond reading (合盘) in Yuel — reflection on attraction and friction themes, not a
+        compatibility score or prediction.
       </p>
       <Link
         href='/tools/compatibility'
         style={{ color: 'var(--color-gold)', marginBottom: '1.25rem', display: 'inline-block' }}
       >
-        Run the Turnstile preview tool →
+        Try a free elemental preview →
       </Link>
       <DownloadCTA
         headline='Yuel — pair charts as a habit'

@@ -23,8 +23,10 @@ Status: **P0–P5 scaffolding in repo.** Activate with prebuild + App Group on d
 
 App Group `group.com.hexastral.yuun`. Envelope key `hexastral_widget_payload_v1`; legacy `almanac_days` mirrored for one release.
 
-Pro `fit` is written only when `auspice_pro` is entitled. AlmanacEngine never invents fit.
+## IAP / freemium
 
-## IAP
+- **Free (no birth):** public 黄历 on Home (S/M/L), Lock Screen accessories, Watch slots — same for everyone.
+- **Free (with birth):** 「对你而言」 verdict + one-line summary in App and on widgets (written into App Group when `personalization` is present).
+- **Pro:** per-reason 宜忌 deep unlock, life timeline / what-if, personal calendar feed, chart deep-read — not the public almanac itself.
 
-Free: public 黄历 on all sizes. Pro: 「对你而言」 line on medium / large / lock / watch rectangular.
+AlmanacEngine never invents fit.

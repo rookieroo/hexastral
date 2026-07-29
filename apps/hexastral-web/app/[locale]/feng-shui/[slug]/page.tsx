@@ -46,8 +46,8 @@ export default async function FengShuiGuidePage({ params }: Props) {
         guarantees.
       </p>
       <DownloadCTA
-        headline='FengShui AI waitlist funnel'
-        sub='Compass-aware rooms arrive as the standalone app passes review.'
+        headline='Kanyu waitlist'
+        sub='Compass-aware room notes arrive as the standalone app ships.'
         appStoreUrl={resolveAppStoreUrl('fengshui')}
         targetApp='fengshui'
       />

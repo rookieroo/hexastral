@@ -77,11 +77,11 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       metadataBase,
       title: { absolute: 'Yuun — the Chinese almanac, every day' },
       description:
-        'A daily 黄历: 宜忌, GanZhi (干支), the lunar calendar and your annual cycle, grounded in classical Chinese cosmology. Educational, not predictive. From UseONE, LLC.',
+        'Free daily 黄历 (宜忌, GanZhi) on Home, Lock Screen, and Watch. Add birth for For you; Pro deepens the read. Educational, not predictive. From UseONE, LLC.',
       icons: { icon: '/brand/yuun.png' },
       openGraph: {
         title: 'Yuun · 运',
-        description: 'The Chinese almanac, every day.',
+        description: 'Free public almanac on Home, Lock Screen, and Watch. Add birth for a free For you summary.',
         siteName: 'Yuun',
       },
       alternates: { canonical: '/' },

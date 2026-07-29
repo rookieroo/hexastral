@@ -37,8 +37,13 @@ Repeat for **each** row above.
 - [ ] Register App ID = brand Bundle ID
 - [ ] Enable **Sign in with Apple**
 - [ ] Associated Domains (match `app.json` `associatedDomains`)
-- [ ] Yuun only: App Group `group.com.hexastral.yuun` (+ widget extension when shipping)
+- [ ] Yuun only: App Group `group.com.hexastral.yuun` on:
+  - `com.hexastral.yuun`
+  - `com.hexastral.yuun.widget`
+  - `com.hexastral.yuun.watch`
+  - `com.hexastral.yuun.watch.widget`
 - [ ] Regenerate provisioning profiles after capabilities
+  (or `cd apps/auspice-app && bun run ios:device` once — shim allows Xcode to create them)
 
 
 

@@ -21,7 +21,9 @@ const withWidgetExtension = (config, props) => {
 
   console.log(
     `[widget-kit-ios] ${props.appSlug} → ${props.widgetName} group=${props.appGroupId}` +
-      (props.watchComplication ? ' (watchComplication planned)' : '')
+      (props.watchComplication
+        ? ' (watchComplication: YuunWatch via targets/watch-widget)'
+        : '')
   )
 
   return withEntitlementsPlist(config, (cfg) => {

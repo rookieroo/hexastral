@@ -10,7 +10,6 @@
 import { Button, useTheme } from '@zhop/core-ui'
 import { ChevronRightIcon, SettingsIcon } from '@zhop/hexastral-icons/action'
 import { SWIPE_TO_ME } from '@zhop/satellite-ui'
-import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
@@ -64,8 +63,6 @@ export default function HomeScreen() {
   const { colors, spacing, mode } = useTheme()
   const { phase: devMoonPhase } = useDevMoonPhase()
   const { t, locale } = useStrings()
-  const entitlements = useEntitlements()
-  const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const router = useRouter()
   const params = useLocalSearchParams<{ day?: string; focus?: string }>()
 
@@ -123,7 +120,7 @@ export default function HomeScreen() {
     }, [loadDay])
   )
 
-  // Widgets follow the same locale as the app (system by default; Me override when set).
+  // Widgets: public 黄历 always; 「对你而言」 when birth personalization exists (not Pro-gated).
   useEffect(() => {
     if (dayData) {
       void syncTodayWidget(
@@ -132,10 +129,10 @@ export default function HomeScreen() {
         dayData.personalization,
         t,
         locale,
-        isPro
+        Boolean(dayData.personalization)
       )
     }
-  }, [dayData, t, locale, isPro])
+  }, [dayData, t, locale])
 
   useEffect(() => {
     if (focusPersonal && dayData && !dayLoading) {
