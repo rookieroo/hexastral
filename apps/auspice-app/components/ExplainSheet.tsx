@@ -56,7 +56,7 @@ const LABELS: Record<Locale, SheetLabels> = {
     loading: '解説中…',
     failed: '取得に失敗しました',
     pro: '詳しい解説は Pro 限定 · 以下は基本説明',
-    unlock: '詳しい解説を解錠',
+    unlock: '詳しい解説を見る',
   },
   en: {
     title: 'Deep reading',

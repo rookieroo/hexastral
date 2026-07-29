@@ -11,7 +11,7 @@ export const XIAOMAN: FestivalContent = {
     'zh-Hans': '小满',
     'zh-Hant': '小滿',
     ja: '小満',
-    en: 'Xiaoman (Lesser Fullness)',
+    en: 'Grain Buds (Xiaoman)',
   },
   tagline: {
     'zh-Hans': '二十四节气之八 · 麦粒渐满，物致小得盈满',
@@ -59,7 +59,7 @@ export const XIAOMAN: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '小満の三候——「一候 苦菜秀（さか）ゆ、二候 靡草（びそう）死す、三候 麦秋至る」。苦菜が茂って採れるようになり、陰を好む靡草が烈日のもとで枯れ、麦類が次第に熟す（「麦秋」は麦の実る秋の意）。小満とは、万物がここに至って小しく盈ち満ち、夏熟の作物の実が満ちつつまだ熟しきらぬ頃をいう。',
+        body: '万物が小さく満ちる——夏熟作物の実が膨らみつつ、まだ熟しきらない節気。\n\n「一候苦菜秀，二候靡草死，三候麦秋至」\n\n苦菜が茂って採れる。陰を好む靡草が強い日差しの下で枯れる。麦が次第に実る（「麦秋」は麦の成熟の意）。小満の名は、満ちつつあるがまだ満たない状態を表す。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const XIAOMAN: FestivalContent = {
       },
       {
         title: '養生',
-        body: '小満は湿と熱がともに重い。漢方では熱を清め湿を利し、脾を健やかにして胃を和すことを説く。食は淡白に、「苦」を多くとり（苦瓜・苦菜で心火を清め）、肥甘の濃いものや湿を生むものを控える。起居は湿気と暑さを防ぎ、衣は通気よく。情を穏やかに保って苛立ちを避ける。皮膚病や湿疹が出やすく、淡白な食と乾いた清潔を保つとよい。',
+        body: '小満は湿と熱がともに重い。養生では熱を清め湿を利し、脾を健やかにして胃を和らげる。食事は淡白に、苦瓜・苦菜などで心火を清め、肥甘の濃いものや湿を生むものは控える。起居は湿気と暑さを防ぎ、衣は通気よく。気持ちを穏やかに保って苛立ちを避ける。皮膚病や湿疹が出やすい時期なので、淡白な食と清潔を保つとよい。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・小満」は節候の態を写す：「小満 気全き時、如何ぞ靡草衰うる。田家 黍稷を私（いとな）み、方伯 蚕糸を問う。」——小満の頃、天地の気は満ちようとするのに、陰を好む靡草は強い光のもとで衰え枯れる。農家は黍や稷の仕事に追われ、地方の長官は蚕糸の収穫を気にかける。わずかな言葉で、小満の農と桑の二重の忙しさを描き出す。',
+        body: '元稹の「咏廿四气诗·小满」は、節候と農桑の忙しさを簡潔に描く。\n\n「小满气全时，如何靡草衰。田家私黍稷，方伯问蚕丝。」\n\n小満の頃、天地の気は満ちようとするのに、陰を好む靡草は強い光の下で枯れる。農家は黍や稷の仕事に追われ、地方の長官は蚕糸の収穫を気にかける——農と桑の二重の忙しさが数行に収まっている。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Lesser Fullness: "first, the bitter herb flourishes (苦菜秀); second, the shade-loving grass withers (靡草死); third, the wheat ripens (麦秋至, the \'wheat autumn\')." The bitter herb grows thick enough to gather, the shade-loving grass dies under the strong sun, and the grain begins to ripen. Xiaoman — "small fullness" — names the moment when summer-ripening crops fill out their grain but are not yet fully ripe.',
+        body: 'The three pentads of Lesser Fullness: first, the bitter herb flourishes; second, the shade-loving grass withers; third, the wheat ripens (the "wheat autumn"). The bitter herb grows thick enough to gather, the shade-loving grass dies under the strong sun, and the grain begins to ripen. Xiaoman — "small fullness" — names the moment when summer-ripening crops fill out their grain but are not yet fully ripe. Classical three pentads: 「一候苦菜秀，二候靡草死，三候麦秋至」。',
       },
       {
         title: 'Farming',

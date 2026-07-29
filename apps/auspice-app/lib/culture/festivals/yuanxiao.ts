@@ -17,7 +17,7 @@ export const YUANXIAO: FestivalContent = {
   tagline: {
     'zh-Hans': '农历正月十五 · 灯火阑珊，年的尾声',
     'zh-Hant': '農曆正月十五 · 燈火闌珊，年的尾聲',
-    ja: '農暦正月十五日 · 灯籠の夜、年の名残',
+    ja: '旧暦正月十五日 · 灯籠の夜、年の名残',
     en: 'Lunar 1/15 · lanterns, and the close of the New Year',
   },
   sections: {
@@ -90,23 +90,23 @@ export const YUANXIAO: FestivalContent = {
     en: [
       {
         title: 'History',
-        body: 'The Lantern Festival falls on the 15th day of the first lunar month — the first full moon of the new year, hence its other names, the "Upper Prime" (上元) and the "Festival of Lanterns." Tradition traces it to the Han dynasty, when Emperor Ming, to honor the Buddha, ordered lanterns lit on this night; the popular custom of lantern displays grew from there. Daoism marks the day as 上元, when the Official of Heaven bestows blessings. Lantern fairs flourished under the Tang (618-907), and the Song (960-1279) added the riddle game — making the festival the finale of the New Year season.',
+        body: 'The Lantern Festival falls on the 15th day of the first lunar month — the first full moon of the new year, hence its other names, the Upper Prime (上元) and the Festival of Lanterns. Tradition traces it to the Han dynasty, when Emperor Ming, to honor the Buddha, ordered lanterns lit on this night; the popular custom of lantern displays grew from there. Daoism marks the day as Upper Prime, when the Official of Heaven bestows blessings. Lantern fairs flourished under the Tang (618-907), and the Song (960-1279) added the riddle game — making the festival the finale of the New Year season.',
       },
       {
         title: 'Customs',
-        body: 'People admire lanterns, guess lantern riddles, watch dragon and lion dances, and stroll under the moon. In old times this was one of the rare nights the curfew lifted, so young men and women could go out together — lending the festival a quiet romance: "The moon climbs the willow tops; lovers meet at dusk." Northerners roll 元宵, southerners wrap 汤圆; the family sits together, and the year comes to a round, whole close on this night.',
+        body: 'People admire lanterns, guess lantern riddles, watch dragon and lion dances, and stroll under the moon. In old times this was one of the rare nights the curfew lifted, so young men and women could go out together — lending the festival a quiet romance: "The moon climbs the willow tops; lovers meet at dusk." Northerners roll yuanxiao (元宵), southerners wrap tangyuan (汤圆); the family sits together, and the year comes to a round, whole close on this night.',
       },
       {
         title: 'Food',
-        body: "元宵 and 汤圆 — glutinous rice balls — are the night's centerpiece. In the north the filling is rolled in dry glutinous flour until it builds into a ball; in the south wet glutinous dough is wrapped around the filling and rounded by hand. Chewy skins, sweet fillings (sesame, red bean, peanut), boiled until they float. A bowl of round dumplings carries the wish for 团圆 — reunion, wholeness.",
+        body: 'Yuanxiao and tangyuan (元宵 / 汤圆) — glutinous rice balls — are the night\'s centerpiece. In the north the filling is rolled in dry glutinous flour until it builds into a ball; in the south wet glutinous dough is wrapped around the filling and rounded by hand. Chewy skins, sweet fillings (sesame, red bean, peanut), boiled until they float. A bowl of round dumplings carries the wish for reunion and wholeness (团圆).',
       },
       {
         title: 'Poetry',
-        body: 'Xin Qiji\'s "Green Jade Cup: Lantern Night" captures the festival\'s blaze: "The east wind by night opens a thousand trees of flowers, / and blows the stars down like rain… / Among the crowd I sought her a thousand times; / then I turned my head — / and there she stood, where the lights were guttering low." Amid the whole city\'s lanterns and perfumed carriages, the poet seeks instead the one who waits in the dimness. The scholar Wang Guowei took that final image — 灯火阑珊, "where the lanterns burn low" — as a metaphor for the highest stage of learning and of life. The festival\'s splendor and its solitary glow both live in these few lines.',
+        body: 'Xin Qiji\'s "Green Jade Cup: Lantern Night" captures the festival\'s blaze: "The east wind by night opens a thousand trees of flowers, / and blows the stars down like rain… / Among the crowd I sought her a thousand times; / then I turned my head — / and there she stood, where the lanterns burn low." Amid the whole city\'s lanterns and perfumed carriages, the poet seeks instead the one who waits in the dimness. The scholar Wang Guowei took that final image — "where the lanterns burn low" (灯火阑珊) — as a metaphor for the highest stage of learning and of life. The festival\'s splendor and its solitary glow both live in these few lines.',
       },
       {
         title: 'Modern celebration',
-        body: 'Lantern fairs still light up cities across China — the Zigong and Qinhuai fairs are spectacular, ice lanterns and LED displays standing beside traditional paper ones. Riddle-guessing has moved online; dragon and lion dances headline gala stages. 汤圆 now sit year-round in supermarket freezers. Only once the Lantern Festival passes is the New Year truly over — and people gather themselves and return to their separate busy lives.',
+        body: 'Lantern fairs still light up cities across China — the Zigong and Qinhuai fairs are spectacular, ice lanterns and LED displays standing beside traditional paper ones. Riddle-guessing has moved online; dragon and lion dances headline gala stages. Tangyuan now sit year-round in supermarket freezers. Only once the Lantern Festival passes is the New Year truly over — and people gather themselves and return to their separate busy lives.',
       },
     ],
   },

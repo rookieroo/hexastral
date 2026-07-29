@@ -17,7 +17,7 @@ export const CHONGYANG: FestivalContent = {
   tagline: {
     'zh-Hans': '农历九月初九 · 登高望远，敬老怀亲',
     'zh-Hant': '農曆九月初九 · 登高望遠，敬老懷親',
-    ja: '農暦九月九日 · 高きに登り、長寿を祈る',
+    ja: '旧暦九月九日 · 高きに登り、長寿を祈る',
     en: 'Lunar 9/9 · climbing high, honoring elders',
   },
   sections: {

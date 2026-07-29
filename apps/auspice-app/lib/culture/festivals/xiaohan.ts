@@ -11,7 +11,7 @@ export const XIAOHAN: FestivalContent = {
     'zh-Hans': '小寒',
     'zh-Hant': '小寒',
     ja: '小寒',
-    en: 'Xiaohan (Lesser Cold)',
+    en: 'Minor Cold (Xiaohan)',
   },
   tagline: {
     'zh-Hans': '二十四节气之二十三 · 天渐寒，三九前后',
@@ -59,7 +59,7 @@ export const XIAOHAN: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '小寒の三候——「一候 雁 北に郷（むか）う、二候 鵲（かささぎ）始めて巣くう、三候 雉 始めて雊（な）く」。雁は陽気の萌しを感じて北へ帰る気配を見せ、鵲は陽気を感じて巣を作り始め、雉は四九（最も寒い頃）近くに鳴いて雌を求める（「雊」は雉の鳴き声）。小寒とは、寒さが次第に増すがまだ極まらぬゆえ「小」という。されど民間では「小寒は大寒に勝る」とも言う。',
+        body: '寒さが増すが、まだ極まらない節気。民間には「小寒は大寒に勝る」とも言われる。\n\n「一候雁北乡，二候鹊始巢，三候雉始雊」\n\n雁が陽の気の芽生えを感じ、北へ帰る気配を見せる。カササギが巣を作り始める。キジ（雉）が鳴いて求愛する。厳寒の中にも、春への兆しが三候に表れる。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const XIAOHAN: FestivalContent = {
       },
       {
         title: '養生',
-        body: '小寒は厳しい寒さで、陽気が内に収まる。漢方では「腎陽を温補し、寒を防ぎ心を護る」ことを説き、「三九に一冬を補えば、来年 病痛なし」と言う。食は温熱で補益するもの（羊肉・当帰・龍眼・胡桃・黒豆・糯米飯）を宜とし、生冷を忌む。早寝遅起きし、寒を避け保温に努める（とりわけ頭・首・背・足を護る）。情を楽観に穏やかに保つ。運動は「日の出の後」穏やかに行い、滑り転倒を防ぎ、大汗をかいて風に当たるのを避ける。',
+        body: '小寒は厳しい寒さで、陽気が内に収まる。養生では腎陽を温補し、寒を防ぎ心を護る。「三九に一冬を補えば、来年 病痛なし」と言われる頃。食事は温熱で補益するもの——羊肉・当帰・龍眼・胡桃・黒豆・糯米飯など——が向く。生冷は避ける。早寝遅起きし、とりわけ頭・首・背・足を温める。気持ちは楽観的に穏やかに。運動は日の出の後に穏やかに行い、滑り転倒を防ぎ、大汗をかいて風に当たるのを避ける。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・小寒」は隆冬の鵲の巣を詠む：「小寒 大呂に連なり、歓鵲 新巣を壘（きず）く。食を拾いて河曲を尋ね、紫を銜（ふく）みて樹梢を繞（めぐ）る。」——小寒の節は十二律の「大呂」に応じ、喜ばしげな鵲はもう枝をくわえて新しい巣を築き始める。川の湾に沿って餌を探し、枝をくわえて梢を巡り飛ぶ。詩人は厳寒のなかに、巣づくりに励む鵲の旺盛な生気を捉え、蕭索のうちに暖を見いだす。',
+        body: '元稹の「咏廿四气诗·小寒」は、厳寒の中のカササギの巣づくりを詠む。蕭索のうちに生機を見いだす作品。\n\n「小寒连大吕，欢鹊垒新巢。拾食寻河曲，衔紫绕树梢。」\n\n小寒の節は十二律の「大呂」に応じ、喜ばしげなカササギが枝をくわえて新巣を築く。川の湾に沿って餌を探し、梢を巡り飛ぶ——厳寒のなかにも、春への兆しが感じられる。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Lesser Cold: "first, the wild geese turn homeward north (雁北乡); second, the magpie begins to nest (鹊始巢); third, the pheasant begins to call (雉始雊)." The geese, sensing the first stir of yang, begin to lean northward; the magpie, feeling the yang, starts to build its nest; and the pheasant calls for a mate near the coldest days. Lesser Cold is when the cold deepens but has not yet reached its limit, hence "lesser" — though folk wisdom often says "Lesser Cold beats Greater Cold."',
+        body: 'The three pentads of Lesser Cold: first, the wild geese turn homeward north; second, the magpie begins to nest; third, the pheasant begins to call. The geese, sensing the first stir of yang, begin to lean northward; the magpie, feeling the yang, starts to build its nest; and the pheasant calls for a mate near the coldest days. Lesser Cold is when the cold deepens but has not yet reached its limit, hence "lesser" — though folk wisdom often says "Lesser Cold beats Greater Cold." Classical three pentads: 「一候雁北乡，二候鹊始巢，三候雉始雊」。',
       },
       {
         title: 'Farming',

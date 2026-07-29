@@ -31,7 +31,7 @@
  *   per-combo table (乙丑 = いっちゅう ≠ おつ+ちゅう) — deferred, not concatenated
  *
  * ## Other
- * - 节气 en: pinyin proper names (Dashu) — noun-like, OK without CJK
+ * - 节气 en UI: English gloss (Pinyin) e.g. Major Heat (Dashu) — see SOLAR_TERM_NAMES
  * - 吉/平/凶 fit glyphs stay CJK on dial; prose may gloss
  * - Water Rabbit / Fire Horse = gloss only, never the day-pillar identity
  * - Padding: small 14 / medium 16 / large 18 pt

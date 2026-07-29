@@ -11,7 +11,7 @@ export const MANGZHONG: FestivalContent = {
     'zh-Hans': '芒种',
     'zh-Hant': '芒種',
     ja: '芒種',
-    en: 'Mangzhong (Grain in Ear)',
+    en: 'Grain in Ear (Mangzhong)',
   },
   tagline: {
     'zh-Hans': '二十四节气之九 · 麦收稻插，最忙的农时',
@@ -59,7 +59,7 @@ export const MANGZHONG: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '芒種の三候——「一候 螳螂（とうろう）生ず、二候 鵙（もず）始めて鳴く、三候 反舌（はんぜつ）声無し」。螳螂は陰気の兆しを感じて卵から孵り、百舌が鳴き始め、百鳥の声をよく真似る反舌鳥は逆に鳴きやむ。芒種とは「芒（のぎ）ある穀を種うべし」の意で、播種と収穫が重なり合う繁忙の節である。',
+        body: '「芒のある穀物を種う時」——播種と収穫が重なる繁忙の節気である。\n\n「一候螳螂生，二候鵙始鸣，三候反舌无声」\n\nカマキリが卵から孵る。モズ（鵙）が鳴き始める。ウグイス模様の鳥（反舌）が、かえって鳴きやむ。陰の気が芽生え始め、夏の忙しさが頂点に近づく。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const MANGZHONG: FestivalContent = {
       },
       {
         title: '養生',
-        body: '芒種は湿熱が次第に盛んになる。漢方では清やかに補い火を降ろし、脾を健やかにして湿を化すことを説く。食は淡白に、水を多く補い（緑豆湯・酸梅湯で津を生じ暑を解き）、辛熱・脂を控える。遅寝早起き、昼の小憩をとり、よく身を洗って「汗を止め疰夏（夏負け）を防ぐ」。情を伸びやかに保ち、鬱屈を避ける。汗の多い人は津液と電解質の補給に努める。',
+        body: '芒種は湿熱が次第に盛んになる。養生では清やかに補い火を降ろし、脾を健やかにして湿を化す。食事は淡白に、緑豆湯・酸梅湯で水を補い津を生じ暑を解き、辛熱・脂は控える。遅寝早起き、昼の小憩をとり、よく身を洗って「汗を止め疰夏（夏負け）を防ぐ」。気持ちを伸びやかに保ち、鬱屈を避ける。汗の多い人は津液と電解質の補給に努める。',
       },
       {
         title: '詩',
-        body: '陸游「時雨」は芒種の農繁を直に詠む：「時雨 芒種に及び、四野 皆 秧（なえ）を插す。家家 麦飯美しく、処処 菱歌長し。」——時を得た雨がちょうど芒種に降り、四方の野はどこも田植えに沸く。家ごとに新麦の飯が香り、水郷のあちこちに菱採りの歌が響く。詩人の筆のもと、芒種は麦熟れ稲植わる、豊かで歓ばしい田園の長巻となる。',
+        body: '陸游の「时雨」は、芒種の農忙を素直に描いた作品。麦熟れと田植え、水郷の菱歌が一幅の絵になる。\n\n「时雨及芒种，四野皆插秧。家家麦饭美，处处菱歌长。」\n\n時雨が芒種に降り、四方の野は田植えに忙しい。家ごとに新麦の飯が香り、水辺では菱を摘む歌が響く——豊かで歓ばしい田園の長巻である。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Grain in Ear: "first, the mantis is born (螳螂生); second, the shrike begins to call (鵙始鸣); third, the mockingbird falls silent (反舌无声)." The mantis, sensing the first stir of yin, hatches from its egg; the shrike starts to cry; and the mockingbird, which mimics a hundred birds, falls quiet. Mangzhong — "awned grain may be sown" — is the crowded season where sowing and reaping overlap.',
+        body: 'The three pentads of Grain in Ear: first, the mantis is born; second, the shrike begins to call; third, the mockingbird falls silent. The mantis, sensing the first stir of yin, hatches from its egg; the shrike starts to cry; and the mockingbird, which mimics a hundred birds, falls quiet. Mangzhong — "awned grain may be sown" — is the crowded season where sowing and reaping overlap. Classical three pentads: 「一候螳螂生，二候鵙始鸣，三候反舌无声」。',
       },
       {
         title: 'Farming',

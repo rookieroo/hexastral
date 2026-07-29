@@ -11,7 +11,7 @@ export const XIAZHI: FestivalContent = {
     'zh-Hans': '夏至',
     'zh-Hant': '夏至',
     ja: '夏至',
-    en: 'Xiazhi (Summer Solstice)',
+    en: 'Summer Solstice (Xiazhi)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十 · 白昼最长，阳极阴生',
@@ -59,7 +59,7 @@ export const XIAZHI: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '夏至の三候——「一候 鹿角解（お）つ、二候 蜩（ひぐらし）始めて鳴く、三候 半夏生ず」。鹿の角は陽に属し、夏至に陰が生じて角が落ちる。蝉（蜩）は陰気を感じて羽を鼓して鳴き始め、陰を好む薬草の半夏が沼沢の湿地に生える。夏至の日、北半球は昼が最も長く、これより陰気が次第に生じ昼は短くなってゆく。',
+        body: '北半球で昼が最も長い日。これより陰の気が生じ、昼は次第に短くなっていく。\n\n「一候鹿角解，二候蜩始鸣，三候半夏生」\n\n鹿の角が落ちる（陽の気が陰へ移る象徴）。セミ（蜩）が鳴き始める。陰を好む薬草・半夏（かんぽう）が湿地に生える。夏至は陽の極みと、陰への転換の始まりでもある。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const XIAZHI: FestivalContent = {
       },
       {
         title: '養生',
-        body: '夏至は陽が極まり陰が生じる。漢方では「陽を養い心を護り、陰の津を固く守る」ことを説く。食は淡白に、苦と酸を多く（苦瓜・烏梅で心を清め津を生じ）、生冷を慎んで脾胃を護る。遅寝早起き、昼寝で心を養い、烈日を避けて中暑（熱中症）を防ぐ。情を静め神を寧んじ、「心静かなれば自ずから涼し」。冬の病を夏に治す者は、三伏が近づく今、医に従って調える。',
+        body: '夏至は陽が極まり陰が生じる。養生では陽を養い心を守り、陰の津を保つことが大切。食事は淡白に、苦瓜・烏梅などで心を清め津を生じ、生冷は慎んで脾胃を護る。遅寝早起き、昼寝で心を養い、烈日を避けて中暑（熱中症）を防ぐ。気持ちを静めて神を落ち着かせ、「心静かなれば自ずから涼し」。冬の病を夏に治すなら、三伏が近づく今、医師の指導に従って調える。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const XIAZHI: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Summer Solstice: "first, the deer sheds its antlers (鹿角解); second, the cicada begins to sing (蜩始鸣); third, the pinellia herb grows (半夏生)." The deer\'s antlers, being yang, drop as yin is born at the solstice; the cicada, sensing the yin, beats its wings and starts to sing; and the shade-loving herb pinellia grows in marshy wet ground. On the solstice the northern hemisphere has its longest day; from here the yin slowly rises and the days shorten.',
+        body: 'The three pentads of the Summer Solstice: first, the deer sheds its antlers; second, the cicada begins to sing; third, the pinellia herb grows. The deer\'s antlers, being yang, drop as yin is born at the solstice; the cicada, sensing the yin, beats its wings and starts to sing; and the shade-loving herb pinellia grows in marshy wet ground. On the solstice the northern hemisphere has its longest day; from here the yin slowly rises and the days shorten. Classical three pentads: 「一候鹿角解，二候蜩始鸣，三候半夏生」。',
       },
       {
         title: 'Farming',

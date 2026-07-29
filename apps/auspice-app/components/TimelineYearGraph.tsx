@@ -308,7 +308,11 @@ export function TimelineYearGraph({
                   onSelectMonth?.(m.month)
                 }}
                 accessibilityRole='button'
-                accessibilityLabel={`${m.label}月 ${m.stem}${m.branch}`}
+                accessibilityLabel={
+                  lang === 'en'
+                    ? `Month ${m.month} ${m.stem}${m.branch}`
+                    : `${m.label}月 ${m.stem}${m.branch}`
+                }
                 style={{
                   position: 'absolute',
                   left: MLANE + 12,

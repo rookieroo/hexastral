@@ -96,6 +96,7 @@ export function DrilldownGraph({
   onSelectYear,
   onSelectMonth,
   fitColor,
+  lang = 'zh',
 }: {
   width: number
   colors: DGColors
@@ -114,6 +115,8 @@ export function DrilldownGraph({
   onSelectYear: (index: number) => void
   onSelectMonth?: (month: number) => void
   fitColor: Record<'吉' | '平' | '凶', string>
+  /** UI locale — month accessibility labels use English when not zh/ja. */
+  lang?: string
 }) {
   const yOf = (i: number) => TOP + ROW + i * ROW // 大运 head sits at TOP; 流年 below
   const laneBottom = yOf(liunian.length - 1)
@@ -292,7 +295,11 @@ export function DrilldownGraph({
                   onSelectMonth?.(m.month)
                 }}
                 accessibilityRole='button'
-                accessibilityLabel={`${m.label}月 ${m.stem}${m.branch}`}
+                accessibilityLabel={
+                  lang === 'en'
+                    ? `Month ${m.month} ${m.stem}${m.branch}`
+                    : `${m.label}月 ${m.stem}${m.branch}`
+                }
                 style={{
                   position: 'absolute',
                   left: LANE_X - 12,

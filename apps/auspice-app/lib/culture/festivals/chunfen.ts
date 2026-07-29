@@ -11,7 +11,7 @@ export const CHUNFEN: FestivalContent = {
     'zh-Hans': '春分',
     'zh-Hant': '春分',
     ja: '春分',
-    en: 'Chunfen (Spring Equinox)',
+    en: 'Spring Equinox (Chunfen)',
   },
   tagline: {
     'zh-Hans': '二十四节气之四 · 昼夜均分，阴阳相半',
@@ -59,7 +59,7 @@ export const CHUNFEN: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '春分の三候——「一候 玄鳥至る、二候 雷乃ち声を発す、三候 始めて電（いなびかり）す」。燕（玄鳥）が南から帰り、天に雷の声が始まり、やがて稲妻が見える。春分は昼夜が等しく、寒暑も平らかで陰陽相半ばする。これより昼は長く夜は短くなる、天象を観るうえで大切な節目である。',
+        body: '昼夜が等しく、陰陽が半ばになる節気。これより昼が長く、夜が短くなり、天候を観るうえでも重要な節目である。\n\n「一候玄鸟至，二候雷乃发声，三候始电」\n\n燕（玄鳥）が南から帰ってくる。空に雷鳴が聞こえ始め、やがて稲妻も見える。春分は寒暑も平らかで、春の深まりと天候の変化が三候に表れる。',
       },
       {
         title: '農事',
@@ -77,7 +77,7 @@ export const CHUNFEN: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Spring Equinox: "first, the swallow arrives (玄鸟至); second, thunder gives voice (雷乃发声); third, lightning first appears (始电)." Swallows return from the south, thunder sounds in the sky, and lightning follows. At the equinox day and night are equal, heat and cold are level, yin and yang in balance; from here the days lengthen and the nights shorten — a key moment for reading the signs of the heavens.',
+        body: 'The three pentads of the Spring Equinox: first, the swallow arrives; second, thunder gives voice; third, lightning first appears. Swallows return from the south, thunder sounds in the sky, and lightning follows. At the equinox day and night are equal, heat and cold are level, yin and yang in balance; from here the days lengthen and the nights shorten — a key moment for reading the signs of the heavens. Classical three pentads: 「一候玄鸟至，二候雷乃发声，三候始电」。',
       },
       {
         title: 'Farming',

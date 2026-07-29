@@ -11,7 +11,7 @@ export const BAILU: FestivalContent = {
     'zh-Hans': '白露',
     'zh-Hant': '白露',
     ja: '白露',
-    en: 'Bailu (White Dew)',
+    en: 'White Dew (Bailu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十五 · 露凝而白，秋意渐浓',
@@ -59,7 +59,7 @@ export const BAILU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '白露の三候——「一候 鴻雁来たる、二候 玄鳥帰る、三候 群鳥 羞（しゅう）を養う」。鴻雁が北から南へ飛び、燕（玄鳥）も寒を避けて南へ帰り、百鳥が秋を感じて食を蓄え冬に備える（「養羞」は食を貯えるの意）。白露とは、陰気が次第に重くなり、露が凝って白く見える頃で、昼夜の寒暖差が最も大きい節気の一つである。',
+        body: '陰の気が重くなり、露が白く見える節気。昼夜の寒暖差が一年で最も大きくなる時期でもある。\n\n「一候鸿雁来，二候玄鸟归，三候群鸟养羞」\n\n鴻雁が北から南へ渡る。燕（玄鳥）も寒を避けて南へ帰る。百鳥が秋を感じて食料を蓄え、冬に備える（「養羞」は食を貯える意）。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const BAILU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '白露は昼夜の寒暖差が大きく、秋の燥が次第に現れる。漢方では燥を潤し肺を養い、陽を護り涼を防ぐことを説く。食は肺を潤し津を生じるもの（梨・百合・白きくらげ・蜂蜜・龍眼）を宜とし、生冷を控える。「白露 身を露わにせず」——時に応じて衣を足し、とりわけ足と腹を護って、冷えと風邪を防ぐ。情を穏やかに保ち、高きに登り菊を愛でて心を舒（の）べる。民間には「白露茶」「白露酒」の風習がある。',
+        body: '白露は昼夜の寒暖差が大きく、秋の燥が次第に現れる。養生では燥を潤し肺を養い、陽を護り涼を防ぐ。食事は肺を潤し津を生じるもの——梨・百合・白きくらげ・蜂蜜・龍眼など——が向く。生冷は控える。「白露 身を露わにせず」——時に応じて衣を足し、とりわけ足と腹を護って、冷えと風邪を防ぐ。気持ちを穏やかに保ち、高きに登り菊を愛でて心をほぐす。民間には「白露茶」「白露酒」の風習がある。',
       },
       {
         title: '詩',
-        body: '『詩経・秦風・蒹葭』は白露を詠む千古の名篇：「蒹葭（けんか）蒼蒼たり、白露 霜と為る。所謂（いわゆる）伊人、水の一方に在り。」——青々と茂る蘆（あし）の上、白露が凝って霜となる。あの慕わしき人は、水の彼方にいる。詩は白露の清秋に興を起こし、望めども近づきがたく、求めても得られぬ怅（うら）みを写し尽くす。中国詩の「朦朧の美」の源である。',
+        body: '『詩経・秦風・蒹葭』は、白露を詠む千古の名篇。可望難即——望めども近づけない——の怅みを、清秋の白露に託している。\n\n「蒹葭苍苍，白露为霜。所谓伊人，在水一方。」\n\n青々と茂る葦の上、白露が凝って霜となる。あの慕わしき人は、水の彼方にいる——中国詩の「朦胧の美」の源とも言われる一首。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of White Dew: "first, the wild geese come (鸿雁来); second, the swallows return (玄鸟归); third, the flocks store their food (群鸟养羞)." The geese fly south from the north, the swallows too head south from the cold, and the birds, feeling autumn, lay in food for winter ("storing provisions"). White Dew is when the yin grows heavy and dew condenses white — one of the terms of greatest day-to-night temperature swing.',
+        body: 'The three pentads of White Dew: first, the wild geese arrive; second, the swallows return south; third, the flocks store their food. The geese fly south from the north, the swallows too head south from the cold, and the birds, feeling autumn, lay in food for winter. White Dew is when the yin grows heavy and dew condenses white — one of the terms of greatest day-to-night temperature swing. Classical three pentads: 「一候鸿雁来，二候玄鸟归，三候群鸟养羞」。',
       },
       {
         title: 'Farming',

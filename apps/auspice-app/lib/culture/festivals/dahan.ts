@@ -11,7 +11,7 @@ export const DAHAN: FestivalContent = {
     'zh-Hans': '大寒',
     'zh-Hant': '大寒',
     ja: '大寒',
-    en: 'Dahan (Greater Cold)',
+    en: 'Major Cold (Dahan)',
   },
   tagline: {
     'zh-Hans': '二十四节气之末 · 寒之极，冬藏转春生',
@@ -59,15 +59,15 @@ export const DAHAN: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '大寒の三候——「一候 鶏 始めて乳（こ）す、二候 征鳥 厲（はげ）しく疾（と）し、三候 水沢 腹堅し」。母鶏は陽気の戻りを感じて卵を孵し始め（「乳」は雛を孵すの意）、鷹隼（征鳥）は高空を翔り迅（はや）く猛々しく搏（う）って寒さに耐える力を補い、水域は最も厚く堅く凍る（「腹堅」）。大寒とは、寒さの極みであり、二十四節気の最後の節気である。',
+        body: '寒さの極み。二十四節気の最後の節気でもある。\n\n「一候鸡始乳，二候征鸟厉疾，三候水泽腹坚」\n\n母鶏が卵を孵し始める。鷹隼（征鳥）が高空を迅く翔び、寒さに耐える力を養う。水域は最も厚く堅く凍る（「腹堅」）。厳冬の頂点であり、陽の回帰も始まる。',
       },
       {
         title: '農事',
-        body: '大寒は寒いとはいえ、すでに春耕の備えに近い。「大寒に寒からずば、人馬安からず」と農諺に言い、冬の寒さが来年に利することを説く。北方では引き続き家畜の防寒、温室の管理、積肥造肥を行い、農具を検め春耕を謀る。南方では小麦・菜種の冬管を強め、凍えを防いで苗を護る。大寒が過ぎれば立春が近づき、農事は「蔵」から「生」へと転じる。',
+        body: '大寒は寒いとはいえ、すでに春耕の備えに近い。「大寒に寒からずば、人馬安からず」と農諺に言い、冬の寒さが来年の農作に利するとされる。北方では引き続き家畜の防寒、温室の管理、積肥造肥を行い、農具を検め春耕を謀る。南方では小麦・菜種の冬管を強め、凍えを防いで苗を護る。大寒が過ぎれば立春が近づき、農事は「蔵」から「生」へと転じる。',
       },
       {
         title: '養生',
-        body: '大寒は隆冬の極みで、漢方では「陽を温め寒を散じ、脾腎を調え補う」ことを説き、「冬蔵から春生へ」の備えをする——進補は重きから軽きへ転じ、来たる春の気に応じて升散の品（少量の葱・生姜など）を酌んで加える。食は温補し固く護るもの（羊肉・鶏湯・棗・山芋・糯米）を宜とし、生冷の摂りすぎを忌む。早寝遅起きし、寒邪と心脳血管の病を厳に防ぐ。情を伸びやかに安らかに保つ。',
+        body: '大寒は隆冬の極みで、養生では陽を温め寒を散じ、脾腎を調え補う——「冬蔵から春生へ」の備えをする。進補は重きから軽きへ転じ、来たる春の気に応じて升散の品（少量の葱・生姜など）を酌んで加える。食事は温補し固く護るもの——羊肉・鶏湯・棗・山芋・糯米など——が向く。生冷の摂りすぎは避ける。早寝遅起きし、寒邪と心脳血管の病を厳に防ぐ。気持ちを伸びやかに安らかに保つ。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const DAHAN: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Greater Cold: "first, the hen begins to brood (鸡始乳); second, the birds of prey are fierce and swift (征鸟厉疾); third, the waters freeze thick and solid (水泽腹坚)." The hen, sensing the yang\'s slow return, begins to hatch her chicks; the hawks and falcons wheel high and strike hard and fast to build the strength to bear the cold; and the waters freeze to their thickest and most solid ("solid to the center"). Greater Cold is the extreme of cold — the last of the twenty-four solar terms.',
+        body: 'The three pentads of Greater Cold: first, the hen begins to brood; second, the birds of prey are fierce and swift; third, the waters freeze thick and solid. The hen, sensing the yang\'s slow return, begins to hatch her chicks; the hawks and falcons wheel high and strike hard and fast to build the strength to bear the cold; and the waters freeze to their thickest and most solid. Greater Cold is the extreme of cold — the last of the twenty-four solar terms. Classical three pentads: 「一候鸡始乳，二候征鸟厉疾，三候水泽腹坚」。',
       },
       {
         title: 'Farming',

@@ -17,7 +17,7 @@ export const QIXI: FestivalContent = {
   tagline: {
     'zh-Hans': '农历七月初七 · 鹊桥相会，乞巧穿针',
     'zh-Hant': '農曆七月初七 · 鵲橋相會，乞巧穿針',
-    ja: '農暦七月七日 · 鵲橋の逢瀬、巧を乞う夜',
+    ja: '旧暦七月七日 · 鵲橋の逢瀬、巧を乞う夜',
     en: 'Lunar 7/7 · the magpie bridge, and the begging of skill',
   },
   sections: {
@@ -94,11 +94,11 @@ export const QIXI: FestivalContent = {
       },
       {
         title: 'Customs',
-        body: 'Qixi takes its old name from 乞巧, "begging for skill": by moonlight girls threaded needles and laid out melons and fruit before the Weaver Girl, praying for nimble fingers and a happy match. There were divination games too — watching a spider\'s web for "answered skill," floating a needle to test it. Lovers entrusted their longing to this night, hoping for a meeting like the magpie-bridge tryst. In each needle and thread lay an old double wish: for talent, and for a good marriage.',
+        body: 'Qixi takes its old name from "begging for skill" (乞巧): by moonlight girls threaded needles and laid out melons and fruit before the Weaver Girl, praying for nimble fingers and a happy match. There were divination games too — watching a spider\'s web for "answered skill," floating a needle to test it. Lovers entrusted their longing to this night, hoping for a meeting like the magpie-bridge tryst. In each needle and thread lay an old double wish: for talent, and for a good marriage.',
       },
       {
         title: 'Food',
-        body: 'The seasonal food is 巧果 — wheat-flour dough sweetened, fried or baked, and shaped into patterns, carrying the wish "to beg for skill." Some regions eat sprout noodles or 酥糖 ("clever sweets"). Melons and fruit are indispensable, set out in the courtyard to feast the Weaver Girl. The sweet, crisp 巧果 is the tasting note of this tender festival.',
+        body: 'The seasonal food is qiaoguo (巧果) — wheat-flour dough sweetened, fried or baked, and shaped into patterns, carrying the wish "to beg for skill." Some regions eat sprout noodles or clever sweets (酥糖). Melons and fruit are indispensable, set out in the courtyard to feast the Weaver Girl. The sweet, crisp qiaoguo is the tasting note of this tender festival.',
       },
       {
         title: 'Poetry',
@@ -106,7 +106,7 @@ export const QIXI: FestivalContent = {
       },
       {
         title: 'Modern celebration',
-        body: 'Qixi today is, in name and fact, China\'s "Valentine\'s Day," with flowers, gifts, and candlelit dinners standing beside the Western holiday, each with its own appeal. Merchants seize the occasion; the young, more and more, look back to the classical romance of the Cowherd and the Weaver Girl. Some places have revived the handcrafts of 乞巧 and prayer in Han-style dress, so the star-river legend still echoes in an age of neon.',
+        body: 'Qixi today is, in name and fact, China\'s "Valentine\'s Day," with flowers, gifts, and candlelit dinners standing beside the Western holiday, each with its own appeal. Merchants seize the occasion; the young, more and more, look back to the classical romance of the Cowherd and the Weaver Girl. Some places have revived begging-for-skill handcrafts and prayer in Han-style dress, so the star-river legend still echoes in an age of neon.',
       },
     ],
   },

@@ -24,7 +24,7 @@ export const TOPIC_GANZHI: FestivalContent = {
     'zh-Hans': [
       {
         title: '天干',
-        body: '天干共十：甲、乙、丙、丁、戊、己、庚、辛、壬、癸。它们两两配属五行、分阴阳：甲乙属木、丙丁属火、戊己属土、庚辛属金、壬癸属水；单数（甲丙戊庚壬）为阳，双数（乙丁己辛癸）为阴。天干主「天时」，在八字中代表显露于外的性情与际遇，也是十神关系推演的根基。',
+        body: '天干共十：甲、乙、丙、丁、戊、己、庚、辛、壬、癸。它们两两配属五行、分阴阳：甲乙属木、丙丁属火、戊己属土、庚辛属金、壬癸属水；单数（甲丙戊庚壬）为阳，双数（乙丁己辛癸）为阴。天干主「天时」，在八字中代表显露于外的性情与际遇，也是十神关系对照的根基。',
       },
       {
         title: '地支',
@@ -42,7 +42,7 @@ export const TOPIC_GANZHI: FestivalContent = {
     'zh-Hant': [
       {
         title: '天干',
-        body: '天干共十：甲、乙、丙、丁、戊、己、庚、辛、壬、癸。它們兩兩配屬五行、分陰陽：甲乙屬木、丙丁屬火、戊己屬土、庚辛屬金、壬癸屬水；單數（甲丙戊庚壬）為陽，雙數（乙丁己辛癸）為陰。天干主「天時」，在八字中代表顯露於外的性情與際遇，也是十神關係推演的根基。',
+        body: '天干共十：甲、乙、丙、丁、戊、己、庚、辛、壬、癸。它們兩兩配屬五行、分陰陽：甲乙屬木、丙丁屬火、戊己屬土、庚辛屬金、壬癸屬水；單數（甲丙戊庚壬）為陽，雙數（乙丁己辛癸）為陰。天干主「天時」，在八字中代表顯露於外的性情與際遇，也是十神關係對照的根基。',
       },
       {
         title: '地支',
@@ -90,7 +90,7 @@ export const TOPIC_GANZHI: FestivalContent = {
       },
       {
         title: 'The Sixty-Year Cycle',
-        body: 'Pairing the ten stems with the twelve branches in turn (甲子, 乙丑, 丙寅…), yang stem to yang branch and yin to yin, and running one full round yields sixty combinations — the "Sixty Jiazi" (六十花甲). It numbers the years (the 丙午 year, say) and also the months, days, and hours: the almanac\'s daily "ganzhi day," and the 大运/流年 on this app\'s life timeline, are all this same sixty-cycle projected onto different scales of time. It returns to its start every sixty years — hence "one jiazi" stands for a full cycle of a life.',
+        body: 'Pairing the ten stems with the twelve branches in turn (甲子, 乙丑, 丙寅…), yang stem to yang branch and yin to yin, and running one full round yields sixty combinations — the "Sixty Jiazi" (六十花甲). It numbers the years (the 丙午 year, say) and also the months, days, and hours: the almanac\'s daily "ganzhi day," and the Luck Pillars (大运) / Annual Years (流年) on this app\'s life timeline, are all this same sixty-cycle projected onto different scales of time. It returns to its start every sixty years — hence "one jiazi" stands for a full cycle of a life.',
       },
     ],
   },

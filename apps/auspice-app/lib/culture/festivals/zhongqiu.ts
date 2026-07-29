@@ -12,7 +12,7 @@ export const ZHONGQIU: FestivalContent = {
   tagline: {
     'zh-Hans': '农历八月十五 · 月圆人团圆',
     'zh-Hant': '農曆八月十五 · 月圓人團圓',
-    ja: '農暦八月十五日 · 月の宴',
+    ja: '旧暦八月十五日 · 月の宴',
     en: 'Lunar 8/15 · the harvest moon',
   },
   sections: {

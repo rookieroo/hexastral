@@ -7,7 +7,7 @@ export const LICHUN: FestivalContent = {
     'zh-Hans': '立春',
     'zh-Hant': '立春',
     ja: '立春',
-    en: 'Lichun (Start of Spring)',
+    en: 'Start of Spring (Lichun)',
   },
   tagline: {
     'zh-Hans': '二十四节气之首 · 阳气始升',

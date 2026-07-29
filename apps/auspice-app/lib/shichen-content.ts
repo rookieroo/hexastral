@@ -124,7 +124,7 @@ export const TWELVE_SHICHEN: ReadonlyArray<ShichenEntry> = [
     activity: {
       'zh-Hans': '辰时胃经当令，养胃早餐为一日之基。',
       'zh-Hant': '辰時胃經當令，養胃早餐為一日之基。',
-      ja: '辰の刻は胃経が当令。胃に優しい朝食を。',
+      ja: '辰の刻は胃経が盛んな時間。胃に優しい朝食を。',
       en: 'Stomach meridian peaks; a nourishing breakfast sets the day.',
     },
   },

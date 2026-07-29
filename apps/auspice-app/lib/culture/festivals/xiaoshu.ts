@@ -11,7 +11,7 @@ export const XIAOSHU: FestivalContent = {
     'zh-Hans': '小暑',
     'zh-Hant': '小暑',
     ja: '小暑',
-    en: 'Xiaoshu (Lesser Heat)',
+    en: 'Minor Heat (Xiaoshu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十一 · 温风始至，暑气渐盛',
@@ -59,7 +59,7 @@ export const XIAOSHU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '小暑の三候——「一候 温風至る、二候 蟋蟀（しっしゅつ）壁に居る、三候 鷹始めて鷙（あらあら）し」。熱い風がこれより吹き、もう涼しさはない。蟋蟀（こおろぎ）は暑さを避けて壁の下にこもり、幼い鷹は搏（う）つ技を学び始める。小暑とは、暑気が盛んになりつつまだ極まらぬゆえ「小」という。',
+        body: '暑気が盛んになりつつ、まだ最盛期ではない節気。「小」と名づけられるゆえは、暑さがこれからさらに増すからである。\n\n「一候温风至，二候蟋蟀居壁，三候鹰始鸷」\n\n熱い風が吹き始め、涼しさは薄れる。コオロギが壁の陰にこもる。若い鷹が狩りの技を学び始める。湿熱が増し、雷雨の前触れも感じられる。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const XIAOSHU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '小暑は暑と湿が入り混じって蒸す。漢方では「動を少なく静を多くし、心を清め暑を防ぐ」ことを説く。食は淡白に、「清補」（蓮の実・緑豆・糸瓜・蓮根）を多くとり、適度な酸味で汗を斂（おさ）め津を生じ、冷たいものの摂りすぎを避ける。遅寝早起き、昼は暑を避けて小憩する。情を穏やかに保ち、「心静かなれば自ずから涼し」、大きな喜怒を避ける。暑さ対策と水分補給に努める。',
+        body: '小暑は暑と湿が入り混じって蒸す。養生では動を少なく静を多くし、心を清め暑を防ぐ。食事は淡白に、蓮の実・緑豆・糸瓜・蓮根などで清補し、適度な酸味で汗を抑え津を生じ、冷たいものの摂りすぎを避ける。遅寝早起き、昼は暑を避けて小憩する。気持ちを穏やかに保ち、「心静かなれば自ずから涼し」——大きな喜怒は避ける。暑さ対策と水分補給に努める。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・小暑」は暑気の初めを詠む：「倏忽（しゅくこつ）として温風至り、因循して小暑来たる。竹喧しくして先に雨を覚え、山暗くして已に雷を聞く。」——温かい風がたちまち吹き、時の流れのままに小暑が訪れる。竹の葉がざわめいて先に夕立を察し、山の色が暗んでもう遠雷が聞こえる。詩人は風・雨・雷で小暑の湿熱と雨を孕む態を描き、節候がありありと目に浮かぶ。',
+        body: '元稹の「咏廿四气诗·小暑」は、風・雨・雷で湿熱の初めを描く。三候の「温风至」に呼応している。\n\n「倏忽温风至，因循小暑来。竹喧先觉雨，山暗已闻雷。」\n\n温かい風がたちまち吹き、時の流れのまま小暑が訪れる。竹の葉がざわめいて夕立を察し、山の色が暗くなると遠雷が聞こえる——湿熱と雨を孕む小暑の気配が目に浮かぶ。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Lesser Heat: "first, the warm wind arrives (温风至); second, the cricket takes to the wall (蟋蟀居壁); third, the hawk begins to hunt fiercely (鹰始鸷)." A hot wind blows from here, with no more coolness; crickets shelter under the walls from the heat; and young hawks begin to learn the art of the strike. Xiaoshu — "lesser heat" — names the time when the heat grows strong but has not yet peaked, hence "lesser."',
+        body: 'The three pentads of Lesser Heat: first, the warm wind arrives; second, the cricket takes to the wall; third, the hawk begins to hunt fiercely. A hot wind blows from here, with no more coolness; crickets shelter under the walls from the heat; and young hawks begin to learn the art of the strike. Xiaoshu — "lesser heat" — names the time when the heat grows strong but has not yet peaked, hence "lesser." Classical three pentads: 「一候温风至，二候蟋蟀居壁，三候鹰始鸷」。',
       },
       {
         title: 'Farming',

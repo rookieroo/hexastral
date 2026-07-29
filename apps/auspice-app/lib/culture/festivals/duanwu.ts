@@ -24,7 +24,7 @@ export const DUANWU: FestivalContent = {
   tagline: {
     'zh-Hans': '农历五月初五 · 龙舟竞渡，以诗祭忠魂',
     'zh-Hant': '農曆五月初五 · 龍舟競渡，以詩祭忠魂',
-    ja: '農暦五月五日 · 龍舟と詩人を悼む日',
+    ja: '旧暦五月五日 · 龍舟と詩人を悼む日',
     en: 'Lunar 5/5 · dragon boats, and a poet remembered',
   },
   sections: {
@@ -109,7 +109,7 @@ export const DUANWU: FestivalContent = {
       },
       {
         title: 'Poetry',
-        body: 'The festival honors Qu Yuan, the first great poet in China to leave his name, whose 《离骚》 (Li Sao, "Encountering Sorrow") is the fountainhead of the 辞赋 tradition. 「长太息以掩涕兮，哀民生之多艰」 — he wept not for himself but for the hardship of the people. 「亦余心之所善兮，虽九死其犹未悔」 — what his heart holds good, he will not repent of, "though I die nine times." And one line above all, 「路漫漫其修远兮，吾将上下而求索」 — "The road ahead is long and far; I will seek up and down for it" — has been, for over two thousand years, the watchword of everyone who searches for a way. Beyond the dumplings and the races, to read a passage of the Li Sao is to find the festival\'s backbone. (The lines are given in the original; a literal rendering can carry their sense, but not the cadence of the 骚体.)',
+        body: 'The festival honors Qu Yuan (c. 340–278 BCE), the first great poet in China to leave his name. His Li Sao ("Encountering Sorrow") is the fountainhead of the fu tradition — a long allegorical lament for a fallen kingdom and a steadfast conscience. He wept not for himself but for the hardship of the people; what his heart held good, he would not repent of even "though I die nine times." One line has outlived all the rest: "The road ahead is long and far; I will seek up and down for it" — a watchword for everyone who searches for a way. Beyond the dumplings and the races, a passage of the Li Sao is the festival\'s backbone.',
       },
       {
         title: 'Modern celebration',

@@ -11,7 +11,7 @@ export const DAXUE: FestivalContent = {
     'zh-Hans': '大雪',
     'zh-Hant': '大雪',
     ja: '大雪',
-    en: 'Daxue (Greater Snow)',
+    en: 'Major Snow (Daxue)',
   },
   tagline: {
     'zh-Hans': '二十四节气之二十一 · 雪盛于此，瑞雪兆丰',
@@ -59,7 +59,7 @@ export const DAXUE: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '大雪の三候——「一候 鶡鴠（かったん）鳴かず、二候 虎 始めて交わる、三候 荔（れい）挺（ぬき）出づ」。寒号鳥（鶡鴠）は寒さを感じてもう鳴かず、虎は微かな陽気を感じて交尾を始め、馬蘭の類（荔）は陽の萌しを感じて新芽を抽く。大雪とは、雪がここに盛んとなり、気温はさらに低く、降雪もより多くなりうる頃である。',
+        body: '雪が盛んになる節気。気温はさらに下がり、降雪も増える。\n\n「一候鹖鴠不鸣，二候虎始交，三候荔挺出」\n\n寒号鳥（鶡鴠）は鳴きやむ。虎は微かな陽の気を感じて交尾を始める。馬蘭の類（荔）が新芽を出す——寒さの極みの中にも、陽の萌えが見える。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const DAXUE: FestivalContent = {
       },
       {
         title: '養生',
-        body: '大雪は寒く、陽気が深く蔵れる。漢方では「大いに補い」陽を温め、腎気を固く護ることを説き、「冬の進補」の正にその時である。食は温熱で滋補するもの（羊肉・牛肉・当帰生姜羊肉湯・栗・龍眼）を宜とし、生冷を控える。早寝遅起きし、厳寒を避け、風寒の感冒と心脳血管の病を防ぐ。情を穏やかに喜ばしく保ち、日光を多く浴びる。適度に穏やかに動き、微かに汗ばめば止める。',
+        body: '大雪は寒く、陽気が深く蔵れる。養生では「大いに補い」陽を温め、腎気を固く護る——「冬の進補」の正にその時。食事は温熱で滋補するもの——羊肉・牛肉・当帰生姜羊肉湯・栗・龍眼など——が向く。生冷は控える。早寝遅起きし、厳寒を避け、風寒の感冒と心脳血管の病を防ぐ。気持ちを穏やかに喜ばしく保ち、日光を多く浴びる。適度に穏やかに動き、微かに汗ばめば止める。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const DAXUE: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Greater Snow: "first, the cold-cry bird falls silent (鹖鴠不鸣); second, the tiger begins to mate (虎始交); third, the lichen-orchid sprouts (荔挺出)." The cold-cry bird, feeling the deep cold, sings no more; the tiger, sensing the faint stir of yang, begins to seek a mate; and the orchid-like 荔 grass, feeling the first stir of yang, pushes out new shoots. Greater Snow is when the snow grows heavy — colder still, and the snowfall possibly greater.',
+        body: 'The three pentads of Greater Snow: first, the cold-cry bird falls silent; second, the tiger begins to mate; third, the lichen-orchid sprouts. The cold-cry bird, feeling the deep cold, sings no more; the tiger, sensing the faint stir of yang, begins to seek a mate; and the orchid-like grass, feeling the first stir of yang, pushes out new shoots. Greater Snow is when the snow grows heavy — colder still, and the snowfall possibly greater. Classical three pentads: 「一候鹖鴠不鸣，二候虎始交，三候荔挺出」。',
       },
       {
         title: 'Farming',

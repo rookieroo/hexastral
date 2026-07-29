@@ -11,7 +11,7 @@ export const LIQIU: FestivalContent = {
     'zh-Hans': '立秋',
     'zh-Hant': '立秋',
     ja: '立秋',
-    en: 'Liqiu (Start of Autumn)',
+    en: 'Start of Autumn (Liqiu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十三 · 凉风初至，一叶知秋',
@@ -59,7 +59,7 @@ export const LIQIU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '立秋の三候——「一候 涼風至る、二候 白露降る、三候 寒蟬（かんせん）鳴く」。涼しい風が立ち始め、暑気はやや収まる。早朝、草木に白露が結び、寒蟬（ひぐらし）が陰を感じて鳴く。立秋は秋の最初の節気で、「梧桐 一葉落ちて、天下ことごとく秋を知る」。なお暑さは残り、「秋老虎（残暑）」が訪れることも多い。',
+        body: '秋の最初の節気。「梧桐一葉落ちて、天下ことごとく秋を知る」——なお暑さは残り、「秋老虎（残暑）」が訪れることも多い。\n\n「一候凉风至，二候白露降，三候寒蝉鸣」\n\n涼しい風が立ち始める。早朝、草木に白露が結ぶ。セミ（寒蝉）が陰を感じて鳴く。秋の気配と、残る暑さが交わる時期である。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const LIQIU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '立秋は陽気が次第に収まり陰気が伸びる。漢方では「収を養う」とし、燥を潤し肺を養うことを重んじる。食は陰を滋し燥を潤すもの（百合・白きくらげ・梨・蜂蜜・胡麻）を宜とし、辛辣を控えて「秋燥」が肺を損なうのを防ぐ。早寝早起きし、「秋の三月は早く臥し早く起き、鶏とともに興（た）つ」。情を安らかに保ち、神気を収めて粛殺の気を避ける。「秋凍（薄着の慣らし）」は適度にし、早くから厚着しない。',
+        body: '立秋は陽気が次第に収まり陰気が伸びる。養生では「収を養う」とされ、燥を潤し肺を養うことが重視される。食事は陰を滋し燥を潤すもの——百合・白きくらげ・梨・蜂蜜・胡麻など——が向く。辛辣は控えて「秋燥」が肺を損なうのを防ぐ。早寝早起きし、「秋の三月は早く臥し早く起き、鶏とともに興（た）つ」。気持ちを安らかに保ち、神気を収めて粛殺の気を避ける。「秋凍（薄着の慣らし）」は適度にし、早くから厚着しない。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const LIQIU: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Start of Autumn: "first, the cool wind arrives (凉风至); second, white dew descends (白露降); third, the cold cicada sings (寒蝉鸣)." A cool wind rises and the heat eases a little; at dawn white dew settles on the grass; the cold cicada, sensing the yin, begins to sing. Liqiu is autumn\'s first term — "one paulownia leaf falls, and all the world knows autumn" — yet the heat lingers, and an "autumn tiger" of late warmth is common.',
+        body: 'The three pentads of the Start of Autumn: first, the cool wind arrives; second, white dew descends; third, the cold cicada sings. A cool wind rises and the heat eases a little; at dawn white dew settles on the grass; the cold cicada, sensing the yin, begins to sing. Liqiu is autumn\'s first term — "one paulownia leaf falls, and all the world knows autumn" — yet the heat lingers, and an "autumn tiger" of late warmth is common. Classical three pentads: 「一候凉风至，二候白露降，三候寒蝉鸣」。',
       },
       {
         title: 'Farming',

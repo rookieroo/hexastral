@@ -12,7 +12,7 @@ export const CHUNJIE: FestivalContent = {
   tagline: {
     'zh-Hans': '农历正月初一 · 万象更新',
     'zh-Hant': '農曆正月初一 · 萬象更新',
-    ja: '農暦正月一日 · 新春到来',
+    ja: '旧暦正月一日 · 新春到来',
     en: 'Chinese New Year · the year reset',
   },
   sections: {
@@ -75,7 +75,7 @@ export const CHUNJIE: FestivalContent = {
       },
       {
         title: '詩',
-        body: '北宋・王安石「元日」：「爆竹声中一歳除き、春風暖を送り屠蘇に入る。千門万戸曈曈の日、総て新桃を把って旧符に換う。」——除夜から元日への転換を四句に凝縮する。爆竹で旧年を送り、屠蘇酒で新年を迎え、朝陽が万戸を照らし、桃符を新しいものに掛け替える。王安石が新法施行に着手した時期の作で、改革への意気込みも込められている。',
+        body: '北宋の王安石が詠んだ「元日」は、除夜から元日への転換を描いた名作。新法施行に着手した時期の作で、桃符を掛け替える風習に改革への意気も込められている。\n\n「爆竹声中一歲除，春風送暖入屠蘇。千門萬戶曈曈日，總把新桃換舊符。」\n\n爆竹の音に旧年が去り、春風が屠蘇酒を温め、朝日が万戸を照らす中、各家で桃符を新しいものに替える——辞旧迎新の一日が四句に凝縮されている。',
       },
       {
         title: '現代の祝い方',
@@ -89,11 +89,11 @@ export const CHUNJIE: FestivalContent = {
       },
       {
         title: 'Customs',
-        body: "守岁 — staying up through the last night of the lunar year — anchors the festival. Families hang red couplets (春联) on their doors, set off firecrackers to drive away misfortune, gather for a reunion dinner on New Year's Eve, and elders give children red envelopes (压岁钱) as blessings of protection. Northern households make dumplings; southern households make rice cakes (年糕) and glutinous rice balls. Family visits continue for the first 15 days of the new year, formally closing at the Lantern Festival.",
+        body: 'Staying up through the last night of the lunar year (守岁) anchors the festival. Families hang red couplets (春联) on their doors, set off firecrackers to drive away misfortune, gather for a reunion dinner on New Year\'s Eve, and elders give children red envelopes (压岁钱) as blessings of protection. Northern households make dumplings; southern households make rice cakes and glutinous rice balls. Family visits continue for the first 15 days of the new year, formally closing at the Lantern Festival.',
       },
       {
         title: 'Food',
-        body: 'Reunion-dinner dishes vary by region but the underlying theme is wordplay on prosperity. Dumplings (饺子) take the shape of ancient gold ingots. Rice cakes (年糕) homophone "year-on-year ascent." Fish (鱼) is mandatory — it rhymes with 余, "surplus." Tofu (豆腐) plays on 都富, "all-prosperity." Dishes carry their meaning into the year on the strength of a pun. Every family\'s table tells a slightly different story of what the household hopes for.',
+        body: 'Reunion-dinner dishes vary by region but the underlying theme is wordplay on prosperity. Dumplings (饺子) take the shape of ancient gold ingots. Rice cakes (年糕) homophone "year-on-year ascent." Fish is mandatory — it rhymes with "surplus." Tofu (豆腐) plays on "all-prosperity." Dishes carry their meaning into the year on the strength of a pun. Every family\'s table tells a slightly different story of what the household hopes for.',
       },
       {
         title: 'Poetry',

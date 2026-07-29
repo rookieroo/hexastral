@@ -11,7 +11,7 @@ export const CHUSHU: FestivalContent = {
     'zh-Hans': '处暑',
     'zh-Hant': '處暑',
     ja: '処暑',
-    en: 'Chushu (End of Heat)',
+    en: 'End of Heat (Chushu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十四 · 暑气至此而止',
@@ -59,7 +59,7 @@ export const CHUSHU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '処暑の三候——「一候 鷹乃ち鳥を祭る、二候 天地始めて粛（しゅく）たり、三候 禾（か）乃ち登る」。鷹が鳥を多く捕えて祭るがごとく並べ、天地のあいだに粛殺の気が現れ始め、黍・稷・稲・粱などの穀物が実って取り入れの時を迎える。「処」は止まるの意で、処暑は「暑気 此に至りて止む」、炎熱が次第に退く。',
+        body: '「暑気、此に至りて止む」——炎熱が退き始める節気。秋の気配が近づく。\n\n「一候鹰乃祭鸟，二候天地始肃，三候禾乃登」\n\n鷹が鳥を多く捕らえ、祭るように並べる。天地に粛殺の気が現れ始める。穀物が実り、収穫の時を迎える。暑から秋への移ろいが三候に表れる。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const CHUSHU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '処暑は暑が去り秋が来て、昼は暑く夜は涼しい。漢方では「秋燥」を防ぎ、脾胃を護り、陽気を収めることを説く。食は清らかに潤すもの（白きくらげ・蓮の実・百合・梨・鴨肉）を宜とし、辛燥・脂を控える。早寝早起きし、適度な昼休みで「秋の倦（だる）さ」を解く。情を伸びやかに安らかに保つ。朝晩は涼しくなるため、衣を足し腹を護り、胃腸と呼吸器の不調を予防する。',
+        body: '処暑は暑が去り秋が来て、昼は暑く夜は涼しい。養生では「秋燥」を防ぎ、脾胃を護り、陽気を収める。食事は清らかに潤すもの——白きくらげ・蓮の実・百合・梨・鴨肉など——が向く。辛燥・脂は控える。早寝早起きし、適度な昼休みで「秋の倦（だる）さ」を解く。気持ちを伸びやかに安らかに保つ。朝晩は涼しくなるため、衣を足し腹を護り、胃腸と呼吸器の不調を予防する。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・処暑」は暑の退き秋の深まりを詠む：「向来 鷹 鳥を祭り、漸く覚ゆ 白蔵の深きを。葉下 空しく吹に驚き、天高くして心を見ず。」——鷹はすでに鳥を祭る候に入り、秋の気（白蔵は秋の別称）が次第に深まる。落葉は風の中いたずらに驚き舞い、天は高く澄んでその果ても見えない。詩人は鷹・葉・高き天によって、処暑の暑から秋へと移る清曠と寂寥を描く。',
+        body: '元稹の「咏廿四气诗·处暑」は、暑が退き秋が深まる様子を鷹・落葉・高天で描く。\n\n「向来鹰祭鸟，渐觉白藏深。叶下空惊吹，天高不见心。」\n\n鷹が鳥を祭る候に入り、秋の気（白藏）が次第に深まる。落葉は風に舞い、天は高く澄んで果てが見えない——処暑の清曠と寂寥が詩行に表れる。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the End of Heat: "first, the hawk makes offering of birds (鹰乃祭鸟); second, heaven and earth grow austere (天地始肃); third, the grain ripens for harvest (禾乃登)." The hawk takes many birds and lays them out as if in offering, an austere air settles over the world, and millet, rice, and other grains ripen for gathering. The word 处 means "to stop": Chushu is "the heat stops here," and the swelter recedes.',
+        body: 'The three pentads of the End of Heat: first, the hawk makes offering of birds; second, heaven and earth grow austere; third, the grain ripens for harvest. The hawk takes many birds and lays them out as if in offering, an austere air settles over the world, and millet, rice, and other grains ripen for gathering. The heat stops here — Chushu marks when the swelter recedes. Classical three pentads: 「一候鹰乃祭鸟，二候天地始肃，三候禾乃登」。',
       },
       {
         title: 'Farming',

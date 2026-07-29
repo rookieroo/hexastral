@@ -11,7 +11,7 @@ export const QIUFEN: FestivalContent = {
     'zh-Hans': '秋分',
     'zh-Hant': '秋分',
     ja: '秋分',
-    en: 'Qiufen (Autumn Equinox)',
+    en: 'Autumn Equinox (Qiufen)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十六 · 昼夜均分，秋色平分',
@@ -59,7 +59,7 @@ export const QIUFEN: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '秋分の三候——「一候 雷 始めて声を収む、二候 蟄虫（ちっちゅう）戸を坯（ふさ）ぐ、三候 水 始めて涸（か）る」。陽気が衰え、雷の声がやむ。蟄虫は土を盛って巣の口を塞ぎ冬眠に備える。天気は乾き、水気が減って沼沢が涸れてゆく。秋分は再び昼夜が等分となり、これより昼は短く夜は長く、陰気が盛んになり始める。',
+        body: '再び昼夜が等しくなる節気。これより昼が短く、夜が長くなり、陰の気が盛んになり始める。\n\n「一候雷始收声，二候蛰虫坯户，三候水始涸」\n\n雷鳴がやむ。冬眠する虫が土を盛って巣の口を塞ぐ。天候が乾き、沼沢の水が減る。秋の深まりと、冬への備えが三候に表れる。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const QIUFEN: FestivalContent = {
       },
       {
         title: '養生',
-        body: '秋分は陰陽相半ばし、漢方では「陰陽の平衡、平らかに補い燥を潤す」ことを説く。食は甘く潤い穏やかなもの（山芋・蓮根・百合・胡麻・胡桃）を宜とし、寒温を適度にして肺をも脾をも護る。早寝早起きし、衣を足して涼を防ぐ。情を静め収め、秋に悲しむ者は陽光を多く浴びて心を舒べる。運動は穏やかに、大汗で津を損なわぬようにする。',
+        body: '秋分は陰陽相半ばし、養生では陰陽の平衡を保ち、平らかに補い燥を潤す。食事は甘く潤い穏やかなもの——山芋・蓮根・百合・胡麻・胡桃など——が向く。寒温を適度にして肺も脾も護る。早寝早起きし、衣を足して涼を防ぐ。気持ちを静め収め、秋に悲しむ人は陽光を浴びて心をほぐす。運動は穏やかに、大汗で津を損なわないようにする。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const QIUFEN: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Autumn Equinox: "first, the thunder withdraws its voice (雷始收声); second, the hibernating insects seal their burrows (蛰虫坯户); third, the waters begin to dry (水始涸)." The yang wanes and the thunder falls silent; insects mound earth to close their nests for the winter sleep; the air dries and the marshes shrink. At the equinox day and night are again equal; from here the days shorten and the nights lengthen, and the yin begins to gather strength.',
+        body: 'The three pentads of the Autumn Equinox: first, the thunder withdraws its voice; second, the hibernating insects seal their burrows; third, the waters begin to dry. The yang wanes and the thunder falls silent; insects mound earth to close their nests for the winter sleep; the air dries and the marshes shrink. At the equinox day and night are again equal; from here the days shorten and the nights lengthen, and the yin begins to gather strength. Classical three pentads: 「一候雷始收声，二候蛰虫坯户，三候水始涸」。',
       },
       {
         title: 'Farming',

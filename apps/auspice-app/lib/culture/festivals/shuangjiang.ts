@@ -11,7 +11,7 @@ export const SHUANGJIANG: FestivalContent = {
     'zh-Hans': '霜降',
     'zh-Hant': '霜降',
     ja: '霜降',
-    en: "Shuangjiang (Frost's Descent)",
+    en: 'Frost Descent (Shuangjiang)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十八 · 露结为霜，秋之将尽',
@@ -59,7 +59,7 @@ export const SHUANGJIANG: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '霜降の三候——「一候 豺（やまいぬ）乃ち獣を祭る、二候 草木 黄落す、三候 蟄虫 咸（ことごと）く俯（ふ）す」。豺狼が獣を多く捕えて祭るがごとく並べ、冬越しの蓄えとする。草木は枯れ黄ばみ落葉が舞い、蟄虫は頭を垂れて穴に蟄（こも）り、食わず動かず冬を越す。霜降とは、気が粛として凝り、露が結んで霜となる、秋の最後の節気である。',
+        body: '秋の最後の節気。気が粛として凝り、露が霜に変わる。万物が冬に備える。\n\n「一候豺乃祭兽，二候草木黄落，三候蛰虫咸俯」\n\nヤマイヌが獣を多く捕らえ、祭るように並べる（冬の蓄え）。草木が枯れ、黄葉が落ちる。冬眠する虫が頭を垂れ、穴にこもる。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const SHUANGJIANG: FestivalContent = {
       },
       {
         title: '養生',
-        body: '霜降は秋の燥が寒へ転じ、脾肺を損ないやすい。漢方では「平らかに補い燥を潤し、脾を健やかにし胃を養い、陽を護り寒を防ぐ」ことを説く。民間には「霜降に柿を食えば鼻水が出ぬ」の俗がある。食は温かく潤し穏やかに補うもの（栗・山芋・銀杏・大根・柿・鴨肉）を宜とし、寒涼を控える。早寝早起きし、保温に努める（とりわけ膝・足・胃を護る）。情を伸びやかに保ち「悲秋」を防ぐ。適度に動いて正気を固め、冬を迎える。',
+        body: '霜降は秋の燥が寒へ転じ、脾肺を損ないやすい。養生では平らかに補い燥を潤し、脾を健やかにし胃を養い、陽を護り寒を防ぐ。民間には「霜降に柿を食えば鼻水が出ぬ」の俗がある。食事は温かく潤し穏やかに補うもの——栗・山芋・銀杏・大根・柿・鴨肉など——が向く。寒涼は控える。早寝早起きし、とりわけ膝・足・胃を温める。気持ちを伸びやかに保ち「悲秋」を防ぐ。適度に動いて正気を固め、冬を迎える。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const SHUANGJIANG: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Frost\'s Descent: "first, the jackal makes offering of beasts (豺乃祭兽); second, the plants yellow and shed (草木黄落); third, the hibernating insects all bow down (蛰虫咸俯)." The jackal takes many beasts and lays them out as if in offering, laying in winter stores; the plants wither yellow and the leaves fall; and the hibernating insects droop their heads in their burrows, neither eating nor moving as they pass the winter. Frost\'s Descent is when the air grows austere and congeals, and dew freezes into frost — the last term of autumn.',
+        body: 'The three pentads of Frost\'s Descent: first, the jackal makes offering of beasts; second, the plants yellow and shed; third, the hibernating insects all bow down. The jackal takes many beasts and lays them out as if in offering, laying in winter stores; the plants wither yellow and the leaves fall; and the hibernating insects droop their heads in their burrows, neither eating nor moving as they pass the winter. Frost\'s Descent is when the air grows austere and congeals, and dew freezes into frost — the last term of autumn. Classical three pentads: 「一候豺乃祭兽，二候草木黄落，三候蛰虫咸俯」。',
       },
       {
         title: 'Farming',

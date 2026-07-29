@@ -40,7 +40,7 @@ const MAKEIF_TAGLINE: Record<string, string> = {
   'zh-Hans': '抉择之前,先看时机',
   'zh-Hant': '抉擇之前,先看時機',
   ja: '決断の前に、時機を読む',
-  en: 'time a real decision',
+  en: 'Before you decide, read the timing',
 }
 
 export function LiuyearBanner() {

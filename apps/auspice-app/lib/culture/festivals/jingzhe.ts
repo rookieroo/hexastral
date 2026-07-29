@@ -11,7 +11,7 @@ export const JINGZHE: FestivalContent = {
     'zh-Hans': '惊蛰',
     'zh-Hant': '驚蟄',
     ja: '啓蟄',
-    en: 'Jingzhe (Awakening of Insects)',
+    en: 'Awakening of Insects (Jingzhe)',
   },
   tagline: {
     'zh-Hans': '二十四节气之三 · 春雷乍动，万物苏醒',
@@ -59,7 +59,7 @@ export const JINGZHE: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '啓蟄の三候——「一候 桃始めて華さく、二候 倉庚鳴く、三候 鷹化して鳩と為る」。桃の花が初めて咲き、黄鸝（こうらい、倉庚）が枝で鳴く。古人は鷹が姿を隠し鳩が増えるのを見て「鷹化して鳩と為る」と想った。一声の春雷が蟄（こも）れる虫を驚かし起こし、天地はここに真の春を迎える。',
+        body: '春雷が鳴り、冬眠していた虫が目を覚ます節気。天地が本格的な春を迎える転換点である。\n\n「一候桃始华，二候仓庚鸣，三候鹰化为鸠」\n\n桃の花が咲き始める。ウグイス（倉庚）が枝で鳴く。鷹が姿を消し鳩が増える——古人は「鷹が鳩に化した」と見なした。一声の春雷が蛰虫を驚かし、万物が動き出す。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const JINGZHE: FestivalContent = {
       },
       {
         title: '養生',
-        body: '啓蟄は陽気が立ち上がりつつ、暖かさと寒さが入り混じる。漢方では時に順って陽を養い、肝を護り脾を健やかにすることを説く。食は淡白に、梨で燥を潤し（「啓蟄に梨を食う」古俗）、春の新芽の旬菜を多くとり、辛味・脂を摂りすぎない。早寝早起きで筋を伸ばし、情を穏やかに保ち、春の眠気と肝火の上昇を慎み、保温して流感を防ぐ。',
+        body: '啓蟄は陽気が立ち上がりつつ、暖かさと寒さが入り混じる。養生では時に順って陽を養い、肝を護り脾を健やかに保つ。食事は淡白に、梨で燥を潤し（「啓蟄に梨を食う」古俗）、春の新芽の旬菜を多くとり、辛味・脂を摂りすぎない。早寝早起きで筋を伸ばし、気持ちを穏やかに保ち、春の眠気と肝火の上昇を慎み、保温して流感を防ぐ。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const JINGZHE: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Awakening of Insects: "first, the peach begins to bloom (桃始华); second, the oriole sings (仓庚鸣); third, the hawk becomes a dove (鹰化为鸠)." Peach blossoms open and the oriole calls from the branches; seeing hawks grow scarce and doves plentiful, the ancients imagined the one turning into the other. A clap of spring thunder startles the hibernating insects awake, and the world turns truly back to spring.',
+        body: 'The three pentads of the Awakening of Insects: first, the peach begins to bloom; second, the oriole sings; third, the hawk becomes a dove. Peach blossoms open and the oriole calls from the branches; seeing hawks grow scarce and doves plentiful, the ancients imagined the one turning into the other. A clap of spring thunder startles the hibernating insects awake, and the world turns truly back to spring. Classical three pentads: 「一候桃始华，二候仓庚鸣，三候鹰化为鸠」。',
       },
       {
         title: 'Farming',

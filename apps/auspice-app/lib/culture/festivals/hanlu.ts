@@ -11,7 +11,7 @@ export const HANLU: FestivalContent = {
     'zh-Hans': '寒露',
     'zh-Hant': '寒露',
     ja: '寒露',
-    en: 'Hanlu (Cold Dew)',
+    en: 'Cold Dew (Hanlu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十七 · 露气寒冷，将凝为霜',
@@ -59,7 +59,7 @@ export const HANLU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '寒露の三候——「一候 鴻雁 来賓す、二候 雀 大水に入りて蛤（はまぐり）と為る、三候 菊に黄華（こうか）有り」。最後の鴻雁の群れが「賓（客）」として南へ渡り、深秋に雀が減り、海辺の蛤の紋様が雀に似るゆえ古人は「雀 蛤と化す」と想った。菊がこの頃、黄の花を盛んに咲かせる。寒露とは、露の気が寒く、やがて霜と凝る、気候が涼から寒へと移る転換である。',
+        body: '露の冷たさが増し、やがて霜となる。気候が涼から寒へ移る転換点である。\n\n「一候鸿雁来宾，二候雀入大水为蛤，三候菊有黄华」\n\n最後の鴻雁の群れが「客」のように南へ渡る。雀が減り、海辺の蛤の模様が雀に似る——古人は「雀が蛤に化した」と想像した。菊が黄色い花を盛んに咲く。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const HANLU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '寒露は気候が寒へ転じ、燥邪が時を得る。漢方では「陰を滋し燥を潤し、陽を護り寒を防ぐ」ことを説く。食は燥を潤し陰を養うもの（胡麻・胡桃・白きくらげ・梨・蜂蜜・糯米）を宜とし、辛辣を控える。「寒露 脚を露わにせず」——足を温め、時に応じて衣を足し、寒邪と心脳血管の病を防ぐ。情を穏やかに楽観に保ち、高きに登り菊を愛でて秋の懐を暢（の）べる。朝の運動は遅らせ、寒露を避ける。',
+        body: '寒露は気候が寒へ転じ、燥邪が盛んになる。養生では陰を滋し燥を潤し、陽を護り寒を防ぐ。食事は燥を潤し陰を養うもの——胡麻・胡桃・白きくらげ・梨・蜂蜜・糯米など——が向く。辛辣は控える。「寒露 脚を露わにせず」——足を温め、時に応じて衣を足し、寒邪と心脳血管の病を防ぐ。気持ちを穏やかに楽観的に保ち、高きに登り菊を愛でて秋の懐を暢（の）べる。朝の運動は遅らせ、寒露を避ける。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・寒露」は深秋の景を詠む：「寒露 秋の晩なるに驚き、朝に看る 菊の漸く黄なるを。千家 風 葉を掃き、万里 雁 陽に随う。」——寒露に秋の暮れ深きを驚き、朝には菊が次第に黄に染まるのを見る。千家の門前を秋風が葉を掃き、万里の大空を雁の列が暖を追って南へ飛ぶ。詩人は菊・葉・雁の三象によって、寒露の頃の清らかな寒さと秋の深まりを写し尽くす。',
+        body: '元稹の「咏廿四气诗·寒露」は、深秋の清寒を菊・落葉・雁の三つの意象で描く。\n\n「寒露惊秋晚，朝看菊渐黄。千家风扫叶，万里雁随阳。」\n\n寒露に気づけば秋も深い。朝、菊が次第に黄に染まり、千家の門前を秋風が葉を掃き、万里の空を雁が暖を追って南へ飛ぶ——清らかな寒さと秋の深まりが一首に尽きている。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Cold Dew: "first, the wild geese come as guests (鸿雁来宾); second, the sparrow enters the water and becomes a clam (雀入大水为蛤); third, the chrysanthemum shows its yellow flowers (菊有黄华)." The last flights of geese migrate south as "guests"; as sparrows thin out in late autumn and the shells along the shore resemble them in marking, the ancients imagined the sparrows turning into clams; and the chrysanthemums open their yellow blooms. Cold Dew is when the dew turns cold and is about to freeze into frost — the turn of the climate from cool to cold.',
+        body: 'The three pentads of Cold Dew: first, the wild geese come as guests; second, the sparrow enters the water and becomes a clam; third, the chrysanthemum shows its yellow flowers. The last flights of geese migrate south as "guests"; as sparrows thin out in late autumn and the shells along the shore resemble them in marking, the ancients imagined the sparrows turning into clams; and the chrysanthemums open their yellow blooms. Cold Dew is when the dew turns cold and is about to freeze into frost — the turn of the climate from cool to cold. Classical three pentads: 「一候鸿雁来宾，二候雀入大水为蛤，三候菊有黄华」。',
       },
       {
         title: 'Farming',

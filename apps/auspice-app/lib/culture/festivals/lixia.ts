@@ -11,7 +11,7 @@ export const LIXIA: FestivalContent = {
     'zh-Hans': '立夏',
     'zh-Hant': '立夏',
     ja: '立夏',
-    en: 'Lixia (Start of Summer)',
+    en: 'Start of Summer (Lixia)',
   },
   tagline: {
     'zh-Hans': '二十四节气之七 · 夏木初长，万物繁茂',
@@ -59,7 +59,7 @@ export const LIXIA: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '立夏の三候——「一候 螻蟈（ろうこく）鳴く、二候 蚯蚓（みみず）出づ、三候 王瓜生ず」。螻蟈（蛙）が田で鳴き、蚯蚓が土を掘って出て、王瓜の蔓が勢いよく伸びる。立夏は夏の始まりを告げ、気温は著しく上がり、万物が繁り育つ。',
+        body: '夏の始まりを告げる節気。気温が上がり、万物が繁茂し始める。\n\n「一候蝼蝈鸣，二候蚯蚓出，三候王瓜生」\n\n田園の蛙（螻蝈）が鳴き始める。蚯蚓が土から出てくる。王瓜の蔓が勢いよく伸びる。初夏の生気が一気に高まる時期である。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const LIXIA: FestivalContent = {
       },
       {
         title: '養生',
-        body: '立夏の後は陽気が盛んになる。漢方では夏の気は心に通じるとして「心を養い神を安んずる」ことを説く。食は淡白に、酸を増し苦を減らし（烏梅やトマトで心を養い津を生じ）、蔬果で水を補い、冷たいものの摂りすぎで脾を損なわぬようにする。遅寝早起き、昼の小憩で心を養う。情を平静に保ち、苛立ちや怒りを戒めて心火の亢ぶりを防ぐ。',
+        body: '立夏の後は陽気が盛んになる。夏の気は心に通じるとされ、養生では心を養い神を安らかに保つ。食事は淡白に、烏梅やトマトで酸を増し苦を減らして心を養い津を生じ、蔬果で水を補い、冷たいものの摂りすぎで脾を損なわないようにする。遅寝早起き、昼の小憩で心を養う。気持ちを平静に保ち、苛立ちや怒りを戒めて心火の亢ぶりを防ぐ。',
       },
       {
         title: '詩',
-        body: '楊万里「小池」は初夏の清らかな趣を写し尽くす：「泉眼 声無くして細流を惜しみ、樹陰 水に照りて晴柔を愛す。小荷 才かに露す 尖尖の角、早に蜻蜓の上頭に立つ有り。」——音もなき細流、水に映る木陰。初めて顔を出した小さな蓮の尖に、もう一匹の蜻蛉がとまっている。詩人は極めて軽やかな筆で、立夏の生気が芽吹く清新で愛らしい一瞬を捉えた。',
+        body: '楊万里の「小池」は、初夏の清らかな一瞬を極めて軽やかな筆致で描いた名作。\n\n「泉眼无声惜细流，树阴照水爱晴柔。小荷才露尖尖角，早有蜻蜓立上头。」\n\n音もなき細流、水に映る木陰。初めて顔を出した小さな蓮の尖に、もう一匹の蜻蛉がとまっている——立夏の生気が芽吹く、清新で愛らしい一コマである。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Start of Summer: "first, the frogs sing (蝼蝈鸣); second, earthworms emerge (蚯蚓出); third, the snake-gourd vine springs up (王瓜生)." Frogs call in the fields, earthworms work up through the soil, and the snake-gourd climbs fast. Lixia announces summer\'s start: the heat rises markedly and all things grow lush.',
+        body: 'The three pentads of the Start of Summer: first, the frogs sing; second, earthworms emerge; third, the snake-gourd vine springs up. Frogs call in the fields, earthworms work up through the soil, and the snake-gourd climbs fast. Lixia announces summer\'s start: the heat rises markedly and all things grow lush. Classical three pentads: 「一候蝼蝈鸣，二候蚯蚓出，三候王瓜生」。',
       },
       {
         title: 'Farming',

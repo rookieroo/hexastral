@@ -11,7 +11,7 @@ export const XIAOXUE: FestivalContent = {
     'zh-Hans': '小雪',
     'zh-Hant': '小雪',
     ja: '小雪',
-    en: 'Xiaoxue (Lesser Snow)',
+    en: 'Minor Snow (Xiaoxue)',
   },
   tagline: {
     'zh-Hans': '二十四节气之二十 · 寒气渐增，雨凝为雪',
@@ -59,7 +59,7 @@ export const XIAOXUE: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '小雪の三候——「一候 虹 蔵れて見えず、二候 天気上昇し地気下降す、三候 閉塞して冬と成る」。陰陽が交わらず、虹は隠れて見えなくなる。天と地の気はそれぞれ昇降して交わらず、万物は閉じ蔵れ、天地は閉塞して深い冬に入る。小雪とは、寒気が次第に増し、雨が凝って雪となるがその量はまだ大きくないゆえ「小」という。',
+        body: '寒気が増し、雨が雪に変わるが、まだ量は少ない。「小」と名づけられるゆえは、本格的な降雪がこれからだからである。\n\n「一候虹藏不见，二候天气上升地气下降，三候闭塞而成冬」\n\n陰陽が交わらず、虹は見えなくなる。天と地の気がそれぞれ昇降し、交わらない。万物が閉じ蔵れ、深い冬の入り口となる。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const XIAOXUE: FestivalContent = {
       },
       {
         title: '養生',
-        body: '小雪は寒く地は凍り、陽気が閉じ蔵れる。漢方では温補して腎を益し、陽を護り寒を防ぎ、あわせて「鬱を解き神を安んずる」ことを説く。食は温潤のもの（羊肉・大根・黒豆・山芋・棗）を宜とし、燥熱を控える。早寝遅起きし、保温に努める（とりわけ頭・背・足を護る）。冬は鬱屈しやすく、情は陽光を多く浴びて心を舒べる。適度に動いて陽を助け、大汗を忌む。',
+        body: '小雪は寒く地は凍り、陽気が閉じ蔵れる。養生では温補して腎を益し、陽を護り寒を防ぎ、鬱を解いて心を安らかに保つ。食事は温潤のもの——羊肉・大根・黒豆・山芋・棗など——が向く。燥熱は控える。早寝遅起きし、とりわけ頭・背・足を温める。冬は気分が閉じやすいので、陽光を浴びて心をほぐす。適度に動いて陽を助け、大汗は避ける。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・小雪」は初雪の候を詠む：「怪しむ莫れ 虹の影無きを、如今 是れ小雪の時。陰陽 上下に依り、寒暑 分離を喜ぶ。」——虹が影も形もなくなったのを怪しむな、今はちょうど小雪の頃。陰陽の気はそれぞれ上と下へ行き、寒暑はここで道を分かつ。詩人は「虹蔵る」「陰陽上下」をもって小雪の三候に扣（かな）え、節気の物候を詩に化す。',
+        body: '元稹の「咏廿四气诗·小雪」は、初雪の候を陰陽の変化で詠む。三候の「虹藏不见」「闭塞而成冬」に扣えている。\n\n「莫怪虹无影，如今小雪时。阴阳依上下，寒暑喜分离。」\n\n虹が見えなくなったのを怪しむな、今は小雪の頃。陰陽の気は上下に分かれ、寒暑もここで別れる——冬の入り口を簡潔に描いた一首。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Lesser Snow: "first, the rainbow hides and is not seen (虹藏不见); second, the sky\'s qi rises and the earth\'s qi sinks (天气上升地气下降); third, all closes up and becomes winter (闭塞而成冬)." With yin and yang no longer meeting, the rainbow vanishes; the qi of heaven and earth each move apart, no longer mingling; all things shut and store themselves away, and the world seals over into deep winter. Lesser Snow is when the cold grows and rain congeals into snow — but not yet heavily, hence "lesser."',
+        body: 'The three pentads of Lesser Snow: first, the rainbow hides and is not seen; second, the sky\'s qi rises and the earth\'s qi sinks; third, all closes up and becomes winter. With yin and yang no longer meeting, the rainbow vanishes; the qi of heaven and earth each move apart, no longer mingling; all things shut and store themselves away, and the world seals over into deep winter. Lesser Snow is when the cold grows and rain congeals into snow — but not yet heavily, hence "lesser." Classical three pentads: 「一候虹藏不见，二候天气上升地气下降，三候闭塞而成冬」。',
       },
       {
         title: 'Farming',

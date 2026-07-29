@@ -11,7 +11,7 @@ export const YUSHUI: FestivalContent = {
     'zh-Hans': '雨水',
     'zh-Hant': '雨水',
     ja: '雨水',
-    en: 'Yushui (Rain Water)',
+    en: 'Rain Water (Yushui)',
   },
   tagline: {
     'zh-Hans': '二十四节气之二 · 冰雪化雨，润物无声',
@@ -59,7 +59,7 @@ export const YUSHUI: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '雨水の三候——「一候 獺魚を祭る、二候 候雁北す、三候 草木萌動す」。獺（かわうそ）は捕えた魚を岸に並べて祭るがごとく、雁は南から北へ帰り、草木は地中の陽気に従って嫩芽を抽く。天地は雪から雨へと転じ、万物が芽吹き始める——まさに「雨水」の名にかなう。',
+        body: '雪が雨へと変わり、万物が芽吹き始める節気。天地が冬から春へ移ろう兆しが表れる。\n\n「一候獭祭鱼，二候候雁北，三候草木萌动」\n\n川獺が捕った魚を岸辺に並べるように見える。雁は南から北へ帰り始める。地中から陽の気が立ち上がり、草木が新芽を出す——まさに「雨水」の名どおりの時期である。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const YUSHUI: FestivalContent = {
       },
       {
         title: '養生',
-        body: '雨水は湿気が次第に重くなる。漢方では脾を健やかにし湿を除き、肝を疏（のび）やかにし胃を養うことを説く。食は淡白で甘平なもの（山芋・はと麦・芡実・棗）を宜とし、生冷・脂っこいものを控え、粥で脾胃を養うとよい。情は伸びやかに保って肝を養い、鬱や怒りを避ける。起居は「春の着込み」を要とし、足腰と首背を守って「寒の戻り」が陽を損なうのを防ぐ。',
+        body: '雨水は湿気が次第に重くなる。養生では脾を健やかにし湿を取り除き、肝をのびやかに保ち、胃をいたわるのが基本。食事は淡白で、山芋・はと麦・芡実・棗などが向く。生冷や脂っこいものは控え、粥で脾胃を養うとよい。気持ちは伸びやかに保ち、鬱や怒りを避ける。起居は「春の着込み」を心がけ、足腰と首背を守って「寒の戻り」で陽を損なわないようにする。',
       },
       {
         title: '詩',
-        body: '杜甫「春夜 雨を喜ぶ」は春雨を詠んだ千古の絶唱：「好雨 時節を知り、春に当たりて乃ち発生す。風に随いて潜かに夜に入り、物を潤して細やかに声無し。」——時を得て降る夜の雨が、音もなく万物を潤す。「物を潤して細やかに声無し」の五字は春雨の優しさと生気を写し尽くし、後世、目に見えぬ感化の働きを言う常套句ともなった。',
+        body: '杜甫の「春夜喜雨」は、春雨を詠んだ千古の名作。「润物细无声」の一句は、目に見えぬ感化の働きを表す言葉として後世に伝わった。\n\n「好雨知时节，当春乃发生。随风潜入夜，润物细无声。」\n\n時宜を得た春雨が、夜風に乗って静かに降り、音もなく万物を潤す——春雨の優しさと生気を五字一句で写し尽くしている。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Rain Water: "first, the otter lays out its fish (獭祭鱼); second, the wild geese turn north (候雁北); third, plants and trees stir into bud (草木萌动)." The otter spreads its catch along the bank as if making an offering; the geese fly back from south to north; trees push out tender shoots as warmth rises from the earth. Snow gives way to rain, and all things begin to wake — true to the name "Rain Water."',
+        body: 'The three pentads of Rain Water: first, the otter lays out its fish; second, the wild geese turn north; third, plants and trees stir into bud. The otter spreads its catch along the bank as if making an offering; the geese fly back from south to north; trees push out tender shoots as warmth rises from the earth. Snow gives way to rain, and all things begin to wake — true to the name "Rain Water." Classical three pentads: 「一候獭祭鱼，二候候雁北，三候草木萌动」。',
       },
       {
         title: 'Farming',

@@ -19,13 +19,13 @@ export const TOPIC_BAZI: FestivalContent = {
     'zh-Hans': '年月日时 · 八字 · 大运流年',
     'zh-Hant': '年月日時 · 八字 · 大運流年',
     ja: '年月日時 · 八字 · 大運流年',
-    en: 'Year, month, day, hour · the Eight Characters',
+    en: 'Year, month, day, hour · Luck Pillars (大运) & Annual Years (流年)',
   },
   sections: {
     'zh-Hans': [
       {
         title: '四柱',
-        body: '将一个人出生的年、月、日、时，各以一组干支表示，便得「四柱」——年柱、月柱、日柱、时柱。每柱一干一支，共八个字，故称「八字」。四柱如人生的四个坐标：年柱多看祖上与早年、月柱看父母与青年（也是「月令」，最重论旺衰）、日柱看自身与配偶、时柱看子女与晚年。八字是东亚命理推演的起点。',
+        body: '将一个人出生的年、月、日、时，各以一组干支表示，便得「四柱」——年柱、月柱、日柱、时柱。每柱一干一支，共八个字，故称「八字」。四柱如人生的四个坐标：年柱多看祖上与早年、月柱看父母与青年（也是「月令」，最重论旺衰）、日柱看自身与配偶、时柱看子女与晚年。八字是东亚命理对照的起点。',
       },
       {
         title: '日主与十神',
@@ -43,7 +43,7 @@ export const TOPIC_BAZI: FestivalContent = {
     'zh-Hant': [
       {
         title: '四柱',
-        body: '將一個人出生的年、月、日、時，各以一組干支表示，便得「四柱」——年柱、月柱、日柱、時柱。每柱一干一支，共八個字，故稱「八字」。四柱如人生的四個座標：年柱多看祖上與早年、月柱看父母與青年（也是「月令」，最重論旺衰）、日柱看自身與配偶、時柱看子女與晚年。八字是東亞命理推演的起點。',
+        body: '將一個人出生的年、月、日、時，各以一組干支表示，便得「四柱」——年柱、月柱、日柱、時柱。每柱一干一支，共八個字，故稱「八字」。四柱如人生的四個座標：年柱多看祖上與早年、月柱看父母與青年（也是「月令」，最重論旺衰）、日柱看自身與配偶、時柱看子女與晚年。八字是東亞命理對照的起點。',
       },
       {
         title: '日主與十神',
@@ -61,7 +61,7 @@ export const TOPIC_BAZI: FestivalContent = {
     ja: [
       {
         title: '四柱',
-        body: '人の生まれた年・月・日・時を、それぞれ一組の干支で表すと「四柱」——年柱・月柱・日柱・時柱が得られる。各柱は干一つ・支一つ、合わせて八字、ゆえに「八字」という。四柱は人生の四つの座標である：年柱は祖先や幼少期、月柱は父母や青年期（「月令」でもあり、旺衰を最も重く見る）、日柱は自身と配偶、時柱は子女と晩年を司る。八字は東アジア命理の出発点である。',
+        body: '人の生まれた年・月・日・時を、それぞれ一組の干支で表すと「四柱」——年柱・月柱・日柱・時柱が得られる。各柱は干一つ・支一つ、合わせて八字、ゆえに「八字」という。四柱は人生の四つの座標である：年柱は祖先や幼少期、月柱は父母や青年期（「月令」でもあり、旺衰を最も重く見る）、日柱は自身と配偶者、時柱は子どもと晩年を司る。八字は東アジア命理の出発点である。',
       },
       {
         title: '日主と十神',
@@ -69,11 +69,11 @@ export const TOPIC_BAZI: FestivalContent = {
       },
       {
         title: '大運と流年',
-        body: '「大運」は人生の大きな運の段で、生後より月柱に従い順逆に排し、十年ごとに一歩、各歩が一組の干支で、その十年の全体の気を司る。「流年」はその年ごとの干支（丙午年など）である。運を論じるとは、大運・流年の干支が本命の八字とどう生剋し会合するか——助け（用神 力を得る）か、妨げ（忌神 当たる）か——を観ることだ。本アプリの人生の時間軸は、あなたの大運・流年を段ごとに並べ、命勢の起伏を見せるものである。',
+        body: '「大運」は人生の大きな運の段で、生後より月柱に従い順逆に排し、十年ごとに一歩、各歩が一組の干支で、その十年の全体の気を司る。「流年」はその年ごとの干支（丙午年など）である。運を論じるとは、大運・流年の干支が本命の八字とどう生剋し会合するか——助け（用神が力を借りる）か、妨げ（忌神が重なる）か——を観ることだ。本アプリの人生タイムラインは、あなたの大運・流年を段ごとに並べ、人生の起伏を見せるものである。',
       },
       {
         title: '用神と忌神',
-        body: '八字は五行の平衡を重んじる。日主を扶け、欠けを補い、全局を中和へ向かわせる五行を「用神（喜用）」といい、逆に失衡を強め日主を損なうものを「忌神」という。用神は命を論じる核心の落としどころ——運に用神を逢えば順、忌神を逢えば滞る。本アプリの「あなたへ」がその日の宜忌参考を示し、make-if がその年の決断タイミングを量るとき、底で問うているのは同じこと——この日・この年は、あなたにとって用神が力を得る読みか、忌神が当たる読みか、である。',
+        body: '八字は五行の平衡を重んじる。日主を扶け、欠けを補い、全局を中和へ向かわせる五行を「用神（喜用）」といい、逆に失衡を強め日主を損なうものを「忌神」という。用神は命を論じる核心の落としどころ——運に用神を逢えば順、忌神を逢えば滞る。本アプリの「あなたへ」がその日の宜忌参考を示し、「もしも」がその年の決断タイミングを量るとき、底で問うているのは同じこと——この日・この年は、あなたにとって用神が助けとなる読みか、忌神が重なる読みか、である。',
       },
     ],
     en: [
@@ -83,15 +83,15 @@ export const TOPIC_BAZI: FestivalContent = {
       },
       {
         title: 'The Day Master & the Ten Gods',
-        body: 'The Heavenly Stem of the day pillar is the "Day Master" (日主 / 日元) — the person themselves. The relationship of each of the other seven characters to the Day Master, by elemental generation and control and by yin-yang, sorts into the "Ten Gods" (十神): Companion, Rob-Wealth, Eating-God, Hurting-Officer, Indirect Wealth, Direct Wealth, Seven-Killings, Direct Officer, Indirect Resource, Direct Resource. The Ten Gods translate the abstract interplay of elements into concrete human affairs — wealth, office, resource, and output, governing career, standing, learning, and talent. This app\'s daily "for you" verdict is read precisely from how the day\'s stem-and-branch relates, as Ten Gods and elements, to your Day Master.',
+        body: 'The Heavenly Stem of the day pillar is the "Day Master" (日主 / 日元) — the person themselves. The relationship of each of the other seven characters to the Day Master, by elemental generation and control and by yin-yang, sorts into the "Ten Gods" (十神): Companion, Rob Wealth, Eating God, Hurting Officer, Indirect Wealth, Direct Wealth, Seven Killings, Direct Officer, Indirect Resource, Direct Resource. The Ten Gods translate the abstract interplay of elements into concrete human affairs — wealth, office, resource, and output, governing career, standing, learning, and talent. This app\'s daily "for you" verdict is read precisely from how the day\'s stem-and-branch relates, as Ten Gods and elements, to your Day Master.',
       },
       {
         title: 'Luck Pillars & Annual Years',
-        body: 'The "Luck Pillars" (大运) are the great segments of a life\'s classical cycle, laid out from birth along the month pillar in forward or reverse order — one step per decade, each step a stem-and-branch governing the overall climate of those ten years. The "Annual Year" (流年) is each single year\'s stem-and-branch (the 丙午 year, say). To read the cycle is to see how the Luck Pillar and Annual Year meet and interact with your natal chart — as support (the favorable element gaining force) or resistance (the unfavorable element falling due). This app\'s life timeline is exactly your Luck Pillars and Annual Years laid out segment by segment, so you can see how each phase reads against your chart.',
+        body: 'Luck Pillars (大运) are the great segments of a life\'s classical cycle, laid out from birth along the month pillar in forward or reverse order — one step per decade, each step a stem-and-branch governing the overall climate of those ten years. The Annual Year (流年) is each single year\'s stem-and-branch (the 丙午 year, say). To read the cycle is to see how the Luck Pillar and Annual Year meet and interact with your natal chart — as support (the favorable element gaining force) or resistance (the unfavorable element falling due). This app\'s life timeline is exactly your Luck Pillars and Annual Years laid out segment by segment, so you can see how each phase reads against your chart.',
       },
       {
         title: 'Favorable & Unfavorable Elements',
-        body: 'The Eight Characters turn on elemental balance. The element that aids the Day Master, supplies what is lacking, and brings the whole toward the center is the "favorable element" (用神); the one that worsens the imbalance and drains the Day Master is the "unfavorable element" (忌神). The favorable element is the crux of the whole reading: when a cycle meets it, things flow; when it meets the unfavorable, they stall. When this app\'s "for you" judges a day supportive or cautious, and when make-if weighs whether a year suits a decision, both are asking the same question underneath — on this day, in this year, does your favorable element gain force, or does your unfavorable one fall due?',
+        body: 'The Eight Characters turn on elemental balance. The element that aids the Day Master, supplies what is lacking, and brings the whole toward the center is the "favorable element" (用神); the one that worsens the imbalance and drains the Day Master is the "unfavorable element" (忌神). The favorable element is the crux of the whole reading: when a cycle meets it, things flow; when it meets the unfavorable, they stall. When this app\'s "for you" judges a day supportive or cautious, and when What-if (もしも) weighs whether a year suits a decision, both are asking the same question underneath — on this day, in this year, does your favorable element gain force, or does your unfavorable one fall due?',
       },
     ],
   },

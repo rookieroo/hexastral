@@ -11,7 +11,7 @@ export const DASHU: FestivalContent = {
     'zh-Hans': '大暑',
     'zh-Hant': '大暑',
     ja: '大暑',
-    en: 'Dashu (Greater Heat)',
+    en: 'Major Heat (Dashu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十二 · 一年最热，湿热交蒸',
@@ -59,7 +59,7 @@ export const DASHU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '大暑の三候——「一候 腐草 螢と為る、二候 土潤いて溽暑（じょくしょ）たり、三候 大雨 時に行る」。蛍は枯れ草に卵を産み、古人はその飛び立つを見て「腐草 螢と為る」と説いた。土は湿り、暑気が蒸し、時に大雨が盆を覆すごとく降る。大暑は一年で最も暑い節気で、「湿熱の蒸し」が頂点に達する。',
+        body: '一年で最も暑い節気。「湿热交蒸」——湿気と暑さが重なり、蒸し暑さが頂点に達する。\n\n「一候腐草为萤，二候土润溽暑，三候大雨时行」\n\n枯れ草のそばにホタルが飛ぶ——古人は「腐草がホタルに化した」と見なした。土は湿り、暑気が蒸す。時折、豪雨が降る。酷暑の真っ只中である。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const DASHU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '大暑の酷暑には、漢方は「熱を清め暑を解き、気を益し津を生ず」ことを説き、「疰夏（夏負け）の予防」を重んじる。食は淡白に、暑を消し湿を利するもの（緑豆・冬瓜・苦瓜・蓮の葉）を多くとり、適度に「熱を以て熱を制す」（伏の日に熱い茶・生姜茶を飲む）て汗を出し湿を排す。烈日を避けてよく休み、昼寝で心を養う。情を静め、苛立ちを戒める。老人と子どもはとりわけ中暑を防ぐ。',
+        body: '大暑の酷暑では、養生では熱を清め暑を解き、気を益し津を生じ、「疰夏（夏負け）の予防」を重んじる。食事は淡白に、暑を消し湿を利するもの——緑豆・冬瓜・苦瓜・蓮の葉など——を多くとり、適度に「熱を以て熱を制す」（伏の日に熱い茶・生姜茶を飲む）て汗を出し湿を排す。烈日を避けてよく休み、昼寝で心を養う。気持ちを静め、苛立ちを戒める。老人と子どもはとりわけ中暑を防ぐ。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const DASHU: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Greater Heat: "first, rotting grass becomes fireflies (腐草为萤); second, the soil is damp and the air sweltering (土润溽暑); third, great rains come in their season (大雨时行)." Fireflies lay their eggs in withered grass, and the ancients, seeing them rise, said the rotting grass turned to fireflies; the soil is moist, the heat steams, and downpours come in torrents. Greater Heat is the hottest term of the year, when the "steaming of damp and heat" reaches its peak.',
+        body: 'The three pentads of Greater Heat: first, rotting grass becomes fireflies; second, the soil is damp and the air sweltering; third, great rains come in their season. Fireflies lay their eggs in withered grass, and the ancients, seeing them rise, said the rotting grass turned to fireflies; the soil is moist, the heat steams, and downpours come in torrents. Greater Heat is the hottest term of the year, when the "steaming of damp and heat" reaches its peak. Classical three pentads: 「一候腐草为萤，二候土润溽暑，三候大雨时行」。',
       },
       {
         title: 'Farming',

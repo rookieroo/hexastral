@@ -139,8 +139,8 @@ async function transferBondsInBackground(): Promise<void> {
     if (people.length === 0) return
     const locale = resolveLocale()
     const language =
-      locale === 'zh' || locale === 'zh-Hant' || locale === 'ja' || locale === 'en'
-        ? locale === 'zh'
+      locale === 'zh-Hans' || locale === 'zh-Hant' || locale === 'ja' || locale === 'en'
+        ? locale === 'zh-Hans'
           ? 'zh-CN'
           : locale === 'zh-Hant'
             ? 'zh-TW'

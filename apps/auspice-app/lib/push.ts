@@ -60,14 +60,14 @@ const EVENING_TEXT: Record<
   'zh-Hans': {
     title: '明日提醒',
     is: '明天{x}',
-    good: '对你而言难得吉日，宜把握',
+    good: '对你而言难得吉日，值得留意',
     caution: '对你而言宜谨慎，凡事缓行',
     sep: ' · ',
   },
   'zh-Hant': {
     title: '明日提醒',
     is: '明天{x}',
-    good: '對你而言難得吉日，宜把握',
+    good: '對你而言難得吉日，值得留意',
     caution: '對你而言宜謹慎，凡事緩行',
     sep: ' · ',
   },
@@ -81,7 +81,7 @@ const EVENING_TEXT: Record<
   en: {
     title: 'Tomorrow',
     is: 'Tomorrow: {x}',
-    good: 'a strong day for you — worth seizing',
+    good: 'a supportive day for you — worth noting',
     caution: 'a day to stay careful — take it steady',
     sep: ' · ',
   },
@@ -852,8 +852,8 @@ const TIMELINE_TEXT: Record<Locale, { month: string; dayun: string }> = {
     dayun: '{year}年から新しい大運{ganzhi}（{fit}）{advice}',
   },
   en: {
-    month: 'Month {month} · 流月 {ganzhi} ({fit}). {advice}',
-    dayun: 'A new 大运 {ganzhi} begins in {year} ({fit}). {advice}',
+    month: 'Month {month} · monthly pillar {ganzhi} ({fit}). {advice}',
+    dayun: 'A new decade pillar (大运) {ganzhi} begins in {year} ({fit}). {advice}',
   },
 }
 

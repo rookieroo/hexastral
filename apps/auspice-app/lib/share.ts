@@ -50,7 +50,7 @@ const TIMELINE_FOOTER: Record<string, string> = {
   'zh-Hans': '大运 · 流年 · 流月 · 一生流年图',
   'zh-Hant': '大運 · 流年 · 流月 · 一生流年圖',
   ja: '大運 · 流年 · 一生の流れ',
-  en: 'Your life as a branching 大运 timeline',
+  en: 'Life timeline · decade & year pillars (大运 / 流年)',
 }
 
 const TIMELINE_EYEBROW: Record<string, string> = {
@@ -61,8 +61,8 @@ const TIMELINE_EYEBROW: Record<string, string> = {
 }
 
 const MAKEIF_FOOTER: Record<string, string> = {
-  'zh-Hans': '八字推演 · 看见另一种人生',
-  'zh-Hant': '八字推演 · 看見另一種人生',
+  'zh-Hans': '八字参考 · 看见另一种人生',
+  'zh-Hant': '八字參考 · 看見另一種人生',
   ja: '四柱推命 · もうひとつの人生',
   en: 'BaZi what-if · see an alternate timeline',
 }

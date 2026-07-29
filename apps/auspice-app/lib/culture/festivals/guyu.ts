@@ -11,7 +11,7 @@ export const GUYU: FestivalContent = {
     'zh-Hans': '谷雨',
     'zh-Hant': '穀雨',
     ja: '穀雨',
-    en: 'Guyu (Grain Rain)',
+    en: 'Grain Rain (Guyu)',
   },
   tagline: {
     'zh-Hans': '二十四节气之六 · 雨生百谷，春之尾声',
@@ -59,7 +59,7 @@ export const GUYU: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '穀雨の三候——「一候 萍（うきくさ）始めて生ず、二候 鳴鳩 其の羽を払う、三候 戴勝 桑に降る」。浮草が水面に生え始め、布穀（鳴鳩）が羽を梳いて農時を促し、戴勝（やつがしら）が桑の木に降りる。雨が百穀を生み、春の最後の節気がここに至り、気温も雨量もともに増す。',
+        body: '春の最後の節気。雨が増え百穀を育て、気温も雨量もともに上がる時期である。\n\n「一候萍始生，二候鸣鸠拂其羽，三候戴胜降于桑」\n\n水面に浮草が生え始める。ホオジロ（鳴鳩）が羽を整え、農時を促すように見える。ヤツガシラ（戴勝）が桑の木に降り立つ。三候はいずれも春の終わりと農事の忙しさを映す。',
       },
       {
         title: '農事',
@@ -67,17 +67,17 @@ export const GUYU: FestivalContent = {
       },
       {
         title: '養生',
-        body: '穀雨は湿熱が次第に現れる。漢方では脾を健やかにし湿を除き、肝を清め目を明らかにすることを説く。食は甘平で利湿のもの（はと麦・小豆・山芋・香椿）を宜とし、酸渋を控え、穀雨茶で火を清めるとよい。起居は湿気を防ぎ、適度に動いて汗で湿を出す。情を伸びやかに保ち、「湿が脾を困らす」だるさや食欲不振を慎む。',
+        body: '穀雨は湿熱が次第に現れる。養生では脾を健やかにし湿を除き、肝を清め目を明らかに保つ。食事は甘平で利湿のもの——はと麦・小豆・山芋・香椿など——が向く。酸渋は控え、穀雨茶で火を清めるとよい。起居は湿気を防ぎ、適度に動いて汗で湿を出す。気持ちを伸びやかに保ち、「湿が脾を困らす」だるさや食欲不振を慎む。',
       },
       {
         title: '詩',
-        body: '元稹「廿四気を詠ずる詩・穀雨」は節候を詩に詠む：「穀雨 春光暁け、山川 黛色青し。葉間 戴勝鳴き、沢水 浮萍長ず。」——穀雨の朝、春の光が明け初め、山も川も青黛に染まる。葉のあいだに戴勝が鳴き、沢の水に浮草が生い広がる。まさに穀雨の三候「萍始めて生ず」「戴勝 桑に降る」の象にかない、節気の物候を詩行に写し取っている。',
+        body: '元稹の「咏廿四气诗·谷雨」は、節候を詩に詠んだ作品。三候の「萍始生」「戴胜降于桑」が詩行にそのまま映っている。\n\n「谷雨春光晓，山川黛色青。叶间鸣戴胜，泽水长浮萍。」\n\n穀雨の朝、春の光が明け、山も川も青黛に染まる。葉のあいだでヤツガシラが鳴き、水辺に浮草が広がる——節気の物候が目の前に浮かぶ一首。',
       },
     ],
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Grain Rain: "first, duckweed begins to grow (萍始生); second, the cuckoo preens its feathers (鸣鸠拂其羽); third, the hoopoe alights on the mulberry (戴胜降于桑)." Duckweed spreads on the water, the cuckoo grooms itself as if urging on the farming season, and the hoopoe settles in the mulberry trees. The rain grows the grain; spring\'s last solar term arrives, and both warmth and rainfall rise.',
+        body: 'The three pentads of Grain Rain: first, duckweed begins to grow; second, the cuckoo preens its feathers; third, the hoopoe alights on the mulberry. Duckweed spreads on the water, the cuckoo grooms itself as if urging on the farming season, and the hoopoe settles in the mulberry trees. The rain grows the grain; spring\'s last solar term arrives, and both warmth and rainfall rise. Classical three pentads: 「一候萍始生，二候鸣鸠拂其羽，三候戴胜降于桑」。',
       },
       {
         title: 'Farming',

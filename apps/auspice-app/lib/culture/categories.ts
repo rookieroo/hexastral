@@ -66,7 +66,7 @@ const INTROS: Record<CultureCategoryKey, LocalizedText> = {
     'zh-Hant':
       '古人將一晝夜分為十二時辰，每時辰約兩小時，以地支命名，並與十二經絡的氣血流注相對應，是中醫養生與擇時的基礎。',
     ja: '一昼夜を十二の時辰（各約二時間）に分け、地支と十二経絡の気血の流れに対応させる。中医の養生と時刻選びの基礎である。',
-    en: 'The day was divided into twelve 2-hour 时辰, each named by an earthly branch and tied to meridian energy-flow — the basis of traditional wellness timing.',
+    en: 'The day was divided into twelve two-hour periods (时辰), each named by an earthly branch and tied to meridian energy-flow — the basis of traditional wellness timing.',
   },
   ganzhi: {
     'zh-Hans':
@@ -74,23 +74,23 @@ const INTROS: Record<CultureCategoryKey, LocalizedText> = {
     'zh-Hant':
       '十天干與十二地支兩兩相配，六十年一輪回，稱六十甲子，用於紀年、紀日、紀時，也是四柱八字與紫微排盤的基本符號。',
     ja: '十干と十二支を組み合わせた六十干支は、紀年・紀日・時刻の基本記号であり、四柱推命や紫微斗数の土台となる。',
-    en: 'Ten heavenly stems pair with twelve branches in a 60-year 甲子 cycle — the notation behind the calendar, Four Pillars, and Zǐwēi charts.',
+    en: 'Ten heavenly stems pair with twelve branches in a sixty-year sexagenary cycle (甲子) — the notation behind the calendar, Four Pillars, and Ziwei charts.',
   },
   sizhu: {
     'zh-Hans':
-      '四柱八字以出生年、月、日、时的天干地支共八个字，结合五行生克与十神关系，推演先天格局与运势倾向，是中式命理的核心体系之一。',
+      '四柱八字以出生年、月、日、时的天干地支共八个字，结合五行生克与十神关系，对照先天格局与运势倾向，是中式命理的核心体系之一。',
     'zh-Hant':
-      '四柱八字以出生年、月、日、時的天干地支共八個字，結合五行生剋與十神關係，推演先天格局與運勢傾向，是中式命理的核心體系之一。',
-    ja: '四柱推命は生年月日時の干支八字から五行の生剋を読み、先天の傾向を推し量る中国命理の中核である。',
-    en: 'Four Pillars (Bazi) use eight stem-branch characters from birth year, month, day, and hour — read through Five-Element interactions as a core Chinese fate system.',
+      '四柱八字以出生年、月、日、時的天干地支共八個字，結合五行生剋與十神關係，對照先天格局與運勢傾向，是中式命理的核心體系之一。',
+    ja: '四柱推命は生年月日時の干支八字から五行の生剋を読み、先天の傾向を対照する中国命理の中核である。',
+    en: 'Four Pillars (Bazi) use eight stem-branch characters from birth year, month, day, and hour — read through Five-Element interactions as a core Chinese chart tradition.',
   },
   ziwei: {
     'zh-Hans':
-      '紫微斗数以紫微星为帝星，将百余颗星曜排布于十二宫，结合四化与流年，推演性格、际遇与运势走势，与八字并列为华人社会常见的命理体系。',
+      '紫微斗数以紫微星为帝星，将百余颗星曜排布于十二宫，结合四化与流年，对照性格、际遇与运势走势，与八字并列为华人社会常见的命理体系。',
     'zh-Hant':
-      '紫微斗數以紫微星為帝星，將百餘顆星曜排布於十二宮，結合四化與流年，推演性格、際遇與運勢走勢，與八字並列為華人社會常見的命理體系。',
-    ja: '紫微斗数は紫微星を中心に百余の星を十二宮へ配し、四化と流年で性格・運勢を読む。四柱推命と並ぶ命理体系である。',
-    en: 'Zǐwēi Dǒushù places 100+ stars across twelve palaces, led by the emperor star Zǐwěi — charting temperament and life phases alongside Bazi in the classical chart tradition.',
+      '紫微斗數以紫微星為帝星，將百餘顆星曜排布於十二宮，結合四化與流年，對照性格、際遇與運勢走勢，與八字並列為華人社會常見的命理體系。',
+    ja: '紫微斗数は紫微星を中心に百余の星を十二宮へ配し、四化と流年で性格・運の傾向を読む。四柱推命と並ぶ命理体系である。',
+    en: 'Ziwei Dou Shu places 100+ stars across twelve palaces, led by the emperor star Ziwei — charting temperament and life phases alongside Bazi in the classical chart tradition.',
   },
 }
 

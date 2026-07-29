@@ -11,7 +11,7 @@ export const LIDONG: FestivalContent = {
     'zh-Hans': '立冬',
     'zh-Hant': '立冬',
     ja: '立冬',
-    en: 'Lidong (Start of Winter)',
+    en: 'Start of Winter (Lidong)',
   },
   tagline: {
     'zh-Hans': '二十四节气之十九 · 万物收藏，避寒就温',
@@ -59,7 +59,7 @@ export const LIDONG: FestivalContent = {
     ja: [
       {
         title: '物候',
-        body: '立冬の三候——「一候 水 始めて氷る、二候 地 始めて凍る、三候 雉 大水に入りて蜃（しん）と為る」。水面に薄氷が張り始め、地は次第に凍り、野鶏（雉）など大きな鳥が見えなくなり、海辺に大蛤（蜃）が増えるゆえ、古人は「雉 蜃と化す」と想った。立冬とは冬の始まりで、万物が収まり蔵（かく）れ、寒を避けて温に就く。',
+        body: '冬の始まり。万物が収まり、蔵（かく）れ、寒を避けて温かい所へ就く。\n\n「一候水始冰，二候地始冻，三候雉入大水为蜃」\n\n水面に薄氷が張り始める。地が次第に凍る。野鶏（雉）が見えなくなり、海辺に大蛤（蜃）が増える——古人は「雉が蜃に化した」と見なした。',
       },
       {
         title: '農事',
@@ -67,7 +67,7 @@ export const LIDONG: FestivalContent = {
       },
       {
         title: '養生',
-        body: '立冬は陽気が潜み蔵れる。漢方では「蔵を養う」とし、陽を収め腎を護り、温かく補って寒を防ぐことを重んじる。食は温補のもの（羊肉・牛肉・栗・胡桃・黒胡麻）を宜とし、生冷を控える。北方は進補を多く、南方は清補を宜とする。早寝遅起きし、「必ず日光を待ち」、寒を避けて温に就き、頭・首・足を護る。情を安らかに内に収め、恬淡として乱さない。',
+        body: '立冬は陽気が潜み蔵れる。養生では「蔵を養う」とされ、陽を収め腎を護り、温かく補って寒を防ぐ。食事は温補のもの——羊肉・牛肉・栗・胡桃・黒胡麻など——が向く。生冷は控える。北方は進補を多く、南方は清補が好まれる。早寝遅起きし、「必ず日光を待ち」、寒を避けて温に就き、頭・首・足を護る。気持ちを安らかに内に収め、恬淡として乱さない。',
       },
       {
         title: '詩',
@@ -77,7 +77,7 @@ export const LIDONG: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Start of Winter: "first, the waters begin to freeze (水始冰); second, the earth begins to freeze (地始冻); third, the pheasant enters the water and becomes a clam (雉入大水为蜃)." Thin ice forms on the water, the ground begins to freeze, and as large birds like pheasants grow scarce and great clams ("蜃") multiply along the shore, the ancients imagined the pheasant turning into a clam. Lidong is winter\'s beginning: all things gather and store themselves away, shunning cold for warmth.',
+        body: 'The three pentads of the Start of Winter: first, the waters begin to freeze; second, the earth begins to freeze; third, the pheasant enters the water and becomes a clam. Thin ice forms on the water, the ground begins to freeze, and as large birds like pheasants grow scarce and great clams multiply along the shore, the ancients imagined the pheasant turning into a clam. Lidong is winter\'s beginning: all things gather and store themselves away, shunning cold for warmth. Classical three pentads: 「一候水始冰，二候地始冻，三候雉入大水为蜃」。',
       },
       {
         title: 'Farming',

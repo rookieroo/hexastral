@@ -268,7 +268,7 @@ function buildGraph(
     isHead: false,
     element: dayMaster.element,
     title: `${dayMaster.stem}${dayMaster.branch}`,
-    sub: '命',
+    sub: '',
     ref: { kind: 'source' },
   })
   y += STEP
