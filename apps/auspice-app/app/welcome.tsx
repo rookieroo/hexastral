@@ -9,9 +9,8 @@ import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { moonPhaseFromLunarDay } from '@/components/DailyCard'
+import { moonPhaseForIsoDate } from '@/components/DailyCard'
 import { PhaseLogo } from '@/components/PhaseLogo'
-import { fetchAuspiceDay } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { markOnboardingSeen } from '@/lib/onboarding-seen'
@@ -59,11 +58,7 @@ export default function WelcomeScreen() {
   useEffect(() => {
     const d = new Date()
     const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-    void fetchAuspiceDay(iso)
-      .then((p) => {
-        setPhase(moonPhaseFromLunarDay(p.day.lunarDate?.day))
-      })
-      .catch(() => {})
+    setPhase(moonPhaseForIsoDate(iso))
   }, [])
 
   const enter = () => {

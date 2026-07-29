@@ -7,7 +7,7 @@
  *   - `ancient` — 古风 黄历, 繁體-only: 時辰 as the time, 干支紀日, 農曆 + 干支年, 節氣,
  *                 黃曆 宜忌, 古铜 ink frame. An "ancient almanac on a wrist". (Pro)
  *
- * 月相 (clean Skia, 阴历-driven, skin-configurable) is the ambient hero. Detail is
+ * 月相 (clean Skia, synodic day-step from civil date, skin-configurable) is the ambient hero. Detail is
  * on-demand: TAP cross-fades the lower slot — at rest the 对你而言 verdict (or 节气);
  * tapped, 宜 / 忌 on two short lines (no ellipsis, fits en). NO 吉凶 "score" dots
  * on the face (energy-rating read = review + psych risk). Time is HH:MM (no
@@ -15,6 +15,7 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
+import { getLunarPhase } from '@zhop/hexastral-tokens/lunar'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -216,9 +217,22 @@ function currentShichen(hant: boolean): string {
   return `${SHICHEN_BRANCHES[idx] ?? '子'}${hant ? '時' : '时'}`
 }
 
+/**
+ * Synodic phase [0, 1) for a Gregorian calendar day — evaluated at local noon
+ * so each civil day gets a stable, day-stepped terminator (not frozen to 农历日
+ * buckets that jump ~0.034 and miss true 望 at 0.5).
+ */
+export function moonPhaseForIsoDate(iso: string): number {
+  const parts = iso.split('-').map(Number)
+  const y = parts[0]
+  const m = parts[1]
+  const d = parts[2]
+  if (!y || !m || !d) return getLunarPhase()
+  return getLunarPhase(new Date(y, m - 1, d, 12, 0, 0, 0).getTime())
+}
+
+/** @deprecated Prefer moonPhaseForIsoDate — kept for call sites that only have 农历日. */
 export function moonPhaseFromLunarDay(day: number | undefined): number {
-  // 农历日 → synodic fraction. 初一 ≈ 朔 (0), 十五 ≈ 望 (~0.47).
-  // 29.53 ≈ mean synodic month; clamp below 1 so day 30 doesn't wrap to new.
   if (!day || day < 1) return 0
   return Math.max(0, Math.min(0.999, (day - 1) / 29.53))
 }
@@ -286,7 +300,7 @@ export function buildDailyCardModel(
     solarTermName: day.solarTermToday?.name ?? '',
     goodForRaw: day.goodFor,
     avoidRaw: day.avoid,
-    moonPhase: moonPhaseFromLunarDay(ld?.day),
+    moonPhase: moonPhaseForIsoDate(date),
     dayElementColor: STEM_ELEMENT_COLOR[day.ganZhi[0] ?? ''] ?? '#A0845C',
     clashAnimal: personalization?.personalClash ? resolveClashAnimal(day.clash) : null,
     fit,

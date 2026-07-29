@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
-import { moonPhaseFromLunarDay } from '@/components/DailyCard'
+import { moonPhaseForIsoDate } from '@/components/DailyCard'
 import { PhaseLogo } from '@/components/PhaseLogo'
 import {
   type AuspiceDayPayload,
@@ -66,7 +66,9 @@ export default function HomeScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ day?: string; focus?: string }>()
 
-  const todayIso = useMemo(() => todayIsoString(), [])
+  const [todayIso, setTodayIso] = useState(() => todayIsoString())
+  const todayMoonPhase = useMemo(() => moonPhaseForIsoDate(todayIso), [todayIso])
+
   const initialDay = useMemo(() => {
     const candidate = Array.isArray(params.day) ? params.day[0] : params.day
     return typeof candidate === 'string' && DATE_RE.test(candidate) ? candidate : todayIso
@@ -116,23 +118,34 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Refresh civil "today" on focus so midnight / overnight stays accurate.
+      setTodayIso(todayIsoString())
       loadDay()
     }, [loadDay])
   )
 
-  // Widgets: public 黄历 always; 「对你而言」 when birth personalization exists (not Pro-gated).
+  // Widgets always sync a window from civil today — not the calendar selection.
   useEffect(() => {
-    if (dayData) {
-      void syncTodayWidget(
-        dayData.date,
-        dayData.day,
-        dayData.personalization,
-        t,
-        locale,
-        Boolean(dayData.personalization)
-      )
+    let cancelled = false
+    void getAuspiceBirthDate()
+      .then(async (birthDate) => {
+        const today = todayIsoString()
+        const payload = await fetchAuspiceDay(today, birthDate)
+        if (cancelled) return
+        await syncTodayWidget(
+          today,
+          payload.day,
+          payload.personalization,
+          t,
+          locale,
+          Boolean(payload.personalization)
+        )
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
-  }, [dayData, t, locale])
+  }, [todayIso, t, locale])
 
   useEffect(() => {
     if (focusPersonal && dayData && !dayLoading) {
@@ -237,11 +250,7 @@ export default function HomeScreen() {
       >
         <View accessibilityLabel='Yuun'>
           <PhaseLogo
-            phase={
-              dayData?.day.lunarDate?.day != null
-                ? (devMoonPhase ?? moonPhaseFromLunarDay(dayData.day.lunarDate.day))
-                : 0.35
-            }
+            phase={devMoonPhase ?? todayMoonPhase}
             size={HOME_LOGO_SIZE}
           />
         </View>

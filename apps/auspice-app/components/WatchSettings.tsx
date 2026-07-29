@@ -4,13 +4,14 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
-import { buildDailyCardModel, compactVerbs } from './DailyCard'
+import { syncWidgetWindow } from '@/lib/widget-bridge'
+import { buildDailyCardModel, compactVerbs, moonPhaseForIsoDate } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
 import { WidgetCard, type WidgetSize } from './WidgetCard'
 import { widgetSurfaceBg } from './WidgetSurface'
@@ -26,6 +27,18 @@ const PREVIEW_SCALE = 0.52
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
+}
+
+function todayIso(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function addDaysIso(iso: string, delta: number): string {
+  const parts = iso.split('-').map(Number)
+  const dt = new Date(parts[0] ?? 0, (parts[1] ?? 1) - 1, parts[2] ?? 1)
+  dt.setDate(dt.getDate() + delta)
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`
 }
 
 function Label({ children }: { children: string }) {
@@ -241,17 +254,26 @@ export function WatchSettings() {
   const { t, locale } = useStrings()
   const [payload, setPayload] = useState<AuspiceDayPayload | null>(null)
   const { phase: phaseOverride, setPhase: setPhaseOverride } = useDevMoonPhase()
+  const [dayOffset, setDayOffset] = useState(0)
 
   useEffect(() => {
-    const d = new Date()
-    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const iso = todayIso()
     getAuspiceBirthDate()
       .then((b) => fetchAuspiceDay(iso, b))
       .then(setPayload)
       .catch(() => {})
   }, [])
 
-  const livePhase = phaseOverride ?? undefined
+  const followSystemDate = useCallback(() => {
+    setDayOffset(0)
+    setPhaseOverride(null)
+    void getAuspiceBirthDate().then((birthDate) =>
+      syncWidgetWindow(todayIso(), t, locale, Boolean(birthDate))
+    )
+  }, [setPhaseOverride, t, locale])
+
+  const previewDayIso = useMemo(() => addDaysIso(todayIso(), dayOffset), [dayOffset])
+  const livePhase = phaseOverride ?? moonPhaseForIsoDate(previewDayIso)
   const previewBg = widgetSurfaceBg(surfaceMode)
   const sizeLabel = (s: WidgetSize) =>
     s === 'small' ? t.widgetSizeSmall : s === 'medium' ? t.widgetSizeMedium : t.widgetSizeLarge
@@ -345,21 +367,46 @@ export function WatchSettings() {
         <View style={{ gap: spacing.sm }}>
           <Label>{t.devMoonPhaseLabel}</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <Pressable
+              onPress={followSystemDate}
+              accessibilityRole='button'
+              accessibilityState={{ selected: phaseOverride === null && dayOffset === 0 }}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: 6,
+                borderRadius: 14,
+                borderWidth: phaseOverride === null && dayOffset === 0 ? 1 : 0.5,
+                borderColor:
+                  phaseOverride === null && dayOffset === 0 ? colors.accent : colors.separator,
+                backgroundColor:
+                  phaseOverride === null && dayOffset === 0 ? colors.accentGhost : 'transparent',
+              }}
+            >
+              <Text
+                style={{
+                  color: phaseOverride === null && dayOffset === 0 ? colors.accent : colors.text,
+                  fontSize: 13,
+                }}
+              >
+                {t.devMoonPhaseLive}
+              </Text>
+            </Pressable>
             {(
               [
-                { label: t.devMoonPhaseLive, value: null as number | null },
                 { label: t.devMoonPhaseNew, value: 0 },
                 { label: t.devMoonPhaseFirst, value: 0.25 },
                 { label: t.devMoonPhaseFull, value: 0.5 },
                 { label: t.devMoonPhaseLast, value: 0.75 },
               ] as const
             ).map((opt) => {
-              const sel =
-                opt.value === null ? phaseOverride === null : phaseOverride === opt.value
+              const sel = phaseOverride === opt.value
               return (
                 <Pressable
                   key={opt.label}
-                  onPress={() => setPhaseOverride(opt.value)}
+                  onPress={() => {
+                    setDayOffset(0)
+                    setPhaseOverride(opt.value)
+                  }}
                   accessibilityRole='button'
                   accessibilityState={{ selected: sel }}
                   style={{
@@ -378,9 +425,54 @@ export function WatchSettings() {
               )
             })}
           </View>
-          <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
-            {t.devMoonPhaseHint}
-          </Text>
+          <Label>{t.devMoonPhaseDayScrub}</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {([-3, -2, -1, 0, 1, 2, 3] as const).map((off) => {
+              const iso = addDaysIso(todayIso(), off)
+              const dayPhase = moonPhaseForIsoDate(iso)
+              const sel =
+                off === 0
+                  ? phaseOverride === null && dayOffset === 0
+                  : phaseOverride != null && Math.abs(phaseOverride - dayPhase) < 0.0005
+              const label =
+                off === 0 ? t.devMoonPhaseDayToday : off > 0 ? `+${off}` : `${off}`
+              return (
+                <Pressable
+                  key={off}
+                  onPress={() => {
+                    setDayOffset(off)
+                    if (off === 0) {
+                      followSystemDate()
+                    } else {
+                      setPhaseOverride(dayPhase)
+                    }
+                  }}
+                  accessibilityRole='button'
+                  accessibilityState={{ selected: sel }}
+                  style={{
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    borderWidth: sel ? 1 : 0.5,
+                    borderColor: sel ? colors.accent : colors.separator,
+                    backgroundColor: sel ? colors.accentGhost : 'transparent',
+                  }}
+                >
+                  <Text style={{ color: sel ? colors.accent : colors.text, fontSize: 13 }}>
+                    {label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <PhaseLogo phase={phase} size={36} />
+            <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16, flex: 1 }}>
+              {previewDayIso} · phase {phase.toFixed(3)}
+              {'\n'}
+              {t.devMoonPhaseHint}
+            </Text>
+          </View>
         </View>
       ) : null}
     </View>

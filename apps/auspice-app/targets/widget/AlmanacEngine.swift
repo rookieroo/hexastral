@@ -73,17 +73,25 @@ enum AlmanacEngine {
     return map[month] ?? "寅"
   }
 
-  /// Synodic phase 0..1 (fallback when 农历日 unavailable).
+  /// Synodic phase 0..1 for a civil calendar day at local noon.
+  /// Matches RN `moonPhaseForIsoDate` / `@zhop/hexastral-tokens` getLunarPhase
+  /// (ref new moon 2026-04-16 06:00 UTC, cycle 29.53059 d).
   static func moonPhaseSynodic(year: Int, month: Int, day: Int) -> Double {
-    let jd = Double(julianDay(year: year, month: month, day: day))
-    let synodic = 29.53058867
-    let days = jd - 2451549.5
-    var phase = days.truncatingRemainder(dividingBy: synodic) / synodic
+    let refNewMoonMs: Double = 1_776_315_600_000
+    let lunarCycleMs: Double = 29.53059 * 86_400_000
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = .current
+    guard let date = cal.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) else {
+      return 0.5
+    }
+    let ms = date.timeIntervalSince1970 * 1000.0
+    let elapsed = ms - refNewMoonMs
+    var phase = elapsed.truncatingRemainder(dividingBy: lunarCycleMs) / lunarCycleMs
     if phase < 0 { phase += 1 }
     return phase
   }
 
-  /// Match RN `moonPhaseFromLunarDay`: (农历日 - 1) / 29.53.
+  /// @deprecated Prefer moonPhaseSynodic(year:month:day:) for day-stepped logos.
   static func moonPhaseFromLunarDay(_ lunarDay: Int) -> Double {
     let d = max(1, min(30, lunarDay))
     return Double(d - 1) / 29.53
@@ -147,7 +155,7 @@ enum AlmanacEngine {
       yi: yj.yi,
       ji: yj.ji,
       fit: nil,
-      moonPhase: moonPhaseFromLunarDay(lunar.day),
+      moonPhase: moonPhaseSynodic(year: year, month: month, day: day),
       officer: officer,
       mansion: nil,
       clashShengxiao: nil,

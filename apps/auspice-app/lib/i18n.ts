@@ -483,6 +483,9 @@ export interface Strings {
   /** __DEV__ moon-phase mock controls. */
   devMoonPhaseLabel: string
   devMoonPhaseLive: string
+  /** DEV row: scrub moon by civil day offset from today. */
+  devMoonPhaseDayScrub: string
+  devMoonPhaseDayToday: string
   devMoonPhaseNew: string
   devMoonPhaseFirst: string
   devMoonPhaseFull: string
@@ -888,12 +891,15 @@ const zhHans: Strings = {
   watchTemplateAncient: '古风',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相预览',
-  devMoonPhaseLive: '今日',
+  devMoonPhaseLive: '跟随系统日期',
+  devMoonPhaseDayScrub: '按日预览（相对今天）',
+  devMoonPhaseDayToday: '今天',
   devMoonPhaseNew: '朔',
   devMoonPhaseFirst: '上弦',
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
-  devMoonPhaseHint: '仅开发构建。选中后同步首页 Logo 与桌面小组件（写入 App Group）。',
+  devMoonPhaseHint:
+    '仅开发构建。跟随系统日期清除覆盖并按公历日重写小组件月相；按日预览以天为单位移动 terminator。',
   comingSoon: '即将推出',
   widgetDayTipLabel: '日签',
   readingChat: {
@@ -1257,12 +1263,15 @@ const zhHant: Strings = {
   watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相預覽',
-  devMoonPhaseLive: '今日',
+  devMoonPhaseLive: '跟隨系統日期',
+  devMoonPhaseDayScrub: '按日預覽（相對今天）',
+  devMoonPhaseDayToday: '今天',
   devMoonPhaseNew: '朔',
   devMoonPhaseFirst: '上弦',
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
-  devMoonPhaseHint: '僅開發構建。選中後同步首頁 Logo 與桌面小組件（寫入 App Group）。',
+  devMoonPhaseHint:
+    '僅開發構建。跟隨系統日期清除覆蓋並按公曆日重寫小組件月相；按日預覽以天為單位移動 terminator。',
   comingSoon: '即將推出',
   widgetDayTipLabel: '日籤',
   readingChat: {
@@ -1653,12 +1662,15 @@ const ja: Strings = {
   watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
   devMoonPhaseLabel: 'DEV · 月相プレビュー',
-  devMoonPhaseLive: '今日',
+  devMoonPhaseLive: 'システム日付に合わせる',
+  devMoonPhaseDayScrub: '日単位プレビュー（今日基準）',
+  devMoonPhaseDayToday: '今日',
   devMoonPhaseNew: '朔',
   devMoonPhaseFirst: '上弦',
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
-  devMoonPhaseHint: '開発ビルドのみ。選択するとホームロゴとウィジェットに同期（App Group）。',
+  devMoonPhaseHint:
+    '開発ビルドのみ。システム日付は上書きを消し、公暦日ごとにウィジェット月相を書き直します。',
   comingSoon: '近日公開',
   widgetDayTipLabel: '今日の一言',
   readingChat: {
@@ -2052,12 +2064,15 @@ const en: Strings = {
   watchTemplateAncient: 'Classical',
   moonSkinLabel: 'Moon skin',
   devMoonPhaseLabel: 'DEV · Moon phase',
-  devMoonPhaseLive: 'Live',
+  devMoonPhaseLive: 'Follow system date',
+  devMoonPhaseDayScrub: 'Day scrub (vs today)',
+  devMoonPhaseDayToday: 'Today',
   devMoonPhaseNew: 'New',
   devMoonPhaseFirst: 'First Q',
   devMoonPhaseFull: 'Full',
   devMoonPhaseLast: 'Last Q',
-  devMoonPhaseHint: 'Dev only. Syncs home logo + home-screen widget via App Group.',
+  devMoonPhaseHint:
+    'Dev only. Follow system date clears the override and rewrites per-day widget phases; day scrub moves the terminator one civil day at a time.',
   comingSoon: 'Soon',
   widgetDayTipLabel: 'Tip',
   readingChat: {
