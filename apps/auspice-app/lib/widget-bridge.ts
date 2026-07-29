@@ -53,7 +53,7 @@ function toWidgetDay(
   const en = locale === 'en'
   const chrome = compactChrome(locale)
   // en compact: keep 干支 + 宜/忌 glyphs + localized verbs; drop dense almanac extras.
-  // yi/ji = medium+large (up to 2 lines); yiShort/jiShort = small (1 line).
+  // Good/Avoid lines = medium+large (up to 2 lines); short = small (1 line).
   return {
     date,
     ganZhi: m.ganZhi,

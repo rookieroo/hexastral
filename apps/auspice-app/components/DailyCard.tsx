@@ -27,6 +27,8 @@ import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
 import { dailyWidgetTip } from '@/lib/culture/daily-widget-tips'
 import { localizeYijiVerb } from '@/lib/yiji-vocab'
+import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
+import { EN_YIJI_LABELS } from '@/lib/terminology-locale'
 import { PhaseLogo } from './PhaseLogo'
 
 type Strings = ReturnType<typeof useStrings>['t']
@@ -36,6 +38,8 @@ export type DailyCardTier = 'glance' | 'compact' | 'full'
 export interface DailyCardModel {
   date: string
   ganZhi: string
+  /** Toned Mandarin for en value slots (副标); null on zh/ja / Watch-only paths. */
+  ganZhiPinyin: string | null
   /** `${值神label} · ${officer}` — already localized (home card). */
   officerLabel: string
   /** 值神 (建除十二神) char, e.g. "建". */
@@ -180,7 +184,7 @@ export function compactVerbs(raw: string[], n: number, locale: Locale): string {
   return topVerbs(raw, locale, n)
 }
 
-/** Chrome labels for widget + watch faces — 宜忌 stay glyphs; other chrome follows locale. */
+/** Chrome labels for widget + watch faces — en uses Good/Avoid; zh/ja keep 宜/忌. */
 export function compactChrome(locale: Locale): {
   yi: string
   ji: string
@@ -194,7 +198,7 @@ export function compactChrome(locale: Locale): {
     return { yi: '宜', ji: '忌', forYou: '對你', tip: '日籤' }
   }
   if (locale === 'en') {
-    return { yi: '宜', ji: '忌', forYou: 'For you', tip: 'Tip' }
+    return { yi: EN_YIJI_LABELS.yi, ji: EN_YIJI_LABELS.ji, forYou: 'For you', tip: 'Tip' }
   }
   return { yi: '宜', ji: '忌', forYou: '对你', tip: '日签' }
 }
@@ -246,6 +250,7 @@ export function buildDailyCardModel(
   return {
     date,
     ganZhi: day.ganZhi,
+    ganZhiPinyin: en ? (ganzhiPinyin(day.ganZhi)?.toned ?? null) : null,
     officerLabel: `${t.dayOfficerLabel} · ${t.officers[day.dayOfficer]}`,
     // Always the 建除 glyph — widgets/watch must not show "Establish" / "Success".
     officer: day.dayOfficer,
@@ -785,19 +790,33 @@ function FullTier({ model }: { model: DailyCardModel }) {
         ) : null}
       </View>
 
-      {/* 月相 + 干支日 (五行 意象) + 值神 */}
+      {/* 月相 + 干支日 (CJK primary; en toned pinyin 副标) + 值神 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <PhaseLogo phase={model.moonPhase} size={46} />
-        <Text
-          style={{
-            color: model.dayElementColor,
-            fontSize: 46,
-            fontWeight: '300',
-            letterSpacing: 2,
-          }}
-        >
-          {model.ganZhi}
-        </Text>
+        <View style={{ alignItems: 'flex-start' }}>
+          <Text
+            style={{
+              color: model.dayElementColor,
+              fontSize: 46,
+              fontWeight: '300',
+              letterSpacing: 2,
+            }}
+          >
+            {model.ganZhi}
+          </Text>
+          {model.ganZhiPinyin ? (
+            <Text
+              style={{
+                color: colors.secondary,
+                fontSize: 12,
+                letterSpacing: 1,
+                marginTop: -4,
+              }}
+            >
+              {model.ganZhiPinyin}
+            </Text>
+          ) : null}
+        </View>
         <View style={{ flex: 1 }} />
         <Text style={{ color: colors.secondary, fontSize: 14, textAlign: 'right' }}>
           {model.officerLabel}

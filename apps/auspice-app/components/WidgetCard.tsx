@@ -167,6 +167,11 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
       <View style={{ width: 96, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <PhaseLogo phase={phaseOf(model, phaseOverride)} size={48} />
         <Text style={{ color: chrome.text, fontSize: 20, fontWeight: '300' }}>{model.ganZhi}</Text>
+        {model.ganZhiPinyin ? (
+          <Text style={{ color: chrome.secondary, fontSize: 10, letterSpacing: 0.5 }} numberOfLines={1}>
+            {model.ganZhiPinyin}
+          </Text>
+        ) : null}
         <Text
           style={{ color: chrome.secondary, fontSize: 11, textAlign: 'center' }}
           numberOfLines={2}
@@ -226,7 +231,14 @@ function LargeWidget({ model, phaseOverride, chrome, locale }: SubProps) {
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-        <Text style={{ color: chrome.text, fontSize: 32, fontWeight: '300' }}>{model.ganZhi}</Text>
+        <View>
+          <Text style={{ color: chrome.text, fontSize: 32, fontWeight: '300' }}>{model.ganZhi}</Text>
+          {model.ganZhiPinyin ? (
+            <Text style={{ color: chrome.secondary, fontSize: 11, letterSpacing: 0.5 }} numberOfLines={1}>
+              {model.ganZhiPinyin}
+            </Text>
+          ) : null}
+        </View>
         {!en && model.officer ? (
           <Text style={{ color: chrome.secondary, fontSize: 13, paddingBottom: 4 }}>
             {`${model.officer}日`}

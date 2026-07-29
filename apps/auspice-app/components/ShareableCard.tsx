@@ -63,8 +63,8 @@ const DAY_FOOTER: Record<string, string> = {
   'zh-Hans': '每日干支 · 农历 · 节气 · 宜忌',
   'zh-Hant': '每日干支 · 農曆 · 節氣 · 宜忌',
   ja: '干支 · 旧暦 · 二十四節気 · 宜忌',
-  // en is pure English — no CJK — and short, so it never crowds the landing URL.
-  en: 'Chinese almanac · daily picks',
+  // en is pure English — no bare CJK in footer chrome.
+  en: 'Chinese almanac · Good / Avoid',
 }
 
 /** Locale-aware brand eyebrow default for the DAY card (en stays CJK-free). */

@@ -18,11 +18,11 @@ import { Share } from 'react-native'
 const WEB_BASE = 'https://yuun.hexastral.com'
 
 /** Localized "shared from" + soft CTA prepended to the share-page link. */
-const EN_TAGLINE = '— from Yuun, the Chinese calendar · see yours'
+const EN_TAGLINE = '— from Yuun, the Chinese almanac · see yours'
 const TAGLINE: Record<string, string> = {
-  'zh-Hans': '—— 由 Yuun 中华万年历生成 · 看看你的',
-  'zh-Hant': '—— 由 Yuun 中華萬年曆生成 · 看看你的',
-  ja: '—— Yuun 中華万年暦より · あなたのも見てみる',
+  'zh-Hans': '—— 由 Yuun 中华黄历生成 · 看看你的',
+  'zh-Hant': '—— 由 Yuun 中華黃曆生成 · 看看你的',
+  ja: '—— Yuun 中華黄暦より · あなたのも見てみる',
   en: EN_TAGLINE,
 }
 

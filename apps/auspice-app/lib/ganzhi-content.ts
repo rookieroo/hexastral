@@ -28,6 +28,10 @@ export interface StemEntry {
   polarity: '阳' | '阴'
   /** Mandarin pinyin (with tone mark). Useful for non-CJK users. */
   pinyin: string
+  /** Japanese 訓読み (黄历 / sexagenary register) — glossary only. */
+  kunyomi: string
+  /** Japanese 音読み — glossary 別読み. */
+  onyomi: string
 }
 
 export interface BranchEntry {
@@ -37,21 +41,25 @@ export interface BranchEntry {
   element: Wuxing
   /** Mandarin pinyin (with tone mark). */
   pinyin: string
+  /** Japanese 訓読み — glossary only. */
+  kunyomi: string
+  /** Japanese 音読み — glossary 別読み. */
+  onyomi: string
   /** Localized 生肖 (zodiac animal). */
   animal: Record<Locale, string>
 }
 
 export const TEN_STEMS: ReadonlyArray<StemEntry> = [
-  { char: '甲', element: '木', polarity: '阳', pinyin: 'jiǎ' },
-  { char: '乙', element: '木', polarity: '阴', pinyin: 'yǐ' },
-  { char: '丙', element: '火', polarity: '阳', pinyin: 'bǐng' },
-  { char: '丁', element: '火', polarity: '阴', pinyin: 'dīng' },
-  { char: '戊', element: '土', polarity: '阳', pinyin: 'wù' },
-  { char: '己', element: '土', polarity: '阴', pinyin: 'jǐ' },
-  { char: '庚', element: '金', polarity: '阳', pinyin: 'gēng' },
-  { char: '辛', element: '金', polarity: '阴', pinyin: 'xīn' },
-  { char: '壬', element: '水', polarity: '阳', pinyin: 'rén' },
-  { char: '癸', element: '水', polarity: '阴', pinyin: 'guǐ' },
+  { char: '甲', element: '木', polarity: '阳', pinyin: 'jiǎ', kunyomi: 'きのえ', onyomi: 'こう' },
+  { char: '乙', element: '木', polarity: '阴', pinyin: 'yǐ', kunyomi: 'きのと', onyomi: 'おつ' },
+  { char: '丙', element: '火', polarity: '阳', pinyin: 'bǐng', kunyomi: 'ひのえ', onyomi: 'へい' },
+  { char: '丁', element: '火', polarity: '阴', pinyin: 'dīng', kunyomi: 'ひのと', onyomi: 'てい' },
+  { char: '戊', element: '土', polarity: '阳', pinyin: 'wù', kunyomi: 'つちのえ', onyomi: 'ぼ' },
+  { char: '己', element: '土', polarity: '阴', pinyin: 'jǐ', kunyomi: 'つちのと', onyomi: 'き' },
+  { char: '庚', element: '金', polarity: '阳', pinyin: 'gēng', kunyomi: 'かのえ', onyomi: 'こう' },
+  { char: '辛', element: '金', polarity: '阴', pinyin: 'xīn', kunyomi: 'かのと', onyomi: 'しん' },
+  { char: '壬', element: '水', polarity: '阳', pinyin: 'rén', kunyomi: 'みずのえ', onyomi: 'じん' },
+  { char: '癸', element: '水', polarity: '阴', pinyin: 'guǐ', kunyomi: 'みずのと', onyomi: 'き' },
 ]
 
 export const TWELVE_BRANCHES: ReadonlyArray<BranchEntry> = [
@@ -59,72 +67,96 @@ export const TWELVE_BRANCHES: ReadonlyArray<BranchEntry> = [
     char: '子',
     element: '水',
     pinyin: 'zǐ',
+    kunyomi: 'ね',
+    onyomi: 'し',
     animal: { 'zh-Hans': '鼠', 'zh-Hant': '鼠', ja: '子・鼠', en: 'Rat' },
   },
   {
     char: '丑',
     element: '土',
     pinyin: 'chǒu',
+    kunyomi: 'うし',
+    onyomi: 'ちゅう',
     animal: { 'zh-Hans': '牛', 'zh-Hant': '牛', ja: '丑・牛', en: 'Ox' },
   },
   {
     char: '寅',
     element: '木',
     pinyin: 'yín',
+    kunyomi: 'とら',
+    onyomi: 'いん',
     animal: { 'zh-Hans': '虎', 'zh-Hant': '虎', ja: '寅・虎', en: 'Tiger' },
   },
   {
     char: '卯',
     element: '木',
     pinyin: 'mǎo',
+    kunyomi: 'う',
+    onyomi: 'ぼう',
     animal: { 'zh-Hans': '兔', 'zh-Hant': '兔', ja: '卯・兎', en: 'Rabbit' },
   },
   {
     char: '辰',
     element: '土',
     pinyin: 'chén',
+    kunyomi: 'たつ',
+    onyomi: 'しん',
     animal: { 'zh-Hans': '龙', 'zh-Hant': '龍', ja: '辰・龍', en: 'Dragon' },
   },
   {
     char: '巳',
     element: '火',
     pinyin: 'sì',
+    kunyomi: 'み',
+    onyomi: 'し',
     animal: { 'zh-Hans': '蛇', 'zh-Hant': '蛇', ja: '巳・蛇', en: 'Snake' },
   },
   {
     char: '午',
     element: '火',
     pinyin: 'wǔ',
+    kunyomi: 'うま',
+    onyomi: 'ご',
     animal: { 'zh-Hans': '马', 'zh-Hant': '馬', ja: '午・馬', en: 'Horse' },
   },
   {
     char: '未',
     element: '土',
     pinyin: 'wèi',
+    kunyomi: 'ひつじ',
+    onyomi: 'び',
     animal: { 'zh-Hans': '羊', 'zh-Hant': '羊', ja: '未・羊', en: 'Goat' },
   },
   {
     char: '申',
     element: '金',
     pinyin: 'shēn',
+    kunyomi: 'さる',
+    onyomi: 'しん',
     animal: { 'zh-Hans': '猴', 'zh-Hant': '猴', ja: '申・猿', en: 'Monkey' },
   },
   {
     char: '酉',
     element: '金',
     pinyin: 'yǒu',
+    kunyomi: 'とり',
+    onyomi: 'ゆう',
     animal: { 'zh-Hans': '鸡', 'zh-Hant': '雞', ja: '酉・鶏', en: 'Rooster' },
   },
   {
     char: '戌',
     element: '土',
     pinyin: 'xū',
+    kunyomi: 'いぬ',
+    onyomi: 'じゅつ',
     animal: { 'zh-Hans': '狗', 'zh-Hant': '狗', ja: '戌・犬', en: 'Dog' },
   },
   {
     char: '亥',
     element: '水',
     pinyin: 'hài',
+    kunyomi: 'い',
+    onyomi: 'がい',
     animal: { 'zh-Hans': '猪', 'zh-Hant': '豬', ja: '亥・猪', en: 'Pig' },
   },
 ]

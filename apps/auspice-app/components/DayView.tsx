@@ -26,6 +26,7 @@ import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
+import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
 import { localizeYijiVerb } from '@/lib/yiji-vocab'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
@@ -111,6 +112,7 @@ export function DayView({
 
   const isZh = locale === 'zh-Hans' || locale === 'zh-Hant'
   const dayGanzhiLabel = `${day.ganZhi}${isZh || locale === 'ja' ? '日' : ''}`
+  const dayGanzhiPinyin = locale === 'en' ? (ganzhiPinyin(day.ganZhi)?.toned ?? null) : null
   const gregorian = formatGregorianIdentity(date, locale as Locale)
   const yg = day.yearGanZhi
   const identitySub = [
@@ -173,11 +175,18 @@ export function DayView({
                 gap: spacing.sm,
               }}
             >
-              <Text
-                style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}
-              >
-                {dayGanzhiLabel}
-              </Text>
+              <View>
+                <Text
+                  style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}
+                >
+                  {dayGanzhiLabel}
+                </Text>
+                {dayGanzhiPinyin ? (
+                  <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.5 }}>
+                    {dayGanzhiPinyin}
+                  </Text>
+                ) : null}
+              </View>
               {identitySub ? (
                 <Text style={{ color: colors.dim, fontSize: 13 }}>{identitySub}</Text>
               ) : null}

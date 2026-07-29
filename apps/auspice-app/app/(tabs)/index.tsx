@@ -1,5 +1,5 @@
 /**
- * Home — Today-first IA: week strip (tap to expand month) + yi/ji + For you.
+ * Home — Today-first IA: week strip (tap to expand month) + Good/Avoid + For you.
  *
  * Calendar: tap the chevron under the strip to expand/collapse (horizontal swipe
  * on the strip is reserved for scrolling days / paging months — don't fight it).

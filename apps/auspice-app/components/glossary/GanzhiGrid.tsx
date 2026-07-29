@@ -31,6 +31,7 @@ import {
   TEN_STEMS,
   TWELVE_BRANCHES,
 } from '@/lib/ganzhi-content'
+import { ganzhiJaKunyomi, ganzhiWikiLineEn } from '@/lib/ganzhi-pinyin'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
@@ -197,6 +198,26 @@ export function GanzhiGrid() {
             {t.ganzhiComboIndex.replace('{index}', String(selected.index + 1))}
           </Text>
         </View>
+        {locale === 'en' ? (
+          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
+            {ganzhiWikiLineEn(
+              selected.label,
+              `${localizeWuxing(selected.stem.element, locale)} ${selected.branch.animal.en}`,
+              selected.index + 1
+            )}
+          </Text>
+        ) : null}
+        {locale === 'ja'
+          ? (() => {
+              const kun = ganzhiJaKunyomi(selected.label)
+              if (!kun) return null
+              return (
+                <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
+                  {`${kun}（訓読み）`}
+                </Text>
+              )
+            })()
+          : null}
         <DetailRow
           label={selected.stem.char}
           value={`${localizeWuxing(selected.stem.element, locale)} · ${localizePolarity(selected.stem.polarity, locale)} · ${selected.stem.pinyin}`}

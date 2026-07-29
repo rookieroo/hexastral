@@ -1750,7 +1750,7 @@ const en: Strings = {
   proTitle: 'Yuun Pro',
   proSubtitle: 'Public almanac free · birth unlocks For you · Pro deepens the read',
   proBenefits: [
-    'For you — every Suitable / Avoid explained (favorable element · color · hour)',
+    'For you — every Good / Avoid explained (favorable element · color · hour)',
     'Your whole life in 10-year cycles — decade, year, month + what-if reflection',
     'Custom date-picker range + personal almanac calendar subscription',
     'Chart deep-read — personal Ba Zi / Zi Wei reference',
@@ -1783,7 +1783,7 @@ const en: Strings = {
   cultureReadMore: 'Read more',
   cultureUpcomingTerm: 'Up next · {name}',
   cultureTopicsTitle: 'Culture guide',
-  cultureHubBlurb: 'Festivals · solar terms · 12 hours · ganzhi · bazi · ziwei',
+  cultureHubBlurb: 'Festivals · solar terms · 12 hours · stem-branch (干支) · bazi · ziwei',
   cultureWikipediaCta: 'Learn more on Wikipedia',
   ziweiChartComingSoon: 'Interactive chart coming soon',
   seasonSpring: 'Spring',
@@ -2035,7 +2035,7 @@ const en: Strings = {
   },
   watchWidgets: 'Home · Lock · Watch',
   watchWidgetsNote:
-    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch slots (circular / rectangular / inline / corner) show today’s stem-branch and 宜忌 — the same for everyone. Add your birth info to unlock For you on the app and widgets. Watch only fills system-face slots; prefer the rectangular slot for 宜忌.',
+    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch slots (circular / rectangular / inline / corner) show today’s stem-branch (干支) and Good / Avoid — the same for everyone. Add your birth info to unlock For you on the app and widgets. Watch only fills system-face slots; prefer the rectangular slot for Good / Avoid.',
   widgetPreviewCaption: 'Home Screen',
   watchPreviewCaption: 'Watch slots (system faces)',
   watchSlotCircular: 'Circular',
@@ -2102,7 +2102,7 @@ const en: Strings = {
   personalCalendarFailed: "Couldn't open your personal calendar — please try again.",
   appleCalendarSubscribeRow: 'Subscribe in Apple Calendar',
   appleCalendarSubscribeHint:
-    'Sync daily 干支, solar terms, and yi/ji to your iPhone / Mac Calendar so you see them without opening the app.',
+    'Sync daily stem-branch (干支), solar terms, and Good / Avoid to your iPhone / Mac Calendar so you see them without opening the app.',
 }
 
 const TABLE: Record<Locale, Strings> = { 'zh-Hans': zhHans, 'zh-Hant': zhHant, ja, en }
