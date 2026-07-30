@@ -27,7 +27,8 @@ import { useImageShare } from '@/lib/imageShare'
 import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
-import { localizeYijiVerb } from '@/lib/yiji-vocab'
+import { displayYijiVerb } from '@/lib/yiji-vocab'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
 import { PersonalCard } from './PersonalCard'
@@ -380,11 +381,12 @@ function ShareYiJi({
 }: {
   goodFor: string[]
   avoid: string[]
-  locale: Parameters<typeof localizeYijiVerb>[1]
+  locale: Locale
   t: ReturnType<typeof useStrings>['t']
   palette: SharePalette
 }) {
   const { colors, spacing, isDark } = useTheme()
+  const { mode } = useYijiDisplayMode()
   // Match on-screen YiJiBlock: only the 宜/忌 headers are tinted; chips stay neutral.
   const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(43,33,24,0.04)'
 
@@ -428,7 +430,7 @@ function ShareYiJi({
               }}
             >
               <Text style={{ color: palette.text, fontSize: 14 }}>
-                {localizeYijiVerb(v, locale)}
+                {displayYijiVerb(v, locale, mode)}
               </Text>
             </View>
           ))

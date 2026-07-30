@@ -114,6 +114,7 @@ struct WidgetEnvelope: Codable {
 struct WatchPreferences: Codable {
   var locale: String
   var birthDate: String?
+  var yijiMode: String?
 }
 
 enum WatchStoreKeys {

@@ -1,0 +1,1 @@
+ALTER TABLE `auspice_push_subs` ADD `yiji_mode` text;

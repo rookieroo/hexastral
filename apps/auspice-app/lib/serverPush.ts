@@ -28,6 +28,8 @@ import { getAuspiceDeviceId } from './device'
 import type { AuspicePerson } from './people'
 import { getAuspiceProActive } from './pro'
 import { isServerPushActive, setServerPushActive } from './serverPushFlag'
+import { resolveYijiDisplayMode } from './yiji-display-mode'
+import type { Locale } from './i18n'
 
 const BDAY_MIGRATED_KEY = 'auspice.bday.serverMigrated.v1'
 
@@ -48,6 +50,8 @@ export interface ServerPushProfile extends Partial<ServerPushPrefs> {
   birthHour?: number
   gender?: 'M' | 'F'
   isPro: boolean
+  /** Device-scoped 宜忌 display mode; omit → server derives from locale. */
+  yijiMode?: 'modern' | 'traditional'
 }
 
 /**
@@ -92,6 +96,7 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
         holidayOn: p.holidayOn ?? true,
         timelineRemindOn: p.timelineRemindOn ?? true,
         isPro: p.isPro,
+        ...(p.yijiMode ? { yijiMode: p.yijiMode } : {}),
         ...(portfolioUserId ? { u: portfolioUserId } : {}),
       }),
     })
@@ -123,12 +128,14 @@ export async function syncAuspiceServerPush(
 ): Promise<boolean> {
   const info = await getAuspiceBirthInfo().catch(() => null)
   const isPro = await getAuspiceProActive().catch(() => false)
+  const yijiMode = await resolveYijiDisplayMode(locale as Locale).catch(() => undefined)
   return registerAuspiceServerPush({
     locale,
     birthDate: info?.solarDate,
     birthHour: info ? (info.timeIndex === null ? -1 : info.timeIndex * 2) : undefined,
     gender: info?.gender ? (info.gender === '男' ? 'M' : 'F') : undefined,
     isPro,
+    yijiMode,
     ...prefs,
   })
 }

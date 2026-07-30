@@ -22,6 +22,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
+import { YijiModeProvider } from '@/lib/yiji-mode-context'
 import { parseKindredComposeUrl } from '@/lib/kindred-import'
 import { addPerson, getPeople } from '@/lib/people'
 import { getAuspiceProActive } from '@/lib/pro'
@@ -59,7 +60,9 @@ export default function RootLayout() {
             fixed ink identity — no user accent switcher. */}
         <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
           <LocaleProvider>
-            <RootLayoutInner />
+            <YijiModeProvider>
+              <RootLayoutInner />
+            </YijiModeProvider>
           </LocaleProvider>
         </CoreUIProvider>
       </SafeAreaProvider>

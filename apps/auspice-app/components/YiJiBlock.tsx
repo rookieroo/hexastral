@@ -5,30 +5,35 @@
  * Header is a soft colored text label (no aggressive Check/X icon) — per
  * user feedback 2026-06: the icons read as too literal / aggressive for a
  * 黄历 surface. Color alone (green for 宜, cinnabar for 忌) carries the
- * semantic. Chip text runs through `localizeYijiVerb` so the verb reads
- * in the user's language; unknown verbs fall back to the source CJK.
+ * semantic. Chip text uses display mode; explain/analytics keep canonical CJK.
  */
 
+import { yijiExplainField, type YijiVocabularyMode } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { Pressable, Text, View } from 'react-native'
 import { useStrings } from '@/lib/i18n-context'
-import { localizeYijiVerb } from '@/lib/yiji-vocab'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
+import { displayYijiVerb } from '@/lib/yiji-vocab'
+import type { Locale } from '@/lib/i18n'
 
 function Column({
   label,
+  side,
   items,
   color,
   onSelect,
   locale,
+  mode,
 }: {
   /** Localized header text (e.g. "宜" / "Good for") — renders in the column's color. */
   label: string
+  side: 'good' | 'avoid'
   items: string[]
   /** Column accent color — drives header text color (and only that, for the gentle look). */
   color: string
   onSelect?: (field: string) => void
-  /** Drives chip-text translation via `localizeYijiVerb`. */
-  locale: Parameters<typeof localizeYijiVerb>[1]
+  locale: Locale
+  mode: YijiVocabularyMode
 }) {
   const { colors, spacing } = useTheme()
   return (
@@ -51,7 +56,7 @@ function Column({
           items.map((v) => (
             <Pressable
               key={v}
-              onPress={onSelect ? () => onSelect(`${label} ${v}`) : undefined}
+              onPress={onSelect ? () => onSelect(yijiExplainField(side, v)) : undefined}
               style={{
                 paddingHorizontal: spacing.sm,
                 paddingVertical: 4,
@@ -62,7 +67,7 @@ function Column({
               }}
             >
               <Text style={{ color: colors.text, fontSize: 14 }}>
-                {localizeYijiVerb(v, locale)}
+                {displayYijiVerb(v, locale, mode)}
               </Text>
             </Pressable>
           ))
@@ -84,22 +89,27 @@ export function YiJiBlock({
 }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
+  const { mode } = useYijiDisplayMode()
 
   return (
     <View style={{ flexDirection: 'row', gap: spacing.lg }}>
       <Column
         label={t.suitable}
+        side='good'
         items={goodFor}
         color={colors.success}
         onSelect={onSelect}
         locale={locale}
+        mode={mode}
       />
       <Column
         label={t.avoid}
+        side='avoid'
         items={avoid}
         color={colors.danger}
         onSelect={onSelect}
         locale={locale}
+        mode={mode}
       />
     </View>
   )

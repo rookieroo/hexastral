@@ -13,6 +13,7 @@
  */
 
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { resolveYijiSearchVerbs } from '@zhop/astro-core'
 import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -37,6 +38,24 @@ import { scheduleRetroCheck } from '@/lib/push'
 /** Free window + server cap (mirror auspice.ts MAX_SEARCH_SPAN_DAYS). */
 const FREE_WINDOW_DAYS = 30
 const MAX_SPAN_DAYS = 92
+
+const HOT_WORD_KEYS = [
+  '相亲',
+  '读书',
+  '进修',
+  '面试',
+  '体检',
+  '发布',
+  '上线',
+  '谈判',
+  'AI',
+  '游戏',
+] as const
+type HotWordKey = (typeof HOT_WORD_KEYS)[number]
+
+function isHotWordKey(key: string): key is HotWordKey {
+  return (HOT_WORD_KEYS as readonly string[]).includes(key)
+}
 
 function fmt(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -63,9 +82,10 @@ function isSpecialized(e: AuspiceEvent): e is SpecializedCycleEvent {
 /** Optional deep-link params from /timeline ("查看吉日"). Pro-only fields, since
  *  Free is pinned to the next-30-days window regardless. */
 const EVENT_SET = new Set<string>(CYCLE_EVENTS)
-function parseEvent(raw: string | string[] | undefined): AuspiceEvent | null {
+const SEARCH_KEY_SET = new Set<string>([...CYCLE_EVENTS, ...HOT_WORD_KEYS])
+function parseSearchKey(raw: string | string[] | undefined): string | null {
   const s = Array.isArray(raw) ? raw[0] : raw
-  return s && EVENT_SET.has(s) ? (s as AuspiceEvent) : null
+  return s && SEARCH_KEY_SET.has(s) ? s : null
 }
 function parseIsoDate(raw: string | string[] | undefined): Date | null {
   const s = Array.isArray(raw) ? raw[0] : raw
@@ -80,7 +100,9 @@ export default function EventScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ event?: string; from?: string; to?: string }>()
 
-  const [event, setEvent] = useState<AuspiceEvent>(() => parseEvent(params.event) ?? 'wedding')
+  const [searchKey, setSearchKey] = useState<string>(
+    () => parseSearchKey(params.event) ?? 'wedding'
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AuspiceSearchPayload | null>(null)
@@ -95,8 +117,8 @@ export default function EventScreen() {
   // Late-arriving params (e.g., deep-link tap after the screen mounted) overwrite
   // state once — without clobbering the user's subsequent manual edits.
   useEffect(() => {
-    const e = parseEvent(params.event)
-    if (e) setEvent(e)
+    const key = parseSearchKey(params.event)
+    if (key) setSearchKey(key)
     const f = parseIsoDate(params.from)
     if (f) setFromDate(f)
     const tDate = parseIsoDate(params.to)
@@ -104,9 +126,17 @@ export default function EventScreen() {
     // Intentionally run once on params — subsequent edits live in user state.
   }, [params.event, params.from, params.to])
 
+  const resolvedSearch = resolveYijiSearchVerbs(searchKey)
+  const resolvedEvent = resolvedSearch?.event ?? null
   const entitlements = useEntitlements()
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
-  const specialized = isSpecialized(event)
+  const specialized = resolvedEvent != null && isSpecialized(resolvedEvent)
+
+  const searchLabel = isHotWordKey(searchKey)
+    ? t.eventAliases[searchKey]
+    : EVENT_SET.has(searchKey)
+      ? t.events[searchKey as AuspiceEvent]
+      : searchKey
 
   const run = () => {
     // Free → fixed next-30-days; Pro → the chosen window, clamped to the server cap.
@@ -127,16 +157,17 @@ export default function EventScreen() {
     const fromIso = fmt(from)
     const toIso = fmt(to)
     // Specialized scoring is free now — only the window is gated.
-    const promise = specialized
-      ? fetchAuspiceSpecialized(event as SpecializedCycleEvent, fromIso, toIso)
-      : searchAuspiceDays(event, fromIso, toIso)
+    const promise =
+      resolvedEvent != null && isSpecialized(resolvedEvent)
+        ? fetchAuspiceSpecialized(resolvedEvent as SpecializedCycleEvent, fromIso, toIso)
+        : searchAuspiceDays(searchKey, fromIso, toIso, locale)
     promise
       .then((r) => setResult(r))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false))
   }
 
-  const flagship: 'yuan' | 'feng' = event === 'wedding' ? 'yuan' : 'feng'
+  const flagship: 'yuan' | 'feng' = resolvedEvent === 'wedding' ? 'yuan' : 'feng'
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -150,11 +181,11 @@ export default function EventScreen() {
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {CYCLE_EVENTS.map((e) => {
-              const selected = e === event
+              const selected = e === searchKey
               return (
                 <Pressable
                   key={e}
-                  onPress={() => setEvent(e)}
+                  onPress={() => setSearchKey(e)}
                   style={{
                     paddingVertical: spacing.sm,
                     paddingHorizontal: spacing.lg,
@@ -166,6 +197,40 @@ export default function EventScreen() {
                 >
                   <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 14 }}>
                     {t.events[e]}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <Text
+            style={{
+              color: colors.secondary,
+              fontSize: 11,
+              letterSpacing: 3,
+              marginTop: spacing.md,
+              marginBottom: spacing.sm,
+            }}
+          >
+            {t.eventAliasSection}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {HOT_WORD_KEYS.map((key) => {
+              const selected = key === searchKey
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setSearchKey(key)}
+                  style={{
+                    paddingVertical: spacing.sm,
+                    paddingHorizontal: spacing.lg,
+                    borderRadius: 999,
+                    backgroundColor: selected ? colors.accent : colors.card,
+                    borderWidth: 0.5,
+                    borderColor: selected ? colors.accent : colors.separator,
+                  }}
+                >
+                  <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 14 }}>
+                    {t.eventAliases[key]}
                   </Text>
                 </Pressable>
               )
@@ -268,7 +333,7 @@ export default function EventScreen() {
                 <Pressable
                   key={r.date}
                   onPress={() => {
-                    scheduleRetroCheck({ date: r.date, eventLabel: t.events[event], locale }).catch(
+                    scheduleRetroCheck({ date: r.date, eventLabel: searchLabel, locale }).catch(
                       () => {}
                     )
                     router.push({ pathname: '/', params: { day: r.date } })

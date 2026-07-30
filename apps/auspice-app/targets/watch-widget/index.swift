@@ -13,7 +13,13 @@ import WidgetKit
 private let APP_GROUP = "group.com.hexastral.yuun"
 private let ENVELOPE_KEY = "hexastral_widget_payload_v1"
 private let LEGACY_DAYS_KEY = "almanac_days"
+private let LOCALE_KEY = "yuun_widget_locale"
+private let TIP_LABEL_KEY = "yuun_widget_tip_label"
 private let DEV_PHASE_KEY = "yuun_dev_moon_phase"
+
+/// Rectangular 宜/忌 verb cap. Three fits the widest slot without an ellipsis;
+/// letting the full `yiLong` list truncate just paints a `…` nobody can read.
+private let RECT_VERBS = 3
 
 // MARK: - Data
 
@@ -31,6 +37,8 @@ struct WatchDay: Codable {
   var ji: String?
   var yiShort: String?
   var jiShort: String?
+  var yiLong: String?
+  var jiLong: String?
   var fit: String?
   var moonPhase: Double
   var lunar: String?
@@ -41,12 +49,14 @@ struct WatchDay: Codable {
 
   enum CodingKeys: String, CodingKey {
     case date, ganZhi, yi, ji, yiShort, jiShort, fit, moonPhase, lunar, solarTerm, officer
+    case yiLong, jiLong
     case dayTip, tipLabel
   }
 
   init(
     date: String, ganZhi: String, yi: String, moonPhase: Double,
     ji: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
+    yiLong: String? = nil, jiLong: String? = nil,
     fit: String? = nil, lunar: String? = nil, solarTerm: String? = nil,
     officer: String? = nil, dayTip: String? = nil, tipLabel: String? = nil
   ) {
@@ -56,6 +66,8 @@ struct WatchDay: Codable {
     self.ji = ji
     self.yiShort = yiShort
     self.jiShort = jiShort
+    self.yiLong = yiLong
+    self.jiLong = jiLong
     self.fit = fit
     self.moonPhase = moonPhase
     self.lunar = lunar
@@ -73,6 +85,8 @@ struct WatchDay: Codable {
     ji = try c.decodeIfPresent(String.self, forKey: .ji)
     yiShort = try c.decodeIfPresent(String.self, forKey: .yiShort)
     jiShort = try c.decodeIfPresent(String.self, forKey: .jiShort)
+    yiLong = try c.decodeIfPresent(String.self, forKey: .yiLong)
+    jiLong = try c.decodeIfPresent(String.self, forKey: .jiLong)
     fit = try c.decodeIfPresent(String.self, forKey: .fit)
     moonPhase = try c.decodeIfPresent(Double.self, forKey: .moonPhase) ?? 0.5
     lunar = try c.decodeIfPresent(String.self, forKey: .lunar)
@@ -98,13 +112,37 @@ private func ymd(_ date: Date) -> String {
   return f.string(from: date)
 }
 
-private func normalizeLocale(_ raw: String?) -> String {
-  let t = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+/// Pure tag matcher — unknown tags land on `en`.
+private func matchLocale(_ tag: String) -> String {
+  let t = tag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
   if t.hasPrefix("en") { return "en" }
   if t.hasPrefix("ja") { return "ja" }
   if t.contains("hant") || t.contains("tw") || t.contains("hk") { return "zh-Hant" }
   if t.hasPrefix("zh") { return "zh-Hans" }
   return "en"
+}
+
+/// Payload locale, falling back to the Watch's own language when absent — a
+/// complication placed before the first sync must not force English chrome.
+private func normalizeLocale(_ raw: String?) -> String {
+  let t = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+  if t.isEmpty { return matchLocale(Locale.preferredLanguages.first ?? "en") }
+  return matchLocale(t)
+}
+
+/// Gallery text is built when `body` is evaluated, before any timeline load, so it
+/// cannot rely on `cachedLocale` — read the App Group directly.
+private func loadLocale() -> String {
+  guard let defaults = UserDefaults(suiteName: APP_GROUP) else { return normalizeLocale(nil) }
+  if let loc = defaults.string(forKey: LOCALE_KEY), !loc.isEmpty { return normalizeLocale(loc) }
+  if let json = defaults.string(forKey: ENVELOPE_KEY),
+     let data = json.data(using: .utf8),
+     let env = try? JSONDecoder().decode(Env.self, from: data),
+     let loc = env.locale,
+     !loc.isEmpty {
+    return normalizeLocale(loc)
+  }
+  return normalizeLocale(nil)
 }
 
 private func goodLabel() -> String {
@@ -142,15 +180,32 @@ private func dateInfo(_ d: WatchDay?) -> String {
   return d.ganZhi
 }
 
-private func verbParts(_ raw: String?, fallback: String?, max: Int) -> [String] {
-  let source = [raw, fallback]
+/// 农历 (+ 节气 on 节气当日) — secondary caption beside 干支 where width allows.
+/// Already localized upstream: RN / bootstrap emit `6/15` for en, `六月十五` for zh/ja.
+private func lunarMeta(_ d: WatchDay?) -> String {
+  guard let d else { return "" }
+  return [d.lunar, d.solarTerm]
+    .compactMap { $0 }
+    .filter { !$0.isEmpty }
+    .joined(separator: " · ")
+}
+
+/// First non-empty of `candidates` (widest field first), split into verbs.
+/// `max: nil` keeps them all.
+///
+/// Split on the bullet only, then trim: `topVerbs` joins with `" · "` on en/ja and
+/// `"·"` on zh, and several en glosses are multi-word (`Move in`, `Bless idol`,
+/// `Mourn end`). Treating a bare space as a separator shears those into fragments.
+private func verbParts(_ candidates: [String?], max: Int? = nil) -> [String] {
+  let source = candidates
     .compactMap { $0 }
     .first { !$0.isEmpty } ?? ""
   let parts = source
-    .split(whereSeparator: { $0 == "·" || $0 == "•" || $0 == " " })
+    .split(whereSeparator: { $0 == "·" || $0 == "•" })
     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     .filter { !$0.isEmpty }
   if parts.isEmpty { return ["—"] }
+  guard let max else { return parts }
   return Array(parts.prefix(max))
 }
 
@@ -162,10 +217,10 @@ private func loadToday() -> WatchDay? {
     days.first { $0.date == today }
   }
 
-  if let tip = defaults.string(forKey: "yuun_widget_tip_label"), !tip.isEmpty {
+  if let tip = defaults.string(forKey: TIP_LABEL_KEY), !tip.isEmpty {
     cachedTipLabel = tip
   }
-  if let loc = defaults.string(forKey: "yuun_widget_locale"), !loc.isEmpty {
+  if let loc = defaults.string(forKey: LOCALE_KEY), !loc.isEmpty {
     cachedLocale = loc
   }
 
@@ -267,19 +322,46 @@ struct WatchEntry: TimelineEntry {
   let day: WatchDay?
 }
 
-struct WatchProvider: TimelineProvider {
-  func placeholder(in context: Context) -> WatchEntry {
-    WatchEntry(
-      date: Date(),
-      day: WatchDay(
-        date: "—", ganZhi: "癸卯", yi: "开市·嫁娶", moonPhase: 0.5,
-        yiShort: "开市·嫁娶", lunar: "六月十五", solarTerm: "", officer: "成"
-      )
+/// Gallery preview sample. Verbs follow the payload locale so an en picker never
+/// previews CJK almanac terms — `Yuun` itself is the brand and stays untranslated.
+private func placeholderDay(_ locale: String) -> WatchDay {
+  if locale == "en" {
+    return WatchDay(
+      date: "—", ganZhi: "乙巳", yi: "Wedding·Travel", moonPhase: 0.5,
+      ji: "Funeral·Groundwork", yiShort: "Wedding", jiShort: "Funeral",
+      yiLong: "Wedding·Travel·Opening·Blessing", jiLong: "Funeral·Groundwork",
+      lunar: "6/15", solarTerm: ""
     )
   }
+  return WatchDay(
+    date: "—", ganZhi: "乙巳", yi: "开市·嫁娶·出行", moonPhase: 0.5,
+    ji: "安葬·动土", yiShort: "开市·嫁娶", jiShort: "安葬",
+    yiLong: "开市·嫁娶·出行·祈福·纳财", jiLong: "安葬·动土·破土",
+    lunar: "六月十五", solarTerm: "", officer: "成"
+  )
+}
 
+private enum WatchGallery {
+  static func description(_ locale: String) -> String {
+    switch locale {
+    case "en": return "Moon · pillars · lunar date · Good/Avoid"
+    case "ja": return "月相 · 干支 · 旧暦 · 向く/避ける"
+    case "zh-Hant": return "月相 · 干支 · 農曆 · 宜忌"
+    default: return "月相 · 干支 · 农历 · 宜忌"
+    }
+  }
+}
+
+struct WatchProvider: TimelineProvider {
+  func placeholder(in context: Context) -> WatchEntry {
+    WatchEntry(date: Date(), day: placeholderDay(loadLocale()))
+  }
+
+  /// Picker preview — fall back to the sample so an unsynced Watch still previews a
+  /// filled slot. `getTimeline` must **not** do this: on the face, no data is real
+  /// state and has to surface `emptyHint`.
   func getSnapshot(in context: Context, completion: @escaping (WatchEntry) -> Void) {
-    completion(WatchEntry(date: Date(), day: loadToday()))
+    completion(WatchEntry(date: Date(), day: loadToday() ?? placeholderDay(loadLocale())))
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<WatchEntry>) -> Void) {
@@ -334,24 +416,38 @@ struct WatchComplicationView: View {
     }
   }
 
-  /// 干支 · 宜 two verbs · 忌 two verbs (For you stays in Watch App).
+  /// 月相 + 干支 + 农历 (+ 节气) on one line, then 宜 / 忌 one line each. Capped at
+  /// `RECT_VERBS`, so a mild scale-down absorbs long locales (en verbs run ~3x CJK)
+  /// instead of truncating — the verb count bounds how much the size can drift.
   private func rectangular(_ d: WatchDay?) -> some View {
-    VStack(alignment: .leading, spacing: 1) {
-      Text(d?.ganZhi ?? "Yuun")
-        .font(.headline)
-        .widgetAccentable()
+    let meta = lunarMeta(d)
+    return VStack(alignment: .leading, spacing: 1) {
+      HStack(spacing: 4) {
+        if let d {
+          WatchPhaseLogo(phase: phaseOf(d))
+            .frame(width: 14, height: 14)
+        }
+        Text(d?.ganZhi ?? "Yuun")
+          .font(.headline)
+          .widgetAccentable()
+          .lineLimit(1)
+        if !meta.isEmpty {
+          Text(meta)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+      }
+      Text(yiLine(d))
+        .font(.caption2)
+        .foregroundStyle(.secondary)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
-      Text(yiLine(d, maxVerbs: 2))
+      Text(jiLine(d))
         .font(.caption2)
         .foregroundStyle(.secondary)
         .lineLimit(1)
-        .minimumScaleFactor(0.85)
-      Text(jiLine(d, maxVerbs: 2))
-        .font(.caption2)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
+        .minimumScaleFactor(0.8)
     }
   }
 
@@ -378,22 +474,23 @@ struct WatchComplicationView: View {
       .lineLimit(1)
   }
 
-  private func yiLine(_ d: WatchDay?, maxVerbs: Int) -> String {
+  /// Widest field first — `yiShort` is capped at 2 verbs by the RN bridge / bootstrap.
+  private func yiLine(_ d: WatchDay?) -> String {
     guard let d else { return emptyHint() }
-    let verbs = verbParts(d.yiShort, fallback: d.yi, max: maxVerbs).joined(separator: "·")
+    let verbs = verbParts([d.yiLong, d.yi, d.yiShort], max: RECT_VERBS).joined(separator: "·")
     return "\(goodLabel()) \(verbs)"
   }
 
-  private func jiLine(_ d: WatchDay?, maxVerbs: Int) -> String {
+  private func jiLine(_ d: WatchDay?) -> String {
     guard let d else { return emptyHint() }
-    let verbs = verbParts(d.jiShort, fallback: d.ji, max: maxVerbs).joined(separator: "·")
+    let verbs = verbParts([d.jiLong, d.ji, d.jiShort], max: RECT_VERBS).joined(separator: "·")
     return "\(avoidLabel()) \(verbs)"
   }
 
   private func inlineYiJi(_ d: WatchDay?) -> String {
     guard let d else { return emptyHint() }
-    let yi = verbParts(d.yiShort, fallback: d.yi, max: 1).first ?? "—"
-    let ji = verbParts(d.jiShort, fallback: d.ji, max: 1).first ?? "—"
+    let yi = verbParts([d.yiShort, d.yi], max: 1).first ?? "—"
+    let ji = verbParts([d.jiShort, d.ji], max: 1).first ?? "—"
     return "\(goodLabel()) \(yi) · \(avoidLabel()) \(ji)"
   }
 }
@@ -410,7 +507,7 @@ struct YuunWatchWidget: Widget {
         }
     }
     .configurationDisplayName("Yuun")
-    .description("圆形月相·干支 · 矩形宜忌 · 底边宜·忌")
+    .description(WatchGallery.description(loadLocale()))
     .supportedFamilies([
       .accessoryCircular,
       .accessoryRectangular,

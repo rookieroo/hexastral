@@ -43,6 +43,18 @@ export {
   TWENTY_EIGHT_MANSIONS,
   twentyEightMansions,
 } from './almanac'
+export type { YijiEvent, YijiLocale, YijiVocabularyMode } from './yiji-vocabulary'
+export {
+  defaultYijiModeForLocale,
+  formatYijiList,
+  formatYijiVerb,
+  officerYijiCanonicalTerms,
+  resolveYijiSearchVerbs,
+  YIJI_EVENT_VERBS,
+  YIJI_EVENTS,
+  YIJI_SEARCH_ALIASES,
+  yijiExplainField,
+} from './yiji-vocabulary'
 // 本我中心多关系时间轴 (Bonds Timeline — Kindred BT.1, ADR-0014)
 export type {
   BondInput,

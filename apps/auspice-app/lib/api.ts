@@ -288,7 +288,8 @@ export interface AuspiceSearchResult {
 }
 
 export interface AuspiceSearchPayload {
-  event: AuspiceEvent
+  /** Stable event id, or the alias key when searching via hot word. */
+  event: AuspiceEvent | string
   range: { from: string; to: string }
   top: AuspiceSearchResult[]
 }
@@ -445,14 +446,20 @@ export function primeFromBootstrap(
   )
 }
 
-/** Reverse 择日: top-3 ranked days for an event within `[from, to]` (≤ 92 days). */
+/** Reverse 择日: top-3 ranked days for an event/alias within `[from, to]` (≤ 92 days). */
 export function searchAuspiceDays(
-  event: AuspiceEvent,
+  event: AuspiceEvent | string,
   from: string,
-  to: string
+  to: string,
+  locale?: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 ): Promise<AuspiceSearchPayload> {
-  const q = `?event=${event}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-  return getJson<AuspiceSearchPayload>(`/api/auspice/search${q}`)
+  const q = new URLSearchParams({
+    event,
+    from,
+    to,
+  })
+  if (locale) q.set('locale', locale)
+  return getJson<AuspiceSearchPayload>(`/api/auspice/search?${q.toString()}`)
 }
 
 /**

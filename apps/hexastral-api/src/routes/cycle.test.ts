@@ -118,6 +118,21 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
     expect(msg?.data.hookKey).toBeUndefined()
   })
 
+  test('zh-Hans morning with null yiji_mode stays traditional; en null → modern', () => {
+    const zh = renderAuspicePush('morning', ymd, mkSub({ locale: 'zh-Hans', yijiMode: null }))
+    expect(zh?.body).toMatch(/宜/)
+    // Traditional zh keeps canonical 嫁娶 when present among top verbs, or other CJK.
+    expect(zh?.body).toMatch(/[一-鿿]/)
+
+    const en = renderAuspicePush(
+      'morning',
+      ymd,
+      mkSub({ locale: 'en', birthDate: null, yijiMode: null })
+    )
+    // en + null mode → modern English glosses in the legacy body path.
+    expect(en?.body).toMatch(/Good|Avoid/)
+  })
+
   test('en evening heads-up no longer repeats "Tomorrow" in the body', () => {
     // Jun 19 2026 = 端午 (festivalToday), so the evening fires regardless of fit — lets us
     // assert the dedup without depending on a 吉/凶 day. Old body was "Tomorrow: …".
@@ -259,6 +274,28 @@ describe('GET /api/auspice/search', () => {
   test('rejects an unbounded range', async () => {
     const res = await auspiceRoutes.request('/search?event=travel&from=2026-01-01&to=2026-12-31')
     expect(res.status).toBe(400)
+  })
+
+  test('hot-word alias 相亲 resolves to wedding scoring', async () => {
+    const res = await auspiceRoutes.request(
+      '/search?event=%E7%9B%B8%E4%BA%B2&from=2026-06-01&to=2026-06-30'
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.data.event).toBe('wedding')
+    expect(body.data.top[0].day.goodFor).toContain('嫁娶')
+  })
+
+  test('locale=en formats reasoning with modern display verbs', async () => {
+    const res = await auspiceRoutes.request(
+      '/search?event=wedding&from=2026-06-01&to=2026-06-30&locale=en'
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data.top[0].reasoning).toMatch(/宜Wedding|宜嫁娶/)
+    // Scoring payload stays canonical.
+    expect(body.data.top[0].day.goodFor).toContain('嫁娶')
   })
 })
 

@@ -68,6 +68,23 @@ export interface Strings {
   /** 节假日 / 调休 heads-up toggle label + hint. */
   holidayHeadsUp: string
   holidayHeadsUpHint: string
+  yijiModeTitle: string
+  yijiModeHint: string
+  yijiModeModern: string
+  yijiModeTraditional: string
+  eventAliasSection: string
+  eventAliases: {
+    相亲: string
+    读书: string
+    进修: string
+    面试: string
+    体检: string
+    发布: string
+    上线: string
+    谈判: string
+    AI: string
+    游戏: string
+  }
   privacy: string
   terms: string
   // navigation / discovery
@@ -627,6 +644,24 @@ const zhHans: Strings = {
   eveningPushHint: '仅当明天值得留意时（节气/节日）于晚 8 点提醒。',
   holidayHeadsUp: '节假日提醒',
   holidayHeadsUpHint: '法定节假日 / 调休前一晚提醒你，别记错闹钟（中国大陆）。',
+  yijiModeTitle: '现代场景词',
+  yijiModeHint:
+    '默认随语言：中文传统黄历词，英文现代词。手动切换后不再随语言变化。',
+  yijiModeModern: '现代场景词',
+  yijiModeTraditional: '传统黄历词',
+  eventAliasSection: '热门',
+  eventAliases: {
+    相亲: '相亲',
+    读书: '读书',
+    进修: '进修',
+    面试: '面试',
+    体检: '体检',
+    发布: '发布',
+    上线: '上线',
+    谈判: '谈判',
+    AI: 'AI',
+    游戏: '游戏',
+  },
   privacy: '隐私政策',
   terms: '使用条款',
   openMonth: '月历',
@@ -1053,6 +1088,24 @@ const zhHant: Strings = {
   eveningPushHint: '僅當明天值得留意時（節氣/節日）於晚 8 點提醒。',
   holidayHeadsUp: '節假日提醒',
   holidayHeadsUpHint: '法定節假日 / 調休前一晚提醒你，別記錯鬧鐘（中國大陸）。',
+  yijiModeTitle: '現代場景詞',
+  yijiModeHint:
+    '預設隨語言：中文傳統黃曆詞，英文現代詞。手動切換後不再隨語言變化。',
+  yijiModeModern: '現代場景詞',
+  yijiModeTraditional: '傳統黃曆詞',
+  eventAliasSection: '熱門',
+  eventAliases: {
+    相亲: '相親',
+    读书: '讀書',
+    进修: '進修',
+    面试: '面試',
+    体检: '體檢',
+    发布: '發布',
+    上线: '上線',
+    谈判: '談判',
+    AI: 'AI',
+    游戏: '遊戲',
+  },
   privacy: '隱私政策',
   terms: '使用條款',
   openMonth: '月曆',
@@ -1489,6 +1542,24 @@ const ja: Strings = {
   eveningPushHint: '明日が特別な日（祝日・二十四節気）のときだけ、夜8時にお知らせ。',
   holidayHeadsUp: '祝日リマインド',
   holidayHeadsUpHint: '法定祝日 / 振替出勤の前夜に通知（中国本土）。',
+  yijiModeTitle: '現代シーン語',
+  yijiModeHint:
+    '既定は言語に従います：日本語・中国語は伝統の黄暦語、英語は現代語。手動で選ぶと言語切替に追従しません。',
+  yijiModeModern: '現代',
+  yijiModeTraditional: '伝統',
+  eventAliasSection: '人気',
+  eventAliases: {
+    相亲: 'お見合い',
+    读书: '読書',
+    进修: 'スキルアップ',
+    面试: '面接',
+    体检: '健康診断',
+    发布: '発表',
+    上线: 'リリース',
+    谈判: '交渉',
+    AI: 'AI',
+    游戏: 'ゲーム',
+  },
   privacy: 'プライバシー',
   terms: '利用規約',
   openMonth: 'カレンダー',
@@ -1916,6 +1987,24 @@ const en: Strings = {
   eveningPushHint: 'An 8pm heads-up — only when tomorrow is notable (a festival or solar term).',
   holidayHeadsUp: 'Holiday heads-up',
   holidayHeadsUpHint: 'Night-before alert for public holidays / makeup workdays (mainland China).',
+  yijiModeTitle: 'Modern scene words',
+  yijiModeHint:
+    'Default follows language: English uses modern labels; Chinese/Japanese use traditional. A manual choice sticks.',
+  yijiModeModern: 'Modern',
+  yijiModeTraditional: 'Traditional',
+  eventAliasSection: 'Popular',
+  eventAliases: {
+    相亲: 'Dating',
+    读书: 'Reading',
+    进修: 'Upskill',
+    面试: 'Interview',
+    体检: 'Checkup',
+    发布: 'Launch',
+    上线: 'Go live',
+    谈判: 'Negotiate',
+    AI: 'AI',
+    游戏: 'Gaming',
+  },
   privacy: 'Privacy',
   terms: 'Terms',
   openMonth: 'Calendar',

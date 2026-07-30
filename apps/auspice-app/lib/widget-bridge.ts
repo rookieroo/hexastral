@@ -22,6 +22,8 @@ import {
 import { type AuspiceDay, type AuspicePersonalization, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { getStrings, type Locale } from '@/lib/i18n'
+import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
+import type { YijiVocabularyMode } from '@zhop/astro-core'
 
 const APP_GROUP = 'group.com.hexastral.yuun'
 const WINDOW_DAYS = 7
@@ -68,7 +70,8 @@ function toWidgetDay(
   personalization: AuspicePersonalization | null | undefined,
   t: Parameters<typeof buildDailyCardModel>[3],
   locale: Locale,
-  includeFit: boolean
+  includeFit: boolean,
+  yijiMode: YijiVocabularyMode
 ): YuunWidgetDay {
   const m = buildDailyCardModel(date, day, includeFit ? (personalization ?? null) : null, t, locale)
   const en = locale === 'en'
@@ -83,14 +86,14 @@ function toWidgetDay(
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
     solarTerm: m.solarTermName,
-    // Follow app locale — en gets localized verbs (Wedding·…), not forced CJK.
-    yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale),
-    ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale),
+    // Follow app locale + display mode — scoring still uses canonical CJK upstream.
+    yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale, yijiMode),
+    ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale, yijiMode),
     // Small widget + lock rectangular: 2 verbs in every locale.
-    yiShort: compactVerbs(m.goodForRaw, 2, locale),
-    jiShort: compactVerbs(m.avoidRaw, 2, locale),
-    yiLong: compactVerbs(m.goodForRaw, verbBudget(locale, 'large'), locale),
-    jiLong: compactVerbs(m.avoidRaw, verbBudget(locale, 'large'), locale),
+    yiShort: compactVerbs(m.goodForRaw, 2, locale, yijiMode),
+    jiShort: compactVerbs(m.avoidRaw, 2, locale, yijiMode),
+    yiLong: compactVerbs(m.goodForRaw, verbBudget(locale, 'large'), locale, yijiMode),
+    jiLong: compactVerbs(m.avoidRaw, verbBudget(locale, 'large'), locale, yijiMode),
     fit: includeFit ? m.fitLabel : null,
     fitSummary: includeFit ? m.fitSummary : null,
     dayTip: m.dayTip,
@@ -130,13 +133,16 @@ export async function syncWidgetWindow(
   includeFit: boolean
 ): Promise<void> {
   const birthDate = includeFit ? await getAuspiceBirthDate() : undefined
+  const yijiMode = await resolveYijiDisplayMode(locale)
   const days: YuunWidgetDay[] = []
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const date = addDaysIso(anchorDate, i)
     try {
       const payload = await fetchAuspiceDay(date, birthDate)
-      days.push(toWidgetDay(date, payload.day, payload.personalization, t, locale, includeFit))
+      days.push(
+        toWidgetDay(date, payload.day, payload.personalization, t, locale, includeFit, yijiMode)
+      )
     } catch {
       // Skip failed days; partial window is better than empty.
     }
@@ -165,8 +171,9 @@ export async function syncTodayWidget(
   locale: Locale,
   includeFit = false
 ): Promise<void> {
+  const yijiMode = await resolveYijiDisplayMode(locale)
   // Seed today immediately so the widget updates before the rest of the window.
-  const today = toWidgetDay(date, day, personalization, t, locale, includeFit)
+  const today = toWidgetDay(date, day, personalization, t, locale, includeFit, yijiMode)
   await writeWidgetDays([today], locale)
   void syncWidgetWindow(date, t, locale, includeFit)
 }

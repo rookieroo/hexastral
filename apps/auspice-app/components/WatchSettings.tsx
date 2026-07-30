@@ -10,6 +10,7 @@ import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { syncWidgetWindow } from '@/lib/widget-bridge'
 import { buildDailyCardModel, compactVerbs, moonPhaseForIsoDate } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
@@ -292,8 +293,9 @@ export function WatchSettings() {
   const ganZhi = model?.ganZhi ?? '—'
   const solarTerm = model?.solarTermName ?? ''
   // Match Watch: locale verbs; en keeps 1 short verb for tiny slots.
+  const { mode: yijiMode } = useYijiDisplayMode()
   const yiShort = model
-    ? compactVerbs(model.goodForRaw, locale === 'en' ? 1 : 2, locale)
+    ? compactVerbs(model.goodForRaw, locale === 'en' ? 1 : 2, locale, yijiMode)
     : '—'
   const yiLine = `宜 ${yiShort}`
   const phase = livePhase ?? model?.moonPhase ?? 0.5

@@ -58,6 +58,8 @@ export const YUUN_WATCH_CREDENTIAL_KEY = 'yuun_watch_credential'
 export interface YuunWatchPreferences {
   locale: WidgetLocale
   birthDate?: string | null
+  /** Optional 宜忌 display mode; omit → Watch/server use traditional for old clients. */
+  yijiMode?: 'modern' | 'traditional' | null
 }
 
 // ── Per-app data shapes ───────────────────────────────────────────────────

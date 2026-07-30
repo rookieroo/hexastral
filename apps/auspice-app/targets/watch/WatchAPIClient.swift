@@ -35,7 +35,8 @@ enum WatchAPIClient {
     anchorDate: String,
     locale: String,
     days: Int = 7,
-    birthDate: String? = nil
+    birthDate: String? = nil,
+    yijiMode: String? = nil
   ) async throws -> WidgetEnvelope {
     guard let token = WatchKeychain.loadCredential() else {
       throw WatchAPIError.noCredential
@@ -55,6 +56,9 @@ enum WatchAPIClient {
     ]
     if let birthDate, !birthDate.isEmpty {
       body["birthDate"] = birthDate
+    }
+    if let yijiMode, !yijiMode.isEmpty {
+      body["yijiMode"] = yijiMode
     }
     req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -93,7 +97,8 @@ enum WatchAPIClient {
         anchorDate: anchorDate,
         locale: locale,
         days: 7,
-        birthDate: prefs?.birthDate
+        birthDate: prefs?.birthDate,
+        yijiMode: prefs?.yijiMode
       )
     }
     let single = try await fetchPublicDay(date: anchorDate, locale: locale)
@@ -193,8 +198,17 @@ enum WatchAPIClient {
 
   private static func mapSharedDay(from payload: DayPayload, locale: String) throws -> SharedDay {
     let d = payload.day
-    let yiRaw = (d.goodFor ?? []).joined(separator: "·")
-    let jiRaw = (d.avoid ?? []).joined(separator: "·")
+    let loc = WatchLocale.normalize(locale)
+    let prefsMode = WatchPayloadStore.shared.loadPreferences()?.yijiMode
+    let mode = WatchYijiVocab.resolveMode(prefsMode: prefsMode, locale: loc)
+    let good = d.goodFor ?? []
+    let avoid = d.avoid ?? []
+    let yiShort = WatchYijiVocab.formatList(good, locale: loc, mode: mode, max: 2)
+    let yiPlain = WatchYijiVocab.formatList(good, locale: loc, mode: mode, max: loc == .en ? 4 : 5)
+    let yiLong = WatchYijiVocab.formatList(good, locale: loc, mode: mode, max: 6)
+    let jiShort = WatchYijiVocab.formatList(avoid, locale: loc, mode: mode, max: 2)
+    let jiPlain = WatchYijiVocab.formatList(avoid, locale: loc, mode: mode, max: loc == .en ? 4 : 5)
+    let jiLong = WatchYijiVocab.formatList(avoid, locale: loc, mode: mode, max: 6)
     let lunar = [d.lunarDate?.monthName, d.lunarDate?.dayName]
       .compactMap { $0 }
       .joined()
@@ -206,13 +220,6 @@ enum WatchAPIClient {
       guard let ymd else { return 0.5 }
       return moonPhaseSynodic(year: ymd.year, month: ymd.month, day: ymd.day)
     }()
-    let loc = WatchLocale.normalize(locale)
-    let yiShort = compactVerbs(yiRaw, max: 2)
-    let yiPlain = compactVerbs(yiRaw, max: loc == .en ? 4 : 5)
-    let yiLong = compactVerbs(yiRaw, max: 6)
-    let jiShort = compactVerbs(jiRaw, max: 2)
-    let jiPlain = compactVerbs(jiRaw, max: loc == .en ? 4 : 5)
-    let jiLong = compactVerbs(jiRaw, max: 6)
     let yearLabel: String? = {
       guard let y = d.yearGanZhi else { return nil }
       return "\(y.stem)\(y.branch)年"
@@ -239,15 +246,6 @@ enum WatchAPIClient {
       fitSummary: nil,
       tipLabel: loc == .en ? nil : fallbackChrome(for: loc).tip
     )
-  }
-
-  private static func compactVerbs(_ raw: String, max: Int) -> String {
-    let parts = raw
-      .split(whereSeparator: { $0 == "·" || $0 == "•" || $0 == " " })
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
-    if parts.isEmpty { return "—" }
-    return parts.prefix(max).joined(separator: "·")
   }
 
   private static func fallbackChrome(for locale: WatchLocale) -> SharedChrome {

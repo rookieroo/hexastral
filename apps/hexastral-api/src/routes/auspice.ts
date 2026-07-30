@@ -18,6 +18,8 @@ import {
   calculateDailySynastry,
   type DailyAlmanac,
   dayGanZhi,
+  defaultYijiModeForLocale,
+  formatYijiVerb,
   getFourPillars,
   getJieQiInstant,
   getNearestJieQiForGregorianDate,
@@ -32,6 +34,9 @@ import {
   STEM_WUXING,
   type SynastryResult,
   solarToLunar,
+  YIJI_EVENT_VERBS,
+  YIJI_EVENTS,
+  resolveYijiSearchVerbs,
 } from '@zhop/astro-core'
 import {
   type Branch as CorpusBranch,
@@ -1219,38 +1224,18 @@ auspiceRoutes.get('/year-overview', (c) => {
 
 // ── GET /search?event=&from=&to= — reverse 择日 ───────────────
 
-const EVENTS = [
-  'wedding',
-  'business',
-  'signing',
-  'move',
-  'move-in',
-  'travel',
-  'burial',
-  'groundbreaking',
-  'medical',
-  'study',
-] as const
+/** Stable event ids + scoring verbs — SSOT in `@zhop/astro-core` yiji-vocabulary. */
+const EVENTS = YIJI_EVENTS
 type AuspiceEvent = (typeof EVENTS)[number]
-
-/** event → 黄历 宜忌 verbs that decide its fitness, matched against goodFor / avoid. */
-const EVENT_VERBS: Record<AuspiceEvent, readonly string[]> = {
-  wedding: ['嫁娶'],
-  business: ['开市', '交易', '纳财'],
-  signing: ['立券', '交易'],
-  move: ['移徙'],
-  'move-in': ['入宅', '移徙'],
-  travel: ['出行'],
-  burial: ['安葬'],
-  groundbreaking: ['动土', '破土'],
-  medical: ['求医', '疗病'],
-  study: ['入学'],
-}
+const EVENT_VERBS = YIJI_EVENT_VERBS
 
 const searchQuerySchema = z.object({
-  event: z.enum(EVENTS),
+  /** Stable event id or modern/hot-word alias (see resolveYijiSearchVerbs). */
+  event: z.string().min(1),
   from: z.string().regex(DATE_RE, 'from must be YYYY-MM-DD'),
   to: z.string().regex(DATE_RE, 'to must be YYYY-MM-DD'),
+  /** Optional BCP-47 for reasoning verb display; scoring stays canonical. */
+  locale: z.enum(['zh-Hans', 'zh-Hant', 'ja', 'en']).optional(),
 })
 
 const specializedQuerySchema = z.object({
@@ -1323,11 +1308,14 @@ function reasoning(
   almanac: DailyAlmanac,
   matchedGood: string[],
   matchedBad: string[],
-  officerBoost?: number
+  officerBoost?: number,
+  locale = 'zh-Hans'
 ): string {
+  const mode = defaultYijiModeForLocale(locale)
+  const fmt = (v: string) => formatYijiVerb(v, locale, mode)
   const parts = [`${almanac.todayGanZhi}日`, `${almanac.dayOfficer}日`, `${almanac.mansion.name}宿`]
-  if (matchedGood.length > 0) parts.push(`宜${matchedGood.join('、')}`)
-  if (matchedBad.length > 0) parts.push(`忌${matchedBad.join('、')}`)
+  if (matchedGood.length > 0) parts.push(`宜${matchedGood.map(fmt).join('、')}`)
+  if (matchedBad.length > 0) parts.push(`忌${matchedBad.map(fmt).join('、')}`)
   // Specialized-route activity-tuned reasoning (Sprint 2 #3).
   if (officerBoost !== undefined && officerBoost > 0) parts.push(`${almanac.dayOfficer}日相宜`)
   else if (officerBoost !== undefined && officerBoost < 0) parts.push(`${almanac.dayOfficer}日相避`)
@@ -1335,7 +1323,14 @@ function reasoning(
 }
 
 /** Shared ranking pipeline for both /search (generic) and the 4 specialized routes. */
-function runSearch(event: AuspiceEvent, fromStr: string, toStr: string, specialized: boolean) {
+function runSearch(
+  event: AuspiceEvent | string,
+  fromStr: string,
+  toStr: string,
+  specialized: boolean,
+  locale = 'zh-Hans',
+  verbsOverride?: readonly string[]
+) {
   const fromDate = ymdToDate(parseYmd(fromStr))
   const toDate = ymdToDate(parseYmd(toStr))
   if (toDate.getTime() < fromDate.getTime()) {
@@ -1346,8 +1341,18 @@ function runSearch(event: AuspiceEvent, fromStr: string, toStr: string, speciali
     throw new HTTPException(400, { message: `range too large (max ${MAX_SEARCH_SPAN_DAYS} days)` })
   }
 
-  const verbs = EVENT_VERBS[event]
-  const boosts = specialized ? EVENT_BOOSTS[event] : undefined
+  const verbs =
+    verbsOverride ??
+    (EVENTS.includes(event as AuspiceEvent)
+      ? EVENT_VERBS[event as AuspiceEvent]
+      : null)
+  if (!verbs) {
+    throw new HTTPException(400, { message: `unknown event: ${event}` })
+  }
+  const boosts =
+    specialized && EVENTS.includes(event as AuspiceEvent)
+      ? EVENT_BOOSTS[event as AuspiceEvent]
+      : undefined
   const scored: Array<{
     date: string
     score: number
@@ -1374,7 +1379,8 @@ function runSearch(event: AuspiceEvent, fromStr: string, toStr: string, speciali
         almanac,
         matchedGood,
         matchedBad,
-        specialized ? officerBoost : undefined
+        specialized ? officerBoost : undefined,
+        locale
       ),
       day: {
         ganZhi: almanac.todayGanZhi,
@@ -1402,8 +1408,20 @@ auspiceRoutes.get('/search', (c) => {
     event: c.req.query('event'),
     from: c.req.query('from'),
     to: c.req.query('to'),
+    locale: c.req.query('locale') || undefined,
   })
-  return jsonOk(c, runSearch(parsed.event, parsed.from, parsed.to, /* specialized */ false))
+  const resolved = resolveYijiSearchVerbs(parsed.event)
+  if (!resolved) {
+    throw new HTTPException(400, { message: `unknown event: ${parsed.event}` })
+  }
+  const locale = parsed.locale ?? 'zh-Hans'
+  // Stable event ids keep the same response `event`; aliases echo the request key.
+  const eventKey = resolved.event ?? parsed.event
+  const specialized = false
+  return jsonOk(
+    c,
+    runSearch(eventKey, parsed.from, parsed.to, specialized, locale, resolved.verbs)
+  )
 })
 
 // ── Specialized 择日 routes (Sprint 2 deliverable #3) ─────────────
@@ -2350,6 +2368,13 @@ interface AuspicePushSubRow {
   locale: string
   birthDate: string | null
   isPro: boolean
+  /** Null/undefined → derive from locale via defaultYijiModeForLocale. */
+  yijiMode?: string | null
+}
+
+function resolvePushYijiMode(sub: AuspicePushSubRow): 'modern' | 'traditional' {
+  if (sub.yijiMode === 'modern' || sub.yijiMode === 'traditional') return sub.yijiMode
+  return defaultYijiModeForLocale(sub.locale)
 }
 
 // ── 生日 / 节假日 server-side push text + matchers (remote push) ───────────────
@@ -2625,8 +2650,14 @@ export function renderAuspicePush(
       data: { type: 'auspice_daily', day: dateStr, hookKey: dailyHook.hookKey },
     }
   }
-  const yi = day.goodFor.slice(0, 3).join('、') || '—'
-  const ji = day.avoid.slice(0, 3).join('、') || '—'
+  const yi = day.goodFor
+    .slice(0, 3)
+    .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
+    .join('、') || '—'
+  const ji = day.avoid
+    .slice(0, 3)
+    .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
+    .join('、') || '—'
   const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
   const dayId = `${day.ganZhi}${L.daySuffix}`
   const pers = sub.isPro ? personalization : null
@@ -2662,6 +2693,8 @@ const pushRegisterSchema = z.object({
   isPro: z.boolean().default(false),
   /** Portfolio / RC app user id for server-side Pro. */
   u: z.string().max(128).optional(),
+  /** Device-scoped 宜忌 display; omit/null → derive from locale on render. */
+  yijiMode: z.enum(['modern', 'traditional']).optional(),
 })
 
 auspiceRoutes.post('/push/register', async (c) => {
@@ -2698,6 +2731,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       timelineRemindOn: b.timelineRemindOn,
       isPro,
       portfolioUserId,
+      yijiMode: b.yijiMode ?? null,
       lastActiveAt: now,
       createdAt: now,
     })
@@ -2719,6 +2753,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         timelineRemindOn: b.timelineRemindOn,
         isPro,
         portfolioUserId,
+        yijiMode: b.yijiMode ?? null,
         lastActiveAt: now,
       },
     })
@@ -2763,6 +2798,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       birthdayOn: auspicePushSubs.birthdayOn,
       holidayOn: auspicePushSubs.holidayOn,
       relationshipOn: auspicePushSubs.relationshipOn,
+      yijiMode: auspicePushSubs.yijiMode,
     })
     .from(auspicePushSubs)
     .where(eq(auspicePushSubs.timezoneId, timezoneId))

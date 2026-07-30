@@ -3,7 +3,13 @@
  * Mirrors `apps/auspice-app/lib/i18n.ts` widgetChrome / personal / moonPhaseNames.
  */
 
-import { STEM_WUXING, type HeavenlyStem, type PersonalFit } from '@zhop/astro-core'
+import {
+  STEM_WUXING,
+  type HeavenlyStem,
+  type PersonalFit,
+  formatYijiList,
+  type YijiVocabularyMode,
+} from '@zhop/astro-core'
 import { getLunarPhase, getLunarPhaseName } from '@zhop/hexastral-tokens/lunar'
 
 export type WidgetLocale = 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
@@ -168,9 +174,14 @@ export function elementColorForGanZhi(ganZhi: string): string {
   return element ? (ELEMENT_COLORS[element] ?? '#A0845C') : '#A0845C'
 }
 
-/** Join almanac verbs with middle dot, capped at `max` items. */
-export function compactVerbs(verbs: string[], max: number): string {
-  return verbs.slice(0, max).join('·')
+/** Join almanac verbs with middle dot, capped at `max` items. Uses shared vocabulary. */
+export function compactVerbs(
+  verbs: string[],
+  max: number,
+  locale: WidgetLocale = 'zh-Hans',
+  mode: YijiVocabularyMode = 'traditional'
+): string {
+  return formatYijiList(verbs, locale, mode, max)
 }
 
 function moonPhaseForUtcNoon(year: number, month: number, day: number): number {

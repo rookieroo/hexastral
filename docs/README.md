@@ -45,6 +45,8 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [apps/yuun/synastry-plan.md](./apps/yuun/synastry-plan.md) | In-app synastry surface plan |
 | [apps/yuun/widget-build-runbook.md](./apps/yuun/widget-build-runbook.md) | WidgetKit / watchOS (post-MVP) |
 | [apps/yuun/widget-watch-scope.md](./apps/yuun/widget-watch-scope.md) | Widget scope |
+| [apps/yuun/yiji-vocabulary.md](./apps/yuun/yiji-vocabulary.md) | 宜忌 display mode + search aliases |
+| [apps/yuun/copy-voice.md](./apps/yuun/copy-voice.md) | Editorial / terminology voice |
 
 ### Yuel (`apps/kindred-app`)
 

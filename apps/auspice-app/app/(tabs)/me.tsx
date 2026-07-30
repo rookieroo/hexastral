@@ -79,6 +79,7 @@ import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { resetOnboarding } from '@/lib/onboarding-seen'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import {
   disableDailyPush,
   disableTimelineReminders,
@@ -88,6 +89,7 @@ import {
   isEveningPushEnabled,
   isPushEnabled,
   isTimelineRemindersEnabled,
+  refreshDailyPush,
   setEveningPushEnabled,
   syncServerPush,
 } from '@/lib/push'
@@ -171,6 +173,7 @@ function SectionLabel({ children }: { children: string }) {
 export default function MeScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale, setLocale, followSystem, isOverridden } = useStrings()
+  const { mode: yijiMode, setMode: setYijiMode } = useYijiDisplayMode()
   const router = useRouter()
   // Discover (flagship funnel) is collapsed by default so Me stays quiet —
   // matches the ming-pan 生态 pattern (ADR-0018: no ad slots on funnel surfaces).
@@ -623,6 +626,20 @@ export default function MeScreen() {
     },
   ]
 
+  const toggleYijiMode = (modern: boolean) => {
+    void (async () => {
+      await setYijiMode(modern ? 'modern' : 'traditional')
+      requestYuunWidgetSync(locale, true)
+      if (await isPushEnabled()) {
+        await refreshDailyPush({
+          locale,
+          birthDate: birthValid ? birth.solarDate : undefined,
+        }).catch(() => {})
+        await syncServerPush(locale).catch(() => {})
+      }
+    })()
+  }
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
@@ -957,6 +974,42 @@ export default function MeScreen() {
         </View>
 
         <NotificationsSection rows={pushToggles} />
+
+        <View>
+          <SectionLabel>{t.yijiModeTitle}</SectionLabel>
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              gap: spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
+              }}
+            >
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={{ color: colors.text, fontSize: 15 }}>
+                  {yijiMode === 'modern' ? t.yijiModeModern : t.yijiModeTraditional}
+                </Text>
+                <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                  {t.yijiModeHint}
+                </Text>
+              </View>
+              <Toggle
+                value={yijiMode === 'modern'}
+                onValueChange={toggleYijiMode}
+                accent={colors.accent}
+              />
+            </View>
+          </View>
+        </View>
 
         {/* ── Calendars & sync ── */}
         <View>

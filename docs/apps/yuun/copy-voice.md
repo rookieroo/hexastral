@@ -12,7 +12,7 @@ Policy companion: [`apps/auspice-app/lib/terminology-locale.ts`](../../apps/ausp
 4. **JA poetry / 物候** — Modern Japanese commentary + optional 原詩 block. No kanbun word-order glosses (`始めて` / `乃ち` / `把って` as line-by-line 訓読).
 5. **Solar-term EN UI** — `English gloss (Pinyin)` e.g. `Start of Spring (Lichun)`. Bare pinyin only for Wikipedia slugs.
 6. **Product verbs** — Do not use 推演 / 测算 as CTAs or Pro bullets. Prefer 探索 / 对照 / 生成 / 参考. EN: explore / contrast / generate — not fortune, seize, fate verdict.
-7. **宜忌** — zh/ja keep 宜·忌; EN chrome uses Good · Avoid.
+7. **宜忌** — zh/ja keep 宜·忌 chrome; EN chrome uses Good · Avoid. Verb chips follow the local **display mode** (modern scene words vs traditional 通书 terms). Scoring / Explain fields always use canonical CJK. See [yiji-vocabulary.md](./yiji-vocabulary.md).
 8. **黄历** — Never brand as 万年历 / 万年暦.
 9. **zh-Hant 命盤** — Keep (Traditional convention). JA uses 命式.
 10. **Library naming**

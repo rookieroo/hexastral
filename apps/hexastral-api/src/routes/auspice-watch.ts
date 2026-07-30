@@ -5,7 +5,7 @@
  * envelope the watch extension can cache offline. No edge cache — private, no-store.
  */
 
-import type { PersonalFit } from '@zhop/astro-core'
+import type { PersonalFit, YijiVocabularyMode } from '@zhop/astro-core'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
@@ -34,6 +34,8 @@ const bootstrapSchema = z.object({
   locale: z.enum(['zh-Hans', 'zh-Hant', 'ja', 'en']),
   days: z.number().int().min(1).max(14).optional().default(7),
   birthDate: z.string().regex(DATE_RE).optional(),
+  /** Optional display mode; omit → traditional (old Watch clients). */
+  yijiMode: z.enum(['modern', 'traditional']).optional(),
 })
 
 function verbBudget(locale: WidgetLocale, surface: 'short' | 'plain' | 'long'): number {
@@ -53,7 +55,8 @@ function lunarMonthDay(
 function mapWidgetDay(
   date: string,
   locale: WidgetLocale,
-  birthDate: string | undefined
+  birthDate: string | undefined,
+  yijiMode: YijiVocabularyMode
 ) {
   const subject = birthDate ? subjectFromBirthDate(birthDate) : undefined
   const { day, personalization } = buildDay(parseYmd(date), subject, {
@@ -73,12 +76,12 @@ function mapWidgetDay(
     elementColor: elementColorForGanZhi(day.ganZhi),
     lunar: ld ? lunarMonthDay(locale, ld) : '',
     solarTerm: day.solarTermToday?.name ?? '',
-    yi: compactVerbs(day.goodFor, verbBudget(locale, 'plain')),
-    ji: compactVerbs(day.avoid, verbBudget(locale, 'plain')),
-    yiShort: compactVerbs(day.goodFor, verbBudget(locale, 'short')),
-    jiShort: compactVerbs(day.avoid, verbBudget(locale, 'short')),
-    yiLong: compactVerbs(day.goodFor, verbBudget(locale, 'long')),
-    jiLong: compactVerbs(day.avoid, verbBudget(locale, 'long')),
+    yi: compactVerbs(day.goodFor, verbBudget(locale, 'plain'), locale, yijiMode),
+    ji: compactVerbs(day.avoid, verbBudget(locale, 'plain'), locale, yijiMode),
+    yiShort: compactVerbs(day.goodFor, verbBudget(locale, 'short'), locale, yijiMode),
+    jiShort: compactVerbs(day.avoid, verbBudget(locale, 'short'), locale, yijiMode),
+    yiLong: compactVerbs(day.goodFor, verbBudget(locale, 'long'), locale, yijiMode),
+    jiLong: compactVerbs(day.avoid, verbBudget(locale, 'long'), locale, yijiMode),
     fit: fit ? labels.fit[fit as PersonalFit] : null,
     fitSummary: fit ? labels.summary[fit as PersonalFit] : null,
     dayTip: null,
@@ -95,14 +98,16 @@ export const auspiceWatchRoutes = new Hono<AppEnv>().post(
   '/bootstrap',
   zValidator('json', bootstrapSchema),
   async (c) => {
-    const { anchorDate, locale, days, birthDate } = c.req.valid('json')
+    const { anchorDate, locale, days, birthDate, yijiMode: modeOpt } = c.req.valid('json')
+    // Old Watch clients omit yijiMode → traditional (rollback-safe).
+    const yijiMode: YijiVocabularyMode = modeOpt ?? 'traditional'
     const anchor = parseYmd(anchorDate)
 
     const windowDays: ReturnType<typeof mapWidgetDay>[] = []
     for (let i = 0; i < days; i++) {
       const ymd = ymdAdd(anchor, i)
       const date = fmtUtc(ymdToDate(ymd))
-      windowDays.push(mapWidgetDay(date, locale, birthDate))
+      windowDays.push(mapWidgetDay(date, locale, birthDate, yijiMode))
     }
 
     const updatedAt = new Date().toISOString()

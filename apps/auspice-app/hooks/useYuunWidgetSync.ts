@@ -11,6 +11,7 @@ import { getAuspiceBirthDate } from '@/lib/birth'
 import { fetchAuspiceDay } from '@/lib/api'
 import { syncTodayWidget } from '@/lib/widget-bridge'
 import { provisionYuunWatch } from '@/lib/watch-provision'
+import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -40,7 +41,8 @@ export function requestYuunWidgetSync(locale: Locale, force = false): void {
 
 async function runYuunWidgetSync(locale: Locale, force: boolean): Promise<void> {
   const today = todayIsoString()
-  const key = `${locale}:${today}`
+  const yijiMode = await resolveYijiDisplayMode(locale)
+  const key = `${locale}:${yijiMode}:${today}`
   if (!force && lastSyncKey === key && inFlight == null) return
   if (inFlight) {
     await inFlight

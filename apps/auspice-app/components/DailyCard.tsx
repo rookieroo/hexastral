@@ -28,7 +28,9 @@ import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
-import { localizeYijiVerb } from '@/lib/yiji-vocab'
+import { displayYijiVerb } from '@/lib/yiji-vocab'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
+import type { YijiVocabularyMode } from '@zhop/astro-core'
 import { PhaseLogo } from './PhaseLogo'
 
 type Strings = ReturnType<typeof useStrings>['t']
@@ -161,13 +163,18 @@ export function formatWatchDate(isoDate: string, locale: Locale): string {
 }
 
 /** Localize the top-`n` 宜/忌 verbs and join. Shared with WidgetCard. */
-export function topVerbs(raw: string[], locale: Locale, n: number): string {
+export function topVerbs(
+  raw: string[],
+  locale: Locale,
+  n: number,
+  mode: YijiVocabularyMode = 'traditional'
+): string {
   if (!raw.length) return '—'
   // Spaces around · so en/ja wrap between verbs (not mid-word like "Schoo/l").
   const sep = locale === 'zh-Hans' || locale === 'zh-Hant' ? '·' : ' · '
   return raw
     .slice(0, n)
-    .map((v) => localizeYijiVerb(v, locale))
+    .map((v) => displayYijiVerb(v, locale, mode))
     .join(sep)
 }
 
@@ -180,9 +187,14 @@ export function verbBudget(locale: Locale, size: 'small' | 'medium' | 'large'): 
   return locale === 'en' ? 4 : 4
 }
 
-/** Alias: compactVerbs(raw, n, locale) — arg order for widget call sites. */
-export function compactVerbs(raw: string[], n: number, locale: Locale): string {
-  return topVerbs(raw, locale, n)
+/** Alias: compactVerbs(raw, n, locale, mode) — arg order for widget call sites. */
+export function compactVerbs(
+  raw: string[],
+  n: number,
+  locale: Locale,
+  mode: YijiVocabularyMode = 'traditional'
+): string {
+  return topVerbs(raw, locale, n, mode)
 }
 
 /**
@@ -415,6 +427,7 @@ function GlanceTier({ model, phaseOverride }: FaceProps) {
 
 function ModernFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
+  const { mode } = useYijiDisplayMode()
   const c = useFaceChrome()
   const L = compactChrome(locale)
   const restText = model.fitLabel ? `${L.forYou} · ${model.fitLabel}` : model.solarTermName
@@ -466,8 +479,8 @@ function ModernFace({ model, phaseOverride, locale }: FaceProps) {
         revealStyle={revealStyle}
         restText={restText || '—'}
         restColor={restColor}
-        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
-        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
+        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale, mode)}`}
+        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale, mode)}`}
         yiColor={c.text}
         jiColor={c.dim}
         marginTop={0}
@@ -480,6 +493,7 @@ function ModernFace({ model, phaseOverride, locale }: FaceProps) {
 
 function LunarFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
+  const { mode } = useYijiDisplayMode()
   const c = useFaceChrome()
   const L = compactChrome(locale)
   const restText = model.fitLabel ? `${L.forYou} · ${model.fitLabel}` : model.solarTermName
@@ -519,8 +533,8 @@ function LunarFace({ model, phaseOverride, locale }: FaceProps) {
           revealStyle={revealStyle}
           restText={restText || '—'}
           restColor={restColor}
-          yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
-          jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
+          yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale, mode)}`}
+          jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale, mode)}`}
           yiColor={c.text}
           jiColor={c.dim}
           marginTop={0}
@@ -534,6 +548,7 @@ function LunarFace({ model, phaseOverride, locale }: FaceProps) {
 
 function AlmanacFace({ model, phaseOverride, locale }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
+  const { mode } = useYijiDisplayMode()
   const c = useFaceChrome()
   const L = compactChrome(locale)
   const restText = model.fitLabel ? `${L.forYou} · ${model.fitLabel}` : model.solarTermName
@@ -598,8 +613,8 @@ function AlmanacFace({ model, phaseOverride, locale }: FaceProps) {
         revealStyle={revealStyle}
         restText={restText || '—'}
         restColor={restColor}
-        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale)}`}
-        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale)}`}
+        yiLine={`${L.yi} ${compactVerbs(model.goodForRaw, 2, locale, mode)}`}
+        jiLine={`${L.ji} ${compactVerbs(model.avoidRaw, 2, locale, mode)}`}
         yiColor={c.text}
         jiColor={c.dim}
         marginTop={0}
@@ -612,6 +627,7 @@ function AlmanacFace({ model, phaseOverride, locale }: FaceProps) {
 
 function AncientFace({ model, phaseOverride }: FaceProps) {
   const { restStyle, revealStyle, toggle } = useReveal()
+  const { mode } = useYijiDisplayMode()
   const c = useFaceChrome()
   // Ancient face is always 繁體 ink — ignore override locale for copy glyphs.
 
@@ -683,10 +699,10 @@ function AncientFace({ model, phaseOverride }: FaceProps) {
           style={[StyleSheet.absoluteFill, revealStyle, { justifyContent: 'center', gap: 2 }]}
         >
           <Text style={{ color: 'rgba(231,224,208,0.9)', fontSize: 12 }} numberOfLines={1}>
-            {`宜 ${topVerbs(model.goodForRaw, 'zh-Hant', 2)}`}
+            {`宜 ${topVerbs(model.goodForRaw, 'zh-Hant', 2, mode)}`}
           </Text>
           <Text style={{ color: 'rgba(231,224,208,0.5)', fontSize: 12 }} numberOfLines={1}>
-            {`忌 ${topVerbs(model.avoidRaw, 'zh-Hant', 2)}`}
+            {`忌 ${topVerbs(model.avoidRaw, 'zh-Hant', 2, mode)}`}
           </Text>
         </Animated.View>
       </View>

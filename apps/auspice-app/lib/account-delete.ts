@@ -26,6 +26,7 @@ const LOCAL_KEYS = [
   'auspice.holiday.enabled',
   'auspice.timeline.enabled',
   'auspice.watch.credential.v1',
+  'auspice.yiji.displayMode',
 ]
 
 export async function deleteYuunAccount(locale: Locale): Promise<boolean> {

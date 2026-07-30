@@ -27,7 +27,8 @@ import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
 import { syncAuspiceServerPush, unregisterAuspiceServerPush } from './serverPush'
 import { isServerPushActive } from './serverPushFlag'
-import { localizeYijiVerb } from './yiji-vocab'
+import { displayYijiVerb } from './yiji-vocab'
+import { resolveYijiDisplayMode, type YijiVocabularyMode } from './yiji-display-mode'
 
 const ENABLED_KEY = 'auspice.push.enabled'
 /** Evening (8pm "tomorrow heads-up") sub-toggle — independent of the 8am reading so
@@ -302,12 +303,13 @@ function dailyContent(
   locale: Locale,
   t: ReturnType<typeof getStrings>,
   payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
-  _isPro: boolean
+  _isPro: boolean,
+  yijiMode: YijiVocabularyMode
 ): { title: string; body: string } {
   const d = payload.day
   const sep = locale === 'en' ? ', ' : '、'
   const colon = locale === 'en' ? ': ' : '：'
-  const loc = (v: string) => localizeYijiVerb(v, locale)
+  const loc = (v: string) => displayYijiVerb(v, locale, yijiMode)
   const yi = d.goodFor.slice(0, 1).map(loc).join(sep) || '—'
   const ji = d.avoid.slice(0, 1).map(loc).join(sep) || '—'
   const special = d.festivalToday
@@ -339,6 +341,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // Read entitlement once per reschedule pass. SDK-unconfigured paths (Expo
   // Go, missing key) safely return false → free-tier body.
   const isPro = await getAuspiceProActive()
+  const yijiMode = await resolveYijiDisplayMode(opts.locale)
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightAm(i)
@@ -347,7 +350,13 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
 
     let content: { title: string; body: string } = { title: t.appName, body: t.today }
     try {
-      content = dailyContent(opts.locale, t, await fetchAuspiceDay(dateStr, opts.birthDate), isPro)
+      content = dailyContent(
+        opts.locale,
+        t,
+        await fetchAuspiceDay(dateStr, opts.birthDate),
+        isPro,
+        yijiMode
+      )
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
     }
@@ -413,9 +422,16 @@ export async function fireTestDailyPush(
   const t = getStrings(opts.locale)
   const dateStr = localYmd(new Date())
   const isPro = opts.isPro ?? (await getAuspiceProActive())
+  const yijiMode = await resolveYijiDisplayMode(opts.locale)
   let content: { title: string; body: string } = { title: t.appName, body: t.today }
   try {
-    content = dailyContent(opts.locale, t, await fetchAuspiceDay(dateStr, opts.birthDate), isPro)
+    content = dailyContent(
+      opts.locale,
+      t,
+      await fetchAuspiceDay(dateStr, opts.birthDate),
+      isPro,
+      yijiMode
+    )
   } catch {
     // keep the generic fallback — a push that opens the app is still useful
   }

@@ -55,8 +55,16 @@ Translations are therefore edited in the locale tables only. Swift contains no
 second face-copy table; before first sync the extension shows neutral `Yuun`
 chrome until the App writes the localized payload.
 
-Day strings (宜忌 verbs, 日签, For-you sentence) are already localized server- or
-app-side before being written, so Swift never translates content.
+Day strings (宜忌 verbs, 日签, For-you sentence) are already localized **and**
+formatted for the user's 宜忌 display mode (`modern` / `traditional`) before
+being written, so Swift never re-translates content. Mode is part of the sync
+cache key; changing Settings forces a widget/Watch rewrite. Offline
+`AlmanacEngine.officerYiJi` stays traditional canonical CJK only (must match
+`OFFICER_YIJI` — see [yiji-vocabulary.md](./yiji-vocabulary.md)).
+
+Watch bootstrap accepts optional `yijiMode` (omit → `traditional` for old
+clients). Public `/day` fallback on Watch formats via `WatchYijiVocab` using
+prefs mode + locale default.
 
 ## Data — Watch companion (direct API)
 
@@ -76,7 +84,7 @@ query string for Watch. Do **not** copy the iPhone `deviceSecret` onto Watch.
 | App Group / Keychain key | Purpose |
 |---|---|
 | `hexastral_widget_payload_v1` | Almanac window envelope |
-| `yuun_watch_preferences_v1` | `{ locale, birthDate? }` snapshot |
+| `yuun_watch_preferences_v1` | `{ locale, birthDate?, yijiMode? }` snapshot |
 | `yuun_watch_credential` | Bearer token; **empty string = tombstone** (clears Watch Keychain) |
 
 Guests without a portfolio identity still get prefs + WCSession almanac push;
@@ -112,13 +120,28 @@ a hole under the last line.
 |---|---|
 | Circular | Moon logo + ganZhi; solar term replaces ganZhi on 节气当日 |
 | Corner | Moon logo + curved label (ganZhi / solar term same rule) |
-| Rectangular | ganZhi + 宜 two short verbs + 忌 two short verbs (few Modular faces) |
+| Rectangular | Line 1 moon logo + ganZhi + `农历 · 节气` caption (term only on 节气当日); then 宜 / 忌 one line each, **3 verbs max** (`RECT_VERBS`) from `yiLong` → `yi` → `yiShort`. Capped so a mild `minimumScaleFactor` absorbs long locales instead of painting an unreadable `…` |
 | Inline | `宜 one · 忌 one` (keep both sides of the almanac) |
 
 - Resolve the day by **calendar date**, never bare `days.first` (midnight / window skew).
+- `yiShort` / `jiShort` are capped at 2 verbs by the bridge **and** bootstrap, so a wide
+  slot must read `yiLong` → `yi` → `yiShort` in that order; raising the Swift verb limit
+  alone changes nothing.
+- Swift re-splitting of a joined verb string must break on `·` / `•` **only**. `topVerbs`
+  joins with `" · "` on en/ja, and en glosses include multi-word phrases (`Move in`,
+  `Bless idol`, `Mourn end`) — treating a bare space as a separator shears them into
+  fragments. Applies to `verbParts` (complication) and `WatchAPIClient.compactVerbs`.
 - Prefer envelope `chrome` / `freshUntil` / source metadata when present.
 - Missing today + network fail → public `AlmanacEngine` only (never fabricate `fit`).
 - **For you is Watch App only** — complications do not paint `fit` / `fitSummary`.
+- Complication chrome is localized in-extension (`goodLabel` / `avoidLabel` / `emptyHint`
+  / gallery description / preview sample), preferring payload `chrome` + `locale`, then
+  the Watch's own language — never a hardcoded `en`. Watch App copy lives in
+  `WatchI18n.swift` (4 locales, no `Localizable.strings`); `data.chrome` still wins for
+  宜忌 labels. Gallery text is read at `body` evaluation, so it uses `loadLocale()`
+  rather than the timeline-populated `cachedLocale`.
+- `getSnapshot` may fall back to the preview sample; `getTimeline` must not — on the
+  face, missing data is real state and has to render `emptyHint`.
 
 ### For you boundary
 

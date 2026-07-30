@@ -119,10 +119,14 @@ struct TodayView: View {
   @ViewBuilder
   private func fitBlock(_ day: SharedDay, fit: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(store.label("forYou", fallback: t.forYouLabel))
-        .font(.caption2.bold())
-      Text(fit)
-        .font(.caption)
+      // Label + verdict share a line (baseline-aligned across the two font sizes);
+      // a bare 「对你而言」 / 「平稳」 stack reads like two unrelated rows.
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(store.label("forYou", fallback: t.forYouLabel))
+          .font(.caption2.bold())
+        Text(fit)
+          .font(.caption)
+      }
       if let summary = day.fitSummary, !summary.isEmpty {
         Text(summary)
           .font(.caption2)
@@ -254,7 +258,7 @@ struct SettingsView: View {
               .font(.caption2)
               .foregroundStyle(.secondary)
           } label: {
-            Text("Credential")
+            Text(t.credentialLabel)
               .font(.caption)
           }
           Text(personalStatus)

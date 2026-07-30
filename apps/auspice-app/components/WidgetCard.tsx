@@ -20,6 +20,7 @@ import {
 } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
 import { WidgetSurface, type WidgetSurfaceMode } from './WidgetSurface'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 
 export type WidgetSize = 'small' | 'medium' | 'large'
 
@@ -119,6 +120,7 @@ function ganzhiHeadword(model: DailyCardModel, locale: Locale): string {
 
 function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
   const L = compactChrome(locale)
+  const { mode } = useYijiDisplayMode()
   const yiN = verbBudget(locale, 'small')
   const year = locale === 'en' ? null : model.ganzhiYear
   return (
@@ -172,7 +174,7 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
           adjustsFontSizeToFit
           minimumFontScale={0.8}
         >
-          {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
+          {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale, mode)}`}
         </Text>
         <Text
           style={{ color: chrome.secondary, fontSize: 13 }}
@@ -180,7 +182,7 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
           adjustsFontSizeToFit
           minimumFontScale={0.8}
         >
-          {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
+          {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale, mode)}`}
         </Text>
       </View>
     </View>
@@ -189,6 +191,7 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
 
 function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
   const L = compactChrome(locale)
+  const { mode } = useYijiDisplayMode()
   const yiN = verbBudget(locale, 'medium')
   const meta =
     locale === 'en'
@@ -224,10 +227,10 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
             </Text>
           ) : null}
           <Text style={{ color: chrome.text, fontSize: 14 }} numberOfLines={2}>
-            {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
+            {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale, mode)}`}
           </Text>
           <Text style={{ color: chrome.secondary, fontSize: 14 }} numberOfLines={2}>
-            {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
+            {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale, mode)}`}
           </Text>
         </View>
       </View>
@@ -253,6 +256,7 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
 
 function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps) {
   const L = compactChrome(locale)
+  const { mode } = useYijiDisplayMode()
   const yiN = verbBudget(locale, 'large')
   const en = locale === 'en'
   const meta = en
@@ -318,10 +322,10 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
       <View style={{ height: 0.5, backgroundColor: chrome.separator }} />
 
       <Text style={{ color: chrome.text, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>
-        {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
+        {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale, mode)}`}
       </Text>
       <Text style={{ color: chrome.secondary, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>
-        {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
+        {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale, mode)}`}
       </Text>
 
       <View style={{ height: 0.5, backgroundColor: chrome.separator, marginTop: 2 }} />

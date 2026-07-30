@@ -1527,6 +1527,11 @@ export const auspicePushSubs = sqliteTable(
     isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
     /** Portfolio / RC app user id — enables live entitlement re-check on cron targets. */
     portfolioUserId: text('portfolio_user_id'),
+    /**
+     * Device-scoped 宜忌 display mode (`modern` | `traditional`).
+     * Null → derive from locale (en→modern, else traditional).
+     */
+    yijiMode: text('yiji_mode'),
     lastActiveAt: text('last_active_at').notNull(),
     createdAt: text('created_at')
       .notNull()

@@ -146,7 +146,8 @@ Historical scaffold (do not prebuild from here): [`watch-complication-scaffold/`
 - [ ] After opening iPhone Yuun once:
   - circular: moon + ganZhi (solar term on 节气当日)
   - corner: moon + curved ganZhi/term label
-  - rectangular: ganZhi + 宜 two verbs + 忌 two verbs (Modular / Infograph Modular faces)
+  - rectangular: moon + 干支 (+ 节气) on line 1, then 宜 / 忌 one line each with the full
+    `yiLong` / `jiLong` verb list, overflow truncated (Modular / Infograph Modular faces)
   - inline: 宜 one · 忌 one
 - [ ] For you appears in Watch App Today (not in complications)
 - [ ] Pull-to-refresh on Watch updates without iPhone foreground (credential present)
