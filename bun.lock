@@ -208,6 +208,7 @@
         "@zhop/astro-core": "workspace:*",
         "@zhop/astro-i18n": "workspace:*",
         "@zhop/growth-funnel": "workspace:*",
+        "@zhop/hexastral-tokens": "workspace:*",
         "@zhop/logger": "workspace:*",
         "@zhop/portfolio-voice": "workspace:*",
         "@zhop/timezone-pool": "workspace:*",

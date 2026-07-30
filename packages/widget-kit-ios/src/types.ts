@@ -49,6 +49,17 @@ export const YUUN_LEGACY_DAYS_KEY = 'almanac_days'
 export const YUUN_WIDGET_LOCALE_KEY = 'yuun_widget_locale'
 export const YUUN_WIDGET_TIP_LABEL_KEY = 'yuun_widget_tip_label'
 
+/** Watch companion prefs mirrored via WatchConnectivity (locale + optional birth). */
+export const YUUN_WATCH_PREFS_KEY = 'yuun_watch_preferences_v1'
+
+/** Watch bootstrap Bearer token (`w1.<id>.<secret>`); empty string = tombstone delete. */
+export const YUUN_WATCH_CREDENTIAL_KEY = 'yuun_watch_credential'
+
+export interface YuunWatchPreferences {
+  locale: WidgetLocale
+  birthDate?: string | null
+}
+
 // ── Per-app data shapes ───────────────────────────────────────────────────
 
 /** One day in the Yuun widget cache window (matches SharedDay in Swift). */
@@ -60,16 +71,16 @@ export interface YuunWidgetDay {
   solarTerm: string
   yi: string
   ji: string
-  /** Pro 「对你而言」 verdict label; null when not synced. */
+  /** Localized 「对你而言」 verdict label; null without birth personalization. */
   fit: string | null
-  /** Pro one-line For you summary (personal.summary[fit]). */
+  /** Localized one-line For-you summary (personal.summary[fit]). */
   fitSummary?: string | null
   /**
    * Free large-widget day tip (preset lexicon). Always filled so Free large
    * widgets are not hollow when `fit` is null.
    */
   dayTip?: string | null
-  /** Localized tip chrome (“Tip” / “日签”) — prefer over FaceChrome when set. */
+  /** Localized tip chrome (“Tip” / “日签”) from the App i18n payload. */
   tipLabel?: string | null
   moonPhase: number
   /** Large / lock extras — optional for small/medium. */
@@ -77,13 +88,57 @@ export interface YuunWidgetDay {
   mansion?: string
   clashShengxiao?: string
   ganzhiYear?: string | null
+  /** ≤2 verbs — small widget + lock rectangular (one line). */
   yiShort?: string
   jiShort?: string
+  /** ≤6 verbs — large widget only (wraps to two lines). */
+  yiLong?: string | null
+  jiLong?: string | null
+  /** Toned Mandarin 副标 for the 干支 day; en only, null elsewhere. */
+  ganZhiPinyin?: string | null
+}
+
+/**
+ * Order of `YuunWidgetChrome.moonPhaseNames`. Matches `getLunarPhaseName`
+ * buckets in `@zhop/hexastral-tokens/lunar` and the Swift index in the widget.
+ */
+export const YUUN_MOON_PHASE_ORDER = [
+  'new',
+  'waxing-crescent',
+  'first-quarter',
+  'waxing-gibbous',
+  'full',
+  'waning-gibbous',
+  'last-quarter',
+  'waning-crescent',
+] as const
+
+/**
+ * Locale chrome the native faces paint. The RN app owns all copy (i18n tables);
+ * Swift constants exist only for the first render before any window is written.
+ */
+export interface YuunWidgetChrome {
+  /** 宜 column label. */
+  good: string
+  /** 忌 column label. */
+  avoid: string
+  /** 对你而言 label (short form). */
+  forYou: string
+  /** 日签 label; empty string means "paint no label" (en). */
+  tip: string
+  /** Substitute for a missing 农历月日. */
+  lunarFallback: string
+  /** Body shown when the widget has no cached window. */
+  emptyHint: string
+  /** 8 月相 names in `YUUN_MOON_PHASE_ORDER`. */
+  moonPhaseNames: string[]
 }
 
 /** Yuun widget payload — N-day window written by the RN app. */
 export interface YuunWidgetData {
   days: YuunWidgetDay[]
+  /** Absent on payloads written by older app builds. */
+  chrome?: YuunWidgetChrome
 }
 
 /** @deprecated Use YuunWidgetData. Kept as alias for older imports. */

@@ -86,6 +86,30 @@ export const users = sqliteTable(
     /** 农历闰月标记 (1=闰月, 0=非闰月) */
     birthIsLeapMonth: integer('birth_is_leap_month', { mode: 'boolean' }).default(false),
 
+    /**
+     * Birth sync metadata (Yuun account-level birth + cross-device / cross-app gates).
+     * Legacy rows leave these null — readers treat them as "available to any app"
+     * until the next explicit PUT stamps source + defaults.
+     */
+    /** App that last wrote birth (`auspice` / `feng` / `faceoracle` / …). */
+    birthSourceApp: text('birth_source_app'),
+    /** Installation id that owns birth when multi-device sync is off. */
+    birthOwnerInstallationId: text('birth_owner_installation_id'),
+    /** Same-app multi-device pull. Default on; false → only owner install may read body. */
+    birthMultiDeviceSyncEnabled: integer('birth_multi_device_sync_enabled', {
+      mode: 'boolean',
+    })
+      .default(true)
+      .notNull(),
+    /** Other apps may read birth body. Default off; gated server-side. */
+    birthCrossAppSyncEnabled: integer('birth_cross_app_sync_enabled', {
+      mode: 'boolean',
+    })
+      .default(false)
+      .notNull(),
+    /** ISO 8601 UTC of last birth field write (not preference-only patches). */
+    birthUpdatedAt: text('birth_updated_at'),
+
     // ── 面相/手相（可选，作为占卜命理入参）──
     /** 最新一次面相特征提取记录 ID（关联 user_physiognomy_features） */
     activePhysiognomyId: text('active_physiognomy_id'),
@@ -1509,6 +1533,27 @@ export const auspicePushSubs = sqliteTable(
       .$defaultFn(() => new Date().toISOString()),
   },
   (t) => [index('auspice_push_subs_tz_idx').on(t.timezoneId)]
+)
+
+/** Yuun Watch bearer credentials — scoped read tokens for watch bootstrap sync. */
+export const watchCredentials = sqliteTable(
+  'watch_credentials',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** SHA-256 hex digest of the one-time plaintext secret. */
+    secretHash: text('secret_hash').notNull(),
+    scope: text('scope').notNull().default('auspice:watch:read'),
+    expiresAt: text('expires_at').notNull(),
+    revokedAt: text('revoked_at'),
+    lastUsedAt: text('last_used_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index('watch_credentials_user_id_idx').on(t.userId)]
 )
 
 // ==================== Relations ====================

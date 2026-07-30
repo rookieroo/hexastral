@@ -41,6 +41,7 @@ import {
   hasEntitlement,
   setDevEntitlementOverride,
   useEntitlements,
+  type BirthSyncPreferences,
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -48,6 +49,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
+import { AuspiceSignInSheet } from '@/components/AuspiceSignInSheet'
 import { FlagshipUpsellInsert } from '@/components/FlagshipUpsellInsert'
 import { LegalSection } from '@/components/settings/LegalSection'
 import { LibrarySection } from '@/components/settings/LibrarySection'
@@ -55,7 +57,22 @@ import {
   NotificationsSection,
   type NotificationToggleItem,
 } from '@/components/settings/NotificationsSection'
-import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
+import {
+  SettingsCard,
+  SettingsRow,
+  SettingsSection,
+} from '@/components/settings/SettingsSection'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import {
+  pushLocalBirthToAccount,
+  reconcileYuunBirthWithAccount,
+  resolveBirthConflict,
+  setYuunMultiDeviceSync,
+} from '@/lib/birth-account-sync'
+import { deleteYuunAccount } from '@/lib/account-delete'
+import { isSignedIn } from '@/lib/account'
+import { clearAuspiceGetCache } from '@/lib/api'
+import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { searchCity } from '@/lib/geocode'
@@ -201,6 +218,13 @@ export default function MeScreen() {
   // clock is folded away, and the birth city appears dynamically inside it once a
   // precise time is set). Auto-expanded when a precise clock or city is on record.
   const [showPrecise, setShowPrecise] = useState(false)
+  const [signedIn, setSignedIn] = useState(false)
+  const [signInForBirthOpen, setSignInForBirthOpen] = useState(false)
+  const [birthSaving, setBirthSaving] = useState(false)
+  const [multiDeviceOn, setMultiDeviceOn] = useState(true)
+  const [syncGated, setSyncGated] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [, setSyncMeta] = useState<BirthSyncPreferences | null>(null)
 
   // Shared field labels — core-ui defaults, with the app's own calendar copy.
   const dateLabels = useMemo(
@@ -296,23 +320,106 @@ export default function MeScreen() {
   }
 
   useEffect(() => {
+    void isSignedIn()
+      .then(setSignedIn)
+      .catch(() => setSignedIn(false))
+  }, [])
+
+  const applyBirthToForm = (info: AuspiceBirthInfo) => {
+    setBirth(info)
+    setHasSavedBirth(true)
+    if (info.clockMinutes != null || info.city?.trim()) setShowPrecise(true)
+    const isLunar = info.calendar === 'lunar' && !!info.lunarInput
+    setDateField({
+      input: isLunar && info.lunarInput ? info.lunarInput : info.solarDate,
+      calendar: isLunar ? 'lunar' : 'solar',
+      isLeap: isLunar && info.lunarIsLeap === true,
+      solarDate: info.solarDate || null,
+    })
+  }
+
+  const runBirthReconcile = async () => {
+    const result = await reconcileYuunBirthWithAccount()
+    if (result.kind === 'applied') {
+      applyBirthToForm(result.info)
+      setSyncMeta(result.sync)
+      setMultiDeviceOn(result.sync.multiDeviceSyncEnabled)
+      setSyncGated(false)
+      clearAuspiceGetCache()
+      requestYuunWidgetSync(locale, true)
+    } else if (result.kind === 'conflict') {
+      setSyncMeta(result.sync)
+      setMultiDeviceOn(result.sync.multiDeviceSyncEnabled)
+      Alert.alert(t.birthConflictTitle, t.birthConflictBody, [
+        {
+          text: t.birthConflictUseAccount,
+          onPress: () => {
+            void resolveBirthConflict('use_account', result.conflict).then((info) => {
+              applyBirthToForm(info)
+              clearAuspiceGetCache()
+              requestYuunWidgetSync(locale, true)
+            })
+          },
+        },
+        {
+          text: t.birthConflictUseLocal,
+          style: 'destructive',
+          onPress: () => {
+            void resolveBirthConflict('use_local', result.conflict).then((info) => {
+              applyBirthToForm(info)
+              clearAuspiceGetCache()
+              requestYuunWidgetSync(locale, true)
+              void isPushEnabled().then((on) => {
+                if (on) void syncServerPush(locale).catch(() => {})
+              })
+            })
+          },
+        },
+        { text: t.retry, style: 'cancel' },
+      ])
+    } else if (result.kind === 'gated') {
+      setSyncGated(true)
+      setSyncMeta(result.sync)
+      setMultiDeviceOn(false)
+    } else if (result.kind === 'empty' || result.kind === 'guest') {
+      setSyncGated(false)
+    }
+  }
+
+  useEffect(() => {
     getAuspiceBirthInfo()
       .then((info) => {
         if (!info) return
-        setBirth(info)
-        setHasSavedBirth(true)
-        if (info.clockMinutes != null || info.city?.trim()) setShowPrecise(true)
-        // Seed the editor with what the user originally entered (农历 stays 农历).
-        const isLunar = info.calendar === 'lunar' && !!info.lunarInput
-        setDateField({
-          input: isLunar && info.lunarInput ? info.lunarInput : info.solarDate,
-          calendar: isLunar ? 'lunar' : 'solar',
-          isLeap: isLunar && info.lunarIsLeap === true,
-          solarDate: info.solarDate || null,
-        })
+        applyBirthToForm(info)
       })
       .catch(() => {})
+    void isSignedIn().then((ok) => {
+      setSignedIn(ok)
+      if (ok) void runBirthReconcile()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only reconcile
   }, [])
+
+  const persistBirthAfterAuth = async (updated: AuspiceBirthInfo) => {
+    setBirthSaving(true)
+    try {
+      await pushLocalBirthToAccount(updated)
+      setBirth(updated)
+      setBirthSaved(true)
+      setHasSavedBirth(true)
+      setEditingBirth(false)
+      setTimeout(() => setBirthSaved(false), 2000)
+      clearAuspiceGetCache()
+      requestYuunWidgetSync(locale, true)
+      void isPushEnabled().then((on) => {
+        if (on) void syncServerPush(locale).catch(() => {})
+      })
+    } catch {
+      Alert.alert(t.birthSaveFailed)
+    } finally {
+      setBirthSaving(false)
+    }
+  }
 
   const saveBirth = () => {
     if (!birthValid || !computedSolarDate) return
@@ -324,19 +431,74 @@ export default function MeScreen() {
       lunarInput: isLunar ? dateField.input : undefined,
       lunarIsLeap: isLunar ? dateField.isLeap : undefined,
     }
-    void setAuspiceBirthInfo(updated).then(() => {
-      setBirth(updated)
-      setBirthSaved(true)
-      setHasSavedBirth(true)
-      // Collapse back to the summary row once saved; tap it to edit again.
-      setEditingBirth(false)
-      // Briefly show "Saved" feedback — clear after 2s so the button reads "Save" again.
-      setTimeout(() => setBirthSaved(false), 2000)
-      // Refresh server push profile (birthDate / gender / hour) while daily push is on.
-      void isPushEnabled().then((on) => {
-        if (on) void syncServerPush(locale).catch(() => {})
-      })
-    })
+    void (async () => {
+      const ok = await isSignedIn()
+      if (!ok) {
+        setSignInForBirthOpen(true)
+        // Stash into form state so post-sign-in save uses the draft.
+        setBirth(updated)
+        return
+      }
+      await persistBirthAfterAuth(updated)
+    })()
+  }
+
+  const beginEditBirth = () => {
+    void (async () => {
+      const ok = await isSignedIn()
+      if (!ok) {
+        setSignInForBirthOpen(true)
+        return
+      }
+      setEditingBirth(true)
+    })()
+  }
+
+  const toggleMultiDevice = (next: boolean) => {
+    setMultiDeviceOn(next)
+    void (async () => {
+      try {
+        const sync = await setYuunMultiDeviceSync(next)
+        setSyncMeta(sync)
+        setSyncGated(false)
+        if (next) void runBirthReconcile()
+      } catch {
+        setMultiDeviceOn(!next)
+        Alert.alert(t.birthSaveFailed)
+      }
+    })()
+  }
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(t.deleteAccountConfirmTitle, t.deleteAccountConfirmBody, [
+      { text: t.deleteAccountCancel, style: 'cancel' },
+      {
+        text: t.deleteAccountConfirmCta,
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setDeletingAccount(true)
+            try {
+              const ok = await deleteYuunAccount(locale)
+              if (!ok) {
+                Alert.alert(t.deleteAccountFailed)
+                return
+              }
+              setSignedIn(false)
+              setHasSavedBirth(false)
+              setBirth({ solarDate: '', timeIndex: null })
+              setEditingBirth(false)
+              setSyncMeta(null)
+              setSyncGated(false)
+            } catch {
+              Alert.alert(t.deleteAccountFailed)
+            } finally {
+              setDeletingAccount(false)
+            }
+          })()
+        },
+      },
+    ])
   }
 
   // Push toggles — flip UI immediately; persist/schedule in the background and
@@ -477,7 +639,7 @@ export default function MeScreen() {
           <SectionLabel>{t.personal.forYou}</SectionLabel>
           {hasSavedBirth && !editingBirth ? (
             <Pressable
-              onPress={() => setEditingBirth(true)}
+              onPress={beginEditBirth}
               accessibilityRole='button'
               accessibilityLabel={t.personal.forYou}
               style={({ pressed }) => ({
@@ -691,7 +853,7 @@ export default function MeScreen() {
               {/* Save — disabled until date is valid. "Saved" feedback briefly. */}
               <Pressable
                 onPress={saveBirth}
-                disabled={!birthValid}
+                disabled={!birthValid || birthSaving}
                 accessibilityRole='button'
                 accessibilityLabel={t.birthSave}
                 style={{
@@ -701,6 +863,7 @@ export default function MeScreen() {
                   borderRadius: 12,
                   backgroundColor: birthValid ? colors.accent : colors.accentGhost,
                   alignItems: 'center',
+                  opacity: birthSaving ? 0.7 : 1,
                 }}
               >
                 <Text
@@ -711,12 +874,62 @@ export default function MeScreen() {
                     letterSpacing: 1,
                   }}
                 >
-                  {birthSaved ? t.birthSaved : t.birthSave}
+                  {birthSaving ? t.birthSaving : birthSaved ? t.birthSaved : t.birthSave}
                 </Text>
               </Pressable>
               <Text style={{ color: colors.dim, fontSize: 12 }}>{t.personal.birthHint}</Text>
             </View>
           )}
+          {signedIn ? (
+            <View
+              style={{
+                marginTop: spacing.md,
+                backgroundColor: colors.card,
+                borderRadius: 14,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                gap: spacing.sm,
+              }}
+            >
+              {syncGated ? (
+                <View style={{ gap: spacing.sm }}>
+                  <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 18 }}>
+                    {t.birthSyncGatedMultiDevice}
+                  </Text>
+                  <Pressable
+                    onPress={() => toggleMultiDevice(true)}
+                    accessibilityRole='button'
+                    accessibilityLabel={t.birthSyncEnableMultiDevice}
+                  >
+                    <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                      {t.birthSyncEnableMultiDevice}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: spacing.md,
+                  }}
+                >
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={{ color: colors.text, fontSize: 15 }}>{t.birthMultiDeviceSync}</Text>
+                    <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                      {t.birthMultiDeviceSyncHint}
+                    </Text>
+                  </View>
+                  <Toggle
+                    value={multiDeviceOn}
+                    onValueChange={toggleMultiDevice}
+                    accent={colors.accent}
+                  />
+                </View>
+              )}
+            </View>
+          ) : null}
         </View>
 
         <LibrarySection />
@@ -890,7 +1103,53 @@ export default function MeScreen() {
           ) : null}
         </View>
 
+        {signedIn ? (
+          <SettingsSection title={t.accountSection}>
+            <SettingsCard>
+              <SettingsRow
+                label={t.signedInLabel}
+                hint={undefined}
+                onPress={() => {}}
+                divider
+                disabled
+              />
+              <SettingsRow
+                label={deletingAccount ? t.deleteAccountWorking : t.deleteAccount}
+                danger
+                disabled={deletingAccount}
+                onPress={confirmDeleteAccount}
+              />
+            </SettingsCard>
+          </SettingsSection>
+        ) : null}
+
         <LegalSection />
+
+        <AuspiceSignInSheet
+          visible={signInForBirthOpen}
+          onClose={() => setSignInForBirthOpen(false)}
+          onSignedIn={() => {
+            setSignInForBirthOpen(false)
+            setSignedIn(true)
+            void (async () => {
+              await runBirthReconcile()
+              // If the user was mid-save, persist the draft now that auth exists.
+              if (birthValid && computedSolarDate && (editingBirth || !hasSavedBirth)) {
+                const isLunar = dateField.calendar === 'lunar'
+                const updated: AuspiceBirthInfo = {
+                  ...birth,
+                  solarDate: computedSolarDate,
+                  calendar: dateField.calendar,
+                  lunarInput: isLunar ? dateField.input : undefined,
+                  lunarIsLeap: isLunar ? dateField.isLeap : undefined,
+                }
+                await persistBirthAfterAuth(updated)
+              } else {
+                setEditingBirth(true)
+              }
+            })()
+          }}
+        />
 
         {/* ── Language (DEV-only) — kept at the very bottom so it never crowds
             the real settings above it. ── */}

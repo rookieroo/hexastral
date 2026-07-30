@@ -16,7 +16,7 @@ import {
 } from '../db/schema'
 import type { CloudflareBindings, ContextVariables } from '../infra-types'
 import { upsellProductFor } from '../lib/access/capabilities'
-import { userHasCapability } from '../lib/access/entitlement-access'
+import { userHasAnySubscription } from '../lib/access/entitlement-access'
 import {
   decideEpisodicQuota,
   EPISODIC_FREE_READINGS_PER_MONTH,
@@ -25,11 +25,13 @@ import {
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../lib/biometric-consent'
-import { hasActiveEntitlement } from '../services/entitlements'
-import {
-  checkAndConsumeFaceoraclePhotoSlots,
-} from '../services/quota'
 import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quota'
+import {
+  birthSyncPreferencePatch,
+  birthSyncWriteStamp,
+  evaluateBirthSyncAccess,
+  normalizeBirthSyncPreferences,
+} from '../lib/birth-sync-policy'
 import { CHAPTER_UNLOCK_CAP } from '../lib/chapter-access'
 import { rebuildUserCharts } from '../lib/chart-skeleton'
 import { castMeihua } from '../lib/meihua'
@@ -56,6 +58,8 @@ import {
   getCreditBalance,
   refundCredit,
 } from '../services/credits'
+import { hasActiveEntitlement } from '../services/entitlements'
+import { checkAndConsumeFaceoraclePhotoSlots } from '../services/quota'
 import {
   checkDivinationGuard,
   type GuardReason,
@@ -140,26 +144,47 @@ const eightPillarsDailyQuerySchema = z.object({
   dayMaster: z.string().max(24).optional(),
 })
 
-const portfolioBirthInfoSchema = z.object({
-  birthSolarDate: z.string().regex(/^\d{4}-\d{1,2}-\d{1,2}$/),
-  birthTimeIndex: z.coerce.number().int().min(0).max(12),
-  gender: z.enum(['男', '女']).optional(),
-  birthCity: z.string().max(80).optional(),
-  birthLatitude: z.string().max(32).optional(),
-  birthLongitude: z.string().max(32).optional(),
-  birthTimezoneId: z.string().max(80).optional(),
-  /** Precise birth clock — minutes since midnight 0..1439. null = 时辰-only. */
-  birthClockMinutes: z.coerce.number().int().min(0).max(1439).nullish(),
-  /** 真太阳时 calibration toggle for the precise clock; default-on, false = off. */
-  birthSolarCalibrate: z.boolean().nullish(),
-  /** Original 农历 round-trip — calendar choice + raw lunar input + 闰月 flag. */
-  birthCalendarType: z.enum(['solar', 'lunar']).optional(),
-  birthLunarInput: z
-    .string()
-    .regex(/^\d{4}-\d{1,2}-\d{1,2}$/)
-    .optional(),
-  birthLunarIsLeap: z.boolean().optional(),
+const birthCallerContextSchema = z.object({
+  /** Satellite / flagship app id writing or reading birth (`auspice`, `feng`, …). */
+  targetApp: z.string().min(1).max(40),
+  /** Stable install id — used when multi-device sync is off. */
+  installationId: z.string().min(1).max(128),
 })
+
+const birthInfoQuerySchema = birthCallerContextSchema.partial()
+
+const portfolioBirthInfoSchema = z
+  .object({
+    birthSolarDate: z.string().regex(/^\d{4}-\d{1,2}-\d{1,2}$/),
+    /** null = unknown 时辰 (Yuun). */
+    birthTimeIndex: z.coerce.number().int().min(0).max(12).nullable(),
+    gender: z.enum(['男', '女']).nullish(),
+    birthCity: z.string().max(80).optional(),
+    birthLatitude: z.string().max(32).optional(),
+    birthLongitude: z.string().max(32).optional(),
+    birthTimezoneId: z.string().max(80).optional(),
+    /** Precise birth clock — minutes since midnight 0..1439. null = 时辰-only. */
+    birthClockMinutes: z.coerce.number().int().min(0).max(1439).nullish(),
+    /** 真太阳时 calibration toggle for the precise clock; default-on, false = off. */
+    birthSolarCalibrate: z.boolean().nullish(),
+    /** Original 农历 round-trip — calendar choice + raw lunar input + 闰月 flag. */
+    birthCalendarType: z.enum(['solar', 'lunar']).optional(),
+    birthLunarInput: z
+      .string()
+      .regex(/^\d{4}-\d{1,2}-\d{1,2}$/)
+      .optional(),
+    birthLunarIsLeap: z.boolean().optional(),
+  })
+  .and(birthCallerContextSchema)
+
+const birthSyncPreferencesSchema = birthCallerContextSchema
+  .extend({
+    multiDeviceSyncEnabled: z.boolean().optional(),
+    crossAppSyncEnabled: z.boolean().optional(),
+  })
+  .refine((v) => v.multiDeviceSyncEnabled !== undefined || v.crossAppSyncEnabled !== undefined, {
+    message: 'At least one of multiDeviceSyncEnabled / crossAppSyncEnabled is required',
+  })
 
 const coincastInputSchema = z.object({
   question: z.string().min(2).max(500),
@@ -212,7 +237,10 @@ const faceInputSchema = z.object({
   timeIndex: z.int().min(0).max(12).optional(),
   gender: z.enum(['男', '女']).optional(),
   city: z.string().max(80).optional(),
-  horizonMonths: z.union([z.literal(3), z.literal(6)]).optional().default(3),
+  horizonMonths: z
+    .union([z.literal(3), z.literal(6)])
+    .optional()
+    .default(3),
   outputKind: z.enum(['oneshot', 'period_brief', 'deep']).optional().default('oneshot'),
   updateKind: z.enum(['full', 'partial']).optional().default('full'),
   partialParts: z.array(z.enum(['face', 'palm_l', 'palm_r'])).optional(),
@@ -806,8 +834,7 @@ async function runTargetPipeline(
             ? fromIds[0]
             : extractPart(
                 '/physiognomy/extract-features',
-                parsed.faceImageBase64 ??
-                  (parsed.mode === 'face' ? parsed.imageBase64 : undefined)
+                parsed.faceImageBase64 ?? (parsed.mode === 'face' ? parsed.imageBase64 : undefined)
               ),
           fromIds[1]
             ? fromIds[1]
@@ -1016,17 +1043,24 @@ portfolioRoutes.post('/preview/:target', async (c) => {
   if (!success) throw new HTTPException(429, { message: 'Rate limited' })
 
   const db = c.get('db')
-  let coincastPreviewOpts: { coincastMode: CoincastInterpretationMode; coincastIsPro: boolean } | undefined
+  let coincastPreviewOpts:
+    | { coincastMode: CoincastInterpretationMode; coincastIsPro: boolean }
+    | undefined
   if (targetParsed.data === 'coincast') {
     await evaluateCoincastQuota(db, { userId: null, anonymousId: anonId ?? null })
 
     const question =
       typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
     const guardUserId = anonId ? `anon:${anonId}` : `ip:${ip}`
-    const guard = await checkDivinationGuard(question, guardUserId, {
-      GUARD_KV: c.env.GUARD_KV,
-      AI: c.env.AI,
-    }, { skipSemantic: true })
+    const guard = await checkDivinationGuard(
+      question,
+      guardUserId,
+      {
+        GUARD_KV: c.env.GUARD_KV,
+        AI: c.env.AI,
+      },
+      { skipSemantic: true }
+    )
     if (!guard.allowed) {
       return c.json({
         mode: 'refused',
@@ -1153,8 +1187,7 @@ portfolioRoutes.post('/linked/:target', async (c) => {
       (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
       (await hasActiveEntitlement(db, userId, 'universe_pro'))
     if (isFacePro) {
-      const slots =
-        fi.updateKind === 'partial' ? Math.max(1, fi.partialParts?.length ?? 1) : 3
+      const slots = fi.updateKind === 'partial' ? Math.max(1, fi.partialParts?.length ?? 1) : 3
       const slot = await checkAndConsumeFaceoraclePhotoSlots(db, userId, slots)
       if (!slot.granted) {
         return c.json(
@@ -1218,10 +1251,15 @@ portfolioRoutes.post('/linked/:target', async (c) => {
 
     const question =
       typeof parsed.data.input.question === 'string' ? parsed.data.input.question.trim() : ''
-    const guard = await checkDivinationGuard(question, userId, {
-      GUARD_KV: c.env.GUARD_KV,
-      AI: c.env.AI,
-    }, { skipSemantic: coincastMode === 'classical' })
+    const guard = await checkDivinationGuard(
+      question,
+      userId,
+      {
+        GUARD_KV: c.env.GUARD_KV,
+        AI: c.env.AI,
+      },
+      { skipSemantic: coincastMode === 'classical' }
+    )
     if (!guard.allowed) {
       const penalty = await applyCoincastRefusalPenalty(db, userId)
       return c.json({
@@ -1284,9 +1322,7 @@ portfolioRoutes.post('/linked/:target', async (c) => {
     requestId,
     {
       faceVlmAuthorized,
-      ...(targetParsed.data === 'coincast'
-        ? { coincastMode, coincastIsPro }
-        : {}),
+      ...(targetParsed.data === 'coincast' ? { coincastMode, coincastIsPro } : {}),
     }
   )
 
@@ -1340,7 +1376,10 @@ portfolioRoutes.post('/linked/:target', async (c) => {
     locale,
   })
 
-  if (targetParsed.data === 'faceoracle' && (pipeline.output as { visionMode?: string }).visionMode === 'real') {
+  if (
+    targetParsed.data === 'faceoracle' &&
+    (pipeline.output as { visionMode?: string }).visionMode === 'real'
+  ) {
     const events = (pipeline.output as { events?: unknown }).events
     const horizon =
       typeof (pipeline.output as { horizonMonths?: number }).horizonMonths === 'number'
@@ -1971,6 +2010,7 @@ portfolioRoutes.put('/birth-info', async (c) => {
       birthSolarCalibrate: users.birthSolarCalibrate,
       birthGender: users.birthGender,
       birthEditUsed: users.birthEditUsed,
+      birthMultiDeviceSyncEnabled: users.birthMultiDeviceSyncEnabled,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -1982,17 +2022,33 @@ portfolioRoutes.put('/birth-info', async (c) => {
     birthTimeIndex: parsed.data.birthTimeIndex,
     birthClockMinutes: parsed.data.birthClockMinutes ?? null,
     birthSolarCalibrate: parsed.data.birthSolarCalibrate ?? null,
-    gender: (parsed.data.gender ?? prior.birthGender ?? '男') as '男' | '女',
+    gender:
+      parsed.data.gender === '男' || parsed.data.gender === '女'
+        ? parsed.data.gender
+        : prior.birthGender === '男' || prior.birthGender === '女'
+          ? prior.birthGender
+          : null,
   }
-  const isPro = await userHasCapability(db, userId, 'fate')
+  // Any active subscription (auspice_pro / fate_pro / universe_pro / …) bypasses
+  // the free lifetime correction — Yuun Pro must not be gated on `fate` alone.
+  const isPro = await userHasAnySubscription(db, userId)
   const disposition = assertBirthEditQuota(prior, nextInput, isPro)
+
+  const multiDevice = prior.birthMultiDeviceSyncEnabled !== false
+  const nowIso = new Date().toISOString()
+  const syncStamp = birthSyncWriteStamp({
+    targetApp: parsed.data.targetApp,
+    installationId: parsed.data.installationId,
+    multiDeviceSyncEnabled: multiDevice,
+    nowIso,
+  })
 
   await db
     .update(users)
     .set({
       birthSolarDate: parsed.data.birthSolarDate,
       birthTimeIndex: parsed.data.birthTimeIndex,
-      birthGender: parsed.data.gender,
+      birthGender: parsed.data.gender ?? prior.birthGender ?? null,
       birthCity: parsed.data.birthCity,
       birthLatitude: parsed.data.birthLatitude,
       birthLongitude: parsed.data.birthLongitude,
@@ -2004,9 +2060,10 @@ portfolioRoutes.put('/birth-info', async (c) => {
       birthCalendarType: parsed.data.birthCalendarType,
       birthLunarDate: parsed.data.birthLunarInput,
       birthIsLeapMonth: parsed.data.birthLunarIsLeap ?? false,
+      ...syncStamp,
       // Consume the lifetime correction the moment the free-tier write lands.
       ...(disposition === 'consume_quota' && !isPro ? { birthEditUsed: true } : {}),
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     })
     .where(eq(users.id, userId))
 
@@ -2020,6 +2077,9 @@ portfolioRoutes.put('/birth-info', async (c) => {
 
 portfolioRoutes.get('/birth-info', async (c) => {
   const userId = requireUserId(c)
+  const queryParsed = birthInfoQuerySchema.safeParse(c.req.query())
+  if (!queryParsed.success) throw new HTTPException(422, { message: 'Invalid birth info query' })
+
   const db = c.get('db')
   const row = await db
     .select({
@@ -2035,11 +2095,123 @@ portfolioRoutes.get('/birth-info', async (c) => {
       birthCalendarType: users.birthCalendarType,
       birthLunarInput: users.birthLunarDate,
       birthLunarIsLeap: users.birthIsLeapMonth,
+      birthSourceApp: users.birthSourceApp,
+      birthOwnerInstallationId: users.birthOwnerInstallationId,
+      birthMultiDeviceSyncEnabled: users.birthMultiDeviceSyncEnabled,
+      birthCrossAppSyncEnabled: users.birthCrossAppSyncEnabled,
+      birthUpdatedAt: users.birthUpdatedAt,
     })
     .from(users)
     .where(eq(users.id, userId))
     .get()
-  return c.json({ birthInfo: row ?? null })
+
+  const sync = normalizeBirthSyncPreferences({
+    birthSourceApp: row?.birthSourceApp ?? null,
+    birthOwnerInstallationId: row?.birthOwnerInstallationId ?? null,
+    birthMultiDeviceSyncEnabled: row?.birthMultiDeviceSyncEnabled ?? null,
+    birthCrossAppSyncEnabled: row?.birthCrossAppSyncEnabled ?? null,
+    birthUpdatedAt: row?.birthUpdatedAt ?? null,
+  })
+
+  const { targetApp, installationId } = queryParsed.data
+  // Legacy callers omit caller context → keep prior "always return body" behavior.
+  const status =
+    targetApp && installationId
+      ? evaluateBirthSyncAccess(
+          {
+            birthSolarDate: row?.birthSolarDate ?? null,
+            birthSourceApp: row?.birthSourceApp ?? null,
+            birthOwnerInstallationId: row?.birthOwnerInstallationId ?? null,
+            birthMultiDeviceSyncEnabled: row?.birthMultiDeviceSyncEnabled ?? null,
+            birthCrossAppSyncEnabled: row?.birthCrossAppSyncEnabled ?? null,
+          },
+          { targetApp, installationId }
+        )
+      : row?.birthSolarDate
+        ? ('available' as const)
+        : ('empty' as const)
+
+  const birthInfo =
+    status === 'available' && row?.birthSolarDate
+      ? {
+          birthSolarDate: row.birthSolarDate,
+          birthTimeIndex: row.birthTimeIndex,
+          gender: row.gender,
+          birthCity: row.birthCity,
+          birthLatitude: row.birthLatitude,
+          birthLongitude: row.birthLongitude,
+          birthTimezoneId: row.birthTimezoneId,
+          birthClockMinutes: row.birthClockMinutes,
+          birthSolarCalibrate: row.birthSolarCalibrate,
+          birthCalendarType: row.birthCalendarType,
+          birthLunarInput: row.birthLunarInput,
+          birthLunarIsLeap: row.birthLunarIsLeap,
+        }
+      : null
+
+  return c.json({ birthInfo, status, sync })
+})
+
+portfolioRoutes.patch('/birth-sync-preferences', async (c) => {
+  const userId = requireUserId(c)
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    throw new HTTPException(422, { message: 'Expected JSON body' })
+  }
+  const parsed = birthSyncPreferencesSchema.safeParse(body)
+  if (!parsed.success) {
+    throw new HTTPException(422, { message: 'Invalid birth sync preferences payload' })
+  }
+
+  const db = c.get('db')
+  const prior = await db
+    .select({
+      birthMultiDeviceSyncEnabled: users.birthMultiDeviceSyncEnabled,
+      birthOwnerInstallationId: users.birthOwnerInstallationId,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+  if (!prior) throw new HTTPException(404, { message: 'User not found' })
+
+  const patch = birthSyncPreferencePatch({
+    installationId: parsed.data.installationId,
+    multiDeviceSyncEnabled: parsed.data.multiDeviceSyncEnabled,
+    crossAppSyncEnabled: parsed.data.crossAppSyncEnabled,
+    priorMultiDevice: prior.birthMultiDeviceSyncEnabled !== false,
+    priorOwner: prior.birthOwnerInstallationId,
+  })
+
+  const nowIso = new Date().toISOString()
+  await db
+    .update(users)
+    .set({ ...patch, updatedAt: nowIso })
+    .where(eq(users.id, userId))
+
+  const row = await db
+    .select({
+      birthSourceApp: users.birthSourceApp,
+      birthOwnerInstallationId: users.birthOwnerInstallationId,
+      birthMultiDeviceSyncEnabled: users.birthMultiDeviceSyncEnabled,
+      birthCrossAppSyncEnabled: users.birthCrossAppSyncEnabled,
+      birthUpdatedAt: users.birthUpdatedAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+
+  return c.json({
+    ok: true,
+    sync: normalizeBirthSyncPreferences({
+      birthSourceApp: row?.birthSourceApp ?? null,
+      birthOwnerInstallationId: row?.birthOwnerInstallationId ?? null,
+      birthMultiDeviceSyncEnabled: row?.birthMultiDeviceSyncEnabled ?? null,
+      birthCrossAppSyncEnabled: row?.birthCrossAppSyncEnabled ?? null,
+      birthUpdatedAt: row?.birthUpdatedAt ?? null,
+    }),
+  })
 })
 
 portfolioRoutes.get('/eightpillars/daily', async (c) => {

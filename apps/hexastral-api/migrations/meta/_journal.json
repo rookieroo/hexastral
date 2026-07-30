@@ -246,6 +246,20 @@
       "when": 1785039971718,
       "tag": "0034_plain_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1785377285317,
+      "tag": "0035_elite_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1785384327227,
+      "tag": "0036_furry_sabra",
+      "breakpoints": true
     }
   ]
 }

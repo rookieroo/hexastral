@@ -35,7 +35,6 @@ import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useStrings } from '@/lib/i18n-context'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
-import { syncTodayWidget } from '@/lib/widget-bridge'
 
 const HOME_LOGO_SIZE = 28
 
@@ -123,29 +122,6 @@ export default function HomeScreen() {
       loadDay()
     }, [loadDay])
   )
-
-  // Widgets always sync a window from civil today — not the calendar selection.
-  useEffect(() => {
-    let cancelled = false
-    void getAuspiceBirthDate()
-      .then(async (birthDate) => {
-        const today = todayIsoString()
-        const payload = await fetchAuspiceDay(today, birthDate)
-        if (cancelled) return
-        await syncTodayWidget(
-          today,
-          payload.day,
-          payload.personalization,
-          t,
-          locale,
-          Boolean(payload.personalization)
-        )
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [todayIso, t, locale])
 
   useEffect(() => {
     if (focusPersonal && dayData && !dayLoading) {

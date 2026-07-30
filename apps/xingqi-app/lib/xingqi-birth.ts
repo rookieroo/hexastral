@@ -2,8 +2,9 @@
  * Birth profile for Life axis / What-if — portfolio birth-info + draft fallback.
  */
 
-import { getPortfolioBirthInfo } from '@zhop/satellite-runtime'
+import { getOrCreateAnonymousInstallId, getPortfolioBirthInfo } from '@zhop/satellite-runtime'
 
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 import { getReadingDraft, hydrateReadingDraft } from './reading-draft'
 
 export type XingqiBirth = {
@@ -13,18 +14,25 @@ export type XingqiBirth = {
   gender: 'M' | 'F'
 }
 
+async function birthCallerContext() {
+  const installationId = await getOrCreateAnonymousInstallId(PORTFOLIO_STORAGE_PREFIX)
+  return { targetApp: PORTFOLIO_TARGET_APP, installationId }
+}
+
 export async function loadXingqiBirth(): Promise<XingqiBirth | null> {
   try {
-    const remote = await getPortfolioBirthInfo()
-    if (remote?.birthSolarDate && remote.gender) {
+    const ctx = await birthCallerContext()
+    const remote = await getPortfolioBirthInfo(ctx)
+    if (remote.birthInfo?.birthSolarDate && remote.birthInfo.gender) {
+      const { birthTimeIndex } = remote.birthInfo
       const hour =
-        typeof remote.birthTimeIndex === 'number' && remote.birthTimeIndex >= 0
-          ? (remote.birthTimeIndex * 2) % 24
+        typeof birthTimeIndex === 'number' && birthTimeIndex >= 0
+          ? (birthTimeIndex * 2) % 24
           : -1
       return {
-        date: remote.birthSolarDate,
+        date: remote.birthInfo.birthSolarDate,
         hour,
-        gender: remote.gender === '女' ? 'F' : 'M',
+        gender: remote.birthInfo.gender === '女' ? 'F' : 'M',
       }
     }
   } catch {

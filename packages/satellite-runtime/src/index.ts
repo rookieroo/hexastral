@@ -111,10 +111,17 @@ export type { EmailConfirmResult } from './use-email-bind'
 export { confirmEmailOtp, requestEmailOtp, unbindUserEmail } from './use-email-bind'
 export { refreshFlags, useFlag } from './use-flag'
 export { getCurrentNetInfo, useNetInfo } from './use-net-info'
-export type { PortfolioBirthInfo } from './use-portfolio-birth-info'
+export type {
+  BirthCallerContext,
+  BirthSyncAccessStatus,
+  BirthSyncPreferences,
+  PortfolioBirthInfo,
+  PortfolioBirthInfoResponse,
+} from './use-portfolio-birth-info'
 export {
   getPortfolioBirthInfo,
   saveAndCacheBirthInfo,
+  updateBirthSyncPreferences,
   usePortfolioBirthInfo,
 } from './use-portfolio-birth-info'
 export type { UsePortfolioSatelliteBootstrapArgs } from './use-portfolio-bootstrap'

@@ -7,6 +7,7 @@
  * content task tracked alongside C.2.5 / C.1.7.
  */
 
+import type { LunarPhaseName } from '@zhop/hexastral-tokens/lunar'
 import { getLocales } from 'expo-localization'
 import type { AuspiceEvent, DayOfficer, PersonalFit, PersonalReasonCode } from './api'
 
@@ -103,6 +104,30 @@ export interface Strings {
   signInBenefit: string
   signInWithGoogle: string
   signInError: string
+  /** Login before saving birth (account sync). */
+  signInForBirthTitle: string
+  signInForBirthBenefit: string
+  /** Multi-device birth sync toggle. */
+  birthMultiDeviceSync: string
+  birthMultiDeviceSyncHint: string
+  birthSyncGatedMultiDevice: string
+  birthSyncEnableMultiDevice: string
+  birthConflictTitle: string
+  birthConflictBody: string
+  birthConflictUseAccount: string
+  birthConflictUseLocal: string
+  birthSaveFailed: string
+  birthSaving: string
+  /** Account deletion (Apple 5.1.1(v)). */
+  deleteAccount: string
+  deleteAccountConfirmTitle: string
+  deleteAccountConfirmBody: string
+  deleteAccountCancel: string
+  deleteAccountConfirmCta: string
+  deleteAccountFailed: string
+  deleteAccountWorking: string
+  accountSection: string
+  signedInLabel: string
   /** Indicator on /event when specialized scoring is active (Pro + a specialized event). */
   specializedActive: string
   /** Upsell pill on /event when user picks a specialized event but isn't Pro yet. */
@@ -480,6 +505,27 @@ export interface Strings {
   watchTemplateAncient: string
   /** Picker label for the 月相 palette (applies to the shipping widget). */
   moonSkinLabel: string
+  /** 月相 names keyed by synodic bucket — widget captions under the logo. */
+  moonPhaseNames: Record<LunarPhaseName, string>
+  /**
+   * Chrome the native widget/watch faces paint. Written into the App Group with
+   * the day window so WidgetKit renders app-locale copy instead of its own
+   * table — the Swift constants are only a first-launch fallback.
+   */
+  widgetChrome: {
+    /** 宜 column label. */
+    good: string
+    /** 忌 column label. */
+    avoid: string
+    /** 对你而言 label — short form, these slots are narrow. */
+    forYou: string
+    /** 日签 label. */
+    tip: string
+    /** Shown in place of 农历月日 when the almanac has no lunar date. */
+    lunarFallback: string
+    /** Widget body before the app has ever synced a window. */
+    emptyHint: string
+  }
   /** __DEV__ moon-phase mock controls. */
   devMoonPhaseLabel: string
   devMoonPhaseLive: string
@@ -607,6 +653,28 @@ const zhHans: Strings = {
   signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Yuel」等其他应用时延续。',
   signInWithGoogle: '使用 Google 登录',
   signInError: '登录失败，请重试。',
+  signInForBirthTitle: '登录以保存生辰',
+  signInForBirthBenefit: '生辰将安全保存到你的账号，便于跨设备同步到 Widget 与 Apple Watch。',
+  birthMultiDeviceSync: '多设备同步生辰',
+  birthMultiDeviceSyncHint: '关闭后，其他设备不会自动读取账号中的生辰；本机仍可使用。',
+  birthSyncGatedMultiDevice: '多设备同步已关闭。开启后，此设备才能读取账号生辰。',
+  birthSyncEnableMultiDevice: '开启多设备同步',
+  birthConflictTitle: '生辰不一致',
+  birthConflictBody: '本机与账号中的生辰不同。请选择保留哪一份。',
+  birthConflictUseAccount: '使用账号资料',
+  birthConflictUseLocal: '用本机资料替换账号',
+  birthSaveFailed: '保存失败，请检查网络后重试。',
+  birthSaving: '正在保存…',
+  deleteAccount: '删除账号',
+  deleteAccountConfirmTitle: '永久删除账号？',
+  deleteAccountConfirmBody:
+    '将永久删除：本人生辰与跨设备同步资料、Watch 凭据、推送注册、亲友/合盘相关服务端数据，以及同一账号下的阅读与对话历史。此操作不可撤销。App Store 订阅需另行取消。',
+  deleteAccountCancel: '取消',
+  deleteAccountConfirmCta: '永久删除',
+  deleteAccountFailed: '删除失败，请稍后重试。',
+  deleteAccountWorking: '正在删除…',
+  accountSection: '账号',
+  signedInLabel: '已登录',
   specializedActive: '专项时日参考 已启用',
   specializedUpsell: 'Pro · 解锁专项时日参考',
   eventRangeSection: '时间范围',
@@ -874,7 +942,7 @@ const zhHans: Strings = {
   },
   watchWidgets: '桌面 · 锁屏 · Watch',
   watchWidgetsNote:
-    '公开黄历免费：主屏小 / 中 / 大、锁屏组件、Apple Watch 热区（圆形 / 矩形 / 底边一行 / 表角）都显示当日干支与宜忌（人人相同）。录入生辰后，「对你而言」会出现在 App 与组件上。Watch 只能填系统表盘热区，无法自定义整张表盘；宜忌优先放矩形两行槽。',
+    '公开黄历免费：主屏小 / 中 / 大、锁屏组件、Apple Watch 都显示当日干支与宜忌（人人相同）。录入生辰后，「对你而言」会出现在 App、桌面组件与 Watch。打开 Yuun 任意一次即可刷新桌面组件；Watch 可独立刷新，首次配对需打开 iPhone 上的 Yuun 一次。Watch 填充系统表盘热区；宜忌优先放矩形两行槽。',
   widgetPreviewCaption: '主屏小组件',
   watchPreviewCaption: 'Watch 热区（系统表盘）',
   watchSlotCircular: '圆形',
@@ -890,6 +958,24 @@ const zhHans: Strings = {
   watchTemplateAlmanac: '黄历',
   watchTemplateAncient: '古风',
   moonSkinLabel: '月相',
+  moonPhaseNames: {
+    new: '新月',
+    'waxing-crescent': '娥眉月',
+    'first-quarter': '上弦月',
+    'waxing-gibbous': '盈凸月',
+    full: '满月',
+    'waning-gibbous': '亏凸月',
+    'last-quarter': '下弦月',
+    'waning-crescent': '残月',
+  },
+  widgetChrome: {
+    good: '宜',
+    avoid: '忌',
+    forYou: '对你',
+    tip: '日签',
+    lunarFallback: '农历',
+    emptyHint: '打开 Yuun 同步今日黄历',
+  },
   devMoonPhaseLabel: 'DEV · 月相预览',
   devMoonPhaseLive: '跟随系统日期',
   devMoonPhaseDayScrub: '按日预览（相对今天）',
@@ -899,7 +985,7 @@ const zhHans: Strings = {
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
   devMoonPhaseHint:
-    '仅开发构建。跟随系统日期清除覆盖并按公历日重写小组件月相；按日预览以天为单位移动 terminator。',
+    '仅开发构建。跟随系统日期会清除手机与手表的覆盖，恢复每日真实月相；按日预览以天为单位移动 terminator。',
   comingSoon: '即将推出',
   widgetDayTipLabel: '日签',
   readingChat: {
@@ -993,6 +1079,28 @@ const zhHant: Strings = {
   signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Yuel」等其他應用時延續。',
   signInWithGoogle: '使用 Google 登入',
   signInError: '登入失敗，請重試。',
+  signInForBirthTitle: '登入以儲存生辰',
+  signInForBirthBenefit: '生辰將安全儲存到你的帳號，便於跨裝置同步到 Widget 與 Apple Watch。',
+  birthMultiDeviceSync: '多裝置同步生辰',
+  birthMultiDeviceSyncHint: '關閉後，其他裝置不會自動讀取帳號中的生辰；本機仍可使用。',
+  birthSyncGatedMultiDevice: '多裝置同步已關閉。開啟後，此裝置才能讀取帳號生辰。',
+  birthSyncEnableMultiDevice: '開啟多裝置同步',
+  birthConflictTitle: '生辰不一致',
+  birthConflictBody: '本機與帳號中的生辰不同。請選擇保留哪一份。',
+  birthConflictUseAccount: '使用帳號資料',
+  birthConflictUseLocal: '用本機資料替換帳號',
+  birthSaveFailed: '儲存失敗，請檢查網路後重試。',
+  birthSaving: '正在儲存…',
+  deleteAccount: '刪除帳號',
+  deleteAccountConfirmTitle: '永久刪除帳號？',
+  deleteAccountConfirmBody:
+    '將永久刪除：本人生辰與跨裝置同步資料、Watch 憑證、推播註冊、親友/合盤相關服務端資料，以及同一帳號下的閱讀與對話歷史。此操作不可撤銷。App Store 訂閱需另行取消。',
+  deleteAccountCancel: '取消',
+  deleteAccountConfirmCta: '永久刪除',
+  deleteAccountFailed: '刪除失敗，請稍後重試。',
+  deleteAccountWorking: '正在刪除…',
+  accountSection: '帳號',
+  signedInLabel: '已登入',
   specializedActive: '專項時日參考 已啟用',
   specializedUpsell: 'Pro · 解鎖專項擇日',
   eventRangeSection: '時間範圍',
@@ -1246,7 +1354,7 @@ const zhHant: Strings = {
   },
   watchWidgets: '桌面 · 鎖屏 · Watch',
   watchWidgetsNote:
-    '公開黃曆免費：主屏小 / 中 / 大、鎖屏元件、Apple Watch 熱區（圓形 / 矩形 / 底邊一行 / 錶角）都顯示當日干支與宜忌（人人相同）。錄入生辰後，「對你而言」會出現在 App 與元件上。Watch 只能填系統錶盤熱區，無法自訂整張錶盤；宜忌優先放矩形兩行槽。',
+    '公開黃曆免費：主屏小 / 中 / 大、鎖屏元件、Apple Watch 都顯示當日干支與宜忌（人人相同）。錄入生辰後，「對你而言」會出現在 App、桌面元件與 Watch。打開 Yuun 任意一次即可重新整理桌面元件；Watch 可獨立重新整理，首次配對需打開 iPhone 上的 Yuun 一次。Watch 填充系統錶盤熱區；宜忌優先放矩形兩行槽。',
   widgetPreviewCaption: '主屏小組件',
   watchPreviewCaption: 'Watch 熱區（系統錶盤）',
   watchSlotCircular: '圓形',
@@ -1262,6 +1370,24 @@ const zhHant: Strings = {
   watchTemplateAlmanac: '黃曆',
   watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
+  moonPhaseNames: {
+    new: '新月',
+    'waxing-crescent': '娥眉月',
+    'first-quarter': '上弦月',
+    'waxing-gibbous': '盈凸月',
+    full: '滿月',
+    'waning-gibbous': '虧凸月',
+    'last-quarter': '下弦月',
+    'waning-crescent': '殘月',
+  },
+  widgetChrome: {
+    good: '宜',
+    avoid: '忌',
+    forYou: '對你',
+    tip: '日籤',
+    lunarFallback: '農曆',
+    emptyHint: '打開 Yuun 同步今日黃曆',
+  },
   devMoonPhaseLabel: 'DEV · 月相預覽',
   devMoonPhaseLive: '跟隨系統日期',
   devMoonPhaseDayScrub: '按日預覽（相對今天）',
@@ -1271,7 +1397,7 @@ const zhHant: Strings = {
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
   devMoonPhaseHint:
-    '僅開發構建。跟隨系統日期清除覆蓋並按公曆日重寫小組件月相；按日預覽以天為單位移動 terminator。',
+    '僅開發構建。跟隨系統日期會清除手機與手錶的覆蓋，恢復每日真實月相；按日預覽以天為單位移動 terminator。',
   comingSoon: '即將推出',
   widgetDayTipLabel: '日籤',
   readingChat: {
@@ -1390,6 +1516,28 @@ const ja: Strings = {
     'サインインすると購読は全デバイスで復元でき、「Yuel」など他のアプリにも引き継げます。',
   signInWithGoogle: 'Google でサインイン',
   signInError: 'サインインに失敗しました。もう一度お試しください。',
+  signInForBirthTitle: '生年月日時を保存するにはサインイン',
+  signInForBirthBenefit: '生年月日はアカウントに安全に保存され、ウィジェットや Apple Watch と同期できます。',
+  birthMultiDeviceSync: '複数デバイスで生年月日を同期',
+  birthMultiDeviceSyncHint: 'オフにすると、他のデバイスはアカウントの生年月日を自動取得しません。この端末では引き続き使えます。',
+  birthSyncGatedMultiDevice: '複数デバイス同期はオフです。オンにすると、この端末でアカウントの生年月日を読めます。',
+  birthSyncEnableMultiDevice: '複数デバイス同期をオン',
+  birthConflictTitle: '生年月日が一致しません',
+  birthConflictBody: 'この端末とアカウントの生年月日が異なります。どちらを残しますか。',
+  birthConflictUseAccount: 'アカウントの内容を使う',
+  birthConflictUseLocal: 'この端末の内容でアカウントを上書き',
+  birthSaveFailed: '保存に失敗しました。通信を確認して再試行してください。',
+  birthSaving: '保存中…',
+  deleteAccount: 'アカウントを削除',
+  deleteAccountConfirmTitle: 'アカウントを完全に削除しますか？',
+  deleteAccountConfirmBody:
+    '次のデータは完全に削除されます：生年月日とデバイス同期データ、Watch 資格情報、プッシュ登録、親しい人／相性関連のサーバーデータ、同一アカウントの読書・会話履歴。この操作は取り消せません。App Store のサブスクリプションは別途解約が必要です。',
+  deleteAccountCancel: 'キャンセル',
+  deleteAccountConfirmCta: '完全に削除',
+  deleteAccountFailed: '削除に失敗しました。しばらくしてから再試行してください。',
+  deleteAccountWorking: '削除中…',
+  accountSection: 'アカウント',
+  signedInLabel: 'サインイン済み',
   specializedActive: '専門日時参考 適用中',
   specializedUpsell: 'Pro · 専門日時参考を解放',
   eventRangeSection: '期間',
@@ -1645,7 +1793,7 @@ const ja: Strings = {
   },
   watchWidgets: 'ホーム · ロック · Watch',
   watchWidgetsNote:
-    '公開の黄暦は無料：ホームの小/中/大、ロック画面ウィジェット、Apple Watch スロット（円形/矩形/1行/コーナー）に当日の干支と宜忌（誰でも同じ）。生年月日を入れると「あなたへ」がアプリとウィジェットに出ます。Watch はシステム文字盤のスロットのみ。宜忌は矩形の2行向き。',
+    '公開の黄暦は無料：ホームの小/中/大、ロック画面、Apple Watch に当日の干支と宜忌（誰でも同じ）。生年月日を入れると「あなたへ」がアプリ・ウィジェット・Watch に出ます。Yuun を一度開けばホーム画面が更新されます。Watch は単独で更新でき、初回ペアリング時だけ iPhone の Yuun を開いてください。Watch はシステム文字盤のスロットを埋めます。宜忌は矩形の2行向き。',
   widgetPreviewCaption: 'ホーム画面',
   watchPreviewCaption: 'Watch スロット（システム文字盤）',
   watchSlotCircular: '円形',
@@ -1661,6 +1809,24 @@ const ja: Strings = {
   watchTemplateAlmanac: '黄暦',
   watchTemplateAncient: '古風',
   moonSkinLabel: '月相',
+  moonPhaseNames: {
+    new: '新月',
+    'waxing-crescent': '三日月',
+    'first-quarter': '上弦',
+    'waxing-gibbous': '十三夜',
+    full: '満月',
+    'waning-gibbous': '寝待月',
+    'last-quarter': '下弦',
+    'waning-crescent': '有明月',
+  },
+  widgetChrome: {
+    good: '向く',
+    avoid: '避ける',
+    forYou: 'あなたへ',
+    tip: '一言',
+    lunarFallback: '旧暦',
+    emptyHint: 'Yuun を開いて今日の黄暦を同期',
+  },
   devMoonPhaseLabel: 'DEV · 月相プレビュー',
   devMoonPhaseLive: 'システム日付に合わせる',
   devMoonPhaseDayScrub: '日単位プレビュー（今日基準）',
@@ -1670,7 +1836,7 @@ const ja: Strings = {
   devMoonPhaseFull: '望',
   devMoonPhaseLast: '下弦',
   devMoonPhaseHint:
-    '開発ビルドのみ。システム日付は上書きを消し、公暦日ごとにウィジェット月相を書き直します。',
+    '開発ビルドのみ。システム日付は iPhone と Watch の上書きを消し、日ごとの実際の月相に戻します。',
   comingSoon: '近日公開',
   widgetDayTipLabel: '今日の一言',
   readingChat: {
@@ -1777,6 +1943,28 @@ const en: Strings = {
     'Signing in lets your subscription restore on every device and carry into other apps like Yuel.',
   signInWithGoogle: 'Sign in with Google',
   signInError: 'Sign-in failed. Please try again.',
+  signInForBirthTitle: 'Sign in to save birth info',
+  signInForBirthBenefit: 'Birth info is saved securely to your account so it can sync across devices, widgets, and Apple Watch.',
+  birthMultiDeviceSync: 'Sync birth across devices',
+  birthMultiDeviceSyncHint: 'When off, other devices will not automatically read account birth info; this device still works.',
+  birthSyncGatedMultiDevice: 'Multi-device sync is off. Turn it on so this device can read account birth info.',
+  birthSyncEnableMultiDevice: 'Enable multi-device sync',
+  birthConflictTitle: 'Birth info differs',
+  birthConflictBody: 'This device and your account have different birth info. Choose which to keep.',
+  birthConflictUseAccount: 'Use account data',
+  birthConflictUseLocal: 'Replace account with this device',
+  birthSaveFailed: 'Save failed. Check your connection and try again.',
+  birthSaving: 'Saving…',
+  deleteAccount: 'Delete account',
+  deleteAccountConfirmTitle: 'Permanently delete account?',
+  deleteAccountConfirmBody:
+    'This permanently deletes: your birth info and cross-device sync data, Watch credentials, push registrations, people/compatibility server data, and reading/chat history under this account. This cannot be undone. Cancel App Store subscriptions separately.',
+  deleteAccountCancel: 'Cancel',
+  deleteAccountConfirmCta: 'Delete permanently',
+  deleteAccountFailed: 'Delete failed. Please try again later.',
+  deleteAccountWorking: 'Deleting…',
+  accountSection: 'Account',
+  signedInLabel: 'Signed in',
   specializedActive: 'Specialized timing reference on',
   specializedUpsell: 'Pro · unlock specialized scoring',
   eventRangeSection: 'Date range',
@@ -1846,7 +2034,8 @@ const en: Strings = {
     'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
-  timelineRemindNeedBirth: 'Add your full birth details (including gender) to enable timeline reminders.',
+  timelineRemindNeedBirth:
+    'Add your full birth details (including gender) to enable timeline reminders.',
   timelineRemindNeedPush: 'Notification permission is required for timeline reminders.',
   timelineAdvice: {
     吉: 'This month reads supportive — a cultural reference for initiative, not advice.',
@@ -1923,7 +2112,8 @@ const en: Strings = {
   },
   timelineBannerHint: 'Decade · year · month pillars',
   timelineInviteTitle: 'See your life in 10-year chapters',
-  timelineInviteBody: 'Add your birth to map decade and year chapters — and explore what-if branches',
+  timelineInviteBody:
+    'Add your birth to map decade and year chapters — and explore what-if branches',
   ganzhiStemsTitle: 'Ten Stems',
   ganzhiBranchesTitle: 'Twelve Branches',
   ganzhiSixtyTitle: 'Sixty Jiazi',
@@ -1940,7 +2130,8 @@ const en: Strings = {
   birthCalendarSolar: 'Solar',
   birthCalendarLunar: 'Chinese calendar',
   birthCalendarLeap: 'Leap month',
-  birthCalendarLunarHint: 'Enter the Chinese-calendar month and day. Turn on Leap month when needed.',
+  birthCalendarLunarHint:
+    'Enter the Chinese-calendar month and day. Turn on Leap month when needed.',
   birthShichenLabel: 'Birth hour',
   birthShichenUnknown: 'Unknown',
   birthGenderLabel: 'Gender',
@@ -1991,13 +2182,17 @@ const en: Strings = {
     deepRead: 'Go deeper',
     reason: {
       day_generates_self: "Today's element nourishes you on the chart (cultural reference)",
-      day_controls_self: "Today's element restrains you on the chart (cultural reference) — hold steady",
+      day_controls_self:
+        "Today's element restrains you on the chart (cultural reference) — hold steady",
       self_generates_day: 'Today drains your energy a little (cultural reference) — pace yourself',
       self_controls_day: 'You read as holding the upper hand today (cultural reference)',
-      day_same_as_self: 'Today is in tune with you on the chart (cultural reference) — steady support',
+      day_same_as_self:
+        'Today is in tune with you on the chart (cultural reference) — steady support',
       favorable_element_present: "Today's element is your favorable one (cultural reference)",
-      unfavorable_element_present: "Today's element is unfavorable for you (cultural reference) — pace yourself",
-      personal_clash: 'Today clashes with your earthly branch (cultural reference) — avoid big decisions',
+      unfavorable_element_present:
+        "Today's element is unfavorable for you (cultural reference) — pace yourself",
+      personal_clash:
+        'Today clashes with your earthly branch (cultural reference) — avoid big decisions',
     },
     setBirth: 'Set birth date',
     birthDatePlaceholder: 'YYYY-MM-DD',
@@ -2047,7 +2242,7 @@ const en: Strings = {
   },
   watchWidgets: 'Home · Lock · Watch',
   watchWidgetsNote:
-    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch slots (circular / rectangular / inline / corner) show today’s stem-branch (干支) and Good / Avoid — the same for everyone. Add your birth info to unlock For you on the app and widgets. Watch only fills system-face slots; prefer the rectangular slot for Good / Avoid.',
+    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch show today’s stem-branch and Good / Avoid — the same for everyone. Add birth info to unlock For you on the app, widgets, and Watch. Open Yuun once (any screen) to refresh home widgets; Watch can refresh on its own after the first pairing opens iPhone Yuun. Watch fills system-face slots; prefer rectangular for Good / Avoid.',
   widgetPreviewCaption: 'Home Screen',
   watchPreviewCaption: 'Watch slots (system faces)',
   watchSlotCircular: 'Circular',
@@ -2063,6 +2258,24 @@ const en: Strings = {
   watchTemplateAlmanac: 'Almanac',
   watchTemplateAncient: 'Classical',
   moonSkinLabel: 'Moon skin',
+  moonPhaseNames: {
+    new: 'New Moon',
+    'waxing-crescent': 'Waxing Crescent',
+    'first-quarter': 'First Quarter',
+    'waxing-gibbous': 'Waxing Gibbous',
+    full: 'Full Moon',
+    'waning-gibbous': 'Waning Gibbous',
+    'last-quarter': 'Last Quarter',
+    'waning-crescent': 'Waning Crescent',
+  },
+  widgetChrome: {
+    good: 'Good',
+    avoid: 'Avoid',
+    forYou: 'For you',
+    tip: 'Tip',
+    lunarFallback: 'Lunar',
+    emptyHint: 'Open Yuun to sync today’s almanac',
+  },
   devMoonPhaseLabel: 'DEV · Moon phase',
   devMoonPhaseLive: 'Follow system date',
   devMoonPhaseDayScrub: 'Day scrub (vs today)',
@@ -2072,7 +2285,7 @@ const en: Strings = {
   devMoonPhaseFull: 'Full',
   devMoonPhaseLast: 'Last Q',
   devMoonPhaseHint:
-    'Dev only. Follow system date clears the override and rewrites per-day widget phases; day scrub moves the terminator one civil day at a time.',
+    'Dev only. Follow system date clears the phone and Watch overrides and restores each day’s real phase; day scrub moves the terminator one civil day at a time.',
   comingSoon: 'Soon',
   widgetDayTipLabel: 'Tip',
   readingChat: {

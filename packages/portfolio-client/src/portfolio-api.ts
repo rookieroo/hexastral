@@ -8,6 +8,7 @@ import {
 } from '@zhop/satellite-runtime'
 import { Platform } from 'react-native'
 import type {
+  BirthCallerContext,
   PortfolioBirthInfo,
   PortfolioBirthInfoResponse,
   PortfolioLinkedResponse,
@@ -379,21 +380,31 @@ export async function upgradeCoincastReadingToAi(
   return (await res.json()) as { readingId: string; output: Record<string, unknown> }
 }
 
+const BIRTH_INFO_PATH = '/api/portfolio/birth-info'
+const BIRTH_SYNC_PREFERENCES_PATH = '/api/portfolio/birth-sync-preferences'
+
+function birthInfoQueryString(opts: BirthCallerContext): string {
+  const params = new URLSearchParams({
+    targetApp: opts.targetApp,
+    installationId: opts.installationId,
+  })
+  return `?${params.toString()}`
+}
+
 export async function saveBirthInfo(
-  input: PortfolioBirthInfo,
+  input: PortfolioBirthInfo & BirthCallerContext,
   baseOverride?: string
 ): Promise<{ ok: boolean }> {
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('Birth info save requires authenticated user.')
 
-  const path = '/api/portfolio/birth-info'
-  const { url } = buildPath(path, baseOverride)
+  const { url } = buildPath(BIRTH_INFO_PATH, baseOverride)
   const body = JSON.stringify(input)
   const signed = await signRequest({
     body,
     userId,
     method: 'PUT',
-    path,
+    path: BIRTH_INFO_PATH,
   })
   if (!signed) throw new Error('Birth info save requires deviceSecret.')
 
@@ -410,17 +421,34 @@ export async function saveBirthInfo(
   return (await res.json()) as { ok: boolean }
 }
 
-export async function getBirthInfo(baseOverride?: string): Promise<PortfolioBirthInfoResponse> {
+/** Legacy GET without caller context — server returns body for pre-sync rows. */
+export async function getBirthInfo(baseOverride?: string): Promise<PortfolioBirthInfoResponse>
+export async function getBirthInfo(
+  opts: BirthCallerContext,
+  baseOverride?: string
+): Promise<PortfolioBirthInfoResponse>
+export async function getBirthInfo(
+  optsOrBase?: BirthCallerContext | string,
+  baseOverride?: string
+): Promise<PortfolioBirthInfoResponse> {
+  const opts =
+    optsOrBase && typeof optsOrBase === 'object' ? optsOrBase : undefined
+  const base =
+    typeof optsOrBase === 'string'
+      ? optsOrBase
+      : baseOverride
+
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('Birth info fetch requires authenticated user.')
 
-  const path = '/api/portfolio/birth-info'
-  const { url } = buildPath(path, baseOverride)
+  const query = opts ? birthInfoQueryString(opts) : ''
+  const requestPath = `${BIRTH_INFO_PATH}${query}`
+  const { url } = buildPath(requestPath, base)
   const signed = await signRequest({
     body: '',
     userId,
     method: 'GET',
-    path,
+    path: BIRTH_INFO_PATH,
   })
   if (!signed) throw new Error('Birth info fetch requires deviceSecret.')
 
@@ -433,6 +461,49 @@ export async function getBirthInfo(baseOverride?: string): Promise<PortfolioBirt
   })
   if (!res.ok) throw new Error(`Birth info fetch failed: ${res.status}`)
   return (await res.json()) as PortfolioBirthInfoResponse
+}
+
+export async function updateBirthSyncPreferences(
+  input: {
+    targetApp: string
+    installationId: string
+    multiDeviceSyncEnabled?: boolean
+    crossAppSyncEnabled?: boolean
+  },
+  baseOverride?: string
+): Promise<{ ok: boolean; sync: PortfolioBirthInfoResponse['sync'] }> {
+  await repairPortfolioCredentialMismatch()
+  const userId = await getPortfolioUserId()
+  if (!userId) throw new Error('Birth sync preferences require authenticated user.')
+
+  const { url } = buildPath(BIRTH_SYNC_PREFERENCES_PATH, baseOverride)
+  const body = JSON.stringify(input)
+  const signed = await signRequest({
+    body,
+    userId,
+    method: 'PATCH',
+    path: BIRTH_SYNC_PREFERENCES_PATH,
+  })
+  if (!signed) {
+    await invalidatePortfolioSession()
+    throw new PortfolioSessionExpiredError()
+  }
+
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${userId}`,
+      ...signed,
+    },
+    body,
+  })
+  if (res.status === 401) {
+    await invalidatePortfolioSession()
+    throw new PortfolioSessionExpiredError()
+  }
+  if (!res.ok) throw new Error(`Birth sync preferences update failed: ${res.status}`)
+  return (await res.json()) as { ok: boolean; sync: PortfolioBirthInfoResponse['sync'] }
 }
 
 export async function fetchPortfolioMemoryPreference(

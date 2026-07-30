@@ -47,7 +47,6 @@ import {
   type AuspiceBirthInfo,
   getAuspiceBirthInfo,
   type ShichenIndex,
-  setAuspiceBirthInfo,
 } from '@/lib/birth'
 import type { Locale as AppLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
@@ -75,10 +74,9 @@ const CHAPTER_LABEL_KEYS = [
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Build an AuspiceBirthInfo from a `yuel://reading?...` hand-off. Yuel passes
- * the user's own birth so Yuun renders the same chart without re-entry; we only
- * seed Yuun's store when it's empty (Yuun stays authoritative once set). Returns
- * null when the hand-off carries no usable date.
+ * Build an AuspiceBirthInfo from a `yuel://reading?...` hand-off. Used only as
+ * an in-memory fallback for this screen — never written to AsyncStorage/D1 here.
+ * Account birth must be saved via Me (login + portfolio birth-info).
  */
 function birthFromHandoff(p: {
   date?: string
@@ -139,15 +137,9 @@ export default function ReadingScreen() {
           setBirth(saved)
           return
         }
-        // No Yuun birth yet — seed from the hand-off (and persist, so the next
-        // Yuun open already has it). Yuun stays authoritative once set.
+        // Ephemeral hand-off only — do not persist (would bypass account sync).
         const seeded = birthFromHandoff({ date, time, gender, city, lng, tz, clock, calibrate })
-        if (seeded) {
-          await setAuspiceBirthInfo(seeded).catch(() => {})
-          if (!cancelled) setBirth(seeded)
-        } else if (!cancelled) {
-          setBirth(null)
-        }
+        if (!cancelled) setBirth(seeded)
       } catch {
         if (!cancelled) setBirth(null)
       }

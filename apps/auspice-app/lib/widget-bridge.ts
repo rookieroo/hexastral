@@ -7,21 +7,42 @@
  */
 
 import {
+  writeWidgetPayload,
+  YUUN_MOON_PHASE_ORDER,
+  type YuunWidgetChrome,
   type YuunWidgetData,
   type YuunWidgetDay,
-  writeWidgetPayload,
 } from '@zhop/widget-kit-ios'
-import { buildDailyCardModel, compactChrome, compactVerbs } from '@/components/DailyCard'
 import {
-  type AuspiceDay,
-  type AuspicePersonalization,
-  fetchAuspiceDay,
-} from '@/lib/api'
-import type { Locale } from '@/lib/i18n'
+  buildDailyCardModel,
+  compactChrome,
+  compactVerbs,
+  verbBudget,
+} from '@/components/DailyCard'
+import { type AuspiceDay, type AuspicePersonalization, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
+import { getStrings, type Locale } from '@/lib/i18n'
 
 const APP_GROUP = 'group.com.hexastral.yuun'
 const WINDOW_DAYS = 7
+
+/**
+ * Face chrome for the native widget, sourced from the app's i18n tables so
+ * WidgetKit never has to own copy. en paints no 日签 label (body only).
+ */
+function toWidgetChrome(locale: Locale): YuunWidgetChrome {
+  const t = getStrings(locale)
+  const c = t.widgetChrome
+  return {
+    good: c.good,
+    avoid: c.avoid,
+    forYou: c.forYou,
+    tip: locale === 'en' ? '' : c.tip,
+    lunarFallback: c.lunarFallback,
+    emptyHint: c.emptyHint,
+    moonPhaseNames: YUUN_MOON_PHASE_ORDER.map((phase) => t.moonPhaseNames[phase]),
+  }
+}
 
 /** @deprecated Prefer YuunWidgetDay from @zhop/widget-kit-ios */
 export type WidgetDay = YuunWidgetDay
@@ -53,19 +74,23 @@ function toWidgetDay(
   const en = locale === 'en'
   const chrome = compactChrome(locale)
   // en compact: keep 干支 + 宜/忌 glyphs + localized verbs; drop dense almanac extras.
-  // Good/Avoid lines = medium+large (up to 2 lines); short = small (1 line).
+  // Three verb budgets per surface: short = small (1 line), plain = medium
+  // (2 lines in a narrow column), long = large (2 lines full width).
   return {
     date,
     ganZhi: m.ganZhi,
+    ganZhiPinyin: m.ganZhiPinyin,
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
     solarTerm: m.solarTermName,
-    // Short = Watch + small widget (≤2 verbs). Follow app locale — en gets
-    // localized verbs (Wedding·…), not forced CJK.
+    // Follow app locale — en gets localized verbs (Wedding·…), not forced CJK.
     yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale),
     ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale),
-    yiShort: compactVerbs(m.goodForRaw, en ? 1 : 2, locale),
-    jiShort: compactVerbs(m.avoidRaw, en ? 1 : 2, locale),
+    // Small widget + lock rectangular: 2 verbs in every locale.
+    yiShort: compactVerbs(m.goodForRaw, 2, locale),
+    jiShort: compactVerbs(m.avoidRaw, 2, locale),
+    yiLong: compactVerbs(m.goodForRaw, verbBudget(locale, 'large'), locale),
+    jiLong: compactVerbs(m.avoidRaw, verbBudget(locale, 'large'), locale),
     fit: includeFit ? m.fitLabel : null,
     fitSummary: includeFit ? m.fitSummary : null,
     dayTip: m.dayTip,
@@ -84,7 +109,7 @@ export async function writeWidgetDays(
   days: YuunWidgetDay[],
   locale: Locale = 'zh-Hans'
 ): Promise<void> {
-  const data: YuunWidgetData = { days }
+  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
   await writeWidgetPayload('yuun', localeToWidget(locale), data, fresh.toISOString(), {
@@ -111,9 +136,7 @@ export async function syncWidgetWindow(
     const date = addDaysIso(anchorDate, i)
     try {
       const payload = await fetchAuspiceDay(date, birthDate)
-      days.push(
-        toWidgetDay(date, payload.day, payload.personalization, t, locale, includeFit)
-      )
+      days.push(toWidgetDay(date, payload.day, payload.personalization, t, locale, includeFit))
     } catch {
       // Skip failed days; partial window is better than empty.
     }
@@ -121,7 +144,7 @@ export async function syncWidgetWindow(
 
   if (days.length === 0) return
 
-  const data: YuunWidgetData = { days }
+  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
   await writeWidgetPayload('yuun', localeToWidget(locale), data, fresh.toISOString(), {

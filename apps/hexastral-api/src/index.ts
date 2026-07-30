@@ -26,9 +26,11 @@ import { dbMiddleware } from './middleware/db'
 import { createHmacVerifyMiddleware } from './middleware/hmac-verify'
 import { createIdempotencyMiddleware } from './middleware/idempotency'
 import { createTurnstileMiddleware } from './middleware/turnstile'
+import { createWatchBearerMiddleware } from './middleware/watch-bearer'
 import {
   auspiceRoutes,
   auspiceTimelineRoutes,
+  auspiceWatchRoutes,
   bondRoutes,
   chatRoutes,
   contactRoutes,
@@ -77,6 +79,7 @@ import {
   timelineRoutes,
   userRoutes,
   visibilityRoutes,
+  watchCredentialsRoutes,
   webhookRoutes,
 } from './routes'
 import { expireStaleInvitations } from './routes/bonds'
@@ -178,6 +181,7 @@ const chartSecurityPaths = [
 
 const turnstile = createTurnstileMiddleware()
 const hmacVerify = createHmacVerifyMiddleware()
+const watchBearer = createWatchBearerMiddleware()
 const idempotency = createIdempotencyMiddleware()
 const chartRateLimit = createChartRateLimitMiddleware()
 
@@ -272,6 +276,7 @@ app.use('/api/bonds', hmacVerify)
 app.use('/api/portfolio/linked/*', hmacVerify)
 app.use('/api/portfolio/readings/*', hmacVerify)
 app.use('/api/portfolio/birth-info', hmacVerify)
+app.use('/api/portfolio/birth-sync-preferences', hmacVerify)
 app.use('/api/portfolio/memory-preference', hmacVerify)
 // Chapter-unlock invite endpoints — POST send invite + GET pending list both
 // call requireUserId(). Without HMAC mounted here `c.get('userId')` is undefined
@@ -432,7 +437,16 @@ app.use('/api/auspice/*', async (c, next) => {
 // `/api/auspice/*` cycle:IP rate-limiter mounted above as defense-in-depth.
 app.route('/api/auspice/timeline', auspiceTimelineRoutes)
 
+// Yuun Watch bootstrap — watch bearer auth (not HMAC userId header).
+app.use('/api/auspice/watch/*', watchBearer)
+app.route('/api/auspice/watch', auspiceWatchRoutes)
+
 app.route('/api/auspice', auspiceRoutes)
+
+// Yuun Watch credential management — HMAC (phone app mints tokens for the watch).
+app.use('/api/watch/credentials/*', hmacVerify)
+app.use('/api/watch/credentials', hmacVerify)
+app.route('/api/watch/credentials', watchCredentialsRoutes)
 
 // fate/Kindred 命运时间轴节点深度解读 (B-fate.3). Anonymous-capable; the POST /explain
 // is K.4-guarded internally (per-subject + global budget). IP rate-limited as defense-in-depth.

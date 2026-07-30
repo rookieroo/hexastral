@@ -88,7 +88,11 @@ function tipLabelFromPayload(serialized: string, locale: WidgetLocale): string {
   try {
     const parsed = JSON.parse(serialized) as WidgetSyncPayload<{
       days?: Array<{ tipLabel?: string | null }>
+      chrome?: { tip?: string | null }
     }>
+    // App i18n owns the copy; the per-day label is the older channel.
+    const fromChrome = parsed.data?.chrome?.tip
+    if (typeof fromChrome === 'string' && fromChrome.length > 0) return fromChrome
     const fromDay = parsed.data?.days?.[0]?.tipLabel
     if (typeof fromDay === 'string' && fromDay.length > 0) return fromDay
   } catch {
@@ -142,7 +146,11 @@ async function persistPayload(
     if (appSlug === 'yuun') {
       // Plain-string chrome — survives envelope decode issues / stale TimelineEntry.
       await shared.setItem(YUUN_WIDGET_LOCALE_KEY, locale, group)
-      await shared.setItem(YUUN_WIDGET_TIP_LABEL_KEY, tipLabelFromPayload(serialized, locale), group)
+      await shared.setItem(
+        YUUN_WIDGET_TIP_LABEL_KEY,
+        tipLabelFromPayload(serialized, locale),
+        group
+      )
     }
     if (options?.mirrorLegacyYuunDays && appSlug === 'yuun') {
       try {

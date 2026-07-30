@@ -87,21 +87,43 @@ export interface RunLinkedParams extends RunPortfolioParams {
   userId: string
 }
 
+export type BirthSyncAccessStatus =
+  | 'available'
+  | 'empty'
+  | 'multi_device_disabled'
+  | 'cross_app_disabled'
+
+export interface BirthSyncPreferences {
+  multiDeviceSyncEnabled: boolean
+  crossAppSyncEnabled: boolean
+  sourceApp: string | null
+  ownerInstallationId: string | null
+  birthUpdatedAt: string | null
+}
+
 export interface PortfolioBirthInfo {
   birthSolarDate: string
-  birthTimeIndex: number
+  /** null = unknown 时辰 (Yuun). */
+  birthTimeIndex: number | null
   gender?: '男' | '女'
   birthCity?: string
   birthLatitude?: string
   birthLongitude?: string
   birthTimezoneId?: string
-  birthClockMinutes?: number
-  birthSolarCalibrate?: boolean
+  birthClockMinutes?: number | null
+  birthSolarCalibrate?: boolean | null
   birthCalendarType?: 'solar' | 'lunar'
   birthLunarInput?: string
   birthLunarIsLeap?: boolean
 }
 
+export interface BirthCallerContext {
+  targetApp: string
+  installationId: string
+}
+
 export interface PortfolioBirthInfoResponse {
   birthInfo: PortfolioBirthInfo | null
+  status: BirthSyncAccessStatus
+  sync: BirthSyncPreferences
 }

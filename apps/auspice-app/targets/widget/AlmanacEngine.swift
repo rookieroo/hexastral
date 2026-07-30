@@ -160,8 +160,9 @@ enum AlmanacEngine {
       mansion: nil,
       clashShengxiao: nil,
       ganzhiYear: ganzhiYear(year: year, month: month, day: day),
-      yiShort: yj.yi.split(separator: "·").first.map { String($0).trimmingCharacters(in: .whitespaces) },
-      jiShort: yj.ji.split(separator: "·").first.map { String($0).trimmingCharacters(in: .whitespaces) }
+      // 建除 pairs are already 2 verbs — the small-widget budget.
+      yiShort: yj.yi,
+      jiShort: yj.ji
     )
   }
 

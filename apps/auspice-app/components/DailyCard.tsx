@@ -15,21 +15,20 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { getLunarPhase } from '@zhop/hexastral-tokens/lunar'
+import { getLunarPhase, getLunarPhaseName } from '@zhop/hexastral-tokens/lunar'
 import * as Haptics from 'expo-haptics'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import type { AuspiceDay, AuspicePersonalization, PersonalFit } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
+import { dailyWidgetTip } from '@/lib/culture/daily-widget-tips'
+import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
 import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
-import { dailyWidgetTip } from '@/lib/culture/daily-widget-tips'
 import { localizeYijiVerb } from '@/lib/yiji-vocab'
-import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
-import { EN_YIJI_LABELS } from '@/lib/terminology-locale'
 import { PhaseLogo } from './PhaseLogo'
 
 type Strings = ReturnType<typeof useStrings>['t']
@@ -175,8 +174,9 @@ export function topVerbs(raw: string[], locale: Locale, n: number): string {
 /** Compact surfaces: small = one line; medium/large = two lines of verbs. */
 export function verbBudget(locale: Locale, size: 'small' | 'medium' | 'large'): number {
   if (size === 'small') return 2
-  if (size === 'large') return locale === 'en' ? 4 : 5
-  // medium
+  // large = full widget width, two lines — the widest budget we can set.
+  if (size === 'large') return 6
+  // medium — narrow right column next to the 月相 / 干支 stack.
   return locale === 'en' ? 4 : 4
 }
 
@@ -185,23 +185,18 @@ export function compactVerbs(raw: string[], n: number, locale: Locale): string {
   return topVerbs(raw, locale, n)
 }
 
-/** Chrome labels for widget + watch faces — en uses Good/Avoid; zh/ja keep 宜/忌. */
+/**
+ * Chrome labels for widget + watch faces. Copy lives in `t.widgetChrome` (all 4
+ * locale tables) — this only maps it onto the 宜/忌 slot names the faces use.
+ */
 export function compactChrome(locale: Locale): {
   yi: string
   ji: string
   forYou: string
   tip: string
 } {
-  if (locale === 'ja') {
-    return { yi: '宜', ji: '忌', forYou: 'あなたへ', tip: '一言' }
-  }
-  if (locale === 'zh-Hant') {
-    return { yi: '宜', ji: '忌', forYou: '對你', tip: '日籤' }
-  }
-  if (locale === 'en') {
-    return { yi: EN_YIJI_LABELS.yi, ji: EN_YIJI_LABELS.ji, forYou: 'For you', tip: 'Tip' }
-  }
-  return { yi: '宜', ji: '忌', forYou: '对你', tip: '日签' }
+  const c = getStrings(locale).widgetChrome
+  return { yi: c.good, ji: c.avoid, forYou: c.forYou, tip: c.tip }
 }
 
 /** Current HH:MM (live; HH:MM only — no seconds, so 时辰 has room). */
@@ -229,6 +224,16 @@ export function moonPhaseForIsoDate(iso: string): number {
   const d = parts[2]
   if (!y || !m || !d) return getLunarPhase()
   return getLunarPhase(new Date(y, m - 1, d, 12, 0, 0, 0).getTime())
+}
+
+/** Illuminated fraction 0–100 for a synodic phase (0 = 朔, 0.5 = 望). */
+export function moonLitPercent(phase: number): number {
+  return Math.round(((1 - Math.cos(2 * Math.PI * phase)) / 2) * 100)
+}
+
+/** Widget caption under the 月相 logo, e.g. `盈凸月 · 68%`. */
+export function moonPhaseCaption(phase: number, t: Strings): string {
+  return `${t.moonPhaseNames[getLunarPhaseName(phase)]} · ${moonLitPercent(phase)}%`
 }
 
 /** @deprecated Prefer moonPhaseForIsoDate — kept for call sites that only have 农历日. */
@@ -285,11 +290,7 @@ export function buildDailyCardModel(
         ? `${ld.month}/${ld.day}`
         : `${t.lunarLabel} ${ld.monthName}${ld.dayName}`
       : null,
-    lunarMonthDay: ld
-      ? en
-        ? `${ld.month}/${ld.day}`
-        : `${ld.monthName}${ld.dayName}`
-      : '',
+    lunarMonthDay: ld ? (en ? `${ld.month}/${ld.day}` : `${ld.monthName}${ld.dayName}`) : '',
     lunarStrong: ld?.isFirst === true || ld?.isFifteenth === true,
     // Home hero may still cite prev→next; widget/watch only show the term ON its day.
     solarTermLabel: day.solarTermToday
@@ -304,10 +305,10 @@ export function buildDailyCardModel(
     dayElementColor: STEM_ELEMENT_COLOR[day.ganZhi[0] ?? ''] ?? '#A0845C',
     clashAnimal: personalization?.personalClash ? resolveClashAnimal(day.clash) : null,
     fit,
-    // Widget/watch: always the 吉/平/凶 glyph — never "Favorable" / "Caution".
-    fitLabel: fit,
-    // Skip long English summaries on compact surfaces (en → tip bank instead).
-    fitSummary: fit && !en ? t.personal.summary[fit] : null,
+    // Locale-facing verdict. Compact en widgets omit this category and lead with
+    // the full For-you sentence; other surfaces may still use the localized word.
+    fitLabel: fit ? t.personal.fit[fit] : null,
+    fitSummary: fit ? t.personal.summary[fit] : null,
     dayTip: dailyWidgetTip(date, locale),
   }
 }
@@ -670,7 +671,9 @@ function AncientFace({ model, phaseOverride }: FaceProps) {
         {model.ganzhiYear ? ` · ${model.ganzhiYear}` : ''}
       </Text>
 
-      <View style={{ height: 0.5, backgroundColor: 'rgba(196,168,130,0.25)', marginVertical: 12 }} />
+      <View
+        style={{ height: 0.5, backgroundColor: 'rgba(196,168,130,0.25)', marginVertical: 12 }}
+      />
 
       <View style={{ height: 34 }}>
         <Animated.View style={[StyleSheet.absoluteFill, restStyle, { justifyContent: 'center' }]}>

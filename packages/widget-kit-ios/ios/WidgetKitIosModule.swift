@@ -53,7 +53,11 @@ private final class WatchConnectivityBridge: NSObject, WCSessionDelegate {
     "yuun_widget_locale",
     "yuun_widget_tip_label",
     "yuun_dev_moon_phase",
+    "yuun_watch_preferences_v1",
+    "yuun_watch_credential",
   ]
+  private let devMoonPhaseKey = "yuun_dev_moon_phase"
+  private let watchCredentialKey = "yuun_watch_credential"
 
   private var pendingSuiteName: String?
   private var lastSuiteName: String = "group.com.hexastral.yuun"
@@ -86,6 +90,18 @@ private final class WatchConnectivityBridge: NSObject, WCSessionDelegate {
           payload[key] = s
         }
       }
+    }
+    // A missing DEV override must cross the phone/watch boundary too. The
+    // empty value is a tombstone; otherwise Watch keeps its previous phase
+    // forever after “Follow system date” removes the iPhone key.
+    if payload[devMoonPhaseKey] == nil {
+      payload[devMoonPhaseKey] = ""
+    }
+    // Credential: only tombstone when RN wrote an explicit empty string.
+    // Missing key must NOT clear Watch Keychain — widget payload sync often
+    // runs before provisionYuunWatch and would otherwise wipe the bearer.
+    if let raw = defaults.object(forKey: watchCredentialKey) as? String, raw.isEmpty {
+      payload[watchCredentialKey] = ""
     }
     return payload
   }
@@ -187,8 +203,37 @@ private final class WatchConnectivityBridge: NSObject, WCSessionDelegate {
     NSLog("[WidgetKitIos] didReceiveMessage request=\(req ?? "?")")
     if req == "yuunWidgetSync" {
       let suite = (message["suite"] as? String) ?? lastSuiteName
+      lastSuiteName = suite
       let payload = snapshotPayload(suiteName: suite)
-      replyHandler(payload)
+      let bytes = payload.values.reduce(0) { $0 + $1.utf8.count }
+
+      // applicationContext before the reply so Watch can ingest either channel.
+      if !payload.isEmpty {
+        do {
+          try session.updateApplicationContext(payload)
+          NSLog("[WidgetKitIos] watch-request updateApplicationContext ok bytes≈\(bytes)")
+        } catch {
+          NSLog(
+            "[WidgetKitIos] watch-request updateApplicationContext failed: \(error.localizedDescription)"
+          )
+        }
+        if session.remainingComplicationUserInfoTransfers > 0 {
+          session.transferCurrentComplicationUserInfo(payload)
+        }
+      }
+
+      // sendMessage replies are property-list limited (~65KB practical ceiling).
+      if bytes > 50_000 {
+        NSLog("[WidgetKitIos] reply ACK only (bytes≈\(bytes))")
+        replyHandler([
+          "ok": payload.isEmpty ? "0" : "1",
+          "via": "applicationContext",
+          "bytes": String(bytes),
+        ])
+      } else {
+        NSLog("[WidgetKitIos] reply snapshot keys=\(payload.keys.sorted()) bytes≈\(bytes)")
+        replyHandler(payload)
+      }
       return
     }
     replyHandler([:])

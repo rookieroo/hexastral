@@ -17,6 +17,7 @@ export { purchaseRoutes } from './purchase'
 
 // Auspice — 黄历 satellite engine (deterministic: 干支 + 建除 + 二十八宿 + 宜忌 + 日冲煞)
 export { auspiceRoutes } from './auspice'
+export { auspiceWatchRoutes } from './auspice-watch'
 // Bonds / Contacts
 export { bondRoutes } from './bonds'
 export { contactRoutes } from './contacts'
@@ -76,6 +77,7 @@ export { timelineRoutes } from './timeline'
 export { userRoutes } from './user'
 // (fateSignatureRoutes removed — signature now derives client-side via astro-i18n)
 export { visibilityRoutes } from './visibility'
+export { watchCredentialsRoutes } from './watch-credentials'
 export { webhookRoutes } from './webhook'
 // Yiching routes
 export { divinationRoutes } from './yiching/cast'

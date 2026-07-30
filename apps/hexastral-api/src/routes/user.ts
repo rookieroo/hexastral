@@ -45,7 +45,7 @@ import {
   users,
 } from '../db/schema'
 import type { AppDb, AppEnv, CloudflareBindings } from '../infra-types'
-import { userHasCapability } from '../lib/access/entitlement-access'
+import { userHasAnySubscription } from '../lib/access/entitlement-access'
 import { requireUserId } from '../lib/auth'
 import {
   BIOMETRIC_CONSENT_VERSION,
@@ -56,12 +56,11 @@ import {
 import { assertBirthEditQuota, type BirthEditInput } from '../lib/birth-edit-quota'
 import { CHAPTER_UNLOCK_DEFAULT, claimChapterUnlocksForEmail } from '../lib/chapter-access'
 import { buildChartSkeleton, rebuildUserCharts } from '../lib/chart-skeleton'
-import { deleteFloorplans } from '../lib/feng-client'
-import { collectFloorplanKeys } from '../lib/feng-interior-compute'
 import {
   ensureStellarChartForPublicProfile,
   parseStellarChartJson,
 } from '../lib/public-stellar-backfill'
+import { purgeUserAccount } from '../lib/purge-user-account'
 import { sendPushEvent } from '../lib/push'
 import { mailerClient } from '../lib/service-clients'
 import { solarDateSchema } from '../lib/validation'
@@ -231,7 +230,7 @@ async function fetchPlainIntroExcerptForPublic(db: AppDb, userId: string): Promi
 
 type UserRow = typeof users.$inferSelect
 
-/** Issue or return deviceSecret for an existing users row (registration + recovery). */
+/** Issue deviceSecret when missing; never re-reveal an existing secret on this route. */
 async function respondWithUserSecret(db: AppDb, row: UserRow) {
   if (!row.deviceSecret) {
     const deviceSecret = crypto.randomUUID()
@@ -239,9 +238,9 @@ async function respondWithUserSecret(db: AppDb, row: UserRow) {
       .update(users)
       .set({ deviceSecret, updatedAt: new Date().toISOString() })
       .where(eq(users.id, row.id))
-    return { data: { ...row, deviceSecret } }
+    return { data: { ...row, deviceSecret }, secretRevealed: true }
   }
-  return { data: row }
+  return { data: { ...row, deviceSecret: null }, secretRevealed: false }
 }
 
 /** 创建或获取用户 */
@@ -486,7 +485,7 @@ export const userRoutes = new Hono<AppEnv>()
     if (input.avatarKey !== undefined) {
       if (input.avatarKey !== user.avatarKey) {
         patch.avatarKey = input.avatarKey
-        if (user.avatarKey && user.avatarKey.startsWith(`avatars/${userId}/`)) {
+        if (user.avatarKey?.startsWith(`avatars/${userId}/`)) {
           c.executionCtx.waitUntil(c.env.MEDIA_BUCKET.delete(user.avatarKey))
         }
       }
@@ -522,95 +521,24 @@ export const userRoutes = new Hono<AppEnv>()
   })
 
   /**
-   * DELETE /api/user/:userId — in-app account deletion (Apple 5.1.1(v)).
+   * DELETE /api/user/:userId — physical account erasure (Apple 5.1.1(v) / GDPR Art.17).
    *
-   * `users` is the shared cross-app identity and 23 of its child tables do NOT
-   * cascade, so a hard row-delete would fail FK. Instead we make the account
-   * irrecoverable + erase personal data:
-   *   1. delete the owned avatar from R2
-   *   2. purge feng-owned content (sites / reports / jobs)
-   *   3. null every PII column + unlink Apple/Google ids — a subsequent login
-   *      creates a fresh user, so the old account can never be reached again.
-   *
-   * NOTE (follow-up before kindred/auspice/fate ship): extend the content purge
-   * to each of those apps' user-owned tables. The PII on the user row is fully
-   * erased here, which is the core compliance requirement; the residual de-
-   * identified rows in other apps' tables carry no personal data on their own.
+   * Privacy policy: account data permanently deleted within 30 days. This path
+   * hard-deletes the `users` row and every owned child table immediately
+   * (see `lib/purge-user-account.ts`). Anonymize-only was removed — it left
+   * portfolio readings, bonds, watch credentials, etc.
    */
   .delete('/:userId', async (c) => {
     const userId = requireUserId(c)
     if (userId !== c.req.param('userId')) throw new HTTPException(403, { message: 'Forbidden' })
     const db = c.get('db')
 
-    const user = await db.select().from(users).where(eq(users.id, userId)).get()
+    const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
     if (!user) throw new HTTPException(404, { message: 'User not found' })
 
-    // 1. Best-effort delete of the owned avatar object.
-    if (user.avatarKey?.startsWith(`avatars/${userId}/`)) {
-      c.executionCtx.waitUntil(c.env.MEDIA_BUCKET.delete(user.avatarKey))
-    }
-
-    // 2. Purge feng-owned content. FIRST purge floor-plan images from R2 (owned
-    // PII — the FLOORPLAN_CACHE bucket has NO lifecycle GC, so deletion is the
-    // only cleanup path) BEFORE dropping the site rows that hold the keys.
-    const fengSiteRows = await db
-      .select({ floorplanKey: fengSites.floorplanKey, floorplanJson: fengSites.floorplanJson })
-      .from(fengSites)
-      .where(eq(fengSites.userId, userId))
-      .all()
-    const floorplanKeys = [...new Set(fengSiteRows.flatMap(collectFloorplanKeys))]
-    if (floorplanKeys.length > 0) {
-      c.executionCtx.waitUntil(
-        deleteFloorplans(c.env.SVC_FENG, floorplanKeys).catch((err) => {
-          console.error('feng.floorplan_purge_failed', { userId, error: String(err) })
-        })
-      )
-    }
-    await db.delete(fengJobs).where(eq(fengJobs.userId, userId))
-    await db.delete(fengReports).where(eq(fengReports.userId, userId))
-    await db.delete(fengSites).where(eq(fengSites.userId, userId))
-
-    // 2b. Purge chat history (universal user content; conversationMessages
-    // auto-cascade via FK on conversations.id). singlePurchases are retained
-    // (financial audit) but de-identified once the user row is anonymized.
-    await db.delete(conversations).where(eq(conversations.userId, userId))
-
-    // 3. Anonymize + unlink the identity (only nullable PII columns).
-    await db
-      .update(users)
-      .set({
-        email: null,
-        name: null,
-        displayName: null,
-        username: null,
-        phone: null,
-        phoneHash: null,
-        appleUserId: null,
-        googleUserId: null,
-        avatarKey: null,
-        chartPublic: false,
-        publicVisibilityJson: null,
-        birthSolarDate: null,
-        birthTimeIndex: null,
-        birthGender: null,
-        birthCity: null,
-        birthLongitude: null,
-        birthLatitude: null,
-        birthTimezoneId: null,
-        birthClockMinutes: null,
-        birthSolarCalibrate: null,
-        birthCalendarType: null,
-        birthLunarDate: null,
-        fateSignature: null,
-        fateSignatureExplanation: null,
-        fateSignatureCustomPrompt: null,
-        fateSignatureGeneratedAt: null,
-        activePhysiognomyId: null,
-        activePalmFeatureId: null,
-        revenueCatUserId: null,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(users.id, userId))
+    await purgeUserAccount(db, c.env, userId, (p) => {
+      c.executionCtx.waitUntil(p)
+    })
 
     return c.json({ data: { deleted: true } })
   })
@@ -1038,7 +966,7 @@ export const userRoutes = new Hono<AppEnv>()
       birthSolarCalibrate: input.birthSolarCalibrate ?? null,
       gender: input.birthGender,
     }
-    const isPro = await userHasCapability(db, userId, 'fate')
+    const isPro = await userHasAnySubscription(db, userId)
     const disposition = assertBirthEditQuota(user, nextInput, isPro)
 
     await db
@@ -1066,107 +994,6 @@ export const userRoutes = new Hono<AppEnv>()
 
     const updated = await db.select().from(users).where(eq(users.id, userId)).get()
     return c.json({ data: updated })
-  })
-
-  /** 删除用户及全部数据 (Apple 5.1.1(v) / GDPR) */
-  .delete('/:userId', async (c) => {
-    const userId = requireUserId(c)
-    if (userId !== c.req.param('userId')) throw new HTTPException(403, { message: 'Forbidden' })
-    const db = c.get('db')
-
-    const user = await db.select().from(users).where(eq(users.id, userId)).get()
-    if (!user) {
-      throw new HTTPException(404, { message: 'User not found' })
-    }
-
-    // Purge floor-plan images from R2 (owned PII, no lifecycle GC) BEFORE the
-    // batch drops the site rows holding the keys. Belt-and-suspenders: this
-    // cascade is currently shadowed by the earlier :userId handler, but if
-    // routing ever changes, PII must still leave R2.
-    const fpRows = await db
-      .select({ floorplanKey: fengSites.floorplanKey, floorplanJson: fengSites.floorplanJson })
-      .from(fengSites)
-      .where(eq(fengSites.userId, userId))
-      .all()
-    const fpKeys = [...new Set(fpRows.flatMap(collectFloorplanKeys))]
-    if (fpKeys.length > 0) {
-      c.executionCtx.waitUntil(
-        deleteFloorplans(c.env.SVC_FENG, fpKeys).catch((err) => {
-          console.error('feng.floorplan_purge_failed', { userId, error: String(err) })
-        })
-      )
-    }
-
-    // 级联删除：使用 db.batch() 减少 D1 round-trips
-    // 子表先于父表，避免 FK 约束冲突。
-    // GDPR Art. 17: a single orphan row = violation. Cross-checked against
-    // schema.ts on $(audit-date) — adds since prior cascade:
-    //   chapterUnlockInvitations (both inviter + redeemed-by)
-    //   bondInviteCredits, readingGifts (both sender + recipient)
-    //   freeMonthlyQuotas, portfolioReadings
-    //   fengSites, fengReports, fengJobs
-    //   userEntitlements, userCredits, notificationAttributions
-    //     (technically auto-cascaded via FK; explicit here as defense-in-depth)
-    //   conversationMessages (joined via conversations.id; explicit fan-out
-    //     unnecessary because Drizzle FK has cascade, but we declare it).
-    await db.batch([
-      // Invitation / bond layer (fk references)
-      db
-        .delete(chapterUnlockInvitations)
-        .where(
-          or(
-            eq(chapterUnlockInvitations.inviterUserId, userId),
-            eq(chapterUnlockInvitations.redeemedByUserId, userId)
-          )
-        ),
-      db.delete(bondInvitations).where(eq(bondInvitations.inviterUserId, userId)),
-      db.delete(bondInviteCredits).where(eq(bondInviteCredits.userId, userId)),
-      db
-        .delete(readingGifts)
-        .where(or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId))),
-      // Sharing / reports layer
-      db.delete(sharedReports).where(eq(sharedReports.userId, userId)),
-      db.delete(reportChapters).where(eq(reportChapters.userId, userId)),
-      db.delete(portfolioReadings).where(eq(portfolioReadings.userId, userId)),
-      // Daily / personal layer
-      db.delete(dailySignals).where(eq(dailySignals.userId, userId)),
-      db.delete(dailyAlmanac).where(eq(dailyAlmanac.userId, userId)),
-      db.delete(dailyActivity).where(eq(dailyActivity.userId, userId)),
-      db.delete(userPhysiognomyFeatures).where(eq(userPhysiognomyFeatures.userId, userId)),
-      // Pair / compatibility layer
-      db.delete(pairReadings).where(eq(pairReadings.userId, userId)),
-      db.delete(pairAnnualForecasts).where(eq(pairAnnualForecasts.userId, userId)),
-      // Notifications / contacts
-      db.delete(pushTokens).where(eq(pushTokens.userId, userId)),
-      db.delete(notificationAttributions).where(eq(notificationAttributions.userId, userId)),
-      db.delete(contactHashes).where(eq(contactHashes.userId, userId)),
-      // Reading types
-      db.delete(analyses).where(eq(analyses.userId, userId)),
-      db.delete(physiognomyReadings).where(eq(physiognomyReadings.userId, userId)),
-      db.delete(divinations).where(eq(divinations.userId, userId)),
-      // Charts + chat
-      db.delete(userCharts).where(eq(userCharts.userId, userId)),
-      db.delete(conversations).where(eq(conversations.userId, userId)),
-      // Note: conversationMessages auto-cascade via FK on conversations.id;
-      // explicit safety net not needed but verify on schema drift.
-      // Purchases / quotas / credits
-      db.delete(singlePurchases).where(eq(singlePurchases.userId, userId)),
-      db.delete(freeMonthlyQuotas).where(eq(freeMonthlyQuotas.userId, userId)),
-      db.delete(userEntitlements).where(eq(userEntitlements.userId, userId)),
-      db.delete(userCredits).where(eq(userCredits.userId, userId)),
-      // Life events
-      db.delete(lifeEvents).where(eq(lifeEvents.userId, userId)),
-      // Bonds
-      db.delete(userBonds).where(eq(userBonds.ownerId, userId)),
-      db.delete(userBonds).where(eq(userBonds.targetUserId, userId)),
-      // Feng (site analysis)
-      db.delete(fengJobs).where(eq(fengJobs.userId, userId)),
-      db.delete(fengReports).where(eq(fengReports.userId, userId)),
-      db.delete(fengSites).where(eq(fengSites.userId, userId)),
-    ])
-    await db.delete(users).where(eq(users.id, userId))
-
-    return c.json({ data: { deleted: true } })
   })
 
   /**

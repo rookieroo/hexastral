@@ -11,16 +11,19 @@ import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import {
   buildDailyCardModel,
-  type DailyCardModel,
   compactChrome,
   compactVerbs,
+  type DailyCardModel,
   formatWatchDate,
+  moonPhaseCaption,
   verbBudget,
 } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
 import { WidgetSurface, type WidgetSurfaceMode } from './WidgetSurface'
 
 export type WidgetSize = 'small' | 'medium' | 'large'
+
+type Strings = ReturnType<typeof getStrings>
 
 type Chrome = {
   text: string
@@ -51,6 +54,8 @@ type SubProps = {
   phaseOverride?: number
   chrome: Chrome
   locale: Locale
+  /** Widget-locale strings (may differ from the app locale in settings previews). */
+  strings: Strings
 }
 
 export function WidgetCard({
@@ -85,13 +90,14 @@ export function WidgetCard({
     () => buildDailyCardModel(date, day, personalization, strings, locale),
     [date, day, personalization, strings, locale]
   )
+  const sub = { model, phaseOverride, chrome, locale, strings }
   const body =
     size === 'medium' ? (
-      <MediumWidget model={model} phaseOverride={phaseOverride} chrome={chrome} locale={locale} />
+      <MediumWidget {...sub} />
     ) : size === 'large' ? (
-      <LargeWidget model={model} phaseOverride={phaseOverride} chrome={chrome} locale={locale} />
+      <LargeWidget {...sub} />
     ) : (
-      <SmallWidget model={model} phaseOverride={phaseOverride} chrome={chrome} locale={locale} />
+      <SmallWidget {...sub} />
     )
 
   return (
@@ -103,6 +109,12 @@ export function WidgetCard({
 
 function phaseOf(model: DailyCardModel, override?: number) {
   return override ?? model.moonPhase
+}
+
+/** Wiktionary-style en headword: toned Hanyu Pinyin first, Han form retained. */
+function ganzhiHeadword(model: DailyCardModel, locale: Locale): string {
+  if (locale !== 'en' || !model.ganZhiPinyin) return model.ganZhi
+  return `${model.ganZhiPinyin} (${model.ganZhi})`
 }
 
 function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
@@ -140,14 +152,34 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
           ) : null}
         </View>
       </View>
-      <Text style={{ color: chrome.text, fontSize: 28, fontWeight: '300', letterSpacing: 2 }}>
-        {model.ganZhi}
+      <Text
+        style={{
+          color: chrome.text,
+          fontSize: locale === 'en' ? 22 : 28,
+          fontWeight: '300',
+          letterSpacing: locale === 'en' ? 0 : 2,
+        }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
+        {ganzhiHeadword(model, locale)}
       </Text>
       <View style={{ gap: 3 }}>
-        <Text style={{ color: chrome.text, fontSize: 12 }} numberOfLines={1}>
+        <Text
+          style={{ color: chrome.text, fontSize: 13 }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
         </Text>
-        <Text style={{ color: chrome.secondary, fontSize: 12 }} numberOfLines={1}>
+        <Text
+          style={{ color: chrome.secondary, fontSize: 13 }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
         </Text>
       </View>
@@ -162,38 +194,56 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
     locale === 'en'
       ? model.lunarMonthDay
       : `${model.lunarMonthDay}${model.ganzhiYear ? ` · ${model.ganzhiYear}` : ''}`
+  // 对你而言 verdict + sentence read on one full-width footer — the 宜忌 column
+  // is too narrow to wrap a sentence.
+  const sentence = model.fitSummary || model.dayTip
   return (
-    <View style={{ flex: 1, padding: 16, flexDirection: 'row', gap: 12 }}>
-      <View style={{ width: 96, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={48} />
-        <Text style={{ color: chrome.text, fontSize: 20, fontWeight: '300' }}>{model.ganZhi}</Text>
-        {model.ganZhiPinyin ? (
-          <Text style={{ color: chrome.secondary, fontSize: 10, letterSpacing: 0.5 }} numberOfLines={1}>
-            {model.ganZhiPinyin}
+    <View style={{ flex: 1, padding: 16, gap: 6 }}>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ width: 98, alignItems: 'center', gap: 4 }}>
+          <PhaseLogo phase={phaseOf(model, phaseOverride)} size={42} />
+          <Text
+            style={{ color: chrome.text, fontSize: locale === 'en' ? 16 : 20, fontWeight: '300' }}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            {ganzhiHeadword(model, locale)}
           </Text>
-        ) : null}
-        <Text
-          style={{ color: chrome.secondary, fontSize: 11, textAlign: 'center' }}
-          numberOfLines={2}
-        >
-          {meta}
-        </Text>
+          <Text
+            style={{ color: chrome.secondary, fontSize: 11, textAlign: 'center' }}
+            numberOfLines={1}
+          >
+            {meta}
+          </Text>
+        </View>
+        <View style={{ flex: 1, gap: 4, minWidth: 0, paddingRight: 2 }}>
+          {model.solarTermName ? (
+            <Text style={{ color: chrome.tertiary, fontSize: 11 }} numberOfLines={1}>
+              {model.solarTermName}
+            </Text>
+          ) : null}
+          <Text style={{ color: chrome.text, fontSize: 14 }} numberOfLines={2}>
+            {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
+          </Text>
+          <Text style={{ color: chrome.secondary, fontSize: 14 }} numberOfLines={2}>
+            {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
+          </Text>
+        </View>
       </View>
-      <View style={{ flex: 1, justifyContent: 'center', gap: 5, minWidth: 0, paddingRight: 2 }}>
-        {model.solarTermName ? (
-          <Text style={{ color: chrome.tertiary, fontSize: 11 }} numberOfLines={1}>
-            {model.solarTermName}
+      <View style={{ flex: 1 }} />
+      <View style={{ gap: 2 }}>
+        {model.fitLabel && locale !== 'en' ? (
+          <Text
+            style={{ color: chrome.text, fontSize: 12, fontWeight: '600', lineHeight: 17 }}
+            numberOfLines={1}
+          >
+            {`${L.forYou} · ${model.fitLabel}`}
           </Text>
         ) : null}
-        <Text style={{ color: chrome.text, fontSize: 14 }} numberOfLines={2}>
-          {`${L.yi} ${compactVerbs(model.goodForRaw, yiN, locale)}`}
-        </Text>
-        <Text style={{ color: chrome.secondary, fontSize: 14 }} numberOfLines={2}>
-          {`${L.ji} ${compactVerbs(model.avoidRaw, yiN, locale)}`}
-        </Text>
-        {model.fitLabel ? (
-          <Text style={{ color: chrome.text, fontSize: 12, fontWeight: '500' }} numberOfLines={1}>
-            {`${L.forYou} · ${model.fitLabel}`}
+        {sentence ? (
+          <Text style={{ color: chrome.secondary, fontSize: 12, lineHeight: 17 }} numberOfLines={2}>
+            {locale === 'en' && model.fitSummary ? `${L.forYou} · ${sentence}` : sentence}
           </Text>
         ) : null}
       </View>
@@ -201,21 +251,21 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
   )
 }
 
-function LargeWidget({ model, phaseOverride, chrome, locale }: SubProps) {
+function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps) {
   const L = compactChrome(locale)
   const yiN = verbBudget(locale, 'large')
   const en = locale === 'en'
   const meta = en
     ? model.lunarMonthDay
     : `${model.lunarMonthDay}${model.ganzhiYear ? ` · ${model.ganzhiYear}` : ''}`
+  const phase = phaseOf(model, phaseOverride)
   return (
     <View style={{ flex: 1, padding: 18, gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
+      >
         <View style={{ gap: 3, flex: 1, minWidth: 0, paddingRight: 8 }}>
-          <Text
-            style={{ color: chrome.text, fontSize: 15, fontWeight: '500' }}
-            numberOfLines={1}
-          >
+          <Text style={{ color: chrome.text, fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
             {meta}
           </Text>
           {model.solarTermName ? (
@@ -227,15 +277,25 @@ function LargeWidget({ model, phaseOverride, chrome, locale }: SubProps) {
             {formatWatchDate(model.date, locale)}
           </Text>
         </View>
-        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={52} />
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <PhaseLogo phase={phase} size={52} />
+          <Text style={{ color: chrome.tertiary, fontSize: 10 }} numberOfLines={1}>
+            {moonPhaseCaption(phase, strings)}
+          </Text>
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
         <View>
-          <Text style={{ color: chrome.text, fontSize: 32, fontWeight: '300' }}>{model.ganZhi}</Text>
-          {model.ganZhiPinyin ? (
-            <Text style={{ color: chrome.secondary, fontSize: 11, letterSpacing: 0.5 }} numberOfLines={1}>
-              {model.ganZhiPinyin}
+          <Text style={{ color: chrome.text, fontSize: en ? 25 : 32, fontWeight: '300' }}>
+            {en && model.ganZhiPinyin ? model.ganZhiPinyin : model.ganZhi}
+          </Text>
+          {en && model.ganZhiPinyin ? (
+            <Text
+              style={{ color: chrome.secondary, fontSize: 11, letterSpacing: 0.5 }}
+              numberOfLines={1}
+            >
+              {`(${model.ganZhi})`}
             </Text>
           ) : null}
         </View>
@@ -251,6 +311,10 @@ function LargeWidget({ model, phaseOverride, chrome, locale }: SubProps) {
         </Text>
       ) : null}
 
+      {/* Breathing room lives here, so 宜忌 + 对你而言 stay anchored to the bottom
+          edge instead of leaving a hole under the last line (en has no 值神/宿). */}
+      <View style={{ flex: 1, minHeight: 4 }} />
+
       <View style={{ height: 0.5, backgroundColor: chrome.separator }} />
 
       <Text style={{ color: chrome.text, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>
@@ -262,25 +326,33 @@ function LargeWidget({ model, phaseOverride, chrome, locale }: SubProps) {
 
       <View style={{ height: 0.5, backgroundColor: chrome.separator, marginTop: 2 }} />
 
-      {model.fitLabel ? (
-        <View style={{ gap: 4, flexGrow: 1 }}>
+      {model.fitLabel || model.fitSummary ? (
+        <View style={{ gap: 4 }}>
           <Text style={{ color: chrome.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
-            {`${L.forYou} · ${model.fitLabel}`}
+            {en ? L.forYou : `${L.forYou} · ${model.fitLabel}`}
           </Text>
-          {model.fitSummary && locale !== 'en' ? (
-            <Text style={{ color: chrome.secondary, fontSize: 13, lineHeight: 19 }} numberOfLines={3}>
+          {model.fitSummary ? (
+            <Text
+              style={{ color: chrome.secondary, fontSize: 13, lineHeight: 19 }}
+              numberOfLines={3}
+            >
               {model.fitSummary}
             </Text>
           ) : null}
         </View>
-      ) : model.dayTip ? (
+      ) : null}
+
+      {model.dayTip ? (
         <View style={{ gap: 4 }}>
-          {locale !== 'en' ? (
-            <Text style={{ color: chrome.tertiary, fontSize: 11, letterSpacing: 1 }} numberOfLines={1}>
+          {!en ? (
+            <Text
+              style={{ color: chrome.tertiary, fontSize: 11, letterSpacing: 1 }}
+              numberOfLines={1}
+            >
               {L.tip}
             </Text>
           ) : null}
-          <Text style={{ color: chrome.secondary, fontSize: 13, lineHeight: 19 }} numberOfLines={2}>
+          <Text style={{ color: chrome.secondary, fontSize: 13, lineHeight: 19 }} numberOfLines={3}>
             {model.dayTip}
           </Text>
         </View>

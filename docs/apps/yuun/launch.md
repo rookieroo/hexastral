@@ -20,8 +20,8 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation. Free tier 
 - Notifications: daily + evening push; timeline node reminders (Pro); **no** CN 调休 holiday toggle in Settings UI
 - Sign-in at paywall: Apple + Google; RC restore across devices
 
-**Native deferred post-v1:**
-- WidgetKit + watchOS — see [widget-watch-scope.md](./widget-watch-scope.md)
+**Native deferred post-v1 (code may exist; do not claim in ASO until shipped):**
+- WidgetKit + watchOS full companion — see [widget-watch-scope.md](./widget-watch-scope.md) + [widget-build-runbook.md](./widget-build-runbook.md). Requires EAS/Xcode Watch install + D1 `watch_credentials` in prod.
 - `/display` route hidden from navigation (no Me entry)
 
 ---
@@ -48,6 +48,6 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation. Free tier 
 - [ ] [pre-submit-smoke.md](./pre-submit-smoke.md) on device
 
 ### Post-launch (NOT v1)
-- Native Widget + Watch
+- Native Widget + Watch companion milestone (RootLayout sync, Watch bootstrap Bearer, Today/Browse/Settings) — separate from June ASO cut
 - Bond-transfer locale polish
 - 调休 heads-up for SG/MY/US

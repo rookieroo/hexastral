@@ -17,6 +17,13 @@ private let DEV_PHASE_KEY = "yuun_dev_moon_phase"
 
 // MARK: - Data
 
+struct WatchChrome: Codable {
+  var good: String?
+  var avoid: String?
+  var tip: String?
+  var emptyHint: String?
+}
+
 struct WatchDay: Codable {
   var date: String
   var ganZhi: String
@@ -29,16 +36,19 @@ struct WatchDay: Codable {
   var lunar: String?
   var solarTerm: String?
   var officer: String?
+  var dayTip: String?
+  var tipLabel: String?
 
   enum CodingKeys: String, CodingKey {
     case date, ganZhi, yi, ji, yiShort, jiShort, fit, moonPhase, lunar, solarTerm, officer
+    case dayTip, tipLabel
   }
 
   init(
     date: String, ganZhi: String, yi: String, moonPhase: Double,
     ji: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
     fit: String? = nil, lunar: String? = nil, solarTerm: String? = nil,
-    officer: String? = nil
+    officer: String? = nil, dayTip: String? = nil, tipLabel: String? = nil
   ) {
     self.date = date
     self.ganZhi = ganZhi
@@ -51,6 +61,8 @@ struct WatchDay: Codable {
     self.lunar = lunar
     self.solarTerm = solarTerm
     self.officer = officer
+    self.dayTip = dayTip
+    self.tipLabel = tipLabel
   }
 
   init(from decoder: Decoder) throws {
@@ -66,12 +78,18 @@ struct WatchDay: Codable {
     lunar = try c.decodeIfPresent(String.self, forKey: .lunar)
     solarTerm = try c.decodeIfPresent(String.self, forKey: .solarTerm)
     officer = try c.decodeIfPresent(String.self, forKey: .officer)
+    dayTip = try c.decodeIfPresent(String.self, forKey: .dayTip)
+    tipLabel = try c.decodeIfPresent(String.self, forKey: .tipLabel)
   }
 }
 
 private struct Legacy: Codable { var days: [WatchDay] }
-private struct EnvData: Codable { var days: [WatchDay] }
-private struct Env: Codable { var data: EnvData }
+private struct EnvData: Codable { var days: [WatchDay]; var chrome: WatchChrome? }
+private struct Env: Codable { var data: EnvData; var locale: String? }
+
+private var cachedChrome: WatchChrome?
+private var cachedTipLabel: String?
+private var cachedLocale: String?
 
 private func ymd(_ date: Date) -> String {
   let f = DateFormatter()
@@ -80,17 +98,85 @@ private func ymd(_ date: Date) -> String {
   return f.string(from: date)
 }
 
+private func normalizeLocale(_ raw: String?) -> String {
+  let t = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+  if t.hasPrefix("en") { return "en" }
+  if t.hasPrefix("ja") { return "ja" }
+  if t.contains("hant") || t.contains("tw") || t.contains("hk") { return "zh-Hant" }
+  if t.hasPrefix("zh") { return "zh-Hans" }
+  return "en"
+}
+
+private func goodLabel() -> String {
+  if let g = cachedChrome?.good, !g.isEmpty { return g }
+  switch normalizeLocale(cachedLocale) {
+  case "ja": return "向く"
+  case "en": return "Good"
+  default: return "宜"
+  }
+}
+
+private func avoidLabel() -> String {
+  if let a = cachedChrome?.avoid, !a.isEmpty { return a }
+  switch normalizeLocale(cachedLocale) {
+  case "ja": return "避ける"
+  case "en": return "Avoid"
+  default: return "忌"
+  }
+}
+
+private func emptyHint() -> String {
+  if let h = cachedChrome?.emptyHint, !h.isEmpty { return h }
+  switch normalizeLocale(cachedLocale) {
+  case "zh-Hant": return "打開 Yuun 同步"
+  case "ja": return "Yuun を開いて同期"
+  case "en": return "Open Yuun to sync"
+  default: return "打开 Yuun 同步"
+  }
+}
+
+/// Prefer solarTerm on 节气当日; otherwise ganZhi.
+private func dateInfo(_ d: WatchDay?) -> String {
+  guard let d else { return "Yuun" }
+  if let term = d.solarTerm, !term.isEmpty { return term }
+  return d.ganZhi
+}
+
+private func verbParts(_ raw: String?, fallback: String?, max: Int) -> [String] {
+  let source = [raw, fallback]
+    .compactMap { $0 }
+    .first { !$0.isEmpty } ?? ""
+  let parts = source
+    .split(whereSeparator: { $0 == "·" || $0 == "•" || $0 == " " })
+    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    .filter { !$0.isEmpty }
+  if parts.isEmpty { return ["—"] }
+  return Array(parts.prefix(max))
+}
+
 private func loadToday() -> WatchDay? {
   guard let defaults = UserDefaults(suiteName: APP_GROUP) else { return nil }
   let today = ymd(Date())
 
   func pick(_ days: [WatchDay]) -> WatchDay? {
-    days.first { $0.date == today } ?? days.first
+    days.first { $0.date == today }
+  }
+
+  if let tip = defaults.string(forKey: "yuun_widget_tip_label"), !tip.isEmpty {
+    cachedTipLabel = tip
+  }
+  if let loc = defaults.string(forKey: "yuun_widget_locale"), !loc.isEmpty {
+    cachedLocale = loc
   }
 
   if let json = defaults.string(forKey: ENVELOPE_KEY),
      let data = json.data(using: .utf8),
      let env = try? JSONDecoder().decode(Env.self, from: data) {
+    cachedChrome = env.data.chrome
+    if let loc = env.locale, !loc.isEmpty { cachedLocale = loc }
+    if cachedTipLabel == nil, let tip = env.data.chrome?.tip, !tip.isEmpty {
+      cachedTipLabel = tip
+    }
     return pick(env.data.days)
   }
   if let json = defaults.string(forKey: LEGACY_DAYS_KEY),
@@ -229,6 +315,7 @@ struct WatchComplicationView: View {
     }
   }
 
+  /// Moon + date info: solarTerm on 节气当日, otherwise ganZhi.
   private func circular(_ d: WatchDay?) -> some View {
     ZStack {
       AccessoryWidgetBackground()
@@ -237,7 +324,7 @@ struct WatchComplicationView: View {
           WatchPhaseLogo(phase: phaseOf(d))
             .frame(width: 14, height: 14)
         }
-        Text(d?.ganZhi ?? "—")
+        Text(dateInfo(d))
           .font(.system(size: 11, weight: .semibold))
           .widgetAccentable()
           .minimumScaleFactor(0.7)
@@ -247,62 +334,67 @@ struct WatchComplicationView: View {
     }
   }
 
+  /// 干支 · 宜 two verbs · 忌 two verbs (For you stays in Watch App).
   private func rectangular(_ d: WatchDay?) -> some View {
-    HStack(alignment: .center, spacing: 6) {
-      if let d {
-        WatchPhaseLogo(phase: phaseOf(d))
-          .frame(width: 22, height: 22)
-      }
-      VStack(alignment: .leading, spacing: 1) {
-        HStack(spacing: 4) {
-          Text(d?.ganZhi ?? "Yuun")
-            .font(.headline)
-            .widgetAccentable()
-          if let term = d?.solarTerm, !term.isEmpty {
-            Text(term)
-              .font(.caption2)
-              .foregroundStyle(.secondary)
-          }
-        }
-        Text(yiLine(d))
-          .font(.caption2)
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
-          .minimumScaleFactor(0.8)
-      }
-      Spacer(minLength: 0)
+    VStack(alignment: .leading, spacing: 1) {
+      Text(d?.ganZhi ?? "Yuun")
+        .font(.headline)
+        .widgetAccentable()
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+      Text(yiLine(d, maxVerbs: 2))
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+      Text(jiLine(d, maxVerbs: 2))
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
     }
   }
 
+  /// Center moon; curved label = solarTerm on 节气当日 else ganZhi.
   private func corner(_ d: WatchDay?) -> some View {
-    Text(d?.ganZhi ?? "Yuun")
-      .font(.caption)
-      .widgetAccentable()
+    Group {
+      if let d {
+        WatchPhaseLogo(phase: phaseOf(d))
+          .frame(width: 18, height: 18)
+          .widgetLabel {
+            Text(dateInfo(d))
+          }
+      } else {
+        Text("Yuun")
+          .font(.caption)
+          .widgetAccentable()
+      }
+    }
   }
 
-  /// Single-line bottom slot — 宜 only (no 干支; circular already shows it).
+  /// Single-line: 宜 one verb · 忌 one verb (keep both sides of the almanac).
   private func inline(_ d: WatchDay?) -> some View {
-    return Text(yiLine(d))
+    Text(inlineYiJi(d))
       .lineLimit(1)
   }
 
-  /// `宜` + short verbs (locale from RN payload — en may be "Wedding").
-  private func yiLine(_ d: WatchDay?) -> String {
-    guard let d else { return "打开 Yuun 同步" }
-    return "宜 \(shortYi(d))"
+  private func yiLine(_ d: WatchDay?, maxVerbs: Int) -> String {
+    guard let d else { return emptyHint() }
+    let verbs = verbParts(d.yiShort, fallback: d.yi, max: maxVerbs).joined(separator: "·")
+    return "\(goodLabel()) \(verbs)"
   }
 
-  /// Prefer yiShort → yi; at most 2 `·`-separated segments (en often 1).
-  private func shortYi(_ d: WatchDay) -> String {
-    let raw = [d.yiShort, d.yi]
-      .compactMap { $0 }
-      .first { !$0.isEmpty } ?? "—"
-    let parts = raw
-      .split(whereSeparator: { $0 == "·" || $0 == "•" })
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
-    if parts.isEmpty { return "—" }
-    return parts.prefix(2).joined(separator: "·")
+  private func jiLine(_ d: WatchDay?, maxVerbs: Int) -> String {
+    guard let d else { return emptyHint() }
+    let verbs = verbParts(d.jiShort, fallback: d.ji, max: maxVerbs).joined(separator: "·")
+    return "\(avoidLabel()) \(verbs)"
+  }
+
+  private func inlineYiJi(_ d: WatchDay?) -> String {
+    guard let d else { return emptyHint() }
+    let yi = verbParts(d.yiShort, fallback: d.yi, max: 1).first ?? "—"
+    let ji = verbParts(d.jiShort, fallback: d.ji, max: 1).first ?? "—"
+    return "\(goodLabel()) \(yi) · \(avoidLabel()) \(ji)"
   }
 }
 
@@ -318,7 +410,7 @@ struct YuunWatchWidget: Widget {
         }
     }
     .configurationDisplayName("Yuun")
-    .description("圆形干支 · 矩形宜忌 · 底边宜")
+    .description("圆形月相·干支 · 矩形宜忌 · 底边宜·忌")
     .supportedFamilies([
       .accessoryCircular,
       .accessoryRectangular,

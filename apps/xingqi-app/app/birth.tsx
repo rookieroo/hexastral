@@ -5,7 +5,7 @@ import {
   birthInputToSolar,
   useTheme,
 } from '@zhop/core-ui'
-import { hasEntitlement, saveAndCacheBirthInfo, useEntitlements } from '@zhop/satellite-runtime'
+import { hasEntitlement, getOrCreateAnonymousInstallId, saveAndCacheBirthInfo, useEntitlements } from '@zhop/satellite-runtime'
 import { router, Stack } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BirthForm } from '@/components/BirthForm'
 import { searchCity as searchCityApi } from '@/lib/geocode'
+import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { pickUi } from '@/lib/locale-zh'
 import type { OnboardingDraft } from '@/lib/onboardingDraft'
@@ -143,6 +144,7 @@ export default function BirthScreen() {
         city: city.trim() || undefined,
       })
       try {
+        const installationId = await getOrCreateAnonymousInstallId(PORTFOLIO_STORAGE_PREFIX)
         await saveAndCacheBirthInfo({
           birthSolarDate: solarDate,
           birthTimeIndex: timeIndex,
@@ -151,6 +153,8 @@ export default function BirthScreen() {
           birthLatitude: lat != null ? String(lat) : undefined,
           birthLongitude: lng != null ? String(lng) : undefined,
           birthTimezoneId: timezone ?? undefined,
+          targetApp: PORTFOLIO_TARGET_APP,
+          installationId,
         })
       } catch {
         // local draft enough for paywall / reading

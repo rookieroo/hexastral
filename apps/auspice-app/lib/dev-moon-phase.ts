@@ -3,16 +3,13 @@
  * the native WidgetKit extension (App Group). Production ignores.
  *
  * Critical: ExtensionStorage.set(number) uses setInt and truncates 0.25/0.5 → 0.
- * Always persist phase as a STRING. Dual-write via SharedGroupPreferences JS
- * wrapper + patch envelope days.moonPhase, then reloadWidget.
+ * Always persist phase as a STRING. The override stays separate from the real
+ * per-day payload so “Follow system date” can cleanly return every face to the
+ * server/app phase.
  */
 
 import { ExtensionStorage } from '@bacons/apple-targets'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {
-  WIDGET_PAYLOAD_KEY,
-  YUUN_LEGACY_DAYS_KEY,
-} from '@zhop/widget-kit-ios'
 import { useCallback, useEffect, useState } from 'react'
 import { Platform } from 'react-native'
 
@@ -30,12 +27,10 @@ function emit(phase: number | null) {
 
 type SharedGroupApi = {
   setItem: (key: string, value: unknown, appGroup: string) => Promise<void>
-  getItem: <T = unknown>(key: string, appGroup: string) => Promise<T>
 }
 
 function loadSharedGroup(): SharedGroupApi | null {
   try {
-    // biome-ignore lint/style/noCommonJs: optional native peer
     const mod = require('react-native-shared-group-preferences') as {
       default?: SharedGroupApi
     } & SharedGroupApi
@@ -49,38 +44,6 @@ function loadSharedGroup(): SharedGroupApi | null {
 
 function clampPhase(phase: number): number {
   return Math.min(0.999, Math.max(0, phase))
-}
-
-async function patchEnvelopeMoonPhase(phase: number | null): Promise<void> {
-  if (Platform.OS !== 'ios') return
-  const shared = loadSharedGroup()
-  if (!shared) return
-
-  try {
-    const raw = await shared.getItem<unknown>(WIDGET_PAYLOAD_KEY, APP_GROUP)
-    if (raw == null) return
-    const text = typeof raw === 'string' ? raw : JSON.stringify(raw)
-    const envelope = JSON.parse(text) as {
-      updatedAt?: string
-      data?: { days?: Array<{ moonPhase?: number; [k: string]: unknown }> }
-      [k: string]: unknown
-    }
-    const days = envelope.data?.days
-    if (!Array.isArray(days) || days.length === 0) return
-    if (phase == null) return
-
-    const next = clampPhase(phase)
-    envelope.data = {
-      ...envelope.data,
-      days: days.map((d) => ({ ...d, moonPhase: next })),
-    }
-    envelope.updatedAt = new Date().toISOString()
-    const serialized = JSON.stringify(envelope)
-    await shared.setItem(WIDGET_PAYLOAD_KEY, serialized, APP_GROUP)
-    await shared.setItem(YUUN_LEGACY_DAYS_KEY, JSON.stringify({ days: envelope.data.days }), APP_GROUP)
-  } catch (err) {
-    console.warn('[dev-moon-phase] payload patch failed', err)
-  }
 }
 
 async function writeAppGroupPhase(phase: number | null): Promise<void> {
@@ -114,8 +77,6 @@ async function writeAppGroupPhase(phase: number | null): Promise<void> {
     console.warn('[dev-moon-phase] SharedGroup write failed', err)
   }
 
-  await patchEnvelopeMoonPhase(phase)
-
   try {
     ExtensionStorage.reloadWidget()
     ExtensionStorage.reloadWidget('AuspiceWidget')
@@ -125,7 +86,6 @@ async function writeAppGroupPhase(phase: number | null): Promise<void> {
   }
 
   try {
-    // biome-ignore lint/style/noCommonJs: optional native module
     const { requireNativeModule } = require('expo-modules-core') as {
       requireNativeModule: <T>(name: string) => T
     }

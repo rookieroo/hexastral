@@ -1,3 +1,4 @@
+export const PORTFOLIO_STORAGE_PREFIX = 'pf_feng'
 export const PORTFOLIO_TARGET_APP = 'feng'
 
 /** RevenueCat consumable — apartment / compound-unit report. */

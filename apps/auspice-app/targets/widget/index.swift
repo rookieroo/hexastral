@@ -41,10 +41,13 @@ struct SharedDay: Codable {
   let ganzhiYear: String?
   let yiShort: String?
   let jiShort: String?
+  let yiLong: String?
+  let jiLong: String?
+  let ganZhiPinyin: String?
 
   enum CodingKeys: String, CodingKey {
     case date, ganZhi, elementColor, lunar, solarTerm, yi, ji, fit, fitSummary, dayTip, tipLabel, moonPhase
-    case officer, mansion, clashShengxiao, ganzhiYear, yiShort, jiShort
+    case officer, mansion, clashShengxiao, ganzhiYear, yiShort, jiShort, yiLong, jiLong, ganZhiPinyin
   }
 
   init(
@@ -52,6 +55,7 @@ struct SharedDay: Codable {
     yi: String, ji: String, fit: String?, moonPhase: Double,
     officer: String? = nil, mansion: String? = nil, clashShengxiao: String? = nil,
     ganzhiYear: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
+    yiLong: String? = nil, jiLong: String? = nil, ganZhiPinyin: String? = nil,
     fitSummary: String? = nil, dayTip: String? = nil, tipLabel: String? = nil
   ) {
     self.date = date
@@ -72,6 +76,9 @@ struct SharedDay: Codable {
     self.ganzhiYear = ganzhiYear
     self.yiShort = yiShort
     self.jiShort = jiShort
+    self.yiLong = yiLong
+    self.jiLong = jiLong
+    self.ganZhiPinyin = ganZhiPinyin
   }
 
   init(from decoder: Decoder) throws {
@@ -94,6 +101,9 @@ struct SharedDay: Codable {
     ganzhiYear = try c.decodeIfPresent(String.self, forKey: .ganzhiYear)
     yiShort = try c.decodeIfPresent(String.self, forKey: .yiShort)
     jiShort = try c.decodeIfPresent(String.self, forKey: .jiShort)
+    yiLong = try c.decodeIfPresent(String.self, forKey: .yiLong)
+    jiLong = try c.decodeIfPresent(String.self, forKey: .jiLong)
+    ganZhiPinyin = try c.decodeIfPresent(String.self, forKey: .ganZhiPinyin)
   }
 }
 
@@ -102,7 +112,23 @@ private struct LegacyPayload: Decodable {
   let locale: String?
 }
 
-private struct EnvelopeData: Decodable { let days: [SharedDay] }
+/// Locale chrome written by RN (`toWidgetChrome`) — the App owns this copy.
+struct SharedChrome: Decodable {
+  let good: String?
+  let avoid: String?
+  let forYou: String?
+  /// Empty string is meaningful: "paint no 日签 label" (en).
+  let tip: String?
+  let lunarFallback: String?
+  let emptyHint: String?
+  /// 8 names ordered new → waning-crescent (YUUN_MOON_PHASE_ORDER).
+  let moonPhaseNames: [String]?
+}
+
+private struct EnvelopeData: Decodable {
+  let days: [SharedDay]
+  let chrome: SharedChrome?
+}
 
 private struct Envelope: Decodable {
   let updatedAt: String?
@@ -160,43 +186,30 @@ private func loadLocale() -> String {
   return deviceLocaleFallback()
 }
 
-/// Chrome strings that follow App locale. 宜/忌 / 干支 stay CJK glyphs on-face.
-private enum FaceChrome {
-  static func emptyHint(_ locale: String) -> String {
-    switch normalizeLocale(locale) {
-    case "en": return "Open Yuun to sync today’s almanac"
-    case "ja": return "Yuun を開いて今日の黄暦を同期"
-    case "zh-Hant": return "打開 Yuun 同步今日黃曆"
-    default: return "打开 Yuun 同步今日黄历"
-    }
-  }
+private func loadChrome() -> SharedChrome? {
+  guard let defaults = UserDefaults(suiteName: APP_GROUP),
+        let data = defaultsJSON(suite: defaults, key: ENVELOPE_KEY),
+        let env = try? JSONDecoder().decode(Envelope.self, from: data)
+  else { return nil }
+  return env.data.chrome
+}
 
-  static func forYou(_ locale: String) -> String {
-    switch normalizeLocale(locale) {
-    case "en": return "For you"
-    case "ja": return "あなたへ"
-    case "zh-Hant": return "對你"
-    default: return "对你"
-    }
-  }
-
-  static func tip(_ locale: String) -> String {
-    switch normalizeLocale(locale) {
-    case "en": return "Tip"
-    case "ja": return "一言"
-    case "zh-Hant": return "日籤"
-    default: return "日签"
-    }
-  }
-
-  static func lunarFallback(_ locale: String) -> String {
-    switch normalizeLocale(locale) {
-    case "en": return "Lunar"
-    case "ja": return "旧暦"
-    case "zh-Hant": return "農曆"
-    default: return "农历"
-    }
-  }
+/// 月相 caption under the logo. Names come exclusively from App i18n.
+private func moonCaption(phase: Double, names: [String]?) -> String {
+  var p = phase.truncatingRemainder(dividingBy: 1)
+  if p < 0 { p += 1 }
+  let idx: Int
+  if p < 0.02 || p >= 0.98 { idx = 0 }
+  else if p < 0.23 { idx = 1 }
+  else if p < 0.27 { idx = 2 }
+  else if p < 0.48 { idx = 3 }
+  else if p < 0.52 { idx = 4 }
+  else if p < 0.73 { idx = 5 }
+  else if p < 0.77 { idx = 6 }
+  else { idx = 7 }
+  let lit = Int(((1 - cos(2 * Double.pi * p)) / 2 * 100).rounded())
+  guard let names, names.count == 8 else { return "\(lit)%" }
+  return "\(names[idx]) · \(lit)%"
 }
 
 private func loadDays() -> [SharedDay] {
@@ -276,9 +289,10 @@ struct AlmanacEntry: TimelineEntry {
 
 private let PLACEHOLDER = SharedDay(
   date: "—", ganZhi: "丁未", elementColor: "#A0845C", lunar: "四月十七",
-  solarTerm: "芒种", yi: "祭祀 · 祈福", ji: "安葬 · 求医", fit: nil, moonPhase: 0.5,
+  solarTerm: "芒种", yi: "祭祀 · 祈福 · 出行", ji: "安葬 · 求医", fit: nil, moonPhase: 0.5,
   officer: "成", mansion: "娄金狗", clashShengxiao: "鼠", ganzhiYear: "丙午年",
-  yiShort: "祭祀", jiShort: "安葬"
+  yiShort: "祭祀 · 祈福", jiShort: "安葬 · 求医",
+  yiLong: "祭祀 · 祈福 · 出行 · 开市 · 入学 · 修造", jiLong: "安葬 · 求医 · 动土"
 )
 
 struct Provider: TimelineProvider {
@@ -517,9 +531,21 @@ struct AuspiceWidgetEntryView: View {
   private var locale: String { loadLocale() }
   private var isEn: Bool { normalizeLocale(locale) == "en" }
 
+  /// Copy written by the App (i18n tables). Nil until the first sync.
+  private var appChrome: SharedChrome? { loadChrome() }
+
+  private var goodLabel: String { appChrome?.good ?? "" }
+  private var avoidLabel: String { appChrome?.avoid ?? "" }
+  private var forYouLabel: String { appChrome?.forYou ?? "" }
+
   /// Always re-read App Group so we do not paint a stale TimelineEntry (日签 vs Tip).
   private var liveDay: SharedDay? {
     dayFor(entry.date) ?? entry.day
+  }
+
+  private var tipLabelChrome: String? {
+    guard let tip = appChrome?.tip, !tip.isEmpty else { return nil }
+    return tip
   }
 
   /// Prefer plain tip key → day.tipLabel → locale chrome.
@@ -536,14 +562,14 @@ struct AuspiceWidgetEntryView: View {
     if let defaults = UserDefaults(suiteName: APP_GROUP),
        let keyLabel = defaults.string(forKey: TIP_LABEL_KEY),
        !keyLabel.isEmpty {
-      if keyLabel == "日签" || keyLabel == "日籤" { return FaceChrome.tip(locale) }
+      if keyLabel == "日签" || keyLabel == "日籤" { return tipLabelChrome }
       return keyLabel
     }
     if let label = d.tipLabel, !label.isEmpty {
       if label == "日签" || label == "日籤", normalizeLocale(locale) == "en" { return nil }
       return label
     }
-    return FaceChrome.tip(locale)
+    return tipLabelChrome
   }
 
   var body: some View {
@@ -558,7 +584,7 @@ struct AuspiceWidgetEntryView: View {
         default: medium(d)
         }
       } else {
-        Text(FaceChrome.emptyHint(locale))
+        Text(appChrome?.emptyHint ?? "Yuun")
           .font(.system(size: 13))
           .foregroundColor(palette.secondary)
           .padding()
@@ -589,24 +615,51 @@ struct AuspiceWidgetEntryView: View {
     return "\(lunar) · \(year)"
   }
 
+  /// Wiktionary-style English headword: toned Hanyu Pinyin first, Han form
+  /// retained in parentheses. Old cached payloads without pinyin keep CJK.
+  private func ganZhiHeadword(_ d: SharedDay) -> String {
+    guard isEn, let pinyin = d.ganZhiPinyin, !pinyin.isEmpty else { return d.ganZhi }
+    return "\(pinyin) (\(d.ganZhi))"
+  }
+
+  /// Verb budget per family: `.short` = 2 verbs (small / lock), `.plain` = 4–5
+  /// (medium column), `.long` = 6 (large, full width).
+  private enum YiJiVariant { case short, plain, long }
+
   private func yiJiBlock(
     _ d: SharedDay,
     yiSize: CGFloat,
     maxLines: Int,
-    useShort: Bool = false
+    variant: YiJiVariant = .plain
   ) -> some View {
-    let yiText = useShort ? (d.yiShort ?? d.yi) : d.yi
-    let jiText = useShort ? (d.jiShort ?? d.ji) : d.ji
+    let yiText: String
+    let jiText: String
+    switch variant {
+    case .short:
+      yiText = d.yiShort ?? d.yi
+      jiText = d.jiShort ?? d.ji
+    case .plain:
+      yiText = d.yi
+      jiText = d.ji
+    case .long:
+      yiText = d.yiLong ?? d.yi
+      jiText = d.jiLong ?? d.ji
+    }
+    // Short lines are single-line by contract — scale rather than truncate so
+    // both verbs survive on narrow small-widget widths.
+    let scale: CGFloat = variant == .short ? 0.8 : 1
     return VStack(alignment: .leading, spacing: 3) {
-      Text("宜 \(yiText)")
+      Text("\(goodLabel) \(yiText)")
         .font(.system(size: yiSize))
         .foregroundColor(palette.text)
         .lineLimit(maxLines)
+        .minimumScaleFactor(scale)
         .truncationMode(.tail)
-      Text("忌 \(jiText)")
+      Text("\(avoidLabel) \(jiText)")
         .font(.system(size: yiSize))
         .foregroundColor(palette.secondary)
         .lineLimit(maxLines)
+        .minimumScaleFactor(scale)
         .truncationMode(.tail)
     }
   }
@@ -617,7 +670,11 @@ struct AuspiceWidgetEntryView: View {
         YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
           .frame(width: 34, height: 34)
         VStack(alignment: .trailing, spacing: 2) {
-          Text(d.lunar == "—" || d.lunar.isEmpty ? FaceChrome.lunarFallback(locale) : d.lunar)
+          Text(
+            d.lunar == "—" || d.lunar.isEmpty
+              ? (appChrome?.lunarFallback ?? d.date)
+              : d.lunar
+          )
             .font(.system(size: 13, weight: .medium))
             .foregroundColor(palette.text)
             .lineLimit(1)
@@ -639,52 +696,78 @@ struct AuspiceWidgetEntryView: View {
 
       Spacer(minLength: 4)
 
-      Text(d.ganZhi)
-        .font(.system(size: 28, weight: .light))
-        .tracking(2)
+      Text(ganZhiHeadword(d))
+        .font(.system(size: isEn ? 22 : 28, weight: .light))
+        .tracking(isEn ? 0 : 2)
         .foregroundColor(palette.text)
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
 
       Spacer(minLength: 4)
 
-      yiJiBlock(d, yiSize: 13, maxLines: 1, useShort: true)
+      yiJiBlock(d, yiSize: 13, maxLines: 1, variant: .short)
     }
     .padding(14)
   }
 
-  private func medium(_ d: SharedDay) -> some View {
-    HStack(alignment: .top, spacing: 14) {
-      VStack(spacing: 8) {
-        YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-          .frame(width: 52, height: 52)
-        Text(d.ganZhi)
-          .font(.system(size: 20, weight: .light))
-          .foregroundColor(palette.text)
-        Text(lunarMeta(d))
-          .font(.system(size: 12))
-          .foregroundColor(palette.secondary)
-          .lineLimit(2)
-          .multilineTextAlignment(.center)
-          .minimumScaleFactor(0.8)
-      }
-      .frame(width: 112)
+  /// 对你而言 summary, else the preset day tip — the sentence for medium/large.
+  private func sentence(_ d: SharedDay) -> String? {
+    if let summary = d.fitSummary, !summary.isEmpty { return summary }
+    if let tip = d.dayTip, !tip.isEmpty { return tip }
+    return nil
+  }
 
-      VStack(alignment: .leading, spacing: 6) {
-        if !d.solarTerm.isEmpty {
-          Text(d.solarTerm)
-            .font(.system(size: 12))
-            .foregroundColor(palette.tertiary)
+  private func medium(_ d: SharedDay) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(alignment: .top, spacing: 14) {
+        VStack(spacing: 4) {
+          YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
+            .frame(width: 42, height: 42)
+          Text(ganZhiHeadword(d))
+            .font(.system(size: isEn ? 16 : 20, weight: .light))
+            .foregroundColor(palette.text)
             .lineLimit(1)
+            .minimumScaleFactor(0.75)
+          Text(lunarMeta(d))
+            .font(.system(size: 11))
+            .foregroundColor(palette.secondary)
+            .lineLimit(1)
+            .multilineTextAlignment(.center)
+            .minimumScaleFactor(0.75)
         }
-        yiJiBlock(d, yiSize: 15, maxLines: 2)
-        if let fit = d.fit {
-          Text("\(FaceChrome.forYou(locale)) · \(fit)")
-            .font(.system(size: 13, weight: .medium))
+        .frame(width: 98)
+
+        VStack(alignment: .leading, spacing: 4) {
+          if !d.solarTerm.isEmpty {
+            Text(d.solarTerm)
+              .font(.system(size: 11))
+              .foregroundColor(palette.tertiary)
+              .lineLimit(1)
+          }
+          yiJiBlock(d, yiSize: 14, maxLines: 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+
+      Spacer(minLength: 0)
+
+      // The full sentence owns the footer width. English omits the redundant
+      // Favorable / Neutral / Caution category and leads with “For you”.
+      VStack(alignment: .leading, spacing: 2) {
+        if let fit = d.fit, !isEn {
+          Text("\(forYouLabel) · \(fit)")
+            .font(.system(size: 12, weight: .semibold))
             .foregroundColor(palette.text)
             .lineLimit(1)
         }
-        Spacer(minLength: 0)
+        if let line = sentence(d) {
+          Text(isEn && d.fitSummary != nil ? "\(forYouLabel) · \(line)" : line)
+            .font(.system(size: 12))
+            .foregroundColor(palette.secondary)
+            .lineLimit(2)
+            .truncationMode(.tail)
+        }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(16)
   }
@@ -706,14 +789,30 @@ struct AuspiceWidgetEntryView: View {
             .foregroundColor(palette.tertiary)
         }
         Spacer()
-        YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-          .frame(width: 58, height: 58)
+        VStack(spacing: 4) {
+          YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
+            .frame(width: 58, height: 58)
+          Text(moonCaption(phase: phaseOf(d), names: appChrome?.moonPhaseNames))
+            .font(.system(size: 10))
+            .foregroundColor(palette.tertiary)
+            .lineLimit(1)
+        }
       }
 
       HStack(alignment: .bottom, spacing: 8) {
-        Text(d.ganZhi)
-          .font(.system(size: 34, weight: .light))
-          .foregroundColor(palette.text)
+        VStack(alignment: .leading, spacing: 0) {
+          Text(isEn ? (d.ganZhiPinyin ?? d.ganZhi) : d.ganZhi)
+            .font(.system(size: isEn ? 25 : 34, weight: .light))
+            .foregroundColor(palette.text)
+          // en 副标 — the day pillar is otherwise opaque without CJK.
+          if let pinyin = d.ganZhiPinyin, !pinyin.isEmpty {
+            Text("(\(d.ganZhi))")
+              .font(.system(size: 12))
+              .tracking(0.5)
+              .foregroundColor(palette.secondary)
+              .lineLimit(1)
+          }
+        }
         if !isEn, let officer = d.officer {
           Text("\(officer)日")
             .font(.system(size: 14))
@@ -729,24 +828,32 @@ struct AuspiceWidgetEntryView: View {
           .lineLimit(1)
       }
 
+      // Slack sits above the 宜忌 rule so the almanac block + footer stay on the
+      // bottom edge — en drops 值神/二十八宿 and used to leave a hole down there.
+      Spacer(minLength: 4)
+
       Rectangle().fill(palette.separator).frame(height: 0.5)
 
-      yiJiBlock(d, yiSize: 16, maxLines: 2)
+      yiJiBlock(d, yiSize: 16, maxLines: 2, variant: .long)
 
       Rectangle().fill(palette.separator).frame(height: 0.5)
 
-      if let fit = d.fit, let summary = d.fitSummary, !summary.isEmpty {
+      if d.fit != nil || d.fitSummary != nil {
         VStack(alignment: .leading, spacing: 4) {
-          Text("\(FaceChrome.forYou(locale)) · \(fit)")
+          Text(isEn ? forYouLabel : "\(forYouLabel) · \(d.fit ?? "")")
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(palette.text)
             .lineLimit(1)
-          Text(summary)
-            .font(.system(size: 14))
-            .foregroundColor(palette.secondary)
-            .lineLimit(3)
+          if let summary = d.fitSummary, !summary.isEmpty {
+            Text(summary)
+              .font(.system(size: 14))
+              .foregroundColor(palette.secondary)
+              .lineLimit(3)
+          }
         }
-      } else if let tip = d.dayTip, !tip.isEmpty {
+      }
+
+      if let tip = d.dayTip, !tip.isEmpty {
         VStack(alignment: .leading, spacing: 4) {
           if let label = resolvedTipLabel(d) {
             Text(label)
@@ -757,16 +864,11 @@ struct AuspiceWidgetEntryView: View {
           }
           Text(tip)
             .font(.system(size: 14))
-            .foregroundColor(palette.text)
-            .lineLimit(2)
+            .foregroundColor(d.fit == nil ? palette.text : palette.secondary)
+            .lineLimit(3)
             .truncationMode(.tail)
         }
-      } else if let fit = d.fit {
-        Text("\(FaceChrome.forYou(locale)) · \(fit)")
-          .font(.system(size: 14, weight: .medium))
-          .foregroundColor(palette.text)
       }
-      Spacer(minLength: 0)
     }
     .padding(18)
   }
@@ -775,19 +877,23 @@ struct AuspiceWidgetEntryView: View {
     VStack(spacing: 2) {
       YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
         .frame(width: 20, height: 20)
-      Text(d.ganZhi).font(.system(size: 12, weight: .semibold)).widgetAccentable()
+      Text(isEn ? (d.ganZhiPinyin ?? d.ganZhi) : d.ganZhi)
+        .font(.system(size: 12, weight: .semibold))
+        .minimumScaleFactor(0.7)
+        .lineLimit(1)
+        .widgetAccentable()
     }
   }
 
   private func rectangular(_ d: SharedDay) -> some View {
     VStack(alignment: .leading, spacing: 1) {
-      Text(d.ganZhi).font(.headline).widgetAccentable()
-      Text("宜 \(d.yiShort ?? d.yi)")
+      Text(ganZhiHeadword(d)).font(.headline).widgetAccentable()
+      Text("\(goodLabel) \(d.yiShort ?? d.yi)")
         .font(.caption2)
         .foregroundColor(.secondary)
         .lineLimit(1)
         .minimumScaleFactor(0.85)
-      Text("忌 \(d.jiShort ?? d.ji)")
+      Text("\(avoidLabel) \(d.jiShort ?? d.ji)")
         .font(.caption2)
         .foregroundColor(.secondary)
         .lineLimit(1)

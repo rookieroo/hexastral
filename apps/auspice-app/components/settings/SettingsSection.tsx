@@ -35,6 +35,8 @@ export function SettingsRow({
   onPress,
   divider,
   badge,
+  danger,
+  disabled,
 }: {
   label: string
   hint?: string
@@ -42,11 +44,15 @@ export function SettingsRow({
   onPress: () => void
   divider?: boolean
   badge?: string
+  danger?: boolean
+  disabled?: boolean
 }) {
   const { colors, spacing } = useTheme()
+  const labelColor = danger ? colors.danger : colors.text
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole='button'
       accessibilityLabel={label}
       style={({ pressed }) => ({
@@ -57,13 +63,13 @@ export function SettingsRow({
         paddingHorizontal: spacing.lg,
         borderBottomWidth: divider ? 0.5 : 0,
         borderBottomColor: colors.separator,
-        opacity: pressed ? 0.6 : 1,
+        opacity: disabled ? 0.45 : pressed ? 0.6 : 1,
       })}
     >
-      {Icon ? <Icon size={18} color={colors.accent} /> : null}
+      {Icon ? <Icon size={18} color={danger ? colors.danger : colors.accent} /> : null}
       <View style={{ flex: 1, gap: hint ? 4 : 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ color: colors.text, fontSize: 15 }}>{label}</Text>
+          <Text style={{ color: labelColor, fontSize: 15 }}>{label}</Text>
           {badge ? (
             <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>{badge}</Text>
           ) : null}

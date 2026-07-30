@@ -1,5 +1,7 @@
 import { config } from './config'
+import { PORTFOLIO_TARGET_APP } from './growth-config'
 import { signRequest } from './hmac'
+import { getOrCreateAnonymousInstallId } from './install-id'
 import { getStoredFengUserId } from './user-session'
 
 /**
@@ -36,6 +38,20 @@ export interface FengBirthInfo {
   birthLunarIsLeap?: boolean
 }
 
+export type BirthSyncAccessStatus =
+  | 'available'
+  | 'empty'
+  | 'multi_device_disabled'
+  | 'cross_app_disabled'
+
+export interface BirthSyncPreferences {
+  multiDeviceSyncEnabled: boolean
+  crossAppSyncEnabled: boolean
+  sourceApp: string | null
+  ownerInstallationId: string | null
+  birthUpdatedAt: string | null
+}
+
 interface BirthInfoResponse {
   birthInfo: {
     birthSolarDate: string | null
@@ -51,35 +67,54 @@ interface BirthInfoResponse {
     birthLunarInput: string | null
     birthLunarIsLeap: boolean | null
   } | null
+  status: BirthSyncAccessStatus
+  sync: BirthSyncPreferences
 }
 
-async function signedBirthRequest(method: 'GET' | 'PUT', body?: FengBirthInfo): Promise<Response> {
+async function getBirthCallerContext(): Promise<{ targetApp: string; installationId: string }> {
+  const installationId = await getOrCreateAnonymousInstallId()
+  return { targetApp: PORTFOLIO_TARGET_APP, installationId }
+}
+
+function birthInfoQueryString(ctx: { targetApp: string; installationId: string }): string {
+  const params = new URLSearchParams({
+    targetApp: ctx.targetApp,
+    installationId: ctx.installationId,
+  })
+  return `?${params.toString()}`
+}
+
+async function signedBirthRequest(
+  method: 'GET' | 'PUT',
+  opts: { path: string; body?: string }
+): Promise<Response> {
   const userId = await getStoredFengUserId()
   if (!userId) throw new Error('birth_info_requires_auth')
 
-  const path = '/api/portfolio/birth-info'
-  const requestBody = method === 'PUT' ? JSON.stringify(body) : ''
+  const requestBody = opts.body ?? ''
   const signed = await signRequest({
     body: requestBody,
     userId,
     method,
-    path,
+    path: opts.path.split('?')[0] ?? opts.path,
   })
   if (!signed) throw new Error('birth_info_requires_device_secret')
 
-  return fetch(`${config.apiUrl}${path}`, {
+  return fetch(`${config.apiUrl}${opts.path}`, {
     method,
     headers: {
-      ...(method === 'PUT' ? { 'Content-Type': 'application/json' } : {}),
+      ...(requestBody.length > 0 ? { 'Content-Type': 'application/json' } : {}),
       Authorization: `Bearer ${userId}`,
       ...signed,
     },
-    ...(method === 'PUT' ? { body: requestBody } : {}),
+    ...(requestBody.length > 0 ? { body: requestBody } : {}),
   })
 }
 
 export async function fetchBirthInfo(): Promise<FengBirthInfo | null> {
-  const res = await signedBirthRequest('GET')
+  const ctx = await getBirthCallerContext()
+  const path = `/api/portfolio/birth-info${birthInfoQueryString(ctx)}`
+  const res = await signedBirthRequest('GET', { path })
   if (!res.ok) throw new Error(`birth_info_fetch_failed:${res.status}`)
   const json = (await res.json()) as BirthInfoResponse
   const row = json.birthInfo
@@ -102,7 +137,12 @@ export async function fetchBirthInfo(): Promise<FengBirthInfo | null> {
 }
 
 export async function saveBirthInfo(input: FengBirthInfo): Promise<void> {
-  const res = await signedBirthRequest('PUT', input)
+  const ctx = await getBirthCallerContext()
+  const path = '/api/portfolio/birth-info'
+  const res = await signedBirthRequest('PUT', {
+    path,
+    body: JSON.stringify({ ...input, ...ctx }),
+  })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`birth_info_save_failed:${res.status}:${text}`)

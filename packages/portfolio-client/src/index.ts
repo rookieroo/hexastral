@@ -16,6 +16,7 @@ export {
   runPreview,
   saveBirthInfo,
   setPortfolioMemoryPreference,
+  updateBirthSyncPreferences,
   upgradeCoincastReadingToAi,
 } from './portfolio-api'
 export type { FlagshipKey, QuestionType } from './routing'
@@ -25,6 +26,9 @@ export {
   routeQuestionToFlagship,
 } from './routing'
 export type {
+  BirthCallerContext,
+  BirthSyncAccessStatus,
+  BirthSyncPreferences,
   PortfolioBirthInfo,
   PortfolioBirthInfoResponse,
   PortfolioLinkedResponse,

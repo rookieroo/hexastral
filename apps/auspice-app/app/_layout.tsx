@@ -36,6 +36,7 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
+import { useYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 
 function SatelliteGrowthMount() {
   usePortfolioSatelliteBootstrap({
@@ -70,6 +71,9 @@ function RootLayoutInner() {
   const { colors, isDark } = useAppTheme()
   const { locale } = useStrings()
   const router = useRouter()
+
+  // WidgetKit + Watch App Group — any route, not Home-only.
+  useYuunWidgetSync(locale)
 
   // Foreground display handler + re-sync the deterministic daily-push window on open
   // (keeps the rolling 8am notifications' content fresh; no-op unless push is enabled).

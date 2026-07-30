@@ -67,13 +67,13 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 /** Reverse-择日 event windows can't be unbounded — a Worker must not loop forever. */
 const MAX_SEARCH_SPAN_DAYS = 92
 
-interface Ymd {
+export interface Ymd {
   year: number
   month: number
   day: number
 }
 
-function parseYmd(s: string): Ymd {
+export function parseYmd(s: string): Ymd {
   if (!DATE_RE.test(s)) throw new HTTPException(400, { message: 'date must be YYYY-MM-DD' })
   const [year, month, day] = s.split('-').map((n) => Number.parseInt(n, 10)) as [
     number,
@@ -92,17 +92,17 @@ function parseYmd(s: string): Ymd {
   return { year, month, day }
 }
 
-function ymdToDate(ymd: Ymd): Date {
+export function ymdToDate(ymd: Ymd): Date {
   return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day))
 }
 
-function fmtUtc(d: Date): string {
+export function fmtUtc(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')
   const day = String(d.getUTCDate()).padStart(2, '0')
   return `${d.getUTCFullYear()}-${m}-${day}`
 }
 
-function dateToYmd(d: Date): Ymd {
+export function dateToYmd(d: Date): Ymd {
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
 }
 
@@ -112,7 +112,7 @@ function dateToYmd(d: Date): Ymd {
  * full 八字 analysis, so they stay undefined at the route level (v1) — the deterministic
  * overlay falls back to the raw 日主 五行 relation.
  */
-function subjectFromBirthDate(birthDate: string): PersonalAlmanacSubject {
+export function subjectFromBirthDate(birthDate: string): PersonalAlmanacSubject {
   const b = parseYmd(birthDate)
   const pillars = getFourPillars({ ...b, hour: 0 })
   return { dayMasterStem: pillars.day.stem, birthBranch: pillars.year.branch }
@@ -360,7 +360,7 @@ function resolveHolidayDayInMonth(
 }
 
 /** Almanac facts + 节气 context + 12 时辰 (+ optional deterministic 对你而言 overlay). */
-function buildDay(
+export function buildDay(
   ymd: Ymd,
   subject?: PersonalAlmanacSubject,
   opts?: { seed?: string; locale?: string }
@@ -764,7 +764,7 @@ function utcStamp(d: Date): string {
   )
 }
 
-function ymdAdd(ymd: Ymd, days: number): Ymd {
+export function ymdAdd(ymd: Ymd, days: number): Ymd {
   const d = ymdToDate(ymd)
   d.setUTCDate(d.getUTCDate() + days)
   return dateToYmd(d)
@@ -2337,7 +2337,7 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
   en: EN_PUSH_LABELS,
 }
 
-function pushLabels(locale: string): PushLabelSet {
+export function pushLabels(locale: string): PushLabelSet {
   if (locale.startsWith('zh-Hant')) return PUSH_LABELS['zh-Hant'] ?? EN_PUSH_LABELS
   if (locale.startsWith('zh')) return PUSH_LABELS['zh-Hans'] ?? EN_PUSH_LABELS
   if (locale.startsWith('ja')) return PUSH_LABELS.ja ?? EN_PUSH_LABELS
