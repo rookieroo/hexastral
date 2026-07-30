@@ -10,7 +10,12 @@
  */
 
 import { CoreUIProvider } from '@zhop/core-ui'
-import { usePortfolioSatelliteBootstrap, usePurchases } from '@zhop/satellite-runtime'
+import {
+  getPortfolioUserId,
+  reconcilePortfolioEntitlements,
+  usePortfolioSatelliteBootstrap,
+  usePurchases,
+} from '@zhop/satellite-runtime'
 import * as Linking from 'expo-linking'
 import { type Href, Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -80,6 +85,15 @@ function RootLayoutInner() {
 
   // WidgetKit + Watch App Group — any route, not Home-only.
   useYuunWidgetSync(locale)
+
+  // Self-heal dropped/late RevenueCat webhooks when signed in (ADR-0013 §5b).
+  useEffect(() => {
+    void (async () => {
+      const userId = await getPortfolioUserId().catch(() => null)
+      if (!userId) return
+      await reconcilePortfolioEntitlements()
+    })()
+  }, [])
 
   // Foreground display handler + re-sync the deterministic daily-push window on open
   // (keeps the rolling 8am notifications' content fresh; no-op unless push is enabled).

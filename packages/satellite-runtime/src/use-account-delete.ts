@@ -1,26 +1,23 @@
 /**
- * Permanent account deletion — `DELETE /api/user/:id` cascades through every
- * downstream table (chats, bonds, charts, readings, contact hashes) and
- * finally removes the `users` row. Required surface for Apple Guideline
- * 5.1.1(v) and GDPR Art. 17 "right to erasure".
- *
- * After server-side delete succeeds, clears local credentials too so the
- * device immediately reverts to an anonymous tier — the user can re-onboard
- * fresh without app reinstall.
+ * Permanently delete the portfolio account. Optional `deviceId` covers
+ * Auspice device-scoped rows (birthdays / make-if / timeline) that are not
+ * discoverable via push subscriptions alone.
  */
 
 import { resolvePortfolioApiUrl } from './api-url'
 import { clearDeviceSecret, signRequest } from './hmac'
 import { clearPortfolioUserId, getPortfolioUserId } from './session'
 
-export async function deletePortfolioAccount(): Promise<boolean> {
+export async function deletePortfolioAccount(opts?: { deviceId?: string }): Promise<boolean> {
   const userId = await getPortfolioUserId()
   if (!userId) {
     console.warn('[account.delete] no portfolio user id on device')
     return false
   }
   const path = `/api/user/${encodeURIComponent(userId)}`
-  const signed = await signRequest({ body: '', userId, method: 'DELETE', path })
+  const body =
+    opts?.deviceId && opts.deviceId.length > 0 ? JSON.stringify({ deviceId: opts.deviceId }) : ''
+  const signed = await signRequest({ body, userId, method: 'DELETE', path })
   if (!signed) {
     console.warn('[account.delete] request signing failed')
     return false
@@ -30,8 +27,10 @@ export async function deletePortfolioAccount(): Promise<boolean> {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${userId}`,
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
         ...signed,
       },
+      ...(body ? { body } : {}),
     })
     // 404 means the account is already gone — fall through and clear the stale
     // local credential, otherwise the device can never leave the failed state.

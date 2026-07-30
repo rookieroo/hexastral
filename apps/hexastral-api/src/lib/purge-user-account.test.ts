@@ -235,3 +235,69 @@ describe('purge execution against real SQLite schema', () => {
     expect(count('birthday_reminders', '1 = 1').n).toBe(0)
   })
 })
+
+describe('purge without push subscription (client deviceId)', () => {
+  test('device-scoped rows are erased when deviceId is supplied', async () => {
+    const empty = await generateSQLiteDrizzleJson({})
+    const target = await generateSQLiteDrizzleJson(schema)
+    const ddl = await generateSQLiteMigration(empty, target)
+
+    const mem = new Database(':memory:')
+    mem.run('PRAGMA foreign_keys = ON')
+    for (const statement of ddl) mem.run(statement)
+
+    const db = drizzle(mem, { schema })
+    const now = new Date().toISOString()
+    const orphanDevice = 'orphan-device'
+
+    await db.insert(schema.users).values({ id: 'orphan_user', createdAt: now, updatedAt: now })
+    // No auspice_push_subs row — the pre-fix path that left birthday/make-if behind.
+    await db.insert(schema.birthdayReminders).values({
+      owner: `device:${orphanDevice}`,
+      id: 'person-orphan',
+      name: 'dad',
+      solarDate: '1960-01-01',
+      createdAt: now,
+    })
+    await db.insert(schema.makeifForks).values({
+      owner: `device:${orphanDevice}`,
+      id: 'fork-1',
+      birthDate: '1990-01-01',
+      birthHour: 0,
+      gender: 'male',
+      event: 'career',
+      label: 'x',
+      divergeAtAge: 25,
+      isPast: false,
+      narrative: 'n',
+      locale: 'en',
+      createdAt: now,
+    })
+
+    const scope: PurgeScope = {
+      userId: 'orphan_user',
+      // Mirrors resolvePurgeScope when opts.deviceId is set and push subs are empty.
+      auspiceOwners: ['user:orphan_user', `device:${orphanDevice}`],
+      conversationIds: [],
+      bondIds: [],
+      bondInvitationIds: [],
+      pairReadingIds: [],
+    }
+
+    mem.run('BEGIN')
+    for (const step of PURGE_STEPS) {
+      const predicate = step.where(scope)
+      expect(predicate).toBeDefined()
+      const query = dialect.sqlToQuery(sql`delete from ${step.table} where ${predicate}`)
+      mem.prepare(query.sql).run(...query.params)
+    }
+    mem.run('COMMIT')
+
+    const count = (table: string) =>
+      (mem.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n
+
+    expect(count('users')).toBe(0)
+    expect(count('birthday_reminders')).toBe(0)
+    expect(count('makeif_forks')).toBe(0)
+  })
+})

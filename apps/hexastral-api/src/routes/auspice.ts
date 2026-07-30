@@ -52,11 +52,7 @@ import { z } from 'zod/v4'
 import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
-import {
-  allowAuspiceDevGuardBypass,
-  isAuspiceProViaRc,
-  resolveAuspiceIsPro,
-} from '../lib/auspice-pro'
+import { allowAuspiceDevGuardBypass, resolveAuspiceIsPro } from '../lib/auspice-pro'
 import { astroClient } from '../lib/service-clients'
 import { hasActiveEntitlement } from '../services/entitlements'
 import {
@@ -969,11 +965,11 @@ async function verifyCalendarToken(secret: string, token: string): Promise<strin
   return timingSafeEqual(token.slice(dot + 1), expected) ? birthDate : null
 }
 
-// Mint a signed personal-feed URL. Server verifies Pro via RevenueCat when
-// REVENUECAT_API_KEY is configured (fail-closed in prod; fail-open in dev with
-// no key so local builds work). `u` = the RC app-user-id from the client.
+// Mint a signed personal-feed URL. Always requires `u` (RC / portfolio user id)
+// and an active Pro entitlement (D1 first, then RC REST). Fail-closed in
+// production; non-production may bypass only when ALLOW_DEV_PRO=1.
 auspiceRoutes.get('/calendar/sign', async (c) => {
-  const env = c.env as unknown as CalendarEnv
+  const env = c.env as unknown as CalendarEnv & { ENVIRONMENT?: string }
   const birthDate = c.req.query('birthDate')
   if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
     return c.json({ error: 'birthDate=YYYY-MM-DD required' }, 400)
@@ -981,9 +977,14 @@ auspiceRoutes.get('/calendar/sign', async (c) => {
   if (!env.CYCLE_CALENDAR_SECRET) {
     return c.json({ error: 'calendar signing not configured' }, 503)
   }
-  if (env.REVENUECAT_API_KEY) {
-    const appUserId = c.req.query('u')
-    if (!appUserId || !(await isAuspiceProViaRc(env.REVENUECAT_API_KEY, appUserId))) {
+  const appUserId = c.req.query('u')
+  const allowDevBypass = env.ENVIRONMENT !== 'production' && allowAuspiceDevGuardBypass(env, true)
+  if (!allowDevBypass) {
+    if (!appUserId) {
+      return c.json({ error: 'pro required' }, 403)
+    }
+    const isPro = await resolveAuspiceIsPro(c.get('db'), env, appUserId)
+    if (!isPro) {
       return c.json({ error: 'pro required' }, 403)
     }
   }

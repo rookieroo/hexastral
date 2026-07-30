@@ -153,7 +153,7 @@ const birthCallerContextSchema = z.object({
 
 const birthInfoQuerySchema = birthCallerContextSchema
 
-const portfolioBirthInfoSchema = z
+export const portfolioBirthInfoSchema = z
   .object({
     birthSolarDate: z.string().regex(/^\d{4}-\d{1,2}-\d{1,2}$/),
     /** null = unknown 时辰. Index is 0..11 only (十二时辰). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { classifySubscriptionEvent } from './webhook'
+import { classifySubscriptionEvent, decideRcEventDisposition } from './webhook'
 
 // Locks the RevenueCat event → webhook action mapping. A wrong string here silently
 // locked every new subscriber out of access until their first renewal (the
@@ -27,5 +27,58 @@ describe('classifySubscriptionEvent', () => {
     expect(classifySubscriptionEvent('SUBSCRIPTION_PAUSED')).toBe('skip')
     expect(classifySubscriptionEvent('TRANSFER')).toBe('skip')
     expect(classifySubscriptionEvent('')).toBe('skip')
+  })
+})
+
+describe('decideRcEventDisposition', () => {
+  it('rejects already-processed event ids', () => {
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: true,
+        eventTimestampMs: 200,
+        lastTimestampMs: 100,
+      })
+    ).toBe('duplicate')
+  })
+
+  it('rejects stale subscription events older than the last applied timestamp', () => {
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: false,
+        eventTimestampMs: 50,
+        lastTimestampMs: 100,
+      })
+    ).toBe('stale')
+  })
+
+  it('processes equal-timestamp and first-seen events', () => {
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: false,
+        eventTimestampMs: 100,
+        lastTimestampMs: 100,
+      })
+    ).toBe('process')
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: false,
+        eventTimestampMs: 200,
+        lastTimestampMs: 100,
+      })
+    ).toBe('process')
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: false,
+        eventTimestampMs: null,
+        lastTimestampMs: 100,
+      })
+    ).toBe('process')
+    expect(
+      decideRcEventDisposition({
+        alreadyProcessed: false,
+        eventTimestampMs: 50,
+        lastTimestampMs: null,
+      })
+    ).toBe('process')
   })
 })

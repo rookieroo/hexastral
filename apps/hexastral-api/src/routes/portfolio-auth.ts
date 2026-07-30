@@ -14,6 +14,7 @@ import { z } from 'zod/v4'
 
 import { users } from '../db/schema'
 import type { CloudflareBindings, ContextVariables } from '../infra-types'
+import { audienceForTarget } from '../lib/apple-client-ids'
 import { CHAPTER_UNLOCK_DEFAULT } from '../lib/chapter-access'
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
@@ -36,28 +37,6 @@ const portfolioAuthBodySchema = z.object({
   authorizationCode: z.string().optional(),
   target_app: z.string().max(64),
 })
-
-/** Maps growth funnel / portfolio target keys → iOS bundle identifier (aud claim). */
-const TARGET_TO_BUNDLE_ID: Record<string, string> = {
-  // Client brand Syel (ADR-0028); opaque target_app stays `faceoracle`.
-  faceoracle: 'com.hexastral.syel',
-  starpalace: 'com.hexastral.starpalace',
-  soulmatch: 'com.hexastral.soulmatch',
-  fengshui: 'com.hexastral.kanyu',
-  dreamoracle: 'com.hexastral.dreamoracle',
-  eightpillars: 'com.hexastral.eightpillars',
-  coincast: 'com.hexastral.yaul',
-  fate: 'com.hexastral.fate',
-  auspice: 'com.hexastral.yuun',
-}
-
-function audienceForTarget(targetApp: string): string {
-  const bundleId = TARGET_TO_BUNDLE_ID[targetApp]
-  if (!bundleId) {
-    throw new HTTPException(422, { message: 'Unknown target_app' })
-  }
-  return bundleId
-}
 
 export const portfolioAuthRoutes = new Hono<{
   Bindings: CloudflareBindings

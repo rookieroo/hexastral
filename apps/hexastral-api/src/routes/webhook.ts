@@ -80,6 +80,40 @@ export function classifySubscriptionEvent(eventType: string): SubscriptionEventA
   return 'skip'
 }
 
+export type RcEventDisposition = 'process' | 'duplicate' | 'stale'
+
+/**
+ * Decide whether an inbound RevenueCat event should mutate state.
+ * Pure so unit tests lock the dedup + ordering rules without spinning up KV.
+ */
+export function decideRcEventDisposition(args: {
+  alreadyProcessed: boolean
+  eventTimestampMs: number | null
+  lastTimestampMs: number | null
+}): RcEventDisposition {
+  if (args.alreadyProcessed) return 'duplicate'
+  if (
+    args.eventTimestampMs != null &&
+    args.lastTimestampMs != null &&
+    args.eventTimestampMs < args.lastTimestampMs
+  ) {
+    return 'stale'
+  }
+  return 'process'
+}
+
+const RC_EVENT_DEDUP_TTL_SECONDS = 2_592_000 // 30 days
+const RC_SUB_TS_TTL_SECONDS = 7_776_000 // 90 days — covers long subscription churn
+
+function parseEventTimestampMs(raw: unknown): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return Math.floor(raw)
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    const n = Number(raw)
+    if (Number.isFinite(n) && n > 0) return Math.floor(n)
+  }
+  return null
+}
+
 webhookRoutes.post('/revenuecat', async (c) => {
   const expectedSecret = c.env.REVENUECAT_WEBHOOK_SECRET
   if (!expectedSecret) {
@@ -152,9 +186,42 @@ webhookRoutes.post('/revenuecat', async (c) => {
   if (!appUserId) return c.json({ received: true, action: 'no_user_id' }, 400)
   const db = c.get('db')
 
+  // KV idempotency + subscription ordering — MUST run before any branch mutates
+  // state. Subscriptions previously bypassed dedup by returning early.
+  const dedupKey = `rc_evt:${eventId}`
+  const alreadyProcessed = (await c.env.GUARD_KV.get(dedupKey)) != null
+  const eventTimestampMs = parseEventTimestampMs(event.event_timestamp_ms)
+  const subTsKey = `rc_sub_ts:${appUserId}:${productId}`
+  let lastTimestampMs: number | null = null
+  if (isSubscriptionProduct(product)) {
+    const raw = await c.env.GUARD_KV.get(subTsKey)
+    if (raw != null) {
+      const n = Number(raw)
+      if (Number.isFinite(n) && n > 0) lastTimestampMs = Math.floor(n)
+    }
+  }
+
+  const disposition = decideRcEventDisposition({
+    alreadyProcessed,
+    eventTimestampMs,
+    lastTimestampMs: isSubscriptionProduct(product) ? lastTimestampMs : null,
+  })
+  if (disposition === 'duplicate') {
+    return c.json({ received: true, action: 'duplicate_event', eventId })
+  }
+  if (disposition === 'stale') {
+    return c.json({
+      received: true,
+      action: 'stale_event',
+      eventId,
+      eventTimestampMs,
+      lastTimestampMs,
+    })
+  }
+
   // ── Subscriptions ──────────────────────────────────────────────────────
   if (isSubscriptionProduct(product)) {
-    return handleSubscriptionEvent(c, {
+    const result = await handleSubscriptionEvent(c, {
       db,
       product,
       eventType,
@@ -163,17 +230,22 @@ webhookRoutes.post('/revenuecat', async (c) => {
       eventId,
       expiresAt,
     })
+    // Only mark processed after a successful handler response (2xx).
+    if (result.status < 400) {
+      await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: RC_EVENT_DEDUP_TTL_SECONDS })
+      if (eventTimestampMs != null) {
+        await c.env.GUARD_KV.put(subTsKey, String(eventTimestampMs), {
+          expirationTtl: RC_SUB_TS_TTL_SECONDS,
+        })
+      }
+    }
+    return result
   }
 
   // ── Consumables and single purchases ──────────────────────────────────
   if (!CONSUMABLE_EVENTS.has(eventType)) {
     return c.json({ received: true, action: 'skipped', eventType })
   }
-
-  // KV idempotency: same eventId only processes once (TTL 30 days)
-  const dedupKey = `rc_evt:${eventId}`
-  const existing = await c.env.GUARD_KV.get(dedupKey)
-  if (existing) return c.json({ received: true, action: 'duplicate_event', eventId })
 
   const user = await db.select({ id: users.id }).from(users).where(eq(users.id, appUserId)).get()
   if (!user) {
@@ -195,7 +267,7 @@ webhookRoutes.post('/revenuecat', async (c) => {
       productId,
       status: 'purchased',
     })
-    await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: 2592000 })
+    await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: RC_EVENT_DEDUP_TTL_SECONDS })
     alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
       title: 'IAP: single reading purchased',
       message: `${productId} (${product.singleSku}) purchased`,
@@ -253,7 +325,7 @@ webhookRoutes.post('/revenuecat', async (c) => {
         .where(eq(users.id, appUserId))
     }
 
-    await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: 2592000 })
+    await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: RC_EVENT_DEDUP_TTL_SECONDS })
 
     alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
       title: `IAP: ${kind} credits added`,
@@ -369,7 +441,7 @@ async function handleSubscriptionEvent(c: Context<AppEnv>, args: SubscriptionEve
 
     // P0-8: emit subscription_started to growth funnel. Fires for both first
     // activation AND renewal (each RC event has a distinct id; same-id replay
-    // is blocked by the upstream KV dedup at routes/webhook.ts:166). Renewal
+    // is blocked by the upstream KV dedup before this handler runs). Renewal
     // signals retention, initial signals conversion — both feed funnel math.
     emitGrowthEventServer(
       c.env,

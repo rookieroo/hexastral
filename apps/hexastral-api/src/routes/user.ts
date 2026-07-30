@@ -46,6 +46,7 @@ import {
 } from '../db/schema'
 import type { AppDb, AppEnv, CloudflareBindings } from '../infra-types'
 import { userHasAnySubscription } from '../lib/access/entitlement-access'
+import { audienceForTarget } from '../lib/apple-client-ids'
 import { requireUserId } from '../lib/auth'
 import {
   BIOMETRIC_CONSENT_VERSION,
@@ -138,13 +139,16 @@ const updatePreferencesSchema = z.object({
 
 const revokeAppleSchema = z.object({
   authorizationCode: z.string().min(1),
+  /** Portfolio target_app — resolves to the correct Apple client_id / JWT sub. */
+  targetApp: z.string().min(1).max(64),
 })
 
-/** Generate Apple client_secret JWT (ES256, valid 3 min) */
+/** Generate Apple client_secret JWT (ES256, valid 3 min) for a given bundle id. */
 async function makeAppleClientSecret(
   teamId: string,
   keyId: string,
-  privateKeyPem: string
+  privateKeyPem: string,
+  clientId: string
 ): Promise<string> {
   const pemBody = privateKeyPem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '')
   const keyData = Uint8Array.from(atob(pemBody), (ch) => ch.charCodeAt(0))
@@ -166,7 +170,7 @@ async function makeAppleClientSecret(
     iat: now,
     exp: now + 180,
     aud: 'https://appleid.apple.com',
-    sub: 'com.zhop.hexastral',
+    sub: clientId,
   })
   const unsigned = `${header}.${payload}`
 
@@ -536,10 +540,31 @@ export const userRoutes = new Hono<AppEnv>()
     const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
     if (!user) throw new HTTPException(404, { message: 'User not found' })
 
+    // Optional deviceId — covers Auspice device-scoped PII when push was never
+    // registered (or was unregistered before delete). Body is HMAC-covered.
+    let deviceId: string | undefined
     try {
-      await purgeUserAccount(db, c.env, userId, (p) => {
-        c.executionCtx.waitUntil(p)
-      })
+      const raw = await c.req.text()
+      if (raw.trim()) {
+        const parsed = z
+          .object({ deviceId: z.string().min(1).max(128).optional() })
+          .safeParse(JSON.parse(raw) as unknown)
+        if (parsed.success) deviceId = parsed.data.deviceId
+      }
+    } catch {
+      // Empty / non-JSON body is fine — older clients omit deviceId.
+    }
+
+    try {
+      await purgeUserAccount(
+        db,
+        c.env,
+        userId,
+        (p) => {
+          c.executionCtx.waitUntil(p)
+        },
+        { deviceId }
+      )
     } catch (err) {
       // The purge is one transaction, so a failure means nothing was deleted.
       // Log the cause — the client can only surface a generic retry prompt.
@@ -1251,16 +1276,22 @@ export const userRoutes = new Hono<AppEnv>()
     }
 
     const body = await c.req.json()
-    const { authorizationCode } = revokeAppleSchema.parse(body)
+    const { authorizationCode, targetApp } = revokeAppleSchema.parse(body)
+    const clientId = audienceForTarget(targetApp)
 
-    const clientSecret = await makeAppleClientSecret(APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY)
+    const clientSecret = await makeAppleClientSecret(
+      APPLE_TEAM_ID,
+      APPLE_KEY_ID,
+      APPLE_PRIVATE_KEY,
+      clientId
+    )
 
     // 1. Exchange authorization_code for access_token
     const tokenRes = await fetch('https://appleid.apple.com/auth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: 'com.zhop.hexastral',
+        client_id: clientId,
         client_secret: clientSecret,
         code: authorizationCode,
         grant_type: 'authorization_code',
@@ -1288,7 +1319,7 @@ export const userRoutes = new Hono<AppEnv>()
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: 'com.zhop.hexastral',
+        client_id: clientId,
         client_secret: clientSecret,
         token: tokens.access_token,
         token_type_hint: 'access_token',

@@ -159,6 +159,8 @@ export interface Strings {
   deleteAccountConfirmCta: string
   deleteAccountFailed: string
   deleteAccountWorking: string
+  /** Opens Apple subscription management before / after account delete. */
+  manageSubscription: string
   accountSection: string
   signedInLabel: string
   /** Indicator on /event when specialized scoring is active (Pro + a specialized event). */
@@ -736,6 +738,7 @@ const zhHans: Strings = {
   deleteAccountConfirmCta: '永久删除',
   deleteAccountFailed: '删除失败，请稍后重试。',
   deleteAccountWorking: '正在删除…',
+  manageSubscription: '管理订阅',
   accountSection: '账号',
   signedInLabel: '已登录',
   specializedActive: '专项时日参考 已启用',
@@ -1192,6 +1195,7 @@ const zhHant: Strings = {
   deleteAccountConfirmCta: '永久刪除',
   deleteAccountFailed: '刪除失敗，請稍後重試。',
   deleteAccountWorking: '正在刪除…',
+  manageSubscription: '管理訂閱',
   accountSection: '帳號',
   signedInLabel: '已登入',
   specializedActive: '專項時日參考 已啟用',
@@ -1664,6 +1668,7 @@ const ja: Strings = {
   deleteAccountConfirmCta: '完全に削除',
   deleteAccountFailed: '削除に失敗しました。しばらくしてから再試行してください。',
   deleteAccountWorking: '削除中…',
+  manageSubscription: 'サブスクリプションを管理',
   accountSection: 'アカウント',
   signedInLabel: 'サインイン済み',
   specializedActive: '専門日時参考 適用中',
@@ -2127,6 +2132,7 @@ const en: Strings = {
   deleteAccountConfirmCta: 'Delete permanently',
   deleteAccountFailed: 'Delete failed. Please try again later.',
   deleteAccountWorking: 'Deleting…',
+  manageSubscription: 'Manage subscription',
   accountSection: 'Account',
   signedInLabel: 'Signed in',
   specializedActive: 'Specialized timing reference on',

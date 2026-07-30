@@ -3,6 +3,7 @@
  * localized prices, auto-renew disclosure, and Privacy/Terms links.
  */
 import { useTheme } from '@zhop/core-ui'
+import { reconcilePortfolioEntitlements } from '@zhop/satellite-runtime'
 import { SatelliteBottomSheet, SatellitePaywall } from '@zhop/satellite-ui'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useState } from 'react'
@@ -139,10 +140,16 @@ export function AuspicePaywallSheet({
             privacyUrl={privacyUrl(locale)}
             termsUrl={termsUrl(locale)}
             onPurchaseComplete={(result) => {
-              if (result === 'success') onClose()
+              if (result === 'success') {
+                void reconcilePortfolioEntitlements()
+                onClose()
+              }
             }}
             onRestoreComplete={(restored) => {
-              if (restored) onClose()
+              if (restored) {
+                void reconcilePortfolioEntitlements()
+                onClose()
+              }
             }}
             copy={{
               title: t.proTitle,

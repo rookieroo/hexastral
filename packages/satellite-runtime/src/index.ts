@@ -75,6 +75,13 @@ export {
   usePushPrime,
   useTokenPermissionReconcile,
 } from './push'
+export { reconcilePortfolioEntitlements } from './reconcile-entitlements'
+export {
+  clearStoredAppleUserId,
+  getStoredAppleUserId,
+  revokeAppleCredential,
+  storeAppleUserId,
+} from './revoke-apple'
 export {
   clearPortfolioUserId,
   getPortfolioUserId,

@@ -13,6 +13,7 @@ import {
   exchangeAppleCredentialForPortfolio,
   exchangeGoogleCredentialForPortfolio,
   getPortfolioUserId,
+  storeAppleUserId,
 } from '@zhop/satellite-runtime'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
@@ -81,6 +82,15 @@ export async function signInWithApple(): Promise<string | null> {
     targetApp: PORTFOLIO_TARGET_APP,
     storagePrefix: PORTFOLIO_STORAGE_PREFIX,
   })
+
+  // Persist Apple sub for Guideline 5.1.1(v) revocation on account delete.
+  if (credential.user) {
+    try {
+      await storeAppleUserId(credential.user)
+    } catch (err) {
+      console.warn('[yuun.account] store Apple user id failed', err)
+    }
+  }
 
   // Tie RevenueCat to the portfolio identity — required for cross-device restore.
   try {

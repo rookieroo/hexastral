@@ -183,7 +183,11 @@ export const PURGE_STEPS: readonly PurgeStep[] = [
   { table: users, where: (s) => eq(users.id, s.userId) },
 ]
 
-async function resolvePurgeScope(db: AppDb, userId: string): Promise<PurgeScope> {
+async function resolvePurgeScope(
+  db: AppDb,
+  userId: string,
+  opts?: { deviceId?: string }
+): Promise<PurgeScope> {
   const [linkedSubs, convRows, bondRows, pairRows] = await Promise.all([
     db
       .select({ deviceId: auspicePushSubs.deviceId })
@@ -214,9 +218,14 @@ async function resolvePurgeScope(db: AppDb, userId: string): Promise<PurgeScope>
     .where(or(eq(bondInvitations.inviterUserId, userId), inArray(bondInvitations.bondId, bondIds)))
     .all()
 
+  const deviceOwners = new Set<string>(linkedSubs.map((s) => `device:${s.deviceId}`))
+  // Client-supplied deviceId covers the no-push path (birthday / make-if /
+  // timeline rows keyed as device:<id> with no auspice_push_subs link).
+  if (opts?.deviceId) deviceOwners.add(`device:${opts.deviceId}`)
+
   return {
     userId,
-    auspiceOwners: [userOwnerKey(userId), ...linkedSubs.map((s) => `device:${s.deviceId}`)],
+    auspiceOwners: [userOwnerKey(userId), ...deviceOwners],
     conversationIds: convRows.map((r) => r.id),
     bondIds,
     bondInvitationIds: inviteRows.map((r) => r.id),
@@ -228,7 +237,8 @@ export async function purgeUserAccount(
   db: AppDb,
   env: CloudflareBindings,
   userId: string,
-  waitUntil: (p: Promise<unknown>) => void
+  waitUntil: (p: Promise<unknown>) => void,
+  opts?: { deviceId?: string }
 ): Promise<void> {
   const user = await db.select().from(users).where(eq(users.id, userId)).get()
   if (!user) return
@@ -288,7 +298,7 @@ export async function purgeUserAccount(
     )
   }
 
-  const scope = await resolvePurgeScope(db, userId)
+  const scope = await resolvePurgeScope(db, userId, opts)
   const statements: BatchItem<'sqlite'>[] = PURGE_STEPS.map((step) => {
     const predicate = step.where(scope)
     // An unfiltered DELETE would wipe the table for every user — refuse instead.

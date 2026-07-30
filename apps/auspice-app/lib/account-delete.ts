@@ -3,17 +3,24 @@
  *
  * Order (must not reverse):
  *   1. clearYuunWatchCredential (needs HMAC)
- *   2. deletePortfolioAccount
- *   3. local AsyncStorage / SecureStore / RC logOut
- *   4. widget sync without personalization
+ *   2. revokeAppleCredential (needs HMAC + Apple refresh)
+ *   3. deletePortfolioAccount (with deviceId for device-scoped PII)
+ *   4. local AsyncStorage / SecureStore / RC logOut
+ *   5. widget sync without personalization
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { deletePortfolioAccount } from '@zhop/satellite-runtime'
+import {
+  clearStoredAppleUserId,
+  deletePortfolioAccount,
+  revokeAppleCredential,
+} from '@zhop/satellite-runtime'
 import Purchases from 'react-native-purchases'
 import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 import { clearAuspiceGetCache } from './api'
 import { clearAuspiceBirthDate } from './birth'
+import { getAuspiceDeviceId } from './device'
+import { PORTFOLIO_TARGET_APP } from './growth-config'
 import type { Locale } from './i18n'
 import { clearPeople } from './people'
 import { clearYuunWatchCredential } from './watch-provision'
@@ -41,11 +48,20 @@ export async function deleteYuunAccount(locale: Locale): Promise<boolean> {
     console.warn('[yuun.account] clear watch credential failed', err)
   }
 
-  // 2. Server physical purge.
-  const ok = await deletePortfolioAccount()
+  // 2. Apple token revocation (best-effort; do not block purge).
+  try {
+    await revokeAppleCredential({ targetApp: PORTFOLIO_TARGET_APP })
+  } catch (err) {
+    console.warn('[yuun.account] Apple revoke failed', err)
+  }
+
+  // 3. Server physical purge — pass deviceId so device-scoped rows leave even
+  // when push was never registered.
+  const deviceId = await getAuspiceDeviceId().catch(() => undefined)
+  const ok = await deletePortfolioAccount(deviceId ? { deviceId } : undefined)
   if (!ok) return false
 
-  // 3. Local wipe.
+  // 4. Local wipe.
   try {
     await clearAuspiceBirthDate()
   } catch (err) {
@@ -67,12 +83,17 @@ export async function deleteYuunAccount(locale: Locale): Promise<boolean> {
     console.warn('[yuun.account] clear async keys failed', err)
   }
   try {
+    await clearStoredAppleUserId()
+  } catch (err) {
+    console.warn('[yuun.account] clear Apple user id failed', err)
+  }
+  try {
     await Purchases.logOut()
   } catch (err) {
     console.warn('[yuun.account] RevenueCat logOut failed', err)
   }
 
-  // 4. Rewrite Widget / Watch without For-you.
+  // 5. Rewrite Widget / Watch without For-you.
   try {
     requestYuunWidgetSync(locale, true)
   } catch (err) {

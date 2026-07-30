@@ -38,7 +38,7 @@ import {
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
@@ -1228,6 +1228,13 @@ export default function MeScreen() {
                 onPress={() => {}}
                 divider
                 disabled
+              />
+              <SettingsRow
+                label={t.manageSubscription}
+                onPress={() => {
+                  void Linking.openURL('https://apps.apple.com/account/subscriptions')
+                }}
+                divider
               />
               <SettingsRow
                 label={deletingAccount ? t.deleteAccountWorking : t.deleteAccount}
