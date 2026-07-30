@@ -22,9 +22,7 @@ import { Canvas, Circle, Group, Path, Skia } from '@shopify/react-native-skia'
 import { STEM_ELEMENT, wuxingGraph } from '@zhop/hexastral-tokens/palette'
 import * as Haptics from 'expo-haptics'
 import { Pressable, Text, View } from 'react-native'
-
-import type { DrilldownYear } from '@/lib/cycle-types'
-import type { LiuyueCell } from '@/lib/cycle-types'
+import type { DrilldownYear, LiuyueCell } from '@/lib/cycle-types'
 
 interface TGColors {
   text: string

@@ -15,7 +15,7 @@
     "format": "biome format . --write"
   },
   "dependencies": {
-    "@expo/config-plugins": "~11.0.0"
+    "@expo/config-plugins": "~54.0.4"
   },
   "peerDependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

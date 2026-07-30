@@ -2,7 +2,15 @@
  * LivingLayerFab — report entry to Life axis / What-if / Chat (Yuel grammar).
  */
 
-import { GitBranch, GitCommitHorizontal, GitCommitVertical, type LucideIcon, MessageCircle, RefreshCw, Timeline } from 'lucide-react-native'
+import {
+  GitBranch,
+  GitCommitHorizontal,
+  GitCommitVertical,
+  type LucideIcon,
+  MessageCircle,
+  RefreshCw,
+  Timeline,
+} from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import Animated, {
@@ -51,7 +59,9 @@ export function LivingLayerFab({
     ...(onTimeline
       ? [{ key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline }]
       : []),
-    ...(onWhatIf ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }] : []),
+    ...(onWhatIf
+      ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }]
+      : []),
     ...(onChat ? [{ key: 'chat', Icon: MessageCircle, label: labels.chat, onPress: onChat }] : []),
     ...(onRegenerate && labels.regenerate
       ? [{ key: 'regen', Icon: RefreshCw, label: labels.regenerate, onPress: onRegenerate }]

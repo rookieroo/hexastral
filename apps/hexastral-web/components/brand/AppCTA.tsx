@@ -13,11 +13,7 @@ import {
   redirectToAppStore,
 } from '@zhop/ddl-client'
 import { useEffect, useState } from 'react'
-import {
-  enqueueAdConvertClient,
-  newAdEventId,
-  trackBrowserConversion,
-} from '@/lib/ads/track'
+import { enqueueAdConvertClient, newAdEventId, trackBrowserConversion } from '@/lib/ads/track'
 import type { GrowthAppStoreTarget } from '@/lib/growth/app-store-urls'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'

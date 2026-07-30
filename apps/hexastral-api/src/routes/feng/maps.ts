@@ -50,101 +50,104 @@ function toBase64(bytes: ArrayBuffer): string {
   return btoa(result)
 }
 
-export const fengMapRoutes = new Hono<AppEnv>().get('/preview', async (c) => {
-  const parsed = querySchema.safeParse({
-    lat: c.req.query('lat'),
-    lng: c.req.query('lng'),
-    zoom: c.req.query('zoom'),
-    size: c.req.query('size'),
+export const fengMapRoutes = new Hono<AppEnv>()
+  .get('/preview', async (c) => {
+    const parsed = querySchema.safeParse({
+      lat: c.req.query('lat'),
+      lng: c.req.query('lng'),
+      zoom: c.req.query('zoom'),
+      size: c.req.query('size'),
+    })
+    if (!parsed.success) {
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'lat and lng query params are required', {
+        issues: parsed.error.issues,
+      })
+    }
+
+    const zoom = parsed.data.zoom ?? 17
+    const size = parsed.data.size ?? 640
+
+    try {
+      const { bytes } = await renderMap(c.env.SVC_FENG, {
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        zoom,
+        width: size,
+        height: size,
+        mode: 'satellite',
+      })
+      return jsonOk(c, {
+        base64: toBase64(bytes),
+        contentType: 'image/png',
+        zoom,
+        size,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[feng.maps.preview] failed', {
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        zoom,
+        size,
+        message,
+      })
+      return jsonErr(c, 502, ApiErrorCode.internal_error, message)
+    }
   })
-  if (!parsed.success) {
-    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'lat and lng query params are required', {
-      issues: parsed.error.issues,
-    })
-  }
+  .post('/floorplan', async (c) => {
+    const userId = requireUserId(c)
 
-  const zoom = parsed.data.zoom ?? 17
-  const size = parsed.data.size ?? 640
+    const json = await c.req.json().catch(() => null)
+    const parsed = floorplanSchema.safeParse(json)
+    if (!parsed.success) {
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'image (base64) + contentType required', {
+        issues: parsed.error.issues,
+      })
+    }
 
-  try {
-    const { bytes } = await renderMap(c.env.SVC_FENG, {
-      lat: parsed.data.lat,
-      lng: parsed.data.lng,
-      zoom,
-      width: size,
-      height: size,
-      mode: 'satellite',
-    })
-    return jsonOk(c, {
-      base64: toBase64(bytes),
-      contentType: 'image/png',
-      zoom,
-      size,
-    })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error('[feng.maps.preview] failed', {
-      lat: parsed.data.lat,
-      lng: parsed.data.lng,
-      zoom,
-      size,
-      message,
-    })
-    return jsonErr(c, 502, ApiErrorCode.internal_error, message)
-  }
-}).post('/floorplan', async (c) => {
-  const userId = requireUserId(c)
+    const bytes = decodeBase64(parsed.data.image)
+    if (!bytes) {
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid base64 image')
+    }
+    if (bytes.byteLength === 0) {
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'empty image')
+    }
+    if (bytes.byteLength > FLOORPLAN_MAX_BYTES) {
+      return jsonErr(c, 413, ApiErrorCode.invalid_input, 'image too large (max 8MB)')
+    }
 
-  const json = await c.req.json().catch(() => null)
-  const parsed = floorplanSchema.safeParse(json)
-  if (!parsed.success) {
-    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'image (base64) + contentType required', {
-      issues: parsed.error.issues,
-    })
-  }
+    try {
+      const { key } = await putFloorplan(c.env.SVC_FENG, bytes, parsed.data.contentType)
+      await grantFloorplanKey(c.env.GUARD_KV, userId, key)
+      return jsonOk(c, { key })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[feng.maps.floorplan] upload failed', { message })
+      return jsonErr(c, 502, ApiErrorCode.internal_error, message)
+    }
+  })
+  .get('/floorplan/:key', async (c) => {
+    const userId = requireUserId(c)
+    const key = c.req.param('key')
+    if (!key || key.length < 4 || key.length > 96) {
+      return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid floorplan key')
+    }
 
-  const bytes = decodeBase64(parsed.data.image)
-  if (!bytes) {
-    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid base64 image')
-  }
-  if (bytes.byteLength === 0) {
-    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'empty image')
-  }
-  if (bytes.byteLength > FLOORPLAN_MAX_BYTES) {
-    return jsonErr(c, 413, ApiErrorCode.invalid_input, 'image too large (max 8MB)')
-  }
+    const db = c.get('db')
+    const allowed = await userCanReadFloorplanKey(c.env, db, userId, key)
+    if (!allowed) {
+      return jsonErr(c, 403, ApiErrorCode.forbidden, 'floorplan key not owned by user')
+    }
 
-  try {
-    const { key } = await putFloorplan(c.env.SVC_FENG, bytes, parsed.data.contentType)
-    await grantFloorplanKey(c.env.GUARD_KV, userId, key)
-    return jsonOk(c, { key })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error('[feng.maps.floorplan] upload failed', { message })
-    return jsonErr(c, 502, ApiErrorCode.internal_error, message)
-  }
-}).get('/floorplan/:key', async (c) => {
-  const userId = requireUserId(c)
-  const key = c.req.param('key')
-  if (!key || key.length < 4 || key.length > 96) {
-    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'invalid floorplan key')
-  }
-
-  const db = c.get('db')
-  const allowed = await userCanReadFloorplanKey(c.env, db, userId, key)
-  if (!allowed) {
-    return jsonErr(c, 403, ApiErrorCode.forbidden, 'floorplan key not owned by user')
-  }
-
-  try {
-    const { bytes, contentType } = await getFloorplanImage(c.env.SVC_FENG, key)
-    return jsonOk(c, {
-      base64: toBase64(bytes),
-      contentType,
-    })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error('[feng.maps.floorplan.get] failed', { key, message })
-    return jsonErr(c, 502, ApiErrorCode.internal_error, message)
-  }
-})
+    try {
+      const { bytes, contentType } = await getFloorplanImage(c.env.SVC_FENG, key)
+      return jsonOk(c, {
+        base64: toBase64(bytes),
+        contentType,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[feng.maps.floorplan.get] failed', { key, message })
+      return jsonErr(c, 502, ApiErrorCode.internal_error, message)
+    }
+  })

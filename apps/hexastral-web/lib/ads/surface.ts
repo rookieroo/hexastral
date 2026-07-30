@@ -3,7 +3,13 @@
  * Reopen & legal surfaces must not load pixels or enqueue store CTA postbacks.
  */
 
-export type WebTrafficSurface = 'brand_acq' | 'lp_acq' | 'lp_reopen' | 'legal' | 'resonate' | 'other'
+export type WebTrafficSurface =
+  | 'brand_acq'
+  | 'lp_acq'
+  | 'lp_reopen'
+  | 'legal'
+  | 'resonate'
+  | 'other'
 
 /** Pathname without locale prefix (e.g. /lp/yuel, /lp/hexagram/foo). */
 export function classifyWebSurface(pathname: string): WebTrafficSurface {

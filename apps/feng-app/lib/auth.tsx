@@ -172,11 +172,7 @@ async function getGoogleSigninModule(): Promise<GoogleSigninModule | null> {
   }
 }
 
-async function registerUser(
-  userId: string,
-  email?: string,
-  name?: string
-): Promise<FengUser> {
+async function registerUser(userId: string, email?: string, name?: string): Promise<FengUser> {
   const res = await fetch(`${config.apiUrl}/api/user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-client-platform': Platform.OS },
@@ -211,9 +207,7 @@ async function fetchUser(userId: string): Promise<FengUser> {
   })
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
-    throw new Error(
-      `user_fetch_failed:${res.status}${detail ? `:${detail.slice(0, 200)}` : ''}`
-    )
+    throw new Error(`user_fetch_failed:${res.status}${detail ? `:${detail.slice(0, 200)}` : ''}`)
   }
   const json = (await res.json()) as { data: Record<string, unknown> }
   return userFromApiRow(json.data, userId)
@@ -329,8 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await googleSigninModule.GoogleSignin.hasPlayServices()
       const res = await googleSigninModule.GoogleSignin.signIn()
       if (res?.type === 'cancelled') return false
-      const idToken =
-        res?.data?.idToken ?? (res as { idToken?: string | null }).idToken ?? null
+      const idToken = res?.data?.idToken ?? (res as { idToken?: string | null }).idToken ?? null
       if (!idToken) {
         throw new Error('google_missing_id_token')
       }
@@ -404,7 +397,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resyncCredentials,
       credentialVersion,
     }),
-    [user, isLoading, credentialVersion, signInWithApple, signInWithGoogle, signInAsGuest, signOut, refreshUser, resyncCredentials]
+    [
+      user,
+      isLoading,
+      credentialVersion,
+      signInWithApple,
+      signInWithGoogle,
+      signInAsGuest,
+      signOut,
+      refreshUser,
+      resyncCredentials,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

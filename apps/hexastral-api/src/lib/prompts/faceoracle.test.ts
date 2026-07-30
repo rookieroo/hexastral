@@ -225,8 +225,7 @@ describe('faceoracleDensityGaps', () => {
       {
         kind: 'natal',
         evidence: '日主与大运互证，这段也足够长避免空章。',
-        dynamic:
-          '若在42–44岁把副业转正职比继续广撒更稳；若不转，48岁后土运来时会更被动。',
+        dynamic: '若在42–44岁把副业转正职比继续广撒更稳；若不转，48岁后土运来时会更被动。',
         reef: null,
         remedy: null,
       },
@@ -449,7 +448,9 @@ describe('faceoracleDensityGaps', () => {
     const gaps = faceoracleDensityGaps(
       {
         events: [],
-        loci: [{ featureKey: 'tianTing', part: 'face', locus: '天庭', reading: '饱满圆润主早年有靠' }],
+        loci: [
+          { featureKey: 'tianTing', part: 'face', locus: '天庭', reading: '饱满圆润主早年有靠' },
+        ],
       },
       [{ kind: 'face', evidence: 'x', dynamic: 'y', reef: null, remedy: null }]
     )

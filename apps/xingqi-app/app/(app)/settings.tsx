@@ -245,9 +245,7 @@ export default function SettingsScreen() {
                     ])
                   })
                   .catch(() => {
-                    Alert.alert(
-                      s('恢复失败', '恢復失敗', 'Restore failed', '復元に失敗しました')
-                    )
+                    Alert.alert(s('恢复失败', '恢復失敗', 'Restore failed', '復元に失敗しました'))
                   })
                   .finally(() => setRestoreBusy(false))
               }}
@@ -295,12 +293,7 @@ export default function SettingsScreen() {
                   )}
                   onPress={() => {
                     Alert.alert(
-                      s(
-                        '撤回同意',
-                        '撤回同意',
-                        'Withdraw consent',
-                        '同意を撤回'
-                      ),
+                      s('撤回同意', '撤回同意', 'Withdraw consent', '同意を撤回'),
                       s(
                         '撤回后需重新同意才能继续形气解读；本机照片草稿也会清除。',
                         '撤回後需重新同意才能繼續形氣解讀；本機照片草稿也會清除。',
@@ -321,9 +314,7 @@ export default function SettingsScreen() {
                                 await revokeBiometricConsent()
                                 await clearReadingDraft({ wipePhotos: true })
                               } catch {
-                                Alert.alert(
-                                  s('失败', '失敗', 'Failed', '失敗しました')
-                                )
+                                Alert.alert(s('失败', '失敗', 'Failed', '失敗しました'))
                               }
                             })()
                           },
@@ -337,10 +328,7 @@ export default function SettingsScreen() {
                   label={s('退出登录', '退出登入', 'Sign out', 'ログアウト')}
                   danger
                   onPress={() => {
-                    Alert.alert(
-                      s('退出登录', '退出登入', 'Sign out', 'ログアウト'),
-                      undefined,
-                      [
+                    Alert.alert(s('退出登录', '退出登入', 'Sign out', 'ログアウト'), undefined, [
                       { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
                       {
                         text: s('退出', '退出', 'Sign out', 'ログアウト'),

@@ -107,7 +107,8 @@ export function buildMacroTerrainTyped(opts: {
       const dist = typeof az.distanceM === 'number' ? az.distanceM : 9999
       if (!prev || dist < prev.distanceM) {
         waterByPalace[az.palace] = {
-          bearingDeg: typeof az.bearingDeg === 'number' ? az.bearingDeg : PALACE_BEARINGS[az.palace] ?? 0,
+          bearingDeg:
+            typeof az.bearingDeg === 'number' ? az.bearingDeg : (PALACE_BEARINGS[az.palace] ?? 0),
           distanceM: dist,
           kind: az.kind,
         }
@@ -192,10 +193,7 @@ export function buildOverlayHints(opts: {
     sand.push({ palace, label: isLai ? '来龙' : '砂' })
   }
 
-  const shuiKou =
-    opts.macro.shuiKou != null
-      ? { palace: opts.macro.shuiKou, label: '水口' }
-      : null
+  const shuiKou = opts.macro.shuiKou != null ? { palace: opts.macro.shuiKou, label: '水口' } : null
 
   return {
     formSha: formSha.slice(0, 8),

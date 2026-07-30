@@ -15,10 +15,10 @@ import { jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
 import { BIOMETRIC_CONSENT_VERSION, hasBiometricConsent } from '../../lib/biometric-consent'
 import {
+  type FaceoracleFeatureTriple,
   featuresUnchangedPayload,
   parseReadingFeatureIds,
   sameFaceoracleFeatures,
-  type FaceoracleFeatureTriple,
 } from '../../lib/faceoracle-job-dedupe'
 import {
   refundFaceoracleJobAccess,
@@ -321,7 +321,7 @@ physiognomyJobsRoutes.get('/:id', async (c) => {
   const id = c.req.param('id')
   const db = c.get('db')
 
-  let job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, id)).get()
+  const job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, id)).get()
   if (!job || job.userId !== userId) {
     throw new HTTPException(404, { message: 'Job not found' })
   }

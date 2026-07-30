@@ -27,8 +27,8 @@ import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
 import { syncAuspiceServerPush, unregisterAuspiceServerPush } from './serverPush'
 import { isServerPushActive } from './serverPushFlag'
-import { displayYijiVerb } from './yiji-vocab'
 import { resolveYijiDisplayMode, type YijiVocabularyMode } from './yiji-display-mode'
+import { displayYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'auspice.push.enabled'
 /** Evening (8pm "tomorrow heads-up") sub-toggle — independent of the 8am reading so

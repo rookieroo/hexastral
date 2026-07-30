@@ -6,20 +6,14 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import {
-  fetchReadings,
-  type PortfolioReadingItem,
-} from '@zhop/portfolio-client'
+import { fetchReadings, type PortfolioReadingItem } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-  SettingsCard,
-  SettingsSection,
-} from '@/components/settings/SettingsSection'
+import { SettingsCard, SettingsSection } from '@/components/settings/SettingsSection'
 import { fetchPhotoQuota } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
@@ -107,12 +101,7 @@ export default function UsageScreen() {
   const lastDate = latest?.createdAt?.slice(0, 10) ?? '—'
   const refreshLine =
     ageDays == null
-      ? s(
-          '尚无解读',
-          '尚無解讀',
-          'No reading yet',
-          '形気リーディングはまだありません'
-        )
+      ? s('尚无解读', '尚無解讀', 'No reading yet', '形気リーディングはまだありません')
       : ageDays >= 25
         ? s(
             `已过 ${ageDays} 天 · 建议更新本期照片`,
@@ -156,9 +145,7 @@ export default function UsageScreen() {
           )}
         </Text>
 
-        <SettingsSection
-          title={s('解读周期', '解讀週期', 'READING CADENCE', '解読サイクル')}
-        >
+        <SettingsSection title={s('解读周期', '解讀週期', 'READING CADENCE', '解読サイクル')}>
           <SettingsCard>
             <MeterRow
               label={s('最近解读', '最近解讀', 'Last reading', '直近の解読')}
@@ -181,11 +168,7 @@ export default function UsageScreen() {
             <SettingsCard>
               <MeterRow
                 label={s('照片额度', '照片額度', 'Photo slots', '写真枠')}
-                value={
-                  quota
-                    ? `${quota.photos.used}/${quota.photos.limit}`
-                    : '—'
-                }
+                value={quota ? `${quota.photos.used}/${quota.photos.limit}` : '—'}
                 hint={s(
                   '完整解读扣 3 格（左掌+右掌+面）。UTC 月初重置。',
                   '完整解讀扣 3 格（左掌＋右掌＋面）。UTC 月初重置。',
@@ -195,17 +178,8 @@ export default function UsageScreen() {
                 colors={colors}
               />
               <MeterRow
-                label={s(
-                  '报告重生成',
-                  '報告重新生成',
-                  'Report regenerations',
-                  'レポート再生成'
-                )}
-                value={
-                  quota
-                    ? `${quota.reports.used}/${quota.reports.limit}`
-                    : '—'
-                }
+                label={s('报告重生成', '報告重新生成', 'Report regenerations', 'レポート再生成')}
+                value={quota ? `${quota.reports.used}/${quota.reports.limit}` : '—'}
                 hint={s(
                   '同照片换语言/重写正文扣 1 次。UTC 月初重置。',
                   '同照片換語言／重寫正文扣 1 次。UTC 月初重置。',

@@ -1,8 +1,10 @@
 # Auspice (Yuun) — native Widget + Watch scope
 
-Status: **iPhone WidgetKit + Watch companion in repo.** Activate with prebuild + App Group on device — see [widget-build-runbook.md](./widget-build-runbook.md).
+Status: **iPhone WidgetKit + Watch companion in repo — v1 launch capability, evidence-gated.**
 
-**Launch boundary:** Store / ASO for the June–July v1 cut does **not** claim Widget or Watch ([launch.md](./launch.md)). Shipping the full Watch companion is a **separate milestone** (EAS + Xcode deploy of `YuunWatchApp` to a paired Watch). Code below is the SSOT when that milestone ships.
+**Launch boundary:** ASO may claim Home Screen / Lock Screen / Watch **only after** a production archive embeds `widget` + `watch` + `watch-widget` and the TestFlight device matrix in [widget-build-runbook.md](./widget-build-runbook.md) + [widget-watch-evidence.md](./widget-watch-evidence.md) passes. If evidence is missing, strip store copy and screenshots before submit ([launch.md](./launch.md)).
+
+**System requirements (disclose in ASO):** App iOS 15.1+ · widgets iOS 17.0+ · watchOS 10+.
 
 ## SSOT
 

@@ -15,12 +15,12 @@ import { CityPicker, type CityRecord } from '../CityPicker'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
 import { BirthClockField } from './BirthClockField'
 import { BirthProgressIndicator } from './BirthProgressIndicator'
+import { BirthTimeModeToggle } from './BirthTimeModeToggle'
 import {
+  type BirthTimeMode,
   birthTimeModeFromClock,
   clearedPreciseBirthFields,
-  type BirthTimeMode,
 } from './birthTimeMode'
-import { BirthTimeModeToggle } from './BirthTimeModeToggle'
 import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
 
@@ -113,7 +113,13 @@ export function BirthTimeStep({
     : null
 
   let calibrationPreview: string | null = null
-  if (allowPreciseTime && mode === 'precise' && value.clockMinutes != null && value.lng != null && value.solarDate) {
+  if (
+    allowPreciseTime &&
+    mode === 'precise' &&
+    value.clockMinutes != null &&
+    value.lng != null &&
+    value.solarDate
+  ) {
     const [yStr, mStr, dStr] = value.solarDate.split('-')
     const y = Number.parseInt(yStr ?? '', 10)
     const m = Number.parseInt(mStr ?? '', 10)
@@ -145,8 +151,7 @@ export function BirthTimeStep({
         onNext()
       }
 
-  const nextDisabled =
-    mode === 'shichen' ? picked === null : value.clockMinutes == null
+  const nextDisabled = mode === 'shichen' ? picked === null : value.clockMinutes == null
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>

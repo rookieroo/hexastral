@@ -10,7 +10,11 @@ import {
 
 describe('vision prompts — no fake overlay contract', () => {
   test('system prompts contain zero overlay-lie keywords', () => {
-    for (const blob of [VISION_SYSTEM_PROMPT, VISION_SHA_SYSTEM_PROMPT, VISION_FORM_SYSTEM_PROMPT]) {
+    for (const blob of [
+      VISION_SYSTEM_PROMPT,
+      VISION_SHA_SYSTEM_PROMPT,
+      VISION_FORM_SYSTEM_PROMPT,
+    ]) {
       expect(promptContainsOverlayLies(blob)).toBeNull()
     }
   })

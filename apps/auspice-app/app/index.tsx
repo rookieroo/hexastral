@@ -1,8 +1,6 @@
 /**
- * Entry — Auspice is anonymous-first (ADR-0010 Tier 3): no sign-in gate, no
- * onboarding WALL. The only first-launch step is a light, skippable welcome
- * (app/welcome.tsx) that orients a first-time user; returning users boot
- * straight into Today. The almanac is never blocked behind it.
+ * Entry — Yuun is anonymous-first: no sign-in gate. First launch shows a light,
+ * skippable welcome; returning users boot straight into Today.
  */
 
 import { Redirect } from 'expo-router'

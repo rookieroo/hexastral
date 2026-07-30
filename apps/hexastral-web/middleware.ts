@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 import { resolveBrandRootRedirect } from './lib/brand-host'
 import {
   apexOriginFromRequest,
@@ -8,7 +9,6 @@ import {
   brandIdFromHost,
   stripLocalePrefix,
 } from './lib/growth/launch-status'
-import { routing } from './i18n/routing'
 
 const intlMiddleware = createMiddleware(routing)
 

@@ -16,10 +16,10 @@ import {
   BirthClockField,
   BirthDateField,
   type BirthDateFieldValue,
-  birthDateFieldLabelsForLocale,
   type BirthTimeMode,
-  birthTimeModeFromClock,
   BirthTimeModeToggle,
+  birthDateFieldLabelsForLocale,
+  birthTimeModeFromClock,
   CityPicker,
   type CityRecord,
   clearedPreciseBirthFields,
@@ -340,211 +340,211 @@ export default function BirthInfoScreen() {
             gap: spacing.lg,
           }}
         >
-            {/* Birth date — the shared HexAstral standard (BirthDateField):
+          {/* Birth date — the shared HexAstral standard (BirthDateField):
                 compact auto-formatted input that works identically for 公历 and
                 农历, plus a wheel affordance that summons the system cascading
                 picker (solar) / lunar wheels (农历). Storage stays solar; 农历
                 inputs convert on the fly. */}
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+              {t.birth_date_label}
+            </Text>
+            <BirthDateField
+              value={dateField}
+              onChange={setDateField}
+              accent={colors.accent}
+              labels={dateLabels}
+              locale={locale}
+            />
+          </View>
+
+          {/* Time mode: 时辰 XOR exact clock + city. */}
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+              {t.birth_time_label}
+            </Text>
+            <BirthTimeModeToggle
+              value={timeMode}
+              onChange={switchTimeMode}
+              accent={colors.accent}
+              labels={{
+                shichen: preciseCopy.modeShichen,
+                precise: preciseCopy.modePrecise,
+              }}
+            />
+          </View>
+
+          {timeMode === 'shichen' ? (
             <View style={{ gap: spacing.sm }}>
-              <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
-                {t.birth_date_label}
-              </Text>
-              <BirthDateField
-                value={dateField}
-                onChange={setDateField}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+                  {preciseCopy.modeShichen}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    applyClearedPrecise()
+                    setTimeIndex(null)
+                  }}
+                  hitSlop={6}
+                  accessibilityRole='button'
+                  accessibilityLabel={t.birth_time_unknown}
+                >
+                  <Text
+                    style={{
+                      color: timeIndex === null ? colors.accent : colors.secondary,
+                      fontSize: 12,
+                      fontWeight: timeIndex === null ? '600' : '400',
+                    }}
+                  >
+                    {t.birth_time_unknown}
+                  </Text>
+                </Pressable>
+              </View>
+              <ShichenField
+                value={timeIndex}
+                onChange={(idx: ShichenIndex) => {
+                  applyClearedPrecise()
+                  setTimeIndex(idx)
+                }}
                 accent={colors.accent}
-                labels={dateLabels}
+                labels={shichenFieldLabelsForLocale(locale)}
                 locale={locale}
               />
             </View>
-
-            {/* Time mode: 时辰 XOR exact clock + city. */}
-            <View style={{ gap: spacing.sm }}>
-              <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
-                {t.birth_time_label}
-              </Text>
-              <BirthTimeModeToggle
-                value={timeMode}
-                onChange={switchTimeMode}
+          ) : (
+            <View style={{ gap: spacing.md }}>
+              <BirthClockField
+                value={birth.birthClockMinutes ?? null}
+                onChange={handleClock}
                 accent={colors.accent}
+                locale={locale}
                 labels={{
-                  shichen: preciseCopy.modeShichen,
-                  precise: preciseCopy.modePrecise,
+                  placeholder: preciseCopy.preciseTimeLabel,
+                  done: preciseCopy.done,
                 }}
               />
-            </View>
 
-            {timeMode === 'shichen' ? (
-              <View style={{ gap: spacing.sm }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
-                    {preciseCopy.modeShichen}
+              {birth.birthClockMinutes != null ? (
+                <View style={{ gap: spacing.md }}>
+                  <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
+                    {preciseCopy.preciseCityLabel}
                   </Text>
+                  <CityPicker
+                    value={cityValue}
+                    onSelect={handlePreciseCity}
+                    search={searchCityRecords}
+                    topCities={DEFAULT_TOP_CITIES}
+                    placeholder={preciseCopy.preciseCityPlaceholder}
+                    scrollRef={scrollRef}
+                  />
+
+                  {lng != null ? (
+                    <View style={{ gap: spacing.sm }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Text style={{ color: colors.text, fontSize: 15 }}>
+                          {preciseCopy.calibrateLabel}
+                        </Text>
+                        <Toggle
+                          value={birth.birthSolarCalibrate !== false}
+                          onValueChange={(on) =>
+                            setBirth((prev) => ({ ...prev, birthSolarCalibrate: on }))
+                          }
+                          accent={colors.accent}
+                        />
+                      </View>
+                      {calibrationPreview ? (
+                        <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
+                          {calibrationPreview}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          )}
+
+          {/* Gender — 2-button segmented. */}
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+              {t.birth_gender_label}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {(
+                [
+                  ['男', t.birth_gender_male],
+                  ['女', t.birth_gender_female],
+                ] as const
+              ).map(([key, label]) => {
+                const selected = birth.gender === key
+                return (
                   <Pressable
-                    onPress={() => {
-                      applyClearedPrecise()
-                      setTimeIndex(null)
+                    key={key}
+                    onPress={() => setBirth((prev) => ({ ...prev, gender: key }))}
+                    style={{
+                      flex: 1,
+                      paddingVertical: spacing.sm,
+                      borderRadius: 10,
+                      borderWidth: 0.5,
+                      borderColor: selected ? colors.accent : colors.separator,
+                      backgroundColor: selected ? colors.accent : 'transparent',
+                      alignItems: 'center',
                     }}
-                    hitSlop={6}
-                    accessibilityRole='button'
-                    accessibilityLabel={t.birth_time_unknown}
                   >
                     <Text
                       style={{
-                        color: timeIndex === null ? colors.accent : colors.secondary,
-                        fontSize: 12,
-                        fontWeight: timeIndex === null ? '600' : '400',
+                        color: selected ? colors.bg : colors.text,
+                        fontSize: 15,
+                        fontWeight: selected ? '600' : '400',
                       }}
                     >
-                      {t.birth_time_unknown}
+                      {label}
                     </Text>
                   </Pressable>
-                </View>
-                <ShichenField
-                  value={timeIndex}
-                  onChange={(idx: ShichenIndex) => {
-                    applyClearedPrecise()
-                    setTimeIndex(idx)
-                  }}
-                  accent={colors.accent}
-                  labels={shichenFieldLabelsForLocale(locale)}
-                  locale={locale}
-                />
-              </View>
-            ) : (
-              <View style={{ gap: spacing.md }}>
-                <BirthClockField
-                  value={birth.birthClockMinutes ?? null}
-                  onChange={handleClock}
-                  accent={colors.accent}
-                  locale={locale}
-                  labels={{
-                    placeholder: preciseCopy.preciseTimeLabel,
-                    done: preciseCopy.done,
-                  }}
-                />
-
-                {birth.birthClockMinutes != null ? (
-                  <View style={{ gap: spacing.md }}>
-                    <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
-                      {preciseCopy.preciseCityLabel}
-                    </Text>
-                    <CityPicker
-                      value={cityValue}
-                      onSelect={handlePreciseCity}
-                      search={searchCityRecords}
-                      topCities={DEFAULT_TOP_CITIES}
-                      placeholder={preciseCopy.preciseCityPlaceholder}
-                      scrollRef={scrollRef}
-                    />
-
-                    {lng != null ? (
-                      <View style={{ gap: spacing.sm }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <Text style={{ color: colors.text, fontSize: 15 }}>
-                            {preciseCopy.calibrateLabel}
-                          </Text>
-                          <Toggle
-                            value={birth.birthSolarCalibrate !== false}
-                            onValueChange={(on) =>
-                              setBirth((prev) => ({ ...prev, birthSolarCalibrate: on }))
-                            }
-                            accent={colors.accent}
-                          />
-                        </View>
-                        {calibrationPreview ? (
-                          <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
-                            {calibrationPreview}
-                          </Text>
-                        ) : null}
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
-            )}
-
-            {/* Gender — 2-button segmented. */}
-            <View style={{ gap: spacing.sm }}>
-              <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
-                {t.birth_gender_label}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                {(
-                  [
-                    ['男', t.birth_gender_male],
-                    ['女', t.birth_gender_female],
-                  ] as const
-                ).map(([key, label]) => {
-                  const selected = birth.gender === key
-                  return (
-                    <Pressable
-                      key={key}
-                      onPress={() => setBirth((prev) => ({ ...prev, gender: key }))}
-                      style={{
-                        flex: 1,
-                        paddingVertical: spacing.sm,
-                        borderRadius: 10,
-                        borderWidth: 0.5,
-                        borderColor: selected ? colors.accent : colors.separator,
-                        backgroundColor: selected ? colors.accent : 'transparent',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: selected ? colors.bg : colors.text,
-                          fontSize: 15,
-                          fontWeight: selected ? '600' : '400',
-                        }}
-                      >
-                        {label}
-                      </Text>
-                    </Pressable>
-                  )
-                })}
-              </View>
+                )
+              })}
             </View>
+          </View>
 
-            {/* Save — disabled until date is valid. "Saved" feedback briefly. */}
-            <Pressable
-              onPress={saveBirth}
-              disabled={!birthValid || saving}
-              accessibilityRole='button'
-              accessibilityLabel={t.birth_save}
+          {/* Save — disabled until date is valid. "Saved" feedback briefly. */}
+          <Pressable
+            onPress={saveBirth}
+            disabled={!birthValid || saving}
+            accessibilityRole='button'
+            accessibilityLabel={t.birth_save}
+            style={{
+              marginTop: spacing.sm,
+              alignSelf: 'stretch',
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: birthValid ? colors.accent : colors.accentGhost,
+              alignItems: 'center',
+            }}
+          >
+            <Text
               style={{
-                marginTop: spacing.sm,
-                alignSelf: 'stretch',
-                paddingVertical: 12,
-                borderRadius: 12,
-                backgroundColor: birthValid ? colors.accent : colors.accentGhost,
-                alignItems: 'center',
+                color: birthValid ? colors.bg : colors.secondary,
+                fontSize: 15,
+                fontWeight: '600',
+                letterSpacing: 1,
               }}
             >
-              <Text
-                style={{
-                  color: birthValid ? colors.bg : colors.secondary,
-                  fontSize: 15,
-                  fontWeight: '600',
-                  letterSpacing: 1,
-                }}
-              >
-                {saving ? t.birth_saving : birthSaved ? t.birth_saved : t.birth_save}
-              </Text>
-            </Pressable>
-            <Text style={{ color: colors.secondary, fontSize: 12 }}>{t.birth_hint}</Text>
+              {saving ? t.birth_saving : birthSaved ? t.birth_saved : t.birth_save}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.secondary, fontSize: 12 }}>{t.birth_hint}</Text>
         </View>
 
         {/* Done — leaves the screen; the profile row reflects the saved summary. */}

@@ -56,7 +56,8 @@ export const XINGQI_CHAPTER_CANON: readonly ChapterCanon[] = [
     titleEn: 'Palms',
     sealBlurbZh: '又 — 甲骨侧掌三指',
     sealBlurbEn: 'Oracle-bone side-hand (three fingers)',
-    vocabZh: '掌形、生命线、智慧线、感情线、事业线、七丘（金星/木星/土星/太阳/水星/月/火星）、纹记、左右对照',
+    vocabZh:
+      '掌形、生命线、智慧线、感情线、事业线、七丘（金星/木星/土星/太阳/水星/月/火星）、纹记、左右对照',
     vocabEn: 'palm shape, major lines, seven mounts, marks, left/right pair',
   },
   {

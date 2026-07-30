@@ -47,9 +47,9 @@ describe('isPathIndexable', () => {
 
 describe('apexOriginFromRequest', () => {
   it('strips brand prefix to parent host', () => {
-    expect(
-      apexOriginFromRequest({ host: 'kanyu.hexastral.com', proto: 'https' })
-    ).toBe('https://hexastral.com')
+    expect(apexOriginFromRequest({ host: 'kanyu.hexastral.com', proto: 'https' })).toBe(
+      'https://hexastral.com'
+    )
     expect(apexOriginFromRequest({ host: 'yuel.localhost:3000', proto: 'http' })).toBe(
       'http://localhost:3000'
     )

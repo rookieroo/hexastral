@@ -18,9 +18,9 @@ import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
+import { moonPhaseForIsoDate } from '@/components/DailyCard'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
-import { moonPhaseForIsoDate } from '@/components/DailyCard'
 import { PhaseLogo } from '@/components/PhaseLogo'
 import {
   type AuspiceDayPayload,
@@ -33,8 +33,8 @@ import { getAuspiceBirthDate } from '@/lib/birth'
 import { lunarCellLabel } from '@/lib/calendar-display'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
-import { useStrings } from '@/lib/i18n-context'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
+import { useStrings } from '@/lib/i18n-context'
 
 const HOME_LOGO_SIZE = 28
 
@@ -225,10 +225,7 @@ export default function HomeScreen() {
         }}
       >
         <View accessibilityLabel='Yuun'>
-          <PhaseLogo
-            phase={devMoonPhase ?? todayMoonPhase}
-            size={HOME_LOGO_SIZE}
-          />
+          <PhaseLogo phase={devMoonPhase ?? todayMoonPhase} size={HOME_LOGO_SIZE} />
         </View>
         <Pressable
           onPress={goToMe}

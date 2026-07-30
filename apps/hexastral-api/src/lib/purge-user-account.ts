@@ -4,12 +4,27 @@
  * Privacy policy: account data permanently deleted within 30 days of account
  * deletion. This helper runs the physical purge immediately on in-app DELETE.
  *
- * Child tables without ON DELETE CASCADE are deleted explicitly before `users`.
- * Device-scoped Auspice rows keyed as `user:<userId>` are cleared here; purely
- * anonymous `device:<id>` rows are left (no account link).
+ * D1 enforces foreign keys and every FK in this schema is `ON DELETE no action`
+ * (RESTRICT), so the whole purge lives in ONE ordered plan: `PURGE_STEPS` runs
+ * children strictly before their parents, ending with `users`. A single D1
+ * `batch()` wraps it in one transaction — either the account is gone or nothing
+ * changed. Adding a table to the schema without adding it here is caught by
+ * `purge-user-account.test.ts`, which walks the real FK graph.
+ *
+ * Rows owned by OTHER users that point at rows we drop must go too, otherwise
+ * the transaction rolls back on a dangling reference:
+ *   - `bond_invitations.bond_id` → bonds where the deleted user is the target
+ *   - `bond_invite_credits.invite_id` → invites the deleted user sent
+ *
+ * Device-scoped Auspice rows keyed as `user:<userId>` are cleared here. Rows
+ * keyed as `device:<deviceId>` that were linked via
+ * `auspice_push_subs.portfolio_user_id` are also purged so account deletion
+ * does not leave 亲友 birthdays / make-if / timeline behind.
  */
 
-import { eq, or } from 'drizzle-orm'
+import { eq, inArray, or, type SQL } from 'drizzle-orm'
+import type { BatchItem } from 'drizzle-orm/batch'
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import {
   analyses,
   auspicePushSubs,
@@ -18,6 +33,7 @@ import {
   bondInviteCredits,
   chapterUnlockInvitations,
   contactHashes,
+  conversationMessages,
   conversations,
   dailyActivity,
   dailyAlmanac,
@@ -60,6 +76,153 @@ import { deleteFloorplans } from './feng-client'
 import { collectFloorplanKeys } from './feng-interior-compute'
 
 const userOwnerKey = (userId: string) => `user:${userId}`
+
+/** Ids resolved before the batch so every step is a plain, ordered DELETE. */
+export type PurgeScope = {
+  userId: string
+  /** `user:<id>` plus every `device:<id>` linked to this account. */
+  auspiceOwners: string[]
+  conversationIds: string[]
+  /** Bonds owned by, or pointing at, the deleted user. */
+  bondIds: string[]
+  /** Invites sent by the deleted user, plus any invite on a bond we drop. */
+  bondInvitationIds: string[]
+  pairReadingIds: string[]
+}
+
+type PurgeStep = {
+  table: SQLiteTable
+  where: (scope: PurgeScope) => SQL | undefined
+}
+
+/**
+ * Ordered delete plan — child tables first, `users` last. Order is load-bearing:
+ * D1 checks foreign keys per statement, so reversing two entries breaks account
+ * deletion for any user who has the referenced rows.
+ */
+export const PURGE_STEPS: readonly PurgeStep[] = [
+  // Chat: messages reference conversations.
+  {
+    table: conversationMessages,
+    where: (s) => inArray(conversationMessages.conversationId, s.conversationIds),
+  },
+  { table: conversations, where: (s) => eq(conversations.userId, s.userId) },
+
+  // Bonds: credits → invitations → bonds → pair readings.
+  {
+    table: bondInviteCredits,
+    where: (s) =>
+      or(
+        eq(bondInviteCredits.userId, s.userId),
+        inArray(bondInviteCredits.inviteId, s.bondInvitationIds)
+      ),
+  },
+  { table: bondInvitations, where: (s) => inArray(bondInvitations.id, s.bondInvitationIds) },
+  { table: kindredPushQueue, where: (s) => eq(kindredPushQueue.userId, s.userId) },
+  {
+    table: pairAnnualForecasts,
+    where: (s) =>
+      or(
+        eq(pairAnnualForecasts.userId, s.userId),
+        inArray(pairAnnualForecasts.pairReadingId, s.pairReadingIds)
+      ),
+  },
+  { table: userBonds, where: (s) => inArray(userBonds.id, s.bondIds) },
+  { table: pairReadings, where: (s) => eq(pairReadings.userId, s.userId) },
+
+  // Feng: jobs → reports → sites.
+  { table: fengJobs, where: (s) => eq(fengJobs.userId, s.userId) },
+  { table: fengReports, where: (s) => eq(fengReports.userId, s.userId) },
+  { table: fengSites, where: (s) => eq(fengSites.userId, s.userId) },
+
+  // Flat, dependency-free owned rows.
+  {
+    table: chapterUnlockInvitations,
+    where: (s) =>
+      or(
+        eq(chapterUnlockInvitations.inviterUserId, s.userId),
+        eq(chapterUnlockInvitations.redeemedByUserId, s.userId)
+      ),
+  },
+  {
+    table: readingGifts,
+    where: (s) =>
+      or(eq(readingGifts.senderUserId, s.userId), eq(readingGifts.recipientUserId, s.userId)),
+  },
+  { table: sharedReports, where: (s) => eq(sharedReports.userId, s.userId) },
+  { table: reportChapters, where: (s) => eq(reportChapters.userId, s.userId) },
+  { table: portfolioReadings, where: (s) => eq(portfolioReadings.userId, s.userId) },
+  { table: dailySignals, where: (s) => eq(dailySignals.userId, s.userId) },
+  { table: dailyAlmanac, where: (s) => eq(dailyAlmanac.userId, s.userId) },
+  { table: dailyActivity, where: (s) => eq(dailyActivity.userId, s.userId) },
+  { table: userPhysiognomyFeatures, where: (s) => eq(userPhysiognomyFeatures.userId, s.userId) },
+  { table: physiognomyEvents, where: (s) => eq(physiognomyEvents.userId, s.userId) },
+  { table: physiognomyReadings, where: (s) => eq(physiognomyReadings.userId, s.userId) },
+  { table: pushTokens, where: (s) => eq(pushTokens.userId, s.userId) },
+  { table: notificationAttributions, where: (s) => eq(notificationAttributions.userId, s.userId) },
+  { table: contactHashes, where: (s) => eq(contactHashes.userId, s.userId) },
+  { table: analyses, where: (s) => eq(analyses.userId, s.userId) },
+  { table: divinations, where: (s) => eq(divinations.userId, s.userId) },
+  { table: userCharts, where: (s) => eq(userCharts.userId, s.userId) },
+  { table: singlePurchases, where: (s) => eq(singlePurchases.userId, s.userId) },
+  { table: freeMonthlyQuotas, where: (s) => eq(freeMonthlyQuotas.userId, s.userId) },
+  { table: proMonthlyUsage, where: (s) => eq(proMonthlyUsage.userId, s.userId) },
+  { table: userEntitlements, where: (s) => eq(userEntitlements.userId, s.userId) },
+  { table: userCredits, where: (s) => eq(userCredits.userId, s.userId) },
+  { table: lifeEvents, where: (s) => eq(lifeEvents.userId, s.userId) },
+  { table: faceoracleJobs, where: (s) => eq(faceoracleJobs.userId, s.userId) },
+  { table: faceoraclePushQueue, where: (s) => eq(faceoraclePushQueue.userId, s.userId) },
+  { table: faceoraclePushSubs, where: (s) => eq(faceoraclePushSubs.userId, s.userId) },
+  { table: userGrowthAttributions, where: (s) => eq(userGrowthAttributions.userId, s.userId) },
+  { table: watchCredentials, where: (s) => eq(watchCredentials.userId, s.userId) },
+  { table: auspicePushSubs, where: (s) => eq(auspicePushSubs.portfolioUserId, s.userId) },
+  { table: makeifForks, where: (s) => inArray(makeifForks.owner, s.auspiceOwners) },
+  { table: timelineReadings, where: (s) => inArray(timelineReadings.owner, s.auspiceOwners) },
+  { table: birthdayReminders, where: (s) => inArray(birthdayReminders.owner, s.auspiceOwners) },
+
+  { table: users, where: (s) => eq(users.id, s.userId) },
+]
+
+async function resolvePurgeScope(db: AppDb, userId: string): Promise<PurgeScope> {
+  const [linkedSubs, convRows, bondRows, pairRows] = await Promise.all([
+    db
+      .select({ deviceId: auspicePushSubs.deviceId })
+      .from(auspicePushSubs)
+      .where(eq(auspicePushSubs.portfolioUserId, userId))
+      .all(),
+    db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .all(),
+    db
+      .select({ id: userBonds.id })
+      .from(userBonds)
+      .where(or(eq(userBonds.ownerId, userId), eq(userBonds.targetUserId, userId)))
+      .all(),
+    db
+      .select({ id: pairReadings.id })
+      .from(pairReadings)
+      .where(eq(pairReadings.userId, userId))
+      .all(),
+  ])
+
+  const bondIds = bondRows.map((r) => r.id)
+  const inviteRows = await db
+    .select({ id: bondInvitations.id })
+    .from(bondInvitations)
+    .where(or(eq(bondInvitations.inviterUserId, userId), inArray(bondInvitations.bondId, bondIds)))
+    .all()
+
+  return {
+    userId,
+    auspiceOwners: [userOwnerKey(userId), ...linkedSubs.map((s) => `device:${s.deviceId}`)],
+    conversationIds: convRows.map((r) => r.id),
+    bondIds,
+    bondInvitationIds: inviteRows.map((r) => r.id),
+    pairReadingIds: pairRows.map((r) => r.id),
+  }
+}
 
 export async function purgeUserAccount(
   db: AppDb,
@@ -125,62 +288,14 @@ export async function purgeUserAccount(
     )
   }
 
-  const owner = userOwnerKey(userId)
-
-  await db.batch([
-    db
-      .delete(chapterUnlockInvitations)
-      .where(
-        or(
-          eq(chapterUnlockInvitations.inviterUserId, userId),
-          eq(chapterUnlockInvitations.redeemedByUserId, userId)
-        )
-      ),
-    db.delete(bondInvitations).where(eq(bondInvitations.inviterUserId, userId)),
-    db.delete(bondInviteCredits).where(eq(bondInviteCredits.userId, userId)),
-    db
-      .delete(readingGifts)
-      .where(or(eq(readingGifts.senderUserId, userId), eq(readingGifts.recipientUserId, userId))),
-    db.delete(sharedReports).where(eq(sharedReports.userId, userId)),
-    db.delete(reportChapters).where(eq(reportChapters.userId, userId)),
-    db.delete(portfolioReadings).where(eq(portfolioReadings.userId, userId)),
-    db.delete(dailySignals).where(eq(dailySignals.userId, userId)),
-    db.delete(dailyAlmanac).where(eq(dailyAlmanac.userId, userId)),
-    db.delete(dailyActivity).where(eq(dailyActivity.userId, userId)),
-    db.delete(userPhysiognomyFeatures).where(eq(userPhysiognomyFeatures.userId, userId)),
-    db.delete(physiognomyEvents).where(eq(physiognomyEvents.userId, userId)),
-    db.delete(physiognomyReadings).where(eq(physiognomyReadings.userId, userId)),
-    db.delete(pairReadings).where(eq(pairReadings.userId, userId)),
-    db.delete(pairAnnualForecasts).where(eq(pairAnnualForecasts.userId, userId)),
-    db.delete(pushTokens).where(eq(pushTokens.userId, userId)),
-    db.delete(notificationAttributions).where(eq(notificationAttributions.userId, userId)),
-    db.delete(contactHashes).where(eq(contactHashes.userId, userId)),
-    db.delete(analyses).where(eq(analyses.userId, userId)),
-    db.delete(divinations).where(eq(divinations.userId, userId)),
-    db.delete(userCharts).where(eq(userCharts.userId, userId)),
-    db.delete(conversations).where(eq(conversations.userId, userId)),
-    db.delete(singlePurchases).where(eq(singlePurchases.userId, userId)),
-    db.delete(freeMonthlyQuotas).where(eq(freeMonthlyQuotas.userId, userId)),
-    db.delete(proMonthlyUsage).where(eq(proMonthlyUsage.userId, userId)),
-    db.delete(userEntitlements).where(eq(userEntitlements.userId, userId)),
-    db.delete(userCredits).where(eq(userCredits.userId, userId)),
-    db.delete(lifeEvents).where(eq(lifeEvents.userId, userId)),
-    db.delete(userBonds).where(eq(userBonds.ownerId, userId)),
-    db.delete(userBonds).where(eq(userBonds.targetUserId, userId)),
-    db.delete(kindredPushQueue).where(eq(kindredPushQueue.userId, userId)),
-    db.delete(fengJobs).where(eq(fengJobs.userId, userId)),
-    db.delete(fengReports).where(eq(fengReports.userId, userId)),
-    db.delete(fengSites).where(eq(fengSites.userId, userId)),
-    db.delete(faceoracleJobs).where(eq(faceoracleJobs.userId, userId)),
-    db.delete(faceoraclePushQueue).where(eq(faceoraclePushQueue.userId, userId)),
-    db.delete(faceoraclePushSubs).where(eq(faceoraclePushSubs.userId, userId)),
-    db.delete(userGrowthAttributions).where(eq(userGrowthAttributions.userId, userId)),
-    db.delete(watchCredentials).where(eq(watchCredentials.userId, userId)),
-    db.delete(auspicePushSubs).where(eq(auspicePushSubs.portfolioUserId, userId)),
-    db.delete(makeifForks).where(eq(makeifForks.owner, owner)),
-    db.delete(timelineReadings).where(eq(timelineReadings.owner, owner)),
-    db.delete(birthdayReminders).where(eq(birthdayReminders.owner, owner)),
-  ])
-
-  await db.delete(users).where(eq(users.id, userId))
+  const scope = await resolvePurgeScope(db, userId)
+  const statements: BatchItem<'sqlite'>[] = PURGE_STEPS.map((step) => {
+    const predicate = step.where(scope)
+    // An unfiltered DELETE would wipe the table for every user — refuse instead.
+    if (!predicate) throw new Error('purge step resolved to an unscoped delete')
+    return db.delete(step.table).where(predicate)
+  })
+  const [head, ...tail] = statements
+  if (!head) return
+  await db.batch([head, ...tail])
 }

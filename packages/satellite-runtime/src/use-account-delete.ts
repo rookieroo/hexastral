@@ -15,10 +15,16 @@ import { clearPortfolioUserId, getPortfolioUserId } from './session'
 
 export async function deletePortfolioAccount(): Promise<boolean> {
   const userId = await getPortfolioUserId()
-  if (!userId) return false
+  if (!userId) {
+    console.warn('[account.delete] no portfolio user id on device')
+    return false
+  }
   const path = `/api/user/${encodeURIComponent(userId)}`
   const signed = await signRequest({ body: '', userId, method: 'DELETE', path })
-  if (!signed) return false
+  if (!signed) {
+    console.warn('[account.delete] request signing failed')
+    return false
+  }
   try {
     const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
       method: 'DELETE',
@@ -27,8 +33,14 @@ export async function deletePortfolioAccount(): Promise<boolean> {
         ...signed,
       },
     })
-    if (!res.ok) return false
-  } catch {
+    // 404 means the account is already gone — fall through and clear the stale
+    // local credential, otherwise the device can never leave the failed state.
+    if (!res.ok && res.status !== 404) {
+      console.error('[account.delete] server rejected delete', res.status, await res.text())
+      return false
+    }
+  } catch (err) {
+    console.error('[account.delete] request failed', err)
     return false
   }
   // Clear local credentials so the device reverts to anonymous tier.

@@ -6,28 +6,26 @@
  * server message inline + lets the user retry.
  */
 
-import { fengPriceEstimate, useCreateSite, useFengClient, type FengPriceQuote } from '@zhop/scenario-feng'
 import { isCompoundFacing } from '@zhop/astro-core'
+import {
+  type FengPriceQuote,
+  fengPriceEstimate,
+  useCreateSite,
+  useFengClient,
+} from '@zhop/scenario-feng'
 import { type Href, useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { CompoundFacingTeachCard } from '@/components/CompoundFacingTeachCard'
+import { ProgressIndicator } from '@/components/ProgressIndicator'
 import { useNewSiteGuard } from '@/hooks/useNewSiteGuard'
 import { useAuth } from '@/lib/auth'
 import { type FengBirthInfo, fetchBirthInfo } from '@/lib/birth-info'
-import {
-  assessDraftQuality,
-  hasDraftBlockers,
-  type DraftQualityIssueId,
-} from '@/lib/draft-quality'
-import {
-  normalizeResidenceType,
-  streetViewEnabledForResidence,
-} from '@/lib/feng-pricing-client'
-import { hasFengAnalyzeAccess } from '@/lib/purchase'
+import { assessDraftQuality, type DraftQualityIssueId, hasDraftBlockers } from '@/lib/draft-quality'
+import { normalizeResidenceType, streetViewEnabledForResidence } from '@/lib/feng-pricing-client'
 import { resolveLocale, useStrings } from '@/lib/i18n'
+import { hasFengAnalyzeAccess } from '@/lib/purchase'
 import { clearDraft, isDraftReady, loadDraft, type SiteDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
 
@@ -166,10 +164,7 @@ export default function ReviewScreen() {
     }
   }
 
-  const qualityIssues = useMemo(
-    () => (draft ? assessDraftQuality(draft) : []),
-    [draft]
-  )
+  const qualityIssues = useMemo(() => (draft ? assessDraftQuality(draft) : []), [draft])
   const qualityMessage = (id: DraftQualityIssueId): string => {
     switch (id) {
       case 'incomplete':
@@ -320,7 +315,9 @@ export default function ReviewScreen() {
             gap: spacing.xs,
           }}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <Text style={{ color: colors.textMute, fontSize: 14 }}>{t.new_site_review_price}</Text>
             <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>
               {priceQuote.displayPrice}
@@ -375,7 +372,9 @@ export default function ReviewScreen() {
               {t.new_site_review_processing.replace('{stage}', 'maps')}
             </Text>
           </View>
-          <Text style={{ color: colors.textMute, fontSize: 12 }}>{t.new_site_review_analyze_eta}</Text>
+          <Text style={{ color: colors.textMute, fontSize: 12 }}>
+            {t.new_site_review_analyze_eta}
+          </Text>
         </View>
       ) : null}
 

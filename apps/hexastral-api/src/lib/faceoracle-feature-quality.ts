@@ -62,9 +62,7 @@ export type FeatureQualityResult =
   | { ok: false; code: FeatureQualityCode; detail: string }
 
 function asEntries(features: Record<string, string>): Array<[string, string]> {
-  return Object.entries(features).filter(
-    ([, v]) => typeof v === 'string' && v.trim().length > 0
-  )
+  return Object.entries(features).filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
 }
 
 function isUnclear(v: string): boolean {
@@ -107,8 +105,7 @@ export function assessFaceoracleFeatureQuality(
     return { ok: false, code: 'photo_quality_low', detail: 'too_few_keys' }
   }
 
-  const unclearRatio =
-    entries.filter(([, v]) => isUnclear(v)).length / Math.max(entries.length, 1)
+  const unclearRatio = entries.filter(([, v]) => isUnclear(v)).length / Math.max(entries.length, 1)
   if (unclearRatio >= 0.55) {
     return { ok: false, code: 'photo_quality_low', detail: 'unclear_ratio' }
   }

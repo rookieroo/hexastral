@@ -1,11 +1,9 @@
 /**
  * First-launch onboarding flag.
  *
- * Auspice is anonymous-first (ADR-0010 Tier 3): the almanac works with no
- * sign-in and no birth. So onboarding is a single light WELCOME — it orients
- * the user and points at birth entry for the 对你而言 layer, then gets out of
- * the way. This flag gates that welcome to the very first launch only; the
- * almanac is never blocked behind it.
+ * Yuun is anonymous-first: the almanac works with no sign-in. Onboarding is a
+ * single light welcome that orients the user toward optional birth entry, then
+ * gets out of the way.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'

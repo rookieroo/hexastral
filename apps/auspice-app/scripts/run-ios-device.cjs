@@ -16,8 +16,7 @@ const path = require('node:path')
 const shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yuun-xcodebuild-'))
 const shimPath = path.join(shimDir, 'xcodebuild')
 const realXcodebuild =
-  spawnSync('which', ['xcodebuild'], { encoding: 'utf8' }).stdout.trim() ||
-  '/usr/bin/xcodebuild'
+  spawnSync('which', ['xcodebuild'], { encoding: 'utf8' }).stdout.trim() || '/usr/bin/xcodebuild'
 
 fs.writeFileSync(
   shimPath,

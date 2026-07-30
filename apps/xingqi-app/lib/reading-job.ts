@@ -6,7 +6,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getPushPermissionStatus, requestPushPermission } from '@zhop/satellite-runtime'
-import { Alert, AppState, Linking, type AppStateStatus } from 'react-native'
+import { Alert, AppState, type AppStateStatus, Linking } from 'react-native'
 
 import {
   type FaceoracleJobPoll,
@@ -337,11 +337,7 @@ function mapJobError(msg: string, locale: string): string {
       'Still processing in the cloud — we will notify you when ready',
       'クラウドで処理中です。完了したらお知らせします'
     )
-  } else if (
-    msg === 'network_error' ||
-    msg === 'request_timeout' ||
-    isTransientNetworkError(msg)
-  ) {
+  } else if (msg === 'network_error' || msg === 'request_timeout' || isTransientNetworkError(msg)) {
     error = zhCopy(
       locale,
       '网络中断。若已开始解读，云端会继续处理，完成后会通知你。',
@@ -367,7 +363,8 @@ function keepQueuedAfterDisconnect(notifyQueued?: () => void): void {
   notifyQueued?.()
   setState({
     status: 'running',
-    phase: state.phase === 'extracting' ? 'queued' : state.phase === 'idle' ? 'queued' : state.phase,
+    phase:
+      state.phase === 'extracting' ? 'queued' : state.phase === 'idle' ? 'queued' : state.phase,
     error: null,
     progress: Math.max(state.progress, 50),
   })

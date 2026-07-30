@@ -64,9 +64,7 @@ export function TermBubble({
                 </Text>
               ) : null}
             </View>
-            <Text style={{ color: colors.ink, fontSize: 15, lineHeight: 24 }}>
-              {term.short}
-            </Text>
+            <Text style={{ color: colors.ink, fontSize: 15, lineHeight: 24 }}>{term.short}</Text>
             {term.long ? (
               <Text style={{ color: colors.muted, fontSize: 14, lineHeight: 22 }}>{term.long}</Text>
             ) : null}

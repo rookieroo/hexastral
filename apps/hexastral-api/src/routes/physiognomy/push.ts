@@ -6,11 +6,11 @@
  * POST /unregister-stale — X-Internal-Key
  */
 
-import { and, eq, gte, inArray, lt, or, isNull } from 'drizzle-orm'
+import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
+import { and, eq, gte, inArray, isNull, lt, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import { faceoraclePushQueue, faceoraclePushSubs, physiognomyEvents } from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
 import { jsonOk } from '../../lib/api-response'
@@ -80,8 +80,7 @@ function pushCopy(locale: string) {
   }
   return {
     recaptureTitle: 'Time to refresh your reading',
-    recaptureBody:
-      'A new monthly window is open. Refresh all three photos, or update one part.',
+    recaptureBody: 'A new monthly window is open. Refresh all three photos, or update one part.',
     eventTitle: 'A window worth noting',
   }
 }
@@ -328,7 +327,7 @@ physiognomyPushRoutes.get('/targets', async (c) => {
         return !cooled.has(key)
       })
       if (top) {
-        let data: Record<string, string> = { kind: top.kind, targetApp: 'faceoracle' }
+        const data: Record<string, string> = { kind: top.kind, targetApp: 'faceoracle' }
         if (top.dataJson) {
           try {
             const parsed: unknown = JSON.parse(top.dataJson)

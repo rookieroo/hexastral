@@ -5,8 +5,8 @@
  * so the strip never looks “stuck in Chinese”. Solar terms stay localized.
  */
 
-import { localizeSolarTermName } from './culture'
 import type { AuspiceMonthDay } from './api'
+import { localizeSolarTermName } from './culture'
 import type { Locale } from './i18n'
 
 export type CalendarDisplayMode = 'full' | 'compact' | 'holidaysOnly'
@@ -58,13 +58,16 @@ export function lunarHeaderLabel(
  * zh: 五月十五 / 闰六月初一 · en: Chinese calendar 5/15 · ja: 旧暦5月15日
  */
 export function dayIdentityLunarLabel(
-  lunar: {
-    month: number
-    day: number
-    monthName?: string
-    dayName?: string
-    isLeap?: boolean
-  } | null | undefined,
+  lunar:
+    | {
+        month: number
+        day: number
+        monthName?: string
+        dayName?: string
+        isLeap?: boolean
+      }
+    | null
+    | undefined,
   locale: Locale,
   _mode: CalendarDisplayMode = defaultCalendarDisplayMode(locale)
 ): string {

@@ -2,16 +2,16 @@
  * React context for 宜忌 display mode (modern / traditional).
  */
 
+import { defaultYijiModeForLocale, type YijiVocabularyMode } from '@zhop/astro-core'
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from 'react'
-import { defaultYijiModeForLocale, type YijiVocabularyMode } from '@zhop/astro-core'
 import { useStrings } from './i18n-context'
 import {
   getYijiModeOverride,

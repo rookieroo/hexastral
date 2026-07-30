@@ -271,9 +271,7 @@ export default function XingqiMakeIfScreen() {
         }}
       >
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={{ color: colors.accent }}>
-            {s('返回', '返回', 'Back', '戻る')}
-          </Text>
+          <Text style={{ color: colors.accent }}>{s('返回', '返回', 'Back', '戻る')}</Text>
         </Pressable>
         <Text style={{ fontFamily: 'CrimsonPro', color: colors.text, fontSize: 28 }}>
           {copy.screenTitle}

@@ -12,11 +12,11 @@
  */
 
 import {
+  type BaguaPalace,
+  type DirectionVerdict,
   houseDirections,
   isHighPriorityRoom,
   resolveRoomBaZhaiDualTrack,
-  type BaguaPalace,
-  type DirectionVerdict,
   type ZhaiMingConcord,
 } from '@zhop/astro-core'
 import type { InteriorVisionResult } from './feng-client'
@@ -87,7 +87,10 @@ export function deriveRoomFindings(
           )
         : (() => {
             const zhaiSide = house.lucky.some((d) => d.palace === palace)
-              ? { verdict: 'lucky' as const, kind: house.lucky.find((d) => d.palace === palace)?.kind ?? null }
+              ? {
+                  verdict: 'lucky' as const,
+                  kind: house.lucky.find((d) => d.palace === palace)?.kind ?? null,
+                }
               : house.unlucky.some((d) => d.palace === palace)
                 ? {
                     verdict: 'unlucky' as const,

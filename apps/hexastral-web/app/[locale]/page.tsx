@@ -8,7 +8,7 @@ import { SyelHome } from '@/components/brand/SyelHome'
 import { YaulHome } from '@/components/brand/YaulHome'
 import { YuelHome } from '@/components/brand/YuelHome'
 import { YuunHome } from '@/components/brand/YuunHome'
-import { appIsPublicSurface, type AppId } from '@/lib/growth/launch-status'
+import { type AppId, appIsPublicSurface } from '@/lib/growth/launch-status'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -81,7 +81,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       icons: { icon: '/brand/yuun.png' },
       openGraph: {
         title: 'Yuun · 运',
-        description: 'Free public almanac on Home, Lock Screen, and Watch. Add birth for a free For you summary.',
+        description:
+          'Free public almanac on Home, Lock Screen, and Watch. Add birth for a free For you summary.',
         siteName: 'Yuun',
       },
       alternates: { canonical: '/' },

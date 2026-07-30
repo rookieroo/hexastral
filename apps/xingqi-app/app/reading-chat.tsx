@@ -9,11 +9,7 @@ import {
   useChatSharePreview,
   useTheme,
 } from '@zhop/core-ui'
-import {
-  getPortfolioUserId,
-  hasEntitlement,
-  useEntitlements,
-} from '@zhop/satellite-runtime'
+import { getPortfolioUserId, hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -55,12 +51,7 @@ export default function XingqiReadingChatScreen() {
 
   const copy = useMemo<ReadingChatStrings>(
     () => ({
-      title: s(
-        '追问本期形气',
-        '追問本期形氣',
-        'Ask about this reading',
-        '今回の形気について質問'
-      ),
+      title: s('追问本期形气', '追問本期形氣', 'Ask about this reading', '今回の形気について質問'),
       emptyHint: s(
         '就划词或章节提问。回答是文化研读，非命运判决。',
         '就劃詞或章節提問。回答是文化研讀，非命運判決。',
@@ -94,11 +85,7 @@ export default function XingqiReadingChatScreen() {
           ? ['這句話的形氣依據是什麼？', '本期宜留意什麼窗口？', '和八字對照怎麼讀？']
           : ['这句话的形气依据是什么？', '本期宜留意什么窗口？', '和八字对照怎么读？']
         : isJa(locale)
-          ? [
-              'この文の形気の根拠は？',
-              '今回留意すべき窓は？',
-              '八字との対照はどう読む？',
-            ]
+          ? ['この文の形気の根拠は？', '今回留意すべき窓は？', '八字との対照はどう読む？']
           : [
               'What is the form basis?',
               'What windows are worth noting?',
@@ -129,12 +116,7 @@ export default function XingqiReadingChatScreen() {
       like: s('有用', '有用', 'Like', '役に立った'),
       dislike: s('没用', '沒用', 'Dislike', '役に立たなかった'),
       share: s('分享', '分享', 'Share', '共有'),
-      dislikeNotAccurate: s(
-        '内容不准',
-        '內容不準',
-        'Not accurate',
-        '内容が不正確'
-      ),
+      dislikeNotAccurate: s('内容不准', '內容不準', 'Not accurate', '内容が不正確'),
       dislikeReport: s(
         '举报不当内容',
         '舉報不當內容',
@@ -147,12 +129,7 @@ export default function XingqiReadingChatScreen() {
         'Select messages for the share image',
         '共有画像に含めるメッセージを選択'
       ),
-      generateShareImage: s(
-        '生成分享图',
-        '生成分享圖',
-        'Generate image',
-        '共有画像を作成'
-      ),
+      generateShareImage: s('生成分享图', '生成分享圖', 'Generate image', '共有画像を作成'),
       cancel: s('取消', '取消', 'Cancel', 'キャンセル'),
     }),
     [locale]

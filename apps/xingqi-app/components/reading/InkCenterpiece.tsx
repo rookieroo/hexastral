@@ -77,9 +77,7 @@ function mulberry32(seed: number) {
 }
 
 function gauss(rnd: () => number, sd: number) {
-  return (
-    sd * Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd())
-  )
+  return sd * Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd())
 }
 
 /** One brush dab — elongated ellipse (墨点/笔触), not a hard circle cluster only. */
@@ -130,19 +128,47 @@ function buildWash(relation: InkRelation, seed: number): Dab[] {
       )
     }
     for (let i = 0; i < 16; i++) {
-      dab(CX + gauss(rnd, 22), CY + gauss(rnd, 18), 22 + rnd() * 36, 14 + rnd() * 20, true, 0.22 + rnd() * 0.28)
+      dab(
+        CX + gauss(rnd, 22),
+        CY + gauss(rnd, 18),
+        22 + rnd() * 36,
+        14 + rnd() * 20,
+        true,
+        0.22 + rnd() * 0.28
+      )
     }
     // pale bloom around core (宣纸吃墨) — mid taupe, not near-white
     for (let i = 0; i < 10; i++) {
-      dab(CX + gauss(rnd, 50), CY + gauss(rnd, 40), 40 + rnd() * 50, 24 + rnd() * 30, false, 0.18 + rnd() * 0.14)
+      dab(
+        CX + gauss(rnd, 50),
+        CY + gauss(rnd, 40),
+        40 + rnd() * 50,
+        24 + rnd() * 30,
+        false,
+        0.18 + rnd() * 0.14
+      )
     }
   } else if (relation === 'pair') {
     // 对 — twin 墨团 like two palms (焦墨 | 淡墨), soft mid breath
     for (let i = 0; i < 22; i++) {
-      dab(155 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, true, 0.18 + rnd() * 0.26)
+      dab(
+        155 + gauss(rnd, 28),
+        CY + gauss(rnd, 48),
+        16 + rnd() * 34,
+        12 + rnd() * 26,
+        true,
+        0.18 + rnd() * 0.26
+      )
     }
     for (let i = 0; i < 22; i++) {
-      dab(405 + gauss(rnd, 28), CY + gauss(rnd, 48), 16 + rnd() * 34, 12 + rnd() * 26, false, 0.28 + rnd() * 0.32)
+      dab(
+        405 + gauss(rnd, 28),
+        CY + gauss(rnd, 48),
+        16 + rnd() * 34,
+        12 + rnd() * 26,
+        false,
+        0.28 + rnd() * 0.32
+      )
     }
     for (let i = 0; i < 6; i++) {
       dab(CX + gauss(rnd, 12), CY + gauss(rnd, 8), 8 + rnd() * 14, 5 + rnd() * 8, rnd() > 0.5, 0.08)
@@ -151,11 +177,25 @@ function buildWash(relation: InkRelation, seed: number): Dab[] {
     // 照 — 浓淡对峙，中缝留白如飞白
     for (let i = 0; i < 26; i++) {
       const x = 60 + rnd() * (CX - 100) + gauss(rnd, 8)
-      dab(Math.min(x, CX - 28), CY + gauss(rnd, 55), 14 + rnd() * 32, 11 + rnd() * 28, true, 0.16 + rnd() * 0.24)
+      dab(
+        Math.min(x, CX - 28),
+        CY + gauss(rnd, 55),
+        14 + rnd() * 32,
+        11 + rnd() * 28,
+        true,
+        0.16 + rnd() * 0.24
+      )
     }
     for (let i = 0; i < 26; i++) {
       const x = CX + 100 + rnd() * (W - CX - 160) + gauss(rnd, 8)
-      dab(Math.max(x, CX + 28), CY + gauss(rnd, 55), 14 + rnd() * 32, 11 + rnd() * 28, false, 0.32 + rnd() * 0.28)
+      dab(
+        Math.max(x, CX + 28),
+        CY + gauss(rnd, 55),
+        14 + rnd() * 32,
+        11 + rnd() * 28,
+        false,
+        0.32 + rnd() * 0.28
+      )
     }
   } else {
     // 流 — 一笔长皴 / 墨线顺势而下
@@ -167,7 +207,14 @@ function buildWash(relation: InkRelation, seed: number): Dab[] {
     }
     for (let i = 0; i < 14; i++) {
       const t = rnd()
-      dab(70 + t * 420 + gauss(rnd, 35), 40 + t * 200 + gauss(rnd, 40), 20 + rnd() * 30, 8 + rnd() * 14, rnd() > 0.45, 0.07)
+      dab(
+        70 + t * 420 + gauss(rnd, 35),
+        40 + t * 200 + gauss(rnd, 40),
+        20 + rnd() * 30,
+        8 + rnd() * 14,
+        rnd() > 0.45,
+        0.07
+      )
     }
   }
 
@@ -299,10 +346,7 @@ export function InkCenterpiece({
   /** Only the 五行 seal — chapter glyph already sits in the title row. */
   const sealSize = Math.max(22, Math.round(width * 0.09))
   const cap = INK_CAPTION[relation]
-  const caption =
-    locale == null
-      ? null
-      : pickUi(locale, cap.zh, cap.zhHant, cap.en, cap.ja)
+  const caption = locale == null ? null : pickUi(locale, cap.zh, cap.zhHant, cap.en, cap.ja)
 
   return (
     <View style={{ width, alignSelf: 'center', gap: 8 }}>

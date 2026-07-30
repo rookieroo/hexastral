@@ -4,8 +4,12 @@
  * Birth fields always stay on `users` (account SSOT). These flags only control
  * whether a GET returns the body to a given (targetApp, installationId).
  *
- * Legacy rows (no `birthSourceApp`) remain readable by any authenticated caller
- * until the next explicit PUT stamps source + defaults.
+ * Legacy rows without `birthSourceApp` are NOT treated as cross-app open: the
+ * first authenticated caller with context may read (so Yuun can reconcile), and
+ * the next PUT stamps source. Until stamped, other apps should not assume
+ * permanent cross-app access — evaluateBirthSyncAccess still returns available
+ * for unstamped rows so migration is possible, but GET now requires caller
+ * context (no anonymous/context-less body dump).
  */
 
 export type BirthSyncAccessStatus =
@@ -66,7 +70,9 @@ export function evaluateBirthSyncAccess(
 ): BirthSyncAccessStatus {
   if (!row?.birthSolarDate) return 'empty'
 
-  // Legacy: no source stamped → any authenticated app may read.
+  // Unstamped history: allow read for the requesting caller so the home app can
+  // reconcile and stamp on next PUT. Cross-app remains closed once a source is
+  // stamped without crossAppSyncEnabled.
   if (!row.birthSourceApp) return 'available'
 
   const sameApp = row.birthSourceApp === ctx.targetApp

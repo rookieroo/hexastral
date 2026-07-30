@@ -8,14 +8,15 @@
  *   4. widget sync without personalization
  */
 
-import { deletePortfolioAccount } from '@zhop/satellite-runtime'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { deletePortfolioAccount } from '@zhop/satellite-runtime'
 import Purchases from 'react-native-purchases'
-import { clearAuspiceBirthDate } from './birth'
-import { clearAuspiceGetCache } from './api'
 import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
-import { clearYuunWatchCredential } from './watch-provision'
+import { clearAuspiceGetCache } from './api'
+import { clearAuspiceBirthDate } from './birth'
 import type { Locale } from './i18n'
+import { clearPeople } from './people'
+import { clearYuunWatchCredential } from './watch-provision'
 
 const LOCAL_KEYS = [
   'auspice.bonds.transferred',
@@ -27,6 +28,9 @@ const LOCAL_KEYS = [
   'auspice.timeline.enabled',
   'auspice.watch.credential.v1',
   'auspice.yiji.displayMode',
+  'auspice.people',
+  'auspice.birthDate',
+  'auspice.birthInfo',
 ]
 
 export async function deleteYuunAccount(locale: Locale): Promise<boolean> {
@@ -46,6 +50,11 @@ export async function deleteYuunAccount(locale: Locale): Promise<boolean> {
     await clearAuspiceBirthDate()
   } catch (err) {
     console.warn('[yuun.account] clear birth failed', err)
+  }
+  try {
+    await clearPeople()
+  } catch (err) {
+    console.warn('[yuun.account] clear people failed', err)
   }
   try {
     clearAuspiceGetCache()

@@ -24,8 +24,6 @@ export const APARTMENT_MAX_FLOORPLAN_IMAGES = 1
  * Per-residence upload cap. apartment → 1 (single layout, base tier);
  * flat / villa → MAX (multi-floor / large premium report).
  */
-export function maxFloorplanImagesFor(
-  residenceType: 'apartment' | 'flat' | 'villa'
-): number {
+export function maxFloorplanImagesFor(residenceType: 'apartment' | 'flat' | 'villa'): number {
   return residenceType === 'apartment' ? APARTMENT_MAX_FLOORPLAN_IMAGES : MAX_FLOORPLAN_IMAGES
 }

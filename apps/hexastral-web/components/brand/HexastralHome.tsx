@@ -3,9 +3,9 @@ import { StarBackground } from '@/components/StarBackground'
 import { Link } from '@/i18n/navigation'
 import {
   APP_LAUNCH,
+  type AppId,
   appIsComingSoon,
   getHomepageAppsByAvailability,
-  type AppId,
 } from '@/lib/growth/launch-status'
 import { type BrandLocale, pickLocale } from './brand-config'
 
@@ -55,7 +55,8 @@ const STR: Record<BrandLocale, Strings> = {
     yuel: 'Your reading, and the people you’re bound to — synastry and personal chart.',
     yuun: 'Daily Chinese almanac — free on Home, Lock Screen, and Watch; add birth for For you.',
     yaul: 'I Ching Liu Yao — three-coin casting, hexagram journal, classical AI read.',
-    kanyu: 'Classical feng-shui site analysis — pin a site, compass bearing, optional floor plan, structured report.',
+    kanyu:
+      'Classical feng-shui site analysis — pin a site, compass bearing, optional floor plan, structured report.',
     syel: 'Face, palms, and natal chart — form-qi loci and a five-chapter brief.',
     foot: 'Educational, not predictive',
     appLabel: { yuel: 'Yuel', yuun: 'Yuun', yaul: 'Yaul', kanyu: 'Kanyu', syel: 'Syel' },
@@ -206,7 +207,8 @@ const JSON_LD_DESCRIPTION: Record<AppId, string> = {
   yuel: 'A personal BaZi and ZiWei chart with two-chart synastry. Educational, not predictive.',
   yuun: 'A daily Chinese almanac grounded in classical cosmology. Educational, not predictive.',
   yaul: 'An I Ching Liu Yao study journal with 3D coin casting. Educational, not predictive.',
-  kanyu: 'Classical feng-shui site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
+  kanyu:
+    'Classical feng-shui site analysis with compass, satellite context, and optional floor plans. Educational, not predictive.',
   syel: 'Face and palm form-qi reading with BaZi contrast. Educational, not predictive.',
 }
 
@@ -242,7 +244,13 @@ function AppIcon({ id }: { id: AppId }) {
   if (style.icon) {
     return (
       // biome-ignore lint/performance/noImgElement: static brand asset
-      <img src={style.icon} alt={APP_LAUNCH[id].displayName} width={30} height={30} style={{ borderRadius: 8 }} />
+      <img
+        src={style.icon}
+        alt={APP_LAUNCH[id].displayName}
+        width={30}
+        height={30}
+        style={{ borderRadius: 8 }}
+      />
     )
   }
   return (
@@ -264,15 +272,7 @@ function AppIcon({ id }: { id: AppId }) {
   )
 }
 
-function AppCard({
-  id,
-  t,
-  large,
-}: {
-  id: AppId
-  t: Strings
-  large: boolean
-}) {
+function AppCard({ id, t, large }: { id: AppId; t: Strings; large: boolean }) {
   const app = APP_LAUNCH[id]
   const style = APP_STYLE[id]
   const copyKey = APP_COPY_KEY[id]
@@ -462,7 +462,14 @@ export function HexastralHome({ locale, origin }: { locale: string; origin: stri
         }}
       >
         {live.length > 0 ? (
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: comingSoon.length ? 24 : 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 16,
+              flexWrap: 'wrap',
+              marginBottom: comingSoon.length ? 24 : 0,
+            }}
+          >
             {live.map((app) => (
               <AppCard key={app.id} id={app.id} t={t} large />
             ))}

@@ -1,11 +1,8 @@
-import {
-  getHexagramDetail,
-  resolveHexagramLocale,
-} from '@zhop/hexastral-tokens/constants/hexagram'
+import { getHexagramDetail, resolveHexagramLocale } from '@zhop/hexastral-tokens/constants/hexagram'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
-import { localeToBcp47, type Locale } from '@/i18n/routing'
+import { type Locale, localeToBcp47 } from '@/i18n/routing'
 import { JsonLd } from '@/lib/json-ld'
 
 function hexagramLocaleFromWeb(locale: string) {
@@ -131,8 +128,8 @@ export default async function HexagramDetailPage({ params }: Props) {
         }}
       >
         Canonical Chinese text surfaced for citation. Literary English polish ships in Yaul
-        interpretive UX when it launches. Provided for scholarship and mindfulness — never for guaranteed
-        outcomes.
+        interpretive UX when it launches. Provided for scholarship and mindfulness — never for
+        guaranteed outcomes.
       </p>
       <footer style={{ marginTop: '1.75rem', fontSize: '0.9rem' }}>
         Explore all 64 hexagrams via{' '}

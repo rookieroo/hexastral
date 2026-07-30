@@ -51,16 +51,21 @@ formLiRouter.post('/interpret', async (c) => {
       schema: FormLiNotesSchema,
       maxRetries: 2,
       call: async () => {
-        const text = await callWithFallback(c.env, FORM_LI_SYSTEM_PROMPT, userPrompt + forbiddenSuffix + auditSuffix, {
-          tier: 'flagship',
-          responseSchema: FORM_LI_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-          maxTokens: MAX_TOKENS,
-          temperature: 0.35,
-          metricLabel: 'feng-form-li',
-          locale,
-          totalBudgetMs: WALL_MS,
-          perModelTimeoutMs: 20_000,
-        })
+        const text = await callWithFallback(
+          c.env,
+          FORM_LI_SYSTEM_PROMPT,
+          userPrompt + forbiddenSuffix + auditSuffix,
+          {
+            tier: 'flagship',
+            responseSchema: FORM_LI_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
+            maxTokens: MAX_TOKENS,
+            temperature: 0.35,
+            metricLabel: 'feng-form-li',
+            locale,
+            totalBudgetMs: WALL_MS,
+            perModelTimeoutMs: 20_000,
+          }
+        )
         const parsedJson = JSON.parse(text) as unknown
         const zod = FormLiNotesSchema.safeParse(parsedJson)
         if (!zod.success) {

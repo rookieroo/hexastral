@@ -43,14 +43,14 @@ export const CHAPTER_TITLE: Record<
   XingqiChapterKind,
   { zh: string; zhHant: string; en: string; ja: string }
 > = {
-    overview: { zh: '总格局', zhHant: '總格局', en: 'Overview', ja: '総合' },
-    face: { zh: '面部', zhHant: '面部', en: 'The Form · Face', ja: '顔' },
-    palms: { zh: '双手', zhHant: '雙手', en: 'The Form · Palms', ja: '両手' },
-    natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form-qi × BaZi', ja: '形気 × 八字' },
-    horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next', ja: '近運と行動' },
-    period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period', ja: '本期' },
-    advice: { zh: '建议', zhHant: '建議', en: 'Advice', ja: '留意' },
-  }
+  overview: { zh: '总格局', zhHant: '總格局', en: 'Overview', ja: '総合' },
+  face: { zh: '面部', zhHant: '面部', en: 'The Form · Face', ja: '顔' },
+  palms: { zh: '双手', zhHant: '雙手', en: 'The Form · Palms', ja: '両手' },
+  natal: { zh: '形气 × 八字', zhHant: '形氣 × 八字', en: 'Form-qi × BaZi', ja: '形気 × 八字' },
+  horizon: { zh: '近运与行动', zhHant: '近運與行動', en: 'Near & Next', ja: '近運と行動' },
+  period: { zh: '本期窗口', zhHant: '本期窗口', en: 'Period', ja: '本期' },
+  advice: { zh: '建议', zhHant: '建議', en: 'Advice', ja: '留意' },
+}
 
 export function chapterTitle(kind: XingqiChapterKind, locale: string): string {
   const row = CHAPTER_TITLE[kind]
@@ -140,7 +140,7 @@ function chapterFromBody(
 function parseChapter(raw: unknown): XingqiChapter | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
-  let kind = o.kind
+  const kind = o.kind
   if (typeof kind !== 'string') return null
   // Remap unexpected legacy duplicates only when kind is already in ORDER.
   if (!ORDER.includes(kind as XingqiChapterKind)) return null

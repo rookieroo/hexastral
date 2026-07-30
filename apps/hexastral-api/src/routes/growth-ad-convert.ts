@@ -39,7 +39,8 @@ growthAdConvertRoutes.post('/', async (c) => {
     client_user_agent: parsed.data.client_user_agent ?? c.req.header('user-agent') ?? undefined,
   }
 
-  const kind = message.event_name === 'Lead' || message.event_name === 'ViewContent' ? 'cta' : 'other'
+  const kind =
+    message.event_name === 'Lead' || message.event_name === 'ViewContent' ? 'cta' : 'other'
   const result = await enqueueAdConvert(c.env, message, kind)
   if (!result.ok) {
     throw new HTTPException(503, { message: 'Postback queue unavailable' })

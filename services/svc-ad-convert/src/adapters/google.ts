@@ -65,7 +65,12 @@ export async function sendGoogle(env: Env, msg: AdConvertMessage): Promise<Vendo
     })
     const text = await res.text().catch(() => '')
     if (res.status === 401 || res.status === 403) {
-      return { vendor: 'google', status: 'auth_error', httpStatus: res.status, body: text.slice(0, 400) }
+      return {
+        vendor: 'google',
+        status: 'auth_error',
+        httpStatus: res.status,
+        body: text.slice(0, 400),
+      }
     }
     if (!res.ok) {
       const transient = res.status >= 500 || res.status === 429

@@ -12,34 +12,29 @@ import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Text, useWindowDimensions, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
+import { CultureSnippetCard } from '@/components/CultureSnippetCard'
 import type { AuspiceDayPayload, RokuyoInfo } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
-import { CultureSnippetCard } from '@/components/CultureSnippetCard'
-import {
-  dayIdentityLunarLabel,
-  formatGregorianIdentity,
-} from '@/lib/calendar-display'
+import { dayIdentityLunarLabel, formatGregorianIdentity } from '@/lib/calendar-display'
 import { localizeSolarTermName } from '@/lib/culture'
 import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-preview'
+import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
 import type { Locale, RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
-import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
-import { displayYijiVerb } from '@/lib/yiji-vocab'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
+import { displayYijiVerb } from '@/lib/yiji-vocab'
 import { AuspicePaywallSheet } from './AuspicePaywallSheet'
 import { ExplainSheet } from './ExplainSheet'
 import { PersonalCard } from './PersonalCard'
-import { type SharePalette, ShareableCard, sharePaletteFor } from './ShareableCard'
+import { ShareableCard, type SharePalette, sharePaletteFor } from './ShareableCard'
 import { YiJiBlock } from './YiJiBlock'
 
 function SectionLabel({ children }: { children: string }) {
   const { colors } = useTheme()
-  return (
-    <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{children}</Text>
-  )
+  return <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>{children}</Text>
 }
 
 const ROKUYO_TONE = ['good', 'bad', 'mixed', 'good', 'mixed', 'bad'] as const
@@ -102,7 +97,11 @@ export function DayView({
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(true)
   const sharePalette = sharePaletteFor(isDark)
-  const { shotRef, capturing, share: shareImage } = useImageShare({
+  const {
+    shotRef,
+    capturing,
+    share: shareImage,
+  } = useImageShare({
     prewarm: true,
     warmKey: `${date}-${isDark ? 'd' : 'l'}`,
   })
@@ -116,11 +115,7 @@ export function DayView({
   const dayGanzhiPinyin = locale === 'en' ? (ganzhiPinyin(day.ganZhi)?.toned ?? null) : null
   const gregorian = formatGregorianIdentity(date, locale as Locale)
   const yg = day.yearGanZhi
-  const identitySub = [
-    gregorian,
-    lunar,
-    isZh && yg ? `${yg.stem}${yg.branch}年` : '',
-  ]
+  const identitySub = [gregorian, lunar, isZh && yg ? `${yg.stem}${yg.branch}年` : '']
     .filter(Boolean)
     .join(' · ')
 
@@ -143,9 +138,7 @@ export function DayView({
   const snippet = cultureSnippetForHome(day, locale)
   const onCultureDay = cultureId !== null
   const upcomingTagline =
-    snippet && !onCultureDay
-      ? t.cultureUpcomingTerm.replace('{name}', snippet.title)
-      : undefined
+    snippet && !onCultureDay ? t.cultureUpcomingTerm.replace('{name}', snippet.title) : undefined
 
   return (
     <View style={{ gap: spacing.xl }}>
@@ -390,15 +383,7 @@ function ShareYiJi({
   // Match on-screen YiJiBlock: only the 宜/忌 headers are tinted; chips stay neutral.
   const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(43,33,24,0.04)'
 
-  const Column = ({
-    label,
-    items,
-    accent,
-  }: {
-    label: string
-    items: string[]
-    accent: string
-  }) => (
+  const Column = ({ label, items, accent }: { label: string; items: string[]; accent: string }) => (
     <View style={{ flex: 1, gap: spacing.sm }}>
       <Text
         style={{

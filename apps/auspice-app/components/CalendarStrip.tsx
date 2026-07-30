@@ -31,13 +31,13 @@ import {
 } from 'react-native'
 
 import { MoonLoader } from '@/components/MoonLoader'
+import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import {
   defaultCalendarDisplayMode,
   lunarCellLabel,
   lunarHeaderLabel,
   showRatingCellShading,
 } from '@/lib/calendar-display'
-import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 

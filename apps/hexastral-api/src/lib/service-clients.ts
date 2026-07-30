@@ -162,12 +162,7 @@ export const geocodeClient = {
 // ── svc-notify ────────────────────────────────────────────────────────────
 
 export const notifyClient = {
-  post<T = unknown>(
-    svc: Fetcher,
-    path: string,
-    body: unknown,
-    internalKey: string
-  ): Promise<T> {
+  post<T = unknown>(svc: Fetcher, path: string, body: unknown, internalKey: string): Promise<T> {
     return servicePost<T>(svc, 'svc-notify', path, body, TIMEOUTS.notify, {
       'X-Internal-Key': internalKey,
     })

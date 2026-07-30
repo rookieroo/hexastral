@@ -42,7 +42,8 @@ export function MeDevTools() {
   const devProLabel = devPro === null ? 'Off · real' : devPro === 'pro' ? 'PRO' : 'FREE'
 
   const cycleDevLocale = () => {
-    const next = DEV_LOCALE_ORDER[(DEV_LOCALE_ORDER.indexOf(devLocale) + 1) % DEV_LOCALE_ORDER.length] ?? null
+    const next =
+      DEV_LOCALE_ORDER[(DEV_LOCALE_ORDER.indexOf(devLocale) + 1) % DEV_LOCALE_ORDER.length] ?? null
     setCoincastDevLocale(next)
     setDevLocale(next)
     DevSettings.reload()

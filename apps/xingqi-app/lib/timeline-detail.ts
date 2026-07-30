@@ -10,9 +10,8 @@ import {
   type HeavenlyStem,
   type WuXing,
 } from '@zhop/astro-core'
-
-import type { Locale } from './i18n'
 import type { NodeDetail, PersonalFit, TimelinePayload } from './cycle-types'
+import type { Locale } from './i18n'
 
 const ADVICE: Record<Locale, Record<PersonalFit, string>> = {
   zh: {

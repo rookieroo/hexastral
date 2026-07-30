@@ -200,18 +200,14 @@ export function appIdForGatedPath(pathWithoutLocale: string): AppId | null {
  * Apex origin for redirecting a locked brand host (kanyu.hexastral.com → hexastral.com).
  * Preserves proto + parent host for local / preview (kanyu.localhost → localhost).
  */
-export function apexOriginFromRequest(opts: {
-  host: string
-  proto?: string | null
-}): string {
+export function apexOriginFromRequest(opts: { host: string; proto?: string | null }): string {
   const proto = opts.proto ?? 'https'
   const host = opts.host || 'hexastral.com'
   const brandId = brandIdFromHost(host)
   if (!brandId) return `${proto}://${host}`
   const entry = BRAND_HOST_TO_APP.find((b) => b.id === brandId)
-  const parent = entry && host.toLowerCase().startsWith(entry.prefix)
-    ? host.slice(entry.prefix.length)
-    : host
+  const parent =
+    entry && host.toLowerCase().startsWith(entry.prefix) ? host.slice(entry.prefix.length) : host
   return `${proto}://${parent || 'hexastral.com'}`
 }
 

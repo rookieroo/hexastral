@@ -31,12 +31,12 @@ import {
   lunarToSolar,
   type PersonalAlmanacSubject,
   personalAlmanacOverlay,
+  resolveYijiSearchVerbs,
   STEM_WUXING,
   type SynastryResult,
   solarToLunar,
   YIJI_EVENT_VERBS,
   YIJI_EVENTS,
-  resolveYijiSearchVerbs,
 } from '@zhop/astro-core'
 import {
   type Branch as CorpusBranch,
@@ -44,6 +44,7 @@ import {
   type Stem as CorpusStem,
   computeDailyHook,
 } from '@zhop/astro-i18n'
+import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import { and, eq, inArray, lt } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -58,7 +59,6 @@ import {
 } from '../lib/auspice-pro'
 import { astroClient } from '../lib/service-clients'
 import { hasActiveEntitlement } from '../services/entitlements'
-import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
 import {
   evaluateLlmGuard,
   type LlmGuardConfig,
@@ -1343,9 +1343,7 @@ function runSearch(
 
   const verbs =
     verbsOverride ??
-    (EVENTS.includes(event as AuspiceEvent)
-      ? EVENT_VERBS[event as AuspiceEvent]
-      : null)
+    (EVENTS.includes(event as AuspiceEvent) ? EVENT_VERBS[event as AuspiceEvent] : null)
   if (!verbs) {
     throw new HTTPException(400, { message: `unknown event: ${event}` })
   }
@@ -1418,10 +1416,7 @@ auspiceRoutes.get('/search', (c) => {
   // Stable event ids keep the same response `event`; aliases echo the request key.
   const eventKey = resolved.event ?? parsed.event
   const specialized = false
-  return jsonOk(
-    c,
-    runSearch(eventKey, parsed.from, parsed.to, specialized, locale, resolved.verbs)
-  )
+  return jsonOk(c, runSearch(eventKey, parsed.from, parsed.to, specialized, locale, resolved.verbs))
 })
 
 // ── Specialized 择日 routes (Sprint 2 deliverable #3) ─────────────
@@ -1598,11 +1593,7 @@ auspiceRoutes.post('/explain', async (c) => {
     `auspice:explain:${body.date}:${field}:${body.locale}:${bucket}`
 
   // Pro-gate (订阅解锁): server entitlement via portfolio `u` — not body.isPro.
-  const isPro = await resolveAuspiceIsPro(
-    c.get('db'),
-    c.env as unknown as CalendarEnv,
-    body.u
-  )
+  const isPro = await resolveAuspiceIsPro(c.get('db'), c.env as unknown as CalendarEnv, body.u)
   if (!isPro) {
     return jsonOk(c, {
       explanation: templateExplanation(almanac, body.field),
@@ -1726,11 +1717,7 @@ const makeifSchema = z.object({
 auspiceRoutes.post('/makeif', async (c) => {
   const body = makeifSchema.parse(await c.req.json().catch(() => ({})))
 
-  const isPro = await resolveAuspiceIsPro(
-    c.get('db'),
-    c.env as unknown as CalendarEnv,
-    body.u
-  )
+  const isPro = await resolveAuspiceIsPro(c.get('db'), c.env as unknown as CalendarEnv, body.u)
   if (!isPro) return jsonOk(c, { narratives: {}, summaries: {}, source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
@@ -1855,11 +1842,7 @@ const auspiceMonthlySchema = z.object({
 auspiceRoutes.post('/monthly', async (c) => {
   const body = auspiceMonthlySchema.parse(await c.req.json().catch(() => ({})))
 
-  const isPro = await resolveAuspiceIsPro(
-    c.get('db'),
-    c.env as unknown as CalendarEnv,
-    body.u
-  )
+  const isPro = await resolveAuspiceIsPro(c.get('db'), c.env as unknown as CalendarEnv, body.u)
   if (!isPro) return c.json({ error: 'pro_required' }, 402)
 
   const cacheKey = `auspice:monthly:v1:${body.birthDate}:${body.timeIndex}:${body.gender}:${body.locale}:${body.monthKey}`
@@ -1957,11 +1940,7 @@ const makeifNodeSchema = z.object({
 auspiceRoutes.post('/makeif/node', async (c) => {
   const body = makeifNodeSchema.parse(await c.req.json().catch(() => ({})))
 
-  const isPro = await resolveAuspiceIsPro(
-    c.get('db'),
-    c.env as unknown as CalendarEnv,
-    body.u
-  )
+  const isPro = await resolveAuspiceIsPro(c.get('db'), c.env as unknown as CalendarEnv, body.u)
   if (!isPro) return jsonOk(c, { narrative: '', source: 'locked' })
 
   const ymd = parseYmd(body.birthDate)
@@ -2368,8 +2347,17 @@ interface AuspicePushSubRow {
   locale: string
   birthDate: string | null
   isPro: boolean
+  /** Present when the device registered while signed in — unlocks Tier-2 push. */
+  portfolioUserId?: string | null
   /** Null/undefined → derive from locale via defaultYijiModeForLocale. */
   yijiMode?: string | null
+}
+
+/** Push personalization ladder: anonymous = public only; signed-in = fit; Pro = fit + tips. */
+function pushPersonalTier(sub: AuspicePushSubRow): 'public' | 'signed' | 'pro' {
+  if (sub.isPro) return 'pro'
+  if (sub.portfolioUserId) return 'signed'
+  return 'public'
 }
 
 function resolvePushYijiMode(sub: AuspicePushSubRow): 'modern' | 'traditional' {
@@ -2593,15 +2581,15 @@ export function renderAuspicePush(
       locale: sub.locale,
     })
     const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
-    // The evening verdict is a GENERIC forward clause (好機 / 慎重) — NOT tomorrow's
-    // dailyHook. The hook is exactly what the next 08:00 push leads with, so previewing
-    // it here made 8pm ≈ 8am ("晚八点和早八点内容完全一样"). en used to lead with the hook;
-    // it now matches CJK and uses the generic clause. The title already says "Tomorrow".
+    const tier = pushPersonalTier(sub)
+    // Evening personal fit is Pro-only (Tier 3 conversion hook). Signed-in Free
+    // still gets festival/solar-term heads-up; anonymous gets the same public path.
+    const useFit = tier === 'pro' && personalization
     if (sub.locale.startsWith('en')) {
       const fitClause =
-        sub.isPro && personalization?.fit === '吉'
+        useFit && personalization?.fit === '吉'
           ? L.eveningGood
-          : sub.isPro && personalization?.fit === '凶'
+          : useFit && personalization?.fit === '凶'
             ? L.eveningCaution
             : null
       if (!special && !fitClause) return null
@@ -2616,9 +2604,9 @@ export function renderAuspicePush(
       }
     }
     const fitClause =
-      sub.isPro && personalization?.fit === '吉'
+      useFit && personalization?.fit === '吉'
         ? L.eveningGood
-        : sub.isPro && personalization?.fit === '凶'
+        : useFit && personalization?.fit === '凶'
           ? L.eveningCaution
           : null
     if (!special && !fitClause) return null
@@ -2631,36 +2619,47 @@ export function renderAuspicePush(
     }
   }
 
-  // Morning (08:00): today's almanac. The title leads with the 干支 day + (Pro)
-  // the personal verdict — NOT the date (the notification timestamps itself, so
-  // a date there wastes the most valuable line; founder 2026-06). A 节气/节日 folds
-  // in: the title for free, the body for Pro (whose title already has the verdict).
+  // Morning (08:00): today's almanac.
+  // Tier 1 anonymous = public 黄历 only.
+  // Tier 2 signed-in Free = personal fit conclusion.
+  // Tier 3 Pro = fit + deterministic reason codes (no LLM).
   const { day, personalization, dailyHook } = buildDay(dateYmd, subject, {
     seed: sub.birthDate ?? undefined,
     locale: sub.locale,
   })
   const dateStr = fmtUtc(ymdToDate(dateYmd))
-  // Non-CJK (en this slice): lead with the personalized hook, NOT the opaque 干支
-  // day-label ("Water Pig day"). Body = the natural-language lens (no 宜忌 verbs).
-  // Free for everyone — the hook is the DAU lure; the deep reading stays the Pro wall.
-  if (sub.locale.startsWith('en') && dailyHook) {
+  const tier = pushPersonalTier(sub)
+  const showPersonal = tier !== 'public' && personalization
+
+  // en: personalized hook only for signed-in+; anonymous stays on public 干支 path below.
+  if (sub.locale.startsWith('en') && showPersonal && dailyHook) {
+    const title =
+      tier === 'pro' && personalization
+        ? `${dailyHook.title} · ${L.fit[personalization.fit] ?? personalization.fit}`
+        : dailyHook.title
+    let body = dailyHook.lens
+    if (tier === 'pro' && personalization?.reasons?.length) {
+      body += ` · ${personalization.reasons.slice(0, 2).join(', ')}`
+    }
     return {
-      title: dailyHook.title,
-      body: dailyHook.lens,
+      title,
+      body,
       data: { type: 'auspice_daily', day: dateStr, hookKey: dailyHook.hookKey },
     }
   }
-  const yi = day.goodFor
-    .slice(0, 3)
-    .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
-    .join('、') || '—'
-  const ji = day.avoid
-    .slice(0, 3)
-    .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
-    .join('、') || '—'
+  const yi =
+    day.goodFor
+      .slice(0, 3)
+      .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
+      .join('、') || '—'
+  const ji =
+    day.avoid
+      .slice(0, 3)
+      .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
+      .join('、') || '—'
   const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
   const dayId = `${day.ganZhi}${L.daySuffix}`
-  const pers = sub.isPro ? personalization : null
+  const pers = showPersonal ? personalization : null
   const title = pers
     ? `${dayId} · ${L.forYou}${L.fit[pers.fit] ?? pers.fit}`
     : special
@@ -2668,6 +2667,9 @@ export function renderAuspicePush(
       : dayId
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
   if (pers && special) body += ` · ${special}`
+  if (tier === 'pro' && pers?.reasons?.length) {
+    body += ` · ${pers.reasons.slice(0, 2).join(' · ')}`
+  }
   return { title, body, data: { type: 'auspice_daily', day: dateStr } }
 }
 
@@ -2705,12 +2707,7 @@ auspiceRoutes.post('/push/register', async (c) => {
   const timezoneId = canonicalizeTimezoneToPool(b.timezoneId)
   const now = new Date().toISOString()
   const db = c.get('db')
-  const isPro = await resolveAuspicePushIsPro(
-    db,
-    c.env as unknown as CalendarEnv,
-    b.isPro,
-    b.u
-  )
+  const isPro = await resolveAuspicePushIsPro(db, c.env as unknown as CalendarEnv, b.isPro, b.u)
   const portfolioUserId = b.u?.trim() ? b.u.trim() : null
   await db
     .insert(auspicePushSubs)

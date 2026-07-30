@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import {
   isSatellitePrivacyKey,
-  SATELLITE_PRIVACY_APPENDICES,
+  resolveSatelliteAppendix,
   SATELLITE_PRIVACY_KEYS,
 } from '@/lib/legal/satellite-privacy-appendices'
 import { appIsPublicSurface, type AppId } from '@/lib/growth/launch-status'
@@ -43,7 +43,7 @@ export function generateStaticParams(): { locale: Locale; appKey: string }[] {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { appKey } = await params
+  const { locale, appKey } = await params
   const key = resolveCanonicalPrivacyKey(appKey)
   if (!isSatellitePrivacyKey(key)) {
     return { title: 'Privacy appendix' }
@@ -51,7 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!appIsPublicSurface(key as AppId)) {
     return { title: 'Privacy appendix', robots: { index: false } }
   }
-  const appendix = SATELLITE_PRIVACY_APPENDICES[key]
+  const appendixLocale =
+    locale === 'zh' || locale === 'tw' || locale === 'ja' ? locale : 'en'
+  const appendix = resolveSatelliteAppendix(key, appendixLocale)
   return {
     title: `${appendix.displayName} · Privacy appendix · HexAstral`,
     description: appendix.summary,
@@ -71,7 +73,9 @@ export default async function SatellitePrivacyAppendixPage({ params }: Props) {
   if (!appIsPublicSurface(appKey as AppId)) {
     redirect(`/${locale}/privacy`)
   }
-  const appendix = SATELLITE_PRIVACY_APPENDICES[appKey]
+  const appendixLocale =
+    locale === 'zh' || locale === 'tw' || locale === 'ja' ? locale : 'en'
+  const appendix = resolveSatelliteAppendix(appKey, appendixLocale)
 
   return (
     <main

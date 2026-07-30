@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: 'Yuun · Chinese almanac',
     alternates: {
       canonical:
-        locale === 'en' ? 'https://hexastral.com/lp/yuun' : `https://hexastral.com/${locale}/lp/yuun`,
+        locale === 'en'
+          ? 'https://hexastral.com/lp/yuun'
+          : `https://hexastral.com/${locale}/lp/yuun`,
     },
   }
 }
@@ -28,8 +30,8 @@ export default async function LpYuunPage({ params }: Props) {
     <>
       <h1 style={{ fontWeight: 400 }}>Today&apos;s 黄历 — free for everyone</h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
-        Public 宜忌 on Home, Lock Screen, and Apple Watch. Add birth info for a free For you summary.
-        Pro deepens reasons, timeline, and calendar — cultural reference, not prediction.
+        Public 宜忌 on Home, Lock Screen, and Apple Watch. Add birth info for a free For you
+        summary. Pro deepens reasons, timeline, and calendar — cultural reference, not prediction.
       </p>
       <DownloadCTA
         headline='Yuun — free public almanac; For you when you add birth'

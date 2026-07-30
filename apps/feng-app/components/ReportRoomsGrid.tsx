@@ -43,10 +43,7 @@ function placementLine(
   if (roomType === '灶位' || roomType === '厨房') {
     return t.report_room_join_stove
       .replace('{palace}', palace)
-      .replace(
-        '{fav}',
-        placement.stove.mouthToward.palace ?? placement.stove.sitAt.palace ?? '—'
-      )
+      .replace('{fav}', placement.stove.mouthToward.palace ?? placement.stove.sitAt.palace ?? '—')
   }
   return null
 }
@@ -86,7 +83,9 @@ export function ReportRoomsGrid({
     return rooms.map((r) => {
       const key = r.roomType ? normalizeConfirmableType(r.roomType) : null
       const over = key ? overrides[key] : undefined
-      return over ? { ...r, palace: over, _overridden: true as const } : { ...r, _overridden: false as const }
+      return over
+        ? { ...r, palace: over, _overridden: true as const }
+        : { ...r, _overridden: false as const }
     })
   }, [rooms, overrides])
 

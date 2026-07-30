@@ -536,9 +536,16 @@ export const userRoutes = new Hono<AppEnv>()
     const user = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
     if (!user) throw new HTTPException(404, { message: 'User not found' })
 
-    await purgeUserAccount(db, c.env, userId, (p) => {
-      c.executionCtx.waitUntil(p)
-    })
+    try {
+      await purgeUserAccount(db, c.env, userId, (p) => {
+        c.executionCtx.waitUntil(p)
+      })
+    } catch (err) {
+      // The purge is one transaction, so a failure means nothing was deleted.
+      // Log the cause — the client can only surface a generic retry prompt.
+      console.error('account_purge_failed', { userId, error: String(err) })
+      throw new HTTPException(500, { message: 'Account deletion failed' })
+    }
 
     return c.json({ data: { deleted: true } })
   })

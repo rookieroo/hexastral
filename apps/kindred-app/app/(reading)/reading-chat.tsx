@@ -16,11 +16,7 @@
  * capability resolver gates this under kindred_pro. Identity = useAuth().userId.
  */
 
-import {
-  ReadingChatScreen,
-  type ReadingChatStrings,
-  useChatSharePreview,
-} from '@zhop/core-ui'
+import { ReadingChatScreen, type ReadingChatStrings, useChatSharePreview } from '@zhop/core-ui'
 import { kindredDark, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
@@ -28,12 +24,7 @@ import { useMemo } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { useAuth } from '@/lib/auth'
-import {
-  fetchChatHistory,
-  rateChatMessage,
-  reportChatMessage,
-  sendChatMessage,
-} from '@/lib/chat'
+import { fetchChatHistory, rateChatMessage, reportChatMessage, sendChatMessage } from '@/lib/chat'
 import { resolveLocale, useI18n } from '@/lib/i18n'
 import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
 
@@ -161,7 +152,12 @@ export default function ReadingChatRoute() {
           backgroundColor: kindredDark.bg,
         }}
       >
-        <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11, lineHeight: 16 }]}>
+        <Text
+          style={[
+            kindredType.caption,
+            { color: kindredDark.textMuted, fontSize: 11, lineHeight: 16 },
+          ]}
+        >
           {t('chat.legalDisclaimer')}
         </Text>
       </View>

@@ -7,12 +7,7 @@ interface PageProps {
   params: Promise<{ locale: string }>
 }
 
-const INDEX_TOOL_KEYS = [
-  'dayMaster',
-  'hexagram',
-  'shengXiao',
-  'compatibility',
-] as const
+const INDEX_TOOL_KEYS = ['dayMaster', 'hexagram', 'shengXiao', 'compatibility'] as const
 
 const INDEX_TOOL_HREFS: Record<(typeof INDEX_TOOL_KEYS)[number], string> = {
   dayMaster: '/tools/day-master',

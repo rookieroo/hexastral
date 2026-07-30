@@ -210,7 +210,12 @@ export default function XingqiGlossaryScreen() {
         </Text>
 
         <SectionLabel colors={colors} cjk={cjk}>
-          {s('① 章节 · 印 · 墨 · 用语', '① 章節 · 印 · 墨 · 用語', '1 · Chapter · seal · ink · vocab', '① 章 · 印 · 墨 · 用語')}
+          {s(
+            '① 章节 · 印 · 墨 · 用语',
+            '① 章節 · 印 · 墨 · 用語',
+            '1 · Chapter · seal · ink · vocab',
+            '① 章 · 印 · 墨 · 用語'
+          )}
         </SectionLabel>
         <Text
           style={{
@@ -228,7 +233,13 @@ export default function XingqiGlossaryScreen() {
           )}
         </Text>
 
-        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.xl }}>
+        <View
+          style={{
+            borderTopWidth: 0.5,
+            borderTopColor: colors.separator,
+            marginBottom: spacing.xl,
+          }}
+        >
           {XINGQI_CHAPTER_CANON.map((c) => {
             const ink = INK_LABEL[c.ink]
             return (
@@ -263,7 +274,12 @@ export default function XingqiGlossaryScreen() {
                       lineHeight: metaSize + 4,
                     }}
                   >
-                    {s(c.sealBlurbZh, SEAL_BLURB_HANT[c.kind] ?? c.sealBlurbZh, c.sealBlurbEn, SEAL_BLURB_JA[c.kind])}
+                    {s(
+                      c.sealBlurbZh,
+                      SEAL_BLURB_HANT[c.kind] ?? c.sealBlurbZh,
+                      c.sealBlurbEn,
+                      SEAL_BLURB_JA[c.kind]
+                    )}
                     {' · '}
                     {s(ink.zh, ink.zhHant, ink.en, ink.ja)}
                   </Text>
@@ -330,7 +346,13 @@ export default function XingqiGlossaryScreen() {
         >
           {s('面', '面', 'Face', '顔')}
         </Text>
-        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.lg }}>
+        <View
+          style={{
+            borderTopWidth: 0.5,
+            borderTopColor: colors.separator,
+            marginBottom: spacing.lg,
+          }}
+        >
           {XINGQI_LOCUS_CANON.filter((l) => l.group === 'face').map((l) => (
             <View
               key={l.featureKey}
@@ -381,7 +403,13 @@ export default function XingqiGlossaryScreen() {
         >
           {s('掌', '掌', 'Palm', '掌')}
         </Text>
-        <View style={{ borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: spacing.xl }}>
+        <View
+          style={{
+            borderTopWidth: 0.5,
+            borderTopColor: colors.separator,
+            marginBottom: spacing.xl,
+          }}
+        >
           {XINGQI_LOCUS_CANON.filter((l) => l.group === 'palm').map((l) => (
             <View
               key={l.featureKey}

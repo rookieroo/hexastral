@@ -5,10 +5,7 @@ import {
   unluckyDirections,
   zhaiMingConcord,
 } from '../../feng/ba-zhai'
-import {
-  isHighPriorityRoom,
-  resolveRoomBaZhaiDualTrack,
-} from '../../feng/room-ba-zhai'
+import { isHighPriorityRoom, resolveRoomBaZhaiDualTrack } from '../../feng/room-ba-zhai'
 
 describe('resolveRoomBaZhaiDualTrack', () => {
   it('marks 一致 when concordant and same verdict per palace', () => {

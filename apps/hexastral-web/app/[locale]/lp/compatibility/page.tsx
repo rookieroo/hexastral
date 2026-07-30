@@ -23,7 +23,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LpCompatibilityPage() {
   return (
     <>
-      <h1 style={{ fontWeight: 400 }}>Two charts, one bond — explore the shape of your connection</h1>
+      <h1 style={{ fontWeight: 400 }}>
+        Two charts, one bond — explore the shape of your connection
+      </h1>
       <p style={{ color: 'var(--color-ivory-dim)' }}>
         A cultural bond reading (合盘) in Yuel — reflection on attraction and friction themes, not a
         compatibility score or prediction.

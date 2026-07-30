@@ -103,9 +103,7 @@ export async function clearLastReadingPhotoSnapshot(): Promise<void> {
  * True when local period photos match the last successful reading's files
  * (mtime+size) and/or the same feature ids are still bound.
  */
-export async function localPhotosUnchangedSinceLastReading(
-  draft: ReadingDraft
-): Promise<boolean> {
+export async function localPhotosUnchangedSinceLastReading(draft: ReadingDraft): Promise<boolean> {
   const snap = await loadLastReadingPhotoSnapshot()
   if (!snap) return false
 

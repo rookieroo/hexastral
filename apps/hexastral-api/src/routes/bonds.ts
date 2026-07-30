@@ -50,8 +50,8 @@ import {
   harvestKindredPushSnippets,
   linkKindredPushToBond,
 } from '../lib/kindred-push-harvest'
-import { pushLocalesEqual } from '../lib/push-locale'
 import { sendPushEvent } from '../lib/push'
+import { pushLocalesEqual } from '../lib/push-locale'
 import { buildBondMakeIf } from '../lib/relationship-makeif'
 import { explainRelationshipMakeIfWindow } from '../lib/relationship-makeif-explain'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'

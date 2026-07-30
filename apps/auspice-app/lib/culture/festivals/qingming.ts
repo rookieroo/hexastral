@@ -98,7 +98,7 @@ export const QINGMING: FestivalContent = {
       },
       {
         title: 'Food',
-        body: 'The Cold Food legacy gives Qingming many cold dishes. The lower Yangtze has qingtuan (青团) — glutinous rice dough kneaded with mugwort or barley-grass juice, wrapped around red-bean or savory filling, jade-green and fragrant. The north has Zitui buns and fried dough twists (馓子). A bite of qingtuan is the taste of spring, and a tongue\'s memory of the ancient Cold Food rite.',
+        body: "The Cold Food legacy gives Qingming many cold dishes. The lower Yangtze has qingtuan (青团) — glutinous rice dough kneaded with mugwort or barley-grass juice, wrapped around red-bean or savory filling, jade-green and fragrant. The north has Zitui buns and fried dough twists (馓子). A bite of qingtuan is the taste of spring, and a tongue's memory of the ancient Cold Food rite.",
       },
       {
         title: 'Poetry',

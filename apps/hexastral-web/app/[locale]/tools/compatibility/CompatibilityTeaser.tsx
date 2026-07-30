@@ -67,13 +67,27 @@ export function CompatibilityTeaser() {
           >
             {t('previewLabel')}
           </p>
-          <p style={{ fontSize: '1.35rem', fontWeight: 400, margin: '0 0 0.5rem', letterSpacing: '0.04em' }}>
+          <p
+            style={{
+              fontSize: '1.35rem',
+              fontWeight: 400,
+              margin: '0 0 0.5rem',
+              letterSpacing: '0.04em',
+            }}
+          >
             {result.grade}
           </p>
           <p style={{ color: 'var(--color-ivory-dim)', marginBottom: 0, fontSize: '0.9rem' }}>
             {t('dayMasters')} {result.personA.dayMaster} · {result.personB.dayMaster}
           </p>
-          <p style={{ color: 'var(--color-ivory-dim)', marginTop: '0.75rem', fontSize: '0.75rem', lineHeight: 1.5 }}>
+          <p
+            style={{
+              color: 'var(--color-ivory-dim)',
+              marginTop: '0.75rem',
+              fontSize: '0.75rem',
+              lineHeight: 1.5,
+            }}
+          >
             {t('disclaimer')}
           </p>
         </div>

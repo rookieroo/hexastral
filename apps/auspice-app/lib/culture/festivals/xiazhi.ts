@@ -77,7 +77,7 @@ export const XIAZHI: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Summer Solstice: first, the deer sheds its antlers; second, the cicada begins to sing; third, the pinellia herb grows. The deer\'s antlers, being yang, drop as yin is born at the solstice; the cicada, sensing the yin, beats its wings and starts to sing; and the shade-loving herb pinellia grows in marshy wet ground. On the solstice the northern hemisphere has its longest day; from here the yin slowly rises and the days shorten. Classical three pentads: 「一候鹿角解，二候蜩始鸣，三候半夏生」。',
+        body: "The three pentads of the Summer Solstice: first, the deer sheds its antlers; second, the cicada begins to sing; third, the pinellia herb grows. The deer's antlers, being yang, drop as yin is born at the solstice; the cicada, sensing the yin, beats its wings and starts to sing; and the shade-loving herb pinellia grows in marshy wet ground. On the solstice the northern hemisphere has its longest day; from here the yin slowly rises and the days shorten. Classical three pentads: 「一候鹿角解，二候蜩始鸣，三候半夏生」。",
       },
       {
         title: 'Farming',

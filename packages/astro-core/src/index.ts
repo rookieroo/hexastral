@@ -43,18 +43,6 @@ export {
   TWENTY_EIGHT_MANSIONS,
   twentyEightMansions,
 } from './almanac'
-export type { YijiEvent, YijiLocale, YijiVocabularyMode } from './yiji-vocabulary'
-export {
-  defaultYijiModeForLocale,
-  formatYijiList,
-  formatYijiVerb,
-  officerYijiCanonicalTerms,
-  resolveYijiSearchVerbs,
-  YIJI_EVENT_VERBS,
-  YIJI_EVENTS,
-  YIJI_SEARCH_ALIASES,
-  yijiExplainField,
-} from './yiji-vocabulary'
 // 本我中心多关系时间轴 (Bonds Timeline — Kindred BT.1, ADR-0014)
 export type {
   BondInput,
@@ -161,29 +149,12 @@ export {
   unluckyDirections,
   zhaiMingConcord,
 } from './feng/ba-zhai'
-export type {
-  BaZhaiVerdict,
-  RoomBaZhaiDualTrack,
-  RoomBaZhaiGoverning,
-} from './feng/room-ba-zhai'
+// 风水 — 产品级常量 (upload cap, shared client + server)
 export {
-  isHighPriorityRoom,
-  resolveRoomBaZhaiDualTrack,
-} from './feng/room-ba-zhai'
-export type {
-  GeometrySupport,
-  PalaceElevation,
-  RawVisionFindings,
-  VisionCourtFinding,
-  VisionGeometryContext,
-  VisionSandFinding,
-  VisionShaFinding,
-  VisionWaterFinding,
-} from './feng/vision-geometry-audit'
-export {
-  auditVisionGeometry,
-  shaCountsForFormLi,
-} from './feng/vision-geometry-audit'
+  APARTMENT_MAX_FLOORPLAN_IMAGES,
+  MAX_FLOORPLAN_IMAGES,
+  maxFloorplanImagesFor,
+} from './feng/constants'
 // 风水 — 玄空飞星 (Flying Stars)
 export type {
   FlyingStarsInput,
@@ -242,12 +213,15 @@ export type {
   ZhengLingShen,
 } from './feng/form-li'
 export { correlateFormAndStars, emptyFormByPalace } from './feng/form-li'
-// 风水 — 产品级常量 (upload cap, shared client + server)
+export type {
+  BaZhaiVerdict,
+  RoomBaZhaiDualTrack,
+  RoomBaZhaiGoverning,
+} from './feng/room-ba-zhai'
 export {
-  APARTMENT_MAX_FLOORPLAN_IMAGES,
-  MAX_FLOORPLAN_IMAGES,
-  maxFloorplanImagesFor,
-} from './feng/constants'
+  isHighPriorityRoom,
+  resolveRoomBaZhaiDualTrack,
+} from './feng/room-ba-zhai'
 // 风水 — 二十四山 (24 Mountains)
 export type {
   BaguaPalace,
@@ -268,6 +242,20 @@ export {
   sitMountainForFacing,
   TWENTY_FOUR_MOUNTAINS,
 } from './feng/twenty-four-mountains'
+export type {
+  GeometrySupport,
+  PalaceElevation,
+  RawVisionFindings,
+  VisionCourtFinding,
+  VisionGeometryContext,
+  VisionSandFinding,
+  VisionShaFinding,
+  VisionWaterFinding,
+} from './feng/vision-geometry-audit'
+export {
+  auditVisionGeometry,
+  shaCountsForFormLi,
+} from './feng/vision-geometry-audit'
 // 天干地支
 export {
   dayGanZhi,
@@ -532,6 +520,18 @@ export type {
   WuXing,
   YinYang,
 } from './types'
+export type { YijiEvent, YijiLocale, YijiVocabularyMode } from './yiji-vocabulary'
+export {
+  defaultYijiModeForLocale,
+  formatYijiList,
+  formatYijiVerb,
+  officerYijiCanonicalTerms,
+  resolveYijiSearchVerbs,
+  YIJI_EVENT_VERBS,
+  YIJI_EVENTS,
+  YIJI_SEARCH_ALIASES,
+  yijiExplainField,
+} from './yiji-vocabulary'
 export type {
   BondCategory,
   ZiweiRelationSignal,

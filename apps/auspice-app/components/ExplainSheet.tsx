@@ -18,11 +18,11 @@ import { ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { MoonLoader } from '@/components/MoonLoader'
 import { ShareableCard, sharePaletteFor } from '@/components/ShareableCard'
 import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
+import { ganzhiWikiLineEn } from '@/lib/ganzhi-pinyin'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
-import { ganzhiWikiLineEn } from '@/lib/ganzhi-pinyin'
 
 interface SheetLabels {
   title: string
@@ -186,7 +186,9 @@ export function ExplainSheet({
           </View>
         ) : null}
 
-        <Text style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}>
+        <Text
+          style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}
+        >
           {t.legalDisclaimerShort}
         </Text>
       </View>

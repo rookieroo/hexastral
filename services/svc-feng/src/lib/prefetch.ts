@@ -160,7 +160,12 @@ function extractLineCoords(geometry: unknown): Array<[number, number]> {
     for (const line of g.coordinates) {
       if (!Array.isArray(line)) continue
       for (const c of line) {
-        if (Array.isArray(c) && c.length >= 2 && typeof c[0] === 'number' && typeof c[1] === 'number') {
+        if (
+          Array.isArray(c) &&
+          c.length >= 2 &&
+          typeof c[0] === 'number' &&
+          typeof c[1] === 'number'
+        ) {
           out.push([c[0], c[1]])
         }
       }

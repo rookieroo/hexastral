@@ -126,7 +126,9 @@ export default function CoinCastResultScreen() {
         <SheetHandle />
         <View style={[styles.inner, { gap: spacing.md }]}>
           {isClassical ? (
-            <Text style={[styles.badge, { color: colors.accent }]}>{t('resultClassicalBadge')}</Text>
+            <Text style={[styles.badge, { color: colors.accent }]}>
+              {t('resultClassicalBadge')}
+            </Text>
           ) : null}
           {desk ? (
             <LiuyaoDeskCard
@@ -140,7 +142,10 @@ export default function CoinCastResultScreen() {
             />
           ) : (
             <View style={{ gap: spacing.sm }}>
-              <SatelliteResultCard title={`${t('deskBenLabel')} · ${title}`} body={interpretation} />
+              <SatelliteResultCard
+                title={`${t('deskBenLabel')} · ${title}`}
+                body={interpretation}
+              />
               {bianTitle ? (
                 <SatelliteResultCard
                   title={`${t('deskBianLabel')} · ${bianTitle}`}
@@ -167,11 +172,7 @@ export default function CoinCastResultScreen() {
               {t('resultOpenDetail')} →
             </Button>
             {isClassical ? (
-              <Button
-                variant='secondary'
-                disabled={upgradeLoading}
-                onPress={handleUpgradeAi}
-              >
+              <Button variant='secondary' disabled={upgradeLoading} onPress={handleUpgradeAi}>
                 {upgradeLoading ? t('upgradeAiLoading') : t('upgradeAiCta')}
               </Button>
             ) : null}

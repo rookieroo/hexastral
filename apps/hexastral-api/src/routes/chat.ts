@@ -22,13 +22,10 @@ import { alertAdmin } from '../lib/admin-alert'
 import { callAstro } from '../lib/astro-client'
 import { requireUserId } from '../lib/auth'
 import { moderationRefusal, screenChatText } from '../lib/chat-moderation'
-import {
-  portfolioTargetBrandLabel,
-  resolvePortfolioTargetApp,
-} from '../lib/portfolio-target-app'
-import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
-import { auditFengChatReply, fengChatComplianceRefusal } from '../lib/feng-chat-compliance'
 import { checkFengChatAccess, isFengDevProBypass } from '../lib/feng-chat-access'
+import { auditFengChatReply, fengChatComplianceRefusal } from '../lib/feng-chat-compliance'
+import { portfolioTargetBrandLabel, resolvePortfolioTargetApp } from '../lib/portfolio-target-app'
+import { buildReadingContext, trimContextBundle } from '../lib/reading-context-builder'
 import { getActiveEntitlements } from '../services/entitlements'
 import { consumeProAllowance } from '../services/pro-allowance'
 import {

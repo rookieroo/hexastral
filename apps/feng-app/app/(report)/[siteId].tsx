@@ -14,9 +14,9 @@
 import { Button, EmptyState, ErrorState, useHaptic } from '@zhop/core-ui'
 import {
   BaZhaiWheel,
+  deriveReportDigest,
   type FengChapter,
   type FengComputeJson,
-  deriveReportDigest,
   FlyingStarsGrid,
   type ReportDigest,
   useAnalyzeJob,
@@ -49,12 +49,12 @@ import { LuopanLoader } from '@/components/LuopanLoader'
 import { ReportRoomsGrid } from '@/components/ReportRoomsGrid'
 import { SealNumeral } from '@/components/SealNumeral'
 import { ShareFengChapterButton } from '@/components/ShareFengChapterButton'
-import { type FengTerm, getFengTerm } from '@/lib/feng-terms'
 import {
   forcedCoverCaveats,
   formatLaiLongLine,
   humanizeDataQualityNotes,
 } from '@/lib/data-quality-copy'
+import { type FengTerm, getFengTerm } from '@/lib/feng-terms'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { type Locale, resolveLocale, type Strings, useStrings } from '@/lib/i18n'
 import { FENG_PAPER, spacing } from '@/lib/theme'
@@ -834,9 +834,7 @@ function ChapterPageView({
             reportId={reportId}
             chapterKind={chapter.kind}
             chapterTitle={chapter.title}
-            streetAttribution={
-              chapter.kind === 'external_landform' ? streetAttribution : null
-            }
+            streetAttribution={chapter.kind === 'external_landform' ? streetAttribution : null}
             contentJson={JSON.stringify({
               kind: chapter.kind,
               title: chapter.title,
@@ -917,8 +915,7 @@ function renderFlyingStars(compute: FengComputeJson, t: Strings, facingDegTrue?:
           />
         </View>
       ) : null}
-      {compute.combinations &&
-      compute.combinations.some((c) => c.name || c.readingPublic) ? (
+      {compute.combinations && compute.combinations.some((c) => c.name || c.readingPublic) ? (
         <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
           <Text style={{ color: C.secondary, fontSize: 11, letterSpacing: 1 }}>
             {t.report_combinations_heading}
@@ -1020,7 +1017,11 @@ function renderFormLiNotes(raw: unknown, t: Strings) {
       </Text>
       {notes.bullets.map((b, i) => {
         const tone =
-          b.severity === 'risk' ? C.danger : b.severity === 'watch' ? FENG_PAPER.cinnabar : C.secondary
+          b.severity === 'risk'
+            ? C.danger
+            : b.severity === 'watch'
+              ? FENG_PAPER.cinnabar
+              : C.secondary
         return (
           <View key={`${b.palace}-${i}`} style={{ gap: 2 }}>
             <Text style={{ color: tone, fontSize: 12, fontWeight: '700' }}>{b.palace}</Text>

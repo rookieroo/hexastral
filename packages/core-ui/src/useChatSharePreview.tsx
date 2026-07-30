@@ -3,21 +3,21 @@
  * Preview fits the phone width; capture uses a fixed off-screen card for sharpness.
  */
 
-import type { ImageSourcePropType } from 'react-native'
 import { useCallback, useRef, useState } from 'react'
+import type { ImageSourcePropType } from 'react-native'
 import {
   ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
   Text,
-  View,
   useWindowDimensions,
+  View,
 } from 'react-native'
 
 import { captureAndShareVisibleCard } from './chatShareCapture'
-import { ShareableChatCard } from './components/ShareableChatCard'
 import type { ReadingChatMessage } from './components/ReadingChatScreen'
+import { ShareableChatCard } from './components/ShareableChatCard'
 import { useTheme } from './theme'
 
 export const CHAT_SHARE_ENABLED = true
@@ -71,8 +71,7 @@ export function useChatSharePreview(opts: {
     }
   }, [opts, shareLines, sharingOut])
 
-  const cardLines =
-    shareLines?.map((m) => ({ role: m.role, content: m.content })) ?? []
+  const cardLines = shareLines?.map((m) => ({ role: m.role, content: m.content })) ?? []
 
   const modal =
     shareLines == null ? null : (

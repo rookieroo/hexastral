@@ -151,13 +151,13 @@ const birthCallerContextSchema = z.object({
   installationId: z.string().min(1).max(128),
 })
 
-const birthInfoQuerySchema = birthCallerContextSchema.partial()
+const birthInfoQuerySchema = birthCallerContextSchema
 
 const portfolioBirthInfoSchema = z
   .object({
     birthSolarDate: z.string().regex(/^\d{4}-\d{1,2}-\d{1,2}$/),
-    /** null = unknown 时辰 (Yuun). */
-    birthTimeIndex: z.coerce.number().int().min(0).max(12).nullable(),
+    /** null = unknown 时辰. Index is 0..11 only (十二时辰). */
+    birthTimeIndex: z.coerce.number().int().min(0).max(11).nullable(),
     gender: z.enum(['男', '女']).nullish(),
     birthCity: z.string().max(256).nullish(),
     birthLatitude: z.string().max(32).nullish(),
@@ -176,6 +176,23 @@ const portfolioBirthInfoSchema = z
     birthLunarIsLeap: z.boolean().optional(),
   })
   .and(birthCallerContextSchema)
+  .superRefine((data, ctx) => {
+    const clock = data.birthClockMinutes
+    if (clock == null) {
+      // 时辰-only mode: precise location fields must be cleared.
+      return
+    }
+    // Precise mode: derive 时辰 from clock and reject contradictory timeIndex.
+    const hour = Math.floor(clock / 60)
+    const derived = Math.floor(((hour + 1) % 24) / 2)
+    if (data.birthTimeIndex != null && data.birthTimeIndex !== derived) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['birthTimeIndex'],
+        message: `birthTimeIndex must match clock (${derived}) or be omitted`,
+      })
+    }
+  })
 
 const birthSyncPreferencesSchema = birthCallerContextSchema
   .extend({
@@ -2050,19 +2067,25 @@ portfolioRoutes.put('/birth-info', async (c) => {
     nowIso,
   })
 
+  const clockMinutes = parsed.data.birthClockMinutes ?? null
+  const derivedTimeIndex =
+    clockMinutes != null
+      ? Math.floor(((Math.floor(clockMinutes / 60) + 1) % 24) / 2)
+      : parsed.data.birthTimeIndex
+  const shichenOnly = clockMinutes == null
+
   await db
     .update(users)
     .set({
       birthSolarDate: parsed.data.birthSolarDate,
-      birthTimeIndex: parsed.data.birthTimeIndex,
+      birthTimeIndex: derivedTimeIndex,
       birthGender: parsed.data.gender ?? prior.birthGender ?? null,
-      birthCity: parsed.data.birthCity ?? null,
-      birthLatitude: parsed.data.birthLatitude ?? null,
-      birthLongitude: parsed.data.birthLongitude ?? null,
-      birthTimezoneId: parsed.data.birthTimezoneId ?? null,
-      // Precise-time disclosure (真太阳时) — clock minutes + calibration toggle.
-      birthClockMinutes: parsed.data.birthClockMinutes ?? null,
-      birthSolarCalibrate: parsed.data.birthSolarCalibrate ?? null,
+      birthCity: shichenOnly ? null : (parsed.data.birthCity ?? null),
+      birthLatitude: shichenOnly ? null : (parsed.data.birthLatitude ?? null),
+      birthLongitude: shichenOnly ? null : (parsed.data.birthLongitude ?? null),
+      birthTimezoneId: shichenOnly ? null : (parsed.data.birthTimezoneId ?? null),
+      birthClockMinutes: clockMinutes,
+      birthSolarCalibrate: shichenOnly ? null : (parsed.data.birthSolarCalibrate ?? null),
       // 农历 round-trip so re-editing restores the user's calendar choice exactly.
       birthCalendarType: parsed.data.birthCalendarType,
       birthLunarDate: parsed.data.birthLunarInput,
@@ -2085,7 +2108,11 @@ portfolioRoutes.put('/birth-info', async (c) => {
 portfolioRoutes.get('/birth-info', async (c) => {
   const userId = requireUserId(c)
   const queryParsed = birthInfoQuerySchema.safeParse(c.req.query())
-  if (!queryParsed.success) throw new HTTPException(422, { message: 'Invalid birth info query' })
+  if (!queryParsed.success) {
+    throw new HTTPException(422, {
+      message: 'Invalid birth info query: targetApp and installationId are required',
+    })
+  }
 
   const db = c.get('db')
   const row = await db
@@ -2121,22 +2148,38 @@ portfolioRoutes.get('/birth-info', async (c) => {
   })
 
   const { targetApp, installationId } = queryParsed.data
-  // Legacy callers omit caller context → keep prior "always return body" behavior.
-  const status =
-    targetApp && installationId
-      ? evaluateBirthSyncAccess(
-          {
-            birthSolarDate: row?.birthSolarDate ?? null,
-            birthSourceApp: row?.birthSourceApp ?? null,
-            birthOwnerInstallationId: row?.birthOwnerInstallationId ?? null,
-            birthMultiDeviceSyncEnabled: row?.birthMultiDeviceSyncEnabled ?? null,
-            birthCrossAppSyncEnabled: row?.birthCrossAppSyncEnabled ?? null,
-          },
-          { targetApp, installationId }
-        )
-      : row?.birthSolarDate
-        ? ('available' as const)
-        : ('empty' as const)
+  const status = evaluateBirthSyncAccess(
+    {
+      birthSolarDate: row?.birthSolarDate ?? null,
+      birthSourceApp: row?.birthSourceApp ?? null,
+      birthOwnerInstallationId: row?.birthOwnerInstallationId ?? null,
+      birthMultiDeviceSyncEnabled: row?.birthMultiDeviceSyncEnabled ?? null,
+      birthCrossAppSyncEnabled: row?.birthCrossAppSyncEnabled ?? null,
+    },
+    { targetApp, installationId }
+  )
+
+  // Soft-stamp unstamped history on first successful read so later cross-app
+  // GETs cannot treat the row as universally open.
+  if (status === 'available' && row?.birthSolarDate && !row.birthSourceApp) {
+    const nowIso = new Date().toISOString()
+    c.executionCtx.waitUntil(
+      db
+        .update(users)
+        .set({
+          birthSourceApp: targetApp,
+          birthOwnerInstallationId:
+            row.birthMultiDeviceSyncEnabled === false ? installationId : null,
+          birthUpdatedAt: nowIso,
+          updatedAt: nowIso,
+        })
+        .where(eq(users.id, userId))
+        .then(() => undefined)
+        .catch((err: unknown) => {
+          console.error('[portfolio.birth-info] soft-stamp failed', err)
+        })
+    )
+  }
 
   const birthInfo =
     status === 'available' && row?.birthSolarDate

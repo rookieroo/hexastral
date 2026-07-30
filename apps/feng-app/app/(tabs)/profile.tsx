@@ -9,7 +9,7 @@ import { useHaptic } from '@zhop/core-ui'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { ChevronRight } from 'lucide-react-native'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { deleteAccount } from '@/lib/account'
@@ -189,9 +189,14 @@ export default function SettingsScreen() {
           {navRow(t.privacy_section, null, () => {
             void Linking.openURL(privacyUrl(locale)).catch(() => {})
           })}
-          {navRow(t.terms_section, null, () => {
-            void Linking.openURL(termsUrl(locale)).catch(() => {})
-          }, true)}
+          {navRow(
+            t.terms_section,
+            null,
+            () => {
+              void Linking.openURL(termsUrl(locale)).catch(() => {})
+            },
+            true
+          )}
         </SettingsSection>
 
         {__DEV__ ? (

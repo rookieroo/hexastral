@@ -103,10 +103,7 @@ export interface ReadingChatScreenProps {
   /** App Store 1.2 — opened from dislike sheet, not long-press. */
   onReportMessage?: (messageId: string) => Promise<void> | void
   /** Persist thumbs; `null` clears. Optimistic UI already applied. */
-  onRateMessage?: (
-    messageId: string,
-    feedback: 'up' | 'down' | null
-  ) => Promise<void> | void
+  onRateMessage?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<void> | void
   /**
    * When set, Share appears and selection mode can hand off messages for a
    * preview-first share card (host owns capture speed gate).
@@ -551,7 +548,12 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
                     {selected ? <Check size={14} color={colors.bg} strokeWidth={2.5} /> : null}
                   </Pressable>
                 ) : null}
-                <View style={{ maxWidth: selecting ? '72%' : '88%', alignItems: isUser ? 'flex-end' : 'flex-start' }}>
+                <View
+                  style={{
+                    maxWidth: selecting ? '72%' : '88%',
+                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                  }}
+                >
                   <View
                     style={{
                       backgroundColor: isUser ? colors.accent : colors.card,

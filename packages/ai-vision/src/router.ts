@@ -302,14 +302,9 @@ function modelSlotMs(
  * budget on reasoning. K2.x: `chat_template_kwargs.thinking`. K3: `reasoning_effort`
  * (always-on; we can only dial it down).
  */
-function reasoningControls(
-  model: string,
-  options?: FallbackCallOptions
-): Record<string, unknown> {
+function reasoningControls(model: string, options?: FallbackCallOptions): Record<string, unknown> {
   const suppress =
-    Boolean(options?.jsonMode) ||
-    Boolean(options?.responseSchema) ||
-    Boolean(options?.noThink)
+    Boolean(options?.jsonMode) || Boolean(options?.responseSchema) || Boolean(options?.noThink)
   if (!suppress) return {}
 
   if (model.includes('kimi-k3')) {

@@ -45,36 +45,33 @@ import type { fengJobs as fengJobsTable, fengSites } from '../db/schema'
 import { fengJobs, fengReports, singlePurchases, users } from '../db/schema'
 import type { AppDb, CloudflareBindings } from '../infra-types'
 import {
-  buildMacroTerrainTyped,
-  buildOverlayHints,
-} from './feng-overlay-hints'
-import {
   type AdaptiveTile,
   annotateMap,
   type ElevationProfile,
   elevationProfile,
-  type InteriorVisionResult,
   getFloorplanImage,
+  type InteriorVisionResult,
+  interpretFormLiNotes,
   type OverlayArrow,
   prefetchTerrain,
   renderMap,
   streetSha,
   synthesizeReport,
-  interpretFormLiNotes,
   type TerrainSignals,
   type VisionAnalyzeResult,
   visionAnalyze,
   visionInterior,
 } from './feng-client'
-import { deriveRoomFindings, parseSiteFloorplan, type RoomFinding } from './feng-interior-compute'
 import { orientFacingDeltaDeg } from './feng-coords'
-import { assessFloorplanImageQuality } from './floorplan-image-heuristic'
+import { deriveRoomFindings, parseSiteFloorplan, type RoomFinding } from './feng-interior-compute'
+import { buildMacroTerrainTyped, buildOverlayHints } from './feng-overlay-hints'
 import {
   type FengResidenceType,
   fengStreetViewEnabled,
   normalizeResidenceType,
 } from './feng-pricing'
 import { inferResidenceHeuristic } from './feng-residence-heuristic'
+import { assessFloorplanImageQuality } from './floorplan-image-heuristic'
 import { fengLogger } from './logger'
 import { searchPortfolioReadingMemory } from './portfolio-memory'
 
@@ -709,7 +706,9 @@ export async function runAnalyzeJob(
 
     const emptyFormLi = {
       palaces: [],
-      zhengLing: { findings: [] as Array<{ palace: BaguaPalace; auspicious: boolean; reason: string }> },
+      zhengLing: {
+        findings: [] as Array<{ palace: BaguaPalace; auspicious: boolean; reason: string }>,
+      },
       patternRescue: [] as Array<{ pattern: string; favourable: boolean; note: string }>,
     }
     const formLi =
@@ -768,48 +767,48 @@ export async function runAnalyzeJob(
         interiorExtraNotes.push(`${skipInterior}=true`)
         fengLogger.info('job.interior.skipped', { jobId, reason: skipInterior })
       } else {
-      const interiorStarted = Date.now()
-      try {
-        interior = await visionInterior(env.SVC_FENG, {
-          floorplanKeys: floorplan.images.map((im) => im.key),
-          northUpBearing: floorplan.orientDeg,
-          locale,
-          floorLabels: floorplan.images.map((im) => im.label ?? ''),
-          centerNorm: floorplan.centerNorm,
-        })
-        roomFindings = deriveRoomFindings(interior, {
-          combinations,
-          sitPalace,
-          mingLucky: baZhaiResult?.lucky ?? [],
-          mingUnlucky: baZhaiResult?.unlucky ?? [],
-          ...(baZhaiResult?.concord ? { concord: baZhaiResult.concord } : {}),
-          floorLabels: floorplan.images.map((im) => im.label),
-        })
-        interiorQueJiao = interior.floors.flatMap((floor, i) => {
-          const floorLabel = floorplan.images[i]?.label
-          return floor.缺角.map((q) => ({
-            palace: q.palace,
-            ...(q.note ? { note: q.note } : {}),
-            ...(floorLabel ? { floorLabel } : {}),
-          }))
-        })
-        fengLogger.info('job.stage.done', {
-          jobId,
-          stage: 'interior',
-          durationMs: Date.now() - interiorStarted,
-          floors: interior.floors.length,
-          rooms: roomFindings.length,
-          modelVersion: interior.modelVersion,
-        })
-        stageMs.interior = Date.now() - interiorStarted
-      } catch (err) {
-        interior = null
-        roomFindings = []
-        fengLogger.warn('job.interior.error', {
-          jobId,
-          error: err instanceof Error ? err.message : String(err),
-        })
-      }
+        const interiorStarted = Date.now()
+        try {
+          interior = await visionInterior(env.SVC_FENG, {
+            floorplanKeys: floorplan.images.map((im) => im.key),
+            northUpBearing: floorplan.orientDeg,
+            locale,
+            floorLabels: floorplan.images.map((im) => im.label ?? ''),
+            centerNorm: floorplan.centerNorm,
+          })
+          roomFindings = deriveRoomFindings(interior, {
+            combinations,
+            sitPalace,
+            mingLucky: baZhaiResult?.lucky ?? [],
+            mingUnlucky: baZhaiResult?.unlucky ?? [],
+            ...(baZhaiResult?.concord ? { concord: baZhaiResult.concord } : {}),
+            floorLabels: floorplan.images.map((im) => im.label),
+          })
+          interiorQueJiao = interior.floors.flatMap((floor, i) => {
+            const floorLabel = floorplan.images[i]?.label
+            return floor.缺角.map((q) => ({
+              palace: q.palace,
+              ...(q.note ? { note: q.note } : {}),
+              ...(floorLabel ? { floorLabel } : {}),
+            }))
+          })
+          fengLogger.info('job.stage.done', {
+            jobId,
+            stage: 'interior',
+            durationMs: Date.now() - interiorStarted,
+            floors: interior.floors.length,
+            rooms: roomFindings.length,
+            modelVersion: interior.modelVersion,
+          })
+          stageMs.interior = Date.now() - interiorStarted
+        } catch (err) {
+          interior = null
+          roomFindings = []
+          fengLogger.warn('job.interior.error', {
+            jobId,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        }
       }
     }
 
@@ -989,28 +988,28 @@ export async function runAnalyzeJob(
         summary:
           flyingStars != null
             ? {
-              sit: flyingStars.sitMountain.name,
-              face: flyingStars.faceMountain.name,
-              buildYuanYun: flyingStars.buildYuanYun.yuanYun,
-              buildYuanYunYears: [
-                flyingStars.buildYuanYun.startYear,
-                flyingStars.buildYuanYun.endYear,
-              ],
-              currentYuanYun: flyingStars.currentYuanYun.yuanYun,
-              currentYuanYunYears: [
-                flyingStars.currentYuanYun.startYear,
-                flyingStars.currentYuanYun.endYear,
-              ],
-              chartMethod: flyingStars.chartMethod,
-              isCompoundFacing: flyingStars.isCompoundFacing,
-            }
+                sit: flyingStars.sitMountain.name,
+                face: flyingStars.faceMountain.name,
+                buildYuanYun: flyingStars.buildYuanYun.yuanYun,
+                buildYuanYunYears: [
+                  flyingStars.buildYuanYun.startYear,
+                  flyingStars.buildYuanYun.endYear,
+                ],
+                currentYuanYun: flyingStars.currentYuanYun.yuanYun,
+                currentYuanYunYears: [
+                  flyingStars.currentYuanYun.startYear,
+                  flyingStars.currentYuanYun.endYear,
+                ],
+                chartMethod: flyingStars.chartMethod,
+                isCompoundFacing: flyingStars.isCompoundFacing,
+              }
             : {
-              sit: sitMountain.name,
-              face: faceMountain.name,
-              flyingStarsOmitted: true,
-              currentYuanYun: presentYuan.yuanYun,
-              currentYuanYunYears: [presentYuan.startYear, presentYuan.endYear],
-            },
+                sit: sitMountain.name,
+                face: faceMountain.name,
+                flyingStarsOmitted: true,
+                currentYuanYun: presentYuan.yuanYun,
+                currentYuanYunYears: [presentYuan.startYear, presentYuan.endYear],
+              },
         flyingStars: flyingStars ?? null,
         annualChart: flyingStars?.annualChart ?? annualChart(dateToFlyingYear(today)),
         baZhai: baZhaiResult ?? null,

@@ -10,7 +10,20 @@ type WuXing = '木' | '火' | '土' | '金' | '水'
 
 const STEM_ELEMENT: readonly WuXing[] = ['木', '木', '火', '火', '土', '土', '金', '金', '水', '水']
 const CONTROLLED_BY: Record<WuXing, WuXing> = { 木: '金', 火: '水', 土: '木', 金: '火', 水: '土' }
-const MONTH_LABEL = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'] as const
+const MONTH_LABEL = [
+  '正',
+  '二',
+  '三',
+  '四',
+  '五',
+  '六',
+  '七',
+  '八',
+  '九',
+  '十',
+  '冬',
+  '腊',
+] as const
 
 export function computeLiuyue(year: number, favEl: WuXing | null): LiuyueCell[] {
   const yStemIdx = HEAVENLY_STEMS.indexOf(yearGanZhi(year).stem)

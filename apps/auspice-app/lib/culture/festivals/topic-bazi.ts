@@ -87,7 +87,7 @@ export const TOPIC_BAZI: FestivalContent = {
       },
       {
         title: 'Luck Pillars & Annual Years',
-        body: 'Luck Pillars (大运) are the great segments of a life\'s classical cycle, laid out from birth along the month pillar in forward or reverse order — one step per decade, each step a stem-and-branch governing the overall climate of those ten years. The Annual Year (流年) is each single year\'s stem-and-branch (the 丙午 year, say). To read the cycle is to see how the Luck Pillar and Annual Year meet and interact with your natal chart — as support (the favorable element gaining force) or resistance (the unfavorable element falling due). This app\'s life timeline is exactly your Luck Pillars and Annual Years laid out segment by segment, so you can see how each phase reads against your chart.',
+        body: "Luck Pillars (大运) are the great segments of a life's classical cycle, laid out from birth along the month pillar in forward or reverse order — one step per decade, each step a stem-and-branch governing the overall climate of those ten years. The Annual Year (流年) is each single year's stem-and-branch (the 丙午 year, say). To read the cycle is to see how the Luck Pillar and Annual Year meet and interact with your natal chart — as support (the favorable element gaining force) or resistance (the unfavorable element falling due). This app's life timeline is exactly your Luck Pillars and Annual Years laid out segment by segment, so you can see how each phase reads against your chart.",
       },
       {
         title: 'Favorable & Unfavorable Elements',

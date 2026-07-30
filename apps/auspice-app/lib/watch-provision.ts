@@ -9,9 +9,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getPortfolioUserId, signedApiFetch } from '@zhop/satellite-runtime'
 import {
+  type WidgetLocale,
   YUUN_WATCH_CREDENTIAL_KEY,
   YUUN_WATCH_PREFS_KEY,
-  type WidgetLocale,
   type YuunWatchPreferences,
 } from '@zhop/widget-kit-ios'
 import { Platform } from 'react-native'

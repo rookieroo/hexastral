@@ -60,7 +60,10 @@ export async function processAdConvertMessage(
       vendor: 'all',
       kind: 'invalid_dto',
       title: 'ad-convert: invalid queue message',
-      message: parsed.error.issues.map((i) => i.message).join('; ').slice(0, 400),
+      message: parsed.error.issues
+        .map((i) => i.message)
+        .join('; ')
+        .slice(0, 400),
       level: 'error',
     })
     return 'ack'

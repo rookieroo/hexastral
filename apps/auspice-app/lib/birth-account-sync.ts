@@ -7,24 +7,16 @@
  */
 
 import {
+  type BirthSyncAccessStatus,
+  type BirthSyncPreferences,
   getOrCreateAnonymousInstallId,
   getPortfolioBirthInfo,
   getPortfolioUserId,
   saveAndCacheBirthInfo,
   updateBirthSyncPreferences,
-  type BirthSyncAccessStatus,
-  type BirthSyncPreferences,
 } from '@zhop/satellite-runtime'
-import {
-  type AuspiceBirthInfo,
-  getAuspiceBirthInfo,
-  setAuspiceBirthInfo,
-} from './birth'
-import {
-  birthInfosEqual,
-  fromPortfolioBirth,
-  toPortfolioBirth,
-} from './birth-account-mapping'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from './birth'
+import { birthInfosEqual, fromPortfolioBirth, toPortfolioBirth } from './birth-account-mapping'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 
 export {

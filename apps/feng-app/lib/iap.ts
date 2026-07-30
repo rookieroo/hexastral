@@ -10,9 +10,9 @@
  */
 
 import { Platform } from 'react-native'
-import { FENG_SINGLE_PRODUCT_ID } from './growth-config'
 import { config } from './config'
 import { getDevPro } from './dev-flags'
+import { FENG_SINGLE_PRODUCT_ID } from './growth-config'
 
 type PurchasesModule = typeof import('react-native-purchases')
 let Purchases: PurchasesModule['default'] | null = null
@@ -35,8 +35,7 @@ export function initializeFengIap(): void {
   if (initialized) return
   const p = loadPurchases()
   if (!p) return
-  const apiKey =
-    Platform.OS === 'ios' ? config.revenueCatIosKey : config.revenueCatAndroidKey
+  const apiKey = Platform.OS === 'ios' ? config.revenueCatIosKey : config.revenueCatAndroidKey
   const looksLikePlaceholder =
     !apiKey || apiKey.includes('REPLACE_WITH_') || apiKey.includes('xxxx')
   if (looksLikePlaceholder) return

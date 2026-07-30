@@ -36,7 +36,12 @@ export {
   markSatelliteOnboardingDone,
   SatelliteOnboarding,
 } from './SatelliteOnboarding'
-export type { SatellitePaywallProductIds, SatellitePaywallProps } from './SatellitePaywall'
+export type {
+  SatellitePaywallCopy,
+  SatellitePaywallProductIds,
+  SatellitePaywallProps,
+  SatellitePaywallPurchaseResult,
+} from './SatellitePaywall'
 export { SatellitePaywall } from './SatellitePaywall'
 export type { SatellitePromoCardProps } from './SatellitePromoCard'
 export { SatellitePromoCard } from './SatellitePromoCard'

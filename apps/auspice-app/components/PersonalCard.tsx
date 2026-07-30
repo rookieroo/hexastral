@@ -73,8 +73,12 @@ export function PersonalCard({
     >
       {pushHook ? (
         <View style={{ gap: 4, marginBottom: spacing.xs }}>
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{pushHook.title}</Text>
-          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>{pushHook.lens}</Text>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+            {pushHook.title}
+          </Text>
+          <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
+            {pushHook.lens}
+          </Text>
         </View>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>

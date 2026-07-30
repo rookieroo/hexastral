@@ -27,6 +27,15 @@ describe('canonicalizeTimezoneToPool', () => {
     expect(canonicalizeTimezoneToPool('Asia/Seoul')).toBe('Asia/Tokyo')
   })
 
+  it('keeps no-DST zones as own pool members (Phoenix / Brisbane / Lagos)', () => {
+    expect(canonicalizeTimezoneToPool('America/Phoenix')).toBe('America/Phoenix')
+    expect(canonicalizeTimezoneToPool('Australia/Brisbane')).toBe('Australia/Brisbane')
+    expect(canonicalizeTimezoneToPool('Africa/Lagos')).toBe('Africa/Lagos')
+    expect(TIMEZONE_POOL).toContain('America/Phoenix')
+    expect(TIMEZONE_POOL).toContain('Australia/Brisbane')
+    expect(TIMEZONE_POOL).toContain('Africa/Lagos')
+  })
+
   it('falls back for empty / invalid to Europe/London', () => {
     expect(canonicalizeTimezoneToPool('')).toBe('Europe/London')
     expect(canonicalizeTimezoneToPool('Not/A_Real_Zone')).toBe('Europe/London')

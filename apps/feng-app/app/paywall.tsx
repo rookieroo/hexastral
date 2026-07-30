@@ -20,8 +20,8 @@ import {
   productIdForResidence,
 } from '@/lib/feng-pricing-client'
 import { REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
-import { getFengPrice, purchaseFeng, restoreFengPurchases } from '@/lib/iap'
 import { resolveLocale, useStrings } from '@/lib/i18n'
+import { getFengPrice, purchaseFeng, restoreFengPurchases } from '@/lib/iap'
 import { waitForFengPurchaseAvailable } from '@/lib/purchase'
 import { FENG_PALETTE } from '@/lib/theme'
 
@@ -58,8 +58,7 @@ export default function FengPaywallScreen() {
     []
   )
 
-  const subtitle =
-    intent === 'chat' ? t.paywall_subtitle_chat : t.paywall_subtitle_analyze
+  const subtitle = intent === 'chat' ? t.paywall_subtitle_chat : t.paywall_subtitle_analyze
 
   const bullets = useMemo(() => {
     const base = [t.paywall_bullet_report, t.paywall_bullet_chat, t.paywall_bullet_once]

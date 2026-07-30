@@ -84,16 +84,20 @@ export default function BuildingScreen() {
   const selectAccuracy = (opt: Accuracy) => {
     void haptic('selection')
     if (opt === 'unknown') {
-      Alert.alert(t.new_site_building_unknown_confirm_title, t.new_site_building_unknown_confirm_body, [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: t.new_site_building_unknown_confirm_cta,
-          onPress: () => {
-            setAccuracy('unknown')
-            setAccuracyError(null)
+      Alert.alert(
+        t.new_site_building_unknown_confirm_title,
+        t.new_site_building_unknown_confirm_body,
+        [
+          { text: t.cancel, style: 'cancel' },
+          {
+            text: t.new_site_building_unknown_confirm_cta,
+            onPress: () => {
+              setAccuracy('unknown')
+              setAccuracyError(null)
+            },
           },
-        },
-      ])
+        ]
+      )
       return
     }
     setAccuracy(opt)

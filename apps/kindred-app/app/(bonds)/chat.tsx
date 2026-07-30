@@ -8,11 +8,7 @@
  * which is what the server's `'pair'` reading-context query expects.
  */
 
-import {
-  ReadingChatScreen,
-  type ReadingChatStrings,
-  useChatSharePreview,
-} from '@zhop/core-ui'
+import { ReadingChatScreen, type ReadingChatStrings, useChatSharePreview } from '@zhop/core-ui'
 import { kindredDark, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
@@ -179,7 +175,12 @@ export default function BondChatScreen() {
           backgroundColor: kindredDark.bg,
         }}
       >
-        <Text style={[kindredType.caption, { color: kindredDark.textMuted, fontSize: 11, lineHeight: 16 }]}>
+        <Text
+          style={[
+            kindredType.caption,
+            { color: kindredDark.textMuted, fontSize: 11, lineHeight: 16 },
+          ]}
+        >
           {t('chat.legalDisclaimer')}
         </Text>
       </View>

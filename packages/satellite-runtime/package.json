@@ -15,7 +15,7 @@
     "@zhop/ddl-client": "workspace:*",
     "@zhop/growth-funnel": "workspace:*",
     "@zhop/hexastral-tokens": "workspace:*",
-    "react-native-purchases": "^10.1.0"
+    "react-native-purchases": "10.3.0"
   },
   "peerDependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -28,7 +28,7 @@
     "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
-    "react-native-purchases": "^10.1.0",
+    "react-native-purchases": "10.3.0",
     "react": "^19.2.3",
     "react-native": ">=0.81.0"
   },
@@ -52,7 +52,7 @@
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
-    "react-native-purchases": "^10.1.0",
+    "react-native-purchases": "10.3.0",
     "react-native": "0.81.5",
     "typescript": "^5.9.3"
   }

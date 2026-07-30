@@ -101,10 +101,7 @@ export function NatalFactsStrip({
         {title}
       </Text>
       {rows.map((r) => (
-        <View
-          key={r.k}
-          style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}
-        >
+        <View key={r.k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
           <Text style={{ color: colors.dim, fontSize: 13 }}>{r.k}</Text>
           <Text
             style={{

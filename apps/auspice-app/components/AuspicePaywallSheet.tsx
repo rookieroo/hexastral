@@ -1,12 +1,6 @@
 /**
- * Auspice Pro paywall sheet — wraps @zhop/satellite-ui SatelliteBottomSheet +
- * SatellitePaywall. Free tier sees top-3 宜忌; Pro unlocks the full lists + 对你而言
- * personalization + the specialized 择日 drill-ins + the personal calendar feed.
- *
- * Login-at-subscribe (2026-06): the free 黄历 is anonymous, but subscribing
- * requires sign-in first, so the subscription is a portable cross-app identity
- * (universe_pro continuity + Bonds → Kindred carry-over). The sheet shows the
- * sign-in gate when not signed in, then the purchase options. See lib/account.ts.
+ * Yuun Pro paywall — sign-in gate then RevenueCat purchase/restore with
+ * localized prices, auto-renew disclosure, and Privacy/Terms links.
  */
 import { useTheme } from '@zhop/core-ui'
 import { SatelliteBottomSheet, SatellitePaywall } from '@zhop/satellite-ui'
@@ -16,12 +10,15 @@ import { Platform, Pressable, Text, useColorScheme, View } from 'react-native'
 import { MoonLoader } from '@/components/MoonLoader'
 
 import { isSignedIn, signInWithApple, signInWithGoogle } from '@/lib/account'
+import { privacyUrl, termsUrl } from '@/lib/config'
 import { useStrings } from '@/lib/i18n-context'
 
-const CYCLE_PRO_PRODUCT_IDS = {
+const AUSPICE_PRO_PRODUCT_IDS = {
   monthly: 'auspice_pro_monthly',
   annual: 'auspice_pro_annual',
 } as const
+
+const AUSPICE_PRO_ENTITLEMENT = 'auspice_pro'
 
 export function AuspicePaywallSheet({
   visible,
@@ -31,7 +28,7 @@ export function AuspicePaywallSheet({
   onClose: () => void
 }) {
   const { colors, spacing } = useTheme()
-  const { t } = useStrings()
+  const { t, locale } = useStrings()
   const scheme = useColorScheme()
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
   const [signingIn, setSigningIn] = useState(false)
@@ -64,7 +61,6 @@ export function AuspicePaywallSheet({
           {t.proSubtitle}
         </Text>
 
-        {/* What Pro unlocks — explicit, localized benefit list. */}
         <View style={{ gap: spacing.sm }}>
           {t.proBenefits.map((benefit) => (
             <View key={benefit} style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -81,7 +77,6 @@ export function AuspicePaywallSheet({
             <MoonLoader />
           </View>
         ) : signedIn === false ? (
-          // ── Login-at-subscribe gate ──
           <View style={{ gap: spacing.md }}>
             <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
               {t.signInToSubscribe}
@@ -139,17 +134,35 @@ export function AuspicePaywallSheet({
           </View>
         ) : (
           <SatellitePaywall
-            productIds={CYCLE_PRO_PRODUCT_IDS}
-            onRestore={onClose}
+            productIds={AUSPICE_PRO_PRODUCT_IDS}
+            entitlementId={AUSPICE_PRO_ENTITLEMENT}
+            privacyUrl={privacyUrl(locale)}
+            termsUrl={termsUrl(locale)}
+            onPurchaseComplete={(result) => {
+              if (result === 'success') onClose()
+            }}
+            onRestoreComplete={(restored) => {
+              if (restored) onClose()
+            }}
             copy={{
               title: t.proTitle,
               restorePrimary: t.proRestore,
               planLabels: { monthly: t.proMonthly, annual: t.proAnnual },
+              loading: t.proLoading,
+              purchaseFailed: t.proPurchaseFailed,
+              restoreFailed: t.proRestoreFailed,
+              restoreSuccess: t.proRestoreSuccess,
+              unavailable: t.proUnavailable,
+              autoRenewDisclaimer: t.proAutoRenewDisclaimer,
+              privacyLabel: t.privacy,
+              termsLabel: t.terms,
             }}
           />
         )}
 
-        <Text style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}>
+        <Text
+          style={{ color: colors.secondary, fontSize: 11, lineHeight: 16, textAlign: 'center' }}
+        >
           {t.legalDisclaimerShort}
         </Text>
       </View>

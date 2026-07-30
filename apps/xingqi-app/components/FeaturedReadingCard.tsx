@@ -21,7 +21,14 @@ export function FeaturedReadingCard({
   hint: string
   onPress: () => void
   onDelete: () => void
-  colors: { text: string; dim: string; accent: string; secondary: string; separator: string; bg: string }
+  colors: {
+    text: string
+    dim: string
+    accent: string
+    secondary: string
+    separator: string
+    bg: string
+  }
   spacing: { md: number; lg: number; sm: number; xl: number }
   deleteLabel: string
 }) {

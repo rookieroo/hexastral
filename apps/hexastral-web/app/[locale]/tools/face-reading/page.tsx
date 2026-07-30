@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { NOINDEX_ROBOTS, canonicalUrl } from '@/lib/growth/page-metadata'
 import { DownloadCTA } from '@/components/DownloadCTA'
 import { Link } from '@/i18n/navigation'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { canonicalUrl, NOINDEX_ROBOTS } from '@/lib/growth/page-metadata'
 
 interface Props {
   params: Promise<{ locale: string }>

@@ -31,8 +31,8 @@ import { FengMark } from '@/components/FengMark'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { FengClientGate } from '@/lib/client'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
-import { initializeFengIap, loginFengIap } from '@/lib/iap'
 import { resolveLocale } from '@/lib/i18n'
+import { initializeFengIap, loginFengIap } from '@/lib/iap'
 import { FENG_PALETTE } from '@/lib/theme'
 
 function BootSplash() {

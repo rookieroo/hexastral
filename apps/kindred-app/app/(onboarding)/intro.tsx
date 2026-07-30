@@ -33,7 +33,10 @@ const INTRO_COPY: Record<CopyLocale, IntroCopy> = {
   },
   zh: { continue: '轻触开始', lines: ['你总会被某些人吸引。', '值得一起细读其中的模式。'] },
   'zh-Hant': { continue: '輕觸開始', lines: ['你總會被某些人吸引。', '值得一起細讀其中的模式。'] },
-  ja: { continue: 'タップして始める', lines: ['惹かれてしまう人がいる。', '一緒に読み解く価値のあるパターン。'] },
+  ja: {
+    continue: 'タップして始める',
+    lines: ['惹かれてしまう人がいる。', '一緒に読み解く価値のあるパターン。'],
+  },
 }
 
 function pickIntroCopy(locale: string): IntroCopy {

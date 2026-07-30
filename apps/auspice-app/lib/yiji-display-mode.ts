@@ -7,10 +7,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {
-  defaultYijiModeForLocale,
-  type YijiVocabularyMode,
-} from '@zhop/astro-core'
+import { defaultYijiModeForLocale, type YijiVocabularyMode } from '@zhop/astro-core'
 import type { Locale } from './i18n'
 
 export const YIJI_MODE_STORAGE_KEY = 'auspice.yiji.displayMode'

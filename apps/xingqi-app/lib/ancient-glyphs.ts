@@ -735,8 +735,7 @@ export function wuxingFromDayMaster(dayMaster: string | undefined | null): Wuxin
  * Palm mount names (金星丘 / 木星丘 / …) contain 五行 chars that are NOT the
  * day master's element — strip them before scanning prose.
  */
-const PALM_MOUNT_NOISE =
-  /[金木水火土]星丘|太阳丘|月丘|火星丘|金星|木星|土星|水星|火星丘?/g
+const PALM_MOUNT_NOISE = /[金木水火土]星丘|太阳丘|月丘|火星丘|金星|木星|土星|水星|火星丘?/g
 
 /** Explicit destiny phrases beat a bare 五行 glyph elsewhere in the brief. */
 const DESTINY_PHRASE: Array<{ re: RegExp; el: WuxingChar }> = [

@@ -28,11 +28,6 @@ import { hasActiveEntitlement } from '../services/entitlements'
 import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../services/quota'
 import { sendExpoPushMessages } from './expo-push'
 import {
-  llmHarvestFacePushWindows,
-  replaceFaceoraclePushFuel,
-  windowsFromEvents,
-} from './faceoracle-push-harvest'
-import {
   buildLocusIndex,
   buildLocusIndexFromLoci,
   type LocusCitation,
@@ -40,6 +35,11 @@ import {
   parseLandmarksJson,
   type ReadingLandmarks,
 } from './faceoracle-landmarks'
+import {
+  llmHarvestFacePushWindows,
+  replaceFaceoraclePushFuel,
+  windowsFromEvents,
+} from './faceoracle-push-harvest'
 import {
   assessLociCoverage,
   buildSuggestedLoci,

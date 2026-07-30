@@ -86,7 +86,9 @@ export function YuunHome({ locale }: { locale: string }) {
   const store = BRAND_STORE.yuun
 
   return (
-    <main style={{ position: 'relative', minHeight: '100dvh', background: C.bg, overflowX: 'hidden' }}>
+    <main
+      style={{ position: 'relative', minHeight: '100dvh', background: C.bg, overflowX: 'hidden' }}
+    >
       <nav
         style={{
           display: 'flex',

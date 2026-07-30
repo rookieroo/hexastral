@@ -4,7 +4,7 @@
 
 import { isCompoundFacing, mountainAtDegree, sitMountainForFacing } from '@zhop/astro-core'
 import { Pressable, Text, View } from 'react-native'
-import { type Strings } from '@/lib/i18n'
+import type { Strings } from '@/lib/i18n'
 import { spacing, useFengTheme } from '@/lib/theme'
 
 export function CompoundFacingTeachCard({

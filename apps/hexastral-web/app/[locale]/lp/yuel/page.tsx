@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: 'Yuel · relationship charts',
     alternates: {
       canonical:
-        locale === 'en' ? 'https://hexastral.com/lp/yuel' : `https://hexastral.com/${locale}/lp/yuel`,
+        locale === 'en'
+          ? 'https://hexastral.com/lp/yuel'
+          : `https://hexastral.com/${locale}/lp/yuel`,
     },
   }
 }

@@ -3,12 +3,12 @@
  * JSON bundles synced from @zhop/hexastral-tokens via scripts/sync-hexagram-corpus.mjs
  */
 
-import type { Hexagram } from './hexagrams'
 import corpusZhCn from './hexagram-i18n/corpus.zh-CN.json'
 import i18nEn from './hexagram-i18n/i18n.en.json'
 import i18nJa from './hexagram-i18n/i18n.ja.json'
 import i18nKo from './hexagram-i18n/i18n.ko.json'
 import i18nZhTw from './hexagram-i18n/i18n.zh-TW.json'
+import type { Hexagram } from './hexagrams'
 
 type HexagramLocale = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'ko'
 

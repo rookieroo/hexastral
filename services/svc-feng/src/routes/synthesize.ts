@@ -267,9 +267,7 @@ const FALLBACK_TITLES_EN: Record<string, string> = {
 function buildFallbackChapters(locale: 'en' | 'zh' | 'zh-Hant' | 'ja', omitFlying: boolean) {
   const isZh = locale.startsWith('zh')
   const isJa = locale === 'ja'
-  const kinds = omitFlying
-    ? CHAPTER_KINDS.filter((k) => k !== 'flying_stars')
-    : [...CHAPTER_KINDS]
+  const kinds = omitFlying ? CHAPTER_KINDS.filter((k) => k !== 'flying_stars') : [...CHAPTER_KINDS]
 
   return kinds.map((kind) => ({
     kind,

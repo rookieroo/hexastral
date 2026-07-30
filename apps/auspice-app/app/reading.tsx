@@ -43,11 +43,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import {
-  type AuspiceBirthInfo,
-  getAuspiceBirthInfo,
-  type ShichenIndex,
-} from '@/lib/birth'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo, type ShichenIndex } from '@/lib/birth'
 import type { Locale as AppLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { openKindredReading } from '@/lib/kindred-handoff'

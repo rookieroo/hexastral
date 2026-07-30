@@ -9,8 +9,8 @@
  * Draft is cleared on (new-site)/review success or when the user discards.
  */
 
-import type { FengResidenceType } from '@zhop/scenario-feng'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import type { FengResidenceType } from '@zhop/scenario-feng'
 
 const KEY = 'feng_site_draft'
 

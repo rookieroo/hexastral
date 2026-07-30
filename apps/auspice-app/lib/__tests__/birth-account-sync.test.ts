@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AuspiceBirthInfo } from '../birth'
-import {
-  birthInfosEqual,
-  fromPortfolioBirth,
-  toPortfolioBirth,
-} from '../birth-account-mapping'
+import { birthInfosEqual, fromPortfolioBirth, toPortfolioBirth } from '../birth-account-mapping'
 
 describe('birth-account-mapping', () => {
   const sample: AuspiceBirthInfo = {

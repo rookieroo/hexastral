@@ -33,9 +33,9 @@ import { ApiErrorCode, jsonErr, jsonOk } from '../../lib/api-response'
 import { requireUserId } from '../../lib/auth'
 import { enqueueFengAnalyzeJob } from '../../lib/feng-analyze-queue'
 import { deleteFloorplans } from '../../lib/feng-client'
-import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
 import { haversineM, orientFacingDeltaDeg, pinOffsetCoords } from '../../lib/feng-coords'
 import { assertUserOwnsFloorplanKeys } from '../../lib/feng-floorplan-access'
+import { collectFloorplanKeys } from '../../lib/feng-interior-compute'
 import {
   fengSkuForResidence,
   MAX_FLOORPLAN_IMAGES,
@@ -45,9 +45,9 @@ import {
 
 const facingDeg = z.number().gte(0).lt(360)
 
-  // 户型图 / 室内堪舆. `orientDeg` = the true-north bearing of the plans' top edge
-  // (from the north-align step). `centerNorm` = user-placed 立极 on the cover plan.
-  // 1 image = apartment · N = villa/multi-floor.
+// 户型图 / 室内堪舆. `orientDeg` = the true-north bearing of the plans' top edge
+// (from the north-align step). `centerNorm` = user-placed 立极 on the cover plan.
+// 1 image = apartment · N = villa/multi-floor.
 const floorplanImageSchema = z.object({
   key: z.string().min(1).max(96),
   // RESERVED, currently ignored: per-image orientDeg — all floors share top-level orientDeg.
@@ -224,11 +224,7 @@ function buildInputMeta(input: z.infer<typeof createSiteObject>): string {
     meta.floorplanOrientConfirmed = input.floorplanOrientConfirmed === true
     meta.orientFacingDeltaDeg = orientFacingDeltaDeg(input.floorplan.orientDeg, input.facingDegTrue)
   }
-  if (
-    input.geocodeLat != null &&
-    input.geocodeLng != null &&
-    input.buildingCenterNorm
-  ) {
+  if (input.geocodeLat != null && input.geocodeLng != null && input.buildingCenterNorm) {
     meta.geocodeLat = input.geocodeLat
     meta.geocodeLng = input.geocodeLng
     meta.buildingCenterNorm = input.buildingCenterNorm
@@ -373,7 +369,9 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     const parsed = z
       .object({ residenceType: z.enum(['apartment', 'flat', 'villa']).optional() })
       .safeParse(body)
-    const residenceType = normalizeResidenceType(parsed.success ? parsed.data.residenceType : undefined)
+    const residenceType = normalizeResidenceType(
+      parsed.success ? parsed.data.residenceType : undefined
+    )
     const quote = quoteFengAnalysis(residenceType)
     return jsonOk(c, { quote })
   })
@@ -543,7 +541,9 @@ export const fengSiteRoutes = new Hono<AppEnv>()
 
     let facingConfirmed = false
     try {
-      const meta = site.inputMeta ? (JSON.parse(site.inputMeta) as { facingConfirmed?: boolean }) : null
+      const meta = site.inputMeta
+        ? (JSON.parse(site.inputMeta) as { facingConfirmed?: boolean })
+        : null
       facingConfirmed = meta?.facingConfirmed === true
     } catch {
       facingConfirmed = false
@@ -607,9 +607,7 @@ export const fengSiteRoutes = new Hono<AppEnv>()
     const runningJob = await db
       .select()
       .from(fengJobs)
-      .where(
-        and(eq(fengJobs.siteId, id), notInArray(fengJobs.stage, ['done', 'failed']))
-      )
+      .where(and(eq(fengJobs.siteId, id), notInArray(fengJobs.stage, ['done', 'failed'])))
       .orderBy(desc(fengJobs.startedAt))
       .limit(1)
       .get()

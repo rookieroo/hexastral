@@ -416,7 +416,8 @@ export type Strings = {
 const EN: Strings = {
   appName: 'Kanyu',
   empty_title: 'No sites yet',
-  empty_subtitle: 'Add a home or office to explore classical site theory from satellite and layout inputs.',
+  empty_subtitle:
+    'Add a home or office to explore classical site theory from satellite and layout inputs.',
   empty_cta: 'Add a site',
   new_site_address_title: 'Pick your address',
   new_site_address_subtitle: 'Type an address or use your current location.',
@@ -434,7 +435,8 @@ const EN: Strings = {
     'Map is true north (N on the ring). Drag the highlighted arrow, or use Record while aiming your phone.',
   new_site_facing_map_legend:
     'Gold = building door · Blue = unit door · White = phone (outdoors only; may drift indoors) · N on ring = true north',
-  new_site_facing_building_pin: 'Drag the white dot onto your building — geocoded pins are often off by one building.',
+  new_site_facing_building_pin:
+    'Drag the white dot onto your building — geocoded pins are often off by one building.',
   new_site_facing_edit_building: 'Edit building door',
   new_site_facing_edit_unit_door: 'Edit unit door',
   new_site_facing_capture_hint: 'Stand outdoors, hold the phone flat, point at the door, then tap:',
@@ -567,18 +569,21 @@ const EN: Strings = {
   dq_no_birth_profile: 'No birth profile — personal gua chapter uses house gua only.',
   dq_pin_offset: 'Building pin was adjusted far from the geocoded address.',
   dq_orient_facing_delta: 'Floor-plan north differs from building facing — verify orientation.',
-  dq_apartment_floor_missing: 'Floor not entered — street-level form is less specific for high-rises.',
+  dq_apartment_floor_missing:
+    'Floor not entered — street-level form is less specific for high-rises.',
   dq_street_sha_skipped_apartment:
     'Street-level form sha was not evaluated for this apartment (satellite + chart only).',
   dq_flying_stars_confidence_caveat:
     'Build year is approximate — flying-stars period confidence is not high; treat 运盘 wording as provisional.',
   dq_flat_floor_missing: 'Floor not entered — street form attenuation skipped.',
   dq_flat_urban: 'Flat urban site — landform read relies on direction + satellite only.',
-  dq_residence_mismatch: 'Declared residence type may not match the site — review if pricing tier fits.',
+  dq_residence_mismatch:
+    'Declared residence type may not match the site — review if pricing tier fits.',
   report_form_li_notes_heading: 'FORM–LI NOTES (形理对照)',
   report_placement_heading: 'CLASSICAL PLACEMENT NOTES',
   report_digest_tag: 'Overview',
-  digest_chart_line: 'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
+  digest_chart_line:
+    'Sit {sit} · Face {face} · built in Period {buildYuan} ({method}) · read in Period {currentYuan}',
   digest_sit_label: 'SIT',
   digest_face_label: 'FACE',
   digest_pattern_ping: 'Balanced chart',
@@ -591,14 +596,20 @@ const EN: Strings = {
   digest_exterior_sha: '{count} form clashes',
   digest_confidence_medium: 'Stars · medium confidence',
   digest_confidence_low: 'Stars · low confidence',
-  digest_headline_pattern_rescued: '{pattern} is rescued by the surrounding landform — a classical form–star alignment reference.',
-  digest_headline_pattern_unrescued: '{pattern} is not rescued by the landform — prioritize the remediation chapter.',
+  digest_headline_pattern_rescued:
+    '{pattern} is rescued by the surrounding landform — a classical form–star alignment reference.',
+  digest_headline_pattern_unrescued:
+    '{pattern} is not rescued by the landform — prioritize the remediation chapter.',
   digest_headline_focus: '{palace} palace reads {verdict} — start adjustments there.',
-  digest_headline_exterior_sha: '{count} exterior form clashes need attention before interior tuning.',
-  digest_headline_concord_mismatch: 'House and personal gua disagree — bed, door, and stove placement matter more here.',
-  digest_headline_ping: 'No special flying-star disposition — read sector by sector from the form–star verdicts.',
+  digest_headline_exterior_sha:
+    '{count} exterior form clashes need attention before interior tuning.',
+  digest_headline_concord_mismatch:
+    'House and personal gua disagree — bed, door, and stove placement matter more here.',
+  digest_headline_ping:
+    'No special flying-star disposition — read sector by sector from the form–star verdicts.',
   digest_focus_line: '{palace} · {verdict}',
-  digest_not_score: 'Verdict chips from deterministic charts and landform — not a fortune score or percentile.',
+  digest_not_score:
+    'Verdict chips from deterministic charts and landform — not a fortune score or percentile.',
   digest_input_completeness: 'Input completeness {score}%',
   share_brand_footer: '風 · Kanyu',
   share_disclaimer: 'For entertainment and cultural study only — not professional advice.',
@@ -679,8 +690,7 @@ const EN: Strings = {
   paywall_title: 'Full site report',
   paywall_subtitle_analyze:
     'One purchase unlocks a structured site report for this address — satellite context, flying stars, and AI-written chapters (study tool).',
-  paywall_subtitle_chat:
-    'Purchase includes unlimited AI follow-up questions about this report.',
+  paywall_subtitle_chat: 'Purchase includes unlimited AI follow-up questions about this report.',
   paywall_plan_single: 'Site analysis',
   paywall_plan_premium: 'Premium site analysis',
   paywall_cta: 'Purchase report',
@@ -826,8 +836,7 @@ const ZH_HANS: Strings = {
   facing_ritual_sample_warn: '罗盘采样相差 {delta}° — 可能有磁干扰；不确定请户外重采。',
   facing_ritual_samples_hint: '已采 {n}/3 · 离散 {delta}°',
   compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
-  compound_teach_why:
-    '朝向落在二十四山边界 ±2.5° 内时，玄空传统改用替卦盘（替星诀）而非下卦盘。',
+  compound_teach_why: '朝向落在二十四山边界 ±2.5° 内时，玄空传统改用替卦盘（替星诀）而非下卦盘。',
   compound_teach_diff: '下卦与替卦盘面可能截然不同——报告会标明所用方法。',
   compound_teach_expand: '为何替卦？',
   compound_teach_collapse: '收起',
@@ -844,7 +853,8 @@ const ZH_HANS: Strings = {
   new_site_residence_apartment: '公寓 / 小区里的一栋楼',
   new_site_residence_flat: '大平层',
   new_site_residence_villa: '独栋 / 别墅 / 农村自建',
-  new_site_residence_premium_note: '大平层与独栋别墅可上传多张户型图，并加入街景级外峦形煞分析，报告更全面深入。',
+  new_site_residence_premium_note:
+    '大平层与独栋别墅可上传多张户型图，并加入街景级外峦形煞分析，报告更全面深入。',
   new_site_review_residence: '住宅类型',
   new_site_building_title: '建筑信息',
   new_site_building_year_label: '建成年份',
@@ -860,7 +870,8 @@ const ZH_HANS: Strings = {
     '没有建运年份时，玄空飞星章将省略；八宅与流年方位仍可生成。',
   new_site_building_unknown_confirm_cta: '仍要跳过',
   new_site_building_floor_label: '楼层(可选)',
-  new_site_building_floor_flat_hint: '大平层必填 —— 街景级外峦形煞会按你所在楼层高度加权，避免高层被地面煞高估。',
+  new_site_building_floor_flat_hint:
+    '大平层必填 —— 街景级外峦形煞会按你所在楼层高度加权，避免高层被地面煞高估。',
   new_site_building_floor_required: '大平层请填写所在楼层。',
   new_site_building_year_required: '请填写建成年份或年代。',
   new_site_building_move_in_required: '请填写入住年份。',
@@ -907,8 +918,7 @@ const ZH_HANS: Strings = {
     '玄空飞星与八宅依你输入的坐向与年份演算；峦头砂水形煞由 AI 与高程推断，仅供参考。',
   report_legal_disclaimer:
     '仅供娱乐、文化探索与个人省思——非专业风水、建筑或施工建议。请勿依此报告作出购房、装修或安全决策。',
-  report_chapter_micro_disclaimer:
-    '仅供娱乐与文化研习，不构成施工、医疗、财务或人生决策建议。',
+  report_chapter_micro_disclaimer: '仅供娱乐与文化研习，不构成施工、医疗、财务或人生决策建议。',
   report_street_source: '街景级形煞参考 Mapillary 影像（CC BY-SA）。',
   report_map_close: '近景',
   report_map_mid: '周边',
@@ -966,8 +976,7 @@ const ZH_HANS: Strings = {
   tool_glossary: '术语表',
   glossary_intro: '报告中用到的风水术语,按流派归类。',
   tool_imagery: '意象图说明',
-  imagery_intro:
-    '报告每一章开头有一枚象征图记。它们是研习辅助，不是符咒，用来标示该章的古典主题。',
+  imagery_intro: '报告每一章开头有一枚象征图记。它们是研习辅助，不是符咒，用来标示该章的古典主题。',
   imagery_blurb_external_landform: '层峦与水线象征峦头——宅周山水形势如何相依。',
   imagery_blurb_personal_fit: '八卦环象征命卦与八宅宅命匹配一章。',
   imagery_blurb_flying_stars: '九宫格象征玄空飞星——按宫读当运盘。',
@@ -1025,7 +1034,8 @@ const ZH_HANS: Strings = {
   new_site_review_floorplan: '户型图',
   report_unlock_title: '解锁这份报告',
   paywall_title: '完整堪舆报告',
-  paywall_subtitle_analyze: '一次购买解锁该址的结构化站点报告——卫星语境、飞星排盘与 AI 章节（学习工具）。',
+  paywall_subtitle_analyze:
+    '一次购买解锁该址的结构化站点报告——卫星语境、飞星排盘与 AI 章节（学习工具）。',
   paywall_subtitle_chat: '购买后可无限追问本报告的 AI 解读。',
   paywall_plan_single: '站点分析',
   paywall_plan_premium: '深度站点分析',
@@ -1163,8 +1173,7 @@ const ZH_HANT: Strings = {
   facing_ritual_sample_warn: '羅盤採樣相差 {delta}° — 可能有磁干擾；不確定請戶外重採。',
   facing_ritual_samples_hint: '已採 {n}/3 · 離散 {delta}°',
   compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
-  compound_teach_why:
-    '朝向落在二十四山邊界 ±2.5° 內時，玄空傳統改用替卦盤（替星訣）而非下卦盤。',
+  compound_teach_why: '朝向落在二十四山邊界 ±2.5° 內時，玄空傳統改用替卦盤（替星訣）而非下卦盤。',
   compound_teach_diff: '下卦與替卦盤面可能截然不同——報告會標明所用方法。',
   compound_teach_expand: '為何替卦？',
   compound_teach_collapse: '收起',
@@ -1181,7 +1190,8 @@ const ZH_HANT: Strings = {
   new_site_residence_apartment: '公寓 / 社區裡的一棟樓',
   new_site_residence_flat: '大平層',
   new_site_residence_villa: '獨棟 / 別墅 / 鄉村自建',
-  new_site_residence_premium_note: '大平層與獨棟別墅可上傳多張戶型圖，並加入街景級外巒形煞分析，報告更全面深入。',
+  new_site_residence_premium_note:
+    '大平層與獨棟別墅可上傳多張戶型圖，並加入街景級外巒形煞分析，報告更全面深入。',
   new_site_review_residence: '住宅類型',
   new_site_building_title: '建築資訊',
   new_site_building_year_label: '建成年份',
@@ -1196,7 +1206,8 @@ const ZH_HANT: Strings = {
     '沒有建運年份時，玄空飛星章將省略；八宅與流年方位仍可生成。',
   new_site_building_unknown_confirm_cta: '仍要略過',
   new_site_building_floor_label: '樓層(選填)',
-  new_site_building_floor_flat_hint: '大平層必填 —— 街景級外巒形煞會按你所在樓層高度加權，避免高層被地面煞高估。',
+  new_site_building_floor_flat_hint:
+    '大平層必填 —— 街景級外巒形煞會按你所在樓層高度加權，避免高層被地面煞高估。',
   new_site_building_floor_required: '大平層請填寫所在樓層。',
   new_site_building_year_required: '請填寫建成年份或年代。',
   new_site_building_move_in_required: '請填寫入住年份。',
@@ -1243,8 +1254,7 @@ const ZH_HANT: Strings = {
     '玄空飛星與八宅依你輸入的坐向與年份演算；巒頭砂水形煞由 AI 與高程推斷，僅供參考。',
   report_legal_disclaimer:
     '僅供娛樂、文化探索與個人省思——非專業風水、建築或施工建議。請勿依此報告作出購屋、裝修或安全決策。',
-  report_chapter_micro_disclaimer:
-    '僅供娛樂與文化研習，不構成施工、醫療、財務或人生決策建議。',
+  report_chapter_micro_disclaimer: '僅供娛樂與文化研習，不構成施工、醫療、財務或人生決策建議。',
   report_street_source: '街景級形煞參考 Mapillary 影像（CC BY-SA）。',
   report_map_close: '近景',
   report_map_mid: '周邊',
@@ -1302,8 +1312,7 @@ const ZH_HANT: Strings = {
   tool_glossary: '術語表',
   glossary_intro: '報告中用到的風水術語,按流派歸類。',
   tool_imagery: '意象圖說明',
-  imagery_intro:
-    '報告每一章開頭有一枚象徵圖記。它們是研習輔助，不是符咒，用來標示該章的古典主題。',
+  imagery_intro: '報告每一章開頭有一枚象徵圖記。它們是研習輔助，不是符咒，用來標示該章的古典主題。',
   imagery_blurb_external_landform: '層巒與水線象徵巒頭——宅周山水形勢如何相依。',
   imagery_blurb_personal_fit: '八卦環象徵命卦與八宅宅命匹配一章。',
   imagery_blurb_flying_stars: '九宮格象徵玄空飛星——按宮讀當運盤。',
@@ -1360,7 +1369,8 @@ const ZH_HANT: Strings = {
   new_site_review_floorplan: '戶型圖',
   report_unlock_title: '解鎖這份報告',
   paywall_title: '完整堪輿報告',
-  paywall_subtitle_analyze: '一次購買解鎖該址的結構化站點報告——衛星語境、飛星排盤與 AI 章節（學習工具）。',
+  paywall_subtitle_analyze:
+    '一次購買解鎖該址的結構化站點報告——衛星語境、飛星排盤與 AI 章節（學習工具）。',
   paywall_subtitle_chat: '購買後可無限追問本報告的 AI 解讀。',
   paywall_plan_single: '站點分析',
   paywall_plan_premium: '深度站點分析',
@@ -1480,7 +1490,8 @@ const JA: Strings = {
     '地図は真北（リングの N）。選択中の矢印をドラッグするか、屋外で向けて「記録」を押します。',
   new_site_facing_map_legend:
     '金 = 建物入口 · 青 = 住戸玄関 · 白 = スマホの向き（屋外推奨）· N = 真北',
-  new_site_facing_building_pin: '白い点を建物の中心に合わせてください。住所の座標は1棟ずれることがあります。',
+  new_site_facing_building_pin:
+    '白い点を建物の中心に合わせてください。住所の座標は1棟ずれることがあります。',
   new_site_facing_edit_building: '建物入口',
   new_site_facing_edit_unit_door: '住戸玄関',
   new_site_facing_capture_hint: '屋外で水平に持ち、向けてから：',
@@ -1503,8 +1514,7 @@ const JA: Strings = {
   facing_ritual_step_pin: '2 · 建物中心をピン留め',
   facing_ritual_step_confirm: '3 · 向首の山名を確認',
   facing_ritual_identity: '坐{sit}向{face} · {method}',
-  facing_ritual_sample_warn:
-    'コンパス標本の差 {delta}° — 磁気干渉の可能性。不明なら屋外で再採。',
+  facing_ritual_sample_warn: 'コンパス標本の差 {delta}° — 磁気干渉の可能性。不明なら屋外で再採。',
   facing_ritual_samples_hint: '標本 {n}/3 · ばらつき {delta}°',
   compound_teach_title: '兼向 · 坐{sit}向{face} · {method}',
   compound_teach_why:
@@ -1634,8 +1644,10 @@ const JA: Strings = {
   digest_exterior_sha: '形煞 {count} 件',
   digest_confidence_medium: '飛星 · 中信頼',
   digest_confidence_low: '飛星 · 低信頼',
-  digest_headline_pattern_rescued: '格局「{pattern}」は地形で救われており、形理同参の文化的参照と読めます。',
-  digest_headline_pattern_unrescued: '格局「{pattern}」は地形で救われず、化解章を優先してください。',
+  digest_headline_pattern_rescued:
+    '格局「{pattern}」は地形で救われており、形理同参の文化的参照と読めます。',
+  digest_headline_pattern_unrescued:
+    '格局「{pattern}」は地形で救われず、化解章を優先してください。',
   digest_headline_focus: '{palace}宮は「{verdict}」— ここから調整を。',
   digest_headline_exterior_sha: '外局に形煞 {count} 件 — 内局より先に外局を。',
   digest_headline_concord_mismatch: '宅命不配 — 床・門・灶の吉方位が特に重要。',

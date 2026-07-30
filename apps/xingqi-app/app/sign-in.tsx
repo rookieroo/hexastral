@@ -175,7 +175,12 @@ export default function SignInScreen() {
     } catch (err) {
       if (__DEV__) console.error('[Xingqi] Google sign-in failed', err)
       setError(
-        s('Google 登录失败', 'Google 登入失敗', 'Google sign-in failed', 'Google ログインに失敗しました')
+        s(
+          'Google 登录失败',
+          'Google 登入失敗',
+          'Google sign-in failed',
+          'Google ログインに失敗しました'
+        )
       )
     } finally {
       setBusy(null)
@@ -258,12 +263,7 @@ export default function SignInScreen() {
             <XingqiLoader size={36} label={s('登录中', '登入中', 'Signing in', 'ログイン中')} />
           ) : (
             <Text style={{ color: colors.text, fontWeight: '600' }}>
-              {s(
-                '通过 Google 登录',
-                '透過 Google 登入',
-                'Continue with Google',
-                'Google で続ける'
-              )}
+              {s('通过 Google 登录', '透過 Google 登入', 'Continue with Google', 'Google で続ける')}
             </Text>
           )}
         </Pressable>

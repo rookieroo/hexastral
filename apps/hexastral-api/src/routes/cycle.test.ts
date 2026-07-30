@@ -98,8 +98,19 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
       typeof renderAuspicePush
     >[2]
 
-  test('en morning push leads with the hook, not the 干支 day-label', () => {
+  test('anonymous with birth still gets public 黄历 (no personal hook)', () => {
     const msg = renderAuspicePush('morning', ymd, mkSub({ locale: 'en' }))
+    expect(msg).not.toBeNull()
+    expect(msg?.body).toMatch(/Good|Avoid|—/)
+    expect(msg?.data.hookKey).toBeUndefined()
+  })
+
+  test('signed-in en morning push leads with the hook, not the 干支 day-label', () => {
+    const msg = renderAuspicePush(
+      'morning',
+      ymd,
+      mkSub({ locale: 'en', portfolioUserId: 'user_test' })
+    )
     expect(msg).not.toBeNull()
     // Title is the English corpus hook — NOT the raw 干支 "丁巳"/"… day" label; the body
     // is the natural-language lens (no 宜/Good list).
@@ -136,7 +147,12 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
   test('en evening heads-up no longer repeats "Tomorrow" in the body', () => {
     // Jun 19 2026 = 端午 (festivalToday), so the evening fires regardless of fit — lets us
     // assert the dedup without depending on a 吉/凶 day. Old body was "Tomorrow: …".
-    const msg = renderAuspicePush('evening', { year: 2026, month: 6, day: 19 }, mkSub({}))
+    // Evening personal fit is Pro-gated; use isPro so the evening path still renders.
+    const msg = renderAuspicePush(
+      'evening',
+      { year: 2026, month: 6, day: 19 },
+      mkSub({ isPro: true, portfolioUserId: 'user_test' })
+    )
     expect(msg).not.toBeNull()
     expect(msg?.title).toBe('Tomorrow')
     expect(msg?.body).not.toMatch(/Tomorrow/)

@@ -17,11 +17,11 @@ import { ChapterPager } from '@/components/reading/ChapterPager'
 import { InkCenterpiece } from '@/components/reading/InkCenterpiece'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { natalFactsFromOutput } from '@/components/reading/NatalFactsStrip'
-import { wuxingFromDayMaster } from '@/lib/ancient-glyphs'
 import { ReadingPrimer, useReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { SelectionActionBar } from '@/components/reading/SelectionActionBar'
 import { ShareableXingqiCard } from '@/components/reading/ShareableXingqiCard'
 import { XingqiLoader } from '@/components/XingqiLoader'
+import { wuxingFromDayMaster } from '@/lib/ancient-glyphs'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { resolveLocale } from '@/lib/i18n'
@@ -88,9 +88,19 @@ export default function FaceResultScreen() {
           setLoadError(null)
           return
         }
-        setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading', '解読を読み込めませんでした'))
+        setLoadError(
+          s('无法加载解读', '無法載入解讀', 'Could not load reading', '解読を読み込めませんでした')
+        )
       } catch {
-        if (!cancelled) setLoadError(s('无法加载解读', '無法載入解讀', 'Could not load reading', '解読を読み込めませんでした'))
+        if (!cancelled)
+          setLoadError(
+            s(
+              '无法加载解读',
+              '無法載入解讀',
+              'Could not load reading',
+              '解読を読み込めませんでした'
+            )
+          )
       } finally {
         if (!cancelled) setLoading(false)
       }

@@ -13,12 +13,7 @@ import { and, desc, eq, inArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import {
-  pairReadings,
-  userBonds,
-  userPhysiognomyFeatures,
-  users,
-} from '../../db/schema'
+import { pairReadings, userBonds, userPhysiognomyFeatures, users } from '../../db/schema'
 import type { AppEnv } from '../../infra-types'
 import { userHasCapability } from '../../lib/access/entitlement-access'
 import { callAstro } from '../../lib/astro-client'

@@ -1,9 +1,9 @@
 import {
   BRAND_LEGAL_PATHS,
   type BrandId,
+  type BrandLocale,
   localePath,
   pickLocale,
-  type BrandLocale,
 } from './brand-config'
 
 const LABELS: Record<BrandLocale, { privacy: string; terms: string }> = {

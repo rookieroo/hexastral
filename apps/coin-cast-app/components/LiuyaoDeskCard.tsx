@@ -41,7 +41,11 @@ function isDesk(value: unknown): value is LiuyaoDeskView {
 export function parseLiuyaoDesk(payload: Record<string, unknown>): LiuyaoDeskView | null {
   if (isDesk(payload.desk)) return payload.desk
   const classical = payload.classical
-  if (classical && typeof classical === 'object' && isDesk((classical as { desk?: unknown }).desk)) {
+  if (
+    classical &&
+    typeof classical === 'object' &&
+    isDesk((classical as { desk?: unknown }).desk)
+  ) {
     return (classical as { desk: LiuyaoDeskView }).desk
   }
   return null
@@ -112,7 +116,9 @@ export function LiuyaoDeskCard({ desk, benSymbol, bianSymbol }: Props) {
 
       <Text style={[styles.tableTitle, { color: colors.accent }]}>{t('deskTableTitle')}</Text>
       <View style={[styles.tableHead, { borderBottomColor: colors.separator }]}>
-        <Text style={[styles.colYao, styles.headCell, { color: colors.dim }]}>{t('deskColYao')}</Text>
+        <Text style={[styles.colYao, styles.headCell, { color: colors.dim }]}>
+          {t('deskColYao')}
+        </Text>
         <Text style={[styles.colGz, styles.headCell, { color: colors.dim }]}>
           {t('deskColGanZhi')}
         </Text>

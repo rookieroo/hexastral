@@ -64,11 +64,7 @@ export function NotificationsSection({ rows }: { rows: NotificationToggleItem[] 
     <SettingsSection title={t.settingsNotifications}>
       <SettingsCard>
         {rows.map((row, index) => (
-          <NotificationToggleRow
-            key={row.id}
-            {...row}
-            divider={index < rows.length - 1}
-          />
+          <NotificationToggleRow key={row.id} {...row} divider={index < rows.length - 1} />
         ))}
       </SettingsCard>
       <View style={{ height: spacing.xs }} />

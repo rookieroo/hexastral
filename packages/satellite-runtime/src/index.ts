@@ -18,10 +18,6 @@ export {
 } from './cross-app-attribution'
 export { ddlClaimedKey, pendingDdlTokenKey } from './ddl-claim-key'
 export { persistPendingDdlToken, resolvePendingPortfolioDdl } from './ddl-resolution'
-export {
-  uploadAnonGrowthAttribution,
-  uploadSignedGrowthAttribution,
-} from './upload-growth-attribution'
 export { extractDdlTokenFromUrl } from './ddl-token'
 export type {
   DevEntitlementOverride,
@@ -91,6 +87,10 @@ export type { StreakState } from './streak'
 export { getStreakState, recordTodayOpen } from './streak'
 export type { HexastralLink } from './universal-links'
 export { parseHexastralLink, useUniversalLinks } from './universal-links'
+export {
+  uploadAnonGrowthAttribution,
+  uploadSignedGrowthAttribution,
+} from './upload-growth-attribution'
 export { deletePortfolioAccount } from './use-account-delete'
 export type {
   ChapterManifestEntry,

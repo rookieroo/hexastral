@@ -24,10 +24,12 @@ export function xingqiShareCaption(locale: string, lead: string): string {
 }
 
 /** Abstract identity for the share card — never birth date/time. */
-export function xingqiShareIdentity(facts: {
-  dayMaster?: string
-  dayun?: string
-} | null): string | undefined {
+export function xingqiShareIdentity(
+  facts: {
+    dayMaster?: string
+    dayun?: string
+  } | null
+): string | undefined {
   if (!facts) return undefined
   const parts = [facts.dayMaster, facts.dayun].filter(
     (x): x is string => typeof x === 'string' && x.trim().length > 0

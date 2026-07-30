@@ -46,13 +46,13 @@ import { Alert, Dimensions, Platform, Pressable, ScrollView, Share, Text, View }
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { EssenceTag } from '@/components/EssenceTag'
 import {
   deriveCenterpieceMode,
   deriveTransitionEndpoints,
   InkCenterpiece,
 } from '@/components/ink/InkCenterpiece'
 import { PrimaryButton } from '@/components/PrimaryButton'
-import { EssenceTag } from '@/components/EssenceTag'
 import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
@@ -966,7 +966,9 @@ export default function BondDetailScreen({
         ) : null}
 
         {(aElement || bElement) && (
-          <View style={{ alignItems: 'center', marginTop: kindredSpacing.xl, gap: kindredSpacing.xs }}>
+          <View
+            style={{ alignItems: 'center', marginTop: kindredSpacing.xl, gap: kindredSpacing.xs }}
+          >
             <EssenceTag aElement={aElement} bElement={bElement} locale={locale} />
             <Text
               style={[

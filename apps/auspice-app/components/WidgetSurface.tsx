@@ -5,7 +5,7 @@
  */
 
 import { ricePaper, rubbing, zinc } from '@zhop/hexastral-tokens'
-import { useMemo, type ReactNode } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { StyleSheet, View, type ViewStyle } from 'react-native'
 
 function hash(n: number): number {

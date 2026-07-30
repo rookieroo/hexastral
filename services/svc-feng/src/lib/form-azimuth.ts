@@ -5,7 +5,7 @@
  * already provide coordinates. Used by prefetch and passed to vision + analyze.
  */
 
-import { palaceAtDegree, type BaguaPalace } from '@zhop/astro-core'
+import { type BaguaPalace, palaceAtDegree } from '@zhop/astro-core'
 
 export type FormAzimuthKind = 'water' | 'waterway' | 'road'
 
@@ -64,7 +64,12 @@ function extractCoords(geometry: unknown): Array<[number, number]> {
     for (const line of g.coordinates) {
       if (!Array.isArray(line)) continue
       for (const c of line) {
-        if (Array.isArray(c) && c.length >= 2 && typeof c[0] === 'number' && typeof c[1] === 'number') {
+        if (
+          Array.isArray(c) &&
+          c.length >= 2 &&
+          typeof c[0] === 'number' &&
+          typeof c[1] === 'number'
+        ) {
           out.push([c[0], c[1]])
         }
       }
@@ -163,9 +168,7 @@ export function computeFormAzimuths(
     if (!prev || item.distanceM < prev.distanceM) best.set(key, item)
   }
 
-  return [...best.values()]
-    .sort((a, b) => a.distanceM - b.distanceM)
-    .slice(0, MAX_FEATURES)
+  return [...best.values()].sort((a, b) => a.distanceM - b.distanceM).slice(0, MAX_FEATURES)
 }
 
 /** Human-readable lines for the vision user prompt. */

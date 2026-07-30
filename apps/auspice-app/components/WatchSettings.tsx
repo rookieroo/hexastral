@@ -10,8 +10,8 @@ import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
-import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { syncWidgetWindow } from '@/lib/widget-bridge'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { buildDailyCardModel, compactVerbs, moonPhaseForIsoDate } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
 import { WidgetCard, type WidgetSize } from './WidgetCard'
@@ -130,7 +130,10 @@ function CircularSlotPreview({
       }}
     >
       <PhaseLogo phase={phase} size={14} />
-      <Text style={{ color: text, fontSize: 11, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+      <Text
+        style={{ color: text, fontSize: 11, fontWeight: '600', letterSpacing: 1 }}
+        numberOfLines={1}
+      >
         {ganZhi}
       </Text>
     </View>
@@ -173,7 +176,10 @@ function RectangularSlotPreview({
       <PhaseLogo phase={phase} size={22} />
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-          <Text style={{ color: text, fontSize: 13, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+          <Text
+            style={{ color: text, fontSize: 13, fontWeight: '600', letterSpacing: 1 }}
+            numberOfLines={1}
+          >
             {ganZhi}
           </Text>
           {solarTerm ? (
@@ -242,7 +248,10 @@ function CornerSlotPreview({
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: text, fontSize: 12, fontWeight: '600', letterSpacing: 1 }} numberOfLines={1}>
+      <Text
+        style={{ color: text, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
+        numberOfLines={1}
+      >
         {ganZhi}
       </Text>
     </View>
@@ -436,8 +445,7 @@ export function WatchSettings() {
                 off === 0
                   ? phaseOverride === null && dayOffset === 0
                   : phaseOverride != null && Math.abs(phaseOverride - dayPhase) < 0.0005
-              const label =
-                off === 0 ? t.devMoonPhaseDayToday : off > 0 ? `+${off}` : `${off}`
+              const label = off === 0 ? t.devMoonPhaseDayToday : off > 0 ? `+${off}` : `${off}`
               return (
                 <Pressable
                   key={off}

@@ -77,7 +77,7 @@ export const SHUANGJIANG: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Frost\'s Descent: first, the jackal makes offering of beasts; second, the plants yellow and shed; third, the hibernating insects all bow down. The jackal takes many beasts and lays them out as if in offering, laying in winter stores; the plants wither yellow and the leaves fall; and the hibernating insects droop their heads in their burrows, neither eating nor moving as they pass the winter. Frost\'s Descent is when the air grows austere and congeals, and dew freezes into frost — the last term of autumn. Classical three pentads: 「一候豺乃祭兽，二候草木黄落，三候蛰虫咸俯」。',
+        body: "The three pentads of Frost's Descent: first, the jackal makes offering of beasts; second, the plants yellow and shed; third, the hibernating insects all bow down. The jackal takes many beasts and lays them out as if in offering, laying in winter stores; the plants wither yellow and the leaves fall; and the hibernating insects droop their heads in their burrows, neither eating nor moving as they pass the winter. Frost's Descent is when the air grows austere and congeals, and dew freezes into frost — the last term of autumn. Classical three pentads: 「一候豺乃祭兽，二候草木黄落，三候蛰虫咸俯」。",
       },
       {
         title: 'Farming',

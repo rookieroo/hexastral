@@ -42,12 +42,10 @@ describe('feng-floorplan-access', () => {
     const ownedKey = 'floorplan/owned.jpg'
     const foreignKey = 'floorplan/other.jpg'
     await grantFloorplanKey(kv, userId, ownedKey)
-    const result = await assertUserOwnsFloorplanKeys(
-      { GUARD_KV: kv },
-      mockDb,
-      userId,
-      [ownedKey, foreignKey]
-    )
+    const result = await assertUserOwnsFloorplanKeys({ GUARD_KV: kv }, mockDb, userId, [
+      ownedKey,
+      foreignKey,
+    ])
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.key).toBe(foreignKey)
   })

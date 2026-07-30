@@ -3,23 +3,21 @@
  * Wave 2: 立极 ritual state machine inside this step (no 5th onboarding step).
  */
 
+import { isCompoundFacing, mountainAtDegree, sitMountainForFacing } from '@zhop/astro-core'
 import { useHaptic } from '@zhop/core-ui'
 import {
-  isCompoundFacing,
-  mountainAtDegree,
-  sitMountainForFacing,
-} from '@zhop/astro-core'
-import { FacingCalibrator, nudgeFengDeg, pixelOffsetToLatLng, useSatelliteTile } from '@zhop/scenario-feng'
+  FacingCalibrator,
+  nudgeFengDeg,
+  pixelOffsetToLatLng,
+  useSatelliteTile,
+} from '@zhop/scenario-feng'
 import * as Location from 'expo-location'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Switch, Text, View } from 'react-native'
 import { MAP_ATTRIBUTION } from '@/components/AnnotatedMapSwiper'
 import { CompoundFacingTeachCard } from '@/components/CompoundFacingTeachCard'
 import { LuopanDial } from '@/components/LuopanDial'
-import {
-  FACING_SAMPLE_WARN_DELTA_DEG,
-  summarizeFacingSamples,
-} from '@/lib/facing-samples'
+import { FACING_SAMPLE_WARN_DELTA_DEG, summarizeFacingSamples } from '@/lib/facing-samples'
 import { resolveLocale, t, useStrings } from '@/lib/i18n'
 import { loadDraft, patchDraft } from '@/lib/siteDraft'
 import { spacing, useFengTheme } from '@/lib/theme'
@@ -83,7 +81,10 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const [pinDone, setPinDone] = useState(false)
   const [teachExpanded, setTeachExpanded] = useState(false)
 
-  const satellite = useSatelliteTile(draftLat, draftLng, { zoom: SAT_TILE_ZOOM, size: SAT_TILE_SIZE })
+  const satellite = useSatelliteTile(draftLat, draftLng, {
+    zoom: SAT_TILE_ZOOM,
+    size: SAT_TILE_SIZE,
+  })
   const hasSatellite = Boolean(satellite.uri)
 
   useEffect(() => {
@@ -152,14 +153,11 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
     ? strings.compound_teach_chart_ti
     : strings.compound_teach_chart_xia
 
-  const persistSamples = useCallback(
-    (samples: number[]) => {
-      const summary = summarizeFacingSamples(samples)
-      if (!summary) return
-      void patchDraft({ facingSamples: summary })
-    },
-    []
-  )
+  const persistSamples = useCallback((samples: number[]) => {
+    const summary = summarizeFacingSamples(samples)
+    if (!summary) return
+    void patchDraft({ facingSamples: summary })
+  }, [])
 
   const onFacingChange = useCallback(
     (deg: number) => {
@@ -309,9 +307,7 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
   const satelliteSource = satellite.uri ? { uri: satellite.uri } : undefined
   const canCapture = heading.trueDeg !== null
   const compassDelta =
-    hasSatellite && heading.trueDeg !== null
-      ? Math.abs(diffDeg(facingDeg, heading.trueDeg))
-      : null
+    hasSatellite && heading.trueDeg !== null ? Math.abs(diffDeg(facingDeg, heading.trueDeg)) : null
   const showCompassWarn = compassDelta !== null && compassDelta > 12
   const showSampleWarn =
     sampleSummary != null && sampleSummary.maxDelta > FACING_SAMPLE_WARN_DELTA_DEG
@@ -516,7 +512,9 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
             ) : null}
           </View>
 
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
+          <Text
+            style={{ fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center' }}
+          >
             {strings.facing_ritual_identity
               .replace('{sit}', sitMountain.name)
               .replace('{face}', faceMountain.name)
@@ -557,7 +555,11 @@ export function NewSiteFacingStep({ onComplete }: NewSiteFacingStepProps) {
                 ? ` · ${t(locale, 'new_site_facing_door_value', { deg: Math.round(doorDeg) })}`
                 : ''}
             </Text>
-            <Pressable onPress={() => nudge(-1)} accessibilityRole='button' accessibilityLabel='−1°'>
+            <Pressable
+              onPress={() => nudge(-1)}
+              accessibilityRole='button'
+              accessibilityLabel='−1°'
+            >
               <Text style={{ color: colors.text, fontWeight: '600' }}>−1°</Text>
             </Pressable>
             <Pressable onPress={() => nudge(1)} accessibilityRole='button' accessibilityLabel='+1°'>

@@ -10,7 +10,9 @@ describe('generateClassicalReading', () => {
   test('returns corpus fields without LLM for a static hexagram', () => {
     const yaoValues = [7, 8, 9, 6, 7, 8] as const
     const lines = yaoValues.map((v) => (v % 2 === 1 ? 1 : 0))
-    const changingLines = yaoValues.map((v, i) => (v === 6 || v === 9 ? i : -1)).filter((i) => i >= 0)
+    const changingLines = yaoValues
+      .map((v, i) => (v === 6 || v === 9 ? i : -1))
+      .filter((i) => i >= 0)
 
     const hexagram = getHexagramByLines(lines)
     expect(hexagram).not.toBeNull()

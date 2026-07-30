@@ -266,7 +266,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     '少在疲憊時做重大決定。',
     '适合把舊項目歸檔，給新空間讓路。',
   ],
-  'ja': [
+  ja: [
     '今日は半拍ゆっくり、小さな一事を終えよう。',
     'いまは、片隅を整えると、心も少し澄む。',
     'この日は、残すものと手放すものを見直す日。',
@@ -396,7 +396,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     'この日は、経験者に尋ね、遠回りを半分減らす。',
     'ひと息、画面を暗くし、目と気を柔らげる。',
   ],
-  'en': [
+  en: [
     'Slow the day half a beat and finish one small thing.',
     'Tidy one corner — the mind often clears with it.',
     'Review what to keep and what to release.',
@@ -411,7 +411,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Clarify before debating who is right.',
     'Mute alerts awhile; attention returns.',
     'Send a specific thank-you, not a vague hello.',
-    'Tonight\'s luck may be an on-time bedtime.',
+    "Tonight's luck may be an on-time bedtime.",
     'Scroll less; leave blank space to breathe.',
     'Take a short walk and let wind thin the clutter.',
     'Order the unfinished: hard-first or easy-first.',
@@ -425,9 +425,9 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Drink water, then answer the hard message.',
     'Count the money clearly before wanting more.',
     'Write commitments down; memory is a soft ledger.',
-    'Rise a little earlier for the morning\'s quiet.',
+    "Rise a little earlier for the morning's quiet.",
     'If restless, do five minutes of chores, then think.',
-    'Ask someone who\'s been there; skip half a detour.',
+    "Ask someone who's been there; skip half a detour.",
     'Dim the screen; eyes and temper soften.',
     'Say "let me think" instead of forcing an answer.',
     'Open a window; fresher air, looser shoulders.',
@@ -445,17 +445,17 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Work slow and fine; haste invites rework.',
     'Stuck? Reframe the question and try again.',
     'Look out the window, then return to the page.',
-    'Share what you don\'t need; space comes back.',
+    "Share what you don't need; space comes back.",
     'Guard your tongue; unverified words can wait.',
     'Make the bed — evening-you will thank morning-you.',
     'Shorten meetings; conclusions beat atmosphere.',
     'Pocket the phone while walking; the road widens.',
     'Practice three minutes of breath; it counts.',
     'Turn "someday" into a dated next step.',
-    'Repair a small crack in a relationship while it\'s shallow.',
+    "Repair a small crack in a relationship while it's shallow.",
     'Skip impulse "just in case" buys.',
     'Back up passwords and essentials once.',
-    'List tomorrow\'s three tasks before sleep.',
+    "List tomorrow's three tasks before sleep.",
     'Accept imperfect progress and keep moving.',
     'Water a plant — and your patience.',
     'Take a familiar route home; save decision fuel.',
@@ -463,7 +463,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Turn extra lights off; let night be quieter.',
     'Reply to one postponed email — just one.',
     'Work with people in sync; pace rises naturally.',
-    'Clean your shoes; the day\'s posture shifts.',
+    "Clean your shoes; the day's posture shifts.",
     'Briefly go offline so thoughts can land.',
     'Check tickets and itinerary against small misses.',
     'Praise specifically: what and why.',
@@ -490,7 +490,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Repot a plant; handwork calms.',
     'Sort notifications into must-see and skippable.',
     'Store praise as fuel for action.',
-    'Don\'t open a new pit — fill an old one.',
+    "Don't open a new pit — fill an old one.",
     'Make a short visit; presence beats messages.',
     'Ask the key question before acting.',
     'Tie the laces — tighten the details.',
@@ -505,11 +505,11 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Skip late-night rushes; sleep often wins quality.',
     'Leave one encouraging line for tomorrow-you.',
     'Walk the last stop; land more steadily.',
-    'List what you know and don\'t when stuck.',
+    "List what you know and don't when stuck.",
     'Wipe the kitchen; everyday warmth stays clean.',
     'Time-box entertainment so pleasure stays clear.',
     'Keep important files in cloud and local.',
-    'When opposed, ask what they\'re afraid of.',
+    "When opposed, ask what they're afraid of.",
     'Stretch briefly; neck and shoulders remember.',
     'Prefer useful gifts over flashy ones.',
     'Dust the sill; small views are daily gifts.',
@@ -519,7 +519,7 @@ const TIPS: Record<Locale, readonly string[]> = {
     'Slow your steps and see the path ahead.',
     'Write the feeling first, then choose whether to speak.',
     'When praised, thank — no need to shrink.',
-    'Lay out tomorrow\'s clothes; soften the morning.',
+    "Lay out tomorrow's clothes; soften the morning.",
     'Keep one habit today: water, stretch, or read.',
     'Peel extra labels so things are easier to find.',
     'Put "later" onto a calendar square.',
@@ -537,9 +537,9 @@ function dayOfYear(iso: string): number {
 
 /** Stable tip for `yyyy-MM-dd` — cycles yearly across 128 lines. */
 export function dailyWidgetTip(isoDate: string, locale: Locale): string {
-  const bank = TIPS[locale] ?? TIPS["zh-Hans"]
+  const bank = TIPS[locale] ?? TIPS['zh-Hans']
   const i = ((dayOfYear(isoDate) % bank.length) + bank.length) % bank.length
-  return bank[i] ?? bank[0] ?? ""
+  return bank[i] ?? bank[0] ?? ''
 }
 
 export const DAILY_WIDGET_TIP_COUNT = 128

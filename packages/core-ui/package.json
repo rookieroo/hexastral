@@ -50,7 +50,7 @@
     "@types/react": "^19.1.10",
     "@zhop/typescript-config": "workspace:*",
     "expo-haptics": "~15.0.8",
-    "expo-image-picker": "~17.0.8",
+    "expo-image-picker": "~17.0.11",
     "expo-sharing": "~14.0.8",
     "lucide-react-native": "^1.14.0",
     "react": "^19.2.3",

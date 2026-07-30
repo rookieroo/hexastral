@@ -77,7 +77,7 @@ export const GUYU: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Grain Rain: first, duckweed begins to grow; second, the cuckoo preens its feathers; third, the hoopoe alights on the mulberry. Duckweed spreads on the water, the cuckoo grooms itself as if urging on the farming season, and the hoopoe settles in the mulberry trees. The rain grows the grain; spring\'s last solar term arrives, and both warmth and rainfall rise. Classical three pentads: 「一候萍始生，二候鸣鸠拂其羽，三候戴胜降于桑」。',
+        body: "The three pentads of Grain Rain: first, duckweed begins to grow; second, the cuckoo preens its feathers; third, the hoopoe alights on the mulberry. Duckweed spreads on the water, the cuckoo grooms itself as if urging on the farming season, and the hoopoe settles in the mulberry trees. The rain grows the grain; spring's last solar term arrives, and both warmth and rainfall rise. Classical three pentads: 「一候萍始生，二候鸣鸠拂其羽，三候戴胜降于桑」。",
       },
       {
         title: 'Farming',

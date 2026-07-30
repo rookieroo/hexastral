@@ -5,6 +5,7 @@
  * so the Reanimated Babel plugin compiles them (cross-module worklets crash on device).
  */
 
+import { isCompoundFacing, mountainAtDegree } from '@zhop/astro-core'
 import * as Haptics from 'expo-haptics'
 import { memo, useCallback, useEffect, useMemo } from 'react'
 import { Image, type ImageSourcePropType, View } from 'react-native'
@@ -15,7 +16,6 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated'
-import { isCompoundFacing, mountainAtDegree } from '@zhop/astro-core'
 import { normalizeFengDeg } from '../lib/facing-deg'
 import { BaguaCompassOverlay } from './BaguaCompassOverlay'
 

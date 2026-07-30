@@ -14,7 +14,10 @@
 
 import { and, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH, FACEORACLE_PRO_REPORT_REGENS_PER_MONTH } from '../config/products'
+import {
+  FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH,
+  FACEORACLE_PRO_REPORT_REGENS_PER_MONTH,
+} from '../config/products'
 import { bondInviteCredits, freeMonthlyQuotas, users } from '../db/schema'
 import type { AppDb } from '../infra-types'
 

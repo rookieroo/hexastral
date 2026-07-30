@@ -77,9 +77,7 @@ export default function BiometricConsentScreen() {
         }}
       >
         <Stack.Screen options={{ headerShown: false }} />
-        <XingqiLoader
-          label={s('加载中', '載入中', 'Loading', '読み込み中')}
-        />
+        <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
       </View>
     )
   }
@@ -120,12 +118,7 @@ export default function BiometricConsentScreen() {
       <Button variant='primary' onPress={() => void onAgree()} disabled={busy}>
         {busy
           ? s('处理中…', '處理中…', 'Working…', '処理中…')
-          : s(
-              '我已了解并同意',
-              '我已瞭解並同意',
-              'I understand and agree',
-              '理解して同意します'
-            )}
+          : s('我已了解并同意', '我已瞭解並同意', 'I understand and agree', '理解して同意します')}
       </Button>
       <Button variant='ghost' onPress={() => router.back()}>
         {s('取消', '取消', 'Cancel', 'キャンセル')}

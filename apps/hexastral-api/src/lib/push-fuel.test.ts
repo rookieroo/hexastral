@@ -10,7 +10,11 @@ import {
   userIdsWithMonthEventCoverage,
   windowsFromEvents,
 } from './faceoracle-push-harvest'
-import { expireKindredPushForBond, harvestKindredPushSnippets, linkKindredPushToBond } from './kindred-push-harvest'
+import {
+  expireKindredPushForBond,
+  harvestKindredPushSnippets,
+  linkKindredPushToBond,
+} from './kindred-push-harvest'
 import { normalizePushLocale, pushLocalesEqual } from './push-locale'
 
 function makePushDb(): AppDb {
@@ -190,9 +194,7 @@ describe('replaceFaceoraclePushFuel', () => {
     const queued = await db
       .select()
       .from(faceoraclePushQueue)
-      .where(
-        and(eq(faceoraclePushQueue.userId, 'u1'), eq(faceoraclePushQueue.status, 'queued'))
-      )
+      .where(and(eq(faceoraclePushQueue.userId, 'u1'), eq(faceoraclePushQueue.status, 'queued')))
     expect(queued.length).toBe(1)
     expect(queued[0]?.title).toBe('新')
   })

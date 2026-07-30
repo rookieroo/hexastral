@@ -8,8 +8,7 @@ import { faceoraclePushQueue } from '../db/schema'
 import type { AppDb, CloudflareBindings } from '../infra-types'
 import { callAstro } from './astro-client'
 
-const HEALTH_DENY =
-  /确诊|癌症|肿瘤|糖尿病|处方|用药|针灸治疗|心脏病|肝炎|肝硬化|你有.*病/i
+const HEALTH_DENY = /确诊|癌症|肿瘤|糖尿病|处方|用药|针灸治疗|心脏病|肝炎|肝硬化|你有.*病/i
 
 export type FacePushWindowIn = {
   fireOn: string
@@ -124,10 +123,7 @@ export async function llmHarvestFacePushWindows(
       if (!fireOn || !body || !title) continue
       const kindRaw = typeof w.kind === 'string' ? w.kind : 'other'
       const kind: FacePushWindowIn['kind'] =
-        kindRaw === 'qi' ||
-        kindRaw === 'rest' ||
-        kindRaw === 'observe' ||
-        kindRaw === 'recapture'
+        kindRaw === 'qi' || kindRaw === 'rest' || kindRaw === 'observe' || kindRaw === 'recapture'
           ? kindRaw
           : 'other'
       const localHour =

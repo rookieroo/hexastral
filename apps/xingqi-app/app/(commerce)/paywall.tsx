@@ -190,9 +190,7 @@ export default function XingqiPaywallScreen() {
       }
       beginHandoff('oneshot')
     } catch {
-      setError(
-        s('购买未完成', '購買未完成', 'Purchase not completed', '購入が完了しませんでした')
-      )
+      setError(s('购买未完成', '購買未完成', 'Purchase not completed', '購入が完了しませんでした'))
       setPhase('choose')
     }
   }
@@ -276,12 +274,7 @@ export default function XingqiPaywallScreen() {
             >
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={{ color: colors.text, fontSize: 15 }}>
-                  {s(
-                    '完成后通知我',
-                    '完成後通知我',
-                    'Notify me when ready',
-                    '完了したら通知する'
-                  )}
+                  {s('完成后通知我', '完成後通知我', 'Notify me when ready', '完了したら通知する')}
                 </Text>
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
                   {s(
@@ -307,12 +300,7 @@ export default function XingqiPaywallScreen() {
         ) : (
           <>
             <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-              {s(
-                '选择解锁方式',
-                '選擇解鎖方式',
-                'Choose how to unlock',
-                '解除方法を選ぶ'
-              )}
+              {s('选择解锁方式', '選擇解鎖方式', 'Choose how to unlock', '解除方法を選ぶ')}
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
               {s(

@@ -36,10 +36,9 @@ import {
 } from '../config/products'
 import { singlePurchases, users } from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
-import { alertAdmin } from '../lib/admin-alert'
 import { enqueueAdConvert } from '../lib/ad-convert-queue'
+import { alertAdmin } from '../lib/admin-alert'
 import { emitGrowthEventServer } from '../lib/growth-emit'
-import { loadGrowthAttributionForUser } from './growth-attribution'
 import { clearAllowance, grantPurchasedCredits, setMonthlyAllowance } from '../services/credits'
 import {
   expireEntitlementNow,
@@ -47,6 +46,7 @@ import {
   setEntitlementExpiry,
 } from '../services/entitlements'
 import { currentMonth } from '../services/quota'
+import { loadGrowthAttributionForUser } from './growth-attribution'
 
 export const webhookRoutes = new Hono<AppEnv>()
 
@@ -485,10 +485,12 @@ async function enqueuePurchaseAdConvert(
     targetApp: string
   }
 ): Promise<void> {
-  const attr = await loadGrowthAttributionForUser(c.get('db'), opts.appUserId).catch((err: unknown) => {
-    console.error('[webhook] loadGrowthAttributionForUser failed', err)
-    return null
-  })
+  const attr = await loadGrowthAttributionForUser(c.get('db'), opts.appUserId).catch(
+    (err: unknown) => {
+      console.error('[webhook] loadGrowthAttributionForUser failed', err)
+      return null
+    }
+  )
   await enqueueAdConvert(
     c.env,
     {

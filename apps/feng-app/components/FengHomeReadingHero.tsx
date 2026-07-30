@@ -2,11 +2,7 @@
  * Home hero — same qualitative overview as report page 0 (`FengDigestCard`).
  */
 
-import {
-  deriveReportDigest,
-  type FengComputeJson,
-  type ReportDigest,
-} from '@zhop/scenario-feng'
+import { deriveReportDigest, type FengComputeJson, type ReportDigest } from '@zhop/scenario-feng'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { FengDigestCard } from '@/components/FengDigestCard'
 import type { Strings } from '@/lib/i18n'
@@ -44,9 +40,7 @@ export function FengHomeReadingHero({
       })}
     >
       <View style={{ gap: spacing.xs, paddingHorizontal: spacing.xs }}>
-        <Text
-          style={{ color: FENG_PALETTE.copperGold, fontSize: 11, letterSpacing: 2 }}
-        >
+        <Text style={{ color: FENG_PALETTE.copperGold, fontSize: 11, letterSpacing: 2 }}>
           {t.report_digest_tag.toUpperCase()}
         </Text>
         <Text

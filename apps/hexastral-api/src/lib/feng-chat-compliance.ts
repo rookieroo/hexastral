@@ -16,10 +16,13 @@ export function fengChatComplianceRefusal(locale: string | null | undefined): st
   if (tag.startsWith('zh')) {
     return '抱歉，这类灵物或「改运」摆件不在本产品的建议范围内。请参考报告中的普通陈设与家具移位建议，仅供文化研习参照。'
   }
-  return 'Sorry — talismans and luck-changing objects are outside what this product recommends. Please use the report\'s ordinary furnishing and layout suggestions only (cultural study, not professional advice).'
+  return "Sorry — talismans and luck-changing objects are outside what this product recommends. Please use the report's ordinary furnishing and layout suggestions only (cultural study, not professional advice)."
 }
 
-export function auditFengChatReply(text: string): { blocked: boolean; hits: ReturnType<typeof auditFengSynthesisHits> } {
+export function auditFengChatReply(text: string): {
+  blocked: boolean
+  hits: ReturnType<typeof auditFengSynthesisHits>
+} {
   const hits = auditFengSynthesisHits(text)
   return { blocked: hits.length > 0, hits }
 }

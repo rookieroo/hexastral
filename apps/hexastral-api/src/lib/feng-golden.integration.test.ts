@@ -5,9 +5,9 @@ import {
   detectPatterns,
   isCompoundFacing,
 } from '@zhop/astro-core'
+import type { fengSites } from '../db/schema'
 import { deriveDataQuality } from './feng-analyze'
 import { FENG_GOLDEN_SITES } from './feng-golden-sites'
-import type { fengSites } from '../db/schema'
 
 function baseSite(
   overrides: Partial<typeof fengSites.$inferSelect>

@@ -4,13 +4,7 @@
  */
 
 import { forwardRef } from 'react'
-import {
-  Image,
-  type ImageSourcePropType,
-  Text,
-  View,
-  type ViewProps,
-} from 'react-native'
+import { Image, type ImageSourcePropType, Text, View, type ViewProps } from 'react-native'
 
 const PAPER = '#F7F4EE'
 const INK = '#1C1914'

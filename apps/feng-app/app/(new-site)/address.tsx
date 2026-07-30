@@ -6,8 +6,8 @@
  */
 
 import { Button, useHaptic } from '@zhop/core-ui'
-import { useRouter } from 'expo-router'
 import * as Location from 'expo-location'
+import { useRouter } from 'expo-router'
 import { LocateFixed } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
@@ -94,10 +94,7 @@ export default function AddressScreen() {
       let geocodeLng = existing.geocodeLng
 
       const addressChanged = trimmed !== (existing.lastGeocodedAddress ?? '').trim()
-      const needsGeocode =
-        typeof lat !== 'number' ||
-        typeof lng !== 'number' ||
-        addressChanged
+      const needsGeocode = typeof lat !== 'number' || typeof lng !== 'number' || addressChanged
 
       if (needsGeocode) {
         const results = await Location.geocodeAsync(trimmed)

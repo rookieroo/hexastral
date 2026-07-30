@@ -1,9 +1,9 @@
-import type { HexagramData } from './hexagram-types'
 import corpusZhCn from './hexagram/corpus.zh-CN.json'
 import i18nEn from './hexagram/i18n.en.json'
 import i18nJa from './hexagram/i18n.ja.json'
 import i18nKo from './hexagram/i18n.ko.json'
 import i18nZhTw from './hexagram/i18n.zh-TW.json'
+import type { HexagramData } from './hexagram-types'
 
 export type HexagramLocale = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'ko'
 

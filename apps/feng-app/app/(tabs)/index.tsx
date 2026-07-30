@@ -37,9 +37,12 @@ export default function HomeScreen() {
   const [splashDone, setSplashDone] = useState(fromIntro !== '1')
 
   const latestSite = useMemo(() => pickLatestSite(sites), [sites])
-  const { site, latestReport, isLoading: detailLoading, refetch: refetchDetail } = useFengSite(
-    latestSite?.id
-  )
+  const {
+    site,
+    latestReport,
+    isLoading: detailLoading,
+    refetch: refetchDetail,
+  } = useFengSite(latestSite?.id)
 
   const openSettings = useCallback(() => {
     void haptic('light')

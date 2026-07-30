@@ -94,8 +94,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     threads: 'Threads',
     threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
-    emptySub:
-      'Invite someone close — or sign in so people from Yuun can join your sky.',
+    emptySub: 'Invite someone close — or sign in so people from Yuun can join your sky.',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
   },

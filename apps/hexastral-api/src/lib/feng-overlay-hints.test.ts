@@ -3,11 +3,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import {
-  buildMacroTerrainTyped,
-  buildOverlayHints,
-  deriveShuiKou,
-} from './feng-overlay-hints'
+import { buildMacroTerrainTyped, buildOverlayHints, deriveShuiKou } from './feng-overlay-hints'
 
 describe('deriveShuiKou', () => {
   test('picks lowest water palace', () => {
@@ -30,10 +26,9 @@ describe('deriveShuiKou', () => {
 
   test('null when no water azimuths', () => {
     expect(
-      deriveShuiKou(
-        { byPalace: { 坎: { relativeM: -10 } } },
-        [{ kind: 'road', palace: '坎', bearingDeg: 0 }]
-      )
+      deriveShuiKou({ byPalace: { 坎: { relativeM: -10 } } }, [
+        { kind: 'road', palace: '坎', bearingDeg: 0 },
+      ])
     ).toBeNull()
   })
 })

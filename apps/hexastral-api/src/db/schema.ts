@@ -1985,10 +1985,7 @@ export const faceoraclePushQueue = sqliteTable(
       .$defaultFn(() => new Date().toISOString()),
     sentAt: text('sent_at'),
   },
-  (t) => [
-    index('fpq_user_status_idx').on(t.userId, t.status),
-    index('fpq_fireon_idx').on(t.fireOn),
-  ]
+  (t) => [index('fpq_user_status_idx').on(t.userId, t.status), index('fpq_fireon_idx').on(t.fireOn)]
 )
 
 /**

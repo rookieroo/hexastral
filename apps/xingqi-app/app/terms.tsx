@@ -114,7 +114,14 @@ export default function XingqiTermsScreen() {
                     gap: spacing.xs,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'baseline',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     <Text
                       style={{
                         color: colors.text,

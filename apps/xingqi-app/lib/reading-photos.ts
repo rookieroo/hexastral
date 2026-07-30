@@ -4,9 +4,8 @@
  */
 
 import * as FileSystem from 'expo-file-system/legacy'
-
-import type { CapturePart } from './reading-draft'
 import { resolvePeriodPhotoUri } from './period-photos'
+import type { CapturePart } from './reading-draft'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 const MAX_SNAPSHOT_READINGS = 20

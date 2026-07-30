@@ -77,7 +77,7 @@ export const DAHAN: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of Greater Cold: first, the hen begins to brood; second, the birds of prey are fierce and swift; third, the waters freeze thick and solid. The hen, sensing the yang\'s slow return, begins to hatch her chicks; the hawks and falcons wheel high and strike hard and fast to build the strength to bear the cold; and the waters freeze to their thickest and most solid. Greater Cold is the extreme of cold — the last of the twenty-four solar terms. Classical three pentads: 「一候鸡始乳，二候征鸟厉疾，三候水泽腹坚」。',
+        body: "The three pentads of Greater Cold: first, the hen begins to brood; second, the birds of prey are fierce and swift; third, the waters freeze thick and solid. The hen, sensing the yang's slow return, begins to hatch her chicks; the hawks and falcons wheel high and strike hard and fast to build the strength to bear the cold; and the waters freeze to their thickest and most solid. Greater Cold is the extreme of cold — the last of the twenty-four solar terms. Classical three pentads: 「一候鸡始乳，二候征鸟厉疾，三候水泽腹坚」。",
       },
       {
         title: 'Farming',

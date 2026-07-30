@@ -120,3 +120,12 @@ export async function removePerson(id: string): Promise<AuspicePerson[]> {
   await savePeople(people)
   return people
 }
+
+/** Wipe all 亲友 (account deletion / factory reset). */
+export async function clearPeople(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY)
+  } catch {
+    // best-effort local wipe
+  }
+}

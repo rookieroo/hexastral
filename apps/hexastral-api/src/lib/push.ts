@@ -175,12 +175,17 @@ export async function sendPushEvent(
     const body = getPushString(`${event}_body`, locale, params)
 
     // 3. Send via svc-notify (resolves token internally)
-    await notifyClient.post(env.SVC_NOTIFY, '/expo-push/notify-user', {
-      userId,
-      title,
-      body,
-      data: { type: event, ...params },
-    }, env.INTERNAL_KEY)
+    await notifyClient.post(
+      env.SVC_NOTIFY,
+      '/expo-push/notify-user',
+      {
+        userId,
+        title,
+        body,
+        data: { type: event, ...params },
+      },
+      env.INTERNAL_KEY
+    )
   } catch (err) {
     console.error('[push] sendPushEvent failed:', err)
   }

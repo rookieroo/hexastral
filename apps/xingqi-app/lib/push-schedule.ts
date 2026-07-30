@@ -8,9 +8,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-
-import { getXingqiPushPrefs } from './push-preference'
 import { pickUi } from './locale-zh'
+import { getXingqiPushPrefs } from './push-preference'
 
 const SCHEDULED_KEY = 'xingqi_push_scheduled_v1'
 const SERVER_ACTIVE_KEY = 'xingqi_server_push_active_v1'
@@ -64,12 +63,7 @@ function copy(locale: string) {
       'A new monthly window is open. Refresh all three photos, or update one part.',
       '新しい月の窓が開きました。三点まとめて撮り直すか、顔／左手／右手だけ更新できます。'
     ),
-    eventTitle: s(
-      '宜留意的时间窗',
-      '宜留意的時間窗',
-      'A window worth noting',
-      '意識したい時間窓'
-    ),
+    eventTitle: s('宜留意的时间窗', '宜留意的時間窗', 'A window worth noting', '意識したい時間窓'),
   }
 }
 

@@ -3,10 +3,7 @@
  * Keeps existing call sites that pass Locale from auspice i18n.
  */
 
-import {
-  formatYijiVerb as formatCore,
-  type YijiVocabularyMode,
-} from '@zhop/astro-core'
+import { formatYijiVerb as formatCore, type YijiVocabularyMode } from '@zhop/astro-core'
 import type { Locale } from './i18n'
 
 /**
@@ -18,10 +15,6 @@ export function localizeYijiVerb(verb: string, locale: Locale): string {
 }
 
 /** Display with an explicit modern/traditional mode. */
-export function displayYijiVerb(
-  verb: string,
-  locale: Locale,
-  mode: YijiVocabularyMode
-): string {
+export function displayYijiVerb(verb: string, locale: Locale, mode: YijiVocabularyMode): string {
   return formatCore(verb, locale, mode)
 }

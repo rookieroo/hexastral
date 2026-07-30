@@ -9,10 +9,7 @@
  * Full PBXNativeTarget mutation remains optional; apple-targets covers Yuun V1.
  */
 
-import {
-  type ConfigPlugin,
-  withEntitlementsPlist,
-} from '@expo/config-plugins'
+import { type ConfigPlugin, withEntitlementsPlist } from '@expo/config-plugins'
 
 export interface WidgetKitIosPluginProps {
   /** PascalCase widget extension name. E.g. "AuspiceWidget". */
@@ -33,9 +30,7 @@ const withWidgetExtension: ConfigPlugin<WidgetKitIosPluginProps> = (config, prop
   // biome-ignore lint/suspicious/noConsole: build-time log is intentional
   console.log(
     `[widget-kit-ios] ${props.appSlug} → ${props.widgetName} group=${props.appGroupId}` +
-      (props.watchComplication
-        ? ' (watchComplication: YuunWatch via targets/watch-widget)'
-        : '')
+      (props.watchComplication ? ' (watchComplication: YuunWatch via targets/watch-widget)' : '')
   )
 
   return withEntitlementsPlist(config, (cfg) => {

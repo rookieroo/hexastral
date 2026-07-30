@@ -14,10 +14,10 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import type { CloudflareBindings, ContextVariables } from './infra-types'
-import type { FengAnalyzeQueueMessage } from './lib/feng-analyze-queue'
-import { processFengAnalyzeQueueBatch } from './lib/feng-analyze-queue'
 import type { FaceoracleReadingQueueMessage } from './lib/faceoracle-reading-queue'
 import { processFaceoracleReadingQueueBatch } from './lib/faceoracle-reading-queue'
+import type { FengAnalyzeQueueMessage } from './lib/feng-analyze-queue'
+import { processFengAnalyzeQueueBatch } from './lib/feng-analyze-queue'
 import { pruneStaleFengJobs, runAnnualFengRefresh } from './lib/feng-annual-cron'
 import { runReconcileSweep } from './lib/reconcile-sweep'
 import { setAdminNotifyFetcher } from './lib/service-clients'
@@ -61,9 +61,9 @@ import {
   pairAnnualForecastRoutes,
   pairPreviewRoutes,
   pairRoutes,
-  physiognomyPushRoutes,
-  physiognomyJobsRoutes,
   physiognomyCycleRoutes,
+  physiognomyJobsRoutes,
+  physiognomyPushRoutes,
   portfolioAuthRoutes,
   portfolioRoutes,
   purchaseRoutes,
@@ -353,11 +353,7 @@ app.route('/api/physiognomy/face-features', faceFeaturesRoutes)
 // targets / unregister-stale / weekly purge-inactive
 app.use('/api/physiognomy/push/*', async (c, next) => {
   const p = c.req.path
-  if (
-    p.endsWith('/targets') ||
-    p.endsWith('/unregister-stale') ||
-    p.endsWith('/purge-inactive')
-  ) {
+  if (p.endsWith('/targets') || p.endsWith('/unregister-stale') || p.endsWith('/purge-inactive')) {
     return next()
   }
   return hmacVerify(c, next)

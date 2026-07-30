@@ -75,7 +75,7 @@ export function useSatelliteTabScreenOptions(): SatelliteTabScreenOptions {
         fontSize: 11,
       },
     }),
-    [colors.bg, colors.secondary, colors.separator, colors.text],
+    [colors.bg, colors.secondary, colors.separator, colors.text]
   )
 }
 

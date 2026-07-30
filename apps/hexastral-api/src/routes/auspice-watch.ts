@@ -5,8 +5,8 @@
  * envelope the watch extension can cache offline. No edge cache — private, no-store.
  */
 
-import type { PersonalFit, YijiVocabularyMode } from '@zhop/astro-core'
 import { zValidator } from '@hono/zod-validator'
+import type { PersonalFit, YijiVocabularyMode } from '@zhop/astro-core'
 import { Hono } from 'hono'
 import { z } from 'zod/v4'
 import type { AppEnv } from '../infra-types'
@@ -14,18 +14,11 @@ import {
   compactVerbs,
   elementColorForGanZhi,
   moonPhaseForIsoDate,
+  type WidgetLocale,
   widgetChrome,
   widgetLabels,
-  type WidgetLocale,
 } from '../lib/yuun-widget-labels'
-import {
-  buildDay,
-  fmtUtc,
-  parseYmd,
-  subjectFromBirthDate,
-  ymdAdd,
-  ymdToDate,
-} from './auspice'
+import { buildDay, fmtUtc, parseYmd, subjectFromBirthDate, ymdAdd, ymdToDate } from './auspice'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 

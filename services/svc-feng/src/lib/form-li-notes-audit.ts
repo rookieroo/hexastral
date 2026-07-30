@@ -72,10 +72,7 @@ function scanOverlayClaims(text: string): ComputeAuditViolation[] {
   return [{ field: 'overlay', term: 'overlay_claim' }]
 }
 
-function scanShanXiang(
-  text: string,
-  allowedPairs: Set<string>
-): ComputeAuditViolation[] {
+function scanShanXiang(text: string, allowedPairs: Set<string>): ComputeAuditViolation[] {
   const violations: ComputeAuditViolation[] = []
   for (const match of text.matchAll(SHAN_XIANG_RE)) {
     const key = `${match[1]}-${match[2]}`
@@ -133,7 +130,9 @@ export function auditFormLiNotes(
     violations: unique,
     rewriteSuffix: `\n\nREWRITE REQUIRED — fix FormLiNotes violations: ${unique
       .map((v) => `${v.field}:${v.term}`)
-      .join(', ')}. Never invent facing; cite only compute patterns/combinations; no medical classical.`,
+      .join(
+        ', '
+      )}. Never invent facing; cite only compute patterns/combinations; no medical classical.`,
   }
 }
 

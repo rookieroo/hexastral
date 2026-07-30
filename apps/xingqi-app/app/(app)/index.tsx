@@ -142,16 +142,17 @@ export default function XingqiHomeScreen() {
         s('解读未完成', '解讀未完成', 'Reading incomplete', '解読が完了しませんでした'),
         err,
         [
-        { text: s('好', '好', 'OK', 'OK') },
-        ...(isUnchanged
-          ? [
-              {
-                text: s('去更新照片', '去更新照片', 'Update photos', '写真を更新'),
-                onPress: () => router.push('/capture' as never),
-              },
-            ]
-          : []),
-      ])
+          { text: s('好', '好', 'OK', 'OK') },
+          ...(isUnchanged
+            ? [
+                {
+                  text: s('去更新照片', '去更新照片', 'Update photos', '写真を更新'),
+                  onPress: () => router.push('/capture' as never),
+                },
+              ]
+            : []),
+        ]
+      )
       void reload('soft')
     }
   }, [job, reload, router, locale])
@@ -297,9 +298,7 @@ export default function XingqiHomeScreen() {
                   await clearLastReadingPhotoSnapshot()
                   await reload('soft')
                 } catch {
-                  Alert.alert(
-                    s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました')
-                  )
+                  Alert.alert(s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました'))
                 }
               })()
             },
@@ -314,7 +313,9 @@ export default function XingqiHomeScreen() {
     (item: PortfolioReadingItem) => {
       const localeBadge = readingLocaleBadge(item.locale)
       const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-      return [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+      return [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge]
+        .filter(Boolean)
+        .join(' · ')
     },
     [locale]
   )
@@ -427,10 +428,7 @@ export default function XingqiHomeScreen() {
                     {` · ${Math.max(job.progress, job.phase === 'extracting' ? 5 : job.phase === 'queued' ? 10 : 20)}%`}
                   </Text>
                 </View>
-                <XingqiLoader
-                  label={s('解读中', '解讀中', 'Reading', '解読中')}
-                  size={28}
-                />
+                <XingqiLoader label={s('解读中', '解讀中', 'Reading', '解読中')} size={28} />
               </View>
               <View style={{ gap: 6, marginTop: 4 }}>
                 {readingJobSteps(job.phase, locale).map((step) => (
@@ -487,12 +485,7 @@ export default function XingqiHomeScreen() {
               }}
             >
               <Text style={{ color: colors.dim, fontSize: 13 }}>
-                {s(
-                  '尚无解读',
-                  '尚無解讀',
-                  'No readings yet',
-                  '形気リーディングはまだありません'
-                )}
+                {s('尚无解读', '尚無解讀', 'No readings yet', '形気リーディングはまだありません')}
               </Text>
             </View>
           ) : null}

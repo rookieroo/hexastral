@@ -81,9 +81,7 @@ function baZhaiCompact(baZhai: unknown): unknown {
   return {
     concord: row.concord ?? null,
     placement: row.placement ?? null,
-    house: row.house
-      ? { gua: asRecord(row.house)?.gua, name: asRecord(row.house)?.name }
-      : null,
+    house: row.house ? { gua: asRecord(row.house)?.gua, name: asRecord(row.house)?.name } : null,
     person: row.person
       ? { gua: asRecord(row.person)?.gua, name: asRecord(row.person)?.name }
       : null,
@@ -177,9 +175,7 @@ export function buildSynthesisBriefing(input: SynthesisBriefingInput): UnknownRe
     },
     formLiNotes: input.formLiNotes ?? null,
     mustSoften: input.mustSoften?.length ? input.mustSoften : undefined,
-    memoryContext: input.memoryContext
-      ? truncate(input.memoryContext, 1500)
-      : undefined,
+    memoryContext: input.memoryContext ? truncate(input.memoryContext, 1500) : undefined,
   }
 
   // Explicitly omit full flyingStars / annualChart dumps

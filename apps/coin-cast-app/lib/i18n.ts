@@ -234,8 +234,7 @@ const EN = {
   motionRetryPreferredTitle: 'Shake again',
   motionRetryPreferredHint:
     'Digital assistance stays hidden until several consecutive failures — prefer another sincere cast.',
-  shakeHoldLonger:
-    'Keep the palm closed a little longer, with real motion, then release to open.',
+  shakeHoldLonger: 'Keep the palm closed a little longer, with real motion, then release to open.',
   lineSeenTitle: 'Read the fallen coins',
   lineSeenMessage:
     'Leave them as they landed, or neat them into a row once you have read the faces.',

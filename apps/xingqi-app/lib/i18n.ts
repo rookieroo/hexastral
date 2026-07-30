@@ -67,8 +67,7 @@ export const translations: Translations = {
     'fill.gender': '性別',
     'fill.gender.male': '男',
     'fill.gender.female': '女',
-    'pairInput.timeHint':
-      '必須 — 時柱の決定に必要です。12の時辰（各2時間）から選びます。',
+    'pairInput.timeHint': '必須 — 時柱の決定に必要です。12の時辰（各2時間）から選びます。',
   },
 }
 

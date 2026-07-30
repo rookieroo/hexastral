@@ -8,11 +8,7 @@ import {
   redirectToAppStore,
 } from '@zhop/ddl-client'
 import { type ReactNode, useState } from 'react'
-import {
-  enqueueAdConvertClient,
-  newAdEventId,
-  trackBrowserConversion,
-} from '@/lib/ads/track'
+import { enqueueAdConvertClient, newAdEventId, trackBrowserConversion } from '@/lib/ads/track'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 const DEFAULT_APP_STORE_URL =

@@ -31,7 +31,9 @@ export function ShengXiaoYearTool() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>{t('yearLabel')}</label>
+      <label style={{ fontSize: '0.85rem', color: 'var(--color-ivory-dim)' }}>
+        {t('yearLabel')}
+      </label>
       <input
         type='number'
         min={1900}

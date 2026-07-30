@@ -11,11 +11,11 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 
 import { LocusSheet } from '@/components/LocusSheet'
 import { LocusStarLayer } from '@/components/LocusStarLayer'
+import { usePhotoImageSize } from '@/lib/image-stage-layout'
 import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import type { LocusExplorerData, LocusPart, LocusStar } from '@/lib/locus-data'
 import { starsForPart } from '@/lib/locus-data'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
-import { usePhotoImageSize } from '@/lib/image-stage-layout'
 
 const STAGE_MAX = 280
 const MIN_SCALE = 1

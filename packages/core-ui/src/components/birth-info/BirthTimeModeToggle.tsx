@@ -20,12 +20,7 @@ export interface BirthTimeModeToggleProps {
   labels: BirthTimeModeToggleLabels
 }
 
-export function BirthTimeModeToggle({
-  value,
-  onChange,
-  accent,
-  labels,
-}: BirthTimeModeToggleProps) {
+export function BirthTimeModeToggle({ value, onChange, accent, labels }: BirthTimeModeToggleProps) {
   const { colors, spacing } = useTheme()
 
   const options: Array<{ key: BirthTimeMode; label: string }> = [

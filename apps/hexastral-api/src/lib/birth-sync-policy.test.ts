@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
+import { classifyBirthEdit } from './birth-edit-quota'
 import {
   birthSyncPreferencePatch,
   birthSyncWriteStamp,
   evaluateBirthSyncAccess,
   normalizeBirthSyncPreferences,
 } from './birth-sync-policy'
-import { classifyBirthEdit } from './birth-edit-quota'
 
 describe('birth-sync-policy', () => {
   test('empty when no solar date', () => {

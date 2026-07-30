@@ -650,10 +650,7 @@ auspiceTimelineRoutes.post('/explain', async (c) => {
   })
   if (!subject) return jsonOk(c, { reading: null, source: 'template' })
 
-  const skipGuard = allowAuspiceDevGuardBypass(
-    c.env as { ALLOW_DEV_PRO?: string },
-    body.dev
-  )
+  const skipGuard = allowAuspiceDevGuardBypass(c.env as { ALLOW_DEV_PRO?: string }, body.dev)
   let guard: Awaited<ReturnType<typeof evaluateLlmGuard>> | null = null
   if (!skipGuard) {
     guard = await evaluateLlmGuard(c.env, { subject, config: EXPLAIN_GUARD })

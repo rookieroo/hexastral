@@ -2,8 +2,8 @@
  * ≥2 mock sites: overlayHints palace must match palaceAtDegree(bearingDeg).
  */
 
-import { palaceAtDegree } from '@zhop/astro-core'
 import { describe, expect, test } from 'bun:test'
+import { palaceAtDegree } from '@zhop/astro-core'
 import siteA from './__fixtures__/feng-overlay-site-a.json'
 import siteB from './__fixtures__/feng-overlay-site-b.json'
 import { buildMacroTerrainTyped, buildOverlayHints } from './feng-overlay-hints'

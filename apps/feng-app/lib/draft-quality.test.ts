@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test'
 import {
   assessDraftQuality,
+  type DraftQualityIssueId,
   hasDraftBlockers,
   isDraftReady,
-  type DraftQualityIssueId,
 } from './draft-quality'
 import type { SiteDraft } from './siteDraft'
 
@@ -35,17 +35,13 @@ describe('assessDraftQuality', () => {
   })
 
   it('blocks flat without floor number', () => {
-    const issues = assessDraftQuality(
-      baseDraft({ residenceType: 'flat', floor: undefined })
-    )
+    const issues = assessDraftQuality(baseDraft({ residenceType: 'flat', floor: undefined }))
     expect(issues.some((i) => i.id === 'flat_floor' && i.severity === 'block')).toBe(true)
   })
 
   it('blocks exact/decade build year without buildYear', () => {
     for (const buildYearAccuracy of ['exact', 'decade'] as const) {
-      const issues = assessDraftQuality(
-        baseDraft({ buildYearAccuracy, buildYear: undefined })
-      )
+      const issues = assessDraftQuality(baseDraft({ buildYearAccuracy, buildYear: undefined }))
       expect(issues.some((i) => i.id === 'build_year' && i.severity === 'block')).toBe(true)
     }
   })
@@ -102,12 +98,10 @@ describe('assessDraftQuality', () => {
   })
 
   it('warns apartment without floor (non-blocking)', () => {
-    const issues = assessDraftQuality(
-      baseDraft({ residenceType: 'apartment', floor: undefined })
+    const issues = assessDraftQuality(baseDraft({ residenceType: 'apartment', floor: undefined }))
+    expect(issues.some((i) => i.id === 'apartment_floor_missing' && i.severity === 'warn')).toBe(
+      true
     )
-    expect(
-      issues.some((i) => i.id === 'apartment_floor_missing' && i.severity === 'warn')
-    ).toBe(true)
     expect(hasDraftBlockers(issues)).toBe(false)
   })
 
@@ -122,7 +116,9 @@ describe('isDraftReady', () => {
     expect(isDraftReady(baseDraft())).toBe(true)
     expect(isDraftReady(baseDraft({ residenceType: 'flat', floor: undefined }))).toBe(false)
     expect(
-      isDraftReady(baseDraft({ buildYearAccuracy: 'moveIn', moveInYear: 2022, buildYear: undefined }))
+      isDraftReady(
+        baseDraft({ buildYearAccuracy: 'moveIn', moveInYear: 2022, buildYear: undefined })
+      )
     ).toBe(true)
   })
 })

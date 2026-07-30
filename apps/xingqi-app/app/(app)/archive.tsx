@@ -3,7 +3,11 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { deletePortfolioReading, fetchReadings, type PortfolioReadingItem } from '@zhop/portfolio-client'
+import {
+  deletePortfolioReading,
+  fetchReadings,
+  type PortfolioReadingItem,
+} from '@zhop/portfolio-client'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
@@ -13,11 +17,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HistoryReadingRow } from '@/components/HistoryReadingRow'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
-import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
 import { resolveLocale } from '@/lib/i18n'
+import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
-import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
 import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
+import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
 
 export default function ArchiveScreen() {
   const router = useRouter()
@@ -70,9 +74,7 @@ export default function ArchiveScreen() {
                 await clearLastReadingPhotoSnapshot()
                 await reload()
               } catch {
-                Alert.alert(
-                  s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました')
-                )
+                Alert.alert(s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました'))
               }
             })()
           },
@@ -137,12 +139,7 @@ export default function ArchiveScreen() {
             }}
           >
             <Text style={{ color: colors.dim, fontSize: 13 }}>
-              {s(
-                '尚无解读',
-                '尚無解讀',
-                'No readings yet',
-                '形気リーディングはまだありません'
-              )}
+              {s('尚无解读', '尚無解讀', 'No readings yet', '形気リーディングはまだありません')}
             </Text>
           </View>
         ) : null}
@@ -151,7 +148,9 @@ export default function ArchiveScreen() {
           const title = formReadingListTitle(locale)
           const localeBadge = readingLocaleBadge(item.locale)
           const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-          const meta = [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge].filter(Boolean).join(' · ')
+          const meta = [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge]
+            .filter(Boolean)
+            .join(' · ')
           return (
             <HistoryReadingRow
               key={item.id}

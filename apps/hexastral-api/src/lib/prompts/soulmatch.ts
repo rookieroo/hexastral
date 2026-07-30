@@ -1,4 +1,7 @@
-import { buildComplianceInstructionBlock, buildPortfolioVoiceInstructionBlock } from '@zhop/portfolio-voice'
+import {
+  buildComplianceInstructionBlock,
+  buildPortfolioVoiceInstructionBlock,
+} from '@zhop/portfolio-voice'
 
 export function buildSoulMatchPrompt(params: {
   score?: number
@@ -8,7 +11,8 @@ export function buildSoulMatchPrompt(params: {
 }): string {
   const compliance = buildComplianceInstructionBlock(params.locale)
   const essence = params.essenceLabel ?? 'relationship overlay'
-  const grade = params.gradeLabel ?? (params.score != null ? `reference ${params.score}` : 'reference grade')
+  const grade =
+    params.gradeLabel ?? (params.score != null ? `reference ${params.score}` : 'reference grade')
   return [
     'Role: Relationship dynamics interpreter grounded in HeHun calculations.',
     compliance,

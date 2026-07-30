@@ -6,13 +6,13 @@
  */
 
 import {
-  deriveReportDigest,
-  patternQualityTone,
   type DigestFocusItem,
   type DigestHeadline,
   type DigestPattern,
   type DigestTone,
+  deriveReportDigest,
   type FengComputeJson,
+  patternQualityTone,
   type ReportDigest,
 } from '@zhop/scenario-feng'
 import { Text, View } from 'react-native'
@@ -61,9 +61,7 @@ function concordChipLabel(concord: ReportDigest['concord'], t: Strings): string 
 }
 
 function focusLine(item: DigestFocusItem, t: Strings): string {
-  return t.digest_focus_line
-    .replace('{palace}', item.palace)
-    .replace('{verdict}', item.verdict)
+  return t.digest_focus_line.replace('{palace}', item.palace).replace('{verdict}', item.verdict)
 }
 
 function headlineText(headline: DigestHeadline, t: Strings): string {
@@ -164,9 +162,7 @@ export function FengDigestCard({ digest, t, compact }: FengDigestCardProps) {
                 : 'danger'
           }
         />
-        {confidenceNote ? (
-          <DigestChip label={confidenceNote} tone='caution' />
-        ) : null}
+        {confidenceNote ? <DigestChip label={confidenceNote} tone='caution' /> : null}
         {typeof digest.inputScore === 'number' && digest.inputScore < 90 ? (
           <DigestChip
             label={t.digest_input_completeness.replace('{score}', String(digest.inputScore))}

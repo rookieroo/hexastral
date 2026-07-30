@@ -77,7 +77,7 @@ export const LIDONG: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Start of Winter: first, the waters begin to freeze; second, the earth begins to freeze; third, the pheasant enters the water and becomes a clam. Thin ice forms on the water, the ground begins to freeze, and as large birds like pheasants grow scarce and great clams multiply along the shore, the ancients imagined the pheasant turning into a clam. Lidong is winter\'s beginning: all things gather and store themselves away, shunning cold for warmth. Classical three pentads: 「一候水始冰，二候地始冻，三候雉入大水为蜃」。',
+        body: "The three pentads of the Start of Winter: first, the waters begin to freeze; second, the earth begins to freeze; third, the pheasant enters the water and becomes a clam. Thin ice forms on the water, the ground begins to freeze, and as large birds like pheasants grow scarce and great clams multiply along the shore, the ancients imagined the pheasant turning into a clam. Lidong is winter's beginning: all things gather and store themselves away, shunning cold for warmth. Classical three pentads: 「一候水始冰，二候地始冻，三候雉入大水为蜃」。",
       },
       {
         title: 'Farming',

@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  mergeClickIdsForDdl,
-  mergeUtmForDdl,
-  readPersistedClickIds,
-} from '@zhop/ddl-client'
+import { mergeClickIdsForDdl, mergeUtmForDdl, readPersistedClickIds } from '@zhop/ddl-client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.hexastral.com'
 

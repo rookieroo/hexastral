@@ -11,13 +11,7 @@
  * (privacy.{locale}.json) governs everything common.
  */
 
-export const SATELLITE_PRIVACY_KEYS = [
-  'yuel',
-  'yuun',
-  'yaul',
-  'kanyu',
-  'syel',
-] as const
+export const SATELLITE_PRIVACY_KEYS = ['yuel', 'yuun', 'yaul', 'kanyu', 'syel'] as const
 
 export type SatellitePrivacyKey = (typeof SATELLITE_PRIVACY_KEYS)[number]
 
@@ -46,15 +40,15 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
   yuun: {
     displayName: 'Yuun',
     summary:
-      'Daily Chinese almanac (黄历) in the HexAstral universe. Anonymous and account-free by default — the base almanac is deterministic. Signing in is optional and only needed to subscribe or to carry data to other universe apps such as Yuel.',
+      'Daily Chinese almanac (黄历) in the HexAstral universe. The free public almanac works without an account. You may save birth info on-device for a deterministic “For you” preview. Signing in enables optional account sync, personalized daily push conclusions, and subscriptions (Yuun Pro).',
     bullets: [
-      'An optional birth date is stored locally on your device and sent only as a request parameter (never as an account) to compute the personalized "对你而言" overlay (For you summary). Deep per-reason unlocks remain part of Yuun Pro.',
-      'Home Screen widgets, Lock Screen accessories, and Apple Watch complications show the same public 黄历 for everyone; the optional For you line appears after you add birth info on device.',
-      '亲友 (friends & family) you add stay on your device; you may export an eligible 亲友 to Yuel as a bond, and import a Yuel bond back into Yuun — only when you choose to, over your one shared sign-in.',
-      'Daily reminders are scheduled as local notifications on the device — no push token is registered and no server-side schedule is stored.',
-      'The optional AI "deep reading" sends only the date, the selected 宜/忌 field, and your day-master stem (not your full birth date) to authorized LLM providers under DPAs; cost-guarded, no biometric data.',
-      'Timeline, chart deep-read, and AI chat outputs are for entertainment, cultural exploration, and personal reflection — not medical, legal, financial, or life advice.',
-      'We may record anonymous install and onboarding steps to improve the product (no IDFA). There are no third-party ad SDKs in the app; if you arrived from an ad, we may use first-party cookies and server-side conversion postbacks.',
+      'Birth info: you can save birth details on this device only for a deterministic “For you” summary (吉/平/凶). Deep per-reason explanations remain Yuun Pro. Signing in lets you sync birth to your HexAstral account (with multi-device and cross-app controls) so it can restore on another device, widgets, and Apple Watch.',
+      'Push notifications: if you enable reminders, we register an Expo push token with our servers together with your locale, timezone, display preferences, and optional birth profile so we can send morning/evening almanac notifications even when the app is closed. Signed-in users may receive a short personal conclusion; Pro may receive additional deterministic tips. You can turn notifications off anytime.',
+      'Home Screen widgets, Lock Screen accessories, and Apple Watch complications show the public 黄历; after you add birth info on device, an optional For you line can appear. Paired Watch sync uses App Group + WatchConnectivity; a signed-in Watch credential may be minted for independent refresh.',
+      '亲友 (friends & family) you add are stored on device by default. Birthday reminders may also be stored server-side for the registered device when push is enabled. You may export an eligible 亲友 to Yuel as a bond over your shared sign-in.',
+      'Apple / Google sign-in creates a recoverable portfolio identity (stable id, and email when the provider supplies it) required before purchase so subscriptions restore across devices. Purchases are processed via RevenueCat; we never see your card number.',
+      'The optional AI deep reading / timeline / chart chat sends only the minimum chart context needed (for example date, selected 宜/忌 field, day-master stem, or structured chapter inputs) to authorized LLM providers under DPAs — not raw biometrics. Outputs are for entertainment, cultural exploration, and personal reflection only.',
+      'Account deletion in Settings permanently removes account-linked birth sync data, Watch credentials, push registrations linked to your account, device-linked 亲友 reminder rows when tied to your signed-in devices, and related reading/chat history. Cancel App Store subscriptions separately. We may record anonymous install and onboarding steps (no IDFA; no third-party ad SDKs in the app).',
     ],
   },
   yaul: {
@@ -92,7 +86,7 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Anonymous boot: first launch registers a device-scoped user via POST /api/user and stores a device secret for HMAC signing. Apple / Google sign-in links that session for cross-device restore across universe apps.',
       'Paywall: each full site analysis job requires one unconsumed one-time purchase matched to your declared residence type — `hexastral_feng_single` for apartment / compound-unit residences (currently from approximately USD $9.99 in supported markets) or `hexastral_feng_premium` for large flat / detached-villa residences (currently approximately USD $39.99 when that SKU is enabled in the store). Until the premium SKU is live end-to-end, all residence types may be billed at the single-tier price. There is no Kanyu subscription and no free monthly feng analysis quota. The single purchase is consumed only after a report completes successfully.',
       'Bundled chat: unlimited AI chat about that same report is included with the purchase (no separate chat SKU), unlocked only after analysis completes. Chat messages, your question text, and report context snippets are stored in our conversation tables under your user id and sent to authorized LLM providers under DPAs. Chat is moderated automatically; abusive prompts may be refused. Fair-use rate limits may apply. See Terms §3 Kanyu limitations.',
-      'When portfolio memory is enabled on your account, report synthesis may retrieve short summaries from your prior HexAstral readings to add context; chat may also reference the saved report chapters. It never pulls another user\'s data.',
+      "When portfolio memory is enabled on your account, report synthesis may retrieve short summaries from your prior HexAstral readings to add context; chat may also reference the saved report chapters. It never pulls another user's data.",
       'Location & sensors (on-device): when-in-use location for map preview and declination; magnetometer for facing calibration. We do not run background location tracking.',
       'Reports, sites, job status, and chat threads live in `feng_reports`, `feng_sites`, `feng_jobs`, and chat conversation tables under your user id. RevenueCat validates `hexastral_feng_single` and `hexastral_feng_premium` one-time purchases — we never see your payment card.',
       'We may record anonymous install and onboarding steps to improve the product (no IDFA, no cross-app advertising trackers). If you arrived from an ad, we may use first-party cookies and server-side conversion postbacks.',
@@ -118,4 +112,60 @@ export const SATELLITE_PRIVACY_APPENDICES: Record<
       'Account deletion (in-app request or privacy@hexastral.com) removes your Syel features, readings, and related account data within 30 days alongside other HexAstral universe data. Withdrawing biometric consent stops new processing but does not by itself delete historical structured features or readings — use account deletion for full erasure.',
     ],
   },
+}
+
+type AppendixBody = { summary: string; bullets: readonly string[] }
+
+/** Yuun appendix bodies for store locales (en fallback = SATELLITE_PRIVACY_APPENDICES.yuun). */
+const YUUN_APPENDIX_LOCALES: Partial<Record<'en' | 'zh' | 'tw' | 'ja', AppendixBody>> = {
+  zh: {
+    summary:
+      'HexAstral 宇宙中的每日中华黄历。公开黄历无需账号；可将生辰保存在本机以获得确定性的「对你而言」预览。登录后可开启账号同步、个性化推送结论，并订阅 Yuun Pro。',
+    bullets: [
+      '生辰：可仅存本机，用于确定性的「对你而言」摘要（吉/平/凶）；逐条原因属 Yuun Pro。登录并可开启多设备/跨应用同步后写入账号，以便在其他设备、小组件与 Apple Watch 恢复。',
+      '推送：开启提醒后，我们会向服务器注册 Expo push token，以及语言、时区、显示偏好与可选生辰资料，以便在 App 关闭时发送早晚黄历通知。登录用户可收到短个人结论；Pro 可收到额外确定性提示。可随时关闭通知。',
+      '主屏/锁屏小组件与 Watch 复杂功能展示公开黄历；本机录入生辰后可显示「对你而言」。配对 Watch 经 App Group + WatchConnectivity；登录后可签发 Watch credential 供手表独立联网刷新。',
+      '亲友默认存本机；开启推送时生日提醒也可能按设备存于服务端。可将符合条件的亲友经同一登录导出到 Yuel 合盘。',
+      'Apple / Google 登录创建可恢复的组合身份（稳定 id，以及提供方给出的邮箱），购买前需要，以便跨设备恢复订阅。支付经 RevenueCat；我们看不到卡号。',
+      '可选 AI 深读 / 时间轴 / 命盘对话仅发送必要盘面上下文给受 DPA 约束的 LLM，不含原始生物特征。内容仅供文化探索与个人省思。',
+      '在设置中删号会永久删除账号生辰同步、Watch credential、与账号关联的推送登记、关联设备上的亲友提醒行及相关阅读/对话记录。App Store 订阅需另行取消。我们可能记录匿名安装与引导步骤（无 IDFA；无第三方广告 SDK）。',
+    ],
+  },
+  tw: {
+    summary:
+      'HexAstral 宇宙中的每日中華黃曆。公開黃曆無需帳號；可將生辰保存在本機以獲得確定性的「對你而言」預覽。登入後可開啟帳號同步、個人化推播結論，並訂閱 Yuun Pro。',
+    bullets: [
+      '生辰：可僅存本機，用於確定性的「對你而言」摘要（吉/平/凶）；逐條原因屬 Yuun Pro。登入並可開啟多裝置/跨應用同步後寫入帳號，以便在其他裝置、小組件與 Apple Watch 恢復。',
+      '推播：開啟提醒後，我們會向伺服器註冊 Expo push token，以及語言、時區、顯示偏好與可選生辰資料，以便在 App 關閉時發送早晚黃曆通知。登入使用者可收到短個人結論；Pro 可收到額外確定性提示。可隨時關閉通知。',
+      '主畫面/鎖屏元件與 Watch 複雜功能展示公開黃曆；本機錄入生辰後可顯示「對你而言」。配對 Watch 經 App Group + WatchConnectivity；登入後可簽發 Watch credential 供手錶獨立連網刷新。',
+      '親友預設存本機；開啟推播時生日提醒也可能依裝置存於伺服器。可將符合條件的親友經同一登入匯出到 Yuel 合盤。',
+      'Apple / Google 登入建立可恢復的組合身分（穩定 id，以及提供方給出的信箱），購買前需要，以便跨裝置恢復訂閱。支付經 RevenueCat；我們看不到卡號。',
+      '可選 AI 深讀 / 時間軸 / 命盤對話僅發送必要盤面上下文給受 DPA 約束的 LLM，不含原始生物特徵。內容僅供文化探索與個人省思。',
+      '在設定中刪號會永久刪除帳號生辰同步、Watch credential、與帳號關聯的推播登記、關聯裝置上的親友提醒列及相關閱讀/對話紀錄。App Store 訂閱需另行取消。我們可能記錄匿名安裝與引導步驟（無 IDFA；無第三方廣告 SDK）。',
+    ],
+  },
+  ja: {
+    summary:
+      'HexAstral 宇宙の毎日の中華黄暦。公開黄暦はアカウント不要。生年月日を端末に保存すると確定的な「あなたへ」プレビューが使えます。サインイン後は任意のアカウント同期、個人向けプッシュ結論、Yuun Pro 購読が利用できます。',
+    bullets: [
+      '生年月日：端末のみに保存して確定的な「あなたへ」要約（吉/平/凶）を表示できます。理由の詳細は Yuun Pro。サインインしマルチデバイス同期を ON にするとアカウントへ書き込み、他端末・ウィジェット・Apple Watch で復元できます。',
+      'プッシュ：通知を ON にすると Expo プッシュトークンと言語・タイムゾーン・表示設定・任意の生年月日をサーバーに登録し、アプリ終了中でも朝夕の黄暦通知を送れます。サインインユーザーは短い個人結論、Pro は追加の確定的ヒントを受け取れる場合があります。いつでもオフにできます。',
+      'ホーム／ロック画面ウィジェットと Watch コンプリケーションは公開黄暦を表示。端末に生年月日があると「あなたへ」行も表示できます。ペア Watch は App Group + WatchConnectivity。サインイン後は独立更新用の Watch credential を発行できます。',
+      '親友はデフォルトで端末内。プッシュ ON 時は誕生日リマインダーがデバイス単位でサーバー保存されることがあります。同一サインインで Yuel の合盤へエクスポートできます。',
+      'Apple / Google サインインは復元可能なポートフォリオ ID（安定 id と、提供される場合のメール）を作り、購入前に必要です（端末間で購読復元）。決済は RevenueCat；カード番号は見えません。',
+      '任意の AI 深掘り／タイムライン／命式チャットは必要な盤面コンテキストのみを DPA 下の LLM に送り、生の生体データは送りません。娯楽・文化・内省目的のみです。',
+      '設定からのアカウント削除で、アカウントの生年月日同期、Watch credential、関連プッシュ登録、関連デバイスの親友リマインダー行、関連の閲覧／チャット履歴を永久削除します。App Store 購読は別途解約。匿名のインストール／オンボーディング記録を取ることがあります（IDFA なし、第三者広告 SDK なし）。',
+    ],
+  },
+}
+
+export function resolveSatelliteAppendix(
+  key: SatellitePrivacyKey,
+  locale: 'en' | 'zh' | 'tw' | 'ja'
+): { displayName: string; summary: string; bullets: readonly string[] } {
+  const base = SATELLITE_PRIVACY_APPENDICES[key]
+  if (key !== 'yuun' || locale === 'en') return base
+  const localized = YUUN_APPENDIX_LOCALES[locale]
+  if (!localized) return base
+  return { displayName: base.displayName, summary: localized.summary, bullets: localized.bullets }
 }

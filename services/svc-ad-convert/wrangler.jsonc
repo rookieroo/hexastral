@@ -13,9 +13,7 @@
   //   bunx wrangler queues create ad-convert
   //   bunx wrangler queues create ad-convert-dlq
 
-  "services": [
-    { "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }
-  ],
+  "services": [{ "binding": "SVC_ADMIN_NOTIFY", "service": "svc-admin-notify" }],
 
   "queues": {
     "consumers": [

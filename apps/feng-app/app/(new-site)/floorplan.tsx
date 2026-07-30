@@ -13,11 +13,7 @@
 
 import { maxFloorplanImagesFor, mountainAtDegree } from '@zhop/astro-core'
 import { Button, useHaptic } from '@zhop/core-ui'
-import {
-  fetchFloorplanPreview,
-  useFengClient,
-  useUploadFloorplan,
-} from '@zhop/scenario-feng'
+import { fetchFloorplanPreview, useFengClient, useUploadFloorplan } from '@zhop/scenario-feng'
 import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -68,7 +64,10 @@ function clamp01(n: number): number {
 function JiugongOverlay({ visible }: { visible: boolean }) {
   if (!visible) return null
   return (
-    <View pointerEvents='none' style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+    <View
+      pointerEvents='none'
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
       {[1 / 3, 2 / 3].map((frac) => (
         <View
           key={`v-${frac}`}

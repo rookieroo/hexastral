@@ -10,13 +10,7 @@
  *   Do NOT fold with abs(cos(effectiveP)) — that made 朔 and 望 identical.
  */
 
-import {
-  Canvas,
-  Circle,
-  LinearGradient,
-  RadialGradient,
-  vec,
-} from '@shopify/react-native-skia'
+import { Canvas, Circle, LinearGradient, RadialGradient, vec } from '@shopify/react-native-skia'
 import { useTheme } from '@zhop/core-ui'
 import { useMemo } from 'react'
 import { View } from 'react-native'

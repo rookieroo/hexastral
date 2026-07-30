@@ -1,15 +1,15 @@
+import { Button } from '@zhop/core-ui'
 import { getHexagramDetail, resolveHexagramLocale } from '@zhop/hexastral-tokens/constants/hexagram'
 import { fetchReadingById } from '@zhop/portfolio-client'
 import { CoinCastSharePoster } from '@zhop/portfolio-posters'
-import { Button } from '@zhop/core-ui'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { LiuyaoDeskCard, parseLiuyaoDesk } from '@/components/LiuyaoDeskCard'
-import { coincastLandingUrl, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { tryUpgradeCoincastReading } from '@/lib/coincast-upgrade'
+import { coincastLandingUrl, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { useSatelliteI18n } from '@/lib/i18n'
 import { SheetHandle } from '@/lib/SheetHandle'
 import { useAppTheme } from '@/lib/theme'
@@ -173,7 +173,10 @@ export default function CoinCastDetailScreen() {
               <>
                 <Text style={[styles.refLabel, { color: colors.accent }]}>{t('detailLines')}</Text>
                 {classical.changingLineTexts.map((lineText, i) => (
-                  <Text key={`changing-${i}`} style={[styles.lineText, { color: colors.secondary }]}>
+                  <Text
+                    key={`changing-${i}`}
+                    style={[styles.lineText, { color: colors.secondary }]}
+                  >
                     {lineText}
                   </Text>
                 ))}
@@ -191,7 +194,9 @@ export default function CoinCastDetailScreen() {
             </Text>
             {!desk && classical.naJiaContext ? (
               <>
-                <Text style={[styles.refLabel, { color: colors.accent }]}>{t('detailNaJiaTitle')}</Text>
+                <Text style={[styles.refLabel, { color: colors.accent }]}>
+                  {t('detailNaJiaTitle')}
+                </Text>
                 <Text style={[styles.naJia, { color: colors.secondary }]}>
                   {classical.naJiaContext}
                 </Text>

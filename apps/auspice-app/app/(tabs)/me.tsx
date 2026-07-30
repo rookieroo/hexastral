@@ -1,18 +1,7 @@
 /**
- * Me — Tier-3 surface (no IAP, no required sign-in).
- *
- * Sections:
- *   - Birth info (single-page quick form — date / 时辰 / gender / city)
- *   - Language switcher (DEV-only — production users get device locale)
- *   - 外地时区 (preset city picker + free-text fallback)
- *   - Daily push toggle
- *   - Discover (collapsed flagship funnel)
- *   - Privacy / Terms (row-style)
- *
- * Birth form replaces the prior bare TextInput per user feedback 2026-06.
- * Single-page (no wizard) so power users can tweak everything at once;
- * onboarding-style multi-step is preserved as `BirthInfoForm` in
- * `@zhop/core-ui` for apps that need the deeper flow.
+ * Me — Settings / profile. Free 黄历 is anonymous-first; birth can be saved
+ * locally without sign-in. Sign-in unlocks account sync + personalized push;
+ * Pro unlocks deep reasons (paywall elsewhere).
  */
 
 import { resolveBirthHour, solarToLunar } from '@zhop/astro-core'
@@ -20,13 +9,13 @@ import {
   BirthClockField,
   BirthDateField,
   type BirthDateFieldValue,
+  type BirthTimeMode,
+  BirthTimeModeToggle,
   birthDateFieldLabelsForLocale,
   birthTimeModeFromClock,
-  BirthTimeModeToggle,
-  type BirthTimeMode,
-  clearedPreciseBirthFields,
   CityPicker,
   type CityRecord,
+  clearedPreciseBirthFields,
   DEFAULT_TOP_CITIES,
   formatHourMinute,
   isCjkScript,
@@ -40,12 +29,12 @@ import {
 } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import {
+  type BirthSyncPreferences,
   type DevEntitlementOverride,
   getDevEntitlementOverride,
   hasEntitlement,
   setDevEntitlementOverride,
   useEntitlements,
-  type BirthSyncPreferences,
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -61,29 +50,24 @@ import {
   NotificationsSection,
   type NotificationToggleItem,
 } from '@/components/settings/NotificationsSection'
-import {
-  SettingsCard,
-  SettingsRow,
-  SettingsSection,
-} from '@/components/settings/SettingsSection'
-import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { SettingsCard, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
+import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
+import { isSignedIn } from '@/lib/account'
+import { deleteYuunAccount } from '@/lib/account-delete'
+import { clearAuspiceGetCache } from '@/lib/api'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import {
   pushLocalBirthToAccount,
   reconcileYuunBirthWithAccount,
   resolveBirthConflict,
   setYuunMultiDeviceSync,
 } from '@/lib/birth-account-sync'
-import { deleteYuunAccount } from '@/lib/account-delete'
-import { isSignedIn } from '@/lib/account'
-import { clearAuspiceGetCache } from '@/lib/api'
-import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/calendar-feed'
 import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { resetOnboarding } from '@/lib/onboarding-seen'
-import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import {
   disableDailyPush,
   disableTimelineReminders,
@@ -97,9 +81,10 @@ import {
   setEveningPushEnabled,
   syncServerPush,
 } from '@/lib/push'
-import { isServerPushActive } from '@/lib/serverPushFlag'
 import { pushTypeById } from '@/lib/pushRegistry'
+import { isServerPushActive } from '@/lib/serverPushFlag'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
+import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 
 const LOCALES: { key: Locale; label: string }[] = [
   { key: 'zh-Hans', label: '简体中文' },
@@ -420,6 +405,29 @@ export default function MeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only reconcile
   }, [])
 
+  const persistBirthLocal = async (updated: AuspiceBirthInfo) => {
+    setBirthSaving(true)
+    try {
+      await setAuspiceBirthInfo(updated)
+      setBirth(updated)
+      setBirthSaved(true)
+      setHasSavedBirth(true)
+      setEditingBirth(false)
+      setTimeout(() => setBirthSaved(false), 2000)
+      clearAuspiceGetCache()
+      requestYuunWidgetSync(locale, true)
+      void isPushEnabled().then((on) => {
+        if (on) void syncServerPush(locale).catch(() => {})
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (__DEV__) console.warn('[yuun] local birth save failed', msg)
+      Alert.alert(t.birthSaveFailed, __DEV__ ? msg : undefined)
+    } finally {
+      setBirthSaving(false)
+    }
+  }
+
   const persistBirthAfterAuth = async (updated: AuspiceBirthInfo) => {
     setBirthSaving(true)
     try {
@@ -463,9 +471,15 @@ export default function MeScreen() {
     void (async () => {
       const ok = await isSignedIn()
       if (!ok) {
-        setSignInForBirthOpen(true)
-        // Stash into form state so post-sign-in save uses the draft.
-        setBirth(updated)
+        // Tier 1: local preview without account. Offer sync after save.
+        await persistBirthLocal(updated)
+        Alert.alert(t.birthLocalSavedTitle, t.birthLocalSavedBody, [
+          { text: t.birthLocalSavedLater, style: 'cancel' },
+          {
+            text: t.signInForBirthTitle,
+            onPress: () => setSignInForBirthOpen(true),
+          },
+        ])
         return
       }
       await persistBirthAfterAuth(updated)
@@ -473,14 +487,7 @@ export default function MeScreen() {
   }
 
   const beginEditBirth = () => {
-    void (async () => {
-      const ok = await isSignedIn()
-      if (!ok) {
-        setSignInForBirthOpen(true)
-        return
-      }
-      setEditingBirth(true)
-    })()
+    setEditingBirth(true)
   }
 
   const toggleMultiDevice = (next: boolean) => {
@@ -606,7 +613,8 @@ export default function MeScreen() {
         const ok = await enableTimelineReminders({
           locale,
           birthDate: info.solarDate,
-          birthHour: info.timeIndex === null || info.timeIndex === undefined ? -1 : info.timeIndex * 2,
+          birthHour:
+            info.timeIndex === null || info.timeIndex === undefined ? -1 : info.timeIndex * 2,
           gender: info.gender === '男' ? 'M' : 'F',
         })
         if (!ok) {
@@ -962,7 +970,9 @@ export default function MeScreen() {
                   }}
                 >
                   <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={{ color: colors.text, fontSize: 15 }}>{t.birthMultiDeviceSync}</Text>
+                    <Text style={{ color: colors.text, fontSize: 15 }}>
+                      {t.birthMultiDeviceSync}
+                    </Text>
                     <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
                       {t.birthMultiDeviceSyncHint}
                     </Text>
@@ -974,6 +984,30 @@ export default function MeScreen() {
                   />
                 </View>
               )}
+            </View>
+          ) : hasSavedBirth ? (
+            <View
+              style={{
+                marginTop: spacing.md,
+                backgroundColor: colors.card,
+                borderRadius: 14,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                gap: spacing.sm,
+              }}
+            >
+              <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 18 }}>
+                {t.signInForBirthBenefit}
+              </Text>
+              <Pressable
+                onPress={() => setSignInForBirthOpen(true)}
+                accessibilityRole='button'
+                accessibilityLabel={t.signInForBirthTitle}
+              >
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                  {t.signInForBirthTitle}
+                </Text>
+              </Pressable>
             </View>
           ) : null}
         </View>
@@ -1329,7 +1363,10 @@ export default function MeScreen() {
               >
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={{ color: colors.text, fontSize: 16 }}>Re-sync server push</Text>
-                  <Text style={{ color: colors.secondary, fontSize: 12, marginTop: 2 }} numberOfLines={2}>
+                  <Text
+                    style={{ color: colors.secondary, fontSize: 12, marginTop: 2 }}
+                    numberOfLines={2}
+                  >
                     {pushDevStatus}
                   </Text>
                 </View>

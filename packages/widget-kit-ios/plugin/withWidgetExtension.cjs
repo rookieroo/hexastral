@@ -21,17 +21,13 @@ const withWidgetExtension = (config, props) => {
 
   console.log(
     `[widget-kit-ios] ${props.appSlug} → ${props.widgetName} group=${props.appGroupId}` +
-      (props.watchComplication
-        ? ' (watchComplication: YuunWatch via targets/watch-widget)'
-        : '')
+      (props.watchComplication ? ' (watchComplication: YuunWatch via targets/watch-widget)' : '')
   )
 
   return withEntitlementsPlist(config, (cfg) => {
     const key = 'com.apple.security.application-groups'
     const existing = cfg.modResults[key]
-    const groups = Array.isArray(existing)
-      ? existing.filter((g) => typeof g === 'string')
-      : []
+    const groups = Array.isArray(existing) ? existing.filter((g) => typeof g === 'string') : []
     if (!groups.includes(props.appGroupId)) {
       groups.push(props.appGroupId)
     }

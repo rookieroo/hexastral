@@ -13,8 +13,7 @@ const REDDIT_PIXEL_ID = process.env.NEXT_PUBLIC_REDDIT_PIXEL_ID?.trim()
  * Inject P0 ad pixels when public env IDs are set. Mount only on brand_acq / lp_acq.
  */
 export function AdPixels() {
-  const any =
-    !!META_PIXEL_ID || !!GOOGLE_ADS_ID || !!TIKTOK_PIXEL_ID || !!REDDIT_PIXEL_ID
+  const any = !!META_PIXEL_ID || !!GOOGLE_ADS_ID || !!TIKTOK_PIXEL_ID || !!REDDIT_PIXEL_ID
 
   useEffect(() => {
     if (!any) return

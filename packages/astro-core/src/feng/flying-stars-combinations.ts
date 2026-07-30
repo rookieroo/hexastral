@@ -305,7 +305,11 @@ export function describePalaceCombination(
   // Benefic combos: 当令 or 生气 → 旺. Malefic combos: only true 当令 → 旺.
   const prosperous = malefic ? hasDangling : hasDangling || hasSheng
   const phase: '旺' | '衰' = prosperous ? '旺' : '衰'
-  const reading = combination ? (phase === '旺' ? combination.prosperous : combination.declining) : ''
+  const reading = combination
+    ? phase === '旺'
+      ? combination.prosperous
+      : combination.declining
+    : ''
   const domains = combination?.domain ?? []
   return {
     mountainStar,

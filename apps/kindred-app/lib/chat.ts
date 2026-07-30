@@ -141,4 +141,3 @@ export async function clearChatHistory(
   })
   if (!res.ok) throw new Error(`chat_clear_failed:${res.status}`)
 }
-

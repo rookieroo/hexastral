@@ -8,13 +8,7 @@ import type { LucideIcon } from 'lucide-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-export function SettingsSection({
-  title,
-  children,
-}: {
-  title?: string
-  children: ReactNode
-}) {
+export function SettingsSection({ title, children }: { title?: string; children: ReactNode }) {
   const { colors, spacing } = useTheme()
   return (
     <View style={{ gap: spacing.sm }}>

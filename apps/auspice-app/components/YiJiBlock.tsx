@@ -8,13 +8,13 @@
  * semantic. Chip text uses display mode; explain/analytics keep canonical CJK.
  */
 
-import { yijiExplainField, type YijiVocabularyMode } from '@zhop/astro-core'
+import { type YijiVocabularyMode, yijiExplainField } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { Pressable, Text, View } from 'react-native'
+import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { displayYijiVerb } from '@/lib/yiji-vocab'
-import type { Locale } from '@/lib/i18n'
 
 function Column({
   label,

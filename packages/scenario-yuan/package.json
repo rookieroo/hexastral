@@ -37,9 +37,9 @@
   "devDependencies": {
     "@types/react": "^19.1.10",
     "@zhop/typescript-config": "workspace:*",
-    "intl-pluralrules": "2.0.1",
+    "intl-pluralrules": "^2.0.1",
     "iztro": "2.5.7",
-    "lucide-react-native": "0.544.0",
+    "lucide-react-native": "^1.14.0",
     "react": "^19.2.3",
     "react-native": "0.81.5",
     "react-native-reanimated": "~4.1.1",

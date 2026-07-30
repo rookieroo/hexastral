@@ -103,8 +103,7 @@ export const translations: Translations = {
     'pairInput.name.other': 'Their name',
     'pairInput.calendar.solar': 'Solar',
     'pairInput.calendar.lunar': 'Chinese (lunar)',
-    'pairInput.calendar.lunarHint':
-      'Enter the lunar calendar date — we convert it for the chart.',
+    'pairInput.calendar.lunarHint': 'Enter the lunar calendar date — we convert it for the chart.',
     'pairInput.cityPlaceholder': 'Birth city (optional)',
     'pairInput.cta.next': 'Next: them  →',
     'pairInput.alt.heading': "Can't fill their details now?",
@@ -266,7 +265,8 @@ export const translations: Translations = {
     'timeline.locked.liuyue': 'The 12-month monthly-cycle climate ahead',
     'timeline.locked.push': 'A gentle reminder before each node',
     'timeline.back': 'Back',
-    'bond.essenceNotScore': 'An essence shape from the Five Elements — not a compatibility score or verdict.',
+    'bond.essenceNotScore':
+      'An essence shape from the Five Elements — not a compatibility score or verdict.',
     'bondList.delete': 'Let go',
     'bondList.deleteTitle': 'Let this thread go?',
     'bondList.cancelInvite': 'Withdraw',
@@ -358,7 +358,8 @@ export const translations: Translations = {
     'settings.glossary.row': 'Symbol glossary',
     'settings.glossary.hint': 'What the seals, marks and elements in a report mean.',
     'settings.terms.row': 'Term glossary',
-    'settings.terms.hint': 'Plain-language meanings of the BaZi / typology terms a reading can use.',
+    'settings.terms.hint':
+      'Plain-language meanings of the BaZi / typology terms a reading can use.',
     'terms.title': 'Term Glossary',
     'terms.intro':
       'A reading may name a few classical concepts. Here is what each one means, in plain language. You never need this to follow your report — it is here if you are curious.',
@@ -486,8 +487,7 @@ export const translations: Translations = {
     'chat.cta': 'Ask about this →',
     'chat.legalDisclaimer':
       'For entertainment, cultural exploration, and personal reflection only — not relationship counseling, therapy, or professional advice.',
-    'chat.aiDisclaimer':
-      'AI-generated for reference only — please use your judgment.',
+    'chat.aiDisclaimer': 'AI-generated for reference only — please use your judgment.',
     'chat.copy': 'Copy',
     'chat.like': 'Like',
     'chat.dislike': 'Dislike',
@@ -886,8 +886,7 @@ export const translations: Translations = {
     'chat.freeRemaining': '还剩 {remaining} 次免费回复',
     'chat.poolRemaining': '本月还剩 {remaining} 次回复',
     'chat.cta': '聊聊这段缘分 →',
-    'chat.legalDisclaimer':
-      '仅供娱乐、文化探索与个人反思 —— 非情感咨询、心理治疗或专业建议。',
+    'chat.legalDisclaimer': '仅供娱乐、文化探索与个人反思 —— 非情感咨询、心理治疗或专业建议。',
     'chat.aiDisclaimer': '本回答由 AI 生成，内容仅供参考，请仔细甄别。',
     'chat.copy': '复制',
     'chat.like': '有用',
@@ -1287,8 +1286,7 @@ export const translations: Translations = {
     'chat.freeRemaining': '還剩 {remaining} 次免費回覆',
     'chat.poolRemaining': '本月還剩 {remaining} 次回覆',
     'chat.cta': '聊聊這段緣分 →',
-    'chat.legalDisclaimer':
-      '僅供娛樂、文化探索與個人反思 —— 非情感諮詢、心理治療或專業建議。',
+    'chat.legalDisclaimer': '僅供娛樂、文化探索與個人反思 —— 非情感諮詢、心理治療或專業建議。',
     'chat.aiDisclaimer': '本回答由 AI 生成，內容僅供參考，請仔細甄別。',
     'chat.copy': '複製',
     'chat.like': '有用',
@@ -1332,8 +1330,7 @@ export const translations: Translations = {
     'pairInput.name.other': 'お相手の名前',
     'pairInput.calendar.solar': '新暦',
     'pairInput.calendar.lunar': '旧暦',
-    'pairInput.calendar.lunarHint':
-      '旧暦の日付を入力すると、命式用に新暦へ変換します。',
+    'pairInput.calendar.lunarHint': '旧暦の日付を入力すると、命式用に新暦へ変換します。',
     'pairInput.cityPlaceholder': '出生地（任意）',
     'pairInput.cta.next': '次：お相手  →',
     'pairInput.alt.heading': '今は相手の情報を入力できない？',
@@ -1468,9 +1465,11 @@ export const translations: Translations = {
     'makeif.move.cohabit': '同棲',
     'makeif.move.distance': '遠距離',
     'makeif.move.child': '子ども',
-    'makeif.guide.commit': '関係を確かにする時——二人が相合し気が読みやすい月は時機の参考であり、保証ではありません。',
+    'makeif.guide.commit':
+      '関係を確かにする時——二人が相合し気が読みやすい月は時機の参考であり、保証ではありません。',
     'makeif.guide.cohabit': '共に暮らす始まり——相合し用神が力を読める月はリズム参照です。',
-    'makeif.guide.distance': '距離の試練——各自の気が安定して読める月を参考に（予測ではありません）。',
+    'makeif.guide.distance':
+      '距離の試練——各自の気が安定して読める月を参考に（予測ではありません）。',
     'makeif.guide.child': '新たな命を迎える——用神と相合が読みやすい月は文化上の参照です。',
     'makeif.upsell.title': '時機の参照を見る',
     'makeif.upsell.body':
@@ -1527,8 +1526,7 @@ export const translations: Translations = {
     'invite.accept.birthHeading': 'あなたの生年月日',
     'invite.accept.birthHint': 'あなたの命式を出すために使います（生年月日・時刻・場所）。',
     'invite.accept.usingSavedBirth': '保存済みの出生情報を使います。再入力は不要です。',
-    'invite.accept.consent.anon':
-      '相性の読みのために生年月日を共有することに同意します。',
+    'invite.accept.consent.anon': '相性の読みのために生年月日を共有することに同意します。',
     'invite.accept.open': '縁レポートを開く  →',
     'invite.accept.later': '後で',
     'invite.accept.consent.lead': '',

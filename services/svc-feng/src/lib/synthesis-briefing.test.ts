@@ -6,8 +6,8 @@ import { describe, expect, test } from 'bun:test'
 import {
   briefingContainsRawChartDump,
   buildSynthesisBriefing,
-  serializeSynthesisBriefing,
   SYNTHESIS_BRIEFING_MAX_CHARS,
+  serializeSynthesisBriefing,
 } from './synthesis-briefing'
 
 describe('buildSynthesisBriefing', () => {

@@ -29,14 +29,7 @@ function CardImage({ kind }: { kind: FengChapterKind }) {
   return (
     <Svg width={IMG_W} height={(IMG_W * 300) / 440} viewBox='0 0 440 300'>
       {dots.map((p, i) => (
-        <Circle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={1.9}
-          fill={`rgb(${p.rgb})`}
-          fillOpacity={p.a}
-        />
+        <Circle key={i} cx={p.x} cy={p.y} r={1.9} fill={`rgb(${p.rgb})`} fillOpacity={p.a} />
       ))}
     </Svg>
   )

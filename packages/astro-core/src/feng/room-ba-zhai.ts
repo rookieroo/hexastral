@@ -4,11 +4,7 @@
  * Classical rule: when 宅命不配, 以人为本 — 门床灶取命卦吉方 (see zhaiMingConcord).
  */
 
-import type {
-  DirectionVerdict,
-  HouseDirections,
-  ZhaiMingConcord,
-} from './ba-zhai'
+import type { DirectionVerdict, HouseDirections, ZhaiMingConcord } from './ba-zhai'
 import type { BaguaPalace } from './twenty-four-mountains'
 
 export type BaZhaiVerdict = 'lucky' | 'unlucky' | 'neutral'

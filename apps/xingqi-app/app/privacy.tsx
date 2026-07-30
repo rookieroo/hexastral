@@ -48,7 +48,12 @@ export default function FacePrivacyAppendixScreen() {
       </Text>
       <Pressable onPress={() => void Linking.openURL(url)}>
         <Text style={{ color: colors.accent, lineHeight: 22 }}>
-          {s('完整隐私附录（网页）→', '完整隱私附錄（網頁）→', 'Full privacy appendix (web) →', '完全なプライバシー付録（Web）→')}
+          {s(
+            '完整隐私附录（网页）→',
+            '完整隱私附錄（網頁）→',
+            'Full privacy appendix (web) →',
+            '完全なプライバシー付録（Web）→'
+          )}
         </Text>
       </Pressable>
     </ScrollView>

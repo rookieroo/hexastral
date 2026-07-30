@@ -11,7 +11,8 @@ export const TIMEZONE_POOL = [
   'Pacific/Marquesas', // UTC-09:30
   'America/Anchorage', // UTC-09
   'America/Los_Angeles', // UTC-08
-  'America/Denver', // UTC-07
+  'America/Phoenix', // UTC-07 year-round (no DST — do not alias to Denver)
+  'America/Denver', // UTC-07 / -06 DST
   'America/Chicago', // UTC-06
   'America/New_York', // UTC-05
   'America/Halifax', // UTC-04
@@ -20,7 +21,8 @@ export const TIMEZONE_POOL = [
   'Atlantic/South_Georgia', // UTC-02
   'Atlantic/Azores', // UTC-01
   'Europe/London', // UTC+00
-  'Europe/Paris', // UTC+01
+  'Africa/Lagos', // UTC+01 year-round (no DST — do not alias to Paris)
+  'Europe/Paris', // UTC+01 / +02 DST
   'Europe/Helsinki', // UTC+02
   'Europe/Moscow', // UTC+03
   'Asia/Tehran', // UTC+03:30
@@ -36,7 +38,8 @@ export const TIMEZONE_POOL = [
   'Australia/Eucla', // UTC+08:45
   'Asia/Tokyo', // UTC+09
   'Australia/Adelaide', // UTC+09:30
-  'Australia/Sydney', // UTC+10
+  'Australia/Brisbane', // UTC+10 year-round (no DST — do not alias to Sydney)
+  'Australia/Sydney', // UTC+10 / +11 DST
   'Pacific/Norfolk', // UTC+11
   'Pacific/Auckland', // UTC+12
   'Pacific/Chatham', // UTC+12:45
@@ -85,7 +88,7 @@ const ALIAS_TO_POOL: Readonly<Record<string, TimezonePoolId>> = {
   'Europe/Oslo': 'Europe/Paris',
   'Europe/Copenhagen': 'Europe/Paris',
   'Europe/Budapest': 'Europe/Paris',
-  'Africa/Lagos': 'Europe/Paris',
+  // UTC+01 year-round (Lagos is in the pool — do not alias to Paris)
   // UTC+00
   'UTC': 'Europe/London',
   'Etc/UTC': 'Europe/London',
@@ -102,15 +105,13 @@ const ALIAS_TO_POOL: Readonly<Record<string, TimezonePoolId>> = {
   // UTC-06 / Central
   'America/Mexico_City': 'America/Chicago',
   'America/Winnipeg': 'America/Chicago',
-  // UTC-07 / Mountain
-  'America/Phoenix': 'America/Denver',
+  // UTC-07 / Mountain (DST zones → Denver; Phoenix is in the pool)
   'America/Edmonton': 'America/Denver',
   // UTC-08 / Pacific
   'America/Vancouver': 'America/Los_Angeles',
   'America/Tijuana': 'America/Los_Angeles',
-  // UTC+10
+  // UTC+10 (DST zones → Sydney; Brisbane is in the pool)
   'Australia/Melbourne': 'Australia/Sydney',
-  'Australia/Brisbane': 'Australia/Sydney',
   'Australia/Hobart': 'Australia/Sydney',
   // UTC+07
   'Asia/Jakarta': 'Asia/Bangkok',

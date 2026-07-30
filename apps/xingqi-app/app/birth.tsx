@@ -5,7 +5,12 @@ import {
   birthInputToSolar,
   useTheme,
 } from '@zhop/core-ui'
-import { hasEntitlement, getOrCreateAnonymousInstallId, saveAndCacheBirthInfo, useEntitlements } from '@zhop/satellite-runtime'
+import {
+  getOrCreateAnonymousInstallId,
+  hasEntitlement,
+  saveAndCacheBirthInfo,
+  useEntitlements,
+} from '@zhop/satellite-runtime'
 import { router, Stack } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
@@ -24,8 +29,8 @@ import {
   hydrateReadingDraft,
   patchReadingDraft,
 } from '@/lib/reading-draft'
-import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import { getReadingJobState, showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
+import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 
 function localeToLang(loc: Locale): string {
   if (loc === 'en') return 'en-US'
@@ -171,9 +176,7 @@ export default function BirthScreen() {
           )
           return
         }
-        setError(
-          s('资料不完整', '資料不完整', 'Incomplete draft', '入力内容が不完全です')
-        )
+        setError(s('资料不完整', '資料不完整', 'Incomplete draft', '入力内容が不完全です'))
         return
       }
       // Pro: skip unlock sheet — start reading and return home.

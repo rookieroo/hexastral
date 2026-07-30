@@ -71,8 +71,7 @@ export function scoreKindredSnippet(
   strongest: { bondId: string; status: string } | null
 ): number {
   let score = 0
-  const matchingCond =
-    q.kind === 'conditional' && strongest && q.triggerKind === strongest.status
+  const matchingCond = q.kind === 'conditional' && strongest && q.triggerKind === strongest.status
   const datedToday = q.kind === 'dated' && q.fireOn === date
   if (matchingCond) score += 700
   else if (datedToday) score += 400
@@ -212,10 +211,7 @@ kindredPushRoutes.get('/targets', async (c) => {
         .get()
       bondId = linked?.id ?? null
       if (bondId) {
-        await db
-          .update(kindredPushQueue)
-          .set({ bondId })
-          .where(eq(kindredPushQueue.id, pick.id))
+        await db.update(kindredPushQueue).set({ bondId }).where(eq(kindredPushQueue.id, pick.id))
       }
     }
     messages.push({

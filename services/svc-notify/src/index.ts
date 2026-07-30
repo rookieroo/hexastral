@@ -348,6 +348,7 @@ interface ExpoMessage {
 
 async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidTokens: string[] }> {
   const invalidTokens: string[] = []
+  const ticketToToken = new Map<string, string>()
   const chunkSize = 100
   for (let i = 0; i < messages.length; i += chunkSize) {
     const chunk = messages.slice(i, i + chunkSize)
@@ -366,15 +367,66 @@ async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidToken
     }
     const json = await res.json<{ data: ExpoTicket[] }>()
     json.data.forEach((item, idx) => {
+      const t = chunk[idx]?.to
       if (item.details?.error === 'DeviceNotRegistered') {
-        const t = chunk[idx]?.to
         if (t) invalidTokens.push(t)
+      } else if (item.status === 'ok' && item.id && t) {
+        ticketToToken.set(item.id, t)
       } else if (item.status !== 'ok') {
         logger.warn('Expo push token issue (auspice)', { message: item.message })
       }
     })
   }
+
+  if (ticketToToken.size > 0) {
+    const more = await collectInvalidTokensFromReceipts([...ticketToToken.keys()], ticketToToken)
+    invalidTokens.push(...more)
+  }
   return { invalidTokens }
+}
+
+/** Poll Expo push receipts for tickets that looked OK at send time. */
+async function collectInvalidTokensFromReceipts(
+  ticketIds: string[],
+  ticketToToken: Map<string, string>
+): Promise<string[]> {
+  const invalid: string[] = []
+  const chunkSize = 100
+  // Brief pause so Expo can attach receipt status for DeviceNotRegistered.
+  await new Promise((r) => setTimeout(r, 1_500))
+  for (let i = 0; i < ticketIds.length; i += chunkSize) {
+    const ids = ticketIds.slice(i, i + chunkSize)
+    try {
+      const res = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!res.ok) {
+        logger.warn('Expo getReceipts failed', { status: String(res.status) })
+        continue
+      }
+      const json = await res.json<{
+        data?: Record<string, { status?: string; details?: { error?: string } }>
+      }>()
+      const data = json.data ?? {}
+      for (const [id, receipt] of Object.entries(data)) {
+        if (receipt?.details?.error === 'DeviceNotRegistered') {
+          const t = ticketToToken.get(id)
+          if (t) invalid.push(t)
+        }
+      }
+    } catch (err) {
+      logger.warn('Expo getReceipts error', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+  return invalid
 }
 
 // ============ Daily Fortune Fortune Text ============
@@ -470,24 +522,30 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     return
   }
 
-  // Hourly cron — daily fortune push dispatch (morning + evening slots)
-  // Flagship hexastral-app fortune push DISABLED — shared push_tokens are used by
-  // Yuel; omnibus daily_almanac fan-out would mis-brand / waste sends (push-retention P2).
-  // await runHourlyFortunePush(env, 'morning', 8)
-  // await runHourlyFortunePush(env, 'evening', 20)
-  // Auspice (per-device, server-rendered almanac, direct send) — the REAL push
-  // that replaces local notifications' rolling-window unreliability:
-  await runAuspicePush(env, 'morning', 8)
-  await runAuspicePush(env, 'evening', 20)
-  // Auspice 人生时间线 node push (流月/流年/大运) — month-starts only, 09:00 local.
-  // THE #1 paid hook; deterministic teaser, lazy in-app LLM read on tap (落库).
-  await runAuspiceTimelinePush(env, 9)
-  // Kindred relationship nudge (ADR-0025): deterministic daily synastry over each
-  // user's Threads picks a pre-harvested queue snippet. Evening slot, no LLM.
-  await runKindredPush(env, 19)
-  // FaceOracle / Xingqi Pro: morning qi/recapture (09) + evening rest windows (21).
-  await runFaceoraclePush(env, 9)
-  await runFaceoraclePush(env, 21)
+  // Hourly cron — isolate each product so one failure/timeout does not skip the rest.
+  const tasks: Array<{ name: string; run: () => Promise<void> }> = [
+    { name: 'auspice-morning', run: () => runAuspicePush(env, 'morning', 8) },
+    { name: 'auspice-evening', run: () => runAuspicePush(env, 'evening', 20) },
+    { name: 'auspice-timeline', run: () => runAuspiceTimelinePush(env, 9) },
+    { name: 'kindred', run: () => runKindredPush(env, 19) },
+    { name: 'faceoracle-09', run: () => runFaceoraclePush(env, 9) },
+    { name: 'faceoracle-21', run: () => runFaceoraclePush(env, 21) },
+  ]
+  for (const task of tasks) {
+    try {
+      await Promise.race([
+        task.run(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${task.name} timeout`)), 55_000)
+        ),
+      ])
+    } catch (err) {
+      logger.error('scheduled task failed', {
+        task: task.name,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
 }
 
 /** Two-digit pad. */
@@ -809,14 +867,14 @@ async function runFaceoraclePush(env: Env, targetHour: number): Promise<void> {
  */
 async function purgeStaleTokens(env: Env): Promise<void> {
   logger.info('stale-token purge started')
-  let cursor: string | null = '0'
   let totalPurged = 0
-
-  while (cursor !== null) {
+  // Always re-fetch from offset 0 after deletes — advancing an offset cursor
+  // after DELETE skips rows (the classic offset-pagination-while-mutating bug).
+  for (let guard = 0; guard < 50; guard++) {
     const url = new URL('https://internal/api/notify/stale-tokens')
     url.searchParams.set('inactiveDays', '90')
     url.searchParams.set('limit', '500')
-    url.searchParams.set('cursor', cursor)
+    url.searchParams.set('cursor', '0')
 
     const res = await env.SVC_API.fetch(url, {
       headers: { 'X-Internal-Key': env.INTERNAL_KEY },
@@ -836,7 +894,6 @@ async function purgeStaleTokens(env: Env): Promise<void> {
 
     const tokens = json.data.map((r) => r.token)
 
-    // Delete from D1 in one batch call
     await await fetchD1WithRetry(env.SVC_API, 'https://internal/api/notify/unregister-stale', {
       method: 'DELETE',
       headers: {
@@ -847,13 +904,12 @@ async function purgeStaleTokens(env: Env): Promise<void> {
       signal: AbortSignal.timeout(10_000),
     })
 
-    // Delete from KV (per-userId, best-effort)
     await Promise.allSettled(
       json.data.map((r) => env.EXPO_PUSH_TOKENS.delete(`pushtoken:${r.userId}`))
     )
 
     totalPurged += tokens.length
-    cursor = json.nextCursor
+    if (json.data.length < 500) break
   }
 
   logger.info('stale-token purge complete', { totalPurged })
@@ -864,14 +920,18 @@ async function purgeStaleTokens(env: Env): Promise<void> {
     'https://internal/api/physiognomy/push/purge-inactive?inactiveDays=90',
   ]) {
     try {
-      const r = await env.SVC_API.fetch(path, {
-        method: 'POST',
-        headers: { 'X-Internal-Key': env.INTERNAL_KEY },
-        signal: AbortSignal.timeout(10_000),
-      })
-      if (r.ok) {
+      // Loop until a batch returns 0 — purge-inactive is capped at 500/call.
+      for (let guard = 0; guard < 20; guard++) {
+        const r = await env.SVC_API.fetch(path, {
+          method: 'POST',
+          headers: { 'X-Internal-Key': env.INTERNAL_KEY },
+          signal: AbortSignal.timeout(10_000),
+        })
+        if (!r.ok) break
         const j = await r.json<{ data?: { deleted?: number } }>()
-        logger.info('satellite push purge', { path, deleted: String(j.data?.deleted ?? 0) })
+        const deleted = j.data?.deleted ?? 0
+        logger.info('satellite push purge', { path, deleted: String(deleted) })
+        if (deleted === 0) break
       }
     } catch (err) {
       logger.error('satellite push purge failed', {

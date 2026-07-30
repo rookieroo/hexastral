@@ -33,7 +33,8 @@ export async function sendMeta(env: Env, msg: AdConvertMessage): Promise<VendorR
 
   const userData: Record<string, string> = {}
   const ids = msg.click_ids ?? {}
-  if (ids.fbclid) userData.fbc = ids._fbc ?? `fb.1.${Math.floor(msg.occurred_at_ms / 1000)}.${ids.fbclid}`
+  if (ids.fbclid)
+    userData.fbc = ids._fbc ?? `fb.1.${Math.floor(msg.occurred_at_ms / 1000)}.${ids.fbclid}`
   if (ids._fbp) userData.fbp = ids._fbp
   if (ids._fbc) userData.fbc = ids._fbc
   if (msg.client_ip) userData.client_ip_address = msg.client_ip
@@ -71,7 +72,12 @@ export async function sendMeta(env: Env, msg: AdConvertMessage): Promise<VendorR
     })
     const text = await res.text().catch(() => '')
     if (res.status === 401 || res.status === 403) {
-      return { vendor: 'meta', status: 'auth_error', httpStatus: res.status, body: text.slice(0, 400) }
+      return {
+        vendor: 'meta',
+        status: 'auth_error',
+        httpStatus: res.status,
+        body: text.slice(0, 400),
+      }
     }
     if (!res.ok) {
       const transient = res.status >= 500 || res.status === 429

@@ -1,15 +1,12 @@
 /**
- * Login-at-subscribe identity. Auspice is anonymous-first (ADR-0010 Tier 3) — the
- * FREE 黄历 needs no account — but the SUBSCRIBE step requires sign-in so the
- * subscription becomes a portable, cross-app identity:
- *   - it restores on every device (not tied to one install / Apple ID anon RC id),
- *   - universe_pro continuity across the suite, and
- *   - frictionless Bonds carry-over when the user later converts to Kindred (Kindred).
+ * Login-at-subscribe identity. Yuun is anonymous-first for the free 黄历, but
+ * subscribing requires sign-in so the subscription is a portable cross-app identity:
+ *   - restores on every device (not tied to one install / Apple ID anon RC id),
+ *   - universe_pro continuity across the suite (Phase 2), and
+ *   - frictionless Bonds carry-over when the user later opens Yuel.
  *
- * Apple Sign In → POST /portfolio/auth/apple (creates/loads the unified user +
- * deviceSecret, persisted by satellite-runtime) → alias RevenueCat to that userId
- * so the purchase follows the person and the RC webhook maps to this identity.
- * Google is a follow-up (needs the Google sign-in dep + native config).
+ * Apple / Google → POST /portfolio/auth/{apple,google} → alias RevenueCat to that
+ * userId so purchases and webhooks map to the portfolio identity.
  */
 
 import {
@@ -85,11 +82,13 @@ export async function signInWithApple(): Promise<string | null> {
     storagePrefix: PORTFOLIO_STORAGE_PREFIX,
   })
 
-  // Tie RevenueCat to the portfolio identity — the subscription now follows the
-  // user (cross-device + into other apps), and RC webhooks map to this userId.
+  // Tie RevenueCat to the portfolio identity — required for cross-device restore.
   try {
     await Purchases.logIn(userId)
-  } catch {}
+  } catch (err) {
+    console.warn('[yuun.account] RevenueCat logIn failed after Apple sign-in', err)
+    throw new Error('RevenueCat alias failed after Apple sign-in')
+  }
   void transferBondsInBackground()
   return userId
 }
@@ -118,7 +117,10 @@ export async function signInWithGoogle(): Promise<string | null> {
     })
     try {
       await Purchases.logIn(userId)
-    } catch {}
+    } catch (err) {
+      console.warn('[yuun.account] RevenueCat logIn failed after Google sign-in', err)
+      throw new Error('RevenueCat alias failed after Google sign-in')
+    }
     void transferBondsInBackground()
     return userId
   } catch (err) {

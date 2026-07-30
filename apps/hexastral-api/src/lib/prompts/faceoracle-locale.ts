@@ -90,9 +90,7 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
       '',
       `## Output language — ${name} (${code})`,
       `所有面向用户的 JSON 文本字段必须使用${name}书写。JSON 字段名保持英文。`,
-      code === 'zh-TW'
-        ? '使用繁體中文（台灣/港澳用字），不要輸出簡體字。'
-        : '使用简体中文。',
+      code === 'zh-TW' ? '使用繁體中文（台灣/港澳用字），不要輸出簡體字。' : '使用简体中文。',
       '禁止在任何中文文本字段中夹杂英文单词或英文句式（禁止 future / tension / palm / support / caution / main / reef 等）。',
       '禁止用英文标签起句（如 "Palm tension…"、"Future…"）。JSON 键名除外。',
       '术语可用原词（天庭、气机、用神…）；首次可用白话承接，勿堆砌不加解释的文言口号。',

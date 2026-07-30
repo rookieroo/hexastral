@@ -53,7 +53,6 @@ export function humanizeDataQualityNotes(notes: string[], t: Strings): string[] 
     }
     if (note.startsWith('residence_heuristic_mismatch=')) {
       push(t.dq_residence_mismatch)
-      continue
     }
   }
 

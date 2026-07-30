@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { headers } from 'next/headers'
 import { locales } from '@/i18n/routing'
 import { getAllBlogSlugs } from '@/lib/content/blog-posts'
+import { APP_LAUNCH, appIsPublicSurface, brandIdFromHost } from '@/lib/growth/launch-status'
 import {
   CONTENT_BASE_PATHS,
   DAY_MASTER_SLUGS,
@@ -11,7 +12,6 @@ import {
   PALACE_SLUGS,
   ZODIAC_SLUGS,
 } from '@/lib/growth/seo-data'
-import { APP_LAUNCH, appIsPublicSurface, brandIdFromHost } from '@/lib/growth/launch-status'
 
 type Locale = (typeof locales)[number]
 

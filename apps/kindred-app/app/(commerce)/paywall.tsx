@@ -105,28 +105,28 @@ export default function PaywallScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }}>
       <View style={{ flex: 1 }}>
         <PaywallView
-        productIds={YUAN_PRODUCT_IDS}
-        prices={{
-          monthly: offerings?.monthlyPriceString ?? null,
-          annual: offerings?.annualPriceString ?? null,
-        }}
-        bullets={[
-          t(locale, 'paywall.bullet.unlimited'),
-          t(locale, 'paywall.bullet.deep'),
-          t(locale, 'paywall.bullet.support'),
-        ]}
-        copy={copy}
-        brand={palette}
-        defaultPlan='annual'
-        hero={<YuelMark vertical size={96} color={kindredDark.seal} />}
-        onClose={() => router.back()}
-        onPurchase={async (productId) => {
-          const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'
-          const result = await purchaseKindredPro(plan)
-          if (result === 'success' && needsAuth) setSignInOpen(true)
-          return result
-        }}
-        onRestore={restoreKindredPurchases}
+          productIds={YUAN_PRODUCT_IDS}
+          prices={{
+            monthly: offerings?.monthlyPriceString ?? null,
+            annual: offerings?.annualPriceString ?? null,
+          }}
+          bullets={[
+            t(locale, 'paywall.bullet.unlimited'),
+            t(locale, 'paywall.bullet.deep'),
+            t(locale, 'paywall.bullet.support'),
+          ]}
+          copy={copy}
+          brand={palette}
+          defaultPlan='annual'
+          hero={<YuelMark vertical size={96} color={kindredDark.seal} />}
+          onClose={() => router.back()}
+          onPurchase={async (productId) => {
+            const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'
+            const result = await purchaseKindredPro(plan)
+            if (result === 'success' && needsAuth) setSignInOpen(true)
+            return result
+          }}
+          onRestore={restoreKindredPurchases}
         />
         <Text
           style={{

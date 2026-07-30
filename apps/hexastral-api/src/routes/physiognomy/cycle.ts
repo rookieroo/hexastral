@@ -56,10 +56,7 @@ function faceoracleOwner(userId: string): string {
   return `user:faceoracle:${userId}`
 }
 
-async function requireFaceoraclePro(
-  db: AppEnv['Variables']['db'],
-  userId: string
-): Promise<void> {
+async function requireFaceoraclePro(db: AppEnv['Variables']['db'], userId: string): Promise<void> {
   const ok =
     (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
     (await hasActiveEntitlement(db, userId, 'universe_pro'))
@@ -80,9 +77,11 @@ function digestStr(v: unknown, max = 0): string {
 function digestFaceoracleReading(output: Record<string, unknown>): string | undefined {
   const lines: string[] = []
 
-  const nf = (output.natalFacts && typeof output.natalFacts === 'object'
-    ? (output.natalFacts as Record<string, unknown>)
-    : {}) as Record<string, unknown>
+  const nf = (
+    output.natalFacts && typeof output.natalFacts === 'object'
+      ? (output.natalFacts as Record<string, unknown>)
+      : {}
+  ) as Record<string, unknown>
   const nfParts = [
     digestStr(nf.dayMaster) && `日主${digestStr(nf.dayMaster)}`,
     digestStr(nf.dayPillar) && `日柱${digestStr(nf.dayPillar)}`,
@@ -532,11 +531,9 @@ physiognomyCycleRoutes.post('/makeif', async (c) => {
       config: MAKEIF_GUARD,
       consumesPeakPass: guard.consumesPeakPass,
     })
-    await c.env.GUARD_KV.put(
-      cacheKey,
-      JSON.stringify({ narratives, summaries }),
-      { expirationTtl: 30 * 24 * 60 * 60 }
-    )
+    await c.env.GUARD_KV.put(cacheKey, JSON.stringify({ narratives, summaries }), {
+      expirationTtl: 30 * 24 * 60 * 60,
+    })
     return jsonOk(c, { narratives, summaries, source: 'llm' })
   } catch (err) {
     console.warn('[physiognomy.cycle.makeif] llm failed', err)

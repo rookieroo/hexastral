@@ -77,7 +77,7 @@ export const LIXIA: FestivalContent = {
     en: [
       {
         title: 'Phenology',
-        body: 'The three pentads of the Start of Summer: first, the frogs sing; second, earthworms emerge; third, the snake-gourd vine springs up. Frogs call in the fields, earthworms work up through the soil, and the snake-gourd climbs fast. Lixia announces summer\'s start: the heat rises markedly and all things grow lush. Classical three pentads: 「一候蝼蝈鸣，二候蚯蚓出，三候王瓜生」。',
+        body: "The three pentads of the Start of Summer: first, the frogs sing; second, earthworms emerge; third, the snake-gourd vine springs up. Frogs call in the fields, earthworms work up through the soil, and the snake-gourd climbs fast. Lixia announces summer's start: the heat rises markedly and all things grow lush. Classical three pentads: 「一候蝼蝈鸣，二候蚯蚓出，三候王瓜生」。",
       },
       {
         title: 'Farming',

@@ -48,7 +48,9 @@ export function LuopanLoader({ size = 200, label }: LuopanLoaderProps) {
         <LuopanDial size={size} detail='full' />
       </Animated.View>
       {label ? (
-        <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 13, letterSpacing: 1 }}>{label}</Text>
+        <Text style={{ color: FENG_PALETTE.riceMute, fontSize: 13, letterSpacing: 1 }}>
+          {label}
+        </Text>
       ) : null}
     </View>
   )

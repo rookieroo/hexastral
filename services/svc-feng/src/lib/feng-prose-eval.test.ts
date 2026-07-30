@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, test } from 'bun:test'
+import { FormLiNotesSchema } from '../prompts/form-li-notes'
 import { auditFormLiNotes, auditSynthesisFactsHard } from './form-li-notes-audit'
 import { fengBodyLooksWrongLocale } from './locale-gate'
-import { FormLiNotesSchema } from '../prompts/form-li-notes'
 
 const compute = {
   summary: { sit: '子', face: '午' },
@@ -76,7 +76,9 @@ describe('feng prose eval harness', () => {
 
   test('en locale drift detected on Chinese chapter body', () => {
     const body =
-      '外峦头形势显示巽宫有路冲，坤宫砂高，来龙在乾，水口在兑，应当谨慎化解并调整室内布局。'.repeat(2)
+      '外峦头形势显示巽宫有路冲，坤宫砂高，来龙在乾，水口在兑，应当谨慎化解并调整室内布局。'.repeat(
+        2
+      )
     expect(fengBodyLooksWrongLocale('en', body)).toBe(true)
   })
 })

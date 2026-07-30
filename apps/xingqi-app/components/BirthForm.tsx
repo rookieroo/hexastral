@@ -15,8 +15,8 @@ import {
   type BirthDateFieldLabels,
   type BirthDateFieldValue,
   type BirthTimeMode,
-  birthTimeModeFromClock,
   BirthTimeModeToggle,
+  birthTimeModeFromClock,
   CityPicker,
   type CityRecord,
   clearedPreciseBirthFields,
@@ -326,9 +326,7 @@ export function BirthForm({
                       />
                     </View>
                     {calibrationPreview ? (
-                      <Text
-                        style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}
-                      >
+                      <Text style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}>
                         {calibrationPreview}
                       </Text>
                     ) : null}
@@ -400,10 +398,7 @@ function LunarSwitch({
       style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}
     >
       <Text
-        style={[
-          kindredType.caption,
-          { color: on ? colors.accent : colors.dim, letterSpacing: 1 },
-        ]}
+        style={[kindredType.caption, { color: on ? colors.accent : colors.dim, letterSpacing: 1 }]}
       >
         {label}
       </Text>

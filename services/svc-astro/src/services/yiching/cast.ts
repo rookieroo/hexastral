@@ -14,9 +14,9 @@ import {
   formatHexagramForPrompt,
   getFourPillars,
 } from '@zhop/astro-core'
+import { applyHexagramLocale } from '../../data/hexagram-i18n'
 import type { Hexagram } from '../../data/hexagrams'
 import { getHexagramByLines } from '../../data/hexagrams'
-import { applyHexagramLocale } from '../../data/hexagram-i18n'
 import { type AiRouterEnv, callWithFallback } from '../../lib/ai-router'
 import { extractJson } from '../../lib/extract-json'
 import { buildLanguageBlock } from '../../lib/i18n-prompt'

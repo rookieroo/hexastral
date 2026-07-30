@@ -417,11 +417,33 @@ export async function saveBirthInfo(
     },
     body,
   })
-  if (!res.ok) throw new Error(`Birth info save failed: ${res.status}`)
+  if (!res.ok) {
+    let detail = String(res.status)
+    try {
+      const raw: unknown = await res.json()
+      if (raw && typeof raw === 'object') {
+        const errObj = 'error' in raw ? raw.error : undefined
+        if (errObj && typeof errObj === 'object') {
+          const code = 'code' in errObj && typeof errObj.code === 'string' ? errObj.code : null
+          const message =
+            'message' in errObj && typeof errObj.message === 'string' ? errObj.message : null
+          if (code) detail = `${res.status} ${code}`
+          else if (message) detail = `${res.status} ${message}`
+        } else if ('code' in raw && typeof raw.code === 'string') {
+          detail = `${res.status} ${raw.code}`
+        } else if ('message' in raw && typeof raw.message === 'string') {
+          detail = `${res.status} ${raw.message}`
+        }
+      }
+    } catch {
+      // non-JSON body
+    }
+    throw new Error(`Birth info save failed: ${detail}`)
+  }
   return (await res.json()) as { ok: boolean }
 }
 
-/** Legacy GET without caller context — server returns body for pre-sync rows. */
+/** GET requires BirthCallerContext (targetApp + installationId). */
 export async function getBirthInfo(baseOverride?: string): Promise<PortfolioBirthInfoResponse>
 export async function getBirthInfo(
   opts: BirthCallerContext,
@@ -431,12 +453,8 @@ export async function getBirthInfo(
   optsOrBase?: BirthCallerContext | string,
   baseOverride?: string
 ): Promise<PortfolioBirthInfoResponse> {
-  const opts =
-    optsOrBase && typeof optsOrBase === 'object' ? optsOrBase : undefined
-  const base =
-    typeof optsOrBase === 'string'
-      ? optsOrBase
-      : baseOverride
+  const opts = optsOrBase && typeof optsOrBase === 'object' ? optsOrBase : undefined
+  const base = typeof optsOrBase === 'string' ? optsOrBase : baseOverride
 
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('Birth info fetch requires authenticated user.')

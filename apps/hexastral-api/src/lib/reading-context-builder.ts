@@ -138,7 +138,8 @@ export async function getPrimaryReadingText(
             const ai = o.aiInterpretation
             if (typeof ai === 'string' && ai.trim()) return ai
             if (ai && typeof ai === 'object') return JSON.stringify(ai)
-            if (Array.isArray(o.chapters)) return JSON.stringify({ chapters: o.chapters, events: o.events })
+            if (Array.isArray(o.chapters))
+              return JSON.stringify({ chapters: o.chapters, events: o.events })
             return portfolio.resultJson
           }
         } catch {

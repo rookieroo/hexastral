@@ -831,7 +831,11 @@ export default function CoinCastHomeScreen() {
     : tossAnimating
       ? t('homeReleaseOpen')
       : t('homeHoldShake')
-  const primaryDisabled = primaryIsCommit ? !canCommit : hasQuestion ? !canShakeBase && !tossAnimating : loading
+  const primaryDisabled = primaryIsCommit
+    ? !canCommit
+    : hasQuestion
+      ? !canShakeBase && !tossAnimating
+      : loading
   const onPrimaryPress = () => {
     if (primaryIsCommit) {
       void castNow()

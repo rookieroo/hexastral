@@ -20,8 +20,8 @@ import {
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { logger } from '../lib/logger'
 import { formatFormAzimuthsForPrompt } from '../lib/form-azimuth'
+import { logger } from '../lib/logger'
 import { auditVisionHits } from '../lib/output-audit'
 import {
   buildInteriorUserPrompt,
@@ -201,9 +201,7 @@ visionRouter.post('/analyze', async (c) => {
     imageCount,
     expectedFeatures,
     terrainSummary,
-    formAzimuthLines: formAzimuths?.length
-      ? formatFormAzimuthsForPrompt(formAzimuths)
-      : undefined,
+    formAzimuthLines: formAzimuths?.length ? formatFormAzimuthsForPrompt(formAzimuths) : undefined,
   })
 
   const closeImages = images.slice(0, 1)

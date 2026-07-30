@@ -3,12 +3,11 @@
  * Optional sentence long-press for 划词 (host owns SelectionActionBar).
  */
 
-import type { Locale as TermLocale, ResolvedTerm } from '@zhop/astro-i18n'
-import { useMemo, useState, type ReactNode } from 'react'
-import { Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
-
-import { resolveXingqiTerm, segmentXingqiTerms } from '@/lib/xingqi-terms'
+import type { ResolvedTerm, Locale as TermLocale } from '@zhop/astro-i18n'
+import { type ReactNode, useMemo, useState } from 'react'
+import { type StyleProp, Text, type TextStyle, View, type ViewStyle } from 'react-native'
 import { isCjkZh, isZhHant } from '@/lib/locale-zh'
+import { resolveXingqiTerm, segmentXingqiTerms } from '@/lib/xingqi-terms'
 
 import { TermBubble } from './TermBubble'
 

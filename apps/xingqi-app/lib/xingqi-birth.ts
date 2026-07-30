@@ -26,9 +26,7 @@ export async function loadXingqiBirth(): Promise<XingqiBirth | null> {
     if (remote.birthInfo?.birthSolarDate && remote.birthInfo.gender) {
       const { birthTimeIndex } = remote.birthInfo
       const hour =
-        typeof birthTimeIndex === 'number' && birthTimeIndex >= 0
-          ? (birthTimeIndex * 2) % 24
-          : -1
+        typeof birthTimeIndex === 'number' && birthTimeIndex >= 0 ? (birthTimeIndex * 2) % 24 : -1
       return {
         date: remote.birthInfo.birthSolarDate,
         hour,
@@ -42,8 +40,7 @@ export async function loadXingqiBirth(): Promise<XingqiBirth | null> {
   await hydrateReadingDraft()
   const d = getReadingDraft()
   if (!d.solarDate || !d.gender) return null
-  const hour =
-    typeof d.timeIndex === 'number' && d.timeIndex >= 0 ? (d.timeIndex * 2) % 24 : -1
+  const hour = typeof d.timeIndex === 'number' && d.timeIndex >= 0 ? (d.timeIndex * 2) % 24 : -1
   return {
     date: d.solarDate,
     hour,

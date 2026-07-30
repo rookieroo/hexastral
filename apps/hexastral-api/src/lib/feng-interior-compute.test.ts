@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import {
-  luckyDirections,
-  unluckyDirections,
-  zhaiMingConcord,
-} from '@zhop/astro-core'
+import { luckyDirections, unluckyDirections, zhaiMingConcord } from '@zhop/astro-core'
 import { deriveRoomFindings } from './feng-interior-compute'
 
 describe('deriveRoomFindings dual-track', () => {

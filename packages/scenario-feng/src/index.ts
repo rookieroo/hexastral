@@ -32,7 +32,6 @@ export {
 } from './context'
 export * from './hooks'
 export { normalizeFengDeg, nudgeFengDeg, pointToFengDeg } from './lib/facing-deg'
-export { metersPerPixel, pixelOffsetToLatLng } from './lib/map-pixel-offset'
 export type {
   CreateSiteInput,
   FengPriceQuote,
@@ -43,14 +42,15 @@ export type {
   PatchSiteInput,
 } from './lib/feng-api'
 export { fengPriceEstimate, fetchFloorplanPreview, uploadFloorplan } from './lib/feng-api'
+export { metersPerPixel, pixelOffsetToLatLng } from './lib/map-pixel-offset'
 export {
-  deriveReportDigest,
-  patternQualityTone,
   type DigestFocusItem,
   type DigestHeadline,
   type DigestPattern,
   type DigestTone,
+  deriveReportDigest,
   type FormLiVerdict,
+  patternQualityTone,
   type ReportDigest,
 } from './lib/report-digest'
 export * from './types'

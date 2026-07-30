@@ -25,11 +25,11 @@ import { Platform } from 'react-native'
 import { saveBirthdayReminder } from './api'
 import { getAuspiceBirthInfo } from './birth'
 import { getAuspiceDeviceId } from './device'
+import type { Locale } from './i18n'
 import type { AuspicePerson } from './people'
 import { getAuspiceProActive } from './pro'
 import { isServerPushActive, setServerPushActive } from './serverPushFlag'
 import { resolveYijiDisplayMode } from './yiji-display-mode'
-import type { Locale } from './i18n'
 
 const BDAY_MIGRATED_KEY = 'auspice.bday.serverMigrated.v1'
 

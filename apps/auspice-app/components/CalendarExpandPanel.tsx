@@ -82,9 +82,7 @@ export function CalendarExpandPanel({
       const prev = monthH.value
       if (Math.abs(prev - h) < 2) return
       monthH.value =
-        progress.value > 0.05
-          ? withTiming(h, { duration: 200, easing: MORPH_EASE })
-          : h
+        progress.value > 0.05 ? withTiming(h, { duration: 200, easing: MORPH_EASE }) : h
     },
     [monthH, progress]
   )

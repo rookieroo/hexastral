@@ -79,9 +79,7 @@ export default async function MethodologyPage() {
         </h2>
         <ol style={{ paddingLeft: '1.25rem', lineHeight: 1.7, color: 'var(--color-ivory)' }}>
           <li>Name the lineage — classical terms deserve clear citations.</li>
-          <li>
-            Show the seams — separate deterministic chart math from interpretive narration.
-          </li>
+          <li>Show the seams — separate deterministic chart math from interpretive narration.</li>
           <li>
             Keep apps focused — feng-shui and face reading belong in their own products, not one
             omnibus.

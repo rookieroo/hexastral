@@ -1,11 +1,11 @@
 /**
- * Auspice root layout — Tier-3 satellite shape (ADR-0010).
+ * Auspice root layout — anonymous-first free 黄历; Pro via login-at-subscribe.
  *
  *   GestureHandlerRootView
  *     SafeAreaProvider
- *       CoreUIProvider (brand="cycle" — 朱泥 terra; defaults light for 黄历 paper reading)
+ *       CoreUIProvider (brand="cycle" — 朱泥 terra)
  *         LocaleProvider (zh-Hans / zh-Hant / ja / en)
- *           SatelliteGrowthMount (anonymous bootstrap; no IAP — Tier 3)
+ *           SatelliteGrowthMount (anonymous bootstrap + RevenueCat configure)
  *           Stack: (tabs) + day/[date] + event
  */
 
@@ -19,10 +19,11 @@ import { StyleSheet, useColorScheme } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { AuspiceErrorBoundary } from '@/components/AuspiceErrorBoundary'
+import { useYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
-import { YijiModeProvider } from '@/lib/yiji-mode-context'
 import { parseKindredComposeUrl } from '@/lib/kindred-import'
 import { addPerson, getPeople } from '@/lib/people'
 import { getAuspiceProActive } from '@/lib/pro'
@@ -37,7 +38,7 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
-import { useYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
+import { YijiModeProvider } from '@/lib/yiji-mode-context'
 
 function SatelliteGrowthMount() {
   usePortfolioSatelliteBootstrap({
@@ -61,7 +62,9 @@ export default function RootLayout() {
         <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
           <LocaleProvider>
             <YijiModeProvider>
-              <RootLayoutInner />
+              <AuspiceErrorBoundary>
+                <RootLayoutInner />
+              </AuspiceErrorBoundary>
             </YijiModeProvider>
           </LocaleProvider>
         </CoreUIProvider>

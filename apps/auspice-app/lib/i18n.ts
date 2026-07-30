@@ -114,6 +114,14 @@ export interface Strings {
   proAnnual: string
   /** Restore-purchases row label. */
   proRestore: string
+  /** Paywall loading / purchase status strings. */
+  proLoading: string
+  proPurchaseFailed: string
+  proRestoreFailed: string
+  proRestoreSuccess: string
+  proUnavailable: string
+  /** Auto-renew disclosure under purchase buttons (ASC 3.1.2). */
+  proAutoRenewDisclaimer: string
   /** Short legal disclaimer for paywall, deep-read, and AI surfaces. */
   legalDisclaimerShort: string
   /** Login-at-subscribe gate (sign in before purchase). */
@@ -124,6 +132,10 @@ export interface Strings {
   /** Login before saving birth (account sync). */
   signInForBirthTitle: string
   signInForBirthBenefit: string
+  /** After anonymous local birth save — invite account sync. */
+  birthLocalSavedTitle: string
+  birthLocalSavedBody: string
+  birthLocalSavedLater: string
   /** Multi-device birth sync toggle. */
   birthMultiDeviceSync: string
   birthMultiDeviceSyncHint: string
@@ -649,8 +661,7 @@ const zhHans: Strings = {
   holidayHeadsUp: '节假日提醒',
   holidayHeadsUpHint: '法定节假日 / 调休前一晚提醒你，别记错闹钟（中国大陆）。',
   yijiModeTitle: '现代场景词',
-  yijiModeHint:
-    '默认随语言：中文传统黄历词，英文现代词。手动切换后不再随语言变化。',
+  yijiModeHint: '默认随语言：中文传统黄历词，英文现代词。手动切换后不再随语言变化。',
   yijiModeModern: '现代场景词',
   yijiModeTraditional: '传统黄历词',
   eventAliasSection: '热门',
@@ -686,14 +697,25 @@ const zhHans: Strings = {
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
   proRestore: '恢复购买',
+  proLoading: '加载中…',
+  proPurchaseFailed: '购买失败，请稍后重试。',
+  proRestoreFailed: '未找到可恢复的购买。',
+  proRestoreSuccess: '购买已恢复。',
+  proUnavailable: '暂时无法加载订阅方案，请稍后重试。',
+  proAutoRenewDisclaimer:
+    '订阅将自动续订，除非在当前周期结束前至少 24 小时取消。可在 Apple ID 设置中管理。',
   legalDisclaimerShort:
     '基于传统历法与命理文化，仅供娱乐、文化探索与个人省思，不构成医疗、法律、财务或人生决策建议。',
   signInToSubscribe: '订阅前请先登录',
   signInBenefit: '登录后，订阅可在所有设备恢复，并在你使用「Yuel」等其他应用时延续。',
   signInWithGoogle: '使用 Google 登录',
   signInError: '登录失败，请重试。',
-  signInForBirthTitle: '登录以保存生辰',
-  signInForBirthBenefit: '生辰将安全保存到你的账号，便于跨设备同步到 Widget 与 Apple Watch。',
+  signInForBirthTitle: '登录以同步生辰',
+  signInForBirthBenefit:
+    '本机已可预览「对你而言」。登录后可跨设备恢复，并在每日推送中收到个人结论。',
+  birthLocalSavedTitle: '生辰已保存在本机',
+  birthLocalSavedBody: '登录后可跨设备同步，并每天收到带个人结论的推送。',
+  birthLocalSavedLater: '稍后再说',
   birthMultiDeviceSync: '多设备同步生辰',
   birthMultiDeviceSyncHint: '关闭后，其他设备不会自动读取账号中的生辰；本机仍可使用。',
   birthSyncGatedMultiDevice: '多设备同步已关闭。开启后，此设备才能读取账号生辰。',
@@ -1095,8 +1117,7 @@ const zhHant: Strings = {
   holidayHeadsUp: '節假日提醒',
   holidayHeadsUpHint: '法定節假日 / 調休前一晚提醒你，別記錯鬧鐘（中國大陸）。',
   yijiModeTitle: '現代場景詞',
-  yijiModeHint:
-    '預設隨語言：中文傳統黃曆詞，英文現代詞。手動切換後不再隨語言變化。',
+  yijiModeHint: '預設隨語言：中文傳統黃曆詞，英文現代詞。手動切換後不再隨語言變化。',
   yijiModeModern: '現代場景詞',
   yijiModeTraditional: '傳統黃曆詞',
   eventAliasSection: '熱門',
@@ -1132,14 +1153,25 @@ const zhHant: Strings = {
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
   proRestore: '恢復購買',
+  proLoading: '載入中…',
+  proPurchaseFailed: '購買失敗，請稍後重試。',
+  proRestoreFailed: '找不到可恢復的購買。',
+  proRestoreSuccess: '購買已恢復。',
+  proUnavailable: '暫時無法載入訂閱方案，請稍後重試。',
+  proAutoRenewDisclaimer:
+    '訂閱將自動續訂，除非在目前週期結束前至少 24 小時取消。可在 Apple ID 設定中管理。',
   legalDisclaimerShort:
     '基於傳統曆法與命理文化，僅供娛樂、文化探索與個人省思，不構成醫療、法律、財務或人生決策建議。',
   signInToSubscribe: '訂閱前請先登入',
   signInBenefit: '登入後，訂閱可在所有裝置恢復，並在你使用「Yuel」等其他應用時延續。',
   signInWithGoogle: '使用 Google 登入',
   signInError: '登入失敗，請重試。',
-  signInForBirthTitle: '登入以儲存生辰',
-  signInForBirthBenefit: '生辰將安全儲存到你的帳號，便於跨裝置同步到 Widget 與 Apple Watch。',
+  signInForBirthTitle: '登入以同步生辰',
+  signInForBirthBenefit:
+    '本機已可預覽「對你而言」。登入後可跨裝置恢復，並在每日推播中收到個人結論。',
+  birthLocalSavedTitle: '生辰已保存在本機',
+  birthLocalSavedBody: '登入後可跨裝置同步，並每天收到帶個人結論的推播。',
+  birthLocalSavedLater: '稍後再說',
   birthMultiDeviceSync: '多裝置同步生辰',
   birthMultiDeviceSyncHint: '關閉後，其他裝置不會自動讀取帳號中的生辰；本機仍可使用。',
   birthSyncGatedMultiDevice: '多裝置同步已關閉。開啟後，此裝置才能讀取帳號生辰。',
@@ -1588,6 +1620,13 @@ const ja: Strings = {
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
   proRestore: '購入を復元',
+  proLoading: '読み込み中…',
+  proPurchaseFailed: '購入に失敗しました。しばらくしてから再試行してください。',
+  proRestoreFailed: '復元できる購入がありません。',
+  proRestoreSuccess: '購入を復元しました。',
+  proUnavailable: 'プランを読み込めません。しばらくしてから再試行してください。',
+  proAutoRenewDisclaimer:
+    '期間終了の24時間前までにキャンセルしない限り、自動更新されます。Apple ID 設定で管理できます。',
   legalDisclaimerShort:
     '伝統暦法・命理文化に基づく娯楽・文化探索・個人的省思用。医療・法律・財務・人生判断の助言ではありません。',
   signInToSubscribe: 'ご登録の前にサインイン',
@@ -1595,11 +1634,17 @@ const ja: Strings = {
     'サインインすると購読は全デバイスで復元でき、「Yuel」など他のアプリにも引き継げます。',
   signInWithGoogle: 'Google でサインイン',
   signInError: 'サインインに失敗しました。もう一度お試しください。',
-  signInForBirthTitle: '生年月日時を保存するにはサインイン',
-  signInForBirthBenefit: '生年月日はアカウントに安全に保存され、ウィジェットや Apple Watch と同期できます。',
+  signInForBirthTitle: '生年月日を同期するにはサインイン',
+  signInForBirthBenefit:
+    'この端末では「あなたへ」をすぐ確認できます。サインインすると他端末で復元でき、毎日の通知に個人の結論が付きます。',
+  birthLocalSavedTitle: '生年月日をこの端末に保存しました',
+  birthLocalSavedBody: 'サインインすると他端末と同期でき、毎日の通知に個人の結論が付きます。',
+  birthLocalSavedLater: 'あとで',
   birthMultiDeviceSync: '複数デバイスで生年月日を同期',
-  birthMultiDeviceSyncHint: 'オフにすると、他のデバイスはアカウントの生年月日を自動取得しません。この端末では引き続き使えます。',
-  birthSyncGatedMultiDevice: '複数デバイス同期はオフです。オンにすると、この端末でアカウントの生年月日を読めます。',
+  birthMultiDeviceSyncHint:
+    'オフにすると、他のデバイスはアカウントの生年月日を自動取得しません。この端末では引き続き使えます。',
+  birthSyncGatedMultiDevice:
+    '複数デバイス同期はオフです。オンにすると、この端末でアカウントの生年月日を読めます。',
   birthSyncEnableMultiDevice: '複数デバイス同期をオン',
   birthConflictTitle: '生年月日が一致しません',
   birthConflictBody: 'この端末とアカウントの生年月日が異なります。どちらを残しますか。',
@@ -1608,7 +1653,8 @@ const ja: Strings = {
   birthSaveFailed: '保存に失敗しました。通信を確認して再試行してください。',
   birthSaveQuotaExhausted:
     '無料の修正枠を使い切りました。生年月日は1回だけ直せます。Pro で無制限に。',
-  birthSaveSessionExpired: 'ログインの有効期限が切れました。再度サインインしてから保存してください。',
+  birthSaveSessionExpired:
+    'ログインの有効期限が切れました。再度サインインしてから保存してください。',
   birthSaving: '保存中…',
   deleteAccount: 'アカウントを削除',
   deleteAccountConfirmTitle: 'アカウントを完全に削除しますか？',
@@ -2036,6 +2082,13 @@ const en: Strings = {
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
   proRestore: 'Restore purchase',
+  proLoading: 'Loading…',
+  proPurchaseFailed: 'Purchase failed. Please try again.',
+  proRestoreFailed: 'No purchases to restore.',
+  proRestoreSuccess: 'Purchases restored.',
+  proUnavailable: 'Subscriptions unavailable. Please try again later.',
+  proAutoRenewDisclaimer:
+    'Subscription renews automatically unless canceled at least 24 hours before the end of the current period. Manage in Apple ID settings.',
   legalDisclaimerShort:
     'Based on traditional almanac and chart culture — for entertainment, cultural exploration, and personal reflection only. Not medical, legal, financial, or life advice.',
   signInToSubscribe: 'Sign in to subscribe',
@@ -2043,14 +2096,22 @@ const en: Strings = {
     'Signing in lets your subscription restore on every device and carry into other apps like Yuel.',
   signInWithGoogle: 'Sign in with Google',
   signInError: 'Sign-in failed. Please try again.',
-  signInForBirthTitle: 'Sign in to save birth info',
-  signInForBirthBenefit: 'Birth info is saved securely to your account so it can sync across devices, widgets, and Apple Watch.',
+  signInForBirthTitle: 'Sign in to sync birth info',
+  signInForBirthBenefit:
+    'For you works on this device now. Sign in to restore across devices and get a personal conclusion in daily push.',
+  birthLocalSavedTitle: 'Birth info saved on this device',
+  birthLocalSavedBody:
+    'Sign in to sync across devices and receive a personal conclusion in your daily push.',
+  birthLocalSavedLater: 'Not now',
   birthMultiDeviceSync: 'Sync birth across devices',
-  birthMultiDeviceSyncHint: 'When off, other devices will not automatically read account birth info; this device still works.',
-  birthSyncGatedMultiDevice: 'Multi-device sync is off. Turn it on so this device can read account birth info.',
+  birthMultiDeviceSyncHint:
+    'When off, other devices will not automatically read account birth info; this device still works.',
+  birthSyncGatedMultiDevice:
+    'Multi-device sync is off. Turn it on so this device can read account birth info.',
   birthSyncEnableMultiDevice: 'Enable multi-device sync',
   birthConflictTitle: 'Birth info differs',
-  birthConflictBody: 'This device and your account have different birth info. Choose which to keep.',
+  birthConflictBody:
+    'This device and your account have different birth info. Choose which to keep.',
   birthConflictUseAccount: 'Use account data',
   birthConflictUseLocal: 'Replace account with this device',
   birthSaveFailed: 'Save failed. Check your connection and try again.',

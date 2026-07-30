@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { deriveReportDigest } from './report-digest'
 import type { FengComputeJson } from '../types'
+import { deriveReportDigest } from './report-digest'
 
 /** Minimal compute stub — only fields read by deriveReportDigest. */
 function stubCompute(): FengComputeJson {
@@ -20,7 +20,10 @@ function stubCompute(): FengComputeJson {
       palaces: [
         {
           palace: '巽',
-          findings: [{ verdict: '动凶', reason: 'a' }, { verdict: '破财', reason: 'b' }],
+          findings: [
+            { verdict: '动凶', reason: 'a' },
+            { verdict: '破财', reason: 'b' },
+          ],
         },
         {
           palace: '离',

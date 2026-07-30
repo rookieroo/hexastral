@@ -4,7 +4,7 @@
 
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg'
 
-import { type AncientGlyph, type XingqiGlyphKey, XINGQI_GLYPHS } from '@/lib/ancient-glyphs'
+import { type AncientGlyph, XINGQI_GLYPHS, type XingqiGlyphKey } from '@/lib/ancient-glyphs'
 
 export function AncientSeal({
   glyph,

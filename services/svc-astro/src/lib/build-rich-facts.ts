@@ -82,8 +82,7 @@ export function buildRichFacts(input: BuildRichFactsInput): string | null {
         startYear: number
         endYear: number
       }
-    ) =>
-      `${label}：${s.ganZhi.label}（${s.startAge}-${s.endAge}岁，${s.startYear}-${s.endYear}年）`
+    ) => `${label}：${s.ganZhi.label}（${s.startAge}-${s.endAge}岁，${s.startYear}-${s.endYear}年）`
     const dominantShishen = natal.shishen
       ? [natal.shishen.year?.name, natal.shishen.month?.name, natal.shishen.hour?.name]
           .filter((x): x is NonNullable<typeof x> => !!x)

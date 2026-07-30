@@ -275,7 +275,9 @@ export default function PeopleScreen() {
                 paddingVertical: spacing.sm,
               }}
             >
-              <Text style={{ flex: 1, color: colors.text, fontSize: 14 }}>{t.birthCalendarLeap}</Text>
+              <Text style={{ flex: 1, color: colors.text, fontSize: 14 }}>
+                {t.birthCalendarLeap}
+              </Text>
               <Toggle value={lunarIsLeap} onValueChange={setLunarIsLeap} accent={colors.accent} />
             </Pressable>
           ) : null}

@@ -5,12 +5,11 @@
 
 import { useEffect, useRef } from 'react'
 import { AppState, type AppStateStatus, Platform } from 'react-native'
-
-import { getStrings, type Locale } from '@/lib/i18n'
-import { getAuspiceBirthDate } from '@/lib/birth'
 import { fetchAuspiceDay } from '@/lib/api'
-import { syncTodayWidget } from '@/lib/widget-bridge'
+import { getAuspiceBirthDate } from '@/lib/birth'
+import { getStrings, type Locale } from '@/lib/i18n'
 import { provisionYuunWatch } from '@/lib/watch-provision'
+import { syncTodayWidget } from '@/lib/widget-bridge'
 import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
 
 function pad(n: number) {

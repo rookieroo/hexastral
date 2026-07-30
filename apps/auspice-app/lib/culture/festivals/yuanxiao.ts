@@ -98,7 +98,7 @@ export const YUANXIAO: FestivalContent = {
       },
       {
         title: 'Food',
-        body: 'Yuanxiao and tangyuan (元宵 / 汤圆) — glutinous rice balls — are the night\'s centerpiece. In the north the filling is rolled in dry glutinous flour until it builds into a ball; in the south wet glutinous dough is wrapped around the filling and rounded by hand. Chewy skins, sweet fillings (sesame, red bean, peanut), boiled until they float. A bowl of round dumplings carries the wish for reunion and wholeness (团圆).',
+        body: "Yuanxiao and tangyuan (元宵 / 汤圆) — glutinous rice balls — are the night's centerpiece. In the north the filling is rolled in dry glutinous flour until it builds into a ball; in the south wet glutinous dough is wrapped around the filling and rounded by hand. Chewy skins, sweet fillings (sesame, red bean, peanut), boiled until they float. A bowl of round dumplings carries the wish for reunion and wholeness (团圆).",
       },
       {
         title: 'Poetry',

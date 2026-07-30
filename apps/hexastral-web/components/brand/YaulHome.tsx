@@ -96,7 +96,16 @@ function CoinTrio() {
         <g key={i} transform={`translate(${c.cx}, 44) rotate(${c.rot})`}>
           <circle r={34} fill={C.stone} stroke={C.goldDim} strokeWidth={1.2} />
           <circle r={28} fill='none' stroke='rgba(196,168,130,0.35)' strokeWidth={0.8} />
-          <rect x={-9} y={-9} width={18} height={18} rx={2} fill='#0a0a0b' stroke={C.brown} strokeWidth={1} />
+          <rect
+            x={-9}
+            y={-9}
+            width={18}
+            height={18}
+            rx={2}
+            fill='#0a0a0b'
+            stroke={C.brown}
+            strokeWidth={1}
+          />
         </g>
       ))}
     </svg>
@@ -188,7 +197,15 @@ export function YaulHome({ locale }: { locale: string }) {
           {t.sub}
         </p>
 
-        <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+        <div
+          style={{
+            marginTop: 26,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            alignItems: 'center',
+          }}
+        >
           <AppCTA
             ios={store.ios}
             android={store.android}

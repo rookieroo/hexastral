@@ -89,7 +89,7 @@ export const CHUNJIE: FestivalContent = {
       },
       {
         title: 'Customs',
-        body: 'Staying up through the last night of the lunar year (守岁) anchors the festival. Families hang red couplets (春联) on their doors, set off firecrackers to drive away misfortune, gather for a reunion dinner on New Year\'s Eve, and elders give children red envelopes (压岁钱) as blessings of protection. Northern households make dumplings; southern households make rice cakes and glutinous rice balls. Family visits continue for the first 15 days of the new year, formally closing at the Lantern Festival.',
+        body: "Staying up through the last night of the lunar year (守岁) anchors the festival. Families hang red couplets (春联) on their doors, set off firecrackers to drive away misfortune, gather for a reunion dinner on New Year's Eve, and elders give children red envelopes (压岁钱) as blessings of protection. Northern households make dumplings; southern households make rice cakes and glutinous rice balls. Family visits continue for the first 15 days of the new year, formally closing at the Lantern Festival.",
       },
       {
         title: 'Food',
