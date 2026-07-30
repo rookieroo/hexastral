@@ -2,7 +2,7 @@
  * PhaseLogo — RN port of WidgetKit `YuunPhaseLogo` / HexastralPlanetLogo.
  *
  * Smooth terminator sphere (not water-ink). Use for home mark + widget/watch
- * chrome. Keep `StaticMoon` / `MoonPhaseLoader` for loading rituals only.
+ * chrome. Loading rituals use `MoonLoader` (`AutoMoonPhaseLoader`).
  *
  * Phase math (must match Swift + `computePhaseGradient` in hexastral-tokens):
  *   0 = 朔 (new, full void) · 0.25 = 上弦 · 0.5 = 望 (full, full lit) · 0.75 = 下弦

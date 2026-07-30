@@ -1264,7 +1264,7 @@ export const userRoutes = new Hono<AppEnv>()
   /**
    * POST /api/user/revoke-apple
    * Exchanges Apple authorizationCode for tokens, then revokes them.
-   * Must be called BEFORE deleting the user so HMAC verificati on still passes.
+   * Must be called BEFORE deleting the user so HMAC verification still passes.
    * See: https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens
    */
   .post('/revoke-apple', async (c) => {

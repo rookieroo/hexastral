@@ -4,11 +4,12 @@
  * Privacy policy: account data permanently deleted within 30 days of account
  * deletion. This helper runs the physical purge immediately on in-app DELETE.
  *
- * D1 enforces foreign keys and every FK in this schema is `ON DELETE no action`
- * (RESTRICT), so the whole purge lives in ONE ordered plan: `PURGE_STEPS` runs
- * children strictly before their parents, ending with `users`. A single D1
- * `batch()` wraps it in one transaction — either the account is gone or nothing
- * changed. Adding a table to the schema without adding it here is caught by
+ * D1 enforces foreign keys. Most user FKs are `ON DELETE no action` (RESTRICT);
+ * a minority use `CASCADE` / `SET NULL`. The purge still lives in ONE ordered
+ * plan: `PURGE_STEPS` deletes owned rows explicitly (including cascade-backed
+ * tables, for an auditable checklist) before `users`. A single D1 `batch()`
+ * wraps it in one transaction — either the account is gone or nothing changed.
+ * Adding a table to the schema without adding it here is caught by
  * `purge-user-account.test.ts`, which walks the real FK graph.
  *
  * Rows owned by OTHER users that point at rows we drop must go too, otherwise

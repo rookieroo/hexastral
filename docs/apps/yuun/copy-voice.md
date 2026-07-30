@@ -2,7 +2,7 @@
 
 Consumer brand: **Yuun**. Engineering/API/SKU may still say Auspice.
 
-Policy companion: [`apps/auspice-app/lib/terminology-locale.ts`](../../apps/auspice-app/lib/terminology-locale.ts).
+Policy companion: this doc + [yiji-vocabulary.md](./yiji-vocabulary.md).
 
 ## Rules
 
@@ -33,7 +33,6 @@ Edit these in the same PR when voice changes:
 - `apps/auspice-app/lib/share.ts` — share chrome
 - `apps/auspice-app/lib/culture/**` — Culture long bodies + summaries + names
 - `apps/auspice-app/components/ExplainSheet.tsx` — deep-read sheet labels
-- `apps/auspice-app/components/LiuyearBanner.tsx` — make-if tagline
 - `apps/auspice-app/aso-metadata.json` — store copy (must match `proBenefits`)
 
 Reading / 命书 handoff copy may live in `@zhop/scenario-yuan` — do not edit there for Culture work.

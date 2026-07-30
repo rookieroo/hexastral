@@ -6,7 +6,7 @@
 import { HTTPException } from 'hono/http-exception'
 
 /** Client brand Syel (ADR-0028); opaque target_app stays `faceoracle`. */
-export const TARGET_TO_BUNDLE_ID: Record<string, string> = {
+const TARGET_TO_BUNDLE_ID: Record<string, string> = {
   faceoracle: 'com.hexastral.syel',
   starpalace: 'com.hexastral.starpalace',
   soulmatch: 'com.hexastral.soulmatch',

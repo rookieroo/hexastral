@@ -78,7 +78,6 @@ export {
 export { reconcilePortfolioEntitlements } from './reconcile-entitlements'
 export {
   clearStoredAppleUserId,
-  getStoredAppleUserId,
   revokeAppleCredential,
   storeAppleUserId,
 } from './revoke-apple'
@@ -129,7 +128,6 @@ export {
   getPortfolioBirthInfo,
   saveAndCacheBirthInfo,
   updateBirthSyncPreferences,
-  usePortfolioBirthInfo,
 } from './use-portfolio-birth-info'
 export type { UsePortfolioSatelliteBootstrapArgs } from './use-portfolio-bootstrap'
 export { usePortfolioSatelliteBootstrap } from './use-portfolio-bootstrap'

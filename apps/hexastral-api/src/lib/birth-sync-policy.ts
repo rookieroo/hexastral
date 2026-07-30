@@ -123,8 +123,6 @@ export function birthSyncPreferencePatch(input: {
   installationId: string
   multiDeviceSyncEnabled?: boolean
   crossAppSyncEnabled?: boolean
-  priorMultiDevice: boolean
-  priorOwner: string | null
 }): {
   birthMultiDeviceSyncEnabled?: boolean
   birthCrossAppSyncEnabled?: boolean

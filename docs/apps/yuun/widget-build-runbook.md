@@ -136,7 +136,7 @@ key on the phone must not clear Watch (widget sync may run before provision).
 Alternatively open `ios/Yuun.xcworkspace` → YuunWatchApp / YuunWatch →
 Signing & Capabilities → enable Automatic for team `L9Z47DW56X` once.
 
-Historical scaffold (do not prebuild from here): [`watch-complication-scaffold/`](./watch-complication-scaffold/).
+Live sources: [`apps/auspice-app/targets/`](../../apps/auspice-app/targets/).
 
 ### Acceptance (Watch)
 

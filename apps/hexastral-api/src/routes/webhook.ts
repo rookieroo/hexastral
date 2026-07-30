@@ -65,7 +65,7 @@ const SUBSCRIPTION_ACTIVATE_EVENTS = new Set([
 const SUBSCRIPTION_CANCEL_EVENTS = new Set(['CANCELLATION'])
 const SUBSCRIPTION_EXPIRE_EVENTS = new Set(['EXPIRATION'])
 
-export type SubscriptionEventAction = 'activate' | 'cancel' | 'expire' | 'skip'
+type SubscriptionEventAction = 'activate' | 'cancel' | 'expire' | 'skip'
 
 /**
  * Classify a RevenueCat subscription event into the webhook's action. Exported + pure so
@@ -80,7 +80,7 @@ export function classifySubscriptionEvent(eventType: string): SubscriptionEventA
   return 'skip'
 }
 
-export type RcEventDisposition = 'process' | 'duplicate' | 'stale'
+type RcEventDisposition = 'process' | 'duplicate' | 'stale'
 
 /**
  * Decide whether an inbound RevenueCat event should mutate state.

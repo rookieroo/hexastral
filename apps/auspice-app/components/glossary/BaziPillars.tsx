@@ -2,8 +2,8 @@
  * 四柱八字 personalized page — Glossary chunk 3 (ADR-0020).
  *
  * When birth + gender are set: fetch the timeline payload (the SAME server
- * cache the LiuyearBanner + /timeline page already hit, so this is nearly
- * free) and render the user's actual 四柱 — year, month, day, hour — as
+ * cache the /timeline page already hits, so this is nearly free) and render
+ * the user's actual 四柱 — year, month, day, hour — as
  * stacked vertical pillars. The day pillar is ringed in accent and labeled
  * 日主 (Day Master); each stem is colored by its 五行, each branch by its
  * own 五行 (derived client-side via the ganzhi-content branch table).

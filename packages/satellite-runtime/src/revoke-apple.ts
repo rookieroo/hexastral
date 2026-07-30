@@ -16,7 +16,7 @@ export async function storeAppleUserId(appleUserId: string): Promise<void> {
   await SecureStore.setItemAsync(APPLE_USER_ID_KEY, appleUserId)
 }
 
-export async function getStoredAppleUserId(): Promise<string | null> {
+async function getStoredAppleUserId(): Promise<string | null> {
   try {
     return await SecureStore.getItemAsync(APPLE_USER_ID_KEY)
   } catch {

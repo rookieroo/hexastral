@@ -378,7 +378,7 @@ export interface Strings {
   }
   /** Appended when a period 冲 the user's 本命支 (流年 = 冲太岁). */
   timelineClashNote: string
-  /** Compact label for the LiuyearBanner on Today (above the hero). */
+  /** Compact label for timeline / luck-cycle entry chrome. */
   timelineBannerHint: string
   /** Birth-less invitation card on Today — title + one-line value prop that
    *  surfaces the timeline/what-if promise before any birth is entered. */

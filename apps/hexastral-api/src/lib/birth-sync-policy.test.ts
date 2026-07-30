@@ -130,8 +130,6 @@ describe('birth-sync-policy', () => {
       birthSyncPreferencePatch({
         installationId: 'i1',
         multiDeviceSyncEnabled: false,
-        priorMultiDevice: true,
-        priorOwner: null,
       })
     ).toEqual({
       birthMultiDeviceSyncEnabled: false,

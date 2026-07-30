@@ -583,10 +583,9 @@ export function fetchTimeline(args: {
   locale: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
 }): Promise<TimelinePayload> {
   // The timeline is read-only + deterministic from the birth profile, yet it's a
-  // POST (carries the profile in the body) so it skips the GET cache. LiuyearBanner
-  // re-fetches on every home focus — ~7 calls in one session in practice — so dedup
-  // + cache it by args here (reusing the GET cache store). A changed birthDate/
-  // locale re-keys; clearAuspiceGetCache() drops it on birth edit.
+  // POST (carries the profile in the body) so it skips the GET cache. Callers may
+  // re-fetch on focus, so dedup + cache by args here (reusing the GET cache store).
+  // A changed birthDate/locale re-keys; clearAuspiceGetCache() drops it on birth edit.
   const key = `timeline:${args.birthDate}:${args.birthHour}:${args.gender}:${args.locale}`
   const hit = getCache.get(key)
   if (hit && Date.now() - hit.at < GET_TTL_MS) return Promise.resolve(hit.data as TimelinePayload)

@@ -156,7 +156,7 @@ export function formatWatchDate(isoDate: string, locale: Locale): string {
   if (Number.isNaN(d.getTime())) return isoDate
   const day = d.getDate()
   const month = d.getMonth() + 1
-  // Faces: numeric only — no Sun/Tue / 周一 chrome on the dial (see terminology-locale).
+  // Faces: numeric only — no Sun/Tue / 周一 chrome on the dial.
   if (locale === 'en') return `${month}/${day}`
   if (locale === 'ja') return `${month}月${day}日`
   return `${month}月${day}日`

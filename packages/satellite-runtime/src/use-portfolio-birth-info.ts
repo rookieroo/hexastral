@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react'
 import { resolvePortfolioApiUrl } from './api-url'
 import { signRequest } from './hmac'
 import {
@@ -159,48 +158,4 @@ export async function updateBirthSyncPreferences(input: {
   })
   if (!res.ok) throw new Error(`Birth sync preferences update failed: ${res.status}`)
   return (await res.json()) as { ok: boolean; sync: BirthSyncPreferences }
-}
-
-export function usePortfolioBirthInfo(opts: BirthCallerContext): {
-  birthInfo: PortfolioBirthInfo | null
-  status: BirthSyncAccessStatus | null
-  sync: BirthSyncPreferences | null
-  loading: boolean
-  refresh: () => Promise<void>
-  save: (input: PortfolioBirthInfo) => Promise<void>
-} {
-  const [birthInfo, setBirthInfo] = useState<PortfolioBirthInfo | null>(null)
-  const [status, setStatus] = useState<BirthSyncAccessStatus | null>(null)
-  const [sync, setSync] = useState<BirthSyncPreferences | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    try {
-      const next = await getPortfolioBirthInfo(opts)
-      setBirthInfo(next.birthInfo)
-      setStatus(next.status)
-      setSync(next.sync)
-    } finally {
-      setLoading(false)
-    }
-  }, [opts.targetApp, opts.installationId])
-
-  const save = useCallback(
-    async (input: PortfolioBirthInfo) => {
-      await saveAndCacheBirthInfo({
-        ...input,
-        targetApp: opts.targetApp,
-        installationId: opts.installationId,
-      })
-      setBirthInfo(input)
-    },
-    [opts.targetApp, opts.installationId]
-  )
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
-
-  return { birthInfo, status, sync, loading, refresh, save }
 }

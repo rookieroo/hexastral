@@ -2217,10 +2217,7 @@ portfolioRoutes.patch('/birth-sync-preferences', async (c) => {
 
   const db = c.get('db')
   const prior = await db
-    .select({
-      birthMultiDeviceSyncEnabled: users.birthMultiDeviceSyncEnabled,
-      birthOwnerInstallationId: users.birthOwnerInstallationId,
-    })
+    .select({ id: users.id })
     .from(users)
     .where(eq(users.id, userId))
     .get()
@@ -2230,8 +2227,6 @@ portfolioRoutes.patch('/birth-sync-preferences', async (c) => {
     installationId: parsed.data.installationId,
     multiDeviceSyncEnabled: parsed.data.multiDeviceSyncEnabled,
     crossAppSyncEnabled: parsed.data.crossAppSyncEnabled,
-    priorMultiDevice: prior.birthMultiDeviceSyncEnabled !== false,
-    priorOwner: prior.birthOwnerInstallationId,
   })
 
   const nowIso = new Date().toISOString()
