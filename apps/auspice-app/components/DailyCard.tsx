@@ -14,6 +14,7 @@
  * seconds) by design so 时辰 has room. `phaseOverride` = DEV moon-phase mock.
  */
 
+import type { YijiVocabularyMode } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { getLunarPhase, getLunarPhaseName } from '@zhop/hexastral-tokens/lunar'
 import * as Haptics from 'expo-haptics'
@@ -28,9 +29,8 @@ import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
-import { displayYijiVerb } from '@/lib/yiji-vocab'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
-import type { YijiVocabularyMode } from '@zhop/astro-core'
+import { displayYijiVerb } from '@/lib/yiji-vocab'
 import { PhaseLogo } from './PhaseLogo'
 
 type Strings = ReturnType<typeof useStrings>['t']
@@ -160,6 +160,61 @@ export function formatWatchDate(isoDate: string, locale: Locale): string {
   if (locale === 'en') return `${month}/${day}`
   if (locale === 'ja') return `${month}月${day}日`
   return `${month}月${day}日`
+}
+
+const EN_MONTH_ABBR = [
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
+] as const
+
+/** Small widget topline — e.g. `THU 30` / `周四 · 30`. */
+export function formatWidgetWeekdayChip(isoDate: string, locale: Locale): string {
+  const d = new Date(`${isoDate}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return isoDate
+  const day = d.getDate()
+  const weekday = d.getDay()
+  if (locale === 'en') {
+    const wd = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][weekday] ?? ''
+    return `${wd} ${day}`
+  }
+  if (locale === 'ja') {
+    const wd = ['日', '月', '火', '水', '木', '金', '土'][weekday] ?? ''
+    return `${wd} · ${day}`
+  }
+  const wd = ['日', '一', '二', '三', '四', '五', '六'][weekday] ?? ''
+  return `周${wd} · ${day}`
+}
+
+/** Medium/large calendar solar half — e.g. `JUL 30` / `7月30日`. */
+export function formatWidgetSolarMonthDay(isoDate: string, locale: Locale): string {
+  const d = new Date(`${isoDate}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return isoDate
+  const day = d.getDate()
+  if (locale === 'en') {
+    return `${EN_MONTH_ABBR[d.getMonth()] ?? ''} ${day}`
+  }
+  return `${d.getMonth() + 1}月${day}日`
+}
+
+/** Medium/large calendar row — solar · Chinese-calendar day, no type prefix. */
+export function formatWidgetCalendarRow(
+  isoDate: string,
+  lunarMonthDay: string,
+  _locale: Locale
+): string {
+  const solar = formatWidgetSolarMonthDay(isoDate, _locale)
+  if (!lunarMonthDay) return solar
+  return `${solar} · ${lunarMonthDay}`
 }
 
 /** Localize the top-`n` 宜/忌 verbs and join. Shared with WidgetCard. */
@@ -823,17 +878,26 @@ function FullTier({ model }: { model: DailyCardModel }) {
         ) : null}
       </View>
 
-      {/* 月相 + 干支日 (CJK primary; en toned pinyin 副标) + 值神 */}
+      {/* 月相 + 干支 + 拼音 + 农历同排；CJK 始终是主身份。 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-        <PhaseLogo phase={model.moonPhase} size={46} />
-        <View style={{ alignItems: 'flex-start' }}>
+        <PhaseLogo phase={model.moonPhase} size={56} />
+        <View
+          style={{
+            flex: 1,
+            minWidth: 0,
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            gap: 8,
+          }}
+        >
           <Text
             style={{
               color: model.dayElementColor,
-              fontSize: 46,
+              fontSize: 42,
               fontWeight: '300',
               letterSpacing: 2,
             }}
+            numberOfLines={1}
           >
             {model.ganZhi}
           </Text>
@@ -843,33 +907,35 @@ function FullTier({ model }: { model: DailyCardModel }) {
                 color: colors.secondary,
                 fontSize: 12,
                 letterSpacing: 1,
-                marginTop: -4,
               }}
+              numberOfLines={1}
             >
               {model.ganZhiPinyin}
             </Text>
           ) : null}
+          {lunar ? (
+            <Text
+              style={{
+                color: model.lunarStrong ? colors.accent : colors.dim,
+                fontSize: 13,
+                fontWeight: model.lunarStrong ? '600' : '400',
+                flexShrink: 1,
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {lunar}
+            </Text>
+          ) : null}
         </View>
-        <View style={{ flex: 1 }} />
         <Text style={{ color: colors.secondary, fontSize: 14, textAlign: 'right' }}>
           {model.officerLabel}
         </Text>
       </View>
 
-      {/* 农历 · 节气 · 二十八宿 */}
+      {/* 节气 · 二十八宿（农历已并入干支身份行） */}
       <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
-        {lunar ? (
-          <Text
-            style={
-              model.lunarStrong
-                ? { color: colors.accent, fontWeight: '600' }
-                : { color: colors.dim }
-            }
-          >
-            {lunar}
-            {' · '}
-          </Text>
-        ) : null}
         {model.solarTermLabel}
         {locale !== 'en' && model.mansion ? ` · ${model.mansion}` : ''}
       </Text>

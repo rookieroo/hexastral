@@ -7,26 +7,29 @@
  * - zh UI: 宜 · 忌
  * - ja compact UI: 向く · 避ける
  * - en UI (home, widgets, Watch chrome): Good · Avoid
- * - Verbs always via `localizeYijiVerb` (locale glosses)
+ * - Labels are **chrome** (bold, neutral ink), verbs are regular body text
+ * - Verbs always via display formatter (locale + modern/traditional mode)
  * - ASO keywords may keep `yiji` for search; user-facing prose never uses yi/ji
  *
- * ## 干支 — Wiktionary split (CJK is the word; pinyin is pronunciation aid)
+ * ## 干支 — CJK is the word; pinyin is pronunciation aid
  *
  * | Context | Form | Example |
  * |---------|------|---------|
- * | zh value slots | CJK primary | 癸卯 |
- * | en widgets | Wiktionary headword order: toned Hanyu Pinyin first, Han form retained | guǐmǎo (癸卯) |
+ * | zh / ja value slots | CJK primary | 癸卯 |
+ * | en widgets / Watch faces | **CJK primary**, toned pinyin secondary gloss | 癸卯 / guǐmǎo |
  * | English prose (Settings, ASO, calendar blurb) | roman-first + CJK paren | stem-branch (干支) |
  * | Teaching (glossary / ExplainSheet) | full wiki line | 癸卯 · guǐmǎo · "Water Rabbit" |
  *
  * ## Compact surfaces
- * - Watch narrow slots (en): toned pinyin; Han form may be omitted only when the slot cannot fit it
- * - Widget small/medium (en): single-line `guǐmǎo (癸卯)`
- * - Widget large (en): pinyin primary + `(癸卯)` secondary
+ * - Watch narrow slots (en): CJK first; pinyin only if the slot still has room
+ * - Widget small (en): 干支 only — no pinyin; lunar `6/17` (no Lunar/Chinese prefix)
+ * - Widget medium/large (en): 干支 + toned pinyin on row 1; calendar row
+ *   `JUL 30 · 6/17` (solar · Chinese-calendar numeric); no type prefix
  * - Omit on en dial when cramped: 丙午年, 成日, 二十八宿, 冲生肖
- * - Keep: Wiktionary-order stem-branch headword, Good/Avoid + localized verbs, lunar `6/15`
+ * - Keep: CJK stem-branch, Good/Avoid chrome (bold, neutral) + localized verbs
  * - en tip: body only (no Tip chrome label on native watch tip line)
- * - Verbs: small 2 (1 line); medium/large 4–5 (up to 2 lines); join with ` · `
+ * - Verbs: small Good ≤2 lines / Avoid 1 line; medium two-column ≤2 lines;
+ *   large ≤2 lines full width; join with ` · `
  *
  * ## Japanese
  * - UI: CJK only — no romaji / ruby on cards
@@ -34,11 +37,11 @@
  *   per-combo table (乙丑 = いっちゅう ≠ おつ+ちゅう) — deferred, not concatenated
  *
  * ## Other
- * - 节气 en UI: English gloss (Pinyin) e.g. Major Heat (Dashu) — see SOLAR_TERM_NAMES
- * - en widget For-you footer omits the categorical 吉/平/凶 verdict and shows
- *   the complete localized sentence; zh/ja may show their localized verdict
+ * - 节气 prose / glossary: English gloss (Pinyin) e.g. Major Heat (Dashu)
+ * - 节气 widget chrome (en): bare pinyin only (Dashu) — Wikipedia title style
+ * - Large widget For-you footer; medium has no For-you (height budget)
  * - Water Rabbit / Fire Horse = gloss only, never the day-pillar identity
- * - Padding: small 14 / medium 16 / large 18 pt
+ * - Padding: small 12 / medium 14–16 / large 18 pt
  * - Widgets use app locale; tipLabel written into App Group
  */
 

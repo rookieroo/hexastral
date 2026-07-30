@@ -98,21 +98,22 @@ all three fields per day.
 
 | Family | 宜忌 field | Verbs | Extra content |
 |---|---|---|---|
-| `systemSmall` | `yiShort` / `jiShort` | 2, one line (scales down, never truncates) | 月相 · 农历 · stem-branch |
-| `systemMedium` | `yi` / `ji` | 4–5, two lines in the right column | full-width footer: complete For-you sentence (en omits the categorical verdict) |
-| `systemLarge` | `yiLong` / `jiLong` | 6, two lines full width | 月相 caption (name · % lit), stem-branch reading, 值神 / 二十八宿 (zh/ja), `对你而言` **and** 日签 |
+| `systemSmall` | Good: `yi` (≤4); Avoid: `jiShort` (2) | Good ≤2 lines; Avoid 1 line | weekday chip · moon · 干支 · lunar only (no pinyin on en) |
+| `systemMedium` | `yi` / `ji` | two columns, ≤2 lines each | moon · 干支(+pinyin en) · `JUL 30 · 6/17` · term; **no** For-you |
+| `systemLarge` | `yiLong` / `jiLong` | 6, two lines full width | moon caption · 干支(+pinyin) · solar·lunar row · term/值神 (zh/ja) · For-you **and** 日签 |
 | `accessoryRectangular` | `yiShort` / `jiShort` | 2, one line | stem-branch |
 
 Locale chrome is semantic, not decorative:
 
 - zh: `宜 / 忌`; stem-branch as CJK.
-- en: `Good / Avoid`; Wiktionary headword order `yǐsì (乙巳)`. The For-you
-  footer is `For you · <full sentence>` and never exposes raw `吉 / 平 / 凶`.
+- en: `Good / Avoid` as **bold** chrome (neutral ink, not green/red); 干支
+  **CJK primary**; toned pinyin only on medium/large. Calendar row is
+  `JUL 30 · 6/17` (no Lunar / Chinese calendar prefix). Widget 节气 chrome
+  uses bare pinyin (`Dashu`), not `Major Heat (Dashu)`.
 - ja: `向く / 避ける`; stem-branch remains Japanese kanji.
 
-Large distributes slack **above** the 宜忌 rule, so the almanac block and the
-footer stay on the bottom edge — en drops 值神/二十八宿 and would otherwise leave
-a hole under the last line.
+Large puts 宜忌 between hairlines; medium uses a two-column 宜忌 strip under
+the identity header.
 
 ## Complications
 

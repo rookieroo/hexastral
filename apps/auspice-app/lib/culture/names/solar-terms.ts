@@ -45,6 +45,18 @@ export function localizeSolarTermName(cjkName: string, locale: Locale): string {
   return SOLAR_TERM_NAMES[cjkName]?.[locale] ?? cjkName
 }
 
+/**
+ * Compact chrome for widgets / tight dials.
+ * en uses Wikipedia-style bare pinyin (Dashu), not "Major Heat (Dashu)".
+ */
+export function localizeSolarTermCompact(cjkName: string, locale: Locale): string {
+  if (!cjkName) return ''
+  if (locale !== 'en') return SOLAR_TERM_NAMES[cjkName]?.[locale] ?? cjkName
+  const py = JIEQI_PINYIN[cjkName]
+  if (!py) return cjkName
+  return `${py.charAt(0).toUpperCase()}${py.slice(1)}`
+}
+
 export function localizeJieqiRouteId(routeId: string, locale: Locale): string | null {
   if (!routeId.startsWith('jieqi-')) return null
   const han = PINYIN_TO_HAN[routeId.slice('jieqi-'.length)]

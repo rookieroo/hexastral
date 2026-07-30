@@ -38,6 +38,22 @@ struct TodayView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Spacer()
+            Button {
+              Task { await refresh.refresh(includePhone: true) }
+            } label: {
+              if refresh.isRefreshing {
+                ProgressView()
+              } else {
+                Image(systemName: "arrow.clockwise")
+              }
+            }
+            .buttonStyle(.plain)
+            .disabled(refresh.isRefreshing)
+            .accessibilityLabel(refresh.isRefreshing ? t.refreshing : t.refresh)
+          }
+
           if store.isStale || refresh.bannerIsError, let msg = refresh.bannerMessage {
             Text(msg)
               .font(.caption2)
@@ -63,14 +79,6 @@ struct TodayView: View {
         .padding(.horizontal, 4)
       }
       .navigationTitle(t.today)
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button(refresh.isRefreshing ? t.refreshing : t.refresh) {
-            Task { await refresh.refresh(includePhone: true) }
-          }
-          .disabled(refresh.isRefreshing)
-        }
-      }
     }
   }
 
@@ -142,12 +150,19 @@ struct DateBrowserView: View {
   @ObservedObject private var store = WatchPayloadStore.shared
   @State private var picked = Date()
   private var t: WatchStrings { WatchI18n.strings(for: store.resolvedLocale) }
+  private var currentYearRange: ClosedRange<Date> {
+    let calendar = Calendar.current
+    let interval = calendar.dateInterval(of: .year, for: Date())
+    let start = interval?.start ?? Date()
+    let end = (interval?.end ?? start).addingTimeInterval(-1)
+    return start...end
+  }
 
   var body: some View {
     NavigationStack {
       List {
         Section(t.selectDate) {
-          DatePicker("", selection: $picked, displayedComponents: .date)
+          DatePicker("", selection: $picked, in: currentYearRange, displayedComponents: .date)
             .labelsHidden()
           NavigationLink {
             DayDetailView(date: ymdString(picked))

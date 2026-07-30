@@ -600,253 +600,353 @@ struct AuspiceWidgetEntryView: View {
     }
   }
 
-  private func lunarMeta(_ d: SharedDay) -> String {
+  /// Chinese-calendar half only (small) — no Lunar / Chinese prefix.
+  private func lunarOnly(_ d: SharedDay) -> String {
     let lunar = d.lunar.trimmingCharacters(in: .whitespacesAndNewlines)
-    // en: lunar / numeric only — omit 丙午年 to cut CJK density.
-    if isEn {
-      if lunar.isEmpty || lunar == "—" { return d.date }
-      return lunar
-    }
-    let year = (d.ganzhiYear ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     if lunar.isEmpty || lunar == "—" {
-      return year.isEmpty ? d.date : year
+      return appChrome?.lunarFallback ?? "—"
     }
-    if year.isEmpty { return lunar }
-    return "\(lunar) · \(year)"
+    return lunar
   }
 
-  /// Wiktionary-style English headword: toned Hanyu Pinyin first, Han form
-  /// retained in parentheses. Old cached payloads without pinyin keep CJK.
+  private func parseYmd(_ iso: String) -> Date? {
+    let f = DateFormatter()
+    f.calendar = Calendar(identifier: .gregorian)
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = TimeZone(identifier: "Asia/Shanghai")
+    f.dateFormat = "yyyy-MM-dd"
+    return f.date(from: iso)
+  }
+
+  /// Medium/large solar half — `JUL 30` / `7月30日`.
+  private func solarMonthDay(_ d: SharedDay) -> String {
+    guard let date = parseYmd(d.date) else { return d.date }
+    let cal = Calendar(identifier: .gregorian)
+    let day = cal.component(.day, from: date)
+    let month = cal.component(.month, from: date)
+    if isEn {
+      let months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+      let abbr = months[max(0, min(11, month - 1))]
+      return "\(abbr) \(day)"
+    }
+    return "\(month)月\(day)日"
+  }
+
+  /// Medium/large calendar row — solar · Chinese-calendar day, no type prefix.
+  private func calendarRow(_ d: SharedDay) -> String {
+    let lunar = lunarOnly(d)
+    let solar = solarMonthDay(d)
+    if lunar == "—" || lunar.isEmpty { return solar }
+    return "\(solar) · \(lunar)"
+  }
+
+  /// Small topline — `THU 30` / `周四 · 30`.
+  private func weekdayChip(_ d: SharedDay) -> String {
+    guard let date = parseYmd(d.date) else { return d.date }
+    let cal = Calendar(identifier: .gregorian)
+    let day = cal.component(.day, from: date)
+    let weekday = cal.component(.weekday, from: date) // 1=Sun
+    if isEn {
+      let wd = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+      return "\(wd[weekday - 1]) \(day)"
+    }
+    if normalizeLocale(locale) == "ja" {
+      let wd = ["日", "月", "火", "水", "木", "金", "土"]
+      return "\(wd[weekday - 1]) · \(day)"
+    }
+    let wd = ["日", "一", "二", "三", "四", "五", "六"]
+    return "周\(wd[weekday - 1]) · \(day)"
+  }
+
+  /// 干支 identity: CJK is the word; en may show toned pinyin as a secondary gloss.
+  private func ganZhiPrimary(_ d: SharedDay) -> String { d.ganZhi }
+
+  private func ganZhiPinyinGloss(_ d: SharedDay) -> String? {
+    guard isEn, let pinyin = d.ganZhiPinyin, !pinyin.isEmpty else { return nil }
+    return pinyin
+  }
+
+  /// Single-line compact headword for lock rectangular / tight slots.
   private func ganZhiHeadword(_ d: SharedDay) -> String {
-    guard isEn, let pinyin = d.ganZhiPinyin, !pinyin.isEmpty else { return d.ganZhi }
-    return "\(pinyin) (\(d.ganZhi))"
+    if let pinyin = ganZhiPinyinGloss(d) {
+      return "\(d.ganZhi) · \(pinyin)"
+    }
+    return d.ganZhi
   }
 
-  /// Verb budget per family: `.short` = 2 verbs (small / lock), `.plain` = 4–5
-  /// (medium column), `.long` = 6 (large, full width).
+  /// Verb budget per family: `.short` = 2 verbs (small avoid / lock),
+  /// `.plain` = 4–5 (medium / small good), `.long` = 6 (large).
   private enum YiJiVariant { case short, plain, long }
+
+  private func yiText(_ d: SharedDay, variant: YiJiVariant) -> String {
+    switch variant {
+    case .short: return d.yiShort ?? d.yi
+    case .plain: return d.yi
+    case .long: return d.yiLong ?? d.yi
+    }
+  }
+
+  private func jiText(_ d: SharedDay, variant: YiJiVariant) -> String {
+    switch variant {
+    case .short: return d.jiShort ?? d.ji
+    case .plain: return d.ji
+    case .long: return d.jiLong ?? d.ji
+    }
+  }
+
+  private func yiJiRow(
+    label: String,
+    text: String,
+    labelColor: Color,
+    textColor: Color,
+    yiSize: CGFloat,
+    maxLines: Int,
+    scale: CGFloat
+  ) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 6) {
+      Text(label)
+        .font(.system(size: max(10, yiSize - 1), weight: .bold))
+        .tracking(isEn ? 0.6 : 2)
+        .foregroundColor(labelColor)
+        .fixedSize(horizontal: true, vertical: false)
+        .lineLimit(1)
+      Text(text)
+        .font(.system(size: yiSize))
+        .foregroundColor(textColor)
+        .lineLimit(maxLines)
+        .minimumScaleFactor(scale)
+        .truncationMode(.tail)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
 
   private func yiJiBlock(
     _ d: SharedDay,
     yiSize: CGFloat,
-    maxLines: Int,
-    variant: YiJiVariant = .plain
+    goodLines: Int,
+    avoidLines: Int,
+    goodVariant: YiJiVariant = .plain,
+    avoidVariant: YiJiVariant = .plain
   ) -> some View {
-    let yiText: String
-    let jiText: String
-    switch variant {
-    case .short:
-      yiText = d.yiShort ?? d.yi
-      jiText = d.jiShort ?? d.ji
-    case .plain:
-      yiText = d.yi
-      jiText = d.ji
-    case .long:
-      yiText = d.yiLong ?? d.yi
-      jiText = d.jiLong ?? d.ji
-    }
-    // Short lines are single-line by contract — scale rather than truncate so
-    // both verbs survive on narrow small-widget widths.
-    let scale: CGFloat = variant == .short ? 0.8 : 1
-    return VStack(alignment: .leading, spacing: 3) {
-      Text("\(goodLabel) \(yiText)")
-        .font(.system(size: yiSize))
-        .foregroundColor(palette.text)
-        .lineLimit(maxLines)
-        .minimumScaleFactor(scale)
-        .truncationMode(.tail)
-      Text("\(avoidLabel) \(jiText)")
-        .font(.system(size: yiSize))
-        .foregroundColor(palette.secondary)
-        .lineLimit(maxLines)
-        .minimumScaleFactor(scale)
-        .truncationMode(.tail)
+    let good = goodLabel.isEmpty ? (isEn ? "Good" : "宜") : goodLabel
+    let avoid = avoidLabel.isEmpty ? (isEn ? "Avoid" : "忌") : avoidLabel
+    return VStack(alignment: .leading, spacing: 4) {
+      yiJiRow(
+        label: good,
+        text: yiText(d, variant: goodVariant),
+        labelColor: palette.text,
+        textColor: palette.text,
+        yiSize: yiSize,
+        maxLines: goodLines,
+        scale: 0.85
+      )
+      yiJiRow(
+        label: avoid,
+        text: jiText(d, variant: avoidVariant),
+        labelColor: palette.text,
+        textColor: palette.secondary,
+        yiSize: yiSize,
+        maxLines: avoidLines,
+        scale: 0.85
+      )
     }
   }
 
   private func small(_ d: SharedDay) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      HStack(alignment: .top, spacing: 10) {
+      HStack(alignment: .center) {
+        Text(weekdayChip(d))
+          .font(.system(size: 10, weight: .semibold))
+          .tracking(0.4)
+          .foregroundColor(palette.secondary)
+          .lineLimit(1)
+        Spacer(minLength: 4)
         YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-          .frame(width: 34, height: 34)
-        VStack(alignment: .trailing, spacing: 2) {
-          Text(
-            d.lunar == "—" || d.lunar.isEmpty
-              ? (appChrome?.lunarFallback ?? d.date)
-              : d.lunar
-          )
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(palette.text)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-          if !isEn, let year = d.ganzhiYear, !year.isEmpty {
-            Text(year)
-              .font(.system(size: 12))
-              .foregroundColor(palette.secondary)
-              .lineLimit(1)
-          } else if !d.solarTerm.isEmpty {
-            Text(d.solarTerm)
-              .font(.system(size: 12))
-              .foregroundColor(palette.secondary)
-              .lineLimit(1)
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+          .frame(width: 40, height: 40)
       }
 
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(ganZhiPrimary(d))
+          .font(.system(size: 22, weight: .light))
+          .tracking(1.5)
+          .foregroundColor(palette.text)
+          .lineLimit(1)
+          .minimumScaleFactor(0.75)
+        Text(lunarOnly(d))
+          .font(.system(size: 10))
+          .foregroundColor(palette.secondary)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
+      }
+      .padding(.top, 5)
+
       Spacer(minLength: 4)
 
-      Text(ganZhiHeadword(d))
-        .font(.system(size: isEn ? 22 : 28, weight: .light))
-        .tracking(isEn ? 0 : 2)
-        .foregroundColor(palette.text)
-        .lineLimit(1)
-        .minimumScaleFactor(0.75)
-
-      Spacer(minLength: 4)
-
-      yiJiBlock(d, yiSize: 13, maxLines: 1, variant: .short)
+      // Good: up to 2 lines; Avoid: 1 line (keep small compact).
+      yiJiBlock(
+        d,
+        yiSize: 11,
+        goodLines: 2,
+        avoidLines: 1,
+        goodVariant: .plain,
+        avoidVariant: .short
+      )
     }
-    .padding(14)
-  }
-
-  /// 对你而言 summary, else the preset day tip — the sentence for medium/large.
-  private func sentence(_ d: SharedDay) -> String? {
-    if let summary = d.fitSummary, !summary.isEmpty { return summary }
-    if let tip = d.dayTip, !tip.isEmpty { return tip }
-    return nil
+    .padding(12)
   }
 
   private func medium(_ d: SharedDay) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(alignment: .top, spacing: 14) {
-        VStack(spacing: 4) {
-          YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-            .frame(width: 42, height: 42)
-          Text(ganZhiHeadword(d))
-            .font(.system(size: isEn ? 16 : 20, weight: .light))
-            .foregroundColor(palette.text)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-          Text(lunarMeta(d))
-            .font(.system(size: 11))
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(alignment: .center, spacing: 12) {
+        YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
+          .frame(width: 46, height: 46)
+        VStack(alignment: .leading, spacing: 2) {
+          HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(ganZhiPrimary(d))
+              .font(.system(size: 27, weight: .light))
+              .tracking(2)
+              .foregroundColor(palette.text)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+            if let pinyin = ganZhiPinyinGloss(d) {
+              Text(pinyin)
+                .font(.system(size: 11))
+                .foregroundColor(palette.tertiary)
+                .lineLimit(1)
+            }
+          }
+          Text(calendarRow(d))
+            .font(.system(size: 10, weight: .medium))
             .foregroundColor(palette.secondary)
             .lineLimit(1)
-            .multilineTextAlignment(.center)
             .minimumScaleFactor(0.75)
-        }
-        .frame(width: 98)
-
-        VStack(alignment: .leading, spacing: 4) {
-          if !d.solarTerm.isEmpty {
-            Text(d.solarTerm)
-              .font(.system(size: 11))
-              .foregroundColor(palette.tertiary)
-              .lineLimit(1)
-          }
-          yiJiBlock(d, yiSize: 14, maxLines: 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        if !d.solarTerm.isEmpty {
+          Text(d.solarTerm)
+            .font(.system(size: 10))
+            .foregroundColor(palette.tertiary)
+            .lineLimit(2)
+            .multilineTextAlignment(.trailing)
+            .frame(maxWidth: 58, alignment: .trailing)
+        }
       }
 
-      Spacer(minLength: 0)
+      Rectangle()
+        .fill(palette.separator)
+        .frame(height: 0.5)
+        .padding(.vertical, 9)
 
-      // The full sentence owns the footer width. English omits the redundant
-      // Favorable / Neutral / Caution category and leads with “For you”.
-      VStack(alignment: .leading, spacing: 2) {
-        if let fit = d.fit, !isEn {
-          Text("\(forYouLabel) · \(fit)")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(palette.text)
-            .lineLimit(1)
-        }
-        if let line = sentence(d) {
-          Text(isEn && d.fitSummary != nil ? "\(forYouLabel) · \(line)" : line)
-            .font(.system(size: 12))
-            .foregroundColor(palette.secondary)
-            .lineLimit(2)
-            .truncationMode(.tail)
-        }
+      // Two-column 宜忌 — each ≤2 lines.
+      HStack(alignment: .top, spacing: 14) {
+        yiJiRow(
+          label: goodLabel.isEmpty ? (isEn ? "Good" : "宜") : goodLabel,
+          text: yiText(d, variant: .plain),
+          labelColor: palette.text,
+          textColor: palette.text,
+          yiSize: 12,
+          maxLines: 2,
+          scale: 0.85
+        )
+        yiJiRow(
+          label: avoidLabel.isEmpty ? (isEn ? "Avoid" : "忌") : avoidLabel,
+          text: jiText(d, variant: .plain),
+          labelColor: palette.text,
+          textColor: palette.secondary,
+          yiSize: 12,
+          maxLines: 2,
+          scale: 0.85
+        )
       }
     }
-    .padding(16)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 14)
   }
 
   private func large(_ d: SharedDay) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(alignment: .top) {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(alignment: .top, spacing: 12) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(lunarMeta(d))
-            .font(.system(size: 15, weight: .medium))
-            .foregroundColor(palette.text)
-          if !d.solarTerm.isEmpty {
-            Text(d.solarTerm)
-              .font(.system(size: 13))
-              .foregroundColor(palette.secondary)
+          HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Text(ganZhiPrimary(d))
+              .font(.system(size: 34, weight: .light))
+              .tracking(2)
+              .foregroundColor(palette.text)
+              .lineLimit(1)
+              .minimumScaleFactor(0.85)
+            if let pinyin = ganZhiPinyinGloss(d) {
+              Text(pinyin)
+                .font(.system(size: 12))
+                .foregroundColor(palette.secondary)
+                .lineLimit(1)
+            }
           }
-          Text(d.date)
-            .font(.system(size: 12))
-            .foregroundColor(palette.tertiary)
+          Text(calendarRow(d))
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(palette.secondary)
+            .lineLimit(1)
+          HStack(spacing: 6) {
+            if !d.solarTerm.isEmpty {
+              Text(d.solarTerm)
+                .font(.system(size: 11))
+                .foregroundColor(palette.tertiary)
+                .lineLimit(1)
+            }
+            if !isEn, let officer = d.officer {
+              if !d.solarTerm.isEmpty {
+                Text("·").foregroundColor(palette.tertiary)
+              }
+              Text("\(officer)日")
+                .font(.system(size: 11))
+                .foregroundColor(palette.tertiary)
+                .lineLimit(1)
+            }
+            if !isEn, let mansion = d.mansion {
+              Text("·").foregroundColor(palette.tertiary)
+              Text("\(mansion)\(d.clashShengxiao.map { " · 冲\($0)" } ?? "")")
+                .font(.system(size: 11))
+                .foregroundColor(palette.tertiary)
+                .lineLimit(1)
+            }
+          }
         }
-        Spacer()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 3)
+
         VStack(spacing: 4) {
           YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
             .frame(width: 58, height: 58)
           Text(moonCaption(phase: phaseOf(d), names: appChrome?.moonPhaseNames))
-            .font(.system(size: 10))
+            .font(.system(size: 9))
             .foregroundColor(palette.tertiary)
             .lineLimit(1)
+            .minimumScaleFactor(0.8)
         }
       }
-
-      HStack(alignment: .bottom, spacing: 8) {
-        VStack(alignment: .leading, spacing: 0) {
-          Text(isEn ? (d.ganZhiPinyin ?? d.ganZhi) : d.ganZhi)
-            .font(.system(size: isEn ? 25 : 34, weight: .light))
-            .foregroundColor(palette.text)
-          // en 副标 — the day pillar is otherwise opaque without CJK.
-          if let pinyin = d.ganZhiPinyin, !pinyin.isEmpty {
-            Text("(\(d.ganZhi))")
-              .font(.system(size: 12))
-              .tracking(0.5)
-              .foregroundColor(palette.secondary)
-              .lineLimit(1)
-          }
-        }
-        if !isEn, let officer = d.officer {
-          Text("\(officer)日")
-            .font(.system(size: 14))
-            .foregroundColor(palette.secondary)
-            .padding(.bottom, 5)
-        }
-      }
-
-      if !isEn, let mansion = d.mansion {
-        Text("\(mansion)\(d.clashShengxiao.map { " · 冲\($0)" } ?? "")")
-          .font(.system(size: 13))
-          .foregroundColor(palette.secondary)
-          .lineLimit(1)
-      }
-
-      // Slack sits above the 宜忌 rule so the almanac block + footer stay on the
-      // bottom edge — en drops 值神/二十八宿 and used to leave a hole down there.
-      Spacer(minLength: 4)
 
       Rectangle().fill(palette.separator).frame(height: 0.5)
 
-      yiJiBlock(d, yiSize: 16, maxLines: 2, variant: .long)
+      yiJiBlock(
+        d,
+        yiSize: 14,
+        goodLines: 2,
+        avoidLines: 2,
+        goodVariant: .long,
+        avoidVariant: .long
+      )
 
       Rectangle().fill(palette.separator).frame(height: 0.5)
 
       if d.fit != nil || d.fitSummary != nil {
         VStack(alignment: .leading, spacing: 4) {
           Text(isEn ? forYouLabel : "\(forYouLabel) · \(d.fit ?? "")")
-            .font(.system(size: 14, weight: .semibold))
+            .font(.system(size: 12, weight: .bold))
             .foregroundColor(palette.text)
             .lineLimit(1)
           if let summary = d.fitSummary, !summary.isEmpty {
             Text(summary)
-              .font(.system(size: 14))
+              .font(.system(size: 12))
               .foregroundColor(palette.secondary)
               .lineLimit(3)
           }
@@ -857,13 +957,13 @@ struct AuspiceWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 4) {
           if let label = resolvedTipLabel(d) {
             Text(label)
-              .font(.system(size: 11))
+              .font(.system(size: 9, weight: .bold))
               .tracking(1)
               .foregroundColor(palette.tertiary)
               .lineLimit(1)
           }
           Text(tip)
-            .font(.system(size: 14))
+            .font(.system(size: 12))
             .foregroundColor(d.fit == nil ? palette.text : palette.secondary)
             .lineLimit(3)
             .truncationMode(.tail)
@@ -877,7 +977,8 @@ struct AuspiceWidgetEntryView: View {
     VStack(spacing: 2) {
       YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
         .frame(width: 20, height: 20)
-      Text(isEn ? (d.ganZhiPinyin ?? d.ganZhi) : d.ganZhi)
+      // Narrow dial: CJK first; fall back to pinyin only if somehow empty.
+      Text(ganZhiPrimary(d))
         .font(.system(size: 12, weight: .semibold))
         .minimumScaleFactor(0.7)
         .lineLimit(1)
@@ -886,18 +987,26 @@ struct AuspiceWidgetEntryView: View {
   }
 
   private func rectangular(_ d: SharedDay) -> some View {
-    VStack(alignment: .leading, spacing: 1) {
+    VStack(alignment: .leading, spacing: 2) {
       Text(ganZhiHeadword(d)).font(.headline).widgetAccentable()
-      Text("\(goodLabel) \(d.yiShort ?? d.yi)")
-        .font(.caption2)
-        .foregroundColor(.secondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
-      Text("\(avoidLabel) \(d.jiShort ?? d.ji)")
-        .font(.caption2)
-        .foregroundColor(.secondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
+      yiJiRow(
+        label: goodLabel.isEmpty ? (isEn ? "Good" : "宜") : goodLabel,
+        text: d.yiShort ?? d.yi,
+        labelColor: .secondary,
+        textColor: .primary,
+        yiSize: 11,
+        maxLines: 1,
+        scale: 0.85
+      )
+      yiJiRow(
+        label: avoidLabel.isEmpty ? (isEn ? "Avoid" : "忌") : avoidLabel,
+        text: d.jiShort ?? d.ji,
+        labelColor: .secondary,
+        textColor: .secondary,
+        yiSize: 11,
+        maxLines: 1,
+        scale: 0.85
+      )
     }
   }
 }

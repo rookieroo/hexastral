@@ -71,7 +71,7 @@ enum WatchI18n {
         complicationStep2: "点复杂功能槽位",
         complicationStep3: "选择 Yuun",
         complicationFaceHint:
-          "矩形槽仅在少数表盘（模块化 / Infograph Modular 等）：月相 + 干支 + 农历，宜忌各一行（过长自动截断）。更多表盘用圆形、表角或底边一行。圆形/表角：月相 + 干支（节气日显示节气）。底边：宜一词 · 忌一词。对你而言只在 Watch App。",
+          "矩形显示月相、干支、农历与宜忌；其他表盘显示精简内容。对你而言仅在 Watch App。",
         goodLabel: "宜", avoidLabel: "忌", forYouLabel: "对你而言",
         selectDate: "选择日期", cachedDays: "已缓存"
       )
@@ -94,7 +94,7 @@ enum WatchI18n {
         complicationStep2: "點複雜功能槽位",
         complicationStep3: "選擇 Yuun",
         complicationFaceHint:
-          "矩形槽僅在少數錶盤（模組化 / Infograph Modular 等）：月相 + 干支 + 農曆，宜忌各一行（過長自動截斷）。更多錶盤用圓形、錶角或底邊一行。圓形/錶角：月相 + 干支（節氣日顯示節氣）。底邊：宜一詞 · 忌一詞。對你而言只在 Watch App。",
+          "矩形顯示月相、干支、農曆與宜忌；其他錶盤顯示精簡內容。對你而言僅在 Watch App。",
         goodLabel: "宜", avoidLabel: "忌", forYouLabel: "對你而言",
         selectDate: "選擇日期", cachedDays: "已快取"
       )
@@ -117,7 +117,7 @@ enum WatchI18n {
         complicationStep2: "スロットをタップ",
         complicationStep3: "Yuun を選択",
         complicationFaceHint:
-          "矩形スロットは少数の文字盤のみ（モジュラー / Infograph Modular など）：月相＋干支＋旧暦、向く/避けるを各1行（長い場合は省略）。多くは円形・コーナー・インラインです。円形/コーナー：月相＋干支（節気の日は節気）。インライン：向く1語 · 避ける1語。「あなたに」は Watch App 内のみ。",
+          "矩形は月相・干支・旧暦・宜忌を表示。ほかの文字盤は簡易表示です。「あなたに」は Watch App のみ。",
         goodLabel: "向く", avoidLabel: "避ける", forYouLabel: "あなたに",
         selectDate: "日付", cachedDays: "キャッシュ"
       )
@@ -140,7 +140,7 @@ enum WatchI18n {
         complicationStep2: "Tap a complication slot",
         complicationStep3: "Choose Yuun",
         complicationFaceHint:
-          "Rectangular slots appear on few faces (Modular / Infograph Modular): moon + stem-branch + lunar date, then Good / Avoid on one line each (truncated when long). Most faces use circular, corner, or inline. Circular/corner: moon + stem-branch (solar term on term days). Inline: Good one · Avoid one. For you only in the Watch app.",
+          "Rectangular shows moon, stem-branch, lunar date, and Good/Avoid. Other faces use compact views. For you stays in the Watch app.",
         goodLabel: "Good", avoidLabel: "Avoid", forYouLabel: "For you",
         selectDate: "Pick date", cachedDays: "Cached"
       )

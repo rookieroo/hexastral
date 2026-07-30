@@ -6,6 +6,7 @@
  * See docs/apps/yuun/widget-build-runbook.md.
  */
 
+import type { YijiVocabularyMode } from '@zhop/astro-core'
 import {
   writeWidgetPayload,
   YUUN_MOON_PHASE_ORDER,
@@ -21,9 +22,9 @@ import {
 } from '@/components/DailyCard'
 import { type AuspiceDay, type AuspicePersonalization, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
+import { localizeSolarTermCompact } from '@/lib/culture/names'
 import { getStrings, type Locale } from '@/lib/i18n'
 import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
-import type { YijiVocabularyMode } from '@zhop/astro-core'
 
 const APP_GROUP = 'group.com.hexastral.yuun'
 const WINDOW_DAYS = 7
@@ -85,7 +86,7 @@ function toWidgetDay(
     ganZhiPinyin: m.ganZhiPinyin,
     elementColor: m.dayElementColor,
     lunar: m.lunarMonthDay,
-    solarTerm: m.solarTermName,
+    solarTerm: localizeSolarTermCompact(m.solarTermName, locale),
     // Follow app locale + display mode — scoring still uses canonical CJK upstream.
     yi: compactVerbs(m.goodForRaw, en ? 4 : 5, locale, yijiMode),
     ji: compactVerbs(m.avoidRaw, en ? 4 : 5, locale, yijiMode),

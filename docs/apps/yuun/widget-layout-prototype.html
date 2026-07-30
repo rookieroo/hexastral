@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yuun Widget Layout Prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #e9e5dd;
+        --surface: #f5f0e8;
+        --ink: #111113;
+        --secondary: #626269;
+        --tertiary: #919198;
+        --line: rgba(17, 17, 19, 0.13);
+        --control: rgba(245, 240, 232, 0.8);
+        --control-active: #111113;
+        --control-active-text: #f5f0e8;
+      }
+
+      body[data-theme='dark'] {
+        color-scheme: dark;
+        --page: #19191b;
+        --surface: #0b0b0c;
+        --ink: #f7f7f7;
+        --secondary: #aaaab1;
+        --tertiary: #74747b;
+        --line: rgba(247, 247, 247, 0.14);
+        --control: rgba(39, 39, 42, 0.86);
+        --control-active: #f7f7f7;
+        --control-active-text: #111113;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 390px;
+        background: var(--page);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC",
+          "Helvetica Neue", sans-serif;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 36px 0 64px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+
+      .eyebrow {
+        margin: 0 0 7px;
+        color: var(--secondary);
+        font-size: 12px;
+        font-weight: 650;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .segmented {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--control);
+      }
+
+      .segmented button {
+        border: 0;
+        border-radius: 7px;
+        padding: 6px 10px;
+        background: transparent;
+        color: var(--secondary);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .segmented button[aria-pressed='true'] {
+        background: var(--control-active);
+        color: var(--control-active-text);
+      }
+
+      .stage {
+        display: grid;
+        grid-template-columns: 158px 338px 338px;
+        align-items: start;
+        gap: 28px;
+        overflow-x: auto;
+        padding: 8px 2px 24px;
+      }
+
+      .sample {
+        display: grid;
+        gap: 10px;
+      }
+
+      .size-label {
+        display: flex;
+        justify-content: space-between;
+        color: var(--secondary);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .widget {
+        position: relative;
+        overflow: hidden;
+        border: 0.5px solid var(--line);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--ink);
+      }
+
+      .widget-small {
+        width: 158px;
+        height: 158px;
+        padding: 12px;
+      }
+
+      .widget-medium {
+        width: 338px;
+        height: 158px;
+        padding: 14px 16px;
+      }
+
+      .widget-large {
+        width: 338px;
+        height: 354px;
+        padding: 18px;
+      }
+
+      .moon {
+        position: relative;
+        flex: 0 0 auto;
+        width: var(--moon-size);
+        height: var(--moon-size);
+        border: 1px solid var(--line);
+        border-radius: 50%;
+      }
+
+      .moon::before {
+        position: absolute;
+        inset: 18%;
+        border-radius: 50%;
+        background: var(--ink);
+        content: "";
+      }
+
+      .moon::after {
+        position: absolute;
+        top: 13%;
+        right: 10%;
+        width: 68%;
+        height: 68%;
+        border-radius: 50%;
+        background: var(--surface);
+        content: "";
+      }
+
+      .identity-row {
+        display: flex;
+        min-width: 0;
+        align-items: baseline;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .ganzhi {
+        flex: 0 0 auto;
+        font-weight: 320;
+        letter-spacing: 0.08em;
+      }
+
+      .pinyin,
+      .lunar,
+      .calendar-row,
+      .term,
+      .support {
+        color: var(--secondary);
+      }
+
+      .pinyin,
+      .lunar {
+        font-size: 10px;
+      }
+
+      .lunar {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .calendar-row {
+        margin-top: 2px;
+        font-size: 10px;
+        font-weight: 550;
+        letter-spacing: 0.02em;
+      }
+
+      .term {
+        flex: 0 0 auto;
+        font-size: 10px;
+      }
+
+      .divider {
+        height: 0.5px;
+        background: var(--line);
+      }
+
+      .yiji {
+        display: grid;
+        gap: 5px;
+      }
+
+      .yiji-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: start;
+        gap: 7px;
+      }
+
+      .yiji-label {
+        color: var(--ink);
+        font-weight: 750;
+        letter-spacing: 0.02em;
+      }
+
+      .yiji-copy {
+        min-width: 0;
+        color: var(--ink);
+        font-weight: 420;
+      }
+
+      .yiji-row.avoid .yiji-copy {
+        color: var(--secondary);
+      }
+
+      .widget-small .topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .widget-small .date {
+        color: var(--secondary);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      .widget-small .moon {
+        --moon-size: 40px;
+      }
+
+      .widget-small .identity-row {
+        margin-top: 5px;
+        gap: 4px;
+      }
+
+      .widget-small .ganzhi {
+        font-size: 22px;
+      }
+
+      .widget-small .yiji {
+        margin-top: 7px;
+        gap: 3px;
+      }
+
+      .widget-small .yiji-row {
+        gap: 5px;
+      }
+
+      .widget-small .yiji-label {
+        font-size: 11px;
+        line-height: 15px;
+      }
+
+      .widget-small .yiji-copy {
+        display: -webkit-box;
+        overflow: hidden;
+        font-size: 11px;
+        line-height: 15px;
+        -webkit-box-orient: vertical;
+      }
+
+      .widget-small .good .yiji-copy {
+        -webkit-line-clamp: 2;
+      }
+
+      .widget-small .avoid .yiji-copy {
+        -webkit-line-clamp: 1;
+      }
+
+      .widget-medium .header,
+      .widget-large .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .widget-medium .moon {
+        --moon-size: 46px;
+      }
+
+      .widget-medium .identity {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .widget-medium .ganzhi {
+        font-size: 27px;
+      }
+
+      .widget-medium .term {
+        max-width: 58px;
+        text-align: right;
+      }
+
+      .widget-medium .divider {
+        margin: 9px 0 8px;
+      }
+
+      .widget-medium .yiji {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .widget-medium .yiji-row {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 5px;
+      }
+
+      .widget-medium .yiji-label,
+      .widget-medium .yiji-copy {
+        font-size: 12px;
+        line-height: 17px;
+      }
+
+      .widget-medium .yiji-copy {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .widget-large .header {
+        align-items: flex-start;
+      }
+
+      .widget-large .moon {
+        --moon-size: 58px;
+      }
+
+      .widget-large .identity {
+        min-width: 0;
+        flex: 1;
+        padding-top: 3px;
+      }
+
+      .widget-large .ganzhi {
+        font-size: 34px;
+      }
+
+      .widget-large .header-detail {
+        display: flex;
+        gap: 7px;
+        margin-top: 5px;
+        color: var(--tertiary);
+        font-size: 11px;
+      }
+
+      .widget-large .moon-caption {
+        margin-top: 4px;
+        color: var(--tertiary);
+        font-size: 9px;
+        text-align: center;
+      }
+
+      .widget-large .divider {
+        margin: 14px 0 12px;
+      }
+
+      .widget-large .yiji {
+        gap: 9px;
+      }
+
+      .widget-large .yiji-row {
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .widget-large .yiji-label,
+      .widget-large .yiji-copy {
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .widget-large .yiji-copy {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .personal {
+        margin-top: 0;
+      }
+
+      .personal-title {
+        margin: 0 0 5px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .personal-copy {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 12px;
+        line-height: 17px;
+      }
+
+      .day-note {
+        margin-top: 14px;
+      }
+
+      .day-note-title {
+        margin-bottom: 4px;
+        color: var(--tertiary);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .day-note-copy {
+        margin: 0;
+        font-size: 12px;
+        line-height: 17px;
+      }
+
+      .locale-zh,
+      .locale-en {
+        display: none;
+      }
+
+      body[data-locale='en'] .locale-en,
+      body[data-locale='zh'] .locale-zh {
+        display: inline;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 0.5px solid var(--line);
+      }
+
+      .note h2 {
+        margin: 0 0 5px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .note p {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 11px;
+        line-height: 16px;
+      }
+
+      @media (max-width: 760px) {
+        .toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .controls {
+          justify-content: flex-start;
+        }
+
+        .notes {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="light" data-locale="en">
+    <main class="shell">
+      <header class="toolbar">
+        <div>
+          <p class="eyebrow">Yuun widget study</p>
+          <h1>真实尺寸布局预览</h1>
+        </div>
+        <div class="controls" aria-label="Preview controls">
+          <div class="segmented" role="group" aria-label="Language">
+            <button type="button" data-locale-button="en" aria-pressed="true">English</button>
+            <button type="button" data-locale-button="zh" aria-pressed="false">简中</button>
+          </div>
+          <div class="segmented" role="group" aria-label="Appearance">
+            <button type="button" data-theme-button="light" aria-pressed="true">Light</button>
+            <button type="button" data-theme-button="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="stage" aria-label="Three iOS widget sizes">
+        <article class="sample">
+          <div class="size-label"><span>Small</span><span>158 × 158 pt</span></div>
+          <div class="widget widget-small">
+            <div class="topline">
+              <span class="date">
+                <span class="locale-en">THU 30</span>
+                <span class="locale-zh">周四 · 30</span>
+              </span>
+              <span class="moon" aria-label="Waxing crescent moon"></span>
+            </div>
+            <div class="identity-row">
+              <span class="ganzhi">乙巳</span>
+              <span class="lunar">
+                <span class="locale-en">6/17</span>
+                <span class="locale-zh">六月十七</span>
+              </span>
+            </div>
+            <div class="yiji">
+              <div class="yiji-row good">
+                <span class="yiji-label">
+                  <span class="locale-en">Good</span><span class="locale-zh">宜</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Plan · Meet · Create · Travel</span>
+                  <span class="locale-zh">规划 · 会面 · 创作 · 出行</span>
+                </span>
+              </div>
+              <div class="yiji-row avoid">
+                <span class="yiji-label">
+                  <span class="locale-en">Avoid</span><span class="locale-zh">忌</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Move · Renovate</span>
+                  <span class="locale-zh">搬家 · 装修</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="sample">
+          <div class="size-label"><span>Medium</span><span>338 × 158 pt</span></div>
+          <div class="widget widget-medium">
+            <div class="header">
+              <span class="moon" aria-label="Waxing crescent moon"></span>
+              <div class="identity">
+                <div class="identity-row">
+                  <span class="ganzhi">乙巳</span>
+                  <span class="pinyin locale-en">yǐ-sì</span>
+                </div>
+                <div class="calendar-row">
+                  <span class="locale-en">JUL 30 · 6/17</span>
+                  <span class="locale-zh">7月30日 · 六月十七</span>
+                </div>
+              </div>
+              <span class="term">
+                <span class="locale-en">Dashu</span>
+                <span class="locale-zh">大暑</span>
+              </span>
+            </div>
+            <div class="divider"></div>
+            <div class="yiji">
+              <div class="yiji-row good">
+                <span class="yiji-label">
+                  <span class="locale-en">Good</span><span class="locale-zh">宜</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Plan · Meet · Create · Travel</span>
+                  <span class="locale-zh">规划 · 会面 · 创作 · 出行</span>
+                </span>
+              </div>
+              <div class="yiji-row avoid">
+                <span class="yiji-label">
+                  <span class="locale-en">Avoid</span><span class="locale-zh">忌</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Move · Renovate · Sign</span>
+                  <span class="locale-zh">搬家 · 装修 · 签约</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="sample">
+          <div class="size-label"><span>Large</span><span>338 × 354 pt</span></div>
+          <div class="widget widget-large">
+            <div class="header">
+              <div class="identity">
+                <div class="identity-row">
+                  <span class="ganzhi">乙巳</span>
+                  <span class="pinyin locale-en">yǐ-sì</span>
+                </div>
+                <div class="calendar-row">
+                  <span class="locale-en">JUL 30 · 6/17</span>
+                  <span class="locale-zh">7月30日 · 六月十七</span>
+                </div>
+                <div class="header-detail">
+                  <span>
+                    <span class="locale-en">Dashu</span>
+                    <span class="locale-zh">大暑</span>
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <span class="locale-en">Establish day</span>
+                    <span class="locale-zh">建日 · 角宿</span>
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div class="moon" aria-label="Waxing crescent moon"></div>
+                <div class="moon-caption">
+                  <span class="locale-en">Waxing crescent</span>
+                  <span class="locale-zh">娥眉月</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="yiji">
+              <div class="yiji-row good">
+                <span class="yiji-label">
+                  <span class="locale-en">Good</span><span class="locale-zh">宜</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Plan · Meet · Create · Travel · Learn · Launch</span>
+                  <span class="locale-zh">规划 · 会面 · 创作 · 出行 · 学习 · 启动</span>
+                </span>
+              </div>
+              <div class="yiji-row avoid">
+                <span class="yiji-label">
+                  <span class="locale-en">Avoid</span><span class="locale-zh">忌</span>
+                </span>
+                <span class="yiji-copy">
+                  <span class="locale-en">Move · Renovate · Sign · Make major purchases</span>
+                  <span class="locale-zh">搬家 · 装修 · 签约 · 大额采购</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <section class="personal">
+              <h2 class="personal-title">
+                <span class="locale-en">For you · Steady</span>
+                <span class="locale-zh">对你而言 · 平稳</span>
+              </h2>
+              <p class="personal-copy">
+                <span class="locale-en">Good for focused work and clear conversations. Keep commitments modest.</span>
+                <span class="locale-zh">适合专注推进与坦诚沟通，承诺宜稳，不必追求一次到位。</span>
+              </p>
+            </section>
+
+            <section class="day-note">
+              <div class="day-note-title">
+                <span class="locale-en">Today</span>
+                <span class="locale-zh">今日提示</span>
+              </div>
+              <p class="day-note-copy">
+                <span class="locale-en">Finish one important thing before opening a second front.</span>
+                <span class="locale-zh">先完成一件重要的事，再开启下一条战线。</span>
+              </p>
+            </section>
+          </div>
+        </article>
+      </section>
+
+      <section class="notes" aria-label="Design rationale">
+        <article class="note">
+          <h2>身份行</h2>
+          <p>干支与拼音保持同一基线；公历和农历在下一行直接并列，不再添加日历类型前缀。</p>
+        </article>
+        <article class="note">
+          <h2>宜忌层级</h2>
+          <p>标签只加粗，不使用红绿；Good 优先两行，Avoid 在 Small 中主动收为一行。</p>
+        </article>
+        <article class="note">
+          <h2>真实尺寸</h2>
+          <p>以常见 6.1 英寸 iPhone Widget 点尺寸绘制，1 CSS px 对应 1 pt，便于直接评审密度。</p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const setPressed = (selector, value, attribute) => {
+        document.querySelectorAll(selector).forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset[attribute] === value));
+        });
+      };
+
+      document.querySelectorAll("[data-theme-button]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.body.dataset.theme = button.dataset.themeButton;
+          setPressed("[data-theme-button]", button.dataset.themeButton, "themeButton");
+        });
+      });
+
+      document.querySelectorAll("[data-locale-button]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.body.dataset.locale = button.dataset.localeButton;
+          setPressed("[data-locale-button]", button.dataset.localeButton, "localeButton");
+        });
+      });
+    </script>
+  </body>
+</html>

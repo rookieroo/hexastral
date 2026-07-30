@@ -5,7 +5,11 @@
 import { getFestivalContent } from '../../festival-content'
 import type { Locale } from '../../i18n'
 import { FESTIVAL_NAMES, localizeFestivalId } from './festivals'
-import { localizeJieqiRouteId, localizeSolarTermName } from './solar-terms'
+import {
+  localizeJieqiRouteId,
+  localizeSolarTermCompact,
+  localizeSolarTermName,
+} from './solar-terms'
 
 export { FESTIVAL_NAMES } from './festivals'
 export { SOLAR_TERM_NAMES } from './solar-terms'
@@ -32,4 +36,4 @@ export function localizeFestival(id: string, locale: Locale, apiName?: string): 
   return localizeFestivalId(id, locale, apiName)
 }
 
-export { localizeSolarTermName }
+export { localizeSolarTermCompact, localizeSolarTermName }
