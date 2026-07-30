@@ -1,10 +1,10 @@
 /**
  * In-app birth info — the single-page HexAstral standard form (the same shape
  * Yuun/Yuel use), NOT the old multi-step `BirthInfoForm` wizard. Composed from
- * the core-ui atomic fields (BirthDateField + ShichenField + a gender segmented
- * control + an opt-in 真太阳时 precise-time disclosure), themed with Fēng's zinc
- * accent from `useTheme()`. Wired to Fēng's HMAC save/geocode; persists the
- * fuller shape (precise clock + calibration + 农历 round-trip).
+ * the core-ui atomic fields (BirthDateField + 时辰 XOR exact clock + city + a
+ * gender segmented control), themed with Fēng's zinc accent from `useTheme()`.
+ * Wired to Fēng's HMAC save/geocode; persists the fuller shape (precise clock +
+ * calibration + 农历 round-trip).
  *
  * Feng only needs year + gender for 命卦, but collecting the full 八字 set keeps
  * parity with the suite and powers the personal 八字 / 命卦 report chapter.
@@ -17,8 +17,12 @@ import {
   BirthDateField,
   type BirthDateFieldValue,
   birthDateFieldLabelsForLocale,
+  type BirthTimeMode,
+  birthTimeModeFromClock,
+  BirthTimeModeToggle,
   CityPicker,
   type CityRecord,
+  clearedPreciseBirthFields,
   DEFAULT_TOP_CITIES,
   formatHourMinute,
   isCjkScript,
@@ -111,10 +115,8 @@ export default function BirthInfoScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [birthSaved, setBirthSaved] = useState(false)
-  // Precise time + birthplace are an opt-in disclosure, collapsed by default so
-  // the everyday 时辰 path stays short. Auto-expanded when a precise clock is on
-  // record.
-  const [showPrecise, setShowPrecise] = useState(false)
+  // Mutually exclusive: 时辰 XOR exact clock + city (Yuun parity).
+  const [timeMode, setTimeMode] = useState<BirthTimeMode>('shichen')
 
   // 时辰-only vs a picked shichen — `null` means the user chose "unknown".
   const [timeIndex, setTimeIndex] = useState<ShichenIndex | null>(0)
@@ -149,9 +151,7 @@ export default function BirthInfoScreen() {
               ? (existing.birthTimeIndex as ShichenIndex)
               : null
           )
-          if (existing.birthClockMinutes != null || existing.birthCity?.trim()) {
-            setShowPrecise(true)
-          }
+          setTimeMode(birthTimeModeFromClock(existing.birthClockMinutes))
           // Seed the editor with what the user originally entered (农历 stays 农历).
           const isLunar = existing.birthCalendarType === 'lunar' && !!existing.birthLunarInput
           setDateField({
@@ -188,6 +188,24 @@ export default function BirthInfoScreen() {
 
   const lng = birth.birthLongitude ? Number(birth.birthLongitude) : null
 
+  const applyClearedPrecise = () => {
+    const cleared = clearedPreciseBirthFields()
+    setBirth((prev) => ({
+      ...prev,
+      birthClockMinutes: cleared.clockMinutes,
+      birthSolarCalibrate: cleared.calibrate,
+      birthCity: undefined,
+      birthLatitude: undefined,
+      birthLongitude: undefined,
+      birthTimezoneId: undefined,
+    }))
+  }
+
+  const switchTimeMode = (next: BirthTimeMode) => {
+    setTimeMode(next)
+    if (next === 'shichen') applyClearedPrecise()
+  }
+
   // A precise clock also snaps the 时辰 wheel to that clock's 时辰 (the 八字
   // calibrates the clock on top — they can differ for a birth near a boundary).
   const handleClock = (min: number) => {
@@ -207,7 +225,12 @@ export default function BirthInfoScreen() {
   // Live 真太阳时 before→after preview — only when a clock + city are present and
   // calibration is on. Computed through the SAME resolver the chart uses.
   let calibrationPreview: string | null = null
-  if (birth.birthClockMinutes != null && lng != null && computedSolarDate) {
+  if (
+    timeMode === 'precise' &&
+    birth.birthClockMinutes != null &&
+    lng != null &&
+    computedSolarDate
+  ) {
     const [yStr, mStr, dStr] = computedSolarDate.split('-')
     const y = Number.parseInt(yStr ?? '', 10)
     const mo = Number.parseInt(mStr ?? '', 10)
@@ -232,8 +255,20 @@ export default function BirthInfoScreen() {
   const saveBirth = async () => {
     if (!birthValid || !computedSolarDate) return
     const isLunar = dateField.calendar === 'lunar'
+    const cleared =
+      timeMode === 'shichen'
+        ? {
+            birthClockMinutes: null,
+            birthSolarCalibrate: null,
+            birthCity: undefined,
+            birthLatitude: undefined,
+            birthLongitude: undefined,
+            birthTimezoneId: undefined,
+          }
+        : {}
     const updated: FengBirthInfo = {
       ...birth,
+      ...cleared,
       birthSolarDate: computedSolarDate,
       birthTimeIndex: timeIndex ?? 0,
       birthCalendarType: dateField.calendar,
@@ -323,43 +358,123 @@ export default function BirthInfoScreen() {
               />
             </View>
 
-            {/* Shichen — one-line wheel field + "unknown" Pressable. */}
+            {/* Time mode: 时辰 XOR exact clock + city. */}
             <View style={{ gap: spacing.sm }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
-                  {t.birth_time_label}
-                </Text>
-                <Pressable
-                  onPress={() => setTimeIndex(null)}
-                  hitSlop={6}
-                  accessibilityRole='button'
-                  accessibilityLabel={t.birth_time_unknown}
-                >
-                  <Text
-                    style={{
-                      color: timeIndex === null ? colors.accent : colors.secondary,
-                      fontSize: 12,
-                      fontWeight: timeIndex === null ? '600' : '400',
-                    }}
-                  >
-                    {t.birth_time_unknown}
-                  </Text>
-                </Pressable>
-              </View>
-              <ShichenField
-                value={timeIndex}
-                onChange={(idx: ShichenIndex) => setTimeIndex(idx)}
+              <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+                {t.birth_time_label}
+              </Text>
+              <BirthTimeModeToggle
+                value={timeMode}
+                onChange={switchTimeMode}
                 accent={colors.accent}
-                labels={shichenFieldLabelsForLocale(locale)}
-                locale={locale}
+                labels={{
+                  shichen: preciseCopy.modeShichen,
+                  precise: preciseCopy.modePrecise,
+                }}
               />
             </View>
+
+            {timeMode === 'shichen' ? (
+              <View style={{ gap: spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 2 }}>
+                    {preciseCopy.modeShichen}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      applyClearedPrecise()
+                      setTimeIndex(null)
+                    }}
+                    hitSlop={6}
+                    accessibilityRole='button'
+                    accessibilityLabel={t.birth_time_unknown}
+                  >
+                    <Text
+                      style={{
+                        color: timeIndex === null ? colors.accent : colors.secondary,
+                        fontSize: 12,
+                        fontWeight: timeIndex === null ? '600' : '400',
+                      }}
+                    >
+                      {t.birth_time_unknown}
+                    </Text>
+                  </Pressable>
+                </View>
+                <ShichenField
+                  value={timeIndex}
+                  onChange={(idx: ShichenIndex) => {
+                    applyClearedPrecise()
+                    setTimeIndex(idx)
+                  }}
+                  accent={colors.accent}
+                  labels={shichenFieldLabelsForLocale(locale)}
+                  locale={locale}
+                />
+              </View>
+            ) : (
+              <View style={{ gap: spacing.md }}>
+                <BirthClockField
+                  value={birth.birthClockMinutes ?? null}
+                  onChange={handleClock}
+                  accent={colors.accent}
+                  locale={locale}
+                  labels={{
+                    placeholder: preciseCopy.preciseTimeLabel,
+                    done: preciseCopy.done,
+                  }}
+                />
+
+                {birth.birthClockMinutes != null ? (
+                  <View style={{ gap: spacing.md }}>
+                    <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
+                      {preciseCopy.preciseCityLabel}
+                    </Text>
+                    <CityPicker
+                      value={cityValue}
+                      onSelect={handlePreciseCity}
+                      search={searchCityRecords}
+                      topCities={DEFAULT_TOP_CITIES}
+                      placeholder={preciseCopy.preciseCityPlaceholder}
+                      scrollRef={scrollRef}
+                    />
+
+                    {lng != null ? (
+                      <View style={{ gap: spacing.sm }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <Text style={{ color: colors.text, fontSize: 15 }}>
+                            {preciseCopy.calibrateLabel}
+                          </Text>
+                          <Toggle
+                            value={birth.birthSolarCalibrate !== false}
+                            onValueChange={(on) =>
+                              setBirth((prev) => ({ ...prev, birthSolarCalibrate: on }))
+                            }
+                            accent={colors.accent}
+                          />
+                        </View>
+                        {calibrationPreview ? (
+                          <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
+                            {calibrationPreview}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            )}
 
             {/* Gender — 2-button segmented. */}
             <View style={{ gap: spacing.sm }}>
@@ -401,85 +516,6 @@ export default function BirthInfoScreen() {
                   )
                 })}
               </View>
-            </View>
-
-            {/* Precise time + birthplace — opt-in disclosure. 真太阳时 correction
-                only earns its keep at minute precision, so the exact clock is
-                folded away, and the birth city appears DYNAMICALLY once a precise
-                time is entered — picking it is what enables 真太阳时 calibration of
-                the 时柱. 时辰-only entry collects no birthplace. */}
-            <View style={{ gap: spacing.sm }}>
-              <Pressable
-                onPress={() => setShowPrecise((s) => !s)}
-                hitSlop={8}
-                accessibilityRole='button'
-                accessibilityLabel={preciseCopy.precisePrompt}
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-              >
-                <Text style={{ color: colors.accent, fontSize: 13 }}>
-                  {`${showPrecise ? '▾  ' : '▸  '}${preciseCopy.precisePrompt}`}
-                </Text>
-              </Pressable>
-
-              {showPrecise ? (
-                <View style={{ gap: spacing.md }}>
-                  <BirthClockField
-                    value={birth.birthClockMinutes ?? null}
-                    onChange={handleClock}
-                    accent={colors.accent}
-                    locale={locale}
-                    labels={{
-                      placeholder: preciseCopy.preciseTimeLabel,
-                      done: preciseCopy.done,
-                    }}
-                  />
-
-                  {/* Birthplace appears only once a precise clock is set. */}
-                  {birth.birthClockMinutes != null ? (
-                    <View style={{ gap: spacing.md }}>
-                      <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
-                        {preciseCopy.preciseCityLabel}
-                      </Text>
-                      <CityPicker
-                        value={cityValue}
-                        onSelect={handlePreciseCity}
-                        search={searchCityRecords}
-                        topCities={DEFAULT_TOP_CITIES}
-                        placeholder={preciseCopy.preciseCityPlaceholder}
-                        scrollRef={scrollRef}
-                      />
-
-                      {lng != null ? (
-                        <View style={{ gap: spacing.sm }}>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <Text style={{ color: colors.text, fontSize: 15 }}>
-                              {preciseCopy.calibrateLabel}
-                            </Text>
-                            <Toggle
-                              value={birth.birthSolarCalibrate !== false}
-                              onValueChange={(on) =>
-                                setBirth((prev) => ({ ...prev, birthSolarCalibrate: on }))
-                              }
-                              accent={colors.accent}
-                            />
-                          </View>
-                          {calibrationPreview ? (
-                            <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
-                              {calibrationPreview}
-                            </Text>
-                          ) : null}
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </View>
-              ) : null}
             </View>
 
             {/* Save — disabled until date is valid. "Saved" feedback briefly. */}

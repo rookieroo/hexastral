@@ -21,6 +21,10 @@ import {
   BirthDateField,
   type BirthDateFieldValue,
   birthDateFieldLabelsForLocale,
+  birthTimeModeFromClock,
+  BirthTimeModeToggle,
+  type BirthTimeMode,
+  clearedPreciseBirthFields,
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
@@ -93,6 +97,7 @@ import {
   setEveningPushEnabled,
   syncServerPush,
 } from '@/lib/push'
+import { isServerPushActive } from '@/lib/serverPushFlag'
 import { pushTypeById } from '@/lib/pushRegistry'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
 
@@ -185,6 +190,7 @@ export default function MeScreen() {
   // DEV-only Pro override — cycled from the debug block at the bottom. Re-renders
   // this screen so all `hasEntitlement`-gated UI flips live.
   const [devPro, setDevPro] = useState<DevEntitlementOverride>(getDevEntitlementOverride())
+  const [pushDevStatus, setPushDevStatus] = useState('…')
   const cycleDevPro = () => {
     const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setDevEntitlementOverride(next)
@@ -216,11 +222,9 @@ export default function MeScreen() {
   // it re-expands for edits. First-time users (no record yet) see the full form.
   const [hasSavedBirth, setHasSavedBirth] = useState(false)
   const [editingBirth, setEditingBirth] = useState(false)
-  // Precise time + birthplace are an opt-in disclosure, collapsed by default so
-  // the everyday 时辰 path stays short (synced from kindred 2026-06: the exact
-  // clock is folded away, and the birth city appears dynamically inside it once a
-  // precise time is set). Auto-expanded when a precise clock or city is on record.
-  const [showPrecise, setShowPrecise] = useState(false)
+  // 时辰 vs exact clock+city — mutually exclusive. Precise fields are cleared
+  // when switching back to shichen so the engine cannot keep a stale clock.
+  const [timeMode, setTimeMode] = useState<BirthTimeMode>('shichen')
   const [signedIn, setSignedIn] = useState(false)
   const [signInForBirthOpen, setSignInForBirthOpen] = useState(false)
   const [birthSaving, setBirthSaving] = useState(false)
@@ -297,6 +301,12 @@ export default function MeScreen() {
       lng: city.lng,
       timezone: city.timezone ?? null,
     }))
+  const switchTimeMode = (next: BirthTimeMode) => {
+    setTimeMode(next)
+    if (next === 'shichen') {
+      setBirth((prev) => ({ ...prev, ...clearedPreciseBirthFields() }))
+    }
+  }
   // Live 真太阳时 before→after preview — only when a clock + city are present and
   // calibration is on. Computed through the SAME resolver the chart uses.
   let calibrationPreview: string | null = null
@@ -331,7 +341,7 @@ export default function MeScreen() {
   const applyBirthToForm = (info: AuspiceBirthInfo) => {
     setBirth(info)
     setHasSavedBirth(true)
-    if (info.clockMinutes != null || info.city?.trim()) setShowPrecise(true)
+    setTimeMode(birthTimeModeFromClock(info.clockMinutes))
     const isLunar = info.calendar === 'lunar' && !!info.lunarInput
     setDateField({
       input: isLunar && info.lunarInput ? info.lunarInput : info.solarDate,
@@ -400,6 +410,13 @@ export default function MeScreen() {
       setSignedIn(ok)
       if (ok) void runBirthReconcile()
     })
+    if (__DEV__) {
+      void Promise.all([isPushEnabled(), isServerPushActive()]).then(([enabled, server]) => {
+        setPushDevStatus(
+          `daily=${enabled ? 'on' : 'off'} · server=${server ? 'active' : 'inactive'} · tz=${Intl.DateTimeFormat().resolvedOptions().timeZone}`
+        )
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only reconcile
   }, [])
 
@@ -417,8 +434,17 @@ export default function MeScreen() {
       void isPushEnabled().then((on) => {
         if (on) void syncServerPush(locale).catch(() => {})
       })
-    } catch {
-      Alert.alert(t.birthSaveFailed)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (__DEV__) console.warn('[yuun] birth save failed', msg)
+      if (msg.includes('BIRTH_EDIT_QUOTA_EXHAUSTED')) {
+        Alert.alert(t.birthSaveQuotaExhausted)
+      } else if (msg.includes('deviceSecret') || msg.includes('requires authenticated user')) {
+        Alert.alert(t.birthSaveSessionExpired)
+        setSignInForBirthOpen(true)
+      } else {
+        Alert.alert(t.birthSaveFailed, __DEV__ ? msg : undefined)
+      }
     } finally {
       setBirthSaving(false)
     }
@@ -704,46 +730,129 @@ export default function MeScreen() {
                 />
               </View>
 
-              {/* Shichen — one-line wheel field (matches kindred + the date field
-                  above; collapses the old 12-cell grid) + "unknown" Pressable. */}
+              {/* Time mode: 时辰 XOR exact clock + city. */}
               <View style={{ gap: spacing.sm }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
-                    {t.birthShichenLabel}
-                  </Text>
-                  <Pressable
-                    onPress={() => setBirth((prev) => ({ ...prev, timeIndex: null }))}
-                    hitSlop={6}
-                    accessibilityRole='button'
-                    accessibilityLabel={t.birthShichenUnknown}
-                  >
-                    <Text
-                      style={{
-                        color: birth.timeIndex === null ? colors.accent : colors.dim,
-                        fontSize: 12,
-                        fontWeight: birth.timeIndex === null ? '600' : '400',
-                      }}
-                    >
-                      {t.birthShichenUnknown}
-                    </Text>
-                  </Pressable>
-                </View>
-                <ShichenField
-                  value={birth.timeIndex}
-                  onChange={(idx: ShichenIndex) =>
-                    setBirth((prev) => ({ ...prev, timeIndex: idx }))
-                  }
+                <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
+                  {t.birthShichenLabel}
+                </Text>
+                <BirthTimeModeToggle
+                  value={timeMode}
+                  onChange={switchTimeMode}
                   accent={colors.accent}
-                  labels={shichenFieldLabelsForLocale(locale)}
-                  locale={locale}
+                  labels={{
+                    shichen: preciseCopy.modeShichen,
+                    precise: preciseCopy.modePrecise,
+                  }}
                 />
               </View>
+
+              {timeMode === 'shichen' ? (
+                <View style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: colors.dim, fontSize: 11, letterSpacing: 2 }}>
+                      {preciseCopy.modeShichen}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        setBirth((prev) => ({
+                          ...prev,
+                          ...clearedPreciseBirthFields(),
+                          timeIndex: null,
+                        }))
+                      }
+                      hitSlop={6}
+                      accessibilityRole='button'
+                      accessibilityLabel={t.birthShichenUnknown}
+                    >
+                      <Text
+                        style={{
+                          color: birth.timeIndex === null ? colors.accent : colors.dim,
+                          fontSize: 12,
+                          fontWeight: birth.timeIndex === null ? '600' : '400',
+                        }}
+                      >
+                        {t.birthShichenUnknown}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <ShichenField
+                    value={birth.timeIndex}
+                    onChange={(idx: ShichenIndex) =>
+                      setBirth((prev) => ({
+                        ...prev,
+                        ...clearedPreciseBirthFields(),
+                        timeIndex: idx,
+                      }))
+                    }
+                    accent={colors.accent}
+                    labels={shichenFieldLabelsForLocale(locale)}
+                    locale={locale}
+                  />
+                </View>
+              ) : (
+                <View style={{ gap: spacing.md }}>
+                  <BirthClockField
+                    value={birth.clockMinutes ?? null}
+                    onChange={handleClock}
+                    accent={colors.accent}
+                    locale={locale}
+                    labels={{
+                      placeholder: preciseCopy.preciseTimeLabel,
+                      done: preciseCopy.done,
+                    }}
+                  />
+
+                  {birth.clockMinutes != null ? (
+                    <View style={{ gap: spacing.md }}>
+                      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                        {preciseCopy.preciseCityLabel}
+                      </Text>
+                      <CityPicker
+                        value={cityValue}
+                        onSelect={handlePreciseCity}
+                        search={searchCity}
+                        topCities={DEFAULT_TOP_CITIES}
+                        placeholder={preciseCopy.preciseCityPlaceholder}
+                        scrollRef={scrollRef}
+                      />
+
+                      {birth.lng != null ? (
+                        <View style={{ gap: spacing.sm }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <Text style={{ color: colors.text, fontSize: 15 }}>
+                              {preciseCopy.calibrateLabel}
+                            </Text>
+                            <Toggle
+                              value={birth.calibrate !== false}
+                              onValueChange={(on) =>
+                                setBirth((prev) => ({ ...prev, calibrate: on }))
+                              }
+                              accent={colors.accent}
+                            />
+                          </View>
+                          {calibrationPreview ? (
+                            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                              {calibrationPreview}
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              )}
 
               {/* Gender — 2-button segmented. */}
               <View style={{ gap: spacing.sm }}>
@@ -785,86 +894,6 @@ export default function MeScreen() {
                     )
                   })}
                 </View>
-              </View>
-
-              {/* Precise time + birthplace — opt-in disclosure (synced from kindred
-                  2026-06: "折叠起来的准确时间" + "动态出现的出生地"). 真太阳时
-                  correction only earns its keep at minute precision, so the exact
-                  clock is folded away here, and the birth city appears DYNAMICALLY
-                  once a precise time is entered — picking it is what enables 真太阳时
-                  calibration of the 时柱. 时辰-only entry collects no birthplace. */}
-              <View style={{ gap: spacing.sm }}>
-                <Pressable
-                  onPress={() => setShowPrecise((s) => !s)}
-                  hitSlop={8}
-                  accessibilityRole='button'
-                  accessibilityLabel={preciseCopy.precisePrompt}
-                  style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                >
-                  <Text style={{ color: colors.accent, fontSize: 13 }}>
-                    {`${showPrecise ? '▾  ' : '▸  '}${preciseCopy.precisePrompt}`}
-                  </Text>
-                </Pressable>
-
-                {showPrecise ? (
-                  <View style={{ gap: spacing.md }}>
-                    <BirthClockField
-                      value={birth.clockMinutes ?? null}
-                      onChange={handleClock}
-                      accent={colors.accent}
-                      locale={locale}
-                      labels={{
-                        placeholder: preciseCopy.preciseTimeLabel,
-                        done: preciseCopy.done,
-                      }}
-                    />
-
-                    {/* Birthplace appears only once a precise clock is set. */}
-                    {birth.clockMinutes != null ? (
-                      <View style={{ gap: spacing.md }}>
-                        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                          {preciseCopy.preciseCityLabel}
-                        </Text>
-                        <CityPicker
-                          value={cityValue}
-                          onSelect={handlePreciseCity}
-                          search={searchCity}
-                          topCities={DEFAULT_TOP_CITIES}
-                          placeholder={preciseCopy.preciseCityPlaceholder}
-                          scrollRef={scrollRef}
-                        />
-
-                        {birth.lng != null ? (
-                          <View style={{ gap: spacing.sm }}>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                              }}
-                            >
-                              <Text style={{ color: colors.text, fontSize: 15 }}>
-                                {preciseCopy.calibrateLabel}
-                              </Text>
-                              <Toggle
-                                value={birth.calibrate !== false}
-                                onValueChange={(on) =>
-                                  setBirth((prev) => ({ ...prev, calibrate: on }))
-                                }
-                                accent={colors.accent}
-                              />
-                            </View>
-                            {calibrationPreview ? (
-                              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                                {calibrationPreview}
-                              </Text>
-                            ) : null}
-                          </View>
-                        ) : null}
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
               </View>
 
               {/* Save — disabled until date is valid. "Saved" feedback briefly. */}
@@ -1235,7 +1264,8 @@ export default function MeScreen() {
               </Pressable>
             </View>
             {/* Fire today's daily push now (~2s) to eyeball the real rendered content —
-                the en 语料钩子 when birth info is set + the /day API serves `dailyHook`. */}
+                the en 语料钩子 when birth info is set + the /day API serves `dailyHook`.
+                Also re-register server push and dump local/server delivery flags. */}
             <SectionLabel>PUSH · DEV</SectionLabel>
             <View
               style={{
@@ -1252,7 +1282,10 @@ export default function MeScreen() {
                       locale,
                       birthDate: birthValid ? birth.solarDate : undefined,
                     })
-                    Alert.alert('Fired in ~2s', `${fired.title}\n\n${fired.body}`)
+                    Alert.alert(
+                      'Local test in ~2s',
+                      `${fired.title}\n\n${fired.body}\n\nNote: this is a local notification only — not Expo/APNs cron.`
+                    )
                   } catch (e) {
                     Alert.alert('Push failed', String(e))
                   }
@@ -1268,6 +1301,40 @@ export default function MeScreen() {
                 <Text style={{ color: colors.text, fontSize: 16 }}>Fire daily push now</Text>
                 <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
                   Send →
+                </Text>
+              </Pressable>
+              <View style={{ height: 0.5, backgroundColor: colors.separator }} />
+              <Pressable
+                onPress={async () => {
+                  try {
+                    await syncServerPush(locale)
+                    const [enabled, server] = await Promise.all([
+                      isPushEnabled(),
+                      isServerPushActive(),
+                    ])
+                    const line = `daily=${enabled ? 'on' : 'off'} · server=${server ? 'active' : 'inactive'} · tz=${Intl.DateTimeFormat().resolvedOptions().timeZone}`
+                    setPushDevStatus(line)
+                    Alert.alert('Server push re-synced', line)
+                  } catch (e) {
+                    Alert.alert('Server sync failed', String(e))
+                  }
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                }}
+              >
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ color: colors.text, fontSize: 16 }}>Re-sync server push</Text>
+                  <Text style={{ color: colors.secondary, fontSize: 12, marginTop: 2 }} numberOfLines={2}>
+                    {pushDevStatus}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>
+                  Sync →
                 </Text>
               </Pressable>
             </View>

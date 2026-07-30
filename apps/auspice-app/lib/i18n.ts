@@ -134,6 +134,10 @@ export interface Strings {
   birthConflictUseAccount: string
   birthConflictUseLocal: string
   birthSaveFailed: string
+  /** Free-tier second chart-altering birth edit blocked. */
+  birthSaveQuotaExhausted: string
+  /** Signed-in UI but missing/stale deviceSecret — need re-login. */
+  birthSaveSessionExpired: string
   birthSaving: string
   /** Account deletion (Apple 5.1.1(v)). */
   deleteAccount: string
@@ -699,6 +703,8 @@ const zhHans: Strings = {
   birthConflictUseAccount: '使用账号资料',
   birthConflictUseLocal: '用本机资料替换账号',
   birthSaveFailed: '保存失败，请检查网络后重试。',
+  birthSaveQuotaExhausted: '免费额度已用完：生辰只能修正一次。升级 Pro 可无限修改。',
+  birthSaveSessionExpired: '登录状态已失效，请重新登录后再保存生辰。',
   birthSaving: '正在保存…',
   deleteAccount: '删除账号',
   deleteAccountConfirmTitle: '永久删除账号？',
@@ -1143,6 +1149,8 @@ const zhHant: Strings = {
   birthConflictUseAccount: '使用帳號資料',
   birthConflictUseLocal: '用本機資料替換帳號',
   birthSaveFailed: '儲存失敗，請檢查網路後重試。',
+  birthSaveQuotaExhausted: '免費額度已用完：生辰只能修正一次。升級 Pro 可無限修改。',
+  birthSaveSessionExpired: '登入狀態已失效，請重新登入後再儲存生辰。',
   birthSaving: '正在儲存…',
   deleteAccount: '刪除帳號',
   deleteAccountConfirmTitle: '永久刪除帳號？',
@@ -1598,6 +1606,9 @@ const ja: Strings = {
   birthConflictUseAccount: 'アカウントの内容を使う',
   birthConflictUseLocal: 'この端末の内容でアカウントを上書き',
   birthSaveFailed: '保存に失敗しました。通信を確認して再試行してください。',
+  birthSaveQuotaExhausted:
+    '無料の修正枠を使い切りました。生年月日は1回だけ直せます。Pro で無制限に。',
+  birthSaveSessionExpired: 'ログインの有効期限が切れました。再度サインインしてから保存してください。',
   birthSaving: '保存中…',
   deleteAccount: 'アカウントを削除',
   deleteAccountConfirmTitle: 'アカウントを完全に削除しますか？',
@@ -2043,6 +2054,9 @@ const en: Strings = {
   birthConflictUseAccount: 'Use account data',
   birthConflictUseLocal: 'Replace account with this device',
   birthSaveFailed: 'Save failed. Check your connection and try again.',
+  birthSaveQuotaExhausted:
+    'Free correction used. Birth info can be edited once — upgrade to Pro for unlimited edits.',
+  birthSaveSessionExpired: 'Your session expired. Sign in again to save birth info.',
   birthSaving: 'Saving…',
   deleteAccount: 'Delete account',
   deleteAccountConfirmTitle: 'Permanently delete account?',

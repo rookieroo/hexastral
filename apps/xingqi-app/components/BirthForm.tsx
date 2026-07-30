@@ -1,25 +1,11 @@
 /**
- * BirthForm — Kindred's single-page birth-info form.
- *
- * Extracted from pair-input.tsx so both the first-run pair flow AND the
- * post-onboarding "I know their details" flow (other-meta.tsx, reached from
- * the home "+" → mode) can mount the same single-page UI. Previously the
- * post-onboarding path chained mode → other-meta → other-birth, where
- * other-birth re-mounted the multi-step `BirthInfoForm` wizard — that gave
- * users "page-by-page" filling instead of the single-page form they'd just
- * used moments earlier for themselves.
+ * BirthForm — Xingqi's single-page birth-info form (ported from Kindred).
  *
  * Layout (top → bottom):
  *   - Date (BirthDateField — prominent boxed input + sheet picker, solar/lunar)
  *   - Gender (Segmented — 男/女)
- *   - 时辰 (ShichenField — one-line summary + almanac wheel sheet, required)
- *   - Precise-time disclosure (self only, opt-in via `allowPreciseTime`): an
- *     HH:MM picker + birth city + 真太阳时 calibration toggle. 时辰 mode collects
- *     no birth place at all.
- *
- * Field, NameInput exports are utility pieces consumers wrap around the
- * BirthForm — e.g. for the partner header "Name" + "Relationship type".
- * Segmented stays private; only gender needs it today.
+ *   - Time mode (when `allowPreciseTime`): 时辰 XOR exact clock + city
+ *   - Without `allowPreciseTime`: ShichenField only (no birth place)
  */
 
 import { resolveBirthHour } from '@zhop/astro-core'
@@ -28,8 +14,12 @@ import {
   BirthDateField,
   type BirthDateFieldLabels,
   type BirthDateFieldValue,
+  type BirthTimeMode,
+  birthTimeModeFromClock,
+  BirthTimeModeToggle,
   CityPicker,
   type CityRecord,
+  clearedPreciseBirthFields,
   DEFAULT_TOP_CITIES,
   formatHourMinute,
   ShichenField,
@@ -87,18 +77,17 @@ export interface BirthFormProps {
   searchCity: (query: string) => Promise<CityRecord[]>
   /** 'self' / 'other' — picks which draft fields the city write targets. */
   fieldPrefix: 'self' | 'other'
-  /** Opt into the precise-time disclosure (self only): an HH:MM picker, birth
-   *  city, and 真太阳时 calibration toggle below the 时辰 wheel. When false/unset
-   *  the form is 时辰-only and collects NO birth place. */
+  /** Opt into 时辰 XOR exact-time modes. When false/unset the form is
+   *  时辰-only and collects NO birth place. */
   allowPreciseTime?: boolean
   /** Precise birth clock, minutes since midnight 0..1439 (precise mode). */
   clockMinutes?: number | null
-  /** Commit a precise clock (minutes since midnight). */
-  onClock?: (minutes: number) => void
+  /** Commit a precise clock, or null when leaving precise mode. */
+  onClock?: (minutes: number | null) => void
   /** 真太阳时 calibration toggle (precise mode); null/true = on, false = off. */
   calibrate?: boolean | null
-  /** Commit the calibration toggle. */
-  onCalibrate?: (on: boolean) => void
+  /** Commit the calibration toggle (null when leaving precise mode). */
+  onCalibrate?: (on: boolean | null) => void
   /** Host ScrollView — the city field scrolls itself above the keyboard on focus. */
   scrollRef: RefObject<ScrollView | null>
 }
@@ -128,11 +117,6 @@ export function BirthForm({
   scrollRef,
 }: BirthFormProps) {
   const { colors } = useTheme()
-  // 时辰 is REQUIRED — it drives the hour pillar of the 八字 (without it the
-  // chart engine has to guess, silently producing a wrong chapter). It's a
-  // collapsed ShichenField (one-line summary + almanac wheel sheet). Birth place
-  // is NOT an always-on field: 时辰 mode collects none, and the precise-time
-  // disclosure (self only) carries the city for 真太阳时 calibration.
   const shichen =
     typeof timeIndex === 'number' && timeIndex >= 0 && timeIndex <= 11
       ? (timeIndex as ShichenIndex)
@@ -150,11 +134,27 @@ export function BirthForm({
       : null
 
   const preciseCopy = kindredBirthCopy(locale)
-  const [showPrecise, setShowPrecise] = useState(clockMinutes != null)
+  const [timeMode, setTimeMode] = useState<BirthTimeMode>(() =>
+    birthTimeModeFromClock(clockMinutes)
+  )
 
-  // A precise clock also snaps the 时辰 wheel to that clock's 时辰 (紫微 reads
-  // timeIndex; the 八字 calibrates the clock on top — they can differ for a
-  // birth near a 时辰 boundary, which the before→after line makes visible).
+  const clearPrecise = () => {
+    const cleared = clearedPreciseBirthFields()
+    onClock?.(cleared.clockMinutes)
+    onCalibrate?.(cleared.calibrate)
+    onCity({
+      selfBirthCity: '',
+      selfBirthLat: null,
+      selfBirthLng: null,
+      selfBirthTimezone: null,
+    })
+  }
+
+  const switchTimeMode = (next: BirthTimeMode) => {
+    setTimeMode(next)
+    if (next === 'shichen') clearPrecise()
+  }
+
   const handleClock = (min: number) => {
     void Haptics.selectionAsync().catch(() => undefined)
     onClock?.(min)
@@ -168,10 +168,14 @@ export function BirthForm({
       selfBirthTimezone: c.timezone ?? null,
     })
 
-  // Live 真太阳时 before→after preview — only when a clock + city are present and
-  // calibration is on. Computed through the SAME resolver the chart uses.
   let calibrationPreview: string | null = null
-  if (allowPreciseTime && clockMinutes != null && lng != null && date.solarDate) {
+  if (
+    allowPreciseTime &&
+    timeMode === 'precise' &&
+    clockMinutes != null &&
+    lng != null &&
+    date.solarDate
+  ) {
     const [yStr, mStr, dStr] = date.solarDate.split('-')
     const y = Number.parseInt(yStr ?? '', 10)
     const mo = Number.parseInt(mStr ?? '', 10)
@@ -195,16 +199,13 @@ export function BirthForm({
 
   const shichenLabels = shichenFieldLabelsForLocale(lang)
 
-  // Solar is the quiet default; a small 农历 switch sits beside the "生日" title
-  // instead of a full-width 公历/农历 segmented control (2026-06: "默认就是 Solar
-  // birth，Birthday 标题右侧放一个小的农历开关"). Flipping CONVERTS the held date to
-  // the other calendar (shared switchBirthCalendar) — previously it reinterpreted
-  // the raw lunar digits "1992-04-06" as a solar date, which is a different day.
   const toggleCalendar = () => {
     const next = date.calendar === 'lunar' ? 'solar' : 'lunar'
     void Haptics.selectionAsync().catch(() => undefined)
     onDate(switchBirthCalendar(date.input, date.calendar, date.isLeap ?? false, next))
   }
+
+  const showShichen = !allowPreciseTime || timeMode === 'shichen'
 
   return (
     <View style={{ gap: kindredSpacing.lg }}>
@@ -254,103 +255,94 @@ export function BirthForm({
         <Text style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}>
           {t(locale, 'pairInput.timeHint')}
         </Text>
-        <ShichenField
-          value={shichen}
-          onChange={(idx) => onTime(idx)}
-          accent={colors.accent}
-          labels={shichenLabels}
-          locale={locale}
-        />
-      </View>
 
-      {allowPreciseTime ? (
-        <View style={{ gap: kindredSpacing.sm }}>
-          <Pressable
-            onPress={() => {
-              void Haptics.selectionAsync().catch(() => undefined)
-              setShowPrecise((s) => !s)
+        {allowPreciseTime ? (
+          <BirthTimeModeToggle
+            value={timeMode}
+            onChange={switchTimeMode}
+            accent={colors.accent}
+            labels={{
+              shichen: preciseCopy.modeShichen ?? '时辰',
+              precise: preciseCopy.modePrecise ?? '精确时间',
             }}
-            hitSlop={8}
-            accessibilityRole='button'
-          >
-            <Text style={[kindredType.caption, { color: colors.accent }]}>
-              {`${showPrecise ? '▾  ' : '▸  '}${preciseCopy.precisePrompt ?? '知道确切出生时间？更精准'}`}
-            </Text>
-          </Pressable>
+          />
+        ) : null}
 
-          {showPrecise ? (
-            <View style={{ gap: kindredSpacing.md }}>
-              <BirthClockField
-                value={clockMinutes ?? null}
-                onChange={handleClock}
-                accent={colors.accent}
-                locale={lang}
-                labels={{
-                  placeholder: preciseCopy.preciseTimeLabel ?? '选择确切时间',
-                  done: preciseCopy.next,
-                }}
-              />
+        {showShichen ? (
+          <ShichenField
+            value={shichen}
+            onChange={(idx) => {
+              clearPrecise()
+              onTime(idx)
+            }}
+            accent={colors.accent}
+            labels={shichenLabels}
+            locale={locale}
+          />
+        ) : (
+          <View style={{ gap: kindredSpacing.md }}>
+            <BirthClockField
+              value={clockMinutes ?? null}
+              onChange={handleClock}
+              accent={colors.accent}
+              locale={lang}
+              labels={{
+                placeholder: preciseCopy.preciseTimeLabel ?? '选择确切时间',
+                done: preciseCopy.next,
+              }}
+            />
 
-              {clockMinutes != null ? (
-                <View style={{ gap: kindredSpacing.md }}>
-                  <Text
-                    style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}
-                  >
-                    {preciseCopy.preciseCityLabel ?? '出生城市（用于真太阳时校准）'}
-                  </Text>
-                  <CityPicker
-                    value={cityValue}
-                    onSelect={handlePreciseCity}
-                    search={searchCity}
-                    topCities={DEFAULT_TOP_CITIES}
-                    placeholder={preciseCopy.preciseCityPlaceholder ?? '搜索出生城市'}
-                    scrollRef={scrollRef}
-                  />
+            {clockMinutes != null ? (
+              <View style={{ gap: kindredSpacing.md }}>
+                <Text style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}>
+                  {preciseCopy.preciseCityLabel ?? '出生城市（用于真太阳时校准）'}
+                </Text>
+                <CityPicker
+                  value={cityValue}
+                  onSelect={handlePreciseCity}
+                  search={searchCity}
+                  topCities={DEFAULT_TOP_CITIES}
+                  placeholder={preciseCopy.preciseCityPlaceholder ?? '搜索出生城市'}
+                  scrollRef={scrollRef}
+                />
 
-                  {lng != null ? (
-                    <View style={{ gap: kindredSpacing.sm }}>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Text style={[kindredType.body, { color: colors.text }]}>
-                          {preciseCopy.calibrateLabel ?? '真太阳时校准'}
-                        </Text>
-                        <Toggle
-                          value={calibrate !== false}
-                          onValueChange={(on) => onCalibrate?.(on)}
-                          accent={colors.accent}
-                          accessibilityLabel={preciseCopy.calibrateLabel ?? '真太阳时校准'}
-                        />
-                      </View>
-                      {calibrationPreview ? (
-                        <Text
-                          style={[
-                            kindredType.caption,
-                            { color: colors.dim, lineHeight: 18 },
-                          ]}
-                        >
-                          {calibrationPreview}
-                        </Text>
-                      ) : null}
+                {lng != null ? (
+                  <View style={{ gap: kindredSpacing.sm }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Text style={[kindredType.body, { color: colors.text }]}>
+                        {preciseCopy.calibrateLabel ?? '真太阳时校准'}
+                      </Text>
+                      <Toggle
+                        value={calibrate !== false}
+                        onValueChange={(on) => onCalibrate?.(on)}
+                        accent={colors.accent}
+                        accessibilityLabel={preciseCopy.calibrateLabel ?? '真太阳时校准'}
+                      />
                     </View>
-                  ) : null}
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
-      ) : null}
+                    {calibrationPreview ? (
+                      <Text
+                        style={[kindredType.caption, { color: colors.dim, lineHeight: 18 }]}
+                      >
+                        {calibrationPreview}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        )}
+      </View>
     </View>
   )
 }
 
-/** Section label + child content. Used inside BirthForm and around it for
- *  free-form rows like Name / Relationship that aren't part of the birth
- *  data itself. */
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   const { colors } = useTheme()
   return (
@@ -361,7 +353,6 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   )
 }
 
-/** Inline single-line text input themed to the kindred dark surface. */
 export function NameInput({
   value,
   placeholder,
@@ -389,9 +380,6 @@ export function NameInput({
   )
 }
 
-/** Compact 农历 switch — sits to the right of the "生日" title. Off = solar
- *  (the default); on = lunar. A label + tiny track/thumb so it reads as a
- *  switch, not another segmented control. */
 function LunarSwitch({
   on,
   label,
@@ -445,7 +433,6 @@ function LunarSwitch({
   )
 }
 
-/** Equal-width pill segmented control, private to BirthForm (gender only). */
 function Segmented({
   options,
   value,

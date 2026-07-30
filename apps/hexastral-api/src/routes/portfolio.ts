@@ -159,10 +159,10 @@ const portfolioBirthInfoSchema = z
     /** null = unknown 时辰 (Yuun). */
     birthTimeIndex: z.coerce.number().int().min(0).max(12).nullable(),
     gender: z.enum(['男', '女']).nullish(),
-    birthCity: z.string().max(80).optional(),
-    birthLatitude: z.string().max(32).optional(),
-    birthLongitude: z.string().max(32).optional(),
-    birthTimezoneId: z.string().max(80).optional(),
+    birthCity: z.string().max(256).nullish(),
+    birthLatitude: z.string().max(32).nullish(),
+    birthLongitude: z.string().max(32).nullish(),
+    birthTimezoneId: z.string().max(80).nullish(),
     /** Precise birth clock — minutes since midnight 0..1439. null = 时辰-only. */
     birthClockMinutes: z.coerce.number().int().min(0).max(1439).nullish(),
     /** 真太阳时 calibration toggle for the precise clock; default-on, false = off. */
@@ -1992,7 +1992,14 @@ portfolioRoutes.put('/birth-info', async (c) => {
     throw new HTTPException(422, { message: 'Expected JSON body' })
   }
   const parsed = portfolioBirthInfoSchema.safeParse(body)
-  if (!parsed.success) throw new HTTPException(422, { message: 'Invalid birth info payload' })
+  if (!parsed.success) {
+    const invalidFields = [
+      ...new Set(parsed.error.issues.map((issue) => issue.path.join('.') || 'root')),
+    ]
+    throw new HTTPException(422, {
+      message: `Invalid birth info payload: ${invalidFields.join(', ')}`,
+    })
+  }
 
   const db = c.get('db')
 
@@ -2049,10 +2056,10 @@ portfolioRoutes.put('/birth-info', async (c) => {
       birthSolarDate: parsed.data.birthSolarDate,
       birthTimeIndex: parsed.data.birthTimeIndex,
       birthGender: parsed.data.gender ?? prior.birthGender ?? null,
-      birthCity: parsed.data.birthCity,
-      birthLatitude: parsed.data.birthLatitude,
-      birthLongitude: parsed.data.birthLongitude,
-      birthTimezoneId: parsed.data.birthTimezoneId,
+      birthCity: parsed.data.birthCity ?? null,
+      birthLatitude: parsed.data.birthLatitude ?? null,
+      birthLongitude: parsed.data.birthLongitude ?? null,
+      birthTimezoneId: parsed.data.birthTimezoneId ?? null,
       // Precise-time disclosure (真太阳时) — clock minutes + calibration toggle.
       birthClockMinutes: parsed.data.birthClockMinutes ?? null,
       birthSolarCalibrate: parsed.data.birthSolarCalibrate ?? null,

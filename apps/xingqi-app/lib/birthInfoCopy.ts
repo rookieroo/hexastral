@@ -1,22 +1,17 @@
 /**
- * Kindred-specific BirthInfoForm copy.
+ * Xingqi birth-info copy (Kindred-shaped overrides for BirthForm).
  *
- * Extends the shared core-ui defaults with Kindred's editorial tone AND the
- * field-importance hints the synastry reading relies on:
- *
- *   - 时辰 is required (drives the hour pillar — without it 八字 has only three
- *     pillars and the chart engine has to guess). The host passes `requireTime`.
- *   - 出生地 is NOT collected in the default 时辰 flow (the place step is
- *     skipped). True-solar-time correction only makes sense on a precise clock
- *     time, so the birth city lives inside the opt-in precise-time disclosure
- *     (`allowPreciseTime`) — picking a city there is what enables 真太阳时
- *     calibration of the hour pillar.
+ *   - 时辰 is required (drives the hour pillar).
+ *   - 出生地 is NOT collected in 时辰 mode. Exact-time mode is mutually
+ *     exclusive and carries the birth city for 真太阳时 calibration.
  */
 
 import { type BirthInfoCopy, birthInfoCopyForLocale } from '@zhop/core-ui'
 
 interface KindredOverride {
   timeSubtitle: string
+  modeShichen: string
+  modePrecise: string
   precisePrompt: string
   preciseTimeLabel: string
   preciseCityLabel: string
@@ -28,6 +23,8 @@ interface KindredOverride {
 const OVERRIDES: Record<string, KindredOverride> = {
   en: {
     timeSubtitle: 'Twelve two-hour 时辰 windows. Required — your hour pillar depends on it.',
+    modeShichen: 'Birth hour',
+    modePrecise: 'Exact time',
     precisePrompt: 'Know your exact birth time? More precise',
     preciseTimeLabel: 'Exact birth time',
     preciseCityLabel: 'Birth city (for true-solar-time)',
@@ -37,6 +34,8 @@ const OVERRIDES: Record<string, KindredOverride> = {
   },
   zh: {
     timeSubtitle: '十二时辰，每个对应两小时。必填——直接决定你的时柱。',
+    modeShichen: '时辰',
+    modePrecise: '精确时间',
     precisePrompt: '知道确切出生时间？更精准',
     preciseTimeLabel: '确切出生时间',
     preciseCityLabel: '出生城市（用于真太阳时校准）',
@@ -46,6 +45,8 @@ const OVERRIDES: Record<string, KindredOverride> = {
   },
   'zh-Hant': {
     timeSubtitle: '十二時辰，每個對應兩小時。必填——直接決定你的時柱。',
+    modeShichen: '時辰',
+    modePrecise: '精確時間',
     precisePrompt: '知道確切出生時間？更精準',
     preciseTimeLabel: '確切出生時間',
     preciseCityLabel: '出生城市（用於真太陽時校準）',
@@ -55,6 +56,8 @@ const OVERRIDES: Record<string, KindredOverride> = {
   },
   ja: {
     timeSubtitle: '12 の時辰（2 時間単位）。必須 — 時柱の決定に必要です。',
+    modeShichen: '時辰',
+    modePrecise: '正確な時刻',
     precisePrompt: '正確な出生時刻が分かる？より正確に',
     preciseTimeLabel: '正確な出生時刻',
     preciseCityLabel: '出生地（真太陽時補正用）',
@@ -77,6 +80,8 @@ export function kindredBirthCopy(locale: string): BirthInfoCopy {
   return {
     ...base,
     timeSubtitle: o.timeSubtitle,
+    modeShichen: o.modeShichen,
+    modePrecise: o.modePrecise,
     precisePrompt: o.precisePrompt,
     preciseTimeLabel: o.preciseTimeLabel,
     preciseCityLabel: o.preciseCityLabel,

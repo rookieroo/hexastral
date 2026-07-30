@@ -1,9 +1,9 @@
 /**
- * BirthTimeStep — step 2: 12-cell 十二时辰 grid.
+ * BirthTimeStep — step 2: 十二时辰 OR exact clock + city (mutually exclusive).
  *
- * Thin layout shell around the existing `ShichenPicker` primitive. Adds
- * the step chrome (progress / title / subtitle), the Skip ("I don't know")
- * affordance, and the Next CTA.
+ * When `allowPreciseTime` is on, a segmented toggle chooses the mode. Switching
+ * to 时辰 clears clock / city / calibrate so the chart engine cannot keep a
+ * stale precise path under a shichen UI.
  */
 
 import { resolveBirthHour } from '@zhop/astro-core'
@@ -15,6 +15,12 @@ import { CityPicker, type CityRecord } from '../CityPicker'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
 import { BirthClockField } from './BirthClockField'
 import { BirthProgressIndicator } from './BirthProgressIndicator'
+import {
+  birthTimeModeFromClock,
+  clearedPreciseBirthFields,
+  type BirthTimeMode,
+} from './birthTimeMode'
+import { BirthTimeModeToggle } from './BirthTimeModeToggle'
 import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
 
@@ -58,21 +64,35 @@ export function BirthTimeStep({
   // rather than null — otherwise Next would read as disabled under a clearly
   // selected row. The grid keeps null so the user must tap to choose.
   const [picked, setPicked] = useState<ShichenIndex | null>(isWheel ? (initial ?? 0) : initial)
+  const [mode, setMode] = useState<BirthTimeMode>(() => birthTimeModeFromClock(value.clockMinutes))
+
+  const switchMode = (next: BirthTimeMode) => {
+    setMode(next)
+    if (next === 'shichen') {
+      onChange(clearedPreciseBirthFields())
+      return
+    }
+    // Entering precise: keep current 时辰 as a starting hint until clock is set.
+    if (picked != null) onChange({ timeIndex: picked })
+  }
 
   const handleNext = () => {
-    if (picked === null) return
+    if (mode === 'shichen') {
+      if (picked === null) return
+      Haptics.selectionAsync()
+      onChange({ ...clearedPreciseBirthFields(), timeIndex: picked })
+      onNext()
+      return
+    }
+    if (value.clockMinutes == null) return
     Haptics.selectionAsync()
-    onChange({ timeIndex: picked })
+    onChange({
+      clockMinutes: value.clockMinutes,
+      timeIndex: clockToShichenIndex(value.clockMinutes),
+    })
     onNext()
   }
 
-  // ── Precise-time disclosure (opt-in via allowPreciseTime) ─────────────────
-  const [showPrecise, setShowPrecise] = useState(value.clockMinutes != null)
-
-  // Entering a precise clock also snaps the 时辰 wheel to that clock's 时辰, so
-  // 紫微 (which reads timeIndex) stays consistent with the 八字 the precise clock
-  // calibrates. The before→after line below shows the calibrated 时辰 separately
-  // (it can differ for births near a 时辰 boundary).
   const handleClock = (min: number) => {
     const idx = clockToShichenIndex(min)
     setPicked(idx)
@@ -92,10 +112,8 @@ export function BirthTimeStep({
       }
     : null
 
-  // Live 真太阳时 before→after preview — only when a clock + city are present and
-  // calibration is on. Computed through the SAME resolver the chart uses.
   let calibrationPreview: string | null = null
-  if (allowPreciseTime && value.clockMinutes != null && value.lng != null && value.solarDate) {
+  if (allowPreciseTime && mode === 'precise' && value.clockMinutes != null && value.lng != null && value.solarDate) {
     const [yStr, mStr, dStr] = value.solarDate.split('-')
     const y = Number.parseInt(yStr ?? '', 10)
     const m = Number.parseInt(mStr ?? '', 10)
@@ -106,7 +124,7 @@ export function BirthTimeStep({
         month: m,
         day: d,
         clockMinutes: value.clockMinutes,
-        calibrate: value.calibrate,
+        calibrate: value.calibrate ?? undefined,
         longitude: value.lng,
         timezoneId: value.timezone,
         city: value.city,
@@ -119,16 +137,16 @@ export function BirthTimeStep({
     }
   }
 
-  // Skip is only available when the host hasn't marked time as required.
-  // For apps that read the hour pillar (kindred / yuan / numerology / cycle),
-  // a null timeIndex breaks the chart; they pass `requireTime` to lock this.
   const handleSkip = requireTime
     ? null
     : () => {
         Haptics.selectionAsync()
-        onChange({ timeIndex: null })
+        onChange({ ...clearedPreciseBirthFields(), timeIndex: null })
         onNext()
       }
+
+  const nextDisabled =
+    mode === 'shichen' ? picked === null : value.clockMinutes == null
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -149,112 +167,103 @@ export function BirthTimeStep({
           ) : null}
         </View>
 
-        <View style={{ marginTop: spacing.xl }}>
-          {isWheel ? (
-            <ShichenWheel value={picked ?? 0} onChange={setPicked} accent={accent} />
-          ) : (
-            <ShichenPicker
-              value={picked}
-              onChange={setPicked}
-              onSelect={() => Haptics.selectionAsync()}
-              accentColor={accent}
-            />
-          )}
-        </View>
-
-        {/* Precise-time opt-in — collapsed by default so the 时辰 wheel stays the
-            low-friction hero. Revealing it adds an HH:MM picker, a birth-city
-            picker, and a 真太阳时 calibration toggle (default on once a city is
-            set). Only rendered for hosts that pass allowPreciseTime. */}
         {allowPreciseTime ? (
-          <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-            <Pressable
-              onPress={() => {
-                void Haptics.selectionAsync().catch(() => undefined)
-                setShowPrecise((s) => !s)
+          <View style={{ marginTop: spacing.xl }}>
+            <BirthTimeModeToggle
+              value={mode}
+              onChange={switchMode}
+              accent={accent}
+              labels={{
+                shichen: copy.modeShichen ?? '时辰',
+                precise: copy.modePrecise ?? '精确时间',
               }}
-              hitSlop={8}
-              accessibilityRole='button'
-            >
-              <Text style={{ color: accent, fontSize: 13, fontWeight: '500' }}>
-                {`${showPrecise ? '▾  ' : '▸  '}${copy.precisePrompt ?? '知道确切出生时间？更精准'}`}
-              </Text>
-            </Pressable>
+            />
+          </View>
+        ) : null}
 
-            {showPrecise ? (
+        {mode === 'shichen' || !allowPreciseTime ? (
+          <View style={{ marginTop: spacing.xl }}>
+            {isWheel ? (
+              <ShichenWheel value={picked ?? 0} onChange={setPicked} accent={accent} />
+            ) : (
+              <ShichenPicker
+                value={picked}
+                onChange={setPicked}
+                onSelect={() => Haptics.selectionAsync()}
+                accentColor={accent}
+              />
+            )}
+          </View>
+        ) : (
+          <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
+            {copy.preciseTimeLabel ? (
+              <Text style={[styles.fieldLabel, { color: colors.secondary }]}>
+                {copy.preciseTimeLabel}
+              </Text>
+            ) : null}
+            <BirthClockField
+              value={value.clockMinutes ?? null}
+              onChange={handleClock}
+              accent={accent}
+              locale={locale}
+              labels={{
+                placeholder: copy.preciseTimeLabel ?? '选择确切时间',
+                done: copy.next,
+              }}
+            />
+
+            {value.clockMinutes != null ? (
               <View style={{ gap: spacing.md }}>
-                {copy.preciseTimeLabel ? (
+                {copy.preciseCityLabel ? (
                   <Text style={[styles.fieldLabel, { color: colors.secondary }]}>
-                    {copy.preciseTimeLabel}
+                    {copy.preciseCityLabel}
                   </Text>
                 ) : null}
-                <BirthClockField
-                  value={value.clockMinutes ?? null}
-                  onChange={handleClock}
-                  accent={accent}
-                  locale={locale}
-                  labels={{
-                    placeholder: copy.preciseTimeLabel ?? '选择确切时间',
-                    done: copy.next,
-                  }}
-                />
+                {searchCity ? (
+                  <CityPicker
+                    value={cityValue}
+                    onSelect={handleCity}
+                    search={searchCity}
+                    topCities={topCities ? Array.from(topCities) : undefined}
+                    placeholder={copy.preciseCityPlaceholder ?? '搜索出生城市'}
+                  />
+                ) : null}
 
-                {value.clockMinutes != null ? (
-                  <View style={{ gap: spacing.md }}>
-                    {copy.preciseCityLabel ? (
-                      <Text style={[styles.fieldLabel, { color: colors.secondary }]}>
-                        {copy.preciseCityLabel}
+                {value.lng != null ? (
+                  <View style={{ gap: spacing.sm }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Text style={{ color: colors.text, fontSize: 14 }}>
+                        {copy.calibrateLabel ?? '真太阳时校准'}
                       </Text>
-                    ) : null}
-                    {searchCity ? (
-                      <CityPicker
-                        value={cityValue}
-                        onSelect={handleCity}
-                        search={searchCity}
-                        topCities={topCities ? Array.from(topCities) : undefined}
-                        placeholder={copy.preciseCityPlaceholder ?? '搜索出生城市'}
+                      <Switch
+                        value={value.calibrate !== false}
+                        onValueChange={(on) => onChange({ calibrate: on })}
+                        trackColor={{ true: accent, false: colors.separator }}
                       />
-                    ) : null}
-
-                    {value.lng != null ? (
-                      <View style={{ gap: spacing.sm }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <Text style={{ color: colors.text, fontSize: 14 }}>
-                            {copy.calibrateLabel ?? '真太阳时校准'}
-                          </Text>
-                          <Switch
-                            value={value.calibrate !== false}
-                            onValueChange={(on) => onChange({ calibrate: on })}
-                            trackColor={{ true: accent, false: colors.separator }}
-                          />
-                        </View>
-                        {calibrationPreview ? (
-                          <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                            {calibrationPreview}
-                          </Text>
-                        ) : null}
-                      </View>
+                    </View>
+                    {calibrationPreview ? (
+                      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                        {calibrationPreview}
+                      </Text>
                     ) : null}
                   </View>
                 ) : null}
               </View>
             ) : null}
           </View>
-        ) : null}
+        )}
 
         <View style={{ flex: 1, minHeight: spacing.lg }} />
 
         <View
           style={[
             styles.footer,
-            // Without a skip affordance the CTA aligns right (no left sibling
-            // to balance against), which matches every other required step.
             { marginTop: spacing.xl, justifyContent: handleSkip ? 'space-between' : 'flex-end' },
           ]}
         >
@@ -266,8 +275,8 @@ export function BirthTimeStep({
           <Pressable
             onPress={handleNext}
             hitSlop={12}
-            disabled={picked === null}
-            style={{ opacity: picked === null ? 0.3 : 1 }}
+            disabled={nextDisabled}
+            style={{ opacity: nextDisabled ? 0.3 : 1 }}
           >
             <Text style={[styles.cta, { color: accent }]}>{copy.next}</Text>
           </Pressable>

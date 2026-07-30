@@ -9,10 +9,11 @@ export interface PortfolioBirthMapped {
   birthSolarDate: string
   birthTimeIndex: number | null
   gender?: '男' | '女'
-  birthCity?: string
-  birthLatitude?: string
-  birthLongitude?: string
-  birthTimezoneId?: string
+  /** null clears a previously saved city when switching to 时辰-only. */
+  birthCity?: string | null
+  birthLatitude?: string | null
+  birthLongitude?: string | null
+  birthTimezoneId?: string | null
   birthClockMinutes?: number | null
   birthSolarCalibrate?: boolean | null
   birthCalendarType?: 'solar' | 'lunar'
@@ -25,10 +26,10 @@ export function toPortfolioBirth(info: AuspiceBirthInfo): PortfolioBirthMapped {
     birthSolarDate: info.solarDate,
     birthTimeIndex: info.timeIndex,
     gender: info.gender,
-    birthCity: info.city,
-    birthLatitude: info.lat != null ? String(info.lat) : undefined,
-    birthLongitude: info.lng != null ? String(info.lng) : undefined,
-    birthTimezoneId: info.timezone ?? undefined,
+    birthCity: info.city?.trim() ? info.city : null,
+    birthLatitude: info.lat != null ? String(info.lat) : null,
+    birthLongitude: info.lng != null ? String(info.lng) : null,
+    birthTimezoneId: info.timezone ?? null,
     birthClockMinutes: info.clockMinutes ?? null,
     birthSolarCalibrate: info.calibrate ?? null,
     birthCalendarType: info.calendar === 'lunar' ? 'lunar' : 'solar',
@@ -51,7 +52,7 @@ export function fromPortfolioBirth(row: PortfolioBirthMapped): AuspiceBirthInfo 
     lunarIsLeap: row.birthLunarIsLeap,
     timeIndex: time,
     gender: row.gender === '男' || row.gender === '女' ? row.gender : undefined,
-    city: row.birthCity,
+    city: row.birthCity ?? undefined,
     lat: Number.isFinite(lat) ? lat : undefined,
     lng: Number.isFinite(lng) ? lng : undefined,
     timezone: row.birthTimezoneId ?? null,

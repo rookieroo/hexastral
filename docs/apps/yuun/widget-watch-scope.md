@@ -101,7 +101,8 @@ all three fields per day.
 | `systemSmall` | Good: `yi` (≤4); Avoid: `jiShort` (2) | Good ≤2 lines; Avoid 1 line | weekday chip · moon · 干支 · lunar only (no pinyin on en) |
 | `systemMedium` | `yi` / `ji` | two columns, ≤2 lines each | moon · 干支(+pinyin en) · `JUL 30 · 6/17` · term; **no** For-you |
 | `systemLarge` | `yiLong` / `jiLong` | 6, two lines full width | moon caption · 干支(+pinyin) · solar·lunar row · term/值神 (zh/ja) · For-you **and** 日签 |
-| `accessoryRectangular` | `yiShort` / `jiShort` | 2, one line | stem-branch |
+| `accessoryCircular` | — | — | moon-only, enlarged; no 干支 / pinyin |
+| `accessoryRectangular` | `yiShort` / `jiShort` | 2, one line | 干支 · lunar date (tight, no pinyin) |
 
 Locale chrome is semantic, not decorative:
 

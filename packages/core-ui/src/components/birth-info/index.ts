@@ -7,7 +7,18 @@
  * in core-ui instead of a per-scenario package.
  */
 
+export {
+  birthTimeModeFromClock,
+  type BirthTimeMode,
+  type ClearedPreciseBirthFields,
+  clearedPreciseBirthFields,
+} from './birthTimeMode'
 export { BirthClockField, type BirthClockFieldLabels } from './BirthClockField'
+export {
+  BirthTimeModeToggle,
+  type BirthTimeModeToggleLabels,
+  type BirthTimeModeToggleProps,
+} from './BirthTimeModeToggle'
 export {
   type BirthCalendar,
   BirthDateField,

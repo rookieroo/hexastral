@@ -115,7 +115,7 @@ const saveBirthInfoSchema = z.object({
   /** 真太阳时校准开关（默认 true）；仅精确模式生效。 */
   birthSolarCalibrate: z.boolean().optional(),
   birthGender: z.enum(['男', '女']),
-  birthCity: z.string().max(100).optional(),
+  birthCity: z.string().max(256).optional(),
   birthLongitude: z.string().max(20).optional(),
   birthLatitude: z.string().max(20).optional(),
   birthTimezoneId: z.string().max(40).optional(),

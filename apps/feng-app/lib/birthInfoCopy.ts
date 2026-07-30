@@ -1,20 +1,21 @@
 /**
- * Fēng precise-time copy — the opt-in 准确时间 + 真太阳时 strings for the single-page
- * birth form, synced from kindred (apps/kindred-app/lib/birthInfoCopy.ts) and
- * auspice (apps/auspice-app/lib/birthInfoCopy.ts) so the whole suite speaks the
- * same 真太阳时 language.
+ * Fēng precise-time copy — 时辰 / exact-time mode labels + 真太阳时 strings for
+ * the single-page birth form, synced from kindred and auspice so the whole
+ * suite speaks the same language.
  *
  * The everyday labels (date / 时辰 / gender) live in lib/i18n.ts; only the
- * precise-time disclosure strings live here, co-located with the feature (and
- * kept off the big typed strings table). 出生地 is NOT in the default 时辰 flow —
- * true-solar-time correction only makes sense at minute precision, so the birth
- * city appears inside this disclosure once a precise clock is entered.
+ * precise-time / mode strings live here. 出生地 is NOT in 时辰 mode —
+ * true-solar-time correction only makes sense at minute precision.
  */
 
 import type { Locale } from './i18n'
 
 export interface FengPreciseCopy {
-  /** Disclosure prompt — "知道确切出生时间？更精准". */
+  /** Segment: 时辰-only mode. */
+  modeShichen: string
+  /** Segment: exact clock + city mode. */
+  modePrecise: string
+  /** Legacy disclosure prompt (kept for fallbacks). */
   precisePrompt: string
   /** BirthClockField placeholder — "确切出生时间". */
   preciseTimeLabel: string
@@ -30,6 +31,8 @@ export interface FengPreciseCopy {
 }
 
 const EN: FengPreciseCopy = {
+  modeShichen: 'Birth hour',
+  modePrecise: 'Exact time',
   precisePrompt: 'Know your exact birth time? More precise',
   preciseTimeLabel: 'Exact birth time',
   preciseCityLabel: 'Birth city (for true-solar-time)',
@@ -39,6 +42,8 @@ const EN: FengPreciseCopy = {
   done: 'Done',
 }
 const ZH_HANS: FengPreciseCopy = {
+  modeShichen: '时辰',
+  modePrecise: '精确时间',
   precisePrompt: '知道确切出生时间？更精准',
   preciseTimeLabel: '确切出生时间',
   preciseCityLabel: '出生城市（用于真太阳时校准）',
@@ -48,6 +53,8 @@ const ZH_HANS: FengPreciseCopy = {
   done: '完成',
 }
 const ZH_HANT: FengPreciseCopy = {
+  modeShichen: '時辰',
+  modePrecise: '精確時間',
   precisePrompt: '知道確切出生時間？更精準',
   preciseTimeLabel: '確切出生時間',
   preciseCityLabel: '出生城市（用於真太陽時校準）',
@@ -57,6 +64,8 @@ const ZH_HANT: FengPreciseCopy = {
   done: '完成',
 }
 const JA: FengPreciseCopy = {
+  modeShichen: '時辰',
+  modePrecise: '正確な時刻',
   precisePrompt: '正確な出生時刻が分かる？より正確に',
   preciseTimeLabel: '正確な出生時刻',
   preciseCityLabel: '出生地（真太陽時補正用）',

@@ -24,11 +24,13 @@ export interface BirthInfoValue {
    *  user opts into the precise-time path (`allowPreciseTime`). Present = the
    *  chart engine runs 真太阳时 calibration on this clock instead of using the
    *  时辰 midpoint. The 时辰 wheel (`timeIndex`) still commits alongside it for
-   *  紫微 + display. */
-  clockMinutes?: number
+   *  紫微 + display. Explicit `null` clears a previously saved clock when the
+   *  user switches back to 时辰-only. */
+  clockMinutes?: number | null
   /** 真太阳时 calibration toggle — only meaningful when `clockMinutes` is set.
-   *  Defaults on once a birth city is present; the user can turn it off. */
-  calibrate?: boolean
+   *  Defaults on once a birth city is present; the user can turn it off.
+   *  Explicit `null` clears the toggle when leaving precise mode. */
+  calibrate?: boolean | null
   /** 男 / 女 — 八字 mandates one. */
   gender: '男' | '女'
   /** Localized city name for review display. Optional — when the host passes
@@ -55,9 +57,12 @@ export interface BirthInfoCopy {
    *  does NOT pass `requireTime` — otherwise the time step is mandatory. */
   timeSkipLabel: string
 
-  /** Precise-time disclosure (only rendered when host passes `allowPreciseTime`).
-   *  All optional — the disclosure hides cleanly when a string is absent. */
-  /** Collapsed link, e.g. "知道确切出生时间? 更精准". */
+  /** Precise-time mode (only rendered when host passes `allowPreciseTime`). */
+  /** Segment label for 时辰-only mode, e.g. "Birth hour" / "时辰". */
+  modeShichen?: string
+  /** Segment label for exact clock + city mode, e.g. "Exact time" / "精确时间". */
+  modePrecise?: string
+  /** Legacy disclosure prompt — kept for hosts that still show a collapse link. */
   precisePrompt?: string
   /** Label above the HH:MM picker, e.g. "确切出生时间". */
   preciseTimeLabel?: string

@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { resolvePortfolioApiUrl } from './api-url'
 import { signRequest } from './hmac'
-import { getPortfolioUserId } from './session'
+import {
+  getPortfolioUserId,
+  invalidatePortfolioSession,
+  repairPortfolioCredentialMismatch,
+} from './session'
 
 export type BirthSyncAccessStatus =
   | 'available'
@@ -22,10 +26,11 @@ export interface PortfolioBirthInfo {
   /** null = unknown 时辰 (Yuun). */
   birthTimeIndex: number | null
   gender?: '男' | '女'
-  birthCity?: string
-  birthLatitude?: string
-  birthLongitude?: string
-  birthTimezoneId?: string
+  /** null clears a previously saved city (时辰-only mode). */
+  birthCity?: string | null
+  birthLatitude?: string | null
+  birthLongitude?: string | null
+  birthTimezoneId?: string | null
   birthClockMinutes?: number | null
   birthSolarCalibrate?: boolean | null
   birthCalendarType?: 'solar' | 'lunar'
@@ -59,6 +64,7 @@ async function signedBirthRequest(
   method: 'GET' | 'PUT' | 'PATCH',
   opts: { path: string; body?: string }
 ): Promise<Response> {
+  await repairPortfolioCredentialMismatch()
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('Birth info requires authenticated user.')
 
@@ -70,7 +76,10 @@ async function signedBirthRequest(
     method,
     path: opts.path.split('?')[0] ?? opts.path,
   })
-  if (!signed) throw new Error('Birth info request requires deviceSecret.')
+  if (!signed) {
+    await invalidatePortfolioSession()
+    throw new Error('Birth info request requires deviceSecret.')
+  }
 
   return fetch(url, {
     method,
@@ -83,12 +92,48 @@ async function signedBirthRequest(
   })
 }
 
+async function birthErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const raw: unknown = await res.json()
+    if (raw && typeof raw === 'object') {
+      const topLevelError = 'error' in raw ? raw.error : undefined
+      if (topLevelError && typeof topLevelError === 'object') {
+        const nestedMessage =
+          'message' in topLevelError && typeof topLevelError.message === 'string'
+            ? topLevelError.message
+            : null
+        if (nestedMessage) return `${fallback}: ${res.status} ${nestedMessage}`
+
+        const nestedCode =
+          'code' in topLevelError && typeof topLevelError.code === 'string'
+            ? topLevelError.code
+            : null
+        if (nestedCode) return `${fallback}: ${res.status} ${nestedCode}`
+      }
+
+      const code = 'code' in raw && typeof raw.code === 'string' ? raw.code : null
+      if (code) return `${fallback}: ${res.status} ${code}`
+
+      const detail =
+        typeof topLevelError === 'string'
+          ? topLevelError
+          : 'message' in raw && typeof raw.message === 'string'
+            ? raw.message
+            : null
+      if (detail) return `${fallback}: ${res.status} ${detail}`
+    }
+  } catch {
+    // body may be empty / non-JSON
+  }
+  return `${fallback}: ${res.status}`
+}
+
 export async function getPortfolioBirthInfo(
   opts: BirthCallerContext
 ): Promise<PortfolioBirthInfoResponse> {
   const path = `${BIRTH_INFO_PATH}${birthInfoQueryString(opts)}`
   const res = await signedBirthRequest('GET', { path })
-  if (!res.ok) throw new Error(`Birth info fetch failed: ${res.status}`)
+  if (!res.ok) throw new Error(await birthErrorMessage(res, 'Birth info fetch failed'))
   return (await res.json()) as PortfolioBirthInfoResponse
 }
 
@@ -99,7 +144,7 @@ export async function saveAndCacheBirthInfo(
     path: BIRTH_INFO_PATH,
     body: JSON.stringify(input),
   })
-  if (!res.ok) throw new Error(`Birth info save failed: ${res.status}`)
+  if (!res.ok) throw new Error(await birthErrorMessage(res, 'Birth info save failed'))
 }
 
 export async function updateBirthSyncPreferences(input: {

@@ -667,14 +667,6 @@ struct AuspiceWidgetEntryView: View {
     return pinyin
   }
 
-  /// Single-line compact headword for lock rectangular / tight slots.
-  private func ganZhiHeadword(_ d: SharedDay) -> String {
-    if let pinyin = ganZhiPinyinGloss(d) {
-      return "\(d.ganZhi) · \(pinyin)"
-    }
-    return d.ganZhi
-  }
-
   /// Verb budget per family: `.short` = 2 verbs (small avoid / lock),
   /// `.plain` = 4–5 (medium / small good), `.long` = 6 (large).
   private enum YiJiVariant { case short, plain, long }
@@ -974,25 +966,28 @@ struct AuspiceWidgetEntryView: View {
   }
 
   private func circular(_ d: SharedDay) -> some View {
-    VStack(spacing: 2) {
-      YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-        .frame(width: 20, height: 20)
-      // Narrow dial: CJK first; fall back to pinyin only if somehow empty.
-      Text(ganZhiPrimary(d))
-        .font(.system(size: 12, weight: .semibold))
-        .minimumScaleFactor(0.7)
-        .lineLimit(1)
-        .widgetAccentable()
-    }
+    // Circular lock widget is moon-only. Rectangular owns almanac identity.
+    YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
+      .frame(width: 36, height: 36)
+      .accessibilityLabel(moonCaption(phase: phaseOf(d), names: appChrome?.moonPhaseNames))
   }
 
   private func rectangular(_ d: SharedDay) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(ganZhiHeadword(d)).font(.headline).widgetAccentable()
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(ganZhiPrimary(d))
+          .font(.headline)
+          .widgetAccentable()
+        Text(lunarOnly(d))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
+      }
       yiJiRow(
         label: goodLabel.isEmpty ? (isEn ? "Good" : "宜") : goodLabel,
         text: d.yiShort ?? d.yi,
-        labelColor: .secondary,
+        labelColor: .primary,
         textColor: .primary,
         yiSize: 11,
         maxLines: 1,
@@ -1001,7 +996,7 @@ struct AuspiceWidgetEntryView: View {
       yiJiRow(
         label: avoidLabel.isEmpty ? (isEn ? "Avoid" : "忌") : avoidLabel,
         text: d.jiShort ?? d.ji,
-        labelColor: .secondary,
+        labelColor: .primary,
         textColor: .secondary,
         yiSize: 11,
         maxLines: 1,
