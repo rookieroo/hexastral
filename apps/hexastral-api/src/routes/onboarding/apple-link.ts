@@ -33,6 +33,8 @@ const jwks = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'))
 const VALID_AUDIENCES = new Set<string>([
   'com.hexastral.fate',
   'com.hexastral.yuel',
+  // Transitional — pre-rename native builds still mint aud=com.hexastral.kindred.
+  'com.hexastral.kindred',
   'com.hexastral.kanyu',
   'com.hexastral.yuun',
   'com.hexastral.syel',

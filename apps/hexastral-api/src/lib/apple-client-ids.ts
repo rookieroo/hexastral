@@ -9,7 +9,9 @@ import { HTTPException } from 'hono/http-exception'
 const TARGET_TO_BUNDLE_ID: Record<string, string> = {
   faceoracle: 'com.hexastral.syel',
   starpalace: 'com.hexastral.starpalace',
-  soulmatch: 'com.hexastral.soulmatch',
+  soulmatch: 'com.hexastral.yuel',
+  kindred: 'com.hexastral.yuel',
+  yuel: 'com.hexastral.yuel',
   fengshui: 'com.hexastral.kanyu',
   dreamoracle: 'com.hexastral.dreamoracle',
   eightpillars: 'com.hexastral.eightpillars',

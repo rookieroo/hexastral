@@ -56,7 +56,10 @@ export default function InviteScreen() {
   const [relType, setRelType] = useState<RelationshipType>('romantic')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showNameField, setShowNameField] = useState(true)
+  // Collapsed by default — avoid a bare underline with a stray draft char (e.g. "d").
+  const [showNameField, setShowNameField] = useState(
+    () => (draft.otherName?.trim().length ?? 0) >= 2
+  )
   const [ready, setReady] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
   const { hasLinkedSignIn, userId, isLoading: authLoading } = useAuth()

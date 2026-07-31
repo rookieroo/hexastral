@@ -176,7 +176,12 @@ export function SignInSheet({ visible, onClose, onAuthed }: SignInSheetProps) {
         setBusy(null)
         return
       }
-      setError(err instanceof Error ? err.message : t(locale, 'settings.error.generic'))
+      const raw = err instanceof Error ? err.message : ''
+      setError(
+        /unsupported audience/i.test(raw)
+          ? t(locale, 'settings.error.generic')
+          : raw || t(locale, 'settings.error.generic')
+      )
     } finally {
       setBusy(null)
     }

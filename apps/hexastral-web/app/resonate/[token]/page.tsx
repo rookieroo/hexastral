@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 import { type Locale, routing } from '@/i18n/routing'
 import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
+import { OpenInYuelButton } from './OpenInYuelButton'
 
 /**
  * Kindred (Yuel) invite landing — what B sees when they tap A's share-sheet link.
@@ -214,8 +215,6 @@ export default async function ResonatePage({ params, searchParams }: PageProps) 
   const invite = await fetchInviteData(token)
 
   const expired = invite ? new Date(invite.expiresAt) < new Date() : false
-  // expo-router resolves this path segment to /accept/[token] inside the app.
-  const deepLink = `yuel:///accept/${token}`
   const appStoreUrl = resolveAppStoreUrl('soulmatch')
 
   // Locale fallback for tw-locale dates (Hant uses zh-TW formatting).
@@ -314,24 +313,9 @@ export default async function ResonatePage({ params, searchParams }: PageProps) 
               </p>
             ) : null}
 
-            {/* Primary CTA — open in the app via the yuel:// scheme. */}
+            {/* Primary CTA — open in the app (yuel://, then kindred:// transitional). */}
             <div style={{ marginBottom: 20 }}>
-              <a
-                href={deepLink}
-                style={{
-                  display: 'inline-block',
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: '#0B0B0C',
-                  background: '#C4A882',
-                  letterSpacing: 0.5,
-                  padding: '15px 36px',
-                  borderRadius: 999,
-                  textDecoration: 'none',
-                }}
-              >
-                {t('openInApp')} →
-              </a>
+              <OpenInYuelButton token={token} label={t('openInApp')} appStoreUrl={appStoreUrl} />
             </div>
 
             {/* Secondary — App Store via a Deferred Deep Link (carries the token
