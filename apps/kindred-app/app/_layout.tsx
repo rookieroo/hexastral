@@ -167,6 +167,7 @@ export default function RootLayout() {
                 <Stack.Screen name='(settings)' options={{ fullScreenGestureEnabled: false }} />
                 <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
                 <Stack.Screen name='accept/[token]' options={{ presentation: 'modal' }} />
+                <Stack.Screen name='resonate/[token]' options={{ presentation: 'modal' }} />
               </Stack>
             </KindredClientGate>
           </AuthProvider>

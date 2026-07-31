@@ -133,7 +133,7 @@
 | **Category → Primary** | **Reference** | **Lifestyle** |
 | **Category → Secondary** | Lifestyle（可选） | **Education**（可选） |
 | **Content Rights** | 不含第三方内容 / 或按实际情况 | 同上 |
-| **Age Rating** | 见 §6（目标 **4+**） | 见 §6（目标 **12+**） |
+| **Age Rating** | 见 §6（目标 **12+**） | 见 §6（目标 **12+**） |
 | **License Agreement** | Apple 标准 EULA（除非自定义） | 同上 |
 
 **Subtitle** 不在此页全局填——在 **各语言 App Store** 本地化里填（见 §7）。
@@ -174,8 +174,8 @@
 
 目标分级：
 
-- **Yuun → 4+**（`aso-metadata.json` → `contentRating: "4+"`）
-- **Yuel → 12+**（关系/伴侣主题，略高一级更稳）
+- **Yuun → 12+**（与 `apps/auspice-app/aso-metadata.json` `contentRating: "12+"` 对齐）
+- **Yuel → 12+**（关系/伴侣主题）
 
 问卷每年可能调整，以 Connect 实时题目为准；填完后确认计算结果接近目标再 Save。
 

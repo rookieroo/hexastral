@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -113,7 +113,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		XX271F250D94CFCEDA3CD3XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -121,7 +121,7 @@
 			);
 			target = XXF407C5B27D1453039EDEXX /* AuspiceWidget */;
 		};
-		XX348F7A597976AF1746C1XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -129,7 +129,7 @@
 			);
 			target = XX16BA89470096787304EEXX /* YuunWatchApp */;
 		};
-		XX3FA1EAB6A4A4C8A5DF68XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -140,9 +140,42 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		XX3FDEBEB27F32C5D81C91XX /* watch-widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX3FA1EAB6A4A4C8A5DF68XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "watch-widget"; sourceTree = "<group>"; };
-		XX9C622A3923308018BB78XX /* widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX271F250D94CFCEDA3CD3XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = widget; sourceTree = "<group>"; };
-		XXBC072C3E310FD773C31FXX /* watch */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX348F7A597976AF1746C1XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = watch; sourceTree = "<group>"; };
+		XX3FDEBEB27F32C5D81C91XX /* watch-widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "watch-widget";
+			sourceTree = "<group>";
+		};
+		XX9C622A3923308018BB78XX /* widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = widget;
+			sourceTree = "<group>";
+		};
+		XXBC072C3E310FD773C31FXX /* watch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = watch;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -520,11 +553,13 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Yuun/Pods-Yuun-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);

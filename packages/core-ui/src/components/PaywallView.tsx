@@ -54,6 +54,8 @@ export interface PaywallCopy {
   errorUnavailable: string
   /** Apple 3.1.2 — auto-renew disclosure under the CTA. */
   autoRenewDisclaimer?: string
+  /** Entertainment / not-counseling footer (reviewer-facing). */
+  legalDisclaimer?: string
   privacyLabel?: string
   termsLabel?: string
 }
@@ -253,6 +255,10 @@ export function PaywallView({
 
         {copy.autoRenewDisclaimer ? (
           <Text style={styles.disclaimer}>{copy.autoRenewDisclaimer}</Text>
+        ) : null}
+
+        {copy.legalDisclaimer ? (
+          <Text style={styles.disclaimer}>{copy.legalDisclaimer}</Text>
         ) : null}
 
         {(privacyUrl || termsUrl) && (copy.privacyLabel || copy.termsLabel) ? (

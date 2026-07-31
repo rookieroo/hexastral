@@ -92,6 +92,7 @@ export default function PaywallScreen() {
       errorFailed: t(locale, 'paywall.failed'),
       errorUnavailable: t(locale, 'paywall.unavailable'),
       autoRenewDisclaimer: t(locale, 'paywall.autoRenewDisclaimer'),
+      legalDisclaimer: t(locale, 'paywall.legalDisclaimer'),
       privacyLabel: t(locale, 'paywall.privacy'),
       termsLabel: t(locale, 'paywall.terms'),
     }),

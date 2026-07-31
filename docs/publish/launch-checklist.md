@@ -23,9 +23,9 @@ Last updated: 2026-07-26.
   - Yuun → Reference
   - Yuel → Lifestyle
 - [ ] Pricing: free with IAP (subscriptions)
-- [ ] Subscription products:
+- [ ] Subscription / IAP products:
   - `auspice_pro_monthly`, `auspice_pro_annual` (Yuun)
-  - `kindred_pro_monthly`, `kindred_pro_annual` + `hexastral_compatibility` (Yuel)
+  - `hexastral_compatibility` (Yuel one-time — **MVP**); defer `kindred_pro_*` to Phase 2
 - [ ] Localizations: zh-Hans, zh-Hant, ja, en — name + subtitle + keywords + description + promotional text
 
 ### RevenueCat
@@ -47,7 +47,7 @@ Both apps file the same privacy posture:
 - [x] `ALLOW_DEV_PRO=0` + cron HMAC exemptions
 - [x] Yuun server-side Pro for LLM routes; Yuel push harvest reliability + Yuel-branded lifecycle push
 - [x] Yuel EAS slug `yuan` aligned with Expo project
-- [ ] Human: fill `appl_*` + `ascAppId` + secrets; run [pre-submit-smoke.md](../apps/yuun/pre-submit-smoke.md)
+- [ ] Human: fill `appl_*` + `ascAppId` + secrets; run [yuun/pre-submit-smoke.md](../apps/yuun/pre-submit-smoke.md) then [yuel/pre-submit-smoke.md](../apps/yuel/pre-submit-smoke.md)
 
 ---
 

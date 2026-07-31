@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { getTranslations } from 'next-intl/server'
 import { DDLRedirectButton } from '@/components/DDLRedirectButton'
 import { type Locale, routing } from '@/i18n/routing'
+import { resolveAppStoreUrl } from '@/lib/growth/app-store-urls'
 
 /**
  * Kindred (Yuel) invite landing — what B sees when they tap A's share-sheet link.
@@ -215,7 +216,7 @@ export default async function ResonatePage({ params, searchParams }: PageProps) 
   const expired = invite ? new Date(invite.expiresAt) < new Date() : false
   // expo-router resolves this path segment to /accept/[token] inside the app.
   const deepLink = `yuel:///accept/${token}`
-  const appStoreUrl = 'https://apps.apple.com/app/kindred/id6745054798'
+  const appStoreUrl = resolveAppStoreUrl('soulmatch')
 
   // Locale fallback for tw-locale dates (Hant uses zh-TW formatting).
   const dateLocale = locale === 'tw' ? 'zh-TW' : locale === 'zh' ? 'zh-CN' : locale

@@ -48,12 +48,18 @@ strings are the contract between RevenueCat ⇄ webhook ⇄ `useEntitlements()` 
 gates. (The RevenueCat entitlement Identifier for Yuel **must be exactly `kindred_pro`**;
 the client was reconciled away from the old `hexastral_kindred_pro`.)
 
-### MVP: create only these two
+### MVP: create these
 
-Per the launch-scope decision (2026-06), create **`kindred_pro`** and **`auspice_pro`**
-only. Do **not** create `universe_pro` (or any `universe_pro_*` product / `universe_default`
-offering) at MVP — cross-app value is ~nil with two apps live and it enlarges the review
-surface. The paywalls already cannot surface universe, so no code change is needed to defer it.
+**2026-07-31 decision:** Yuel ships **one-time** `hexastral_compatibility` at MVP;
+`kindred_pro` subscription is **Phase 2**. Create:
+
+- `auspice_pro` (Yuun subscription)
+- Do **not** create `universe_pro` (or any `universe_pro_*` product / `universe_default`
+  offering) at MVP.
+
+Defer creating the `kindred_pro` entitlement until Phase 2 (monthly quota + evening
+relationship-push retention is product-clear). Engineering catalog in `products.ts`
+may still list `kindred_pro_*` for code that remains in-repo.
 
 ---
 
@@ -61,14 +67,14 @@ surface. The paywalls already cannot surface universe, so no code change is need
 
 Create these in App Store Connect, then register the same IDs in RevenueCat:
 
-| Product ID | App | Plan | Grants | Price (confirm in ASC) |
-|---|---|---|---|---|
-| `kindred_pro_monthly` | Yuel | Monthly | `kindred_pro` | $7.99/mo (founder-agreed) |
-| `kindred_pro_annual` | Yuel | Annual | `kindred_pro` | $47.99/yr (founder-agreed) |
-| `auspice_pro_monthly` | Yuun | Monthly | `auspice_pro` | $4.99/mo (per aso-metadata; confirm) |
-| `auspice_pro_annual` | Yuun | Annual | `auspice_pro` | $39.99/yr (per aso-metadata; confirm) |
-| `coincast_pro_monthly` | Yaul | Monthly | `coincast_pro` | Confirm in ASC |
-| `coincast_pro_annual` | Yaul | Annual | `coincast_pro` | Confirm in ASC |
+| Product ID | App | Plan | Grants | Price (confirm in ASC) | MVP? |
+|---|---|---|---|---|---|
+| `auspice_pro_monthly` | Yuun | Monthly | `auspice_pro` | $4.99/mo (per aso-metadata; confirm) | **Yes** |
+| `auspice_pro_annual` | Yuun | Annual | `auspice_pro` | $39.99/yr (per aso-metadata; confirm) | **Yes** |
+| `kindred_pro_monthly` | Yuel | Monthly | `kindred_pro` | $7.99/mo | **Phase 2** |
+| `kindred_pro_annual` | Yuel | Annual | `kindred_pro` | $47.99/yr | **Phase 2** |
+| `coincast_pro_monthly` | Yaul | Monthly | `coincast_pro` | Confirm in ASC | Post-wave |
+| `coincast_pro_annual` | Yaul | Annual | `coincast_pro` | Confirm in ASC | Post-wave |
 
 **Yaul consumable AI cast packs** (Display Name in ASC should read **Yaul AI Deep Read ×N**; Product IDs unchanged):
 
@@ -78,13 +84,13 @@ Create these in App Store Connect, then register the same IDs in RevenueCat:
 | `coincast_cast_pack_5` | Yaul | Consumable | +5 credits | |
 | `coincast_cast_pack_10` | Yaul | Consumable | +10 credits | |
 
-Plus Yuel's **one-time 合盘 unlock** (not a subscription):
+Plus Yuel's **one-time 合盘 unlock** (MVP primary monetization — not a subscription):
 
-| Product ID | App | Type | Grants | Price |
-|---|---|---|---|---|
-| `hexastral_compatibility` | Yuel | Consumable (server-applied, per-bond) | — (the API marks the specific bond unlocked) | $6.99 |
-| `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (apartment / compound unit) |
-| `hexastral_feng_premium` | Kanyu | Consumable (大平层 / 独栋别墅; **not live until `PREMIUM_SKU_PROVISIONED`**) | — | $39.99 |
+| Product ID | App | Type | Grants | Price | MVP? |
+|---|---|---|---|---|---|
+| `hexastral_compatibility` | Yuel | Consumable (server-applied, per-bond) | — (the API marks the specific bond unlocked) | $6.99 | **Yes — create now** |
+| `hexastral_feng_single` | Kanyu | Consumable (server-applied, per-site report) | — (consumed after analyze completes; bundled chat) | $9.99 (apartment / compound unit) | Kanyu wave |
+| `hexastral_feng_premium` | Kanyu | Consumable (大平层 / 独栋别墅; **not live until `PREMIUM_SKU_PROVISIONED`**) | — | $39.99 | Kanyu wave |
 
 > **Kanyu premium tier (residence-type price ladder).** Apple IAP can only charge a
 > fixed pre-registered SKU, so pricing is a discrete two-tier ladder keyed by the
