@@ -168,6 +168,18 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
     if (deviceSecret) await storeDeviceSecret(deviceSecret)
   }, [])
 
+  // Optimistic cache read so the route Stack can mount before network provision
+  // finishes — Universal Links need screens registered immediately.
+  useEffect(() => {
+    let cancelled = false
+    void AsyncStorage.getItem(USER_ID_KEY).then((id) => {
+      if (!cancelled && id) setUserId(id)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {

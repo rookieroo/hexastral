@@ -1,16 +1,12 @@
 /**
- * Auspice 亲友 → Kindred Bonds — frictionless carry-over after sign-in.
+ * Auspice 亲友 → Kindred Bonds transfer (POST /api/bonds/solo per eligible person).
  *
- * The payoff of the login-at-subscribe identity: once the user has a portfolio
- * userId + deviceSecret, every 亲友 they recorded (lib/people.ts) can be POSTed
- * to `/api/bonds/solo` to seed the Kindred (Kindred) graph WITHOUT re-entering names /
- * birthdays / 时辰 / gender. The first time the user opens Kindred, the bonds are
- * already there.
+ * Call site is DISABLED in lib/account.ts until Yuun has scale and a deliberate
+ * opt-in conversion path (silent cross-app writes erode trust). Keep this module
+ * so a future feature flag can re-enable without rewriting the transfer logic.
  *
- * Idempotent — a `cycle.bonds.transferred` set tracks `AuspicePerson.id`s that
- * have already been pushed, so re-running this is safe (e.g. on each app open).
- * Skips people missing the data Kindred's `personBirthSchema` requires (time index
- * + gender). The user can edit them in /people and the next sweep picks them up.
+ * Idempotent — `auspice.bonds.transferred` tracks AuspicePerson.ids already pushed.
+ * Skips people missing time index + gender (personBirthSchema).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'

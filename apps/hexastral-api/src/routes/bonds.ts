@@ -56,7 +56,7 @@ import { buildBondMakeIf } from '../lib/relationship-makeif'
 import { explainRelationshipMakeIfWindow } from '../lib/relationship-makeif-explain'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
-import { gateInterpretationChapters, resolveUnlockedChapterCount } from '../lib/synastry-chapters'
+import { gateInterpretationChapters, resolveUnlockedChapterCount, SYNASTRY_TOTAL_CHAPTERS } from '../lib/synastry-chapters'
 import { solarDateSchema } from '../lib/validation'
 import { consumeProAllowance, getProAllowanceStatus } from '../services/pro-allowance'
 import { getBondInviteCreditStatus } from '../services/quota'
@@ -341,16 +341,87 @@ async function topUpRestChapters(
       const k = (ch as ChapterLike).kind
       if (typeof k === 'string') byKind.set(k, ch)
     }
-    interp.chapters = SYNASTRY_CANON_KINDS.flatMap((k) => {
+    const merged = SYNASTRY_CANON_KINDS.flatMap((k) => {
       const ch = byKind.get(k)
       return ch ? [ch] : []
     })
-    interp.chaptersPending = false
+    interp.chapters = merged
+    // Keep pending until the full canonical set landed (partial merge ≠ done).
+    interp.chaptersPending = merged.length < SYNASTRY_TOTAL_CHAPTERS
 
     await db
       .update(pairReadings)
       .set({ interpretation: JSON.stringify(interp) })
       .where(eq(pairReadings.id, readingId))
+  }
+}
+
+/** Isolate-local lock so GET poll repair does not stack parallel top-ups for one reading. */
+const toppingUpReadings = new Set<string>()
+
+/**
+ * Re-enqueue top-up for incomplete progressive reports (GET self-repair).
+ * Dedupes in-flight work per reading id within this isolate.
+ */
+function enqueueTopUpRestChapters(
+  executionCtx: ExecutionContext,
+  env: CloudflareBindings,
+  db: AppDb,
+  readingIds: readonly string[],
+  hehunPayload: Record<string, unknown>
+): void {
+  const fresh = readingIds.filter((id) => id.length > 0 && !toppingUpReadings.has(id))
+  if (fresh.length === 0) return
+  for (const id of fresh) toppingUpReadings.add(id)
+  executionCtx.waitUntil(
+    topUpRestChapters(env, db, fresh, hehunPayload)
+      .catch((err) => {
+        console.error('[bonds] chapter top-up failed:', err)
+      })
+      .finally(() => {
+        for (const id of fresh) toppingUpReadings.delete(id)
+      })
+  )
+}
+
+function buildTopUpPayloadFromReading(
+  reading: {
+    personASolarDate: string
+    personATimeIndex: number
+    personAGender: string
+    personAName: string | null
+    personBSolarDate: string
+    personBTimeIndex: number
+    personBGender: string
+    personBName: string | null
+    personBLongitude?: string | number | null
+    personBTimezoneId?: string | null
+    relationshipCategory: string | null
+    customRelationshipLabel: string | null
+  },
+  userId: string,
+  language: string | undefined
+): Record<string, unknown> {
+  return {
+    personA: {
+      solarDate: reading.personASolarDate,
+      timeIndex: reading.personATimeIndex,
+      gender: reading.personAGender,
+      name: reading.personAName ?? undefined,
+    },
+    personB: {
+      solarDate: reading.personBSolarDate,
+      timeIndex: reading.personBTimeIndex,
+      gender: reading.personBGender,
+      name: reading.personBName ?? undefined,
+      longitude: reading.personBLongitude != null ? Number(reading.personBLongitude) : undefined,
+      timezoneId: reading.personBTimezoneId ?? undefined,
+    },
+    userId,
+    isPro: true,
+    language,
+    relationshipCategory: reading.relationshipCategory ?? undefined,
+    customRelationshipLabel: reading.customRelationshipLabel ?? undefined,
   }
 }
 
@@ -2678,6 +2749,8 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
         personBTimeIndex: pairReadings.personBTimeIndex,
         personBGender: pairReadings.personBGender,
         personBName: pairReadings.personBName,
+        personBLongitude: pairReadings.personBLongitude,
+        personBTimezoneId: pairReadings.personBTimezoneId,
         relationshipCategory: pairReadings.relationshipCategory,
         customRelationshipLabel: pairReadings.customRelationshipLabel,
       })
@@ -2716,6 +2789,26 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
         if (parsed && typeof parsed === 'object') interpretation = parsed
       } catch {
         // Malformed interpretation JSON — leave as null so the client falls back gracefully.
+      }
+
+      // Progressive repair: if the shell is still pending and incomplete, re-enqueue
+      // the background top-up (waitUntil may have died locally / after poll budget).
+      if (
+        interpretation?.chaptersPending === true &&
+        Array.isArray(interpretation.chapters) &&
+        interpretation.chapters.length < SYNASTRY_TOTAL_CHAPTERS
+      ) {
+        const lang =
+          typeof interpretation.language === 'string'
+            ? interpretation.language
+            : c.req.valid('query').lc
+        enqueueTopUpRestChapters(
+          c.executionCtx,
+          c.env,
+          db,
+          [bond.hehunReadingId],
+          buildTopUpPayloadFromReading(rawReading, userId, lang)
+        )
       }
       // Surface both day-master 五行 so the report screen can render the ink
       // centerpiece (生/克/比和). Coarse element only — D2-safe (not raw birth).

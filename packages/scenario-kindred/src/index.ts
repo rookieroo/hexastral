@@ -37,6 +37,7 @@ export {
 } from './glyphs'
 export * from './hooks'
 export { isCjkLocale, kindredFonts } from './kindredFonts'
+export { SYNASTRY_FREE_CHAPTERS, SYNASTRY_TOTAL_CHAPTERS } from './synastry-chapters'
 export {
   elementName,
   formatLean,

@@ -61,7 +61,6 @@ import { SkyHero } from '@/components/home/SkyHero'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
-import { getCarryOverHintPending, markCarryOverHintSeen } from '@/lib/carry-over-hint'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { consumePendingOpenBond } from '@/lib/pending-open'
 import { fetchPushFuel, type PushFuelSnapshot } from '@/lib/push-fuel'
@@ -85,9 +84,6 @@ interface HomeCopy {
   noBirthTitle: string
   noBirthCta: string
   upcoming: string
-  upcomingEmpty: string
-  upcomingEmptyCta: string
-  upcomingLoading: string
   upcomingMore: (n: number) => string
 }
 
@@ -98,13 +94,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     month: 'This month',
     threads: 'Threads',
     emptyCta: 'Invite someone →',
-    emptySub: 'Invite someone close — or sign in so people from Yuun can join your sky.',
+    emptySub: 'Invite someone close to start a thread.',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
     upcoming: 'Upcoming',
-    upcomingEmpty: 'A Pro bond reading mints evening reminders for the weeks ahead.',
-    upcomingEmptyCta: 'Start a thread →',
-    upcomingLoading: 'Loading reminders…',
     upcomingMore: (n: number) => (n === 1 ? '1 reminder queued' : `${n} reminders queued`),
   },
   zh: {
@@ -113,13 +106,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     month: '本月',
     threads: '牵绊',
     emptyCta: '邀请对方 →',
-    emptySub: '邀请在意的人，或登录后让 Yuun 里的亲友亮起在夜空。',
+    emptySub: '邀请在意的人，开启一段牵绊。',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
     upcoming: '即将到来',
-    upcomingEmpty: '一次 Pro 合盘会为未来数周种下晚间关系提醒。',
-    upcomingEmptyCta: '开启一段牵绊 →',
-    upcomingLoading: '提醒加载中…',
     upcomingMore: (n: number) => `还有 ${n} 条提醒在队列中`,
   },
   'zh-Hant': {
@@ -128,13 +118,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     month: '本月',
     threads: '牽絆',
     emptyCta: '邀請對方 →',
-    emptySub: '邀請在意的人，或登入後讓 Yuun 裡的親友亮起在夜空。',
+    emptySub: '邀請在意的人，開啟一段牽絆。',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
     upcoming: '即將到來',
-    upcomingEmpty: '一次 Pro 合盤會為未來數周種下晚間關係提醒。',
-    upcomingEmptyCta: '開啟一段牽絆 →',
-    upcomingLoading: '提醒載入中…',
     upcomingMore: (n: number) => `還有 ${n} 條提醒在佇列中`,
   },
   ja: {
@@ -143,13 +130,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     month: '今月',
     threads: '絆',
     emptyCta: '相手を招待 →',
-    emptySub: '大切な人を招くか、サインインして Yuun の人を夜空へ。',
+    emptySub: '大切な人を招いて、絆をはじめましょう。',
     noBirthTitle: 'あなた自身の命式から',
     noBirthCta: '生年月日を入力 →',
     upcoming: 'これから',
-    upcomingEmpty: 'Pro の合盤レポートが、先の数週間の夜のリマインダーを残します。',
-    upcomingEmptyCta: '絆をはじめる →',
-    upcomingLoading: 'リマインダーを読み込み中…',
     upcomingMore: (n: number) => `キューに ${n} 件`,
   },
 }
@@ -308,23 +292,6 @@ export default function ReadingHomeScreen() {
       }),
     [bonds]
   )
-
-  // One-shot Yuun→Yuel carry-over banner (portfolio bonds landed on first sign-in).
-  const [showCarryOver, setShowCarryOver] = useState(false)
-  useEffect(() => {
-    if (bondsLoading || threads.length === 0) return
-    let cancelled = false
-    void getCarryOverHintPending().then((pending) => {
-      if (!cancelled && pending) setShowCarryOver(true)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [bondsLoading, threads.length])
-  const dismissCarryOver = useCallback(() => {
-    setShowCarryOver(false)
-    void markCarryOverHintSeen()
-  }, [])
 
   // First-thread (and any new-thread) BIRTH — diff the visible thread ids against
   // what we've seen this session; a freshly-appeared id is a bond YOU just made, so
@@ -639,132 +606,9 @@ export default function ReadingHomeScreen() {
         </Pressable>
       </View>
 
-      {/* Upcoming — aggregated push fuel from Pro bond reports (retention loop). */}
-      <View
-        style={{
-          marginHorizontal: kindredSpacing.screenH,
-          marginBottom: kindredSpacing.md,
-          paddingVertical: kindredSpacing.sm,
-          paddingHorizontal: kindredSpacing.md,
-          borderWidth: 0.5,
-          borderRadius: 0,
-          borderColor: kindredDark.border,
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: kindredFonts.mono,
-            fontSize: 11,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            color: kindredDark.accent,
-            marginBottom: 8,
-          }}
-        >
-          {copy.upcoming}
-        </Text>
-        {pushFuel === null ? (
-          <Text
-            style={{
-              fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
-              fontSize: 13,
-              lineHeight: 20,
-              color: kindredDark.textMuted,
-            }}
-          >
-            {copy.upcomingLoading}
-          </Text>
-        ) : pushFuel.next.length > 0 ? (
-          <>
-            {pushFuel.next.slice(0, 3).map((item) => (
-              <Pressable
-                key={item.id}
-                onPress={() => {
-                  if (item.bondId) setOpenBond({ id: item.bondId, origin: null })
-                  else startNewThread()
-                }}
-                style={({ pressed }) => ({
-                  opacity: pressed ? 0.6 : 1,
-                  marginBottom: 10,
-                })}
-              >
-                <Text
-                  style={{
-                    fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: kindredDark.text,
-                  }}
-                  numberOfLines={2}
-                >
-                  {item.title}
-                </Text>
-                {item.fireOn ? (
-                  <Text
-                    style={{
-                      marginTop: 2,
-                      fontFamily: kindredFonts.mono,
-                      fontSize: 11,
-                      color: kindredDark.textMuted,
-                    }}
-                  >
-                    {item.fireOn}
-                  </Text>
-                ) : null}
-              </Pressable>
-            ))}
-            {pushFuel.remaining > pushFuel.next.length ? (
-              <Text
-                style={{
-                  fontFamily: kindredFonts.mono,
-                  fontSize: 11,
-                  color: kindredDark.textMuted,
-                }}
-              >
-                {copy.upcomingMore(pushFuel.remaining)}
-              </Text>
-            ) : null}
-          </>
-        ) : (
-          <Pressable
-            onPress={startNewThread}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-          >
-            <Text
-              style={{
-                fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
-                fontSize: 13,
-                lineHeight: 20,
-                color: kindredDark.textMuted,
-              }}
-            >
-              {copy.upcomingEmpty}
-            </Text>
-            <Text
-              style={{
-                marginTop: 6,
-                fontFamily: kindredFonts.mono,
-                fontSize: 11,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                color: kindredDark.accent,
-              }}
-            >
-              {copy.upcomingEmptyCta}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* The threads-section header (title + inline "add") is gone: New Thread now
-          lives in the bottom-center floating FAB, and the rows stand on their own
-          under "Open your reading" + the sky. A quiet neutral hairline separates the
-          doorway from the threads (the earlier cinnabar 红线 串联 was dropped — 2026-06). */}
-      {showCarryOver && threads.length > 0 ? (
-        <Pressable
-          onPress={dismissCarryOver}
-          accessibilityRole='button'
-          accessibilityLabel={t(locale, 'home.carryOver.dismiss')}
+      {/* Upcoming — only when Pro bond fuel actually queued (no empty CTA; FAB owns create). */}
+      {pushFuel && pushFuel.next.length > 0 ? (
+        <View
           style={{
             marginHorizontal: kindredSpacing.screenH,
             marginBottom: kindredSpacing.md,
@@ -777,28 +621,70 @@ export default function ReadingHomeScreen() {
         >
           <Text
             style={{
-              fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
-              fontSize: 13,
-              lineHeight: 20,
-              color: kindredDark.textMuted,
-            }}
-          >
-            {t(locale, 'home.carryOver.banner')}
-          </Text>
-          <Text
-            style={{
-              marginTop: 6,
               fontFamily: kindredFonts.mono,
               fontSize: 11,
-              letterSpacing: 1,
+              letterSpacing: 2,
               textTransform: 'uppercase',
               color: kindredDark.accent,
+              marginBottom: 8,
             }}
           >
-            {t(locale, 'home.carryOver.dismiss')}
+            {copy.upcoming}
           </Text>
-        </Pressable>
+          {pushFuel.next.slice(0, 3).map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => {
+                if (item.bondId) setOpenBond({ id: item.bondId, origin: null })
+              }}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+                marginBottom: 10,
+              })}
+            >
+              <Text
+                style={{
+                  fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: kindredDark.text,
+                }}
+                numberOfLines={2}
+              >
+                {item.title}
+              </Text>
+              {item.fireOn ? (
+                <Text
+                  style={{
+                    marginTop: 2,
+                    fontFamily: kindredFonts.mono,
+                    fontSize: 11,
+                    color: kindredDark.textMuted,
+                  }}
+                >
+                  {item.fireOn}
+                </Text>
+              ) : null}
+            </Pressable>
+          ))}
+          {pushFuel.remaining > pushFuel.next.length ? (
+            <Text
+              style={{
+                fontFamily: kindredFonts.mono,
+                fontSize: 11,
+                color: kindredDark.textMuted,
+              }}
+            >
+              {copy.upcomingMore(pushFuel.remaining)}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
+
+      {/* The threads-section header (title + inline "add") is gone: New Thread now
+          lives in the bottom-center floating FAB, and the rows stand on their own
+          under "Open your reading" + the sky. A quiet neutral hairline separates the
+          doorway from the threads (the earlier cinnabar 红线 串联 was dropped — 2026-06). */}
       {threads.length > 0 ? (
         <View
           style={{

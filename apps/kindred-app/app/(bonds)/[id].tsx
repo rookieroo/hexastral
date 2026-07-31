@@ -36,10 +36,11 @@ import {
   ChapterPager,
   ChapterUnlockWall,
   ShareableChapterCard,
+  SYNASTRY_TOTAL_CHAPTERS,
   useShareBond,
   useSynastryReport,
 } from '@zhop/scenario-kindred'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { ChevronLeft, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Dimensions, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native'
@@ -242,10 +243,19 @@ export default function BondDetailScreen({
     chaptersPending,
     error,
     refetch,
+    resumeChapterPoll,
     chapters,
     unlockBond,
     relocalize,
   } = useSynastryReport(id ?? null, resolveLocale())
+
+  // Progressive top-up may finish after the client poll budget (~40s). Re-arm on
+  // focus so reopening / returning to the report keeps asking until all six land.
+  useFocusEffect(
+    useCallback(() => {
+      if (chaptersPending) resumeChapterPoll()
+    }, [chaptersPending, resumeChapterPoll])
+  )
   // Frozen LLM output: render the report's content + report-chrome (essence chip,
   // chapter section labels, primer, share card) in the locale it was GENERATED in
   // (interpretation.language), NOT the device locale — switching the app language
@@ -627,9 +637,12 @@ export default function BondDetailScreen({
     // Progressive report: an UNLOCKED report still composing shows skeleton pages for
     // the chapters not yet topped up (they fill in as the poll lands them). A LOCKED
     // report shows the unlock wall instead, so no skeletons there.
-    const totalChapters = detail.interpretation?.totalChapters ?? viewedChapters.length
+    // Use canonical 6 when pending — gated `totalChapters` equals DB length (often 1
+    // while the shell is alone), which would collapse skeletons to zero.
     const pendingChapterCount =
-      chaptersPending && !reportLocked ? Math.max(0, totalChapters - viewedChapters.length) : 0
+      chaptersPending && !reportLocked
+        ? Math.max(0, SYNASTRY_TOTAL_CHAPTERS - viewedChapters.length)
+        : 0
     // Same subscription paywall the timeline / what-if screens raise for their own
     // Pro upsell (no special reason → the default subtitle).
     const openPaywall = () => router.push('/(commerce)/paywall')

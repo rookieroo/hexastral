@@ -8,7 +8,8 @@ import '@/lib/ensure-intl'
  *     SafeAreaProvider
  *       CoreUIProvider (brand='kindred', mode='dark') — dark-only (ADR-0018 ink aesthetic)
  *         AuthProvider (provisions userId + deviceSecret)
- *           KindredClientGate (wires <KindredClientProvider> once userId is ready)
+ *           KindredClientGate (provider + Stack always mounted once userId cached;
+ *             boot splash is an overlay so Universal Links can resolve)
  *             IapInitializer  (one-shot RevenueCat configure + login)
  *             expo-router <Stack>
  *               (onboarding)/*  — intro → self → [first run: solo reading] or mode → partner flow
@@ -30,29 +31,26 @@ import { CoreUIProvider } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useFonts } from 'expo-font'
 import * as Linking from 'expo-linking'
-import { type Href, router, Stack } from 'expo-router'
+import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useMemo } from 'react'
 import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { KindredRouteBoot } from '@/components/KindredRouteBoot'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { KindredClientGate } from '@/lib/client'
 import { captureCompose } from '@/lib/composeLink'
-import { attemptKindredDdlRestore, setKindredDdlToken } from '@/lib/ddl'
+import { setKindredDdlToken } from '@/lib/ddl'
 import { captureOnboardAttribution } from '@/lib/funnel-attribution'
 import { resolveLocale } from '@/lib/i18n'
 import { initializeYuanIap, loginYuanIap } from '@/lib/iap'
 import { syncPushRegistration } from '@/lib/serverPush'
-import { attachTimelineTapHandler, configureTimelineNotifications } from '@/lib/timeline-push'
 
 /**
- * Boot cover — the client gate paints the kindred bg ONLY while session
- * provisioning resolves (a frame or two of automatic network setup, not a
- * user-initiated action). A moon-phase spinner here read as a redundant
- * "Loading" screen in front of the brand's own entrance flourish (intro moon
- * for first launch, HomeSplash for returning users); a loader belongs only
- * where the user took an explicit action and the API genuinely needs time.
+ * Boot cover — painted as an overlay while session provisioning finishes, so the
+ * Stack stays mounted underneath (deep links need registered screens). A moon
+ * spinner here read as redundant in front of the brand entrance; keep it blank.
  * The native splash already covers the cold-launch flash before this mounts.
  */
 function BootSplash() {
@@ -116,24 +114,6 @@ export default function RootLayout() {
     return () => sub.remove()
   }, [])
 
-  // Cold-install invite recovery (Deferred Deep Link). When B installed the app
-  // from A's /resonate link, no URL carries the token — recover it via the DDL
-  // fingerprint match and resume the invite at /accept/[token]. Runs once per
-  // install (claimed guard inside); a non-invited user costs one no-op match.
-  useEffect(() => {
-    void attemptKindredDdlRestore().then((claim) => {
-      if (claim) router.push({ pathname: '/accept/[token]', params: { token: claim.token } })
-    })
-  }, [])
-
-  // Relationship-timeline reminders: set the foreground display behaviour once and
-  // route taps to the timeline. The schedule itself is laid down lazily when the
-  // timeline is viewed (Pro-gated server-side) — see lib/timeline-push.ts.
-  useEffect(() => {
-    configureTimelineNotifications()
-    return attachTimelineTapHandler((route) => router.push(route as Href))
-  }, [])
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -142,6 +122,7 @@ export default function RootLayout() {
           <AuthProvider locale={locale}>
             <KindredClientGate fallback={<BootSplash />}>
               <IapInitializer />
+              <KindredRouteBoot />
               <Stack
                 screenOptions={{
                   headerShown: false,

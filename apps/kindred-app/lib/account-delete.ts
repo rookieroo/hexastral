@@ -21,7 +21,7 @@ const LOCAL_KEYS = [
   'kindred_daily_push_v1',
   'kindred.selfBirth',
   'kindred.selfBirth.synced',
-  'kindred.carryOver.hint.seen',
+  'kindred_carryover_hint_v1',
   'kindred.primer.seen',
 ]
 

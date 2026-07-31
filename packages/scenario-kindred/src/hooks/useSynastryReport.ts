@@ -75,6 +75,12 @@ export interface UseSynastryReportResult {
   chaptersPending: boolean
   /** Force re-fetch — does not regenerate, just clears local state */
   refetch: () => Promise<void>
+  /**
+   * Reset the progressive-chapter poll budget and refetch. Call when the report
+   * screen regains focus while `chaptersPending` is still true (poll may have
+   * exhausted while the user stayed on the page).
+   */
+  resumeChapterPoll: () => void
   /** Convenience accessor: returns chapters if interpretation includes them */
   chapters: SynastryChapter[] | null
   /**
@@ -155,6 +161,13 @@ export function useSynastryReport(
     }
   }, [bondId, client, onError, viewerLocale, clearPoll])
 
+  const resumeChapterPoll = useCallback(() => {
+    if (!bondId) return
+    clearPoll()
+    pollCount.current = 0
+    void refetch()
+  }, [bondId, clearPoll, refetch])
+
   const unlockBond = useCallback(async (): Promise<'unlocked' | 'needs_purchase' | 'error'> => {
     if (!bondId) return 'error'
     try {
@@ -215,6 +228,7 @@ export function useSynastryReport(
     error,
     chaptersPending: detail?.chaptersPending ?? false,
     refetch,
+    resumeChapterPoll,
     chapters: extractChapters(detail?.interpretation),
     unlockBond,
     relocalize,

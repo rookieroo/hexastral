@@ -2,8 +2,10 @@
  * Login-at-subscribe identity. Yuun is anonymous-first for the free 黄历, but
  * subscribing requires sign-in so the subscription is a portable cross-app identity:
  *   - restores on every device (not tied to one install / Apple ID anon RC id),
- *   - universe_pro continuity across the suite (Phase 2), and
- *   - frictionless Bonds carry-over when the user later opens Yuel.
+ *   - universe_pro continuity across the suite (Phase 2).
+ *
+ * Silent Yuun→Yuel 亲友 transfer on sign-in is DISABLED until Yuun has scale and a
+ * deliberate opt-in conversion path (trust > funnel). See lib/bonds-transfer.ts.
  *
  * Apple / Google → POST /portfolio/auth/{apple,google} → alias RevenueCat to that
  * userId so purchases and webhooks map to the portfolio identity.
@@ -18,10 +20,7 @@ import {
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
-import { transferAuspicePeopleToBonds } from './bonds-transfer'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
-import { resolveLocale } from './i18n'
-import { getPeople } from './people'
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
 let isGoogleSigninConfigured = false
@@ -141,30 +140,14 @@ export async function signInWithGoogle(): Promise<string | null> {
 }
 
 /**
- * The PAYOFF of sign-in — push every eligible 亲友 (lib/people.ts) into the
- * portfolio Bonds graph so Kindred picks them up with zero friction. Runs after
- * each successful sign-in; idempotent, failures retried on the next call.
+ * Formerly pushed every eligible 亲友 into portfolio Bonds on sign-in.
+ * No-op until a deliberate Yuun→Yuel conversion ships (see bonds-transfer.ts).
  */
 async function transferBondsInBackground(): Promise<void> {
-  try {
-    const people = await getPeople()
-    if (people.length === 0) return
-    const locale = resolveLocale()
-    const language =
-      locale === 'zh-Hans' || locale === 'zh-Hant' || locale === 'ja' || locale === 'en'
-        ? locale === 'zh-Hans'
-          ? 'zh-CN'
-          : locale === 'zh-Hant'
-            ? 'zh-TW'
-            : locale
-        : 'en'
-    await transferAuspicePeopleToBonds(people, language)
-  } catch (err) {
-    console.warn('[auspice.account] bonds transfer failed', err)
-  }
+  // Intentionally disabled — silent cross-app data write.
 }
 
-/** Re-runs the transfer (e.g. after the user edits 亲友 to fill in missing data). */
+/** Kept for callers; no-op while auto-transfer is disabled. */
 export async function retryBondsTransfer(): Promise<void> {
   if (!(await isSignedIn())) return
   await transferBondsInBackground()
