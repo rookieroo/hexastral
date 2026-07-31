@@ -2,7 +2,7 @@
  * DEV preview — the LOCKED synastry card design (chapter-en) with hardcoded
  * English sample data (Metal × Fire), so it can be QA'd on device without
  * deploying svc-astro or regenerating a bond. Reachable via /_sitemap or the
- * home DEV row. Not linked from production; safe to leave or delete.
+ * Settings DEV row. Gated at the route — production builds redirect home.
  */
 
 import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
@@ -12,7 +12,7 @@ import {
   type SynastryChapter,
   type SynastryReport,
 } from '@zhop/scenario-kindred'
-import { Stack } from 'expo-router'
+import { Redirect, Stack } from 'expo-router'
 import { useState } from 'react'
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -147,6 +147,7 @@ const REPORT: SynastryReport = {
 export default function ChapterPreview() {
   const [index, setIndex] = useState(0)
   const [mode, setMode] = useState<'card' | 'share'>('card')
+  if (!__DEV__) return <Redirect href='/(reading)' />
 
   // Share card is authored at 1080×1920; scale to fit the screen for preview.
   const shareW = Math.min(Dimensions.get('window').width - 40, 380)

@@ -24,13 +24,19 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     // This matters: if we don't rewrite, a bare "/reading" falls through to the
     // root dynamic route `(bonds)/[id]` (id="reading") and renders "Bond not
     // found" instead of the personal reading the Yuun hand-off intended.
-    const firstSegment = rawPath
+    const segments = rawPath
       .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '') // strip a leading URL scheme
       .replace(/^\/?--\//, '') // strip the Expo Go dev separator
       .split('/')
-      .find((s) => s.length > 0)
+      .filter((s) => s.length > 0)
+    const firstSegment = segments[0]
     if (firstSegment === 'reading') {
       return query ? `/(reading)/full?${query}` : '/(reading)/full'
+    }
+    // Universal Link / share: yuel.hexastral.com/resonate/{token} → in-app accept.
+    if (firstSegment === 'resonate' && segments[1]) {
+      const token = segments[1]
+      return query ? `/accept/${encodeURIComponent(token)}?${query}` : `/accept/${encodeURIComponent(token)}`
     }
   } catch {
     // Fall through to the original path on any parse failure.

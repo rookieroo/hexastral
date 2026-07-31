@@ -209,6 +209,7 @@ export const translations: Translations = {
     'bondList.noActiveYet': 'No woven threads yet — once they accept, they show up here.',
     'bondList.title': 'Threads',
     'bondList.subtitle': 'The people woven into your chart',
+    'bondList.add': 'New thread',
 
     'timeline.title': 'Timeline',
     'timeline.subtitle': 'The turning points ahead across every bond',
@@ -340,6 +341,16 @@ export const translations: Translations = {
     'settings.recovered': 'Restored your previous threads',
     'settings.signOut': 'Sign out',
     'settings.signOut.hint': 'Removes the local device key',
+    'settings.signOut.confirmTitle': 'Sign out?',
+    'settings.signOut.confirmBody': 'This removes the local device key. You can sign in again to restore linked threads.',
+    'settings.deleteAccount': 'Delete account',
+    'settings.deleteAccount.confirmTitle': 'Permanently delete account?',
+    'settings.deleteAccount.confirmBody':
+      'This permanently deletes your birth info, bonds, invitations, push queue, and reading history under this account. This cannot be undone. Cancel App Store subscriptions separately in Apple ID settings.',
+    'settings.deleteAccount.cancel': 'Cancel',
+    'settings.deleteAccount.confirmCta': 'Delete permanently',
+    'settings.deleteAccount.failed': 'Delete failed. Please try again later.',
+    'settings.deleteAccount.working': 'Deleting…',
     'settings.privacy.section': 'Privacy',
     'settings.crossAppMemory.label': 'Cross-app memory',
     'settings.crossAppMemory.hint':
@@ -471,6 +482,10 @@ export const translations: Translations = {
     'paywall.success': 'Welcome to Yuel Pro',
     'paywall.legalDisclaimer':
       'For entertainment, cultural exploration, and personal reflection only — not relationship counseling, therapy, or professional advice. See yuel.hexastral.com/terms.',
+    'paywall.autoRenewDisclaimer':
+      'Subscription renews automatically unless canceled at least 24 hours before the end of the current period. Manage in Apple ID settings.',
+    'paywall.privacy': 'Privacy Policy',
+    'paywall.terms': 'Terms of Use',
     'paywall.close': 'Close',
 
     'chat.title': 'Ask about this synastry',
@@ -760,6 +775,16 @@ export const translations: Translations = {
     'settings.recovered': '已恢复你之前的合盘记录',
     'settings.signOut': '退出',
     'settings.signOut.hint': '清除本机密钥',
+    'settings.signOut.confirmTitle': '确认退出？',
+    'settings.signOut.confirmBody': '会移除本机设备密钥。重新登录后可恢复已绑定的牵绊。',
+    'settings.deleteAccount': '删除账号',
+    'settings.deleteAccount.confirmTitle': '永久删除账号？',
+    'settings.deleteAccount.confirmBody':
+      '将永久删除本账号下的生辰、牵绊、邀请、推送队列与解读记录，且无法恢复。App Store 订阅需在 Apple ID 设置中另行取消。',
+    'settings.deleteAccount.cancel': '取消',
+    'settings.deleteAccount.confirmCta': '永久删除',
+    'settings.deleteAccount.failed': '删除失败，请稍后重试。',
+    'settings.deleteAccount.working': '正在删除…',
     'settings.privacy.section': '隐私',
     'settings.crossAppMemory.label': '跨应用记忆',
     'settings.crossAppMemory.hint':
@@ -880,6 +905,10 @@ export const translations: Translations = {
     'paywall.success': '欢迎加入 Yuel Pro',
     'paywall.legalDisclaimer':
       '仅供娱乐、文化探索与个人反思——非心理咨询、关系治疗或专业建议。详见 yuel.hexastral.com/terms。',
+    'paywall.autoRenewDisclaimer':
+      '订阅将自动续订，除非在当前周期结束前至少 24 小时取消。可在 Apple ID 设置中管理。',
+    'paywall.privacy': '隐私政策',
+    'paywall.terms': '使用条款',
     'paywall.close': '关闭',
 
     'chat.title': '聊聊你们的合盘',
@@ -1168,6 +1197,16 @@ export const translations: Translations = {
     'settings.recovered': '已還原先前的合盤記錄',
     'settings.signOut': '登出',
     'settings.signOut.hint': '清除本機金鑰',
+    'settings.signOut.confirmTitle': '確認登出？',
+    'settings.signOut.confirmBody': '會移除本機裝置金鑰。重新登入後可恢復已綁定的牽絆。',
+    'settings.deleteAccount': '刪除帳號',
+    'settings.deleteAccount.confirmTitle': '永久刪除帳號？',
+    'settings.deleteAccount.confirmBody':
+      '將永久刪除本帳號下的生辰、牽絆、邀請、推送佇列與解讀紀錄，且無法復原。App Store 訂閱需在 Apple ID 設定中另行取消。',
+    'settings.deleteAccount.cancel': '取消',
+    'settings.deleteAccount.confirmCta': '永久刪除',
+    'settings.deleteAccount.failed': '刪除失敗，請稍後重試。',
+    'settings.deleteAccount.working': '正在刪除…',
     'settings.privacy.section': '隱私',
     'settings.crossAppMemory.label': '跨應用記憶',
     'settings.crossAppMemory.hint':
@@ -1288,6 +1327,10 @@ export const translations: Translations = {
     'paywall.success': '歡迎加入 Yuel Pro',
     'paywall.legalDisclaimer':
       '僅供娛樂、文化探索與個人反思——非心理諮詢、關係治療或專業建議。詳見 yuel.hexastral.com/terms。',
+    'paywall.autoRenewDisclaimer':
+      '訂閱將自動續訂，除非在目前週期結束前至少 24 小時取消。可在 Apple ID 設定中管理。',
+    'paywall.privacy': '隱私政策',
+    'paywall.terms': '使用條款',
     'paywall.close': '關閉',
 
     'chat.title': '聊聊你們的合盤',
@@ -1581,6 +1624,17 @@ export const translations: Translations = {
     'settings.recovered': '以前の縁を復元しました',
     'settings.signOut': 'サインアウト',
     'settings.signOut.hint': '端末のキーを削除',
+    'settings.signOut.confirmTitle': 'サインアウトしますか？',
+    'settings.signOut.confirmBody':
+      '端末のキーを削除します。再サインインすると紐づいた縁を復元できます。',
+    'settings.deleteAccount': 'アカウントを削除',
+    'settings.deleteAccount.confirmTitle': 'アカウントを完全に削除しますか？',
+    'settings.deleteAccount.confirmBody':
+      'このアカウントの出生情報・縁・招待・プッシュキュー・読み取り履歴を完全に削除します。元に戻せません。App Store の定期購読は Apple ID 設定で別途解約してください。',
+    'settings.deleteAccount.cancel': 'キャンセル',
+    'settings.deleteAccount.confirmCta': '完全に削除',
+    'settings.deleteAccount.failed': '削除に失敗しました。しばらくしてから再試行してください。',
+    'settings.deleteAccount.working': '削除中…',
     'settings.privacy.section': 'プライバシー',
     'settings.crossAppMemory.label': 'アプリ間メモリ',
     'settings.crossAppMemory.hint':
@@ -1706,6 +1760,10 @@ export const translations: Translations = {
     'paywall.success': 'Yuel Proへようこそ',
     'paywall.legalDisclaimer':
       '娯楽・文化探索・個人的な振り返りのみを目的とします。カウンセリングや専門助言の代替ではありません。yuel.hexastral.com/terms を参照。',
+    'paywall.autoRenewDisclaimer':
+      '期間終了の24時間前までにキャンセルしない限り、自動更新されます。Apple ID 設定で管理できます。',
+    'paywall.privacy': 'プライバシーポリシー',
+    'paywall.terms': '利用規約',
     'paywall.close': '閉じる',
 
     'chat.title': '二人の相性について聞く',

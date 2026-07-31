@@ -49,13 +49,26 @@ export function initializeYuanIap(): void {
   const apiKey = Platform.OS === 'ios' ? config.revenueCat.ios : config.revenueCat.android
   const looksLikePlaceholder =
     !apiKey || apiKey.includes('REPLACE_WITH_') || apiKey.includes('xxxx')
-  if (looksLikePlaceholder) return
+  if (looksLikePlaceholder) {
+    if (__DEV__) {
+      console.warn(
+        '[yuel.iap] RevenueCat key missing or REPLACE_WITH_* placeholder — IAP stays unavailable'
+      )
+    }
+    return
+  }
   try {
     p.configure({ apiKey })
     initialized = true
-  } catch {
-    // ignore — paywall will degrade to preview mode
+  } catch (err) {
+    console.warn('[yuel.iap] configure failed', err)
   }
+}
+
+/** True when RC keys look shippable (not empty / REPLACE_WITH_*). Used by paywall + audit. */
+export function isKindredIapConfigured(): boolean {
+  const apiKey = Platform.OS === 'ios' ? config.revenueCat.ios : config.revenueCat.android
+  return Boolean(apiKey && !apiKey.includes('REPLACE_WITH_') && !apiKey.includes('xxxx'))
 }
 
 export async function loginYuanIap(userId: string): Promise<void> {
@@ -139,6 +152,7 @@ export type KindredPurchaseResult = 'success' | 'cancelled' | 'failed' | 'unavai
 export async function purchaseKindredPro(
   plan: 'monthly' | 'annual'
 ): Promise<KindredPurchaseResult> {
+  if (!isKindredIapConfigured()) return 'unavailable'
   const p = loadPurchases()
   if (!p || !initialized) return 'unavailable'
   try {

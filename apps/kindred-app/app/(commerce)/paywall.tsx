@@ -24,12 +24,12 @@ import { PaywallView } from '@zhop/core-ui'
 import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { SignInSheet } from '@/components/SignInSheet'
 import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
-import { resolveLocale, t } from '@/lib/i18n'
+import { privacyPolicyUrl, resolveLocale, t } from '@/lib/i18n'
 import {
   getYuanOfferings,
   type KindredOfferings,
@@ -91,9 +91,19 @@ export default function PaywallScreen() {
       closeLabel: t(locale, 'paywall.close'),
       errorFailed: t(locale, 'paywall.failed'),
       errorUnavailable: t(locale, 'paywall.unavailable'),
+      autoRenewDisclaimer: t(locale, 'paywall.autoRenewDisclaimer'),
+      privacyLabel: t(locale, 'paywall.privacy'),
+      termsLabel: t(locale, 'paywall.terms'),
     }),
     [locale, subtitleKey]
   )
+
+  const termsUrl = useMemo(() => {
+    const segment =
+      locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
+    if (segment === 'en') return 'https://yuel.hexastral.com/terms'
+    return `https://yuel.hexastral.com/${segment}/terms`
+  }, [locale])
 
   // userEmail = "do they already have a recovery handle?" (set after an email
   // bind OR Apple/Google sign-in). Null → anonymous device-id only; we use this
@@ -119,6 +129,8 @@ export default function PaywallScreen() {
           brand={palette}
           defaultPlan='annual'
           hero={<YuelMark vertical size={96} color={kindredDark.seal} />}
+          privacyUrl={privacyPolicyUrl(locale)}
+          termsUrl={termsUrl}
           onClose={() => router.back()}
           onPurchase={async (productId) => {
             const plan = productId === YUAN_PRODUCT_IDS.annual ? 'annual' : 'monthly'
@@ -128,18 +140,6 @@ export default function PaywallScreen() {
           }}
           onRestore={restoreKindredPurchases}
         />
-        <Text
-          style={{
-            color: kindredDark.textMuted,
-            fontSize: 11,
-            lineHeight: 16,
-            paddingHorizontal: 20,
-            paddingBottom: 12,
-            textAlign: 'center',
-          }}
-        >
-          {t(locale, 'paywall.legalDisclaimer')}
-        </Text>
       </View>
 
       <SignInSheet visible={signInOpen} onClose={() => setSignInOpen(false)} />

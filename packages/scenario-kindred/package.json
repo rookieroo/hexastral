@@ -5,7 +5,6 @@
   "description": "Shared components, hooks, and types for the Kindred (Kindred) synastry product. Consumed by hexastral-app (bonds tab) and yuan-app (standalone Expo build).",
   "exports": {
     ".": "./src/index.ts",
-    "./light": "./src/light.ts",
     "./components": "./src/components/index.ts",
     "./hooks": "./src/hooks/index.ts",
     "./types": "./src/types.ts"

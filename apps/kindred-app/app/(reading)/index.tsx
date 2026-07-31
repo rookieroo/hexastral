@@ -78,7 +78,6 @@ interface HomeCopy {
   /** Short doorway to the 本月 screen (the lightweight 本月运势 card), beside `open`. */
   month: string
   threads: string
-  threadsHint: string
   /** 0-thread empty state — the primary "bring someone into your sky" action. */
   emptyCta: string
   /** 0-thread sub-line under the lone-sky title — what a thread is, gently. */
@@ -88,6 +87,7 @@ interface HomeCopy {
   upcoming: string
   upcomingEmpty: string
   upcomingEmptyCta: string
+  upcomingLoading: string
   upcomingMore: (n: number) => string
 }
 
@@ -97,7 +97,6 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: 'Open your reading →',
     month: 'This month',
     threads: 'Threads',
-    threadsHint: 'Your sky is yours alone — no one orbits you yet.',
     emptyCta: 'Invite someone →',
     emptySub: 'Invite someone close — or sign in so people from Yuun can join your sky.',
     noBirthTitle: 'Begin with your own chart',
@@ -105,6 +104,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     upcoming: 'Upcoming',
     upcomingEmpty: 'A Pro bond reading mints evening reminders for the weeks ahead.',
     upcomingEmptyCta: 'Start a thread →',
+    upcomingLoading: 'Loading reminders…',
     upcomingMore: (n: number) => (n === 1 ? '1 reminder queued' : `${n} reminders queued`),
   },
   zh: {
@@ -112,7 +112,6 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '打开个人解读 →',
     month: '本月',
     threads: '牵绊',
-    threadsHint: '此刻，夜空里只有你一个人。',
     emptyCta: '邀请对方 →',
     emptySub: '邀请在意的人，或登录后让 Yuun 里的亲友亮起在夜空。',
     noBirthTitle: '从你自己的命盘开始',
@@ -120,6 +119,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     upcoming: '即将到来',
     upcomingEmpty: '一次 Pro 合盘会为未来数周种下晚间关系提醒。',
     upcomingEmptyCta: '开启一段牵绊 →',
+    upcomingLoading: '提醒加载中…',
     upcomingMore: (n: number) => `还有 ${n} 条提醒在队列中`,
   },
   'zh-Hant': {
@@ -127,7 +127,6 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '打開個人解讀 →',
     month: '本月',
     threads: '牽絆',
-    threadsHint: '此刻，夜空裡只有你一個人。',
     emptyCta: '邀請對方 →',
     emptySub: '邀請在意的人，或登入後讓 Yuun 裡的親友亮起在夜空。',
     noBirthTitle: '從你自己的命盤開始',
@@ -135,6 +134,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     upcoming: '即將到來',
     upcomingEmpty: '一次 Pro 合盤會為未來數周種下晚間關係提醒。',
     upcomingEmptyCta: '開啟一段牽絆 →',
+    upcomingLoading: '提醒載入中…',
     upcomingMore: (n: number) => `還有 ${n} 條提醒在佇列中`,
   },
   ja: {
@@ -142,7 +142,6 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     open: '個人レポートを開く →',
     month: '今月',
     threads: '絆',
-    threadsHint: '今はまだ、夜空にいるのはあなただけ。',
     emptyCta: '相手を招待 →',
     emptySub: '大切な人を招くか、サインインして Yuun の人を夜空へ。',
     noBirthTitle: 'あなた自身の命式から',
@@ -150,6 +149,7 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     upcoming: 'これから',
     upcomingEmpty: 'Pro の合盤レポートが、先の数週間の夜のリマインダーを残します。',
     upcomingEmptyCta: '絆をはじめる →',
+    upcomingLoading: 'リマインダーを読み込み中…',
     upcomingMore: (n: number) => `キューに ${n} 件`,
   },
 }
@@ -663,7 +663,18 @@ export default function ReadingHomeScreen() {
         >
           {copy.upcoming}
         </Text>
-        {pushFuel && pushFuel.next.length > 0 ? (
+        {pushFuel === null ? (
+          <Text
+            style={{
+              fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
+              fontSize: 13,
+              lineHeight: 20,
+              color: kindredDark.textMuted,
+            }}
+          >
+            {copy.upcomingLoading}
+          </Text>
+        ) : pushFuel.next.length > 0 ? (
           <>
             {pushFuel.next.slice(0, 3).map((item) => (
               <Pressable
@@ -870,6 +881,7 @@ export default function ReadingHomeScreen() {
                   // more — the lone star above is the picture.
                   <FirstThreadInvite
                     cjk={isCjkLocale(locale)}
+                    cta={copy.emptyCta}
                     line={copy.emptySub}
                     onPress={startNewThread}
                   />
@@ -1005,10 +1017,12 @@ export default function ReadingHomeScreen() {
  */
 function FirstThreadInvite({
   cjk,
+  cta,
   line,
   onPress,
 }: {
   cjk: boolean
+  cta: string
   line: string
   onPress: () => void
 }) {
@@ -1025,7 +1039,7 @@ function FirstThreadInvite({
       <Pressable
         onPress={onPress}
         accessibilityRole='button'
-        accessibilityLabel={line}
+        accessibilityLabel={cta}
         hitSlop={12}
         style={({ pressed }) => ({ alignItems: 'center', opacity: pressed ? 0.65 : 1 })}
       >
@@ -1047,6 +1061,18 @@ function FirstThreadInvite({
         >
           <Spline color={kindredDark.text} size={24} strokeWidth={2} />
         </View>
+        <Text
+          style={{
+            fontFamily: kindredFonts.mono,
+            fontSize: 12,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            color: kindredDark.accent,
+            marginBottom: kindredSpacing.sm,
+          }}
+        >
+          {cta}
+        </Text>
         <Text
           style={{
             fontFamily: bodyFont,

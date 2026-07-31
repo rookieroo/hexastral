@@ -13,9 +13,6 @@ export default function BondsLayout() {
         gestureEnabled: true,
       }}
     >
-      <Stack.Screen name='index' />
-      {/* The report owns its own 水墨晕开 entrance (ReportBloom), so suppress the
-          slide and let the ink bloom be the transition. */}
       <Stack.Screen name='[id]' options={{ animation: 'fade' }} />
       <Stack.Screen name='chat' />
     </Stack>

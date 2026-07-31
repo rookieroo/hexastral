@@ -23,7 +23,9 @@ export function PushFuelDisclosure({ bondId }: { bondId: string }) {
       // Count queued rows that belong to this bond when present in the preview;
       // otherwise fall back to the user's total remaining fuel.
       const bondHits = snap.next.filter((n) => n.bondId === bondId)
-      setRemaining(bondHits.length > 0 ? bondHits.length : snap.remaining)
+      // Never fall back to user-wide `remaining` — that mis-attributes other
+      // bonds' fuel to this report. No preview rows for this bond ⇒ empty.
+      setRemaining(bondHits.length)
     })
     return () => {
       cancelled = true

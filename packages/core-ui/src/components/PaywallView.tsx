@@ -21,7 +21,15 @@
  */
 
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import { useTheme } from '../theme'
 
 export type PaywallPlan = 'monthly' | 'annual' | 'single'
@@ -44,6 +52,10 @@ export interface PaywallCopy {
   closeLabel?: string
   errorFailed: string
   errorUnavailable: string
+  /** Apple 3.1.2 — auto-renew disclosure under the CTA. */
+  autoRenewDisclaimer?: string
+  privacyLabel?: string
+  termsLabel?: string
 }
 
 export interface PaywallPalette {
@@ -74,6 +86,9 @@ export interface PaywallViewProps {
   onClose?: () => void
   /** Optional hero / brand mark slot above the title. */
   hero?: ReactNode
+  /** Apple 3.1.2 — tappable Privacy / Terms on the buy screen. */
+  privacyUrl?: string
+  termsUrl?: string
 }
 
 type Status = 'idle' | 'purchasing' | 'restoring' | 'success' | 'error'
@@ -90,6 +105,8 @@ export function PaywallView({
   onRestore,
   onClose,
   hero,
+  privacyUrl,
+  termsUrl,
 }: PaywallViewProps) {
   const theme = useTheme()
   const palette: PaywallPalette = useMemo(
@@ -233,6 +250,40 @@ export function PaywallView({
         ) : null}
 
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+
+        {copy.autoRenewDisclaimer ? (
+          <Text style={styles.disclaimer}>{copy.autoRenewDisclaimer}</Text>
+        ) : null}
+
+        {(privacyUrl || termsUrl) && (copy.privacyLabel || copy.termsLabel) ? (
+          <View style={styles.legalRow}>
+            {privacyUrl && copy.privacyLabel ? (
+              <Pressable
+                onPress={() => {
+                  void Linking.openURL(privacyUrl)
+                }}
+                hitSlop={8}
+                accessibilityRole='link'
+              >
+                <Text style={styles.legalLink}>{copy.privacyLabel}</Text>
+              </Pressable>
+            ) : null}
+            {privacyUrl && termsUrl && copy.privacyLabel && copy.termsLabel ? (
+              <Text style={styles.legalSep}>·</Text>
+            ) : null}
+            {termsUrl && copy.termsLabel ? (
+              <Pressable
+                onPress={() => {
+                  void Linking.openURL(termsUrl)
+                }}
+                hitSlop={8}
+                accessibilityRole='link'
+              >
+                <Text style={styles.legalLink}>{copy.termsLabel}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </ScrollView>
   )
@@ -313,6 +364,29 @@ function createStyles(p: PaywallPalette) {
       color: '#EF4444',
       textAlign: 'center',
       lineHeight: 18,
+    },
+    disclaimer: {
+      fontSize: 11,
+      lineHeight: 16,
+      color: p.textMuted,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+    },
+    legalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    legalLink: {
+      fontSize: 12,
+      color: p.textMuted,
+      textDecorationLine: 'underline',
+    },
+    legalSep: {
+      fontSize: 12,
+      color: p.textMuted,
     },
   })
 }

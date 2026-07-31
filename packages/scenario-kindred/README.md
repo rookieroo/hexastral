@@ -49,15 +49,15 @@ src/
 │   ├── useBondList.ts        list current user's bonds (GET /api/bonds)
 │   └── useSynastryReport.ts  fetch bond detail + chapters (GET /api/bonds/:id)
 └── components/
-    ├── KindredSeal              cinnabar Kindred stamp (3 animation modes)
     ├── RelationshipTypeSelector  chip group
-    ├── CompatibilityScore    0-100 with SVG ring
     ├── RevealMoment          2.7s ceremonial reveal after bond creation
-    ├── WaitingForOther       A's pending/accepted state screen
-    ├── InviteAcceptSheet     B's first-launch bottom sheet
     ├── ChapterCard           single chapter render
     ├── ChapterPager          6-chapter horizontal page-snap
-    └── ShareableChapterCard  9:16 PNG for IG / 小红书 share
+    ├── ChapterUnlockWall     locked-chapter paywall surface
+    ├── ShareableChapterCard  9:16 PNG for IG / 小红书 share
+    ├── ShareablePersonalCard personal-reading share card
+    ├── AncientSeal / AncientNumeral / RiskMark / TermBubble / QrCode
+    └── …
 ```
 
 ## What does NOT live here

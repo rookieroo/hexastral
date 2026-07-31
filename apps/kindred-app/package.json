@@ -27,7 +27,6 @@
     "@zhop/ddl-client": "workspace:*",
     "@zhop/hexastral-client": "workspace:*",
     "@zhop/hexastral-tokens": "workspace:*",
-    "@zhop/satellite-ui": "workspace:*",
     "@zhop/scenario-kindred": "workspace:*",
     "@zhop/scenario-yuan": "workspace:*",
     "babel-preset-expo": "~54.0.10",

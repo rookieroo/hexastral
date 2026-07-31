@@ -29,6 +29,9 @@ import {
   TIMELINE_NOTIFY_ID_PREFIX,
 } from '@zhop/scenario-kindred'
 import { Platform } from 'react-native'
+import { isKindredPushRouteAllowed } from './timeline-push-route'
+
+export { isKindredPushRouteAllowed } from './timeline-push-route'
 
 type Notif = typeof import('expo-notifications')
 let cached: Notif | null | undefined
@@ -189,14 +192,6 @@ export async function syncLiuyueDigest(
  *
  * Only allow known in-app prefixes (open-redirect hardening).
  */
-const ALLOWED_ROUTE_PREFIXES = ['/(bonds)/', '/(tabs)/', '/(app)/', '/bonds/', '/timeline'] as const
-
-function isAllowedPushRoute(route: string): boolean {
-  const r = route.trim()
-  if (!r.startsWith('/')) return false
-  return ALLOWED_ROUTE_PREFIXES.some((p) => r === p || r.startsWith(p))
-}
-
 export function attachTimelineTapHandler(navigate: (route: string) => void): () => void {
   const N = notif()
   if (!N) return () => {}
@@ -209,7 +204,7 @@ export function attachTimelineTapHandler(navigate: (route: string) => void): () 
       if (id && id === lastHandledId) return
       if (id) lastHandledId = id
       const data = response.notification.request.content.data as { route?: string } | undefined
-      if (data?.route && isAllowedPushRoute(data.route)) navigate(data.route)
+      if (data?.route && isKindredPushRouteAllowed(data.route)) navigate(data.route)
     }
     const sub = N.addNotificationResponseReceivedListener(handle)
     void N.getLastNotificationResponseAsync()

@@ -1,4 +1,4 @@
-import { kindredPaper } from '@zhop/hexastral-tokens/kindred'
+import { kindredDark } from '@zhop/hexastral-tokens/kindred'
 import { Stack } from 'expo-router'
 
 // DO NOT add `unstable_settings = { initialRouteName: 'index' }` here.
@@ -15,14 +15,17 @@ import { Stack } from 'expo-router'
 // Trade-off accepted: glossary / 命理词典 opened from the HOME footer now pops back to
 // home, not Settings (there's no Settings index beneath it). Opened from WITHIN
 // Settings they still pop back to Settings — the index is already in the stack.
+//
+// Stack chrome matches the dark Settings index (home). Glossary / terms paint their
+// own 宣纸 (kindredPaper) surface so document screens stay paper without flashing
+// cream under the dark settings index.
 
 export default function SettingsLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        // Shared 宣纸 document layer — same surface as the reading + paywall.
-        contentStyle: { backgroundColor: kindredPaper.bg },
+        contentStyle: { backgroundColor: kindredDark.bg },
         animation: 'slide_from_right',
         gestureEnabled: true,
         // Edge-only back-swipe (NOT full-screen): the glossary + settings are long

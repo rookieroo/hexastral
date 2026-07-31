@@ -17,9 +17,17 @@ import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
+import { deleteYuelAccount } from '@/lib/account-delete'
 import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
-import { getKindredDevLocale, type Locale, resolveLocale, setKindredDevLocale, t } from '@/lib/i18n'
+import {
+  getKindredDevLocale,
+  type Locale,
+  privacyPolicyUrl,
+  resolveLocale,
+  setKindredDevLocale,
+  t,
+} from '@/lib/i18n'
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
@@ -30,16 +38,14 @@ import { resetOnboarding } from '../index'
 // Privacy + Terms URLs — Apple App Store requires both reachable from inside a
 // signed-in surface. Served on the Yuel brand subdomain: privacy is the per-app
 // `yuel` appendix (/[locale]/privacy/yuel); terms stay the shared suite
-// document (/[locale]/terms). The LLC entity is named within the document text.
+// document (/[locale]/terms). Locale segment matches privacyPolicyUrl (zh-Hant → tw).
 const LEGAL_BASE = 'https://yuel.hexastral.com'
-function legalUrl(path: '/privacy' | '/terms', locale: string): string {
-  // Locale prefix matches hexastral-web's [locale] segment. Default falls
-  // through to the English version when the user's locale isn't published.
-  const known = ['en', 'zh', 'tw', 'ja']
-  const seg = known.includes(locale) ? locale : 'en'
-  const suffix = path === '/privacy' ? '/privacy/yuel' : path
-  if (seg === 'en') return `${LEGAL_BASE}${suffix}`
-  return `${LEGAL_BASE}/${seg}${suffix}`
+function legalUrl(path: '/privacy' | '/terms', locale: Locale): string {
+  if (path === '/privacy') return privacyPolicyUrl(locale)
+  const segment =
+    locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
+  if (segment === 'en') return `${LEGAL_BASE}/terms`
+  return `${LEGAL_BASE}/${segment}/terms`
 }
 
 type Status = 'idle' | 'pending' | 'linked' | 'recovered' | 'already_linked' | 'error'
@@ -95,6 +101,7 @@ export default function SettingsScreen() {
   // en-vs-CJK rendering can be QA'd on one device. Reopen the screen/report to
   // apply (resolveLocale is read once per mount).
   const [devLocale, setDevLocale] = useState<Locale | null>(getKindredDevLocale())
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const cycleDevLocale = () => {
     const order: (Locale | null)[] = [null, 'en', 'zh', 'zh-Hant', 'ja']
     const next = order[(order.indexOf(devLocale) + 1) % order.length] ?? null
@@ -149,9 +156,53 @@ export default function SettingsScreen() {
     void refreshProfile()
   }, [refreshProfile])
 
-  const handleSignOut = async () => {
-    await signOut()
-    router.replace('/')
+  const handleSignOut = () => {
+    Alert.alert(t(locale, 'settings.signOut.confirmTitle'), t(locale, 'settings.signOut.confirmBody'), [
+      { text: t(locale, 'settings.deleteAccount.cancel'), style: 'cancel' },
+      {
+        text: t(locale, 'settings.signOut'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            await signOut()
+            router.replace('/')
+          })()
+        },
+      },
+    ])
+  }
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t(locale, 'settings.deleteAccount.confirmTitle'),
+      t(locale, 'settings.deleteAccount.confirmBody'),
+      [
+        { text: t(locale, 'settings.deleteAccount.cancel'), style: 'cancel' },
+        {
+          text: t(locale, 'settings.deleteAccount.confirmCta'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              if (deletingAccount) return
+              setDeletingAccount(true)
+              try {
+                const ok = await deleteYuelAccount()
+                if (!ok) {
+                  Alert.alert(t(locale, 'settings.deleteAccount.failed'))
+                  return
+                }
+                router.replace('/')
+              } catch (err) {
+                if (__DEV__) console.error('[Settings] delete account failed', err)
+                Alert.alert(t(locale, 'settings.deleteAccount.failed'))
+              } finally {
+                setDeletingAccount(false)
+              }
+            })()
+          },
+        },
+      ]
+    )
   }
 
   const onEmailVerified = useCallback(
@@ -475,6 +526,29 @@ export default function SettingsScreen() {
         </Card>
 
         <View style={{ height: kindredSpacing.xxl }} />
+
+        <Pressable
+          onPress={handleDeleteAccount}
+          hitSlop={12}
+          disabled={deletingAccount}
+          style={{ alignSelf: 'center', opacity: deletingAccount ? 0.5 : 1 }}
+        >
+          <Text
+            style={[
+              kindredType.caption,
+              {
+                color: kindredDark.textMuted,
+                textDecorationLine: 'underline',
+              },
+            ]}
+          >
+            {deletingAccount
+              ? t(locale, 'settings.deleteAccount.working')
+              : t(locale, 'settings.deleteAccount')}
+          </Text>
+        </Pressable>
+
+        <View style={{ height: kindredSpacing.lg }} />
 
         <Pressable onPress={handleSignOut} hitSlop={12} style={{ alignSelf: 'center' }}>
           <Text

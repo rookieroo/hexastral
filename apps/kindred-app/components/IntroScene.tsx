@@ -2,16 +2,13 @@
  * IntroScene — ambient deep-space backdrop for the Yuel intro.
  *
  * The narrative stars (A·B·C·D) and the brand moon live in IntroThread; this
- * file is only the scenery they float in: a full-frame twinkling star field and
- * a faint galaxy band. (The old planet-ground / walking-figure parable this file
- * used to stage was retired with the two-stars rewrite — its Ground / FigureGlow
- * / WalkDust / AI-plate machinery is gone.)
+ * file is only the scenery they float in: a full-frame twinkling star field.
  *
  * All scatter comes from a sin-hash (no Math.random per repo convention), so the
  * sky is byte-identical on every launch and across a shared-screenshot compare.
  */
 
-import { ricePaper, zinc } from '@zhop/hexastral-tokens'
+import { zinc } from '@zhop/hexastral-tokens'
 import { useEffect, useMemo } from 'react'
 import { StyleSheet } from 'react-native'
 import Animated, {
@@ -19,20 +16,18 @@ import Animated, {
   Easing,
   type SharedValue,
   useAnimatedProps,
-  useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg'
+import Svg, { Circle } from 'react-native-svg'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 /* ── Palette ────────────────────────────────────────────────────────────── */
 const STAR = zinc[400]
-const GLOW = ricePaper.ivory
 
 /* ── Deterministic scatter ──────────────────────────────────────────────── */
 
@@ -178,85 +173,5 @@ function StarDot({
 
   return (
     <AnimatedCircle cx={star.x} cy={star.y} r={star.r} fill={STAR} animatedProps={animatedProps} />
-  )
-}
-
-/* ── Galaxy band ────────────────────────────────────────────────────────── */
-
-/**
- * GalaxyBand — a diagonal milky-way streak in the upper right, revealed by
- * `brightSv` (the same value that brightens the stars). Dust specks scatter
- * around the band axis with a triangular distribution (denser at the core),
- * plus two soft glow cores.
- */
-export function GalaxyBand({
-  width,
-  height,
-  brightSv,
-}: {
-  width: number
-  height: number
-  brightSv: SharedValue<number>
-}) {
-  // Band axis: upper-center → off-screen right, sloping down.
-  const x0 = width * 0.55
-  const y0 = height * 0.04
-  const x1 = width * 1.08
-  const y1 = height * 0.42
-  const halfWidth = width * 0.12
-
-  const specks = useMemo(() => {
-    const dx = x1 - x0
-    const dy = y1 - y0
-    const len = Math.hypot(dx, dy) || 1
-    const px = -dy / len
-    const py = dx / len
-    const out: Array<{ x: number; y: number; r: number; o: number }> = []
-    for (let i = 0; i < 38; i++) {
-      const t = hash(i * 5 + 1)
-      // Sum of two hashes - 1 → triangular distribution centered on the axis.
-      const off = (hash(i * 5 + 2) + hash(i * 5 + 3) - 1) * halfWidth
-      out.push({
-        x: x0 + dx * t + px * off,
-        y: y0 + dy * t + py * off,
-        r: 0.5 + hash(i * 5 + 4) * 1.2,
-        o: 0.25 + hash(i * 5 + 5) * 0.5,
-      })
-    }
-    return out
-  }, [x0, y0, x1, y1, halfWidth])
-
-  const fadeStyle = useAnimatedStyle(() => ({ opacity: brightSv.value * 0.9 }))
-
-  // Two soft glow cores along the band.
-  const cores: Array<[number, number]> = [
-    [0.3, width * 0.1],
-    [0.65, width * 0.13],
-  ]
-
-  return (
-    <Animated.View style={[StyleSheet.absoluteFillObject, fadeStyle]} pointerEvents='none'>
-      <Svg style={StyleSheet.absoluteFillObject}>
-        <Defs>
-          <RadialGradient id='galaxyCore' cx='50%' cy='50%' r='50%'>
-            <Stop offset='0' stopColor={GLOW} stopOpacity='0.2' />
-            <Stop offset='0.6' stopColor={GLOW} stopOpacity='0.06' />
-            <Stop offset='1' stopColor={GLOW} stopOpacity='0' />
-          </RadialGradient>
-        </Defs>
-        {cores.map(([t, r], i) => (
-          <Circle
-            key={`c${i}`}
-            cx={x0 + (x1 - x0) * t}
-            cy={y0 + (y1 - y0) * t}
-            r={r}
-            fill='url(#galaxyCore)'
-          />
-        ))}
-        {specks.map((s, i) => (
-          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill={STAR} opacity={s.o} />
-        ))}
-      </Svg>
-    </Animated.View>
   )
 }
