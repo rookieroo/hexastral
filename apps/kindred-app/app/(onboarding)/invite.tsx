@@ -27,7 +27,7 @@ import {
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { SignInSheet } from '@/components/SignInSheet'
@@ -36,7 +36,12 @@ import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { isPaywall, relationshipLabel, shareInvite } from '@/lib/inviteSubmit'
 import { clearDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
-import { ensureSelfBirthForBonds } from '@/lib/selfBirth'
+import {
+  clearSelfBirthSyncedFlag,
+  ensureSelfBirthSynced,
+  isSelfBirthReady,
+  loadSelfBirth,
+} from '@/lib/selfBirth'
 import { markInviteSignInNudgeShown, shouldNudgeSignInAfterInvite } from '@/lib/sign-in-nudge'
 import { suppressNextSplash } from '@/lib/splash-control'
 import { markOnboardingComplete } from '../index'
@@ -54,7 +59,7 @@ export default function InviteScreen() {
   const [showNameField, setShowNameField] = useState(true)
   const [ready, setReady] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
-  const { hasLinkedSignIn, userId } = useAuth()
+  const { hasLinkedSignIn, userId, isLoading: authLoading } = useAuth()
 
   const goSelfForInvite = useCallback(() => {
     router.replace({
@@ -71,24 +76,43 @@ export default function InviteScreen() {
     router.replace('/(reading)')
   }
 
+  // Local-first: missing birth → self immediately (ignore effect cancel).
+  // Local ready → paint UI; soft sync in background.
   useEffect(() => {
+    if (authLoading) return
+
     let cancelled = false
-    void ensureSelfBirthForBonds(
-      userId,
-      () => {
-        if (!cancelled) goSelfForInvite()
-      },
-      'invite'
-    ).then((ok) => {
-      if (!cancelled && ok) setReady(true)
-    })
+    void (async () => {
+      const birth = await loadSelfBirth()
+      if (!isSelfBirthReady(birth)) {
+        goSelfForInvite()
+        return
+      }
+      if (cancelled) return
+      setReady(true)
+      if (userId) {
+        void ensureSelfBirthSynced(userId)
+      }
+    })()
+
     return () => {
       cancelled = true
     }
-  }, [userId, goSelfForInvite])
+  }, [authLoading, goSelfForInvite, userId])
 
-  if (!ready) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+  if (authLoading || !ready) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: kindredDark.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color={kindredDark.accent} />
+      </SafeAreaView>
+    )
   }
 
   const handleShare = async () => {
@@ -96,9 +120,20 @@ export default function InviteScreen() {
     setSending(true)
     setError(null)
     try {
-      // Re-check + sync at tap time (mount gate can race a wiped account).
-      const ok = await ensureSelfBirthForBonds(userId, goSelfForInvite, 'invite')
-      if (!ok) {
+      const birth = await loadSelfBirth()
+      if (!isSelfBirthReady(birth)) {
+        setSending(false)
+        goSelfForInvite()
+        return
+      }
+      if (!userId) {
+        setError(t(locale, 'settings.dailyPush.failedBody'))
+        setSending(false)
+        return
+      }
+      const synced = await ensureSelfBirthSynced(userId)
+      if (!synced) {
+        setError(t(locale, 'settings.dailyPush.failedBody'))
         setSending(false)
         return
       }
@@ -112,8 +147,8 @@ export default function InviteScreen() {
       })
       await shareInvite(result.mailto, result.resonateUrl)
       updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
-      await markOnboardingComplete()
-      await clearDraft()
+      void markOnboardingComplete()
+      void clearDraft()
       if (!hasLinkedSignIn && (await shouldNudgeSignInAfterInvite())) {
         await markInviteSignInNudgeShown()
         setSending(false)
@@ -134,6 +169,7 @@ export default function InviteScreen() {
       // Server still missing birth — send them to the form instead of a dead-end error.
       if (/birth/i.test(msg) || /missing_required/i.test(msg)) {
         setSending(false)
+        void clearSelfBirthSyncedFlag()
         goSelfForInvite()
         return
       }

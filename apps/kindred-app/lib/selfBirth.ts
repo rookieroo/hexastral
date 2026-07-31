@@ -169,30 +169,47 @@ export function isSelfBirthReady(birth: SelfBirth | null | undefined): boolean {
   return true
 }
 
+/** Drop the local "already synced" marker (server rejected birth / wipe race). */
+export async function clearSelfBirthSyncedFlag(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SELF_BIRTH_SYNCED_KEY)
+  } catch {
+    // Best-effort.
+  }
+}
+
+export type EnsureBirthForBondsResult = 'ok' | 'needs_birth' | 'pending_auth' | 'sync_error'
+
 /**
- * Ensure local + server birth before invite / mode. Returns false after redirecting
- * to the self form when anything is missing or sync fails.
+ * Local-first birth gate for invite / mode.
+ *
+ * - Missing local birth → `redirect(next)` immediately, return `needs_birth`
+ * - Auth still loading (`userId` null) → `pending_auth` (do NOT bounce to self)
+ * - Local ready → soft sync via `ensureSelfBirthSynced` (honors synced flag)
+ * - Sync failure with ready local birth → `sync_error` (caller shows retry; no form redirect)
+ *
+ * Pass `{ forceSync: true }` after account wipe or server birth errors.
  */
 export async function ensureSelfBirthForBonds(
   userId: string | null | undefined,
   redirect: (next: 'mode' | 'invite') => void,
-  next: 'mode' | 'invite'
-): Promise<boolean> {
+  next: 'mode' | 'invite',
+  opts?: { forceSync?: boolean }
+): Promise<EnsureBirthForBondsResult> {
   const birth = await loadSelfBirth()
   if (!isSelfBirthReady(birth) || !birth) {
     redirect(next)
-    return false
+    return 'needs_birth'
   }
   if (!userId) {
-    redirect(next)
-    return false
+    return 'pending_auth'
   }
-  // Always push (idempotent on server) — don't trust a stale local "synced" flag
-  // after account wipe / re-provision.
-  const result = await syncSelfBirthToServer(userId, birth)
-  if (result === 'ok') return true
-  redirect(next)
-  return false
+  if (opts?.forceSync) {
+    const result = await syncSelfBirthToServer(userId, birth)
+    return result === 'ok' ? 'ok' : 'sync_error'
+  }
+  const synced = await ensureSelfBirthSynced(userId)
+  return synced ? 'ok' : 'sync_error'
 }
 
 /**

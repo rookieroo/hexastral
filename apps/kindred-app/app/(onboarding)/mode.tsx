@@ -9,21 +9,25 @@
  * The pre-K2 "skip" option is gone: there is nothing to skip to — the solo
  * reading already exists without a partner.
  *
- * On mount, fire ensureSelfBirthSynced() so the server has person A's birth
- * by the time the partner flow finishes (bond creation requires it).
+ * Mount: local-first birth gate (instant self redirect); soft sync in background
+ * once auth is ready so Mode Next → Invite is not blocked on a birth PUT.
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 import { updateDraft } from '@/lib/onboardingDraft'
-import { ensureSelfBirthForBonds } from '@/lib/selfBirth'
+import {
+  ensureSelfBirthSynced,
+  isSelfBirthReady,
+  loadSelfBirth,
+} from '@/lib/selfBirth'
 
 type Intent = 'know' | 'invite'
 
@@ -38,31 +42,49 @@ const OPTS: { key: Intent; label: TranslationKey; subtitle: TranslationKey }[] =
 export default function ModeScreen() {
   const router = useRouter()
   const locale = useMemo<Locale>(() => resolveLocale(), [])
-  const { userId } = useAuth()
+  const { userId, isLoading: authLoading } = useAuth()
   const [intent, setIntent] = useState<Intent>('invite')
   const [ready, setReady] = useState(false)
 
-  // Threads require person A's birth on the server. Missing / unsynced → self form.
+  // Local-first: missing birth → self immediately (never cancel that navigate).
+  // Auth loading → spinner. Local ready → paint UI; soft-sync in background.
   useEffect(() => {
+    if (authLoading) return
+
     let cancelled = false
-    void ensureSelfBirthForBonds(
-      userId,
-      () => {
-        if (!cancelled) {
-          router.replace({ pathname: '/(onboarding)/self', params: { next: 'mode' } })
-        }
-      },
-      'mode'
-    ).then((ok) => {
-      if (!cancelled && ok) setReady(true)
-    })
+    void (async () => {
+      const birth = await loadSelfBirth()
+      if (!isSelfBirthReady(birth)) {
+        // One-shot navigate — do not gate on `cancelled` (effect cleanup used to
+        // swallow replace and leave a blank screen).
+        router.replace({ pathname: '/(onboarding)/self', params: { next: 'mode' } })
+        return
+      }
+      if (cancelled) return
+      setReady(true)
+      if (userId) {
+        void ensureSelfBirthSynced(userId)
+      }
+    })()
+
     return () => {
       cancelled = true
     }
-  }, [router, userId])
+  }, [authLoading, router, userId])
 
-  if (!ready) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+  if (authLoading || !ready) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: kindredDark.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color={kindredDark.accent} />
+      </SafeAreaView>
+    )
   }
 
   const handleNext = () => {

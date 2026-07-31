@@ -540,7 +540,9 @@ export default function ReadingHomeScreen() {
             customAction={
               <PrimaryButton
                 label={copy.noBirthCta}
-                onPress={() => router.push('/(onboarding)/self')}
+                onPress={() =>
+                  router.push({ pathname: '/(onboarding)/self', params: { next: 'mode' } })
+                }
                 block={false}
               />
             }
